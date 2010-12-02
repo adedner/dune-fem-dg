@@ -3,7 +3,7 @@
 AC_PREREQ(2.50)
 DUNE_AC_INIT # gets module version from dune.module file
 AM_INIT_AUTOMAKE
-AC_CONFIG_SRCDIR([src/common/fluxes/dgprimalfluxes.hh])
+AC_CONFIG_SRCDIR([dune/fem-dg/operator/limiter/limiter.hh])
 AM_CONFIG_HEADER([config.h])
 
 
@@ -19,24 +19,10 @@ LIBS="$DUNE_LIBS $ALL_PKG_LIBS $LAPACK_LIBS"
 
 AC_CONFIG_FILES([
   Makefile
-  dune/Makefile
-  dune/fem/Makefile
-  dune/fem/operator/Makefile
-  src/common/Makefile
-  src/common/base/Makefile
-  src/common/fluxes/Makefile
-  src/common/main/Makefile
-  src/common/operator/Makefile
-  src/common/pass/Makefile
-  src/problems/heat/Makefile
-  src/problems/nseq/Makefile
-  src/problems/poisson/Makefile
-  src/problems/coldbubble/Makefile
-  src/Makefile
-  doc/Makefile
-  doc/doxygen/Makefile
   m4/Makefile
-  navier-stokes.pc
+  dune/Makefile
+  dune/fem-dg/Makefile
+  dune-fem-dg.pc
 ])
 AC_OUTPUT
 # finally print the summary information

@@ -13,5 +13,5 @@ AC_DEFUN([DUNE_FEM_DG_CHECKS])
 # not by dune-fem-dg itself
 AC_DEFUN([DUNE_FEM_DG_CHECK_MODULE],
 [
-  DUNE_CHECK_MODULES([dune-fem-dg],[dune/limiter/limiter.hh])
+  DUNE_CHECK_MODULES([dune-fem-dg],[fem-dg/operator/limiter/limiter.hh])
 ])
