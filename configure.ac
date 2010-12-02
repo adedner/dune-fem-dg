@@ -1,0 +1,43 @@
+# -*- Autoconf -*-
+# Process this file with autoconf to produce a configure script.
+AC_PREREQ(2.50)
+DUNE_AC_INIT # gets module version from dune.module file
+AM_INIT_AUTOMAKE
+AC_CONFIG_SRCDIR([src/common/fluxes/dgprimalfluxes.hh])
+AM_CONFIG_HEADER([config.h])
+
+
+# we need no more than the standard DE-stuff
+# this module depends on dune-common dune-grid dune-fem
+# this implies checking for [dune-common], [dune-grid], [dune-istl], [dune-fem]
+DUNE_CHECK_ALL
+
+# implicitly set the Dune-flags everywhere
+AC_SUBST(AM_CPPFLAGS, $DUNE_CPPFLAGS)
+AC_SUBST(AM_LDFLAGS, $DUNE_LDFLAGS)
+LIBS="$DUNE_LIBS $ALL_PKG_LIBS $LAPACK_LIBS"
+
+AC_CONFIG_FILES([
+  Makefile
+  dune/Makefile
+  dune/fem/Makefile
+  dune/fem/operator/Makefile
+  src/common/Makefile
+  src/common/base/Makefile
+  src/common/fluxes/Makefile
+  src/common/main/Makefile
+  src/common/operator/Makefile
+  src/common/pass/Makefile
+  src/problems/heat/Makefile
+  src/problems/nseq/Makefile
+  src/problems/poisson/Makefile
+  src/problems/coldbubble/Makefile
+  src/Makefile
+  doc/Makefile
+  doc/doxygen/Makefile
+  m4/Makefile
+  navier-stokes.pc
+])
+AC_OUTPUT
+# finally print the summary information
+DUNE_SUMMARY_ALL
