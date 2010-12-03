@@ -36,9 +36,6 @@ namespace Dune {
     typedef DGDiscreteModelCaller< DiscreteModelImp, ArgumentImp, SelectorImp> BaseType ;
 
   public:
-    //using BaseType :: DiscreteModelType ;
-    //using BaseType :: IntersectionIterator ;
-
     LimiterDiscreteModelCaller( DiscreteModelImp& problem)
       : BaseType( problem ) 
 #ifndef NDEBUG 
@@ -367,14 +364,10 @@ namespace Dune {
     // Various other types
     typedef typename DestinationType::LocalFunctionType DestLocalFunctionType;
     typedef typename DiscreteModelType::SelectorType SelectorType;
-#ifdef OLD_DUNE_FEM_VERSION 
-    typedef LimiterDiscreteModelCaller<
-      DiscreteModelType, ArgumentType, SelectorType> DiscreteModelCallerType;
-#else 
+
     typedef CombinedSelector< ThisType , SelectorType > CombinedSelectorType;
     typedef LimiterDiscreteModelCaller<
       DiscreteModelType, ArgumentType, CombinedSelectorType> DiscreteModelCallerType;
-#endif
 
     // type of Communication Manager 
     typedef CommunicationManager< DiscreteFunctionSpaceType > CommunicationManagerType;
@@ -387,7 +380,6 @@ namespace Dune {
     typedef FieldVector<ctype, dimDomain-1> FaceDomainType;
 
     typedef PointBasedDofConversionUtility< dimRange > DofConversionUtilityType;
-    //typedef DofConversionUtility< PointBased > DofConversionUtilityType;
 
     //! is true if grid is structured grid 
     enum { StructuredGrid = ! Capabilities::IsUnstructured<GridType>::v };
@@ -464,7 +456,6 @@ namespace Dune {
       localMassMatrix_( spc_ , volumeQuadOrd_ ),
       adaptive_((AdaptationMethodType(gridPart_.grid())).adaptive()),
       cartesianGrid_( CheckCartesian::check( gridPart_ ) ),
-      //cartesianGrid_( StructuredGrid ),
       stepTime_(3, 0.0),
       calcIndicator_(true),
       adaptMode_(false),
@@ -523,7 +514,7 @@ namespace Dune {
     {
       // default value 
       double eps = 1e-8;
-      eps = Parameter::getValue("LimitEps", eps );
+      eps = Parameter::getValue("femdg.limiter.limiteps", eps );
       return eps;
     }
 
@@ -532,7 +523,7 @@ namespace Dune {
     {
       // default value 
       int val = 1; 
-      val = Parameter::getValue("AdmissibleFunctions", val);
+      val = Parameter::getValue("femdg.limiter.admissiblefunctions", val);
       assert( val >= DGFunctions || val <= BothFunctions );
       return (AdmissibleFunctions) val;
     }
