@@ -131,18 +131,10 @@ namespace Dune {
   // **********************************************
   template <class GlobalTraitsImp, class Model, int passId >
   class LimiterDefaultDiscreteModel :
-    public DGDiscreteModelDefaultWithInsideOutside< LimiterDefaultTraits<GlobalTraitsImp,Model,passId > 
-#ifndef OLD_DUNE_FEM_VERSION
-     , passId
-#endif
-     >  
+    public DGDiscreteModelDefaultWithInsideOutside< LimiterDefaultTraits<GlobalTraitsImp,Model,passId >, passId >  
   {
   public:
     typedef LimiterDefaultTraits<GlobalTraitsImp,Model,passId> Traits;
-    
-#ifdef OLD_DUNE_FEM_VERSION
-    typedef Selector<0> SelectorType;
-#endif
     
     typedef typename Traits::DomainType DomainType;
     typedef typename Traits::FaceDomainType FaceDomainType;
@@ -245,7 +237,7 @@ namespace Dune {
       uRight = uLeft;
     }
 
-    //! \brief returns true if physical check does something */
+    //! \brief returns true if physical check does something useful */
     bool hasPhysical () const { return false; }
 
     /** \brief check physical values (called from LimiterDiscreteModelCaller) */ 
@@ -258,13 +250,6 @@ namespace Dune {
 
     /** \brief check physical values */ 
     bool physical(const RangeType& u) const { return true; }
-
-    void cons2prim(const RangeType& u, RangeType& v) const { 
-      model().cons2prim(u,v);
-    }
-    void prim2cons(const RangeType& u, RangeType& v) const { 
-      model().prim2cons(u,v);
-    }
 
     void indicatorMax() const
     {
@@ -331,20 +316,12 @@ namespace Dune {
   */
   template <class DiscreteModelImp, class PreviousPassImp, int passId = 0 >
   class LimitDGPass :
-    public LocalPass<DiscreteModelImp, PreviousPassImp
-#ifndef OLD_DUNE_FEM_VERSION 
-      , passId
-#endif
-      > 
+    public LocalPass<DiscreteModelImp, PreviousPassImp , passId > 
   {
   public:
     //- Typedefs and enums
     //! Base class
-    typedef LocalPass<DiscreteModelImp, PreviousPassImp
-#ifndef OLD_DUNE_FEM_VERSION 
-      , passId
-#endif
-      > BaseType;
+    typedef LocalPass<DiscreteModelImp, PreviousPassImp, passId > BaseType;
 
     typedef LimitDGPass<DiscreteModelImp, PreviousPassImp, passId> ThisType;
     
@@ -355,11 +332,7 @@ namespace Dune {
     
     // Types from the base class
     typedef typename BaseType::Entity EntityType;
-#if DUNE_VERSION_NEWER(DUNE_FEM,1,1,0) 
     typedef const EntityType ConstEntityType;
-#else 
-    typedef EntityType ConstEntityType;
-#endif
 
     typedef typename BaseType::ArgumentType ArgumentType;
     typedef typename PreviousPassType::GlobalArgumentType ArgumentFunctionType;
@@ -541,7 +514,7 @@ namespace Dune {
     double getTol() const 
     {
       double tol = 1.0; 
-      tol = Parameter::getValue< double > ("LimitTol");
+      tol = Parameter::getValue("femdg.limiter.tolerance", tol );
       return tol;
     }
 
@@ -674,6 +647,7 @@ namespace Dune {
       // set time to caller 
       caller_.setTime(currentTime_);
 
+      // calculate maximal indicator (if necessary)
       problem_.indicatorMax();
 
       const int numLevels = gridPart_.grid().maxLevel() + 1;
@@ -871,7 +845,7 @@ namespace Dune {
             boundary = true ; 
             
             typedef typename IntersectionType :: Geometry LocalGeometryType;
-            const LocalGeometryType& interGeo = intersectionGeometry( intersection );   
+            const LocalGeometryType& interGeo = intersection.geometry();
 
             /////////////////////////////////////////
             // construct bary center of ghost cell 
@@ -1804,7 +1778,7 @@ namespace Dune {
       caller_.setNeighbor( nb, faceQuadInner, faceQuadOuter );
 
       typedef typename IntersectionType :: Geometry LocalGeometryType;
-      const LocalGeometryType& interGeo = intersectionGeometry( intersection );   
+      const LocalGeometryType& interGeo = intersection.geometry();   
 
       RangeType jump, adapt;
       const int faceQuadNop = faceQuadInner.nop();
@@ -1843,7 +1817,7 @@ namespace Dune {
                       RangeType& adaptIndicator) const 
     {
       typedef typename IntersectionType :: Geometry LocalGeometryType;
-      const LocalGeometryType& interGeo = intersectionGeometry( intersection );   
+      const LocalGeometryType& interGeo = intersection.geometry();   
 
       RangeType jump;
       const int faceQuadNop = faceQuadInner.nop();
@@ -1901,7 +1875,7 @@ namespace Dune {
         const IntersectionType& intersection = *niter ;
 
         typedef typename IntersectionType :: Geometry LocalGeometryType;
-        const LocalGeometryType& interGeo = intersectionGeometry( intersection );   
+        const LocalGeometryType& interGeo = intersection.geometry();   
 
         // calculate max face volume 
         if( numberInSelf != ( int ) intersection.indexInInside() )
