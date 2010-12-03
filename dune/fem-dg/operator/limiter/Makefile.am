@@ -1,4 +1,4 @@
-operatordir = $(includedir)/dune/fem/operator
-operator_HEADERS = primaldg.hh
+operatordir = $(includedir)/dune/fem/operator/limiter
+operator_HEADERS = limiter.hh limitpass.hh
 
 include $(top_srcdir)/am/global-rules

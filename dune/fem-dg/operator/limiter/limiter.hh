@@ -1,7 +1,10 @@
 #ifndef DUNE_FEM_LIMITER_HH
 #define DUNE_FEM_LIMITER_HH 
 
+#include <dune/fem/io/parameter.hh>
+#include <dune/fem/space/fvspace.hh>
 #include <dune/fem/space/dgspace.hh>
+#include <dune/fem/function/adaptivefunction.hh>
 #include <dune/fem/operator/limiter/limitpass.hh>
 
 namespace Dune {
@@ -63,10 +66,10 @@ namespace Fem {
       : BaseType(mod), 
         refTol_(1), crsTol_(0.1), finLevel_(0), crsLevel_(0)
     {
-      refTol_   = Paramter :: getValue("RefinementTolerance", refTol_ );
-      crsTol_   = Paramter :: getValue("CoarseningTolerance", crsTol_ );
-      finLevel_ = Paramter :: getValue("FinestLevel", finLevel_ );
-      crsLevel_ = Paramter :: getValue("CoarsestLevel", crsLevel_ );
+      refTol_   = Parameter :: getValue("RefinementTolerance", refTol_ );
+      crsTol_   = Parameter :: getValue("CoarseningTolerance", crsTol_ );
+      finLevel_ = Parameter :: getValue("FinestLevel", finLevel_ );
+      crsLevel_ = Parameter :: getValue("CoarsestLevel", crsLevel_ );
     }
 
     template < class IndicatorType >  

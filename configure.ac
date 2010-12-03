@@ -22,6 +22,8 @@ AC_CONFIG_FILES([
   m4/Makefile
   dune/Makefile
   dune/fem-dg/Makefile
+  dune/fem-dg/operator/Makefile
+  dune/fem-dg/operator/limiter/Makefile
   dune-fem-dg.pc
 ])
 AC_OUTPUT
