@@ -103,14 +103,17 @@ namespace Dune {
       iterators_( spc ),
       problems_( Fem::ThreadManager::maxThreads() ),
       passes_( Fem::ThreadManager::maxThreads() ),
-      firstCall_( false )
+      firstCall_( true )
     {
       for(int i=0; i<Fem::ThreadManager::maxThreads(); ++i)
       {
         // use serparate discrete problem for each thread 
         problems_[ i ] = new DiscreteModelType( problem );
-        passes_[ i ]   = new InnerPassType( *problems_[ i ], pass, spc, volumeQuadOrd, faceQuadOrd);
+        // create dg passes, the last bool disables communication in the pass itself
+        passes_[ i ]   = new InnerPassType( *problems_[ i ], pass, spc, volumeQuadOrd, faceQuadOrd, false );
       }
+
+      std::cout << "Thread Pass initialized\n";
     }
 
     virtual ~ThreadPass () 
@@ -133,13 +136,15 @@ namespace Dune {
     double timeStepEstimateImpl() const 
     {
       double dtMin = passes_[ 0 ]->timeStepEstimateImpl();
-      for( int i = 1; i < Fem::ThreadManager::maxThreads() ; ++i)
+      const int maxThreads = Fem::ThreadManager::maxThreads();
+      for( int i = 1; i < maxThreads ; ++i)
       {
         dtMin = std::min( dtMin, passes_[i]->timeStepEstimateImpl() );
       }
       return dtMin;
     }
 
+  protected:  
     //! returns true for flux evaluation if neighbor 
     //! is on same thread as entity  
     struct NBChecker 
@@ -151,11 +156,21 @@ namespace Dune {
           myThread_( Fem::ThreadManager::thread() )
       {}
 
+      // returns true if niehhbor can be updated 
       bool operator () ( const EntityType& en, const EntityType& nb ) const 
       {
         return myThread_ == storage_.thread( nb );
       }
     };
+
+  public:  
+    //! switch upwind direction
+    void switchUpwind() 
+    {
+      const int maxThreads = Fem::ThreadManager::maxThreads();
+      for(int i=0; i<maxThreads; ++i ) 
+        problems_[ i ]->switchUpwind(); 
+    }
 
     //! overload compute method to use thread iterators 
     void compute(const ArgumentType& arg, DestinationType& dest) const
@@ -166,62 +181,83 @@ namespace Dune {
       // clear destination 
       dest.clear();
 
-      // update thread iterators 
-      iterators_.update();
-
-      // call prepare before parallel area 
-      const int maxThreads = Fem::ThreadManager::maxThreads();
-      for(int i=0; i<maxThreads; ++i ) 
-      {
-        passes_[ i ]->prepare( arg, dest );
-      }
-
       // for the first call we only run on one thread to avoid 
       // clashes with the singleton storages for quadratures 
       // and base function caches etc.
       // after one grid traversal everything should be set up 
       if( firstCall_ ) 
       {
-        // reduce number of threads to 1  
-        Fem :: ThreadManager :: setMaxNumberThreads( 1 );
-      }
-
-      // parallel region 
-#ifdef _OPENMP
-#pragma omp parallel
-#endif
-      {
         //! get pass for my thread  
-        InnerPassType& pass = *(passes_[ Fem::ThreadManager::thread() ]);
+        InnerPassType& pass = *(passes_[ 0 ]);
+        std::cout << "Thread Pass :: First Call !!! " << this << std::endl;
 
-        // set current time (to be revised)
-        pass.setTime( this->time() );
-
-        // create NB checker 
-        NBChecker nbChecker( iterators_ );
+        // pepare 
+        pass.prepare( arg, dest );
 
         // Iterator is of same type as the space iterator 
-        typedef typename ThreadIteratorType :: IteratorType Iterator;
-        const Iterator endit = iterators_.end();
-        for (Iterator it = iterators_.begin(); it != endit; ++it)
+        typedef typename DiscreteFunctionSpaceType :: IteratorType Iterator;
+        const Iterator endit = iterators_.space().end();
+        for (Iterator it = iterators_.space().begin(); it != endit; ++it)
         {
-          assert( iterators_.thread( *it ) == Fem::ThreadManager::thread() );
-          pass.applyLocal( *it, nbChecker );
+          pass.applyLocal( *it );
         }
 
         // finalize pass 
         pass.finalize(arg, dest);
-      } /* end parallel */
 
-      if( firstCall_ ) 
-      {
-        // reset original number of threads 
-        Fem :: ThreadManager :: setMaxNumberThreads( maxThreads );
+        // set tot false since first call has been done
         firstCall_ = false ;
       }
+      else 
+      {
+        // update thread iterators in case grid changed 
+        iterators_.update();
+
+        // call prepare before parallel area 
+        const int maxThreads = Fem::ThreadManager::maxThreads();
+        for(int i=0; i<maxThreads; ++i ) 
+        {
+          passes_[ i ]->prepare( arg, dest );
+          // set current time (to be revised)
+          passes_[ i ]->setTime( this->time() );
+        }
+
+        /////////////////////////////////////////////////
+        // BEGIN PARALLEL REGION 
+        /////////////////////////////////////////////////
+#ifdef _OPENMP
+#pragma omp parallel
+#endif
+        {
+          //! get pass for my thread  
+          InnerPassType& pass = *(passes_[ Fem::ThreadManager::thread() ]);
+
+          // create NB checker 
+          NBChecker nbChecker( iterators_ );
+
+          // Iterator is of same type as the space iterator 
+          typedef typename ThreadIteratorType :: IteratorType Iterator;
+          const Iterator endit = iterators_.end();
+          for (Iterator it = iterators_.begin(); it != endit; ++it)
+          {
+            assert( iterators_.thread( *it ) == Fem::ThreadManager::thread() );
+            pass.applyLocal( *it, nbChecker );
+          }
+
+          // finalize pass 
+          pass.finalize(arg, dest);
+        } 
+        /////////////////////////////////////////////////
+        // END PARALLEL REGION 
+        /////////////////////////////////////////////////
+
+      } // end if first call 
 
       // accumulate time 
       this->computeTime_ += timer.elapsed()/((double) Fem::ThreadManager::maxThreads());
+
+      // communicate calculated function 
+      dest.communicate();
     }
 
     //! In the preparations, store pointers to the actual arguments and 
