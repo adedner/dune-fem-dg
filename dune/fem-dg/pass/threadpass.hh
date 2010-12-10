@@ -172,6 +172,8 @@ namespace Dune {
       return *( passes_[ thread ] );
     }
 
+    using BaseType :: time ;
+
   public:  
     //! switch upwind direction
     void switchUpwind() 
@@ -189,6 +191,15 @@ namespace Dune {
 
       // clear destination 
       dest.clear();
+
+      // set time for all passes, this is used in prepare of pass 
+      // and therefore has to be done before prepare is called
+      const int maxThreads = Fem::ThreadManager::maxThreads();
+      for(int i=0; i<maxThreads; ++i ) 
+      {
+        // set time to each pass 
+        pass( i ).setTime( time() );
+      }
 
       // for the first call we only run on one thread to avoid 
       // clashes with the singleton storages for quadratures 
@@ -242,9 +253,6 @@ namespace Dune {
 
           // create NB checker 
           NBChecker nbChecker( iterators_ );
-
-          // set current time to my pass
-          myPass.setTime( this->time() );
 
           // Iterator is of same type as the space iterator 
           typedef typename ThreadIteratorType :: IteratorType Iterator;
