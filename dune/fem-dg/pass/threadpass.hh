@@ -113,7 +113,10 @@ namespace Dune {
         passes_[ i ]   = new InnerPassType( *problems_[ i ], pass, spc, volumeQuadOrd, faceQuadOrd, false );
       }
 
-      std::cout << "Thread Pass initialized\n";
+#ifndef NDEBUG
+      if( Parameter :: verbose() )
+        std::cout << "Thread Pass initialized\n";
+#endif
     }
 
     virtual ~ThreadPass () 
@@ -129,17 +132,17 @@ namespace Dune {
     void printTexInfo(std::ostream& out) const 
     {
       BaseType::printTexInfo(out);
-      passes_[ 0 ]->printTexInfo(out);
+      pass( 0 ).printTexInfo(out);
     }
 
     //! Estimate for the timestep size 
     double timeStepEstimateImpl() const 
     {
-      double dtMin = passes_[ 0 ]->timeStepEstimateImpl();
+      double dtMin = pass( 0 ).timeStepEstimateImpl();
       const int maxThreads = Fem::ThreadManager::maxThreads();
       for( int i = 1; i < maxThreads ; ++i)
       {
-        dtMin = std::min( dtMin, passes_[i]->timeStepEstimateImpl() );
+        dtMin = std::min( dtMin, pass( i ).timeStepEstimateImpl() );
       }
       return dtMin;
     }
@@ -162,6 +165,12 @@ namespace Dune {
         return myThread_ == storage_.thread( nb );
       }
     };
+
+    InnerPass& pass( const int thread ) const 
+    {
+      assert( (int) passes_.size() > thread );
+      return *( passes_[ thread ] );
+    }
 
   public:  
     //! switch upwind direction
@@ -189,7 +198,7 @@ namespace Dune {
       {
         //! get pass for my thread  
         InnerPassType& pass = *(passes_[ 0 ]);
-        std::cout << "Thread Pass :: First Call !!! " << this << std::endl;
+        //std::cout << "Thread Pass :: First Call !!! " << this << std::endl;
 
         // pepare 
         pass.prepare( arg, dest );
@@ -217,9 +226,8 @@ namespace Dune {
         const int maxThreads = Fem::ThreadManager::maxThreads();
         for(int i=0; i<maxThreads; ++i ) 
         {
-          passes_[ i ]->prepare( arg, dest );
-          // set current time (to be revised)
-          passes_[ i ]->setTime( this->time() );
+          // prepare pass (make sure pass doesn't clear dest, this will conflict)
+          pass( i ).prepare( arg, dest );
         }
 
         /////////////////////////////////////////////////
@@ -230,10 +238,13 @@ namespace Dune {
 #endif
         {
           //! get pass for my thread  
-          InnerPassType& pass = *(passes_[ Fem::ThreadManager::thread() ]);
+          InnerPassType& myPass = pass( Fem::ThreadManager::thread() );
 
           // create NB checker 
           NBChecker nbChecker( iterators_ );
+
+          // set current time to my pass
+          myPass.setTime( this->time() );
 
           // Iterator is of same type as the space iterator 
           typedef typename ThreadIteratorType :: IteratorType Iterator;
@@ -241,11 +252,12 @@ namespace Dune {
           for (Iterator it = iterators_.begin(); it != endit; ++it)
           {
             assert( iterators_.thread( *it ) == Fem::ThreadManager::thread() );
-            pass.applyLocal( *it, nbChecker );
+            myPass.applyLocal( *it, nbChecker );
           }
 
-          // finalize pass 
-          pass.finalize(arg, dest);
+          // finalize pass (make sure communication is done in case of thread parallel
+          // program, this would give conflicts)
+          myPass.finalize(arg, dest);
         } 
         /////////////////////////////////////////////////
         // END PARALLEL REGION 
