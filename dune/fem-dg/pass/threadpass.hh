@@ -162,6 +162,8 @@ namespace Dune {
       // returns true if niehhbor can be updated 
       bool operator () ( const EntityType& en, const EntityType& nb ) const 
       {
+        // storage_.thread can also return negative values in which case the 
+        // update of the neighbor is skipped, e.g. for ghost elements 
         return myThread_ == storage_.thread( nb );
       }
     };
@@ -271,10 +273,10 @@ namespace Dune {
         // END PARALLEL REGION 
         /////////////////////////////////////////////////
 
-      } // end if first call 
+        // accumulate time 
+        this->computeTime_ += timer.elapsed()/((double) Fem::ThreadManager::maxThreads());
 
-      // accumulate time 
-      this->computeTime_ += timer.elapsed()/((double) Fem::ThreadManager::maxThreads());
+      } // end if first call 
 
       // communicate calculated function 
       dest.communicate();
