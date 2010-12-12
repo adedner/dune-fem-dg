@@ -154,14 +154,29 @@ namespace Dune {
     {
       const ThreadIteratorType& storage_;
       const int myThread_; 
+
+#ifndef NDEBUG
+      mutable int counter_; 
+      mutable int nonEqual_;
+#endif
       NBChecker( const ThreadIteratorType& st ) 
         : storage_( st ),
           myThread_( Fem::ThreadManager::thread() )
+#ifndef NDEBUG
+          , counter_( 0 )
+          , nonEqual_( 0 )
+#endif
       {}
 
       // returns true if niehhbor can be updated 
       bool operator () ( const EntityType& en, const EntityType& nb ) const 
       {
+#ifndef NDEBUG
+        ++counter_;
+        if( myThread_ != storage_.thread( nb ) )
+          ++nonEqual_;
+#endif
+
         // storage_.thread can also return negative values in which case the 
         // update of the neighbor is skipped, e.g. for ghost elements 
         return myThread_ == storage_.thread( nb );
@@ -268,6 +283,11 @@ namespace Dune {
           // finalize pass (make sure communication is done in case of thread parallel
           // program, this would give conflicts)
           myPass.finalize(arg, dest);
+
+#ifndef NDEBUG 
+          std::cout << "Thread["<< Fem::ThreadManager::thread() << "] diagnostics: " <<
+            nbChecker.counter_ << "  and   "<< nbChecker.nonEqual_ << std::endl;
+#endif
         } 
         /////////////////////////////////////////////////
         // END PARALLEL REGION 
