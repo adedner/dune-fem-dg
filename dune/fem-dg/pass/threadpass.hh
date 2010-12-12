@@ -24,6 +24,8 @@
 #include <dune/fem/quadrature/intersectionquadrature.hh>
 #include <dune/fem/misc/threaditerator.hh>
 
+#include "domaindecomposed.hh"
+
 namespace Dune {
 
   template < class InnerPass > 
@@ -84,7 +86,8 @@ namespace Dune {
     // type of local id set 
     typedef typename GridPartType::IndexSetType IndexSetType; 
 
-    typedef Fem::ThreadIterator< DiscreteFunctionSpaceType > ThreadIteratorType;
+    //typedef Fem::ThreadIterator< DiscreteFunctionSpaceType > ThreadIteratorType;
+    typedef Fem::DomainDecomposedIterator< DiscreteFunctionSpaceType > ThreadIteratorType;
 
   public:
     //- Public methods
