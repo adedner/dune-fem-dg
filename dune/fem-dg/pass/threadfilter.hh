@@ -13,13 +13,11 @@
 #include <dune/fem/misc/gridwidth.hh>
 #include <dune/fem/quadrature/cachingquadrature.hh>
 
-#include "includes.hh"
-
 namespace Dune {
 
 //***************************************************************************
 // 
-// FFS Filter 
+// Thread Filter 
 //
 //***************************************************************************
   template <class GridPartType>

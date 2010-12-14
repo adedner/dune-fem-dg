@@ -87,7 +87,7 @@ namespace Dune {
     typedef typename GridPartType::IndexSetType IndexSetType; 
 
     //typedef Fem::ThreadIterator< DiscreteFunctionSpaceType > ThreadIteratorType;
-    typedef Fem::DomainDecomposedIterator< DiscreteFunctionSpaceType > ThreadIteratorType;
+    typedef Fem::DomainDecomposedIteratorStorage< DiscreteFunctionSpaceType > ThreadIteratorType;
 
   public:
     //- Public methods
@@ -287,9 +287,14 @@ namespace Dune {
           // program, this would give conflicts)
           myPass.finalize(arg, dest);
 
-#ifndef NDEBUG 
-          std::cout << "Thread["<< Fem::ThreadManager::thread() << "] diagnostics: " <<
-            nbChecker.counter_ << "  and   "<< nbChecker.nonEqual_ << std::endl;
+#if not defined NDEBUG 
+          /*
+          if( Parameter :: verbose() ) 
+          {
+            std::cout << "Thread["<< Fem::ThreadManager::thread() << "] diagnostics: " <<
+              nbChecker.counter_ << "  and   "<< nbChecker.nonEqual_ << std::endl;
+          }
+          */
 #endif
         } 
         /////////////////////////////////////////////////

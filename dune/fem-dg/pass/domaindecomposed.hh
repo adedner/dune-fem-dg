@@ -94,7 +94,7 @@ namespace Dune {
           const size_t maxThreads = ThreadManager :: maxThreads() ;
 
           // create partitioner 
-          Partitioner< GridType > db( space_.gridPart() , maxThreads );
+          Partitioner< GridPartType > db( space_.gridPart() , maxThreads );
           // do partitioning 
           db.serialPartition( false );
 
@@ -128,7 +128,7 @@ namespace Dune {
           if( Parameter :: verbose() )
           {
             for(size_t i = 0; i<maxThreads; ++i ) 
-              std::cout << "T[" << i << "] = " << counter[ i ] << std::endl;
+              std::cout << "DomainDecomposedIterator: T[" << i << "] = " << counter[ i ] << std::endl;
           }
             
           //for(size_t i = 0; i<size; ++i ) 
@@ -174,6 +174,110 @@ namespace Dune {
 #else 
         return 0;
 #endif
+      }
+    };
+
+    /** \brief Thread iterator */
+    template <class DiscreteFunctionSpace>  
+    class DomainDecomposedIteratorStorage
+    {
+      typedef DiscreteFunctionSpace SpaceType;
+    public:  
+      typedef DiscreteFunctionSpace DiscreteFunctionSpaceType;
+
+      typedef typename SpaceType :: GridPartType  GridPartType;
+      typedef typename SpaceType :: IndexSetType  IndexSetType;
+
+      typedef DomainDecomposedIterator< DiscreteFunctionSpace >  DomainIterator;
+      typedef typename DomainIterator :: IteratorType  IteratorType;
+
+      typedef typename IteratorType :: Entity EntityType ;
+
+    private:
+      struct IteratorFactory
+      {
+        struct Key
+        {
+          const DiscreteFunctionSpaceType& space_;
+          const IndexSetType& indexSet_;
+          Key(const DiscreteFunctionSpaceType& space)
+           : space_( space ), indexSet_( space_.indexSet() )
+          {}
+
+          bool operator ==( const Key& other ) const
+          {
+            // compare grid pointers 
+            return (&indexSet_) == (& other.indexSet_ );
+          }
+          const DiscreteFunctionSpaceType& space() const { return space_; }
+        };
+
+        typedef DomainIterator ObjectType;
+        typedef Key KeyType;
+
+        inline static ObjectType *createObject ( const KeyType &key )
+        {
+          return new ObjectType( key.space() );
+        }
+
+        inline static void deleteObject ( ObjectType *object )
+        {
+          delete object;
+        }
+      };
+
+
+     typedef typename IteratorFactory :: KeyType KeyType;
+     typedef SingletonList
+      < KeyType, DomainIterator, IteratorFactory > IndexSetProviderType;
+
+    protected:  
+      DomainIterator& iterators_;
+
+    public:  
+      //! contructor creating thread iterators 
+      explicit DomainDecomposedIteratorStorage( const DiscreteFunctionSpaceType& spc )
+        : iterators_( IndexSetProviderType::getObject( KeyType( spc ) ) )
+      {
+        update();
+      }
+
+      ~DomainDecomposedIteratorStorage() 
+      {
+        IndexSetProviderType::removeObject( iterators_ );
+      }
+
+      //! return reference to space 
+      const SpaceType& space() const { return iterators_.space(); }
+
+      //! update internal list of iterators 
+      void update() 
+      {
+        iterators_.update();
+      }
+
+      //! return begin iterator for current thread 
+      IteratorType begin() const 
+      {
+        return iterators_.begin();
+      }
+
+      //! return end iterator for current thread 
+      IteratorType end() const 
+      {
+        return iterators_.end();
+      }
+
+      //! return thread number this entity belongs to 
+      int index(const EntityType& entity ) const 
+      {
+        return iterators_.index( entity );
+      }
+
+      //! return thread number this entity belongs to 
+      int thread(const EntityType& entity ) const 
+      {
+        return iterators_.thread( entity );
       }
     };
   }
