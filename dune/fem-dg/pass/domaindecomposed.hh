@@ -9,7 +9,7 @@
 #include <dune/fem/misc/threadmanager.hh>
 
 #include "threadfilter.hh"
-#include "communicator.hh"
+#include "partitioner.hh"
 
 namespace Dune {
 
