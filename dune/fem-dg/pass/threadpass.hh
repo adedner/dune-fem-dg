@@ -193,8 +193,15 @@ namespace Dune {
     }
 
     using BaseType :: time ;
+    using BaseType :: computeTime_ ;
 
   public:  
+    //! return number of elements visited on last application
+    size_t numberOfElements () const 
+    {
+      return numberOfElements_; 
+    }
+
     //! switch upwind direction
     void switchUpwind() 
     {
@@ -206,11 +213,11 @@ namespace Dune {
     //! overload compute method to use thread iterators 
     void compute(const ArgumentType& arg, DestinationType& dest) const
     {
-      // get stopwatch 
-      Timer timer;
-
       // clear destination 
       dest.clear();
+
+      // reset number of elements 
+      numberOfElements_ = 0;
 
       // set time for all passes, this is used in prepare of pass 
       // and therefore has to be done before prepare is called
@@ -231,6 +238,9 @@ namespace Dune {
         InnerPassType& pass = *(passes_[ 0 ]);
         //std::cout << "Thread Pass :: First Call !!! " << this << std::endl;
 
+        // stop time 
+        Timer timer ;
+
         // pepare 
         pass.prepare( arg, dest );
 
@@ -244,6 +254,11 @@ namespace Dune {
 
         // finalize pass 
         pass.finalize(arg, dest);
+
+        // get number of elements 
+        numberOfElements_ = pass.numberOfElements(); 
+        // store time 
+        computeTime_ += timer.elapsed();
 
         // set tot false since first call has been done
         firstCall_ = false ;
@@ -261,6 +276,8 @@ namespace Dune {
           pass( i ).prepare( arg, dest );
         }
 
+        std::vector< double > passComputeTime( maxThreads, 0.0 );
+
         /////////////////////////////////////////////////
         // BEGIN PARALLEL REGION 
         /////////////////////////////////////////////////
@@ -273,6 +290,9 @@ namespace Dune {
 
           // create NB checker 
           NBChecker nbChecker( iterators_ );
+
+          // stop time 
+          Timer timer ;
 
           // Iterator is of same type as the space iterator 
           typedef typename ThreadIteratorType :: IteratorType Iterator;
@@ -296,13 +316,24 @@ namespace Dune {
           }
           */
 #endif
+          passComputeTime[ Fem::ThreadManager::thread() ] = timer.elapsed();
         } 
         /////////////////////////////////////////////////
         // END PARALLEL REGION 
         /////////////////////////////////////////////////
 
-        // accumulate time 
-        this->computeTime_ += timer.elapsed()/((double) Fem::ThreadManager::maxThreads());
+        double maxCompTime = 0.0;
+        for(int i=0; i<maxThreads; ++i ) 
+        {
+          // get number of elements 
+          numberOfElements_ += pass( i ).numberOfElements(); 
+
+          // accumulate time 
+          maxCompTime = std::max( passComputeTime[ i ], maxCompTime );
+        }
+
+        // increase compute time 
+        computeTime_ += maxCompTime ;
 
       } // end if first call 
 
@@ -339,6 +370,7 @@ namespace Dune {
     mutable ThreadIteratorType iterators_;
     std::vector< DiscreteModelType* > problems_; 
     std::vector< InnerPassType* > passes_;
+    mutable size_t numberOfElements_;
     mutable bool firstCall_;
   };
 //! @}  
