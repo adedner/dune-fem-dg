@@ -289,18 +289,10 @@ namespace Dune {
         /////////////////////////////////////////////////
         // BEGIN PARALLEL REGION 
         /////////////////////////////////////////////////
-#ifdef USE_PTHREADS 
         {
+          // see threadhandle.hh 
           threadHandler_.run(); 
         }
-#else   // the other versions 
-#ifdef _OPENMP
-#pragma omp parallel
-#endif
-        {
-          runThread(); 
-        } 
-#endif
         /////////////////////////////////////////////////
         // END PARALLEL REGION 
         /////////////////////////////////////////////////

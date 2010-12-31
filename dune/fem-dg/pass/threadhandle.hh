@@ -1,8 +1,8 @@
 #ifndef DUNE_FEM_PTHREADCLASS_HH
 #define DUNE_FEM_PTHREADCLASS_HH
 
-#if HAVE_PTHREAD 
-#include <pthread.h>
+#if defined USE_PTHREADS && ! HAVE_PTHREAD  
+#error "pthreads not found, reconfigure!"
 #endif
 
 #include <cassert> 
@@ -15,95 +15,59 @@ namespace Fem {
 template <class Object> 
 class ThreadHandle 
 {
-#if HAVE_PTHREAD 
+#ifdef USE_PTHREADS 
   ////////////////////////////////////////////
   // class ThreadHandleObject 
   ////////////////////////////////////////////
   class ThreadHandleObject
   {
-    struct ObjectStorage
-    {
-      Object* objPtr_;
-      pthread_barrier_t* barrier_ ;
-      int threadNumber_ ;
-      bool finished_ ;
-
-      ObjectStorage(Object* obj, const int tn )
-        : objPtr_( obj ), 
-          barrier_( 0 ),
-          threadNumber_( tn ),
-          finished_( false ) 
-      {
-      }
-
-      ObjectStorage( const ObjectStorage& other )
-        : objPtr_( other.objPtr_ ),
-          barrier_( other.barrier_ ),
-          threadNumber_( other.threadNumber_ ),
-          finished_( other.finished_ ) 
-      {
-      }
-
-      ObjectStorage& operator = ( const ObjectStorage& other ) 
-      {
-        objPtr_       = other.objPtr_;
-        barrier_      = other.barrier_ ;
-        threadNumber_ = other.threadNumber_;
-        finished_     = other.finished_;
-        return *this;
-      }
-
-      // do the work 
-      void run() 
-      {
-        // wait for all threads 
-        assert( barrier_ );
-        pthread_barrier_wait( barrier_ );
-
-        // run thread work 
-        objPtr_->runThread();
-        
-        // work finished 
-        finished_ = true ;
-        barrier_ = 0;
-      }
-
-      void init( pthread_barrier_t& barrier ) 
-      {
-        barrier_ = & barrier ;
-        finished_ = false ;
-      }
-
-      bool finished() const { return finished_; }
-      bool isMaster() const { return threadNumber_ == 0; }
-      int threadNumber() const { return threadNumber_ ; }
-    };
-
-    ObjectStorage obj_;
+    Object* objPtr_;
+    pthread_barrier_t* barrier_ ;
     pthread_t threadId_ ;
+    int threadNumber_ ;
+    bool finished_ ;
+
+    bool isMaster() const { return threadNumber_ == 0; }
+
   public:
+    // constructor creating thread with given thread number 
     explicit ThreadHandleObject(Object& obj, const int threadNumber ) 
-      : obj_( &obj, threadNumber ),
-        threadId_( threadNumber )
+      : objPtr_( &obj ), 
+        barrier_ ( 0 ),
+        threadId_( threadNumber ),
+        threadNumber_( threadNumber ),
+        finished_( false )
     {
       assert( threadNumber > 0 );
     }
 
+    // constructor creating master thread 
     explicit ThreadHandleObject( Object& obj ) 
-      : obj_( &obj, 0 ),
-        threadId_( pthread_self() )
+      : objPtr_( &obj ),
+        barrier_( 0 ),
+        threadId_( pthread_self() ),
+        threadNumber_( 0 ),
+        finished_( false )
     {
     }
 
+    // copy constructor 
     ThreadHandleObject(const ThreadHandleObject& other) 
-      : obj_( other.obj_ ),
-        threadId_( other.threadId_ )
+      : objPtr_( other.objPtr_ ),
+        barrier_( other.barrier_ ),
+        threadId_( other.threadId_ ),
+        threadNumber_( other.threadNumber_ ),
+        finished_( other.finished_ ) 
     {}
 
+    // assigment operator 
     ThreadHandleObject& operator = ( const ThreadHandleObject& other) 
     {
-      obj_ = other.obj_ ;
-      threadId_ = other.threadId_;
+      objPtr_       = other.objPtr_ ;
+      barrier_      = other.barrier_ ;
+      threadId_     = other.threadId_;
+      threadNumber_ = other.threadNumber_;
+      finished_     = other.finished_;
       return *this;
     }
 
@@ -111,28 +75,28 @@ class ThreadHandle
     void start( pthread_barrier_t& barrier ) 
     {
       // init object 
-      obj_.init( barrier );
+      init( barrier );
 
       // on master thread there is no need to start an extra thread 
-      if( obj_.isMaster() ) 
+      if( isMaster() ) 
       {
-        obj_.run();
+        run();
       }
       else 
       {
         // create a joinable thread 
-        pthread_create(&threadId_, 0, &ThreadHandleObject::startThread, (void *) &obj_);
+        pthread_create(&threadId_, 0, &ThreadHandleObject::startThread, (void *) this);
         // the master thread is also adding the threadnumber for the given ids 
-        ThreadManager :: setThreadNumber( threadId_, obj_.threadNumber() );
+        ThreadManager :: setThreadNumber( threadId_, threadNumber_ );
       }
     }
 
     // stop thread and join, return 1 when finished  
     int stoped() 
     {
-      if( obj_.finished() ) 
+      if( finished_ ) 
       {
-        if( ! obj_.isMaster() ) 
+        if( ! isMaster() ) 
           pthread_join(threadId_, 0);
 
         return 1;
@@ -140,13 +104,34 @@ class ThreadHandle
       return 0;
     }
 
+    // do the work 
+    void run() 
+    {
+      // wait for all threads 
+      assert( barrier_ );
+      pthread_barrier_wait( barrier_ );
+
+      // run thread work 
+      objPtr_->runThread();
+      
+      // work finished 
+      finished_ = true ;
+      barrier_ = 0;
+    }
+
   private:
+    void init( pthread_barrier_t& barrier ) 
+    {
+      barrier_ = & barrier ;
+      finished_ = false ;
+    }
+
     // This is the static class function that serves as a 
     // C style function pointer for the pthread_create call
     static void* startThread(void *obj)
     {
       // do the work
-      ((ObjectStorage *) obj)->run();
+      ((ThreadHandleObject *) obj)->run();
       return 0;
     }
   }; // end ThreadHandleObject 
@@ -155,12 +140,16 @@ class ThreadHandle
   ////////////////////////////////////////////////////
 
   std::vector< ThreadHandleObject > threads_;
-#endif // end if HAVE_PTHREAD
+#else // else ifdef USE_PTHREAD
+
+  // object to call runThread 
+  Object& obj_;
+#endif // end ifdef USE_PTHREAD
 
 public:
   // constructor 
   ThreadHandle( Object& obj ) 
-#if HAVE_PTHREAD 
+#ifdef USE_PTHREADS
     : threads_()
   {
     const int maxThreads = ThreadManager :: maxThreads() ;
@@ -170,22 +159,24 @@ public:
       threads_.push_back( ThreadHandleObject( obj, i ) );
     }
 
-    // insert master thread at last 
+    // insert master thread at last because this thread creates 
+    // all other threads before it start its calculations 
     threads_.push_back( ThreadHandleObject( obj ) );
 #else 
+    : obj_( obj )
   {
 #endif
-  }
+  } // end constructor 
 
   void run () 
   {
-#if HAVE_PTHREAD 
+#ifdef USE_PTHREADS
     // get number of threads 
     const int maxThreads = ThreadManager :: maxThreads() ;
     
     // initialize barrier 
     pthread_barrier_t barrier ;
-    pthread_barrier_init( &barrier , NULL, maxThreads );
+    pthread_barrier_init( &barrier , 0, maxThreads );
 
     // set number of active threads 
     ThreadManager :: initMultiThreadMode( maxThreads );
@@ -212,9 +203,12 @@ public:
     Fem :: ThreadManager :: initSingleThreadMode();
 
 #else 
+    // OpenMP parallel region 
+#ifdef _OPENMP 
+#pragma omp parallel
+#endif
     {
-      std::cerr << "ERROR: pthreads not available! " << std::endl;
-      abort();
+      obj_.runThread();
     }
 #endif
   }
