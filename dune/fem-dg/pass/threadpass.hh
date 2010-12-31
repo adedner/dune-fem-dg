@@ -24,6 +24,7 @@
 #include <dune/fem/quadrature/intersectionquadrature.hh>
 #include <dune/fem/misc/threaditerator.hh>
 
+#include "threadhandle.hh"
 #include "domaindecomposed.hh"
 
 namespace Dune {
@@ -89,6 +90,8 @@ namespace Dune {
     //typedef Fem::ThreadIterator< DiscreteFunctionSpaceType > ThreadIteratorType;
     typedef Fem::DomainDecomposedIteratorStorage< DiscreteFunctionSpaceType > ThreadIteratorType;
 
+    typedef Fem :: ThreadHandle < ThisType > ThreadHandleType;
+
   public:
     //- Public methods
     //! Constructor
@@ -106,16 +109,19 @@ namespace Dune {
       iterators_( spc ),
       problems_( Fem::ThreadManager::maxThreads() ),
       passes_( Fem::ThreadManager::maxThreads() ),
+      threadHandler_( *this ),
+      passComputeTime_( Fem::ThreadManager::maxThreads(), 0.0 ),
+      arg_(0), dest_(0),
       firstCall_( true )
     {
-      for(int i=0; i<Fem::ThreadManager::maxThreads(); ++i)
+      const int maxThreads = Fem::ThreadManager::maxThreads();
+      for(int i=0; i<maxThreads; ++i)
       {
         // use serparate discrete problem for each thread 
         problems_[ i ] = new DiscreteModelType( problem );
         // create dg passes, the last bool disables communication in the pass itself
         passes_[ i ]   = new InnerPassType( *problems_[ i ], pass, spc, volumeQuadOrd, faceQuadOrd, false );
       }
-
 #ifndef NDEBUG
       if( Parameter :: verbose() )
         std::cout << "Thread Pass initialized\n";
@@ -274,53 +280,32 @@ namespace Dune {
         {
           // prepare pass (make sure pass doesn't clear dest, this will conflict)
           pass( i ).prepare( arg, dest );
+          passComputeTime_[ i ] = 0.0 ;
         }
-
-        std::vector< double > passComputeTime( maxThreads, 0.0 );
+        
+        arg_  = &arg ; 
+        dest_ = &dest ;
 
         /////////////////////////////////////////////////
         // BEGIN PARALLEL REGION 
         /////////////////////////////////////////////////
+#ifdef USE_PTHREADS 
+        {
+          threadHandler_.run(); 
+        }
+#else   // the other versions 
 #ifdef _OPENMP
 #pragma omp parallel
 #endif
         {
-          //! get pass for my thread  
-          InnerPassType& myPass = pass( Fem::ThreadManager::thread() );
-
-          // create NB checker 
-          NBChecker nbChecker( iterators_ );
-
-          // stop time 
-          Timer timer ;
-
-          // Iterator is of same type as the space iterator 
-          typedef typename ThreadIteratorType :: IteratorType Iterator;
-          const Iterator endit = iterators_.end();
-          for (Iterator it = iterators_.begin(); it != endit; ++it)
-          {
-            assert( iterators_.thread( *it ) == Fem::ThreadManager::thread() );
-            myPass.applyLocal( *it, nbChecker );
-          }
-
-          // finalize pass (make sure communication is done in case of thread parallel
-          // program, this would give conflicts)
-          myPass.finalize(arg, dest);
-
-#if not defined NDEBUG 
-          /*
-          if( Parameter :: verbose() ) 
-          {
-            std::cout << "Thread["<< Fem::ThreadManager::thread() << "] diagnostics: " <<
-              nbChecker.counter_ << "  and   "<< nbChecker.nonEqual_ << std::endl;
-          }
-          */
-#endif
-          passComputeTime[ Fem::ThreadManager::thread() ] = timer.elapsed();
+          runThread(); 
         } 
+#endif
         /////////////////////////////////////////////////
         // END PARALLEL REGION 
         /////////////////////////////////////////////////
+        arg_  = 0;
+        dest_ = 0;
 
         double maxCompTime = 0.0;
         for(int i=0; i<maxThreads; ++i ) 
@@ -329,7 +314,7 @@ namespace Dune {
           numberOfElements_ += pass( i ).numberOfElements(); 
 
           // accumulate time 
-          maxCompTime = std::max( passComputeTime[ i ], maxCompTime );
+          maxCompTime = std::max( passComputeTime_[ i ], maxCompTime );
         }
 
         // increase compute time 
@@ -340,6 +325,46 @@ namespace Dune {
       // communicate calculated function 
       dest.communicate();
     }
+
+    //! parallel section of compute 
+    void runThread() const
+    {
+      //! get pass for my thread  
+      InnerPassType& myPass = pass( Fem::ThreadManager::thread() );
+
+      // create NB checker 
+      NBChecker nbChecker( iterators_ );
+
+      // stop time 
+      Timer timer ;
+
+      // Iterator is of same type as the space iterator 
+      typedef typename ThreadIteratorType :: IteratorType Iterator;
+      const Iterator endit = iterators_.end();
+      for (Iterator it = iterators_.begin(); it != endit; ++it)
+      {
+        assert( iterators_.thread( *it ) == Fem::ThreadManager::thread() );
+        myPass.applyLocal( *it, nbChecker );
+      }
+
+      assert( arg_ );
+      assert( dest_ );
+      // finalize pass (make sure communication is done in case of thread parallel
+      // program, this would give conflicts)
+      myPass.finalize(*arg_, *dest_);
+
+#if not defined NDEBUG 
+      /*
+      if( Parameter :: verbose() ) 
+      {
+        std::cout << "Thread["<< Fem::ThreadManager::thread() << "] diagnostics: " <<
+          nbChecker.counter_ << "  and   "<< nbChecker.nonEqual_ << std::endl;
+      }
+      */
+#endif
+      passComputeTime_[ Fem::ThreadManager::thread() ] = timer.elapsed();
+    }
+
 
     //! In the preparations, store pointers to the actual arguments and 
     //! destinations. Filter out the "right" arguments for this pass.
@@ -370,6 +395,13 @@ namespace Dune {
     mutable ThreadIteratorType iterators_;
     std::vector< DiscreteModelType* > problems_; 
     std::vector< InnerPassType* > passes_;
+    mutable ThreadHandleType threadHandler_;
+    mutable std::vector< double > passComputeTime_;
+
+    // temporary variables 
+    mutable const ArgumentType* arg_; 
+    mutable DestinationType* dest_; 
+
     mutable size_t numberOfElements_;
     mutable bool firstCall_;
   };

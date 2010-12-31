@@ -28,7 +28,7 @@ namespace Dune {
       typedef ThreadFilter<GridPartType> FilterType;
       typedef FilteredGridPart< GridPartType, FilterType > FilteredGridPartType;
 
-#ifdef _OPENMP
+#ifdef USE_SMP_PARALLEL
       typedef typename FilteredGridPartType :: template Codim< 0 > :: IteratorType
         IteratorType;
 #else 
@@ -43,7 +43,7 @@ namespace Dune {
       const SpaceType& space_ ;
       const IndexSetType& indexSet_;
 
-#ifdef _OPENMP
+#ifdef USE_SMP_PARALLEL
       int sequence_;
       std::vector< FilteredGridPartType* > filteredGridParts_;
       MutableArray< int > threadNum_;
@@ -53,12 +53,12 @@ namespace Dune {
       explicit DomainDecomposedIterator( const SpaceType& spc )
         : space_( spc ),
           indexSet_( space_.indexSet() )
-#ifdef _OPENMP
+#ifdef USE_SMP_PARALLEL
         , sequence_( -1 )  
         , filteredGridParts_( Fem :: ThreadManager :: maxThreads() )
 #endif
       {
-#ifdef _OPENMP
+#ifdef USE_SMP_PARALLEL
         FilterType filter( space_.gridPart(), threadNum_ );
         GridType& grid = const_cast< GridType& > (space_.grid());
         for(int i=0; i< Fem :: ThreadManager :: maxThreads(); ++i )
@@ -79,7 +79,7 @@ namespace Dune {
       //! update internal list of iterators 
       void update() 
       {
-#ifdef _OPENMP
+#ifdef USE_SMP_PARALLEL
         // if grid got updated also update iterators 
         if( sequence_ != space_.sequence() )
         {
@@ -140,7 +140,7 @@ namespace Dune {
       //! return begin iterator for current thread 
       IteratorType begin() const 
       {
-#ifdef _OPENMP
+#ifdef USE_SMP_PARALLEL
         return filteredGridParts_[ ThreadManager :: thread() ]->template begin< 0 > ();
 #else 
         return space_.begin();
@@ -150,7 +150,7 @@ namespace Dune {
       //! return end iterator for current thread 
       IteratorType end() const 
       {
-#ifdef _OPENMP
+#ifdef USE_SMP_PARALLEL
         return filteredGridParts_[ ThreadManager :: thread() ]->template end< 0 > ();
 #else 
         return space_.end();
@@ -166,7 +166,7 @@ namespace Dune {
       //! return thread number this entity belongs to 
       int thread(const EntityType& entity ) const 
       {
-#ifdef _OPENMP
+#ifdef USE_SMP_PARALLEL
         assert( (size_t) threadNum_.size() > indexSet_.index( entity ) );
         // NOTE: this number can also be negative for ghost elements or elements
         // that do not belong to the set covered by the space iterators 
