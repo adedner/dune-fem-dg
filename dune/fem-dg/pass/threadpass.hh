@@ -107,6 +107,7 @@ namespace Dune {
                const int faceQuadOrd = -1) :
       BaseType(pass, spc),
       iterators_( spc ),
+      singleProblem_( problem ),
       problems_( Fem::ThreadManager::maxThreads() ),
       passes_( Fem::ThreadManager::maxThreads() ),
       threadHandler_( *this ),
@@ -241,28 +242,28 @@ namespace Dune {
       if( firstCall_ ) 
       {
         //! get pass for my thread  
-        InnerPassType& pass = *(passes_[ 0 ]);
+        InnerPassType& myPass = pass( 0 );
         //std::cout << "Thread Pass :: First Call !!! " << this << std::endl;
 
         // stop time 
         Timer timer ;
 
         // pepare 
-        pass.prepare( arg, dest );
+        myPass.prepare( arg, dest );
 
         // Iterator is of same type as the space iterator 
         typedef typename DiscreteFunctionSpaceType :: IteratorType Iterator;
         const Iterator endit = iterators_.space().end();
         for (Iterator it = iterators_.space().begin(); it != endit; ++it)
         {
-          pass.applyLocal( *it );
+          myPass.applyLocal( *it );
         }
 
         // finalize pass 
-        pass.finalize(arg, dest);
+        myPass.finalize(arg, dest);
 
         // get number of elements 
-        numberOfElements_ = pass.numberOfElements(); 
+        numberOfElements_ = myPass.numberOfElements(); 
         // store time 
         computeTime_ += timer.elapsed();
 
@@ -313,6 +314,9 @@ namespace Dune {
         computeTime_ += maxCompTime ;
 
       } // end if first call 
+
+      // set max time steps 
+      setMaxTimeSteps();
 
       // communicate calculated function 
       dest.communicate();
@@ -378,6 +382,22 @@ namespace Dune {
       // we use applyLocal of internal operator
       abort();
     }
+  protected:
+    void setMaxTimeSteps() const
+    {
+      const int maxThreads = Fem::ThreadManager::maxThreads();
+      double maxAdvStep = 0;
+      double maxDiffStep = 0;
+      for(int i=0; i<maxThreads; ++i ) 
+      {
+        maxAdvStep  = std::max( maxAdvStep,  problems_[ i ]->maxAdvectionTimeStep() );
+        maxDiffStep = std::max( maxDiffStep, problems_[ i ]->maxDiffusionTimeStep() );
+      }
+
+      // set time steps to single problem 
+      singleProblem_.setMaxTimeSteps( maxAdvStep, maxDiffStep );
+    }
+
   private:
     ThreadPass();
     ThreadPass(const ThreadPass&);
@@ -385,6 +405,7 @@ namespace Dune {
 
   protected:  
     mutable ThreadIteratorType iterators_;
+    mutable DiscreteModelType& singleProblem_;
     std::vector< DiscreteModelType* > problems_; 
     std::vector< InnerPassType* > passes_;
     mutable ThreadHandleType threadHandler_;
