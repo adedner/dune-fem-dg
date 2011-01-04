@@ -100,7 +100,7 @@ public:
     for(Iterator it = gridPart.template begin<0> (); it != end; ++it )
     {
       const EntityType& entity = *it;
-      assert( entity.partitionType() == InteriorEntity );
+      //assert( entity.partitionType() == InteriorEntity );
       ldbUpdateVertex ( entity,
                         gridPart.ibegin( entity ),
                         gridPart.iend( entity ),
@@ -176,13 +176,16 @@ public:
         EntityPointerType ep = intersection.outside();
         const EntityType& nb = *ep;
 
-        const int eid = getIndex( en );
-        const int nid = getIndex( nb );
-        if( (eid < nid) && nb.partitionType() == InteriorEntity )
+        if( nb.partitionType() == InteriorEntity )
         {
-          db.edgeUpdate ( 
-              typename LoadBalancerType :: GraphEdge ( eid, nid, weight )
-              );
+          const int eid = getIndex( en );
+          const int nid = getIndex( nb );
+          if( eid < nid ) 
+          {
+            db.edgeUpdate ( 
+                typename LoadBalancerType :: GraphEdge ( eid, nid, weight )
+                );
+          }
         }
       }
     }
