@@ -201,7 +201,6 @@ public:
   {
     if( pSize_ > 1 ) 
     {
-      std::cout << "IndexSize = " << indexCounter_ << std::endl;
       if( useKway ) 
         partition_ = db_.repartition( mpAccess_, DataBaseType :: METIS_PartGraphKway, pSize_ );
       else 
