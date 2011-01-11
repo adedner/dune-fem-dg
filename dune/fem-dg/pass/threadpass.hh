@@ -90,8 +90,6 @@ namespace Dune {
     //typedef Fem::ThreadIterator< DiscreteFunctionSpaceType > ThreadIteratorType;
     typedef Fem::DomainDecomposedIteratorStorage< DiscreteFunctionSpaceType > ThreadIteratorType;
 
-    typedef Fem :: ThreadHandle < ThisType > ThreadHandleType;
-
   public:
     //- Public methods
     //! Constructor
@@ -110,7 +108,6 @@ namespace Dune {
       singleProblem_( problem ),
       problems_( Fem::ThreadManager::maxThreads() ),
       passes_( Fem::ThreadManager::maxThreads() ),
-      threadHandler_( *this ),
       passComputeTime_( Fem::ThreadManager::maxThreads(), 0.0 ),
       arg_(0), dest_(0),
       firstCall_( true )
@@ -292,7 +289,7 @@ namespace Dune {
         /////////////////////////////////////////////////
         {
           // see threadhandle.hh 
-          threadHandler_.run(); 
+          Fem :: ThreadHandle :: run( *this ); 
         }
         /////////////////////////////////////////////////
         // END PARALLEL REGION 
@@ -408,7 +405,6 @@ namespace Dune {
     mutable DiscreteModelType& singleProblem_;
     std::vector< DiscreteModelType* > problems_; 
     std::vector< InnerPassType* > passes_;
-    mutable ThreadHandleType threadHandler_;
     mutable std::vector< double > passComputeTime_;
 
     // temporary variables 
