@@ -6,6 +6,7 @@
 #endif
 
 #include <cassert> 
+#include <dune/common/exceptions.hh>
 #include <dune/fem/misc/threadmanager.hh>
 
 namespace Dune { 
@@ -283,8 +284,12 @@ public:
   template <class Object> 
   static void run ( Object& obj ) 
   {
+    if( ! ThreadManager :: singleThreadMode() )
+      DUNE_THROW(InvalidStateException,"ThreadHandle :: run called from thread  parallel region!");
+
 #ifdef USE_PTHREADS
     {
+
       // pthread version 
       instance().runThreads( obj );
     }
