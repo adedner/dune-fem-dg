@@ -44,7 +44,7 @@ class ThreadHandle
     pthread_t threadId_ ;
     int threadNumber_ ;
 
-    bool isMaster() const { return threadNumber_ == 0; }
+    bool isSlave () const { return threadNumber_ > 0; }
 
   public:
     // constructor creating thread with given thread number 
@@ -86,17 +86,12 @@ class ThreadHandle
     }
 
     // Create the thread and start work
-    void start( ObjectIF& obj ) 
+    void start( ObjectIF* obj ) 
     {
       // init object 
-      objPtr_ = & obj ;
+      objPtr_ = obj ;
 
-      // on master thread there is no need to start an extra thread 
-      if( isMaster() ) 
-      {
-        run();
-      }
-      else 
+      if( isSlave() ) 
       {
         // if thread has not been initialized 
         if( threadId_ == 0 )
@@ -106,6 +101,11 @@ class ThreadHandle
           // the master thread is also adding the threadnumber for the given ids 
           ThreadManager :: setThreadNumber( threadId_, threadNumber_ );
         }
+      }
+      else 
+      {
+        // on master thread there is no need to start an extra thread 
+        run();
       }
     }
 
@@ -122,11 +122,15 @@ class ThreadHandle
       // wait for all threads 
       pthread_barrier_wait( barrier_ );
 
-      // when object pointer is set call run 
-      //if( objPtr_ ) 
+      // when object pointer is set call run, else terminate  
+      if( objPtr_ ) 
       {
-        assert( objPtr_ );
         objPtr_->run();
+      }
+      else 
+      {
+        // this is terminating the threads 
+        return ;
       }
       
       // work finished, set objPtr to zero 
@@ -134,22 +138,7 @@ class ThreadHandle
 
       // when thread is not master then 
       // just call run and wait at barrier 
-      if( ! isMaster() ) 
-      {
-        run();
-      }
-    }
-
-    /*
-    //! destroy thread by calling pthread_join  
-    void finish() 
-    {
-      // work finished 
-      objPtr_ = 0;
-      return ;
-
-      // run on master to reach barrier 
-      if( isMaster() ) 
+      if( isSlave() ) 
       {
         run();
       }
@@ -158,10 +147,10 @@ class ThreadHandle
     //! destroy thread by calling pthread_join  
     void destroy() 
     {
-      //if( ! isMaster() )
-      //  pthread_join(threadId_, 0);
+      if( isSlave() )
+        pthread_join(threadId_, 0);
     }
-    */
+
   private:
     // This is the static class function that serves as a 
     // C style function pointer for the pthread_create call
@@ -204,23 +193,12 @@ private:
     threads_.push_back( ThreadHandleObject( &waitAll_ ) );
   } // end constructor 
 
-  /*
-  // destructor deleting threads 
+  //! destructor deleting threads 
   ~ThreadHandle() 
   {
-    // set number of active threads 
-    ThreadManager :: initMultiThreadMode( maxThreads_ );
-
-    for(int i=0; i<maxThreads_; ++i)
-    {
-      threads_[ i ].finish();
-    }
-
-    // wait for all to finish  
-    wait();
-
-    // activate initSingleThreadMode again 
-    Fem :: ThreadManager :: initSingleThreadMode();
+    // start threads with null object which wil terminate 
+    // all threads 
+    startThreads () ;
 
     // call thread join 
     for(int i=0; i<maxThreads_; ++i)
@@ -231,11 +209,19 @@ private:
     // destroy barrier 
     pthread_barrier_destroy( &waitAll_ );
   }
-  */
 
-  //! wait until all threads are stoped 
-  void wait() const 
+  //! start all threads to do the job 
+  void startThreads( ObjectIF* obj = 0 )
   {
+    // set number of active threads 
+    ThreadManager :: initMultiThreadMode( maxThreads_ );
+
+    // start threads, this will call the runThread method  
+    for(int i=0; i<maxThreads_; ++i)
+    {
+      threads_[ i ].start( obj );
+    }
+
     // wait until all threads are done 
     int count = 0; 
     while( count < maxThreads_ )
@@ -247,28 +233,20 @@ private:
         count += threads_[ i ].stoped() ;
       }
     }
+
+    // activate initSingleThreadMode again 
+    Fem :: ThreadManager :: initSingleThreadMode();
   }
 
+  //! run all threads 
   template <class Object>
   void runThreads( Object& obj ) 
   {
     // create object wrapper 
     ObjectWrapper< Object > objPtr( obj );
 
-    // set number of active threads 
-    ThreadManager :: initMultiThreadMode( maxThreads_ );
-
-    // start threads, this will call the runThread method  
-    for(int i=0; i<maxThreads_; ++i)
-    {
-      threads_[ i ].start( objPtr );
-    }
-
-    // wait until all threads are done 
-    wait();
-
-    // activate initSingleThreadMode again 
-    Fem :: ThreadManager :: initSingleThreadMode();
+    // start parallel execution 
+    startThreads( & objPtr ) ;
   }
 
   // return instance of ThreadHandle
@@ -277,13 +255,14 @@ private:
     static ThreadHandle handle;
     return handle;
   }
-
 #endif
 
 public:  
   template <class Object> 
   static void run ( Object& obj ) 
   {
+    // this routine should not be called in multiThreadMode, since 
+    // this routine is actually starting the multiThreadMode
     if( ! ThreadManager :: singleThreadMode() )
       DUNE_THROW(InvalidStateException,"ThreadHandle :: run called from thread  parallel region!");
 
