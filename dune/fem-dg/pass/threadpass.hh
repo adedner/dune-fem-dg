@@ -110,7 +110,8 @@ namespace Dune {
       passes_( Fem::ThreadManager::maxThreads() ),
       passComputeTime_( Fem::ThreadManager::maxThreads(), 0.0 ),
       arg_(0), dest_(0),
-      firstCall_( true )
+      firstCall_( true ),
+      sumComputeTime_( Parameter :: getValue<bool>("fem.parallel.sumcomputetime", false ) )
     {
       const int maxThreads = Fem::ThreadManager::maxThreads();
       for(int i=0; i<maxThreads; ++i)
@@ -297,18 +298,25 @@ namespace Dune {
         arg_  = 0;
         dest_ = 0;
 
-        double maxCompTime = 0.0;
+        double accCompTime = 0.0;
         for(int i=0; i<maxThreads; ++i ) 
         {
           // get number of elements 
           numberOfElements_ += pass( i ).numberOfElements(); 
 
-          // accumulate time 
-          maxCompTime = std::max( passComputeTime_[ i ], maxCompTime );
+          if( sumComputeTime_ ) 
+          {
+            accCompTime += passComputeTime_[ i ];
+          }
+          else 
+          {
+            // accumulate time 
+            accCompTime = std::max( passComputeTime_[ i ], accCompTime );
+          }
         }
 
         // increase compute time 
-        computeTime_ += maxCompTime ;
+        computeTime_ += accCompTime ;
 
       } // end if first call 
 
@@ -413,6 +421,7 @@ namespace Dune {
 
     mutable size_t numberOfElements_;
     mutable bool firstCall_;
+    const bool sumComputeTime_;
   };
 //! @}  
 } // end namespace Dune
