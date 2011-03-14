@@ -29,6 +29,120 @@ namespace Dune {
 /*! @addtogroup PassLimit
 */
 
+  // base class for Limiters, mainly reading limitEps 
+  struct LimiterFunctionBase
+  {
+    const double limitEps_; 
+    LimiterFunctionBase() 
+      : limitEps_( getEpsilon() )
+    {}
+  protected:  
+    //! get tolerance for shock detector 
+    double getEpsilon() const 
+    {
+      // default value 
+      double eps = 1e-8;
+      eps = Parameter::getValue("LimitEps", eps );
+      return eps;
+    }
+
+    void printInfo(const std::string& name ) const 
+    {
+      if( Parameter::verbose() ) 
+      {
+        std::cout << "LimiterFunction: " << name << " with limitEps = " << limitEps_ << std::endl;
+      }
+    }
+  };
+
+  template <class Field>
+  struct MinModLimiter : public LimiterFunctionBase 
+  {
+    using LimiterFunctionBase :: limitEps_ ;
+    typedef Field FieldType;
+
+    MinModLimiter() : LimiterFunctionBase() 
+    {
+      printInfo( "minmod" );
+    }
+
+    FieldType operator ()(const FieldType& g, const FieldType& d ) const 
+    {
+      const FieldType absG = std::abs( g );
+      const FieldType absD = std::abs( d );
+      
+      // avoid rounding errors 
+      if ( (absG < limitEps_) && (absD < limitEps_) ) return 1;
+      
+      // if product smaller than zero set localFactor to zero 
+      // otherwise d/g until 1 
+      const FieldType localFactor = 
+            ( (g * d) < 0.0 ) ? 0.0 : 
+            ( (absG > absD) ) ? (d/g) : 1.0;
+
+      return localFactor;
+    }
+  };
+
+  template <class Field>
+  struct SuperBeeLimiter : public LimiterFunctionBase 
+  {
+    using LimiterFunctionBase :: limitEps_ ;
+    typedef Field FieldType;
+
+    SuperBeeLimiter() : LimiterFunctionBase()
+    {
+      printInfo( "superbee" );
+    }
+
+    FieldType operator ()(const FieldType& g, const FieldType& d ) const 
+    {
+      const FieldType absG = std::abs( g );
+      const FieldType absD = std::abs( d );
+
+      // avoid rounding errors 
+      if ( (absG < limitEps_) && (absD < limitEps_) ) return 1;
+      if ( absG < limitEps_ ) return 1;
+      
+      const FieldType r = d / g ;
+
+      // if product smaller than zero set localFactor to zero 
+      // otherwise d/g until 1 
+      const FieldType localFactor = 
+            ( (g * d) < 0.0 ) ? 0.0 :
+            ( std::max( std::min( 2.0 * r , 1.0 ), std::min( r, 2.0 ) ) );
+
+      return localFactor;
+    }
+  };
+
+  template <class Field>
+  struct VanLeerLimiter : public LimiterFunctionBase 
+  {
+    using LimiterFunctionBase :: limitEps_ ;
+    typedef Field FieldType;
+
+    VanLeerLimiter() : LimiterFunctionBase()
+    {
+      printInfo( "vanLeer" );
+    }
+
+    FieldType operator ()(const FieldType& g, const FieldType& d ) const 
+    {
+      const FieldType absG = std::abs( g );
+      const FieldType absD = std::abs( d );
+
+      // avoid rounding errors 
+      if ( (absG < limitEps_) && (absD < limitEps_) ) return 1;
+      if ( absG < limitEps_ ) return 1;
+      
+      const FieldType r = d / g ;
+      const FieldType absR = std::abs( r );
+
+      return ( absR + r ) / ( 1.0 + absR );
+    }
+  };
+
   template <class DiscreteModelImp, class ArgumentImp, class SelectorImp>
   class LimiterDiscreteModelCaller 
     : public DGDiscreteModelCaller< DiscreteModelImp, ArgumentImp, SelectorImp > 
@@ -89,7 +203,17 @@ namespace Dune {
     using BaseType :: valuesEn_ ;
   };
  
+  template < class Model, class DomainFieldType, class dummy = double >
+  struct ExistsLimiterFunction
+  {
+    typedef MinModLimiter< DomainFieldType > LimiterFunctionType ;
+  };
 
+  template < class Model >
+  struct ExistsLimiterFunction< Model, typename Model::Traits::LimiterFunctionType >
+  {
+    typedef typename  Model::Traits::LimiterFunctionType  LimiterFunctionType;
+  };
 
   template <class GlobalTraitsImp, class Model, int passId = -1 >
   class LimiterDefaultDiscreteModel;
@@ -120,6 +244,10 @@ namespace Dune {
     typedef FieldVector<DomainFieldType, dimDomain - 1> FaceDomainType;
 
     typedef LimiterDefaultDiscreteModel <GlobalTraitsImp,Model,passId> DGDiscreteModelType;
+
+    //typedef typename ExistsLimiterFunction< Model, DomainFieldType > :: LimiterFunctionType  LimiterFunctionType;
+    typedef MinModLimiter< DomainFieldType > LimiterFunctionType;
+    //typedef typename Model :: Traits :: LimiterFunctionType  LimiterFunctionType;
   };
   
   
@@ -143,6 +271,8 @@ namespace Dune {
     typedef typename GridType::template Codim<0>::Entity EntityType;
     typedef typename GridType::template Codim<0>::EntityPointer EntityPointerType;
     typedef typename DomainType :: field_type DomainFieldType;
+
+    typedef typename Traits :: LimiterFunctionType  LimiterFunctionType;
 
     enum { dimRange = RangeType :: dimension };
     
@@ -279,6 +409,13 @@ namespace Dune {
       return checkDirection(it, x, velocity_);
     }
     
+    // g = grad L ( w_E,i - w_E ) ,  d = u_E,i - u_E  
+    // default limiter function is minmod 
+    DomainFieldType limiterFunction( const DomainFieldType& g, const DomainFieldType& d ) const
+    {
+      return limiterFunction_( g, d );
+    }
+    
   protected:
     //! returns true, if we have an inflow boundary
     bool checkDirection(const IntersectionType& it,
@@ -295,6 +432,7 @@ namespace Dune {
 
   protected:
     const Model& model_;
+    const LimiterFunctionType limiterFunction_;
     mutable DomainType velocity_;
     const DomainFieldType veloEps_;
   };
@@ -448,8 +586,6 @@ namespace Dune {
       comboSet_(),
       tolFactor_( getTolFactor() ),
       tol_1_( 1.0/getTol() ),
-      epsilon_( 1e-8 ),
-      limitEps_( getEpsilon() ),
       geoInfo_( gridPart_.indexSet() ),
       faceGeoInfo_( geoInfo_.geomTypes(1) ),
       matrixCacheVec_( gridPart_.grid().maxLevel() + 1 ),
@@ -470,7 +606,8 @@ namespace Dune {
           std::cout << "cartesian";
         else 
           std::cout << "unstructured";
-        std::cout << "! LimitEps: "<< limitEps_ << ", LimitTol: "<< 1./tol_1_ << std::endl;
+        //std::cout << "! LimitEps: "<< limitEps_ << ", LimitTol: "<< 1./tol_1_ << std::endl;
+        std::cout << "! LimitTol: "<< 1./tol_1_ << std::endl;
       }
 
       // we need the flux here 
@@ -1306,17 +1443,9 @@ namespace Dune {
             // evaluate values for limiter function 
             const DomainFieldType g = D * barys[k];
             const DomainFieldType d = nbVals[k][r];
-            const DomainFieldType absG = std::abs( g );
-            const DomainFieldType absD = std::abs( d );
-            
-            // avoid rounding errors 
-            if ( (absG < limitEps_) && (absD < limitEps_) ) continue;
-            
-            // if product smaller than zero set localFactor to zero 
-            // otherwise d/g until 1 
-            const DomainFieldType localFactor = 
-                  ( (g * d) < 0.0 ) ? 0.0 : 
-                  ( (absG > absD) ) ? (d/g) : 1.0;
+
+            // call limiter function 
+            const DomainFieldType localFactor = problem_.limiterFunction( g, d );
 
             // take minimum 
             minimalFactor = std::min( localFactor , minimalFactor );
@@ -2108,8 +2237,6 @@ namespace Dune {
     // tolerance to scale shock indicator 
     const double tolFactor_;
     const double tol_1_;
-    const double epsilon_;
-    const double limitEps_;
 
     // if true scheme is TVD
     const GeometryInformationType geoInfo_;

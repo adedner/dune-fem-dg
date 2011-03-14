@@ -173,7 +173,8 @@ namespace Fem {
       }
       else 
       {
-        model_.jump(argULeft, uRight, adaptIndicator);
+        const UType& argURight = uRight;
+        model_.jump(argULeft, argURight, adaptIndicator);
         return 1.;
       }
     }
