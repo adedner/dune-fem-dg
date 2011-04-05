@@ -861,7 +861,8 @@ namespace Dune {
       // cache geometry type 
       const GeometryType geomType = geo.type();
       // get bary center of element 
-      const DomainType enBary = geo.global( geoInfo_.localCenter( geomType ) );
+      const DomainType& x = geoInfo_.localCenter( geomType );
+      const DomainType enBary = geo.global( x );
 
       const IntersectionIteratorType endnit = gridPart_.iend( en );
       IntersectionIteratorType niter = gridPart_.ibegin(en); 
@@ -897,7 +898,7 @@ namespace Dune {
       }
 
       // check average value
-      if (! problem_.physical(en, enBary, enVal) ) 
+      if (! problem_.physical(en, x, enVal) ) 
       {
         std::cerr << "Average Value "
                   << enVal
@@ -908,7 +909,7 @@ namespace Dune {
         assert( false );
         abort();
       }
-      assert( (problem_.hasPhysical()) ? (problem_.physical(en, enBary, enVal)) : true );
+      assert( (problem_.hasPhysical()) ? (problem_.physical(en, x, enVal)) : true );
 
       stepTime_[0] += indiTime.elapsed();
       indiTime.reset();
