@@ -159,9 +159,10 @@ namespace Dune {
     {}
   
     // check whether we have inflow or outflow direction 
-    template <class QuadratureType>
-    bool checkPhysical(QuadratureType& faceQuad, 
-                       const  int quadPoint) 
+    template< class Intersection, class QuadratureType >
+    bool checkPhysical( const Intersection& intersection,
+                        QuadratureType& faceQuad, 
+                        const  int quadPoint) 
     {
 #ifndef NDEBUG 
       // store quadature info
@@ -169,11 +170,12 @@ namespace Dune {
       quadPoint_ = quadPoint;
 #endif
       // evaluate data 
-      BaseType :: evaluateQuad(faceQuad, quadPoint,
-                               data_->localFunctionsSelf(), valuesEn_);
+      BaseType :: evaluateQuad( faceQuad, quadPoint,
+                                data_->localFunctionsSelf(), valuesEn_ );
 
       // call problem checkDirection 
-      return problem_.checkPhysical(valuesEn_); 
+      return problem_.checkPhysical( *(intersection.inside()),
+                                     faceQuad.point( quadPoint ), valuesEn_ ); 
     }
 
     // check whether we have inflow or outflow direction 
@@ -311,7 +313,6 @@ namespace Dune {
                          RangeType& gLeft,
                          RangeType& gRight) const
     { 
-      
       typedef typename ElementType<0, ArgumentTuple>::Type UType;
       const UType& argULeft = Element<0>::get(uLeft);
       const UType& argURight = Element<0>::get(uRight);
@@ -369,14 +370,23 @@ namespace Dune {
 
     /** \brief check physical values (called from LimiterDiscreteModelCaller) */ 
     template <class ArgumentTuple>  
-    bool checkPhysical(const ArgumentTuple& u) const 
+    bool checkPhysical( const EntityType& en, 
+                        const DomainType& x,
+                        const ArgumentTuple& u ) const 
     { 
       // take first component 
-      return physical( Element<0> :: get( u ) );
+      return physical( en, x, Element<0> :: get( u ) );
     }
 
-    /** \brief check physical values */ 
-    bool physical(const RangeType& u) const { return true; }
+    /** \brief check physical values 
+     *  \param[in] xglBary Point in the global coordinates
+     */ 
+    bool physical( const EntityType& en, 
+                   const DomainType& x,
+                   const RangeType& u) const 
+    { 
+      return true;
+    }
 
     void indicatorMax() const
     {
@@ -887,16 +897,18 @@ namespace Dune {
       }
 
       // check average value
-      if (! problem_.physical(enVal) ) 
+      if (! problem_.physical(en, enBary, enVal) ) 
       {
         std::cerr << "Average Value "
                   << enVal
+                  << " in point "
+                  << enBary
                   << " is Unphysical!"
                   << std::endl << "ABORTED" << std::endl;
         assert( false );
         abort();
       }
-      assert( (problem_.hasPhysical()) ? (problem_.physical(enVal)) : true );
+      assert( (problem_.hasPhysical()) ? (problem_.physical(en, enBary, enVal)) : true );
 
       stepTime_[0] += indiTime.elapsed();
       indiTime.reset();
@@ -939,6 +951,11 @@ namespace Dune {
                 
             RangeType nbVal;
 
+            // get geometry of neighbor 
+            const Geometry& nbGeo = nb.geometry();
+
+            DomainType nbBary = nbGeo.global( geoInfo_.localCenter( nbGeo.type() ) );
+
             // evaluate function  
             if ( evalAverage(nb, uNb, nbVal ) )
             {
@@ -951,10 +968,6 @@ namespace Dune {
             // store difference of mean values 
             nbVals.push_back(nbVal);
             
-            // get geometry of neighbor 
-            const Geometry& nbGeo = nb.geometry();
-
-            DomainType nbBary = nbGeo.global( geoInfo_.localCenter( nbGeo.type() ) );
             // calculate difference 
             nbBary -= enBary;
 
@@ -1494,20 +1507,24 @@ namespace Dune {
       }
     }
           
-    // cehck physicality on given quadrature 
+    // check physicality on given quadrature 
     template <class QuadratureType, class LocalFunctionImp>
     bool checkPhysicalQuad(const QuadratureType& quad,
                            const LocalFunctionImp& uEn) const 
     {
-      // use LagrangePointSet to evaluate on cornners of the 
+      // use LagrangePointSet to evaluate on corners of the 
       // geometry and also use caching 
       RangeType u;
       const int quadNop = quad.nop();
+      const EntityType& en = uEn.entity();
+      //const Geometry& geo = en.geometry();
       for(int l=0; l<quadNop; ++l) 
       {
         uEn.evaluate( quad[l] , u );
+        // warning!!! caching of geo can be more efficient
+        //const DomainType& xgl = geo.global( quad[l] );
         // check data 
-        if ( ! problem_.physical( u ) ) 
+        if ( ! problem_.physical( en, quad.point(l), u ) ) 
         {
           // return notPhysical 
           return false;
@@ -1533,7 +1550,7 @@ namespace Dune {
 #else 
         {
           VolumeQuadratureType volQuad(en, volumeQuadOrd_ );
-          if( ! checkPhysicalQuad( volQuad, uEn ) ) return false;
+          if( ! checkPhysicalQuad(volQuad, uEn) ) return false;
         }
 
         const IntersectionIteratorType endnit = gridPart_.iend(en); 
@@ -1555,13 +1572,13 @@ namespace Dune {
             { // non-conforming case 
               typedef typename FaceQuadratureType :: NonConformingQuadratureType NonConformingQuadratureType;
               NonConformingQuadratureType faceQuadInner(gridPart_,intersection, faceQuadOrd_, FaceQuadratureType::INSIDE);
-              if( ! checkPhysicalQuad( faceQuadInner, uEn ) ) return false;
+              if( ! checkPhysicalQuad( faceQuadInner, nitBary, uEn ) ) return false;
             }
           }
           else 
           {
             FaceQuadratureType faceQuadInner(gridPart_,intersection, faceQuadOrd_, FaceQuadratureType::INSIDE);
-            if( ! checkPhysicalQuad( faceQuadInner, uEn ) ) return false;
+            if( ! checkPhysicalQuad( faceQuadInner, nitBary, uEn ) ) return false;
           }
         }
 #endif
@@ -1710,7 +1727,7 @@ namespace Dune {
       if( localMassMatrix_.affine() )
       {
         // get point quadrature 
-        VolumeQuadratureType quad( en, 0);
+        VolumeQuadratureType quad( en, 0 );
 
         RangeType phi; 
         
@@ -1721,7 +1738,8 @@ namespace Dune {
           // here evaluateScalar could be used 
           val[r] = lf[dofIdx] * phi[0];
         }
-        return ( problem_.hasPhysical() && ! problem_.physical(val) );
+        // return whether value is physical 
+        return ( problem_.hasPhysical() && ! problem_.physical(en, quad.point(0), val) );
       }
       else 
       {
@@ -1743,7 +1761,7 @@ namespace Dune {
           lf.evaluate( quad[qp] , tmp );
 
           // check whether value is physical 
-          if ( problem_.hasPhysical() && ! problem_.physical(tmp) )
+          if ( problem_.hasPhysical() && ! problem_.physical(en, quad.point(qp), tmp) )
           {
             notphysical = true;
           }
@@ -2183,7 +2201,7 @@ namespace Dune {
       for(int l=0; l<quadNop; ++l) 
       {
         // check physicality of value 
-        const bool physical = caller_.checkPhysical( quad, l );
+        const bool physical = caller_.checkPhysical( intersection, quad, l );
 
         if( checkPhysical && ! physical ) 
         {
