@@ -25,11 +25,11 @@ class HLLEMNumFlux;
 
 // ************************************************
 template <int dimDomain>
-class ConsVec : public FieldVector< double, dimDomain+2> 
+class ConsVec : public Dune :: FieldVector< double, dimDomain+2> 
 {
 public:
-  explicit ConsVec (const double& t) : FieldVector<double,dimDomain+2>(t) {}
-  ConsVec () : FieldVector<double,dimDomain+2>(0) {}
+  explicit ConsVec (const double& t) : Dune :: FieldVector<double,dimDomain+2>(t) {}
+  ConsVec () : Dune :: FieldVector<double,dimDomain+2>(0) {}
 };
 
 namespace Mhd {
@@ -68,7 +68,7 @@ protected:
   {
     if( fluxtype == Mhd :: HLLEM ) 
     {
-      if( Parameter :: verbose () )
+      if( Dune :: Parameter :: verbose () )
         std::cout << "Choosing HLLEM Flux " << std::endl;
 
       numFlux_.init(Mhd :: MhdSolver :: mf_rghllem ); 
