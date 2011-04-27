@@ -1,5 +1,5 @@
-#ifndef DUNE_EULERFLUXES_HH
-#define DUNE_EULERFLUXES_HH
+#ifndef DUNE_FEM_DG_EULERFLUXES_HH
+#define DUNE_FEM_DG_EULERFLUXES_HH
   
 // system includes
 #include <string>
@@ -17,7 +17,7 @@ namespace EULERNUMFLUX
 {
   ////////////////////////////////////////////////////////
   //
-  // Implementation of Euler fluxes form Dennis Diehl.
+  // Implementation of Euler fluxes from Dennis Diehl.
   //
   ////////////////////////////////////////////////////////
 
