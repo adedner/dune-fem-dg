@@ -17,7 +17,7 @@
 // local includes
 #include <dune/fem-dg/operator/fluxes/ldgflux.hh>
 
-#include "../adaptation.hh"
+#include <dune/fem-dg/operator/adaptation/adaptation.hh>
 
 namespace Dune {
 
