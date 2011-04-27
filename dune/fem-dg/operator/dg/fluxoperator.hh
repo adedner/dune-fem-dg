@@ -1,5 +1,5 @@
-#ifndef DUNE_LDGOPERATOR_HH
-#define DUNE_LDGOPERATOR_HH
+#ifndef DUNE_FEM_DG_FLUXOPERATOR_HH
+#define DUNE_FEM_DG_FLUXOPERATOR_HH
 
 #include <string>
 
@@ -12,16 +12,15 @@
 #include <dune/fem/operator/common/spaceoperatorif.hh>
 
 // dune-fem-dg includes
-//#include <dune/fem-dg/operator/limiter/limitpass.hh>
-#include "../pass/limitpass.hh"
+#include <dune/fem-dg/operator/limiter/limitpass.hh>
 
 // note to me: it doesn't make sense to include primaldiscretemodel.hh
 //             but it was design in that way. to be removed later!!!!!!
 // local includes
-#include "primaldiscretemodel.hh"
-#include "dualdiscretemodel.hh"
-#include "operatorbase.hh"
-#include "../pass/ippass.hh"
+#include <dune/fem-dg/operator/dg/primaldiscretemodel.hh>
+#include <dune/fem-dg/operator/dg/fluxdiscretemodel.hh>
+#include <dune/fem-dg/operator/dg/operatorbase.hh>
+#include <dune/fem-dg/operator/pass/dgpass.hh>
 
 
 namespace Dune {  
