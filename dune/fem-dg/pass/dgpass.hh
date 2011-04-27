@@ -8,7 +8,7 @@
 #include <dune/fem/pass/selection.hh>
 #include <dune/fem/pass/dgdiscretemodel.hh>
 
-#include "ipmodelcaller.hh"
+#include <dune/fem-dg/pass/dgmodelcaller.hh>
 
 #include <dune/fem/solver/timeprovider.hh>
 
