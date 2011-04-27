@@ -1,5 +1,5 @@
-#ifndef DUNE_MHDFLUXES_HH
-#define DUNE_MHDFLUXES_HH
+#ifndef DUNE_FEM_DG_MHDFLUXES_HH
+#define DUNE_FEM_DG_MHDFLUXES_HH
 #warning "Using Mhd NumFluxes"
 
 #include <cmath>

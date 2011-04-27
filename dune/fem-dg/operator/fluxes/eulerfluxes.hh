@@ -671,7 +671,7 @@ public:
   typedef typename Traits::RangeType                  RangeType;
   typedef typename Traits::FluxRangeType              FluxRangeType;
 
- typedef  Adi::FieldRotator< ModelType > RotatorType ;
+ typedef EulerFluxes::FieldRotator< ModelType > RotatorType ;
 
   // constructor 
   HLLCNumFlux(const Model& mod) : 

@@ -1,14 +1,12 @@
-#ifndef ADI_ROTATOR_HH
-#define ADI_ROTATOR_HH
+#ifndef DUNE_FEM_DG_ROTATOR_HH
+#define DUNE_FEM_DG_ROTATOR_HH
 
 //- Dune includes
 #include <dune/common/misc.hh>
 
 //- Local includes
 
-using namespace Dune;
-
-namespace Adi {
+namespace EulerFluxes {
 
   template <class FunctionSpaceT>
   class FieldRotator {
@@ -169,5 +167,10 @@ namespace Adi {
     }
     
   }
-} // end namespace Adi
+} // end namespace EulerFluxes
+
+// depreacted namespace 
+namespace Adi {
+  using EulerFluxes :: FieldRotator ;
+}
 #endif
