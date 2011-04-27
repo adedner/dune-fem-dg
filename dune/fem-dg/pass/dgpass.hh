@@ -1,0 +1,787 @@
+#ifndef DUNE_FEM_DG_DGPASS_HH
+#define DUNE_FEM_DG_DGPASS_HH
+
+//- system includes 
+#include <dune/fem/misc/utility.hh>
+
+#include <dune/fem/pass/pass.hh>
+#include <dune/fem/pass/selection.hh>
+#include <dune/fem/pass/dgdiscretemodel.hh>
+
+#include "ipmodelcaller.hh"
+
+#include <dune/fem/solver/timeprovider.hh>
+
+#include <dune/common/fvector.hh>
+#include <dune/grid/common/grid.hh>
+#include <dune/fem/quadrature/caching/twistutility.hh>
+
+#include <dune/fem/space/common/allgeomtypes.hh> 
+#include <dune/fem/space/common/arrays.hh> 
+#include <dune/fem/function/localfunction/temporarylocalfunction.hh>
+#include <dune/fem/operator/1order/localmassmatrix.hh>
+
+#include <dune/fem/space/dgspace.hh>
+
+#include <dune/fem/quadrature/intersectionquadrature.hh>
+
+namespace Dune {
+/*! @addtogroup PassHyp
+ * Description: Solver for equations of the form
+** \f{eqnarray*}
+**   v + div(f(x,u)) + A(x,u)\nabla u &=& S(x,u)  \quad\mbox{in}\quad \Omega    \\
+** \f}
+** where \f$ u \f$ is the argument and \f$ v \f$ is computed.
+** Weak formulation on a cell T: 
+** \f[
+** \int_T v \phi = -\int_{\partial T} g \phi + \int_T f \cdot \nabla \phi + \int_T Q \phi 
+** \f]
+** with \f$ g \approx f \cdot n + \tilde{A}[u] \cdot n \f$ and \f$ Q \approx S - A \nabla u \f$
+** where \f$ \tilde{A} \f$ denotes the arithmetic average and \f$ [u] \f$ the jump of 
+** \f$ u \f$ over the cell interface.\\
+** The discrete model provides the \b analyticalFlux f, the \b source Q and the \b numericalFlux g.
+** @{
+**************************************************************************/
+
+  //! Concrete implementation of Pass for first hyperbolic systems using
+  //! LDG
+  template< class DiscreteModelImp, class PreviousPassImp , int passIdImp = -1 >
+  class LocalCDGPass :
+    public LocalPass< DiscreteModelImp , PreviousPassImp , passIdImp > 
+  {
+    typedef LocalCDGPass< DiscreteModelImp, PreviousPassImp, passIdImp > ThisType;
+  public:
+
+    //- Typedefs and enums
+    //! Base class
+    typedef LocalPass< DiscreteModelImp , PreviousPassImp , passIdImp > BaseType;
+
+    //! Repetition of template arguments
+    typedef DiscreteModelImp DiscreteModelType;
+    typedef PreviousPassImp PreviousPassType;
+
+    // Types from the base class
+    typedef typename BaseType::Entity EntityType;
+    typedef typename EntityType :: EntityPointer EntityPointerType;
+    typedef typename BaseType::ArgumentType ArgumentType;
+
+    // Types from the traits
+    typedef typename DiscreteModelType::Traits::DestinationType DestinationType;
+    typedef typename DiscreteModelType::Traits::VolumeQuadratureType VolumeQuadratureType;
+    typedef typename DiscreteModelType::Traits::FaceQuadratureType FaceQuadratureType;
+    typedef typename DiscreteModelType::Traits::DiscreteFunctionSpaceType DiscreteFunctionSpaceType;
+    //! Iterator over the space
+    typedef typename DiscreteFunctionSpaceType::IteratorType IteratorType;
+
+    // Types extracted from the discrete function space type
+    typedef typename DiscreteFunctionSpaceType::GridType GridType;
+    typedef typename DiscreteFunctionSpaceType::GridPartType GridPartType;
+    typedef typename DiscreteFunctionSpaceType::DomainType DomainType;
+    typedef typename DiscreteFunctionSpaceType::RangeType RangeType;
+    typedef typename DiscreteFunctionSpaceType::DomainFieldType DomainFieldType;
+    typedef typename DiscreteFunctionSpaceType::RangeFieldType  RangeFieldType;
+    typedef typename DiscreteFunctionSpaceType::JacobianRangeType JacobianRangeType;
+    typedef typename DiscreteFunctionSpaceType:: BaseFunctionSetType
+      BaseFunctionSetType; 
+
+    // Types extracted from the underlying grids
+    typedef typename GridPartType::IntersectionIteratorType IntersectionIteratorType;
+    typedef typename IntersectionIteratorType::Intersection IntersectionType;
+    typedef typename GridType::template Codim<0>::Geometry Geometry;
+
+
+    // Various other types
+    typedef typename DestinationType::LocalFunctionType LocalFunctionType;
+    typedef typename DiscreteModelType::SelectorType SelectorType;
+    typedef CombinedSelector< ThisType , SelectorType > CombinedSelectorType;
+    typedef CDGDiscreteModelCaller< DiscreteModelType 
+                                 , ArgumentType 
+                                 , CombinedSelectorType
+                               > DiscreteModelCallerType;
+
+    // type of local id set 
+    typedef typename GridPartType::IndexSetType IndexSetType; 
+    typedef TemporaryLocalFunction< DiscreteFunctionSpaceType > TemporaryLocalFunctionType;
+
+    //! type of local mass matrix 
+    typedef LocalDGMassMatrix< DiscreteFunctionSpaceType, VolumeQuadratureType > LocalMassMatrixType;
+
+  public:
+    //- Public methods
+    //! Constructor
+    //! \param problem Actual problem definition (see problem.hh)
+    //! \param pass Previous pass
+    //! \param spc Space belonging to the discrete function local to this pass
+    //! \param volumeQuadOrd defines the order of the volume quadrature which is by default 2* space polynomial order 
+    //! \param faceQuadOrd defines the order of the face quadrature which is by default 2* space polynomial order 
+    LocalCDGPass( DiscreteModelType& problem, 
+                  PreviousPassType& pass, 
+                  const DiscreteFunctionSpaceType& spc,
+                  const int volumeQuadOrd = -1,
+                  const int faceQuadOrd = -1,
+                  const bool notThreadParallel = true ) 
+      : BaseType(pass, spc),
+        caller_(problem),
+        problem_(problem),
+        arg_(0),
+        dest_(0),
+        spc_(spc),
+        gridPart_(spc_.gridPart()),
+        indexSet_(gridPart_.indexSet()),
+        visited_(0),
+        updEn_(spc_),
+        updNeigh_(spc_),
+        valEnVec_( 20 ),
+        valNbVec_( 20 ),
+        valJacEn_( 20 ),
+        valJacNb_( 20 ),
+        dtMin_(std::numeric_limits<double>::max()),
+        minLimit_(2.0*std::numeric_limits<double>::min()),
+        volumeQuadOrd_( (volumeQuadOrd < 0) ? 
+            (2*spc_.order()) : volumeQuadOrd ),
+        faceQuadOrd_( (faceQuadOrd < 0) ? 
+          (2*spc_.order()+1) : faceQuadOrd ),
+        localMassMatrix_( spc_ , volumeQuadOrd_ ),
+        reallyCompute_( true ),
+        notThreadParallel_( notThreadParallel )
+    {
+      valEnVec_.setMemoryFactor( 1.1 );
+      valNbVec_.setMemoryFactor( 1.1 );
+      valJacEn_.setMemoryFactor( 1.1 );
+      valJacNb_.setMemoryFactor( 1.1 );
+
+      assert( volumeQuadOrd_ >= 0 );
+      assert( faceQuadOrd_ >= 0 );
+    }
+   
+    //! Destructor
+    virtual ~LocalCDGPass()
+    {}
+
+    //! print tex info
+    void printTexInfo(std::ostream& out) const {
+      BaseType::printTexInfo(out);
+      out << "LocalCDGPass: "
+          << "\\\\ \n";
+    }
+
+    //! switch upwind if necessary 
+    void switchUpwind() 
+    {
+      problem_.switchUpwind();
+    }
+    
+    //! Estimate for the timestep size 
+    double timeStepEstimateImpl() const 
+    {
+      // factor for CDG time discretization 
+      const double p = 2. * spc_.order() + 1.;
+      return dtMin_ / p;
+    }
+
+    //! The actual computations are performed as follows. First, prepare
+    //! the grid walkthrough, then call applyLocal on each entity and then
+    //! call finalize.
+    void compute(const ArgumentType& arg, DestinationType& dest) const
+    {
+      // get stopwatch 
+      Timer timer;
+
+      prepare(arg, dest);
+
+      if( reallyCompute_ )
+      {
+        const IteratorType endit = spc_.end();
+        for (IteratorType it = spc_.begin(); it != endit; ++it) 
+        {
+          applyLocal(*it);
+        }
+
+        finalize(arg, dest);
+      }
+
+      // accumulate time 
+      this->computeTime_ += timer.elapsed();
+    }
+
+    template <class Matrix> 
+    void operator2Matrix( Matrix& matrix, DestinationType& rhs ) const 
+    {
+      DestinationType vector("Op2Mat::arg", spc_ ); 
+      DestinationType matrixRow("Op2Mat::matixRow", spc_ ); 
+      vector.clear();  
+      
+      // get right hand side, = op( 0 )
+      this->operator()( vector, rhs );
+
+      const int size = spc_.size();
+      bool symetric = true ;
+      {
+        reallyCompute_ = false ;
+        // set vector as arg and matrixRow as dest 
+        this->operator()( vector, matrixRow );
+
+        typedef typename DestinationType :: DofBlockPtrType DofBlockPtrType;
+        IteratorType endit = spc_.end();
+        for (IteratorType it = spc_.begin(); it != endit; ++it) 
+        {
+          const EntityType& entity = *it;
+          BaseFunctionSetType baseSet = spc_.baseFunctionSet( entity );
+
+          const int numBaseFct = baseSet.numBaseFunctions();
+          for( int base = 0 ; base < numBaseFct; ++base )
+          {
+            const int idx = spc_.mapper().mapToGlobal( entity, base );
+            vector.leakPointer()[ idx ] = 1;
+
+            // clear target 
+            matrixRow.clear();
+
+            applyLocal( entity );
+            // apply -1 
+            matrixRow *= -1.0;
+            // calc op( 0 )
+            vector.leakPointer()[ idx ] = 0;
+            // add right hand side 
+            applyLocal( entity );
+
+            for(int i=0; i<size; ++i) 
+            {
+              const double value = matrixRow.leakPointer()[ i ];
+              if( std::abs( value ) > 0 )
+              {
+                matrix.add( idx, i, value );  
+              }
+              if( symetric && i<idx ) 
+              {
+                if( ( std::abs( matrix( i, idx ) ) - std::abs( value ) ) > 1e-6 )
+                {
+                  symetric = false ;
+                }
+              }
+            }
+          }
+        }
+
+        std::cout << "Matrix is " << symetric << std::endl;
+        reallyCompute_ = true ;
+        doFinalize( matrixRow );
+      }
+    }
+
+    //! In the preparations, store pointers to the actual arguments and 
+    //! destinations. Filter out the "right" arguments for this pass.
+    virtual void prepare(const ArgumentType& arg, DestinationType& dest) const
+    {
+      arg_ = const_cast<ArgumentType*>(&arg);
+      dest_ = &dest;
+
+      numberOfElements_ = 0;
+
+      if( notThreadParallel_ )
+      {
+        // clear destination (not in thread parallel version)
+        dest_->clear();
+      }
+
+      // set arguments to caller 
+      caller_.setArgument(*arg_);
+
+      // resize indicator function 
+      visited_.resize( indexSet_.size(0) );
+      // set all values to false 
+      const int indSize = visited_.size();
+      for(int i=0; i<indSize; ++i) visited_[i] = false;
+
+      // time initialisation to max value 
+      dtMin_ = std::numeric_limits<double>::max();
+
+      // time is member of pass 
+      caller_.setTime( this->time() );
+    }
+
+    //! Some timestep size management.
+    void doFinalize(DestinationType& dest) const
+    {
+      if( notThreadParallel_ )
+      {
+        // communicate calculated function (not in thread parallel version)
+        dest.communicate();
+      }
+
+      // call finalize 
+      caller_.finalize();
+    }
+
+    //! Some timestep size management.
+    virtual void finalize(const ArgumentType& arg, DestinationType& dest) const
+    {
+      doFinalize( dest );
+    }
+
+    size_t numberOfElements() const 
+    {
+      return numberOfElements_; 
+    }
+
+  protected:
+    struct DefaultNBChecker
+    {
+      bool operator ()(const EntityType& , const EntityType& nb ) const
+      {
+#if HAVE_MPI
+        // only update when neighbor is interior 
+        return nb.partitionType() == InteriorEntity ;
+#else 
+        return true ;
+#endif
+      }
+    };
+
+  public:
+    // compatibility 
+    void applyLocal(EntityType& en) const
+    {
+      const EntityType& entity = en;
+      this->applyLocal( entity );
+    }
+
+    void applyLocal(const EntityType& entity ) const
+    {
+      applyLocal( entity, DefaultNBChecker() );
+    }
+
+    template <class NeighborChecker>
+    void applyLocal(const EntityType& entity,
+                    const NeighborChecker& nbChecker ) const 
+    {
+      // init local function 
+      // updEn_=0
+      initLocalFunction( entity , updEn_ );
+
+      // call real apply local 
+      applyLocal(entity, updEn_, nbChecker );
+      
+      // add update to real function 
+      updateFunctionAndApplyMass(entity, updEn_ );
+    }
+
+  protected:
+    //! local integration 
+    template <class NeighborChecker>
+    void applyLocal(const EntityType& entity, 
+                    TemporaryLocalFunctionType& updEn,
+                    const NeighborChecker& nbChecker ) const
+    {
+      // increase element counter 
+      ++numberOfElements_ ;
+
+      // only call geometry once, who know what is done in this function 
+      const Geometry & geo = entity.geometry();
+
+      // get volume of element 
+      const double envol = geo.volume(); 
+
+      // only apply volumetric integral if order > 0 
+      // otherwise this contribution is zero 
+      if( (spc_.order() > 0) || problem_.hasSource() ) 
+      {
+        VolumeQuadratureType volQuad(entity, volumeQuadOrd_);
+        caller_.setEntity(entity, volQuad);
+
+        // if only flux, evaluate only flux 
+        if ( problem_.hasFlux() && ! problem_.hasSource() ) 
+        {
+          evalVolumetricPartFlux(entity, geo, volQuad, updEn);
+        }
+        else 
+        {
+          // evaluate flux and source 
+          evalVolumetricPartBoth(entity, geo, volQuad, updEn);
+        }
+      }
+      else 
+      {
+        caller_.setEntity( entity );
+      }
+
+      /////////////////////////////
+      // Surface integral part
+      /////////////////////////////
+      if ( problem_.hasFlux() ) 
+      {
+        const IntersectionIteratorType endnit = gridPart_.iend(entity);
+        for (IntersectionIteratorType nit = gridPart_.ibegin(entity); nit != endnit; ++nit) 
+        {
+          const IntersectionType& intersection = *nit;
+
+          double nbvol = envol;
+          double wspeedS = 0.0;
+
+          if( intersection.neighbor() ) 
+          {
+            // get neighbor 
+            EntityPointerType outside = intersection.outside();
+            const EntityType & nb = * outside;
+            
+            // true if neighbor values can be updated (needed for thread parallel version)
+            const bool canUpdateNeighbor = nbChecker( entity, nb );
+      
+            if( ! visited_[ indexSet_.index( nb ) ] ) 
+            {
+              // for conforming situations apply Quadrature given
+              if( ! GridPartType :: conforming && ! intersection.conforming() )
+              {
+                // occurs in a non-conforming grid 
+                assert( GridPartType :: conforming == false );
+
+                // apply neighbor part, return is volume of neighbor which is
+                // needed below 
+                nbvol = applyLocalNeighbor< false >
+                            (intersection, nb,
+                             updEn, updNeigh_ , envol,
+                             wspeedS,
+                             canUpdateNeighbor );
+              }
+              else
+              { 
+                // apply neighbor part, return is volume of neighbor which is
+                // needed below 
+                nbvol = applyLocalNeighbor< true > 
+                            (intersection, nb,
+                             updEn, updNeigh_ , envol,
+                             wspeedS,
+                             canUpdateNeighbor );
+              }
+            } // end if do something 
+          } // end if neighbor
+          else if( intersection.boundary() )
+          {
+            FaceQuadratureType faceQuadInner(gridPart_, intersection, faceQuadOrd_, 
+                                             FaceQuadratureType::INSIDE);
+
+            // initialize intersection 
+            caller_.initializeBoundary( intersection, faceQuadInner );
+
+            const size_t faceQuadInner_nop = faceQuadInner.nop();
+
+            if( valJacEn_.size() < faceQuadInner_nop ) 
+            {
+              valEnVec_.resize( faceQuadInner_nop );
+              valJacEn_.resize( faceQuadInner_nop );
+            }
+        
+            for (size_t l = 0; l < faceQuadInner_nop; ++l) 
+            {
+              RangeType& fluxEn = valEnVec_[ l ];
+              JacobianRangeType& diffFluxEn = valJacEn_[ l ];
+
+#ifndef NDEBUG 
+              fluxEn = 0;
+              diffFluxEn = 0;
+#endif
+                
+              // eval boundary Flux  
+              wspeedS += caller_.boundaryFlux(intersection, 
+                                              faceQuadInner, 
+                                              l, 
+                                              fluxEn,
+                                              diffFluxEn)
+                       * faceQuadInner.weight(l);
+
+              // apply weights 
+              fluxEn     *= -faceQuadInner.weight( l );
+              diffFluxEn *= -faceQuadInner.weight( l );
+
+            }
+
+            if( DiscreteModelCallerType :: evaluateJacobian ) 
+            {
+              // update local functions at once 
+              updEn.axpyQuadrature( faceQuadInner, valEnVec_, valJacEn_ );
+            }
+            else 
+            {
+              // update only with range values 
+              updEn.axpyQuadrature( faceQuadInner, valEnVec_ );
+            }
+          } // end if boundary
+          
+          if (wspeedS > minLimit_ ) 
+          {
+            double minvolS = std::min(envol , nbvol);
+            dtMin_ = std::min(dtMin_,minvolS/wspeedS);
+          }
+        } // end intersection loop
+
+      } // end if problem_.hasFlux()
+
+      // this entity is finised by now 
+      visited_[ indexSet_.index( entity ) ] = reallyCompute_ ;
+    }
+
+    // initialize local update function 
+    template <class LocalFunctionImp>
+    void initLocalFunction(const EntityType& entity, LocalFunctionImp& update) const 
+    {
+      // init local function  
+      update.init( entity );
+      // clear dof values 
+      update.clear();
+    }
+
+    //! add update to destination 
+    template <class LocalFunctionImp>
+    void updateFunction(const EntityType& entity, 
+                        LocalFunctionImp& update) const 
+    {
+      // get local function and add update 
+      LocalFunctionType function = dest_->localFunction( entity );
+      function += update;
+    }
+
+    //! add update to destination 
+    template <class LocalFunctionImp>
+    void updateFunctionAndApplyMass(
+                        const EntityType& entity, 
+                        LocalFunctionImp& update) const
+    {
+      // get local function and add update 
+      LocalFunctionType function = dest_->localFunction( entity );
+      function += update;
+
+      // apply local inverse mass matrix 
+      if (DiscreteModelImp::ApplyInverseMassOperator)
+        localMassMatrix_.applyInverse( caller_, entity, function );
+    }
+
+    //////////////////////////////////////////
+    // Volumetric integral part only flux 
+    //////////////////////////////////////////
+    template <class LocalFunctionImp>
+    void evalVolumetricPartFlux(const EntityType& entity, 
+                                const Geometry& geo, 
+                                const VolumeQuadratureType& volQuad,
+                                LocalFunctionImp& updEn) const
+    {
+      const size_t volQuad_nop = volQuad.nop();
+      if( valJacEn_.size() < volQuad_nop ) 
+      {
+        valJacEn_.resize( volQuad_nop );
+      }
+
+      for (size_t l = 0; l < volQuad_nop; ++l) 
+      {
+        JacobianRangeType& flux = valJacEn_[ l ];
+#ifndef NDEBUG 
+        flux = 0;
+#endif
+        // evaluate analytical flux and source 
+        caller_.analyticalFlux(entity, volQuad, l, flux );
+        
+        const double intel = geo.integrationElement(volQuad.point(l))
+                           * volQuad.weight(l);
+        
+        // apply integration weights 
+        flux *= intel;
+
+      }
+      // add values to local function 
+      updEn.axpyQuadrature( volQuad, valJacEn_ );
+    }
+    
+    //////////////////////////////////////////
+    // Volumetric integral part only flux 
+    //////////////////////////////////////////
+    template <class LocalFunctionImp>
+    void evalVolumetricPartBoth(const EntityType& entity, 
+                                const Geometry& geo, 
+                                const VolumeQuadratureType& volQuad,
+                                LocalFunctionImp& updEn) const
+    {
+      const size_t volQuad_nop = volQuad.nop();
+      if( valEnVec_.size() < volQuad_nop ) 
+      {
+        valEnVec_.resize( volQuad_nop );
+      }
+
+      if( valJacEn_.size() < volQuad_nop ) 
+      {
+        valJacEn_.resize( volQuad_nop );
+      }
+
+      for (size_t l = 0; l < volQuad_nop; ++l) 
+      {
+        RangeType& source       = valEnVec_[ l ];
+        JacobianRangeType& flux = valJacEn_[ l ];
+
+#ifndef NDEBUG 
+        source = 0 ;
+        flux = 0;
+#endif
+        
+        // evaluate analytical flux and source 
+        const double dtEst =
+          caller_.analyticalFluxAndSource(entity, volQuad, l, flux, source );
+        
+        const double intel = geo.integrationElement(volQuad.point(l))
+                           * volQuad.weight(l);
+        
+        // apply integration weights 
+        source *= intel;
+        flux   *= intel;
+       
+        if( dtEst > minLimit_ )
+          dtMin_ = std::min(dtMin_, dtEst);
+
+      }
+      updEn.axpyQuadrature(volQuad, valEnVec_, valJacEn_ );
+    }
+
+    template <bool conforming, class LocalFunctionImp >  
+    double applyLocalNeighbor(const IntersectionType & intersection, 
+                              const EntityType & nb, 
+                              LocalFunctionImp & updEn,
+                              LocalFunctionImp & updNb,
+                              const double enVol,
+                              double & wspeedS,
+                              const bool canUpdateNeighbor ) const 
+    {
+      // make sure correct method is called 
+      assert( intersection.conforming() == conforming );
+
+      // use IntersectionQuadrature to create appropriate face quadratures 
+      typedef IntersectionQuadrature< FaceQuadratureType, conforming > IntersectionQuadratureType;
+      typedef typename IntersectionQuadratureType :: FaceQuadratureType QuadratureImp;
+
+      // create intersection quadrature 
+      IntersectionQuadratureType interQuad( gridPart_, intersection, faceQuadOrd_ );
+
+      // get appropriate references 
+      const QuadratureImp &faceQuadInner = interQuad.inside();
+      const QuadratureImp &faceQuadOuter = interQuad.outside();
+
+      // get geometry of neighbor 
+      const Geometry & nbGeo = nb.geometry();
+
+      // get neighbors volume 
+      const double nbVol = nbGeo.volume(); 
+      
+      // set neighbor and initialize intersection 
+      caller_.initializeIntersection( nb, intersection, faceQuadInner, faceQuadOuter );
+
+      const size_t faceQuadInner_nop = faceQuadInner.nop();
+
+      if( valNbVec_.size() < faceQuadInner_nop ) 
+      {
+        valEnVec_.resize( faceQuadInner_nop );
+        valNbVec_.resize( faceQuadInner_nop );
+
+        valJacEn_.resize( faceQuadInner_nop );
+        valJacNb_.resize( faceQuadInner_nop );
+      }
+        
+      for (size_t l = 0; l < faceQuadInner_nop; ++l) 
+      {
+        RangeType& fluxEn = valEnVec_[ l ];
+        RangeType& fluxNb = valNbVec_[ l ];
+
+        JacobianRangeType& diffFluxEn = valJacEn_[ l ];
+        JacobianRangeType& diffFluxNb = valJacNb_[ l ];
+
+#ifndef NDEBUG 
+        fluxEn = 0;
+        fluxNb = 0;
+
+        diffFluxEn = 0;
+        diffFluxNb = 0;
+#endif
+
+        // calculate num flux for multiplication with the basis
+        // wspeedS = fastest wave speed
+        wspeedS += caller_.numericalFlux(intersection, 
+                                         faceQuadInner, 
+                                         faceQuadOuter,
+                                         l, 
+                                         fluxEn, fluxNb,
+                                         diffFluxEn, diffFluxNb)
+                 * faceQuadInner.weight(l);
+        
+        // apply weights 
+        fluxEn     *= -faceQuadInner.weight(l);
+        fluxNb     *=  faceQuadOuter.weight(l);
+
+        diffFluxEn *= -faceQuadInner.weight(l);
+        diffFluxNb *=  faceQuadOuter.weight(l);
+      }
+
+      // update local functions at once 
+      if( DiscreteModelCallerType :: evaluateJacobian ) 
+        updEn.axpyQuadrature( faceQuadInner, valEnVec_, valJacEn_ );
+      else 
+        updEn.axpyQuadrature( faceQuadInner, valEnVec_ );
+
+      // if we can also update the neighbor 
+      // this can be different in thread parallel programs 
+      if( canUpdateNeighbor ) 
+      {
+        // init local function 
+        initLocalFunction( nb, updNb );
+
+        // add update of the neighbor to the new discrete 
+        // function which represents L(u_h)
+        // this update is convenient, so that we
+        // don't have to visit neighbor directly
+        if( DiscreteModelCallerType :: evaluateJacobian ) 
+          updNb.axpyQuadrature( faceQuadOuter, valNbVec_, valJacNb_ );
+        else 
+          updNb.axpyQuadrature( faceQuadOuter, valNbVec_ );
+
+        // do the update to global values 
+        updateFunction( nb, updNb );
+      }
+      return nbVol;
+    }
+                         
+  private:
+    LocalCDGPass();
+    LocalCDGPass(const LocalCDGPass&);
+    LocalCDGPass& operator=(const LocalCDGPass&);
+
+  protected:
+    mutable DiscreteModelCallerType caller_;
+    const DiscreteModelType& problem_; 
+    
+    mutable ArgumentType* arg_;
+    mutable DestinationType* dest_;
+
+    const DiscreteFunctionSpaceType& spc_;
+    const GridPartType & gridPart_;
+    const IndexSetType& indexSet_;
+
+    // indicator for grid walk 
+    mutable MutableArray<bool> visited_;
+
+    mutable TemporaryLocalFunctionType updEn_;
+    mutable TemporaryLocalFunctionType updNeigh_;
+
+    //! Some helper variables
+    mutable MutableArray< RangeType > valEnVec_;
+    mutable MutableArray< RangeType > valNbVec_;
+
+    mutable MutableArray< JacobianRangeType > valJacEn_;
+    mutable MutableArray< JacobianRangeType > valJacNb_;
+
+    mutable double dtMin_;
+    const double minLimit_;
+
+    const int volumeQuadOrd_, faceQuadOrd_;
+    mutable size_t numberOfElements_ ;
+    LocalMassMatrixType localMassMatrix_;
+    mutable bool reallyCompute_;
+    const bool notThreadParallel_;
+  };
+//! @}  
+} // end namespace Dune
+
+#endif
