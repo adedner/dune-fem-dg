@@ -1,11 +1,13 @@
-#ifndef DUNE_DGOPERATORBASE_HH
-#define DUNE_DGOPERATORBASE_HH
+#ifndef DUNE_FEM_DG_OPERATORBASE_HH
+#define DUNE_FEM_DG_OPERATORBASE_HH
 
 #include <string>
 
-#include "../pass/ippass.hh"
 #include <dune/fem/solver/timeprovider.hh>
 #include <dune/fem/operator/common/spaceoperatorif.hh>
+
+// dune-fem-dg includes 
+#include <dune/fem-dg/pass/dgpass.hh>
 
 #ifdef NSMOD_USE_SMP_PARALLEL
 #include <dune/fem-dg/pass/threadpass.hh>

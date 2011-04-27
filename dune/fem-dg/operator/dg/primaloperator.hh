@@ -1,5 +1,5 @@
-#ifndef DUNE_CDGOPERATOR_HH
-#define DUNE_CDGOPERATOR_HH
+#ifndef DUNE_FEM_DG_PRIMALOPERATOR_HH
+#define DUNE_FEM_DG_PRIMALOPERATOR_HH
 
 // system includes
 #include <string>
@@ -14,13 +14,9 @@
 
 // dune-fem-dg includes
 #include <dune/fem-dg/operator/limiter/limitpass.hh>
-//#include "../pass/limitpass.hh"
-
-// local includes
-#include "primaldiscretemodel.hh"
-#include "operatorbase.hh"
-#include "../pass/ippass.hh"
-
+#include <dune/fem-dg/operator/dg/primaldiscretemodel.hh>
+#include <dune/fem-dg/operator/dg/operatorbase.hh>
+#include <dune/fem-dg/pass/dgpass.hh>
 
 namespace Dune {  
 
