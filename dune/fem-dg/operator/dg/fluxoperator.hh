@@ -20,7 +20,7 @@
 #include <dune/fem-dg/operator/dg/primaldiscretemodel.hh>
 #include <dune/fem-dg/operator/dg/fluxdiscretemodel.hh>
 #include <dune/fem-dg/operator/dg/operatorbase.hh>
-#include <dune/fem-dg/operator/pass/dgpass.hh>
+#include <dune/fem-dg/pass/dgpass.hh>
 
 
 namespace Dune {  
