@@ -24,7 +24,13 @@ AC_CONFIG_FILES([
   dune/fem-dg/Makefile
   dune/fem-dg/pass/Makefile
   dune/fem-dg/operator/Makefile
+  dune/fem-dg/operator/adaptation/Makefile
   dune/fem-dg/operator/limiter/Makefile
+  dune/fem-dg/operator/dg/Makefile
+  dune/fem-dg/operator/fluxes/Makefile
+  dune/fem-dg/solver/Makefile
+  dune/fem-dg/misc/Makefile
+  dune/fem-dg/models/Makefile
   dune-fem-dg.pc
 ])
 AC_OUTPUT
