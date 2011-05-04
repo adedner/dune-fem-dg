@@ -202,6 +202,23 @@ namespace Fem {
     }
 
     /** \brief check physical values */
+    template <class ArgumentTuple>
+    bool checkPhysical( const EntityType& en,
+                   const DomainType& x,
+                   const ArgumentTuple& u ) const
+    { 
+      return physical( Element<0> :: get( u ) );
+    }
+
+    /** \brief check physical values */
+    bool physical( const EntityType& en,
+                   const DomainType& x,
+                   const RangeType& u ) const
+    { 
+      return physical( u );
+    }
+
+    /** \brief check physical values */
     bool physical(const RangeType& u) const
     {
       return model_.physical( u );

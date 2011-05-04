@@ -15,8 +15,8 @@
 #include <dune/fem/misc/fmatrixconverter.hh>
 
 // local includes
+#include <dune/fem-dg/operator/limiter/limiter.hh>
 #include <dune/fem-dg/operator/fluxes/ldgflux.hh>
-
 #include <dune/fem-dg/operator/adaptation/adaptation.hh>
 
 namespace Dune {
