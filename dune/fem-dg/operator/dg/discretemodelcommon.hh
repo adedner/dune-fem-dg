@@ -188,8 +188,8 @@ namespace Dune {
       : BaseType( other ),
         model_( other.model_ ),
         numflux_( other.numflux_ ),
-        weight_( other.weight_ ),
         adaptation_( other.adaptation_ ),
+        weight_( other.weight_ ),
         maxAdvTimeStep_( other.maxAdvTimeStep_ ),
         maxDiffTimeStep_( other.maxDiffTimeStep_ )
     {
