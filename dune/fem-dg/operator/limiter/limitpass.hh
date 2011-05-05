@@ -590,6 +590,7 @@ namespace Dune {
       localIdSet_( gridPart_.grid().localIdSet()),
       lagrangeSpace_(gridPart_),
       orderPower_( -((spc_.order()+1.0) * 0.25)),
+      detEps_( 1e-12 ),
       dofConversion_(dimRange),
       faceQuadOrd_( (fQ < 0) ? (2 * spc_.order() + 1) : fQ ),
       volumeQuadOrd_( (vQ < 0) ? (2 * spc_.order()) : vQ ),
@@ -1245,7 +1246,7 @@ namespace Dune {
         DeoModType& dM = deoMod_;
 
         // if matrix is regular 
-        if( std::abs( det ) > 1e-12 )
+        if( std::abs( det ) > detEps_ )
         {
           // non-singular case 
           entry.second = true;
@@ -1401,7 +1402,7 @@ namespace Dune {
         det = FMatrixHelp :: invertMatrix(matrix,inverse);
       }
 
-      if( std::abs( det ) > 0 )
+      if( std::abs( det ) > detEps_ )
       {
         // need new right hand side 
         NewVectorType newRhs;
@@ -1780,6 +1781,7 @@ namespace Dune {
         val *= 1.0/geo.volume();
       }
 
+      // adjust average value, e.g. calculate primitive variables if necessary.
       problem_.adjustAverageValue( val );
       return notphysical;
     }
@@ -2250,6 +2252,7 @@ namespace Dune {
     LagrangeSpaceType lagrangeSpace_;
 
     const double orderPower_;
+    const double detEps_; 
     const DofConversionUtilityType dofConversion_; 
     mutable int faceQuadOrd_;
     mutable int volumeQuadOrd_;
