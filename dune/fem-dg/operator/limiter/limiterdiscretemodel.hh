@@ -223,6 +223,12 @@ namespace Fem {
     {
       return model_.physical( u );
     }
+
+    /** \brief check physical values */
+    void adjustAverageValue( RangeType& u ) const
+    {
+      return model_.adjustAverageValue( u );
+    }
   };
 
 } // end namespace Fem 

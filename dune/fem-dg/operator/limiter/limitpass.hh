@@ -603,7 +603,7 @@ namespace Dune {
       matrixCacheVec_( gridPart_.grid().maxLevel() + 1 ),
       localMassMatrix_( spc_ , volumeQuadOrd_ ),
       adaptive_((AdaptationMethodType(gridPart_.grid())).adaptive()),
-      cartesianGrid_( false ), //CheckCartesian::check( gridPart_ ) ),
+      cartesianGrid_( CheckCartesian::check( gridPart_ ) ),
       stepTime_(3, 0.0),
       calcIndicator_(true),
       adaptMode_(false),
@@ -1245,7 +1245,7 @@ namespace Dune {
         DeoModType& dM = deoMod_;
 
         // if matrix is regular 
-        if( std::abs( det ) > 0 )
+        if( std::abs( det ) > 1e-12 )
         {
           // non-singular case 
           entry.second = true;
@@ -1780,7 +1780,7 @@ namespace Dune {
         val *= 1.0/geo.volume();
       }
 
-      //problem_.primitive( val );
+      problem_.adjustAverageValue( val );
       return notphysical;
     }
 
