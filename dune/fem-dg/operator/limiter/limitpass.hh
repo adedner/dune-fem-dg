@@ -29,6 +29,15 @@ namespace Dune {
 /*! @addtogroup PassLimit
 */
 
+  inline std::ostream& operator << (std::ostream& out, const DGFEntityKey<int>& key )
+  {
+    out << "(";
+    for(int i=0; i<key.size(); ++i )
+      out << key[i] << " ";
+    out << ")";
+    return out;
+  }
+
   // base class for Limiters, mainly reading limitEps 
   struct LimiterFunctionBase
   {
@@ -552,7 +561,218 @@ namespace Dune {
     typedef std::pair< KeyType, CheckType > VectorCompType;
     typedef std::set< VectorCompType > ComboSetType;
 
-    typedef std::pair < MatrixType , bool > MatrixCacheEntry; 
+    struct MatrixIF 
+    {
+      virtual bool apply( const KeyType& v, 
+                          const std::vector< DomainType >& barys, 
+                          const std::vector< RangeType >& nbVals, 
+                          DeoModType& dM ) = 0;
+      virtual MatrixIF* clone() const = 0;
+      static const double detEps_ = 1e-12 ;
+    };
+
+    struct RegularMatrix : public MatrixIF 
+    {
+      MatrixType inverse_ ;
+      bool inverseCalculated_ ;
+
+      RegularMatrix() : inverseCalculated_( false ) {}
+
+      MatrixIF* clone() const { return new RegularMatrix( *this ); }
+
+      bool inverse(const KeyType& v, const std::vector< DomainType >& barys ) 
+      {
+        if( ! inverseCalculated_ ) 
+        {
+          MatrixType matrix; 
+          // setup matrix 
+          for(int i=0; i<DomainType::dimension; ++i) 
+          {
+            matrix[ i ] = barys[ v[ i ] ];
+          }
+
+          // invert matrix 
+          RangeFieldType det = FMatrixHelp :: invertMatrix( matrix, inverse_ );
+          if( std::abs( det ) > MatrixIF :: detEps_ ) 
+          {
+            inverseCalculated_ = true ;
+          }
+        }
+        return inverseCalculated_ ;
+      }
+
+      bool apply( const KeyType& v, 
+                  const std::vector< DomainType >& barys, 
+                  const std::vector< RangeType >& nbVals, 
+                  DeoModType& dM )
+      {
+        // if matrix is regular 
+        if( inverse( v, barys ) )
+        {
+          DomainType rhs ; 
+          // calculate D
+          for(int r=0; r<dimRange; ++r)
+          {
+            for(int i=0; i<DomainType::dimension; ++i) 
+            {
+              rhs[i] = nbVals[ v[i] ][r];
+            }
+
+            // get solution 
+            inverse_.mv( rhs, dM[r] );
+          }
+          return true; 
+        }
+        return false;
+      }
+    };
+    
+    struct LeastSquaresMatrix : public MatrixIF 
+    {
+      // dimension 
+      enum { dim = dimension };
+      // new dimension is dim + 1 
+      enum { newDim = dim + 1 };
+
+      // apply least square by adding another point 
+      // this should make the linear system solvable 
+       
+      // need new matrix type containing one row more  
+      typedef FieldMatrix<DomainFieldType, newDim , dim> NewMatrixType;
+      typedef FieldVector<DomainFieldType, newDim > NewVectorType;
+
+      MatrixType inverse_ ;
+      // new matrix 
+      NewMatrixType A_ ;
+
+      bool inverseCalculated_ ;
+
+      LeastSquaresMatrix() : inverseCalculated_( false ) {}
+
+      MatrixIF* clone() const { return new LeastSquaresMatrix( *this ); }
+
+      bool inverse(const KeyType& nV, const std::vector< DomainType >& barys ) 
+      {
+        if( ! inverseCalculated_ ) 
+        {
+          assert( (int) nV.size() == newDim );
+
+          // create matrix 
+          for(int k=0; k<newDim; ++k) 
+          {
+            A_[k] = barys[ nV[k] ];
+          }
+
+          MatrixType matrix ; 
+
+          // matrix = A^T * A 
+          multiply_AT_A(A_, matrix);
+
+            // invert matrix 
+          RangeFieldType det = FMatrixHelp :: invertMatrix(matrix, inverse_ );
+
+          if( std::abs( det ) > MatrixIF :: detEps_ ) 
+          {
+            inverseCalculated_ = true ; 
+          }
+        }
+        return inverseCalculated_ ;
+      }
+
+      bool apply( const KeyType& nV, 
+                  const std::vector< DomainType >& barys, 
+                  const std::vector< RangeType >& nbVals, 
+                  DeoModType& dM )
+      {
+        if( inverse( nV, barys ) ) 
+        {
+          // need new right hand side 
+          NewVectorType newRhs;
+          DomainType rhs ;
+        
+          // calculate D
+          for(int r=0; r<dimRange; ++r)
+          {
+            // get right hand side 
+            for(int i=0; i<newDim; ++i) 
+            {
+              newRhs[i] = nbVals[ nV[i] ][r];
+            }
+
+            // convert newRhs to matrix 
+            A_.mtv(newRhs, rhs);
+          
+            // get solution 
+            inverse_.mv( rhs, dM[r] );
+          }
+          return true ;
+        }
+        return false ;
+      }
+
+      // matrix = A^T * A 
+      template <class NewMatrixType, class MatrixType> 
+      void multiply_AT_A(const NewMatrixType& A, MatrixType& matrix) const
+      {
+        assert( (int) MatrixType :: rows == (int) NewMatrixType :: cols );
+        typedef typename MatrixType :: field_type value_type;
+
+        for(int row=0; row< MatrixType :: rows; ++row)
+        {
+          for(int col=0; col< MatrixType :: cols; ++col)
+          {
+            matrix[row][col] = 0;
+            for(int k=0; k<NewMatrixType :: rows;  ++k)
+            {
+              matrix[row][col] += A[k][row] * A[k][col];
+            }
+          }
+        }
+      }
+
+    };
+
+    class MatrixStorage
+    {
+    protected:  
+      MatrixIF* matrix_;
+    public:   
+      MatrixStorage() : matrix_( 0 ) {}
+      explicit MatrixStorage( const MatrixIF& matrix ) 
+       :  matrix_( matrix.clone() ) 
+      {}
+
+      MatrixStorage( const MatrixStorage& other ) : matrix_( 0 ) 
+      { 
+        assign( other );
+      }
+
+      MatrixStorage& operator = ( const MatrixStorage& other ) 
+      {
+        removeObj();
+        assign( other );
+        return *this;
+      }
+
+      ~MatrixStorage() { removeObj(); }
+
+      MatrixIF* matrix() { assert( matrix_ ); return matrix_ ; }
+
+    protected:  
+      void removeObj() 
+      { 
+        delete matrix_; matrix_ = 0;
+      }     
+
+      void assign( const MatrixStorage& other ) 
+      {   
+        matrix_ = ( other.matrix_ ) ? (other.matrix_->clone() ) : 0 ;  
+      }
+    };
+
+    
+    //typedef std::pair < MatrixType , bool > MatrixCacheEntry; 
+    typedef MatrixStorage MatrixCacheEntry; 
     typedef std::map< KeyType, MatrixCacheEntry > MatrixCacheType;
 
     //! type of local mass matrix 
@@ -590,7 +810,6 @@ namespace Dune {
       localIdSet_( gridPart_.grid().localIdSet()),
       lagrangeSpace_(gridPart_),
       orderPower_( -((spc_.order()+1.0) * 0.25)),
-      detEps_( 1e-12 ),
       dofConversion_(dimRange),
       faceQuadOrd_( (fQ < 0) ? (2 * spc_.order() + 1) : fQ ),
       volumeQuadOrd_( (vQ < 0) ? (2 * spc_.order()) : vQ ),
@@ -1163,7 +1382,7 @@ namespace Dune {
       for (size_t i=0;i<combSize; ++i) comb[ i ] = i;
       comboVec_.push_back(comb);
     }
-    
+
     // get linear function from reconstruction of the average values
     void calculateLinearFunctions(const int level, 
                                   const ComboSetType& comboSet, 
@@ -1172,45 +1391,19 @@ namespace Dune {
                                   const bool nonConforming,
                                   const bool cartesian ) const 
     {
-      //assert( (StructuredGrid) ? (cartesian) : true );  
+      assert( (StructuredGrid) ? (cartesian) : true );  
       // use matrix cache in case of structured grid 
       const bool useCache = cartesian 
                             && ! nonConforming 
                             && ! hasBoundaryIntersection;
 
       assert( level < (int) matrixCacheVec_.size() );
-      MatrixCacheType& matrixCache = matrixCacheVec_[level]; 
-
-      const bool initMatrixCache = (matrixCache.size () == 0);
-      //const bool useCache = false;
-      const bool nonCachedMatrix = ! useCache || initMatrixCache;
+      MatrixCacheType& matrixCache = matrixCacheVec_[ level ]; 
 
       enum { dim = dimension };
 
-      // get references 
-      MatrixType matrix;
-      MatrixCacheEntry localEntry;
-      localEntry.first  = 0;
-      localEntry.second = true;
-
-      DomainType rhs;
-
       typedef typename ComboSetType :: iterator iterator; 
 
-      // create matrix cache entries 
-      if ( useCache && initMatrixCache )
-      {
-        const iterator endit = comboSet.end();
-        for(iterator it = comboSet.begin(); it != endit; ++it) 
-        {
-          // get tuple of numbers 
-          const KeyType& v = (*it).first; 
-          MatrixCacheEntry& entry = matrixCache[ v ];
-          entry.first  = 0;
-          entry.second = true;
-        }
-      }
-      
       // calculate linear functions 
       // D(x) = U_i + D_i * (x - w_i)
       const iterator endit = comboSet.end();
@@ -1219,59 +1412,47 @@ namespace Dune {
         // get tuple of numbers 
         const KeyType& v = (*it).first; 
 
-        assert( (useCache) ? 
-            (matrixCache.find( v ) != matrixCache.end()) : 1 );
-        
-        // get matrix from cache if ok 
-        MatrixCacheEntry& entry = (useCache) ? matrixCache[v] : localEntry;
-        MatrixType& inverse = entry.first; 
+        RegularMatrix regInverse ;
 
-        RangeFieldType det = (entry.second) ? 1 : 0;
-       
-        const bool calculateMatrix = nonCachedMatrix || ! entry.second ;
+        MatrixIF* inverse = & regInverse ; 
 
-        if( calculateMatrix )
+        if( useCache ) 
         {
-          // setup matrix 
-          for(int i=0; i<dim; ++i) 
+          typedef typename MatrixCacheType :: iterator iterator ;
+          iterator matrixEntry = matrixCache.find( v );
+          if( matrixEntry != matrixCache.end() ) 
           {
-            matrix[i] = barys_[ v[i] ];
+            inverse = matrixEntry->second.matrix();
           }
-
-          // invert matrix 
-          det = FMatrixHelp :: invertMatrix(matrix,inverse);
+          else 
+          { 
+            if( regInverse.inverse( v, barys_ ) ) 
+            {
+              matrixCache[ v ] = MatrixStorage( regInverse );
+            }
+          }
         }
 
         // create new instance of limiter coefficients  
         DeoModType& dM = deoMod_;
 
-        // if matrix is regular 
-        if( std::abs( det ) > detEps_ )
+        // if applied is not true the inverse is singular 
+        const bool applied = inverse->apply( v, barys_, nbVals_, dM );
+
+        if( applied ) 
         {
-          // non-singular case 
-          entry.second = true;
-          
-          // calculate D
-          for(int r=0; r<dimRange; ++r)
-          {
-            for(int i=0; i<dim; ++i) 
-            {
-              rhs[i] = nbVals_[ v[i] ][r];
-            }
-
-            // get solution 
-            inverse.mv( rhs, dM[r] );
-          }
-
           // store linear function 
           deoMods_.push_back( dM );
           comboVec_.push_back( (*it).second );
         }
         else 
         {
-          // we are in singular situation 
-          entry.second = false;
-          
+          ////////////////////////////////////////////
+          // apply least squares approach here 
+          ////////////////////////////////////////////
+          LeastSquaresMatrix lsInverse ;
+          inverse = & lsInverse ;
+
           // apply least square by adding another point 
           // this should make the linear system solvable 
            
@@ -1309,20 +1490,13 @@ namespace Dune {
           {
             // assign last element 
             nV[dim] = *checkIt ;
-          
-            // apply least square again 
-            bool matrixSingular = 
-                  applyLeastSquare( barys_,
-                                    nbVals_,
-                                    nV,
-                                    dM,
-                                    matrix,
-                                    inverse,
-                                    rhs,
-                                    true ); //calculateMatrix );
+
+            KeyType newV ( nV );
+
+            bool matrixNotSingular = lsInverse.apply( newV, barys_, nbVals_, dM ) ;
 
             // if matrix was valid add to functions 
-            if( ! matrixSingular ) 
+            if( matrixNotSingular ) 
             {
               // store linear function
               deoMods_.push_back( dM );
@@ -1333,103 +1507,6 @@ namespace Dune {
           }
         }
       } // end solving 
-    }
-
-    // matrix = A^T * A 
-    template <class NewMatrixType, class MatrixType> 
-    void multiply_AT_A(const NewMatrixType& A, MatrixType& matrix) const
-    {
-      assert( (int) MatrixType :: rows == (int) NewMatrixType :: cols );
-      typedef typename MatrixType :: field_type value_type;
-
-      for(int row=0; row< MatrixType :: rows; ++row)
-      {
-        for(int col=0; col< MatrixType :: cols; ++col)
-        {
-          matrix[row][col] = 0;
-          for(int k=0; k<NewMatrixType :: rows;  ++k)
-          {
-            matrix[row][col] += A[k][row] * A[k][col];
-          }
-        }
-      }
-    }
-
-    // solve system by applying least square method 
-    template <class BaryVectorType, class NbValVectorType,
-              class FunctionType, class MatrixType, class VectorType> 
-    bool applyLeastSquare(const BaryVectorType& barys,
-                          const NbValVectorType& nbVals,
-                          const std::vector<int> &nV,
-                          FunctionType& dM, 
-                          MatrixType& matrix, 
-                          MatrixType& inverse, 
-                          VectorType& rhs,
-                          const bool calculateInverse ) const 
-    {
-      // dimension 
-      enum { dim = dimension };
-      // new dimension is dim + 1 
-      enum { newDim = dim + 1 };
-
-      // apply least square by adding another point 
-      // this should make the linear system solvable 
-       
-      // need new matrix type containing one row more  
-      typedef FieldMatrix<DomainFieldType, newDim , dim> NewMatrixType;
-      typedef FieldVector<DomainFieldType, newDim > NewVectorType;
-
-      // new matrix 
-      NewMatrixType A ;
-
-      assert( (int) nV.size() == newDim );
-
-      // create matrix 
-      for(int k=0; k<newDim; ++k) 
-      {
-        A[k] = barys[ nV[k] ];
-      }
-
-      RangeFieldType det = 1;
-
-      // only calculate new if not from cache 
-      if( calculateInverse ) 
-      {
-        // matrix = A^T * A 
-        multiply_AT_A(A, matrix);
-
-        // invert matrix 
-        det = FMatrixHelp :: invertMatrix(matrix,inverse);
-      }
-
-      if( std::abs( det ) > detEps_ )
-      {
-        // need new right hand side 
-        NewVectorType newRhs;
-        
-        // calculate D
-        for(int r=0; r<dimRange; ++r)
-        {
-          // get right hand side 
-          for(int i=0; i<newDim; ++i) 
-          {
-            newRhs[i] = nbVals[ nV[i] ][r];
-          }
-          
-          // convert newRhs to matrix 
-          rhs = 0;
-          A.umtv(newRhs, rhs);
-          
-          // get solution 
-          inverse.mv( rhs, dM[r] );
-        }
-        
-        // return false because matrix is invertable 
-        return false;
-      }
-
-      // matrix is still singular 
-      return true;
     }
 
     //! limit all functions 
@@ -1781,7 +1858,7 @@ namespace Dune {
         val *= 1.0/geo.volume();
       }
 
-      // adjust average value, e.g. calculate primitive variables if necessary.
+      // possibly adjust average value, e.g. calculate primitive vairables and so on 
       problem_.adjustAverageValue( val );
       return notphysical;
     }
@@ -2252,7 +2329,6 @@ namespace Dune {
     LagrangeSpaceType lagrangeSpace_;
 
     const double orderPower_;
-    const double detEps_; 
     const DofConversionUtilityType dofConversion_; 
     mutable int faceQuadOrd_;
     mutable int volumeQuadOrd_;
