@@ -1277,7 +1277,7 @@ namespace Dune {
            
           // creare vector with size = dim+1
           // the first dim components are equal to v 
-          std::vector<int> nV( dim+1 );
+          CheckType nV( dim+1 );
           for(int i=0; i<dim; ++i) nV[i] = v[i];
 
           // take first point of list of points to check 
@@ -1319,7 +1319,7 @@ namespace Dune {
                                     matrix,
                                     inverse,
                                     rhs,
-                                    calculateMatrix );
+                                    true ); //calculateMatrix );
 
             // if matrix was valid add to functions 
             if( ! matrixSingular ) 
