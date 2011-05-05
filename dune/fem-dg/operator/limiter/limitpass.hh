@@ -69,15 +69,17 @@ namespace Dune {
     FieldType operator ()(const FieldType& g, const FieldType& d ) const 
     {
       const FieldType absG = std::abs( g );
-      const FieldType absD = std::abs( d );
-      
+
       // avoid rounding errors 
-      if ( (absG < limitEps_) && (absD < limitEps_) ) return 1;
-      
+      // gradient of linear functions is nerly zero
+      if ( absG < limitEps_ ) return 1;  
+
+      const FieldType absD = std::abs( d );
+
       // if product smaller than zero set localFactor to zero 
       // otherwise d/g until 1 
       const FieldType localFactor = 
-            ( (g * d) < 0.0 ) ? 0.0 : 
+            ( (d * g) < 0.0 ) ? 0.0 : 
             ( (absG > absD) ) ? (d/g) : 1.0;
 
       return localFactor;
@@ -98,12 +100,12 @@ namespace Dune {
     FieldType operator ()(const FieldType& g, const FieldType& d ) const 
     {
       const FieldType absG = std::abs( g );
+      // avoid rounding errors 
+      // gradient of linear functions is nerly zero
+      if ( absG < limitEps_ ) return 1;  
+
       const FieldType absD = std::abs( d );
 
-      // avoid rounding errors 
-      if ( (absG < limitEps_) && (absD < limitEps_) ) return 1;
-      if ( absG < limitEps_ ) return 1;
-      
       const FieldType r = d / g ;
 
       // if product smaller than zero set localFactor to zero 
@@ -601,7 +603,7 @@ namespace Dune {
       matrixCacheVec_( gridPart_.grid().maxLevel() + 1 ),
       localMassMatrix_( spc_ , volumeQuadOrd_ ),
       adaptive_((AdaptationMethodType(gridPart_.grid())).adaptive()),
-      cartesianGrid_( CheckCartesian::check( gridPart_ ) ),
+      cartesianGrid_( false ), //CheckCartesian::check( gridPart_ ) ),
       stepTime_(3, 0.0),
       calcIndicator_(true),
       adaptMode_(false),
@@ -1169,7 +1171,7 @@ namespace Dune {
                                   const bool nonConforming,
                                   const bool cartesian ) const 
     {
-      assert( (StructuredGrid) ? (cartesian) : true );  
+      //assert( (StructuredGrid) ? (cartesian) : true );  
       // use matrix cache in case of structured grid 
       const bool useCache = cartesian 
                             && ! nonConforming 
@@ -1448,11 +1450,12 @@ namespace Dune {
           RangeFieldType minimalFactor = 1;
           DomainType& D = deoMods[j][r];
           
-          const size_t vSize = v.size();
-          for(size_t m=0; m<vSize; ++m)
+          typedef typename std::vector<int> :: const_iterator const_iterator ;
+          const const_iterator endit = v.end();
+          for(const_iterator it = v.begin(); it != endit ; ++it )
           {
             // get current number of entry 
-            const size_t k = v[m];
+            const size_t k = *it; 
 
             // evaluate values for limiter function 
             const DomainFieldType g = D * barys[k];
@@ -1725,6 +1728,7 @@ namespace Dune {
                      const LocalFunctionType& lf,
                      RangeType& val) const 
     {
+      bool notphysical = false;
       if( localMassMatrix_.affine() )
       {
         // get point quadrature 
@@ -1740,11 +1744,10 @@ namespace Dune {
           val[r] = lf[dofIdx] * phi[0];
         }
         // return whether value is physical 
-        return ( problem_.hasPhysical() && ! problem_.physical(en, quad.point(0), val) );
+        notphysical = ( problem_.hasPhysical() && ! problem_.physical(en, quad.point(0), val) );
       }
       else 
       {
-        bool notphysical = false;
         const Geometry& geo = en.geometry();
         
         // get quadrature 
@@ -1775,8 +1778,10 @@ namespace Dune {
 
         // mean value, i.e. devide by volume 
         val *= 1.0/geo.volume();
-        return notphysical;
       }
+
+      //problem_.primitive( val );
+      return notphysical;
     }
 
     // fill combination vector recursive 
