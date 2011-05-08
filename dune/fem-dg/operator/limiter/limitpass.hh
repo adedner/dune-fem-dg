@@ -45,9 +45,9 @@ namespace Dune {
     LimiterFunctionBase() 
       : limitEps_( getEpsilon() )
     {}
-  protected:  
+
     //! get tolerance for shock detector 
-    double getEpsilon() const 
+    static double getEpsilon() 
     {
       // default value 
       double eps = 1e-8;
@@ -55,6 +55,7 @@ namespace Dune {
       return eps;
     }
 
+  protected:  
     void printInfo(const std::string& name ) const 
     {
       if( Parameter::verbose() ) 
@@ -436,7 +437,7 @@ namespace Dune {
     {
       return limiterFunction_( g, d );
     }
-    
+
   protected:
     //! returns true, if we have an inflow boundary
     bool checkDirection(const IntersectionType& it,
@@ -810,6 +811,7 @@ namespace Dune {
       localIdSet_( gridPart_.grid().localIdSet()),
       lagrangeSpace_(gridPart_),
       orderPower_( -((spc_.order()+1.0) * 0.25)),
+      limitEps_( LimiterFunctionBase :: getEpsilon() ),
       dofConversion_(dimRange),
       faceQuadOrd_( (fQ < 0) ? (2 * spc_.order() + 1) : fQ ),
       volumeQuadOrd_( (vQ < 0) ? (2 * spc_.order()) : vQ ),
@@ -1536,21 +1538,81 @@ namespace Dune {
             const size_t k = *it; 
 
             // evaluate values for limiter function 
-            const DomainFieldType g = D * barys[k];
             const DomainFieldType d = nbVals[k][r];
+            const DomainFieldType g = D * barys[k];
+
+            const DomainFieldType length2 =  barys[ k ].two_norm2();
+            assert( length2 > 1e-12 );
+
+            // if the gradient in direction of the line 
+            // connecting the barycenters is very small 
+            // then neglect this direction since it does not give 
+            // valuable contribution to the linear function 
+            if( ( (g*g) / length2 ) < limitEps_ )
+              continue ;
 
             // call limiter function 
             const DomainFieldType localFactor = problem_.limiterFunction( g, d );
 
             // take minimum 
             minimalFactor = std::min( localFactor , minimalFactor );
-
-            // this cannot be smaller, so break if we got this value 
-            if( localFactor <= 0.0 ) break; 
           }
 
           // scale linear function 
           D *= minimalFactor;
+#if 0
+          RangeFieldType minimalFactor_1 = 1;
+          RangeFieldType minimalFactor_2 = 1;
+          DomainType& D = deoMods[j][r];
+          
+          DomainType D_1 (D);
+          double length = D.two_norm() ;
+          if ( length > 1e-12 ) 
+          {
+            D_1 /= ( length );
+          }
+            
+          DomainType D_2 ( D );
+          D_2 -= D_1 ;
+
+          /*
+          if( length > 0 ) 
+          {
+            std::cout << D << " D | "  << D_1 << " D1 " << D_2 << std::endl;
+            DomainType Dsum( D_1 );
+            Dsum += D_2 ;
+            std::cout << Dsum << std::endl;
+          }
+          */
+
+          typedef typename std::vector<int> :: const_iterator const_iterator ;
+          const const_iterator endit = v.end();
+          for(const_iterator it = v.begin(); it != endit ; ++it )
+          {
+            // get current number of entry 
+            const size_t k = *it; 
+
+            // evaluate values for limiter function 
+            const DomainFieldType d = nbVals[k][r];
+            const DomainFieldType g_1 = D_1 * barys[k];
+            const DomainFieldType g_2 = D_2 * barys[k];
+
+            // call limiter function 
+            const DomainFieldType localFactor_1 = problem_.limiterFunction( g_1, d );
+            const DomainFieldType localFactor_2 = problem_.limiterFunction( g_2, d );
+
+            // take minimum 
+            minimalFactor_1 = std::min( localFactor_1 , minimalFactor_1 );
+            minimalFactor_2 = std::min( localFactor_2 , minimalFactor_2 );
+          }
+
+          // scale linear function 
+          D_1 *= minimalFactor_1;
+          D_2 *= minimalFactor_2;
+          
+          D  = D_1;
+          D += D_2;
+#endif
         }
       }
     }
@@ -2329,6 +2391,7 @@ namespace Dune {
     LagrangeSpaceType lagrangeSpace_;
 
     const double orderPower_;
+    const double limitEps_;
     const DofConversionUtilityType dofConversion_; 
     mutable int faceQuadOrd_;
     mutable int volumeQuadOrd_;
