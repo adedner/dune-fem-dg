@@ -82,7 +82,7 @@ namespace Dune {
 
       // avoid rounding errors 
       // gradient of linear functions is nerly zero
-      if ( absG < limitEps_ ) return 1; 
+      if ( absG < 1e-10 ) return 1; 
 
       // if product smaller than zero set localFactor to zero 
       // otherwise d/g until 1 
@@ -1544,17 +1544,24 @@ namespace Dune {
             const DomainFieldType g = D * barys[k];
 
             const DomainFieldType length2 =  barys[ k ].two_norm2();
+            // if length is to small then the grid is corrupted
             assert( length2 > 1e-12 );
 
             // if the gradient in direction of the line 
             // connecting the barycenters is very small 
             // then neglect this direction since it does not give 
             // valuable contribution to the linear function 
-            if( ( (g*g) / length2 ) < limitEps_ )
-              continue ;
-
             // call limiter function 
             DomainFieldType localFactor = problem_.limiterFunction( g, d );
+
+            const DomainFieldType factor = (g*g) / length2 ;
+            //const DomainFieldType factor = (g*g) / length2;
+            if( localFactor < 1.0 &&  factor  < limitEps_ )
+            {
+              //std::cout << localFactor << " " ;
+              localFactor = 1.0 - std::tanh( factor / limitEps_ );
+              //std::cout << localFactor << std::endl ;
+            }
 
             // take minimum 
             minimalFactor = std::min( localFactor , minimalFactor );
