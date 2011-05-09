@@ -82,15 +82,12 @@ namespace Dune {
 
       // avoid rounding errors 
       // gradient of linear functions is nerly zero
-      if ( absG < limitEps_ ) return 1;  
-
-      const FieldType absD = std::abs( d );
+      if ( absG < limitEps_ ) return 1; 
 
       // if product smaller than zero set localFactor to zero 
       // otherwise d/g until 1 
       const FieldType localFactor = 
-            ( (d * g) < 0.0 ) ? 0.0 : 
-            ( (absG > absD) ) ? (d/g) : 1.0;
+            ( (d * g) < 0.0 ) ? 0.0 : std::min( 1.0 , ( d / g ) );
 
       return localFactor;
     }
@@ -109,12 +106,9 @@ namespace Dune {
 
     FieldType operator ()(const FieldType& g, const FieldType& d ) const 
     {
-      const FieldType absG = std::abs( g );
       // avoid rounding errors 
       // gradient of linear functions is nerly zero
-      if ( absG < limitEps_ ) return 1;  
-
-      const FieldType absD = std::abs( d );
+      if ( std::abs( g ) < limitEps_ ) return 1;  
 
       const FieldType r = d / g ;
 
@@ -260,8 +254,8 @@ namespace Dune {
     typedef LimiterDefaultDiscreteModel <GlobalTraitsImp,Model,passId> DGDiscreteModelType;
 
     //typedef typename ExistsLimiterFunction< Model, DomainFieldType > :: LimiterFunctionType  LimiterFunctionType;
-    typedef MinModLimiter< DomainFieldType > LimiterFunctionType;
-    //typedef typename Model :: Traits :: LimiterFunctionType  LimiterFunctionType;
+    //typedef MinModLimiter< DomainFieldType > LimiterFunctionType;
+    typedef typename Model :: Traits :: LimiterFunctionType  LimiterFunctionType;
   };
   
   
@@ -1189,12 +1183,17 @@ namespace Dune {
 
             // calculate difference 
             nbVal -= enVal;
+            //for( int r=0; r<dimRange; ++r ) 
+            //  if( std::abs( nbVal[ r ] ) < 1e-14 ) nbVal[ r ] = 0;
 
             // store difference of mean values 
             nbVals.push_back(nbVal);
             
             // calculate difference 
             nbBary -= enBary;
+
+            //for( int j=0; j<dim; ++j ) 
+            //  if( std::abs( nbBary[ j ] ) < 1e-14 ) nbBary[ j ] = 0;
 
             // store value 
             barys.push_back(nbBary);
@@ -1232,6 +1231,9 @@ namespace Dune {
 
             assert( lambda.two_norm () > 0 );
 
+            //for( int j=0; j<dim; ++j ) 
+            //  if( std::abs( lambda[ j ] ) < 1e-14 ) lambda[ j ] = 0;
+
             // store difference between bary centers 
             barys.push_back(lambda);
 
@@ -1252,12 +1254,12 @@ namespace Dune {
                                      enVal, nbVal);
               // calculate difference 
               nbVal -= enVal;
+              //for( int r=0; r<dimRange; ++r ) 
+              //  if( std::abs( nbVal[ r ] ) < 1e-14 ) nbVal[ r ] = 0;
             }
 
             // store value 
             nbVals.push_back( nbVal );
-            /////////////////////////////////
-
           } //end boundary
 
         } // end intersection iterator 
@@ -1340,6 +1342,7 @@ namespace Dune {
                        const RangeType& enVal,
                        const DomainType& enBary) const 
     {
+      abort();
       DeoModType D;
       FieldMatrix<double,dimDomain,dimDomain> A;
       RangeType b[dimDomain];
@@ -1449,12 +1452,6 @@ namespace Dune {
         }
         else 
         {
-          ////////////////////////////////////////////
-          // apply least squares approach here 
-          ////////////////////////////////////////////
-          LeastSquaresMatrix lsInverse ;
-          inverse = & lsInverse ;
-
           // apply least square by adding another point 
           // this should make the linear system solvable 
            
@@ -1490,6 +1487,11 @@ namespace Dune {
 
           for( ; checkIt != checkEnd; ++ checkIt )
           {
+            ////////////////////////////////////////////
+            // apply least squares approach here 
+            ////////////////////////////////////////////
+            LeastSquaresMatrix lsInverse ;
+
             // assign last element 
             nV[dim] = *checkIt ;
 
@@ -1552,7 +1554,7 @@ namespace Dune {
               continue ;
 
             // call limiter function 
-            const DomainFieldType localFactor = problem_.limiterFunction( g, d );
+            DomainFieldType localFactor = problem_.limiterFunction( g, d );
 
             // take minimum 
             minimalFactor = std::min( localFactor , minimalFactor );
@@ -1561,20 +1563,6 @@ namespace Dune {
           // scale linear function 
           D *= minimalFactor;
 #if 0
-          RangeFieldType minimalFactor_1 = 1;
-          RangeFieldType minimalFactor_2 = 1;
-          DomainType& D = deoMods[j][r];
-          
-          DomainType D_1 (D);
-          double length = D.two_norm() ;
-          if ( length > 1e-12 ) 
-          {
-            D_1 /= ( length );
-          }
-            
-          DomainType D_2 ( D );
-          D_2 -= D_1 ;
-
           /*
           if( length > 0 ) 
           {
