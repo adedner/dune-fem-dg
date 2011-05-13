@@ -564,9 +564,7 @@ namespace Dune {
       indicator_ = ind;
     }
 
-
     enum { Coarsen = -1 , None = 0, Refine = 1 };
-
 
     void adaptation(GridType& grid, 
                     const EntityType& en,
@@ -620,6 +618,14 @@ namespace Dune {
                    const RangeType& u ) const
     {
       return this->model_.physical( en, x, u );
+    }
+
+    /** \brief adjust average values, e.g. transform to primitive or something similar */
+    void adjustAverageValue( const EntityType& entity,
+                             const DomainType& xLocal,
+                             RangeType& u ) const
+    {
+      model_.adjustAverageValue( entity, xLocal, u );
     }
 
   public:
