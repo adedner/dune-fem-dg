@@ -85,9 +85,9 @@ namespace EulerFluxes {
               const NormalType& n,
               FRInt2Type<2>) const {
     // res = arg;
-    double a[2] = {res[idx_],res[idx_+1]};
-    res[idx_] = n[0]*a[0] + n[1]*a[1];
-    res[idx_+1] = -n[1]*a[0] + n[0]*a[1];
+    const double a[2] = { res[idx_], res[idx_+1] };
+    res[ idx_   ] =  n[0]*a[0] + n[1]*a[1];
+    res[ idx_+1 ] = -n[1]*a[0] + n[0]*a[1];
   }
   
   template <class FunctionSpaceT>
@@ -97,9 +97,9 @@ namespace EulerFluxes {
               FRInt2Type<3>) const {
     // res = arg;
 
-    double a[3]={res[idx_],res[idx_+1],res[idx_+2]};
+    const double a[3] = { res[idx_], res[idx_+1], res[idx_+2] };
  
-    double d = std::sqrt(n[0]*n[0]+n[1]*n[1]);
+    const double d = std::sqrt(n[0]*n[0]+n[1]*n[1]);
 
     if (d > 1.0e-8) 
     {
@@ -139,8 +139,8 @@ namespace EulerFluxes {
   {
     // res = arg;
 
-    double a[2] = {res[idx_],res[idx_+1]};
-    res[idx_] = n[0]*a[0] - n[1]*a[1];
+    const double a[2] = { res[idx_], res[idx_+1] };
+    res[idx_  ] = n[0]*a[0] - n[1]*a[1];
     res[idx_+1] = n[1]*a[0] + n[0]*a[1];
   }
 
