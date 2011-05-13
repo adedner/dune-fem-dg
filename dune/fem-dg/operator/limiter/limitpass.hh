@@ -796,7 +796,7 @@ namespace Dune {
                 const int fQ = -1) :
       BaseType(pass, spc),
       caller_(problem),
-      problem_(problem),
+      discreteModel_(problem),
       currentTime_(0.0),
       arg_(0),
       dest_(0),
@@ -1004,7 +1004,7 @@ namespace Dune {
       caller_.setTime(currentTime_);
 
       // calculate maximal indicator (if necessary)
-      problem_.indicatorMax();
+      discreteModel_.indicatorMax();
 
       const int numLevels = gridPart_.grid().maxLevel() + 1;
       // check size of matrix cache vec
@@ -1116,7 +1116,7 @@ namespace Dune {
       }
 
       // check average value
-      if (! problem_.physical(en, x, enVal) ) 
+      if (! discreteModel_.physical(en, x, enVal) ) 
       {
         std::cerr << "Average Value "
                   << enVal
@@ -1127,7 +1127,7 @@ namespace Dune {
         assert( false );
         abort();
       }
-      assert( (problem_.hasPhysical()) ? (problem_.physical(en, x, enVal)) : true );
+      assert( (discreteModel_.hasPhysical()) ? (discreteModel_.physical(en, x, enVal)) : true );
 
       stepTime_[0] += indiTime.elapsed();
       indiTime.reset();
@@ -1246,10 +1246,10 @@ namespace Dune {
             const FaceDomainType localPoint 
                   ( interGeo.local( lambda + enBary ) );
             
-            if( problem_.hasBoundaryValue(intersection, currentTime_, 
+            if( discreteModel_.hasBoundaryValue(intersection, currentTime_, 
                                           localPoint) )
             {
-              problem_.boundaryValue(intersection, currentTime_, 
+              discreteModel_.boundaryValue(intersection, currentTime_, 
                                      localPoint, 
                                      enVal, nbVal);
               // calculate difference 
@@ -1282,7 +1282,7 @@ namespace Dune {
         }
 
         // call problem adaptation for setting refinement marker 
-        problem_.adaptation( gridPart_.grid() , en, shockIndicator, adaptIndicator );
+        discreteModel_.adaptation( gridPart_.grid() , en, shockIndicator, adaptIndicator );
       }
 
       // if nothing to limit then just return here
@@ -1552,7 +1552,7 @@ namespace Dune {
             // then neglect this direction since it does not give 
             // valuable contribution to the linear function 
             // call limiter function 
-            DomainFieldType localFactor = problem_.limiterFunction( g, d );
+            DomainFieldType localFactor = discreteModel_.limiterFunction( g, d );
 
             const DomainFieldType factor = (g*g) / length2 ;
             //const DomainFieldType factor = (g*g) / length2;
@@ -1593,8 +1593,8 @@ namespace Dune {
             const DomainFieldType g_2 = D_2 * barys[k];
 
             // call limiter function 
-            const DomainFieldType localFactor_1 = problem_.limiterFunction( g_1, d );
-            const DomainFieldType localFactor_2 = problem_.limiterFunction( g_2, d );
+            const DomainFieldType localFactor_1 = discreteModel_.limiterFunction( g_1, d );
+            const DomainFieldType localFactor_2 = discreteModel_.limiterFunction( g_2, d );
 
             // take minimum 
             minimalFactor_1 = std::min( localFactor_1 , minimalFactor_1 );
@@ -1663,7 +1663,7 @@ namespace Dune {
         // warning!!! caching of geo can be more efficient
         //const DomainType& xgl = geo.global( quad[l] );
         // check data 
-        if ( ! problem_.physical( en, quad.point(l), u ) ) 
+        if ( ! discreteModel_.physical( en, quad.point(l), u ) ) 
         {
           // return notPhysical 
           return false;
@@ -1680,7 +1680,7 @@ namespace Dune {
                        const LocalFunctionImp& uEn) const 
     {
       enum { dim = dimension };
-      if( problem_.hasPhysical() )
+      if( discreteModel_.hasPhysical() )
       {  
 #if 1
         // use LagrangePointSet to evaluate on corners of the 
@@ -1878,8 +1878,12 @@ namespace Dune {
           // here evaluateScalar could be used 
           val[r] = lf[dofIdx] * phi[0];
         }
+
+        // possibly adjust average value, e.g. calculate primitive vairables and so on 
+        discreteModel_.adjustAverageValue( en, quad.point(0), val );
+
         // return whether value is physical 
-        notphysical = ( problem_.hasPhysical() && ! problem_.physical(en, quad.point(0), val) );
+        notphysical = ( discreteModel_.hasPhysical() && ! discreteModel_.physical(en, quad.point(0), val) );
       }
       else 
       {
@@ -1899,8 +1903,11 @@ namespace Dune {
           // evaluate function  
           lf.evaluate( quad[qp] , tmp );
 
+          // possibly adjust average value, e.g. calculate primitive vairables and so on 
+          discreteModel_.adjustAverageValue( en, quad.point( qp ), val );
+
           // check whether value is physical 
-          if ( problem_.hasPhysical() && ! problem_.physical(en, quad.point(qp), tmp) )
+          if ( discreteModel_.hasPhysical() && ! discreteModel_.physical(en, quad.point(qp), tmp) )
           {
             notphysical = true;
           }
@@ -1915,8 +1922,6 @@ namespace Dune {
         val *= 1.0/geo.volume();
       }
 
-      // possibly adjust average value, e.g. calculate primitive vairables and so on 
-      problem_.adjustAverageValue( val );
       return notphysical;
     }
 
@@ -2178,7 +2183,7 @@ namespace Dune {
         // check whether we have an inflow intersection or not 
         typedef TwistUtility<GridType> TwistUtilityType;
         
-        const int quadOrd = problem_.hasPhysical() ? faceQuadOrd_ : 0;
+        const int quadOrd = discreteModel_.hasPhysical() ? faceQuadOrd_ : 0;
         
         // flag to trigger inflow intersection 
         bool inflowIntersection = false;
@@ -2374,7 +2379,7 @@ namespace Dune {
     
   private:
     mutable DiscreteModelCallerType caller_;
-    const DiscreteModelType& problem_; 
+    const DiscreteModelType& discreteModel_; 
     mutable double currentTime_;
     
     mutable ArgumentType* arg_;
