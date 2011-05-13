@@ -203,31 +203,33 @@ namespace Fem {
 
     /** \brief check physical values */
     template <class ArgumentTuple>
-    bool checkPhysical( const EntityType& en,
-                   const DomainType& x,
-                   const ArgumentTuple& u ) const
+    bool checkPhysical( const EntityType& entity,
+                        const DomainType& xLocal,
+                        const ArgumentTuple& u ) const
     { 
-      return physical( Element<0> :: get( u ) );
+      return physical( entity, xLocal, Element<0> :: get( u ) );
     }
 
     /** \brief check physical values */
-    bool physical( const EntityType& en,
-                   const DomainType& x,
+    bool physical( const EntityType& entity,
+                   const DomainType& xLocal,
                    const RangeType& u ) const
     { 
       return physical( u );
     }
 
-    /** \brief check physical values */
-    bool physical(const RangeType& u) const
-    {
+    /** \brief returns true if value is in set of states */
+    bool physical( const RangeType& u ) const
+    { 
       return model_.physical( u );
     }
 
-    /** \brief check physical values */
-    void adjustAverageValue( RangeType& u ) const
+    /** \brief adjust average values, e.g. transform to primitive or something similar */
+    void adjustAverageValue( const EntityType& entity,
+                             const DomainType& xLocal,
+                             RangeType& u ) const
     {
-      return model_.adjustAverageValue( u );
+      model_.adjustAverageValue( entity, xLocal, u );
     }
   };
 
