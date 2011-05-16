@@ -1,4 +1,4 @@
-SUBDIRS = operator pass solver misc 
+SUBDIRS = operator pass solver misc models
 include $(top_srcdir)/am/global-rules
 
 femdgdir = $(includedir)/dune/fem-dg
