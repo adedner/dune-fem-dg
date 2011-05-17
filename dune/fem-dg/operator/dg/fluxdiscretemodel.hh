@@ -507,13 +507,18 @@ namespace Dune {
                       uLeft, jacLeft, gLeft, gDiffLeft );
                                   
       // diffusion
-
+      
       double diffTimeStep = 0.0;
 
-      if( diffusion ) 
+      bool hasBoundaryValue = 
+        model_.hasBoundaryValue( it, time, faceQuadInner.localPoint(0) );
+
+      if( diffusion && hasBoundaryValue ) 
       {
+        // diffusion boundary flux for Dirichlet boundaries 
         RangeType dLeft;
-        diffTimeStep = diffFlux_.boundaryFlux(it, *this,
+        diffTimeStep = diffFlux_.boundaryFlux(it, 
+                               *this, 
                                time, faceQuadInner, quadPoint,
                                uLeft[ uVar ], uBnd_, // is set during call of  BaseType::boundaryFlux
                                uLeft[ sigmaVar ], 
@@ -521,11 +526,15 @@ namespace Dune {
                                gDiffLeft);
         gLeft += dLeft;
       }
-      else
+      else if ( diffusion )
       {
+        RangeType diffBndFlux;
+        model_.diffusionBoundaryFlux( it, time, faceQuadInner.localPoint(quadPoint),
+                                      uLeft[uVar], jacLeft[uVar], diffBndFlux );
+        gLeft += diffBndFlux;
       }
-
-      gDiffLeft = 0;
+      else
+        gDiffLeft = 0;
 
       maxAdvTimeStep_  = std::max( wave, maxAdvTimeStep_ );
       maxDiffTimeStep_ = std::max( diffTimeStep, maxDiffTimeStep_ );

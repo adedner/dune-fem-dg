@@ -367,8 +367,12 @@ namespace Dune {
         gLeft += dLeft;
       }
       else if ( diffusion )
+      {
+        RangeType diffBndFlux;
         model_.diffusionBoundaryFlux( it, time, faceQuadInner.localPoint(quadPoint),
-                                      uLeft[uVar], jacLeft[uVar], gLeft );
+                                      uLeft[uVar], jacLeft[uVar], diffBndFlux );
+        gLeft += diffBndFlux;
+      }
       else
         gDiffLeft = 0;
 
