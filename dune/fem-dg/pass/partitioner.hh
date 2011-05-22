@@ -1,5 +1,5 @@
-#ifndef DUNE_ALUCOMMUNICATOR_HH
-#define DUNE_ALUCOMMUNICATOR_HH
+#ifndef DUNE_THREADPARTITIONER_HH
+#define DUNE_THREADPARTITIONER_HH
 
 //- system includes 
 #include <string>
@@ -19,7 +19,7 @@
 namespace Dune {
 
 template < class GridPartImp >
-class Partitioner 
+class ThreadPartitioner 
 {
 
 protected:  
@@ -59,7 +59,7 @@ protected:
   std::vector< int > partition_;
 
 public:
-  Partitioner( const GridPartType& gridPart, const int pSize )
+  ThreadPartitioner( const GridPartType& gridPart, const int pSize )
     : mpAccess_( MPIHelper::getCommunicator() ),
       db_ (),
       gridPart_( gridPart )
@@ -199,6 +199,7 @@ public:
 
   bool serialPartition(const bool useKway = true ) 
   {
+#ifdef ITERATORS_WITHOUT_MYALLOC
     if( pSize_ > 1 ) 
     {
       if( useKway ) 
@@ -220,6 +221,7 @@ public:
       return partition_.size() > 0;
     }
     else 
+#endif 
     {
       partition_.resize( indexSet_.size( 0 ) );
       for( size_t i =0; i<partition_.size(); ++i )

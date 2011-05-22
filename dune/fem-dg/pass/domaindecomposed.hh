@@ -94,7 +94,7 @@ namespace Dune {
           const size_t maxThreads = ThreadManager :: maxThreads() ;
 
           // create partitioner 
-          Partitioner< GridPartType > db( space_.gridPart() , maxThreads );
+          ThreadPartitioner< GridPartType > db( space_.gridPart() , maxThreads );
           // do partitioning 
           db.serialPartition( false );
 
