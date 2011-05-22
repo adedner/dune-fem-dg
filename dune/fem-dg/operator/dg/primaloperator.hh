@@ -163,8 +163,8 @@ namespace Dune {
    *  \tparam advection Advection
    */
   template< class Model, class NumFlux, 
-            DGDiffusionFluxIdentifier diffFluxId, // dummy parameter 
-            int polOrd, bool advection = true >
+            DGDiffusionFluxIdentifier diffFluxId, // diffusion flux identifier 
+            int polOrd, bool advection = true, bool diffusion = false >
   class DGLimitedAdvectionOperator :
     public SpaceOperatorInterface 
       < typename PassTraits< Model, Model::Traits::dimRange, polOrd > :: DestinationType >
@@ -179,10 +179,8 @@ namespace Dune {
     typedef PassTraits< Model, dimRange, polOrd >                       PassTraitsType;
 
     // The model of the advection pass (advectPassId)
-    //typedef AdvectionModel
-    //  < Model, NumFluxType, polOrd, limitPassId, -1, true >             DiscreteModel1Type;
     typedef AdvectionDiffusionDGPrimalModel
-      < Model, NumFluxType, diffFluxId, polOrd, limitPassId, advection, false > 
+      < Model, NumFluxType, diffFluxId, polOrd, limitPassId, advection, diffusion > 
                                                                         DiscreteModel1Type;
     typedef typename DiscreteModel1Type :: DiffusionFluxType            DiffusionFluxType;
     typedef typename DiscreteModel1Type :: AdaptationHandlerType        AdaptationHandlerType;
