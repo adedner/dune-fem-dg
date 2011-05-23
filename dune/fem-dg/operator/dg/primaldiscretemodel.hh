@@ -350,31 +350,35 @@ namespace Dune {
        ****************************/
       double diffTimeStep = 0.0;
 
-      bool hasBoundaryValue = 
+      const int hasBoundaryValue = 
         model_.hasBoundaryValue( it, time, faceQuadInner.localPoint(0) );
 
       if( diffusion && hasBoundaryValue ) 
       {
         // diffusion boundary flux for Dirichlet boundaries 
         RangeType dLeft;
-        diffTimeStep = diffFlux_.boundaryFlux(it, 
-                               *this, 
-                               time, faceQuadInner, quadPoint,
-                               uLeft[ uVar ], uBnd_, // is set during call of  BaseType::boundaryFlux
-                               jacLeft[ uVar ], 
-                               dLeft,
-                               gDiffLeft);
+        diffTimeStep = 
+          diffFlux_.boundaryFlux(it, 
+                                 *this, 
+                                 time, faceQuadInner, quadPoint,
+                                 uLeft[ uVar ], uBnd_, // is set during call of  BaseType::boundaryFlux
+                                 jacLeft[ uVar ], 
+                                 dLeft,
+                                 gDiffLeft);
         gLeft += dLeft;
       }
-      else if ( diffusion )
+
+      if ( diffusion && hasBoundaryValue != 1 )
       {
         RangeType diffBndFlux;
         model_.diffusionBoundaryFlux( it, time, faceQuadInner.localPoint(quadPoint),
                                       uLeft[uVar], jacLeft[uVar], diffBndFlux );
         gLeft += diffBndFlux;
       }
-      else
+
+      if( ! diffusion && ! hasBoundaryValue )
         gDiffLeft = 0;
+
 
       maxAdvTimeStep_  = std::max( wave, maxAdvTimeStep_ );
       maxDiffTimeStep_ = std::max( diffTimeStep, maxDiffTimeStep_ );
