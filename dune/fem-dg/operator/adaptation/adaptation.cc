@@ -44,7 +44,7 @@ AdaptationHandler (GridType &grid,
   coarsestLevel_ = 0;
 
   // read levels 
-  finestLevel_ = Parameter :: getValue("fem.adaptation.finestLevel", finestLevel_ );
+  finestLevel_ = Parameter :: getValue< int >( "fem.adaptation.finestLevel" );
   coarsestLevel_ = Parameter :: getValue("fem.adaptation.coarsestLevel", coarsestLevel_ );
 
   // apply grid specific level count 
