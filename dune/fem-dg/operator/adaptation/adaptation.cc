@@ -23,20 +23,20 @@ AdaptationHandler (GridType &grid,
   , localNumElements_(0)
   , maxLevelCounter_()
 {
-  const bool verboseOutput = (grid_.comm().rank() == 0);
-
-  // get global tolerance 
-  double tol = Parameter :: getValue< double >("femhowto.refineTolerance", 0.0 );
-  globalTolerance_ = tol;
-  
   // get end time 
   double T = Parameter :: getValue< double >("femhowto.endTime" );
   endTime_ = T;
 
+  const bool verboseOutput = Parameter :: verbose() ;
+
+  // get global tolerance 
+  double tol = Parameter :: getValue< double >("fem-dg.adaptation.refineTolerance", 0.0 );
+  globalTolerance_ = tol;
+  
   // set default values
   initialTheta_ = 0.05;
   coarsenTheta_ = 0.1;
-  coarsenTheta_ = Parameter :: getValue< double >("femhowto.coarseTolerance", 0.0);
+  coarsenTheta_ = Parameter :: getValue< double >("fem-dg.adaptation.coarseTolerance", 0.0);
   
   alphaSigSet_ = 0.01;
   maxLevFlag_ = 1;
@@ -44,8 +44,8 @@ AdaptationHandler (GridType &grid,
   coarsestLevel_ = 0;
 
   // read levels 
-  finestLevel_ = Parameter :: getValue("femhowto.finestLevel", finestLevel_ );
-  coarsestLevel_ = Parameter :: getValue("femhowto.coarsestLevel", coarsestLevel_ );
+  finestLevel_ = Parameter :: getValue("fem-dg.adaptation.finestLevel", finestLevel_ );
+  coarsestLevel_ = Parameter :: getValue("fem-dg.adaptation.coarsestLevel", coarsestLevel_ );
 
   // apply grid specific level count 
   finestLevel_   *= DGFGridInfo<GridType>::refineStepsForHalf();
@@ -104,7 +104,7 @@ addToLocalIndicator(const FullRangeType& error)
 {
   //std::cout << "Add val to indicator " << val << "\n";
   //if( val < 0.0 ) abort();
-  enIndicator_[0] += error[ 0 ];  
+  enIndicator_[0] += error.two_norm2();  
   return;
 }
 
@@ -116,7 +116,7 @@ addToNeighborIndicator(const FullRangeType& error)
 {
   //std::cout << "Add val to nb indicator " << val << "\n";
   //if( val < 0.0 ) abort();
-  nbIndicator_[0] += error[ 0 ];  
+  nbIndicator_[0] += error.two_norm2();  
   return;
 }
 
@@ -231,6 +231,7 @@ getLocalTolerance () const
   const double localInTimeTol = getLocalInTimeTolerance ();
   double globalErr = getMaxEstimator(); 
   
+  /*
   if((double) maxLevelCounter_[finestLevel_] < 
         0.1 * ((double) globalNumberOfElements()))
   {
@@ -241,17 +242,28 @@ getLocalTolerance () const
   {
     globalTolerance_ *= 10.0;
   }
+  */
+
+  const double globalNumElem = globalNumberOfElements();
 
   //double localTol = localInTimeTol /((double) globalNumberOfElements());
-  double localTol = globalTolerance_/ ((double) globalNumberOfElements()); 
+  double localTol = globalTolerance_/ globalNumElem ;
 
   if( Parameter :: verbose() )
   {
+    std::cout << "Level counters: ";
+    for(size_t i=0; i<maxLevelCounter_.size(); ++i ) 
+    {
+      double percent = maxLevelCounter_[ i ]/ globalNumElem ;
+      std::cout << "Level[ " << i << " ] = " << percent << "  ";
+    }
+    std::cout << std::endl;
     std::cout << "   LocalEst_max = " <<  globalErr
         << "   Tol_local = " << localTol 
         << "   Tol = " << localInTimeTol 
-        << "   Num El: " <<  globalNumberOfElements() << "\n";
+        << "   Num El: " <<  globalNumElem << "\n";
   }
+
   return localTol;
 }
 
@@ -277,22 +289,24 @@ markEntities ()
 
     // get local error indicator 
     const double localIndicator = getLocalIndicator(entity);
+    // get entity level 
+    const int level = entity.level() ;
     
     // if indicator larger than localTol mark for refinement 
-    if( (localIndicator > refineTol) && (entity.level() < finestLevel_) )
+    if( (localIndicator > refineTol) && (level < finestLevel_) )
     {
       // mark for refinement 
-      grid_.mark(1, entity);
+      grid_.mark(REFINE, entity);
     }
-    else if ( (localIndicator < coarsenTol) && (entity.level() > coarsestLevel_) )
+    else if ( (localIndicator < coarsenTol) && (level > coarsestLevel_) )
     {
       // mark for coarsening 
-      grid_.mark(-1, entity);
+      grid_.mark(COARSEN, entity);
     }
     else
     {
       // for for nothing 
-      grid_.mark(0, entity);
+      grid_.mark(NONE, entity);
     }
   }
   return;
@@ -329,9 +343,11 @@ resetStatus()
   clearIndicator();
 
   // re-calculate number of leaf elements 
+  // and number of level elements 
   globalNumElements_ = countElements();
+
   // output new number of elements 
-  if( grid_.comm().rank() == 0)
+  if( Parameter :: verbose () )
   {
     std::cout << "   Adaptation: Num El = " << globalNumElements_ << "\n";
   }
@@ -346,7 +362,7 @@ countElements() const
   if(  maxLevelCounter_.size() > 0)
     maxLevelCounter_.clear();
 
-  maxLevelCounter_.resize(finestLevel_+1);
+  maxLevelCounter_.resize(finestLevel_ + 1);
   for(size_t i=0; i<maxLevelCounter_.size(); ++i)
     maxLevelCounter_[i] = 0;
   
@@ -357,9 +373,9 @@ countElements() const
   for(IteratorType it = indicatorSpace_.begin(); it != endit; ++it)
   {
     ++count;
-    EntityType& en = *it;
-    if( en.level() < (int) maxLevelCounter_.size())
-      ++maxLevelCounter_[en.level()];
+    const int level = it->level();
+    assert( level < int(maxLevelCounter_.size()) );
+    ++maxLevelCounter_[ level ];
   }
 
   // number of elements that I have

@@ -30,6 +30,7 @@ template <class GridImp, class ProblemFunctionSpace >
 class AdaptationHandler
 {
 public:
+  enum { COARSEN = -1, NONE = 0, REFINE = 1 };
 
   typedef GridImp GridType ;
   typedef DGAdaptiveLeafGridPart< GridType > GridPartType ;
