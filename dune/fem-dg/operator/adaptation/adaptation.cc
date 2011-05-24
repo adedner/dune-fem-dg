@@ -30,13 +30,13 @@ AdaptationHandler (GridType &grid,
   const bool verboseOutput = Parameter :: verbose() ;
 
   // get global tolerance 
-  double tol = Parameter :: getValue< double >("fem-dg.adaptation.refineTolerance", 0.0 );
+  double tol = Parameter :: getValue< double >("fem.adaptation.refineTolerance", 0.0 );
   globalTolerance_ = tol;
   
   // set default values
   initialTheta_ = 0.05;
   coarsenTheta_ = 0.1;
-  coarsenTheta_ = Parameter :: getValue< double >("fem-dg.adaptation.coarseTolerance", 0.0);
+  coarsenTheta_ = Parameter :: getValue< double >("fem.adaptation.coarsenPercent", 0.0);
   
   alphaSigSet_ = 0.01;
   maxLevFlag_ = 1;
@@ -44,8 +44,8 @@ AdaptationHandler (GridType &grid,
   coarsestLevel_ = 0;
 
   // read levels 
-  finestLevel_ = Parameter :: getValue("fem-dg.adaptation.finestLevel", finestLevel_ );
-  coarsestLevel_ = Parameter :: getValue("fem-dg.adaptation.coarsestLevel", coarsestLevel_ );
+  finestLevel_ = Parameter :: getValue("fem.adaptation.finestLevel", finestLevel_ );
+  coarsestLevel_ = Parameter :: getValue("fem.adaptation.coarsestLevel", coarsestLevel_ );
 
   // apply grid specific level count 
   finestLevel_   *= DGFGridInfo<GridType>::refineStepsForHalf();
