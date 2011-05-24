@@ -350,7 +350,7 @@ namespace Dune {
        ****************************/
       double diffTimeStep = 0.0;
 
-      const int hasBoundaryValue = 
+      const bool hasBoundaryValue = 
         model_.hasBoundaryValue( it, time, faceQuadInner.localPoint(0) );
 
       if( diffusion && hasBoundaryValue ) 
@@ -367,18 +367,15 @@ namespace Dune {
                                  gDiffLeft);
         gLeft += dLeft;
       }
-
-      if ( diffusion && hasBoundaryValue != 1 )
+      else if ( diffusion ) 
       {
         RangeType diffBndFlux;
         model_.diffusionBoundaryFlux( it, time, faceQuadInner.localPoint(quadPoint),
                                       uLeft[uVar], jacLeft[uVar], diffBndFlux );
         gLeft += diffBndFlux;
       }
-
-      if( ! diffusion && ! hasBoundaryValue )
+      else 
         gDiffLeft = 0;
-
 
       maxAdvTimeStep_  = std::max( wave, maxAdvTimeStep_ );
       maxDiffTimeStep_ = std::max( diffTimeStep, maxDiffTimeStep_ );
