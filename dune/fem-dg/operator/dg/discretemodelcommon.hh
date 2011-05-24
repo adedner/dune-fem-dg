@@ -771,9 +771,12 @@ namespace Dune {
 
         for( int i=0; i<dimRange; ++i ) 
         {
+          error[ i ] = std::abs( error[ i ] );
+          /*
           // otherwise ul = ur 
           if( std::abs( error[ i ] > 1e-12 ) )
             error[ i ] /= (uLeft[ uVar ][i] - uRight[ uVar ][i] );
+            */
         }
 
         const DomainType normal = it.integrationOuterNormal( faceQuadInner.localPoint( quadPoint ) );
