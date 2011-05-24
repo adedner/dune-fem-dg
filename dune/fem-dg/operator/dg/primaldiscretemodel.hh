@@ -552,7 +552,7 @@ namespace Dune {
     typedef typename BaseType :: FaceDomainType  FaceDomainType;
 
     typedef typename BaseType :: Intersection        Intersection;
-    typedef typename BaseType :: Entity              EntityType;
+    typedef typename BaseType :: EntityType          EntityType;
     typedef typename Traits :: RangeType             RangeType;
     typedef typename Traits :: JacobianRangeType     JacobianRangeType;
 

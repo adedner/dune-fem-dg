@@ -748,18 +748,23 @@ namespace Dune {
 
       if( BaseType :: advection && adaptation_ ) 
       {
+        RangeType error ;
         RangeType v ;
-        // v = g( ul, ul ) = f( ul ) 
-        model_.advection( inside(), time, faceQuadInner.point( quadPoint ), uLeft[ uVar ], v);
+        // v = g( ul, ul ) = f( ul )
+        numflux_.numericalFlux(it, inside(), outside(),
+                               time, faceQuadInner, faceQuadOuter, quadPoint, 
+                               uLeft[ uVar ], uLeft[ uVar ], v, error);
 
         RangeType w ;
         // v = g( ur, ur ) = f( ur ) 
-        model_.advection( outside(), time, faceQuadOuter.point( quadPoint ), uRight[ uVar ], w);
+        numflux_.numericalFlux(it, inside(), outside(),
+                               time, faceQuadInner, faceQuadOuter, quadPoint, 
+                               uRight[ uVar ], uRight[ uVar ], w, error);
 
         // err = 2 * g(u,v) - g(u,u) - g(v,v) 
         // 2 * g(u,v) = gLeft + gRight
-        RangeType error ( gLeft );
-        error += gRight;  // gRight +  gLeft  = 2*g(v,w) 
+        error  = gLeft ;
+        error += gRight ;  // gRight +  gLeft  = 2*g(v,w) 
 
         error -= v;
         error -= w;
@@ -768,7 +773,7 @@ namespace Dune {
         {
           // otherwise ul = ur 
           if( std::abs( error[ i ] > 1e-12 ) )
-            error[ i ] /= (uLeft[ uVar ] - uRight[ uVar ] );
+            error[ i ] /= (uLeft[ uVar ][i] - uRight[ uVar ][i] );
         }
 
         const DomainType normal = it.integrationOuterNormal( faceQuadInner.localPoint( quadPoint ) );
@@ -809,6 +814,7 @@ namespace Dune {
     using BaseType :: inside ;
     using BaseType :: outside ;
     using BaseType :: model_ ;
+    using BaseType :: numflux_ ;
 
     AdaptationHandlerType* adaptation_;
     double weight_ ;
