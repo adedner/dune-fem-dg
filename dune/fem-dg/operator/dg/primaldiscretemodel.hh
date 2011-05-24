@@ -20,52 +20,16 @@
 
 namespace Dune {
 
-  // AdvectionDiffusionDGPrimalModel
-  //--------------------------------
+  // AdvectionDiffusionDGPrimalModelBase
+  //------------------------------------
 
-  //! \brief forward declaration
-  template <class Model, class NumFlux, 
-            DGDiffusionFluxIdentifier diffFluxId,
-            int polOrd, int passUId,
-            bool returnAdvectionPart, bool returnDiffsuionPart >
-  class AdvectionDiffusionDGPrimalModel;
-
-
-  // AdvectionDiffusionDGPrimalTraits
-  //---------------------------------
-
-  template <class Model, class NumFlux,
-            DGDiffusionFluxIdentifier diffFluxId,
-            int polOrd, int passUId,
-            bool returnAdvectionPart, bool returnDiffusionPart >
-  struct AdvectionDiffusionDGPrimalTraits 
-   : public AdvectionTraits< Model, NumFlux, polOrd, passUId, -1, returnAdvectionPart> 
-  {
-    typedef AdvectionDiffusionDGPrimalModel
-      < Model, NumFlux, diffFluxId, polOrd, passUId, 
-        returnAdvectionPart, returnDiffusionPart >                   DGDiscreteModelType;
-  };
-
-
-  // AdvectionDiffusionDGPrimalModel
-  //--------------------------------
-
-  template< class Model, 
-            class NumFlux, 
-            DGDiffusionFluxIdentifier diffFluxId,
-            int polOrd, 
-            int passUId,
-            bool returnAdvectionPart, bool returnDiffusionPart >
-  class AdvectionDiffusionDGPrimalModel :
-    public AdvectionModel< Model, NumFlux, polOrd, passUId, -1, returnAdvectionPart > 
+  template< class TraitsImp >
+  class AdvectionDiffusionDGPrimalModelBase :
+    public TraitsImp :: AdvectionModelType 
   {
   public:
-    typedef AdvectionDiffusionDGPrimalTraits
-      < Model, NumFlux, diffFluxId, polOrd, passUId, returnAdvectionPart, returnDiffusionPart >
-                                                           Traits; /*@LST0E@*/
-
-    typedef AdvectionModel< Model, NumFlux, polOrd, 
-                            passUId, -1, returnAdvectionPart>    BaseType;
+    typedef TraitsImp  Traits ;
+    typedef typename Traits :: AdvectionModelType  BaseType;
 
     using BaseType :: uVar; 
     using BaseType :: inside;
@@ -77,11 +41,16 @@ namespace Dune {
     enum { dimDomain = Traits :: dimDomain };
     enum { dimRange  = Traits :: dimRange };
 
-    enum { advection = returnAdvectionPart }; // true if advection is enabled 
-    enum { diffusion = returnDiffusionPart }; // this should be disabled for LDG 
+    enum { advection = Traits :: advection }; // true if advection is enabled 
+    enum { diffusion = Traits :: diffusion }; // this should be disabled for LDG 
 
-    typedef FieldVector< double, dimDomain >               DomainType;
-    typedef FieldVector< double, dimDomain-1 >             FaceDomainType;
+    enum { passUId = Traits :: passUId };
+
+    typedef typename BaseType :: DomainType     DomainType;
+    typedef typename BaseType :: FaceDomainType FaceDomainType;
+
+    typedef typename BaseType :: ModelType    ModelType ;
+    typedef typename BaseType :: NumFluxType  NumFluxType ;
 
 #if defined TESTOPERATOR
 #warning NO MASSOPERATOR APPLIED
@@ -104,23 +73,23 @@ namespace Dune {
     typedef typename Traits :: DiscreteFunctionSpaceType DiscreteFunctionSpaceType;
 
     // type of diffusion flux implementation 
-    typedef DGPrimalDiffusionFlux< DiscreteFunctionSpaceType, Model, diffFluxId > DiffusionFluxType;
+    typedef DGPrimalDiffusionFlux< DiscreteFunctionSpaceType, ModelType, Traits :: diffFluxId > DiffusionFluxType;
 
     enum { evaluateJacobian = DiffusionFluxType :: evaluateJacobian  }; // we need to evaluate jacobians here
   public:
     /**
      * @brief constructor
      */
-    AdvectionDiffusionDGPrimalModel(const Model& mod,
-                                    const NumFlux& numf,
-                                    const DiffusionFluxType& diffflux )
+    AdvectionDiffusionDGPrimalModelBase(const ModelType& mod,
+                                        const NumFluxType& numf,
+                                        const DiffusionFluxType& diffflux )
       : BaseType( mod, numf ),
         diffFlux_( diffflux )
     {
     }
 
     //! copy constructor (for thread parallel progs mainly)
-    AdvectionDiffusionDGPrimalModel(const AdvectionDiffusionDGPrimalModel& other ) 
+    AdvectionDiffusionDGPrimalModelBase(const AdvectionDiffusionDGPrimalModelBase& other ) 
       : BaseType( other ),
         diffFlux_( other.diffFlux_ )
     {
@@ -373,6 +342,7 @@ namespace Dune {
         model_.diffusionBoundaryFlux( it, time, faceQuadInner.localPoint(quadPoint),
                                       uLeft[uVar], jacLeft[uVar], diffBndFlux );
         gLeft += diffBndFlux;
+        // gDiffLeft not set here ????
       }
       else 
         gDiffLeft = 0;
@@ -426,6 +396,256 @@ namespace Dune {
     // defined in AdvectionModel 
     using BaseType :: maxAdvTimeStep_ ;
     using BaseType :: maxDiffTimeStep_ ;
+  };                                              /*@LST0E@*/
+
+
+
+  ///////////////////////////////////////////////////////////////////////
+  ///////////////////////////////////////////////////////////////////////
+  ///////////////////////////////////////////////////////////////////////
+  ///////////////////////////////////////////////////////////////////////
+  ///////////////////////////////////////////////////////////////////////
+
+
+  // AdvectionDiffusionDGPrimalModel
+  //--------------------------------
+
+  //! \brief forward declaration
+  template <class Model, class NumFlux, 
+            DGDiffusionFluxIdentifier diffFluxId,
+            int polOrd, int passUId,
+            bool returnAdvectionPart, bool returnDiffsuionPart >
+  class AdvectionDiffusionDGPrimalModel;
+
+
+  // AdvectionDiffusionDGPrimalTraits
+  //---------------------------------
+
+  template <class Model, class NumFlux,
+            DGDiffusionFluxIdentifier dFluxId,
+            int polOrd, int pUId,
+            bool returnAdvectionPart, bool returnDiffusionPart >
+  struct AdvectionDiffusionDGPrimalTraits 
+   : public AdvectionTraits< Model, NumFlux, polOrd, pUId, -1, returnAdvectionPart> 
+  {
+    static const DGDiffusionFluxIdentifier diffFluxId = dFluxId ;
+
+    enum { advection = returnAdvectionPart };
+    enum { diffusion = returnDiffusionPart };
+
+    enum { passUId = pUId };
+
+    // type of base class 
+    typedef AdvectionModel< Model, NumFlux, polOrd, 
+        passUId, -1, returnAdvectionPart >     AdvectionModelType ;
+
+    // type of my discrete model 
+    typedef AdvectionDiffusionDGPrimalModel
+      < Model, NumFlux, diffFluxId, polOrd, passUId, 
+        returnAdvectionPart, returnDiffusionPart >                   DGDiscreteModelType;
+  };
+
+  // AdvectionDiffusionDGPrimalModel
+  //--------------------------------
+
+  template< class Model, 
+            class NumFlux, 
+            DGDiffusionFluxIdentifier diffFluxId,
+            int polOrd, 
+            int passUId,
+            bool returnAdvectionPart, bool returnDiffusionPart >
+  class AdvectionDiffusionDGPrimalModel :
+    public AdvectionDiffusionDGPrimalModelBase< 
+              AdvectionDiffusionDGPrimalTraits < Model, NumFlux, diffFluxId, 
+              polOrd, passUId, returnAdvectionPart, returnDiffusionPart > > 
+  {
+  public:
+    typedef AdvectionDiffusionDGPrimalTraits
+      < Model, NumFlux, diffFluxId, polOrd, passUId, 
+        returnAdvectionPart, returnDiffusionPart >   Traits;
+
+    typedef AdvectionDiffusionDGPrimalModelBase< Traits > BaseType ;
+    typedef typename BaseType :: DiffusionFluxType  DiffusionFluxType ;
+
+    AdvectionDiffusionDGPrimalModel(const Model& mod,
+                                    const NumFlux& numf,
+                                    const DiffusionFluxType& diffflux )
+      : BaseType( mod, numf, diffflux )
+    {
+    }
+  };
+
+
+  ///////////////////////////////////////////////////////////////////////
+  //
+  // AdvectionDiffusionDGPrimalTraits
+  //
+  //////////////////////////////////////////////////////////////////////
+
+  // AdvectionDiffusionDGPrimalModel
+  //--------------------------------
+
+  //! \brief forward declaration
+  template <class Model, class NumFlux, 
+            DGDiffusionFluxIdentifier diffFluxId,
+            int polOrd, int passUId,
+            bool returnAdvectionPart, bool returnDiffsuionPart >
+  class AdaptiveAdvectionDiffusionDGPrimalModel;
+
+
+  // AdvectionDiffusionDGPrimalTraits
+  //---------------------------------
+
+  template <class Model, class NumFlux,
+            DGDiffusionFluxIdentifier diffFluxId,
+            int polOrd, int passUId,
+            bool returnAdvectionPart, bool returnDiffusionPart >
+  struct AdaptiveAdvectionDiffusionDGPrimalTraits 
+   : public AdvectionDiffusionDGPrimalTraits 
+        < Model, NumFlux, diffFluxId, polOrd, passUId, returnAdvectionPart, returnDiffusionPart > 
+  {
+    // type of base class 
+    typedef AdaptiveAdvectionModel< Model, NumFlux, polOrd, 
+               passUId, -1, returnAdvectionPart >     AdvectionModelType ;
+
+    // type of my discrete model 
+    typedef AdaptiveAdvectionDiffusionDGPrimalModel
+      < Model, NumFlux, diffFluxId, polOrd, passUId, 
+        returnAdvectionPart, returnDiffusionPart >                   DGDiscreteModelType;
+  };
+
+  // AdaptiveAdvectionDiffusionDGPrimalModel
+  //----------------------------------------
+
+  template< class Model, 
+            class NumFlux, 
+            DGDiffusionFluxIdentifier diffFluxId,
+            int polOrd, 
+            int passUId,
+            bool returnAdvectionPart, bool returnDiffusionPart >
+  class AdaptiveAdvectionDiffusionDGPrimalModel :
+    public AdvectionDiffusionDGPrimalModelBase< 
+       AdaptiveAdvectionDiffusionDGPrimalTraits< Model, NumFlux, diffFluxId, 
+       polOrd, passUId, returnAdvectionPart, returnDiffusionPart > >
+  {
+  public:
+    typedef AdaptiveAdvectionDiffusionDGPrimalTraits
+      < Model, NumFlux, diffFluxId, polOrd, passUId, 
+          returnAdvectionPart, returnDiffusionPart >   Traits;
+
+    typedef AdvectionDiffusionDGPrimalModelBase< Traits >  BaseType;
+
+    using BaseType :: uVar; 
+    using BaseType :: inside;
+    using BaseType :: outside;
+    using BaseType :: model_;
+    using BaseType :: uBnd_;
+
+  public:
+    enum { dimDomain = Traits :: dimDomain };
+    enum { dimRange  = Traits :: dimRange };
+
+    enum { advection = returnAdvectionPart }; // true if advection is enabled 
+    enum { diffusion = returnDiffusionPart }; // this should be disabled for LDG 
+
+    typedef typename BaseType :: DomainType      DomainType;
+    typedef typename BaseType :: FaceDomainType  FaceDomainType;
+
+    typedef typename BaseType :: Intersection        Intersection;
+    typedef typename BaseType :: Entity              EntityType;
+    typedef typename Traits :: RangeType             RangeType;
+    typedef typename Traits :: JacobianRangeType     JacobianRangeType;
+
+    typedef typename Traits :: DiscreteFunctionSpaceType DiscreteFunctionSpaceType;
+
+    // type of diffusion flux implementation 
+    typedef typename BaseType :: DiffusionFluxType  DiffusionFluxType;
+
+    enum { evaluateJacobian = DiffusionFluxType :: evaluateJacobian  }; // we need to evaluate jacobians here
+  public:
+    /**
+     * @brief constructor
+     */
+    AdaptiveAdvectionDiffusionDGPrimalModel(const Model& mod,
+                                            const NumFlux& numf,
+                                            const DiffusionFluxType& diffflux )
+      : BaseType( mod, numf, diffflux )
+    {
+    }
+
+  public:
+    /**
+     * @brief flux function on interfaces between cells
+     *
+     * @param it intersection
+     * @param time current time given by TimeProvider
+     * @param x coordinate of required evaluation local to \c it
+     * @param uLeft DOF evaluation on this side of \c it
+     * @param uRight DOF evaluation on the other side of \c it
+     * @param gLeft result for this side of \c it
+     * @param gRight result for the other side of \c it
+     * @return wave speed estimate (multiplied with the integration element of the intersection).
+     *         To estimate the time step |T|/wave is used
+     */
+    template <class QuadratureImp,
+              class ArgumentTuple, 
+              class JacobianTuple >          /*@LST0S@*/
+    double numericalFlux(const Intersection& it,
+                         const double time,
+                         const QuadratureImp& faceQuadInner,
+                         const QuadratureImp& faceQuadOuter,
+                         const int quadPoint, 
+                         const ArgumentTuple& uLeft,
+                         const ArgumentTuple& uRight,
+                         const JacobianTuple& jacLeft,
+                         const JacobianTuple& jacRight,
+                         RangeType& gLeft,
+                         RangeType& gRight,
+                         JacobianRangeType& gDiffLeft,
+                         JacobianRangeType& gDiffRight ) const
+    {
+      // call numerical flux of base type 
+      const double ldt = BaseType :: numericalFlux( it, time, faceQuadInner, faceQuadOuter, quadPoint,
+                                              uLeft, uRight, jacLeft, jacRight, 
+                                              gLeft, gRight, gDiffLeft, gDiffRight );
+
+      if( diffusion && adaptation_ ) 
+      {
+        // implement error indicator here 
+      }
+
+      return ldt ;
+    }
+
+
+    /**
+     * @brief same as numericalFlux() but for fluxes over boundary interfaces
+     */
+    template <class QuadratureImp, 
+              class ArgumentTuple, class JacobianTuple>
+    double boundaryFlux(const Intersection& it,
+                        const double time, 
+                        const QuadratureImp& faceQuadInner,
+                        const int quadPoint,
+                        const ArgumentTuple& uLeft,
+                        const JacobianTuple& jacLeft,
+                        RangeType& gLeft,
+                        JacobianRangeType& gDiffLeft ) const   /*@LST0E@*/
+    {
+      const double ldt = BaseType :: boundaryFlux( it, time, faceQuadInner, quadPoint, 
+                  uLeft, jacLeft, gLeft, gDiffLeft );
+
+      if( diffusion && adaptation_ ) 
+      {
+        // implement error indicator here 
+      }
+
+      return ldt ;
+    }
+
+  protected:
+    // defined in AdvectionModel 
+    using BaseType :: adaptation_ ;
   };                                              /*@LST0E@*/
 
 } // namespace Dune

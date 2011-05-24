@@ -130,15 +130,14 @@ namespace Dune {
     typedef AdvectionTraits 
       <Model, NumFlux, polOrd, passUId, passGradId, returnAdvectionPart> Traits;
 
+    typedef Model   ModelType ;
+    typedef NumFlux NumFluxType ;
+
     typedef DGDiscreteModelDefaultWithInsideOutside
               < Traits, passUId, passGradId >                          BaseType;
 
     // These type definitions allow a convenient access to arguments of pass.
-#if DUNE_VERSION_NEWER_REV(DUNE_COMMON,2,1,0)
     integral_constant< int, passUId > uVar;
-#else
-    const Int2Type<passUId> uVar; /*@\label{dm:int2type0}@*/
-#endif
 
   public:
     enum { dimDomain = Traits :: dimDomain };
@@ -176,8 +175,6 @@ namespace Dune {
                    const NumFlux& numf)
       : model_(mod),
         numflux_( numf ),
-        adaptation_( 0 ),
-        weight_( 1 ),
         maxAdvTimeStep_( 0.0 ),
         maxDiffTimeStep_( 0.0 )
     {
@@ -188,30 +185,10 @@ namespace Dune {
       : BaseType( other ),
         model_( other.model_ ),
         numflux_( other.numflux_ ),
-        adaptation_( other.adaptation_ ),
-        weight_( other.weight_ ),
         maxAdvTimeStep_( other.maxAdvTimeStep_ ),
         maxDiffTimeStep_( other.maxDiffTimeStep_ )
     {
     }
-
-#ifdef APOST_ERROR_INDICATOR
-    void setEntity( const EntityType& entity ) 
-    {
-      BaseType :: setEntity( entity );
-
-      if( adaptation_ ) 
-        adaptation_->setEntity( entity );
-    }
-
-    void setNeighbor( const EntityType& neighbor ) 
-    {
-      BaseType :: setNeighbor( neighbor );
-
-      if( adaptation_ ) 
-        adaptation_->setNeighbor( neighbor );
-    }
-#endif
 
     //! dummy method 
     void switchUpwind() const {
@@ -219,17 +196,14 @@ namespace Dune {
       maxDiffTimeStep_ = 0;
     } 
 
-    //! set pointer to adaptation indicator 
+    // cummy methods doing nothing 
     void setAdaptationHandler( AdaptationHandlerType& adaptation, double weight ) 
     {
-      adaptation_ = & adaptation;       
-      weight_ = weight ;
     }
 
     //! remove pointer to adaptation indicator 
     void removeAdaptationHandler() 
     {
-      adaptation_ = 0 ;
     }
 
     inline bool hasSource() const 
@@ -331,42 +305,6 @@ namespace Dune {
         double ldt = numflux_.numericalFlux(it, this->inside(), this->outside(),
                                            time, faceQuadInner, faceQuadOuter, quadPoint, 
                                            uLeft[ uVar ], uRight[ uVar ], gLeft, gRight);
-
-#ifdef APOST_ERROR_INDICATOR
-        if( adaptation_ ) 
-        {
-          RangeType v, w, error ;
-          // v = g( ul, ul )
-          numflux_.numericalFlux(it, this->inside(), this->inside(),
-                                 time, faceQuadInner, faceQuadInner, quadPoint, 
-                                 uLeft[ uVar ], uLeft[ uVar ], v, error);
-
-          // w = g( ur, ur )
-          numflux_.numericalFlux(it, this->outside(), this->outside(),
-                                 time, faceQuadOuter, faceQuadInner, quadPoint, 
-                                 uRight[ uVar ], uRight[ uVar ], w, error);
-
-          // err = 2 * g(u,v) - g(u,u) - g(v,v) 
-          // 2 * g(u,v) = gLeft + gRight
-          error  = gLeft;
-          error += gRight;
-
-          error -= v;
-          error -= w;
-
-          const DomainType normal = it.integrationOuterNormal( faceQuadInner.localPoint( quadPoint ) );
-
-          // calculate grid width 
-          double weight = weight_ *
-            (0.5 * ( this->enVolume() + this->nbVolume() ) / normal.two_norm() );
-
-          error *= weight ;
-
-          // add error to indicator 
-          adaptation_->addToLocalIndicator(error);
-          adaptation_->addToNeighborIndicator(error);
-        }
-#endif
         return ldt ;
       }
       else 
@@ -464,9 +402,7 @@ namespace Dune {
 
     const Model&   model_;
     const NumFlux& numflux_;
-    AdaptationHandlerType* adaptation_;
     mutable RangeType uBnd_;
-    double weight_ ;
     mutable double maxAdvTimeStep_;
     mutable double maxDiffTimeStep_;
   };                                              /*@LST0E@*/
@@ -645,6 +581,238 @@ namespace Dune {
   };
 
 
+  //////////////////////////////////////////////////////
+  //
+  // AdaptiveAdvectionModel
+  //
+  //////////////////////////////////////////////////////
+  template< class Model, 
+            class NumFlux, 
+            int polOrd, int passUId, int passGradId,
+            bool returnAdvectionPart> 
+  class AdaptiveAdvectionModel ;
+  
+  template <class Model, class NumFlux,
+            int polOrd, int passUId, int passGradId, bool returnAdvectionPart>
+  struct AdaptiveAdvectionTraits 
+    : public AdvectionTraits< Model, NumFlux, polOrd, passUId, passGradId,
+                              returnAdvectionPart >
+  {
+    typedef AdaptiveAdvectionModel< Model, NumFlux, polOrd, passUId, passGradId, 
+                  returnAdvectionPart >       DGDiscreteModelType;
+  };
+
+  /*  \class AdvectionModel
+   *
+   *  \tparam Model Mathematical model
+   *  \tparam NumFlux Numerical flux
+   *  \tparam polOrd Polynomial degree
+   *  \tparam passUId The id of a pass whose value is used here
+   *  \tparam passGradId The id of a pass whose value is used here
+   *  \tparam returnAdvectionPart Switch on/off the advection
+   */
+  template< class Model, 
+            class NumFlux, 
+            int polOrd, int passUId, int passGradId,
+            bool returnAdvectionPart> 
+  class AdaptiveAdvectionModel 
+    : public AdvectionModel< Model, NumFlux, polOrd, passUId,  passGradId, returnAdvectionPart >
+  {
+  public:
+    typedef AdaptiveAdvectionTraits 
+      <Model, NumFlux, polOrd, passUId, passGradId, returnAdvectionPart> Traits;
+
+    typedef AdvectionModel< Model, NumFlux, polOrd, passUId,  passGradId,
+            returnAdvectionPart > BaseType ;
+
+    // These type definitions allow a convenient access to arguments of pass.
+    integral_constant< int, passUId > uVar;
+
+  public:
+    enum { dimDomain = Traits :: dimDomain };
+    enum { dimRange  = Traits :: dimRange };
+
+    typedef typename BaseType :: DomainType      DomainType ;
+    typedef typename BaseType :: FaceDomainType  FaceDomainType;
+
+    typedef typename Traits :: GridPartType                            GridPartType;
+    typedef typename Traits :: GridType                                GridType;
+    typedef typename GridPartType :: IntersectionIteratorType          IntersectionIterator;
+    typedef typename IntersectionIterator :: Intersection              Intersection;
+    typedef typename GridType :: template Codim< 0 > :: Entity         EntityType;
+    typedef typename GridType :: template Codim< 0 > :: EntityPointer  EntityPointerType;
+    typedef typename Traits :: RangeFieldType                          RangeFieldType;
+    typedef typename Traits :: DomainFieldType                         DomainFieldType;
+    typedef typename Traits :: RangeType                               RangeType;
+    typedef typename Traits :: JacobianRangeType                       JacobianRangeType;
+
+    // discrete function storing the adaptation indicator information 
+    typedef typename Traits :: IndicatorType          IndicatorTpye;
+
+    // discrete function storing the adaptation indicator information 
+    typedef typename Traits :: AdaptationHandlerType  AdaptationHandlerType ;
+
+
+  public:
+    /**
+     * @brief constructor
+     */
+    AdaptiveAdvectionModel(const Model& mod,
+                           const NumFlux& numf)
+      : BaseType( mod, numf ),
+        adaptation_( 0 ),
+        weight_( 1 )
+    {
+    }
+
+    //! copy constructor (for thread parallel progs mainly)
+    AdaptiveAdvectionModel( const AdaptiveAdvectionModel& other )
+      : BaseType( other ),
+        adaptation_( other.adaptation_ ),
+        weight_( other.weight_ )
+    {
+    }
+
+    void setEntity( const EntityType& entity ) 
+    {
+      BaseType :: setEntity( entity );
+
+      if( adaptation_ ) 
+        adaptation_->setEntity( entity );
+    }
+
+    void setNeighbor( const EntityType& neighbor ) 
+    {
+      BaseType :: setNeighbor( neighbor );
+
+      if( adaptation_ ) 
+        adaptation_->setNeighbor( neighbor );
+    }
+
+    //! set pointer to adaptation indicator 
+    void setAdaptationHandler( AdaptationHandlerType& adaptation, double weight ) 
+    {
+      adaptation_ = & adaptation;       
+      weight_ = weight ;
+    }
+
+    //! remove pointer to adaptation indicator 
+    void removeAdaptationHandler() 
+    {
+      adaptation_ = 0 ;
+    }
+
+  public:
+    /**
+     * @brief flux function on interfaces between cells for advection and diffusion
+     *
+     * @param[in] it intersection
+     * @param[in] time current time given by TimeProvider
+     * @param[in] x coordinate of required evaluation local to \c it
+     * @param[in] uLeft DOF evaluation on this side of \c it
+     * @param[in] uRight DOF evaluation on the other side of \c it
+     * @param[out] gLeft num. flux projected on normal on this side
+     *             of \c it for multiplication with \f$ \phi \f$
+     * @param[out] gRight advection flux projected on normal for the other side 
+     *             of \c it for multiplication with \f$ \phi \f$
+     * @param[out] gDiffLeft num. flux projected on normal on this side
+     *             of \c it for multiplication with \f$ \nabla\phi \f$
+     * @param[out] gDiffRight advection flux projected on normal for the other side 
+     *             of \c it for multiplication with \f$ \nabla\phi \f$
+     *
+     * @note For dual operators we have \c gDiffLeft = 0 and \c gDiffRight = 0.
+     *
+     * @return wave speed estimate (multiplied with the integration element of the intersection),
+     *              to estimate the time step |T|/wave.
+     */
+    template <class QuadratureImp,
+              class ArgumentTuple, 
+              class JacobianTuple >          /*@LST0S@*/
+    double numericalFlux(const Intersection& it,
+                         const double time,
+                         const QuadratureImp& faceQuadInner,
+                         const QuadratureImp& faceQuadOuter,
+                         const int quadPoint, 
+                         const ArgumentTuple& uLeft,
+                         const ArgumentTuple& uRight,
+                         const JacobianTuple& jacLeft,
+                         const JacobianTuple& jacRight,
+                         RangeType& gLeft,
+                         RangeType& gRight,
+                         JacobianRangeType& gDiffLeft,
+                         JacobianRangeType& gDiffRight ) const
+    {
+      double ldt = BaseType :: numericalFlux( it, time, faceQuadInner, faceQuadOuter, quadPoint, 
+                                              uLeft, uRight, jacLeft, jacRight, 
+                                              gLeft, gRight, gDiffLeft, gDiffRight );
+
+      if( BaseType :: advection && adaptation_ ) 
+      {
+        RangeType v ;
+        // v = g( ul, ul ) = f( ul ) 
+        model_.advection( inside(), time, faceQuadInner.point( quadPoint ), uLeft[ uVar ], v);
+
+        RangeType w ;
+        // v = g( ur, ur ) = f( ur ) 
+        model_.advection( outside(), time, faceQuadOuter.point( quadPoint ), uRight[ uVar ], w);
+
+        // err = 2 * g(u,v) - g(u,u) - g(v,v) 
+        // 2 * g(u,v) = gLeft + gRight
+        RangeType error ( gLeft );
+        error += gRight;  // gRight +  gLeft  = 2*g(v,w) 
+
+        error -= v;
+        error -= w;
+
+        for( int i=0; i<dimRange; ++i ) 
+        {
+          // otherwise ul = ur 
+          if( std::abs( error[ i ] > 1e-12 ) )
+            error[ i ] /= (uLeft[ uVar ] - uRight[ uVar ] );
+        }
+
+        const DomainType normal = it.integrationOuterNormal( faceQuadInner.localPoint( quadPoint ) );
+
+        // calculate grid width 
+        double weight = weight_ *
+          (0.5 * ( this->enVolume() + this->nbVolume() ) / normal.two_norm() );
+
+        error *= weight ;
+
+        // add error to indicator 
+        adaptation_->addToLocalIndicator( error );
+        adaptation_->addToNeighborIndicator( error );
+      }
+
+      return ldt ;
+    }
+
+    /**
+     * @brief same as numericalFlux() but for fluxes over boundary interfaces
+     */
+    template <class QuadratureImp, 
+              class ArgumentTuple, class JacobianTuple>
+    double boundaryFlux(const Intersection& it,
+                        const double time, 
+                        const QuadratureImp& faceQuadInner,
+                        const int quadPoint,
+                        const ArgumentTuple& uLeft,
+                        const JacobianTuple& jacLeft,
+                        RangeType& gLeft,
+                        JacobianRangeType& gDiffLeft ) const 
+    {
+      return BaseType :: boundaryFlux( it, time, faceQuadInner, quadPoint, uLeft,
+          jacLeft, gLeft, gDiffLeft );
+    }
+
+  protected:  
+    using BaseType :: inside ;
+    using BaseType :: outside ;
+    using BaseType :: model_ ;
+
+    AdaptationHandlerType* adaptation_;
+    double weight_ ;
+  };                                             
 
 } // end namespace Dune
 
