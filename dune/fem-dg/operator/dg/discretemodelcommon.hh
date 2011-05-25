@@ -785,11 +785,9 @@ namespace Dune {
         double weight = weight_ *
           (0.5 * ( this->enVolume() + this->nbVolume() ) / normal.two_norm() );
 
-        error *= weight ;
-
         // add error to indicator 
-        adaptation_->addToLocalIndicator( error );
-        adaptation_->addToNeighborIndicator( error );
+        adaptation_->addToLocalIndicator( error, weight );
+        adaptation_->addToNeighborIndicator( error, weight );
       }
 
       return ldt ;

@@ -90,10 +90,14 @@ public:
   void setNeighbor(const EntityType & en);
   
   //! add value to local indicator, use setEntity before 
-  void addToLocalIndicator(const FullRangeType& error );
+  void addToLocalIndicator(const FullRangeType& error, const double h );
 
   //! add value to local indicator, use setNeighbor before 
-  void addToNeighborIndicator( const FullRangeType& error );
+  void addToNeighborIndicator( const FullRangeType& error, const double h );
+
+  //! add value to local indicator, use setNeighbor before 
+  void addToLocalIndicator( LocalIndicatorType& indicator,
+        const FullRangeType& error, const double h );
 
   void addToLocalIndicator(const EntityType &en, const FullRangeType& error );
 

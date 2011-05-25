@@ -100,24 +100,30 @@ setNeighbor(const EntityType & nb)
 template <class GridImp, class FunctionSpace>
 void 
 AdaptationHandler<GridImp, FunctionSpace> ::  
-addToLocalIndicator(const FullRangeType& error)
+addToLocalIndicator( LocalIndicatorType& indicator, 
+  const FullRangeType& error, const double h )
 {
-  //std::cout << "Add val to indicator " << val << "\n";
-  //if( val < 0.0 ) abort();
-  enIndicator_[0] += error.two_norm2();  
-  return;
+  const double dt = timeProvider_.deltaT();
+  const double factor = ( h + dt  ) * dt ;
+  indicator[0] += factor * error.two_norm();  
 }
 
 //! add value to local indicator, use setEntity before 
 template <class GridImp, class FunctionSpace>
 void 
 AdaptationHandler<GridImp, FunctionSpace> ::  
-addToNeighborIndicator(const FullRangeType& error)
+addToLocalIndicator(const FullRangeType& error, const double h )
 {
-  //std::cout << "Add val to nb indicator " << val << "\n";
-  //if( val < 0.0 ) abort();
-  nbIndicator_[0] += error.two_norm2();  
-  return;
+  addToLocalIndicator( enIndicator_, error, h );
+}
+
+//! add value to local indicator, use setEntity before 
+template <class GridImp, class FunctionSpace>
+void 
+AdaptationHandler<GridImp, FunctionSpace> ::  
+addToNeighborIndicator(const FullRangeType& error, const double h )
+{
+  addToLocalIndicator( nbIndicator_, error, h );
 }
 
 template <class GridImp, class FunctionSpace>
