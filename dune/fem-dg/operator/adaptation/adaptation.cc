@@ -45,7 +45,7 @@ AdaptationHandler (GridType &grid,
 
   // read levels 
   finestLevel_ = Parameter :: getValue< int >( "fem.adaptation.finestLevel" );
-  coarsestLevel_ = Parameter :: getValue("fem.adaptation.coarsestLevel", coarsestLevel_ );
+  coarsestLevel_ = Parameter :: getValue( "fem.adaptation.coarsestLevel", coarsestLevel_ );
 
   // apply grid specific level count 
   finestLevel_   *= DGFGridInfo<GridType>::refineStepsForHalf();
@@ -58,7 +58,7 @@ AdaptationHandler (GridType &grid,
   }
 
   // calculate global min of grid width to scale tolerance  
-  double gridWidth = GridWidth::calcGridWidth(indicatorSpace_.gridPart());
+  double gridWidth = GridWidth::calcGridWidth( indicatorSpace_.gridPart() );
   
   // get global minimum of macro grid width 
   double macroGridWidth = indicatorSpace_.grid().comm().min( gridWidth );
@@ -224,9 +224,9 @@ double
 AdaptationHandler<GridImp, FunctionSpace> ::  
 getLocalInTimeTolerance () const 
 {
-  //double dt = timeProvider_.deltaT();
-  //return (1. - initialTheta_) * globalTolerance_;// * (dt / endTime_);
-  return globalTolerance_;
+  double dt = timeProvider_.deltaT();
+  return (1. - initialTheta_) * globalTolerance_ * globalTolerance_* (dt / endTime_);
+  //return globalTolerance_;
 }
 
 template <class GridImp, class FunctionSpace>
