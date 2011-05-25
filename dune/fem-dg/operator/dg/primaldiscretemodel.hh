@@ -611,7 +611,33 @@ namespace Dune {
 
       if( diffusion && adaptation_ ) 
       {
-        // implement error indicator here 
+        JacobianRangeType diffmatrix;
+        RangeType error;
+        DomainType normal = it.integrationOuterNormal( faceQuadInner.localPoint( quadPoint ) );
+
+        // G(u-)grad(u-) for multiplication with phi
+        // call on inside 
+        model_.diffusion( inside(), time, faceQuadInner.point( quadPoint ), 
+                          uLeft[uVar], jacLeft[uVar], diffmatrix );
+
+        diffmatrix.mv( normal, error );
+
+        // G(u+)grad(u+) for multiplication with phi
+        // call on outside 
+        model_.diffusion( outside(), time, faceQuadOuter.point( quadPoint ), 
+                          uRight[uVar], jacRight[uVar], diffmatrix );
+
+        diffmatrix.mmv( normal, error );
+
+        error *= 0.5;
+
+        // calculate grid width 
+        double weight = weight_ *
+          (0.5 * ( this->enVolume() + this->nbVolume() ) / normal.two_norm() );
+
+        // add error to indicator 
+        adaptation_->addToLocalIndicator( error, weight );
+        adaptation_->addToNeighborIndicator( error, weight );
       }
 
       return ldt ;
@@ -646,6 +672,7 @@ namespace Dune {
   protected:
     // defined in AdvectionModel 
     using BaseType :: adaptation_ ;
+    using BaseType :: weight_ ;
   };                                              /*@LST0E@*/
 
 } // namespace Dune
