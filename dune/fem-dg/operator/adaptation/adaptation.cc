@@ -34,7 +34,7 @@ AdaptationHandler (GridType &grid,
   globalTolerance_ = tol;
   
   // set default values
-  initialTheta_ = 0.05;
+  initialTheta_ = 0.;
   coarsenTheta_ = 0.1;
   coarsenTheta_ = Parameter :: getValue< double >("fem.adaptation.coarsenPercent", 0.0);
   
@@ -252,8 +252,8 @@ getLocalTolerance () const
 
   const double globalNumElem = globalNumberOfElements();
 
-  //double localTol = localInTimeTol /((double) globalNumberOfElements());
-  double localTol = globalTolerance_/ globalNumElem ;
+  double localTol = localInTimeTol / globalNumElem;
+  //double localTol = globalTolerance_ / globalNumElem ;
 
   if( Parameter :: verbose() )
   {
