@@ -1341,7 +1341,6 @@ namespace Dune {
                        const RangeType& enVal,
                        const DomainType& enBary) const 
     {
-      abort();
       DeoModType D;
       FieldMatrix<double,dimDomain,dimDomain> A;
       RangeType b[dimDomain];
