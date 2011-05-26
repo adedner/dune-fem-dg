@@ -13,7 +13,8 @@ namespace EulerFluxes {
   public:
     //- Global typedefs
     typedef typename FunctionSpaceT::DomainType NormalType;
-    typedef typename FunctionSpaceT::RangeType ValueType;
+    typedef typename FunctionSpaceT::RangeType  ValueType;
+    typedef typename ValueType :: field_type    FieldType;
 
     template <int N> 
     struct FRInt2Type{
@@ -25,19 +26,22 @@ namespace EulerFluxes {
     //! vector of unknows.
     //! \param startIdx Specifies first component of vector component
     FieldRotator(const int startIdx) : 
-      idx_(startIdx) {
-      assert(startIdx < ValueType::size-NormalType::size+1);
+      idx_(startIdx) 
+    {
+      assert(startIdx < ValueType::size-NormalType::size+1 );
     }
 
     //! Rotate data from basic coordinate system into normal coordinate system
     void rotateForth(ValueType& res, 
-                     const NormalType& n) const {
+                     const NormalType& n) const 
+    {
       rotateForth(res, n, FRInt2Type<NormalType::size>());
     }
 
     //! Rotate data from normal coordinate system into basic coordinate system
     void rotateBack(ValueType& res, 
-                    const NormalType& n) const {
+                    const NormalType& n) const 
+    {
       rotateBack(res, n, FRInt2Type<NormalType::size>());
     }
 
@@ -85,7 +89,7 @@ namespace EulerFluxes {
               const NormalType& n,
               FRInt2Type<2>) const {
     // res = arg;
-    const double a[2] = { res[idx_], res[idx_+1] };
+    const FieldType a[2] = { res[idx_], res[idx_+1] };
     res[ idx_   ] =  n[0]*a[0] + n[1]*a[1];
     res[ idx_+1 ] = -n[1]*a[0] + n[0]*a[1];
   }
@@ -94,16 +98,15 @@ namespace EulerFluxes {
   inline void FieldRotator<FunctionSpaceT>::
   rotateForth(ValueType& res, 
               const NormalType& n,
-              FRInt2Type<3>) const {
-    // res = arg;
-
-    const double a[3] = { res[idx_], res[idx_+1], res[idx_+2] };
+              FRInt2Type<3>) const 
+  {
+    const FieldType a[3] = { res[idx_], res[idx_+1], res[idx_+2] };
  
-    const double d = std::sqrt(n[0]*n[0]+n[1]*n[1]);
+    const FieldType d = std::sqrt(n[0]*n[0]+n[1]*n[1]);
 
     if (d > 1.0e-8) 
     {
-      double d_1 = 1.0/d;
+      const FieldType d_1 = 1.0/d;
       res[idx_]   =   n[0] * a[0]
                     + n[1] * a[1]
                     + n[2] * a[2];
@@ -127,7 +130,6 @@ namespace EulerFluxes {
 	           const NormalType& n,
 	           FRInt2Type<1>) const 
   {
-    // res = arg;
     res[idx_] = res[idx_] * n[0]; 
   }
 
@@ -137,9 +139,7 @@ namespace EulerFluxes {
              const NormalType& n,
              FRInt2Type<2>) const 
   {
-    // res = arg;
-
-    const double a[2] = { res[idx_], res[idx_+1] };
+    const FieldType a[2] = { res[idx_], res[idx_ + 1] };
     res[idx_  ] = n[0]*a[0] - n[1]*a[1];
     res[idx_+1] = n[1]*a[0] + n[0]*a[1];
   }
@@ -151,13 +151,13 @@ namespace EulerFluxes {
              FRInt2Type<3>) const 
   {
     // res = arg;
-    double a[3]={res[idx_],res[idx_+1],res[idx_+2]};
+    const FieldType a[3]={res[idx_],res[idx_+1],res[idx_+2]};
 
-    double d = std::sqrt(n[0]*n[0]+n[1]*n[1]);
+    const FieldType d = std::sqrt(n[0]*n[0]+n[1]*n[1]);
 
     if (d > 1.0e-8) 
     {
-      double d_1 = 1.0/d;
+      const FieldType d_1 = 1.0/d;
       res[idx_]   =   n[0]              * a[0]
                     - n[1] * d_1        * a[1]
                     - n[0] * n[2] * d_1 * a[2];
