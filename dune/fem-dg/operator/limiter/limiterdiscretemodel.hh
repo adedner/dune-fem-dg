@@ -95,24 +95,6 @@ namespace Fem {
     {
     }
 
-    template <class QuadratureImp, class ArgumentTupleVector >
-    void initializeIntersection(const IntersectionType& it,
-                                const double time,
-                                const QuadratureImp& quadInner,
-                                const QuadratureImp& quadOuter,
-                                const ArgumentTupleVector& uLeftVec,
-                                const ArgumentTupleVector& uRightVec)
-    {
-    }
-
-    template <class QuadratureImp, class ArgumentTupleVector >
-    void initializeBoundary(const IntersectionType& it,
-                            const double time,
-                            const QuadratureImp& quadInner,
-                            const ArgumentTupleVector& uLeftVec)
-    {
-    }
-
     enum { Coarsen = -1 , None = 0, Refine = 1 };
 
     //! mark element for refinement or coarsening 
