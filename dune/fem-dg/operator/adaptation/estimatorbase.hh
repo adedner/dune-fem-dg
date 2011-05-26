@@ -8,6 +8,8 @@
 #include <dune/fem/operator/matrix/blockmatrix.hh>
 #include <dune/fem/space/dgspace.hh>
 
+#include <dune/fem-dg/operator/adaptation/adaptation.hh>
+
 
 // EstimatorBase
 // -------------

@@ -11,7 +11,8 @@ namespace Dune
 template <class GridImp, class FunctionSpace>
 AdaptationHandler<GridImp, FunctionSpace> ::  
 AdaptationHandler (GridType &grid, 
-                   TimeProviderType &timeProvider) 
+                   TimeProviderType &timeProvider,
+                   const AdaptationParameters& param ) 
   : grid_(grid)
   , gridPart_(grid_)
   , indicatorSpace_( gridPart_ )
@@ -19,37 +20,22 @@ AdaptationHandler (GridType &grid,
   , enIndicator_( indicator_ )
   , nbIndicator_( indicator_ )
   , timeProvider_(timeProvider)
+  , globalTolerance_ ( param.refinementTolerance() )
+  , coarsenTheta_( param.coarsenPercentage() )
+  , finestLevel_( param.finestLevel( DGFGridInfo<GridType>::refineStepsForHalf() ) )
+  , coarsestLevel_( param.coarsestLevel( DGFGridInfo<GridType>::refineStepsForHalf() ) )
   , globalNumElements_ (0)
   , localNumElements_(0)
+  , endTime_( param.endTime() )  
   , maxLevelCounter_()
 {
-  // get end time 
-  double T = Parameter :: getValue< double >("femhowto.endTime" );
-  endTime_ = T;
-
   const bool verboseOutput = Parameter :: verbose() ;
 
-  // get global tolerance 
-  double tol = Parameter :: getValue< double >("fem.adaptation.refineTolerance", 0.0 );
-  globalTolerance_ = tol;
-  
   // set default values
   initialTheta_ = 0.;
-  coarsenTheta_ = 0.1;
-  coarsenTheta_ = Parameter :: getValue< double >("fem.adaptation.coarsenPercent", 0.0);
   
   alphaSigSet_ = 0.01;
   maxLevFlag_ = 1;
-  finestLevel_ = 0;
-  coarsestLevel_ = 0;
-
-  // read levels 
-  finestLevel_ = Parameter :: getValue< int >( "fem.adaptation.finestLevel" );
-  coarsestLevel_ = Parameter :: getValue( "fem.adaptation.coarsestLevel", coarsestLevel_ );
-
-  // apply grid specific level count 
-  finestLevel_   *= DGFGridInfo<GridType>::refineStepsForHalf();
-  coarsestLevel_ *= DGFGridInfo<GridType>::refineStepsForHalf();
 
   resetStatus();
   if( verboseOutput )

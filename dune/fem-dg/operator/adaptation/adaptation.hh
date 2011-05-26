@@ -25,6 +25,51 @@
 namespace Dune 
 {
 
+struct AdaptationParameters
+: public LocalParameter< AdaptationParameters, AdaptationParameters >
+{
+  AdaptationParameters() {}
+
+  //! simulation end time 
+  virtual double endTime() const 
+  {
+    return Parameter :: getValue< double >("femhowto.endTime" );
+  }
+
+  //! retujrn refinement tolerance 
+  virtual double refinementTolerance() const 
+  {
+    return Parameter :: getValue<double> ("fem.adaptation.refineTolerance");
+  }
+
+  //! return percentage of refinement tolerance used for coarsening tolerance
+  virtual double coarsenPercentage() const 
+  { 
+    return Parameter :: getValue<double> ("fem.adaptation.coarsenPercent", 0.1 );
+  }
+
+  //! return product of refinementTolerance and coarsenPercentage 
+  virtual double coarsenTolerance () const 
+  {
+    return refinementTolerance() * coarsenPercentage();
+  }
+
+  //! return maximal level achieved by refinement  
+  virtual int finestLevel( const int refineStepsForHalf ) const 
+  { 
+    return refineStepsForHalf * 
+      Parameter :: getValue<int>("fem.adaptation.finestLevel" );
+  }
+
+  //! return minimal level achieved by refinement  
+  virtual int coarsestLevel( const int refineStepsForHalf ) const 
+  { 
+    return refineStepsForHalf * 
+      Parameter :: getValue<int>("fem.adaptation.coarsestLevel" );
+  }
+
+};
+
 // class for the organization of the adaptation prozess
 template <class GridImp, class ProblemFunctionSpace >
 class AdaptationHandler
@@ -75,7 +120,8 @@ public:
   typedef IndicatorLocalFuncType LocalIndicatorType;
   //! constructor
   AdaptationHandler (GridType &grid, 
-                     TimeProviderType &timeProvider ) ;
+                     TimeProviderType &timeProvider,
+                     const AdaptationParameters& param = AdaptationParameters() ) ;
 
   //const TimeProviderType &timeProvider() const;
   TimeProviderType* timeProvider () { return &timeProvider_; } 
@@ -170,9 +216,6 @@ private:
 
   //! parameters for adaptation
   mutable double globalTolerance_;
-  //double localInTimeTolerance_;
-  //double localToleranceOrig_;
-  //double localTolerance_;
   double coarsenTheta_;
   double initialTheta_;
 

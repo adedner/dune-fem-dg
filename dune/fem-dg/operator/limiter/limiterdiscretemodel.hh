@@ -5,6 +5,7 @@
 #include <dune/fem/io/parameter.hh>
 
 #include <dune/fem-dg/operator/limiter/limitpass.hh>
+#include <dune/fem-dg/operator/adaptation/adaptation.hh>
 
 namespace Dune {
 
@@ -69,16 +70,14 @@ namespace Fem {
   public:
     //! constructor 
     StandardLimiterDiscreteModel(const Model& mod, 
-                                 const int polOrd ) 
+                                 const int polOrd,
+                                 const AdaptationParameters& param = AdaptationParameters() ) 
       : BaseType(mod), 
-        refTol_(1), crsTol_(0.1), finLevel_(0), crsLevel_(0)
+        refTol_( param.refinementTolerance() ),
+        crsTol_( param.coarsenTolerance() ),
+        finLevel_( param.finestLevel( DGFGridInfo<GridType>::refineStepsForHalf() ) ),
+        crsLevel_( param.coarsestLevel( DGFGridInfo<GridType>::refineStepsForHalf() ) )
     {
-      Parameter :: get("fem.adaptation.refineTolerance", refTol_, refTol_ );
-      double crsPers = 0.1;
-      Parameter :: get("fem.adaptation.coarsenPercent", crsPers , crsPers );
-      crsTol_   = refTol_ * crsPers;
-      Parameter :: get("fem.adaptation.finestLevel", finLevel_, finLevel_ );
-      Parameter :: get("fem.adaptation.coarsestLevel", crsLevel_, crsLevel_ );
     }
 
     template < class IndicatorType >  
