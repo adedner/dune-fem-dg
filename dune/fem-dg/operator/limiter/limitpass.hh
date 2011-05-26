@@ -17,9 +17,8 @@
 #include <dune/fem/space/combinedspace.hh>
 #include <dune/fem/space/lagrangespace.hh>
 #include <dune/fem/pass/dgpass.hh>
-#include <dune/fem/pass/dgmodelcaller.hh>
+#include <dune/fem-dg/pass/dgmodelcaller.hh>
 #include <dune/fem/pass/dgdiscretemodel.hh>
-#include <dune/fem/pass/selection.hh>
 #include <dune/fem/operator/1order/localmassmatrix.hh>
 
 #include <dune/fem/io/parameter.hh>
@@ -151,9 +150,9 @@ namespace Dune {
 
   template <class DiscreteModelImp, class ArgumentImp, class SelectorImp>
   class LimiterDiscreteModelCaller 
-    : public DGDiscreteModelCaller< DiscreteModelImp, ArgumentImp, SelectorImp > 
+    : public CDGDiscreteModelCaller< DiscreteModelImp, ArgumentImp, SelectorImp > 
   {
-    typedef DGDiscreteModelCaller< DiscreteModelImp, ArgumentImp, SelectorImp> BaseType ;
+    typedef CDGDiscreteModelCaller< DiscreteModelImp, ArgumentImp, SelectorImp> BaseType ;
 
   public:
     LimiterDiscreteModelCaller( DiscreteModelImp& problem)
@@ -2059,12 +2058,13 @@ namespace Dune {
       const QuadratureImp &faceQuadInner = interQuad.inside();
       const QuadratureImp &faceQuadOuter = interQuad.outside();
                          
-      // set neighbor to caller 
-      caller_.setNeighbor( nb, faceQuadInner, faceQuadOuter );
+      // set neighbor and initialize intersection 
+      caller_.initializeIntersection( nb, intersection, faceQuadInner, faceQuadOuter );
 
       typedef typename IntersectionType :: Geometry LocalGeometryType;
       const LocalGeometryType& interGeo = intersection.geometry();   
 
+      JacobianRangeType dummy ;
       RangeType jump, adapt;
       const int faceQuadNop = faceQuadInner.nop();
       for(int l=0; l<faceQuadNop; ++l) 
@@ -2072,7 +2072,7 @@ namespace Dune {
         // calculate jump 
         const double val = caller_.numericalFlux( intersection, 
                                                   faceQuadInner, faceQuadOuter, l,
-                                                  jump , adapt );
+                                                  jump , adapt, dummy, dummy );
 
         // non-physical solution 
         if(val < 0.0) 
@@ -2105,11 +2105,12 @@ namespace Dune {
       const LocalGeometryType& interGeo = intersection.geometry();   
 
       RangeType jump;
+      JacobianRangeType dummy ;
       const int faceQuadNop = faceQuadInner.nop();
       for(int l=0; l<faceQuadNop; ++l) 
       {
         // calculate jump 
-        const double val = caller_.boundaryFlux(intersection, faceQuadInner,l,jump);
+        const double val = caller_.boundaryFlux(intersection, faceQuadInner, l, jump, dummy);
 
         // non-physical solution 
         if (val < 0.0)
@@ -2285,10 +2286,10 @@ namespace Dune {
           {
             FaceQuadratureType faceQuadInner(gridPart_,intersection, jumpQuadOrd, FaceQuadratureType::INSIDE);
 
-            // set neighbor entity to inside entity 
-            caller_.setBoundary(en, faceQuadInner);
+            // initialize intersection 
+            caller_.initializeBoundary( intersection, faceQuadInner );
 
-            if (applyBoundary(intersection, faceQuadInner,shockIndicator,adaptIndicator))
+            if (applyBoundary(intersection, faceQuadInner, shockIndicator, adaptIndicator))
             {
               shockIndicator = -1;
               return true;

@@ -13,6 +13,7 @@
 #include <dune/fem/operator/common/spaceoperatorif.hh>
 
 // dune-fem-dg includes
+#include <dune/fem-dg/operator/limiter/limiterdiscretemodel.hh>
 #include <dune/fem-dg/operator/limiter/limitpass.hh>
 #include <dune/fem-dg/operator/dg/primaldiscretemodel.hh>
 #include <dune/fem-dg/operator/dg/operatorbase.hh>
@@ -250,7 +251,7 @@ namespace Dune {
     typedef typename DiscreteModel1Type :: AdaptationHandlerType        AdaptationHandlerType;
 
     // The model of the limiter pass (limitPassId)
-    typedef LimiterDiscreteModel< PassTraitsType, Model, u > LimiterDiscreteModelType;
+    typedef Fem :: StandardLimiterDiscreteModel< PassTraitsType, Model, u > LimiterDiscreteModelType;
 
     typedef typename LimiterDiscreteModelType :: Traits                       Traits;
 
@@ -310,7 +311,7 @@ namespace Dune {
       , indicator_( "Indicator", fvSpc_ )
       , diffFlux_( gridPart_, model_ )
       , problem1_( model_, numflux_, diffFlux_ )
-      , limitProblem_( model_ )
+      , limitProblem_( model_ , space_.order() )
       , pass0_()
       , pass1_( limitProblem_, pass0_, space_ )    /*@\label{ad:initialisepass1}@*/
       , pass2_( problem1_, pass1_, space_ )    /*@\label{ad:initialisepass1}@*/

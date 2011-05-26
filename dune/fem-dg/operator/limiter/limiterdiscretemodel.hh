@@ -34,6 +34,9 @@ namespace Fem {
     public LimiterDefaultDiscreteModel<GlobalPassTraitsImp, Model , passId >
   {
     typedef LimiterDefaultDiscreteModel<GlobalPassTraitsImp, Model, passId > BaseType;
+
+    // These type definitions allow a convenient access to arguments of pass.
+    integral_constant< int, passId > uVar;
   public:
     typedef LimiterTraits<GlobalPassTraitsImp,Model, passId > Traits;
 
@@ -51,9 +54,12 @@ namespace Fem {
     typedef typename Traits::DestinationType DestinationType;
 
     enum { dimRange = Traits :: dimRange };
+    enum { evaluateJacobian = false };
 
   protected:
     using BaseType :: model_;
+    using BaseType :: inside ;
+    using BaseType :: outside ;
 
     double refTol_;
     double crsTol_;
@@ -63,14 +69,16 @@ namespace Fem {
   public:
     //! constructor 
     StandardLimiterDiscreteModel(const Model& mod, 
-                         const int polOrd ) 
+                                 const int polOrd ) 
       : BaseType(mod), 
         refTol_(1), crsTol_(0.1), finLevel_(0), crsLevel_(0)
     {
-      refTol_   = Parameter :: getValue("RefinementTolerance", refTol_ );
-      crsTol_   = Parameter :: getValue("CoarseningTolerance", crsTol_ );
-      finLevel_ = Parameter :: getValue("FinestLevel", finLevel_ );
-      crsLevel_ = Parameter :: getValue("CoarsestLevel", crsLevel_ );
+      Parameter :: get("fem.adaptation.refineTolerance", refTol_, refTol_ );
+      double crsPers = 0.1;
+      Parameter :: get("fem.adaptation.coarsenPercent", crsPers , crsPers );
+      crsTol_   = refTol_ * crsPers;
+      Parameter :: get("fem.adaptation.finestLevel", finLevel_, finLevel_ );
+      Parameter :: get("fem.adaptation.coarsestLevel", crsLevel_, crsLevel_ );
     }
 
     template < class IndicatorType >  
@@ -84,6 +92,24 @@ namespace Fem {
     }
 
     void indicatorMax() const
+    {
+    }
+
+    template <class QuadratureImp, class ArgumentTupleVector >
+    void initializeIntersection(const IntersectionType& it,
+                                const double time,
+                                const QuadratureImp& quadInner,
+                                const QuadratureImp& quadOuter,
+                                const ArgumentTupleVector& uLeftVec,
+                                const ArgumentTupleVector& uRightVec)
+    {
+    }
+
+    template <class QuadratureImp, class ArgumentTupleVector >
+    void initializeBoundary(const IntersectionType& it,
+                            const double time,
+                            const QuadratureImp& quadInner,
+                            const ArgumentTupleVector& uLeftVec)
     {
     }
 
@@ -123,20 +149,27 @@ namespace Fem {
       grid.mark( refinement, en );
     }
 
-    template <class ArgumentTuple>
+    template <class FaceQuadratureImp, 
+              class ArgumentTuple, 
+              class JacobianTuple>
     double numericalFlux(const IntersectionType& it,
                          const double time, 
-                         const FaceDomainType& x,
+                         const FaceQuadratureImp& innerQuad,
+                         const FaceQuadratureImp& outerQuad,
+                         const int quadPoint,
                          const ArgumentTuple& uLeft,
                          const ArgumentTuple& uRight,
+                         const JacobianTuple& jacLeft,
+                         const JacobianTuple& jacRight,
                          RangeType& shockIndicator,
-                         RangeType& adaptIndicator) const
+                         RangeType& adaptIndicator,
+                         JacobianRangeType&,
+                         JacobianRangeType& ) const
     {
-      typedef typename ElementType<0, ArgumentTuple>::Type UType;
-      const UType& argULeft = Element<0>::get(uLeft);
-      const UType& argURight = Element<0>::get(uRight);
+      const FaceDomainType& x = innerQuad.localPoint( quadPoint );
 
-      if (!physical(argULeft) || !physical(argURight)) 
+      if (! physical(inside(), innerQuad.point( quadPoint ), uLeft[ uVar ] ) || 
+          ! physical(outside(), outerQuad.point( quadPoint ), uRight[ uVar ] ) ) 
       {
         adaptIndicator = shockIndicator = 1e10;
         return -1.;
@@ -144,37 +177,42 @@ namespace Fem {
       else 
       {
         // evaluate adaptation indicator 
-        model_.adaptationIndicator(it, x, argULeft, argURight, adaptIndicator );
-        model_.jump(argULeft, argURight, shockIndicator );
+        model_.adaptationIndicator(it, x, uLeft[ uVar ], uRight[ uVar ], adaptIndicator );
+        model_.jump( uLeft[ uVar ], uRight[ uVar ], shockIndicator );
         return 1.;
       }
     }
 
     //! returns difference between internal value and boundary 
     //! value 
-    template <class ArgumentTuple>
+    template <class FaceQuadratureImp, 
+              class ArgumentTuple, 
+              class JacobianTuple>
     double boundaryFlux(const IntersectionType& it,
                         const double time, 
-                        const FaceDomainType& x,
+                        const FaceQuadratureImp& innerQuad,
+                        const int quadPoint,
                         const ArgumentTuple& uLeft,
-                        RangeType& adaptIndicator) const
+                        const JacobianTuple& jacLeft,
+                        RangeType& adaptIndicator,
+                        JacobianRangeType& gDiffLeft ) const
     {
-      typedef typename ElementType<0, ArgumentTuple>::Type UType;
-      const UType& argULeft = Element<0>::get(uLeft);
+      const FaceDomainType& x = innerQuad.localPoint( quadPoint );
+
       RangeType uRight; 
 
       // evaluate boundary value 
-      model_.boundaryValue(it, time,x,argULeft,uRight);
+      model_.boundaryValue(it, time,x, uLeft[ uVar ], uRight );
       
-      if (!physical(argULeft) || !physical(uRight) ) 
+      if (! physical(inside(), innerQuad.point( quadPoint ), uLeft[ uVar ] ) || 
+          ! physical(inside(), innerQuad.point( quadPoint ), uRight ) ) 
       {
         adaptIndicator = 1e10;
         return -1.;
       }
       else 
       {
-        const UType& argURight = uRight;
-        model_.jump(argULeft, argURight, adaptIndicator);
+        model_.jump( uLeft[ uVar ], uRight, adaptIndicator);
         return 1.;
       }
     }
@@ -193,14 +231,6 @@ namespace Fem {
     /** \brief returns true if model provides physical check */
     bool hasPhysical() const { return model_.hasPhysical(); } 
 
-    /** \brief check physical values (called from StandardLimiterDiscreteModelCaller) */
-    template <class ArgumentTuple>
-    bool checkPhysical(const ArgumentTuple& u) const
-    {
-      // take first component 
-      return physical( Element<0> :: get( u ) );
-    }
-
     /** \brief check physical values */
     template <class ArgumentTuple>
     bool checkPhysical( const EntityType& entity,
@@ -215,13 +245,7 @@ namespace Fem {
                    const DomainType& xLocal,
                    const RangeType& u ) const
     { 
-      return physical( u );
-    }
-
-    /** \brief returns true if value is in set of states */
-    bool physical( const RangeType& u ) const
-    { 
-      return model_.physical( u );
+      return model_.physical( entity, xLocal, u );
     }
 
     /** \brief adjust average values, e.g. transform to primitive or something similar */

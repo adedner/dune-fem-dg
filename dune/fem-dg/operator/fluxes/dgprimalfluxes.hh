@@ -1002,7 +1002,6 @@ namespace Dune {
         // get value of G(u)L_e*n into lift
         applyLifting( faceQuadInner, quadPoint, time, normal, uRight, LeLeft, lift );
 
-
         if( method_ == method_br2 )
         {
           // set liftTotal = G(u)r_e*n = 0.5*G(u_in)L_e_in*n
