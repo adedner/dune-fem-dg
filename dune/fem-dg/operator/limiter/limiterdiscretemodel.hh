@@ -177,8 +177,8 @@ namespace Fem {
       else 
       {
         // evaluate adaptation indicator 
-        model_.adaptationIndicator(it, x, uLeft[ uVar ], uRight[ uVar ], adaptIndicator );
-        model_.jump( uLeft[ uVar ], uRight[ uVar ], shockIndicator );
+        model_.adaptationIndicator(it, time, x, uLeft[ uVar ], uRight[ uVar ], adaptIndicator );
+        model_.jump( it, time, x, uLeft[ uVar ], uRight[ uVar ], shockIndicator );
         return 1.;
       }
     }
@@ -202,7 +202,7 @@ namespace Fem {
       RangeType uRight; 
 
       // evaluate boundary value 
-      model_.boundaryValue(it, time,x, uLeft[ uVar ], uRight );
+      model_.boundaryValue(it, time, x, uLeft[ uVar ], uRight );
       
       if (! physical(inside(), innerQuad.point( quadPoint ), uLeft[ uVar ] ) || 
           ! physical(inside(), innerQuad.point( quadPoint ), uRight ) ) 
@@ -212,7 +212,7 @@ namespace Fem {
       }
       else 
       {
-        model_.jump( uLeft[ uVar ], uRight, adaptIndicator);
+        model_.jump( it, time, x, uLeft[ uVar ], uRight, adaptIndicator);
         return 1.;
       }
     }
@@ -237,7 +237,7 @@ namespace Fem {
                         const DomainType& xLocal,
                         const ArgumentTuple& u ) const
     { 
-      return physical( entity, xLocal, Element<0> :: get( u ) );
+      return physical( entity, xLocal, u[ uVar ] );
     }
 
     /** \brief check physical values */

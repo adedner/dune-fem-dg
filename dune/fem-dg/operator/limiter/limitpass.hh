@@ -265,6 +265,8 @@ namespace Dune {
   class LimiterDefaultDiscreteModel :
     public DGDiscreteModelDefaultWithInsideOutside< LimiterDefaultTraits<GlobalTraitsImp,Model,passId >, passId >  
   {
+    integral_constant< int, passId > uVar;
+
   public:
     typedef LimiterDefaultTraits<GlobalTraitsImp,Model,passId> Traits;
     
@@ -304,34 +306,59 @@ namespace Dune {
     //! \brief returns true 
     bool hasFlux() const   { return true;  }
     
+
+    template <class QuadratureImp, class ArgumentTupleVector >
+    void initializeIntersection(const IntersectionType& it,
+                                const double time,
+                                const QuadratureImp& quadInner,
+                                const QuadratureImp& quadOuter,
+                                const ArgumentTupleVector& uLeftVec,
+                                const ArgumentTupleVector& uRightVec)
+    {
+    }
+
+    template <class QuadratureImp, class ArgumentTupleVector >
+    void initializeBoundary(const IntersectionType& it,
+                            const double time,
+                            const QuadratureImp& quadInner,
+                            const ArgumentTupleVector& uLeftVec)
+    {
+    }
+
     /** \brief numericalFlux of for limiter evaluateing the difference
          of the solution in the current integration point if we are a an
          inflow intersection.
          This is needed for the shock detection.
     */
-    template <class ArgumentTuple>
+    template <class FaceQuadratureImp,
+              class ArgumentTuple,
+              class JacobianTuple>
     double numericalFlux(const IntersectionType& it,
-                         const double time, 
-                         const FaceDomainType& x,
-                         const ArgumentTuple& uLeft, 
+                         const double time,
+                         const FaceQuadratureImp& innerQuad,
+                         const FaceQuadratureImp& outerQuad,
+                         const int quadPoint,
+                         const ArgumentTuple& uLeft,
                          const ArgumentTuple& uRight,
-                         RangeType& gLeft,
-                         RangeType& gRight) const
-    { 
-      typedef typename ElementType<0, ArgumentTuple>::Type UType;
-      const UType& argULeft = Element<0>::get(uLeft);
-      const UType& argURight = Element<0>::get(uRight);
- 
-      if( checkDirection(it,time,x, uLeft) )
+                         const JacobianTuple& jacLeft,
+                         const JacobianTuple& jacRight,
+                         RangeType& shockIndicator,
+                         RangeType& adaptIndicator,
+                         JacobianRangeType&,
+                         JacobianRangeType& ) const
+    {
+      const FaceDomainType& x = innerQuad.localPoint( quadPoint );
+
+      if( checkDirection(it,time, x, uLeft) )
       {
-        gLeft  = argURight;
-        gLeft -= argULeft;
-        gRight = gLeft;
+        shockIndicator  = uLeft[ uVar ];
+        shockIndicator -= uRight[ uVar ];
+        adaptIndicator = shockIndicator;
         return it.integrationOuterNormal( x ).two_norm();
       }
       else 
       {
-        gLeft = gRight = 0.0;
+        adaptIndicator = shockIndicator = 0;
         return 0.0;
       }
     }
@@ -340,13 +367,19 @@ namespace Dune {
         with the boundary value. This is needed for the limiter. 
         The default returns 0, meaning that we use the interior value as ghost value. 
     */
-    template <class ArgumentTuple>
+    template <class FaceQuadratureImp,
+              class ArgumentTuple,
+              class JacobianTuple>
     double boundaryFlux(const IntersectionType& it,
-                        const double time, const FaceDomainType& x,
-                        const ArgumentTuple& uLeft, 
-                        RangeType& gLeft) const
+                        const double time,
+                        const FaceQuadratureImp& innerQuad,
+                        const int quadPoint,
+                        const ArgumentTuple& uLeft,
+                        const JacobianTuple& jacLeft,
+                        RangeType& adaptIndicator,
+                        JacobianRangeType& gDiffLeft ) const
     { 
-      gLeft = 0 ;
+      adaptIndicator = 0 ;
       return 0.0;
     }
 
@@ -380,7 +413,7 @@ namespace Dune {
                         const ArgumentTuple& u ) const 
     { 
       // take first component 
-      return physical( en, x, Element<0> :: get( u ) );
+      return physical( en, x, u[ uVar ] );
     }
 
     /** \brief check physical values 
@@ -415,12 +448,9 @@ namespace Dune {
                         const double time, const FaceDomainType& x,
                         const ArgumentTuple& uLeft) const 
     { 
-      typedef typename ElementType<0, ArgumentTuple>::Type UType;
-      const UType& argULeft = Element<0>::get(uLeft);
-
       // evaluate velocity 
       model_.velocity(this->inside(),time,it.geometryInInside().global(x),
-                      argULeft,velocity_);
+                      uLeft[ uVar ], velocity_);
       return checkDirection(it, x, velocity_);
     }
     
