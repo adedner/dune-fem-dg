@@ -300,8 +300,11 @@ namespace Dune {
     typedef typename DiscreteModel3Type :: DiffusionFluxType  DiffusionFluxType;
     typedef GradientModel< Model, DiffusionFluxType, polOrd, limitPassId >
                                                                        DiscreteModel2Type;
+    // The model of the limiter pass (limitPassId)
+    typedef Fem :: StandardLimiterDiscreteModel< PassTraitsType, Model, u > LimiterDiscreteModelType;
+
     // Pass 0 Model (limitPassId)
-    typedef LimiterDiscreteModel< PassTraitsType, Model, u >           DiscreteModel1Type;
+    typedef LimiterDiscreteModelType                                   DiscreteModel1Type;
 
 
                                                                        /*@LST0E@*/
