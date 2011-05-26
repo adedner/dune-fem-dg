@@ -125,8 +125,7 @@ namespace Dune {
       pass1_.operator2Matrix( matrix , rhs );
     }
 
-    inline void limit(const DestinationType& arg,DestinationType& dest) const
-    {}
+    inline void limit( DestinationType& U ) const {}
 
     inline double computeTime() const 
     {

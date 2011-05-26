@@ -388,10 +388,10 @@ namespace Dune {
     // return pointer to indicator function 
     IndicatorType* indicator() { return &indicator_ ; }
 
-    inline void limit( const DestinationType& arg, DestinationType& dest ) const
+    inline void limit( DestinationType& U ) const
     {
       pass1_.enableFirstCall();
-      LimiterCall< Pass1Type, polOrd >::limit( pass1_, uTmp_, dest );
+      LimiterCall< Pass1Type, polOrd >::limit( pass1_, uTmp_, U );
     }
     
     void printmyInfo(std::string filename) const
