@@ -278,7 +278,7 @@ namespace Dune {
 
       numberOfElements_ = 0;
 
-      if( notThreadParallel_ )
+      if( notThreadParallel_ && dest_ )
       {
         // clear destination (not in thread parallel version)
         dest_->clear();
@@ -303,7 +303,7 @@ namespace Dune {
     //! Some timestep size management.
     void doFinalize(DestinationType& dest) const
     {
-      if( notThreadParallel_ )
+      if( notThreadParallel_ && (&dest) )
       {
         // communicate calculated function (not in thread parallel version)
         dest.communicate();
@@ -311,6 +311,8 @@ namespace Dune {
 
       // call finalize 
       caller_.finalize();
+      arg_  = 0;
+      dest_ = 0;
     }
 
     //! Some timestep size management.
@@ -425,7 +427,7 @@ namespace Dune {
             const EntityType & nb = * outside;
             
             // true if neighbor values can be updated (needed for thread parallel version)
-            const bool canUpdateNeighbor = nbChecker( entity, nb );
+            const bool canUpdateNeighbor = nbChecker( entity, nb ) && dest_ ;
       
             if( ! visited_[ indexSet_.index( nb ) ] ) 
             {
@@ -535,9 +537,12 @@ namespace Dune {
     void updateFunction(const EntityType& entity, 
                         LocalFunctionImp& update) const 
     {
-      // get local function and add update 
-      LocalFunctionType function = dest_->localFunction( entity );
-      function += update;
+      if( dest_ ) 
+      {
+        // get local function and add update 
+        LocalFunctionType function = dest_->localFunction( entity );
+        function += update;
+      }
     }
 
     //! add update to destination 
@@ -546,13 +551,16 @@ namespace Dune {
                         const EntityType& entity, 
                         LocalFunctionImp& update) const
     {
-      // get local function and add update 
-      LocalFunctionType function = dest_->localFunction( entity );
-      function += update;
+      if( dest_ ) 
+      {
+        // get local function and add update 
+        LocalFunctionType function = dest_->localFunction( entity );
+        function += update;
 
-      // apply local inverse mass matrix 
-      if (DiscreteModelImp::ApplyInverseMassOperator)
-        localMassMatrix_.applyInverse( caller_, entity, function );
+        // apply local inverse mass matrix 
+        if (DiscreteModelImp::ApplyInverseMassOperator)
+          localMassMatrix_.applyInverse( caller_, entity, function );
+      }
     }
 
     //////////////////////////////////////////

@@ -96,8 +96,16 @@ namespace Dune {
 	    return pass1_.timeStepEstimate();
     }
 
+    //! evaluate the spatial operator 
     void operator()( const DestinationType& arg, DestinationType& dest ) const {
 	    pass1_( arg, dest );
+    }
+
+    //! only evaluate fluxes of operator 
+    void evaluateOnly( const DestinationType& arg ) const {
+      // only apply operator without storing result, for evalaution 
+      // of the aposteriori error estimator mainly 
+	    pass1_( arg, *(( DestinationType *) 0) );
     }
 
     inline const DiscreteFunctionSpaceType& space() const {
