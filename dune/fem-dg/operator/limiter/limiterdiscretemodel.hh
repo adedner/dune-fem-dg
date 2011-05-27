@@ -66,6 +66,7 @@ namespace Fem {
     double crsTol_;
     int finLevel_;
     int crsLevel_;
+    const bool shockIndicatorAdaptivty_;
 
   public:
     //! constructor 
@@ -76,7 +77,8 @@ namespace Fem {
         refTol_( param.refinementTolerance() ),
         crsTol_( param.coarsenTolerance() ),
         finLevel_( param.finestLevel( DGFGridInfo<GridType>::refineStepsForHalf() ) ),
-        crsLevel_( param.coarsestLevel( DGFGridInfo<GridType>::refineStepsForHalf() ) )
+        crsLevel_( param.coarsestLevel( DGFGridInfo<GridType>::refineStepsForHalf() ) ),
+        shockIndicatorAdaptivty_( param.shockIndicator() )
     {
     }
 
@@ -102,6 +104,8 @@ namespace Fem {
                     const RangeType& shockIndicator, 
                     const RangeType& adaptIndicator) const 
     {
+      if( ! shockIndicatorAdaptivty_ ) return ;
+
       const double val = adaptIndicator[0];
 
       // get refinement marker 

@@ -851,7 +851,6 @@ namespace Dune {
       cartesianGrid_( CheckCartesian::check( gridPart_ ) ),
       stepTime_(3, 0.0),
       calcIndicator_(true),
-      adaptMode_(false),
       reconstruct_(false),
       applyLimiter_(true),
       admissibleFunctions_( getAdmissibleFunctions() )
@@ -2458,9 +2457,6 @@ namespace Dune {
 
     //! true if indicator should be calculated 
     mutable bool calcIndicator_;
-    
-    //! true if limiter has been called after adaptation 
-    mutable bool adaptMode_;
     
     //! true if limtier is used as finite volume scheme of higher order 
     mutable bool reconstruct_;

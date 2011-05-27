@@ -28,7 +28,17 @@ namespace Dune
 struct AdaptationParameters
 : public LocalParameter< AdaptationParameters, AdaptationParameters >
 {
-  AdaptationParameters() {}
+  int markStrategy_ ; 
+
+  int getStrategy() const 
+  {
+    const std::string names[] = { "shockind", "apost" , "grad" };
+    return Parameter :: getEnum("fem.adaptation.markingStrategy", names);
+  }
+
+  AdaptationParameters() 
+    : markStrategy_( getStrategy() )
+  {}
 
   //! simulation end time 
   virtual double endTime() const 
@@ -68,6 +78,22 @@ struct AdaptationParameters
       Parameter :: getValue<int>("fem.adaptation.coarsestLevel" );
   }
 
+  //! return true if marking strategy is based on shock indicator 
+  virtual bool shockIndicator() const 
+  {
+    return markStrategy_ == 0;
+  }
+
+  //! return true if marking strategy is based on shock indicator 
+  virtual bool gradientBasedIndicator() const 
+  {
+    return markStrategy_ == 2;
+  }
+
+  virtual bool aposterioriIndicator() const 
+  {
+    return markStrategy_ == 1;
+  }
 };
 
 // class for the organization of the adaptation prozess
