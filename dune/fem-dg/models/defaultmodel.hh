@@ -275,9 +275,11 @@ public:
   /** \brief check with the problem setup whether or not a cell is allowed to be refined
    *
    *  \param[in] en Entity
+   *  \param[in] time Current model time
    *  \return true if the cell can be refined
    */
-  inline bool allowsRefinement( const EntityType& en ) const
+  inline bool allowsRefinement( const EntityType& en,
+                                const double time ) const
   {
     return true;
   }
