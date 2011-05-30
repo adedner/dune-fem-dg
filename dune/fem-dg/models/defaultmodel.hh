@@ -278,8 +278,9 @@ public:
    *  \param[in] time Current model time
    *  \return true if the cell can be refined
    */
-  inline bool allowsRefinement( const EntityType& en,
-                                const double time ) const
+  inline bool allowsRefinement( const IntersectionType& en,
+                                const double time,
+                                const FaceDomainType& x ) const
   {
     return true;
   }
