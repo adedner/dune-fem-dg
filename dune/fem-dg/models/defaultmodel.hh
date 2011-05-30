@@ -274,11 +274,12 @@ public:
 
   /** \brief check with the problem setup whether or not a cell is allowed to be refined
    *
-   *  \param[in] en Entity
+   *  \param[in] it Intersection
    *  \param[in] time Current model time
+   *  \param[in] x Point w.r.t. intersection \a it
    *  \return true if the cell can be refined
    */
-  inline bool allowsRefinement( const IntersectionType& en,
+  inline bool allowsRefinement( const IntersectionType& it,
                                 const double time,
                                 const FaceDomainType& x ) const
   {
