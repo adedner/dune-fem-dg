@@ -271,5 +271,15 @@ public:
                              RangeType& uRight) const
   {
   }
+
+  /** \brief check with the problem setup whether or not a cell is allowed to be refined
+   *
+   *  \param[in] en Entity
+   *  \return true if the cell can be refined
+   */
+  inline bool allowsRefinement( const EntityType& en ) const
+  {
+    return true;
+  }
 };
 #endif
