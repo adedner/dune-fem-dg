@@ -604,7 +604,7 @@ namespace Dune {
                          JacobianRangeType& gDiffLeft,
                          JacobianRangeType& gDiffRight ) const
     {
-      if( ! model_.allowsRefinement( it, time, faceQuadInner.point( quadPoint ) ) )
+      if( ! model_.allowsRefinement( it, time, faceQuadInner.localPoint( quadPoint ) ) )
         return 0.;
 
       // call numerical flux of base type 

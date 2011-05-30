@@ -569,7 +569,7 @@ namespace Dune {
                          JacobianRangeType& gDiffLeft,
                          JacobianRangeType& gDiffRight ) const
     {
-      if( ! model_.allowsRefinement( it, time, faceQuadInner.point( quadPoint ) ) )
+      if( ! model_.allowsRefinement( it, time, faceQuadInner.localPoint( quadPoint ) ) )
         return 0.;
 
       double ldt = BaseType :: numericalFlux( it, time, faceQuadInner, faceQuadOuter, quadPoint, 
