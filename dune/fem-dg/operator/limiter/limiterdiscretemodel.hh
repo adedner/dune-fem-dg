@@ -74,12 +74,19 @@ namespace Fem {
                                  const int polOrd,
                                  const AdaptationParameters& param = AdaptationParameters() ) 
       : BaseType(mod), 
-        refTol_( param.refinementTolerance() ),
-        crsTol_( param.coarsenTolerance() ),
-        finLevel_( param.finestLevel( DGFGridInfo<GridType>::refineStepsForHalf() ) ),
-        crsLevel_( param.coarsestLevel( DGFGridInfo<GridType>::refineStepsForHalf() ) ),
+        refTol_( -1 ),
+        crsTol_( -1 ),
+        finLevel_( 0 ),
+        crsLevel_( 0 ),
         shockIndicatorAdaptivty_( param.shockIndicator() )
     {
+      if( shockIndicatorAdaptivty_ ) 
+      {
+        refTol_   = param.refinementTolerance();
+        crsTol_   = param.coarsenTolerance();
+        finLevel_ = param.finestLevel( DGFGridInfo<GridType>::refineStepsForHalf() );
+        crsLevel_ = param.coarsestLevel( DGFGridInfo<GridType>::refineStepsForHalf() );
+      }
     }
 
     template < class IndicatorType >  

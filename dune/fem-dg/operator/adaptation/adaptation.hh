@@ -33,7 +33,8 @@ struct AdaptationParameters
   int getStrategy() const 
   {
     const std::string names[] = { "shockind", "apost" , "grad" };
-    return Parameter :: getEnum("fem.adaptation.markingStrategy", names);
+    // default value is gradient 
+    return Parameter :: getEnum("fem.adaptation.markingStrategy", names, 2 );
   }
 
   AdaptationParameters() 
