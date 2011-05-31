@@ -141,6 +141,7 @@ namespace Dune {
             (2*spc_.order()) : volumeQuadOrd ),
         faceQuadOrd_( (faceQuadOrd < 0) ? 
           (2*spc_.order()+1) : faceQuadOrd ),
+        numberOfElements_( 0 ),
         localMassMatrix_( spc_ , volumeQuadOrd_ ),
         reallyCompute_( true ),
         notThreadParallel_( notThreadParallel )
