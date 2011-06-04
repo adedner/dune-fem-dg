@@ -369,6 +369,18 @@ namespace Dune {
       updateFunctionAndApplyMass(entity, updEn_ );
     }
 
+    void applyLocalMass( const EntityType& en) const
+    {
+      if( dest_ ) 
+      {
+        // get local function and add update 
+        LocalFunctionType function = dest_->localFunction(en);
+
+        // apply local inverse mass matrix 
+        localMassMatrix_.applyInverse( caller_, en, function );
+      }
+    }
+
   protected:
     //! local integration 
     template <class NeighborChecker>

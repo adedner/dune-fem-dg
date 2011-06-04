@@ -55,12 +55,38 @@ namespace Dune {
     method_none    = 7   // no diffusion (advection only) 
   };
 
+  struct DGPrimalMethodNames 
+  {
+    typedef DGDiffusionFluxIdentifier MethodType;
+    static std::string methodNames( const MethodType mthd )
+    {
+      static const std::string method []
+        = { "CDG2", "CDG" , "BR2", "IP" , "NIPG", "BO" };
+      assert( mthd >= method_cdg2 && mthd < method_general );
+      return method[ mthd ];
+    }
+
+    static MethodType getMethod() 
+    {
+      const std::string method []
+        = { methodNames( method_cdg2 ),
+            methodNames( method_cdg ),
+            methodNames( method_br2 ),
+            methodNames( method_ip ),
+            methodNames( method_nipg ),
+            methodNames( method_bo )
+          };
+      return (MethodType) Parameter::getEnum( "dgdiffusionflux.method", method );
+    }
+  };
+
+
   // DGDiffusionFluxBase
   //--------------------
   
   template <class DiscreteFunctionSpaceImp,
             class Model > 
-  class DGDiffusionFluxBase
+  class DGDiffusionFluxBase : public DGPrimalMethodNames
   {
   public:
     enum { evaluateJacobian = false };

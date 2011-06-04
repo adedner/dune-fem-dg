@@ -1,8 +1,8 @@
-#ifndef DUNE_ADVDIFFDGPASS_HH
-#define DUNE_ADVDIFFDGPASS_HH
+#ifndef DUNE_ASSEMBLEDDIFFUSIONPASS_HH
+#define DUNE_ASSEMBLEDDIFFUSIONPASS_HH
 
 #include <dune/fem-dg/pass/dgpass.hh>
-#include <dune/fem-dg/operator/dg/cdgrowwise.hh>
+#include <dune/fem-dg/operator/dg/assembled/cdgrowwise.hh>
 
 namespace Dune {
 
@@ -23,8 +23,7 @@ namespace Dune {
 
     //- Typedefs and enums
     //! Base class for advection 
-    typedef LocalDGPass<AdvectionDiscreteModelImp, PreviousPassImp
-    , passId
+    typedef LocalCDGPass<AdvectionDiscreteModelImp, PreviousPassImp, passId
       > AdvectionBaseType;
 
     //! Base class for diffusion  

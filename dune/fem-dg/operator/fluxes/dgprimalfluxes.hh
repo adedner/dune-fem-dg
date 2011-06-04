@@ -103,17 +103,11 @@ namespace Dune {
     using BaseType :: nonconformingFactor_;
     using BaseType :: numericalFlux ;
     using BaseType :: upwind_ ;
+    using BaseType :: methodNames ;
 
-    typedef DGDiffusionFluxIdentifier MethodType;
+    typedef typename BaseType :: MethodType  MethodType;
 
   public:
-    static std::string methodNames( const MethodType mthd )
-    {
-      static const std::string method []
-        = { "CDG2", "CDG" , "BR2", "IP" , "NIPG", "BO" };
-      assert( mthd >= method_cdg2 && mthd < method_general );
-      return method[ mthd ];
-    }
 
     bool initAreaSwitch() const 
     {
@@ -1150,21 +1144,8 @@ namespace Dune {
     typedef typename DiscreteFunctionSpaceType :: GridPartType GridPartType;
 
   protected:  
-    typedef DGDiffusionFluxIdentifier MethodType;
-    using BaseType :: methodNames ;
-
-    MethodType getMethod() const 
-    {
-      const std::string method []
-        = { methodNames( method_cdg2 ), 
-            methodNames( method_cdg ), 
-            methodNames( method_br2 ), 
-            methodNames( method_ip ),
-            methodNames( method_nipg ), 
-            methodNames( method_bo )
-          };
-      return (MethodType) Parameter::getEnum( "dgdiffusionflux.method", method );
-    }
+    typedef typename BaseType :: MethodType  MethodType;
+    using BaseType :: getMethod ;
 
   public:  
     /**

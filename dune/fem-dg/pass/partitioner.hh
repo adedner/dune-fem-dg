@@ -14,6 +14,8 @@
 
 #if ALU3DGRID_PARALLEL
 
+#warning "Using the Partitioner"
+
 #define ALU2DGRID_READALL_GRIDS 
 
 namespace Dune {

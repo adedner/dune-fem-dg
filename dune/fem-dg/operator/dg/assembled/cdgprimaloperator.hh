@@ -1,8 +1,6 @@
 #ifndef DUNE_CDGPRIMALOPERATOR_HH
 #define DUNE_CDGPRIMALOPERATOR_HH
 
-#include "includes.hh"
-
 //- Dune includes 
 #include <dune/common/typetraits.hh>
 #include <dune/common/timer.hh>
@@ -12,7 +10,8 @@
 
 //- local includes 
 #include <dune/fem/pass/pass.hh>
-#include <dune/fem/pass/ellipticmodelcaller.hh>
+// use model caller from fem-dg 
+#include <dune/fem-dg/pass/ellipticmodelcaller.hh>
 
 #include <dune/fem/solver/timeprovider.hh>
 #include <dune/fem/misc/boundaryidentifier.hh>
@@ -28,7 +27,7 @@
 #include <dune/fem/operator/2order/dgmatrixsetup.hh>
 #include <dune/fem/operator/1order/localmassmatrix.hh>
 
-#include "dgmethodtypes.hh"
+#include <dune/fem-dg/operator/fluxes/diffusionflux.hh>
 
 // eigen value calculation 
 #include <dune/common/fmatrixev.hh>
@@ -452,7 +451,7 @@ namespace Dune {
       minLimit_(2.0*std::numeric_limits<double>::min()),
       sequence_ ( -1 ),
       numberOfElements_( 0 ),
-      method_( getDGMethod() ),
+      method_( DGPrimalMethodNames::getMethod() ),
       penalty_( Parameter::getValue<double>("dgprimal.penalty") ),
       penaltyNotZero_( std::abs( penalty_ ) > 0 ),
       bilinearPlus_( (method_ == method_nipg) || (method_ == method_bo) ? true : false ),
@@ -482,7 +481,7 @@ namespace Dune {
 
       if( output ) 
       {
-        std::cout << "CDGPrimalOperatorImpl: using k=" << spc_.order() << "  "<< methodNames( method_ );
+        std::cout << "CDGPrimalOperatorImpl: using k=" << spc_.order() << "  "<< DGPrimalMethodNames::methodNames( method_ );
         if( theoryParams_ ) 
         {
           if( penaltyNotZero_ ) std::cout  <<" theory: (eta = " << penalty_ << ") "; 
@@ -737,7 +736,7 @@ namespace Dune {
     void printTexInfo(std::ostream& out) const 
     {
       out << "CDGPrimalOperator: ";
-      out << " method = " << methodNames( method_ ) ; 
+      out << " method = " << DGPrimalMethodNames::methodNames( method_ ) ; 
       if( penaltyNotZero_ ) out << " ( eta = " << penalty_ << " )"; 
       if( liftFactor_>0 ) out << " ( chi  = " << liftFactor_ << " )"; 
       out  << "\\\\ \n";
@@ -2781,7 +2780,7 @@ protected:
     int sequence_ ;
     // if true B_+ is used otherwise B_-
     mutable size_t numberOfElements_;
-    const DGMethodType method_;
+    const DGDiffusionFluxIdentifier method_;
     const double penalty_;
     const bool penaltyNotZero_;
     const bool bilinearPlus_;
