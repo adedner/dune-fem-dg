@@ -457,38 +457,44 @@ namespace EULERNUMFLUX
 
   {
     const double rhoj = Uj[0];
-    const double Ej = Uj[dim+1];
+    double Ej = Uj[dim+1];
     const double rhon = Un[0];
-    const double En = Un[dim+1];
+    double En = Un[dim+1];
+#ifdef POTTEMP
+    double pressj, tempj;
+    double pressn, tempn;
+    model_.pressAndTemp( Uj, pressj, tempj );
+    model_.pressAndTemp( Un, pressn, tempn );
+
+    // get kinetic velocity
+    double Ekinj = 0;
+    double Ekinn = 0;
+    for(int i=1; i<dim+1; i++){
+      Ekinj = (0.5/rhoj) * Uj[i] * Uj[i];
+      Ekinn = (0.5/rhon) * Un[i] * Un[i];
+    }
+    Ej = pressj/(_gamma-1.) + Ekinj;
+    En = pressn/(_gamma-1.) + Ekinn;
+#endif
 
     double rho_uj[dim], rho_un[dim], uj[dim], un[dim];
-#ifndef USE_MODEL
     double Ekin2j=0.0, Ekin2n=0.0;
-#endif
     rotate(normal, Uj+1, rho_uj);
     rotate(normal, Un+1, rho_un);
     for(int i=0; i<dim; i++){
       uj[i] = (1.0/rhoj) * rho_uj[i];
       un[i] = (1.0/rhon) * rho_un[i];
-#ifndef USE_MODEL
       Ekin2j += rho_uj[i] * uj[i];
       Ekin2n += rho_un[i] * un[i];
-#endif
     }
 
-#ifdef USE_MODEL 
-    const double pj = model_.pressure( rhoj, rho_uj, Uj[ dim+1 ] );
-    const double pn = model_.pressure( rhon, rho_un, Un[ dim+1 ] );
-#else 
     const double pj = (_gamma-1.0)*(Ej - 0.5*Ekin2j);
     const double pn = (_gamma-1.0)*(En - 0.5*Ekin2n);
-#endif
 
     const double cj = sqrt(_gamma*pj/rhoj);
     const double cn = sqrt(_gamma*pn/rhon);
 
     assert(rhoj>0.0 && pj>0.0 && rhoj>0.0 && pj>0.0);
-
 
     const double rho_bar = 0.5 * (rhoj + rhon);
     const double c_bar = 0.5 * (cj + cn);
@@ -498,8 +504,8 @@ namespace EULERNUMFLUX
     const double qj = (p_star > pj)? sqrt( 1.0 + tmp*(p_star/pj - 1.0) ): 1.0;
     const double qn = (p_star > pn)? sqrt( 1.0 + tmp*(p_star/pn - 1.0) ): 1.0;
 
-    const double sj = uj[0] - cj*qj;
-    const double sn = un[0] + cn*qn;
+    const double sj = uj[0] - cj*qj;//*std::sqrt(_gamma-1.)/_gamma;
+    const double sn = un[0] + cn*qn;//*std::sqrt(_gamma-1.)/_gamma;
 
     double guj[dim];
 
@@ -510,8 +516,8 @@ namespace EULERNUMFLUX
         for(int i=0; i<dim; i++) guj[i] = rho_uj[i]*uj[0];
         guj[0] += pj;
 
-#ifdef USE_MODEL
-        gj[dim+1] = model_.energyFlux( Ej, pj, uj[ 0 ] );
+#ifdef POTTEMP
+        gj[dim+1] = Uj[dim+1]*uj[0];
 #else 
         gj[dim+1] = (Ej+pj)*uj[0];
 #endif
@@ -526,15 +532,15 @@ namespace EULERNUMFLUX
         }
         guj[0] += tmp2 * (sn*pj - sj*pn);
 
-#ifdef USE_MODEL
-        const double Etmpj = model_.energyFlux( Ej, pj, uj[0] );
-        const double Etmpn = model_.energyFlux( En, pn, un[0] );
+#ifdef POTTEMP
+        const double Etmpj = Uj[dim+1]*uj[0];
+        const double Etmpn = Un[dim+1]*un[0];
+        gj[dim+1] = tmp2 * (sn*Etmpj-sj*Etmpn + tmp1*(Un[dim+1] - Uj[dim+1]));
 #else
         const double Etmpj = (Ej+pj)*uj[0];
         const double Etmpn = (En+pn)*un[0];
-#endif
-
         gj[dim+1] = tmp2 * (sn*Etmpj-sj*Etmpn + tmp1*(En - Ej));
+#endif
       }
     }
     else{ // u_star <= 0
@@ -544,8 +550,8 @@ namespace EULERNUMFLUX
         for(int i=0; i<dim; i++) guj[i] = rho_un[i]*un[0];
         guj[0] += pn;
 
-#ifdef USE_MODEL
-        gj[dim+1] = model_.energyFlux( En, pn, un[ 0 ] );
+#ifdef POTTEMP
+        gj[dim+1] = Uj[dim+1]*un[0];
 #else 
         gj[dim+1] = (En+pn)*un[0];
 #endif
@@ -560,14 +566,15 @@ namespace EULERNUMFLUX
         }
         guj[0] += tmp2 * (sn*pj - sj*pn);
 
-#ifdef USE_MODEL
-        const double Etmpj = model_.energyFlux( Ej, pj, uj[0] );
-        const double Etmpn = model_.energyFlux( En, pn, un[0] );
+#ifdef POTTEMP
+        const double Etmpj = Uj[dim+1]*uj[0];
+        const double Etmpn = Un[dim+1]*un[0];
+        gj[dim+1] = tmp2 * (sn*Etmpj-sj*Etmpn + tmp1*(Un[dim+1] - Uj[dim+1]));
 #else
         const double Etmpj = (Ej+pj)*uj[0];
         const double Etmpn = (En+pn)*un[0];
-#endif
         gj[dim+1] = tmp2 * (sn*Etmpj-sj*Etmpn + tmp1*(En - Ej));
+#endif
 
       }
     }
