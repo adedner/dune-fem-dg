@@ -604,6 +604,8 @@ namespace Dune {
                          JacobianRangeType& gDiffLeft,
                          JacobianRangeType& gDiffRight ) const
     {
+      // do not take into account part of the domain which is not 
+      // of computation significance (i.e. a damping layer)
       if( ! model_.allowsRefinement( it, time, faceQuadInner.localPoint( quadPoint ) ) )
         return 0.;
 
