@@ -476,6 +476,66 @@ namespace Dune {
     Pass3Type           pass3_;
   };
 
+  ////////////////////////////////////////////////////////////////////////////
+  ////////////////////////////////////////////////////////////////////////////
+  ////////////////////////////////////////////////////////////////////////////
+  ////////////////////////////////////////////////////////////////////////////
+
+  template <class Mod, class NumFlux, 
+            DGDiffusionFluxIdentifier diffFluxId,
+            int pOrd, 
+            bool advection, bool diffusion >
+  struct AdaptationIndicatorTraits 
+  {
+    enum { u, cdgpass };
+    
+    typedef Mod  Model;
+    enum { dimRange = Model::dimRange };
+    typedef NumFlux NumFluxType;
+    enum { polOrd = pOrd };
+    typedef AdaptiveAdvectionDiffusionDGPrimalModel
+      < Model, NumFluxType, diffFluxId, polOrd, u, advection, diffusion> DiscreteModelType;
+  };
+
+  // DGAdaptationIndicatorOperator 
+  //------------------------------
+
+  template< class Model, class NumFlux,
+            DGDiffusionFluxIdentifier diffFluxId, int polOrd,
+            bool advection, bool diffusion = false >
+  struct DGAdaptationIndicatorOperator : public 
+    DGAdvectionDiffusionOperatorBase< 
+       AdaptationIndicatorTraits< Model, NumFlux, diffFluxId, polOrd, advection, diffusion > >
+  {
+    typedef AdaptationIndicatorTraits< Model, NumFlux, diffFluxId, polOrd, advection, diffusion > Traits ;
+    typedef DGAdvectionDiffusionOperatorBase< Traits >  BaseType;
+    typedef typename BaseType :: GridType  GridType;
+    typedef typename BaseType :: NumFluxType  NumFluxType;
+
+    DGAdaptationIndicatorOperator( GridType& grid , const NumFluxType& numf ) 
+      : BaseType( grid, numf )
+    {
+      std::cerr <<"\nWARNING: The adaptation indicator based on Ohlberger's a-posteriori\n";
+      std::cerr <<"         error estimator is not ment to be used with flux methods\n\n";
+    }
+
+    std::string description() const
+    {
+      std::stringstream stream;
+      discreteModel_.diffusionFlux().diffusionFluxName( stream );
+      stream <<" {\\bf Adv. Op.} in primal formulation, order: " << polOrd+1
+             <<", $\\eta = ";
+      discreteModel_.diffusionFlux().diffusionFluxPenalty( stream );
+      stream <<"$, $\\chi = ";
+      discreteModel_.diffusionFlux().diffusionFluxLiftFactor( stream );
+      stream << "$, {\\bf Adv. Flux:} " << numflux_.name() << ",\\\\" << std::endl;
+      return stream.str();
+    }
+
+  protected:
+    using BaseType::discreteModel_;
+    using BaseType::numflux_;
+  };
 
 }
 #endif
