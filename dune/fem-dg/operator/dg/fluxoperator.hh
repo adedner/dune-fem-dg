@@ -30,7 +30,7 @@ namespace Dune {
 
   template< class Model, class NumFlux, 
             DGDiffusionFluxIdentifier diffFluxId,
-            int polOrd, bool advection = true >
+            int polOrd, bool advection = true , bool diffusion = true >
   class DGAdvectionDiffusionOperator : 
     public SpaceOperatorInterface 
       < typename PassTraits< Model, Model::Traits::dimRange, polOrd > :: DestinationType >
@@ -44,9 +44,13 @@ namespace Dune {
 
     typedef NumFlux NumFluxType;
 
+    typedef PassTraits< Model, Model::Traits::dimRange, polOrd >     PassTraitsType ;
+    typedef typename PassTraitsType::IndicatorType                   IndicatorType;
+    typedef typename IndicatorType::DiscreteFunctionSpaceType        IndicatorSpaceType;
+
     // Pass 2 Model (advection)
     typedef AdvectionDiffusionLDGModel
-      < Model, NumFluxType, polOrd, u, gradPass, advection, true >     DiscreteModel2Type;
+      < Model, NumFluxType, polOrd, u, gradPass, advection, diffusion >     DiscreteModel2Type;
 
     // Pass 1 Model (gradient)
     typedef typename DiscreteModel2Type :: DiffusionFluxType  DiffusionFluxType;
