@@ -519,8 +519,11 @@ namespace Dune {
     DGAdaptationIndicatorOperator( GridType& grid , const NumFluxType& numf ) 
       : BaseType( grid, numf )
     {
-      std::cerr <<"\nWARNING: The adaptation indicator based on Ohlberger's a-posteriori\n";
-      std::cerr <<"         error estimator is not ment to be used with flux methods\n\n";
+      if (Parameter::verbose())
+      {
+        std::cerr <<"\nWARNING: The adaptation indicator based on Ohlberger's a-posteriori\n";
+        std::cerr <<"         error estimator is not ment to be used with flux formulation.\n\n";
+      }
     }
 
     std::string description() const
