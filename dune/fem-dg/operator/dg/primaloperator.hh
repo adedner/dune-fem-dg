@@ -229,12 +229,14 @@ namespace Dune {
    */
   template< class Model, class NumFlux, 
             DGDiffusionFluxIdentifier diffFluxId, // diffusion flux identifier 
-            int polOrd, bool advection = true, bool diffusion = false >
+            int pOrd, bool advection = true, bool diffusion = false> 
   class DGLimitedAdvectionOperator :
     public SpaceOperatorInterface 
-      < typename PassTraits< Model, Model::Traits::dimRange, polOrd > :: DestinationType >
+      < typename PassTraits< Model, Model::Traits::dimRange, (pOrd < 0 ) ? 0 : pOrd> :: DestinationType >
   {
     enum PassIdType { u, limitPassId, advectPassId };    /*@\label{ad:passids}@*/
+    enum { polOrd = ( pOrd < 0 ) ? 0 : pOrd };
+    enum { limiterPolOrd = ( pOrd < 0 ) ? 1 : pOrd };
 
   public:
     enum { dimRange = Model::dimRange };
@@ -247,13 +249,15 @@ namespace Dune {
     typedef AdvectionDiffusionDGPrimalModel
       < Model, NumFluxType, diffFluxId, polOrd, limitPassId, advection, diffusion > 
                                                                         DiscreteModel1Type;
+
     typedef typename DiscreteModel1Type :: DiffusionFluxType            DiffusionFluxType;
     typedef typename DiscreteModel1Type :: AdaptationHandlerType        AdaptationHandlerType;
 
     // The model of the limiter pass (limitPassId)
-    typedef Fem :: StandardLimiterDiscreteModel< PassTraitsType, Model, u > LimiterDiscreteModelType;
+    typedef PassTraits< Model, dimRange, limiterPolOrd >                LimiterPassTraitsType;
+    typedef Fem :: StandardLimiterDiscreteModel< LimiterPassTraitsType, Model, u > LimiterDiscreteModelType;
 
-    typedef typename LimiterDiscreteModelType :: Traits                       Traits;
+    typedef typename DiscreteModel1Type :: Traits                       Traits;
 
     typedef typename Model :: Traits :: GridType                        GridType;
 
@@ -265,6 +269,11 @@ namespace Dune {
 
     typedef typename Traits :: GridPartType                             GridPartType;
 
+    typedef typename LimiterDiscreteModelType :: Traits  LimiterTraits ;
+    typedef typename LimiterTraits :: DiscreteFunctionType
+      LimiterDestinationType ;
+    typedef typename LimiterDestinationType :: DiscreteFunctionSpaceType  LimiterSpaceType;
+
     typedef StartPass< DiscreteFunctionType, u >                        Pass0Type; /*@LST0S@*/
     typedef LimitDGPass< LimiterDiscreteModelType, Pass0Type, limitPassId >   Pass1Type; /*@\label{ad:typedefpass1}@*/
     typedef LocalCDGPass< DiscreteModel1Type, Pass1Type, advectPassId > Pass2Type; /*@\label{ad:typedefpass2}@*//*@LST0E@*/
@@ -272,7 +281,7 @@ namespace Dune {
     typedef typename PassTraitsType::IndicatorType                      IndicatorType;
     typedef typename IndicatorType::DiscreteFunctionSpaceType           IndicatorSpaceType;
 
-    template< class Limiter, int pOrd >
+    template< class Limiter, int pO >
     struct LimiterCall
     {
       template <class ArgumentType, class DestinationType>
@@ -306,14 +315,15 @@ namespace Dune {
       , numflux_( numf )
       , gridPart_( grid_ )
       , space_(gridPart_)
-      , uTmp_( (polOrd > 0) ? (new DestinationType("limitTmp", space_)) : 0 )
+      , limiterSpace_( gridPart_ )
+      , uTmp_( (polOrd > 0) ? (new LimiterDestinationType("limitTmp", limiterSpace_)) : 0 )
       , fvSpc_( gridPart_ )
       , indicator_( "Indicator", fvSpc_ )
       , diffFlux_( gridPart_, model_ )
       , problem1_( model_, numflux_, diffFlux_ )
       , limitProblem_( model_ , space_.order() )
       , pass0_()
-      , pass1_( limitProblem_, pass0_, space_ )    /*@\label{ad:initialisepass1}@*/
+      , pass1_( limitProblem_, pass0_, limiterSpace_ )    /*@\label{ad:initialisepass1}@*/
       , pass2_( problem1_, pass1_, space_ )    /*@\label{ad:initialisepass1}@*/
     {
       limitProblem_.setIndicator( &indicator_ );
@@ -426,7 +436,9 @@ namespace Dune {
     const NumFluxType&  numflux_;
     GridPartType        gridPart_;
     SpaceType           space_;
-    mutable DestinationType* uTmp_;
+    LimiterSpaceType    limiterSpace_;
+    mutable LimiterDestinationType* uTmp_;
+
     IndicatorSpaceType  fvSpc_;
     IndicatorType       indicator_;
 
