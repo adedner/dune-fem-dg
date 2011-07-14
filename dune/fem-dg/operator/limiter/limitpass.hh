@@ -1176,17 +1176,25 @@ namespace Dune {
         for ( ; niter != endnit; ++niter ) 
         {
           const IntersectionType& intersection = *niter; 
+          const bool hasBoundary = intersection.boundary();
+          const bool hasNeighbor = intersection.neighbor();
 
           // check cartesian
           if( ! StructuredGrid && cartesian ) 
           {
             // check whether this element is really cartesian 
-            if ( ! CheckCartesian::checkIntersection(intersection) ) cartesian = false;
+            cartesian &= ( ! CheckCartesian::checkIntersection(intersection) );
           }
-          
-          // check all neighbors 
-          if (intersection.neighbor()) 
+
+          DomainType lambda( 1 );
+          RangeType nbVal( 0 );
+
+          /////////////////////////////////////
+          //  if we have a neighbor 
+          /////////////////////////////////////
+          if ( hasNeighbor ) 
           {
+            // check all neighbors 
             EntityPointerType ep = intersection.outside();
             EntityType& nb = *ep;
             
@@ -1194,44 +1202,31 @@ namespace Dune {
             const LocalFunctionType uNb = U.localFunction(nb);
 
             // non-conforming case 
-            if( ! intersection.conforming() ) nonConforming = true ;
+            nonConforming |= (! intersection.conforming() );
                 
-            RangeType nbVal;
-
             // get geometry of neighbor 
             const Geometry& nbGeo = nb.geometry();
 
-            DomainType nbBary = nbGeo.global( geoInfo_.localCenter( nbGeo.type() ) );
-
-            // evaluate function  
-            if ( evalAverage(nb, uNb, nbVal ) )
+            // this is true in the periodic case 
+            if( ! hasBoundary ) 
             {
-              limiter = true;
+              lambda = nbGeo.global( geoInfo_.localCenter( nbGeo.type() ) );
+              // calculate difference 
+              lambda -= enBary;
             }
+
+            // evaluate function 
+            limiter |= evalAverage(nb, uNb, nbVal );
 
             // calculate difference 
             nbVal -= enVal;
-            //for( int r=0; r<dimRange; ++r ) 
-            //  if( std::abs( nbVal[ r ] ) < 1e-14 ) nbVal[ r ] = 0;
-
-            // store difference of mean values 
-            nbVals.push_back(nbVal);
-            
-            // calculate difference 
-            nbBary -= enBary;
-
-            //for( int j=0; j<dim; ++j ) 
-            //  if( std::abs( nbBary[ j ] ) < 1e-14 ) nbBary[ j ] = 0;
-
-            // store value 
-            barys.push_back(nbBary);
 
           } // end neighbor 
 
           ////////////////////////////
           // --boundary
           ////////////////////////////
-          // use ghost cell approach for limiting 
+          // use ghost cell approach for limiting, 
           if( intersection.boundary() )
           {
             // we have entity with boundary intersections 
@@ -1246,7 +1241,7 @@ namespace Dune {
             const FaceDomainType& faceMid = faceGeoInfo_.localCenter( interGeo.type() );
 
             // get unit normal 
-            DomainType lambda ( intersection.unitOuterNormal(faceMid) );
+            lambda = intersection.unitOuterNormal(faceMid);
 
             // get one point of intersection 
             DomainType point ( interGeo.corner( 0 ) );
@@ -1254,41 +1249,38 @@ namespace Dune {
 
             const double length = (point * lambda);
             const double factorLength = (cartesianGrid_) ? 2.0 * length : length ;
-            //const double factorLength = length ; //(cartesianGrid_) ? 2.0 * length : length ;
             lambda *= factorLength;
 
             assert( lambda.two_norm () > 0 );
 
-            //for( int j=0; j<dim; ++j ) 
-            //  if( std::abs( lambda[ j ] ) < 1e-14 ) lambda[ j ] = 0;
-
-            // store difference between bary centers 
-            barys.push_back(lambda);
-
             /////////////////////////////////////////////////
             /////////////////////////////////////////////////
-            
-            RangeType nbVal( 0 );
-            
-            // check for boundary Value 
-            const FaceDomainType localPoint 
-                  ( interGeo.local( lambda + enBary ) );
-            
-            if( discreteModel_.hasBoundaryValue(intersection, currentTime_, 
-                                          localPoint) )
+            // only when we don't have a neighbor
+            // this can be true in periodic case 
+            if( ! hasNeighbor ) 
             {
-              discreteModel_.boundaryValue(intersection, currentTime_, 
-                                     localPoint, 
-                                     enVal, nbVal);
-              // calculate difference 
-              nbVal -= enVal;
-              //for( int r=0; r<dimRange; ++r ) 
-              //  if( std::abs( nbVal[ r ] ) < 1e-14 ) nbVal[ r ] = 0;
+              // check for boundary Value 
+              const FaceDomainType localPoint 
+                    ( interGeo.local( lambda + enBary ) );
+              
+              if( discreteModel_.hasBoundaryValue(intersection, currentTime_, 
+                                            localPoint) )
+              {
+                discreteModel_.boundaryValue(intersection, currentTime_, 
+                                       localPoint, 
+                                       enVal, nbVal);
+                // calculate difference 
+                nbVal -= enVal;
+              }
             }
 
-            // store value 
-            nbVals.push_back( nbVal );
           } //end boundary
+
+          // store difference of mean values 
+          nbVals.push_back(nbVal);
+            
+          // store difference between bary centers 
+          barys.push_back(lambda);
 
         } // end intersection iterator 
       }
