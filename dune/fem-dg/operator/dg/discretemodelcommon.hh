@@ -18,6 +18,8 @@
 #include <dune/fem-dg/operator/limiter/limiter.hh>
 #include <dune/fem-dg/operator/fluxes/ldgflux.hh>
 #include <dune/fem-dg/operator/adaptation/adaptation.hh>
+
+// pass traits (include before to overload default values)
 #include <dune/fem-dg/operator/dg/passtraits.hh>
 
 namespace Dune {
