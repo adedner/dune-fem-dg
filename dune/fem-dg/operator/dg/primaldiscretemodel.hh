@@ -325,7 +325,7 @@ namespace Dune {
       if( diffusion && hasBoundaryValue ) 
       {
         // diffusion boundary flux for Dirichlet boundaries 
-        RangeType dLeft;
+        RangeType dLeft ( 0 );
         diffTimeStep = 
           diffFlux_.boundaryFlux(it, 
                                  *this, 
@@ -338,7 +338,7 @@ namespace Dune {
       }
       else if ( diffusion ) 
       {
-        RangeType diffBndFlux;
+        RangeType diffBndFlux ( 0 );
         model_.diffusionBoundaryFlux( it, time, faceQuadInner.localPoint(quadPoint),
                                       uLeft[uVar], jacLeft[uVar], diffBndFlux );
         gLeft += diffBndFlux;

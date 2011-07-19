@@ -75,11 +75,7 @@ namespace Dune {
     using BaseType :: outside;
 
     // This type definition allows a convenient access to arguments of passes.
-#if DUNE_VERSION_NEWER_REV(DUNE_COMMON,2,1,0)
     integral_constant< int, passUId > uVar;
-#else
-    Int2Type<passUId> uVar;
-#endif
 
   public:
     typedef GradientTraits< Model, NumFlux, polOrd, passUId >        Traits;
@@ -309,11 +305,7 @@ namespace Dune {
     using BaseType :: maxAdvTimeStep_ ;
     using BaseType :: maxDiffTimeStep_ ;
 
-#if DUNE_VERSION_NEWER_REV(DUNE_COMMON,2,1,0)
     integral_constant< int, passGradId> sigmaVar;
-#else
-    Int2Type<passGradId> sigmaVar;
-#endif
 
   public:
     enum { dimDomain = Traits :: dimDomain };
@@ -516,7 +508,7 @@ namespace Dune {
       if( diffusion && hasBoundaryValue ) 
       {
         // diffusion boundary flux for Dirichlet boundaries 
-        RangeType dLeft;
+        RangeType dLeft ( 0 );
         diffTimeStep = diffFlux_.boundaryFlux(it, 
                                *this, 
                                time, faceQuadInner, quadPoint,
@@ -528,7 +520,7 @@ namespace Dune {
       }
       else if ( diffusion )
       {
-        RangeType diffBndFlux;
+        RangeType diffBndFlux ( 0 );
         model_.diffusionBoundaryFlux( it, time, faceQuadInner.localPoint(quadPoint),
                                       uLeft[uVar], jacLeft[uVar], diffBndFlux );
         gLeft += diffBndFlux;
