@@ -11,6 +11,8 @@
 #include <dune/fem/pass/dgdiscretemodel.hh>
 #include <dune/fem/function/adaptivefunction.hh>
 #include <dune/fem/quadrature/cachingquadrature.hh>
+#include <dune/fem-dg/operator/adaptation/adaptation.hh>
+
 
 namespace Dune {
 
