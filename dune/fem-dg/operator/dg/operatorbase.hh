@@ -111,6 +111,9 @@ namespace Dune {
     inline const DiscreteFunctionSpaceType& space() const {
 	    return space_;
     } 
+    inline DiscreteFunctionSpaceType& space() {
+	    return space_;
+    } 
 
     inline void switchupwind() 
     { 
