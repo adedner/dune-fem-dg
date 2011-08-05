@@ -109,20 +109,20 @@ namespace Dune {
   public:
     //- Public methods
     //! Constructor
-    //! \param problem Actual problem definition (see problem.hh)
+    //! \param discreteModel Actual discrete model definition (see dgdiscretemodels.hh)
     //! \param pass Previous pass
     //! \param spc Space belonging to the discrete function local to this pass
     //! \param volumeQuadOrd defines the order of the volume quadrature which is by default 2* space polynomial order 
     //! \param faceQuadOrd defines the order of the face quadrature which is by default 2* space polynomial order 
-    LocalCDGPass( DiscreteModelType& problem, 
+    LocalCDGPass( DiscreteModelType& discreteModel, 
                   PreviousPassType& pass, 
                   const DiscreteFunctionSpaceType& spc,
                   const int volumeQuadOrd = -1,
                   const int faceQuadOrd = -1,
                   const bool notThreadParallel = true ) 
       : BaseType(pass, spc),
-        caller_(problem),
-        problem_(problem),
+        caller_(discreteModel),
+        discreteModel_(discreteModel),
         arg_(0),
         dest_(0),
         spc_(spc),
@@ -169,7 +169,7 @@ namespace Dune {
     //! switch upwind if necessary 
     void switchUpwind() 
     {
-      problem_.switchUpwind();
+      discreteModel_.switchUpwind();
     }
     
     //! Estimate for the timestep size 
@@ -399,13 +399,13 @@ namespace Dune {
 
       // only apply volumetric integral if order > 0 
       // otherwise this contribution is zero 
-      if( (spc_.order() > 0) || problem_.hasSource() ) 
+      if( (spc_.order() > 0) || discreteModel_.hasSource() ) 
       {
         VolumeQuadratureType volQuad(entity, volumeQuadOrd_);
         caller_.setEntity(entity, volQuad);
 
         // if only flux, evaluate only flux 
-        if ( problem_.hasFlux() && ! problem_.hasSource() ) 
+        if ( discreteModel_.hasFlux() && ! discreteModel_.hasSource() ) 
         {
           evalVolumetricPartFlux(entity, geo, volQuad, updEn);
         }
@@ -423,7 +423,7 @@ namespace Dune {
       /////////////////////////////
       // Surface integral part
       /////////////////////////////
-      if ( problem_.hasFlux() ) 
+      if ( discreteModel_.hasFlux() ) 
       {
         const IntersectionIteratorType endnit = gridPart_.iend(entity);
         for (IntersectionIteratorType nit = gridPart_.ibegin(entity); nit != endnit; ++nit) 
@@ -529,7 +529,7 @@ namespace Dune {
           }
         } // end intersection loop
 
-      } // end if problem_.hasFlux()
+      } // end if discreteModel_.hasFlux()
 
       // this entity is finised by now 
       visited_[ indexSet_.index( entity ) ] = reallyCompute_ ;
@@ -771,7 +771,7 @@ namespace Dune {
 
   protected:
     mutable DiscreteModelCallerType caller_;
-    const DiscreteModelType& problem_; 
+    const DiscreteModelType& discreteModel_; 
     
     mutable ArgumentType* arg_;
     mutable DestinationType* dest_;
