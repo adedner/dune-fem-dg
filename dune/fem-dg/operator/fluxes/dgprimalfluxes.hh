@@ -208,7 +208,7 @@ namespace Dune {
         { 
           liftFactor_ = theoryFactor * maxNumFaces;
         }
-        else 
+        else if( method_ == method_nipg )
         {
           std::cerr << "ERROR: No theory parameters for NIPG" << std::endl;
           DUNE_THROW(InvalidStateException,"No theory parameters for NIPG");
