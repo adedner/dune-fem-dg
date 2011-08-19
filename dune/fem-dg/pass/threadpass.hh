@@ -110,6 +110,7 @@ namespace Dune {
       passes_( Fem::ThreadManager::maxThreads() ),
       passComputeTime_( Fem::ThreadManager::maxThreads(), 0.0 ),
       arg_(0), dest_(0),
+      numberOfElements_( 0 ),
       firstCall_( true ),
       sumComputeTime_( Parameter :: getValue<bool>("fem.parallel.sumcomputetime", false ) )
     {
