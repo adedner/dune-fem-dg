@@ -264,7 +264,7 @@ namespace Dune {
           {
             if( std::abs( matrix( i, idx ) - matrix( idx, i) ) > 1e-6 )
             {
-              std::cout << " i , idx: " << i << " " << idx << " = " << matrix(i,idx) << " - " << matrix(idx,i) << std::endl;
+              // std::cout << " i , idx: " << i << " " << idx << " = " << matrix(i,idx) << " - " << matrix(idx,i) << std::endl;
               symetric = false ;
             }
           }
