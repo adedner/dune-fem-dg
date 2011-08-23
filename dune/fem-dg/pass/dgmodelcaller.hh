@@ -142,7 +142,7 @@ namespace Dune {
                                  const QuadratureImp& quadInner,
                                  const QuadratureImp& quadOuter)
     {
-      assert( ! intersection.boundary () );
+      assert( intersection.neighbor () );
 
       setNeighbor( neighbor );
 
