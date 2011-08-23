@@ -216,7 +216,6 @@ namespace Dune {
       this->operator()( vector, rhs );
 
       const int size = spc_.size();
-      bool symetric = true ;
       {
         reallyCompute_ = false ;
         // set vector as arg and matrixRow as dest 
@@ -253,21 +252,40 @@ namespace Dune {
               {
                 matrix.add( idx, i, value );  
               }
-              if( symetric && i<idx ) 
-              {
-                if( ( std::abs( matrix( i, idx ) ) - std::abs( value ) ) > 1e-6 )
-                {
-                  symetric = false ;
-                }
-              }
             }
           }
         }
-
-        std::cout << "Matrix is " << symetric << std::endl;
-        reallyCompute_ = true ;
-        doFinalize( matrixRow );
       }
+      {
+        bool symetric = true ;
+        for( int idx = 0 ; idx < size; ++idx )
+        {
+          for(int i=0; i<size; ++i) 
+          {
+            if( std::abs( matrix( i, idx ) - matrix( idx, i) ) > 1e-6 )
+            {
+              std::cout << " i , idx: " << i << " " << idx << " = " << matrix(i,idx) << " - " << matrix(idx,i) << std::endl;
+              symetric = false ;
+            }
+          }
+        }
+        std::cout << "Matrix is " << (symetric==true? "symetric":"non symetric") << std::endl;
+        /*
+        if (!symetric)
+        {
+          for( int idx = 0 ; idx < size; ++idx )
+          {
+            for(int i=0; i<size; ++i) 
+            {
+              std::cout << matrix( i, idx ) << " ";
+            }
+            std::cout << std::endl;
+          }
+        }
+        */
+      }
+      reallyCompute_ = true ;
+      doFinalize( matrixRow );
     }
 
     //! In the preparations, store pointers to the actual arguments and 
