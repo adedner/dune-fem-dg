@@ -216,6 +216,26 @@ namespace Dune {
       this->operator()( vector, rhs );
 
       const int size = spc_.size();
+#if 0
+      {
+        for(int i=0; i<size; ++i) 
+        {
+          vector.leakPointer()[ i ] = 1;
+          this->operator()( vector, matrixRow );
+          vector.leakPointer()[ i ] = 0;
+          matrixRow *= -1.0;
+          matrixRow += rhs;
+          for(int j=0; j<size; ++j) 
+          {
+            const double value = matrixRow.leakPointer()[ j ];
+            if( std::abs( value ) > 0 )
+            {
+              matrix.add( i, j, value );  
+            }
+          }
+        }
+      }
+#else
       {
         reallyCompute_ = false ;
         // set vector as arg and matrixRow as dest 
@@ -256,6 +276,7 @@ namespace Dune {
           }
         }
       }
+#endif
       {
         bool symetric = true ;
         for( int idx = 0 ; idx < size; ++idx )
