@@ -243,37 +243,76 @@ namespace Dune {
 
         typedef typename DestinationType :: DofBlockPtrType DofBlockPtrType;
         IteratorType endit = spc_.end();
+
+        typedef typename DiscreteFunctionSpaceType :: BlockMapperType BlockMapperType;
+        typedef typename DiscreteFunctionSpaceType :: MapperType      MapperType;
+
+        enum { localBlockSize = DiscreteFunctionSpaceType :: localBlockSize };
+
+        const BlockMapperType& blockMapper = spc_.blockMapper();
+
+        typedef typename BlockMapperType :: DofMapIteratorType BlockDofMapIteratorType;
+        typedef typename MapperType :: DofMapIteratorType DofMapIteratorType;
+
+        const int sizeBlocks = blockMapper.size();
         for (IteratorType it = spc_.begin(); it != endit; ++it) 
         {
           const EntityType& entity = *it;
-          BaseFunctionSetType baseSet = spc_.baseFunctionSet( entity );
 
-          const int numBaseFct = baseSet.numBaseFunctions();
-          for( int base = 0 ; base < numBaseFct; ++base )
+          DofMapIteratorType dof = spc_.mapper().begin( entity );
+
+          // iterate over all block dofs 
+          const BlockDofMapIteratorType dofend = blockMapper.end( entity );
+          for( BlockDofMapIteratorType dofit = blockMapper.end( entity );
+               dofit != dofend; ++ dofit )
           {
-            const int idx = spc_.mapper().mapToGlobal( entity, base );
-            vector.leakPointer()[ idx ] = 1;
+            // get block 
+            DofBlockPtrType block = vector.block( dofit.global() );
 
-            // clear target 
-            matrixRow.clear();
-
-            applyLocal( entity );
-            // apply -1 
-            matrixRow *= -1.0;
-            // calc op( 0 )
-            vector.leakPointer()[ idx ] = 0;
-            // add right hand side 
-            applyLocal( entity );
-
-            for(int i=0; i<size; ++i) 
+            for( int l=0; l<localBlockSize; ++l, ++dof ) 
             {
-              const double value = matrixRow.leakPointer()[ i ];
-              if( std::abs( value ) > 0 )
+              // set base function dof to 1 
+              (*block)[ l ] = 1;
+
+              // clear target 
+              matrixRow.clear();
+
+              // apply operator locally 
+              applyLocal( entity );
+
+              // apply -1 
+              matrixRow *= -1.0;
+
+              // calc op( 0 )
+              (*block)[ l ] = 0;
+
+              // add right hand side 
+              applyLocal( entity );
+
+              const int idx = dof.global();
+              int i = 0;
+              for(int block=0; block<sizeBlocks; ++block) 
               {
-                matrix.add( idx, i, value );  
-              }
-            }
-          }
+                DofBlockPtrType dofBlock = matrixRow.block( block );
+                for( int l=0; l<localBlockSize; ++l, ++i  ) 
+                {
+                  const double value = (*dofBlock)[ l ];
+                  if( std::abs( value ) > 0 )
+                  {
+                    if( idx == i ) 
+                    {
+                      matrix.add( idx, i, value );  
+                    }
+                    else 
+                    {
+                      matrix.add( idx, i, 0.5 * value );  
+                      matrix.add( i, idx, 0.5 * value );  
+                    }
+                  }
+                }
+              } // end for block=0...
+            }// end for localBlockSize 
+          } // end for numDofs 
         }
       }
 #endif
