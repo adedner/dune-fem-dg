@@ -99,6 +99,8 @@ namespace Dune {
                                  , CombinedSelectorType
                                > DiscreteModelCallerType;
 
+    typedef typename DestinationType :: DofBlockPtrType DofBlockPtrType;
+
     // type of local id set 
     typedef typename GridPartType::IndexSetType IndexSetType; 
     typedef TemporaryLocalFunction< DiscreteFunctionSpaceType > TemporaryLocalFunctionType;
@@ -205,11 +207,59 @@ namespace Dune {
       this->computeTime_ += timer.elapsed();
     }
 
+    void applyForBlock( const EntityType& entity, 
+                        const int l, 
+                        DofBlockPtrType& block, 
+                        DestinationType& matrixRow ) const 
+    {
+      // set base function dof to 1 
+      (*block)[ l ] = 1;
+
+      // clear target 
+      matrixRow.clear();
+
+      // apply operator locally 
+      applyLocal( entity );
+
+      // apply -1 
+      matrixRow *= -1.0;
+
+      // calc op( 0 )
+      (*block)[ l ] = 0;
+
+      // add right hand side 
+      applyLocal( entity );
+    }
+
+    template <class DofIter, class MatrixType>
+    void addRowToMatrix( DofIter& dof, 
+                         const int sizeBlocks,
+                         DestinationType& matrixRow,
+                         MatrixType& matrix ) const 
+    {
+      enum { localBlockSize = DiscreteFunctionSpaceType :: localBlockSize };
+      const int idx = dof.global();
+      int i = 0;
+      for(int block=0; block<sizeBlocks; ++block) 
+      {
+        DofBlockPtrType dofBlock = matrixRow.block( block );
+        for( int l=0; l<localBlockSize; ++l, ++i  ) 
+        {
+          const double value = (*dofBlock)[ l ];
+          if( std::abs( value ) > 0 )
+          {
+            matrix.add( idx, i, value );  
+          }
+        }
+      }
+    }
+
     template <class Matrix> 
     void operator2Matrix( Matrix& matrix, DestinationType& rhs ) const 
     {
       DestinationType vector("Op2Mat::arg", spc_ ); 
       DestinationType matrixRow("Op2Mat::matixRow", spc_ ); 
+      DestinationType result("Op2Mat::result", spc_ ); 
       vector.clear();  
       
       // get right hand side, = op( 0 )
@@ -241,7 +291,6 @@ namespace Dune {
         // set vector as arg and matrixRow as dest 
         this->operator()( vector, matrixRow );
 
-        typedef typename DestinationType :: DofBlockPtrType DofBlockPtrType;
         IteratorType endit = spc_.end();
 
         typedef typename DiscreteFunctionSpaceType :: BlockMapperType BlockMapperType;
@@ -254,66 +303,68 @@ namespace Dune {
         typedef typename BlockMapperType :: DofMapIteratorType BlockDofMapIteratorType;
         typedef typename MapperType :: DofMapIteratorType DofMapIteratorType;
 
+        // interate over the grid 
         const int sizeBlocks = blockMapper.size();
         for (IteratorType it = spc_.begin(); it != endit; ++it) 
         {
           const EntityType& entity = *it;
 
-          DofMapIteratorType dof = spc_.mapper().begin( entity );
-
-          // iterate over all block dofs 
-          const BlockDofMapIteratorType dofend = blockMapper.end( entity );
-          for( BlockDofMapIteratorType dofit = blockMapper.end( entity );
-               dofit != dofend; ++ dofit )
           {
-            // get block 
-            DofBlockPtrType block = vector.block( dofit.global() );
+            DofMapIteratorType dof = spc_.mapper().begin( entity );
 
-            for( int l=0; l<localBlockSize; ++l, ++dof ) 
+            // iterate over all block dofs 
+            const BlockDofMapIteratorType dofend = blockMapper.end( entity );
+            for( BlockDofMapIteratorType dofit = blockMapper.end( entity );
+                 dofit != dofend; ++ dofit )
             {
-              // set base function dof to 1 
-              (*block)[ l ] = 1;
+              // get block 
+              DofBlockPtrType block = vector.block( dofit.global() );
 
-              // clear target 
-              matrixRow.clear();
-
-              // apply operator locally 
-              applyLocal( entity );
-
-              // apply -1 
-              matrixRow *= -1.0;
-
-              // calc op( 0 )
-              (*block)[ l ] = 0;
-
-              // add right hand side 
-              applyLocal( entity );
-
-              const int idx = dof.global();
-              int i = 0;
-              for(int block=0; block<sizeBlocks; ++block) 
+              for( int l=0; l<localBlockSize; ++l, ++dof ) 
               {
-                DofBlockPtrType dofBlock = matrixRow.block( block );
-                for( int l=0; l<localBlockSize; ++l, ++i  ) 
+                // create matrix row 
+                applyForBlock( entity, l, block, matrixRow );
+
+                // add row to matrix 
+                addRowToMatrix( dof, sizeBlocks, matrixRow, matrix );
+              }
+            }
+          }
+
+          // check for non-conforming intersections 
+          const IntersectionIteratorType endnit = gridPart_.iend( entity );
+          for( IntersectionIteratorType nit = gridPart_.ibegin( entity ); 
+               nit != endnit ; ++ nit ) 
+          {
+            const IntersectionType& intersection = *nit ;
+            // on non-conforming intersections we have to add something more
+            if( ! intersection.conforming() && intersection.neighbor() ) 
+            {
+              EntityPointerType outside = intersection.outside() ;
+              const EntityType& neighbor = *outside ;
+
+              DofMapIteratorType dof = spc_.mapper().begin( neighbor );
+
+              // iterate over all block dofs 
+              const BlockDofMapIteratorType dofend = blockMapper.end( neighbor );
+              for( BlockDofMapIteratorType dofit = blockMapper.end( neighbor );
+                   dofit != dofend; ++ dofit )
+              {
+                // get block 
+                DofBlockPtrType block = vector.block( dofit.global() );
+
+                for( int l=0; l<localBlockSize; ++l, ++dof ) 
                 {
-                  const double value = (*dofBlock)[ l ];
-                  if( std::abs( value ) > 0 )
-                  {
-                    if( idx == i ) 
-                    {
-                      matrix.add( idx, i, value );  
-                    }
-                    else 
-                    {
-                      matrix.add( idx, i, 0.5 * value );  
-                      matrix.add( i, idx, 0.5 * value );  
-                    }
-                  }
+                  // create matrix row (but still using entity)
+                  applyForBlock( entity, l, block, matrixRow );
+
+                  // add row to matrix 
+                  addRowToMatrix( dof, sizeBlocks, matrixRow, matrix );
                 }
-              } // end for block=0...
-            }// end for localBlockSize 
-          } // end for numDofs 
-        }
+              }
+            }
+          } // end intersection iterator 
+        } // end for each entity 
       }
 #endif
       {
