@@ -261,6 +261,8 @@ namespace Dune {
       DestinationType matrixRow("Op2Mat::matixRow", spc_ ); 
       DestinationType result("Op2Mat::result", spc_ ); 
       vector.clear();  
+
+      matrix.clear();
       
       // get right hand side, = op( 0 )
       this->operator()( vector, rhs );
@@ -291,7 +293,6 @@ namespace Dune {
         // set vector as arg and matrixRow as dest 
         this->operator()( vector, matrixRow );
 
-        IteratorType endit = spc_.end();
 
         typedef typename DiscreteFunctionSpaceType :: BlockMapperType BlockMapperType;
         typedef typename DiscreteFunctionSpaceType :: MapperType      MapperType;
@@ -305,6 +306,7 @@ namespace Dune {
 
         // interate over the grid 
         const int sizeBlocks = blockMapper.size();
+        IteratorType endit = spc_.end();
         for (IteratorType it = spc_.begin(); it != endit; ++it) 
         {
           const EntityType& entity = *it;
@@ -314,7 +316,7 @@ namespace Dune {
 
             // iterate over all block dofs 
             const BlockDofMapIteratorType dofend = blockMapper.end( entity );
-            for( BlockDofMapIteratorType dofit = blockMapper.end( entity );
+            for( BlockDofMapIteratorType dofit = blockMapper.begin( entity );
                  dofit != dofend; ++ dofit )
             {
               // get block 
@@ -347,7 +349,7 @@ namespace Dune {
 
               // iterate over all block dofs 
               const BlockDofMapIteratorType dofend = blockMapper.end( neighbor );
-              for( BlockDofMapIteratorType dofit = blockMapper.end( neighbor );
+              for( BlockDofMapIteratorType dofit = blockMapper.begin( neighbor );
                    dofit != dofend; ++ dofit )
               {
                 // get block 
@@ -381,20 +383,8 @@ namespace Dune {
           }
         }
         std::cout << "Matrix is " << (symetric==true? "symetric":"non symetric") << std::endl;
-        /*
-        if (!symetric)
-        {
-          for( int idx = 0 ; idx < size; ++idx )
-          {
-            for(int i=0; i<size; ++i) 
-            {
-              std::cout << matrix( i, idx ) << " ";
-            }
-            std::cout << std::endl;
-          }
-        }
-        */
       }
+
       reallyCompute_ = true ;
       doFinalize( matrixRow );
     }
