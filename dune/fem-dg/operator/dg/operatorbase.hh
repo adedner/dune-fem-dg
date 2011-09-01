@@ -136,6 +136,18 @@ namespace Dune {
       pass1_.operator2Matrix( matrix , rhs );
     }
 
+    template <class Entity, class Intersection, class Quadrature>
+    inline void flux(const DestinationType &u, 
+                     const Entity &entity, const Entity &nb,
+                     const Intersection &intersection, 
+                     const Quadrature &faceQuadInner, const Quadrature &faceQuadOuter,
+                     const int l,
+                     typename DestinationType::RangeType &fluxEn,
+                     typename DestinationType::RangeType &fluxNb) const
+    {
+      pass1_.flux(u,entity,nb,intersection,faceQuadInner,faceQuadOuter,l,fluxEn,fluxNb);
+    }
+
     inline void limit( DestinationType& U ) const {}
 
     inline double computeTime() const 

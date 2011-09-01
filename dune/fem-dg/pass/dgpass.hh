@@ -389,6 +389,35 @@ namespace Dune {
       doFinalize( matrixRow );
     }
 
+    template <class Entity, class Intersection, class Quadrature>
+    inline void flux(const DestinationType &u, 
+                     const Entity &entity, const Entity &nb,
+                     const Intersection &intersection, 
+                     const Quadrature &faceQuadInner, const Quadrature &faceQuadOuter,
+                     const int l,
+                     typename DestinationType::RangeType &fluxEn,
+                     typename DestinationType::RangeType &fluxNb) const
+    {
+      // add u to argument tuple
+      this->previousPass_.pass(u);
+      typename PreviousPassType::NextArgumentType prevArg=this->previousPass_.localArgument();
+      const typename BaseType::TotalArgumentType totalArg(&u, prevArg);
+      arg_ = const_cast<ArgumentType*>(&totalArg);
+      caller_.setArgument(*arg_);
+      caller_.setTime( this->time() );
+
+      caller_.setEntity( entity );
+      caller_.initializeIntersection( nb, intersection, faceQuadInner, faceQuadOuter );
+
+      JacobianRangeType diffFluxEn, diffFluxNb;
+
+      caller_.numericalFlux(intersection, faceQuadInner, faceQuadOuter, l, 
+                            fluxEn, fluxNb, diffFluxEn, diffFluxNb);
+
+      caller_.finalize();
+      arg_  = 0;
+    }
+
     //! In the preparations, store pointers to the actual arguments and 
     //! destinations. Filter out the "right" arguments for this pass.
     virtual void prepare(const ArgumentType& arg, DestinationType& dest) const
