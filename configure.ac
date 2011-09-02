@@ -31,6 +31,7 @@ AC_CONFIG_FILES([
   dune/fem-dg/solver/Makefile
   dune/fem-dg/misc/Makefile
   dune/fem-dg/models/Makefile
+  dune/fem-dg/assemble/Makefile
   dune-fem-dg.pc
 ])
 AC_OUTPUT
