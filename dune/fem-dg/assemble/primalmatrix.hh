@@ -5,6 +5,13 @@
 
 namespace Dune {
 
+/*************************
+ * Assemble system matrix using DGPrimalDiffusionFlux implementation
+ *
+ * Remark: at the moment this class sets up the transposed of the system
+ *         matrix similar to DgPass::operator2Matrix
+ ************************/
+
 template <class DestinationImp,
           class Model, 
           DGDiffusionFluxIdentifier = method_general >
@@ -37,6 +44,7 @@ class DGPrimalMatrixAssembly
 
   typedef typename GridPartType :: GridType :: template Codim< 0 > :: EntityPointer EntityPointerType;
 
+  // typedef DGPrimalDiffusionFlux<DiscreteFunctionSpaceType,Model,method_general,true> FluxType;
   typedef DGPrimalDiffusionFlux<DiscreteFunctionSpaceType,Model,method_general> FluxType;
 
   struct RangeValues
@@ -90,7 +98,15 @@ class DGPrimalMatrixAssembly
     : model_(model),
       space_(gridPart),
       flux_(gridPart, model)
-  {}
+  {
+    int polOrder = Parameter::getValue<double>("femhowto.polynomialOrder",1);
+
+    std::vector<int> polOrderVec( space_.gridPart().indexSet().size(0) );
+    std::fill( polOrderVec.begin(), polOrderVec.end(), polOrder );
+
+    DestinationType tmp("tmp", space_);
+    pAdaptation( tmp, polOrderVec );
+  }
 
   const DiscreteFunctionSpaceType &space() const
   {
@@ -131,7 +147,7 @@ class DGPrimalMatrixAssembly
       const BaseFunctionSetType &baseSet = localOpEn.domainBaseFunctionSet();
       const unsigned int numBaseFunctions = baseSet.numBaseFunctions();
             
-      QuadratureType quadrature( entity, 2*dfSpace.order() );
+      QuadratureType quadrature( entity, 2*(dfSpace.order()+1) );
       const size_t numQuadraturePoints = quadrature.nop();
       for( size_t pt = 0; pt < numQuadraturePoints; ++pt )
       {
@@ -198,9 +214,9 @@ class DGPrimalMatrixAssembly
           // get neighbor's base function set 
           const BaseFunctionSetType &baseSetNb = localOpNb.domainBaseFunctionSet();
 
-          FaceQuadratureType faceQuadInside(dfSpace.gridPart(), intersection, 2*dfSpace.order()+1,
+          FaceQuadratureType faceQuadInside(dfSpace.gridPart(), intersection, 2*(dfSpace.order()+1),
                                             FaceQuadratureType::INSIDE);
-          FaceQuadratureType faceQuadOutside(dfSpace.gridPart(), intersection, 2*dfSpace.order()+1,
+          FaceQuadratureType faceQuadOutside(dfSpace.gridPart(), intersection, 2*(dfSpace.order()+1),
                                              FaceQuadratureType::OUTSIDE);
 
           const size_t numFaceQuadPoints = faceQuadInside.nop();
@@ -255,7 +271,7 @@ class DGPrimalMatrixAssembly
         {
           IntersectionStorage intersectionStorage( entity, entity, geometry.volume(), geometry.volume() );
         
-          FaceQuadratureType faceQuadInside(dfSpace.gridPart(), intersection, 2*dfSpace.order(),
+          FaceQuadratureType faceQuadInside(dfSpace.gridPart(), intersection, 2*dfSpace.order()+5,
                                             FaceQuadratureType::INSIDE);
 
           const size_t numFaceQuadPoints = faceQuadInside.nop();
@@ -399,6 +415,63 @@ class DGPrimalMatrixAssembly
                            retEn[ pt ], retNb[ pt ],
                            dretEn[ pt ], dretNb[ pt ]);
     }
+  }
+  template <class Quadrature,class Value,class DValue,class RetType, class DRetType>
+  void fluxAndLift(const IntersectionType &intersection,
+                   const EntityType &entity, const EntityType &neighbor,
+                   const double time,
+                   const Quadrature &faceQuadInside, const Quadrature &faceQuadOutside,
+                   const Value &valueEn, const DValue &dvalueEn,
+                   const Value &valueNb, const DValue &dvalueNb,
+                   RetType &retEn, DRetType &dretEn, 
+                   RetType &retNb, DRetType &dretNb,
+                   DRetType &liftEn, DRetType &liftNb) const
+  {
+    flux(intersection,entity,neighbor,time,faceQuadInside,faceQuadOutside,
+         valueEn,dvalueEn,valueNb,dvalueNb,
+         retEn,dretEn,retNb,dretNb);
+    const size_t numFaceQuadPoints = faceQuadInside.nop();
+    for( size_t pt = 0; pt < numFaceQuadPoints; ++pt )
+    {
+      liftEn[pt] = JacobianRangeType(0);
+      liftNb[pt] = JacobianRangeType(0);
+      // flux_.evaluateLifting(faceQuadInside,faceQuadOutside,pt,time,
+      //                       valueEn[pt],valueNb[pt],
+      //                       liftEn[pt],liftNb[pt]);
+    }
+  }
+  template <class FaceQuadrature,class Quadrature,class Value,class DValue,class RetType, class DRetType>
+  void fluxAndLift(const IntersectionType &intersection,
+                   const EntityType &entity, const EntityType &neighbor,
+                   const double time,
+                   const FaceQuadrature &faceQuadInside, const FaceQuadrature &faceQuadOutside,
+                   const Value &faceValueEn, const DValue &dfaceValueEn,
+                   const Value &faceValueNb, const DValue &dfaceValueNb,
+                   RetType &retEn, DRetType &dretEn, 
+                   RetType &retNb, DRetType &dretNb,
+                   const Quadrature &quadInside, const Quadrature &quadOutside, 
+                   const Value &valueEn, const Value &valueNb,
+                   DRetType &liftEn, DRetType &liftNb) const
+  {
+    flux(intersection,entity,neighbor,time,faceQuadInside,faceQuadOutside,
+         faceValueEn,dfaceValueEn,faceValueNb,dfaceValueNb,
+         retEn,dretEn,retNb,dretNb);
+    const size_t numFaceQuadPoints = quadInside.nop();
+    for( size_t pt = 0; pt < numFaceQuadPoints; ++pt )
+    {
+      liftEn[pt] = JacobianRangeType(0);
+      liftNb[pt] = JacobianRangeType(0);
+      /*
+      flux_.evaluateLifting(quadInside,quadOutside,pt,time,
+                            valueEn[pt],valueNb[pt],
+                            liftEn[pt],liftNb[pt]);
+      */
+    }
+  }
+
+  const Model &model() const
+  {
+    return model_;
   }
 
 
