@@ -54,6 +54,11 @@ namespace Dune {
     method_general = 6,   // general means all methods chosen via parameter file 
     method_none    = 7   // no diffusion (advection only) 
   };
+  enum DGLiftingFluxIdentifier { 
+    lifting_id_id    = 0,  // int_Omega r([u]).tau  = -int_e [u].{tau}
+    lifting_id_A     = 1,  // int_Omega r([u]).tau  = -int_e [u].{Atau}
+    lifting_A_A      = 2   // int_Omega r([u]).Atau = -int_e [u].{Atau}
+  };
 
   struct DGPrimalMethodNames 
   {
@@ -65,7 +70,6 @@ namespace Dune {
       assert( mthd >= method_cdg2 && mthd < method_general );
       return method[ mthd ];
     }
-
     static MethodType getMethod() 
     {
       const std::string method []
@@ -77,6 +81,23 @@ namespace Dune {
             methodNames( method_bo )
           };
       return (MethodType) Parameter::getEnum( "dgdiffusionflux.method", method );
+    }
+
+    typedef DGLiftingFluxIdentifier LiftingType;
+    static std::string liftingNames( const LiftingType mthd )
+    {
+      static const std::string method []
+        = { "id_id", "id_A" , "A_A" };
+      return method[ mthd ];
+    }
+    static LiftingType getLifting()
+    {
+      const std::string method []
+        = { liftingNames( lifting_id_id ),
+            liftingNames( lifting_id_A ),
+            liftingNames( lifting_A_A )
+          };
+      return (LiftingType) Parameter::getEnum( "dgdiffusionflux.lifting", method, 0 );
     }
   };
 
@@ -163,26 +184,21 @@ namespace Dune {
     //const bool hasLifting () const { return false; }
 
   protected:   
-    bool determineDirection( const double enVolume, const double nbVolume ) const 
+    bool determineDirection( const bool areaSwitch, const double enVolume, const double nbVolume,
+                             const Intersection& intersection ) const 
     {
-      // we need en=K^- and nb=K^+ such that c = (|K^-|/|K^+|) <= 1 
-      // outside is K^- if outside volume is smaller   
-      return ( enVolume > nbVolume );
-    }
-
-    bool determineDirection( const Intersection& intersection ) const 
-    {
-      Quadrature< DomainFieldType, dimDomain - 1 > quad( intersection.type() , 0 );
-      const DomainType normal = intersection.outerNormal( quad.point( 0 ) );
-      return determineDirection( normal );
-    }
-
-    /** \brief determines whether the interfaces is inflow
-     *  \return true if the interface is inflow 
-     */
-    bool determineDirection( const DomainType& normal) const 
-    {
-      return ( normal * upwind_ ) < 0 ;
+      if (areaSwitch && std::abs( enVolume - nbVolume ) > 1e-8)
+      {
+        // we need en=K^- and nb=K^+ such that c = (|K^-|/|K^+|) <= 1 
+        // outside is K^- if outside volume is smaller   
+        return ( enVolume > nbVolume );
+      }
+      else
+      {
+        Quadrature< DomainFieldType, dimDomain - 1 > quad( intersection.type() , 0 );
+        const DomainType normal = intersection.outerNormal( quad.point( 0 ) );
+        return ( normal * upwind_ ) < 0 ;
+      }
     }
 
   public:  
