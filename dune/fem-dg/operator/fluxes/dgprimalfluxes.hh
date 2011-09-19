@@ -248,6 +248,7 @@ namespace Dune {
       penalty_( other.penalty_ ),
       nipgFactor_( other.nipgFactor_ ),
       liftFactor_( other.liftFactor_ ),
+      liftingMethod_( other.liftingMethod_ ),
       penaltyTerm_( other.penaltyTerm_ ),
       LeMinusLifting_( hasLifting() ? new Lifting( gridPart_ ) : 0 ),
       LePlusLifting_( ( method_ == method_br2 ) ? new Lifting( gridPart_ ) : 0 ),
