@@ -58,7 +58,7 @@ namespace Dune {
 
     typedef CachingQuadrature< GridPartType, 0>                         VolumeQuadratureType ;
     
-    typedef LocalDGMassMatrix
+    typedef LocalMassMatrix
       < DiscreteGradientSpaceType, VolumeQuadratureType >               LocalMassMatrixType;
 
     class Lifting 
