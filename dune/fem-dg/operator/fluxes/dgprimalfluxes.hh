@@ -590,10 +590,9 @@ namespace Dune {
 
       FieldMatrixConverter< GradientType, JacobianRangeType> gradient( sigma );
 
-      JacobianRangeType mat; 
-
       if (liftingMethod_ != lifting_id_A)
       {
+        JacobianRangeType mat; 
         // set mat = G(u)L_e
         model_.diffusion( r_e.entity(),
                           time, faceQuad.point( quadPoint ),
@@ -603,9 +602,8 @@ namespace Dune {
       }
       else
       {
-        JacobianRangeType mat;
-        mat = gradient;
-        mat.mv( normal, lift );
+        // just apply gradient 
+        gradient.mv( normal, lift );
       }
     }
 
