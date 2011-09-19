@@ -9,17 +9,18 @@
 namespace EulerFluxes {
 
   template <class FunctionSpaceT>
-  class FieldRotator {
+  class FieldRotator 
+  {
+    template <int N> 
+    struct RotInt2Type{
+      enum { value = N };
+    };
+
   public:
     //- Global typedefs
     typedef typename FunctionSpaceT::DomainType NormalType;
     typedef typename FunctionSpaceT::RangeType  ValueType;
     typedef typename ValueType :: field_type    FieldType;
-
-    template <int N> 
-    struct FRInt2Type{
-      enum { value = N };
-    };
 
     //! Constructor
     //! The vector components to be rotated must be consecutive in the
@@ -28,43 +29,43 @@ namespace EulerFluxes {
     FieldRotator(const int startIdx) : 
       idx_(startIdx) 
     {
-      assert(startIdx < ValueType::size-NormalType::size+1 );
+      assert(startIdx < ValueType::dimension - NormalType::dimension+1 );
     }
 
     //! Rotate data from basic coordinate system into normal coordinate system
     void rotateForth(ValueType& res, 
                      const NormalType& n) const 
     {
-      rotateForth(res, n, FRInt2Type<NormalType::size>());
+      rotateForth(res, n, RotInt2Type<NormalType::dimension>());
     }
 
     //! Rotate data from normal coordinate system into basic coordinate system
     void rotateBack(ValueType& res, 
                     const NormalType& n) const 
     {
-      rotateBack(res, n, FRInt2Type<NormalType::size>());
+      rotateBack(res, n, RotInt2Type<NormalType::dimension>());
     }
 
   private:
     // Local methods
     void rotateForth(ValueType& res, 
                      const NormalType& n,
-                     FRInt2Type<1>) const;
+                     RotInt2Type<1>) const;
     void rotateForth(ValueType& res, 
                      const NormalType& n,
-                     FRInt2Type<2>) const;
+                     RotInt2Type<2>) const;
     void rotateForth(ValueType& res, 
                      const NormalType& n,
-                     FRInt2Type<3>) const;
+                     RotInt2Type<3>) const;
     void rotateBack(ValueType& res, 
                     const NormalType& n,
-                    FRInt2Type<1>) const;
+                    RotInt2Type<1>) const;
     void rotateBack(ValueType& res, 
                     const NormalType& n,
-                    FRInt2Type<2>) const;
+                    RotInt2Type<2>) const;
     void rotateBack(ValueType& res, 
                     const NormalType& n,
-                    FRInt2Type<3>) const;
+                    RotInt2Type<3>) const;
 
     
     const int idx_;
@@ -78,7 +79,7 @@ namespace EulerFluxes {
   inline void FieldRotator<FunctionSpaceT>::
   rotateForth(ValueType& res, 
               const NormalType& n,
-              FRInt2Type<1>) const {
+              RotInt2Type<1>) const {
     // res = arg ;
     res[idx_] = res[idx_] * n[0];
   }
@@ -87,7 +88,7 @@ namespace EulerFluxes {
   inline void FieldRotator<FunctionSpaceT>::
   rotateForth(ValueType& res, 
               const NormalType& n,
-              FRInt2Type<2>) const {
+              RotInt2Type<2>) const {
     // res = arg;
     const FieldType a[2] = { res[idx_], res[idx_+1] };
     res[ idx_   ] =  n[0]*a[0] + n[1]*a[1];
@@ -98,7 +99,7 @@ namespace EulerFluxes {
   inline void FieldRotator<FunctionSpaceT>::
   rotateForth(ValueType& res, 
               const NormalType& n,
-              FRInt2Type<3>) const 
+              RotInt2Type<3>) const 
   {
     const FieldType a[3] = { res[idx_], res[idx_+1], res[idx_+2] };
  
@@ -128,7 +129,7 @@ namespace EulerFluxes {
   inline void FieldRotator<FunctionSpaceT>::
   rotateBack(ValueType& res, 
 	           const NormalType& n,
-	           FRInt2Type<1>) const 
+	           RotInt2Type<1>) const 
   {
     res[idx_] = res[idx_] * n[0]; 
   }
@@ -137,7 +138,7 @@ namespace EulerFluxes {
   inline void FieldRotator<FunctionSpaceT>::
   rotateBack(ValueType& res, 
              const NormalType& n,
-             FRInt2Type<2>) const 
+             RotInt2Type<2>) const 
   {
     const FieldType a[2] = { res[idx_], res[idx_ + 1] };
     res[idx_  ] = n[0]*a[0] - n[1]*a[1];
@@ -148,7 +149,7 @@ namespace EulerFluxes {
   inline void FieldRotator<FunctionSpaceT>::
   rotateBack(ValueType& res, 
              const NormalType& n,
-             FRInt2Type<3>) const 
+             RotInt2Type<3>) const 
   {
     // res = arg;
     const FieldType a[3]={res[idx_],res[idx_+1],res[idx_+2]};
