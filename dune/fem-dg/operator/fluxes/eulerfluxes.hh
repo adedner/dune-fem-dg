@@ -260,7 +260,8 @@ namespace EULERNUMFLUX
   template<class Model, EulerFluxType flux_type>
   inline
   EulerFlux<Model,flux_type>::EulerFlux( const ModelType& model ) 
-    : model_( model ), _gamma( model_.c_p() * model_.c_v_inv() )
+    : model_( model ), 
+      _gamma( model_.c_p() * model_.c_v_inv() )
   {}
 
   template<class Model, EulerFluxType flux_type>
@@ -268,16 +269,17 @@ namespace EULERNUMFLUX
   void EulerFlux<Model,flux_type>::rotate(const double n[dim], 
                                         const double u[dim], double u_rot[dim])
   {
-    if (dim == 1){
+    if (dim == 1)
+    {
       u_rot[0] = n[0] * u[0];
     }
-
-    if (dim == 2){
+    else if (dim == 2)
+    {
       u_rot[0] = n[0]*u[0] + n[1]*u[1];
       u_rot[1] = -n[1]*u[0] + n[0]*u[1];
     }
-
-    if (dim == 3){
+    else if (dim == 3)
+    {
       double d = std::sqrt(n[0]*n[0]+n[1]*n[1]);
 
       if (d > 1.0e-8) {
@@ -291,11 +293,13 @@ namespace EULERNUMFLUX
         u_rot[1] = u[1];
         u_rot[2] = -n[2]*u[0];
       }
-
       //assert(0); // test it, not tested up to now
     }
-
-    if (dim > 3) assert(0);
+    else
+    {
+      std::cerr <<"EulerFlux::rotate does not support dim>3!! Aborting...\n";
+      abort();
+    };
   }
 
 
@@ -379,8 +383,10 @@ namespace EULERNUMFLUX
    
     if (flux_type == HLL) return num_flux_HLL(Uj, Un, normal, gj);
 
-    assert(0);
-    return 0.0;
+    if (flux_type == HLLC) return num_flux_HLLC(Uj, Un, normal, gj);
+
+    std::cerr <<"Numerical flux " <<flux_type <<" not available. Exiting...\n";
+    abort();
   }
 
 
@@ -466,12 +472,11 @@ namespace EULERNUMFLUX
     model_.pressAndTemp( Uj, pressj, tempj );
     model_.pressAndTemp( Un, pressn, tempn );
 
-    // get kinetic velocity
     double Ekinj = 0;
     double Ekinn = 0;
     for(int i=1; i<dim+1; i++){
-      Ekinj = (0.5/rhoj) * Uj[i] * Uj[i];
-      Ekinn = (0.5/rhon) * Un[i] * Un[i];
+      Ekinj += (0.5/rhoj) * Uj[i] * Uj[i];
+      Ekinn += (0.5/rhon) * Un[i] * Un[i];
     }
     Ej = pressj/(_gamma-1.) + Ekinj;
     En = pressn/(_gamma-1.) + Ekinn;
@@ -504,8 +509,8 @@ namespace EULERNUMFLUX
     const double qj = (p_star > pj)? sqrt( 1.0 + tmp*(p_star/pj - 1.0) ): 1.0;
     const double qn = (p_star > pn)? sqrt( 1.0 + tmp*(p_star/pn - 1.0) ): 1.0;
 
-    const double sj = uj[0] - cj*qj;//*std::sqrt(_gamma-1.)/_gamma;
-    const double sn = un[0] + cn*qn;//*std::sqrt(_gamma-1.)/_gamma;
+    const double sj = uj[0] - cj*qj;
+    const double sn = un[0] + cn*qn;
 
     double guj[dim];
 
@@ -543,7 +548,7 @@ namespace EULERNUMFLUX
 #endif
       }
     }
-    else{ // u_star <= 0
+    else{
       if (sn <= 0.0){
         gj[0] = rho_un[0];
 
@@ -586,74 +591,109 @@ namespace EULERNUMFLUX
 
 
 
-  // todo: this is 1d only
-  // returns fastest wave speed
-  // U[0] = rho, (U[1],...,U[dim]) = rho_\vect u, U[dim+1] = E
   template<class Model, EulerFluxType flux_type>
   inline
   double EulerFlux<Model,flux_type>::num_flux_HLLC(const double Um[dim+2], 
                                                  const double Up[dim+2], 
                                                  const double normal[dim], 
                                                  double g[dim+2]) const
-
   {
-    assert(dim == 1);
-
     const double rhom = Um[0];
-    const double rho_um = Um[1];
-    const double Em = Um[2];
-    const double um = rho_um/rhom;
-    const double pm = (_gamma-1.0)*(Em - 0.5*rho_um*um);
-    const double cm = sqrt(_gamma*pm/rhom);
     const double rhop = Up[0];
-    const double rho_up = Up[1];
-    const double Ep = Up[2];
-    const double up = rho_up/rhop;
-    const double pp = (_gamma-1.0)*(Ep - 0.5*rho_up*up);
+    const double Em = Um[dim+1];
+    const double Ep = Up[dim+1];
+
+    double rho_um[dim], rho_up[dim];
+    rotate( normal, Um+1, rho_um );
+    rotate( normal, Up+1, rho_up );
+
+    double Ekinm = 0.;
+    double Ekinp = 0.;
+    double um[dim], up[dim];
+    for( int i=0; i<dim; ++i )
+    {
+      um[i] = rho_um[i] / rhom;
+      up[i] = rho_up[i] / rhop;
+      Ekinm += rho_um[i] * um[i];
+      Ekinp += rho_up[i] * up[i];
+    }
+
+    const double pm = (_gamma-1.0)*(Em - 0.5*Ekinm);
+    const double pp = (_gamma-1.0)*(Ep - 0.5*Ekinp);
+
+    assert( rhom>0.0 && pm>0.0 && rhop>0.0 && pp>0.0 );
+
+    const double cm = sqrt(_gamma*pm/rhom);
     const double cp = sqrt(_gamma*pp/rhop);
 
     const double rho_bar = 0.5 * (rhom + rhop);
     const double c_bar = 0.5 * (cm + cp);
-    const double p_star = 0.5 * ( (pm+pp) - (up-um)*rho_bar*c_bar );
-    const double u_star = 0.5 * ( (um+up) - (pp-pm)/(rho_bar*c_bar) );
+    const double p_star = 0.5 * ( (pm+pp) - (up[0]-um[0])*rho_bar*c_bar );
+    const double u_star = 0.5 * ( (um[0]+up[0]) - (pp-pm)/(rho_bar*c_bar) );
     const double tmp = 0.5*(_gamma+1.0)/_gamma;
-    const double qm = (p_star > pm)? sqrt( 1.0 + tmp*(p_star/pm - 1.0) ): 1.0;
-    const double qp = (p_star > pp)? sqrt( 1.0 + tmp*(p_star/pp - 1.0) ): 1.0;
+    const double qm = (p_star > pm) ? sqrt( 1.0 + tmp*(p_star/pm - 1.0) ) : 1.0;
+    const double qp = (p_star > pp) ? sqrt( 1.0 + tmp*(p_star/pp - 1.0) ) : 1.0;
 
-    const double sm = um - cm*qm;
-    const double sp = up + cp*qp;
+    const double sm = um[0] - cm*qm;
+    const double sp = up[0] + cp*qp;
 
-    if (sm >= 0.0){
-      g[0] = rho_um;
-      g[1] = rho_um*um + pm;
-      g[2] = (Em+pm)*um;
+    double guj[dim];
+
+    if (sm >= 0.0)
+    {
+      g[0] = rho_um[0];
+
+      for(int i=0; i<dim; i++) 
+        guj[i] = rho_um[i]*um[0];
+      guj[0] += pm;
+
+      g[dim+1] = (Em+pm)*um[0];
     }
-    else if (sp <= 0.0){
-      g[0] = rho_up;
-      g[1] = rho_up*up + pp;
-      g[2] = (Ep+pp)*up;
-    }
-    else{
-      const double tmpm = sm*(sm-um)/(sm-u_star);
-      const double tmpp = sp*(sp-up)/(sp-u_star);
+    else if (sp <= 0.0)
+    {
+      g[0] = rho_up[0];
 
-      if ( u_star >= 0.0 ){
-        g[0] = rho_um + rhom*(tmpm-sm);
-        g[1] = rho_um*um + pm + rhom*u_star*tmpm - sm*rho_um;
-        g[2] = (Em+pm)*um + Em*(tmpm-sm) 
-          + tmpm*(u_star-um)*( rhom*u_star + pm/(sm-um) );
+      for(int i=0; i<dim; i++) 
+        guj[i] = rho_up[i]*up[0];
+      guj[0] += pp;
+
+      g[dim+1] = (Ep+pp)*up[0];
+    }
+    else
+    {
+      const double tmpm = sm*(sm-um[0])/(sm-u_star);
+      const double tmpp = sp*(sp-up[0])/(sp-u_star);
+
+      if (u_star >= 0.0)
+      {
+        g[0] = rho_um[0] + rhom*(tmpm-sm);
+
+        for(int i=0; i<dim; i++) 
+          guj[i] = rho_um[i]*um[0] + rhom*um[i]*tmpm - sm*rho_um[i];
+        guj[0] += pm + rhom*(u_star-um[0])*tmpm;
+
+        g[dim+1] = (Em+pm)*um[0] + Em*(tmpm-sm) 
+          + tmpm*(u_star-um[0])*( rhom*u_star + pm/(sm-um[0]) );
       }
-      else{
-        g[0] = rho_up + rhop*(tmpp- sp);
-        g[1] = rho_up*up + pp + rhop*u_star*tmpp - sp*rho_up;
-        g[2] = (Ep+pp)*up + Ep*(tmpp-sp) 
-          + tmpp*(u_star-up)*( rhop*u_star + pp/(sp-up) );
+      else
+      {
+        g[0] = rho_up[0] + rhop*(tmpp-sp);
+
+        for(int i=0; i<dim; i++) 
+          guj[i] = rho_up[i]*up[0] + rhop*up[i]*tmpp - sp*rho_up[i];
+        guj[0] += pp + rhop*(u_star-up[0])*tmpp;
+
+        g[dim+1] = (Ep+pp)*up[0] + Ep*(tmpp-sp) 
+          + tmpp*(u_star-up[0])*( rhop*u_star + pp/(sp-up[0]) );
       }
     }
 
-    return (fabs(sm) > fabs(sp))? fabs(sm): fabs(sp);
+    rotate_inv( normal, guj, g+1 );
+
+    return (fabs(sm) > fabs(sp)) ? fabs(sm) : fabs(sp);
   }
 }
+
 
 ////////////////////////////////////////////////////////
 //
@@ -682,7 +722,7 @@ public:
   typedef typename Traits::FluxRangeType              FluxRangeType;
 
   LLFFlux( const Model& mod )
-    : model_(mod) 
+    : model_(mod)
   {}
 
   static std::string name () { return "LLF"; }
@@ -892,93 +932,12 @@ public:
 // HLLCNumFlux
 //-----------
 template <class Model> 
-class HLLCNumFlux 
-//: public NumFluxBase< Model, EULERNUMFLUX::HLLC >
+class HLLCNumFlux : public NumFluxBase< Model, EULERNUMFLUX::HLLC >
 {
+  typedef NumFluxBase< Model, EULERNUMFLUX::HLLC >  BaseType;
 public:
-  typedef Model ModelType;
-  typedef typename Model::Traits::GridType GridType;
-  typedef typename GridType::ctype                    ctype;
-  enum { dimDomain = GridType::dimensionworld };
-  enum { dimRange = Model::dimRange };
-  typedef typename Model::Traits Traits;
-  typedef typename Traits::EntityType                 EntityType;
-  typedef typename Traits::EntityPointerType          EntityPointerType;
-
-  typedef typename Traits::DomainType                 DomainType;
-  typedef typename Traits::FaceDomainType             FaceDomainType;
-  typedef typename Traits::RangeType                  RangeType;
-  typedef typename Traits::FluxRangeType              FluxRangeType;
-
- typedef EulerFluxes::FieldRotator< ModelType > RotatorType ;
-
-  // constructor 
-  HLLCNumFlux(const Model& mod) : 
-    model_(mod),
-    rot_( 1 ),
-    numFlux_( mod ) 
-  {}
-
-  //! return reference to model 
-  const Model& model() const { return model_; }
-
-protected:
-  const Model& model_;
-  RotatorType rot_;
-  EULERNUMFLUX::EulerFlux< Model, EULERNUMFLUX::HLLC > numFlux_;
-public:
+  HLLCNumFlux(const Model& mod) : BaseType ( mod ) {}
   static std::string name () { return "HLLC (Dennis)"; }
-
-  // Return value: maximum wavespeed*length of integrationOuterNormal
-  // gLeft,gRight are fluxed * length of integrationOuterNormal
-  template< class Intersection, class QuadratureImp >
-  inline double 
-  numericalFlux( const Intersection& intersection,
-                 const EntityType& inside,
-                 const EntityType& outside,
-                 const double time, 
-                 const QuadratureImp& faceQuadInner,
-                 const QuadratureImp& faceQuadOuter,
-                 const int quadPoint,
-                 const RangeType& uLeft, 
-                 const RangeType& uRight,
-                 RangeType& gLeft,
-                 RangeType& gRight) const
-  {
-    enum { e = dimDomain + 1 };
-    DomainType normal = intersection.integrationOuterNormal( faceQuadInner.localPoint( quadPoint ) );
-    const double len = normal.two_norm();
-    normal *= 1./len;
-
-    // for the sake of additional components we put...
-    gLeft  = uLeft ;
-    gRight = uRight ;
-
-    rot_.rotateForth( gLeft, normal );
-    rot_.rotateForth( gRight, normal );
-
-    // copy values to 1d vectors 
-    const double valuesLeft[ 3 ]  = { gLeft[ 0 ],  gLeft[ 1 ],  gLeft[ e ] };
-    const double valuesRight[ 3 ] = { gRight[ 0 ], gRight[ 1 ], gRight[ e ] };
-    const double unitNormal[ 1 ]  = { (normal[ 0 ] > 0 ) ? 1 : -1  };
-
-    double flux[ 3 ] = { 0,0,0 };
-
-    double ldt = numFlux_.num_flux( valuesLeft, valuesRight, unitNormal, flux );
-    gLeft = 0;
-
-    gLeft[ 0 ] = flux[ 0 ];
-    gLeft[ 1 ] = flux[ 1 ];
-    gLeft[ e ] = flux[ 2 ];
-
-    rot_.rotateBack( gLeft, normal );
-
-    // scaling and conservation
-    gLeft *= len;
-    gRight = gLeft;
-
-    // return timestep restriction
-    return ldt*len;
-  }
 };
+
 #endif // file declaration
