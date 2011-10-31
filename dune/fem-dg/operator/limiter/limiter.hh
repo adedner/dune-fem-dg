@@ -52,7 +52,7 @@ namespace Fem {
     typedef typename DiscreteFunctionSpaceType :: GridPartType       GridPartType;
     typedef typename GridPartType :: GridType   GridType;
 
-    typedef typename GridType::template Codim<0>::Entity EntityType;
+    typedef typename DiscreteFunctionSpaceType :: EntityType  EntityType;
 
     // pass ids 
     enum PassIdType{ u = 0 , limitPass = 1 };

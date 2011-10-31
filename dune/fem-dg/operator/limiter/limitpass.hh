@@ -274,11 +274,12 @@ namespace Dune {
     typedef typename Traits::FaceDomainType FaceDomainType;
     typedef typename Traits::RangeType RangeType;
     typedef typename Traits::GridType GridType;
+    typedef typename Traits::GridPartType GridPartType;
     typedef typename Traits::JacobianRangeType JacobianRangeType;
-    typedef typename Traits::GridPartType::IntersectionIteratorType IntersectionIteratorType;
+    typedef typename GridPartType::IntersectionIteratorType IntersectionIteratorType;
     typedef typename IntersectionIteratorType :: Intersection IntersectionType;
-    typedef typename GridType::template Codim<0>::Entity EntityType;
-    typedef typename GridType::template Codim<0>::EntityPointer EntityPointerType;
+    typedef typename GridPartType::template Codim<0>::EntityType        EntityType;
+    typedef typename GridPartType::template Codim<0>::EntityPointerType EntityPointerType;
     typedef typename DomainType :: field_type DomainFieldType;
 
     typedef typename Traits :: LimiterFunctionType  LimiterFunctionType;
@@ -541,8 +542,8 @@ namespace Dune {
     // Types extracted from the underlying grids
     typedef typename GridPartType :: IntersectionIteratorType IntersectionIteratorType;
     typedef typename IntersectionIteratorType :: Intersection IntersectionType;
-    typedef typename GridType::template Codim<0>::EntityPointer EntityPointerType;
-    typedef typename GridType::template Codim<0>::Geometry Geometry;
+    typedef typename GridPartType::template Codim<0>::EntityPointerType  EntityPointerType;
+    typedef typename GridPartType::template Codim<0>::GeometryType       Geometry;
     
     // Various other types
     typedef typename DestinationType::LocalFunctionType DestLocalFunctionType;
@@ -800,7 +801,7 @@ namespace Dune {
     typedef std::map< KeyType, MatrixCacheEntry > MatrixCacheType;
 
     //! type of local mass matrix 
-    typedef LocalDGMassMatrix< DiscreteFunctionSpaceType,
+    typedef LocalMassMatrix< DiscreteFunctionSpaceType,
                   VolumeQuadratureType > LocalMassMatrixType;
 
     //! type of used adaptation method 

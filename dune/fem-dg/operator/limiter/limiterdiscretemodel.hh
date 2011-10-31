@@ -47,10 +47,11 @@ namespace Fem {
     
     typedef typename Traits::RangeType RangeType;
     typedef typename Traits::GridType GridType;
+    typedef typename Traits::GridPartType GridPartType;
     typedef typename Traits::JacobianRangeType JacobianRangeType;
-    typedef typename Traits::GridPartType::IntersectionIteratorType :: Intersection IntersectionType;
-    typedef typename GridType::template Codim<0>::Entity EntityType;
-    typedef typename GridType::template Codim<0>::EntityPointer EntityPointerType;
+    typedef typename GridPartType::IntersectionIteratorType :: Intersection IntersectionType;
+    typedef typename GridPartType::template Codim<0>::EntityType        EntityType;
+    typedef typename GridPartType::template Codim<0>::EntityPointerType EntityPointerType;
 
     typedef typename Traits::DestinationType DestinationType;
 
