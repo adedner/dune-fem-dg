@@ -46,7 +46,7 @@ namespace Dune {
     typedef LocalPass< DiscreteModelType, PreviousPassType, InnerPass :: passId>  BaseType;
 
     // Types from the base class
-    typedef typename BaseType::Entity EntityType;
+    typedef typename BaseType::EntityType  EntityType;
     typedef typename EntityType :: EntityPointer EntityPointerType;
     typedef typename BaseType::ArgumentType ArgumentType;
 

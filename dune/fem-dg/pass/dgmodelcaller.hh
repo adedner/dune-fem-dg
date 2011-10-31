@@ -27,7 +27,7 @@ namespace Dune {
     typedef DiscreteModelCallerDefault< DiscreteModelImp, ArgumentImp, SelectorImp > BaseType;
   public:
     typedef DiscreteModelImp DiscreteModelType;  
-    typedef typename BaseType :: Entity                  Entity;
+    typedef typename BaseType :: EntityType              EntityType;
     typedef typename BaseType :: JacobianRangeType       JacobianRangeType;
     typedef typename BaseType :: RangeType               RangeType;
     typedef typename BaseType :: JacobianRangeTupleType  JacobianRangeTupleType;
@@ -65,14 +65,14 @@ namespace Dune {
       vecJacobiansNb_.push_back( JacobianRangeTupleType( JacobianCreator::apply() )  );
     }
 
-    void setEntity ( const Entity &entity )
+    void setEntity ( const EntityType &entity )
     {
       BaseType :: setEntity( entity );
       problem_.setEntity( entity );
     }
 
     template <class QuadratureType>
-    void setEntity ( const Entity &entity,
+    void setEntity ( const EntityType &entity,
                      const QuadratureType& quad)
     {
       setEntity( entity );
@@ -87,7 +87,7 @@ namespace Dune {
 #endif
     }
 
-    void setNeighbor( const Entity &neighbor )
+    void setNeighbor( const EntityType &neighbor )
     {
       BaseType :: setNeighbor( neighbor );
       problem_.setNeighbor( neighbor );
@@ -101,7 +101,7 @@ namespace Dune {
       return ( evaluateJacobian ) ? jacobiansVec[ quadPoint ] : jacobiansVec[ 0 ];
     }
 
-    void analyticalFlux(const Entity& en, 
+    void analyticalFlux(const EntityType& en, 
                         const VolumeQuadratureType& quad, 
                         const int quadPoint,
                         JacobianRangeType& res) 
@@ -115,7 +115,7 @@ namespace Dune {
                               jacobianValue(jacobiansVec_, quadPoint) , res);
     }
 
-    double analyticalFluxAndSource(const Entity& en, 
+    double analyticalFluxAndSource(const EntityType& en, 
                                    const VolumeQuadratureType& quad, 
                                    const int quadPoint,
                                    JacobianRangeType& fluxRes, 
@@ -137,7 +137,7 @@ namespace Dune {
 
     // Ensure: entities set correctly before call
     template <class QuadratureImp> 
-    void initializeIntersection( const Entity &neighbor,
+    void initializeIntersection( const EntityType &neighbor,
                                  const Intersection& intersection,
                                  const QuadratureImp& quadInner,
                                  const QuadratureImp& quadOuter)
@@ -236,7 +236,7 @@ namespace Dune {
     bool hasMass () const  { return problem_.hasMass(); }
 
     //! evaluate mass matrix factor 
-    void mass(const Entity& en,
+    void mass(const EntityType& en,
               const VolumeQuadratureType& quad,
               const int quadPoint,
               MassFactorType& m) const

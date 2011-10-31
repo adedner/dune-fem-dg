@@ -36,11 +36,7 @@ namespace Dune {
     typedef typename BaseType::EntityCodim0Type EntityCodim0Type;
     typedef typename BaseType::EntityPointerCodim0Type EntityPointerCodim0Type;
 
-  private:
-    typedef typename GridType::Traits::template Codim<0>::Geometry GeometryType;
-    enum{dim = GeometryType::dimension};
-    typedef typename Dune::FieldVector<typename GridType::ctype, dim> FieldVectorType;
-    typedef typename GridType :: ctype coordType;
+  protected:
     typedef typename GridPartType :: IndexSetType IndexSetType;
 
     const GridPartType& gridPart_;

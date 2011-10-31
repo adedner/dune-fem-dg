@@ -61,7 +61,7 @@ namespace Dune {
     typedef PreviousPassImp PreviousPassType;
 
     // Types from the base class
-    typedef typename BaseType::Entity EntityType;
+    typedef typename BaseType::EntityType  EntityType;
     typedef typename EntityType :: EntityPointer EntityPointerType;
     typedef typename BaseType::ArgumentType ArgumentType;
 
@@ -84,10 +84,10 @@ namespace Dune {
     typedef typename DiscreteFunctionSpaceType:: BaseFunctionSetType
       BaseFunctionSetType; 
 
-    // Types extracted from the underlying grids
+    // Types extracted from the underlying grid part types 
     typedef typename GridPartType::IntersectionIteratorType IntersectionIteratorType;
     typedef typename IntersectionIteratorType::Intersection IntersectionType;
-    typedef typename GridType::template Codim<0>::Geometry Geometry;
+    typedef typename GridPartType :: template Codim<0>:: GeometryType  Geometry;
 
 
     // Various other types

@@ -47,8 +47,8 @@ protected:
   const GridPartType& gridPart_;
   const IndexSetType& indexSet_;
 
-  typedef typename GridType :: template Codim<0> :: Entity EntityType;
-  typedef typename GridType :: template Codim<0> :: EntityPointer EntityPointerType;
+  typedef typename GridPartType :: template Codim<0> :: EntityType         EntityType;
+  typedef typename GridPartType :: template Codim<0> :: EntityPointerType  EntityPointerType;
 
   // load balancer bounds 
   const double ldbOver_ ;
