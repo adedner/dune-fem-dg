@@ -88,7 +88,7 @@ namespace Dune {
     typedef typename Traits :: GridPartType
               :: IntersectionIteratorType                            IntersectionIterator;
     typedef typename IntersectionIterator :: Intersection            Intersection;
-    typedef typename GridType :: template Codim< 0 > :: Entity       EntityType;
+    typedef typename BaseType :: EntityType                          EntityType;
 
     enum { evaluateJacobian = NumFlux :: evaluateJacobian };
 
@@ -327,8 +327,8 @@ namespace Dune {
     typedef typename Traits :: GridType                                GridType;
     typedef typename GridPartType :: IntersectionIteratorType          IntersectionIterator;
     typedef typename IntersectionIterator :: Intersection              Intersection;
-    typedef typename GridType :: template Codim< 0 > :: Entity         EntityType;
-    typedef typename GridType :: template Codim< 0 > :: EntityPointer  EntityPointerType;
+    typedef typename BaseType :: EntityType                            EntityType;
+    typedef typename BaseType :: EntityPointerType                     EntityPointerType;
     typedef typename Traits :: RangeFieldType                          RangeFieldType;
     typedef typename Traits :: DomainFieldType                         DomainFieldType;
     typedef typename Traits :: RangeType                               RangeType;
