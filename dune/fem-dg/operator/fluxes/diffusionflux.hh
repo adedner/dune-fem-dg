@@ -197,8 +197,13 @@ namespace Dune {
       {
         Quadrature< DomainFieldType, dimDomain - 1 > quad( intersection.type() , 0 );
         const DomainType normal = intersection.outerNormal( quad.point( 0 ) );
-        return ( normal * upwind_ ) < 0 ;
+        return determineDirection( normal );
       }
+    }
+
+    bool determineDirection( const DomainType& normal ) const 
+    {
+       return ( normal * upwind_ ) < 0 ;
     }
 
   public:  

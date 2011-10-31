@@ -47,7 +47,7 @@ namespace Dune {
     typedef typename GridPartType :: IntersectionIteratorType           IntersectionIterator;
     typedef typename IntersectionIterator :: Intersection               Intersection;
     typedef typename GridPartType :: GridType                           GridType;
-    typedef typename GridType::template Codim< 0 >::Entity              EntityType;
+    typedef typename DiscreteFunctionSpaceType :: EntityType            EntityType;
     typedef typename GridPartType::template Codim< 0 >::IteratorType    IteratorType;
     typedef typename GridPartType::IntersectionIteratorType
                                                                         IntersectionIteratorType;
@@ -74,7 +74,7 @@ namespace Dune {
         , localMassMatrix_( gradSpc_, 2*gradSpc_.order() )
       {}
 
-      void initialize(const EntityType& entity ) 
+      void initialize( const EntityType& entity ) 
       { 
         r_e_.init( entity ); 
         r_e_.clear();
@@ -121,6 +121,7 @@ namespace Dune {
       }
       return upwind_.two_norm2() < 1e-10 ;
     }
+
   public:
     enum { evaluateJacobian = true };
 
@@ -152,7 +153,6 @@ namespace Dune {
       useTheoryParams_( false ),
       initialized_ ( false )
     {
-      
       // calculate maxNeighborVolumeRatio_
       maxNeighborsVolumeRatio_ = 1.;
 
