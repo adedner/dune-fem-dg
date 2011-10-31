@@ -128,7 +128,7 @@ namespace Dune {
     typedef typename GridPartType :: IntersectionIteratorType          IntersectionIterator;
     typedef typename IntersectionIterator :: Intersection              Intersection;
     typedef typename GridPartType :: GridType                          GridType;
-    typedef typename GridType :: template Codim< 0 > :: Entity         EntityType;
+    typedef typename DiscreteFunctionSpaceType :: EntityType           EntityType;
     enum { dimGradRange = dimDomain * dimRange };
     enum { polOrd = DiscreteFunctionSpaceType :: polynomialOrder };
 
