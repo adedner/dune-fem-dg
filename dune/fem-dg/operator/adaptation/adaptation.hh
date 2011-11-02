@@ -12,11 +12,9 @@
 #define DUNE_ADAPTATIONOBJECT_HH
 
 // include restricion, prolongation and adaptation operator classes for discrete functions
-#include <dune/fem/function/adaptivefunction.hh>
-#include <dune/fem/space/common/restrictprolonginterface.hh>
+#include <dune/grid/utility/persistentcontainer.hh>
+ 
 #include <dune/fem/quadrature/cachingquadrature.hh>
-
-#include <dune/fem/space/fvspace.hh>
 #include <dune/fem/space/common/adaptmanager.hh>
 #include <dune/fem/gridpart/adaptiveleafgridpart.hh>
 
@@ -115,26 +113,40 @@ public:
 
   // initialize functionspace, etc., for the indicator function
   typedef typename ToNewDimRangeFunctionSpace< 
-      ProblemFunctionSpace, 1 > :: Type IndicatorFuncSpaceType;
-
-  //! type of discrete function space for indicator  
-  typedef FiniteVolumeSpace<IndicatorFuncSpaceType, 
-                   GridPartType, 0, CachingStorage> DiscreteFunctionSpaceType;
-
-  typedef DiscreteFunctionSpaceType IndicatorDiscreteFunctionSpaceType;
+      ProblemFunctionSpace, 1 > :: Type  FunctionSpaceType;
 
   // discrete function type of adaptive functions
-  typedef typename DiscreteFunctionSpaceType::RangeType           RangeType;
-  typedef typename GridType :: template Codim<0> :: Entity        EntityType; 
+  typedef typename FunctionSpaceType :: RangeType           RangeType;
+  typedef typename GridType :: template Codim<0> :: Entity        GridEntityType; 
   typedef typename GridType :: template Codim<0> :: EntityPointer EntityPointerType; 
 
   typedef typename GridPartType :: IntersectionIteratorType IntersectionIteratorType ;
 
-  typedef AdaptiveDiscreteFunction< IndicatorDiscreteFunctionSpaceType >            IndicatorDiscreteFunctionType; 
+  // local indicator 
+  struct LocalIndicator 
+  {
+    LocalIndicator() : value_( -1.0 ) {} 
+    double value_;
+    LocalIndicator& operator += ( const double& value ) 
+    {
+      value_ += value; 
+      return *this;
+    }
 
-  typedef typename IndicatorDiscreteFunctionType::LocalFunctionType IndicatorLocalFuncType;
+    LocalIndicator& operator = ( const double& value ) 
+    {
+      value_ = value; 
+      return *this;
+    }
+    double value() const { return value_; }
+  };
 
-  //typedef GridTimeProviderType< GridType > TimeProviderType ;
+  // type of indicator stored by for each entity 
+  typedef LocalIndicator LocalIndicatorType;
+
+  typedef PersistentContainer< GridType, LocalIndicatorType > IndicatorType ;
+
+  // time provider 
   typedef TimeProviderBase TimeProviderType ;
 
   // interface for adaptation operator 
@@ -144,7 +156,6 @@ private:
   // no copying 
   AdaptationHandler (const AdaptationHandler&); 
 public:
-  typedef IndicatorLocalFuncType LocalIndicatorType;
   //! constructor
   AdaptationHandler (GridType &grid, 
                      TimeProviderType &timeProvider,
@@ -157,26 +168,30 @@ public:
   void clearIndicator();
 
   //! initialize enIndicator with en 
-  void setEntity(const EntityType & en);
+  template <class Entity> 
+  void setEntity(const Entity& en);
   
   //! initialize nbIndicator with en 
-  void setNeighbor(const EntityType & en);
+  template <class Entity>
+  void setNeighbor(const Entity& en);
   
   //! add value to local indicator, use setEntity before 
-  void addToLocalIndicator(const FullRangeType& error, const double h );
+  void addToEntityIndicator(const FullRangeType& error, const double h );
 
   //! add value to local indicator, use setNeighbor before 
   void addToNeighborIndicator( const FullRangeType& error, const double h );
 
-  //! add value to local indicator, use setNeighbor before 
-  void addToLocalIndicator( LocalIndicatorType& indicator,
-        const FullRangeType& error, const double h );
+  //! add to local indicator for given entity 
+  void addToLocalIndicator( LocalIndicatorType& indicator, const FullRangeType& error, const double h );
 
-  void addToLocalIndicator(const EntityType &en, const FullRangeType& error );
+  //! add to local indicator for given entity 
+  void addToLocalIndicator(const GridEntityType &en, const FullRangeType& error, const double h );
 
-  void setLocalIndicator(const EntityType &en, const FullRangeType& error);
+  //! det local indicator for given entity 
+  void setLocalIndicator(const GridEntityType &en, const FullRangeType& error);
 
-  double getLocalIndicator(const EntityType &en) const;
+  //! return local indicator for given entity 
+  double getLocalIndicator(const GridEntityType &en) const;
 
   //! calculate sum of local errors 
   double getSumEstimator() const ;
@@ -184,14 +199,16 @@ public:
   //! calculate max of local errors 
   double getMaxEstimator() const ;
 
-  // overall number of leaf elements 
+  //! overall number of leaf elements 
   int globalNumberOfElements () const ;
 
-  // number of local leaf elements 
+  //! number of local leaf elements 
   int localNumberOfElements () const ;
 
+  //! get local in time tolerance  
   double getLocalInTimeTolerance () const ;
 
+  //! get local tolerance 
   double getLocalTolerance () const;
 
   // --markEntities
@@ -206,9 +223,6 @@ public:
 
   //! count number of overall leaf entities 
   int countElements() const ;
-
-  //! export indicator function
-  IndicatorDiscreteFunctionType& indicator () ;
 
   //! module interface for intialize 
   void initialize() 
@@ -227,16 +241,13 @@ private:
   GridType&  grid_;
   GridPartType gridPart_;
 
-  //! function space for discrete solution
-  IndicatorDiscreteFunctionSpaceType indicatorSpace_;
-
   //! indicator function
-  IndicatorDiscreteFunctionType indicator_;
+  IndicatorType indicator_;
 
   //! local function of indicator_ for entity 
-  LocalIndicatorType enIndicator_;
+  LocalIndicatorType* enIndicator_;
   //! local function of indicator_ for neighbor 
-  LocalIndicatorType nbIndicator_;
+  LocalIndicatorType* nbIndicator_;
 
   //! timestep size in time discretization parameters und endTime 
   TimeProviderType & timeProvider_;

@@ -641,7 +641,7 @@ namespace Dune {
           (0.5 * ( this->enVolume() + this->nbVolume() ) / normal.two_norm() );
 
         // add error to indicator 
-        adaptation_->addToLocalIndicator( error, weight );
+        adaptation_->addToEntityIndicator( error, weight );
         adaptation_->addToNeighborIndicator( error, weight );
       }
 

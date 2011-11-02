@@ -15,10 +15,9 @@ AdaptationHandler (GridType &grid,
                    const AdaptationParameters& param ) 
   : grid_(grid)
   , gridPart_(grid_)
-  , indicatorSpace_( gridPart_ )
-  , indicator_("indicator", indicatorSpace_)
-  , enIndicator_( indicator_ )
-  , nbIndicator_( indicator_ )
+  , indicator_( grid_, 0 ) // grid , codimension 
+  , enIndicator_( 0 )
+  , nbIndicator_( 0 )
   , timeProvider_(timeProvider)
   , globalTolerance_ ( param.refinementTolerance() )
   , coarsenTheta_( param.coarsenPercentage() )
@@ -44,10 +43,10 @@ AdaptationHandler (GridType &grid,
   }
 
   // calculate global min of grid width to scale tolerance  
-  double gridWidth = GridWidth::calcGridWidth( indicatorSpace_.gridPart() );
+  double gridWidth = GridWidth::calcGridWidth( gridPart_ );
   
   // get global minimum of macro grid width 
-  double macroGridWidth = indicatorSpace_.grid().comm().min( gridWidth );
+  double macroGridWidth = grid_.comm().min( gridWidth );
 
   // scale tolerance 
   globalTolerance_ *= macroGridWidth;
@@ -66,20 +65,28 @@ clearIndicator()
 
 //! initialize localIndicator with en 
 template <class GridImp, class FunctionSpace>
+template <class Entity>
 void 
 AdaptationHandler<GridImp, FunctionSpace> ::  
-setEntity(const EntityType & en)
+setEntity(const Entity& en)
 {
-  enIndicator_.init(en);
+  // convert the given entity to an entity of the grid 
+  // for wrapped entities the cast to the host entity is necessary 
+  const GridEntityType& entity = en ;
+  enIndicator_ = & indicator_[ entity ];
 }
   
 //! initialize localIndicator with en 
 template <class GridImp, class FunctionSpace>
+template <class Entity>
 void 
 AdaptationHandler<GridImp, FunctionSpace> ::  
-setNeighbor(const EntityType & nb)
+setNeighbor(const Entity& nb)
 {
-  nbIndicator_.init(nb);
+  // convert the given entity to an entity of the grid 
+  // for wrapped entities the cast to the host entity is necessary 
+  const GridEntityType& neighbor = nb ;
+  nbIndicator_ = & indicator_[ neighbor ];
 }
   
 //! add value to local indicator, use setEntity before 
@@ -87,20 +94,21 @@ template <class GridImp, class FunctionSpace>
 void 
 AdaptationHandler<GridImp, FunctionSpace> ::  
 addToLocalIndicator( LocalIndicatorType& indicator, 
-  const FullRangeType& error, const double h )
+                     const FullRangeType& error, const double h )
 {
   const double dt = timeProvider_.deltaT();
   const double factor = ( h + dt  ) * dt ;
-  indicator[0] += factor * error.two_norm();  
+  indicator += (factor * error.two_norm());  
 }
 
 //! add value to local indicator, use setEntity before 
 template <class GridImp, class FunctionSpace>
 void 
 AdaptationHandler<GridImp, FunctionSpace> ::  
-addToLocalIndicator(const FullRangeType& error, const double h )
+addToEntityIndicator(const FullRangeType& error, const double h )
 {
-  addToLocalIndicator( enIndicator_, error, h );
+  assert( enIndicator_ );
+  addToLocalIndicator( *enIndicator_, error, h );
 }
 
 //! add value to local indicator, use setEntity before 
@@ -109,34 +117,34 @@ void
 AdaptationHandler<GridImp, FunctionSpace> ::  
 addToNeighborIndicator(const FullRangeType& error, const double h )
 {
-  addToLocalIndicator( nbIndicator_, error, h );
+  assert( nbIndicator_ );
+  addToLocalIndicator( *nbIndicator_, error, h );
 }
 
 template <class GridImp, class FunctionSpace>
 void 
 AdaptationHandler<GridImp, FunctionSpace> ::  
-addToLocalIndicator(const EntityType &en, const FullRangeType& error)
+addToLocalIndicator(const GridEntityType &en, const FullRangeType& error, const double h )
 {
-  //std::cout << "  addToLocalInd:  " << val << std::endl;
-  indicator_.localFunction( en )[ 0 ] += error[ 0 ] ;
+  addToLocalIndicator( indicator_[ en ], error, h );
   return;
 }
 
 template <class GridImp, class FunctionSpace>
 void 
 AdaptationHandler<GridImp, FunctionSpace> ::  
-setLocalIndicator(const EntityType &en, const FullRangeType& error)
+setLocalIndicator(const GridEntityType &en, const FullRangeType& error)
 {
-  indicator_.localFunction( en )[ 0 ] = error[ 0 ] ;
+  indicator_[ en ] = error[ 0 ] ;
   return;
 }
 
 template <class GridImp, class FunctionSpace>
 double  
 AdaptationHandler<GridImp, FunctionSpace> ::  
-getLocalIndicator(const EntityType &en) const
+getLocalIndicator(const GridEntityType &en) const
 {
-  return indicator_.localFunction( en )[ 0 ];
+  return indicator_[ en ].value();
 }
 
   //! calculate sum of local errors 
@@ -147,11 +155,11 @@ getSumEstimator() const
 {    
   double sum = 0.0;
 
-  typedef typename IndicatorDiscreteFunctionType::ConstDofIteratorType DofIteratorType; 
-  DofIteratorType endit = indicator_.dend();
-  for(DofIteratorType it = indicator_.dbegin(); it != endit; ++it)
+  typedef typename IndicatorType :: ConstIterator   IteratorType ;
+  const IteratorType endit = indicator_.end();
+  for(IteratorType it = indicator_.begin(); it != endit; ++it)
   {
-    sum += (*it);
+    sum += (*it).value();
   }
 
   // global sum of estimator 
@@ -168,17 +176,16 @@ getMaxEstimator() const
   double max = 0.0;
 
   {
-    typedef typename IndicatorDiscreteFunctionType::ConstDofIteratorType DofIteratorType; 
-    
-    DofIteratorType endit = indicator_.dend();
-    DofIteratorType it = indicator_.dbegin();
+    typedef typename IndicatorType :: ConstIterator   IteratorType ;
+    const IteratorType endit = indicator_.end();
+    IteratorType it = indicator_.begin(); 
 
     // initialzie with first entry 
-    if ( it != endit ) max = (*it);
+    if ( it != endit ) max = (*it).value();
     
-    for(; it != endit; ++it)
+    for( ; it != endit; ++it)
     {
-      max = std::max((*it), max);
+      max = std::max((*it).value(), max);
     }
   }
 
@@ -265,19 +272,20 @@ void
 AdaptationHandler<GridImp, FunctionSpace> ::  
 markEntities ()
 {
-  // type of iterator, i.e. leaf iterator 
-  typedef typename IndicatorDiscreteFunctionSpaceType::IteratorType IteratorType;
-  
   // get local refine tolerance 
   const double refineTol = getLocalTolerance();
   // get local coarsen tolerance 
   const double coarsenTol = refineTol * coarsenTheta_;
 
-  IteratorType endit = indicatorSpace_.end();
-  for (IteratorType it = indicatorSpace_.begin(); it != endit; ++it)
+  // type of iterator, i.e. leaf iterator 
+  typedef typename GridPartType :: template Codim< 0 > :: IteratorType IteratorType;
+  
+  const IteratorType endit = gridPart_.template end< 0 > ();
+  for (IteratorType it = gridPart_.template begin< 0 > (); 
+       it != endit; ++it)
   {
     // entity 
-    const EntityType& entity = *it;
+    const GridEntityType& entity = *it;
 
     // get local error indicator 
     const double localIndicator = getLocalIndicator(entity);
@@ -360,9 +368,12 @@ countElements() const
   
   // count elements 
   int count = 0;
-  typedef typename IndicatorDiscreteFunctionSpaceType::IteratorType IteratorType;
-  IteratorType endit = indicatorSpace_.end();
-  for(IteratorType it = indicatorSpace_.begin(); it != endit; ++it)
+  // type of iterator, i.e. leaf iterator 
+  typedef typename GridPartType :: template Codim< 0 > :: IteratorType IteratorType;
+  
+  const IteratorType endit = gridPart_.template end< 0 > ();
+  for (IteratorType it = gridPart_.template begin< 0 > (); 
+       it != endit; ++it)
   {
     ++count;
     const int level = it->level();
@@ -397,14 +408,5 @@ countElements() const
   return count;
 }
   
-//! export indicator function
-template <class GridImp, class FunctionSpace>
-typename AdaptationHandler<GridImp, FunctionSpace> :: IndicatorDiscreteFunctionType&
-AdaptationHandler<GridImp, FunctionSpace> ::  
-indicator () 
-{  
-  return indicator_;
-}
-
 } // end namespace Dune 
 #endif
