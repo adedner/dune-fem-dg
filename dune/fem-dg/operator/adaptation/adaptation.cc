@@ -86,7 +86,7 @@ setNeighbor( const Entity& neighbor )
   // convert the given entity to an entity of the grid 
   // for wrapped entities the cast to the host entity is necessary 
   const GridEntityType& gridNeighbor = Fem :: gridEntity( neighbor );
-  nbIndicator_ = & indicator_[ neighbor ];
+  nbIndicator_ = & indicator_[ gridNeighbor ];
 }
   
 //! add value to local indicator, use setEntity before 
