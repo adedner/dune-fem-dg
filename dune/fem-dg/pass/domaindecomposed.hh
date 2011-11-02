@@ -167,7 +167,7 @@ namespace Dune {
       int thread(const EntityType& entity ) const 
       {
 #ifdef USE_SMP_PARALLEL
-        assert( (size_t) threadNum_.size() > indexSet_.index( entity ) );
+        assert( (int)threadNum_.size() > (int) indexSet_.index( entity ) );
         // NOTE: this number can also be negative for ghost elements or elements
         // that do not belong to the set covered by the space iterators 
         return threadNum_[ indexSet_.index( entity ) ];
