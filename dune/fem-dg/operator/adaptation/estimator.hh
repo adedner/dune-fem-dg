@@ -48,6 +48,7 @@ public:
   typedef typename BaseType :: IntersectionType               IntersectionType;
   typedef typename BaseType :: ElementType                    ElementType;
   typedef typename BaseType :: ElementPointerType             ElementPointerType;
+  typedef typename BaseType :: GridElementType                GridElementType;
   typedef typename BaseType :: GeometryType                   GeometryType;
 
   static const int dimension = GridType :: dimension;
@@ -290,10 +291,12 @@ public:
       toBeCoarsend = (toBeCoarsend && (localIndicator2 < locCoarTol2));
     }
 
-    if ( toBeRefined && (entity.level() < maxLevel_) )
+    const GridElementType& element = Fem :: gridEntity( entity );
+
+    if ( toBeRefined && (element.level() < maxLevel_) )
     {
       // mark for refinement 
-      grid_.mark( 1, entity );
+      grid_.mark( 1, element );
 
       // also mark all neighbors of the actual entity for refinement
       const IntersectionIteratorType nbend = gridPart_.iend(entity); 
@@ -303,7 +306,7 @@ public:
         if( nb->neighbor() )
         {
           ElementPointerType outside = nb->outside();
-          const ElementType& neighbor = *outside; 
+          const GridElementType& neighbor = Fem :: gridEntity( *outside ); 
           if ( (neighbor.level() < maxLevel_) || (! neighbor.isRegular()) )
           {
             // mark for refinement 
@@ -315,13 +318,13 @@ public:
     else
     {
       // don't do anything
-      grid_.mark( 0, entity );
+      grid_.mark( 0, element );
     }
 
-    if ( toBeCoarsend && (entity.level() > 0) )
+    if ( toBeCoarsend && (element.level() > 0) )
     {
       // mark for coarsening 
-      grid_.mark( -1, entity );
+      grid_.mark( -1, element );
     }
   }
 

@@ -52,6 +52,7 @@ namespace Fem {
     typedef typename GridPartType::IntersectionIteratorType :: Intersection IntersectionType;
     typedef typename GridPartType::template Codim<0>::EntityType        EntityType;
     typedef typename GridPartType::template Codim<0>::EntityPointerType EntityPointerType;
+    typedef typename GridType::template Codim<0>::Entity                GridEntityType;
 
     typedef typename Traits::DestinationType DestinationType;
 
@@ -108,7 +109,7 @@ namespace Fem {
 
     //! mark element for refinement or coarsening 
     void adaptation(GridType& grid, 
-                    const EntityType& en,
+                    const EntityType& entity,
                     const RangeType& shockIndicator, 
                     const RangeType& adaptIndicator) const 
     {
@@ -116,15 +117,18 @@ namespace Fem {
 
       const double val = adaptIndicator[0];
 
+      // get real grid entity from possibly wrapped entity 
+      const GridEntityType& gridEntity = Fem :: gridEntity( entity );
+
       // get refinement marker 
-      int refinement = grid.getMark( en );
+      int refinement = grid.getMark( gridEntity );
       
       // if element already is marked for refinement then do nothing 
       if( refinement >= Refine ) return ;
       
       // use component 1 (max of adapt indicator)
       {
-        const int level = en.level();
+        const int level = gridEntity.level();
         if( (( val > refTol_ ) || (val < 0)) && level < finLevel_) 
         {
           refinement = Refine;
@@ -139,7 +143,7 @@ namespace Fem {
       }
 
       // set new refinement marker 
-      grid.mark( refinement, en );
+      grid.mark( refinement, gridEntity );
     }
 
     template <class FaceQuadratureImp, 
