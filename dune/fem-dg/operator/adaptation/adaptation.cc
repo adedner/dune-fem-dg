@@ -68,12 +68,12 @@ template <class GridImp, class FunctionSpace>
 template <class Entity>
 void 
 AdaptationHandler<GridImp, FunctionSpace> ::  
-setEntity(const Entity& en)
+setEntity( const Entity& entity )
 {
   // convert the given entity to an entity of the grid 
   // for wrapped entities the cast to the host entity is necessary 
-  const GridEntityType& entity = en ;
-  enIndicator_ = & indicator_[ entity ];
+  const GridEntityType& gridEntity = Fem :: gridEntity( entity );
+  enIndicator_ = & indicator_[ gridEntity ];
 }
   
 //! initialize localIndicator with en 
@@ -81,11 +81,11 @@ template <class GridImp, class FunctionSpace>
 template <class Entity>
 void 
 AdaptationHandler<GridImp, FunctionSpace> ::  
-setNeighbor(const Entity& nb)
+setNeighbor( const Entity& neighbor )
 {
   // convert the given entity to an entity of the grid 
   // for wrapped entities the cast to the host entity is necessary 
-  const GridEntityType& neighbor = nb ;
+  const GridEntityType& gridNeighbor = Fem :: gridEntity( neighbor );
   nbIndicator_ = & indicator_[ neighbor ];
 }
   
