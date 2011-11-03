@@ -103,14 +103,15 @@ namespace Dune
       { 
       }
 
-      //! \brief default implementation returns contains from neighbor
+      //! \brief return false since all interior intersections should be skipped 
       template< class Intersection >
       bool interiorIntersection( const Intersection &intersection ) const
       {
         return false;
       }
     
-      //! \brief returns true if the given entity of the pointer in the domain 
+      //! \brief returns true if the given entity has the correct thread number  
+      //! for higher codims false is returned 
       template< int cd >
       bool contains ( const typename Codim< cd >::EntityType & entity ) const
       {
@@ -122,7 +123,8 @@ namespace Dune
           return false ;
       }
 
-      //! \brief returns true if the given entity of the pointer in the domain 
+      //! \brief returns true if the given entity has the correct thread number  
+      //! for higher codims false is returned 
       template< class Entity >
       bool contains ( const Entity & entity ) const
       {
