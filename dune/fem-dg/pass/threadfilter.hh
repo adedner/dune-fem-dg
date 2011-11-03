@@ -1,110 +1,164 @@
-#ifndef DUNE_THREADFILTER_HH
-#define DUNE_THREADFILTER_HH
+#ifndef DUNE_FEM_DG_THEADFILTER_HH
+#define DUNE_FEM_DG_THEADFILTER_HH
 
-//- System includes
-#include <vector>
-#include <cassert>
+//- system includes
+#include <algorithm>
 
-//- Dune includes
-#include <dune/fem/gridpart/gridpart.hh>
-#include <dune/fem/gridpart/filteredgrid.hh>
+//- dune-fem includes
+#include <dune/fem/gridpart/filter/filter.hh>
+#include <dune/fem/space/common/arrays.hh>
 
-#include <dune/fem/space/common/allgeomtypes.hh>
-#include <dune/fem/misc/gridwidth.hh>
-#include <dune/fem/quadrature/cachingquadrature.hh>
-
-namespace Dune {
-
-//***************************************************************************
-// 
-// Thread Filter 
-//
-//***************************************************************************
-  template <class GridPartType>
-  class ThreadFilter : 
-    public FilterDefaultImplementation<
-      DefaultFilterTraits<ThreadFilter<GridPartType>,GridPartType> >
+namespace Dune
+{
+  namespace Fem
   {
-    typedef typename GridPartType :: GridType GridType;
-  public:
-    typedef DefaultFilterTraits<ThreadFilter<GridPartType>, GridPartType> Traits;
-    typedef FilterInterface<DefaultFilterTraits<ThreadFilter<GridPartType>,GridPartType> > BaseType;
 
-    using BaseType :: has0Entity;
+    // forward declarations
+    // --------------------
+
+    template< class > class FilterDefaultImplementation;
+    template< class > class ThreadFilter;
+
+
+    // ThreadFilterTraits
+    // ------------------------
+
+    template< class GridPartImp >
+    struct ThreadFilterTraits
+    {
+      //! \brief grid part type
+      typedef GridPartImp GridPartType;
+
+      //! \brief filter type
+      typedef ThreadFilter< GridPartType > FilterType;
+
+      //! \brief entity types
+      template < int cd >
+      struct Codim 
+      {
+        //! \brief entity type for given codimension
+        typedef typename GridPartType::template Codim< cd >::EntityType EntityType;
+      };
+
+      //! \brief entity type for codimension 0 
+      typedef typename Codim< 0 >::EntityType EntityType;   
+    };
+
+
+    // ThreadFilter
+    // ------------------
+
+    template< class GridPartImp >
+    class ThreadFilter
+    : public FilterDefaultImplementation< ThreadFilterTraits< GridPartImp > >
+    {
+      // type of grid part 
+      typedef GridPartImp GridPartType;
+ 
+      // type of traits
+      typedef ThreadFilterTraits< GridPartType > Traits;
+
+      // this type 
+      typedef ThreadFilter< GridPartType > ThisType;
+      
+      // base type
+      typedef FilterDefaultImplementation< Traits > BaseType;
+
+      static const int dimension = GridPartType::GridType::dimension;
+
+      static const int nCodim = dimension+1;
+
+    public:
+      //! \brief type of the filter implementation
+      typedef typename Traits::FilterType FilterType;
+
+      //! \brief type of index set 
+      typedef typename GridPartType :: IndexSetType IndexSetType;
     
-    typedef typename BaseType::FilterType FilterType;
-    typedef typename BaseType::EntityCodim0Type EntityCodim0Type;
-    typedef typename BaseType::EntityPointerCodim0Type EntityPointerCodim0Type;
+      template< int cd >
+      struct Codim
+      {
+        typedef typename Traits::template Codim< cd >::EntityType EntityType;
+      };
 
-  protected:
-    typedef typename GridPartType :: IndexSetType IndexSetType;
+      //! \brief type of codim 0 entity 
+      typedef typename Traits::EntityType EntityType;
 
-    const GridPartType& gridPart_;
-    const IndexSetType& indexSet_;
-    const MutableArray< int >& threadNum_ ;
-    int thread_;
-  public:
-    ThreadFilter(const GridPartType& gridPart, const MutableArray< int > & threadNum )
-     : gridPart_(gridPart),
-       indexSet_( gridPart.indexSet() ),
-       threadNum_( threadNum ),
-       thread_( 0 )
-    {
-    }
+      typedef MutableArray< int >  ThreadArrayType ;
+       
+      //! \brief constructor
+      ThreadFilter ( const GridPartType & gridPart, 
+                     const ThreadArrayType& threadNum,
+                     const int thead )
+      : indexSet_( gridPart.indexSet() ),
+        threadNum_( threadNum ),
+        thread_( thead )
+      { }
+
+      //! \brief copy constructor
+      ThreadFilter ( const ThisType & other )
+      : indexSet_( other.indexSet_ ),
+        threadNum_( other.threadNum_ ),
+        thread_( other.thread_ )
+      { 
+      }
+
+      //! \brief default implementation returns contains from neighbor
+      template< class Intersection >
+      bool interiorIntersection( const Intersection &intersection ) const
+      {
+        return false;
+      }
     
-    //! copy constructor 
-    ThreadFilter(const ThreadFilter& org) : 
-      gridPart_(org.gridPart_) ,
-      indexSet_(org.indexSet_) , 
-      threadNum_( org.threadNum_ ),
-      thread_( org.thread_ )
-    {
-    }
+      //! \brief returns true if the given entity of the pointer in the domain 
+      template< int cd >
+      bool contains ( const typename Codim< cd >::EntityType & entity ) const
+      {
+        if( cd == 0 ) 
+        {
+          return (thread_ == threadNum_[ indexSet_.index( entity ) ]);
+        }
+        else 
+          return false ;
+      }
 
-    void setThread ( const int thread )
-    {
-      thread_ = thread ;
-    }
+      //! \brief returns true if the given entity of the pointer in the domain 
+      template< class Entity >
+      bool contains ( const Entity & entity ) const
+      {
+        enum { cc = Entity::codimension };
+        return contains< cc >( entity );
+      }
+ 
+      //! \brief returns true if an intersection is a boundary intersection 
+      template< class Intersection >
+      bool intersectionBoundary( const Intersection & intersection ) const
+      {
+        return intersection.boundary();
+      }
+     
+      //! \brief returns the boundary id for an intersection 
+      template< class Intersection >
+      int intersectionBoundaryId ( const Intersection & intersection ) const
+      {
+        return intersection.boundaryId();
+      }
 
-    //! return true if entity is in FFS domain 
-    inline bool has0Entity(const EntityPointerCodim0Type & e) const 
-    {
-      return has0Entity( *e );
-    }
+      //! \brief returns true if for an intersection a neighbor exsits 
+      template< class Intersection >
+      bool intersectionNeighbor ( const Intersection & intersection ) const
+      {
+        return intersection.neighbor();
+      }
 
-    //! return true if entity is in FFS domain 
-    template <class EntityType>
-    inline bool has0Entity(const EntityType & e) const 
-    {
-      return threadNum_[ indexSet_.index(e) ] == thread_ ;
-    }
+    protected:
+      const IndexSetType& indexSet_;
+      const ThreadArrayType& threadNum_ ;
+      const int thread_;
+    };
 
-    // true if all intersections are interior intersections 
-    template <class IntersectionType>
-    inline bool interiorIntersection(const IntersectionType & it) const 
-    {
-      return false;
-    }
-    
-    template <class IntersectionType>
-    inline bool intersectionBoundary(const IntersectionType & it) const 
-    {
-      return it.boundary();
-    }
-    
-    template <class IntersectionType>
-    inline int intersectionBoundaryId(const IntersectionType & it) const 
-    {
-      // default value for lower region 
-      return ( it.boundary () ) ? it.boundaryId() : 111;
-    }
-    
-    template <class IntersectionType>
-    inline bool intersectionNeighbor(const IntersectionType & it) const 
-    {
-      return it.neighbor();
-    }
-  }; // end ThreadFilter
+  }  // end namespace Fem
 
 }  // end namespace Dune
-#endif
+
+#endif // #ifndef DUNE_FEM_GRIDPART_FILTER_BASICFILTERWRAPPER_HH

@@ -1,15 +1,15 @@
-#ifndef DUNE_FEM_THREADITERATOR2_HH
-#define DUNE_FEM_THREADITERATOR2_HH
+#ifndef DUNE_FEM_DG_THREADITERATOR2_HH
+#define DUNE_FEM_DG_THREADITERATOR2_HH
 
 #include <vector>
 
 #include <dune/common/exceptions.hh>
 
-#include <dune/fem/space/common/arrays.hh>
 #include <dune/fem/misc/threadmanager.hh>
+#include <dune/fem/gridpart/filteredgridpart.hh>
 
-#include "threadfilter.hh"
-#include "partitioner.hh"
+#include <dune/fem-dg/pass/threadfilter.hh>
+#include <dune/fem-dg/pass/partitioner.hh>
 
 namespace Dune {
 
@@ -26,7 +26,7 @@ namespace Dune {
       typedef typename SpaceType :: GridPartType  GridPartType;
       typedef typename SpaceType :: IndexSetType  IndexSetType;
       typedef ThreadFilter<GridPartType> FilterType;
-      typedef FilteredGridPart< GridPartType, FilterType > FilteredGridPartType;
+      typedef FilteredGridPart< GridPartType, FilterType, false > FilteredGridPartType ;
 
 #ifdef USE_SMP_PARALLEL
       typedef typename FilteredGridPartType :: template Codim< 0 > :: IteratorType
@@ -36,8 +36,8 @@ namespace Dune {
 #endif
 
       typedef typename IteratorType :: Entity EntityType ;
-      typedef typename SpaceType :: GridType :: template Codim<0> ::
-        EntityPointer EntityPointer ;
+      typedef typename GridPartType :: template Codim<0> ::
+        EntityPointerType EntityPointer ;
 
     protected:  
       const SpaceType& space_ ;
@@ -46,7 +46,9 @@ namespace Dune {
 #ifdef USE_SMP_PARALLEL
       int sequence_;
       std::vector< FilteredGridPartType* > filteredGridParts_;
-      MutableArray< int > threadNum_;
+
+      typedef typename FilterType :: ThreadArrayType ThreadArrayType;
+      ThreadArrayType threadNum_;
 #endif
     public:  
       //! contructor creating thread iterators 
@@ -59,13 +61,12 @@ namespace Dune {
 #endif
       {
 #ifdef USE_SMP_PARALLEL
-        FilterType filter( space_.gridPart(), threadNum_ );
-        GridType& grid = const_cast< GridType& > (space_.grid());
         for(int i=0; i< Fem :: ThreadManager :: maxThreads(); ++i )
         {
-          filteredGridParts_[ i ] = new FilteredGridPartType( grid, filter );
-          // set thread number of grid part 
-          filteredGridParts_[ i ]->filter().setThread( i );
+          // i is the thread number of this filter 
+          filteredGridParts_[ i ] 
+            = new FilteredGridPartType( space_.gridPart(), 
+                                        FilterType( space_.gridPart(), threadNum_, i ) );
         }
 
         threadNum_.setMemoryFactor( 1.1 ); 
