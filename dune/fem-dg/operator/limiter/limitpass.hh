@@ -593,7 +593,8 @@ namespace Dune {
                           const std::vector< RangeType >& nbVals, 
                           DeoModType& dM ) = 0;
       virtual MatrixIF* clone() const = 0;
-      static const double detEps_ = 1e-12 ;
+
+      static const double detEps_;
     };
 
     struct RegularMatrix : public MatrixIF 
@@ -2462,5 +2463,10 @@ namespace Dune {
     bool dgAdded_ ;
   }; // end DGLimitPass 
 
-} // end namespace Dune 
-#endif
+
+  template< class DiscreteModelImp, class PreviousPassImp, int passId >
+  const double LimitDGPass< DiscreteModelImp, PreviousPassImp, passId >::MatrixIF::detEps_ = 1e-12;
+
+} // namespace Dune 
+
+#endif // #ifndef DUNE_LIMITERPASS_HH
