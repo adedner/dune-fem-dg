@@ -29,7 +29,48 @@
 
 namespace Dune {
 
-  template < class InnerPass > 
+  template < class DestinationType > 
+  class NonBlockingCommHandle 
+  {
+    typedef typename DestinationType :: DiscreteFunctionSpaceType :: CommunicationManagerType
+          :: NonBlockingCommunicationType  NonBlockingCommunicationType;
+
+    mutable NonBlockingCommunicationType* nonBlockingComm_;
+  public:
+    NonBlockingCommHandle() : nonBlockingComm_( 0 ) {}
+    NonBlockingCommHandle( const NonBlockingCommHandle& ) : nonBlockingComm_( 0 ) {}
+
+    ~NonBlockingCommHandle() 
+    {
+      // make sure all communications have been finished
+      assert( nonBlockingComm_ == 0 );
+    }
+
+    void initComm( const DestinationType& dest ) const 
+    {
+      if( ! nonBlockingComm_ )
+      {
+        nonBlockingComm_ = new NonBlockingCommunicationType(
+            dest.space().communicator().nonBlockingCommunication() );
+
+        // perform send operation 
+        nonBlockingComm_->send( dest );
+      }
+    }
+
+    void finalizeComm( const DestinationType& dest ) const 
+    {
+      if( nonBlockingComm_ )
+      {
+        nonBlockingComm_->receive( const_cast< DestinationType& > ( dest ) );
+        delete nonBlockingComm_;
+        nonBlockingComm_ = 0;
+      }
+    }
+  };
+
+
+  template < class InnerPass, bool nonblockingcomm = true > 
   class ThreadPass :
     public LocalPass< typename InnerPass :: DiscreteModelType,
                       typename InnerPass :: PreviousPassType, 
@@ -81,6 +122,8 @@ namespace Dune {
                                    , CombinedSelectorType
                                  > DiscreteModelCallerType;
 
+    typedef NonBlockingCommHandle< DestinationType > NonBlockingCommHandleType ;
+
     // Range of the destination
     enum { dimRange = DiscreteFunctionSpaceType::dimRange };
 
@@ -109,7 +152,9 @@ namespace Dune {
       problems_( Fem::ThreadManager::maxThreads() ),
       passes_( Fem::ThreadManager::maxThreads() ),
       passComputeTime_( Fem::ThreadManager::maxThreads(), 0.0 ),
+      passStage_( Fem::ThreadManager::maxThreads(), false ),
       arg_(0), dest_(0),
+      nonBlockingComm_(),
       numberOfElements_( 0 ),
       firstCall_( true ),
       sumComputeTime_( Parameter :: getValue<bool>("fem.parallel.sumcomputetime", false ) )
@@ -200,6 +245,9 @@ namespace Dune {
 
     using BaseType :: time ;
     using BaseType :: computeTime_ ;
+    using BaseType :: destination_ ;
+    using BaseType :: destination ;
+    using BaseType :: finalizeCommunication ;
 
   public:  
     //! return number of elements visited on last application
@@ -281,13 +329,14 @@ namespace Dune {
           // prepare pass (make sure pass doesn't clear dest, this will conflict)
           pass( i ).prepare( arg, dest );
           passComputeTime_[ i ] = 0.0 ;
+          passStage_[ i ] = true ;
         }
         
         arg_  = &arg ; 
         dest_ = &dest ;
 
         /////////////////////////////////////////////////
-        // BEGIN PARALLEL REGION 
+        // BEGIN PARALLEL REGION, first stage, element integrals  
         /////////////////////////////////////////////////
         {
           // see threadhandle.hh 
@@ -296,6 +345,27 @@ namespace Dune {
         /////////////////////////////////////////////////
         // END PARALLEL REGION 
         /////////////////////////////////////////////////
+
+        /////////////////////////////////////////////////
+        // BEGIN PARALLEL REGION, second stage, surface integrals 
+        // only for non-blocking communication 
+        /////////////////////////////////////////////////
+        if( nonblockingcomm ) 
+        {
+          // mark second stage 
+          for(int i=0; i<maxThreads; ++i ) 
+            passStage_[ i ] = false ;
+
+          // RECEIVE DATA, send was done on call of compute (see pass.hh)
+          finalizeCommunication( arg );
+
+          // see threadhandle.hh 
+          Fem :: ThreadHandle :: run( *this ); 
+        }
+        /////////////////////////////////////////////////
+        // END PARALLEL REGION 
+        /////////////////////////////////////////////////
+
         arg_  = 0;
         dest_ = 0;
 
@@ -324,47 +394,93 @@ namespace Dune {
       // set max time steps 
       setMaxTimeSteps();
 
-      // communicate calculated function 
-      dest.communicate();
+      // if nonblockingcomm is disabled then communicate here
+      if( ! nonblockingcomm ) 
+      {
+        // communicate calculated function 
+        dest.communicate();
+      }
+    }
+
+    void initComm() const 
+    {
+      if( nonblockingcomm ) 
+        nonBlockingComm_.initComm( destination() );
+    }
+
+    void finalizeComm() const
+    {
+      if( nonblockingcomm && destination_ ) 
+        nonBlockingComm_.finalizeComm( destination() );
     }
 
     //! parallel section of compute 
     void runThread() const
     {
+      const int thread = Fem::ThreadManager::thread() ;
       //! get pass for my thread  
-      InnerPassType& myPass = pass( Fem::ThreadManager::thread() );
-
-      // create NB checker 
-      NBChecker nbChecker( iterators_ );
+      InnerPassType& myPass = pass( thread );
 
       // stop time 
       Timer timer ;
 
-      // Iterator is of same type as the space iterator 
-      typedef typename ThreadIteratorType :: IteratorType Iterator;
-      const Iterator endit = iterators_.end();
-      for (Iterator it = iterators_.begin(); it != endit; ++it)
+      const bool computeElementIntegral = passStage_[ thread ];
+
+      // create NB checker 
+      NBChecker nbChecker( iterators_ );
+
+      if( nonblockingcomm ) 
       {
-        assert( iterators_.thread( *it ) == Fem::ThreadManager::thread() );
-        myPass.applyLocal( *it, nbChecker );
+        if ( computeElementIntegral ) 
+        {
+          // Iterator is of same type as the space iterator 
+          typedef typename ThreadIteratorType :: IteratorType Iterator;
+          const Iterator endit = iterators_.end();
+          for (Iterator it = iterators_.begin(); it != endit; ++it)
+          {
+            assert( iterators_.thread( *it ) == thread );
+            myPass.elementIntegral( *it );
+          }
+        }
+        else 
+        {
+          // Iterator is of same type as the space iterator 
+          typedef typename ThreadIteratorType :: IteratorType Iterator;
+          const Iterator endit = iterators_.end();
+          for (Iterator it = iterators_.begin(); it != endit; ++it)
+          {
+            assert( iterators_.thread( *it ) == thread );
+            myPass.surfaceIntegral( *it, nbChecker );
+          }
+
+          assert( arg_ );
+          assert( dest_ );
+
+          // finalize pass (make sure communication is done in case of thread parallel
+          // program, this would give conflicts)
+          myPass.finalize(*arg_, *dest_);
+        }
+      }
+      else 
+      {
+        // Iterator is of same type as the space iterator 
+        typedef typename ThreadIteratorType :: IteratorType Iterator;
+        const Iterator endit = iterators_.end();
+        for (Iterator it = iterators_.begin(); it != endit; ++it)
+        {
+          assert( iterators_.thread( *it ) == thread );
+          myPass.applyLocal( *it, nbChecker );
+        }
+
+        assert( arg_ );
+        assert( dest_ );
+
+        // finalize pass (make sure communication is done in case of thread parallel
+        // program, this would give conflicts)
+        myPass.finalize(*arg_, *dest_);
       }
 
-      assert( arg_ );
-      assert( dest_ );
-      // finalize pass (make sure communication is done in case of thread parallel
-      // program, this would give conflicts)
-      myPass.finalize(*arg_, *dest_);
-
-#if not defined NDEBUG 
-      /*
-      if( Parameter :: verbose() ) 
-      {
-        std::cout << "Thread["<< Fem::ThreadManager::thread() << "] diagnostics: " <<
-          nbChecker.counter_ << "  and   "<< nbChecker.nonEqual_ << std::endl;
-      }
-      */
-#endif
-      passComputeTime_[ Fem::ThreadManager::thread() ] = timer.elapsed();
+      passComputeTime_[ thread ] += timer.elapsed();
     }
 
 
@@ -415,10 +531,14 @@ namespace Dune {
     std::vector< DiscreteModelType* > problems_; 
     std::vector< InnerPassType* > passes_;
     mutable std::vector< double > passComputeTime_;
+    mutable std::vector< bool   > passStage_;
 
     // temporary variables 
     mutable const ArgumentType* arg_; 
     mutable DestinationType* dest_; 
+
+    // non-blocking communication handler 
+    NonBlockingCommHandleType nonBlockingComm_;
 
     mutable size_t numberOfElements_;
     mutable bool firstCall_;
