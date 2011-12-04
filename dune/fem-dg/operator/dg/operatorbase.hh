@@ -47,16 +47,22 @@ namespace Dune {
     typedef typename AdvTraits::DiscreteFunctionType AdvDFunctionType;
     typedef typename AdvTraits::IndicatorType        IndicatorType ;
     
-    typedef StartPass< AdvDFunctionType, u > Pass0Type;
+    typedef StartPass< AdvDFunctionType, u
+#ifdef NSMOD_USE_SMP_PARALLEL
+         , NonBlockingCommHandle< AdvDFunctionType >   
+#endif
+      > Pass0Type;
+
     typedef 
 #ifdef NSMOD_USE_SMP_PARALLEL
-      ThreadPass<
+      ThreadPass < 
 #endif
-        LocalCDGPass< DiscreteModelType, Pass0Type, cdgpass >
-#ifdef NSMOD_USE_SMP_PARALLEL 
-                >
+      LocalCDGPass< DiscreteModelType, Pass0Type, cdgpass >
+#ifdef NSMOD_USE_SMP_PARALLEL
+      , true // non-blocking communication 
+        > 
 #endif
-        Pass1Type;
+    Pass1Type;
 
     typedef typename AdvTraits::DomainType AdvDomainType;
     typedef typename AdvTraits::DiscreteFunctionSpaceType AdvDFunctionSpaceType;
