@@ -439,8 +439,8 @@ namespace Dune {
       // resize indicator function 
       visited_.resize( indexSet_.size(0) );
       // set all values to false 
-      const int indSize = visited_.size();
-      for(int i=0; i<indSize; ++i) visited_[i] = false;
+      const size_t indSize = visited_.size();
+      for(size_t i=0; i<indSize; ++i) visited_[i] = false;
 
       // time initialisation to max value 
       dtMin_ = std::numeric_limits<double>::max();
@@ -529,6 +529,34 @@ namespace Dune {
       }
     }
 
+    // only calculate element integral part 
+    void elementIntegral(const EntityType& entity ) const 
+    {
+      // init local function 
+      initLocalFunction( entity , updEn_ );
+
+      // call real apply local 
+      elementIntegral(entity, updEn_);
+
+      // add update to real function (do not apply local inverse mass yet)
+      updateFunction(entity, updEn_ );
+    }
+
+    // only calculate surface integral 
+    template <class NeighborChecker>
+    void surfaceIntegral(const EntityType& entity,
+                         const NeighborChecker& nbChecker ) const 
+    {
+      // init local function 
+      initLocalFunction( entity , updEn_ );
+
+      // call real apply local 
+      surfaceIntegral(entity, updEn_, nbChecker );
+      
+      // add update to real function 
+      updateFunctionAndApplyMass(entity, updEn_ );
+    }
+
   protected:
     //! local integration 
     template <class NeighborChecker>
@@ -536,14 +564,23 @@ namespace Dune {
                     TemporaryLocalFunctionType& updEn,
                     const NeighborChecker& nbChecker ) const
     {
+      // calcuate element integral 
+      elementIntegral( entity, updEn, true );
+
+      // calculate surface integral 
+      surfaceIntegral( entity, updEn, nbChecker, false );
+    }
+
+    // compute element integral for given entity 
+    void elementIntegral(const EntityType& entity, 
+                         TemporaryLocalFunctionType& updEn,
+                         const bool alsoSetEntity = false ) const
+    {
       // increase element counter 
       ++numberOfElements_ ;
 
       // only call geometry once, who know what is done in this function 
       const Geometry & geo = entity.geometry();
-
-      // get volume of element 
-      const double envol = geo.volume(); 
 
       // only apply volumetric integral if order > 0 
       // otherwise this contribution is zero 
@@ -563,16 +600,33 @@ namespace Dune {
           evalVolumetricPartBoth(entity, geo, volQuad, updEn);
         }
       }
-      else 
+      else if( alsoSetEntity )
       {
         caller_.setEntity( entity );
       }
+    }
 
-      /////////////////////////////
-      // Surface integral part
-      /////////////////////////////
+    // compute surface integral for given entity 
+    template <class NeighborChecker>
+    void surfaceIntegral(const EntityType& entity, 
+                         TemporaryLocalFunctionType& updEn,
+                         const NeighborChecker& nbChecker,
+                         const bool setEntity = true ) const
+    {
       if ( discreteModel_.hasFlux() ) 
       {
+        if( setEntity ) 
+        {
+          // set entity for caller 
+          caller_.setEntity( entity );
+        }
+
+        /////////////////////////////
+        // Surface integral part
+        /////////////////////////////
+        // get volume of element 
+        const double envol = entity.geometry().volume(); 
+
         const IntersectionIteratorType endnit = gridPart_.iend(entity);
         for (IntersectionIteratorType nit = gridPart_.ibegin(entity); nit != endnit; ++nit) 
         {
@@ -676,8 +730,7 @@ namespace Dune {
             dtMin_ = std::min(dtMin_,minvolS/wspeedS);
           }
         } // end intersection loop
-
-      } // end if discreteModel_.hasFlux()
+      } // end discreteModel_.hasFlux() 
 
       // this entity is finised by now 
       visited_[ indexSet_.index( entity ) ] = reallyCompute_ ;
