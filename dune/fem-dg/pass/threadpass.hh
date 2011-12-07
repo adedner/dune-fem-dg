@@ -36,9 +36,19 @@ namespace Dune {
           :: NonBlockingCommunicationType  NonBlockingCommunicationType;
 
     mutable NonBlockingCommunicationType* nonBlockingComm_;
+    const bool useNonBlockingComm_ ;
   public:
-    NonBlockingCommHandle() : nonBlockingComm_( 0 ) {}
-    NonBlockingCommHandle( const NonBlockingCommHandle& ) : nonBlockingComm_( 0 ) {}
+    NonBlockingCommHandle() 
+      : nonBlockingComm_( 0 ),
+        useNonBlockingComm_( Parameter :: getValue< bool > ("femdg.nonblockingcomm", false ))
+      {}
+
+    NonBlockingCommHandle( const NonBlockingCommHandle& other ) 
+      : nonBlockingComm_( 0 ),
+        useNonBlockingComm_( other.useNonBlockingComm_ ) 
+    {}
+
+    bool nonBlockingCommunication () const { return useNonBlockingComm_; }
 
     ~NonBlockingCommHandle() 
     {
@@ -48,7 +58,7 @@ namespace Dune {
 
     void initComm( const DestinationType& dest ) const 
     {
-      if( ! nonBlockingComm_ )
+      if( nonBlockingCommunication() && nonBlockingComm_ == 0 )
       {
         nonBlockingComm_ = new NonBlockingCommunicationType(
             dest.space().communicator().nonBlockingCommunication() );
@@ -60,7 +70,7 @@ namespace Dune {
 
     void finalizeComm( const DestinationType& dest ) const 
     {
-      if( nonBlockingComm_ )
+      if( nonBlockingCommunication() && nonBlockingComm_ )
       {
         nonBlockingComm_->receive( const_cast< DestinationType& > ( dest ) );
         delete nonBlockingComm_;
@@ -350,7 +360,7 @@ namespace Dune {
         // BEGIN PARALLEL REGION, second stage, surface integrals 
         // only for non-blocking communication 
         /////////////////////////////////////////////////
-        if( nonblockingcomm ) 
+        if( nonBlockingComm_.nonBlockingCommunication() ) 
         {
           // mark second stage 
           for(int i=0; i<maxThreads; ++i ) 
@@ -394,8 +404,8 @@ namespace Dune {
       // set max time steps 
       setMaxTimeSteps();
 
-      // if nonblockingcomm is disabled then communicate here
-      if( ! nonblockingcomm ) 
+      // if useNonBlockingComm_ is disabled then communicate here
+      if( ! nonBlockingComm_.nonBlockingCommunication() ) 
       {
         // communicate calculated function 
         dest.communicate();
@@ -404,13 +414,13 @@ namespace Dune {
 
     void initComm() const 
     {
-      if( nonblockingcomm ) 
+      if( nonBlockingComm_.nonBlockingCommunication() && destination_ ) 
         nonBlockingComm_.initComm( destination() );
     }
 
     void finalizeComm() const
     {
-      if( nonblockingcomm && destination_ ) 
+      if( nonBlockingComm_.nonBlockingCommunication() && destination_ ) 
         nonBlockingComm_.finalizeComm( destination() );
     }
 
@@ -429,7 +439,7 @@ namespace Dune {
       // create NB checker 
       NBChecker nbChecker( iterators_ );
 
-      if( nonblockingcomm ) 
+      if( nonBlockingComm_.nonBlockingCommunication() ) 
       {
         if ( computeElementIntegral ) 
         {
