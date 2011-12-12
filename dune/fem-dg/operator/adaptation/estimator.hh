@@ -166,60 +166,71 @@ public:
   { 
     const int enIdx = indexSet_.index( entity ); 
     
-    RangeType val(0.0);
-    RangeType valnb(0.0);
+    RangeType val( 0. );
+    RangeType valnb( 0. );
 
-    // evaluate solution at this entity's barycenter
-    const DomainType& localBarycenter = localBarycenterPoint( entity );
+    // get local function on the element
     LocalFunctionType lf = uh_.localFunction( entity );
-    lf.evaluate( localBarycenter, val );
-    
-    const double ind1 = indicator1( entity, localBarycenter, val );
-    ind1Max = std::max( ind1Max, ind1 );
-    ind1Min = std::min( ind1Min, ind1 );
+    const int quadOrder = ( lf.order()==0 ? 1 : 2 );
+    ElementQuadratureType quad( entity, quadOrder );
+    const int numQuad = quad.nop();
 
-    double ind2 = 0.;
-    if( indicator2Ptr_ )
+    for( int qp=0; qp<numQuad; ++qp )
     {
-      ind2 = indicator2( entity, localBarycenter, val );
-      ind2Max = std::max( ind2Max, ind2 );
-      ind2Min = std::min( ind2Min, ind2 );
-    }
+      DomainType xEn = quad.point( qp );
+      lf.evaluate( xEn, val );
+      const double ind1 = indicator1( entity, xEn, val );
+      ind1Max = std::max( ind1Max, ind1 );
+      ind1Min = std::min( ind1Min, ind1 );
 
-    // iterate over neighbors
-    const IntersectionIteratorType nbend = gridPart_.iend( entity ); 
-    for (IntersectionIteratorType nb = gridPart_.ibegin( entity ); 
-         nb != nbend; ++nb)
-    {
-      if( nb->neighbor() )
+      double ind2 = 0.;
+      if( indicator2Ptr_ )
       {
-        // access neighbor
-        ElementPointerType outside = nb->outside();
-        const ElementType& neighbor = *outside; 
-        const int nbIdx = indexSet_.index( neighbor );
+        ind2 = indicator2( entity, xEn, val );
+        ind2Max = std::max( ind2Max, ind2 );
+        ind2Min = std::min( ind2Min, ind2 );
+      }
 
-        // handle face from one side only
-        if ( entity.level() > neighbor.level() ||
-            (entity.level() == neighbor.level() && enIdx < nbIdx) )
+      // iterate over neighbors
+      const IntersectionIteratorType nbend = gridPart_.iend( entity ); 
+      for (IntersectionIteratorType nb = gridPart_.ibegin( entity ); 
+           nb != nbend; ++nb)
+      {
+        if( nb->neighbor() )
         {
-          // get same specific position (point) in the neighbor
-          // and evaluate num. solution
-          const DomainType& localNeighborBarycenter = localBarycenterPoint ( neighbor );
-          LocalFunctionType lfnb = uh_.localFunction( neighbor );
-          lfnb.evaluate( localNeighborBarycenter, valnb );
+          // access neighbor
+          ElementPointerType outside = nb->outside();
+          const ElementType& neighbor = *outside; 
+          const int nbIdx = indexSet_.index( neighbor );
 
-          const double ind1nb = indicator1( neighbor, localNeighborBarycenter, valnb );
-          double ind1LocalDiff = std::abs( ind1 - ind1nb );
-          indicator_[enIdx] = std::max( indicator_[enIdx], ind1LocalDiff );
-          indicator_[nbIdx] = std::max( indicator_[nbIdx], ind1LocalDiff );
-
-          if( indicator2Ptr_ )
+          // handle face from one side only
+          if ( entity.level() > neighbor.level() ||
+              (entity.level() == neighbor.level() && enIdx < nbIdx) )
           {
-            IndicatorType& indicator2_ = *indicator2Ptr_;
-            const double ind2nb = indicator2( neighbor, localNeighborBarycenter, valnb );
-            double ind2LocalDiff = std::abs( ind2 - ind2nb );
-            indicator2_[enIdx] = std::max( indicator2_[enIdx], ind2LocalDiff );
-            indicator2_[nbIdx] = std::max( indicator2_[nbIdx], ind2LocalDiff );
+            // get local function on the neighbor element
+            LocalFunctionType lfnb = uh_.localFunction( neighbor );
+            ElementQuadratureType quadNeigh( entity, quadOrder );
+            const int numQuadNe = quad.nop();
+
+            // run over neighbor quadrature points
+            for( int qpNe=0; qpNe<numQuadNe; ++qpNe )
+            {
+              DomainType xNe = quadNeigh.point( qpNe );
+              lfnb.evaluate( xNe, valnb );
+              const double ind1nb = indicator1( neighbor, xNe, valnb );
+              double ind1LocalDiff = std::abs( ind1 - ind1nb );
+              indicator_[enIdx] = std::max( indicator_[enIdx], ind1LocalDiff );
+              indicator_[nbIdx] = std::max( indicator_[nbIdx], ind1LocalDiff );
+
+              if( indicator2Ptr_ )
+              {
+                IndicatorType& indicator2_ = *indicator2Ptr_;
+                const double ind2nb = indicator2( neighbor, xNe, valnb );
+                double ind2LocalDiff = std::abs( ind2 - ind2nb );
+                indicator2_[enIdx] = std::max( indicator2_[enIdx], ind2LocalDiff );
+                indicator2_[nbIdx] = std::max( indicator2_[nbIdx], ind2LocalDiff );
+              }
+            }
           }
         }
       }
