@@ -180,7 +180,7 @@ namespace Dune {
 
       // call problem checkDirection 
       return problem_.checkPhysical( *(intersection.inside()),
-                                     faceQuad.point( quadPoint ), valuesEn_ ); 
+                                     intersection.inside()->geometry().local( intersection.geometry().global( faceQuad.localPoint( quadPoint ) ) ), valuesEn_ ); 
     }
 
     // check whether we have inflow or outflow direction 
@@ -233,6 +233,7 @@ namespace Dune {
 
     enum { dimRange = ModelTraits::dimRange };
     enum { dimDomain = ModelTraits::dimDomain };
+    enum { dimGrid = GridType::dimension };
 
     typedef GlobalTraitsImp Traits; 
     typedef typename Traits::FunctionSpaceType FunctionSpaceType;
@@ -246,9 +247,10 @@ namespace Dune {
 
     typedef typename DestinationType::DomainFieldType DomainFieldType;
     typedef typename DestinationType::DomainType DomainType;
+    typedef FieldVector<DomainFieldType, dimGrid >  LocalDomainType;
     typedef typename DestinationType::RangeType RangeType;
     typedef typename DestinationType::JacobianRangeType JacobianRangeType;
-    typedef FieldVector<DomainFieldType, dimDomain - 1> FaceDomainType;
+    typedef FieldVector<DomainFieldType, dimGrid - 1> FaceLocalDomainType;
 
     typedef LimiterDefaultDiscreteModel <GlobalTraitsImp,Model,passId> DGDiscreteModelType;
 
@@ -271,7 +273,8 @@ namespace Dune {
     typedef LimiterDefaultTraits<GlobalTraitsImp,Model,passId> Traits;
     
     typedef typename Traits::DomainType DomainType;
-    typedef typename Traits::FaceDomainType FaceDomainType;
+    typedef typename Traits::LocalDomainType LocalDomainType;
+    typedef typename Traits::FaceLocalDomainType FaceLocalDomainType;
     typedef typename Traits::RangeType RangeType;
     typedef typename Traits::GridType GridType;
     typedef typename Traits::GridPartType GridPartType;
@@ -348,7 +351,7 @@ namespace Dune {
                          JacobianRangeType&,
                          JacobianRangeType& ) const
     {
-      const FaceDomainType& x = innerQuad.localPoint( quadPoint );
+      const FaceLocalDomainType& x = innerQuad.localPoint( quadPoint );
 
       if( checkDirection(it,time, x, uLeft) )
       {
@@ -388,7 +391,7 @@ namespace Dune {
         intersection */
     inline bool hasBoundaryValue(const IntersectionType& it,
                                  const double time, 
-                                 const FaceDomainType& x) const
+                                 const FaceLocalDomainType& x) const
     {
       return true; 
     }
@@ -397,7 +400,7 @@ namespace Dune {
     //! value 
     inline void boundaryValue(const IntersectionType& it,
                               const double time,
-                              const FaceDomainType& x,
+                              const FaceLocalDomainType& x,
                               const RangeType& uLeft,
                               RangeType& uRight) const
     {
@@ -410,7 +413,7 @@ namespace Dune {
     /** \brief check physical values (called from LimiterDiscreteModelCaller) */ 
     template <class ArgumentTuple>  
     bool checkPhysical( const EntityType& en, 
-                        const DomainType& x,
+                        const LocalDomainType& x,
                         const ArgumentTuple& u ) const 
     { 
       // take first component 
@@ -418,10 +421,10 @@ namespace Dune {
     }
 
     /** \brief check physical values 
-     *  \param[in] xglBary Point in the global coordinates
+     *  \param[in] xglBary Point in the local coordinates
      */ 
     bool physical( const EntityType& en, 
-                   const DomainType& x,
+                   const LocalDomainType& x,
                    const RangeType& u) const 
     { 
       return true;
@@ -446,12 +449,11 @@ namespace Dune {
     //! returns true, if we have an inflow boundary
     template <class ArgumentTuple> 
     bool checkDirection(const IntersectionType& it,
-                        const double time, const FaceDomainType& x,
+                        const double time, const FaceLocalDomainType& x,
                         const ArgumentTuple& uLeft) const 
     { 
       // evaluate velocity 
-      model_.velocity(this->inside(),time,it.geometryInInside().global(x),
-                      uLeft[ uVar ], velocity_);
+      model_.velocity(this->inside(),time,it.inside()->geometry().local( it.geometry().global(x) ), uLeft[ uVar ], velocity_);
       return checkDirection(it, x, velocity_);
     }
     
@@ -465,7 +467,7 @@ namespace Dune {
   protected:
     //! returns true, if we have an inflow boundary
     bool checkDirection(const IntersectionType& it,
-                        const FaceDomainType& x,
+                        const FaceLocalDomainType& x,
                         const DomainType& velocity) const 
     { 
       // calculate scalar product of normal and velocity 
@@ -483,6 +485,84 @@ namespace Dune {
     const DomainFieldType veloEps_;
   };
 
+  namespace Fem { 
+
+  // matrix assemblers for the reconstruction matrices 
+
+  template<int dimension,int dimensionworld = dimension, class DomainFieldType = double>
+  struct MatrixAssemblerForLinearReconstruction
+  {
+    typedef DGFEntityKey<int> KeyType;
+    typedef FieldMatrix< DomainFieldType, dimensionworld , dimensionworld > MatrixType;
+    typedef FieldVector< DomainFieldType , dimensionworld > DomainType;
+    
+    static inline 
+    void assembleMatrix(const KeyType& v, 
+                        const std::vector< DomainType >& barys, 
+                        MatrixType& matrix)
+    {
+      assert(dimension == dimensionworld);
+      const int size = v.size();
+      for(int i=0; i<size; ++i)
+      {
+        matrix[ i ] = barys[ v[ i ] ];
+      }
+    }
+  };
+
+
+  template<class DomainFieldType>
+  struct MatrixAssemblerForLinearReconstruction<1, 2, DomainFieldType>
+  {
+    typedef DGFEntityKey<int> KeyType;
+    typedef FieldMatrix< DomainFieldType, 2 , 2 > MatrixType;
+    typedef FieldVector< DomainFieldType , 2 > DomainType;
+    
+    static inline 
+    void assembleMatrix(const KeyType& v, 
+                        const std::vector< DomainType >& barys, 
+                        MatrixType& matrix)
+    {
+      const int size = v.size();
+      assert( size==1 );
+
+      for(int i=0; i<size; ++i)
+      {
+        matrix[ i ] = barys[ v[ i ] ];
+      }
+      //take a vector that is orthogonal to the first one
+      matrix[ 1 ] [ 0 ]  = (-1.) * barys[ v[ 0 ] ] [ 1 ];
+      matrix[ 1 ] [ 1 ]  = barys[ v[ 0 ] ] [ 0 ];
+    }
+  };
+
+  template<class DomainFieldType>
+  struct MatrixAssemblerForLinearReconstruction<2, 3, DomainFieldType>
+  {
+    typedef DGFEntityKey<int> KeyType;
+    typedef FieldMatrix< DomainFieldType, 3 , 3 > MatrixType;
+    typedef FieldVector< DomainFieldType , 3 > DomainType;
+    
+    static inline 
+    void assembleMatrix(const KeyType& v, 
+                        const std::vector< DomainType >& barys, 
+                        MatrixType& matrix)
+    {
+      const int size = v.size();
+      assert( size==2 );
+
+      for(int i=0; i<size; ++i)
+      {
+        matrix[ i ] = barys[ v[ i ] ];
+      }
+      //take the cross product of first and second vector as the third vector
+      matrix[ 2 ] [ 0 ]  = barys[ v[ 0 ] ] [ 1 ] *  barys[ v[ 1 ] ] [ 2 ] - barys[ v[ 0 ] ] [ 2 ] *  barys[ v[ 1 ] ] [ 1 ];
+      matrix[ 2 ] [ 1 ]  = barys[ v[ 0 ] ] [ 2 ] *  barys[ v[ 1 ] ] [ 0 ] - barys[ v[ 0 ] ] [ 0 ] *  barys[ v[ 1 ] ] [ 2 ];
+      matrix[ 2 ] [ 2 ]  = barys[ v[ 0 ] ] [ 0 ] *  barys[ v[ 1 ] ] [ 1 ] - barys[ v[ 0 ] ] [ 1 ] *  barys[ v[ 1 ] ] [ 0 ];
+    }
+  };
+
+  } // end namespace Fem 
 
   /** \brief Concrete implementation of Pass for Limiting.
       The implemented Shock detection is described in detail in: 
@@ -544,6 +624,7 @@ namespace Dune {
     typedef typename IntersectionIteratorType :: Intersection IntersectionType;
     typedef typename GridPartType::template Codim<0>::EntityPointerType  EntityPointerType;
     typedef typename GridPartType::template Codim<0>::GeometryType       Geometry;
+    typedef typename Geometry::LocalCoordinate LocalDomainType;
     
     // Various other types
     typedef typename DestinationType::LocalFunctionType DestLocalFunctionType;
@@ -559,9 +640,9 @@ namespace Dune {
     // Range of the destination
     enum { dimRange = DiscreteFunctionSpaceType::DimRange,
      dimDomain = DiscreteFunctionSpaceType::DimDomain};
-    enum { dimension = GridType :: dimension };
+    enum { dimGrid = GridType :: dimension };
     typedef typename GridType :: ctype ctype; 
-    typedef FieldVector<ctype, dimDomain-1> FaceDomainType;
+    typedef FieldVector<ctype, dimGrid-1> FaceLocalDomainType;
 
     typedef PointBasedDofConversionUtility< dimRange > DofConversionUtilityType;
 
@@ -569,7 +650,7 @@ namespace Dune {
     enum { StructuredGrid = ! Capabilities::IsUnstructured<GridType>::v };
 
     typedef FieldVector< DomainType , dimRange > DeoModType; 
-    typedef FieldMatrix< DomainFieldType, dimension , dimension > MatrixType;
+    typedef FieldMatrix< DomainFieldType, dimDomain , dimDomain > MatrixType;
 
     typedef AllGeomTypes< typename GridPartType :: IndexSetType,
                           GridType> GeometryInformationType;
@@ -605,18 +686,15 @@ namespace Dune {
       RegularMatrix() : inverseCalculated_( false ) {}
 
       MatrixIF* clone() const { return new RegularMatrix( *this ); }
-
+           
       bool inverse(const KeyType& v, const std::vector< DomainType >& barys ) 
       {
         if( ! inverseCalculated_ ) 
         {
           MatrixType matrix; 
-          // setup matrix 
-          for(int i=0; i<DomainType::dimension; ++i) 
-          {
-            matrix[ i ] = barys[ v[ i ] ];
-          }
-
+          // setup matrix
+          Fem :: MatrixAssemblerForLinearReconstruction<dimGrid,dimDomain, DomainFieldType> 
+            :: assembleMatrix(v, barys, matrix);
           // invert matrix 
           RangeFieldType det = FMatrixHelp :: invertMatrix( matrix, inverse_ );
           if( std::abs( det ) > MatrixIF :: detEps_ ) 
@@ -636,12 +714,21 @@ namespace Dune {
         if( inverse( v, barys ) )
         {
           DomainType rhs ; 
+          const int vSize = v.size();
           // calculate D
           for(int r=0; r<dimRange; ++r)
           {
-            for(int i=0; i<DomainType::dimension; ++i) 
+            for(int i=0; i<vSize; ++i) 
             {
-              rhs[i] = nbVals[ v[i] ][r];
+              rhs[ i ] = nbVals[ v[ i ] ][ r ];
+            }
+
+            //if we have surface grid, then we need additional row to make the matrix quadratic. Claim that 
+            //derivative in normal (to entity) direction is zero
+            // whats with 1,2 ???
+            if( (dimGrid == 2) && (dimDomain == 3) )
+            {
+              rhs[vSize] = 0;
             }
 
             // get solution 
@@ -656,7 +743,7 @@ namespace Dune {
     struct LeastSquaresMatrix : public MatrixIF 
     {
       // dimension 
-      enum { dim = dimension };
+      enum { dim = dimGrid };
       // new dimension is dim + 1 
       enum { newDim = dim + 1 };
 
@@ -664,7 +751,7 @@ namespace Dune {
       // this should make the linear system solvable 
        
       // need new matrix type containing one row more  
-      typedef FieldMatrix<DomainFieldType, newDim , dim> NewMatrixType;
+      typedef FieldMatrix<DomainFieldType, newDim , dimDomain> NewMatrixType;
       typedef FieldVector<DomainFieldType, newDim > NewVectorType;
 
       MatrixType inverse_ ;
@@ -890,7 +977,7 @@ namespace Dune {
     //! get tolerance factor for shock detector 
     double getTolFactor() const 
     {
-      const double dim = dimension; 
+      const double dim = dimGrid; 
       const double dimFactor = 1./dim; 
       const double order = spc_.order();
       return dimFactor * 0.016 * std::pow(5.0, order);
@@ -1109,7 +1196,7 @@ namespace Dune {
       // cache geometry type 
       const GeometryType geomType = geo.type();
       // get bary center of element 
-      const DomainType& x = geoInfo_.localCenter( geomType );
+      const LocalDomainType& x = geoInfo_.localCenter( geomType );
       const DomainType enBary = geo.global( x );
 
       const IntersectionIteratorType endnit = gridPart_.iend( en );
@@ -1145,8 +1232,13 @@ namespace Dune {
         limiter = calculateIndicator(en, uEn, geo, limiter, limit, shockIndicator, adaptIndicator);
       }
 
+      // get barycenter of entity 
+      const DomainType& entityBary = (int(dimGrid) == int(dimDomain)) ? 
+        geoInfo_.localCenter( geomType ) : 
+        geo.local( enBary ) ;
+      
       // check average value
-      if (! discreteModel_.physical(en, x, enVal) ) 
+      if ( ! discreteModel_.physical(en, entityBary, enVal) ) 
       {
         std::cerr << "Average Value "
                   << enVal
@@ -1157,7 +1249,7 @@ namespace Dune {
         assert( false );
         abort();
       }
-      assert( (discreteModel_.hasPhysical()) ? (discreteModel_.physical(en, x, enVal)) : true );
+      assert( (discreteModel_.hasPhysical()) ? (discreteModel_.physical(en, entityBary, enVal)) : true );
 
       stepTime_[0] += indiTime.elapsed();
       indiTime.reset();
@@ -1240,7 +1332,7 @@ namespace Dune {
             /////////////////////////////////////////
             // construct bary center of ghost cell 
             /////////////////////////////////////////
-            const FaceDomainType& faceMid = faceGeoInfo_.localCenter( interGeo.type() );
+            const FaceLocalDomainType& faceMid = faceGeoInfo_.localCenter( interGeo.type() );
 
             // get unit normal 
             lambda = intersection.unitOuterNormal(faceMid);
@@ -1262,15 +1354,15 @@ namespace Dune {
             if( ! hasNeighbor ) 
             {
               // check for boundary Value 
-              const FaceDomainType localPoint 
+              const FaceLocalDomainType localPoint 
                     ( interGeo.local( lambda + enBary ) );
               
               if( discreteModel_.hasBoundaryValue(intersection, currentTime_, 
-                                            localPoint) )
+                                                  localPoint) )
               {
                 discreteModel_.boundaryValue(intersection, currentTime_, 
-                                       localPoint, 
-                                       enVal, nbVal);
+                                             localPoint, 
+                                             enVal, nbVal);
                 // calculate difference 
                 nbVal -= enVal;
               }
@@ -1426,7 +1518,7 @@ namespace Dune {
       assert( level < (int) matrixCacheVec_.size() );
       MatrixCacheType& matrixCache = matrixCacheVec_[ level ]; 
 
-      enum { dim = dimension };
+      enum { dim = dimGrid };
 
       typedef typename ComboSetType :: iterator iterator; 
 
@@ -1700,7 +1792,7 @@ namespace Dune {
                        const Geometry& geo,
                        const LocalFunctionImp& uEn) const 
     {
-      enum { dim = dimension };
+      enum { dim = dimGrid };
       if( discreteModel_.hasPhysical() )
       {  
 #if 1
@@ -1763,7 +1855,7 @@ namespace Dune {
     {
       inline static int numBasis(const LocalFunctionImp& lf) 
       {
-        return dimension + 1;
+        return dimGrid + 1;
       }
     };
 
@@ -1777,7 +1869,7 @@ namespace Dune {
     {
       inline static int numBasis(const LocalFunctionImp& lf) 
       {
-        return dimension + 1;
+        return dimGrid + 1;
       }
     };
 
@@ -1792,7 +1884,7 @@ namespace Dune {
        LocalFunctionImp& limitEn, 
        const bool constantValue = false ) const 
     {
-      enum { dim = dimension };
+      enum { dim = dimGrid };
       
       // true if geometry mapping is affine 
       const bool affineMapping = localMassMatrix_.affine();
@@ -1969,15 +2061,15 @@ namespace Dune {
     
     // termination of fill combination vector 
     template <class SetType> 
-    struct FillVector<SetType, dimension-1 >
+    struct FillVector<SetType, dimGrid-1 >
     {
-      enum { dim = dimension-1 };
+      enum { dim = dimGrid-1 };
       static void fill(const int neighbors, 
                        const int start,
                        SetType& comboSet,
                        std::vector<int>& v) 
       {
-        assert( (int) v.size() == dimension );
+        assert( (int) v.size() == dimGrid );
         for(int n = start; n<neighbors; ++n)
         {
           v[dim] = n;
@@ -2018,7 +2110,7 @@ namespace Dune {
       comboSet.clear();
 
       // maximal number of neighbors 
-      std::vector<int> v(dimension,0);
+      std::vector<int> v(dimGrid,0);
       FillVector<ComboSetType, 0> :: fill(neighbors,0, comboSet, v );
 
       // create set containing all numbers 
@@ -2029,7 +2121,7 @@ namespace Dune {
         constNumbers.insert(i);
       }
         
-      const int checkSize = neighbors - dimension ;
+      const int checkSize = neighbors - dimGrid ;
       typedef typename ComboSetType :: iterator iterator; 
       const iterator endit = comboSet.end();
       for(iterator it = comboSet.begin(); it != endit; ++it) 
@@ -2044,7 +2136,7 @@ namespace Dune {
         std::set<int> numbers (constNumbers);
         
         // remove the key values 
-        for(int i=0; i<dimension; ++i) 
+        for(int i=0; i<dimGrid; ++i) 
         {
           el_iterator el = numbers.find( v[i] );
           numbers.erase( el );
@@ -2452,7 +2544,7 @@ namespace Dune {
     //! true if indicator should be calculated 
     mutable bool calcIndicator_;
     
-    //! true if limtier is used as finite volume scheme of higher order 
+    //! true if limiter is used as finite volume scheme of higher order 
     mutable bool reconstruct_;
 
     //! true if limiting operator is applied 

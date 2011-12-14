@@ -41,11 +41,10 @@ namespace Fem {
   public:
     typedef LimiterTraits<GlobalPassTraitsImp,Model, passId > Traits;
 
-    typedef typename Traits:: DomainType DomainType;
-    typedef FieldVector<typename 
-          DomainType :: field_type, Traits::dimDomain-1> FaceDomainType;
-    
     typedef typename Traits::RangeType RangeType;
+    typedef typename Traits:: DomainType DomainType;
+    typedef typename Traits:: LocalDomainType LocalDomainType;
+    typedef typename Traits:: DomainFieldType DomainFieldType;
     typedef typename Traits::GridType GridType;
     typedef typename Traits::GridPartType GridPartType;
     typedef typename Traits::JacobianRangeType JacobianRangeType;
@@ -53,6 +52,11 @@ namespace Fem {
     typedef typename GridPartType::template Codim<0>::EntityType        EntityType;
     typedef typename GridPartType::template Codim<0>::EntityPointerType EntityPointerType;
     typedef typename GridType::template Codim<0>::Entity                GridEntityType;
+    
+    enum { dimGrid = GridType :: dimension };
+    
+    // type of surface domain type 
+    typedef FieldVector< DomainFieldType, dimGrid - 1 > FaceLocalDomainType;
 
     typedef typename Traits::DestinationType DestinationType;
 
@@ -163,7 +167,7 @@ namespace Fem {
                          JacobianRangeType&,
                          JacobianRangeType& ) const
     {
-      const FaceDomainType& x = innerQuad.localPoint( quadPoint );
+      const FaceLocalDomainType& x = innerQuad.localPoint( quadPoint );
 
       if (! physical(inside(), innerQuad.point( quadPoint ), uLeft[ uVar ] ) || 
           ! physical(outside(), outerQuad.point( quadPoint ), uRight[ uVar ] ) ) 
@@ -194,7 +198,7 @@ namespace Fem {
                         RangeType& adaptIndicator,
                         JacobianRangeType& gDiffLeft ) const
     {
-      const FaceDomainType& x = innerQuad.localPoint( quadPoint );
+      const FaceLocalDomainType& x = innerQuad.localPoint( quadPoint );
 
       RangeType uRight; 
 
@@ -218,7 +222,7 @@ namespace Fem {
     //! value 
     inline void boundaryValue(const IntersectionType& it,
                               const double time, 
-                              const FaceDomainType& x,
+                              const FaceLocalDomainType& x,
                               const RangeType& uLeft,
                               RangeType& uRight) const
     {
@@ -231,7 +235,7 @@ namespace Fem {
     /** \brief check physical values */
     template <class ArgumentTuple>
     bool checkPhysical( const EntityType& entity,
-                        const DomainType& xLocal,
+                        const LocalDomainType& xLocal,
                         const ArgumentTuple& u ) const
     { 
       return physical( entity, xLocal, u[ uVar ] );
@@ -239,7 +243,7 @@ namespace Fem {
 
     /** \brief check physical values */
     bool physical( const EntityType& entity,
-                   const DomainType& xLocal,
+                   const LocalDomainType& xLocal,
                    const RangeType& u ) const
     { 
       return model_.physical( entity, xLocal, u );
@@ -247,7 +251,7 @@ namespace Fem {
 
     /** \brief adjust average values, e.g. transform to primitive or something similar */
     void adjustAverageValue( const EntityType& entity,
-                             const DomainType& xLocal,
+                             const LocalDomainType& xLocal,
                              RangeType& u ) const
     {
       model_.adjustAverageValue( entity, xLocal, u );
