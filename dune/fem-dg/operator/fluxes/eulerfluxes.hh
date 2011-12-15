@@ -261,7 +261,7 @@ namespace EULERNUMFLUX
   inline
   EulerFlux<Model,flux_type>::EulerFlux( const ModelType& model ) 
     : model_( model ), 
-      _gamma( model_.c_p() * model_.c_v_inv() )
+      _gamma( model.gamma() )
   {}
 
   template<class Model, EulerFluxType flux_type>
@@ -296,10 +296,7 @@ namespace EULERNUMFLUX
       //assert(0); // test it, not tested up to now
     }
     else
-    {
-      std::cerr <<"EulerFlux::rotate does not support dim>3!! Aborting...\n";
-      abort();
-    };
+      DUNE_THROW( Dune::NotImplemented, "EulerFlux::rotate does not support dim>3." );
   }
 
 
@@ -385,8 +382,7 @@ namespace EULERNUMFLUX
 
     if (flux_type == HLLC) return num_flux_HLLC(Uj, Un, normal, gj);
 
-    std::cerr <<"Numerical flux " <<flux_type <<" not available. Exiting...\n";
-    abort();
+    DUNE_THROW( Dune::NotImplemented, "Numerical flux not implemented" );
   }
 
 
