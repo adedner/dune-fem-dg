@@ -102,8 +102,8 @@ protected:
   virtual double indicator1( const ElementType& entity,
                              const DomainType& x, const RangeType& u ) const
   {
-    assert( u[0] > 1e-10 );
-    return problem_.indicator1( u );
+    const DomainType& xgl = entity.geometry().global( x );
+    return problem_.indicator1( xgl, u );
   }
 
   /** \brief caculates a second quantity (e.g. density, pot. temperature) whose
@@ -116,8 +116,8 @@ protected:
   virtual double indicator2( const ElementType& entity,
                              const DomainType& x, const RangeType& u ) const
   {
-    assert( u[0] > 1e-10 );
-    return problem_.indicator2( u );
+    const DomainType& xgl = entity.geometry().global( x );
+    return problem_.indicator2( xgl, u );
   }
 
 public:
@@ -292,8 +292,6 @@ public:
 
     if( indicator2Ptr_ )
     {
-      std::cerr <<"estimator::indicator2Ptr != 0\n";
-      abort();
       const IndicatorType& indicator2_ = *indicator2Ptr_;
       double localIndicator2 = indicator2_[ entityId ]; 
       const double locRefTol2 =  refineTolerance_ * ind2MaxDiff_;
