@@ -235,23 +235,6 @@ public:
         }
       }
     } 
-
-    // check if this point is in domain for adapting the grid
-    //bool inAdaptiveDomain = true;
-    //for( int idim = 0; idim < dimension; ++idim )
-    //  if ( (x[idim] < xAdapt_[2*idim]) || (x[idim] > xAdapt_[2*idim+1]) )
-    //  {
-    //    inAdaptiveDomain = false;
-    //    break;
-    //  }
-
-    // if this entity is in the damping layer then override usual 
-    // indicator by setting coarsing value
-    //if ( !inAdaptiveDomain )
-    //{
-    //  indicator_[enIdx] = 0.0;
-    //  indicator2_[enIdx] = 0.0;
-    //}
   }
 
 
@@ -287,7 +270,11 @@ public:
     double localIndicator1 = indicator_[ entityId ]; 
     const double locRefTol1 = refineTolerance_ * ind1MaxDiff_;
     const double locCoarTol1 = coarseTolerance_ * ind1MaxDiff_;
-    bool toBeRefined = (localIndicator1 > locRefTol1);
+
+    // check if element is allowed to be refined by the problem settings
+    const DomainType& xEn = entity.geometry().center();
+    const bool problemAllows = problem_.allowsRefinement( xEn );
+    bool toBeRefined = (localIndicator1 > locRefTol1) && problemAllows;
     bool toBeCoarsend = (localIndicator1 < locCoarTol1);
 
     if( indicator2Ptr_ )
@@ -296,7 +283,7 @@ public:
       double localIndicator2 = indicator2_[ entityId ]; 
       const double locRefTol2 =  refineTolerance_ * ind2MaxDiff_;
       const double locCoarTol2 =  coarseTolerance_ * ind2MaxDiff_;
-      toBeRefined = (toBeRefined || (localIndicator2 > locRefTol2));
+      toBeRefined = (toBeRefined || ((localIndicator2 > locRefTol2) && problemAllows));
       toBeCoarsend = (toBeCoarsend && (localIndicator2 < locCoarTol2));
     }
 
