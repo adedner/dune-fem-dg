@@ -755,10 +755,8 @@ public:
     // set gLeft 
     anaflux.mv( normal, gLeft );
 
-    // if there's neighbor, update the value of anaflux
-    if ( intersection.neighbor() )
-      model_.advection( outside, time, faceQuadOuter.point( quadPoint ),
-                        uRight, anaflux );
+    model_.advection( outside, time, faceQuadOuter.point( quadPoint ),
+                      uRight, anaflux );
     anaflux.umv( normal, gLeft );
 
     double maxspeedl, maxspeedr, maxspeed;
