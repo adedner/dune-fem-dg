@@ -124,10 +124,10 @@ public:
   //! \brief Constructor
   explicit Estimator ( const DiscreteFunctionType &uh, 
                        const Problem& problem,
-                       const AdaptationParameters& param = AdaptationParameters() )
+                       const Dune::AdaptationParameters& param = Dune::AdaptationParameters() )
   : BaseType( uh ),
     indicator2Ptr_( 0 ),
-    maxLevel_( param.finestLevel( DGFGridInfo<GridType>::refineStepsForHalf() ) ),
+    maxLevel_( param.finestLevel( Dune::DGFGridInfo<GridType>::refineStepsForHalf() ) ),
     refineTolerance_( param.refinementTolerance() ),
     coarseTolerance_( param.coarsenTolerance() ),
     problem_( problem )
@@ -287,7 +287,7 @@ public:
       toBeCoarsend = (toBeCoarsend && (localIndicator2 < locCoarTol2));
     }
 
-    const GridElementType& element = Fem :: gridEntity( entity );
+    const GridElementType& element = Dune :: Fem :: gridEntity( entity );
 
     if ( toBeRefined && (element.level() < maxLevel_) )
     {
@@ -302,7 +302,7 @@ public:
         if( nb->neighbor() )
         {
           ElementPointerType outside = nb->outside();
-          const GridElementType& neighbor = Fem :: gridEntity( *outside ); 
+          const GridElementType& neighbor = Dune :: Fem :: gridEntity( *outside ); 
           if ( (neighbor.level() < maxLevel_) || (! neighbor.isRegular()) )
           {
             // mark for refinement 
