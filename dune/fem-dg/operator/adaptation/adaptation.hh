@@ -74,7 +74,7 @@ struct AdaptationParameters
   virtual int coarsestLevel( const int refineStepsForHalf ) const 
   { 
     return refineStepsForHalf * 
-      Parameter :: getValue<int>("fem.adaptation.coarsestLevel" );
+      Parameter :: getValue<int>("fem.adaptation.coarsestLevel", 0 );
   }
 
   //! return true if marking strategy is based on shock indicator 
