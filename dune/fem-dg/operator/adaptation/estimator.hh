@@ -79,6 +79,7 @@ private:
   const double coarseTolerance_;
   double ind1MaxDiff_;
   double ind2MaxDiff_;
+  const int neighborRefLevel_;
 
 protected:
   const ProblemType& problem_;
@@ -120,6 +121,32 @@ protected:
     return problem_.indicator2( xgl, u );
   }
 
+  void markNeighborsForRefinement( const ElementType& entity, const int level ) const
+  {
+    if (level <= 0)
+      return;
+
+    // also mark all neighbors of the actual entity for refinement
+    const IntersectionIteratorType nbend = gridPart_.iend( entity ); 
+    for (IntersectionIteratorType nb = gridPart_.ibegin( entity ); 
+         nb != nbend; ++nb)
+    {
+      if( nb->neighbor() )
+      {
+        ElementPointerType outside = nb->outside();
+        const GridElementType& neighbor = Dune :: Fem :: gridEntity( *outside ); 
+        if ( (neighbor.level() < maxLevel_) || (! neighbor.isRegular()) )
+        {
+          // mark for refinement 
+          grid_.mark( 1, neighbor );
+        }
+
+        // mark further neighbors
+        markNeighborsForRefinement( neighbor, level-1 );
+      }
+    }
+  }
+
 public:
   //! \brief Constructor
   explicit Estimator ( const DiscreteFunctionType &uh, 
@@ -130,6 +157,7 @@ public:
     maxLevel_( param.finestLevel( Dune::DGFGridInfo<GridType>::refineStepsForHalf() ) ),
     refineTolerance_( param.refinementTolerance() ),
     coarseTolerance_( param.coarsenTolerance() ),
+    neighborRefLevel_( param.neighborRefLevel() ),
     problem_( problem )
   {
     if( problem.twoIndicators() )
@@ -294,22 +322,8 @@ public:
       // mark for refinement 
       grid_.mark( 1, element );
 
-      // also mark all neighbors of the actual entity for refinement
-      const IntersectionIteratorType nbend = gridPart_.iend(entity); 
-      for (IntersectionIteratorType nb = gridPart_.ibegin(entity); 
-           nb != nbend; ++nb)
-      {
-        if( nb->neighbor() )
-        {
-          ElementPointerType outside = nb->outside();
-          const GridElementType& neighbor = Dune :: Fem :: gridEntity( *outside ); 
-          if ( (neighbor.level() < maxLevel_) || (! neighbor.isRegular()) )
-          {
-            // mark for refinement 
-            grid_.mark( 1, neighbor );
-          }
-        }
-      }
+      // also mark distant neighbors of the actual entity for refinement
+      markNeighborsForRefinement( entity, neighborRefLevel_ );
     }
     else
     {

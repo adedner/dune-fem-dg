@@ -77,6 +77,12 @@ struct AdaptationParameters
       Parameter :: getValue<int>("fem.adaptation.coarsestLevel", 0 );
   }
 
+  //! return depth for refining neighbors of a cell marked for refinement
+  virtual int neighborRefLevel() const 
+  { 
+    return Parameter :: getValue<int>("fem.adaptation.grad.neighborRefLevel", 1 );
+  }
+
   //! return true if marking strategy is based on shock indicator 
   virtual bool shockIndicator() const 
   {
