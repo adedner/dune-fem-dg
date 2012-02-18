@@ -131,18 +131,23 @@ protected:
     for (IntersectionIteratorType nb = gridPart_.ibegin( entity ); 
          nb != nbend; ++nb)
     {
-      if( nb->neighbor() )
+      const IntersectionType& intersection = *nb ;
+      if( intersection.neighbor() )
       {
-        ElementPointerType outside = nb->outside();
+        ElementPointerType outside = intersection.outside();
         const GridElementType& neighbor = Dune :: Fem :: gridEntity( *outside ); 
-        if ( (neighbor.level() < maxLevel_) || (! neighbor.isRegular()) )
-        {
-          // mark for refinement 
-          grid_.mark( 1, neighbor );
-        }
+        // only do the following when the neighbor is not a ghost entity 
+        if( neighbor.partitionType() != GhostEntity ) 
+        { 
+          if ( (neighbor.level() < maxLevel_) || (! neighbor.isRegular()) )
+          {
+            // mark for refinement 
+            grid_.mark( 1, neighbor );
+          }
 
-        // mark further neighbors
-        markNeighborsForRefinement( neighbor, level-1 );
+          // mark further neighbors
+          markNeighborsForRefinement( neighbor, level-1 );
+        }
       }
     }
   }
@@ -224,15 +229,17 @@ public:
       for (IntersectionIteratorType nb = gridPart_.ibegin( entity ); 
            nb != nbend; ++nb)
       {
-        if( nb->neighbor() )
+        const IntersectionType& intersection = *nb ;
+        if( intersection.neighbor() )
         {
           // access neighbor
-          ElementPointerType outside = nb->outside();
+          ElementPointerType outside = intersection.outside();
           const ElementType& neighbor = *outside; 
           const int nbIdx = indexSet_.index( neighbor );
 
           // handle face from one side only
-          if ( entity.level() > neighbor.level() ||
+          if ( neighbor.partitionType() == GhostEntity || 
+                entity.level() > neighbor.level() ||
               (entity.level() == neighbor.level() && enIdx < nbIdx) )
           {
             // get local function on the neighbor element
