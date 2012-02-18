@@ -72,14 +72,14 @@ void EulerAnalyticalFlux<1>::analyticalFlux(const FieldType gamma,
 }
 template <>
 inline
-EulerAnalyticalFlux<1>::FieldType EulerAnalyticalFlux<2>::rhoeps(const RangeType& u) const 
+EulerAnalyticalFlux<2>::FieldType EulerAnalyticalFlux<2>::rhoeps(const RangeType& u) const 
 {
   assert( u[0] >= 1e-10 );
   return u[e]-0.5*(u[1]*u[1]+u[2]*u[2])/u[0];
 }
 template <>
 inline
-EulerAnalyticalFlux<1>::FieldType EulerAnalyticalFlux<2>::pressure(const FieldType gamma,const RangeType& u) const 
+EulerAnalyticalFlux<2>::FieldType EulerAnalyticalFlux<2>::pressure(const FieldType gamma,const RangeType& u) const 
 {
   const FieldType re = rhoeps(u);
   assert(re>=1e-10);
@@ -103,14 +103,14 @@ void EulerAnalyticalFlux<2>::analyticalFlux(const FieldType gamma,
 
 template <>
 inline
-EulerAnalyticalFlux<1>::FieldType EulerAnalyticalFlux<3>::rhoeps(const RangeType& u) const 
+EulerAnalyticalFlux<3>::FieldType EulerAnalyticalFlux<3>::rhoeps(const RangeType& u) const 
 {
   assert( u[0] >= 1e-10 );
   return u[e]-0.5*(u[1]*u[1]+u[2]*u[2]+u[3]*u[3])/u[0];
 }
 template <>
 inline
-EulerAnalyticalFlux<1>::FieldType EulerAnalyticalFlux<3>::pressure(const FieldType gamma,const RangeType& u) const {
+EulerAnalyticalFlux<3>::FieldType EulerAnalyticalFlux<3>::pressure(const FieldType gamma,const RangeType& u) const {
   assert(u[0]>1e-10);
   const FieldType rhoe = rhoeps(u);
   assert( rhoe>1e-10 );
@@ -178,7 +178,7 @@ EulerAnalyticalFlux<1>::FieldType EulerAnalyticalFlux<1>::maxSpeed(const FieldTy
 }
 template <>
 inline
-EulerAnalyticalFlux<1>::FieldType EulerAnalyticalFlux<2>::maxSpeed(const FieldType gamma,
+EulerAnalyticalFlux<2>::FieldType EulerAnalyticalFlux<2>::maxSpeed(const FieldType gamma,
             const DomainType& n,
             const RangeType& u) const 
 {
@@ -191,7 +191,7 @@ EulerAnalyticalFlux<1>::FieldType EulerAnalyticalFlux<2>::maxSpeed(const FieldTy
 }
 template <>
 inline
-EulerAnalyticalFlux<1>::FieldType EulerAnalyticalFlux<3>::maxSpeed(const FieldType gamma,
+EulerAnalyticalFlux<3>::FieldType EulerAnalyticalFlux<3>::maxSpeed(const FieldType gamma,
             const DomainType& n,
             const RangeType& u) const 
 {
