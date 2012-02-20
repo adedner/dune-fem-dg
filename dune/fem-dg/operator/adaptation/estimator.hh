@@ -166,7 +166,10 @@ public:
     problem_( problem )
   {
     if( problem.twoIndicators() )
+    {
+      abort();
       indicator2Ptr_ = new IndicatorType( indexSet_.size( 0 ) );
+    }
   }
 
 
@@ -204,7 +207,7 @@ public:
 
     // get local function on the element
     LocalFunctionType lf = uh_.localFunction( entity );
-    const int quadOrder = ( lf.order()==0 ? 1 : 2 );
+    const int quadOrder = ( lf.order()==0 ? 1 : lf.order() );
     ElementQuadratureType quad( entity, quadOrder );
     const int numQuad = quad.nop();
 
@@ -276,6 +279,7 @@ public:
   //! \brief calculates indicators
   void estimate()
   {
+    indicator_.resize( indexSet_.size( 0 )); 
     clear();
 
     double ind1Max = -1E100;
@@ -287,6 +291,28 @@ public:
     const IteratorType end = dfSpace_.end();
     for( IteratorType it = dfSpace_.begin(); it != end; ++it )
       estimateLocal( *it, ind1Min, ind1Max, ind2Min, ind2Max );
+
+    // global max 
+    {
+      double commBuff[ 2 ] = { ind1Max, ind2Max };
+
+      // get global max of indMax 
+      gridPart_.grid().comm().max( &commBuff[ 0 ], 2 );
+
+      ind1Max = commBuff[ 0 ];
+      ind2Max = commBuff[ 1 ];
+    }
+
+    // global min 
+    {
+      double commBuff[ 2 ] = { ind1Min, ind2Min };
+
+      // get global min of indMin 
+      gridPart_.grid().comm().min( &commBuff[ 0 ], 2 );
+
+      ind1Min = commBuff[ 0 ];
+      ind2Min = commBuff[ 1 ];
+    }
 
     // return global max differences
     ind1MaxDiff_ = ind1Max - ind1Min;
@@ -323,6 +349,9 @@ public:
     }
 
     const GridElementType& element = Dune :: Fem :: gridEntity( entity );
+
+    // do not mark ghost elements 
+    if( element.partitionType() == GhostEntity ) return ;
 
     if ( toBeRefined && (element.level() < maxLevel_) )
     {
