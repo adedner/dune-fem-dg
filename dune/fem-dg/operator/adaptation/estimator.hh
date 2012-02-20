@@ -167,7 +167,6 @@ public:
   {
     if( problem.twoIndicators() )
     {
-      abort();
       indicator2Ptr_ = new IndicatorType( indexSet_.size( 0 ) );
     }
   }
