@@ -5,7 +5,6 @@
 #include <string>
 
 // dune-fem includes
-#include <dune/fem/gridpart/gridpart.hh>
 #include <dune/fem/pass/dgdiscretemodel.hh>
 #include <dune/fem/pass/selection.hh>
 #include <dune/fem/solver/timeprovider.hh>

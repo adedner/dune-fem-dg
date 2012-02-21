@@ -1,14 +1,8 @@
 #ifndef DUNE_FEM_DG_FLUXDISCRETEMODEL_HH
 #define DUNE_FEM_DG_FLUXDISCRETEMODEL_HH
 
-// Dune includes
-#include <dune/fem/gridpart/gridpart.hh>
-#include <dune/fem/gridpart/adaptiveleafgridpart.hh>
-
 // Dune-Fem includes
-#include <dune/fem/space/dgspace.hh>
 #include <dune/fem/pass/dgdiscretemodel.hh>
-#include <dune/fem/function/adaptivefunction.hh>
 #include <dune/fem/quadrature/cachingquadrature.hh>
 #include <dune/fem/misc/boundaryidentifier.hh>
 #include <dune/fem/misc/fmatrixconverter.hh>

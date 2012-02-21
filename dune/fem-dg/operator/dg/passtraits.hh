@@ -2,7 +2,6 @@
 #define DUNE_FEM_DG_PASSTRAITS_HH
 
 // Dune includes
-#include <dune/fem/gridpart/gridpart.hh>
 #include <dune/fem/gridpart/adaptiveleafgridpart.hh>
 
 // Dune-Fem includes
