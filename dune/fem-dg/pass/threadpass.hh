@@ -537,7 +537,7 @@ namespace Dune {
 
   protected:  
     mutable ThreadIteratorType iterators_;
-    mutable DiscreteModelType& singleProblem_;
+    DiscreteModelType& singleProblem_;
     std::vector< DiscreteModelType* > problems_; 
     std::vector< InnerPassType* > passes_;
     mutable std::vector< double > passComputeTime_;
