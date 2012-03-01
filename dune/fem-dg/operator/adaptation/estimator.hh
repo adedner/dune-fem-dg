@@ -74,9 +74,10 @@ private:
   using BaseType :: grid_;
   using BaseType :: indicator_;
   IndicatorType*    indicator2Ptr_;
-  const int maxLevel_;
   const double refineTolerance_;
   const double coarseTolerance_;
+  const int finestLevel_;
+  const int coarsestLevel_;
   double ind1MaxDiff_;
   double ind2MaxDiff_;
   const int neighborRefLevel_;
@@ -139,7 +140,7 @@ protected:
         // only do the following when the neighbor is not a ghost entity 
         if( neighbor.partitionType() != GhostEntity ) 
         { 
-          if ( (neighbor.level() < maxLevel_) || (! neighbor.isRegular()) )
+          if ( (neighbor.level() < finestLevel_) || (! neighbor.isRegular()) )
           {
             // mark for refinement 
             grid_.mark( 1, neighbor );
@@ -159,9 +160,10 @@ public:
                        const Dune::AdaptationParameters& param = Dune::AdaptationParameters() )
   : BaseType( uh ),
     indicator2Ptr_( 0 ),
-    maxLevel_( param.finestLevel( Dune::DGFGridInfo<GridType>::refineStepsForHalf() ) ),
     refineTolerance_( param.refinementTolerance() ),
     coarseTolerance_( param.coarsenTolerance() ),
+    finestLevel_( param.finestLevel( Dune::DGFGridInfo<GridType>::refineStepsForHalf() ) ),
+    coarsestLevel_( param.coarsestLevel( Dune::DGFGridInfo<GridType>::refineStepsForHalf() ) ),
     neighborRefLevel_( param.neighborRefLevel() ),
     problem_( problem )
   {
@@ -352,24 +354,25 @@ public:
     // do not mark ghost elements 
     if( element.partitionType() == GhostEntity ) return ;
 
-    if ( toBeRefined && (element.level() < maxLevel_) )
+    const int elemLevel = element.level();
+
+    if ( toBeRefined && (elemLevel < finestLevel_) )
     {
       // mark for refinement 
       grid_.mark( 1, element );
 
       // also mark distant neighbors of the actual entity for refinement
-      markNeighborsForRefinement( entity, neighborRefLevel_ );
+      // markNeighborsForRefinement( entity, neighborRefLevel_ );
+    }
+    else if ( toBeCoarsend && (elemLevel > coarsestLevel_) )
+    {
+      // mark for coarsening 
+      grid_.mark( -1, element );
     }
     else
     {
       // don't do anything
       grid_.mark( 0, element );
-    }
-
-    if ( toBeCoarsend && (element.level() > 0) )
-    {
-      // mark for coarsening 
-      grid_.mark( -1, element );
     }
   }
 
