@@ -646,8 +646,8 @@ namespace Dune {
 
     typedef PointBasedDofConversionUtility< dimRange > DofConversionUtilityType;
 
-    //! is true if grid is structured grid 
-    enum { StructuredGrid = ! Capabilities::IsUnstructured<GridType>::v };
+    //! is true if grid is Structured grid 
+    enum { StructuredGrid = Capabilities :: isCartesian<GridType>::v };
 
     typedef FieldVector< DomainType , dimRange > DeoModType; 
     typedef FieldMatrix< DomainFieldType, dimDomain , dimDomain > MatrixType;
