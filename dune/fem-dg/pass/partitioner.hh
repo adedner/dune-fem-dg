@@ -182,7 +182,7 @@ public:
         {
           const int eid = getIndex( en );
           const int nid = getIndex( nb );
-          if( eid < nid ) 
+          //if( eid < nid ) 
           {
             db.edgeUpdate ( 
                 typename LoadBalancerType :: GraphEdge ( eid, nid, weight )

@@ -97,7 +97,7 @@ namespace Dune {
           // create partitioner 
           ThreadPartitioner< GridPartType > db( space_.gridPart() , maxThreads );
           // do partitioning 
-          db.serialPartition( false );
+          db.serialPartition( true );
 
           // get end iterator
           typedef typename SpaceType :: IteratorType SpaceIteratorType;
@@ -128,6 +128,7 @@ namespace Dune {
 
           if( Parameter :: verbose() )
           {
+            std::cout << "Update DomainDecomposedIterator for sequence " << sequence_ << std::endl;
             for(size_t i = 0; i<maxThreads; ++i ) 
               std::cout << "DomainDecomposedIterator: T[" << i << "] = " << counter[ i ] << std::endl;
           }
