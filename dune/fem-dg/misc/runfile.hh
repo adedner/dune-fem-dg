@@ -18,6 +18,7 @@ namespace Dune {
 
     std::vector< double > times_ ;
     double elements_;
+    double maxDofs_;
     size_t timesteps_;
 
     // write in milli seconds
@@ -85,6 +86,7 @@ namespace Dune {
       , runfile_( createRunFile( comm_.rank(), writeRunFile_, newStart ) ) 
       , times_() 
       , elements_( 0.0 )
+      , maxDofs_( 0.0 )
       , timesteps_( 0 )
     {
       if( runfile_ && newStart ) 
@@ -144,8 +146,13 @@ namespace Dune {
 
         // sum, max, and min for all procs 
         comm_.sum( &sumTimes[ 0 ], size );
-        comm_.max( &maxTimes[ 0 ], size );
         comm_.min( &minTimes[ 0 ], size );
+
+        maxTimes.push_back( maxDofs_ );
+        comm_.max( &maxTimes[ 0 ], maxTimes.size() );
+
+        maxDofs_ = maxTimes.back();
+        maxTimes.pop_back();
 
         if( comm_.rank() == 0 && timesteps_ > 0 ) 
         {
@@ -168,6 +175,7 @@ namespace Dune {
 
             file << "# Procs = " << comm_.size() << " * " << maxThreads << " (MPI * threads)" << std::endl ;
             file << "# Timesteps = " << timesteps_ << std::endl ;
+            file << "# Max DoFs (per element): " << maxDofs_ << std::endl;
             file << "# Elements / timestep: sum    max    min    average  " << std::endl;
             file << sumTimes[ size-1 ] << "  " << maxTimes[ size-1 ] << "  " << minTimes[ size-1 ] << "  " << ((size_t)averageElements) << std::endl;
             file << "# DG       ODE     ADAPT    LB      TIMESTEP    " << std::endl ;
@@ -251,6 +259,7 @@ namespace Dune {
     inline void write( const double t, 
                        const double ldt, 
                        const size_t nElements,
+                       const size_t maxDofs,
                        const double dgOperatorTime,
                        const double odeSolve,
                        const double adaptTime,
@@ -266,6 +275,8 @@ namespace Dune {
       times[ 4 ] = timeStepTime ;
       for(size_t i=5; i<limitSteps.size(); ++i)
         times[ i ] = limitSteps[ i ];
+
+      maxDofs_ = std::max( double(maxDofs), maxDofs_ );
 
       write( t, ldt, nElements, times );
     }
