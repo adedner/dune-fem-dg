@@ -40,7 +40,8 @@ class ThreadHandle
   class ThreadHandleObject
   {
     ObjectIF* objPtr_;
-    pthread_barrier_t* barrier_ ;
+    pthread_barrier_t* barrierBegin_ ;
+    pthread_barrier_t* barrierEnd_ ;
     pthread_t threadId_ ;
     int threadNumber_ ;
 
@@ -48,10 +49,12 @@ class ThreadHandle
 
   public:
     // constructor creating thread with given thread number 
-    explicit ThreadHandleObject(pthread_barrier_t* barrier,
-                                const int threadNumber ) 
+    ThreadHandleObject(pthread_barrier_t* barrierBegin,
+                       pthread_barrier_t* barrierEnd,
+                       const int threadNumber ) 
       : objPtr_( 0 ), 
-        barrier_ ( barrier ),
+        barrierBegin_ ( barrierBegin ),
+        barrierEnd_ ( barrierEnd ),
         threadId_( 0 ),
         threadNumber_( threadNumber )
     {
@@ -59,9 +62,11 @@ class ThreadHandle
     }
 
     // constructor creating master thread 
-    explicit ThreadHandleObject( pthread_barrier_t* barrier )
+    explicit ThreadHandleObject( pthread_barrier_t* barrierBegin, 
+                                 pthread_barrier_t* barrierEnd )
       : objPtr_( 0 ),
-        barrier_( barrier ),
+        barrierBegin_ ( barrierBegin ),
+        barrierEnd_ ( barrierEnd ),
         threadId_( pthread_self() ),
         threadNumber_( 0 )
     {
@@ -70,7 +75,8 @@ class ThreadHandle
     // copy constructor 
     ThreadHandleObject(const ThreadHandleObject& other) 
       : objPtr_( other.objPtr_ ),
-        barrier_( other.barrier_ ),
+        barrierBegin_( other.barrierBegin_ ),
+        barrierEnd_( other.barrierEnd_ ),
         threadId_( other.threadId_ ),
         threadNumber_( other.threadNumber_ )
     {}
@@ -79,7 +85,8 @@ class ThreadHandle
     ThreadHandleObject& operator = ( const ThreadHandleObject& other) 
     {
       objPtr_       = other.objPtr_ ;
-      barrier_      = other.barrier_ ;
+      barrierBegin_ = other.barrierBegin_ ;
+      barrierEnd_   = other.barrierEnd_ ;
       threadId_     = other.threadId_;
       threadNumber_ = other.threadNumber_;
       return *this;
@@ -118,9 +125,11 @@ class ThreadHandle
     // do the work 
     void run() 
     {
-      assert( barrier_ );
+      assert( barrierBegin_ );
+      assert( barrierEnd_ );
+
       // wait for all threads 
-      pthread_barrier_wait( barrier_ );
+      pthread_barrier_wait( barrierBegin_ );
 
       // when object pointer is set call run, else terminate  
       if( objPtr_ ) 
@@ -135,6 +144,9 @@ class ThreadHandle
       
       // work finished, set objPtr to zero 
       objPtr_ = 0 ;
+
+      // wait for all threads 
+      pthread_barrier_wait( barrierEnd_ );
 
       // when thread is not master then 
       // just call run and wait at barrier 
@@ -166,7 +178,8 @@ class ThreadHandle
   ////////////////////////////////////////////////////
 
   std::vector< ThreadHandleObject > threads_;
-  pthread_barrier_t waitAll_ ;
+  pthread_barrier_t waitBegin_ ;
+  pthread_barrier_t waitEnd_ ;
   const int maxThreads_ ;
 
 private:  
@@ -175,22 +188,26 @@ private:
   // default constructor 
   ThreadHandle() 
     : threads_()
-    , waitAll_()
+    , waitBegin_()
+    , waitEnd_()
     , maxThreads_( ThreadManager :: maxThreads() )
   {
     // initialize barrier 
-    pthread_barrier_init( &waitAll_, 0, maxThreads_ );
+    pthread_barrier_init( &waitBegin_, 0, maxThreads_ );
+
+    // initialize barrier 
+    pthread_barrier_init( &waitEnd_, 0, maxThreads_ );
 
     // initialize slave threads 
     for(int i=1; i<maxThreads_; ++i)
     {
       // create thread handles for pthreads 
-      threads_.push_back( ThreadHandleObject( &waitAll_, i ) );
+      threads_.push_back( ThreadHandleObject( &waitBegin_, &waitEnd_, i ) );
     }
 
     // insert master thread at last because this thread creates 
     // all other threads before it start its calculations 
-    threads_.push_back( ThreadHandleObject( &waitAll_ ) );
+    threads_.push_back( ThreadHandleObject( &waitBegin_, &waitEnd_ ) );
   } // end constructor 
 
   //! destructor deleting threads 
@@ -207,7 +224,9 @@ private:
     }
 
     // destroy barrier 
-    pthread_barrier_destroy( &waitAll_ );
+    pthread_barrier_destroy( &waitEnd_ );
+    // destroy barrier 
+    pthread_barrier_destroy( &waitBegin_ );
   }
 
   //! start all threads to do the job 
