@@ -228,7 +228,8 @@ struct StepperBase
     sum_ = 0.;
     sum2_ = 0.;
 #endif
-#if BASEFUNCTIONSET_CODEGEN_GENERATE
+
+#ifdef BASEFUNCTIONSET_CODEGEN_GENERATE
     DUNE_THROW(Dune::Fem::CodegenInfoFinished,"All automated code generated, bye, bye !!");
 #endif
 

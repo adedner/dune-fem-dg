@@ -261,12 +261,18 @@ public:
     // write data 
     writeData( eocDataOutput, tp, eocDataOutput.willWrite( tp ) );
 
+#ifdef BASEFUNCTIONSET_CODEGEN_GENERATE
+    // make sure that at least one timestep is executed 
+    if( ! (endTime > tp.time()) ) 
+      DUNE_THROW(InvalidStateException,"endtime to small, we need at least one timestep for codegen !!!");
+#endif
+
     //**********************************************                    /*@LST0S@*/
     //* Time Loop                                  *
     //**********************************************
-    for( ; tp.time() < endTime; )    /*@\label{fv:timeLoop}@*/
+    for( ; tp.time() < endTime; ) 
     {
-      tp.provideTimeStepEstimate(maxTimeStep);                                          /*@LST0E@*/
+      tp.provideTimeStepEstimate(maxTimeStep);
       const double tnow  = tp.time();
       const double ldt   = tp.deltaT();
       int newton_iterations;
