@@ -279,7 +279,6 @@ public:
 
             if( indicator2Ptr_ )
             {
-              IndicatorType& indicator2_ = *indicator2Ptr_;
               const double ind2nb = indicator2( neighbor, xNe, valnb );
               ind2nbLocMax = std::max( ind2nbLocMax, ind2nb );
               ind2nbLocMin = std::min( ind2nbLocMin, ind2nb );
