@@ -24,10 +24,50 @@
 #include <dune/fem/quadrature/intersectionquadrature.hh>
 #include <dune/fem/misc/threaditerator.hh>
 
+#include <dune/fem/function/common/scalarproducts.hh>
+
 #include "threadhandle.hh"
 #include "domaindecomposed.hh"
 
 namespace Dune {
+
+  template < class DiscreteFunction > 
+  class DeleteCommunicatedDofs : public ParallelScalarProduct < DiscreteFunction >
+  {
+    typedef ParallelScalarProduct < DiscreteFunction >  BaseType; 
+
+  public:
+    typedef typename BaseType :: DiscreteFunctionType       DiscreteFunctionType;
+    typedef typename BaseType :: DiscreteFunctionSpaceType  DiscreteFunctionSpaceType;
+    
+
+    //! constructor taking space 
+    explicit DeleteCommunicatedDofs( const DiscreteFunctionSpaceType &space )
+      : BaseType( space )
+    {
+    }
+
+    //! delete ghost values again, otherwise the Newton solver 
+    //! of the implicit ODE solvers wont converge 
+    void deleteCommunicatedDofs( DiscreteFunctionType& df ) const
+    {
+#if HAVE_MPI
+      typedef typename BaseType :: SlaveDofsType  SlaveDofsType;
+      SlaveDofsType &slaves = this->slaveDofs();
+
+      // don't delete the last since this is the overall Size 
+      const int slaveSize = slaves.size() - 1;
+      for(int slave = 0; slave<slaveSize; ++slave)
+      {
+        typedef typename DiscreteFunctionType :: DofBlockPtrType DofBlockPtrType;
+        DofBlockPtrType block = df.block( slaves[ slave ] );
+        const int blockSize = DiscreteFunctionType :: DiscreteFunctionSpaceType :: localBlockSize ;
+        for(int l = 0; l<blockSize; ++l )
+          (*block)[ l ] = 0;
+      }
+#endif
+    }
+  };
 
   template < class DestinationType > 
   class NonBlockingCommHandle 
@@ -56,6 +96,7 @@ namespace Dune {
       assert( nonBlockingComm_ == 0 );
     }
 
+    // send data 
     void initComm( const DestinationType& dest ) const 
     {
       if( nonBlockingCommunication() && nonBlockingComm_ == 0 )
@@ -68,14 +109,23 @@ namespace Dune {
       }
     }
 
-    void finalizeComm( const DestinationType& dest ) const 
+    // receive data 
+    void receiveComm( const DestinationType& destination ) const 
     {
       if( nonBlockingCommunication() && nonBlockingComm_ )
       {
-        nonBlockingComm_->receive( const_cast< DestinationType& > ( dest ) );
+        DestinationType& dest = const_cast< DestinationType& > ( destination );
+        nonBlockingComm_->receive( dest );
         delete nonBlockingComm_;
         nonBlockingComm_ = 0;
       }
+    }
+
+    // cleanup possibly overwritten ghost values 
+    void finalizeComm( const DestinationType& dest ) const 
+    {
+      DeleteCommunicatedDofs< DestinationType > delDofs( dest.space() );
+      delDofs.deleteCommunicatedDofs( const_cast< DestinationType& > ( dest ) );
     }
   };
 
@@ -157,6 +207,7 @@ namespace Dune {
                const int volumeQuadOrd = -1,
                const int faceQuadOrd = -1) :
       BaseType(pass, spc),
+      delDofs_( spc ),
       iterators_( spc ),
       singleProblem_( problem ),
       problems_( Fem::ThreadManager::maxThreads() ),
@@ -257,6 +308,7 @@ namespace Dune {
     using BaseType :: computeTime_ ;
     using BaseType :: destination_ ;
     using BaseType :: destination ;
+    using BaseType :: receiveCommunication ;
     using BaseType :: finalizeCommunication ;
 
   public:  
@@ -366,8 +418,8 @@ namespace Dune {
           for(int i=0; i<maxThreads; ++i ) 
             passStage_[ i ] = false ;
 
-          // RECEIVE DATA, send was done on call of compute (see pass.hh)
-          finalizeCommunication( arg );
+          // RECEIVE DATA, send was done on call of operator() (see pass.hh)
+          receiveCommunication( arg );
 
           // see threadhandle.hh 
           Fem :: ThreadHandle :: run( *this ); 
@@ -418,10 +470,10 @@ namespace Dune {
         nonBlockingComm_.initComm( destination() );
     }
 
-    void finalizeComm() const
+    void receiveComm() const
     {
       if( nonBlockingComm_.nonBlockingCommunication() && destination_ ) 
-        nonBlockingComm_.finalizeComm( destination() );
+        nonBlockingComm_.receiveComm( destination() );
     }
 
     //! parallel section of compute 
@@ -536,6 +588,10 @@ namespace Dune {
     ThreadPass& operator=(const ThreadPass&);
 
   protected:  
+    // create an instance of the parallel scalarproduct here to avoid 
+    // deleting on every call of finalizeComm 
+    DeleteCommunicatedDofs< DestinationType > delDofs_;
+
     mutable ThreadIteratorType iterators_;
     DiscreteModelType& singleProblem_;
     std::vector< DiscreteModelType* > problems_; 

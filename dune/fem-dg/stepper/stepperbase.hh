@@ -185,9 +185,15 @@ struct StepperBase
 
     typedef typename InitialDataType :: TimeDependentFunctionType
       TimeDependentFunctionType;
-    L2Projection< double, double,                         /*@\label{dg:l2pro0}@*/
-                  TimeDependentFunctionType, DiscreteFunctionType > l2pro;
-    l2pro( problem().fixedTimeFunction( tp.time() ), U ); /*@\label{dg:l2pro1}@*/
+    //L2Projection< double, double,                         /*@\label{dg:l2pro0}@*/
+    //              TimeDependentFunctionType, DiscreteFunctionType > l2pro;
+    //l2pro( problem().fixedTimeFunction( tp.time() ), U ); /*@\label{dg:l2pro1}@*/
+
+    const bool blockingComm = ! Parameter :: getValue< bool > ("femdg.nonblockingcomm",  false );
+    DGL2ProjectionImpl :: project( problem().fixedTimeFunction( tp.time() ),
+                                   U, 
+                                   2 * U.space().order(), 
+                                   blockingComm );
 
     // ode.initialize applies the DG Operator once to get an initial
     // estimate on the time step. This does not change the initial data u.
