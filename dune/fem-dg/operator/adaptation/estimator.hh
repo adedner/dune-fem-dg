@@ -12,14 +12,11 @@
  *  \brief A class for estimating and marking grid elements for refinement and coarsening
  *
  *  This is a indicator based on a 'gradient' of the numerical solution.
- *  It evaluates numerical solution in an element's barycenter, and compares
+ *  It evaluates maximum of the numerical solution in a grid element, and compares
  *  this value with the corresponding neighbor's value.
  *  The estimate is based on two indicators, e.g. one indicator could be 
  *  the density and the second vertical velocity.
  *  
- *  \note One may expect that this indicator will not give good results for higher order 
- *    methods as its results are solely based on a single value within one grid entity.
- *
  *  \tparam DiscreteFunction Discrete function type
  */
 template< class DiscreteFunction, class Problem >
