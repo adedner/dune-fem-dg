@@ -2039,7 +2039,7 @@ namespace Dune {
     }
 
     // fill combination vector recursive 
-    template <class SetType, int dim> 
+    template< class SetType, int i >
     struct FillVector
     {
       static void fill(const int neighbors, 
@@ -2047,23 +2047,19 @@ namespace Dune {
                        SetType& comboSet,
                        std::vector<int>& v) 
       {
-        assert( (int) v.size() > dim );
+        assert( (int) v.size() > dimGrid-i );
         for(int n = start; n<neighbors; ++n)
         {
-          v[dim] = n;
-          FillVector<SetType, dim+1> :: fill( neighbors, 
-                                              n + 1,
-                                              comboSet,
-                                              v);
+          v[ dimGrid - i ] = n;
+          FillVector< SetType, i-1 >::fill( neighbors, n + 1, comboSet, v);
         }
       } 
     };
     
     // termination of fill combination vector 
-    template <class SetType> 
-    struct FillVector<SetType, dimGrid-1 >
+    template< class SetType > 
+    struct FillVector< SetType, 1 >
     {
-      enum { dim = dimGrid-1 };
       static void fill(const int neighbors, 
                        const int start,
                        SetType& comboSet,
@@ -2072,7 +2068,7 @@ namespace Dune {
         assert( (int) v.size() == dimGrid );
         for(int n = start; n<neighbors; ++n)
         {
-          v[dim] = n;
+          v[ dimGrid-1 ] = n;
           comboSet.insert( VectorCompType( v, std::vector<int> () ) );
         }
       } 
@@ -2111,7 +2107,7 @@ namespace Dune {
 
       // maximal number of neighbors 
       std::vector<int> v(dimGrid,0);
-      FillVector<ComboSetType, 0> :: fill(neighbors,0, comboSet, v );
+      FillVector< ComboSetType, dimGrid >::fill( neighbors, 0, comboSet, v );
 
       // create set containing all numbers 
       std::set<int> constNumbers;
