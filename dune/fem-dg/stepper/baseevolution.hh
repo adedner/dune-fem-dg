@@ -239,7 +239,8 @@ public:
     // if it is not 0 otherwise use the internal estimate
     tp.provideTimeStepEstimate(maxTimeStep);
     if ( fixedTimeStep_ > 1e-20 )
-      tp.init( fixedTimeStep_ );
+      // initialize without respect of CFL number 
+      tp.init( fixedTimeStep_/tp.factor() );
     else
       tp.init();
 
