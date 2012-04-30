@@ -238,9 +238,13 @@ public:
     // start first time step with prescribed fixed time step 
     // if it is not 0 otherwise use the internal estimate
     tp.provideTimeStepEstimate(maxTimeStep);
-    if ( fixedTimeStep_ > 1e-20 )
+
+    // adjust fixed time step with timeprovider.factor() 
+    const double fixedTimeStep = fixedTimeStep_/tp.factor() ;
+
+    if ( fixedTimeStep > 1e-20 )
       // initialize without respect of CFL number 
-      tp.init( fixedTimeStep_/tp.factor() );
+      tp.init( fixedTimeStep );
     else
       tp.init();
 
@@ -326,8 +330,8 @@ public:
 
       // next time step is prescribed by fixedTimeStep
       // it fixedTimeStep is not 0
-      if ( fixedTimeStep_ > 1e-20 )
-        tp.next( fixedTimeStep_ );
+      if ( fixedTimeStep > 1e-20 )
+        tp.next( fixedTimeStep );
       else
         tp.next();
 
