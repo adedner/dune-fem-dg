@@ -17,14 +17,28 @@
 #include <dune/fem/io/parameter.hh>
 #include <dune/fem/io/file/datawriter.hh>
 
-
-//! get memory in MB 
-inline double getMemoryUsage()
+//! FemEoc initialization helper
+struct InitFemEoc 
 {
-  struct rusage info;
-  getrusage( RUSAGE_SELF, &info );
-  return (info.ru_maxrss / 1024.0);
-}
+  //! return number of eoc steps 
+  static inline int eocSteps() 
+  {
+    return Dune::Parameter::getValue<int>("femhowto.eocSteps", 1);
+  }
+
+  //! initialize FemEoc if eocSteps is > 1 
+  static inline void initializeFemEoc( const std::string& problemDescription )
+  {
+    if( eocSteps() > 1 ) 
+    {
+      // output of error and eoc information
+      std::string eocOutPath = 
+        Dune::Parameter::getValue<std::string>("femhowto.eocOutputPath", std::string("./"));
+
+      Dune::FemEoc::initialize(eocOutPath, "eoc", problemDescription);
+    }
+  }
+};
 
 template< class HGridType >
 Dune::GridPtr< HGridType > initialize( const std::string& problemDescription )
@@ -40,11 +54,8 @@ Dune::GridPtr< HGridType > initialize( const std::string& problemDescription )
   // load balance grid in case of parallel runs 
   gridptr->loadBalance();
 
-  // output of error and eoc information
-  std::string eocOutPath = Dune::Parameter::getValue<std::string>("femhowto.eocOutputPath",  /*@\label{fv:param1}@*/
-                                                            std::string("./"));
-
-  Dune::FemEoc::initialize(eocOutPath, "eoc", problemDescription); /*@\label{fv:femeocInit}@*/
+  // initialize FemEoc if eocSteps > 1 
+  InitFemEoc :: initializeFemEoc( problemDescription );
 
   // and refine the grid globally
   const int startLevel = Dune::Parameter::getValue<int>("fem.adaptation.coarsestLevel", 0);
@@ -53,6 +64,13 @@ Dune::GridPtr< HGridType > initialize( const std::string& problemDescription )
   return gridptr;
 } /*@LST0E@*/
 
+//! get memory in MB 
+inline double getMemoryUsage()
+{
+  struct rusage info;
+  getrusage( RUSAGE_SELF, &info );
+  return (info.ru_maxrss / 1024.0);
+}
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -68,8 +86,8 @@ void compute(Algorithm& algorithm)
   typedef typename Algorithm::GridPartType::GridType GridType;
   GridType& grid = gridPart.grid();
 
-  // get some parameters
-  const int eocSteps   = Dune::Parameter::getValue<int>("femhowto.eocSteps", 1);
+  // get number of eoc steps 
+  const int eocSteps = InitFemEoc :: eocSteps ();
 
   typename Algorithm::IOTupleType dataTup ( &algorithm.solution() );
   typedef Dune::DataOutput<GridType, typename Algorithm::IOTupleType> DataOutputType;
@@ -123,9 +141,11 @@ void compute(Algorithm& algorithm)
       // Refine the grid for the next EOC Step. If the scheme uses adaptation,
       // the refinement level needs to be set in the algorithms' initialize method.
       Dune::GlobalRefine::apply(grid,Dune::DGFGridInfo<GridType>::refineStepsForHalf());
-      grid.loadBalance();
     }
+
   } /***** END of EOC Loop *****/
+
+  // FemTimer cleanup
   Dune::FemTimer::removeAll();
 }
 
