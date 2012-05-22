@@ -31,6 +31,14 @@
 
 namespace Dune {
 
+  struct NonBlockingCommHelper 
+  {
+    static bool nonBlockingCommunication() 
+    {
+      return Parameter :: getValue< bool > ("femdg.nonblockingcomm", false );
+    }
+  };
+
   template < class DiscreteFunction > 
   class DeleteCommunicatedDofs : public ParallelScalarProduct < DiscreteFunction >
   {
@@ -80,7 +88,7 @@ namespace Dune {
   public:
     NonBlockingCommHandle() 
       : nonBlockingComm_( 0 ),
-        useNonBlockingComm_( Parameter :: getValue< bool > ("femdg.nonblockingcomm", false ))
+        useNonBlockingComm_( NonBlockingCommHelper :: nonBlockingCommunication() )
       {}
 
     NonBlockingCommHandle( const NonBlockingCommHandle& other ) 

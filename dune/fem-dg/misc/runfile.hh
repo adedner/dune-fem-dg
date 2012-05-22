@@ -3,6 +3,7 @@
 
 #include <dune/fem/io/parameter.hh>
 #include <dune/fem/misc/threadmanager.hh>
+#include <dune/fem-dg/pass/threadpass.hh>
 
 namespace Dune {
 
@@ -173,7 +174,16 @@ namespace Dune {
           {
             const double averageElements = sumTimes[ size - 1 ] / tasks ;
 
+            const bool nonBlocking = 
+#ifdef NSMOD_USE_SMP_PARALLEL
+              NonBlockingCommHelper :: nonBlockingCommunication() ;
+#else 
+              false ;
+#endif
+
             file << "# Procs = " << comm_.size() << " * " << maxThreads << " (MPI * threads)" << std::endl ;
+            const char* commType = nonBlocking ? "asynchron" : "standard";
+            file << "# Comm: " << commType << std::endl;
             file << "# Timesteps = " << timesteps_ << std::endl ;
             file << "# Max DoFs (per element): " << maxDofs_ << std::endl;
             file << "# Elements / timestep: sum    max    min    average  " << std::endl;
