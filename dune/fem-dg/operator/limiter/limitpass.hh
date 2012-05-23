@@ -934,6 +934,7 @@ namespace Dune {
       tol_1_( 1.0/getTol() ),
       geoInfo_( gridPart_.indexSet() ),
       faceGeoInfo_( geoInfo_.geomTypes(1) ),
+      phi0_( 0 ),
       matrixCacheVec_( gridPart_.grid().maxLevel() + 1 ),
       localMassMatrix_( spc_ , volumeQuadOrd_ ),
       adaptive_((AdaptationMethodType(gridPart_.grid())).adaptive()),
@@ -1900,7 +1901,7 @@ namespace Dune {
       
       typedef typename LocalFunctionImp :: BaseFunctionSetType BaseFunctionSetType;
 
-      const BaseFunctionSetType& baseset = limitEn.baseFunctionSet();
+      //const BaseFunctionSetType& baseset = limitEn.baseFunctionSet();
       const int quadNop = quad.nop();
       for(int qP = 0; qP < quadNop ; ++qP) 
       {
@@ -1922,6 +1923,11 @@ namespace Dune {
           }
         }
 
+        RangeType factor (ret);
+        factor *= intel ;
+        limitEn.axpy( quad[ qP ], factor );
+
+        /*
         // assume PointBased and CombinedSpace  
         for(int i=0; 
             i< NumLinearBasis<LocalFunctionImp, typename
@@ -1939,6 +1945,7 @@ namespace Dune {
             limitEn[dofIdx] += intel * (ret[r] * phi[0]) ;
           }
         }
+        */
       }
 
       // apply local inverse mass matrix for non-linear mappings 
@@ -1971,6 +1978,31 @@ namespace Dune {
       }
     }
 
+    template <class BaseFunctionSetType, class PointType>
+    const RangeType& evaluateConsantBasis( const BaseFunctionSetType& baseSet, 
+                                           const PointType& x ) const 
+    {
+      // calculate constant part of the basis functions 
+      if( ! (phi0_[ 0 ] > 0 ) ) 
+      {
+        std::vector< RangeType > phi;  
+        baseSet.evaluateAll( x, phi );
+        phi0_ = phi[ 0 ];
+      }
+
+#ifndef NDEBUG
+      // check that phi0 is valid 
+      {
+        std::vector< RangeType > phi;  
+        baseSet.evaluateAll( x, phi );
+        assert( (phi0_ - phi[ 0 ]).infinity_norm() < 1e-8 );
+      }
+#endif
+
+      // return constant part of basis functions 
+      return phi0_ ;
+    }
+
     // evaluate average of local function lf on entity en 
     bool evalAverage(const EntityType& en, 
                      const LocalFunctionType& lf,
@@ -1982,14 +2014,12 @@ namespace Dune {
         // get point quadrature 
         VolumeQuadratureType quad( en, 0 );
 
-        RangeType phi; 
-        
-        lf.baseFunctionSet().evaluate(0, quad[0], phi);
+        const RangeType& phi0 = evaluateConsantBasis( lf.baseFunctionSet(), quad[ 0 ] );
         for(int r=0; r<dimRange; ++r) 
         {
           const int dofIdx = dofConversion_.combinedDof(0, r);
           // here evaluateScalar could be used 
-          val[r] = lf[dofIdx] * phi[0];
+          val[r] = lf[dofIdx] * phi0 [ 0 ];
         }
 
         // possibly adjust average value, e.g. calculate primitive vairables and so on 
@@ -2520,6 +2550,7 @@ namespace Dune {
     const FaceGeometryInformationType faceGeoInfo_;
 
     mutable DeoModType deoMod_;
+    mutable RangeType  phi0_ ;
 
     mutable std::vector< DeoModType > deoMods_;
     mutable std::vector< CheckType >  comboVec_;
