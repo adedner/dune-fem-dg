@@ -96,16 +96,18 @@ namespace LOOPSPACE {
     GridType & grid = *gridptr;
 
 #if defined NS_ELLIPTIC_OPERATOR 
-    EllipticAlgorithm<GridType, 
+    typedef EllipticAlgorithm<GridType, 
                       ProblemTraits, 
-                      POLORDER> stepper( grid );
+                      POLORDER> StepperType;
+                        
 #else 
-    Stepper<GridType, 
-            ProblemTraits, 
-            POLORDER> stepper( grid );
+    typedef Stepper<GridType, ProblemTraits, POLORDER>  StepperType;
 #endif
-
-    compute( stepper );
+    // create stepper on heap, otherwise problems with stack size
+    StepperType* stepper = new StepperType( grid );
+    assert( stepper );
+    compute( *stepper );
+    delete stepper;
   } 
 
 } // end namespace LOOPSPACE
