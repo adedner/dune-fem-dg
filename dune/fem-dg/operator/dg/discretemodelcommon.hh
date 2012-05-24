@@ -152,7 +152,7 @@ namespace Dune {
 
     //! dummy method 
     void switchUpwind() const {
-      maxAdvTimeStep_ = 0;
+      maxAdvTimeStep_  = 0;
       maxDiffTimeStep_ = 0;
     } 
 
@@ -569,11 +569,12 @@ namespace Dune {
             */
         }
 
-        const DomainType normal = it.integrationOuterNormal( faceQuadInner.localPoint( quadPoint ) );
+        // get face volume 
+        const double faceVol = it.geometry().integrationElement( faceQuadInner.localPoint( quadPoint ) );
 
         // calculate grid width 
         double weight = weight_ *
-          (0.5 * ( this->enVolume() + this->nbVolume() ) / normal.two_norm() );
+          (0.5 * ( this->enVolume() + this->nbVolume() ) / faceVol );
 
         // add error to indicator 
         adaptation_->addToEntityIndicator( error, weight );
