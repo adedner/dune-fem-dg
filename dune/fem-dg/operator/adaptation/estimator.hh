@@ -135,7 +135,7 @@ protected:
         ElementPointerType outside = intersection.outside();
         const GridElementType& neighbor = Dune :: Fem :: gridEntity( *outside ); 
         // only do the following when the neighbor is not a ghost entity 
-        if( neighbor.partitionType() != GhostEntity ) 
+        if( neighbor.partitionType() != Dune::GhostEntity ) 
         { 
           if ( (neighbor.level() < finestLevel_) || (! neighbor.isRegular()) )
           {
@@ -252,7 +252,7 @@ public:
         const int nbIdx = indexSet_.index( neighbor );
 
         // handle face from one side only
-        if ( neighbor.partitionType() == GhostEntity || 
+        if ( neighbor.partitionType() == Dune::GhostEntity || 
               entity.level() > neighbor.level() ||
             (entity.level() == neighbor.level() && enIdx < nbIdx) )
         {
@@ -377,7 +377,7 @@ public:
     const GridElementType& element = Dune :: Fem :: gridEntity( entity );
 
     // do not mark ghost elements 
-    if( element.partitionType() == GhostEntity ) return ;
+    if( element.partitionType() == Dune::GhostEntity ) return ;
 
     const int elemLevel = element.level();
 

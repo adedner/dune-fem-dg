@@ -98,7 +98,7 @@ public:
 
   virtual void estimateLocal( const ElementType& it )
   { 
-    DUNE_THROW( NotImplemented, "Use your own local estimator !" );
+    DUNE_THROW( Dune::NotImplemented, "Use your own local estimator !" );
   }
 
   virtual void estimate()
