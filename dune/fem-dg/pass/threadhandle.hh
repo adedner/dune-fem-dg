@@ -210,25 +210,6 @@ private:
     threads_.push_back( ThreadHandleObject( &waitBegin_, &waitEnd_ ) );
   } // end constructor 
 
-  //! destructor deleting threads 
-  ~ThreadHandle() 
-  {
-    // start threads with null object which wil terminate 
-    // all threads 
-    startThreads () ;
-
-    // call thread join 
-    for(int i=0; i<maxThreads_; ++i)
-    {
-      threads_[ i ].destroy();
-    }
-
-    // destroy barrier 
-    pthread_barrier_destroy( &waitEnd_ );
-    // destroy barrier 
-    pthread_barrier_destroy( &waitBegin_ );
-  }
-
   //! start all threads to do the job 
   void startThreads( ObjectIF* obj = 0 )
   {
@@ -271,9 +252,30 @@ private:
   // return instance of ThreadHandle
   static ThreadHandle& instance() 
   {
-    static ThreadHandle handle;
-    return handle;
+    static std::auto_ptr< ThreadHandle > handle( new ThreadHandle() ); 
+    return *handle;
   }
+
+public:  
+  //! destructor deleting threads 
+  ~ThreadHandle() 
+  {
+    // start threads with null object which wil terminate 
+    // all threads 
+    startThreads () ;
+
+    // call thread join 
+    for(int i=0; i<maxThreads_; ++i)
+    {
+      threads_[ i ].destroy();
+    }
+
+    // destroy barrier 
+    pthread_barrier_destroy( &waitEnd_ );
+    // destroy barrier 
+    pthread_barrier_destroy( &waitBegin_ );
+  }
+
 #endif
 
 public:  

@@ -65,11 +65,12 @@ namespace Dune {
     typedef DGDiffusionFluxIdentifier MethodType;
     static std::string methodNames( const MethodType mthd )
     {
-      static const std::string method []
+      const std::string method []
         = { "CDG2", "CDG" , "BR2", "IP" , "NIPG", "BO" };
       assert( mthd >= method_cdg2 && mthd < method_general );
       return method[ mthd ];
     }
+
     static MethodType getMethod() 
     {
       const std::string method []
@@ -86,7 +87,7 @@ namespace Dune {
     typedef DGLiftingFluxIdentifier LiftingType;
     static std::string liftingNames( const LiftingType mthd )
     {
-      static const std::string method []
+      const std::string method []
         = { "id_id", "id_A" , "A_A" };
       return method[ mthd ];
     }

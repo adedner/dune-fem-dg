@@ -88,7 +88,7 @@ namespace Dune {
 
     // necessary for TESTOPERATOR
     // not sure how it works for dual operators!
-    static const bool ApplyInverseMassOperator = true;
+    enum { ApplyInverseMassOperator = true }; 
 
   public:
     /**
@@ -312,9 +312,9 @@ namespace Dune {
     typedef FieldVector< double, dimDomain-1 >             FaceDomainType;
 
 #if defined TESTOPERATOR
-    static const bool ApplyInverseMassOperator = false;
+    enum { ApplyInverseMassOperator = false };
 #else
-    static const bool ApplyInverseMassOperator = true;
+    enum { ApplyInverseMassOperator = true };
 #endif
 
     typedef typename Traits :: GridPartType                            GridPartType;

@@ -49,9 +49,9 @@ namespace Dune {
 
 #if defined TESTOPERATOR
 #warning NO MASSOPERATOR APPLIED
-    static const bool ApplyInverseMassOperator = false;
+    enum { ApplyInverseMassOperator = false };
 #else
-    static const bool ApplyInverseMassOperator = true;
+    enum { ApplyInverseMassOperator = true };
 #endif
 
     typedef typename Traits :: GridPartType                            GridPartType;
