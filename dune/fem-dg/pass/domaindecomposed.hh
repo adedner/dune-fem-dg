@@ -61,12 +61,12 @@ namespace Dune {
 #endif
       {
 #ifdef USE_SMP_PARALLEL
-        for(int i=0; i< Fem :: ThreadManager :: maxThreads(); ++i )
+        for(int thread=0; thread < Fem :: ThreadManager :: maxThreads(); ++thread )
         {
           // i is the thread number of this filter 
-          filteredGridParts_[ i ] 
+          filteredGridParts_[ thread ] 
             = new FilteredGridPartType( space_.gridPart(), 
-                                        FilterType( space_.gridPart(), threadNum_, i ) );
+                                        FilterType( space_.gridPart(), threadNum_, thread ) );
         }
 
         threadNum_.setMemoryFactor( 1.1 ); 
@@ -97,7 +97,7 @@ namespace Dune {
           // create partitioner 
           ThreadPartitioner< GridPartType > db( space_.gridPart() , maxThreads );
           // do partitioning 
-          db.serialPartition( true );
+          db.serialPartition( false );
 
           // get end iterator
           typedef typename SpaceType :: IteratorType SpaceIteratorType;
@@ -114,10 +114,12 @@ namespace Dune {
           // just for diagnostics 
           std::vector< int > counter( maxThreads , 0 );
 
-          for(SpaceIteratorType it = space_.begin(); it != endit; ++it ) 
+          int numInteriorElems = 0;
+          for(SpaceIteratorType it = space_.begin(); it != endit; ++it, ++numInteriorElems ) 
           {
             const EntityType& entity  = * it;
             const int rank = db.getRank( entity );
+            assert( rank >= 0 );
             //std::cout << "Got rank = " << rank << "\n";
             threadNum_[ indexSet_.index( entity ) ] = rank ; 
             ++counter[ rank ];
@@ -128,13 +130,22 @@ namespace Dune {
 
           if( Parameter :: verbose() )
           {
-            std::cout << "Update DomainDecomposedIterator for sequence " << sequence_ << std::endl;
+            std::cout << "DomainDecomposedIterator: sequence = " << sequence_ << " size = " << numInteriorElems << std::endl;
             for(size_t i = 0; i<maxThreads; ++i ) 
               std::cout << "DomainDecomposedIterator: T[" << i << "] = " << counter[ i ] << std::endl;
           }
             
+#ifndef NDEBUG
+          // check that all interior elements have got a valid thread number 
+          for(SpaceIteratorType it = space_.begin(); it != endit; ++it ) 
+          {
+            assert( threadNum_[ indexSet_.index( *it ) ] >= 0 );
+          }
+#endif
           //for(size_t i = 0; i<size; ++i ) 
-          //  std::cout << threadNum_[ i ] << std::endl;
+          //{
+          //  //std::cout << threadNum_[ i ] << std::endl;
+          //}
         }
 #endif
       }

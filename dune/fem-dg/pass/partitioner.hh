@@ -18,6 +18,62 @@
 
 #define ALU2DGRID_READALL_GRIDS 
 
+namespace ALUGridSpace {
+
+  // class fulfilling the ALUGrid communicator interface
+  // but without any communication, this is needed to avoid 
+  // communication during the call of DataBase :: repartition 
+  class MpAccessSerial : public ALU3DSPACE MpAccessGlobal
+  {
+  public:  
+    MpAccessSerial() {} 
+
+    virtual int psize() const { return 1; }
+    int myrank () const { return 0; }
+
+    virtual int barrier () const { return psize(); }
+    virtual bool gmax (bool value) const { return value; }
+    virtual int gmax (int value) const { return value; }
+    virtual int gmin ( int value ) const { return value; }
+    virtual int gsum ( int value ) const { return value; }
+    virtual long gmax ( long value ) const { return value; }
+    virtual long gmin ( long value ) const { return value; }
+    virtual long gsum ( long value ) const { return value; }
+    virtual double gmax ( double value ) const { return value; }
+    virtual double gmin ( double value ) const { return value; }
+    virtual double gsum ( double value ) const { return value; }
+    virtual void gmax (double* in, int length, double* out) const { std::copy(in, in+length, out ); }
+    virtual void gmin (double* in, int length, double* out) const { std::copy(in, in+length, out ); }
+    virtual void gsum (double* in, int length, double* out) const { std::copy(in, in+length, out ); }
+    virtual void gmax (int*,int,int*) const {  }
+    virtual void gmin (int*,int,int*) const {  }
+    virtual void gsum (int*,int,int*) const {  }
+    virtual minmaxsum_t minmaxsum( double value ) const { return minmaxsum_t( value ); }
+    virtual pair<double,double> gmax (pair<double,double> value ) const { return value; }
+    virtual pair<double,double> gmin (pair<double,double> value ) const { return value; }
+    virtual pair<double,double> gsum (pair<double,double> value ) const { return value; }
+    virtual void bcast(int*,int, int) const { }
+    virtual void bcast(char*,int, int) const { }
+    virtual void bcast(double*,int, int) const { }
+    virtual int exscan( int value ) const { return 0; }
+    virtual int scan( int value ) const { return value; }
+    virtual vector < int > gcollect ( int value ) const { return vector<int> (psize(), value); }
+    virtual vector < double > gcollect ( double value ) const { return vector<double> (psize(), value); }
+    virtual vector < vector < int > > gcollect (const vector < int > & value) const 
+    { 
+      return vector < vector < int > > (psize(), value); 
+    }
+    virtual vector < vector < double > > gcollect (const vector < double > & value) const 
+    { 
+      return vector < vector < double > > (psize(), value); 
+    }
+    virtual vector < ObjectStream > gcollect (const ObjectStream &os) const { return vector < ObjectStream >(psize(),os); }
+
+    //! return address of communicator (not optimal but avoid explicit MPI types here)
+    virtual const CommIF* communicator() const { return 0; }
+  };
+}
+
 namespace Dune {
 
 template < class GridPartImp >
@@ -37,9 +93,12 @@ protected:
   typedef ALU3DSPACE LoadBalancer LoadBalancerType;
   typedef typename LoadBalancerType :: DataBase DataBaseType;
 
-  // type of communicator 
+  // type of communicator interface 
   typedef ALU3DSPACE MpAccessLocal MPAccessInterfaceType;
-  typedef ALU3DSPACE MpAccessMPI   MPAccessImplType;
+
+  // type of communicator implementation 
+  typedef ALU3DSPACE MpAccessSerial  MPAccessImplType;
+
   mutable MPAccessImplType  mpAccess_;
 
   DataBaseType db_;
@@ -62,7 +121,7 @@ protected:
 
 public:
   ThreadPartitioner( const GridPartType& gridPart, const int pSize )
-    : mpAccess_( MPIHelper::getCommunicator() ),
+    : mpAccess_(),
       db_ (),
       gridPart_( gridPart )
     , indexSet_( gridPart_.indexSet() )
@@ -75,6 +134,10 @@ public:
     calculateGraph( gridPart_ );
   }
 
+protected:  
+  //! create consecutive entity numbering on-the-fly 
+  //! this is neccessary, because we might only be interating over a
+  //! sub set of the given entities, and thus indices might be non-consecutive
   int getIndex( const size_t idx ) 
   {
     assert( idx < index_.size() );
@@ -82,27 +145,34 @@ public:
     return index_[ idx ] ;
   }
 
+  //! access consecutive entity numbering (read-only)
+  int getIndex( const size_t idx ) const 
+  {
+    assert( idx < index_.size() );
+    return index_[ idx ] ;
+  }
+
+  //! get consecutive entity index, if not existing, it's created 
   int getIndex( const EntityType& entity ) 
   {
     return getIndex( indexSet_.index( entity ) );
   }
 
-  int index( const EntityType& entity ) const 
+  //! get consecutive entity index (read-only)
+  int getIndex( const EntityType& entity ) const 
   {
-    const size_t idx = indexSet_.index( entity );
-    assert( idx < index_.size() );
-    assert( index_[ idx ] >= 0 );
-    return index_[ idx ];
+    return getIndex( indexSet_.index( entity ) );
   }
 
   void calculateGraph( const GridPartType& gridPart )
   {
     typedef typename GridPartType :: template Codim< 0 > :: IteratorType Iterator;
     const Iterator end = gridPart.template end<0> ();
+    // create graph 
     for(Iterator it = gridPart.template begin<0> (); it != end; ++it )
     {
       const EntityType& entity = *it;
-      //assert( entity.partitionType() == InteriorEntity );
+      assert( entity.partitionType() == InteriorEntity );
       ldbUpdateVertex ( entity,
                         gridPart.ibegin( entity ),
                         gridPart.iend( entity ),
@@ -182,7 +252,7 @@ public:
         {
           const int eid = getIndex( en );
           const int nid = getIndex( nb );
-          //if( eid < nid ) 
+          if( eid < nid ) 
           {
             db.edgeUpdate ( 
                 typename LoadBalancerType :: GraphEdge ( eid, nid, weight )
@@ -272,8 +342,9 @@ public:
 
   int getRank( const EntityType& entity ) const 
   {
-    assert( (int) partition_.size() > index( entity ) );
-    return partition_[ index( entity ) ];
+    //std::cout << "partSize = " << partition_.size()  << " idx = " << index( entity )  << std::endl;
+    assert( (int) partition_.size() > getIndex( entity ) );
+    return partition_[ getIndex( entity ) ];
   }
 
   bool validEntity( const EntityType& entity, const int rank ) const 
