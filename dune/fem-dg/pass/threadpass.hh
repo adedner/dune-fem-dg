@@ -132,6 +132,8 @@ namespace Dune {
     // cleanup possibly overwritten ghost values 
     void finalizeComm( const DestinationType& dest ) const 
     {
+      // make sure communication has been finished
+      assert( nonBlockingComm_ == 0 );
       DeleteCommunicatedDofs< DestinationType > delDofs( dest.space() );
       delDofs.deleteCommunicatedDofs( const_cast< DestinationType& > ( dest ) );
     }
@@ -367,6 +369,14 @@ namespace Dune {
 
         // pepare 
         myPass.prepare( arg, dest );
+
+        // for the first call we need to receive data already here,
+        // since the flux calculation is done at once
+        if( nonBlockingComm_.nonBlockingCommunication() ) 
+        {
+          // RECEIVE DATA, send was done on call of operator() (see pass.hh)
+          receiveCommunication( arg );
+        }
 
         // Iterator is of same type as the space iterator 
         typedef typename DiscreteFunctionSpaceType :: IteratorType Iterator;
