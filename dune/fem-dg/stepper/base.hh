@@ -43,6 +43,10 @@ struct InitFemEoc
 template< class HGridType >
 Dune::GridPtr< HGridType > initialize( const std::string& problemDescription )
 { 
+#ifdef ALUGRID_CONSTRUCTION_WITH_STREAMS 
+  ALUGridSpace :: ALUGridExternalParameters :: precision () = 6;
+#endif
+  
   // ----- read in runtime parameters ------
   const std::string filekey = Dune::IOInterface::defaultGridKey( HGridType::dimension );
   const std::string filename = Dune::Parameter::getValue< std::string >( filekey ); /*@\label{base:param0}@*/

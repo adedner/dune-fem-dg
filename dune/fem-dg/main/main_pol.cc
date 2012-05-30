@@ -21,6 +21,9 @@
 
 #include <dune/common/version.hh>
 
+// streams for backup
+#include <dune/fem-dg/misc/streams.hh>
+
 #include <dune/fem/misc/threadmanager.hh>
 #include <dune/fem-dg/pass/partitioner.hh>
 #include <dune/fem-dg/pass/threadpass.hh>

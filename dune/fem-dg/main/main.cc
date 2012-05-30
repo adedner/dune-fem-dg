@@ -7,10 +7,14 @@
 // configure macros 
 #include <config.h>
 
+// streams for backup
+#include <dune/fem-dg/misc/streams.hh>
+
+// local includes
+#include <dune/fem-dg/main/main.hh>
 #include <dune/fem-dg/main/codegen.hh>
 
 #include <dune/fem/misc/threadmanager.hh>
-#include <dune/fem-dg/pass/partitioner.hh>
 #include <dune/fem-dg/pass/threadpass.hh>
 
 // include std libs
@@ -21,9 +25,6 @@
 #include <dune/fem/misc/l2error.hh>
 #include <dune/fem/operator/projection/l2projection.hh>
 #include <dune/fem/solver/odesolver.hh>
-
-// local includes
-#include <dune/fem-dg/main/main.hh>
 
 #if HAVE_PETSC
 #include <petsc.h>
@@ -179,10 +180,10 @@ void codegen()
  *
  * @param argc number of arguments from command line
  * @param argv array of arguments from command line
- * @param envp array of environmental variables
  * @return 0 we don't program bugs. :)
  */
-int main(int argc, char ** argv, char ** envp) {          /*@LST0S@*/
+int main(int argc, char ** argv) 
+{     
 
   /* Initialize MPI (always do this even if you are not using MPI) */
   Dune::MPIManager :: initialize( argc, argv );
