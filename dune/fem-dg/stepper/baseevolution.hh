@@ -145,7 +145,8 @@ public:
   virtual void finalizeStep(TimeProviderType& tp) = 0;
 
   //! restore all data from check point (overload to do something)
-  virtual void restoreFromCheckPoint(TimeProviderType& tp) {} 
+  //! return true if the simulation was newly started 
+  virtual bool restoreFromCheckPoint(TimeProviderType& tp) { abort(); return true;  } 
 
   //! write a check point (overload to do something)
   virtual void writeCheckPoint(TimeProviderType& tp,
@@ -224,7 +225,7 @@ public:
     AdaptationManagerType adaptManager( grid_ , rp );
 
     // restoreData if checkpointing is enabled (default is disabled)
-    restoreFromCheckPoint( tp );
+    const bool newStart = restoreFromCheckPoint( tp );
 
     // tuple with additionalVariables 
     IOTupleType dataTuple( &solution, this->additionalVariables(), indicator() );
@@ -248,23 +249,29 @@ public:
     else
       tp.init();
 
-    // adapt the grid to the initial data
-    int startCount = 0;
-    if( adaptCount > 0 )
-      while( startCount < maxAdaptationLevel )
+    // for simulation new start do start adaptation 
+    if( newStart ) 
+    {
+      // adapt the grid to the initial data
+      int startCount = 0;
+      if( adaptCount > 0 )
       {
-        estimateMarkAdapt( adaptManager );
+        while( startCount < maxAdaptationLevel )
+        {
+          estimateMarkAdapt( adaptManager );
 
-        initializeStep( tp );
+          initializeStep( tp );
 
-        if( verbose )
-          std::cout << "start: " << startCount << " grid size: " << grid_.size(0)
-                    << std::endl;
-        ++startCount;
+          if( verbose )
+            std::cout << "start: " << startCount << " grid size: " << grid_.size(0)
+                      << std::endl;
+          ++startCount;
+        }
       }
 
-    // write data 
-    writeData( eocDataOutput, tp, eocDataOutput.willWrite( tp ) );
+      // write data 
+      writeData( eocDataOutput, tp, eocDataOutput.willWrite( tp ) );
+    }
 
 #ifdef BASEFUNCTIONSET_CODEGEN_GENERATE
     // make sure that at least one timestep is executed 

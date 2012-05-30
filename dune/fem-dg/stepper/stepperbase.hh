@@ -156,19 +156,25 @@ struct StepperBase
   }
 
   // restore data if checkpoint file is given 
- virtual void restoreFromCheckPoint( TimeProviderType& tp )
+ virtual bool restoreFromCheckPoint( TimeProviderType& tp )
   {
     // add solution to persistence manager for check pointing 
     Dune::persistenceManager << solution_ ;
   
-    // check checkpoint filename (see base.hh)
-    const std::string checkPointRestartFile = checkPointRestartFileName();
+    std::string checkPointRestartFile = checkPointRestartFileName();
+    std::cout << "Got check point file " << checkPointRestartFile << std::endl;
+
     // if check file is non-zero a restart is performed 
     if( checkPointRestartFile.size() > 0 )
     {
       // restore data 
       checkPointer( tp ).restoreData( grid_, checkPointRestartFile );
+
+      std::cout <<"Current time = " << tp.time() << std::endl;
+      return false;  
     }
+    
+    return true ;
   }
 
   // write checkpoint data and also run time diagnostics 

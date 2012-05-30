@@ -40,15 +40,23 @@ struct InitFemEoc
   }
 };
 
-inline std::string checkPointRestartFileName () 
+static inline std::string checkPointRestartFileName () 
 {
-  const std::string key( "fem.io.checkpointrestartfile" );
-  if( Dune :: Parameter :: exists( key ) )
+  static bool initialized = false ;
+  static std::string checkFileName ;
+  if( ! initialized ) 
   {
-    return Dune :: Parameter::getValue<std::string> ( key );
+    const std::string key( "fem.io.checkpointrestartfile" );
+    if( Dune :: Parameter :: exists( key ) )
+    {
+      checkFileName = Dune :: Parameter::getValue<std::string> ( key );
+    }
+    else 
+      checkFileName = "" ;
+    initialized = true ;
   }
-  else 
-    return std::string( "" );
+
+  return checkFileName ;
 }
 
 template< class HGridType >
@@ -68,8 +76,17 @@ Dune::GridPtr< HGridType > initialize( const std::string& problemDescription )
   // if checkpoint restart file has been given
   if( checkPointRestartFile.size() > 0 ) 
   {
-     // restore grid from checkpoint
-     gridptr = Dune::CheckPointer< HGridType > :: restoreGrid( checkPointRestartFile );
+    if( 0 == Dune::MPIManager :: rank () )
+    {
+      std::cout << std::endl;
+      std::cout << "********************************************************" << std::endl;
+      std::cout << "**   Restart from checkpoint `" << checkPointRestartFile << "' " << std::endl;
+      std::cout << "********************************************************" << std::endl;
+      std::cout << std::endl;
+    }
+
+    // restore grid from checkpoint
+    gridptr = Dune::CheckPointer< HGridType > :: restoreGrid( checkPointRestartFile );
   }
   else  // normal new start 
   {

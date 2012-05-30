@@ -200,7 +200,7 @@ int main(int argc, char ** argv)
 
   // *** Initialization
   Dune::Parameter::append(argc,argv);                           /*@\label{dg:param0}@*/
-  if (argc == 2) 
+  if (argc >= 2) 
   {
     Dune::Parameter::append(argv[1]);
   } 
