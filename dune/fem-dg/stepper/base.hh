@@ -44,7 +44,9 @@ template< class HGridType >
 Dune::GridPtr< HGridType > initialize( const std::string& problemDescription )
 { 
 #ifdef ALUGRID_CONSTRUCTION_WITH_STREAMS 
-  ALUGridSpace :: ALUGridExternalParameters :: precision () = 6;
+  // precision of out streams (here ALUGrid backup streams)
+  const int precision = Dune :: Parameter :: getValue< int > ("fem.io.precision", 16);
+  ALUGridSpace :: ALUGridExternalParameters :: precision () = precision;
 #endif
   
   // ----- read in runtime parameters ------
