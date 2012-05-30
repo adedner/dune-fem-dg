@@ -162,15 +162,12 @@ struct StepperBase
     Dune::persistenceManager << solution_ ;
   
     std::string checkPointRestartFile = checkPointRestartFileName();
-    std::cout << "Got check point file " << checkPointRestartFile << std::endl;
 
     // if check file is non-zero a restart is performed 
     if( checkPointRestartFile.size() > 0 )
     {
       // restore data 
       checkPointer( tp ).restoreData( grid_, checkPointRestartFile );
-
-      std::cout <<"Current time = " << tp.time() << std::endl;
       return false;  
     }
     
