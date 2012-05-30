@@ -334,54 +334,37 @@ namespace Dune {
     //! backup routine 
     void backup() const 
     {
-      std::ifstream testfile ( runFileName_.c_str() );
+      typedef PersistenceManager :: BackupStreamType  BackupStreamType ;
+      BackupStreamType& stream = PersistenceManager :: backupStream();
 
-      // check whether file exists 
-      if( testfile.is_open() ) 
+      stream << elements_ ;
+      stream << maxDofs_ ;
+      stream << timesteps_ ;
+      const size_t tSize = times_.size();
+      stream << tSize ;
+      for( size_t i=0; i<tSize; ++i ) 
       {
-        testfile.close();
-
-        // copy run file to backup path 
-        std::string cmd("cp ");
-        cmd += runFileName_; 
-        cmd += " ";
-        cmd += PersistenceManager :: uniqueFileName( "run" );
-        int result = system( cmd.c_str() );
-        if( result < 0 ) 
-          std::cerr <<"WARNING: system call seemed to fail!" << std::endl;
+        stream << times_[ i ];
       }
-    } 
+    }
 
     //! restore routine 
     void restore () 
     {
-      // get run file name 
+      typedef PersistenceManager :: RestoreStreamType  RestoreStreamType ;
+      RestoreStreamType& stream = PersistenceManager :: restoreStream();
+
+      stream >> elements_ ;
+      stream >> maxDofs_ ;
+      stream >> timesteps_ ;
+
+      size_t tSize;
+      stream >> tSize ;
+
+      times_.resize( tSize );
+      for( size_t i=0; i<tSize; ++i ) 
       {
-        // clear run file in case we have a restart with 
-        // more processors than the checkpoint was written with
-        std::ofstream clearfile ( runFileName_.c_str() );
-        clearfile << "# restarted from checkpoint " << std::endl;
-        // close file 
-        clearfile.close();
-      }
-
-      std::string restorename( PersistenceManager :: uniqueFileName( "run" ) );
-      std::ifstream testfile ( restorename.c_str() );
-
-      // check whether file exists 
-      if( testfile.is_open() ) 
-      {
-        // close test file 
-        testfile.close();
-
-        // copy run file back 
-        std::string cmd("cp ");
-        cmd += restorename;
-        cmd += " ";
-        cmd += runFileName_;
-        int result = system( cmd.c_str() );
-        if( result < 0 ) 
-          std::cerr <<"WARNING: system call seemed to fail!" << std::endl;
+        stream >> times_[ i ];
       }
     }
   }; // end class runfile
