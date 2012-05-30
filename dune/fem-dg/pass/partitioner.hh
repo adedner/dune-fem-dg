@@ -8,7 +8,7 @@
 #include <vector>
 
 #include <dune/common/mpihelper.hh>
-#include <dune/grid/alugrid.hh>
+#include <dune/grid/alugrid/3d/alugrid.hh>
 
 #include <dune/grid/io/visual/grapegriddisplay.hh>
 
@@ -23,10 +23,12 @@ namespace ALUGridSpace {
   // class fulfilling the ALUGrid communicator interface
   // but without any communication, this is needed to avoid 
   // communication during the call of DataBase :: repartition 
-  class MpAccessSerial : public ALU3DSPACE MpAccessGlobal
+  class MpAccessSerial : public MpAccessGlobal
   {
   public:  
     MpAccessSerial() {} 
+
+    typedef MpAccessGlobal :: minmaxsum_t  minmaxsum_t;
 
     virtual int psize() const { return 1; }
     int myrank () const { return 0; }
