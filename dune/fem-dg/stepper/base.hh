@@ -40,6 +40,17 @@ struct InitFemEoc
   }
 };
 
+inline std::string checkPointRestartFileName () 
+{
+  const std::string key( "fem.io.checkpointrestartfile" );
+  if( Dune :: Parameter :: exists( key ) )
+  {
+    return Dune :: Parameter::getValue<std::string> ( key );
+  }
+  else 
+    return std::string( "" );
+}
+
 template< class HGridType >
 Dune::GridPtr< HGridType > initialize( const std::string& problemDescription )
 { 
@@ -48,25 +59,40 @@ Dune::GridPtr< HGridType > initialize( const std::string& problemDescription )
   const int precision = Dune :: Parameter :: getValue< int > ("fem.io.precision", 16);
   ALUGridSpace :: ALUGridExternalParameters :: precision () = precision;
 #endif
-  
-  // ----- read in runtime parameters ------
-  const std::string filekey = Dune::IOInterface::defaultGridKey( HGridType::dimension );
-  const std::string filename = Dune::Parameter::getValue< std::string >( filekey ); /*@\label{base:param0}@*/
 
-  // initialize grid
-  Dune::GridPtr< HGridType > gridptr(filename);
-  Dune::Parameter::appendDGF( filename );
+  // grid pointer object 
+  Dune::GridPtr< HGridType > gridptr ; 
 
-  // load balance grid in case of parallel runs 
-  gridptr->loadBalance();
+  const std::string checkPointRestartFile = checkPointRestartFileName();
+
+  // if checkpoint restart file has been given
+  if( checkPointRestartFile.size() > 0 ) 
+  {
+     // restore grid from checkpoint
+     gridptr = Dune::CheckPointer< HGridType > :: restoreGrid( checkPointRestartFile );
+  }
+  else  // normal new start 
+  {
+    // ----- read in runtime parameters ------
+    const std::string filekey = Dune::IOInterface::defaultGridKey( HGridType::dimension );
+    const std::string filename = Dune::Parameter::getValue< std::string >( filekey ); /*@\label{base:param0}@*/
+
+    // initialize grid with given macro file name 
+    gridptr = Dune::GridPtr< HGridType >( filename );
+    Dune::Parameter::appendDGF( filename );
+
+    // load balance grid in case of parallel runs 
+    gridptr->loadBalance();
+
+    // and refine the grid globally
+    const int startLevel = Dune::Parameter::getValue<int>("fem.adaptation.coarsestLevel", 0);
+    for(int level=0; level < startLevel ; ++level)
+      Dune::GlobalRefine::apply(*gridptr, 1 ); /*@\label{fv:globalRefine1}@*/
+  }
 
   // initialize FemEoc if eocSteps > 1 
   InitFemEoc :: initializeFemEoc( problemDescription );
 
-  // and refine the grid globally
-  const int startLevel = Dune::Parameter::getValue<int>("fem.adaptation.coarsestLevel", 0);
-  for(int level=0; level < startLevel ; ++level)
-    Dune::GlobalRefine::apply(*gridptr, 1 ); /*@\label{fv:globalRefine1}@*/
   return gridptr;
 } /*@LST0E@*/
 

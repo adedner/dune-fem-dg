@@ -94,6 +94,9 @@ struct StepperBase
 
   typedef RunFile< GridType >  RunFileType;
 
+  // type of most simple check pointer 
+  typedef Dune::CheckPointer< GridType >   CheckPointerType;
+
   using BaseType :: grid_;
   using BaseType :: gridPart_;
   using BaseType :: solution;
@@ -111,6 +114,7 @@ struct StepperBase
     convectionFlux_( *model_ ),
     adaptationHandler_( 0 ),
     runfile_( grid.comm(), true ),
+    checkPointer_( 0 ),
     overallTimer_(),
     eocId_( FemEoc::addEntry(std::string("$L^2$-error")) ),
     odeSolver_( 0 ),
@@ -122,6 +126,8 @@ struct StepperBase
   //! destructor 
   virtual ~StepperBase()
   {
+    delete checkPointer_;
+    checkPointer_ = 0;
     delete odeSolver_;
     odeSolver_ = 0;
     delete problem_ ;
@@ -140,6 +146,32 @@ struct StepperBase
   // function creating the ode solvers 
   virtual OdeSolverType* createOdeSolver( TimeProviderType& ) = 0;
 
+  CheckPointerType& checkPointer( TimeProviderType& tp ) const
+  {
+    // create check point if not exsistent 
+    if( ! checkPointer_ )
+      checkPointer_ = new CheckPointerType( grid_, tp );
+
+    return *checkPointer_;
+  }
+
+  // restore data if checkpoint file is given 
+ virtual void restoreFromCheckPoint( TimeProviderType& tp )
+  {
+    // add solution to persistence manager for check pointing 
+    Dune::persistenceManager << solution_ ;
+  
+    // check checkpoint filename (see base.hh)
+    const std::string checkPointRestartFile = checkPointRestartFileName();
+    // if check file is non-zero a restart is performed 
+    if( checkPointRestartFile.size() > 0 )
+    {
+      // restore data 
+      checkPointer( tp ).restoreData( grid_, checkPointRestartFile );
+    }
+  }
+
+  // write checkpoint data and also run time diagnostics 
   virtual void writeCheckPoint(TimeProviderType& tp,
                                AdaptationManagerType& am ) const 
   {
@@ -156,6 +188,8 @@ struct StepperBase
                     am.loadBalanceTime(),                   // time for load balance
                     overallTimer_.elapsed());               // time step overall time
 
+    // write data checkpoint (see datawriter.hh)
+    checkPointer( tp ).write( tp );
   }
 
   //! returns data prefix for EOC loops ( default is loop )
@@ -336,7 +370,12 @@ protected:
   // Initial flux for advection discretization (UpwindFlux)
   FluxType                convectionFlux_;
   AdaptationHandlerType*  adaptationHandler_;
+
+  // diagnostics file 
   mutable RunFileType     runfile_;
+  // check point writer 
+  mutable CheckPointerType* checkPointer_;
+
   Timer                   overallTimer_;
   double                  odeSolve_;
   const unsigned int      eocId_;
