@@ -334,6 +334,9 @@ namespace Dune {
     //! backup routine 
     void backup() const 
     {
+      // flush run file 
+      flush(); 
+
       typedef PersistenceManager :: BackupStreamType  BackupStreamType ;
       BackupStreamType& stream = PersistenceManager :: backupStream();
 
