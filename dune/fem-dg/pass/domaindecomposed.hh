@@ -97,7 +97,7 @@ namespace Dune {
           // create partitioner 
           ThreadPartitioner< GridPartType > db( space_.gridPart() , maxThreads );
           // do partitioning 
-          const bool partitioned = db.serialPartition( false );
+          db.serialPartition( false );
 
           // get end iterator
           typedef typename SpaceType :: IteratorType SpaceIteratorType;
@@ -111,7 +111,6 @@ namespace Dune {
           // set all values to default value 
           for(size_t i = 0; i<size; ++i) threadNum_[ i ] = -1;
 
-          if( partitioned ) 
           {
             // just for diagnostics 
             std::vector< int > counter( maxThreads , 0 );
