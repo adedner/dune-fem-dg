@@ -263,7 +263,8 @@ protected:
         {
           const int eid = getIndex( en );
           const int nid = getIndex( nb );
-          if( eid < nid ) 
+          // insert edges twice, with both orientations 
+          // the ALUGrid partitioner expects it this way 
           {
             db.edgeUpdate ( 
                 typename LoadBalancerType :: GraphEdge ( eid, nid, weight )
@@ -275,11 +276,6 @@ protected:
   }
 
 public:
-  bool repartition() 
-  {
-    return db_.repartition( mpAccess_,  DataBaseType :: METIS_PartGraphKway );
-  }
-
   bool serialPartition(const bool useKway = true ) 
   {
 #ifdef ITERATORS_WITHOUT_MYALLOC
@@ -287,7 +283,7 @@ public:
     {
       // if the graph size is smaller then the number of partitions 
       // the distribution is easy to compute 
-      if( graphSize_ < pSize_ ) 
+      if( graphSize_ <= pSize_ ) 
       {
         partition_.resize( graphSize_ );
         for( int i=0; i<graphSize_; ++ i ) 
