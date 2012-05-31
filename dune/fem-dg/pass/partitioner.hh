@@ -28,7 +28,12 @@ namespace ALUGridSpace {
   public:  
     MpAccessSerial() {} 
 
+#ifdef ALUGRID_CONSTRUCTION_WITH_STREAMS
+    // this features is only available in the newer version 
     typedef MpAccessGlobal :: minmaxsum_t  minmaxsum_t;
+#else 
+    typedef double minmaxsum_t ;
+#endif
 
     virtual int psize() const { return 1; }
     int myrank () const { return 0; }
@@ -115,6 +120,7 @@ protected:
   const double ldbOver_ ;
   const double ldbUnder_;
   const int pSize_ ;
+  int graphSize_; 
 
   std::vector< int > index_;
   int indexCounter_ ;
@@ -130,6 +136,7 @@ public:
     , ldbOver_(1.2)
     , ldbUnder_(0.0)
     , pSize_( pSize )
+    , graphSize_( pSize_ )
     , index_( indexSet_.size( 0 ), -1 )
     , indexCounter_( 0 )
   {
@@ -168,6 +175,7 @@ protected:
 
   void calculateGraph( const GridPartType& gridPart )
   {
+    graphSize_ = 0;
     typedef typename GridPartType :: template Codim< 0 > :: IteratorType Iterator;
     const Iterator end = gridPart.template end<0> ();
     // create graph 
@@ -228,6 +236,7 @@ protected:
              , center
 #endif
              ) ) ;
+      ++graphSize_; 
     }
     
     // set weight for faces (to be revised)
@@ -254,7 +263,7 @@ protected:
         {
           const int eid = getIndex( en );
           const int nid = getIndex( nb );
-          if( eid < nid ) 
+          //if( eid < nid ) 
           {
             db.edgeUpdate ( 
                 typename LoadBalancerType :: GraphEdge ( eid, nid, weight )
@@ -276,19 +285,33 @@ public:
 #ifdef ITERATORS_WITHOUT_MYALLOC
     if( pSize_ > 1 ) 
     {
-      if( useKway ) 
-        partition_ = db_.repartition( mpAccess_, DataBaseType :: METIS_PartGraphKway, pSize_ );
+      // if the graph size is small then the number of partitions 
+      // then the distribution is easy 
+      if( graphSize_ < pSize_ ) 
+      {
+        partition_.resize( graphSize_ );
+        for( size_t i=0; i<graphSize_; ++ i ) 
+          partition_[ i ] = i;
+      }
       else 
-        partition_ = db_.repartition( mpAccess_, DataBaseType :: METIS_PartGraphRecursive, pSize_ );
-      assert( partition_.size() > 0 );
+      {
+        if( useKway ) 
+          partition_ = db_.repartition( mpAccess_, DataBaseType :: METIS_PartGraphKway, pSize_ );
+        else 
+          partition_ = db_.repartition( mpAccess_, DataBaseType :: METIS_PartGraphRecursive, pSize_ );
+      }
+
       /*
+      assert( partition_.size() > 0 );
       std::vector< int > counter( pSize_ , 0 );
       for( size_t i =0; i<partition_.size(); ++i) 
       {
         std::cout << "part[" << i << "] = " << partition_[ i ]  << endl;
         ++counter[  partition_[ i ]  ];
       }
+      */
 
+      /*
       for( int i=0; i<pSize_; ++ i) 
         std::cout << counter[ i ] << " counter \n";
       */
@@ -305,33 +328,6 @@ public:
 
   }
 
-  bool checkPartition() const 
-  {
-    bool neu = false ;
-    {
-      const int np = mpAccess_.psize ();
-      // Kriterium, wann eine Lastneuverteilung vorzunehmen ist:
-      // 
-      // load  - eigene ElementLast
-      // mean  - mittlere ElementLast
-      // nload - Lastverh"altnis
-
-      double load = db_.accVertexLoad () ;
-      std :: vector < double > v (mpAccess_.gcollect (load)) ;
-      double mean = std::accumulate (v.begin (), v.end (), 0.0) / double (np) ;
-
-      for (std :: vector < double > :: iterator i = v.begin () ; i != v.end () ; ++i)
-        neu |= (*i > mean ? (*i > (ldbOver_ * mean) ? true : false) : 
-            (*i < (ldbUnder_ * mean) ? true : false)) ;
-    }
-
-    int val = (neu) ? 1 : 0; 
-    // get global maximum 
-    int v2  = mpAccess_.gmax( val ); 
-
-    return (v2 == 1) ? true : false;
-  }
-
   int getDestination( const int idx ) const 
   {
     return db_.getDestination ( idx ) ;
@@ -344,7 +340,7 @@ public:
 
   int getRank( const EntityType& entity ) const 
   {
-    //std::cout << "partSize = " << partition_.size()  << " idx = " << index( entity )  << std::endl;
+    //std::cout << "partSize = " << partition_.size()  << " idx = " << getIndex( entity )  << std::endl;
     assert( (int) partition_.size() > getIndex( entity ) );
     return partition_[ getIndex( entity ) ];
   }
