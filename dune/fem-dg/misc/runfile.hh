@@ -23,7 +23,7 @@ namespace Dune {
     size_t timesteps_;
 
     // write in milli seconds
-    inline size_t inMS(const double t) 
+    inline size_t inMS(const double t) const
     {
       return (size_t (t * 1e3));
     }
@@ -134,16 +134,18 @@ namespace Dune {
     }
 
   public:  
-    void flush() 
+    void flush() const
     {
       // if write is > 0 then create speedup file 
       if( writeRunFile_ )
       {
-        times_.push_back( elements_ );
-        const size_t size = times_.size();
-        std::vector< double > sumTimes ( times_ );
-        std::vector< double > maxTimes ( times_ );
-        std::vector< double > minTimes ( times_ );
+        std::vector< double > times( times_ );
+
+        times.push_back( elements_ );
+        const size_t size = times.size();
+        std::vector< double > sumTimes ( times );
+        std::vector< double > maxTimes ( times );
+        std::vector< double > minTimes ( times );
 
         // sum, max, and min for all procs 
         comm_.sum( &sumTimes[ 0 ], size );
@@ -152,7 +154,7 @@ namespace Dune {
         maxTimes.push_back( maxDofs_ );
         comm_.max( &maxTimes[ 0 ], maxTimes.size() );
 
-        maxDofs_ = maxTimes.back();
+        const double maxDofs = maxTimes.back();
         maxTimes.pop_back();
 
         if( comm_.rank() == 0 && timesteps_ > 0 ) 
@@ -185,7 +187,7 @@ namespace Dune {
             const char* commType = nonBlocking ? "asynchron" : "standard";
             file << "# Comm: " << commType << std::endl;
             file << "# Timesteps = " << timesteps_ << std::endl ;
-            file << "# Max DoFs (per element): " << maxDofs_ << std::endl;
+            file << "# Max DoFs (per element): " << maxDofs << std::endl;
             file << "# Elements / timestep: sum    max    min    average  " << std::endl;
             file << sumTimes[ size-1 ] << "  " << maxTimes[ size-1 ] << "  " << minTimes[ size-1 ] << "  " << ((size_t)averageElements) << std::endl;
             file << "# DG       ODE     ADAPT    LB      TIMESTEP    " << std::endl ;
