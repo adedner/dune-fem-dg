@@ -285,8 +285,8 @@ public:
 #ifdef ITERATORS_WITHOUT_MYALLOC
     if( pSize_ > 1 ) 
     {
-      // if the graph size is small then the number of partitions 
-      // then the distribution is easy 
+      // if the graph size is smaller then the number of partitions 
+      // the distribution is easy to compute 
       if( graphSize_ < pSize_ ) 
       {
         partition_.resize( graphSize_ );
@@ -300,6 +300,8 @@ public:
         else 
           partition_ = db_.repartition( mpAccess_, DataBaseType :: METIS_PartGraphRecursive, pSize_ );
       }
+
+      assert( int(partition_.size()) >= graphSize_ );
 
       /*
       assert( partition_.size() > 0 );
