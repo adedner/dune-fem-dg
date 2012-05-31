@@ -263,7 +263,7 @@ protected:
         {
           const int eid = getIndex( en );
           const int nid = getIndex( nb );
-          //if( eid < nid ) 
+          if( eid < nid ) 
           {
             db.edgeUpdate ( 
                 typename LoadBalancerType :: GraphEdge ( eid, nid, weight )
@@ -290,7 +290,7 @@ public:
       if( graphSize_ < pSize_ ) 
       {
         partition_.resize( graphSize_ );
-        for( size_t i=0; i<graphSize_; ++ i ) 
+        for( int i=0; i<graphSize_; ++ i ) 
           partition_[ i ] = i;
       }
       else 
