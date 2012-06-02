@@ -234,7 +234,7 @@ public:
     DataWriterType eocDataOutput( grid_, dataTuple, tp, EocDataOutputParameters( loop_ , dataPrefix() ) );
 
     // set initial data (and create ode solver)
-    initializeStep( tp ); /*@LST0E@*/ /*@\label{fv:stepperInitialize}@*/
+    initializeStep( tp );
 
     // start first time step with prescribed fixed time step 
     // if it is not 0 otherwise use the internal estimate
@@ -319,7 +319,7 @@ public:
         size_t grSize = gridSize();
         if( grid_.comm().rank() == 0 )
           std::cout << "step: " << counter << "  time = " << tnow << ", dt = " << ldt
-                    <<" grid size: " << grSize << std::endl;
+                    <<",  grid size: " << grSize << std::endl;
       }
 
       // write data 
