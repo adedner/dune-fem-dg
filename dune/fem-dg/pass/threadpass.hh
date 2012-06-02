@@ -137,10 +137,14 @@ namespace Dune {
     // cleanup possibly overwritten ghost values 
     void finalizeComm( const DestinationType& dest ) const 
     {
-      // make sure communication has been finished
-      assert( nonBlockingComm_ == 0 );
-      DeleteCommunicatedDofs< DestinationType > delDofs( dest.space() );
-      delDofs.deleteCommunicatedDofs( const_cast< DestinationType& > ( dest ) );
+      // only delete non-interior dofs in non-blocking mode 
+      if( nonBlockingCommunication() ) 
+      {
+        // make sure communication has been finished
+        assert( nonBlockingComm_ == 0 );
+        DeleteCommunicatedDofs< DestinationType > delDofs( dest.space() );
+        delDofs.deleteCommunicatedDofs( const_cast< DestinationType& > ( dest ) );
+      }
     }
   };
 
@@ -324,7 +328,6 @@ namespace Dune {
     using BaseType :: destination_ ;
     using BaseType :: destination ;
     using BaseType :: receiveCommunication ;
-    using BaseType :: finalizeCommunication ;
 
   public:  
     //! return number of elements visited on last application
@@ -420,9 +423,9 @@ namespace Dune {
         arg_  = &arg ; 
         dest_ = &dest ;
 
-        /////////////////////////////////////////////////
+        ////////////////////////////////////////////////////////////
         // BEGIN PARALLEL REGION, first stage, element integrals  
-        /////////////////////////////////////////////////
+        ////////////////////////////////////////////////////////////
         {
           // see threadhandle.hh 
           Fem :: ThreadHandle :: run( *this ); 
@@ -431,10 +434,10 @@ namespace Dune {
         // END PARALLEL REGION 
         /////////////////////////////////////////////////
 
-        /////////////////////////////////////////////////
+        ////////////////////////////////////////////////////////////
         // BEGIN PARALLEL REGION, second stage, surface integrals 
         // only for non-blocking communication 
-        /////////////////////////////////////////////////
+        ////////////////////////////////////////////////////////////
         if( nonBlockingComm_.nonBlockingCommunication() ) 
         {
           // mark second stage 
@@ -514,12 +517,13 @@ namespace Dune {
       // create NB checker 
       NBChecker nbChecker( iterators_ );
 
+      // Iterator is of same type as the space iterator 
+      typedef typename ThreadIteratorType :: IteratorType Iterator;
+
       if( nonBlockingComm_.nonBlockingCommunication() ) 
       {
         if ( computeElementIntegral ) 
         {
-          // Iterator is of same type as the space iterator 
-          typedef typename ThreadIteratorType :: IteratorType Iterator;
           const Iterator endit = iterators_.end();
           for (Iterator it = iterators_.begin(); it != endit; ++it)
           {
@@ -529,8 +533,6 @@ namespace Dune {
         }
         else 
         {
-          // Iterator is of same type as the space iterator 
-          typedef typename ThreadIteratorType :: IteratorType Iterator;
           const Iterator endit = iterators_.end();
           for (Iterator it = iterators_.begin(); it != endit; ++it)
           {
@@ -548,8 +550,6 @@ namespace Dune {
       }
       else 
       {
-        // Iterator is of same type as the space iterator 
-        typedef typename ThreadIteratorType :: IteratorType Iterator;
         const Iterator endit = iterators_.end();
         for (Iterator it = iterators_.begin(); it != endit; ++it)
         {
@@ -560,7 +560,7 @@ namespace Dune {
         assert( arg_ );
         assert( dest_ );
 
-        // finalize pass (make sure communication is done in case of thread parallel
+        // finalize pass (make sure communication is not done in case of thread parallel
         // program, this would give conflicts)
         myPass.finalize(*arg_, *dest_);
       }
