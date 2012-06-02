@@ -148,6 +148,16 @@ namespace Dune {
         reallyCompute_( true ),
         notThreadParallel_( notThreadParallel )
     {
+      // make sure that either a ghost layer or an overlap layer is there for 
+      // communication of the data, otherwise the scheme will not work
+      if( spc_.grid().comm().size() > 1 ) 
+      {
+        if( spc_.grid().ghostSize( 0 ) <= 0 && spc_.grid().overlapSize( 0 ) <= 0 ) 
+        {
+          DUNE_THROW(InvalidStateException, "No ghost or overlap layer present, which is needed for communication");
+        }
+      }
+
       valEnVec_.setMemoryFactor( 1.1 );
       valNbVec_.setMemoryFactor( 1.1 );
       valJacEn_.setMemoryFactor( 1.1 );
