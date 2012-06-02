@@ -50,13 +50,8 @@ void setupAdditionalVariables( const TimeProvider& tp,
   PrimRangeType prim(0.0);
   PrimRangeType prim_bg(0.0);
   
-  Iterator it    = space.begin();
-  Iterator endit = space.end();
-
-  // if empty grid, do nothing 
-  if( it == endit ) return ;
-  
-  for( ; it != endit ; ++it) 
+  const Iterator endit = space.end();
+  for( Iterator it = space.begin(); it != endit ; ++it) 
   {
     // get entity 
     const Entity& entity = *it ;
