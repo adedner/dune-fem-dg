@@ -224,8 +224,11 @@ public:
     // create adaptation manager 
     AdaptationManagerType adaptManager( grid_ , rp );
 
+    // only do checkpointing when number of EOC steps is 1 
+    const bool doCheckPointing = ( InitFemEoc :: eocSteps() == 1 ); 
+
     // restoreData if checkpointing is enabled (default is disabled)
-    const bool newStart = restoreFromCheckPoint( tp );
+    const bool newStart = ( doCheckPointing ) ? restoreFromCheckPoint( tp ) : false ;
 
     // tuple with additionalVariables 
     IOTupleType dataTuple( &solution, this->additionalVariables(), indicator() );
@@ -325,8 +328,12 @@ public:
       // write data 
       writeData( eocDataOutput, tp, eocDataOutput.willWrite( tp ) );
 
-      // possibly write check point (default is disabled)
-      writeCheckPoint( tp, adaptManager );
+      // only do checkpointing for loop 0, i.e. not in EOC calculations 
+      if( doCheckPointing ) 
+      {
+        // possibly write check point (default is disabled)
+        writeCheckPoint( tp, adaptManager );
+      }
 
       // some statistics
       mindt = (ldt<mindt) ? ldt : mindt;

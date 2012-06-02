@@ -156,7 +156,7 @@ struct StepperBase
   }
 
   // restore data if checkpoint file is given 
- virtual bool restoreFromCheckPoint( TimeProviderType& tp )
+  virtual bool restoreFromCheckPoint( TimeProviderType& tp )
   {
     // add solution to persistence manager for check pointing 
     Dune::persistenceManager << solution_ ;
