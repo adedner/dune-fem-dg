@@ -176,12 +176,8 @@ namespace Dune {
           {
             const double averageElements = sumTimes[ size - 1 ] / tasks ;
 
-            const bool nonBlocking = 
-#ifdef NSMOD_USE_SMP_PARALLEL
-              NonBlockingCommHelper :: nonBlockingCommunication() ;
-#else 
-              false ;
-#endif
+            // get information about communication type 
+            const bool nonBlocking = NonBlockingCommParameter :: nonBlockingCommunication() ;
 
             file << "# Procs = " << comm_.size() << " * " << maxThreads << " (MPI * threads)" << std::endl ;
             const char* commType = nonBlocking ? "asynchron" : "standard";

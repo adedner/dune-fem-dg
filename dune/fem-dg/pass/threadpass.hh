@@ -31,11 +31,16 @@
 
 namespace Dune {
 
-  struct NonBlockingCommHelper 
+  struct NonBlockingCommParameter 
   {
     static bool nonBlockingCommunication() 
     {
+      // non-blocking communication is only avaiable in smp mode
+#ifdef NSMOD_USE_SMP_PARALLEL
       return Parameter :: getValue< bool > ("femdg.nonblockingcomm", false );
+#else 
+      return false;
+#endif
     }
   };
 
@@ -88,7 +93,7 @@ namespace Dune {
   public:
     NonBlockingCommHandle() 
       : nonBlockingComm_( 0 ),
-        useNonBlockingComm_( NonBlockingCommHelper :: nonBlockingCommunication() )
+        useNonBlockingComm_( NonBlockingCommParameter :: nonBlockingCommunication() )
       {}
 
     NonBlockingCommHandle( const NonBlockingCommHandle& other ) 
