@@ -212,7 +212,6 @@ struct StepperBase
 
   // before first step, do data initialization 
   void initializeStep(TimeProviderType& tp) 
-    //, DiscreteFunctionType& U)
   {
     DiscreteFunctionType& U = solution();
 
@@ -222,19 +221,21 @@ struct StepperBase
 
     typedef typename InitialDataType :: TimeDependentFunctionType
       TimeDependentFunctionType;
-    //L2Projection< double, double,                         /*@\label{dg:l2pro0}@*/
-    //              TimeDependentFunctionType, DiscreteFunctionType > l2pro;
-    //l2pro( problem().fixedTimeFunction( tp.time() ), U ); /*@\label{dg:l2pro1}@*/
 
-    const bool blockingComm = ! Parameter :: getValue< bool > ("femdg.nonblockingcomm",  false );
-    DGL2ProjectionImpl :: project( problem().fixedTimeFunction( tp.time() ),
-                                   U, 
-                                   2 * U.space().order(), 
-                                   blockingComm );
+    // communication is needed when blocking communication is used 
+    // but has to be avoided otherwise (because of implicit solver)
+    const bool doCommunicate = ! NonBlockingCommParameter :: nonBlockingCommunication ();
+
+    // create L2 projection 
+    Fem :: L2Projection< TimeDependentFunctionType, 
+        DiscreteFunctionType > l2pro( 2 * U.space().order(), doCommunicate );
+
+    // L2 project initial data 
+    l2pro( problem().fixedTimeFunction( tp.time() ), U ); 
 
     // ode.initialize applies the DG Operator once to get an initial
     // estimate on the time step. This does not change the initial data u.
-    odeSolver_->initialize( U );                               /*@\label{dg:odeinit}@*/
+    odeSolver_->initialize( U );                
   }
 
 
