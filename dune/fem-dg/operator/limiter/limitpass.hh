@@ -938,7 +938,7 @@ namespace Dune {
       matrixCacheVec_( gridPart_.grid().maxLevel() + 1 ),
       localMassMatrix_( spc_ , volumeQuadOrd_ ),
       adaptive_((AdaptationMethodType(gridPart_.grid())).adaptive()),
-      cartesianGrid_( CheckCartesian::check( gridPart_ ) ),
+      cartesianGrid_( Fem::CheckCartesian::check( gridPart_ ) ),
       stepTime_(3, 0.0),
       calcIndicator_(true),
       reconstruct_(false),
@@ -1278,7 +1278,7 @@ namespace Dune {
           if( ! StructuredGrid && cartesian ) 
           {
             // check whether this element is really cartesian 
-            cartesian &= ( ! CheckCartesian::checkIntersection(intersection) );
+            cartesian &= ( ! Fem::CheckCartesian::checkIntersection(intersection) );
           }
 
           DomainType lambda( 1 );
