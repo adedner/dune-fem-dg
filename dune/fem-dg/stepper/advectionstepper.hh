@@ -67,8 +67,8 @@ struct Stepper
 
   Stepper(GridType& grid) :
     BaseType( grid ),
-    dgAdvectionOperator_(grid_, convectionFlux_),
-    dgIndicator_( grid_, convectionFlux_ )
+    dgAdvectionOperator_(gridPart_, convectionFlux_),
+    dgIndicator_( gridPart_, convectionFlux_ )
   {
   }                                                                        /*@LST1E@*/
 

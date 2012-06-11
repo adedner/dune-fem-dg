@@ -47,11 +47,11 @@ namespace Dune {
   {
     typedef CDGAdvectionDiffusionTraits<Model, NumFlux, diffFluxId, polOrd, true, true> Traits;
     typedef DGAdvectionDiffusionOperatorBase< Traits >  BaseType;
-    typedef typename BaseType :: GridType  GridType;
+    typedef typename BaseType :: GridPartType  GridPartType;
     typedef typename BaseType :: NumFluxType  NumFluxType;
 
-    DGAdvectionDiffusionOperator( GridType& grid , const NumFluxType& numf ) 
-      : BaseType( grid, numf )
+    DGAdvectionDiffusionOperator( GridPartType& gridPart , const NumFluxType& numf ) 
+      : BaseType( gridPart, numf )
     {}
 
     std::string description() const
@@ -84,11 +84,11 @@ namespace Dune {
   {
     typedef CDGAdvectionDiffusionTraits<Model, NumFlux, diffFluxId, polOrd, true, false> Traits;
     typedef DGAdvectionDiffusionOperatorBase< Traits >  BaseType;
-    typedef typename BaseType :: GridType  GridType;
+    typedef typename BaseType :: GridPartType  GridPartType;
     typedef typename BaseType :: NumFluxType  NumFluxType;
 
-    DGAdvectionOperator( GridType& grid , const NumFluxType& numf ) 
-      : BaseType( grid, numf )
+    DGAdvectionOperator( GridPartType& gridPart , const NumFluxType& numf ) 
+      : BaseType( gridPart, numf )
     {}
 
     std::string description() const
@@ -122,15 +122,15 @@ namespace Dune {
   public:
     typedef CDGAdvectionDiffusionTraits<Model, NumFlux, diffFluxId, polOrd, false, true> Traits;
     typedef DGAdvectionDiffusionOperatorBase< Traits >  BaseType;
-    typedef typename BaseType :: GridType  GridType;
+    typedef typename BaseType :: GridPartType  GridPartType;
     typedef typename BaseType :: NumFluxType  NumFluxType;
 
   private:
     using BaseType::discreteModel_;
 
   public:  
-    DGDiffusionOperator( GridType& grid , const NumFluxType& numf ) 
-      : BaseType( grid, numf )
+    DGDiffusionOperator( GridPartType& gridPart , const NumFluxType& numf ) 
+      : BaseType( gridPart, numf )
     {}
 
     std::string description() const
@@ -182,11 +182,11 @@ namespace Dune {
   {
     typedef CDGAdaptationIndicatorTraits< Model, NumFlux, diffFluxId, polOrd, advection, diffusion > Traits ;
     typedef DGAdvectionDiffusionOperatorBase< Traits >  BaseType;
-    typedef typename BaseType :: GridType  GridType;
+    typedef typename BaseType :: GridPartType  GridPartType;
     typedef typename BaseType :: NumFluxType  NumFluxType;
 
-    DGAdaptationIndicatorOperator( GridType& grid , const NumFluxType& numf ) 
-      : BaseType( grid, numf )
+    DGAdaptationIndicatorOperator( GridPartType& gridPart , const NumFluxType& numf ) 
+      : BaseType( gridPart, numf )
     {}
 
     std::string description() const
@@ -308,12 +308,11 @@ namespace Dune {
     }; 
 
   public:
-    DGLimitedAdvectionOperator( GridType& grid , const NumFluxType& numf ) 
-      : grid_( grid )
-      , model_( numf.model() )
+    DGLimitedAdvectionOperator( GridPartType& gridPart , const NumFluxType& numf ) 
+      : model_( numf.model() )
       , numflux_( numf )
-      , gridPart_( grid_ )
-      , space_(gridPart_)
+      , gridPart_( gridPart )
+      , space_( gridPart_ )
       , limiterSpace_( gridPart_ )
       , uTmp_( (polOrd > 0) ? (new LimiterDestinationType("limitTmp", limiterSpace_)) : 0 )
       , fvSpc_( gridPart_ )
@@ -430,10 +429,9 @@ namespace Dune {
     }
 
   private:
-    GridType&           grid_;
     const Model&        model_;
     const NumFluxType&  numflux_;
-    GridPartType        gridPart_;
+    GridPartType&       gridPart_;
     SpaceType           space_;
     LimiterSpaceType    limiterSpace_;
     mutable LimiterDestinationType* uTmp_;

@@ -62,6 +62,7 @@ struct Stepper
             DiffusionFluxId, polynomialOrder, true, true >  DGIndicatorType;
 
   using BaseType :: grid_;
+  using BaseType :: gridPart_;
   using BaseType :: space;
   using BaseType :: convectionFlux_ ;
   using BaseType :: problem;
@@ -70,12 +71,12 @@ struct Stepper
   using BaseType :: adaptationParameters_;
   using BaseType :: adaptive_ ;
 
-  Stepper(GridType& grid) :
+  Stepper( GridType& grid ) :
     BaseType( grid ),
-    dgOperator_(grid_, convectionFlux_),
-    dgAdvectionOperator_(grid_, convectionFlux_),
-    dgDiffusionOperator_(grid_, convectionFlux_),
-    dgIndicator_( grid_, convectionFlux_ )
+    dgOperator_( gridPart_, convectionFlux_ ),
+    dgAdvectionOperator_( gridPart_, convectionFlux_ ),
+    dgDiffusionOperator_( gridPart_, convectionFlux_ ),
+    dgIndicator_( gridPart_, convectionFlux_ )
   {
   }                                                                        /*@LST1E@*/
 

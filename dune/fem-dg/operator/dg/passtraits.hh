@@ -24,6 +24,7 @@ namespace Dune {
   public:
     typedef typename Model :: Traits                                 ModelTraits;
     typedef typename ModelTraits :: GridPartType                     GridPartType;
+    typedef typename ModelTraits :: HostGridPartType                 HostGridPartType;
     typedef typename GridPartType :: GridType                        GridType;
     typedef typename GridType :: ctype                               ctype;
     static const int dimDomain = Model :: Traits :: dimDomain;
@@ -35,7 +36,9 @@ namespace Dune {
 
     // Allow generalization to systems
     typedef FunctionSpace< ctype, double, dimDomain, dimRange >      FunctionSpaceType;
-    typedef DiscontinuousGalerkinSpace< FunctionSpaceType,
+    typedef LagrangeDiscontinuousGalerkinSpace <
+//    typedef DiscontinuousGalerkinSpace< 
+                                        FunctionSpaceType,
                                         GridPartType, polOrd,
                                         CachingStorage >             DiscreteFunctionSpaceType;
     //typedef LegendreDiscontinuousGalerkinSpace< FunctionSpaceType,

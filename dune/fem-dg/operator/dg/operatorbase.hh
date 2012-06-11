@@ -76,11 +76,10 @@ namespace Dune {
     typedef typename DiscreteModelType :: AdaptationHandlerType  AdaptationHandlerType;
 
   public:
-    DGAdvectionDiffusionOperatorBase( GridType& grid , const NumFluxType& numf ) 
-      : grid_( grid )
-      , model_( numf.model() )
+    DGAdvectionDiffusionOperatorBase( GridPartType& gridPart , const NumFluxType& numf ) 
+      : model_( numf.model() )
       , numflux_( numf )
-      , gridPart_( grid_ )
+      , gridPart_( gridPart )
       , space_( gridPart_ )
       , discreteModel_( model_, numflux_, DiffusionFluxType( gridPart_, model_ ) )
       , startPass_()
@@ -171,10 +170,9 @@ namespace Dune {
     virtual std::string description() const = 0;
 
   protected:
-    GridType& grid_;
     const Model& model_;
     const NumFluxType& numflux_;
-    GridPartType gridPart_;
+    GridPartType& gridPart_;
     AdvDFunctionSpaceType space_;
     DiscreteModelType discreteModel_;
     Pass0Type startPass_;
