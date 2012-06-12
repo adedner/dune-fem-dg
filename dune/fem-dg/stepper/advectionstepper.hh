@@ -58,6 +58,7 @@ struct Stepper
             DiffusionFluxId, polynomialOrder, true, false >  DGIndicatorType;
 
   using BaseType :: grid_;
+  using BaseType :: gridPart_;
   using BaseType :: convectionFlux_ ;
   using BaseType :: problem;
   using BaseType :: adaptationHandler_ ;
@@ -70,7 +71,7 @@ struct Stepper
     dgAdvectionOperator_(gridPart_, convectionFlux_),
     dgIndicator_( gridPart_, convectionFlux_ )
   {
-  }                                                                        /*@LST1E@*/
+  }
 
   virtual OdeSolverType* createOdeSolver(TimeProviderType& tp) 
   {
