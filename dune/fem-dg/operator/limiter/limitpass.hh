@@ -1812,11 +1812,8 @@ namespace Dune {
         {
           if( intersection.neighbor() ) 
           {
-            // check whether we have an inflow intersection or not 
-            typedef TwistUtility<GridType> TwistUtilityType;
-        
             // conforming case 
-            if( TwistUtilityType::conforming(gridPart_.grid(),intersection) )
+            if( intersection.conforming() ) 
             {
               FaceQuadratureType faceQuadInner(gridPart_,intersection, faceQuadOrd_, FaceQuadratureType::INSIDE);
               if( ! checkPhysicalQuad( faceQuadInner, uEn ) ) return false;
@@ -2321,9 +2318,6 @@ namespace Dune {
         const double vol = interGeo.volume();
         currVol += vol;
 
-        // check whether we have an inflow intersection or not 
-        typedef TwistUtility<GridType> TwistUtilityType;
-        
         const int quadOrd = discreteModel_.hasPhysical() ? faceQuadOrd_ : 0;
         
         // flag to trigger inflow intersection 
