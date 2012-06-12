@@ -30,10 +30,9 @@ void setupAdditionalVariables( const TimeProvider& tp,
   typedef typename PrimDiscreteFunctionType::Traits::DiscreteFunctionSpaceType 
     PrimDiscreteFunctionSpaceType;
   typedef typename ConsDiscreteFunctionSpaceType::Traits::GridPartType GridPartType;
-  typedef typename ConsDiscreteFunctionSpaceType::Traits::GridType GridType;
-  typedef typename GridType :: template Codim<0> :: Entity   Entity;
-  typedef typename GridType :: template Codim<0> :: Geometry Geometry;
   typedef typename ConsDiscreteFunctionSpaceType::Traits::IteratorType Iterator;
+  typedef typename Iterator :: Entity Entity;
+  typedef typename Entity :: Geometry Geometry;
   typedef typename ConsDiscreteFunctionSpaceType::DomainType DomainType;
   typedef typename ConsDiscreteFunctionSpaceType::RangeType ConsRangeType;
   typedef typename PrimDiscreteFunctionSpaceType::RangeType PrimRangeType;
