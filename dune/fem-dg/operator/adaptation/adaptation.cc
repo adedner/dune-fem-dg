@@ -33,7 +33,7 @@ AdaptationHandler (GridType &grid,
   const bool verboseOutput = Parameter :: verbose() ;
 
   // set default values
-  initialTheta_ = 0.25;
+  initialTheta_ = 0.995;
   
   maxLevFlag_ = 1;
 
@@ -257,8 +257,6 @@ AdaptationHandler<GridImp, FunctionSpace> ::
 getLocalTolerance () const
 {
   const double localInTimeTol = getLocalInTimeTolerance ();
-  double globalErr = getMaxEstimator(); 
-
   const double globalNumberElements = globalNumberOfElements();
   const double elementsOnMaxLevel = maxLevelCounter_[finestLevel_]; 
   
@@ -303,6 +301,9 @@ getLocalTolerance () const
 
   if( verbose() )
   {
+    // this requires global communication 
+    const double globalErr = getMaxEstimator(); 
+
     std::cout << "Level counters: ";
     for(size_t i=0; i<maxLevelCounter_.size(); ++i ) 
     {
