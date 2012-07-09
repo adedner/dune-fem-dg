@@ -95,10 +95,14 @@ struct AdaptationParameters
     return markStrategy_ == 2;
   }
 
+  //! return true if aposteriori indicator is enabled 
   virtual bool aposterioriIndicator() const 
   {
     return markStrategy_ == 1;
   }
+
+  //! return true if verbosity mode is enabled 
+  virtual bool verbose () const { return Parameter :: getValue<bool>("fem.adaptation.verbose", false ); }
 };
 
 // class for the organization of the adaptation prozess
@@ -242,7 +246,24 @@ public:
     adapt();
   }
 
-private:
+  //! return true if verbosity mode is enabled 
+  bool verbose () const { return verbose_; }
+
+protected:
+  double volumeOfDomain () const;
+
+  double getMaxNumberOfElements () const   
+  {
+    double maxElem = grid_.size( 0 );
+    maxElem = grid_.comm().sum( maxElem );
+    
+    double factor = std::pow( double(GridType::dimension), 2.0 );
+    double res = maxElem * factor * ( finestLevel_ - 1 );
+
+    std::cout << "Maximal number of elements allowed: " << res << std::endl;
+    return res;
+  }
+
   //! grid part, has grid and ind set 
   GridType&  grid_;
   GridPartType gridPart_;
@@ -263,7 +284,6 @@ private:
   double coarsenTheta_;
   double initialTheta_;
 
-  double alphaSigSet_;
   double tolSigSet_;
   double tolSigSetInv_;
   double tolMaxLevSet_;
@@ -277,11 +297,15 @@ private:
   int coarsestLevel_; 
 
   int globalNumElements_;
+  double maxNumberOfElementsAllowed_ ;
+
   mutable int localNumElements_;
 
   double endTime_;
 
   mutable std::vector<int> maxLevelCounter_;
+
+  const bool verbose_ ;
 };
 
 } // end namespace Dune 

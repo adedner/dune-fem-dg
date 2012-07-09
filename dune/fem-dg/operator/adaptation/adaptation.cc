@@ -24,16 +24,17 @@ AdaptationHandler (GridType &grid,
   , finestLevel_( param.finestLevel( DGFGridInfo<GridType>::refineStepsForHalf() ) )
   , coarsestLevel_( param.coarsestLevel( DGFGridInfo<GridType>::refineStepsForHalf() ) )
   , globalNumElements_ (0)
+  , maxNumberOfElementsAllowed_( getMaxNumberOfElements() )  
   , localNumElements_(0)
   , endTime_( param.endTime() )  
   , maxLevelCounter_()
+  , verbose_( Parameter :: verbose() && param.verbose() )
 {
   const bool verboseOutput = Parameter :: verbose() ;
 
   // set default values
-  initialTheta_ = 0.;
+  initialTheta_ = 0.25;
   
-  alphaSigSet_ = 0.01;
   maxLevFlag_ = 1;
 
   resetStatus();
@@ -42,14 +43,43 @@ AdaptationHandler (GridType &grid,
     std::cout << "AdaptationHandler created! \n";
   }
 
+  /*
   // calculate global min of grid width to scale tolerance  
   double gridWidth = GridWidth::calcGridWidth( gridPart_ );
   
   // get global minimum of macro grid width 
   double macroGridWidth = grid_.comm().min( gridWidth );
 
-  // scale tolerance 
-  globalTolerance_ *= macroGridWidth;
+  // globalTolerance_ *= macroGridWidth;
+  */
+
+  // scale tolerance with domain volume 
+  globalTolerance_ *= volumeOfDomain();
+}
+
+//! clear indicator 
+template <class GridImp, class FunctionSpace>
+double 
+AdaptationHandler<GridImp, FunctionSpace> ::  
+volumeOfDomain() const
+{
+  double volume = 0;
+  // type of iterator, i.e. leaf iterator 
+  typedef typename GridPartType :: template Codim< 0 > :: IteratorType IteratorType;
+  
+  const IteratorType endit = gridPart_.template end< 0 > ();
+  for (IteratorType it = gridPart_.template begin< 0 > (); 
+       it != endit; ++it)
+  {
+    // entity 
+    const GridEntityType& entity = *it;
+
+    // sum up the volume 
+    volume += entity.geometry().volume();
+  }
+
+  // return volume of computational domain 
+  return grid_.comm().sum( volume );
 }
 
 //! clear indicator 
@@ -60,7 +90,6 @@ clearIndicator()
 {
   // set all entries to zero
   indicator_.clear();
-  return ;
 }
 
 //! initialize localIndicator with en 
@@ -163,7 +192,7 @@ getSumEstimator() const
   }
 
   // global sum of estimator 
-  sum = grid_.comm().sum(sum);
+  sum = grid_.comm().sum( sum );
   return sum;
 }
 
@@ -204,7 +233,7 @@ localNumberOfElements () const
 }
 
 template <class GridImp, class FunctionSpace>
-int  
+int   
 AdaptationHandler<GridImp, FunctionSpace> ::  
 globalNumberOfElements () const 
 {
@@ -229,38 +258,63 @@ getLocalTolerance () const
 {
   const double localInTimeTol = getLocalInTimeTolerance ();
   double globalErr = getMaxEstimator(); 
+
+  const double globalNumberElements = globalNumberOfElements();
+  const double elementsOnMaxLevel = maxLevelCounter_[finestLevel_]; 
   
   /*
-  if((double) maxLevelCounter_[finestLevel_] < 
-        0.1 * ((double) globalNumberOfElements()))
+  if( elementsOnMaxLevel < 
+        0.1 * globalNumberElements ) 
   {
-    globalTolerance_ *= 0.1;
+    globalTolerance_ *= 0.01;
   }
-  else if( (double) maxLevelCounter_[finestLevel_] > 
-            0.5 * ((double) globalNumberOfElements()))
+  else if( elementsOnMaxLevel > 
+           0.5 * globalNumberElements )
   {
-    globalTolerance_ *= 10.0;
+    globalTolerance_ *= 1.05;
   }
   */
 
-  const double globalNumElem = globalNumberOfElements();
+  /*
+  double factor = 1.0 ;
 
-  double localTol = localInTimeTol / globalNumElem;
-  //double localTol = globalTolerance_ / globalNumElem ;
+  if( globalNumberElements > 1.25 * maxNumberOfElementsAllowed_ ) 
+  {
+    // (tanh( ( 2.0*pi * x - pi))+1)*0.5
+    double x = globalNumberElements / maxNumberOfElementsAllowed_ ;
+    //factor = 1.0 + 0.5 * (std::sin(M_PI*x + 0.5*M_PI) + 1.0);
+    factor = 1.0 + 0.5 * (std::tanh(M_PI*x - M_PI) + 1.0);
+    std::cout << factor << " factor|percent " << x << std::endl;
+  }
+  else if ( globalNumberElements < 0.25 * maxNumberOfElementsAllowed_ )
+  {
+    double x = globalNumberElements / maxNumberOfElementsAllowed_ ;
+    //factor = 0.5 * (std::sin(M_PI*x + 0.5*M_PI) + 1.0);
+    factor = 0.5 * (std::tanh(M_PI*x - M_PI) + 1.0);
+    std::cout << factor << " factor|percent " << x << std::endl;
+  }
 
-  if( Parameter :: verbose() )
+  // adjust global tolerance such that maximal number of elements 
+  // is kept more or less constant 
+  globalTolerance_ *= factor ;
+  */
+
+  double localTol = localInTimeTol / globalNumberElements ;
+
+  if( verbose() )
   {
     std::cout << "Level counters: ";
     for(size_t i=0; i<maxLevelCounter_.size(); ++i ) 
     {
-      double percent = maxLevelCounter_[ i ]/ globalNumElem ;
+      double percent = maxLevelCounter_[ i ]/ globalNumberElements ;
       std::cout << "Level[ " << i << " ] = " << percent << "  ";
     }
     std::cout << std::endl;
     std::cout << "   LocalEst_max = " <<  globalErr
         << "   Tol_local = " << localTol 
         << "   Tol = " << localInTimeTol 
-        << "   Num El: " <<  globalNumElem << "\n";
+        << "   GlobalTol = " << globalTolerance_  
+        << "   Num El: " <<  globalNumberElements << "\n";
   }
 
   return localTol;
@@ -347,7 +401,7 @@ resetStatus()
   globalNumElements_ = countElements();
 
   // output new number of elements 
-  if( Parameter :: verbose () )
+  if( verbose() )
   {
     std::cout << "   Adaptation: Num El = " << globalNumElements_ << "\n";
   }
@@ -355,7 +409,7 @@ resetStatus()
 
   //! count number of overall leaf entities 
 template <class GridImp, class FunctionSpace>
-int  
+int 
 AdaptationHandler<GridImp, FunctionSpace> ::  
 countElements() const 
 {
@@ -367,7 +421,7 @@ countElements() const
     maxLevelCounter_[i] = 0;
   
   // count elements 
-  int count = 0;
+  size_t count = 0;
   // type of iterator, i.e. leaf iterator 
   typedef typename GridPartType :: template Codim< 0 > :: IteratorType IteratorType;
   
