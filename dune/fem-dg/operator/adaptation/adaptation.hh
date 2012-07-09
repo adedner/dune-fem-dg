@@ -218,15 +218,18 @@ public:
   //! get local in time tolerance  
   double getLocalInTimeTolerance () const ;
 
+  //! get initial tolerance 
+  double getInitialTolerance () const;
+
   //! get local tolerance 
   double getLocalTolerance () const;
 
   // --markEntities
-  void markEntities ();
+  void markEntities ( const bool initialAdapt );
 
   //- --adapt 
   template <class AdaptationManagerType> 
-  void adapt( AdaptationManagerType& );
+  void adapt( AdaptationManagerType&, const bool initialAdapt = false );
 
   //! reset status of indicator and count elements 
   void resetStatus ();
@@ -287,11 +290,7 @@ protected:
   double tolSigSet_;
   double tolSigSetInv_;
   double tolMaxLevSet_;
-  int    numSigSet_;
   int    numMaxLev_;
-  int    maxLevFlag_;
-  double maxLevAlpha_;
-  double maxLevBeta_;
 
   int finestLevel_; 
   int coarsestLevel_; 

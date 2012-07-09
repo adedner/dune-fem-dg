@@ -32,11 +32,9 @@ AdaptationHandler (GridType &grid,
 {
   const bool verboseOutput = Parameter :: verbose() ;
 
-  // set default values
-  initialTheta_ = 0.995;
+  // make intial error count as 1 percent of the total error
+  initialTheta_ = 0.01;
   
-  maxLevFlag_ = 1;
-
   resetStatus();
   if( verboseOutput )
   {
@@ -254,6 +252,19 @@ getLocalInTimeTolerance () const
 template <class GridImp, class FunctionSpace>
 double  
 AdaptationHandler<GridImp, FunctionSpace> ::  
+getInitialTolerance () const
+{
+  const double globalNumberElements = globalNumberOfElements();
+  const double dt = timeProvider_.deltaT();
+  const double localInTimeTol = initialTheta_ * globalTolerance_ * globalTolerance_* (dt / endTime_);
+  const double localTol = localInTimeTol / globalNumberElements ;
+  std::cout << "Return intial tol " << localTol << std::endl;
+  return localTol;
+}
+
+template <class GridImp, class FunctionSpace>
+double  
+AdaptationHandler<GridImp, FunctionSpace> ::  
 getLocalTolerance () const
 {
   const double localInTimeTol = getLocalInTimeTolerance ();
@@ -325,10 +336,10 @@ getLocalTolerance () const
 template <class GridImp, class FunctionSpace>
 void 
 AdaptationHandler<GridImp, FunctionSpace> ::  
-markEntities ()
+markEntities ( const bool initialAdapt )
 {
   // get local refine tolerance 
-  const double refineTol = getLocalTolerance();
+  const double refineTol = ( initialAdapt ) ? getInitialTolerance() : getLocalTolerance();
   // get local coarsen tolerance 
   const double coarsenTol = refineTol * coarsenTheta_;
 
@@ -372,13 +383,13 @@ markEntities ()
 template <class GridImp, class FunctionSpace>
 template <class AdaptationManagerType>
 void AdaptationHandler<GridImp, FunctionSpace> ::  
-adapt( AdaptationManagerType& am )
+adapt( AdaptationManagerType& am, const bool initialAdapt )
 {
   // if adaptation is enabled 
   if( am.adaptive() )
   {
     // mark all entities depending on error
-    markEntities(); 
+    markEntities( initialAdapt ); 
 
     // do adaptation 
     am.adapt();
