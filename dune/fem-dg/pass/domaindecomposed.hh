@@ -50,6 +50,8 @@ namespace Dune {
       typedef typename FilterType :: ThreadArrayType ThreadArrayType;
       ThreadArrayType threadNum_;
 #endif
+      const bool verbose_ ;
+
     public:  
       //! contructor creating thread iterators 
       explicit DomainDecomposedIterator( const SpaceType& spc )
@@ -59,6 +61,8 @@ namespace Dune {
         , sequence_( -1 )  
         , filteredGridParts_( Fem :: ThreadManager :: maxThreads() )
 #endif
+        , verbose_( Parameter::verbose() && 
+                    Parameter::getValue<bool>("fem.parallel.verbose", false ) )
       {
 #ifdef USE_SMP_PARALLEL
         for(int thread=0; thread < Fem :: ThreadManager :: maxThreads(); ++thread )
@@ -129,7 +133,7 @@ namespace Dune {
             // update sequence number 
             sequence_ = space_.sequence();
 
-            if( Parameter :: verbose() )
+            if( verbose_ )
             {
               std::cout << "DomainDecomposedIterator: sequence = " << sequence_ << " size = " << numInteriorElems << std::endl;
               for(size_t i = 0; i<maxThreads; ++i ) 
