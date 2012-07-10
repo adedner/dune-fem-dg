@@ -90,7 +90,17 @@ namespace Dune {
 
     void setAdaptationHandler( AdaptationHandlerType& adHandle, double weight = 1 ) 
     {
-      discreteModel_.setAdaptationHandler( adHandle, weight );
+#ifdef NSMOD_USE_SMP_PARALLEL
+      // also set adaptation handler to the discrete models in the thread pass 
+      {
+        pass1_.setAdaptationHandler( adHandle, weight );
+      }
+#else
+      {
+        // set adaptation handle to discrete model 
+        discreteModel_.setAdaptationHandler( adHandle, weight );
+      }
+#endif
     }
 
     void setTime(const double time) {

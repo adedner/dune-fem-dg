@@ -21,6 +21,8 @@ AdaptationHandler ( GridType &grid,
   , timeProvider_(timeProvider)
   , globalTolerance_ ( param.refinementTolerance() )
   , coarsenTheta_( param.coarsenPercentage() )
+  // make intial error count as 1 percent of the total error
+  , initialTheta_( 0.01 )
   , finestLevel_( param.finestLevel( DGFGridInfo<GridType>::refineStepsForHalf() ) )
   , coarsestLevel_( param.coarsestLevel( DGFGridInfo<GridType>::refineStepsForHalf() ) )
   , globalNumElements_ (0)
@@ -31,9 +33,6 @@ AdaptationHandler ( GridType &grid,
 {
   const bool verboseOutput = Parameter :: verbose() ;
 
-  // make intial error count as 1 percent of the total error
-  initialTheta_ = 0.01;
-  
   resetStatus();
   if( verboseOutput )
   {
@@ -52,6 +51,28 @@ AdaptationHandler ( GridType &grid,
 
   // scale tolerance with domain volume 
   globalTolerance_ *= volumeOfDomain();
+}
+
+//! constructor
+template <class GridImp, class FunctionSpace>
+AdaptationHandler<GridImp, FunctionSpace> ::  
+AdaptationHandler ( const AdaptationHandler& other ) 
+  : grid_( other.grid_ )
+  , gridPart_( grid_)
+  , indicator_( other.indicator_ ) 
+  , enIndicator_( 0 )
+  , nbIndicator_( 0 )
+  , timeProvider_( other.timeProvider_ )
+  , globalTolerance_ ( other.globalTolerance_ )
+  , coarsenTheta_( other.coarsenTheta_ )
+  , finestLevel_( other.finestLevel_ ) 
+  , coarsestLevel_( other.coarsestLevel_ )
+  , globalNumElements_ ( other.globalNumElements_ )
+  , localNumElements_( other.localNumElements_ )
+  , endTime_( other.endTime_ )  
+  , maxLevelCounter_( other.maxLevelCounter_ )
+  , verbose_( other.verbose_ )
+{
 }
 
 //! clear indicator 
@@ -115,6 +136,15 @@ setNeighbor( const Entity& neighbor )
   nbIndicator_ = & indicator_[ gridNeighbor ];
 }
   
+//! initialize localIndicator with en 
+template <class GridImp, class FunctionSpace>
+void 
+AdaptationHandler<GridImp, FunctionSpace> ::  
+resetNeighbor()
+{
+  nbIndicator_ = 0 ;
+}
+  
 //! add value to local indicator, use setEntity before 
 template <class GridImp, class FunctionSpace>
 void 
@@ -143,8 +173,10 @@ void
 AdaptationHandler<GridImp, FunctionSpace> ::  
 addToNeighborIndicator(const FullRangeType& error, const double h )
 {
-  assert( nbIndicator_ );
-  addToLocalIndicator( *nbIndicator_, error, h );
+  if( nbIndicator_ )
+  {
+    addToLocalIndicator( *nbIndicator_, error, h );
+  }
 }
 
 template <class GridImp, class FunctionSpace>

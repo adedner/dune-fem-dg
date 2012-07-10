@@ -148,7 +148,6 @@ namespace Dune {
     }
   };
 
-
   template < class InnerPass, bool nonblockingcomm = true > 
   class ThreadPass :
     public LocalPass< typename InnerPass :: DiscreteModelType,
@@ -212,6 +211,9 @@ namespace Dune {
     //typedef Fem::ThreadIterator< DiscreteFunctionSpaceType > ThreadIteratorType;
     typedef Fem::DomainDecomposedIteratorStorage< DiscreteFunctionSpaceType > ThreadIteratorType;
 
+    // type of adaptation handler 
+    typedef typename DiscreteModelType :: AdaptationHandlerType AdaptationHandlerType ;
+
   public:
     //- Public methods
     //! Constructor
@@ -261,6 +263,15 @@ namespace Dune {
         delete problems_[ i ];
       }
     }
+
+    void setAdaptationHandler( AdaptationHandlerType& adHandle, double weight ) 
+    {
+      const int maxThreads = Fem::ThreadManager::maxThreads();
+      for(int thread=0; thread<maxThreads; ++thread)
+      {
+        problems_[ thread ]->setAdaptationHandler( adHandle, iterators_.filter( thread ), weight );
+      }
+    }
    
     //! print tex info
     void printTexInfo(std::ostream& out) const 
@@ -293,9 +304,10 @@ namespace Dune {
       mutable int counter_; 
       mutable int nonEqual_;
 #endif
-      NBChecker( const ThreadIteratorType& st ) 
+      NBChecker( const ThreadIteratorType& st, 
+                 const int myThread = Fem::ThreadManager::thread() ) 
         : storage_( st ),
-          myThread_( Fem::ThreadManager::thread() )
+          myThread_( myThread ) 
 #ifndef NDEBUG
           , counter_( 0 )
           , nonEqual_( 0 )
@@ -347,8 +359,12 @@ namespace Dune {
     //! overload compute method to use thread iterators 
     void compute(const ArgumentType& arg, DestinationType& dest) const
     {
-      // clear destination 
-      dest.clear();
+      const bool updateAlso = (& dest != 0);
+      if( updateAlso ) 
+      {
+        // clear destination 
+        dest.clear();
+      }
 
       // reset number of elements 
       numberOfElements_ = 0;
@@ -483,7 +499,7 @@ namespace Dune {
       setMaxTimeSteps();
 
       // if useNonBlockingComm_ is disabled then communicate here
-      if( ! nonBlockingComm_.nonBlockingCommunication() ) 
+      if( ! nonBlockingComm_.nonBlockingCommunication() && updateAlso ) 
       {
         // communicate calculated function 
         dest.communicate();
@@ -515,7 +531,7 @@ namespace Dune {
       const bool computeElementIntegral = passStage_[ thread ];
 
       // create NB checker 
-      NBChecker nbChecker( iterators_ );
+      NBChecker nbChecker( iterators_, thread );
 
       // Iterator is of same type as the space iterator 
       typedef typename ThreadIteratorType :: IteratorType Iterator;
@@ -541,7 +557,9 @@ namespace Dune {
           }
 
           assert( arg_ );
-          assert( dest_ );
+          // dest can also be null pointer 
+          // when the operator is evaluated only 
+          // for evaluation of the estimators 
 
           // finalize pass (make sure communication is done in case of thread parallel
           // program, this would give conflicts)
@@ -558,7 +576,9 @@ namespace Dune {
         }
 
         assert( arg_ );
-        assert( dest_ );
+        // dest can also be null pointer 
+        // when the operator is evaluated only 
+        // for evaluation of the estimators 
 
         // finalize pass (make sure communication is not done in case of thread parallel
         // program, this would give conflicts)

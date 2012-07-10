@@ -167,18 +167,18 @@ public:
   // type of 64 bit unsigned integer 
   typedef uint64_t UInt64Type;
 
-private:  
-  // no copying 
-  AdaptationHandler (const AdaptationHandler&); 
 public:
   //! constructor
   AdaptationHandler (GridType &grid, 
                      TimeProviderType &timeProvider,
                      const AdaptationParameters& param = AdaptationParameters() ) ;
 
+  // copy constructor 
+  AdaptationHandler (const AdaptationHandler&); 
+
   //const TimeProviderType &timeProvider() const;
   TimeProviderType* timeProvider () { return &timeProvider_; } 
-public: 
+
   //! clear indicator 
   void clearIndicator();
 
@@ -189,6 +189,9 @@ public:
   //! initialize nbIndicator with en 
   template <class Entity>
   void setNeighbor(const Entity& en);
+  
+  //! reset nbIndicator to null pointer 
+  void resetNeighbor();
   
   //! add value to local indicator, use setEntity before 
   void addToEntityIndicator(const FullRangeType& error, const double h );
@@ -278,11 +281,11 @@ protected:
 
   //! parameters for adaptation
   mutable double globalTolerance_;
-  double coarsenTheta_;
-  double initialTheta_;
+  const double coarsenTheta_;
+  const double initialTheta_;
 
-  int finestLevel_; 
-  int coarsestLevel_; 
+  const int finestLevel_; 
+  const int coarsestLevel_; 
 
   UInt64Type globalNumElements_;
 

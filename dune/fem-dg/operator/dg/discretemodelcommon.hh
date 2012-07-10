@@ -14,6 +14,7 @@
 
 // pass traits (include before to overload default values)
 #include <dune/fem-dg/operator/dg/passtraits.hh>
+#include <dune/fem-dg/pass/threadfilter.hh>
 
 namespace Dune {
 
@@ -439,6 +440,8 @@ namespace Dune {
     // discrete function storing the adaptation indicator information 
     typedef typename Traits :: AdaptationHandlerType  AdaptationHandlerType ;
 
+    // type of thread filter in thread parallel runs 
+    typedef Fem :: ThreadFilter<GridPartType> ThreadFilterType;
 
   public:
     /**
@@ -448,6 +451,7 @@ namespace Dune {
                            const NumFlux& numf)
       : BaseType( mod, numf ),
         adaptation_( 0 ),
+        threadFilter_( 0 ),
         weight_( 1 )
     {
     }
@@ -456,6 +460,7 @@ namespace Dune {
     AdaptiveAdvectionModel( const AdaptiveAdvectionModel& other )
       : BaseType( other ),
         adaptation_( other.adaptation_ ),
+        threadFilter_( other.threadFilter_ ),
         weight_( other.weight_ )
     {
     }
@@ -473,20 +478,48 @@ namespace Dune {
       BaseType :: setNeighbor( neighbor );
 
       if( adaptation_ ) 
-        adaptation_->setNeighbor( neighbor );
+      {
+#ifdef USE_SMP_PARALLEL
+        // if the neighbor does not belong to our 
+        // thread domain reset the pointer 
+        // to avoid update of indicators  
+        if( threadFilter_ && 
+            ! threadFilter_->contains( neighbor ) )
+        {
+          // remove neighbor indicator
+          adaptation_->resetNeighbor(); 
+        }
+        else 
+#endif
+        {
+          adaptation_->setNeighbor( neighbor );
+        }
+      }
     }
 
     //! set pointer to adaptation indicator 
     void setAdaptationHandler( AdaptationHandlerType& adaptation, double weight ) 
     {
       adaptation_ = & adaptation;       
+      threadFilter_ = 0;
+      weight_ = weight ;
+    }
+
+    //! set pointer to adaptation indicator 
+    void setAdaptationHandler( AdaptationHandlerType& adaptation, 
+                               const ThreadFilterType& threadFilter, 
+                               double weight ) 
+    {
+      adaptation_   = & adaptation;       
+      threadFilter_ = & threadFilter ;
       weight_ = weight ;
     }
 
     //! remove pointer to adaptation indicator 
     void removeAdaptationHandler() 
     {
-      adaptation_ = 0 ;
+      adaptation_   = 0 ;
+      threadFilter_ = 0 ;  
     }
 
   public:
@@ -608,7 +641,8 @@ namespace Dune {
     using BaseType :: model_ ;
     using BaseType :: numflux_ ;
 
-    AdaptationHandlerType* adaptation_;
+    AdaptationHandlerType*  adaptation_;
+    const ThreadFilterType*  threadFilter_;  
     double weight_ ;
   };                                             
 
