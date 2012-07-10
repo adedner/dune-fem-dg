@@ -62,7 +62,7 @@ namespace Dune {
         , filteredGridParts_( Fem :: ThreadManager :: maxThreads() )
 #endif
         , verbose_( Parameter::verbose() && 
-                    Parameter::getValue<bool>("fem.parallel.verbose", false ) )
+                    Parameter::getValue<bool>("femdg.threads.verbose", false ) )
       {
 #ifdef USE_SMP_PARALLEL
         for(int thread=0; thread < Fem :: ThreadManager :: maxThreads(); ++thread )
@@ -80,6 +80,12 @@ namespace Dune {
 
       //! return reference to space 
       const SpaceType& space() const { return space_; }
+
+      //! return filter for given thread 
+      const FilterType& filter( const int thread ) const 
+      {
+        return filteredGridParts_[ thread ]->filter();
+      }
 
       //! update internal list of iterators 
       void update() 
@@ -208,6 +214,7 @@ namespace Dune {
       typedef typename SpaceType :: IndexSetType  IndexSetType;
 
       typedef DomainDecomposedIterator< DiscreteFunctionSpace >  DomainIterator;
+      typedef typename DomainIterator :: FilterType    FilterType ;
       typedef typename DomainIterator :: IteratorType  IteratorType;
 
       typedef typename IteratorType :: Entity EntityType ;
@@ -268,6 +275,12 @@ namespace Dune {
 
       //! return reference to space 
       const SpaceType& space() const { return iterators_.space(); }
+
+      //! return filter for given thread 
+      const FilterType& filter( const int thread ) const 
+      {
+        return iterators_.filter( thread );
+      }
 
       //! update internal list of iterators 
       void update() 
