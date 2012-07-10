@@ -76,11 +76,9 @@ public:
     gridPart_( dfSpace_.gridPart() ),
     indexSet_( gridPart_.indexSet() ),
     grid_( gridPart_.grid() ),
-    indicator_( indexSet_.size( 0 ) )
+    indicator_() // create empty vector, resize before use 
   {
-    //!!! Constructor is called before each adaptation
   }
-
 
   void clear( IndicatorType& indicator )
   {

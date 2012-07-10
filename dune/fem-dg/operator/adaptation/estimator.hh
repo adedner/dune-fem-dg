@@ -63,7 +63,7 @@ public:
   using BaseType :: mark;
   using BaseType :: clear;
 
-private:
+protected:
   using BaseType :: uh_;
   using BaseType :: dfSpace_;
   using BaseType :: gridPart_;
@@ -305,7 +305,7 @@ public:
   //! \brief calculates indicators
   void estimate()
   {
-    indicator_.resize( indexSet_.size( 0 )); 
+    indicator_.resize( indexSet_.size( 0 ) ); 
     clear();
 
     double ind1Max = -1E100;
