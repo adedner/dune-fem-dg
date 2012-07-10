@@ -41,9 +41,6 @@ struct Stepper
   // The discrete function for the unknown solution is defined in the DgOperator
   typedef typename BaseType :: DiscreteFunctionType      DiscreteFunctionType;
 
-  // The indicator function in case of limiting 
-  //typedef typename BaseType :: IndicatorType             IndicatorType;
-
   // ... as well as the Space type
   typedef typename BaseType :: DiscreteSpaceType         DiscreteSpaceType;
 
