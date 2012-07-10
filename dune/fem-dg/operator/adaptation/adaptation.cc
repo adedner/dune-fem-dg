@@ -10,9 +10,9 @@ namespace Dune
 //! constructor
 template <class GridImp, class FunctionSpace>
 AdaptationHandler<GridImp, FunctionSpace> ::  
-AdaptationHandler (GridType &grid, 
-                   TimeProviderType &timeProvider,
-                   const AdaptationParameters& param ) 
+AdaptationHandler ( GridType &grid, 
+                    TimeProviderType &timeProvider,
+                    const AdaptationParameters& param ) 
   : grid_(grid)
   , gridPart_(grid_)
   , indicator_( grid_, 0 ) // grid , codimension 
@@ -246,7 +246,6 @@ getLocalInTimeTolerance () const
 {
   double dt = timeProvider_.deltaT();
   return (1. - initialTheta_) * globalTolerance_ * globalTolerance_* (dt / endTime_);
-  //return globalTolerance_;
 }
 
 template <class GridImp, class FunctionSpace>
@@ -258,7 +257,7 @@ getInitialTolerance () const
   const double dt = timeProvider_.deltaT();
   const double localInTimeTol = initialTheta_ * globalTolerance_ * globalTolerance_* (dt / endTime_);
   const double localTol = localInTimeTol / globalNumberElements ;
-  std::cout << "Return intial tol " << localTol << std::endl;
+  //std::cout << "Return intial tol " << localTol << std::endl;
   return localTol;
 }
 
@@ -269,45 +268,8 @@ getLocalTolerance () const
 {
   const double localInTimeTol = getLocalInTimeTolerance ();
   const double globalNumberElements = globalNumberOfElements();
-  //const double elementsOnMaxLevel = maxLevelCounter_[finestLevel_]; 
-  
-  /*
-  if( elementsOnMaxLevel < 
-        0.1 * globalNumberElements ) 
-  {
-    globalTolerance_ *= 0.01;
-  }
-  else if( elementsOnMaxLevel > 
-           0.5 * globalNumberElements )
-  {
-    globalTolerance_ *= 1.05;
-  }
-  */
 
-  /*
-  double factor = 1.0 ;
-
-  if( globalNumberElements > 1.25 * maxNumberOfElementsAllowed_ ) 
-  {
-    // (tanh( ( 2.0*pi * x - pi))+1)*0.5
-    double x = globalNumberElements / maxNumberOfElementsAllowed_ ;
-    //factor = 1.0 + 0.5 * (std::sin(M_PI*x + 0.5*M_PI) + 1.0);
-    factor = 1.0 + 0.5 * (std::tanh(M_PI*x - M_PI) + 1.0);
-    std::cout << factor << " factor|percent " << x << std::endl;
-  }
-  else if ( globalNumberElements < 0.25 * maxNumberOfElementsAllowed_ )
-  {
-    double x = globalNumberElements / maxNumberOfElementsAllowed_ ;
-    //factor = 0.5 * (std::sin(M_PI*x + 0.5*M_PI) + 1.0);
-    factor = 0.5 * (std::tanh(M_PI*x - M_PI) + 1.0);
-    std::cout << factor << " factor|percent " << x << std::endl;
-  }
-
-  // adjust global tolerance such that maximal number of elements 
-  // is kept more or less constant 
-  globalTolerance_ *= factor ;
-  */
-
+  // apply equi distribution strategy 
   double localTol = localInTimeTol / globalNumberElements ;
 
   if( verbose() )
