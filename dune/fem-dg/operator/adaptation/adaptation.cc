@@ -269,7 +269,7 @@ getLocalTolerance () const
 {
   const double localInTimeTol = getLocalInTimeTolerance ();
   const double globalNumberElements = globalNumberOfElements();
-  const double elementsOnMaxLevel = maxLevelCounter_[finestLevel_]; 
+  //const double elementsOnMaxLevel = maxLevelCounter_[finestLevel_]; 
   
   /*
   if( elementsOnMaxLevel < 
