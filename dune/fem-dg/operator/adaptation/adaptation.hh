@@ -137,7 +137,7 @@ public:
   // local indicator 
   struct LocalIndicator 
   {
-    LocalIndicator() : value_( -1.0 ) {} 
+    LocalIndicator() : value_( 0.0 ) {} 
     double value_;
     LocalIndicator& operator += ( const double& value ) 
     {

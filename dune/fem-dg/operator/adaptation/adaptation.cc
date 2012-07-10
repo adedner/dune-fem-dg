@@ -106,8 +106,21 @@ void
 AdaptationHandler<GridImp, FunctionSpace> ::  
 clearIndicator()
 {
-  // set all entries to zero
+  indicator_.update();
   indicator_.clear();
+  /*
+  // set all entries to zero
+  {
+    double zero = 0;
+  typedef typename IndicatorType :: Iterator   IteratorType ;
+    const IteratorType endit = indicator_.end();
+    IteratorType it = indicator_.begin(); 
+    for( ; it != endit; ++it)
+    {
+      (*it) = zero;
+    }
+  }
+  */
 }
 
 //! initialize localIndicator with en 
@@ -289,6 +302,25 @@ getInitialTolerance () const
   const double localInTimeTol = initialTheta_ * globalTolerance_ * globalTolerance_* (dt / endTime_);
   const double localTol = localInTimeTol / globalNumberElements ;
   //std::cout << "Return intial tol " << localTol << std::endl;
+  if( verbose() )
+  {
+    // this requires global communication 
+    const double globalErr = getMaxEstimator(); 
+
+    std::cout << "Level counters: ";
+    for(size_t i=0; i<maxLevelCounter_.size(); ++i ) 
+    {
+      double percent = maxLevelCounter_[ i ]/ globalNumberElements ;
+      std::cout << "Level[ " << i << " ] = " << percent << "  ";
+    }
+    std::cout << std::endl;
+    std::cout << "   LocalEst_max = " <<  globalErr
+        << "   Tol_local = " << localTol 
+        << "   Tol = " << localInTimeTol 
+        << "   GlobalTol = " << globalTolerance_  
+        << "   Num El: " <<  globalNumberElements << "\n";
+  }
+
   return localTol;
 }
 
@@ -418,7 +450,7 @@ typename AdaptationHandler<GridImp, FunctionSpace>::UInt64Type
 AdaptationHandler<GridImp, FunctionSpace> ::  
 countElements() const 
 {
-  if(  maxLevelCounter_.size() > 0)
+  if( maxLevelCounter_.size() > 0)
     maxLevelCounter_.clear();
 
   maxLevelCounter_.resize(finestLevel_ + 1);
