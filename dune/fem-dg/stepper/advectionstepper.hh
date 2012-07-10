@@ -57,6 +57,8 @@ struct Stepper
   typedef Dune :: DGAdaptationIndicatorOperator< ModelType, FluxType,
             DiffusionFluxId, polynomialOrder, true, false >  DGIndicatorType;
 
+  typedef Estimator< DiscreteFunctionType, InitialDataType > GradientIndicatorType ;
+
   using BaseType :: grid_;
   using BaseType :: gridPart_;
   using BaseType :: convectionFlux_ ;
@@ -66,10 +68,11 @@ struct Stepper
   using BaseType :: adaptive_ ;
   using BaseType :: adaptationParameters_;
 
-  Stepper(GridType& grid) :
+  Stepper( GridType& grid ) :
     BaseType( grid ),
     dgAdvectionOperator_(gridPart_, convectionFlux_),
-    dgIndicator_( gridPart_, convectionFlux_ )
+    dgIndicator_( gridPart_, convectionFlux_ ),
+    gradientIndicator_( solution_, problem() )
   {
   }
 
@@ -90,6 +93,17 @@ struct Stepper
                               dgAdvectionOperator_ );
   }
 
+  //! return overal number of grid elements 
+  virtual size_t gridSize() const
+  {
+    // is adaptation handler exists use the information to avoid global comm
+    if( adaptationHandler_ )
+      return adaptationHandler_->globalNumberOfElements() ;
+
+    size_t grSize  = dgAdvectionOperator_.numberOfElements();
+    return grid_.comm().sum( grSize );
+  }
+
   //! call limiter (only if dgAdvectionOperator_ is DGLimitedAdvectionOperator)
   void limitSolution() 
   { 
@@ -97,14 +111,20 @@ struct Stepper
   }
 
   //! estimate and mark solution 
+  virtual void initialEstimateMarkAdapt( AdaptationManagerType& am )
+  {
+    doEstimateMarkAdapt( dgIndicator_, gradientIndicator_, am, true );
+  }
+
+  //! estimate and mark solution 
   virtual void estimateMarkAdapt( AdaptationManagerType& am )
   {
-    Estimator< DiscreteFunctionType, InitialDataType > gradientIndicator( solution_, problem() );
-    doEstimateMarkAdapt( dgIndicator_, gradientIndicator, am );
+    doEstimateMarkAdapt( dgIndicator_, gradientIndicator_, am, false );
   }
 
 protected:
   DgAdvectionType         dgAdvectionOperator_;
   DGIndicatorType         dgIndicator_;
+  GradientIndicatorType   gradientIndicator_;
 };
 #endif // FEMHOWTO_STEPPER_HH

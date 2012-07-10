@@ -155,6 +155,12 @@ public:
   //! estimate and mark cell for refinement/coarsening
   virtual void estimateMarkAdapt( AdaptationManagerType& am ) = 0;
 
+  //! initial estimate and mark cell for refinement/coarsening
+  virtual void initialEstimateMarkAdapt( AdaptationManagerType& am )
+  {
+    estimateMarkAdapt( am );  
+  }
+
   //! write data, if pointer to additionalVariables is true, they are calculated first 
   void writeData( DataWriterType& eocDataOutput, 
                   TimeProviderType& tp, 
@@ -181,24 +187,17 @@ public:
                           int& total_newton_iterations, int& total_ils_iterations,
                           int& max_newton_iterations, int& max_ils_iterations)
   {
+    // verbosity 
     const bool verbose = Dune::Parameter :: verbose ();
-    int printCount = Dune::Parameter::getValue<int>("femhowto.printCount", -1);
-
-    // if adaptCount is 0 then no dynamics grid adaptation
-    int adaptCount = 0;
-    int maxAdaptationLevel = 0;
-    Dune::AdaptationMethod< GridType > am( grid_ );
-    if( am.adaptive() )
-    {
-      adaptCount = Dune::Parameter::getValue<int>("fem.adaptation.adaptcount");
-      maxAdaptationLevel = Dune::Parameter::getValue<int>("fem.adaptation.finestLevel");
-    }
+    // print info on each printCount step 
+    const int printCount = Dune::Parameter::getValue<int>("femhowto.printCount", -1);
 
     double maxTimeStep =
       Dune::Parameter::getValue("femhowto.maxTimeStep", std::numeric_limits<double>::max());
     const double startTime = Dune::Parameter::getValue<double>("femhowto.startTime", 0.0);
     const double endTime   = Dune::Parameter::getValue<double>("femhowto.endTime");
 
+    // if this variable is set then only maximalTimeSteps timesteps will be computed 
     const int maximalTimeSteps =
       Dune::Parameter::getValue("femhowto.maximaltimesteps", std::numeric_limits<int>::max());
 
@@ -216,6 +215,7 @@ public:
 
     DiscreteFunctionType& solution = this->solution(); 
 
+    // restriction and prolongation operator for adaptive simulations 
     RestrictionProlongationType rp( solution );
 
     // set refine weight 
@@ -223,6 +223,15 @@ public:
 
     // create adaptation manager 
     AdaptationManagerType adaptManager( grid_ , rp );
+
+    // if adaptCount is 0 then no dynamics grid adaptation
+    int adaptCount = 0;
+    int maxAdaptationLevel = 0;
+    if( adaptManager.adaptive() )
+    {
+      adaptCount = Dune::Parameter::getValue<int>("fem.adaptation.adaptcount");
+      maxAdaptationLevel = Dune::Parameter::getValue<int>("fem.adaptation.finestLevel");
+    }
 
     // only do checkpointing when number of EOC steps is 1 
     const bool doCheckPointing = ( InitFemEoc :: eocSteps() == 1 ); 
@@ -247,28 +256,28 @@ public:
     const double fixedTimeStep = fixedTimeStep_/tp.factor() ;
 
     if ( fixedTimeStep > 1e-20 )
-      // initialize without respect of CFL number 
       tp.init( fixedTimeStep );
     else
       tp.init();
 
     // for simulation new start do start adaptation 
-    if( newStart ) 
+    if( newStart && adaptCount > 0 ) 
     {
       // adapt the grid to the initial data
-      int startCount = 0;
-      if( adaptCount > 0 )
+      for( int startCount = 0; startCount < maxAdaptationLevel; ++ startCount )
       {
-        while( startCount < maxAdaptationLevel )
+        // call initial adaptation
+        initialEstimateMarkAdapt( adaptManager );
+
+        // setup problem again 
+        initializeStep( tp );
+
+        // some info in verbose mode 
+        if( verbose )
         {
-          estimateMarkAdapt( adaptManager );
-
-          initializeStep( tp );
-
-          if( verbose )
-            std::cout << "start: " << startCount << " grid size: " << grid_.size(0)
-                      << std::endl;
-          ++startCount;
+          size_t grSize = gridSize();
+          std::cout << "Start adaptation: step " << startCount << ",  dt = " << tp.deltaT() << ",  grid size: " << grSize
+                    << std::endl;
         }
       }
 
@@ -282,19 +291,20 @@ public:
       DUNE_THROW(InvalidStateException,"endtime to small, we need at least one timestep for codegen !!!");
 #endif
 
-    //**********************************************                    /*@LST0S@*/
-    //* Time Loop                                  *
-    //**********************************************
+    //******************************    
+    //*  Time Loop                 *
+    //******************************
     for( ; tp.time() < endTime; ) 
     {
       tp.provideTimeStepEstimate(maxTimeStep);
       const double tnow  = tp.time();
       const double ldt   = tp.deltaT();
+
       int newton_iterations;
       int ils_iterations;
       counter  = tp.timeStep();
 
-      //************************************************        /*@LST0S@*/
+      //************************************************   
       //* Compute an ODE timestep                      *
       //************************************************
       Dune::FemTimer::start(timeStepTimer_);
@@ -306,12 +316,13 @@ public:
       // maximality of max_newton_iterations, max_ils_iterations
       // is dealt within this step(...) function
       step( tp, newton_iterations, ils_iterations,
-            max_newton_iterations, max_ils_iterations ); /*@\label{fv:step}@*/
+            max_newton_iterations, max_ils_iterations ); 
 
-      Dune::FemTimer::stop(timeStepTimer_,Dune::FemTimer::max);              /*@LST0E@*/
+      Dune::FemTimer::stop(timeStepTimer_,Dune::FemTimer::max);
 
        // Check that no NAN have been generated
-      if (! solution.dofsValid()) {
+      if (! solution.dofsValid() ) 
+      {
         std::cout << "Loop(" << loop_ << "): Invalid DOFs" << std::endl;
         eocDataOutput.write(tp);
         abort();
@@ -355,7 +366,7 @@ public:
       // possibly write a grid solution
       problem().postProcessTimeStep( grid_, solution, tp.time() );
 
-    } /****** END of time loop *****/ /*@LST0S@*/
+    } /****** END of time loop *****/
 
     // write last time step  
     writeData( eocDataOutput, tp, true );
@@ -369,7 +380,7 @@ public:
     }
 
     // finalize eoc step 
-    finalizeStep( tp );                                   /*@\label{fv:finalize}@*/
+    finalizeStep( tp ); 
     
     // increase loop counter
     ++loop_;

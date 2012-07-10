@@ -61,6 +61,8 @@ struct Stepper
   typedef Dune :: DGAdaptationIndicatorOperator< ModelType, FluxType,
             DiffusionFluxId, polynomialOrder, true, true >  DGIndicatorType;
 
+  typedef Estimator< DiscreteFunctionType, InitialDataType > GradientIndicatorType ;
+
   using BaseType :: grid_;
   using BaseType :: gridPart_;
   using BaseType :: space;
@@ -76,12 +78,18 @@ struct Stepper
     dgOperator_( gridPart_, convectionFlux_ ),
     dgAdvectionOperator_( gridPart_, convectionFlux_ ),
     dgDiffusionOperator_( gridPart_, convectionFlux_ ),
-    dgIndicator_( gridPart_, convectionFlux_ )
+    dgIndicator_( gridPart_, convectionFlux_ ),
+    gradientIndicator_( solution_, problem() )
   {
-  }                                                                        /*@LST1E@*/
+  }
 
+  //! return overal number of grid elements 
   virtual size_t gridSize() const 
   {
+    // is adaptation handler exists use the information to avoid global comm
+    if( adaptationHandler_ ) 
+      return adaptationHandler_->globalNumberOfElements() ;
+
     // one of them is not zero, 
     // use int because the unintialized size_t is the largest 
     size_t advSize  = dgAdvectionOperator_.numberOfElements();
@@ -109,10 +117,15 @@ struct Stepper
   }
 
   //! estimate and mark solution 
+  virtual void initialEstimateMarkAdapt( AdaptationManagerType& am )
+  {
+    doEstimateMarkAdapt( dgIndicator_, gradientIndicator_, am, true );
+  }
+
+  //! estimate and mark solution 
   virtual void estimateMarkAdapt( AdaptationManagerType& am ) 
   {
-    Estimator< DiscreteFunctionType, InitialDataType > gradientIndicator( solution_, problem() );
-    doEstimateMarkAdapt( dgIndicator_, gradientIndicator, am );
+    doEstimateMarkAdapt( dgIndicator_, gradientIndicator_, am, false );
   }
 
 protected:
@@ -120,5 +133,6 @@ protected:
   DgAdvectionType         dgAdvectionOperator_;
   DgDiffusionType         dgDiffusionOperator_;
   DGIndicatorType         dgIndicator_;
+  GradientIndicatorType   gradientIndicator_;
 };
 #endif // FEMHOWTO_STEPPER_HH

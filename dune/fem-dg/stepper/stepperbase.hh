@@ -325,10 +325,11 @@ struct StepperBase
   }
 
 protected:
-  template <class IndicatorOperator, class GradientEstimator>
+  template <class IndicatorOperator, class GradientIndicator>
   void doEstimateMarkAdapt( const IndicatorOperator& dgIndicator,
-                            GradientEstimator& gradientEstimator,
-                            AdaptationManagerType& am ) 
+                            GradientIndicator& gradientIndicator,
+                            AdaptationManagerType& am,
+                            const bool initialAdaptation = false )
   {
     if( adaptive_ )
     {
@@ -341,11 +342,11 @@ protected:
         dgIndicator.evaluateOnly( solution_ );
 
         // do marking and adaptation 
-        adaptationHandler_->adapt( am );
+        adaptationHandler_->adapt( am, initialAdaptation );
       }
       else if( adaptationParameters_.gradientBasedIndicator() )
       {
-        gradientEstimator.estimateAndMark();
+        gradientIndicator.estimateAndMark();
         am.adapt();
       }
       else if( adaptationParameters_.shockIndicator() )
@@ -361,7 +362,6 @@ protected:
       }
     }
   }
-
 
   // the solution 
   DiscreteFunctionType   solution_;
