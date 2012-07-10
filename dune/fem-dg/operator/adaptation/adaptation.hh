@@ -19,6 +19,8 @@
 #include <dune/fem/gridpart/adaptiveleafgridpart.hh>
 
 #include <dune/fem/solver/timeprovider.hh>
+#include <dune/fem/io/streams/streams.hh>
+
 
 namespace Dune 
 {
@@ -162,6 +164,9 @@ public:
   // interface for adaptation operator 
   typedef AdaptationManagerInterface   AdaptInterfaceType;
 
+  // type of 64 bit unsigned integer 
+  typedef uint64_t UInt64Type;
+
 private:  
   // no copying 
   AdaptationHandler (const AdaptationHandler&); 
@@ -210,7 +215,7 @@ public:
   double getMaxEstimator() const ;
 
   //! overall number of leaf elements 
-  int globalNumberOfElements () const ;
+  UInt64Type globalNumberOfElements () const ;
 
   //! number of local leaf elements 
   int localNumberOfElements () const ;
@@ -235,7 +240,7 @@ public:
   void resetStatus ();
 
   //! count number of overall leaf entities 
-  int countElements() const ;
+  UInt64Type countElements() const ;
 
   //! module interface for intialize 
   void initialize() 
@@ -253,19 +258,8 @@ public:
   bool verbose () const { return verbose_; }
 
 protected:
+  // return volume of computational domain 
   double volumeOfDomain () const;
-
-  double getMaxNumberOfElements () const   
-  {
-    double maxElem = grid_.size( 0 );
-    maxElem = grid_.comm().sum( maxElem );
-    
-    double factor = std::pow( double(GridType::dimension), 2.0 );
-    double res = maxElem * factor * ( finestLevel_ - 1 );
-
-    std::cout << "Maximal number of elements allowed: " << res << std::endl;
-    return res;
-  }
 
   //! grid part, has grid and ind set 
   GridType&  grid_;
@@ -287,22 +281,16 @@ protected:
   double coarsenTheta_;
   double initialTheta_;
 
-  double tolSigSet_;
-  double tolSigSetInv_;
-  double tolMaxLevSet_;
-  int    numMaxLev_;
-
   int finestLevel_; 
   int coarsestLevel_; 
 
-  int globalNumElements_;
-  double maxNumberOfElementsAllowed_ ;
+  UInt64Type globalNumElements_;
 
   mutable int localNumElements_;
 
   double endTime_;
 
-  mutable std::vector<int> maxLevelCounter_;
+  mutable std::vector< UInt64Type > maxLevelCounter_;
 
   const bool verbose_ ;
 };

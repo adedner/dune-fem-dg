@@ -24,7 +24,6 @@ AdaptationHandler ( GridType &grid,
   , finestLevel_( param.finestLevel( DGFGridInfo<GridType>::refineStepsForHalf() ) )
   , coarsestLevel_( param.coarsestLevel( DGFGridInfo<GridType>::refineStepsForHalf() ) )
   , globalNumElements_ (0)
-  , maxNumberOfElementsAllowed_( getMaxNumberOfElements() )  
   , localNumElements_(0)
   , endTime_( param.endTime() )  
   , maxLevelCounter_()
@@ -231,7 +230,7 @@ localNumberOfElements () const
 }
 
 template <class GridImp, class FunctionSpace>
-int   
+typename AdaptationHandler<GridImp, FunctionSpace>::UInt64Type  
 AdaptationHandler<GridImp, FunctionSpace> ::  
 globalNumberOfElements () const 
 {
@@ -383,7 +382,7 @@ resetStatus()
 
   //! count number of overall leaf entities 
 template <class GridImp, class FunctionSpace>
-int 
+typename AdaptationHandler<GridImp, FunctionSpace>::UInt64Type  
 AdaptationHandler<GridImp, FunctionSpace> ::  
 countElements() const 
 {
@@ -395,7 +394,7 @@ countElements() const
     maxLevelCounter_[i] = 0;
   
   // count elements 
-  size_t count = 0;
+  UInt64Type count = 0;
   // type of iterator, i.e. leaf iterator 
   typedef typename GridPartType :: template Codim< 0 > :: IteratorType IteratorType;
   
@@ -404,8 +403,8 @@ countElements() const
        it != endit; ++it)
   {
     ++count;
-    const int level = it->level();
-    assert( level < int(maxLevelCounter_.size()) );
+    const unsigned int level = it->level();
+    assert( level < maxLevelCounter_.size() );
     ++maxLevelCounter_[ level ];
   }
 
@@ -413,16 +412,17 @@ countElements() const
   localNumElements_ = count;
 
   {
-    size_t commSize = maxLevelCounter_.size();
-    int* commBuff = new int [commSize+1]; 
+    const size_t commSize = maxLevelCounter_.size();
+    std::vector< UInt64Type > commBuff( commSize+1, UInt64Type(0) );
     
     for(size_t i=0; i<commSize; ++i)
     {
       commBuff[i] = maxLevelCounter_[i];
     }
-    commBuff[commSize] = count;
+    commBuff[ commSize ] = count;
       
-    grid_.comm().sum(commBuff,commSize+1);
+    // do global sum of all entries 
+    grid_.comm().sum( &commBuff[ 0 ], commSize+1 );
     
     for(size_t i=0; i<commSize; ++i)
     {
@@ -430,8 +430,8 @@ countElements() const
     }
 
     count = commBuff[commSize];
-    delete [] commBuff;
   }
+
   // return element count 
   return count;
 }
