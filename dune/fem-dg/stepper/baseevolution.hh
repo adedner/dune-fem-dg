@@ -84,6 +84,9 @@ public:
   // type of time provider organizing time for time loops 
   typedef Dune::GridTimeProvider< GridType >                 TimeProviderType;
 
+  // type of 64bit unsigned integer 
+  typedef uint64_t UInt64Type ;
+
   //! constructor 
   AlgorithmBase(GridType& grid) 
    : grid_( grid ),
@@ -110,9 +113,9 @@ public:
   DiscreteSpaceType& space() { return space_; }
 
   // return size of grid 
-  virtual size_t gridSize() const 
+  virtual UInt64Type gridSize() const 
   { 
-    size_t grSize = grid_.size( 0 );
+    UInt64Type grSize = grid_.size( 0 );
     return grid_.comm().sum( grSize );
   }
 
@@ -275,7 +278,7 @@ public:
         // some info in verbose mode 
         if( verbose )
         {
-          size_t grSize = gridSize();
+          UInt64Type grSize = gridSize();
           std::cout << "Start adaptation: step " << startCount << ",  dt = " << tp.deltaT() << ",  grid size: " << grSize
                     << std::endl;
         }
@@ -330,7 +333,7 @@ public:
 
       if( (printCount > 0) && (counter % printCount == 0)) 
       {
-        size_t grSize = gridSize();
+        UInt64Type grSize = gridSize();
         if( grid_.comm().rank() == 0 )
           std::cout << "step: " << counter << "  time = " << tnow << ", dt = " << ldt
                     <<",  grid size: " << grSize << std::endl;

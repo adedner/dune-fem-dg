@@ -57,7 +57,11 @@ struct Stepper
   typedef Dune :: DGAdaptationIndicatorOperator< ModelType, FluxType,
             DiffusionFluxId, polynomialOrder, true, false >  DGIndicatorType;
 
+  // gradient estimator 
   typedef Estimator< DiscreteFunctionType, InitialDataType > GradientIndicatorType ;
+
+  // type of 64bit unsigned integer  
+  typedef typename BaseType :: UInt64Type  UInt64Type;
 
   using BaseType :: grid_;
   using BaseType :: gridPart_;
@@ -94,13 +98,15 @@ struct Stepper
   }
 
   //! return overal number of grid elements 
-  virtual size_t gridSize() const
+  virtual uint64_t gridSize() const
   {
     // is adaptation handler exists use the information to avoid global comm
     if( adaptationHandler_ )
       return adaptationHandler_->globalNumberOfElements() ;
 
-    size_t grSize  = dgAdvectionOperator_.numberOfElements();
+    size_t  advSize   = dgAdvectionOperator_.numberOfElements();
+    size_t  dgIndSize = gradientIndicator_.numberOfElements();
+    uint64_t grSize   = std::max( advSize, dgIndSize );
     return grid_.comm().sum( grSize );
   }
 

@@ -58,7 +58,11 @@ struct Stepper
   typedef Dune :: DGAdaptationIndicatorOperator< ModelType, FluxType,
             DiffusionFluxId, polynomialOrder, true, true >  DGIndicatorType;
 
+  // gradient estimator 
   typedef Estimator< DiscreteFunctionType, InitialDataType > GradientIndicatorType ;
+
+  // type of 64bit unsigned integer  
+  typedef typename BaseType :: UInt64Type  UInt64Type;
 
   using BaseType :: grid_;
   using BaseType :: gridPart_;
@@ -81,18 +85,18 @@ struct Stepper
   }
 
   //! return overal number of grid elements 
-  virtual size_t gridSize() const 
+  virtual UInt64Type gridSize() const 
   {
     // is adaptation handler exists use the information to avoid global comm
     if( adaptationHandler_ ) 
       return adaptationHandler_->globalNumberOfElements() ;
 
     // one of them is not zero, 
-    // use int because the unintialized size_t is the largest 
-    size_t advSize  = dgAdvectionOperator_.numberOfElements();
-    size_t diffSize = dgDiffusionOperator_.numberOfElements();
-    size_t grSize   = std::max( advSize, diffSize );
-    grSize = std::max( dgOperator_.numberOfElements(), grSize );
+    size_t advSize     = dgAdvectionOperator_.numberOfElements();
+    size_t diffSize    = dgDiffusionOperator_.numberOfElements();
+    size_t dgIndSize   = gradientIndicator_.numberOfElements();
+    size_t dgSize      = dgOperator_.numberOfElements(); 
+    UInt64Type grSize  = std::max( std::max(advSize, dgSize ), std::max( diffSize, dgIndSize ) );
     return grid_.comm().sum( grSize );
   }
 
