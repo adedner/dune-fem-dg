@@ -269,7 +269,11 @@ namespace Dune {
       const int maxThreads = Fem::ThreadManager::maxThreads();
       for(int thread=0; thread<maxThreads; ++thread)
       {
-        problems_[ thread ]->setAdaptationHandler( adHandle, iterators_.filter( thread ), weight );
+        problems_[ thread ]->setAdaptationHandler( adHandle, 
+#ifdef NSMOD_USE_SMP_PARALLEL
+            iterators_.filter( thread ), // add filter in thread parallel versions 
+#endif
+            weight );
       }
     }
    

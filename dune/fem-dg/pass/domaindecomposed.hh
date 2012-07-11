@@ -81,11 +81,13 @@ namespace Dune {
       //! return reference to space 
       const SpaceType& space() const { return space_; }
 
+#ifdef USE_SMP_PARALLEL
       //! return filter for given thread 
       const FilterType& filter( const int thread ) const 
       {
         return filteredGridParts_[ thread ]->filter();
       }
+#endif
 
       //! update internal list of iterators 
       void update() 
