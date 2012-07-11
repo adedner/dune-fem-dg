@@ -58,13 +58,14 @@ template <class GridImp, class FunctionSpace>
 AdaptationHandler<GridImp, FunctionSpace> ::  
 AdaptationHandler ( const AdaptationHandler& other ) 
   : grid_( other.grid_ )
-  , gridPart_( grid_)
+  , gridPart_( grid_ )
   , indicator_( other.indicator_ ) 
   , enIndicator_( 0 )
   , nbIndicator_( 0 )
   , timeProvider_( other.timeProvider_ )
   , globalTolerance_ ( other.globalTolerance_ )
   , coarsenTheta_( other.coarsenTheta_ )
+  , initialTheta_( other.initialTheta_ )
   , finestLevel_( other.finestLevel_ ) 
   , coarsestLevel_( other.coarsestLevel_ )
   , globalNumElements_ ( other.globalNumElements_ )
@@ -108,19 +109,28 @@ clearIndicator()
 {
   indicator_.update();
   indicator_.clear();
-  /*
-  // set all entries to zero
+}
+
+//! add another adaptation handlers indicator container 
+template <class GridImp, class FunctionSpace>
+AdaptationHandler<GridImp, FunctionSpace>&   
+AdaptationHandler<GridImp, FunctionSpace> ::  
+operator += ( const ThisType& other ) 
+{
+  // add all indicator entries 
   {
-    double zero = 0;
-  typedef typename IndicatorType :: Iterator   IteratorType ;
+    typedef typename IndicatorType :: Iterator       IteratorType ;
+    typedef typename IndicatorType :: ConstIterator  ConstIteratorType ;
     const IteratorType endit = indicator_.end();
     IteratorType it = indicator_.begin(); 
-    for( ; it != endit; ++it)
+
+    ConstIteratorType oIt = other.indicator_.begin();
+    for(IteratorType it = indicator_.begin(); it != endit; ++it, ++ oIt )
     {
-      (*it) = zero;
+      (*it) += (*oIt).value();
     }
   }
-  */
+  return *this;
 }
 
 //! initialize localIndicator with en 

@@ -111,6 +111,8 @@ struct AdaptationParameters
 template <class GridImp, class ProblemFunctionSpace >
 class AdaptationHandler
 {
+  typedef AdaptationHandler< GridImp, ProblemFunctionSpace > ThisType ;
+
 public:
   enum { COARSEN = -1, NONE = 0, REFINE = 1 };
 
@@ -181,6 +183,9 @@ public:
 
   //! clear indicator 
   void clearIndicator();
+
+  //! add another AdaptationHandlers indicator 
+  ThisType& operator += ( const ThisType& other );
 
   //! initialize enIndicator with en 
   template <class Entity> 
