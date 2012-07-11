@@ -78,6 +78,7 @@ protected:
   double ind1MaxDiff_;
   double ind2MaxDiff_;
   const int neighborRefLevel_;
+  size_t numberOfElements_ ;
 
 protected:
   const ProblemType& problem_;
@@ -162,6 +163,7 @@ public:
     finestLevel_( param.finestLevel( Dune::DGFGridInfo<GridType>::refineStepsForHalf() ) ),
     coarsestLevel_( param.coarsestLevel( Dune::DGFGridInfo<GridType>::refineStepsForHalf() ) ),
     neighborRefLevel_( param.neighborRefLevel() ),
+    numberOfElements_( 0 ),
     problem_( problem )
   {
     if( problem.twoIndicators() )
@@ -170,14 +172,21 @@ public:
     }
   }
 
-
+  //! clear the stored indicators 
   void clear()
   {
     BaseType::clear();
     if( indicator2Ptr_ )
       clear( *indicator2Ptr_ );
+
+    numberOfElements_ = 0;
   }
 
+  //! return number of leaf element for this process (global comm still needed)
+  size_t numberOfElements () const 
+  {
+    return numberOfElements_; 
+  }
 
   /** \brief calculates the maximum of the differences between the values in the center of 
    *  the current grid entity and its neighbors
@@ -315,8 +324,15 @@ public:
     ind2MaxDiff_ = 0.;
 
     const IteratorType end = dfSpace_.end();
+
+    numberOfElements_ = 0 ;
     for( IteratorType it = dfSpace_.begin(); it != end; ++it )
+    {
+      // do local estimation 
       estimateLocal( *it, ind1Min, ind1Max, ind2Min, ind2Max );
+      // count number of elements 
+      ++ numberOfElements_ ;
+    }
 
     // global max 
     {
