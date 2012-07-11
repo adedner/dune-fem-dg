@@ -266,6 +266,9 @@ public:
   bool verbose () const { return verbose_; }
 
 protected:
+  int thread () const { return Dune::Fem::ThreadManager::thread(); }
+  bool singleThreadMode() const { return Dune::Fem::ThreadManager::singleThreadMode(); }
+
   // return volume of computational domain 
   double volumeOfDomain () const;
 
@@ -273,13 +276,13 @@ protected:
   GridType&  grid_;
   GridPartType gridPart_;
 
-  //! indicator function
+  //! persistent container holding local indicators 
   IndicatorType indicator_;
 
   //! local function of indicator_ for entity 
-  LocalIndicatorType* enIndicator_;
+  std::vector< LocalIndicatorType* > enIndicator_;
   //! local function of indicator_ for neighbor 
-  LocalIndicatorType* nbIndicator_;
+  std::vector< LocalIndicatorType* > nbIndicator_;
 
   //! timestep size in time discretization parameters und endTime 
   TimeProviderType & timeProvider_;

@@ -16,8 +16,8 @@ AdaptationHandler ( GridType &grid,
   : grid_(grid)
   , gridPart_(grid_)
   , indicator_( grid_, 0 ) // grid , codimension 
-  , enIndicator_( 0 )
-  , nbIndicator_( 0 )
+  , enIndicator_( Dune::Fem::ThreadManager::maxThreads(), (LocalIndicatorType* ) 0 )
+  , nbIndicator_( Dune::Fem::ThreadManager::maxThreads(), (LocalIndicatorType* ) 0 )
   , timeProvider_(timeProvider)
   , globalTolerance_ ( param.refinementTolerance() )
   , coarsenTheta_( param.coarsenPercentage() )
@@ -60,8 +60,8 @@ AdaptationHandler ( const AdaptationHandler& other )
   : grid_( other.grid_ )
   , gridPart_( grid_ )
   , indicator_( other.indicator_ ) 
-  , enIndicator_( 0 )
-  , nbIndicator_( 0 )
+  , enIndicator_( Dune::Fem::ThreadManager::maxThreads(), (LocalIndicatorType* ) 0 )
+  , nbIndicator_( Dune::Fem::ThreadManager::maxThreads(), (LocalIndicatorType* ) 0 )
   , timeProvider_( other.timeProvider_ )
   , globalTolerance_ ( other.globalTolerance_ )
   , coarsenTheta_( other.coarsenTheta_ )
@@ -143,7 +143,7 @@ setEntity( const Entity& entity )
   // convert the given entity to an entity of the grid 
   // for wrapped entities the cast to the host entity is necessary 
   const GridEntityType& gridEntity = Fem :: gridEntity( entity );
-  enIndicator_ = & indicator_[ gridEntity ];
+  enIndicator_[ thread() ] = & indicator_[ gridEntity ];
 }
   
 //! initialize localIndicator with en 
@@ -156,7 +156,7 @@ setNeighbor( const Entity& neighbor )
   // convert the given entity to an entity of the grid 
   // for wrapped entities the cast to the host entity is necessary 
   const GridEntityType& gridNeighbor = Fem :: gridEntity( neighbor );
-  nbIndicator_ = & indicator_[ gridNeighbor ];
+  nbIndicator_[ thread() ] = & indicator_[ gridNeighbor ];
 }
   
 //! initialize localIndicator with en 
@@ -165,7 +165,7 @@ void
 AdaptationHandler<GridImp, FunctionSpace> ::  
 resetNeighbor()
 {
-  nbIndicator_ = 0 ;
+  nbIndicator_[ thread() ] = 0 ;
 }
   
 //! add value to local indicator, use setEntity before 
@@ -186,8 +186,9 @@ void
 AdaptationHandler<GridImp, FunctionSpace> ::  
 addToEntityIndicator(const FullRangeType& error, const double h )
 {
-  assert( enIndicator_ );
-  addToLocalIndicator( *enIndicator_, error, h );
+  LocalIndicatorType* enIndicator = enIndicator_[ thread() ];
+  assert( enIndicator );
+  addToLocalIndicator( *enIndicator, error, h );
 }
 
 //! add value to local indicator, use setEntity before 
@@ -196,9 +197,10 @@ void
 AdaptationHandler<GridImp, FunctionSpace> ::  
 addToNeighborIndicator(const FullRangeType& error, const double h )
 {
-  if( nbIndicator_ )
+  LocalIndicatorType* nbIndicator = nbIndicator_[ thread() ];
+  if( nbIndicator )
   {
-    addToLocalIndicator( *nbIndicator_, error, h );
+    addToLocalIndicator( *nbIndicator, error, h );
   }
 }
 
@@ -207,6 +209,7 @@ void
 AdaptationHandler<GridImp, FunctionSpace> ::  
 addToLocalIndicator(const GridEntityType &en, const FullRangeType& error, const double h )
 {
+  assert( singleThreadMode() );
   addToLocalIndicator( indicator_[ en ], error, h );
   return;
 }
@@ -216,6 +219,7 @@ void
 AdaptationHandler<GridImp, FunctionSpace> ::  
 setLocalIndicator(const GridEntityType &en, const FullRangeType& error)
 {
+  assert( singleThreadMode() );
   indicator_[ en ] = error[ 0 ] ;
   return;
 }
@@ -234,6 +238,7 @@ double
 AdaptationHandler<GridImp, FunctionSpace> ::  
 getSumEstimator() const 
 {    
+  assert( singleThreadMode() );
   double sum = 0.0;
 
   typedef typename IndicatorType :: ConstIterator   IteratorType ;
@@ -254,6 +259,7 @@ double
 AdaptationHandler<GridImp, FunctionSpace> ::  
 getMaxEstimator() const 
 {    
+  assert( singleThreadMode() );
   double max = 0.0;
 
   {
@@ -307,6 +313,7 @@ double
 AdaptationHandler<GridImp, FunctionSpace> ::  
 getInitialTolerance () const
 {
+  assert( singleThreadMode() );
   const double globalNumberElements = globalNumberOfElements();
   const double dt = timeProvider_.deltaT();
   const double localInTimeTol = initialTheta_ * globalTolerance_ * globalTolerance_* (dt / endTime_);
@@ -339,6 +346,7 @@ double
 AdaptationHandler<GridImp, FunctionSpace> ::  
 getLocalTolerance () const
 {
+  assert( singleThreadMode() );
   const double localInTimeTol = getLocalInTimeTolerance ();
   const double globalNumberElements = globalNumberOfElements();
 
@@ -373,6 +381,7 @@ void
 AdaptationHandler<GridImp, FunctionSpace> ::  
 markEntities ( const bool initialAdapt )
 {
+  assert( singleThreadMode() );
   // get local refine tolerance 
   const double refineTol = ( initialAdapt ) ? getInitialTolerance() : getLocalTolerance();
   // get local coarsen tolerance 
@@ -420,6 +429,7 @@ template <class AdaptationManagerType>
 void AdaptationHandler<GridImp, FunctionSpace> ::  
 adapt( AdaptationManagerType& am, const bool initialAdapt )
 {
+  assert( singleThreadMode() );
   // if adaptation is enabled 
   if( am.adaptive() )
   {
@@ -440,6 +450,8 @@ void
 AdaptationHandler<GridImp, FunctionSpace> ::  
 resetStatus() 
 {
+  assert( singleThreadMode() );
+
   // clear error indicator 
   clearIndicator();
 
@@ -460,6 +472,8 @@ typename AdaptationHandler<GridImp, FunctionSpace>::UInt64Type
 AdaptationHandler<GridImp, FunctionSpace> ::  
 countElements() const 
 {
+  assert( singleThreadMode() );
+
   if( maxLevelCounter_.size() > 0)
     maxLevelCounter_.clear();
 
