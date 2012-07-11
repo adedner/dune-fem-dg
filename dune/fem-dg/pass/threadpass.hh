@@ -233,6 +233,8 @@ namespace Dune {
       singleProblem_( problem ),
       problems_( Fem::ThreadManager::maxThreads() ),
       passes_( Fem::ThreadManager::maxThreads() ),
+      slaveAdaptationHandler_( Fem::ThreadManager::maxThreads(), (AdaptationHandlerType *) 0 ),
+      masterAdaptationHandler_( 0 ),
       passComputeTime_( Fem::ThreadManager::maxThreads(), 0.0 ),
       passStage_( Fem::ThreadManager::maxThreads(), false ),
       arg_(0), dest_(0),
@@ -259,6 +261,7 @@ namespace Dune {
     {
       for(int i=0; i<Fem::ThreadManager::maxThreads(); ++i)
       {
+        delete slaveAdaptationHandler_[ i ];
         delete passes_[ i ];
         delete problems_[ i ];
       }
@@ -266,14 +269,32 @@ namespace Dune {
 
     void setAdaptationHandler( AdaptationHandlerType& adHandle, double weight ) 
     {
+      // store adaptation handle as master handle 
+      masterAdaptationHandler_ = & adHandle ;
       const int maxThreads = Fem::ThreadManager::maxThreads();
       for(int thread=0; thread<maxThreads; ++thread)
       {
-        problems_[ thread ]->setAdaptationHandler( adHandle, 
+        AdaptationHandlerType* handle = 0;
+        if( thread == 0 ) 
+        {
+          // use existing adaptation handle 
+          // as master handle 
+          handle = masterAdaptationHandler_;
+        }
+        else 
+        {
+          // create new slave adaptation handles to avoid 
+          // conflicts with wrtiting 
+          handle = new AdaptationHandlerType( adHandle );
+          slaveAdaptationHandler_[ thread-1 ] = handle ;
+        }
+
+        problems_[ thread ]->setAdaptationHandler( *handle, 
 #ifdef NSMOD_USE_SMP_PARALLEL
             iterators_.filter( thread ), // add filter in thread parallel versions 
 #endif
             weight );
+
       }
     }
    
@@ -363,11 +384,27 @@ namespace Dune {
     //! overload compute method to use thread iterators 
     void compute(const ArgumentType& arg, DestinationType& dest) const
     {
+      const int maxThreads = Fem::ThreadManager::maxThreads();
+
       const bool updateAlso = (& dest != 0);
       if( updateAlso ) 
       {
         // clear destination 
         dest.clear();
+      }
+      else 
+      {
+        // if adaptation handler is set 
+        if( masterAdaptationHandler_ ) 
+        {
+          // skip the master thread since this 
+          // is already cleared 
+          for(int i=0; i<maxThreads-1; ++i)
+          {
+            // sum up indicators 
+            slaveAdaptationHandler_[ i ]->clearIndicator();
+          }
+        }
       }
 
       // reset number of elements 
@@ -375,7 +412,6 @@ namespace Dune {
 
       // set time for all passes, this is used in prepare of pass 
       // and therefore has to be done before prepare is called
-      const int maxThreads = Fem::ThreadManager::maxThreads();
       for(int i=0; i<maxThreads; ++i ) 
       {
         // set time to each pass 
@@ -498,6 +534,17 @@ namespace Dune {
         computeTime_ += accCompTime ;
 
       } // end if first call 
+
+      // if adaptation handler is set 
+      if( masterAdaptationHandler_ ) 
+      {
+        // accumulate the other indicators 
+        for(int i=0; i<maxThreads-1; ++i)
+        {
+          // sum up indicators 
+          (*masterAdaptationHandler_) += *(slaveAdaptationHandler_[ i ]);
+        }
+      }
 
       // set max time steps 
       setMaxTimeSteps();
@@ -643,6 +690,8 @@ namespace Dune {
     DiscreteModelType& singleProblem_;
     std::vector< DiscreteModelType* > problems_; 
     std::vector< InnerPassType* > passes_;
+    std::vector< AdaptationHandlerType* > slaveAdaptationHandler_;
+    AdaptationHandlerType* masterAdaptationHandler_;
     mutable std::vector< double > passComputeTime_;
     mutable std::vector< bool   > passStage_;
 
