@@ -636,8 +636,8 @@ namespace Dune {
           (0.5 * ( this->enVolume() + this->nbVolume() ) / normal.two_norm() );
 
         // add error to indicator 
-        adaptation_->addToEntityIndicator( error, weight );
-        adaptation_->addToNeighborIndicator( error, weight );
+        enIndicator_.add( error, weight );
+        nbIndicator_.addChecked( error, weight );
       }
 
       return ldt ;
@@ -672,6 +672,8 @@ namespace Dune {
   protected:
     // defined in AdvectionModel 
     using BaseType :: adaptation_ ;
+    using BaseType :: enIndicator_;
+    using BaseType :: nbIndicator_;
     using BaseType :: weight_ ;
   };                                              /*@LST0E@*/
 

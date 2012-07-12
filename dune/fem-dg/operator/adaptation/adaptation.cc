@@ -16,8 +16,6 @@ AdaptationHandler ( GridType &grid,
   : grid_(grid)
   , gridPart_(grid_)
   , indicator_( grid_, 0 ) // grid , codimension 
-  , enIndicator_( Dune::Fem::ThreadManager::maxThreads(), (LocalIndicatorType* ) 0 )
-  , nbIndicator_( Dune::Fem::ThreadManager::maxThreads(), (LocalIndicatorType* ) 0 )
   , timeProvider_(timeProvider)
   , globalTolerance_ ( param.refinementTolerance() )
   , coarsenTheta_( param.coarsenPercentage() )
@@ -60,8 +58,6 @@ AdaptationHandler ( const AdaptationHandler& other )
   : grid_( other.grid_ )
   , gridPart_( grid_ )
   , indicator_( other.indicator_ ) 
-  , enIndicator_( Dune::Fem::ThreadManager::maxThreads(), (LocalIndicatorType* ) 0 )
-  , nbIndicator_( Dune::Fem::ThreadManager::maxThreads(), (LocalIndicatorType* ) 0 )
   , timeProvider_( other.timeProvider_ )
   , globalTolerance_ ( other.globalTolerance_ )
   , coarsenTheta_( other.coarsenTheta_ )
@@ -136,72 +132,27 @@ operator += ( const ThisType& other )
 //! initialize localIndicator with en 
 template <class GridImp, class FunctionSpace>
 template <class Entity>
-void 
+typename AdaptationHandler<GridImp, FunctionSpace> ::LocalIndicatorType 
 AdaptationHandler<GridImp, FunctionSpace> ::  
-setEntity( const Entity& entity )
+localIndicator( const Entity& entity )
 {
   // convert the given entity to an entity of the grid 
   // for wrapped entities the cast to the host entity is necessary 
   const GridEntityType& gridEntity = Fem :: gridEntity( entity );
-  enIndicator_[ thread() ] = & indicator_[ gridEntity ];
+  return LocalIndicatorType( this, &indicator_[ gridEntity ] );
 }
-  
-//! initialize localIndicator with en 
-template <class GridImp, class FunctionSpace>
-template <class Entity>
-void 
-AdaptationHandler<GridImp, FunctionSpace> ::  
-setNeighbor( const Entity& neighbor )
-{
-  // convert the given entity to an entity of the grid 
-  // for wrapped entities the cast to the host entity is necessary 
-  const GridEntityType& gridNeighbor = Fem :: gridEntity( neighbor );
-  nbIndicator_[ thread() ] = & indicator_[ gridNeighbor ];
-}
-  
-//! initialize localIndicator with en 
-template <class GridImp, class FunctionSpace>
-void 
-AdaptationHandler<GridImp, FunctionSpace> ::  
-resetNeighbor()
-{
-  nbIndicator_[ thread() ] = 0 ;
-}
+
   
 //! add value to local indicator, use setEntity before 
 template <class GridImp, class FunctionSpace>
 void 
 AdaptationHandler<GridImp, FunctionSpace> ::  
-addToLocalIndicator( LocalIndicatorType& indicator, 
-                     const FullRangeType& error, const double h )
+addToLocalIndicator( LocalIndicatorDataType& indicator, 
+                     const FullRangeType& error, const double h ) const
 {
   const double dt = timeProvider_.deltaT();
   const double factor = ( h + dt  ) * dt ;
   indicator += (factor * error.two_norm());  
-}
-
-//! add value to local indicator, use setEntity before 
-template <class GridImp, class FunctionSpace>
-void 
-AdaptationHandler<GridImp, FunctionSpace> ::  
-addToEntityIndicator(const FullRangeType& error, const double h )
-{
-  LocalIndicatorType* enIndicator = enIndicator_[ thread() ];
-  assert( enIndicator );
-  addToLocalIndicator( *enIndicator, error, h );
-}
-
-//! add value to local indicator, use setEntity before 
-template <class GridImp, class FunctionSpace>
-void 
-AdaptationHandler<GridImp, FunctionSpace> ::  
-addToNeighborIndicator(const FullRangeType& error, const double h )
-{
-  LocalIndicatorType* nbIndicator = nbIndicator_[ thread() ];
-  if( nbIndicator )
-  {
-    addToLocalIndicator( *nbIndicator, error, h );
-  }
 }
 
 template <class GridImp, class FunctionSpace>
@@ -209,7 +160,6 @@ void
 AdaptationHandler<GridImp, FunctionSpace> ::  
 addToLocalIndicator(const GridEntityType &en, const FullRangeType& error, const double h )
 {
-  assert( singleThreadMode() );
   addToLocalIndicator( indicator_[ en ], error, h );
   return;
 }

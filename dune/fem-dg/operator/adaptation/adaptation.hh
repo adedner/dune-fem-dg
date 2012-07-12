@@ -137,17 +137,17 @@ public:
   typedef typename GridPartType :: IntersectionIteratorType IntersectionIteratorType ;
 
   // local indicator 
-  struct LocalIndicator 
+  struct LocalIndicatorData
   {
-    LocalIndicator() : value_( 0.0 ) {} 
+    LocalIndicatorData() : value_( 0.0 ) {} 
     double value_;
-    LocalIndicator& operator += ( const double& value ) 
+    LocalIndicatorData& operator += ( const double& value ) 
     {
       value_ += value; 
       return *this;
     }
 
-    LocalIndicator& operator = ( const double& value ) 
+    LocalIndicatorData& operator = ( const double& value ) 
     {
       value_ = value; 
       return *this;
@@ -155,10 +155,64 @@ public:
     double value() const { return value_; }
   };
 
-  // type of indicator stored by for each entity 
-  typedef LocalIndicator LocalIndicatorType;
 
-  typedef PersistentContainer< GridType, LocalIndicatorType > IndicatorType ;
+  // type of indicator stored by for each entity 
+  typedef LocalIndicatorData LocalIndicatorDataType;
+
+  typedef PersistentContainer< GridType, LocalIndicatorDataType > IndicatorType ;
+
+  class LocalIndicator
+  {
+    const ThisType* adaptation_; 
+    LocalIndicatorDataType* localIndicator_;
+  public:  
+    LocalIndicator() 
+      : adaptation_( 0 ), 
+        localIndicator_( 0 ) {}
+
+    LocalIndicator( const ThisType* adaptation, LocalIndicatorDataType* indicator ) 
+      : adaptation_( adaptation ), 
+        localIndicator_( indicator ) {}
+
+    LocalIndicator( const LocalIndicator& other ) 
+      : adaptation_( other.adaptation_ ),
+        localIndicator_( other.localIndicator_ ) 
+    {}
+
+    LocalIndicator& operator= ( const LocalIndicator& other ) 
+    {
+      // make sure we are considering the same adaptation object 
+      adaptation_     = other.adaptation_ ;
+      localIndicator_ = other.localIndicator_;
+      return *this;
+    }
+
+    //! reset local indicator  
+    void reset() 
+    {
+      localIndicator_ = 0;
+    }
+
+    //! add to local indicator 
+    void add( const FullRangeType& error, const double h )
+    {
+      assert( localIndicator_ );
+      assert( adaptation_ );
+      adaptation_->addToLocalIndicator( *localIndicator_, error, h );
+    }
+
+    //! add to local indicator if localIndicator is valid 
+    void addChecked( const FullRangeType& error, const double h )
+    {
+      if( localIndicator_ ) 
+      {
+        add( error, h );
+      }
+    }
+  };
+
+  // type of local indicator
+  typedef LocalIndicator  LocalIndicatorType ;
 
   // time provider 
   typedef TimeProviderBase TimeProviderType ;
@@ -184,6 +238,10 @@ public:
   //! clear indicator 
   void clearIndicator();
 
+  //! return local indicator object 
+  template <class Entity> 
+  LocalIndicatorType localIndicator( const Entity& entity );
+
   //! add another AdaptationHandlers indicator 
   ThisType& operator += ( const ThisType& other );
 
@@ -205,7 +263,7 @@ public:
   void addToNeighborIndicator( const FullRangeType& error, const double h );
 
   //! add to local indicator for given entity 
-  void addToLocalIndicator( LocalIndicatorType& indicator, const FullRangeType& error, const double h );
+  void addToLocalIndicator( LocalIndicatorDataType& indicator, const FullRangeType& error, const double h ) const ;
 
   //! add to local indicator for given entity 
   void addToLocalIndicator(const GridEntityType &en, const FullRangeType& error, const double h );
@@ -278,11 +336,6 @@ protected:
 
   //! persistent container holding local indicators 
   IndicatorType indicator_;
-
-  //! local function of indicator_ for entity 
-  std::vector< LocalIndicatorType* > enIndicator_;
-  //! local function of indicator_ for neighbor 
-  std::vector< LocalIndicatorType* > nbIndicator_;
 
   //! timestep size in time discretization parameters und endTime 
   TimeProviderType & timeProvider_;

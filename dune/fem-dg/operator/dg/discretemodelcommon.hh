@@ -440,6 +440,8 @@ namespace Dune {
     // discrete function storing the adaptation indicator information 
     typedef typename Traits :: AdaptationHandlerType  AdaptationHandlerType ;
 
+    typedef typename AdaptationHandlerType :: LocalIndicatorType  LocalIndicatorType;
+
     // type of thread filter in thread parallel runs 
     typedef Fem :: ThreadFilter<GridPartType> ThreadFilterType;
 
@@ -452,6 +454,8 @@ namespace Dune {
       : BaseType( mod, numf ),
         adaptation_( 0 ),
         threadFilter_( 0 ),
+        enIndicator_(),
+        nbIndicator_(),
         weight_( 1 )
     {
     }
@@ -461,6 +465,8 @@ namespace Dune {
       : BaseType( other ),
         adaptation_( other.adaptation_ ),
         threadFilter_( other.threadFilter_ ),
+        enIndicator_( other.enIndicator_ ),
+        nbIndicator_( other.nbIndicator_ ),
         weight_( other.weight_ )
     {
     }
@@ -470,7 +476,7 @@ namespace Dune {
       BaseType :: setEntity( entity );
 
       if( adaptation_ ) 
-        adaptation_->setEntity( entity );
+        enIndicator_ = adaptation_->localIndicator( entity );
     }
 
     void setNeighbor( const EntityType& neighbor ) 
@@ -487,12 +493,12 @@ namespace Dune {
             ! threadFilter_->contains( neighbor ) )
         {
           // remove neighbor indicator
-          adaptation_->resetNeighbor(); 
+          nbIndicator_.reset();
         }
         else 
 #endif
         {
-          adaptation_->setNeighbor( neighbor );
+          nbIndicator_ = adaptation_->localIndicator( neighbor );
         }
       }
     }
@@ -610,8 +616,8 @@ namespace Dune {
           (0.5 * ( this->enVolume() + this->nbVolume() ) / faceVol );
 
         // add error to indicator 
-        adaptation_->addToEntityIndicator( error, weight );
-        adaptation_->addToNeighborIndicator( error, weight );
+        enIndicator_.add( error, weight );
+        nbIndicator_.addChecked( error, weight );
       }
 
       return ldt ;
@@ -643,6 +649,10 @@ namespace Dune {
 
     AdaptationHandlerType*  adaptation_;
     const ThreadFilterType*  threadFilter_;  
+
+    mutable LocalIndicatorType enIndicator_;
+    mutable LocalIndicatorType nbIndicator_;
+
     double weight_ ;
   };                                             
 
