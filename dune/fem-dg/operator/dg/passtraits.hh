@@ -35,8 +35,7 @@ namespace Dune {
 
     // Allow generalization to systems
     typedef FunctionSpace< ctype, double, dimDomain, dimRange >      FunctionSpaceType;
-    typedef LagrangeDiscontinuousGalerkinSpace <
-//    typedef DiscontinuousGalerkinSpace< 
+    typedef DiscontinuousGalerkinSpace< 
                                         FunctionSpaceType,
                                         GridPartType, polOrd,
                                         CachingStorage >             DiscreteFunctionSpaceType;
