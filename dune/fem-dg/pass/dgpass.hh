@@ -139,10 +139,8 @@ namespace Dune {
         valJacNb_( 20 ),
         dtMin_(std::numeric_limits<double>::max()),
         minLimit_(2.0*std::numeric_limits<double>::min()),
-        volumeQuadOrd_( (volumeQuadOrd < 0) ? 
-            (2*spc_.order()) : volumeQuadOrd ),
-        faceQuadOrd_( (faceQuadOrd < 0) ? 
-          (2*spc_.order()+1) : faceQuadOrd ),
+        volumeQuadOrd_( volumeQuadOrd ),
+        faceQuadOrd_( faceQuadOrd ),
         numberOfElements_( 0 ),
         localMassMatrix_( spc_ , volumeQuadOrd_ ),
         reallyCompute_( true ),
@@ -162,9 +160,6 @@ namespace Dune {
       valNbVec_.setMemoryFactor( 1.1 );
       valJacEn_.setMemoryFactor( 1.1 );
       valJacNb_.setMemoryFactor( 1.1 );
-
-      assert( volumeQuadOrd_ >= 0 );
-      assert( faceQuadOrd_ >= 0 );
     }
    
     //! Destructor
@@ -596,7 +591,8 @@ namespace Dune {
       // otherwise this contribution is zero 
       if( (spc_.order() > 0) || discreteModel_.hasSource() ) 
       {
-        VolumeQuadratureType volQuad(entity, volumeQuadOrd_);
+        assert( volumeQuadratureOrder( entity ) >=0 );
+        VolumeQuadratureType volQuad(entity, volumeQuadratureOrder( entity ) );
         caller_.setEntity(entity, volQuad);
 
         // if only flux, evaluate only flux 
@@ -665,8 +661,8 @@ namespace Dune {
                 // apply neighbor part, return is volume of neighbor which is
                 // needed below 
                 nbvol = applyLocalNeighbor< false >
-                            (intersection, nb,
-                             updEn, updNeigh_ , envol,
+                            (intersection, nb, faceQuadratureOrder( entity, nb ),
+                             updEn, updNeigh_, envol,
                              wspeedS,
                              canUpdateNeighbor );
               }
@@ -675,7 +671,7 @@ namespace Dune {
                 // apply neighbor part, return is volume of neighbor which is
                 // needed below 
                 nbvol = applyLocalNeighbor< true > 
-                            (intersection, nb,
+                            (intersection, nb, faceQuadratureOrder( entity, nb ),
                              updEn, updNeigh_ , envol,
                              wspeedS,
                              canUpdateNeighbor );
@@ -684,7 +680,7 @@ namespace Dune {
           } // end if neighbor
           else if( intersection.boundary() )
           {
-            FaceQuadratureType faceQuadInner(gridPart_, intersection, faceQuadOrd_, 
+            FaceQuadratureType faceQuadInner(gridPart_, intersection, faceQuadratureOrder( entity ), 
                                              FaceQuadratureType::INSIDE);
 
             // initialize intersection 
@@ -873,6 +869,7 @@ namespace Dune {
     template <bool conforming, class LocalFunctionImp >  
     double applyLocalNeighbor(const IntersectionType & intersection, 
                               const EntityType & nb, 
+                              const int faceQuadratureOrder,
                               LocalFunctionImp & updEn,
                               LocalFunctionImp & updNb,
                               const double enVol,
@@ -882,12 +879,15 @@ namespace Dune {
       // make sure correct method is called 
       assert( intersection.conforming() == conforming );
 
+      // check on quadrature order 
+      assert( faceQuadratureOrder >= 0 );
+
       // use IntersectionQuadrature to create appropriate face quadratures 
       typedef IntersectionQuadrature< FaceQuadratureType, conforming > IntersectionQuadratureType;
       typedef typename IntersectionQuadratureType :: FaceQuadratureType QuadratureImp;
 
       // create intersection quadrature 
-      IntersectionQuadratureType interQuad( gridPart_, intersection, faceQuadOrd_ );
+      IntersectionQuadratureType interQuad( gridPart_, intersection, faceQuadratureOrder );
 
       // get appropriate references 
       const QuadratureImp &faceQuadInner = interQuad.inside();
@@ -979,6 +979,33 @@ namespace Dune {
     LocalCDGPass();
     LocalCDGPass(const LocalCDGPass&);
     LocalCDGPass& operator=(const LocalCDGPass&);
+
+  protected:
+    //! return appropriate quadrature order, default is 2 * order(entity) 
+    int volumeQuadratureOrder( const EntityType& entity ) const
+    {
+      return ( volumeQuadOrd_ < 0 ) ? ( spc_.order( entity ) * 2 ) : volumeQuadOrd_ ;
+    }
+
+    //! return default face quadrature order 
+    int defaultFaceQuadOrder( const EntityType& entity ) const 
+    {
+      return (2 * spc_.order( entity )) + 1;
+    }
+
+    //! return appropriate quadrature order, default is 2 * order( entity ) + 1
+    int faceQuadratureOrder( const EntityType& entity ) const
+    {
+      return ( faceQuadOrd_ < 0 ) ? defaultFaceQuadOrder( entity ) : faceQuadOrd_ ;
+    }
+
+    //! return appropriate quadrature order, default is 2 * order( entity ) + 1
+    int faceQuadratureOrder( const EntityType& entity, const EntityType& neighbor ) const
+    {
+      return ( faceQuadOrd_ < 0 ) ? 
+        std::max( defaultFaceQuadOrder( entity ), defaultFaceQuadOrder( neighbor ) ) : 
+        faceQuadOrd_ ;
+    }
 
   protected:
     mutable DiscreteModelCallerType caller_;
