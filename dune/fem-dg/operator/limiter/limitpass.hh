@@ -15,11 +15,14 @@
 #include <dune/fem/space/common/adaptmanager.hh>
 #include <dune/fem/space/dgspace.hh>
 #include <dune/fem/space/combinedspace.hh>
-#include <dune/fem/space/lagrangespace.hh>
 #include <dune/fem/pass/dgpass.hh>
 #include <dune/fem-dg/pass/dgmodelcaller.hh>
 #include <dune/fem/pass/dgdiscretemodel.hh>
 #include <dune/fem/operator/1order/localmassmatrix.hh>
+
+// the lagrange point sets 
+#include <dune/fem/space/lagrangespace/lagrangepointset.hh>
+#include <dune/fem/space/common/basesetlocalkeystorage.hh>
 
 #include <dune/fem/io/parameter.hh>
 
@@ -658,9 +661,10 @@ namespace Dune {
     typedef GeometryInformation< GridType, 1 > FaceGeometryInformationType;
 
     // get LagrangePointSet of pol order 1 
-    typedef LagrangeDiscreteFunctionSpace < typename
-      DiscreteFunctionSpaceType :: FunctionSpaceType, GridPartType, 1 >
-          LagrangeSpaceType; 
+    typedef Fem :: LagrangePointSet< GridPartType, 1 > LagrangePointSetType ;
+    // get lagrange point set of order 1 
+    typedef Fem :: CompiledLocalKeyContainer< LagrangePointSetType, 1 , 1 >
+      LagrangePointSetContainerType ;
     
     typedef DGFEntityKey<int> KeyType;
     typedef std::vector<int> CheckType;
@@ -921,7 +925,7 @@ namespace Dune {
       spc_(spc),
       gridPart_(spc_.gridPart()),
       localIdSet_( gridPart_.grid().localIdSet()),
-      lagrangeSpace_(gridPart_),
+      lagrangePointSetContainer_(gridPart_),
       orderPower_( -((spc_.order()+1.0) * 0.25)),
       limitEps_( LimiterFunctionBase :: getEpsilon() ),
       dofConversion_(dimRange),
@@ -1470,10 +1474,10 @@ namespace Dune {
           uTmp[ idx ] = uEn[ idx ];
         }
       }
-      typedef typename LagrangeSpaceType :: LagrangePointSetType  LagrangePointSetType;
+
       // use LagrangePointSet to evaluate on cornners of the 
       // geometry and also use caching 
-      const LagrangePointSetType& quad = lagrangeSpace_.lagrangePointSet( geo.type() );
+      const LagrangePointSetType& quad = lagrangePointSet( geo.type() );
       for(int i=0; i<dimDomain; ++i) 
       {
         uTmp.evaluate( quad[ i ], b[ i ]);   
@@ -1799,7 +1803,7 @@ namespace Dune {
 #if 1
         // use LagrangePointSet to evaluate on corners of the 
         // geometry and also use caching 
-        return checkPhysicalQuad( lagrangeSpace_.lagrangePointSet(geo.type()), uEn );
+        return checkPhysicalQuad( lagrangePointSet( geo.type() ), uEn );
 #else 
         {
           VolumeQuadratureType volQuad(en, volumeQuadOrd_ );
@@ -2511,6 +2515,11 @@ namespace Dune {
     LimitDGPass();
     LimitDGPass(const LimitDGPass&);
     LimitDGPass& operator=(const LimitDGPass&);
+
+    const LagrangePointSetType& lagrangePointSet( const GeometryType& geomType ) const 
+    {
+      return lagrangePointSetContainer_.compiledLocalKey( geomType, 1 );
+    }
     
   private:
     mutable DiscreteModelCallerType caller_;
@@ -2523,7 +2532,8 @@ namespace Dune {
     const DiscreteFunctionSpaceType& spc_;
     GridPartType& gridPart_;
     const LocalIdSetType& localIdSet_;
-    LagrangeSpaceType lagrangeSpace_;
+
+    LagrangePointSetContainerType lagrangePointSetContainer_; 
 
     const double orderPower_;
     const double limitEps_;
