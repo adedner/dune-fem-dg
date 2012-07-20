@@ -204,7 +204,7 @@ protected:
       if( mxl > entity.level() ) 
       {
         typedef typename EntityType :: HierarchicIterator HierIt; 
-        HierIt endit = entity.hend( mxl ); 
+        const HierIt endit = entity.hend( mxl ); 
         for(HierIt it = entity.hbegin( mxl ); it != endit; ++it)
         {
           ++weight;
