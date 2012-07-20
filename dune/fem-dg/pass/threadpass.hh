@@ -36,7 +36,7 @@ namespace Dune {
     static bool nonBlockingCommunication() 
     {
       // non-blocking communication is only avaiable in smp mode
-#ifdef NSMOD_USE_SMP_PARALLEL
+#ifdef USE_SMP_PARALLEL
       return Parameter :: getValue< bool > ("femdg.nonblockingcomm", false );
 #else 
       return false;
