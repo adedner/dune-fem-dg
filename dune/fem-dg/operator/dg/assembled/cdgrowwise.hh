@@ -30,7 +30,7 @@ namespace Dune {
   template <class DiscreteFunctionSpaceType> 
   struct CDGRowwiseTraits<DiscreteFunctionSpaceType, true> 
   {
-    typedef SparseRowMatrixTraits< 
+    typedef Fem::SparseRowMatrixTraits< 
                   DiscreteFunctionSpaceType, 
                   DiscreteFunctionSpaceType > MatrixTraits; 
   };
