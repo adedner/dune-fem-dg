@@ -8,8 +8,10 @@
 #include <dune/fem/misc/threadmanager.hh>
 #include <dune/fem/gridpart/filteredgridpart.hh>
 
+#ifdef USE_SMP_PARALLEL
 #include <dune/fem-dg/pass/threadfilter.hh>
 #include <dune/fem-dg/pass/partitioner.hh>
+#endif
 
 namespace Dune {
 
@@ -25,10 +27,10 @@ namespace Dune {
       typedef typename SpaceType :: GridType      GridType;
       typedef typename SpaceType :: GridPartType  GridPartType;
       typedef typename SpaceType :: IndexSetType  IndexSetType;
+#ifdef USE_SMP_PARALLEL
       typedef ThreadFilter<GridPartType> FilterType;
       typedef FilteredGridPart< GridPartType, FilterType, false > FilteredGridPartType ;
 
-#ifdef USE_SMP_PARALLEL
       typedef typename FilteredGridPartType :: template Codim< 0 > :: IteratorType
         IteratorType;
 #else 

@@ -24,11 +24,11 @@
 // streams for backup
 #include <dune/fem-dg/misc/streams.hh>
 
+#if defined USE_SMP_PARALLEL 
 #include <dune/fem/misc/threadmanager.hh>
 #include <dune/fem-dg/pass/partitioner.hh>
 #include <dune/fem-dg/pass/threadpass.hh>
 
-#if defined USE_SMP_PARALLEL 
 #if HAVE_DUNE_FEM_DG 
 #define NSMOD_USE_SMP_PARALLEL
 #endif
