@@ -83,7 +83,7 @@ namespace Dune {
             int polOrd, int passUId, int passGradId,
             bool returnAdvectionPart> 
   class AdvectionModel :
-    public DGDiscreteModelDefaultWithInsideOutside
+    public Fem::DGDiscreteModelDefaultWithInsideOutside
       <AdvectionTraits<Model, NumFlux, polOrd, passUId, passGradId, returnAdvectionPart>,
        passUId, passGradId>
   {
@@ -94,7 +94,7 @@ namespace Dune {
     typedef Model   ModelType ;
     typedef NumFlux NumFluxType ;
 
-    typedef DGDiscreteModelDefaultWithInsideOutside
+    typedef Fem::DGDiscreteModelDefaultWithInsideOutside
               < Traits, passUId, passGradId >                          BaseType;
 
     // These type definitions allow a convenient access to arguments of pass.

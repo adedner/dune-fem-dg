@@ -31,7 +31,7 @@ namespace Dune {
             DGDiffusionFluxIdentifier diffFluxId,
             int polOrd, bool advection = true , bool diffusion = true >
   class DGAdvectionDiffusionOperator : 
-    public SpaceOperatorInterface 
+    public Fem::SpaceOperatorInterface 
       < typename PassTraits< Model, Model::Traits::dimRange, polOrd > :: DestinationType >
   {
     // Id's for the three Passes (including StartPass)
@@ -73,7 +73,7 @@ namespace Dune {
 
     typedef typename Traits1 :: GridPartType                           GridPartType;
 
-    typedef StartPass< DiscreteFunction2Type, u >                      Pass0Type; /*@LST0S@*/
+    typedef Fem::StartPass< DiscreteFunction2Type, u >                 Pass0Type; /*@LST0S@*/
     typedef LocalCDGPass< DiscreteModel1Type, Pass0Type, gradPass >    Pass1Type; /*@\label{ad:typedefpass1}@*/
     typedef LocalCDGPass< DiscreteModel2Type, Pass1Type, advectPass >  Pass2Type; /*@\label{ad:typedefpass2}@*//*@LST0E@*/
 
@@ -281,7 +281,7 @@ namespace Dune {
             DGDiffusionFluxIdentifier diffFluxId, // dummy parameter 
             int polOrd, bool advection = true >
   class DGLimitedAdvectionDiffusionOperator :
-    public SpaceOperatorInterface 
+    public Fem::SpaceOperatorInterface 
       < typename PassTraits< Model, Model::Traits::dimRange, polOrd > :: DestinationType >
   {
     enum PassIdType { u, limitPassId, gradPassId, advectPassId };    /*@\label{ad:passids}@*/
@@ -328,7 +328,7 @@ namespace Dune {
 
     typedef typename Traits2 :: GridPartType                           GridPartType;
 
-    typedef StartPass< DiscreteFunction3Type, u >                      Pass0Type; /*@LST0S@*/
+    typedef Fem::StartPass< DiscreteFunction3Type, u >                   Pass0Type; /*@LST0S@*/
     typedef LimitDGPass< DiscreteModel1Type, Pass0Type, limitPassId >    Pass1Type; /*@\label{ad:typedefpass1}@*/
     typedef LocalCDGPass< DiscreteModel2Type, Pass1Type, gradPassId >    Pass2Type; /*@\label{ad:typedefpass1}@*/
     typedef LocalCDGPass< DiscreteModel3Type, Pass2Type, advectPassId >  Pass3Type; /*@\label{ad:typedefpass2}@*//*@LST0E@*/

@@ -28,7 +28,7 @@ namespace Dune {
     typedef typename GridType :: ctype                               ctype;
     static const int dimDomain = Model :: Traits :: dimDomain;
 
-    //typedef ElementQuadrature< GridPartType, 0 >                     VolumeQuadratureType;
+    //typedef Fem::ElementQuadrature< GridPartType, 0 >                     VolumeQuadratureType;
     typedef CachingQuadrature< GridPartType, 0 >                     VolumeQuadratureType;
     typedef CachingQuadrature< GridPartType, 1 >                     FaceQuadratureType;
     //typedef ElementQuadrature< GridPartType, 1 >                     FaceQuadratureType;

@@ -47,14 +47,14 @@ namespace Dune {
   //! LDG
   template< class DiscreteModelImp, class PreviousPassImp , int passIdImp = -1 >
   class LocalCDGPass :
-    public LocalPass< DiscreteModelImp , PreviousPassImp , passIdImp > 
+    public Fem::LocalPass< DiscreteModelImp , PreviousPassImp , passIdImp > 
   {
     typedef LocalCDGPass< DiscreteModelImp, PreviousPassImp, passIdImp > ThisType;
   public:
 
     //- Typedefs and enums
     //! Base class
-    typedef LocalPass< DiscreteModelImp , PreviousPassImp , passIdImp > BaseType;
+    typedef Fem::LocalPass< DiscreteModelImp , PreviousPassImp , passIdImp > BaseType;
 
     //! Repetition of template arguments
     typedef DiscreteModelImp DiscreteModelType;

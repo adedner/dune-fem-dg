@@ -230,7 +230,7 @@ namespace Dune {
             DGDiffusionFluxIdentifier diffFluxId, // diffusion flux identifier 
             int pOrd, bool advection = true, bool diffusion = false> 
   class DGLimitedAdvectionOperator :
-    public SpaceOperatorInterface 
+    public Fem::SpaceOperatorInterface 
       < typename PassTraits< Model, Model::Traits::dimRange, (pOrd < 0 ) ? 0 : pOrd> :: DestinationType >
   {
     enum PassIdType { u, limitPassId, advectPassId };    /*@\label{ad:passids}@*/

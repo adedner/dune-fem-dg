@@ -22,9 +22,9 @@ namespace Dune {
    */
   template <class DiscreteModelImp, class ArgumentImp, class SelectorImp>
   class CDGDiscreteModelCaller 
-    : public DiscreteModelCallerDefault< DiscreteModelImp, ArgumentImp, SelectorImp >
+    : public Fem::DiscreteModelCallerDefault< DiscreteModelImp, ArgumentImp, SelectorImp >
   {
-    typedef DiscreteModelCallerDefault< DiscreteModelImp, ArgumentImp, SelectorImp > BaseType;
+    typedef Fem::DiscreteModelCallerDefault< DiscreteModelImp, ArgumentImp, SelectorImp > BaseType;
   public:
     typedef DiscreteModelImp DiscreteModelType;  
     typedef typename BaseType :: EntityType              EntityType;

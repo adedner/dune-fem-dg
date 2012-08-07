@@ -79,13 +79,13 @@ namespace Dune {
             class MatrixObjectTraits, 
             int passId >
   class CDGPrimalOperatorImpl 
-    : public LocalPass<DiscreteModelImp, PreviousPassImp, passId
+    : public Fem::LocalPass<DiscreteModelImp, PreviousPassImp, passId
       > 
   {
   public:
     //- Typedefs and enums
     //! Base class
-    typedef LocalPass<DiscreteModelImp, PreviousPassImp, passId
+    typedef Fem::LocalPass<DiscreteModelImp, PreviousPassImp, passId
       > BaseType;
 
     typedef CDGPrimalOperatorImpl<DiscreteModelImp,

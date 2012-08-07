@@ -268,7 +268,7 @@ namespace Dune {
   // **********************************************
   template <class GlobalTraitsImp, class Model, int passId >
   class LimiterDefaultDiscreteModel :
-    public DGDiscreteModelDefaultWithInsideOutside< LimiterDefaultTraits<GlobalTraitsImp,Model,passId >, passId >  
+    public Fem::DGDiscreteModelDefaultWithInsideOutside< LimiterDefaultTraits<GlobalTraitsImp,Model,passId >, passId >  
   {
     integral_constant< int, passId > uVar;
 
