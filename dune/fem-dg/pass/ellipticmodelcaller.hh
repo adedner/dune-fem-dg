@@ -44,15 +44,15 @@ namespace Dune
     typedef typename Traits::FaceQuadratureType FaceQuadratureType;
     typedef typename Traits::VolumeQuadratureType VolumeQuadratureType;
 
-    typedef Filter<TotalArgumentType, SelectorType> FilterType;
+    typedef Fem::Filter<TotalArgumentType, SelectorType> FilterType;
     typedef typename FilterType::ResultType DiscreteFunctionTupleType;
-    typedef LocalFunctionCreator<DiscreteFunctionTupleType> LFCreator;
+    typedef Fem::LocalFunctionCreator<DiscreteFunctionTupleType> LFCreator;
     typedef typename LFCreator::ResultType LocalFunctionTupleType;
-    typedef Creator<
-      RangeTypeEvaluator, LocalFunctionTupleType> RangeCreator;
+    typedef Fem::Creator<
+      Fem::RangeTypeEvaluator, LocalFunctionTupleType> RangeCreator;
     typedef typename RangeCreator::ResultType RangeTupleType;
-    typedef Creator<
-      JacobianRangeTypeEvaluator, LocalFunctionTupleType> JacobianCreator;
+    typedef Fem::Creator<
+      Fem::JacobianRangeTypeEvaluator, LocalFunctionTupleType> JacobianCreator;
     typedef typename JacobianCreator::ResultType JacobianRangeTupleType;
 
     typedef BoundaryIdentifier BoundaryIdentifierType;

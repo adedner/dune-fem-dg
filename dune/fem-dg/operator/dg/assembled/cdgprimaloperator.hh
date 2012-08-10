@@ -203,8 +203,8 @@ namespace Dune {
     typedef FieldVector<double, massSize > MassVectorType; 
 
     //! type of local mass matrix 
-    typedef LocalDGMassMatrix< DiscreteFunctionSpaceType, VolumeQuadratureType > RhsMassMatrixType;
-    typedef LocalDGMassMatrix< DiscreteGradientSpaceType, VolumeQuadratureType > LocalMassMatrixType;
+    typedef LocalMassMatrix< DiscreteFunctionSpaceType, VolumeQuadratureType > RhsMassMatrixType;
+    typedef LocalMassMatrix< DiscreteGradientSpaceType, VolumeQuadratureType > LocalMassMatrixType;
 
     ////////////////////////////////////////////////////
     //
