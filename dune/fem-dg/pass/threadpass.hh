@@ -37,7 +37,7 @@ namespace Dune {
     {
       // non-blocking communication is only avaiable in smp mode
 #ifdef USE_SMP_PARALLEL
-      return Parameter :: getValue< bool > ("femdg.nonblockingcomm", false );
+      return Fem :: Parameter :: getValue< bool > ("femdg.nonblockingcomm", false );
 #else 
       return false;
 #endif
@@ -250,7 +250,7 @@ namespace Dune {
         passes_[ i ]   = new InnerPassType( *problems_[ i ], pass, spc, volumeQuadOrd, faceQuadOrd, false );
       }
 #ifndef NDEBUG
-      if( Parameter :: verbose() )
+      if( Fem :: Parameter :: verbose() )
         std::cout << "Thread Pass initialized\n";
 #endif
     }
