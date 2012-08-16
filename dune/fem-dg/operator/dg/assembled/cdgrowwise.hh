@@ -119,7 +119,7 @@ namespace Dune {
     typedef DestinationType RangeType ;
 
     typedef typename DiscreteModelType::SelectorType SelectorType;
-    typedef CombinedSelector< ThisType , SelectorType >  CombinedSelectorType;
+    typedef Fem::CombinedSelector< ThisType , SelectorType >  CombinedSelectorType;
     typedef EllipticDiscreteModelCaller< DiscreteModelType, ArgumentType,
               CombinedSelectorType> DiscreteModelCallerType;
 
@@ -165,7 +165,7 @@ namespace Dune {
     virtual void multOEM(const double* arg, double* dest) const 
     {
       //std :: cout << "CDG-Rowwise :: multOEM \n";
-      typedef AdaptiveDiscreteFunction< DiscreteFunctionSpaceType >
+      typedef Fem::AdaptiveDiscreteFunction< DiscreteFunctionSpaceType >
         TemporaryDiscreteFunctionType;
 
       TemporaryDiscreteFunctionType Arg ("CDG-Row::Arg" , spc_ , arg  );
@@ -179,7 +179,7 @@ namespace Dune {
     virtual double ddotOEM(const double* x, const double* y) const 
     {
       //std::cout << "CDG-Rowwise :: ddotOEM \n";
-      typedef AdaptiveDiscreteFunction< DiscreteFunctionSpaceType >
+      typedef Fem::AdaptiveDiscreteFunction< DiscreteFunctionSpaceType >
         TemporaryDiscreteFunctionType;
 
       double dot = 0.0 ;

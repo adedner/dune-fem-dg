@@ -29,25 +29,25 @@ namespace Dune {
     static const int dimDomain = Model :: Traits :: dimDomain;
 
     //typedef Fem::ElementQuadrature< GridPartType, 0 >                     VolumeQuadratureType;
-    typedef CachingQuadrature< GridPartType, 0 >                     VolumeQuadratureType;
-    typedef CachingQuadrature< GridPartType, 1 >                     FaceQuadratureType;
+    typedef Fem::CachingQuadrature< GridPartType, 0 >                     VolumeQuadratureType;
+    typedef Fem::CachingQuadrature< GridPartType, 1 >                     FaceQuadratureType;
     //typedef ElementQuadrature< GridPartType, 1 >                     FaceQuadratureType;
 
     // Allow generalization to systems
-    typedef FunctionSpace< ctype, double, dimDomain, dimRange >      FunctionSpaceType;
-    typedef DiscontinuousGalerkinSpace< 
+    typedef Fem::FunctionSpace< ctype, double, dimDomain, dimRange >      FunctionSpaceType;
+    typedef Fem::DiscontinuousGalerkinSpace< 
                                         FunctionSpaceType,
                                         GridPartType, polOrd,
-                                        CachingStorage >             DiscreteFunctionSpaceType;
-    //typedef LegendreDiscontinuousGalerkinSpace< FunctionSpaceType,
+                                        Fem::CachingStorage >             DiscreteFunctionSpaceType;
+    //typedef Fem::LegendreDiscontinuousGalerkinSpace< FunctionSpaceType,
     //                                    GridPartType, polOrd,
-    //                                    CachingStorage >             DiscreteFunctionSpaceType;
-    typedef AdaptiveDiscreteFunction< DiscreteFunctionSpaceType >    DestinationType;
+    //                                    Fem::CachingStorage >             DiscreteFunctionSpaceType;
+    typedef Fem::AdaptiveDiscreteFunction< DiscreteFunctionSpaceType >    DestinationType;
 
     // Indicator for Limiter
-    typedef FunctionSpace< ctype, double, dimDomain, 3> FVFunctionSpaceType;
-    typedef FiniteVolumeSpace<FVFunctionSpaceType,GridPartType, 0, SimpleStorage> IndicatorSpaceType;
-    typedef AdaptiveDiscreteFunction<IndicatorSpaceType> IndicatorType;
+    typedef Fem::FunctionSpace< ctype, double, dimDomain, 3> FVFunctionSpaceType;
+    typedef Fem::FiniteVolumeSpace<FVFunctionSpaceType,GridPartType, 0, Fem::SimpleStorage> IndicatorSpaceType;
+    typedef Fem::AdaptiveDiscreteFunction<IndicatorSpaceType> IndicatorType;
 
     typedef AdaptationHandler< GridType, FunctionSpaceType >  AdaptationHandlerType ;
   };

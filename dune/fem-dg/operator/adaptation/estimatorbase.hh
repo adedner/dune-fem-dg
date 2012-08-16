@@ -55,8 +55,8 @@ public:
   typedef typename ElementType::Geometry                             GeometryType;
   static const int dimension = GridType :: dimension;
 
-  typedef Dune::CachingQuadrature< GridPartType, 0 >                ElementQuadratureType;
-  typedef Dune::CachingQuadrature< GridPartType, 1 >                FaceQuadratureType;
+  typedef Dune::Fem::CachingQuadrature< GridPartType, 0 >           ElementQuadratureType;
+  typedef Dune::Fem::CachingQuadrature< GridPartType, 1 >           FaceQuadratureType;
   typedef Dune::FieldMatrix<double,dimension,dimension>             JacobianInverseType;
   typedef std :: vector< double >                                   IndicatorType;
 

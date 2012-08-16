@@ -26,7 +26,7 @@ namespace Dune {
   public:
     typedef typename ArgumentVectorTuple :: value_type TupleType;
     // note that localPassId is usually 0 (the local position in the tuple 
-    typedef typename ElementType<localPassId, TupleType> :: Type ValueType; 
+    typedef typename Fem::ElementType<localPassId, TupleType> :: Type ValueType; 
 
     DGFluxTupleToVectorConverter(const ArgumentVectorTuple& vec) 
       : vec_( vec )
@@ -81,7 +81,7 @@ namespace Dune {
             methodNames( method_nipg ),
             methodNames( method_bo )
           };
-      return (MethodType) Parameter::getEnum( "dgdiffusionflux.method", method );
+      return (MethodType) Fem::Parameter::getEnum( "dgdiffusionflux.method", method );
     }
 
     typedef DGLiftingFluxIdentifier LiftingType;
@@ -98,7 +98,7 @@ namespace Dune {
             liftingNames( lifting_id_A ),
             liftingNames( lifting_A_A )
           };
-      return (LiftingType) Parameter::getEnum( "dgdiffusionflux.lifting", method, 0 );
+      return (LiftingType) Fem::Parameter::getEnum( "dgdiffusionflux.lifting", method, 0 );
     }
   };
 
@@ -139,9 +139,9 @@ namespace Dune {
 
     typedef typename DiscreteGradientSpaceType :: RangeType GradientType;
 
-    typedef TemporaryLocalFunction< DiscreteGradientSpaceType > LiftingFunctionType;
+    typedef Fem::TemporaryLocalFunction< DiscreteGradientSpaceType > LiftingFunctionType;
 
-    typedef CachingQuadrature< GridPartType, 0> VolumeQuadratureType ;
+    typedef Fem::CachingQuadrature< GridPartType, 0> VolumeQuadratureType ;
 
     DomainType upwindDefault() const 
     {
@@ -165,8 +165,8 @@ namespace Dune {
     {
       if( initUpwind ) 
       {
-        Parameter::get("dgdiffusionflux.upwind", upwind_, upwind_);
-        if( Parameter :: verbose() )
+        Fem::Parameter::get("dgdiffusionflux.upwind", upwind_, upwind_);
+        if( Fem::Parameter :: verbose() )
           std::cout << "Using upwind = " << upwind_ << std::endl;
       }
     }

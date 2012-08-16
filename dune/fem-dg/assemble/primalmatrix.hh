@@ -39,8 +39,8 @@ class DGPrimalMatrixAssembly
   typedef typename IntersectionType::Geometry IntersectionGeometryType;
 
   // need treatment of non conforming grids
-  typedef Dune::ElementQuadrature< GridPartType, 1 > FaceQuadratureType; 
-  typedef Dune::CachingQuadrature< GridPartType, 0 > QuadratureType;
+  typedef Fem::ElementQuadrature< GridPartType, 1 > FaceQuadratureType; 
+  typedef Fem::CachingQuadrature< GridPartType, 0 > QuadratureType;
 
   typedef typename GridPartType :: GridType :: template Codim< 0 > :: EntityPointer EntityPointerType;
 
@@ -99,7 +99,7 @@ class DGPrimalMatrixAssembly
       space_(gridPart),
       flux_(gridPart, model)
   {
-    int polOrder = Parameter::getValue<double>("femhowto.polynomialOrder",1);
+    int polOrder = Dune::Fem::Parameter::getValue<double>("femhowto.polynomialOrder",1);
 
     std::vector<int> polOrderVec( space_.gridPart().indexSet().size(0) );
     std::fill( polOrderVec.begin(), polOrderVec.end(), polOrder );

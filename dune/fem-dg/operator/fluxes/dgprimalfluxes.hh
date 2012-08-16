@@ -54,11 +54,11 @@ namespace Dune {
 
     typedef typename BaseType :: DiscreteGradientSpaceType              DiscreteGradientSpaceType;
     typedef typename DiscreteGradientSpaceType :: RangeType             GradientType;
-    typedef TemporaryLocalFunction< DiscreteGradientSpaceType >         LiftingFunctionType;
+    typedef Fem::TemporaryLocalFunction< DiscreteGradientSpaceType >         LiftingFunctionType;
 
-    typedef CachingQuadrature< GridPartType, 0>                         VolumeQuadratureType ;
+    typedef Fem::CachingQuadrature< GridPartType, 0>                         VolumeQuadratureType ;
     
-    typedef LocalMassMatrix
+    typedef Fem::LocalMassMatrix
       < DiscreteGradientSpaceType, VolumeQuadratureType >               LocalMassMatrixType;
 
     class Lifting 
@@ -134,11 +134,11 @@ namespace Dune {
       BaseType( model, true ),
       gridPart_( gridPart ),
       method_( method ),
-      penalty_( Parameter::getValue<double>("dgdiffusionflux.penalty") ),
+      penalty_( Fem::Parameter::getValue<double>("dgdiffusionflux.penalty") ),
       nipgFactor_( (method_ == method_nipg) || 
                    (method_ == method_bo) 
                    ? 0.5 : -0.5 ),
-      liftFactor_( Parameter::getValue<double>("dgdiffusionflux.liftfactor") ),
+      liftFactor_( Fem::Parameter::getValue<double>("dgdiffusionflux.liftfactor") ),
       liftingMethod_( getLifting() ),
       penaltyTerm_( method_ip || ((std::abs(  penalty_ ) > 0) && 
                     method_ != method_br2 && 
@@ -156,7 +156,7 @@ namespace Dune {
       // calculate maxNeighborVolumeRatio_
       maxNeighborsVolumeRatio_ = 1.;
 
-      double theoryFactor = Parameter::getValue< double >( "dgdiffusionflux.theoryparameters", 0. );
+      double theoryFactor = Fem::Parameter::getValue< double >( "dgdiffusionflux.theoryparameters", 0. );
       useTheoryParams_ = (theoryFactor > 0.);
 
       double n_k = DiscreteFunctionSpaceType :: polynomialOrder ; 
@@ -218,7 +218,7 @@ namespace Dune {
         }
       }
 
-      if (Parameter :: verbose()) 
+      if( Fem::Parameter :: verbose() ) 
       {
         std::cout <<"Diff. flux: ";
         diffusionFluxName( std::cout );
@@ -562,7 +562,7 @@ namespace Dune {
           jumpUNormal[ r ][ j ] = normal[ j ] * (uLeft[ r ] - uRight[ r ]);
       }
 
-      FieldMatrixConverter< GradientType, JacobianRangeType> func1( func );
+      Fem::FieldMatrixConverter< GradientType, JacobianRangeType> func1( func );
       if (liftingMethod_ == lifting_id_id)
         func1 = jumpUNormal;
       else
@@ -589,7 +589,7 @@ namespace Dune {
       // evaluate lifting at quadrature point 
       r_e.evaluate( faceQuad[ quadPoint ], sigma );
 
-      FieldMatrixConverter< GradientType, JacobianRangeType> gradient( sigma );
+      Fem::FieldMatrixConverter< GradientType, JacobianRangeType> gradient( sigma );
 
       if (liftingMethod_ != lifting_id_A)
       {
@@ -1119,7 +1119,7 @@ namespace Dune {
 #ifdef LOCALDEBUG
     Lifting*          LeMinusLifting2_;
 #endif
-    mutable MutableArray< GradientType > liftTmp_ ;
+    mutable Fem::MutableArray< GradientType > liftTmp_ ;
     double            maxNeighborsVolumeRatio_; // for CDG2 only
     double            ainsworthFactor_;
     bool              insideIsInflow_; 

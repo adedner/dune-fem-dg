@@ -132,7 +132,7 @@ namespace Dune {
       AdvectionBaseType::prepare( arg, dest );
 
       // get pointer to U 
-      U_ = Element<0> :: get(arg);
+      U_ = Fem :: Element<0> :: get(arg);
 
       // prepare again (compute is only done the first time)
       if( constantDiffusion_ ) 

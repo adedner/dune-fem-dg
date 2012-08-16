@@ -26,7 +26,7 @@ namespace Dune
 {
 
 struct AdaptationParameters
-: public LocalParameter< AdaptationParameters, AdaptationParameters >
+: public Fem :: LocalParameter< AdaptationParameters, AdaptationParameters >
 {
   int markStrategy_ ; 
 
@@ -34,7 +34,7 @@ struct AdaptationParameters
   {
     const std::string names[] = { "shockind", "apost" , "grad" };
     // default value is gradient 
-    return Parameter :: getEnum("fem.adaptation.markingStrategy", names, 2 );
+    return Fem :: Parameter :: getEnum("fem.adaptation.markingStrategy", names, 2 );
   }
 
   AdaptationParameters() 
@@ -44,19 +44,19 @@ struct AdaptationParameters
   //! simulation end time 
   virtual double endTime() const 
   {
-    return Parameter :: getValue< double >("femhowto.endTime" );
+    return Fem :: Parameter :: getValue< double >("femhowto.endTime" );
   }
 
   //! retujrn refinement tolerance 
   virtual double refinementTolerance() const 
   {
-    return Parameter :: getValue<double> ("fem.adaptation.refineTolerance");
+    return Fem :: Parameter :: getValue<double> ("fem.adaptation.refineTolerance");
   }
 
   //! return percentage of refinement tolerance used for coarsening tolerance
   virtual double coarsenPercentage() const 
   { 
-    return Parameter :: getValue<double> ("fem.adaptation.coarsenPercent", 0.1 );
+    return Fem :: Parameter :: getValue<double> ("fem.adaptation.coarsenPercent", 0.1 );
   }
 
   //! return product of refinementTolerance and coarsenPercentage 
@@ -69,20 +69,20 @@ struct AdaptationParameters
   virtual int finestLevel( const int refineStepsForHalf ) const 
   { 
     return refineStepsForHalf * 
-      Parameter :: getValue<int>("fem.adaptation.finestLevel" );
+      Fem :: Parameter :: getValue<int>("fem.adaptation.finestLevel" );
   }
 
   //! return minimal level achieved by refinement  
   virtual int coarsestLevel( const int refineStepsForHalf ) const 
   { 
     return refineStepsForHalf * 
-      Parameter :: getValue<int>("fem.adaptation.coarsestLevel", 0 );
+      Fem :: Parameter :: getValue<int>("fem.adaptation.coarsestLevel", 0 );
   }
 
   //! return depth for refining neighbors of a cell marked for refinement
   virtual int neighborRefLevel() const 
   { 
-    return Parameter :: getValue<int>("fem.adaptation.grad.neighborRefLevel", 1 );
+    return Fem :: Parameter :: getValue<int>("fem.adaptation.grad.neighborRefLevel", 1 );
   }
 
   //! return true if marking strategy is based on shock indicator 
@@ -104,7 +104,7 @@ struct AdaptationParameters
   }
 
   //! return true if verbosity mode is enabled 
-  virtual bool verbose () const { return Parameter :: getValue<bool>("fem.adaptation.verbose", false ); }
+  virtual bool verbose () const { return Fem :: Parameter :: getValue<bool>("fem.adaptation.verbose", false ); }
 };
 
 // class for the organization of the adaptation prozess
@@ -117,7 +117,7 @@ public:
   enum { COARSEN = -1, NONE = 0, REFINE = 1 };
 
   typedef GridImp GridType ;
-  typedef DGAdaptiveLeafGridPart< GridType > GridPartType ;
+  typedef Fem::DGAdaptiveLeafGridPart< GridType > GridPartType ;
 
   // useful enums and typedefs
   enum { dim = GridType :: dimension };
@@ -126,7 +126,7 @@ public:
   typedef typename ProblemFunctionSpace :: RangeType FullRangeType ;
 
   // initialize functionspace, etc., for the indicator function
-  typedef typename ToNewDimRangeFunctionSpace< 
+  typedef typename Fem :: ToNewDimRangeFunctionSpace< 
       ProblemFunctionSpace, 1 > :: Type  FunctionSpaceType;
 
   // discrete function type of adaptive functions
@@ -215,10 +215,10 @@ public:
   typedef LocalIndicator  LocalIndicatorType ;
 
   // time provider 
-  typedef TimeProviderBase TimeProviderType ;
+  typedef Fem :: TimeProviderBase TimeProviderType ;
 
   // interface for adaptation operator 
-  typedef AdaptationManagerInterface   AdaptInterfaceType;
+  typedef Fem :: AdaptationManagerInterface   AdaptInterfaceType;
 
   // type of 64 bit unsigned integer 
   typedef uint64_t UInt64Type;

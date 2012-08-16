@@ -93,7 +93,7 @@ namespace Dune {
     // Various other types
     typedef typename DestinationType::LocalFunctionType LocalFunctionType;
     typedef typename DiscreteModelType::SelectorType SelectorType;
-    typedef CombinedSelector< ThisType , SelectorType > CombinedSelectorType;
+    typedef Fem::CombinedSelector< ThisType , SelectorType > CombinedSelectorType;
     typedef CDGDiscreteModelCaller< DiscreteModelType 
                                  , ArgumentType 
                                  , CombinedSelectorType
@@ -103,10 +103,10 @@ namespace Dune {
 
     // type of local id set 
     typedef typename GridPartType::IndexSetType IndexSetType; 
-    typedef TemporaryLocalFunction< DiscreteFunctionSpaceType > TemporaryLocalFunctionType;
+    typedef Fem::TemporaryLocalFunction< DiscreteFunctionSpaceType > TemporaryLocalFunctionType;
 
     //! type of local mass matrix 
-    typedef LocalMassMatrix< DiscreteFunctionSpaceType, VolumeQuadratureType > LocalMassMatrixType;
+    typedef Fem::LocalMassMatrix< DiscreteFunctionSpaceType, VolumeQuadratureType > LocalMassMatrixType;
 
   public:
     //- Public methods
@@ -883,7 +883,7 @@ namespace Dune {
       assert( faceQuadratureOrder >= 0 );
 
       // use IntersectionQuadrature to create appropriate face quadratures 
-      typedef IntersectionQuadrature< FaceQuadratureType, conforming > IntersectionQuadratureType;
+      typedef Fem::IntersectionQuadrature< FaceQuadratureType, conforming > IntersectionQuadratureType;
       typedef typename IntersectionQuadratureType :: FaceQuadratureType QuadratureImp;
 
       // create intersection quadrature 
@@ -1019,17 +1019,17 @@ namespace Dune {
     const IndexSetType& indexSet_;
 
     // indicator for grid walk 
-    mutable MutableArray<bool> visited_;
+    mutable Fem::MutableArray<bool> visited_;
 
     mutable TemporaryLocalFunctionType updEn_;
     mutable TemporaryLocalFunctionType updNeigh_;
 
     //! Some helper variables
-    mutable MutableArray< RangeType > valEnVec_;
-    mutable MutableArray< RangeType > valNbVec_;
+    mutable Fem::MutableArray< RangeType > valEnVec_;
+    mutable Fem::MutableArray< RangeType > valNbVec_;
 
-    mutable MutableArray< JacobianRangeType > valJacEn_;
-    mutable MutableArray< JacobianRangeType > valJacNb_;
+    mutable Fem::MutableArray< JacobianRangeType > valJacEn_;
+    mutable Fem::MutableArray< JacobianRangeType > valJacNb_;
 
     mutable double dtMin_;
     const double minLimit_;

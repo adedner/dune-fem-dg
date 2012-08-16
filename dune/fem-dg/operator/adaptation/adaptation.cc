@@ -27,9 +27,9 @@ AdaptationHandler ( GridType &grid,
   , localNumElements_(0)
   , endTime_( param.endTime() )  
   , maxLevelCounter_()
-  , verbose_( Parameter :: verbose() && param.verbose() )
+  , verbose_( Fem :: Parameter :: verbose() && param.verbose() )
 {
-  const bool verboseOutput = Parameter :: verbose() ;
+  const bool verboseOutput = Fem :: Parameter :: verbose() ;
 
   resetStatus();
   if( verboseOutput )

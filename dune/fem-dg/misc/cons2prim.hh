@@ -8,6 +8,8 @@
 #include <iomanip>
 #include <time.h>
 
+#include <dune/fem/quadrature/cachingquadrature.hh>
+
 
 /** \brief converts a discrete function of conservative variables to
  *    a discrete function of primitive variables for a visualization purpose only
@@ -57,7 +59,7 @@ void setupAdditionalVariables( const TimeProvider& tp,
     const Geometry& geo = entity.geometry(); 
 
     // get quadrature rule for L2 projection
-    Dune::CachingQuadrature< GridPartType, 0 > quad( entity, 2*space.order()+1 );
+    Dune::Fem::CachingQuadrature< GridPartType, 0 > quad( entity, 2*space.order()+1 );
   
     ConsLocalFuncType consLF = consDF.localFunction( entity );
     PrimLocalFuncType primLF = primDF.localFunction( entity );

@@ -21,7 +21,7 @@ namespace Dune {
 
   template< class Traits > 
   class DGAdvectionDiffusionOperatorBase : 
-    public SpaceOperatorInterface 
+    public Fem::SpaceOperatorInterface 
       < typename PassTraits< 
           typename Traits :: Model, Traits::dimRange, Traits :: polOrd > :: DestinationType >
   {
@@ -47,9 +47,9 @@ namespace Dune {
     typedef typename AdvTraits::DiscreteFunctionType AdvDFunctionType;
     typedef typename AdvTraits::IndicatorType        IndicatorType ;
     
-    typedef StartPass< AdvDFunctionType, u
+    typedef Fem::StartPass< AdvDFunctionType, u
 #ifdef NSMOD_USE_SMP_PARALLEL
-         , NonBlockingCommHandle< AdvDFunctionType >   
+         , Fem::NonBlockingCommHandle< AdvDFunctionType >   
 #endif
       > Pass0Type;
 

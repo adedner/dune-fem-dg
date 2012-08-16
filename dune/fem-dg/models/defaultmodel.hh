@@ -179,7 +179,7 @@ public:
                         const GradientType& vecJac,
                         FluxRangeType& A) const
   {
-    Dune::FieldMatrixConverter< GradientType, FluxRangeType> jac( vecJac );
+    Dune::Fem::FieldMatrixConverter< GradientType, FluxRangeType> jac( vecJac );
     diffusion( en, time, x, u, jac, A );
   }
 
@@ -241,7 +241,7 @@ public:
                                        const GradientType& gradLeft,
                                        RangeType& gLeft ) const  
   {
-    Dune::FieldMatrixConverter< GradientType, JacobianRangeType> jacLeft( gradLeft );
+    Dune::Fem::FieldMatrixConverter< GradientType, JacobianRangeType> jacLeft( gradLeft );
     return diffusionBoundaryFlux( it, time, x, uLeft, jacLeft, gLeft );
   }
 

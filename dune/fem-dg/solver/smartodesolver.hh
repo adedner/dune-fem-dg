@@ -11,7 +11,7 @@ struct SmartOdeSolverParameters : public DuneODE :: ODEParameters
 {
   virtual double explicitFactor() const
   {
-    return Parameter::getValue< double >( "fem.ode.explicitfactor" , 1.0 );
+    return Fem::Parameter::getValue< double >( "fem.ode.explicitfactor" , 1.0 );
   }
 
   SmartOdeSolverParameters* clone() const 
@@ -44,7 +44,7 @@ public:
 
 protected:
   OperatorType&          operator_;
-  TimeProviderBase&      timeProvider_; 
+  Fem::TimeProviderBase&      timeProvider_; 
 
   AdvectionOperatorType& advectionOperator_;
   DiffusionOperatorType& diffusionOperator_;
@@ -61,11 +61,11 @@ protected:
   int minIterationSteps_, maxIterationSteps_ ;
   bool imex_ ;
 public:
-  SmartOdeSolver( TimeProviderBase& tp,
+  SmartOdeSolver( Fem::TimeProviderBase& tp,
                   OperatorType& op, 
                   AdvectionOperatorType& advOp,
                   DiffusionOperatorType& diffOp,
-                  const SmartOdeSolverParameters& parameter= SmartOdeSolverParameters() )
+                  const SmartOdeSolverParameters &parameter = SmartOdeSolverParameters() )
    : operator_( op ), 
      timeProvider_( tp ),
      advectionOperator_( advOp ),
@@ -249,20 +249,20 @@ protected:
     // methods
     static const std::string odeSolver[]  = { "EX", "IM" ,"IMEX", "IMEX+"  };
     std::string key( "fem.ode.odesolver" );
-    if( Parameter :: exists( key ) )
-      return Parameter::getEnum( "fem.ode.odesolver", odeSolver, 0 );
+    if( Fem :: Parameter :: exists( key ) )
+      return Fem::Parameter::getEnum( "fem.ode.odesolver", odeSolver, 0 );
     else 
     {
       std::cerr << "WARNING: deprecated key, use `fem.ode.odesolver' instread!" << std::endl;
-      return Parameter::getEnum( "femhowto.odesolver", odeSolver, 0 );
+      return Fem::Parameter::getEnum( "femhowto.odesolver", odeSolver, 0 );
     }
   }
 
   int obtainRungeKuttaSteps() const
   {
     std::string key("fem.ode.order");
-    if ( Parameter :: exists( key ) )
-      return Parameter::getValue< int > ( key );
+    if ( Fem :: Parameter :: exists( key ) )
+      return Fem::Parameter::getValue< int > ( key );
     else
       return operator_.space().order() + 1;
   }

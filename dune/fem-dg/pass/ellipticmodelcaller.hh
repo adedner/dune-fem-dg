@@ -21,10 +21,10 @@ namespace Dune
    */
   template <class DiscreteModelImp, class ArgumentImp, class SelectorImp>
   class EllipticDiscreteModelCaller
-  : public DiscreteModelCallerDefault< DiscreteModelImp, ArgumentImp, SelectorImp >
+  : public Fem::DiscreteModelCallerDefault< DiscreteModelImp, ArgumentImp, SelectorImp >
   {
     typedef EllipticDiscreteModelCaller< DiscreteModelImp, ArgumentImp, SelectorImp > ThisType;
-    typedef DiscreteModelCallerDefault< DiscreteModelImp, ArgumentImp, SelectorImp > BaseType; 
+    typedef Fem::DiscreteModelCallerDefault< DiscreteModelImp, ArgumentImp, SelectorImp > BaseType; 
 
   public:
     typedef DiscreteModelImp DiscreteModelType;
@@ -55,7 +55,7 @@ namespace Dune
       Fem::JacobianRangeTypeEvaluator, LocalFunctionTupleType> JacobianCreator;
     typedef typename JacobianCreator::ResultType JacobianRangeTupleType;
 
-    typedef BoundaryIdentifier BoundaryIdentifierType;
+    typedef Fem::BoundaryIdentifier BoundaryIdentifierType;
 
     EllipticDiscreteModelCaller( DiscreteModelType &problem )
     : problem_( problem ),

@@ -273,7 +273,7 @@ namespace Dune {
       LimiterDestinationType ;
     typedef typename LimiterDestinationType :: DiscreteFunctionSpaceType  LimiterSpaceType;
 
-    typedef StartPass< DiscreteFunctionType, u >                        Pass0Type; /*@LST0S@*/
+    typedef Fem::StartPass< DiscreteFunctionType, u >                        Pass0Type; /*@LST0S@*/
     typedef LimitDGPass< LimiterDiscreteModelType, Pass0Type, limitPassId >   Pass1Type; /*@\label{ad:typedefpass1}@*/
     typedef LocalCDGPass< DiscreteModel1Type, Pass1Type, advectPassId > Pass2Type; /*@\label{ad:typedefpass2}@*//*@LST0E@*/
 

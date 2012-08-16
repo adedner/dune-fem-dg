@@ -68,7 +68,7 @@ protected:
   {
     if( fluxtype == Mhd :: HLLEM ) 
     {
-      if( Dune :: Parameter :: verbose () )
+      if( Dune :: Fem :: Parameter :: verbose () )
         std::cout << "Choosing HLLEM Flux " << std::endl;
 
       numFlux_.init(Mhd :: MhdSolver :: mf_rghllem ); 

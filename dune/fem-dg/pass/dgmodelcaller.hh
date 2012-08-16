@@ -45,6 +45,9 @@ namespace Dune {
 
     enum { evaluateJacobian = DiscreteModelType :: evaluateJacobian };
 
+    using BaseType::evaluateQuadrature;
+    using BaseType::evaluateQuad;
+
     CDGDiscreteModelCaller(DiscreteModelType& problem) :
       BaseType( ),
       problem_( problem )

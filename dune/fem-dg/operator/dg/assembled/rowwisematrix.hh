@@ -85,11 +85,11 @@ public:
   //
   //////////////////////////////////////////////////
   template <class MatrixObjectImp> 
-  class LocalMatrix : public LocalMatrixDefault<LocalMatrixTraits>
+  class LocalMatrix : public Fem::LocalMatrixDefault<LocalMatrixTraits>
   {
   public:  
     //! type of base class 
-    typedef LocalMatrixDefault<LocalMatrixTraits> BaseType;
+    typedef Fem::LocalMatrixDefault<LocalMatrixTraits> BaseType;
 
     //! type of matrix object 
     typedef MatrixObjectImp MatrixObjectType;
@@ -218,7 +218,7 @@ public:
   typedef ThisType LocalMatrixFactoryType;
   typedef Fem :: ObjectStack< LocalMatrixFactoryType > LocalMatrixStackType;
   //! type of local matrix 
-  typedef LocalMatrixWrapper< LocalMatrixStackType > LocalMatrixType;
+  typedef Fem :: LocalMatrixWrapper< LocalMatrixStackType > LocalMatrixType;
 
   typedef typename RowSpaceType :: BlockMapperType RowMapperType; 
   typedef typename ColumnSpaceType :: BlockMapperType ColMapperType; 
@@ -226,9 +226,9 @@ public:
   typedef ThisType PreconditionMatrixType;
   typedef ThisType MatrixType ;
 
-  typedef AdaptiveDiscreteFunction<RowSpaceType> DestinationType;
+  typedef Fem :: AdaptiveDiscreteFunction<RowSpaceType> DestinationType;
 
-  typedef CommunicationManager<RowSpaceType> CommunicationManagerType;
+  typedef Fem :: CommunicationManager<RowSpaceType> CommunicationManagerType;
 
   // row space 
   const RowSpaceType & rowSpace_; 

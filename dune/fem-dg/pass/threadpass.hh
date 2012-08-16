@@ -45,9 +45,9 @@ namespace Dune {
   };
 
   template < class DiscreteFunction > 
-  class DeleteCommunicatedDofs : public ParallelScalarProduct < DiscreteFunction >
+  class DeleteCommunicatedDofs : public Fem::ParallelScalarProduct < DiscreteFunction >
   {
-    typedef ParallelScalarProduct < DiscreteFunction >  BaseType; 
+    typedef Fem::ParallelScalarProduct < DiscreteFunction >  BaseType; 
 
   public:
     typedef typename BaseType :: DiscreteFunctionType       DiscreteFunctionType;
@@ -150,9 +150,9 @@ namespace Dune {
 
   template < class InnerPass, bool nonblockingcomm = true > 
   class ThreadPass :
-    public LocalPass< typename InnerPass :: DiscreteModelType,
-                      typename InnerPass :: PreviousPassType, 
-                      InnerPass :: passId > 
+    public Fem::LocalPass< typename InnerPass :: DiscreteModelType,
+                           typename InnerPass :: PreviousPassType, 
+                           InnerPass :: passId > 
   {
     typedef ThreadPass< InnerPass > ThisType;
   public:
@@ -162,7 +162,7 @@ namespace Dune {
 
     //- Typedefs and enums
     //! Base class
-    typedef LocalPass< DiscreteModelType, PreviousPassType, InnerPass :: passId>  BaseType;
+    typedef Fem::LocalPass< DiscreteModelType, PreviousPassType, InnerPass :: passId>  BaseType;
 
     // Types from the base class
     typedef typename BaseType::EntityType  EntityType;
@@ -194,8 +194,8 @@ namespace Dune {
     // Various other types
     typedef typename DestinationType::LocalFunctionType LocalFunctionType;
     typedef typename DiscreteModelType::SelectorType SelectorType;
-    typedef CombinedSelector< ThisType , SelectorType > CombinedSelectorType;
-    typedef DGDiscreteModelCaller< DiscreteModelType 
+    typedef Fem::CombinedSelector< ThisType , SelectorType > CombinedSelectorType;
+    typedef Fem::DGDiscreteModelCaller< DiscreteModelType 
                                    , ArgumentType 
                                    , CombinedSelectorType
                                  > DiscreteModelCallerType;
@@ -239,7 +239,7 @@ namespace Dune {
       nonBlockingComm_(),
       numberOfElements_( 0 ),
       firstCall_( true ),
-      sumComputeTime_( Parameter :: getValue<bool>("fem.parallel.sumcomputetime", false ) )
+      sumComputeTime_( Fem :: Parameter :: getValue<bool>("fem.parallel.sumcomputetime", false ) )
     {
       const int maxThreads = Fem::ThreadManager::maxThreads();
       for(int i=0; i<maxThreads; ++i)

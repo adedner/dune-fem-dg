@@ -134,12 +134,8 @@ namespace Dune {
     enum { dimGradRange = dimDomain * dimRange };
     enum { polOrd = DiscreteFunctionSpaceType::polynomialOrder };
 
-
-
-    typedef FunctionSpace < DomainFieldType, 
-                            RangeFieldType, 
-                            dimDomain, 
-                            dimGradRange > ContainedFunctionSpaceType ;
+    typedef Fem::FunctionSpace < DomainFieldType, RangeFieldType, 
+                       dimDomain, dimGradRange > ContainedFunctionSpaceType ;
 
     typedef typename DiscreteFunctionSpaceType :: template ToNewFunctionSpace<
             ContainedFunctionSpaceType > :: Type DiscreteGradientSpaceType ;
@@ -152,7 +148,7 @@ namespace Dune {
 
     typedef typename DiscreteModelType::SelectorType SelectorType;
 
-    typedef CombinedSelector< ThisType , SelectorType >  CombinedSelectorType;
+    typedef Fem::CombinedSelector< ThisType , SelectorType >  CombinedSelectorType;
     typedef EllipticDiscreteModelCaller< DiscreteModelType, ArgumentType,
               CombinedSelectorType> DiscreteModelCallerType;
 
@@ -172,8 +168,8 @@ namespace Dune {
     
     typedef typename DiscreteGradientSpaceType::BaseFunctionSetType GradientBaseFunctionSetType;
      // type of temporary local function belonging to lower space 
-    typedef TemporaryLocalFunction< DiscreteGradientSpaceType > TemporaryLocalFunctionType;
-    typedef MutableArray< std::auto_ptr< TemporaryLocalFunctionType > > TemporaryLocalFunctionArrayType;
+    typedef Fem::TemporaryLocalFunction< DiscreteGradientSpaceType > TemporaryLocalFunctionType;
+    typedef Fem::MutableArray< std::auto_ptr< TemporaryLocalFunctionType > > TemporaryLocalFunctionArrayType;
 
     typedef DGMatrixTraits< MatrixObjectTraits > MyOperatorTraits;
     //! type of underlying matrix implementation 
@@ -190,11 +186,11 @@ namespace Dune {
     typedef FieldVector< FluxRangeType , dimRange > CoeffMatrixType;
 
     // typedef GradJacobianRangeType FluxRangeType; 
-    typedef TemporaryLocalFunction< DiscreteFunctionSpaceType > SingleLFType;
+    typedef Fem::TemporaryLocalFunction< DiscreteFunctionSpaceType > SingleLFType;
     //typedef typename DestinationType :: LocalFunctionType SingleLFType; 
 
     //! singleton list , key type is const pointer to grid 
-    typedef GridWidthProvider< GridType > GridWidthType;
+    typedef Fem::GridWidthProvider< GridType > GridWidthType;
     typedef typename GridWidthType :: ProviderType GridWidthProviderType;
 
     typedef typename DiscreteGradientSpaceType :: RangeType GradRangeType;
@@ -203,8 +199,8 @@ namespace Dune {
     typedef FieldVector<double, massSize > MassVectorType; 
 
     //! type of local mass matrix 
-    typedef LocalMassMatrix< DiscreteFunctionSpaceType, VolumeQuadratureType > RhsMassMatrixType;
-    typedef LocalMassMatrix< DiscreteGradientSpaceType, VolumeQuadratureType > LocalMassMatrixType;
+    typedef Fem::LocalMassMatrix< DiscreteFunctionSpaceType, VolumeQuadratureType > RhsMassMatrixType;
+    typedef Fem::LocalMassMatrix< DiscreteGradientSpaceType, VolumeQuadratureType > LocalMassMatrixType;
 
     ////////////////////////////////////////////////////
     //
@@ -371,7 +367,7 @@ namespace Dune {
 
     double getLiftFactor() const 
     {
-      double liftFac = Parameter::getValue<double>("dgprimal.liftfactor");
+      double liftFac = Fem::Parameter::getValue<double>("dgprimal.liftfactor");
       if( theoryParams_ ) 
       {
         //if( spc_.multipleGeometryTypes() ) 
@@ -452,11 +448,11 @@ namespace Dune {
       sequence_ ( -1 ),
       numberOfElements_( 0 ),
       method_( DGPrimalMethodNames::getMethod() ),
-      penalty_( Parameter::getValue<double>("dgprimal.penalty") ),
+      penalty_( Fem::Parameter::getValue<double>("dgprimal.penalty") ),
       penaltyNotZero_( std::abs( penalty_ ) > 0 ),
       bilinearPlus_( (method_ == method_nipg) || (method_ == method_bo) ? true : false ),
       areaSwitch_( method_ == method_cdg2 ),
-      theoryParams_( Parameter::getValue< int >("dgprimal.theoryparams", 1 ) ),
+      theoryParams_( Fem::Parameter::getValue< int >("dgprimal.theoryparams", 1 ) ),
       liftFactor_( getLiftFactor() ),
       affineGeoms_( true )
     {
@@ -639,7 +635,7 @@ namespace Dune {
         this->computeTime_ = timer.elapsed();
 
         // in verbose mode make output 
-        if( Parameter :: verbose () )
+        if( Fem :: Parameter :: verbose () )
         {
           std::cout << "Matrix assembly took " << this->computeTime_ << " seconds! \n";
         }
@@ -2301,8 +2297,8 @@ protected:
                                const QuadratureType& quad,
                                const int l,
                                const JacobianRangeType& factor,
-                               MutableArray<RangeFieldType>& tau,
-                               MutableArray<RangeType>& phi) const 
+                               Fem::MutableArray<RangeFieldType>& tau,
+                               Fem::MutableArray<RangeType>& phi) const 
     {
       const JacobianInverseType& inv =
         geo.jacobianInverseTransposed( quad.point(l) );
@@ -2746,17 +2742,17 @@ protected:
 
 
     // caches for base function evaluation 
-    mutable MutableArray<RangeFieldType> tau_;
-    mutable MutableArray<RangeFieldType> tauNeigh_;
-    mutable MutableArray<RangeType> phi_;
-    mutable MutableArray<RangeType> phiNeigh_;
-    mutable MutableArray<JacobianRangeType> psi_;
-    mutable MutableArray<JacobianRangeType> coeffPsi_;
+    mutable Fem::MutableArray<RangeFieldType> tau_;
+    mutable Fem::MutableArray<RangeFieldType> tauNeigh_;
+    mutable Fem::MutableArray<RangeType> phi_;
+    mutable Fem::MutableArray<RangeType> phiNeigh_;
+    mutable Fem::MutableArray<JacobianRangeType> psi_;
+    mutable Fem::MutableArray<JacobianRangeType> coeffPsi_;
 
-    mutable MutableArray<RangeType> eta_;
+    mutable Fem::MutableArray<RangeType> eta_;
 
-    mutable MutableArray<GradRangeType> rRets_;
-    mutable MutableArray<GradRangeType> rRetsCoeff_;
+    mutable Fem::MutableArray<GradRangeType> rRets_;
+    mutable Fem::MutableArray<GradRangeType> rRetsCoeff_;
 
     mutable TemporaryLocalFunctionArrayType r_e_;
     mutable TemporaryLocalFunctionArrayType r_e_nb_;
@@ -2765,9 +2761,9 @@ protected:
     mutable TemporaryLocalFunctionArrayType r_e_neigh_nb_;
 
 
-    mutable MutableArray< CoeffMatrixType > coeffs_; 
-    mutable MutableArray< double > weights_ ; 
-    mutable MutableArray< GradRangeType > baseFct_; 
+    mutable Fem::MutableArray< CoeffMatrixType > coeffs_; 
+    mutable Fem::MutableArray< double > weights_ ; 
+    mutable Fem::MutableArray< GradRangeType > baseFct_; 
 
     mutable JacobianRangeType psitmp_;
 

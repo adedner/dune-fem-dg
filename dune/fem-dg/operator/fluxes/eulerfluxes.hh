@@ -6,6 +6,7 @@
 #include <cmath>
 
 #include <dune/common/fvector.hh>
+#include <dune/common/fmatrix.hh>
 
 // dune-grid includes
 #if WELLBALANCE

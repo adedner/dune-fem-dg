@@ -8,7 +8,7 @@
 namespace Dune {
 
   template <class GridType>
-  class RunFile : public AutoPersistentObject 
+  class RunFile : public Fem::AutoPersistentObject 
   {
     typedef typename GridType :: Traits :: CollectiveCommunication CommunicatorType;
     const CommunicatorType& comm_; 
@@ -48,7 +48,7 @@ namespace Dune {
     std::string runFileName(const int rank) const 
     {
       std::stringstream runfile;
-      runfile << Parameter :: commonOutputPath() << "/run." << rank; 
+      runfile << Fem :: Parameter :: commonOutputPath() << "/run." << rank; 
       return runfile.str();
     }
 
@@ -83,7 +83,7 @@ namespace Dune {
     RunFile( const CommunicatorType& comm, const bool newStart )
       : comm_( comm )
       , runFileName_( runFileName( comm_.rank() ) )
-      , writeRunFile_( Parameter :: getValue< int > ("fem.parallel.runfile", 0 ) )
+      , writeRunFile_( Fem :: Parameter :: getValue< int > ("fem.parallel.runfile", 0 ) )
       , runfile_( createRunFile( comm_.rank(), writeRunFile_, newStart ) ) 
       , times_() 
       , elements_( 0.0 )
@@ -170,7 +170,7 @@ namespace Dune {
           }
 
           std::stringstream runfile;
-          runfile << Parameter :: commonOutputPath() << "/speedup." << comm_.size(); 
+          runfile << Fem :: Parameter :: commonOutputPath() << "/speedup." << comm_.size(); 
           std::ofstream file ( runfile.str().c_str() );
           if( file ) 
           {
@@ -335,8 +335,8 @@ namespace Dune {
       // flush run file 
       flush(); 
 
-      typedef PersistenceManager :: BackupStreamType  BackupStreamType ;
-      BackupStreamType& stream = PersistenceManager :: backupStream();
+      typedef Fem :: PersistenceManager :: BackupStreamType  BackupStreamType ;
+      BackupStreamType& stream = Fem :: PersistenceManager :: backupStream();
 
       stream << elements_ ;
       stream << maxDofs_ ;
@@ -352,8 +352,8 @@ namespace Dune {
     //! restore routine 
     void restore () 
     {
-      typedef PersistenceManager :: RestoreStreamType  RestoreStreamType ;
-      RestoreStreamType& stream = PersistenceManager :: restoreStream();
+      typedef Fem :: PersistenceManager :: RestoreStreamType  RestoreStreamType ;
+      RestoreStreamType& stream = Fem :: PersistenceManager :: restoreStream();
 
       stream >> elements_ ;
       stream >> maxDofs_ ;
