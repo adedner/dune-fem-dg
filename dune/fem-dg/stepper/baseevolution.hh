@@ -19,7 +19,7 @@
 /////////////////////////////////////////////////////////////////////////////
 
 struct EocDataOutputParameters :   /*@LST1S@*/
-       public Dune::LocalParameter<Dune::DataWriterParameters,EocDataOutputParameters> 
+       public Dune::Fem::LocalParameter<Dune::Fem::DataWriterParameters,EocDataOutputParameters> 
 {
   std::string loop_;
   EocDataOutputParameters(int loop, const std::string& name) {
@@ -74,18 +74,21 @@ public:
   typedef typename Traits :: RestrictionProlongationType RestrictionProlongationType;
 
   // type of adaptation manager 
-  typedef Dune::AdaptationManager< GridType, RestrictionProlongationType > AdaptationManagerType;
+  typedef Dune::Fem::AdaptationManager< GridType, RestrictionProlongationType > AdaptationManagerType;
 
   // type of IOTuple 
   typedef Dune::tuple< DiscreteFunctionType*, DiscreteFunctionType*, IndicatorType* > IOTupleType; 
   // type of data writer 
-  typedef Dune::DataWriter< GridType, IOTupleType >    DataWriterType;
+  typedef Dune::Fem::DataWriter< GridType, IOTupleType >    DataWriterType;
 
   // type of time provider organizing time for time loops 
-  typedef Dune::GridTimeProvider< GridType >                 TimeProviderType;
+  typedef Dune::Fem::GridTimeProvider< GridType >                 TimeProviderType;
 
   // type of 64bit unsigned integer 
   typedef uint64_t UInt64Type ;
+
+  // type of parameter class 
+  typedef Dune::Fem::Parameter  ParameterType ;
 
   //! constructor 
   AlgorithmBase(GridType& grid) 
@@ -97,8 +100,8 @@ public:
      // Initialize Timer for CPU time measurements
      timeStepTimer_( Dune::FemTimer::addTo("max time/timestep") ),
      loop_( 0 ),
-     fixedTimeStep_( Dune::Parameter::getValue<double>("fixedTimeStep",0) ),
-     fixedTimeStepEocLoopFactor_( Dune::Parameter::getValue<double>("fixedTimeStepEocLoopFactor",1.) )
+     fixedTimeStep_( ParameterType::getValue<double>("fixedTimeStep",0) ),
+     fixedTimeStepEocLoopFactor_( ParameterType::getValue<double>("fixedTimeStepEocLoopFactor",1.) )
   {
   }
 
@@ -191,18 +194,18 @@ public:
                           int& max_newton_iterations, int& max_ils_iterations)
   {
     // verbosity 
-    const bool verbose = Dune::Parameter :: verbose ();
+    const bool verbose = ParameterType :: verbose ();
     // print info on each printCount step 
-    const int printCount = Dune::Parameter::getValue<int>("femhowto.printCount", -1);
+    const int printCount = ParameterType::getValue<int>("femhowto.printCount", -1);
 
     double maxTimeStep =
-      Dune::Parameter::getValue("femhowto.maxTimeStep", std::numeric_limits<double>::max());
-    const double startTime = Dune::Parameter::getValue<double>("femhowto.startTime", 0.0);
-    const double endTime   = Dune::Parameter::getValue<double>("femhowto.endTime");
+      ParameterType::getValue("femhowto.maxTimeStep", std::numeric_limits<double>::max());
+    const double startTime = ParameterType::getValue<double>("femhowto.startTime", 0.0);
+    const double endTime   = ParameterType::getValue<double>("femhowto.endTime");
 
     // if this variable is set then only maximalTimeSteps timesteps will be computed 
     const int maximalTimeSteps =
-      Dune::Parameter::getValue("femhowto.maximaltimesteps", std::numeric_limits<int>::max());
+      ParameterType::getValue("femhowto.maximaltimesteps", std::numeric_limits<int>::max());
 
     // for statistics
     maxdt     = 0.;
@@ -232,8 +235,8 @@ public:
     int maxAdaptationLevel = 0;
     if( adaptManager.adaptive() )
     {
-      adaptCount = Dune::Parameter::getValue<int>("fem.adaptation.adaptcount");
-      maxAdaptationLevel = Dune::Parameter::getValue<int>("fem.adaptation.finestLevel");
+      adaptCount = ParameterType::getValue<int>("fem.adaptation.adaptcount");
+      maxAdaptationLevel = ParameterType::getValue<int>("fem.adaptation.finestLevel");
     }
 
     // only do checkpointing when number of EOC steps is 1 
@@ -420,7 +423,7 @@ protected:
   GridType&            grid_;
   GridPartType         gridPart_;
   DiscreteSpaceType    space_;
-  Dune::IOInterface*   eocLoopData_;
+  Dune::Fem::IOInterface*   eocLoopData_;
   IOTupleType          eocDataTup_; 
   unsigned int timeStepTimer_; 
   unsigned int loop_ ; 

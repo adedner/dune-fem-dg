@@ -17,7 +17,7 @@ struct StepperTraits
   typedef GridImp                                   GridType;
 
   // Choose a suitable GridView
-  typedef Dune :: DGAdaptiveLeafGridPart< GridType >       HostGridPartType;
+  typedef Dune :: Fem :: DGAdaptiveLeafGridPart< GridType >       HostGridPartType;
   typedef HostGridPartType  GridPartType ;
   //typedef Dune :: Fem :: IdGridPart< HostGridPartType >       GridPartType;
 
@@ -73,7 +73,7 @@ struct StepperTraits
   typedef DuneODE :: OdeSolverInterface< DiscreteFunctionType > OdeSolverType ;
 
   // type of restriction/prolongation projection for adaptive simulations 
-  typedef Dune :: RestrictProlongDefault< DiscreteFunctionType > RestrictionProlongationType;
+  typedef Dune :: Fem :: RestrictProlongDefault< DiscreteFunctionType > RestrictionProlongationType;
 };
 
 #endif

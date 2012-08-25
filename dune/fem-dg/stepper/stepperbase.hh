@@ -95,7 +95,10 @@ struct StepperBase
   typedef RunFile< GridType >  RunFileType;
 
   // type of most simple check pointer 
-  typedef Dune::CheckPointer< GridType >   CheckPointerType;
+  typedef Dune::Fem::CheckPointer< GridType >   CheckPointerType;
+
+  // type of parameter class 
+  typedef Dune::Fem::Parameter ParameterType ;
 
   using BaseType :: grid_;
   using BaseType :: gridPart_;
@@ -107,7 +110,7 @@ struct StepperBase
   StepperBase(GridType& grid) :
     BaseType( grid ),
     solution_( "solution", space() ),
-    additionalVariables_( Parameter :: getValue< bool >("femhowto.additionalvariables", false) ? 
+    additionalVariables_( ParameterType :: getValue< bool >("femhowto.additionalvariables", false) ? 
         new DiscreteFunctionType("additional", space() ) : 0 ),
     problem_( ProblemTraits::problem() ),
     model_( new ModelType( problem() ) ),
@@ -116,9 +119,9 @@ struct StepperBase
     runfile_( grid.comm(), true ),
     checkPointer_( 0 ),
     overallTimer_(),
-    eocId_( FemEoc::addEntry(std::string("$L^2$-error")) ),
+    eocId_( Fem::FemEoc::addEntry(std::string("$L^2$-error")) ),
     odeSolver_( 0 ),
-    adaptive_( Dune::AdaptationMethod< GridType >( grid_ ).adaptive() ),
+    adaptive_( Dune::Fem::AdaptationMethod< GridType >( grid_ ).adaptive() ),
     adaptationParameters_( )
   {
   }                                                                      
@@ -159,7 +162,7 @@ struct StepperBase
   virtual bool restoreFromCheckPoint( TimeProviderType& tp )
   {
     // add solution to persistence manager for check pointing 
-    Dune::persistenceManager << solution_ ;
+    Dune::Fem::persistenceManager << solution_ ;
   
     std::string checkPointRestartFile = checkPointRestartFileName();
 
@@ -239,7 +242,7 @@ struct StepperBase
   }
 
 
-  void step(TimeProviderType& tp, //DiscreteFunctionType& U,
+  void step(TimeProviderType& tp,
             int& newton_iterations, 
             int& ils_iterations,
             int& max_newton_iterations,
@@ -282,7 +285,7 @@ struct StepperBase
   inline double error(TimeProviderType& tp, DiscreteFunctionType& u)
   {
     typedef typename DiscreteFunctionType :: RangeType RangeType;
-    L2Norm< GridPartType > l2norm( u.space().gridPart() );
+    Fem :: L2Norm< GridPartType > l2norm( u.space().gridPart() );
 
     return l2norm.distance( problem().fixedTimeFunction( tp.time() ), u );
   }
@@ -297,7 +300,7 @@ struct StepperBase
 
     // ... and print the statistics out to a file
     if( doFemEoc )
-      FemEoc::setErrors(eocId_, error(tp, u ));
+      Fem::FemEoc::setErrors(eocId_, error(tp, u ));
 
 #ifdef LOCALDEBUG
     std::cout <<"maxRatioOfSums: " <<maxRatioOfSums <<std::endl;

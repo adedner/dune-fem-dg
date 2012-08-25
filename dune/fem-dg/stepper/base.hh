@@ -17,13 +17,15 @@
 #include <dune/fem/io/parameter.hh>
 #include <dune/fem/io/file/datawriter.hh>
 
+typedef Dune::Fem::Parameter  ParameterType ;
+
 //! FemEoc initialization helper
 struct InitFemEoc 
 {
   //! return number of eoc steps 
   static inline int eocSteps() 
   {
-    return Dune::Parameter::getValue<int>("femhowto.eocSteps", 1);
+    return ParameterType::getValue<int>("femhowto.eocSteps", 1);
   }
 
   //! initialize FemEoc if eocSteps is > 1 
@@ -33,9 +35,9 @@ struct InitFemEoc
     {
       // output of error and eoc information
       std::string eocOutPath = 
-        Dune::Parameter::getValue<std::string>("femhowto.eocOutputPath", std::string("./"));
+        ParameterType::getValue<std::string>("femhowto.eocOutputPath", std::string("./"));
 
-      Dune::FemEoc::initialize(eocOutPath, "eoc", problemDescription);
+      Dune::Fem::FemEoc::initialize(eocOutPath, "eoc", problemDescription);
     }
   }
 };
@@ -47,9 +49,9 @@ static inline std::string checkPointRestartFileName ()
   if( ! initialized ) 
   {
     const std::string key( "fem.io.checkpointrestartfile" );
-    if( Dune :: Parameter :: exists( key ) )
+    if( ParameterType :: exists( key ) )
     {
-      checkFileName = Dune :: Parameter::getValue<std::string> ( key );
+      checkFileName = ParameterType::getValue<std::string> ( key );
     }
     else 
       checkFileName = "" ;
@@ -64,7 +66,7 @@ Dune::GridPtr< HGridType > initialize( const std::string& problemDescription )
 { 
 #ifdef ALUGRID_CONSTRUCTION_WITH_STREAMS 
   // precision of out streams (here ALUGrid backup streams)
-  const int precision = Dune :: Parameter :: getValue< int > ("fem.io.precision", 16);
+  const int precision = ParameterType :: getValue< int > ("fem.io.precision", 16);
   ALUGridSpace :: ALUGridExternalParameters :: precision () = precision;
 #endif
 
@@ -76,7 +78,7 @@ Dune::GridPtr< HGridType > initialize( const std::string& problemDescription )
   // if checkpoint restart file has been given
   if( checkPointRestartFile.size() > 0 ) 
   {
-    if( 0 == Dune::MPIManager :: rank () )
+    if( 0 == Dune::Fem::MPIManager :: rank () )
     {
       std::cout << std::endl;
       std::cout << "********************************************************" << std::endl;
@@ -86,25 +88,25 @@ Dune::GridPtr< HGridType > initialize( const std::string& problemDescription )
     }
 
     // restore grid from checkpoint
-    gridptr = Dune::CheckPointer< HGridType > :: restoreGrid( checkPointRestartFile );
+    gridptr = Dune::Fem::CheckPointer< HGridType > :: restoreGrid( checkPointRestartFile );
   }
   else  // normal new start 
   {
     // ----- read in runtime parameters ------
-    const std::string filekey = Dune::IOInterface::defaultGridKey( HGridType::dimension );
-    const std::string filename = Dune::Parameter::getValue< std::string >( filekey ); /*@\label{base:param0}@*/
+    const std::string filekey = Dune::Fem::IOInterface::defaultGridKey( HGridType::dimension );
+    const std::string filename = ParameterType::getValue< std::string >( filekey ); /*@\label{base:param0}@*/
 
     // initialize grid with given macro file name 
     gridptr = Dune::GridPtr< HGridType >( filename );
-    Dune::Parameter::appendDGF( filename );
+    ParameterType::appendDGF( filename );
 
     // load balance grid in case of parallel runs 
     gridptr->loadBalance();
 
     // and refine the grid globally
-    const int startLevel = Dune::Parameter::getValue<int>("fem.adaptation.coarsestLevel", 0);
+    const int startLevel = ParameterType::getValue<int>("fem.adaptation.coarsestLevel", 0);
     for(int level=0; level < startLevel ; ++level)
-      Dune::GlobalRefine::apply(*gridptr, 1 ); /*@\label{fv:globalRefine1}@*/
+      Dune::Fem::GlobalRefine::apply(*gridptr, 1 ); /*@\label{fv:globalRefine1}@*/
   }
 
   // initialize FemEoc if eocSteps > 1 
@@ -139,7 +141,7 @@ void compute(Algorithm& algorithm)
   const int eocSteps = InitFemEoc :: eocSteps ();
 
   typename Algorithm::IOTupleType dataTup ( &algorithm.solution() );
-  typedef Dune::DataOutput<GridType, typename Algorithm::IOTupleType> DataOutputType;
+  typedef Dune::Fem::DataOutput<GridType, typename Algorithm::IOTupleType> DataOutputType;
   DataOutputType dataOutput( grid, dataTup );
 
   const unsigned int femTimerId = Dune::FemTimer::addTo("timestep");
@@ -167,7 +169,7 @@ void compute(Algorithm& algorithm)
     Dune::FemTimer::reset(femTimerId);
 
     // calculate grid width
-    const double h = Dune::GridWidth::calcGridWidth(gridPart);
+    const double h = Dune::Fem::GridWidth::calcGridWidth(gridPart);
 
     // finalize the algorithm 
     algorithm.finalize( eocloop );
@@ -175,12 +177,12 @@ void compute(Algorithm& algorithm)
     // only do this if we have more than 1 eoc step
     if( eocSteps > 1 ) 
     {
-      if( Dune::Parameter :: verbose() )
-        Dune::FemEoc::write(h,grid.size(0), runTime, counter,avgTimeStep,minTimeStep,
+      if( ParameterType :: verbose() )
+        Dune::Fem::FemEoc::write(h,grid.size(0), runTime, counter,avgTimeStep,minTimeStep,
                       maxTimeStep, total_newton_iterations, total_ils_iterations, 
                       max_newton_iterations, max_ils_iterations, std::cout);
       else
-        Dune::FemEoc::write(h,grid.size(0),runTime,counter,avgTimeStep,minTimeStep,
+        Dune::Fem::FemEoc::write(h,grid.size(0),runTime,counter,avgTimeStep,minTimeStep,
                       maxTimeStep,total_newton_iterations,total_ils_iterations,
                       max_newton_iterations, max_ils_iterations);
 
@@ -189,7 +191,7 @@ void compute(Algorithm& algorithm)
 
       // Refine the grid for the next EOC Step. If the scheme uses adaptation,
       // the refinement level needs to be set in the algorithms' initialize method.
-      Dune::GlobalRefine::apply(grid,Dune::DGFGridInfo<GridType>::refineStepsForHalf());
+      Dune::Fem::GlobalRefine::apply(grid,Dune::DGFGridInfo<GridType>::refineStepsForHalf());
     }
 
   } /***** END of EOC Loop *****/
