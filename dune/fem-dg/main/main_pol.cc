@@ -77,7 +77,7 @@ namespace LOOPSPACE {
 
   void simulate()
   {
-    FemEoc::clear();
+    Fem::FemEoc::clear();
 
     typedef Dune::GridSelector :: GridType GridType;
     typedef ProblemGenerator< GridType > ProblemTraits;

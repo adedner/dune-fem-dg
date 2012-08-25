@@ -186,7 +186,7 @@ int main(int argc, char ** argv)
 {     
 
   /* Initialize MPI (always do this even if you are not using MPI) */
-  Dune::MPIManager :: initialize( argc, argv );
+  Dune::Fem::MPIManager :: initialize( argc, argv );
   try {
 
 #if HAVE_PETSC
@@ -199,22 +199,22 @@ int main(int argc, char ** argv)
 #endif
 
   // *** Initialization
-  Dune::Parameter::append(argc,argv);                           /*@\label{dg:param0}@*/
+  Dune::Fem::Parameter::append(argc,argv);                           /*@\label{dg:param0}@*/
   if (argc >= 2) 
   {
-    Dune::Parameter::append(argv[1]);
+    Dune::Fem::Parameter::append(argv[1]);
   } 
   else 
   {
-    Dune::Parameter::append("parameter");                       /*@\label{dg:paramfile}@*/
+    Dune::Fem::Parameter::append("parameter");                       /*@\label{dg:paramfile}@*/
   }                                                       /*@\label{dg:param1}@*/
 
   // get number of desired threads (default is 1)
-  int numThreads = Dune :: Parameter::getValue< int >("fem.parallel.numberofthreads", 1);
+  int numThreads = Dune::Fem::Parameter::getValue< int >("fem.parallel.numberofthreads", 1);
   Dune :: Fem :: ThreadManager :: setMaxNumberThreads( numThreads );
 
   int polynomialOrder = 1;
-  polynomialOrder = Dune::Parameter :: getValue("femhowto.polynomialOrder", polynomialOrder );
+  polynomialOrder = Dune::Fem::Parameter :: getValue("femhowto.polynomialOrder", polynomialOrder );
 
 #ifdef BASEFUNCTIONSET_CODEGEN_GENERATE
   codegen();
@@ -262,7 +262,7 @@ int main(int argc, char ** argv)
 #endif
 
   // write parameters used 
-  Dune::Parameter::write("parameter.log");
+  Dune::Fem::Parameter::write("parameter.log");
 #endif
   }
   catch (Dune::Exception &e) {                            /*@\label{dg:catch0}@*/
