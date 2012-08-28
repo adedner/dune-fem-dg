@@ -9,7 +9,7 @@
 // dune-fem-dg includes 
 #include <dune/fem-dg/pass/dgpass.hh>
 
-#ifdef NSMOD_USE_SMP_PARALLEL
+#ifdef USE_SMP_PARALLEL
 #include <dune/fem-dg/pass/threadpass.hh>
 #endif
 
@@ -48,17 +48,17 @@ namespace Dune {
     typedef typename AdvTraits::IndicatorType        IndicatorType ;
     
     typedef Fem::StartPass< AdvDFunctionType, u
-#ifdef NSMOD_USE_SMP_PARALLEL
-         , Fem::NonBlockingCommHandle< AdvDFunctionType >   
+#ifdef USE_SMP_PARALLEL
+         , NonBlockingCommHandle< AdvDFunctionType >   
 #endif
       > Pass0Type;
 
     typedef 
-#ifdef NSMOD_USE_SMP_PARALLEL
+#ifdef USE_SMP_PARALLEL
       ThreadPass < 
 #endif
       LocalCDGPass< DiscreteModelType, Pass0Type, cdgpass >
-#ifdef NSMOD_USE_SMP_PARALLEL
+#ifdef USE_SMP_PARALLEL
       , true // non-blocking communication 
         > 
 #endif
@@ -90,7 +90,7 @@ namespace Dune {
 
     void setAdaptationHandler( AdaptationHandlerType& adHandle, double weight = 1 ) 
     {
-#ifdef NSMOD_USE_SMP_PARALLEL
+#ifdef USE_SMP_PARALLEL
       // also set adaptation handler to the discrete models in the thread pass 
       {
         pass1_.setAdaptationHandler( adHandle, weight );
