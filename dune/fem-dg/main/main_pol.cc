@@ -46,7 +46,7 @@
 #elif defined EULER 
 #include <dune/fem-dg/stepper/advectionstepper.hh>
 #else
-#include <dune/fem-dg/stepper/stepper.hh>
+#include <dune/fem-dg/stepper/advectiondiffusionstepper.hh>
 #endif
 
 #include <dune/fem/space/common/allgeomtypes.hh>
