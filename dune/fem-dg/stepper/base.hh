@@ -132,39 +132,34 @@ template <class Algorithm>
 void compute(Algorithm& algorithm)
 {
   typedef typename Algorithm::DiscreteFunctionType DiscreteFunctionType;
-  typename Algorithm::DiscreteSpaceType& space = algorithm.space();
-  typename Algorithm::GridPartType& gridPart = space.gridPart();
+  const typename Algorithm::DiscreteSpaceType& space = algorithm.space();
+  const typename Algorithm::GridPartType& gridPart = space.gridPart();
   typedef typename Algorithm::GridPartType::GridType GridType;
-  GridType& grid = gridPart.grid();
+  GridType& grid = algorithm.grid();
 
   // get number of eoc steps 
   const int eocSteps = InitFemEoc :: eocSteps ();
 
-  typename Algorithm::IOTupleType dataTup ( &algorithm.solution() );
+  typename Algorithm::IOTupleType dataTup = algorithm.dataTuple() ; 
+
   typedef Dune::Fem::DataOutput<GridType, typename Algorithm::IOTupleType> DataOutputType;
   DataOutputType dataOutput( grid, dataTup );
 
+  typedef typename Algorithm::SolverMonitorType SolverMonitorType;
+
   const unsigned int femTimerId = Dune::FemTimer::addTo("timestep");
-  for(int eocloop=0; eocloop < eocSteps; ++eocloop)
+  for(int eocloop=0; eocloop < eocSteps; ++eocloop )
   {
+    // start fem timer (enable with -DFEMTIMER)
     Dune::FemTimer :: start(femTimerId);
 
-    // do one step
-    double avgTimeStep = 0;
-    double minTimeStep = 0;
-    double maxTimeStep = 0;
-    size_t counter = 0;
-    int total_newton_iterations = 0;
-    int total_ils_iterations = 0;
-    int max_newton_iterations = 0;
-    int max_ils_iterations = 0;
+    // call algorithm and return solver statistics and some info
+    SolverMonitorType monitor = algorithm.solve( eocloop );
 
-    algorithm( avgTimeStep, minTimeStep, maxTimeStep,
-               counter, total_newton_iterations, total_ils_iterations,
-               max_newton_iterations, max_ils_iterations );
-
+    // get run time of solving procedure 
     double runTime = Dune::FemTimer::stop(femTimerId);
 
+    // print some info 
     Dune::FemTimer::printFile("./timer.out");
     Dune::FemTimer::reset(femTimerId);
 
@@ -177,17 +172,21 @@ void compute(Algorithm& algorithm)
     // only do this if we have more than 1 eoc step
     if( eocSteps > 1 ) 
     {
+      std::stringstream eocInfo ;
+      // generate EOC information
+      Dune::Fem::FemEoc::write(h,grid.size(0), runTime, 
+                      monitor.timeSteps, monitor.avgTimeStep, monitor.minTimeStep,
+                      monitor.maxTimeStep, monitor.total_newton_iterations, monitor.total_ils_iterations, 
+                      monitor.max_newton_iterations, monitor.max_ils_iterations, eocInfo );
+       
+      // in verbose mode write EOC info to std::cout  
       if( ParameterType :: verbose() )
-        Dune::Fem::FemEoc::write(h,grid.size(0), runTime, counter,avgTimeStep,minTimeStep,
-                      maxTimeStep, total_newton_iterations, total_ils_iterations, 
-                      max_newton_iterations, max_ils_iterations, std::cout);
-      else
-        Dune::Fem::FemEoc::write(h,grid.size(0),runTime,counter,avgTimeStep,minTimeStep,
-                      maxTimeStep,total_newton_iterations,total_ils_iterations,
-                      max_newton_iterations, max_ils_iterations);
+      {
+        std::cout << std::endl << "EOC info: " << std::endl << eocInfo.str() << std::endl;
+      }
 
       // write eoc step 
-      dataOutput.writeData(eocloop);
+      dataOutput.writeData( eocloop );
 
       // Refine the grid for the next EOC Step. If the scheme uses adaptation,
       // the refinement level needs to be set in the algorithms' initialize method.

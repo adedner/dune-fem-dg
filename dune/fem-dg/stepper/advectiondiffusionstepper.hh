@@ -1,5 +1,5 @@
-#ifndef NAVIER_STOKES_STEPPER_HH
-#define NAVIER_STOKES_STEPPER_HH
+#ifndef ADVECTION_DIFFUSION_STEPPER_HH
+#define ADVECTION_DIFFUSION_STEPPER_HH
 
 // dune-fem-dg includes
 #include <dune/fem-dg/operator/adaptation/estimator.hh>
@@ -33,9 +33,9 @@ struct Stepper
   // The DG space operator
   // The first operator is sum of the other two
   // The other two are needed for semi-implicit time discretization
-  typedef typename BaseType :: DgAdvectionType           DgType;
-  typedef DgType  DgAdvectionType;
-  typedef DgType  DgDiffusionType;
+  typedef typename BaseType :: DgType                    DgType;
+  typedef typename BaseType :: DgAdvectionType           DgAdvectionType;
+  typedef typename BaseType :: DgDiffusionType           DgDiffusionType;
 
   // The discrete function for the unknown solution is defined in the DgOperator
   typedef typename BaseType :: DiscreteFunctionType      DiscreteFunctionType;
@@ -46,16 +46,16 @@ struct Stepper
   // The ODE Solvers
   typedef typename BaseType :: OdeSolverType     OdeSolverType;
 
-  typedef typename BaseType :: TimeProviderType        TimeProviderType;
-  typedef typename BaseType :: AdaptationManagerType   AdaptationManagerType;
-  typedef typename BaseType :: AdaptationHandlerType   AdaptationHandlerType;
+  typedef typename BaseType :: TimeProviderType       TimeProviderType;
+  typedef typename BaseType :: AdaptationManagerType  AdaptationManagerType;
+  typedef typename BaseType :: AdaptationHandlerType  AdaptationHandlerType; 
 
   static const Dune::DGDiffusionFluxIdentifier DiffusionFluxId =
     BaseType::Traits::DiffusionFluxId ;
 
-  // advection = true , diffusion = false 
+  // advection = true , diffusion = true
   typedef Dune :: DGAdaptationIndicatorOperator< ModelType, FluxType,
-            DiffusionFluxId, polynomialOrder, true, false >  DGIndicatorType;
+            DiffusionFluxId, polynomialOrder, true, true >  DGIndicatorType;
 
   // gradient estimator 
   typedef Estimator< DiscreteFunctionType, InitialDataType > GradientIndicatorType ;
@@ -65,23 +65,43 @@ struct Stepper
 
   using BaseType :: grid_;
   using BaseType :: gridPart_;
+  using BaseType :: space;
   using BaseType :: convectionFlux_ ;
   using BaseType :: problem;
+  using BaseType :: solution_;
   using BaseType :: adaptationHandler_ ;
-  using BaseType :: solution_ ;
-  using BaseType :: adaptive ;
   using BaseType :: adaptationParameters_;
+  using BaseType :: adaptive ;
 
   Stepper( GridType& grid ) :
     BaseType( grid ),
-    dgAdvectionOperator_(gridPart_, convectionFlux_),
+    dgOperator_( gridPart_, convectionFlux_ ),
+    dgAdvectionOperator_( gridPart_, convectionFlux_ ),
+    dgDiffusionOperator_( gridPart_, convectionFlux_ ),
     dgIndicator_( gridPart_, convectionFlux_ ),
     gradientIndicator_( solution_, problem() )
   {
   }
 
+  //! return overal number of grid elements 
+  virtual UInt64Type gridSize() const 
+  {
+    // is adaptation handler exists use the information to avoid global comm
+    if( adaptationHandler_ ) 
+      return adaptationHandler_->globalNumberOfElements() ;
+
+    // one of them is not zero, 
+    size_t advSize     = dgAdvectionOperator_.numberOfElements();
+    size_t diffSize    = dgDiffusionOperator_.numberOfElements();
+    size_t dgIndSize   = gradientIndicator_.numberOfElements();
+    size_t dgSize      = dgOperator_.numberOfElements(); 
+    UInt64Type grSize  = std::max( std::max(advSize, dgSize ), std::max( diffSize, dgIndSize ) );
+    return grid_.comm().sum( grSize );
+  }
+
   virtual OdeSolverType* createOdeSolver(TimeProviderType& tp) 
   {
+    // create adaptation handler in case of apost indicator
     if( adaptive() )
     {
       if( ! adaptationHandler_ && adaptationParameters_.aposterioriIndicator() )
@@ -91,29 +111,11 @@ struct Stepper
       }
     }
 
-    typedef SmartOdeSolver< DgAdvectionType, DgAdvectionType, DgAdvectionType > OdeSolverImpl;
-    return new OdeSolverImpl( tp, dgAdvectionOperator_, 
+    // create ODE solver 
+    typedef SmartOdeSolver< DgType, DgAdvectionType, DgDiffusionType > OdeSolverImpl;
+    return new OdeSolverImpl( tp, dgOperator_, 
                               dgAdvectionOperator_,
-                              dgAdvectionOperator_ );
-  }
-
-  //! return overal number of grid elements 
-  virtual uint64_t gridSize() const
-  {
-    // is adaptation handler exists use the information to avoid global comm
-    if( adaptationHandler_ )
-      return adaptationHandler_->globalNumberOfElements() ;
-
-    size_t  advSize   = dgAdvectionOperator_.numberOfElements();
-    size_t  dgIndSize = gradientIndicator_.numberOfElements();
-    uint64_t grSize   = std::max( advSize, dgIndSize );
-    return grid_.comm().sum( grSize );
-  }
-
-  //! call limiter (only if dgAdvectionOperator_ is DGLimitedAdvectionOperator)
-  void limitSolution() 
-  { 
-    dgAdvectionOperator_.limit( solution_ );
+                              dgDiffusionOperator_ );
   }
 
   //! estimate and mark solution 
@@ -123,13 +125,15 @@ struct Stepper
   }
 
   //! estimate and mark solution 
-  virtual void estimateMarkAdapt( )
+  virtual void estimateMarkAdapt( ) 
   {
     doEstimateMarkAdapt( dgIndicator_, gradientIndicator_, false );
   }
 
 protected:
+  DgType                  dgOperator_;
   DgAdvectionType         dgAdvectionOperator_;
+  DgDiffusionType         dgDiffusionOperator_;
   DGIndicatorType         dgIndicator_;
   GradientIndicatorType   gradientIndicator_;
 };

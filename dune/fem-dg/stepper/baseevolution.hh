@@ -33,7 +33,83 @@ struct EocDataOutputParameters :   /*@LST1S@*/
   std::string path() const {
     return loop_;
   }
-};                              /*@LST1E@*/
+};
+
+//! solver statistics and further info 
+//! such as newton iterations and iterations of the linear solver 
+class SolverMonitor 
+{
+public:
+  double avgTimeStep;
+  double minTimeStep;
+  double maxTimeStep;
+  size_t timeSteps;
+  int newton_iterations;
+  int ils_iterations;
+  int total_newton_iterations;
+  int total_ils_iterations;
+  int max_newton_iterations;
+  int max_ils_iterations;
+
+  SolverMonitor() 
+  {
+    avgTimeStep = 0;
+    minTimeStep = std::numeric_limits<double>::max();
+    maxTimeStep = 0;
+    timeSteps = 0;
+    newton_iterations = 0;
+    ils_iterations = 0;
+    total_newton_iterations = 0;
+    total_ils_iterations = 0;
+    max_newton_iterations = 0;
+    max_ils_iterations = 0;
+  }
+
+  void setTimeStepInfo( const Dune::Fem::TimeProviderBase& tp ) 
+  { 
+    const double ldt = tp.deltaT();
+    // calculate time step info 
+    minTimeStep  = std::min( ldt, minTimeStep );
+    maxTimeStep  = std::max( ldt, maxTimeStep );
+    avgTimeStep += ldt;
+
+    timeSteps = tp.timeStep() + 1;
+
+    // accumulate iteration information 
+    total_newton_iterations += newton_iterations;
+    total_ils_iterations += ils_iterations;
+  }
+
+  void finalize() 
+  {
+    avgTimeStep /= double( timeSteps );
+  }
+
+  void dump( std::ostream& out ) const
+  {
+    out << "SolverMonitorInfo (timesteps):" << std::endl;
+    out << "min  dt: " << minTimeStep << std::endl;
+    out << "max  dt: " << maxTimeStep << std::endl;
+    out << "aver dt: " << avgTimeStep << std::endl;
+
+    if( max_newton_iterations > 0 || max_ils_iterations > 0 )
+    {
+      out << "SolverMonitorInfo (iterations):" << std::endl;
+      out << "newton max: " << max_newton_iterations << std::endl;
+      out << "newton tot: " << total_newton_iterations << std::endl;
+      out << "ils    max: " << max_ils_iterations << std::endl;
+      out << "ils    tot: " << total_ils_iterations << std::endl;
+    }
+    out << std::endl;
+  }
+};
+
+// ostream operator for SolverMonitor
+std::ostream& operator << ( std::ostream& out, const SolverMonitor& monitor ) 
+{
+  monitor.dump( out );
+  return out;
+}
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -70,14 +146,8 @@ public:
   typedef typename DiscreteFunctionType::DomainType    DomainType;
   typedef typename DiscreteFunctionType::RangeType     RangeType;
 
-  // the restriction and prolongation projection 
-  typedef typename Traits :: RestrictionProlongationType RestrictionProlongationType;
-
-  // type of adaptation manager 
-  typedef Dune::Fem::AdaptationManager< GridType, RestrictionProlongationType > AdaptationManagerType;
-
   // type of IOTuple 
-  typedef Dune::tuple< DiscreteFunctionType*, DiscreteFunctionType*, IndicatorType* > IOTupleType; 
+  typedef Dune::tuple< DiscreteFunctionType*, DiscreteFunctionType*, IndicatorType* >  IOTupleType; 
   // type of data writer 
   typedef Dune::Fem::DataWriter< GridType, IOTupleType >    DataWriterType;
 
@@ -87,19 +157,19 @@ public:
   // type of 64bit unsigned integer 
   typedef uint64_t UInt64Type ;
 
+  // type of statistics monitor 
+  typedef SolverMonitor  SolverMonitorType ;
+
   // type of parameter class 
   typedef Dune::Fem::Parameter  ParameterType ;
 
   //! constructor 
-  AlgorithmBase(GridType& grid) 
+  AlgorithmBase( GridType& grid ) 
    : grid_( grid ),
-     gridPart_( grid_ ),
-     space_( gridPart_ ),
      eocLoopData_( 0 ),
      eocDataTup_(),
      // Initialize Timer for CPU time measurements
      timeStepTimer_( Dune::FemTimer::addTo("max time/timestep") ),
-     loop_( 0 ),
      fixedTimeStep_( ParameterType::getValue<double>("fixedTimeStep",0) ),
      fixedTimeStepEocLoopFactor_( ParameterType::getValue<double>("fixedTimeStepEocLoopFactor",1.) )
   {
@@ -112,8 +182,14 @@ public:
     eocLoopData_ = 0 ;
   } 
 
+  //! return default data tuple for data output
+  virtual IOTupleType dataTuple() = 0 ;
+
   //! return reference to space 
-  DiscreteSpaceType& space() { return space_; }
+  virtual const DiscreteSpaceType& space() const = 0 ;
+
+  //! return reference to hierarchical grid 
+  GridType& grid() { return grid_ ; }
 
   // return size of grid 
   virtual UInt64Type gridSize() const 
@@ -122,77 +198,57 @@ public:
     return grid_.comm().sum( grSize );
   }
 
-  virtual std::string dataPrefix () const = 0;
-
-  virtual const ProblemType& problem() const = 0;
-  virtual const ModelType& model() const = 0;
-
   // return reference to solution 
   virtual DiscreteFunctionType& solution () = 0;
-  // return reference to additional variables 
-  virtual DiscreteFunctionType* additionalVariables () = 0;
   // return reference to additional variables 
   virtual IndicatorType* indicator()  { return 0; }
 
   //! initialize method for time loop, i.e. L2-project initial data 
-  virtual void initializeStep(TimeProviderType& tp) = 0;
+  virtual void initializeStep( TimeProviderType& tp, const int loop ) = 0;
 
   //! solve one time step 
   virtual void step(TimeProviderType& tp,
-                    int& newton_iterations,
-                    int& ils_iterations,
-                    int& max_newton_iterations,
-                    int& max_ils_iterations) = 0;
+                    SolverMonitorType& monitor ) = 0;
 
   //! call limiter if necessary 
   virtual void limitSolution () {} 
 
-  //! finalize problem, i.e. calculate EOC ...
+  //! finalize this EOC loop and possibly calculate EOC ...
   virtual void finalizeStep(TimeProviderType& tp) = 0;
 
   //! restore all data from check point (overload to do something)
   //! return true if the simulation was newly started 
-  virtual bool restoreFromCheckPoint(TimeProviderType& tp) { abort(); return true;  } 
+  virtual bool restoreFromCheckPoint( TimeProviderType& tp ) { abort(); return true;  } 
 
   //! write a check point (overload to do something)
-  virtual void writeCheckPoint(TimeProviderType& tp,
-                               AdaptationManagerType& am ) const {}
+  virtual void writeCheckPoint(TimeProviderType& tp) const {}
 
   //! estimate and mark cell for refinement/coarsening
-  virtual void estimateMarkAdapt( AdaptationManagerType& am ) = 0;
+  virtual void estimateMarkAdapt( ) = 0;
 
   //! initial estimate and mark cell for refinement/coarsening
-  virtual void initialEstimateMarkAdapt( AdaptationManagerType& am )
+  //! the default redirects to estimateMarkAdapt
+  virtual void initialEstimateMarkAdapt( )
   {
-    estimateMarkAdapt( am );  
+    estimateMarkAdapt( );  
   }
 
-  //! write data, if pointer to additionalVariables is true, they are calculated first 
-  void writeData( DataWriterType& eocDataOutput, 
-                  TimeProviderType& tp, 
-                  const bool reallyWrite )
+  virtual void checkDofsValid( TimeProviderType& tp, const int loop  ) const {}
+
+  virtual bool adaptive () const { return false ; }
+
+  virtual void checkAdditionalVariables( TimeProviderType& tp ) {} 
+
+  //! write data, this should be overloaded in the derived implementation (default does nothing)
+  void writeData( TimeProviderType& tp, 
+                  const bool reallyWrite = false ) {}
+
+  //! default time loop implementation, overload for changes in derived classes !!! 
+  virtual SolverMonitorType solve ( const int loop )
   {
-    if( reallyWrite ) 
-    {
-      DiscreteFunctionType* additionalVariables = this->additionalVariables();
-      // calculate DG-projection of additional variables
-      if ( additionalVariables )
-      {
-        // calculate additional variables from the current num. solution
-        setupAdditionalVariables( tp, solution(), model(), *additionalVariables );
-      }
-    }
+    // get grid reference 
+    GridType& grid = this->grid(); 
 
-    // write the data 
-    eocDataOutput.write( tp );    
-  }
-
-
-  //! default time loop implementation, overload for changes 
-  virtual void operator()(double& averagedt, double& mindt, double& maxdt, size_t& counter,
-                          int& total_newton_iterations, int& total_ils_iterations,
-                          int& max_newton_iterations, int& max_ils_iterations)
-  {
     // verbosity 
     const bool verbose = ParameterType :: verbose ();
     // print info on each printCount step 
@@ -207,33 +263,16 @@ public:
     const int maximalTimeSteps =
       ParameterType::getValue("femhowto.maximaltimesteps", std::numeric_limits<int>::max());
 
-    // for statistics
-    maxdt     = 0.;
-    mindt     = std::numeric_limits<double>::max();
-    averagedt = 0.;
-    total_newton_iterations = 0;
-    total_ils_iterations = 0;
-    max_newton_iterations = 0;
-    max_ils_iterations = 0;
+    // create monitor object (initialize all varialbes) 
+    SolverMonitorType monitor; 
 
     // Initialize TimeProvider
-    TimeProviderType tp(startTime, grid_ );  /*@\label{fv:timeprovider}@*/
-
-    DiscreteFunctionType& solution = this->solution(); 
-
-    // restriction and prolongation operator for adaptive simulations 
-    RestrictionProlongationType rp( solution );
-
-    // set refine weight 
-    rp.setFatherChildWeight( Dune::DGFGridInfo<GridType> :: refineWeight() );
-
-    // create adaptation manager 
-    AdaptationManagerType adaptManager( grid_ , rp );
+    TimeProviderType tp( startTime, grid );  /*@\label{fv:timeprovider}@*/
 
     // if adaptCount is 0 then no dynamics grid adaptation
     int adaptCount = 0;
     int maxAdaptationLevel = 0;
-    if( adaptManager.adaptive() )
+    if( adaptive() )
     {
       adaptCount = ParameterType::getValue<int>("fem.adaptation.adaptcount");
       maxAdaptationLevel = ParameterType::getValue<int>("fem.adaptation.finestLevel");
@@ -245,14 +284,8 @@ public:
     // restoreData if checkpointing is enabled (default is disabled)
     const bool newStart = ( doCheckPointing ) ? restoreFromCheckPoint( tp ) : false ;
 
-    // tuple with additionalVariables 
-    IOTupleType dataTuple( &solution, this->additionalVariables(), indicator() );
-
-    // type of the data writer
-    DataWriterType eocDataOutput( grid_, dataTuple, tp, EocDataOutputParameters( loop_ , dataPrefix() ) );
-
     // set initial data (and create ode solver)
-    initializeStep( tp );
+    initializeStep( tp, loop );
 
     // start first time step with prescribed fixed time step 
     // if it is not 0 otherwise use the internal estimate
@@ -273,10 +306,10 @@ public:
       for( int startCount = 0; startCount < maxAdaptationLevel; ++ startCount )
       {
         // call initial adaptation
-        initialEstimateMarkAdapt( adaptManager );
+        initialEstimateMarkAdapt( );
 
         // setup problem again 
-        initializeStep( tp );
+        initializeStep( tp, loop );
 
         // some info in verbose mode 
         if( verbose )
@@ -286,9 +319,6 @@ public:
                     << std::endl;
         }
       }
-
-      // write data 
-      writeData( eocDataOutput, tp, eocDataOutput.willWrite( tp ) );
     }
 
 #ifdef BASEFUNCTIONSET_CODEGEN_GENERATE
@@ -302,62 +332,50 @@ public:
     //******************************
     for( ; tp.time() < endTime; ) 
     {
-      tp.provideTimeStepEstimate(maxTimeStep);
-      const double tnow  = tp.time();
-      const double ldt   = tp.deltaT();
-
-      int newton_iterations;
-      int ils_iterations;
-      counter  = tp.timeStep();
-
-      //************************************************   
-      //* Compute an ODE timestep                      *
-      //************************************************
-      Dune::FemTimer::start(timeStepTimer_);
-
-      // grid adaptation (including marking of elements)
-      if( (adaptCount > 0) && (counter % adaptCount) == 0 )
-        estimateMarkAdapt( adaptManager );
-
-      // maximality of max_newton_iterations, max_ils_iterations
-      // is dealt within this step(...) function
-      step( tp, newton_iterations, ils_iterations,
-            max_newton_iterations, max_ils_iterations ); 
-
-      Dune::FemTimer::stop(timeStepTimer_,Dune::FemTimer::max);
-
-       // Check that no NAN have been generated
-      if (! solution.dofsValid() ) 
-      {
-        std::cout << "Loop(" << loop_ << "): Invalid DOFs" << std::endl;
-        eocDataOutput.write(tp);
-        abort();
-      }
-
-      if( (printCount > 0) && (counter % printCount == 0)) 
-      {
-        UInt64Type grSize = gridSize();
-        if( grid_.comm().rank() == 0 )
-          std::cout << "step: " << counter << "  time = " << tnow << ", dt = " << ldt
-                    <<",  grid size: " << grSize << std::endl;
-      }
-
-      // write data 
-      writeData( eocDataOutput, tp, eocDataOutput.willWrite( tp ) );
+      // write data for current time 
+      writeData( tp );
 
       // only do checkpointing for loop 0, i.e. not in EOC calculations 
       if( doCheckPointing ) 
       {
         // possibly write check point (default is disabled)
-        writeCheckPoint( tp, adaptManager );
+        writeCheckPoint( tp );
       }
 
-      // some statistics
-      mindt = (ldt<mindt) ? ldt : mindt;
-      maxdt = (ldt>maxdt) ? ldt : maxdt;
-      averagedt += ldt;
-      total_newton_iterations += newton_iterations;
-      total_ils_iterations += ils_iterations;
+      // reset time step estimate 
+      tp.provideTimeStepEstimate( maxTimeStep );
+
+      // current time step size
+      const double deltaT = tp.deltaT();
+
+      // current time step number 
+      const int timeStep  = tp.timeStep();
+
+      //************************************************   
+      //* Compute an ODE timestep                      *
+      //************************************************
+      Dune::FemTimer::start( timeStepTimer_ );
+
+      // grid adaptation (including marking of elements)
+      if( (adaptCount > 0) && (timeStep % adaptCount) == 0 )
+        estimateMarkAdapt();
+
+      // perform the solve for one time step, i.e. solve ODE 
+      step( tp, monitor ); 
+
+      // stop FemTimer for this time step
+      Dune::FemTimer::stop(timeStepTimer_,Dune::FemTimer::max);
+
+      // Check that no NAN have been generated
+      checkDofsValid( tp, loop );
+
+      if( (printCount > 0) && (timeStep % printCount == 0)) 
+      {
+        UInt64Type grSize = gridSize();
+        if( grid.comm().rank() == 0 )
+          std::cout << "step: " << timeStep << "  time = " << tp.time() << ", dt = " << deltaT
+                    <<",  grid size: " << grSize << std::endl;
+      }
 
       // next time step is prescribed by fixedTimeStep
       // it fixedTimeStep is not 0
@@ -366,67 +384,58 @@ public:
       else
         tp.next();
 
-      // for debugging only 
+      // for debugging and codegen only 
       if( tp.timeStep() >= maximalTimeSteps ) break ;
-
-      // possibly write a grid solution
-      problem().postProcessTimeStep( grid_, solution, tp.time() );
 
     } /****** END of time loop *****/
 
     // write last time step  
-    writeData( eocDataOutput, tp, true );
-
-    averagedt /= double(tp.timeStep());
-    if(verbose)
-    {
-      std::cout << "Minimum dt: " << mindt
-         << "\nMaximum dt: " << maxdt
-         << "\nAverage dt: " << averagedt << std::endl;
-    }
+    writeData( tp, true );
 
     // finalize eoc step 
     finalizeStep( tp ); 
     
-    // increase loop counter
-    ++loop_;
-
     // prepare the fixed time step for the next eoc loop
     fixedTimeStep_ /= fixedTimeStepEocLoopFactor_; 
+
+    // adjust average time step size 
+    monitor.finalize();
+
+    return monitor;
   }
 
 
   //! finalize problem, i.e. calculated EOC ...
   virtual void finalize( const int eocloop ) 
   {
+    /*
     DiscreteFunctionType& U = solution(); 
-    DiscreteFunctionType* addVars = additionalVariables();
 
     if( eocLoopData_ == 0 ) 
     {
-      eocDataTup_ = IOTupleType( &U, addVars, indicator() ); 
-      eocLoopData_ = new DataWriterType( grid_, eocDataTup_ );
+      eocDataTup_ = dataTuple();
+      eocLoopData_ = new DataWriterType( grid(), eocDataTup_ );
     }
 
     if( addVars ) 
     {
-      problem().finalizeSimulation( *addVars, eocloop );
+      //problem().finalizeSimulation( *addVars, eocloop );
     }
     else 
     {
-      problem().finalizeSimulation( U,  eocloop );
+      //problem().finalizeSimulation( U,  eocloop );
     }
     eocLoopData_->writeData( eocloop );
+    */
   }
 
 protected:      
-  GridType&            grid_;
-  GridPartType         gridPart_;
-  DiscreteSpaceType    space_;
+  // reference to hierarchical grid 
+  GridType& grid_ ;
+
   Dune::Fem::IOInterface*   eocLoopData_;
   IOTupleType          eocDataTup_; 
   unsigned int timeStepTimer_; 
-  unsigned int loop_ ; 
 
   // use fixed time step if fixedTimeStep>0
   double fixedTimeStep_;        
