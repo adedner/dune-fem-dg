@@ -74,6 +74,9 @@ struct StepperTraits
 
   // type of restriction/prolongation projection for adaptive simulations 
   typedef Dune :: Fem :: RestrictProlongDefault< DiscreteFunctionType > RestrictionProlongationType;
+
+  // type of IOTuple 
+  typedef Dune::tuple< DiscreteFunctionType*, DiscreteFunctionType*, IndicatorType* >  IOTupleType;
 };
 
 #endif

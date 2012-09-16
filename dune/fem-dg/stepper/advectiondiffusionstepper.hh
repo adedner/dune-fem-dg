@@ -1,5 +1,5 @@
-#ifndef ADVECTION_DIFFUSION_STEPPER_HH
-#define ADVECTION_DIFFUSION_STEPPER_HH
+#ifndef NAVIER_STOKES_STEPPER_HH
+#define NAVIER_STOKES_STEPPER_HH
 
 // dune-fem-dg includes
 #include <dune/fem-dg/operator/adaptation/estimator.hh>

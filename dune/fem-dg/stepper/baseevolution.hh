@@ -147,7 +147,8 @@ public:
   typedef typename DiscreteFunctionType::RangeType     RangeType;
 
   // type of IOTuple 
-  typedef Dune::tuple< DiscreteFunctionType*, DiscreteFunctionType*, IndicatorType* >  IOTupleType; 
+  typedef typename Traits :: IOTupleType  IOTupleType ;
+
   // type of data writer 
   typedef Dune::Fem::DataWriter< GridType, IOTupleType >    DataWriterType;
 
@@ -166,8 +167,6 @@ public:
   //! constructor 
   AlgorithmBase( GridType& grid ) 
    : grid_( grid ),
-     eocLoopData_( 0 ),
-     eocDataTup_(),
      // Initialize Timer for CPU time measurements
      timeStepTimer_( Dune::FemTimer::addTo("max time/timestep") ),
      fixedTimeStep_( ParameterType::getValue<double>("fixedTimeStep",0) ),
@@ -175,12 +174,8 @@ public:
   {
   }
 
-  //! also have virtual destructor 
-  virtual ~AlgorithmBase() 
-  {
-    delete eocLoopData_; 
-    eocLoopData_ = 0 ;
-  } 
+  // nothing to do here
+  virtual ~AlgorithmBase() {} 
 
   //! return default data tuple for data output
   virtual IOTupleType dataTuple() = 0 ;
@@ -198,8 +193,6 @@ public:
     return grid_.comm().sum( grSize );
   }
 
-  // return reference to solution 
-  virtual DiscreteFunctionType& solution () = 0;
   // return reference to additional variables 
   virtual IndicatorType* indicator()  { return 0; }
 
@@ -257,17 +250,26 @@ public:
     double maxTimeStep =
       ParameterType::getValue("femhowto.maxTimeStep", std::numeric_limits<double>::max());
     const double startTime = ParameterType::getValue<double>("femhowto.startTime", 0.0);
+
+#ifdef BASEFUNCTIONSET_CODEGEN_GENERATE
+    // in codegen modus make endTime large and only compute one timestep
+    const double endTime = startTime + 1e8;
+    const int maximalTimeSteps = 1;
+#else 
+
+    // get end time from parameter file 
     const double endTime   = ParameterType::getValue<double>("femhowto.endTime");
 
     // if this variable is set then only maximalTimeSteps timesteps will be computed 
     const int maximalTimeSteps =
       ParameterType::getValue("femhowto.maximaltimesteps", std::numeric_limits<int>::max());
+#endif
+
+    // Initialize TimeProvider
+    TimeProviderType tp( startTime, grid );
 
     // create monitor object (initialize all varialbes) 
     SolverMonitorType monitor; 
-
-    // Initialize TimeProvider
-    TimeProviderType tp( startTime, grid );  /*@\label{fv:timeprovider}@*/
 
     // if adaptCount is 0 then no dynamics grid adaptation
     int adaptCount = 0;
@@ -321,12 +323,6 @@ public:
       }
     }
 
-#ifdef BASEFUNCTIONSET_CODEGEN_GENERATE
-    // make sure that at least one timestep is executed 
-    if( ! (endTime > tp.time()) ) 
-      DUNE_THROW(InvalidStateException,"endtime to small, we need at least one timestep for codegen !!!");
-#endif
-
     //******************************    
     //*  Time Loop                 *
     //******************************
@@ -376,7 +372,7 @@ public:
           std::cout << "step: " << timeStep << "  time = " << tp.time() << ", dt = " << deltaT
                     <<",  grid size: " << grSize << std::endl;
       }
-
+  
       // next time step is prescribed by fixedTimeStep
       // it fixedTimeStep is not 0
       if ( fixedTimeStep > 1e-20 )
@@ -408,33 +404,12 @@ public:
   //! finalize problem, i.e. calculated EOC ...
   virtual void finalize( const int eocloop ) 
   {
-    /*
-    DiscreteFunctionType& U = solution(); 
-
-    if( eocLoopData_ == 0 ) 
-    {
-      eocDataTup_ = dataTuple();
-      eocLoopData_ = new DataWriterType( grid(), eocDataTup_ );
-    }
-
-    if( addVars ) 
-    {
-      //problem().finalizeSimulation( *addVars, eocloop );
-    }
-    else 
-    {
-      //problem().finalizeSimulation( U,  eocloop );
-    }
-    eocLoopData_->writeData( eocloop );
-    */
   }
 
 protected:      
   // reference to hierarchical grid 
   GridType& grid_ ;
 
-  Dune::Fem::IOInterface*   eocLoopData_;
-  IOTupleType          eocDataTup_; 
   unsigned int timeStepTimer_; 
 
   // use fixed time step if fixedTimeStep>0

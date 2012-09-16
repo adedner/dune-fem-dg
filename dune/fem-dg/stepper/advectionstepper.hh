@@ -68,7 +68,7 @@ struct Stepper
   using BaseType :: convectionFlux_ ;
   using BaseType :: problem;
   using BaseType :: adaptationHandler_ ;
-  using BaseType :: solution_ ;
+  using BaseType :: solution ;
   using BaseType :: adaptive ;
   using BaseType :: adaptationParameters_;
 
@@ -76,7 +76,7 @@ struct Stepper
     BaseType( grid ),
     dgAdvectionOperator_(gridPart_, convectionFlux_),
     dgIndicator_( gridPart_, convectionFlux_ ),
-    gradientIndicator_( solution_, problem() )
+    gradientIndicator_( solution(), problem() )
   {
   }
 
@@ -113,7 +113,7 @@ struct Stepper
   //! call limiter (only if dgAdvectionOperator_ is DGLimitedAdvectionOperator)
   void limitSolution() 
   { 
-    dgAdvectionOperator_.limit( solution_ );
+    dgAdvectionOperator_.limit( solution() );
   }
 
   //! estimate and mark solution 

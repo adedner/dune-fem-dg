@@ -114,7 +114,6 @@ struct StepperBase
   // type of adaptation manager 
   typedef Dune::Fem::AdaptationManager< GridType, RestrictionProlongationType > AdaptationManagerType ;
 
-  using BaseType :: solution;
   using BaseType :: indicator;
   using BaseType :: grid_ ;
   using BaseType :: limitSolution ;
@@ -244,7 +243,7 @@ struct StepperBase
     // write times to run file 
     runfile_.write( tp.time() + ldt, ldt, 
                     odeSolverMonitor_.numberOfElements_,    // number of elements
-                    solution_.space().mapper().maxNumDofs(),// number of dofs per element (max)
+                    space().mapper().maxNumDofs(),          // number of dofs per element (max)
                     odeSolverMonitor_.operatorTime_,        // time for operator evaluation 
                     odeSolverMonitor_.odeSolveTime_,        // ode solver 
                     adaptationManager_.adaptationTime(),    // time for adaptation 
@@ -341,11 +340,6 @@ struct StepperBase
     sum_ = 0.;
     sum2_ = 0.;
 #endif
-
-#ifdef BASEFUNCTIONSET_CODEGEN_GENERATE
-    DUNE_THROW(Dune::Fem::CodegenInfoFinished,"All automated code generated, bye, bye !!");
-#endif
-
   }
 
   inline double error(TimeProviderType& tp, DiscreteFunctionType& u)
@@ -405,7 +399,7 @@ protected:
     if( adaptationManager_.adaptive() )
     {
       // get grid sequence before adaptation 
-      const int sequence = solution_.space().sequence();
+      const int sequence = space().sequence();
 
       if( adaptationHandler_ )
       {
@@ -427,7 +421,7 @@ protected:
       }
 
       // if grid has changed then limit solution again
-      if( sequence != solution_.space().sequence() )
+      if( sequence != space().sequence() )
       {
         limitSolution();
       }
