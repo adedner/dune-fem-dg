@@ -64,7 +64,6 @@ public:
   using BaseType :: clear;
 
 protected:
-  using BaseType :: uh_;
   using BaseType :: dfSpace_;
   using BaseType :: gridPart_;
   using BaseType :: indexSet_;
@@ -153,10 +152,10 @@ protected:
 
 public:
   //! \brief Constructor
-  explicit Estimator ( const DiscreteFunctionType &uh, 
+  explicit Estimator ( const DiscreteFunctionSpaceType &space, 
                        const Problem& problem,
                        const Dune::AdaptationParameters& param = Dune::AdaptationParameters() )
-  : BaseType( uh ),
+  : BaseType( space ),
     indicator2Ptr_( 0 ),
     refineTolerance_( param.refinementTolerance() ),
     coarseTolerance_( param.coarsenTolerance() ),
@@ -204,7 +203,8 @@ public:
    *  \note \a indicator1_ and \a indicator2_ are assigned its correspond values
    *    for \a entity and its neighbor
    */
-  void estimateLocal( const ElementType& entity, double& ind1Min, double& ind1Max,
+  void estimateLocal( const DiscreteFunctionType& uh, 
+                      const ElementType& entity, double& ind1Min, double& ind1Max,
                       double& ind2Min, double& ind2Max )
   { 
     const int enIdx = indexSet_.index( entity ); 
@@ -213,7 +213,7 @@ public:
     RangeType valnb( 0. );
 
     // get local function on the element
-    LocalFunctionType lf = uh_.localFunction( entity );
+    LocalFunctionType lf = uh.localFunction( entity );
     const int quadOrder = ( lf.order()==0 ? 1 : lf.order() );
     ElementQuadratureType quad( entity, quadOrder );
     const int numQuad = quad.nop();
@@ -266,7 +266,7 @@ public:
             (entity.level() == neighbor.level() && enIdx < nbIdx) )
         {
           // get local function on the neighbor element
-          LocalFunctionType lfnb = uh_.localFunction( neighbor );
+          LocalFunctionType lfnb = uh.localFunction( neighbor );
           ElementQuadratureType quadNeigh( entity, quadOrder );
           const int numQuadNe = quad.nop();
 
@@ -312,7 +312,7 @@ public:
 
 
   //! \brief calculates indicators
-  void estimate()
+  void estimate( const DiscreteFunctionType& uh )
   {
     indicator_.resize( indexSet_.size( 0 ) ); 
     clear();
@@ -329,7 +329,7 @@ public:
     for( IteratorType it = dfSpace_.begin(); it != end; ++it )
     {
       // do local estimation 
-      estimateLocal( *it, ind1Min, ind1Max, ind2Min, ind2Max );
+      estimateLocal( uh, *it, ind1Min, ind1Max, ind2Min, ind2Max );
       // count number of elements 
       ++ numberOfElements_ ;
     }
@@ -419,9 +419,9 @@ public:
 
 
   //! \brief estimate and mark grid entities for refinement/coarsening
-  void estimateAndMark()
+  void estimateAndMark( const DiscreteFunctionType& uh )
   {
-    estimate();
+    estimate( uh );
     mark();
   }
   

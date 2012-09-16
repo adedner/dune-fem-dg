@@ -61,7 +61,6 @@ public:
   typedef std :: vector< double >                                   IndicatorType;
 
 protected:
-  const DiscreteFunctionType& uh_;
   const DiscreteFunctionSpaceType& dfSpace_;
   GridPartType& gridPart_;
   const IndexSetType& indexSet_;
@@ -70,9 +69,8 @@ protected:
 
 public:
   //! Constructor
-  explicit EstimatorBase ( const DiscreteFunctionType &uh )
-  : uh_( uh ),
-    dfSpace_( uh.space() ),
+  explicit EstimatorBase ( const DiscreteFunctionSpaceType& space )
+  : dfSpace_( space ),
     gridPart_( dfSpace_.gridPart() ),
     indexSet_( gridPart_.indexSet() ),
     grid_( gridPart_.grid() ),
@@ -110,7 +108,7 @@ public:
 
   /** \brief estimates and marks grid cells for refining/coarsening
    */
-  virtual void estimateAndMark( )
+  virtual void estimateAndMark( const DiscreteFunctionType& )
   {}
 
 

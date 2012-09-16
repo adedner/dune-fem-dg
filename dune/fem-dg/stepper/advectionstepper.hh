@@ -68,6 +68,7 @@ struct Stepper
   using BaseType :: convectionFlux_ ;
   using BaseType :: problem;
   using BaseType :: adaptationHandler_ ;
+  using BaseType :: space ;
   using BaseType :: solution ;
   using BaseType :: adaptive ;
   using BaseType :: adaptationParameters_;
@@ -76,7 +77,7 @@ struct Stepper
     BaseType( grid ),
     dgAdvectionOperator_(gridPart_, convectionFlux_),
     dgIndicator_( gridPart_, convectionFlux_ ),
-    gradientIndicator_( solution(), problem() )
+    gradientIndicator_( space(), problem() )
   {
   }
 

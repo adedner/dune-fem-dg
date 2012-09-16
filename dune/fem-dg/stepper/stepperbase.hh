@@ -411,7 +411,7 @@ protected:
       }
       else if( adaptationParameters_.gradientBasedIndicator() )
       {
-        gradientIndicator.estimateAndMark();
+        gradientIndicator.estimateAndMark( solution_ );
         adaptationManager_.adapt();
       }
       else if( adaptationParameters_.shockIndicator() )
