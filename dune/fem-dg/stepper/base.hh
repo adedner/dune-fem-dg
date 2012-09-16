@@ -6,6 +6,7 @@
 #include <dune/common/misc.hh>
 #include <dune/common/fvector.hh>
 #include <dune/common/version.hh>
+#include <dune/common/timer.hh>
 
 #include <dune/fem/misc/mpimanager.hh>
 #include <dune/fem/misc/utility.hh>
@@ -153,13 +154,17 @@ void compute(Algorithm& algorithm)
     // start fem timer (enable with -DFEMTIMER)
     Dune::FemTimer :: start(femTimerId);
 
+    // additional timer 
+    Dune::Timer timer ;
+
     // call algorithm and return solver statistics and some info
     SolverMonitorType monitor = algorithm.solve( eocloop );
 
-    // get run time of solving procedure 
-    double runTime = Dune::FemTimer::stop(femTimerId);
+    // get run time 
+    const double runTime = timer.elapsed();
 
-    // print some info 
+    // also get times for FemTimer if enabled 
+    Dune::FemTimer::stop(femTimerId);
     Dune::FemTimer::printFile("./timer.out");
     Dune::FemTimer::reset(femTimerId);
 
