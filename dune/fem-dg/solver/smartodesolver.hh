@@ -18,6 +18,32 @@ struct SmartOdeSolverParameters : public DuneODE :: ODEParameters
   {
     return new SmartOdeSolverParameters( *this );
   }
+
+  virtual int obtainOdeSolverType () const 
+  {
+    // we need this choice of explicit or implicit ode solver
+    // defined here, so that it can be used later in two different
+    // methods
+    static const std::string odeSolver[]  = { "EX", "IM" ,"IMEX", "IMEX+"  };
+    std::string key( "fem.ode.odesolver" );
+    if( Fem :: Parameter :: exists( key ) )
+      return Fem::Parameter::getEnum( "fem.ode.odesolver", odeSolver, 0 );
+    else 
+    {
+      std::cerr << "WARNING: deprecated key, use `fem.ode.odesolver' instread!" << std::endl;
+      return Fem::Parameter::getEnum( "femhowto.odesolver", odeSolver, 0 );
+    }
+  }
+
+  virtual int obtainRungeKuttaSteps( const int defaultRKOrder ) const
+  {
+    std::string key("fem.ode.order");
+    if ( Fem :: Parameter :: exists( key ) )
+      return Fem::Parameter::getValue< int > ( key );
+    else
+      return defaultRKOrder ;
+  }
+
 };
 
 template <class Operator, 
@@ -75,8 +101,8 @@ public:
      odeSolver_( 0 ),
      explFactor_( param_->explicitFactor() ),
      verbose_( param_->verbose() ),
-     rkSteps_( obtainRungeKuttaSteps() ),
-     odeSolverType_( obtainOdeSolverType() ),
+     rkSteps_( param_->obtainRungeKuttaSteps( operator_.space().order() + 1 ) ),
+     odeSolverType_( param_->obtainOdeSolverType() ),
      imexCounter_( 0 ), exCounter_ ( 0 ),
      minIterationSteps_( std::numeric_limits< int > :: max() ),
      maxIterationSteps_( 0 ),
@@ -242,31 +268,6 @@ public:
   }
 
 protected:
-  int obtainOdeSolverType () const 
-  {
-    // we need this choice of explicit or implicit ode solver
-    // defined here, so that it can be used later in two different
-    // methods
-    static const std::string odeSolver[]  = { "EX", "IM" ,"IMEX", "IMEX+"  };
-    std::string key( "fem.ode.odesolver" );
-    if( Fem :: Parameter :: exists( key ) )
-      return Fem::Parameter::getEnum( "fem.ode.odesolver", odeSolver, 0 );
-    else 
-    {
-      std::cerr << "WARNING: deprecated key, use `fem.ode.odesolver' instread!" << std::endl;
-      return Fem::Parameter::getEnum( "femhowto.odesolver", odeSolver, 0 );
-    }
-  }
-
-  int obtainRungeKuttaSteps() const
-  {
-    std::string key("fem.ode.order");
-    if ( Fem :: Parameter :: exists( key ) )
-      return Fem::Parameter::getValue< int > ( key );
-    else
-      return operator_.space().order() + 1;
-  }
-
   void resetComputeTime() const 
   {
     // this will reset the internal time counters 
