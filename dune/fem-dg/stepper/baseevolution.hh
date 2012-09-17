@@ -233,8 +233,8 @@ public:
   virtual void checkAdditionalVariables( TimeProviderType& tp ) {} 
 
   //! write data, this should be overloaded in the derived implementation (default does nothing)
-  void writeData( TimeProviderType& tp, 
-                  const bool reallyWrite = false ) {}
+  virtual void writeData( TimeProviderType& tp, 
+                          const bool reallyWrite = false ) { abort(); }
 
   //! default time loop implementation, overload for changes in derived classes !!! 
   virtual SolverMonitorType solve ( const int loop )
