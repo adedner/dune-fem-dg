@@ -105,7 +105,7 @@ public:
 };
 
 // ostream operator for SolverMonitor
-std::ostream& operator << ( std::ostream& out, const SolverMonitor& monitor ) 
+inline std::ostream& operator << ( std::ostream& out, const SolverMonitor& monitor ) 
 {
   monitor.dump( out );
   return out;

@@ -240,10 +240,12 @@ struct StepperBase
     assert( odeSolver_ );
 
     const double ldt = tp.deltaT();
+    const int maxNumDofs = space().blockMapper().maxNumDofs() * space().localBlockSize;
+ 
     // write times to run file 
     runfile_.write( tp.time() + ldt, ldt, 
                     odeSolverMonitor_.numberOfElements_,    // number of elements
-                    space().mapper().maxNumDofs(),          // number of dofs per element (max)
+                    maxNumDofs,                             // number of dofs per element (max)
                     odeSolverMonitor_.operatorTime_,        // time for operator evaluation 
                     odeSolverMonitor_.odeSolveTime_,        // ode solver 
                     adaptationManager_.adaptationTime(),    // time for adaptation 
