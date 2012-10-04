@@ -1317,5 +1317,122 @@ namespace Dune {
   //
   //////////////////////////////////////////////////////////
 
+
+  //////////////////////////////////////////////////////////
+  //
+  //  extended flux for matrix assembly
+  //
+  //////////////////////////////////////////////////////////
+  template <class DiscreteFunctionSpaceImp, 
+            class Model>
+  class ExtendedDGPrimalDiffusionFlux
+   : public DGPrimalDiffusionFluxImpl< DiscreteFunctionSpaceImp, Model > 
+  {
+    typedef DGPrimalDiffusionFluxImpl< DiscreteFunctionSpaceImp, Model >      BaseType;
+
+  public:
+    typedef typename BaseType::GridPartType GridPartType;
+    typedef typename BaseType::Intersection Intersection;
+    typedef typename BaseType::EntityType EntityType;
+    typedef typename BaseType::RangeType RangeType;
+    typedef typename BaseType::JacobianRangeType JacobianRangeType;
+
+    ExtendedDGPrimalDiffusionFlux( GridPartType& gridPart,
+                                   const Model& model ) :
+      BaseType( gridPart, model, this->getMethod() )
+    { }
+
+    //! copy constructor (needed for thread parallel programs)
+    ExtendedDGPrimalDiffusionFlux( const ExtendedDGPrimalDiffusionFlux& other ) : 
+      BaseType( other )
+    {
+    }
+
+    using BaseType::initializeIntersection;
+    template <class QuadratureImp, class ArgumentTupleVector, class LF > 
+    void initializeIntersection(const Intersection& intersection,
+                                const EntityType& inside,
+                                const EntityType& outside,
+                                const double time,
+                                const LF &lfInner, const LF &lfOuter,
+                                const QuadratureImp& quadInner, 
+                                const QuadratureImp& quadOuter,
+                                const ArgumentTupleVector& uLeftVec,
+                                const ArgumentTupleVector& uRightVec,
+                                bool computeBoth)
+    {
+      this->computeLiftings(intersection,inside,outside,time,
+                            lfInner, lfOuter,
+                            quadInner,quadOuter,
+                            uLeftVec,uRightVec,
+                            computeBoth
+                           );
+    }
+
+    // return AL_e.n on element and neighbor
+    template <class QuadratureImp>
+    void evaluateLifting(const QuadratureImp& faceQuadInner,
+                         const QuadratureImp& faceQuadOuter,
+                         const int quadPoint,
+                         const double time,
+                         const RangeType& uEn,
+                         const RangeType& uNb,
+                         JacobianRangeType& liftEn,
+                         JacobianRangeType& liftNb) const
+    {
+      assert( this->LePlusLifting().isInitialized() );
+      assert( this->LeMinusLifting().isInitialized() );
+      if ( this->insideIsInflow_)
+      {
+        applyLifting( faceQuadInner, quadPoint, time, uEn, this->LePlusLifting().function(), liftEn );
+        applyLifting( faceQuadOuter, quadPoint, time, uNb, this->LeMinusLifting().function(), liftNb );
+      } 
+      else
+      {
+        applyLifting( faceQuadInner, quadPoint, time, uEn, this->LeMinusLifting().function(), liftEn );
+        applyLifting( faceQuadOuter, quadPoint, time, uNb, this->LePlusLifting().function(), liftNb );
+      }
+      assert( liftEn == liftEn );
+      assert( liftNb == liftNb );
+    }
+    // return AL_e.n on element and neighbor
+    const typename BaseType::LiftingFunctionType &getInsideLifting() const
+    {
+      assert( this->LePlusLifting().isInitialized() );
+      assert( this->LeMinusLifting().isInitialized() );
+      if ( this->insideIsInflow_)
+      {
+        return this->LePlusLifting().function();
+      } 
+      else
+      {
+        return this->LeMinusLifting().function();
+      }
+    }
+
+  protected:
+    template <class QuadratureImp>
+    void applyLifting(const QuadratureImp& faceQuad,
+                      const int quadPoint,
+                      const double time,
+                      const RangeType& u,
+                      typename BaseType::LiftingFunctionType& r_e,
+                      JacobianRangeType& mat) const
+    { 
+      typedef typename BaseType::GradientType GradientType;
+      GradientType sigma;
+
+      // evaluate lifting at quadrature point 
+      r_e.evaluate( faceQuad[ quadPoint ], sigma );
+
+      Fem::FieldMatrixConverter< GradientType, JacobianRangeType> gradient( sigma );
+
+      // set mat = G(u)L_e
+      this->model_.diffusion( r_e.entity(),
+                        time, faceQuad.point( quadPoint ),
+                        u, gradient, mat );
+    }
+  }; // end ExtendedDGPrimalDiffusionFlux
+
 } // end namespace 
 #endif
