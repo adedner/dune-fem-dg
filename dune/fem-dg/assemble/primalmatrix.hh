@@ -1,7 +1,12 @@
 #ifndef PRIMALMATRIXASSEMBLY_HH
 #define PRIMALMATRIXASSEMBLY_HH
 
-#include <dune/fem-dg/assemble/dgprimalfluxes.hh>
+#include <dune/fem/quadrature/intersectionquadrature.hh>
+#include <dune/fem/function/common/gridfunctionadapter.hh>
+#include <dune/fem/misc/fmatrixconverter.hh>
+
+#include <dune/fem-dg/operator/fluxes/dgprimalfluxes.hh>
+#include <dune/fem-dg/operator/dg/primaloperator.hh>
 
 namespace Dune {
 
@@ -224,6 +229,8 @@ class DGPrimalMatrixAssembly
   typedef typename IntersectionIteratorType::Intersection IntersectionType;
   typedef typename IntersectionType::Geometry IntersectionGeometryType;
 
+  typedef Fem :: Parameter ParameterType ;
+
   // need treatment of non conforming grids
   // CACHING
   // typedef Dune::Fem::CachingQuadrature< GridPartType, 1 > FaceQuadratureType; 
@@ -248,7 +255,7 @@ class DGPrimalMatrixAssembly
     }
   };
 
-  typedef Dune::GridFunctionAdapter< ZeroFunction, GridPartType > ZeroFunctionType;
+  typedef Dune::Fem::GridFunctionAdapter< ZeroFunction, GridPartType > ZeroFunctionType;
 
   struct RangeValues
   {
@@ -316,8 +323,8 @@ class DGPrimalMatrixAssembly
       zero_(), 
       advFlux_(model_),
       flux_(gridPart, model),
-      calculateFluxes_( Parameter::getValue<bool>( "use_dgstabilization",true ) ),
-      useStrongBoundaryCondition_( Parameter::getValue<bool>( "use_strongbnd",false ) )
+      calculateFluxes_( ParameterType::getValue<bool>( "use_dgstabilization",true ) ),
+      useStrongBoundaryCondition_( ParameterType::getValue<bool>( "use_strongbnd",false ) )
   {
   }
 
@@ -683,7 +690,7 @@ class DGPrimalMatrixAssembly
     const int polOrdOnFace = std::max( entityOrder, neighborOrder );
 
     // use IntersectionQuadrature to create appropriate face quadratures 
-    typedef IntersectionQuadrature< FaceQuadratureType, conforming > IntersectionQuadratureType;
+    typedef Fem :: IntersectionQuadrature< FaceQuadratureType, conforming > IntersectionQuadratureType;
     typedef typename IntersectionQuadratureType :: FaceQuadratureType QuadratureImp;
 
     // create intersection quadrature 
