@@ -63,21 +63,27 @@ namespace Dune {
 
     class Lifting 
     {
-      DiscreteGradientSpaceType gradSpc_;
+      const DiscreteGradientSpaceType& gradSpc_;
       LiftingFunctionType r_e_;
       LocalMassMatrixType localMassMatrix_;
+      unsigned char isInitialized_;
 
     public:  
-      Lifting(GridPartType &gridPart) 
-        : gradSpc_( gridPart )
+      Lifting( const DiscreteGradientSpaceType& space ) 
+        : gradSpc_( space )
         , r_e_( gradSpc_ )
         , localMassMatrix_( gradSpc_, 2*gradSpc_.order() )
+        , isInitialized_( 0 )
       {}
+
+      bool isInitialized() const { return isInitialized_ == 2 ; }
 
       void initialize( const EntityType& entity ) 
       { 
+        assert( isInitialized_ != 1 );
         r_e_.init( entity ); 
         r_e_.clear();
+        isInitialized_ = 1;
       }
 
       LiftingFunctionType& function() 
@@ -87,7 +93,9 @@ namespace Dune {
 
       void finalize()
       {
+        assert( isInitialized_ == 1 );
         localMassMatrix_.applyInverse( r_e_ );
+        isInitialized_ = 2;
       }
 
     private:
@@ -143,10 +151,11 @@ namespace Dune {
       penaltyTerm_( method_ip || ((std::abs(  penalty_ ) > 0) && 
                     method_ != method_br2 && 
                     method_ != method_bo )),
-      LeMinusLifting_( hasLifting() ? new Lifting( gridPart ) : 0 ),
-      LePlusLifting_( ( method_ == method_br2 ) ? new Lifting( gridPart ) : 0 ),
+      gradSpc_( gridPart ),
+      LeMinusLifting_( hasLifting() ? new Lifting( gradSpc_ ) : 0 ),
+      LePlusLifting_( ( method_ == method_br2 ) ? new Lifting( gradSpc_ ) : 0 ),
 #ifdef LOCALDEBUG
-      LeMinusLifting2_( ( method_ <= method_cdg ) ? new Lifting( gridPart ) : 0 ),
+      LeMinusLifting2_( ( method_ <= method_cdg ) ? new Lifting( gradSpc_ ) : 0 ),
 #endif
       insideIsInflow_ ( true ),
       areaSwitch_( initAreaSwitch() ),
@@ -250,6 +259,7 @@ namespace Dune {
       liftFactor_( other.liftFactor_ ),
       liftingMethod_( other.liftingMethod_ ),
       penaltyTerm_( other.penaltyTerm_ ),
+      gradSpc_( gridPart_ ),
       LeMinusLifting_( hasLifting() ? new Lifting( gridPart_ ) : 0 ),
       LePlusLifting_( ( method_ == method_br2 ) ? new Lifting( gridPart_ ) : 0 ),
 #ifdef LOCALDEBUG
@@ -276,6 +286,9 @@ namespace Dune {
       LeMinusLifting2_ = 0;
 #endif
     }
+
+    // return reference to gradient discrete function space 
+    const DiscreteGradientSpaceType& gradientSpace() const { return gradSpc_; }
 
     double maxNeighborsVolumeRatio() const
     {
@@ -326,6 +339,9 @@ namespace Dune {
 #endif
 
   public:  
+    void initialize( const DiscreteFunctionSpaceType &space )
+    {
+    }
 
     template <class QuadratureImp, class ArgumentTupleVector > 
     void initializeIntersection(const Intersection& intersection,
@@ -337,8 +353,29 @@ namespace Dune {
                                 const ArgumentTupleVector& uLeftVec,
                                 const ArgumentTupleVector& uRightVec) 
     {
-      if( hasLifting() ) 
+      if( hasLifting() )
+        computeLiftings( intersection, inside, outside, time,
+                         quadInner, quadOuter,
+                         uLeftVec, uRightVec,
+                         (method_ == method_br2 ) );
+    }
+
+    template <class QuadratureImp, class ArgumentTupleVector > 
+    void computeLiftings(const Intersection& intersection,
+                         const EntityType& inside,
+                         const EntityType& outside,
+                         const double time,
+                         const QuadratureImp& quadInner, 
+                         const QuadratureImp& quadOuter,
+                         const ArgumentTupleVector& uLeftVec,
+                         const ArgumentTupleVector& uRightVec,
+                         const bool computeBoth ) 
+    {
+      if( hasLifting() || computeBoth ) 
       {
+        if ( ! LeMinusLifting_ )
+          LeMinusLifting_ = new Lifting( gradSpc_ );
+
         // define for an intersection e
         //  Ke+ := { e in bnd(Ke+), s * n_Ke+ < 0 }
         //  Ke- := { e in bnd(Ke-), s * n_Ke- > 0 }
@@ -462,8 +499,11 @@ namespace Dune {
         // LeMinusLifting_ has L_e=2*r_e on Ke-
         LeMinusLifting().finalize( );
 
-        if (method_ == method_br2)
+        if ( computeBoth )
         {
+          if ( ! LePlusLifting_ )
+            LePlusLifting_ = new Lifting( gradSpc_ );
+
           // get Ke+ in entity2
           // calculate 2*r_e on Ke+
           const EntityType& entity2 = ( insideIsInflow_ ) ? inside : outside;
@@ -490,7 +530,6 @@ namespace Dune {
         }
       }
     }
-
 
 #ifdef LOCALDEBUG
     template <class LiftingFunction , class Geometry >
@@ -1114,6 +1153,7 @@ namespace Dune {
     double            liftFactor_;
     LiftingType       liftingMethod_;
     const bool        penaltyTerm_; 
+    DiscreteGradientSpaceType  gradSpc_;
     Lifting*          LeMinusLifting_;
     Lifting*          LePlusLifting_;
 #ifdef LOCALDEBUG
@@ -1349,12 +1389,11 @@ namespace Dune {
     }
 
     using BaseType::initializeIntersection;
-    template <class QuadratureImp, class ArgumentTupleVector, class LF > 
+    template <class QuadratureImp, class ArgumentTupleVector> 
     void initializeIntersection(const Intersection& intersection,
                                 const EntityType& inside,
                                 const EntityType& outside,
                                 const double time,
-                                const LF &lfInner, const LF &lfOuter,
                                 const QuadratureImp& quadInner, 
                                 const QuadratureImp& quadOuter,
                                 const ArgumentTupleVector& uLeftVec,
@@ -1362,7 +1401,6 @@ namespace Dune {
                                 bool computeBoth)
     {
       this->computeLiftings(intersection,inside,outside,time,
-                            lfInner, lfOuter,
                             quadInner,quadOuter,
                             uLeftVec,uRightVec,
                             computeBoth
@@ -1395,12 +1433,13 @@ namespace Dune {
       assert( liftEn == liftEn );
       assert( liftNb == liftNb );
     }
+
     // return AL_e.n on element and neighbor
     const typename BaseType::LiftingFunctionType &getInsideLifting() const
     {
       assert( this->LePlusLifting().isInitialized() );
       assert( this->LeMinusLifting().isInitialized() );
-      if ( this->insideIsInflow_)
+      if ( this->insideIsInflow_ )
       {
         return this->LePlusLifting().function();
       } 

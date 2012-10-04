@@ -404,7 +404,7 @@ class DGPrimalMatrixAssembly
     std::vector< RangeType > phi( maxNumBaseFunctions );
     std::vector< JacobianRangeType > dphi( maxNumBaseFunctions );
 
-    flux_.initialize(dfSpace);
+    flux_.initialize( dfSpace );
 
     const RangeType uZero(0);
     const JacobianRangeType uJacZero(0);
@@ -869,10 +869,9 @@ class DGPrimalMatrixAssembly
     flux_.initializeIntersection( intersectionStorage.intersection(), 
                                   intersectionStorage.inside(),
                                   intersectionStorage.outside(), time,
-                                  zero_,
-                                  zero_,
+                                  //zero_, zero_,
                                   faceQuadInside, faceQuadOutside,
-                                  valueEn, valueNb, false );
+                                  valueEn, valueNb);
 
     const size_t numFaceQuadPoints = faceQuadInside.nop();
     for( size_t pt = 0; pt < numFaceQuadPoints; ++pt )
@@ -884,7 +883,8 @@ class DGPrimalMatrixAssembly
                            retEn[ pt ], retNb[ pt ],
                            dretEn[ pt ], dretNb[ pt ]);
       advFlux_.numericalFlux(intersectionStorage.intersection(),
-                             intersectionStorage.inside(),intersectionStorage.outside(),
+                             intersectionStorage.inside(),
+                             intersectionStorage.outside(),
                              time,faceQuadInside,faceQuadOutside,pt,
                              valueEn[ pt ],valueNb[ pt ], 
                              gLeft, gRight);
@@ -982,7 +982,7 @@ class DGPrimalMatrixAssembly
                LiftingFunction &lifting) const
   {
     flux_.initializeIntersection( intersection, entity, neighbor, time,
-                                  zero_, zero_, 
+                                  // zero_, zero_, 
                                   faceQuadInside, faceQuadOutside,
                                   valueEn, valueNb, true );
     lifting += flux_.getInsideLifting();
@@ -1014,7 +1014,7 @@ class DGPrimalMatrixAssembly
   {
     RangeType gLeft,gRight;
     flux_.initializeBoundary( intersection, entity, time, 
-                              zero_,
+                              // zero_,
                               faceQuadInside, 
                               valueEn, valueNb );
     IntersectionStorage intersectionStorage( intersection, entity, entity, entity.geometry().volume(), entity.geometry().volume() );

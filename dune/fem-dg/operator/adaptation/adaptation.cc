@@ -19,8 +19,8 @@ AdaptationHandler ( GridType &grid,
   , timeProvider_(timeProvider)
   , globalTolerance_ ( param.refinementTolerance() )
   , coarsenTheta_( param.coarsenPercentage() )
-  // make intial error count as 1 percent of the total error
-  , initialTheta_( 0.01 )
+  // make intial error count as 2.5 percent of the total error
+  , initialTheta_( 0.025 )
   , finestLevel_( param.finestLevel( DGFGridInfo<GridType>::refineStepsForHalf() ) )
   , coarsestLevel_( param.coarsestLevel( DGFGridInfo<GridType>::refineStepsForHalf() ) )
   , globalNumElements_ (0)
@@ -48,7 +48,7 @@ AdaptationHandler ( GridType &grid,
   */
 
   // scale tolerance with domain volume 
-  globalTolerance_ *= volumeOfDomain();
+  globalTolerance_ *= volumeOfDomain(); 
 }
 
 //! constructor

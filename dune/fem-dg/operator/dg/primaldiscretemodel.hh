@@ -93,11 +93,11 @@ namespace Dune {
     inline bool hasSource() const 
     {                 
       return ( model_.hasNonStiffSource() || model_.hasStiffSource() );
-    } /*@\label{dm:hasSource}@*/
+    }
 
     inline bool hasFlux() const { 
-      return (advection || diffusion) && model_.hasFlux(); }     /*@LST0E@*/
-                                                  /*@LST0S@*/
+      return (advection || diffusion) && model_.hasFlux(); } 
+
     /**
      * @brief analytical flux function$
      */
@@ -119,7 +119,6 @@ namespace Dune {
         dtEst = ( dtStiff > 0 ) ? dtStiff : dtEst;
         maxDiffTimeStep_ = std::max( dtStiff, maxDiffTimeStep_ );
       }
-
 
       if (advection && model_.hasNonStiffSource() )
       {
