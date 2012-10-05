@@ -384,6 +384,12 @@ class DGPrimalMatrixAssembly
       }
     }
   }
+
+  size_t maxNumScalarBaseFunctions( const DiscreteFunctionSpaceType& space ) const 
+  {
+    return space.blockMapper().maxNumDofs() * DiscreteFunctionSpaceType :: localBlockSize ;
+  }
+
   /* 
    * Assemble Matrix for Elliptic Problem using the DGPrimalDIffusionFlux
    * implementation.
@@ -398,8 +404,7 @@ class DGPrimalMatrixAssembly
     rhs.clear();
 
     const DiscreteFunctionSpaceType &dfSpace = rhs.space();
-    const size_t maxNumBaseFunctions = dfSpace.mapper().maxNumDofs();
-
+    const size_t maxNumBaseFunctions = maxNumScalarBaseFunctions( dfSpace );
 
     std::vector< RangeType > phi( maxNumBaseFunctions );
     std::vector< JacobianRangeType > dphi( maxNumBaseFunctions );
@@ -575,7 +580,7 @@ class DGPrimalMatrixAssembly
     rhs.clear();
 
     const DiscreteFunctionSpaceType &dfSpace = rhs.space();
-    const size_t maxNumBaseFunctions = dfSpace.mapper().maxNumDofs();
+    const size_t maxNumBaseFunctions = maxNumScalarBaseFunctions( dfSpace );
 
     flux_.initialize(dfSpace);
 
