@@ -68,13 +68,16 @@ namespace Dune {
       LocalMassMatrixType localMassMatrix_;
       unsigned char isInitialized_;
 
+      // prohibit copying
+      Lifting( const Lifting& );
     public:  
-      Lifting( const DiscreteGradientSpaceType& space ) 
-        : gradSpc_( space )
+      explicit Lifting( const DiscreteGradientSpaceType& grdSpace ) 
+        : gradSpc_( grdSpace )
         , r_e_( gradSpc_ )
         , localMassMatrix_( gradSpc_, 2*gradSpc_.order() )
         , isInitialized_( 0 )
-      {}
+      {
+      }
 
       bool isInitialized() const { return isInitialized_ == 2 ; }
 
@@ -97,12 +100,8 @@ namespace Dune {
         localMassMatrix_.applyInverse( r_e_ );
         isInitialized_ = 2;
       }
-
-    private:
-      Lifting( const Lifting& );
     };
 
-  private:
   protected:
     using BaseType :: determineDirection;
     using BaseType :: model_;
@@ -151,7 +150,7 @@ namespace Dune {
       penaltyTerm_( method_ip || ((std::abs(  penalty_ ) > 0) && 
                     method_ != method_br2 && 
                     method_ != method_bo )),
-      gradSpc_( gridPart ),
+      gradSpc_( gridPart_ ),
       LeMinusLifting_( hasLifting() ? new Lifting( gradSpc_ ) : 0 ),
       LePlusLifting_( ( method_ == method_br2 ) ? new Lifting( gradSpc_ ) : 0 ),
 #ifdef LOCALDEBUG
@@ -260,10 +259,10 @@ namespace Dune {
       liftingMethod_( other.liftingMethod_ ),
       penaltyTerm_( other.penaltyTerm_ ),
       gradSpc_( gridPart_ ),
-      LeMinusLifting_( hasLifting() ? new Lifting( gridPart_ ) : 0 ),
-      LePlusLifting_( ( method_ == method_br2 ) ? new Lifting( gridPart_ ) : 0 ),
+      LeMinusLifting_( hasLifting() ? new Lifting( gradSpc_ ) : 0 ),
+      LePlusLifting_( ( method_ == method_br2 ) ? new Lifting( gradSpc_ ) : 0 ),
 #ifdef LOCALDEBUG
-      LeMinusLifting2_( ( method_ <= method_cdg ) ? new Lifting( gridPart_ ) : 0 ),
+      LeMinusLifting2_( ( method_ <= method_cdg ) ? new Lifting( gradSpc_ ) : 0 ),
 #endif
       maxNeighborsVolumeRatio_( other.maxNeighborsVolumeRatio_ ),
       ainsworthFactor_( other.ainsworthFactor_ ),
