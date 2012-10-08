@@ -1167,6 +1167,11 @@ namespace Dune {
     //! Perform the limitation on all elements.
     void applyLocalImp(ConstEntityType& en) const
     {
+      // if case of finite volume scheme set admissible functions to reconstructions 
+      const AdmissibleFunctions usedAdmissibleFunctions = 
+        reconstruct_ ? ReconstructedFunctions : admissibleFunctions_;
+
+      // timer for shock detection
       Timer indiTime; 
 
       // true if entity has boundary intersections 
@@ -1425,7 +1430,7 @@ namespace Dune {
       deoMods_.resize( 0 );
       comboVec_.resize( 0 );
 
-      if( admissibleFunctions_ >= ReconstructedFunctions ) 
+      if( usedAdmissibleFunctions >= ReconstructedFunctions ) 
       {
         // calculate linear functions 
         calculateLinearFunctions(en.level(), comboSet, geomType, 
@@ -1433,7 +1438,7 @@ namespace Dune {
       }
       
       // add DG Function
-      if( (admissibleFunctions_ % 2) == DGFunctions )
+      if( (usedAdmissibleFunctions % 2) == DGFunctions )
       {
         addDGFunction( en, geo, uEn, enVal, enBary );
       }
