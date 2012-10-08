@@ -947,7 +947,8 @@ namespace Dune {
       calcIndicator_(true),
       reconstruct_(false),
       applyLimiter_(true),
-      admissibleFunctions_( getAdmissibleFunctions() )
+      admissibleFunctions_( getAdmissibleFunctions() ),
+      usedAdmissibleFunctions_( admissibleFunctions_ )
     {
       if( gridPart_.grid().comm().rank() == 0 )
       {
@@ -1054,6 +1055,9 @@ namespace Dune {
           AssignFunction<typename ArgumentFunctionType ::
           DiscreteFunctionSpaceType,DiscreteFunctionSpaceType>::
                assign( U , dest );
+
+      // if case of finite volume scheme set admissible functions to reconstructions 
+      usedAdmissibleFunctions_ = reconstruct_ ? ReconstructedFunctions : admissibleFunctions_;
 
       // in case of reconstruction 
       if( reconstruct_ ) 
@@ -1167,10 +1171,6 @@ namespace Dune {
     //! Perform the limitation on all elements.
     void applyLocalImp(ConstEntityType& en) const
     {
-      // if case of finite volume scheme set admissible functions to reconstructions 
-      const AdmissibleFunctions usedAdmissibleFunctions = 
-        reconstruct_ ? ReconstructedFunctions : admissibleFunctions_;
-
       // timer for shock detection
       Timer indiTime; 
 
@@ -1430,7 +1430,7 @@ namespace Dune {
       deoMods_.resize( 0 );
       comboVec_.resize( 0 );
 
-      if( usedAdmissibleFunctions >= ReconstructedFunctions ) 
+      if( usedAdmissibleFunctions_ >= ReconstructedFunctions ) 
       {
         // calculate linear functions 
         calculateLinearFunctions(en.level(), comboSet, geomType, 
@@ -1438,7 +1438,7 @@ namespace Dune {
       }
       
       // add DG Function
-      if( (usedAdmissibleFunctions % 2) == DGFunctions )
+      if( (usedAdmissibleFunctions_ % 2) == DGFunctions )
       {
         addDGFunction( en, geo, uEn, enVal, enBary );
       }
@@ -2588,7 +2588,7 @@ namespace Dune {
 
     // choice of admissible linear functions 
     const AdmissibleFunctions admissibleFunctions_;
-    bool dgAdded_ ;
+    mutable AdmissibleFunctions usedAdmissibleFunctions_ ;
   }; // end DGLimitPass 
 
 
