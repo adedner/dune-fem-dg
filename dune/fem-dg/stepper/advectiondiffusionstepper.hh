@@ -71,6 +71,7 @@ struct Stepper
   using BaseType :: adaptationHandler_ ;
   using BaseType :: adaptationParameters_;
   using BaseType :: adaptive ;
+  using BaseType :: doEstimateMarkAdapt ;
 
   Stepper( GridType& grid ) :
     BaseType( grid ),
