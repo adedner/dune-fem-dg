@@ -217,8 +217,8 @@ protected:
       double center[ 3 ] = { 0.0, 0.0, 0.0 };
       {
         typedef typename GridType :: ctype ctype;
-        const GenericReferenceElement< ctype, dim > & refElem =
-          GenericReferenceElements< ctype, dim>::general(entity.type());
+        const Dune::ReferenceElement< ctype, dim > & refElem =
+          Dune::ReferenceElements< ctype, dim>::general(entity.type());
 
         FieldVector<ctype, dim> c = 
           entity.geometry().global( refElem.position(0,0) );

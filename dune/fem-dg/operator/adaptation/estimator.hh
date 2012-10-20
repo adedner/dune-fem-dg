@@ -54,9 +54,9 @@ public:
   typedef typename BaseType :: FaceQuadratureType             FaceQuadratureType;
   typedef typename BaseType :: JacobianInverseType            JacobianInverseType;
   typedef typename BaseType :: IndicatorType                  IndicatorType;
-  typedef Dune::GenericReferenceElement
+  typedef Dune::ReferenceElement
     < DomainFieldType, dimension >                            ReferenceElementType;
-  typedef Dune::GenericReferenceElements
+  typedef Dune::ReferenceElements
     < DomainFieldType, dimension >                            ReferenceElementContainerType;
 
 public:
