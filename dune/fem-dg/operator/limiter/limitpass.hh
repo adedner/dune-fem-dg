@@ -2197,8 +2197,8 @@ namespace Dune {
       typedef Fem::IntersectionQuadrature< FaceQuadratureType, conforming > IntersectionQuadratureType;
       typedef typename IntersectionQuadratureType :: FaceQuadratureType QuadratureImp;
 
-      // create intersection quadrature 
-      IntersectionQuadratureType interQuad( gridPart_, intersection, faceQuadOrd_ );
+      // create intersection quadrature (no neighbor check here)
+      IntersectionQuadratureType interQuad( gridPart_, intersection, faceQuadOrd_, true );
 
       // get appropriate references 
       const QuadratureImp &faceQuadInner = interQuad.inside();

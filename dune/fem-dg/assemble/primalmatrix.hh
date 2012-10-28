@@ -698,8 +698,8 @@ class DGPrimalMatrixAssembly
     typedef Fem :: IntersectionQuadrature< FaceQuadratureType, conforming > IntersectionQuadratureType;
     typedef typename IntersectionQuadratureType :: FaceQuadratureType QuadratureImp;
 
-    // create intersection quadrature 
-    IntersectionQuadratureType interQuad( dfSpace.gridPart(), intersection, faceQuadOrder( polOrdOnFace ));
+    // create intersection quadrature (without neighbor check)
+    IntersectionQuadratureType interQuad( dfSpace.gridPart(), intersection, faceQuadOrder( polOrdOnFace ), true);
 
     // get appropriate references 
     const QuadratureImp &faceQuadInside  = interQuad.inside();
