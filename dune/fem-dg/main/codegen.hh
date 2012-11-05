@@ -19,8 +19,11 @@ namespace Dune
 namespace Fem { 
 
   /** \brief default code generator methods */
+  template < int sseWidth = 2 >
   struct VectorCodeGenerator 
   {
+    // enum { sseWidth = 2 };
+
     static const char* restrictKey() 
     {
       return "__restrict__";
@@ -65,17 +68,8 @@ namespace Fem {
       return funcName.str();
     }
 
-    enum { sseWidth = 2 };
     static void writeInnerLoopEval(std::ostream& out, const int sseW, const int dimRange, const size_t numRows )
     {
-      //out << "      typedef typename RangeVectorType :: value_type value_type;" << std::endl; 
-      //for( int i = 0 ; i< sseW ; ++ i ) 
-      // {
-      //  for( int r=0; r< dimRange; ++r ) 
-      //  {
-      //    out << "      const double dof" << i << r << " = dofs[ dof++ ] ; " << std::endl;
-      //  }
-      //}
       out << "      for(int row = 0; row < " << numRows << " ; ++row )" << std::endl;
       out << "      {" << std::endl;
       if( sseW == 1 ) 
@@ -105,12 +99,6 @@ namespace Fem {
                                 const size_t numRows, 
                                 const size_t numCols ) 
     {
-      //out << "  template <class LocalDofVectorType," << std::endl;
-      //out << "            class field_type," << std::endl;
-      //out << "            class RangeVectorType>" << std::endl;
-      //out << "  static void innerLoop( const LocalDofVectorType& dofs," << std::endl; 
-      //out << "  static void innerLoop( const double* dofs," << std::endl; 
-
       const std::string funcName = 
             generateFunctionName( "evalRangesLoop", sseWidth, dimRange, numRows, numCols );
 
@@ -155,7 +143,7 @@ namespace Fem {
 
       for( int i=0; i< sseWidth; ++ i ) 
       {
-        out << "    double base" << i << "[ " << numRows << " ];" << std::endl;
+        out << "    field_type base" << i << "[ " << numRows << " ];" << std::endl;
       }
       const size_t sseCols = sseWidth * ( numCols / sseWidth );
       out << "    for( int col = 0, dof = 0 ; col < "<< sseCols <<" ; col += 2, dof += " << sseWidth * dimRange<< " )"<<std::endl;
@@ -220,9 +208,7 @@ namespace Fem {
       for( int i=0; i<sseWidth-1; ++ i ) 
         out << "                         const double* " << restrictKey() << " base" << i << ","; 
       out << " const double* " << restrictKey() << " base"<< sseWidth-1 << " )" << std::endl;  
-      //out << "                         const RangeVectorType& rangeStorage," << std::endl; 
-      //out << "                         const size_t *rowMap, const size_t col, size_t& dof )" << std::endl;
-      //out << "                         const size_t col, size_t& dof )" << std::endl;
+
       writePreCompHeader( out, 1 );
       out << "  {" << std::endl;
       writeInnerLoopEval( out, sseWidth, dimRange, numRows ); 
@@ -234,7 +220,6 @@ namespace Fem {
     {
       for( int i=0; i< sseW; ++i ) 
       {
-        //out << "      const RangeType& factor" << i << " = rangeFactors[ row + " << i << " ];" << std::endl;
         for( int r=0; r< dimRange; ++r ) 
         {
           out << "      const double fac" << i << r << " = rangeFactor" << i << "[ " << r << " ];" << std::endl;
@@ -272,10 +257,7 @@ namespace Fem {
       out << "template <class BaseFunctionSet>" << std::endl;
       out << "struct AxpyRanges<BaseFunctionSet, Fem :: EmptyGeometry, " << dimRange << ", " << numRows << ", " << numCols << ">" << std::endl;
       out << "{" << std::endl;
-      //out << "  template <class RangeVectorRowType>" << std::endl;
-      //out << "  static void innerLoop( const RangeVectorRowType& rangeStorageRow0," << std::endl; 
-      //for( int i=1; i<sseWidth; ++ i ) 
-      //  out << "                         const RangeVectorRowType& rangeStorageRow" << i << "," << std::endl; 
+
       out << std::endl;
       out << "  template< class QuadratureType,"<< std::endl;
       out << "            class RangeVectorType," << std::endl;
@@ -308,7 +290,6 @@ namespace Fem {
         out << "      const double* rangeFactor" << i << " = &rangeFactors[ row + " << i << " ][ 0 ];" << std::endl;
       out << "      " << funcName << "("; 
       for( int i = 0; i < sseWidth; ++i ) 
-        //out << " rangeStorage[ quad.cachingPoint( row + " << i << " ) ],";
         out << " &rangeStorage[ quad.cachingPoint( row + " << i << " ) ][ 0 ][ 0 ],";
       out << std::endl; 
       out << "                 rangeFactor0, ";
@@ -545,16 +526,16 @@ namespace Fem {
       out << "    typedef typename JacobianRangeVectorType :: value_type  value_type;" << std::endl; 
       out << "    typedef typename JacobianRangeType :: field_type field_type;" << std::endl;
       const size_t dofs = dimRange * numCols ;
-      out << "    double result [ " << dofs << " ] = {"; 
+      out << "    field_type result [ " << dofs << " ] = {"; 
       for( size_t dof = 0 ; dof < dofs-1 ; ++ dof ) out << " 0,";
       out << " 0 };" << std::endl << std::endl;
       for( int r=0; r<dimRange; ++r ) 
-        out << "    double* result" << r << " = result + " << r * numCols << ";" << std::endl; 
+        out << "    field_type* result" << r << " = result + " << r * numCols << ";" << std::endl; 
       out << std::endl;
 
       for( int d =0; d < dim; ++d ) 
       {
-        out << "    double baseFunc"<< d << "[ " << numCols << " ] ;" << std::endl; 
+        out << "    field_type baseFunc"<< d << "[ " << numCols << " ] ;" << std::endl; 
       }
 
       out << "    for( int row = 0; row < " << numRows << " ; ++ row )" << std::endl;
@@ -568,23 +549,12 @@ namespace Fem {
       out << "      {"<<std::endl; 
       out << "        gjit.mtv( jacFactors[ row ][ r ], jacFactorTmp[ r ] );" << std::endl;
       out << "      }" << std::endl << std::endl;
-      /*
-      out << "      // rearrange values to have linear memory walk through" << std::endl;
-      for( int i =0; i < dim; ++i )
-        for( int r = 0; r < dimRange; ++ r ) 
-          out << "      const double jacFactorInv" << i << r << " = jacFactorTmp[ " << r  << " ][ " << i << " ];" << std::endl;
-      out << std::endl;
-      */
 
       out << "      for( int col = 0; col < " << numCols << " ; ++ col )" << std::endl;
       out << "      {" << std::endl;
       for( int d =0; d < dim; ++d ) 
         out << "        baseFunc"<< d << "[ col ] = jacStorageRow[ col ][ 0 ][ " << d << " ];" << std::endl;
-      //    if( col < numCols - 1 ) 
-      //      out << ", ";
-      // out << std::endl;
-      //}
-      //out <<  "                               };" << std::endl << std::endl;
+
       out << "      }" << std::endl;
 
       out << "      // calculate updates" << std::endl;
@@ -653,7 +623,7 @@ namespace Fem {
 
   // if this pre processor variable is defined then 
   // we assume that CODEGENERATOR_REPLACEMENT is CodeGenerator of choice 
-#define FEM_CODEGENERATOR_REPLACEMENT  VectorCodeGenerator
+#define FEM_CODEGENERATOR_REPLACEMENT  VectorCodeGenerator< 2 >
 } // end namespace Fem 
 
 } // end namespace Dune
