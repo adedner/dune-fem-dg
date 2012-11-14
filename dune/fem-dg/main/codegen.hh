@@ -764,7 +764,10 @@ namespace Fem {
 
   // if this pre processor variable is defined then 
   // we assume that CODEGENERATOR_REPLACEMENT is CodeGenerator of choice 
-#define FEM_CODEGENERATOR_REPLACEMENT  VectorCodeGenerator< 2 >
+#ifndef CODEGEN_SIMD_WIDTH 
+#define CODEGEN_SIMD_WIDTH 2 
+#endif
+#define FEM_CODEGENERATOR_REPLACEMENT  VectorCodeGenerator< CODEGEN_SIMD_WIDTH >
 } // end namespace Fem 
 
 } // end namespace Dune
