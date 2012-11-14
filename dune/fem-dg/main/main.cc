@@ -45,12 +45,13 @@ std::string autoFilename(const int dim, const int polynomialOrder )
   return name.str();
 }
 
-void cleanup(const int k, const std::string& filename ) 
+int cleanup(const int k, const std::string& filename ) 
 {
   std::cerr << "Code for k="<< k << " generated!! " << std::endl;
   Dune::Fem::CodegenInfo :: instance().dumpInfo();
   Dune::Fem::CodegenInfo :: instance().clear();
   std::remove( filename.c_str() );
+  return -1 ;
 }
 
 void codegen()
@@ -58,20 +59,24 @@ void codegen()
   // only one thread for codegen 
   Dune :: Fem :: ThreadManager :: setMaxNumberThreads( 1 );
 
+  // remember last polynomial order
+  int lastK = -1;
+
+  std::string filename;
+  const int dim = CODEDIM;
   try 
   {
-    const int dim = CODEDIM;
     std::cout << "Generating Code \n";
-    std::string filename;
 #ifdef ONLY_ONE_P
     try {
       filename = autoFilename( dim, POLORDER ) ;
       Dune::Fem::CodegenInfo :: instance().setFileName( filename );
       DG_ONE_P :: simulate();  
+      lastK = POLORDER ;
     }
     catch (Dune::Fem::CodegenInfoFinished) 
     {
-      cleanup( POLORDER , filename );
+      lastK = cleanup( POLORDER , filename );
     }
 #else 
 #ifndef ONLY_P1_P2
@@ -79,30 +84,33 @@ void codegen()
       filename = autoFilename( dim, 0 ) ;
       Dune::Fem::CodegenInfo :: instance().setFileName( filename );
       DG_P0 :: simulate();  
+      lastK = 0 ;
     }
     catch (Dune::Fem::CodegenInfoFinished) 
     {
-      cleanup( 0 , filename );
+      lastK = cleanup( 0 , filename );
     }
 #endif
     try {
       filename = autoFilename( dim, 1 ) ;
       Dune::Fem::CodegenInfo :: instance().setFileName( filename );
       DG_P1 :: simulate();  
+      lastK = 1 ;
     }
     catch (Dune::Fem::CodegenInfoFinished) 
     {
-      cleanup( 1 , filename );
+      lastK = cleanup( 1 , filename );
     }
     try 
     {
       filename = autoFilename( dim, 2 ) ;
       Dune::Fem::CodegenInfo :: instance().setFileName( filename );
       DG_P2 :: simulate();  
+      lastK = 2 ;
     }
     catch (Dune::Fem::CodegenInfoFinished) 
     {
-      cleanup( 2 , filename );
+      lastK = cleanup( 2 , filename );
     }
 #ifndef ONLY_P1_P2
     try 
@@ -110,10 +118,11 @@ void codegen()
       filename = autoFilename( dim, 3 ) ;
       Dune::Fem::CodegenInfo :: instance().setFileName( filename );
       DG_P3 :: simulate();  
+      lastK = 3 ;
     }
     catch (Dune::Fem::CodegenInfoFinished) 
     {
-      cleanup( 3 , filename );
+      lastK = cleanup( 3 , filename );
     }
 #endif
 #ifdef ALSO_P4
@@ -122,16 +131,22 @@ void codegen()
       filename = autoFilename( dim, 4 ) ;
       Dune::Fem::CodegenInfo :: instance().setFileName( filename );
       DG_P4 :: simulate();  
+      lastK = 4 ;
     }
     catch (Dune::Fem::CodegenInfoFinished) 
     {
-      cleanup( 4 , filename );
+      lastK = cleanup( 4 , filename );
     }
 #endif
 #endif
   }
   catch (Dune::Fem::CodegenInfoFinished) {}
 
+  if( lastK >= 0 ) 
+  {
+    filename = autoFilename( dim, lastK ) ;
+    lastK = cleanup( lastK , filename );
+  }
 
   //////////////////////////////////////////////////
   //  write include header 
