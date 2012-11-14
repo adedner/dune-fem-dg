@@ -19,11 +19,9 @@ namespace Dune
 namespace Fem { 
 
   /** \brief default code generator methods */
-  template < int sseWidth = 2 >
+  template < int simdWidth = 2 >
   struct VectorCodeGenerator 
   {
-    // enum { sseWidth = 2 };
-
     static const char* restrictKey() 
     {
       return "__restrict__";
@@ -60,33 +58,33 @@ namespace Fem {
 
     // generate inner loop function name 
     static std::string generateFunctionName( const std::string& prefix, 
-                                      const int sseW, const int dimRange, 
+                                      const int simdW, const int dimRange, 
                                       const size_t numRows, const size_t numCols )
     {
       std::stringstream funcName;
-      funcName << prefix << "_" << sseWidth << "_" << dimRange << "_" << numRows << "_" << numCols ;
+      funcName << prefix << "_" << simdWidth << "_" << dimRange << "_" << numRows << "_" << numCols ;
       return funcName.str();
     }
 
-    static void writeInnerLoopEval(std::ostream& out, const int sseW, const int dimRange, const size_t numRows )
+    static void writeInnerLoopEval(std::ostream& out, const int simdW, const int dimRange, const size_t numRows )
     {
       out << "      for(int row = 0; row < " << numRows << " ; ++row )" << std::endl;
       out << "      {" << std::endl;
-      if( sseW == 1 ) 
+      if( simdW == 1 ) 
       {
         out << "        const value_type& rangeStorageRow = rangeStorage[ rowMap[ row ] ];" << std::endl;
-        for( int i = 0 ; i< sseW ; ++ i ) 
+        for( int i = 0 ; i< simdW ; ++ i ) 
           out << "        const double phi" << i << " = rangeStorageRow[ col + " << i << " ][ 0 ];" << std::endl;  
       }
       else 
       {
-        for( int i = 0 ; i< sseW ; ++ i ) 
+        for( int i = 0 ; i< simdW ; ++ i ) 
           out << "        const double phi" << i << " = base" << i << "[ row ];" << std::endl;
       }
       for(int r = 0; r < dimRange; ++ r ) 
       {
         out << "        result" << r << "[ row ] += phi0 * dof0" << r;
-        for( int i=1; i<sseW; ++i )
+        for( int i=1; i<simdW; ++i )
           out << " + phi" << i << " * dof" << i << r;
         out << " ;" << std::endl;
       }
@@ -100,7 +98,7 @@ namespace Fem {
                                 const size_t numCols ) 
     {
       const std::string funcName = 
-            generateFunctionName( "evalRangesLoop", sseWidth, dimRange, numRows, numCols );
+            generateFunctionName( "evalRangesLoop", simdWidth, dimRange, numRows, numCols );
 
       writePreCompHeader( out, -1 );
 
@@ -127,7 +125,7 @@ namespace Fem {
       out << "    }" << std::endl;
       out << std::endl;
 
-      // make length sse conform 
+      // make length simd conform 
       out << "    field_type resultTmp[ " << numRows * dimRange << " ] = { 0";
       for( size_t row = 1; row < numRows * dimRange; ++ row )
       {
@@ -141,38 +139,42 @@ namespace Fem {
       }
       out << std::endl;
 
-      for( int i=0; i< sseWidth; ++ i ) 
+      const size_t simdCols = simdWidth * ( numCols / simdWidth );
+      if( simdCols > 0 ) 
       {
-        out << "    field_type base" << i << "[ " << numRows << " ];" << std::endl;
+        for( int i=0; i< simdWidth; ++ i ) 
+        {
+          out << "    field_type base" << i << "[ " << numRows << " ];" << std::endl;
+        }
+        out << "    for( int col = 0, dof = 0 ; col < "<< simdCols <<" ; col += " << simdWidth << ", dof += " << simdWidth * dimRange<< " )"<<std::endl;
+        out << "    {" << std::endl;
+        out << "      for( int row = 0 ; row < " << numRows << " ; ++ row )" << std::endl;
+        out << "      {" << std::endl;
+        out << "        const value_type& rangeStorageRow = rangeStorage[ rowMap[ row ] ];" << std::endl;
+        for( int i=0; i< simdWidth; ++ i )
+        {
+          out << "        base" << i << "[ row ] = rangeStorageRow[ col + " << i << " ][ 0 ];" << std::endl;
+        } 
+        out << "      }" << std::endl;
+        out << "      " << funcName << "(" << std::endl;
+        out << "                ";
+        for( int i = 0; i< simdWidth * dimRange; ++i ) 
+          out << " dofs[ dof + " << i << " ],";
+        out << std::endl << "                 ";
+        for( int i=0; i< simdWidth; ++i )
+          out << "base" << i << ", ";
+        out << std::endl << "                 ";
+        for( int r = 0; r < dimRange-1; ++r) 
+          out << "result" << r << ", ";
+        out << "result" << dimRange-1 << " );" << std::endl;
+        out << "    }"<< std::endl;  
+        out << std::endl;
       }
-      const size_t sseCols = sseWidth * ( numCols / sseWidth );
-      out << "    for( int col = 0, dof = 0 ; col < "<< sseCols <<" ; col += 2, dof += " << sseWidth * dimRange<< " )"<<std::endl;
-      out << "    {" << std::endl;
-      out << "      for( int row = 0 ; row < " << numRows << " ; ++ row )" << std::endl;
-      out << "      {" << std::endl;
-      out << "        const value_type& rangeStorageRow = rangeStorage[ rowMap[ row ] ];" << std::endl;
-      for( int i=0; i< sseWidth; ++ i )
-      {
-        out << "        base" << i << "[ row ] = rangeStorageRow[ col + " << i << " ][ 0 ];" << std::endl;
-      } 
-      out << "      }" << std::endl;
-      out << "      " << funcName << "(";
-      for( int i = 0; i< sseWidth * dimRange; ++i ) 
-        out << " dofs[ dof + " << i << " ],";
-      out << std::endl << "                 ";
-      for( int r = 0; r < dimRange; ++r) 
-        out << "result" << r << ", ";
-      out << std::endl << "                 ";
-      for( int i=0; i< sseWidth-1; ++i )
-        out << "base" << i << ", ";
-      out << "base" << sseWidth-1 << " );" << std::endl;
-      out << "    }"<< std::endl;  
-      out << std::endl;
 
-      if( numCols > sseCols ) 
+      if( numCols > simdCols ) 
       {
         out << "    // remainder iteration" << std::endl;
-        out << "    for( int col = " << sseCols << ", dof = " << sseCols * dimRange << " ; col < " << numCols << " ; ++col )" << std::endl;
+        out << "    for( int col = " << simdCols << ", dof = " << simdCols * dimRange << " ; col < " << numCols << " ; ++col )" << std::endl;
         out << "    {" << std::endl;
         for( int r=0; r<dimRange; ++r ) 
           out << "      const double dof0" << r << " = dofs[ dof++ ];" << std::endl;
@@ -194,31 +196,33 @@ namespace Fem {
       out << "};" << std::endl;
 
       writePreCompHeader( out, 0 );
-      out << "  void " << funcName << "(";
-      for( int i=0; i<sseWidth; ++i ) 
+      out << "  void " << funcName << "(" << std::endl;
+      for( int i=0; i<simdWidth; ++i ) 
       {
-        if( i > 0 ) 
-          out << "                        ";
+        out << "        ";
         for( int r=0; r<dimRange; ++ r ) 
-          out << " const double dof"<< i << r << ",";
+          out << "const double dof"<< i << r << ", ";
         out << std::endl;
       }
+      for( int i=0; i<simdWidth; ++ i ) 
+        out << "        const double* " << restrictKey() << " base" << i << "," << std::endl; 
       for( int r=0; r<dimRange; ++ r ) 
-        out << "                         double* "<< restrictKey() << " result" << r << "," << std::endl; 
-      for( int i=0; i<sseWidth-1; ++ i ) 
-        out << "                         const double* " << restrictKey() << " base" << i << ","; 
-      out << " const double* " << restrictKey() << " base"<< sseWidth-1 << " )" << std::endl;  
+      {
+        out << "        double* "<< restrictKey() << " result" << r;
+        if( r == dimRange-1 ) out << " )" << std::endl;
+        else out << "," << std::endl; 
+      }
 
       writePreCompHeader( out, 1 );
       out << "  {" << std::endl;
-      writeInnerLoopEval( out, sseWidth, dimRange, numRows ); 
+      writeInnerLoopEval( out, simdWidth, dimRange, numRows ); 
       out << "  }" << std::endl;
       writePreCompHeader( out, 2 );
     }
 
-    static void writeInnerLoop(std::ostream& out, const int sseW, const int dimRange, const size_t numCols )
+    static void writeInnerLoop(std::ostream& out, const int simdW, const int dimRange, const size_t numCols )
     {
-      for( int i=0; i< sseW; ++i ) 
+      for( int i=0; i< simdW; ++i ) 
       {
         for( int r=0; r< dimRange; ++r ) 
         {
@@ -227,9 +231,9 @@ namespace Fem {
       }
       out << "      for(int col = 0; col < " << numCols << " ; ++ col )" << std::endl;
       out << "      {" << std::endl;
-      for( int i = 0 ; i< sseW ; ++ i ) 
+      for( int i = 0 ; i< simdW ; ++ i ) 
       {
-        if( sseW == 1 )
+        if( simdW == 1 )
           out << "        const double phi" << i << " = rangeStorageRow" << i  << " [ col ][ 0 ];" << std::endl;  
         else 
           out << "        const double phi" << i << " = base" << i  << " [ col ];" << std::endl;  
@@ -237,7 +241,7 @@ namespace Fem {
       for(int r = 0; r < dimRange; ++ r ) 
       {
         out << "        dofs" << r << "[ col ] += phi0 * fac0" << r;
-        for( int i=1; i<sseW; ++i )
+        for( int i=1; i<simdW; ++i )
         {
           out << " + phi" << i << " * fac" << i << r ; 
         }
@@ -250,7 +254,7 @@ namespace Fem {
             const int dim, const int dimRange, const size_t numRows, const size_t numCols ) 
     {
       const std::string funcName = 
-        generateFunctionName( "axpyRangesLoop", sseWidth, dimRange, numRows, numCols );
+        generateFunctionName( "axpyRangesLoop", simdWidth, dimRange, numRows, numCols );
 
       writePreCompHeader( out, -1 );
 
@@ -278,46 +282,49 @@ namespace Fem {
       out << std::endl;
 
       out << "    double dofResult[ " << numCols * dimRange << " ] = { 0";
-      const size_t sseRows  = sseWidth * (numRows / sseWidth) ;
+      const size_t simdRows  = simdWidth * (numRows / simdWidth) ;
       for( size_t col = 1; col < dimRange * numCols; ++ col )
         out << ", 0";
       out << " };" << std::endl;
       out << std::endl;
 
-      out << "    for( int row = 0; row < "<< sseRows << " ; row += " << int(sseWidth) << " )" << std::endl;
-      out << "    {" << std::endl;
-      for( int i=0; i<sseWidth; ++ i ) 
-        out << "      const double* rangeFactor" << i << " = &rangeFactors[ row + " << i << " ][ 0 ];" << std::endl;
-      out << "      " << funcName << "("; 
-      for( int i = 0; i < sseWidth; ++i ) 
-        out << " &rangeStorage[ quad.cachingPoint( row + " << i << " ) ][ 0 ][ 0 ],";
-      out << std::endl; 
-      out << "                 rangeFactor0, ";
-      for( int i=1; i<sseWidth; ++ i ) 
-        out << "rangeFactor" << i << ",";
-      out << std::endl;
-      out << "                ";
-      for( int r = 0; r < dimRange; ++ r ) 
+      if( simdRows > 0 ) 
       {
-        out << " dofResult + " << r * numCols;
-        if( r == dimRange-1 ) 
-          out << " );" << std::endl;
-        else  
-          out << ",";
+        out << "    for( int row = 0; row < "<< simdRows << " ; row += " << int(simdWidth) << " )" << std::endl;
+        out << "    {" << std::endl;
+        for( int i=0; i<simdWidth; ++ i ) 
+          out << "      const double* rangeFactor" << i << " = &rangeFactors[ row + " << i << " ][ 0 ];" << std::endl;
+        out << "      " << funcName << "("; 
+        for( int i = 0; i < simdWidth; ++i ) 
+          out << " &rangeStorage[ quad.cachingPoint( row + " << i << " ) ][ 0 ][ 0 ],";
+        out << std::endl; 
+        out << "                 rangeFactor0, ";
+        for( int i=1; i<simdWidth; ++ i ) 
+          out << "rangeFactor" << i << ",";
+        out << std::endl;
+        out << "                ";
+        for( int r = 0; r < dimRange; ++ r ) 
+        {
+          out << " dofResult + " << r * numCols;
+          if( r == dimRange-1 ) 
+            out << " );" << std::endl;
+          else  
+            out << ",";
+        }
+        out << std::endl;
+        out << "    }" << std::endl;
+        out << std::endl;
       }
-      out << std::endl;
-      out << "    }" << std::endl;
-      out << std::endl;
 
       out << "    double* dofs0 = dofResult;" << std::endl;
       for( int r = 1; r < dimRange; ++ r ) 
         out << "    double* dofs" << r << " = dofResult + " << r * numCols << ";" << std::endl;
       out << std::endl;
 
-      if( numRows > sseRows )
+      if( numRows > simdRows )
       {
         out << "    // remainder iteration" << std::endl;
-        out << "    for( int row = " << sseRows << " ; row < " << numRows << " ; ++row )" << std::endl;
+        out << "    for( int row = " << simdRows << " ; row < " << numRows << " ; ++row )" << std::endl;
         out << "    {" << std::endl;
         out << "      const value_type& rangeStorageRow0 = rangeStorage[ quad.cachingPoint( row ) ];" << std::endl;
         out << "      const double* rangeFactor0 = &rangeFactors[ row ][ 0 ];" << std::endl;
@@ -340,14 +347,15 @@ namespace Fem {
       //  inner loop 
       ///////////////////////////////////
       writePreCompHeader( out, 0 );
-      out << "  void " << funcName << "( const double* " << restrictKey() << " base0," << std::endl; 
-      for( int i=1; i<sseWidth; ++ i ) 
-        out << "                         const double* " << restrictKey() << " base" << i << "," << std::endl; 
-      for( int i=0; i<sseWidth; ++ i ) 
-        out << "                         const double* " << restrictKey() << " rangeFactor" << i << "," << std::endl; 
+      out << "  void " << funcName << "(" << std::endl;
+      out << "       const double* " << restrictKey() << " base0," << std::endl; 
+      for( int i=1; i<simdWidth; ++ i ) 
+        out << "       const double* " << restrictKey() << " base" << i << "," << std::endl; 
+      for( int i=0; i<simdWidth; ++ i ) 
+        out << "       const double* " << restrictKey() << " rangeFactor" << i << "," << std::endl; 
       for( int r = 0; r < dimRange; ++r ) 
       {
-        out << "                         double* " << restrictKey() << " dofs" << r;
+        out << "       double* " << restrictKey() << " dofs" << r;
         if( r == dimRange-1 ) 
           out << " )" << std::endl;
         else 
@@ -355,31 +363,55 @@ namespace Fem {
       }
       writePreCompHeader( out, 1 );
       out << "  {" << std::endl;
-      writeInnerLoop( out, sseWidth, dimRange, numCols ); 
+      writeInnerLoop( out, simdWidth, dimRange, numCols ); 
       out << "  }" << std::endl;
       writePreCompHeader( out, 2 );
     }
 
-    static void writeInnerJacEvalLoop(std::ostream& out, const int sseW, const int dimRange )
-    {
-      for( int i=0; i< sseW; ++ i )
-        out << "        gjit.mv( jacStorageRow[ col + " << i << " ][ 0 ], gradPhi"<< i << " );" << std::endl;
-
-      for( int i=0; i< sseW; ++ i )
-        out << "        const int colR"<< i<< " = (col + " << i << ") * " << dimRange << ";" << std::endl; 
-
-      out << "        for( int r = 0; r < " << dimRange << " ; ++r )" << std::endl;
-      out << "        {" << std::endl;
-        for( int i=0; i< sseW; ++ i )
+    static void writeInnerJacEvalLoop(std::ostream& out, const int simdW, const int dim,
+                                      const int dimRange, const size_t numRows ) 
+    { 
+      out << "      for(int row = 0; row < " << numRows << " ; ++row )" << std::endl;
+      out << "      {" << std::endl;
+      if( simdW == 1 ) 
+      {
+        out << "        const value_type& jacStorageRow = jacStorage[ rowMap[ row ] ];" << std::endl;
+        out << "        const GeometryJacobianType& gjit = geometry.jacobianInverseTransposed( quad.point( row ) );" << std::endl << std::endl;
+        for( int i = 0 ; i< simdW ; ++ i ) 
         {
-          out << "          result"<< i << "[ r ].axpy( dofs[ colR"<< i << " + r ], gradPhi" << i << " );" << std::endl;
+          out << "        gjit.mv( jacStorageRow[ col + " << i << " ][ 0 ], gradPhi" << i << " );" << std::endl;
+          for( int d = 0 ; d < dim; ++ d ) 
+            out << "        const double phi" << i << d << " = gradPhi" << i << "[ " << d << " ];" << std::endl;
         }
-      out << "        }" << std::endl;
+        out << std::endl;
+      }
+      else 
+      {
+        for( int d = 0; d < dim ; ++ d ) 
+        {
+          for( int i = 0 ; i< simdW ; ++ i ) 
+            out << "        const double phi" << i << d << " = base" << i << d << "[ row ];" << std::endl;
+        }
+      }
+      for( int d = 0; d < dim ; ++ d ) 
+      {
+        for(int r = 0; r < dimRange; ++ r ) 
+        {
+          out << "        result" << r << d << "[ row ] += phi0" << d << " * dof0" << r;
+          for( int i=1; i<simdW; ++i )
+            out << " + phi" << i << d << " * dof" << i << r;
+          out << " ;" << std::endl;
+        }
+      }
+      out << "      }" << std::endl;
     }
 
     static void evaluateJacobiansCodegen(std::ostream& out, 
             const int dim, const int dimRange, const size_t numRows, const size_t numCols ) 
     {
+      const std::string funcName = 
+            generateFunctionName( "evalJacobianLoop", simdWidth, dimRange, numRows, numCols );
+
       writePreCompHeader( out, -1 );
 
       out << "template <class BaseFunctionSet>" << std::endl;
@@ -429,42 +461,150 @@ namespace Fem {
       out << "  {" << std::endl;
       out << "    typedef typename JacobianRangeVectorType :: value_type  value_type;" << std::endl; 
       out << "    typedef typename JacobianRangeType :: field_type field_type;" << std::endl;
-      out << "    for( int row = 0; row < " << numRows << " ; ++ row )" << std::endl;
+      out << "    typedef typename Geometry::Jacobian GeometryJacobianType;" << std::endl;
+      out << "    // only evaluate cachingPoint once" << std::endl;
+      out << "    int rowMap[ " << numRows << " ] ;" << std::endl;
+      out << "    for( int row = 0; row < " << numRows << "; ++ row )" << std::endl;
       out << "    {" << std::endl;
-      out << "      const value_type& jacStorageRow = jacStorage[ quad.cachingPoint( row ) ];" << std::endl;
-      out << "      typedef typename Geometry::Jacobian GeometryJacobianType;" << std::endl;
-      out << "      // use reference to GeometryJacobianType to make code compile with SPGrid Geometry" << std::endl;
-      out << "      const GeometryJacobianType& gjit = geometry.jacobianInverseTransposed( quad.point( row ) );" << std::endl << std::endl;
-      out << "      typedef typename GlobalJacobianRangeType :: row_type JacobianRangeType;" << std::endl;
-      for( int i=0; i<sseWidth; ++i ) 
-        out << "      GlobalJacobianRangeType result" << i << "( 0 );" << std::endl;
-      for( int i=0; i<sseWidth; ++i ) 
-        out << "      JacobianRangeType gradPhi" << i << ";" << std::endl;
-      const size_t sseNumCols = sseWidth * ( numCols / sseWidth );
-      out << "      for( int col = 0; col < " << sseNumCols << " ; col += " << sseWidth << " )" << std::endl;
-      out << "      {" << std::endl;
-      writeInnerJacEvalLoop( out, sseWidth, dimRange );
-      out << "      }" << std::endl;
-      out << std::endl;        
+      out << "      rowMap[ row ] = quad.cachingPoint( row  );" << std::endl; 
+      out << "    }" << std::endl;
+      out << std::endl;
 
-      if( numCols > sseNumCols ) 
+      for( int d = 0; d < dim ; ++ d ) 
       {
-        out << "      for( int col = " << sseNumCols <<" ; col < " << numCols << " ; ++col )" << std::endl;
+        // make length simd conform 
+        out << "    field_type resultTmp" << d << "[ " << numRows * dimRange << " ] = { 0";
+        for( size_t row = 1; row < numRows * dimRange; ++ row )
+        {
+          out << ", 0";
+        }
+        out << " };" << std::endl;
+      }
+      out << std::endl;
+
+      for( int d = 0; d < dim ; ++ d ) 
+      {
+        for(int r=0; r<dimRange ; ++r ) 
+        {
+          out << "    field_type* result" << r << d <<" = resultTmp" << d << " + " << r * numRows << " ;" << std::endl; 
+        }
+      }
+      out << std::endl;
+
+      const size_t simdNumCols = simdWidth * ( numCols / simdWidth );
+      if( simdNumCols > 0 ) 
+      {
+        for( int d = 0; d < dim; ++d )
+        {
+          for( int i=0; i< simdWidth; ++ i ) 
+          {
+            out << "    field_type base" << i << d << "[ " << numRows << " ];" << std::endl;
+          }
+        }
+
+        out << "    typedef typename GlobalJacobianRangeType :: row_type JacobianRangeType;" << std::endl;
+        for( int i=0; i< simdWidth; ++ i ) 
+        out << "    JacobianRangeType gradPhi" << i << ";" << std::endl;
+        out << "    for( int col = 0, dof = 0 ; col < "<< simdNumCols <<" ; col += " << simdWidth << ", dof += " << simdWidth * dimRange<< " )"<<std::endl;
+        out << "    {" << std::endl;
+        out << "      for( int row = 0; row < " << numRows << " ; ++ row )" << std::endl;
         out << "      {" << std::endl;
-        writeInnerJacEvalLoop( out, 1, dimRange );
-        out << "      }" << std::endl;
-        out << std::endl;        
+        out << "        const value_type& jacStorageRow = jacStorage[ rowMap[ row ] ];" << std::endl;
+        out << "        // use reference to GeometryJacobianType to make code compile with SPGrid Geometry" << std::endl;
+        out << "        const GeometryJacobianType& gjit = geometry.jacobianInverseTransposed( quad.point( row ) );" << std::endl << std::endl;
+        for( int i=0; i< simdWidth; ++ i ) 
+          out << "        gjit.mv( jacStorageRow[ col + " << i << " ][ 0 ], gradPhi" << i << " );" << std::endl;
+        out << std::endl;
+        for( int d = 0; d < dim; ++ d ) 
+        {
+          for( int i=0; i< simdWidth; ++ i ) 
+          {
+            out << "        base" << i << d << "[ row ] = gradPhi"<< i << "[ " << d << " ];" << std::endl;
+          }
+        }
+        out << "      }" << std::endl << std::endl;
+
+        out << "      " << funcName << "(";
+        for( int i = 0; i< simdWidth * dimRange; ++i ) 
+          out << " dofs[ dof + " << i << " ],";
+        out << std::endl << "                 ";
+        for( int d = 0; d < dim; ++ d )
+        {
+          for( int i=0; i< simdWidth; ++i )
+            out << "base" << i << d << ", ";
+        }
+        out << std::endl << "                 ";
+        for( int d = 0; d < dim; ++ d )
+        {
+          for( int r = 0; r < dimRange; ++r) 
+          {
+            out << "result" << r << d;
+            if( r * d == (dim-1)*(dimRange-1) ) out << std::endl;
+            else out << ", ";
+          }
+        }
+        out << "      );" << std::endl;
+        out << "    }"<< std::endl;  
+        out << std::endl;
       }
 
+      // remainder iteration
+      if( numCols > simdNumCols ) 
+      {
+        out << "    // remainder iteration" << std::endl;
+        out << "    for( int col = " << simdNumCols << ", dof = " << simdNumCols * dimRange << " ; col < " << numCols << " ; ++col )" << std::endl;
+        out << "    {" << std::endl;
+        for( int r=0; r<dimRange; ++r ) 
+          out << "      const double dof0" << r << " = dofs[ dof++ ];" << std::endl;
+        writeInnerJacEvalLoop( out, 1, dim, dimRange, numRows ); 
+        out << "    }" << std::endl;
+        out << std::endl;
+      }
+
+      out << "    // store result" << std::endl;   
+      out << "    for(int row = 0; row < " << numRows << " ; ++row )" << std::endl;
+      out << "    {" << std::endl;
       out << "      GlobalJacobianRangeType& result = jacVector[ row ];" << std::endl;
-      out << "      result = result0;" << std::endl;
-      for( int i=1; i<sseWidth; ++i ) 
-        out << "      result += result" << i << ";" << std::endl;
+      for( int d = 0 ; d < dim; ++ d ) 
+      {
+        for( int r = 0 ; r < dimRange; ++ r ) 
+        {
+          out << "      result[ " << r << " ][ " << d <<" ] = result" << r << d << "[ row ];" << std::endl;
+        }
+      }
       out << "    }" << std::endl;
-      out << "  }" << std::endl;
+      out << "  }" << std::endl << std::endl;
       out << "};" << std::endl;
-      
-      out << "#endif" << std::endl;
+
+      writePreCompHeader( out, 0 );
+      out << "  void " << funcName << "(" << std::endl;
+      for( int i=0; i<simdWidth; ++i ) 
+      {
+        out << "                        ";
+        for( int r=0; r<dimRange; ++ r ) 
+          out << " const double dof"<< i << r << ",";
+        out << std::endl;
+      }
+      for( int d=0; d<dim; ++ d ) 
+      {
+        for( int i=0; i<simdWidth; ++ i ) 
+          out << "                         const double* " << restrictKey() << " base" << i << d << "," << std::endl; 
+      }
+      for( int d=0; d<dim; ++ d ) 
+      {
+        for( int r=0; r<dimRange; ++ r ) 
+        {
+          out << "                         double* "<< restrictKey() << " result" << r << d;
+          if( d * r == (dim-1)*(dimRange-1) ) out << " )" << std::endl;
+          else out << "," << std::endl; 
+        }
+      }
+
+      writePreCompHeader( out, 1 );
+      out << "  {" << std::endl;
+      writeInnerJacEvalLoop( out, simdWidth, dim, dimRange, numRows ); 
+      out << "  }" << std::endl;
+      writePreCompHeader( out, 2 );
     }
 
     static void writeInnerLoopAxpyJac(std::ostream& out, const int dim, const int dimRange, const size_t numCols )
@@ -488,7 +628,7 @@ namespace Fem {
             const int dim, const int dimRange, const size_t numRows, const size_t numCols ) 
     {
       const std::string funcName = 
-            generateFunctionName( "axpyJacobianLoop", sseWidth, dimRange, numRows, numCols );
+            generateFunctionName( "axpyJacobianLoop", simdWidth, dimRange, numRows, numCols );
 
       writePreCompHeader( out, -1 );
 
@@ -535,7 +675,7 @@ namespace Fem {
 
       for( int d =0; d < dim; ++d ) 
       {
-        out << "    field_type baseFunc"<< d << "[ " << numCols << " ] ;" << std::endl; 
+        out << "    field_type base"<< d << "[ " << numCols << " ] ;" << std::endl; 
       }
 
       out << "    for( int row = 0; row < " << numRows << " ; ++ row )" << std::endl;
@@ -553,22 +693,22 @@ namespace Fem {
       out << "      for( int col = 0; col < " << numCols << " ; ++ col )" << std::endl;
       out << "      {" << std::endl;
       for( int d =0; d < dim; ++d ) 
-        out << "        baseFunc"<< d << "[ col ] = jacStorageRow[ col ][ 0 ][ " << d << " ];" << std::endl;
+        out << "        base"<< d << "[ col ] = jacStorageRow[ col ][ 0 ][ " << d << " ];" << std::endl;
 
       out << "      }" << std::endl;
 
       out << "      // calculate updates" << std::endl;
       out << "      " << funcName << "(";
-      for( int d =0; d < dim; ++d ) out << "baseFunc" << d << ", ";
+      for( int d =0; d < dim; ++d ) out << "base" << d << ", ";
       out << std::endl;
       for( int i =0; i < dim; ++i )
       {
-        out << "                             ";
+        out << "                               ";
         for( int r = 0; r < dimRange; ++ r ) 
           out << "jacFactorTmp[ " << r  << " ][ " << i << " ], ";
         out << std::endl;
       }
-      out << "                             ";
+      out << "                               ";
       for( int r = 0; r < dimRange; ++ r ) 
       {
         out << "result" << r;
@@ -595,19 +735,20 @@ namespace Fem {
       ///////////////////////////////////
       writePreCompHeader( out, 0 );
 
-      out << "  void " << funcName << "( const double* " << restrictKey() << " base0," << std::endl; 
+      out << "  void " << funcName << "(" << std::endl;
+      out << "        const double* " << restrictKey() << " base0," << std::endl; 
       for( int i=1; i<dim; ++ i ) 
-        out << "                                      const double* " << restrictKey() << " base" << i << "," << std::endl; 
+        out << "        const double* " << restrictKey() << " base" << i << "," << std::endl; 
       for( int i=0; i<dim; ++i ) 
       {
-        out << "                                  ";
+        out << "        ";
         for( int r=0; r<dimRange; ++ r ) 
-          out << " const double jacFactorInv"<< i << r << ",";
+          out << "const double jacFactorInv"<< i << r << ", ";
         out << std::endl;
       }
       for( int r = 0; r < dimRange; ++r ) 
       {
-        out << "                                double* " << restrictKey() << " result" << r;
+        out << "        double* " << restrictKey() << " result" << r;
         if( r == dimRange-1 ) 
           out << " )" << std::endl;
         else 
