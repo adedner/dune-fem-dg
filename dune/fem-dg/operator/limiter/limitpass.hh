@@ -21,7 +21,7 @@
 #include <dune/fem/operator/1order/localmassmatrix.hh>
 
 // the lagrange point sets 
-#include <dune/fem/space/lagrangespace/lagrangepoints.hh>
+#include <dune/fem/space/lagrange/lagrangepoints.hh>
 #include <dune/fem/space/common/basesetlocalkeystorage.hh>
 
 #include <dune/fem/io/parameter.hh>

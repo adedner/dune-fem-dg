@@ -2,6 +2,7 @@
 #define DUNE_FEM_DG_SMARTODESOLVER_HH
 
 #include <limits>
+#include <dune/fem/misc/femtimer.hh>
 #include <dune/fem/solver/odesolver.hh>
 
 namespace Dune {

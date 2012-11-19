@@ -8,6 +8,7 @@
 
 // dune-fem-dg includes 
 #include <dune/fem-dg/pass/dgpass.hh>
+#include <dune/fem-dg/operator/dg/passtraits.hh>
 
 #ifdef USE_SMP_PARALLEL
 #include <dune/fem-dg/pass/threadpass.hh>

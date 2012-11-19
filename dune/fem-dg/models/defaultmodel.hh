@@ -1,7 +1,11 @@
 #ifndef DUNE_FEM_DG_DEFAULTMODEL_HH
 #define DUNE_FEM_DG_DEFAULTMODEL_HH
 
+#include<limits>
+
 #include <dune/common/exceptions.hh>
+
+#include <dune/fem/misc/fmatrixconverter.hh>
 
 /**********************************************
  * Default model 
