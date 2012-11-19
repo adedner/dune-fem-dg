@@ -1,7 +1,6 @@
 #ifndef DUNE_FEM_LIMITERDISCRETEMODEL_HH
 #define DUNE_FEM_LIMITERDISCRETEMODEL_HH
 
-#include <dune/fem/space/dgspace.hh>
 #include <dune/fem/io/parameter.hh>
 
 #include <dune/fem-dg/operator/limiter/limitpass.hh>

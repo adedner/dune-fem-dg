@@ -31,8 +31,8 @@ void setupAdditionalVariables( const TimeProvider& tp,
     ConsDiscreteFunctionSpaceType;
   typedef typename PrimDiscreteFunctionType::Traits::DiscreteFunctionSpaceType 
     PrimDiscreteFunctionSpaceType;
-  typedef typename ConsDiscreteFunctionSpaceType::Traits::GridPartType GridPartType;
-  typedef typename ConsDiscreteFunctionSpaceType::Traits::IteratorType Iterator;
+  typedef typename ConsDiscreteFunctionSpaceType::GridPartType GridPartType;
+  typedef typename ConsDiscreteFunctionSpaceType::IteratorType Iterator;
   typedef typename Iterator :: Entity Entity;
   typedef typename Entity :: Geometry Geometry;
   typedef typename ConsDiscreteFunctionSpaceType::DomainType DomainType;

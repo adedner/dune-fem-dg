@@ -3,7 +3,6 @@
 
 #include <dune/fem/gridpart/adaptiveleafgridpart.hh>
 #include <dune/fem/gridpart/idgridpart.hh>
-#include <dune/fem/space/dgspace.hh>
 #include <dune/fem/solver/odesolver.hh>
 
 template <class GridImp,

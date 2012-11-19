@@ -13,7 +13,7 @@
 #include <dune/grid/io/file/dgfparser/entitykey.hh>
 
 #include <dune/fem/space/common/adaptmanager.hh>
-#include <dune/fem/space/dgspace.hh>
+#include <dune/fem/space/discontinuousgalerkin.hh>
 #include <dune/fem/space/combinedspace.hh>
 #include <dune/fem/pass/dgpass.hh>
 #include <dune/fem-dg/pass/dgmodelcaller.hh>
