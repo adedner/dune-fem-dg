@@ -138,7 +138,6 @@ struct StepperBase
     rp_( solution_ ),
     adaptationManager_( grid_, rp_ ),
     adaptationParameters_( ),
-    dataTuple_( dataTuple() ),
     dataWriter_( 0 )
   {
     // set refine weight 
@@ -281,6 +280,8 @@ struct StepperBase
 
     if( dataWriter_ == 0 ) 
     {
+      // copy data tuple 
+      dataTuple_ = dataTuple () ;
       dataWriter_ = new DataWriterType( grid_, dataTuple_, tp,
         EocDataOutputParameters( loop, problem_->dataPrefix() ) );
     }
@@ -466,7 +467,7 @@ protected:
   AdaptationManagerType   adaptationManager_;
   AdaptationParameters    adaptationParameters_;
 
-  IOTupleType             dataTuple_;
+  IOTupleType             dataTuple_ ;
   DataWriterType*         dataWriter_ ;
 };
 #endif // FEMHOWTO_STEPPER_HH

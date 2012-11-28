@@ -49,6 +49,7 @@ struct Stepper
   typedef typename BaseType :: TimeProviderType        TimeProviderType;
   typedef typename BaseType :: AdaptationManagerType   AdaptationManagerType;
   typedef typename BaseType :: AdaptationHandlerType   AdaptationHandlerType;
+  typedef typename BaseType :: IndicatorType           IndicatorType;
 
   static const Dune::DGDiffusionFluxIdentifier DiffusionFluxId =
     BaseType::Traits::DiffusionFluxId ;
@@ -74,12 +75,17 @@ struct Stepper
   using BaseType :: adaptationParameters_;
   using BaseType :: doEstimateMarkAdapt ;
 
+  // constructor 
   Stepper( GridType& grid ) :
     BaseType( grid ),
     dgAdvectionOperator_(gridPart_, convectionFlux_),
     dgIndicator_( gridPart_, convectionFlux_ ),
-    gradientIndicator_( space(), problem() )
+    gradientIndicator_( space(), problem() ),
+    indicator_( 0 )
   {
+    // enable indicator output if the parameter is set 
+    if( ParameterType :: getValue<bool> ("femdg.limiter.indicatoroutput", false ) ) 
+      indicator_ = dgAdvectionOperator_.indicator(); 
   }
 
   virtual OdeSolverType* createOdeSolver(TimeProviderType& tp) 
@@ -118,6 +124,12 @@ struct Stepper
     dgAdvectionOperator_.limit( solution() );
   }
 
+  // return indicator pointer for data output, see above
+  IndicatorType* indicator () 
+  { 
+    return indicator_;
+  }
+
   //! estimate and mark solution 
   virtual void initialEstimateMarkAdapt( )
   {
@@ -134,5 +146,6 @@ protected:
   DgAdvectionType         dgAdvectionOperator_;
   DGIndicatorType         dgIndicator_;
   GradientIndicatorType   gradientIndicator_;
+  IndicatorType* indicator_ ;
 };
 #endif // FEMHOWTO_STEPPER_HH
