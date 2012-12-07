@@ -1905,7 +1905,7 @@ namespace Dune {
       // get quadrature for destination space order  
       VolumeQuadratureType quad( en, spc_.order() + 1 );
       
-      typedef typename LocalFunctionImp :: BaseFunctionSetType BaseFunctionSetType;
+      typedef typename LocalFunctionImp::BasisFunctionSetType BasisFunctionSetType;
 
       //const BaseFunctionSetType& baseset = limitEn.baseFunctionSet();
       const int quadNop = quad.nop();
@@ -1984,23 +1984,23 @@ namespace Dune {
       }
     }
 
-    template <class BaseFunctionSetType, class PointType>
-    const RangeType& evaluateConsantBasis( const BaseFunctionSetType& baseSet, 
+    template <class BasisFunctionSetType, class PointType>
+    const RangeType& evaluateConsantBasis( const BasisFunctionSetType& basisSet, 
                                            const PointType& x ) const 
     {
       // calculate constant part of the basis functions 
       if( ! (phi0_[ 0 ] > 0 ) ) 
       {
-        std::vector< RangeType > phi;  
-        baseSet.evaluateAll( x, phi );
+        std::vector< RangeType > phi( basisSet.size() );
+        basisSet.evaluateAll( x, phi );
         phi0_ = phi[ 0 ];
       }
 
 #ifndef NDEBUG
       // check that phi0 is valid 
       {
-        std::vector< RangeType > phi;  
-        baseSet.evaluateAll( x, phi );
+        std::vector< RangeType > phi( basisSet.size() ); 
+        basisSet.evaluateAll( x, phi );
         assert( (phi0_ - phi[ 0 ]).infinity_norm() < 1e-8 );
       }
 #endif
@@ -2020,7 +2020,7 @@ namespace Dune {
         // get point quadrature 
         VolumeQuadratureType quad( en, 0 );
 
-        const RangeType& phi0 = evaluateConsantBasis( lf.baseFunctionSet(), quad[ 0 ] );
+        const RangeType& phi0 = evaluateConsantBasis( lf.basisFunctionSet(), quad[ 0 ] );
         for(int r=0; r<dimRange; ++r) 
         {
           const int dofIdx = dofConversion_.combinedDof(0, r);
