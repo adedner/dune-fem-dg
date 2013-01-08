@@ -1,13 +1,13 @@
 #ifndef DUNE_FEM_LIMITER_HH
 #define DUNE_FEM_LIMITER_HH 
 
-#include <dune/fem/space/discontinuousgalerkin.hh>
+#include <dune/fem/space/dgspace.hh>
 #include <dune/fem/io/parameter.hh>
 
 #include <dune/fem-dg/operator/limiter/limitpass.hh>
 #include <dune/fem-dg/operator/limiter/limiterdiscretemodel.hh>
 #include <dune/fem/function/adaptivefunction.hh>
-#include <dune/fem/space/finitevolume.hh>
+#include <dune/fem/space/fvspace.hh>
 
 namespace Dune {
 
