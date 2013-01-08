@@ -70,6 +70,10 @@ namespace ALUGridSpace {
     { 
       return vector < vector < int > > (psize(), value); 
     }
+    virtual vector < ObjectStream > gcollect (const ObjectStream &, const vector<int>& ) const
+    {
+      return vector < ObjectStream > (psize()); 
+    }
     virtual vector < vector < double > > gcollect (const vector < double > & value) const 
     { 
       return vector < vector < double > > (psize(), value); 
