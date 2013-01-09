@@ -6,7 +6,7 @@
 #include <dune/fem/quadrature/cachingquadrature.hh>
 #include <dune/fem/operator/common/spaceoperatorif.hh> 
 #include <dune/fem/operator/matrix/blockmatrix.hh>
-#include <dune/fem/space/discontinuousgalerkin.hh>
+#include <dune/fem/space/dgspace.hh>
 
 #include <dune/fem-dg/operator/adaptation/adaptation.hh>
 

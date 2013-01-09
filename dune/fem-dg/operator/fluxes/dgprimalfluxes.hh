@@ -315,7 +315,7 @@ namespace Dune {
     }
 
     //! returns true if lifting has to be calculated 
-    const bool hasLifting () const { return ( method_ <= method_br2 ); }
+    bool hasLifting () const { return ( method_ <= method_br2 ); }
 
   protected:   
     Lifting& LePlusLifting() const 

@@ -77,7 +77,7 @@ namespace Dune {
     }
 
     //! returns true if lifting has to be calculated 
-    const bool hasLifting () const { return false; }
+    bool hasLifting () const { return false; }
 
     void diffusionFluxPenalty( std::ostream& out ) const
     {

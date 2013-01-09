@@ -62,6 +62,8 @@ public:
 public:
   using BaseType :: mark;
   using BaseType :: clear;
+  using BaseType :: estimateLocal ;
+  using BaseType :: estimate ;
 
 protected:
   using BaseType :: dfSpace_;

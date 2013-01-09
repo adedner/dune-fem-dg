@@ -57,6 +57,8 @@ class SmartOdeSolver :
   typedef AdvectionOperator  AdvectionOperatorType;
   typedef DiffusionOperator  DiffusionOperatorType;
 
+  typedef DuneODE :: OdeSolverInterface< typename Operator :: DestinationType > BaseType;
+
 public:
   typedef typename OperatorType :: DestinationType DestinationType ;
   typedef DestinationType  DiscreteFunctionType;
@@ -67,8 +69,10 @@ public:
   typedef DuneODE :: ExplicitOdeSolver< DiscreteFunctionType >       ExplicitOdeSolverType; 
   typedef DuneODE :: SemiImplicitOdeSolver< DiscreteFunctionType >   SemiImplicitOdeSolverType;
 
+
   typedef typename OdeSolverInterfaceType :: MonitorType MonitorType;
 
+  using BaseType :: solve; 
 protected:
   OperatorType&          operator_;
   Fem::TimeProviderBase&      timeProvider_; 
