@@ -8,7 +8,7 @@
 #include <dune/fem/quadrature/cachingquadrature.hh>
 #include <dune/fem/misc/boundaryidentifier.hh>
 #include <dune/fem/misc/fmatrixconverter.hh>
-#include <dune/fem/function/localfunction/temporarylocalfunction.hh>
+#include <dune/fem/function/localfunction/temporary.hh>
 
 
 namespace Dune {

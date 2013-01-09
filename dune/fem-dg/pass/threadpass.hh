@@ -17,7 +17,6 @@
 
 #include <dune/fem/space/common/allgeomtypes.hh> 
 #include <dune/fem/space/common/arrays.hh> 
-#include <dune/fem/function/localfunction/temporarylocalfunction.hh>
 #include <dune/fem/operator/1order/localmassmatrix.hh>
 #include <dune/fem/pass/selection.hh>
 
