@@ -30,8 +30,14 @@ namespace Dune {
            cdgpass  = Traits :: cdgpass };
 
     enum { polOrd = Traits :: polOrd };
+
+    typedef Fem::SpaceOperatorInterface < typename PassTraits<
+                      typename Traits :: Model, Traits::dimRange, Traits :: polOrd > ::
+                      DestinationType > BaseType ;
     
   public:
+    using BaseType :: operator () ;
+
     typedef typename Traits :: NumFluxType NumFluxType;
     typedef typename Traits :: Model Model;
 
