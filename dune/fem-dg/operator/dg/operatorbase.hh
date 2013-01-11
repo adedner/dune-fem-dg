@@ -127,7 +127,8 @@ namespace Dune {
     void evaluateOnly( const DestinationType& arg ) const {
       // only apply operator without storing result, for evalaution 
       // of the aposteriori error estimator mainly 
-	    pass1_( arg, *(( DestinationType *) 0) );
+      DestinationType* emptyPtr = 0 ;
+	    pass1_( arg, *emptyPtr );
     }
 
     inline const DiscreteFunctionSpaceType& space() const {
