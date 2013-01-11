@@ -106,6 +106,10 @@ namespace Dune {
     //! type of local mass matrix 
     typedef Fem::LocalMassMatrix< DiscreteFunctionSpaceType, VolumeQuadratureType > LocalMassMatrixType;
 
+    // true if all intersections between element in this grid part are conforming
+    static const bool conformingGridPart = 
+      Fem::GridPartCapabilities::isConforming< GridPartType >::v ;
+
   public:
     //- Public methods
     //! Constructor
@@ -651,10 +655,10 @@ namespace Dune {
             if( ! visited_[ indexSet_.index( nb ) ] ) 
             {
               // for conforming situations apply Quadrature given
-              if( ! GridPartType :: conforming && ! intersection.conforming() )
+              if( ! conformingGridPart && ! intersection.conforming() )
               {
                 // occurs in a non-conforming grid 
-                assert( GridPartType :: conforming == false );
+                assert( conformingGridPart == false );
 
                 // apply neighbor part, return is volume of neighbor which is
                 // needed below 
