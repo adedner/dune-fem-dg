@@ -153,6 +153,8 @@ struct StepperBase
     odeSolver_ = 0;
     delete dataWriter_; 
     dataWriter_ = 0 ;
+    delete model_ ;
+    model_ = 0;
     delete problem_ ;
     problem_ = 0;
     delete adaptationHandler_ ;
