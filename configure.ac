@@ -14,8 +14,8 @@ DUNE_CHECK_ALL
 
 # implicitly set the Dune-flags everywhere
 # preset variable to path such that #include <dune/...> works
-AC_SUBST(AM_CPPFLAGS, '$(DUNE_CPPFLAGS) -I$(top_srcdir)')
-AC_SUBST(AM_LDFLAGS, '$(DUNE_LDFLAGS) $(DUNE_LIBS)')
+AC_SUBST(AM_CPPFLAGS, '\${DUNE_CPPFLAGS} -I$(top_srcdir)')
+AC_SUBST(AM_LDFLAGS, '\${DUNE_LDFLAGS} \${DUNE_LIBS}')
 
 AC_CONFIG_FILES([
   Makefile
