@@ -80,6 +80,19 @@ namespace Dune {
         update();
       }
 
+      //! destructor 
+      ~DomainDecomposedIterator()
+      {
+#ifdef USE_SMP_PARALLEL
+        for(int thread=0; thread < Fem :: ThreadManager :: maxThreads(); ++thread )
+        {
+          // i is the thread number of this filter 
+          delete filteredGridParts_[ thread ] ; 
+          filteredGridParts_[ thread ] = 0 ;
+        }
+#endif
+      }
+
       //! return reference to space 
       const SpaceType& space() const { return space_; }
 
