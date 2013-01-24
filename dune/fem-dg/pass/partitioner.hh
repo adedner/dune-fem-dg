@@ -8,7 +8,11 @@
 #include <vector>
 
 #include <dune/common/mpihelper.hh>
+#if HAVE_ALUGRID 
 #include <dune/grid/alugrid/3d/alugrid.hh>
+#elif HAVE_DUNE_ALUGRID
+#include <dune/alugrid/3d/alugrid.hh>
+#endif
 
 #include <dune/grid/io/visual/grapegriddisplay.hh>
 
@@ -18,7 +22,11 @@
 
 #define ALU2DGRID_READALL_GRIDS 
 
+#if HAVE_DUNE_ALUGRID 
+namespace ALUGrid {
+#else
 namespace ALUGridSpace {
+#endif
 
   // class fulfilling the ALUGrid communicator interface
   // but without any communication, this is needed to avoid 
@@ -56,32 +64,34 @@ namespace ALUGridSpace {
     virtual void gmin (int*,int,int*) const {  }
     virtual void gsum (int*,int,int*) const {  }
     virtual minmaxsum_t minmaxsum( double value ) const { return minmaxsum_t( value ); }
-    virtual pair<double,double> gmax (pair<double,double> value ) const { return value; }
-    virtual pair<double,double> gmin (pair<double,double> value ) const { return value; }
-    virtual pair<double,double> gsum (pair<double,double> value ) const { return value; }
+    virtual std::pair<double,double> gmax (std::pair<double,double> value ) const { return value; }
+    virtual std::pair<double,double> gmin (std::pair<double,double> value ) const { return value; }
+    virtual std::pair<double,double> gsum (std::pair<double,double> value ) const { return value; }
     virtual void bcast(int*,int, int) const { }
     virtual void bcast(char*,int, int) const { }
     virtual void bcast(double*,int, int) const { }
     virtual int exscan( int value ) const { return 0; }
     virtual int scan( int value ) const { return value; }
-    virtual vector < int > gcollect ( int value ) const { return vector<int> (psize(), value); }
-    virtual vector < double > gcollect ( double value ) const { return vector<double> (psize(), value); }
-    virtual vector < vector < int > > gcollect (const vector < int > & value) const 
+    virtual std::vector < int > gcollect ( int value ) const { return std::vector<int> (psize(), value); }
+    virtual std::vector < double > gcollect ( double value ) const { return std::vector<double> (psize(), value); }
+    virtual std::vector < std::vector < int > > gcollect (const std::vector < int > & value) const 
     { 
-      return vector < vector < int > > (psize(), value); 
+      return std::vector < std::vector < int > > (psize(), value); 
     }
-    virtual vector < ObjectStream > gcollect (const ObjectStream &, const vector<int>& ) const
+    virtual std::vector < ObjectStream > gcollect (const ObjectStream &, const std::vector<int>& ) const
     {
-      return vector < ObjectStream > (psize()); 
+      return std::vector < ObjectStream > (psize()); 
     }
-    virtual vector < vector < double > > gcollect (const vector < double > & value) const 
+    virtual std::vector < std::vector < double > > gcollect (const std::vector < double > & value) const 
     { 
-      return vector < vector < double > > (psize(), value); 
+      return std::vector < std::vector < double > > (psize(), value); 
     }
-    virtual vector < ObjectStream > gcollect (const ObjectStream &os) const { return vector < ObjectStream >(psize(),os); }
+    virtual std::vector < ObjectStream > gcollect (const ObjectStream &os) const { return std::vector < ObjectStream >(psize(),os); }
 
+#if HAVE_ALUGRID
     //! return address of communicator (not optimal but avoid explicit MPI types here)
     virtual const CommIF* communicator() const { return 0; }
+#endif
   };
 }
 
@@ -267,6 +277,11 @@ protected:
         {
           const int eid = getIndex( en );
           const int nid = getIndex( nb );
+#ifdef ALUGRID_3D_CONFORMING_REFINEMENT
+          // the newest ALU version only needs the edges to be inserted only once
+          if( eid < nid ) 
+#endif
+          // the older version works with double insertion 
           // insert edges twice, with both orientations 
           // the ALUGrid partitioner expects it this way 
           {

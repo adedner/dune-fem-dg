@@ -29,9 +29,10 @@ namespace Dune {
     static const int dimDomain = Model :: Traits :: dimDomain;
 
     //typedef Fem::ElementQuadrature< GridPartType, 0 >                     VolumeQuadratureType;
+    //typedef ElementQuadrature< GridPartType, 1 >                     FaceQuadratureType;
+    
     typedef Fem::CachingQuadrature< GridPartType, 0 >                     VolumeQuadratureType;
     typedef Fem::CachingQuadrature< GridPartType, 1 >                     FaceQuadratureType;
-    //typedef ElementQuadrature< GridPartType, 1 >                     FaceQuadratureType;
 
     // Allow generalization to systems
     typedef Fem::FunctionSpace< ctype, double, dimDomain, dimRange >      FunctionSpaceType;
