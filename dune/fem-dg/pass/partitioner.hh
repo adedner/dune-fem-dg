@@ -310,7 +310,7 @@ public:
       }
       else 
       {
-#if HAVE_METIS 
+#if HAVE_ALUGRID || HAVE_METIS 
         if( useKway ) 
           partition_ = db_.repartition( mpAccess_, DataBaseType :: METIS_PartGraphKway, pSize_ );
         else 
