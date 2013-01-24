@@ -36,7 +36,7 @@ namespace ALUGridSpace {
   public:  
     MpAccessSerial() {} 
 
-#ifdef ALUGRID_CONSTRUCTION_WITH_STREAMS
+#if HAVE_DUNE_ALUGRID || defined ALUGRID_CONSTRUCTION_WITH_STREAMS 
     // this features is only available in the newer version 
     typedef MpAccessGlobal :: minmaxsum_t  minmaxsum_t;
 #else 
@@ -277,7 +277,7 @@ protected:
         {
           const int eid = getIndex( en );
           const int nid = getIndex( nb );
-#ifdef ALUGRID_3D_CONFORMING_REFINEMENT
+#if HAVE_DUNE_ALUGRID || defined ALUGRID_3D_CONFORMING_REFINEMENT
           // the newest ALU version only needs the edges to be inserted only once
           if( eid < nid ) 
 #endif
@@ -310,10 +310,14 @@ public:
       }
       else 
       {
+#if HAVE_METIS 
         if( useKway ) 
           partition_ = db_.repartition( mpAccess_, DataBaseType :: METIS_PartGraphKway, pSize_ );
         else 
           partition_ = db_.repartition( mpAccess_, DataBaseType :: METIS_PartGraphRecursive, pSize_ );
+#elif HAVE_DUNE_ALUGRID
+        partition_ = db_.repartition( mpAccess_, DataBaseType :: ALUGRID_SpaceFillingCurveNoEdges, pSize_ );
+#endif
       }
 
       assert( int(partition_.size()) >= graphSize_ );
