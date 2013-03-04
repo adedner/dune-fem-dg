@@ -192,17 +192,6 @@ namespace Dune
                                            gLeft, hLeft );
     }
 
-  private:
-    // forbid base class methods that shall not be part of this class' interface
-    void setNeighbor ( const EntityType &entity );
-    template< class QuadratureType >
-    void setNeighbor ( const EntityType &neighbor,
-                       const QuadratureType &inside,
-                       const QuadratureType &outside );
-
-    template< class QuadratureType >
-    void setBoundary ( const EntityType &entity, const QuadratureType &quadrature );
-   
   protected:
     template< class JacobianRangeTupleVectorType >
     const JacobianRangeTupleType &jacobianValue ( const JacobianRangeTupleVectorType &jacobians, const int qp ) const

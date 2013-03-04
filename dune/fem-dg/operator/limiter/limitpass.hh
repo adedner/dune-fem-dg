@@ -12,6 +12,7 @@
 #include <dune/fem/io/parameter.hh>
 #include <dune/fem/misc/utility.hh>
 #include <dune/fem/operator/1order/localmassmatrix.hh>
+#include <dune/fem/pass/common/typeindexedtuple.hh>
 #include <dune/fem/pass/localdg/discretemodel.hh>
 #include <dune/fem/pass/localdg.hh>
 #include <dune/fem/space/combinedspace.hh>
@@ -159,6 +160,8 @@ namespace Dune {
 
     typedef typename BaseType::IntersectionType IntersectionType;
 
+    typedef typename BaseType::RangeTupleType RangeTupleType;
+
     using BaseType::time;
 
     LimiterDiscreteModelCaller( ArgumentType &argument, DiscreteModelType &discreteModel )
@@ -181,12 +184,13 @@ namespace Dune {
       quadPoint_ = qp;
 #endif
       // evaluate data 
-      BaseType :: evaluateQuad( quadrature, qp, localFunctionsInside_, values_ );
+      localFunctionsInside_.evaluate( quadrature[ qp ], ranges_ );
+      // BaseType :: evaluateQuad( quadrature, qp, localFunctionsInside_, values_ );
 
       // call problem checkDirection 
       typename IntersectionType::EntityPointer inside = intersection.inside();
       const typename BaseType::EntityType &entity = *inside;
-      return discreteModel().checkPhysical( entity, entity.geometry().local( intersection.geometry().global( quadrature.localPoint( qp ) ) ), values_ ); 
+      return discreteModel().checkPhysical( entity, entity.geometry().local( intersection.geometry().global( quadrature.localPoint( qp ) ) ), ranges_ ); 
     }
 
     // check whether we have inflow or outflow direction 
@@ -200,12 +204,14 @@ namespace Dune {
       assert( quadPoint_ == qp );
 
       // call checkDirection() on discrete model
-      return discreteModel().checkDirection( intersection, time(), quadrature.localPoint( qp ), values_ );
+      return discreteModel().checkDirection( intersection, time(), quadrature.localPoint( qp ), ranges_ );
     }
   protected:
     using BaseType::discreteModel;
-    using BaseType::values_;
     using BaseType::localFunctionsInside_;
+
+  private:
+    Dune::TypeIndexedTuple< RangeTupleType, typename DiscreteModelType::Selector > ranges_;
 
 #ifndef NDEBUG 
     size_t quadId_ ;
