@@ -7,7 +7,7 @@
 #include <map>
 #include <vector>
 
-#include <dune/common/mpihelper.hh>
+#include <dune/common/parallel/mpihelper.hh>
 #if HAVE_ALUGRID 
 #include <dune/grid/alugrid/3d/alugrid.hh>
 #elif HAVE_DUNE_ALUGRID
