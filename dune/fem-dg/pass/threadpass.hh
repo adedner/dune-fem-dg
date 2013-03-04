@@ -9,8 +9,8 @@
 #include <dune/fem/misc/threaditerator.hh>
 #include <dune/fem/misc/utility.hh>
 #include <dune/fem/operator/1order/localmassmatrix.hh>
-#include <dune/fem/pass/dgmodelcaller.hh>
-#include <dune/fem/pass/pass.hh>
+#include <dune/fem/pass/localdg/modelcaller.hh>
+#include <dune/fem/pass/common/pass.hh>
 #include <dune/fem/quadrature/caching/twistutility.hh>
 #include <dune/fem/quadrature/intersectionquadrature.hh>
 #include <dune/fem/solver/timeprovider.hh>
