@@ -1,29 +1,21 @@
 #ifndef DUNE_THREADPASS_HH
 #define DUNE_THREADPASS_HH
 
-//- system includes 
-#include <dune/fem/misc/utility.hh>
-
-#include <dune/fem/pass/pass.hh>
-#include <dune/fem/pass/selection.hh>
-// #include "discretemodel.hh"
-#include <dune/fem/pass/dgmodelcaller.hh>
-
-#include <dune/fem/solver/timeprovider.hh>
-
 #include <dune/common/fvector.hh>
+
 #include <dune/grid/common/grid.hh>
-#include <dune/fem/quadrature/caching/twistutility.hh>
-
-#include <dune/fem/space/common/allgeomtypes.hh> 
-#include <dune/fem/space/common/arrays.hh> 
-#include <dune/fem/operator/1order/localmassmatrix.hh>
-#include <dune/fem/pass/selection.hh>
-
-#include <dune/fem/quadrature/intersectionquadrature.hh>
-#include <dune/fem/misc/threaditerator.hh>
 
 #include <dune/fem/function/common/scalarproducts.hh>
+#include <dune/fem/misc/threaditerator.hh>
+#include <dune/fem/misc/utility.hh>
+#include <dune/fem/operator/1order/localmassmatrix.hh>
+#include <dune/fem/pass/dgmodelcaller.hh>
+#include <dune/fem/pass/pass.hh>
+#include <dune/fem/quadrature/caching/twistutility.hh>
+#include <dune/fem/quadrature/intersectionquadrature.hh>
+#include <dune/fem/solver/timeprovider.hh>
+#include <dune/fem/space/common/allgeomtypes.hh> 
+#include <dune/fem/space/common/arrays.hh> 
 
 #include "threadhandle.hh"
 #include "domaindecomposed.hh"

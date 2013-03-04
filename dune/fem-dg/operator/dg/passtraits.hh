@@ -1,17 +1,14 @@
 #ifndef DUNE_FEM_DG_PASSTRAITS_HH
 #define DUNE_FEM_DG_PASSTRAITS_HH
 
-// Dune includes
-#include <dune/fem/gridpart/adaptiveleafgridpart.hh>
-
-// Dune-Fem includes
-#include <dune/fem/space/finitevolume.hh>
-#include <dune/fem/space/discontinuousgalerkin.hh>
-#include <dune/fem/pass/dgdiscretemodel.hh>
 #include <dune/fem/function/adaptivefunction.hh>
+#include <dune/fem/gridpart/adaptiveleafgridpart.hh>
+#include <dune/fem/pass/localdg/discretemodel.hh>
 #include <dune/fem/quadrature/cachingquadrature.hh>
-#include <dune/fem-dg/operator/adaptation/adaptation.hh>
+#include <dune/fem/space/discontinuousgalerkin.hh>
+#include <dune/fem/space/finitevolume.hh>
 
+#include <dune/fem-dg/operator/adaptation/adaptation.hh>
 
 namespace Dune {
 

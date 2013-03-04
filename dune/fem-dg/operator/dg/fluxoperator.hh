@@ -3,13 +3,10 @@
 
 #include <string>
 
-// dune-fem includes
-#include <dune/fem/pass/dgdiscretemodel.hh>
-#include <dune/fem/pass/selection.hh>
+#include <dune/fem/pass/localdg/discretemodel.hh>
 #include <dune/fem/solver/timeprovider.hh>
 #include <dune/fem/operator/common/spaceoperatorif.hh>
 
-// dune-fem-dg includes
 #include <dune/fem-dg/operator/limiter/limitpass.hh>
 
 // note to me: it doesn't make sense to include primaldiscretemodel.hh

@@ -1,332 +1,233 @@
 #ifndef DUNE_FEM_DG_DISCRETEMODELCALLER_HH
 #define DUNE_FEM_DG_DISCRETEMODELCALLER_HH
 
-#include <utility>
+#include <cassert>
 #include <vector>
-#include <memory>
 
-#include <dune/common/fvector.hh> 
-
+#include <dune/fem/pass/localdg/modelcaller.hh>
 #include <dune/fem/version.hh>
 
-#include <dune/fem/pass/callerutility.hh>
-#include <dune/fem/pass/dgdiscretemodel.hh>
+namespace Dune
+{
 
-#include <dune/fem/pass/modelcallerdefault.hh> 
-
-namespace Dune {
+  // CDGDiscreteModelCaller
+  // ----------------------
 
   /**
-   * @brief Wrapper class for all the template magic used to call the problem
-   * methods.
+   * \brief Model caller for CDG pass.
    */
-  template <class DiscreteModelImp, class ArgumentImp, class SelectorImp>
+  template< class DiscreteModel, class Argument, class PassIds >
   class CDGDiscreteModelCaller 
-    : public Fem::DiscreteModelCallerDefault< DiscreteModelImp, ArgumentImp, SelectorImp >
+  : public Dune::Fem::DGDiscreteModelCaller< DiscreteModel, Argument, PassIds >
   {
-    typedef Fem::DiscreteModelCallerDefault< DiscreteModelImp, ArgumentImp, SelectorImp > BaseType;
+    typedef CDGDiscreteModelCaller< DiscreteModel, Argument, PassIds > ThisType;
+    typedef Dune::Fem::DGDiscreteModelCaller< DiscreteModel, Argument, PassIds > BaseType;
+
   public:
-    typedef DiscreteModelImp DiscreteModelType;  
-    typedef typename BaseType :: EntityType              EntityType;
-    typedef typename BaseType :: JacobianRangeType       JacobianRangeType;
-    typedef typename BaseType :: RangeType               RangeType;
-    typedef typename BaseType :: JacobianRangeTupleType  JacobianRangeTupleType;
-    typedef typename BaseType :: RangeTupleType          RangeTupleType;
-    typedef typename BaseType :: LocalFunctionTupleType  LocalFunctionTupleType;
-    typedef typename BaseType :: VolumeQuadratureType    VolumeQuadratureType;
-    typedef typename BaseType :: FaceQuadratureType      FaceQuadratureType;
-    typedef typename BaseType :: Intersection            Intersection;
-    typedef typename BaseType :: MassFactorType          MassFactorType;
-    typedef typename BaseType :: RangeCreator            RangeCreator;
-    typedef typename BaseType :: JacobianCreator         JacobianCreator;
+    typedef typename BaseType::DiscreteModelType DiscreteModelType;
+    typedef typename BaseType::ArgumentType ArgumentType;
 
-    typedef std::vector< RangeTupleType > RangeTupleVectorType ;
-    typedef std::vector< JacobianRangeTupleType > JacobianRangeTupleVectorType ;
+    typedef typename BaseType::Selector Selector;
 
-    enum { evaluateJacobian = DiscreteModelType :: evaluateJacobian };
+    typedef typename BaseType::FunctionSpaceType FunctionSpaceType;
+    typedef typename BaseType::RangeType RangeType;
+    typedef typename BaseType::JacobianRangeType JacobianRangeType;
 
-    using BaseType::evaluateQuadrature;
-    using BaseType::evaluateQuad;
+    typedef typename BaseType::EntityType EntityType;
+    typedef typename BaseType::IntersectionType IntersectionType;
 
-    CDGDiscreteModelCaller(DiscreteModelType& problem) :
-      BaseType( ),
-      problem_( problem )
+    typedef typename BaseType::VolumeQuadratureType VolumeQuadratureType;
+    typedef typename BaseType::FaceQuadratureType FaceQuadratureType;
+
+    typedef typename BaseType::MassFactorType MassFactorType;
+
+  protected:
+    typedef typename BaseType::RangeTupleType RangeTupleType;
+    typedef typename BaseType::JacobianRangeTupleType JacobianRangeTupleType;
+
+  public:
+    static const bool evaluateJacobian = DiscreteModelType::evaluateJacobian;
+
+    using BaseType::setEntity;
+    using BaseType::setNeighbor;
+    using BaseType::time;
+
+    CDGDiscreteModelCaller ( ArgumentType &argument, DiscreteModelType &discreteModel )
+    : BaseType( argument, discreteModel )
 #ifndef NDEBUG
       , quadInnerId_( 0 )
       , quadOuterId_( 0 )
       , quadId_( 0 )
 #endif
-    {
-      // we need at least size 1 
-      vecValuesEn_.push_back( RangeTupleType( RangeCreator::apply() ) );
-      vecValuesNb_.push_back( RangeTupleType( RangeCreator::apply() ) );
-
-      valuesVec_.push_back( RangeTupleType( RangeCreator::apply() ) );
-      jacobiansVec_.push_back( JacobianRangeTupleType( JacobianCreator::apply() )  );
-      
-      vecJacobiansEn_.push_back( JacobianRangeTupleType( JacobianCreator::apply() )  );
-      vecJacobiansNb_.push_back( JacobianRangeTupleType( JacobianCreator::apply() )  );
-    }
-
-    void setEntity ( const EntityType &entity )
-    {
-      BaseType :: setEntity( entity );
-      problem_.setEntity( entity );
-    }
+    {}
 
     template <class QuadratureType>
-    void setEntity ( const EntityType &entity,
-                     const QuadratureType& quad)
+    void setEntity ( const EntityType &entity, const QuadratureType &quadrature )
     {
-      setEntity( entity );
+      BaseType::setEntity( entity, quadrature );
 
-      // evaluate all local functions for whole quadrature 
-      resizeAndEvaluate( quad, data_->localFunctionsSelf(), valuesVec_,
-          jacobiansVec_ , problem_.hasSource () || evaluateJacobian ); 
-      // only when we have a source or diffusion term we need the jacobians 
+      if( discreteModel().hasSource () || evaluateJacobian )
+      {
+        jacobians_.resize( quadrature.nop() );
+        localFunctionsInside_.evaluateQuadrature( quadrature, jacobians_ );
+      }
 
 #ifndef NDEBUG 
       quadId_ = quad.id();
 #endif
     }
 
-    void setNeighbor( const EntityType &neighbor )
-    {
-      BaseType :: setNeighbor( neighbor );
-      problem_.setNeighbor( neighbor );
-    }
-
-    const JacobianRangeTupleType& 
-    jacobianValue(const JacobianRangeTupleVectorType& jacobiansVec,
-                  const int quadPoint) const
-    {
-      assert( ( evaluateJacobian ) ? (int) jacobiansVec.size() > quadPoint : true ); 
-      return ( evaluateJacobian ) ? jacobiansVec[ quadPoint ] : jacobiansVec[ 0 ];
-    }
-
-    void analyticalFlux(const EntityType& en, 
-                        const VolumeQuadratureType& quad, 
-                        const int quadPoint,
-                        JacobianRangeType& res) 
-    {
-      // make sure we get the right quadrature 
-      assert( quadId_ == quad.id() );
-      assert( (int) valuesVec_.size() > quadPoint );
-
-      // for CDG: forward calculated jacobians to analyticalFlux in user's discrete model
-      problem_.analyticalFlux(en, time_, quad.point(quadPoint), valuesVec_[ quadPoint ],
-                              jacobianValue(jacobiansVec_, quadPoint) , res);
-    }
-
-    double analyticalFluxAndSource(const EntityType& en, 
-                                   const VolumeQuadratureType& quad, 
-                                   const int quadPoint,
-                                   JacobianRangeType& fluxRes, 
-                                   RangeType& sourceRes) 
-    {
-      // make sure we git the right quadrature 
-      assert( quadId_ == quad.id() );
-      assert( (int) valuesVec_.size() > quadPoint );
-      
-      // for CDG: forward calculated jacobians to analyticalFlux in user's discrete model
-      problem_.analyticalFlux(en, time_, quad.point(quadPoint), valuesVec_[ quadPoint ],
-                              jacobianValue(jacobiansVec_, quadPoint), fluxRes);
-
-      // return time step restriction for source term (zero if none)
-      return 
-        problem_.source(en, time_, quad.point(quadPoint), valuesVec_[ quadPoint ],
-                        jacobianValue(jacobiansVec_, quadPoint), sourceRes);
-    }
-
     // Ensure: entities set correctly before call
     template <class QuadratureImp> 
     void initializeIntersection( const EntityType &neighbor,
-                                 const Intersection& intersection,
-                                 const QuadratureImp& quadInner,
-                                 const QuadratureImp& quadOuter)
+                                 const IntersectionType &intersection,
+                                 const QuadratureImp &inside,
+                                 const QuadratureImp &outside )
     {
-      assert( intersection.neighbor () );
+      assert( intersection.neighbor() );
 
-      setNeighbor( neighbor );
+      BaseType::setNeighbor( neighbor, inside, outside );
 
-      // only when we have diffusion term jacobians are needed 
-      resizeAndEvaluate( quadInner, data_->localFunctionsSelf(),  vecValuesEn_, 
-                         vecJacobiansEn_,  evaluateJacobian );
-      resizeAndEvaluate( quadOuter, data_->localFunctionsNeigh(), vecValuesNb_,
-                         vecJacobiansNb_ , evaluateJacobian );
-
-#ifndef NDEBUG 
-      quadInnerId_ = quadInner.id();
-      quadOuterId_ = quadOuter.id();
-#endif
-
-      // for CDG Pass 
-      problem_.initializeIntersection( intersection, 
-                                       time_,
-                                       quadInner, 
-                                       quadOuter, 
-                                       vecValuesEn_,
-                                       vecValuesNb_ );
-    }
-
-    // Ensure: entities set correctly before call
-    template <class QuadratureImp> 
-    void initializeBoundary(const Intersection& intersection,
-                            const QuadratureImp& quadInner)
-    {
-      assert( intersection.boundary () );
-
-      // only when we have diffusion term jacobians are needed 
-      resizeAndEvaluate( quadInner, data_->localFunctionsSelf(), vecValuesEn_, 
-                         vecJacobiansEn_, evaluateJacobian );
-#ifndef NDEBUG 
-      quadInnerId_ = quadInner.id();
-#endif
-      // for CDG Pass 
-      problem_.initializeBoundary( intersection, 
-                                   time_,
-                                   quadInner, 
-                                   vecValuesEn_);
-    }
-
-    // Ensure: entities set correctly before call
-    template <class QuadratureType>
-    double numericalFlux(const Intersection& intersection,
-                         const QuadratureType& quadInner, 
-                         const QuadratureType& quadOuter, 
-                         const int quadPoint,
-                         RangeType& resEn, 
-                         RangeType& resNeigh,
-                         JacobianRangeType& resEnGrad, 
-                         JacobianRangeType& resNeighGrad) 
-    {
-      assert( vecValuesEn_.size() >= quadInner.nop() ); 
-      assert( quadInnerId_ == quadInner.id() );
-      assert( vecValuesNb_.size() >= quadInner.nop() ); 
-      assert( quadOuterId_ == quadOuter.id() );
-
-      return problem_.numericalFlux(intersection, time_, 
-                                    quadInner,
-                                    quadOuter,
-                                    quadPoint,
-                                    vecValuesEn_[ quadPoint ], 
-                                    vecValuesNb_[ quadPoint ],
-                                    jacobianValue(vecJacobiansEn_, quadPoint),
-                                    jacobianValue(vecJacobiansNb_, quadPoint),
-                                    resEn, 
-                                    resNeigh,
-                                    resEnGrad, 
-                                    resNeighGrad);
-    }
-
-    double boundaryFlux(const Intersection& intersection,
-                        const FaceQuadratureType& quad,
-                        const int quadPoint,
-                        RangeType& boundaryFlux,
-                        JacobianRangeType& boundaryGradFlux ) 
-    {
-      assert( vecValuesEn_.size() >= quad.nop() ); 
-      assert( quadInnerId_ == quad.id() );
-
-      return problem_.boundaryFlux(intersection, time_, 
-                                   quad, quadPoint,
-                                   vecValuesEn_[ quadPoint ], 
-                                   jacobianValue(vecJacobiansEn_, quadPoint),
-                                   boundaryFlux, boundaryGradFlux );
-    }
-
-    //! return true when a mass matrix has to be build  
-    bool hasMass () const  { return problem_.hasMass(); }
-
-    //! evaluate mass matrix factor 
-    void mass(const EntityType& en,
-              const VolumeQuadratureType& quad,
-              const int quadPoint,
-              MassFactorType& m) const
-    {
-      assert( quadId_ == quad.id() );
-      assert( (int) valuesVec_.size() > quadPoint );
+      if( evaluateJacobian )
+      {
+        jacobiansInside_.resize( inside.nop() );
+        localFunctionsInside_.evaluateQuadrature( inside, jacobiansInside_ );
+        jacobiansOutside_.resize( outside.nop() );
+        localFunctionsOutside_.evaluateQuadrature( outside, jacobiansOutside_ );
+      }
       
-      // call problem implementation 
-      problem_.mass(en, time_, quad.point(quadPoint),
-                    valuesVec_[ quadPoint ],
-                    m);
-    }
-    
-  protected:  
-    template <class QuadratureImp> 
-    void resizeAndEvaluate(const QuadratureImp& faceQuad,
-                           LocalFunctionTupleType& lfs,
-                           RangeTupleVectorType& vecValues,
-                           JacobianRangeTupleVectorType& vecJacobians,
-                           const bool evalJacobians ) 
-    {
-#if DUNE_VERSION_NEWER_REV(DUNE_FEM,1,1,0)
-      evaluateQuadrature( faceQuad, lfs, vecValues );
-      if ( evalJacobians )
-      {
-        evaluateQuadrature( faceQuad, lfs, vecJacobians );
-      }
-#else 
-      const size_t quadNop = faceQuad.nop();
-      assert( vecValues.size() == vecJacobians.size() );
-      if( vecValues.size() < quadNop ) 
-      {
-        while( vecValues.size() < quadNop ) 
-        {
-          vecValues.push_back( RangeTupleType( RangeCreator::apply() ) );
-          vecJacobians.push_back( JacobianRangeTupleType( JacobianCreator::apply() ) );
-        }
-      }
-
-      for(size_t quadPoint = 0; quadPoint < quadNop; ++quadPoint )
-      {
-        evaluateQuad(faceQuad, quadPoint, lfs, vecValues[ quadPoint ]);
-      }
-
-      if ( evalJacobians ) 
-      {
-        for(size_t quadPoint = 0; quadPoint < quadNop; ++quadPoint )
-        {
-          evaluateJacobianQuad( faceQuad, quadPoint, lfs, vecJacobians[ quadPoint ] );
-        }
-      }
+#ifndef NDEBUG 
+      quadInnerId_ = inside.id();
+      quadOuterId_ = outside.id();
 #endif
+
+      discreteModel().initializeIntersection( intersection, time(), inside, outside, valuesInside_, valuesOutside_ );
+    }
+
+    template <class QuadratureImp> 
+    void initializeBoundary ( const IntersectionType &intersection,
+                              const QuadratureImp &quadrature )
+    {
+      assert( intersection.boundary() );
+
+      BaseType::setBoundary( *(intersection.inside()), quadrature );
+      if( evaluateJacobian )
+      {
+        jacobiansInside_.resize( quadrature.nop() );
+        localFunctionsInside_.evaluateQuadrature( quadrature, jacobiansInside_ );
+      }
+
+#ifndef NDEBUG 
+      quadInnerId_ = quadInner.id();
+#endif
+
+      discreteModel().initializeBoundary( intersection, time(), quadrature, valuesInside_ );
+    }
+
+    void analyticalFlux ( const EntityType &entity, 
+                          const VolumeQuadratureType &quadrature, 
+                          const int qp,
+                          JacobianRangeType &flux )
+    {
+      assert( quadId_ == quadrature.id() );
+      assert( (int) values_.size() > qp );
+
+      discreteModel().analyticalFlux( entity, time(), quadrature.point( qp ), values_[ qp ], jacobianValue( jacobians_, qp ), flux );
+    }
+
+    double source ( const EntityType &entity, 
+                    const VolumeQuadratureType &quadrature, 
+                    const int qp,
+                    RangeType &source )
+    {
+      assert( quadId_ == quadrature.id() );
+      assert( (int) values_.size() > qp );
+
+      return discreteModel().source( entity, time(), quadrature.point( qp ), values_[ qp ], jacobianValue( jacobians_, qp ), source );
+    }
+
+    double analyticalFluxAndSource( const EntityType &entity,
+                                    const VolumeQuadratureType &quadrature, 
+                                    const int qp,
+                                    JacobianRangeType &flux, 
+                                    RangeType &source ) 
+    {
+      analyticalFlux( entity, quadrature, qp, flux );
+      return ThisType::source( entity, quadrature, qp, source );
+    }
+
+
+    template <class QuadratureType>
+    double numericalFlux ( const IntersectionType &intersection,
+                           const QuadratureType &inside, 
+                           const QuadratureType &outside, 
+                           const int qp,
+                           RangeType &gLeft, 
+                           RangeType &gRight,
+                           JacobianRangeType &hLeft, 
+                           JacobianRangeType &hRight) 
+    {
+      assert( valuesInside_.size() >= inside.nop() ); 
+      assert( quadInnerId_ == inside.id() );
+      assert( valuesOutside_.size() >= inside.nop() ); 
+      assert( quadOuterId_ == outside.id() );
+
+      return discreteModel().numericalFlux( intersection, time(), inside, outside, qp, 
+                                            valuesInside_[ qp ], valuesOutside_[ qp ],
+                                            jacobianValue( jacobiansInside_, qp ), jacobianValue( jacobiansOutside_, qp ),
+                                            gLeft, gRight, hLeft, hRight );
+    }
+
+    double boundaryFlux ( const IntersectionType &intersection,
+                          const FaceQuadratureType &quadrature,
+                          const int qp,
+                          RangeType &gLeft,
+                          JacobianRangeType &hLeft )
+    {
+      assert( valuesInside_.size() >= quadrature.nop() ); 
+      assert( quadInnerId_ == quadrature.id() );
+
+      return discreteModel().boundaryFlux( intersection, time(), quadrature, qp,
+                                           valuesInside_[ qp ], jacobianValue( jacobiansInside_, qp ),
+                                           gLeft, hLeft );
     }
 
   private:
-    CDGDiscreteModelCaller(const CDGDiscreteModelCaller&);
-    CDGDiscreteModelCaller& operator=(const CDGDiscreteModelCaller&);
+    // forbid base class methods that shall not be part of this class' interface
+    void setNeighbor ( const EntityType &entity );
+    template< class QuadratureType >
+    void setNeighbor ( const EntityType &neighbor,
+                       const QuadratureType &inside,
+                       const QuadratureType &outside );
 
+    template< class QuadratureType >
+    void setBoundary ( const EntityType &entity, const QuadratureType &quadrature );
+   
   protected:
-    DiscreteModelType& problem_;
+    template< class JacobianRangeTupleVectorType >
+    const JacobianRangeTupleType &jacobianValue ( const JacobianRangeTupleVectorType &jacobians, const int qp ) const
+    {
+      assert( ( evaluateJacobian ) ? (int) jacobians.size() > qp : true ); 
+      return ( evaluateJacobian ) ? jacobians[ qp ] : jacobians[ 0 ];
+    }
 
-  protected:
-    using BaseType::data_;
-    using BaseType::valuesEn_;
-    using BaseType::valuesNeigh_;
+    using BaseType::discreteModel;
     using BaseType::jacobians_;
-    using BaseType::time_;
+    using BaseType::localFunctionsInside_;
+    using BaseType::localFunctionsOutside_;
+    using BaseType::values_;
+    using BaseType::valuesInside_;
+    using BaseType::valuesOutside_;
+    std::vector< Dune::TypeIndexedTuple< JacobianRangeTupleType, Selector > > jacobiansInside_, jacobiansOutside_;
 
-    RangeTupleVectorType vecValuesEn_;
-    RangeTupleVectorType vecValuesNb_;
-
-    RangeTupleVectorType valuesVec_;
-    JacobianRangeTupleVectorType jacobiansVec_;
-
-    // for jacobians on entity use variable from BaseType
-    JacobianRangeTupleVectorType vecJacobiansEn_;
-    // need also variable for jacobians on neighbor 
-    JacobianRangeTupleVectorType vecJacobiansNb_;
-
+  private:
 #ifndef NDEBUG
     size_t quadInnerId_;
     size_t quadOuterId_;
     size_t quadId_;
 #endif
-
   };
 
-}
+} // namespace Dune
 
-#endif
+#endif // #ifndef DUNE_FEM_DG_DISCRETEMODELCALLER_HH

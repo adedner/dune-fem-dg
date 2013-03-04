@@ -1,17 +1,14 @@
 #ifndef DUNE_FEM_DG_DGPRIMALFLUXES_HH
 #define DUNE_FEM_DG_DGPRIMALFLUXES_HH
 
-// Dune-Fem includes
-#include <dune/fem/pass/dgdiscretemodel.hh>
-#include <dune/fem/pass/selection.hh>
-#include <dune/fem/space/common/arrays.hh>
-#include <dune/fem/solver/timeprovider.hh>
-#include <dune/fem/quadrature/cachingquadrature.hh>
 #include <dune/fem/misc/boundaryidentifier.hh>
 #include <dune/fem/misc/fmatrixconverter.hh>
 #include <dune/fem/operator/1order/localmassmatrix.hh>
+#include <dune/fem/pass/localdg/discretemodel.hh>
+#include <dune/fem/quadrature/cachingquadrature.hh>
+#include <dune/fem/solver/timeprovider.hh>
+#include <dune/fem/space/common/arrays.hh>
 
-// local includes
 #include <dune/fem-dg/operator/fluxes/diffusionflux.hh>
 
 namespace Dune {

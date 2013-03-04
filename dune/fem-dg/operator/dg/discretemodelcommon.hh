@@ -1,18 +1,15 @@
 #ifndef DUNE_FEM_DG_DISCRETEMODELCOMMON_HH
 #define DUNE_FEM_DG_DISCRETEMODELCOMMON_HH
 
-// Dune-Fem includes
-#include <dune/fem/pass/dgdiscretemodel.hh>
-#include <dune/fem/quadrature/cachingquadrature.hh>
 #include <dune/fem/misc/boundaryidentifier.hh>
 #include <dune/fem/misc/fmatrixconverter.hh>
+#include <dune/fem/pass/localdg/discretemodel.hh>
+#include <dune/fem/quadrature/cachingquadrature.hh>
 
-// local includes
-#include <dune/fem-dg/operator/limiter/limiter.hh>
-#include <dune/fem-dg/operator/fluxes/ldgflux.hh>
 #include <dune/fem-dg/operator/adaptation/adaptation.hh>
+#include <dune/fem-dg/operator/fluxes/ldgflux.hh>
+#include <dune/fem-dg/operator/limiter/limiter.hh>
 
-// pass traits (include before to overload default values)
 #include <dune/fem-dg/operator/dg/passtraits.hh>
 #include <dune/fem-dg/pass/threadfilter.hh>
 
