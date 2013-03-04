@@ -10,7 +10,7 @@
 #include "fluxoperator.hh"
 
 #else
-// #error "Please define either PRIMALDG or FLUXDG in AM_CXXFLAGS"
+#error "Please define either PRIMALDG or FLUXDG in AM_CXXFLAGS"
 #endif
 
 #endif
