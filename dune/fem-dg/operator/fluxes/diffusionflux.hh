@@ -23,8 +23,7 @@ namespace Dune {
     //DGFluxTupleToVectorConverter(const DGFluxTupleToVectorConverter&);
   public:
     typedef typename ArgumentVectorTuple :: value_type TupleType;
-    // note that localPassId is usually 0 (the local position in the tuple 
-    typedef typename Fem::ElementType<localPassId, TupleType> :: Type ValueType; 
+    typedef typename TupleType::template Value< integral_constant< int, passUId > >::Type ValueType;
 
     DGFluxTupleToVectorConverter(const ArgumentVectorTuple& vec) 
       : vec_( vec )

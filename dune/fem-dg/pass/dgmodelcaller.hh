@@ -194,7 +194,7 @@ namespace Dune
 
   protected:
     template< class JacobianRangeTupleVectorType >
-    const JacobianRangeTupleType &jacobianValue ( const JacobianRangeTupleVectorType &jacobians, const int qp ) const
+    const typename JacobianRangeTupleVectorType::value_type &jacobianValue ( const JacobianRangeTupleVectorType &jacobians, const int qp ) const
     {
       assert( ( evaluateJacobian ) ? (int) jacobians.size() > qp : true ); 
       return ( evaluateJacobian ) ? jacobians[ qp ] : jacobians[ 0 ];

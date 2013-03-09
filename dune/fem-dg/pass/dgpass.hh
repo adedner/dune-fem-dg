@@ -7,7 +7,6 @@
 
 #include <dune/fem/function/localfunction/temporary.hh>
 #include <dune/fem/gridpart/common/capabilities.hh>
-#include <dune/fem/misc/utility.hh>
 #include <dune/fem/operator/1order/localmassmatrix.hh>
 #include <dune/fem/pass/localdg/discretemodel.hh>
 #include <dune/fem/pass/common/pass.hh>
@@ -1014,7 +1013,7 @@ namespace Dune {
     }
 
     mutable DiscreteModelCallerType *caller_;
-    const DiscreteModelType& discreteModel_; 
+    DiscreteModelType& discreteModel_; 
     
     mutable ArgumentType* arg_;
     mutable DestinationType* dest_;

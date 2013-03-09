@@ -10,9 +10,8 @@
 #include <dune/grid/io/file/dgfparser/entitykey.hh>
 
 #include <dune/fem/io/parameter.hh>
-#include <dune/fem/misc/utility.hh>
 #include <dune/fem/operator/1order/localmassmatrix.hh>
-#include <dune/fem/pass/common/typeindexedtuple.hh>
+#include <dune/fem/common/typeindexedtuple.hh>
 #include <dune/fem/pass/localdg/discretemodel.hh>
 #include <dune/fem/pass/localdg.hh>
 #include <dune/fem/space/combinedspace.hh>

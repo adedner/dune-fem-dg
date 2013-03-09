@@ -1,15 +1,9 @@
 #ifndef DUNE_THREADPASS_HH
 #define DUNE_THREADPASS_HH
 
-#include <dune/common/fvector.hh>
-
-#include <dune/grid/common/grid.hh>
-
 #include <dune/fem/function/common/scalarproducts.hh>
 #include <dune/fem/misc/threaditerator.hh>
-#include <dune/fem/misc/utility.hh>
 #include <dune/fem/operator/1order/localmassmatrix.hh>
-#include <dune/fem/pass/localdg/modelcaller.hh>
 #include <dune/fem/pass/common/pass.hh>
 #include <dune/fem/quadrature/caching/twistutility.hh>
 #include <dune/fem/quadrature/intersectionquadrature.hh>
@@ -17,8 +11,8 @@
 #include <dune/fem/space/common/allgeomtypes.hh> 
 #include <dune/fem/space/common/arrays.hh> 
 
-#include "threadhandle.hh"
 #include "domaindecomposed.hh"
+#include "threadhandle.hh"
 
 namespace Dune {
 
@@ -182,12 +176,6 @@ namespace Dune {
 
     // Various other types
     typedef typename DestinationType::LocalFunctionType LocalFunctionType;
-    typedef typename DiscreteModelType::SelectorType SelectorType;
-    typedef Fem::CombinedSelector< ThisType , SelectorType > CombinedSelectorType;
-    typedef Fem::DGDiscreteModelCaller< DiscreteModelType 
-                                   , ArgumentType 
-                                   , CombinedSelectorType
-                                 > DiscreteModelCallerType;
 
     typedef NonBlockingCommHandle< DestinationType > NonBlockingCommHandleType ;
 
