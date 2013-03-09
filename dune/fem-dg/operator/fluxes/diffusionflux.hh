@@ -14,7 +14,7 @@ namespace Dune {
   // DGFluxTupleToVectorConverter
   //-----------------------------
 
-  template <class ArgumentVectorTuple, int passUId, int localPassId >
+  template <class ArgumentVectorTuple, int passUId >
   class DGFluxTupleToVectorConverter
   {
     integral_constant< int, passUId > uVar;

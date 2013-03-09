@@ -154,7 +154,7 @@ namespace Dune {
     {
       if( diffusion ) 
       {
-        typedef DGFluxTupleToVectorConverter< ArgumentTupleVector, passUId, 0> ConverterType;
+        typedef DGFluxTupleToVectorConverter< ArgumentTupleVector, passUId > ConverterType;
         // call diffusion flux 
         diffFlux_.initializeIntersection( it, inside(), outside(),
                                           time, quadInner, quadOuter,
@@ -171,7 +171,7 @@ namespace Dune {
     {
       if( diffusion ) 
       {
-        typedef DGFluxTupleToVectorConverter< ArgumentTupleVector, passUId, 0> ConverterType;
+        typedef DGFluxTupleToVectorConverter< ArgumentTupleVector, passUId > ConverterType;
         if( diffFlux_.hasLifting() ) 
         {
           const bool hasBoundaryValue = model_.hasBoundaryValue(it, time, quadInner.localPoint( 0 ));
