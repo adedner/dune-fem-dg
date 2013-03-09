@@ -679,6 +679,8 @@ namespace Dune {
                           DeoModType& dM ) = 0;
       virtual MatrixIF* clone() const = 0;
 
+      virtual ~MatrixIF () {}
+
       static const double detEps_;
     };
 
