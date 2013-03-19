@@ -88,7 +88,7 @@ struct StepperBase
 
   typedef typename BaseType :: TimeProviderType       TimeProviderType;
 
-  typedef AdaptationHandler< GridType, 
+  typedef AdaptationHandler< GridPartType, 
            typename DiscreteSpaceType::FunctionSpaceType >  AdaptationHandlerType;
 
   typedef RunFile< GridType >  RunFileType;

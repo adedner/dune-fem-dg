@@ -108,16 +108,16 @@ struct AdaptationParameters
 };
 
 // class for the organization of the adaptation prozess
-template <class GridImp, class ProblemFunctionSpace >
+template <class GridPartImp, class ProblemFunctionSpace >
 class AdaptationHandler
 {
-  typedef AdaptationHandler< GridImp, ProblemFunctionSpace > ThisType ;
+  typedef AdaptationHandler< GridPartImp, ProblemFunctionSpace > ThisType ;
 
 public:
   enum { COARSEN = -1, NONE = 0, REFINE = 1 };
 
-  typedef GridImp GridType ;
-  typedef Fem::DGAdaptiveLeafGridPart< GridType > GridPartType ;
+  typedef GridPartImp GridPartType ;
+  typedef typename GridPartType::GridType GridType;
 
   // useful enums and typedefs
   enum { dim = GridType :: dimension };
@@ -131,6 +131,7 @@ public:
 
   // discrete function type of adaptive functions
   typedef typename FunctionSpaceType :: RangeType           RangeType;
+  typedef typename GridPartType :: template Codim<0>::EntityType  EntityType;
   typedef typename GridType :: template Codim<0> :: Entity        GridEntityType; 
   typedef typename GridType :: template Codim<0> :: EntityPointer EntityPointerType; 
 
@@ -225,7 +226,7 @@ public:
 
 public:
   //! constructor
-  AdaptationHandler (GridType &grid, 
+  AdaptationHandler (GridPartType &gridPart, 
                      TimeProviderType &timeProvider,
                      const AdaptationParameters& param = AdaptationParameters() ) ;
 
@@ -331,8 +332,8 @@ protected:
   double volumeOfDomain () const;
 
   //! grid part, has grid and ind set 
+  GridPartType &gridPart_;
   GridType&  grid_;
-  GridPartType gridPart_;
 
   //! persistent container holding local indicators 
   IndicatorType indicator_;

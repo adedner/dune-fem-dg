@@ -8,13 +8,13 @@ namespace Dune
 {
 
 //! constructor
-template <class GridImp, class FunctionSpace>
-AdaptationHandler<GridImp, FunctionSpace> ::  
-AdaptationHandler ( GridType &grid, 
+template <class GridPartImp, class FunctionSpace>
+AdaptationHandler<GridPartImp, FunctionSpace> ::  
+AdaptationHandler ( GridPartType &gridPart, 
                     TimeProviderType &timeProvider,
                     const AdaptationParameters& param ) 
-  : grid_(grid)
-  , gridPart_(grid_)
+  : gridPart_( gridPart )
+  , grid_( gridPart.grid() )
   , indicator_( grid_, 0 ) // grid , codimension 
   , timeProvider_(timeProvider)
   , globalTolerance_ ( param.refinementTolerance() )
@@ -52,11 +52,11 @@ AdaptationHandler ( GridType &grid,
 }
 
 //! constructor
-template <class GridImp, class FunctionSpace>
-AdaptationHandler<GridImp, FunctionSpace> ::  
+template <class GridPartImp, class FunctionSpace>
+AdaptationHandler<GridPartImp, FunctionSpace> ::  
 AdaptationHandler ( const AdaptationHandler& other ) 
-  : grid_( other.grid_ )
-  , gridPart_( grid_ )
+  : gridPart_( other.gridPart_ )
+  , grid_( other.grid_ )
   , indicator_( other.indicator_ ) 
   , timeProvider_( other.timeProvider_ )
   , globalTolerance_ ( other.globalTolerance_ )
@@ -73,9 +73,9 @@ AdaptationHandler ( const AdaptationHandler& other )
 }
 
 //! clear indicator 
-template <class GridImp, class FunctionSpace>
+template <class GridPartImp, class FunctionSpace>
 double 
-AdaptationHandler<GridImp, FunctionSpace> ::  
+AdaptationHandler<GridPartImp, FunctionSpace> ::  
 volumeOfDomain() const
 {
   double volume = 0;
@@ -87,7 +87,7 @@ volumeOfDomain() const
        it != endit; ++it)
   {
     // entity 
-    const GridEntityType& entity = *it;
+    const EntityType& entity = *it;
 
     // sum up the volume 
     volume += entity.geometry().volume();
@@ -98,9 +98,9 @@ volumeOfDomain() const
 }
 
 //! clear indicator 
-template <class GridImp, class FunctionSpace>
+template <class GridPartImp, class FunctionSpace>
 void 
-AdaptationHandler<GridImp, FunctionSpace> ::  
+AdaptationHandler<GridPartImp, FunctionSpace> ::  
 clearIndicator()
 {
   indicator_.update();
@@ -108,9 +108,9 @@ clearIndicator()
 }
 
 //! add another adaptation handlers indicator container 
-template <class GridImp, class FunctionSpace>
-AdaptationHandler<GridImp, FunctionSpace>&   
-AdaptationHandler<GridImp, FunctionSpace> ::  
+template <class GridPartImp, class FunctionSpace>
+AdaptationHandler<GridPartImp, FunctionSpace>&   
+AdaptationHandler<GridPartImp, FunctionSpace> ::  
 operator += ( const ThisType& other ) 
 {
   // add all indicator entries 
@@ -130,10 +130,10 @@ operator += ( const ThisType& other )
 }
 
 //! initialize localIndicator with en 
-template <class GridImp, class FunctionSpace>
+template <class GridPartImp, class FunctionSpace>
 template <class Entity>
-typename AdaptationHandler<GridImp, FunctionSpace> ::LocalIndicatorType 
-AdaptationHandler<GridImp, FunctionSpace> ::  
+typename AdaptationHandler<GridPartImp, FunctionSpace> ::LocalIndicatorType 
+AdaptationHandler<GridPartImp, FunctionSpace> ::  
 localIndicator( const Entity& entity )
 {
   // convert the given entity to an entity of the grid 
@@ -144,9 +144,9 @@ localIndicator( const Entity& entity )
 
   
 //! add value to local indicator, use setEntity before 
-template <class GridImp, class FunctionSpace>
+template <class GridPartImp, class FunctionSpace>
 void 
-AdaptationHandler<GridImp, FunctionSpace> ::  
+AdaptationHandler<GridPartImp, FunctionSpace> ::  
 addToLocalIndicator( LocalIndicatorDataType& indicator, 
                      const FullRangeType& error, const double h ) const
 {
@@ -155,18 +155,18 @@ addToLocalIndicator( LocalIndicatorDataType& indicator,
   indicator += (factor * error.two_norm());  
 }
 
-template <class GridImp, class FunctionSpace>
+template <class GridPartImp, class FunctionSpace>
 void 
-AdaptationHandler<GridImp, FunctionSpace> ::  
+AdaptationHandler<GridPartImp, FunctionSpace> ::  
 addToLocalIndicator(const GridEntityType &en, const FullRangeType& error, const double h )
 {
   addToLocalIndicator( indicator_[ en ], error, h );
   return;
 }
 
-template <class GridImp, class FunctionSpace>
+template <class GridPartImp, class FunctionSpace>
 void 
-AdaptationHandler<GridImp, FunctionSpace> ::  
+AdaptationHandler<GridPartImp, FunctionSpace> ::  
 setLocalIndicator(const GridEntityType &en, const FullRangeType& error)
 {
   assert( singleThreadMode() );
@@ -174,18 +174,18 @@ setLocalIndicator(const GridEntityType &en, const FullRangeType& error)
   return;
 }
 
-template <class GridImp, class FunctionSpace>
+template <class GridPartImp, class FunctionSpace>
 double  
-AdaptationHandler<GridImp, FunctionSpace> ::  
+AdaptationHandler<GridPartImp, FunctionSpace> ::  
 getLocalIndicator(const GridEntityType &en) const
 {
   return indicator_[ en ].value();
 }
 
   //! calculate sum of local errors 
-template <class GridImp, class FunctionSpace>
+template <class GridPartImp, class FunctionSpace>
 double  
-AdaptationHandler<GridImp, FunctionSpace> ::  
+AdaptationHandler<GridPartImp, FunctionSpace> ::  
 getSumEstimator() const 
 {    
   assert( singleThreadMode() );
@@ -204,9 +204,9 @@ getSumEstimator() const
 }
 
   //! calculate max of local errors 
-template <class GridImp, class FunctionSpace>
+template <class GridPartImp, class FunctionSpace>
 double  
-AdaptationHandler<GridImp, FunctionSpace> ::  
+AdaptationHandler<GridPartImp, FunctionSpace> ::  
 getMaxEstimator() const 
 {    
   assert( singleThreadMode() );
@@ -231,36 +231,36 @@ getMaxEstimator() const
   return max;
 }
 
-template <class GridImp, class FunctionSpace>
+template <class GridPartImp, class FunctionSpace>
 int  
-AdaptationHandler<GridImp, FunctionSpace> ::  
+AdaptationHandler<GridPartImp, FunctionSpace> ::  
 localNumberOfElements () const 
 {
   assert( localNumElements_ > 0 );
   return localNumElements_;
 }
 
-template <class GridImp, class FunctionSpace>
-typename AdaptationHandler<GridImp, FunctionSpace>::UInt64Type  
-AdaptationHandler<GridImp, FunctionSpace> ::  
+template <class GridPartImp, class FunctionSpace>
+typename AdaptationHandler<GridPartImp, FunctionSpace>::UInt64Type  
+AdaptationHandler<GridPartImp, FunctionSpace> ::  
 globalNumberOfElements () const 
 {
   assert( globalNumElements_ > 0 );
   return globalNumElements_;
 }
 
-template <class GridImp, class FunctionSpace>
+template <class GridPartImp, class FunctionSpace>
 double  
-AdaptationHandler<GridImp, FunctionSpace> ::  
+AdaptationHandler<GridPartImp, FunctionSpace> ::  
 getLocalInTimeTolerance () const 
 {
   double dt = timeProvider_.deltaT();
   return (1. - initialTheta_) * globalTolerance_ * globalTolerance_* (dt / endTime_);
 }
 
-template <class GridImp, class FunctionSpace>
+template <class GridPartImp, class FunctionSpace>
 double  
-AdaptationHandler<GridImp, FunctionSpace> ::  
+AdaptationHandler<GridPartImp, FunctionSpace> ::  
 getInitialTolerance () const
 {
   assert( singleThreadMode() );
@@ -291,9 +291,9 @@ getInitialTolerance () const
   return localTol;
 }
 
-template <class GridImp, class FunctionSpace>
+template <class GridPartImp, class FunctionSpace>
 double  
-AdaptationHandler<GridImp, FunctionSpace> ::  
+AdaptationHandler<GridPartImp, FunctionSpace> ::  
 getLocalTolerance () const
 {
   assert( singleThreadMode() );
@@ -326,9 +326,9 @@ getLocalTolerance () const
 }
 
 // --markEntities
-template <class GridImp, class FunctionSpace>
+template <class GridPartImp, class FunctionSpace>
 void 
-AdaptationHandler<GridImp, FunctionSpace> ::  
+AdaptationHandler<GridPartImp, FunctionSpace> ::  
 markEntities ( const bool initialAdapt )
 {
   assert( singleThreadMode() );
@@ -345,10 +345,10 @@ markEntities ( const bool initialAdapt )
        it != endit; ++it)
   {
     // entity 
-    const GridEntityType& entity = *it;
+    const EntityType& entity = *it;
 
     // get local error indicator 
-    const double localIndicator = getLocalIndicator(entity);
+    const double localIndicator = getLocalIndicator( Fem :: gridEntity( entity ) );
     // get entity level 
     const int level = entity.level() ;
     
@@ -356,17 +356,17 @@ markEntities ( const bool initialAdapt )
     if( (localIndicator > refineTol) && (level < finestLevel_) )
     {
       // mark for refinement 
-      grid_.mark(REFINE, entity);
+      grid_.mark(REFINE, Fem :: gridEntity( entity ) );
     }
     else if ( (localIndicator < coarsenTol) && (level > coarsestLevel_) )
     {
       // mark for coarsening 
-      grid_.mark(COARSEN, entity);
+      grid_.mark(COARSEN, Fem :: gridEntity( entity ) );
     }
     else
     {
       // for for nothing 
-      grid_.mark(NONE, entity);
+      grid_.mark(NONE, Fem :: gridEntity( entity ) );
     }
   }
   return;
@@ -374,9 +374,9 @@ markEntities ( const bool initialAdapt )
 
 
 //- --adapt 
-template <class GridImp, class FunctionSpace>
+template <class GridPartImp, class FunctionSpace>
 template <class AdaptationManagerType>
-void AdaptationHandler<GridImp, FunctionSpace> ::  
+void AdaptationHandler<GridPartImp, FunctionSpace> ::  
 adapt( AdaptationManagerType& am, const bool initialAdapt )
 {
   assert( singleThreadMode() );
@@ -395,9 +395,9 @@ adapt( AdaptationManagerType& am, const bool initialAdapt )
 }
 
 //! clear indicator and caculate new number of elements 
-template <class GridImp, class FunctionSpace>
+template <class GridPartImp, class FunctionSpace>
 void 
-AdaptationHandler<GridImp, FunctionSpace> ::  
+AdaptationHandler<GridPartImp, FunctionSpace> ::  
 resetStatus() 
 {
   assert( singleThreadMode() );
@@ -417,9 +417,9 @@ resetStatus()
 }
 
   //! count number of overall leaf entities 
-template <class GridImp, class FunctionSpace>
-typename AdaptationHandler<GridImp, FunctionSpace>::UInt64Type  
-AdaptationHandler<GridImp, FunctionSpace> ::  
+template <class GridPartImp, class FunctionSpace>
+typename AdaptationHandler<GridPartImp, FunctionSpace>::UInt64Type  
+AdaptationHandler<GridPartImp, FunctionSpace> ::  
 countElements() const 
 {
   assert( singleThreadMode() );

@@ -47,7 +47,7 @@ namespace Dune {
     typedef Fem::FiniteVolumeSpace<FVFunctionSpaceType,GridPartType, 0, Fem::SimpleStorage> IndicatorSpaceType;
     typedef Fem::AdaptiveDiscreteFunction<IndicatorSpaceType> IndicatorType;
 
-    typedef AdaptationHandler< GridType, FunctionSpaceType >  AdaptationHandlerType ;
+    typedef AdaptationHandler< GridPartType, FunctionSpaceType >  AdaptationHandlerType ;
   };
 
 } // end namespace Dune 
