@@ -55,14 +55,13 @@ namespace Dune
     CDGDiscreteModelCaller ( ArgumentType &argument, DiscreteModelType &discreteModel )
     : BaseType( argument, discreteModel )
 #ifndef NDEBUG
-      , quadInnerId_( 0 )
-      , quadOuterId_( 0 )
-      , quadId_( 0 )
+      , quadInnerId_( -1 )
+      , quadOuterId_( -1 )
+      , quadId_( -1 )
 #endif
     {}
 
-    template <class QuadratureType>
-    void setEntity ( const EntityType &entity, const QuadratureType &quadrature )
+    void setEntity ( const EntityType &entity, const VolumeQuadratureType &quadrature )
     {
       BaseType::setEntity( entity, quadrature );
 
