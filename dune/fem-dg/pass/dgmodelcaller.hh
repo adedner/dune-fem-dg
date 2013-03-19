@@ -118,7 +118,7 @@ namespace Dune
       }
 
 #ifndef NDEBUG 
-      quadInnerId_ = quadInner.id();
+      quadInnerId_ = quadrature.id();
 #endif
 
       discreteModel().initializeBoundary( intersection, time(), quadrature, valuesInside_ );
