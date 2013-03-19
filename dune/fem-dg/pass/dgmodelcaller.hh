@@ -73,7 +73,7 @@ namespace Dune
       }
 
 #ifndef NDEBUG 
-      quadId_ = quad.id();
+      quadId_ = quadrature.id();
 #endif
     }
 
