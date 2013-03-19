@@ -61,8 +61,7 @@ namespace Dune
 #endif
     {}
 
-    template <class QuadratureType>
-    void setEntity ( const EntityType &entity, const QuadratureType &quadrature )
+    void setEntity ( const EntityType &entity, const VolumeQuadratureType &quadrature )
     {
       BaseType::setEntity( entity, quadrature );
 
