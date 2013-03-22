@@ -93,10 +93,11 @@ namespace LOOPSPACE {
 
     // use problem specific initialize method since some problems do different things
     // there, e.g. poisson 
-    Dune::GridPtr<GridType> gridptr = ProblemTraits :: initializeGrid( advFlux + diffFlux );
+    // return type of initializeGrid is Dune::GridPtr, use release such that memory of GridPtr is released 
+    GridType* gridptr = ProblemTraits :: initializeGrid( advFlux + diffFlux ).release();
 
     // get grid reference 
-    GridType & grid = *gridptr;
+    GridType& grid = *gridptr;
 
 #if defined NS_ELLIPTIC_OPERATOR 
     typedef EllipticAlgorithm<GridType, 
@@ -111,6 +112,7 @@ namespace LOOPSPACE {
     assert( stepper );
     compute( *stepper );
     delete stepper;
+    delete gridptr;
   } 
 
 } // end namespace LOOPSPACE
