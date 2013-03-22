@@ -245,14 +245,6 @@ public:
   //! add another AdaptationHandlers indicator 
   ThisType& operator += ( const ThisType& other );
 
-  //! initialize enIndicator with en 
-  template <class Entity> 
-  void setEntity(const Entity& en);
-  
-  //! initialize nbIndicator with en 
-  template <class Entity>
-  void setNeighbor(const Entity& en);
-  
   //! reset nbIndicator to null pointer 
   void resetNeighbor();
   
