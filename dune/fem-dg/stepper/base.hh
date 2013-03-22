@@ -68,7 +68,7 @@ Dune::GridPtr< HGridType > initialize( const std::string& problemDescription )
 #ifdef ALUGRID_CONSTRUCTION_WITH_STREAMS 
   // precision of out streams (here ALUGrid backup streams)
   const int precision = ParameterType :: getValue< int > ("fem.io.precision", 16);
-  ALUGridSpace :: ALUGridExternalParameters :: precision () = precision;
+  ALU3DSPACE ALUGridExternalParameters :: precision () = precision;
 #endif
 
   // grid pointer object 

@@ -5,8 +5,8 @@
 #include <dune/fem/gridpart/adaptiveleafgridpart.hh>
 
 // Dune-Fem includes
-#include <dune/fem/space/fvspace.hh>
-#include <dune/fem/space/dgspace.hh>
+#include <dune/fem/space/finitevolume.hh>
+#include <dune/fem/space/discontinuousgalerkin.hh>
 #include <dune/fem/pass/dgdiscretemodel.hh>
 #include <dune/fem/function/adaptivefunction.hh>
 #include <dune/fem/quadrature/cachingquadrature.hh>
@@ -29,9 +29,10 @@ namespace Dune {
     static const int dimDomain = Model :: Traits :: dimDomain;
 
     //typedef Fem::ElementQuadrature< GridPartType, 0 >                     VolumeQuadratureType;
+    //typedef ElementQuadrature< GridPartType, 1 >                     FaceQuadratureType;
+    
     typedef Fem::CachingQuadrature< GridPartType, 0 >                     VolumeQuadratureType;
     typedef Fem::CachingQuadrature< GridPartType, 1 >                     FaceQuadratureType;
-    //typedef ElementQuadrature< GridPartType, 1 >                     FaceQuadratureType;
 
     // Allow generalization to systems
     typedef Fem::FunctionSpace< ctype, double, dimDomain, dimRange >      FunctionSpaceType;
