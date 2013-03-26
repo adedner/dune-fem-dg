@@ -12,8 +12,8 @@
 #include <dune/fem/storage/vector.hh>
 #include <dune/fem/io/parameter.hh>
 
-#include "mhd_eqns.hh"
-#include "rotator.hh"
+#include <dune/fem-dg/operator/fluxes/mhd_eqns.hh>
+#include <dune/fem-dg/operator/fluxes/rotator.hh>
 
 // Dai-Woodward 
 template <class Model>
@@ -97,7 +97,7 @@ protected:
   const Model& model_;
   const typename MhdSolverType::Eosmode::meos_t eos;
   mutable MhdSolverType numFlux_;
-  Adi::FieldRotator<Model> rot_;
+  Adi::FieldRotator<DomainType, RangeType> rot_;
   //mutable MhdSolverType::Vec9 ulmhd_, urmhd_, retmhd_;
 };
 

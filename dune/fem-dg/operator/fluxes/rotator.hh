@@ -8,7 +8,7 @@
 
 namespace EulerFluxes {
 
-  template <class FunctionSpaceT>
+  template <class Domain, class Range>
   class FieldRotator 
   {
     template <int N> 
@@ -18,8 +18,8 @@ namespace EulerFluxes {
 
   public:
     //- Global typedefs
-    typedef typename FunctionSpaceT::DomainType NormalType;
-    typedef typename FunctionSpaceT::RangeType  ValueType;
+    typedef Domain NormalType;
+    typedef Range  ValueType;
     typedef typename ValueType :: field_type    FieldType;
 
     //! Constructor
@@ -72,11 +72,11 @@ namespace EulerFluxes {
     const static double eps_;
   };
 
-  template <class FunctionSpaceT>
-  const double FieldRotator<FunctionSpaceT>::eps_ = 1.0e-14;
+  template <class Domain, class Range>
+  const double FieldRotator<Domain, Range>::eps_ = 1.0e-14;
 
-  template <class FunctionSpaceT>
-  inline void FieldRotator<FunctionSpaceT>::
+  template <class Domain, class Range>
+  inline void FieldRotator<Domain, Range>::
   rotateForth(ValueType& res, 
               const NormalType& n,
               RotInt2Type<1>) const {
@@ -84,8 +84,8 @@ namespace EulerFluxes {
     res[idx_] = res[idx_] * n[0];
   }
 
-  template <class FunctionSpaceT>
-  inline void FieldRotator<FunctionSpaceT>::
+  template <class Domain, class Range>
+  inline void FieldRotator<Domain, Range>::
   rotateForth(ValueType& res, 
               const NormalType& n,
               RotInt2Type<2>) const {
@@ -95,8 +95,8 @@ namespace EulerFluxes {
     res[ idx_+1 ] = -n[1]*a[0] + n[0]*a[1];
   }
   
-  template <class FunctionSpaceT>
-  inline void FieldRotator<FunctionSpaceT>::
+  template <class Domain, class Range>
+  inline void FieldRotator<Domain, Range>::
   rotateForth(ValueType& res, 
               const NormalType& n,
               RotInt2Type<3>) const 
@@ -125,8 +125,8 @@ namespace EulerFluxes {
     }
   }
 
-  template <class FunctionSpaceT>
-  inline void FieldRotator<FunctionSpaceT>::
+  template <class Domain, class Range>
+  inline void FieldRotator<Domain, Range>::
   rotateBack(ValueType& res, 
 	           const NormalType& n,
 	           RotInt2Type<1>) const 
@@ -134,8 +134,8 @@ namespace EulerFluxes {
     res[idx_] = res[idx_] * n[0]; 
   }
 
-  template <class FunctionSpaceT>
-  inline void FieldRotator<FunctionSpaceT>::
+  template <class Domain, class Range>
+  inline void FieldRotator<Domain, Range>::
   rotateBack(ValueType& res, 
              const NormalType& n,
              RotInt2Type<2>) const 
@@ -145,8 +145,8 @@ namespace EulerFluxes {
     res[idx_+1] = n[1]*a[0] + n[0]*a[1];
   }
 
-  template <class FunctionSpaceT>
-  inline void FieldRotator<FunctionSpaceT>::
+  template <class Domain, class Range>
+  inline void FieldRotator<Domain, Range>::
   rotateBack(ValueType& res, 
              const NormalType& n,
              RotInt2Type<3>) const 

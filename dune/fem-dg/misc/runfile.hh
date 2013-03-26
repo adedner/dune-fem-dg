@@ -281,8 +281,8 @@ namespace Dune {
       times[ 2 ] = adaptTime ;
       times[ 3 ] = lbTime ;
       times[ 4 ] = timeStepTime ;
-      for(size_t i=5; i<limitSteps.size(); ++i)
-        times[ i ] = limitSteps[ i ];
+      for(size_t i=0; i<limitSteps.size(); ++i)
+        times[ i+5 ] = limitSteps[ i ];
 
       maxDofs_ = std::max( double(maxDofs), maxDofs_ );
 

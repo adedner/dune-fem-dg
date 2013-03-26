@@ -40,12 +40,11 @@ private:
   double min(const double p1, const double p2) {return (p1 <= p2) ? p1 : p2;}
 
   double p_1d(const VEC1D pu,double gamma) {
-    double lp,lrho,lrhoux,lrhouy,lrhouz,lBx,lBy,lBz,lrhoE;
+    double lp,lrho,lrhoux,lrhouy,lrhouz,lBy,lBz,lrhoE;
     lrho   = pu[0];
     lrhoux = pu[1];
     lrhouy = pu[2];
     lrhouz = pu[3];
-    lBx    = pu[4];
     lBy    = pu[5];
     lBz    = pu[6];
     lrhoE  = pu[7];
