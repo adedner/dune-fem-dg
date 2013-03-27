@@ -4,475 +4,452 @@
 #include "adaptation.hh"
 #include <dune/fem/misc/gridwidth.hh>
 
-namespace Dune 
+namespace Dune
 {
 
 //! constructor
-template <class GridImp, class FunctionSpace>
-AdaptationHandler<GridImp, FunctionSpace> ::  
-AdaptationHandler ( GridType &grid, 
-                    TimeProviderType &timeProvider,
-                    const AdaptationParameters& param ) 
-  : grid_(grid)
-  , gridPart_(grid_)
-  , indicator_( grid_, 0 ) // grid , codimension 
-  , timeProvider_(timeProvider)
-  , globalTolerance_ ( param.refinementTolerance() )
-  , coarsenTheta_( param.coarsenPercentage() )
-  // make intial error count as 2.5 percent of the total error
-  , initialTheta_( 0.025 )
-  , finestLevel_( param.finestLevel( DGFGridInfo<GridType>::refineStepsForHalf() ) )
-  , coarsestLevel_( param.coarsestLevel( DGFGridInfo<GridType>::refineStepsForHalf() ) )
-  , globalNumElements_ (0)
-  , localNumElements_(0)
-  , endTime_( param.endTime() )  
-  , maxLevelCounter_()
-  , verbose_( Fem :: Parameter :: verbose() && param.verbose() )
-{
-  const bool verboseOutput = Fem :: Parameter :: verbose() ;
-
-  resetStatus();
-  if( verboseOutput )
+  template< class GridImp, class FunctionSpace >
+  AdaptationHandler< GridImp, FunctionSpace >::
+  AdaptationHandler ( GridType &grid,
+                      TimeProviderType &timeProvider,
+                      const AdaptationParameters &param )
+    : grid_( grid )
+    , gridPart_( grid_ )
+    , indicator_( grid_, 0 ) // grid , codimension
+    , timeProvider_( timeProvider )
+    , globalTolerance_( param.refinementTolerance() )
+    , coarsenTheta_( param.coarsenPercentage() )
+    // make intial error count as 2.5 percent of the total error
+    , initialTheta_( 0.025 )
+    , finestLevel_( param.finestLevel( DGFGridInfo< GridType >::refineStepsForHalf() ) )
+    , coarsestLevel_( param.coarsestLevel( DGFGridInfo< GridType >::refineStepsForHalf() ) )
+    , globalNumElements_( 0 )
+    , localNumElements_( 0 )
+    , endTime_( param.endTime() )
+    , maxLevelCounter_()
+    , verbose_( Fem::Parameter::verbose() && param.verbose() )
   {
-    std::cout << "AdaptationHandler created! \n";
+    const bool verboseOutput = Fem::Parameter::verbose();
+
+    resetStatus();
+    if( verboseOutput )
+      std::cout << "AdaptationHandler created! \n";
+
+    /*
+       // calculate global min of grid width to scale tolerance
+       double gridWidth = GridWidth::calcGridWidth( gridPart_ );
+
+       // get global minimum of macro grid width
+       double macroGridWidth = grid_.comm().min( gridWidth );
+
+       // globalTolerance_ *= macroGridWidth;
+     */
+
+    // scale tolerance with domain volume
+    globalTolerance_ *= volumeOfDomain();
   }
-
-  /*
-  // calculate global min of grid width to scale tolerance  
-  double gridWidth = GridWidth::calcGridWidth( gridPart_ );
-  
-  // get global minimum of macro grid width 
-  double macroGridWidth = grid_.comm().min( gridWidth );
-
-  // globalTolerance_ *= macroGridWidth;
-  */
-
-  // scale tolerance with domain volume 
-  globalTolerance_ *= volumeOfDomain(); 
-}
 
 //! constructor
-template <class GridImp, class FunctionSpace>
-AdaptationHandler<GridImp, FunctionSpace> ::  
-AdaptationHandler ( const AdaptationHandler& other ) 
-  : grid_( other.grid_ )
-  , gridPart_( grid_ )
-  , indicator_( other.indicator_ ) 
-  , timeProvider_( other.timeProvider_ )
-  , globalTolerance_ ( other.globalTolerance_ )
-  , coarsenTheta_( other.coarsenTheta_ )
-  , initialTheta_( other.initialTheta_ )
-  , finestLevel_( other.finestLevel_ ) 
-  , coarsestLevel_( other.coarsestLevel_ )
-  , globalNumElements_ ( other.globalNumElements_ )
-  , localNumElements_( other.localNumElements_ )
-  , endTime_( other.endTime_ )  
-  , maxLevelCounter_( other.maxLevelCounter_ )
-  , verbose_( other.verbose_ )
-{
-}
+  template< class GridImp, class FunctionSpace >
+  AdaptationHandler< GridImp, FunctionSpace >::
+  AdaptationHandler ( const AdaptationHandler &other )
+    : grid_( other.grid_ )
+    , gridPart_( grid_ )
+    , indicator_( other.indicator_ )
+    , timeProvider_( other.timeProvider_ )
+    , globalTolerance_( other.globalTolerance_ )
+    , coarsenTheta_( other.coarsenTheta_ )
+    , initialTheta_( other.initialTheta_ )
+    , finestLevel_( other.finestLevel_ )
+    , coarsestLevel_( other.coarsestLevel_ )
+    , globalNumElements_( other.globalNumElements_ )
+    , localNumElements_( other.localNumElements_ )
+    , endTime_( other.endTime_ )
+    , maxLevelCounter_( other.maxLevelCounter_ )
+    , verbose_( other.verbose_ )
+  {}
 
-//! clear indicator 
-template <class GridImp, class FunctionSpace>
-double 
-AdaptationHandler<GridImp, FunctionSpace> ::  
-volumeOfDomain() const
-{
-  double volume = 0;
-  // type of iterator, i.e. leaf iterator 
-  typedef typename GridPartType :: template Codim< 0 > :: IteratorType IteratorType;
-  
-  const IteratorType endit = gridPart_.template end< 0 > ();
-  for (IteratorType it = gridPart_.template begin< 0 > (); 
-       it != endit; ++it)
+//! clear indicator
+  template< class GridImp, class FunctionSpace >
+  double
+  AdaptationHandler< GridImp, FunctionSpace >::
+  volumeOfDomain () const
   {
-    // entity 
-    const GridEntityType& entity = *it;
+    double volume = 0;
+    // type of iterator, i.e. leaf iterator
+    typedef typename GridPartType::template Codim< 0 >::IteratorType IteratorType;
 
-    // sum up the volume 
-    volume += entity.geometry().volume();
+    const IteratorType endit = gridPart_.template end< 0 >();
+    for( IteratorType it = gridPart_.template begin< 0 >();
+         it != endit; ++it )
+    {
+      // entity
+      const GridEntityType &entity = *it;
+
+      // sum up the volume
+      volume += entity.geometry().volume();
+    }
+
+    // return volume of computational domain
+    return grid_.comm().sum( volume );
   }
 
-  // return volume of computational domain 
-  return grid_.comm().sum( volume );
-}
-
-//! clear indicator 
-template <class GridImp, class FunctionSpace>
-void 
-AdaptationHandler<GridImp, FunctionSpace> ::  
-clearIndicator()
-{
-  indicator_.update();
-  indicator_.clear();
-}
-
-//! add another adaptation handlers indicator container 
-template <class GridImp, class FunctionSpace>
-AdaptationHandler<GridImp, FunctionSpace>&   
-AdaptationHandler<GridImp, FunctionSpace> ::  
-operator += ( const ThisType& other ) 
-{
-  // add all indicator entries 
+//! clear indicator
+  template< class GridImp, class FunctionSpace >
+  void
+  AdaptationHandler< GridImp, FunctionSpace >::
+  clearIndicator ()
   {
-    typedef typename IndicatorType :: Iterator       IteratorType ;
-    typedef typename IndicatorType :: ConstIterator  ConstIteratorType ;
+    indicator_.update();
+    indicator_.clear();
+  }
+
+//! add another adaptation handlers indicator container
+  template< class GridImp, class FunctionSpace >
+  AdaptationHandler< GridImp, FunctionSpace > &
+  AdaptationHandler< GridImp, FunctionSpace >::
+  operator+= ( const ThisType &other )
+  {
+    // add all indicator entries
+    {
+      typedef typename IndicatorType::Iterator IteratorType;
+      typedef typename IndicatorType::ConstIterator ConstIteratorType;
+      const IteratorType endit = indicator_.end();
+      IteratorType it = indicator_.begin();
+
+      ConstIteratorType oIt = other.indicator_.begin();
+      for( IteratorType it = indicator_.begin(); it != endit; ++it, ++oIt )
+        (*it) += (*oIt).value();
+    }
+    return *this;
+  }
+
+//! initialize localIndicator with en
+  template< class GridImp, class FunctionSpace >
+  template< class Entity >
+  typename AdaptationHandler< GridImp, FunctionSpace >::LocalIndicatorType
+  AdaptationHandler< GridImp, FunctionSpace >::
+  localIndicator ( const Entity &entity )
+  {
+    // convert the given entity to an entity of the grid
+    // for wrapped entities the cast to the host entity is necessary
+    const GridEntityType &gridEntity = Fem::gridEntity( entity );
+    return LocalIndicatorType( this, &indicator_[ gridEntity ] );
+  }
+
+
+//! add value to local indicator, use setEntity before
+  template< class GridImp, class FunctionSpace >
+  void
+  AdaptationHandler< GridImp, FunctionSpace >::
+  addToLocalIndicator ( LocalIndicatorDataType &indicator,
+                        const FullRangeType &error, const double h ) const
+  {
+    const double dt = timeProvider_.deltaT();
+    const double factor = ( h + dt  ) * dt;
+    indicator += (factor * error.two_norm());
+  }
+
+  template< class GridImp, class FunctionSpace >
+  void
+  AdaptationHandler< GridImp, FunctionSpace >::
+  addToLocalIndicator ( const GridEntityType &en, const FullRangeType &error, const double h )
+  {
+    addToLocalIndicator( indicator_[ en ], error, h );
+  }
+
+  template< class GridImp, class FunctionSpace >
+  void
+  AdaptationHandler< GridImp, FunctionSpace >::
+  setLocalIndicator ( const GridEntityType &en, const FullRangeType &error )
+  {
+    assert( singleThreadMode() );
+    indicator_[ en ] = error[ 0 ];
+  }
+
+  template< class GridImp, class FunctionSpace >
+  double
+  AdaptationHandler< GridImp, FunctionSpace >::
+  getLocalIndicator ( const GridEntityType &en ) const
+  {
+    return indicator_[ en ].value();
+  }
+
+  //! calculate sum of local errors
+  template< class GridImp, class FunctionSpace >
+  double
+  AdaptationHandler< GridImp, FunctionSpace >::
+  getSumEstimator () const
+  {
+    assert( singleThreadMode() );
+    double sum = 0.0;
+
+    typedef typename IndicatorType::ConstIterator IteratorType;
     const IteratorType endit = indicator_.end();
-    IteratorType it = indicator_.begin(); 
+    for( IteratorType it = indicator_.begin(); it != endit; ++it )
+      sum += (*it).value();
 
-    ConstIteratorType oIt = other.indicator_.begin();
-    for(IteratorType it = indicator_.begin(); it != endit; ++it, ++ oIt )
-    {
-      (*it) += (*oIt).value();
-    }
+    // global sum of estimator
+    sum = grid_.comm().sum( sum );
+    return sum;
   }
-  return *this;
-}
 
-//! initialize localIndicator with en 
-template <class GridImp, class FunctionSpace>
-template <class Entity>
-typename AdaptationHandler<GridImp, FunctionSpace> ::LocalIndicatorType 
-AdaptationHandler<GridImp, FunctionSpace> ::  
-localIndicator( const Entity& entity )
-{
-  // convert the given entity to an entity of the grid 
-  // for wrapped entities the cast to the host entity is necessary 
-  const GridEntityType& gridEntity = Fem :: gridEntity( entity );
-  return LocalIndicatorType( this, &indicator_[ gridEntity ] );
-}
-
-  
-//! add value to local indicator, use setEntity before 
-template <class GridImp, class FunctionSpace>
-void 
-AdaptationHandler<GridImp, FunctionSpace> ::  
-addToLocalIndicator( LocalIndicatorDataType& indicator, 
-                     const FullRangeType& error, const double h ) const
-{
-  const double dt = timeProvider_.deltaT();
-  const double factor = ( h + dt  ) * dt ;
-  indicator += (factor * error.two_norm());  
-}
-
-template <class GridImp, class FunctionSpace>
-void 
-AdaptationHandler<GridImp, FunctionSpace> ::  
-addToLocalIndicator(const GridEntityType &en, const FullRangeType& error, const double h )
-{
-  addToLocalIndicator( indicator_[ en ], error, h );
-  return;
-}
-
-template <class GridImp, class FunctionSpace>
-void 
-AdaptationHandler<GridImp, FunctionSpace> ::  
-setLocalIndicator(const GridEntityType &en, const FullRangeType& error)
-{
-  assert( singleThreadMode() );
-  indicator_[ en ] = error[ 0 ] ;
-  return;
-}
-
-template <class GridImp, class FunctionSpace>
-double  
-AdaptationHandler<GridImp, FunctionSpace> ::  
-getLocalIndicator(const GridEntityType &en) const
-{
-  return indicator_[ en ].value();
-}
-
-  //! calculate sum of local errors 
-template <class GridImp, class FunctionSpace>
-double  
-AdaptationHandler<GridImp, FunctionSpace> ::  
-getSumEstimator() const 
-{    
-  assert( singleThreadMode() );
-  double sum = 0.0;
-
-  typedef typename IndicatorType :: ConstIterator   IteratorType ;
-  const IteratorType endit = indicator_.end();
-  for(IteratorType it = indicator_.begin(); it != endit; ++it)
+  //! calculate max of local errors
+  template< class GridImp, class FunctionSpace >
+  double
+  AdaptationHandler< GridImp, FunctionSpace >::
+  getMaxEstimator () const
   {
-    sum += (*it).value();
-  }
+    assert( singleThreadMode() );
+    double max = 0.0;
 
-  // global sum of estimator 
-  sum = grid_.comm().sum( sum );
-  return sum;
-}
-
-  //! calculate max of local errors 
-template <class GridImp, class FunctionSpace>
-double  
-AdaptationHandler<GridImp, FunctionSpace> ::  
-getMaxEstimator() const 
-{    
-  assert( singleThreadMode() );
-  double max = 0.0;
-
-  {
-    typedef typename IndicatorType :: ConstIterator   IteratorType ;
-    const IteratorType endit = indicator_.end();
-    IteratorType it = indicator_.begin(); 
-
-    // initialzie with first entry 
-    if ( it != endit ) max = (*it).value();
-    
-    for( ; it != endit; ++it)
     {
-      max = std::max((*it).value(), max);
+      typedef typename IndicatorType::ConstIterator IteratorType;
+      const IteratorType endit = indicator_.end();
+      IteratorType it = indicator_.begin();
+
+      // initialzie with first entry
+      if( it != endit )
+        max = (*it).value();
+
+      for(; it != endit; ++it )
+        max = std::max((*it).value(), max );
     }
+
+    // global sum of estimator
+    max = grid_.comm().max( max );
+    return max;
   }
 
-  // global sum of estimator 
-  max = grid_.comm().max(max);
-  return max;
-}
-
-template <class GridImp, class FunctionSpace>
-int  
-AdaptationHandler<GridImp, FunctionSpace> ::  
-localNumberOfElements () const 
-{
-  assert( localNumElements_ > 0 );
-  return localNumElements_;
-}
-
-template <class GridImp, class FunctionSpace>
-typename AdaptationHandler<GridImp, FunctionSpace>::UInt64Type  
-AdaptationHandler<GridImp, FunctionSpace> ::  
-globalNumberOfElements () const 
-{
-  assert( globalNumElements_ > 0 );
-  return globalNumElements_;
-}
-
-template <class GridImp, class FunctionSpace>
-double  
-AdaptationHandler<GridImp, FunctionSpace> ::  
-getLocalInTimeTolerance () const 
-{
-  double dt = timeProvider_.deltaT();
-  return (1. - initialTheta_) * globalTolerance_ * globalTolerance_* (dt / endTime_);
-}
-
-template <class GridImp, class FunctionSpace>
-double  
-AdaptationHandler<GridImp, FunctionSpace> ::  
-getInitialTolerance () const
-{
-  assert( singleThreadMode() );
-  const double globalNumberElements = globalNumberOfElements();
-  const double dt = timeProvider_.deltaT();
-  const double localInTimeTol = initialTheta_ * globalTolerance_ * globalTolerance_* (dt / endTime_);
-  const double localTol = localInTimeTol / globalNumberElements ;
-  //std::cout << "Return intial tol " << localTol << std::endl;
-  if( verbose() )
+  template< class GridImp, class FunctionSpace >
+  int
+  AdaptationHandler< GridImp, FunctionSpace >::
+  localNumberOfElements () const
   {
-    // this requires global communication 
-    const double globalErr = getMaxEstimator(); 
-
-    std::cout << "Level counters: ";
-    for(size_t i=0; i<maxLevelCounter_.size(); ++i ) 
-    {
-      double percent = maxLevelCounter_[ i ]/ globalNumberElements ;
-      std::cout << "Level[ " << i << " ] = " << percent << "  ";
-    }
-    std::cout << std::endl;
-    std::cout << "   LocalEst_max = " <<  globalErr
-        << "   Tol_local = " << localTol 
-        << "   Tol = " << localInTimeTol 
-        << "   GlobalTol = " << globalTolerance_  
-        << "   Num El: " <<  globalNumberElements << "\n";
+    assert( localNumElements_ > 0 );
+    return localNumElements_;
   }
 
-  return localTol;
-}
-
-template <class GridImp, class FunctionSpace>
-double  
-AdaptationHandler<GridImp, FunctionSpace> ::  
-getLocalTolerance () const
-{
-  assert( singleThreadMode() );
-  const double localInTimeTol = getLocalInTimeTolerance ();
-  const double globalNumberElements = globalNumberOfElements();
-
-  // apply equi distribution strategy 
-  double localTol = localInTimeTol / globalNumberElements ;
-
-  if( verbose() )
+  template< class GridImp, class FunctionSpace >
+  typename AdaptationHandler< GridImp, FunctionSpace >::UInt64Type
+  AdaptationHandler< GridImp, FunctionSpace >::
+  globalNumberOfElements () const
   {
-    // this requires global communication 
-    const double globalErr = getMaxEstimator(); 
-
-    std::cout << "Level counters: ";
-    for(size_t i=0; i<maxLevelCounter_.size(); ++i ) 
-    {
-      double percent = maxLevelCounter_[ i ]/ globalNumberElements ;
-      std::cout << "Level[ " << i << " ] = " << percent << "  ";
-    }
-    std::cout << std::endl;
-    std::cout << "   LocalEst_max = " <<  globalErr
-        << "   Tol_local = " << localTol 
-        << "   Tol = " << localInTimeTol 
-        << "   GlobalTol = " << globalTolerance_  
-        << "   Num El: " <<  globalNumberElements << "\n";
+    assert( globalNumElements_ > 0 );
+    return globalNumElements_;
   }
 
-  return localTol;
-}
+  template< class GridImp, class FunctionSpace >
+  double
+  AdaptationHandler< GridImp, FunctionSpace >::
+  getLocalInTimeTolerance () const
+  {
+    double dt = timeProvider_.deltaT();
+    return (1. - initialTheta_) * globalTolerance_ * globalTolerance_* (dt / endTime_);
+  }
+
+  template< class GridImp, class FunctionSpace >
+  double
+  AdaptationHandler< GridImp, FunctionSpace >::
+  getInitialTolerance () const
+  {
+    assert( singleThreadMode() );
+    const double globalNumberElements = globalNumberOfElements();
+    const double dt = timeProvider_.deltaT();
+    const double localInTimeTol = initialTheta_ * globalTolerance_ * globalTolerance_* (dt / endTime_);
+    const double localTol = localInTimeTol / globalNumberElements;
+    //std::cout << "Return intial tol " << localTol << std::endl;
+    if( verbose() )
+    {
+      // this requires global communication
+      const double globalErr = getMaxEstimator();
+
+      std::cout << "Level counters: ";
+      for( size_t i = 0; i < maxLevelCounter_.size(); ++i )
+      {
+        double percent = maxLevelCounter_[ i ]/ globalNumberElements;
+        std::cout << "Level[ " << i << " ] = " << percent << "  ";
+      }
+      std::cout << std::endl;
+      std::cout << "   LocalEst_max = " <<  globalErr
+                << "   Tol_local = " << localTol
+                << "   Tol = " << localInTimeTol
+                << "   GlobalTol = " << globalTolerance_
+                << "   Num El: " <<  globalNumberElements << "\n";
+    }
+
+    return localTol;
+  }
+
+  template< class GridImp, class FunctionSpace >
+  double
+  AdaptationHandler< GridImp, FunctionSpace >::
+  getLocalTolerance () const
+  {
+    assert( singleThreadMode() );
+    const double localInTimeTol = getLocalInTimeTolerance();
+    const double globalNumberElements = globalNumberOfElements();
+
+    // apply equi distribution strategy
+    double localTol = localInTimeTol / globalNumberElements;
+
+    if( verbose() )
+    {
+      // this requires global communication
+      const double globalErr = getMaxEstimator();
+
+      std::cout << "Level counters: ";
+      for( size_t i = 0; i < maxLevelCounter_.size(); ++i )
+      {
+        double percent = maxLevelCounter_[ i ]/ globalNumberElements;
+        std::cout << "Level[ " << i << " ] = " << percent << "  ";
+      }
+      std::cout << std::endl;
+      std::cout << "   LocalEst_max = " <<  globalErr
+                << "   Tol_local = " << localTol
+                << "   Tol = " << localInTimeTol
+                << "   GlobalTol = " << globalTolerance_
+                << "   Num El: " <<  globalNumberElements << "\n";
+    }
+
+    return localTol;
+  }
 
 // --markEntities
-template <class GridImp, class FunctionSpace>
-void 
-AdaptationHandler<GridImp, FunctionSpace> ::  
-markEntities ( const bool initialAdapt )
-{
-  assert( singleThreadMode() );
-  // get local refine tolerance 
-  const double refineTol = ( initialAdapt ) ? getInitialTolerance() : getLocalTolerance();
-  // get local coarsen tolerance 
-  const double coarsenTol = refineTol * coarsenTheta_;
-
-  // type of iterator, i.e. leaf iterator 
-  typedef typename GridPartType :: template Codim< 0 > :: IteratorType IteratorType;
-  
-  const IteratorType endit = gridPart_.template end< 0 > ();
-  for (IteratorType it = gridPart_.template begin< 0 > (); 
-       it != endit; ++it)
+  template< class GridImp, class FunctionSpace >
+  void
+  AdaptationHandler< GridImp, FunctionSpace >::
+  markEntities ( const bool initialAdapt )
   {
-    // entity 
-    const GridEntityType& entity = *it;
+    assert( singleThreadMode() );
+    // get local refine tolerance
+    const double refineTol = ( initialAdapt ) ? getInitialTolerance() : getLocalTolerance();
+    // get local coarsen tolerance
+    const double coarsenTol = refineTol * coarsenTheta_;
 
-    // get local error indicator 
-    const double localIndicator = getLocalIndicator(entity);
-    // get entity level 
-    const int level = entity.level() ;
-    
-    // if indicator larger than localTol mark for refinement 
-    if( (localIndicator > refineTol) && (level < finestLevel_) )
+    // type of iterator, i.e. leaf iterator
+    typedef typename GridPartType::template Codim< 0 >::IteratorType IteratorType;
+
+    const IteratorType endit = gridPart_.template end< 0 >();
+    for( IteratorType it = gridPart_.template begin< 0 >();
+         it != endit; ++it )
     {
-      // mark for refinement 
-      grid_.mark(REFINE, entity);
-    }
-    else if ( (localIndicator < coarsenTol) && (level > coarsestLevel_) )
-    {
-      // mark for coarsening 
-      grid_.mark(COARSEN, entity);
-    }
-    else
-    {
-      // for for nothing 
-      grid_.mark(NONE, entity);
+      // entity
+      const GridEntityType &entity = *it;
+
+      // get local error indicator
+      const double localIndicator = getLocalIndicator( entity );
+      // get entity level
+      const int level = entity.level();
+
+      // if indicator larger than localTol mark for refinement
+      if( (localIndicator > refineTol) && (level < finestLevel_) )
+        // mark for refinement
+        grid_.mark( REFINE, entity );
+      else if( (localIndicator < coarsenTol) && (level > coarsestLevel_) )
+        // mark for coarsening
+        grid_.mark( COARSEN, entity );
+      else
+        // for for nothing
+        grid_.mark( NONE, entity );
     }
   }
-  return;
-}
 
 
-//- --adapt 
-template <class GridImp, class FunctionSpace>
-template <class AdaptationManagerType>
-void AdaptationHandler<GridImp, FunctionSpace> ::  
-adapt( AdaptationManagerType& am, const bool initialAdapt )
-{
-  assert( singleThreadMode() );
-  // if adaptation is enabled 
-  if( am.adaptive() )
+//- --adapt
+  template< class GridImp, class FunctionSpace >
+  template< class AdaptationManagerType >
+  void AdaptationHandler< GridImp, FunctionSpace >::
+  adapt ( AdaptationManagerType &am, const bool initialAdapt )
   {
-    // mark all entities depending on error
-    markEntities( initialAdapt ); 
-
-    // do adaptation 
-    am.adapt();
-
-    // clear indicator and calc number of elements 
-    resetStatus();
-  }
-}
-
-//! clear indicator and caculate new number of elements 
-template <class GridImp, class FunctionSpace>
-void 
-AdaptationHandler<GridImp, FunctionSpace> ::  
-resetStatus() 
-{
-  assert( singleThreadMode() );
-
-  // clear error indicator 
-  clearIndicator();
-
-  // re-calculate number of leaf elements 
-  // and number of level elements 
-  globalNumElements_ = countElements();
-
-  // output new number of elements 
-  if( verbose() )
-  {
-    std::cout << "   Adaptation: Num El = " << globalNumElements_ << "\n";
-  }
-}
-
-  //! count number of overall leaf entities 
-template <class GridImp, class FunctionSpace>
-typename AdaptationHandler<GridImp, FunctionSpace>::UInt64Type  
-AdaptationHandler<GridImp, FunctionSpace> ::  
-countElements() const 
-{
-  assert( singleThreadMode() );
-
-  if( maxLevelCounter_.size() > 0)
-    maxLevelCounter_.clear();
-
-  maxLevelCounter_.resize(finestLevel_ + 1);
-  for(size_t i=0; i<maxLevelCounter_.size(); ++i)
-    maxLevelCounter_[i] = 0;
-  
-  // count elements 
-  UInt64Type count = 0;
-  // type of iterator, i.e. leaf iterator 
-  typedef typename GridPartType :: template Codim< 0 > :: IteratorType IteratorType;
-  
-  const IteratorType endit = gridPart_.template end< 0 > ();
-  for (IteratorType it = gridPart_.template begin< 0 > (); 
-       it != endit; ++it)
-  {
-    ++count;
-    const unsigned int level = it->level();
-    assert( level < maxLevelCounter_.size() );
-    ++maxLevelCounter_[ level ];
-  }
-
-  // number of elements that I have
-  localNumElements_ = count;
-
-  {
-    const size_t commSize = maxLevelCounter_.size();
-    std::vector< UInt64Type > commBuff( commSize+1, UInt64Type(0) );
-    
-    for(size_t i=0; i<commSize; ++i)
+    assert( singleThreadMode() );
+    // if adaptation is enabled
+    if( am.adaptive() )
     {
-      commBuff[i] = maxLevelCounter_[i];
+      // mark all entities depending on error
+      markEntities( initialAdapt );
+
+      // do adaptation
+      am.adapt();
+
+      // clear indicator and calc number of elements
+      resetStatus();
     }
-    commBuff[ commSize ] = count;
-      
-    // do global sum of all entries 
-    grid_.comm().sum( &commBuff[ 0 ], commSize+1 );
-    
-    for(size_t i=0; i<commSize; ++i)
+  }
+
+//! clear indicator and caculate new number of elements
+  template< class GridImp, class FunctionSpace >
+  void
+  AdaptationHandler< GridImp, FunctionSpace >::
+  resetStatus ()
+  {
+    assert( singleThreadMode() );
+
+    // clear error indicator
+    clearIndicator();
+
+    // re-calculate number of leaf elements
+    // and number of level elements
+    globalNumElements_ = countElements();
+
+    // output new number of elements
+    if( verbose() )
+      std::cout << "   Adaptation: Num El = " << globalNumElements_ << "\n";
+  }
+
+  //! count number of overall leaf entities
+  template< class GridImp, class FunctionSpace >
+  typename AdaptationHandler< GridImp, FunctionSpace >::UInt64Type
+  AdaptationHandler< GridImp, FunctionSpace >::
+  countElements () const
+  {
+    assert( singleThreadMode() );
+
+    if( maxLevelCounter_.size() > 0 )
+      maxLevelCounter_.clear();
+
+    maxLevelCounter_.resize( finestLevel_ + 1 );
+    for( size_t i = 0; i < maxLevelCounter_.size(); ++i )
+      maxLevelCounter_[ i ] = 0;
+
+    // count elements
+    UInt64Type count = 0;
+    // type of iterator, i.e. leaf iterator
+    typedef typename GridPartType::template Codim< 0 >::IteratorType IteratorType;
+
+    const IteratorType endit = gridPart_.template end< 0 >();
+    for( IteratorType it = gridPart_.template begin< 0 >();
+         it != endit; ++it )
     {
-      maxLevelCounter_[i] = commBuff[i]; 
+      ++count;
+      const unsigned int level = it->level();
+      assert( level < maxLevelCounter_.size() );
+      ++maxLevelCounter_[ level ];
     }
 
-    count = commBuff[commSize];
+    // number of elements that I have
+    localNumElements_ = count;
+
+    {
+      const size_t commSize = maxLevelCounter_.size();
+      std::vector< UInt64Type > commBuff( commSize+1, UInt64Type( 0 ) );
+
+      for( size_t i = 0; i < commSize; ++i )
+        commBuff[ i ] = maxLevelCounter_[ i ];
+      commBuff[ commSize ] = count;
+
+      // do global sum of all entries
+      grid_.comm().sum( &commBuff[ 0 ], commSize+1 );
+
+      for( size_t i = 0; i < commSize; ++i )
+        maxLevelCounter_[ i ] = commBuff[ i ];
+
+      count = commBuff[ commSize ];
+    }
+
+    // return element count
+    return count;
   }
 
-  // return element count 
-  return count;
-}
-  
-} // end namespace Dune 
+} // end namespace Dune
 #endif
