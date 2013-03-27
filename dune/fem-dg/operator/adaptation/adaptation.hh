@@ -37,7 +37,7 @@ namespace Dune
       return Fem::Parameter::getEnum( "fem.adaptation.markingStrategy", names, 2 );
     }
 
-    AdaptationParameters()
+    AdaptationParameters ()
       : markStrategy_( getStrategy() )
     {}
 
@@ -139,7 +139,7 @@ namespace Dune
     // local indicator
     struct LocalIndicatorData
     {
-      LocalIndicatorData() : value_( 0.0 ) {}
+      LocalIndicatorData () : value_( 0.0 ) {}
       double value_;
       LocalIndicatorData &operator+= ( const double &value )
       {
@@ -167,15 +167,15 @@ namespace Dune
       LocalIndicatorDataType *localIndicator_;
 
     public:
-      LocalIndicator()
+      LocalIndicator ()
         : adaptation_( 0 ),
         localIndicator_( 0 ) {}
 
-      LocalIndicator( const ThisType *adaptation, LocalIndicatorDataType *indicator )
+      LocalIndicator ( const ThisType *adaptation, LocalIndicatorDataType *indicator )
         : adaptation_( adaptation ),
         localIndicator_( indicator ) {}
 
-      LocalIndicator( const LocalIndicator &other )
+      LocalIndicator ( const LocalIndicator &other )
         : adaptation_( other.adaptation_ ),
         localIndicator_( other.localIndicator_ )
       {}
