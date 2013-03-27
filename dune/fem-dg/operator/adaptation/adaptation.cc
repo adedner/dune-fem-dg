@@ -15,7 +15,7 @@ namespace Dune
                       const AdaptationParameters &param )
     : grid_( grid )
     , gridPart_( grid_ )
-    , indicator_( grid_, 0 ) // grid , codimension
+    , indicator_( grid_, 0, 0.0 )
     , timeProvider_( timeProvider )
     , globalTolerance_( param.refinementTolerance() )
     , coarsenTheta_( param.coarsenPercentage() )
@@ -100,8 +100,9 @@ namespace Dune
   AdaptationHandler< GridImp, FunctionSpace >::
   clearIndicator ()
   {
-    indicator_.update();
-    indicator_.clear();
+    indicator_.resize( 0.0 );
+    indicator_.shrinkToFit();
+    indicator_.fill( 0.0 );
   }
 
 //! add another adaptation handlers indicator container
@@ -119,7 +120,7 @@ namespace Dune
 
       ConstIteratorType oIt = other.indicator_.begin();
       for( IteratorType it = indicator_.begin(); it != endit; ++it, ++oIt )
-        (*it) += (*oIt).value();
+        (*it) += *oIt;
     }
     return *this;
   }
@@ -172,7 +173,7 @@ namespace Dune
   AdaptationHandler< GridImp, FunctionSpace >::
   getLocalIndicator ( const GridEntityType &en ) const
   {
-    return indicator_[ en ].value();
+    return indicator_[ en ];
   }
 
   //! calculate sum of local errors
@@ -187,7 +188,7 @@ namespace Dune
     typedef typename IndicatorType::ConstIterator IteratorType;
     const IteratorType endit = indicator_.end();
     for( IteratorType it = indicator_.begin(); it != endit; ++it )
-      sum += (*it).value();
+      sum += *it;
 
     // global sum of estimator
     sum = grid_.comm().sum( sum );
@@ -210,10 +211,10 @@ namespace Dune
 
       // initialzie with first entry
       if( it != endit )
-        max = (*it).value();
+        max = *it;
 
       for(; it != endit; ++it )
-        max = std::max((*it).value(), max );
+        max = std::max( *it, max );
     }
 
     // global sum of estimator

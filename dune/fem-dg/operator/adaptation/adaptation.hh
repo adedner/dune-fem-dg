@@ -11,6 +11,8 @@
 #ifndef DUNE_ADAPTATIONOBJECT_HH
 #define DUNE_ADAPTATIONOBJECT_HH
 
+#include <dune/common/nullptr.hh>
+
 // include restricion, prolongation and adaptation operator classes for discrete functions
 #include <dune/grid/utility/persistentcontainer.hh>
 
@@ -136,28 +138,8 @@ namespace Dune
 
     typedef typename GridPartType::IntersectionIteratorType IntersectionIteratorType;
 
-    // local indicator
-    struct LocalIndicatorData
-    {
-      LocalIndicatorData () : value_( 0.0 ) {}
-      double value_;
-      LocalIndicatorData &operator+= ( const double &value )
-      {
-        value_ += value;
-        return *this;
-      }
-
-      LocalIndicatorData &operator= ( const double &value )
-      {
-        value_ = value;
-        return *this;
-      }
-      double value () const { return value_; }
-    };
-
-
     // type of indicator stored by for each entity
-    typedef LocalIndicatorData LocalIndicatorDataType;
+    typedef double LocalIndicatorDataType;
 
     typedef PersistentContainer< GridType, LocalIndicatorDataType > IndicatorType;
 
@@ -168,16 +150,18 @@ namespace Dune
 
     public:
       LocalIndicator ()
-        : adaptation_( 0 ),
-        localIndicator_( 0 ) {}
+        : adaptation_( nullptr ),
+          localIndicator_( nullptr )
+      {}
 
       LocalIndicator ( const ThisType *adaptation, LocalIndicatorDataType *indicator )
         : adaptation_( adaptation ),
-        localIndicator_( indicator ) {}
+          localIndicator_( indicator )
+      {}
 
       LocalIndicator ( const LocalIndicator &other )
         : adaptation_( other.adaptation_ ),
-        localIndicator_( other.localIndicator_ )
+          localIndicator_( other.localIndicator_ )
       {}
 
       LocalIndicator &operator= ( const LocalIndicator &other )
@@ -191,7 +175,7 @@ namespace Dune
       //! reset local indicator
       void reset ()
       {
-        localIndicator_ = 0;
+        localIndicator_ = nullptr;
       }
 
       //! add to local indicator
