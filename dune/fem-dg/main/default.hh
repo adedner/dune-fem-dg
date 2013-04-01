@@ -13,11 +13,11 @@
 #include <dune/common/nullptr.hh>
 #include <dune/common/typetraits.hh>
 
-#include "caching.hh"
-
 // dune-geometry includes
 #include <dune/geometry/referenceelements.hh>
 #include <dune/geometry/type.hh>
+
+#include "caching.hh"
 
 // dune-fem includes
 #include <dune/fem/space/basisfunctionset/functor.hh>
@@ -98,27 +98,14 @@ namespace Dune
       typedef typename ScalarFunctionSpaceType::RangeType ScalarRangeType;
       typedef typename ScalarFunctionSpaceType::JacobianRangeType ScalarJacobianRangeType;
 
-      typedef typename ShapeFunctionSetType :: ScalarShapeFunctionSetType  ScalarShapeFunctionSetType;
-      //typedef typename ScalarShapeFunctionSetType :: RangeVectorType RangeVectorType ;
-      //typedef typename ScalarShapeFunctionSetType :: JacobianRangeVectorType JacobianRangeVectorType ;
-
       //! \brief type of reference element
       typedef Dune::ReferenceElement< ctype, GeometryType::coorddimension > ReferenceElementType;
 
       enum { dimDomain = FunctionSpaceType::dimDomain };
       enum { dimRange  = FunctionSpaceType::dimRange  };
 
-      // this typedef is only needed to extract the vector type of CachingShapeFunctionSet 
-      /*
-      typedef CachingShapeFunctionSet< ShapeFunctionSet > CachingShapeFunctionSetType ;
-
-      typedef typename CachingShapeFunctionSetType :: RangeVectorType          RangeVectorType;
-      typedef typename CachingShapeFunctionSetType :: JacobianRangeVectorType  JacobianRangeVectorType;
-      */ 
-
       typedef MutableArray< MutableArray< ScalarRangeType > >         RangeVectorType;
       typedef MutableArray< MutableArray< ScalarJacobianRangeType > > JacobianRangeVectorType;
-
 
       //! \brief constructor
       DefaultBasisFunctionSet ()
@@ -418,37 +405,15 @@ namespace Dune
 
       GeometryType geometry () const { return entity().geometry(); }
 
-      template< class SFS, class Quad, bool cacheable > 
-      struct FillVector 
-      {
-        static const RangeVectorType& 
-        ranges( const ThisType& basisFunctionSet, 
-                const Quad& quad,     
-                RangeVectorType& storage ) 
-        {
-          return storage;
-        }
-
-        static const JacobianRangeVectorType&
-        jacobians( const SFS& shapeFunctionSet, 
-                   const Quad& quad,
-                   JacobianRangeVectorType& storage ) 
-        {
-          return storage;
-        }
-      };
-
       template <class QuadratureType>
+      //const ScalarRangeType* rangeCache( const QuadratureType& quad ) const 
       const RangeVectorType& rangeCache( const QuadratureType& quad ) const 
       { 
-        //const bool cachable = Conversion< QuadratureType, CachingInterface >::exists ;
-        //const bool cachingStorage = Conversion<
-        //  QuadratureStorageRegistry::StorageInterface , ShapeFunctionSetType > :: exists ;
-        //std::cout << " cachable " << cachable << "  " << cachingStorage << std::endl;
         return shapeFunctionSet().scalarShapeFunctionSet().impl().rangeCache( quad );
       }
 
       template <class QuadratureType>
+      //const ScalarJacobianRangeType* jacobianCache( const QuadratureType& quad ) const 
       const JacobianRangeVectorType& jacobianCache( const QuadratureType& quad ) const 
       { 
         return shapeFunctionSet().scalarShapeFunctionSet().impl().jacobianCache( quad );
@@ -456,9 +421,6 @@ namespace Dune
     private:
       const EntityType *entity_;
       ShapeFunctionSetType shapeFunctionSet_;
-
-      mutable RangeVectorType     rangeCaches_; 
-      mutable JacobianRangeVectorType  jacobianCaches_;
     };
 
   } // namespace Fem
