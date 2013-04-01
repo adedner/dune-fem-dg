@@ -45,9 +45,6 @@ namespace Dune
       typedef std::vector< RangeVectorType >          ValueCacheVectorType ;
       typedef std::vector< JacobianRangeVectorType >  JacobianCacheVectorType;
 
-      //typedef std::vector< RangeType * >         ValueCacheVectorType;
-      //typedef std::vector< JacobianRangeType * > JacobianCacheVectorType;
-
       explicit CachingShapeFunctionSet ( const GeometryType &type,
                                          const ShapeFunctionSet &shapeFunctionSet = ShapeFunctionSet() )
       : type_( type ),
@@ -110,7 +107,6 @@ namespace Dune
                 const ValueCacheVectorType&,
                 RangeVectorType& storage ) 
         {
-          std::cout << "Returning local cache " << std::endl;
           // evaluate all basis functions and multiply with dof value 
           const unsigned int nop  = quad.nop(); 
           const unsigned int size = shapeFunctionSet.size();
@@ -122,7 +118,6 @@ namespace Dune
           for( unsigned int qp = 0 ; qp < nop; ++ qp ) 
           {
             const int cacheQp = quad.cachingPoint( qp );
-            std::cout << "Cache point " << cacheQp << " size = " << size << std::endl;
             storage[ cacheQp ].resize( size );
             AssignFunctor< RangeVector > funztor( storage[ cacheQp ] );
             shapeFunctionSet.evaluateEach( quad[ qp ], funztor );
@@ -258,11 +253,12 @@ namespace Dune
       //assert( (quadrature.id() < valueCaches_.size()) && valueCaches_[ quadrature.id() ] );
       //const RangeType *cache = valueCaches_[ quadrature.id() ];
 
-      const RangeVectorType& cache = valueCaches_[ quadrature.id() ];
+      typedef MutableArray<RangeType>         RangeVector;
+      const RangeVector& cache = valueCaches_[ quadrature.id() ][ quadrature.cachingPoint( pt ) ];
       const std::size_t numShapeFunctions = size();
       //std::size_t cptIdx = quadrature.cachingPoint( pt ) * numShapeFunctions;
       for( std::size_t i = 0; i < numShapeFunctions; ++i )
-        functor( i, cache[ pt ][ i ] );
+        functor( i, cache[ i ] );
     }
 
 
@@ -274,12 +270,14 @@ namespace Dune
     {
       //assert( (quadrature.id() < jacobianCaches_.size()) && jacobianCaches_[ quadrature.id() ] );
       //const JacobianRangeType *cache = jacobianCaches_[ quadrature.id() ];
-      const JacobianRangeVectorType& cache = jacobianCaches_[ quadrature.id() ];
+      //
+      typedef MutableArray<JacobianRangeType>       JacobianRangeVector;
+      const JacobianRangeVector& cache = jacobianCaches_[ quadrature.id() ][ quadrature.cachingPoint( pt ) ];
 
       const std::size_t numShapeFunctions = size();
       //std::size_t cptIdx = quadrature.cachingPoint( pt ) * numShapeFunctions;
       for( std::size_t i = 0; i < numShapeFunctions; ++i )
-        functor( i, cache[ pt ][ i ] );
+        functor( i, cache[ i ] );
     }
 
 
