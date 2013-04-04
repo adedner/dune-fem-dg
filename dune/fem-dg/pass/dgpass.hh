@@ -238,6 +238,9 @@ namespace Dune {
       applyLocal( entity );
     }
 
+    // the next block is to be removed, just disable for the moment
+    // to see whether somebody complains 
+#if 0
     template <class DofIter, class MatrixType>
     void addRowToMatrix( DofIter& dof, 
                          const int sizeBlocks,
@@ -395,6 +398,8 @@ namespace Dune {
       reallyCompute_ = true ;
       doFinalize( matrixRow );
     }
+#endif
+
 
     template <class Entity, class Intersection, class Quadrature>
     inline void flux(const DestinationType &u, 
@@ -493,6 +498,12 @@ namespace Dune {
 #else 
         return true ;
 #endif
+      }
+
+      //! returns true if the intersection with neighbor nb should be skipped
+      bool skipIntersection( const EntityType& nb ) const 
+      {
+        return false ; 
       }
     };
 
@@ -648,6 +659,9 @@ namespace Dune {
             // get neighbor 
             EntityPointerType outside = intersection.outside();
             const EntityType & nb = * outside;
+
+            // check whether we have to skip this intersection
+            if( nbChecker.skipIntersection( nb ) ) continue ;
             
             // true if neighbor values can be updated (needed for thread parallel version)
             const bool canUpdateNeighbor = nbChecker( entity, nb ) && dest_ ;
