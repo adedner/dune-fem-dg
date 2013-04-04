@@ -277,7 +277,7 @@ protected:
         {
           const int eid = getIndex( en );
           const int nid = getIndex( nb );
-#if HAVE_DUNE_ALUGRID || defined ALUGRID_3D_CONFORMING_REFINEMENT
+#if HAVE_DUNE_ALUGRID 
           // the newest ALU version only needs the edges to be inserted only once
           if( eid < nid ) 
 #endif
@@ -286,7 +286,11 @@ protected:
           // the ALUGrid partitioner expects it this way 
           {
             db.edgeUpdate ( 
-                typename LoadBalancerType :: GraphEdge ( eid, nid, weight )
+                typename LoadBalancerType :: GraphEdge ( eid, nid, weight, 
+#if HAVE_DUNE_ALUGRID 
+                            -1, -1 
+#endif
+                          )
                 );
           }
         }
@@ -297,7 +301,6 @@ protected:
 public:
   bool serialPartition(const bool useKway = true ) 
   {
-#ifdef ITERATORS_WITHOUT_MYALLOC
     if( pSize_ > 1 ) 
     {
       // if the graph size is smaller then the number of partitions 
@@ -310,14 +313,12 @@ public:
       }
       else 
       {
-#if HAVE_ALUGRID || HAVE_METIS 
+        // || HAVE_METIS 
         if( useKway ) 
           partition_ = db_.repartition( mpAccess_, DataBaseType :: METIS_PartGraphKway, pSize_ );
         else 
           partition_ = db_.repartition( mpAccess_, DataBaseType :: METIS_PartGraphRecursive, pSize_ );
-#elif HAVE_DUNE_ALUGRID
-        partition_ = db_.repartition( mpAccess_, DataBaseType :: ALUGRID_SpaceFillingCurveNoEdges, pSize_ );
-#endif
+//        partition_ = db_.repartition( mpAccess_, DataBaseType :: ALUGRID_SpaceFillingCurveNoEdges, pSize_ );
       }
 
       assert( int(partition_.size()) >= graphSize_ );
@@ -339,14 +340,12 @@ public:
       return partition_.size() > 0;
     }
     else 
-#endif 
     {
       partition_.resize( indexSet_.size( 0 ) );
       for( size_t i =0; i<partition_.size(); ++i )
         partition_[ i ] = 0;
       return false ;
     }
-
   }
 
   int getDestination( const int idx ) const 
