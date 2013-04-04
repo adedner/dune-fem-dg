@@ -52,6 +52,8 @@ namespace Dune {
       typedef typename FilterType :: ThreadArrayType ThreadArrayType;
       ThreadArrayType threadNum_;
 #endif
+      // if true, thread 0 does only communication and no computation
+      const bool communicationThread_; 
       const bool verbose_ ;
 
     public:  
@@ -63,6 +65,7 @@ namespace Dune {
         , sequence_( -1 )  
         , filteredGridParts_( Fem :: ThreadManager :: maxThreads() )
 #endif
+        , communicationThread_( Parameter::getValue<bool>("femdg.threads.communicationthread", false) ) 
         , verbose_( Parameter::verbose() && 
                     Parameter::getValue<bool>("femdg.threads.verbose", false ) )
       {
@@ -118,11 +121,12 @@ namespace Dune {
             abort();
           }
 
-          // get maximal number of threads possible 
-          const size_t maxThreads = ThreadManager :: maxThreads() ;
+          const int commThread = communicationThread_ ? 1 : 0;
+          // get number of partitions possible 
+          const size_t partitions = ThreadManager :: maxThreads() - commThread ;
 
           // create partitioner 
-          ThreadPartitioner< GridPartType > db( space_.gridPart() , maxThreads );
+          ThreadPartitioner< GridPartType > db( space_.gridPart() , partitions );
           // do partitioning 
           db.serialPartition( false );
 
@@ -140,13 +144,13 @@ namespace Dune {
 
           {
             // just for diagnostics 
-            std::vector< int > counter( maxThreads , 0 );
+            std::vector< int > counter( partitions+commThread , 0 );
 
             int numInteriorElems = 0;
             for(SpaceIteratorType it = space_.begin(); it != endit; ++it, ++numInteriorElems ) 
             {
               const EntityType& entity  = * it;
-              const int rank = db.getRank( entity );
+              const int rank = db.getRank( entity ) + commThread ;
               assert( rank >= 0 );
               //std::cout << "Got rank = " << rank << "\n";
               threadNum_[ indexSet_.index( entity ) ] = rank ; 
@@ -159,7 +163,8 @@ namespace Dune {
             if( verbose_ )
             {
               std::cout << "DomainDecomposedIterator: sequence = " << sequence_ << " size = " << numInteriorElems << std::endl;
-              for(size_t i = 0; i<maxThreads; ++i ) 
+              const size_t counterSize = counter.size();
+              for(size_t i = 0; i<counterSize; ++i ) 
                 std::cout << "DomainDecomposedIterator: T[" << i << "] = " << counter[ i ] << std::endl;
             }
               
@@ -183,7 +188,11 @@ namespace Dune {
       IteratorType begin() const 
       {
 #ifdef USE_SMP_PARALLEL
-        return filteredGridParts_[ ThreadManager :: thread() ]->template begin< 0 > ();
+        const int thread = ThreadManager :: thread() ;
+        if( communicationThread_ && thread == 0 ) 
+          return filteredGridParts_[ thread ]->template end< 0 > ();
+        else 
+          return filteredGridParts_[ thread ]->template begin< 0 > ();
 #else 
         return space_.begin();
 #endif
