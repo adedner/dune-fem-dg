@@ -103,8 +103,8 @@ void
 AdaptationHandler<GridImp, FunctionSpace> ::  
 clearIndicator()
 {
-  indicator_.update();
-  indicator_.clear();
+  indicator_.shrinkToFit();
+  indicator_.fill( LocalIndicatorData() );
 }
 
 //! add another adaptation handlers indicator container 
