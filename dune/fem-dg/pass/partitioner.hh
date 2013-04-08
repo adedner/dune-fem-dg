@@ -286,7 +286,11 @@ protected:
           // the ALUGrid partitioner expects it this way 
           {
             db.edgeUpdate ( 
-                typename LoadBalancerType :: GraphEdge ( eid, nid, weight )
+                typename LoadBalancerType :: GraphEdge ( eid, nid, weight
+#if HAVE_DUNE_ALUGRID 
+                  ,-1, -1
+#endif
+                  )
                 );
           }
         }
