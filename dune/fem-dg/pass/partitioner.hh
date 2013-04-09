@@ -277,7 +277,7 @@ protected:
         {
           const int eid = getIndex( en );
           const int nid = getIndex( nb );
-#if HAVE_DUNE_ALUGRID || defined ALUGRID_3D_CONFORMING_REFINEMENT
+#if HAVE_DUNE_ALUGRID 
           // the newest ALU version only needs the edges to be inserted only once
           if( eid < nid ) 
 #endif
@@ -301,7 +301,6 @@ protected:
 public:
   bool serialPartition(const bool useKway = true ) 
   {
-#ifdef ITERATORS_WITHOUT_MYALLOC
     if( pSize_ > 1 ) 
     {
       // if the graph size is smaller then the number of partitions 
@@ -343,7 +342,6 @@ public:
       return partition_.size() > 0;
     }
     else 
-#endif 
     {
       partition_.resize( indexSet_.size( 0 ) );
       for( size_t i =0; i<partition_.size(); ++i )
