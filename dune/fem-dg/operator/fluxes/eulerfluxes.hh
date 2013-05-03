@@ -267,25 +267,13 @@ namespace EULERNUMFLUX
 
     EulerFlux( const Model& model );
 
-    static std::string name () 
-    {
-      if( flux_type == LLF ) 
-        return std::string("LLF (Dennis)");
-      else if( flux_type == HLL )
-        return std::string("HLL (Dennis)");
-      else if( flux_type == HLLC )  
-        return std::string("HLLC (Dennis)");
-
-      return std::string("unknown");
-    }
-
     void flux(const double U[dim+2], double *f[dim]) const;
 
     double num_flux(const double Uj[dim+2], const double Un[dim+2], 
                     const double normal[dim], double gj[dim+2]) const;
 
     const Model& model_;
-    double _gamma;
+    const double _gamma;
 
   private:
     double num_flux_LLF(const double Uj[dim+2], const double Un[dim+2], 
@@ -937,10 +925,10 @@ numericalFlux( const Intersection& intersection,
   // for the sake of additional components we put...
   gLeft = 0.;
 
-  double ldt = numFlux_.num_flux((&(uLeft[0])),
-				 (&(uRight[0])),
-				 (&(normal[0])),
-				 (&(gLeft[0])));
+  double ldt = numFlux_.num_flux((&(uLeft [0])),
+                                 (&(uRight[0])),
+                                 (&(normal[0])),
+                                 (&(gLeft [0])));
 
   // scaling and conservation
   gLeft *= len;
