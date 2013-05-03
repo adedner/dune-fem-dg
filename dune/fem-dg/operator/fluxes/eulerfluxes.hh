@@ -267,6 +267,18 @@ namespace EULERNUMFLUX
 
     EulerFlux( const Model& model );
 
+    static std::string name () 
+    {
+      if( flux_type == LLF ) 
+        return std::string("LLF (Dennis)");
+      else if( flux_type == HLL )
+        return std::string("HLL (Dennis)");
+      else if( flux_type == HLLC )  
+        return std::string("HLLC (Dennis)");
+
+      return std::string("unknown");
+    }
+
     void flux(const double U[dim+2], double *f[dim]) const;
 
     double num_flux(const double Uj[dim+2], const double Un[dim+2], 
