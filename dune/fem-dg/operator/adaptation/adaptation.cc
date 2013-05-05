@@ -7,7 +7,7 @@
 namespace Dune
 {
 
-//! constructor
+  //! constructor
   template< class GridImp, class FunctionSpace >
   AdaptationHandler< GridImp, FunctionSpace >::
   AdaptationHandler ( GridType &grid,
@@ -49,7 +49,7 @@ namespace Dune
     globalTolerance_ *= volumeOfDomain();
   }
 
-//! constructor
+  //! constructor
   template< class GridImp, class FunctionSpace >
   AdaptationHandler< GridImp, FunctionSpace >::
   AdaptationHandler ( const AdaptationHandler &other )
@@ -69,7 +69,7 @@ namespace Dune
     , verbose_( other.verbose_ )
   {}
 
-//! clear indicator
+  //! clear indicator
   template< class GridImp, class FunctionSpace >
   double
   AdaptationHandler< GridImp, FunctionSpace >::
@@ -94,18 +94,27 @@ namespace Dune
     return grid_.comm().sum( volume );
   }
 
-//! clear indicator
+  //! clear indicator
   template< class GridImp, class FunctionSpace >
   void
   AdaptationHandler< GridImp, FunctionSpace >::
   clearIndicator ()
   {
-    indicator_.resize( 0.0 );
+    indicator_.shrinkToFit();
+    indicator_.fill( LocalIndicatorData() );
+  }
+
+  //! add another adaptation handlers indicator container 
+  template <class GridImp, class FunctionSpace>
+  AdaptationHandler<GridImp, FunctionSpace>&   
+  AdaptationHandler<GridImp, FunctionSpace> ::  
+  operator += ( const ThisType& other ) 
+  {
     indicator_.shrinkToFit();
     indicator_.fill( 0.0 );
   }
 
-//! add another adaptation handlers indicator container
+  //! add another adaptation handlers indicator container
   template< class GridImp, class FunctionSpace >
   AdaptationHandler< GridImp, FunctionSpace > &
   AdaptationHandler< GridImp, FunctionSpace >::
@@ -125,7 +134,7 @@ namespace Dune
     return *this;
   }
 
-//! initialize localIndicator with en
+  //! initialize localIndicator with en
   template< class GridImp, class FunctionSpace >
   template< class Entity >
   typename AdaptationHandler< GridImp, FunctionSpace >::LocalIndicatorType
@@ -139,7 +148,7 @@ namespace Dune
   }
 
 
-//! add value to local indicator, use setEntity before
+  //! add value to local indicator, use setEntity before
   template< class GridImp, class FunctionSpace >
   void
   AdaptationHandler< GridImp, FunctionSpace >::
@@ -316,7 +325,7 @@ namespace Dune
     return localTol;
   }
 
-// --markEntities
+  // --markEntities
   template< class GridImp, class FunctionSpace >
   void
   AdaptationHandler< GridImp, FunctionSpace >::
@@ -357,7 +366,7 @@ namespace Dune
   }
 
 
-//- --adapt
+  //- --adapt
   template< class GridImp, class FunctionSpace >
   template< class AdaptationManagerType >
   void AdaptationHandler< GridImp, FunctionSpace >::
@@ -378,7 +387,7 @@ namespace Dune
     }
   }
 
-//! clear indicator and caculate new number of elements
+  //! clear indicator and caculate new number of elements
   template< class GridImp, class FunctionSpace >
   void
   AdaptationHandler< GridImp, FunctionSpace >::

@@ -7,7 +7,7 @@
 #include <map>
 #include <vector>
 
-#include <dune/common/mpihelper.hh>
+#include <dune/common/parallel/mpihelper.hh>
 #if HAVE_ALUGRID 
 #include <dune/grid/alugrid/3d/alugrid.hh>
 #elif HAVE_DUNE_ALUGRID
@@ -285,13 +285,11 @@ protected:
           // insert edges twice, with both orientations 
           // the ALUGrid partitioner expects it this way 
           {
-            db.edgeUpdate ( 
-                typename LoadBalancerType :: GraphEdge ( eid, nid, weight, 
+            db.edgeUpdate ( typename LoadBalancerType :: GraphEdge ( eid, nid, weight
 #if HAVE_DUNE_ALUGRID 
-                            -1, -1 
+                  ,-1, -1
 #endif
-                          )
-                );
+                  ) );
           }
         }
       }

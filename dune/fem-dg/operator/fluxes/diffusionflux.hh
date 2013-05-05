@@ -1,15 +1,12 @@
 #ifndef DUNE_FEM_DG_DIFFUSIONFLUXES_HH
 #define DUNE_FEM_DG_DIFFUSIONFLUXES_HH
 
-// Dune-Fem includes
-#include <dune/fem/pass/dgdiscretemodel.hh>
-#include <dune/fem/pass/selection.hh>
-#include <dune/fem/solver/timeprovider.hh>
-#include <dune/fem/quadrature/cachingquadrature.hh>
+#include <dune/fem/function/localfunction/temporary.hh>
 #include <dune/fem/misc/boundaryidentifier.hh>
 #include <dune/fem/misc/fmatrixconverter.hh>
-#include <dune/fem/function/localfunction/temporary.hh>
-
+#include <dune/fem/pass/localdg/discretemodel.hh>
+#include <dune/fem/quadrature/cachingquadrature.hh>
+#include <dune/fem/solver/timeprovider.hh>
 
 namespace Dune {
 
@@ -17,7 +14,7 @@ namespace Dune {
   // DGFluxTupleToVectorConverter
   //-----------------------------
 
-  template <class ArgumentVectorTuple, int passUId, int localPassId >
+  template <class ArgumentVectorTuple, int passUId >
   class DGFluxTupleToVectorConverter
   {
     integral_constant< int, passUId > uVar;
@@ -26,8 +23,7 @@ namespace Dune {
     //DGFluxTupleToVectorConverter(const DGFluxTupleToVectorConverter&);
   public:
     typedef typename ArgumentVectorTuple :: value_type TupleType;
-    // note that localPassId is usually 0 (the local position in the tuple 
-    typedef typename Fem::ElementType<localPassId, TupleType> :: Type ValueType; 
+    typedef typename TupleType::template Value< integral_constant< int, passUId > >::Type ValueType;
 
     DGFluxTupleToVectorConverter(const ArgumentVectorTuple& vec) 
       : vec_( vec )

@@ -5,8 +5,7 @@
 #include <string>
 
 // dune-fem includes
-#include <dune/fem/pass/dgdiscretemodel.hh>
-#include <dune/fem/pass/selection.hh>
+#include <dune/fem/pass/localdg/discretemodel.hh>
 #include <dune/fem/solver/timeprovider.hh>
 #include <dune/fem/operator/common/spaceoperatorif.hh>
 

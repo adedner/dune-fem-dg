@@ -1,27 +1,22 @@
 #ifndef DUNE_FEM_DG_DGPASS_HH
 #define DUNE_FEM_DG_DGPASS_HH
 
-//- system includes 
-#include <dune/fem/misc/utility.hh>
-
-#include <dune/fem/pass/pass.hh>
-#include <dune/fem/pass/selection.hh>
-#include <dune/fem/pass/dgdiscretemodel.hh>
-
-#include <dune/fem-dg/pass/dgmodelcaller.hh>
-
-#include <dune/fem/solver/timeprovider.hh>
-
 #include <dune/common/fvector.hh>
-#include <dune/grid/common/grid.hh>
-#include <dune/fem/quadrature/caching/twistutility.hh>
 
+#include <dune/grid/common/grid.hh>
+
+#include <dune/fem/function/localfunction/temporary.hh>
+#include <dune/fem/gridpart/common/capabilities.hh>
+#include <dune/fem/operator/1order/localmassmatrix.hh>
+#include <dune/fem/pass/localdg/discretemodel.hh>
+#include <dune/fem/pass/common/pass.hh>
+#include <dune/fem/quadrature/caching/twistutility.hh>
+#include <dune/fem/quadrature/intersectionquadrature.hh>
+#include <dune/fem/solver/timeprovider.hh>
 #include <dune/fem/space/common/allgeomtypes.hh> 
 #include <dune/fem/space/common/arrays.hh> 
-#include <dune/fem/function/localfunction/temporary.hh>
-#include <dune/fem/operator/1order/localmassmatrix.hh>
 
-#include <dune/fem/quadrature/intersectionquadrature.hh>
+#include <dune/fem-dg/pass/dgmodelcaller.hh>
 
 namespace Dune {
 /*! @addtogroup PassHyp
@@ -53,6 +48,7 @@ namespace Dune {
     //- Typedefs and enums
     //! Base class
     typedef Fem::LocalPass< DiscreteModelImp , PreviousPassImp , passIdImp > BaseType;
+    typedef typename BaseType::PassIds PassIds;
 
     //! Repetition of template arguments
     typedef DiscreteModelImp DiscreteModelType;
@@ -90,12 +86,8 @@ namespace Dune {
 
     // Various other types
     typedef typename DestinationType::LocalFunctionType LocalFunctionType;
-    typedef typename DiscreteModelType::SelectorType SelectorType;
-    typedef Fem::CombinedSelector< ThisType , SelectorType > CombinedSelectorType;
-    typedef CDGDiscreteModelCaller< DiscreteModelType 
-                                 , ArgumentType 
-                                 , CombinedSelectorType
-                               > DiscreteModelCallerType;
+
+    typedef CDGDiscreteModelCaller< DiscreteModelType, ArgumentType, PassIds > DiscreteModelCallerType;
 
     typedef typename DestinationType :: DofBlockPtrType DofBlockPtrType;
 
@@ -125,7 +117,7 @@ namespace Dune {
                   const int faceQuadOrd = -1,
                   const bool notThreadParallel = true ) 
       : BaseType(pass, spc),
-        caller_(discreteModel),
+        caller_( 0 ),
         discreteModel_(discreteModel),
         arg_(0),
         dest_(0),
@@ -415,8 +407,9 @@ namespace Dune {
       typename PreviousPassType::NextArgumentType prevArg=this->previousPass_.localArgument();
       const typename BaseType::TotalArgumentType totalArg(&u, prevArg);
       arg_ = const_cast<ArgumentType*>(&totalArg);
-      caller_.setArgument(*arg_);
-      caller_.setTime( this->time() );
+
+      caller_ = new DiscreteModelCallerType( *arg_, discreteModel_ );
+      caller_->setTime( this->time() );
 
       caller_.setEntity( entity );
       caller_.initializeIntersection( nb, intersection, faceQuadInner, faceQuadOuter );
@@ -426,7 +419,9 @@ namespace Dune {
       caller_.numericalFlux(intersection, faceQuadInner, faceQuadOuter, l, 
                             fluxEn, fluxNb, diffFluxEn, diffFluxNb);
 
-      caller_.finalize();
+      if( caller_ )
+        delete caller_;
+      caller_ = 0;
       arg_  = 0;
     }
 
@@ -446,7 +441,8 @@ namespace Dune {
       }
 
       // set arguments to caller 
-      caller_.setArgument(*arg_);
+      caller_ = new DiscreteModelCallerType( *arg_, discreteModel_ );
+      caller_->setTime( this->time() );
 
       // resize indicator function 
       visited_.resize( indexSet_.size(0) );
@@ -456,9 +452,6 @@ namespace Dune {
 
       // time initialisation to max value 
       dtMin_ = std::numeric_limits<double>::max();
-
-      // time is member of pass 
-      caller_.setTime( this->time() );
     }
 
     //! Some timestep size management.
@@ -471,7 +464,10 @@ namespace Dune {
       }
 
       // call finalize 
-      caller_.finalize();
+      if( caller_ )
+        delete caller_;
+      caller_ = 0;
+
       arg_  = 0;
       dest_ = 0;
     }
@@ -543,7 +539,7 @@ namespace Dune {
         LocalFunctionType function = dest_->localFunction(en);
 
         // apply local inverse mass matrix 
-        localMassMatrix_.applyInverse( caller_, en, function );
+        localMassMatrix_.applyInverse( caller(), en, function );
       }
     }
 
@@ -606,7 +602,7 @@ namespace Dune {
       {
         assert( volumeQuadratureOrder( entity ) >=0 );
         VolumeQuadratureType volQuad(entity, volumeQuadratureOrder( entity ) );
-        caller_.setEntity(entity, volQuad);
+        caller().setEntity(entity, volQuad);
 
         // if only flux, evaluate only flux 
         if ( discreteModel_.hasFlux() && ! discreteModel_.hasSource() ) 
@@ -621,7 +617,7 @@ namespace Dune {
       }
       else if( alsoSetEntity )
       {
-        caller_.setEntity( entity );
+        caller().setEntity( entity );
       }
     }
 
@@ -637,7 +633,7 @@ namespace Dune {
         if( setEntity ) 
         {
           // set entity for caller 
-          caller_.setEntity( entity );
+          caller().setEntity( entity );
         }
 
         /////////////////////////////
@@ -700,7 +696,7 @@ namespace Dune {
                                              FaceQuadratureType::INSIDE);
 
             // initialize intersection 
-            caller_.initializeBoundary( intersection, faceQuadInner );
+            caller().initializeBoundary( intersection, faceQuadInner );
 
             const size_t faceQuadInner_nop = faceQuadInner.nop();
 
@@ -721,7 +717,7 @@ namespace Dune {
 #endif
                 
               // eval boundary Flux  
-              wspeedS += caller_.boundaryFlux(intersection, 
+              wspeedS += caller().boundaryFlux(intersection, 
                                               faceQuadInner, 
                                               l, 
                                               fluxEn,
@@ -795,7 +791,7 @@ namespace Dune {
 
         // apply local inverse mass matrix 
         if (DiscreteModelImp::ApplyInverseMassOperator)
-          localMassMatrix_.applyInverse( caller_, entity, function );
+          localMassMatrix_.applyInverse( caller(), entity, function );
       }
     }
 
@@ -821,7 +817,7 @@ namespace Dune {
         flux = 0;
 #endif
         // evaluate analytical flux and source 
-        caller_.analyticalFlux(entity, volQuad, l, flux );
+        caller().analyticalFlux(entity, volQuad, l, flux );
         
         const double intel = geo.integrationElement(volQuad.point(l))
                            * volQuad.weight(l);
@@ -866,7 +862,7 @@ namespace Dune {
         
         // evaluate analytical flux and source 
         const double dtEst =
-          caller_.analyticalFluxAndSource(entity, volQuad, l, flux, source );
+          caller().analyticalFluxAndSource(entity, volQuad, l, flux, source );
         
         const double intel = geo.integrationElement(volQuad.point(l))
                            * volQuad.weight(l);
@@ -916,7 +912,7 @@ namespace Dune {
       const double nbVol = nbGeo.volume(); 
       
       // set neighbor and initialize intersection 
-      caller_.initializeIntersection( nb, intersection, faceQuadInner, faceQuadOuter );
+      caller().initializeIntersection( nb, intersection, faceQuadInner, faceQuadOuter );
 
       const size_t faceQuadInner_nop = faceQuadInner.nop();
 
@@ -947,7 +943,7 @@ namespace Dune {
 
         // calculate num flux for multiplication with the basis
         // wspeedS = fastest wave speed
-        wspeedS += caller_.numericalFlux(intersection, 
+        wspeedS += caller().numericalFlux(intersection, 
                                          faceQuadInner, 
                                          faceQuadOuter,
                                          l, 
@@ -1024,8 +1020,14 @@ namespace Dune {
     }
 
   protected:
-    mutable DiscreteModelCallerType caller_;
-    const DiscreteModelType& discreteModel_; 
+    DiscreteModelCallerType &caller () const
+    {
+      assert( caller_ );
+      return *caller_;
+    }
+
+    mutable DiscreteModelCallerType *caller_;
+    DiscreteModelType& discreteModel_; 
     
     mutable ArgumentType* arg_;
     mutable DestinationType* dest_;

@@ -2,7 +2,7 @@
 #define DUNE_FEM_DG_FLUXDISCRETEMODEL_HH
 
 // Dune-Fem includes
-#include <dune/fem/pass/dgdiscretemodel.hh>
+#include <dune/fem/pass/localdg/discretemodel.hh>
 #include <dune/fem/quadrature/cachingquadrature.hh>
 #include <dune/fem/misc/boundaryidentifier.hh>
 #include <dune/fem/misc/fmatrixconverter.hh>
@@ -188,6 +188,19 @@ namespace Dune {
     }
 
     /**
+     * @brief method required by LocalDGPass
+     */
+    template <class ArgumentTuple, class JacobianTuple>    
+    void analyticalFlux(const EntityType& en,
+                        const double time, const DomainType& x,
+                        const ArgumentTuple& u, 
+                        const JacobianTuple& jac,
+                        JacobianRangeType& f)
+    {
+      model_.jacobian(en, time, x, u[ uVar ], f);
+    }
+
+    /**
      * @brief same as numericalFlux() but for the boundary
      */
     template <class QuadratureImp, 
@@ -199,42 +212,43 @@ namespace Dune {
                         const ArgumentTuple& uLeft,
                         const JacobianTuple& jacLeft,
                         RangeType& gLeft,
-                        JacobianRangeType& gDiffLeft ) const   /*@LST0E@*/
+                        JacobianRangeType& gDiffLeft ) const
+    {
+      return boundaryFluxImpl( it, time, faceQuadInner, quadPoint, 
+                               uLeft[ uVar ], gLeft, gDiffLeft );
+    }
+
+  protected:  
+    template <class QuadratureImp, 
+              class UType>
+    double boundaryFluxImpl(const Intersection& it,
+                        double time, 
+                        const QuadratureImp& faceQuadInner,
+                        const int quadPoint,
+                        const UType& uLeft, 
+                        RangeType& gLeft,
+                        JacobianRangeType& gDiffLeft ) const
     {
       const FaceDomainType& x = faceQuadInner.localPoint( quadPoint );
 
-      typedef typename ArgumentTuple::template Get<passUId>::Type UType;
       UType uRight;
 
       if( model_.hasBoundaryValue(it,time,x) )
       {
-        model_.boundaryValue(it, time, x, uLeft[ uVar ], uRight);
+        model_.boundaryValue(it, time, x, uLeft, uRight);
       }
       else 
       {
-        uRight = uLeft[ uVar ];
+        uRight = uLeft;
       }
 
       return gradientFlux_.gradientBoundaryFlux(it, inside(),
                              time, faceQuadInner, quadPoint,
-                             uLeft[ uVar ],
+                             uLeft,
                              uRight, 
                              gLeft,
                              gDiffLeft );
     }
-
-    /**
-     * @brief method required by LocalDGPass
-     */
-    template <class ArgumentTuple, class JacobianTuple>    /*@LST1S@*/
-    void analyticalFlux(const EntityType& en,
-                        const double time, const DomainType& x,
-                        const ArgumentTuple& u, 
-                        const JacobianTuple& jac,
-                        JacobianRangeType& f)
-    {
-      model_.jacobian(en, time, x, u[ uVar ], f);
-    }                                /*@LST1E@*/
 
   private:
     const Model& model_;
@@ -283,7 +297,7 @@ namespace Dune {
   public:
     typedef AdvectionDiffusionLDGTraits
       < Model, NumFlux, polOrd, passUId, passGradId, 
-          advectionPartExists, diffusionPartExists >  Traits; /*@LST0E@*/
+          advectionPartExists, diffusionPartExists >  Traits;
 
     typedef AdvectionModel< Model, NumFlux, polOrd, 
                             passUId, passGradId, advectionPartExists>    BaseType;
@@ -348,9 +362,9 @@ namespace Dune {
     bool hasSource() const
     {                 
       return ( model_.hasNonStiffSource() || model_.hasStiffSource() );
-    } /*@\label{dm:hasSource}@*/
+    } 
 
-    bool hasFlux() const { return advection || diffusion; };       /*@LST0S@*/
+    bool hasFlux() const { return advection || diffusion; }; 
 
     /**
      * @brief analytical flux function$
@@ -422,7 +436,7 @@ namespace Dune {
      */
     template< class QuadratureImp,
               class ArgumentTuple, 
-              class JacobianTuple >          /*@LST0S@*/
+              class JacobianTuple >
     double numericalFlux(const Intersection& it,
                          const double time,
                          const QuadratureImp& faceQuadInner,
@@ -484,7 +498,7 @@ namespace Dune {
                         const ArgumentTuple& uLeft,
                         const JacobianTuple& jacLeft,
                         RangeType& gLeft,
-                        JacobianRangeType& gDiffLeft ) const   /*@LST0E@*/
+                        JacobianRangeType& gDiffLeft ) const
     {
       // advection
 
@@ -527,7 +541,7 @@ namespace Dune {
 
       return std::max( wave, diffTimeStep );
     }
-                                                  /*@LST0S@*/
+
     /**
      * @brief analytical flux function$
      */
@@ -557,7 +571,7 @@ namespace Dune {
     DiffusionFluxType& diffFlux_;
     const double penalty_;
     const double cflDiffinv_;
-  };                                              /*@LST0E@*/
+  };
 
 }
 #endif

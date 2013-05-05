@@ -1,30 +1,26 @@
 #ifndef DUNE_LIMITERPASS_HH
 #define DUNE_LIMITERPASS_HH
 
-//- system includes 
 #include <vector>
 
-//- Dune includes 
 #include <dune/common/fvector.hh>
 #include <dune/common/timer.hh>
-#include <dune/fem/misc/utility.hh>
 
 #include <dune/grid/common/grid.hh>
 #include <dune/grid/io/file/dgfparser/entitykey.hh>
 
-#include <dune/fem/space/common/adaptmanager.hh>
-#include <dune/fem/space/discontinuousgalerkin.hh>
-#include <dune/fem/space/combinedspace.hh>
-#include <dune/fem/pass/dgpass.hh>
-#include <dune/fem-dg/pass/dgmodelcaller.hh>
-#include <dune/fem/pass/dgdiscretemodel.hh>
-#include <dune/fem/operator/1order/localmassmatrix.hh>
-
-// the lagrange point sets 
-#include <dune/fem/space/lagrange/lagrangepoints.hh>
-#include <dune/fem/space/common/basesetlocalkeystorage.hh>
-
 #include <dune/fem/io/parameter.hh>
+#include <dune/fem/operator/1order/localmassmatrix.hh>
+#include <dune/fem/common/typeindexedtuple.hh>
+#include <dune/fem/pass/localdg/discretemodel.hh>
+#include <dune/fem/pass/localdg.hh>
+#include <dune/fem/space/combinedspace.hh>
+#include <dune/fem/space/common/adaptmanager.hh>
+#include <dune/fem/space/common/basesetlocalkeystorage.hh>
+#include <dune/fem/space/discontinuousgalerkin.hh>
+#include <dune/fem/space/lagrange/lagrangepoints.hh>
+
+#include <dune/fem-dg/pass/dgmodelcaller.hh>
 
 //*************************************************************
 namespace Dune {  
@@ -151,15 +147,24 @@ namespace Dune {
     }
   };
 
-  template <class DiscreteModelImp, class ArgumentImp, class SelectorImp>
+  template <class DiscreteModel, class Argument, class PassIds >
   class LimiterDiscreteModelCaller 
-    : public CDGDiscreteModelCaller< DiscreteModelImp, ArgumentImp, SelectorImp > 
+  : public CDGDiscreteModelCaller< DiscreteModel, Argument, PassIds > 
   {
-    typedef CDGDiscreteModelCaller< DiscreteModelImp, ArgumentImp, SelectorImp> BaseType ;
+    typedef CDGDiscreteModelCaller< DiscreteModel, Argument, PassIds > BaseType;
 
   public:
-    LimiterDiscreteModelCaller( DiscreteModelImp& problem)
-      : BaseType( problem ) 
+    typedef typename BaseType::ArgumentType ArgumentType;
+    typedef typename BaseType::DiscreteModelType DiscreteModelType;
+
+    typedef typename BaseType::IntersectionType IntersectionType;
+
+    typedef typename BaseType::RangeTupleType RangeTupleType;
+
+    using BaseType::time;
+
+    LimiterDiscreteModelCaller( ArgumentType &argument, DiscreteModelType &discreteModel )
+    : BaseType( argument, discreteModel ) 
 #ifndef NDEBUG 
       , quadId_(size_t(-1)) 
       , quadPoint_(-1)
@@ -167,50 +172,50 @@ namespace Dune {
     {}
   
     // check whether we have inflow or outflow direction 
-    template< class Intersection, class QuadratureType >
-    bool checkPhysical( const Intersection& intersection,
-                        QuadratureType& faceQuad, 
-                        const  int quadPoint) 
+    template< class QuadratureType >
+    bool checkPhysical( const IntersectionType &intersection,
+                        QuadratureType &quadrature,
+                        const int qp ) 
     {
 #ifndef NDEBUG 
       // store quadature info
-      quadId_    = faceQuad.id();
-      quadPoint_ = quadPoint;
+      quadId_    = quadrature.id();
+      quadPoint_ = qp;
 #endif
       // evaluate data 
-      BaseType :: evaluateQuad( faceQuad, quadPoint,
-                                data_->localFunctionsSelf(), valuesEn_ );
+      localFunctionsInside_.evaluate( quadrature[ qp ], ranges_ );
+      // BaseType :: evaluateQuad( quadrature, qp, localFunctionsInside_, values_ );
 
       // call problem checkDirection 
-      return problem_.checkPhysical( *(intersection.inside()),
-                                     intersection.inside()->geometry().local( intersection.geometry().global( faceQuad.localPoint( quadPoint ) ) ), valuesEn_ ); 
+      typename IntersectionType::EntityPointer inside = intersection.inside();
+      const typename BaseType::EntityType &entity = *inside;
+      return discreteModel().checkPhysical( entity, entity.geometry().local( intersection.geometry().global( quadrature.localPoint( qp ) ) ), ranges_ ); 
     }
 
     // check whether we have inflow or outflow direction 
-    template <class IntersectionIterator, class QuadratureType>
-    bool checkDirection(const IntersectionIterator& nit,
-                        QuadratureType& faceQuad, 
-                        const  int quadPoint)
+    template< class QuadratureType>
+    bool checkDirection( const IntersectionType &intersection,
+                         QuadratureType &quadrature, 
+                         const int qp )
     {
       // check quadature info
-      assert( quadId_    == faceQuad.id() );
-      assert( quadPoint_ == quadPoint );
+      assert( quadId_    == quadrature.id() );
+      assert( quadPoint_ == qp );
 
-      // call problem checkDirection 
-      return problem_.checkDirection(nit, time_, 
-                                     faceQuad.localPoint(quadPoint),
-                                     valuesEn_ );
+      // call checkDirection() on discrete model
+      return discreteModel().checkDirection( intersection, time(), quadrature.localPoint( qp ), ranges_ );
     }
   protected:
+    using BaseType::discreteModel;
+    using BaseType::localFunctionsInside_;
+
+  private:
+    Dune::TypeIndexedTuple< RangeTupleType, typename DiscreteModelType::Selector > ranges_;
+
 #ifndef NDEBUG 
     size_t quadId_ ;
     int quadPoint_ ;
 #endif
-
-    using BaseType :: time_ ;
-    using BaseType :: data_ ;
-    using BaseType :: problem_ ;
-    using BaseType :: valuesEn_ ;
   };
  
   template < class Model, class DomainFieldType, class dummy = double >
@@ -594,6 +599,8 @@ namespace Dune {
     //! Repetition of template arguments
     typedef PreviousPassImp PreviousPassType;
     
+    typedef typename BaseType::PassIds PassIds;
+    
     // Types from the base class
     typedef typename BaseType::Entity EntityType;
     typedef const EntityType ConstEntityType;
@@ -631,11 +638,8 @@ namespace Dune {
     
     // Various other types
     typedef typename DestinationType::LocalFunctionType DestLocalFunctionType;
-    typedef typename DiscreteModelType::SelectorType SelectorType;
 
-    typedef Fem::CombinedSelector< ThisType , SelectorType > CombinedSelectorType;
-    typedef LimiterDiscreteModelCaller<
-      DiscreteModelType, ArgumentType, CombinedSelectorType> DiscreteModelCallerType;
+    typedef LimiterDiscreteModelCaller< DiscreteModelType, ArgumentType, PassIds > DiscreteModelCallerType;
 
     // type of Communication Manager 
     typedef Fem::CommunicationManager< DiscreteFunctionSpaceType > CommunicationManagerType;
@@ -919,7 +923,7 @@ namespace Dune {
                 const int vQ = -1,
                 const int fQ = -1) :
       BaseType(pass, spc),
-      caller_(problem),
+      caller_( 0 ),
       discreteModel_(problem),
       currentTime_(0.0),
       arg_(0),
@@ -1049,7 +1053,7 @@ namespace Dune {
       Timer timer; 
       
       // get reference to U 
-      const ArgumentFunctionType& U = (*(Fem::Element<0>::get(arg)));
+      const ArgumentFunctionType& U = *(Dune::get< 0 >( arg )); //  (*(Fem::Element<0>::get(arg)));
       
       // initialize dest as copy of U 
       // if reconstruct_ false then only reconstruct in some cases 
@@ -1121,15 +1125,13 @@ namespace Dune {
       
       arg_ = const_cast<ArgumentType*>(&arg);
       dest_ = &dest;
-      
-      // initialize arg in caller 
-      caller_.setArgument(*arg_);
-
+ 
       // time initialisation
       currentTime_ = this->time();
-
-      // set time to caller 
-      caller_.setTime(currentTime_);
+     
+      // initialize caller 
+      caller_ = new DiscreteModelCallerType( *arg_, discreteModel_ );
+      caller_->setTime(currentTime_);
 
       // calculate maximal indicator (if necessary)
       discreteModel_.indicatorMax();
@@ -1160,7 +1162,9 @@ namespace Dune {
       dest.communicate();
 
       // finalize caller 
-      caller_.finalize();
+      if( caller_ )
+        delete caller_;
+      caller_ = 0;
     }
 
   protected:
@@ -1194,10 +1198,10 @@ namespace Dune {
       
       //- statements
       // set entity to caller 
-      caller_.setEntity( en );
+      caller().setEntity( en );
 
       // get function to limit 
-      const ArgumentFunctionType& U = (*(Fem::Element<0>::get(*arg_)));
+      const ArgumentFunctionType& U = *(Dune::get< 0 >( *arg_ )); // (*(Fem::Element<0>::get(*arg_)));
 
       // get U on entity
       const LocalFunctionType uEn = U.localFunction(en);
@@ -2207,7 +2211,7 @@ namespace Dune {
       const QuadratureImp &faceQuadOuter = interQuad.outside();
                          
       // set neighbor and initialize intersection 
-      caller_.initializeIntersection( nb, intersection, faceQuadInner, faceQuadOuter );
+      caller().initializeIntersection( nb, intersection, faceQuadInner, faceQuadOuter );
 
       typedef typename IntersectionType :: Geometry LocalGeometryType;
       const LocalGeometryType& interGeo = intersection.geometry();   
@@ -2218,7 +2222,7 @@ namespace Dune {
       for(int l=0; l<faceQuadNop; ++l) 
       {
         // calculate jump 
-        const double val = caller_.numericalFlux( intersection, 
+        const double val = caller().numericalFlux( intersection, 
                                                   faceQuadInner, faceQuadOuter, l,
                                                   jump , adapt, dummy, dummy );
 
@@ -2258,7 +2262,7 @@ namespace Dune {
       for(int l=0; l<faceQuadNop; ++l) 
       {
         // calculate jump 
-        const double val = caller_.boundaryFlux(intersection, faceQuadInner, l, jump, dummy);
+        const double val = caller().boundaryFlux(intersection, faceQuadInner, l, jump, dummy);
 
         // non-physical solution 
         if (val < 0.0)
@@ -2364,7 +2368,7 @@ namespace Dune {
           EntityType& nb = *ep; 
 
           // set neighbor to caller 
-          caller_.setNeighbor( nb );
+          caller().setNeighbor( nb );
 
           if( intersection.conforming() )
           {
@@ -2432,7 +2436,7 @@ namespace Dune {
             FaceQuadratureType faceQuadInner(gridPart_,intersection, jumpQuadOrd, FaceQuadratureType::INSIDE);
 
             // initialize intersection 
-            caller_.initializeBoundary( intersection, faceQuadInner );
+            caller().initializeBoundary( intersection, faceQuadInner );
 
             if (applyBoundary(intersection, faceQuadInner, shockIndicator, adaptIndicator))
             {
@@ -2494,7 +2498,7 @@ namespace Dune {
       for(int l=0; l<quadNop; ++l) 
       {
         // check physicality of value 
-        const bool physical = caller_.checkPhysical( intersection, quad, l );
+        const bool physical = caller().checkPhysical( intersection, quad, l );
 
         if( checkPhysical && ! physical ) 
         {
@@ -2505,7 +2509,7 @@ namespace Dune {
         if( ! inflowIntersection ) 
         {
           // check intersection 
-          if( physical && caller_.checkDirection(intersection, quad, l) ) 
+          if( physical && caller().checkDirection(intersection, quad, l) ) 
           {
             inflowIntersection = true;
             // in case of physicality check is disabled 
@@ -2527,10 +2531,17 @@ namespace Dune {
     {
       return lagrangePointSetContainer_.compiledLocalKey( geomType, 1 );
     }
+
+  protected:
+    DiscreteModelCallerType &caller () const
+    {
+      assert( caller_ );
+      return *caller_;
+    }
     
   private:
-    mutable DiscreteModelCallerType caller_;
-    const DiscreteModelType& discreteModel_; 
+    mutable DiscreteModelCallerType *caller_;
+    DiscreteModelType& discreteModel_; 
     mutable double currentTime_;
     
     mutable ArgumentType* arg_;
