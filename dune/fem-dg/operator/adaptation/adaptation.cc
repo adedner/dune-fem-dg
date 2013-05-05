@@ -101,16 +101,6 @@ namespace Dune
   clearIndicator ()
   {
     indicator_.shrinkToFit();
-    indicator_.fill( LocalIndicatorData() );
-  }
-
-  //! add another adaptation handlers indicator container 
-  template <class GridImp, class FunctionSpace>
-  AdaptationHandler<GridImp, FunctionSpace>&   
-  AdaptationHandler<GridImp, FunctionSpace> ::  
-  operator += ( const ThisType& other ) 
-  {
-    indicator_.shrinkToFit();
     indicator_.fill( 0.0 );
   }
 
