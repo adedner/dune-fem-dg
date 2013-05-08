@@ -756,7 +756,7 @@ public:
   typedef typename Traits::RangeType RangeType;
   typedef typename Traits::FluxRangeType              FluxRangeType;
 
-  LLFFlux( const Model& mod )
+  LLFFlux(const Model& mod )
     : model_(mod)
   {}
 
@@ -803,10 +803,10 @@ public:
     
     const DomainType xGlobal = intersection.geometry().global(x);
 
-    model_.maxSpeed( normal, time, xGlobal, 
-                     uLeft, viscparal, maxspeedl );
-    model_.maxSpeed( normal, time, xGlobal,
-                     uRight, viscparar, maxspeedr );
+    model_.maxSpeed( inside, time, faceQuadInner.point( quadPoint ),
+                     normal, uLeft, viscparal, maxspeedl );
+    model_.maxSpeed( outside, time, faceQuadOuter.point( quadPoint ),
+                     normal, uRight, viscparar, maxspeedr );
 
     maxspeed = (maxspeedl > maxspeedr) ? maxspeedl : maxspeedr;
     viscpara = (viscparal > viscparar) ? viscparal : viscparar;
