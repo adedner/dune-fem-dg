@@ -150,9 +150,9 @@ namespace Dune {
     //! evaluate the spatial operator 
     void operator()( const DestinationType& arg, DestinationType& dest ) const 
     {
-#ifdef INVERSMASS
+#ifdef NOINVERSMASS
       DestinationType arg2( arg );
-      applyInverseMass( arg2 )
+      applyInverseMass( arg2 );
 	    pass1_( arg2, dest );
 #else 
       pass1_( arg, dest );
