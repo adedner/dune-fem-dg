@@ -1,8 +1,6 @@
 #ifndef DUNE_STEPPERTRAITS_HH
 #define DUNE_STEPPERTRAITS_HH
 
-#include <dune/fem/gridpart/adaptiveleafgridpart.hh>
-#include <dune/fem/gridpart/idgridpart.hh>
 #include <dune/fem/solver/odesolver.hh>
 
 template <class GridImp,
@@ -15,10 +13,7 @@ struct StepperTraits
   // type of Grid
   typedef GridImp                                   GridType;
 
-  // Choose a suitable GridView
-  typedef Dune :: Fem :: DGAdaptiveLeafGridPart< GridType >       HostGridPartType;
-  typedef HostGridPartType  GridPartType ;
-  //typedef Dune :: Fem :: IdGridPart< HostGridPartType >       GridPartType;
+  typedef typename ProblemTraits::GridPartType GridPartType;
 
   // problem dependent types 
   typedef typename ProblemTraits :: template Traits< GridPartType > :: InitialDataType  InitialDataType;
