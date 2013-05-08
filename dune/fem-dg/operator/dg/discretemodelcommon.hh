@@ -148,7 +148,7 @@ namespace Dune {
     {
     }
 
-    void setTime ( double time ) { model_.setTime( time ); }
+    void setTime ( double time ) { const_cast< ModelType& >( model_ ).setTime( time ); }
 
     //! dummy method 
     void switchUpwind() const {
