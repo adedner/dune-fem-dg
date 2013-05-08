@@ -27,8 +27,8 @@ namespace Dune {
     typedef typename EntityType::Geometry GeometryType;
     typedef typename DiscreteFunctionSpaceType::GridPartType  GridPartType;
 
-    typedef CachingQuadrature< GridPartType, 0 > QuadratureType;
-    typedef LocalMassMatrix< DiscreteFunctionSpaceType, QuadratureType > LocalMassMatrixType;
+    typedef Fem::CachingQuadrature< GridPartType, 0 > QuadratureType;
+    typedef Fem::LocalMassMatrix< DiscreteFunctionSpaceType, QuadratureType > LocalMassMatrixType;
 
     const DiscreteFunctionSpaceType &dfSpace = arg.space();
 
