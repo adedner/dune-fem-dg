@@ -172,6 +172,12 @@ namespace Dune {
     {
       discreteModel_.switchUpwind();
     }
+
+    void setTime ( double time )
+    {
+      discreteModel_.setTime( time );
+      BaseType::setTime( time );
+    }
     
     //! Estimate for the timestep size 
     double timeStepEstimateImpl() const 

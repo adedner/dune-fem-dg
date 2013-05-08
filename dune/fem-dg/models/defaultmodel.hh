@@ -27,6 +27,9 @@ public:
   typedef typename Traits :: EntityType                       EntityType;
   typedef typename Traits :: IntersectionType                 IntersectionType;
 
+
+  inline void setTime ( double time ){}
+
   inline bool hasFlux() const { return false ; }
 
   inline bool hasStiffSource() const { return false ; }

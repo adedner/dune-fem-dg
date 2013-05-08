@@ -139,15 +139,12 @@ namespace Dune {
 #endif
     }
 
-    void setTime(const double time) 
-    {
+    void setTime(const double time){
 	    pass1_.setTime( time );
-      gridPart_.filter().setTime( time );
-      dt_ = gridPart_.filter().remesh( time );
     }
 
     double timeStepEstimate() const {
-      return std::min( dt_, pass1_.timeStepEstimate() );
+      return pass1_.timeStepEstimate();
     }
 
     //! evaluate the spatial operator 
@@ -234,7 +231,6 @@ namespace Dune {
     DiscreteModelType discreteModel_;
     Pass0Type startPass_;
     Pass1Type pass1_;
-    double dt_;
   };
 
 }
