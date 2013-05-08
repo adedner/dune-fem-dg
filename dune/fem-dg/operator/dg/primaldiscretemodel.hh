@@ -47,7 +47,7 @@ namespace Dune {
     typedef typename BaseType :: ModelType    ModelType ;
     typedef typename BaseType :: NumFluxType  NumFluxType ;
 
-#if defined TESTOPERATOR
+#if defined NOINVERSMASS
 #warning NO MASSOPERATOR APPLIED
     enum { ApplyInverseMassOperator = false };
 #else

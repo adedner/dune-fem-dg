@@ -15,7 +15,36 @@
 #endif
 
 namespace Dune {  
+    
+  template<class DiscreteFunction>
+  void applyInverseMass( DiscreteFunction &arg )
+  {
+    typedef typename DiscreteFunction::DiscreteFunctionSpaceType DiscreteFunctionSpaceType;
+    typedef typename DiscreteFunction::LocalFunctionType LocalFunctionType;
 
+    typedef typename DiscreteFunctionSpaceType::IteratorType IteratorType;
+    typedef typename IteratorType::Entity EntityType;
+    typedef typename EntityType::Geometry GeometryType;
+    typedef typename DiscreteFunctionSpaceType::GridPartType  GridPartType;
+
+    typedef CachingQuadrature< GridPartType, 0 > QuadratureType;
+    typedef LocalMassMatrix< DiscreteFunctionSpaceType, QuadratureType > LocalMassMatrixType;
+
+    const DiscreteFunctionSpaceType &dfSpace = arg.space();
+
+    const int quadOrd = 2 * dfSpace.order();
+
+    // create local mass matrix object
+    LocalMassMatrixType massMatrix( dfSpace, quadOrd );
+
+    const IteratorType end = dfSpace.end();
+    for( IteratorType it = dfSpace.begin(); it != end; ++it )
+    {
+      const EntityType &entity = *it;
+      LocalFunctionType argLocal = arg.localFunction( entity );
+      massMatrix.applyInverse( entity, argLocal );
+    }
+  }
 
   // DGAdvectionDiffusionOperatorBase
   //---------------------------------
@@ -110,17 +139,27 @@ namespace Dune {
 #endif
     }
 
-    void setTime(const double time) {
+    void setTime(const double time) 
+    {
 	    pass1_.setTime( time );
+      gridPart_.filter().setTime( time );
+      dt_ = gridPart_.filter().remesh( time );
     }
 
     double timeStepEstimate() const {
-	    return pass1_.timeStepEstimate();
+      return std::min( dt_, pass1_.timeStepEstimate() );
     }
 
     //! evaluate the spatial operator 
-    void operator()( const DestinationType& arg, DestinationType& dest ) const {
-	    pass1_( arg, dest );
+    void operator()( const DestinationType& arg, DestinationType& dest ) const 
+    {
+#ifdef INVERSMASS
+      DestinationType arg2( arg );
+      applyInverseMass( arg2 )
+	    pass1_( arg2, dest );
+#else 
+      pass1_( arg, dest );
+#endif
     }
 
     //! only evaluate fluxes of operator 
@@ -195,6 +234,7 @@ namespace Dune {
     DiscreteModelType discreteModel_;
     Pass0Type startPass_;
     Pass1Type pass1_;
+    double dt_;
   };
 
 }
