@@ -801,8 +801,6 @@ public:
     double maxspeedl, maxspeedr, maxspeed;
     double viscparal, viscparar, viscpara;
     
-    const DomainType xGlobal = intersection.geometry().global(x);
-
     model_.maxSpeed( inside, time, faceQuadInner.point( quadPoint ),
                      normal, uLeft, viscparal, maxspeedl );
     model_.maxSpeed( outside, time, faceQuadOuter.point( quadPoint ),
