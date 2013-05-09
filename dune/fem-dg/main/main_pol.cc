@@ -24,6 +24,8 @@
 // streams for backup
 #include <dune/fem-dg/misc/streams.hh>
 
+#include "default.hh"
+
 #if defined USE_SMP_PARALLEL 
 #include <dune/fem/misc/threadmanager.hh>
 #include <dune/fem-dg/pass/partitioner.hh>

@@ -306,10 +306,11 @@ namespace Dune {
             times_[ i ] = 0;
         }
 
-        const double elems = nElements ;
-        elements_ += elems ;
+        elements_ += double( nElements );
         for(size_t i=0; i<size; ++i ) 
-          times_[ i ] += times[ i ] / elems ; 
+        {
+          times_[ i ] += times[ i ] ; 
+        }
 
         ++timesteps_ ;
 

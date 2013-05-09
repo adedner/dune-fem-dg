@@ -285,13 +285,11 @@ protected:
           // insert edges twice, with both orientations 
           // the ALUGrid partitioner expects it this way 
           {
-            db.edgeUpdate ( 
-                typename LoadBalancerType :: GraphEdge ( eid, nid, weight
+            db.edgeUpdate ( typename LoadBalancerType :: GraphEdge ( eid, nid, weight
 #if HAVE_DUNE_ALUGRID 
                   ,-1, -1
 #endif
-                  )
-                );
+                  ) );
           }
         }
       }
@@ -313,14 +311,12 @@ public:
       }
       else 
       {
-#if HAVE_ALUGRID || HAVE_METIS 
+        // || HAVE_METIS 
         if( useKway ) 
           partition_ = db_.repartition( mpAccess_, DataBaseType :: METIS_PartGraphKway, pSize_ );
         else 
           partition_ = db_.repartition( mpAccess_, DataBaseType :: METIS_PartGraphRecursive, pSize_ );
-#elif HAVE_DUNE_ALUGRID
-        partition_ = db_.repartition( mpAccess_, DataBaseType :: ALUGRID_SpaceFillingCurveNoEdges, pSize_ );
-#endif
+//        partition_ = db_.repartition( mpAccess_, DataBaseType :: ALUGRID_SpaceFillingCurveNoEdges, pSize_ );
       }
 
       assert( int(partition_.size()) >= graphSize_ );
@@ -348,7 +344,6 @@ public:
         partition_[ i ] = 0;
       return false ;
     }
-
   }
 
   int getDestination( const int idx ) const 

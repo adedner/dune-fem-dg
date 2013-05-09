@@ -285,14 +285,21 @@ namespace Dune {
       mutable int counter_; 
       mutable int nonEqual_;
 #endif
+      const bool noSkip_; 
+      const bool equalNotEqual_;
+
       NBChecker( const ThreadIteratorType& st, 
-                 const int myThread = Fem::ThreadManager::thread() ) 
+                 const int myThread, 
+                 const bool noSkip,
+                 const bool equalNotEqual ) 
         : storage_( st ),
           myThread_( myThread ) 
 #ifndef NDEBUG
           , counter_( 0 )
           , nonEqual_( 0 )
 #endif
+          , noSkip_( noSkip )
+          , equalNotEqual_( equalNotEqual )
       {}
 
       // returns true if niehhbor can be updated 
@@ -307,6 +314,14 @@ namespace Dune {
         // storage_.thread can also return negative values in which case the 
         // update of the neighbor is skipped, e.g. for ghost elements 
         return myThread_ == storage_.thread( nb );
+      }
+
+      //! returns true if the intersection with neighbor nb should be skipped
+      bool skipIntersection( const EntityType& nb ) const 
+      {
+        if( noSkip_ ) return false ;
+        const bool equal = (nb.partitionType() == InteriorEntity); 
+        return equal == equalNotEqual_;
       }
     };
 
@@ -441,9 +456,6 @@ namespace Dune {
           for(int i=0; i<maxThreads; ++i ) 
             passStage_[ i ] = false ;
 
-          // RECEIVE DATA, send was done on call of operator() (see pass.hh)
-          receiveCommunication( arg );
-
           // see threadhandle.hh 
           Fem :: ThreadHandle :: run( *this ); 
         }
@@ -511,9 +523,6 @@ namespace Dune {
 
       const bool computeElementIntegral = passStage_[ thread ];
 
-      // create NB checker 
-      NBChecker nbChecker( iterators_, thread );
-
       // Iterator is of same type as the space iterator 
       typedef typename ThreadIteratorType :: IteratorType Iterator;
 
@@ -521,15 +530,28 @@ namespace Dune {
       {
         if ( computeElementIntegral ) 
         {
+          // create NB checker, skip if neighbors is NOT interior
+          NBChecker nbChecker( iterators_, thread, false, true );
+
           const Iterator endit = iterators_.end();
           for (Iterator it = iterators_.begin(); it != endit; ++it)
           {
             assert( iterators_.thread( *it ) == thread );
-            myPass.elementIntegral( *it );
+            myPass.applyLocal( *it, nbChecker );
+          }
+
+          // receive ghost data 
+          if( thread == 0 ) 
+          {
+            // RECEIVE DATA, send was done on call of operator() (see pass.hh)
+            receiveCommunication( *arg_ );
           }
         }
         else 
         {
+          // create NB checker, skip if neighbors is interior
+          NBChecker nbChecker( iterators_, thread, false, false );
+
           const Iterator endit = iterators_.end();
           for (Iterator it = iterators_.begin(); it != endit; ++it)
           {
@@ -549,6 +571,9 @@ namespace Dune {
       }
       else 
       {
+        // create NB checker, noSkip 
+        NBChecker nbChecker( iterators_, thread, true, false );
+
         const Iterator endit = iterators_.end();
         for (Iterator it = iterators_.begin(); it != endit; ++it)
         {
