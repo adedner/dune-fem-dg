@@ -1335,9 +1335,6 @@ namespace Dune {
     typedef DiscreteFunctionSpaceImp DiscreteFunctionSpaceType;
     typedef typename DiscreteFunctionSpaceType :: GridPartType GridPartType;
 
-  protected:
-    using BaseType::methodNames;
-
   public:  
     /**
       * @brief constructor reading parameters 
@@ -1350,7 +1347,7 @@ namespace Dune {
 
     void diffusionFluxName ( std::ostream& out ) const
     {
-      out << methodNames( method_none );
+      out << "none";
     }
 
     void diffusionFluxLiftFactor ( std::ostream& out ) const {}
