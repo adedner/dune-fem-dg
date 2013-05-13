@@ -460,5 +460,49 @@ namespace Dune {
     Pass2Type           pass2_;
   };
 
+
+
+  template< class Model, class NumFlux, 
+            DGDiffusionFluxIdentifier diffFluxId, // diffusion flux identifier 
+            int pOrd, bool advection = true, bool diffusion = true >
+  class DGLimitedAdvectionDiffusionOperator 
+  : public DGLimitedAdvectionOperator< Model, NumFlux, diffFluxId, pOrd, advection, diffusion >
+  {
+    typedef DGLimitedAdvectionOperator< Model, NumFlux, diffFluxId, pOrd, advection, diffusion > BaseType;
+
+    typedef typename BaseType :: GridPartType GridPartType;
+    typedef typename BaseType :: NumFluxType NumFluxType;
+   
+  public:
+    DGLimitedAdvectionDiffusionOperator ( GridPartType& gridPart , const NumFluxType& numf )
+    : BaseType( gridPart, numf )
+    {}
+
+    void printmyInfo(std::string filename) const
+    {
+	    std::ostringstream filestream;
+            filestream << filename;
+            std::ofstream ofs(filestream.str().c_str(), std::ios::app);
+            ofs << "Limited Adv. Diff. Op., polynomial order: " << pOrd << "\\\\\n\n";
+            ofs.close();
+    }
+
+    std::string description() const
+    {
+      std::cerr <<"DGLimitedAdvectionDiffusionOperator::description() not implemented" <<std::endl;
+      abort();
+
+      /*
+      std::stringstream stream;
+      stream <<", {\\bf Adv. Flux:} ";
+      if (FLUX==1)
+        stream <<"LLF";
+      else if (FLUX==2)
+        stream <<"HLL";
+      stream <<",\\\\\n";
+      return stream.str();
+      */
+    }
+  };
 }
 #endif
