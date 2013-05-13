@@ -4,6 +4,7 @@
 #include <dune/fem/operator/projection/l2projection.hh>
 #include <dune/fem/solver/odesolver.hh>
 
+#include <dune/fem-dg/misc/cons2prim.hh>
 #include <dune/fem-dg/pass/threadpass.hh>
 
 // DefaultL2Projection
@@ -89,10 +90,40 @@ struct StepperTraits
   // type of restriction/prolongation projection for adaptive simulations 
   typedef Dune :: Fem :: RestrictProlongDefault< DiscreteFunctionType > RestrictionProlongationType;
 
-  // type of IOTuple 
-  typedef Dune::tuple< DiscreteFunctionType*, DiscreteFunctionType*, IndicatorType* >  IOTupleType;
+
+  // management of IO tuple
+
+  typedef Dune::tuple< DiscreteFunctionType *, DiscreteFunctionType *, IndicatorType * > IOTupleType;
+
+  static IOTupleType *newIOTuple ( DiscreteFunctionType &solution, IndicatorType *indicator )
+  {
+    DiscreteFunctionType *additionalVariables = nullptr;
+    if( Dune::Fem::Parameter::getValue< bool >( "femhowto.additionalvariables", false ) )
+      additionalVariables = new DiscreteFunctionType( "additional", solution.space() );
+    return new IOTupleType( &solution, additionalVariables, indicator );
+  }
+
+  static void deleteIOTuple ( IOTupleType *ioTuple )
+  {
+    DiscreteFunctionType *additionalVariables = Dune::get< 1 >( *ioTuple );
+    if( additionalVariables )
+      delete additionalVariables;
+    delete ioTuple;
+  }
+
+  template< class TimeProvider, class Model >
+  static void setupIOTuple ( const TimeProvider &timeProvider,
+                             const DiscreteFunctionType &solution,
+                             const Model &model,
+                             const IOTupleType &ioTuple )
+  {
+    DiscreteFunctionType *additionalVariables = Dune::get< 1 >( ioTuple );
+    if( additionalVariables )
+      setupAdditionalVariables( timeProvider, solution, model, *additionalVariables );
+  }
 
   // initial data projection
+
   typedef typename InitialDataType::TimeDependentFunctionType TimeDependentFunctionType;
   typedef DefaultL2Projection< TimeDependentFunctionType, DiscreteFunctionType > InitialProjectionType;
 };
