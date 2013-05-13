@@ -21,6 +21,8 @@ static double minRatioOfSums = 1e+100;
 #include <iostream>
 #include <string>
 
+#include <dune/common/nullptr.hh>
+
 // Dune includes
 #include <dune/fem/misc/l2norm.hh>
 
@@ -101,11 +103,11 @@ struct StepperBase
   // type of solver monitor 
   typedef typename BaseType :: SolverMonitorType  SolverMonitorType;
 
-  // type of solver monitor 
-  typedef typename BaseType :: DataWriterType     DataWriterType;
+  // type of IOTuple 
+  typedef typename BaseType::IOTupleType IOTupleType;
 
-  // type of solver monitor 
-  typedef typename BaseType :: IOTupleType        IOTupleType;
+  // type of data writer 
+  typedef Dune::Fem::DataWriter< GridType, IOTupleType > DataWriterType;
 
   // type of parameter class 
   typedef Dune::Fem::Parameter ParameterType ;  
@@ -126,8 +128,6 @@ struct StepperBase
     gridPart_( grid_ ),
     space_( gridPart_ ),
     solution_( "solution", space() ),
-    additionalVariables_( ParameterType :: getValue< bool >("femhowto.additionalvariables", false) ? 
-        new DiscreteFunctionType("additional", space() ) : 0 ),
     problem_( ProblemTraits::problem( gridPart_ ) ),
     model_( new ModelType( problem() ) ),
     convectionFlux_( *model_ ),
@@ -161,20 +161,14 @@ struct StepperBase
     problem_ = 0;
     delete adaptationHandler_ ;
     adaptationHandler_ = 0;
-    delete additionalVariables_; 
-    additionalVariables_ = 0;
+    Traits::deleteIOTuple( dataTuple_ );
+    dataTuple_ = nullptr;
   }
 
   const DiscreteSpaceType& space() const { return space_ ; }
 
   // return reference to discrete function holding solution 
   DiscreteFunctionType& solution() { return solution_; }
-
-  IOTupleType dataTuple() 
-  { 
-    // tuple with additionalVariables 
-    return IOTupleType( &solution_, additionalVariables_, indicator() );
-  }
 
   void checkDofsValid ( TimeProviderType& tp, const int loop ) const 
   { 
@@ -187,16 +181,20 @@ struct StepperBase
     }
   }
 
+  IOTupleType dataTuple ()
+  {
+    if( !dataTuple_ )
+      dataTuple_ = Traits::newIOTuple( solution_, indicator() );
+    return *dataTuple_;
+  }
+
   void writeData( TimeProviderType& tp, const bool writeAnyway = false ) 
   {
     if( dataWriter_ ) 
     {
       const bool reallyWrite = writeAnyway ? true : dataWriter_->willWrite( tp );
-      if( reallyWrite && additionalVariables_ ) 
-      {
-        setupAdditionalVariables( tp, solution(), model(), *additionalVariables_ );
-      }
-
+      if( reallyWrite )
+        Traits::setupIOTuple( tp, solution(), model(), *dataTuple_ );
       dataWriter_->write( tp );
     }
 
@@ -277,27 +275,24 @@ struct StepperBase
   // before first step, do data initialization 
   void initializeStep( TimeProviderType& tp, const int loop ) 
   {
-    DiscreteFunctionType& U = solution_;
-
-    if( odeSolver_ == 0 ) odeSolver_ = this->createOdeSolver( tp );
+    if( !odeSolver_ )
+      odeSolver_ = this->createOdeSolver( tp );
     assert( odeSolver_ );
 
-    if( dataWriter_ == 0 ) 
+    if( !dataWriter_ )
     {
-      // copy data tuple 
-      dataTuple_ = dataTuple () ;
-      dataWriter_ = new DataWriterType( grid_, dataTuple_, tp,
-        EocDataOutputParameters( loop, problem_->dataPrefix() ) );
+      dataTuple();
+      dataWriter_ = new DataWriterType( grid_, *dataTuple_, tp, EocDataOutputParameters( loop, problem_->dataPrefix() ) );
     }
     assert( dataWriter_ );
 
     // projection of initial data
     InitialProjectionType projection;
-    projection( problem().fixedTimeFunction( tp.time() ), U );
+    projection( problem().fixedTimeFunction( tp.time() ), solution_ );
 
     // ode.initialize applies the DG Operator once to get an initial
     // estimate on the time step. This does not change the initial data u.
-    odeSolver_->initialize( U );                
+    odeSolver_->initialize( solution_ );
   }
 
 
@@ -434,7 +429,6 @@ protected:
 
   // the solution 
   DiscreteFunctionType   solution_;
-  DiscreteFunctionType*  additionalVariables_;
 
   // InitialDataType is a Dune::Operator that evaluates to $u_0$ and also has a
   // method that gives you the exact solution.
@@ -461,7 +455,7 @@ protected:
   AdaptationManagerType   adaptationManager_;
   AdaptationParameters    adaptationParameters_;
 
-  IOTupleType             dataTuple_ ;
-  DataWriterType*         dataWriter_ ;
+  IOTupleType *dataTuple_ ;
+  DataWriterType *dataWriter_ ;
 };
 #endif // FEMHOWTO_STEPPER_HH
