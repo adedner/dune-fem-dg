@@ -23,7 +23,6 @@ static double minRatioOfSums = 1e+100;
 
 // Dune includes
 #include <dune/fem/misc/l2norm.hh>
-#include <dune/fem/operator/projection/l2projection.hh>
 
 #include <dune/fem-dg/solver/smartodesolver.hh>
 
@@ -62,6 +61,9 @@ struct StepperBase
 
   // initial data type 
   typedef typename Traits :: InitialDataType          InitialDataType;
+
+  // projection for initial data
+  typedef typename Traits::InitialProjectionType InitialProjectionType;
 
   // An analytical version of our model
   typedef typename Traits :: ModelType                 ModelType;
@@ -289,19 +291,9 @@ struct StepperBase
     }
     assert( dataWriter_ );
 
-    typedef typename InitialDataType :: TimeDependentFunctionType
-      TimeDependentFunctionType;
-
-    // communication is needed when blocking communication is used 
-    // but has to be avoided otherwise (because of implicit solver)
-    const bool doCommunicate = ! NonBlockingCommParameter :: nonBlockingCommunication ();
-
-    // create L2 projection 
-    Fem :: L2Projection< TimeDependentFunctionType, 
-        DiscreteFunctionType > l2pro( 2 * U.space().order(), doCommunicate );
-
-    // L2 project initial data 
-    l2pro( problem().fixedTimeFunction( tp.time() ), U ); 
+    // projection of initial data
+    InitialProjectionType projection;
+    projection( problem().fixedTimeFunction( tp.time() ), U );
 
     // ode.initialize applies the DG Operator once to get an initial
     // estimate on the time step. This does not change the initial data u.

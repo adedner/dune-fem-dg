@@ -1,11 +1,31 @@
 #ifndef DUNE_STEPPERTRAITS_HH
 #define DUNE_STEPPERTRAITS_HH
 
+#include <dune/fem/operator/projection/l2projection.hh>
 #include <dune/fem/solver/odesolver.hh>
 
-template <class GridImp,
-          class ProblemTraits, 
-          int polOrd>
+#include <dune/fem-dg/pass/threadpass.hh>
+
+// DefaultL2Projection
+// -------------------
+
+template< class DType, class RType >
+class DefaultL2Projection
+: public Dune::Fem::L2Projection< DType, RType >
+{
+  typedef Dune::Fem::L2Projection< DType, RType > BaseType;
+
+public:
+  DefaultL2Projection ()
+  : BaseType( -1, !Dune::NonBlockingCommParameter::nonBlockingCommunication() )
+  {}
+};
+
+
+// StepperTraits
+// -------------
+
+template< class GridImp, class ProblemTraits, int polOrd >
 struct StepperTraits 
 {
   enum { polynomialOrder = polOrd };
@@ -71,6 +91,10 @@ struct StepperTraits
 
   // type of IOTuple 
   typedef Dune::tuple< DiscreteFunctionType*, DiscreteFunctionType*, IndicatorType* >  IOTupleType;
+
+  // initial data projection
+  typedef typename InitialDataType::TimeDependentFunctionType TimeDependentFunctionType;
+  typedef DefaultL2Projection< TimeDependentFunctionType, DiscreteFunctionType > InitialProjectionType;
 };
 
-#endif
+#endif // #ifndef DUNE_STEPPERTRAITS_HH
