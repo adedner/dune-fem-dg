@@ -129,7 +129,7 @@ struct StepperBase
     space_( gridPart_ ),
     solution_( "solution", space() ),
     problem_( ProblemTraits::problem( gridPart_ ) ),
-    model_( new ModelType( problem() ) ),
+    model_( new ModelType( *problem_ ) ),
     convectionFlux_( *model_ ),
     adaptationHandler_( 0 ),
     runfile_( grid.comm(), true ),
@@ -435,7 +435,7 @@ protected:
 
   // InitialDataType is a Dune::Operator that evaluates to $u_0$ and also has a
   // method that gives you the exact solution.
-  const InitialDataType*  problem_;
+  InitialDataType *problem_;
   ModelType*              model_;
   // Initial flux for advection discretization (UpwindFlux)
   FluxType                convectionFlux_;
