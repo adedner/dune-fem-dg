@@ -654,7 +654,8 @@ namespace Dune {
     typedef Fem::PointBasedDofConversionUtility< dimRange > DofConversionUtilityType;
 
     //! is true if grid is Structured grid 
-    enum { StructuredGrid = Capabilities :: isCartesian<GridType>::v };
+    //enum { StructuredGrid = Capabilities :: isCartesian<GridType>::v };
+    enum { StructuredGrid = false };
 
     typedef FieldVector< DomainType , dimRange > DeoModType; 
     typedef FieldMatrix< DomainFieldType, dimDomain , dimDomain > MatrixType;
@@ -1439,8 +1440,8 @@ namespace Dune {
       if( usedAdmissibleFunctions_ >= ReconstructedFunctions ) 
       {
         // calculate linear functions 
-        calculateLinearFunctions(en.level(), comboSet, geomType, 
-                                 boundary, nonConforming , cartesian );
+        //calculateLinearFunctions(en.level(), comboSet, geomType, boundary, nonConforming , cartesian );
+        calculateLinearFunctions( 0, comboSet, geomType, boundary, nonConforming , cartesian );
       }
       
       // add DG Function
