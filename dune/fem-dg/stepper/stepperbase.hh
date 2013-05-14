@@ -197,7 +197,10 @@ struct StepperBase
     {
       const bool reallyWrite = writeAnyway ? true : dataWriter_->willWrite( tp );
       if( reallyWrite )
+      {
+        model_->setTime( tp.time() );
         Traits::setupIOTuple( tp, solution(), model(), *dataTuple_ );
+      }
       dataWriter_->write( tp );
     }
 
