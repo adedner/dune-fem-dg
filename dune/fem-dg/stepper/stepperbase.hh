@@ -139,8 +139,9 @@ struct StepperBase
     odeSolver_( 0 ),
     rp_( solution_ ),
     adaptationManager_( grid_, rp_ ),
-    adaptationParameters_( ),
-    dataWriter_( 0 )
+    adaptationParameters_(),
+    dataTuple_( nullptr ),
+    dataWriter_( nullptr )
   {
     // set refine weight 
     rp_.setFatherChildWeight( Dune::DGFGridInfo<GridType> :: refineWeight() );
@@ -153,8 +154,6 @@ struct StepperBase
     checkPointer_ = 0;
     delete odeSolver_;
     odeSolver_ = 0;
-    delete dataWriter_; 
-    dataWriter_ = 0 ;
     delete model_ ;
     model_ = 0;
     delete problem_ ;
@@ -162,6 +161,8 @@ struct StepperBase
     delete adaptationHandler_ ;
     adaptationHandler_ = 0;
 
+    delete dataWriter_;
+    dataWriter_ = nullptr;
     if( dataTuple_ )
       Traits::deleteIOTuple( dataTuple_ );
     dataTuple_ = nullptr;
