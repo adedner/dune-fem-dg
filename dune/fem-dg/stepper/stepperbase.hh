@@ -161,7 +161,9 @@ struct StepperBase
     problem_ = 0;
     delete adaptationHandler_ ;
     adaptationHandler_ = 0;
-    Traits::deleteIOTuple( dataTuple_ );
+
+    if( dataTuple_ )
+      Traits::deleteIOTuple( dataTuple_ );
     dataTuple_ = nullptr;
   }
 

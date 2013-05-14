@@ -105,6 +105,7 @@ struct StepperTraits
 
   static void deleteIOTuple ( IOTupleType *ioTuple )
   {
+    assert( ioTuple );
     DiscreteFunctionType *additionalVariables = Dune::get< 1 >( *ioTuple );
     if( additionalVariables )
       delete additionalVariables;
