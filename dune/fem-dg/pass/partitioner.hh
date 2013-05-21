@@ -227,29 +227,8 @@ protected:
 
       enum { dim = GridType :: dimension };
 
-#ifdef GRAPHVERTEX_WITH_CENTER
-      double center[ 3 ] = { 0.0, 0.0, 0.0 };
-      {
-        typedef typename GridType :: ctype ctype;
-        const Dune::ReferenceElement< ctype, dim > & refElem =
-          Dune::ReferenceElements< ctype, dim>::general(entity.type());
-
-        FieldVector<ctype, dim> c = 
-          entity.geometry().global( refElem.position(0,0) );
-
-        for( int i = 0; i < dim ; ++ i ) 
-        {
-          center[ i ] = c[ i ];
-        }
-      }
-#endif
-
       db.vertexUpdate ( typename LoadBalancerType :: 
-           GraphVertex ( getIndex( entity ), weight
-#ifdef GRAPHVERTEX_WITH_CENTER
-             , center
-#endif
-             ) ) ;
+                        GraphVertex ( getIndex( entity ), weight ) );
       ++graphSize_; 
     }
     
