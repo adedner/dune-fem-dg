@@ -605,7 +605,16 @@ namespace Dune {
     typedef const EntityType ConstEntityType;
 
     typedef typename BaseType::ArgumentType ArgumentType;
-    typedef typename PreviousPassType::GlobalArgumentType ArgumentFunctionType;
+
+  private:
+    typedef typename DiscreteModelType::Selector Selector;
+    typedef typename Dune::tuple_element< 0, Selector >::type ArgumentIdType;
+    static const std::size_t argumentPosition
+      = Dune::FirstTypeIndex< PassIds, ArgumentIdType >::type::value;
+    typedef typename Dune::tuple_element< argumentPosition, ArgumentType >::type ArgumentFunctionPtrType;
+
+  public:
+    typedef typename Dune::TypeTraits< ArgumentFunctionPtrType >::PointeeType ArgumentFunctionType;
     typedef typename ArgumentFunctionType :: LocalFunctionType LocalFunctionType;
     
     // Types from the traits
@@ -1051,10 +1060,10 @@ namespace Dune {
     {
       // get stopwatch 
       Timer timer; 
-      
+
       // get reference to U 
-      const ArgumentFunctionType& U = *(Dune::get< 0 >( arg )); //  (*(Fem::Element<0>::get(arg)));
-      
+      const ArgumentFunctionType &U = *(Dune::get< argumentPosition >( arg ));
+
       // initialize dest as copy of U 
       // if reconstruct_ false then only reconstruct in some cases 
       reconstruct_ =
@@ -1201,7 +1210,7 @@ namespace Dune {
       caller().setEntity( en );
 
       // get function to limit 
-      const ArgumentFunctionType& U = *(Dune::get< 0 >( *arg_ )); // (*(Fem::Element<0>::get(*arg_)));
+      const ArgumentFunctionType &U = *(Dune::get< argumentPosition >( *arg_ ));
 
       // get U on entity
       const LocalFunctionType uEn = U.localFunction(en);
