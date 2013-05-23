@@ -1089,6 +1089,7 @@ namespace Dune {
       // if polOrder of destination is > 0 then we have to do something 
       if( spc_.order() > 0 && applyLimiter_ )
       {
+        std::cout << "Limiter enabled." << std::endl;
         // prepare, i.e. set argument and destination 
         prepare(arg, dest);
 
@@ -1106,6 +1107,8 @@ namespace Dune {
         // finalize
         finalize(arg, dest);
       }
+      else
+        std::cout << "Limiter disabled." << std::endl;
 
       // accumulate time 
       this->computeTime_ += timer.elapsed();
@@ -1913,9 +1916,6 @@ namespace Dune {
       // set zero dof to zero
       limitEn.clear();
 
-      RangeType retVal, phi;
-      const RangeType& ret = (constantValue) ? enVal : retVal;
-      
       // get quadrature for destination space order  
       VolumeQuadratureType quad( en, spc_.order() + 1 );
       
@@ -1929,51 +1929,28 @@ namespace Dune {
         const double intel = (affineMapping) ?
           quad.weight(qP) : // affine case 
           quad.weight(qP) * geo.integrationElement( quad.point(qP) ); // general case
-  
+
+        RangeType retVal( enVal );
         // if we don't have only constant value then evaluate function 
-        if( ! constantValue ) 
+        if( !constantValue ) 
         {
           // get global coordinate 
           DomainType point = geo.global( quad.point( qP ) );
           point -= enBary;
     
           // evaluate linear function 
-          for(int r=0; r<dimRange; ++r) {
-            retVal[r] = enVal[r] + (deoMod[r] * point);
-          }
+          for( int r = 0; r < dimRange; ++r )
+            retVal[ r ] += (deoMod[ r ] * point);
         }
 
-        RangeType factor (ret);
-        factor *= intel ;
-        limitEn.axpy( quad[ qP ], factor );
-
-        /*
-        // assume PointBased and CombinedSpace  
-        for(int i=0; 
-            i< NumLinearBasis<LocalFunctionImp, typename
-                              LocalFunctionImp :: DiscreteFunctionSpaceType>::numBasis( limitEn ); 
-            ++i) 
-        {
-          const int base = dofConversion_.combinedDof(i,0);
-          baseset.evaluate(base, quad[qP] , phi);
-          
-          // project linear function 
-          for(int r=0; r<dimRange; ++r) 
-          {
-            const int dofIdx = dofConversion_.combinedDof(i,r);
-            // here evaluateScalar could be used 
-            limitEn[dofIdx] += intel * (ret[r] * phi[0]) ;
-          }
-        }
-        */
+        retVal *= intel;
+        limitEn.axpy( quad[ qP ], retVal );
       }
 
       // apply local inverse mass matrix for non-linear mappings 
-      if( ! affineMapping )
-      {
+      if( !affineMapping )
         localMassMatrix_.applyInverse( en, limitEn );
-      }
-      
+
       // check physicality of projected data
       if ( (! constantValue) && (! checkPhysical(en, geo, limitEn)) )
       {
