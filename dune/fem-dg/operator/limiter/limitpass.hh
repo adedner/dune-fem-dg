@@ -584,15 +584,14 @@ namespace Dune {
       Limiting is done by simply setting the polynomial order to zero.
   */
   template <class DiscreteModelImp, class PreviousPassImp, int passId = 0 >
-  class LimitDGPass 
-  : public Fem::LocalPass<DiscreteModelImp, PreviousPassImp , passId > 
+  class LimitDGPass
+  : public Fem::LocalPass<DiscreteModelImp, PreviousPassImp , passId >
   {
+    typedef LimitDGPass< DiscreteModelImp, PreviousPassImp, passId > ThisType;
+    typedef Fem::LocalPass< DiscreteModelImp, PreviousPassImp, passId > BaseType;
+
   public:
     //- Typedefs and enums
-    //! Base class
-    typedef Fem::LocalPass<DiscreteModelImp, PreviousPassImp, passId > BaseType;
-
-    typedef LimitDGPass<DiscreteModelImp, PreviousPassImp, passId> ThisType;
     
     //! Repetition of template arguments
     typedef DiscreteModelImp DiscreteModelType;
@@ -1237,7 +1236,7 @@ namespace Dune {
 
       // check physicality of data 
       // evaluate average returns true if not physical 
-      if ( evalAverage(en, uEn, enVal ) ) 
+      if( evalAverage( en, uEn, enVal ) )
       {
         limiter = true;
         // enable adaptation because of not physical 
@@ -1255,7 +1254,7 @@ namespace Dune {
         geo.local( enBary ) ;
       
       // check average value
-      if ( ! discreteModel_.physical(en, entityBary, enVal) ) 
+      if( discreteModel_.hasPhysical() && !discreteModel_.physical( en, entityBary, enVal ) )
       {
         std::cerr << "Average Value "
                   << enVal
@@ -1266,7 +1265,6 @@ namespace Dune {
         assert( false );
         abort();
       }
-      assert( (discreteModel_.hasPhysical()) ? (discreteModel_.physical(en, entityBary, enVal)) : true );
 
       stepTime_[0] += indiTime.elapsed();
       indiTime.reset();
@@ -2036,10 +2034,10 @@ namespace Dune {
         }
 
         // possibly adjust average value, e.g. calculate primitive vairables and so on 
-        discreteModel_.adjustAverageValue( en, quad.point(0), val );
+        discreteModel_.adjustAverageValue( en, quad.point( 0 ), val );
 
         // return whether value is physical 
-        notphysical = ( discreteModel_.hasPhysical() && ! discreteModel_.physical(en, quad.point(0), val) );
+        notphysical = (discreteModel_.hasPhysical() && !discreteModel_.physical( en, quad.point( 0 ), val ) );
       }
       else 
       {
@@ -2063,10 +2061,7 @@ namespace Dune {
           discreteModel_.adjustAverageValue( en, quad.point( qp ), val );
 
           // check whether value is physical 
-          if ( discreteModel_.hasPhysical() && ! discreteModel_.physical(en, quad.point(qp), tmp) )
-          {
-            notphysical = true;
-          }
+          notphysical |= (discreteModel_.hasPhysical() && !discreteModel_.physical( en, quad.point( qp ), tmp ) );
 
           // apply integration weight 
           tmp *= quad.weight(qp) * geo.integrationElement(quad.point(qp));
