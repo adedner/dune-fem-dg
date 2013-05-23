@@ -276,6 +276,8 @@ public:
                              const RangeType& uLeft,
                              RangeType& uRight) const
   {
+    std::cerr << "Method DefaultModel::boundaryValue not implemented." << std::endl;
+    abort();
   }
 
   /** \brief check with the problem setup whether or not a cell is allowed to be refined
