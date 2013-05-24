@@ -836,7 +836,6 @@ namespace Dune {
       void multiply_AT_A(const NewMatrixType& A, MatrixType& matrix) const
       {
         assert( (int) MatrixType :: rows == (int) NewMatrixType :: cols );
-        typedef typename MatrixType :: field_type value_type;
 
         for(int row=0; row< MatrixType :: rows; ++row)
         {
@@ -1258,7 +1257,6 @@ namespace Dune {
 
       // extract types 
       enum { dim = EntityType :: dimension };
-      typedef typename EntityType :: ctype coordType;
       
       // check argument is not zero
       assert( arg_ );
@@ -1985,8 +1983,6 @@ namespace Dune {
       // get quadrature for destination space order  
       VolumeQuadratureType quad( en, spc_.order() + 1 );
       
-      typedef typename LocalFunctionImp::BasisFunctionSetType BasisFunctionSetType;
-
       //const BaseFunctionSetType& baseset = limitEn.baseFunctionSet();
       const int quadNop = quad.nop();
       for(int qP = 0; qP < quadNop ; ++qP) 
