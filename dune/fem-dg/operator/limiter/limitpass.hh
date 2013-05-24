@@ -1089,7 +1089,6 @@ namespace Dune {
       // if polOrder of destination is > 0 then we have to do something 
       if( spc_.order() > 0 && applyLimiter_ )
       {
-        std::cout << "Limiter enabled." << std::endl;
         // prepare, i.e. set argument and destination 
         prepare(arg, dest);
 
@@ -1107,8 +1106,6 @@ namespace Dune {
         // finalize
         finalize(arg, dest);
       }
-      else
-        std::cout << "Limiter disabled." << std::endl;
 
       // accumulate time 
       this->computeTime_ += timer.elapsed();
