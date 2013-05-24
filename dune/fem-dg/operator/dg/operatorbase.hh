@@ -16,36 +16,6 @@
 
 namespace Dune {  
     
-  template<class DiscreteFunction>
-  void applyInverseMass( DiscreteFunction &arg )
-  {
-    typedef typename DiscreteFunction::DiscreteFunctionSpaceType DiscreteFunctionSpaceType;
-    typedef typename DiscreteFunction::LocalFunctionType LocalFunctionType;
-
-    typedef typename DiscreteFunctionSpaceType::IteratorType IteratorType;
-    typedef typename IteratorType::Entity EntityType;
-    typedef typename EntityType::Geometry GeometryType;
-    typedef typename DiscreteFunctionSpaceType::GridPartType  GridPartType;
-
-    typedef Fem::CachingQuadrature< GridPartType, 0 > QuadratureType;
-    typedef Fem::LocalMassMatrix< DiscreteFunctionSpaceType, QuadratureType > LocalMassMatrixType;
-
-    const DiscreteFunctionSpaceType &dfSpace = arg.space();
-
-    const int quadOrd = 2 * dfSpace.order();
-
-    // create local mass matrix object
-    LocalMassMatrixType massMatrix( dfSpace, quadOrd );
-
-    const IteratorType end = dfSpace.end();
-    for( IteratorType it = dfSpace.begin(); it != end; ++it )
-    {
-      const EntityType &entity = *it;
-      LocalFunctionType argLocal = arg.localFunction( entity );
-      massMatrix.applyInverse( entity, argLocal );
-    }
-  }
-
   // DGAdvectionDiffusionOperatorBase
   //---------------------------------
 
@@ -150,13 +120,7 @@ namespace Dune {
     //! evaluate the spatial operator 
     void operator()( const DestinationType& arg, DestinationType& dest ) const 
     {
-#ifdef NOINVERSMASS
-      DestinationType arg2( arg );
-      applyInverseMass( arg2 );
-	    pass1_( arg2, dest );
-#else 
       pass1_( arg, dest );
-#endif
     }
 
     //! only evaluate fluxes of operator 
