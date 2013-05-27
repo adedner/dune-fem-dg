@@ -14,7 +14,7 @@
 #include <dune/fem-dg/main/main.hh>
 #include <dune/fem-dg/main/codegen.hh>
 
-#include <dune/fem/misc/threadmanager.hh>
+#include <dune/fem/misc/threads/threadmanager.hh>
 #include <dune/fem-dg/pass/threadpass.hh>
 
 // include std libs

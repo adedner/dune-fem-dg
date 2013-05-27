@@ -2,8 +2,7 @@
 #define DUNE_FEM_DG_RUNFILE_HH
 
 #include <dune/fem/io/parameter.hh>
-#include <dune/fem/misc/threadmanager.hh>
-#include <dune/fem-dg/pass/threadpass.hh>
+#include <dune/fem/misc/threads/threadmanager.hh>
 
 namespace Dune {
 
