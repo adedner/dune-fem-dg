@@ -7,7 +7,7 @@
 
 #include <cassert> 
 #include <dune/common/exceptions.hh>
-#include <dune/fem/misc/threadmanager.hh>
+#include <dune/fem/misc/threads/threadmanager.hh>
 
 namespace Dune { 
 
