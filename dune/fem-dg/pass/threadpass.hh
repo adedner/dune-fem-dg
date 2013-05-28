@@ -1,8 +1,7 @@
-#ifndef DUNE_THREADPASS_HH
-#define DUNE_THREADPASS_HH
+#ifndef DUNE_FEM_DG_THREADPASS_HH
+#define DUNE_FEM_DG_THREADPASS_HH
 
 #include <dune/fem/function/common/scalarproducts.hh>
-#include <dune/fem/misc/threaditerator.hh>
 #include <dune/fem/operator/1order/localmassmatrix.hh>
 #include <dune/fem/pass/common/local.hh>
 #include <dune/fem/quadrature/caching/twistutility.hh>
@@ -11,7 +10,7 @@
 #include <dune/fem/space/common/allgeomtypes.hh> 
 #include <dune/fem/space/common/arrays.hh> 
 
-#include "domaindecomposed.hh"
+#include <dune/fem/misc/threads/domainthreaditerator.hh>
 #include "threadhandle.hh"
 
 namespace Dune {
@@ -185,7 +184,6 @@ namespace Dune {
     // type of local id set 
     typedef typename GridPartType::IndexSetType IndexSetType; 
 
-    //typedef Fem::ThreadIterator< DiscreteFunctionSpaceType > ThreadIteratorType;
     typedef Fem::DomainDecomposedIteratorStorage< DiscreteFunctionSpaceType > ThreadIteratorType;
 
     // type of adaptation handler 

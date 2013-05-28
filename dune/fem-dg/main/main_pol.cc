@@ -27,8 +27,7 @@
 #include "default.hh"
 
 #if defined USE_SMP_PARALLEL 
-#include <dune/fem/misc/threadmanager.hh>
-#include <dune/fem-dg/pass/partitioner.hh>
+#include <dune/fem/misc/threads/threadmanager.hh>
 #include <dune/fem-dg/pass/threadpass.hh>
 
 #if HAVE_DUNE_FEM_DG 

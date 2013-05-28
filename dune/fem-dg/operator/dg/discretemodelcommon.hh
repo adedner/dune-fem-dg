@@ -11,7 +11,7 @@
 #include <dune/fem-dg/operator/limiter/limiter.hh>
 
 #include <dune/fem-dg/operator/dg/passtraits.hh>
-#include <dune/fem-dg/pass/threadfilter.hh>
+#include <dune/fem/gridpart/filter/threadfilter.hh>
 
 namespace Dune {
 
