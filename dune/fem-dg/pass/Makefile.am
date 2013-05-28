@@ -1,5 +1,3 @@
 passdir = $(includedir)/dune/fem-dg/pass
-pass_HEADERS = partitioner.hh  threadfilter.hh \
-threadpass.hh  threadhandle.hh dgpass.hh dgmodelcaller.hh \
-assembleddiffusionpass.hh ellipticmodelcaller.hh
+pass_HEADERS = assembleddiffusionpass.hh  dgmodelcaller.hh  dgpass.hh  ellipticmodelcaller.hh  threadhandle.hh  threadpass.hh
 include $(top_srcdir)/am/global-rules
