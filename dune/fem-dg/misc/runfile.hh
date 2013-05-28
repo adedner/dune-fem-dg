@@ -3,6 +3,7 @@
 
 #include <dune/fem/io/parameter.hh>
 #include <dune/fem/misc/threads/threadmanager.hh>
+#include <dune/fem-dg/pass/threadpass.hh>
 
 namespace Dune {
 
