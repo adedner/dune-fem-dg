@@ -19,7 +19,7 @@
 
 #include <dune/fem/space/common/arrays.hh>
 
-#define NEWBASEFCT_CACHING
+//#define NEWBASEFCT_CACHING
 
 #ifdef NEWBASEFCT_CACHING
 //#include <dune/fem/space/shapefunctionset/caching.hh>
