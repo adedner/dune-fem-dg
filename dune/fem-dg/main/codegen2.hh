@@ -1,6 +1,8 @@
 #ifndef DUNE_BASEFUNCTIONSETS_VECTORCODEGEN_HH
 #define DUNE_BASEFUNCTIONSETS_VECTORCODEGEN_HH
 
+#define NEWBASEFCT_CACHING
+
 #include <cassert>
 #include <cstdlib>
 #include <iostream>
@@ -39,7 +41,7 @@ namespace Fem {
         out << "#else" << std::endl;
         out << "#if " << codegenPreCompVar << " == 1" << std::endl;
         out << "extern \"C\" {" << std::endl
-            << "  extern " << std::endl;
+            << "  extern inline" << std::endl;
         out << "#endif" << std::endl;
       }
       else if( stage == 1 )

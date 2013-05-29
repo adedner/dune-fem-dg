@@ -17,7 +17,15 @@
 #include <dune/geometry/referenceelements.hh>
 #include <dune/geometry/type.hh>
 
+#include <dune/fem/space/common/arrays.hh>
+
+#define NEWBASEFCT_CACHING
+
+#ifdef NEWBASEFCT_CACHING
+#include <dune/fem/space/shapefunctionset/caching.hh>
+#else 
 #include "caching.hh"
+#endif
 
 // dune-fem includes
 #include <dune/fem/space/basisfunctionset/functor.hh>
@@ -28,7 +36,11 @@
 #include <dune/fem/version.hh>
 
 #ifdef BASEFUNCTIONSET_CODEGEN_GENERATE
+#ifdef NEWBASEFCT_CACHING
+#include "codegen2.hh"
+#else
 #include "codegen.hh"
+#endif
 #endif
 
 
@@ -406,15 +418,21 @@ namespace Dune
       GeometryType geometry () const { return entity().geometry(); }
 
       template <class QuadratureType>
-      //const ScalarRangeType* rangeCache( const QuadratureType& quad ) const 
+#ifdef NEWBASEFCT_CACHING
+      const ScalarRangeType* rangeCache( const QuadratureType& quad ) const 
+#else
       const RangeVectorType& rangeCache( const QuadratureType& quad ) const 
+#endif
       { 
         return shapeFunctionSet().scalarShapeFunctionSet().impl().rangeCache( quad );
       }
 
       template <class QuadratureType>
-      //const ScalarJacobianRangeType* jacobianCache( const QuadratureType& quad ) const 
+#ifdef NEWBASEFCT_CACHING
+      const ScalarJacobianRangeType* jacobianCache( const QuadratureType& quad ) const 
+#else
       const JacobianRangeVectorType& jacobianCache( const QuadratureType& quad ) const 
+#endif
       { 
         return shapeFunctionSet().scalarShapeFunctionSet().impl().jacobianCache( quad );
       }

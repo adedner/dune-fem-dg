@@ -35,7 +35,11 @@
 #endif
 #endif
 
+#ifdef NEWBASEFCT_CACHING
+#include <dune/fem-dg/main/codegen2.hh>
+#else
 #include <dune/fem-dg/main/codegen.hh>
+#endif
 
 #include <dune/fem-dg/stepper/base.hh>
 
