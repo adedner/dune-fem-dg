@@ -127,12 +127,7 @@ namespace Fem {
       out << std::endl;
 
       // make length simd conform 
-      out << "    field_type resultTmp[ " << numRows * dimRange << " ] = { 0";
-      for( size_t row = 1; row < numRows * dimRange; ++ row )
-      {
-        out << ", 0";
-      }
-      out << " };" << std::endl << std::endl;
+      out << "    field_type resultTmp[ " << numRows * dimRange << " ] = { 0 };" << std::endl << std::endl;
 
       for(int r=0; r<dimRange ; ++r ) 
       {
@@ -290,12 +285,8 @@ namespace Fem {
       out << "    typedef typename ScalarRangeType :: field_type field_type;" << std::endl;
       out << std::endl;
 
-      out << "    double dofResult[ " << numCols * dimRange << " ] = { 0";
+      out << "    double dofResult[ " << numCols * dimRange << " ] = { 0 };" << std::endl << std::endl;
       const size_t simdRows  = simdWidth * (numRows / simdWidth) ;
-      for( size_t col = 1; col < dimRange * numCols; ++ col )
-        out << ", 0";
-      out << " };" << std::endl;
-      out << std::endl;
 
       if( simdRows > 0 ) 
       {
@@ -483,12 +474,7 @@ namespace Fem {
       for( int d = 0; d < dim ; ++ d ) 
       {
         // make length simd conform 
-        out << "    field_type resultTmp" << d << "[ " << numRows * dimRange << " ] = { 0";
-        for( size_t row = 1; row < numRows * dimRange; ++ row )
-        {
-          out << ", 0";
-        }
-        out << " };" << std::endl;
+        out << "    field_type resultTmp" << d << "[ " << numRows * dimRange << " ] = { 0 };" << std::endl;
       }
       out << std::endl;
 

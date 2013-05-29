@@ -22,7 +22,8 @@
 #define NEWBASEFCT_CACHING
 
 #ifdef NEWBASEFCT_CACHING
-#include <dune/fem/space/shapefunctionset/caching.hh>
+//#include <dune/fem/space/shapefunctionset/caching.hh>
+#include "caching2.hh"
 #else 
 #include "caching.hh"
 #endif
@@ -116,8 +117,13 @@ namespace Dune
       enum { dimDomain = FunctionSpaceType::dimDomain };
       enum { dimRange  = FunctionSpaceType::dimRange  };
 
+#ifdef NEWBASEFCT_CACHING
+      typedef std::vector< ScalarRangeType >          RangeVectorType;
+      typedef std::vector< ScalarJacobianRangeType >  JacobianRangeVectorType;
+#else
       typedef MutableArray< MutableArray< ScalarRangeType > >         RangeVectorType;
       typedef MutableArray< MutableArray< ScalarJacobianRangeType > > JacobianRangeVectorType;
+#endif
 
       //! \brief constructor
       DefaultBasisFunctionSet ()
@@ -418,24 +424,34 @@ namespace Dune
       GeometryType geometry () const { return entity().geometry(); }
 
       template <class QuadratureType>
+        /*
 #ifdef NEWBASEFCT_CACHING
       const ScalarRangeType* rangeCache( const QuadratureType& quad ) const 
-#else
-      const RangeVectorType& rangeCache( const QuadratureType& quad ) const 
-#endif
       { 
         return shapeFunctionSet().scalarShapeFunctionSet().impl().rangeCache( quad );
       }
+#else
+*/
+      const RangeVectorType& rangeCache( const QuadratureType& quad ) const 
+      { 
+        return shapeFunctionSet().scalarShapeFunctionSet().impl().rangeCache( quad );
+      }
+//#endif
 
       template <class QuadratureType>
+        /*
 #ifdef NEWBASEFCT_CACHING
       const ScalarJacobianRangeType* jacobianCache( const QuadratureType& quad ) const 
-#else
-      const JacobianRangeVectorType& jacobianCache( const QuadratureType& quad ) const 
-#endif
       { 
         return shapeFunctionSet().scalarShapeFunctionSet().impl().jacobianCache( quad );
       }
+#else
+*/
+      const JacobianRangeVectorType& jacobianCache( const QuadratureType& quad ) const 
+      { 
+        return shapeFunctionSet().scalarShapeFunctionSet().impl().jacobianCache( quad );
+      }
+//#endif
     private:
       const EntityType *entity_;
       ShapeFunctionSetType shapeFunctionSet_;
