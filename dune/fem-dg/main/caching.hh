@@ -101,6 +101,18 @@ namespace Dune
       template< class Quad, bool cacheable > 
       struct ReturnCache 
       {
+        static unsigned int maxCachingPoint( const Quad& quad ) 
+        {
+          unsigned int maxCp = 0; 
+          const unsigned int nop = quad.nop(); 
+          for( unsigned int i=0; i<nop; ++i ) 
+          {
+            const unsigned int cp = quad.cachingPoint( i );
+            maxCp = std::max( cp, maxCp );
+          }
+          return maxCp;
+        }
+
         static const RangeVectorType& 
         ranges( const ThisType& shapeFunctionSet, 
                 const Quad& quad,     
@@ -111,8 +123,11 @@ namespace Dune
           const unsigned int nop  = quad.nop(); 
           const unsigned int size = shapeFunctionSet.size();
 
+          // check caching points 
+          assert( maxCachingPoint( quad ) < nop );
+
           // make sure cache has the appropriate size 
-          storage.resize( nop * 10  );
+          storage.resize( nop );
 
           typedef MutableArray<RangeType>         RangeVector;
           for( unsigned int qp = 0 ; qp < nop; ++ qp ) 
@@ -135,8 +150,11 @@ namespace Dune
           const unsigned int nop  = quad.nop(); 
           const unsigned int size = shapeFunctionSet.size();
 
+          // check caching points 
+          assert( maxCachingPoint( quad ) < nop );
+
           // make sure cache has the appropriate size 
-          storage.resize( nop * 10  );
+          storage.resize( nop );
 
           typedef MutableArray<JacobianRangeType> JacobianRangeVector;
           for( unsigned int qp = 0 ; qp < nop; ++ qp ) 
