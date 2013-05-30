@@ -12,7 +12,13 @@
 
 // local includes
 #include <dune/fem-dg/main/main.hh>
+
+#include "default.hh"
+#ifdef NEWBASEFCT_CACHING
+#include <dune/fem-dg/main/codegen2.hh>
+#else
 #include <dune/fem-dg/main/codegen.hh>
+#endif
 
 #include <dune/fem/misc/threads/threadmanager.hh>
 #include <dune/fem-dg/pass/threadpass.hh>
@@ -25,15 +31,6 @@
 #include <dune/fem/misc/l2error.hh>
 #include <dune/fem/operator/projection/l2projection.hh>
 #include <dune/fem/solver/odesolver.hh>
-
-#if HAVE_PETSC
-#include <petsc.h>
-#endif
-
-#if HAVE_SLEPC
-#include <slepc.h>
-#endif
-
 
 #ifdef BASEFUNCTIONSET_CODEGEN_GENERATE
 #include <dune/fem/space/basefunctions/codegen.hh>
@@ -203,15 +200,6 @@ int main(int argc, char ** argv)
   /* Initialize MPI (always do this even if you are not using MPI) */
   Dune::Fem::MPIManager :: initialize( argc, argv );
   try {
-
-#if HAVE_PETSC
-    static char help[] = "Petsc-Slepc init";
-#endif
-#if HAVE_SLEPC
-    SlepcInitialize(&argc,&argv,(char*)0,help);
-#elif HAVE_PETSC 
-    PetscInitialize(&argc,&argv,(char *)0,help);
-#endif
 
   // *** Initialization
   Dune::Fem::Parameter::append(argc,argv);                           /*@\label{dg:param0}@*/
