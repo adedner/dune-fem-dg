@@ -272,9 +272,10 @@ namespace Dune {
     }
 
   protected:  
-    enum SkipMode { skipNone, skipInterior, skipNoneInterior };
+    enum SkipMode { skipNone, skipInterior, skipNonInterior };
     //! returns true for flux evaluation if neighbor 
     //! is on same thread as entity  
+    template <SkipMode mode>
     struct NBChecker 
     {
       const ThreadIteratorType& storage_;
@@ -284,18 +285,14 @@ namespace Dune {
       mutable int counter_; 
       mutable int nonEqual_;
 #endif
-      const SkipMode mode_;
-
       NBChecker( const ThreadIteratorType& st, 
-                 const int myThread, 
-                 const SkipMode mode )
+                 const int myThread )
         : storage_( st ),
           myThread_( myThread ) 
 #ifndef NDEBUG
           , counter_( 0 )
           , nonEqual_( 0 )
 #endif
-          , mode_( mode )
       {}
 
       // returns true if niehhbor can be updated 
@@ -315,11 +312,11 @@ namespace Dune {
       bool skipIntersection( const EntityType& nb ) const 
       {
         // noskip means all intersections are considered 
-        switch( mode_ ) 
+        switch( mode ) 
         {
           case skipNone:         return false; 
           case skipInterior:     return nb.partitionType() == InteriorEntity;  
-          case skipNoneInterior: return nb.partitionType() != InteriorEntity;  
+          case skipNonInterior:  return nb.partitionType() != InteriorEntity;  
           default: assert(false); abort(); return false; 
         }
       }
@@ -530,7 +527,7 @@ namespace Dune {
         if ( computeInteriorIntegrals ) 
         {
           // create NB checker, skip if neighbor is NOT interior
-          NBChecker nbChecker( iterators_, thread, skipNoneInterior );
+          NBChecker< skipNonInterior > nbChecker( iterators_, thread );
 
           const Iterator endit = iterators_.end();
           for (Iterator it = iterators_.begin(); it != endit; ++it)
@@ -549,7 +546,7 @@ namespace Dune {
         else 
         {
           // create NB checker, skip if neighbors is interior
-          NBChecker nbChecker( iterators_, thread, skipInterior );
+          NBChecker< skipInterior > nbChecker( iterators_, thread );
 
           const Iterator endit = iterators_.end();
           for (Iterator it = iterators_.begin(); it != endit; ++it)
@@ -571,7 +568,7 @@ namespace Dune {
       else 
       {
         // create NB checker, noSkip of intersections 
-        NBChecker nbChecker( iterators_, thread, skipNone );
+        NBChecker< skipNone > nbChecker( iterators_, thread );
 
         const Iterator endit = iterators_.end();
         for (Iterator it = iterators_.begin(); it != endit; ++it)
