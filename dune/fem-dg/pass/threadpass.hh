@@ -209,7 +209,7 @@ namespace Dune {
       problems_( Fem::ThreadManager::maxThreads() ),
       passes_( Fem::ThreadManager::maxThreads() ),
       passComputeTime_( Fem::ThreadManager::maxThreads(), 0.0 ),
-      passStage_( Fem::ThreadManager::maxThreads(), false ),
+      firstStage_( Fem::ThreadManager::maxThreads(), false ),
       arg_(0), dest_(0),
       nonBlockingComm_(),
       numberOfElements_( 0 ),
@@ -245,7 +245,7 @@ namespace Dune {
       for(int thread=0; thread<maxThreads; ++thread)
       {
         problems_[ thread ]->setAdaptationHandler( adHandle, 
-#ifdef NSMOD_USE_SMP_PARALLEL
+#ifdef USE_SMP_PARALLEL
             iterators_.filter( thread ), // add filter in thread parallel versions 
 #endif
             weight );
@@ -380,7 +380,6 @@ namespace Dune {
       {
         //! get pass for my thread  
         InnerPassType& myPass = pass( 0 );
-        //std::cout << "Thread Pass :: First Call !!! " << this << std::endl;
 
         // stop time 
         Timer timer ;
@@ -427,7 +426,7 @@ namespace Dune {
           // prepare pass (make sure pass doesn't clear dest, this will conflict)
           pass( i ).prepare( arg, dest );
           passComputeTime_[ i ] = 0.0 ;
-          passStage_[ i ] = true ;
+          firstStage_[ i ] = true ;
         }
         
         arg_  = &arg ; 
@@ -452,7 +451,7 @@ namespace Dune {
         {
           // mark second stage 
           for(int i=0; i<maxThreads; ++i ) 
-            passStage_[ i ] = false ;
+            firstStage_[ i ] = false ;
 
           // see threadhandle.hh 
           Fem :: ThreadHandle :: run( *this ); 
@@ -519,23 +518,23 @@ namespace Dune {
       // stop time 
       Timer timer ;
 
-      const bool computeElementIntegral = passStage_[ thread ];
+      const bool computeInteriorIntegrals = firstStage_[ thread ];
 
       // Iterator is of same type as the space iterator 
       typedef typename ThreadIteratorType :: IteratorType Iterator;
 
       if( nonBlockingComm_.nonBlockingCommunication() ) 
       {
-        if ( computeElementIntegral ) 
+        if ( computeInteriorIntegrals ) 
         {
-          // create NB checker, skip if neighbors is NOT interior
+          // create NB checker, skip if neighbor is NOT interior
           NBChecker nbChecker( iterators_, thread, false, true );
 
           const Iterator endit = iterators_.end();
           for (Iterator it = iterators_.begin(); it != endit; ++it)
           {
             assert( iterators_.thread( *it ) == thread );
-            myPass.applyLocal( *it, nbChecker );
+            myPass.interiorIntegral( *it, nbChecker );
           }
 
           // receive ghost data 
@@ -554,7 +553,7 @@ namespace Dune {
           for (Iterator it = iterators_.begin(); it != endit; ++it)
           {
             assert( iterators_.thread( *it ) == thread );
-            myPass.surfaceIntegral( *it, nbChecker );
+            myPass.processBoundaryIntegral( *it, nbChecker );
           }
 
           assert( arg_ );
@@ -589,6 +588,7 @@ namespace Dune {
         myPass.finalize(*arg_, *dest_);
       }
 
+      // accumulate compute time for this thread 
       passComputeTime_[ thread ] += timer.elapsed();
     }
 
@@ -644,7 +644,7 @@ namespace Dune {
     std::vector< DiscreteModelType* > problems_; 
     std::vector< InnerPassType* > passes_;
     mutable std::vector< double > passComputeTime_;
-    mutable std::vector< bool   > passStage_;
+    mutable std::vector< bool   > firstStage_;
 
     // temporary variables 
     mutable const ArgumentType* arg_; 

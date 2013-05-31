@@ -230,169 +230,6 @@ namespace Dune {
       applyLocal( entity );
     }
 
-    // the next block is to be removed, just disable for the moment
-    // to see whether somebody complains 
-#if 0
-    template <class DofIter, class MatrixType>
-    void addRowToMatrix( DofIter& dof, 
-                         const int sizeBlocks,
-                         DestinationType& matrixRow,
-                         MatrixType& matrix ) const 
-    {
-      enum { localBlockSize = DiscreteFunctionSpaceType :: localBlockSize };
-      const int idx = dof.global();
-      int i = 0;
-      for(int block=0; block<sizeBlocks; ++block) 
-      {
-        DofBlockPtrType dofBlock = matrixRow.block( block );
-        for( int l=0; l<localBlockSize; ++l, ++i  ) 
-        {
-          const double value = (*dofBlock)[ l ];
-          if( std::abs( value ) > 0 )
-          {
-            matrix.add( idx, i, value );  
-          }
-        }
-      }
-    }
-
-    template <class Matrix> 
-    void operator2Matrix( Matrix& matrix, DestinationType& rhs ) const 
-    {
-      DestinationType vector("Op2Mat::arg", spc_ ); 
-      DestinationType matrixRow("Op2Mat::matixRow", spc_ ); 
-      DestinationType result("Op2Mat::result", spc_ ); 
-      vector.clear();  
-
-      matrix.clear();
-      
-      // get right hand side, = op( 0 )
-      this->operator()( vector, rhs );
-
-      const int size = spc_.size();
-#if 0
-      {
-        for(int i=0; i<size; ++i) 
-        {
-          vector.leakPointer()[ i ] = 1;
-          this->operator()( vector, matrixRow );
-          vector.leakPointer()[ i ] = 0;
-          matrixRow *= -1.0;
-          matrixRow += rhs;
-          for(int j=0; j<size; ++j) 
-          {
-            const double value = matrixRow.leakPointer()[ j ];
-            if( std::abs( value ) > 0 )
-            {
-              matrix.add( i, j, value );  
-            }
-          }
-        }
-      }
-#else
-      {
-        reallyCompute_ = false ;
-        // set vector as arg and matrixRow as dest 
-        this->operator()( vector, matrixRow );
-
-
-        typedef typename DiscreteFunctionSpaceType :: BlockMapperType BlockMapperType;
-        typedef typename DiscreteFunctionSpaceType :: MapperType      MapperType;
-
-        enum { localBlockSize = DiscreteFunctionSpaceType :: localBlockSize };
-
-        const BlockMapperType& blockMapper = spc_.blockMapper();
-
-        typedef typename BlockMapperType :: DofMapIteratorType BlockDofMapIteratorType;
-        typedef typename MapperType :: DofMapIteratorType DofMapIteratorType;
-
-        // interate over the grid 
-        const int sizeBlocks = blockMapper.size();
-        IteratorType endit = spc_.end();
-        for (IteratorType it = spc_.begin(); it != endit; ++it) 
-        {
-          const EntityType& entity = *it;
-
-          {
-            DofMapIteratorType dof = spc_.mapper().begin( entity );
-
-            // iterate over all block dofs 
-            const BlockDofMapIteratorType dofend = blockMapper.end( entity );
-            for( BlockDofMapIteratorType dofit = blockMapper.begin( entity );
-                 dofit != dofend; ++ dofit )
-            {
-              // get block 
-              DofBlockPtrType block = vector.block( dofit.global() );
-
-              for( int l=0; l<localBlockSize; ++l, ++dof ) 
-              {
-                // create matrix row 
-                applyForBlock( entity, l, block, matrixRow );
-
-                // add row to matrix 
-                addRowToMatrix( dof, sizeBlocks, matrixRow, matrix );
-              }
-            }
-          }
-
-          // check for non-conforming intersections 
-          const IntersectionIteratorType endnit = gridPart_.iend( entity );
-          for( IntersectionIteratorType nit = gridPart_.ibegin( entity ); 
-               nit != endnit ; ++ nit ) 
-          {
-            const IntersectionType& intersection = *nit ;
-            // on non-conforming intersections we have to add something more
-            if( ! intersection.conforming() && intersection.neighbor() ) 
-            {
-              EntityPointerType outside = intersection.outside() ;
-              const EntityType& neighbor = *outside ;
-
-              DofMapIteratorType dof = spc_.mapper().begin( neighbor );
-
-              // iterate over all block dofs 
-              const BlockDofMapIteratorType dofend = blockMapper.end( neighbor );
-              for( BlockDofMapIteratorType dofit = blockMapper.begin( neighbor );
-                   dofit != dofend; ++ dofit )
-              {
-                // get block 
-                DofBlockPtrType block = vector.block( dofit.global() );
-
-                for( int l=0; l<localBlockSize; ++l, ++dof ) 
-                {
-                  // create matrix row (but still using entity)
-                  applyForBlock( entity, l, block, matrixRow );
-
-                  // add row to matrix 
-                  addRowToMatrix( dof, sizeBlocks, matrixRow, matrix );
-                }
-              }
-            }
-          } // end intersection iterator 
-        } // end for each entity 
-      }
-#endif
-      {
-        bool symetric = true ;
-        for( int idx = 0 ; idx < size; ++idx )
-        {
-          for(int i=0; i<size; ++i) 
-          {
-            if( std::abs( matrix( i, idx ) - matrix( idx, i) ) > 1e-6 )
-            {
-              // std::cout << " i , idx: " << i << " " << idx << " = " << matrix(i,idx) << " - " << matrix(idx,i) << std::endl;
-              symetric = false ;
-            }
-          }
-        }
-        std::cout << "Matrix is " << (symetric==true? "symetric":"non symetric") << std::endl;
-      }
-
-      reallyCompute_ = true ;
-      doFinalize( matrixRow );
-    }
-#endif
-
-
     template <class Entity, class Intersection, class Quadrature>
     inline void flux(const DestinationType &u, 
                      const Entity &entity, const Entity &nb,
@@ -464,9 +301,11 @@ namespace Dune {
       }
 
       // call finalize 
-      if( caller_ )
+      if( caller_ ) 
+      {
         delete caller_;
-      caller_ = 0;
+        caller_ = 0;
+      }
 
       arg_  = 0;
       dest_ = 0;
@@ -521,7 +360,6 @@ namespace Dune {
                     const NeighborChecker& nbChecker ) const 
     {
       // init local function 
-      // updEn_=0
       initLocalFunction( entity , updEn_ );
 
       // call real apply local 
@@ -543,7 +381,7 @@ namespace Dune {
       }
     }
 
-    // only calculate element integral part 
+    // only calculate element integral part and interior fluxes
     void elementIntegral(const EntityType& entity ) const 
     {
       // init local function 
@@ -551,21 +389,38 @@ namespace Dune {
 
       // call real apply local 
       elementIntegral(entity, updEn_);
-
+      
       // add update to real function (do not apply local inverse mass yet)
       updateFunction(entity, updEn_ );
     }
 
-    // only calculate surface integral 
+    // only calculate element integral part and interior fluxes
+    template <class NeighborChecker> 
+    void interiorIntegral(const EntityType& entity, const NeighborChecker& nbChecker ) const 
+    {
+      // init local function 
+      initLocalFunction( entity , updEn_ );
+
+      // calcuate element integral 
+      elementIntegral(entity, updEn_);
+
+      // calculate surface integral for interior and boundary intersections 
+      surfaceIntegral(entity, updEn_, nbChecker );
+      
+      // add update to real function (do not apply local inverse mass yet)
+      updateFunction(entity, updEn_ );
+    }
+
+    // only calculate integral that need data from other processes
     template <class NeighborChecker>
-    void surfaceIntegral(const EntityType& entity,
+    void processBoundaryIntegral(const EntityType& entity,
                          const NeighborChecker& nbChecker ) const 
     {
       // init local function 
       initLocalFunction( entity , updEn_ );
 
-      // call real apply local 
-      surfaceIntegral(entity, updEn_, nbChecker );
+      // calculate surface integral for intersections at the process boundary
+      surfaceIntegral(entity, updEn_, nbChecker, true );
       
       // add update to real function 
       updateFunctionAndApplyMass(entity, updEn_ );
@@ -582,7 +437,7 @@ namespace Dune {
       elementIntegral( entity, updEn, true );
 
       // calculate surface integral 
-      surfaceIntegral( entity, updEn, nbChecker, false );
+      surfaceIntegral( entity, updEn, nbChecker );
     }
 
     // compute element integral for given entity 
@@ -626,8 +481,16 @@ namespace Dune {
     void surfaceIntegral(const EntityType& entity, 
                          TemporaryLocalFunctionType& updEn,
                          const NeighborChecker& nbChecker,
-                         const bool setEntity = true ) const
+                         const bool setEntity = false ) const
     {
+      // true by default 
+      bool visited = true ;
+
+      // only compute boundary integral, when setEntity is false, 
+      // this is the case in applyLocal and interiorIntergra, 
+      // but not in processBoundaryIntegral
+      const bool computeBoundary = ! setEntity ;
+
       if ( discreteModel_.hasFlux() ) 
       {
         if( setEntity ) 
@@ -657,7 +520,12 @@ namespace Dune {
             const EntityType & nb = * outside;
 
             // check whether we have to skip this intersection
-            if( nbChecker.skipIntersection( nb ) ) continue ;
+            if( nbChecker.skipIntersection( nb ) ) 
+            {
+              // we need to visited again in the second call (i.e. processBoundaryIntegral)
+              visited = false ;
+              continue ;
+            }
             
             // true if neighbor values can be updated (needed for thread parallel version)
             const bool canUpdateNeighbor = nbChecker( entity, nb ) && dest_ ;
@@ -690,7 +558,8 @@ namespace Dune {
               }
             } // end if do something 
           } // end if neighbor
-          else if( intersection.boundary() )
+          // compute boundary only in applyLocal and interiorIntegral
+          else if( computeBoundary && intersection.boundary() )
           {
             FaceQuadratureType faceQuadInner(gridPart_, intersection, faceQuadratureOrder( entity ), 
                                              FaceQuadratureType::INSIDE);
@@ -750,8 +619,11 @@ namespace Dune {
         } // end intersection loop
       } // end discreteModel_.hasFlux() 
 
+      // set visited to true for the second call
+      visited = setEntity ? true : visited ;
+
       // this entity is finised by now 
-      visited_[ indexSet_.index( entity ) ] = reallyCompute_ ;
+      visited_[ indexSet_.index( entity ) ] = visited && reallyCompute_ ;
     }
 
     // initialize local update function 
