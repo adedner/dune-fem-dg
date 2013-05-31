@@ -463,6 +463,7 @@ namespace Dune {
         dest_ = 0;
 
         double accCompTime = 0.0;
+        double ratioMaster = 1.0; 
         for(int i=0; i<maxThreads; ++i ) 
         {
           // get number of elements 
@@ -477,7 +478,15 @@ namespace Dune {
             // accumulate time 
             accCompTime = std::max( passComputeTime_[ i ], accCompTime );
           }
+
+          // thread 0 should have longer compute time since also communication has to be done
+          if( passComputeTime_[ 0 ] > 0 )
+            ratioMaster = std::min( ratioMaster, double(passComputeTime_[ i ] / passComputeTime_[ 0 ] ) );
         }
+
+        //std::cout << "ratio = " << ratioMaster << std::endl;
+        // store ration information for next partitioning 
+        //iterators_.setMasterRatio( ratioMaster );
 
         // increase compute time 
         computeTime_ += accCompTime ;
