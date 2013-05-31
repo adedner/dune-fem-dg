@@ -483,9 +483,6 @@ namespace Dune {
                          const NeighborChecker& nbChecker,
                          const bool setEntity = false ) const
     {
-      // true by default 
-      bool visited = true ;
-
       // only compute boundary integral, when setEntity is false, 
       // this is the case in applyLocal and interiorIntergra, 
       // but not in processBoundaryIntegral
@@ -522,8 +519,6 @@ namespace Dune {
             // check whether we have to skip this intersection
             if( nbChecker.skipIntersection( nb ) ) 
             {
-              // we need to visited again in the second call (i.e. processBoundaryIntegral)
-              visited = false ;
               continue ;
             }
             
@@ -619,11 +614,8 @@ namespace Dune {
         } // end intersection loop
       } // end discreteModel_.hasFlux() 
 
-      // set visited to true for the second call
-      visited = setEntity ? true : visited ;
-
       // this entity is finised by now 
-      visited_[ indexSet_.index( entity ) ] = visited && reallyCompute_ ;
+      visited_[ indexSet_.index( entity ) ] = reallyCompute_ ;
     }
 
     // initialize local update function 
