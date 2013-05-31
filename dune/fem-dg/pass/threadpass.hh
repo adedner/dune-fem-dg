@@ -511,6 +511,9 @@ namespace Dune {
     void runThread() const
     {
       const int thread = Fem::ThreadManager::thread() ;
+      // make sure thread 0 is master thread 
+      assert( (thread == 0) == Fem::ThreadManager::isMaster() );
+
       //! get pass for my thread  
       InnerPassType& myPass = pass( thread );
 
@@ -536,7 +539,7 @@ namespace Dune {
             myPass.interiorIntegral( *it, nbChecker );
           }
 
-          // receive ghost data 
+          // receive ghost data (only master thread)
           if( thread == 0 ) 
           {
             // RECEIVE DATA, send was done on call of operator() (see pass.hh)
