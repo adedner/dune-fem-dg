@@ -209,7 +209,7 @@ namespace Dune {
       problems_( Fem::ThreadManager::maxThreads() ),
       passes_( Fem::ThreadManager::maxThreads() ),
       passComputeTime_( Fem::ThreadManager::maxThreads(), 0.0 ),
-      passStage_( Fem::ThreadManager::maxThreads(), false ),
+      firstStage_( Fem::ThreadManager::maxThreads(), false ),
       arg_(0), dest_(0),
       nonBlockingComm_(),
       numberOfElements_( 0 ),
@@ -245,7 +245,7 @@ namespace Dune {
       for(int thread=0; thread<maxThreads; ++thread)
       {
         problems_[ thread ]->setAdaptationHandler( adHandle, 
-#ifdef NSMOD_USE_SMP_PARALLEL
+#ifdef USE_SMP_PARALLEL
             iterators_.filter( thread ), // add filter in thread parallel versions 
 #endif
             weight );
@@ -272,8 +272,10 @@ namespace Dune {
     }
 
   protected:  
+    enum SkipMode { skipNone, skipInterior, skipNonInterior };
     //! returns true for flux evaluation if neighbor 
     //! is on same thread as entity  
+    template <SkipMode mode>
     struct NBChecker 
     {
       const ThreadIteratorType& storage_;
@@ -283,21 +285,14 @@ namespace Dune {
       mutable int counter_; 
       mutable int nonEqual_;
 #endif
-      const bool noSkip_; 
-      const bool equalNotEqual_;
-
       NBChecker( const ThreadIteratorType& st, 
-                 const int myThread, 
-                 const bool noSkip,
-                 const bool equalNotEqual ) 
+                 const int myThread )
         : storage_( st ),
           myThread_( myThread ) 
 #ifndef NDEBUG
           , counter_( 0 )
           , nonEqual_( 0 )
 #endif
-          , noSkip_( noSkip )
-          , equalNotEqual_( equalNotEqual )
       {}
 
       // returns true if niehhbor can be updated 
@@ -308,7 +303,6 @@ namespace Dune {
         if( myThread_ != storage_.thread( nb ) )
           ++nonEqual_;
 #endif
-
         // storage_.thread can also return negative values in which case the 
         // update of the neighbor is skipped, e.g. for ghost elements 
         return myThread_ == storage_.thread( nb );
@@ -317,9 +311,14 @@ namespace Dune {
       //! returns true if the intersection with neighbor nb should be skipped
       bool skipIntersection( const EntityType& nb ) const 
       {
-        if( noSkip_ ) return false ;
-        const bool equal = (nb.partitionType() == InteriorEntity); 
-        return equal == equalNotEqual_;
+        // noskip means all intersections are considered 
+        switch( mode ) 
+        {
+          case skipNone:         return false; 
+          case skipInterior:     return nb.partitionType() == InteriorEntity;  
+          case skipNonInterior:  return nb.partitionType() != InteriorEntity;  
+          default: assert(false); abort(); return false; 
+        }
       }
     };
 
@@ -380,7 +379,6 @@ namespace Dune {
       {
         //! get pass for my thread  
         InnerPassType& myPass = pass( 0 );
-        //std::cout << "Thread Pass :: First Call !!! " << this << std::endl;
 
         // stop time 
         Timer timer ;
@@ -427,7 +425,7 @@ namespace Dune {
           // prepare pass (make sure pass doesn't clear dest, this will conflict)
           pass( i ).prepare( arg, dest );
           passComputeTime_[ i ] = 0.0 ;
-          passStage_[ i ] = true ;
+          firstStage_[ i ] = true ;
         }
         
         arg_  = &arg ; 
@@ -452,7 +450,7 @@ namespace Dune {
         {
           // mark second stage 
           for(int i=0; i<maxThreads; ++i ) 
-            passStage_[ i ] = false ;
+            firstStage_[ i ] = false ;
 
           // see threadhandle.hh 
           Fem :: ThreadHandle :: run( *this ); 
@@ -465,6 +463,7 @@ namespace Dune {
         dest_ = 0;
 
         double accCompTime = 0.0;
+        double ratioMaster = 1.0; 
         for(int i=0; i<maxThreads; ++i ) 
         {
           // get number of elements 
@@ -479,7 +478,15 @@ namespace Dune {
             // accumulate time 
             accCompTime = std::max( passComputeTime_[ i ], accCompTime );
           }
+
+          // thread 0 should have longer compute time since also communication has to be done
+          if( passComputeTime_[ 0 ] > 0 )
+            ratioMaster = std::min( ratioMaster, double(passComputeTime_[ i ] / passComputeTime_[ 0 ] ) );
         }
+
+        //std::cout << "ratio = " << ratioMaster << std::endl;
+        // store ration information for next partitioning 
+        //iterators_.setMasterRatio( ratioMaster );
 
         // increase compute time 
         computeTime_ += accCompTime ;
@@ -513,32 +520,35 @@ namespace Dune {
     void runThread() const
     {
       const int thread = Fem::ThreadManager::thread() ;
+      // make sure thread 0 is master thread 
+      assert( (thread == 0) == Fem::ThreadManager::isMaster() );
+
       //! get pass for my thread  
       InnerPassType& myPass = pass( thread );
 
       // stop time 
       Timer timer ;
 
-      const bool computeElementIntegral = passStage_[ thread ];
+      const bool computeInteriorIntegrals = firstStage_[ thread ];
 
       // Iterator is of same type as the space iterator 
       typedef typename ThreadIteratorType :: IteratorType Iterator;
 
       if( nonBlockingComm_.nonBlockingCommunication() ) 
       {
-        if ( computeElementIntegral ) 
+        if ( computeInteriorIntegrals ) 
         {
-          // create NB checker, skip if neighbors is NOT interior
-          NBChecker nbChecker( iterators_, thread, false, true );
+          // create NB checker, skip if neighbor is NOT interior
+          NBChecker< skipNonInterior > nbChecker( iterators_, thread );
 
           const Iterator endit = iterators_.end();
           for (Iterator it = iterators_.begin(); it != endit; ++it)
           {
             assert( iterators_.thread( *it ) == thread );
-            myPass.applyLocal( *it, nbChecker );
+            myPass.interiorIntegral( *it, nbChecker );
           }
 
-          // receive ghost data 
+          // receive ghost data (only master thread)
           if( thread == 0 ) 
           {
             // RECEIVE DATA, send was done on call of operator() (see pass.hh)
@@ -548,13 +558,13 @@ namespace Dune {
         else 
         {
           // create NB checker, skip if neighbors is interior
-          NBChecker nbChecker( iterators_, thread, false, false );
+          NBChecker< skipInterior > nbChecker( iterators_, thread );
 
           const Iterator endit = iterators_.end();
           for (Iterator it = iterators_.begin(); it != endit; ++it)
           {
             assert( iterators_.thread( *it ) == thread );
-            myPass.surfaceIntegral( *it, nbChecker );
+            myPass.processBoundaryIntegral( *it, nbChecker );
           }
 
           assert( arg_ );
@@ -569,8 +579,8 @@ namespace Dune {
       }
       else 
       {
-        // create NB checker, noSkip 
-        NBChecker nbChecker( iterators_, thread, true, false );
+        // create NB checker, noSkip of intersections 
+        NBChecker< skipNone > nbChecker( iterators_, thread );
 
         const Iterator endit = iterators_.end();
         for (Iterator it = iterators_.begin(); it != endit; ++it)
@@ -589,6 +599,7 @@ namespace Dune {
         myPass.finalize(*arg_, *dest_);
       }
 
+      // accumulate compute time for this thread 
       passComputeTime_[ thread ] += timer.elapsed();
     }
 
@@ -644,7 +655,7 @@ namespace Dune {
     std::vector< DiscreteModelType* > problems_; 
     std::vector< InnerPassType* > passes_;
     mutable std::vector< double > passComputeTime_;
-    mutable std::vector< bool   > passStage_;
+    mutable std::vector< bool   > firstStage_;
 
     // temporary variables 
     mutable const ArgumentType* arg_; 
