@@ -184,10 +184,12 @@ namespace Dune {
     // type of local id set 
     typedef typename GridPartType::IndexSetType IndexSetType; 
 
-    typedef Fem::DomainDecomposedIteratorStorage< DiscreteFunctionSpaceType > ThreadIteratorType;
+    typedef Fem::DomainDecomposedIteratorStorage< GridPartType > ThreadIteratorType;
 
     // type of adaptation handler 
     typedef typename DiscreteModelType :: AdaptationHandlerType AdaptationHandlerType ;
+  protected:
+    using BaseType :: spc_;
 
   public:
     //- Public methods
@@ -204,7 +206,7 @@ namespace Dune {
                const int faceQuadOrd = -1) :
       BaseType(pass, spc),
       delDofs_( spc ),
-      iterators_( spc ),
+      iterators_( spc.gridPart() ),
       singleProblem_( problem ),
       problems_( Fem::ThreadManager::maxThreads() ),
       passes_( Fem::ThreadManager::maxThreads() ),
@@ -396,8 +398,8 @@ namespace Dune {
 
         // Iterator is of same type as the space iterator 
         typedef typename DiscreteFunctionSpaceType :: IteratorType Iterator;
-        const Iterator endit = iterators_.space().end();
-        for (Iterator it = iterators_.space().begin(); it != endit; ++it)
+        const Iterator endit = spc_.end();
+        for (Iterator it = spc_.begin(); it != endit; ++it)
         {
           myPass.applyLocal( *it );
         }
