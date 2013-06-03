@@ -160,27 +160,26 @@ protected:
     if( weight < 0 ) 
       weight = 1.0/std::pow( 2.0, double( GridType :: dimension) );
 
-    smallestVolume_ = std::numeric_limits< double > ::max();
-    largestVolume_  = std::numeric_limits< double > ::min();
+    double minVolume[ 1 ] = { std::numeric_limits< double > ::max() };
+    double maxVolume[ 1 ] = { std::numeric_limits< double > ::min() };
 
     // if grid is not empty compute smallest and biggest volume 
     const IteratorType end = dfSpace_.end();
     for( IteratorType it = dfSpace_.begin(); it != end; ++it )
     {
       const double volume = (*it).geometry().volume();
-      smallestVolume_ = std::min( smallestVolume_, volume );
-      largestVolume_  = std::max( largestVolume_,  volume );
+      minVolume[ 0 ] = std::min( minVolume[ 0 ], volume );
+      maxVolume[ 0 ] = std::max( maxVolume[ 0 ], volume );
     }
 
-    double volumes[ 2 ] = { 1.0/smallestVolume_, largestVolume_ };
-    // compute global maximum of volumes 
-    dfSpace_.grid().comm().max( &volumes[ 0 ], 2 );
+    // compute global min and max of values 
+    computeGlobalMinMax( dfSpace_.grid().comm(), 1, maxVolume, minVolume );
 
     double finestWeight   = std::pow( weight, double(finestLevel) );
     double coarsestWeight = std::pow( weight, double(coarsestLevel) );
     // set local variables 
-    smallestVolume_ = (1.0/volumes[ 0 ]) * finestWeight;
-    largestVolume_  = volumes[ 1 ] * coarsestWeight;
+    smallestVolume_ = minVolume[ 0 ] * finestWeight;
+    largestVolume_  = maxVolume[ 0 ] * coarsestWeight;
   }
 
 public:
@@ -353,49 +352,27 @@ public:
     indicator_.resize( indexSet_.size( 0 ) ); 
     clear();
 
-    double ind1Max = -1E100;
-    double ind1Min =  1E100;
-    double ind2Max = -1E100;
-    double ind2Min =  1E100;
-    ind2MaxDiff_ = 0.;
-
-    const IteratorType end = dfSpace_.end();
+    double indMax[ 2 ] = { std::numeric_limits< double > :: min (), std::numeric_limits< double > :: min () };
+    double indMin[ 2 ] = { std::numeric_limits< double > :: max (), std::numeric_limits< double > :: max () };
+    ind2MaxDiff_   = 0;
 
     numberOfElements_ = 0 ;
+    const IteratorType end = dfSpace_.end();
     for( IteratorType it = dfSpace_.begin(); it != end; ++it )
     {
       // do local estimation 
-      estimateLocal( uh, *it, ind1Min, ind1Max, ind2Min, ind2Max );
+      estimateLocal( uh, *it, indMin[ 0 ], indMax[ 0 ], indMin[ 1 ], indMax[ 1 ] );
       // count number of elements 
       ++ numberOfElements_ ;
     }
 
-    // global max 
-    {
-      double commBuff[ 2 ] = { ind1Max, ind2Max };
-
-      // get global max of indMax 
-      gridPart_.grid().comm().max( &commBuff[ 0 ], 2 );
-
-      ind1Max = commBuff[ 0 ];
-      ind2Max = commBuff[ 1 ];
-    }
-
-    // global min 
-    {
-      double commBuff[ 2 ] = { ind1Min, ind2Min };
-
-      // get global min of indMin 
-      gridPart_.grid().comm().min( &commBuff[ 0 ], 2 );
-
-      ind1Min = commBuff[ 0 ];
-      ind2Min = commBuff[ 1 ];
-    }
+    // global max and min 
+    computeGlobalMinMax( gridPart_.grid().comm(), 2, indMax, indMin );
 
     // return global max differences
-    ind1MaxDiff_ = ind1Max - ind1Min;
+    ind1MaxDiff_ = indMax[ 0 ] - indMin [ 0 ];
     if( indicator2Ptr_ )
-      ind2MaxDiff_ = ind2Max - ind2Min;
+      ind2MaxDiff_ = indMax[ 1 ] - indMin[ 1 ];
   }
 
 

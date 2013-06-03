@@ -44,6 +44,7 @@ public:
   typedef typename DiscreteFunctionSpaceType :: IteratorType        IteratorType;
 
   typedef typename GridPartType :: GridType                         GridType;
+  typedef typename GridType :: CollectiveCommunication              CommunicatorType;
   typedef typename GridPartType :: IndexSetType                     IndexSetType;
   typedef typename GridPartType :: IntersectionIteratorType         IntersectionIteratorType;
 
@@ -76,6 +77,31 @@ public:
     grid_( gridPart_.grid() ),
     indicator_() // create empty vector, resize before use 
   {
+  }
+
+  template <class Vector>
+  void computeGlobalMinMax( const CommunicatorType& comm, const int size, Vector& max, Vector& min ) const
+  {
+    //std::vector< double > buffer( 2 * size, 0.0 );
+    double buffer[ 2 * size ];
+    // store max 
+    for( int i=0; i<size; ++i ) 
+      buffer[ i ] = max[ i ];
+
+    // store 1/min 
+    const double eps = std::numeric_limits< double > :: epsilon ();
+    for( int i=0, ib=size; i<size; ++i, ++ib ) 
+      buffer[ ib ] = (std::abs( min[ i ] ) > eps) ? 1.0/min[ i ] : 0;
+
+    // compute global maximum 
+    comm.max( &buffer[ 0 ], 2*size );
+
+    // store max again
+    for( int i=0; i<size; ++i ) 
+      max[ i ] = buffer[ i ];
+    // store 1/min again
+    for( int i=0, ib=size; i<size; ++i, ++ib ) 
+      min[ i ] = (std::abs( buffer[ ib ] ) > eps) ? 1.0/buffer[ ib ] : 0;
   }
 
   void clear( IndicatorType& indicator )
