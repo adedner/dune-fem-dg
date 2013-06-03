@@ -23,99 +23,22 @@
 #include <dune/fem/io/streams/streams.hh>
 #include <dune/fem/solver/timeprovider.hh>
 
+#include <dune/fem-dg/operator/adaptation/utility.hh>
 
 namespace Dune
 {
-
-  struct AdaptationParameters
-    : public Fem::LocalParameter< AdaptationParameters, AdaptationParameters >
-  {
-    int markStrategy_;
-
-    int getStrategy () const
-    {
-      const std::string names[] = { "shockind", "apost", "grad" };
-      // default value is gradient
-      return Fem::Parameter::getEnum( "fem.adaptation.markingStrategy", names, 2 );
-    }
-
-    AdaptationParameters ()
-      : markStrategy_( getStrategy() )
-    {}
-
-    //! simulation end time
-    virtual double endTime () const
-    {
-      return Fem::Parameter::getValue< double >( "femhowto.endTime" );
-    }
-
-    //! retujrn refinement tolerance
-    virtual double refinementTolerance () const
-    {
-      return Fem::Parameter::getValue< double >( "fem.adaptation.refineTolerance" );
-    }
-
-    //! return percentage of refinement tolerance used for coarsening tolerance
-    virtual double coarsenPercentage () const
-    {
-      return Fem::Parameter::getValue< double >( "fem.adaptation.coarsenPercent", 0.1 );
-    }
-
-    //! return product of refinementTolerance and coarsenPercentage
-    virtual double coarsenTolerance () const
-    {
-      return refinementTolerance() * coarsenPercentage();
-    }
-
-    //! return maximal level achieved by refinement
-    virtual int finestLevel ( const int refineStepsForHalf ) const
-    {
-      return refineStepsForHalf *
-             Fem::Parameter::getValue< int >( "fem.adaptation.finestLevel" );
-    }
-
-    //! return minimal level achieved by refinement
-    virtual int coarsestLevel ( const int refineStepsForHalf ) const
-    {
-      return refineStepsForHalf *
-             Fem::Parameter::getValue< int >( "fem.adaptation.coarsestLevel", 0 );
-    }
-
-    //! return depth for refining neighbors of a cell marked for refinement
-    virtual int neighborRefLevel () const
-    {
-      return Fem::Parameter::getValue< int >( "fem.adaptation.grad.neighborRefLevel", 1 );
-    }
-
-    //! return true if marking strategy is based on shock indicator
-    virtual bool shockIndicator () const
-    {
-      return markStrategy_ == 0;
-    }
-
-    //! return true if marking strategy is based on shock indicator
-    virtual bool gradientBasedIndicator () const
-    {
-      return markStrategy_ == 2;
-    }
-
-    //! return true if aposteriori indicator is enabled
-    virtual bool aposterioriIndicator () const
-    {
-      return markStrategy_ == 1;
-    }
-
-    //! return true if verbosity mode is enabled
-    virtual bool verbose () const { return Fem::Parameter::getValue< bool >( "fem.adaptation.verbose", false ); }
-  };
-
-// class for the organization of the adaptation prozess
+  // class for the organization of the adaptation prozess
   template< class GridImp, class ProblemFunctionSpace >
   class AdaptationHandler
+    : public ComputeMinMaxVolume
   {
     typedef AdaptationHandler< GridImp, ProblemFunctionSpace > ThisType;
 
   public:
+    using ComputeMinMaxVolume :: coarsestVolume ;
+    using ComputeMinMaxVolume :: finestVolume ;
+    using ComputeMinMaxVolume :: computeGlobalMinMax ;
+
     enum { COARSEN = -1, NONE = 0, REFINE = 1 };
 
     typedef GridImp GridType;
@@ -320,16 +243,11 @@ namespace Dune
     const double coarsenTheta_;
     const double initialTheta_;
 
-    const int finestLevel_;
-    const int coarsestLevel_;
-
     UInt64Type globalNumElements_;
 
     mutable int localNumElements_;
 
     double endTime_;
-
-    mutable std::vector< UInt64Type > maxLevelCounter_;
 
     const bool verbose_;
   };

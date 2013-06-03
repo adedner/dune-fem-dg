@@ -4,7 +4,6 @@
 //- Dune-fem includes 
 #include <dune/fem-dg/operator/adaptation/estimatorbase.hh>
 
-
 // Estimator
 // ---------
 
@@ -20,7 +19,9 @@
  *  \tparam DiscreteFunction Discrete function type
  */
 template< class DiscreteFunction, class Problem >
-class Estimator : public EstimatorBase< DiscreteFunction >
+class Estimator : 
+  public EstimatorBase< DiscreteFunction >,
+  public Dune::ComputeMinMaxVolume 
 {
   typedef Estimator< DiscreteFunction, Problem >              ThisType;
   typedef EstimatorBase< DiscreteFunction >                   BaseType;
@@ -59,11 +60,16 @@ public:
   typedef Dune::ReferenceElements
     < DomainFieldType, dimension >                            ReferenceElementContainerType;
 
+  typedef Dune :: ComputeMinMaxVolume  ComputeMinMaxVolumeType;
 public:
   using BaseType :: mark;
   using BaseType :: clear;
   using BaseType :: estimateLocal ;
   using BaseType :: estimate ;
+
+  using ComputeMinMaxVolumeType :: coarsestVolume ;
+  using ComputeMinMaxVolumeType :: finestVolume ;
+  using ComputeMinMaxVolumeType :: computeGlobalMinMax ;
 
 protected:
   using BaseType :: dfSpace_;
@@ -78,9 +84,6 @@ protected:
   double ind2MaxDiff_;
   const int neighborRefLevel_;
   size_t numberOfElements_ ;
-
-  double smallestVolume_;
-  double largestVolume_;
 
 protected:
   const ProblemType& problem_;
@@ -140,7 +143,7 @@ protected:
         // only do the following when the neighbor is not a ghost entity 
         if( neighbor.partitionType() != Dune::GhostEntity ) 
         { 
-          if ( (neighbor.geometry().volume() > smallestVolume_) || (! neighbor.isRegular()) )
+          if ( (neighbor.geometry().volume() > finestVolume()) || (! neighbor.isRegular()) )
           {
             // mark for refinement 
             grid_.mark( 1, neighbor );
@@ -153,41 +156,15 @@ protected:
     }
   }
 
-  void computeSmallestBiggestVolume( const int finestLevel, const int coarsestLevel )  
-  {
-    double weight = Dune::DGFGridInfo<GridType>::refineWeight();
-    // if weight is not set, use 1/(2^d) 
-    if( weight < 0 ) 
-      weight = 1.0/std::pow( 2.0, double( GridType :: dimension) );
-
-    double minVolume[ 1 ] = { std::numeric_limits< double > ::max() };
-    double maxVolume[ 1 ] = { std::numeric_limits< double > ::min() };
-
-    // if grid is not empty compute smallest and biggest volume 
-    const IteratorType end = dfSpace_.end();
-    for( IteratorType it = dfSpace_.begin(); it != end; ++it )
-    {
-      const double volume = (*it).geometry().volume();
-      minVolume[ 0 ] = std::min( minVolume[ 0 ], volume );
-      maxVolume[ 0 ] = std::max( maxVolume[ 0 ], volume );
-    }
-
-    // compute global min and max of values 
-    computeGlobalMinMax( dfSpace_.grid().comm(), 1, maxVolume, minVolume );
-
-    double finestWeight   = std::pow( weight, double(finestLevel) );
-    double coarsestWeight = std::pow( weight, double(coarsestLevel) );
-    // set local variables 
-    smallestVolume_ = minVolume[ 0 ] * finestWeight;
-    largestVolume_  = maxVolume[ 0 ] * coarsestWeight;
-  }
-
 public:
   //! \brief Constructor
   explicit Estimator ( const DiscreteFunctionSpaceType &space, 
                        const Problem& problem,
                        const Dune::AdaptationParameters& param = Dune::AdaptationParameters() )
   : BaseType( space ),
+    ComputeMinMaxVolumeType( space.gridPart(), 
+                             param.coarsestLevel( Dune::DGFGridInfo<GridType>::refineStepsForHalf() ),
+                             param.finestLevel( Dune::DGFGridInfo<GridType>::refineStepsForHalf() ) ),
     indicator2Ptr_( 0 ),
     refineTolerance_( param.refinementTolerance() ),
     coarseTolerance_( param.coarsenTolerance() ),
@@ -195,11 +172,6 @@ public:
     numberOfElements_( 0 ),
     problem_( problem )
   {
-    // compute smallest and largest possible volumes
-    computeSmallestBiggestVolume( 
-        param.finestLevel( Dune::DGFGridInfo<GridType>::refineStepsForHalf() ),
-        param.coarsestLevel( Dune::DGFGridInfo<GridType>::refineStepsForHalf() ) );
-
     if( problem.twoIndicators() )
     {
       indicator2Ptr_ = new IndicatorType( indexSet_.size( 0 ) );
@@ -414,7 +386,7 @@ public:
     const GridElementType& element = Dune :: Fem :: gridEntity( entity );
 
     // allow refinement if volume of element is still bigger then smallest volume allowed
-    if ( toBeRefined && (volume > smallestVolume_) )
+    if ( toBeRefined && (volume > finestVolume()) )
     {
       // mark for refinement 
       grid_.mark( 1, element );
@@ -422,7 +394,7 @@ public:
       // also mark distant neighbors of the actual entity for refinement
       // markNeighborsForRefinement( entity, neighborRefLevel_ );
     }
-    else if ( toBeCoarsend && (volume < largestVolume_) )
+    else if ( toBeCoarsend && (volume < coarsestVolume()) )
     {
       // mark for coarsening 
       grid_.mark( -1, element );
