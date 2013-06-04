@@ -13,7 +13,10 @@ namespace Dune
   AdaptationHandler ( GridType &grid,
                       TimeProviderType &timeProvider,
                       const AdaptationParameters &param )
-    : grid_( grid )
+    : ComputeMinMaxVolume( GridPartType( grid ),
+                           param.coarsestLevel( DGFGridInfo< GridType >::refineStepsForHalf() ),
+                           param.finestLevel  ( DGFGridInfo< GridType >::refineStepsForHalf() ) )
+    , grid_( grid )
     , gridPart_( grid_ )
     , indicator_( grid_, 0, 0.0 )
     , timeProvider_( timeProvider )
@@ -21,12 +24,9 @@ namespace Dune
     , coarsenTheta_( param.coarsenPercentage() )
     // make intial error count as 2.5 percent of the total error
     , initialTheta_( 0.025 )
-    , finestLevel_( param.finestLevel( DGFGridInfo< GridType >::refineStepsForHalf() ) )
-    , coarsestLevel_( param.coarsestLevel( DGFGridInfo< GridType >::refineStepsForHalf() ) )
     , globalNumElements_( 0 )
     , localNumElements_( 0 )
     , endTime_( param.endTime() )
-    , maxLevelCounter_()
     , verbose_( Fem::Parameter::verbose() && param.verbose() )
   {
     const bool verboseOutput = Fem::Parameter::verbose();
@@ -60,12 +60,9 @@ namespace Dune
     , globalTolerance_( other.globalTolerance_ )
     , coarsenTheta_( other.coarsenTheta_ )
     , initialTheta_( other.initialTheta_ )
-    , finestLevel_( other.finestLevel_ )
-    , coarsestLevel_( other.coarsestLevel_ )
     , globalNumElements_( other.globalNumElements_ )
     , localNumElements_( other.localNumElements_ )
     , endTime_( other.endTime_ )
-    , maxLevelCounter_( other.maxLevelCounter_ )
     , verbose_( other.verbose_ )
   {}
 
@@ -264,12 +261,6 @@ namespace Dune
       // this requires global communication
       const double globalErr = getMaxEstimator();
 
-      std::cout << "Level counters: ";
-      for( size_t i = 0; i < maxLevelCounter_.size(); ++i )
-      {
-        double percent = maxLevelCounter_[ i ]/ globalNumberElements;
-        std::cout << "Level[ " << i << " ] = " << percent << "  ";
-      }
       std::cout << std::endl;
       std::cout << "   LocalEst_max = " <<  globalErr
                 << "   Tol_local = " << localTol
@@ -298,12 +289,6 @@ namespace Dune
       // this requires global communication
       const double globalErr = getMaxEstimator();
 
-      std::cout << "Level counters: ";
-      for( size_t i = 0; i < maxLevelCounter_.size(); ++i )
-      {
-        double percent = maxLevelCounter_[ i ]/ globalNumberElements;
-        std::cout << "Level[ " << i << " ] = " << percent << "  ";
-      }
       std::cout << std::endl;
       std::cout << "   LocalEst_max = " <<  globalErr
                 << "   Tol_local = " << localTol
@@ -340,13 +325,13 @@ namespace Dune
       // get local error indicator
       const double localIndicator = getLocalIndicator( entity );
       // get entity level
-      const int level = entity.level();
+      const double volume = entity.geometry().volume();
 
       // if indicator larger than localTol mark for refinement
-      if( (localIndicator > refineTol) && (level < finestLevel_) )
+      if( (localIndicator > refineTol) && (volume > finestVolume()) )
         // mark for refinement
         grid_.mark( REFINE, entity );
-      else if( (localIndicator < coarsenTol) && (level > coarsestLevel_) )
+      else if( (localIndicator < coarsenTol) && (volume < coarsestVolume()) )
         // mark for coarsening
         grid_.mark( COARSEN, entity );
       else
@@ -405,13 +390,6 @@ namespace Dune
   {
     assert( singleThreadMode() );
 
-    if( maxLevelCounter_.size() > 0 )
-      maxLevelCounter_.clear();
-
-    maxLevelCounter_.resize( finestLevel_ + 1 );
-    for( size_t i = 0; i < maxLevelCounter_.size(); ++i )
-      maxLevelCounter_[ i ] = 0;
-
     // count elements
     UInt64Type count = 0;
     // type of iterator, i.e. leaf iterator
@@ -422,33 +400,11 @@ namespace Dune
          it != endit; ++it )
     {
       ++count;
-      const unsigned int level = it->level();
-      assert( level < maxLevelCounter_.size() );
-      ++maxLevelCounter_[ level ];
     }
 
     // number of elements that I have
     localNumElements_ = count;
-
-    {
-      const size_t commSize = maxLevelCounter_.size();
-      std::vector< UInt64Type > commBuff( commSize+1, UInt64Type( 0 ) );
-
-      for( size_t i = 0; i < commSize; ++i )
-        commBuff[ i ] = maxLevelCounter_[ i ];
-      commBuff[ commSize ] = count;
-
-      // do global sum of all entries
-      grid_.comm().sum( &commBuff[ 0 ], commSize+1 );
-
-      for( size_t i = 0; i < commSize; ++i )
-        maxLevelCounter_[ i ] = commBuff[ i ];
-
-      count = commBuff[ commSize ];
-    }
-
-    // return element count
-    return count;
+    return grid_.comm().sum( count );
   }
 
 } // end namespace Dune
