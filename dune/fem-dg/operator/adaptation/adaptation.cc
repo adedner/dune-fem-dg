@@ -97,7 +97,7 @@ namespace Dune
   AdaptationHandler< GridImp, FunctionSpace >::
   clearIndicator ()
   {
-    indicator_.shrinkToFit();
+    indicator_.resize();
     indicator_.fill( 0.0 );
   }
 
@@ -214,8 +214,7 @@ namespace Dune
     }
 
     // global sum of estimator
-    max = grid_.comm().max( max );
-    return max;
+    return grid_.comm().max( max );
   }
 
   template< class GridImp, class FunctionSpace >
@@ -255,6 +254,7 @@ namespace Dune
     const double dt = timeProvider_.deltaT();
     const double localInTimeTol = initialTheta_ * globalTolerance_ * globalTolerance_* (dt / endTime_);
     const double localTol = localInTimeTol / globalNumberElements;
+
     //std::cout << "Return intial tol " << localTol << std::endl;
     if( verbose() )
     {
@@ -326,6 +326,9 @@ namespace Dune
       const double localIndicator = getLocalIndicator( entity );
       // get entity level
       const double volume = entity.geometry().volume();
+
+      //std::cout << localIndicator << "   " << refineTol << std::endl;
+      //std::cout << finestVolume() << "  " << coarsestVolume() << std::endl;
 
       // if indicator larger than localTol mark for refinement
       if( (localIndicator > refineTol) && (volume > finestVolume()) )
