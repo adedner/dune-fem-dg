@@ -46,7 +46,7 @@ namespace Dune
      */
 
     // scale tolerance with domain volume
-    globalTolerance_ *= volumeOfDomain();
+    // globalTolerance_ *= volumeOfDomain();
   }
 
   //! constructor
@@ -142,9 +142,10 @@ namespace Dune
   addToLocalIndicator ( LocalIndicatorDataType &indicator,
                         const FullRangeType &error, const double h ) const
   {
-    const double dt = timeProvider_.deltaT();
-    const double factor = ( h + dt  ) * dt;
-    indicator += (factor * error.two_norm());
+    //const double dt = timeProvider_.deltaT();
+    //const double factor = ( h + dt  ) * dt;
+    //indicator += (factor * error.two_norm());
+    indicator += error.two_norm();
   }
 
   template< class GridImp, class FunctionSpace >
@@ -308,7 +309,8 @@ namespace Dune
   {
     assert( singleThreadMode() );
     // get local refine tolerance
-    const double refineTol = ( initialAdapt ) ? getInitialTolerance() : getLocalTolerance();
+    //const double refineTol = ( initialAdapt ) ? getInitialTolerance() : getLocalTolerance();
+    const double refineTol = getMaxEstimator() * globalTolerance_ ; 
     // get local coarsen tolerance
     const double coarsenTol = refineTol * coarsenTheta_;
 
