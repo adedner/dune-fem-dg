@@ -18,6 +18,9 @@ namespace Dune
                            param.finestLevel  ( DGFGridInfo< GridType >::refineStepsForHalf() ) )
     , grid_( grid )
     , gridPart_( grid_ )
+#ifdef USE_ALUGRID_MPACCESS 
+    , mpAccess_( MPIHelper::getCommunicator() )
+#endif
     , indicator_( grid_, 0, 0.0 )
     , timeProvider_( timeProvider )
     , globalTolerance_( param.refinementTolerance() )
@@ -30,6 +33,8 @@ namespace Dune
     , verbose_( Fem::Parameter::verbose() && param.verbose() )
   {
     const bool verboseOutput = Fem::Parameter::verbose();
+
+    //std::cout << finestVolume() << "  " << coarsestVolume() << std::endl;
 
     resetStatus();
     if( verboseOutput )
@@ -236,6 +241,22 @@ namespace Dune
   }
 
   template< class GridImp, class FunctionSpace >
+  size_t 
+  AdaptationHandler< GridImp, FunctionSpace >::
+  minNumberOfElements () const
+  {
+    return minNumElements_;
+  }
+
+  template< class GridImp, class FunctionSpace >
+  size_t 
+  AdaptationHandler< GridImp, FunctionSpace >::
+  maxNumberOfElements () const
+  {
+    return maxNumElements_;
+  }
+
+  template< class GridImp, class FunctionSpace >
   double
   AdaptationHandler< GridImp, FunctionSpace >::
   getLocalInTimeTolerance () const
@@ -378,7 +399,7 @@ namespace Dune
 
     // re-calculate number of leaf elements
     // and number of level elements
-    globalNumElements_ = countElements();
+    countElements();
 
     // output new number of elements
     if( verbose() )
@@ -387,14 +408,14 @@ namespace Dune
 
   //! count number of overall leaf entities
   template< class GridImp, class FunctionSpace >
-  typename AdaptationHandler< GridImp, FunctionSpace >::UInt64Type
+  void
   AdaptationHandler< GridImp, FunctionSpace >::
-  countElements () const
+  countElements ()
   {
     assert( singleThreadMode() );
 
     // count elements
-    UInt64Type count = 0;
+    size_t count = 0;
     // type of iterator, i.e. leaf iterator
     typedef typename GridPartType::template Codim< 0 >::IteratorType IteratorType;
 
@@ -407,7 +428,20 @@ namespace Dune
 
     // number of elements that I have
     localNumElements_ = count;
-    return grid_.comm().sum( count );
+
+#ifdef USE_ALUGRID_MPACCESS 
+    typename ALU3DSPACE MpAccessLocal::minmaxsum_t minmaxsum = mpAccess_.minmaxsum( double(count) );
+    globalNumElements_ = (UInt64Type) minmaxsum.sum;
+    minNumElements_ = (size_t) minmaxsum.min;
+    maxNumElements_ = (size_t) minmaxsum.max;
+#else 
+    double minMax[ 2 ] = { double(count), count > 0 ? 1.0/double(count) : 0.0 } ;
+    grid_.comm().max( &minMax[ 0 ], 2 );
+    maxNumElements_ = (size_t) minMax[ 0 ];
+    minNumElements_ = (size_t) (minMax[ 1 ] > 0) ? (1.0/minMax[ 1 ]) : 0;
+    globalNumElements_ = count ;
+    globalNumElements_ = grid_.comm().sum( globalNumElements_ ); 
+#endif
   }
 
 } // end namespace Dune

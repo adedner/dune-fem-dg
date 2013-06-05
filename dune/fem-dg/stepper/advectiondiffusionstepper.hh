@@ -88,7 +88,17 @@ struct Stepper
   {
     // is adaptation handler exists use the information to avoid global comm
     if( adaptationHandler_ ) 
-      return adaptationHandler_->globalNumberOfElements() ;
+    {
+      UInt64Type globalElements = adaptationHandler_->globalNumberOfElements() ;
+      if( Dune::Fem::Parameter::verbose () )
+      {
+        std::cout << "grid size (sum,min,max) = ( " 
+          << globalElements << " , "
+          << adaptationHandler_->minNumberOfElements() << " , " 
+          << adaptationHandler_->maxNumberOfElements() << ")" << std::endl;
+      }
+      return globalElements;
+    }
 
     // one of them is not zero, 
     size_t advSize     = dgAdvectionOperator_.numberOfElements();
@@ -96,6 +106,12 @@ struct Stepper
     size_t dgIndSize   = gradientIndicator_.numberOfElements();
     size_t dgSize      = dgOperator_.numberOfElements(); 
     UInt64Type grSize  = std::max( std::max(advSize, dgSize ), std::max( diffSize, dgIndSize ) );
+    double minMax[ 2 ] = { double(grSize), 1.0/double(grSize) } ;
+    grid_.comm().max( &minMax[ 0 ], 2 );
+    if( Dune::Fem::Parameter :: verbose () )
+    {
+      std::cout << "grid size (min,max) = ( " << size_t(1.0/minMax[ 1 ]) << " , " << size_t(minMax[ 0 ]) << ")" << std::endl;
+    }
     return grid_.comm().sum( grSize );
   }
 

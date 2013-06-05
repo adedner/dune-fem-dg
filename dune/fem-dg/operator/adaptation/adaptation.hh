@@ -25,6 +25,11 @@
 
 #include <dune/fem-dg/operator/adaptation/utility.hh>
 
+#if HAVE_DUNE_ALUGRID && HAVE_MPI
+#define USE_ALUGRID_MPACCESS
+#include <dune/alugrid/3d/alugrid.hh>
+#endif
+
 namespace Dune
 {
   // class for the organization of the adaptation prozess
@@ -181,6 +186,12 @@ namespace Dune
     //! overall number of leaf elements
     UInt64Type globalNumberOfElements () const;
 
+    //! min number of leaf element that one process has
+    size_t minNumberOfElements () const;
+
+    //! max number of leaf element that one process has
+    size_t maxNumberOfElements () const;
+
     //! number of local leaf elements
     int localNumberOfElements () const;
 
@@ -203,9 +214,6 @@ namespace Dune
     //! reset status of indicator and count elements
     void resetStatus ();
 
-    //! count number of overall leaf entities
-    UInt64Type countElements() const;
-
     //! module interface for intialize
     void initialize ()
     {
@@ -222,6 +230,9 @@ namespace Dune
     bool verbose () const { return verbose_; }
 
   protected:
+    //! count number of overall leaf entities
+    void countElements();
+
     int thread () const { return Dune::Fem::ThreadManager::thread(); }
     bool singleThreadMode () const { return Dune::Fem::ThreadManager::singleThreadMode(); }
 
@@ -231,6 +242,10 @@ namespace Dune
     //! grid part, has grid and ind set
     GridType &grid_;
     GridPartType gridPart_;
+
+#ifdef USE_ALUGRID_MPACCESS
+    ALU3DSPACE MpAccessMPI mpAccess_;
+#endif
 
     //! persistent container holding local indicators
     IndicatorType indicator_;
@@ -244,6 +259,8 @@ namespace Dune
     const double initialTheta_;
 
     UInt64Type globalNumElements_;
+    size_t minNumElements_;
+    size_t maxNumElements_;
 
     mutable int localNumElements_;
 
@@ -255,4 +272,5 @@ namespace Dune
 } // end namespace Dune
 
 #include "adaptation.cc"
+#undef USE_ALUGRID_MPACCESS
 #endif
