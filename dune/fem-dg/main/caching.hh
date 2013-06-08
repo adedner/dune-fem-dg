@@ -15,6 +15,7 @@
 #include <dune/fem/quadrature/cachingpointlist.hh>
 #include <dune/fem/quadrature/quadrature.hh>
 #include <dune/fem/space/common/arrays.hh>
+#include <dune/fem/misc/threads/threadmanager.hh>
 
 namespace Dune
 {
@@ -48,7 +49,11 @@ namespace Dune
       explicit CachingShapeFunctionSet ( const GeometryType &type,
                                          const ShapeFunctionSet &shapeFunctionSet = ShapeFunctionSet() )
       : type_( type ),
-        shapeFunctionSet_( shapeFunctionSet )
+        shapeFunctionSet_( shapeFunctionSet ),
+        valueCaches_(),
+        jacobianCaches_(),
+        localRangeCache_( ThreadManager::maxThreads() ),
+        localJacobianCache_( ThreadManager::maxThreads() )
       {
         QuadratureStorageRegistry::registerStorage( *this );
       }
@@ -194,14 +199,14 @@ namespace Dune
       const RangeVectorType& rangeCache( const QuadratureType& quadrature ) const 
       {
         return ReturnCache< QuadratureType, Conversion< QuadratureType, CachingInterface >::exists > :: 
-          ranges( *this, quadrature, valueCaches_, localRangeCache_ );
+          ranges( *this, quadrature, valueCaches_, localRangeCache_[ ThreadManager::thread() ] );
       }
 
       template < class QuadratureType > 
       const JacobianRangeVectorType& jacobianCache( const QuadratureType& quadrature ) const 
       {
         return ReturnCache< QuadratureType, Conversion< QuadratureType, CachingInterface >::exists > :: 
-          jacobians( *this, quadrature, jacobianCaches_, localJacobianCache_ );
+          jacobians( *this, quadrature, jacobianCaches_, localJacobianCache_[ ThreadManager::thread() ] );
       }
 
     private:
@@ -242,8 +247,8 @@ namespace Dune
       ValueCacheVectorType valueCaches_;
       JacobianCacheVectorType jacobianCaches_;
 
-      mutable RangeVectorType          localRangeCache_ ;
-      mutable JacobianRangeVectorType  localJacobianCache_;
+      mutable ValueCacheVectorType     localRangeCache_ ;
+      mutable JacobianCacheVectorType  localJacobianCache_;
     };
 
 
