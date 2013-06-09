@@ -226,9 +226,12 @@ namespace Dune
                 QuadratureType, RangeArray, DofVector > Traits;
         typedef Fem :: EvaluateCallerInterface< Traits > BaseEvaluationType;
 
+        // get thread number 
+        const int thread = ThreadManager :: thread();
+
         // get base function evaluate caller (calls evaluateRanges) 
         const BaseEvaluationType& baseEval = 
-            BaseEvaluationType::storage( *this, rangeCache( quad ), quad );
+            BaseEvaluationType::storage( *this, rangeCache( quad, thread ), quad, thread );
 
         baseEval.evaluateRanges( quad, dofs, ranges );
 #else 
@@ -274,9 +277,12 @@ namespace Dune
                 JacobianArray, DofVector, Geometry >  Traits;
         typedef Fem :: EvaluateCallerInterface< Traits > BaseEvaluationType;
 
+        // get thread number 
+        const int thread = ThreadManager :: thread();
+
         // get base function evaluate caller (calls axpyRanges) 
         const BaseEvaluationType& baseEval = 
-          BaseEvaluationType::storage( *this, jacobianCache( quad ), quad );
+          BaseEvaluationType::storage( *this, jacobianCache( quad, thread ), quad, thread );
 
         // call appropriate axpyJacobian method 
         baseEval.evaluateJacobians( quad, geometry(), dofs, jacobians );
@@ -368,9 +374,12 @@ namespace Dune
             QuadratureType, RangeArray, DofVector > Traits;
         typedef Fem :: EvaluateCallerInterface< Traits > BaseEvaluationType;
 
+        // get thread number 
+        const int thread = ThreadManager :: thread();
+
         // get base function evaluate caller (calls axpyRanges) 
         const BaseEvaluationType& baseEval = 
-          BaseEvaluationType::storage( *this, rangeCache( quad ), quad );
+          BaseEvaluationType::storage( *this, rangeCache( quad, thread ), quad, thread );
 
         // call appropriate axpyRanges method 
         baseEval.axpyRanges( quad, rangeFactors, dofs );
@@ -399,9 +408,12 @@ namespace Dune
                 JacobianArray, DofVector, Geometry >  Traits;
         typedef Fem :: EvaluateCallerInterface< Traits > BaseEvaluationType;
 
+        // get thread number 
+        const int thread = ThreadManager :: thread();
+
         // get base function evaluate caller (calls axpyRanges) 
         const BaseEvaluationType& baseEval = 
-          BaseEvaluationType::storage( *this, jacobianCache( quad ), quad );
+          BaseEvaluationType::storage( *this, jacobianCache( quad, thread ), quad, thread );
 
         // call appropriate axpyRanges method 
         baseEval.axpyJacobians( quad, geometry(), jacobianFactors, dofs );
@@ -424,34 +436,16 @@ namespace Dune
       GeometryType geometry () const { return entity().geometry(); }
 
       template <class QuadratureType>
-        /*
-#ifdef NEWBASEFCT_CACHING
-      const ScalarRangeType* rangeCache( const QuadratureType& quad ) const 
+      const RangeVectorType& rangeCache( const QuadratureType& quad, const int thread ) const 
       { 
-        return shapeFunctionSet().scalarShapeFunctionSet().impl().rangeCache( quad );
+        return shapeFunctionSet().scalarShapeFunctionSet().impl().rangeCache( quad, thread );
       }
-#else
-*/
-      const RangeVectorType& rangeCache( const QuadratureType& quad ) const 
-      { 
-        return shapeFunctionSet().scalarShapeFunctionSet().impl().rangeCache( quad );
-      }
-//#endif
 
       template <class QuadratureType>
-        /*
-#ifdef NEWBASEFCT_CACHING
-      const ScalarJacobianRangeType* jacobianCache( const QuadratureType& quad ) const 
+      const JacobianRangeVectorType& jacobianCache( const QuadratureType& quad, const int thread ) const 
       { 
-        return shapeFunctionSet().scalarShapeFunctionSet().impl().jacobianCache( quad );
+        return shapeFunctionSet().scalarShapeFunctionSet().impl().jacobianCache( quad, thread );
       }
-#else
-*/
-      const JacobianRangeVectorType& jacobianCache( const QuadratureType& quad ) const 
-      { 
-        return shapeFunctionSet().scalarShapeFunctionSet().impl().jacobianCache( quad );
-      }
-//#endif
     private:
       const EntityType *entity_;
       ShapeFunctionSetType shapeFunctionSet_;
