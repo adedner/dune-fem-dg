@@ -196,17 +196,19 @@ namespace Dune
       };
 
       template < class QuadratureType > 
-      const RangeVectorType& rangeCache( const QuadratureType& quadrature ) const 
+      const RangeVectorType& rangeCache( const QuadratureType& quadrature, const int thread ) const 
       {
+        assert( thread == ThreadManager::thread() );
         return ReturnCache< QuadratureType, Conversion< QuadratureType, CachingInterface >::exists > :: 
-          ranges( *this, quadrature, valueCaches_, localRangeCache_[ ThreadManager::thread() ] );
+          ranges( *this, quadrature, valueCaches_, localRangeCache_[ thread ] );
       }
 
       template < class QuadratureType > 
-      const JacobianRangeVectorType& jacobianCache( const QuadratureType& quadrature ) const 
+      const JacobianRangeVectorType& jacobianCache( const QuadratureType& quadrature, const int thread ) const 
       {
+        assert( thread == ThreadManager::thread() );
         return ReturnCache< QuadratureType, Conversion< QuadratureType, CachingInterface >::exists > :: 
-          jacobians( *this, quadrature, jacobianCaches_, localJacobianCache_[ ThreadManager::thread() ] );
+          jacobians( *this, quadrature, jacobianCaches_, localJacobianCache_[ thread ] );
       }
 
     private:
