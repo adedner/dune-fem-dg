@@ -205,7 +205,6 @@ namespace Dune
       template < class QuadratureType > 
       const JacobianRangeVectorType& jacobianCache( const QuadratureType& quadrature ) const 
       {
-        assert( thread == ThreadManager::thread() );
         return ReturnCache< QuadratureType, Conversion< QuadratureType, CachingInterface >::exists > :: 
           jacobians( *this, quadrature, jacobianCaches_, localJacobianCache_[ ThreadManager::thread() ] );
       }
