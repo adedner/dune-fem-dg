@@ -530,7 +530,7 @@ namespace Dune {
       {
         RangeType diffBndFlux ( 0 );
         model_.diffusionBoundaryFlux( it, time, faceQuadInner.localPoint(quadPoint),
-                                      uLeft[uVar], jacLeft[uVar], diffBndFlux );
+                                      uLeft[uVar], uLeft[ sigmaVar ], diffBndFlux );
         gLeft += diffBndFlux;
       }
       else
