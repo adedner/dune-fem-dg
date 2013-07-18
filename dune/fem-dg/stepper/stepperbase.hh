@@ -115,6 +115,9 @@ struct StepperBase
   // the restriction and prolongation projection 
   typedef typename Traits :: RestrictionProlongationType RestrictionProlongationType;
 
+  // type of default mass operator 
+  typedef typename Traits :: InverseMassOperatorType  InverseMassOperatorType ;
+
   // type of adaptation manager 
   typedef Dune::Fem::AdaptationManager< GridType, RestrictionProlongationType > AdaptationManagerType ;
 
@@ -199,7 +202,7 @@ struct StepperBase
       if( reallyWrite )
       {
         model_->setTime( tp.time() );
-        Traits::setupIOTuple( tp, solution(), model(), *dataTuple_ );
+        Traits::setupIOTuple( tp, solution(), model(), *dataTuple_, inverseMassOperator() );
       }
       dataWriter_->write( tp );
     }
@@ -268,6 +271,9 @@ struct StepperBase
   {
     return problem_->dataPrefix();
   }
+
+  // inverse mass for output (default return NULL)
+  virtual InverseMassOperatorType* inverseMassOperator() { return 0; }
 
   // gather information from the space operator, the time integratior
   // and the problem to output before each table in tex file
@@ -438,6 +444,7 @@ protected:
   // method that gives you the exact solution.
   InitialDataType *problem_;
   ModelType*              model_;
+
   // Initial flux for advection discretization (UpwindFlux)
   FluxType                convectionFlux_;
   AdaptationHandlerType*  adaptationHandler_;
