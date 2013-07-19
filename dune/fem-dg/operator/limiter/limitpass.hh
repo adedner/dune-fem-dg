@@ -1904,25 +1904,18 @@ namespace Dune {
         for (IntersectionIteratorType nit = gridPart_.ibegin(en); 
              nit != endnit; ++nit) 
         {
-          if( intersection.neighbor() ) 
+          const IntersectionType& intersection = *nit;
+          if( intersection.neighbor() && ! intersection.conforming() ) 
           {
-            // conforming case 
-            if( intersection.conforming() ) 
-            {
-              FaceQuadratureType faceQuadInner(gridPart_,intersection, faceQuadOrd_, FaceQuadratureType::INSIDE);
-              if( ! checkPhysicalQuad( faceQuadInner, uEn ) ) return false;
-            }
-            else 
-            { // non-conforming case 
-              typedef typename FaceQuadratureType :: NonConformingQuadratureType NonConformingQuadratureType;
-              NonConformingQuadratureType faceQuadInner(gridPart_,intersection, faceQuadOrd_, FaceQuadratureType::INSIDE);
-              if( ! checkPhysicalQuad( faceQuadInner, nitBary, uEn ) ) return false;
-            }
+            typedef typename FaceQuadratureType :: NonConformingQuadratureType NonConformingQuadratureType;
+            NonConformingQuadratureType faceQuadInner(gridPart_,intersection, faceQuadOrd_, FaceQuadratureType::INSIDE);
+            if( ! checkPhysicalQuad( faceQuadInner, uEn ) ) return false;
           }
           else 
           {
+            // conforming case 
             FaceQuadratureType faceQuadInner(gridPart_,intersection, faceQuadOrd_, FaceQuadratureType::INSIDE);
-            if( ! checkPhysicalQuad( faceQuadInner, nitBary, uEn ) ) return false;
+            if( ! checkPhysicalQuad( faceQuadInner, uEn ) ) return false;
           }
         }
 #endif
