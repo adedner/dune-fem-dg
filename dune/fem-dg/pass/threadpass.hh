@@ -549,7 +549,7 @@ namespace Dune {
           for (Iterator it = iterators_.begin(); it != endit; ++it)
           {
             assert( iterators_.thread( *it ) == thread );
-            myPass.interiorIntegral( *it, nbChecker );
+            myPass.applyLocalInterior( *it, nbChecker );
           }
 
           // receive ghost data (only master thread)
@@ -568,7 +568,7 @@ namespace Dune {
           for (Iterator it = iterators_.begin(); it != endit; ++it)
           {
             assert( iterators_.thread( *it ) == thread );
-            myPass.processBoundaryIntegral( *it, nbChecker );
+            myPass.applyLocalProcessBoundary( *it, nbChecker );
           }
 
           assert( arg_ );
