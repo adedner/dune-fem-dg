@@ -602,7 +602,6 @@ namespace Dune {
     
     // Types from the base class
     typedef typename BaseType::Entity EntityType;
-    typedef const EntityType ConstEntityType;
 
     typedef typename BaseType::ArgumentType ArgumentType;
 
@@ -668,7 +667,8 @@ namespace Dune {
     typedef FieldVector< DomainType , dimRange > DeoModType; 
     typedef FieldMatrix< DomainFieldType, dimDomain , dimDomain > MatrixType;
 
-    typedef Fem::AllGeomTypes< typename GridPartType :: IndexSetType,
+    typedef typename GridPartType :: IndexSetType IndexSetType;
+    typedef Fem::AllGeomTypes< IndexSetType,
                                GridType> GeometryInformationType;
 
     typedef Fem::GeometryInformation< GridType, 1 > FaceGeometryInformationType;
@@ -938,6 +938,7 @@ namespace Dune {
       dest_(0),
       spc_(spc),
       gridPart_(spc_.gridPart()),
+      indexSet_( gridPart_.indexSet() ),
       localIdSet_( gridPart_.grid().localIdSet()),
       lagrangePointSetContainer_(gridPart_),
       orderPower_( -((spc_.order()+1.0) * 0.25)),
@@ -964,7 +965,7 @@ namespace Dune {
       admissibleFunctions_( getAdmissibleFunctions() ),
       usedAdmissibleFunctions_( admissibleFunctions_ )
     {
-      if( gridPart_.grid().comm().rank() == 0 )
+      if( gridPart_.comm().rank() == 0 )
       {
         std::cout << "LimitPass: Grid is ";
         if( cartesianGrid_ ) 
@@ -1144,6 +1145,10 @@ namespace Dune {
       // calculate maximal indicator (if necessary)
       discreteModel_.indicatorMax();
 
+      // reset visited vector 
+      visited_.resize( indexSet_.size( 0 ) );
+      std::fill( visited_.begin(), visited_.end(), false );
+
       const int numLevels = gridPart_.grid().maxLevel() + 1;
       // check size of matrix cache vec
       if( (int) matrixCacheVec_.size() < numLevels )
@@ -1177,13 +1182,53 @@ namespace Dune {
 
   protected:
     //! apply local is virtual 
-    void applyLocal(ConstEntityType& en) const
+    void applyLocal(const EntityType& en) const
     {
       applyLocalImp(en);
     }
 
+    template <class NeighborChecker>
+    void applyLocalInterior( const EntityType& entity,
+                             const NeighborChecker& nbChecker ) const 
+    {
+      // check whether on of the intersections is with ghost element 
+      // and if so, skip the computation of the limited solution for now
+      const IntersectionIteratorType endnit = gridPart_.iend(entity);
+      for (IntersectionIteratorType nit = gridPart_.ibegin(entity); nit != endnit; ++nit)
+      {
+        const IntersectionType& intersection = *nit;
+        if( intersection.neighbor() )
+        {
+          // get neighbor 
+          EntityPointerType outside = intersection.outside();
+          const EntityType & nb = * outside;
+
+          // check whether we have to skip this intersection
+          if( nbChecker.skipIntersection( nb ) )
+          {
+            return ; 
+          }
+        }
+      }
+
+      // otherwise apply limiting process
+      applyLocalImp( entity );
+    }
+
+    template <class NeighborChecker>
+    void applyLocalProcessBoundary( const EntityType& entity,
+                                    const NeighborChecker& nChecker ) const
+    {
+      assert( indexSet_.index( entity ) < int(visited_.size()) );
+      // if entity was already visited, do nothing in this turn 
+      if( visited_[ indexSet_.index( entity ) ] ) return ;
+
+      // apply limiter otherwise 
+      applyLocalImp( entity );
+    }
+
     //! Perform the limitation on all elements.
-    void applyLocalImp(ConstEntityType& en) const
+    void applyLocalImp(const EntityType& en) const
     {
       // timer for shock detection
       Timer indiTime; 
@@ -1421,6 +1466,10 @@ namespace Dune {
         discreteModel_.adaptation( gridPart_.grid() , en, shockIndicator, adaptIndicator );
       }
 
+      // mark entity as finished, even if not limited everything necessary was done
+      assert( indexSet_.index( entity ) < int(visited_.size()) );
+      visited_[ indexSet_.index( en ) ] = true ;
+
       // if nothing to limit then just return here
       if ( ! limiter ) return ;
 
@@ -1467,6 +1516,7 @@ namespace Dune {
       assert( checkPhysical(en, geo, limitEn) );
 
       stepTime_[1] += indiTime.elapsed();
+
       //end limiting process 
     }
     
@@ -2517,6 +2567,7 @@ namespace Dune {
 
     const DiscreteFunctionSpaceType& spc_;
     GridPartType& gridPart_;
+    const IndexSetType& indexSet_;
     const LocalIdSetType& localIdSet_;
 
     LagrangePointSetContainerType lagrangePointSetContainer_; 
@@ -2548,6 +2599,9 @@ namespace Dune {
     mutable std::vector< DomainType > barys_;
     mutable std::vector< RangeType >  nbVals_;
     mutable std::vector< MatrixCacheType > matrixCacheVec_;
+
+    // vector for stroing the information which elements have been computed already 
+    mutable std::vector< bool > visited_;
 
     LocalMassMatrixType localMassMatrix_;
     //! true if limiter is used in adaptive scheme 

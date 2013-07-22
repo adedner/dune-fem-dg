@@ -11,6 +11,7 @@
 #include <dune/fem/space/common/arrays.hh> 
 
 #include <dune/fem/misc/threads/domainthreaditerator.hh>
+#include <dune/fem/misc/threads/threaditerator.hh>
 #include "threadhandle.hh"
 
 namespace Dune {
@@ -185,6 +186,7 @@ namespace Dune {
     typedef typename GridPartType::IndexSetType IndexSetType; 
 
     typedef Fem::DomainDecomposedIteratorStorage< GridPartType > ThreadIteratorType;
+    //typedef Fem::ThreadIterator< GridPartType > ThreadIteratorType;
 
     // type of adaptation handler 
     typedef typename DiscreteModelType :: AdaptationHandlerType AdaptationHandlerType ;
@@ -547,7 +549,7 @@ namespace Dune {
           for (Iterator it = iterators_.begin(); it != endit; ++it)
           {
             assert( iterators_.thread( *it ) == thread );
-            myPass.interiorIntegral( *it, nbChecker );
+            myPass.applyLocalInterior( *it, nbChecker );
           }
 
           // receive ghost data (only master thread)
@@ -566,7 +568,7 @@ namespace Dune {
           for (Iterator it = iterators_.begin(); it != endit; ++it)
           {
             assert( iterators_.thread( *it ) == thread );
-            myPass.processBoundaryIntegral( *it, nbChecker );
+            myPass.applyLocalProcessBoundary( *it, nbChecker );
           }
 
           assert( arg_ );

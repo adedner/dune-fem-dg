@@ -142,7 +142,7 @@ namespace Dune {
     {
       // make sure that either a ghost layer or an overlap layer is there for 
       // communication of the data, otherwise the scheme will not work
-      if( spc_.grid().comm().size() > 1 ) 
+      if( spc_.gridPart().comm().size() > 1 ) 
       {
         if( spc_.grid().ghostSize( 0 ) <= 0 && spc_.grid().overlapSize( 0 ) <= 0 ) 
         {
@@ -402,7 +402,7 @@ namespace Dune {
 
     // only calculate element integral part and interior fluxes
     template <class NeighborChecker> 
-    void interiorIntegral(const EntityType& entity, const NeighborChecker& nbChecker ) const 
+    void applyLocalInterior(const EntityType& entity, const NeighborChecker& nbChecker ) const 
     {
       // init local function 
       initLocalFunction( entity , updEn_ );
@@ -419,8 +419,8 @@ namespace Dune {
 
     // only calculate integral that need data from other processes
     template <class NeighborChecker>
-    void processBoundaryIntegral(const EntityType& entity,
-                         const NeighborChecker& nbChecker ) const 
+    void applyLocalProcessBoundary(const EntityType& entity,
+                                   const NeighborChecker& nbChecker ) const 
     {
       // init local function 
       initLocalFunction( entity , updEn_ );

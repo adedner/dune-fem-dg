@@ -231,7 +231,7 @@ namespace Dune {
     public Fem::SpaceOperatorInterface 
       < typename PassTraits< Model, Model::Traits::dimRange, (pOrd < 0 ) ? 0 : pOrd> :: DestinationType >
   {
-    enum PassIdType { u, limitPassId, advectPassId };    /*@\label{ad:passids}@*/
+    enum PassIdType { u, limitPassId, advectPassId };
     enum { polOrd = ( pOrd < 0 ) ? 0 : pOrd };
     enum { limiterPolOrd = ( pOrd < 0 ) ? 1 : pOrd };
 
@@ -271,9 +271,16 @@ namespace Dune {
       LimiterDestinationType ;
     typedef typename LimiterDestinationType :: DiscreteFunctionSpaceType  LimiterSpaceType;
 
-    typedef Fem::StartPass< DiscreteFunctionType, u >                        Pass0Type; /*@LST0S@*/
-    typedef LimitDGPass< LimiterDiscreteModelType, Pass0Type, limitPassId >   Pass1Type; /*@\label{ad:typedefpass1}@*/
-    typedef LocalCDGPass< DiscreteModel1Type, Pass1Type, advectPassId > Pass2Type; /*@\label{ad:typedefpass2}@*//*@LST0E@*/
+//#ifdef USE_SMP_PARALLEL
+//    typedef Fem::StartPass < DiscreteFunctionType, u, NonBlockingCommHandle< DiscreteFunctionType > Pass0Type;
+//    typedef LimitDGPass    < LimiterDiscreteModelType, Pass0Type, limitPassId >   InnerPass1Type;
+//    typedef ThreadPass     < InnerPass1Type, true > Pass1Type;
+//    typedef LocalCDGPass   <  
+//#else 
+    typedef Fem::StartPass < DiscreteFunctionType, u >                          Pass0Type;
+    typedef LimitDGPass    < LimiterDiscreteModelType, Pass0Type, limitPassId > Pass1Type;
+    typedef LocalCDGPass   < DiscreteModel1Type, Pass1Type, advectPassId >      Pass2Type;
+//#endif
 
     typedef typename PassTraitsType::IndicatorType                      IndicatorType;
     typedef typename IndicatorType::DiscreteFunctionSpaceType           IndicatorSpaceType;
@@ -319,8 +326,8 @@ namespace Dune {
       , problem1_( model_, numflux_, diffFlux_ )
       , limitProblem_( model_ , space_.order() )
       , pass0_()
-      , pass1_( limitProblem_, pass0_, limiterSpace_ )    /*@\label{ad:initialisepass1}@*/
-      , pass2_( problem1_, pass1_, space_ )    /*@\label{ad:initialisepass1}@*/
+      , pass1_( limitProblem_, pass0_, limiterSpace_ )
+      , pass2_( problem1_, pass1_, space_ )
     {
       limitProblem_.setIndicator( &indicator_ );
     }
