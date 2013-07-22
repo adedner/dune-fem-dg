@@ -90,6 +90,7 @@ struct StepperTraits
   // type of restriction/prolongation projection for adaptive simulations 
   typedef Dune :: Fem :: RestrictProlongDefault< DiscreteFunctionType > RestrictionProlongationType;
 
+  struct InverseMassOperatorType {};
 
   // management of IO tuple
 
@@ -116,7 +117,8 @@ struct StepperTraits
   static void setupIOTuple ( const TimeProvider &timeProvider,
                              const DiscreteFunctionType &solution,
                              const Model &model,
-                             const IOTupleType &ioTuple )
+                             const IOTupleType &ioTuple,
+                             const InverseMassOperatorType *inverseMassOp )
   {
     DiscreteFunctionType *additionalVariables = Dune::get< 1 >( ioTuple );
     if( additionalVariables )
