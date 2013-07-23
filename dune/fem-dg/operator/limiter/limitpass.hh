@@ -1467,7 +1467,7 @@ namespace Dune {
       }
 
       // mark entity as finished, even if not limited everything necessary was done
-      assert( indexSet_.index( entity ) < int(visited_.size()) );
+      assert( indexSet_.index( en ) < int(visited_.size()) );
       visited_[ indexSet_.index( en ) ] = true ;
 
       // if nothing to limit then just return here
