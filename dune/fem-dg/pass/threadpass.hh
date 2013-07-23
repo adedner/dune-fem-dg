@@ -217,6 +217,7 @@ namespace Dune {
       nonBlockingComm_(),
       numberOfElements_( 0 ),
       firstCall_( true ),
+      requireCommunication_( true ),
       sumComputeTime_( Fem :: Parameter :: getValue<bool>("fem.parallel.sumcomputetime", false ) )
     {
       const int maxThreads = Fem::ThreadManager::maxThreads();
@@ -231,6 +232,8 @@ namespace Dune {
       if( Fem :: Parameter :: verbose() )
         std::cout << "Thread Pass initialized\n";
 #endif
+      // get information about communication
+      requireCommunication_ = passes_[ 0 ]->requireCommunication();
     }
 
     virtual ~ThreadPass () 
@@ -376,14 +379,6 @@ namespace Dune {
     //! overload compute method to use thread iterators 
     void compute(const ArgumentType& arg, DestinationType& dest) const
     {
-
-    }
-
-    //! overload compute method to use thread iterators 
-    void compute(const ArgumentType& arg, DestinationType& dest) const
-    {
-      const bool updateAlso = (& dest != 0);
-
       // reset number of elements 
       numberOfElements_ = 0;
 
@@ -413,7 +408,7 @@ namespace Dune {
 
         // for the first call we need to receive data already here,
         // since the flux calculation is done at once
-        if( nonBlockingComm_.nonBlockingCommunication() ) 
+        if( useNonBlockingCommunication() ) 
         {
           // RECEIVE DATA, send was done on call of operator() (see pass.hh)
           receiveCommunication( arg );
@@ -473,7 +468,7 @@ namespace Dune {
         // BEGIN PARALLEL REGION, second stage, surface integrals 
         // only for non-blocking communication 
         ////////////////////////////////////////////////////////////
-        if( nonBlockingComm_.nonBlockingCommunication() ) 
+        if( useNonBlockingCommunication() )
         {
           // mark second stage 
           firstStage_ = false ;
@@ -522,23 +517,32 @@ namespace Dune {
       // set max time steps 
       setMaxTimeSteps();
 
-      // if useNonBlockingComm_ is disabled then communicate here
-      if( ! nonBlockingComm_.nonBlockingCommunication() && updateAlso ) 
+      // if useNonBlockingComm_ is disabled then communicate here if communication is required 
+      if( requireCommunication_ && ! nonBlockingComm_.nonBlockingCommunication() ) 
       {
-        // communicate calculated function 
-        dest.communicate();
+        if( &dest ) // could also be reference to NULL 
+        {
+          // communicate calculated function 
+          dest.communicate();
+        }
       }
+    }
+
+    //! return true if communication is necessary and non-blocking should be used
+    bool useNonBlockingCommunication() const 
+    {
+      return requireCommunication_ && nonBlockingComm_.nonBlockingCommunication();
     }
 
     void initComm() const 
     {
-      if( nonBlockingComm_.nonBlockingCommunication() && destination_ ) 
+      if( useNonBlockingCommunication() && destination_ ) 
         nonBlockingComm_.initComm( destination() );
     }
 
     void receiveComm() const
     {
-      if( nonBlockingComm_.nonBlockingCommunication() && destination_ ) 
+      if( useNonBlockingCommunication() && destination_ ) 
         nonBlockingComm_.receiveComm( destination() );
     }
 
@@ -560,7 +564,7 @@ namespace Dune {
       // Iterator is of same type as the space iterator 
       typedef typename ThreadIteratorType :: IteratorType Iterator;
 
-      if( nonBlockingComm_.nonBlockingCommunication() ) 
+      if( useNonBlockingCommunication() ) 
       {
         if ( computeInteriorIntegrals ) 
         {
@@ -575,7 +579,7 @@ namespace Dune {
           }
 
           // receive ghost data (only master thread)
-          if( thread == 0 ) 
+          if( thread == 0 && requireCommunication_ ) 
           {
             // RECEIVE DATA, send was done on call of operator() (see pass.hh)
             receiveCommunication( *arg_ );
@@ -694,6 +698,7 @@ namespace Dune {
 
     mutable size_t numberOfElements_;
     mutable bool firstCall_;
+    bool requireCommunication_;
     const bool sumComputeTime_;
   };
 //! @}  
