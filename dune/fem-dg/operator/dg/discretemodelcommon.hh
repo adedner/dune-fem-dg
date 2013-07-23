@@ -260,10 +260,10 @@ namespace Dune {
 
       if( advection ) 
       {
-        double ldt = numflux_.numericalFlux(it, this->inside(), this->outside(),
-                                           time, faceQuadInner, faceQuadOuter, quadPoint, 
-                                           uLeft[ uVar ], uRight[ uVar ], gLeft, gRight);
-        return ldt ;
+        // returns advection wave speed 
+        return numflux_.numericalFlux(it, this->inside(), this->outside(),
+                                      time, faceQuadInner, faceQuadOuter, quadPoint, 
+                                      uLeft[ uVar ], uRight[ uVar ], gLeft, gRight);
       }
       else 
       {
@@ -302,12 +302,14 @@ namespace Dune {
         if( hasBndValue )
         {
           RangeType gRight;
+          // returns advection wave speed 
           return numflux_.numericalFlux(it, this->inside(), this->inside(),
                                         time, faceQuadInner, faceQuadInner, quadPoint, 
                                         uLeft[ uVar ], uBnd_, gLeft, gRight);
         }
         else 
         {
+          // returns advection wave speed 
           return model_.boundaryFlux( it, time, x, uLeft[uVar], gLeft );
         }
       }
