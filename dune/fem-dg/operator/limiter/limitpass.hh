@@ -907,7 +907,7 @@ namespace Dune {
     enum AdmissibleFunctions { DGFunctions = 0, ReconstructedFunctions = 1 , BothFunctions = 2 };
 
     //! returns true of pass is currently active in the pass tree
-    using BaseType :: isActive ;
+    using BaseType :: active ;
 
   public:
     //- Public methods
@@ -1072,7 +1072,7 @@ namespace Dune {
       }
 
       // if polOrder of destination is > 0 then we have to do something 
-      if( spc_.order() > 0 && isActive() )
+      if( spc_.order() > 0 && active() )
       {
         // prepare, i.e. set argument and destination 
         prepare(arg, dest);
@@ -1491,9 +1491,11 @@ namespace Dune {
 
       if( usedAdmissibleFunctions_ >= ReconstructedFunctions ) 
       {
+        // level is only needed for Cartesian grids to access the matrix caches
+        const int matrixCacheLevel = ( cartesian ) ? en.level() : 0 ;
         // calculate linear functions 
-        calculateLinearFunctions(en.level(), comboSet, geomType, 
-                                 boundary, nonConforming , cartesian );
+        calculateLinearFunctions( matrixCacheLevel, comboSet, geomType, 
+                                  boundary, nonConforming , cartesian );
       }
       
       // add DG Function
