@@ -11,6 +11,8 @@
 #include <dune/fem-dg/operator/dg/passtraits.hh>
 
 #ifdef USE_SMP_PARALLEL
+#include <dune/fem/misc/threads/domainthreaditerator.hh>
+#include <dune/fem/misc/threads/threaditerator.hh>
 #include <dune/fem-dg/pass/threadpass.hh>
 #endif
 
@@ -53,6 +55,7 @@ namespace Dune {
     
     typedef typename AdvTraits::DiscreteFunctionType AdvDFunctionType;
     typedef typename AdvTraits::IndicatorType        IndicatorType ;
+    typedef typename AdvTraits::GridPartType GridPartType;
     
     typedef Fem::StartPass< AdvDFunctionType, u
 #ifdef USE_SMP_PARALLEL
@@ -66,6 +69,8 @@ namespace Dune {
 #endif
       LocalCDGPass< DiscreteModelType, Pass0Type, cdgpass >
 #ifdef USE_SMP_PARALLEL
+      , Fem::DomainDecomposedIteratorStorage< GridPartType >
+    //, Fem::ThreadIterator< GridPartType >
       , true // non-blocking communication 
         > 
 #endif
@@ -76,7 +81,6 @@ namespace Dune {
     typedef typename AdvTraits::DestinationType AdvDestinationType;
 
     typedef AdvDomainType DomainType;
-    typedef typename AdvTraits::GridPartType GridPartType;
     typedef AdvDFunctionSpaceType DiscreteFunctionSpaceType;
     typedef AdvDestinationType DestinationType;
 

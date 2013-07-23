@@ -10,8 +10,6 @@
 #include <dune/fem/space/common/allgeomtypes.hh> 
 #include <dune/fem/space/common/arrays.hh> 
 
-#include <dune/fem/misc/threads/domainthreaditerator.hh>
-#include <dune/fem/misc/threads/threaditerator.hh>
 #include "threadhandle.hh"
 
 namespace Dune {
@@ -133,13 +131,15 @@ namespace Dune {
     }
   };
 
-  template < class InnerPass, bool nonblockingcomm = true > 
+  template < class InnerPass, 
+             class ThreadIterator, 
+             bool nonblockingcomm = true > 
   class ThreadPass :
     public Fem::LocalPass< typename InnerPass :: DiscreteModelType,
                            typename InnerPass :: PreviousPassType, 
                            InnerPass :: passId > 
   {
-    typedef ThreadPass< InnerPass > ThisType;
+    typedef ThreadPass< InnerPass, ThreadIterator, nonblockingcomm > ThisType;
   public:
     typedef InnerPass InnerPassType;
     typedef typename InnerPass :: DiscreteModelType  DiscreteModelType;
@@ -185,8 +185,8 @@ namespace Dune {
     // type of local id set 
     typedef typename GridPartType::IndexSetType IndexSetType; 
 
-    typedef Fem::DomainDecomposedIteratorStorage< GridPartType > ThreadIteratorType;
-    //typedef Fem::ThreadIterator< GridPartType > ThreadIteratorType;
+    // type of thread iterators (e.g. Fem::DomainDecomposedIteratorStorage or Fem::ThreadIterator)
+    typedef ThreadIterator  ThreadIteratorType;
 
   protected:
     using BaseType :: spc_;
@@ -371,6 +371,12 @@ namespace Dune {
       const int maxThreads = Fem::ThreadManager::maxThreads();
       for(int i=0; i<maxThreads; ++i ) 
         problems_[ i ]->switchUpwind(); 
+    }
+
+    //! overload compute method to use thread iterators 
+    void compute(const ArgumentType& arg, DestinationType& dest) const
+    {
+
     }
 
     //! overload compute method to use thread iterators 
