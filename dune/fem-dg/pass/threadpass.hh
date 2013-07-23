@@ -188,10 +188,9 @@ namespace Dune {
     typedef Fem::DomainDecomposedIteratorStorage< GridPartType > ThreadIteratorType;
     //typedef Fem::ThreadIterator< GridPartType > ThreadIteratorType;
 
-    // type of adaptation handler 
-    typedef typename DiscreteModelType :: AdaptationHandlerType AdaptationHandlerType ;
   protected:
     using BaseType :: spc_;
+    using BaseType :: pass ;
 
   public:
     //- Public methods
@@ -213,7 +212,7 @@ namespace Dune {
       problems_( Fem::ThreadManager::maxThreads() ),
       passes_( Fem::ThreadManager::maxThreads() ),
       passComputeTime_( Fem::ThreadManager::maxThreads(), 0.0 ),
-      firstStage_( Fem::ThreadManager::maxThreads(), false ),
+      firstStage_( false ),
       arg_(0), dest_(0),
       nonBlockingComm_(),
       numberOfElements_( 0 ),
@@ -226,7 +225,7 @@ namespace Dune {
         // use serparate discrete problem for each thread 
         problems_[ i ] = new DiscreteModelType( problem );
         // create dg passes, the last bool disables communication in the pass itself
-        passes_[ i ]   = new InnerPassType( *problems_[ i ], pass, spc, volumeQuadOrd, faceQuadOrd, false );
+        passes_[ i ]   = new InnerPassType( *problems_[ i ], pass, spc, volumeQuadOrd, faceQuadOrd );
       }
 #ifndef NDEBUG
       if( Fem :: Parameter :: verbose() )
@@ -243,16 +242,37 @@ namespace Dune {
       }
     }
 
-    void setAdaptationHandler( AdaptationHandlerType& adHandle, double weight ) 
+    template <class AdaptationType>
+    void setAdaptation( AdaptationType& adHandle, double weight ) 
     {
       const int maxThreads = Fem::ThreadManager::maxThreads();
       for(int thread=0; thread<maxThreads; ++thread)
       {
-        problems_[ thread ]->setAdaptationHandler( adHandle, 
+        problems_[ thread ]->setAdaptation( adHandle, 
 #ifdef USE_SMP_PARALLEL
             iterators_.filter( thread ), // add filter in thread parallel versions 
 #endif
             weight );
+      }
+    }
+
+    //! call apropriate method on all internal passes
+    void enable() const 
+    {
+      const int maxThreads = Fem::ThreadManager::maxThreads();
+      for(int thread=0; thread<maxThreads; ++thread)
+      {
+        pass( thread ).enable();
+      }
+    }
+
+    //! call apropriate method on all internal passes
+    void disable() const 
+    {
+      const int maxThreads = Fem::ThreadManager::maxThreads();
+      for(int thread=0; thread<maxThreads; ++thread)
+      {
+        pass( thread ).disable();
       }
     }
    
@@ -357,11 +377,6 @@ namespace Dune {
     void compute(const ArgumentType& arg, DestinationType& dest) const
     {
       const bool updateAlso = (& dest != 0);
-      if( updateAlso ) 
-      {
-        // clear destination 
-        dest.clear();
-      }
 
       // reset number of elements 
       numberOfElements_ = 0;
@@ -424,13 +439,15 @@ namespace Dune {
 
         // call prepare before parallel area 
         const int maxThreads = Fem::ThreadManager::maxThreads();
-        for(int i=0; i<maxThreads; ++i ) 
+        pass( 0 ).prepare( arg, dest, true );
+        passComputeTime_[ 0 ] = 0.0 ;
+        for(int i=1; i<maxThreads; ++i ) 
         {
           // prepare pass (make sure pass doesn't clear dest, this will conflict)
-          pass( i ).prepare( arg, dest );
+          pass( i ).prepare( arg, dest, false );
           passComputeTime_[ i ] = 0.0 ;
-          firstStage_[ i ] = true ;
         }
+        firstStage_ = true ;
         
         arg_  = &arg ; 
         dest_ = &dest ;
@@ -453,8 +470,7 @@ namespace Dune {
         if( nonBlockingComm_.nonBlockingCommunication() ) 
         {
           // mark second stage 
-          for(int i=0; i<maxThreads; ++i ) 
-            firstStage_[ i ] = false ;
+          firstStage_ = false ;
 
           // see threadhandle.hh 
           Fem :: ThreadHandle :: run( *this ); 
@@ -533,7 +549,7 @@ namespace Dune {
       // stop time 
       Timer timer ;
 
-      const bool computeInteriorIntegrals = firstStage_[ thread ];
+      const bool computeInteriorIntegrals = firstStage_;
 
       // Iterator is of same type as the space iterator 
       typedef typename ThreadIteratorType :: IteratorType Iterator;
@@ -578,7 +594,7 @@ namespace Dune {
 
           // finalize pass (make sure communication is done in case of thread parallel
           // program, this would give conflicts)
-          myPass.finalize(*arg_, *dest_);
+          myPass.finalize(*arg_, *dest_, false );
         }
       }
       else 
@@ -600,7 +616,7 @@ namespace Dune {
 
         // finalize pass (make sure communication is not done in case of thread parallel
         // program, this would give conflicts)
-        myPass.finalize(*arg_, *dest_);
+        myPass.finalize(*arg_, *dest_, false );
       }
 
       // accumulate compute time for this thread 
@@ -631,6 +647,7 @@ namespace Dune {
   protected:
     void setMaxTimeSteps() const
     {
+      /*
       const int maxThreads = Fem::ThreadManager::maxThreads();
       double maxAdvStep = 0;
       double maxDiffStep = 0;
@@ -642,6 +659,7 @@ namespace Dune {
 
       // set time steps to single problem 
       singleProblem_.setMaxTimeSteps( maxAdvStep, maxDiffStep );
+      */
     }
 
   private:
@@ -659,7 +677,7 @@ namespace Dune {
     std::vector< DiscreteModelType* > problems_; 
     std::vector< InnerPassType* > passes_;
     mutable std::vector< double > passComputeTime_;
-    mutable std::vector< bool   > firstStage_;
+    mutable bool firstStage_;
 
     // temporary variables 
     mutable const ArgumentType* arg_; 

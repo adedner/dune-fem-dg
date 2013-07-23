@@ -919,14 +919,12 @@ namespace Dune {
      *                     this pass
      *  \param  vQ         order of volume quadrature                    
      *  \param  fQ         order of face quadrature                    
-     *  \param  nTP        dummy parameter (to be removed again)                    
      */
     LimitDGPass(DiscreteModelType& problem, 
                 PreviousPassType& pass, 
                 const DiscreteFunctionSpaceType& spc,
                 const int vQ = -1,
-                const int fQ = -1,
-                bool  nTP = false ) :
+                const int fQ = -1 ) :
       BaseType(pass, spc),
       caller_( 0 ),
       discreteModel_(problem),
@@ -1020,7 +1018,7 @@ namespace Dune {
     struct AssignFunction
     {
       template <class ArgImp, class DestImp> 
-      static bool assign(const ArgImp& arg, DestImp& dest)
+      static bool assign(const ArgImp& arg, DestImp& dest, const bool firstThread)
       {
         // reconstruct if this combination of orders has been given
         return (arg.space().order() == 0) && (dest.space().order() == 1);
@@ -1031,9 +1029,12 @@ namespace Dune {
     struct AssignFunction<S1,S1>
     {
       template <class ArgImp, class DestImp> 
-      static bool assign(const ArgImp& arg, DestImp& dest) 
+      static bool assign(const ArgImp& arg, DestImp& dest, const bool firstThread ) 
       {
-        dest.assign(arg);
+        if( firstThread ) 
+        {
+          dest.assign(arg);
+        }
         return false;
       }
     };
@@ -1045,31 +1046,6 @@ namespace Dune {
     {
       // get stopwatch 
       Timer timer; 
-      
-      // get reference to U 
-      const ArgumentFunctionType& U = *(Dune::get< 0 >( arg )); //  (*(Fem::Element<0>::get(arg)));
-      
-      // initialize dest as copy of U 
-      // if reconstruct_ false then only reconstruct in some cases 
-      reconstruct_ =
-          AssignFunction<typename ArgumentFunctionType ::
-          DiscreteFunctionSpaceType,DiscreteFunctionSpaceType>::
-               assign( U , dest );
-
-      // if case of finite volume scheme set admissible functions to reconstructions 
-      usedAdmissibleFunctions_ = reconstruct_ ? ReconstructedFunctions : admissibleFunctions_;
-
-      // in case of reconstruction 
-      if( reconstruct_ ) 
-      {
-        // in case of non-adaptive scheme indicator not needed 
-        calcIndicator_ = adaptive_;
-        
-        // adjust quadrature orders 
-        argOrder_ = U.space().order();
-        faceQuadOrd_ = 2 * argOrder_ + 1;
-        volumeQuadOrd_ = 2 * argOrder_;
-      }
 
       // if polOrder of destination is > 0 then we have to do something 
       if( spc_.order() > 0 && active() )
@@ -1114,6 +1090,38 @@ namespace Dune {
     //! destinations. Filter out the "right" arguments for this pass.
     void prepare(const ArgumentType& arg, DestinationType& dest) const
     {
+      prepare( arg, dest, true );
+    }
+
+    //! In the preparations, store pointers to the actual arguments and 
+    //! destinations. Filter out the "right" arguments for this pass.
+    void prepare(const ArgumentType& arg, DestinationType& dest, const bool firstThread ) const
+    {
+      // get reference to U 
+      const ArgumentFunctionType& U = *(Dune::get< 0 >( arg )); //  (*(Fem::Element<0>::get(arg)));
+      
+      // initialize dest as copy of U 
+      // if reconstruct_ false then only reconstruct in some cases 
+      reconstruct_ =
+          AssignFunction<typename ArgumentFunctionType ::
+          DiscreteFunctionSpaceType,DiscreteFunctionSpaceType>::
+               assign( U , dest, firstThread );
+
+      // if case of finite volume scheme set admissible functions to reconstructions 
+      usedAdmissibleFunctions_ = reconstruct_ ? ReconstructedFunctions : admissibleFunctions_;
+
+      // in case of reconstruction 
+      if( reconstruct_ ) 
+      {
+        // in case of non-adaptive scheme indicator not needed 
+        calcIndicator_ = adaptive_;
+        
+        // adjust quadrature orders 
+        argOrder_ = U.space().order();
+        faceQuadOrd_ = 2 * argOrder_ + 1;
+        volumeQuadOrd_ = 2 * argOrder_;
+      }
+
       limitedElements_ = 0;
       notPhysicalElements_ = 0;
       
@@ -1142,10 +1150,15 @@ namespace Dune {
       }
     }
     
-    //! Some management.
+    //! Some management (interface version)
     void finalize(const ArgumentType& arg, DestinationType& dest) const
     {
-      //if( notPhysicalElements_ ) 
+      finalize( arg, dest, true );
+    }
+
+    //! Some management (thread parallel version) 
+    void finalize(const ArgumentType& arg, DestinationType& dest, const bool notThreadParallel) const
+    {
       /*
       if( limitedElements_ > 0 )
       {
@@ -1156,13 +1169,18 @@ namespace Dune {
       }
       */
 
-      // communicate dest 
-      dest.communicate();
+      if( notThreadParallel )
+      {
+        // communicate dest 
+        dest.communicate();
+      }
 
       // finalize caller 
       if( caller_ )
+      {
         delete caller_;
-      caller_ = 0;
+        caller_ = 0;
+      }
     }
 
     //! apply local is virtual 
