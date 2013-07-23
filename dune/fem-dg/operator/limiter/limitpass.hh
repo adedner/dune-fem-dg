@@ -573,17 +573,15 @@ namespace Dune {
   } // end namespace Fem 
 
   /** \brief Concrete implementation of Pass for Limiting.
-      The implemented Shock detection is described in detail in: 
-        L. Krivodonova and J. Xin and J.-F. Remacle and N. Chevaugeon and J. E. Flaherty
-        Shock detection and limiting with discontinuous Galerkin methods for hyperbolic conservation laws.
-        Appl. Numer. Math., 48(3-4), pages 323-338, 2004.
-    
-      Link to paper:
-        http://www.scorec.rpi.edu/REPORTS/2003-3.pdf
-
-      Limiting is done by simply setting the polynomial order to zero.
-  */
-  template <class DiscreteModelImp, class PreviousPassImp, int passId = 0 >
+   *
+   *  \note: A detailed description can be found in: 
+   *
+   *   A. Dedner and R. Klöfkorn. 
+   *   \b A Generic Stabilization Approach for Higher Order 
+   *   Discontinuous Galerkin Methods for Convection Dominated Problems. \b
+   *   J. Sci. Comput., 47(3):365-388, 2011. http://link.springer.com/article/10.1007%2Fs10915-010-9448-0
+   */
+  template <class DiscreteModelImp, class PreviousPassImp, int passId >
   class LimitDGPass 
   : public Fem::LocalPass<DiscreteModelImp, PreviousPassImp , passId > 
   {
@@ -908,6 +906,9 @@ namespace Dune {
     //! id for choosing admissible linear functions 
     enum AdmissibleFunctions { DGFunctions = 0, ReconstructedFunctions = 1 , BothFunctions = 2 };
 
+    //! returns true of pass is currently active in the pass tree
+    using BaseType :: isActive ;
+
   public:
     //- Public methods
     /** \brief constructor
@@ -916,12 +917,16 @@ namespace Dune {
      *  \param  pass       Previous pass
      *  \param  spc        Space belonging to the discrete function local to
      *                     this pass
+     *  \param  vQ         order of volume quadrature                    
+     *  \param  fQ         order of face quadrature                    
+     *  \param  nTP        dummy parameter (to be removed again)                    
      */
     LimitDGPass(DiscreteModelType& problem, 
                 PreviousPassType& pass, 
                 const DiscreteFunctionSpaceType& spc,
                 const int vQ = -1,
-                const int fQ = -1) :
+                const int fQ = -1,
+                bool  nTP = false ) :
       BaseType(pass, spc),
       caller_( 0 ),
       discreteModel_(problem),
@@ -953,7 +958,6 @@ namespace Dune {
       stepTime_(3, 0.0),
       calcIndicator_(true),
       reconstruct_(false),
-      applyLimiter_(true),
       admissibleFunctions_( getAdmissibleFunctions() ),
       usedAdmissibleFunctions_( admissibleFunctions_ )
     {
@@ -973,19 +977,8 @@ namespace Dune {
     }
     
     //! Destructor
-    virtual ~LimitDGPass() {
-    }
-
-    void disableFirstCall() const 
-    {
-      applyLimiter_ = false; 
-    }
+    virtual ~LimitDGPass() {}
     
-    void enableFirstCall() const 
-    {
-      applyLimiter_ = true; 
-    }
-
   protected:    
     //! get tolerance factor for shock detector 
     double getTolFactor() const 
@@ -1079,7 +1072,7 @@ namespace Dune {
       }
 
       // if polOrder of destination is > 0 then we have to do something 
-      if( spc_.order() > 0 && applyLimiter_ )
+      if( spc_.order() > 0 && isActive() )
       {
         // prepare, i.e. set argument and destination 
         prepare(arg, dest);
@@ -1172,13 +1165,22 @@ namespace Dune {
       caller_ = 0;
     }
 
-  protected:
     //! apply local is virtual 
-    void applyLocal(const EntityType& en) const
+    void applyLocal( const EntityType& entity ) const
     {
-      applyLocalImp(en);
+      applyLocalImp( entity );
     }
 
+    //! apply local with neighbor checker (does nothing here)
+    template <class NeighborChecker>
+    void applyLocal( const EntityType& entity,
+                     const NeighborChecker& ) const 
+    {
+      // neighbor checking not needed in this case 
+      applyLocalImp( entity );
+    }
+
+    //! apply limiter only to elements without neighboring process boundary
     template <class NeighborChecker>
     void applyLocalInterior( const EntityType& entity,
                              const NeighborChecker& nbChecker ) const 
@@ -1207,6 +1209,7 @@ namespace Dune {
       applyLocalImp( entity );
     }
 
+    //! apply limiter only to elements with neighboring process boundary
     template <class NeighborChecker>
     void applyLocalProcessBoundary( const EntityType& entity,
                                     const NeighborChecker& nChecker ) const
@@ -1219,6 +1222,7 @@ namespace Dune {
       applyLocalImp( entity );
     }
 
+  protected:
     //! Perform the limitation on all elements.
     void applyLocalImp(const EntityType& en) const
     {
@@ -2649,9 +2653,6 @@ namespace Dune {
     
     //! true if limiter is used as finite volume scheme of higher order 
     mutable bool reconstruct_;
-
-    //! true if limiting operator is applied 
-    mutable bool applyLimiter_;
 
     // choice of admissible linear functions 
     const AdmissibleFunctions admissibleFunctions_;
