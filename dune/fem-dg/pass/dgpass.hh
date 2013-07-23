@@ -298,9 +298,9 @@ namespace Dune {
     }
 
     //! Some timestep size management.
-    void doFinalize(DestinationType& dest, const bool notThreadParallel ) const
+    void doFinalize(DestinationType& dest, const bool doCommunicate) const
     {
-      if( notThreadParallel && (&dest) )
+      if( doCommunicate && (&dest) )
       {
         // communicate calculated function (not in thread parallel version)
         dest.communicate();
@@ -319,9 +319,9 @@ namespace Dune {
 
     //! Some timestep size management.
     //! This is the version use with ThreadPass 
-    void finalize(const ArgumentType& arg, DestinationType& dest, const bool notThreadParallel ) const
+    void finalize(const ArgumentType& arg, DestinationType& dest, const bool doCommunicate ) const
     {
-      doFinalize( dest, notThreadParallel );
+      doFinalize( dest, doCommunicate );
     }
 
     //! Some timestep size management.

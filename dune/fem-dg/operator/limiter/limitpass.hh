@@ -1157,7 +1157,7 @@ namespace Dune {
     }
 
     //! Some management (thread parallel version) 
-    void finalize(const ArgumentType& arg, DestinationType& dest, const bool notThreadParallel) const
+    void finalize(const ArgumentType& arg, DestinationType& dest, const bool doCommunicate) const
     {
       /*
       if( limitedElements_ > 0 )
@@ -1169,7 +1169,7 @@ namespace Dune {
       }
       */
 
-      if( notThreadParallel )
+      if( doCommunicate )
       {
         // communicate dest 
         dest.communicate();
