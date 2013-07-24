@@ -8,6 +8,7 @@
 #include <cassert> 
 #include <dune/common/exceptions.hh>
 #include <dune/fem/misc/threads/threadmanager.hh>
+#include <dune/fem/misc/flops.hh>
 
 namespace Dune { 
 
@@ -44,6 +45,7 @@ class ThreadHandle
     pthread_barrier_t* barrierEnd_ ;
     pthread_t threadId_ ;
     int threadNumber_ ;
+    bool initFlopCounters_;
 
     bool isSlave () const { return threadNumber_ > 0; }
 
@@ -52,11 +54,12 @@ class ThreadHandle
     ThreadHandleObject(pthread_barrier_t* barrierBegin,
                        pthread_barrier_t* barrierEnd,
                        const int threadNumber ) 
-      : objPtr_( 0 ), 
-        barrierBegin_ ( barrierBegin ),
-        barrierEnd_ ( barrierEnd ),
-        threadId_( 0 ),
-        threadNumber_( threadNumber )
+    : objPtr_( 0 ), 
+      barrierBegin_ ( barrierBegin ),
+      barrierEnd_ ( barrierEnd ),
+      threadId_( 0 ),
+      threadNumber_( threadNumber ),
+      initFlopCounters_( true )
     {
       assert( threadNumber > 0 );
     }
@@ -64,21 +67,23 @@ class ThreadHandle
     // constructor creating master thread 
     explicit ThreadHandleObject( pthread_barrier_t* barrierBegin, 
                                  pthread_barrier_t* barrierEnd )
-      : objPtr_( 0 ),
-        barrierBegin_ ( barrierBegin ),
-        barrierEnd_ ( barrierEnd ),
-        threadId_( pthread_self() ),
-        threadNumber_( 0 )
+    : objPtr_( 0 ),
+      barrierBegin_ ( barrierBegin ),
+      barrierEnd_ ( barrierEnd ),
+      threadId_( pthread_self() ),
+      threadNumber_( 0 ),
+      initFlopCounters_( true )
     {
     }
 
     // copy constructor 
     ThreadHandleObject(const ThreadHandleObject& other) 
-      : objPtr_( other.objPtr_ ),
-        barrierBegin_( other.barrierBegin_ ),
-        barrierEnd_( other.barrierEnd_ ),
-        threadId_( other.threadId_ ),
-        threadNumber_( other.threadNumber_ )
+    : objPtr_( other.objPtr_ ),
+      barrierBegin_( other.barrierBegin_ ),
+      barrierEnd_( other.barrierEnd_ ),
+      threadId_( other.threadId_ ),
+      threadNumber_( other.threadNumber_ ),
+      initFlopCounters_( other.initFlopCounters_ )
     {}
 
     // assigment operator 
@@ -89,6 +94,7 @@ class ThreadHandle
       barrierEnd_   = other.barrierEnd_ ;
       threadId_     = other.threadId_;
       threadNumber_ = other.threadNumber_;
+      initFlopCounters_ = other.initFlopCounters_;
       return *this;
     }
 
@@ -111,6 +117,9 @@ class ThreadHandle
       }
       else 
       {
+        // start flop counter for master thread 
+        FlopCounter :: start();
+
         // on master thread there is no need to start an extra thread 
         run();
       }
@@ -130,6 +139,13 @@ class ThreadHandle
 
       // wait for all threads 
       pthread_barrier_wait( barrierBegin_ );
+
+      if( initFlopCounters_ ) 
+      {
+        // start flop counters for this thread 
+        FlopCounter :: start();
+        initFlopCounters_ = false ;
+      }
 
       // when object pointer is set call run, else terminate  
       if( objPtr_ ) 
@@ -160,7 +176,13 @@ class ThreadHandle
     void destroy() 
     {
       if( isSlave() )
+      {
+        // stop flop counters 
+        FlopCounter :: stop();
+
+        // join threads 
         pthread_join(threadId_, 0);
+      }
     }
 
   private:
@@ -294,13 +316,18 @@ public:
       instance().runThreads( obj );
     }
 #else 
+    static bool firstCall = true ;
     // OpenMP parallel region 
 #ifdef _OPENMP 
 #pragma omp parallel
 #endif
     {
+      if( firstCall ) 
+        FlopCounter :: start() ;
+
       obj.runThread();
     }
+    firstCall = false ;
 #endif
   }
 

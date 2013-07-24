@@ -11,6 +11,8 @@
 #include <dune/fem-dg/operator/dg/passtraits.hh>
 
 #ifdef USE_SMP_PARALLEL
+#include <dune/fem/misc/threads/domainthreaditerator.hh>
+#include <dune/fem/misc/threads/threaditerator.hh>
 #include <dune/fem-dg/pass/threadpass.hh>
 #endif
 
@@ -52,6 +54,7 @@ namespace Dune {
     
     typedef typename AdvTraits::DiscreteFunctionType AdvDFunctionType;
     typedef typename AdvTraits::IndicatorType        IndicatorType ;
+    typedef typename AdvTraits::GridPartType GridPartType;
     
     typedef Fem::StartPass< AdvDFunctionType, u
 #ifdef USE_SMP_PARALLEL
@@ -65,6 +68,8 @@ namespace Dune {
 #endif
       LocalCDGPass< DiscreteModelType, Pass0Type, cdgpass >
 #ifdef USE_SMP_PARALLEL
+      , Fem::DomainDecomposedIteratorStorage< GridPartType >
+    //, Fem::ThreadIterator< GridPartType >
       , true // non-blocking communication 
         > 
 #endif
@@ -75,11 +80,10 @@ namespace Dune {
     typedef typename AdvTraits::DestinationType AdvDestinationType;
 
     typedef AdvDomainType DomainType;
-    typedef typename AdvTraits::GridPartType GridPartType;
     typedef AdvDFunctionSpaceType DiscreteFunctionSpaceType;
     typedef AdvDestinationType DestinationType;
 
-    typedef typename DiscreteModelType :: AdaptationHandlerType  AdaptationHandlerType;
+    typedef typename DiscreteModelType :: AdaptationType  AdaptationType;
 
   public:
     DGAdvectionDiffusionOperatorBase( GridPartType& gridPart , const NumFluxType& numf ) 
@@ -94,17 +98,17 @@ namespace Dune {
 
     IndicatorType* indicator() { return 0; }
 
-    void setAdaptationHandler( AdaptationHandlerType& adHandle, double weight = 1 ) 
+    void setAdaptation( AdaptationType& adHandle, double weight = 1 ) 
     {
 #ifdef USE_SMP_PARALLEL
       // also set adaptation handler to the discrete models in the thread pass 
       {
-        pass1_.setAdaptationHandler( adHandle, weight );
+        pass1_.setAdaptation( adHandle, weight );
       }
 #else
       {
         // set adaptation handle to discrete model 
-        discreteModel_.setAdaptationHandler( adHandle, weight );
+        discreteModel_.setAdaptation( adHandle, weight );
       }
 #endif
     }

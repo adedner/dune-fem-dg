@@ -342,7 +342,7 @@ public:
     computeGlobalMinMax( gridPart_.grid().comm(), 2, indMax, indMin );
 
     // return global max differences
-    ind1MaxDiff_ = indMax[ 0 ] - indMin [ 0 ];
+    ind1MaxDiff_ = indMax[ 0 ];// - indMin [ 0 ];
     if( indicator2Ptr_ )
       ind2MaxDiff_ = indMax[ 1 ] - indMin[ 1 ];
   }

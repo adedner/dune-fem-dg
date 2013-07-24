@@ -55,6 +55,7 @@
 #endif
 
 #include <dune/fem/space/common/allgeomtypes.hh>
+#include <dune/fem/misc/flops.hh>
 
 #include <dune/grid/io/visual/grapedatadisplay.hh>
 
@@ -118,6 +119,13 @@ namespace LOOPSPACE {
     compute( *stepper );
     delete stepper;
     delete gridptr;
+
+    // start FLOP counters (only if PAPI is enabled)
+    Fem::FlopCounter :: stop();
+
+    // print counters to standard out 
+    if( Fem::Parameter :: verbose () )
+      Fem::FlopCounter :: info( std::cout );
   } 
 
 } // end namespace LOOPSPACE

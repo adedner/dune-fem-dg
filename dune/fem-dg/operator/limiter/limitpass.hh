@@ -573,19 +573,17 @@ namespace Dune {
   } // end namespace Fem 
 
   /** \brief Concrete implementation of Pass for Limiting.
-      The implemented Shock detection is described in detail in: 
-        L. Krivodonova and J. Xin and J.-F. Remacle and N. Chevaugeon and J. E. Flaherty
-        Shock detection and limiting with discontinuous Galerkin methods for hyperbolic conservation laws.
-        Appl. Numer. Math., 48(3-4), pages 323-338, 2004.
-    
-      Link to paper:
-        http://www.scorec.rpi.edu/REPORTS/2003-3.pdf
-
-      Limiting is done by simply setting the polynomial order to zero.
-  */
-  template <class DiscreteModelImp, class PreviousPassImp, int passId = 0 >
-  class LimitDGPass
-  : public Fem::LocalPass<DiscreteModelImp, PreviousPassImp , passId >
+   *
+   *  \note: A detailed description can be found in: 
+   *
+   *   A. Dedner and R. Klöfkorn. 
+   *   \b A Generic Stabilization Approach for Higher Order 
+   *   Discontinuous Galerkin Methods for Convection Dominated Problems. \b
+   *   J. Sci. Comput., 47(3):365-388, 2011. http://link.springer.com/article/10.1007%2Fs10915-010-9448-0
+   */
+  template <class DiscreteModelImp, class PreviousPassImp, int passId >
+  class LimitDGPass 
+  : public Fem::LocalPass<DiscreteModelImp, PreviousPassImp , passId > 
   {
     typedef LimitDGPass< DiscreteModelImp, PreviousPassImp, passId > ThisType;
     typedef Fem::LocalPass< DiscreteModelImp, PreviousPassImp, passId > BaseType;
@@ -916,6 +914,9 @@ namespace Dune {
     //! id for choosing admissible linear functions 
     enum AdmissibleFunctions { DGFunctions = 0, ReconstructedFunctions = 1 , BothFunctions = 2 };
 
+    //! returns true of pass is currently active in the pass tree
+    using BaseType :: active ;
+
   public:
     //- Public methods
     /** \brief constructor
@@ -924,12 +925,14 @@ namespace Dune {
      *  \param  pass       Previous pass
      *  \param  spc        Space belonging to the discrete function local to
      *                     this pass
+     *  \param  vQ         order of volume quadrature                    
+     *  \param  fQ         order of face quadrature                    
      */
     LimitDGPass(DiscreteModelType& problem, 
                 PreviousPassType& pass, 
                 const DiscreteFunctionSpaceType& spc,
                 const int vQ = -1,
-                const int fQ = -1) :
+                const int fQ = -1 ) :
       BaseType(pass, spc),
       caller_( 0 ),
       discreteModel_(problem),
@@ -961,7 +964,6 @@ namespace Dune {
       stepTime_(3, 0.0),
       calcIndicator_(true),
       reconstruct_(false),
-      applyLimiter_(true),
       admissibleFunctions_( getAdmissibleFunctions() ),
       usedAdmissibleFunctions_( admissibleFunctions_ )
     {
@@ -981,19 +983,8 @@ namespace Dune {
     }
     
     //! Destructor
-    virtual ~LimitDGPass() {
-    }
-
-    void disableFirstCall() const 
-    {
-      applyLimiter_ = false; 
-    }
+    virtual ~LimitDGPass() {}
     
-    void enableFirstCall() const 
-    {
-      applyLimiter_ = true; 
-    }
-
   protected:    
     //! get tolerance factor for shock detector 
     double getTolFactor() const 
@@ -1035,7 +1026,7 @@ namespace Dune {
     struct AssignFunction
     {
       template <class ArgImp, class DestImp> 
-      static bool assign(const ArgImp& arg, DestImp& dest)
+      static bool assign(const ArgImp& arg, DestImp& dest, const bool firstThread)
       {
         // reconstruct if this combination of orders has been given
         return (arg.space().order() == 0) && (dest.space().order() == 1);
@@ -1046,9 +1037,12 @@ namespace Dune {
     struct AssignFunction<S1,S1>
     {
       template <class ArgImp, class DestImp> 
-      static bool assign(const ArgImp& arg, DestImp& dest) 
+      static bool assign(const ArgImp& arg, DestImp& dest, const bool firstThread ) 
       {
-        dest.assign(arg);
+        // only do this operation for the first thread 
+        if( firstThread ) 
+          dest.assign(arg);
+
         return false;
       }
     };
@@ -1061,33 +1055,8 @@ namespace Dune {
       // get stopwatch 
       Timer timer; 
 
-      // get reference to U 
-      const ArgumentFunctionType &U = *(Dune::get< argumentPosition >( arg ));
-
-      // initialize dest as copy of U 
-      // if reconstruct_ false then only reconstruct in some cases 
-      reconstruct_ =
-          AssignFunction<typename ArgumentFunctionType ::
-          DiscreteFunctionSpaceType,DiscreteFunctionSpaceType>::
-               assign( U , dest );
-
-      // if case of finite volume scheme set admissible functions to reconstructions 
-      usedAdmissibleFunctions_ = reconstruct_ ? ReconstructedFunctions : admissibleFunctions_;
-
-      // in case of reconstruction 
-      if( reconstruct_ ) 
-      {
-        // in case of non-adaptive scheme indicator not needed 
-        calcIndicator_ = adaptive_;
-        
-        // adjust quadrature orders 
-        argOrder_ = U.space().order();
-        faceQuadOrd_ = 2 * argOrder_ + 1;
-        volumeQuadOrd_ = 2 * argOrder_;
-      }
-
       // if polOrder of destination is > 0 then we have to do something 
-      if( spc_.order() > 0 && applyLimiter_ )
+      if( spc_.order() > 0 && active() )
       {
         // prepare, i.e. set argument and destination 
         prepare(arg, dest);
@@ -1129,6 +1098,38 @@ namespace Dune {
     //! destinations. Filter out the "right" arguments for this pass.
     void prepare(const ArgumentType& arg, DestinationType& dest) const
     {
+      prepare( arg, dest, true );
+    }
+
+    //! In the preparations, store pointers to the actual arguments and 
+    //! destinations. Filter out the "right" arguments for this pass.
+    void prepare(const ArgumentType& arg, DestinationType& dest, const bool firstThread ) const
+    {
+      // get reference to U 
+      const ArgumentFunctionType &U = *(Dune::get< argumentPosition >( arg ));
+
+      // initialize dest as copy of U 
+      // if reconstruct_ false then only reconstruct in some cases 
+      reconstruct_ =
+          AssignFunction<typename ArgumentFunctionType ::
+          DiscreteFunctionSpaceType,DiscreteFunctionSpaceType>::
+               assign( U , dest, firstThread );
+
+      // if case of finite volume scheme set admissible functions to reconstructions 
+      usedAdmissibleFunctions_ = reconstruct_ ? ReconstructedFunctions : admissibleFunctions_;
+
+      // in case of reconstruction 
+      if( reconstruct_ ) 
+      {
+        // in case of non-adaptive scheme indicator not needed 
+        calcIndicator_ = adaptive_;
+        
+        // adjust quadrature orders 
+        argOrder_ = U.space().order();
+        faceQuadOrd_ = 2 * argOrder_ + 1;
+        volumeQuadOrd_ = 2 * argOrder_;
+      }
+
       limitedElements_ = 0;
       notPhysicalElements_ = 0;
       
@@ -1157,10 +1158,15 @@ namespace Dune {
       }
     }
     
-    //! Some management.
+    //! Some management (interface version)
     void finalize(const ArgumentType& arg, DestinationType& dest) const
     {
-      //if( notPhysicalElements_ ) 
+      finalize( arg, dest, true );
+    }
+
+    //! Some management (thread parallel version) 
+    void finalize(const ArgumentType& arg, DestinationType& dest, const bool doCommunicate) const
+    {
       /*
       if( limitedElements_ > 0 )
       {
@@ -1171,22 +1177,36 @@ namespace Dune {
       }
       */
 
-      // communicate dest 
-      dest.communicate();
+      if( doCommunicate )
+      {
+        // communicate dest 
+        dest.communicate();
+      }
 
       // finalize caller 
       if( caller_ )
+      {
         delete caller_;
-      caller_ = 0;
+        caller_ = 0;
+      }
     }
 
-  protected:
     //! apply local is virtual 
-    void applyLocal(const EntityType& en) const
+    void applyLocal( const EntityType& entity ) const
     {
-      applyLocalImp(en);
+      applyLocalImp( entity );
     }
 
+    //! apply local with neighbor checker (does nothing here)
+    template <class NeighborChecker>
+    void applyLocal( const EntityType& entity,
+                     const NeighborChecker& ) const 
+    {
+      // neighbor checking not needed in this case 
+      applyLocalImp( entity );
+    }
+
+    //! apply limiter only to elements without neighboring process boundary
     template <class NeighborChecker>
     void applyLocalInterior( const EntityType& entity,
                              const NeighborChecker& nbChecker ) const 
@@ -1215,6 +1235,7 @@ namespace Dune {
       applyLocalImp( entity );
     }
 
+    //! apply limiter only to elements with neighboring process boundary
     template <class NeighborChecker>
     void applyLocalProcessBoundary( const EntityType& entity,
                                     const NeighborChecker& nChecker ) const
@@ -1227,6 +1248,7 @@ namespace Dune {
       applyLocalImp( entity );
     }
 
+  protected:
     //! Perform the limitation on all elements.
     void applyLocalImp(const EntityType& en) const
     {
@@ -1493,9 +1515,11 @@ namespace Dune {
 
       if( usedAdmissibleFunctions_ >= ReconstructedFunctions ) 
       {
+        // level is only needed for Cartesian grids to access the matrix caches
+        const int matrixCacheLevel = ( cartesian ) ? en.level() : 0 ;
         // calculate linear functions 
-        //calculateLinearFunctions(en.level(), comboSet, geomType, boundary, nonConforming , cartesian );
-        calculateLinearFunctions( 0, comboSet, geomType, boundary, nonConforming , cartesian );
+        calculateLinearFunctions( matrixCacheLevel, comboSet, geomType, 
+                                  boundary, nonConforming , cartesian );
       }
       
       // add DG Function
@@ -2617,9 +2641,6 @@ namespace Dune {
     
     //! true if limiter is used as finite volume scheme of higher order 
     mutable bool reconstruct_;
-
-    //! true if limiting operator is applied 
-    mutable bool applyLimiter_;
 
     // choice of admissible linear functions 
     const AdmissibleFunctions admissibleFunctions_;

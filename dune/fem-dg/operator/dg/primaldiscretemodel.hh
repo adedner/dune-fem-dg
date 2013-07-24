@@ -253,17 +253,17 @@ namespace Dune {
       /*****************************
        * Advection                 *
        ****************************/
-      double wave = BaseType :: 
+      double advectionWaveSpeed = BaseType :: 
         numericalFlux( it, time, faceQuadInner, faceQuadOuter,
                        quadPoint, uLeft, uRight, jacLeft, jacRight, 
                        gLeft, gRight, gDiffLeft, gDiffRight );
 
-      double diffTimeStep = 0.0;
+      double diffusionWaveSpeed = 0.0;
       if( diffusion ) 
       {
         RangeType dLeft, dRight; 
 
-        diffTimeStep = 
+        diffusionWaveSpeed = 
           diffFlux_.numericalFlux(it, *this, 
                                   time, faceQuadInner, faceQuadOuter, quadPoint,
                                   uLeft[ uVar ], uRight[ uVar ], 
@@ -276,14 +276,14 @@ namespace Dune {
       }
       else
       {
-        gDiffLeft = 0;
+        gDiffLeft  = 0;
         gDiffRight = 0;
       }
 
-      maxAdvTimeStep_  = std::max( wave, maxAdvTimeStep_ );
-      maxDiffTimeStep_ = std::max( diffTimeStep, maxDiffTimeStep_ );
+      maxAdvTimeStep_  = std::max( advectionWaveSpeed, maxAdvTimeStep_ );
+      maxDiffTimeStep_ = std::max( diffusionWaveSpeed, maxDiffTimeStep_ );
 
-      return std::max( wave, diffTimeStep );
+      return advectionWaveSpeed + diffusionWaveSpeed;
     }
 
 
@@ -304,14 +304,14 @@ namespace Dune {
       /****************************/
       /* Advection                *
        ****************************/
-      double wave = BaseType :: 
+      double advectionWaveSpeed = BaseType :: 
         boundaryFlux( it, time, faceQuadInner, quadPoint,
                       uLeft, jacLeft, gLeft, gDiffLeft );
                                   
       /****************************/
       /* Diffusion                 *
        ****************************/
-      double diffTimeStep = 0.0;
+      double diffusionWaveSpeed = 0.0;
 
       const bool hasBoundaryValue = 
         model_.hasBoundaryValue( it, time, faceQuadInner.localPoint(0) );
@@ -320,7 +320,7 @@ namespace Dune {
       {
         // diffusion boundary flux for Dirichlet boundaries 
         RangeType dLeft ( 0 );
-        diffTimeStep = 
+        diffusionWaveSpeed = 
           diffFlux_.boundaryFlux(it, 
                                  *this, 
                                  time, faceQuadInner, quadPoint,
@@ -341,11 +341,10 @@ namespace Dune {
       else 
         gDiffLeft = 0;
 
-      maxAdvTimeStep_  = std::max( wave, maxAdvTimeStep_ );
-      maxDiffTimeStep_ = std::max( diffTimeStep, maxDiffTimeStep_ );
+      maxAdvTimeStep_  = std::max( advectionWaveSpeed, maxAdvTimeStep_ );
+      maxDiffTimeStep_ = std::max( diffusionWaveSpeed, maxDiffTimeStep_ );
 
-      wave = std::max( wave, diffTimeStep );
-      return wave;
+      return advectionWaveSpeed + diffusionWaveSpeed;
     }
                                                   /*@LST0S@*/
     /**

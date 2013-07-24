@@ -56,7 +56,7 @@ namespace Dune {
     typedef typename DestinationType :: DomainFieldType              DomainFieldType;
     typedef typename DestinationType :: JacobianRangeType            JacobianRangeType;
 
-    typedef typename Traits :: AdaptationHandlerType  AdaptationHandlerType ;
+    typedef typename Traits :: AdaptationHandlerType                 AdaptationType ;
 
     typedef AdvectionModel
       < Model, NumFlux, polOrd, passUId, passGradId, returnAdvectionPart >       DGDiscreteModelType;
@@ -120,10 +120,10 @@ namespace Dune {
     typedef typename Traits :: JacobianRangeType                       JacobianRangeType;
 
     // discrete function storing the adaptation indicator information 
-    typedef typename Traits :: IndicatorType          IndicatorTpye;
+    typedef typename Traits :: IndicatorType    IndicatorTpye;
 
     // discrete function storing the adaptation indicator information 
-    typedef typename Traits :: AdaptationHandlerType  AdaptationHandlerType ;
+    typedef typename Traits :: AdaptationType   AdaptationType ;
 
   public:
     /**
@@ -155,16 +155,6 @@ namespace Dune {
       maxAdvTimeStep_  = 0;
       maxDiffTimeStep_ = 0;
     } 
-
-    // cummy methods doing nothing 
-    void setAdaptationHandler( AdaptationHandlerType& adaptation, double weight ) 
-    {
-    }
-
-    //! remove pointer to adaptation indicator 
-    void removeAdaptationHandler() 
-    {
-    }
 
     inline bool hasSource() const 
     { 
@@ -262,10 +252,10 @@ namespace Dune {
 
       if( advection ) 
       {
-        double ldt = numflux_.numericalFlux(it, this->inside(), this->outside(),
-                                           time, faceQuadInner, faceQuadOuter, quadPoint, 
-                                           uLeft[ uVar ], uRight[ uVar ], gLeft, gRight);
-        return ldt ;
+        // returns advection wave speed 
+        return numflux_.numericalFlux(it, this->inside(), this->outside(),
+                                      time, faceQuadInner, faceQuadOuter, quadPoint, 
+                                      uLeft[ uVar ], uRight[ uVar ], gLeft, gRight);
       }
       else 
       {
@@ -304,12 +294,14 @@ namespace Dune {
         if( hasBndValue )
         {
           RangeType gRight;
+          // returns advection wave speed 
           return numflux_.numericalFlux(it, this->inside(), this->inside(),
                                         time, faceQuadInner, faceQuadInner, quadPoint, 
                                         uLeft[ uVar ], uBnd_, gLeft, gRight);
         }
         else 
         {
+          // returns advection wave speed 
           return model_.boundaryFlux( it, time, x, uLeft[uVar], gLeft );
         }
       }
@@ -434,12 +426,12 @@ namespace Dune {
     typedef typename Traits :: JacobianRangeType                       JacobianRangeType;
 
     // discrete function storing the adaptation indicator information 
-    typedef typename Traits :: IndicatorType          IndicatorTpye;
+    typedef typename Traits :: IndicatorType     IndicatorTpye;
 
     // discrete function storing the adaptation indicator information 
-    typedef typename Traits :: AdaptationHandlerType  AdaptationHandlerType ;
+    typedef typename Traits :: AdaptationType    AdaptationType ;
 
-    typedef typename AdaptationHandlerType :: LocalIndicatorType  LocalIndicatorType;
+    typedef typename AdaptationType :: LocalIndicatorType  LocalIndicatorType;
 
     // type of thread filter in thread parallel runs 
     typedef Fem :: ThreadFilter<GridPartType> ThreadFilterType;
@@ -503,7 +495,7 @@ namespace Dune {
     }
 
     //! set pointer to adaptation indicator 
-    void setAdaptationHandler( AdaptationHandlerType& adaptation, double weight ) 
+    void setAdaptation( AdaptationType& adaptation, double weight ) 
     {
       adaptation_ = & adaptation;       
       threadFilter_ = 0;
@@ -511,9 +503,9 @@ namespace Dune {
     }
 
     //! set pointer to adaptation indicator 
-    void setAdaptationHandler( AdaptationHandlerType& adaptation, 
-                               const ThreadFilterType& threadFilter, 
-                               double weight ) 
+    void setAdaptation( AdaptationType& adaptation, 
+                        const ThreadFilterType& threadFilter, 
+                        double weight ) 
     {
       adaptation_   = & adaptation;       
       threadFilter_ = & threadFilter ;
@@ -521,7 +513,7 @@ namespace Dune {
     }
 
     //! remove pointer to adaptation indicator 
-    void removeAdaptationHandler() 
+    void removeAdaptation() 
     {
       adaptation_   = 0 ;
       threadFilter_ = 0 ;  
@@ -646,7 +638,7 @@ namespace Dune {
     using BaseType :: model_ ;
     using BaseType :: numflux_ ;
 
-    AdaptationHandlerType*  adaptation_;
+    AdaptationType*  adaptation_;
     const ThreadFilterType*  threadFilter_;  
 
     mutable LocalIndicatorType enIndicator_;
