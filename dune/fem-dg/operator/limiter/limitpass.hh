@@ -922,8 +922,7 @@ namespace Dune {
      * 
      *  \param  problem    Actual problem definition (see problem.hh)
      *  \param  pass       Previous pass
-     *  \param  spc        Space belonging to the discrete function local to
-     *                     this pass
+     *  \param  spc        Space belonging to the discrete function local to this pass
      *  \param  vQ         order of volume quadrature                    
      *  \param  fQ         order of face quadrature                    
      */
@@ -966,7 +965,7 @@ namespace Dune {
       admissibleFunctions_( getAdmissibleFunctions() ),
       usedAdmissibleFunctions_( admissibleFunctions_ )
     {
-      if( gridPart_.comm().rank() == 0 )
+      if( Fem :: Parameter :: verbose () )
       {
         std::cout << "LimitPass: Grid is ";
         if( cartesianGrid_ ) 
