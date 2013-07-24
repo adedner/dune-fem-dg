@@ -8,7 +8,9 @@
 #include <cassert> 
 #include <dune/common/exceptions.hh>
 #include <dune/fem/misc/threads/threadmanager.hh>
+#if COUNT_FLOPS
 #include <dune/fem/misc/flops.hh>
+#endif // #if COUNT_FLOPS
 
 namespace Dune { 
 
@@ -45,7 +47,9 @@ class ThreadHandle
     pthread_barrier_t* barrierEnd_ ;
     pthread_t threadId_ ;
     int threadNumber_ ;
+#if COUNT_FLOPS
     bool initFlopCounters_;
+#endif // #if COUNT_FLOPS
 
     bool isSlave () const { return threadNumber_ > 0; }
 
@@ -58,8 +62,10 @@ class ThreadHandle
       barrierBegin_ ( barrierBegin ),
       barrierEnd_ ( barrierEnd ),
       threadId_( 0 ),
-      threadNumber_( threadNumber ),
-      initFlopCounters_( true )
+      threadNumber_( threadNumber )
+#if COUNT_FLOPS
+      , initFlopCounters_( true )
+#endif // #if COUNT_FLOPS
     {
       assert( threadNumber > 0 );
     }
@@ -71,10 +77,11 @@ class ThreadHandle
       barrierBegin_ ( barrierBegin ),
       barrierEnd_ ( barrierEnd ),
       threadId_( pthread_self() ),
-      threadNumber_( 0 ),
-      initFlopCounters_( true )
-    {
-    }
+      threadNumber_( 0 )
+#if COUNT_FLOPS
+      , initFlopCounters_( true )
+#endif // #if COUNT_FLOPS
+    {}
 
     // copy constructor 
     ThreadHandleObject(const ThreadHandleObject& other) 
@@ -82,8 +89,10 @@ class ThreadHandle
       barrierBegin_( other.barrierBegin_ ),
       barrierEnd_( other.barrierEnd_ ),
       threadId_( other.threadId_ ),
-      threadNumber_( other.threadNumber_ ),
-      initFlopCounters_( other.initFlopCounters_ )
+      threadNumber_( other.threadNumber_ )
+#if COUNT_FLOPS
+      , initFlopCounters_( other.initFlopCounters_ )
+#endif // #if COUNT_FLOPS
     {}
 
     // assigment operator 
@@ -94,7 +103,9 @@ class ThreadHandle
       barrierEnd_   = other.barrierEnd_ ;
       threadId_     = other.threadId_;
       threadNumber_ = other.threadNumber_;
+#if COUNT_FLOPS
       initFlopCounters_ = other.initFlopCounters_;
+#endif // #if COUNT_FLOPS
       return *this;
     }
 
@@ -117,8 +128,10 @@ class ThreadHandle
       }
       else 
       {
+#if COUNT_FLOPS
         // start flop counter for master thread 
-        FlopCounter :: start();
+        FlopCounter::start();
+#endif // #if COUNT_FLOPS
 
         // on master thread there is no need to start an extra thread 
         run();
@@ -140,12 +153,14 @@ class ThreadHandle
       // wait for all threads 
       pthread_barrier_wait( barrierBegin_ );
 
+#if COUNT_FLOPS
       if( initFlopCounters_ ) 
       {
         // start flop counters for this thread 
-        FlopCounter :: start();
+        FlopCounter::start();
         initFlopCounters_ = false ;
       }
+#endif // #if COUNT_FLOPS
 
       // when object pointer is set call run, else terminate  
       if( objPtr_ ) 
@@ -177,8 +192,10 @@ class ThreadHandle
     {
       if( isSlave() )
       {
+#if COUNT_FLOPS
         // stop flop counters 
-        FlopCounter :: stop();
+        FlopCounter::stop();
+#endif // #if COUNT_FLOPS
 
         // join threads 
         pthread_join(threadId_, 0);
@@ -322,8 +339,10 @@ public:
 #pragma omp parallel
 #endif
     {
+#if COUNT_FLOPS
       if( firstCall ) 
-        FlopCounter :: start() ;
+        FlopCounter::start();
+#endif // #if COUNT_FLOPS
 
       obj.runThread();
     }
