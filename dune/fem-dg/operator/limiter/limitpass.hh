@@ -603,9 +603,18 @@ namespace Dune {
     typedef typename BaseType::Entity EntityType;
 
     typedef typename BaseType::ArgumentType ArgumentType;
+
+  private:
+   typedef typename DiscreteModelType::Selector Selector;
+   typedef typename Dune::tuple_element< 0, Selector >::type ArgumentIdType;
+   static const std::size_t argumentPosition
+     = Dune::FirstTypeIndex< PassIds, ArgumentIdType >::type::value;
+   typedef typename Dune::tuple_element< argumentPosition, ArgumentType >::type ArgumentFunctionPtrType;
+
+  public:
     typedef typename PreviousPassType::GlobalArgumentType ArgumentFunctionType;
     typedef typename ArgumentFunctionType :: LocalFunctionType LocalFunctionType;
-    
+
     // Types from the traits
     typedef typename DiscreteModelType::Traits::DestinationType DestinationType;
     typedef typename DiscreteModelType::Traits::VolumeQuadratureType VolumeQuadratureType;
@@ -1095,9 +1104,9 @@ namespace Dune {
     //! destinations. Filter out the "right" arguments for this pass.
     void prepare(const ArgumentType& arg, DestinationType& dest, const bool firstThread ) const
     {
-      // get reference to U 
-      const ArgumentFunctionType& U = *(Dune::get< 0 >( arg )); //  (*(Fem::Element<0>::get(arg)));
-      
+      // get reference to U
+      const ArgumentFunctionType &U = *(Dune::get< argumentPosition >( arg ));
+
       // initialize dest as copy of U 
       // if reconstruct_ false then only reconstruct in some cases 
       reconstruct_ =
@@ -1265,7 +1274,7 @@ namespace Dune {
       caller().setEntity( en );
 
       // get function to limit 
-      const ArgumentFunctionType& U = *(Dune::get< 0 >( *arg_ )); // (*(Fem::Element<0>::get(*arg_)));
+      const ArgumentFunctionType &U = *(Dune::get< argumentPosition >( *arg_ ));
 
       // get U on entity
       const LocalFunctionType uEn = U.localFunction(en);
