@@ -9,6 +9,7 @@
 #include <dune/grid/common/grid.hh>
 #include <dune/grid/io/file/dgfparser/entitykey.hh>
 
+#include <dune/fem/gridpart/common/capabilities.hh>
 #include <dune/fem/io/parameter.hh>
 #include <dune/fem/operator/1order/localmassmatrix.hh>
 #include <dune/fem/common/typeindexedtuple.hh>
@@ -650,8 +651,7 @@ namespace Dune {
 
     typedef Fem::PointBasedDofConversionUtility< dimRange > DofConversionUtilityType;
 
-    //! is true if grid is Structured grid 
-    enum { StructuredGrid = Capabilities :: isCartesian<GridType>::v };
+    static const bool StructuredGrid = Fem::GridPartCapabilities::isCartesian< GridPartType >::v;
 
     typedef FieldVector< DomainType , dimRange > DeoModType; 
     typedef FieldMatrix< DomainFieldType, dimDomain , dimDomain > MatrixType;
@@ -1597,7 +1597,7 @@ namespace Dune {
                                   const bool nonConforming,
                                   const bool cartesian ) const 
     {
-      assert( (StructuredGrid) ? (cartesian) : true );  
+      assert( StructuredGrid || cartesian );
       // use matrix cache in case of structured grid 
       const bool useCache = cartesian 
                             && ! nonConforming 
