@@ -1362,7 +1362,7 @@ namespace Dune {
           const bool hasNeighbor = intersection.neighbor();
 
           // check cartesian
-          if( ! StructuredGrid && cartesian ) 
+          if( !StructuredGrid && cartesian )
           {
             // check whether this element is really cartesian 
             cartesian &= ( ! Fem::CheckCartesian::checkIntersection(intersection) );
@@ -1604,7 +1604,7 @@ namespace Dune {
                                   const bool nonConforming,
                                   const bool cartesian ) const 
     {
-      assert( StructuredGrid || cartesian );
+      assert( !StructuredGrid || cartesian );
       // use matrix cache in case of structured grid 
       const bool useCache = cartesian 
                             && ! nonConforming 
