@@ -148,6 +148,8 @@ namespace Dune {
     {
     }
 
+    void setTime ( double time ) { const_cast< ModelType & >( model_ ).setTime( time ); }
+
     //! dummy method 
     void switchUpwind() const {
       maxAdvTimeStep_  = 0;
