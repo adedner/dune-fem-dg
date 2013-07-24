@@ -200,7 +200,7 @@ namespace Dune {
     //! \param spc Space belonging to the discrete function local to this pass
     //! \param volumeQuadOrd defines the order of the volume quadrature which is by default 2* space polynomial order 
     //! \param faceQuadOrd defines the order of the face quadrature which is by default 2* space polynomial order 
-    ThreadPass(DiscreteModelType& problem, 
+    ThreadPass(const DiscreteModelType& problem, 
                PreviousPassType& pass, 
                const DiscreteFunctionSpaceType& spc,
                const int volumeQuadOrd = -1,
@@ -683,7 +683,7 @@ namespace Dune {
     DeleteCommunicatedDofs< DestinationType > delDofs_;
 
     mutable ThreadIteratorType iterators_;
-    DiscreteModelType& singleProblem_;
+    const DiscreteModelType& singleProblem_;
     std::vector< DiscreteModelType* > problems_; 
     std::vector< InnerPassType* > passes_;
     mutable std::vector< double > passComputeTime_;
