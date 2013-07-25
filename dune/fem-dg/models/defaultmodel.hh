@@ -189,16 +189,6 @@ public:
     diffusion( en, time, x, u, jac, A );
   }
 
-  inline double diffusionTimeStep( const IntersectionType &it,
-                                   const double enVolume,
-                                   const double circumEstimate,
-                                   const double time,
-                                   const FaceDomainType& x,
-                                   const RangeType& u ) const
-  {
-    return 0;
-  }
-
   //! maximal wave speed due to advection part 
   inline void maxSpeed( const EntityType& entity,
                         const double time,
