@@ -59,6 +59,24 @@ class SmartOdeSolver :
 
   typedef DuneODE :: OdeSolverInterface< typename Operator :: DestinationType > BaseType;
 
+  template <class AdvOp, class DiffOp>
+  struct IsSame 
+  {
+    static bool check(const AdvOp&, const DiffOp& ) 
+    {
+      return false;
+    }
+  };
+
+  template <class AdvOp>
+  struct IsSame< AdvOp, AdvOp>
+  {
+    static bool check(const AdvOp& a, const AdvOp& d) 
+    {
+      return &a == &d;
+    }
+  };
+
 public:
   typedef typename OperatorType :: DestinationType DestinationType ;
   typedef DestinationType  DiscreteFunctionType;
@@ -122,16 +140,19 @@ public:
     {
       odeSolver_ = new ImplicitOdeSolverType( operator_, tp, rkSteps_);
     }
-    else if( odeSolverType_ == 2 )
+    else if( odeSolverType_ > 1 )
     {
+      // make sure that advection and diffusion operator are different 
+      if( IsSame< AdvectionOperatorType, DiffusionOperatorType >::check( advectionOperator_, diffusionOperator_ ) )
+      {
+        DUNE_THROW(Dune::InvalidStateException,"Advection and Diffusion operator are the same, therefore IMEX cannot work!");
+      }
       odeSolver_ = new SemiImplicitOdeSolverType
         (advectionOperator_, diffusionOperator_, tp, rkSteps_);
-    }
-    else if( odeSolverType_ == 3 ) 
-    {
-      odeSolver_ = new SemiImplicitOdeSolverType
-          (advectionOperator_, diffusionOperator_, tp, rkSteps_); 
-      explicitSolver_ = new ExplicitOdeSolverType( operator_, tp, rkSteps_);
+
+      // IMEX+
+      if( odeSolverType_ == 3 ) 
+        explicitSolver_ = new ExplicitOdeSolverType( operator_, tp, rkSteps_);
     }
     else 
     {
@@ -156,7 +177,6 @@ public:
     }
     assert( odeSolver_ );
     odeSolver_->initialize( U );
-
   }
 
   //! solver the ODE 
@@ -189,13 +209,22 @@ public:
       assert( odeSolver_ );
       odeSolver_->solve( U, monitor );
 
-      maxAdvStep  = advectionOperator_.maxAdvectionTimeStep();
-      maxDiffStep = diffusionOperator_.maxDiffusionTimeStep();
+      maxAdvStep  = std::max( advectionOperator_.maxAdvectionTimeStep(), operator_.maxAdvectionTimeStep() );
+      maxDiffStep = std::max( diffusionOperator_.maxDiffusionTimeStep(), operator_.maxDiffusionTimeStep() );
       ++imexCounter_ ;
 
       const int iterationSteps = monitor.newtonIterations_ * monitor.linearSolverIterations_ ;
       minIterationSteps_ = std::min( minIterationSteps_, iterationSteps );
       maxIterationSteps_ = std::max( maxIterationSteps_, iterationSteps );
+
+      if( verbose_ == 2 ) 
+      {
+        double factor = explFactor_ ;
+        //if( averageIterationSteps > 0 ) 
+        //  factor *= averageIterationSteps / (rkSteps_ + 1 ) ;
+        std::cout << maxAdvStep << " a | d " << maxDiffStep << "  factor: " << factor
+          << "  " << minIterationSteps_ << " min | max " << maxIterationSteps_ << "  use imex = " << imex_ << std::endl;
+      }
     }
 
     if( explicitSolver_ ) 
