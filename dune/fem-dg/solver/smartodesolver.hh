@@ -73,7 +73,7 @@ class SmartOdeSolver :
   {
     static bool check(const AdvOp& a, const AdvOp& d) 
     {
-      return &a == &d;
+      return true;
     }
   };
 
