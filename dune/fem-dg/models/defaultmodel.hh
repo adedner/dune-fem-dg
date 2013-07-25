@@ -199,6 +199,29 @@ public:
     return 0;
   }
 
+  //! maximal wave speed due to advection part 
+  inline void maxSpeed( const EntityType& entity,
+                        const double time,
+                        const DomainType& x,
+                        const DomainType& normal,
+                        const RangeType& u,
+                        double& advspeed,
+                        double& totalspeed ) const
+  {
+    advspeed = totalspeed = 0;
+  }
+
+  //! maximal wave speed due to diffusion part 
+  inline double diffusionTimeStep( const IntersectionType &it,
+                                   const double enVolume,
+                                   const double circumEstimate,
+                                   const double time,
+                                   const FaceDomainType& x,
+                                   const RangeType& u ) const
+  {
+    return 0;
+  }
+
 public:                            
   /**
    * @brief checks for existence of dirichlet boundary values
