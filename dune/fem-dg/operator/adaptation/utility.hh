@@ -3,6 +3,7 @@
 
 // include restricion, prolongation and adaptation operator classes for discrete functions
 #include <dune/fem/io/parameter.hh>
+#include <dune/fem/gridpart/common/capabilities.hh>
 
 namespace Dune
 {
@@ -95,15 +96,15 @@ namespace Dune
     typedef std::pair< double, double > VolumePairType;
     
     template <class Entity>
-    double findCoarsestVolume( const Entity& entity ) const 
+    double findCoarsestVolume( const Entity& entity, const bool hasGridHierarchy ) const 
     {
       // go to father, if possible 
       // otherwise write min and max volume on backup/restore
-      if( entity.level() > 0 )
+      if( hasGridHierarchy && entity.level() > 0 )
       {
         typedef typename Entity::EntityPointer EntityPointer ;
         EntityPointer father = entity.father();
-        return findCoarsestVolume( *father );
+        return findCoarsestVolume( *father, hasGridHierarchy );
       }
       else  // return entity's volume 
         return entity.geometry().volume();
@@ -117,6 +118,8 @@ namespace Dune
       typedef typename GridPart :: GridType GridType ;
       typedef typename GridPart :: template Codim< 0 > :: IteratorType IteratorType;
 
+      const bool hasGridHierarchy = Fem :: GridPartCapabilities :: hasGrid< GridPart > :: v;
+
       double weight = Dune::DGFGridInfo<GridType>::refineWeight();
       // if weight is not set, use 1/(2^d) 
       if( weight < 0 )
@@ -129,7 +132,7 @@ namespace Dune
       const IteratorType end = gridPart.template end< 0 >();
       for( IteratorType it = gridPart.template begin< 0 >(); it != end; ++it )
       {
-        const double volume = findCoarsestVolume( *it );
+        const double volume = findCoarsestVolume( *it, hasGridHierarchy );
         minVolume[ 0 ] = std::min( minVolume[ 0 ], volume );
         maxVolume[ 0 ] = std::max( maxVolume[ 0 ], volume );
       }
