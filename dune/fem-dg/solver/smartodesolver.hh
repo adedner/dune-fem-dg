@@ -217,7 +217,7 @@ public:
       minIterationSteps_ = std::min( minIterationSteps_, iterationSteps );
       maxIterationSteps_ = std::max( maxIterationSteps_, iterationSteps );
 
-      if( verbose_ == 2 ) 
+      if( verbose_ == 3 ) 
       {
         double factor = explFactor_ ;
         //if( averageIterationSteps > 0 ) 
@@ -237,7 +237,7 @@ public:
       // if true solve next time step with semi implicit solver
       imex_ = ( maxDiffStep > (factor * maxAdvStep) ) ;
 
-      if( verbose_ == 2 ) 
+      if( verbose_ == 3 ) 
       {
         std::cout << maxAdvStep << " a | d " << maxDiffStep << "  factor: " << factor
           << "  " << minIterationSteps_ << " min | max " << maxIterationSteps_ << "  use imex = " << imex_ << std::endl;
