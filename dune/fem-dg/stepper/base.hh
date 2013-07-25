@@ -37,7 +37,10 @@ struct InitFemEoc
       std::string eocOutPath = 
         ParameterType::getValue<std::string>("femhowto.eocOutputPath", std::string("./"));
 
-      Dune::Fem::FemEoc::initialize(eocOutPath, "eoc", problemDescription);
+      std::string eocFileName = 
+        ParameterType::getValue<std::string>("femhowto.eocFileName", std::string("eoc"));
+
+      Dune::Fem::FemEoc::initialize(eocOutPath, eocFileName, problemDescription);
     }
   }
 };
