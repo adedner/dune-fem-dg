@@ -341,6 +341,9 @@ namespace Dune {
       return numberOfElements_; 
     }
 
+    //! this pass needs communication only when hasFlux on discrete model is true
+    bool requireCommunication () const { return discreteModel_.hasFlux(); }
+
   protected:
     struct DefaultNBChecker
     {
