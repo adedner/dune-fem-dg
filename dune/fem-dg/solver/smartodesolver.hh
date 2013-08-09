@@ -3,6 +3,7 @@
 
 #include <limits>
 #include <dune/fem/misc/femtimer.hh>
+#include <dune/fem/solver/rungekutta.hh>
 #include <dune/fem/solver/odesolver.hh>
 
 namespace Dune {
@@ -81,12 +82,71 @@ public:
   typedef typename OperatorType :: DestinationType DestinationType ;
   typedef DestinationType  DiscreteFunctionType;
 
+  template < class Op, class DF > 
+  struct OdeSolverSelection 
+  {
+    typedef DuneODE :: ExplicitRungeKuttaSolver< DiscreteFunctionType >  ExplicitOdeSolverType;
+    typedef ExplicitOdeSolverType ImplicitOdeSolverType ;
+    typedef ExplicitOdeSolverType SemiImplicitOdeSolverType ;
+
+    static ExplicitOdeSolverType* 
+    createExplicitSolver( Op& op, Fem::TimeProviderBase& tp, const int rkSteps )
+    { 
+      return new ExplicitOdeSolverType( op, tp, rkSteps );
+    }
+
+    static ImplicitOdeSolverType* 
+    createImplicitSolver( Op& op, Fem::TimeProviderBase& tp, const int rkSteps )
+    { 
+      DUNE_THROW(NotImplemented," ");
+      return 0;
+    }
+
+    template <class ExplOp, class ImplOp> 
+    static SemiImplicitOdeSolverType* 
+    createSemiImplicitSolver( ExplOp& explOp, ImplOp& implOp, Fem::TimeProviderBase& tp, const int rkSteps )
+    { 
+      DUNE_THROW(NotImplemented," ");
+      return 0;
+    }
+
+  };
+
+  template < class Op > 
+  struct OdeSolverSelection< Op, Fem :: AdaptiveDiscreteFunction< typename Op::SpaceType > >
+  {
+    typedef Fem :: AdaptiveDiscreteFunction< typename Operator::SpaceType >  DiscreteFunctionType ;
+    typedef DuneODE :: ImplicitOdeSolver< DiscreteFunctionType >       ImplicitOdeSolverType; 
+    typedef DuneODE :: ExplicitOdeSolver< DiscreteFunctionType >       ExplicitOdeSolverType; 
+    typedef DuneODE :: SemiImplicitOdeSolver< DiscreteFunctionType >   SemiImplicitOdeSolverType;
+
+    static ExplicitOdeSolverType* 
+    createExplicitSolver( Op& op, Fem::TimeProviderBase& tp, const int rkSteps )
+    { 
+      return new ExplicitOdeSolverType( op, tp, rkSteps );
+    }
+
+    static ImplicitOdeSolverType* 
+    createImplicitSolver( Op& op, Fem::TimeProviderBase& tp, const int rkSteps )
+    { 
+      return new ImplicitOdeSolverType( op, tp, rkSteps );
+    }
+
+    template <class ExplOp, class ImplOp> 
+    static SemiImplicitOdeSolverType* 
+    createSemiImplicitSolver( ExplOp& explOp, ImplOp& implOp, Fem::TimeProviderBase& tp, const int rkSteps )
+    { 
+      return new SemiImplicitOdeSolverType( explOp, implOp, tp, rkSteps );
+    }
+
+  };
+
   // The ODE Solvers                                                  
   typedef DuneODE :: OdeSolverInterface< DestinationType >           OdeSolverInterfaceType;
-  typedef DuneODE :: ImplicitOdeSolver< DiscreteFunctionType >       ImplicitOdeSolverType; 
-  typedef DuneODE :: ExplicitOdeSolver< DiscreteFunctionType >       ExplicitOdeSolverType; 
-  typedef DuneODE :: SemiImplicitOdeSolver< DiscreteFunctionType >   SemiImplicitOdeSolverType;
-
+  typedef OdeSolverSelection< OperatorType, DestinationType >  OdeSolversType ;
+  typedef typename OdeSolversType :: ImplicitOdeSolverType  ImplicitOdeSolverType ;
+  typedef typename OdeSolversType :: ExplicitOdeSolverType  ExplicitOdeSolverType ;
+  typedef typename OdeSolversType :: SemiImplicitOdeSolverType  SemiImplicitOdeSolverType ;
 
   typedef typename OdeSolverInterfaceType :: MonitorType MonitorType;
 
@@ -134,11 +194,11 @@ public:
     // create implicit or explicit ode solver
     if( odeSolverType_ == 0 )
     {
-      odeSolver_ = new ExplicitOdeSolverType( operator_, tp, rkSteps_);
+      odeSolver_ = OdeSolversType :: createExplicitSolver( operator_, tp, rkSteps_);
     }
     else if (odeSolverType_ == 1)
     {
-      odeSolver_ = new ImplicitOdeSolverType( operator_, tp, rkSteps_);
+      odeSolver_ = OdeSolversType :: createImplicitSolver( operator_, tp, rkSteps_);
     }
     else if( odeSolverType_ > 1 )
     {
@@ -147,8 +207,7 @@ public:
       {
         DUNE_THROW(Dune::InvalidStateException,"Advection and Diffusion operator are the same, therefore IMEX cannot work!");
       }
-      odeSolver_ = new SemiImplicitOdeSolverType
-        (advectionOperator_, diffusionOperator_, tp, rkSteps_);
+      odeSolver_ = OdeSolversType :: createSemiImplicitSolver( advectionOperator_, diffusionOperator_, tp, rkSteps_);
 
       // IMEX+
       if( odeSolverType_ == 3 ) 
