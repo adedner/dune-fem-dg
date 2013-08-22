@@ -313,10 +313,11 @@ public:
         // setup problem again 
         initializeStep( tp, loop );
 
+        // get grid size (outside of verbose if)
+        UInt64Type grSize = gridSize();
         // some info in verbose mode 
         if( verbose )
         {
-          UInt64Type grSize = gridSize();
           std::cout << "Start adaptation: step " << startCount << ",  dt = " << tp.deltaT() << ",  grid size: " << grSize
                     << std::endl;
         }
