@@ -1,21 +1,21 @@
-#ifndef DUNE_FEM_DG_RUNFILE_HH
-#define DUNE_FEM_DG_RUNFILE_HH
+#ifndef DUNE_FEM_DG_DIAGNOSTICS_HH
+#define DUNE_FEM_DG_DIAGNOSTICS_HH
 
 #include <dune/fem/io/parameter.hh>
+#include <dune/fem/misc/mpimanager.hh>
 #include <dune/fem/misc/threads/threadmanager.hh>
 #include <dune/fem-dg/pass/threadpass.hh>
 
 namespace Dune {
 
-  template <class GridType>
-  class RunFile : public Fem::AutoPersistentObject 
+  class Diagnostics : public Fem::AutoPersistentObject 
   {
-    typedef typename GridType :: Traits :: CollectiveCommunication CommunicatorType;
+    typedef Fem :: MPIManager :: CollectiveCommunication CommunicatorType;
     const CommunicatorType& comm_; 
     const std::string runFileName_;
-    const int writeRunFile_; // 0 don't, 1 only speedup file, 2 write all runfiles 
+    const int writeDiagnostics_; // 0 don't, 1 only speedup file, 2 write all diagnosticss 
                              // 3 only write 0, others at end, 4 all files at end 
-    std::ostream* runfile_;
+    std::ostream* diagnostics_;
 
     std::vector< double > times_ ;
     double elements_;
@@ -28,35 +28,35 @@ namespace Dune {
       return (size_t (t * 1e3));
     }
 
-    void writeHeader(std::ostream& runfile) 
+    void writeHeader(std::ostream& diagnostics) 
     {
       // write header 
-      runfile << "# Time          ";
-      runfile << "   dt         ";
-      runfile << "  Elements   ";
-      runfile << "        dg   ";
-      runfile << "       ode      ";
-      runfile << "  adapt      ";
-      runfile << "     lb   ";
-      runfile << "       all  ";
-      runfile << "      indi   ";
-      runfile << "   limfunc   ";
-      runfile << "     limit (in ms)  " << std::endl;
-      runfile.flush();
+      diagnostics << "# Time          ";
+      diagnostics << "   dt         ";
+      diagnostics << "  Elements   ";
+      diagnostics << "        dg   ";
+      diagnostics << "       ode      ";
+      diagnostics << "  adapt      ";
+      diagnostics << "     lb   ";
+      diagnostics << "       all  ";
+      diagnostics << "      indi   ";
+      diagnostics << "   limfunc   ";
+      diagnostics << "     limit (in ms)  " << std::endl;
+      diagnostics.flush();
     }
 
     std::string runFileName(const int rank) const 
     {
-      std::stringstream runfile;
-      runfile << Fem :: Parameter :: commonOutputPath() << "/run." << rank; 
-      return runfile.str();
+      std::stringstream diagnostics;
+      diagnostics << Fem :: Parameter :: commonOutputPath() << "/run." << rank; 
+      return diagnostics.str();
     }
 
-    std::ostream* createRunFile( const int rank, 
+    std::ostream* createDiagnostics( const int rank, 
                                  const int writeId, 
                                  const bool newStart ) 
     {
-      // in case of no writing or only speedup table don't create runfile
+      // in case of no writing or only speedup table don't create diagnostics
       if( writeId <= 1 ) return 0;
 
       bool writeAtOnce = ( writeId > 2 );
@@ -80,26 +80,26 @@ namespace Dune {
       }
     }
   public:  
-    RunFile( const CommunicatorType& comm, const bool newStart )
-      : comm_( comm )
+    explicit Diagnostics( const bool newStart )
+      : comm_( Fem :: MPIManager :: comm() )
       , runFileName_( runFileName( comm_.rank() ) )
-      , writeRunFile_( Fem :: Parameter :: getValue< int > ("fem.parallel.runfile", 0 ) )
-      , runfile_( createRunFile( comm_.rank(), writeRunFile_, newStart ) ) 
+      , writeDiagnostics_( Fem :: Parameter :: getValue< int > ("fem.parallel.diagnostics", 0 ) )
+      , diagnostics_( createDiagnostics( comm_.rank(), writeDiagnostics_, newStart ) ) 
       , times_() 
       , elements_( 0.0 )
       , maxDofs_( 0.0 )
       , timesteps_( 0 )
     {
-      if( runfile_ && newStart ) 
+      if( diagnostics_ && newStart ) 
       {
-        writeHeader( *runfile_ );
+        writeHeader( *diagnostics_ );
       }
     }
 
     //! destructor 
-    ~RunFile() 
+    ~Diagnostics() 
     {
-      delete runfile_;
+      delete diagnostics_;
     }
 
 
@@ -137,7 +137,7 @@ namespace Dune {
     void flush() const
     {
       // if write is > 0 then create speedup file 
-      if( writeRunFile_ )
+      if( writeDiagnostics_ )
       {
         std::vector< double > times( times_ );
 
@@ -169,9 +169,9 @@ namespace Dune {
             minTimes[ i ] /= (double) timesteps_;
           }
 
-          std::stringstream runfile;
-          runfile << Fem :: Parameter :: commonOutputPath() << "/speedup." << comm_.size(); 
-          std::ofstream file ( runfile.str().c_str() );
+          std::stringstream diagnostics;
+          diagnostics << Fem :: Parameter :: commonOutputPath() << "/speedup." << comm_.size(); 
+          std::ofstream file ( diagnostics.str().c_str() );
           if( file ) 
           {
             const double averageElements = sumTimes[ size - 1 ] / tasks ;
@@ -242,9 +242,9 @@ namespace Dune {
           }
         } // end speedup file 
 
-        if( runfile_ ) 
+        if( diagnostics_ ) 
         {
-          std::stringstream* str = dynamic_cast< std::stringstream* > (runfile_); 
+          std::stringstream* str = dynamic_cast< std::stringstream* > (diagnostics_); 
           if( str ) 
           {
             std::ofstream file( runFileName_.c_str() );
@@ -295,7 +295,7 @@ namespace Dune {
                        const size_t nElements,
                        const std::vector<double>& times) 
     {
-      if( writeRunFile_ ) 
+      if( writeDiagnostics_ ) 
       {
         const size_t size = times.size() ;
         const size_t oldsize = times_.size();
@@ -314,18 +314,18 @@ namespace Dune {
 
         ++timesteps_ ;
 
-        if( runfile_ ) 
+        if( diagnostics_ ) 
         {
-          std::ostream& runfile = (*runfile_);
+          std::ostream& diagnostics = (*diagnostics_);
           const int space = 12;
-          runfile << std::scientific << t  << "  ";
-          runfile << std::setw(space) << ldt << "  ";
-          runfile << std::setw(space) << nElements << " ";
+          diagnostics << std::scientific << t  << "  ";
+          diagnostics << std::setw(space) << ldt << "  ";
+          diagnostics << std::setw(space) << nElements << " ";
           for(size_t i=0; i<size; ++i) 
-            runfile << std::setw(space) << inMS( times[ i ] ) << " ";
-          runfile << std::endl;
+            diagnostics << std::setw(space) << inMS( times[ i ] ) << " ";
+          diagnostics << std::endl;
 
-          runfile.flush();
+          diagnostics.flush();
         }
       }
     }
@@ -369,7 +369,7 @@ namespace Dune {
         stream >> times_[ i ];
       }
     }
-  }; // end class runfile
+  }; // end class diagnostics
 
 } // end namespace Dune 
 #endif
