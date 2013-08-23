@@ -14,8 +14,10 @@ DUNE_CHECK_ALL
 
 # implicitly set the Dune-flags everywhere
 # preset variable to path such that #include <dune/...> works
-AC_SUBST(AM_CPPFLAGS, '\${DUNE_CPPFLAGS} -I$(top_srcdir)')
-AC_SUBST(AM_LDFLAGS, '\${DUNE_LDFLAGS} \${DUNE_LIBS}')
+#AC_SUBST(AM_CPPFLAGS, '\${DUNE_CPPFLAGS} -I$(top_srcdir)')
+#AC_SUBST(AM_LDFLAGS, '\${DUNE_LDFLAGS} \${DUNE_LIBS}')
+AC_SUBST(AM_CPPFLAGS, '${DUNE_CPPFLAGS} -I$(top_srcdir)')
+AC_SUBST(AM_LDFLAGS, '${DUNE_LDFLAGS} ${DUNE_LIBS}')
 
 AC_CONFIG_FILES([
   Makefile
@@ -33,6 +35,7 @@ AC_CONFIG_FILES([
   dune/fem-dg/main/Makefile
   dune/fem-dg/misc/Makefile
   dune/fem-dg/models/Makefile
+  dune/fem-dg/test/Makefile
   dune/fem-dg/assemble/Makefile
   dune-fem-dg.pc
 ])
