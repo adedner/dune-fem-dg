@@ -197,26 +197,32 @@ struct Stepper : public AlgorithmBase< StepperTraits< GridImp, ProblemTraits, or
     return *checkPointer_;
   }
 
-  // restore data 
-  void restoreFromCheckPoint(TimeProviderType& tp,
-                             DiscreteFunctionType& solution) 
+  // restore data, return true for new start 
+  bool restoreFromCheckPoint(TimeProviderType& tp )
   {
     // add solution to persistence manager for check pointing 
-    Dune::Fem::persistenceManager << solution ;
+    Dune::Fem::persistenceManager << solution_ ;
+
+    std::string checkPointRestartFile = checkPointRestartFileName();
 
     // if check file is non-zero a restart is performed 
-    if( checkFile_ ) 
+    if( checkPointRestartFile.size() > 0 )
     {
       // restore data 
-      checkPointer( tp ).restoreData( grid_, checkFile_ );
+      checkPointer( tp ).restoreData( grid_, checkPointRestartFile );
   
       // check consistency of check point 
-      consistencyCheck( tp, solution );
+      consistencyCheck( tp, solution_ );
+
+      // return false for no new start
+      return false;
     }
+    // do new start 
+    return true ;
   }
 
   // backup data  
-  void writeCheckPoint(TimeProviderType& tp, DiscreteFunctionType & solution ) const 
+  void writeCheckPoint(TimeProviderType& tp) const 
   {
     if( Dune::Fem::Parameter::verbose() )
     {
