@@ -1,4 +1,9 @@
+// this programm only works without MPI and without threads 
+#undef ENABLE_PETSC
 #undef ENABLE_MPI
+#undef USE_PTHREADS 
+#undef _OPENMP
+
 //************************************************************
 //
 //  (C) written and directed by Robert Kloefkorn 
@@ -24,79 +29,211 @@
 // Include your header defining all necessary types 
 //
 ///////////////////////////////////////////////////
-#include "checkpointing.hh"
-
+#include <dune/fem-dg/main/main_pol.cc>
 #include <dune/fem/io/file/vtkio.hh>
-#include <dune/fem/operator/projection/vtxprojection.hh>
 
+#include <dune/fem/operator/projection/vtxprojection.hh>
 
 void appendUserParameter() 
 {
   Dune::Fem::Parameter :: append("parameter");
 }
+#define PARAMETER_APPEND_FUNCTION appendUserParameter
 
 typedef Dune::GridSelector :: GridType GridType;
+typedef ProblemGenerator< GridType > ProblemTraits;
 
-// ProblemType is a Dune::Function that evaluates to $u_0$ and also has a
-// method that gives you the exact solution.
-typedef Dune::U0< GridType > ProblemType;
-
-typedef  Stepper<GridType, ProblemType> StepperType ;
+typedef  Stepper<GridType,
+                 ProblemTraits,
+                 POLORDER> StepperType ;
 
 typedef StepperType :: IOTupleType InTupleType ;
 
 // type of discrete function tuple to restore 
 typedef InTupleType GR_InputType;
 
+  
+template < int dimRange, int probDimRange >
+struct AdditionalVariables
+{
+  template <class DestinationType> 
+  static DestinationType* setup( const double, const DestinationType& ) 
+  {
+    return 0;
+  }
+};
+
+template < int dimRange >
+struct AdditionalVariables< dimRange, dimRange >
+{
+  template <class DestinationType> 
+  static DestinationType* setup( const double time, const DestinationType& Uh ) 
+  {
+    DestinationType* additionalVariables = 0;
+    if( ParameterType :: getValue< bool >("femhowto.additionalvariables", false) ) 
+    {
+      /*
+      std::cout << "Setup additional variables" << std::endl;
+      additionalVariables = new DestinationType("add", Uh.space() );
+      typedef typename StepperType :: InitialDataType InitialDataType;
+      InitialDataType* problem = ProblemTraits :: problem() ;
+      typedef typename StepperType :: ModelType  ModelType;
+      ModelType model( *problem ); 
+
+      // create TimeProvider provider with given time 
+      Dune::Fem::TimeProviderBase tp( time );
+
+      setupAdditionalVariables( tp, Uh, model, *additionalVariables );
+      delete problem;
+      */
+    }
+    return additionalVariables;
+  }
+};
+
+template < int pos >
+struct ProcessElement
+{
+template <class GR_GridType,
+          class InTupleType>
+  static void apply(const GR_GridType& grid,
+                    const InTupleType& data,
+                    const double time,
+                    const int timestep,
+                    const int myRank,
+                    const int numProcs)
+  {
+    applyDF( grid, *(Dune::get< pos >( data )), time, timestep, myRank, numProcs );
+  }
+
+  template <class GR_GridType, class DestinationType>
+  static void applyDF(const GR_GridType& grid,
+                      const DestinationType& Uh,
+                      const double time,
+                      const int timestep,
+                      const int myRank,
+                      const int numProcs)
+  {
+    typedef typename DestinationType :: DiscreteFunctionSpaceType DiscreteFunctionSpaceType;
+    typedef typename DiscreteFunctionSpaceType :: GridPartType GridPartType;
+    typedef typename StepperType :: InitialDataType InitialDataType;
+
+    DestinationType* additionalVariables = 
+      AdditionalVariables< DiscreteFunctionSpaceType::dimRange, 
+                           InitialDataType :: dimRange > ::  setup( time, Uh ); 
+
+    typedef Dune::Fem::AdaptiveLeafGridPart< typename GridPartType::GridType > VtxGridPartType;
+    typedef Dune::Fem::LagrangeDiscreteFunctionSpace< typename DiscreteFunctionSpaceType::FunctionSpaceType, 
+                                           VtxGridPartType, 1 > VtxSpaceType;
+                                          // DiscreteFunctionSpaceType::polynomialOrder >  VtxSpaceType;
+    typedef Dune::Fem::AdaptiveDiscreteFunction< VtxSpaceType > VtxFunctionType;                                      
+
+
+    typedef Dune::Fem::Parameter  ParameterType ;
+
+    const int subSamplingLevel = ParameterType :: getValue< int >("fem.io.subsamplinglevel", 0);
+
+    // subsampling vtk output 
+    //Dune::Fem::VTKIO< GridPartType > vtkio( Uh.space().gridPart() );
+    
+    Dune::Fem::DataOutputParameters parameter;
+    if( parameter.outputformat() == 1 ) // vtk-vertex 
+    {
+      if( ParameterType :: verbose() )
+        std::cout << "Writing vertex data" << std::endl;
+
+      VtxGridPartType vxGridPart( Uh.space().gridPart().grid() );
+      VtxSpaceType xvSpace( vxGridPart );
+      Dune::Fem::SubsamplingVTKIO< VtxGridPartType > vtkio( vxGridPart, subSamplingLevel );
+
+      VtxFunctionType vtxValues( "vx", xvSpace ); 
+      VtxFunctionType* addValues = ( additionalVariables ) ? new VtxFunctionType( "add", xvSpace ) : 0 ; 
+
+      Dune::Fem::VtxProjection< DestinationType, VtxFunctionType > vxpro;
+      vxpro( Uh, vtxValues );
+
+      if( additionalVariables ) 
+      {
+        vxpro( *additionalVariables, *addValues );
+      }
+
+      vtkio.addVertexData( vtxValues );
+      if( addValues ) 
+        vtkio.addVertexData( *addValues );
+
+      const bool verbose = ParameterType::verbose() ;
+      // get data name 
+      std::string name( (Uh.name() == "") ? "sol" : Uh.name() ); 
+      // get file name
+      std::string filename = Dune :: genFilename("",name,timestep,6);
+
+      if( verbose ) 
+        std::cout <<"Writing vtk output " <<filename <<"...";
+
+      // write vtk output 
+      vtkio.write( filename, 
+                   Dune::VTK::appendedraw,
+                   myRank, numProcs
+                 );
+      if( verbose ) 
+        std::cout <<"[ok]" << std::endl;
+
+      delete addValues;
+      if( additionalVariables )
+        delete additionalVariables ;
+    }
+    else // vtk-cell
+    {
+      Dune::Fem::SubsamplingVTKIO< GridPartType > vtkio( Uh.space().gridPart(), subSamplingLevel );
+      if( Uh.space().order() > 0 )
+      {
+        vtkio.addVertexData(Uh);
+        if( additionalVariables ) 
+          vtkio.addVertexData( *additionalVariables );
+      }
+      else
+      {
+        vtkio.addCellData(Uh);
+        if( additionalVariables ) 
+          vtkio.addCellData( *additionalVariables );
+      }
+
+      const bool verbose = ParameterType::verbose() ;
+      // get data name 
+      std::string name( (Uh.name() == "") ? "sol" : Uh.name() ); 
+      // get file name
+      std::string filename = Dune :: genFilename("",name,timestep,6);
+
+      if( verbose ) 
+        std::cout <<"Writing vtk output " <<filename <<"...";
+
+      // write vtk output 
+      vtkio.write( filename, 
+                   Dune::VTK::appendedraw,
+                   myRank, numProcs
+                 );
+      if( verbose ) 
+        std::cout <<"[ok]" << std::endl;
+
+      if( additionalVariables )
+        delete additionalVariables ;
+    }
+  }
+};
+
 #define WRITE_VTK
 template <class GR_GridType,
           class InTupleType>
 void process(const GR_GridType& grid,
-             const InTupleType& data, 
+             const InTupleType& data,
              const double time,
              const int timestep,
              const int myRank,
              const int numProcs)
 {
 #ifdef WRITE_VTK 
-  typedef typename Dune :: TypeTraits< typename Dune :: tuple_element< 0, InTupleType >::type >::PointeeType DestinationType;
-  typedef typename DestinationType :: DiscreteFunctionSpaceType DiscreteFunctionSpaceType;
-  typedef typename DiscreteFunctionSpaceType :: GridPartType GridPartType;
-  const DestinationType& Uh = *( Dune :: get<0>(data) );
-
-  const int subSamplingLevel = Dune::Fem::Parameter :: 
-        getValue< int >("fem.io.subsamplinglevel", 1);
-  //std::cout <<"Got Sublevel = " << subSamplingLevel << std::endl;
-  // vtk output 
-  Dune::Fem::SubsamplingVTKIO< GridPartType > vtkio( Uh.space().gridPart(), subSamplingLevel );
-  //VTKIO< GridPartType > vtkio(Uh.space().gridPart(),
-  //                           (Uh.space().continuous()) ? 
-  //                             VTKOptions::conforming :
-  //                            VTKOptions::nonconforming);
-
-  if( Uh.space().order() > 0 )
-  {
-    vtkio.addVertexData(Uh);
-  }
-  else 
-  {
-    vtkio.addCellData(Uh);
-  }
-  
-  // get data name 
-  std::string name( (Uh.name() == "") ? "rho" : Uh.name() ); 
-  //std::cout << "Got discrete function " << name << std::endl;
-  //std::string name( "rho" ); 
-  // get file name
-  std::string filename = Dune :: genFilename("",name,timestep,6);
-  std::cout <<"Writing vtk output " << filename << " for time = " << time << " ...";
-  // write vtk output 
-  vtkio.write( filename, 
-               Dune::VTK::appendedraw,
-               myRank, numProcs
-             );
-  std::cout <<"[ok]" << std::endl;
-
+  Dune :: ForLoop< ProcessElement, 0, 0 > // Dune::tuple_size< InTupleType > :: value-1 >
+    :: apply( grid, data, time, timestep, myRank, numProcs );
 #endif
 }
 
