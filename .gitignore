@@ -26,4 +26,7 @@ Makefile.in
 *~
 *.log
 *.swp
+*.o
+*.lo
+*.la
 *.tmp
