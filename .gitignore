@@ -22,6 +22,8 @@ Makefile
 Makefile.in
 
 .libs
+.deps
+
 
 *~
 *.log
