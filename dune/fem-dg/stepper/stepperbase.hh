@@ -37,7 +37,7 @@ static double minRatioOfSums = 1e+100;
 #include <dune/fem-dg/stepper/baseevolution.hh>
 #include <dune/fem-dg/stepper/steppertraits.hh>
 
-#include <dune/fem-dg/misc/runfile.hh>
+#include <dune/fem-dg/misc/diagnostics.hh>
 #include <dune/fem-dg/operator/adaptation/estimatorbase.hh>
 
 using namespace Dune;                                        
@@ -64,49 +64,50 @@ struct StepperBase
   typedef typename Traits :: InitialDataType          InitialDataType;
 
   // An analytical version of our model
-  typedef typename Traits :: ModelType                 ModelType;
+  typedef typename Traits :: ModelType                ModelType;
 
   // The flux for the discretization of advection terms
-  typedef typename Traits :: FluxType                  FluxType;
+  typedef typename Traits :: FluxType                 FluxType;
 
   // The DG space operator
   // The first operator is sum of the other two
   // The other two are needed for semi-implicit time discretization
-  typedef typename Traits :: DgType                    DgType;
-  typedef typename Traits :: DgAdvectionType           DgAdvectionType;
-  typedef typename Traits :: DgDiffusionType           DgDiffusionType;
+  typedef typename Traits :: DgType                   DgType;
+  typedef typename Traits :: DgAdvectionType          DgAdvectionType;
+  typedef typename Traits :: DgDiffusionType          DgDiffusionType;
 
   // The discrete function for the unknown solution is defined in the DgOperator
-  typedef typename Traits :: DiscreteFunctionType      DiscreteFunctionType;
+  typedef typename Traits :: DiscreteFunctionType     DiscreteFunctionType;
 
   // ... as well as the Space type
-  typedef typename Traits :: DiscreteSpaceType         DiscreteSpaceType;
+  typedef typename Traits :: DiscreteSpaceType        DiscreteSpaceType;
 
   // The ODE Solvers
-  typedef typename Traits :: OdeSolverType       OdeSolverType;
-  typedef typename OdeSolverType :: MonitorType  OdeSolverMonitorType ;
+  typedef typename Traits :: OdeSolverType            OdeSolverType;
+  typedef typename OdeSolverType :: MonitorType       OdeSolverMonitorType ;
 
   typedef typename BaseType :: TimeProviderType       TimeProviderType;
 
   typedef AdaptationHandler< GridType, 
            typename DiscreteSpaceType::FunctionSpaceType >  AdaptationHandlerType;
 
-  typedef RunFile< GridType >  RunFileType;
+  // type of run time diagnostics 
+  typedef Diagnostics                                 DiagnosticsType;
 
   // type of most simple check pointer 
-  typedef Dune::Fem::CheckPointer< GridType >   CheckPointerType;
+  typedef Dune::Fem::CheckPointer< GridType >         CheckPointerType;
 
   // type of solver monitor 
-  typedef typename BaseType :: SolverMonitorType  SolverMonitorType;
+  typedef typename BaseType :: SolverMonitorType      SolverMonitorType;
 
   // type of solver monitor 
-  typedef typename BaseType :: DataWriterType     DataWriterType;
+  typedef typename BaseType :: IOTupleType            IOTupleType;
 
-  // type of solver monitor 
-  typedef typename BaseType :: IOTupleType        IOTupleType;
+  // type of data writer 
+  typedef Dune::Fem::DataWriter< GridType, IOTupleType >    DataWriterType;
 
   // type of parameter class 
-  typedef Dune::Fem::Parameter ParameterType ;  
+  typedef Dune::Fem::Parameter                        ParameterType ;  
 
   // the restriction and prolongation projection 
   typedef typename Traits :: RestrictionProlongationType RestrictionProlongationType;
@@ -130,7 +131,7 @@ struct StepperBase
     model_( new ModelType( problem() ) ),
     convectionFlux_( *model_ ),
     adaptationHandler_( 0 ),
-    runfile_( grid.comm(), true ),
+    diagnostics_( true ),
     checkPointer_( 0 ),
     overallTimer_(),
     eocId_( Fem::FemEoc::addEntry(std::string("$L^2$-error")) ),
@@ -244,7 +245,7 @@ struct StepperBase
     const int maxNumDofs = space().blockMapper().maxNumDofs() * space().localBlockSize;
  
     // write times to run file 
-    runfile_.write( tp.time() + ldt, ldt, 
+    diagnostics_.write( tp.time() + ldt, ldt, 
                     odeSolverMonitor_.numberOfElements_,    // number of elements
                     maxNumDofs,                             // number of dofs per element (max)
                     odeSolverMonitor_.operatorTime_,        // time for operator evaluation 
@@ -303,6 +304,9 @@ struct StepperBase
     // L2 project initial data 
     l2pro( problem().fixedTimeFunction( tp.time() ), U ); 
 
+    writeData( tp );
+    if( loop > 0 ) abort();
+    
     // ode.initialize applies the DG Operator once to get an initial
     // estimate on the time step. This does not change the initial data u.
     odeSolver_->initialize( U );                
@@ -357,7 +361,7 @@ struct StepperBase
   {
     DiscreteFunctionType& u = solution();
     // write run file (in writeatonce mode)
-    runfile_.flush(); 
+    diagnostics_.flush(); 
 
     bool doFemEoc = problem().calculateEOC( tp, u, eocId_ );
 
@@ -451,7 +455,7 @@ protected:
   AdaptationHandlerType*  adaptationHandler_;
 
   // diagnostics file 
-  mutable RunFileType     runfile_;
+  mutable DiagnosticsType diagnostics_;
   // check point writer 
   mutable CheckPointerType* checkPointer_;
 
