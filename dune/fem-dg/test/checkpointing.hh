@@ -1,6 +1,5 @@
-#ifndef DUNE_FEM_HOWTO_CHECKPOINTING_HH
-#define DUNE_FEM_HOWTO_CHECKPOINTING_HH
-
+#ifndef NAVIER_STOKES_STEPPER_HH
+#define NAVIER_STOKES_STEPPER_HH
 
 #if HAVE_SIONLIB && WANT_SIONLIB
 #include <dune/fem/io/streams/sionlibstreams.hh>
@@ -32,13 +31,10 @@ struct PersistenceManagerTraits
 #include <dune/fem/quadrature/cachingquadrature.hh>
 
 // include local header files
-#include <dune/fem-howto/baseevolution.hh>
+#include <dune/fem-dg/stepper/baseevolution.hh>
 #include "problem.hh" 
 
-// approximation order
-const int order   = POLORDER;
-
-template <class GridImp, class InitialDataType>               /*@LST1S@*/
+template <class GridImp, class ProblemTraits, int order>               /*@LST1S@*/
 struct StepperTraits {
   // type of Grid
   typedef GridImp                                                    GridType;
@@ -47,9 +43,11 @@ struct StepperTraits {
   //typedef AdaptiveLeafGridPart< GridType >                         GridPartType;
   //typedef IdBasedLeafGridPart< GridType >                         GridPartType;
 
+  // type of initial data 
+  typedef typename ProblemTraits :: template Traits< GridPartType > :: InitialDataType  InitialDataType;
+
   // type of function space 
-  typedef Dune::Fem::FunctionSpace< typename  GridType :: ctype, double, 
-                               GridType :: dimensionworld, 1 >  FunctionSpaceType;
+  typedef typename InitialDataType :: FunctionSpaceType  FunctionSpaceType;
 
   // ... as well as the Space type
   typedef Dune::Fem::DiscontinuousGalerkinSpace < FunctionSpaceType, GridPartType, order> DiscreteSpaceType;
@@ -59,6 +57,12 @@ struct StepperTraits {
 
   // type of restriction/prolongation projection for adaptive simulations 
   typedef Dune::Fem::RestrictProlongDefault< DiscreteFunctionType >  RestrictionProlongationType;
+
+  // fake indicator type 
+  typedef DiscreteFunctionType  IndicatorType ;
+
+  // type of IOTuple 
+  typedef Dune::tuple< DiscreteFunctionType*, DiscreteFunctionType* >  IOTupleType;
 };
 
 
@@ -111,12 +115,11 @@ public:
 };
 
 
-
-template <class GridImp, class InitialDataType>               /*@LST1S@*/
-struct Stepper : public AlgorithmBase< StepperTraits< GridImp, InitialDataType> >
+template <class GridImp, class ProblemTraits, int order>               /*@LST1S@*/
+struct Stepper : public AlgorithmBase< StepperTraits< GridImp, ProblemTraits, order> >
 {
   // my traits class 
-  typedef StepperTraits< GridImp, InitialDataType> Traits ;
+  typedef StepperTraits< GridImp, ProblemTraits, order> Traits ;
 
   // my base class 
   typedef AlgorithmBase < Traits > BaseType;
@@ -127,6 +130,9 @@ struct Stepper : public AlgorithmBase< StepperTraits< GridImp, InitialDataType> 
   // Choose a suitable GridView
   typedef typename Traits :: GridPartType              GridPartType;
 
+  // type of problem data 
+  typedef typename Traits :: InitialDataType           InitialDataType ;
+
   // The discrete function for the unknown solution is defined in the DgOperator
   typedef typename Traits :: DiscreteFunctionType      DiscreteFunctionType;
 
@@ -135,36 +141,51 @@ struct Stepper : public AlgorithmBase< StepperTraits< GridImp, InitialDataType> 
 
   typedef typename BaseType :: TimeProviderType   TimeProviderType;
 
+  typedef typename Traits :: IOTupleType     IOTupleType;
+
+  typedef typename BaseType :: SolverMonitorType  SolverMonitorType;
+
   // type of most simple check pointer 
   typedef Dune::Fem::CheckPointer< GridType >   CheckPointerType;
 
   using BaseType :: grid_;
-  using BaseType :: gridPart_;
 
-  Stepper(GridType& grid, const InitialDataType& problem, const char* checkFile) :
-    BaseType ( grid ),
-    problem_(problem),
+  Stepper( GridType& grid )
+  : BaseType ( grid ),
+    gridPart_( grid ),
+    space_( gridPart_ ),
+    solution_( "solution", space() ),
+    problem_( ProblemTraits::problem() ),
     eocId_( Dune::Fem::FemEoc::addEntry(std::string("$L^2$-error")) ),
     checkPointer_( 0 ),
-    checkFile_( checkFile )
+    checkFile_( 0 )
   {
     Dune::Fem::persistenceManager << error_;
-  }                                                                        /*@LST1E@*/
+  }
 
   ~Stepper() 
   {
     removeObj();
   }
 
+  const DiscreteSpaceType& space() const { return space_ ; }
+
+  const InitialDataType& problem () const { assert( problem_ ); return *problem_; }
+
+  // return reference to discrete function holding solution 
+  DiscreteFunctionType& solution() { return solution_; }
+
+  IOTupleType dataTuple()
+  {
+    // tuple with additionalVariables 
+    return IOTupleType( &solution_, (DiscreteFunctionType*) 0 );
+  }
+
   void removeObj() 
   {
     delete checkPointer_;
     checkPointer_ = 0;
-  }
-
-  void finalize(DiscreteFunctionType&) 
-  {
-    removeObj();
+    // delete problem_;
   }
 
   CheckPointerType& checkPointer( TimeProviderType& tp ) const
@@ -205,43 +226,44 @@ struct Stepper : public AlgorithmBase< StepperTraits< GridImp, InitialDataType> 
   }
 
   // before first step, do data initialization 
-  void initializeStep(TimeProviderType& tp, DiscreteFunctionType& u)
+  void initializeStep(TimeProviderType& tp, const int loop )
   {
     Dune::Fem::L2Projection< InitialDataType, DiscreteFunctionType > l2pro;
-    l2pro(problem_, u);
+    l2pro( problem(), solution_);
   }
 
   // solve ODE for one time step 
-  void step(TimeProviderType& tp, DiscreteFunctionType& u) 
+  void step(TimeProviderType& tp, SolverMonitorType& monitor ) 
   {
     // do new projection 
-    typedef Dune::TimeDependentFunction< InitialDataType > FunctionType;
-    FunctionType function( problem_, tp.time() );
+    typedef Dune::Fem::TimeDependentFunction< InitialDataType > FunctionType;
+    FunctionType function( problem(), tp.time() );
     Dune::Fem::L2Projection< FunctionType, DiscreteFunctionType > l2pro;
-    l2pro(function, u); 
+    l2pro(function, solution_); 
 
     // exchange data to ghost cells
-    u.communicate();
+    solution_.communicate();
 
     // compute error for backup and restore (including ghost cells)
-    error_ = computeError(tp, u );
+    error_ = computeError(tp, solution_ );
   }
 
   double computeError(TimeProviderType& tp, DiscreteFunctionType& u)
   {
     L2ErrorNoComm< DiscreteFunctionType > l2norm;
     // Compute L2 error of discretized solution ...
-    typedef Dune::TimeDependentFunction< InitialDataType > FunctionType;
-    FunctionType function( problem_, tp.time() );
+    typedef Dune::Fem::TimeDependentFunction< InitialDataType > FunctionType;
+    FunctionType function( problem(), tp.time() );
     return l2norm.norm( function, u );
   }
 
   // after last step, do EOC calculation 
-  void finalizeStep(TimeProviderType& tp, DiscreteFunctionType& u)
+  void finalizeStep(TimeProviderType& tp)
   {
     // ... and print the statistics out to the eocOutputPath file
-    Dune::Fem::FemEoc::setErrors(eocId_, computeError(tp, u ) );
+    Dune::Fem::FemEoc::setErrors(eocId_, computeError(tp, solution_ ) );
   }
+
 
   // reset solution on ghost cells 
   void resetNonInterior( DiscreteFunctionType& solution ) 
@@ -285,10 +307,15 @@ struct Stepper : public AlgorithmBase< StepperTraits< GridImp, InitialDataType> 
       DUNE_THROW(Dune::InvalidStateException, "Error in backup/restore" );
     }
   }
-private:
+
+protected:
+  GridPartType          gridPart_;
+  DiscreteSpaceType     space_;
+  DiscreteFunctionType  solution_;
+
   // InitialDataType is a Dune::Operator that evaluates to $u_0$ and also has a
   // method that gives you the exact solution.
-  const InitialDataType  &problem_;
+  const InitialDataType* problem_;
   // Initial flux for advection discretization (UpwindFlux)
   const unsigned int      eocId_;
 
