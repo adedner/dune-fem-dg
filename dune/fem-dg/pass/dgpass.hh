@@ -114,8 +114,7 @@ namespace Dune {
                   PreviousPassType& pass, 
                   const DiscreteFunctionSpaceType& spc,
                   const int volumeQuadOrd = -1,
-                  const int faceQuadOrd = -1,
-                  const bool notThreadParallel = true ) 
+                  const int faceQuadOrd = -1 )
       : BaseType(pass, spc),
         caller_( 0 ),
         discreteModel_(discreteModel),
@@ -137,12 +136,11 @@ namespace Dune {
         faceQuadOrd_( faceQuadOrd ),
         numberOfElements_( 0 ),
         localMassMatrix_( spc_ , volumeQuadOrd_ ),
-        reallyCompute_( true ),
-        notThreadParallel_( notThreadParallel )
+        reallyCompute_( true )
     {
       // make sure that either a ghost layer or an overlap layer is there for 
       // communication of the data, otherwise the scheme will not work
-      if( spc_.grid().comm().size() > 1 ) 
+      if( spc_.gridPart().comm().size() > 1 ) 
       {
         if( spc_.grid().ghostSize( 0 ) <= 0 && spc_.grid().overlapSize( 0 ) <= 0 ) 
         {
@@ -173,6 +171,12 @@ namespace Dune {
       discreteModel_.switchUpwind();
     }
     
+    void setTime ( double time )
+    {
+      discreteModel_.setTime( time );
+      BaseType::setTime( time );
+    }
+
     //! Estimate for the timestep size 
     double timeStepEstimateImpl() const 
     {
@@ -266,14 +270,22 @@ namespace Dune {
     //! destinations. Filter out the "right" arguments for this pass.
     virtual void prepare(const ArgumentType& arg, DestinationType& dest) const
     {
+      prepare( arg, dest, true );
+    }
+
+    //! In the preparations, store pointers to the actual arguments and 
+    //! destinations. Filter out the "right" arguments for this pass.
+    //! This is the version use with ThreadPass 
+    void prepare(const ArgumentType& arg, DestinationType& dest, const bool firstThread ) const
+    {
       arg_ = const_cast<ArgumentType*>(&arg);
       dest_ = &dest;
 
       numberOfElements_ = 0;
 
-      if( notThreadParallel_ && dest_ )
+      if( firstThread && dest_ )
       {
-        // clear destination (not in thread parallel version)
+        // clear destination (only for first pass in thread parallel version)
         dest_->clear();
       }
 
@@ -292,9 +304,9 @@ namespace Dune {
     }
 
     //! Some timestep size management.
-    void doFinalize(DestinationType& dest) const
+    void doFinalize(DestinationType& dest, const bool doCommunicate) const
     {
-      if( notThreadParallel_ && (&dest) )
+      if( doCommunicate && (&dest) )
       {
         // communicate calculated function (not in thread parallel version)
         dest.communicate();
@@ -312,15 +324,25 @@ namespace Dune {
     }
 
     //! Some timestep size management.
+    //! This is the version use with ThreadPass 
+    void finalize(const ArgumentType& arg, DestinationType& dest, const bool doCommunicate ) const
+    {
+      doFinalize( dest, doCommunicate );
+    }
+
+    //! Some timestep size management.
     virtual void finalize(const ArgumentType& arg, DestinationType& dest) const
     {
-      doFinalize( dest );
+      doFinalize( dest, true );
     }
 
     size_t numberOfElements() const 
     {
       return numberOfElements_; 
     }
+
+    //! this pass needs communication only when hasFlux on discrete model is true
+    bool requireCommunication () const { return discreteModel_.hasFlux(); }
 
   protected:
     struct DefaultNBChecker
@@ -396,7 +418,7 @@ namespace Dune {
 
     // only calculate element integral part and interior fluxes
     template <class NeighborChecker> 
-    void interiorIntegral(const EntityType& entity, const NeighborChecker& nbChecker ) const 
+    void applyLocalInterior(const EntityType& entity, const NeighborChecker& nbChecker ) const 
     {
       // init local function 
       initLocalFunction( entity , updEn_ );
@@ -413,8 +435,8 @@ namespace Dune {
 
     // only calculate integral that need data from other processes
     template <class NeighborChecker>
-    void processBoundaryIntegral(const EntityType& entity,
-                         const NeighborChecker& nbChecker ) const 
+    void applyLocalProcessBoundary(const EntityType& entity,
+                                   const NeighborChecker& nbChecker ) const 
     {
       // init local function 
       initLocalFunction( entity , updEn_ );
@@ -920,7 +942,6 @@ namespace Dune {
     mutable size_t numberOfElements_ ;
     LocalMassMatrixType localMassMatrix_;
     mutable bool reallyCompute_;
-    const bool notThreadParallel_;
   };
 //! @}  
 } // end namespace Dune

@@ -3,6 +3,7 @@
 
 #include <limits>
 #include <dune/fem/misc/femtimer.hh>
+#include <dune/fem/solver/rungekutta.hh>
 #include <dune/fem/solver/odesolver.hh>
 
 namespace Dune {
@@ -59,16 +60,93 @@ class SmartOdeSolver :
 
   typedef DuneODE :: OdeSolverInterface< typename Operator :: DestinationType > BaseType;
 
+  template <class AdvOp, class DiffOp>
+  struct IsSame 
+  {
+    static bool check(const AdvOp&, const DiffOp& ) 
+    {
+      return false;
+    }
+  };
+
+  template <class AdvOp>
+  struct IsSame< AdvOp, AdvOp>
+  {
+    static bool check(const AdvOp& a, const AdvOp& d) 
+    {
+      return true;
+    }
+  };
+
 public:
   typedef typename OperatorType :: DestinationType DestinationType ;
   typedef DestinationType  DiscreteFunctionType;
 
+  template < class Op, class DF > 
+  struct OdeSolverSelection 
+  {
+    typedef DuneODE :: ExplicitRungeKuttaSolver< DiscreteFunctionType >  ExplicitOdeSolverType;
+    typedef ExplicitOdeSolverType ImplicitOdeSolverType ;
+    typedef ExplicitOdeSolverType SemiImplicitOdeSolverType ;
+
+    static ExplicitOdeSolverType* 
+    createExplicitSolver( Op& op, Fem::TimeProviderBase& tp, const int rkSteps )
+    { 
+      return new ExplicitOdeSolverType( op, tp, rkSteps );
+    }
+
+    static ImplicitOdeSolverType* 
+    createImplicitSolver( Op& op, Fem::TimeProviderBase& tp, const int rkSteps )
+    { 
+      DUNE_THROW(NotImplemented," ");
+      return 0;
+    }
+
+    template <class ExplOp, class ImplOp> 
+    static SemiImplicitOdeSolverType* 
+    createSemiImplicitSolver( ExplOp& explOp, ImplOp& implOp, Fem::TimeProviderBase& tp, const int rkSteps )
+    { 
+      DUNE_THROW(NotImplemented," ");
+      return 0;
+    }
+
+  };
+
+  template < class Op > 
+  struct OdeSolverSelection< Op, Fem :: AdaptiveDiscreteFunction< typename Op::SpaceType > >
+  {
+    typedef Fem :: AdaptiveDiscreteFunction< typename Operator::SpaceType >  DiscreteFunctionType ;
+    typedef DuneODE :: ImplicitOdeSolver< DiscreteFunctionType >       ImplicitOdeSolverType; 
+    typedef DuneODE :: ExplicitOdeSolver< DiscreteFunctionType >       ExplicitOdeSolverType; 
+    typedef DuneODE :: SemiImplicitOdeSolver< DiscreteFunctionType >   SemiImplicitOdeSolverType;
+
+    static ExplicitOdeSolverType* 
+    createExplicitSolver( Op& op, Fem::TimeProviderBase& tp, const int rkSteps )
+    { 
+      return new ExplicitOdeSolverType( op, tp, rkSteps );
+    }
+
+    static ImplicitOdeSolverType* 
+    createImplicitSolver( Op& op, Fem::TimeProviderBase& tp, const int rkSteps )
+    { 
+      return new ImplicitOdeSolverType( op, tp, rkSteps );
+    }
+
+    template <class ExplOp, class ImplOp> 
+    static SemiImplicitOdeSolverType* 
+    createSemiImplicitSolver( ExplOp& explOp, ImplOp& implOp, Fem::TimeProviderBase& tp, const int rkSteps )
+    { 
+      return new SemiImplicitOdeSolverType( explOp, implOp, tp, rkSteps );
+    }
+
+  };
+
   // The ODE Solvers                                                  
   typedef DuneODE :: OdeSolverInterface< DestinationType >           OdeSolverInterfaceType;
-  typedef DuneODE :: ImplicitOdeSolver< DiscreteFunctionType >       ImplicitOdeSolverType; 
-  typedef DuneODE :: ExplicitOdeSolver< DiscreteFunctionType >       ExplicitOdeSolverType; 
-  typedef DuneODE :: SemiImplicitOdeSolver< DiscreteFunctionType >   SemiImplicitOdeSolverType;
-
+  typedef OdeSolverSelection< OperatorType, DestinationType >  OdeSolversType ;
+  typedef typename OdeSolversType :: ImplicitOdeSolverType  ImplicitOdeSolverType ;
+  typedef typename OdeSolversType :: ExplicitOdeSolverType  ExplicitOdeSolverType ;
+  typedef typename OdeSolversType :: SemiImplicitOdeSolverType  SemiImplicitOdeSolverType ;
 
   typedef typename OdeSolverInterfaceType :: MonitorType MonitorType;
 
@@ -116,22 +194,24 @@ public:
     // create implicit or explicit ode solver
     if( odeSolverType_ == 0 )
     {
-      odeSolver_ = new ExplicitOdeSolverType( operator_, tp, rkSteps_);
+      odeSolver_ = OdeSolversType :: createExplicitSolver( operator_, tp, rkSteps_);
     }
     else if (odeSolverType_ == 1)
     {
-      odeSolver_ = new ImplicitOdeSolverType( operator_, tp, rkSteps_);
+      odeSolver_ = OdeSolversType :: createImplicitSolver( operator_, tp, rkSteps_);
     }
-    else if( odeSolverType_ == 2 )
+    else if( odeSolverType_ > 1 )
     {
-      odeSolver_ = new SemiImplicitOdeSolverType
-        (advectionOperator_, diffusionOperator_, tp, rkSteps_);
-    }
-    else if( odeSolverType_ == 3 ) 
-    {
-      odeSolver_ = new SemiImplicitOdeSolverType
-          (advectionOperator_, diffusionOperator_, tp, rkSteps_); 
-      explicitSolver_ = new ExplicitOdeSolverType( operator_, tp, rkSteps_);
+      // make sure that advection and diffusion operator are different 
+      if( IsSame< AdvectionOperatorType, DiffusionOperatorType >::check( advectionOperator_, diffusionOperator_ ) )
+      {
+        DUNE_THROW(Dune::InvalidStateException,"Advection and Diffusion operator are the same, therefore IMEX cannot work!");
+      }
+      odeSolver_ = OdeSolversType :: createSemiImplicitSolver( advectionOperator_, diffusionOperator_, tp, rkSteps_);
+
+      // IMEX+
+      if( odeSolverType_ == 3 ) 
+        explicitSolver_ = new ExplicitOdeSolverType( operator_, tp, rkSteps_);
     }
     else 
     {
@@ -156,7 +236,6 @@ public:
     }
     assert( odeSolver_ );
     odeSolver_->initialize( U );
-
   }
 
   //! solver the ODE 
@@ -189,13 +268,22 @@ public:
       assert( odeSolver_ );
       odeSolver_->solve( U, monitor );
 
-      maxAdvStep  = advectionOperator_.maxAdvectionTimeStep();
-      maxDiffStep = diffusionOperator_.maxDiffusionTimeStep();
+      maxAdvStep  = std::max( advectionOperator_.maxAdvectionTimeStep(), operator_.maxAdvectionTimeStep() );
+      maxDiffStep = std::max( diffusionOperator_.maxDiffusionTimeStep(), operator_.maxDiffusionTimeStep() );
       ++imexCounter_ ;
 
       const int iterationSteps = monitor.newtonIterations_ * monitor.linearSolverIterations_ ;
       minIterationSteps_ = std::min( minIterationSteps_, iterationSteps );
       maxIterationSteps_ = std::max( maxIterationSteps_, iterationSteps );
+
+      if( verbose_ == 3 ) 
+      {
+        double factor = explFactor_ ;
+        //if( averageIterationSteps > 0 ) 
+        //  factor *= averageIterationSteps / (rkSteps_ + 1 ) ;
+        std::cout << maxAdvStep << " a | d " << maxDiffStep << "  factor: " << factor
+          << "  " << minIterationSteps_ << " min | max " << maxIterationSteps_ << "  use imex = " << imex_ << std::endl;
+      }
     }
 
     if( explicitSolver_ ) 
@@ -208,7 +296,7 @@ public:
       // if true solve next time step with semi implicit solver
       imex_ = ( maxDiffStep > (factor * maxAdvStep) ) ;
 
-      if( verbose_ == 2 ) 
+      if( verbose_ == 3 ) 
       {
         std::cout << maxAdvStep << " a | d " << maxDiffStep << "  factor: " << factor
           << "  " << minIterationSteps_ << " min | max " << maxIterationSteps_ << "  use imex = " << imex_ << std::endl;

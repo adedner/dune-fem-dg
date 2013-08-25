@@ -9,6 +9,7 @@
 #include <dune/grid/common/grid.hh>
 #include <dune/grid/io/file/dgfparser/entitykey.hh>
 
+#include <dune/fem/gridpart/common/capabilities.hh>
 #include <dune/fem/io/parameter.hh>
 #include <dune/fem/operator/1order/localmassmatrix.hh>
 #include <dune/fem/common/typeindexedtuple.hh>
@@ -573,26 +574,23 @@ namespace Dune {
   } // end namespace Fem 
 
   /** \brief Concrete implementation of Pass for Limiting.
-      The implemented Shock detection is described in detail in: 
-        L. Krivodonova and J. Xin and J.-F. Remacle and N. Chevaugeon and J. E. Flaherty
-        Shock detection and limiting with discontinuous Galerkin methods for hyperbolic conservation laws.
-        Appl. Numer. Math., 48(3-4), pages 323-338, 2004.
-    
-      Link to paper:
-        http://www.scorec.rpi.edu/REPORTS/2003-3.pdf
-
-      Limiting is done by simply setting the polynomial order to zero.
-  */
-  template <class DiscreteModelImp, class PreviousPassImp, int passId = 0 >
+   *
+   *  \note: A detailed description can be found in: 
+   *
+   *   A. Dedner and R. Klöfkorn. 
+   *   \b A Generic Stabilization Approach for Higher Order 
+   *   Discontinuous Galerkin Methods for Convection Dominated Problems. \b
+   *   J. Sci. Comput., 47(3):365-388, 2011. http://link.springer.com/article/10.1007%2Fs10915-010-9448-0
+   */
+  template <class DiscreteModelImp, class PreviousPassImp, int passId >
   class LimitDGPass 
   : public Fem::LocalPass<DiscreteModelImp, PreviousPassImp , passId > 
   {
+    typedef LimitDGPass< DiscreteModelImp, PreviousPassImp, passId > ThisType;
+    typedef Fem::LocalPass< DiscreteModelImp, PreviousPassImp, passId > BaseType;
+
   public:
     //- Typedefs and enums
-    //! Base class
-    typedef Fem::LocalPass<DiscreteModelImp, PreviousPassImp, passId > BaseType;
-
-    typedef LimitDGPass<DiscreteModelImp, PreviousPassImp, passId> ThisType;
     
     //! Repetition of template arguments
     typedef DiscreteModelImp DiscreteModelType;
@@ -603,12 +601,20 @@ namespace Dune {
     
     // Types from the base class
     typedef typename BaseType::Entity EntityType;
-    typedef const EntityType ConstEntityType;
 
     typedef typename BaseType::ArgumentType ArgumentType;
+
+  private:
+   typedef typename DiscreteModelType::Selector Selector;
+   typedef typename Dune::tuple_element< 0, Selector >::type ArgumentIdType;
+   static const std::size_t argumentPosition
+     = Dune::FirstTypeIndex< PassIds, ArgumentIdType >::type::value;
+   typedef typename Dune::tuple_element< argumentPosition, ArgumentType >::type ArgumentFunctionPtrType;
+
+  public:
     typedef typename PreviousPassType::GlobalArgumentType ArgumentFunctionType;
     typedef typename ArgumentFunctionType :: LocalFunctionType LocalFunctionType;
-    
+
     // Types from the traits
     typedef typename DiscreteModelType::Traits::DestinationType DestinationType;
     typedef typename DiscreteModelType::Traits::VolumeQuadratureType VolumeQuadratureType;
@@ -653,13 +659,13 @@ namespace Dune {
 
     typedef Fem::PointBasedDofConversionUtility< dimRange > DofConversionUtilityType;
 
-    //! is true if grid is Structured grid 
-    enum { StructuredGrid = Capabilities :: isCartesian<GridType>::v };
+    static const bool StructuredGrid = Fem::GridPartCapabilities::isCartesian< GridPartType >::v;
 
     typedef FieldVector< DomainType , dimRange > DeoModType; 
     typedef FieldMatrix< DomainFieldType, dimDomain , dimDomain > MatrixType;
 
-    typedef Fem::AllGeomTypes< typename GridPartType :: IndexSetType,
+    typedef typename GridPartType :: IndexSetType IndexSetType;
+    typedef Fem::AllGeomTypes< IndexSetType,
                                GridType> GeometryInformationType;
 
     typedef Fem::GeometryInformation< GridType, 1 > FaceGeometryInformationType;
@@ -838,7 +844,6 @@ namespace Dune {
       void multiply_AT_A(const NewMatrixType& A, MatrixType& matrix) const
       {
         assert( (int) MatrixType :: rows == (int) NewMatrixType :: cols );
-        typedef typename MatrixType :: field_type value_type;
 
         for(int row=0; row< MatrixType :: rows; ++row)
         {
@@ -908,20 +913,24 @@ namespace Dune {
     //! id for choosing admissible linear functions 
     enum AdmissibleFunctions { DGFunctions = 0, ReconstructedFunctions = 1 , BothFunctions = 2 };
 
+    //! returns true of pass is currently active in the pass tree
+    using BaseType :: active ;
+
   public:
     //- Public methods
     /** \brief constructor
      * 
      *  \param  problem    Actual problem definition (see problem.hh)
      *  \param  pass       Previous pass
-     *  \param  spc        Space belonging to the discrete function local to
-     *                     this pass
+     *  \param  spc        Space belonging to the discrete function local to this pass
+     *  \param  vQ         order of volume quadrature                    
+     *  \param  fQ         order of face quadrature                    
      */
     LimitDGPass(DiscreteModelType& problem, 
                 PreviousPassType& pass, 
                 const DiscreteFunctionSpaceType& spc,
                 const int vQ = -1,
-                const int fQ = -1) :
+                const int fQ = -1 ) :
       BaseType(pass, spc),
       caller_( 0 ),
       discreteModel_(problem),
@@ -930,6 +939,7 @@ namespace Dune {
       dest_(0),
       spc_(spc),
       gridPart_(spc_.gridPart()),
+      indexSet_( gridPart_.indexSet() ),
       localIdSet_( gridPart_.grid().localIdSet()),
       lagrangePointSetContainer_(gridPart_),
       orderPower_( -((spc_.order()+1.0) * 0.25)),
@@ -952,11 +962,10 @@ namespace Dune {
       stepTime_(3, 0.0),
       calcIndicator_(true),
       reconstruct_(false),
-      applyLimiter_(true),
       admissibleFunctions_( getAdmissibleFunctions() ),
       usedAdmissibleFunctions_( admissibleFunctions_ )
     {
-      if( gridPart_.grid().comm().rank() == 0 )
+      if( Fem :: Parameter :: verbose () )
       {
         std::cout << "LimitPass: Grid is ";
         if( cartesianGrid_ ) 
@@ -972,19 +981,8 @@ namespace Dune {
     }
     
     //! Destructor
-    virtual ~LimitDGPass() {
-    }
-
-    void disableFirstCall() const 
-    {
-      applyLimiter_ = false; 
-    }
+    virtual ~LimitDGPass() {}
     
-    void enableFirstCall() const 
-    {
-      applyLimiter_ = true; 
-    }
-
   protected:    
     //! get tolerance factor for shock detector 
     double getTolFactor() const 
@@ -1026,7 +1024,7 @@ namespace Dune {
     struct AssignFunction
     {
       template <class ArgImp, class DestImp> 
-      static bool assign(const ArgImp& arg, DestImp& dest)
+      static bool assign(const ArgImp& arg, DestImp& dest, const bool firstThread)
       {
         // reconstruct if this combination of orders has been given
         return (arg.space().order() == 0) && (dest.space().order() == 1);
@@ -1037,9 +1035,12 @@ namespace Dune {
     struct AssignFunction<S1,S1>
     {
       template <class ArgImp, class DestImp> 
-      static bool assign(const ArgImp& arg, DestImp& dest) 
+      static bool assign(const ArgImp& arg, DestImp& dest, const bool firstThread ) 
       {
-        dest.assign(arg);
+        if( firstThread ) 
+        {
+          dest.assign(arg);
+        }
         return false;
       }
     };
@@ -1051,34 +1052,9 @@ namespace Dune {
     {
       // get stopwatch 
       Timer timer; 
-      
-      // get reference to U 
-      const ArgumentFunctionType& U = *(Dune::get< 0 >( arg )); //  (*(Fem::Element<0>::get(arg)));
-      
-      // initialize dest as copy of U 
-      // if reconstruct_ false then only reconstruct in some cases 
-      reconstruct_ =
-          AssignFunction<typename ArgumentFunctionType ::
-          DiscreteFunctionSpaceType,DiscreteFunctionSpaceType>::
-               assign( U , dest );
-
-      // if case of finite volume scheme set admissible functions to reconstructions 
-      usedAdmissibleFunctions_ = reconstruct_ ? ReconstructedFunctions : admissibleFunctions_;
-
-      // in case of reconstruction 
-      if( reconstruct_ ) 
-      {
-        // in case of non-adaptive scheme indicator not needed 
-        calcIndicator_ = adaptive_;
-        
-        // adjust quadrature orders 
-        argOrder_ = U.space().order();
-        faceQuadOrd_ = 2 * argOrder_ + 1;
-        volumeQuadOrd_ = 2 * argOrder_;
-      }
 
       // if polOrder of destination is > 0 then we have to do something 
-      if( spc_.order() > 0 && applyLimiter_ )
+      if( spc_.order() > 0 && active() )
       {
         // prepare, i.e. set argument and destination 
         prepare(arg, dest);
@@ -1120,6 +1096,38 @@ namespace Dune {
     //! destinations. Filter out the "right" arguments for this pass.
     void prepare(const ArgumentType& arg, DestinationType& dest) const
     {
+      prepare( arg, dest, true );
+    }
+
+    //! In the preparations, store pointers to the actual arguments and 
+    //! destinations. Filter out the "right" arguments for this pass.
+    void prepare(const ArgumentType& arg, DestinationType& dest, const bool firstThread ) const
+    {
+      // get reference to U
+      const ArgumentFunctionType &U = *(Dune::get< argumentPosition >( arg ));
+
+      // initialize dest as copy of U 
+      // if reconstruct_ false then only reconstruct in some cases 
+      reconstruct_ =
+          AssignFunction<typename ArgumentFunctionType ::
+          DiscreteFunctionSpaceType,DiscreteFunctionSpaceType>::
+               assign( U , dest, firstThread );
+
+      // if case of finite volume scheme set admissible functions to reconstructions 
+      usedAdmissibleFunctions_ = reconstruct_ ? ReconstructedFunctions : admissibleFunctions_;
+
+      // in case of reconstruction 
+      if( reconstruct_ ) 
+      {
+        // in case of non-adaptive scheme indicator not needed 
+        calcIndicator_ = adaptive_;
+        
+        // adjust quadrature orders 
+        argOrder_ = U.space().order();
+        faceQuadOrd_ = 2 * argOrder_ + 1;
+        volumeQuadOrd_ = 2 * argOrder_;
+      }
+
       limitedElements_ = 0;
       notPhysicalElements_ = 0;
       
@@ -1136,6 +1144,10 @@ namespace Dune {
       // calculate maximal indicator (if necessary)
       discreteModel_.indicatorMax();
 
+      // reset visited vector 
+      visited_.resize( indexSet_.size( 0 ) );
+      std::fill( visited_.begin(), visited_.end(), false );
+
       const int numLevels = gridPart_.grid().maxLevel() + 1;
       // check size of matrix cache vec
       if( (int) matrixCacheVec_.size() < numLevels )
@@ -1144,10 +1156,15 @@ namespace Dune {
       }
     }
     
-    //! Some management.
+    //! Some management (interface version)
     void finalize(const ArgumentType& arg, DestinationType& dest) const
     {
-      //if( notPhysicalElements_ ) 
+      finalize( arg, dest, true );
+    }
+
+    //! Some management (thread parallel version) 
+    void finalize(const ArgumentType& arg, DestinationType& dest, const bool doCommunicate) const
+    {
       /*
       if( limitedElements_ > 0 )
       {
@@ -1158,24 +1175,80 @@ namespace Dune {
       }
       */
 
-      // communicate dest 
-      dest.communicate();
+      if( doCommunicate )
+      {
+        // communicate dest 
+        dest.communicate();
+      }
 
       // finalize caller 
       if( caller_ )
+      {
         delete caller_;
-      caller_ = 0;
+        caller_ = 0;
+      }
+    }
+
+    //! apply local is virtual 
+    void applyLocal( const EntityType& entity ) const
+    {
+      applyLocalImp( entity );
+    }
+
+    //! apply local with neighbor checker (does nothing here)
+    template <class NeighborChecker>
+    void applyLocal( const EntityType& entity,
+                     const NeighborChecker& ) const 
+    {
+      // neighbor checking not needed in this case 
+      applyLocalImp( entity );
+    }
+
+    //! apply limiter only to elements without neighboring process boundary
+    template <class NeighborChecker>
+    void applyLocalInterior( const EntityType& entity,
+                             const NeighborChecker& nbChecker ) const 
+    {
+      // check whether on of the intersections is with ghost element 
+      // and if so, skip the computation of the limited solution for now
+      const IntersectionIteratorType endnit = gridPart_.iend(entity);
+      for (IntersectionIteratorType nit = gridPart_.ibegin(entity); nit != endnit; ++nit)
+      {
+        const IntersectionType& intersection = *nit;
+        if( intersection.neighbor() )
+        {
+          // get neighbor 
+          EntityPointerType outside = intersection.outside();
+          const EntityType & nb = * outside;
+
+          // check whether we have to skip this intersection
+          if( nbChecker.skipIntersection( nb ) )
+          {
+            return ; 
+          }
+        }
+      }
+
+      // otherwise apply limiting process
+      applyLocalImp( entity );
+    }
+
+    //! apply limiter only to elements with neighboring process boundary
+    template <class NeighborChecker>
+    void applyLocalProcessBoundary( const EntityType& entity,
+                                    const NeighborChecker& nChecker ) const
+    {
+      assert( indexSet_.index( entity ) < int(visited_.size()) );
+      // if entity was already visited, do nothing in this turn 
+      if( visited_[ indexSet_.index( entity ) ] ) return ;
+
+      // apply limiter otherwise 
+      applyLocalImp( entity );
     }
 
   protected:
-    //! apply local is virtual 
-    void applyLocal(ConstEntityType& en) const
-    {
-      applyLocalImp(en);
-    }
-
     //! Perform the limitation on all elements.
-    void applyLocalImp(ConstEntityType& en) const
+    void applyLocalImp(const EntityType& en) const
     {
       // timer for shock detection
       Timer indiTime; 
@@ -1191,7 +1264,6 @@ namespace Dune {
 
       // extract types 
       enum { dim = EntityType :: dimension };
-      typedef typename EntityType :: ctype coordType;
       
       // check argument is not zero
       assert( arg_ );
@@ -1201,7 +1273,7 @@ namespace Dune {
       caller().setEntity( en );
 
       // get function to limit 
-      const ArgumentFunctionType& U = *(Dune::get< 0 >( *arg_ )); // (*(Fem::Element<0>::get(*arg_)));
+      const ArgumentFunctionType &U = *(Dune::get< argumentPosition >( *arg_ ));
 
       // get U on entity
       const LocalFunctionType uEn = U.localFunction(en);
@@ -1236,7 +1308,7 @@ namespace Dune {
 
       // check physicality of data 
       // evaluate average returns true if not physical 
-      if ( evalAverage(en, uEn, enVal ) ) 
+      if( evalAverage( en, uEn, enVal ) )
       {
         limiter = true;
         // enable adaptation because of not physical 
@@ -1254,7 +1326,7 @@ namespace Dune {
         geo.local( enBary ) ;
       
       // check average value
-      if ( ! discreteModel_.physical(en, entityBary, enVal) ) 
+      if( discreteModel_.hasPhysical() && !discreteModel_.physical( en, entityBary, enVal ) )
       {
         std::cerr << "Average Value "
                   << enVal
@@ -1265,7 +1337,6 @@ namespace Dune {
         assert( false );
         abort();
       }
-      assert( (discreteModel_.hasPhysical()) ? (discreteModel_.physical(en, entityBary, enVal)) : true );
 
       stepTime_[0] += indiTime.elapsed();
       indiTime.reset();
@@ -1290,7 +1361,7 @@ namespace Dune {
           const bool hasNeighbor = intersection.neighbor();
 
           // check cartesian
-          if( ! StructuredGrid && cartesian ) 
+          if( !StructuredGrid && cartesian )
           {
             // check whether this element is really cartesian 
             cartesian &= ( ! Fem::CheckCartesian::checkIntersection(intersection) );
@@ -1415,6 +1486,10 @@ namespace Dune {
         discreteModel_.adaptation( gridPart_.grid() , en, shockIndicator, adaptIndicator );
       }
 
+      // mark entity as finished, even if not limited everything necessary was done
+      assert( indexSet_.index( en ) < int(visited_.size()) );
+      visited_[ indexSet_.index( en ) ] = true ;
+
       // if nothing to limit then just return here
       if ( ! limiter ) return ;
 
@@ -1438,9 +1513,11 @@ namespace Dune {
 
       if( usedAdmissibleFunctions_ >= ReconstructedFunctions ) 
       {
+        // level is only needed for Cartesian grids to access the matrix caches
+        const int matrixCacheLevel = ( cartesian ) ? en.level() : 0 ;
         // calculate linear functions 
-        calculateLinearFunctions(en.level(), comboSet, geomType, 
-                                 boundary, nonConforming , cartesian );
+        calculateLinearFunctions( matrixCacheLevel, comboSet, geomType, 
+                                  boundary, nonConforming , cartesian );
       }
       
       // add DG Function
@@ -1461,6 +1538,7 @@ namespace Dune {
       assert( checkPhysical(en, geo, limitEn) );
 
       stepTime_[1] += indiTime.elapsed();
+
       //end limiting process 
     }
     
@@ -1525,7 +1603,7 @@ namespace Dune {
                                   const bool nonConforming,
                                   const bool cartesian ) const 
     {
-      assert( (StructuredGrid) ? (cartesian) : true );  
+      assert( !StructuredGrid || cartesian );
       // use matrix cache in case of structured grid 
       const bool useCache = cartesian 
                             && ! nonConforming 
@@ -1825,25 +1903,18 @@ namespace Dune {
         for (IntersectionIteratorType nit = gridPart_.ibegin(en); 
              nit != endnit; ++nit) 
         {
-          if( intersection.neighbor() ) 
+          const IntersectionType& intersection = *nit;
+          if( intersection.neighbor() && ! intersection.conforming() ) 
           {
-            // conforming case 
-            if( intersection.conforming() ) 
-            {
-              FaceQuadratureType faceQuadInner(gridPart_,intersection, faceQuadOrd_, FaceQuadratureType::INSIDE);
-              if( ! checkPhysicalQuad( faceQuadInner, uEn ) ) return false;
-            }
-            else 
-            { // non-conforming case 
-              typedef typename FaceQuadratureType :: NonConformingQuadratureType NonConformingQuadratureType;
-              NonConformingQuadratureType faceQuadInner(gridPart_,intersection, faceQuadOrd_, FaceQuadratureType::INSIDE);
-              if( ! checkPhysicalQuad( faceQuadInner, nitBary, uEn ) ) return false;
-            }
+            typedef typename FaceQuadratureType :: NonConformingQuadratureType NonConformingQuadratureType;
+            NonConformingQuadratureType faceQuadInner(gridPart_,intersection, faceQuadOrd_, FaceQuadratureType::INSIDE);
+            if( ! checkPhysicalQuad( faceQuadInner, uEn ) ) return false;
           }
           else 
           {
+            // conforming case 
             FaceQuadratureType faceQuadInner(gridPart_,intersection, faceQuadOrd_, FaceQuadratureType::INSIDE);
-            if( ! checkPhysicalQuad( faceQuadInner, nitBary, uEn ) ) return false;
+            if( ! checkPhysicalQuad( faceQuadInner, uEn ) ) return false;
           }
         }
 #endif
@@ -1905,14 +1976,9 @@ namespace Dune {
       // set zero dof to zero
       limitEn.clear();
 
-      RangeType retVal, phi;
-      const RangeType& ret = (constantValue) ? enVal : retVal;
-      
       // get quadrature for destination space order  
       VolumeQuadratureType quad( en, spc_.order() + 1 );
       
-      typedef typename LocalFunctionImp::BasisFunctionSetType BasisFunctionSetType;
-
       //const BaseFunctionSetType& baseset = limitEn.baseFunctionSet();
       const int quadNop = quad.nop();
       for(int qP = 0; qP < quadNop ; ++qP) 
@@ -1921,51 +1987,28 @@ namespace Dune {
         const double intel = (affineMapping) ?
           quad.weight(qP) : // affine case 
           quad.weight(qP) * geo.integrationElement( quad.point(qP) ); // general case
-  
+
+        RangeType retVal( enVal );
         // if we don't have only constant value then evaluate function 
-        if( ! constantValue ) 
+        if( !constantValue ) 
         {
           // get global coordinate 
           DomainType point = geo.global( quad.point( qP ) );
           point -= enBary;
     
           // evaluate linear function 
-          for(int r=0; r<dimRange; ++r) {
-            retVal[r] = enVal[r] + (deoMod[r] * point);
-          }
+          for( int r = 0; r < dimRange; ++r )
+            retVal[ r ] += (deoMod[ r ] * point);
         }
 
-        RangeType factor (ret);
-        factor *= intel ;
-        limitEn.axpy( quad[ qP ], factor );
-
-        /*
-        // assume PointBased and CombinedSpace  
-        for(int i=0; 
-            i< NumLinearBasis<LocalFunctionImp, typename
-                              LocalFunctionImp :: DiscreteFunctionSpaceType>::numBasis( limitEn ); 
-            ++i) 
-        {
-          const int base = dofConversion_.combinedDof(i,0);
-          baseset.evaluate(base, quad[qP] , phi);
-          
-          // project linear function 
-          for(int r=0; r<dimRange; ++r) 
-          {
-            const int dofIdx = dofConversion_.combinedDof(i,r);
-            // here evaluateScalar could be used 
-            limitEn[dofIdx] += intel * (ret[r] * phi[0]) ;
-          }
-        }
-        */
+        retVal *= intel;
+        limitEn.axpy( quad[ qP ], retVal );
       }
 
       // apply local inverse mass matrix for non-linear mappings 
-      if( ! affineMapping )
-      {
+      if( !affineMapping )
         localMassMatrix_.applyInverse( en, limitEn );
-      }
-      
+
       // check physicality of projected data
       if ( (! constantValue) && (! checkPhysical(en, geo, limitEn)) )
       {
@@ -2035,10 +2078,10 @@ namespace Dune {
         }
 
         // possibly adjust average value, e.g. calculate primitive vairables and so on 
-        discreteModel_.adjustAverageValue( en, quad.point(0), val );
+        discreteModel_.adjustAverageValue( en, quad.point( 0 ), val );
 
         // return whether value is physical 
-        notphysical = ( discreteModel_.hasPhysical() && ! discreteModel_.physical(en, quad.point(0), val) );
+        notphysical = (discreteModel_.hasPhysical() && !discreteModel_.physical( en, quad.point( 0 ), val ) );
       }
       else 
       {
@@ -2062,10 +2105,7 @@ namespace Dune {
           discreteModel_.adjustAverageValue( en, quad.point( qp ), val );
 
           // check whether value is physical 
-          if ( discreteModel_.hasPhysical() && ! discreteModel_.physical(en, quad.point(qp), tmp) )
-          {
-            notphysical = true;
-          }
+          notphysical |= (discreteModel_.hasPhysical() && !discreteModel_.physical( en, quad.point( qp ), tmp ) );
 
           // apply integration weight 
           tmp *= quad.weight(qp) * geo.integrationElement(quad.point(qp));
@@ -2549,6 +2589,7 @@ namespace Dune {
 
     const DiscreteFunctionSpaceType& spc_;
     GridPartType& gridPart_;
+    const IndexSetType& indexSet_;
     const LocalIdSetType& localIdSet_;
 
     LagrangePointSetContainerType lagrangePointSetContainer_; 
@@ -2581,6 +2622,9 @@ namespace Dune {
     mutable std::vector< RangeType >  nbVals_;
     mutable std::vector< MatrixCacheType > matrixCacheVec_;
 
+    // vector for stroing the information which elements have been computed already 
+    mutable std::vector< bool > visited_;
+
     LocalMassMatrixType localMassMatrix_;
     //! true if limiter is used in adaptive scheme 
     const bool adaptive_;
@@ -2595,9 +2639,6 @@ namespace Dune {
     
     //! true if limiter is used as finite volume scheme of higher order 
     mutable bool reconstruct_;
-
-    //! true if limiting operator is applied 
-    mutable bool applyLimiter_;
 
     // choice of admissible linear functions 
     const AdmissibleFunctions admissibleFunctions_;

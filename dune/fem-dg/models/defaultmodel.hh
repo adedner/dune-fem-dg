@@ -27,6 +27,8 @@ public:
   typedef typename Traits :: EntityType                       EntityType;
   typedef typename Traits :: IntersectionType                 IntersectionType;
 
+  void setTime ( double time ) {}
+
   inline bool hasFlux() const { return false ; }
 
   inline bool hasStiffSource() const { return false ; }
@@ -187,6 +189,19 @@ public:
     diffusion( en, time, x, u, jac, A );
   }
 
+  //! maximal wave speed due to advection part 
+  inline void maxSpeed( const EntityType& entity,
+                        const double time,
+                        const DomainType& x,
+                        const DomainType& normal,
+                        const RangeType& u,
+                        double& advspeed,
+                        double& totalspeed ) const
+  {
+    advspeed = totalspeed = 0;
+  }
+
+  //! maximal wave speed due to diffusion part 
   inline double diffusionTimeStep( const IntersectionType &it,
                                    const double enVolume,
                                    const double circumEstimate,
@@ -274,6 +289,8 @@ public:
                              const RangeType& uLeft,
                              RangeType& uRight) const
   {
+    std::cerr << "Method DefaultModel::boundaryValue not implemented." << std::endl;
+    abort();
   }
 
   /** \brief check with the problem setup whether or not a cell is allowed to be refined

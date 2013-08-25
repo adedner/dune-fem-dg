@@ -231,7 +231,7 @@ namespace Dune {
     public Fem::SpaceOperatorInterface 
       < typename PassTraits< Model, Model::Traits::dimRange, (pOrd < 0 ) ? 0 : pOrd> :: DestinationType >
   {
-    enum PassIdType { u, limitPassId, advectPassId };    /*@\label{ad:passids}@*/
+    enum PassIdType { u, limitPassId, advectPassId };
     enum { polOrd = ( pOrd < 0 ) ? 0 : pOrd };
     enum { limiterPolOrd = ( pOrd < 0 ) ? 1 : pOrd };
 
@@ -248,7 +248,7 @@ namespace Dune {
                                                                         DiscreteModel1Type;
 
     typedef typename DiscreteModel1Type :: DiffusionFluxType            DiffusionFluxType;
-    typedef typename DiscreteModel1Type :: AdaptationHandlerType        AdaptationHandlerType;
+    typedef typename DiscreteModel1Type :: AdaptationType               AdaptationType;
 
     // The model of the limiter pass (limitPassId)
     typedef PassTraits< Model, dimRange, limiterPolOrd >                LimiterPassTraitsType;
@@ -271,9 +271,17 @@ namespace Dune {
       LimiterDestinationType ;
     typedef typename LimiterDestinationType :: DiscreteFunctionSpaceType  LimiterSpaceType;
 
-    typedef Fem::StartPass< DiscreteFunctionType, u >                        Pass0Type; /*@LST0S@*/
-    typedef LimitDGPass< LimiterDiscreteModelType, Pass0Type, limitPassId >   Pass1Type; /*@\label{ad:typedefpass1}@*/
-    typedef LocalCDGPass< DiscreteModel1Type, Pass1Type, advectPassId > Pass2Type; /*@\label{ad:typedefpass2}@*//*@LST0E@*/
+#ifdef USE_SMP_PARALLEL
+    typedef Fem::StartPass < DiscreteFunctionType, u, NonBlockingCommHandle< DiscreteFunctionType > > Pass0Type;
+    typedef LimitDGPass    < LimiterDiscreteModelType, Pass0Type, limitPassId > InnerPass1Type;
+    typedef ThreadPass     < InnerPass1Type, Fem::ThreadIterator< GridPartType >, true > Pass1Type;
+    typedef LocalCDGPass   < DiscreteModel1Type, Pass1Type, advectPassId > InnerPass2Type;
+    typedef ThreadPass     < InnerPass2Type, Fem::DomainDecomposedIteratorStorage<GridPartType >, true > Pass2Type;
+#else 
+    typedef Fem::StartPass < DiscreteFunctionType, u >                          Pass0Type;
+    typedef LimitDGPass    < LimiterDiscreteModelType, Pass0Type, limitPassId > Pass1Type;
+    typedef LocalCDGPass   < DiscreteModel1Type, Pass1Type, advectPassId >      Pass2Type;
+#endif
 
     typedef typename PassTraitsType::IndicatorType                      IndicatorType;
     typedef typename IndicatorType::DiscreteFunctionSpaceType           IndicatorSpaceType;
@@ -286,11 +294,11 @@ namespace Dune {
                                ArgumentType* arg,
                                DestinationType& dest)
       {
-        limiter.enableFirstCall();
+        limiter.enable();
         assert( arg );
         arg->assign(dest);
         limiter(*arg,dest);
-        limiter.disableFirstCall();
+        limiter.disable();
       }
     };
 
@@ -319,17 +327,21 @@ namespace Dune {
       , problem1_( model_, numflux_, diffFlux_ )
       , limitProblem_( model_ , space_.order() )
       , pass0_()
-      , pass1_( limitProblem_, pass0_, limiterSpace_ )    /*@\label{ad:initialisepass1}@*/
-      , pass2_( problem1_, pass1_, space_ )    /*@\label{ad:initialisepass1}@*/
+      , pass1_( limitProblem_, pass0_, limiterSpace_ )
+      , pass2_( problem1_, pass1_, space_ )
     {
       limitProblem_.setIndicator( &indicator_ );
     }
 
     ~DGLimitedAdvectionOperator() { delete uTmp_; }
 
-    void setAdaptationHandler( AdaptationHandlerType& adHandle, double weight = 1 ) 
+    void setAdaptationHandler( AdaptationType& adHandle, double weight = 1 ) 
     {
-      problem1_.setAdaptationHandler( adHandle, weight );
+#ifdef USE_SMP_PARALLEL
+      pass2_.setAdaptation( adHandle, weight );
+#else
+      problem1_.setAdaptation( adHandle, weight );
+#endif
     }
 
     void setTime(const double time) 
@@ -345,7 +357,7 @@ namespace Dune {
     void operator()( const DestinationType& arg, DestinationType& dest ) const
     {
 	    pass2_( arg, dest );
-      pass1_.enableFirstCall();
+      pass1_.enable();
     }
 
     inline const SpaceType& space() const {
@@ -396,7 +408,7 @@ namespace Dune {
 
     inline void limit( DestinationType& U ) const
     {
-      pass1_.enableFirstCall();
+      pass1_.enable();
       LimiterCall< Pass1Type, polOrd >::limit( pass1_, uTmp_, U );
     }
     
@@ -448,5 +460,49 @@ namespace Dune {
     Pass2Type           pass2_;
   };
 
+
+
+  template< class Model, class NumFlux, 
+            DGDiffusionFluxIdentifier diffFluxId, // diffusion flux identifier 
+            int pOrd, bool advection = true, bool diffusion = true >
+  class DGLimitedAdvectionDiffusionOperator 
+  : public DGLimitedAdvectionOperator< Model, NumFlux, diffFluxId, pOrd, advection, diffusion >
+  {
+    typedef DGLimitedAdvectionOperator< Model, NumFlux, diffFluxId, pOrd, advection, diffusion > BaseType;
+
+    typedef typename BaseType :: GridPartType GridPartType;
+    typedef typename BaseType :: NumFluxType NumFluxType;
+   
+  public:
+    DGLimitedAdvectionDiffusionOperator ( GridPartType& gridPart , const NumFluxType& numf )
+    : BaseType( gridPart, numf )
+    {}
+
+    void printmyInfo(std::string filename) const
+    {
+	    std::ostringstream filestream;
+            filestream << filename;
+            std::ofstream ofs(filestream.str().c_str(), std::ios::app);
+            ofs << "Limited Adv. Diff. Op., polynomial order: " << pOrd << "\\\\\n\n";
+            ofs.close();
+    }
+
+    std::string description() const
+    {
+      std::cerr <<"DGLimitedAdvectionDiffusionOperator::description() not implemented" <<std::endl;
+      abort();
+
+      /*
+      std::stringstream stream;
+      stream <<", {\\bf Adv. Flux:} ";
+      if (FLUX==1)
+        stream <<"LLF";
+      else if (FLUX==2)
+        stream <<"HLL";
+      stream <<",\\\\\n";
+      return stream.str();
+      */
+    }
+  };
 }
 #endif

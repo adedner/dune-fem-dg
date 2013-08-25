@@ -124,12 +124,6 @@ public:
   // type of Grid
   typedef typename Traits :: GridType                  GridType;
 
-  // type of the problem
-  typedef typename Traits :: InitialDataType           ProblemType;
-
-  // type of the model 
-  typedef typename Traits :: ModelType                 ModelType;
-
   // choose a suitable GridView
   typedef typename Traits :: GridPartType              GridPartType;
 
@@ -142,15 +136,8 @@ public:
   // the indicator function type (for limiting only)
   typedef typename Traits :: IndicatorType             IndicatorType;
 
-  // the type of domain and range
-  typedef typename DiscreteFunctionType::DomainType    DomainType;
-  typedef typename DiscreteFunctionType::RangeType     RangeType;
-
   // type of IOTuple 
   typedef typename Traits :: IOTupleType  IOTupleType ;
-
-  // type of data writer 
-  typedef Dune::Fem::DataWriter< GridType, IOTupleType >    DataWriterType;
 
   // type of time provider organizing time for time loops 
   typedef Dune::Fem::GridTimeProvider< GridType >                 TimeProviderType;
@@ -216,8 +203,8 @@ public:
   //! write a check point (overload to do something)
   virtual void writeCheckPoint(TimeProviderType& tp) const {}
 
-  //! estimate and mark cell for refinement/coarsening
-  virtual void estimateMarkAdapt( ) = 0;
+  //! estimate and mark cell for refinement/coarsening (default does nothing)
+  virtual void estimateMarkAdapt( ) { }
 
   //! initial estimate and mark cell for refinement/coarsening
   //! the default redirects to estimateMarkAdapt
@@ -313,10 +300,11 @@ public:
         // setup problem again 
         initializeStep( tp, loop );
 
+        // get grid size (outside of verbose if)
+        UInt64Type grSize = gridSize();
         // some info in verbose mode 
         if( verbose )
         {
-          UInt64Type grSize = gridSize();
           std::cout << "Start adaptation: step " << startCount << ",  dt = " << tp.deltaT() << ",  grid size: " << grSize
                     << std::endl;
         }
@@ -399,7 +387,6 @@ public:
 
     return monitor;
   }
-
 
   //! finalize problem, i.e. calculated EOC ...
   virtual void finalize( const int eocloop ) 

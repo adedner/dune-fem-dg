@@ -1344,6 +1344,14 @@ namespace Dune {
       : BaseType( model, false )
     {
     }
+
+    void diffusionFluxName ( std::ostream& out ) const
+    {
+      out << "none";
+    }
+
+    void diffusionFluxLiftFactor ( std::ostream& out ) const {}
+    void diffusionFluxPenalty ( std::ostream& out ) const {}
   };
 
   //////////////////////////////////////////////////////////

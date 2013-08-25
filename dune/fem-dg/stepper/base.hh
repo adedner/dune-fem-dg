@@ -37,7 +37,10 @@ struct InitFemEoc
       std::string eocOutPath = 
         ParameterType::getValue<std::string>("femhowto.eocOutputPath", std::string("./"));
 
-      Dune::Fem::FemEoc::initialize(eocOutPath, "eoc", problemDescription);
+      std::string eocFileName = 
+        ParameterType::getValue<std::string>("femhowto.eocFileName", std::string("eoc"));
+
+      Dune::Fem::FemEoc::initialize(eocOutPath, eocFileName, problemDescription);
     }
   }
 };
@@ -131,7 +134,6 @@ inline double getMemoryUsage()
 template <class Algorithm>
 void compute(Algorithm& algorithm)
 {
-  typedef typename Algorithm::DiscreteFunctionType DiscreteFunctionType;
   const typename Algorithm::DiscreteSpaceType& space = algorithm.space();
   const typename Algorithm::GridPartType& gridPart = space.gridPart();
   typedef typename Algorithm::GridPartType::GridType GridType;

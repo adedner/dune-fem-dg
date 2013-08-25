@@ -95,7 +95,7 @@ struct Stepper
       if( ! adaptationHandler_ && adaptationParameters_.aposterioriIndicator() )
       {
         adaptationHandler_ = new AdaptationHandlerType( grid_, tp );
-        dgIndicator_.setAdaptationHandler( *adaptationHandler_ );
+        dgIndicator_.setAdaptation( *adaptationHandler_ );
       }
     }
 

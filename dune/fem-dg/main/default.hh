@@ -226,12 +226,9 @@ namespace Dune
                 QuadratureType, RangeArray, DofVector > Traits;
         typedef Fem :: EvaluateCallerInterface< Traits > BaseEvaluationType;
 
-        // get thread number 
-        const int thread = ThreadManager :: thread();
-
         // get base function evaluate caller (calls evaluateRanges) 
         const BaseEvaluationType& baseEval = 
-            BaseEvaluationType::storage( *this, rangeCache( quad, thread ), quad, thread );
+            BaseEvaluationType::storage( *this, rangeCache( quad ), quad );
 
         baseEval.evaluateRanges( quad, dofs, ranges );
 #else 
@@ -277,12 +274,9 @@ namespace Dune
                 JacobianArray, DofVector, Geometry >  Traits;
         typedef Fem :: EvaluateCallerInterface< Traits > BaseEvaluationType;
 
-        // get thread number 
-        const int thread = ThreadManager :: thread();
-
         // get base function evaluate caller (calls axpyRanges) 
         const BaseEvaluationType& baseEval = 
-          BaseEvaluationType::storage( *this, jacobianCache( quad, thread ), quad, thread );
+          BaseEvaluationType::storage( *this, jacobianCache( quad ), quad );
 
         // call appropriate axpyJacobian method 
         baseEval.evaluateJacobians( quad, geometry(), dofs, jacobians );
@@ -374,12 +368,9 @@ namespace Dune
             QuadratureType, RangeArray, DofVector > Traits;
         typedef Fem :: EvaluateCallerInterface< Traits > BaseEvaluationType;
 
-        // get thread number 
-        const int thread = ThreadManager :: thread();
-
         // get base function evaluate caller (calls axpyRanges) 
         const BaseEvaluationType& baseEval = 
-          BaseEvaluationType::storage( *this, rangeCache( quad, thread ), quad, thread );
+          BaseEvaluationType::storage( *this, rangeCache( quad ), quad );
 
         // call appropriate axpyRanges method 
         baseEval.axpyRanges( quad, rangeFactors, dofs );
@@ -408,12 +399,9 @@ namespace Dune
                 JacobianArray, DofVector, Geometry >  Traits;
         typedef Fem :: EvaluateCallerInterface< Traits > BaseEvaluationType;
 
-        // get thread number 
-        const int thread = ThreadManager :: thread();
-
         // get base function evaluate caller (calls axpyRanges) 
         const BaseEvaluationType& baseEval = 
-          BaseEvaluationType::storage( *this, jacobianCache( quad, thread ), quad, thread );
+          BaseEvaluationType::storage( *this, jacobianCache( quad ), quad );
 
         // call appropriate axpyRanges method 
         baseEval.axpyJacobians( quad, geometry(), jacobianFactors, dofs );
@@ -436,15 +424,15 @@ namespace Dune
       GeometryType geometry () const { return entity().geometry(); }
 
       template <class QuadratureType>
-      const RangeVectorType& rangeCache( const QuadratureType& quad, const int thread ) const 
+      const RangeVectorType& rangeCache( const QuadratureType& quad ) const 
       { 
-        return shapeFunctionSet().scalarShapeFunctionSet().impl().rangeCache( quad, thread );
+        return shapeFunctionSet().scalarShapeFunctionSet().impl().rangeCache( quad );
       }
 
       template <class QuadratureType>
-      const JacobianRangeVectorType& jacobianCache( const QuadratureType& quad, const int thread ) const 
+      const JacobianRangeVectorType& jacobianCache( const QuadratureType& quad ) const 
       { 
-        return shapeFunctionSet().scalarShapeFunctionSet().impl().jacobianCache( quad, thread );
+        return shapeFunctionSet().scalarShapeFunctionSet().impl().jacobianCache( quad );
       }
     private:
       const EntityType *entity_;

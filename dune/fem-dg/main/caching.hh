@@ -15,7 +15,7 @@
 #include <dune/fem/quadrature/cachingpointlist.hh>
 #include <dune/fem/quadrature/quadrature.hh>
 #include <dune/fem/space/common/arrays.hh>
-#include <dune/fem/misc/threads/threadmanager.hh>
+#include <dune/fem/misc/threads/threadsafevalue.hh>
 
 namespace Dune
 {
@@ -46,14 +46,17 @@ namespace Dune
       typedef std::vector< RangeVectorType >          ValueCacheVectorType ;
       typedef std::vector< JacobianRangeVectorType >  JacobianCacheVectorType;
 
+      typedef ThreadSafeValue< RangeVectorType >          LocalRangeCacheType ;
+      typedef ThreadSafeValue< JacobianRangeVectorType >  LocalJacobianCacheType ;
+
       explicit CachingShapeFunctionSet ( const GeometryType &type,
                                          const ShapeFunctionSet &shapeFunctionSet = ShapeFunctionSet() )
       : type_( type ),
         shapeFunctionSet_( shapeFunctionSet ),
         valueCaches_(),
         jacobianCaches_(),
-        localRangeCache_( ThreadManager::maxThreads() ),
-        localJacobianCache_( ThreadManager::maxThreads() )
+        localRangeCache_(),
+        localJacobianCache_()
       {
         QuadratureStorageRegistry::registerStorage( *this );
       }
@@ -196,19 +199,17 @@ namespace Dune
       };
 
       template < class QuadratureType > 
-      const RangeVectorType& rangeCache( const QuadratureType& quadrature, const int thread ) const 
+      const RangeVectorType& rangeCache( const QuadratureType& quadrature ) const 
       {
-        assert( thread == ThreadManager::thread() );
         return ReturnCache< QuadratureType, Conversion< QuadratureType, CachingInterface >::exists > :: 
-          ranges( *this, quadrature, valueCaches_, localRangeCache_[ thread ] );
+          ranges( *this, quadrature, valueCaches_, *localRangeCache_ );
       }
 
       template < class QuadratureType > 
-      const JacobianRangeVectorType& jacobianCache( const QuadratureType& quadrature, const int thread ) const 
+      const JacobianRangeVectorType& jacobianCache( const QuadratureType& quadrature ) const 
       {
-        assert( thread == ThreadManager::thread() );
         return ReturnCache< QuadratureType, Conversion< QuadratureType, CachingInterface >::exists > :: 
-          jacobians( *this, quadrature, jacobianCaches_, localJacobianCache_[ thread ] );
+          jacobians( *this, quadrature, jacobianCaches_, *localJacobianCache_ );
       }
 
     private:
@@ -249,8 +250,8 @@ namespace Dune
       ValueCacheVectorType valueCaches_;
       JacobianCacheVectorType jacobianCaches_;
 
-      mutable ValueCacheVectorType     localRangeCache_ ;
-      mutable JacobianCacheVectorType  localJacobianCache_;
+      mutable LocalRangeCacheType     localRangeCache_ ;
+      mutable LocalJacobianCacheType  localJacobianCache_;
     };
 
 
