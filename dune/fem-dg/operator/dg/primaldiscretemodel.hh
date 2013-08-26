@@ -36,8 +36,8 @@ namespace Dune {
     enum { dimDomain = Traits :: dimDomain };
     enum { dimRange  = Traits :: dimRange };
 
-    enum { advection = Traits :: advection }; // true if advection is enabled 
-    enum { diffusion = Traits :: diffusion }; // this should be disabled for LDG 
+    static const bool advection = Traits :: advection ; // true if advection is enabled 
+    static const bool diffusion = Traits :: diffusion ; // this should be disabled for LDG 
 
     enum { passUId = Traits :: passUId };
 
@@ -90,16 +90,24 @@ namespace Dune {
     {
     }
 
+    //! return true if source term is enabled (this might be overloaded in a derived class)
     inline bool hasSource() const 
-    {                 
-      return ( model_.hasNonStiffSource() || model_.hasStiffSource() );
+    {        
+      if( advection == diffusion ) 
+        return model_.hasStiffSource() || model_.hasNonStiffSource() ;
+      else if ( advection && ! diffusion ) 
+        return model_.hasNonStiffSource() ;
+      else 
+        return model_.hasStiffSource() ;
     }
 
-    inline bool hasFlux() const { 
-      return (advection || diffusion) && model_.hasFlux(); } 
+    inline bool hasFlux() const 
+    { 
+      return (advection || diffusion) && model_.hasFlux(); 
+    } 
 
     /**
-     * @brief analytical flux function$
+     * @brief analytical flux function
      */
     template <class ArgumentTuple, class JacobianTuple >
     double source( const EntityType& en,
@@ -113,14 +121,14 @@ namespace Dune {
 
       double dtEst = std::numeric_limits< double > :: max();
 
-      if (diffusion && model_.hasStiffSource() )
+      if ( model_.hasStiffSource() )
       {
         const double dtStiff = model_.stiffSource( en, time, x, u[uVar], jac[uVar], s );
         dtEst = ( dtStiff > 0 ) ? dtStiff : dtEst;
         maxDiffTimeStep_ = std::max( dtStiff, maxDiffTimeStep_ );
       }
 
-      if (advection && model_.hasNonStiffSource() )
+      if ( model_.hasNonStiffSource() ) 
       {
         RangeType sNonStiff (0);
         const double dtNon = model_.nonStiffSource( en, time, x, u[uVar], jac[uVar], sNonStiff );
