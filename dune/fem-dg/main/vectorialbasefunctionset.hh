@@ -63,15 +63,9 @@ struct EvaluateJacobians
                     const LocalDofVectorType& dofs,
                     JacobianRangeFactorType &jacFactors)
   {
-#ifndef USE_BASEFUNCTIONSET_CODEGEN
-    BaseFunctionSet :: 
-      evaluateJacobians( quad, geometry, jacobianStorage, dofs, jacFactors, 
-                         jacFactors[ 0 ], numRows, numCols );
-#else 
     std::cerr << "ERROR: wrong code generated for VectorialBaseFunctionSet::evaluateJacobians< "
               << dimRange << " , " << numRows << " , " << numCols << " >!" << std::endl;
     abort();
-#endif
   }
 };
 
@@ -132,13 +126,9 @@ struct AxpyRanges<BaseFunctionSet, Fem :: EmptyGeometry, dimRange, numRows, numC
                     const RangeFactorType &rangeFactors,
                     LocalDofVectorType& dofs)
   {
-#ifndef USE_BASEFUNCTIONSET_CODEGEN
-    BaseFunctionSet::axpyRanges( quad, rangeStorage, rangeFactors, dofs, numRows, numCols );
-#else 
     std::cerr << "ERROR: wrong code generated for VectorialBaseFunctionSet::axpyRanges <"
               << dimRange << " , " << numRows << " , " << numCols << " >!" << std::endl;
     abort();
-#endif
   }
 };
 
@@ -160,9 +150,9 @@ struct AxpyJacobians
                     const JacobianRangeFactorType &jacFactors,
                     LocalDofVectorType& dofs)
   {
-    BaseFunctionSet :: 
-      axpyJacobians( quad, geometry, jacobianStorage, jacFactors, dofs, 
-                     jacFactors[ 0 ], numRows, numCols );
+    std::cerr << "ERROR: wrong code generated for VectorialBaseFunctionSet::axpyJacobian <"
+              << dimRange << " , " << numRows << " , " << numCols << " >!" << std::endl;
+    abort();
   }
 };
 
