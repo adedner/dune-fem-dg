@@ -55,6 +55,7 @@
 #endif
 
 #include <dune/fem/space/common/allgeomtypes.hh>
+#include <dune/fem/misc/femeoc.hh>
 
 #include <dune/grid/io/visual/grapedatadisplay.hh>
 
@@ -82,7 +83,7 @@ namespace LOOPSPACE {
 
   void simulate()
   {
-    Fem::FemEoc::clear();
+    Dune::Fem::FemEoc::clear();
 
     typedef Dune::GridSelector :: GridType GridType;
     typedef ProblemGenerator< GridType > ProblemTraits;
