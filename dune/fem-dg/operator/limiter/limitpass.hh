@@ -916,6 +916,9 @@ namespace Dune {
     //! returns true of pass is currently active in the pass tree
     using BaseType :: active ;
 
+    //! type of cartesian grid checker 
+    typedef Fem :: CheckCartesian< GridPartType >  CheckCartesian ;
+
   public:
     //- Public methods
     /** \brief constructor
@@ -958,7 +961,7 @@ namespace Dune {
       matrixCacheVec_( gridPart_.grid().maxLevel() + 1 ),
       localMassMatrix_( spc_ , volumeQuadOrd_ ),
       adaptive_((AdaptationMethodType(gridPart_.grid())).adaptive()),
-      cartesianGrid_( Fem::CheckCartesian::check( gridPart_ ) ),
+      cartesianGrid_( CheckCartesian::check( gridPart_ ) ),
       stepTime_(3, 0.0),
       calcIndicator_(true),
       reconstruct_(false),
@@ -1364,7 +1367,7 @@ namespace Dune {
           if( !StructuredGrid && cartesian )
           {
             // check whether this element is really cartesian 
-            cartesian &= ( ! Fem::CheckCartesian::checkIntersection(intersection) );
+            cartesian &= ( ! CheckCartesian::checkIntersection(intersection) );
           }
 
           DomainType lambda( 1 );
