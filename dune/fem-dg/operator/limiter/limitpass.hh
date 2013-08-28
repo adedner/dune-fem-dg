@@ -1751,8 +1751,9 @@ namespace Dune {
             const DomainFieldType g = D * barys[k];
 
             const DomainFieldType length2 =  barys[ k ].two_norm2();
+
             // if length is to small then the grid is corrupted
-            assert( length2 > 1e-12 );
+            assert( length2 > 1e-14 );
 
             // if the gradient in direction of the line 
             // connecting the barycenters is very small 
@@ -1762,12 +1763,9 @@ namespace Dune {
             DomainFieldType localFactor = discreteModel_.limiterFunction( g, d );
 
             const DomainFieldType factor = (g*g) / length2 ;
-            //const DomainFieldType factor = (g*g) / length2;
             if( localFactor < 1.0 &&  factor  < limitEps_ )
             {
-              //std::cout << localFactor << " " ;
               localFactor = 1.0 - std::tanh( factor / limitEps_ );
-              //std::cout << localFactor << std::endl ;
             }
 
             // take minimum 
@@ -1776,45 +1774,6 @@ namespace Dune {
 
           // scale linear function 
           D *= minimalFactor;
-#if 0
-          /*
-          if( length > 0 ) 
-          {
-            std::cout << D << " D | "  << D_1 << " D1 " << D_2 << std::endl;
-            DomainType Dsum( D_1 );
-            Dsum += D_2 ;
-            std::cout << Dsum << std::endl;
-          }
-          */
-
-          typedef typename std::vector<int> :: const_iterator const_iterator ;
-          const const_iterator endit = v.end();
-          for(const_iterator it = v.begin(); it != endit ; ++it )
-          {
-            // get current number of entry 
-            const size_t k = *it; 
-
-            // evaluate values for limiter function 
-            const DomainFieldType d = nbVals[k][r];
-            const DomainFieldType g_1 = D_1 * barys[k];
-            const DomainFieldType g_2 = D_2 * barys[k];
-
-            // call limiter function 
-            const DomainFieldType localFactor_1 = discreteModel_.limiterFunction( g_1, d );
-            const DomainFieldType localFactor_2 = discreteModel_.limiterFunction( g_2, d );
-
-            // take minimum 
-            minimalFactor_1 = std::min( localFactor_1 , minimalFactor_1 );
-            minimalFactor_2 = std::min( localFactor_2 , minimalFactor_2 );
-          }
-
-          // scale linear function 
-          D_1 *= minimalFactor_1;
-          D_2 *= minimalFactor_2;
-          
-          D  = D_1;
-          D += D_2;
-#endif
         }
       }
     }
@@ -2088,29 +2047,33 @@ namespace Dune {
         const Geometry& geo = en.geometry();
         
         // get quadrature 
-        VolumeQuadratureType quad( en, volumeQuadOrd_);
-
-        RangeType tmp; 
+        VolumeQuadratureType quad( en, volumeQuadOrd_ );
 
         // set value to zero
         val = 0;
 
         const int quadNop = quad.nop();
+        if( int(aver_.size()) < quadNop )
+        {
+          // resize value vector
+          aver_.resize( quadNop );
+        }
+
+        // evaluate quadrature at once 
+        lf.evaluateQuadrature( quad, aver_ );
+
         for(int qp=0; qp<quadNop; ++qp) 
         {
-          // evaluate function  
-          lf.evaluate( quad[qp] , tmp );
+          // check whether value is physical 
+          notphysical |= (discreteModel_.hasPhysical() && !discreteModel_.physical( en, quad.point( qp ), aver_[ qp ] ) );
 
           // possibly adjust average value, e.g. calculate primitive vairables and so on 
-          discreteModel_.adjustAverageValue( en, quad.point( qp ), val );
-
-          // check whether value is physical 
-          notphysical |= (discreteModel_.hasPhysical() && !discreteModel_.physical( en, quad.point( qp ), tmp ) );
+          discreteModel_.adjustAverageValue( en, quad.point( qp ), aver_[ qp ] );
 
           // apply integration weight 
-          tmp *= quad.weight(qp) * geo.integrationElement(quad.point(qp));
+          aver_[ qp ] *= quad.weight(qp) * geo.integrationElement( quad.point(qp) );
           // sum up 
-          val += tmp;
+          val += aver_[ qp ];
         }
 
         // mean value, i.e. devide by volume 
@@ -2618,6 +2581,7 @@ namespace Dune {
     mutable std::vector< DeoModType > deoMods_;
     mutable std::vector< CheckType >  comboVec_;
 
+    mutable std::vector< RangeType >  aver_ ;
     mutable std::vector< DomainType > barys_;
     mutable std::vector< RangeType >  nbVals_;
     mutable std::vector< MatrixCacheType > matrixCacheVec_;
