@@ -1000,6 +1000,16 @@ namespace Dune {
 
       // we need the flux here 
       assert(problem.hasFlux());
+     
+      // intialize volume quadratures, otherwise we run into troubles with the threading
+      if(spc_.begin() != spc_.end() )
+      {
+        initializeVolumeQuadratures( *spc_.begin() );
+      }
+      else if( Fem :: ThreadManager :: maxThreads() > 1 ) 
+      {
+        DUNE_THROW(InvalidStateException,"Quadratures not initialized in LimitPass" );
+      }
     }
     
     //! Destructor
@@ -1941,6 +1951,18 @@ namespace Dune {
         return dimGrid + 1;
       }
     };
+
+    void initializeVolumeQuadratures( const EntityType& entity ) const 
+    {
+      // get quadrature for destination space order  
+      VolumeQuadratureType quad0( entity, spc_.order() + 1 );
+
+      // get point quadrature 
+      VolumeQuadratureType quad1( entity, 0 );
+
+      // get quadrature 
+      VolumeQuadratureType quad2( entity, volumeQuadOrd_ );
+    }
 
     // L2 projection 
     template <class LocalFunctionImp>
