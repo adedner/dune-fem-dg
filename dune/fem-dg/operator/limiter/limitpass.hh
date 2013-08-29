@@ -1577,6 +1577,10 @@ namespace Dune {
       RangeType b[dimDomain];
       Fem::TemporaryLocalFunction< DiscreteFunctionSpaceType > uTmp(spc_,en);
       uTmp.clear();
+
+      // assume that basis functions are hierarchical
+      assert( HierarchicalBasis< DiscreteFunctionSpaceType > :: v );
+
       for (int r=0;r<dimRange;++r) 
       {
         for (int i=0; i<dimDomain+1; ++i) 
