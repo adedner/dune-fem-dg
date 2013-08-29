@@ -919,6 +919,25 @@ namespace Dune {
     //! type of cartesian grid checker 
     typedef Fem :: CheckCartesian< GridPartType >  CheckCartesian ;
 
+  protected:
+    template <class DiscreteSpace>
+    struct HierarchicalBasis 
+    {
+      static const bool v = false ;
+    };
+
+    template < class FunctionSpace, class GridPart, int polOrder, template< class > class Storage > 
+    struct HierarchicalBasis< Fem::DiscontinuousGalerkinSpace< FunctionSpace, GridPart, polOrder, Storage > >
+    {
+      static const bool v = true ;
+    };
+
+    template < class FunctionSpace, class GridPart, int polOrder, template< class > class Storage > 
+    struct HierarchicalBasis< Fem::HierarchicLegendreDiscontinuousGalerkinSpace< FunctionSpace, GridPart, polOrder, Storage > >
+    {
+      static const bool v = true ;
+    };
+
   public:
     //- Public methods
     /** \brief constructor
@@ -2026,7 +2045,8 @@ namespace Dune {
                      RangeType& val) const 
     {
       bool notphysical = false;
-      if( localMassMatrix_.affine() )
+      if( HierarchicalBasis< DiscreteFunctionSpaceType > :: v 
+          && localMassMatrix_.affine() )
       {
         // get point quadrature 
         VolumeQuadratureType quad( en, 0 );
