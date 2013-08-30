@@ -269,22 +269,15 @@ public:
 
     double maxAdvStep  = 0;
     double maxDiffStep = 0;
-    if( explicitSolver_ || verbose_ == 3 ) 
-    {
-      // get advection and diffusion time step 
-      getAdvectionDiffsionTimeSteps( maxAdvStep, maxDiffStep );
-    }
 
     if( explicitSolver_ && ! useImex_ ) 
     {
-      // solve using the explicit ode solver 
       explicitSolver_->solve( U, monitor );
       ++exCounter_ ;
     }
     else 
     {
       assert( odeSolver_ );
-      // solve using the IMEX solver 
       odeSolver_->solve( U, monitor );
 
       ++imexCounter_ ;
@@ -295,6 +288,9 @@ public:
 
       if( verbose_ == 3 ) 
       {
+        // get advection and diffusion time step 
+        getAdvectionDiffsionTimeSteps( maxAdvStep, maxDiffStep );
+
         double factor = explFactor_ ;
         //if( averageIterationSteps > 0 ) 
         //  factor *= averageIterationSteps / (rkSteps_ + 1 ) ;
@@ -305,6 +301,9 @@ public:
 
     if( explicitSolver_ ) 
     {
+      // get advection and diffusion time step 
+      getAdvectionDiffsionTimeSteps( maxAdvStep, maxDiffStep );
+
       const int averageIterationSteps = (minIterationSteps_ + maxIterationSteps_) / 2;
       double factor = explFactor_ ;
       if( averageIterationSteps > 0 ) 
