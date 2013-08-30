@@ -377,17 +377,6 @@ namespace Dune {
       return pass1_.computeTimeSteps();
     }
 
-    inline double maxAdvectionTimeStep() const 
-    {
-      return problem1_.maxAdvectionTimeStep();
-    } 
-
-    inline double maxDiffusionTimeStep() const 
-    {
-      // no diffusion restriction for advection operator
-      return std::numeric_limits<double>::max();
-    } 
-
     inline double computeTime() const 
     {
       return pass2_.computeTime();

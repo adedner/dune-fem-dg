@@ -132,9 +132,7 @@ namespace Dune {
     AdvectionModel(const Model& mod,
                    const NumFlux& numf)
       : model_(mod),
-        numflux_( numf ),
-        maxAdvTimeStep_( 0.0 ),
-        maxDiffTimeStep_( 0.0 )
+        numflux_( numf )
     {
     }
 
@@ -142,19 +140,14 @@ namespace Dune {
     AdvectionModel( const AdvectionModel& other )
       : BaseType( other ),
         model_( other.model_ ),
-        numflux_( other.numflux_ ),
-        maxAdvTimeStep_( other.maxAdvTimeStep_ ),
-        maxDiffTimeStep_( other.maxDiffTimeStep_ )
+        numflux_( other.numflux_ )
     {
     }
 
     void setTime ( double time ) { const_cast< ModelType & >( model_ ).setTime( time ); }
 
     //! dummy method 
-    void switchUpwind() const {
-      maxAdvTimeStep_  = 0;
-      maxDiffTimeStep_ = 0;
-    } 
+    void switchUpwind() const {} 
 
     inline bool hasSource() const 
     { 
@@ -162,17 +155,6 @@ namespace Dune {
     }  /*@\label{dm:hasSource}@*/
 
     inline bool hasFlux() const { return advection; }
-
-    //! return true if diffusion time step is defining the time step size (default is false)
-    double maxAdvectionTimeStep() const { return maxAdvTimeStep_; }
-    double maxDiffusionTimeStep() const { return maxDiffTimeStep_; }
-
-    //! this method is needed for thread pass 
-    void setMaxTimeSteps( const double advStep, const double diffStep ) 
-    {
-      maxAdvTimeStep_  = advStep ;
-      maxDiffTimeStep_ = diffStep ;
-    }
 
     /**
      * @brief Stiff source associated with advection
@@ -355,8 +337,6 @@ namespace Dune {
     const Model&   model_;
     const NumFlux& numflux_;
     mutable RangeType uBnd_;
-    mutable double maxAdvTimeStep_;
-    mutable double maxDiffTimeStep_;
   };                                              /*@LST0E@*/
 
 
