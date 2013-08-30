@@ -152,11 +152,11 @@ public:
 
   using BaseType :: solve; 
 protected:
-  OperatorType&          operator_;
-  Fem::TimeProviderBase&      timeProvider_; 
+  OperatorType&           operator_;
+  Fem::TimeProviderBase&  timeProvider_; 
 
-  AdvectionOperatorType& advectionOperator_;
-  DiffusionOperatorType& diffusionOperator_;
+  AdvectionOperatorType&  advectionOperator_;
+  DiffusionOperatorType&  diffusionOperator_;
   const SmartOdeSolverParameters* param_;
 
   OdeSolverInterfaceType* explicitSolver_;
@@ -165,10 +165,10 @@ protected:
   const double explFactor_ ;
   const int verbose_ ;
   const int rkSteps_ ; 
-  const int odeSolverType_;
+  const int odeSolverType_ ;
   int imexCounter_ , exCounter_;
   int minIterationSteps_, maxIterationSteps_ ;
-  bool imex_ ;
+  bool useImex_ ;
 public:
   SmartOdeSolver( Fem::TimeProviderBase& tp,
                   OperatorType& op, 
@@ -189,7 +189,7 @@ public:
      imexCounter_( 0 ), exCounter_ ( 0 ),
      minIterationSteps_( std::numeric_limits< int > :: max() ),
      maxIterationSteps_( 0 ),
-     imex_( odeSolverType_ > 1 )
+     useImex_( odeSolverType_ > 1 )
   {
     // create implicit or explicit ode solver
     if( odeSolverType_ == 0 )
@@ -238,6 +238,20 @@ public:
     odeSolver_->initialize( U );
   }
 
+  void getAdvectionDiffsionTimeSteps( double& advStep, double& diffStep ) const 
+  {
+    if( odeSolverType_ > 1 ) 
+    {
+      double steps[ 2 ] = { advectionOperator_.timeStepEstimate(),
+                            diffusionOperator_.timeStepEstimate() };
+      // get global min 
+      Dune :: Fem :: MPIManager :: comm().min( &steps[ 0 ], 2 );
+
+      advStep  = steps[ 0 ];
+      diffStep = steps[ 1 ];
+    }
+  }
+
   //! solver the ODE 
   void solve( DestinationType& U , 
               MonitorType& monitor ) 
@@ -245,6 +259,7 @@ public:
     // take CPU time of solution process 
     Timer timer ;
 
+    // switch upwind direction 
     operator_.switchupwind();
     advectionOperator_.switchupwind();
     diffusionOperator_.switchupwind();
@@ -254,22 +269,24 @@ public:
 
     double maxAdvStep  = 0;
     double maxDiffStep = 0;
-
-    if( explicitSolver_ && ! imex_ ) 
+    if( explicitSolver_ || verbose_ == 3 ) 
     {
-      explicitSolver_->solve( U, monitor );
+      // get advection and diffusion time step 
+      getAdvectionDiffsionTimeSteps( maxAdvStep, maxDiffStep );
+    }
 
-      maxAdvStep  = operator_.maxAdvectionTimeStep();
-      maxDiffStep = operator_.maxDiffusionTimeStep();
+    if( explicitSolver_ && ! useImex_ ) 
+    {
+      // solve using the explicit ode solver 
+      explicitSolver_->solve( U, monitor );
       ++exCounter_ ;
     }
     else 
     {
       assert( odeSolver_ );
+      // solve using the IMEX solver 
       odeSolver_->solve( U, monitor );
 
-      maxAdvStep  = std::max( advectionOperator_.maxAdvectionTimeStep(), operator_.maxAdvectionTimeStep() );
-      maxDiffStep = std::max( diffusionOperator_.maxDiffusionTimeStep(), operator_.maxDiffusionTimeStep() );
       ++imexCounter_ ;
 
       const int iterationSteps = monitor.newtonIterations_ * monitor.linearSolverIterations_ ;
@@ -282,7 +299,7 @@ public:
         //if( averageIterationSteps > 0 ) 
         //  factor *= averageIterationSteps / (rkSteps_ + 1 ) ;
         std::cout << maxAdvStep << " a | d " << maxDiffStep << "  factor: " << factor
-          << "  " << minIterationSteps_ << " min | max " << maxIterationSteps_ << "  use imex = " << imex_ << std::endl;
+          << "  " << minIterationSteps_ << " min | max " << maxIterationSteps_ << "  use imex = " << useImex_ << std::endl;
       }
     }
 
@@ -294,16 +311,17 @@ public:
         factor *= averageIterationSteps / (rkSteps_ + 1 ) ;
 
       // if true solve next time step with semi implicit solver
-      imex_ = ( maxDiffStep > (factor * maxAdvStep) ) ;
+      useImex_ = ( maxDiffStep > (factor * maxAdvStep) ) ;
 
       if( verbose_ == 3 ) 
       {
         std::cout << maxAdvStep << " a | d " << maxDiffStep << "  factor: " << factor
-          << "  " << minIterationSteps_ << " min | max " << maxIterationSteps_ << "  use imex = " << imex_ << std::endl;
+          << "  " << minIterationSteps_ << " min | max " << maxIterationSteps_ 
+          << "  use imex = " << useImex_ << "  ex steps: " << exCounter_ << std::endl;
       }
 
       // make sure the correct time step is used for the explicit solver 
-      if( ! imex_ ) 
+      if( ! useImex_ ) 
         timeProvider_.provideTimeStepEstimate( operator_.timeStepEstimate() ) ;
     }
 
@@ -316,7 +334,7 @@ public:
   //! return CPU time needed for the operator evaluation
   double operatorTime() const 
   {
-    if( imex_ ) 
+    if( useImex_ ) 
     {
       return advectionOperator_.computeTime() +
              diffusionOperator_.computeTime() ;
@@ -328,7 +346,7 @@ public:
   //! return number of elements meat during operator evaluation 
   size_t numberOfElements() const  
   {
-    if( imex_ ) 
+    if( useImex_ ) 
       return advectionOperator_.numberOfElements();
     else 
       return operator_.numberOfElements();
@@ -354,7 +372,7 @@ public:
     latexInfo += odeInfo.str() + "\n";
     std::stringstream info; 
     info << "Regular  Solver used: " << imexCounter_ << std::endl;
-    info << "Explicit Solver sued: " << exCounter_ << std::endl;
+    info << "Explicit Solver used: " << exCounter_ << std::endl;
     latexInfo += info.str();
 
     return latexInfo;
