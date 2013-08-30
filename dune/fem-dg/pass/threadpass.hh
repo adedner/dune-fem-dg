@@ -514,9 +514,6 @@ namespace Dune {
 
       } // end if first call 
 
-      // set max time steps 
-      setMaxTimeSteps();
-
       // if useNonBlockingComm_ is disabled then communicate here if communication is required 
       if( requireCommunication_ && ! nonBlockingComm_.nonBlockingCommunication() ) 
       {
@@ -653,23 +650,6 @@ namespace Dune {
     {
       // we use applyLocal of internal operator
       abort();
-    }
-  protected:
-    void setMaxTimeSteps() const
-    {
-      /*
-      const int maxThreads = Fem::ThreadManager::maxThreads();
-      double maxAdvStep = 0;
-      double maxDiffStep = 0;
-      for(int i=0; i<maxThreads; ++i ) 
-      {
-        maxAdvStep  = std::max( maxAdvStep,  problems_[ i ]->maxAdvectionTimeStep() );
-        maxDiffStep = std::max( maxDiffStep, problems_[ i ]->maxDiffusionTimeStep() );
-      }
-
-      // set time steps to single problem 
-      singleProblem_.setMaxTimeSteps( maxAdvStep, maxDiffStep );
-      */
     }
 
   private:
