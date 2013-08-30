@@ -267,8 +267,8 @@ public:
     // reset compute time counter 
     resetComputeTime();
 
-    double maxAdvStep  = 0;
-    double maxDiffStep = 0;
+    double maxAdvStep  = std::numeric_limits< double > :: max();
+    double maxDiffStep = std::numeric_limits< double > :: max();
 
     if( explicitSolver_ && ! useImex_ ) 
     {
