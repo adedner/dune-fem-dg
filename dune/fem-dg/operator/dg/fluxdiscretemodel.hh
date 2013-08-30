@@ -106,6 +106,8 @@ namespace Dune {
       #endif
     }
 
+    void setTime ( double time ) { const_cast< Model& >( model_ ).setTime( time ); }
+
     bool hasSource() const { return false; }
     bool hasFlux() const { return true; }  /*@LST1E@*/
 
