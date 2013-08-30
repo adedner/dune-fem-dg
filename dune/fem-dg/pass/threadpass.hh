@@ -335,6 +335,9 @@ namespace Dune {
         return myThread_ == storage_.thread( nb );
       }
 
+      //! return true if actually some intersections would be skipped 
+      bool isActive () const { return mode != skipNone ; }
+
       //! returns true if the intersection with neighbor nb should be skipped
       bool skipIntersection( const EntityType& nb ) const 
       {
@@ -344,8 +347,9 @@ namespace Dune {
           case skipNone:         return false; 
           case skipInterior:     return nb.partitionType() == InteriorEntity;  
           case skipNonInterior:  return nb.partitionType() != InteriorEntity;  
-          default: assert(false); abort(); return false; 
+          default: return false ;                       
         }
+        return false ;
       }
     };
 

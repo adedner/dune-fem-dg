@@ -1241,22 +1241,25 @@ namespace Dune {
     void applyLocalInterior( const EntityType& entity,
                              const NeighborChecker& nbChecker ) const 
     {
-      // check whether on of the intersections is with ghost element 
-      // and if so, skip the computation of the limited solution for now
-      const IntersectionIteratorType endnit = gridPart_.iend(entity);
-      for (IntersectionIteratorType nit = gridPart_.ibegin(entity); nit != endnit; ++nit)
+      if( nbChecker.isActive() ) 
       {
-        const IntersectionType& intersection = *nit;
-        if( intersection.neighbor() )
+        // check whether on of the intersections is with ghost element 
+        // and if so, skip the computation of the limited solution for now
+        const IntersectionIteratorType endnit = gridPart_.iend(entity);
+        for (IntersectionIteratorType nit = gridPart_.ibegin(entity); nit != endnit; ++nit)
         {
-          // get neighbor 
-          EntityPointerType outside = intersection.outside();
-          const EntityType & nb = * outside;
-
-          // check whether we have to skip this intersection
-          if( nbChecker.skipIntersection( nb ) )
+          const IntersectionType& intersection = *nit;
+          if( intersection.neighbor() )
           {
-            return ; 
+            // get neighbor 
+            EntityPointerType outside = intersection.outside();
+            const EntityType & nb = * outside;
+
+            // check whether we have to skip this intersection
+            if( nbChecker.skipIntersection( nb ) )
+            {
+              return ; 
+            }
           }
         }
       }
@@ -1268,8 +1271,9 @@ namespace Dune {
     //! apply limiter only to elements with neighboring process boundary
     template <class NeighborChecker>
     void applyLocalProcessBoundary( const EntityType& entity,
-                                    const NeighborChecker& nChecker ) const
+                                    const NeighborChecker& nbChecker ) const
     {
+      assert( nbChecker.isActive() );
       assert( indexSet_.index( entity ) < int(visited_.size()) );
       // if entity was already visited, do nothing in this turn 
       if( visited_[ indexSet_.index( entity ) ] ) return ;
