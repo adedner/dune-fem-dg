@@ -304,9 +304,6 @@ struct StepperBase
     // L2 project initial data 
     l2pro( problem().fixedTimeFunction( tp.time() ), U ); 
 
-    writeData( tp );
-    if( loop > 0 ) abort();
-    
     // ode.initialize applies the DG Operator once to get an initial
     // estimate on the time step. This does not change the initial data u.
     odeSolver_->initialize( U );                
