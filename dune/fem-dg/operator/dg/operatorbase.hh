@@ -148,15 +148,6 @@ namespace Dune {
       pass1_.switchUpwind();
     }
 
-    inline double maxAdvectionTimeStep() const 
-    {
-      return discreteModel_.maxAdvectionTimeStep();
-    } 
-    inline double maxDiffusionTimeStep() const 
-    {
-      return discreteModel_.maxDiffusionTimeStep();
-    } 
-
     template <class Matrix> 
     inline void operator2Matrix( Matrix& matrix, DestinationType& rhs ) const 
     {

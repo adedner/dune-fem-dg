@@ -125,7 +125,6 @@ namespace Dune {
       {
         const double dtStiff = model_.stiffSource( en, time, x, u[uVar], jac[uVar], s );
         dtEst = ( dtStiff > 0 ) ? dtStiff : dtEst;
-        maxDiffTimeStep_ = std::max( dtStiff, maxDiffTimeStep_ );
       }
 
       if ( model_.hasNonStiffSource() ) 
@@ -137,7 +136,6 @@ namespace Dune {
         s += sNonStiff;
 
         dtEst = ( dtNon > 0 ) ? std::min( dtEst, dtNon ) : dtEst;
-        maxAdvTimeStep_  = std::max( dtNon, maxAdvTimeStep_ );
       }
 
       // return the fastest wave from source terms
@@ -288,9 +286,6 @@ namespace Dune {
         gDiffRight = 0;
       }
 
-      maxAdvTimeStep_  = std::max( advectionWaveSpeed, maxAdvTimeStep_ );
-      maxDiffTimeStep_ = std::max( diffusionWaveSpeed, maxDiffTimeStep_ );
-
       return advectionWaveSpeed + diffusionWaveSpeed;
     }
 
@@ -349,9 +344,6 @@ namespace Dune {
       else 
         gDiffLeft = 0;
 
-      maxAdvTimeStep_  = std::max( advectionWaveSpeed, maxAdvTimeStep_ );
-      maxDiffTimeStep_ = std::max( diffusionWaveSpeed, maxDiffTimeStep_ );
-
       return advectionWaveSpeed + diffusionWaveSpeed;
     }
                                                   /*@LST0S@*/
@@ -393,10 +385,6 @@ namespace Dune {
     mutable DiffusionFluxType diffFlux_;
     // storage for boundary values 
     std::vector< RangeType > uBndVec_;
-
-    // defined in AdvectionModel 
-    using BaseType :: maxAdvTimeStep_ ;
-    using BaseType :: maxDiffTimeStep_ ;
   };                                              /*@LST0E@*/
 
 

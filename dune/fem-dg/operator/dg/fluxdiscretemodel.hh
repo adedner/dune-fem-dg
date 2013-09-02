@@ -106,6 +106,8 @@ namespace Dune {
       #endif
     }
 
+    void setTime ( double time ) { const_cast< Model& >( model_ ).setTime( time ); }
+
     bool hasSource() const { return false; }
     bool hasFlux() const { return true; }  /*@LST1E@*/
 
@@ -309,9 +311,6 @@ namespace Dune {
 
     // These type definitions allow a convenient access to arguments of pass.
     using BaseType :: uVar;
-    // defined in AdvectionModel 
-    using BaseType :: maxAdvTimeStep_ ;
-    using BaseType :: maxDiffTimeStep_ ;
 
     integral_constant< int, passGradId> sigmaVar;
 
@@ -386,7 +385,6 @@ namespace Dune {
         const double dtStiff = 
           model_.stiffSource( en, time, x, u[uVar], u[sigmaVar], s );
         dtEst = ( dtStiff > 0 ) ? dtStiff : dtEst;
-        maxDiffTimeStep_ = std::max( dtStiff, maxDiffTimeStep_ );
       }
 
       if (advection)
@@ -398,7 +396,6 @@ namespace Dune {
         s += sNonStiff;
 
         dtEst = ( dtNon > 0 ) ? std::min( dtEst, dtNon ) : dtEst;
-        maxAdvTimeStep_  = std::max( dtNon, maxAdvTimeStep_ );
       }
 
       // return the fastest wave from source terms
@@ -479,9 +476,6 @@ namespace Dune {
       gDiffLeft  = 0;
       gDiffRight = 0;
 
-      maxAdvTimeStep_  = std::max( wave, maxAdvTimeStep_ );
-      maxDiffTimeStep_ = std::max( diffTimeStep, maxDiffTimeStep_ );
-
       return std::max( wave, diffTimeStep );
     }
 
@@ -535,9 +529,6 @@ namespace Dune {
       }
       else
         gDiffLeft = 0;
-
-      maxAdvTimeStep_  = std::max( wave, maxAdvTimeStep_ );
-      maxDiffTimeStep_ = std::max( diffTimeStep, maxDiffTimeStep_ );
 
       return std::max( wave, diffTimeStep );
     }

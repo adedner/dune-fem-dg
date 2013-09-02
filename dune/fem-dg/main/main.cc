@@ -13,7 +13,7 @@
 // local includes
 #include <dune/fem-dg/main/main.hh>
 
-#include "default.hh"
+#include <dune/fem-dg/main/default.hh>
 #ifdef NEWBASEFCT_CACHING
 #include <dune/fem-dg/main/codegen2.hh>
 #else
@@ -202,15 +202,15 @@ int main(int argc, char ** argv)
   try {
 
   // *** Initialization
-  Dune::Fem::Parameter::append(argc,argv);                           /*@\label{dg:param0}@*/
+  Dune::Fem::Parameter::append(argc,argv);
   if (argc >= 2) 
   {
     Dune::Fem::Parameter::append(argv[1]);
   } 
   else 
   {
-    Dune::Fem::Parameter::append("parameter");                       /*@\label{dg:paramfile}@*/
-  }                                                       /*@\label{dg:param1}@*/
+    Dune::Fem::Parameter::append("parameter");
+  }                                                   
 
   // get number of desired threads (default is 1)
   int numThreads = Dune::Fem::Parameter::getValue< int >("fem.parallel.numberofthreads", 1);
@@ -218,6 +218,9 @@ int main(int argc, char ** argv)
 
   int polynomialOrder = 1;
   polynomialOrder = Dune::Fem::Parameter :: getValue("femhowto.polynomialOrder", polynomialOrder );
+
+  // write parameters used (before simulation starts)
+  Dune::Fem::Parameter::write("parameter.log");
 
 #ifdef BASEFUNCTIONSET_CODEGEN_GENERATE
   codegen();
@@ -264,17 +267,18 @@ int main(int argc, char ** argv)
   }
 #endif
 
-  // write parameters used 
-  Dune::Fem::Parameter::write("parameter.log");
 #endif
   }
-  catch (Dune::Exception &e) {                            /*@\label{dg:catch0}@*/
+  catch (Dune::Exception &e) 
+  {
     std::cerr << e << std::endl;
     return 1;
-  } catch (...) {
+  } 
+  catch (...) 
+  {
     std::cerr << "Generic exception!" << std::endl;
     return 2;
-  }                                                      /*@\label{dg:catch1}@*/
+  }
 
   return 0;
 }

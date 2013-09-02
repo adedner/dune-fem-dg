@@ -916,6 +916,28 @@ namespace Dune {
     //! returns true of pass is currently active in the pass tree
     using BaseType :: active ;
 
+    //! type of cartesian grid checker 
+    typedef Fem :: CheckCartesian< GridPartType >  CheckCartesian ;
+
+  protected:
+    template <class DiscreteSpace>
+    struct HierarchicalBasis 
+    {
+      static const bool v = false ;
+    };
+
+    template < class FunctionSpace, class GridPart, int polOrder, template< class > class Storage > 
+    struct HierarchicalBasis< Fem::DiscontinuousGalerkinSpace< FunctionSpace, GridPart, polOrder, Storage > >
+    {
+      static const bool v = true ;
+    };
+
+    template < class FunctionSpace, class GridPart, int polOrder, template< class > class Storage > 
+    struct HierarchicalBasis< Fem::HierarchicLegendreDiscontinuousGalerkinSpace< FunctionSpace, GridPart, polOrder, Storage > >
+    {
+      static const bool v = true ;
+    };
+
   public:
     //- Public methods
     /** \brief constructor
@@ -958,7 +980,7 @@ namespace Dune {
       matrixCacheVec_( gridPart_.grid().maxLevel() + 1 ),
       localMassMatrix_( spc_ , volumeQuadOrd_ ),
       adaptive_((AdaptationMethodType(gridPart_.grid())).adaptive()),
-      cartesianGrid_( Fem::CheckCartesian::check( gridPart_ ) ),
+      cartesianGrid_( CheckCartesian::check( gridPart_ ) ),
       stepTime_(3, 0.0),
       calcIndicator_(true),
       reconstruct_(false),
@@ -978,6 +1000,16 @@ namespace Dune {
 
       // we need the flux here 
       assert(problem.hasFlux());
+     
+      // intialize volume quadratures, otherwise we run into troubles with the threading
+      if(spc_.begin() != spc_.end() )
+      {
+        initializeVolumeQuadratures( *spc_.begin() );
+      }
+      else if( Fem :: ThreadManager :: maxThreads() > 1 ) 
+      {
+        DUNE_THROW(InvalidStateException,"Quadratures not initialized in LimitPass" );
+      }
     }
     
     //! Destructor
@@ -1209,22 +1241,25 @@ namespace Dune {
     void applyLocalInterior( const EntityType& entity,
                              const NeighborChecker& nbChecker ) const 
     {
-      // check whether on of the intersections is with ghost element 
-      // and if so, skip the computation of the limited solution for now
-      const IntersectionIteratorType endnit = gridPart_.iend(entity);
-      for (IntersectionIteratorType nit = gridPart_.ibegin(entity); nit != endnit; ++nit)
+      if( nbChecker.isActive() ) 
       {
-        const IntersectionType& intersection = *nit;
-        if( intersection.neighbor() )
+        // check whether on of the intersections is with ghost element 
+        // and if so, skip the computation of the limited solution for now
+        const IntersectionIteratorType endnit = gridPart_.iend(entity);
+        for (IntersectionIteratorType nit = gridPart_.ibegin(entity); nit != endnit; ++nit)
         {
-          // get neighbor 
-          EntityPointerType outside = intersection.outside();
-          const EntityType & nb = * outside;
-
-          // check whether we have to skip this intersection
-          if( nbChecker.skipIntersection( nb ) )
+          const IntersectionType& intersection = *nit;
+          if( intersection.neighbor() )
           {
-            return ; 
+            // get neighbor 
+            EntityPointerType outside = intersection.outside();
+            const EntityType & nb = * outside;
+
+            // check whether we have to skip this intersection
+            if( nbChecker.skipIntersection( nb ) )
+            {
+              return ; 
+            }
           }
         }
       }
@@ -1236,8 +1271,9 @@ namespace Dune {
     //! apply limiter only to elements with neighboring process boundary
     template <class NeighborChecker>
     void applyLocalProcessBoundary( const EntityType& entity,
-                                    const NeighborChecker& nChecker ) const
+                                    const NeighborChecker& nbChecker ) const
     {
+      assert( nbChecker.isActive() );
       assert( indexSet_.index( entity ) < int(visited_.size()) );
       // if entity was already visited, do nothing in this turn 
       if( visited_[ indexSet_.index( entity ) ] ) return ;
@@ -1364,7 +1400,7 @@ namespace Dune {
           if( !StructuredGrid && cartesian )
           {
             // check whether this element is really cartesian 
-            cartesian &= ( ! Fem::CheckCartesian::checkIntersection(intersection) );
+            cartesian &= ( ! CheckCartesian::checkIntersection(intersection) );
           }
 
           DomainType lambda( 1 );
@@ -1555,6 +1591,10 @@ namespace Dune {
       RangeType b[dimDomain];
       Fem::TemporaryLocalFunction< DiscreteFunctionSpaceType > uTmp(spc_,en);
       uTmp.clear();
+
+      // assume that basis functions are hierarchical
+      assert( HierarchicalBasis< DiscreteFunctionSpaceType > :: v );
+
       for (int r=0;r<dimRange;++r) 
       {
         for (int i=0; i<dimDomain+1; ++i) 
@@ -1751,8 +1791,9 @@ namespace Dune {
             const DomainFieldType g = D * barys[k];
 
             const DomainFieldType length2 =  barys[ k ].two_norm2();
+
             // if length is to small then the grid is corrupted
-            assert( length2 > 1e-12 );
+            assert( length2 > 1e-14 );
 
             // if the gradient in direction of the line 
             // connecting the barycenters is very small 
@@ -1762,12 +1803,9 @@ namespace Dune {
             DomainFieldType localFactor = discreteModel_.limiterFunction( g, d );
 
             const DomainFieldType factor = (g*g) / length2 ;
-            //const DomainFieldType factor = (g*g) / length2;
             if( localFactor < 1.0 &&  factor  < limitEps_ )
             {
-              //std::cout << localFactor << " " ;
               localFactor = 1.0 - std::tanh( factor / limitEps_ );
-              //std::cout << localFactor << std::endl ;
             }
 
             // take minimum 
@@ -1776,45 +1814,6 @@ namespace Dune {
 
           // scale linear function 
           D *= minimalFactor;
-#if 0
-          /*
-          if( length > 0 ) 
-          {
-            std::cout << D << " D | "  << D_1 << " D1 " << D_2 << std::endl;
-            DomainType Dsum( D_1 );
-            Dsum += D_2 ;
-            std::cout << Dsum << std::endl;
-          }
-          */
-
-          typedef typename std::vector<int> :: const_iterator const_iterator ;
-          const const_iterator endit = v.end();
-          for(const_iterator it = v.begin(); it != endit ; ++it )
-          {
-            // get current number of entry 
-            const size_t k = *it; 
-
-            // evaluate values for limiter function 
-            const DomainFieldType d = nbVals[k][r];
-            const DomainFieldType g_1 = D_1 * barys[k];
-            const DomainFieldType g_2 = D_2 * barys[k];
-
-            // call limiter function 
-            const DomainFieldType localFactor_1 = discreteModel_.limiterFunction( g_1, d );
-            const DomainFieldType localFactor_2 = discreteModel_.limiterFunction( g_2, d );
-
-            // take minimum 
-            minimalFactor_1 = std::min( localFactor_1 , minimalFactor_1 );
-            minimalFactor_2 = std::min( localFactor_2 , minimalFactor_2 );
-          }
-
-          // scale linear function 
-          D_1 *= minimalFactor_1;
-          D_2 *= minimalFactor_2;
-          
-          D  = D_1;
-          D += D_2;
-#endif
         }
       }
     }
@@ -1957,6 +1956,18 @@ namespace Dune {
       }
     };
 
+    void initializeVolumeQuadratures( const EntityType& entity ) const 
+    {
+      // get quadrature for destination space order  
+      VolumeQuadratureType quad0( entity, spc_.order() + 1 );
+
+      // get point quadrature 
+      VolumeQuadratureType quad1( entity, 0 );
+
+      // get quadrature 
+      VolumeQuadratureType quad2( entity, volumeQuadOrd_ );
+    }
+
     // L2 projection 
     template <class LocalFunctionImp>
     void L2project(const EntityType& en,
@@ -2064,7 +2075,8 @@ namespace Dune {
                      RangeType& val) const 
     {
       bool notphysical = false;
-      if( localMassMatrix_.affine() )
+      if( HierarchicalBasis< DiscreteFunctionSpaceType > :: v 
+          && localMassMatrix_.affine() )
       {
         // get point quadrature 
         VolumeQuadratureType quad( en, 0 );
@@ -2088,29 +2100,33 @@ namespace Dune {
         const Geometry& geo = en.geometry();
         
         // get quadrature 
-        VolumeQuadratureType quad( en, volumeQuadOrd_);
-
-        RangeType tmp; 
+        VolumeQuadratureType quad( en, volumeQuadOrd_ );
 
         // set value to zero
         val = 0;
 
         const int quadNop = quad.nop();
+        if( int(aver_.size()) < quadNop )
+        {
+          // resize value vector
+          aver_.resize( quadNop );
+        }
+
+        // evaluate quadrature at once 
+        lf.evaluateQuadrature( quad, aver_ );
+
         for(int qp=0; qp<quadNop; ++qp) 
         {
-          // evaluate function  
-          lf.evaluate( quad[qp] , tmp );
+          // check whether value is physical 
+          notphysical |= (discreteModel_.hasPhysical() && !discreteModel_.physical( en, quad.point( qp ), aver_[ qp ] ) );
 
           // possibly adjust average value, e.g. calculate primitive vairables and so on 
-          discreteModel_.adjustAverageValue( en, quad.point( qp ), val );
-
-          // check whether value is physical 
-          notphysical |= (discreteModel_.hasPhysical() && !discreteModel_.physical( en, quad.point( qp ), tmp ) );
+          discreteModel_.adjustAverageValue( en, quad.point( qp ), aver_[ qp ] );
 
           // apply integration weight 
-          tmp *= quad.weight(qp) * geo.integrationElement(quad.point(qp));
+          aver_[ qp ] *= quad.weight(qp) * geo.integrationElement( quad.point(qp) );
           // sum up 
-          val += tmp;
+          val += aver_[ qp ];
         }
 
         // mean value, i.e. devide by volume 
@@ -2618,6 +2634,7 @@ namespace Dune {
     mutable std::vector< DeoModType > deoMods_;
     mutable std::vector< CheckType >  comboVec_;
 
+    mutable std::vector< RangeType >  aver_ ;
     mutable std::vector< DomainType > barys_;
     mutable std::vector< RangeType >  nbVals_;
     mutable std::vector< MatrixCacheType > matrixCacheVec_;
