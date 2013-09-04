@@ -402,13 +402,10 @@ namespace Dune {
       if( firstCall_ ) 
       {
         //! get pass for my thread  
-        InnerPassType& myPass = pass( 0 );
+        BaseType& myPass = pass( 0 );
 
         // stop time 
         Timer timer ;
-
-        // pepare 
-        myPass.prepare( arg, dest );
 
         // for the first call we need to receive data already here,
         // since the flux calculation is done at once
@@ -417,17 +414,9 @@ namespace Dune {
           // RECEIVE DATA, send was done on call of operator() (see pass.hh)
           receiveCommunication( arg );
         }
-
-        // Iterator is of same type as the space iterator 
-        typedef typename DiscreteFunctionSpaceType :: IteratorType Iterator;
-        const Iterator endit = spc_.end();
-        for (Iterator it = spc_.begin(); it != endit; ++it)
-        {
-          myPass.applyLocal( *it );
-        }
-
-        // finalize pass 
-        myPass.finalize(arg, dest);
+        
+        // use the default compute method of the given pass 
+        myPass.compute( arg, dest );
 
         // get number of elements 
         numberOfElements_ = myPass.numberOfElements(); 
@@ -436,6 +425,8 @@ namespace Dune {
 
         // set tot false since first call has been done
         firstCall_ = false ;
+
+        return ;
       }
       else 
       {
@@ -532,7 +523,7 @@ namespace Dune {
     //! return true if communication is necessary and non-blocking should be used
     bool useNonBlockingCommunication() const 
     {
-      return requireCommunication_ && nonBlockingComm_.nonBlockingCommunication();
+      return requireCommunication_ && nonBlockingComm_.nonBlockingCommunication() && firstCall_ == false ;
     }
 
     void initComm() const 
