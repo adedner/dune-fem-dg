@@ -297,6 +297,8 @@ namespace Dune {
       return 0.0;
     }
 
+    const Model &model () const { return model_; }
+
   protected:
     const Model   &model_;
     DomainType upwind_;
