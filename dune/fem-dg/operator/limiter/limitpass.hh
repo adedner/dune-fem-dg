@@ -1002,14 +1002,7 @@ namespace Dune {
       assert(problem.hasFlux());
      
       // intialize volume quadratures, otherwise we run into troubles with the threading
-      if(spc_.begin() != spc_.end() )
-      {
-        initializeVolumeQuadratures( *spc_.begin() );
-      }
-      else if( Fem :: ThreadManager :: maxThreads() > 1 ) 
-      {
-        DUNE_THROW(InvalidStateException,"Quadratures not initialized in LimitPass" );
-      }
+      initializeVolumeQuadratures( geoInfo_.geomTypes( 0 ) );
     }
     
     //! Destructor
@@ -1956,16 +1949,20 @@ namespace Dune {
       }
     };
 
-    void initializeVolumeQuadratures( const EntityType& entity ) const 
+    void initializeVolumeQuadratures( const std::vector< GeometryType >& geomTypes ) const 
     {
-      // get quadrature for destination space order  
-      VolumeQuadratureType quad0( entity, spc_.order() + 1 );
+      for( size_t i=0; i<geomTypes.size(); ++ i ) 
+      {
+        const GeometryType& type = geomTypes[ i ];
+        // get quadrature for destination space order  
+        VolumeQuadratureType quad0( type, spc_.order() + 1 );
 
-      // get point quadrature 
-      VolumeQuadratureType quad1( entity, 0 );
+        // get point quadrature 
+        VolumeQuadratureType quad1( type, 0 );
 
-      // get quadrature 
-      VolumeQuadratureType quad2( entity, volumeQuadOrd_ );
+        // get quadrature 
+        VolumeQuadratureType quad2( type, volumeQuadOrd_ );
+      }
     }
 
     // L2 projection 
