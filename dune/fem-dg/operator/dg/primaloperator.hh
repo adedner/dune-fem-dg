@@ -294,11 +294,9 @@ namespace Dune {
                                ArgumentType* arg,
                                DestinationType& dest)
       {
-        limiter.enable();
         assert( arg );
         arg->assign(dest);
         limiter(*arg,dest);
-        limiter.disable();
       }
     };
 
@@ -357,7 +355,6 @@ namespace Dune {
     void operator()( const DestinationType& arg, DestinationType& dest ) const
     {
 	    pass2_( arg, dest );
-      pass1_.enable();
     }
 
     inline const SpaceType& space() const {
@@ -397,7 +394,6 @@ namespace Dune {
 
     inline void limit( DestinationType& U ) const
     {
-      pass1_.enable();
       LimiterCall< Pass1Type, polOrd >::limit( pass1_, uTmp_, U );
     }
     
