@@ -48,7 +48,6 @@ namespace Dune {
     typedef typename Traits :: DiscreteFunctionSpaceType             DiscreteFunctionSpaceType;
     typedef typename Traits :: DestinationType                       DestinationType;
     typedef DestinationType                                          DiscreteFunctionType;
-    typedef typename Traits :: IndicatorType                         IndicatorType;
 
     typedef typename DestinationType :: DomainType                   DomainType;
     typedef typename DestinationType :: RangeType                    RangeType;
@@ -118,9 +117,6 @@ namespace Dune {
     typedef typename Traits :: DomainFieldType                         DomainFieldType;
     typedef typename Traits :: RangeType                               RangeType;
     typedef typename Traits :: JacobianRangeType                       JacobianRangeType;
-
-    // discrete function storing the adaptation indicator information 
-    typedef typename Traits :: IndicatorType    IndicatorTpye;
 
     // discrete function storing the adaptation indicator information 
     typedef typename Traits :: AdaptationType   AdaptationType ;
@@ -404,9 +400,6 @@ namespace Dune {
     typedef typename Traits :: DomainFieldType                         DomainFieldType;
     typedef typename Traits :: RangeType                               RangeType;
     typedef typename Traits :: JacobianRangeType                       JacobianRangeType;
-
-    // discrete function storing the adaptation indicator information 
-    typedef typename Traits :: IndicatorType     IndicatorTpye;
 
     // discrete function storing the adaptation indicator information 
     typedef typename Traits :: AdaptationType    AdaptationType ;

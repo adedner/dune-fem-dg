@@ -283,7 +283,7 @@ namespace Dune {
     typedef LocalCDGPass   < DiscreteModel1Type, Pass1Type, advectPassId >      Pass2Type;
 #endif
 
-    typedef typename PassTraitsType::IndicatorType                      IndicatorType;
+    typedef typename LimiterDiscreteModelType::IndicatorType                      IndicatorType;
     typedef typename IndicatorType::DiscreteFunctionSpaceType           IndicatorSpaceType;
 
     template< class Limiter, int pO >

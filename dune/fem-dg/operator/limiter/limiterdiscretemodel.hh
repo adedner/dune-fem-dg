@@ -59,7 +59,8 @@ namespace Fem {
 
     typedef typename Traits::DestinationType DestinationType;
 
-    typedef typename GlobalPassTraitsImp::IndicatorType   IndicatorType ;
+    // Indicator for Limiter
+    typedef typename Traits::IndicatorType   IndicatorType ;
 
     enum { dimRange = Traits :: dimRange };
     enum { evaluateJacobian = false };

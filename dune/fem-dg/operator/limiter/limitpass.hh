@@ -11,14 +11,18 @@
 
 #include <dune/fem/gridpart/common/capabilities.hh>
 #include <dune/fem/io/parameter.hh>
+
 #include <dune/fem/operator/1order/localmassmatrix.hh>
 #include <dune/fem/common/typeindexedtuple.hh>
 #include <dune/fem/pass/localdg/discretemodel.hh>
 #include <dune/fem/pass/localdg.hh>
+
 #include <dune/fem/space/combinedspace.hh>
 #include <dune/fem/space/common/adaptmanager.hh>
 #include <dune/fem/space/common/basesetlocalkeystorage.hh>
+
 #include <dune/fem/space/discontinuousgalerkin.hh>
+#include <dune/fem/space/finitevolume.hh>
 #include <dune/fem/space/lagrange/lagrangepoints.hh>
 
 #include <dune/fem-dg/pass/dgmodelcaller.hh>
@@ -260,6 +264,11 @@ namespace Dune {
     typedef typename DestinationType::RangeType RangeType;
     typedef typename DestinationType::JacobianRangeType JacobianRangeType;
     typedef FieldVector<DomainFieldType, dimGrid - 1> FaceLocalDomainType;
+
+    // Indicator function type for Limiter (for output mainly)
+    typedef Fem::FunctionSpace< DomainFieldType, double, dimDomain, 3> FVFunctionSpaceType;
+    typedef Fem::FiniteVolumeSpace<FVFunctionSpaceType,GridPartType, 0, Fem::SimpleStorage> IndicatorSpaceType;
+    typedef Fem::AdaptiveDiscreteFunction<IndicatorSpaceType> IndicatorType;
 
     typedef LimiterDefaultDiscreteModel <GlobalTraitsImp,Model,passId> DGDiscreteModelType;
 
