@@ -80,12 +80,8 @@ struct Stepper
     BaseType( grid ),
     dgAdvectionOperator_(gridPart_, convectionFlux_),
     dgIndicator_( gridPart_, convectionFlux_ ),
-    gradientIndicator_( space(), problem() ),
-    indicator_( 0 )
+    gradientIndicator_( space(), problem() )
   {
-    // enable indicator output if the parameter is set 
-    if( ParameterType :: getValue<bool> ("femdg.limiter.indicatoroutput", false ) ) 
-      indicator_ = dgAdvectionOperator_.indicator(); 
   }
 
   virtual OdeSolverType* createOdeSolver(TimeProviderType& tp) 
@@ -127,7 +123,7 @@ struct Stepper
   // return indicator pointer for data output, see above
   IndicatorType* indicator () 
   { 
-    return indicator_;
+    return dgAdvectionOperator_.indicator();
   }
 
   //! estimate and mark solution 
@@ -146,6 +142,5 @@ protected:
   DgAdvectionType         dgAdvectionOperator_;
   DGIndicatorType         dgIndicator_;
   GradientIndicatorType   gradientIndicator_;
-  IndicatorType* indicator_ ;
 };
 #endif // FEMHOWTO_STEPPER_HH
