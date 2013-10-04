@@ -124,9 +124,9 @@ struct StepperBase
     BaseType( grid ),
     gridPart_( grid_ ),
     space_( gridPart_ ),
-    solution_( "solution", space() ),
+    solution_( "U", space() ),
     additionalVariables_( ParameterType :: getValue< bool >("femhowto.additionalvariables", false) ? 
-        new DiscreteFunctionType("additional", space() ) : 0 ),
+        new DiscreteFunctionType("A", space() ) : 0 ),
     problem_( ProblemTraits::problem() ),
     model_( new ModelType( problem() ) ),
     convectionFlux_( *model_ ),
