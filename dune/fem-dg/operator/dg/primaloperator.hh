@@ -311,6 +311,17 @@ namespace Dune {
       }
     }; 
 
+    void createIndicator() 
+    {
+      // if indicator output is enabled create objects 
+      if( ParameterType :: getValue<bool> ("femdg.limiter.indicatoroutput", false ) )
+      {
+        fvSpc_     = new IndicatorSpaceType( gridPart_ );
+        indicator_ = new IndicatorType( "SE", *fvSpc_ );
+        limitProblem_.setIndicator( indicator_ );
+      }
+    }
+
   public:
     DGLimitedAdvectionOperator( GridPartType& gridPart , const NumFluxType& numf ) 
       : model_( numf.model() )
@@ -319,8 +330,8 @@ namespace Dune {
       , space_( gridPart_ )
       , limiterSpace_( gridPart_ )
       , uTmp_( (polOrd > 0) ? (new LimiterDestinationType("limitTmp", limiterSpace_)) : 0 )
-      , fvSpc_( gridPart_ )
-      , indicator_( "Indicator", fvSpc_ )
+      , fvSpc_( 0 ) 
+      , indicator_( 0 )
       , diffFlux_( gridPart_, model_ )
       , problem1_( model_, numflux_, diffFlux_ )
       , limitProblem_( model_ , space_.order() )
@@ -328,10 +339,19 @@ namespace Dune {
       , pass1_( limitProblem_, pass0_, limiterSpace_ )
       , pass2_( problem1_, pass1_, space_ )
     {
-      limitProblem_.setIndicator( &indicator_ );
+      // create indicator if enabled 
+      createIndicator();
     }
 
-    ~DGLimitedAdvectionOperator() { delete uTmp_; }
+    ~DGLimitedAdvectionOperator() 
+    { 
+      delete uTmp_; uTmp_ = 0;
+      if( indicator_ ) 
+      {
+        delete indicator_; indicator_ = 0;
+        delete fvSpc_;     fvSpc_     = 0;
+      }
+    }
 
     void setAdaptationHandler( AdaptationType& adHandle, double weight = 1 ) 
     {
@@ -366,12 +386,12 @@ namespace Dune {
 
     double limitTime() const
     {
-      return pass1_.computeTime();
+      return limitPass().computeTime();
     }
 
     std::vector<double> limitSteps() const
     {
-      return pass1_.computeTimeSteps();
+      return limitPass().computeTimeSteps();
     }
 
     inline double computeTime() const 
@@ -390,11 +410,11 @@ namespace Dune {
     }
 
     // return pointer to indicator function 
-    IndicatorType* indicator() { return &indicator_ ; }
+    IndicatorType* indicator() { return indicator_ ; }
 
     inline void limit( DestinationType& U ) const
     {
-      LimiterCall< Pass1Type, polOrd >::limit( pass1_, uTmp_, U );
+      LimiterCall< Pass1Type, polOrd >::limit( limitPass(), uTmp_, U );
     }
     
     void printmyInfo(std::string filename) const
@@ -431,8 +451,8 @@ namespace Dune {
     LimiterSpaceType    limiterSpace_;
     mutable LimiterDestinationType* uTmp_;
 
-    IndicatorSpaceType  fvSpc_;
-    IndicatorType       indicator_;
+    IndicatorSpaceType*  fvSpc_;
+    IndicatorType*       indicator_;
 
   protected:
     DiffusionFluxType   diffFlux_;
