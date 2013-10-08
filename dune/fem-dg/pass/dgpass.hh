@@ -584,15 +584,15 @@ namespace Dune {
             // initialize intersection 
             caller().initializeBoundary( intersection, faceQuadInner );
 
-            const size_t faceQuadInner_nop = faceQuadInner.nop();
+            const unsigned int faceQuadInner_nop = faceQuadInner.nop();
+
+            if( valEnVec_.size() < faceQuadInner_nop ) 
+              valEnVec_.resize( faceQuadInner_nop );
 
             if( valJacEn_.size() < faceQuadInner_nop ) 
-            {
-              valEnVec_.resize( faceQuadInner_nop );
               valJacEn_.resize( faceQuadInner_nop );
-            }
         
-            for (size_t l = 0; l < faceQuadInner_nop; ++l) 
+            for (unsigned int l = 0; l < faceQuadInner_nop; ++l) 
             {
               RangeType& fluxEn = valEnVec_[ l ];
               JacobianRangeType& diffFluxEn = valJacEn_[ l ];
@@ -690,13 +690,13 @@ namespace Dune {
                                 const VolumeQuadratureType& volQuad,
                                 LocalFunctionImp& updEn) const
     {
-      const size_t volQuad_nop = volQuad.nop();
+      const unsigned int volQuad_nop = volQuad.nop();
       if( valJacEn_.size() < volQuad_nop ) 
       {
         valJacEn_.resize( volQuad_nop );
       }
 
-      for (size_t l = 0; l < volQuad_nop; ++l) 
+      for (unsigned int l = 0; l < volQuad_nop; ++l) 
       {
         JacobianRangeType& flux = valJacEn_[ l ];
 #ifndef NDEBUG 
@@ -725,7 +725,7 @@ namespace Dune {
                                 const VolumeQuadratureType& volQuad,
                                 LocalFunctionImp& updEn) const
     {
-      const size_t volQuad_nop = volQuad.nop();
+      const unsigned int volQuad_nop = volQuad.nop();
       if( valEnVec_.size() < volQuad_nop ) 
       {
         valEnVec_.resize( volQuad_nop );
@@ -736,7 +736,7 @@ namespace Dune {
         valJacEn_.resize( volQuad_nop );
       }
 
-      for (size_t l = 0; l < volQuad_nop; ++l) 
+      for (unsigned int l = 0; l < volQuad_nop; ++l) 
       {
         RangeType& source       = valEnVec_[ l ];
         JacobianRangeType& flux = valJacEn_[ l ];
@@ -800,7 +800,7 @@ namespace Dune {
       // set neighbor and initialize intersection 
       caller().initializeIntersection( nb, intersection, faceQuadInner, faceQuadOuter );
 
-      const size_t faceQuadInner_nop = faceQuadInner.nop();
+      const unsigned int faceQuadInner_nop = faceQuadInner.nop();
 
       if( valNbVec_.size() < faceQuadInner_nop ) 
       {
@@ -811,7 +811,7 @@ namespace Dune {
         valJacNb_.resize( faceQuadInner_nop );
       }
         
-      for (size_t l = 0; l < faceQuadInner_nop; ++l) 
+      for (unsigned int l = 0; l < faceQuadInner_nop; ++l) 
       {
         RangeType& fluxEn = valEnVec_[ l ];
         RangeType& fluxNb = valNbVec_[ l ];
