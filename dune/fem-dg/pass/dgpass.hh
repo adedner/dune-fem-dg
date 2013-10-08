@@ -586,11 +586,11 @@ namespace Dune {
 
             const size_t faceQuadInner_nop = faceQuadInner.nop();
 
-            if( valJacEn_.size() < faceQuadInner_nop ) 
-            {
+            if( valEnVec_.size() < faceQuadInner_nop ) 
               valEnVec_.resize( faceQuadInner_nop );
+
+            if( valJacEn_.size() < faceQuadInner_nop ) 
               valJacEn_.resize( faceQuadInner_nop );
-            }
         
             for (size_t l = 0; l < faceQuadInner_nop; ++l) 
             {
