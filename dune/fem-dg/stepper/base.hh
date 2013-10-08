@@ -3,7 +3,6 @@
 
 #include <sstream>
 
-#include <dune/common/misc.hh>
 #include <dune/common/fvector.hh>
 #include <dune/common/version.hh>
 #include <dune/common/timer.hh>
@@ -51,6 +50,7 @@ static inline std::string checkPointRestartFileName ()
   static std::string checkFileName ;
   if( ! initialized ) 
   {
+    /*
     const std::string key( "fem.io.checkpointrestartfile" );
     if( ParameterType :: exists( key ) )
     {
@@ -58,6 +58,7 @@ static inline std::string checkPointRestartFileName ()
     }
     else 
       checkFileName = "" ;
+      */
     initialized = true ;
   }
 
@@ -97,7 +98,7 @@ Dune::GridPtr< HGridType > initialize( const std::string& problemDescription )
   {
     // ----- read in runtime parameters ------
     const std::string filekey = Dune::Fem::IOInterface::defaultGridKey( HGridType::dimension );
-    const std::string filename = ParameterType::getValue< std::string >( filekey ); /*@\label{base:param0}@*/
+    const std::string filename = ParameterType::getValue< std::string >( filekey ); 
 
     // initialize grid with given macro file name 
     gridptr = Dune::GridPtr< HGridType >( filename );
@@ -109,14 +110,14 @@ Dune::GridPtr< HGridType > initialize( const std::string& problemDescription )
     // and refine the grid globally
     const int startLevel = ParameterType::getValue<int>("fem.adaptation.coarsestLevel", 0);
     for(int level=0; level < startLevel ; ++level)
-      Dune::Fem::GlobalRefine::apply(*gridptr, 1 ); /*@\label{fv:globalRefine1}@*/
+      Dune::Fem::GlobalRefine::apply(*gridptr, 1 ); 
   }
 
   // initialize FemEoc if eocSteps > 1 
   InitFemEoc :: initializeFemEoc( problemDescription );
 
   return gridptr;
-} /*@LST0E@*/
+}
 
 //! get memory in MB 
 inline double getMemoryUsage()

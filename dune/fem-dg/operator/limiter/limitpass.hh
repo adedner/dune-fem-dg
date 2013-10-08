@@ -11,14 +11,18 @@
 
 #include <dune/fem/gridpart/common/capabilities.hh>
 #include <dune/fem/io/parameter.hh>
+
 #include <dune/fem/operator/1order/localmassmatrix.hh>
 #include <dune/fem/common/typeindexedtuple.hh>
 #include <dune/fem/pass/localdg/discretemodel.hh>
 #include <dune/fem/pass/localdg.hh>
+
 #include <dune/fem/space/combinedspace.hh>
 #include <dune/fem/space/common/adaptmanager.hh>
 #include <dune/fem/space/common/basesetlocalkeystorage.hh>
+
 #include <dune/fem/space/discontinuousgalerkin.hh>
+#include <dune/fem/space/finitevolume.hh>
 #include <dune/fem/space/lagrange/lagrangepoints.hh>
 
 #include <dune/fem-dg/pass/dgmodelcaller.hh>
@@ -260,6 +264,11 @@ namespace Dune {
     typedef typename DestinationType::RangeType RangeType;
     typedef typename DestinationType::JacobianRangeType JacobianRangeType;
     typedef FieldVector<DomainFieldType, dimGrid - 1> FaceLocalDomainType;
+
+    // Indicator function type for Limiter (for output mainly)
+    typedef Fem::FunctionSpace< DomainFieldType, double, dimDomain, 3> FVFunctionSpaceType;
+    typedef Fem::FiniteVolumeSpace<FVFunctionSpaceType,GridPartType, 0, Fem::SimpleStorage> IndicatorSpaceType;
+    typedef Fem::AdaptiveDiscreteFunction<IndicatorSpaceType> IndicatorType;
 
     typedef LimiterDefaultDiscreteModel <GlobalTraitsImp,Model,passId> DGDiscreteModelType;
 
@@ -1002,14 +1011,7 @@ namespace Dune {
       assert(problem.hasFlux());
      
       // intialize volume quadratures, otherwise we run into troubles with the threading
-      if(spc_.begin() != spc_.end() )
-      {
-        initializeVolumeQuadratures( *spc_.begin() );
-      }
-      else if( Fem :: ThreadManager :: maxThreads() > 1 ) 
-      {
-        DUNE_THROW(InvalidStateException,"Quadratures not initialized in LimitPass" );
-      }
+      initializeVolumeQuadratures( geoInfo_.geomTypes( 0 ) );
     }
     
     //! Destructor
@@ -1956,16 +1958,20 @@ namespace Dune {
       }
     };
 
-    void initializeVolumeQuadratures( const EntityType& entity ) const 
+    void initializeVolumeQuadratures( const std::vector< GeometryType >& geomTypes ) const 
     {
-      // get quadrature for destination space order  
-      VolumeQuadratureType quad0( entity, spc_.order() + 1 );
+      for( size_t i=0; i<geomTypes.size(); ++ i ) 
+      {
+        const GeometryType& type = geomTypes[ i ];
+        // get quadrature for destination space order  
+        VolumeQuadratureType quad0( type, spc_.order() + 1 );
 
-      // get point quadrature 
-      VolumeQuadratureType quad1( entity, 0 );
+        // get point quadrature 
+        VolumeQuadratureType quad1( type, 0 );
 
-      // get quadrature 
-      VolumeQuadratureType quad2( entity, volumeQuadOrd_ );
+        // get quadrature 
+        VolumeQuadratureType quad2( type, volumeQuadOrd_ );
+      }
     }
 
     // L2 projection 

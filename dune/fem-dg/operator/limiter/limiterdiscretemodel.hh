@@ -59,6 +59,9 @@ namespace Fem {
 
     typedef typename Traits::DestinationType DestinationType;
 
+    // Indicator for Limiter
+    typedef typename Traits::IndicatorType   IndicatorType ;
+
     enum { dimRange = Traits :: dimRange };
     enum { evaluateJacobian = false };
 
@@ -66,6 +69,8 @@ namespace Fem {
     using BaseType :: model_;
     using BaseType :: inside ;
     using BaseType :: outside ;
+
+    IndicatorType* indicator_;
 
     double refTol_;
     double crsTol_;
@@ -79,6 +84,7 @@ namespace Fem {
                                  const int polOrd,
                                  const AdaptationParameters& param = AdaptationParameters() ) 
       : BaseType(mod), 
+        indicator_( 0 ),
         refTol_( -1 ),
         crsTol_( -1 ),
         finLevel_( 0 ),
@@ -94,9 +100,9 @@ namespace Fem {
       }
     }
 
-    template < class IndicatorType >  
-    void setIndicator(IndicatorType* ind) 
+    void setIndicator(IndicatorType* indicator) 
     {
+      indicator_ = indicator; 
     }
 
     void setEntity(const EntityType& en) 
@@ -116,9 +122,21 @@ namespace Fem {
                     const RangeType& shockIndicator, 
                     const RangeType& adaptIndicator) const 
     {
-      if( ! shockIndicatorAdaptivty_ ) return ;
-
       const double val = adaptIndicator[0];
+
+      // set indicator 
+      if( indicator_ )
+      {
+        typedef typename IndicatorType :: LocalFunctionType  LocalFunctionType;
+        LocalFunctionType lf = indicator_->localFunction( entity );
+        assert( lf.numDofs() == 3 );
+        lf[0] = shockIndicator[0];
+        lf[1] = adaptIndicator[0];
+        lf[2] = val; // store real adapt indicator 
+      }
+
+      // only mark for adaptation if this type of adaptation is enabled 
+      if( ! shockIndicatorAdaptivty_ ) return ;
 
       // get real grid entity from possibly wrapped entity 
       const GridEntityType& gridEntity = Fem :: gridEntity( entity );

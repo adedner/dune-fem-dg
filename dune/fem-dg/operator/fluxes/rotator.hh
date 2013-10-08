@@ -1,10 +1,8 @@
 #ifndef DUNE_FEM_DG_ROTATOR_HH
 #define DUNE_FEM_DG_ROTATOR_HH
 
-//- Dune includes
-#include <dune/common/misc.hh>
-
-//- Local includes
+//- system includes 
+#include <cmath>
 
 namespace EulerFluxes {
 

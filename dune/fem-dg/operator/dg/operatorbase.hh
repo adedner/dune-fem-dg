@@ -54,7 +54,8 @@ namespace Dune {
     typedef typename DiscreteModelType::Traits AdvTraits;
     
     typedef typename AdvTraits::DiscreteFunctionType AdvDFunctionType;
-    typedef typename AdvTraits::IndicatorType        IndicatorType ;
+    // for convenience (not used here)
+    typedef typename AdvTraits::DiscreteFunctionType IndicatorType;
     typedef typename AdvTraits::GridPartType GridPartType;
     
     typedef Fem::StartPass< AdvDFunctionType, u
