@@ -59,6 +59,8 @@
 
 #include <dune/grid/io/visual/grapedatadisplay.hh>
 
+#include <dune/fem/misc/flops.hh>
+
 #if POLORDER == 0
 #define LOOPSPACE DG_P0
 #elif POLORDER == 1 
@@ -85,13 +87,16 @@ namespace LOOPSPACE {
   {
     Dune::Fem::FemEoc::clear();
 
+    // create Flop counter, needs PAPI
+    Dune::Fem::FlopCounter flopCounter;
+
+    const bool countFlops = Dune::Fem::Parameter::getValue< bool >("femdg.flopcounter", false );
+    // if flop count is enabled count floating point operations
+    if( countFlops )
+      flopCounter.start();
+
     typedef Dune::GridSelector :: GridType GridType;
     typedef ProblemGenerator< GridType > ProblemTraits;
-
-    // ProblemType is a Dune::Function that evaluates to $u_0$ and also has a
-    // method that gives you the exact solution.
-    //typedef NSProblemType< GridType > ProblemType;
-    //ProblemType problem;
 
     // Note to me: problem description is for FemEOC
     const std::string advFlux  = ProblemTraits :: advectionFluxName();
@@ -119,6 +124,13 @@ namespace LOOPSPACE {
     compute( *stepper );
     delete stepper;
     delete gridptr;
+
+    // print floating point results 
+    if( countFlops ) 
+    {
+      flopCounter.stop();
+      flopCounter.print( std::cout );
+    }
   } 
 
 } // end namespace LOOPSPACE
