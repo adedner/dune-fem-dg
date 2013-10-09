@@ -17,7 +17,6 @@
 #include <dune/fem/pass/localdg/discretemodel.hh>
 #include <dune/fem/pass/localdg.hh>
 
-#include <dune/fem/space/combinedspace.hh>
 #include <dune/fem/space/common/adaptmanager.hh>
 #include <dune/fem/space/common/basesetlocalkeystorage.hh>
 
@@ -1944,6 +1943,7 @@ namespace Dune {
       }
     };
 
+    /*
     template <class LocalFunctionImp, class FunctionSpaceImp, class
       GridPartImp, int polOrd, template <class> class StrorageImp, 
           int N , Fem::DofStoragePolicy policy > 
@@ -1957,6 +1957,7 @@ namespace Dune {
         return dimGrid + 1;
       }
     };
+    */
 
     void initializeVolumeQuadratures( const std::vector< GeometryType >& geomTypes ) const 
     {
@@ -2474,7 +2475,7 @@ namespace Dune {
             const EntityType& nb = *ep; 
 
             // conforming case 
-            if( ! GridPartType::conforming && ! intersection.conforming() )
+            if( ! GridPartType::Traits::conforming && ! intersection.conforming() )
             { // non-conforming case 
               if (applyLocalNeighbor< false > (intersection, nb, shockIndicator, adaptIndicator))
               {
