@@ -1,11 +1,14 @@
 #ifndef DUNE_FEM_DG_STREAMS_HH
 #define DUNE_FEM_DG_STREAMS_HH
 
-#if HAVE_SIONLIB && USE_SIONLIB
+#if HAVE_SIONLIB
+#if USE_SIONLIB
 #warning "using SIONlib streams for output"
 
 #include <dune/fem/io/streams/sionlibstreams.hh>
-namespace Dune {
+
+namespace Dune
+{
 
   struct PersistenceManagerTraits
   {
@@ -15,7 +18,9 @@ namespace Dune {
   };
 
 #define FEM_PERSISTENCEMANAGERSTREAMTRAITS  PersistenceManagerTraits
-}
-#endif // #if HAVE_SIONLIB && USE_SIONLIB
+} // namespace Dune
+
+#endif // #if USE_SIONLIB
+#endif // #if HAVE_SIONLIB
 
 #endif // #ifndef DUNE_FEM_DG_STREAMS_HH
