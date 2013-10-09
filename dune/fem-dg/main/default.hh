@@ -46,7 +46,7 @@
 
 
 #ifdef USE_BASEFUNCTIONSET_OPTIMIZED
-#include <dune/fem/space/basefunctions/evaluatecaller.hh>
+#include <dune/fem/space/basisfunctions/evaluatecaller.hh>
 #endif
 
 namespace Dune
@@ -97,7 +97,7 @@ namespace Dune
     public:
       //  slight misuse of struct ToLocalFunctionSpace!!!
       //! \brief type of function space
-      typedef typename ToLocalFunctionSpace< LocalFunctionSpaceType, GeometryType::coorddimension >::Type FunctionSpaceType;
+      typedef typename ToNewDimDomainFunctionSpace< LocalFunctionSpaceType, Geometry::coorddimension > :: Type  FunctionSpaceType;
 
       //! \brief range type
       typedef typename FunctionSpaceType::RangeType RangeType;
