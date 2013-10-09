@@ -28,10 +28,6 @@
 #include <string>
 
 // Dune includes
-#include <dune/fem/misc/l2error.hh>
-#include <dune/fem/operator/projection/l2projection.hh>
-#include <dune/fem/solver/odesolver.hh>
-
 #ifdef BASEFUNCTIONSET_CODEGEN_GENERATE
 #include <dune/fem/space/basisfunctionset/codegen.hh>
 
