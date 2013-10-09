@@ -46,7 +46,7 @@
 
 
 #ifdef USE_BASEFUNCTIONSET_OPTIMIZED
-#include <dune/fem/space/basisfunctions/evaluatecaller.hh>
+#include <dune/fem/space/basisfunctionset/evaluatecaller.hh>
 #endif
 
 namespace Dune
