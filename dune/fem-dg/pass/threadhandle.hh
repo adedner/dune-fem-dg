@@ -8,7 +8,6 @@
 #include <cassert> 
 #include <dune/common/exceptions.hh>
 #include <dune/fem/misc/threads/threadmanager.hh>
-#include <dune/fem/misc/flops.hh>
 
 namespace Dune { 
 
@@ -63,8 +62,8 @@ class ThreadHandle
     }
 
     // constructor creating master thread 
-    explicit ThreadHandleObject( pthread_barrier_t* barrierBegin, 
-                                 pthread_barrier_t* barrierEnd )
+    explicit ThreadHandleObject(pthread_barrier_t* barrierBegin, 
+                                pthread_barrier_t* barrierEnd)
       : objPtr_( 0 ),
         barrierBegin_ ( barrierBegin ),
         barrierEnd_ ( barrierEnd ),
@@ -176,14 +175,8 @@ class ThreadHandle
       // when thread local storage is available then each thread adds it's thread number and not the master
       ThreadManager :: setThreadNumber( pthread_self(), ((ThreadHandleObject *) obj)->threadNumber_ );
 #endif
-      // start flop counter for this thread 
-      FlopCounter :: start();
-
       // do the work
       ((ThreadHandleObject *) obj)->run();
-
-      // stop flop counter for this thread
-      FlopCounter :: stop();
 
       return 0;
     }
@@ -275,8 +268,7 @@ public:
   //! destructor deleting threads 
   ~ThreadHandle() 
   {
-    // start threads with null object which wil terminate 
-    // all threads 
+    // start threads with null object which will terminate each sub thread 
     startThreads () ;
 
     // call thread join 
