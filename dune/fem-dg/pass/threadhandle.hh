@@ -8,6 +8,7 @@
 #include <cassert> 
 #include <dune/common/exceptions.hh>
 #include <dune/fem/misc/threads/threadmanager.hh>
+#include <dune/fem/misc/flops.hh>
 
 namespace Dune { 
 
@@ -175,8 +176,15 @@ class ThreadHandle
       // when thread local storage is available then each thread adds it's thread number and not the master
       ThreadManager :: setThreadNumber( pthread_self(), ((ThreadHandleObject *) obj)->threadNumber_ );
 #endif
+      // start flop counter for this thread 
+      FlopCounter :: start();
+
       // do the work
       ((ThreadHandleObject *) obj)->run();
+
+      // stop flop counter for this thread
+      FlopCounter :: stop();
+
       return 0;
     }
   }; // end ThreadHandleObject 
