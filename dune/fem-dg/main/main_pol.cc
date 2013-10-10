@@ -26,6 +26,7 @@
 
 #include "default.hh"
 
+#include <dune/fem-dg/pass/threadhandle.hh>
 #if defined USE_SMP_PARALLEL 
 #include <dune/fem/misc/threads/threadmanager.hh>
 #include <dune/fem-dg/pass/threadpass.hh>
@@ -83,16 +84,35 @@
 
 namespace LOOPSPACE { 
 
+  struct FlopStartObject
+  {
+    void runThread() const
+    {
+      Dune::Fem::FlopCounter::start();
+    }
+  };
+
+  struct FlopStopObject
+  {
+    void runThread() const
+    {
+      Dune::Fem::FlopCounter::start();
+    }
+  };
+
   void simulate()
   {
     Dune::Fem::FemEoc::clear();
 
-
     const bool countFlops = Dune::Fem::Parameter::getValue< bool >("femdg.flopcounter", false );
 
-    // if flop count is enabled count floating point operations
-    // Flop counter needs PAPI
-    Dune::Fem::FlopCounter::start( countFlops );
+    // if flop count is enabled count floating point operations (PAPI needed)
+    // start flop counters for all threads 
+    if( countFlops ) 
+    {
+      FlopStartObject startObj ;
+      Dune::Fem::ThreadHandle::run( startObj );
+    }
 
     typedef Dune::GridSelector :: GridType GridType;
     typedef ProblemGenerator< GridType > ProblemTraits;
@@ -122,8 +142,14 @@ namespace LOOPSPACE {
     assert( stepper );
     compute( *stepper );
 
-    // stop flop counter of started before 
-    Dune::Fem::FlopCounter::stop();
+    // stop flop counters for all threads 
+    if( countFlops ) 
+    {
+      FlopStopObject stopObj ;
+      Dune::Fem::ThreadHandle::run( stopObj );
+      // print results 
+      Dune::Fem::FlopCounter::print( std::cout );
+    }
 
     // delete data 
     delete stepper;
