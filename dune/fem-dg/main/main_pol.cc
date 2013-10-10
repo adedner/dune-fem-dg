@@ -86,6 +86,11 @@ namespace LOOPSPACE {
 
   struct FlopStartObject
   {
+    FlopStartObject() 
+    {
+      // initialize counters for master thread before all others 
+      runThread() ;
+    }
     void runThread() const
     {
       Dune::Fem::FlopCounter::start();
@@ -96,7 +101,7 @@ namespace LOOPSPACE {
   {
     void runThread() const
     {
-      Dune::Fem::FlopCounter::start();
+      Dune::Fem::FlopCounter::stop();
     }
   };
 
