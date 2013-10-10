@@ -87,13 +87,12 @@ namespace LOOPSPACE {
   {
     Dune::Fem::FemEoc::clear();
 
-    // create Flop counter, needs PAPI
-    Dune::Fem::FlopCounter flopCounter;
 
     const bool countFlops = Dune::Fem::Parameter::getValue< bool >("femdg.flopcounter", false );
+
     // if flop count is enabled count floating point operations
-    if( countFlops )
-      flopCounter.start();
+    // Flop counter needs PAPI
+    Dune::Fem::FlopCounter::start( countFlops );
 
     typedef Dune::GridSelector :: GridType GridType;
     typedef ProblemGenerator< GridType > ProblemTraits;
@@ -122,15 +121,13 @@ namespace LOOPSPACE {
     StepperType* stepper = new StepperType( grid );
     assert( stepper );
     compute( *stepper );
+
+    // stop flop counter of started before 
+    Dune::Fem::FlopCounter::stop();
+
+    // delete data 
     delete stepper;
     delete gridptr;
-
-    // print floating point results 
-    if( countFlops ) 
-    {
-      flopCounter.stop();
-      flopCounter.print( std::cout );
-    }
   } 
 
 } // end namespace LOOPSPACE
