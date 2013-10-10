@@ -62,8 +62,8 @@ class ThreadHandle
     }
 
     // constructor creating master thread 
-    explicit ThreadHandleObject( pthread_barrier_t* barrierBegin, 
-                                 pthread_barrier_t* barrierEnd )
+    explicit ThreadHandleObject(pthread_barrier_t* barrierBegin, 
+                                pthread_barrier_t* barrierEnd)
       : objPtr_( 0 ),
         barrierBegin_ ( barrierBegin ),
         barrierEnd_ ( barrierEnd ),
@@ -105,8 +105,11 @@ class ThreadHandle
         {
           // create a joinable thread 
           pthread_create(&threadId_, 0, &ThreadHandleObject::startThread, (void *) this);
-          // the master thread is also adding the threadnumber for the given ids 
+#if ! HAVE_PTHREAD_TLS
+          // the master thread is adding the threadnumber for the given ids 
+          // if no thread local storage is available
           ThreadManager :: setThreadNumber( threadId_, threadNumber_ );
+#endif
         }
       }
       else 
@@ -168,8 +171,13 @@ class ThreadHandle
     // C style function pointer for the pthread_create call
     static void* startThread(void *obj)
     {
+#if HAVE_PTHREAD_TLS
+      // when thread local storage is available then each thread adds it's thread number and not the master
+      ThreadManager :: setThreadNumber( pthread_self(), ((ThreadHandleObject *) obj)->threadNumber_ );
+#endif
       // do the work
       ((ThreadHandleObject *) obj)->run();
+
       return 0;
     }
   }; // end ThreadHandleObject 
@@ -260,8 +268,7 @@ public:
   //! destructor deleting threads 
   ~ThreadHandle() 
   {
-    // start threads with null object which wil terminate 
-    // all threads 
+    // start threads with null object which will terminate each sub thread 
     startThreads () ;
 
     // call thread join 

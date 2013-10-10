@@ -667,7 +667,8 @@ namespace Dune {
 
     typedef Fem::PointBasedDofConversionUtility< dimRange > DofConversionUtilityType;
 
-    static const bool StructuredGrid = Fem::GridPartCapabilities::isCartesian< GridPartType >::v;
+    static const bool StructuredGrid     = Fem::GridPartCapabilities::isCartesian< GridPartType >::v;
+    static const bool conformingGridPart = Fem::GridPartCapabilities::isConforming< GridPartType >::v;
 
     typedef FieldVector< DomainType , dimRange > DeoModType; 
     typedef FieldMatrix< DomainFieldType, dimDomain , dimDomain > MatrixType;
@@ -2475,7 +2476,7 @@ namespace Dune {
             const EntityType& nb = *ep; 
 
             // conforming case 
-            if( ! GridPartType::Traits::conforming && ! intersection.conforming() )
+            if( ! conformingGridPart && ! intersection.conforming() )
             { // non-conforming case 
               if (applyLocalNeighbor< false > (intersection, nb, shockIndicator, adaptIndicator))
               {
