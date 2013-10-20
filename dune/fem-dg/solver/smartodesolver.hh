@@ -3,7 +3,7 @@
 
 #include <limits>
 #include <dune/fem/misc/femtimer.hh>
-#include <dune/fem/solver/rungekutta.hh>
+#include <dune/fem/solver/rungekutta/explicit.hh>
 #include <dune/fem/solver/odesolver.hh>
 
 namespace Dune {
@@ -310,7 +310,7 @@ public:
         factor *= averageIterationSteps / (rkSteps_ + 1 ) ;
 
       // if true solve next time step with semi implicit solver
-      useImex_ = ( maxDiffStep > (factor * maxAdvStep) ) ;
+      useImex_ = ( maxDiffStep < (factor * maxAdvStep) ) ;
 
       if( verbose_ == 3 ) 
       {

@@ -27,10 +27,6 @@ static double minRatioOfSums = 1e+100;
 
 #include <dune/fem-dg/solver/smartodesolver.hh>
 
-#ifdef BASEFUNCTIONSET_CODEGEN_GENERATE
-#include <dune/fem/space/basefunctions/codegen.hh>
-#endif
-
 #include <dune/fem-dg/operator/dg/dgoperatorchoice.hh>
 
 // include local header files
