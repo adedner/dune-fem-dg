@@ -57,7 +57,7 @@ if test x$BGQ_L1PREFETCHYES = x1 ; then
   # if header is found...
   if test x$HAVE_BGQ_L1PREFETCH = x1 ; then
     LIBNAME="SPI_l1p"
-    AC_CHECK_LIB($LIBNAME,[BGQ_L1PREFETCH_flops],
+    AC_CHECK_LIB($LIBNAME,[main],
     [BGQ_L1PREFETCH_LIBS="-l$LIBNAME"
            BGQ_L1PREFETCH_LDFLAGS="-L$BGQ_L1PREFETCH_LIB_PATH"],
 	  [HAVE_BGQ_L1PREFETCH="0"
