@@ -124,7 +124,6 @@ namespace Dune
       typedef MutableArray< MutableArray< ScalarRangeType > >         RangeVectorType;
       typedef MutableArray< MutableArray< ScalarJacobianRangeType > > JacobianRangeVectorType;
 #endif
-
       //! \brief constructor
       DefaultBasisFunctionSet ()
       : entity_( nullptr )
@@ -221,6 +220,10 @@ namespace Dune
       template< class QuadratureType, class DofVector, class RangeArray >
       void evaluateAll ( const QuadratureType &quad, const DofVector &dofs, RangeArray &ranges ) const
       {
+#if HAVE_BGQ_L1PREFETCH
+        L1P_PatternStart(!i);
+#endif
+
 #ifdef USE_BASEFUNCTIONSET_OPTIMIZED
         typedef Fem :: EvaluateCallerInterfaceTraits< 
                 QuadratureType, RangeArray, DofVector > Traits;
@@ -245,6 +248,10 @@ namespace Dune
           evaluateAll( quad[ qp ], dofs, ranges[ qp ] );
         }
 #endif // #ifdef USE_BASEFUNCTIONSET_OPTIMIZED
+
+#if HAVE_BGQ_L1PREFETCH
+        L1P_PatternStart(!i);
+#endif
       }
 
       //! \todo please doc me
@@ -363,6 +370,9 @@ namespace Dune
       template< class QuadratureType, class RangeArray, class DofVector >
       void axpyImpl ( const QuadratureType &quad, const RangeArray &rangeFactors, DofVector &dofs, const RangeType& ) const
       {
+#if HAVE_BGQ_L1PREFETCH
+
+
 #ifdef USE_BASEFUNCTIONSET_OPTIMIZED
         typedef Fem :: EvaluateCallerInterfaceTraits< 
             QuadratureType, RangeArray, DofVector > Traits;
@@ -434,6 +444,35 @@ namespace Dune
       { 
         return shapeFunctionSet().scalarShapeFunctionSet().impl().jacobianCache( quad );
       }
+
+      void configurePrefetch() 
+      {
+#if HAVE_BGQ_L1PREFETCH
+        static bool initialized = false ;
+        if( ! initialized ) 
+        {
+          const size_t LIST_SIZE = 10*1024*1024 
+          L1P_PatternConfigure( LIST_SIZE );
+        }
+#endif
+      }
+
+      void startPrefetch () 
+      {
+#if HAVE_BGQ_L1PREFETCH
+        static int newPattern = 1 ;
+        L1P_PatternStart( newPattern );
+        newPattern = 0;
+#endif
+      }
+
+      void stopPrefetch () 
+      {
+#if HAVE_BGQ_L1PREFETCH
+        L1P_PatternStop();
+#endif
+      }
+
     private:
       const EntityType *entity_;
       ShapeFunctionSetType shapeFunctionSet_;
