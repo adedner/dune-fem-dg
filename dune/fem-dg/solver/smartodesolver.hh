@@ -307,10 +307,10 @@ public:
       const int averageIterationSteps = (minIterationSteps_ + maxIterationSteps_) / 2;
       double factor = explFactor_ ;
       if( averageIterationSteps > 0 ) 
-        factor *= averageIterationSteps / (rkSteps_ + 1 ) ;
+        factor *= double(rkSteps_ + 1) / double(averageIterationSteps) ;
 
       // if true solve next time step with semi implicit solver
-      useImex_ = ( maxDiffStep > (factor * maxAdvStep) ) ;
+      useImex_ = ( maxDiffStep < (factor * maxAdvStep) ) ;
 
       if( verbose_ == 3 ) 
       {
@@ -320,8 +320,8 @@ public:
       }
 
       // make sure the correct time step is used for the explicit solver 
-      if( ! useImex_ ) 
-        timeProvider_.provideTimeStepEstimate( operator_.timeStepEstimate() ) ;
+      //if( ! useImex_ ) 
+      //  timeProvider_.provideTimeStepEstimate( operator_.timeStepEstimate() ) ;
     }
 
     // store needed time 
