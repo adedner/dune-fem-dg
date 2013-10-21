@@ -3,7 +3,7 @@
 
 #include <limits>
 #include <dune/fem/misc/femtimer.hh>
-#include <dune/fem/solver/rungekutta.hh>
+#include <dune/fem/solver/rungekutta/explicit.hh>
 #include <dune/fem/solver/odesolver.hh>
 
 namespace Dune {

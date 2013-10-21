@@ -6,7 +6,9 @@ dnl -*- autoconf -*-
 # Additional checks needed to build dune-fem-dg
 # This macro should be invoked by every module which depends on dune-fem-dg, as
 # well as by dune-fem-dg itself
-AC_DEFUN([DUNE_FEM_DG_CHECKS])
+AC_DEFUN([DUNE_FEM_DG_CHECKS],[
+  AC_REQUIRE([DUNE_PATH_BGQ_L1PREFETCH])
+])
 
 # Additional checks needed to find dune-fem-dg
 # This macro should be invoked by every module which depends on dune-fem-dg, but

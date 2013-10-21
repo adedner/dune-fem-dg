@@ -1,4 +1,4 @@
-M4FILES = dune-fem-dg.m4
+M4FILES = dune-fem-dg.m4 bgq_l1prefetch.m4
 
 aclocaldir = $(datadir)/aclocal
 aclocal_DATA = $(M4FILES)
