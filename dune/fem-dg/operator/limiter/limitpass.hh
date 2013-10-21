@@ -24,6 +24,8 @@
 #include <dune/fem/space/finitevolume.hh>
 #include <dune/fem/space/lagrange/lagrangepoints.hh>
 
+#include <dune/fem/function/adaptivefunction.hh>
+
 #include <dune/fem-dg/pass/dgmodelcaller.hh>
 
 //*************************************************************
