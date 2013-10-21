@@ -29,8 +29,8 @@ static double minRatioOfSums = 1e+100;
 #include <dune/fem-dg/operator/dg/dgoperatorchoice.hh>
 
 // include local header files
-#include "../base/base.hh"
-#include "../base/baseevolution.hh"
+#include "base.hh"
+#include "baseevolution.hh"
 
 
 using namespace Dune;                                        
@@ -47,7 +47,7 @@ struct ElliptTraits
   typedef GridImp                                   GridType;
 
   // Choose a suitable GridView
-  typedef DGAdaptiveLeafGridPart< GridType >       GridPartType;
+  typedef Fem :: DGAdaptiveLeafGridPart< GridType >       GridPartType;
 
   // problem dependent types 
   typedef typename ProblemTraits :: template Traits< GridPartType > :: InitialDataType  InitialDataType;
@@ -82,7 +82,7 @@ struct ElliptTraits
 
 
   // type of restriction/prolongation projection for adaptive simulations 
-  typedef RestrictProlongDefault< DiscreteFunctionType > RestrictionProlongationType;
+  typedef Fem::RestrictProlongDefault< DiscreteFunctionType > RestrictionProlongationType;
 };
 
 
@@ -122,8 +122,8 @@ struct EllipticAlgorithm
   // ... as well as the Space type
   typedef typename Traits :: DiscreteSpaceType         DiscreteSpaceType;
 
-  typedef tuple< const DiscreteFunctionType* >           IOTupleType;
-  typedef Dune::DataWriter<GridType,IOTupleType>            DataWriterType;
+  typedef tuple< const DiscreteFunctionType* >         IOTupleType;
+  typedef Dune::Fem::DataWriter<GridType,IOTupleType>  DataWriterType;
 
   EllipticAlgorithm(GridType& grid) :
     grid_( grid ),
@@ -136,9 +136,9 @@ struct EllipticAlgorithm
     dgOperator_(grid_, convectionFlux_),
     dgAdvectionOperator_(grid_, convectionFlux_),
     dgDiffusionOperator_(grid_, convectionFlux_),
-    eocId_( FemEoc::addEntry(std::string("$L^2$-error")) )
+    eocId_( Fem::FemEoc::addEntry(std::string("$L^2$-error")) )
   {
-    std::string filename( Parameter::commonOutputPath() );
+    std::string filename( Fem::Parameter::commonOutputPath() );
     filename += "/run.gnu";
     runFile_.open( filename.c_str() );
     if( ! runFile_.is_open() ) 
@@ -188,7 +188,7 @@ struct EllipticAlgorithm
     numbers_.resize( 0 );
 
     // calculate grid width
-    const double h = GridWidth::calcGridWidth(gridPart_);
+    const double h = Fem::GridWidth::calcGridWidth(gridPart_);
     numbers_.push_back( h );
 
     const double size = grid_.size(0);
@@ -207,7 +207,7 @@ struct EllipticAlgorithm
   void finalize( const int eocloop )
   {
     //---- Adapter for exact solution ------------------------------------------
-    typedef Dune::GridFunctionAdapter< InitialDataType, GridPartType >
+    typedef Dune::Fem::GridFunctionAdapter< InitialDataType, GridPartType >
         GridExactSolutionType;
 
     // create grid function adapter 
@@ -215,7 +215,7 @@ struct EllipticAlgorithm
                                  DiscreteSpaceType :: polynomialOrder + 1 );
 
     // create L2 - Norm 
-    Dune::L2Norm< GridPartType > l2norm( gridPart_ );
+    Dune::Fem::L2Norm< GridPartType > l2norm( gridPart_ );
 
     // calculate L2 - Norm 
     const double l2error = l2norm.distance( ugrid, solution_ );
@@ -232,7 +232,7 @@ struct EllipticAlgorithm
     errors.push_back( l2error );
 
     // submit error to the FEM EOC calculator 
-    Dune::FemEoc :: setErrors(eocId_, errors);
+    Dune::Fem::FemEoc :: setErrors(eocId_, errors);
   }
 
   const InitialDataType& problem() const { assert( problem_ ); return *problem_; }
