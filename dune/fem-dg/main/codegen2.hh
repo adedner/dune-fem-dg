@@ -770,5 +770,5 @@ namespace Fem {
 
 } // end namespace Dune
 
-#include <dune/fem/space/basefunctions/codegen.hh>
+#include <dune/fem/space/basisfunctionset/codegen.hh>
 #endif
