@@ -314,7 +314,7 @@ namespace Dune {
     void createIndicator() 
     {
       // if indicator output is enabled create objects 
-      if( ParameterType :: getValue<bool> ("femdg.limiter.indicatoroutput", false ) )
+      if( Fem::Parameter::getValue<bool> ("femdg.limiter.indicatoroutput", false ) )
       {
         fvSpc_     = new IndicatorSpaceType( gridPart_ );
         indicator_ = new IndicatorType( "SE", *fvSpc_ );

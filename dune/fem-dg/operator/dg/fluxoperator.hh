@@ -1,6 +1,10 @@
 #ifndef DUNE_FEM_DG_FLUXOPERATOR_HH
 #define DUNE_FEM_DG_FLUXOPERATOR_HH
 
+#ifdef HEADERCHECK
+#define FLUX 1
+#endif
+
 #include <string>
 
 #include <dune/fem/pass/localdg/discretemodel.hh>
