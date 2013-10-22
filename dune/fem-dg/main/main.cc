@@ -7,18 +7,15 @@
 // configure macros 
 #include <config.h>
 
+#if defined USE_BASEFUNCTIONSET_OPTIMIZED || defined BASEFUNCTIONSET_CODEGEN_GENERATE
+#define USE_FEMDG_BASISFUNCTIONSET 
+#endif
+
 // streams for backup
 #include <dune/fem-dg/misc/streams.hh>
 
 // local includes
 #include <dune/fem-dg/main/main.hh>
-
-#include <dune/fem-dg/main/default.hh>
-#ifdef NEWBASEFCT_CACHING
-#include <dune/fem-dg/main/codegen2.hh>
-#else
-#include <dune/fem-dg/main/codegen.hh>
-#endif
 
 #include <dune/fem/misc/threads/threadmanager.hh>
 #include <dune/fem-dg/pass/threadpass.hh>

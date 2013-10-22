@@ -21,10 +21,7 @@
 
 #include <dune/common/version.hh>
 
-// streams for backup
-#include <dune/fem-dg/misc/streams.hh>
-
-#include "default.hh"
+#include "main.hh"
 
 #include <dune/fem-dg/pass/threadhandle.hh>
 #if defined USE_SMP_PARALLEL 

@@ -1,6 +1,23 @@
 #ifndef DUNE_FEM_DG_MAINHEADER_HH
 #define DUNE_FEM_DG_MAINHEADER_HH
 
+// streams for backup
+#include <dune/fem-dg/misc/streams.hh>
+
+#if defined USE_BASEFUNCTIONSET_OPTIMIZED || defined BASEFUNCTIONSET_CODEGEN_GENERATE
+#define USE_FEMDG_BASISFUNCTIONSET 
+#endif
+
+#ifdef USE_FEMDG_BASISFUNCTIONSET 
+#include <dune/fem-dg/main/default.hh>
+#ifdef NEWBASEFCT_CACHING
+#include <dune/fem-dg/main/codegen2.hh>
+#else
+#include <dune/fem-dg/main/codegen.hh>
+#endif
+#endif
+
+
 #ifdef ONLY_ONE_P
 #if POLORDER == 0 || POLORDER == -1
 #define DG_ONE_P DG_P0
