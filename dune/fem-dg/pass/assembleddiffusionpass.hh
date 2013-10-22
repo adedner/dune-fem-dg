@@ -1,6 +1,9 @@
 #ifndef DUNE_ASSEMBLEDDIFFUSIONPASS_HH
 #define DUNE_ASSEMBLEDDIFFUSIONPASS_HH
 
+#ifndef HEADERCHECK
+#error "Deprecated header, check usage" 
+
 #include <dune/fem-dg/pass/dgpass.hh>
 #include <dune/fem-dg/operator/dg/assembled/cdgrowwise.hh>
 
@@ -210,5 +213,7 @@ namespace Dune {
   };
 //! @}  
 } // end namespace Dune
+
+#endif
 
 #endif

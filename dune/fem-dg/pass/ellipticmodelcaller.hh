@@ -1,6 +1,9 @@
 #ifndef DUNE_ELLIPTICDISCRETEMODELCALLER_HH
 #define DUNE_ELLIPTICDISCRETEMODELCALLER_HH
 
+#ifndef HEADERCHECK 
+#error "Deprecated header, check usage" 
+
 #include <utility>
 #include <memory>
 
@@ -181,4 +184,6 @@ namespace Dune
   }; // end EllipticDiscreteModelCaller 
 
 } // end namespace Dune 
+
+#endif
 #endif
