@@ -9,6 +9,8 @@
 #include <dune/common/version.hh>
 #include <dune/fem/io/parameter.hh>
 
+#include <dune/fem-dg/stepper/base.hh>
+
 // local includes
 #include "problem.hh"
 

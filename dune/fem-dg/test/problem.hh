@@ -33,6 +33,11 @@ struct U0 : public EvolutionProblemInterface<
                       GridType::dimensionworld, GridType::dimensionworld+2 >,
                       true >
 {
+  double SQR( const double a ) const 
+  {
+    return (a * a);
+  }
+
 public:
   typedef EvolutionProblemInterface<
                  Dune::Fem::FunctionSpace< double, double,

@@ -25,3 +25,5 @@ test_HEADERS = checkpointing.hh
 check_PROGRAMS = checkpointing dataconvert 
 nodist_checkpointing_SOURCES = $(SOURCES)
 dataconvert_SOURCES = dataconvert.cc
+
+include $(top_srcdir)/am/global-rules
