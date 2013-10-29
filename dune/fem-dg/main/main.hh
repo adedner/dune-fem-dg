@@ -4,7 +4,7 @@
 // streams for backup
 #include <dune/fem-dg/misc/streams.hh>
 
-#if defined USE_BASEFUNCTIONSET_OPTIMIZED || defined BASEFUNCTIONSET_CODEGEN_GENERATE
+#if defined USE_BASEFUNCTIONSET_CODEGEN || defined BASEFUNCTIONSET_CODEGEN_GENERATE
 #define USE_FEMDG_BASISFUNCTIONSET 
 #endif
 
