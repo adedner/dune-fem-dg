@@ -180,9 +180,8 @@ namespace Dune {
     //! Estimate for the timestep size 
     double timeStepEstimateImpl() const 
     {
-      // factor for CDG time discretization 
-      const double p = 2. * spc_.order() + 1.;
-      return dtMin_ / p;
+      // return time step size valid for this pass 
+      return dtMin_ ;
     }
 
     //! The actual computations are performed as follows. First, prepare
@@ -521,8 +520,8 @@ namespace Dune {
         /////////////////////////////
         // Surface integral part
         /////////////////////////////
-        // get volume of element 
-        const double envol = entity.geometry().volume(); 
+        // get volume of element divided by the DG polynomial factor 
+        const double envol = entity.geometry().volume() / ( 2.0 * spc_.order( entity ) + 1.0 ) ; 
 
         const IntersectionIteratorType endnit = gridPart_.iend(entity);
         for (IntersectionIteratorType nit = gridPart_.ibegin(entity); nit != endnit; ++nit) 
@@ -631,7 +630,7 @@ namespace Dune {
           if (wspeedS > minLimit_ ) 
           {
             double minvolS = std::min(envol , nbvol);
-            dtMin_ = std::min(dtMin_,minvolS/wspeedS);
+            dtMin_ = std::min(dtMin_, (minvolS/wspeedS) );
           }
         } // end intersection loop
       } // end discreteModel_.hasFlux() 
@@ -752,7 +751,7 @@ namespace Dune {
         
         const double intel = geo.integrationElement(volQuad.point(l))
                            * volQuad.weight(l);
-        
+
         // apply integration weights 
         source *= intel;
         flux   *= intel;
@@ -794,8 +793,8 @@ namespace Dune {
       // get geometry of neighbor 
       const Geometry & nbGeo = nb.geometry();
 
-      // get neighbors volume 
-      const double nbVol = nbGeo.volume(); 
+      // get volume of neighbor divided by the DG polynomial factor 
+      const double nbVol = nbGeo.volume() / ( 2.0 * spc_.order( nb ) + 1.0 ) ; 
       
       // set neighbor and initialize intersection 
       caller().initializeIntersection( nb, intersection, faceQuadInner, faceQuadOuter );
