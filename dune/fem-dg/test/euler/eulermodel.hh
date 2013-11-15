@@ -10,7 +10,7 @@
 #include <dune/fem/misc/fmatrixconverter.hh>
 #include <dune/fem/space/common/functionspace.hh>
 
-#include "../nseq/thermodynamics.hh"
+#include "../navierstokes/thermodynamics.hh"
 
 #include <dune/fem-dg/models/defaultmodel.hh>
 #include <dune/fem-dg/operator/fluxes/eulerfluxes.hh>

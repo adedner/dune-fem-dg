@@ -1,11 +1,12 @@
 # install these headers 
-eulerdir=$(includedir)/src/problems/euler
+eulerdir=$(includedir)/dune/fem-dg/test/euler
 euler_HEADERS= eulermodel.hh  problems.hh problemcreator.hh \
 chorjo.hh chorjo.cc 							 
 
 LDADD = $(ALL_PKG_LDFLAGS) $(ALL_PKG_LIBS) $(LOCAL_LIBS) $(DUNEMPILDFLAGS) $(DUNEMPILIBS)
 
-BASEDIR=$(DUNE_FEM_DG_ROOT)/dune/fem-dg/main
+
+BASEDIR=../../main
 
 # helper variables
 SOURCEBASE= $(BASEDIR)/main.cc chorjo.cc
