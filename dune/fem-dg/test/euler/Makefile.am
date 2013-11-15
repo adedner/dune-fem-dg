@@ -5,7 +5,6 @@ chorjo.hh chorjo.cc
 
 LDADD = $(ALL_PKG_LDFLAGS) $(ALL_PKG_LIBS) $(LOCAL_LIBS) $(DUNEMPILDFLAGS) $(DUNEMPILIBS)
 
-
 BASEDIR=../../main
 
 # helper variables
