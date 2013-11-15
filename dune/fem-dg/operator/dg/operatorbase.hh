@@ -168,6 +168,7 @@ namespace Dune {
     }
 
     inline void limit( DestinationType& U ) const {}
+    inline void limit( const DestinationType& arg, DestinationType& U ) const {}
 
     inline double computeTime() const 
     {

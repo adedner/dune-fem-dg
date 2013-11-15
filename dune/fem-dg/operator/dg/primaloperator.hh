@@ -291,12 +291,10 @@ namespace Dune {
     {
       template <class ArgumentType, class DestinationType>
       static inline void limit(const Limiter& limiter,
-                               ArgumentType* arg,
+                               ArgumentType& arg,
                                DestinationType& dest)
       {
-        assert( arg );
-        arg->assign(dest);
-        limiter(*arg,dest);
+        limiter(arg, dest);
       }
     };
 
@@ -305,7 +303,7 @@ namespace Dune {
     {
       template <class ArgumentType, class DestinationType>
       static inline void limit(const Limiter& limiter,
-                               const ArgumentType* arg,
+                               const ArgumentType& arg,
                                DestinationType& dest)
       {
       }
@@ -329,7 +327,7 @@ namespace Dune {
       , gridPart_( gridPart )
       , space_( gridPart_ )
       , limiterSpace_( gridPart_ )
-      , uTmp_( (polOrd > 0) ? (new LimiterDestinationType("limitTmp", limiterSpace_)) : 0 )
+      , uTmp_( 0 )
       , fvSpc_( 0 ) 
       , indicator_( 0 )
       , diffFlux_( gridPart_, model_ )
@@ -414,7 +412,22 @@ namespace Dune {
 
     inline void limit( DestinationType& U ) const
     {
-      LimiterCall< Pass1Type, polOrd >::limit( limitPass(), uTmp_, U );
+      // copy U to uTmp_
+      if( polOrd > 0 ) 
+      {
+        if( ! uTmp_ ) 
+          uTmp_ = new LimiterDestinationType("limitTmp", limiterSpace_);
+
+        assert( uTmp_ );
+        uTmp_->assign( U );
+
+        limit( *uTmp_, U );
+      }
+    }
+    
+    inline void limit( const DestinationType& arg, DestinationType& U ) const
+    {
+      LimiterCall< Pass1Type, polOrd >::limit( limitPass(), arg, U );
     }
     
     void printmyInfo(std::string filename) const
