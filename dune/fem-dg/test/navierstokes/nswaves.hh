@@ -10,7 +10,7 @@
 
 // local includes
 #include "thermodynamics.hh"
-#include <dune/fem/probleminterfaces.hh>
+#include <dune/fem-dg/models/defaultprobleminterfaces.hh>
 
 
 /***********************************************************

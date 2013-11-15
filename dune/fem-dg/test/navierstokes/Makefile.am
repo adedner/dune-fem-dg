@@ -1,5 +1,5 @@
 # install these headers 
-nseqdir=$(includedir)/src/problems/nseq
+nseqdir=$(includedir)/dune/fem-dg/test/navierstokes
 nseq_HEADERS= ns_model.hh problemcreator.hh nswaves.hh \
 ns_model_spec.hh constant.hh problemtype.hh nssmooth.hh thermodynamics.hh passtraits.hh
 
@@ -8,7 +8,7 @@ ns_model_spec.hh constant.hh problemtype.hh nssmooth.hh thermodynamics.hh passtr
 
 LDADD=$(ALL_PKG_LDFLAGS) $(ALL_PKG_LIBS) $(LOCAL_LIBS) $(DUNEMPILDFLAGS) $(DUNEMPILIBS)
 
-BASEDIR=$(DUNE_FEM_DG_ROOT)/dune/fem-dg/main
+BASEDIR=../../main
 
 SOURCES = $(BASEDIR)/main.cc $(BASEDIR)/main_0.cc $(BASEDIR)/main_1.cc \
 						$(BASEDIR)/main_2.cc $(BASEDIR)/main_3.cc $(BASEDIR)/main_4.cc
