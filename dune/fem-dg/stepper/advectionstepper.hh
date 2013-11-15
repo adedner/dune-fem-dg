@@ -3,9 +3,11 @@
 
 // dune-fem-dg includes
 #include <dune/fem-dg/operator/adaptation/estimator.hh>
+#include <dune/fem-dg/solver/rungekuttasolver.hh>
 
 // local includes
 #include "stepperbase.hh"
+
 
 template <class GridImp,
           class ProblemTraits, 
@@ -95,7 +97,9 @@ struct Stepper
       }
     }
 
-    typedef SmartOdeSolver< DgAdvectionType, DgAdvectionType, DgAdvectionType > OdeSolverImpl;
+    //typedef SmartOdeSolver< DgAdvectionType, DgAdvectionType, DgAdvectionType > OdeSolverImpl;
+    
+    typedef RungeKuttaSolver< DgAdvectionType, DgAdvectionType, DgAdvectionType > OdeSolverImpl;
     return new OdeSolverImpl( tp, dgAdvectionOperator_, 
                               dgAdvectionOperator_,
                               dgAdvectionOperator_ );

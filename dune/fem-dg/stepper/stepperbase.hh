@@ -25,8 +25,6 @@ static double minRatioOfSums = 1e+100;
 #include <dune/fem/misc/l2norm.hh>
 #include <dune/fem/operator/projection/l2projection.hh>
 
-#include <dune/fem-dg/solver/smartodesolver.hh>
-
 #include <dune/fem-dg/operator/dg/dgoperatorchoice.hh>
 
 // include local header files
