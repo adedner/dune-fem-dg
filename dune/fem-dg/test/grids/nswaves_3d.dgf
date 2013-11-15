@@ -1,0 +1,22 @@
+DGF
+
+Interval
+0 0 0
+1 1 1
+4 4 4
+#
+
+GridParameter
+overlap 1
+name 3d_nswaves_str
+#
+
+%PeriodicFaceTransformation
+%1 0 0, 0 1 0, 0 0 1 + 1 0 0
+%1 0 0, 0 1 0, 0 0 1 + 0 1 0
+%1 0 0, 0 1 0, 0 0 1 + 0 0 1
+%#
+
+BOUNDARYDOMAIN
+default 1
+#

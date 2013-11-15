@@ -1,0 +1,92 @@
+# OMP THREADS 
+#------------
+
+fem.parallel.numberofthreads: 1 # number of threads used in OMP program
+
+# write diagnostics file (
+# 0 don't, 1 only speedup file, 2 write all runfiles 
+# 3 only write 0, others at end, 4 all files at end for scaling) 
+fem.parallel.runfile: 0
+
+# if true nonblocking communication is used if available 
+femdg.nonblockingcomm: false
+
+#femhowto.maximaltimesteps: 30 # number of time steps allowed
+
+# DATA WRITER
+#------------
+
+# (-1: off, p: process p is verbose, in general 0 is a good choice)
+fem.verboserank: 0
+
+fem.io.outputformat: sub-vtk-cell # sub-vtk-cell # output format: binary(grape), vtk-cell, vtk-vertex, gnuplot, sub-vtk-cell
+fem.io.subsamplinglevel: 0 # (default=1)
+fem.io.grapedisplay: 0
+femhowto.additionalvariables: true # write additional to hdd
+fem.io.eocFileTimeStamp: 1 # add time stamp to eoc file name
+femhowto.eocOutputPath: ./data
+
+
+# GRID SOLUTION
+#--------------
+
+gridsol.writesolution: false
+gridsol.usegridsolution: false
+gridsol.filename: checkpoint
+
+
+# PROBLEM SETUP
+#--------------
+
+femhowto.startTime: 0.
+hSpeed0: 0.
+vSpeed0: 0.
+inertiagravity.refatmosphere: environmental # environmental = from problem, cosmo
+metstroem.spongelayer.klemplillydx: 1.
+metstroem.spongelayer.klemplillydy: 1.
+metstroem.spongelayer.klemplillydz: 1.
+metstroem.spongelayer.horDampCoeff: 1.
+metstroem.spongelayer.verDampCoeff: 1.
+metstroem.spongelayer: none # none, simple, klemplilly
+
+
+# GENERAL
+#--------
+
+femhowto.eocSteps: 4
+femhowto.printCount: 50
+femhowto.verbose: 0
+
+femhowto.sampleAlongLine: 0 # create a file with sampled values of the numerical solution
+linesegmentsamplerresolution: 100. # number of samples for sampleAlongLine
+
+writegridsolution: 0 # postprocessing num. solutions
+readgridsolution: 0 # postprocessing num. solutions
+
+
+# LIMITER
+#--------
+
+femdg.limiter.admissiblefunctions: 1 # 0 = only dg solution | 1 = only reconstruction | 2 = both
+femdg.limiter.tolerance: 1 # tolerance for shock indicator
+femdg.limiter.limiteps: 1e-8 # threshold for avoiding over-excessive limitation
+
+
+# LOAD BALANCING
+#---------------
+
+# perform load balancing only each step-th timestep  
+fem.loadbalancing.step: 10
+
+# GRID ADAPTATION
+#----------------
+
+fem.adaptation.method: callback # none | generic | callback
+fem.adaptation.refineTolerance: 0.02 # specify refinement tolerance
+fem.adaptation.coarsenPercent: 0.1 # percent of refinement rol used for coarsening
+fem.adaptation.coarsestLevel: 0 # coarsest level that should be present
+fem.adaptation.finestLevel: 4 # finest level that should be present
+fem.adaptation.adaptcount: 5 # after this many time step, 0 disables adaptation
+femhowto.startLevel: 0 # global refines of the macrogrid prior to the run
+fem.adaptation.markingStrategy: grad # shockind = shock indicator, apost = aposteriori based indicator, grad = gradient based indicator
+fem.adaptation.grad.neighborRefLevel: 5

@@ -1,0 +1,22 @@
+DGF
+
+Interval
+0 0
+1 1
+16 16   % 1 cell only
+# 
+
+PeriodicFaceTransformation
+1 0, 0 1 + 1 0
+1 0, 0 1 + 0 1
+#
+
+BoundaryDomain
+default 1    % all boundaries have id 1
+#
+
+GridParameter
+name 1d_Unit_Cube
+#
+
+# unitcube1.dgf 
