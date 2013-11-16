@@ -42,6 +42,7 @@ namespace Dune {
 
     typedef typename Traits :: NumFluxType NumFluxType;
     typedef typename Traits :: Model Model;
+    typedef typename Model  :: ProblemType ProblemType ;
 
     enum { dimRange = Model::dimRange };
     enum { dimDomain = Model::Traits::dimDomain };
@@ -88,9 +89,9 @@ namespace Dune {
     typedef typename DiscreteModelType :: AdaptationType  AdaptationType;
 
   public:
-    DGAdvectionDiffusionOperatorBase( GridPartType& gridPart , const NumFluxType& numf ) 
-      : model_( numf.model() )
-      , numflux_( numf )
+    DGAdvectionDiffusionOperatorBase( GridPartType& gridPart , const ProblemType& problem ) 
+      : model_( problem )
+      , numflux_( model_ )
       , gridPart_( gridPart )
       , space_( gridPart_ )
       , discreteModel_( model_, numflux_, DiffusionFluxType( gridPart_, model_ ) )
@@ -184,10 +185,13 @@ namespace Dune {
 
     virtual std::string description() const = 0;
 
+    const Model& model() const { return model_; }
+
   protected:
-    const Model& model_;
-    const NumFluxType& numflux_;
+    Model         model_;
+    NumFluxType   numflux_;
     GridPartType& gridPart_;
+
     AdvDFunctionSpaceType space_;
     DiscreteModelType discreteModel_;
     Pass0Type startPass_;

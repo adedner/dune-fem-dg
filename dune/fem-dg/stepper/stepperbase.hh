@@ -57,11 +57,11 @@ struct StepperBase
   // initial data type 
   typedef typename Traits :: InitialDataType          InitialDataType;
 
-  // An analytical version of our model
-  typedef typename Traits :: ModelType                ModelType;
+  // model type 
+  typedef typename Traits :: ModelType                ModelType ;
 
-  // The flux for the discretization of advection terms
-  typedef typename Traits :: FluxType                 FluxType;
+  // type of convective numerical flux 
+  typedef typename Traits :: FluxType                 FluxType ;
 
   // The DG space operator
   // The first operator is sum of the other two
@@ -122,8 +122,6 @@ struct StepperBase
     additionalVariables_( ParameterType :: getValue< bool >("femhowto.additionalvariables", false) ? 
         new DiscreteFunctionType("A", space() ) : 0 ),
     problem_( ProblemTraits::problem() ),
-    model_( new ModelType( problem() ) ),
-    convectionFlux_( *model_ ),
     adaptationHandler_( 0 ),
     diagnostics_( true ),
     checkPointer_( 0 ),
@@ -148,8 +146,6 @@ struct StepperBase
     odeSolver_ = 0;
     delete dataWriter_; 
     dataWriter_ = 0 ;
-    delete model_ ;
-    model_ = 0;
     delete problem_ ;
     problem_ = 0;
     delete adaptationHandler_ ;
@@ -382,11 +378,7 @@ struct StepperBase
     return *problem_; 
   }
 
-  const ModelType& model() const 
-  { 
-    assert( model_ ); 
-    return *model_;
-  }
+  virtual const ModelType& model() const = 0 ;
 
 protected:
   template <class IndicatorOperator, class GradientIndicator>
@@ -440,9 +432,7 @@ protected:
   // InitialDataType is a Dune::Operator that evaluates to $u_0$ and also has a
   // method that gives you the exact solution.
   const InitialDataType*  problem_;
-  ModelType*              model_;
   // Initial flux for advection discretization (UpwindFlux)
-  FluxType                convectionFlux_;
   AdaptationHandlerType*  adaptationHandler_;
 
   // diagnostics file 

@@ -78,9 +78,9 @@ namespace Dune {
     typedef LocalCDGPass< DiscreteModel2Type, Pass1Type, advectPass >  Pass2Type; /*@\label{ad:typedefpass2}@*//*@LST0E@*/
 
   public:
-    DGAdvectionDiffusionOperator( GridPartType& gridPart , const NumFluxType& numf ) :
-      model_( numf.model() ),
-      numflux_( numf ),
+    DGAdvectionDiffusionOperator( GridPartType& gridPart , const ProblemType& problem ) :
+      model_( problem ),
+      numflux_( model_ ),
       gridPart_( gridPart ),
       space1_( gridPart_ ),
       space2_( gridPart_ ),
@@ -159,8 +159,8 @@ namespace Dune {
     }
 
   private:
-    const Model&        model_;
-    const NumFluxType&  numflux_;
+    Model               model_;
+    NumFluxType         numflux_;
     GridPartType&       gridPart_;
     Space1Type          space1_;
     Space2Type          space2_;
@@ -209,10 +209,10 @@ namespace Dune {
     typedef LDGAdvectionTraits<Model, NumFlux, polOrd, true> Traits;
     typedef DGAdvectionDiffusionOperatorBase< Traits >  BaseType;
     typedef typename BaseType :: GridPartType  GridPartType;
-    typedef typename BaseType :: NumFluxType  NumFluxType;
+    typedef typename BaseType :: ProblemType   ProblemType;
   public:
-    DGAdvectionOperator( GridPartType& gridPart , const NumFluxType& numf )
-      : BaseType( gridPart, numf )
+    DGAdvectionOperator( GridPartType& gridPart , const ProblemType& problem )
+      : BaseType( gridPart, problem )
     {}
 
     std::string description() const
@@ -241,11 +241,11 @@ namespace Dune {
   {
     typedef DGAdvectionDiffusionOperator< Model, NumFlux, diffFluxId, polOrd, false >  BaseType;
     typedef typename BaseType :: GridPartType  GridPartType;
-    typedef typename BaseType :: NumFluxType  NumFluxType;
+    typedef typename BaseType :: ProblemType   ProblemType;
 
   public:
-    DGDiffusionOperator( GridPartType& gridPart , const NumFluxType& numf )
-      : BaseType( gridPart, numf )
+    DGDiffusionOperator( GridPartType& gridPart , const ProblemType& problem )
+      : BaseType( gridPart, problem )
     {}
 
     std::string description() const
@@ -291,6 +291,7 @@ namespace Dune {
     enum { dimDomain = Model::Traits::dimDomain };
 
     typedef NumFlux NumFluxType;
+    typedef typename Model :: ProblemType  ProblemType; 
     typedef PassTraits< Model, dimRange, polOrd > PassTraitsType;
 
     // Pass 2 Model (advectPassId)
@@ -364,8 +365,8 @@ namespace Dune {
     }; 
 
   public:
-    DGLimitedAdvectionDiffusionOperator( GridPartType& gridPart , const NumFluxType& numf ) 
-      : model_( numf.model() )
+    DGLimitedAdvectionDiffusionOperator( GridPartType& gridPart , const ProblemType& problem ) 
+      : model_( problem )
       , numflux_( numf )
       , gridPart_( gridPart )
       , space1_( gridPart_ )
@@ -452,8 +453,8 @@ namespace Dune {
     }
 
   private:
-    const Model&        model_;
-    const NumFluxType&  numflux_;
+    Model               model_;
+    NumFluxType         numflux_;
     GridPartType&       gridPart_;
     Space1Type          space1_;
     Space2Type          space2_;
@@ -509,10 +510,10 @@ namespace Dune {
     typedef AdaptationIndicatorTraits< Model, NumFlux, diffFluxId, polOrd, advection, diffusion > Traits ;
     typedef DGAdvectionDiffusionOperatorBase< Traits >  BaseType;
     typedef typename BaseType :: GridPartType  GridPartType;
-    typedef typename BaseType :: NumFluxType  NumFluxType;
+    typedef typename BaseType :: ProblemType   ProblemType ;
 
-    DGAdaptationIndicatorOperator( GridPartType& gridPart , const NumFluxType& numf ) 
-      : BaseType( gridPart, numf )
+    DGAdaptationIndicatorOperator( GridPartType& gridPart , const ProblemType& problem ) 
+      : BaseType( gridPart, problem )
     {
       if ( Fem::Parameter::verbose() )
       {

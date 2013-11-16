@@ -68,7 +68,6 @@ struct Stepper
 
   using BaseType :: grid_;
   using BaseType :: gridPart_;
-  using BaseType :: convectionFlux_ ;
   using BaseType :: problem;
   using BaseType :: adaptationHandler_ ;
   using BaseType :: space ;
@@ -80,8 +79,8 @@ struct Stepper
   // constructor 
   Stepper( GridType& grid ) :
     BaseType( grid ),
-    dgAdvectionOperator_(gridPart_, convectionFlux_),
-    dgIndicator_( gridPart_, convectionFlux_ ),
+    dgAdvectionOperator_(gridPart_, problem() ),
+    dgIndicator_( gridPart_, problem() ),
     gradientIndicator_( space(), problem() )
   {
   }
@@ -141,6 +140,8 @@ struct Stepper
   {
     doEstimateMarkAdapt( dgIndicator_, gradientIndicator_, false );
   }
+
+  const ModelType& model() const { return dgAdvectionOperator_.model(); }
 
 protected:
   DgAdvectionType         dgAdvectionOperator_;
