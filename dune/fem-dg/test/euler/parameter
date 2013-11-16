@@ -71,10 +71,10 @@ r: 0.25 # radius of perturbation ball
 # DOMAIN SETUP
 #-------------
 
-fem.io.macroGridFile_1d: ../macrogrids/unitcube1.dgf
-#fem.io.macroGridFile_2d: ../macrogrids/unitcube2.dgf
-fem.io.macroGridFile_2d: ../macrogrids/grid2d_str1d.dgf
-fem.io.macroGridFile_3d: ../macrogrids/unitcube3.dgf
+fem.io.macroGridFile_1d: ../grids/unitcube1.dgf
+#fem.io.macroGridFile_2d: ../grids/unitcube2.dgf
+fem.io.macroGridFile_2d: ../grids/grid2d_str1d.dgf
+fem.io.macroGridFile_3d: ../grids/unitcube3.dgf
 
 
 # SOLVER CONFIGURATION
