@@ -34,9 +34,9 @@ struct Stepper
   // The DG space operator
   // The first operator is sum of the other two
   // The other two are needed for semi-implicit time discretization
-  typedef typename BaseType :: DgType                    DgType;
-  typedef typename BaseType :: DgAdvectionType           DgAdvectionType;
-  typedef typename BaseType :: DgDiffusionType           DgDiffusionType;
+  typedef typename BaseType :: FullOperatorType                    FullOperatorType;
+  typedef typename BaseType :: ExplicitOperatorType           ExplicitOperatorType;
+  typedef typename BaseType :: ImplicitOperatorType           ImplicitOperatorType;
 
   // The discrete function for the unknown solution is defined in the DgOperator
   typedef typename BaseType :: DiscreteFunctionType      DiscreteFunctionType;
@@ -128,7 +128,7 @@ struct Stepper
     }
 
     // create ODE solver 
-    typedef RungeKuttaSolver< DgType, DgAdvectionType, DgDiffusionType > OdeSolverImpl;
+    typedef RungeKuttaSolver< FullOperatorType, ExplicitOperatorType, ImplicitOperatorType > OdeSolverImpl;
     return new OdeSolverImpl( tp, dgOperator_, 
                               dgAdvectionOperator_,
                               dgDiffusionOperator_ );
@@ -149,9 +149,9 @@ struct Stepper
   const ModelType& model() const { return dgOperator_.model(); }
 
 protected:
-  DgType                  dgOperator_;
-  DgAdvectionType         dgAdvectionOperator_;
-  DgDiffusionType         dgDiffusionOperator_;
+  FullOperatorType                  dgOperator_;
+  ExplicitOperatorType         dgAdvectionOperator_;
+  ImplicitOperatorType         dgDiffusionOperator_;
   DGIndicatorType         dgIndicator_;
   GradientIndicatorType   gradientIndicator_;
 };

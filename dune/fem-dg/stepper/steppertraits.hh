@@ -23,12 +23,13 @@ struct StepperTraits
   //typedef Dune :: Fem :: IdGridPart< HostGridPartType >       GridPartType;
 
   // problem dependent types 
-  typedef typename ProblemTraits :: template Traits< GridPartType > :: InitialDataType  InitialDataType;
-  typedef typename ProblemTraits :: template Traits< GridPartType > :: ModelType        ModelType;
-  typedef typename ProblemTraits :: template Traits< GridPartType > :: FluxType         FluxType;
+  typedef typename ProblemTraits :: template Traits< GridPartType > :: InitialDataType   InitialDataType;
+  typedef typename ProblemTraits :: template Traits< GridPartType > :: ModelType         ModelType;
+  typedef typename ProblemTraits :: template Traits< GridPartType > :: FluxType          FluxType;
   static const Dune::DGDiffusionFluxIdentifier DiffusionFluxId 
     = ProblemTraits :: template Traits< GridPartType > ::PrimalDiffusionFluxId ;
 
+private:
   // The DG Operator (using 2 Passes)
   // The first operator is sum of the other two
   // The other two are needed for semi-implicit time discretization
@@ -60,6 +61,11 @@ struct StepperTraits
 #endif                                       
   typedef Dune :: DGDiffusionOperator< ModelType, FluxType,
                                DiffusionFluxId, polynomialOrder >      DgDiffusionType; /*@LST1E@*/
+
+public:
+  typedef DgType          FullOperatorType;
+  typedef DgDiffusionType ImplicitOperatorType;
+  typedef DgAdvectionType ExplicitOperatorType;
 
   // The discrete function for the unknown solution is defined in the DgOperator
   typedef typename DgType :: DestinationType                         DiscreteFunctionType;

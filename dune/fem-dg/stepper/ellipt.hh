@@ -61,18 +61,18 @@ struct ElliptTraits
   // The other two are needed for semi-implicit time discretization
   typedef DGAdvectionDiffusionOperator< ModelType, FluxType,
                                         DiffusionFluxId,  
-                                        polynomialOrder >            DgType; /*@LST1E@*/
+                                        polynomialOrder >            FullOperatorType; /*@LST1E@*/
   typedef DGAdvectionOperator< ModelType, FluxType,
                                DiffusionFluxId,  
-                               polynomialOrder >                     DgAdvectionType; /*@LST1E@*/
+                               polynomialOrder >                     ExplicitOperatorType; /*@LST1E@*/
   typedef DGDiffusionOperator< ModelType, FluxType,
                                DiffusionFluxId,  
-                               polynomialOrder >                     DgDiffusionType; /*@LST1E@*/
+                               polynomialOrder >                     ImplicitOperatorType; /*@LST1E@*/
 
   // The discrete function for the unknown solution is defined in the DgOperator
-  typedef typename DgType :: DestinationType                         DiscreteFunctionType;
+  typedef typename FullOperatorType :: DestinationType                         DiscreteFunctionType;
   // ... as well as the Space type
-  typedef typename DgType :: SpaceType                               DiscreteSpaceType;
+  typedef typename FullOperatorType :: SpaceType                               DiscreteSpaceType;
 
   // The ODE Solvers                                                         /*@LST1S@*/
   typedef DuneODE :: OdeSolverInterface< DiscreteFunctionType >      OdeSolverInterfaceType;
@@ -112,9 +112,9 @@ struct EllipticAlgorithm
   // The DG space operator
   // The first operator is sum of the other two
   // The other two are needed for semi-implicit time discretization
-  typedef typename Traits :: DgType                    DgType;
-  typedef typename Traits :: DgAdvectionType           DgAdvectionType;
-  typedef typename Traits :: DgDiffusionType           DgDiffusionType;
+  typedef typename Traits :: FullOperatorType                    FullOperatorType;
+  typedef typename Traits :: ExplicitOperatorType           ExplicitOperatorType;
+  typedef typename Traits :: ImplicitOperatorType           ImplicitOperatorType;
 
   // The discrete function for the unknown solution is defined in the DgOperator
   typedef typename Traits :: DiscreteFunctionType      DiscreteFunctionType;
@@ -251,9 +251,9 @@ protected:
   ModelType*              model_;
   // Initial flux for advection discretization (UpwindFlux)
   FluxType                convectionFlux_;
-  DgType                  dgOperator_;
-  DgAdvectionType         dgAdvectionOperator_;
-  DgDiffusionType         dgDiffusionOperator_;
+  FullOperatorType                  dgOperator_;
+  ExplicitOperatorType         dgAdvectionOperator_;
+  ImplicitOperatorType         dgDiffusionOperator_;
   const unsigned int      eocId_;
   std::vector<double> numbers_;
   std::ofstream runFile_;
