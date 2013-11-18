@@ -54,10 +54,10 @@ kGNS: 3.1415926535897932385
 # DOMAIN CONFIGURATION
 #---------------------
 
-fem.io.macroGridFile_1d: ../macrogrids/nswaves_1d.dgf
-fem.io.macroGridFile_2d: ../macrogrids/nswaves_2d.dgf
-#fem.io.macroGridFile_2d: ../macrogrids/nswaves_2d_unstr.dgf
-fem.io.macroGridFile_3d: ../macrogrids/nswaves_3d.dgf
+fem.io.macroGridFile_1d: ../grids/nswaves_1d.dgf
+fem.io.macroGridFile_2d: ../grids/nswaves_2d.dgf
+#fem.io.macroGridFile_2d: ../grids/nswaves_2d_unstr.dgf
+fem.io.macroGridFile_3d: ../grids/nswaves_3d.dgf
 
 
 # SOLVER CONFIGURATION
