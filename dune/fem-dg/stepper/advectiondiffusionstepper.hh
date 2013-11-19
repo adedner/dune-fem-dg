@@ -38,6 +38,8 @@ struct Stepper
   typedef typename BaseType :: ExplicitOperatorType           ExplicitOperatorType;
   typedef typename BaseType :: ImplicitOperatorType           ImplicitOperatorType;
 
+  typedef typename BaseType :: LinearInverseOperatorType LinearInverseOperatorType;
+
   // The discrete function for the unknown solution is defined in the DgOperator
   typedef typename BaseType :: DiscreteFunctionType      DiscreteFunctionType;
 
@@ -128,7 +130,8 @@ struct Stepper
     }
 
     // create ODE solver 
-    typedef RungeKuttaSolver< FullOperatorType, ExplicitOperatorType, ImplicitOperatorType > OdeSolverImpl;
+    typedef RungeKuttaSolver< FullOperatorType, ExplicitOperatorType, ImplicitOperatorType, 
+                              LinearInverseOperatorType > OdeSolverImpl;
     return new OdeSolverImpl( tp, dgOperator_, 
                               dgAdvectionOperator_,
                               dgDiffusionOperator_ );

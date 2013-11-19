@@ -66,9 +66,12 @@ struct StepperBase
   // The DG space operator
   // The first operator is sum of the other two
   // The other two are needed for semi-implicit time discretization
-  typedef typename Traits :: FullOperatorType                   FullOperatorType;
+  typedef typename Traits :: FullOperatorType              FullOperatorType;
   typedef typename Traits :: ExplicitOperatorType          ExplicitOperatorType;
   typedef typename Traits :: ImplicitOperatorType          ImplicitOperatorType;
+
+  // type of linear solver for implicit ode
+  typedef typename Traits :: LinearInverseOperatorType    LinearInverseOperatorType;
 
   // The discrete function for the unknown solution is defined in the DgOperator
   typedef typename Traits :: DiscreteFunctionType     DiscreteFunctionType;

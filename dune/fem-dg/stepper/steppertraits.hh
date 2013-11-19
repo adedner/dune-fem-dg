@@ -84,6 +84,11 @@ public:
 
   // type of IOTuple 
   typedef Dune::tuple< DiscreteFunctionType*, DiscreteFunctionType*, IndicatorType* >  IOTupleType;
+
+  // type of linear solver for implicit ode
+  typedef Dune::Fem::ParDGGeneralizedMinResInverseOperator< DiscreteFunctionType >  LinearInverseOperatorType;
+  typedef Dune::Fem::ParDGGeneralizedMinResInverseOperator< DiscreteFunctionType >  LinearInverseImplicitOperatorType;
+
 };
 
 #endif
