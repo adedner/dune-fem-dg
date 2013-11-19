@@ -471,8 +471,6 @@ class DGPrimalMatrixAssembly
           aphi -= arhs;
           aphi *= -1;
 
-          aphi =  phi[localCol];
-
           JacobianRangeType adphi;
           model_.diffusion(entity, time, x, phi[localCol], dphi[localCol], adphi);
 
@@ -483,8 +481,6 @@ class DGPrimalMatrixAssembly
 
           adphi -= arhsdphi;
 
-          adphi = JacobianRangeType(0);
-
           // get column object and call axpy method 
           localOpEn.column( localCol ).axpy( phi, dphi, aphi, adphi, weight );
         }
@@ -494,7 +490,6 @@ class DGPrimalMatrixAssembly
         rhsLocal.axpy( quadrature[ pt ], arhs, arhsdphi );
       }
 
-#if 0
       const IntersectionIteratorType endiit = dfSpace.gridPart().iend( entity );
       for ( IntersectionIteratorType iit = dfSpace.gridPart().ibegin( entity );
             iit != endiit ; ++ iit )
@@ -574,22 +569,6 @@ class DGPrimalMatrixAssembly
           rhsLocal.axpyQuadrature( faceQuadInside, valueNb, dvalueNb );
         }
       }
-
-#endif
-
-      for( unsigned int localRow = 0; localRow < numBasisFunctionsEn; ++localRow )
-      {
-        for( unsigned int localCol = 0; localCol < numBasisFunctionsEn; ++localCol )
-        {
-          double val = localOpEn.get(localRow,localCol);
-          if (std::abs(val)>1e-8)
-            std::cout << val << " ";
-          else
-            std::cout << " 0 ";
-        }
-        std::cout << std::endl;
-      }
-      std::cout << std::endl;
     }
   }
   // assemble vector containing boundary fluxes for right hand side
