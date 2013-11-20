@@ -311,6 +311,9 @@ public:
       }
     }
 
+    // true if last time step should match end time 
+    const bool stopAtEndTime =  ParameterType::getValue("femdg.stopatendtime", bool(false) );
+
     //******************************    
     //*  Time Loop                 *
     //******************************
@@ -360,6 +363,10 @@ public:
           std::cout << "step: " << timeStep << "  time = " << tp.time() << ", dt = " << deltaT
                     <<",  grid size: " << grSize << std::endl;
       }
+
+      // next advance should not exceed endtime
+      if( stopAtEndTime ) 
+        tp.provideTimeStepEstimate( (endTime - tp.time()) );
 
       // next time step is prescribed by fixedTimeStep
       // it fixedTimeStep is not 0
