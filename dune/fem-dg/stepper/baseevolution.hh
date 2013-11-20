@@ -360,7 +360,7 @@ public:
           std::cout << "step: " << timeStep << "  time = " << tp.time() << ", dt = " << deltaT
                     <<",  grid size: " << grSize << std::endl;
       }
-  
+
       // next time step is prescribed by fixedTimeStep
       // it fixedTimeStep is not 0
       if ( fixedTimeStep > 1e-20 )
@@ -369,7 +369,11 @@ public:
         tp.next();
 
       // for debugging and codegen only 
-      if( tp.timeStep() >= maximalTimeSteps ) break ;
+      if( tp.timeStep() >= maximalTimeSteps ) 
+      {
+        if( ParameterType :: verbose() )
+          std::cerr << "ABORT: time step count reached max limit of " << maximalTimeSteps << std::endl;
+      }
 
     } /****** END of time loop *****/
 
