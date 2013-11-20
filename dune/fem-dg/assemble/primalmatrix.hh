@@ -167,7 +167,7 @@ public:
                       uRight, anaflux );
     anaflux.umv( normal, gLeft );
 
-    double maxspeedl, maxspeedr, maxspeed;
+    double maxspeedl, maxspeedr; // , maxspeed;
     double viscparal, viscparar, viscpara;
     
     const DomainType xGlobal = intersection.geometry().global(x);
@@ -177,7 +177,7 @@ public:
     model_.maxSpeed( normal, time, xGlobal,
                      uRight, viscparar, maxspeedr );
 
-    maxspeed = (maxspeedl > maxspeedr) ? maxspeedl : maxspeedr;
+    //maxspeed = (maxspeedl > maxspeedr) ? maxspeedl : maxspeedr;
     viscpara = (viscparal > viscparar) ? viscparal : viscparar;
     visc = uRight;
     visc -= uLeft;
