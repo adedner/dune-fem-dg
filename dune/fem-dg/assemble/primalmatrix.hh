@@ -570,6 +570,9 @@ class DGPrimalMatrixAssembly
         }
       }
     }
+
+    // finish matrix build process (mostly for PETSc)
+    matrix.communicate();
   }
   // assemble vector containing boundary fluxes for right hand side
   void assemble( const double time, 
