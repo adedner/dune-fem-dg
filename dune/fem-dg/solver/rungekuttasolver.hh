@@ -139,7 +139,7 @@ public:
 
   };
 
-  static const bool useParDGSolvers = false ;
+  static const bool useParDGSolvers = true ;
   typedef OdeSolverSelection< OperatorType, DestinationType, useParDGSolvers >  OdeSolversType ;
 
   using BaseType :: solve; 

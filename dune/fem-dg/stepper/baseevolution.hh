@@ -385,6 +385,11 @@ public:
         break ;
       }
 
+      if (tp.timeStep()<2)
+      {
+        // write parameters used (before simulation starts)
+        Dune::Fem::Parameter::write("parameter.log");
+      }
     } /****** END of time loop *****/
 
     // write last time step  
