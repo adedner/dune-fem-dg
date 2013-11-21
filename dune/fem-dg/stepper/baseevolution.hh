@@ -360,8 +360,10 @@ public:
       {
         UInt64Type grSize = gridSize();
         if( grid.comm().rank() == 0 )
+        {
           std::cout << "step: " << timeStep << "  time = " << tp.time() << ", dt = " << deltaT
-                    <<",  grid size: " << grSize << std::endl;
+                    <<",  grid size: " << grSize << ",  Newton: " << monitor.newton_iterations << "  ILS: " << monitor.ils_iterations << std::endl;
+        }
       }
 
       // next advance should not exceed endtime
@@ -380,6 +382,7 @@ public:
       {
         if( ParameterType :: verbose() )
           std::cerr << "ABORT: time step count reached max limit of " << maximalTimeSteps << std::endl;
+        break ;
       }
 
     } /****** END of time loop *****/
