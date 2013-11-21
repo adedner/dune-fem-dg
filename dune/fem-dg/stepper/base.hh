@@ -29,7 +29,7 @@ struct InitFemEoc
   //! initialize FemEoc if eocSteps is > 1 
   static inline void initializeFemEoc( const std::string& problemDescription )
   {
-    if( eocSteps() > 1 ) 
+    //if( eocSteps() > 1 ) 
     {
       // output of error and eoc information
       std::string eocOutPath = 
@@ -144,7 +144,7 @@ void compute(Algorithm& algorithm)
 
   typename Algorithm::IOTupleType dataTup = algorithm.dataTuple() ; 
 
-  typedef Dune::Fem::DataOutput<GridType, typename Algorithm::IOTupleType> DataOutputType;
+  typedef Dune::Fem::DataWriter<GridType, typename Algorithm::IOTupleType> DataOutputType;
   DataOutputType dataOutput( grid, dataTup );
 
   typedef typename Algorithm::SolverMonitorType SolverMonitorType;
@@ -176,7 +176,7 @@ void compute(Algorithm& algorithm)
     algorithm.finalize( eocloop );
 
     // only do this if we have more than 1 eoc step
-    if( eocSteps > 1 ) 
+    //if( eocSteps > 1 ) 
     {
       std::stringstream eocInfo ;
       // generate EOC information
@@ -196,7 +196,8 @@ void compute(Algorithm& algorithm)
 
       // Refine the grid for the next EOC Step. If the scheme uses adaptation,
       // the refinement level needs to be set in the algorithms' initialize method.
-      Dune::Fem::GlobalRefine::apply(grid,Dune::DGFGridInfo<GridType>::refineStepsForHalf());
+      if( eocSteps > 1 ) 
+        Dune::Fem::GlobalRefine::apply(grid,Dune::DGFGridInfo<GridType>::refineStepsForHalf());
     }
 
   } /***** END of EOC Loop *****/
