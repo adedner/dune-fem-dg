@@ -37,6 +37,7 @@ AC_CONFIG_FILES([
   dune/fem-dg/models/Makefile
   dune/fem-dg/test/Makefile
   dune/fem-dg/test/dataio/Makefile
+  dune/fem-dg/test/advdiff/Makefile
   dune/fem-dg/test/euler/Makefile
   dune/fem-dg/test/navierstokes/Makefile
   dune/fem-dg/assemble/Makefile
