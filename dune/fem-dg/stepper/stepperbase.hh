@@ -343,7 +343,7 @@ struct StepperBase
 
   inline double error(TimeProviderType& tp, DiscreteFunctionType& u)
   {
-    Fem :: L2Norm< GridPartType > l2norm( u.space().gridPart() );
+    Fem :: L2Norm< GridPartType > l2norm( u.space().gridPart(), 2*u.space().order()+4 );
     return l2norm.distance( problem().fixedTimeFunction( tp.time() ), u );
   }
 
