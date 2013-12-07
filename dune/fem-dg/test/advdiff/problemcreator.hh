@@ -25,7 +25,7 @@ struct ProblemGenerator
                       Dune::Fem::FunctionSpace< double, double, GridType::dimension,
                       DIMRANGE>,
                       false > ProblemType;
-  //typedef HeatProblemType ProblemType;
+  // define problem type here if interface should be avoided
 
   template< class GridPart >
   struct Traits
@@ -33,6 +33,7 @@ struct ProblemGenerator
     typedef ProblemType  InitialDataType;
     typedef HeatEqnModel< GridPart, InitialDataType > ModelType;
     typedef LLFFlux< ModelType > FluxType;
+
     //typedef UpwindFlux< ModelType > FluxType;
     // choice of diffusion flux (see diffusionflux.hh for methods)
      static const Dune :: DGDiffusionFluxIdentifier PrimalDiffusionFluxId 

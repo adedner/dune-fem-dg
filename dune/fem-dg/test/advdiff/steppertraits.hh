@@ -63,27 +63,43 @@ private:
   typedef Dune :: DGDiffusionOperator< ModelType, FluxType,
                                        DiffusionFluxId, polynomialOrder >      DgDiffusionType;
 
+
+  // default is that both are enabled 
+  template < bool advection, bool diffusion >
+  struct OperatorChooser
+  {
+    typedef DgType          FullOperatorType;
+    typedef DgDiffusionType ImplicitOperatorType;
+    typedef DgAdvectionType ExplicitOperatorType;
+  };
+
+  // advection operator only, i.e. linear advection equation
+  template < bool advection >
+  struct OperatorChooser< advection, false >
+  {
+    typedef DgAdvectionType  FullOperatorType;
+    typedef FullOperatorType ImplicitOperatorType;
+    typedef FullOperatorType ExplicitOperatorType;
+  };
+
+  // diffusion operator only, i.e. for the heat equation 
+  template < bool diffusion >
+  struct OperatorChooser< false, diffusion >
+  {
+    typedef DgDiffusionType  FullOperatorType;
+    typedef FullOperatorType ImplicitOperatorType;
+    typedef FullOperatorType ExplicitOperatorType;
+  };
 public:
 
+  static const bool advection = ModelType :: hasAdvection ;
+  static const bool diffusion = ModelType :: hasDiffusion ;
 
-#if ADVECTION && DIFFUSION
-#warning "Using Advection-Diffusion Operator"
-  typedef DgType          FullOperatorType;
-  typedef DgDiffusionType ImplicitOperatorType;
-  typedef DgAdvectionType ExplicitOperatorType;
-#elif ADVECTION 
-#warning "Using Advection Operator"
-  typedef DgAdvectionType  FullOperatorType;
-  typedef FullOperatorType ImplicitOperatorType;
-  typedef FullOperatorType ExplicitOperatorType;
-#elif DIFFUSION 
-#warning "Using Diffusion Operator"
-  typedef DgDiffusionType  FullOperatorType;
-  typedef FullOperatorType ImplicitOperatorType;
-  typedef FullOperatorType ExplicitOperatorType;
-#else 
-#error "Either ADVECTION or DIFFUSSION has to be set" 
-#endif
+  typedef OperatorChooser< advection, diffusion > OperatorChooserType ;
+
+  typedef typename OperatorChooserType :: FullOperatorType      FullOperatorType;
+  typedef typename OperatorChooserType :: ImplicitOperatorType  ImplicitOperatorType;
+  typedef typename OperatorChooserType :: ExplicitOperatorType  ExplicitOperatorType;
 
   // The discrete function for the unknown solution is defined in the DgOperator
   typedef typename DgType :: DestinationType                         DiscreteFunctionType;

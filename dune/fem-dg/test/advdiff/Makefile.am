@@ -22,9 +22,6 @@ GRIDDIM  = 2
 DIMRANGE = 1
 FLUX = 1    # LLF 1, HLL 2
 
-ADVECTION=0
-DIFFUSION=1
-
 #USE_OMP=-fopenmp
 
 # INFO SPACE OPERATOR:
@@ -40,7 +37,6 @@ check_PROGRAMS = advdiff advdiffonep advdiff12 # quasiadvdiff quasiadvdiff12 pla
 
 AM_CPPFLAGS = $(USE_OMP) -I../../problems/advdiff  $(ALL_PKG_CPPFLAGS) -DGRIDDIM=$(GRIDDIM) \
 							-D$(GRIDTYPE) $(DUNEMPICPPFLAGS) \
-              -DADVECTION=$(ADVECTION)  -DDIFFUSION=$(DIFFUSION) \
 							-DDIMRANGE=$(DIMRANGE) -DFLUX=$(FLUX) -DPRIMALDG -DUSE_ASSERT_THROW
 AM_LDFLAGS = $(ALL_PKG_LDFLAGS) $(LAPACK_LDFLAGS) $(USE_OMP)
 

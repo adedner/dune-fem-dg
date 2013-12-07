@@ -88,6 +88,10 @@ template <class GridPartType,class ProblemImp>
 class HeatEqnModel : public DefaultModel < HeatEqnModelTraits< GridPartType > >
 {
 public:
+  // for heat equations advection is disabled 
+  static const bool hasAdvection = false ;
+  static const bool hasDiffusion = true  ;
+
   typedef ProblemImp ProblemType ;
 
   static const int ConstantVelocity = ProblemType :: ConstantVelocity;
