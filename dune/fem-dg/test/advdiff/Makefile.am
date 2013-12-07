@@ -39,7 +39,7 @@ DIFFUSION=1
 check_PROGRAMS = advdiff advdiffonep advdiff12 # quasiadvdiff quasiadvdiff12 plaplace plaplace12
 
 AM_CPPFLAGS = $(USE_OMP) -I../../problems/advdiff  $(ALL_PKG_CPPFLAGS) -DGRIDDIM=$(GRIDDIM) \
-							-D$(GRIDTYPE) $(DUNEMPICPPFLAGS) -DFEMTIMER \
+							-D$(GRIDTYPE) $(DUNEMPICPPFLAGS) \
               -DADVECTION=$(ADVECTION)  -DDIFFUSION=$(DIFFUSION) \
 							-DDIMRANGE=$(DIMRANGE) -DFLUX=$(FLUX) -DPRIMALDG -DUSE_ASSERT_THROW
 AM_LDFLAGS = $(ALL_PKG_LDFLAGS) $(LAPACK_LDFLAGS) $(USE_OMP)
