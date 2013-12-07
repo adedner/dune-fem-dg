@@ -39,14 +39,9 @@ femhowto.zvelocity: 0.    # the only advection part for the linear heat eqn
 # DOMAIN
 #-------
 
-fem.io.macroGridFile_1d: ../macrogrids/unitcube1.dgf
-fem.io.macroGridFile_2d: ../macrogrids/unitcube2_per.dgf
-#fem.io.macroGridFile_2d: ../macrogrids/unitcube2_unstr.dgf
-#fem.io.macroGridFile_2d: ../macrogrids/test2.dgf
-#fem.io.macroGridFile_2d: ../macrogrids/unitgrid2d_unstr_2.dgf
-#fem.io.macroGridFile_2d: ../macrogrids/stability.dgf
-#fem.io.macroGridFile_2d: ../macrogrids/cdgpaper_test.dgf
-fem.io.macroGridFile_3d: ../macrogrids/unitcube3.dgf
+fem.io.macroGridFile_1d: ../grids/unitcube1.dgf
+fem.io.macroGridFile_2d: ../grids/unitcube2.dgf
+fem.io.macroGridFile_3d: ../grids/unitcube3.dgf
 
 
 # SOLVER
