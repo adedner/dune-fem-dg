@@ -10,6 +10,8 @@
 
 // local includes
 #include <dune/fem-dg/operator/fluxes/diffusionflux.hh>
+#include <dune/fem-dg/stepper/base.hh>
+
 #include "problem.hh"
 #include "problemQuasiHeatEqn.hh"
 #include "deformationalflow.hh"
@@ -94,6 +96,12 @@ struct ProblemGenerator
   }
 };
 
-//#include <dune/fem-dg/stepper/advectionstepper.hh>
+#include "steppertraits.hh"
+
+#if ADVECTION && DIFFUSION 
+#include <dune/fem-dg/stepper/advectiondiffusionstepper.hh>
+#else 
+#include <dune/fem-dg/stepper/advectionstepper.hh>
+#endif
 
 #endif // FEMHOWTO_HEATSTEPPER_HH
