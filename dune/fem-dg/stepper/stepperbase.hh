@@ -381,6 +381,12 @@ struct StepperBase
     return *problem_; 
   }
 
+  InitialDataType& problem()  
+  { 
+    assert( problem_ ); 
+    return *problem_; 
+  }
+
   virtual const ModelType& model() const = 0 ;
 
 protected:
@@ -434,7 +440,7 @@ protected:
 
   // InitialDataType is a Dune::Operator that evaluates to $u_0$ and also has a
   // method that gives you the exact solution.
-  const InitialDataType*  problem_;
+  InitialDataType*  problem_;
   // Initial flux for advection discretization (UpwindFlux)
   AdaptationHandlerType*  adaptationHandler_;
 

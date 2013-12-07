@@ -4,6 +4,7 @@
 #include <dune/fem/gridpart/adaptiveleafgridpart.hh>
 #include <dune/fem/gridpart/idgridpart.hh>
 #include <dune/fem/solver/odesolver.hh>
+#include <dune/fem/solver/pardginverseoperators.hh>
 
 #include <dune/fem-dg/operator/dg/dgoperatorchoice.hh>
 

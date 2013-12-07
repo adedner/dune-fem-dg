@@ -48,7 +48,7 @@ namespace Dune {
     typedef typename BaseType :: GridPartType  GridPartType;
     typedef typename BaseType :: ProblemType   ProblemType;
 
-    DGAdvectionDiffusionOperator( GridPartType& gridPart , const ProblemType& problem ) 
+    DGAdvectionDiffusionOperator( GridPartType& gridPart, ProblemType& problem ) 
       : BaseType( gridPart, problem )
     {}
 
@@ -85,7 +85,7 @@ namespace Dune {
     typedef typename BaseType :: GridPartType  GridPartType;
     typedef typename BaseType :: ProblemType   ProblemType ;
 
-    DGAdvectionOperator( GridPartType& gridPart , const ProblemType& problem )
+    DGAdvectionOperator( GridPartType& gridPart, ProblemType& problem )
       : BaseType( gridPart, problem )
     {}
 
@@ -127,7 +127,7 @@ namespace Dune {
     using BaseType::discreteModel_;
 
   public:  
-    DGDiffusionOperator( GridPartType& gridPart , const ProblemType& problem ) 
+    DGDiffusionOperator( GridPartType& gridPart, ProblemType& problem ) 
       : BaseType( gridPart, problem )
     {}
 
@@ -183,7 +183,7 @@ namespace Dune {
     typedef typename BaseType :: GridPartType  GridPartType;
     typedef typename BaseType :: ProblemType   ProblemType ;
 
-    DGAdaptationIndicatorOperator( GridPartType& gridPart , const ProblemType& problem ) 
+    DGAdaptationIndicatorOperator( GridPartType& gridPart, ProblemType& problem ) 
       : BaseType( gridPart, problem )
     {}
 
@@ -322,7 +322,7 @@ namespace Dune {
     }
 
   public:
-    DGLimitedAdvectionOperator( GridPartType& gridPart , const ProblemType& problem ) 
+    DGLimitedAdvectionOperator( GridPartType& gridPart, ProblemType& problem ) 
       : model_( problem )
       , numflux_( model_ )
       , gridPart_( gridPart )
@@ -495,7 +495,7 @@ namespace Dune {
     typedef typename BaseType :: ProblemType  ProblemType;
    
   public:
-    DGLimitedAdvectionDiffusionOperator ( GridPartType& gridPart , const ProblemType& problem )
+    DGLimitedAdvectionDiffusionOperator ( GridPartType& gridPart, ProblemType& problem )
     : BaseType( gridPart, problem )
     {}
 

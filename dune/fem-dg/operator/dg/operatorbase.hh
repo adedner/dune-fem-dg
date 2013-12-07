@@ -89,7 +89,7 @@ namespace Dune {
     typedef typename DiscreteModelType :: AdaptationType  AdaptationType;
 
   public:
-    DGAdvectionDiffusionOperatorBase( GridPartType& gridPart , const ProblemType& problem ) 
+    DGAdvectionDiffusionOperatorBase( GridPartType& gridPart, ProblemType& problem ) 
       : model_( problem )
       , numflux_( model_ )
       , gridPart_( gridPart )

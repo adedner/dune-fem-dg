@@ -78,7 +78,7 @@ namespace Dune {
     typedef LocalCDGPass< DiscreteModel2Type, Pass1Type, advectPass >  Pass2Type;
 
   public:
-    DGAdvectionDiffusionOperator( GridPartType& gridPart , const ProblemType& problem ) :
+    DGAdvectionDiffusionOperator( GridPartType& gridPart, ProblemType& problem ) :
       model_( problem ),
       numflux_( model_ ),
       gridPart_( gridPart ),
@@ -213,7 +213,7 @@ namespace Dune {
     typedef typename BaseType :: GridPartType  GridPartType;
     typedef typename BaseType :: ProblemType   ProblemType;
   public:
-    DGAdvectionOperator( GridPartType& gridPart , const ProblemType& problem )
+    DGAdvectionOperator( GridPartType& gridPart, ProblemType& problem )
       : BaseType( gridPart, problem )
     {}
 
@@ -246,7 +246,7 @@ namespace Dune {
     typedef typename BaseType :: ProblemType   ProblemType;
 
   public:
-    DGDiffusionOperator( GridPartType& gridPart , const ProblemType& problem )
+    DGDiffusionOperator( GridPartType& gridPart, ProblemType& problem )
       : BaseType( gridPart, problem )
     {}
 
@@ -366,7 +366,7 @@ namespace Dune {
     }; 
 
   public:
-    DGLimitedAdvectionDiffusionOperator( GridPartType& gridPart , const ProblemType& problem ) 
+    DGLimitedAdvectionDiffusionOperator( GridPartType& gridPart, ProblemType& problem ) 
       : model_( problem )
       , numflux_( model_ )
       , gridPart_( gridPart )
@@ -515,7 +515,7 @@ namespace Dune {
     typedef typename BaseType :: GridPartType  GridPartType;
     typedef typename BaseType :: ProblemType   ProblemType ;
 
-    DGAdaptationIndicatorOperator( GridPartType& gridPart , const ProblemType& problem ) 
+    DGAdaptationIndicatorOperator( GridPartType& gridPart, ProblemType& problem ) 
       : BaseType( gridPart, problem )
     {
       if ( Fem::Parameter::verbose() )
