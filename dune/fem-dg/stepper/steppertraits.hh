@@ -36,30 +36,30 @@ struct StepperTraits
   #if (not defined EULER) and (defined FLUXDG)
   #warning "DGAdvectionDiffusionOperator: using LIMITER."
     typedef Dune :: DGLimitedAdvectionDiffusionOperator< ModelType, FluxType,
-                          DiffusionFluxId,  polynomialOrder >            DgType; /*@LST1E@*/
+                          DiffusionFluxId,  polynomialOrder >            DgType;
   #else
   #warning "DGAdvectionDiffusionOperator: LIMITER can NOT be used. Not supported -> LIMITER, no EULER, no FLUXDG."
     typedef Dune :: DGAdvectionDiffusionOperator< ModelType, FluxType,
-                          DiffusionFluxId,  polynomialOrder >            DgType; /*@LST1E@*/
+                          DiffusionFluxId,  polynomialOrder >            DgType;
   #endif
   #ifndef HIGHER_ORDER_FV 
   #warning "DGAdvectionOperator: using LIMITER."
     typedef Dune :: DGLimitedAdvectionOperator< ModelType, FluxType,
-                                 DiffusionFluxId, polynomialOrder >      DgAdvectionType; /*@LST1E@*/
+                                 DiffusionFluxId, polynomialOrder >      DgAdvectionType;
   #else 
   #warning "DGAdvectionOperator: using HIGHER ORDER FV."
     typedef Dune :: DGLimitedAdvectionOperator< ModelType, FluxType,
-                                 DiffusionFluxId, -1 >      DgAdvectionType; /*@LST1E@*/
+                                 DiffusionFluxId, -1 >      DgAdvectionType;
   #endif
 #else // no LIMITER 
 #warning "No limiter is applied to the numerical solution !!"
   typedef Dune :: DGAdvectionDiffusionOperator< ModelType, FluxType,
-                        DiffusionFluxId,  polynomialOrder >            DgType; /*@LST1E@*/
+                        DiffusionFluxId,  polynomialOrder >            DgType;
   typedef Dune :: DGAdvectionOperator< ModelType, FluxType,
-                               DiffusionFluxId, polynomialOrder >      DgAdvectionType; /*@LST1E@*/
+                               DiffusionFluxId, polynomialOrder >      DgAdvectionType;
 #endif                                       
   typedef Dune :: DGDiffusionOperator< ModelType, FluxType,
-                               DiffusionFluxId, polynomialOrder >      DgDiffusionType; /*@LST1E@*/
+                               DiffusionFluxId, polynomialOrder >      DgDiffusionType;
 
   // The discrete function for the unknown solution is defined in the DgOperator
   typedef typename DgType :: DestinationType                         DiscreteFunctionType;
