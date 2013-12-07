@@ -311,6 +311,9 @@ public:
       }
     }
 
+    // true if last time step should match end time 
+    const bool stopAtEndTime =  ParameterType::getValue("femdg.stopatendtime", bool(false) );
+
     //******************************    
     //*  Time Loop                 *
     //******************************
@@ -357,10 +360,16 @@ public:
       {
         UInt64Type grSize = gridSize();
         if( grid.comm().rank() == 0 )
+        {
           std::cout << "step: " << timeStep << "  time = " << tp.time() << ", dt = " << deltaT
-                    <<",  grid size: " << grSize << std::endl;
+                    <<",  grid size: " << grSize << ",  Newton: " << monitor.newton_iterations << "  ILS: " << monitor.ils_iterations << std::endl;
+        }
       }
-  
+
+      // next advance should not exceed endtime
+      if( stopAtEndTime ) 
+        tp.provideTimeStepEstimate( (endTime - tp.time()) );
+
       // next time step is prescribed by fixedTimeStep
       // it fixedTimeStep is not 0
       if ( fixedTimeStep > 1e-20 )
@@ -369,8 +378,18 @@ public:
         tp.next();
 
       // for debugging and codegen only 
-      if( tp.timeStep() >= maximalTimeSteps ) break ;
+      if( tp.timeStep() >= maximalTimeSteps ) 
+      {
+        if( ParameterType :: verbose() )
+          std::cerr << "ABORT: time step count reached max limit of " << maximalTimeSteps << std::endl;
+        break ;
+      }
 
+      if (tp.timeStep()<2)
+      {
+        // write parameters used (before simulation starts)
+        Dune::Fem::Parameter::write("parameter.log");
+      }
     } /****** END of time loop *****/
 
     // write last time step  

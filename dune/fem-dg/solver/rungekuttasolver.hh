@@ -17,11 +17,12 @@ namespace Dune {
 
 template <class Operator, 
           class ExplicitOperator, 
-          class ImplicitOperator> 
+          class ImplicitOperator,
+          class LinearInverseOperator>
 class RungeKuttaSolver : 
   public DuneODE :: OdeSolverInterface< typename Operator :: DestinationType >
 {
-  typedef Operator           OperatorType;
+  typedef Operator          OperatorType;
   typedef ExplicitOperator  ExplicitOperatorType;
   typedef ImplicitOperator  ImplicitOperatorType;
 
@@ -63,8 +64,6 @@ public:
   template < class Op, class DF, bool pardgOdeSolver > 
   struct OdeSolverSelection 
   {
-    typedef Dune::Fem::ParDGGeneralizedMinResInverseOperator< DestinationType >  LinearInverseOperatorType;
-
     static solverpair_t  
     createExplicitSolver( Op& op, Fem::TimeProviderBase& tp, const int rkSteps )
     { 
@@ -80,7 +79,7 @@ public:
 
       typedef Dune::Fem::NewtonInverseOperator< 
                     typename HelmholtzOperatorType::JacobianOperatorType, 
-                    LinearInverseOperatorType > NonlinearInverseOperatorType;
+                    LinearInverseOperator > NonlinearInverseOperatorType;
 
       typedef DuneODE::ImplicitRungeKuttaSolver< HelmholtzOperatorType, 
                     NonlinearInverseOperatorType > ImplicitOdeSolverType;
@@ -97,7 +96,7 @@ public:
       
       typedef Dune::Fem::NewtonInverseOperator< 
                     typename HelmholtzOperatorType::JacobianOperatorType, 
-                    LinearInverseOperatorType > NonlinearInverseOperatorType;
+                    LinearInverseOperator > NonlinearInverseOperatorType;
 
       typedef DuneODE::SemiImplicitRungeKuttaSolver< ExplicitOperatorType, 
                     HelmholtzOperatorType, NonlinearInverseOperatorType > SemiImplicitOdeSolverType ;

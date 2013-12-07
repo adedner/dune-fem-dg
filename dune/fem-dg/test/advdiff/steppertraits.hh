@@ -30,6 +30,7 @@ struct StepperTraits
   static const Dune::DGDiffusionFluxIdentifier DiffusionFluxId 
     = ProblemTraits :: template Traits< GridPartType > ::PrimalDiffusionFluxId ;
 
+private:
   // The DG Operator (using 2 Passes)
   // The first operator is sum of the other two
   // The other two are needed for semi-implicit time discretization

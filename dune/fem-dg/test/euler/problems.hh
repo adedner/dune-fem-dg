@@ -158,7 +158,7 @@ public:
     enum { dim = DomainType :: dimension  };
 
     res = 0;
-    DomainType y(0.0);
+    DomainType y(0.5);
     const double p = 0.3;
 
     double tmp_c[dim], tmp=0.0, u_sq=0.0;

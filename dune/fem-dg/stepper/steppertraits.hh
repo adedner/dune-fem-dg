@@ -23,12 +23,13 @@ struct StepperTraits
   //typedef Dune :: Fem :: IdGridPart< HostGridPartType >       GridPartType;
 
   // problem dependent types 
-  typedef typename ProblemTraits :: template Traits< GridPartType > :: InitialDataType  InitialDataType;
-  typedef typename ProblemTraits :: template Traits< GridPartType > :: ModelType        ModelType;
-  typedef typename ProblemTraits :: template Traits< GridPartType > :: FluxType         FluxType;
+  typedef typename ProblemTraits :: template Traits< GridPartType > :: InitialDataType   InitialDataType;
+  typedef typename ProblemTraits :: template Traits< GridPartType > :: ModelType         ModelType;
+  typedef typename ProblemTraits :: template Traits< GridPartType > :: FluxType          FluxType;
   static const Dune::DGDiffusionFluxIdentifier DiffusionFluxId 
     = ProblemTraits :: template Traits< GridPartType > ::PrimalDiffusionFluxId ;
 
+private:
   // The DG Operator (using 2 Passes)
   // The first operator is sum of the other two
   // The other two are needed for semi-implicit time discretization
@@ -61,6 +62,11 @@ struct StepperTraits
   typedef Dune :: DGDiffusionOperator< ModelType, FluxType,
                                DiffusionFluxId, polynomialOrder >      DgDiffusionType;
 
+public:
+  typedef DgType          FullOperatorType;
+  typedef DgDiffusionType ImplicitOperatorType;
+  typedef DgAdvectionType ExplicitOperatorType;
+
   // The discrete function for the unknown solution is defined in the DgOperator
   typedef typename DgType :: DestinationType                         DiscreteFunctionType;
 
@@ -78,6 +84,11 @@ struct StepperTraits
 
   // type of IOTuple 
   typedef Dune::tuple< DiscreteFunctionType*, DiscreteFunctionType*, IndicatorType* >  IOTupleType;
+
+  // type of linear solver for implicit ode
+  typedef Dune::Fem::ParDGGeneralizedMinResInverseOperator< DiscreteFunctionType >  LinearInverseOperatorType;
+  typedef Dune::Fem::ParDGGeneralizedMinResInverseOperator< DiscreteFunctionType >  LinearInverseImplicitOperatorType;
+
 };
 
 #endif

@@ -34,9 +34,11 @@ struct Stepper
   // The DG space operator
   // The first operator is sum of the other two
   // The other two are needed for semi-implicit time discretization
-  typedef typename BaseType :: DgType                    DgType;
-  typedef typename BaseType :: DgAdvectionType           DgAdvectionType;
-  typedef typename BaseType :: DgDiffusionType           DgDiffusionType;
+  typedef typename BaseType :: FullOperatorType                    FullOperatorType;
+  typedef typename BaseType :: ExplicitOperatorType           ExplicitOperatorType;
+  typedef typename BaseType :: ImplicitOperatorType           ImplicitOperatorType;
+
+  typedef typename BaseType :: LinearInverseOperatorType LinearInverseOperatorType;
 
   // The discrete function for the unknown solution is defined in the DgOperator
   typedef typename BaseType :: DiscreteFunctionType      DiscreteFunctionType;
@@ -67,7 +69,6 @@ struct Stepper
   using BaseType :: grid_;
   using BaseType :: gridPart_;
   using BaseType :: space;
-  using BaseType :: convectionFlux_ ;
   using BaseType :: problem;
   using BaseType :: adaptationHandler_ ;
   using BaseType :: adaptationParameters_;
@@ -76,10 +77,10 @@ struct Stepper
 
   Stepper( GridType& grid ) :
     BaseType( grid ),
-    dgOperator_( gridPart_, convectionFlux_ ),
-    dgAdvectionOperator_( gridPart_, convectionFlux_ ),
-    dgDiffusionOperator_( gridPart_, convectionFlux_ ),
-    dgIndicator_( gridPart_, convectionFlux_ ),
+    dgOperator_( gridPart_, problem() ),
+    dgAdvectionOperator_( gridPart_, problem() ),
+    dgDiffusionOperator_( gridPart_, problem() ),
+    dgIndicator_( gridPart_, problem() ),
     gradientIndicator_( space(), problem() )
   {
   }
@@ -129,7 +130,8 @@ struct Stepper
     }
 
     // create ODE solver 
-    typedef RungeKuttaSolver< DgType, DgAdvectionType, DgDiffusionType > OdeSolverImpl;
+    typedef RungeKuttaSolver< FullOperatorType, ExplicitOperatorType, ImplicitOperatorType, 
+                              LinearInverseOperatorType > OdeSolverImpl;
     return new OdeSolverImpl( tp, dgOperator_, 
                               dgAdvectionOperator_,
                               dgDiffusionOperator_ );
@@ -147,10 +149,12 @@ struct Stepper
     doEstimateMarkAdapt( dgIndicator_, gradientIndicator_, false );
   }
 
+  const ModelType& model() const { return dgOperator_.model(); }
+
 protected:
-  DgType                  dgOperator_;
-  DgAdvectionType         dgAdvectionOperator_;
-  DgDiffusionType         dgDiffusionOperator_;
+  FullOperatorType                  dgOperator_;
+  ExplicitOperatorType         dgAdvectionOperator_;
+  ImplicitOperatorType         dgDiffusionOperator_;
   DGIndicatorType         dgIndicator_;
   GradientIndicatorType   gradientIndicator_;
 };

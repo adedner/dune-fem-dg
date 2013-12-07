@@ -46,10 +46,10 @@ namespace Dune {
     typedef CDGAdvectionDiffusionTraits<Model, NumFlux, diffFluxId, polOrd, true, true> Traits;
     typedef DGAdvectionDiffusionOperatorBase< Traits >  BaseType;
     typedef typename BaseType :: GridPartType  GridPartType;
-    typedef typename BaseType :: NumFluxType  NumFluxType;
+    typedef typename BaseType :: ProblemType   ProblemType;
 
-    DGAdvectionDiffusionOperator( GridPartType& gridPart , const NumFluxType& numf ) 
-      : BaseType( gridPart, numf )
+    DGAdvectionDiffusionOperator( GridPartType& gridPart , const ProblemType& problem ) 
+      : BaseType( gridPart, problem )
     {}
 
     std::string description() const
@@ -83,10 +83,10 @@ namespace Dune {
     typedef CDGAdvectionDiffusionTraits<Model, NumFlux, diffFluxId, polOrd, true, false> Traits;
     typedef DGAdvectionDiffusionOperatorBase< Traits >  BaseType;
     typedef typename BaseType :: GridPartType  GridPartType;
-    typedef typename BaseType :: NumFluxType  NumFluxType;
+    typedef typename BaseType :: ProblemType   ProblemType ;
 
-    DGAdvectionOperator( GridPartType& gridPart , const NumFluxType& numf ) 
-      : BaseType( gridPart, numf )
+    DGAdvectionOperator( GridPartType& gridPart , const ProblemType& problem )
+      : BaseType( gridPart, problem )
     {}
 
     std::string description() const
@@ -121,14 +121,14 @@ namespace Dune {
     typedef CDGAdvectionDiffusionTraits<Model, NumFlux, diffFluxId, polOrd, false, true> Traits;
     typedef DGAdvectionDiffusionOperatorBase< Traits >  BaseType;
     typedef typename BaseType :: GridPartType  GridPartType;
-    typedef typename BaseType :: NumFluxType  NumFluxType;
+    typedef typename BaseType :: ProblemType   ProblemType;
 
   private:
     using BaseType::discreteModel_;
 
   public:  
-    DGDiffusionOperator( GridPartType& gridPart , const NumFluxType& numf ) 
-      : BaseType( gridPart, numf )
+    DGDiffusionOperator( GridPartType& gridPart , const ProblemType& problem ) 
+      : BaseType( gridPart, problem )
     {}
 
     std::string description() const
@@ -181,10 +181,10 @@ namespace Dune {
     typedef CDGAdaptationIndicatorTraits< Model, NumFlux, diffFluxId, polOrd, advection, diffusion > Traits ;
     typedef DGAdvectionDiffusionOperatorBase< Traits >  BaseType;
     typedef typename BaseType :: GridPartType  GridPartType;
-    typedef typename BaseType :: NumFluxType  NumFluxType;
+    typedef typename BaseType :: ProblemType   ProblemType ;
 
-    DGAdaptationIndicatorOperator( GridPartType& gridPart , const NumFluxType& numf ) 
-      : BaseType( gridPart, numf )
+    DGAdaptationIndicatorOperator( GridPartType& gridPart , const ProblemType& problem ) 
+      : BaseType( gridPart, problem )
     {}
 
     std::string description() const
@@ -256,6 +256,7 @@ namespace Dune {
 
     typedef typename DiscreteModel1Type :: Traits                       Traits;
 
+    typedef typename Model :: ProblemType                               ProblemType;
     typedef typename Model :: Traits :: GridType                        GridType;
 
     typedef typename Traits :: DomainType                               DomainType;
@@ -321,9 +322,9 @@ namespace Dune {
     }
 
   public:
-    DGLimitedAdvectionOperator( GridPartType& gridPart , const NumFluxType& numf ) 
-      : model_( numf.model() )
-      , numflux_( numf )
+    DGLimitedAdvectionOperator( GridPartType& gridPart , const ProblemType& problem ) 
+      : model_( problem )
+      , numflux_( model_ )
       , gridPart_( gridPart )
       , space_( gridPart_ )
       , limiterSpace_( gridPart_ )
@@ -456,9 +457,11 @@ namespace Dune {
       */
     }
 
+    const Model& model () const { return model_; }
+
   private:
-    const Model&        model_;
-    const NumFluxType&  numflux_;
+    Model               model_;
+    NumFluxType         numflux_;
     GridPartType&       gridPart_;
     SpaceType           space_;
     LimiterSpaceType    limiterSpace_;
@@ -489,11 +492,11 @@ namespace Dune {
     typedef DGLimitedAdvectionOperator< Model, NumFlux, diffFluxId, pOrd, advection, diffusion > BaseType;
 
     typedef typename BaseType :: GridPartType GridPartType;
-    typedef typename BaseType :: NumFluxType NumFluxType;
+    typedef typename BaseType :: ProblemType  ProblemType;
    
   public:
-    DGLimitedAdvectionDiffusionOperator ( GridPartType& gridPart , const NumFluxType& numf )
-    : BaseType( gridPart, numf )
+    DGLimitedAdvectionDiffusionOperator ( GridPartType& gridPart , const ProblemType& problem )
+    : BaseType( gridPart, problem )
     {}
 
     void printmyInfo(std::string filename) const
