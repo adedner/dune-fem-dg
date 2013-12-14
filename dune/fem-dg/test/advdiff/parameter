@@ -25,7 +25,8 @@ paramfile: ../parameter/paramBase
 #--------------
 
 # problem: heat, quasi, plaplace
-femhowto.problem: deformational
+#advdiff.problem: deformational
+advdiff.problem: pulse
 
 femhowto.endTime: 1.0
 femhowto.diffusionTimeStep: 1

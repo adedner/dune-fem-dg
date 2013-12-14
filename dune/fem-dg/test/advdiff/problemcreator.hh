@@ -12,9 +12,11 @@
 #include <dune/fem-dg/operator/fluxes/diffusionflux.hh>
 #include <dune/fem-dg/stepper/base.hh>
 
-#include "problem.hh"
-#include "problemQuasiHeatEqn.hh"
-#include "deformationalflow.hh"
+#include "problems/problem.hh"
+#include "problems/problemQuasiHeatEqn.hh"
+#include "problems/pulse.hh"
+#include "problems/sin.hh"
+#include "problems/deformationalflow.hh"
 #include "models.hh"
 
 
@@ -81,28 +83,30 @@ struct ProblemGenerator
   static ProblemType* problem()
   {
     // choice of explicit or implicit ode solver
-    //static const std::string probString[]  = { "heat" ,"quasi", "deformational" };
-    //int probNr = Dune::Fem::Parameter::getEnum( "femhowto.problem", probString, 0 );
-    //if( probNr == 0 ) 
-    //  return new Dune :: U0< GridType > ();
-    //else if ( probNr == 1 ) 
-    //  return new Dune :: QuasiHeatEqnSolution< GridType > ();
-    //else if ( probNr == 2 ) 
-      return new Dune :: DeformationalFlow< GridType > ();
-    //else 
-    //{
-    //  abort();
-    //  return 0;
-    //}
+    static const std::string probString[]  = { "heat" ,"quasi", "pulse", "sin" };
+    const int probNr = Dune::Fem::Parameter::getEnum( "advdiff.problem", probString, 0 );
+    if( probNr == 0 ) 
+      return new Dune :: U0< GridType > ();
+    else if ( probNr == 1 ) 
+      return new Dune :: QuasiHeatEqnSolution< GridType > ();
+    else if ( probNr == 2 ) 
+      return new Dune :: Pulse< GridType > ();
+    else if ( probNr == 3 ) 
+      return new Dune :: U0Sin< GridType > ();
+    else 
+    {
+      abort();
+      return 0;
+    }
   }
 };
 
 #include "steppertraits.hh"
 
-#if ADVECTION && DIFFUSION 
+//#if ADVECTION && DIFFUSION 
 #include <dune/fem-dg/stepper/advectiondiffusionstepper.hh>
-#else 
-#include <dune/fem-dg/stepper/advectionstepper.hh>
-#endif
+//#else 
+//#include <dune/fem-dg/stepper/advectionstepper.hh>
+//#endif
 
 #endif // FEMHOWTO_HEATSTEPPER_HH

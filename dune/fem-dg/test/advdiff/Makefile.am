@@ -1,7 +1,7 @@
 # install these headers 
 advdiffdir=$(includedir)/test/advdiff
 advdiff_HEADERS = models.hh  deformationalflow.hh problemcreator.hh \
-problem.hh  problemQuasiHeatEqn.hh steppertraits.hh
+problem.hh  pulse.hh problemQuasiHeatEqn.hh steppertraits.hh
 
 LDADD = $(ALL_PKG_LDFLAGS) $(ALL_PKG_LIBS) $(LOCAL_LIBS) $(DUNEMPILDFLAGS) $(DUNEMPILIBS)
 
@@ -33,7 +33,7 @@ FLUX = 1    # LLF 1, HLL 2
 # INFO TESTOPERATOR:
 # 		1. define TESTOPERATOR for linear advdiff equation to output various
 # 			 information on space operator
-check_PROGRAMS = advdiff advdiffonep advdiff12 # quasiadvdiff quasiadvdiff12 plaplace plaplace12
+check_PROGRAMS = advdiff advdiffonep pulseonep pulse # quasiadvdiff quasiadvdiff12 plaplace plaplace12
 
 AM_CPPFLAGS = $(USE_OMP) -I../../problems/advdiff  $(ALL_PKG_CPPFLAGS) -DGRIDDIM=$(GRIDDIM) \
 							-D$(GRIDTYPE) $(DUNEMPICPPFLAGS) \
@@ -42,7 +42,9 @@ AM_LDFLAGS = $(ALL_PKG_LDFLAGS) $(LAPACK_LDFLAGS) $(USE_OMP)
 
 advdiff_CPPFLAGS = $(AM_CPPFLAGS)
 advdiffonep_CPPFLAGS = $(advdiff_CPPFLAGS) -DONLY_ONE_P -DPOLORDER=$(POLORDER)
-advdiff12_CPPFLAGS = $(advdiff_CPPFLAGS) -DONLY_P1_P2
+
+pulse_CPPFLAGS = $(AM_CPPFLAGS)
+pulseonep_CPPFLAGS = $(advdiff_CPPFLAGS) -DONLY_ONE_P -DPOLORDER=$(POLORDER)
 
 DISTCHECK_CONFIGURE_FLAGS = DOXYGEN="true"
 
@@ -50,7 +52,7 @@ EXTRA_DIST = parameter
 
 CLEANFILES=manager.*.log eoc_*.tex
 
-PROG=advdiff12
+PROG=advdiffonep
 # codegeneration 
 generatecode:
 	$(MAKE) -i clean

@@ -37,13 +37,13 @@ namespace Dune {
 template <class GridType>                                          /*@LST0S@*/
 struct U0 : public EvolutionProblemInterface<
                   Fem::FunctionSpace< double, double, GridType::dimension, DIMRANGE>,
-                  true >
+                  false >
 {                                                                  /*@LST0E@*/
 public:
   typedef EvolutionProblemInterface<
                  Fem::FunctionSpace< double, double,
                                      GridType::dimension, DIMRANGE >,
-                 true >                                              BaseType;
+                 false >                                              BaseType;
 
   enum{ dimDomain = BaseType :: dimDomain };
   typedef typename BaseType :: DomainType            DomainType;

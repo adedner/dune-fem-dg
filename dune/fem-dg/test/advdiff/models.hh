@@ -80,7 +80,7 @@ public:
 ////////////////////////////////////////////////////////
 //
 //  Analytical model for the Heat Equation
-//      dx(u) + div(uV) - epsilon*lap(u)) = 0
+//      dt(u) + div(uV) - epsilon*lap(u)) = 0
 //  where V is constant vector
 //
 ////////////////////////////////////////////////////////
@@ -89,8 +89,8 @@ class HeatEqnModel : public DefaultModel < HeatEqnModelTraits< GridPartType > >
 {
 public:
   // for heat equations advection is disabled 
-  static const bool hasAdvection = false ;
-  static const bool hasDiffusion = true  ;
+  static const bool hasAdvection = true ;
+  static const bool hasDiffusion = true ;
 
   typedef ProblemImp ProblemType ;
 
@@ -215,7 +215,7 @@ public:
     DomainType v;
     velocity( en, time, x, u, v );
 
-    //f = uV;
+    // f = uV;
     for( int r=0; r<dimRange; ++r )
       for( int d=0; d<dimDomain; ++d )
         f[r][d] = v[ d ] * u[ r ];

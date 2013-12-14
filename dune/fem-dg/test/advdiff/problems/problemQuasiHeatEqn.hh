@@ -20,13 +20,13 @@ namespace Dune {
 template <class GridType>                                          /*@LST0S@*/
 struct QuasiHeatEqnSolution : public EvolutionProblemInterface<
                   Dune::Fem::FunctionSpace< double, double, GridType::dimension, DIMRANGE>,
-                  true >
+                  false >
 {                                                                  /*@LST0E@*/
 public:
   typedef EvolutionProblemInterface<
                  Dune::Fem::FunctionSpace< double, double,
                                            GridType::dimension, DIMRANGE >,
-                 true >                                              BaseType;
+                 false >                                              BaseType;
 
   enum{ dimDomain = BaseType :: dimDomain };
   typedef typename BaseType :: DomainType                            DomainType;

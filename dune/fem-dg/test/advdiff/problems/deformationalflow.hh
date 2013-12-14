@@ -1,5 +1,5 @@
-#ifndef  DUNE_DEFORMATIONALFLOW_HH
-#define  DUNE_DEFORMATIONALFLOW_HH
+#ifndef DUNE_DEFORMATIONALFLOW_HH
+#define DUNE_DEFORMATIONALFLOW_HH
  
 // dune-fem includes
 #include <dune/fem/io/parameter.hh>
@@ -34,11 +34,11 @@ namespace Dune {
  * \Omega}\f$.
  *
  */
-template <class GridType>                                          /*@LST0S@*/
+template <class GridType>
 struct DeformationalFlow : public EvolutionProblemInterface<
                   Fem::FunctionSpace< double, double, GridType::dimension, DIMRANGE>,
                   false >
-{                                                                  /*@LST0E@*/
+{
 public:
   typedef EvolutionProblemInterface<
                  Fem::FunctionSpace< double, double,
@@ -55,7 +55,7 @@ public:
   /**
    * @brief define problem parameters
    */
-  DeformationalFlow () :                                                        /*@LST0S@*/
+  DeformationalFlow () :
     BaseType () ,
     center_( 0.5 ),
     startTime_( ParameterType::getValue<double>("femhowto.startTime",0.0) ),
@@ -118,7 +118,7 @@ public:
   /**
    * @brief evaluates \f$ u_0(x) \f$
    */
-  void evaluate(const DomainType& arg, RangeType& res) const         /*@LST0S@@LST0E@*/
+  void evaluate(const DomainType& arg, RangeType& res) const
   {
     evaluate(arg, startTime_, res);
   }
@@ -126,7 +126,7 @@ public:
   /**
    * @brief evaluate exact solution
    */
-  void evaluate(const DomainType& x, const double t, RangeType& res) const /*@LST0S@@LST0E@*/
+  void evaluate(const DomainType& x, const double t, RangeType& res) const
   {
     DomainType c2( 0.5 );
     c2[ 0 ] = 0.3;
@@ -178,6 +178,6 @@ public:
   std::string myName;
 };
 
-}
-#endif  /*DUNE_PROBLEM_HH__*/
+} // end namespace Dune
+#endif
 
