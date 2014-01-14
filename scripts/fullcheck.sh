@@ -10,8 +10,8 @@ if test \( $# -lt 1 \) -o ! -e $1/$DUNECONTROL ; then
   exit 1
 fi
 
-echo "Full Check of dune-femo-dg"
-echo "--------------------------"
+echo "Full Check of dune-fem-dg"
+echo "-------------------------"
 
 echo
 echo "Host Name: $HOSTNAME"
@@ -92,35 +92,51 @@ do
   fi
 done
 
-# build tarballs
-# --------------
+# perform make check
+# ------------------
 
-for MODULE in $MODULES ; do
-  # ignore missing modules since istl may be missing
-  if ! test -d $DUNEDIR/$MODULE ; then
-    continue;
-  fi
+CHECKLOG="$WORKINGDIR/minimal-check.out"
 
-  echo
-  echo "Making tarball in $MODULE..."
+MAKE_CHECK_FLAGS=""
+MAKE_CHECK_FLAGS="$(source $OPTSDIR/$OPTS; echo $MAKE_CHECK_FLAGS)"
 
-  cd $DUNEDIR/$MODULE
-  find -maxdepth 1 -name "*.tar.gz" -delete
-  if ! make dist &> $WORKINGDIR/$MODULE-dist.out ; then
-    echo "Error: Cannot make tarball for $MODULE (see $WORKINGDIR/$MODULE-dist.out)"
-    if test $MODULE == dune-fem ; then
-      errors=$((errors+1))
-    fi
-  fi
-done
-
-# check distributions
-# -------------------
-
-cd $WORKINGDIR
-if ! $SCRIPTSDIR/check-dist.sh $DUNEDIR ; then
+if ! $SCRIPTSDIR/check-tests.sh $TESTDIR/dune-fem "$MAKE_CHECK_FLAGS"; then
+  echo "Error: Check failed with minimal options (see $CHECKLOG)"
   errors=$((errors+1))
 fi
+mv $WORKINGDIR/check-tests.out $CHECKLOG
+
+
+
+## build tarballs
+## --------------
+#
+#for MODULE in $MODULES ; do
+#  # ignore missing modules since istl may be missing
+#  if ! test -d $DUNEDIR/$MODULE ; then
+#    continue;
+#  fi
+#
+#  echo
+#  echo "Making tarball in $MODULE..."
+#
+#  cd $DUNEDIR/$MODULE
+#  find -maxdepth 1 -name "*.tar.gz" -delete
+#  if ! make dist &> $WORKINGDIR/$MODULE-dist.out ; then
+#    echo "Error: Cannot make tarball for $MODULE (see $WORKINGDIR/$MODULE-dist.out)"
+#    if test $MODULE == dune-fem ; then
+#      errors=$((errors+1))
+#    fi
+#  fi
+#done
+#
+## check distributions
+## -------------------
+#
+#cd $WORKINGDIR
+#if ! $SCRIPTSDIR/check-dist.sh $DUNEDIR ; then
+#  errors=$((errors+1))
+#fi
 
 if test $errors -gt 0 ; then
   exit 1
