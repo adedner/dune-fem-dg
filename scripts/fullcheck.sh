@@ -98,9 +98,9 @@ done
 CHECKLOG="$WORKINGDIR/minimal-check.out"
 
 MAKE_CHECK_FLAGS=""
-MAKE_CHECK_FLAGS="$(source $OPTSDIR/$OPTS; echo $MAKE_CHECK_FLAGS)"
+MAKE_CHECK_FLAGS="$(source $MINIMALOPTS; echo $MAKE_CHECK_FLAGS)"
 
-if ! $SCRIPTSDIR/check-tests.sh $TESTDIR/dune-fem "$MAKE_CHECK_FLAGS"; then
+if ! $SCRIPTSDIR/check-tests.sh $FEMDIR "$MAKE_CHECK_FLAGS"; then
   echo "Error: Check failed with minimal options (see $CHECKLOG)"
   errors=$((errors+1))
 fi
