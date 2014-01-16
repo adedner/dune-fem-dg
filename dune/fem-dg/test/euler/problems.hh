@@ -12,10 +12,15 @@
 #include <dune/fem/space/common/functionspace.hh>
 #include <dune/fem/storage/vector.hh>
 
+#include <dune/fem-dg/operator/fluxes/eulerfluxes.hh>
+#include <dune/fem/io/parameter.hh>
+
 // local includes
 #include <dune/fem-dg/models/defaultprobleminterfaces.hh>
 #include "chorjo.hh"
 
+
+namespace Dune {
 
 //typedef float FIELDTYPE;
 typedef double FIELDTYPE;
@@ -262,6 +267,8 @@ public:
   typedef typename BaseType :: RangeType   RangeType ;
   typedef typename BaseType :: DomainType  DomainType ;
 
+  typedef typename BaseType :: ParameterType ParameterType;
+
   using BaseType :: gamma ;
   using BaseType :: V ;
 
@@ -281,7 +288,7 @@ public:
     Ulr[5] = 0.1;
     
     //ParameterType::get("euler.riemanndata", Ulr, Ulr );
-    T = ParameterType::getValue<double>("femhowto.endTime");
+    T = ParameterType::getValue("femhowto.endTime", T);
     ParameterType::get("femhowto.startTime", startTime, startTime );
     flag = ParameterType::getValue("euler.problemflag", flag);
   }
@@ -431,6 +438,8 @@ public:
   typedef typename BaseType::RangeType RangeType;
   typedef typename BaseType::DomainType DomainType;
 
+  typedef typename BaseType :: ParameterType ParameterType;
+
   using BaseType::gamma;
   using BaseType::V;
 
@@ -451,7 +460,7 @@ public:
     Ulr[2] = 0.4;
     Ulr[5] = 0.4;
     
-    T = ParameterType::getValue< double >( "femhowto.endTime" );
+    T = ParameterType::getValue( "femhowto.endTime", T );
     ParameterType::get( "femhowto.startTime", startTime, startTime );
   }
 
@@ -1033,6 +1042,8 @@ public:
 
 #endif
 
+} // end namespace Dune
+
 #endif
 
 /* CLAWPACK example
@@ -1066,3 +1077,4 @@ public:
  *        sqrt( 0.5*((gamma+1)/gamma) * pinf + 0.5*gamma1/gamma )
  * einf = 0.5*rinf*vinf*vinf + pinf/gamma1
  */
+

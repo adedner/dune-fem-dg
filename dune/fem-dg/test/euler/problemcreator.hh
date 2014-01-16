@@ -16,6 +16,8 @@
 #include "eulermodel.hh"
 #include "problems.hh"
 
+#include <dune/fem-dg/stepper/base.hh>
+
 template <class GridType> 
 struct ProblemGenerator 
 {
