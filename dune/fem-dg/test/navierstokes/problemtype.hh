@@ -7,16 +7,7 @@
 ///////////////////////////////////////
 // AVAILABLE PROBLEMS
 ///////////////////////////////////////
-#if PROBLEM==1
-#error
-   // a trivial exact solution
-   // for Navier-Stokes equations
-   #include "constant.hh"
-   #warning "Problem: 2d constant Navier-Stokes solution"
-   typedef NSConstant< GridSelector :: GridType >  NSProblemType;
-   #define PROBLEM_HAS_SOLUTION
-
-#elif PROBLEM==2
+#if PROBLEM==2
    // a nonstationary exact solution 
    // for Navier-Stokes equations
    #include "nswaves.hh"
