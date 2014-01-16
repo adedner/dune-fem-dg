@@ -58,7 +58,7 @@ nseq12_CPPFLAGS = $(nseq_CPPFLAGS) -DONLY_P1_P2
 
 DISTCHECK_CONFIGURE_FLAGS = DOXYGEN="true"
 
-EXTRA_DIST = paramFiles/param*
+EXTRA_DIST = parameter
 
 CLEANFILES = manager.*.log 
 
