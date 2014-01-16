@@ -10,20 +10,20 @@ LDADD=$(ALL_PKG_LDFLAGS) $(ALL_PKG_LIBS) $(LOCAL_LIBS) $(DUNEMPILDFLAGS) $(DUNEM
 
 BASEDIR=../../main
 
-SOURCES = $(BASEDIR)/main.cc $(BASEDIR)/main_0.cc $(BASEDIR)/main_1.cc \
-						$(BASEDIR)/main_2.cc $(BASEDIR)/main_3.cc $(BASEDIR)/main_4.cc
-SOURCES12 = $(BASEDIR)/main.cc $(BASEDIR)/main_1.cc $(BASEDIR)/main_2.cc
 SOURCESONEP = $(BASEDIR)/main.cc $(BASEDIR)/main_pol.cc 
+SOURCES = $(BASEDIR)/main.cc $(BASEDIR)/main_0.cc $(BASEDIR)/main_1.cc \
+          $(BASEDIR)/main_2.cc $(BASEDIR)/main_3.cc $(BASEDIR)/main_4.cc
+SOURCES12 = $(BASEDIR)/main.cc $(BASEDIR)/main_1.cc $(BASEDIR)/main_2.cc
 
 #GRIDTYPE = ALUGRID_SIMPLEX
 #GRIDTYPE=PARALLELGRID_ALUGRID_CUBE
 #GRIDTYPE=PARALLELGRID_ALUGRID_SIMPLEX
-GRIDTYPE=SPGRID
+# GRIDTYPE=SPGRID
 #GRIDTYPE=CARTESIANGRID_ALUGRID_CUBE
-#GRIDTYPE = ALUGRID_CUBE
+GRIDTYPE = ALUGRID_CUBE
 #GRIDTYPE=YASPGRID
 #GRIDTYPE = YASPGRID
-GRIDDIM=2
+GRIDDIM=3
 POLORDER=2
 
 PROBLEM = 2 # check ./problemtype.hh
@@ -33,31 +33,25 @@ DIFFFLUX=PRIMALDG
 #DIFFFLUX=FLUXDG
 
 # INFO SPACE OPERATOR:
-# 		1. define PRIMALDG for various space operators in primal formulation
-# 	  2. define DUALDG for the LDG space operator in dual formulation
+#     1. define PRIMALDG for various space operators in primal formulation
+#     2. define DUALDG for the LDG space operator in dual formulation
 # INFO TRACK LIFTING:
-# 		1. define LOCALDEBUG to calculate \sum_e\int_Omega(r_e*l_e) and 
-# 			 \sum_e\int_Omega(r_e*l_e). They will be output to std::cout from the Stepper
+#     1. define LOCALDEBUG to calculate \sum_e\int_Omega(r_e*l_e) and 
+#        \sum_e\int_Omega(r_e*l_e). They will be output to std::cout from the Stepper
 # INFO LIMITER
-# 		1. define LIMITER to limit the advection part of the solution (not checked)
+#     1. define LIMITER to limit the advection part of the solution (not checked)
 AM_CPPFLAGS = $(USE_OMP) -I../../problems/nseq  $(ALL_PKG_CPPFLAGS) -DGRIDDIM=$(GRIDDIM) \
               -DPROBLEM=$(PROBLEM) -D$(GRIDTYPE) $(DUNEMPICPPFLAGS) \
-              -DFLUX=$(FLUX) -D$(DIFFFLUX) -DLAGRANGEBASIS # -DLEGENDREBASIS # -DWBPROBLEM -DWELLBALANCE
+              -DFLUX=$(FLUX) -D$(DIFFFLUX) # -DLEGENDREBASIS # -DWBPROBLEM -DWELLBALANCE
 AM_LDFLAGS = $(ALL_PKG_LDFLAGS) $(LAPACK_LDFLAGS) $(USE_OMP) 
 
+noinst_PROGRAMS = nseq nseq12
+check_PROGRAMS = nseqonep
 
-check_PROGRAMS = constant constantonep constant12 \
-								 nseq nseqonep nseq12
-nodist_constant_SOURCES = $(SOURCES)
-nodist_constantonep_SOURCES = $(SOURCESONEP)
-nodist_constant12_SOURCES = $(SOURCES12) 
 nodist_nseq_SOURCES = $(SOURCES) 
 nodist_nseqonep_SOURCES = $(SOURCESONEP) 
 nodist_nseq12_SOURCES = $(SOURCES12) 
 
-constant_CPPFLAGS = $(AM_CPPFLAGS)
-constantonep_CPPFLAGS = $(constant_CPPFLAGS) -DONLY_ONE_P -DPOLORDER=$(POLORDER)
-constant12_CPPFLAGS = $(constant_CPPFLAGS) -DONLY_P1_P2
 nseq_CPPFLAGS = $(AM_CPPFLAGS)
 nseqonep_CPPFLAGS = $(nseq_CPPFLAGS) -DONLY_ONE_P -DPOLORDER=$(POLORDER)
 nseq12_CPPFLAGS = $(nseq_CPPFLAGS) -DONLY_P1_P2
