@@ -17,6 +17,8 @@
 #include "problemtype.hh"
 #include "ns_model.hh"
 
+#include <dune/fem-dg/stepper/base.hh>
+
 
 template< class GridType > 
 struct ProblemGenerator 
