@@ -1,7 +1,7 @@
 # install these headers 
 advdiffdir=$(includedir)/test/advdiff
-advdiff_HEADERS = models.hh  deformationalflow.hh problemcreator.hh \
-problem.hh  pulse.hh problemQuasiHeatEqn.hh steppertraits.hh
+advdiff_HEADERS = models.hh  problemcreator.hh \
+pulse.hh steppertraits.hh
 
 LDADD = $(ALL_PKG_LDFLAGS) $(ALL_PKG_LIBS) $(LOCAL_LIBS) $(DUNEMPILDFLAGS) $(DUNEMPILIBS)
 
