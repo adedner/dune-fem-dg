@@ -31,6 +31,7 @@
 ///////////////////////////////////////////////////
 #include <dune/fem-dg/main/main_pol.cc>
 #include <dune/fem/io/file/vtkio.hh>
+#include <dune/fem/io/file/vtkio.hh>
 
 #include <dune/fem/operator/projection/vtxprojection.hh>
 
@@ -165,7 +166,7 @@ template <class GR_GridType,
       // get data name 
       std::string name( (Uh.name() == "") ? "sol" : Uh.name() ); 
       // get file name
-      std::string filename = Dune :: genFilename("",name,timestep,6);
+      std::string filename = Dune :: Fem :: generateFilename(name,timestep,6);
 
       if( verbose ) 
         std::cout <<"Writing vtk output " <<filename <<"...";
@@ -202,7 +203,7 @@ template <class GR_GridType,
       // get data name 
       std::string name( (Uh.name() == "") ? "sol" : Uh.name() ); 
       // get file name
-      std::string filename = Dune :: genFilename("",name,timestep,6);
+      std::string filename = Dune :: Fem :: generateFilename(name,timestep,6);
 
       if( verbose ) 
         std::cout <<"Writing vtk output " <<filename <<"...";
