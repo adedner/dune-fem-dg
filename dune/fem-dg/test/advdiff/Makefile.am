@@ -27,8 +27,8 @@ FLUX = 1    # LLF 1, HLL 2
 # INFO TESTOPERATOR:
 #     1. define TESTOPERATOR for linear advdiff equation to output various
 #        information on space operator
-noinst_PROGRAMS = advdiff pulse # quasiadvdiff quasiadvdiff12 plaplace plaplace12
-check_PROGRAMS = advdiffonep pulseonep pulse # quasiadvdiff quasiadvdiff12 plaplace plaplace12
+EXTRA_PROGRAMS = advdiff pulse # quasiadvdiff quasiadvdiff12 plaplace plaplace12
+check_PROGRAMS = advdiffonep pulseonep # quasiadvdiff quasiadvdiff12 plaplace plaplace12
 
 advdiff_SOURCES = $(BASEDIR)/main.cc $(BASEDIR)/main_1.cc $(BASEDIR)/main_2.cc \
                   $(BASEDIR)/main_0.cc $(BASEDIR)/main_3.cc

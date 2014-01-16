@@ -45,7 +45,7 @@ AM_CPPFLAGS = $(USE_OMP) -I../../problems/nseq  $(ALL_PKG_CPPFLAGS) -DGRIDDIM=$(
               -DFLUX=$(FLUX) -D$(DIFFFLUX) # -DLEGENDREBASIS # -DWBPROBLEM -DWELLBALANCE
 AM_LDFLAGS = $(ALL_PKG_LDFLAGS) $(LAPACK_LDFLAGS) $(USE_OMP) 
 
-noinst_PROGRAMS = nseq nseq12
+EXTRA_PROGRAMS = nseq nseq12
 check_PROGRAMS = nseqonep
 
 nodist_nseq_SOURCES = $(SOURCES) 

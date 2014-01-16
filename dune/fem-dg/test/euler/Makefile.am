@@ -47,7 +47,7 @@ AM_CPPFLAGS = $(USE_OMP) -I../../problems/coldbubble  $(ALL_PKG_CPPFLAGS) -DGRID
               -DFLUX=$(FLUX) -D$(DIFFFLUXTYPE) -DWANT_CACHED_COMM_MANAGER=0
 AM_LDFLAGS = $(ALL_PKG_LDFLAGS) $(LAPACK_LDFLAGS) $(USE_OMP)
 
-noinst_PROGRAMS = euler euler12
+EXTRA_PROGRAMS = euler euler12
 check_PROGRAMS = euleronep 
 
 euler_SOURCES = $(SOURCES)
