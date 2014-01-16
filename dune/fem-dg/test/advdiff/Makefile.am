@@ -1,7 +1,6 @@
 # install these headers 
 advdiffdir=$(includedir)/test/advdiff
-advdiff_HEADERS = models.hh  problemcreator.hh \
-pulse.hh steppertraits.hh
+advdiff_HEADERS = models.hh  problemcreator.hh steppertraits.hh
 
 LDADD = $(ALL_PKG_LDFLAGS) $(ALL_PKG_LIBS) $(LOCAL_LIBS) $(DUNEMPILDFLAGS) $(DUNEMPILIBS)
 
@@ -10,7 +9,6 @@ BASEDIR=../../main
 advdiff_SOURCES = $(BASEDIR)/main.cc $(BASEDIR)/main_1.cc $(BASEDIR)/main_2.cc \
 							 $(BASEDIR)/main_0.cc $(BASEDIR)/main_3.cc
 advdiffonep_SOURCES = $(BASEDIR)/main.cc $(BASEDIR)/main_pol.cc
-advdiff12_SOURCES = $(BASEDIR)/main.cc $(BASEDIR)/main_1.cc $(BASEDIR)/main_2.cc
 
 #GRIDTYPE = ALUGRID_SIMPLEX
 #GRIDTYPE = YASPGRID
