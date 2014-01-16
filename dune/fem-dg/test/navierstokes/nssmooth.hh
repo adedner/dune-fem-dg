@@ -10,20 +10,20 @@
 
 // local includes
 #include "thermodynamics.hh"
-#include <dune/fem/probleminterfaces.hh>
+#include <dune/fem-dg/models/defaultprobleminterfaces.hh>
 
 
 namespace Dune {
 
 template <class GridType>
 class NSSmoothSolution : public EvolutionProblemInterface<
-                            Dune::FunctionSpace< double, double, GridType::dimension, GridType::dimension + 2 >,
+                            Dune::Fem::FunctionSpace< double, double, GridType::dimension, GridType::dimension + 2 >,
                             true >,
                          public Thermodynamics< GridType::dimensionworld >
 {
   NSSmoothSolution( const NSSmoothSolution& );
   public:
-  typedef FunctionSpace<typename GridType::ctype,
+  typedef Fem::FunctionSpace<typename GridType::ctype,
                         double, GridType::dimensionworld,
                         GridType::dimensionworld + 2 > FunctionSpaceType ;
 
@@ -35,13 +35,15 @@ class NSSmoothSolution : public EvolutionProblemInterface<
   typedef typename FunctionSpaceType :: RangeType         RangeType;
   typedef Thermodynamics< dimension >                     ThermodynamicsType;
 
+  typedef Fem :: Parameter ParameterType;
+
   NSSmoothSolution() : ThermodynamicsType(),
     myName_( "NSSmoothSolution" ),
-    omegaGNS_( Parameter::getValue< double >( "omegaGNS" ) ),
-    kGNS_( Parameter::getValue< double >( "kGNS" ) ),
-    gammaGNS_( Parameter::getValue< double >( "gammaGNS" ) ),
-    endTime_ ( Parameter::getValue<double>( "femhowto.endTime" )), 
-    mu_( Parameter :: getValue< double >( "mu" )), 
+    omegaGNS_( ParameterType::getValue< double >( "omegaGNS" ) ),
+    kGNS_( ParameterType::getValue< double >( "kGNS" ) ),
+    gammaGNS_( ParameterType::getValue< double >( "gammaGNS" ) ),
+    endTime_ ( ParameterType::getValue<double>( "femhowto.endTime" )), 
+    mu_( ParameterType :: getValue< double >( "mu" )), 
     //k_ ( c_pd() * Pr_inv() * mu_),
     k_ ( 2.0 ),
     alpha_( 1.0 ),
