@@ -314,16 +314,19 @@ class DGPrimalMatrixAssembly
 
   public:
 
+  //! constructor for DG matrix assembly
   DGPrimalMatrixAssembly( GridPartType& gridPart,
                           const Model& model,
-                          const bool fullOperator = ParameterType::getValue("use_dgstabilization", bool(true)) )
+                          const bool calculateFluxes = true,
+                          const bool strongBC = false )
+                          // = ParameterType::getValue("use_dgstabilization", bool(true)) )
     : model_(model),
       space_(gridPart),
       zero_(), 
       advFlux_(model_),
       flux_(gridPart, model),
-      calculateFluxes_( fullOperator ),
-      useStrongBoundaryCondition_( ParameterType::getValue<bool>( "use_strongbnd",false ) )
+      calculateFluxes_( calculateFluxes ),
+      useStrongBoundaryCondition_( strongBC ) // ParameterType::getValue<bool>( "use_strongbnd",false ) )
   {
   }
 
