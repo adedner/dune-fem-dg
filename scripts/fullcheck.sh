@@ -95,6 +95,9 @@ done
 # perform make check
 # ------------------
 
+echo
+echo "Checking for minimal options ..."
+
 CHECKLOG="$WORKINGDIR/minimal-check.out"
 
 MAKE_CHECK_FLAGS=""
@@ -104,7 +107,7 @@ if ! $SCRIPTSDIR/check-tests.sh $FEMDIR "$MAKE_CHECK_FLAGS"; then
   echo "Error: Check failed with minimal options (see $CHECKLOG)"
   errors=$((errors+1))
 fi
-mv $WORKINGDIR/check-tests.out $CHECKLOG
+mv $FEMDIR/check-tests.out $CHECKLOG
 
 
 
