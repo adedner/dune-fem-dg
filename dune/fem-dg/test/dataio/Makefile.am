@@ -19,8 +19,8 @@ BASEDIR = ../../main/
 SOURCES = $(BASEDIR)/main.cc $(BASEDIR)/main_pol.cc
 
 # install these headers 
-testdir = $(includedir)/dune/fem-dg/test
-test_HEADERS = checkpointing.hh
+dataiodir = $(includedir)/dune/fem-dg/test/dataio
+dataio_HEADERS = checkpointing.hh problemcreator.hh  problem.hh
 
 check_PROGRAMS = checkpointing dataconvert 
 nodist_checkpointing_SOURCES = $(SOURCES)
