@@ -80,21 +80,22 @@ fi
 # check headers
 # -------------
 
-for module in $MODULES;
-do 
-  echo
-  echo "Checking headers in $module ..."
-  cd $DUNEDIR/$module
-  if ! $SCRIPTSDIR/check-headers.sh ; then
-    if test "x$module" == "xdune-fem"; then
-      errors=$((errors+1))
-    fi
-  fi
-done
+#for module in $MODULES;
+#do 
+#  echo
+#  echo "Checking headers in $module ..."
+#  cd $DUNEDIR/$module
+#  if ! $SCRIPTSDIR/check-headers.sh ; then
+#    if test "x$module" == "xdune-fem"; then
+#      errors=$((errors+1))
+#    fi
+#  fi
+#done
 
 # perform make check
 # ------------------
 
+cd $WORKINGDIR 
 echo
 echo "Checking for minimal options ..."
 
@@ -107,7 +108,7 @@ if ! $SCRIPTSDIR/check-tests.sh $FEMDIR "$MAKE_CHECK_FLAGS"; then
   echo "Error: Check failed with minimal options (see $CHECKLOG)"
   errors=$((errors+1))
 fi
-mv $FEMDIR/check-tests.out $CHECKLOG
+mv $WORKINGDIR/check-tests.out $CHECKLOG
 
 
 
