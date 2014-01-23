@@ -7,6 +7,7 @@
 
 #include <dune/common/typetraits.hh>
 
+#include <dune/fem/storage/singletonlist.hh>
 #include <dune/fem/common/tupleutility.hh>
 #include <dune/fem/pass/common/local.hh>
 #include <dune/fem/quadrature/cachingquadrature.hh>

@@ -10,6 +10,7 @@
 #include <dune/fem/space/common/arrays.hh>
 
 #include <dune/fem-dg/operator/fluxes/diffusionflux.hh>
+#include <dune/fem-dg/pass/dgmasspass.hh>
 
 namespace Dune {
 
@@ -60,9 +61,21 @@ namespace Dune {
 
     class Lifting 
     {
+    protected:  
       const DiscreteGradientSpaceType& gradSpc_;
       LiftingFunctionType r_e_;
+
+#ifdef USE_CACHED_INVERSE_MASSMATRIX
+#warning "Using cached inverse local mass matrix"
+      // type of communication manager object which does communication
+      typedef typename DiscreteGradientSpaceType::template ToNewDimRange< 1 >::Type ScalarDiscreteFunctionSpaceType;
+      typedef Fem::DGMassInverseMassImplementation< ScalarDiscreteFunctionSpaceType, true > MassInverseMassType ;
+      typedef typename MassInverseMassType :: KeyType KeyType;
+      typedef Fem::SingletonList< KeyType, MassInverseMassType >  InverseMassProviderType;
+      MassInverseMassType& inverseMass_;
+#else
       LocalMassMatrixType localMassMatrix_;
+#endif
       unsigned char isInitialized_;
 
       // prohibit copying
@@ -71,9 +84,14 @@ namespace Dune {
       explicit Lifting( const DiscreteGradientSpaceType& grdSpace ) 
         : gradSpc_( grdSpace )
         , r_e_( gradSpc_ )
+#ifdef USE_CACHED_INVERSE_MASSMATRIX
+        , inverseMass_( InverseMassProviderType :: getObject( KeyType( gradSpc_.gridPart() ) ) ) 
+#else
         , localMassMatrix_( gradSpc_, 2*gradSpc_.order() )
+#endif
         , isInitialized_( 0 )
       {
+        assert( Fem::ThreadManager::singleThreadMode() );
       }
 
       bool isInitialized() const { return isInitialized_ == 2 ; }
@@ -94,7 +112,11 @@ namespace Dune {
       void finalize()
       {
         assert( isInitialized_ == 1 );
+#ifdef USE_CACHED_INVERSE_MASSMATRIX
+        inverseMass_.applyInverse( r_e_ );
+#else
         localMassMatrix_.applyInverse( r_e_ );
+#endif
         isInitialized_ = 2;
       }
     };
