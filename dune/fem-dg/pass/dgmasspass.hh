@@ -163,11 +163,26 @@ namespace Dune
       }
 
       //! apply inverse mass matrix to local function 
+      template< class Caller, class LocalFunction >
+      void applyInverse( Caller& caller, const EntityType& entity, LocalFunction& localDest ) const 
+      {
+        // this pass only can handle no mass
+        assert( ! caller.hasMass() );
+        applyInverse( entity, localDest );
+      }
+
+      //! apply inverse mass matrix to local function 
       template< class LocalFunction >
       void applyInverse( LocalFunction& localDest ) const 
       {
+        applyInverse( localDest.entity(), localDest );
+      }
+
+      //! apply inverse mass matrix to local function 
+      template< class LocalFunction >
+      void applyInverse( const EntityType& entity, LocalFunction& localDest ) const 
+      {
         enum { dimRange = LocalFunction :: dimRange };
-        const EntityType& entity = localDest.entity();
         const int idx = scalarSpace_.gridPart().indexSet().index( entity );
         const Geometry& geometry = entity.geometry();
 

@@ -62,9 +62,6 @@ namespace Dune {
     class Lifting 
     {
     protected:  
-      const DiscreteGradientSpaceType& gradSpc_;
-      LiftingFunctionType r_e_;
-
 #ifdef USE_CACHED_INVERSE_MASSMATRIX
 #warning "Using cached inverse local mass matrix"
       // type of communication manager object which does communication
@@ -72,10 +69,14 @@ namespace Dune {
       typedef Fem::DGMassInverseMassImplementation< ScalarDiscreteFunctionSpaceType, true > MassInverseMassType ;
       typedef typename MassInverseMassType :: KeyType KeyType;
       typedef Fem::SingletonList< KeyType, MassInverseMassType >  InverseMassProviderType;
-      MassInverseMassType& inverseMass_;
+      typedef MassInverseMassType&  LocalMassMatrixStorageType ;
 #else
-      LocalMassMatrixType localMassMatrix_;
+      typedef LocalMassMatrixType  LocalMassMatrixStorageType;
 #endif
+
+      const DiscreteGradientSpaceType& gradSpc_;
+      LiftingFunctionType r_e_;
+      LocalMassMatrixStorageType localMassMatrix_;
       unsigned char isInitialized_;
 
       // prohibit copying
@@ -85,7 +86,7 @@ namespace Dune {
         : gradSpc_( grdSpace )
         , r_e_( gradSpc_ )
 #ifdef USE_CACHED_INVERSE_MASSMATRIX
-        , inverseMass_( InverseMassProviderType :: getObject( KeyType( gradSpc_.gridPart() ) ) ) 
+        , localMassMatrix_( InverseMassProviderType :: getObject( KeyType( gradSpc_.gridPart() ) ) ) 
 #else
         , localMassMatrix_( gradSpc_, 2*gradSpc_.order() )
 #endif
@@ -112,11 +113,7 @@ namespace Dune {
       void finalize()
       {
         assert( isInitialized_ == 1 );
-#ifdef USE_CACHED_INVERSE_MASSMATRIX
-        inverseMass_.applyInverse( r_e_ );
-#else
         localMassMatrix_.applyInverse( r_e_ );
-#endif
         isInitialized_ = 2;
       }
     };

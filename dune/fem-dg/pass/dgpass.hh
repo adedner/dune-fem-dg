@@ -95,8 +95,19 @@ namespace Dune {
     typedef typename GridPartType::IndexSetType IndexSetType; 
     typedef Fem::TemporaryLocalFunction< DiscreteFunctionSpaceType > TemporaryLocalFunctionType;
 
+#ifdef USE_CACHED_INVERSE_MASSMATRIX
+    // type of communication manager object which does communication
+    typedef typename DiscreteFunctionSpaceType::template ToNewDimRange< 1 >::Type ScalarDiscreteFunctionSpaceType;
+    typedef Fem::DGMassInverseMassImplementation< ScalarDiscreteFunctionSpaceType, true > MassInverseMassType ;
+    typedef typename MassInverseMassType :: KeyType MassKeyType;
+    typedef Fem::SingletonList< MassKeyType, MassInverseMassType >  InverseMassProviderType;
+    // store a reference to the mass matrix implementation
+    typedef MassInverseMassType&  LocalMassMatrixStorageType ;
+#else
     //! type of local mass matrix 
     typedef Fem::LocalMassMatrix< DiscreteFunctionSpaceType, VolumeQuadratureType > LocalMassMatrixType;
+    typedef LocalMassMatrixType  LocalMassMatrixStorageType;
+#endif
 
     // true if all intersections between element in this grid part are conforming
     static const bool conformingGridPart = 
@@ -135,7 +146,11 @@ namespace Dune {
         volumeQuadOrd_( volumeQuadOrd ),
         faceQuadOrd_( faceQuadOrd ),
         numberOfElements_( 0 ),
+#ifdef USE_CACHED_INVERSE_MASSMATRIX
+        localMassMatrix_( InverseMassProviderType :: getObject( MassKeyType( gridPart_ ) ) ),
+#else
         localMassMatrix_( spc_ , volumeQuadOrd_ ),
+#endif
         reallyCompute_( true )
     {
       // make sure that either a ghost layer or an overlap layer is there for 
@@ -939,7 +954,7 @@ namespace Dune {
 
     const int volumeQuadOrd_, faceQuadOrd_;
     mutable size_t numberOfElements_ ;
-    LocalMassMatrixType localMassMatrix_;
+    LocalMassMatrixStorageType localMassMatrix_;
     mutable bool reallyCompute_;
   };
 //! @}  
