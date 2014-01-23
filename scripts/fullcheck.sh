@@ -80,17 +80,17 @@ fi
 # check headers
 # -------------
 
-#for module in $MODULES;
-#do 
-#  echo
-#  echo "Checking headers in $module ..."
-#  cd $DUNEDIR/$module
-#  if ! $SCRIPTSDIR/check-headers.sh ; then
-#    if test "x$module" == "xdune-fem"; then
-#      errors=$((errors+1))
-#    fi
-#  fi
-#done
+for module in $MODULES;
+do 
+  echo
+  echo "Checking headers in $module ..."
+  cd $DUNEDIR/$module
+  if ! $SCRIPTSDIR/check-headers.sh ; then
+    if test "x$module" == "xdune-fem"; then
+      errors=$((errors+1))
+    fi
+  fi
+done
 
 # perform make check
 # ------------------
