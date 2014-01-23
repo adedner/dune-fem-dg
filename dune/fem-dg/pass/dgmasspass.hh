@@ -12,6 +12,7 @@
 #include <dune/fem/pass/common/local.hh>
 #include <dune/fem/quadrature/cachingquadrature.hh>
 #include <dune/fem/pass/dginversemass.hh>
+#include <dune/fem-dg/misc/crs.hh>
 
 namespace Dune
 {
@@ -69,7 +70,8 @@ namespace Dune
 
     private:
       typedef typename ScalarDiscreteFunctionSpaceType :: RangeFieldType  ctype;
-      typedef Dune::FieldMatrix< ctype, numScalarBasis, numScalarBasis > LocalMatrixType ;
+      typedef Dune::FieldMatrix< ctype, numScalarBasis, numScalarBasis >         LocalMatrixType ;
+      typedef Dune::Fem::BlockCRSMatrix< ctype, numScalarBasis, numScalarBasis > SparseLocalMatrixType ;
 
       typedef Fem::CachingQuadrature< GridPartType, 0 > VolumeQuadratureType;
 
@@ -88,9 +90,9 @@ namespace Dune
 
       struct VectorEntry 
       {
-        LocalMatrixType  matrix_ ;
+        SparseLocalMatrixType  matrix_ ;
         GlobalCoordinate center_ ;
-        VectorEntry () : matrix_( 0 ), center_( std::numeric_limits< double > :: max() )
+        VectorEntry () : matrix_(), center_( std::numeric_limits< double > :: max() )
         {}
       };
 
@@ -223,13 +225,15 @@ namespace Dune
     protected:
       template < class ConstLocalFunction, class LocalFunctionType >
       void multiplyBlock( const int dimRange, 
-                          const LocalMatrixType& matrix, 
+                          const SparseLocalMatrixType& matrix, 
                           const ConstLocalFunction& arg, 
                           LocalFunctionType& dest ) const 
       {
         // clear destination
-        dest.clear();
+        // dest.clear();
+        matrix.mvb( dimRange, arg, dest );
         
+        /*
         static const int rows = LocalMatrixType::rows;
         static const int cols = LocalMatrixType::cols;
 
@@ -247,6 +251,7 @@ namespace Dune
             }
           }
         }
+        */
       }
 
       void setup() const
@@ -306,10 +311,10 @@ namespace Dune
                   const EntityType& entity, 
                   const Geometry& geo,
                   const BasisFunctionSetType& set,
-                  LocalMatrixType& matrix ) const
+                  SparseLocalMatrixType& storedMatrix ) const
       {
         // clear matrix 
-        matrix = 0;
+        LocalMatrixType matrix( 0 );
 
         // vector holding basis function evaluation 
         Dune::array< ScalarRangeType, numScalarBasis > phi ;
@@ -356,6 +361,9 @@ namespace Dune
         // if we are looking for the inverse, then invert matrix 
         if( inverse ) 
           matrix.invert();
+
+        // store matrix 
+        storedMatrix.set( matrix );
       }
 
     protected:
