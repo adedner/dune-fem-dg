@@ -49,7 +49,6 @@ static inline std::string checkPointRestartFileName ()
   static std::string checkFileName ;
   if( ! initialized ) 
   {
-    /*
     const std::string key( "fem.io.checkpointrestartfile" );
     if( ParameterType :: exists( key ) )
     {
@@ -57,7 +56,6 @@ static inline std::string checkPointRestartFileName ()
     }
     else 
       checkFileName = "" ;
-      */
     initialized = true ;
   }
 
