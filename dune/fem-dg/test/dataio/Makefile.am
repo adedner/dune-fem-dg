@@ -14,6 +14,7 @@ AM_CPPFLAGS = $(ALL_PKG_CPPFLAGS) -DUSE_SIONLIB=$(USE_SIONLIB) \
 LDADD = $(ALL_PKG_LDFLAGS) $(ALL_PKG_LIBS)
 
 EXTRA_DIST = parameter
+CLEANFILES = *.*vtu
 
 BASEDIR = ../../main/
 SOURCES = $(BASEDIR)/main.cc $(BASEDIR)/main_pol.cc
