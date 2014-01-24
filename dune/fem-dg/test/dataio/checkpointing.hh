@@ -1,19 +1,7 @@
 #ifndef NAVIER_STOKES_STEPPER_HH
 #define NAVIER_STOKES_STEPPER_HH
 
-#if HAVE_SIONLIB && WANT_SIONLIB
-#include <dune/fem/io/streams/sionlibstreams.hh>
-namespace Dune {
-
-struct PersistenceManagerTraits 
-{
-  typedef Fem :: SIONlibOutStream  BackupStreamType ;
-  typedef Fem :: SIONlibInStream   RestoreStreamType ;
-  static const bool singleBackupRestoreFile = true ;
-};
-#define FEM_PERSISTENCEMANAGERSTREAMTRAITS  PersistenceManagerTraits
-}
-#endif
+#include <dune/fem-dg/misc/streams.hh>
 
 // include std libs
 #include <iostream>
@@ -39,6 +27,7 @@ struct StepperTraits {
   // type of Grid
   typedef GridImp                                                    GridType;
   // Choose a suitable GridView
+  //typedef Dune::Fem::LeafGridPart< GridType >              GridPartType;
   typedef Dune::Fem::DGAdaptiveLeafGridPart< GridType >              GridPartType;
   //typedef AdaptiveLeafGridPart< GridType >                         GridPartType;
   //typedef IdBasedLeafGridPart< GridType >                         GridPartType;
@@ -201,7 +190,11 @@ struct Stepper : public AlgorithmBase< StepperTraits< GridImp, ProblemTraits, or
   bool restoreFromCheckPoint(TimeProviderType& tp )
   {
     // add solution to persistence manager for check pointing 
-    Dune::Fem::persistenceManager << solution_ ;
+    bool writeData = Dune::Fem::Parameter::getValue<bool>("fem.io.writedata", true );
+    if( writeData ) 
+    {
+      Dune::Fem::persistenceManager << solution_ ;
+    }
 
     std::string checkPointRestartFile = checkPointRestartFileName();
 
@@ -309,8 +302,8 @@ struct Stepper : public AlgorithmBase< StepperTraits< GridImp, ProblemTraits, or
               << "  stored value: " << error_ << std::endl;
     if( std::abs( error - error_ ) > 1e-14 ) 
     {
-      //std::cerr << "ERROR: backup/restore not consistent" << std::endl;
-      DUNE_THROW(Dune::InvalidStateException, "Error in backup/restore" );
+      std::cerr << "ERROR: backup/restore not consistent" << std::endl;
+      //DUNE_THROW(Dune::InvalidStateException, "Error in backup/restore" );
     }
   }
 

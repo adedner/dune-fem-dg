@@ -24,6 +24,8 @@
 
 #include <string>
 
+#include <dune/fem-dg/misc/streams.hh>
+
 ///////////////////////////////////////////////////
 //
 // Include your header defining all necessary types 

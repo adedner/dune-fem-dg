@@ -2,15 +2,19 @@ femhowto.verboserank: 0
 femhowto.verbose: 1
 
 # macro grid file
-fem.io.macroGridFile: ./grids/unitcube2.dgf
+fem.io.macroGridFile: ../grids/unitcube2.dgf
 
 # macro grid file
-fem.io.macroGridFile_3d: ./grids/unitcube3.dgf
+fem.io.macroGridFile_3d: ../grids/unitcube3.dgf
+
+# if false no discrete function data is written (for debugging)
+fem.io.writedata: true
+
+#fem.io.checkpointrestartfile: ./checkpoint
 
 # number of EOC steps (only 1 for checkpointing)
 femhowto.eocSteps: 1
 
-# Default parameter file for fem/localdg/advectdiffusion/dgtest.cc
 femhowto.endTime: 1.0
 femhowto.odesolver: explicit
 femhowto.diffusionTimeStep: 1
@@ -19,9 +23,7 @@ femhowto.penalty: 1.
 fem.timeprovider.factor: 1.
 fem.io.savestep: 0.1
 
-fem.io.outputformat: vtk-cell
-
-fem.io.sionlib.numfiles: 4
+fem.io.sionlib.numfiles: 1
 fem.io.sionlib.blocksize: 128
 
 #number of global refinements before start of simulation 
@@ -42,7 +44,8 @@ fem.io.savecount: 0
 fem.verboserank: 0
 
 #number of global refinements before start of simulation 
-femhowto.startLevel: 1
+fem.adaptation.coarsestLevel: 2
+fem.adaptation.finestLevel: 2
 
 # number of EOC steps 
 femhowto.eocSteps: 4
@@ -56,15 +59,13 @@ fem.io.savestep: 0.1
 # save every i-th step
 fem.io.savecount: 1
 
-#fem.io.macroGridFile: macrogrid
-
 # output format: binary | vtk-cell | vtk-vertex (projected in DG case) | none 
-fem.io.outputformat: none
+fem.io.outputformat: binary
 # toggle grape display (0 = off | 1 = on)
 fem.io.grapedisplay: 0
 
 # write checkpoint every 'checkpointstep' timestep 
-fem.io.checkpointstep: 5
+fem.io.checkpointstep: 7
 # write 'checkpointmax' number of different check points 
 fem.io.checkpointmax: 8 
 
