@@ -3,7 +3,7 @@
 
 #if HAVE_SIONLIB
 #if USE_SIONLIB
-#warning "using SIONlib streams for output"
+#warning "using SIONlib streams for I/O"
 
 #include <dune/fem/io/streams/sionlibstreams.hh>
 
