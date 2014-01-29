@@ -12,7 +12,7 @@ static double minRatioOfSums = 1e+100;
 #endif
 
 
-#ifndef NDEBUG 
+#ifndef NDEBUG
 // enable fvector and fmatrix checking
 #define DUNE_ISTL_WITH_CHECKING
 #endif
@@ -34,16 +34,16 @@ static double minRatioOfSums = 1e+100;
 #include <dune/fem-dg/misc/diagnostics.hh>
 #include <dune/fem-dg/operator/adaptation/estimatorbase.hh>
 
-using namespace Dune;                                        
+using namespace Dune;
 
 
 template <class GridImp,
-          class ProblemTraits, 
-          int polynomialOrder>             
+          class ProblemTraits,
+          int polynomialOrder>
 struct StepperBase
-  : public AlgorithmBase< StepperTraits< GridImp, ProblemTraits, polynomialOrder> > 
+  : public AlgorithmBase< StepperTraits< GridImp, ProblemTraits, polynomialOrder> >
 {
-  // my traits class 
+  // my traits class
   typedef StepperTraits< GridImp, ProblemTraits, polynomialOrder> Traits ;
   typedef AlgorithmBase< Traits > BaseType;
 
@@ -54,13 +54,13 @@ struct StepperBase
   // Choose a suitable GridView
   typedef typename Traits :: GridPartType             GridPartType;
 
-  // initial data type 
+  // initial data type
   typedef typename Traits :: InitialDataType          InitialDataType;
 
-  // model type 
+  // model type
   typedef typename Traits :: ModelType                ModelType ;
 
-  // type of convective numerical flux 
+  // type of convective numerical flux
   typedef typename Traits :: FluxType                 FluxType ;
 
   // The DG space operator
@@ -85,44 +85,44 @@ struct StepperBase
 
   typedef typename BaseType :: TimeProviderType       TimeProviderType;
 
-  typedef AdaptationHandler< GridType, 
+  typedef AdaptationHandler< GridType,
            typename DiscreteSpaceType::FunctionSpaceType >  AdaptationHandlerType;
 
-  // type of run time diagnostics 
+  // type of run time diagnostics
   typedef Diagnostics                                 DiagnosticsType;
 
-  // type of most simple check pointer 
+  // type of most simple check pointer
   typedef Dune::Fem::CheckPointer< GridType >         CheckPointerType;
 
-  // type of solver monitor 
+  // type of solver monitor
   typedef typename BaseType :: SolverMonitorType      SolverMonitorType;
 
-  // type of solver monitor 
+  // type of solver monitor
   typedef typename BaseType :: IOTupleType            IOTupleType;
 
-  // type of data writer 
+  // type of data writer
   typedef Dune::Fem::DataWriter< GridType, IOTupleType >    DataWriterType;
 
-  // type of parameter class 
-  typedef Dune::Fem::Parameter                        ParameterType ;  
+  // type of parameter class
+  typedef Dune::Fem::Parameter                        ParameterType ;
 
-  // the restriction and prolongation projection 
+  // the restriction and prolongation projection
   typedef typename Traits :: RestrictionProlongationType RestrictionProlongationType;
 
-  // type of adaptation manager 
+  // type of adaptation manager
   typedef Dune::Fem::AdaptationManager< GridType, RestrictionProlongationType > AdaptationManagerType ;
 
   using BaseType :: indicator;
   using BaseType :: grid_ ;
   using BaseType :: limitSolution ;
 
-  // constructor taking grid 
+  // constructor taking grid
   StepperBase(GridType& grid) :
     BaseType( grid ),
     gridPart_( grid_ ),
     space_( gridPart_ ),
     solution_( "U", space() ),
-    additionalVariables_( ParameterType :: getValue< bool >("femhowto.additionalvariables", false) ? 
+    additionalVariables_( ParameterType :: getValue< bool >("femhowto.additionalvariables", false) ?
         new DiscreteFunctionType("A", space() ) : 0 ),
     problem_( ProblemTraits::problem() ),
     adaptationHandler_( 0 ),
@@ -136,55 +136,55 @@ struct StepperBase
     adaptationParameters_( ),
     dataWriter_( 0 )
   {
-    // set refine weight 
+    // set refine weight
     rp_.setFatherChildWeight( Dune::DGFGridInfo<GridType> :: refineWeight() );
-  }                                                                      
+  }
 
-  //! destructor 
+  //! destructor
   virtual ~StepperBase()
   {
     delete checkPointer_;
     checkPointer_ = 0;
     delete odeSolver_;
     odeSolver_ = 0;
-    delete dataWriter_; 
+    delete dataWriter_;
     dataWriter_ = 0 ;
     delete problem_ ;
     problem_ = 0;
     delete adaptationHandler_ ;
     adaptationHandler_ = 0;
-    delete additionalVariables_; 
+    delete additionalVariables_;
     additionalVariables_ = 0;
   }
 
   const DiscreteSpaceType& space() const { return space_ ; }
 
-  // return reference to discrete function holding solution 
+  // return reference to discrete function holding solution
   DiscreteFunctionType& solution() { return solution_; }
 
-  IOTupleType dataTuple() 
-  { 
-    // tuple with additionalVariables 
+  IOTupleType dataTuple()
+  {
+    // tuple with additionalVariables
     return IOTupleType( &solution_, additionalVariables_, indicator() );
   }
 
-  void checkDofsValid ( TimeProviderType& tp, const int loop ) const 
-  { 
-    if( ! solution_.dofsValid() )   
+  void checkDofsValid ( TimeProviderType& tp, const int loop ) const
+  {
+    if( ! solution_.dofsValid() )
     {
       std::cout << "Loop(" << loop << "): Invalid DOFs" << std::endl;
-      if( dataWriter_ ) 
+      if( dataWriter_ )
         dataWriter_->write( tp );
       abort();
     }
   }
 
-  void writeData( TimeProviderType& tp, const bool writeAnyway = false ) 
+  void writeData( TimeProviderType& tp, const bool writeAnyway = false )
   {
-    if( dataWriter_ ) 
+    if( dataWriter_ )
     {
       const bool reallyWrite = writeAnyway ? true : dataWriter_->willWrite( tp );
-      if( reallyWrite && additionalVariables_ ) 
+      if( reallyWrite && additionalVariables_ )
       {
         setupAdditionalVariables( tp, solution(), model(), *additionalVariables_ );
       }
@@ -198,52 +198,52 @@ struct StepperBase
 
   bool adaptive () const { return adaptationManager_.adaptive(); }
 
-  // function creating the ode solvers 
+  // function creating the ode solvers
   virtual OdeSolverType* createOdeSolver( TimeProviderType& ) = 0;
 
   CheckPointerType& checkPointer( TimeProviderType& tp ) const
   {
-    // create check point if not exsistent 
+    // create check point if not exsistent
     if( ! checkPointer_ )
       checkPointer_ = new CheckPointerType( grid_, tp );
 
     return *checkPointer_;
   }
 
-  // restore data if checkpoint file is given 
+  // restore data if checkpoint file is given
   virtual bool restoreFromCheckPoint( TimeProviderType& tp )
   {
-    // add solution to persistence manager for check pointing 
+    // add solution to persistence manager for check pointing
     Dune::Fem::persistenceManager << solution_ ;
-  
+
     std::string checkPointRestartFile = checkPointRestartFileName();
 
-    // if check file is non-zero a restart is performed 
+    // if check file is non-zero a restart is performed
     if( checkPointRestartFile.size() > 0 )
     {
-      // restore data 
+      // restore data
       checkPointer( tp ).restoreData( grid_, checkPointRestartFile );
-      return false;  
+      return false;
     }
-    
+
     return true ;
   }
 
-  // write checkpoint data and also run time diagnostics 
-  virtual void writeCheckPoint( TimeProviderType& tp ) const 
+  // write checkpoint data and also run time diagnostics
+  virtual void writeCheckPoint( TimeProviderType& tp ) const
   {
     assert( odeSolver_ );
 
     const double ldt = tp.deltaT();
     const int maxNumDofs = space().blockMapper().maxNumDofs() * space().localBlockSize;
- 
-    // write times to run file 
-    diagnostics_.write( tp.time() + ldt, ldt, 
+
+    // write times to run file
+    diagnostics_.write( tp.time() + ldt, ldt,
                     odeSolverMonitor_.numberOfElements_,    // number of elements
                     maxNumDofs,                             // number of dofs per element (max)
-                    odeSolverMonitor_.operatorTime_,        // time for operator evaluation 
-                    odeSolverMonitor_.odeSolveTime_,        // ode solver 
-                    adaptationManager_.adaptationTime(),    // time for adaptation 
+                    odeSolverMonitor_.operatorTime_,        // time for operator evaluation
+                    odeSolverMonitor_.odeSolveTime_,        // ode solver
+                    adaptationManager_.adaptationTime(),    // time for adaptation
                     adaptationManager_.loadBalanceTime(),   // time for load balance
                     overallTimer_.elapsed());               // time step overall time
 
@@ -252,7 +252,7 @@ struct StepperBase
   }
 
   //! returns data prefix for EOC loops ( default is loop )
-  virtual std::string dataPrefix() const 
+  virtual std::string dataPrefix() const
   {
     return problem_->dataPrefix();
   }
@@ -266,17 +266,17 @@ struct StepperBase
     return latexInfo;
   }
 
-  // before first step, do data initialization 
-  void initializeStep( TimeProviderType& tp, const int loop ) 
+  // before first step, do data initialization
+  void initializeStep( TimeProviderType& tp, const int loop )
   {
     DiscreteFunctionType& U = solution_;
 
     if( odeSolver_ == 0 ) odeSolver_ = this->createOdeSolver( tp );
     assert( odeSolver_ );
 
-    if( dataWriter_ == 0 ) 
+    if( dataWriter_ == 0 )
     {
-      // copy data tuple 
+      // copy data tuple
       dataTuple_ = dataTuple () ;
       dataWriter_ = new DataWriterType( grid_, dataTuple_, tp,
         EocDataOutputParameters( loop, problem_->dataPrefix() ) );
@@ -286,20 +286,20 @@ struct StepperBase
     typedef typename InitialDataType :: TimeDependentFunctionType
       TimeDependentFunctionType;
 
-    // communication is needed when blocking communication is used 
+    // communication is needed when blocking communication is used
     // but has to be avoided otherwise (because of implicit solver)
     const bool doCommunicate = ! NonBlockingCommParameter :: nonBlockingCommunication ();
 
-    // create L2 projection 
-    Fem :: L2Projection< TimeDependentFunctionType, 
+    // create L2 projection
+    Fem :: L2Projection< TimeDependentFunctionType,
         DiscreteFunctionType > l2pro( 2 * U.space().order(), doCommunicate );
 
-    // L2 project initial data 
-    l2pro( problem().fixedTimeFunction( tp.time() ), U ); 
+    // L2 project initial data
+    l2pro( problem().fixedTimeFunction( tp.time() ), U );
 
     // ode.initialize applies the DG Operator once to get an initial
     // estimate on the time step. This does not change the initial data u.
-    odeSolver_->initialize( U );                
+    odeSolver_->initialize( U );
   }
 
 
@@ -311,11 +311,11 @@ struct StepperBase
     // reset overall timer
     overallTimer_.reset();
 
-    // solve ODE 
+    // solve ODE
     assert(odeSolver_);
     odeSolver_->solve( U, odeSolverMonitor_ );
 
-    // limit solution if necessary 
+    // limit solution if necessary
     limitSolution ();
 
     // copy information to solver monitor
@@ -324,7 +324,7 @@ struct StepperBase
     monitor.max_newton_iterations = odeSolverMonitor_.maxNewtonIterations_ ;
     monitor.max_ils_iterations    = odeSolverMonitor_.maxLinearSolverIterations_;
 
-    // set time step size to monitor 
+    // set time step size to monitor
     monitor.setTimeStepInfo( tp );
 
 #ifdef LOCALDEBUG
@@ -351,7 +351,7 @@ struct StepperBase
   {
     DiscreteFunctionType& u = solution();
     // write run file (in writeatonce mode)
-    diagnostics_.flush(); 
+    diagnostics_.flush();
 
     bool doFemEoc = problem().calculateEOC( tp, u, eocId_ );
 
@@ -362,29 +362,29 @@ struct StepperBase
 #ifdef LOCALDEBUG
     std::cout <<"maxRatioOfSums: " <<maxRatioOfSums <<std::endl;
     std::cout <<"minRatioOfSums: " <<minRatioOfSums <<std::endl;
-#endif    
+#endif
 
     // delete ode solver
     delete odeSolver_;
     odeSolver_ = 0;
 
-    delete dataWriter_; 
+    delete dataWriter_;
     dataWriter_ = 0 ;
 
     delete adaptationHandler_;
     adaptationHandler_ = 0;
   }                                                       /*@LST1E@*/
 
-  const InitialDataType& problem() const 
-  { 
-    assert( problem_ ); 
-    return *problem_; 
+  const InitialDataType& problem() const
+  {
+    assert( problem_ );
+    return *problem_;
   }
 
-  InitialDataType& problem()  
-  { 
-    assert( problem_ ); 
-    return *problem_; 
+  InitialDataType& problem()
+  {
+    assert( problem_ );
+    return *problem_;
   }
 
   virtual const ModelType& model() const = 0 ;
@@ -397,15 +397,15 @@ protected:
   {
     if( adaptationManager_.adaptive() )
     {
-      // get grid sequence before adaptation 
+      // get grid sequence before adaptation
       const int sequence = space().sequence();
 
       if( adaptationHandler_ )
       {
-        // call operator once to calculate indicator 
+        // call operator once to calculate indicator
         dgIndicator.evaluateOnly( solution_ );
 
-        // do marking and adaptation 
+        // do marking and adaptation
         adaptationHandler_->adapt( adaptationManager_, initialAdaptation );
       }
       else if( adaptationParameters_.gradientBasedIndicator() )
@@ -415,7 +415,7 @@ protected:
       }
       else if( adaptationParameters_.shockIndicator() )
       {
-        // marking has been done by limiter 
+        // marking has been done by limiter
         adaptationManager_.adapt();
       }
 
@@ -428,13 +428,13 @@ protected:
   }
 
   ///////////////////////////////////////////
-  //  instances 
+  //  instances
   ///////////////////////////////////////////
 
   GridPartType         gridPart_;
   DiscreteSpaceType    space_;
 
-  // the solution 
+  // the solution
   DiscreteFunctionType   solution_;
   DiscreteFunctionType*  additionalVariables_;
 
@@ -444,9 +444,9 @@ protected:
   // Initial flux for advection discretization (UpwindFlux)
   AdaptationHandlerType*  adaptationHandler_;
 
-  // diagnostics file 
+  // diagnostics file
   mutable DiagnosticsType diagnostics_;
-  // check point writer 
+  // check point writer
   mutable CheckPointerType* checkPointer_;
 
   Timer                   overallTimer_;
