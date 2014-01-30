@@ -229,11 +229,8 @@ struct StepperBase
     return true ;
   }
 
-  // write checkpoint data and also run time diagnostics
-  virtual void writeCheckPoint( TimeProviderType& tp ) const
+  void writeDiagnostics( TimeProviderType& tp ) const
   {
-    assert( odeSolver_ );
-
     const double ldt = tp.deltaT();
     const int maxNumDofs = space().blockMapper().maxNumDofs() * space().localBlockSize;
 
@@ -246,7 +243,11 @@ struct StepperBase
                     adaptationManager_.adaptationTime(),    // time for adaptation
                     adaptationManager_.loadBalanceTime(),   // time for load balance
                     overallTimer_.elapsed());               // time step overall time
+  }
 
+  // write checkpoint data and also run time diagnostics
+  virtual void writeCheckPoint( TimeProviderType& tp ) const
+  {
     // write data checkpoint (see datawriter.hh)
     checkPointer( tp ).write( tp );
   }
@@ -339,6 +340,8 @@ struct StepperBase
     sum_ = 0.;
     sum2_ = 0.;
 #endif
+
+    writeDiagnostics( tp );
   }
 
   inline double error(TimeProviderType& tp, DiscreteFunctionType& u)
