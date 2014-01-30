@@ -18,10 +18,10 @@ namespace Dune {
     std::ostream* diagnostics_;
 
     std::vector< double > times_ ;
+    std::vector< double > timesPerElem_ ;
     double elements_;
     double maxDofs_;
     size_t timesteps_;
-    size_t elementSteps_;
 
     static const size_t width = 12; 
     
@@ -89,10 +89,10 @@ namespace Dune {
       , writeDiagnostics_( Fem :: Parameter :: getValue< int > ("fem.parallel.diagnostics", 0 ) )
       , diagnostics_( createDiagnostics( comm_.rank(), writeDiagnostics_, newStart ) ) 
       , times_() 
+      , timesPerElem_() 
       , elements_( 0.0 )
       , maxDofs_( 0.0 )
       , timesteps_( 0 )
-      , elementSteps_( 0 )
     {
       if( diagnostics_ && newStart ) 
       {
@@ -113,26 +113,28 @@ namespace Dune {
                       const std::string& descr, 
                       const std::vector< T >& sumTimes,
                       const std::vector< T >& maxTimes,
-                      const std::vector< T >& minTimes ) const 
+                      const std::vector< T >& minTimes,
+                      const std::string& sumDescr, 
+                      const std::string& maxDescr ) const 
     {
       const size_t size = sumTimes.size();
       file.precision(6); 
       file << std::scientific ;
       file << "############################################################################" << std::endl ;
-      file << "# Sum " << descr << std::endl ;
-      for(size_t i=0; i<size-1; ++i)
+      file << "# Sum " << descr << sumDescr << std::endl;
+      for(size_t i=0; i<size; ++i)
       {
         file << std::setw(width) << sumTimes[ i ] << "   ";
       }
       file << std::endl;
-      file << "# Max " << descr << std::endl ;
-      for(size_t i=0; i<size-1; ++i)
+      file << "# Max " << descr << maxDescr << std::endl;
+      for(size_t i=0; i<size; ++i)
       {
         file << std::setw(width) << maxTimes[ i ] << "   ";
       }
       file << std::endl;
-      file << "# Min " << descr << std::endl ;
-      for(size_t i=0; i<size-1; ++i)
+      file << "# Min " << descr << maxDescr << std::endl;
+      for(size_t i=0; i<size; ++i)
       {
         file << std::setw(width) << minTimes[ i ] << "   ";
       }
@@ -145,17 +147,31 @@ namespace Dune {
       // if write is > 0 then create speedup file 
       if( writeDiagnostics_ )
       {
-        std::vector< double > times( times_ );
+        const size_t size = times_.size();
 
-        times.push_back( elements_ );
-        const size_t size = times.size();
-        std::vector< double > sumTimes ( times );
-        std::vector< double > maxTimes ( times );
-        std::vector< double > minTimes ( times );
+        std::vector< double > sumTimes ( times_ );
+        std::vector< double > maxTimes ( times_ );
+        std::vector< double > minTimes ( times_ );
+
+        sumTimes.reserve( 2*size+1 );
+        maxTimes.reserve( 2*size+1 );
+        minTimes.reserve( 2*size+1 );
+
+        for( size_t i=0; i<size; ++ i ) 
+        {
+          sumTimes.push_back( timesPerElem_[i] );
+          maxTimes.push_back( timesPerElem_[i] );
+          minTimes.push_back( timesPerElem_[i] );
+        }
+
+        // add number of elements 
+        sumTimes.push_back( elements_ );
+        maxTimes.push_back( elements_ );
+        minTimes.push_back( elements_ );
 
         // sum, max, and min for all procs 
-        comm_.sum( &sumTimes[ 0 ], size );
-        comm_.min( &minTimes[ 0 ], size );
+        comm_.sum( &sumTimes[ 0 ], sumTimes.size() );
+        comm_.min( &minTimes[ 0 ], minTimes.size() );
 
         maxTimes.push_back( maxDofs_ );
         comm_.max( &maxTimes[ 0 ], maxTimes.size() );
@@ -169,25 +185,37 @@ namespace Dune {
           const double tasks = comm_.size() * maxThreads ;
           const double timesteps = double(timesteps_);
 
-          { // adjust elements to be the average element number  
-            size_t i = size - 1 ;
-            sumTimes[ i ] /= timesteps;
-            maxTimes[ i ] /= timesteps;
-            minTimes[ i ] /= timesteps;
+          const size_t bufferSize = sumTimes.size();
+          const double sumElements = sumTimes[ bufferSize - 1 ] / timesteps;
+          const double maxElements = maxTimes[ bufferSize - 1 ] / timesteps;
+          const double minElements = minTimes[ bufferSize - 1 ] / timesteps;
+
+          std::vector< double > sumTimesPerElem( size, 0.0 );
+          std::vector< double > maxTimesPerElem( size, 0.0 );
+          std::vector< double > minTimesPerElem( size, 0.0 );
+
+          for( size_t i=0; i<size; ++i )
+          {
+            sumTimesPerElem[ i ] = sumTimes[ i + size ];
+            maxTimesPerElem[ i ] = maxTimes[ i + size ];
+            minTimesPerElem[ i ] = minTimes[ i + size ];
           }
+          sumTimes.resize( size );
+          maxTimes.resize( size );
+          minTimes.resize( size );
 
           std::stringstream diagnostics;
           diagnostics << Fem :: Parameter :: commonOutputPath() << "/speedup." << comm_.size(); 
           std::ofstream file ( diagnostics.str().c_str() );
           if( file ) 
           {
-            const double averageElements = sumTimes[ size - 1 ] / tasks ;
+            const double averageElements = sumElements / tasks ;
 
             // get information about communication type 
             const bool nonBlocking = NonBlockingCommParameter :: nonBlockingCommunication() ;
 
             file << "# Procs = " << comm_.size() << " * " << maxThreads << " (MPI * threads)" << std::endl ;
-            const char* commType = nonBlocking ? "asynchron" : "standard";
+            const char* commType = nonBlocking ? "asynchronous" : "standard";
             file << "# Comm: " << commType << std::endl;
             file << "# Timesteps = " << timesteps_ << std::endl ;
             file << "# Max DoFs (per element): " << maxDofs << std::endl;
@@ -196,9 +224,9 @@ namespace Dune {
             file << std::setw(width) << "max";
             file << std::setw(width) << "min";
             file << std::setw(width) << "average" << std::endl;
-            file << std::setw(width) << sumTimes[ size-1 ];
-            file << std::setw(width) << maxTimes[ size-1 ];
-            file << std::setw(width) << minTimes[ size-1 ];
+            file << std::setw(width) << sumElements;
+            file << std::setw(width) << maxElements;
+            file << std::setw(width) << minElements;
             file << std::setw(width) << averageElements << std::endl;
             file << "############################################################################" << std::endl;
             file << "#";
@@ -212,11 +240,14 @@ namespace Dune {
             for(size_t i=0; i<size; ++i)
             {
               sumTimes[ i ] *= maxThreads ;
+              sumTimesPerElem[ i ] *= maxThreads;
             }
             { 
+              std::string sumDescr("(opt: stays constant over #core increase)");
+              std::string maxDescr("(opt: inversely proportional to #core increase)");
               {
                 std::string descr("(time of all timesteps in sec)");
-                writeVectors( file, descr, sumTimes, maxTimes, minTimes );
+                writeVectors( file, descr, sumTimes, maxTimes, minTimes, sumDescr, maxDescr );
               }
               for(size_t i=0; i<size; ++i)
               {
@@ -226,21 +257,23 @@ namespace Dune {
               }
               {
                 std::string descr("(time / timesteps in sec)");
-                writeVectors( file, descr, sumTimes, maxTimes, minTimes );
+                writeVectors( file, descr, sumTimes, maxTimes, minTimes, sumDescr, maxDescr );
               }
             }
 
-            // devide by timesteps 
+            // devide per elem times by timesteps 
             for(size_t i=0; i<size; ++i)
             {
-              sumTimes[ i ] /= averageElements;
-              maxTimes[ i ] /= averageElements;
-              minTimes[ i ] /= averageElements;
+              sumTimesPerElem[ i ] /= timesteps;
+              maxTimesPerElem[ i ] /= timesteps;
+              minTimesPerElem[ i ] /= timesteps;
             }
 
             {
+              std::string sumDescrPerElem("(opt: stays constant over #core increase)");
+              std::string maxDescrPerElem("(opt: inversely proportional to #core increase)");
               std::string descr( "( time / (timesteps * elements) in sec )" );
-              writeVectors( file, descr, sumTimes, maxTimes, minTimes );
+              writeVectors( file, descr, sumTimesPerElem, maxTimesPerElem, minTimesPerElem, sumDescrPerElem, maxDescrPerElem );
             }
           }
         } // end speedup file 
@@ -279,10 +312,10 @@ namespace Dune {
                        const std::vector<double>& limitSteps = std::vector<double>() )
     {
       std::vector< double > times( 5 + limitSteps.size(), 0.0 );
-      times[ 0 ] = dgOperatorTime ; 
-      times[ 1 ] = odeSolve ;
-      times[ 2 ] = adaptTime ;
-      times[ 3 ] = lbTime ;
+      times[ 0 ] = dgOperatorTime; 
+      times[ 1 ] = odeSolve;
+      times[ 2 ] = adaptTime;
+      times[ 3 ] = lbTime;
       times[ 4 ] = timeStepTime ;
       for(size_t i=0; i<limitSteps.size(); ++i)
         times[ i+5 ] = limitSteps[ i ];
@@ -296,7 +329,7 @@ namespace Dune {
     inline void write( const double t, 
                        const double ldt, 
                        const size_t nElements,
-                       const std::vector<double>& times) 
+                       const std::vector<double>& times )
     {
       if( writeDiagnostics_ ) 
       {
@@ -305,14 +338,19 @@ namespace Dune {
         if( oldsize < size  )
         {
           times_.resize( size ); 
+          timesPerElem_.resize( size );
           for( size_t i=oldsize; i<size; ++i) 
+          {
             times_[ i ] = 0;
+            timesPerElem_[ i ] = 0;
+          }
         }
 
         elements_ += double( nElements );
         for(size_t i=0; i<size; ++i ) 
         {
-          times_[ i ] += times[ i ] ; 
+          times_[ i ]        += times[ i ] ; 
+          timesPerElem_[ i ] += times[ i ] / double( nElements );
         }
 
         ++timesteps_ ;
@@ -351,6 +389,10 @@ namespace Dune {
       {
         stream << times_[ i ];
       }
+      for( size_t i=0; i<tSize; ++i ) 
+      {
+        stream << timesPerElem_[ i ];
+      }
     }
 
     //! restore routine 
@@ -370,6 +412,11 @@ namespace Dune {
       for( size_t i=0; i<tSize; ++i ) 
       {
         stream >> times_[ i ];
+      }
+      timesPerElem_.resize( tSize );
+      for( size_t i=0; i<tSize; ++i ) 
+      {
+        stream >> timesPerElem_[ i ];
       }
     }
   }; // end class diagnostics
