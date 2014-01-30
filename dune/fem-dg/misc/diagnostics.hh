@@ -21,7 +21,10 @@ namespace Dune {
     double elements_;
     double maxDofs_;
     size_t timesteps_;
+    size_t elementSteps_;
 
+    static const size_t width = 12; 
+    
     // write in milli seconds
     inline size_t inMS(const double t) const
     {
@@ -53,8 +56,8 @@ namespace Dune {
     }
 
     std::ostream* createDiagnostics( const int rank, 
-                                 const int writeId, 
-                                 const bool newStart ) 
+                                     const int writeId, 
+                                     const bool newStart ) 
     {
       // in case of no writing or only speedup table don't create diagnostics
       if( writeId <= 1 ) return 0;
@@ -89,6 +92,7 @@ namespace Dune {
       , elements_( 0.0 )
       , maxDofs_( 0.0 )
       , timesteps_( 0 )
+      , elementSteps_( 0 )
     {
       if( diagnostics_ && newStart ) 
       {
@@ -112,23 +116,25 @@ namespace Dune {
                       const std::vector< T >& minTimes ) const 
     {
       const size_t size = sumTimes.size();
-      file << "#########################################" << std::endl ;
+      file.precision(6); 
+      file << std::scientific ;
+      file << "############################################################################" << std::endl ;
       file << "# Sum " << descr << std::endl ;
       for(size_t i=0; i<size-1; ++i)
       {
-        file << sumTimes[ i ] << "  ";
+        file << std::setw(width) << sumTimes[ i ] << "   ";
       }
       file << std::endl;
       file << "# Max " << descr << std::endl ;
       for(size_t i=0; i<size-1; ++i)
       {
-        file << maxTimes[ i ] << "  ";
+        file << std::setw(width) << maxTimes[ i ] << "   ";
       }
       file << std::endl;
       file << "# Min " << descr << std::endl ;
       for(size_t i=0; i<size-1; ++i)
       {
-        file << minTimes[ i ] << "  ";
+        file << std::setw(width) << minTimes[ i ] << "   ";
       }
       file << std::endl;
     }
@@ -161,12 +167,13 @@ namespace Dune {
         {
           const int maxThreads = Fem :: ThreadManager :: maxThreads ();
           const double tasks = comm_.size() * maxThreads ;
+          const double timesteps = double(timesteps_);
 
           { // adjust elements to be the average element number  
             size_t i = size - 1 ;
-            sumTimes[ i ] /= (double) timesteps_;
-            maxTimes[ i ] /= (double) timesteps_;
-            minTimes[ i ] /= (double) timesteps_;
+            sumTimes[ i ] /= timesteps;
+            maxTimes[ i ] /= timesteps;
+            minTimes[ i ] /= timesteps;
           }
 
           std::stringstream diagnostics;
@@ -184,59 +191,55 @@ namespace Dune {
             file << "# Comm: " << commType << std::endl;
             file << "# Timesteps = " << timesteps_ << std::endl ;
             file << "# Max DoFs (per element): " << maxDofs << std::endl;
-            file << "# Elements / timestep: sum    max    min    average  " << std::endl;
-            file << sumTimes[ size-1 ] << "  " << maxTimes[ size-1 ] << "  " << minTimes[ size-1 ] << "  " << ((size_t)averageElements) << std::endl;
-            file << "# DG       ODE     ADAPT    LB      TIMESTEP    " << std::endl ;
+            file << "# Elements / timestep:" << std::endl;
+            file << "#" << std::setw(width-1) << "sum";
+            file << std::setw(width) << "max";
+            file << std::setw(width) << "min";
+            file << std::setw(width) << "average" << std::endl;
+            file << std::setw(width) << sumTimes[ size-1 ];
+            file << std::setw(width) << maxTimes[ size-1 ];
+            file << std::setw(width) << minTimes[ size-1 ];
+            file << std::setw(width) << averageElements << std::endl;
+            file << "############################################################################" << std::endl;
+            file << "#";
+            file << std::setw(width) << "DG    ";
+            file << std::setw(width+2) << "ODE   ";
+            file << std::setw(width+1) << "ADAPT ";
+            file << std::setw(width+1) << "   LB ";
+            file << std::setw(width+5) << "TIMESTEP" << std::endl;
 
             // multiply sumTimes with maxThhreads since the sum would be to small otherwise 
             for(size_t i=0; i<size; ++i)
             {
               sumTimes[ i ] *= maxThreads ;
-#if HAVE_BLUEGENE_P_ARCH
-              // for some reason the time on bluegene is 
-              // devided by number of threads 
-              sumTimes[ i ] *= maxThreads ;
-              maxTimes[ i ] *= maxThreads ;
-              minTimes[ i ] *= maxThreads ;
-#endif
             }
             { 
-              std::vector<size_t> sumTimesElem(size);
-              std::vector<size_t> maxTimesElem(size);
-              std::vector<size_t> minTimesElem(size);
-
-              for(size_t i=0; i<size; ++i)
               {
-                sumTimesElem[ i ] = inMS( sumTimes[ i ] * averageElements );
-                maxTimesElem[ i ] = inMS( maxTimes[ i ] * averageElements );
-                minTimesElem[ i ] = inMS( minTimes[ i ] * averageElements );
-              }
-              {
-                std::string descr("(time of all timesteps in ms)");
-                writeVectors( file, descr, sumTimesElem, maxTimesElem, minTimesElem );
+                std::string descr("(time of all timesteps in sec)");
+                writeVectors( file, descr, sumTimes, maxTimes, minTimes );
               }
               for(size_t i=0; i<size; ++i)
               {
-                sumTimesElem[ i ] /= timesteps_;
-                maxTimesElem[ i ] /= timesteps_;
-                minTimesElem[ i ] /= timesteps_;
+                sumTimes[ i ] /= timesteps;
+                maxTimes[ i ] /= timesteps;
+                minTimes[ i ] /= timesteps;
               }
               {
-                std::string descr("(average time / timestep in ms)");
-                writeVectors( file, descr, sumTimesElem, maxTimesElem, minTimesElem );
+                std::string descr("(time / timesteps in sec)");
+                writeVectors( file, descr, sumTimes, maxTimes, minTimes );
               }
             }
 
             // devide by timesteps 
             for(size_t i=0; i<size; ++i)
             {
-              sumTimes[ i ] /= (double) timesteps_;
-              maxTimes[ i ] /= (double) timesteps_;
-              minTimes[ i ] /= (double) timesteps_;
+              sumTimes[ i ] /= averageElements;
+              maxTimes[ i ] /= averageElements;
+              minTimes[ i ] /= averageElements;
             }
 
             {
-              std::string descr( "( average time / timestep / element in sec )" );
+              std::string descr( "( time / (timesteps * elements) in sec )" );
               writeVectors( file, descr, sumTimes, maxTimes, minTimes );
             }
           }
