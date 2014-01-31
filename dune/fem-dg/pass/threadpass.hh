@@ -523,7 +523,7 @@ namespace Dune {
     //! return true if communication is necessary and non-blocking should be used
     bool useNonBlockingCommunication() const 
     {
-      return requireCommunication_ && nonBlockingComm_.nonBlockingCommunication() && firstCall_ == false ;
+      return requireCommunication_ && nonBlockingComm_.nonBlockingCommunication();
     }
 
     void initComm() const 
