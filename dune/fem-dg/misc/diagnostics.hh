@@ -264,7 +264,7 @@ namespace Dune {
             std::string sumDescrPerElem("(opt: grows with #core)");
             std::string maxDescrPerElem("(opt: stays constant over #core increase)");
             {
-              std::string descr( "( time / elements in sec )" );
+              std::string descr( "(time / elements in sec )" );
               writeVectors( file, descr, sumTimesPerElem, maxTimesPerElem, minTimesPerElem, sumDescrPerElem, maxDescrPerElem );
             }
 
@@ -277,7 +277,7 @@ namespace Dune {
             }
 
             {
-              std::string descr( "( time / (timesteps * elements) in sec )" );
+              std::string descr( "(time / (timesteps * elements) in sec )" );
               writeVectors( file, descr, sumTimesPerElem, maxTimesPerElem, minTimesPerElem, sumDescrPerElem, maxDescrPerElem );
             }
           }
