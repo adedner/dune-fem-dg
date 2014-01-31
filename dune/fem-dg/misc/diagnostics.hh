@@ -120,7 +120,7 @@ namespace Dune {
       const size_t size = sumTimes.size();
       file.precision(6); 
       file << std::scientific ;
-      file << "############################################################################" << std::endl ;
+      file << "########################################################################################" << std::endl ;
       file << "# Sum " << descr << sumDescr << std::endl;
       for(size_t i=0; i<size; ++i)
       {
@@ -182,7 +182,6 @@ namespace Dune {
         if( comm_.rank() == 0 && timesteps_ > 0 ) 
         {
           const int maxThreads = Fem :: ThreadManager :: maxThreads ();
-          const double tasks = comm_.size() * maxThreads ;
           const double timesteps = double(timesteps_);
 
           const size_t bufferSize = sumTimes.size();
@@ -209,6 +208,7 @@ namespace Dune {
           std::ofstream file ( diagnostics.str().c_str() );
           if( file ) 
           {
+            const double tasks = comm_.size();// * maxThreads ;
             const double averageElements = sumElements / tasks ;
 
             // get information about communication type 
@@ -219,7 +219,7 @@ namespace Dune {
             file << "# Comm: " << commType << std::endl;
             file << "# Timesteps = " << timesteps_ << std::endl ;
             file << "# Max DoFs (per element): " << maxDofs << std::endl;
-            file << "# Elements / timestep:" << std::endl;
+            file << "# Elements / timestep / MPI tasks:" << std::endl;
             file << "#" << std::setw(width-1) << "sum";
             file << std::setw(width) << "max";
             file << std::setw(width) << "min";
@@ -228,7 +228,7 @@ namespace Dune {
             file << std::setw(width) << maxElements;
             file << std::setw(width) << minElements;
             file << std::setw(width) << averageElements << std::endl;
-            file << "############################################################################" << std::endl;
+            file << "#########################################################################################" << std::endl;
             file << "#";
             file << std::setw(width) << "DG    ";
             file << std::setw(width+2) << "ODE   ";
@@ -261,6 +261,13 @@ namespace Dune {
               }
             }
 
+            std::string sumDescrPerElem("(opt: grows with #core)");
+            std::string maxDescrPerElem("(opt: stays constant over #core increase)");
+            {
+              std::string descr( "( time / elements in sec )" );
+              writeVectors( file, descr, sumTimesPerElem, maxTimesPerElem, minTimesPerElem, sumDescrPerElem, maxDescrPerElem );
+            }
+
             // devide per elem times by timesteps 
             for(size_t i=0; i<size; ++i)
             {
@@ -270,8 +277,6 @@ namespace Dune {
             }
 
             {
-              std::string sumDescrPerElem("(opt: stays constant over #core increase)");
-              std::string maxDescrPerElem("(opt: inversely proportional to #core increase)");
               std::string descr( "( time / (timesteps * elements) in sec )" );
               writeVectors( file, descr, sumTimesPerElem, maxTimesPerElem, minTimesPerElem, sumDescrPerElem, maxDescrPerElem );
             }
