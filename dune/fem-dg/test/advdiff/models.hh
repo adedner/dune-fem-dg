@@ -19,14 +19,14 @@
 /**
  * @brief Traits class for HeatEqnModel
  */
-template <class GridPart > 
+template <class GridPart, int dimR > 
 class HeatEqnModelTraits
 {
 public:
   typedef GridPart                                                   GridPartType;
   typedef typename GridPartType :: GridType                          GridType;
   static const int dimDomain = GridType::dimensionworld;
-  static const int dimRange = DIMRANGE;
+  static const int dimRange = dimR;
   static const int dimGradRange = dimRange * dimDomain ;
   // Definition of domain and range types
   typedef Dune::FieldVector< double, dimDomain >                     DomainType;
@@ -85,7 +85,8 @@ public:
 //
 ////////////////////////////////////////////////////////
 template <class GridPartType,class ProblemImp>
-class HeatEqnModel : public DefaultModel < HeatEqnModelTraits< GridPartType > >
+class HeatEqnModel : 
+  public DefaultModel < HeatEqnModelTraits< GridPartType,ProblemImp::dimRange > >
 {
 public:
   // for heat equations advection is disabled 
@@ -95,8 +96,8 @@ public:
   typedef ProblemImp ProblemType ;
 
   static const int ConstantVelocity = ProblemType :: ConstantVelocity;
-  typedef typename GridPartType :: GridType                          GridType;
-  typedef HeatEqnModelTraits< GridPartType >        Traits;
+  typedef typename GridPartType :: GridType                        GridType;
+  typedef HeatEqnModelTraits< GridPartType,ProblemImp::dimRange >  Traits;
   static const int dimDomain = Traits :: dimDomain ; 
   static const int dimRange  = Traits :: dimRange ;
   typedef typename Traits :: DomainType                          DomainType;
@@ -108,8 +109,8 @@ public:
   typedef typename Traits :: FaceDomainType                      FaceDomainType;
   typedef typename Traits :: JacobianRangeType                   JacobianRangeType;
 
-  typedef typename Traits :: EntityType                       EntityType;
-  typedef typename Traits :: IntersectionType                 IntersectionType;
+  typedef typename Traits :: EntityType                          EntityType;
+  typedef typename Traits :: IntersectionType                    IntersectionType;
 
   HeatEqnModel(const HeatEqnModel& otehr);
   const HeatEqnModel &operator=(const HeatEqnModel &other);

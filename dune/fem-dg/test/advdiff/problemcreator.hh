@@ -2,6 +2,10 @@
 #define FEMHOWTO_HEATSTEPPER_HH
 #include <config.h>
 
+#ifndef DIMRANGE
+#define DIMRANGE 1
+#endif
+
 // dune-fem includes
 #include <dune/fem/io/parameter.hh>
 
@@ -45,19 +49,7 @@ struct ProblemGenerator
 
   static inline std::string advectionFluxName()
   {
-#if (FLUX==1)
     return "LLF";
-#elif (FLUX==2)
-    return "HLL(Dennis)";
-#elif (FLUX==3)
-    return "HLLC(Dennis)";
-#elif (FLUX==4)
-    return "HLL2C";
-#elif (FLUX==5)
-    return "HLL2";
-#elif (FLUX==6)
-    return "HLLEM(Mhd)";
-#endif
   }
 
 
