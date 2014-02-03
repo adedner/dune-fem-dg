@@ -6,8 +6,6 @@
 #include <dune/fem-dg/operator/fluxes/eulerfluxes.hh>
 #include <dune/fem/misc/fmatrixconverter.hh>
 
-#include "problemtype.hh"
-
 namespace Dune {
 
 template< class Traits >

@@ -34,6 +34,11 @@ struct ProblemGenerator
     static const Dune :: DGDiffusionFluxIdentifier PrimalDiffusionFluxId 
            = Dune :: method_general ;
 
+// for header check 
+#ifndef FLUX
+#define FLUX 1
+#endif
+
 // ******************************** NUMERICAL FLUX *****************************
 #if (FLUX==1)
 #warning "FLUX: LLF"
