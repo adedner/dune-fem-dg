@@ -1,11 +1,11 @@
-static volatile char RCSId_eqns_mhd_cc [] = "$Id: mhd_eqns.cc 2881 2008-01-08 13:15:34Z robertk $";
-
 // #include "mhd_eqns.hh"
 #include <cmath>
 #include <cassert>
 #include <cstdlib>
 #include <cstdio>
 #include <iostream>
+
+#ifndef HEADERCHECK
 
 namespace Mhd {
 
@@ -3264,3 +3264,4 @@ namespace Mhd {
 
 } // end namespace Mhd 
 
+#endif

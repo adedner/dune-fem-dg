@@ -5,6 +5,8 @@
 
 #include <string>
 
+#ifndef HEADERCHECK
+
 // #include "mhd_eqns.hh"
 
 namespace Mhd {
@@ -4254,3 +4256,5 @@ namespace Mhd {
   } 
 
 } // end namespace Mhd 
+
+#endif
