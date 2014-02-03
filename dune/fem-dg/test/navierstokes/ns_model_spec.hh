@@ -21,6 +21,7 @@ class NSFlux
   enum { dimGradRange = dimRange * dimDomain };
   
 public:
+  typedef typename Traits::ProblemType ProblemType;
   typedef typename Traits::DomainType  DomainType;
   typedef typename Traits::RangeType   RangeType;
   typedef Dune::FieldVector< double, dimGradRange > GradientRangeType;
@@ -31,7 +32,7 @@ public:
     ConvertedJacobianRangeType;
   typedef Dune::FieldMatrix< double, dimDomain, dimDomain > VelocityGradientType;
 
-  NSFlux( const NSProblemType& problem )
+  NSFlux( const ProblemType& problem )
     : eulerFlux_() 
     , problem_( problem )
     , gamma_( problem.gamma() )
@@ -78,7 +79,7 @@ public:
 
 protected:
   const EulerAnalyticalFlux<dimDomain> eulerFlux_;
-  const NSProblemType& problem_;
+  const ProblemType& problem_;
   const double gamma_;
   const double R_d_inv_;
   const double Re_inv_;

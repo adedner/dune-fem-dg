@@ -8,6 +8,7 @@
 // local includes
 #include <dune/fem-dg/models/defaultmodel.hh>
 #include <dune/fem-dg/operator/limiter/limitpass.hh>
+#include "thermodynamics.hh"
 #include "ns_model_spec.hh"
 
 
@@ -18,10 +19,11 @@ namespace Dune {
 //                 NAVIER-STOKES EQNS 
 //
 //////////////////////////////////////////////////////
-template< class GridPart > 
+template< class GridPart, class Problem > 
 class NSModelTraits 
 {
   public:
+  typedef Problem  ProblemType;  
   typedef GridPart GridPartType;
   typedef typename GridPart :: GridType                     GridType;
   enum { dimDomain = GridType :: dimensionworld };
@@ -57,12 +59,12 @@ class NSModelTraits
 
 
 template< class GridPartType , class ProblemImp >
-class NSModel : public DefaultModel < NSModelTraits< GridPartType > >
+class NSModel : public DefaultModel < NSModelTraits< GridPartType, ProblemImp > >
 {
   public:
   typedef ProblemImp                                        ProblemType;
   typedef typename GridPartType::GridType                   GridType;
-  typedef NSModelTraits< GridPartType >                     Traits;
+  typedef NSModelTraits< GridPartType, ProblemType >        Traits;
 
   typedef NSFlux< Traits >  FluxType ;
 

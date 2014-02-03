@@ -14,7 +14,7 @@
 // local includes
 #include <dune/fem-dg/operator/fluxes/eulerfluxes.hh>
 #include <dune/fem-dg/operator/fluxes/diffusionflux.hh>
-#include "problemtype.hh"
+#include "nswaves.hh"
 #include "ns_model.hh"
 
 #include <dune/fem-dg/stepper/base.hh>
@@ -23,12 +23,12 @@
 template< class GridType > 
 struct ProblemGenerator 
 {
-  typedef NSProblemType ProblemType;
+  typedef NSWaves< GridType > ProblemType;  
 
   template< class GridPart >
   struct Traits
   {
-    typedef ProblemType InitialDataType;
+    typedef ProblemType      InitialDataType;
     typedef Dune::NSModel< GridPart, InitialDataType > ModelType;
     // choice of diffusion flux (see diffusionflux.hh for methods)
     static const Dune :: DGDiffusionFluxIdentifier PrimalDiffusionFluxId 
