@@ -84,8 +84,8 @@ namespace Dune
       rows_[ rows ] = count ;
     }
 
-    const int N () const { return rows; }
-    const int M () const { return cols; }
+    int N () const { return rows; }
+    int M () const { return cols; }
 
     template <class X, class Y> 
     void mv ( const X& x, Y& y ) const 
