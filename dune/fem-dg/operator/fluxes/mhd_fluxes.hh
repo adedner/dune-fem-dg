@@ -147,7 +147,11 @@ protected:
   typedef typename Eos < Cons<size> > :: var_t var_t;
 
   const int dpdeps_avail;
+  typedef Eos < Cons<size> > BaseType;
+
 public:
+  using BaseType :: cs2;
+
   inline Eos_cons(int = 0);
   virtual double p(const var_t &) const = 0;
   double gamma(const var_t &) const;
@@ -365,6 +369,8 @@ template <class VAR> class VariableTop : public VAR
 protected:
   VariableTop() : VAR() {}
 public:
+  using VAR :: init;
+
   typedef VariableTop <VAR> var_t;
   typedef VariableTop <typename VAR::cvar1_t> cvar1_t;
   typedef VariableTop <typename VAR::cvar2_t> cvar2_t;
