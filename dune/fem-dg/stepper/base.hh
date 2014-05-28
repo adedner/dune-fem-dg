@@ -2,6 +2,8 @@
 #define FEMHOWTO_BASE_HH
 
 #include <sstream>
+#include <sys/time.h>
+#include <sys/resource.h>
 
 #include <dune/common/fvector.hh>
 #include <dune/common/version.hh>
