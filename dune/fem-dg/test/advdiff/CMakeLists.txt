@@ -1,0 +1,14 @@
+# install these headers
+set(advdiffdir ${CMAKE_INSTALL_INCLUDEDIR}/test/advdiff)
+set(advdiff_HEADERS  models.hh  problemcreator.hh steppertraits.hh)
+set(LDADD  ${ALL_PKG_LDFLAGS} ${ALL_PKG_LIBS} ${LOCAL_LIBS} ${DUNEMPILDFLAGS} ${DUNEMPILIBS})
+set(BASEDIR ../../main)
+#GRIDTYPE = ALUGRID_SIMPLEX
+#GRIDTYPE = YASPGRID
+#GRIDTYPE=PARALLELGRID_ALUGRID_SIMPLEX
+#GRIDTYPE=CARTESIANGRID_ALUGRID_CUBE
+set(GRIDTYPE  SPGRID)
+set(POLORDER  2)
+set(GRIDDIM  2)
+set(DIMRANGE  1)
+install(FILES ${advdiff_HEADERS} DESTINATION ${advdiffdir})
