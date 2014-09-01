@@ -32,3 +32,5 @@ Makefile.in
 *.lo
 *.la
 *.tmp
+
+build-cmake
