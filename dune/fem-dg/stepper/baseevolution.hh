@@ -223,11 +223,27 @@ public:
   virtual void writeData( TimeProviderType& tp, 
                           const bool reallyWrite = false ) {}
 
-  //! default time loop implementation, overload for changes in derived classes !!! 
+  //! default time loop implementation, overload for changes in derived classes !!!
   virtual SolverMonitorType solve ( const int loop )
   {
+    // get start and end time from parameter file
+    const double startTime = ParameterType::getValue<double>("femhowto.startTime", 0.0);
+    const double endTime   = ParameterType::getValue<double>("femhowto.endTime");
+
+    // Initialize TimeProvider
+    TimeProviderType tp( startTime, this->grid() );
+
+    // call solve implementation taking start and end time
+    return solve( loop, tp, endTime );
+  }
+
+  //! time loop implementation taking TimeProvider and endTime
+  virtual SolverMonitorType solve ( const int loop,
+                                    TimeProviderType& tp,
+                                    const double endTime )
+  {
     // get grid reference 
-    GridType& grid = this->grid(); 
+    GridType& grid = this->grid();
 
     // verbosity 
     const bool verbose = ParameterType :: verbose ();
@@ -236,24 +252,16 @@ public:
 
     double maxTimeStep =
       ParameterType::getValue("femhowto.maxTimeStep", std::numeric_limits<double>::max());
-    const double startTime = ParameterType::getValue<double>("femhowto.startTime", 0.0);
 
 #ifdef BASEFUNCTIONSET_CODEGEN_GENERATE
     // in codegen modus make endTime large and only compute one timestep
-    const double endTime = startTime + 1e8;
+    // const double endTime = startTime + 1e8;
     const int maximalTimeSteps = 1;
 #else 
-
-    // get end time from parameter file 
-    const double endTime   = ParameterType::getValue<double>("femhowto.endTime");
-
     // if this variable is set then only maximalTimeSteps timesteps will be computed 
     const int maximalTimeSteps =
       ParameterType::getValue("femhowto.maximaltimesteps", std::numeric_limits<int>::max());
 #endif
-
-    // Initialize TimeProvider
-    TimeProviderType tp( startTime, grid );
 
     // create monitor object (initialize all varialbes) 
     SolverMonitorType monitor; 
