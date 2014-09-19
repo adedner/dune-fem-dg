@@ -6,7 +6,6 @@
 // dune-fem includes
 #include <dune/fem/io/parameter.hh>
 #include <dune/fem/misc/femeoc.hh>
-#include <dune/fem/misc/field.hh>
 #include <dune/fem/misc/l1norm.hh>
 #include <dune/fem/misc/l2norm.hh>
 #include <dune/fem/space/common/functionspace.hh>

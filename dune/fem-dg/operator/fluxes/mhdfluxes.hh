@@ -3,7 +3,6 @@
 #warning "Using Mhd NumFluxes"
 
 #include <cmath>
-#include <dune/fem/misc/field.hh>
 
 #ifdef COUNT_FLOPS
 #include <double.h>
