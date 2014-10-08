@@ -19,10 +19,9 @@
 
 #include <dune/fem-dg/operator/dg/dgoperatorchoice.hh>
 #include <dune/fem-dg/assemble/primalmatrix.hh>
-#include "../common/inverseop.hh"
 
 // local includes
-#include "benchmarkproblem.hh"
+#include "poissonproblem.hh"
 #include "models.hh"
 #include "estimator1.hh"
 

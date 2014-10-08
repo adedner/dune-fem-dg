@@ -6,20 +6,20 @@
 
 // local includes
 #include "../common/probleminterfaces.hh"
-#include "benchmark.hh"
+#include "benchmarkproblems.hh"
 
 
 namespace Dune {
 
-template <class GridType>                                          /*@LST0S@*/
-struct BenchmarkProblems : public ProblemInterface<
-                    Dune :: Fem :: FunctionSpace< double, double, GridType::dimension, DIMRANGE> >
-{                                                                  /*@LST0E@*/
+template <class GridType>                                         
+struct PoissonProblem : public ProblemInterface<
+     Dune :: Fem :: FunctionSpace< double, double, GridType::dimension, DIMRANGE> >
+{                                                                  
 public:
   typedef ProblemInterface<
-                 Dune :: Fem::FunctionSpace< double, double,
-                                        GridType::dimension, DIMRANGE >
-                          >                    BaseType;
+       Dune :: Fem::FunctionSpace< double, double,
+       GridType::dimension, DIMRANGE >
+          >                    BaseType;
 
   enum{ dimDomain = BaseType :: dimDomain };
   enum{ dim = dimDomain };
@@ -34,7 +34,7 @@ public:
   /**
    * @brief define problem parameters
    */
-  BenchmarkProblems (const int problemNumber) :   
+  PoissonProblem(const int problemNumber) :   
     BaseType (),
     data_(0)
   {            
@@ -215,7 +215,7 @@ public:
       v[i] = vv[i];
   }
 
-  void u(const DomainType& arg, RangeType& res) const         /*@LST0S@@LST0E@*/
+  void u(const DomainType& arg, RangeType& res) const
   {
     evaluate(arg, res );
   }
@@ -223,7 +223,7 @@ public:
   /**
    * @brief evaluates \f$ u_0(x) \f$
    */
-  void evaluate(const DomainType& arg, RangeType& res) const         /*@LST0S@@LST0E@*/
+  void evaluate(const DomainType& arg, RangeType& res) const
   {
     evaluate(arg, 0, res);
   }
@@ -231,7 +231,7 @@ public:
   /**
    * @brief evaluate exact solution
    */
-  void evaluate(const DomainType& arg, const double t, RangeType& res) const /*@LST0S@@LST0E@*/
+  void evaluate(const DomainType& arg, const double t, RangeType& res) const
   {
     res = data().exact( &arg[ 0 ] );
   }

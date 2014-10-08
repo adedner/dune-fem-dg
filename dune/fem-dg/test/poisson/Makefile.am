@@ -1,5 +1,5 @@
 # install these headers 
-poissondir=$(includedir)/test/advdiff
+poissondir=$(includedir)/test/poisson
 poisson_HEADERS = models.hh  problemcreator.hh steppertraits.hh
 
 LDADD = $(ALL_PKG_LDFLAGS) $(ALL_PKG_LIBS) $(LOCAL_LIBS) $(DUNEMPILDFLAGS) $(DUNEMPILIBS)
