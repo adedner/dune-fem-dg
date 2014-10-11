@@ -1,5 +1,5 @@
-#ifndef ELLIPTIC_ALGORITHM_HH
-#define ELLIPTIC_ALGORITHM_HH
+#ifndef DUNE_FEMDG_ELLIPTIC_ALGORITHM_HH
+#define DUNE_FEMDG_ELLIPTIC_ALGORITHM_HH
 #include <config.h>
 
 // include std libs
@@ -513,18 +513,15 @@ public:
       double reduction  = Dune::Fem:: Parameter::getValue<double>("istl.reduction",1.e-10);
       // this describes the factor for max iterations in terms of spaces size
       int maxIterFactor = Dune::Fem:: Parameter::getValue<double>("istl.maxiterfactor", int(-1) );
+
       // if max iterations is negative set it to twice the spaces size
       if( maxIterFactor < 0 ) 
         maxIterFactor = 2; 
-		//	linDgOperator_->print(std::cout);
+
       invDgOperator_.reset( new LinearInverseOperatorType(*linDgOperator_, reduction, absLimit ));
+      // invDgOperator_.reset( new InverseOperatorType(*linDgOperator_, reduction, absLimit, maxIterFactor * space_.size() ));
       (*invDgOperator_)(rhs_,solution_);
       monitor.ils_iterations = invDgOperator_->iterations();
-      /*
-      invDgOperator_ = new InverseOperatorType(*linDgOperator_, reduction, absLimit, maxIterFactor * space_.size() );
-      (*invDgOperator_)(rhs_,solution_);
-      monitor.ils_iterations = invDgOperator_->iterations();
-      */
     }
 
     // calculate new sigma 
@@ -538,15 +535,13 @@ public:
   //! finalize computation by calculating errors and EOCs 
   void finalize( const int eocloop )
   {
+    typedef typename InitialDataType :: ExactSolutionType  ExactSolutionType ;
     //---- Adapter for exact solution ------------------------------------------
-    typedef Dune::Fem::GridFunctionAdapter< InitialDataType, GridPartType >
+    typedef Dune::Fem::GridFunctionAdapter< ExactSolutionType, GridPartType >
         GridExactSolutionType;
 
     // create grid function adapter 
-    GridExactSolutionType ugrid( "exact solution", problem(), gridPart_, 1 );
-    //                              DiscreteSpaceType :: polynomialOrder + 1 ); //
-    //                              polynomgrad muss bei Fehlerberechnung von solution
-    //                              kommen
+    GridExactSolutionType ugrid( "exact solution", problem().exactSolution(), gridPart_, 1 );
 
     // calculate L2 - Norm 
     Dune::Fem::L2Norm< GridPartType > l2norm( gridPart_ );
@@ -560,14 +555,14 @@ public:
     runFile_ << std::endl;
 
     Dune::Fem::DGNorm< GridPartType > dgnorm( gridPart_ );
-    const double dgerror = 0; //dgnorm.distance( ugrid, solution_ );
+    const double dgerror = dgnorm.distance( ugrid, solution_ );
 
     Dune::Fem::H1Norm< GridPartType > sigmanorm( gridPart_ );
     typedef SigmaLocalFunction<SigmaLocal<DiscreteFunctionType, DgType> >
       SigmaLocalFunctionType;
     SigmaLocalFunctionType sigmaLocalFunction( solution_, sigmaDiscreteFunction_, sigmaLocalEstimate_ );
     Dune::Fem::LocalFunctionAdapter<SigmaLocalFunctionType> sigma( "sigma function", sigmaLocalFunction, gridPart_, space_.order() );
-    const double sigmaerror = 0;//sigmanorm.distance( ugrid, sigma );
+    const double sigmaerror = sigmanorm.distance( ugrid, sigma );
 
     // store values 
     std::vector<double> errors;

@@ -1,18 +1,17 @@
-#ifndef NAVIER_STOKES_STEPPER_HH
-#define NAVIER_STOKES_STEPPER_HH
+#ifndef DUNE_FEMDG_ADVECTION_STEPPER_HH
+#define DUNE_FEMDG_ADVECTION_STEPPER_HH
 
 // dune-fem-dg includes
 #include <dune/fem-dg/operator/adaptation/estimator.hh>
 #include <dune/fem-dg/solver/rungekuttasolver.hh>
 
 // local includes
-#include "stepperbase.hh"
-
+#include <dune/fem-dg/stepper/stepperbase.hh>
 
 template <class GridImp,
           class ProblemTraits, 
           int polynomialOrder>             
-struct Stepper 
+struct AdvectionStepper 
   : public StepperBase< GridImp, ProblemTraits, polynomialOrder >
 {
   typedef StepperBase< GridImp, ProblemTraits, polynomialOrder > BaseType ;
@@ -48,12 +47,12 @@ struct Stepper
   typedef typename BaseType :: DiscreteSpaceType         DiscreteSpaceType;
 
   // The ODE Solvers
-  typedef typename BaseType :: OdeSolverType     OdeSolverType;
+  typedef typename BaseType :: OdeSolverType             OdeSolverType;
 
-  typedef typename BaseType :: TimeProviderType        TimeProviderType;
-  typedef typename BaseType :: AdaptationManagerType   AdaptationManagerType;
-  typedef typename BaseType :: AdaptationHandlerType   AdaptationHandlerType;
-  typedef typename BaseType :: IndicatorType           IndicatorType;
+  typedef typename BaseType :: TimeProviderType          TimeProviderType;
+  typedef typename BaseType :: AdaptationManagerType     AdaptationManagerType;
+  typedef typename BaseType :: AdaptationHandlerType     AdaptationHandlerType;
+  typedef typename BaseType :: IndicatorType             IndicatorType;
 
   static const Dune::DGDiffusionFluxIdentifier DiffusionFluxId =
     BaseType::Traits::DiffusionFluxId ;
@@ -79,7 +78,7 @@ struct Stepper
   using BaseType :: doEstimateMarkAdapt ;
 
   // constructor 
-  Stepper( GridType& grid ) :
+  AdvectionStepper( GridType& grid ) :
     BaseType( grid ),
     dgAdvectionOperator_(gridPart_, problem() ),
     dgIndicator_( gridPart_, problem() ),
@@ -147,7 +146,7 @@ struct Stepper
   const ModelType& model() const { return dgAdvectionOperator_.model(); }
 
 protected:
-  ExplicitOperatorType         dgAdvectionOperator_;
+  ExplicitOperatorType    dgAdvectionOperator_;
   DGIndicatorType         dgIndicator_;
   GradientIndicatorType   gradientIndicator_;
 };

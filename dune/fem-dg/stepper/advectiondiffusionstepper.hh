@@ -1,5 +1,5 @@
-#ifndef NAVIER_STOKES_STEPPER_HH
-#define NAVIER_STOKES_STEPPER_HH
+#ifndef DUNE_FEMDG_ADVECTIONDIFFUSION_STEPPER_HH
+#define DUNE_FEMDG_ADVECTIONDIFFUSION_STEPPER_HH
 
 // dune-fem-dg includes
 #include <dune/fem-dg/operator/adaptation/estimator.hh>
@@ -11,7 +11,7 @@
 template <class GridImp,
           class ProblemTraits, 
           int polynomialOrder>             
-struct Stepper 
+struct AdvectionDiffusionStepper 
   : public StepperBase< GridImp, ProblemTraits, polynomialOrder >
 {
   typedef StepperBase< GridImp, ProblemTraits, polynomialOrder > BaseType ;
@@ -75,7 +75,7 @@ struct Stepper
   using BaseType :: adaptive ;
   using BaseType :: doEstimateMarkAdapt ;
 
-  Stepper( GridType& grid ) :
+  AdvectionDiffusionStepper( GridType& grid ) :
     BaseType( grid ),
     dgOperator_( gridPart_, problem() ),
     dgAdvectionOperator_( gridPart_, problem() ),
@@ -152,9 +152,9 @@ struct Stepper
   const ModelType& model() const { return dgOperator_.model(); }
 
 protected:
-  FullOperatorType                  dgOperator_;
-  ExplicitOperatorType         dgAdvectionOperator_;
-  ImplicitOperatorType         dgDiffusionOperator_;
+  FullOperatorType        dgOperator_;
+  ExplicitOperatorType    dgAdvectionOperator_;
+  ImplicitOperatorType    dgDiffusionOperator_;
   DGIndicatorType         dgIndicator_;
   GradientIndicatorType   gradientIndicator_;
 };
