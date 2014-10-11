@@ -23,7 +23,8 @@ static double minRatioOfSums = 1e+100;
 // dune-fem includes
 #include <dune/fem/misc/l2norm.hh>
 #include <dune/fem/misc/h1norm.hh>
-#include <dune/fem/misc/dgnorm.hh>
+#include <dune/fem/misc/femeoc.hh>
+#include <dune/fem-dg/misc/dgnorm.hh>
 #include <dune/fem/operator/projection/l2projection.hh>
 #include <dune/fem/function/common/localfunctionadapter.hh>
 
@@ -47,7 +48,7 @@ static double minRatioOfSums = 1e+100;
 
 // include local header files
 #include "base.hh"
-// #include "../base/baseevolution.hh"
+#include "baseevolution.hh"
 
 
 using namespace Dune;                                        
@@ -62,10 +63,10 @@ struct ElliptTraits
   enum { polynomialOrder = polOrd };
 
   // type of Grid
-  typedef GridImp                                   GridType;
+  typedef GridImp                                        GridType;
 
   // Choose a suitable GridView
-  typedef Dune::Fem::AdaptiveLeafGridPart< GridType >       GridPartType;
+  typedef Dune::Fem::AdaptiveLeafGridPart< GridType >    GridPartType;
 
   // problem dependent types 
   typedef typename ProblemTraits :: template Traits< GridPartType > :: InitialDataType  InitialDataType;
@@ -74,7 +75,10 @@ struct ElliptTraits
   static const Dune :: DGDiffusionFluxIdentifier DiffusionFluxId = 
     ProblemTraits :: template Traits< GridPartType > :: PrimalDiffusionFluxId ;
 
-  typedef typename PassTraits<ModelType,dimRange,polynomialOrder>::DestinationType DiscreteFunctionType;
+  typedef PassTraits<ModelType,dimRange,polynomialOrder>      PassTraitsType;
+  typedef typename PassTraitsType::DestinationType            DiscreteFunctionType;
+  typedef typename PassTraitsType::LinearOperatorType         LinearOperatorType;
+  typedef typename PassTraitsType::LinearInverseOperatorType  LinearInverseOperatorType;
   
   typedef DGPrimalMatrixAssembly<DiscreteFunctionType,ModelType,FluxType > DgType;
 
@@ -97,40 +101,35 @@ public:
   typedef ElliptTraits< GridImp, ProblemTraits, polynomialOrder> Traits ;
 
   // type of Grid
-  typedef typename Traits :: GridType                 GridType;
+  typedef typename Traits :: GridType                    GridType;
 
   // Choose a suitable GridView
-  typedef typename Traits :: GridPartType             GridPartType;
+  typedef typename Traits :: GridPartType                GridPartType;
 
   // initial data type 
-  typedef typename Traits :: InitialDataType          InitialDataType;
+  typedef typename Traits :: InitialDataType             InitialDataType;
 
   // An analytical version of our model
-  typedef typename Traits :: ModelType                 ModelType;
+  typedef typename Traits :: ModelType                   ModelType;
 
   // The flux for the discretization of advection terms
-  typedef typename Traits :: FluxType                  FluxType;
+  typedef typename Traits :: FluxType                    FluxType;
 
   // The DG space operator
-  typedef typename Traits :: DgType                    DgType;
+  typedef typename Traits :: DgType                      DgType;
 
   // The discrete function for the unknown solution is defined in the DgOperator
-  typedef typename Traits :: DiscreteFunctionType      DiscreteFunctionType;
+  typedef typename Traits :: DiscreteFunctionType        DiscreteFunctionType;
 
   // ... as well as the Space type
-  typedef typename Traits :: DiscreteSpaceType         DiscreteSpaceType;
+  typedef typename Traits :: DiscreteSpaceType           DiscreteSpaceType;
 
-#if WANT_ISTL
-#warning USING ISTL
-  typedef Dune::Fem::ISTLLinearOperator< DiscreteFunctionType, DiscreteFunctionType > LinearOperatorType;
-  typedef Dune::Fem::ISTLCGOp< DiscreteFunctionType, LinearOperatorType > InverseOperatorType;
-#elif WANT_PETSC
-  typedef Dune::Fem::PetscLinearOperator< DiscreteFunctionType, DiscreteFunctionType > LinearOperatorType;
-  typedef Dune::Fem::PetscInverseOperator< DiscreteFunctionType, LinearOperatorType >  InverseOperatorType ;
-#else
-#error
-#endif
-   
+  // type of linear operator (i.e. matrix implementation)
+  typedef typename Traits :: LinearOperatorType          LinearOperatorType;
+
+  // type of inverse operator (i.e. linear solver implementation)
+  typedef typename Traits :: LinearInverseOperatorType   LinearInverseOperatorType;
+
   enum { dimension = GridType :: dimension  };
 #if STOKES
   typedef typename DiscreteSpaceType ::  
@@ -278,10 +277,11 @@ public:
   };
   
   typedef Dune::Fem::LocalFunctionAdapter< SigmaLocal<DiscreteFunctionType, DgType> > SigmaEstimateFunction;
-  typedef Estimator1< DiscreteFunctionType, SigmaDiscreteFunctionType, DgType > EstimatorType;
+  //typedef Estimator1< DiscreteFunctionType, SigmaDiscreteFunctionType, DgType > EstimatorType;
 
-  typedef Dune::Fem::LocalFunctionAdapter< EstimatorType > EstimateDataType;
-  typedef tuple< const DiscreteFunctionType*, const SigmaEstimateFunction*, const EstimateDataType* >  IOTupleType;
+  //typedef Dune::Fem::LocalFunctionAdapter< EstimatorType > EstimateDataType;
+  //typedef tuple< const DiscreteFunctionType*, const SigmaEstimateFunction*, const EstimateDataType* >  IOTupleType;
+  typedef tuple< const DiscreteFunctionType*, const SigmaEstimateFunction* >  IOTupleType;
   typedef Dune::Fem::DataWriter<GridType,IOTupleType> DataWriterType;
 
   template <class SigmaLocalType>
@@ -354,6 +354,10 @@ public:
     int val_;
   };
   typedef PersistentContainer<GridType,PolOrderStructure> PolOrderContainer;
+
+  // type of statistics monitor 
+  typedef SolverMonitor  SolverMonitorType ;
+
 public:
   EllipticAlgorithm(GridType& grid) :
     grid_( grid ),
@@ -363,9 +367,7 @@ public:
     convectionFlux_( *model_ ),
     dgOperator_(gridPart_, *model_),
     invDgOperator_(0),
-#if WANT_ISTL || WANT_PETSC
     linDgOperator_(0),
-#endif
     space_( const_cast<DiscreteSpaceType &> (dgOperator_.space()) ),
     solution_("solution", space_ ),
     rhs_("rhs", space_ ),
@@ -373,9 +375,9 @@ public:
     sigmaDiscreteFunction_( "sigma", sigmaSpace_ ),
     sigmaLocalEstimate_( solution_, dgOperator_ ),
     sigmaEstimateFunction_( "function 4 estimate", sigmaLocalEstimate_, gridPart_, space_.order() ),
-    estimator_( solution_, sigmaDiscreteFunction_, dgOperator_, grid ),
-    estimateData_( "estimator", estimator_, gridPart_, space_.order() ),
-    ioTuple_( &solution_, &sigmaEstimateFunction_, &estimateData_ ),
+    //estimator_( solution_, sigmaDiscreteFunction_, dgOperator_, grid ),
+    //estimateData_( "estimator", estimator_, gridPart_, space_.order() ),
+    ioTuple_( &solution_, &sigmaEstimateFunction_), //, &estimateData_ ),
     polOrderContainer_(grid_ , 0),
     eocId_( -1 ),
     step_( 0 ),
@@ -408,18 +410,27 @@ public:
     // we start with max order
     typedef typename PolOrderContainer :: Iterator Iterator ;
     const Iterator end = polOrderContainer_.end();
-    const int minimalOrder = estimator_.minimalOrder() ;
+    const int minimalOrder = solution_.space().order(); // estimator_.minimalOrder() ;
     for( Iterator it = polOrderContainer_.begin(); it != end; ++it ) 
     {
       (*it).value() = minimalOrder ;
     }
 
     const std::string eocDescription[] = { "$L^2$-error", "DG-error", "sigma-norm" };
-    eocId_ = FemEoc::addEntry( eocDescription, 3);
+    eocId_ = Dune::Fem::FemEoc::addEntry( eocDescription, 3);
   }                                                                        /*@LST1E@*/
-  ~EllipticAlgorithm()
+
+  virtual ~EllipticAlgorithm()
   {
     delete model_;
+  }
+
+  GridType& grid () { return grid_; }
+
+  IOTupleType dataTuple()
+  {
+    // tuple with additionalVariables
+    return IOTupleType( &solution_, 0 );
   }
 
   //! return reference to discrete space 
@@ -453,11 +464,9 @@ public:
   }
 
   //! default time loop implementation, overload for changes 
-  void operator()(double& averagedt,
-                  double& mindt, double& maxdt, size_t& counter,
-                  int& total_newton_iterations, int& total_ils_iterations,
-                  int& max_newton_iterations, int& max_ils_iterations)
+  SolverMonitorType solve( const int loop ) 
   {
+    SolverMonitorType monitor;
     numbers_.resize( 0 );
 
     // calculate grid width
@@ -513,7 +522,6 @@ public:
     space_.adapt( polOrderVec );
 #endif
     
-#if WANT_ISTL || WANT_PETSC 
     if (!invDgOperator_)
     {
       linDgOperator_ = new LinearOperatorType("dg operator", space_, space_ );
@@ -548,27 +556,22 @@ public:
       // if max iterations is negative set it to twice the spaces size
       if( maxIterFactor < 0 ) 
         maxIterFactor = 2; 
-#if WANT_ISTL
 		//	linDgOperator_->print(std::cout);
-      invDgOperator_ = new InverseOperatorType(*linDgOperator_, reduction, absLimit );
+      invDgOperator_ = new LinearInverseOperatorType(*linDgOperator_, reduction, absLimit );
       (*invDgOperator_)(rhs_,solution_);
-      counter = invDgOperator_->iterations();
-#endif
-#if WANT_PETSC
+      monitor.ils_iterations = invDgOperator_->iterations();
+      /*
       invDgOperator_ = new InverseOperatorType(*linDgOperator_, reduction, absLimit, maxIterFactor * space_.size() );
       (*invDgOperator_)(rhs_,solution_);
-      counter = invDgOperator_->iterations();
-#endif
+      monitor.ils_iterations = invDgOperator_->iterations();
+      */
     }
-#elif HAVE_SOLVER_BENCH
-#error
-#endif
 
     // calculate new sigma 
     Dune::Fem:: DGL2ProjectionImpl :: project( sigmaEstimateFunction_, sigmaDiscreteFunction_ );
 
     //Dune::Fem::DGL2ProjectionImpl :: project( problem(), solution_ );
-    return ;
+    return monitor;
   }
 
 
@@ -597,14 +600,14 @@ public:
     runFile_ << std::endl;
 
     Dune::Fem::DGNorm< GridPartType > dgnorm( gridPart_ );
-    const double dgerror = dgnorm.distance( ugrid, solution_ );
+    const double dgerror = 0; //dgnorm.distance( ugrid, solution_ );
 
     Dune::Fem::H1Norm< GridPartType > sigmanorm( gridPart_ );
     typedef SigmaLocalFunction<SigmaLocal<DiscreteFunctionType, DgType> >
       SigmaLocalFunctionType;
     SigmaLocalFunctionType sigmaLocalFunction( solution_, sigmaDiscreteFunction_, sigmaLocalEstimate_ );
     Dune::Fem::LocalFunctionAdapter<SigmaLocalFunctionType> sigma( "sigma function", sigmaLocalFunction, gridPart_, space_.order() );
-    const double sigmaerror = sigmanorm.distance( ugrid, sigma );
+    const double sigmaerror = 0;//sigmanorm.distance( ugrid, sigma );
 
     // store values 
     std::vector<double> errors;
@@ -613,7 +616,7 @@ public:
     errors.push_back( sigmaerror );
 
     // submit error to the FEM EOC calculator 
-    Dune::FemEoc :: setErrors(eocId_, errors);
+    Dune::Fem::FemEoc :: setErrors(eocId_, errors);
 
     delete invDgOperator_;
     invDgOperator_ = 0;
@@ -628,21 +631,22 @@ public:
     // resize container 
     polOrderContainer_.resize();
 
-    const double error = estimator_.estimate( problem() );
+    const double error = 0.0;//estimator_.estimate( problem() );
     std::cout << "ESTIMATE: " << error << std::endl;
     typedef typename DiscreteSpaceType::IteratorType IteratorType;
     const IteratorType end = space_.end();
     for( IteratorType it = space_.begin(); it != end; ++it )
     {
       const typename IteratorType::Entity &entity = *it;
-      polOrderContainer_[entity].value() = 
-        estimator_.newOrder( 0.98*tolerance, entity );
+      //polOrderContainer_[entity].value() = 
+      //  estimator_.newOrder( 0.98*tolerance, entity );
     }
-    return (error < std::abs(tolerance) ? false : estimator_.mark( 0.98 * tolerance));
+    return false ;
+    //return (error < std::abs(tolerance) ? false : estimator_.mark( 0.98 * tolerance));
   }
   void closure() 
   {
-    estimator_.closure();
+    //estimator_.closure();
   }
 
   const InitialDataType& problem() const { assert( problem_ ); return *problem_; }
@@ -664,10 +668,10 @@ public:
   ModelType*              model_;
   FluxType                convectionFlux_;
   DgType                  dgOperator_;
-  InverseOperatorType     *invDgOperator_;
-#if WANT_ISTL || WANT_PETSC
+
+  LinearInverseOperatorType     *invDgOperator_;
   LinearOperatorType      *linDgOperator_;
-#endif
+
   DiscreteSpaceType &space_;    // the discrete function space
   // the solution 
   DiscreteFunctionType   solution_, rhs_;
@@ -677,8 +681,8 @@ public:
 
   SigmaLocal<DiscreteFunctionType, DgType> sigmaLocalEstimate_;
   SigmaEstimateFunction sigmaEstimateFunction_;
-  EstimatorType estimator_;
-  EstimateDataType estimateData_;
+  //EstimatorType estimator_;
+  //EstimateDataType estimateData_;
   IOTupleType ioTuple_;
   PolOrderContainer polOrderContainer_;
 
