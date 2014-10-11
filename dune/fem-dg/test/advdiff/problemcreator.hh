@@ -14,7 +14,10 @@
 
 // local includes
 #include <dune/fem-dg/operator/fluxes/diffusionflux.hh>
-#include <dune/fem-dg/stepper/base.hh>
+
+// overload default stepper traits
+#include "steppertraits.hh"
+#include <dune/fem-dg/stepper/advectiondiffusionstepper.hh>
 
 #include "problems/problem.hh"
 #include "problems/problemQuasiHeatEqn.hh"
@@ -27,6 +30,12 @@
 template< class GridType > 
 struct ProblemGenerator 
 {
+  template <class Traits>
+  struct Stepper
+  {
+    typedef AdvectionDiffusionStepper< GridType, Traits, POLORDER > Type;
+  };
+
   typedef Dune :: EvolutionProblemInterface<
                       Dune::Fem::FunctionSpace< double, double, GridType::dimension,
                       DIMRANGE>,
@@ -66,8 +75,9 @@ struct ProblemGenerator
 
 
   static inline Dune::GridPtr<GridType> 
-  initializeGrid( const std::string description )
+  initializeGrid()
   {
+    std::string description( advectionFluxName() + " " + diffusionFluxName() );
     // use default implementation 
     return initialize< GridType > ( description );
   }
@@ -93,12 +103,5 @@ struct ProblemGenerator
   }
 };
 
-#include "steppertraits.hh"
-
-//#if ADVECTION && DIFFUSION 
-#include <dune/fem-dg/stepper/advectiondiffusionstepper.hh>
-//#else 
-//#include <dune/fem-dg/stepper/advectionstepper.hh>
-//#endif
 
 #endif // FEMHOWTO_HEATSTEPPER_HH

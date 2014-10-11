@@ -16,11 +16,17 @@
 #include "eulermodel.hh"
 #include "problems.hh"
 
-#include <dune/fem-dg/stepper/base.hh>
+#include <dune/fem-dg/stepper/advectionstepper.hh>
 
 template <class GridType> 
 struct ProblemGenerator 
 {
+  template <class Traits>
+  struct Stepper
+  {
+    typedef AdvectionStepper< GridType, Traits, POLORDER > Type;
+  };
+
   typedef ProblemBase< GridType > ProblemType ;
 
   template <class GridPart>
@@ -73,21 +79,10 @@ struct ProblemGenerator
 #endif
   }
 
-  static inline std::string diffusionFluxName()
-  {
-#ifdef EULER
-    return "";
-#elif (defined PRIMALDG)
-    return Dune::Fem::Parameter::getValue< std::string >("dgdiffusionflux.method");
-#else
-    return "LDG";
-#endif
-  }
-
-
   static inline Dune::GridPtr<GridType> 
-  initializeGrid( const std::string description )
+  initializeGrid()
   {
+    std::string description( advectionFluxName() );
     // use default implementation 
     return initialize< GridType >( description );
   }

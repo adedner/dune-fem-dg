@@ -17,12 +17,17 @@
 #include "nswaves.hh"
 #include "ns_model.hh"
 
-#include <dune/fem-dg/stepper/base.hh>
-
+#include <dune/fem-dg/stepper/advectiondiffusionstepper.hh>
 
 template< class GridType > 
 struct ProblemGenerator 
 {
+  template < class Traits >
+  struct Stepper
+  {
+    typedef AdvectionDiffusionStepper< GridType, Traits, POLORDER > Type;
+  };
+
   typedef NSWaves< GridType > ProblemType;  
 
   template< class GridPart >
@@ -94,8 +99,9 @@ struct ProblemGenerator
   }
 
   static inline Dune::GridPtr<GridType>               
-  initializeGrid( const std::string description )
+  initializeGrid()
   {
+    std::string description( advectionFluxName() + " " + diffusionFluxName() ); 
     // use default implementation 
     return initialize< GridType > ( description );
   }

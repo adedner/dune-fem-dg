@@ -1,5 +1,3 @@
-#undef ENABLE_MPI
-
 #ifndef FEMHOWTO_POISSONSTEPPER_HH
 #define FEMHOWTO_POISSONSTEPPER_HH
 #include <config.h>
@@ -31,7 +29,7 @@
 #include <dune/fem-dg/assemble/primalmatrix.hh>
 
 #include <dune/fem-dg/solver/linearsolvers.hh>
-#include <dune/fem-dg/stepper/ellipt.hh>
+#include <dune/fem-dg/stepper/ellipticalgorithm.hh>
 
 // local includes
 #include "poissonproblem.hh"
