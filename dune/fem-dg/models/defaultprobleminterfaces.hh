@@ -2,6 +2,8 @@
 #define DUNE_DEFAULTPROBLEMINTERFACE_HH
 
 #include <dune/common/version.hh>
+#include <dune/common/exceptions.hh>
+
 #include <dune/fem/function/common/timedependentfunction.hh>
 #include <dune/fem/misc/gridsolution.hh>
 
@@ -153,6 +155,7 @@ public:
   { 
     velocity( x, v );
   }
+
   /**
    * @brief old version of the exact solution
    *
@@ -311,9 +314,13 @@ public:
     v = 0;  
   }
 
-  //! the gradient of the exact solution
-  //virtual void gradient(const DomainType& x,
-  //                      JacobianRangeType& grad) const = 0;
+  //! the gradient of the exact solution (default is empty)
+  virtual void gradient(const DomainType& x,
+                        JacobianRangeType& grad) const
+  { 
+    assert( false );
+    DUNE_THROW( NotImplemented, "ProblemInterface::gradient not overloaded but called!" ); 
+  }
 
   //! return whether boundary is Dirichlet (true) or Neumann (false)
   virtual bool dirichletBoundary(const int bndId, const DomainType& x) const
