@@ -4,7 +4,14 @@
 #define FEMHOWTO_POISSONSTEPPER_HH
 #include <config.h>
 
-#define WANT_ISTL 1
+//#define WANT_ISTL 1
+
+#ifndef NDEBUG 
+// enable fvector and fmatrix checking
+#define DUNE_ISTL_WITH_CHECKING
+#endif
+
+#define PROBLEMTRAITS_HAVE_STEPPERTYPE
 
 #include <dune/fem-dg/main/codegen.hh>
 #include "passtraits.hh"
@@ -198,7 +205,4 @@ struct ProblemGenerator
     return new Dune :: PoissonProblem< GridType > ( probNr );
   }
 };
-
-// include elliptic stepper
-#include <dune/fem-dg/stepper/ellipt.hh>
 #endif // FEMHOWTO_POISSONSTEPPER_HH

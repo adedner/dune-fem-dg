@@ -243,12 +243,6 @@ public:
       data().gradExact( &x[ 0 ], &grad[ i ][ 0 ] );
   }
 
-  void jacobian(const DomainType& x,
-                JacobianRangeType& grad) const 
-  { 
-    gradient( x, grad );
-  }
-
   /**
    * @brief latex output for EocOutput
    */
