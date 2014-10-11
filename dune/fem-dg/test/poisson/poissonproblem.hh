@@ -5,7 +5,7 @@
 #include <dune/fem/space/common/functionspace.hh>
 
 // local includes
-#include "../common/probleminterfaces.hh"
+#include <dune/fem-dg/models/defaultprobleminterfaces.hh>
 #include "benchmarkproblems.hh"
 
 
@@ -241,6 +241,12 @@ public:
   { 
     for (int i=0;i<RangeType::dimension;++i)
       data().gradExact( &x[ 0 ], &grad[ i ][ 0 ] );
+  }
+
+  void jacobian(const DomainType& x,
+                JacobianRangeType& grad) const 
+  { 
+    gradient( x, grad );
   }
 
   /**

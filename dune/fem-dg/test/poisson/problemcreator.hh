@@ -4,7 +4,9 @@
 #define FEMHOWTO_POISSONSTEPPER_HH
 #include <config.h>
 
-#include <dune/fem/main/codegen.hh>
+#define WANT_ISTL 1
+
+#include <dune/fem-dg/main/codegen.hh>
 #include "passtraits.hh"
 
 // dune-grid includes
@@ -18,17 +20,15 @@
 
 
 #include <dune/fem-dg/operator/dg/dgoperatorchoice.hh>
+#include <dune/fem-dg/operator/fluxes/noflux.hh>
 #include <dune/fem-dg/assemble/primalmatrix.hh>
+
+#include <dune/fem-dg/solver/linearsolvers.hh>
+#include <dune/fem-dg/stepper/ellipt.hh>
 
 // local includes
 #include "poissonproblem.hh"
 #include "models.hh"
-#include "estimator1.hh"
-
-#define NS_ELLIPTIC_OPERATOR 
-#ifndef TESTOPERATOR
-#define TESTOPERATOR 
-#endif
 
 template <class GridType> 
 struct ProblemGenerator 
@@ -47,6 +47,12 @@ struct ProblemGenerator
       = Dune :: method_general ;
   };
 
+  // type of stepper to be used
+  template < class Traits >
+  struct Stepper
+  {
+    typedef EllipticAlgorithm< GridType, Traits, POLORDER > Type; 
+  };
 
   static inline std::string diffusionFluxName()
   {
@@ -57,12 +63,12 @@ struct ProblemGenerator
 #endif
   }
 
-  static inline Dune::GridPtr<GridType> initializeGrid(const std::string description)
+  static inline Dune::GridPtr<GridType> initializeGrid()
   {
     // use default implementation 
-    //GridPtr<GridType> gridptr = initialize< GridType >( description );
     std::string filename = Dune::Fem::Parameter::getValue< std::string >(Dune::Fem::IOInterface::defaultGridKey(GridType :: dimension, false)); 
   
+    std::string description ("poisson-"+diffusionFluxName());
     // initialize grid
     Dune::GridPtr< GridType > gridptr = initialize< GridType >( description );
 
@@ -185,12 +191,14 @@ struct ProblemGenerator
     return gridptr ;
   }
 
-  static ProblemType* problem()
+  static ProblemType* problem( )
   {
     // choice of benchmark problem 
     int probNr = Dune::Fem::Parameter::getValue< int > ( "femhowto.problem" );
-    return new Dune :: BenchmarkProblems< GridType > ( probNr );
+    return new Dune :: PoissonProblem< GridType > ( probNr );
   }
 };
 
+// include elliptic stepper
+#include <dune/fem-dg/stepper/ellipt.hh>
 #endif // FEMHOWTO_POISSONSTEPPER_HH

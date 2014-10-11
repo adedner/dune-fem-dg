@@ -12,13 +12,8 @@
 #include <dune/fem/pass/localdg/discretemodel.hh>
 #include <dune/fem/function/adaptivefunction.hh>
 #include <dune/fem/quadrature/cachingquadrature.hh>
-#include <dune/fem-dg/operator/adaptation/adaptation.hh>
-#include <dune/fem/function/blockvectorfunction.hh>
 
-#if HAVE_PETSC
-#include <dune/fem/function/petscdiscretefunction.hh>
-#endif
-
+#include <dune/fem-dg/solver/linearsolvers.hh>
 
 namespace Dune {
 
@@ -85,20 +80,19 @@ namespace Dune {
 #endif
        < FunctionSpaceType, GridPartType, polOrd, Dune::Fem::CachingStorage > DiscreteFunctionSpaceType;
     
+    static const bool symmetricSolver = true ;
 #if WANT_ISTL
-  typedef Dune::Fem::ISTLBlockVectorDiscreteFunction< DiscreteFunctionSpaceType > DestinationType;
+    typedef Solvers<DiscreteFunctionSpaceType, istl,  symmetricSolver> SolversType; 
 #elif WANT_PETSC
-  typedef Dune::Fem::PetscDiscreteFunction< DiscreteFunctionSpaceType >           DestinationType;
+    typedef Solvers<DiscreteFunctionSpaceType, petsc, symmetricSolver> SolversType; 
 #else
-  typedef Dune::Fem::AdaptiveDiscreteFunction< DiscreteFunctionSpaceType >        DestinationType;
+    typedef Solvers<DiscreteFunctionSpaceType, fem,   symmetricSolver> SolversType; 
 #endif
 
-    // Indicator for Limiter
-    typedef Dune::Fem::FunctionSpace< ctype, double, dimDomain, 3> FVFunctionSpaceType;
-    typedef Dune::Fem::FiniteVolumeSpace<FVFunctionSpaceType,GridPartType, 0, Dune::Fem::SimpleStorage> IndicatorSpaceType;
-    typedef Dune::Fem::AdaptiveDiscreteFunction<IndicatorSpaceType> IndicatorType;
+    typedef typename SolversType :: DiscreteFunctionType       DestinationType;
+    typedef typename SolversType :: LinearOperatorType         LinearOperatorType;
+    typedef typename SolversType :: LinearInverseOperatorType  LinearInverseOperatorType;
 
-    typedef AdaptationHandler< GridType, FunctionSpaceType >  AdaptationHandlerType ;
   };
 
 } // end namespace Dune 
