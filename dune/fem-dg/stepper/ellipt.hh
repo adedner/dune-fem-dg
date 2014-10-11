@@ -2,20 +2,6 @@
 #define ELLIPTIC_ALGORITHM_HH
 #include <config.h>
 
-#ifdef LOCALDEBUG
-static double sum_ = 0.;
-static double sum2_ = 0.;
-static double localMaxRatio_ = 0.;
-static double localMinRatio_ = 1e+100;
-static double maxRatioOfSums = 0.;
-static double minRatioOfSums = 1e+100;
-#endif
-
-#ifndef NDEBUG 
-// enable fvector and fmatrix checking
-#define DUNE_ISTL_WITH_CHECKING
-#endif
-
 // include std libs
 #include <iostream>
 #include <string>
@@ -32,17 +18,8 @@ static double minRatioOfSums = 1e+100;
 #include <dune/fem-dg/operator/dg/dgoperatorchoice.hh>
 #include <dune/fem-dg/assemble/primalmatrix.hh>
 #include <dune/fem/operator/projection/dgl2projection.hh>
-#include <dune/fem/space/padaptivespace.hh>
 
 #include <dune/fem/operator/common/stencil.hh>
-#include <dune/fem/operator/linear/istloperator.hh>
-#include <dune/fem/solver/istlsolver.hh>
-
-#if HAVE_PETSC
-#include <dune/fem/function/petscdiscretefunction.hh>
-#include <dune/fem/operator/common/petsclinearoperator.hh>
-#include <dune/fem/solver/petscsolver.hh>
-#endif
 
 #include <dune/fem/misc/gridname.hh>
 
@@ -281,7 +258,7 @@ public:
 
   //typedef Dune::Fem::LocalFunctionAdapter< EstimatorType > EstimateDataType;
   //typedef tuple< const DiscreteFunctionType*, const SigmaEstimateFunction*, const EstimateDataType* >  IOTupleType;
-  typedef tuple< const DiscreteFunctionType*, const SigmaEstimateFunction* >  IOTupleType;
+  typedef tuple< const DiscreteFunctionType* > IOTupleType;
   typedef Dune::Fem::DataWriter<GridType,IOTupleType> DataWriterType;
 
   template <class SigmaLocalType>
@@ -366,8 +343,8 @@ public:
     model_( new ModelType( problem() ) ),
     convectionFlux_( *model_ ),
     dgOperator_(gridPart_, *model_),
-    invDgOperator_(0),
-    linDgOperator_(0),
+    invDgOperator_(),
+    linDgOperator_(),
     space_( const_cast<DiscreteSpaceType &> (dgOperator_.space()) ),
     solution_("solution", space_ ),
     rhs_("rhs", space_ ),
@@ -377,11 +354,10 @@ public:
     sigmaEstimateFunction_( "function 4 estimate", sigmaLocalEstimate_, gridPart_, space_.order() ),
     //estimator_( solution_, sigmaDiscreteFunction_, dgOperator_, grid ),
     //estimateData_( "estimator", estimator_, gridPart_, space_.order() ),
-    ioTuple_( &solution_, &sigmaEstimateFunction_), //, &estimateData_ ),
+    ioTuple_( &solution_ ), // &sigmaEstimateFunction_), &estimateData_ ),
     polOrderContainer_(grid_ , 0),
     eocId_( -1 ),
-    step_( 0 ),
-    useStrongBoundaryCondition_( Dune::Fem::Parameter::getValue<bool>( "use_strongbnd",false ) )
+    step_( 0 )
   {
     std::string filename( Dune::Fem::Parameter::commonOutputPath() );
     filename += "/run.gnu";
@@ -420,17 +396,12 @@ public:
     eocId_ = Dune::Fem::FemEoc::addEntry( eocDescription, 3);
   }                                                                        /*@LST1E@*/
 
-  virtual ~EllipticAlgorithm()
-  {
-    delete model_;
-  }
-
   GridType& grid () { return grid_; }
 
   IOTupleType dataTuple()
   {
     // tuple with additionalVariables
-    return IOTupleType( &solution_, 0 );
+    return IOTupleType( &solution_ );
   }
 
   //! return reference to discrete space 
@@ -524,7 +495,7 @@ public:
     
     if (!invDgOperator_)
     {
-      linDgOperator_ = new LinearOperatorType("dg operator", space_, space_ );
+      linDgOperator_.reset( new LinearOperatorType("dg operator", space_, space_ ) );
 
 #if DGSCHEME // for all dg schemes including pdg (later not working)
       typedef Dune::Fem::DiagonalAndNeighborStencil<DiscreteSpaceType,DiscreteSpaceType> StencilType ;
@@ -538,17 +509,6 @@ public:
       dgOperator_.assemble(0, *linDgOperator_, rhs_);
 			dgOperator_.testSymmetrie(*linDgOperator_);
 
-#ifdef USE_STRONG_BC
-      if (useStrongBoundaryCondition_)
-      {
-        typedef Fem :: DirichletConstraints< DiscreteSpaceType > DirichletConstraintsType;
-        DirichletConstraintsType dirichletConstraints_( space_ );
-        dirichletConstraints_.applyToOperator( *linDgOperator_ );
-        dirichletConstraints_( problem(), rhs_ );
-        dirichletConstraints_( rhs_, solution_ );
-      }
-#endif
-
       double absLimit   = Dune::Fem:: Parameter::getValue<double>("istl.absLimit",1.e-10);
       double reduction  = Dune::Fem:: Parameter::getValue<double>("istl.reduction",1.e-10);
       // this describes the factor for max iterations in terms of spaces size
@@ -557,7 +517,7 @@ public:
       if( maxIterFactor < 0 ) 
         maxIterFactor = 2; 
 		//	linDgOperator_->print(std::cout);
-      invDgOperator_ = new LinearInverseOperatorType(*linDgOperator_, reduction, absLimit );
+      invDgOperator_.reset( new LinearInverseOperatorType(*linDgOperator_, reduction, absLimit ));
       (*invDgOperator_)(rhs_,solution_);
       monitor.ils_iterations = invDgOperator_->iterations();
       /*
@@ -618,12 +578,9 @@ public:
     // submit error to the FEM EOC calculator 
     Dune::Fem::FemEoc :: setErrors(eocId_, errors);
 
-    delete invDgOperator_;
-    invDgOperator_ = 0;
-#if WANT_ISTL || WANT_PETSC
-    delete linDgOperator_;
-    linDgOperator_ = 0;
-#endif
+    // delete solver and linear operator for next step
+    delete invDgOperator_.release();
+    delete linDgOperator_.release();
   }
 
   bool adaptation(const double tolerance)
@@ -664,13 +621,13 @@ public:
   GridPartType gridPart_;       // reference to grid part, i.e. the leaf grid 
   // InitialDataType is a Dune::Operator that evaluates to $u_0$ and also has a
   // method that gives you the exact solution.
-  const InitialDataType*  problem_;
-  ModelType*              model_;
+  std::unique_ptr< const InitialDataType > problem_;
+  std::unique_ptr< ModelType >             model_;
   FluxType                convectionFlux_;
   DgType                  dgOperator_;
 
-  LinearInverseOperatorType     *invDgOperator_;
-  LinearOperatorType      *linDgOperator_;
+  std::unique_ptr< LinearInverseOperatorType > invDgOperator_;
+  std::unique_ptr< LinearOperatorType        > linDgOperator_;
 
   DiscreteSpaceType &space_;    // the discrete function space
   // the solution 
@@ -689,7 +646,6 @@ public:
   // Initial flux for advection discretization (UpwindFlux)
   int  eocId_;
   int  step_;
-  bool useStrongBoundaryCondition_;
 
   std::vector<double> numbers_;
   std::ofstream runFile_;
