@@ -1,5 +1,5 @@
-#ifndef NAVIER_STOKES_STEPPER_HH
-#define NAVIER_STOKES_STEPPER_HH
+#ifndef DUNE_FEMDG_CHECKPOINTING_STEPPER_HH
+#define DUNE_FEMDG_CHECKPOINTING_STEPPER_HH
 
 #include <dune/fem-dg/misc/streams.hh>
 
@@ -105,7 +105,7 @@ public:
 
 
 template <class GridImp, class ProblemTraits, int order>               /*@LST1S@*/
-struct Stepper : public AlgorithmBase< StepperTraits< GridImp, ProblemTraits, order> >
+struct CheckPointingStepper : public AlgorithmBase< StepperTraits< GridImp, ProblemTraits, order> >
 {
   // my traits class 
   typedef StepperTraits< GridImp, ProblemTraits, order> Traits ;
@@ -139,22 +139,17 @@ struct Stepper : public AlgorithmBase< StepperTraits< GridImp, ProblemTraits, or
 
   using BaseType :: grid_;
 
-  Stepper( GridType& grid )
+  CheckPointingStepper( GridType& grid )
   : BaseType ( grid ),
     gridPart_( grid ),
     space_( gridPart_ ),
     solution_( "solution", space() ),
     problem_( ProblemTraits::problem() ),
     eocId_( Dune::Fem::FemEoc::addEntry(std::string("$L^2$-error")) ),
-    checkPointer_( 0 ),
+    checkPointer_(),
     checkFile_( 0 )
   {
     Dune::Fem::persistenceManager << error_;
-  }
-
-  ~Stepper() 
-  {
-    removeObj();
   }
 
   const DiscreteSpaceType& space() const { return space_ ; }
@@ -170,18 +165,11 @@ struct Stepper : public AlgorithmBase< StepperTraits< GridImp, ProblemTraits, or
     return IOTupleType( &solution_, (DiscreteFunctionType*) 0 );
   }
 
-  void removeObj() 
-  {
-    delete checkPointer_;
-    checkPointer_ = 0;
-    // delete problem_;
-  }
-
   CheckPointerType& checkPointer( TimeProviderType& tp ) const
   {
     // create check point if not exsistent 
     if( ! checkPointer_ ) 
-      checkPointer_ = new CheckPointerType( grid_, tp );
+      checkPointer_.reset( new CheckPointerType( grid_, tp ) );
 
     return *checkPointer_;
   }
@@ -314,16 +302,16 @@ protected:
 
   // InitialDataType is a Dune::Operator that evaluates to $u_0$ and also has a
   // method that gives you the exact solution.
-  const InitialDataType* problem_;
+  std::unique_ptr< const InitialDataType > problem_;
   // Initial flux for advection discretization (UpwindFlux)
   const unsigned int      eocId_;
 
   // check point writer 
-  mutable CheckPointerType* checkPointer_;
+  mutable std::unique_ptr< CheckPointerType > checkPointer_;
   // name of checkpoint file 
   const char* checkFile_;
 
   double error_;
 };
 
-#endif // #ifndef DUNE_FEM_HOWTO_CHECKPOINTING_HH
+#endif // #ifndef DUNE_FEMDG_CHECKPOINTING_STEPPER_HH

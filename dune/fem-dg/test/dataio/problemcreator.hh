@@ -13,10 +13,18 @@
 
 // local includes
 #include "problem.hh"
+// this implements the Stepper
+#include "checkpointing.hh"
 
 template< class GridType > 
 struct ProblemGenerator 
 {
+  template <class Traits> 
+  struct Stepper
+  {
+    typedef CheckPointingStepper< GridType, Traits, POLORDER > Type;
+  };
+
   typedef Dune :: U0< GridType > ProblemType;
   template< class GridPart >
   struct Traits
@@ -24,19 +32,10 @@ struct ProblemGenerator
     typedef ProblemType InitialDataType;
   };
 
-  static inline std::string advectionFluxName()
-  {
-    return "noflux";
-  }
-
-  static inline std::string diffusionFluxName()
-  {
-    return "";
-  }
-
   static inline Dune::GridPtr<GridType>               
-  initializeGrid( const std::string description )
+  initializeGrid()
   {
+    std::string description ("noflux");
     // use default implementation 
     return initialize< GridType > ( description );
   }
@@ -47,8 +46,5 @@ struct ProblemGenerator
     return new ProblemType ();
   }
 };
-
-// this implements the Stepper
-#include "checkpointing.hh"
 
 #endif // FEMHOWTO_NSEQ_RPOBLEMCREATOR_HH
