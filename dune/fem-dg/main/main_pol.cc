@@ -5,7 +5,7 @@
 #endif
 
 // in dbug mode also enable FieldVector checking and dune devel mode
-#ifndef DNDEBUG 
+#ifndef NDEBUG
 #define DUNE_ISTL_WITH_CHECKING
 #define DUNE_DEVEL_MODE
 #endif
@@ -19,6 +19,7 @@
 
 #include <config.h>
 
+#include <memory>
 #include <dune/common/version.hh>
 
 #include "main.hh"
@@ -44,18 +45,7 @@
 // problem dependent
 #include <problemcreator.hh>
 
-#if defined NS_ELLIPTIC_OPERATOR 
-#include <dune/fem-dg/stepper/ellipt.hh>
-#elif defined EULER 
-#include <dune/fem-dg/stepper/advectionstepper.hh>
-#else
-#include <dune/fem-dg/stepper/advectiondiffusionstepper.hh>
-#endif
-
-#include <dune/fem/space/common/allgeomtypes.hh>
 #include <dune/fem/misc/femeoc.hh>
-
-#include <dune/grid/io/visual/grapedatadisplay.hh>
 
 #include <dune/fem/misc/flops.hh>
 
@@ -119,28 +109,24 @@ namespace LOOPSPACE {
     typedef Dune::GridSelector :: GridType GridType;
     typedef ProblemGenerator< GridType > ProblemTraits;
 
-    // Note to me: problem description is for FemEOC
-    const std::string advFlux  = ProblemTraits :: advectionFluxName();
-    const std::string diffFlux = ProblemTraits :: diffusionFluxName();
-
-    // use problem specific initialize method since some problems do different things
-    // there, e.g. poisson 
     // return type of initializeGrid is Dune::GridPtr, use release such that memory of GridPtr is released 
-    GridType* gridptr = ProblemTraits :: initializeGrid( advFlux + diffFlux ).release();
+    std::unique_ptr< GridType > gridptr ( ProblemTraits :: initializeGrid().release() );
 
     // get grid reference 
     GridType& grid = *gridptr;
 
-#if defined NS_ELLIPTIC_OPERATOR 
-    typedef EllipticAlgorithm<GridType, 
-                      ProblemTraits, 
-                      POLORDER> StepperType;
-                        
-#else 
-    typedef Stepper<GridType, ProblemTraits, POLORDER>  StepperType;
+#ifndef NAVIER_STOKES_STEPPER_HH
+    // the new way
+    typedef ProblemTraits :: Stepper< ProblemTraits > :: Type  StepperType ;
+#else
+#warning "Using deprecated method of Stepper selection. Please consult the fem-dg examples for update"
+    // the old legacy way
+    typedef Stepper< GridType, ProblemTraits, POLORDER > StepperType ;
 #endif
+
     // create stepper on heap, otherwise problems with stack size
-    StepperType* stepper = new StepperType( grid );
+    std::unique_ptr< StepperType > stepper( new StepperType( grid ) );
+
     assert( stepper );
     compute( *stepper );
 
@@ -152,10 +138,6 @@ namespace LOOPSPACE {
       // print results 
       Dune::Fem::FlopCounter::print( std::cout );
     }
-
-    // delete data 
-    delete stepper;
-    delete gridptr;
   } 
 
 } // end namespace LOOPSPACE
