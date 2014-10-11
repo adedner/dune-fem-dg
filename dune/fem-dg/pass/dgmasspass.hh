@@ -33,7 +33,7 @@ namespace Dune
     class DGMassInverseMassImplementation
     {
     public:
-      dune_static_assert((ScalarDiscreteFunctionSpace::dimRange == 1), "dimRange of ScalarSpace > 1");
+      static_assert((ScalarDiscreteFunctionSpace::dimRange == 1), "dimRange of ScalarSpace > 1");
       //! \brief discrete function space type
       typedef ScalarDiscreteFunctionSpace ScalarDiscreteFunctionSpaceType ;
       typedef typename ScalarDiscreteFunctionSpaceType::RangeType ScalarRangeType;
