@@ -1,5 +1,5 @@
-#ifndef DUNE_FEM_DGNORM_HH
-#define DUNE_FEM_DGNORM_HH
+#ifndef DUNE_FEMDG_DGNORM_HH
+#define DUNE_FEMDG_DGNORM_HH
 
 #include <dune/fem/misc/l2norm.hh>
 
@@ -198,17 +198,22 @@ namespace Dune
           typename EntityType::EntityPointer outside = intersection.outside();
           const EntityType& neighbor = *outside ;
           const Geometry& geometryNb = neighbor.geometry();
+
+
           unsigned int nbIdx = gridPart().indexSet().index(neighbor);
           unsigned int nbOrder = std::max( uint(2 * u.space().order( neighbor )) , order );
           if( (enIdx < nbIdx) || (neighbor.partitionType() != Dune::InteriorEntity) )
           {
-            const double intersectionArea = intersection.geometry().volume();
+            typedef typename IntersectionType :: Geometry IntersectionGeometry;
+            const IntersectionGeometry intersectionGeometry = intersection.geometry();
+
+            const double intersectionArea = intersectionGeometry.volume();
             const double heInverse = intersectionArea / std::min( geometry.volume(), geometryNb.volume() );
             ULocalFunctionType ulocalNb = u.localFunction( neighbor ); // local u on neighbor element
             VLocalFunctionType vlocalNb = v.localFunction( neighbor ); // local u on neighbor element
             LocalDistanceType distNb( ulocalNb, vlocalNb );
             
-            FaceQuadratureType quadInside( gridPart(), intersection, nbOrder, FaceQuadratureType::INSIDE );
+            FaceQuadratureType quadInside ( gridPart(), intersection, nbOrder, FaceQuadratureType::INSIDE  );
             FaceQuadratureType quadOutside( gridPart(), intersection, nbOrder, FaceQuadratureType::OUTSIDE );
             const size_t numQuadraturePoints = quadInside.nop();
             for( size_t pt = 0; pt < numQuadraturePoints; ++pt )
@@ -218,7 +223,7 @@ namespace Dune
               dist.evaluate( quadInside[ pt ], distIn );
               distNb.evaluate( quadOutside[ pt ], distOut );
               jump = distIn - distOut;
-              double weight = quadInside.weight( pt )*heInverse * intersection.geometry().integrationElement( x );
+              double weight = quadInside.weight( pt )*heInverse * intersectionGeometry.integrationElement( x );
               jumpTerm += (jump*jump) * weight;
             }
           }
