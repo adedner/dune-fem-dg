@@ -36,7 +36,7 @@
 #include "models.hh"
 
 template <class GridType> 
-struct ProblemGenerator 
+struct ProblemCreator
 {
   typedef Dune :: ProblemInterface<
              Dune::Fem::FunctionSpace< double, double, GridType::dimension, DIMRANGE> >  ProblemType;
@@ -50,13 +50,6 @@ struct ProblemGenerator
     // choice of diffusion flux (see diffusionflux.hh for methods)
     static const Dune :: DGDiffusionFluxIdentifier PrimalDiffusionFluxId 
       = Dune :: method_general ;
-  };
-
-  // type of stepper to be used
-  template < class Traits >
-  struct Stepper
-  {
-    typedef EllipticAlgorithm< GridType, Traits, POLORDER > Type; 
   };
 
   static inline std::string diffusionFluxName()
@@ -202,5 +195,10 @@ struct ProblemGenerator
     int probNr = Dune::Fem::Parameter::getValue< int > ( "femhowto.problem" );
     return new Dune :: PoissonProblem< GridType > ( probNr );
   }
+
+  // type of stepper to be used
+  typedef EllipticAlgorithm< GridType, ProblemCreator<GridType>, POLORDER > StepperType; 
 };
+
+#define NEW_STEPPER_SELECTOR_USED
 #endif // FEMHOWTO_POISSONSTEPPER_HH

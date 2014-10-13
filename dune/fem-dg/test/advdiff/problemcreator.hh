@@ -28,14 +28,8 @@
 
 
 template< class GridType > 
-struct ProblemGenerator 
+struct ProblemCreator
 {
-  template <class Traits>
-  struct Stepper
-  {
-    typedef AdvectionDiffusionStepper< GridType, Traits, POLORDER > Type;
-  };
-
   typedef Dune :: EvolutionProblemInterface<
                       Dune::Fem::FunctionSpace< double, double, GridType::dimension,
                       DIMRANGE>,
@@ -101,7 +95,10 @@ struct ProblemGenerator
       return 0;
     }
   }
+
+  // this should be ok but could lead to a henn-egg problem
+  typedef AdvectionDiffusionStepper< GridType, ProblemCreator<GridType>, POLORDER > StepperType;
 };
 
-
+#define NEW_STEPPER_SELECTOR_USED
 #endif // FEMHOWTO_HEATSTEPPER_HH

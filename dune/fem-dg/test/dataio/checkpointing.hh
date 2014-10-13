@@ -255,7 +255,6 @@ struct CheckPointingStepper : public AlgorithmBase< StepperTraits< GridImp, Prob
   // reset solution on ghost cells 
   void resetNonInterior( DiscreteFunctionType& solution ) 
   {
-    typedef typename DiscreteFunctionType :: LocalFunctionType LocalFunctionType;
     typedef typename GridPartType :: template Codim< 0 > :: template 
         Partition< Dune::All_Partition > :: IteratorType  IteratorType;
 

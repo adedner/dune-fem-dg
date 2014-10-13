@@ -44,11 +44,11 @@ void appendUserParameter()
 #define PARAMETER_APPEND_FUNCTION appendUserParameter
 
 typedef Dune::GridSelector :: GridType GridType;
-typedef ProblemGenerator< GridType > ProblemTraits;
+typedef ProblemCreator< GridType > ProblemTraits;
 
-typedef  Stepper<GridType,
-                 ProblemTraits,
-                 POLORDER> StepperType ;
+typedef CheckPointingStepper<GridType,
+                             ProblemTraits,
+                             POLORDER> StepperType ;
 
 typedef StepperType :: IOTupleType InTupleType ;
 

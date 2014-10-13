@@ -19,15 +19,11 @@
 
 #include <dune/fem-dg/stepper/advectiondiffusionstepper.hh>
 
-template< class GridType > 
-struct ProblemGenerator 
-{
-  template < class Traits >
-  struct Stepper
-  {
-    typedef AdvectionDiffusionStepper< GridType, Traits, POLORDER > Type;
-  };
 
+template< class GridType > 
+struct ProblemCreator
+{
+  static const int polynomialOrder =  POLORDER ;
   typedef NSWaves< GridType > ProblemType;  
 
   template< class GridPart >
@@ -111,6 +107,10 @@ struct ProblemGenerator
     // choice of explicit or implicit ode solver
     return new ProblemType ();
   }
+
+  // this should be ok but could lead to a henn-egg problem
+  typedef AdvectionDiffusionStepper< GridType, ProblemCreator< GridType>, polynomialOrder > StepperType;
 };
 
+#define NEW_STEPPER_SELECTOR_USED
 #endif // FEMHOWTO_NSEQ_RPOBLEMCREATOR_HH

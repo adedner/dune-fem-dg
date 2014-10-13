@@ -19,14 +19,8 @@
 #include <dune/fem-dg/stepper/advectionstepper.hh>
 
 template <class GridType> 
-struct ProblemGenerator 
+struct ProblemCreator
 {
-  template <class Traits>
-  struct Stepper
-  {
-    typedef AdvectionStepper< GridType, Traits, POLORDER > Type;
-  };
-
   typedef ProblemBase< GridType > ProblemType ;
 
   template <class GridPart>
@@ -127,8 +121,10 @@ struct ProblemGenerator
     // choice of explicit or implicit ode solver
     return new U0Smooth1D< GridType > ();
   }
+
+  // this should be ok but could lead to a henn-egg problem
+  typedef AdvectionStepper< GridType, ProblemCreator< GridType> , POLORDER > StepperType;
 };
 
-#include <dune/fem-dg/stepper/advectionstepper.hh>
-
+#define NEW_STEPPER_SELECTOR_USED
 #endif // FEMHOWTO_NSEQ_RPOBLEMCREATOR_HH

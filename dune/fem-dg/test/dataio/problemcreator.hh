@@ -17,14 +17,8 @@
 #include "checkpointing.hh"
 
 template< class GridType > 
-struct ProblemGenerator 
+struct ProblemCreator
 {
-  template <class Traits> 
-  struct Stepper
-  {
-    typedef CheckPointingStepper< GridType, Traits, POLORDER > Type;
-  };
-
   typedef Dune :: U0< GridType > ProblemType;
   template< class GridPart >
   struct Traits
@@ -45,6 +39,10 @@ struct ProblemGenerator
     // choice of explicit or implicit ode solver
     return new ProblemType ();
   }
+
+  // this should be ok but could lead to a henn-egg problem
+  typedef CheckPointingStepper< GridType, ProblemCreator<GridType>, POLORDER > StepperType;
 };
 
+#define NEW_STEPPER_SELECTOR_USED
 #endif // FEMHOWTO_NSEQ_RPOBLEMCREATOR_HH
