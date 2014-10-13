@@ -45,6 +45,17 @@
 // problem dependent
 #include <problemcreator.hh>
 
+#ifndef NEW_STEPPER_SELECTOR_USED
+#warning "Old method of stepper selection detected. Please consult dune/fem-dg/test and update your code"
+#if defined EULER
+#include <dune/fem-dg/stepper/advectionstepper.hh>
+#define Stepper AdvectionStepper
+#else
+#include <dune/fem-dg/stepper/advectiondiffusionstepper.hh>
+#define Stepper AdvectionDiffusionStepper
+#endif
+#endif
+
 #include <dune/fem/misc/femeoc.hh>
 
 #include <dune/fem/misc/flops.hh>
@@ -107,35 +118,43 @@ namespace LOOPSPACE {
     }
 
     typedef Dune::GridSelector :: GridType GridType;
+
+    // old method
+#ifndef NEW_STEPPER_SELECTOR_USED
     typedef ProblemGenerator< GridType > ProblemTraits;
 
-    // return type of initializeGrid is Dune::GridPtr, use release such that memory of GridPtr is released 
-    std::unique_ptr< GridType > gridptr ( ProblemTraits :: initializeGrid().release() );
+    // Note to me: problem description is for FemEOC
+    const std::string advFlux  = ProblemTraits :: advectionFluxName();
+    const std::string diffFlux = ProblemTraits :: diffusionFluxName();
 
-    // get grid reference 
-    GridType& grid = *gridptr;
+    // return type of initializeGrid is Dune::GridPtr, use release such that memory of GridPtr is released
+    std::unique_ptr< GridType > gridptr( ProblemTraits :: initializeGrid( advFlux + diffFlux ).release() );
 
-#ifndef NAVIER_STOKES_STEPPER_HH
-    // the new way
-    typedef ProblemTraits :: Stepper< ProblemTraits > :: Type  StepperType ;
-#else
-#warning "Using deprecated method of Stepper selection. Please consult the fem-dg examples for update"
     // the old legacy way
     typedef Stepper< GridType, ProblemTraits, POLORDER > StepperType ;
+    StepperType stepper( *gridptr );
+
+    // new method, the ProblemGenerator simply creates the stepper
+    compute( stepper );
+#else
+    typedef ProblemCreator< GridType > ProblemTraits;
+
+    // return type of initializeGrid is Dune::GridPtr, use release such that memory of GridPtr is released
+    std::unique_ptr< GridType > gridptr( ProblemTraits :: initializeGrid().release() );
+
+    typedef ProblemTraits :: StepperType StepperType;
+    std::unique_ptr< StepperType > stepper( new StepperType( *gridptr ) );
+
+    // new method, the ProblemGenerator simply creates the stepper
+    compute( *stepper );
 #endif
 
-    // create stepper on heap, otherwise problems with stack size
-    std::unique_ptr< StepperType > stepper( new StepperType( grid ) );
-
-    assert( stepper );
-    compute( *stepper );
-
-    // stop flop counters for all threads 
-    if( countFlops ) 
+    // stop flop counters for all threads
+    if( countFlops )
     {
       FlopStopObject stopObj ;
       Dune::Fem::ThreadHandle::run( stopObj );
-      // print results 
+      // print results
       Dune::Fem::FlopCounter::print( std::cout );
     }
   } 
