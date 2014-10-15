@@ -9,7 +9,9 @@
 #define DUNE_ISTL_WITH_CHECKING
 #endif
 
-#define PROBLEMTRAITS_HAVE_STEPPERTYPE
+#ifndef POLORDER
+#define POLORDER 1
+#endif
 
 #include <dune/fem-dg/main/codegen.hh>
 #include "passtraits.hh"
