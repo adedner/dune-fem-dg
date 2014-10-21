@@ -1,0 +1,21 @@
+DGF
+Vertex
+ 0  0
+ 1  0
+ 1  1 
+ 0  1
+-1  1
+-1  0
+-1 -1
+ 0 -1
+#
+Cube
+0 1 3 2
+5 0 4 3
+6 7 5 0
+#
+Simplex
+#
+Gridparameter
+closure green
+#
