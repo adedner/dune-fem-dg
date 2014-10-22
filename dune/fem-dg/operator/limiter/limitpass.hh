@@ -1417,7 +1417,7 @@ namespace Dune {
           {
             // check all neighbors 
             EntityPointerType ep = intersection.outside();
-            EntityType& nb = *ep;
+            const EntityType& nb = *ep;
             
             // get U on entity
             const LocalFunctionType uNb = U.localFunction(nb);
@@ -2431,7 +2431,7 @@ namespace Dune {
         {
           // get neighbor entity
           EntityPointerType ep = intersection.outside();
-          EntityType& nb = *ep; 
+          const EntityType& nb = *ep;
 
           // set neighbor to caller 
           caller().setNeighbor( nb );
