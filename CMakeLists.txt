@@ -21,7 +21,7 @@ dune_project()
 # $Id: duneproject 5842 2010-01-20 18:48:34Z joe $
 # we need the module file to be able to build via dunecontrol
 set(EXTRA_DIST dune.module)
-set(SUBDIRS  dune m4)
+set(SUBDIRS  dune m4 lib)
 if( BUILD_DOCS)
 # TODO: set up documentation tree automatically
 #SUBDIRS += doc
