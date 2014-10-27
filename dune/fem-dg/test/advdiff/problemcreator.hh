@@ -6,6 +6,10 @@
 #define DIMRANGE 1
 #endif
 
+#ifndef POLORDER
+#define POLORDER 1
+#endif
+
 // dune-fem includes
 #include <dune/fem/io/parameter.hh>
 
