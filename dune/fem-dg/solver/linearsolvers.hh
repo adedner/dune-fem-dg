@@ -4,6 +4,9 @@
 // iostream includes
 #include <iostream>
 
+// include gridpart
+#include <dune/fem/gridpart/adaptiveleafgridpart.hh>
+
 // include discrete function
 #include <dune/fem/function/adaptivefunction.hh>
 #include <dune/fem/storage/vector.hh>
