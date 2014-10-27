@@ -2,6 +2,10 @@
 #define FEMHOWTO_NSEQ_RPOBLEMCREATOR_HH
 #include <config.h>
 
+#ifndef POLORDER
+#define POLORDER 1
+#endif
+
 // system includes
 #include <string>
 
