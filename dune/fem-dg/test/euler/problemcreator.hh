@@ -3,6 +3,10 @@
 
 #include <config.h>
 
+#ifndef POLORDER
+#define POLORDER 1
+#endif
+
 #include <dune/fem/io/parameter.hh>
 
 #include <dune/grid/io/file/dgfparser/dgfparser.hh>
