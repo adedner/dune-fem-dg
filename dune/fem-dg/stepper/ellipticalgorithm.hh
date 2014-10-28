@@ -11,6 +11,7 @@
 #include <dune/fem/misc/h1norm.hh>
 #include <dune/fem/misc/femeoc.hh>
 #include <dune/fem-dg/misc/dgnorm.hh>
+#include <dune/fem/space/padaptivespace.hh>
 #include <dune/fem/operator/projection/l2projection.hh>
 #include <dune/fem/function/common/localfunctionadapter.hh>
 
@@ -33,8 +34,7 @@ using namespace Dune;
 
 template <class GridImp,
           class ProblemTraits, 
-          int polOrd,
-          int dimRange = DIMRANGE >             
+          int polOrd>
 struct ElliptTraits 
 {
   enum { polynomialOrder = polOrd };
@@ -51,6 +51,7 @@ struct ElliptTraits
   typedef typename ProblemTraits :: template Traits< GridPartType > :: FluxType         FluxType;
   static const Dune :: DGDiffusionFluxIdentifier DiffusionFluxId = 
     ProblemTraits :: template Traits< GridPartType > :: PrimalDiffusionFluxId ;
+  static const int dimRange = InitialDataType :: dimRange ;
 
   typedef PassTraits<ModelType,dimRange,polynomialOrder>      PassTraitsType;
   typedef typename PassTraitsType::DestinationType            DiscreteFunctionType;
