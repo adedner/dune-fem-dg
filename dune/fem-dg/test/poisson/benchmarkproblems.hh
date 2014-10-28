@@ -1,5 +1,5 @@
-#ifndef ELLIPTPROBLEM_CC
-#define ELLIPTPROBLEM_CC
+#ifndef DUNE_FEM_DG_BENCHMARKPROBLEMS_HH
+#define DUNE_FEM_DG_BENCHMARKPROBLEMS_HH
 
 #include <cmath>
 #include <set>
