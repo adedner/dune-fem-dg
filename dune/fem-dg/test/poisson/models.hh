@@ -83,7 +83,7 @@ public:
 //  where V is constant vector
 //
 ////////////////////////////////////////////////////////
-template <class GridPartType,class ProblemImp>
+template <class GridPartType, class ProblemImp>
 class PoissonModel
 {
 public:
@@ -91,7 +91,7 @@ public:
 
   typedef typename GridPartType :: GridType                          GridType;
   static const int dimDomain = GridType::dimensionworld;
-  static const int dimRange = DIMRANGE;
+  static const int dimRange = ProblemType :: dimRange;
   typedef PoissonModelTraits< GridPartType, dimRange,
                               dimRange*dimDomain >                   Traits;
   typedef typename Traits :: DomainType                              DomainType;

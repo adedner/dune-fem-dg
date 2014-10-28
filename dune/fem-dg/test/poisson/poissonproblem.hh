@@ -10,14 +10,14 @@
 
 namespace Dune {
 
-template <class GridType>                                         
+template <class GridType, int dimRange>                                         
 struct PoissonProblem : public ProblemInterface<
-     Dune :: Fem :: FunctionSpace< double, double, GridType::dimension, DIMRANGE> >
+     Dune :: Fem :: FunctionSpace< double, double, GridType::dimension, dimRange> >
 {                                                                  
 public:
   typedef ProblemInterface<
        Dune :: Fem::FunctionSpace< double, double,
-       GridType::dimension, DIMRANGE >
+       GridType::dimension, dimRange >
           >                    BaseType;
 
   enum{ dimDomain = BaseType :: dimDomain };
