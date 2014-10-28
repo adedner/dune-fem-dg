@@ -453,6 +453,7 @@ public:
 
     //Dune::Fem::DGL2ProjectionImpl :: project( problem(), solution_ );
     //return ;
+#if 0
 #ifdef PADAPTSPACE
     int polOrder = Dune::Fem:: Parameter::getValue<double>("femhowto.polynomialOrder",1);
     const int minimalOrder = estimator_.minimalOrder() ;
@@ -492,6 +493,7 @@ public:
       }
     }
     space_.adapt( polOrderVec );
+#endif
 #endif
     
     if (!invDgOperator_)
