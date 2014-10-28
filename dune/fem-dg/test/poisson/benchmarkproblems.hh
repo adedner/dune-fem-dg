@@ -4,6 +4,9 @@
 #include <cmath>
 #include <set>
 #include <cassert>
+#include <complex>
+
+#include <dune/common/exceptions.hh>
 
 template<int dim, class DomainField, class Field> 
 class DataFunctionIF

@@ -40,7 +40,7 @@
 template <class GridType> 
 struct ProblemCreator
 {
-  static const dimRange = 1 ;
+  static const int dimRange = 1 ;
   typedef Dune :: ProblemInterface<
              Dune::Fem::FunctionSpace< double, double, GridType::dimension, dimRange> >  ProblemType;
 
