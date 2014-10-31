@@ -260,6 +260,7 @@ public:
   typedef ProblemInterface< FunctionSpaceType >                      ThisType;
 
   enum { dimDomain = FunctionSpaceType :: dimDomain };
+  enum { dimRange  = FunctionSpaceType :: dimRange  };
 
   typedef typename FunctionSpaceType :: DomainType                   DomainType;
   typedef typename FunctionSpaceType :: RangeType                    RangeType;
