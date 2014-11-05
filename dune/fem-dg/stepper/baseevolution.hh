@@ -7,6 +7,7 @@
 // dune-fem includes
 #include <dune/fem/io/file/datawriter.hh>
 #include <dune/fem/space/common/adaptmanager.hh>
+#include <dune/fem/misc/gridwidth.hh>
 
 // local includes
 #include <dune/fem-dg/stepper/base.hh>
@@ -40,6 +41,7 @@ struct EocDataOutputParameters :   /*@LST1S@*/
 class SolverMonitor 
 {
 public:
+  double gridWidth;
   double avgTimeStep;
   double minTimeStep;
   double maxTimeStep;
@@ -51,8 +53,11 @@ public:
   int max_newton_iterations;
   int max_ils_iterations;
 
+  unsigned long elements ;
+
   SolverMonitor() 
   {
+    gridWidth = 0;
     avgTimeStep = 0;
     minTimeStep = std::numeric_limits<double>::max();
     maxTimeStep = 0;
@@ -63,6 +68,7 @@ public:
     total_ils_iterations = 0;
     max_newton_iterations = 0;
     max_ils_iterations = 0;
+    elements = 0;
   }
 
   void setTimeStepInfo( const Dune::Fem::TimeProviderBase& tp ) 
@@ -80,9 +86,11 @@ public:
     total_ils_iterations += ils_iterations;
   }
 
-  void finalize() 
+  void finalize( const double h = 0, const unsigned long el = 0 )
   {
     avgTimeStep /= double( timeSteps );
+    gridWidth = h;
+    elements = el;
   }
 
   void dump( std::ostream& out ) const
@@ -410,7 +418,8 @@ public:
     fixedTimeStep_ /= fixedTimeStepEocLoopFactor_; 
 
     // adjust average time step size 
-    monitor.finalize();
+    monitor.finalize( Dune::Fem::GridWidth::calcGridWidth( space().gridPart() ), // h
+                      gridSize() );                                   // elements
 
     return monitor;
   }

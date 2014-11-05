@@ -12,7 +12,6 @@
 #include <dune/fem/misc/mpimanager.hh>
 #include <dune/fem/misc/femeoc.hh>
 #include <dune/fem/misc/femtimer.hh>
-#include <dune/fem/misc/gridwidth.hh>
 #include <dune/fem/space/common/adaptmanager.hh>
 #include <dune/fem/io/parameter.hh>
 #include <dune/fem/io/file/datawriter.hh>
@@ -134,9 +133,7 @@ inline double getMemoryUsage()
 template <class Algorithm>
 void compute(Algorithm& algorithm)
 {
-  const typename Algorithm::DiscreteSpaceType& space = algorithm.space();
-  const typename Algorithm::GridPartType& gridPart = space.gridPart();
-  typedef typename Algorithm::GridPartType::GridType GridType;
+  typedef typename Algorithm::GridType GridType;
   GridType& grid = algorithm.grid();
 
   // get number of eoc steps 
@@ -169,9 +166,6 @@ void compute(Algorithm& algorithm)
     Dune::FemTimer::printFile("./timer.out");
     Dune::FemTimer::reset(femTimerId);
 
-    // calculate grid width
-    const double h = Dune::Fem::GridWidth::calcGridWidth(gridPart);
-
     // finalize the algorithm 
     algorithm.finalize( eocloop );
 
@@ -180,7 +174,7 @@ void compute(Algorithm& algorithm)
     {
       std::stringstream eocInfo ;
       // generate EOC information
-      Dune::Fem::FemEoc::write(h,grid.size(0), runTime, 
+      Dune::Fem::FemEoc::write( monitor.gridWidth, monitor.elements, runTime, 
                       monitor.timeSteps, monitor.avgTimeStep, monitor.minTimeStep,
                       monitor.maxTimeStep, monitor.total_newton_iterations, monitor.total_ils_iterations, 
                       monitor.max_newton_iterations, monitor.max_ils_iterations, eocInfo );
