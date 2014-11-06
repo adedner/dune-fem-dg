@@ -135,12 +135,6 @@ public:
   // choose a suitable GridView
   typedef typename Traits :: GridPartType              GridPartType;
 
-  // the space type
-  typedef typename Traits :: DiscreteSpaceType         DiscreteSpaceType;
-
-  // the discrete function type
-  typedef typename Traits :: DiscreteFunctionType      DiscreteFunctionType;
-
   // the indicator function type (for limiting only)
   typedef typename Traits :: IndicatorType             IndicatorType;
 
@@ -175,11 +169,11 @@ public:
   //! return default data tuple for data output
   virtual IOTupleType dataTuple() = 0 ;
 
-  //! return reference to space 
-  virtual const DiscreteSpaceType& space() const = 0 ;
-
   //! return reference to hierarchical grid 
   GridType& grid() { return grid_ ; }
+
+  // return grid width of grid (overload in derived classes)
+  virtual double gridWidth() const { return 0.0; }
 
   // return size of grid 
   virtual UInt64Type gridSize() const 
@@ -418,8 +412,8 @@ public:
     fixedTimeStep_ /= fixedTimeStepEocLoopFactor_; 
 
     // adjust average time step size 
-    monitor.finalize( Dune::Fem::GridWidth::calcGridWidth( space().gridPart() ), // h
-                      gridSize() );                                   // elements
+    monitor.finalize( gridWidth(),  // h 
+                      gridSize() ); // elements
 
     return monitor;
   }
