@@ -157,7 +157,9 @@ struct StepperBase
     additionalVariables_ = 0;
   }
 
-  const DiscreteSpaceType& space() const { return space_ ; }
+  virtual const DiscreteSpaceType& space() const { return space_ ; }
+
+  double gridWidth () const { return Dune::Fem::GridWidth::calcGridWidth( gridPart_ ); }
 
   // return reference to discrete function holding solution
   DiscreteFunctionType& solution() { return solution_; }

@@ -7,6 +7,7 @@
 // dune-fem includes
 #include <dune/fem/io/file/datawriter.hh>
 #include <dune/fem/space/common/adaptmanager.hh>
+#include <dune/fem/misc/gridwidth.hh>
 
 // local includes
 #include <dune/fem-dg/stepper/base.hh>
@@ -40,6 +41,7 @@ struct EocDataOutputParameters :   /*@LST1S@*/
 class SolverMonitor 
 {
 public:
+  double gridWidth;
   double avgTimeStep;
   double minTimeStep;
   double maxTimeStep;
@@ -51,8 +53,11 @@ public:
   int max_newton_iterations;
   int max_ils_iterations;
 
+  unsigned long elements ;
+
   SolverMonitor() 
   {
+    gridWidth = 0;
     avgTimeStep = 0;
     minTimeStep = std::numeric_limits<double>::max();
     maxTimeStep = 0;
@@ -63,6 +68,7 @@ public:
     total_ils_iterations = 0;
     max_newton_iterations = 0;
     max_ils_iterations = 0;
+    elements = 0;
   }
 
   void setTimeStepInfo( const Dune::Fem::TimeProviderBase& tp ) 
@@ -80,9 +86,11 @@ public:
     total_ils_iterations += ils_iterations;
   }
 
-  void finalize() 
+  void finalize( const double h = 0, const unsigned long el = 0 )
   {
     avgTimeStep /= double( timeSteps );
+    gridWidth = h;
+    elements = el;
   }
 
   void dump( std::ostream& out ) const
@@ -127,12 +135,6 @@ public:
   // choose a suitable GridView
   typedef typename Traits :: GridPartType              GridPartType;
 
-  // the space type
-  typedef typename Traits :: DiscreteSpaceType         DiscreteSpaceType;
-
-  // the discrete function type
-  typedef typename Traits :: DiscreteFunctionType      DiscreteFunctionType;
-
   // the indicator function type (for limiting only)
   typedef typename Traits :: IndicatorType             IndicatorType;
 
@@ -167,11 +169,11 @@ public:
   //! return default data tuple for data output
   virtual IOTupleType dataTuple() = 0 ;
 
-  //! return reference to space 
-  virtual const DiscreteSpaceType& space() const = 0 ;
-
   //! return reference to hierarchical grid 
   GridType& grid() { return grid_ ; }
+
+  // return grid width of grid (overload in derived classes)
+  virtual double gridWidth() const { return 0.0; }
 
   // return size of grid 
   virtual UInt64Type gridSize() const 
@@ -410,7 +412,8 @@ public:
     fixedTimeStep_ /= fixedTimeStepEocLoopFactor_; 
 
     // adjust average time step size 
-    monitor.finalize();
+    monitor.finalize( gridWidth(),  // h 
+                      gridSize() ); // elements
 
     return monitor;
   }
