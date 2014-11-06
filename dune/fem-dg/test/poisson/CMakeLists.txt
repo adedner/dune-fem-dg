@@ -1,8 +1,10 @@
 # install these headers
-set(advdiffdir ${CMAKE_INSTALL_INCLUDEDIR}/test/advdiff)
-set(advdiff_HEADERS  models.hh  
-                     problemcreator.hh 
-                     steppertraits.hh)
+set(poissondir ${CMAKE_INSTALL_INCLUDEDIR}/test/poisson)
+set(poisson_HEADERS benchmarkproblems.hh
+                    models.hh
+                    passtraits.hh
+                    problemcreator.hh
+                    poissonproblem.hh )
                                       
 set(GRIDTYPE  YASPGRID)
 set(POLORDER  2)
@@ -10,8 +12,8 @@ set(GRIDDIM  2)
 set(DIMRANGE  1)
 set(FLUX 1) #2
 
-set(TESTS advdiff
-          advdiffall) 
+set(TESTS poisson
+          poissonall) 
 
 add_definitions( "-D${GRIDTYPE}" )
 add_definitions( "-DGRIDDIM=${GRIDDIM}" )
@@ -20,19 +22,19 @@ add_definitions( "-DFLUX=${FLUX}" )
 add_definitions( "-DPRIMALDG" )
 add_definitions( "-DUSE_ASSERT_THROW" ) 
 
-include_directories("${CMAKE_SOURCE_DIR}/dune/fem-dg/test/advdiff")
+include_directories("${CMAKE_SOURCE_DIR}/dune/fem-dg/test/poisson")
 
-add_executable( advdiffall ${SOURCEALL})
-dune_target_link_libraries(advdiffall ${DUNE_LIBS})
+add_executable( poissonall ${SOURCEALL})
+dune_target_link_libraries(poissonall ${DUNE_LIBS})
 
-add_executable( advdiff ${SOURCEONE})
-dune_target_link_libraries(advdiff ${DUNE_LIBS})
-set_property(TARGET advdiff APPEND PROPERTY 
+add_executable( poisson ${SOURCEONE})
+dune_target_link_libraries(poisson ${DUNE_LIBS})
+set_property(TARGET poisson APPEND PROPERTY 
              COMPILE_DEFINITIONS "ONLY_ONE_P;POLORDER=${POLORDER}")
 
 # We do not want want to build the tests during make all
 # but just build them on demand
-install(FILES ${advdiff_HEADERS} DESTINATION ${advdiffdir})
+install(FILES ${poisson_HEADERS} DESTINATION ${poissondir})
 foreach(i ${TESTS})
   add_test(${i} ${i})
 endforeach(i ${TESTS})

@@ -7,25 +7,14 @@ set(euler_HEADERS  eulermodel.hh
                    chorjo.cc 
                    passtraits.hh)
 
-set(BASEDIR ../../main)
-
-# helper variables
-set(SOURCEBASE  ${BASEDIR}/main.cc chorjo.cc)
-set(SOURCES  ${SOURCEBASE} ${BASEDIR}/main_0.cc ${BASEDIR}/main_1.cc
-                                        ${BASEDIR}/main_2.cc ${BASEDIR}/main_3.cc)
-set(SOURCES12  ${SOURCEBASE} ${BASEDIR}/main_1.cc ${BASEDIR}/main_2.cc)
-set(SOURCEONEP  ${SOURCEBASE} ${BASEDIR}/main_pol.cc)
-
 set(GRIDTYPE YASPGRID)
 set(GRIDDIM  2)
+set(POLORDER 2)
 set(FLUX 1)
 set(DIFFFLUXTYPE PRIMALDG)
 
 set(TESTS euler
-          euler12
-          euleronep) 
-
-
+          eulerall)
 
 add_definitions( "-D${GRIDTYPE}" )
 add_definitions( "-DGRIDDIM=${GRIDDIM}" )
@@ -33,22 +22,16 @@ add_definitions( "-DFLUX=${FLUX}" )
 add_definitions( "-D${DIFFFLUXTYPE}" )
 add_definitions( "-DWANT_CACHED_COMM_MANAGER=0" )
 
-
 include_directories("${CMAKE_SOURCE_DIR}/dune/fem-dg/test/euler")
 
-add_executable( euler ${BASEDIR}/main.cc ${BASEDIR}/main_0.cc ${BASEDIR}/main_1.cc ${BASEDIR}/main_2.cc ${BASEDIR}/main_3.cc )
-dune_target_link_libraries(euler ${DUNE_LIBS})
-set_property(TARGET euler APPEND PROPERTY 
+add_executable( eulerall ${SOURCEALL} chorjo.cc )
+dune_target_link_libraries(eulerall ${DUNE_LIBS})
+set_property(TARGET eulerall APPEND PROPERTY 
   COMPILE_DEFINITIONS "LIMITER")
 
-add_executable( euler12 ${BASEDIR}/main.cc ${BASEDIR}/main_0.cc ${BASEDIR}/main_1.cc )
-dune_target_link_libraries(euler12 ${DUNE_LIBS})
-set_property(TARGET euler12 APPEND PROPERTY 
-  COMPILE_DEFINITIONS "ONLY_P1_P2")
-
-add_executable( euleronep ${BASEDIR}/main_pol.cc )
-dune_target_link_libraries(euleronep ${DUNE_LIBS})
-set_property(TARGET euleronep APPEND PROPERTY 
+add_executable( euler ${SOURCEONE} chorjo.cc )
+dune_target_link_libraries(euler ${DUNE_LIBS})
+set_property(TARGET euler APPEND PROPERTY 
              COMPILE_DEFINITIONS "ONLY_ONE_P;POLORDER=${POLORDER}")
 
 # We do not want want to build the tests during make all

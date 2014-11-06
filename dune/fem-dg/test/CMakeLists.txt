@@ -1,4 +1,4 @@
-set(SUBDIRS  dataio advdiff euler navierstokes)
+set(SUBDIRS  dataio advdiff euler navierstokes poisson)
 # include not needed for CMake
 # include $(top_srcdir)/am/global-rules
 set(testdir  ${CMAKE_INSTALL_INCLUDEDIR}/dune/fem-dg/test)
