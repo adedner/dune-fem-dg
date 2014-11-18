@@ -87,7 +87,7 @@ namespace Fem {
     void update( const DiscreteFunctionType& arg ) 
     {
       // apply limit pass in any case
-      limitPass_.enableFirstCall();
+      limitPass_.enable();
       // calculate reconstruction 
       limitPass_( arg, reconstruction_ );
     }
