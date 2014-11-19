@@ -380,7 +380,7 @@ public:
   typedef typename VAR::dvec_t dvec_t;
   typedef typename VAR::eos_t      eos_t;
   typedef typename VAR::conv_eos_t conv_eos_t;
- 
+
   VariableTop(eos_t *peos, conv_eos_t *pceos) : VAR(peos,pceos) {}
   inline VariableTop(const var_t&);
   inline explicit VariableTop(const cvar1_t&);
@@ -821,7 +821,7 @@ template <const int size> class Eos_cons_adtab : public Eos_cons <size>
 {
 protected:
   typedef typename Eos_cons <size> :: var_t var_t;
- 
+
   int first_is_tau,maxlevel,range_warning;
   Eos_table *eos_table;
 
@@ -852,7 +852,7 @@ template <const int size> class Eos_prim_adtab : public Eos_prim <size>
 {
 protected:
   typedef typename Eos_prim <size> :: var_t var_t;
- 
+
   int first_is_tau,maxlevel,range_warning;
   Eos_table *eos_table;
 
@@ -1080,7 +1080,7 @@ template <const int size> class Eos_cons_nconv : public Eos_cons <size>
 {
 protected:
   typedef typename Eos_cons <size> :: var_t var_t;
- 
+
   double alpha, gamma, mintaunc, maxtaunc, c0, c1, c2, c3, c4, c5;
 
   inline double dpdtau(const var_t &) const;
@@ -1182,7 +1182,7 @@ class Eostab_cons : public eos_cons_t
 {
   Eos_tabular &ptable;
 public:
-  virtual double cs2(const var_t &u) const 
+  virtual double cs2(const var_t &u) const
   {return ptable.cs2(u.tau(),u.eps());}
   virtual double p(const var_t &u) const
   {return ptable.p(u.tau(),u.eps());}
@@ -1208,7 +1208,7 @@ public:
    class Eos_tabular_tau
 *******************************************************************************/
 
-class Eos_tabular_tau : public Eos_tabular 
+class Eos_tabular_tau : public Eos_tabular
 {
   double **_ptable;
   double taumin,taumax,epsmin,epsmax,htau,heps;
@@ -1623,7 +1623,7 @@ inline double Flux<EQNS>::psi(double px) const
   if (px < -del)
     lret = 1.0;
   else if (px < -eps)
-    lret = 0.5 * (px + del) / (eps - del) + 1.0; 
+    lret = 0.5 * (px + del) / (eps - del) + 1.0;
   else if (px < eps)
     lret = 0.5;
   else if (px < del)
@@ -1645,7 +1645,7 @@ double Flux<EQNS>::ce(const prim_t &ppriml, const prim_t &pprimr) const
 
   for (int j=0;j<lambdal.size();j++)
     if ((eqns->nonlinear(j)) && (lambdal[j] < 0.0) && (0.0 < lambdar[j]))
-      lret += lambdar[j] - lambdal[j]; 
+      lret += lambdar[j] - lambdal[j];
 
   return lret;
 }
@@ -1745,7 +1745,7 @@ void Flux_hlle<EQNS>::operator()(const cons_t &pconsl,
                            this->eqns->lambda(0,mval)));
   double brp = max(0.0,max(this->eqns->lambda(m,primr),
                            this->eqns->lambda(m,mval)));
-  
+
   /* calculate flux */
 
   cons_t fl(pconsl),fr(pconsr);
@@ -2160,10 +2160,10 @@ void Flux_hllemc<EQNS>::operator()(const cons_t &pconsl,
   phi2 = phi(cmval.B2());
 
   double div = vel[0] + (1.0 - phi2) * vel[ewave];
-  
+
   for (i=1;i<ewave;i++)
     delta[i] = phi1 * vel[0] / (div + vel[i]);
-  delta[ewave] = phi1 * vel[0] / (vel[0] + vel[ewave]); 
+  delta[ewave] = phi1 * vel[0] / (vel[0] + vel[ewave]);
 
   /* calculate anti-diffusion term */
 
@@ -2182,7 +2182,7 @@ void Flux_hllemc<EQNS>::operator()(const cons_t &pconsl,
 
   double blm = min(0.0,min(this->eqns->lambda(0,priml),lambdamv[0]));
   double brp = max(0.0,max(this->eqns->lambda(m,primr),lambdamv[m]));
-  
+
   /* calculate flux */
 
   cons_t fl(pconsl),fr(pconsr);
@@ -2289,10 +2289,10 @@ void Flux_hllem<EQNS>::operator()(const prim_t &ppriml,
   phi2 = phi(mval.B2());
 
   double div = vel[0] + (1.0 - phi2) * vel[ewave];
-  
+
   for (i=1;i<ewave;i++)
     delta[i] = phi1 * vel[0] / (div + vel[i]);
-  delta[ewave] = phi1 * vel[0] / (vel[0] + vel[ewave]); 
+  delta[ewave] = phi1 * vel[0] / (vel[0] + vel[ewave]);
 
   /* calculate anti-diffusion term */
 
@@ -2307,7 +2307,7 @@ void Flux_hllem<EQNS>::operator()(const prim_t &ppriml,
 
   double blm = min(0.0,min(this->eqns->lambda(0,ppriml),lambdamv[0]));
   double brp = max(0.0,max(this->eqns->lambda(m,pprimr),lambdamv[m]));
-  
+
   /* calculate flux */
 
   cons_t fl(ppriml.get_conv_eos(),ppriml.get_eos());
@@ -2522,11 +2522,11 @@ void Flux_vfroe<EQNS>::operator()(const prim_t &ppriml,
         {
           intvec = ppriml.vec();
           for (i=0;i<=k;i++)
-            intvec += rmat.col(i) * alpha[i]; 
+            intvec += rmat.col(i) * alpha[i];
         }
 
       prim_t intstate(ppriml.get_eos(),ppriml.get_conv_eos(),intvec);
-  
+
       /* calculate native flux */
 
       cons_t natflux(ppriml.get_conv_eos(),ppriml.get_eos());
@@ -2556,5 +2556,5 @@ void Flux_vfroe<EQNS>::operator()(const cons_t &pconsl,
 // ** NEWLY INSERTED FROM MHD_EQNS_HH **
 
 
-} // end namespace Mhd 
+} // end namespace Mhd
 #endif

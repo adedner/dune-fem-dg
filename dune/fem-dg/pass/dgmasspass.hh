@@ -43,27 +43,27 @@ namespace Dune
 
       class Key
       {
-      protected:  
+      protected:
         const GridPartType & gridPart_;
         const int numScalarBasis_;
         const bool inverse_ ;
       public:
-        //! constructor taking space 
+        //! constructor taking space
         Key(const GridPartType& gridPart)
           : gridPart_(gridPart),
             numScalarBasis_( numScalarBasis ),
             inverse_( inverse ) {}
 
-        //! copy constructor  
-        //! returns true if indexSet pointer and numDofs are equal 
+        //! copy constructor
+        //! returns true if indexSet pointer and numDofs are equal
         bool operator == (const Key& otherKey) const
         {
-          // mapper of space is singleton 
-          return (&(gridPart_.indexSet()) == & (otherKey.gridPart_.indexSet()) ) 
+          // mapper of space is singleton
+          return (&(gridPart_.indexSet()) == & (otherKey.gridPart_.indexSet()) )
                  && ( numScalarBasis_ == otherKey.numScalarBasis_ ) && ( inverse_ == otherKey.inverse_ );
         }
 
-        //! return reference to grid part for construction 
+        //! return reference to grid part for construction
         const GridPartType& gridPart() const { return gridPart_; }
       };
       typedef Key KeyType;
@@ -86,9 +86,9 @@ namespace Dune
       typedef LocalMassMatrixImplementationDgOrthoNormal<
             ScalarDiscreteFunctionSpaceType, VolumeQuadratureType >  DgOrthoNormalMassMatrixType ;
 
-      static const bool isOrthoNormal = false ; //Conversion< LocalMassMatrixType, DgOrthoNormalMassMatrixType > :: exists ; 
+      static const bool isOrthoNormal = false ; //Conversion< LocalMassMatrixType, DgOrthoNormalMassMatrixType > :: exists ;
 
-      struct VectorEntry 
+      struct VectorEntry
       {
         SparseLocalMatrixType  matrix_ ;
         GlobalCoordinate center_ ;
@@ -99,8 +99,8 @@ namespace Dune
       typedef std::vector< VectorEntry* >      MatrixStorageType;
 
     public:
-      template <class Key> 
-      explicit DGMassInverseMassImplementation ( const Key& key ) 
+      template <class Key>
+      explicit DGMassInverseMassImplementation ( const Key& key )
       : scalarSpace_( const_cast< GridPartType& > (key.gridPart()) ),
         volumeQuadratureOrder_( 2 * scalarSpace_.order() ),
         matrices_( Fem :: ThreadManager :: maxThreads() ),
@@ -111,35 +111,35 @@ namespace Dune
         setup();
       }
 
-      ~DGMassInverseMassImplementation () 
+      ~DGMassInverseMassImplementation ()
       {
         const int maxThreads = Fem :: ThreadManager :: maxThreads() ;
-        for( int thread = 0; thread < maxThreads ; ++ thread ) 
+        for( int thread = 0; thread < maxThreads ; ++ thread )
         {
-          for( size_t i=0; i<matrices_[ thread ].size(); ++i ) 
+          for( size_t i=0; i<matrices_[ thread ].size(); ++i )
             delete matrices_[ thread ][ i ];
         }
       }
 
-      //! interface method 
+      //! interface method
       template < class DestinationType >
       void prepare( const DestinationType& argument, DestinationType &destination, const bool doSetup ) const
       {
-        if( doSetup ) 
+        if( doSetup )
           setup();
       }
 
-      //! interface method 
+      //! interface method
       template < class DestinationType >
       void finalize( const DestinationType &argument, DestinationType &destination ) const
       {
       }
 
-      //! apply inverse mass matrix locally 
+      //! apply inverse mass matrix locally
       template < class DestinationType >
-      void applyLocal( const EntityType& entity, 
+      void applyLocal( const EntityType& entity,
                        const DestinationType& argument,
-                       DestinationType& destination ) const 
+                       DestinationType& destination ) const
       {
         typedef typename DestinationType :: LocalFunctionType LocalFunctionType;
         const Geometry& geometry = entity.geometry();
@@ -147,14 +147,14 @@ namespace Dune
         const LocalFunctionType localArg = argument.localFunction( entity );
         if( isOrthoNormal && geometry.affine() )
         {
-          // get inverse mass factor 
+          // get inverse mass factor
           const double massFactorInv = localMassMatrix_.getAffineMassFactor( geometry );
           const double factor = ( ! inverse ) ? massFactorInv : 1.0/massFactorInv ;
 
           // apply factor * localArg and store in dest
           localDest.axpy( factor, localArg );
         }
-        else 
+        else
         {
           const int idx = scalarSpace_.gridPart().indexSet().index( entity );
           const int thread = setup( idx, entity, geometry );
@@ -164,25 +164,25 @@ namespace Dune
         }
       }
 
-      //! apply inverse mass matrix to local function 
+      //! apply inverse mass matrix to local function
       template< class Caller, class LocalFunction >
-      void applyInverse( Caller& caller, const EntityType& entity, LocalFunction& localDest ) const 
+      void applyInverse( Caller& caller, const EntityType& entity, LocalFunction& localDest ) const
       {
         // this pass only can handle no mass
         assert( ! caller.hasMass() );
         applyInverse( entity, localDest );
       }
 
-      //! apply inverse mass matrix to local function 
+      //! apply inverse mass matrix to local function
       template< class LocalFunction >
-      void applyInverse( LocalFunction& localDest ) const 
+      void applyInverse( LocalFunction& localDest ) const
       {
         applyInverse( localDest.entity(), localDest );
       }
 
-      //! apply inverse mass matrix to local function 
+      //! apply inverse mass matrix to local function
       template< class LocalFunction >
-      void applyInverse( const EntityType& entity, LocalFunction& localDest ) const 
+      void applyInverse( const EntityType& entity, LocalFunction& localDest ) const
       {
         enum { dimRange = LocalFunction :: dimRange };
         const int idx = scalarSpace_.gridPart().indexSet().index( entity );
@@ -193,7 +193,7 @@ namespace Dune
         static const int numBasis = dimRange * numScalarBasis ;
         assert( localDest.numDofs() == numBasis );
 
-        // vector holding basis function evaluation 
+        // vector holding basis function evaluation
         Dune::array< ctype, numBasis > lfX;
         for( int i=0; i<numBasis; ++i )
           lfX[ i ] = localDest[ i ];
@@ -224,27 +224,27 @@ namespace Dune
       }
     protected:
       template < class ConstLocalFunction, class LocalFunctionType >
-      void multiplyBlock( const int dimRange, 
-                          const SparseLocalMatrixType& matrix, 
-                          const ConstLocalFunction& arg, 
-                          LocalFunctionType& dest ) const 
+      void multiplyBlock( const int dimRange,
+                          const SparseLocalMatrixType& matrix,
+                          const ConstLocalFunction& arg,
+                          LocalFunctionType& dest ) const
       {
         // clear destination
         // dest.clear();
         matrix.mvb( dimRange, arg, dest );
-        
+
         /*
         static const int rows = LocalMatrixType::rows;
         static const int cols = LocalMatrixType::cols;
 
         assert( int(rows * dimRange) == dest.numDofs() );
 
-        // apply matrix to arg and store in dest 
-        for(int i=0; i<rows; ++i ) 
+        // apply matrix to arg and store in dest
+        for(int i=0; i<rows; ++i )
         {
-          for(int j=0; j<cols; ++j ) 
+          for(int j=0; j<cols; ++j )
           {
-            for( int r=0, ir = i * dimRange, jr = j * dimRange ; 
+            for( int r=0, ir = i * dimRange, jr = j * dimRange ;
                  r<dimRange; ++ r, ++ ir, ++ jr )
             {
               dest[ ir ] += matrix[ i ][ j ] * arg[ jr ] ;
@@ -258,12 +258,12 @@ namespace Dune
       {
         assert( Fem :: ThreadManager :: singleThreadMode() );
         const int gpSequence = scalarSpace_.gridPart().sequence();
-        if( sequence_ != gpSequence ) 
+        if( sequence_ != gpSequence )
         {
           const GridPartType &gridPart = scalarSpace_.gridPart();
           const int gpSize = gridPart.indexSet().size( 0 ) ;
           const int maxThreads = Fem :: ThreadManager :: maxThreads() ;
-          for( int thread = 0; thread < maxThreads ; ++ thread ) 
+          for( int thread = 0; thread < maxThreads ; ++ thread )
           {
             matrices_[ thread ].resize( gpSize, (VectorEntry *) 0 );
           }
@@ -271,13 +271,13 @@ namespace Dune
         }
       }
 
-      int setup( const int idx, 
-                 const EntityType& entity, 
-                 const Geometry& geometry ) const 
+      int setup( const int idx,
+                 const EntityType& entity,
+                 const Geometry& geometry ) const
       {
         const int thread = Fem :: ThreadManager :: thread();
         bool computeMatrix = false ;
-        if( matrices_[ thread ][ idx ] == 0 ) 
+        if( matrices_[ thread ][ idx ] == 0 )
         {
           VectorEntry* entry = new VectorEntry();
           matrices_[ thread ][ idx ] = entry;
@@ -285,13 +285,13 @@ namespace Dune
           computeMatrix = true ;
 
         }
-        else 
+        else
         {
           VectorEntry* entry = matrices_[ thread ][ idx ] ;
           const GlobalCoordinate center = geometry.center();
           GlobalCoordinate diff ( center );
           diff -= entry->center_;
-          // for cells on the boundary we have to compute this all the time 
+          // for cells on the boundary we have to compute this all the time
           computeMatrix = diff.infinity_norm() > 1e-12 ;
           if( computeMatrix ) entry->center_ = center ;
         }
@@ -299,30 +299,30 @@ namespace Dune
         if( computeMatrix )
         {
           VectorEntry* entry = matrices_[ thread ][ idx ];
-          setup( idx, entity, 
+          setup( idx, entity,
                  geometry,
-                 scalarSpace_.basisFunctionSet( entity ), 
+                 scalarSpace_.basisFunctionSet( entity ),
                  entry->matrix_ );
         }
         return thread ;
       }
 
-      void setup( const int idx, 
-                  const EntityType& entity, 
+      void setup( const int idx,
+                  const EntityType& entity,
                   const Geometry& geo,
                   const BasisFunctionSetType& set,
                   SparseLocalMatrixType& storedMatrix ) const
       {
-        // clear matrix 
+        // clear matrix
         LocalMatrixType matrix( 0 );
 
-        // vector holding basis function evaluation 
+        // vector holding basis function evaluation
         Dune::array< ScalarRangeType, numScalarBasis > phi ;
 
-        // make sure that the number of basis functions is correct 
+        // make sure that the number of basis functions is correct
         assert( numScalarBasis == int(set.size()) );
-        
-        // create appropriate quadrature 
+
+        // create appropriate quadrature
         VolumeQuadratureType volQuad( entity, volumeQuadratureOrder_ );
 
         const int volNop = volQuad.nop();
@@ -353,16 +353,16 @@ namespace Dune
         {
           for(int k=0; k<numScalarBasis; ++k)
           {
-            if( std::abs( matrix[ m ][ k ] ) < 1e-14 ) 
+            if( std::abs( matrix[ m ][ k ] ) < 1e-14 )
               matrix[ m ][ k ] = 0;
           }
         }
 
-        // if we are looking for the inverse, then invert matrix 
-        if( inverse ) 
+        // if we are looking for the inverse, then invert matrix
+        if( inverse )
           matrix.invert();
 
-        // store matrix 
+        // store matrix
         storedMatrix.set( matrix );
       }
 
@@ -391,7 +391,7 @@ namespace Dune
       typedef Dune::Fem::LocalPass< DGInverseMassPassDiscreteModel< functionalId, PreviousPass >, PreviousPass, id > BaseType;
 
     public:
-      //! type of the discrete model used 
+      //! type of the discrete model used
       typedef DGInverseMassPassDiscreteModel< functionalId, PreviousPass > DiscreteModelType;
 
       //! pass ids up to here (tuple of integral constants)
@@ -432,11 +432,11 @@ namespace Dune
       {
       }
 
-      //! constructor for use with thread pass 
-      DGMassInverseMassPass ( const DiscreteModelType& discreteModel, 
+      //! constructor for use with thread pass
+      DGMassInverseMassPass ( const DiscreteModelType& discreteModel,
                               PreviousPass &previousPass,
                               const DiscreteFunctionSpaceType &spc,
-                              const int volQuadOrd  = -1, 
+                              const int volQuadOrd  = -1,
                               const int faceQuadOrd = -1)
       : BaseType( previousPass, spc, "DGMassInverseMassPass" ),
         massInverseMass_( MassInverseMassProviderType :: getObject( KeyType( spc.gridPart() ) ) ),
@@ -453,16 +453,16 @@ namespace Dune
         out << "DGMassInverseMassPassname() :" << "\\\\" << std::endl;
       }
 
-      //! this pass needs no communication 
+      //! this pass needs no communication
       bool requireCommunication () const { return false ; }
 
-      //! interface method 
+      //! interface method
       void prepare( const TotalArgumentType &argument, DestinationType &destination ) const
       {
         prepare( argument, destination, true );
       }
 
-      //! prepare for ThreadPass 
+      //! prepare for ThreadPass
       void prepare( const TotalArgumentType &argument, DestinationType &destination, const bool doSetup ) const
       {
         arg_  = &argument ;
@@ -470,13 +470,13 @@ namespace Dune
         massInverseMass_.prepare( *(Dune::get< functionalPosition >( argument )), destination, doSetup );
       }
 
-      //! finalize for ThreadPass 
+      //! finalize for ThreadPass
       void finalize( const TotalArgumentType &argument, DestinationType &destination, const bool ) const
       {
         finalize( argument, destination );
       }
 
-      //! interface method 
+      //! interface method
       void finalize( const TotalArgumentType &argument, DestinationType &destination ) const
       {
         massInverseMass_.finalize( *(Dune::get< functionalPosition >( argument )), destination );
@@ -484,8 +484,8 @@ namespace Dune
         dest_ = 0;
       }
 
-      //! apply inverse mass matrix locally 
-      void applyLocal( const EntityType& entity ) const 
+      //! apply inverse mass matrix locally
+      void applyLocal( const EntityType& entity ) const
       {
         assert( arg_  );
         assert( dest_ );
@@ -494,25 +494,25 @@ namespace Dune
 
       //! apply local with neighbor checker (not needed here)
       template <class NBChecker>
-      void applyLocal( const EntityType& entity, const NBChecker& ) const 
+      void applyLocal( const EntityType& entity, const NBChecker& ) const
       {
         applyLocal( entity );
       }
 
-      /** \brief  apply local for all elements that do not need information from 
+      /** \brief  apply local for all elements that do not need information from
        *          other processes (here all elements)
-       */         
+       */
       template <class NBChecker>
-      void applyLocalInterior( const EntityType& entity, const NBChecker& ) const 
+      void applyLocalInterior( const EntityType& entity, const NBChecker& ) const
       {
         applyLocal( entity );
       }
 
-      /** \brief  apply local for all elements that need information from 
+      /** \brief  apply local for all elements that need information from
        *          other processes (here no elements)
-       */         
+       */
       template <class NBChecker>
-      void applyLocalProcessBoundary( const EntityType& entity, const NBChecker& ) const 
+      void applyLocalProcessBoundary( const EntityType& entity, const NBChecker& ) const
       {
         DUNE_THROW(InvalidStateException,"DGInverseMassPass does not need a second phase for ThreadPass");
       }

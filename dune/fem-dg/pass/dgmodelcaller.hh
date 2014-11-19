@@ -17,7 +17,7 @@ namespace Dune
    * \brief Model caller for CDG pass.
    */
   template< class DiscreteModel, class Argument, class PassIds >
-  class CDGDiscreteModelCaller 
+  class CDGDiscreteModelCaller
   : public Dune::Fem::DGDiscreteModelCaller< DiscreteModel, Argument, PassIds >
   {
     typedef CDGDiscreteModelCaller< DiscreteModel, Argument, PassIds > ThisType;
@@ -71,13 +71,13 @@ namespace Dune
         localFunctionsInside_.evaluateQuadrature( quadrature, jacobians_ );
       }
 
-#ifndef NDEBUG 
+#ifndef NDEBUG
       quadId_ = quadrature.id();
 #endif
     }
 
     // Ensure: entities set correctly before call
-    template <class QuadratureImp> 
+    template <class QuadratureImp>
     void initializeIntersection( const EntityType &neighbor,
                                  const IntersectionType &intersection,
                                  const QuadratureImp &inside,
@@ -94,8 +94,8 @@ namespace Dune
         jacobiansOutside_.resize( outside.nop() );
         localFunctionsOutside_.evaluateQuadrature( outside, jacobiansOutside_ );
       }
-      
-#ifndef NDEBUG 
+
+#ifndef NDEBUG
       quadInnerId_ = inside.id();
       quadOuterId_ = outside.id();
 #endif
@@ -103,7 +103,7 @@ namespace Dune
       discreteModel().initializeIntersection( intersection, time(), inside, outside, valuesInside_, valuesOutside_ );
     }
 
-    template <class QuadratureImp> 
+    template <class QuadratureImp>
     void initializeBoundary ( const IntersectionType &intersection,
                               const QuadratureImp &quadrature )
     {
@@ -116,15 +116,15 @@ namespace Dune
         localFunctionsInside_.evaluateQuadrature( quadrature, jacobiansInside_ );
       }
 
-#ifndef NDEBUG 
+#ifndef NDEBUG
       quadInnerId_ = quadrature.id();
 #endif
 
       discreteModel().initializeBoundary( intersection, time(), quadrature, valuesInside_ );
     }
 
-    void analyticalFlux ( const EntityType &entity, 
-                          const VolumeQuadratureType &quadrature, 
+    void analyticalFlux ( const EntityType &entity,
+                          const VolumeQuadratureType &quadrature,
                           const int qp,
                           JacobianRangeType &flux )
     {
@@ -134,8 +134,8 @@ namespace Dune
       discreteModel().analyticalFlux( entity, time(), quadrature.point( qp ), values_[ qp ], jacobianValue( jacobians_, qp ), flux );
     }
 
-    double source ( const EntityType &entity, 
-                    const VolumeQuadratureType &quadrature, 
+    double source ( const EntityType &entity,
+                    const VolumeQuadratureType &quadrature,
                     const int qp,
                     RangeType &source )
     {
@@ -146,10 +146,10 @@ namespace Dune
     }
 
     double analyticalFluxAndSource( const EntityType &entity,
-                                    const VolumeQuadratureType &quadrature, 
+                                    const VolumeQuadratureType &quadrature,
                                     const int qp,
-                                    JacobianRangeType &flux, 
-                                    RangeType &source ) 
+                                    JacobianRangeType &flux,
+                                    RangeType &source )
     {
       analyticalFlux( entity, quadrature, qp, flux );
       return ThisType::source( entity, quadrature, qp, source );
@@ -158,20 +158,20 @@ namespace Dune
 
     template <class QuadratureType>
     double numericalFlux ( const IntersectionType &intersection,
-                           const QuadratureType &inside, 
-                           const QuadratureType &outside, 
+                           const QuadratureType &inside,
+                           const QuadratureType &outside,
                            const int qp,
-                           RangeType &gLeft, 
+                           RangeType &gLeft,
                            RangeType &gRight,
-                           JacobianRangeType &hLeft, 
-                           JacobianRangeType &hRight) 
+                           JacobianRangeType &hLeft,
+                           JacobianRangeType &hRight)
     {
-      assert( valuesInside_.size() >= inside.nop() ); 
+      assert( valuesInside_.size() >= inside.nop() );
       assert( quadInnerId_ == inside.id() );
-      assert( valuesOutside_.size() >= inside.nop() ); 
+      assert( valuesOutside_.size() >= inside.nop() );
       assert( quadOuterId_ == outside.id() );
 
-      return discreteModel().numericalFlux( intersection, time(), inside, outside, qp, 
+      return discreteModel().numericalFlux( intersection, time(), inside, outside, qp,
                                             valuesInside_[ qp ], valuesOutside_[ qp ],
                                             jacobianValue( jacobiansInside_, qp ), jacobianValue( jacobiansOutside_, qp ),
                                             gLeft, gRight, hLeft, hRight );
@@ -183,7 +183,7 @@ namespace Dune
                           RangeType &gLeft,
                           JacobianRangeType &hLeft )
     {
-      assert( valuesInside_.size() >= quadrature.nop() ); 
+      assert( valuesInside_.size() >= quadrature.nop() );
       assert( quadInnerId_ == quadrature.id() );
 
       return discreteModel().boundaryFlux( intersection, time(), quadrature, qp,
@@ -195,7 +195,7 @@ namespace Dune
     template< class JacobianRangeTupleVectorType >
     const typename JacobianRangeTupleVectorType::value_type &jacobianValue ( const JacobianRangeTupleVectorType &jacobians, const int qp ) const
     {
-      assert( ( evaluateJacobian ) ? (int) jacobians.size() > qp : true ); 
+      assert( ( evaluateJacobian ) ? (int) jacobians.size() > qp : true );
       return ( evaluateJacobian ) ? jacobians[ qp ] : jacobians[ 0 ];
     }
 

@@ -18,7 +18,7 @@ namespace Dune
                            param.finestLevel  ( DGFGridInfo< GridType >::refineStepsForHalf() ) )
     , grid_( grid )
     , gridPart_( grid_ )
-#ifdef USE_ALUGRID_MPACCESS 
+#ifdef USE_ALUGRID_MPACCESS
     , mpAccess_( MPIHelper::getCommunicator() )
 #endif
     , indicator_( grid_, 0, 0.0 )
@@ -242,7 +242,7 @@ namespace Dune
   }
 
   template< class GridImp, class FunctionSpace >
-  size_t 
+  size_t
   AdaptationHandler< GridImp, FunctionSpace >::
   minNumberOfElements () const
   {
@@ -250,7 +250,7 @@ namespace Dune
   }
 
   template< class GridImp, class FunctionSpace >
-  size_t 
+  size_t
   AdaptationHandler< GridImp, FunctionSpace >::
   maxNumberOfElements () const
   {
@@ -331,7 +331,7 @@ namespace Dune
     assert( singleThreadMode() );
     // get local refine tolerance
     //const double refineTol = ( initialAdapt ) ? getInitialTolerance() : getLocalTolerance();
-    const double refineTol = getMaxEstimator() * globalTolerance_ ; 
+    const double refineTol = getMaxEstimator() * globalTolerance_ ;
     // get local coarsen tolerance
     const double coarsenTol = refineTol * coarsenTheta_;
 
@@ -431,18 +431,18 @@ namespace Dune
     // number of elements that I have
     localNumElements_ = count;
 
-#ifdef USE_ALUGRID_MPACCESS 
+#ifdef USE_ALUGRID_MPACCESS
     typename ALU3DSPACE MpAccessLocal::minmaxsum_t minmaxsum = mpAccess_.minmaxsum( double(count) );
     globalNumElements_ = (UInt64Type) minmaxsum.sum;
     minNumElements_ = (size_t) minmaxsum.min;
     maxNumElements_ = (size_t) minmaxsum.max;
-#else 
+#else
     double minMax[ 2 ] = { double(count), count > 0 ? 1.0/double(count) : 0.0 } ;
     grid_.comm().max( &minMax[ 0 ], 2 );
     maxNumElements_ = (size_t) minMax[ 0 ];
     minNumElements_ = (size_t) (minMax[ 1 ] > 0) ? (1.0/minMax[ 1 ]) : 0;
     globalNumElements_ = count ;
-    globalNumElements_ = grid_.comm().sum( globalNumElements_ ); 
+    globalNumElements_ = grid_.comm().sum( globalNumElements_ );
 #endif
   }
 

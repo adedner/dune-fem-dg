@@ -154,10 +154,10 @@ public:
                                RangeType& gRight ) const
   {
     const FaceDomainType& x = faceQuadInner.localPoint( quadPoint );
-    DomainType normal = intersection.integrationOuterNormal(x);  
+    DomainType normal = intersection.integrationOuterNormal(x);
     const double len = normal.two_norm();
     normal *= 1./len;
-    
+
     RangeType visc;
     FluxRangeType anaflux;
     model_.advection( inside, time, faceQuadInner.point( quadPoint ),
@@ -169,7 +169,7 @@ public:
 
     double maxspeedl, maxspeedr; // , maxspeed;
     double viscparal, viscparar, viscpara;
-    
+
     model_.maxSpeed( inside, time, faceQuadInner.point( quadPoint ),
                      normal, uLeft, viscparal, maxspeedl );
     model_.maxSpeed( outside, time, faceQuadOuter.point( quadPoint ),
@@ -181,7 +181,7 @@ public:
     visc -= uLeft;
     visc *= viscpara;
     gLeft -= visc;
-    
+
     gLeft *= 0.5*len;
     gRight = gLeft;
 
@@ -200,7 +200,7 @@ protected:
  ************************/
 
 template <class DestinationImp,
-          class M, 
+          class M,
           class AdvFlux,
           DGDiffusionFluxIdentifier = method_general >
 class DGPrimalMatrixAssembly
@@ -214,9 +214,9 @@ class DGPrimalMatrixAssembly
   typedef typename EntityType::Geometry GeometryType;
 
   typedef typename DiscreteFunctionSpaceType::GridPartType GridPartType;
-  typedef typename DiscreteFunctionSpaceType :: DomainType DomainType; 
-  typedef typename DiscreteFunctionSpaceType :: RangeType RangeType; 
-  typedef typename DiscreteFunctionSpaceType :: JacobianRangeType JacobianRangeType; 
+  typedef typename DiscreteFunctionSpaceType :: DomainType DomainType;
+  typedef typename DiscreteFunctionSpaceType :: RangeType RangeType;
+  typedef typename DiscreteFunctionSpaceType :: JacobianRangeType JacobianRangeType;
   typedef typename DiscreteFunctionSpaceType :: DomainFieldType DomainFieldType;
   typedef typename DiscreteFunctionSpaceType :: RangeFieldType RangeFieldType;
 
@@ -231,8 +231,8 @@ class DGPrimalMatrixAssembly
 
   // need treatment of non conforming grids
   // CACHING
-  // typedef Dune::Fem::CachingQuadrature< GridPartType, 1 > FaceQuadratureType; 
-  typedef Dune::Fem::ElementQuadrature< GridPartType, 1 > FaceQuadratureType; 
+  // typedef Dune::Fem::CachingQuadrature< GridPartType, 1 > FaceQuadratureType;
+  typedef Dune::Fem::ElementQuadrature< GridPartType, 1 > FaceQuadratureType;
   typedef Dune::Fem::CachingQuadrature< GridPartType, 0 > QuadratureType;
 
   typedef typename GridPartType :: GridType :: template Codim< 0 > :: EntityPointer EntityPointerType;
@@ -246,7 +246,7 @@ class DGPrimalMatrixAssembly
     typedef typename FunctionSpaceType::DomainType DomainType;
     typedef typename FunctionSpaceType::RangeType RangeType;
 
-    template <class PointType> 
+    template <class PointType>
     void evaluate( const PointType &x, RangeType &phi ) const
     {
       phi = 0;
@@ -258,13 +258,13 @@ class DGPrimalMatrixAssembly
   struct RangeValues
   {
     typedef std::vector< std::vector< RangeType > > VectorType;
-    RangeValues(int col, const VectorType &vec) : col_(col), vec_(vec), zero_(0) 
+    RangeValues(int col, const VectorType &vec) : col_(col), vec_(vec), zero_(0)
     {}
     const RangeType &operator[](int row) const
     {
-      if (col_==-1) 
+      if (col_==-1)
         return zero_;
-      else 
+      else
         return vec_[row][col_];
     }
   private:
@@ -275,13 +275,13 @@ class DGPrimalMatrixAssembly
   struct JacobianRangeValues
   {
     typedef std::vector< std::vector< JacobianRangeType > > VectorType;
-    JacobianRangeValues(int col, const VectorType &vec) : col_(col), vec_(vec), zero_(0) 
+    JacobianRangeValues(int col, const VectorType &vec) : col_(col), vec_(vec), zero_(0)
     {}
     const JacobianRangeType &operator[](int row) const
     {
-      if (col_==-1) 
+      if (col_==-1)
         return zero_;
-      else 
+      else
         return vec_[row][col_];
     }
   private:
@@ -291,12 +291,12 @@ class DGPrimalMatrixAssembly
   };
   struct IntersectionStorage
   {
-    IntersectionStorage( 
+    IntersectionStorage(
         const IntersectionType& intersection,
         const EntityType &entity, const EntityType &neighbor, const double areaEn, const double areaNb )
       : intersection_( intersection ),
-        en_(entity), 
-        nb_(neighbor), 
+        en_(entity),
+        nb_(neighbor),
         areaEn_(areaEn), areaNb_(areaNb)
     {}
 
@@ -322,7 +322,7 @@ class DGPrimalMatrixAssembly
                           // = ParameterType::getValue("use_dgstabilization", bool(true)) )
     : model_(model),
       space_(gridPart),
-      zero_(), 
+      zero_(),
       advFlux_(model_),
       flux_(gridPart, model),
       calculateFluxes_( calculateFluxes ),
@@ -343,62 +343,62 @@ class DGPrimalMatrixAssembly
   const void operator()(const DestinationType &arg, DestinationType &dest) const
   {
     static const Dune :: DGDiffusionFluxIdentifier PrimalDiffusionFluxId = Dune :: method_general ;
-    typedef DGAdvectionDiffusionOperator< Model, AdvFluxType, PrimalDiffusionFluxId, DiscreteFunctionSpaceType::polynomialOrder >   
-            DgOperatorType; 
+    typedef DGAdvectionDiffusionOperator< Model, AdvFluxType, PrimalDiffusionFluxId, DiscreteFunctionSpaceType::polynomialOrder >
+            DgOperatorType;
     static const AdvFluxType flux( model_ );
     static const DgOperatorType dgOperator( space().gridPart(), flux );
     dgOperator(arg,dest);
   }
-  template <class Matrix> 
-  void operator2Matrix( Matrix& matrix, DestinationType& rhs ) const 
+  template <class Matrix>
+  void operator2Matrix( Matrix& matrix, DestinationType& rhs ) const
   {
     static const Dune :: DGDiffusionFluxIdentifier PrimalDiffusionFluxId = Dune :: method_general ;
-    typedef DGAdvectionDiffusionOperator< Model, AdvFluxType, PrimalDiffusionFluxId, DiscreteFunctionSpaceType::polynomialOrder >   
-            DgOperatorType; 
+    typedef DGAdvectionDiffusionOperator< Model, AdvFluxType, PrimalDiffusionFluxId, DiscreteFunctionSpaceType::polynomialOrder >
+            DgOperatorType;
     const AdvFluxType flux( model_ );
     const DgOperatorType dgOperator( space().gridPart(), flux );
 
-    DestinationType vector("Op2Mat::arg", space() ); 
-    DestinationType matrixRow("Op2Mat::matixRow", space() ); 
-    DestinationType result("Op2Mat::result", space() ); 
-    vector.clear();  
+    DestinationType vector("Op2Mat::arg", space() );
+    DestinationType matrixRow("Op2Mat::matixRow", space() );
+    DestinationType result("Op2Mat::result", space() );
+    vector.clear();
 
     matrix.clear();
-      
+
     // get right hand side, = op( 0 )
     this->operator()( vector, rhs );
 
     const int size = space().size();
-    for(int i=0; i<size; ++i) 
+    for(int i=0; i<size; ++i)
     {
       vector.leakPointer()[ i ] = 1;
       this->operator()( vector, matrixRow );
       vector.leakPointer()[ i ] = 0;
       matrixRow *= -1.0;
       matrixRow += rhs;
-      for(int j=0; j<size; ++j) 
+      for(int j=0; j<size; ++j)
       {
         const double value = matrixRow.leakPointer()[ j ];
         if( std::abs( value ) > 0 )
         {
-          matrix.add( i, j, value );  
+          matrix.add( i, j, value );
         }
       }
     }
   }
 
-  size_t maxNumScalarBasisFunctions( const DiscreteFunctionSpaceType& space ) const 
+  size_t maxNumScalarBasisFunctions( const DiscreteFunctionSpaceType& space ) const
   {
     return space.blockMapper().maxNumDofs() * DiscreteFunctionSpaceType :: localBlockSize ;
   }
 
-  /* 
+  /*
    * Assemble Matrix for Elliptic Problem using the DGPrimalDIffusionFlux
    * implementation.
    */
-  template <class Matrix> 
-  void assemble( const double time, 
-                 Matrix& matrix, DestinationType& rhs ) const 
+  template <class Matrix>
+  void assemble( const double time,
+                 Matrix& matrix, DestinationType& rhs ) const
   {
     typedef typename Matrix::LocalMatrixType LocalMatrixType;
     // matrix.reserve();
@@ -416,6 +416,8 @@ class DGPrimalMatrixAssembly
     const RangeType uZero(0);
     const JacobianRangeType uJacZero(0);
 
+    std::cout << "DG matrix assemble" << std::endl;
+
     const IteratorType end = dfSpace.end();
     for( IteratorType it = dfSpace.begin(); it != end; ++it )
     {
@@ -427,8 +429,8 @@ class DGPrimalMatrixAssembly
 
       const BasisFunctionSetType &baseSet = localOpEn.domainBasisFunctionSet();
       const unsigned int numBasisFunctionsEn = baseSet.size();
-            
-      QuadratureType quadrature( entity, 
+
+      QuadratureType quadrature( entity,
                                  elementQuadOrder( dfSpace.order( entity ) ) );
       const size_t numQuadraturePoints = quadrature.nop();
       for( size_t pt = 0; pt < numQuadraturePoints; ++pt )
@@ -436,7 +438,7 @@ class DGPrimalMatrixAssembly
         const typename QuadratureType::CoordinateType &x = quadrature.point( pt );
         const double weight = quadrature.weight( pt ) * geometry.integrationElement( x );
 
-        // resize of phi and dphi is done in evaluate methods 
+        // resize of phi and dphi is done in evaluate methods
         baseSet.evaluateAll( quadrature[ pt ], phi );
         baseSet.jacobianAll( quadrature[ pt ], dphi );
 
@@ -483,7 +485,7 @@ class DGPrimalMatrixAssembly
 
           adphi -= arhsdphi;
 
-          // get column object and call axpy method 
+          // get column object and call axpy method
           localOpEn.column( localCol ).axpy( phi, dphi, aphi, adphi, weight );
         }
         // assemble rhs
@@ -497,15 +499,15 @@ class DGPrimalMatrixAssembly
             iit != endiit ; ++ iit )
       {
         const IntersectionType& intersection = *iit ;
-        
+
         if( intersection.neighbor() && calculateFluxes_ )
         {
           if ( dfSpace.continuous(intersection) ) continue;
-          if( intersection.conforming() ) 
+          if( intersection.conforming() )
           {
             assembleIntersection< true > ( time, entity, geometry, intersection, dfSpace, baseSet, matrix, localOpEn, rhsLocal );
           }
-          else 
+          else
           {
             assembleIntersection< false > ( time, entity, geometry, intersection, dfSpace, baseSet, matrix, localOpEn, rhsLocal );
           }
@@ -513,7 +515,7 @@ class DGPrimalMatrixAssembly
         else if ( intersection.boundary() && ! useStrongBoundaryCondition_ )
         {
           IntersectionStorage intersectionStorage( intersection, entity, entity, geometry.volume(), geometry.volume() );
-        
+
           FaceQuadratureType faceQuadInside(dfSpace.gridPart(), intersection,
                                             faceQuadOrder( dfSpace.order( entity ) ),
                                             FaceQuadratureType::INSIDE);
@@ -525,8 +527,8 @@ class DGPrimalMatrixAssembly
           for( size_t pt = 0; pt < numFaceQuadPoints; ++pt )
           {
             baseSet.evaluateAll( faceQuadInside[ pt ], phiFaceEn[pt] );
-            baseSet.jacobianAll( faceQuadInside[ pt ], 
-                                 // geometry.jacobianInverseTransposed( faceQuadInside.point( pt ) ), 
+            baseSet.jacobianAll( faceQuadInside[ pt ],
+                                 // geometry.jacobianInverseTransposed( faceQuadInside.point( pt ) ),
                                  dphiFaceEn[pt] );
           }
 
@@ -554,7 +556,7 @@ class DGPrimalMatrixAssembly
               const double weight = faceQuadInside.weight( pt );
               valueEn[pt] -= valueNb[pt];
               dvalueEn[pt] -= dvalueNb[pt];
-              localOpEn.column( localCol ).axpy( phiFaceEn[pt], dphiFaceEn[pt], 
+              localOpEn.column( localCol ).axpy( phiFaceEn[pt], dphiFaceEn[pt],
                                                  valueEn[pt], dvalueEn[pt], weight );
             }
           }
@@ -577,8 +579,8 @@ class DGPrimalMatrixAssembly
     matrix.communicate();
   }
   // assemble vector containing boundary fluxes for right hand side
-  void assemble( const double time, 
-                 DestinationType& rhs ) const 
+  void assemble( const double time,
+                 DestinationType& rhs ) const
   {
     rhs.clear();
 
@@ -600,20 +602,20 @@ class DGPrimalMatrixAssembly
 
       const BasisFunctionSetType &baseSet = rhsLocal.baseFunctionSet();
       const unsigned int numBasisFunctionsEn = baseSet.size();
-            
+
       const IntersectionIteratorType endiit = dfSpace.gridPart().iend( entity );
       for ( IntersectionIteratorType iit = dfSpace.gridPart().ibegin( entity );
             iit != endiit ; ++ iit )
       {
         const IntersectionType& intersection = *iit ;
-        
+
         if( intersection.neighbor() && calculateFluxes_ )
         {
         }
         else if ( intersection.boundary() && ! useStrongBoundaryCondition_ )
         {
           IntersectionStorage intersectionStorage( intersection, entity, entity, geometry.volume(), geometry.volume() );
-        
+
           FaceQuadratureType faceQuadInside(dfSpace.gridPart(), intersection,
                                             faceQuadOrder( dfSpace.order( entity ) ),
                                             FaceQuadratureType::INSIDE);
@@ -627,8 +629,8 @@ class DGPrimalMatrixAssembly
           for( size_t pt = 0; pt < numFaceQuadPoints; ++pt )
           {
             baseSet.evaluateAll( faceQuadInside[ pt ], phiFaceEn[pt] );
-            baseSet.jacobianAll( faceQuadInside[ pt ], 
-                                 // geometry.jacobianInverseTransposed( faceQuadInside.point( pt ) ), 
+            baseSet.jacobianAll( faceQuadInside[ pt ],
+                                 // geometry.jacobianInverseTransposed( faceQuadInside.point( pt ) ),
                                  dphiFaceEn[pt] );
           }
 
@@ -657,10 +659,10 @@ class DGPrimalMatrixAssembly
   }
 
   template <bool conforming, class Matrix>
-  void assembleIntersection( const double time, 
+  void assembleIntersection( const double time,
                              const EntityType& entity,
                              const GeometryType& geometry,
-                             const IntersectionType& intersection,      
+                             const IntersectionType& intersection,
                              const DiscreteFunctionSpaceType& dfSpace,
                              const BasisFunctionSetType& baseSet,
                              Matrix& matrix,
@@ -678,35 +680,35 @@ class DGPrimalMatrixAssembly
     const int entityOrder   = dfSpace.order( entity );
     const int neighborOrder = dfSpace.order( neighbor );
 
-    // get local matrix for face entries 
+    // get local matrix for face entries
     LocalMatrixType localOpNb = matrix.localMatrix( entity, neighbor );
     const BasisFunctionSetType &baseSetNb = localOpNb.rangeBasisFunctionSet();
 
-    // get neighbor's base function set 
+    // get neighbor's base function set
     const unsigned int numBasisFunctionsEn = baseSet.size();
     const unsigned int numBasisFunctionsNb = baseSetNb.size();
 
-    // only do one sided evaluation if the polynomial orders match 
+    // only do one sided evaluation if the polynomial orders match
     const bool oneSidedEvaluation = ( numBasisFunctionsEn == numBasisFunctionsNb );
 
-    const bool updateOnNeighbor   = 
+    const bool updateOnNeighbor   =
       dfSpace.gridPart().indexSet().index(entity) >
       dfSpace.gridPart().indexSet().index(neighbor) ;
 
-    // only do one sided evaluation if the polynomial orders match 
+    // only do one sided evaluation if the polynomial orders match
     if( updateOnNeighbor && oneSidedEvaluation )
       return;
 
     const int polOrdOnFace = std::max( entityOrder, neighborOrder );
 
-    // use IntersectionQuadrature to create appropriate face quadratures 
+    // use IntersectionQuadrature to create appropriate face quadratures
     typedef Fem :: IntersectionQuadrature< FaceQuadratureType, conforming > IntersectionQuadratureType;
     typedef typename IntersectionQuadratureType :: FaceQuadratureType QuadratureImp;
 
     // create intersection quadrature (without neighbor check)
     IntersectionQuadratureType interQuad( dfSpace.gridPart(), intersection, faceQuadOrder( polOrdOnFace ), true);
 
-    // get appropriate references 
+    // get appropriate references
     const QuadratureImp &faceQuadInside  = interQuad.inside();
     const QuadratureImp &faceQuadOutside = interQuad.outside();
 
@@ -717,19 +719,19 @@ class DGPrimalMatrixAssembly
     // evalute base functions
     for( size_t pt = 0; pt < numFaceQuadPoints; ++pt )
     {
-      // resize is done in evaluateAll and jacobianAll 
+      // resize is done in evaluateAll and jacobianAll
       baseSet.evaluateAll( faceQuadInside[ pt ], phiFaceEn[pt] );
-      baseSet.jacobianAll( faceQuadInside[ pt ], 
-                           // geometry.jacobianInverseTransposed( faceQuadInside.point( pt ) ), 
+      baseSet.jacobianAll( faceQuadInside[ pt ],
+                           // geometry.jacobianInverseTransposed( faceQuadInside.point( pt ) ),
                            dphiFaceEn[pt] );
       baseSetNb.evaluateAll( faceQuadOutside[ pt ], phiFaceNb[pt] );
-      baseSetNb.jacobianAll( faceQuadOutside[ pt ], 
-                             // nbGeometry.jacobianInverseTransposed( faceQuadOutside.point( pt ) ), 
+      baseSetNb.jacobianAll( faceQuadOutside[ pt ],
+                             // nbGeometry.jacobianInverseTransposed( faceQuadOutside.point( pt ) ),
                              dphiFaceNb[pt] );
     }
 
     IntersectionStorage intersectionStorage( intersection,
-                  entity, neighbor, 
+                  entity, neighbor,
                   entity.geometry().volume(), neighbor.geometry().volume() );
 
     flux(dfSpace.gridPart(),
@@ -759,9 +761,9 @@ class DGPrimalMatrixAssembly
         dvalueEn[pt] -= rhsDValueEn[pt];
         valueNb[pt] -= rhsValueNb[pt];
         dvalueNb[pt] -= rhsDValueNb[pt];
-        localOpEn.column( localCol ).axpy( phiFaceEn[pt], dphiFaceEn[pt], 
+        localOpEn.column( localCol ).axpy( phiFaceEn[pt], dphiFaceEn[pt],
                                            valueEn[pt], dvalueEn[pt], weight );
-        localOpNb.column( localCol ).axpy( phiFaceNb[pt], dphiFaceNb[pt], 
+        localOpNb.column( localCol ).axpy( phiFaceNb[pt], dphiFaceNb[pt],
                                            valueNb[pt], dvalueNb[pt], -weight );
       }
     }
@@ -806,11 +808,11 @@ class DGPrimalMatrixAssembly
     rhsLocal.axpyQuadrature( faceQuadInside, rhsValueEn, rhsDValueEn );
   }
 
-  template <class Matrix> 
+  template <class Matrix>
   void testSymmetrie(const Matrix &matrix) const
   {
-    // NOTE: this is bad coding style 
-    // not check at the moment 
+    // NOTE: this is bad coding style
+    // not check at the moment
     return;
 
 
@@ -874,12 +876,12 @@ class DGPrimalMatrixAssembly
             const Quadrature &faceQuadInside, const Quadrature &faceQuadOutside,
             const Value &valueEn, const DValue &dvalueEn,
             const Value &valueNb, const DValue &dvalueNb,
-            RetType &retEn, DRetType &dretEn, 
+            RetType &retEn, DRetType &dretEn,
             RetType &retNb, DRetType &dretNb) const
   {
     RangeType gLeft,gRight;
     /*
-    flux_.initializeIntersection( intersectionStorage.intersection(), 
+    flux_.initializeIntersection( intersectionStorage.intersection(),
                                   intersectionStorage.inside(),
                                   intersectionStorage.outside(), time,
                                   //zero_, zero_,
@@ -890,9 +892,9 @@ class DGPrimalMatrixAssembly
     for( size_t pt = 0; pt < numFaceQuadPoints; ++pt )
     {
     /*
-      flux_.numericalFlux( intersectionStorage.intersection(), 
+      flux_.numericalFlux( intersectionStorage.intersection(),
                            intersectionStorage,
-                           time, faceQuadInside, faceQuadOutside, pt, 
+                           time, faceQuadInside, faceQuadOutside, pt,
                            valueEn[ pt ], valueNb[ pt ], dvalueEn[ pt ], dvalueNb[ pt ],
                            retEn[ pt ], retNb[ pt ],
                            dretEn[ pt ], dretNb[ pt ]);
@@ -903,7 +905,7 @@ class DGPrimalMatrixAssembly
                              intersectionStorage.inside(),
                              intersectionStorage.outside(),
                              time,faceQuadInside,faceQuadOutside,pt,
-                             valueEn[ pt ],valueNb[ pt ], 
+                             valueEn[ pt ],valueNb[ pt ],
                              gLeft, gRight);
       retEn[pt] += gLeft;
       retNb[pt] += gRight;
@@ -918,11 +920,11 @@ class DGPrimalMatrixAssembly
             const Quadrature &faceQuadInside, const Quadrature &faceQuadOutside,
             const Value &valueEn, const DValue &dvalueEn,
             const Value &valueNb, const DValue &dvalueNb,
-            RetType &retEn, DRetType &dretEn, 
+            RetType &retEn, DRetType &dretEn,
             RetType &retNb, DRetType &dretNb) const
   {
     IntersectionStorage intersectionStorage( intersection,
-                  entity, neighbor, 
+                  entity, neighbor,
                   entity.geometry().volume(), neighbor.geometry().volume() );
 
     flux(gridPart,intersectionStorage,
@@ -939,12 +941,12 @@ class DGPrimalMatrixAssembly
                    const FaceQuadrature &faceQuadInside, const FaceQuadrature &faceQuadOutside,
                    const Value &valueEn, const DValue &dvalueEn,
                    const Value &valueNb, const DValue &dvalueNb,
-                   RetType &retEn, DRetType &dretEn, 
+                   RetType &retEn, DRetType &dretEn,
                    RetType &retNb, DRetType &dretNb,
                    DRetType &liftEn, DRetType &liftNb) const
   {
     IntersectionStorage intersectionStorage( intersection,
-                  entity, neighbor, 
+                  entity, neighbor,
                   entity.geometry().volume(), neighbor.geometry().volume() );
 
     flux(gridPart,intersectionStorage,
@@ -970,14 +972,14 @@ class DGPrimalMatrixAssembly
                    const FaceQuadrature &faceQuadInside, const FaceQuadrature &faceQuadOutside,
                    const Value &faceValueEn, const DValue &dfaceValueEn,
                    const Value &faceValueNb, const DValue &dfaceValueNb,
-                   RetType &retEn, DRetType &dretEn, 
+                   RetType &retEn, DRetType &dretEn,
                    RetType &retNb, DRetType &dretNb,
-                   const Quadrature &quadInside, const Quadrature &quadOutside, 
+                   const Quadrature &quadInside, const Quadrature &quadOutside,
                    const Value &valueEn, const Value &valueNb,
                    DRetType &liftEn, DRetType &liftNb) const
   {
     IntersectionStorage intersectionStorage( intersection,
-                  entity, neighbor, 
+                  entity, neighbor,
                   entity.geometry().volume(), neighbor.geometry().volume() );
 
     flux(gridPart,intersectionStorage,time,faceQuadInside,faceQuadOutside,
@@ -1004,7 +1006,7 @@ class DGPrimalMatrixAssembly
   {
   /*
     flux_.initializeIntersection( intersection, entity, neighbor, time,
-                                  // zero_, zero_, 
+                                  // zero_, zero_,
                                   faceQuadInside, faceQuadOutside,
                                   valueEn, valueNb, true );
     lifting += flux_.getInsideLifting();
@@ -1014,32 +1016,32 @@ class DGPrimalMatrixAssembly
   template <class Quadrature,class RetType>
   void boundaryValues(const GridPartType &gridPart,
             const IntersectionType &intersection,
-            const EntityType &entity, 
+            const EntityType &entity,
             const double time,
-            const Quadrature &faceQuadInside, 
+            const Quadrature &faceQuadInside,
             RetType &bndValues) const
   {
     const RangeType uZero(0);
     const size_t numFaceQuadPoints = faceQuadInside.nop();
     for( size_t pt = 0; pt < numFaceQuadPoints; ++pt )
-      model_.boundaryValue(intersection, time,  faceQuadInside.localPoint( pt ), 
+      model_.boundaryValue(intersection, time,  faceQuadInside.localPoint( pt ),
                            uZero, bndValues[ pt ]);
   }
   template <class Quadrature,class Value,class DValue,class GValue,class RetType, class DRetType>
   void boundaryFlux(const GridPartType &gridPart,
             const IntersectionType &intersection,
-            const EntityType &entity, 
+            const EntityType &entity,
             const double time,
-            const Quadrature &faceQuadInside, 
+            const Quadrature &faceQuadInside,
             const Value &valueEn, const DValue &dvalueEn,
             const GValue &valueNb,
             RetType &retEn, DRetType &dretEn) const
   {
     RangeType gLeft,gRight;
     /*
-    flux_.initializeBoundary( intersection, entity, time, 
+    flux_.initializeBoundary( intersection, entity, time,
                               // zero_,
-                              faceQuadInside, 
+                              faceQuadInside,
                               valueEn, valueNb );
     */
     IntersectionStorage intersectionStorage( intersection, entity, entity, entity.geometry().volume(), entity.geometry().volume() );
@@ -1049,10 +1051,10 @@ class DGPrimalMatrixAssembly
       if ( model_.hasBoundaryValue(intersection,time,faceQuadInside.localPoint(pt)) )
       {
       /*
-        flux_.boundaryFlux( intersection, intersectionStorage, 
-                            time, faceQuadInside, pt, 
+        flux_.boundaryFlux( intersection, intersectionStorage,
+                            time, faceQuadInside, pt,
                             valueEn[ pt ], valueNb[ pt ],
-                            dvalueEn[ pt ], 
+                            dvalueEn[ pt ],
                             retEn[ pt ], dretEn[ pt ]);
         */
         retEn[pt] = RangeType(0);
@@ -1077,7 +1079,7 @@ class DGPrimalMatrixAssembly
   }
 
 private:
-  int elementQuadOrder( int polOrder ) const 
+  int elementQuadOrder( int polOrder ) const
   {
     return 2*polOrder;
   }
@@ -1088,10 +1090,10 @@ private:
 
   void resize( unsigned int numFaceQuadPoints, unsigned int maxNumBasisFunctions ) const
   {
-    if (phiFaceEn.size() >= numFaceQuadPoints) 
+    if (phiFaceEn.size() >= numFaceQuadPoints)
       return;
 
-    phiFaceEn.resize( numFaceQuadPoints );   
+    phiFaceEn.resize( numFaceQuadPoints );
     for (unsigned int i=0;i<numFaceQuadPoints;++i) phiFaceEn[i].resize(maxNumBasisFunctions);
     dphiFaceEn.resize( numFaceQuadPoints );
     for (unsigned int i=0;i<numFaceQuadPoints;++i) dphiFaceEn[i].resize(maxNumBasisFunctions);
@@ -1099,7 +1101,7 @@ private:
     for (unsigned int i=0;i<numFaceQuadPoints;++i) phiFaceNb[i].resize(maxNumBasisFunctions);
     dphiFaceNb.resize( numFaceQuadPoints );
     for (unsigned int i=0;i<numFaceQuadPoints;++i) dphiFaceNb[i].resize(maxNumBasisFunctions);
-    valueEn.resize( numFaceQuadPoints );  
+    valueEn.resize( numFaceQuadPoints );
     dvalueEn.resize( numFaceQuadPoints );
     valueNb.resize( numFaceQuadPoints );
     dvalueNb.resize( numFaceQuadPoints );

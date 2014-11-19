@@ -1,6 +1,6 @@
 #ifndef DUNE_FEM_DG_EULERFLUXES_HH
 #define DUNE_FEM_DG_EULERFLUXES_HH
-  
+
 // system includes
 #include <string>
 #include <cmath>
@@ -57,9 +57,9 @@ class EulerAnalyticalFlux
 
 // ***********************
 template <>
-template <class RangeType> 
+template <class RangeType>
 inline
-EulerAnalyticalFlux<1>::FieldType EulerAnalyticalFlux<1>::rhoeps(const RangeType& u) const 
+EulerAnalyticalFlux<1>::FieldType EulerAnalyticalFlux<1>::rhoeps(const RangeType& u) const
 {
   assert( u[0] >= 1e-10 );
   return u[e]-0.5*(u[1]*u[1])/u[0];
@@ -86,9 +86,9 @@ void EulerAnalyticalFlux<1>::analyticalFlux(const FieldType gamma,
 }
 
 template <>
-template <class RangeType> 
+template <class RangeType>
 inline
-EulerAnalyticalFlux<2>::FieldType EulerAnalyticalFlux<2>::rhoeps(const RangeType& u) const 
+EulerAnalyticalFlux<2>::FieldType EulerAnalyticalFlux<2>::rhoeps(const RangeType& u) const
 {
   assert( u[0] >= 1e-10 );
   return u[e]-0.5*(u[1]*u[1]+u[2]*u[2])/u[0];
@@ -97,7 +97,7 @@ EulerAnalyticalFlux<2>::FieldType EulerAnalyticalFlux<2>::rhoeps(const RangeType
 template <>
 template <class RangeType>
 inline
-EulerAnalyticalFlux<2>::FieldType EulerAnalyticalFlux<2>::pressure(const FieldType gamma,const RangeType& u) const 
+EulerAnalyticalFlux<2>::FieldType EulerAnalyticalFlux<2>::pressure(const FieldType gamma,const RangeType& u) const
 {
   const FieldType re = rhoeps(u);
   assert(re>=1e-10);
@@ -110,7 +110,7 @@ inline
 void EulerAnalyticalFlux<2>::
 analyticalFlux(const FieldType gamma,
                const RangeType& u,
-               FluxRangeType& f) const 
+               FluxRangeType& f) const
 {
   assert( u[0] >= 1e-10 );
   const FieldType v[2] = {u[1]/u[0],u[2]/u[0]};
@@ -125,7 +125,7 @@ analyticalFlux(const FieldType gamma,
 template <>
 template <class RangeType>
 inline
-EulerAnalyticalFlux<3>::FieldType EulerAnalyticalFlux<3>::rhoeps(const RangeType& u) const 
+EulerAnalyticalFlux<3>::FieldType EulerAnalyticalFlux<3>::rhoeps(const RangeType& u) const
 {
   assert( u[0] >= 1e-10 );
   return u[e]-0.5*(u[1]*u[1]+u[2]*u[2]+u[3]*u[3])/u[0];
@@ -135,7 +135,7 @@ template <>
 template <class RangeType>
 inline
 EulerAnalyticalFlux<3>::FieldType EulerAnalyticalFlux<3>::
-pressure(const FieldType gamma,const RangeType& u) const 
+pressure(const FieldType gamma,const RangeType& u) const
 {
   assert(u[0]>1e-10);
   const FieldType rhoe = rhoeps(u);
@@ -148,14 +148,14 @@ template <class RangeType, class FluxRangeType>
 inline
 void EulerAnalyticalFlux<3>::analyticalFlux(const FieldType gamma,
                                             const RangeType& u,
-                                            FluxRangeType& f) const 
+                                            FluxRangeType& f) const
 {
   assert(u[0]>1e-10);
   const FieldType p = pressure(gamma,u);
-  // get the velocity 
+  // get the velocity
   const FieldType v[3] = {u[1]/u[0], u[2]/u[0], u[3]/u[0]};
   const FieldType ue_p = (u[e]+p);
-  
+
   f[0][0]=u[1];          f[0][1]=u[2];           f[0][2]=u[3];
   f[1][0]=v[0]*u[1]+p;   f[1][1]=v[1]*u[1];      f[1][2]=v[2]*u[1];
   f[2][0]=v[0]*u[2];     f[2][1]=v[1]*u[2]+p;    f[2][2]=v[2]*u[2];
@@ -167,13 +167,13 @@ template <>
 template <class RangeType, class FluxRangeType>
 inline
 void EulerAnalyticalFlux<2>::jacobian(const FieldType gamma,
-                                      const RangeType& u, 
+                                      const RangeType& u,
                                       const FluxRangeType& du,
-                                      RangeType& A) const 
+                                      RangeType& A) const
 {
   assert(u[0]>1e-10);
   FieldType v[2] = {u[1]/u[0],u[2]/u[0]};
-  
+
   A[0] = du[1][0] + du[1][1];
   A[1] = du[0][0]*((gamma-3.0)/2.0*v[0]*v[0] +(gamma-1.0)/2.0*v[1]*v[1])-
     du[0][1]*v[0]*v[1];
@@ -197,10 +197,10 @@ void EulerAnalyticalFlux<2>::jacobian(const FieldType gamma,
 template <>
 template <class RangeType>
 inline
-EulerAnalyticalFlux<1>::FieldType 
+EulerAnalyticalFlux<1>::FieldType
 EulerAnalyticalFlux<1>::maxSpeed(const FieldType gamma,
                                  const DomainType& n,
-                                 const RangeType& u) const 
+                                 const RangeType& u) const
 {
   assert(u[0]>1e-10);
   FieldType u_normal = u[1]*n[0] / u[0];
@@ -213,10 +213,10 @@ EulerAnalyticalFlux<1>::maxSpeed(const FieldType gamma,
 template <>
 template <class RangeType>
 inline
-EulerAnalyticalFlux<2>::FieldType 
+EulerAnalyticalFlux<2>::FieldType
 EulerAnalyticalFlux<2>::maxSpeed(const FieldType gamma,
                                  const DomainType& n,
-                                 const RangeType& u) const 
+                                 const RangeType& u) const
 {
   assert( u[0] > 1e-10 );
   FieldType u_normal = (u[1]*n[0]+u[2]*n[1]) / u[0];
@@ -229,10 +229,10 @@ EulerAnalyticalFlux<2>::maxSpeed(const FieldType gamma,
 template <>
 template <class RangeType>
 inline
-EulerAnalyticalFlux<3>::FieldType 
+EulerAnalyticalFlux<3>::FieldType
 EulerAnalyticalFlux<3>::maxSpeed(const FieldType gamma,
                                  const DomainType& n,
-                                 const RangeType& u) const 
+                                 const RangeType& u) const
 {
   assert(u[0]>1e-10);
   const FieldType u_normal = (u[1]*n[0]+u[2]*n[1]+u[3]*n[2]) / u[0];
@@ -258,7 +258,7 @@ namespace EULERNUMFLUX
   typedef enum {LLF, HLL, HLLC} EulerFluxType;
   const EulerFluxType std_flux_type = HLL;
 
-  template< class Model, EulerFluxType flux_type=std_flux_type> 
+  template< class Model, EulerFluxType flux_type=std_flux_type>
   class EulerFlux
   {
   public:
@@ -269,27 +269,27 @@ namespace EULERNUMFLUX
 
     void flux(const double U[dim+2], double *f[dim]) const;
 
-    double num_flux(const double Uj[dim+2], const double Un[dim+2], 
+    double num_flux(const double Uj[dim+2], const double Un[dim+2],
                     const double normal[dim], double gj[dim+2]) const;
 
     const Model& model_;
     const double _gamma;
 
   private:
-    double num_flux_LLF(const double Uj[dim+2], const double Un[dim+2], 
+    double num_flux_LLF(const double Uj[dim+2], const double Un[dim+2],
                         const double normal[dim], double gj[dim+2]) const;
 
-    double num_flux_HLL(const double Uj[dim+2], const double Un[dim+2], 
+    double num_flux_HLL(const double Uj[dim+2], const double Un[dim+2],
                         const double normal[dim], double gj[dim+2]) const;
-    
-    double num_flux_HLLC(const double Uj[dim+2], const double Un[dim+2], 
+
+    double num_flux_HLLC(const double Uj[dim+2], const double Un[dim+2],
                          const double normal[dim], double gj[dim+2]) const;
 
 
-    static void rotate(const double normal[dim], 
+    static void rotate(const double normal[dim],
                        const double u[dim], double u_rot[dim]);
 
-    static void rotate_inv(const double normal[dim], 
+    static void rotate_inv(const double normal[dim],
                            const double u_rot[dim], double u[dim]);
   };
 
@@ -298,14 +298,14 @@ namespace EULERNUMFLUX
   // ======= class Euler inline implementation =================
   template<class Model, EulerFluxType flux_type>
   inline
-  EulerFlux<Model,flux_type>::EulerFlux( const ModelType& model ) 
-    : model_( model ), 
+  EulerFlux<Model,flux_type>::EulerFlux( const ModelType& model )
+    : model_( model ),
       _gamma( model.gamma() )
   {}
 
   template<class Model, EulerFluxType flux_type>
   inline
-  void EulerFlux<Model,flux_type>::rotate(const double n[dim], 
+  void EulerFlux<Model,flux_type>::rotate(const double n[dim],
                                         const double u[dim], double u_rot[dim])
   {
     if (dim == 1)
@@ -326,7 +326,7 @@ namespace EULERNUMFLUX
         u_rot[0] = n[0]*u[0]           + n[1]*u[1]          + n[2]*u[2];
         u_rot[1] = -n[1]*d_1*u[0]      + n[0]*d_1* u[1];
         u_rot[2] = -n[0]*n[2]*d_1*u[0] - n[1]*n[2]*d_1*u[1] + d*u[2];
-      } 
+      }
       else {
         u_rot[0] = n[2]*u[2];
         u_rot[1] = u[1];
@@ -341,8 +341,8 @@ namespace EULERNUMFLUX
 
   template<class Model, EulerFluxType flux_type>
   inline
-  void EulerFlux<Model,flux_type>::rotate_inv(const double n[dim], 
-                                           const double u_rot[dim], 
+  void EulerFlux<Model,flux_type>::rotate_inv(const double n[dim],
+                                           const double u_rot[dim],
                                            double u[dim])
   {
     if (dim == 1){
@@ -362,13 +362,13 @@ namespace EULERNUMFLUX
         u[0] = n[0]*u_rot[0] - n[1]*d_1*u_rot[1] - n[0]*n[2]*d_1*u_rot[2];
         u[1] = n[1]*u_rot[0] + n[0]*d_1*u_rot[1] - n[1]*n[2]*d_1*u_rot[2];
         u[2] = n[2]*u_rot[0]                     + d*u_rot[2];
-      } 
+      }
       else {
         u[0] = -n[2]*u_rot[2];
         u[1] = u_rot[1];
         u[2] = n[2]*u_rot[0];
       }
-      
+
       //assert(0); // test it, not tested up to now
     }
 
@@ -379,7 +379,7 @@ namespace EULERNUMFLUX
   // U[0] = rho, (U[1],...,U[dim]) = rho_\vect u, U[dim+1] = E
   template<class Model, EulerFluxType flux_type>
   inline
-  void EulerFlux<Model,flux_type>::flux(const double U[dim+2], 
+  void EulerFlux<Model,flux_type>::flux(const double U[dim+2],
                                         double *f[dim]) const
   {
     const double rho = U[0];
@@ -391,7 +391,7 @@ namespace EULERNUMFLUX
       u[i] = (1.0/rho) * rho_u[i];
       Ekin2 += rho_u[i] * u[i];
     }
-   
+
     const double p = (_gamma-1.0)*(E - 0.5*Ekin2);
 
     for(int i=0; i<dim; i++){
@@ -410,13 +410,13 @@ namespace EULERNUMFLUX
   // U[0] = rho, (U[1],...,U[dim]) = rho_\vect u, U[dim+1] = E
   template<class Model, EulerFluxType flux_type>
   inline
-  double EulerFlux<Model,flux_type>::num_flux(const double Uj[dim+2], 
-                                              const double Un[dim+2], 
-                                              const double normal[dim], 
+  double EulerFlux<Model,flux_type>::num_flux(const double Uj[dim+2],
+                                              const double Un[dim+2],
+                                              const double normal[dim],
                                               double gj[dim+2]) const
   {
     if (flux_type == LLF) return num_flux_LLF(Uj, Un, normal, gj);
-   
+
     if (flux_type == HLL) return num_flux_HLL(Uj, Un, normal, gj);
 
     if (flux_type == HLLC) return num_flux_HLLC(Uj, Un, normal, gj);
@@ -429,9 +429,9 @@ namespace EULERNUMFLUX
   // U[0] = rho, (U[1],...,U[dim]) = rho_\vect u, U[dim+1] = E
   template<class Model, EulerFluxType flux_type>
   inline
-  double EulerFlux<Model,flux_type>::num_flux_LLF(const double Uj[dim+2], 
-                                                  const double Un[dim+2], 
-                                                  const double normal[dim], 
+  double EulerFlux<Model,flux_type>::num_flux_LLF(const double Uj[dim+2],
+                                                  const double Un[dim+2],
+                                                  const double normal[dim],
                                                   double gj[dim+2]) const
   {
     const double rhoj = Uj[0];
@@ -491,9 +491,9 @@ namespace EULERNUMFLUX
   // U[0] = rho, (U[1],...,U[dim]) = rho_\vect u, U[dim+1] = E
   template<class Model, EulerFluxType flux_type>
   inline
-  double EulerFlux<Model,flux_type>::num_flux_HLL(const double Uj[dim+2], 
-                                                  const double Un[dim+2], 
-                                                  const double normal[dim], 
+  double EulerFlux<Model,flux_type>::num_flux_HLL(const double Uj[dim+2],
+                                                  const double Un[dim+2],
+                                                  const double normal[dim],
                                                   double gj[dim+2]) const
 
   {
@@ -558,13 +558,13 @@ namespace EULERNUMFLUX
 
 #ifdef POTTEMP
         gj[dim+1] = Uj[dim+1]*uj[0];
-#else 
+#else
         gj[dim+1] = (Ej+pj)*uj[0];
 #endif
       }
       else{
         const double tmp1 = sj * sn;
-        const double tmp2 = 1.0/(sn - sj);      
+        const double tmp2 = 1.0/(sn - sj);
         gj[0] = tmp2 * ( sn*rho_uj[0] - sj*rho_un[0] + tmp1*(rhon - rhoj) );
 
         for(int i=0; i<dim; i++){
@@ -592,7 +592,7 @@ namespace EULERNUMFLUX
 
 #ifdef POTTEMP
         gj[dim+1] = Uj[dim+1]*un[0];
-#else 
+#else
         gj[dim+1] = (En+pn)*un[0];
 #endif
       }
@@ -628,9 +628,9 @@ namespace EULERNUMFLUX
 
   template<class Model, EulerFluxType flux_type>
   inline
-  double EulerFlux<Model,flux_type>::num_flux_HLLC(const double Um[dim+2], 
-                                                   const double Up[dim+2], 
-                                                   const double normal[dim], 
+  double EulerFlux<Model,flux_type>::num_flux_HLLC(const double Um[dim+2],
+                                                   const double Up[dim+2],
+                                                   const double normal[dim],
                                                    double g[dim+2]) const
   {
     const double rhom = Um[0];
@@ -678,7 +678,7 @@ namespace EULERNUMFLUX
     {
       g[0] = rho_um[0];
 
-      for(int i=0; i<dim; i++) 
+      for(int i=0; i<dim; i++)
         guj[i] = rho_um[i]*um[0];
       guj[0] += pm;
 
@@ -688,7 +688,7 @@ namespace EULERNUMFLUX
     {
       g[0] = rho_up[0];
 
-      for(int i=0; i<dim; i++) 
+      for(int i=0; i<dim; i++)
         guj[i] = rho_up[i]*up[0];
       guj[0] += pp;
 
@@ -703,22 +703,22 @@ namespace EULERNUMFLUX
       {
         g[0] = rho_um[0] + rhom*(tmpm-sm);
 
-        for(int i=0; i<dim; i++) 
+        for(int i=0; i<dim; i++)
           guj[i] = rho_um[i]*um[0] + rhom*um[i]*tmpm - sm*rho_um[i];
         guj[0] += pm + rhom*(u_star-um[0])*tmpm;
 
-        g[dim+1] = (Em+pm)*um[0] + Em*(tmpm-sm) 
+        g[dim+1] = (Em+pm)*um[0] + Em*(tmpm-sm)
           + tmpm*(u_star-um[0])*( rhom*u_star + pm/(sm-um[0]) );
       }
       else
       {
         g[0] = rho_up[0] + rhop*(tmpp-sp);
 
-        for(int i=0; i<dim; i++) 
+        for(int i=0; i<dim; i++)
           guj[i] = rho_up[i]*up[0] + rhop*up[i]*tmpp - sp*rho_up[i];
         guj[0] += pp + rhop*(u_star-up[0])*tmpp;
 
-        g[dim+1] = (Ep+pp)*up[0] + Ep*(tmpp-sp) 
+        g[dim+1] = (Ep+pp)*up[0] + Ep*(tmpp-sp)
           + tmpp*(u_star-up[0])*( rhop*u_star + pp/(sp-up[0]) );
       }
     }
@@ -732,7 +732,7 @@ namespace EULERNUMFLUX
 
 ////////////////////////////////////////////////////////
 //
-// Dune interface for Euler fluxes 
+// Dune interface for Euler fluxes
 //
 ////////////////////////////////////////////////////////
 // LLFFlux
@@ -766,31 +766,31 @@ public:
   // Return value: maximum wavespeed*length of integrationOuterNormal
   // gLeft,gRight are fluxed * length of integrationOuterNormal
   template< class Intersection, class QuadratureImp >
-  inline double 
+  inline double
   numericalFlux( const Intersection& intersection,
                  const EntityType& inside,
                  const EntityType& outside,
-                 const double time, 
+                 const double time,
                  const QuadratureImp& faceQuadInner,
                  const QuadratureImp& faceQuadOuter,
                  const int quadPoint,
-                 const RangeType& uLeft, 
+                 const RangeType& uLeft,
                  const RangeType& uRight,
                  RangeType& gLeft,
-                 RangeType& gRight) const 
+                 RangeType& gRight) const
   {
     const FaceDomainType& x = faceQuadInner.localPoint( quadPoint );
-    DomainType normal = intersection.integrationOuterNormal(x);  
+    DomainType normal = intersection.integrationOuterNormal(x);
     const double len = normal.two_norm();
     normal *= 1./len;
-    
+
     RangeType visc;
     FluxRangeType anaflux;
 
     model_.advection( inside, time, faceQuadInner.point( quadPoint ),
                       uLeft, anaflux );
 
-    // set gLeft 
+    // set gLeft
     anaflux.mv( normal, gLeft );
 
     model_.advection( outside, time, faceQuadOuter.point( quadPoint ),
@@ -799,7 +799,7 @@ public:
 
     double maxspeedl, maxspeedr, maxspeed;
     double viscparal, viscparar, viscpara;
-    
+
     model_.maxSpeed( inside, time, faceQuadInner.point( quadPoint ),
                      normal, uLeft, viscparal, maxspeedl );
     model_.maxSpeed( outside, time, faceQuadOuter.point( quadPoint ),
@@ -811,7 +811,7 @@ public:
     visc -= uLeft;
     visc *= viscpara;
     gLeft -= visc;
-    
+
     gLeft *= 0.5*len;
     gRight = gLeft;
 
@@ -828,7 +828,7 @@ public:
     model_.pressAndTemp( uLeft, pInside, TInside );
     model_.pressAndTemp( uRight, pOutside, TOutside );
     const double pNumFlux = 0.5*(pInside + pOutside);
-    
+
     const double rhoAvg = 0.5*(uLeft[0] + uRight[0]);
     const double rhoJump = uRight[0] - uLeft[0];
 
@@ -849,10 +849,10 @@ public:
 
 /////////////////////////////////////////////////////////////
 //
-//  Dennis Flux implementations 
+//  Dennis Flux implementations
 //
 ////////////////////////////////////////////////////////////
-template <class Model, 
+template <class Model,
           EULERNUMFLUX::EulerFluxType fluxtype>
 class NumFluxBase {
  public:
@@ -869,8 +869,8 @@ class NumFluxBase {
   typedef typename Traits::RangeType                  RangeType;
   typedef typename Traits::FluxRangeType              FluxRangeType;
 
-  // constructor 
-  NumFluxBase(const Model& mod) : 
+  // constructor
+  NumFluxBase(const Model& mod) :
     model_(mod),
     numFlux_( mod )
   {}
@@ -878,20 +878,20 @@ class NumFluxBase {
   // Return value: maximum wavespeed*length of integrationOuterNormal
   // gLeft,gRight are fluxed * length of integrationOuterNormal
   template< class Intersection, class QuadratureImp >
-  inline double 
+  inline double
   numericalFlux( const Intersection& intersection,
                  const EntityType& inside,
                  const EntityType& outside,
-                 const double time, 
+                 const double time,
                  const QuadratureImp& faceQuadInner,
                  const QuadratureImp& faceQuadOuter,
                  const int quadPoint,
-                 const RangeType& uLeft, 
+                 const RangeType& uLeft,
                  const RangeType& uRight,
                  RangeType& gLeft,
                  RangeType& gRight) const;
 
-  //! return reference to model 
+  //! return reference to model
   const Model& model() const { return model_; }
 
 protected:
@@ -902,15 +902,15 @@ protected:
 template<class Model, EULERNUMFLUX::EulerFluxType fluxtype>
 template<class Intersection, class QuadratureImp>
 inline double
-NumFluxBase<Model, fluxtype> :: 
+NumFluxBase<Model, fluxtype> ::
 numericalFlux( const Intersection& intersection,
                const EntityType& inside,
                const EntityType& outside,
-               const double time, 
+               const double time,
                const QuadratureImp& faceQuadInner,
                const QuadratureImp& faceQuadOuter,
                const int quadPoint,
-               const RangeType& uLeft, 
+               const RangeType& uLeft,
                const RangeType& uRight,
                RangeType& gLeft,
                RangeType& gRight) const
@@ -950,7 +950,7 @@ public:
 
 // HLLNumFlux
 //-----------
-template <class Model> 
+template <class Model>
 class HLLNumFlux : public NumFluxBase< Model, EULERNUMFLUX::HLL >
 {
   typedef NumFluxBase< Model, EULERNUMFLUX::HLL >  BaseType;
@@ -961,7 +961,7 @@ public:
 
 // HLLCNumFlux
 //-----------
-template <class Model> 
+template <class Model>
 class HLLCNumFlux : public NumFluxBase< Model, EULERNUMFLUX::HLLC >
 {
   typedef NumFluxBase< Model, EULERNUMFLUX::HLLC >  BaseType;

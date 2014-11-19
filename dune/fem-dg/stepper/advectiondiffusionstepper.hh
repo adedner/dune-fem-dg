@@ -9,9 +9,9 @@
 #include "stepperbase.hh"
 
 template <class GridImp,
-          class ProblemTraits, 
-          int polynomialOrder>             
-struct AdvectionDiffusionStepper 
+          class ProblemTraits,
+          int polynomialOrder>
+struct AdvectionDiffusionStepper
   : public StepperBase< GridImp, ProblemTraits, polynomialOrder >
 {
   typedef StepperBase< GridImp, ProblemTraits, polynomialOrder > BaseType ;
@@ -22,7 +22,7 @@ struct AdvectionDiffusionStepper
   // Choose a suitable GridView
   typedef typename BaseType :: GridPartType             GridPartType;
 
-  // initial data type 
+  // initial data type
   typedef typename BaseType :: InitialDataType          InitialDataType;
 
   // An analytical version of our model
@@ -51,7 +51,7 @@ struct AdvectionDiffusionStepper
 
   typedef typename BaseType :: TimeProviderType       TimeProviderType;
   typedef typename BaseType :: AdaptationManagerType  AdaptationManagerType;
-  typedef typename BaseType :: AdaptationHandlerType  AdaptationHandlerType; 
+  typedef typename BaseType :: AdaptationHandlerType  AdaptationHandlerType;
 
   static const Dune::DGDiffusionFluxIdentifier DiffusionFluxId =
     BaseType::Traits::DiffusionFluxId ;
@@ -60,10 +60,10 @@ struct AdvectionDiffusionStepper
   typedef Dune :: DGAdaptationIndicatorOperator< ModelType, FluxType,
             DiffusionFluxId, polynomialOrder, true, true >  DGIndicatorType;
 
-  // gradient estimator 
+  // gradient estimator
   typedef Estimator< DiscreteFunctionType, InitialDataType > GradientIndicatorType ;
 
-  // type of 64bit unsigned integer  
+  // type of 64bit unsigned integer
   typedef typename BaseType :: UInt64Type  UInt64Type;
 
   using BaseType :: grid_;
@@ -85,28 +85,28 @@ struct AdvectionDiffusionStepper
   {
   }
 
-  //! return overal number of grid elements 
-  virtual UInt64Type gridSize() const 
+  //! return overal number of grid elements
+  virtual UInt64Type gridSize() const
   {
     // is adaptation handler exists use the information to avoid global comm
-    if( adaptationHandler_ ) 
+    if( adaptationHandler_ )
     {
       UInt64Type globalElements = adaptationHandler_->globalNumberOfElements() ;
       if( Dune::Fem::Parameter::verbose () )
       {
-        std::cout << "grid size (sum,min,max) = ( " 
+        std::cout << "grid size (sum,min,max) = ( "
           << globalElements << " , "
-          << adaptationHandler_->minNumberOfElements() << " , " 
+          << adaptationHandler_->minNumberOfElements() << " , "
           << adaptationHandler_->maxNumberOfElements() << ")" << std::endl;
       }
       return globalElements;
     }
 
-    // one of them is not zero, 
+    // one of them is not zero,
     size_t advSize     = dgAdvectionOperator_.numberOfElements();
     size_t diffSize    = dgDiffusionOperator_.numberOfElements();
     size_t dgIndSize   = gradientIndicator_.numberOfElements();
-    size_t dgSize      = dgOperator_.numberOfElements(); 
+    size_t dgSize      = dgOperator_.numberOfElements();
     UInt64Type grSize  = std::max( std::max(advSize, dgSize ), std::max( diffSize, dgIndSize ) );
     double minMax[ 2 ] = { double(grSize), 1.0/double(grSize) } ;
     grid_.comm().max( &minMax[ 0 ], 2 );
@@ -117,7 +117,7 @@ struct AdvectionDiffusionStepper
     return grid_.comm().sum( grSize );
   }
 
-  virtual OdeSolverType* createOdeSolver(TimeProviderType& tp) 
+  virtual OdeSolverType* createOdeSolver(TimeProviderType& tp)
   {
     // create adaptation handler in case of apost indicator
     if( adaptive() )
@@ -129,22 +129,22 @@ struct AdvectionDiffusionStepper
       }
     }
 
-    // create ODE solver 
-    typedef RungeKuttaSolver< FullOperatorType, ExplicitOperatorType, ImplicitOperatorType, 
+    // create ODE solver
+    typedef RungeKuttaSolver< FullOperatorType, ExplicitOperatorType, ImplicitOperatorType,
                               LinearInverseOperatorType > OdeSolverImpl;
-    return new OdeSolverImpl( tp, dgOperator_, 
+    return new OdeSolverImpl( tp, dgOperator_,
                               dgAdvectionOperator_,
                               dgDiffusionOperator_ );
   }
 
-  //! estimate and mark solution 
+  //! estimate and mark solution
   virtual void initialEstimateMarkAdapt( )
   {
     doEstimateMarkAdapt( dgIndicator_, gradientIndicator_, true );
   }
 
-  //! estimate and mark solution 
-  virtual void estimateMarkAdapt( ) 
+  //! estimate and mark solution
+  virtual void estimateMarkAdapt( )
   {
     doEstimateMarkAdapt( dgIndicator_, gradientIndicator_, false );
   }

@@ -5,9 +5,6 @@ UseBlocking: 0
 use_dgstabilization: true
 use_oldassemble: false
 
-# enable or disable use of solvebench
-use_solvebench: true
-
 # enable or disable strong boundary conditions 
 use_strongbnd: false
 
@@ -15,7 +12,7 @@ use_strongbnd: false
 femhowto.polynomialOrder: 2
 
 # problem number 
-femhowto.problem: 20 # 5 6 13 16
+femhowto.problem: 8 # 5 6 13 16
 
 femhowto.globalshift: 0
 femhowto.factor: 1
@@ -28,15 +25,15 @@ femhowto.adaptive.maximumstrategy: false
 padaptive.method: none
 
 femhowto.verbose: 1
-fem.solver.verbose: 0
+fem.solver.verbose: 1
 
 fem.solver.matrixfilename: matrixfile
 
 # macro grid file
 
-#fem.io.macroGridFile_2d: ../grids/unitcube2.dgf
+fem.io.macroGridFile_2d: ../grids/unitcube2.dgf
 #fem.io.macroGridFile_2d: ../grids/nonaffine.dgf
-fem.io.macroGridFile_2d: ../grids/corner_cube.dgf
+#fem.io.macroGridFile_2d: ../grids/corner_cube.dgf
 #fem.io.macroGridFile_2d: ../grids/corner.dgf
 #fem.io.macroGridFile_2d: ../grids/corner_green.dgf
 #fem.io.macroGridFile_2d: ../grids/corner_red.dgf

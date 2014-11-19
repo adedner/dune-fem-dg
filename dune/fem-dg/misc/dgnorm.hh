@@ -6,7 +6,7 @@
 namespace Dune
 {
 
-  namespace Fem 
+  namespace Fem
   {
 
   template< class GridPart >
@@ -48,7 +48,7 @@ namespace Dune
     template< class DiscreteFunctionType >
     typename DiscreteFunctionType::RangeFieldType
     norm ( const DiscreteFunctionType &u ) const;
-    
+
     template< class UDiscreteFunctionType, class VDiscreteFunctionType >
     typename UDiscreteFunctionType::RangeFieldType
     distance ( const UDiscreteFunctionType &u, const VDiscreteFunctionType &v ) const;
@@ -92,12 +92,12 @@ namespace Dune
     explicit FunctionJacobianSquare ( const FunctionType &function )
     : function_( function )
     {}
-    
+
     template< class Point >
     void evaluate ( const Point &x, RangeType &ret ) const
     {
       const int dimRange = FunctionType::RangeType::dimension;
-      
+
       typename FunctionType::RangeType phi;
       function_.evaluate( x, phi );
       ret[ 0 ] = phi * phi;
@@ -116,7 +116,7 @@ namespace Dune
 
   // Implementation of DG Norm
   // -------------------------
-  
+
   template< class GridPart >
   inline DGNorm< GridPart >::DGNorm ( const GridPartType &gridPart )
   : BaseType( gridPart )
@@ -129,7 +129,7 @@ namespace Dune
   : BaseType( other )
   {}
 
-  
+
   template< class GridPart >
   template< class DiscreteFunctionType >
   inline typename DiscreteFunctionType::RangeFieldType
@@ -140,7 +140,7 @@ namespace Dune
 
     ReturnType sum = BaseType :: forEach( u, ReturnType( 0 ) );
 
-    // return result, e.g. sqrt of calculated sum 
+    // return result, e.g. sqrt of calculated sum
     return sqrt( comm().sum( sum[ 0 ] ) );
   }
 
@@ -155,7 +155,7 @@ namespace Dune
 
     ReturnType sum = BaseType :: forEach( u, v, ReturnType( 0 ) );
 
-    // return result, e.g. sqrt of calculated sum 
+    // return result, e.g. sqrt of calculated sum
     return sqrt( comm().sum( sum[ 0 ] ) );
   }
 
@@ -212,7 +212,7 @@ namespace Dune
             ULocalFunctionType ulocalNb = u.localFunction( neighbor ); // local u on neighbor element
             VLocalFunctionType vlocalNb = v.localFunction( neighbor ); // local u on neighbor element
             LocalDistanceType distNb( ulocalNb, vlocalNb );
-            
+
             FaceQuadratureType quadInside ( gridPart(), intersection, nbOrder, FaceQuadratureType::INSIDE  );
             FaceQuadratureType quadOutside( gridPart(), intersection, nbOrder, FaceQuadratureType::OUTSIDE );
             const size_t numQuadraturePoints = quadInside.nop();
@@ -242,7 +242,7 @@ namespace Dune
                                   ReturnType& sum ) const
   {
     typedef typename DiscreteFunctionType::LocalFunctionType LocalFunctionType;
-    // evaluate norm locally 
+    // evaluate norm locally
 
     IntegratorType integrator( order );
 
@@ -272,7 +272,7 @@ namespace Dune
             const double intersectionArea = intersection.geometry().volume();
             const double heInverse = intersectionArea / std::min( geometry.volume(), geometryNb.volume() );
             LocalFunctionType ulocalNb = u.localFunction( neighbor ); // local u on neighbor element
-            
+
             FaceQuadratureType quadInside( gridPart(), intersection, nbOrder, FaceQuadratureType::INSIDE );
             FaceQuadratureType quadOutside( gridPart(), intersection, nbOrder, FaceQuadratureType::OUTSIDE );
             const size_t numQuadraturePoints = quadInside.nop();
@@ -297,6 +297,6 @@ namespace Dune
 
   using Fem :: DGNorm ;
 
-} // end namespace Dune 
+} // end namespace Dune
 
 #endif // #ifndef DUNE_FEM_DGNORM_HH

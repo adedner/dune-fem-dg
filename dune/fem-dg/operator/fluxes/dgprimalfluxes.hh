@@ -18,10 +18,10 @@ namespace Dune {
   // DGPrimalDiffusionFluxImpl
   //----------------------
 
-  template <class DiscreteFunctionSpaceImp, 
+  template <class DiscreteFunctionSpaceImp,
             class Model>
-  class DGPrimalDiffusionFluxImpl 
-   : public DGDiffusionFluxBase< DiscreteFunctionSpaceImp, Model > 
+  class DGPrimalDiffusionFluxImpl
+   : public DGDiffusionFluxBase< DiscreteFunctionSpaceImp, Model >
   {
     typedef DGDiffusionFluxBase< DiscreteFunctionSpaceImp, Model >      BaseType;
 
@@ -55,13 +55,13 @@ namespace Dune {
     typedef Fem::TemporaryLocalFunction< DiscreteGradientSpaceType >         LiftingFunctionType;
 
     typedef Fem::CachingQuadrature< GridPartType, 0>                         VolumeQuadratureType ;
-    
+
     typedef Fem::LocalMassMatrix
       < DiscreteGradientSpaceType, VolumeQuadratureType >               LocalMassMatrixType;
 
-    class Lifting 
+    class Lifting
     {
-    protected:  
+    protected:
 #ifdef USE_CACHED_INVERSE_MASSMATRIX
 #warning "Using cached inverse local mass matrix"
       // type of communication manager object which does communication
@@ -81,12 +81,12 @@ namespace Dune {
 
       // prohibit copying
       Lifting( const Lifting& );
-    public:  
-      explicit Lifting( const DiscreteGradientSpaceType& grdSpace ) 
+    public:
+      explicit Lifting( const DiscreteGradientSpaceType& grdSpace )
         : gradSpc_( grdSpace )
         , r_e_( gradSpc_ )
 #ifdef USE_CACHED_INVERSE_MASSMATRIX
-        , localMassMatrix_( InverseMassProviderType :: getObject( KeyType( gradSpc_.gridPart() ) ) ) 
+        , localMassMatrix_( InverseMassProviderType :: getObject( KeyType( gradSpc_.gridPart() ) ) )
 #else
         , localMassMatrix_( gradSpc_, 2*gradSpc_.order() )
 #endif
@@ -97,15 +97,15 @@ namespace Dune {
 
       bool isInitialized() const { return isInitialized_ == 2 ; }
 
-      void initialize( const EntityType& entity ) 
-      { 
+      void initialize( const EntityType& entity )
+      {
         assert( isInitialized_ != 1 );
-        r_e_.init( entity ); 
+        r_e_.init( entity );
         r_e_.clear();
         isInitialized_ = 1;
       }
 
-      LiftingFunctionType& function() 
+      LiftingFunctionType& function()
       {
         return r_e_;
       }
@@ -134,12 +134,12 @@ namespace Dune {
 
   public:
 
-    bool initAreaSwitch() const 
+    bool initAreaSwitch() const
     {
       if( method_ == method_cdg2 )
       {
-        // when default value is used, then use areSwitch 
-        if( ( upwind_ - BaseType :: upwindDefault() ).two_norm2() < 1e-10 ) 
+        // when default value is used, then use areSwitch
+        if( ( upwind_ - BaseType :: upwindDefault() ).two_norm2() < 1e-10 )
           return true ;
       }
       return upwind_.two_norm2() < 1e-10 ;
@@ -149,7 +149,7 @@ namespace Dune {
     enum { evaluateJacobian = true };
 
     /**
-     * @brief constructor reading parameters 
+     * @brief constructor reading parameters
      */
     DGPrimalDiffusionFluxImpl( GridPartType& gridPart,
                                const Model& model,
@@ -158,13 +158,13 @@ namespace Dune {
       gridPart_( gridPart ),
       method_( method ),
       penalty_( Fem::Parameter::getValue<double>("dgdiffusionflux.penalty") ),
-      nipgFactor_( (method_ == method_nipg) || 
-                   (method_ == method_bo) 
+      nipgFactor_( (method_ == method_nipg) ||
+                   (method_ == method_bo)
                    ? 0.5 : -0.5 ),
       liftFactor_( Fem::Parameter::getValue<double>("dgdiffusionflux.liftfactor") ),
       liftingMethod_( getLifting() ),
-      penaltyTerm_( method_ip || ((std::abs(  penalty_ ) > 0) && 
-                    method_ != method_br2 && 
+      penaltyTerm_( method_ip || ((std::abs(  penalty_ ) > 0) &&
+                    method_ != method_br2 &&
                     method_ != method_bo )),
       gradSpc_( gridPart_ ),
       LeMinusLifting_( hasLifting() ? new Lifting( gradSpc_ ) : 0 ),
@@ -183,7 +183,7 @@ namespace Dune {
       double theoryFactor = Fem::Parameter::getValue< double >( "dgdiffusionflux.theoryparameters", 0. );
       useTheoryParams_ = (theoryFactor > 0.);
 
-      double n_k = DiscreteFunctionSpaceType :: polynomialOrder ; 
+      double n_k = DiscreteFunctionSpaceType :: polynomialOrder ;
       ainsworthFactor_ = theoryFactor * 0.5 * n_k * ( n_k + 1.0 );
 
       int maxNumFaces = 0 ;
@@ -191,14 +191,14 @@ namespace Dune {
       if ( useTheoryParams_ )
       {
         const IteratorType itend = gridPart.template end<0>();
-        for( IteratorType it = gridPart.template begin<0>(); it != itend; ++it ) 
+        for( IteratorType it = gridPart.template begin<0>(); it != itend; ++it )
         {
           const EntityType& entity = * it ;
           const double insideVol = entity.geometry().volume();
           int numFaces = 0;
           int numOutflowFaces = 0;
           const IntersectionIteratorType intitend = gridPart.iend( entity );
-          for(IntersectionIteratorType intit = gridPart.ibegin( entity ); 
+          for(IntersectionIteratorType intit = gridPart.ibegin( entity );
               intit != intitend; ++intit )
           {
             const Intersection& intersection = * intit ;
@@ -224,15 +224,15 @@ namespace Dune {
         if (method_ == method_cdg2)
         {
           liftFactor_ = theoryFactor * 0.25* ((double) maxNumFaces); // max number of faces here
-          //if( ! areaSwitch_ ) 
+          //if( ! areaSwitch_ )
           liftFactor_ *= (1.+maxNeighborsVolumeRatio_);
         }
-        else if (method_ == method_cdg) 
-        { 
-          liftFactor_ = theoryFactor * maxNumOutflowFaces; 
+        else if (method_ == method_cdg)
+        {
+          liftFactor_ = theoryFactor * maxNumOutflowFaces;
         }
-        else if (method_ == method_br2) 
-        { 
+        else if (method_ == method_br2)
+        {
           liftFactor_ = theoryFactor * maxNumFaces;
         }
         else if( method_ == method_nipg )
@@ -242,7 +242,7 @@ namespace Dune {
         }
       }
 
-      if( Fem::Parameter :: verbose() ) 
+      if( Fem::Parameter :: verbose() )
       {
         std::cout <<"Diff. flux: ";
         diffusionFluxName( std::cout );
@@ -250,7 +250,7 @@ namespace Dune {
         std::cout <<", penalty: ";
         if ( useTheoryParams_ && (method_ == method_ip) )
         {
-          std::cout <<"theory ("; 
+          std::cout <<"theory (";
           diffusionFluxPenalty( std::cout );
           std::cout << ")";
         }
@@ -265,7 +265,7 @@ namespace Dune {
     }
 
     //! copy constructor (needed for thread parallel programs)
-    DGPrimalDiffusionFluxImpl( const DGPrimalDiffusionFluxImpl& other ) : 
+    DGPrimalDiffusionFluxImpl( const DGPrimalDiffusionFluxImpl& other ) :
       BaseType( other ),
       gridPart_( other.gridPart_ ),
       method_( other.method_ ),
@@ -289,20 +289,20 @@ namespace Dune {
     {
     }
 
-    //! destructor deleting liftings 
-    ~DGPrimalDiffusionFluxImpl() 
+    //! destructor deleting liftings
+    ~DGPrimalDiffusionFluxImpl()
     {
-      delete LeMinusLifting_; 
+      delete LeMinusLifting_;
       LeMinusLifting_ = 0;
-      delete LePlusLifting_; 
+      delete LePlusLifting_;
       LePlusLifting_ = 0;
 #ifdef LOCALDEBUG
-      delete LeMinusLifting2_; 
+      delete LeMinusLifting2_;
       LeMinusLifting2_ = 0;
 #endif
     }
 
-    // return reference to gradient discrete function space 
+    // return reference to gradient discrete function space
     const DiscreteGradientSpaceType& gradientSpace() const { return gradSpc_; }
 
     double maxNeighborsVolumeRatio() const
@@ -330,43 +330,43 @@ namespace Dune {
       out <<liftFactor_;
     }
 
-    //! returns true if lifting has to be calculated 
+    //! returns true if lifting has to be calculated
     bool hasLifting () const { return ( method_ <= method_br2 ); }
 
-  protected:   
-    Lifting& LePlusLifting() const 
+  protected:
+    Lifting& LePlusLifting() const
     {
       assert( LePlusLifting_ );
       return *LePlusLifting_;
     }
 
-    Lifting& LeMinusLifting() const 
+    Lifting& LeMinusLifting() const
     {
       assert( LeMinusLifting_ );
       return *LeMinusLifting_;
     }
 #ifdef LOCALDEBUG
-    Lifting& LeMinusLifting2() const 
+    Lifting& LeMinusLifting2() const
     {
       assert( LeMinusLifting2_ );
       return *LeMinusLifting2_;
     }
 #endif
 
-  public:  
+  public:
     void initialize( const DiscreteFunctionSpaceType &space )
     {
     }
 
-    template <class QuadratureImp, class ArgumentTupleVector > 
+    template <class QuadratureImp, class ArgumentTupleVector >
     void initializeIntersection(const Intersection& intersection,
                                 const EntityType& inside,
                                 const EntityType& outside,
                                 const double time,
-                                const QuadratureImp& quadInner, 
+                                const QuadratureImp& quadInner,
                                 const QuadratureImp& quadOuter,
                                 const ArgumentTupleVector& uLeftVec,
-                                const ArgumentTupleVector& uRightVec) 
+                                const ArgumentTupleVector& uRightVec)
     {
       if( hasLifting() )
         computeLiftings( intersection, inside, outside, time,
@@ -375,18 +375,18 @@ namespace Dune {
                          (method_ == method_br2 ) );
     }
 
-    template <class QuadratureImp, class ArgumentTupleVector > 
+    template <class QuadratureImp, class ArgumentTupleVector >
     void computeLiftings(const Intersection& intersection,
                          const EntityType& inside,
                          const EntityType& outside,
                          const double time,
-                         const QuadratureImp& quadInner, 
+                         const QuadratureImp& quadInner,
                          const QuadratureImp& quadOuter,
                          const ArgumentTupleVector& uLeftVec,
                          const ArgumentTupleVector& uRightVec,
-                         const bool computeBoth ) 
+                         const bool computeBoth )
     {
-      if( hasLifting() || computeBoth ) 
+      if( hasLifting() || computeBoth )
       {
         if ( ! LeMinusLifting_ )
           LeMinusLifting_ = new Lifting( gradSpc_ );
@@ -394,7 +394,7 @@ namespace Dune {
         // define for an intersection e
         //  Ke+ := { e in bnd(Ke+), s * n_Ke+ < 0 }
         //  Ke- := { e in bnd(Ke-), s * n_Ke- > 0 }
-        // Notice 
+        // Notice
         //  l_e = r_e on Ke-
         //  l_e = -r_e on Ke+
         // so that
@@ -404,7 +404,7 @@ namespace Dune {
         // get Ke- in entity
         insideIsInflow_ = determineDirection( areaSwitch_, inside.geometry().volume(),
                                               outside.geometry().volume(),
-                                              intersection ); 
+                                              intersection );
 
         const EntityType& entity = ( insideIsInflow_ ) ? outside : inside;
         const ArgumentTupleVector& u = ( insideIsInflow_ ) ? uRightVec : uLeftVec;
@@ -413,7 +413,7 @@ namespace Dune {
         liftTmp_.resize( quadNoInp );
 
         // get the right quadrature for the lifting entity
-        const QuadratureImp& faceQuad = ( insideIsInflow_ ) ? quadOuter : quadInner; 
+        const QuadratureImp& faceQuad = ( insideIsInflow_ ) ? quadOuter : quadInner;
 
 #ifdef LOCALDEBUG
         const size_t quadNoOutp = quadOuter.nop();
@@ -427,15 +427,15 @@ namespace Dune {
 
         {
           // get the right quadrature for the lifting entity
-          const QuadratureImp& faceQuad2 = ( insideIsInflow_ ) ? quadInner : quadOuter; 
+          const QuadratureImp& faceQuad2 = ( insideIsInflow_ ) ? quadInner : quadOuter;
 
           for(size_t qp = 0; qp < quadNoInp; ++qp )
           {
             // get value of 2*r_e in quadrature point
-            addLifting(intersection, time, faceQuad2, qp, 
+            addLifting(intersection, time, faceQuad2, qp,
                        uLeftVec[ qp ], uRightVec[ qp ], liftTmp_[ qp ] );
           }
-          // add to local function 
+          // add to local function
           LeMinusLifting().function().axpyQuadrature( faceQuad, liftTmp_ );
 
           LeMinusLifting().finalize();
@@ -443,9 +443,9 @@ namespace Dune {
 
         // calculate 4*\int_Ke+(r_e*r_e)
         double term1;
-        term1 = integrateLifting( LeMinusLifting().function(), 
+        term1 = integrateLifting( LeMinusLifting().function(),
                                   LeMinusLifting().function().entity().geometry() );
-        const double interiorFactor = 
+        const double interiorFactor =
           ( insideIsInflow_ ? -1. : 1. );
 
         // set sum += -4*\int_Ke+(r_e*r_e)
@@ -457,7 +457,7 @@ namespace Dune {
         for(size_t qp = 0; qp < quadNoOutp; ++qp )
         {
           // get value of 2*r_e in quadrature point
-          addLifting(intersection, time, faceQuad, qp, 
+          addLifting(intersection, time, faceQuad, qp,
                      uLeftVec[ qp ], uRightVec[ qp ], liftTmp_ );
         }
         LeMinusLifting2().function().axpyQuadrature( faceQuad, liftTmp_ );
@@ -492,7 +492,7 @@ namespace Dune {
           abort();
         }
 
-        // add to final sum 
+        // add to final sum
         //    \sum_e (\int_Ke+ r_e*r_e - \int_Ke- r_e*r_e)
         //    \sum_e (\int_Ke+ r_e*r_e + \int_Ke- r_e*r_e)
         sum_ += sum;
@@ -505,10 +505,10 @@ namespace Dune {
         // calculate real lifting
         for(size_t qp = 0; qp < quadNoInp; ++qp )
         {
-          addLifting(intersection, entity, u[ qp ], time, faceQuad,  qp, 
+          addLifting(intersection, entity, u[ qp ], time, faceQuad,  qp,
                      uLeftVec[ qp ], uRightVec[ qp ], liftTmp_[ qp ] );
         }
-        // add to local function 
+        // add to local function
         LeMinusLifting().function().axpyQuadrature( faceQuad, liftTmp_ );
 
         // LeMinusLifting_ has L_e=2*r_e on Ke-
@@ -526,18 +526,18 @@ namespace Dune {
           LePlusLifting().initialize( entity2 );
 
           // get the right quadrature for the lifting entity
-          const QuadratureImp& faceQuad2 = ( insideIsInflow_ ) ? quadInner : quadOuter; 
+          const QuadratureImp& faceQuad2 = ( insideIsInflow_ ) ? quadInner : quadOuter;
 
           const size_t quadNoOutp = quadOuter.nop();
           for(size_t qp = 0; qp < quadNoOutp; ++qp )
           {
             // get value of 2*r_e in quadrature point
             // use correct order on interface quadratures!
-            addLifting(intersection, entity2, u2[ qp ], time, faceQuad2,  qp, 
+            addLifting(intersection, entity2, u2[ qp ], time, faceQuad2,  qp,
                        uLeftVec[ qp ], uRightVec[ qp ], liftTmp_[ qp ] );
           }
 
-          // add to local function 
+          // add to local function
           LePlusLifting().function().axpyQuadrature( faceQuad2, liftTmp_ );
 
           // LePlusLifting_ carries 2*r_e on Ke+
@@ -548,7 +548,7 @@ namespace Dune {
 
 #ifdef LOCALDEBUG
     template <class LiftingFunction , class Geometry >
-    double integrateLifting( const LiftingFunction& lifting, const Geometry& geometry ) const 
+    double integrateLifting( const LiftingFunction& lifting, const Geometry& geometry ) const
     {
       typedef typename LiftingFunction :: RangeType RangeType;
       VolumeQuadratureType quad( lifting.entity(), 2 * lifting.order() + 2 );
@@ -557,7 +557,7 @@ namespace Dune {
       double sum = 0.0;
       for( int qp = 0; qp < quadNop; ++qp )
       {
-        const double weight = quad.weight( qp ) * 
+        const double weight = quad.weight( qp ) *
           geometry.integrationElement( quad.point( qp ) );
         lifting.evaluate( quad[ qp ], val );
         sum += weight * (val * val);
@@ -571,13 +571,13 @@ namespace Dune {
     void initializeBoundary(const Intersection& intersection,
                             const EntityType& entity,
                             const double time,
-                            const QuadratureImp& quadInner, 
+                            const QuadratureImp& quadInner,
                             const ArgumentTupleVector& uLeftVec,
-                            const std::vector< RangeType >& uRight) 
+                            const std::vector< RangeType >& uRight)
     {
-      if( hasLifting() ) 
+      if( hasLifting() )
       {
-        insideIsInflow_ = true; 
+        insideIsInflow_ = true;
 
         LeMinusLifting().initialize( entity );
 
@@ -585,23 +585,23 @@ namespace Dune {
         liftTmp_.resize( quadNop );
         for(size_t qp = 0; qp < quadNop; ++qp )
         {
-          addLifting(intersection, entity, uLeftVec[ qp ], time, quadInner, qp, 
+          addLifting(intersection, entity, uLeftVec[ qp ], time, quadInner, qp,
                      uLeftVec[ qp ], uRight[ qp ] , liftTmp_[ qp ] );
         }
-        // add to local function 
+        // add to local function
         LeMinusLifting().function().axpyQuadrature( quadInner, liftTmp_ );
         LeMinusLifting().finalize();
       }
     }
 
-  protected:  
+  protected:
     template <class QuadratureImp, class LiftingFunction >
     void addLifting(const Intersection& intersection,
                     const EntityType &entity,
                     const RangeType &u,
                     const double time,
                     const QuadratureImp& faceQuad,
-                    const int quadPoint, 
+                    const int quadPoint,
                     const RangeType& uLeft,
                     const RangeType& uRight,
                     LiftingFunction& func ) const
@@ -612,7 +612,7 @@ namespace Dune {
       JacobianRangeType jumpUNormal;
       for(int r = 0; r < dimRange; ++r)
       {
-        for(int j=0; j<dimDomain; ++j) 
+        for(int j=0; j<dimDomain; ++j)
           jumpUNormal[ r ][ j ] = normal[ j ] * (uLeft[ r ] - uRight[ r ]);
       }
 
@@ -637,17 +637,17 @@ namespace Dune {
                       const RangeType& u,
                       LiftingFunctionType& r_e,
                       RangeType& lift) const
-    { 
+    {
       GradientType sigma;
 
-      // evaluate lifting at quadrature point 
+      // evaluate lifting at quadrature point
       r_e.evaluate( faceQuad[ quadPoint ], sigma );
 
       Fem::FieldMatrixConverter< GradientType, JacobianRangeType> gradient( sigma );
 
       if (liftingMethod_ != lifting_id_A)
       {
-        JacobianRangeType mat; 
+        JacobianRangeType mat;
         // set mat = G(u)L_e
         model_.diffusion( r_e.entity(),
                           time, faceQuad.point( quadPoint ),
@@ -657,13 +657,13 @@ namespace Dune {
       }
       else
       {
-        // just apply gradient 
+        // just apply gradient
         gradient.mv( normal, lift );
       }
     }
 
     /** \brief calculate \f$\sum_{e\in\partial K} \Lambda_e |e|^2\f$
-     *  
+     *
      *  \note \f$\Lambda_e = 1\f$ for Dirichlet face @a e, \f$\Lambda_e = 0.5\f$
      *        for interface, and \f$\Lambda_e = 0\f$ for Neumann face
      */
@@ -672,14 +672,14 @@ namespace Dune {
       double sumFaceVolSqr  = 0.0;
 
       const IntersectionIteratorType intitend = gridPart_.iend( entity );
-      for(IntersectionIteratorType intit = gridPart_.ibegin( entity ); 
+      for(IntersectionIteratorType intit = gridPart_.ibegin( entity );
           intit != intitend; ++intit )
       {
         const Intersection& intersection = * intit ;
         const double faceVol = intersection.geometry().volume();
 
         // !!!!! forget about Neumann for now
-        // 1/2 for interior intersections 
+        // 1/2 for interior intersections
         if ( intersection.neighbor() )
           sumFaceVolSqr += 0.5 * faceVol * faceVol;
         else
@@ -704,11 +704,11 @@ namespace Dune {
      * @note The total numerical flux for multiplication with phi
      *       is given with
      *        CDG2:
-     *          gLeft = numflux(f(u)) - {G(u)grad(u)}*n 
+     *          gLeft = numflux(f(u)) - {G(u)grad(u)}*n
      *            + C_cdg2/h {G(u)}[u]*n
      *            + liftFactor*(G(u)L_e)|Ke-
      *        CDG:
-     *          gLeft = numflux(f(u)) - {G(u)grad(u)}*n 
+     *          gLeft = numflux(f(u)) - {G(u)grad(u)}*n
      *            - beta*n[G(u)grad(u)] + C_cdg/h {G(u)}[u]*n
      *            + liftFactor*(G(u)L_e)|Ke-
      *        BR2:
@@ -737,7 +737,7 @@ namespace Dune {
                          const double time,
                          const QuadratureImp& faceQuadInner,
                          const QuadratureImp& faceQuadOuter,
-                         const int quadPoint, 
+                         const int quadPoint,
                          const RangeType& uLeft,
                          const RangeType& uRight,
                          const JacobianRangeType& jacLeft,
@@ -765,18 +765,18 @@ namespace Dune {
       RangeType diffflux ;
 
       // for all methods except CDG we need to evaluate {G(u)grad(u)}
-      if (method_ != method_cdg) 
+      if (method_ != method_cdg)
       {
         // G(u-)grad(u-) for multiplication with phi
-        // call on inside 
-        model_.diffusion( inside, time, xglInside, 
+        // call on inside
+        model_.diffusion( inside, time, xglInside,
                           uLeft, jacLeft, diffmatrix );
 
         // diffflux=G(u-)grad(u-)*n
         diffmatrix.mv( normal, diffflux );
 
         // G(u+)grad(u+) for multiplication with phi
-        // call on outside 
+        // call on outside
         model_.diffusion( outside, time, xglOutside,
                           uRight, jacRight, diffmatrix );
 
@@ -786,7 +786,7 @@ namespace Dune {
         // gLeft = gRight = -{G(u)grad(u)}*n
         gLeft.axpy ( -0.5, diffflux );
         gRight.axpy( -0.5, diffflux );
-      } 
+      }
       else
       // for CDG we need G(u)grad(u) on Ke-
       {
@@ -799,7 +799,7 @@ namespace Dune {
         else
           model_.diffusion( outside, time, xglOutside,
                             uRight, jacRight, diffmatrix );
-                            
+
         // diffflux=(G(u)grad(u)*n)|Ke-
         diffmatrix.mv( normal, diffflux );
 
@@ -830,21 +830,21 @@ namespace Dune {
                         uRight, jumpU, gDiffRight );
 
       ////////////////////////////////////////////////
-      //  start penalty term 
+      //  start penalty term
       ///////////////////////////////////////////////
       // BR2 has its own special and BO doesn't have penalty term
       // every other method has this penalty term
-      if ( penaltyTerm_ ) 
+      if ( penaltyTerm_ )
       {
         RangeType penaltyTerm ;
 
-        if( (method_ == method_ip) && useTheoryParams_ ) 
+        if( (method_ == method_ip) && useTheoryParams_ )
         {
-          // penaltyTerm 
+          // penaltyTerm
           // = ainsworthFactor * maxEigenValue(A(u)) * FaceEntityVolumeRatio * [u] * n
-          RangeType maxLeft, maxRight; 
-          model_.eigenValues( inside, time, xglInside, uLeft, maxLeft );   
-          model_.eigenValues( outside, time, xglOutside, uRight, maxRight );   
+          RangeType maxLeft, maxRight;
+          model_.eigenValues( inside, time, xglInside, uLeft, maxLeft );
+          model_.eigenValues( outside, time, xglOutside, uRight, maxRight );
           double maxEigenValue = 0.;
           for( int r = 0; r<dimRange; ++r )
           {
@@ -855,7 +855,7 @@ namespace Dune {
           // calculate penalty factor
           const double penaltyFactorInside = sumFaceVolumeSqr( inside ) / discreteModel.enVolume();
           const double penaltyFactorOutside = sumFaceVolumeSqr( outside ) / discreteModel.nbVolume();
-          penalty_ = std::max( penaltyFactorInside, penaltyFactorOutside ); 
+          penalty_ = std::max( penaltyFactorInside, penaltyFactorOutside );
           penalty_ *= ainsworthFactor_ * maxEigenValue ;
 
           jumpU.mv( normal, penaltyTerm );
@@ -865,31 +865,31 @@ namespace Dune {
           // \int C_IP {G(u)}[u][phi] dx
           //    = \int C_IP (G(u_L)[u]*n + G(u_R)[u]*n)/2 phi
           // so penaltyTerm = C_IP (G(u_L)[u]*n + G(u_R)[u]*n)/2
-          
+
           // apply with normal
           gDiffLeft.mv( normal, penaltyTerm );
           gDiffRight.umv( normal, penaltyTerm );
-    
+
           penaltyTerm *= 0.5 ;
 
           /*
-          double penFac = model_.penaltyFactor( inside,    outside, time, 
+          double penFac = model_.penaltyFactor( inside,    outside, time,
                                                 xglInside, uLeft, uRight );
           penaltyTerm = jumpUNormal ;
           penaltyTerm *= penFac ;
           */
         }
 
-        double minvol = 
+        double minvol =
           std::min( discreteModel.enVolume(), discreteModel.nbVolume() );
         penaltyTerm /= minvol;
 
-        // add to fluxes 
+        // add to fluxes
         gLeft.axpy( penalty_, penaltyTerm );
         gRight.axpy( penalty_, penaltyTerm );
       }
       ////////////////////////////////////////////////
-      //  end penalty term 
+      //  end penalty term
       ///////////////////////////////////////////////
 
 
@@ -907,16 +907,16 @@ namespace Dune {
       gDiffRight *= (-nipgFactor_);
 
       ////////////////////////////////////////////////
-      //  begin lifting terms 
+      //  begin lifting terms
       ///////////////////////////////////////////////
       if( hasLifting() )
       {
         // get correct quadrature, the one from Ke-
-        const QuadratureImp& faceQuad = ( insideIsInflow_ ) ? faceQuadOuter : faceQuadInner; 
+        const QuadratureImp& faceQuad = ( insideIsInflow_ ) ? faceQuadOuter : faceQuadInner;
         // ... and the values of u from Ke-
         const RangeType& u = ( insideIsInflow_ ) ? uRight : uLeft;
 
-        RangeType lift; 
+        RangeType lift;
         LiftingFunctionType& LeLeft = LeMinusLifting().function();
         // get value of G(u-)L_e-*n into liftTotal
         applyLifting( faceQuad, quadPoint, time, normal, u, LeLeft, lift );
@@ -929,7 +929,7 @@ namespace Dune {
           gRight -= lift;
         }
 
-        if( method_ == method_cdg ) 
+        if( method_ == method_cdg )
         {
           const RangeFieldType C_12 = ( insideIsInflow_ ) ? 0.5 : -0.5;
           JacobianRangeType resU;
@@ -938,16 +938,16 @@ namespace Dune {
           // [ u ] * [ G(u)grad(phi) ] ...
           ///////////////////////////////
 
-          resU = gDiffLeft; 
+          resU = gDiffLeft;
           resU *= C_12/nipgFactor_;
 
-          // save gDiffLeft 
+          // save gDiffLeft
           gDiffLeft += resU;
-          
+
           resU  = gDiffRight;
           resU *= C_12/(-nipgFactor_);
 
-          // save gDiffLeft 
+          // save gDiffLeft
           gDiffRight += resU;
         }
 
@@ -960,8 +960,8 @@ namespace Dune {
           // so penaltyTerm = C_BR2 (G(u_L)r_e([u])*n + G(u_R)r_e([u])*n)/2
 
           // get correct quadrature, the one from Ke+
-          const QuadratureImp& faceQuadPlus = 
-            ( ! insideIsInflow_ ) ? faceQuadOuter : faceQuadInner; 
+          const QuadratureImp& faceQuadPlus =
+            ( ! insideIsInflow_ ) ? faceQuadOuter : faceQuadInner;
           // ... and the values of u from Ke+
           const RangeType& uPlus = ( ! insideIsInflow_ ) ? uRight : uLeft;
 
@@ -969,44 +969,44 @@ namespace Dune {
           LiftingFunctionType& LeRight = LePlusLifting().function();
 
           // get value of G(u+)L_e+*n into liftTotal
-          applyLifting( faceQuadPlus, quadPoint, time, 
+          applyLifting( faceQuadPlus, quadPoint, time,
                         normal, uPlus, LeRight, liftTotal );
-          
+
           // set liftTotal = {G(u)r_e}*n = 0.25*(G(u+)L_e+*n + G(u-)L_e-*n)
           liftTotal += lift;
           // add penalty coefficient
-          liftTotal *= 0.25 * liftFactor_; 
+          liftTotal *= 0.25 * liftFactor_;
 
           gLeft -= liftTotal;
           gRight -= liftTotal;
         }
       }
       ////////////////////////////////////////////////
-      //  end lifting terms 
+      //  end lifting terms
       ///////////////////////////////////////////////
 
       //////////////////////////////////////////////////////////
       //
-      //  --Time step calculation 
+      //  --Time step calculation
       //
       //////////////////////////////////////////////////////////
-      const double faceVolumeEstimate = dimensionFactor_ * 
-        (intersection.conforming() ? faceLengthSqr 
+      const double faceVolumeEstimate = dimensionFactor_ *
+        (intersection.conforming() ? faceLengthSqr
           : (nonconformingFactor_ * faceLengthSqr));
 
-      const double diffTimeLeft = 
+      const double diffTimeLeft =
         model_.diffusionTimeStep( intersection,
             discreteModel.enVolume(),
-            faceVolumeEstimate, 
+            faceVolumeEstimate,
             time, x, uLeft );
-                                  
-      const double diffTimeRight = 
+
+      const double diffTimeRight =
         model_.diffusionTimeStep( intersection,
             discreteModel.nbVolume(),
-            faceVolumeEstimate, 
+            faceVolumeEstimate,
             time, x, uRight );
-                                  
-      // take minimum to proceed 
+
+      // take minimum to proceed
       const double diffTimeStep = std::max( diffTimeLeft, diffTimeRight );
 
       // timestep restict to diffusion timestep
@@ -1018,10 +1018,10 @@ namespace Dune {
     /**
      * @brief same as numericalFlux() but for fluxes over boundary interfaces
      */
-    template <class DiscreteModelImp, class QuadratureImp> 
+    template <class DiscreteModelImp, class QuadratureImp>
     double boundaryFlux(const Intersection& intersection,
                         const DiscreteModelImp& discreteModel,
-                        const double time, 
+                        const double time,
                         const QuadratureImp& faceQuadInner,
                         const int quadPoint,
                         const RangeType& uLeft,
@@ -1030,7 +1030,7 @@ namespace Dune {
                         RangeType& gLeft,
                         JacobianRangeType& gDiffLeft )   /*@LST0E@*/
     {
-      // get local point 
+      // get local point
       const FaceDomainType& x = faceQuadInner.localPoint( quadPoint );
       const DomainType normal = intersection.integrationOuterNormal(x);
       const DomainType& xglInside = faceQuadInner.point( quadPoint );
@@ -1043,7 +1043,7 @@ namespace Dune {
 
       // diffmatrix = G(u-)grad(u-)
       model_.diffusion( inside, time,
-                        xglInside, 
+                        xglInside,
                         uLeft, jacLeft, diffmatrix);
 
       // gLeft = -G(u-)grad(u-)*n
@@ -1054,7 +1054,7 @@ namespace Dune {
       {
         LiftingFunctionType& LeLeft = LeMinusLifting().function();
 
-        RangeType lift; 
+        RangeType lift;
         // get value of G(u)L_e*n into lift
         applyLifting( faceQuadInner, quadPoint, time, normal, uRight, LeLeft, lift );
 
@@ -1063,7 +1063,7 @@ namespace Dune {
           // set liftTotal = G(u)r_e*n = 0.5*G(u_in)L_e_in*n
           lift *= (0.5*liftFactor_);
         }
-        else 
+        else
         {
           // only for CDG-type methods
           lift *= liftFactor_ ;
@@ -1091,25 +1091,25 @@ namespace Dune {
       // get G(u-)[u] in gDiffLeft
       // this is not hte final value for gDiffLeft
       // but it's used in the penalty term
-      model_.diffusion( inside, 
+      model_.diffusion( inside,
                         time,
-                        xglInside, 
-                        uLeft, 
+                        xglInside,
+                        uLeft,
                         bndJumpU, gDiffLeft );
 
       // add penalty term
-      if ( penaltyTerm_ ) 
+      if ( penaltyTerm_ )
       {
         // penalty term for IP
         RangeType penaltyTerm;
         const double enVolInv = 1./discreteModel.enVolume();
 
-        if( (method_ == method_ip) && useTheoryParams_ ) 
+        if( (method_ == method_ip) && useTheoryParams_ )
         {
-          // penaltyTerm 
+          // penaltyTerm
           // = ainsworthFactor * maxEigenValue(A(u)) * FaceEntityVolumeRatio * [u] * n
           RangeType maxInside;
-          model_.eigenValues( inside, time, xglInside, uLeft, maxInside );   
+          model_.eigenValues( inside, time, xglInside, uLeft, maxInside );
           double maxEigenValue = 0.;
           for( int r = 0; r<dimRange; ++r )
             maxEigenValue = std::max( maxEigenValue, maxInside[r] );
@@ -1123,7 +1123,7 @@ namespace Dune {
         else
         {
           /*
-          double penFac = model_.penaltyBoundary( inside, time, 
+          double penFac = model_.penaltyBoundary( inside, time,
                                                   xglInside, uLeft );
           bndJumpU.mv( normal, penaltyTerm );
           penaltyTerm *= penFac ;
@@ -1131,7 +1131,7 @@ namespace Dune {
           // \int C_IP {G(u)}[u][phi] dx
           //    = \int C_IP G(u_L)[u]*n phi
           // so penaltyTerm = C_IP G(u_L)[u]*n
-          
+
           // apply with normal
           gDiffLeft.mv( normal, penaltyTerm );
         }
@@ -1148,26 +1148,26 @@ namespace Dune {
 
       ////////////////////////////////////////////////////
       //
-      //  --Time step boundary 
+      //  --Time step boundary
       //
       ////////////////////////////////////////////////////
-      const double diffTimeStep = 
+      const double diffTimeStep =
         model_.diffusionTimeStep( intersection,
             discreteModel.enVolume(),
-            faceLengthSqr, 
+            faceLengthSqr,
             time, x, uLeft );
-                                  
-      return diffTimeStep * cflDiffinv_; 
+
+      return diffTimeStep * cflDiffinv_;
     }
 
   protected:
     GridPartType&     gridPart_;
-    const MethodType  method_; 
+    const MethodType  method_;
     double            penalty_;
     const double      nipgFactor_;
     double            liftFactor_;
     LiftingType       liftingMethod_;
-    const bool        penaltyTerm_; 
+    const bool        penaltyTerm_;
     DiscreteGradientSpaceType  gradSpc_;
     Lifting*          LeMinusLifting_;
     Lifting*          LePlusLifting_;
@@ -1177,16 +1177,16 @@ namespace Dune {
     mutable Fem::MutableArray< GradientType > liftTmp_ ;
     double            maxNeighborsVolumeRatio_; // for CDG2 only
     double            ainsworthFactor_;
-    bool              insideIsInflow_; 
+    bool              insideIsInflow_;
     const bool        areaSwitch_;
     bool              useTheoryParams_;
     bool              initialized_;
-  }; // end DGPrimalDiffusionFluxImpl                        
+  }; // end DGPrimalDiffusionFluxImpl
 
-  
-  //! DG primal diffusion flux 
-  template <class DiscreteFunctionSpaceImp, 
-            class Model, 
+
+  //! DG primal diffusion flux
+  template <class DiscreteFunctionSpaceImp,
+            class Model,
             DGDiffusionFluxIdentifier >
   class DGPrimalDiffusionFlux;
 
@@ -1195,8 +1195,8 @@ namespace Dune {
   //  general diffusion flux allows choice of method via Parameter
   //
   //////////////////////////////////////////////////////////
-  template <class DiscreteFunctionSpaceImp, 
-            class Model> 
+  template <class DiscreteFunctionSpaceImp,
+            class Model>
   class DGPrimalDiffusionFlux<  DiscreteFunctionSpaceImp, Model, method_general >
     : public DGPrimalDiffusionFluxImpl< DiscreteFunctionSpaceImp, Model >
   {
@@ -1207,13 +1207,13 @@ namespace Dune {
     typedef DiscreteFunctionSpaceImp DiscreteFunctionSpaceType;
     typedef typename DiscreteFunctionSpaceType :: GridPartType GridPartType;
 
-  protected:  
+  protected:
     typedef typename BaseType :: MethodType  MethodType;
     using BaseType :: getMethod ;
 
-  public:  
+  public:
     /**
-      * @brief constructor reading parameters 
+      * @brief constructor reading parameters
       */
     DGPrimalDiffusionFlux( GridPartType& gridPart,
                            const Model& model)
@@ -1224,11 +1224,11 @@ namespace Dune {
 
   //////////////////////////////////////////////////////////
   //
-  //  specialization for CDG2 
+  //  specialization for CDG2
   //
   //////////////////////////////////////////////////////////
-  template <class DiscreteFunctionSpaceImp, 
-            class Model> 
+  template <class DiscreteFunctionSpaceImp,
+            class Model>
   class DGPrimalDiffusionFlux<  DiscreteFunctionSpaceImp, Model, method_cdg2 >
     : public DGPrimalDiffusionFluxImpl< DiscreteFunctionSpaceImp, Model >
   {
@@ -1239,9 +1239,9 @@ namespace Dune {
     typedef DiscreteFunctionSpaceImp DiscreteFunctionSpaceType;
     typedef typename DiscreteFunctionSpaceType :: GridPartType GridPartType;
 
-  public:  
+  public:
     /**
-      * @brief constructor reading parameters 
+      * @brief constructor reading parameters
       */
     DGPrimalDiffusionFlux( GridPartType& gridPart,
                            const Model& model)
@@ -1253,11 +1253,11 @@ namespace Dune {
 
   //////////////////////////////////////////////////////////
   //
-  //  specialization for CDG 
+  //  specialization for CDG
   //
   //////////////////////////////////////////////////////////
-  template <class DiscreteFunctionSpaceImp, 
-            class Model> 
+  template <class DiscreteFunctionSpaceImp,
+            class Model>
   class DGPrimalDiffusionFlux<  DiscreteFunctionSpaceImp, Model, method_cdg >
     : public DGPrimalDiffusionFluxImpl< DiscreteFunctionSpaceImp, Model >
   {
@@ -1268,9 +1268,9 @@ namespace Dune {
     typedef DiscreteFunctionSpaceImp DiscreteFunctionSpaceType;
     typedef typename DiscreteFunctionSpaceType :: GridPartType GridPartType;
 
-  public:  
+  public:
     /**
-      * @brief constructor reading parameters 
+      * @brief constructor reading parameters
       */
     DGPrimalDiffusionFlux( GridPartType& gridPart,
                            const Model& model)
@@ -1282,11 +1282,11 @@ namespace Dune {
 
   //////////////////////////////////////////////////////////
   //
-  //  specialization for BR2 
+  //  specialization for BR2
   //
   //////////////////////////////////////////////////////////
-  template <class DiscreteFunctionSpaceImp, 
-            class Model> 
+  template <class DiscreteFunctionSpaceImp,
+            class Model>
   class DGPrimalDiffusionFlux<  DiscreteFunctionSpaceImp, Model, method_br2 >
     : public DGPrimalDiffusionFluxImpl< DiscreteFunctionSpaceImp, Model >
   {
@@ -1297,9 +1297,9 @@ namespace Dune {
     typedef DiscreteFunctionSpaceImp DiscreteFunctionSpaceType;
     typedef typename DiscreteFunctionSpaceType :: GridPartType GridPartType;
 
-  public:  
+  public:
     /**
-      * @brief constructor reading parameters 
+      * @brief constructor reading parameters
       */
     DGPrimalDiffusionFlux( GridPartType& gridPart,
                            const Model& model)
@@ -1311,11 +1311,11 @@ namespace Dune {
 
   //////////////////////////////////////////////////////////
   //
-  //  specialization for IP 
+  //  specialization for IP
   //
   //////////////////////////////////////////////////////////
-  template <class DiscreteFunctionSpaceImp, 
-            class Model> 
+  template <class DiscreteFunctionSpaceImp,
+            class Model>
   class DGPrimalDiffusionFlux<  DiscreteFunctionSpaceImp, Model, method_ip >
     : public DGPrimalDiffusionFluxImpl< DiscreteFunctionSpaceImp, Model >
   {
@@ -1326,9 +1326,9 @@ namespace Dune {
     typedef DiscreteFunctionSpaceImp DiscreteFunctionSpaceType;
     typedef typename DiscreteFunctionSpaceType :: GridPartType GridPartType;
 
-  public:  
+  public:
     /**
-      * @brief constructor reading parameters 
+      * @brief constructor reading parameters
       */
     DGPrimalDiffusionFlux( GridPartType& gridPart,
                            const Model& model)
@@ -1342,8 +1342,8 @@ namespace Dune {
   //  specialization for no-diffusion
   //
   //////////////////////////////////////////////////////////
-  template <class DiscreteFunctionSpaceImp, 
-            class Model> 
+  template <class DiscreteFunctionSpaceImp,
+            class Model>
   class DGPrimalDiffusionFlux<  DiscreteFunctionSpaceImp, Model, method_none >
     : public DGDiffusionFluxBase< DiscreteFunctionSpaceImp, Model >
   {
@@ -1354,9 +1354,9 @@ namespace Dune {
     typedef DiscreteFunctionSpaceImp DiscreteFunctionSpaceType;
     typedef typename DiscreteFunctionSpaceType :: GridPartType GridPartType;
 
-  public:  
+  public:
     /**
-      * @brief constructor reading parameters 
+      * @brief constructor reading parameters
       */
     DGPrimalDiffusionFlux( GridPartType& gridPart,
                            const Model& model)
@@ -1376,7 +1376,7 @@ namespace Dune {
   //////////////////////////////////////////////////////////
   //
   //  specialization for NIPG and BO are missing since these methods are not so
-  //  interesting, use method_general for this 
+  //  interesting, use method_general for this
   //
   //////////////////////////////////////////////////////////
 
@@ -1386,10 +1386,10 @@ namespace Dune {
   //  extended flux for matrix assembly
   //
   //////////////////////////////////////////////////////////
-  template <class DiscreteFunctionSpaceImp, 
+  template <class DiscreteFunctionSpaceImp,
             class Model>
   class ExtendedDGPrimalDiffusionFlux
-   : public DGPrimalDiffusionFluxImpl< DiscreteFunctionSpaceImp, Model > 
+   : public DGPrimalDiffusionFluxImpl< DiscreteFunctionSpaceImp, Model >
   {
     typedef DGPrimalDiffusionFluxImpl< DiscreteFunctionSpaceImp, Model >      BaseType;
 
@@ -1406,18 +1406,18 @@ namespace Dune {
     { }
 
     //! copy constructor (needed for thread parallel programs)
-    ExtendedDGPrimalDiffusionFlux( const ExtendedDGPrimalDiffusionFlux& other ) : 
+    ExtendedDGPrimalDiffusionFlux( const ExtendedDGPrimalDiffusionFlux& other ) :
       BaseType( other )
     {
     }
 
     using BaseType::initializeIntersection;
-    template <class QuadratureImp, class ArgumentTupleVector> 
+    template <class QuadratureImp, class ArgumentTupleVector>
     void initializeIntersection(const Intersection& intersection,
                                 const EntityType& inside,
                                 const EntityType& outside,
                                 const double time,
-                                const QuadratureImp& quadInner, 
+                                const QuadratureImp& quadInner,
                                 const QuadratureImp& quadOuter,
                                 const ArgumentTupleVector& uLeftVec,
                                 const ArgumentTupleVector& uRightVec,
@@ -1447,7 +1447,7 @@ namespace Dune {
       {
         applyLifting( faceQuadInner, quadPoint, time, uEn, this->LePlusLifting().function(), liftEn );
         applyLifting( faceQuadOuter, quadPoint, time, uNb, this->LeMinusLifting().function(), liftNb );
-      } 
+      }
       else
       {
         applyLifting( faceQuadInner, quadPoint, time, uEn, this->LeMinusLifting().function(), liftEn );
@@ -1465,7 +1465,7 @@ namespace Dune {
       if ( this->insideIsInflow_ )
       {
         return this->LePlusLifting().function();
-      } 
+      }
       else
       {
         return this->LeMinusLifting().function();
@@ -1480,11 +1480,11 @@ namespace Dune {
                       const RangeType& u,
                       typename BaseType::LiftingFunctionType& r_e,
                       JacobianRangeType& mat) const
-    { 
+    {
       typedef typename BaseType::GradientType GradientType;
       GradientType sigma;
 
-      // evaluate lifting at quadrature point 
+      // evaluate lifting at quadrature point
       r_e.evaluate( faceQuad[ quadPoint ], sigma );
 
       Fem::FieldMatrixConverter< GradientType, JacobianRangeType> gradient( sigma );
@@ -1496,5 +1496,5 @@ namespace Dune {
     }
   }; // end ExtendedDGPrimalDiffusionFlux
 
-} // end namespace 
+} // end namespace
 #endif

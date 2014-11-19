@@ -1,13 +1,13 @@
 #ifndef DUNE_ELLIPTICDISCRETEMODELCALLER_HH
 #define DUNE_ELLIPTICDISCRETEMODELCALLER_HH
 
-#ifndef HEADERCHECK 
-#error "Deprecated header, check usage" 
+#ifndef HEADERCHECK
+#error "Deprecated header, check usage"
 
 #include <utility>
 #include <memory>
 
-#include <dune/common/fvector.hh> 
+#include <dune/common/fvector.hh>
 
 #include <dune/fem/pass/callerutility.hh>
 #include <dune/fem/pass/ellipticdiscretemodel.hh>
@@ -27,7 +27,7 @@ namespace Dune
   : public Fem::DiscreteModelCallerDefault< DiscreteModelImp, ArgumentImp, SelectorImp >
   {
     typedef EllipticDiscreteModelCaller< DiscreteModelImp, ArgumentImp, SelectorImp > ThisType;
-    typedef Fem::DiscreteModelCallerDefault< DiscreteModelImp, ArgumentImp, SelectorImp > BaseType; 
+    typedef Fem::DiscreteModelCallerDefault< DiscreteModelImp, ArgumentImp, SelectorImp > BaseType;
 
   public:
     typedef DiscreteModelImp DiscreteModelType;
@@ -67,10 +67,10 @@ namespace Dune
       jacobians_( JacobianCreator::apply() )
     {}
 
-    //! return true when a mass matrix has to be build  
+    //! return true when a mass matrix has to be build
     bool hasMass () const  { return false; }
 
-    //! evaluate mass matrix factor 
+    //! evaluate mass matrix factor
     template <class MassFactorType>
     void mass(const Entity& en,
               const VolumeQuadratureType& quad,
@@ -81,7 +81,7 @@ namespace Dune
       abort();
     }
 
-    void setEntity ( const Entity &entity ) 
+    void setEntity ( const Entity &entity )
     {
       BaseType::setEntity( entity );
       problem_.setEntity( entity );
@@ -96,21 +96,21 @@ namespace Dune
     // Ensure: entities set correctly before call
     template <class QuadratureType, class CoefficientType>
     void evaluateCoefficientFace(const Intersection& intersection,
-                                 const QuadratureType& quadInner, 
-                                 const QuadratureType& quadOuter, 
+                                 const QuadratureType& quadInner,
+                                 const QuadratureType& quadOuter,
                                  const int quadPoint,
-                                 CoefficientType& coeffLeft, 
-                                 CoefficientType& coeffRight) 
+                                 CoefficientType& coeffLeft,
+                                 CoefficientType& coeffRight)
     {
-      // evaluate data functions 
+      // evaluate data functions
       this->evaluateQuad( quadInner, quadPoint,
                          this->data_->localFunctionsSelf(), this->valuesEn_);
       this->evaluateQuad( quadOuter, quadPoint,
                          this->data_->localFunctionsNeigh(), this->valuesNeigh_);
 
-      problem_.coefficientFace(intersection, this->time_, 
-                               quadInner, quadOuter, quadPoint,     
-                               this->valuesEn_, 
+      problem_.coefficientFace(intersection, this->time_,
+                               quadInner, quadOuter, quadPoint,
+                               this->valuesEn_,
                                this->valuesNeigh_,
                                coeffLeft,coeffRight);
     }
@@ -118,19 +118,19 @@ namespace Dune
     // Ensure: entities set correctly before call
     template <class QuadratureType, class CoefficientType>
     void evaluateCoefficientBoundary(const Intersection& intersection,
-                                     const QuadratureType& quadInner, 
+                                     const QuadratureType& quadInner,
                                      const int quadPoint,
-                                     CoefficientType& coeff) 
+                                     CoefficientType& coeff)
     {
       this->evaluateQuad( quadInner, quadPoint,
                           this->data_->localFunctionsSelf(), this->valuesEn_);
 
-      problem_.coefficient(this->data_->self(), 
-                           this->time_, 
-                           quadInner, quadPoint, 
+      problem_.coefficient(this->data_->self(),
+                           this->time_,
+                           quadInner, quadPoint,
                            this->valuesEn_, coeff);
     }
-      
+
     template< class CoefficientType >
     void evaluateCoefficient( const Entity &entity,
                               const VolumeQuadratureType &quad, int quadPoint,
@@ -142,12 +142,12 @@ namespace Dune
                             this->valuesEn_, coeff );
     }
 
-    template <class QuadratureType> 
+    template <class QuadratureType>
     BoundaryIdentifierType
     boundaryValue(const Intersection& intersection,
                   const QuadratureType& quad,
                   const int quadPoint,
-                  RangeType& boundaryValue) 
+                  RangeType& boundaryValue)
     {
       typedef typename Intersection::LocalGeometry Geometry;
 
@@ -157,33 +157,33 @@ namespace Dune
                                     this->valuesEn_, boundaryValue);
     }
 
-    void rightHandSide(const Entity& en, 
-                       const VolumeQuadratureType& quad, 
-                       const int quadPoint, 
-                       RangeType& res) 
+    void rightHandSide(const Entity& en,
+                       const VolumeQuadratureType& quad,
+                       const int quadPoint,
+                       RangeType& res)
     {
       this->evaluateQuad( quad, quadPoint,
                          this->data_->localFunctionsSelf(), this->valuesEn_);
-      this->evaluateJacobianQuad( quad, quadPoint, 
+      this->evaluateJacobianQuad( quad, quadPoint,
                                   this->data_->localFunctionsSelf(),
                                   this->jacobians_ );
-      problem_.rightHandSide(en, this->time_, quad, quadPoint, 
+      problem_.rightHandSide(en, this->time_, quad, quadPoint,
                              this->valuesEn_,
                              this->jacobians_,
                              res);
     }
 
   private:
-    // our problem 
+    // our problem
     DiscreteModelType& problem_;
 
   protected:
     RangeTupleType valuesEn_;
     RangeTupleType valuesNeigh_;
     JacobianRangeTupleType jacobians_;
-  }; // end EllipticDiscreteModelCaller 
+  }; // end EllipticDiscreteModelCaller
 
-} // end namespace Dune 
+} // end namespace Dune
 
 #endif
 #endif

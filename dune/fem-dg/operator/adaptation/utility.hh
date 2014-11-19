@@ -19,7 +19,7 @@ namespace Dune
       return Fem::Parameter::getEnum( "fem.adaptation.markingStrategy", names, 2 );
     }
 
-    //! constructor 
+    //! constructor
     AdaptationParameters ()
       : markStrategy_( getStrategy() )
     {}
@@ -90,15 +90,15 @@ namespace Dune
     virtual bool verbose () const { return Fem::Parameter::getValue< bool >( "fem.adaptation.verbose", false ); }
   };
 
-  class ComputeMinMaxVolume 
+  class ComputeMinMaxVolume
   {
-  protected:  
+  protected:
     typedef std::pair< double, double > VolumePairType;
-    
+
     template <class Entity>
-    double findCoarsestVolume( const Entity& entity, const bool hasGridHierarchy ) const 
+    double findCoarsestVolume( const Entity& entity, const bool hasGridHierarchy ) const
     {
-      // go to father, if possible 
+      // go to father, if possible
       // otherwise write min and max volume on backup/restore
       if( hasGridHierarchy && entity.level() > 0 )
       {
@@ -106,14 +106,14 @@ namespace Dune
         EntityPointer father = entity.father();
         return findCoarsestVolume( *father, hasGridHierarchy );
       }
-      else  // return entity's volume 
+      else  // return entity's volume
         return entity.geometry().volume();
     }
 
     template <class GridPart>
-    VolumePairType computeMinMaxVolume( const GridPart& gridPart, 
-                                        const int coarsestLevel,               
-                                        const int finestLevel ) 
+    VolumePairType computeMinMaxVolume( const GridPart& gridPart,
+                                        const int coarsestLevel,
+                                        const int finestLevel )
     {
       typedef typename GridPart :: GridType GridType ;
       typedef typename GridPart :: template Codim< 0 > :: IteratorType IteratorType;
@@ -121,14 +121,14 @@ namespace Dune
       const bool hasGridHierarchy = Fem :: GridPartCapabilities :: hasGrid< GridPart > :: v;
 
       double weight = Dune::DGFGridInfo<GridType>::refineWeight();
-      // if weight is not set, use 1/(2^d) 
+      // if weight is not set, use 1/(2^d)
       if( weight < 0 )
         weight = 1.0/std::pow( 2.0, double( GridType :: dimension) );
 
       double minVolume[ 1 ] = { std::numeric_limits< double > ::max() };
       double maxVolume[ 1 ] = { std::numeric_limits< double > ::min() };
 
-      // if grid is not empty compute smallest and biggest volume 
+      // if grid is not empty compute smallest and biggest volume
       const IteratorType end = gridPart.template end< 0 >();
       for( IteratorType it = gridPart.template begin< 0 >(); it != end; ++it )
       {
@@ -137,12 +137,12 @@ namespace Dune
         maxVolume[ 0 ] = std::max( maxVolume[ 0 ], volume );
       }
 
-      // compute global min and max of values 
+      // compute global min and max of values
       computeGlobalMinMax( gridPart.grid().comm(), 1, maxVolume, minVolume );
 
       double finestWeight   = std::pow( weight, double(finestLevel) );
       double coarsestWeight = std::pow( weight, double(coarsestLevel) );
-      // set local variables 
+      // set local variables
       return VolumePairType( double(maxVolume[ 0 ] * coarsestWeight),
                              double(minVolume[ 0 ] * finestWeight) );
     }
@@ -152,16 +152,16 @@ namespace Dune
     {
       //std::vector< double > buffer( 2 * size, 0.0 );
       double buffer[ 2 * size ];
-      // store max 
+      // store max
       for( int i=0; i<size; ++i )
         buffer[ i ] = max[ i ];
 
-      // store 1/min 
+      // store 1/min
       const double eps = std::numeric_limits< double > :: epsilon ();
       for( int i=0, ib=size; i<size; ++i, ++ib )
         buffer[ ib ] = (std::abs( min[ i ] ) > eps) ? 1.0/min[ i ] : 0;
 
-      // compute global maximum 
+      // compute global maximum
       comm.max( &buffer[ 0 ], 2*size );
 
       // store max again
@@ -172,10 +172,10 @@ namespace Dune
         min[ i ] = (std::abs( buffer[ ib ] ) > eps) ? 1.0/buffer[ ib ] : 0;
     }
 
-    //! constructor computing coarsest and finest volume 
-    template <class GridPart> 
-    ComputeMinMaxVolume( const GridPart& gridPart, 
-                         const int coarsestLevel, 
+    //! constructor computing coarsest and finest volume
+    template <class GridPart>
+    ComputeMinMaxVolume( const GridPart& gridPart,
+                         const int coarsestLevel,
                          const int finestLevel )
       : volumes_( computeMinMaxVolume( gridPart, coarsestLevel, finestLevel ) )
     {

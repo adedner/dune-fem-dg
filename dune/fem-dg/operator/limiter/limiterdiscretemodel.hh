@@ -12,7 +12,7 @@ namespace Fem {
 
   ///////////////////////////////////////////////////////////////////
   //
-  //  --StandardLimiterDiscreteModel 
+  //  --StandardLimiterDiscreteModel
   //
   ///////////////////////////////////////////////////////////////////
 
@@ -23,12 +23,12 @@ namespace Fem {
   class StandardLimiterDiscreteModel;
 
   template <class GlobalPassTraitsImp, class Model, int passId >
-  struct LimiterTraits 
-    : public LimiterDefaultTraits<GlobalPassTraitsImp,Model,passId> 
+  struct LimiterTraits
+    : public LimiterDefaultTraits<GlobalPassTraitsImp,Model,passId>
   {
     typedef StandardLimiterDiscreteModel<GlobalPassTraitsImp,Model,passId> DGDiscreteModelType;
   };
-  
+
   template <class GlobalPassTraitsImp, class Model, int passId >
   class StandardLimiterDiscreteModel :
     public LimiterDefaultDiscreteModel<GlobalPassTraitsImp, Model , passId >
@@ -51,10 +51,10 @@ namespace Fem {
     typedef typename GridPartType::template Codim<0>::EntityType        EntityType;
     typedef typename GridPartType::template Codim<0>::EntityPointerType EntityPointerType;
     typedef typename GridType::template Codim<0>::Entity                GridEntityType;
-    
+
     enum { dimGrid = GridType :: dimension };
-    
-    // type of surface domain type 
+
+    // type of surface domain type
     typedef FieldVector< DomainFieldType, dimGrid - 1 > FaceLocalDomainType;
 
     typedef typename Traits::DestinationType DestinationType;
@@ -79,11 +79,11 @@ namespace Fem {
     const bool shockIndicatorAdaptivty_;
 
   public:
-    //! constructor 
-    StandardLimiterDiscreteModel(const Model& mod, 
+    //! constructor
+    StandardLimiterDiscreteModel(const Model& mod,
                                  const int polOrd,
-                                 const AdaptationParameters& param = AdaptationParameters() ) 
-      : BaseType(mod), 
+                                 const AdaptationParameters& param = AdaptationParameters() )
+      : BaseType(mod),
         indicator_( 0 ),
         refTol_( -1 ),
         crsTol_( -1 ),
@@ -91,7 +91,7 @@ namespace Fem {
         crsLevel_( 0 ),
         shockIndicatorAdaptivty_( param.shockIndicator() )
     {
-      if( shockIndicatorAdaptivty_ ) 
+      if( shockIndicatorAdaptivty_ )
       {
         refTol_   = param.refinementTolerance();
         crsTol_   = param.coarsenTolerance();
@@ -100,12 +100,12 @@ namespace Fem {
       }
     }
 
-    void setIndicator(IndicatorType* indicator) 
+    void setIndicator(IndicatorType* indicator)
     {
-      indicator_ = indicator; 
+      indicator_ = indicator;
     }
 
-    void setEntity(const EntityType& en) 
+    void setEntity(const EntityType& en)
     {
       BaseType :: setEntity ( en );
     }
@@ -116,15 +116,15 @@ namespace Fem {
 
     enum { Coarsen = -1 , None = 0, Refine = 1 };
 
-    //! mark element for refinement or coarsening 
-    void adaptation(GridType& grid, 
+    //! mark element for refinement or coarsening
+    void adaptation(GridType& grid,
                     const EntityType& entity,
-                    const RangeType& shockIndicator, 
-                    const RangeType& adaptIndicator) const 
+                    const RangeType& shockIndicator,
+                    const RangeType& adaptIndicator) const
     {
       const double val = adaptIndicator[0];
 
-      // set indicator 
+      // set indicator
       if( indicator_ )
       {
         typedef typename IndicatorType :: LocalFunctionType  LocalFunctionType;
@@ -132,46 +132,46 @@ namespace Fem {
         assert( lf.numDofs() == 3 );
         lf[0] = shockIndicator[0];
         lf[1] = adaptIndicator[0];
-        lf[2] = val; // store real adapt indicator 
+        lf[2] = val; // store real adapt indicator
       }
 
-      // only mark for adaptation if this type of adaptation is enabled 
+      // only mark for adaptation if this type of adaptation is enabled
       if( ! shockIndicatorAdaptivty_ ) return ;
 
-      // get real grid entity from possibly wrapped entity 
+      // get real grid entity from possibly wrapped entity
       const GridEntityType& gridEntity = Fem :: gridEntity( entity );
 
-      // get refinement marker 
+      // get refinement marker
       int refinement = grid.getMark( gridEntity );
-      
-      // if element already is marked for refinement then do nothing 
+
+      // if element already is marked for refinement then do nothing
       if( refinement >= Refine ) return ;
-      
+
       // use component 1 (max of adapt indicator)
       {
         const int level = gridEntity.level();
-        if( (( val > refTol_ ) || (val < 0)) && level < finLevel_) 
+        if( (( val > refTol_ ) || (val < 0)) && level < finLevel_)
         {
           refinement = Refine;
         }
-        else if ( (val >= 0) && (val < crsTol_)  && level > crsLevel_ ) 
+        else if ( (val >= 0) && (val < crsTol_)  && level > crsLevel_ )
         {
-          if( refinement == None ) 
+          if( refinement == None )
           {
             refinement = Coarsen;
           }
         }
       }
 
-      // set new refinement marker 
+      // set new refinement marker
       grid.mark( refinement, gridEntity );
     }
 
-    template <class FaceQuadratureImp, 
-              class ArgumentTuple, 
+    template <class FaceQuadratureImp,
+              class ArgumentTuple,
               class JacobianTuple>
     double numericalFlux(const IntersectionType& it,
-                         const double time, 
+                         const double time,
                          const FaceQuadratureImp& innerQuad,
                          const FaceQuadratureImp& outerQuad,
                          const int quadPoint,
@@ -186,28 +186,28 @@ namespace Fem {
     {
       const FaceLocalDomainType& x = innerQuad.localPoint( quadPoint );
 
-      if (! physical(inside(), innerQuad.point( quadPoint ), uLeft[ uVar ] ) || 
-          ! physical(outside(), outerQuad.point( quadPoint ), uRight[ uVar ] ) ) 
+      if (! physical(inside(), innerQuad.point( quadPoint ), uLeft[ uVar ] ) ||
+          ! physical(outside(), outerQuad.point( quadPoint ), uRight[ uVar ] ) )
       {
         adaptIndicator = shockIndicator = 1e10;
         return -1.;
-      } 
-      else 
+      }
+      else
       {
-        // evaluate adaptation indicator 
+        // evaluate adaptation indicator
         model_.adaptationIndicator(it, time, x, uLeft[ uVar ], uRight[ uVar ], adaptIndicator );
         model_.jump( it, time, x, uLeft[ uVar ], uRight[ uVar ], shockIndicator );
         return 1.;
       }
     }
 
-    //! returns difference between internal value and boundary 
-    //! value 
-    template <class FaceQuadratureImp, 
-              class ArgumentTuple, 
+    //! returns difference between internal value and boundary
+    //! value
+    template <class FaceQuadratureImp,
+              class ArgumentTuple,
               class JacobianTuple>
     double boundaryFlux(const IntersectionType& it,
-                        const double time, 
+                        const double time,
                         const FaceQuadratureImp& innerQuad,
                         const int quadPoint,
                         const ArgumentTuple& uLeft,
@@ -217,28 +217,28 @@ namespace Fem {
     {
       const FaceLocalDomainType& x = innerQuad.localPoint( quadPoint );
 
-      RangeType uRight; 
+      RangeType uRight;
 
-      // evaluate boundary value 
+      // evaluate boundary value
       model_.boundaryValue(it, time, x, uLeft[ uVar ], uRight );
-      
-      if (! physical(inside(), innerQuad.point( quadPoint ), uLeft[ uVar ] ) || 
-          ! physical(inside(), innerQuad.point( quadPoint ), uRight ) ) 
+
+      if (! physical(inside(), innerQuad.point( quadPoint ), uLeft[ uVar ] ) ||
+          ! physical(inside(), innerQuad.point( quadPoint ), uRight ) )
       {
         adaptIndicator = 1e10;
         return -1.;
       }
-      else 
+      else
       {
         model_.jump( it, time, x, uLeft[ uVar ], uRight, adaptIndicator);
         return 1.;
       }
     }
-    
-    //! returns difference between internal value and boundary 
-    //! value 
+
+    //! returns difference between internal value and boundary
+    //! value
     inline void boundaryValue(const IntersectionType& it,
-                              const double time, 
+                              const double time,
                               const FaceLocalDomainType& x,
                               const RangeType& uLeft,
                               RangeType& uRight) const
@@ -247,14 +247,14 @@ namespace Fem {
     }
 
     /** \brief returns true if model provides physical check */
-    bool hasPhysical() const { return model_.hasPhysical(); } 
+    bool hasPhysical() const { return model_.hasPhysical(); }
 
     /** \brief check physical values */
     template <class ArgumentTuple>
     bool checkPhysical( const EntityType& entity,
                         const LocalDomainType& xLocal,
                         const ArgumentTuple& u ) const
-    { 
+    {
       return physical( entity, xLocal, u[ uVar ] );
     }
 
@@ -262,7 +262,7 @@ namespace Fem {
     bool physical( const EntityType& entity,
                    const LocalDomainType& xLocal,
                    const RangeType& u ) const
-    { 
+    {
       return model_.physical( entity, xLocal, u );
     }
 
@@ -275,6 +275,6 @@ namespace Fem {
     }
   };
 
-} // end namespace Fem 
-} // end namespace Dune 
+} // end namespace Fem
+} // end namespace Dune
 #endif

@@ -1,7 +1,7 @@
 #ifndef METSTROEM_ESTIMATOR_HH
 #define METSTROEM_ESTIMATOR_HH
 
-//- Dune-fem includes 
+//- Dune-fem includes
 #include <dune/fem-dg/operator/adaptation/estimatorbase.hh>
 
 // Estimator
@@ -13,15 +13,15 @@
  *  This is a indicator based on a 'gradient' of the numerical solution.
  *  It evaluates maximum of the numerical solution in a grid element, and compares
  *  this value with the corresponding neighbor's value.
- *  The estimate is based on two indicators, e.g. one indicator could be 
+ *  The estimate is based on two indicators, e.g. one indicator could be
  *  the density and the second vertical velocity.
- *  
+ *
  *  \tparam DiscreteFunction Discrete function type
  */
 template< class DiscreteFunction, class Problem >
-class Estimator : 
+class Estimator :
   public EstimatorBase< DiscreteFunction >,
-  public Dune::ComputeMinMaxVolume 
+  public Dune::ComputeMinMaxVolume
 {
   typedef Estimator< DiscreteFunction, Problem >              ThisType;
   typedef EstimatorBase< DiscreteFunction >                   BaseType;
@@ -32,12 +32,12 @@ public:
   typedef typename BaseType :: DiscreteFunctionSpaceType      DiscreteFunctionSpaceType;
   typedef typename BaseType :: LocalFunctionType              LocalFunctionType;
 
-  typedef typename BaseType :: DomainFieldType                DomainFieldType; 
-  typedef typename BaseType :: RangeFieldType                 RangeFieldType; 
-  typedef typename BaseType :: DomainType                     DomainType; 
-  typedef typename BaseType :: RangeType                      RangeType; 
-  typedef typename BaseType :: JacobianRangeType              JacobianRangeType; 
-  typedef typename BaseType :: GridPartType                   GridPartType; 
+  typedef typename BaseType :: DomainFieldType                DomainFieldType;
+  typedef typename BaseType :: RangeFieldType                 RangeFieldType;
+  typedef typename BaseType :: DomainType                     DomainType;
+  typedef typename BaseType :: RangeType                      RangeType;
+  typedef typename BaseType :: JacobianRangeType              JacobianRangeType;
+  typedef typename BaseType :: GridPartType                   GridPartType;
   typedef typename BaseType :: IteratorType                   IteratorType;
 
   typedef typename BaseType :: GridType                       GridType;
@@ -131,21 +131,21 @@ protected:
       return;
 
     // also mark all neighbors of the actual entity for refinement
-    const IntersectionIteratorType nbend = gridPart_.iend( entity ); 
-    for (IntersectionIteratorType nb = gridPart_.ibegin( entity ); 
+    const IntersectionIteratorType nbend = gridPart_.iend( entity );
+    for (IntersectionIteratorType nb = gridPart_.ibegin( entity );
          nb != nbend; ++nb)
     {
       const IntersectionType& intersection = *nb ;
       if( intersection.neighbor() )
       {
         ElementPointerType outside = intersection.outside();
-        const GridElementType& neighbor = Dune :: Fem :: gridEntity( *outside ); 
-        // only do the following when the neighbor is not a ghost entity 
-        if( neighbor.partitionType() != Dune::GhostEntity ) 
-        { 
+        const GridElementType& neighbor = Dune :: Fem :: gridEntity( *outside );
+        // only do the following when the neighbor is not a ghost entity
+        if( neighbor.partitionType() != Dune::GhostEntity )
+        {
           if ( (neighbor.geometry().volume() > finestVolume()) || (! neighbor.isRegular()) )
           {
-            // mark for refinement 
+            // mark for refinement
             grid_.mark( 1, neighbor );
           }
 
@@ -158,11 +158,11 @@ protected:
 
 public:
   //! \brief Constructor
-  explicit Estimator ( const DiscreteFunctionSpaceType &space, 
+  explicit Estimator ( const DiscreteFunctionSpaceType &space,
                        const Problem& problem,
                        const Dune::AdaptationParameters& param = Dune::AdaptationParameters() )
   : BaseType( space ),
-    ComputeMinMaxVolumeType( space.gridPart(), 
+    ComputeMinMaxVolumeType( space.gridPart(),
                              param.coarsestLevel( Dune::DGFGridInfo<GridType>::refineStepsForHalf() ),
                              param.finestLevel( Dune::DGFGridInfo<GridType>::refineStepsForHalf() ) ),
     indicator2Ptr_( 0 ),
@@ -178,7 +178,7 @@ public:
     }
   }
 
-  //! clear the stored indicators 
+  //! clear the stored indicators
   void clear()
   {
     BaseType::clear();
@@ -189,33 +189,33 @@ public:
   }
 
   //! return number of leaf element for this process (global comm still needed)
-  size_t numberOfElements () const 
+  size_t numberOfElements () const
   {
-    return numberOfElements_; 
+    return numberOfElements_;
   }
 
-  /** \brief calculates the maximum of the differences between the values in the center of 
+  /** \brief calculates the maximum of the differences between the values in the center of
    *  the current grid entity and its neighbors
    *
    *  \param[in] entity Grid entity
-   *  \param[out] ind1Min Minimal difference of the first indicator quantity (e.g. density) 
+   *  \param[out] ind1Min Minimal difference of the first indicator quantity (e.g. density)
    *    values in the center of \a entity and its neighbor
-   *  \param[out] ind1Max Maximal difference of the first indicator quantity (e.g. density) 
+   *  \param[out] ind1Max Maximal difference of the first indicator quantity (e.g. density)
    *    values in the center of \a entity and its neighbor
-   *  \param[out] ind2Min Minimal difference of the second indicator quantity (e.g. density) 
+   *  \param[out] ind2Min Minimal difference of the second indicator quantity (e.g. density)
    *    values in the center of \a entity and its neighbor
-   *  \param[out] ind2Min Maximal difference of the second indicator quantity (e.g. density) 
+   *  \param[out] ind2Min Maximal difference of the second indicator quantity (e.g. density)
    *    values in the center of \a entity and its neighbor
    *
    *  \note \a indicator1_ and \a indicator2_ are assigned its correspond values
    *    for \a entity and its neighbor
    */
-  void estimateLocal( const DiscreteFunctionType& uh, 
+  void estimateLocal( const DiscreteFunctionType& uh,
                       const ElementType& entity, double& ind1Min, double& ind1Max,
                       double& ind2Min, double& ind2Max )
-  { 
-    const int enIdx = indexSet_.index( entity ); 
-    
+  {
+    const int enIdx = indexSet_.index( entity );
+
     RangeType val( 0. );
     RangeType valnb( 0. );
 
@@ -255,8 +255,8 @@ public:
     }
 
     // iterate over neighbors
-    const IntersectionIteratorType nbend = gridPart_.iend( entity ); 
-    for (IntersectionIteratorType nb = gridPart_.ibegin( entity ); 
+    const IntersectionIteratorType nbend = gridPart_.iend( entity );
+    for (IntersectionIteratorType nb = gridPart_.ibegin( entity );
          nb != nbend; ++nb)
     {
       const IntersectionType& intersection = *nb ;
@@ -264,11 +264,11 @@ public:
       {
         // access neighbor
         ElementPointerType outside = intersection.outside();
-        const ElementType& neighbor = *outside; 
+        const ElementType& neighbor = *outside;
         const int nbIdx = indexSet_.index( neighbor );
 
         // handle face from one side only
-        if ( neighbor.partitionType() == Dune::GhostEntity || 
+        if ( neighbor.partitionType() == Dune::GhostEntity ||
               entity.level() > neighbor.level() ||
             (entity.level() == neighbor.level() && enIdx < nbIdx) )
         {
@@ -321,7 +321,7 @@ public:
   //! \brief calculates indicators
   void estimate( const DiscreteFunctionType& uh )
   {
-    indicator_.resize( indexSet_.size( 0 ) ); 
+    indicator_.resize( indexSet_.size( 0 ) );
     clear();
 
     double indMax[ 2 ] = { std::numeric_limits< double > :: min (), std::numeric_limits< double > :: min () };
@@ -332,13 +332,13 @@ public:
     const IteratorType end = dfSpace_.end();
     for( IteratorType it = dfSpace_.begin(); it != end; ++it )
     {
-      // do local estimation 
+      // do local estimation
       estimateLocal( uh, *it, indMin[ 0 ], indMax[ 0 ], indMin[ 1 ], indMax[ 1 ] );
-      // count number of elements 
+      // count number of elements
       ++ numberOfElements_ ;
     }
 
-    // global max and min 
+    // global max and min
     computeGlobalMinMax( gridPart_.grid().comm(), 2, indMax, indMin );
 
     // return global max differences
@@ -352,13 +352,13 @@ public:
    */
   virtual void markLocal( const ElementType& entity )
   {
-    // do not mark ghost elements 
+    // do not mark ghost elements
     if( entity.partitionType() == Dune::GhostEntity ) return ;
 
-    // get local error indicator 
+    // get local error indicator
     const int entityId = indexSet_.index(entity);
 
-    double localIndicator1 = indicator_[ entityId ]; 
+    double localIndicator1 = indicator_[ entityId ];
     const double locRefTol1 = refineTolerance_ * ind1MaxDiff_;
     const double locCoarTol1 = coarseTolerance_ * ind1MaxDiff_;
 
@@ -375,20 +375,20 @@ public:
     if( indicator2Ptr_ )
     {
       const IndicatorType& indicator2_ = *indicator2Ptr_;
-      double localIndicator2 = indicator2_[ entityId ]; 
+      double localIndicator2 = indicator2_[ entityId ];
       const double locRefTol2 =  refineTolerance_ * ind2MaxDiff_;
       const double locCoarTol2 =  coarseTolerance_ * ind2MaxDiff_;
       toBeRefined = (toBeRefined || ((localIndicator2 > locRefTol2) && problemAllows));
       toBeCoarsend = (toBeCoarsend && (localIndicator2 < locCoarTol2));
     }
 
-    // get grid's entity object form marking 
+    // get grid's entity object form marking
     const GridElementType& element = Dune :: Fem :: gridEntity( entity );
 
     // allow refinement if volume of element is still bigger then smallest volume allowed
     if ( toBeRefined && (volume > finestVolume()) )
     {
-      // mark for refinement 
+      // mark for refinement
       grid_.mark( 1, element );
 
       // also mark distant neighbors of the actual entity for refinement
@@ -396,7 +396,7 @@ public:
     }
     else if ( toBeCoarsend && (volume < coarsestVolume()) )
     {
-      // mark for coarsening 
+      // mark for coarsening
       grid_.mark( -1, element );
     }
     else
@@ -413,8 +413,8 @@ public:
     estimate( uh );
     mark();
   }
-  
+
 };
 
 
-#endif // #ifndef ESTIMATOR_HH 
+#endif // #ifndef ESTIMATOR_HH

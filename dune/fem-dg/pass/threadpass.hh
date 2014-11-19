@@ -7,51 +7,51 @@
 #include <dune/fem/quadrature/caching/twistutility.hh>
 #include <dune/fem/quadrature/intersectionquadrature.hh>
 #include <dune/fem/solver/timeprovider.hh>
-#include <dune/fem/space/common/allgeomtypes.hh> 
-#include <dune/fem/space/common/arrays.hh> 
+#include <dune/fem/space/common/allgeomtypes.hh>
+#include <dune/fem/space/common/arrays.hh>
 
 #include "threadhandle.hh"
 
 namespace Dune {
 
-  struct NonBlockingCommParameter 
+  struct NonBlockingCommParameter
   {
-    static bool nonBlockingCommunication() 
+    static bool nonBlockingCommunication()
     {
       // non-blocking communication is only avaiable in smp mode
 #ifdef USE_SMP_PARALLEL
       return Fem :: Parameter :: getValue< bool > ("femdg.nonblockingcomm", false );
-#else 
+#else
       return false;
 #endif
     }
   };
 
-  template < class DiscreteFunction > 
+  template < class DiscreteFunction >
   class DeleteCommunicatedDofs : public Fem::ParallelScalarProduct < DiscreteFunction >
   {
-    typedef Fem::ParallelScalarProduct < DiscreteFunction >  BaseType; 
+    typedef Fem::ParallelScalarProduct < DiscreteFunction >  BaseType;
 
   public:
     typedef typename BaseType :: DiscreteFunctionType       DiscreteFunctionType;
     typedef typename BaseType :: DiscreteFunctionSpaceType  DiscreteFunctionSpaceType;
-    
 
-    //! constructor taking space 
+
+    //! constructor taking space
     explicit DeleteCommunicatedDofs( const DiscreteFunctionSpaceType &space )
       : BaseType( space )
     {
     }
 
-    //! delete ghost values again, otherwise the Newton solver 
-    //! of the implicit ODE solvers wont converge 
+    //! delete ghost values again, otherwise the Newton solver
+    //! of the implicit ODE solvers wont converge
     void deleteCommunicatedDofs( DiscreteFunctionType& df ) const
     {
 #if HAVE_MPI
       typedef typename BaseType :: SlaveDofsType  SlaveDofsType;
       SlaveDofsType &slaves = this->slaveDofs();
 
-      // don't delete the last since this is the overall Size 
+      // don't delete the last since this is the overall Size
       const int slaveSize = slaves.size() - 1;
       for(int slave = 0; slave<slaveSize; ++slave)
       {
@@ -65,8 +65,8 @@ namespace Dune {
     }
   };
 
-  template < class DestinationType > 
-  class NonBlockingCommHandle 
+  template < class DestinationType >
+  class NonBlockingCommHandle
   {
     typedef typename DestinationType :: DiscreteFunctionSpaceType :: CommunicationManagerType
           :: NonBlockingCommunicationType  NonBlockingCommunicationType;
@@ -74,39 +74,39 @@ namespace Dune {
     mutable NonBlockingCommunicationType* nonBlockingComm_;
     const bool useNonBlockingComm_ ;
   public:
-    NonBlockingCommHandle() 
+    NonBlockingCommHandle()
       : nonBlockingComm_( 0 ),
         useNonBlockingComm_( NonBlockingCommParameter :: nonBlockingCommunication() )
       {}
 
-    NonBlockingCommHandle( const NonBlockingCommHandle& other ) 
+    NonBlockingCommHandle( const NonBlockingCommHandle& other )
       : nonBlockingComm_( 0 ),
-        useNonBlockingComm_( other.useNonBlockingComm_ ) 
+        useNonBlockingComm_( other.useNonBlockingComm_ )
     {}
 
     bool nonBlockingCommunication () const { return useNonBlockingComm_; }
 
-    ~NonBlockingCommHandle() 
+    ~NonBlockingCommHandle()
     {
       // make sure all communications have been finished
       assert( nonBlockingComm_ == 0 );
     }
 
-    // send data 
-    void initComm( const DestinationType& dest ) const 
+    // send data
+    void initComm( const DestinationType& dest ) const
     {
       if( nonBlockingCommunication() && nonBlockingComm_ == 0 )
       {
         nonBlockingComm_ = new NonBlockingCommunicationType(
             dest.space().communicator().nonBlockingCommunication() );
 
-        // perform send operation 
+        // perform send operation
         nonBlockingComm_->send( dest );
       }
     }
 
-    // receive data 
-    void receiveComm( const DestinationType& destination ) const 
+    // receive data
+    void receiveComm( const DestinationType& destination ) const
     {
       if( nonBlockingCommunication() && nonBlockingComm_ )
       {
@@ -117,11 +117,11 @@ namespace Dune {
       }
     }
 
-    // cleanup possibly overwritten ghost values 
-    void finalizeComm( const DestinationType& dest ) const 
+    // cleanup possibly overwritten ghost values
+    void finalizeComm( const DestinationType& dest ) const
     {
-      // only delete non-interior dofs in non-blocking mode 
-      if( nonBlockingCommunication() ) 
+      // only delete non-interior dofs in non-blocking mode
+      if( nonBlockingCommunication() )
       {
         // make sure communication has been finished
         assert( nonBlockingComm_ == 0 );
@@ -131,13 +131,13 @@ namespace Dune {
     }
   };
 
-  template < class InnerPass, 
-             class ThreadIterator, 
-             bool nonblockingcomm = true > 
+  template < class InnerPass,
+             class ThreadIterator,
+             bool nonblockingcomm = true >
   class ThreadPass :
     public Fem::LocalPass< typename InnerPass :: DiscreteModelType,
-                           typename InnerPass :: PreviousPassType, 
-                           InnerPass :: passId > 
+                           typename InnerPass :: PreviousPassType,
+                           InnerPass :: passId >
   {
     typedef ThreadPass< InnerPass, ThreadIterator, nonblockingcomm > ThisType;
   public:
@@ -182,8 +182,8 @@ namespace Dune {
     // Range of the destination
     enum { dimRange = DiscreteFunctionSpaceType::dimRange };
 
-    // type of local id set 
-    typedef typename GridPartType::IndexSetType IndexSetType; 
+    // type of local id set
+    typedef typename GridPartType::IndexSetType IndexSetType;
 
     // type of thread iterators (e.g. Fem::DomainDecomposedIteratorStorage or Fem::ThreadIterator)
     typedef ThreadIterator  ThreadIteratorType;
@@ -198,10 +198,10 @@ namespace Dune {
     //! \param problem Actual problem definition (see problem.hh)
     //! \param pass Previous pass
     //! \param spc Space belonging to the discrete function local to this pass
-    //! \param volumeQuadOrd defines the order of the volume quadrature which is by default 2* space polynomial order 
-    //! \param faceQuadOrd defines the order of the face quadrature which is by default 2* space polynomial order 
-    ThreadPass(const DiscreteModelType& problem, 
-               PreviousPassType& pass, 
+    //! \param volumeQuadOrd defines the order of the volume quadrature which is by default 2* space polynomial order
+    //! \param faceQuadOrd defines the order of the face quadrature which is by default 2* space polynomial order
+    ThreadPass(const DiscreteModelType& problem,
+               PreviousPassType& pass,
                const DiscreteFunctionSpaceType& spc,
                const int volumeQuadOrd = -1,
                const int faceQuadOrd = -1) :
@@ -223,7 +223,7 @@ namespace Dune {
       const int maxThreads = Fem::ThreadManager::maxThreads();
       for(int i=0; i<maxThreads; ++i)
       {
-        // use serparate discrete problem for each thread 
+        // use serparate discrete problem for each thread
         problems_[ i ] = new DiscreteModelType( problem );
         // create dg passes, the last bool disables communication in the pass itself
         passes_[ i ]   = new InnerPassType( *problems_[ i ], pass, spc, volumeQuadOrd, faceQuadOrd );
@@ -236,7 +236,7 @@ namespace Dune {
       requireCommunication_ = passes_[ 0 ]->requireCommunication();
     }
 
-    virtual ~ThreadPass () 
+    virtual ~ThreadPass ()
     {
       for(int i=0; i<Fem::ThreadManager::maxThreads(); ++i)
       {
@@ -246,21 +246,21 @@ namespace Dune {
     }
 
     template <class AdaptationType>
-    void setAdaptation( AdaptationType& adHandle, double weight ) 
+    void setAdaptation( AdaptationType& adHandle, double weight )
     {
       const int maxThreads = Fem::ThreadManager::maxThreads();
       for(int thread=0; thread<maxThreads; ++thread)
       {
-        problems_[ thread ]->setAdaptation( adHandle, 
+        problems_[ thread ]->setAdaptation( adHandle,
 #ifdef USE_SMP_PARALLEL
-            iterators_.filter( thread ), // add filter in thread parallel versions 
+            iterators_.filter( thread ), // add filter in thread parallel versions
 #endif
             weight );
       }
     }
 
     //! call apropriate method on all internal passes
-    void enable() const 
+    void enable() const
     {
       const int maxThreads = Fem::ThreadManager::maxThreads();
       for(int thread=0; thread<maxThreads; ++thread)
@@ -270,7 +270,7 @@ namespace Dune {
     }
 
     //! call apropriate method on all internal passes
-    void disable() const 
+    void disable() const
     {
       const int maxThreads = Fem::ThreadManager::maxThreads();
       for(int thread=0; thread<maxThreads; ++thread)
@@ -278,16 +278,16 @@ namespace Dune {
         pass( thread ).disable();
       }
     }
-   
+
     //! print tex info
-    void printTexInfo(std::ostream& out) const 
+    void printTexInfo(std::ostream& out) const
     {
       BaseType::printTexInfo(out);
       pass( 0 ).printTexInfo(out);
     }
 
-    //! Estimate for the timestep size 
-    double timeStepEstimateImpl() const 
+    //! Estimate for the timestep size
+    double timeStepEstimateImpl() const
     {
       double dtMin = pass( 0 ).timeStepEstimateImpl();
       const int maxThreads = Fem::ThreadManager::maxThreads();
@@ -298,62 +298,62 @@ namespace Dune {
       return dtMin;
     }
 
-  protected:  
+  protected:
     enum SkipMode { skipNone, skipInterior, skipNonInterior };
-    //! returns true for flux evaluation if neighbor 
-    //! is on same thread as entity  
+    //! returns true for flux evaluation if neighbor
+    //! is on same thread as entity
     template <SkipMode mode>
-    struct NBChecker 
+    struct NBChecker
     {
       const ThreadIteratorType& storage_;
-      const int myThread_; 
+      const int myThread_;
 
 #ifndef NDEBUG
-      mutable int counter_; 
+      mutable int counter_;
       mutable int nonEqual_;
 #endif
-      NBChecker( const ThreadIteratorType& st, 
+      NBChecker( const ThreadIteratorType& st,
                  const int myThread )
         : storage_( st ),
-          myThread_( myThread ) 
+          myThread_( myThread )
 #ifndef NDEBUG
           , counter_( 0 )
           , nonEqual_( 0 )
 #endif
       {}
 
-      // returns true if niehhbor can be updated 
-      bool operator () ( const EntityType& en, const EntityType& nb ) const 
+      // returns true if niehhbor can be updated
+      bool operator () ( const EntityType& en, const EntityType& nb ) const
       {
 #ifndef NDEBUG
         ++counter_;
         if( myThread_ != storage_.thread( nb ) )
           ++nonEqual_;
 #endif
-        // storage_.thread can also return negative values in which case the 
-        // update of the neighbor is skipped, e.g. for ghost elements 
+        // storage_.thread can also return negative values in which case the
+        // update of the neighbor is skipped, e.g. for ghost elements
         return myThread_ == storage_.thread( nb );
       }
 
-      //! return true if actually some intersections would be skipped 
+      //! return true if actually some intersections would be skipped
       bool isActive () const { return mode != skipNone ; }
 
       //! returns true if the intersection with neighbor nb should be skipped
-      bool skipIntersection( const EntityType& nb ) const 
+      bool skipIntersection( const EntityType& nb ) const
       {
-        // noskip means all intersections are considered 
-        switch( mode ) 
+        // noskip means all intersections are considered
+        switch( mode )
         {
-          case skipNone:         return false; 
-          case skipInterior:     return nb.partitionType() == InteriorEntity;  
-          case skipNonInterior:  return nb.partitionType() != InteriorEntity;  
-          default: return false ;                       
+          case skipNone:         return false;
+          case skipInterior:     return nb.partitionType() == InteriorEntity;
+          case skipNonInterior:  return nb.partitionType() != InteriorEntity;
+          default: return false ;
         }
         return false ;
       }
     };
 
-    InnerPass& pass( const int thread ) const 
+    InnerPass& pass( const int thread ) const
     {
       assert( (int) passes_.size() > thread );
       return *( passes_[ thread ] );
@@ -365,62 +365,62 @@ namespace Dune {
     using BaseType :: destination ;
     using BaseType :: receiveCommunication ;
 
-  public:  
+  public:
     //! return number of elements visited on last application
-    size_t numberOfElements () const 
+    size_t numberOfElements () const
     {
-      return numberOfElements_; 
+      return numberOfElements_;
     }
 
     //! switch upwind direction
-    void switchUpwind() 
+    void switchUpwind()
     {
       const int maxThreads = Fem::ThreadManager::maxThreads();
-      for(int i=0; i<maxThreads; ++i ) 
-        problems_[ i ]->switchUpwind(); 
+      for(int i=0; i<maxThreads; ++i )
+        problems_[ i ]->switchUpwind();
     }
 
-    //! overload compute method to use thread iterators 
+    //! overload compute method to use thread iterators
     void compute(const ArgumentType& arg, DestinationType& dest) const
     {
-      // reset number of elements 
+      // reset number of elements
       numberOfElements_ = 0;
 
-      // set time for all passes, this is used in prepare of pass 
+      // set time for all passes, this is used in prepare of pass
       // and therefore has to be done before prepare is called
       const int maxThreads = Fem::ThreadManager::maxThreads();
-      for(int i=0; i<maxThreads; ++i ) 
+      for(int i=0; i<maxThreads; ++i )
       {
-        // set time to each pass 
+        // set time to each pass
         pass( i ).setTime( time() );
       }
 
-      // for the first call we only run on one thread to avoid 
-      // clashes with the singleton storages for quadratures 
+      // for the first call we only run on one thread to avoid
+      // clashes with the singleton storages for quadratures
       // and base function caches etc.
-      // after one grid traversal everything should be set up 
-      if( firstCall_ ) 
+      // after one grid traversal everything should be set up
+      if( firstCall_ )
       {
-        //! get pass for my thread  
+        //! get pass for my thread
         BaseType& myPass = pass( 0 );
 
-        // stop time 
+        // stop time
         Timer timer ;
 
         // for the first call we need to receive data already here,
         // since the flux calculation is done at once
-        if( useNonBlockingCommunication() ) 
+        if( useNonBlockingCommunication() )
         {
           // RECEIVE DATA, send was done on call of operator() (see pass.hh)
           receiveCommunication( arg );
         }
-        
-        // use the default compute method of the given pass 
+
+        // use the default compute method of the given pass
         myPass.compute( arg, dest );
 
-        // get number of elements 
-        numberOfElements_ = myPass.numberOfElements(); 
-        // store time 
+        // get number of elements
+        numberOfElements_ = myPass.numberOfElements();
+        // store time
         computeTime_ += timer.elapsed();
 
         // set tot false since first call has been done
@@ -428,70 +428,70 @@ namespace Dune {
 
         return ;
       }
-      else 
+      else
       {
-        // update thread iterators in case grid changed 
+        // update thread iterators in case grid changed
         iterators_.update();
 
-        // call prepare before parallel area 
+        // call prepare before parallel area
         const int maxThreads = Fem::ThreadManager::maxThreads();
         pass( 0 ).prepare( arg, dest, true );
         passComputeTime_[ 0 ] = 0.0 ;
-        for(int i=1; i<maxThreads; ++i ) 
+        for(int i=1; i<maxThreads; ++i )
         {
           // prepare pass (make sure pass doesn't clear dest, this will conflict)
           pass( i ).prepare( arg, dest, false );
           passComputeTime_[ i ] = 0.0 ;
         }
         firstStage_ = true ;
-        
-        arg_  = &arg ; 
+
+        arg_  = &arg ;
         dest_ = &dest ;
 
         ////////////////////////////////////////////////////////////
-        // BEGIN PARALLEL REGION, first stage, element integrals  
+        // BEGIN PARALLEL REGION, first stage, element integrals
         ////////////////////////////////////////////////////////////
         {
-          // see threadhandle.hh 
-          Fem :: ThreadHandle :: run( *this ); 
+          // see threadhandle.hh
+          Fem :: ThreadHandle :: run( *this );
         }
         /////////////////////////////////////////////////
-        // END PARALLEL REGION 
+        // END PARALLEL REGION
         /////////////////////////////////////////////////
 
         ////////////////////////////////////////////////////////////
-        // BEGIN PARALLEL REGION, second stage, surface integrals 
-        // only for non-blocking communication 
+        // BEGIN PARALLEL REGION, second stage, surface integrals
+        // only for non-blocking communication
         ////////////////////////////////////////////////////////////
         if( useNonBlockingCommunication() )
         {
-          // mark second stage 
+          // mark second stage
           firstStage_ = false ;
 
-          // see threadhandle.hh 
-          Fem :: ThreadHandle :: run( *this ); 
+          // see threadhandle.hh
+          Fem :: ThreadHandle :: run( *this );
         }
         /////////////////////////////////////////////////
-        // END PARALLEL REGION 
+        // END PARALLEL REGION
         /////////////////////////////////////////////////
 
         arg_  = 0;
         dest_ = 0;
 
         double accCompTime = 0.0;
-        double ratioMaster = 1.0; 
-        for(int i=0; i<maxThreads; ++i ) 
+        double ratioMaster = 1.0;
+        for(int i=0; i<maxThreads; ++i )
         {
-          // get number of elements 
-          numberOfElements_ += pass( i ).numberOfElements(); 
+          // get number of elements
+          numberOfElements_ += pass( i ).numberOfElements();
 
-          if( sumComputeTime_ ) 
+          if( sumComputeTime_ )
           {
             accCompTime += passComputeTime_[ i ];
           }
-          else 
+          else
           {
-            // accumulate time 
+            // accumulate time
             accCompTime = std::max( passComputeTime_[ i ], accCompTime );
           }
 
@@ -501,64 +501,64 @@ namespace Dune {
         }
 
         //std::cout << "ratio = " << ratioMaster << std::endl;
-        // store ration information for next partitioning 
+        // store ration information for next partitioning
         //iterators_.setMasterRatio( ratioMaster );
 
-        // increase compute time 
+        // increase compute time
         computeTime_ += accCompTime ;
 
-      } // end if first call 
+      } // end if first call
 
-      // if useNonBlockingComm_ is disabled then communicate here if communication is required 
-      if( requireCommunication_ && ! nonBlockingComm_.nonBlockingCommunication() ) 
+      // if useNonBlockingComm_ is disabled then communicate here if communication is required
+      if( requireCommunication_ && ! nonBlockingComm_.nonBlockingCommunication() )
       {
-        if( &dest ) // could also be reference to NULL 
+        if( &dest ) // could also be reference to NULL
         {
-          // communicate calculated function 
+          // communicate calculated function
           dest.communicate();
         }
       }
     }
 
     //! return true if communication is necessary and non-blocking should be used
-    bool useNonBlockingCommunication() const 
+    bool useNonBlockingCommunication() const
     {
       return requireCommunication_ && nonBlockingComm_.nonBlockingCommunication();
     }
 
-    void initComm() const 
+    void initComm() const
     {
-      if( useNonBlockingCommunication() && destination_ ) 
+      if( useNonBlockingCommunication() && destination_ )
         nonBlockingComm_.initComm( destination() );
     }
 
     void receiveComm() const
     {
-      if( useNonBlockingCommunication() && destination_ ) 
+      if( useNonBlockingCommunication() && destination_ )
         nonBlockingComm_.receiveComm( destination() );
     }
 
-    //! parallel section of compute 
+    //! parallel section of compute
     void runThread() const
     {
       const int thread = Fem::ThreadManager::thread() ;
-      // make sure thread 0 is master thread 
+      // make sure thread 0 is master thread
       assert( (thread == 0) == Fem::ThreadManager::isMaster() );
 
-      //! get pass for my thread  
+      //! get pass for my thread
       InnerPassType& myPass = pass( thread );
 
-      // stop time 
+      // stop time
       Timer timer ;
 
       const bool computeInteriorIntegrals = firstStage_;
 
-      // Iterator is of same type as the space iterator 
+      // Iterator is of same type as the space iterator
       typedef typename ThreadIteratorType :: IteratorType Iterator;
 
-      if( useNonBlockingCommunication() ) 
+      if( useNonBlockingCommunication() )
       {
-        if ( computeInteriorIntegrals ) 
+        if ( computeInteriorIntegrals )
         {
           // create NB checker, skip if neighbor is NOT interior
           NBChecker< skipNonInterior > nbChecker( iterators_, thread );
@@ -571,13 +571,13 @@ namespace Dune {
           }
 
           // receive ghost data (only master thread)
-          if( thread == 0 && requireCommunication_ ) 
+          if( thread == 0 && requireCommunication_ )
           {
             // RECEIVE DATA, send was done on call of operator() (see pass.hh)
             receiveCommunication( *arg_ );
           }
         }
-        else 
+        else
         {
           // create NB checker, skip if neighbors is interior
           NBChecker< skipInterior > nbChecker( iterators_, thread );
@@ -590,18 +590,18 @@ namespace Dune {
           }
 
           assert( arg_ );
-          // dest can also be null pointer 
-          // when the operator is evaluated only 
-          // for evaluation of the estimators 
+          // dest can also be null pointer
+          // when the operator is evaluated only
+          // for evaluation of the estimators
 
           // finalize pass (make sure communication is done in case of thread parallel
           // program, this would give conflicts)
           myPass.finalize(*arg_, *dest_, false );
         }
       }
-      else 
+      else
       {
-        // create NB checker, noSkip of intersections 
+        // create NB checker, noSkip of intersections
         NBChecker< skipNone > nbChecker( iterators_, thread );
 
         const Iterator endit = iterators_.end();
@@ -612,21 +612,21 @@ namespace Dune {
         }
 
         assert( arg_ );
-        // dest can also be null pointer 
-        // when the operator is evaluated only 
-        // for evaluation of the estimators 
+        // dest can also be null pointer
+        // when the operator is evaluated only
+        // for evaluation of the estimators
 
         // finalize pass (make sure communication is not done in case of thread parallel
         // program, this would give conflicts)
         myPass.finalize(*arg_, *dest_, false );
       }
 
-      // accumulate compute time for this thread 
+      // accumulate compute time for this thread
       passComputeTime_[ thread ] += timer.elapsed();
     }
 
 
-    //! In the preparations, store pointers to the actual arguments and 
+    //! In the preparations, store pointers to the actual arguments and
     //! destinations. Filter out the "right" arguments for this pass.
     virtual void prepare(const ArgumentType& arg, DestinationType& dest) const
     {
@@ -641,7 +641,7 @@ namespace Dune {
       abort();
     }
 
-    void applyLocal( const EntityType& en) const 
+    void applyLocal( const EntityType& en) const
     {
       // we use applyLocal of internal operator
       abort();
@@ -652,23 +652,23 @@ namespace Dune {
     ThreadPass(const ThreadPass&);
     ThreadPass& operator=(const ThreadPass&);
 
-  protected:  
-    // create an instance of the parallel scalarproduct here to avoid 
-    // deleting on every call of finalizeComm 
+  protected:
+    // create an instance of the parallel scalarproduct here to avoid
+    // deleting on every call of finalizeComm
     DeleteCommunicatedDofs< DestinationType > delDofs_;
 
     mutable ThreadIteratorType iterators_;
     const DiscreteModelType& singleProblem_;
-    std::vector< DiscreteModelType* > problems_; 
+    std::vector< DiscreteModelType* > problems_;
     std::vector< InnerPassType* > passes_;
     mutable std::vector< double > passComputeTime_;
     mutable bool firstStage_;
 
-    // temporary variables 
-    mutable const ArgumentType* arg_; 
-    mutable DestinationType* dest_; 
+    // temporary variables
+    mutable const ArgumentType* arg_;
+    mutable DestinationType* dest_;
 
-    // non-blocking communication handler 
+    // non-blocking communication handler
     NonBlockingCommHandleType nonBlockingComm_;
 
     mutable size_t numberOfElements_;
@@ -676,7 +676,7 @@ namespace Dune {
     bool requireCommunication_;
     const bool sumComputeTime_;
   };
-//! @}  
+//! @}
 } // end namespace Dune
 
 #endif

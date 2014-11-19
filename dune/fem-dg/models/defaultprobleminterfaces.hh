@@ -49,14 +49,14 @@ protected:
 public:
   typedef Fem :: TimeDependentFunction< ThisType > TimeDependentFunctionType;
 
-  //! turn timedependent function into function by fixing time 
-  TimeDependentFunctionType fixedTimeFunction( const double time ) const 
+  //! turn timedependent function into function by fixing time
+  TimeDependentFunctionType fixedTimeFunction( const double time ) const
   {
     return TimeDependentFunctionType( *this, time );
   }
 
-  // return prefix for data loops 
-  virtual std::string dataPrefix() const 
+  // return prefix for data loops
+  virtual std::string dataPrefix() const
   {
     return std::string( "loop" );
   }
@@ -64,15 +64,15 @@ public:
   //! destructor
   virtual ~EvolutionProblemInterface() {}
 
-  //! return true is source term is available 
+  //! return true is source term is available
   virtual inline bool hasStiffSource() const { return true ; }
   virtual inline bool hasNonStiffSource() const { return false; }
 
   //! stiff source term
-  virtual inline double stiffSource( const DomainType& arg, 
-                              const double time, 
-                              const RangeType& u, 
-                              RangeType& res) const 
+  virtual inline double stiffSource( const DomainType& arg,
+                              const double time,
+                              const RangeType& u,
+                              RangeType& res) const
   {
     abort();
     res = 0;
@@ -80,10 +80,10 @@ public:
   }
 
   //! non stiff source term
-  virtual inline double nonStiffSource( const DomainType& arg, 
-                                 const double time, 
-                                 const RangeType& u, 
-                                 RangeType& res) const 
+  virtual inline double nonStiffSource( const DomainType& arg,
+                                 const double time,
+                                 const RangeType& u,
+                                 RangeType& res) const
   {
     abort();
     res = 0;
@@ -135,7 +135,7 @@ public:
 
 
   //! return diffusion coefficient (default returns epsilon)
-  virtual inline double diffusion ( const RangeType& u, const JacobianRangeType& gradU ) const 
+  virtual inline double diffusion ( const RangeType& u, const JacobianRangeType& gradU ) const
   {
     return epsilon();
   }
@@ -151,8 +151,8 @@ public:
    */
   virtual void velocity(const DomainType& x, DomainType& v) const {}
 
-  virtual void velocity(const DomainType& x, const double, DomainType& v) const 
-  { 
+  virtual void velocity(const DomainType& x, const double, DomainType& v) const
+  {
     velocity( x, v );
   }
 
@@ -163,7 +163,7 @@ public:
    * which is still needed by the DataWriter
    */
   virtual inline void evaluate(const double t,
-                               const DomainType& arg, RangeType& res) const 
+                               const DomainType& arg, RangeType& res) const
   {
     evaluate(arg, t, res);
   }
@@ -177,12 +177,12 @@ public:
   /** \brief calculate reference solution for BgFix scheme
    *  \param[in] xgl Point in global coordinates
    *  \param[out] res Background solution (default to 0)
-   *   
+   *
    *  \note BgFix is explained in the PhD thesis of A. Dedner (2003)
    */
   virtual inline void bgFixReference( const DomainType& xgl, RangeType& res ) const
   {
-    std::cout <<"ProblemInterface::bgFixReference( const DomainType&, RangeType& ) not implemented!!! Aborting!" 
+    std::cout <<"ProblemInterface::bgFixReference( const DomainType&, RangeType& ) not implemented!!! Aborting!"
               <<std::endl;
     abort();
   }
@@ -195,13 +195,13 @@ public:
     return std::string("");
   }
 
-  /*  \brief calculate EOC between exact and numerical solution 
-   *  
-   *  \param[in] tp     time provider 
-   *  \param[in] u      numerical solution 
+  /*  \brief calculate EOC between exact and numerical solution
+   *
+   *  \param[in] tp     time provider
+   *  \param[in] u      numerical solution
    *  \param[in] eocId  for FemEoc
-   * 
-   *  \return true if no EOC was calculated 
+   *
+   *  \return true if no EOC was calculated
    */
   template< class TimeProviderType, class DiscreteFunctionType >
   bool calculateEOC( TimeProviderType& tp, DiscreteFunctionType& u,
@@ -211,12 +211,12 @@ public:
     return true ;
   }
 
-  /* \brief 
+  /* \brief
    */
   template< class GridType, class DiscreteFunctionType >
-  inline void postProcessTimeStep( const GridType& grid, 
-                                   const DiscreteFunctionType& solution, 
-                                   const double time ) const 
+  inline void postProcessTimeStep( const GridType& grid,
+                                   const DiscreteFunctionType& solution,
+                                   const double time ) const
   {
     if( writeGridSolution_ && time > saveStep_ )
     {
@@ -230,7 +230,7 @@ public:
 
   /*  \brief finalize the simulation using the calculated numerical
    *  solution u for this problem
-   *  
+   *
    *  \param[in] variablesToOutput Numerical solution in the suitably chosen variables
    *  \param[in] eocloop Specific EOC loop
    */
@@ -310,17 +310,17 @@ public:
   /**
    * @brief getter for the velocity
    */
-  virtual void velocity(const DomainType& x, DomainType& v) const 
+  virtual void velocity(const DomainType& x, DomainType& v) const
   {
-    v = 0;  
+    v = 0;
   }
 
   //! the gradient of the exact solution (default is empty)
   virtual void gradient(const DomainType& x,
                         JacobianRangeType& grad) const
-  { 
+  {
     assert( false );
-    DUNE_THROW( NotImplemented, "ProblemInterface::gradient not overloaded but called!" ); 
+    DUNE_THROW( NotImplemented, "ProblemInterface::gradient not overloaded but called!" );
   }
 
   //! return whether boundary is Dirichlet (true) or Neumann (false)
@@ -329,8 +329,8 @@ public:
     return true;
   }
 
-  // return prefix for data loops 
-  virtual std::string dataPrefix() const 
+  // return prefix for data loops
+  virtual std::string dataPrefix() const
   {
     return std::string( "loop" );
   }

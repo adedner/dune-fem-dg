@@ -6,7 +6,7 @@
 #include <dune/fem/solver/timeprovider.hh>
 #include <dune/fem/operator/common/spaceoperatorif.hh>
 
-// dune-fem-dg includes 
+// dune-fem-dg includes
 #include <dune/fem-dg/pass/dgpass.hh>
 #include <dune/fem-dg/operator/dg/passtraits.hh>
 
@@ -16,19 +16,19 @@
 #include <dune/fem-dg/pass/threadpass.hh>
 #endif
 
-namespace Dune {  
+namespace Dune {
 
 
   // DGAdvectionDiffusionOperatorBase
   //---------------------------------
 
-  template< class Traits > 
-  class DGAdvectionDiffusionOperatorBase : 
-    public Fem::SpaceOperatorInterface 
-      < typename PassTraits< 
+  template< class Traits >
+  class DGAdvectionDiffusionOperatorBase :
+    public Fem::SpaceOperatorInterface
+      < typename PassTraits<
           typename Traits :: Model, Traits::dimRange, Traits :: polOrd > :: DestinationType >
   {
-    enum { u = Traits :: u, 
+    enum { u = Traits :: u,
            cdgpass  = Traits :: cdgpass };
 
     enum { polOrd = Traits :: polOrd };
@@ -36,7 +36,7 @@ namespace Dune {
     typedef Fem::SpaceOperatorInterface < typename PassTraits<
                       typename Traits :: Model, Traits::dimRange, Traits :: polOrd > ::
                       DestinationType > BaseType ;
-    
+
   public:
     using BaseType :: operator () ;
 
@@ -53,28 +53,28 @@ namespace Dune {
     typedef typename DiscreteModelType :: DiffusionFluxType DiffusionFluxType;
 
     typedef typename DiscreteModelType::Traits AdvTraits;
-    
+
     typedef typename AdvTraits::DiscreteFunctionType AdvDFunctionType;
     // for convenience (not used here)
     typedef typename AdvTraits::DiscreteFunctionType IndicatorType;
     typedef typename AdvTraits::GridPartType GridPartType;
-    
+
     typedef Fem::StartPass< AdvDFunctionType, u
 #ifdef USE_SMP_PARALLEL
-         , NonBlockingCommHandle< AdvDFunctionType >   
+         , NonBlockingCommHandle< AdvDFunctionType >
 #endif
       > Pass0Type;
 
-    typedef 
+    typedef
 #ifdef USE_SMP_PARALLEL
-      ThreadPass < 
+      ThreadPass <
 #endif
       LocalCDGPass< DiscreteModelType, Pass0Type, cdgpass >
 #ifdef USE_SMP_PARALLEL
       , Fem::DomainDecomposedIteratorStorage< GridPartType >
     //, Fem::ThreadIterator< GridPartType >
-      , true // non-blocking communication 
-        > 
+      , true // non-blocking communication
+        >
 #endif
     Pass1Type;
 
@@ -89,7 +89,7 @@ namespace Dune {
     typedef typename DiscreteModelType :: AdaptationType  AdaptationType;
 
   public:
-    DGAdvectionDiffusionOperatorBase( GridPartType& gridPart, ProblemType& problem ) 
+    DGAdvectionDiffusionOperatorBase( GridPartType& gridPart, ProblemType& problem )
       : model_( problem )
       , numflux_( model_ )
       , gridPart_( gridPart )
@@ -101,16 +101,16 @@ namespace Dune {
 
     IndicatorType* indicator() { return 0; }
 
-    void setAdaptation( AdaptationType& adHandle, double weight = 1 ) 
+    void setAdaptation( AdaptationType& adHandle, double weight = 1 )
     {
 #ifdef USE_SMP_PARALLEL
-      // also set adaptation handler to the discrete models in the thread pass 
+      // also set adaptation handler to the discrete models in the thread pass
       {
         pass1_.setAdaptation( adHandle, weight );
       }
 #else
       {
-        // set adaptation handle to discrete model 
+        // set adaptation handle to discrete model
         discreteModel_.setAdaptation( adHandle, weight );
       }
 #endif
@@ -124,42 +124,42 @@ namespace Dune {
 	    return pass1_.timeStepEstimate();
     }
 
-    //! evaluate the spatial operator 
+    //! evaluate the spatial operator
     void operator()( const DestinationType& arg, DestinationType& dest ) const {
 	    pass1_( arg, dest );
     }
 
-    //! only evaluate fluxes of operator 
+    //! only evaluate fluxes of operator
     void evaluateOnly( const DestinationType& arg ) const {
-      // only apply operator without storing result, for evalaution 
-      // of the aposteriori error estimator mainly 
+      // only apply operator without storing result, for evalaution
+      // of the aposteriori error estimator mainly
       DestinationType* emptyPtr = 0 ;
 	    pass1_( arg, *emptyPtr );
     }
 
     inline const DiscreteFunctionSpaceType& space() const {
 	    return space_;
-    } 
+    }
     inline DiscreteFunctionSpaceType& space() {
 	    return space_;
-    } 
+    }
 
-    inline void switchupwind() 
-    { 
+    inline void switchupwind()
+    {
       // call upwind switcher on pass (in case its a thread pass)
       pass1_.switchUpwind();
     }
 
-    template <class Matrix> 
-    inline void operator2Matrix( Matrix& matrix, DestinationType& rhs ) const 
+    template <class Matrix>
+    inline void operator2Matrix( Matrix& matrix, DestinationType& rhs ) const
     {
       pass1_.operator2Matrix( matrix , rhs );
     }
 
     template <class Entity, class Intersection, class Quadrature>
-    inline void flux(const DestinationType &u, 
+    inline void flux(const DestinationType &u,
                      const Entity &entity, const Entity &nb,
-                     const Intersection &intersection, 
+                     const Intersection &intersection,
                      const Quadrature &faceQuadInner, const Quadrature &faceQuadOuter,
                      const int l,
                      typename DestinationType::RangeType &fluxEn,
@@ -171,16 +171,16 @@ namespace Dune {
     inline void limit( DestinationType& U ) const {}
     inline void limit( const DestinationType& arg, DestinationType& U ) const {}
 
-    inline double computeTime() const 
+    inline double computeTime() const
     {
       return pass1_.computeTime();
     }
 
-    inline size_t numberOfElements () const 
+    inline size_t numberOfElements () const
     {
       return pass1_.numberOfElements();
     }
-    
+
     void printmyInfo(std::string filename) const {}
 
     virtual std::string description() const = 0;

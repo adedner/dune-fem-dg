@@ -1,13 +1,13 @@
 #ifdef USE_BASEFUNCTIONSET_OPTIMIZED
 /////////////////////////////////////////////////////////////////////////
 //
-//  evaluate and store results in a vector 
+//  evaluate and store results in a vector
 //
 /////////////////////////////////////////////////////////////////////////
 template <class BaseFunctionSet, class Geometry, int dimRange, int numRows, int numCols>
-struct EvaluateRanges 
+struct EvaluateRanges
 {
-  template< class QuadratureType, 
+  template< class QuadratureType,
             class RangeVectorType,
             class LocalDofVectorType,
             class RangeFactorType>
@@ -23,9 +23,9 @@ struct EvaluateRanges
 };
 
 template <class BaseFunctionSet, int dimRange, int numRows, int numCols>
-struct EvaluateRanges<BaseFunctionSet, Fem :: EmptyGeometry, dimRange, numRows, numCols > 
+struct EvaluateRanges<BaseFunctionSet, Fem :: EmptyGeometry, dimRange, numRows, numCols >
 {
-  template< class QuadratureType, 
+  template< class QuadratureType,
             class RangeVectorType,
             class LocalDofVectorType,
             class RangeFactorType>
@@ -36,7 +36,7 @@ struct EvaluateRanges<BaseFunctionSet, Fem :: EmptyGeometry, dimRange, numRows, 
   {
 #ifndef USE_BASEFUNCTIONSET_CODEGEN
     BaseFunctionSet::evaluateRanges( quad, rangeStorage, dofs, rangeFactors, numRows, numCols );
-#else 
+#else
     std::cerr << "ERROR: wrong code generated for VectorialBaseFunctionSet::evaluateRanges< "
               << "EmptyGeo, " << dimRange << " , " << numRows << " , " << numCols << " >!" << std::endl;
     abort();
@@ -46,14 +46,14 @@ struct EvaluateRanges<BaseFunctionSet, Fem :: EmptyGeometry, dimRange, numRows, 
 
 ////////////////////////////////////////////////////////////////////
 //
-//  --evaluateJacobians 
+//  --evaluateJacobians
 //
 ////////////////////////////////////////////////////////////////////
-template <class BaseFunctionSet, class Geometry, 
+template <class BaseFunctionSet, class Geometry,
           int dimRange, int numRows, int numCols>
-struct EvaluateJacobians 
+struct EvaluateJacobians
 {
-  template< class QuadratureType, 
+  template< class QuadratureType,
             class JacobianRangeVectorType,
             class JacobianRangeFactorType,
             class LocalDofVectorType >
@@ -71,9 +71,9 @@ struct EvaluateJacobians
 
 template <class BaseFunctionSet,
           int dimRange, int numRows, int numCols>
-struct EvaluateJacobians< BaseFunctionSet, Fem :: EmptyGeometry, dimRange, numRows, numCols > 
+struct EvaluateJacobians< BaseFunctionSet, Fem :: EmptyGeometry, dimRange, numRows, numCols >
 {
-  template< class QuadratureType, 
+  template< class QuadratureType,
             class JacobianRangeVectorType,
             class JacobianRangeFactorType,
             class LocalDofVectorType >
@@ -91,14 +91,14 @@ struct EvaluateJacobians< BaseFunctionSet, Fem :: EmptyGeometry, dimRange, numRo
 
 /////////////////////////////////////////////////////////////
 //
-//  --axpyRanges -- add a vector of ranges to the dof vector  
+//  --axpyRanges -- add a vector of ranges to the dof vector
 //
 /////////////////////////////////////////////////////////////
-template <class BaseFunctionSet, class Geometry, 
+template <class BaseFunctionSet, class Geometry,
           int dimRange, int numRows, int numCols>
-struct AxpyRanges 
+struct AxpyRanges
 {
-  template< class QuadratureType, 
+  template< class QuadratureType,
             class RangeVectorType,
             class RangeFactorType,
             class LocalDofVectorType >
@@ -115,9 +115,9 @@ struct AxpyRanges
 
 template <class BaseFunctionSet,
           int dimRange, int numRows, int numCols>
-struct AxpyRanges<BaseFunctionSet, Fem :: EmptyGeometry, dimRange, numRows, numCols>  
+struct AxpyRanges<BaseFunctionSet, Fem :: EmptyGeometry, dimRange, numRows, numCols>
 {
-  template< class QuadratureType, 
+  template< class QuadratureType,
             class RangeVectorType,
             class RangeFactorType,
             class LocalDofVectorType >
@@ -134,13 +134,13 @@ struct AxpyRanges<BaseFunctionSet, Fem :: EmptyGeometry, dimRange, numRows, numC
 
 
 ///////////////////////////////////////////////////////////
-//  applyAxpy Jacobian 
+//  applyAxpy Jacobian
 ///////////////////////////////////////////////////////////
-template <class BaseFunctionSet, class Geometry, 
+template <class BaseFunctionSet, class Geometry,
           int dimRange, int numRows, int numCols>
-struct AxpyJacobians 
+struct AxpyJacobians
 {
-  template< class QuadratureType, 
+  template< class QuadratureType,
             class JacobianRangeVectorType,
             class JacobianRangeFactorType,
             class LocalDofVectorType >
@@ -158,9 +158,9 @@ struct AxpyJacobians
 
 template <class BaseFunctionSet,
           int dimRange, int numRows, int numCols>
-struct AxpyJacobians< BaseFunctionSet, Fem :: EmptyGeometry, dimRange, numRows, numCols > 
+struct AxpyJacobians< BaseFunctionSet, Fem :: EmptyGeometry, dimRange, numRows, numCols >
 {
-  template< class QuadratureType, 
+  template< class QuadratureType,
             class JacobianRangeVectorType,
             class JacobianRangeFactorType,
             class LocalDofVectorType >
@@ -178,4 +178,4 @@ struct AxpyJacobians< BaseFunctionSet, Fem :: EmptyGeometry, dimRange, numRows, 
 #ifdef USE_BASEFUNCTIONSET_CODEGEN
 #include <autogeneratedcode.hh>
 #endif
-#endif // endif USE_BASEFUNCTIONSET_OPTIMIZED 
+#endif // endif USE_BASEFUNCTIONSET_OPTIMIZED

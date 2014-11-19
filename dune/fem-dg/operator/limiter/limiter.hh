@@ -1,5 +1,5 @@
 #ifndef DUNE_FEM_LIMITER_HH
-#define DUNE_FEM_LIMITER_HH 
+#define DUNE_FEM_LIMITER_HH
 
 #include <dune/fem/space/discontinuousgalerkin.hh>
 #include <dune/fem/space/finitevolume.hh>
@@ -13,12 +13,12 @@ namespace Dune {
 
 namespace Fem {
 
-  template <class Model, class DiscreteFunction> 
+  template <class Model, class DiscreteFunction>
   class LimitedReconstruction
   {
     // MethodOrderTraits
     template <class GridPartImp, class ftype, int dimRange,int polOrd>
-    class PassTraits 
+    class PassTraits
     {
     public:
       typedef ftype        FieldType;
@@ -30,20 +30,20 @@ namespace Fem {
       typedef CachingQuadrature<GridPartType,0> VolumeQuadratureType;
       typedef CachingQuadrature<GridPartType,1> FaceQuadratureType;
 
-      typedef FunctionSpace< ctype, FieldType, dimDomain, dimRange> FunctionSpaceType; 
-      typedef DiscontinuousGalerkinSpace<FunctionSpaceType, GridPartType, 
+      typedef FunctionSpace< ctype, FieldType, dimDomain, dimRange> FunctionSpaceType;
+      typedef DiscontinuousGalerkinSpace<FunctionSpaceType, GridPartType,
                  polOrd> DiscreteFunctionSpaceType;
 
       typedef AdaptiveDiscreteFunction<DiscreteFunctionSpaceType> DestinationType;
       typedef DestinationType DiscreteFunctionType;
 
-      // Indicator for Limiter 
+      // Indicator for Limiter
       typedef FunctionSpace< ctype, FieldType, dimDomain, 3> FVFunctionSpaceType;
       typedef FiniteVolumeSpace<FVFunctionSpaceType,GridPartType, 0, SimpleStorage> IndicatorSpaceType;
       typedef AdaptiveDiscreteFunction<IndicatorSpaceType> IndicatorType;
     };
 
-  public:  
+  public:
     typedef DiscreteFunction  DiscreteFunctionType;
     typedef typename DiscreteFunctionType :: DiscreteFunctionSpaceType
       DiscreteFunctionSpaceType;
@@ -54,7 +54,7 @@ namespace Fem {
 
     typedef typename DiscreteFunctionSpaceType :: EntityType  EntityType;
 
-    // pass ids 
+    // pass ids
     enum PassIdType{ u = 0 , limitPass = 1 };
     enum { dimRange = DiscreteFunctionSpaceType :: dimRange };
 
@@ -66,9 +66,9 @@ namespace Fem {
     typedef typename LimiterDiscreteModelType :: DestinationType ReconstructionType;
 
     typedef typename ReconstructionType :: DiscreteFunctionSpaceType
-      ReconstructionSpaceType; 
+      ReconstructionSpaceType;
 
-    //! define local function, this could also be a temporary local function 
+    //! define local function, this could also be a temporary local function
     typedef typename ReconstructionType :: LocalFunctionType  LocalFunctionType;
 
     typedef StartPass< DiscreteFunctionType , u > StartPassType;
@@ -76,42 +76,42 @@ namespace Fem {
 
   public:
     LimitedReconstruction( const Model& model, const DiscreteFunctionSpaceType& space )
-      : space_( space.gridPart() ) 
+      : space_( space.gridPart() )
       , reconstruction_( "LimitedReconstruction" , space_ )
       , problem_( model, 1 )
-      , startPass_() 
+      , startPass_()
       , limitPass_( problem_ , startPass_, space_ )
-    {} 
+    {}
 
-    //! calculate internal reconstruction 
-    void update( const DiscreteFunctionType& arg ) 
+    //! calculate internal reconstruction
+    void update( const DiscreteFunctionType& arg )
     {
       // apply limit pass in any case
       limitPass_.enable();
-      // calculate reconstruction 
+      // calculate reconstruction
       limitPass_( arg, reconstruction_ );
     }
-    
-    //! return local reconstruction 
-    LocalFunctionType localFunction( const EntityType& entity ) 
+
+    //! return local reconstruction
+    LocalFunctionType localFunction( const EntityType& entity )
     {
       return reconstruction_.localFunction( entity );
     }
 
-    //! return local reconstruction 
-    const LocalFunctionType localFunction( const EntityType& entity ) const 
+    //! return local reconstruction
+    const LocalFunctionType localFunction( const EntityType& entity ) const
     {
       return reconstruction_.localFunction( entity );
     }
 
-    ReconstructionType& function() 
+    ReconstructionType& function()
     {
-      return reconstruction_ ; 
+      return reconstruction_ ;
     }
 
-    const ReconstructionType& function() const 
+    const ReconstructionType& function() const
     {
-      return reconstruction_ ; 
+      return reconstruction_ ;
     }
 
   private:
@@ -121,15 +121,15 @@ namespace Fem {
     ReconstructionSpaceType space_;
     ReconstructionType reconstruction_;
 
-    LimiterDiscreteModelType problem_; 
+    LimiterDiscreteModelType problem_;
 
-    StartPassType startPass_; 
+    StartPassType startPass_;
     LimitPassType limitPass_;
 
   };
 
-} // end namespace Fem 
+} // end namespace Fem
 
-} // end namespace Dune 
+} // end namespace Dune
 
 #endif // DUNE_FEM_LIMITER_HH

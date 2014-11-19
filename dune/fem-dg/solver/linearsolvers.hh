@@ -48,7 +48,7 @@ enum SolverType
 };
 enum OperatorType
 {
-  cg, dg 
+  cg, dg
 };
 
 template <class Grid, OperatorType op>
@@ -70,19 +70,19 @@ struct Solvers
 {
   static const bool solverConfigured = false; // this implementation is used for not installed packages
   typedef DFSpace DiscreteFunctionSpaceType;
-  // choose type of discrete function, Matrix implementation and solver implementation 
+  // choose type of discrete function, Matrix implementation and solver implementation
   // this should work with any discrete function implementation
   typedef Dune::Fem::DynamicVector<double> DofVectorType;
   typedef Dune::Fem::ManagedDiscreteFunction< Dune::Fem::VectorDiscreteFunction< DiscreteFunctionSpaceType, DofVectorType > > DiscreteFunctionType;
   typedef Dune::Fem::SparseRowLinearOperator< DiscreteFunctionType, DiscreteFunctionType > LinearOperatorType;
   typedef Dune::Fem::CGInverseOperator< DiscreteFunctionType > LinearInverseOperatorType;
-  
+
 };
 
 template <class DFSpace, bool symmetric>
 struct Solvers<DFSpace,fem,symmetric>
 {
-  static const bool solverConfigured = true; 
+  static const bool solverConfigured = true;
   typedef DFSpace DiscreteFunctionSpaceType;
   typedef Dune::Fem::AdaptiveDiscreteFunction< DiscreteFunctionSpaceType > DiscreteFunctionType;
   typedef Dune::Fem::SparseRowLinearOperator< DiscreteFunctionType, DiscreteFunctionType > LinearOperatorType;
@@ -95,13 +95,13 @@ struct Solvers<DFSpace,fem,symmetric>
 template <class DFSpace,bool symmetric>
 struct Solvers<DFSpace,femoem,symmetric>
 {
-  static const bool solverConfigured = true; 
+  static const bool solverConfigured = true;
   typedef DFSpace DiscreteFunctionSpaceType;
-  // choose type of discrete function, Matrix implementation and solver implementation 
+  // choose type of discrete function, Matrix implementation and solver implementation
   // this work with a discrete function implementation based on a double* dof storage
   typedef Dune::Fem::AdaptiveDiscreteFunction< DiscreteFunctionSpaceType > DiscreteFunctionType;
   typedef Dune::Fem::SparseRowLinearOperator< DiscreteFunctionType, DiscreteFunctionType > LinearOperatorType;
-  typedef typename Dune::conditional<symmetric, 
+  typedef typename Dune::conditional<symmetric,
           Dune::Fem::OEMCGOp< DiscreteFunctionType, LinearOperatorType >,
           Dune::Fem::OEMBICGSTABOp< DiscreteFunctionType, LinearOperatorType > > :: type
           LinearInverseOperatorType;
@@ -111,14 +111,14 @@ struct Solvers<DFSpace,femoem,symmetric>
 template <class DFSpace,bool symmetric>
 struct Solvers<DFSpace,istl,symmetric>
 {
-  static const bool solverConfigured = true; 
+  static const bool solverConfigured = true;
   typedef DFSpace DiscreteFunctionSpaceType;
-  // choose type of discrete function, Matrix implementation and solver implementation 
+  // choose type of discrete function, Matrix implementation and solver implementation
   // here we need the special ISTLBlockVectorDiscreteFunction
   typedef Dune::Fem::ISTLBlockVectorDiscreteFunction< DiscreteFunctionSpaceType > DiscreteFunctionType;
   typedef Dune::Fem::ISTLLinearOperator< DiscreteFunctionType, DiscreteFunctionType > LinearOperatorType;
   typedef typename Dune::conditional<symmetric,
-          Dune::Fem::ISTLGMResOp< DiscreteFunctionType, LinearOperatorType >,
+          Dune::Fem::ISTLCGOp< DiscreteFunctionType, LinearOperatorType >,
           Dune::Fem::ISTLBICGSTABOp< DiscreteFunctionType, LinearOperatorType > > :: type
           LinearInverseOperatorType;
 };
@@ -127,9 +127,9 @@ struct Solvers<DFSpace,istl,symmetric>
 template <class DFSpace, bool symmetric>
 struct Solvers<DFSpace,umfpack,symmetric>
 {
-  static const bool solverConfigured = true; 
+  static const bool solverConfigured = true;
   typedef DFSpace DiscreteFunctionSpaceType;
-  // choose type of discrete function, Matrix implementation and solver implementation 
+  // choose type of discrete function, Matrix implementation and solver implementation
   typedef Dune::Fem::AdaptiveDiscreteFunction< DiscreteFunctionSpaceType > DiscreteFunctionType;
   typedef Dune::Fem::SparseRowLinearOperator< DiscreteFunctionType, DiscreteFunctionType > LinearOperatorType;
   typedef Dune::Fem::UMFPACKOp< DiscreteFunctionType, LinearOperatorType, symmetric > LinearInverseOperatorType;
@@ -139,9 +139,9 @@ struct Solvers<DFSpace,umfpack,symmetric>
 template <class DFSpace,bool symmetric>
 struct Solvers<DFSpace,petsc,symmetric>
 {
-  static const bool solverConfigured = true; 
+  static const bool solverConfigured = true;
   typedef DFSpace DiscreteFunctionSpaceType;
-  // choose type of discrete function, Matrix implementation and solver implementation 
+  // choose type of discrete function, Matrix implementation and solver implementation
   typedef Dune::Fem::PetscDiscreteFunction< DiscreteFunctionSpaceType > DiscreteFunctionType;
   typedef Dune::Fem::PetscLinearOperator< DiscreteFunctionType, DiscreteFunctionType > LinearOperatorType;
   typedef Dune::Fem::PetscInverseOperator< DiscreteFunctionType, LinearOperatorType > LinearInverseOperatorType;

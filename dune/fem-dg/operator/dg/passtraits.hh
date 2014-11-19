@@ -27,13 +27,13 @@ namespace Dune {
 
     //typedef Fem::ElementQuadrature< GridPartType, 0 >                     VolumeQuadratureType;
     //typedef ElementQuadrature< GridPartType, 1 >                     FaceQuadratureType;
-    
+
     typedef Fem::CachingQuadrature< GridPartType, 0 >                     VolumeQuadratureType;
     typedef Fem::CachingQuadrature< GridPartType, 1 >                     FaceQuadratureType;
 
     // Allow generalization to systems
     typedef Fem::FunctionSpace< ctype, double, dimDomain, dimRange >      FunctionSpaceType;
-    typedef Fem::DiscontinuousGalerkinSpace< 
+    typedef Fem::DiscontinuousGalerkinSpace<
                                         FunctionSpaceType,
                                         GridPartType, polOrd,
                                         Fem::CachingStorage >             DiscreteFunctionSpaceType;
@@ -50,5 +50,5 @@ namespace Dune {
     typedef AdaptationHandler< GridType, FunctionSpaceType >  AdaptationHandlerType ;
   };
 
-} // end namespace Dune 
+} // end namespace Dune
 #endif

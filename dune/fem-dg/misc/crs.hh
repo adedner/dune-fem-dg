@@ -18,7 +18,7 @@ namespace Dune
 
 
   template<class K, int ROWS, int COLS>
-  class BlockCRSMatrix 
+  class BlockCRSMatrix
   {
     std::vector< double > data_;
     std::vector< int > rows_;
@@ -33,7 +33,7 @@ namespace Dune
       cols = COLS
     };
 
-    typedef K Field; 
+    typedef K Field;
     typedef K value_type ;
 
     typedef std::vector< value_type > row_type ;
@@ -48,7 +48,7 @@ namespace Dune
      : data_( other.data_ ), rows_( other.rows_ ), cols_( other.cols_ ) {}
 
     template <class Matrix>
-    void set( const Matrix& matrix ) 
+    void set( const Matrix& matrix )
     {
       data_.clear();
       cols_.clear();
@@ -56,16 +56,16 @@ namespace Dune
       assert( matrix.size() == rows );
 
       int count = 0;
-      for( int row=0; row<rows; ++row ) 
+      for( int row=0; row<rows; ++row )
         for( int col=0; col<cols; ++col )
           if( std::abs( matrix[ row ][ col ] ) > 0.0 )
-            ++ count; 
+            ++ count;
 
       data_.resize( count, Field( 0 ) );
       cols_.resize( count, int( 0 ) );
 
       count = 0 ;
-      for( int row=0; row<rows; ++row ) 
+      for( int row=0; row<rows; ++row )
       {
         rows_[ row ] = count ;
         for( int col=0; col<cols; ++col )
@@ -86,10 +86,10 @@ namespace Dune
     int N () const { return rows; }
     int M () const { return cols; }
 
-    template <class X, class Y> 
-    void mv ( const X& x, Y& y ) const 
+    template <class X, class Y>
+    void mv ( const X& x, Y& y ) const
     {
-      for( int row=0; row<rows; ++row ) 
+      for( int row=0; row<rows; ++row )
       {
         Field sum = 0;
         for( int c = rows_[ row ]; c < rows_[ row+1 ]; ++ c )
@@ -100,13 +100,13 @@ namespace Dune
       }
     }
 
-    template <class X, class Y> 
-    void mvb( const int blockSize, const X& x, Y& y ) const 
+    template <class X, class Y>
+    void mvb( const int blockSize, const X& x, Y& y ) const
     {
       // clear result
       y.clear();
 
-      for( int row=0; row<rows; ++row ) 
+      for( int row=0; row<rows; ++row )
       {
         for( int c = rows_[ row ]; c < rows_[ row+1 ]; ++ c )
         {
@@ -121,21 +121,21 @@ namespace Dune
     }
 
     //! Multiplies M from the right to this matrix
-    template < class M > 
+    template < class M >
     BlockCRSMatrix& rightmultiply (const M& )
     {
       abort();
       return *this;
     }
 
-    template < class M > 
+    template < class M >
     BlockCRSMatrix& leftmultiply (const M& )
     {
       abort();
       return *this;
     }
 
-    void invert() 
+    void invert()
     {
       abort();
     }

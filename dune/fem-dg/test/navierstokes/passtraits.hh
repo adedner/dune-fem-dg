@@ -8,6 +8,7 @@
 // Dune-Fem includes
 #include <dune/fem/space/finitevolume.hh>
 #include <dune/fem/space/discontinuousgalerkin.hh>
+#include <dune/fem/space/combinedspace.hh>
 #include <dune/fem/function/adaptivefunction.hh>
 #include <dune/fem/quadrature/cachingquadrature.hh>
 #include <dune/fem-dg/operator/adaptation/adaptation.hh>
@@ -50,9 +51,9 @@ namespace Dune {
                                         Fem::CachingStorage >             DiscreteFunctionSpaceType;
 #else
 #warning "Using standard modal basis functions"
-    typedef Fem::DiscontinuousGalerkinSpace< FunctionSpaceType,
-                                        GridPartType, polOrd,
-                                        Fem::CachingStorage >             DiscreteFunctionSpaceType;
+    typedef Fem::DiscontinuousGalerkinSpace< Fem::FunctionSpace< ctype, double, dimDomain, 1 >,
+                                             GridPartType, polOrd, Fem::CachingStorage >        ContainedSpaceType;
+    typedef Fem::CombinedSpace< ContainedSpaceType, dimRange, Fem::VariableBased > DiscreteFunctionSpaceType;
 #endif
     typedef Fem::AdaptiveDiscreteFunction< DiscreteFunctionSpaceType >    DestinationType;
     //typedef Fem::PetscDiscreteFunction< DiscreteFunctionSpaceType >    DestinationType;
@@ -65,5 +66,5 @@ namespace Dune {
     typedef AdaptationHandler< GridType, FunctionSpaceType >  AdaptationHandlerType ;
   };
 
-} // end namespace Dune 
+} // end namespace Dune
 #endif

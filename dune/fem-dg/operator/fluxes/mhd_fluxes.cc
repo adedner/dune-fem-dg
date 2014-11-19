@@ -36,7 +36,7 @@ namespace Mhd {
 #define tstep_auto MhdSolver::tstep_auto
 #define use_hll_fix MhdSolver::use_hll_fix
 #define verbose_mode MhdSolver::verbose_mode
-#define use_point_fix MhdSolver::use_point_fix 
+#define use_point_fix MhdSolver::use_point_fix
 #define use_entropy_fix MhdSolver::use_entropy_fix
 #define use_velocity_fix MhdSolver::use_velocity_fix
 #define check_rmv_errors MhdSolver::check_rmv_errors
@@ -45,9 +45,9 @@ namespace Mhd {
 #define hll_use_roe_mean_values MhdSolver::hll_use_roe_mean_values
 #define visc MhdSolver::visc
 #define algorithm MhdSolver::algorithm
-   
+
   /***************************************************************************
-     global counters 
+     global counters
   ****************************************************************************/
 
 #define undo MhdSolver::undo
@@ -61,7 +61,7 @@ namespace Mhd {
 #define max_conservation_error_2D MhdSolver::max_conservation_error_2D
 
   /***************************************************************************
-     unused global variables 
+     unused global variables
   ****************************************************************************/
 
 #define filenametime "/dev/null"
@@ -169,7 +169,7 @@ namespace Mhd {
   {
     int li;
     double lerg = 0;
-  
+
     for (li=0;li<dim;li++) lerg += pu1[li] * pu2[li];
 
     return lerg;
@@ -178,14 +178,14 @@ namespace Mhd {
   void vadd(const MhdSolver::VEC1D pu1, const MhdSolver::VEC1D pu2, MhdSolver::VEC1D *pret)
   {
     int li;
-  
+
     for (li=0;li<dim;li++) (*pret)[li] = pu1[li] + pu2[li];
   }
 
   void vsub(const MhdSolver::VEC1D pu1, const MhdSolver::VEC1D pu2, MhdSolver::VEC1D *pret)
   {
     int li;
-  
+
     for (li=0;li<dim;li++) (*pret)[li] = pu1[li] - pu2[li];
   }
 
@@ -199,7 +199,7 @@ namespace Mhd {
   void svmult(const double ps, const MhdSolver::VEC1D pu, MhdSolver::VEC1D *pret)
   {
     int li;
-  
+
     for (li=0;li<dim;li++) (*pret)[li] = ps * pu[li];
   }
 
@@ -217,7 +217,7 @@ namespace Mhd {
   void madd(const MhdSolver::MAT pmat1, const MhdSolver::MAT pmat2, MhdSolver::MAT *pret)
   {
     int li,lj;
-  
+
     for (li=0;li<dim;li++)
       for (lj=0;lj<dim;lj++)
         (*pret)[li][lj] = pmat1[li][lj] + pmat2[li][lj];
@@ -226,7 +226,7 @@ namespace Mhd {
   void msub(const MhdSolver::MAT pmat1, const MhdSolver::MAT pmat2, MhdSolver::MAT *pret)
   {
     int li,lj;
-  
+
     for (li=0;li<dim;li++)
       for (lj=0;lj<dim;lj++)
         (*pret)[li][lj] = pmat1[li][lj] - pmat2[li][lj];
@@ -336,7 +336,7 @@ namespace Mhd {
       }
     else if (px < -eps)
       {
-        lret = 0.5 * (px + del) / (eps - del) + 1.0; 
+        lret = 0.5 * (px + del) / (eps - del) + 1.0;
       }
     else if (px < eps)
       {
@@ -355,7 +355,7 @@ namespace Mhd {
   }
 
   /***************************************************************************
-     functions depending on underlying equations                           
+     functions depending on underlying equations
   ****************************************************************************/
 
   /* flux function */
@@ -378,7 +378,7 @@ namespace Mhd {
     lux = lrhoux / lrho;
     luy = lrhouy / lrho;
     luz = lrhouz / lrho;
-    lp  = (gamma - 1.0) 
+    lp  = (gamma - 1.0)
       * (lrhoE - 0.5 * ( lrhoux * lux + lrhouy * luy + lrhouz * luz )
          - ( lBy * lBy + lBz * lBz ) / ( 8.0 * M_PI ));
 
@@ -415,7 +415,7 @@ namespace Mhd {
     lux = lrhoux / lrho;
     luy = lrhouy / lrho;
     luz = lrhouz / lrho;
-    lp  = (gamma - 1.0) 
+    lp  = (gamma - 1.0)
       * (lrhoE - 0.5 * ( lrhoux * lux + lrhouy * luy + lrhouz * luz )
          - ( lBy * lBy + lBz * lBz ) / ( 8.0 * M_PI ));
 
@@ -485,9 +485,9 @@ namespace Mhd {
     (*pret)[6][6] = lux;
     (*pret)[6][7] = 0.0;
 
-    (*pret)[7][0] =   lux * (   0.5 * (gamma - 1.0) 
-                                * (lux * lux + luy * luy + luz * luz) 
-                                - (   lrhoE + lp 
+    (*pret)[7][0] =   lux * (   0.5 * (gamma - 1.0)
+                                * (lux * lux + luy * luy + luz * luz)
+                                - (   lrhoE + lp
                                       + 0.5 * lpifac * (lBy * lBy + lBz * lBz)) / lrho)
       + lpifac * lBx * (luy * lBy + luz * lBz) / lrho;
     (*pret)[7][1] =   (lrhoE + lp + 0.5 * lpifac * (lBy * lBy + lBz * lBz)) / lrho
@@ -525,7 +525,7 @@ namespace Mhd {
     switch (pidx)
       {
       case 0 :
-        lp    = (gamma - 1.0) 
+        lp    = (gamma - 1.0)
           * (lrhoE - 0.5 * ( lrhoux * lux + lrhouy * luy + lrhouz * luz )
              - ( lBy * lBy + lBz * lBz ) / ( 8.0 * M_PI ));
         lvax2 = lBx * lBx / ( 4.0 * M_PI * lrho );
@@ -543,7 +543,7 @@ namespace Mhd {
         (*pret) = lux - sqrt(lvax2);
         break;
       case 2 :
-        lp    = (gamma - 1.0) 
+        lp    = (gamma - 1.0)
           * (lrhoE - 0.5 * ( lrhoux * lux + lrhouy * luy + lrhouz * luz )
              - ( lBy * lBy + lBz * lBz ) / ( 8.0 * M_PI ));
         lvax2 = lBx * lBx / ( 4.0 * M_PI * lrho );
@@ -563,7 +563,7 @@ namespace Mhd {
         (*pret) = 0.0;
         break;
       case 5 :
-        lp    = (gamma - 1.0) 
+        lp    = (gamma - 1.0)
           * (lrhoE - 0.5 * ( lrhoux * lux + lrhouy * luy + lrhouz * luz )
              - ( lBy * lBy + lBz * lBz ) / ( 8.0 * M_PI ));
         lvax2 = lBx * lBx / ( 4.0 * M_PI * lrho );
@@ -581,7 +581,7 @@ namespace Mhd {
         (*pret) = lux + sqrt(lvax2);
         break;
       case 7 :
-        lp    = (gamma - 1.0) 
+        lp    = (gamma - 1.0)
           * (lrhoE - 0.5 * ( lrhoux * lux + lrhouy * luy + lrhouz * luz )
              - ( lBy * lBy + lBz * lBz ) / ( 8.0 * M_PI ));
         lvax2 = lBx * lBx / ( 4.0 * M_PI * lrho );
@@ -687,10 +687,10 @@ namespace Mhd {
         if (lsqrtBy2pBz2 > eps)
           {
             lbetay = lBy / lsqrtBy2pBz2;
-            lbetaz = lBz / lsqrtBy2pBz2; 
+            lbetaz = lBz / lsqrtBy2pBz2;
           }
         else lbetay = lbetaz = 1.0 / sqrt(2.0);
-        lp   = (gamma - 1.0) 
+        lp   = (gamma - 1.0)
           * (lrhoE - 0.5 * ( lrhoux * lux + lrhouy * luy + lrhouz * luz )
              - ( lBy * lBy + lBz * lBz ) / ( 8.0 * M_PI ));
         lvax2    = lBx * lBx / ( 4.0 * M_PI * lrho );
@@ -757,10 +757,10 @@ namespace Mhd {
         if (lsqrtBy2pBz2 > eps)
           {
             lbetay = lBy / lsqrtBy2pBz2;
-            lbetaz = lBz / lsqrtBy2pBz2; 
+            lbetaz = lBz / lsqrtBy2pBz2;
           }
         else lbetay = lbetaz = 1.0 / sqrt(2.0);
-        lp   = (gamma - 1.0) 
+        lp   = (gamma - 1.0)
           * (lrhoE - 0.5 * ( lrhoux * lux + lrhouy * luy + lrhouz * luz )
              - ( lBy * lBy + lBz * lBz ) / ( 8.0 * M_PI ));
         lvax2    = lBx * lBx / ( 4.0 * M_PI * lrho );
@@ -794,10 +794,10 @@ namespace Mhd {
         if (lsqrtBy2pBz2 > eps)
           {
             lbetay = lBy / lsqrtBy2pBz2;
-            lbetaz = lBz / lsqrtBy2pBz2; 
+            lbetaz = lBz / lsqrtBy2pBz2;
           }
         else lbetay = lbetaz = 1.0 / sqrt(2.0);
-        lp   = (gamma - 1.0) 
+        lp   = (gamma - 1.0)
           * (lrhoE - 0.5 * ( lrhoux * lux + lrhouy * luy + lrhouz * luz )
              - ( lBy * lBy + lBz * lBz ) / ( 8.0 * M_PI ));
         lvax2    = lBx * lBx / ( 4.0 * M_PI * lrho );
@@ -852,7 +852,7 @@ namespace Mhd {
           + lrhoux * lalphas * lvs
           + lrhouy * lalphaf * lbetay * lcs * lsgnBx
           + lrhouz * lalphaf * lbetaz * lcs * lsgnBx
-          + lBy * lalphaf * lbetay * lcs2 
+          + lBy * lalphaf * lbetay * lcs2
           * sqrt ( lrho / ( 4.0 * M_PI ) ) / lvf
           + lBz * lalphaf * lbetaz * lcs2
           * sqrt ( lrho / ( 4.0 * M_PI ) ) / lvf
@@ -869,7 +869,7 @@ namespace Mhd {
         (*pret)[4] = 0.0;
         (*pret)[5] = 0.0;
         (*pret)[6] = 0.0;
-        (*pret)[7] = -0.5 * (   lrhoux * lrhoux + lrhouy * lrhouy 
+        (*pret)[7] = -0.5 * (   lrhoux * lrhoux + lrhouy * lrhouy
                                 + lrhouz * lrhouz ) / lrho;
         break;
       case 4:
@@ -887,10 +887,10 @@ namespace Mhd {
         if (lsqrtBy2pBz2 > eps)
           {
             lbetay = lBy / lsqrtBy2pBz2;
-            lbetaz = lBz / lsqrtBy2pBz2; 
+            lbetaz = lBz / lsqrtBy2pBz2;
           }
         else lbetay = lbetaz = 1.0 / sqrt(2.0);
-        lp   = (gamma - 1.0) 
+        lp   = (gamma - 1.0)
           * (lrhoE - 0.5 * ( lrhoux * lux + lrhouy * luy + lrhouz * luz )
              - ( lBy * lBy + lBz * lBz ) / ( 8.0 * M_PI ));
         lvax2    = lBx * lBx / ( 4.0 * M_PI * lrho );
@@ -945,7 +945,7 @@ namespace Mhd {
           + lrhoux * lalphas * lvs
           + lrhouy * lalphaf * lbetay * lcs * lsgnBx
           + lrhouz * lalphaf * lbetaz * lcs * lsgnBx
-          - lBy * lalphaf * lbetay * lcs2 
+          - lBy * lalphaf * lbetay * lcs2
           * sqrt ( lrho / ( 4.0 * M_PI ) ) / lvf
           - lBz * lalphaf * lbetaz * lcs2
           * sqrt ( lrho / ( 4.0 * M_PI ) ) / lvf
@@ -960,10 +960,10 @@ namespace Mhd {
         if (lsqrtBy2pBz2 > eps)
           {
             lbetay = lBy / lsqrtBy2pBz2;
-            lbetaz = lBz / lsqrtBy2pBz2; 
+            lbetaz = lBz / lsqrtBy2pBz2;
           }
         else lbetay = lbetaz = 1.0 / sqrt(2.0);
-        lp   = (gamma - 1.0) 
+        lp   = (gamma - 1.0)
           * (lrhoE - 0.5 * ( lrhoux * lux + lrhouy * luy + lrhouz * luz )
              - ( lBy * lBy + lBz * lBz ) / ( 8.0 * M_PI ));
         lvax2    = lBx * lBx / ( 4.0 * M_PI * lrho );
@@ -997,10 +997,10 @@ namespace Mhd {
         if (lsqrtBy2pBz2 > eps)
           {
             lbetay = lBy / lsqrtBy2pBz2;
-            lbetaz = lBz / lsqrtBy2pBz2; 
+            lbetaz = lBz / lsqrtBy2pBz2;
           }
         else lbetay = lbetaz = 1.0 / sqrt(2.0);
-        lp   = (gamma - 1.0) 
+        lp   = (gamma - 1.0)
           * (lrhoE - 0.5 * ( lrhoux * lux + lrhouy * luy + lrhouz * luz )
              - ( lBy * lBy + lBz * lBz ) / ( 8.0 * M_PI ));
         lvax2    = lBx * lBx / ( 4.0 * M_PI * lrho );
@@ -1099,10 +1099,10 @@ namespace Mhd {
     if (lsqrtBy2pBz2 > eps)
       {
         lbetay = lBy / lsqrtBy2pBz2;
-        lbetaz = lBz / lsqrtBy2pBz2; 
+        lbetaz = lBz / lsqrtBy2pBz2;
       }
     else lbetay = lbetaz = 1.0 / sqrt(2.0);
-    lp   = (gamma - 1.0) 
+    lp   = (gamma - 1.0)
       * (lrhoE - 0.5 * ( lrhoux * lux + lrhouy * luy + lrhouz * luz )
          - ( lBy * lBy + lBz * lBz ) / ( 8.0 * M_PI ));
     lvax2    = lBx * lBx / ( 4.0 * M_PI * lrho );
@@ -1187,7 +1187,7 @@ namespace Mhd {
       + lrhoux * lalphas * lvs
       + lrhouy * lalphaf * lbetay * lcs * lsgnBx
       + lrhouz * lalphaf * lbetaz * lcs * lsgnBx
-      + lBy * lalphaf * lbetay * lcs2 
+      + lBy * lalphaf * lbetay * lcs2
       * sqrt ( lrho / ( 4.0 * M_PI ) ) / lvf
       + lBz * lalphaf * lbetaz * lcs2
       * sqrt ( lrho / ( 4.0 * M_PI ) ) / lvf
@@ -1200,7 +1200,7 @@ namespace Mhd {
     pret[3][4] = 0.0;
     pret[3][5] = 0.0;
     pret[3][6] = 0.0;
-    pret[3][7] = -0.5 * (   lrhoux * lrhoux + lrhouy * lrhouy 
+    pret[3][7] = -0.5 * (   lrhoux * lrhoux + lrhouy * lrhouy
                             + lrhouz * lrhouz ) / lrho;
 
     pret[4][0] = 0.0;
@@ -1224,7 +1224,7 @@ namespace Mhd {
       + lrhoux * lalphas * lvs
       + lrhouy * lalphaf * lbetay * lcs * lsgnBx
       + lrhouz * lalphaf * lbetaz * lcs * lsgnBx
-      - lBy * lalphaf * lbetay * lcs2 
+      - lBy * lalphaf * lbetay * lcs2
       * sqrt ( lrho / ( 4.0 * M_PI ) ) / lvf
       - lBz * lalphaf * lbetaz * lcs2
       * sqrt ( lrho / ( 4.0 * M_PI ) ) / lvf
@@ -1301,10 +1301,10 @@ namespace Mhd {
         if (lsqrtBy2pBz2 > eps)
           {
             lbetay = lBy / lsqrtBy2pBz2;
-            lbetaz = lBz / lsqrtBy2pBz2; 
+            lbetaz = lBz / lsqrtBy2pBz2;
           }
         else lbetay = lbetaz = 1.0 / sqrt(2.0);
-        lp   = (gamma - 1.0) 
+        lp   = (gamma - 1.0)
           * (lrhoE - 0.5 * ( lrhoux * lux + lrhouy * luy + lrhouz * luz )
              - ( lBy * lBy + lBz * lBz ) / ( 8.0 * M_PI ));
         lvax2    = lBx * lBx / ( 4.0 * M_PI * lrho );
@@ -1350,7 +1350,7 @@ namespace Mhd {
         (*pret)[0] = lmultvf  * ( - lalphaf * lvf * lux / lrho
                                   + lalphas * lbetay * lvax * lsgnBx * luy / lrho
                                   + lalphas * lbetaz * lvax * lsgnBx * luz / lrho
-                                  + lalphaf / lrho * 0.5 * (1.0 - gamma) 
+                                  + lalphaf / lrho * 0.5 * (1.0 - gamma)
                                   * (lux * lux + luy * luy + luz * luz));
         (*pret)[1] = lmultvf  * (   lalphaf * lvf / lrho
                                     + lalphaf / lrho * (gamma - 1.0) * lux );
@@ -1373,10 +1373,10 @@ namespace Mhd {
         if (lsqrtBy2pBz2 > eps)
           {
             lbetay = lBy / lsqrtBy2pBz2;
-            lbetaz = lBz / lsqrtBy2pBz2; 
+            lbetaz = lBz / lsqrtBy2pBz2;
           }
         else lbetay = lbetaz = 1.0 / sqrt(2.0);
-        lp   = (gamma - 1.0) 
+        lp   = (gamma - 1.0)
           * (lrhoE - 0.5 * ( lrhoux * lux + lrhouy * luy + lrhouz * luz )
              - ( lBy * lBy + lBz * lBz ) / ( 8.0 * M_PI ));
         lvax2    = lBx * lBx / ( 4.0 * M_PI * lrho );
@@ -1408,10 +1408,10 @@ namespace Mhd {
         if (lsqrtBy2pBz2 > eps)
           {
             lbetay = lBy / lsqrtBy2pBz2;
-            lbetaz = lBz / lsqrtBy2pBz2; 
+            lbetaz = lBz / lsqrtBy2pBz2;
           }
         else lbetay = lbetaz = 1.0 / sqrt(2.0);
-        lp   = (gamma - 1.0) 
+        lp   = (gamma - 1.0)
           * (lrhoE - 0.5 * ( lrhoux * lux + lrhouy * luy + lrhouz * luz )
              - ( lBy * lBy + lBz * lBz ) / ( 8.0 * M_PI ));
         lvax2    = lBx * lBx / ( 4.0 * M_PI * lrho );
@@ -1476,12 +1476,12 @@ namespace Mhd {
         (*pret)[7] = lmultvs  * (   lalphas / lrho * (1.0 - gamma) );
         break;
       case 3:
-        lp   = (gamma - 1.0) 
+        lp   = (gamma - 1.0)
           * (lrhoE - 0.5 * ( lrhoux * lux + lrhouy * luy + lrhouz * luz )
              - ( lBy * lBy + lBz * lBz ) / ( 8.0 * M_PI ));
 
         (*pret)[0] = - 1.0 / lrho
-          + (gamma - 1.0) / (gamma * lp) * 0.5 
+          + (gamma - 1.0) / (gamma * lp) * 0.5
           * (lux * lux + luy * luy + luz * luz);
         (*pret)[1] =   (1.0 - gamma) / (gamma * lp) * lux;
         (*pret)[2] =   (1.0 - gamma) / (gamma * lp) * luy;
@@ -1507,10 +1507,10 @@ namespace Mhd {
         if (lsqrtBy2pBz2 > eps)
           {
             lbetay = lBy / lsqrtBy2pBz2;
-            lbetaz = lBz / lsqrtBy2pBz2; 
+            lbetaz = lBz / lsqrtBy2pBz2;
           }
         else lbetay = lbetaz = 1.0 / sqrt(2.0);
-        lp   = (gamma - 1.0) 
+        lp   = (gamma - 1.0)
           * (lrhoE - 0.5 * ( lrhoux * lux + lrhouy * luy + lrhouz * luz )
              - ( lBy * lBy + lBz * lBz ) / ( 8.0 * M_PI ));
         lvax2    = lBx * lBx / ( 4.0 * M_PI * lrho );
@@ -1580,10 +1580,10 @@ namespace Mhd {
         if (lsqrtBy2pBz2 > eps)
           {
             lbetay = lBy / lsqrtBy2pBz2;
-            lbetaz = lBz / lsqrtBy2pBz2; 
+            lbetaz = lBz / lsqrtBy2pBz2;
           }
         else lbetay = lbetaz = 1.0 / sqrt(2.0);
-        lp   = (gamma - 1.0) 
+        lp   = (gamma - 1.0)
           * (lrhoE - 0.5 * ( lrhoux * lux + lrhouy * luy + lrhouz * luz )
              - ( lBy * lBy + lBz * lBz ) / ( 8.0 * M_PI ));
         lvax2    = lBx * lBx / ( 4.0 * M_PI * lrho );
@@ -1615,10 +1615,10 @@ namespace Mhd {
         if (lsqrtBy2pBz2 > eps)
           {
             lbetay = lBy / lsqrtBy2pBz2;
-            lbetaz = lBz / lsqrtBy2pBz2; 
+            lbetaz = lBz / lsqrtBy2pBz2;
           }
         else lbetay = lbetaz = 1.0 / sqrt(2.0);
-        lp   = (gamma - 1.0) 
+        lp   = (gamma - 1.0)
           * (lrhoE - 0.5 * ( lrhoux * lux + lrhouy * luy + lrhouz * luz )
              - ( lBy * lBy + lBz * lBz ) / ( 8.0 * M_PI ));
         lvax2    = lBx * lBx / ( 4.0 * M_PI * lrho );
@@ -1664,7 +1664,7 @@ namespace Mhd {
         (*pret)[0] = lmultvf  * ( - lalphaf * lvf * lux / lrho
                                   + lalphas * lbetay * lvax * lsgnBx * luy / lrho
                                   + lalphas * lbetaz * lvax * lsgnBx * luz / lrho
-                                  + lalphaf / lrho * 0.5 * (gamma - 1.0) 
+                                  + lalphaf / lrho * 0.5 * (gamma - 1.0)
                                   * (lux * lux + luy * luy + luz * luz));
         (*pret)[1] = lmultvf  * (   lalphaf * lvf / lrho
                                     + lalphaf / lrho * (1.0 - gamma) * lux );
@@ -1717,10 +1717,10 @@ namespace Mhd {
     if (lsqrtBy2pBz2 > eps)
       {
         lbetay = lBy / lsqrtBy2pBz2;
-        lbetaz = lBz / lsqrtBy2pBz2; 
+        lbetaz = lBz / lsqrtBy2pBz2;
       }
     else lbetay = lbetaz = 1.0 / sqrt(2.0);
-    lp   = (gamma - 1.0) 
+    lp   = (gamma - 1.0)
       * (lrhoE - 0.5 * ( lrhoux * lux + lrhouy * luy + lrhouz * luz )
          - ( lBy * lBy + lBz * lBz ) / ( 8.0 * M_PI ));
     lvax2    = lBx * lBx / ( 4.0 * M_PI * lrho );
@@ -1771,7 +1771,7 @@ namespace Mhd {
     (*pret)[0][0] = lmultvf  * ( - lalphaf * lvf * lux / lrho
                                  + lalphas * lbetay * lvax * lsgnBx * luy / lrho
                                  + lalphas * lbetaz * lvax * lsgnBx * luz / lrho
-                                 + lalphaf / lrho * 0.5 * (1.0 - gamma) 
+                                 + lalphaf / lrho * 0.5 * (1.0 - gamma)
                                  * (lux * lux + luy * luy + luz * luz));
     (*pret)[0][1] = lmultvf  * (   lalphaf * lvf / lrho
                                    + lalphaf / lrho * (gamma - 1.0) * lux );
@@ -1819,7 +1819,7 @@ namespace Mhd {
     (*pret)[2][7] = lmultvs  * (   lalphas / lrho * (1.0 - gamma) );
 
     (*pret)[3][0] = - 1.0 / lrho
-      + (gamma - 1.0) / (gamma * lp) * 0.5 
+      + (gamma - 1.0) / (gamma * lp) * 0.5
       * (lux * lux + luy * luy + luz * luz);
     (*pret)[3][1] =   (1.0 - gamma) / (gamma * lp) * lux;
     (*pret)[3][2] =   (1.0 - gamma) / (gamma * lp) * luy;
@@ -1871,7 +1871,7 @@ namespace Mhd {
     (*pret)[7][0] = lmultvf  * ( - lalphaf * lvf * lux / lrho
                                  + lalphas * lbetay * lvax * lsgnBx * luy / lrho
                                  + lalphas * lbetaz * lvax * lsgnBx * luz / lrho
-                                 + lalphaf / lrho * 0.5 * (gamma - 1.0) 
+                                 + lalphaf / lrho * 0.5 * (gamma - 1.0)
                                  * (lux * lux + luy * luy + luz * luz));
     (*pret)[7][1] = lmultvf  * (   lalphaf * lvf / lrho
                                    + lalphaf / lrho * (1.0 - gamma) * lux );
@@ -1925,7 +1925,7 @@ namespace Mhd {
     switch (pidx)
       {
       case 0 :
-        lp   = (gamma - 1.0) 
+        lp   = (gamma - 1.0)
           * (lrhoE - 0.5 * ( lrhoux * lux + lrhouy * luy + lrhouz * luz )
              - ( lBy * lBy + lBz * lBz ) / ( 8.0 * M_PI ));
         lvax2    = lBx * lBx / ( 4.0 * M_PI * lrho );
@@ -1946,10 +1946,10 @@ namespace Mhd {
             lmgvax2  = -2.0 * lcs2 / lsqrtvfs;
             lmgcs2   = 1.0 + ( lva2 + lcs2 - 2.0 * lvax2 ) / lsqrtvfs;
 
-            (*pret)[0] -= (  lmgva2  * (- lva2  * ltau) 
+            (*pret)[0] -= (  lmgva2  * (- lva2  * ltau)
                              + lmgvax2 * (- lvax2 * ltau)
-                             + lmgcs2  * ltau 
-                             * ((- lcs2 
+                             + lmgcs2  * ltau
+                             * ((- lcs2
                                  + gamma * (gamma - 1.0) * 0.5
                                  * (  lux * lux
                                       + luy * luy
@@ -1986,7 +1986,7 @@ namespace Mhd {
           }
         else
           {
-            (*pret)[0] -= ltau * (- lcs2 
+            (*pret)[0] -= ltau * (- lcs2
                                   + gamma * (gamma - 1.0) * 0.5
                                   * (  lux * lux
                                        + luy * luy
@@ -2002,7 +2002,7 @@ namespace Mhd {
               * 0.25 / lvf;
             (*pret)[7] -= (gamma * (gamma - 1.0) * ltau) * 0.25 / lvf;
           }
-        break; 
+        break;
       case 1 :
         lvax2    = lBx * lBx / ( 4.0 * M_PI * lrho );
         if (fabs(lvax2) <= eps) lvax = 0.0; else lvax = sqrt( lvax2 );
@@ -2014,9 +2014,9 @@ namespace Mhd {
         (*pret)[5] -= 0.0;
         (*pret)[6] -= 0.0;
         (*pret)[7] -= 0.0;
-        break; 
+        break;
       case 2 :
-        lp   = (gamma - 1.0) 
+        lp   = (gamma - 1.0)
           * (lrhoE - 0.5 * ( lrhoux * lux + lrhouy * luy + lrhouz * luz )
              - ( lBy * lBy + lBz * lBz ) / ( 8.0 * M_PI ));
         lvax2    = lBx * lBx / ( 4.0 * M_PI * lrho );
@@ -2042,10 +2042,10 @@ namespace Mhd {
                 lmgvax2  = 2.0 * lcs2 / lsqrtvfs;
                 lmgcs2   = 1.0 - ( lva2 + lcs2 - 2.0 * lvax2 ) / lsqrtvfs;
 
-                (*pret)[0] -= (  lmgva2  * (- lva2  * ltau) 
+                (*pret)[0] -= (  lmgva2  * (- lva2  * ltau)
                                  + lmgvax2 * (- lvax2 * ltau)
-                                 + lmgcs2  * ltau 
-                                 * ((- lcs2 
+                                 + lmgcs2  * ltau
+                                 * ((- lcs2
                                      + gamma * (gamma - 1.0) * 0.5
                                      * (  lux * lux
                                           + luy * luy
@@ -2072,7 +2072,7 @@ namespace Mhd {
           }
         else if (psign > 0)
           {
-            (*pret)[0] -= ltau * (- lcs2 
+            (*pret)[0] -= ltau * (- lcs2
                                   + gamma * (gamma - 1.0) * 0.5
                                   * (  lux * lux
                                        + luy * luy
@@ -2099,7 +2099,7 @@ namespace Mhd {
             (*pret)[6] -= 0.0;
             (*pret)[7] -= 0.0;
           }
-        break; 
+        break;
       case 3:
         break;
       case 4:
@@ -2107,7 +2107,7 @@ namespace Mhd {
         (*pret)[1] = 0.0;
         break;
       case 5 :
-        lp   = (gamma - 1.0) 
+        lp   = (gamma - 1.0)
           * (lrhoE - 0.5 * ( lrhoux * lux + lrhouy * luy + lrhouz * luz )
              - ( lBy * lBy + lBz * lBz ) / ( 8.0 * M_PI ));
         lvax2    = lBx * lBx / ( 4.0 * M_PI * lrho );
@@ -2123,7 +2123,7 @@ namespace Mhd {
         if (fabs(lva2)  <= eps) lva  = 0.0; else lva  = sqrt( lva2 );
         lvf      = sqrt( lvf2 );
         assert(lvf > 0.0);
-   
+
         if (fabs(lrad) > eps)
           {
             if (fabs(lvs2) > eps)
@@ -2133,10 +2133,10 @@ namespace Mhd {
                 lmgvax2  = 2.0 * lcs2 / lsqrtvfs;
                 lmgcs2   = 1.0 - ( lva2 + lcs2 - 2.0 * lvax2 ) / lsqrtvfs;
 
-                (*pret)[0] += (  lmgva2  * (- lva2  * ltau) 
+                (*pret)[0] += (  lmgva2  * (- lva2  * ltau)
                                  + lmgvax2 * (- lvax2 * ltau)
-                                 + lmgcs2  * ltau 
-                                 * ((- lcs2 
+                                 + lmgcs2  * ltau
+                                 * ((- lcs2
                                      + gamma * (gamma - 1.0) * 0.5
                                      * (  lux * lux
                                           + luy * luy
@@ -2163,7 +2163,7 @@ namespace Mhd {
           }
         else if (psign > 0)
           {
-            (*pret)[0] += ltau * (- lcs2 
+            (*pret)[0] += ltau * (- lcs2
                                   + gamma * (gamma - 1.0) * 0.5
                                   * (  lux * lux
                                        + luy * luy
@@ -2190,7 +2190,7 @@ namespace Mhd {
             (*pret)[6] += 0.0;
             (*pret)[7] += 0.0;
           }
-        break; 
+        break;
       case 6 :
         lvax2    = lBx * lBx / ( 4.0 * M_PI * lrho );
         if (fabs(lvax2) <= eps) lvax = 0.0; else lvax = sqrt( lvax2 );
@@ -2202,9 +2202,9 @@ namespace Mhd {
         (*pret)[5] += 0.0;
         (*pret)[6] += 0.0;
         (*pret)[7] += 0.0;
-        break; 
+        break;
       case 7 :
-        lp   = (gamma - 1.0) 
+        lp   = (gamma - 1.0)
           * (lrhoE - 0.5 * ( lrhoux * lux + lrhouy * luy + lrhouz * luz )
              - ( lBy * lBy + lBz * lBz ) / ( 8.0 * M_PI ));
         lvax2    = lBx * lBx / ( 4.0 * M_PI * lrho );
@@ -2225,10 +2225,10 @@ namespace Mhd {
             lmgvax2  = -2.0 * lcs2 / lsqrtvfs;
             lmgcs2   = 1.0 + ( lva2 + lcs2 - 2.0 * lvax2 ) / lsqrtvfs;
 
-            (*pret)[0] += (  lmgva2  * (- lva2  * ltau) 
+            (*pret)[0] += (  lmgva2  * (- lva2  * ltau)
                              + lmgvax2 * (- lvax2 * ltau)
-                             + lmgcs2  * ltau 
-                             * ((- lcs2 
+                             + lmgcs2  * ltau
+                             * ((- lcs2
                                  + gamma * (gamma - 1.0) * 0.5
                                  * (  lux * lux
                                       + luy * luy
@@ -2265,7 +2265,7 @@ namespace Mhd {
           }
         else
           {
-            (*pret)[0] += ltau * (- lcs2 
+            (*pret)[0] += ltau * (- lcs2
                                   + gamma * (gamma - 1.0) * 0.5
                                   * (  lux * lux
                                        + luy * luy
@@ -2281,7 +2281,7 @@ namespace Mhd {
               * 0.25 / lvf;
             (*pret)[7] += (gamma * (gamma - 1.0) * ltau) * 0.25 / lvf;
           }
-        break; 
+        break;
       default :
         printf("Invalid argument \"pidx == %d\" in function grad_lambda!\n\n",
                pidx);
@@ -2329,7 +2329,7 @@ namespace Mhd {
     pret[4][0] = 0.0;
     pret[4][1] = 0.0;
 
-    lp   = (gamma - 1.0) 
+    lp   = (gamma - 1.0)
       * (lrhoE - 0.5 * ( lrhoux * lux + lrhouy * luy + lrhouz * luz )
          - ( lBy * lBy + lBz * lBz ) / ( 8.0 * M_PI ));
     lvax2    = lBx * lBx / ( 4.0 * M_PI * lrho );
@@ -2354,10 +2354,10 @@ namespace Mhd {
         lmgvax2  = -2.0 * lcs2 / lsqrtvfs;
         lmgcs2   = 1.0 + ( lva2 + lcs2 - 2.0 * lvax2 ) / lsqrtvfs;
 
-        pret[0][0] -= (  lmgva2  * (- lva2  * ltau) 
+        pret[0][0] -= (  lmgva2  * (- lva2  * ltau)
                          + lmgvax2 * (- lvax2 * ltau)
-                         + lmgcs2  * ltau 
-                         * ((- lcs2 
+                         + lmgcs2  * ltau
+                         * ((- lcs2
                              + gamma * (gamma - 1.0) * 0.5
                              * (  lux * lux
                                   + luy * luy
@@ -2389,12 +2389,12 @@ namespace Mhd {
         pret[0][3] -= 0.0;
         pret[0][4] -= 0.0;
         pret[0][5] -= 0.0;
-        pret[0][6] -= 0.0; 
+        pret[0][6] -= 0.0;
         pret[0][7] -= 0.0;
       }
     else
       {
-        pret[0][0] -= ltau * (- lcs2 
+        pret[0][0] -= ltau * (- lcs2
                               + gamma * (gamma - 1.0) * 0.5
                               * (  lux * lux
                                    + luy * luy
@@ -2419,17 +2419,17 @@ namespace Mhd {
     pret[1][5] -= 0.0;
     pret[1][6] -= 0.0;
     pret[1][7] -= 0.0;
-  
+
     if ((fabs(lrad) > eps) && (fabs(lvs2) > eps))
       {
         lmgva2   = 1.0 - ( lva2 + lcs2 ) / lsqrtvfs;
         lmgvax2  = 2.0 * lcs2 / lsqrtvfs;
         lmgcs2   = 1.0 - ( lva2 + lcs2 - 2.0 * lvax2 ) / lsqrtvfs;
 
-        pret[2][0] -= (  lmgva2  * (- lva2  * ltau) 
+        pret[2][0] -= (  lmgva2  * (- lva2  * ltau)
                          + lmgvax2 * (- lvax2 * ltau)
-                         + lmgcs2  * ltau 
-                         * ((- lcs2 
+                         + lmgcs2  * ltau
+                         * ((- lcs2
                              + gamma * (gamma - 1.0) * 0.5
                              * (  lux * lux
                                   + luy * luy
@@ -2457,10 +2457,10 @@ namespace Mhd {
         lmgvax2  = 2.0 * lcs2 / lsqrtvfs;
         lmgcs2   = 1.0 - ( lva2 + lcs2 - 2.0 * lvax2 ) / lsqrtvfs;
 
-        pret[5][0] += (  lmgva2  * (- lva2  * ltau) 
+        pret[5][0] += (  lmgva2  * (- lva2  * ltau)
                          + lmgvax2 * (- lvax2 * ltau)
-                         + lmgcs2  * ltau 
-                         * ((- lcs2 
+                         + lmgcs2  * ltau
+                         * ((- lcs2
                              + gamma * (gamma - 1.0) * 0.5
                              * (  lux * lux
                                   + luy * luy
@@ -2488,7 +2488,7 @@ namespace Mhd {
       {
         if (psign > 0)
           {
-            pret[2][0] -= ltau * (- lcs2 
+            pret[2][0] -= ltau * (- lcs2
                                   + gamma * (gamma - 1.0) * 0.5
                                   * (  lux * lux
                                        + luy * luy
@@ -2504,7 +2504,7 @@ namespace Mhd {
               * 0.25 / lvs;
             pret[2][7] -= (gamma * (gamma - 1.0) * ltau) * 0.25 / lvs;
 
-            pret[5][0] += ltau * (- lcs2 
+            pret[5][0] += ltau * (- lcs2
                                   + gamma * (gamma - 1.0) * 0.5
                                   * (  lux * lux
                                        + luy * luy
@@ -2557,10 +2557,10 @@ namespace Mhd {
         lmgvax2  = -2.0 * lcs2 / lsqrtvfs;
         lmgcs2   = 1.0 + ( lva2 + lcs2 - 2.0 * lvax2 ) / lsqrtvfs;
 
-        pret[7][0] += (  lmgva2  * (- lva2  * ltau) 
+        pret[7][0] += (  lmgva2  * (- lva2  * ltau)
                          + lmgvax2 * (- lvax2 * ltau)
-                         + lmgcs2  * ltau 
-                         * ((- lcs2 
+                         + lmgcs2  * ltau
+                         * ((- lcs2
                              + gamma * (gamma - 1.0) * 0.5
                              * (  lux * lux
                                   + luy * luy
@@ -2592,12 +2592,12 @@ namespace Mhd {
         pret[7][3] += 0.0;
         pret[7][4] += 0.0;
         pret[7][5] += 0.0;
-        pret[7][6] += 0.0; 
+        pret[7][6] += 0.0;
         pret[7][7] += 0.0;
       }
     else
       {
-        pret[7][0] += ltau * (- lcs2 
+        pret[7][0] += ltau * (- lcs2
                               + gamma * (gamma - 1.0) * 0.5
                               * (  lux * lux
                                    + luy * luy
@@ -2638,7 +2638,7 @@ namespace Mhd {
     luxl = lrhouxl / lrhol;
     luyl = lrhouyl / lrhol;
     luzl = lrhouzl / lrhol;
-    lPl  = (gamma - 1.0) 
+    lPl  = (gamma - 1.0)
       * (lrhoEl - 0.5 * ( lrhouxl * luxl + lrhouyl * luyl + lrhouzl * luzl ))
       + (2.0 - gamma) * ( lByl * lByl + lBzl * lBzl ) / ( 8.0 * M_PI );
     lHl  = (lrhoEl + lPl) / lrhol;
@@ -2657,7 +2657,7 @@ namespace Mhd {
     luxr = lrhouxr / lrhor;
     luyr = lrhouyr / lrhor;
     luzr = lrhouzr / lrhor;
-    lPr  = (gamma - 1.0) 
+    lPr  = (gamma - 1.0)
       * (lrhoEr - 0.5 * ( lrhouxr * luxr + lrhouyr * luyr + lrhouzr * luzr ))
       + (2.0 - gamma) * ( lByr * lByr + lBzr * lBzr ) / ( 8.0 * M_PI );
     lHr  = (lrhoEr + lPr) / lrhor;
@@ -2685,7 +2685,7 @@ namespace Mhd {
     (*pret)[5] = lmvBy;
     (*pret)[6] = lmvBz;
     (*pret)[7] = (  lmvrho * ( lmvH + (gamma - 1.0) * 0.5
-                               * (  lmvux*lmvux 
+                               * (  lmvux*lmvux
                                     + lmvuy*lmvuy + lmvuz*lmvuz ))
                     - (2.0 - gamma) * ( lmvBy * lmvBy + lmvBz * lmvBz )
                     / ( 8.0 * M_PI ) ) / gamma;
@@ -2714,7 +2714,7 @@ namespace Mhd {
     luxl = lrhouxl / lrhol;
     luyl = lrhouyl / lrhol;
     luzl = lrhouzl / lrhol;
-    lPl  = (gamma - 1.0) 
+    lPl  = (gamma - 1.0)
       * (lrhoEl - 0.5 * ( lrhouxl * luxl + lrhouyl * luyl + lrhouzl * luzl ))
       + (2.0 - gamma) * ( lByl * lByl + lBzl * lBzl ) / ( 8.0 * M_PI );
 
@@ -2732,7 +2732,7 @@ namespace Mhd {
     luxr = lrhouxr / lrhor;
     luyr = lrhouyr / lrhor;
     luzr = lrhouzr / lrhor;
-    lPr  = (gamma - 1.0) 
+    lPr  = (gamma - 1.0)
       * (lrhoEr - 0.5 * ( lrhouxr * luxr + lrhouyr * luyr + lrhouzr * luzr ))
       + (2.0 - gamma) * ( lByr * lByr + lBzr * lBzr ) / ( 8.0 * M_PI );
 
@@ -2800,7 +2800,7 @@ namespace Mhd {
     double lrhol,lrhouxl,lrhouyl,lrhouzl,lBxl,lByl,lBzl,lrhoEl,luxl,luyl,luzl,lpl;
     double lrhor,lrhouxr,lrhouyr,lrhouzr,lBxr,lByr,lBzr,lrhoEr,luxr,luyr,luzr,lpr;
     double lBx2l,lBy2l,lBz2l,lBx2r,lBy2r,lBz2r,lmax,lval;
-    
+
     int li;
 
     lrhor   = pu[0][0];
@@ -2817,7 +2817,7 @@ namespace Mhd {
     luxr = lrhouxr / lrhor;
     luyr = lrhouyr / lrhor;
     luzr = lrhouzr / lrhor;
-    lpr  = (gamma - 1.0) 
+    lpr  = (gamma - 1.0)
       * (lrhoEr - 0.5 * ( lrhouxr * luxr + lrhouyr * luyr + lrhouzr * luzr )
          - ( lByr * lByr + lBzr * lBzr ) / ( 8.0 * M_PI ));
 
@@ -2864,7 +2864,7 @@ namespace Mhd {
         luxr = lrhouxr / lrhor;
         luyr = lrhouyr / lrhor;
         luzr = lrhouzr / lrhor;
-        lpr  = (gamma - 1.0) 
+        lpr  = (gamma - 1.0)
           * (lrhoEr - 0.5 * (lrhouxr * luxr + lrhouyr * luyr + lrhouzr * luzr)
              - ( lByr * lByr + lBzr * lBzr ) / ( 8.0 * M_PI ));
 
@@ -2874,12 +2874,12 @@ namespace Mhd {
         lBy2r = lByr * lByr;
         lBz2r = lBzr * lBzr;
 
-        lval =   max(fabs(luxl),fabs(luxr)) 
+        lval =   max(fabs(luxl),fabs(luxr))
           + sqrt((  (  max(lBx2l,lBx2r) + max(lBy2l,lBy2r)
                        + max(lBz2l,lBz2r)) / (4.0 * M_PI)
                     + gamma * max(lpl,lpr) ) / min(lrhol,lrhor));
         if (lval > lmax) lmax = lval;
-      }  
+      }
 
     return pcfl * pxstep / lmax;
   }
@@ -2917,7 +2917,7 @@ namespace Mhd {
 
     if (parg <= 0.0) lret = 0.0; else lret = parg;
 
-    return lret; 
+    return lret;
   }
 
 
@@ -2965,7 +2965,7 @@ namespace Mhd {
     svmult(lmultfur,lfur,&lhvec);
     vadd(*pret,lhvec,pret);
     svmult(lmultdiff,ldiff,&lhvec);
-    vadd(*pret,lhvec,pret);   
+    vadd(*pret,lhvec,pret);
   }
 
 
@@ -2979,7 +2979,7 @@ namespace Mhd {
         printf("conservation_errors_2D    : %d\n",conservation_errors_2D);
         printf("max_conservation_error_2D : %le\n\n",max_conservation_error_2D);
       }
-  } 
+  }
 
 #ifdef _MHD8
 #define _MHD8DC
@@ -3056,7 +3056,7 @@ namespace Mhd {
     /* calculate flux */
 
     lphi = phi(lch);
-  
+
     if (lphi >= 1.0 - eps)
       {
         flux_hlle(pul,pur,pret,gamma);
@@ -3207,7 +3207,7 @@ namespace Mhd {
         lambda(ewave,  pul,&llambda_ewave_l,gamma);
         lambda(ewave,  pur,&llambda_ewave_r,gamma);
 
-        if (lvmax_mv < llambda_ewave_r - llambda_ewave_l) 
+        if (lvmax_mv < llambda_ewave_r - llambda_ewave_l)
           lch = llambda_ewave_r - llambda_ewave_l - lvmax_mv;
       }
 
@@ -3352,7 +3352,7 @@ namespace Mhd {
   }
 
   /* choose reference state */
-  
+
   void ref_state(const MhdSolver::VEC1D pul, const MhdSolver::VEC1D pur,
                  double *ppsi, double *psigmabar, MhdSolver::VEC1D *pret, double gamma)
   {
@@ -3377,13 +3377,13 @@ namespace Mhd {
     if ((*ppsi > eps) && (*ppsi < 1.0 - eps))
       {
         vsub(pul,pur,&ldiff);
-        if (sqrt(vmult(ldiff,ldiff)) <= eps) *ppsi = psi(sgn(*psigmabar));  
+        if (sqrt(vmult(ldiff,ldiff)) <= eps) *ppsi = psi(sgn(*psigmabar));
       }
   }
 
   /* approximate phase-space-solution */
 
-  void approx_phasespacesol(const int psign, const MhdSolver::VEC1D pul, const MhdSolver::VEC1D pur, 
+  void approx_phasespacesol(const int psign, const MhdSolver::VEC1D pul, const MhdSolver::VEC1D pur,
                             MhdSolver::VEC1D *palpha, EVEC_APPROX *pevec, double gamma)
   {
     MhdSolver::VEC1D ldiff, lavg;
@@ -3404,14 +3404,14 @@ namespace Mhd {
         {
           (*palpha)[li] *= -1.0;
           svmult(-1.0,(*pevec)[li],&((*pevec)[li]));
-        } 
+        }
   }
 
   /* evaluate a cubic polynom */
 
   double eval_cubic_pol(const double pbeta[4], const double px)
   {
-    return (  pbeta[3] * px * px * px 
+    return (  pbeta[3] * px * px * px
               + pbeta[2] * px * px
               + pbeta[1] * px
               + pbeta[0] );
@@ -3441,7 +3441,7 @@ namespace Mhd {
             lalpha = palpha[li];
 
             if (fabs(lalpha) < eps) (*peval)[li].parts = 0;
-            else 
+            else
               {
                 la = llambdal[li];
                 lc = llambdar[li];
@@ -3449,7 +3449,7 @@ namespace Mhd {
                 lb = vmult(lgradlambdal[li],pevec[li]);
                 ld = vmult(lgradlambdar[li],pevec[li]);
 
-      
+
                 /* calculate cubic interpolation of lambda[li] */
 
                 assert(lalpha != 0);
@@ -3497,7 +3497,7 @@ namespace Mhd {
 
                 (*peval)[li].x[0] = 0.0;
                 (*peval)[li].y[0] = eval_cubic_pol(lbeta,0.0);
-                lidx = 1;    
+                lidx = 1;
                 for (lj=0;lj<2;lj++)
                   if (ln[lj])
                     {
@@ -3509,10 +3509,10 @@ namespace Mhd {
                 (*peval)[li].y[lidx] = eval_cubic_pol(lbeta,lalpha);
               }
           }
-      }  
+      }
   }
 
-  /* find zero for line segment [(plx,ply),(prx,pry)] with 0 <= plx < prx 
+  /* find zero for line segment [(plx,ply),(prx,pry)] with 0 <= plx < prx
      and ((ply * pry <= eps) or (|ply| <= eps) or (|pry| <= eps))          */
 
   double find_zero(const double plx, const double ply,
@@ -3539,7 +3539,7 @@ namespace Mhd {
           }
         lzero = - lbeta[0] / lbeta[1];
       }
-    else if (fabs(ply) < fabs(pry)) lzero = plx; else lzero = prx; 
+    else if (fabs(ply) < fabs(pry)) lzero = plx; else lzero = prx;
 
     return lzero;
   }
@@ -3624,12 +3624,12 @@ namespace Mhd {
 
     assert(lrho > 0.0);
 
-    lp = (gamma - 1.0) * (lrhoE - 0.5 * (   lrhoux * lrhoux 
+    lp = (gamma - 1.0) * (lrhoE - 0.5 * (   lrhoux * lrhoux
                                             + lrhouy * lrhouy
                                             + lrhouz * lrhouz ) / lrho );
 
     assert(lp > 0.0);
-  
+
     lvax2 = -17.42;
 #ifdef _MHD
     lvax2 = Bx * Bx / (4.0 * M_PI * lrho);
@@ -3648,7 +3648,7 @@ namespace Mhd {
       lret = -1;
     else if (ldiff <= eps)
       lret = 0;
-    else 
+    else
       lret = 1;
 
     return lret;
@@ -3805,7 +3805,7 @@ namespace Mhd {
         if (lvmax_mv < llambda_ewave_r - llambda_ewave_l)
           lch = llambda_ewave_r - llambda_ewave_l - lvmax_mv;
       }
-  
+
     /* initialization */
 
     for (li=0;li<dim;li++) (*pret)[li] = 0.0;
@@ -3970,7 +3970,7 @@ namespace Mhd {
                 exit(17);
               }
           }
-    
+
         approx_phasespacesol(lcsign,lul,lur,&lalpha,&levec,gamma);
         for (li=0;li<dim;li++)
           {
@@ -4045,7 +4045,7 @@ namespace Mhd {
       {
         printf("conservation_errors_2D    : %d\n",conservation_errors_2D);
         printf("max_conservation_error_2D : %le\n\n",max_conservation_error_2D);
-      } 
+      }
   }
 
 
@@ -4126,7 +4126,7 @@ namespace Mhd {
     svmult(ldelta,lhvec1,&lhvec1);
     vadd(lhvec,lhvec1,&lhvec);
     svmult(lmultdiff,lhvec,&lhvec);
-    vadd(*pret,lhvec,pret);   
+    vadd(*pret,lhvec,pret);
   }
 
 
@@ -4140,7 +4140,7 @@ namespace Mhd {
         printf("conservation_errors_2D    : %d\n",conservation_errors_2D);
         printf("max_conservation_error_2D : %le\n\n",max_conservation_error_2D);
       }
-  } 
+  }
 
   /***************************************************************************
      initialize HLLEML-Solver
@@ -4253,8 +4253,8 @@ namespace Mhd {
         printf("conservation_errors_2D    : %d\n",conservation_errors_2D);
         printf("max_conservation_error_2D : %le\n\n",max_conservation_error_2D);
       }
-  } 
+  }
 
-} // end namespace Mhd 
+} // end namespace Mhd
 
 #endif

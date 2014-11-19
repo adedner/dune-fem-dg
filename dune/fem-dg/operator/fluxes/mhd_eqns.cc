@@ -591,7 +591,7 @@ namespace Mhd {
           if (lsqrtBy2pBz2 > MhdEPS)
             {
               lbetay = lBy / lsqrtBy2pBz2;
-              lbetaz = lBz / lsqrtBy2pBz2; 
+              lbetaz = lBz / lsqrtBy2pBz2;
             }
           else lbetay = lbetaz = 1.0 / std::sqrt(2.0);
           if (pprim.Bx() >= 0.0) lsgnBx = 1.0; else lsgnBx = -1.0;
@@ -603,7 +603,7 @@ namespace Mhd {
           pret[4] =   0.0;
           pret[5] = - lalphas * lbetay * lvf * std::sqrt(4.0 * M_PI / ltau);
           pret[6] = - lalphas * lbetaz * lvf * std::sqrt(4.0 * M_PI / ltau);
-          pret[7] = - lalphaf * pprim.gamma() * pprim.p(); 
+          pret[7] = - lalphaf * pprim.gamma() * pprim.p();
 
           pret   *= lvf  / std::sqrt(   lalphaf * lalphaf * (lvf2 + lcs2)
                                    + lalphas * lalphas * (lvf2 + lvax2) );
@@ -621,12 +621,12 @@ namespace Mhd {
           if (lsqrtBy2pBz2 > MhdEPS)
             {
               lbetay = lBy / lsqrtBy2pBz2;
-              lbetaz = lBz / lsqrtBy2pBz2; 
+              lbetaz = lBz / lsqrtBy2pBz2;
             }
           else lbetay = lbetaz = 1.0 / std::sqrt(2.0);
           if (pprim.Bx() >= 0.0) lsgnBx = 1.0; else lsgnBx = -1.0;
 
-          pret[0] =   0.0; 
+          pret[0] =   0.0;
           pret[1] =   0.0;
           pret[2] = - lbetaz;
           pret[3] =   lbetay;
@@ -678,12 +678,12 @@ namespace Mhd {
           if (lsqrtBy2pBz2 > MhdEPS)
             {
               lbetay = lBy / lsqrtBy2pBz2;
-              lbetaz = lBz / lsqrtBy2pBz2; 
+              lbetaz = lBz / lsqrtBy2pBz2;
             }
           else lbetay = lbetaz = 1.0 / std::sqrt(2.0);
           if (pprim.Bx() >= 0.0) lsgnBx = 1.0; else lsgnBx = -1.0;
 
-          pret[0] =   lalphas * ltau; 
+          pret[0] =   lalphas * ltau;
           pret[1] =   lalphas * lvs;
           pret[2] =   lalphaf * lbetay * lcs * lsgnBx;
           pret[3] =   lalphaf * lbetaz * lcs * lsgnBx;
@@ -698,7 +698,7 @@ namespace Mhd {
         }
       case 3:
         {
-          pret[0] = pprim.tau(); 
+          pret[0] = pprim.tau();
           pret[1] = 0.0;
           pret[2] = 0.0;
           pret[3] = 0.0;
@@ -710,7 +710,7 @@ namespace Mhd {
         }
       case 4:
         {
-          pret[0] = 0.0; 
+          pret[0] = 0.0;
           pret[1] = 0.0;
           pret[2] = 0.0;
           pret[3] = 1.0;
@@ -759,12 +759,12 @@ namespace Mhd {
           if (lsqrtBy2pBz2 > MhdEPS)
             {
               lbetay = lBy / lsqrtBy2pBz2;
-              lbetaz = lBz / lsqrtBy2pBz2; 
+              lbetaz = lBz / lsqrtBy2pBz2;
             }
           else lbetay = lbetaz = 1.0 / std::sqrt(2.0);
           if (pprim.Bx() >= 0.0) lsgnBx = 1.0; else lsgnBx = -1.0;
 
-          pret[0] = - lalphas * ltau; 
+          pret[0] = - lalphas * ltau;
           pret[1] =   lalphas * lvs;
           pret[2] =   lalphaf * lbetay * lcs * lsgnBx;
           pret[3] =   lalphaf * lbetaz * lcs * lsgnBx;
@@ -788,12 +788,12 @@ namespace Mhd {
           if (lsqrtBy2pBz2 > MhdEPS)
             {
               lbetay = lBy / lsqrtBy2pBz2;
-              lbetaz = lBz / lsqrtBy2pBz2; 
+              lbetaz = lBz / lsqrtBy2pBz2;
             }
           else lbetay = lbetaz = 1.0 / std::sqrt(2.0);
           if (pprim.Bx() >= 0.0) lsgnBx = 1.0; else lsgnBx = -1.0;
 
-          pret[0] =   0.0; 
+          pret[0] =   0.0;
           pret[1] =   0.0;
           pret[2] =   lbetaz;
           pret[3] = - lbetay;
@@ -844,7 +844,7 @@ namespace Mhd {
           if (lsqrtBy2pBz2 > MhdEPS)
             {
               lbetay = lBy / lsqrtBy2pBz2;
-              lbetaz = lBz / lsqrtBy2pBz2; 
+              lbetaz = lBz / lsqrtBy2pBz2;
             }
           else lbetay = lbetaz = 1.0 / std::sqrt(2.0);
           if (pprim.Bx() >= 0.0) lsgnBx = 1.0; else lsgnBx = -1.0;
@@ -856,7 +856,7 @@ namespace Mhd {
           pret[4] =   0.0;
           pret[5] =   lalphas * lbetay * lvf * std::sqrt(4.0 * M_PI / ltau);
           pret[6] =   lalphas * lbetaz * lvf * std::sqrt(4.0 * M_PI / ltau);
-          pret[7] =   lalphaf * pprim.gamma() * pprim.p(); 
+          pret[7] =   lalphaf * pprim.gamma() * pprim.p();
 
           pret   *= lvf  / std::sqrt(   lalphaf * lalphaf * (lvf2 + lcs2)
                                    + lalphas * lalphas * (lvf2 + lvax2) );
@@ -910,7 +910,7 @@ namespace Mhd {
     if (lsqrtBy2pBz2 > MhdEPS)
       {
         lbetay = lBy / lsqrtBy2pBz2;
-        lbetaz = lBz / lsqrtBy2pBz2; 
+        lbetaz = lBz / lsqrtBy2pBz2;
       }
     else lbetay = lbetaz = 1.0 / std::sqrt(2.0);
     if (pprim.Bx() >= 0.0) lsgnBx = 1.0; else lsgnBx = -1.0;
@@ -930,7 +930,7 @@ namespace Mhd {
     pret(6,0) = - lalphas * lbetaz * lvf * std::sqrt(4.0 * M_PI / ltau);
     pret(7,0) = - lalphaf * lgp;
 
-    pret(0,1) =   0.0; 
+    pret(0,1) =   0.0;
     pret(1,1) =   0.0;
     pret(2,1) = - lbetaz;
     pret(3,1) =   lbetay;
@@ -939,7 +939,7 @@ namespace Mhd {
     pret(6,1) =   lsgnBx * std::sqrt(4.0 * M_PI / ltau) * lbetay;
     pret(7,1) =  0.0;
 
-    pret(0,2) =   lalphas * ltau; 
+    pret(0,2) =   lalphas * ltau;
     pret(1,2) =   lalphas * lvs;
     pret(2,2) =   lalphaf * lbetay * lcs * lsgnBx;
     pret(3,2) =   lalphaf * lbetaz * lcs * lsgnBx;
@@ -948,7 +948,7 @@ namespace Mhd {
     pret(6,2) =   lalphaf * lbetaz * lcs2 / lvf * std::sqrt(4.0 * M_PI / ltau);
     pret(7,2) = - lalphas * lgp;
 
-    pret(0,3) = ltau; 
+    pret(0,3) = ltau;
     pret(1,3) = 0.0;
     pret(2,3) = 0.0;
     pret(3,3) = 0.0;
@@ -966,7 +966,7 @@ namespace Mhd {
     pret(6,4) = 0.0;
     pret(7,4) = 0.0;
 
-    pret(0,5) = - lalphas * ltau; 
+    pret(0,5) = - lalphas * ltau;
     pret(1,5) =   lalphas * lvs;
     pret(2,5) =   lalphaf * lbetay * lcs * lsgnBx;
     pret(3,5) =   lalphaf * lbetaz * lcs * lsgnBx;
@@ -975,7 +975,7 @@ namespace Mhd {
     pret(6,5) = - lalphaf * lbetaz * lcs2 / lvf * std::sqrt(4.0 * M_PI / ltau);
     pret(7,5) =   lalphas * lgp;
 
-    pret(0,6) =   0.0; 
+    pret(0,6) =   0.0;
     pret(1,6) =   0.0;
     pret(2,6) =   lbetaz;
     pret(3,6) = - lbetay;
@@ -991,7 +991,7 @@ namespace Mhd {
     pret(4,7) =   0.0;
     pret(5,7) =   lalphas * lbetay * lvf * std::sqrt(4.0 * M_PI / ltau);
     pret(6,7) =   lalphas * lbetaz * lvf * std::sqrt(4.0 * M_PI / ltau);
-    pret(7,7) =   lalphaf * lgp; 
+    pret(7,7) =   lalphaf * lgp;
 
     for (int i=0;i<8;i++)
       {
@@ -1046,12 +1046,12 @@ namespace Mhd {
           if (lsqrtBy2pBz2 > MhdEPS)
             {
               lbetay = lBy / lsqrtBy2pBz2;
-              lbetaz = lBz / lsqrtBy2pBz2; 
+              lbetaz = lBz / lsqrtBy2pBz2;
             }
           else lbetay = lbetaz = 1.0 / std::sqrt(2.0);
           if (pprim.Bx() >= 0.0) lsgnBx = 1.0; else lsgnBx = -1.0;
 
-          pret[0] =   0.0; 
+          pret[0] =   0.0;
           pret[1] =   lalphaf * lvf;
           pret[2] = - lalphas * lbetay * lvax * lsgnBx;
           pret[3] = - lalphas * lbetaz * lvax * lsgnBx;
@@ -1076,7 +1076,7 @@ namespace Mhd {
           if (lsqrtBy2pBz2 > MhdEPS)
             {
               lbetay = lBy / lsqrtBy2pBz2;
-              lbetaz = lBz / lsqrtBy2pBz2; 
+              lbetaz = lBz / lsqrtBy2pBz2;
             }
           else lbetay = lbetaz = 1.0 / std::sqrt(2.0);
           if (pprim.Bx() >= 0.0) lsgnBx = 1.0; else lsgnBx = -1.0;
@@ -1133,7 +1133,7 @@ namespace Mhd {
           if (lsqrtBy2pBz2 > MhdEPS)
             {
               lbetay = lBy / lsqrtBy2pBz2;
-              lbetaz = lBz / lsqrtBy2pBz2; 
+              lbetaz = lBz / lsqrtBy2pBz2;
             }
           else lbetay = lbetaz = 1.0 / std::sqrt(2.0);
           if (pprim.Bx() >= 0.0) lsgnBx = 1.0; else lsgnBx = -1.0;
@@ -1154,7 +1154,7 @@ namespace Mhd {
         }
       case 3:
         {
-          pret[0] =   1.0 / pprim.tau(); 
+          pret[0] =   1.0 / pprim.tau();
           pret[1] =   0.0;
           pret[2] =   0.0;
           pret[3] =   0.0;
@@ -1215,7 +1215,7 @@ namespace Mhd {
           if (lsqrtBy2pBz2 > MhdEPS)
             {
               lbetay = lBy / lsqrtBy2pBz2;
-              lbetaz = lBz / lsqrtBy2pBz2; 
+              lbetaz = lBz / lsqrtBy2pBz2;
             }
           else lbetay = lbetaz = 1.0 / std::sqrt(2.0);
           if (pprim.Bx() >= 0.0) lsgnBx = 1.0; else lsgnBx = -1.0;
@@ -1245,7 +1245,7 @@ namespace Mhd {
           if (lsqrtBy2pBz2 > MhdEPS)
             {
               lbetay = lBy / lsqrtBy2pBz2;
-              lbetaz = lBz / lsqrtBy2pBz2; 
+              lbetaz = lBz / lsqrtBy2pBz2;
             }
           else lbetay = lbetaz = 1.0 / std::sqrt(2.0);
           if (pprim.Bx() >= 0.0) lsgnBx = 1.0; else lsgnBx = -1.0;
@@ -1301,12 +1301,12 @@ namespace Mhd {
           if (lsqrtBy2pBz2 > MhdEPS)
             {
               lbetay = lBy / lsqrtBy2pBz2;
-              lbetaz = lBz / lsqrtBy2pBz2; 
+              lbetaz = lBz / lsqrtBy2pBz2;
             }
           else lbetay = lbetaz = 1.0 / std::sqrt(2.0);
           if (pprim.Bx() >= 0.0) lsgnBx = 1.0; else lsgnBx = -1.0;
 
-          pret[0] =   0.0; 
+          pret[0] =   0.0;
           pret[1] =   lalphaf * lvf;
           pret[2] = - lalphas * lbetay * lvax * lsgnBx;
           pret[3] = - lalphas * lbetaz * lvax * lsgnBx;
@@ -1366,7 +1366,7 @@ namespace Mhd {
     if (lsqrtBy2pBz2 > MhdEPS)
       {
         lbetay = lBy / lsqrtBy2pBz2;
-        lbetaz = lBz / lsqrtBy2pBz2; 
+        lbetaz = lBz / lsqrtBy2pBz2;
       }
     else lbetay = lbetaz = 1.0 / std::sqrt(2.0);
     if (pprim.Bx() >= 0.0) lsgnBx = 1.0; else lsgnBx = -1.0;
@@ -1377,7 +1377,7 @@ namespace Mhd {
     lmultvf  = 1.0  / ( std::sqrt(   lalphaf * lalphaf * (lvf2 + lcs2)
                                 + lalphas * lalphas * (lvf2 + lvax2) ) * lvf );
 
-    pret(0,0) =   0.0; 
+    pret(0,0) =   0.0;
     pret(0,1) =   lalphaf * lvf;
     pret(0,2) = - lalphas * lbetay * lvax * lsgnBx;
     pret(0,3) = - lalphas * lbetaz * lvax * lsgnBx;
@@ -1404,7 +1404,7 @@ namespace Mhd {
     pret(2,6) =   lalphaf * lbetaz * lcs2 / lvf * std::sqrt(ltau / (4.0 * M_PI));
     pret(2,7) = - lalphas * ltau;
 
-    pret(3,0) =   1.0 / pprim.tau(); 
+    pret(3,0) =   1.0 / pprim.tau();
     pret(3,1) =   0.0;
     pret(3,2) =   0.0;
     pret(3,3) =   0.0;
@@ -1440,7 +1440,7 @@ namespace Mhd {
     pret(6,6) =   lsgnBx * lbetay * std::sqrt(ltau / (4.0 * M_PI));
     pret(6,7) =   0.0;
 
-    pret(7,0) =   0.0; 
+    pret(7,0) =   0.0;
     pret(7,1) =   lalphaf * lvf;
     pret(7,2) = - lalphas * lbetay * lvax * lsgnBx;
     pret(7,3) = - lalphas * lbetaz * lvax * lsgnBx;
@@ -1471,7 +1471,7 @@ namespace Mhd {
     double lBy    = max(fabs(pconsl.By()),fabs(pconsr.By()));
     double lBz    = max(fabs(pconsl.Bz()),fabs(pconsr.Bz()));
     double lp     = max(pconsl.p(),pconsr.p());
-    double lgamma = max(pconsl.gamma(),pconsr.gamma());  
+    double lgamma = max(pconsl.gamma(),pconsr.gamma());
     double lret,lval,lrad;
 
     assert(phl > 0.0);
@@ -1483,7 +1483,7 @@ namespace Mhd {
       lval = lux;
     else
       lval = lux + std::sqrt(lrad);
-  
+
     if (fabs(lval) < MhdEPS)
       {
         lret = lmaxstep;
@@ -1910,8 +1910,8 @@ namespace Mhd {
   Eos_tabular_tau :: Eos_tabular_tau(eos_cons_t *peos_c,eos_prim_t *peos_p,
                                      double ptaumin,double ptaumax,
                                      double pepsmin,double pepsmax,
-                                     int pdimtau,int pdimeps) 
-    : taumin(ptaumin), taumax(ptaumax), epsmin(pepsmin), epsmax(pepsmax), 
+                                     int pdimtau,int pdimeps)
+    : taumin(ptaumin), taumax(ptaumax), epsmin(pepsmin), epsmax(pepsmax),
       dimtau(pdimtau), dimeps(pdimeps)
   {
     assert(peos_c && peos_p);
@@ -1927,7 +1927,7 @@ namespace Mhd {
         _ptable[t]=new double[dimeps];
         for (e=0,eps=epsmin;e<dimeps;e++,eps+=heps)
           {
-            cons_t u(peos_c,peos_p); 
+            cons_t u(peos_c,peos_p);
             u.rho()=1/tau;
             u.rhoe()=eps/tau;
             _ptable[t][e]=peos_c->p(u);
@@ -1943,7 +1943,7 @@ namespace Mhd {
     //           |:.......:|
     //        ---|---------|---
     //        '''|:        |:''
-    //        4  |:   0    |: 2 
+    //        4  |:   0    |: 2
     //        ...|:........|:..
     //        ---|---------|---
     //           |:       :|
@@ -1952,7 +1952,7 @@ namespace Mhd {
     t=((tau-taumin)/htau);
     e=((eps-epsmin)/heps);
     if (t<0 || t>dimtau-1 || e<0 || e>dimeps-1)
-      cerr << "Ausserhalb der Tabelle! " << endl 
+      cerr << "Ausserhalb der Tabelle! " << endl
            << tau << " " << eps << " " << t << " " << e << endl;
     if (t<0) // Bereiche 7,3,8
       {
@@ -1989,7 +1989,7 @@ namespace Mhd {
     int t,e;
     findintable(tau,eps,t,e,psw,pse,pnw,pne,lambdat,lambdae);
     p=(pne+psw-pse-pnw)*lambdat*lambdae+
-      (pse-psw)*lambdat+ 
+      (pse-psw)*lambdat+
       (pnw-psw)*lambdae+
       psw;
     return p;
@@ -2059,7 +2059,7 @@ namespace Mhd {
     int t,e;
     findintable(tau,eps,t,e,psw,pse,pnw,pne,lambdat,lambdae);
     p=(pne+psw-pse-pnw)*lambdat*lambdae+
-      (pse-psw)*lambdat+ 
+      (pse-psw)*lambdat+
       (pnw-psw)*lambdae+
       psw;
     dpe=(pne+psw-pse-pnw)*lambdat+
@@ -2081,9 +2081,9 @@ namespace Mhd {
   Eos_tabular_rho :: Eos_tabular_rho(eos_cons_t *peos_c,eos_prim_t *peos_p,
                                      double ptaumin,double ptaumax,
                                      double pepsmin,double pepsmax,
-                                     int pdimtau,int pdimeps) 
-    : rhomin(1.0/ptaumax), rhomax(1.0/ptaumin), 
-      epsmin(pepsmin), epsmax(pepsmax), 
+                                     int pdimtau,int pdimeps)
+    : rhomin(1.0/ptaumax), rhomax(1.0/ptaumin),
+      epsmin(pepsmin), epsmax(pepsmax),
       dimrho(pdimtau), dimeps(pdimeps)
   {
     assert(peos_c && peos_p);
@@ -2099,7 +2099,7 @@ namespace Mhd {
         _ptable[r]=new double[dimeps];
         for (e=0,eps=epsmin;e<dimeps;e++,eps+=heps)
           {
-            cons_t u(peos_c,peos_p); 
+            cons_t u(peos_c,peos_p);
             u.rho()=rho;
             u.rhoe()=eps*rho;
             _ptable[r][e]=peos_c->p(u);
@@ -2115,7 +2115,7 @@ namespace Mhd {
     //           |:.......:|
     //        ---|---------|---
     //        '''|:        |:''
-    //        4  |:   0    |: 2 
+    //        4  |:   0    |: 2
     //        ...|:........|:..
     //        ---|---------|---
     //           |:       :|
@@ -2124,7 +2124,7 @@ namespace Mhd {
     r=(int)((rho-rhomin)/hrho);
     e=(int)((eps-epsmin)/heps);
     if (r<0 || r>dimrho-1 || e<0 || e>dimeps-1)
-      cerr << "Ausserhalb der Tabelle! " << endl 
+      cerr << "Ausserhalb der Tabelle! " << endl
            << rho << " " << eps << " " << r << " " << e << endl;
     if (r<0) // Bereiche 7,3,8
       {
@@ -2161,7 +2161,7 @@ namespace Mhd {
     int r,e;
     findintable(1.0/tau,eps,r,e,psw,pse,pnw,pne,lambdar,lambdae);
     p=(pne+psw-pse-pnw)*lambdar*lambdae+
-      (pse-psw)*lambdar+ 
+      (pse-psw)*lambdar+
       (pnw-psw)*lambdae+
       psw;
     return p;
@@ -2231,7 +2231,7 @@ namespace Mhd {
     int r,e;
     findintable(1.0/tau,eps,r,e,psw,pse,pnw,pne,lambdar,lambdae);
     p=(pne+psw-pse-pnw)*lambdar*lambdae+
-      (pse-psw)*lambdar+ 
+      (pse-psw)*lambdar+
       (pnw-psw)*lambdae+
       psw;
     dpe=(pne+psw-pse-pnw)*lambdar+
@@ -2678,7 +2678,7 @@ namespace Mhd {
     //           |:.......:|
     //        ---|---------|---
     //        '''|:''''''':|:''
-    //        4  |:   0   :|: 2 
+    //        4  |:   0   :|: 2
     //        ...|:........|:..
     //        ---|---------|---
     //           |:''''''':|
@@ -2774,7 +2774,7 @@ namespace Mhd {
           ->get_table_value(pcomp,pval1,pval2,pret);
       }
 
-    return range_error;  
+    return range_error;
   }
 
   int Eos_table::get_table_derivative(derivative_type_t pdtype, int pcomp,
@@ -2895,7 +2895,7 @@ namespace Mhd {
     int iter;
     float a=x1,b=x2,c=x2,min1,min2,fa,fb;
     float d=0.0, e=0.0;
-	
+
     if(flag)
       {
         fa=ener_b(a,f1,f2);
@@ -2904,16 +2904,16 @@ namespace Mhd {
     else
       {
         fa=ener_a(a,f1,f2);
-        fb=ener_a(b,f1,f2); 
-      }  
+        fb=ener_a(b,f1,f2);
+      }
 
     float fc,r,s,tol1,xm;
     float p =0.0, q=0.0;
 
     if ((fa > 0.0 && fb > 0.0) || (fa < 0.0 && fb < 0.0))
-      cerr<<"Root must be bracketed in zbrent (" 
+      cerr<<"Root must be bracketed in zbrent ("
           << flag << ": fa = " << fa << ", fb = " << fb << ")" <<endl;
-	
+
     fc=fb;
     for (iter=1;iter<=ITMAX;iter++)
       {
@@ -2935,11 +2935,11 @@ namespace Mhd {
 
         tol1=2.0*TOL*fabs(b)+0.5*tol;
         xm=0.5*(c-b);
-        if (fabs(xm) <= tol1 || fb == 0.0) 
+        if (fabs(xm) <= tol1 || fb == 0.0)
           return b;
 
         if (fabs(e) >= tol1 && fabs(fa) > fabs(fb))
-          {	
+          {
             s=fb/fa;
             if (a == c)
               {
@@ -2980,7 +2980,7 @@ namespace Mhd {
         if(flag)
           fb=ener_b(b,f1,f2);
         else
-          fb=ener_a(b,f1,f2);  
+          fb=ener_a(b,f1,f2);
       }
 
     return 0.0;
@@ -3008,11 +3008,11 @@ namespace Mhd {
     //     Recipes ch. 9.3)
 
     *pT=zbrent(0,1.e-8,0.5e8,1.e-8,peps,ptau);
- 
+
     //     Next is calculation of the internal energy
-    
+
     boltem = boltz*(*pT);
-    arg = chi/boltem; 
+    arg = chi/boltem;
     phi = cii*(pow(*pT,1.5))*exp(-arg);
     nh = 1./(ptau*amass*hmu);
     ne = -.5*phi + std::sqrt(.25*(pow(phi,2)) + nh*phi);
@@ -3023,8 +3023,8 @@ namespace Mhd {
 
     //    Now we can determine the velocity of sound
     //    (eq. 36 of my memo) and gam1
-    //    and the molecular weight mu with n_alpha=n_h 
- 
+    //    and the molecular weight mu with n_alpha=n_h
+
     x = ne/nh;
     mu=mu1/(1.+x);
 
@@ -3041,9 +3041,9 @@ namespace Mhd {
     f2 = 2.5*(1.+x) + x*(1.-x)*(pow(arg5,2)) - .5*x*pow(((1.-x)*arg5),2);
 
     nad = f1/f2;
-      
+
     *pdpdeps = (gam1)*nad/ptau;
-      
+
     dptau    = -(*pcs2)/(pow(ptau,2)) + (*pp)*(*pdpdeps);
   }
 
@@ -3069,11 +3069,11 @@ namespace Mhd {
     //  Recipes ch. 9.3)
 
     *pT=zbrent(1,1.e-8,0.5e8,1.e-8,pp,ptau);
- 
+
     //  Next is calculation of the internal energy
 
     boltem = boltz*(*pT);
-    arg = chi/boltem; 
+    arg = chi/boltem;
     phi = cii*(pow(*pT,1.5))*exp(-arg);
     nh = 1./(ptau*amass*hmu);
     ne = -.5*phi + std::sqrt(.25*(pow(phi,2)) + nh*phi);
@@ -3082,8 +3082,8 @@ namespace Mhd {
 
     //  Now we can determine the velocity of sound
     //  (eq. 36 of my memo) and gam1
-    //  and the molecular weight mu with n_alpha=n_h 
- 
+    //  and the molecular weight mu with n_alpha=n_h
+
     x = ne/nh;
     mu=mu1/(1.+x);
 
@@ -3100,10 +3100,10 @@ namespace Mhd {
     f2 = 2.5*(1.+x) + x*(1.-x)*(pow(arg5,2)) - .5*x*pow(((1.-x)*arg5),2);
 
     nad = f1/f2;
-      
+
     dpeps = gam1*nad/ptau;
-      
-    dptau = -(*pcs2)/(pow(ptau,2)) + pp*(dpeps); 
+
+    dptau = -(*pcs2)/(pow(ptau,2)) + pp*(dpeps);
   }
 
   //*****************************************************************************
@@ -3120,7 +3120,7 @@ namespace Mhd {
     //      Status : 20.3.2000
 
     double boltem = boltz*temp;
-    double arg = chi/boltem; 
+    double arg = chi/boltem;
     double phi = cii*(pow(temp,(float)1.5))*exp(-arg);
     double nh = 1./(hmu*amass*ftau);
     double ne = -.5*phi + std::sqrt(.25*(pow(phi,2)) + nh*phi);
@@ -3144,7 +3144,7 @@ namespace Mhd {
     //      Status : 20.3.2000
 
     double boltem = boltz*temp;
-    double arg = chi/boltem; 
+    double arg = chi/boltem;
     double phi = cii*(pow(temp,(float)1.5))*exp(-arg);
     double nh = 1./(hmu*amass*ftau);
     double ne = -.5*phi + std::sqrt(.25*(pow(phi,2)) + nh*phi);
@@ -3174,15 +3174,15 @@ namespace Mhd {
 
     double ltau = ptau / rho0;
     double leps = peps * eps0;
-  
+
     eos_a(ltau,leps,&pcs2,&pp,&pT,&pdpdeps);
-  
+
     pcs2    /= cs20;
     pp      /= p0;
     pT      /= T0;
     pdpdeps *= eps0/p0;
     pdummy   = -1.0;
-  
+
     // DEBUGGING
 
     double lp = pp * p0;
@@ -3204,7 +3204,7 @@ namespace Mhd {
         cerr << "   (tau,p  ) ==> (cs2,eps,T): (" << ptau << "," << pp   << ") ==> ("
              << ltcs2 << "," << lteps << "," << ltT << ")" << endl;
       }
-  
+
     pp *= p0_sun;
     pT *= T0_sun;
 
@@ -3231,7 +3231,7 @@ namespace Mhd {
     double ltau = ptau / rho0;
     double lp   = pp * p0;
     eos_b(ltau,lp,&pcs2,&peps,&pT);
-  
+
     pcs2    /= cs20;
     peps    /= eps0;
     pT      /= T0;
@@ -3257,11 +3257,11 @@ namespace Mhd {
         cerr << "   (tau,eps) ==> (cs2,p  ,T): (" << ptau << "," << peps << ") ==> ("
              << ltcs2 << "," << ltp << "," << ltT << ")" << endl;
       }
-  
+
     peps *= eps0;
     pT *= T0_sun;
   }
 
-} // end namespace Mhd 
+} // end namespace Mhd
 
 #endif
