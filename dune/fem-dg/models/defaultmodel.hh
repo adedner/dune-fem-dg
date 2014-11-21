@@ -8,13 +8,13 @@
 #include <dune/fem/misc/fmatrixconverter.hh>
 
 /**********************************************
- * Default model 
+ * Default model
  *********************************************/
 template < class Traits >
 class DefaultModel
 {
 public:
-  static const int dimDomain = Traits :: dimDomain ; 
+  static const int dimDomain = Traits :: dimDomain ;
   static const int dimRange  = Traits :: dimRange ;
 
   typedef typename Traits :: DomainType                              DomainType;
@@ -154,12 +154,12 @@ public:
     DUNE_THROW(Dune::NotImplemented,"DefaultModel::eigenValues is not implemented");
   }
 
-  inline double penaltyFactor( const double time, 
-                               const DomainType& xInside, 
+  inline double penaltyFactor( const double time,
+                               const DomainType& xInside,
                                const EntityType& inside,
-                               const RangeType& uLeft ) const 
-                               //const EntityType& outside = inside, 
-                               //const RangeType& uRight = uLeft ) const 
+                               const RangeType& uLeft ) const
+                               //const EntityType& outside = inside,
+                               //const RangeType& uRight = uLeft ) const
   {
     DUNE_THROW(Dune::NotImplemented,"DefaultModel::penaltyValues is not implemented");
     return 0.0;
@@ -189,7 +189,7 @@ public:
     diffusion( en, time, x, u, jac, A );
   }
 
-  //! maximal wave speed due to advection part 
+  //! maximal wave speed due to advection part
   inline void maxSpeed( const EntityType& entity,
                         const double time,
                         const DomainType& x,
@@ -201,7 +201,7 @@ public:
     advspeed = totalspeed = 0;
   }
 
-  //! maximal wave speed due to diffusion part 
+  //! maximal wave speed due to diffusion part
   inline double diffusionTimeStep( const IntersectionType &it,
                                    const double enVolume,
                                    const double circumEstimate,
@@ -212,7 +212,7 @@ public:
     return 0;
   }
 
-public:                            
+public:
   /**
    * @brief checks for existence of dirichlet boundary values
    */
@@ -258,7 +258,7 @@ public:
                                        const FaceDomainType& x,
                                        const RangeType& uLeft,
                                        const GradientType& gradLeft,
-                                       RangeType& gLeft ) const  
+                                       RangeType& gLeft ) const
   {
     Dune::Fem::FieldMatrixConverter< GradientType, JacobianRangeType> jacLeft( gradLeft );
     return diffusionBoundaryFlux( it, time, x, uLeft, jacLeft, gLeft );
@@ -272,7 +272,7 @@ public:
                                        const FaceDomainType& x,
                                        const RangeType& uLeft,
                                        const JacobianRangeImp& jacLeft,
-                                       RangeType& gLeft ) const  
+                                       RangeType& gLeft ) const
   {
     std::cerr <<"diffusionBoundaryFlux shouldn't be used in this model" <<std::endl;
     abort();

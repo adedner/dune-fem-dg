@@ -1,6 +1,7 @@
 /aclocal.m4
 /am
 /autom4te.cache
+/compile
 /configure
 /config.guess
 /config.h
@@ -18,6 +19,7 @@
 /missing
 /stamp-h1
 
+
 Makefile
 Makefile.in
 
@@ -32,3 +34,5 @@ Makefile.in
 *.lo
 *.la
 *.tmp
+
+build-cmake

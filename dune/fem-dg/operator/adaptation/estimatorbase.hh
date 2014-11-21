@@ -1,10 +1,10 @@
-#ifndef DUNE_FEM_DG_ESTIMATORBASE_HH 
-#define DUNE_FEM_DG_ESTIMATORBASE_HH 
+#ifndef DUNE_FEM_DG_ESTIMATORBASE_HH
+#define DUNE_FEM_DG_ESTIMATORBASE_HH
 
-//- Dune-fem includes 
+//- Dune-fem includes
 #include <dune/fem/quadrature/caching/twistutility.hh>
 #include <dune/fem/quadrature/cachingquadrature.hh>
-#include <dune/fem/operator/common/spaceoperatorif.hh> 
+#include <dune/fem/operator/common/spaceoperatorif.hh>
 #include <dune/fem/operator/matrix/blockmatrix.hh>
 #include <dune/fem/space/discontinuousgalerkin.hh>
 
@@ -35,12 +35,12 @@ public:
                                                                     DiscreteFunctionSpaceType;
   typedef typename DiscreteFunctionType :: LocalFunctionType        LocalFunctionType;
 
-  typedef typename DiscreteFunctionSpaceType :: DomainFieldType     DomainFieldType; 
-  typedef typename DiscreteFunctionSpaceType :: RangeFieldType      RangeFieldType; 
-  typedef typename DiscreteFunctionSpaceType :: DomainType          DomainType; 
-  typedef typename DiscreteFunctionSpaceType :: RangeType           RangeType; 
-  typedef typename DiscreteFunctionSpaceType :: JacobianRangeType   JacobianRangeType; 
-  typedef typename DiscreteFunctionSpaceType :: GridPartType        GridPartType; 
+  typedef typename DiscreteFunctionSpaceType :: DomainFieldType     DomainFieldType;
+  typedef typename DiscreteFunctionSpaceType :: RangeFieldType      RangeFieldType;
+  typedef typename DiscreteFunctionSpaceType :: DomainType          DomainType;
+  typedef typename DiscreteFunctionSpaceType :: RangeType           RangeType;
+  typedef typename DiscreteFunctionSpaceType :: JacobianRangeType   JacobianRangeType;
+  typedef typename DiscreteFunctionSpaceType :: GridPartType        GridPartType;
   typedef typename DiscreteFunctionSpaceType :: IteratorType        IteratorType;
 
   typedef typename GridPartType :: GridType                         GridType;
@@ -74,7 +74,7 @@ public:
     gridPart_( dfSpace_.gridPart() ),
     indexSet_( gridPart_.indexSet() ),
     grid_( gridPart_.grid() ),
-    indicator_() // create empty vector, resize before use 
+    indicator_() // create empty vector, resize before use
   {
   }
 
@@ -93,7 +93,7 @@ public:
 
 
   virtual void estimateLocal( const ElementType& it )
-  { 
+  {
     DUNE_THROW( Dune::NotImplemented, "Use your own local estimator !" );
   }
 
@@ -119,7 +119,7 @@ public:
   //! mark elements
   void mark()
   {
-    // loop over all elements 
+    // loop over all elements
     const IteratorType end = dfSpace_.end();
     for( IteratorType it = dfSpace_.begin(); it != end; ++it )
     {
@@ -131,4 +131,4 @@ public:
 };
 
 
-#endif // #ifndef ESTIMATOR_HH 
+#endif // #ifndef ESTIMATOR_HH

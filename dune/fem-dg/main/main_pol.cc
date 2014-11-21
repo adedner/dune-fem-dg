@@ -10,10 +10,10 @@
 #define DUNE_DEVEL_MODE
 #endif
 
-// -1 means higher order FV 
-#if POLORDER == -1 
-#define HIGHER_ORDER_FV 
-#undef POLORDER 
+// -1 means higher order FV
+#if POLORDER == -1
+#define HIGHER_ORDER_FV
+#undef POLORDER
 #define POLORDER 0
 #endif
 
@@ -25,11 +25,11 @@
 #include "main.hh"
 
 #include <dune/fem-dg/pass/threadhandle.hh>
-#if defined USE_SMP_PARALLEL 
+#if defined USE_SMP_PARALLEL
 #include <dune/fem/misc/threads/threadmanager.hh>
 #include <dune/fem-dg/pass/threadpass.hh>
 
-#if HAVE_DUNE_FEM_DG 
+#if HAVE_DUNE_FEM_DG
 #define NSMOD_USE_SMP_PARALLEL
 #endif
 #endif
@@ -62,31 +62,31 @@
 
 #if POLORDER == 0
 #define LOOPSPACE DG_P0
-#elif POLORDER == 1 
-#define LOOPSPACE DG_P1 
-#elif POLORDER == 2 
-#define LOOPSPACE DG_P2 
-#elif POLORDER == 3 
-#define LOOPSPACE DG_P3 
-#elif POLORDER == 4 
-#define LOOPSPACE DG_P4 
-#elif POLORDER == 5 
-#define LOOPSPACE DG_P5 
-#elif POLORDER == 6 
-#define LOOPSPACE DG_P6 
-#elif POLORDER == 7 
-#define LOOPSPACE DG_P7 
-#elif POLORDER == 8 
-#define LOOPSPACE DG_P8 
+#elif POLORDER == 1
+#define LOOPSPACE DG_P1
+#elif POLORDER == 2
+#define LOOPSPACE DG_P2
+#elif POLORDER == 3
+#define LOOPSPACE DG_P3
+#elif POLORDER == 4
+#define LOOPSPACE DG_P4
+#elif POLORDER == 5
+#define LOOPSPACE DG_P5
+#elif POLORDER == 6
+#define LOOPSPACE DG_P6
+#elif POLORDER == 7
+#define LOOPSPACE DG_P7
+#elif POLORDER == 8
+#define LOOPSPACE DG_P8
 #endif
 
-namespace LOOPSPACE { 
+namespace LOOPSPACE {
 
   struct FlopStartObject
   {
-    FlopStartObject() 
+    FlopStartObject()
     {
-      // initialize counters for master thread before all others 
+      // initialize counters for master thread before all others
       runThread() ;
     }
     void runThread() const
@@ -110,8 +110,8 @@ namespace LOOPSPACE {
     const bool countFlops = Dune::Fem::Parameter::getValue< bool >("femdg.flopcounter", false );
 
     // if flop count is enabled count floating point operations (PAPI needed)
-    // start flop counters for all threads 
-    if( countFlops ) 
+    // start flop counters for all threads
+    if( countFlops )
     {
       FlopStartObject startObj ;
       Dune::Fem::ThreadHandle::run( startObj );
@@ -157,6 +157,6 @@ namespace LOOPSPACE {
       // print results
       Dune::Fem::FlopCounter::print( std::cout );
     }
-  } 
+  }
 
 } // end namespace LOOPSPACE

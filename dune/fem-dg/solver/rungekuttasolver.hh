@@ -15,11 +15,11 @@
 namespace Dune {
 
 
-template <class Operator, 
-          class ExplicitOperator, 
+template <class Operator,
+          class ExplicitOperator,
           class ImplicitOperator,
           class LinearInverseOperator>
-class RungeKuttaSolver : 
+class RungeKuttaSolver :
   public DuneODE :: OdeSolverInterface< typename Operator :: DestinationType >
 {
   typedef Operator          OperatorType;
@@ -29,9 +29,9 @@ class RungeKuttaSolver :
   typedef DuneODE :: OdeSolverInterface< typename Operator :: DestinationType > BaseType;
 
   template <class AdvOp, class DiffOp>
-  struct IsSame 
+  struct IsSame
   {
-    static bool check(const AdvOp&, const DiffOp& ) 
+    static bool check(const AdvOp&, const DiffOp& )
     {
       return false;
     }
@@ -40,7 +40,7 @@ class RungeKuttaSolver :
   template <class AdvOp>
   struct IsSame< AdvOp, AdvOp>
   {
-    static bool check(const AdvOp& a, const AdvOp& d) 
+    static bool check(const AdvOp& a, const AdvOp& d)
     {
       return true;
     }
@@ -59,81 +59,81 @@ public:
   typedef std::pair< OdeSolverInterfaceType* ,  HelmHoltzOperatorType* > solverpair_t ;
 
   /////////////////////////////////////////////////////////////////////////
-  //  ODE solvers from dune-fem/dune/fem/solver/rungekutta 
+  //  ODE solvers from dune-fem/dune/fem/solver/rungekutta
   /////////////////////////////////////////////////////////////////////////
-  template < class Op, class DF, bool pardgOdeSolver > 
-  struct OdeSolverSelection 
+  template < class Op, class DF, bool pardgOdeSolver >
+  struct OdeSolverSelection
   {
-    static solverpair_t  
+    static solverpair_t
     createExplicitSolver( Op& op, Fem::TimeProviderBase& tp, const int rkSteps )
-    { 
+    {
       typedef DuneODE :: ExplicitRungeKuttaSolver< DiscreteFunctionType >          ExplicitOdeSolverType;
       return solverpair_t( new ExplicitOdeSolverType( op, tp, rkSteps ), nullptr );
     }
 
-    static solverpair_t 
+    static solverpair_t
     createImplicitSolver( Op& op, Fem::TimeProviderBase& tp, const int rkSteps )
-    { 
+    {
       typedef Dune::Fem::DGHelmholtzOperator< Op >  HelmholtzOperatorType;
       HelmholtzOperatorType* helmOp = new HelmholtzOperatorType( op );
 
-      typedef Dune::Fem::NewtonInverseOperator< 
-                    typename HelmholtzOperatorType::JacobianOperatorType, 
+      typedef Dune::Fem::NewtonInverseOperator<
+                    typename HelmholtzOperatorType::JacobianOperatorType,
                     LinearInverseOperator > NonlinearInverseOperatorType;
 
-      typedef DuneODE::ImplicitRungeKuttaSolver< HelmholtzOperatorType, 
+      typedef DuneODE::ImplicitRungeKuttaSolver< HelmholtzOperatorType,
                     NonlinearInverseOperatorType > ImplicitOdeSolverType;
-      
+
       return solverpair_t(new ImplicitOdeSolverType( *helmOp, tp, rkSteps ), helmOp );
     }
 
-    template < class ExplOp, class ImplOp > 
-    static solverpair_t 
+    template < class ExplOp, class ImplOp >
+    static solverpair_t
     createSemiImplicitSolver( ExplOp& explOp, ImplOp& implOp, Fem::TimeProviderBase& tp, const int rkSteps )
-    { 
+    {
       typedef Dune::Fem::DGHelmholtzOperator< ImplOp >  HelmholtzOperatorType;
       HelmholtzOperatorType* helmOp = new HelmholtzOperatorType( implOp );
-      
-      typedef Dune::Fem::NewtonInverseOperator< 
-                    typename HelmholtzOperatorType::JacobianOperatorType, 
+
+      typedef Dune::Fem::NewtonInverseOperator<
+                    typename HelmholtzOperatorType::JacobianOperatorType,
                     LinearInverseOperator > NonlinearInverseOperatorType;
 
-      typedef DuneODE::SemiImplicitRungeKuttaSolver< ExplicitOperatorType, 
+      typedef DuneODE::SemiImplicitRungeKuttaSolver< ExplicitOperatorType,
                     HelmholtzOperatorType, NonlinearInverseOperatorType > SemiImplicitOdeSolverType ;
-    
+
       return solverpair_t(new SemiImplicitOdeSolverType( explOp, *helmOp, tp, rkSteps ), helmOp );
     }
 
   };
 
   /////////////////////////////////////////////////////////////////////////
-  //  parDG ODE solvers based on double* 
+  //  parDG ODE solvers based on double*
   /////////////////////////////////////////////////////////////////////////
-  template < class Op > 
+  template < class Op >
   struct OdeSolverSelection< Op, Fem :: AdaptiveDiscreteFunction< typename Op::SpaceType >, true >
   {
     typedef Fem :: AdaptiveDiscreteFunction< typename Operator::SpaceType >  DiscreteFunctionType ;
-    // old ode solver based on double* from pardg 
-    typedef DuneODE :: ImplicitOdeSolver< DiscreteFunctionType >       ImplicitOdeSolverType; 
-    typedef DuneODE :: ExplicitOdeSolver< DiscreteFunctionType >       ExplicitOdeSolverType; 
+    // old ode solver based on double* from pardg
+    typedef DuneODE :: ImplicitOdeSolver< DiscreteFunctionType >       ImplicitOdeSolverType;
+    typedef DuneODE :: ExplicitOdeSolver< DiscreteFunctionType >       ExplicitOdeSolverType;
     typedef DuneODE :: SemiImplicitOdeSolver< DiscreteFunctionType >   SemiImplicitOdeSolverType;
 
-    static solverpair_t 
+    static solverpair_t
     createExplicitSolver( Op& op, Fem::TimeProviderBase& tp, const int rkSteps )
-    { 
+    {
       return solverpair_t(new ExplicitOdeSolverType( op, tp, rkSteps ), nullptr );
     }
 
-    static solverpair_t 
+    static solverpair_t
     createImplicitSolver( Op& op, Fem::TimeProviderBase& tp, const int rkSteps )
-    { 
+    {
       return solverpair_t(new ImplicitOdeSolverType( op, tp, rkSteps ), nullptr );
     }
 
-    template <class ExplOp, class ImplOp> 
-    static solverpair_t 
+    template <class ExplOp, class ImplOp>
+    static solverpair_t
     createSemiImplicitSolver( ExplOp& explOp, ImplOp& implOp, Fem::TimeProviderBase& tp, const int rkSteps )
-    { 
+    {
       return solverpair_t(new SemiImplicitOdeSolverType( explOp, implOp, tp, rkSteps ), nullptr );
     }
 
@@ -142,10 +142,10 @@ public:
   static const bool useParDGSolvers = true ;
   typedef OdeSolverSelection< OperatorType, DestinationType, useParDGSolvers >  OdeSolversType ;
 
-  using BaseType :: solve; 
+  using BaseType :: solve;
 protected:
   OperatorType&           operator_;
-  Fem::TimeProviderBase&  timeProvider_; 
+  Fem::TimeProviderBase&  timeProvider_;
 
   ExplicitOperatorType&  explicitOperator_;
   ImplicitOperatorType&  implicitOperator_;
@@ -157,18 +157,18 @@ protected:
 
   const double explFactor_ ;
   const int verbose_ ;
-  const int rkSteps_ ; 
+  const int rkSteps_ ;
   const int odeSolverType_ ;
   int imexCounter_ , exCounter_;
   int minIterationSteps_, maxIterationSteps_ ;
   bool useImex_ ;
 public:
   RungeKuttaSolver( Fem::TimeProviderBase& tp,
-                  OperatorType& op, 
+                  OperatorType& op,
                   ExplicitOperatorType& advOp,
                   ImplicitOperatorType& diffOp,
                   const SmartOdeSolverParameters &parameter = SmartOdeSolverParameters() )
-   : operator_( op ), 
+   : operator_( op ),
      timeProvider_( tp ),
      explicitOperator_( advOp ),
      implicitOperator_( diffOp ),
@@ -197,7 +197,7 @@ public:
     }
     else if( odeSolverType_ > 1 )
     {
-      // make sure that advection and diffusion operator are different 
+      // make sure that advection and diffusion operator are different
       if( IsSame< ExplicitOperatorType, ImplicitOperatorType >::check( explicitOperator_, implicitOperator_ ) )
       {
         DUNE_THROW(Dune::InvalidStateException,"Advection and Diffusion operator are the same, therefore IMEX cannot work!");
@@ -206,20 +206,20 @@ public:
       solver = OdeSolversType :: createSemiImplicitSolver( explicitOperator_, implicitOperator_, tp, rkSteps_);
 
       // IMEX+
-      if( odeSolverType_ == 3 ) 
-        explicitSolver_ = OdeSolversType :: createExplicitSolver( operator_, tp, rkSteps_).first; 
+      if( odeSolverType_ == 3 )
+        explicitSolver_ = OdeSolversType :: createExplicitSolver( operator_, tp, rkSteps_).first;
     }
-    else 
+    else
     {
       DUNE_THROW(NotImplemented,"Wrong ODE solver selected");
     }
 
     odeSolver_ = solver.first;
-    helmholtzOperator_ = solver.second; 
+    helmholtzOperator_ = solver.second;
   }
 
-  //! destructor 
-  ~RungeKuttaSolver() 
+  //! destructor
+  ~RungeKuttaSolver()
   {
     delete param_;           param_ = 0;
     delete odeSolver_;       odeSolver_ = 0;
@@ -227,7 +227,7 @@ public:
     delete helmholtzOperator_; helmholtzOperator_ = 0;
   }
 
-  //! initialize method 
+  //! initialize method
   void initialize( const DestinationType& U )
   {
     if( explicitSolver_ )
@@ -238,13 +238,13 @@ public:
     odeSolver_->initialize( U );
   }
 
-  void getAdvectionDiffsionTimeSteps( double& advStep, double& diffStep ) const 
+  void getAdvectionDiffsionTimeSteps( double& advStep, double& diffStep ) const
   {
-    if( odeSolverType_ > 1 ) 
+    if( odeSolverType_ > 1 )
     {
       double steps[ 2 ] = { explicitOperator_.timeStepEstimate(),
                             implicitOperator_.timeStepEstimate() };
-      // get global min 
+      // get global min
       Dune :: Fem :: MPIManager :: comm().min( &steps[ 0 ], 2 );
 
       advStep  = steps[ 0 ];
@@ -252,30 +252,30 @@ public:
     }
   }
 
-  //! solver the ODE 
-  void solve( DestinationType& U , 
-              MonitorType& monitor ) 
+  //! solver the ODE
+  void solve( DestinationType& U ,
+              MonitorType& monitor )
   {
-    // take CPU time of solution process 
+    // take CPU time of solution process
     Timer timer ;
 
-    // switch upwind direction 
+    // switch upwind direction
     operator_.switchupwind();
     explicitOperator_.switchupwind();
     implicitOperator_.switchupwind();
 
-    // reset compute time counter 
+    // reset compute time counter
     resetComputeTime();
 
     double maxAdvStep  = std::numeric_limits< double > :: max();
     double maxDiffStep = std::numeric_limits< double > :: max();
 
-    if( explicitSolver_ && ! useImex_ ) 
+    if( explicitSolver_ && ! useImex_ )
     {
       explicitSolver_->solve( U, monitor );
       ++exCounter_ ;
     }
-    else 
+    else
     {
       assert( odeSolver_ );
       odeSolver_->solve( U, monitor );
@@ -286,68 +286,68 @@ public:
       minIterationSteps_ = std::min( minIterationSteps_, iterationSteps );
       maxIterationSteps_ = std::max( maxIterationSteps_, iterationSteps );
 
-      if( verbose_ == 3 ) 
+      if( verbose_ == 3 )
       {
-        // get advection and diffusion time step 
+        // get advection and diffusion time step
         getAdvectionDiffsionTimeSteps( maxAdvStep, maxDiffStep );
 
         double factor = explFactor_ ;
-        //if( averageIterationSteps > 0 ) 
+        //if( averageIterationSteps > 0 )
         //  factor *= averageIterationSteps / (rkSteps_ + 1 ) ;
         std::cout << maxAdvStep << " a | d " << maxDiffStep << "  factor: " << factor
           << "  " << minIterationSteps_ << " min | max " << maxIterationSteps_ << "  use imex = " << useImex_ << std::endl;
       }
     }
 
-    if( explicitSolver_ ) 
+    if( explicitSolver_ )
     {
-      // get advection and diffusion time step 
+      // get advection and diffusion time step
       getAdvectionDiffsionTimeSteps( maxAdvStep, maxDiffStep );
 
       const int averageIterationSteps = (minIterationSteps_ + maxIterationSteps_) / 2;
       double factor = explFactor_ ;
-      if( averageIterationSteps > 0 ) 
+      if( averageIterationSteps > 0 )
         factor *= double(rkSteps_ + 1) / double(averageIterationSteps) ;
 
       // if true solve next time step with semi implicit solver
       useImex_ = ( maxDiffStep < (factor * maxAdvStep) ) ;
 
-      if( verbose_ == 3 ) 
+      if( verbose_ == 3 )
       {
         std::cout << maxAdvStep << " a | d " << maxDiffStep << "  factor: " << factor
-          << "  " << minIterationSteps_ << " min | max " << maxIterationSteps_ 
+          << "  " << minIterationSteps_ << " min | max " << maxIterationSteps_
           << "  use imex = " << useImex_ << "  ex steps: " << exCounter_ << std::endl;
       }
 
-      // make sure the correct time step is used for the explicit solver 
-      //if( ! useImex_ ) 
+      // make sure the correct time step is used for the explicit solver
+      //if( ! useImex_ )
       //  timeProvider_.provideTimeStepEstimate( operator_.timeStepEstimate() ) ;
     }
 
-    // store needed time 
+    // store needed time
     monitor.odeSolveTime_     = timer.elapsed();
     monitor.operatorTime_     = operatorTime();
     monitor.numberOfElements_ = numberOfElements();
   }
 
   //! return CPU time needed for the operator evaluation
-  double operatorTime() const 
+  double operatorTime() const
   {
-    if( useImex_ ) 
+    if( useImex_ )
     {
       return explicitOperator_.computeTime() +
              implicitOperator_.computeTime() ;
     }
-    else 
+    else
       return operator_.computeTime();
   }
 
-  //! return number of elements meat during operator evaluation 
-  size_t numberOfElements() const  
+  //! return number of elements meat during operator evaluation
+  size_t numberOfElements() const
   {
-    if( useImex_ ) 
+    if( useImex_ )
       return explicitOperator_.numberOfElements();
-    else 
+    else
       return operator_.numberOfElements();
   }
 
@@ -365,11 +365,11 @@ public:
       latexInfo = explicitOperator_.description()
                   + implicitOperator_.description();
 
-    std::stringstream odeInfo; 
+    std::stringstream odeInfo;
     odeSolver_->description( odeInfo );
 
     latexInfo += odeInfo.str() + "\n";
-    std::stringstream info; 
+    std::stringstream info;
     info << "Regular  Solver used: " << imexCounter_ << std::endl;
     info << "Explicit Solver used: " << exCounter_ << std::endl;
     latexInfo += info.str();
@@ -378,14 +378,14 @@ public:
   }
 
 protected:
-  void resetComputeTime() const 
+  void resetComputeTime() const
   {
-    // this will reset the internal time counters 
+    // this will reset the internal time counters
     operator_.computeTime() ;
     explicitOperator_.computeTime();
     implicitOperator_.computeTime();
   }
-}; // end RungeKuttaSolver 
+}; // end RungeKuttaSolver
 
-} // end namespace Dune 
+} // end namespace Dune
 #endif

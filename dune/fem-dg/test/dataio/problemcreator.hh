@@ -2,6 +2,10 @@
 #define FEMDG_CHECKPOINTING_RPOBLEMCREATOR_HH
 #include <config.h>
 
+#ifndef POLORDER 
+#define POLORDER 2
+#endif
+
 // system includes
 #include <string>
 

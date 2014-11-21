@@ -14,7 +14,7 @@
 #endif
 
 namespace Mhd {
-  
+
 using namespace std;
 
 typedef Flux<Mhd> flux_t;
@@ -35,7 +35,7 @@ public:
   typedef double MAT[8][8];
 private:
   static void (*ipflux_1d)(const VEC1D, const VEC1D, VEC1D *, double);
- 
+
   double max(const double p1, const double p2) {return (p1 >= p2) ? p1 : p2;}
   double min(const double p1, const double p2) {return (p1 <= p2) ? p1 : p2;}
 
@@ -49,7 +49,7 @@ private:
     lBz    = pu[6];
     lrhoE  = pu[7];
     assert(lrho > 0.0);
-    lp  = (gamma - 1.0) 
+    lp  = (gamma - 1.0)
       * (lrhoE - 0.5 * (  lrhoux * lrhoux
 			  + lrhouy * lrhouy
 			  + lrhouz * lrhouz ) / lrho
@@ -60,36 +60,36 @@ private:
 
   double dt_local(const VEC1D prdate,const VEC1D prdatn,double gamma) {
     double lval;
-    
-    assert(gamma>1.0); 
-    
+
+    assert(gamma>1.0);
+
     double lrhoe = prdate[0], lrhon = prdatn[0];
-    assert(lrhoe > 0.0 && lrhon > 0.0);         
-    
+    assert(lrhoe > 0.0 && lrhon > 0.0);
+
     double luxe = prdate[1] / lrhoe, luxn = prdatn[1] / lrhon;
     double lBxe = prdate[4], lBxn = prdatn[4];
     double lBye = prdate[5], lByn = prdatn[5];
     double lBze = prdate[6], lBzn = prdatn[6];
     double lpe  = p_1d(prdate,gamma), lpn  = p_1d(prdatn,gamma);
-    
+
     lval =   max(fabs(luxe),fabs(luxn))
       + std::sqrt((  (  max(lBxe * lBxe, lBxn * lBxn)
 		   + max(lBye * lBye, lByn * lByn)
 		   + max(lBze * lBze, lBzn * lBzn) ) / (4.0 * M_PI)
 		+ gamma * max(lpe,lpn) ) / min(lrhoe,lrhon));
-    
+
     return lval;
   }
-  double relax (const Vec9 &pdatae, const Vec9 &pdatan,const double (&x)[3], 
+  double relax (const Vec9 &pdatae, const Vec9 &pdatan,const double (&x)[3],
 		Vec9 &pret) {
     double lgamma1,lGamma1;
     double lrepsl,lrepsr,lreps1l,lreps1r,lreps2l,lreps2r;
     cons_t ldatae(EOS_CONS,EOS_PRIM,pdatae);
     cons_t ldatan(EOS_CONS,EOS_PRIM,pdatan);
-    
+
     VEC1D  ldat1de,ldat1dn,lret;
     double lBx;
-    
+
     /* Relaxation (Korrektur fuer allg. Zustandsgleichungen) */
     lgamma1 = max(ldatae.gamma(),ldatan.gamma());
     lGamma1 = max(1.+EOS_CONS->dpdeps(ldatae)*ldatae.tau(),
@@ -156,7 +156,7 @@ private:
     pret[8] = 0.0;
     return dt_local(ldat1de,ldat1dn,lgamma1);
   }
-  double ipflux(const Vec9 &pdatae, const Vec9 &pdatan, const double (&x)[3], 
+  double ipflux(const Vec9 &pdatae, const Vec9 &pdatan, const double (&x)[3],
 			   Vec9 &pret) {
     VEC1D  ldat1de,ldat1dn,lret;
     double lBxe,lBxn,lBx;
@@ -226,22 +226,22 @@ public:
             adtab_maxp(10.0), adtab_mineps(2.0), adtab_maxeps(20.0),
             adtab_idealgamma(-1.0), adtab_idealR(1.0),
             func_idealgamma(-1.0), func_idealR(1.0)
-          {}         
+          {}
     };
   MhdSolver(MhdSolver::Eosmode::meos_t peos,double pgamma=1.4,double pR=1.0) {
     MhdSolver::FLUXCHOICE = MhdSolver::mf_dw;
     MhdSolver::Eosmode leosmode;
-    if (peos==MhdSolver::Eosmode::me_ideal) { // Perfektes Gas 
+    if (peos==MhdSolver::Eosmode::me_ideal) { // Perfektes Gas
       assert(pgamma > 1.0);
       leosmode.eos = MhdSolver::Eosmode::me_ideal;
       leosmode.gamma_id = pgamma;
       leosmode.R_id     = pR;
-    } else 
+    } else
       leosmode.eos = peos;
     MhdSolver::init_eos(leosmode);
     MhdSolver::init(MhdSolver::FLUXCHOICE);
   }
-  double operator()(const Vec9 &pdatae, const Vec9 &pdatan, const double (&x)[3], 
+  double operator()(const Vec9 &pdatae, const Vec9 &pdatan, const double (&x)[3],
 		    Vec9 &pret) {
     if (MhdSolver::FLUXCHOICE < MhdSolver::first_rgflux) {
       if (eos_is_ideal())
@@ -278,18 +278,18 @@ public:
   typedef enum {mf_bct=0,mf_dw,mf_hlle,mf_hllemg,mf_hlleml,mf_roe,
 		mf_rgdw=first_rgflux,mf_rgdwc,mf_rghlle,mf_rghllem,
 		mf_rghllemc,mf_rglf,mf_rgvfroe} mflux_t;
-  
+
   static const double s2;
   static mflux_t FLUXCHOICE;
   static double GAMMA_ID,R_ID;
   static eos_cons_t *EOS_CONS;
   static eos_prim_t *EOS_PRIM;
-  
+
   static double gamma_id() {
     assert(GAMMA_ID > 1.0);
     return GAMMA_ID;
   }
-  
+
   static int eos_is_ideal() {
     return (GAMMA_ID > 1.0);
   }
@@ -367,21 +367,21 @@ inline typename MhdVector<T,vsize>::vec_t& MhdVector<T,vsize>::operator=(const v
   return *this;
 }
 
-template <class T, const int vsize> 
+template <class T, const int vsize>
 inline T& MhdVector<T,vsize>::operator[](int pidx)
 {
   assert((0 <= pidx) && (pidx < vsize));
   return vec[pidx];
 }
 
-template <class T, const int vsize> 
+template <class T, const int vsize>
 inline T MhdVector<T,vsize>::operator[](int pidx) const
 {
   assert((0 <= pidx) && (pidx < vsize));
   return vec[pidx];
 }
 
-template <class T, const int vsize> 
+template <class T, const int vsize>
 inline typename MhdVector<T,vsize>::vec_t& MhdVector<T,vsize>::operator+=(const vec_t &pvec)
 {
   for (int i=0;i<vsize;i++)
@@ -413,7 +413,7 @@ inline typename MhdVector<T,vsize>::vec_t& MhdVector<T,vsize>::operator*=(const 
   return *this;
 }
 
-template <class T, const int vsize> 
+template <class T, const int vsize>
 inline typename MhdVector<T,vsize>::vec_t& MhdVector<T,vsize>::operator*=(const T pt)
 {
   for (int i=0;i<vsize;i++)
@@ -421,7 +421,7 @@ inline typename MhdVector<T,vsize>::vec_t& MhdVector<T,vsize>::operator*=(const 
   return *this;
 }
 
-template <class T, const int vsize> 
+template <class T, const int vsize>
 inline typename MhdVector<T,vsize>::vec_t& MhdVector<T,vsize>::operator/=(const T pt)
 {
   assert(pt != (T)0);
@@ -430,7 +430,7 @@ inline typename MhdVector<T,vsize>::vec_t& MhdVector<T,vsize>::operator/=(const 
   return *this;
 }
 
-template <class T, const int vsize> 
+template <class T, const int vsize>
 inline typename MhdVector<T,vsize>::vec_t MhdVector<T,vsize>::operator+(const vec_t &pvec)
 const
 {
@@ -439,7 +439,7 @@ const
   return ret;
 }
 
-template <class T, const int vsize> 
+template <class T, const int vsize>
 inline typename MhdVector<T,vsize>::vec_t MhdVector<T,vsize>::operator-(const vec_t &pvec)
 const
 {
@@ -478,7 +478,7 @@ const
   return ret;
 }
 
-template <class T, const int vsize> 
+template <class T, const int vsize>
 inline typename MhdVector<T,vsize>::vec_t MhdVector<T,vsize>::operator/(const T pt)
 const
 {
@@ -488,7 +488,7 @@ const
   return ret;
 }
 
-template <class T, const int vsize> 
+template <class T, const int vsize>
 inline void MhdVector<T,vsize>::write(ostream &pout) const
 {
   pout << '(';
@@ -836,7 +836,7 @@ double Eos_prim<size>::depsdtau(const var_t &pvar) const
 
 inline Eos_thin_entry::~Eos_thin_entry()
 {
-  if (next_table) 
+  if (next_table)
     delete next_table;
 }
 
@@ -872,7 +872,7 @@ inline double Eos_table::max(double pval1, double pval2) const
 inline int Eos_table::refine() const
 {
   int ret = 0;
- 
+
   if (get_level() < minlevel)
     ret = 1;
   else if (get_level() < maxlevel)
@@ -1051,7 +1051,7 @@ double Eos_cons_adtab<size>::cs2(const var_t &pvar) const
   int lflag = get_table_value(0,ltau,leps,lcs2);
 
   if ((lflag) && (range_warning))
-    cerr << "Eos_cons_adtab::cs2(): WARNING (value [tau,eps] = [" 
+    cerr << "Eos_cons_adtab::cs2(): WARNING (value [tau,eps] = ["
          << ltau << "," << leps << "] not in table range on level "
          << lflag-1 << ")!" << endl;
 
@@ -1069,7 +1069,7 @@ double Eos_cons_adtab<size>::p(const var_t &pvar) const
   int lflag = get_table_value(1,ltau,leps,lp);
 
   if ((lflag) && (range_warning))
-    cerr << "Eos_cons_adtab::p(): WARNING (value [tau,eps] = [" 
+    cerr << "Eos_cons_adtab::p(): WARNING (value [tau,eps] = ["
          << ltau << "," << leps << "] not in table range on level "
          << lflag-1 << ")!" << endl;
 
@@ -1092,7 +1092,7 @@ double Eos_cons_adtab<size>::dpdeps(const var_t &pvar) const
     lflag = approximate_deps(1,ltau,leps,ldpdeps);
 
   if ((lflag) && (range_warning))
-    cerr << "Eos_cons_adtab::dpdeps(): WARNING (value [tau,eps] = [" 
+    cerr << "Eos_cons_adtab::dpdeps(): WARNING (value [tau,eps] = ["
          << ltau << "," << leps << "] not in table range on level "
          << lflag-1 << ")!" << endl;
 
@@ -1110,7 +1110,7 @@ double Eos_cons_adtab<size>::T(const var_t &pvar) const
   int lflag = get_table_value(2,ltau,leps,lT);
 
   if ((lflag) && (range_warning))
-    cerr << "Eos_cons_adtab::T(): WARNING (value [tau,eps] = [" 
+    cerr << "Eos_cons_adtab::T(): WARNING (value [tau,eps] = ["
          << ltau << "," << leps << "] not in table range on level "
          << lflag-1 << ")!" << endl;
 
@@ -1163,7 +1163,7 @@ Eos_prim_adtab<size>::Eos_prim_adtab(int pfirst_is_tau,
                                      double pmin_p, double pmax_p,
                                      double ptol, Init_eos &ptable_init)
 : Eos_prim<size>(ptable_init.additional_values()),
-  first_is_tau(pfirst_is_tau), maxlevel(pmaxlevel), range_warning(1) 
+  first_is_tau(pfirst_is_tau), maxlevel(pmaxlevel), range_warning(1)
 {
   assert(pmaxlevel >= pminlevel);
   assert(pminlevel >= 0);
@@ -1208,7 +1208,7 @@ double Eos_prim_adtab<size>::cs2(const var_t &pvar) const
   int lflag = get_table_value(0,ltau,lp,lcs2);
 
   if ((lflag) && (range_warning))
-    cerr << "Eos_prim_adtab::cs2(): WARNING (value [tau,p] = [" 
+    cerr << "Eos_prim_adtab::cs2(): WARNING (value [tau,p] = ["
          << ltau << "," << lp << "] not in table range on level "
          << lflag-1 << ")!" << endl;
 
@@ -1226,7 +1226,7 @@ double Eos_prim_adtab<size>::eps(const var_t &pvar) const
   int lflag = get_table_value(1,ltau,lp,leps);
 
   if ((lflag) && (range_warning))
-    cerr << "Eos_prim_adtab::eps(): WARNING (value [tau,p] = [" 
+    cerr << "Eos_prim_adtab::eps(): WARNING (value [tau,p] = ["
          << ltau << "," << lp << "] not in table range on level "
          << lflag-1 << ")!" << endl;
 
@@ -1249,7 +1249,7 @@ double Eos_prim_adtab<size>::depsdp(const var_t &pvar) const
     lflag = approximate_dp(1,ltau,lp,ldepsdp);
 
   if ((lflag) && (range_warning))
-    cerr << "Eos_cons_adtab::depsdp(): WARNING (value [tau,p] = [" 
+    cerr << "Eos_cons_adtab::depsdp(): WARNING (value [tau,p] = ["
          << ltau << "," << lp << "] not in table range on level "
          << lflag-1 << ")!" << endl;
 
@@ -1272,7 +1272,7 @@ double Eos_prim_adtab<size>::depsdtau(const var_t &pvar) const
     lflag = approximate_dtau(1,ltau,lp,ldepsdtau);
 
   if ((lflag) && (range_warning))
-    cerr << "Eos_cons_adtab::depsdtau(): WARNING (value [tau,p] = [" 
+    cerr << "Eos_cons_adtab::depsdtau(): WARNING (value [tau,p] = ["
          << ltau << "," << lp << "] not in table range on level "
          << lflag-1 << ")!" << endl;
 
@@ -1289,7 +1289,7 @@ double Eos_prim_adtab<size>::T(const var_t &pvar) const
   int lflag = get_table_value(2,ltau,lp,lT);
 
   if ((lflag) && (range_warning))
-    cerr << "Eos_prim_adtab::T(): WARNING (value [tau,p] = [" 
+    cerr << "Eos_prim_adtab::T(): WARNING (value [tau,p] = ["
          << ltau << "," << lp << "] not in table range on level "
          << lflag-1 << ")!" << endl;
 
@@ -1545,7 +1545,7 @@ inline int Eos_cons_file<size>::get_table_value(int pcomp,
   //           |:.......:|
   //        ---|---------|---
   //        '''|:''''''''|:''
-  //        4  |:   0   :|: 2 
+  //        4  |:   0   :|: 2
   //        ...|:........|:..
   //        ---|---------|---
   //           |:''''''':|
@@ -1593,7 +1593,7 @@ inline int Eos_cons_file<size>::get_table_value(int pcomp,
          + (val_nw - val_sw) * lam_eps
          + val_sw;
 
-  return ret;  
+  return ret;
 }
 
 template <const int size>
@@ -1604,7 +1604,7 @@ double Eos_cons_file<size>::cs2(const var_t &pvar) const
   double lcs2;
 
   if ((!get_table_value(0,ltau,leps,lcs2)) && (range_warning))
-    cerr << "Eos_cons_file::cs2(): WARNING (value [tau,eps] = [" 
+    cerr << "Eos_cons_file::cs2(): WARNING (value [tau,eps] = ["
          << ltau << "," << leps << "] not in table range)!"
          << endl;
 
@@ -1621,7 +1621,7 @@ double Eos_cons_file<size>::p(const var_t &pvar) const
   double lp;
 
   if ((!get_table_value(1,ltau,leps,lp)) && (range_warning))
-    cerr << "Eos_cons_file::p(): WARNING (value [tau,eps] = [" 
+    cerr << "Eos_cons_file::p(): WARNING (value [tau,eps] = ["
          << ltau << "," << leps << "] not in table range)!"
          << endl;
 
@@ -1638,7 +1638,7 @@ double Eos_cons_file<size>::T(const var_t &pvar) const
   double lT;
 
   if ((!get_table_value(2,ltau,leps,lT)) && (range_warning))
-    cerr << "Eos_cons_file::T(): WARNING (value [tau,eps] = [" 
+    cerr << "Eos_cons_file::T(): WARNING (value [tau,eps] = ["
          << ltau << "," << leps << "] not in table range)!"
          << endl;
 
@@ -1794,7 +1794,7 @@ inline int Eos_prim_file<size>::get_table_value(int pcomp,
   //           |:.......:|
   //        ---|---------|---
   //        '''|:''''''''|:''
-  //        4  |:   0   :|: 2 
+  //        4  |:   0   :|: 2
   //        ...|:........|:..
   //        ---|---------|---
   //           |:''''''':|
@@ -1842,7 +1842,7 @@ inline int Eos_prim_file<size>::get_table_value(int pcomp,
          + (val_nw - val_sw) * lam_p
          + val_sw;
 
-  return ret;  
+  return ret;
 }
 
 template <const int size>
@@ -1853,7 +1853,7 @@ double Eos_prim_file<size>::cs2(const var_t &pvar) const
   double lcs2;
 
   if ((!get_table_value(0,ltau,lp,lcs2)) && (range_warning))
-    cerr << "Eos_prim_file::cs2(): WARNING (value [tau,p] = [" 
+    cerr << "Eos_prim_file::cs2(): WARNING (value [tau,p] = ["
          << ltau << "," << lp << "] not in table range)!"
          << endl;
 
@@ -1870,7 +1870,7 @@ double Eos_prim_file<size>::eps(const var_t &pvar) const
   double leps;
 
   if ((!get_table_value(1,ltau,lp,leps)) && (range_warning))
-    cerr << "Eos_prim_file::eps(): WARNING (value [tau,p] = [" 
+    cerr << "Eos_prim_file::eps(): WARNING (value [tau,p] = ["
          << ltau << "," << lp << "] not in table range)!"
          << endl;
 
@@ -1887,7 +1887,7 @@ double Eos_prim_file<size>::T(const var_t &pvar) const
   double lT;
 
   if ((!get_table_value(2,ltau,lp,lT)) && (range_warning))
-    cerr << "Eos_prim_file::T(): WARNING (value [tau,p] = [" 
+    cerr << "Eos_prim_file::T(): WARNING (value [tau,p] = ["
          << ltau << "," << lp << "] not in table range)!"
          << endl;
 
@@ -2165,7 +2165,7 @@ double Eos_prim_ideal<size>::cs2(const var_t &pvar) const
 template <const int size>
 double Eos_prim_ideal<size>::eps(const var_t &pvar) const
 {
-  return ( pvar.p() * pvar.tau() / (gamma - 1.0) );  
+  return ( pvar.p() * pvar.tau() / (gamma - 1.0) );
 }
 
 template <const int size>
@@ -2229,7 +2229,7 @@ inline double Eos_cons_nconv<size>::dpdtau(const var_t &pvar) const
   {
     lret = lc * pvar.eps();
   }
-  
+
   return lret;
 }
 
@@ -2253,7 +2253,7 @@ inline double Eos_cons_nconv<size>::dpdeps(const var_t &pvar) const
   {
     lret = lc;
   }
-  
+
   return lret;
 }
 
@@ -2295,7 +2295,7 @@ double Eos_cons_nconv<size>::p(const var_t &pvar) const
   {
     lret = lc * leps;
   }
-  
+
   return lret;
 }
 
@@ -2322,7 +2322,7 @@ inline double Eos_prim_nconv<size>::dpdtau(const var_t &pvar) const
   {
     lret = lc * eps(pvar);
   }
-  
+
   return lret;
 }
 
@@ -2346,7 +2346,7 @@ inline double Eos_prim_nconv<size>::dpdeps(const var_t &pvar) const
   {
     lret = lc;
   }
-  
+
   return lret;
 }
 
@@ -2490,7 +2490,7 @@ double Eos_prim_osborne<size>::eps(const var_t &pvar) const
   assert(leps > 0.0);
   assert(tau0 * (lp - lxi - lsqr) / (2.0 * (c0 + c1 * lzet)) <= 0.0);
 
-  return leps;  
+  return leps;
 }
 /******************************************************************************
  ******************************************************************************
@@ -2520,7 +2520,7 @@ inline double Eos_cons_tmv<size>::df(double pT) const
 {
   double le = std::exp(thetavib/pT);
 
-  return cvtr + (  alpha * thetavib * thetavib * le 
+  return cvtr + (  alpha * thetavib * thetavib * le
                  / ((le - 1.0) * (le - 1.0) * pT * pT));
 }
 
@@ -2561,7 +2561,7 @@ inline double Eos_prim_tmv<size>::deps(double pT) const
 {
   double le = std::exp(thetavib/pT);
 
-  return cvtr + (  alpha * thetavib * thetavib * le 
+  return cvtr + (  alpha * thetavib * thetavib * le
                  / ((le - 1.0) * (le - 1.0) * pT * pT));
 }
 
@@ -2583,7 +2583,7 @@ double Eos_prim_tmv<size>::eps(const var_t &pvar) const
 {
   double lT = pvar.p() * pvar.tau() / r;
 
-  return cvtr * lT + alpha * thetavib / (std::exp(thetavib/lT) - 1.0);   
+  return cvtr * lT + alpha * thetavib / (std::exp(thetavib/lT) - 1.0);
 }
 
 template <const int size>
@@ -2609,8 +2609,8 @@ double Eos_cons_waals<size>::cs2(const var_t &pvar) const
 {
   double lp   = p(pvar);
   double ltau = pvar.tau();
-  double lcs2 = - 2.0 * a / ltau 
-                + (lp * ltau * ltau + a) / (ltau - b) * (1.0 + R / cv); 
+  double lcs2 = - 2.0 * a / ltau
+                + (lp * ltau * ltau + a) / (ltau - b) * (1.0 + R / cv);
 
   assert(lcs2 > 0.0);
 
@@ -2668,8 +2668,8 @@ double Eos_prim_waals<size>::cs2(const var_t &pvar) const
 {
   double lp   = pvar.p();
   double ltau = pvar.tau();
-  double lcs2 = - 2.0 * a / ltau 
-                + (lp * ltau * ltau + a) / (ltau - b) * (1.0 + R / cv); 
+  double lcs2 = - 2.0 * a / ltau
+                + (lp * ltau * ltau + a) / (ltau - b) * (1.0 + R / cv);
 
   assert(lcs2 > 0.0);
 
@@ -2686,7 +2686,7 @@ double Eos_prim_waals<size>::eps(const var_t &pvar) const
 
   assert(leps > 0.0);
 
-  return leps;  
+  return leps;
 }
 
 template <const int size>
@@ -2788,7 +2788,7 @@ inline double Variable<vsize>::operator[](int pidx) const
 template <const int vsize>
 inline void Variable<vsize>::write(ostream &pout) const
 {
-  val.write(pout);  
+  val.write(pout);
 }
 
 /*******************************************************************************
@@ -3139,7 +3139,7 @@ inline ostream& operator<<(ostream &pout, const typename VariableTop<VAR>::var_t
    template <class CONS> class Equations
 *******************************************************************************/
 
-template <class CONS> 
+template <class CONS>
 inline double Equations<CONS>::min(double pd1, double pd2) const
 {
   return (pd1 <= pd2) ? pd1 : pd2;
@@ -3703,7 +3703,7 @@ inline ostream& operator<<(ostream &pout, const Prim_tp_mhd::var_t &pprim)
   return pout;
 }
 
-} // end namespace Mhd 
+} // end namespace Mhd
 
 #ifdef USE_MHDFLUXES_INLINE
 #include "mhd_eqns.cc"

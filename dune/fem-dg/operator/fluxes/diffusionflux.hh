@@ -10,7 +10,7 @@
 
 namespace Dune {
 
-  
+
   // DGFluxTupleToVectorConverter
   //-----------------------------
 
@@ -25,39 +25,39 @@ namespace Dune {
     typedef typename ArgumentVectorTuple :: value_type TupleType;
     typedef typename TupleType::template Value< integral_constant< int, passUId > >::Type ValueType;
 
-    DGFluxTupleToVectorConverter(const ArgumentVectorTuple& vec) 
+    DGFluxTupleToVectorConverter(const ArgumentVectorTuple& vec)
       : vec_( vec )
     {}
 
-    const ValueType& operator [] (const size_t i) const 
-    { 
+    const ValueType& operator [] (const size_t i) const
+    {
       assert( i < vec_.size() );
-      return vec_[ i ][ uVar ]; 
+      return vec_[ i ][ uVar ];
     }
   };
 
   ///////////////////////////////////////////////////////////
   //
-  //  Identifier for Diffusion Fluxes for Primal methods 
+  //  Identifier for Diffusion Fluxes for Primal methods
   //
   //////////////////////////////////////////////////////////
-  enum DGDiffusionFluxIdentifier { 
-    method_cdg2    = 0,  // CDG 2 (Compact Discontinuous Galerkin 2) 
-    method_cdg     = 1,  // CDG (Compact Discontinuous Galerkin) 
+  enum DGDiffusionFluxIdentifier {
+    method_cdg2    = 0,  // CDG 2 (Compact Discontinuous Galerkin 2)
+    method_cdg     = 1,  // CDG (Compact Discontinuous Galerkin)
     method_br2     = 2,  // BR2 (Bassi-Rebay 2)
-    method_ip      = 3,  // IP (Interior Penalty) 
-    method_nipg    = 4,  // NIPG (Non-symmetric Interior  Penalty) 
-    method_bo      = 5,  // BO (Baumann-Oden) 
-    method_general = 6,   // general means all methods chosen via parameter file 
-    method_none    = 7   // no diffusion (advection only) 
+    method_ip      = 3,  // IP (Interior Penalty)
+    method_nipg    = 4,  // NIPG (Non-symmetric Interior  Penalty)
+    method_bo      = 5,  // BO (Baumann-Oden)
+    method_general = 6,   // general means all methods chosen via parameter file
+    method_none    = 7   // no diffusion (advection only)
   };
-  enum DGLiftingFluxIdentifier { 
+  enum DGLiftingFluxIdentifier {
     lifting_id_id    = 0,  // int_Omega r([u]).tau  = -int_e [u].{tau}
     lifting_id_A     = 1,  // int_Omega r([u]).tau  = -int_e [u].{Atau}
     lifting_A_A      = 2   // int_Omega r([u]).Atau = -int_e [u].{Atau}
   };
 
-  struct DGPrimalMethodNames 
+  struct DGPrimalMethodNames
   {
     typedef DGDiffusionFluxIdentifier MethodType;
     static std::string methodNames( const MethodType mthd )
@@ -68,7 +68,7 @@ namespace Dune {
       return method[ mthd ];
     }
 
-    static MethodType getMethod() 
+    static MethodType getMethod()
     {
       const std::string method []
         = { methodNames( method_cdg2 ),
@@ -102,9 +102,9 @@ namespace Dune {
 
   // DGDiffusionFluxBase
   //--------------------
-  
+
   template <class DiscreteFunctionSpaceImp,
-            class Model > 
+            class Model >
   class DGDiffusionFluxBase : public DGPrimalMethodNames
   {
   public:
@@ -130,8 +130,8 @@ namespace Dune {
     enum { dimGradRange = dimDomain * dimRange };
     enum { polOrd = DiscreteFunctionSpaceType :: polynomialOrder };
 
-    // type of gradient space 
-    typedef typename DiscreteFunctionSpaceType :: 
+    // type of gradient space
+    typedef typename DiscreteFunctionSpaceType ::
         template ToNewDimRange< dimGradRange > :: Type   DiscreteGradientSpaceType;
 
     typedef typename DiscreteGradientSpaceType :: RangeType GradientType;
@@ -140,10 +140,10 @@ namespace Dune {
 
     typedef Fem::CachingQuadrature< GridPartType, 0> VolumeQuadratureType ;
 
-    DomainType upwindDefault() const 
+    DomainType upwindDefault() const
     {
       DomainType upwind ( M_PI );
-      // set upwind to some strange numbers 
+      // set upwind to some strange numbers
       if( dimDomain > 1 ) upwind[1] = M_LN2 ;
       if( dimDomain > 2 ) upwind[2] = M_E ;
       return upwind ;
@@ -160,7 +160,7 @@ namespace Dune {
       dimensionFactor_( 2.0 * ( dimDomain ) ),
       nonconformingFactor_( 2.0 * ( dimDomain - 1 ) )
     {
-      if( initUpwind ) 
+      if( initUpwind )
       {
         Fem::Parameter::get("dgdiffusionflux.upwind", upwind_, upwind_);
         if( Fem::Parameter :: verbose() )
@@ -168,27 +168,27 @@ namespace Dune {
       }
     }
 
-    //! copy constructor 
+    //! copy constructor
     DGDiffusionFluxBase( const DGDiffusionFluxBase& other ) :
       model_( other.model_ ),
       upwind_( other.upwind_ ),
       cflDiffinv_( other.cflDiffinv_ ),
-      dimensionFactor_( other.dimensionFactor_ ), 
+      dimensionFactor_( other.dimensionFactor_ ),
       nonconformingFactor_( other.nonconformingFactor_ )
     {
     }
 
-    //! returns true if lifting has to be calculated 
+    //! returns true if lifting has to be calculated
     //const bool hasLifting () const { return false; }
 
-  protected:   
+  protected:
     bool determineDirection( const bool areaSwitch, const double enVolume, const double nbVolume,
-                             const Intersection& intersection ) const 
+                             const Intersection& intersection ) const
     {
       if (areaSwitch && std::abs( enVolume - nbVolume ) > 1e-8)
       {
-        // we need en=K^- and nb=K^+ such that c = (|K^-|/|K^+|) <= 1 
-        // outside is K^- if outside volume is smaller   
+        // we need en=K^- and nb=K^+ such that c = (|K^-|/|K^+|) <= 1
+        // outside is K^- if outside volume is smaller
         return ( enVolume > nbVolume );
       }
       else
@@ -199,28 +199,28 @@ namespace Dune {
       }
     }
 
-    bool determineDirection( const DomainType& normal ) const 
+    bool determineDirection( const DomainType& normal ) const
     {
        return ( normal * upwind_ ) < 0 ;
     }
 
-  public:  
-    void switchUpwind() 
+  public:
+    void switchUpwind()
     {
       upwind_ *= -1.0;
     }
 
     bool hasLifting() const { return false; }
 
-    template <class QuadratureImp, class ArgumentTupleVector > 
+    template <class QuadratureImp, class ArgumentTupleVector >
     void initializeIntersection(const Intersection& intersection,
                                 const EntityType& inside,
                                 const EntityType& outside,
                                 const double time,
-                                const QuadratureImp& quadInner, 
+                                const QuadratureImp& quadInner,
                                 const QuadratureImp& quadOuter,
                                 const ArgumentTupleVector& uLeftVec,
-                                const ArgumentTupleVector& uRightVec) 
+                                const ArgumentTupleVector& uRightVec)
     {
     }
 
@@ -228,9 +228,9 @@ namespace Dune {
     void initializeBoundary(const Intersection& intersection,
                             const EntityType& entity,
                             const double time,
-                            const QuadratureImp& quadInner, 
+                            const QuadratureImp& quadInner,
                             const ArgumentTupleVector& uLeftVec,
-                            const std::vector< RangeType >& uRight) 
+                            const std::vector< RangeType >& uRight)
     {
     }
 
@@ -245,11 +245,11 @@ namespace Dune {
      * @param[in] uRight DOF evaluation on the other side of \c it
      * @param[out] gLeft num. flux projected on normal on this side
      *             of \c it for multiplication with \f$ \phi \f$
-     * @param[out] gRight advection flux projected on normal for the other side 
+     * @param[out] gRight advection flux projected on normal for the other side
      *             of \c it for multiplication with \f$ \phi \f$
      * @param[out] gDiffLeft num. flux projected on normal on this side
      *             of \c it for multiplication with \f$ \nabla\phi \f$
-     * @param[out] gDiffRight advection flux projected on normal for the other side 
+     * @param[out] gDiffRight advection flux projected on normal for the other side
      *             of \c it for multiplication with \f$ \nabla\phi \f$
      *
      * @return wave speed estimate (multiplied with the integration element of the intersection),
@@ -305,7 +305,7 @@ namespace Dune {
     const double cflDiffinv_;
     const double dimensionFactor_;
     const double nonconformingFactor_;
-  }; // end DGPrimalDiffusionFlux                        
+  }; // end DGPrimalDiffusionFlux
 
-} // end namespace 
+} // end namespace
 #endif

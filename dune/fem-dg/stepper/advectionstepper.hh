@@ -9,9 +9,9 @@
 #include <dune/fem-dg/stepper/stepperbase.hh>
 
 template <class GridImp,
-          class ProblemTraits, 
-          int polynomialOrder>             
-struct AdvectionStepper 
+          class ProblemTraits,
+          int polynomialOrder>
+struct AdvectionStepper
   : public StepperBase< GridImp, ProblemTraits, polynomialOrder >
 {
   typedef StepperBase< GridImp, ProblemTraits, polynomialOrder > BaseType ;
@@ -22,7 +22,7 @@ struct AdvectionStepper
   // Choose a suitable GridView
   typedef typename BaseType :: GridPartType             GridPartType;
 
-  // initial data type 
+  // initial data type
   typedef typename BaseType :: InitialDataType          InitialDataType;
 
   // An analytical version of our model
@@ -57,14 +57,14 @@ struct AdvectionStepper
   static const Dune::DGDiffusionFluxIdentifier DiffusionFluxId =
     BaseType::Traits::DiffusionFluxId ;
 
-  // advection = true , diffusion = false 
+  // advection = true , diffusion = false
   typedef Dune :: DGAdaptationIndicatorOperator< ModelType, FluxType,
             DiffusionFluxId, polynomialOrder, true, false >  DGIndicatorType;
 
-  // gradient estimator 
+  // gradient estimator
   typedef Estimator< DiscreteFunctionType, InitialDataType > GradientIndicatorType ;
 
-  // type of 64bit unsigned integer  
+  // type of 64bit unsigned integer
   typedef typename BaseType :: UInt64Type  UInt64Type;
 
   using BaseType :: grid_;
@@ -77,7 +77,7 @@ struct AdvectionStepper
   using BaseType :: adaptationParameters_;
   using BaseType :: doEstimateMarkAdapt ;
 
-  // constructor 
+  // constructor
   AdvectionStepper( GridType& grid ) :
     BaseType( grid ),
     dgAdvectionOperator_(gridPart_, problem() ),
@@ -86,7 +86,7 @@ struct AdvectionStepper
   {
   }
 
-  virtual OdeSolverType* createOdeSolver(TimeProviderType& tp) 
+  virtual OdeSolverType* createOdeSolver(TimeProviderType& tp)
   {
     if( adaptive() )
     {
@@ -98,15 +98,15 @@ struct AdvectionStepper
     }
 
     //typedef SmartOdeSolver< ExplicitOperatorType, ExplicitOperatorType, ExplicitOperatorType > OdeSolverImpl;
-    
-    typedef RungeKuttaSolver< ExplicitOperatorType, ExplicitOperatorType, ExplicitOperatorType, 
+
+    typedef RungeKuttaSolver< ExplicitOperatorType, ExplicitOperatorType, ExplicitOperatorType,
                               LinearInverseOperatorType > OdeSolverImpl;
-    return new OdeSolverImpl( tp, dgAdvectionOperator_, 
+    return new OdeSolverImpl( tp, dgAdvectionOperator_,
                               dgAdvectionOperator_,
                               dgAdvectionOperator_ );
   }
 
-  //! return overal number of grid elements 
+  //! return overal number of grid elements
   virtual uint64_t gridSize() const
   {
     // is adaptation handler exists use the information to avoid global comm
@@ -120,24 +120,24 @@ struct AdvectionStepper
   }
 
   //! call limiter (only if dgAdvectionOperator_ is DGLimitedAdvectionOperator)
-  void limitSolution() 
-  { 
+  void limitSolution()
+  {
     dgAdvectionOperator_.limit( solution() );
   }
 
   // return indicator pointer for data output, see above
-  IndicatorType* indicator () 
-  { 
+  IndicatorType* indicator ()
+  {
     return dgAdvectionOperator_.indicator();
   }
 
-  //! estimate and mark solution 
+  //! estimate and mark solution
   virtual void initialEstimateMarkAdapt( )
   {
     doEstimateMarkAdapt( dgIndicator_, gradientIndicator_, true );
   }
 
-  //! estimate and mark solution 
+  //! estimate and mark solution
   virtual void estimateMarkAdapt( )
   {
     doEstimateMarkAdapt( dgIndicator_, gradientIndicator_, false );

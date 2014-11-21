@@ -1,9 +1,12 @@
-#ifndef ELLIPTPROBLEM_CC
-#define ELLIPTPROBLEM_CC
+#ifndef DUNE_FEM_DG_BENCHMARKPROBLEMS_HH
+#define DUNE_FEM_DG_BENCHMARKPROBLEMS_HH
 
 #include <cmath>
 #include <set>
 #include <cassert>
+#include <complex>
+
+#include <dune/common/exceptions.hh>
 
 template<int dim, class DomainField, class Field> 
 class DataFunctionIF

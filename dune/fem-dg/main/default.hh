@@ -1,7 +1,7 @@
 #ifndef DUNE_FEM_BASISFUNCTIONSET_DEFAULT_HH
 #define DUNE_FEM_BASISFUNCTIONSET_DEFAULT_HH
 
-#ifdef USE_BASEFUNCTIONSET_CODEGEN 
+#ifdef USE_BASEFUNCTIONSET_CODEGEN
 #define USE_BASEFUNCTIONSET_OPTIMIZED
 #endif
 
@@ -28,7 +28,7 @@
 #ifdef NEWBASEFCT_CACHING
 //#include <dune/fem/space/shapefunctionset/caching.hh>
 #include "caching2.hh"
-#else 
+#else
 #include "caching.hh"
 #endif
 
@@ -68,8 +68,8 @@ namespace Dune
      * \tparam  Entity            entity type
      * \tparam  ShapeFunctionSet  shape function set
      *
-     * \note ShapeFunctionSet must be a copyable object. For most 
-     *       non-trivial implementations, you may want to use a 
+     * \note ShapeFunctionSet must be a copyable object. For most
+     *       non-trivial implementations, you may want to use a
      *       proxy, see file
 \code
     <dune/fem/space/shapefunctionset/proxy.hh>
@@ -146,7 +146,7 @@ namespace Dune
       void registerEntry() const
       {
 #ifdef BASEFUNCTIONSET_CODEGEN_GENERATE
-        // add my dimrange 
+        // add my dimrange
         Fem::CodegenInfo::instance().addDimRange( this, dimRange );
 #endif
       }
@@ -173,15 +173,15 @@ namespace Dune
         return Dune::ReferenceElements< ctype, GeometryType::coorddimension >::general( type() );
       }
 
-      //! \brief evaluate all basis function and multiply with given values and add to dofs 
+      //! \brief evaluate all basis function and multiply with given values and add to dofs
       template< class QuadratureType, class Vector, class DofVector >
       void axpy ( const QuadratureType &quad, const Vector &values, DofVector &dofs ) const
       {
         axpyImpl( quad, values, dofs, values[ 0 ] );
       }
 
-      /** \brief evaluate all basis function and multiply with given values and add to dofs 
-          \note valuesA and valuesB can be vectors of RangeType or JacobianRangeType 
+      /** \brief evaluate all basis function and multiply with given values and add to dofs
+          \note valuesA and valuesB can be vectors of RangeType or JacobianRangeType
       */
       template< class QuadratureType, class VectorA, class VectorB, class DofVector >
       void axpy ( const QuadratureType &quad, const VectorA &valuesA, const VectorB &valuesB, DofVector &dofs ) const
@@ -231,20 +231,20 @@ namespace Dune
         startPrefetch();
 
 #ifdef USE_BASEFUNCTIONSET_OPTIMIZED
-        typedef Fem :: EvaluateCallerInterfaceTraits< 
+        typedef Fem :: EvaluateCallerInterfaceTraits<
                 QuadratureType, RangeArray, DofVector > Traits;
         typedef Fem :: EvaluateCallerInterface< Traits > BaseEvaluationType;
 
-        // get base function evaluate caller (calls evaluateRanges) 
-        const BaseEvaluationType& baseEval = 
+        // get base function evaluate caller (calls evaluateRanges)
+        const BaseEvaluationType& baseEval =
             BaseEvaluationType::storage( *this, rangeCache( quad ), quad );
 
         baseEval.evaluateRanges( quad, dofs, ranges );
-#else 
+#else
 
         registerEntry();
 #ifdef BASEFUNCTIONSET_CODEGEN_GENERATE
-        Fem::CodegenInfo::instance().addEntry( "evalranges", 
+        Fem::CodegenInfo::instance().addEntry( "evalranges",
             Fem :: CodeGeneratorType :: evaluateCodegen, dimDomain, dimRange, quad.nop(), size()/dimRange );
 #endif
         // call axpy method for each entry of the given vector, e.g. rangeVector or jacobianVector
@@ -283,21 +283,21 @@ namespace Dune
 
         assert( jacobians.size() > 0 );
 #ifdef USE_BASEFUNCTIONSET_OPTIMIZED
-        typedef Fem :: EvaluateCallerInterfaceTraits< QuadratureType, 
+        typedef Fem :: EvaluateCallerInterfaceTraits< QuadratureType,
                 JacobianArray, DofVector, Geometry >  Traits;
         typedef Fem :: EvaluateCallerInterface< Traits > BaseEvaluationType;
 
-        // get base function evaluate caller (calls axpyRanges) 
-        const BaseEvaluationType& baseEval = 
+        // get base function evaluate caller (calls axpyRanges)
+        const BaseEvaluationType& baseEval =
           BaseEvaluationType::storage( *this, jacobianCache( quad ), quad );
 
-        // call appropriate axpyJacobian method 
+        // call appropriate axpyJacobian method
         baseEval.evaluateJacobians( quad, geometry(), dofs, jacobians );
-#else 
+#else
         registerEntry();
 
 #ifdef BASEFUNCTIONSET_CODEGEN_GENERATE
-        Fem::CodegenInfo::instance().addEntry( "evaljacobians", 
+        Fem::CodegenInfo::instance().addEntry( "evaljacobians",
               Fem :: CodeGeneratorType :: evaluateJacobiansCodegen, dimDomain, dimRange, quad.nop(), size()/dimRange );
 #endif
         // call axpy method for each entry of the given vector, e.g. rangeVector or jacobianVector
@@ -374,28 +374,28 @@ namespace Dune
       const ShapeFunctionSetType &shapeFunctionSet () const { return shapeFunctionSet_; }
 
     protected:
-      //! \brief evaluate all basis function and multiply with given values and add to dofs 
+      //! \brief evaluate all basis function and multiply with given values and add to dofs
       template< class QuadratureType, class RangeArray, class DofVector >
       void axpyImpl ( const QuadratureType &quad, const RangeArray &rangeFactors, DofVector &dofs, const RangeType& ) const
       {
         startPrefetch();
 
 #ifdef USE_BASEFUNCTIONSET_OPTIMIZED
-        typedef Fem :: EvaluateCallerInterfaceTraits< 
+        typedef Fem :: EvaluateCallerInterfaceTraits<
             QuadratureType, RangeArray, DofVector > Traits;
         typedef Fem :: EvaluateCallerInterface< Traits > BaseEvaluationType;
 
-        // get base function evaluate caller (calls axpyRanges) 
-        const BaseEvaluationType& baseEval = 
+        // get base function evaluate caller (calls axpyRanges)
+        const BaseEvaluationType& baseEval =
           BaseEvaluationType::storage( *this, rangeCache( quad ), quad );
 
-        // call appropriate axpyRanges method 
+        // call appropriate axpyRanges method
         baseEval.axpyRanges( quad, rangeFactors, dofs );
-#else 
+#else
 
         registerEntry();
 #ifdef BASEFUNCTIONSET_CODEGEN_GENERATE
-        Fem::CodegenInfo::instance().addEntry( "axpyranges", 
+        Fem::CodegenInfo::instance().addEntry( "axpyranges",
               Fem :: CodeGeneratorType :: axpyCodegen, dimDomain, dimRange, quad.nop(), size()/dimRange );
 #endif
         // call axpy method for each entry of the given vector, e.g. rangeVector or jacobianVector
@@ -408,7 +408,7 @@ namespace Dune
         stopPrefetch();
       }
 
-      //! \brief evaluate all basis function and multiply with given values and add to dofs 
+      //! \brief evaluate all basis function and multiply with given values and add to dofs
       template< class QuadratureType, class JacobianArray, class DofVector >
       void axpyImpl ( const QuadratureType &quad, const JacobianArray &jacobianFactors, DofVector &dofs, const JacobianRangeType& ) const
       {
@@ -419,18 +419,18 @@ namespace Dune
                 JacobianArray, DofVector, Geometry >  Traits;
         typedef Fem :: EvaluateCallerInterface< Traits > BaseEvaluationType;
 
-        // get base function evaluate caller (calls axpyRanges) 
-        const BaseEvaluationType& baseEval = 
+        // get base function evaluate caller (calls axpyRanges)
+        const BaseEvaluationType& baseEval =
           BaseEvaluationType::storage( *this, jacobianCache( quad ), quad );
 
-        // call appropriate axpyRanges method 
+        // call appropriate axpyRanges method
         baseEval.axpyJacobians( quad, geometry(), jacobianFactors, dofs );
-#else 
+#else
 
         registerEntry();
 #ifdef BASEFUNCTIONSET_CODEGEN_GENERATE
-        Fem::CodegenInfo::instance().addEntry( "axpyjacobians", 
-                Fem :: CodeGeneratorType :: axpyJacobianCodegen, dimDomain, dimRange, quad.nop(), size()/dimRange ); 
+        Fem::CodegenInfo::instance().addEntry( "axpyjacobians",
+                Fem :: CodeGeneratorType :: axpyJacobianCodegen, dimDomain, dimRange, quad.nop(), size()/dimRange );
 #endif
         // call axpy method for each entry of the given vector, e.g. rangeVector or jacobianVector
         const unsigned int nop = quad.nop();
@@ -445,14 +445,14 @@ namespace Dune
       GeometryType geometry () const { return entity().geometry(); }
 
       template <class QuadratureType>
-      const RangeVectorType& rangeCache( const QuadratureType& quad ) const 
-      { 
+      const RangeVectorType& rangeCache( const QuadratureType& quad ) const
+      {
         return shapeFunctionSet().scalarShapeFunctionSet().impl().rangeCache( quad );
       }
 
       template <class QuadratureType>
-      const JacobianRangeVectorType& jacobianCache( const QuadratureType& quad ) const 
-      { 
+      const JacobianRangeVectorType& jacobianCache( const QuadratureType& quad ) const
+      {
         return shapeFunctionSet().scalarShapeFunctionSet().impl().jacobianCache( quad );
       }
 
@@ -460,7 +460,7 @@ namespace Dune
       {
 #if HAVE_BGQ_L1PREFETCH
         static bool initialized = false ;
-        if( ! initialized ) 
+        if( ! initialized )
         {
           const size_t LIST_SIZE = 10*1024*1024 ;
           L1P_PatternConfigure( LIST_SIZE );

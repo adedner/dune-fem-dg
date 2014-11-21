@@ -1,24 +1,23 @@
-#ifndef  DUNE_BENCHMARK_PROBLEM_HH
-#define  DUNE_BENCHMARK_PROBLEM_HH
+#ifndef DUNE_FEM_DG_POISSONPROBLEM_HH
+#define DUNE_FEM_DG_POISSONPROBLEM_HH
  
 #include <dune/fem/io/parameter.hh>
 #include <dune/fem/space/common/functionspace.hh>
 
 // local includes
 #include <dune/fem-dg/models/defaultprobleminterfaces.hh>
-#include "benchmarkproblems.hh"
-
+#include <dune/fem-dg/test/poisson/benchmarkproblems.hh>
 
 namespace Dune {
 
-template <class GridType>                                         
+template <class GridType, int dimRange>                                         
 struct PoissonProblem : public ProblemInterface<
-     Dune :: Fem :: FunctionSpace< double, double, GridType::dimension, DIMRANGE> >
+     Dune :: Fem :: FunctionSpace< double, double, GridType::dimension, dimRange> >
 {                                                                  
 public:
   typedef ProblemInterface<
        Dune :: Fem::FunctionSpace< double, double,
-       GridType::dimension, DIMRANGE >
+       GridType::dimension, dimRange >
           >                    BaseType;
 
   enum{ dimDomain = BaseType :: dimDomain };

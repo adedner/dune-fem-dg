@@ -20,13 +20,13 @@ namespace Dune {
 
   template< class TraitsImp >
   class AdvectionDiffusionDGPrimalModelBase :
-    public TraitsImp :: AdvectionModelType 
+    public TraitsImp :: AdvectionModelType
   {
   public:
     typedef TraitsImp  Traits ;
     typedef typename Traits :: AdvectionModelType  BaseType;
 
-    using BaseType :: uVar; 
+    using BaseType :: uVar;
     using BaseType :: inside;
     using BaseType :: outside;
     using BaseType :: model_;
@@ -36,8 +36,8 @@ namespace Dune {
     enum { dimDomain = Traits :: dimDomain };
     enum { dimRange  = Traits :: dimRange };
 
-    static const bool advection = Traits :: advection ; // true if advection is enabled 
-    static const bool diffusion = Traits :: diffusion ; // this should be disabled for LDG 
+    static const bool advection = Traits :: advection ; // true if advection is enabled
+    static const bool diffusion = Traits :: diffusion ; // this should be disabled for LDG
 
     enum { passUId = Traits :: passUId };
 
@@ -67,7 +67,7 @@ namespace Dune {
 
     typedef typename Traits :: DiscreteFunctionSpaceType DiscreteFunctionSpaceType;
 
-    // type of diffusion flux implementation 
+    // type of diffusion flux implementation
     typedef DGPrimalDiffusionFlux< DiscreteFunctionSpaceType, ModelType, Traits :: diffFluxId > DiffusionFluxType;
 
     enum { evaluateJacobian = DiffusionFluxType :: evaluateJacobian  }; // we need to evaluate jacobians here
@@ -84,37 +84,37 @@ namespace Dune {
     }
 
     //! copy constructor (for thread parallel progs mainly)
-    AdvectionDiffusionDGPrimalModelBase(const AdvectionDiffusionDGPrimalModelBase& other ) 
+    AdvectionDiffusionDGPrimalModelBase(const AdvectionDiffusionDGPrimalModelBase& other )
       : BaseType( other ),
         diffFlux_( other.diffFlux_ )
     {
     }
 
     //! return true if source term is enabled (this might be overloaded in a derived class)
-    inline bool hasSource() const 
-    {        
-      if( advection == diffusion ) 
+    inline bool hasSource() const
+    {
+      if( advection == diffusion )
         return model_.hasStiffSource() || model_.hasNonStiffSource() ;
-      else if ( advection && ! diffusion ) 
+      else if ( advection && ! diffusion )
         return model_.hasNonStiffSource() ;
-      else 
+      else
         return model_.hasStiffSource() ;
     }
 
-    inline bool hasFlux() const 
-    { 
-      return (advection || diffusion) && model_.hasFlux(); 
-    } 
+    inline bool hasFlux() const
+    {
+      return (advection || diffusion) && model_.hasFlux();
+    }
 
     /**
      * @brief analytical flux function
      */
     template <class ArgumentTuple, class JacobianTuple >
     double source( const EntityType& en,
-                   const double time, 
+                   const double time,
                    const DomainType& x,
-                   const ArgumentTuple& u, 
-                   const JacobianTuple& jac, 
+                   const ArgumentTuple& u,
+                   const JacobianTuple& jac,
                    RangeType& s ) const
     {
       s = 0;
@@ -127,12 +127,12 @@ namespace Dune {
         dtEst = ( dtStiff > 0 ) ? dtStiff : dtEst;
       }
 
-      if ( model_.hasNonStiffSource() ) 
+      if ( model_.hasNonStiffSource() )
       {
         RangeType sNonStiff (0);
         const double dtNon = model_.nonStiffSource( en, time, x, u[uVar], jac[uVar], sNonStiff );
 
-        // add to source 
+        // add to source
         s += sNonStiff;
 
         dtEst = ( dtNon > 0 ) ? std::min( dtEst, dtNon ) : dtEst;
@@ -142,48 +142,48 @@ namespace Dune {
       return dtEst ;
     }
 
-    void switchUpwind() const 
-    { 
-      // reset max time steps 
+    void switchUpwind() const
+    {
+      // reset max time steps
       BaseType :: switchUpwind() ;
-      // switch upwind direction if necessary 
+      // switch upwind direction if necessary
       diffFlux_.switchUpwind();
     }
 
-    template <class QuadratureImp, class ArgumentTupleVector > 
+    template <class QuadratureImp, class ArgumentTupleVector >
     void initializeIntersection(const Intersection& it,
                                 const double time,
-                                const QuadratureImp& quadInner, 
+                                const QuadratureImp& quadInner,
                                 const QuadratureImp& quadOuter,
                                 const ArgumentTupleVector& uLeftVec,
-                                const ArgumentTupleVector& uRightVec) 
+                                const ArgumentTupleVector& uRightVec)
     {
-      if( diffusion ) 
+      if( diffusion )
       {
         typedef DGFluxTupleToVectorConverter< ArgumentTupleVector, passUId > ConverterType;
-        // call diffusion flux 
+        // call diffusion flux
         diffFlux_.initializeIntersection( it, inside(), outside(),
                                           time, quadInner, quadOuter,
-                                          ConverterType( uLeftVec ), 
+                                          ConverterType( uLeftVec ),
                                           ConverterType( uRightVec ) );
       }
     }
 
-    template <class QuadratureImp, class ArgumentTupleVector > 
+    template <class QuadratureImp, class ArgumentTupleVector >
     void initializeBoundary(const Intersection& it,
                             const double time,
-                            const QuadratureImp& quadInner, 
+                            const QuadratureImp& quadInner,
                             const ArgumentTupleVector& uLeftVec)
     {
-      if( diffusion ) 
+      if( diffusion )
       {
         typedef DGFluxTupleToVectorConverter< ArgumentTupleVector, passUId > ConverterType;
-        if( diffFlux_.hasLifting() ) 
+        if( diffFlux_.hasLifting() )
         {
           const bool hasBoundaryValue = model_.hasBoundaryValue(it, time, quadInner.localPoint( 0 ));
 
-          // turns uLeftVec into a fake 
-          // vector of RangeTypes by storing the passUId 
+          // turns uLeftVec into a fake
+          // vector of RangeTypes by storing the passUId
           ConverterType uLeft ( uLeftVec ) ;
 
           const size_t quadNop = quadInner.nop();
@@ -191,24 +191,24 @@ namespace Dune {
 
           for(size_t qp = 0; qp < quadNop; ++qp)
           {
-            assert( hasBoundaryValue == 
+            assert( hasBoundaryValue ==
                 model_.hasBoundaryValue(it, time, quadInner.localPoint( qp )) );
 
-            if( hasBoundaryValue ) 
-              model_.boundaryValue(it, time, quadInner.localPoint( qp ), 
+            if( hasBoundaryValue )
+              model_.boundaryValue(it, time, quadInner.localPoint( qp ),
                                    uLeft[ qp ], uBndVec_[ qp ] );
             else
               // do something bad to uBndVec as it shouldn't be used
               uBndVec_[ qp ] = std::numeric_limits< double >::quiet_NaN();
           }
 
-          // call diffusion flux 
-          diffFlux_.initializeBoundary( it, inside(), 
-                                        time, quadInner, 
+          // call diffusion flux
+          diffFlux_.initializeBoundary( it, inside(),
+                                        time, quadInner,
                                         uLeft, uBndVec_ );
         }
       }
-    } 
+    }
 
   public:
     /**
@@ -225,13 +225,13 @@ namespace Dune {
      *         To estimate the time step |T|/wave is used
      */
     template <class QuadratureImp,
-              class ArgumentTuple, 
+              class ArgumentTuple,
               class JacobianTuple >          /*@LST0S@*/
     double numericalFlux(const Intersection& it,
                          const double time,
                          const QuadratureImp& faceQuadInner,
                          const QuadratureImp& faceQuadOuter,
-                         const int quadPoint, 
+                         const int quadPoint,
                          const ArgumentTuple& uLeft,
                          const ArgumentTuple& uRight,
                          const JacobianTuple& jacLeft,
@@ -255,25 +255,25 @@ namespace Dune {
       //       STSIPG gives an optimal results for EOC
       //       see R.Hartman,P.Houston JCP2008
       ///////////////////////////////////////////////////////////////
-      
+
       /*****************************
        * Advection                 *
        ****************************/
-      double advectionWaveSpeed = BaseType :: 
+      double advectionWaveSpeed = BaseType ::
         numericalFlux( it, time, faceQuadInner, faceQuadOuter,
-                       quadPoint, uLeft, uRight, jacLeft, jacRight, 
+                       quadPoint, uLeft, uRight, jacLeft, jacRight,
                        gLeft, gRight, gDiffLeft, gDiffRight );
 
       double diffusionWaveSpeed = 0.0;
-      if( diffusion ) 
+      if( diffusion )
       {
-        RangeType dLeft, dRight; 
+        RangeType dLeft, dRight;
 
-        diffusionWaveSpeed = 
-          diffFlux_.numericalFlux(it, *this, 
+        diffusionWaveSpeed =
+          diffFlux_.numericalFlux(it, *this,
                                   time, faceQuadInner, faceQuadOuter, quadPoint,
-                                  uLeft[ uVar ], uRight[ uVar ], 
-                                  jacLeft[ uVar ], jacRight[ uVar ], 
+                                  uLeft[ uVar ], uRight[ uVar ],
+                                  jacLeft[ uVar ], jacRight[ uVar ],
                                   dLeft, dRight,
                                   gDiffLeft, gDiffRight);
 
@@ -293,10 +293,10 @@ namespace Dune {
     /**
      * @brief same as numericalFlux() but for fluxes over boundary interfaces
      */
-    template <class QuadratureImp, 
+    template <class QuadratureImp,
               class ArgumentTuple, class JacobianTuple>
     double boundaryFlux(const Intersection& it,
-                        const double time, 
+                        const double time,
                         const QuadratureImp& faceQuadInner,
                         const int quadPoint,
                         const ArgumentTuple& uLeft,
@@ -307,33 +307,33 @@ namespace Dune {
       /****************************/
       /* Advection                *
        ****************************/
-      double advectionWaveSpeed = BaseType :: 
+      double advectionWaveSpeed = BaseType ::
         boundaryFlux( it, time, faceQuadInner, quadPoint,
                       uLeft, jacLeft, gLeft, gDiffLeft );
-                                  
+
       /****************************/
       /* Diffusion                 *
        ****************************/
       double diffusionWaveSpeed = 0.0;
 
-      const bool hasBoundaryValue = 
+      const bool hasBoundaryValue =
         model_.hasBoundaryValue( it, time, faceQuadInner.localPoint(0) );
 
-      if( diffusion && hasBoundaryValue ) 
+      if( diffusion && hasBoundaryValue )
       {
-        // diffusion boundary flux for Dirichlet boundaries 
+        // diffusion boundary flux for Dirichlet boundaries
         RangeType dLeft ( 0 );
-        diffusionWaveSpeed = 
-          diffFlux_.boundaryFlux(it, 
-                                 *this, 
+        diffusionWaveSpeed =
+          diffFlux_.boundaryFlux(it,
+                                 *this,
                                  time, faceQuadInner, quadPoint,
                                  uLeft[ uVar ], uBnd_, // is set during call of  BaseType::boundaryFlux
-                                 jacLeft[ uVar ], 
+                                 jacLeft[ uVar ],
                                  dLeft,
                                  gDiffLeft);
         gLeft += dLeft;
       }
-      else if ( diffusion ) 
+      else if ( diffusion )
       {
         RangeType diffBndFlux ( 0 );
         model_.diffusionBoundaryFlux( it, time, faceQuadInner.localPoint(quadPoint),
@@ -341,7 +341,7 @@ namespace Dune {
         gLeft += diffBndFlux;
         // gDiffLeft not set here ????
       }
-      else 
+      else
         gDiffLeft = 0;
 
       return advectionWaveSpeed + diffusionWaveSpeed;
@@ -352,10 +352,10 @@ namespace Dune {
      */
     template <class ArgumentTuple, class JacobianTuple >
     void analyticalFlux( const EntityType& en,
-                         const double time, 
+                         const double time,
                          const DomainType& x,
-                         const ArgumentTuple& u, 
-                         const JacobianTuple& jac, 
+                         const ArgumentTuple& u,
+                         const JacobianTuple& jac,
                          JacobianRangeType& f ) const
     {
       /*****************************
@@ -366,24 +366,24 @@ namespace Dune {
       /*****************************
        * Diffusion                 *
        ****************************/
-      if( diffusion && hasFlux() ) 
+      if( diffusion && hasFlux() )
       {
         JacobianRangeType diffmatrix;
         model_.diffusion(en, time, x, u[ uVar ], jac[ uVar ], diffmatrix);
-        // primal case 
+        // primal case
         f -= diffmatrix;
       }
     }
 
-    //! return reference to diffusion flux 
+    //! return reference to diffusion flux
     DiffusionFluxType& diffusionFlux() const { return diffFlux_; }
 
   protected:
-    // store flux here for thread parallel programs 
-    // since the diffusion flux contains a lot of 
-    // temporary class variables  
+    // store flux here for thread parallel programs
+    // since the diffusion flux contains a lot of
+    // temporary class variables
     mutable DiffusionFluxType diffFlux_;
-    // storage for boundary values 
+    // storage for boundary values
     std::vector< RangeType > uBndVec_;
   };                                              /*@LST0E@*/
 
@@ -400,7 +400,7 @@ namespace Dune {
   //--------------------------------
 
   //! \brief forward declaration
-  template <class Model, class NumFlux, 
+  template <class Model, class NumFlux,
             DGDiffusionFluxIdentifier diffFluxId,
             int polOrd, int passUId,
             bool returnAdvectionPart, bool returnDiffsuionPart >
@@ -414,8 +414,8 @@ namespace Dune {
             DGDiffusionFluxIdentifier dFluxId,
             int polOrd, int pUId,
             bool returnAdvectionPart, bool returnDiffusionPart >
-  struct AdvectionDiffusionDGPrimalTraits 
-   : public AdvectionTraits< Model, NumFlux, polOrd, pUId, -1, returnAdvectionPart> 
+  struct AdvectionDiffusionDGPrimalTraits
+   : public AdvectionTraits< Model, NumFlux, polOrd, pUId, -1, returnAdvectionPart>
   {
     static const DGDiffusionFluxIdentifier diffFluxId = dFluxId ;
 
@@ -424,33 +424,33 @@ namespace Dune {
 
     enum { passUId = pUId };
 
-    // type of base class 
-    typedef AdvectionModel< Model, NumFlux, polOrd, 
+    // type of base class
+    typedef AdvectionModel< Model, NumFlux, polOrd,
         passUId, -1, returnAdvectionPart >     AdvectionModelType ;
 
-    // type of my discrete model 
+    // type of my discrete model
     typedef AdvectionDiffusionDGPrimalModel
-      < Model, NumFlux, diffFluxId, polOrd, passUId, 
+      < Model, NumFlux, diffFluxId, polOrd, passUId,
         returnAdvectionPart, returnDiffusionPart >                   DGDiscreteModelType;
   };
 
   // AdvectionDiffusionDGPrimalModel
   //--------------------------------
 
-  template< class Model, 
-            class NumFlux, 
+  template< class Model,
+            class NumFlux,
             DGDiffusionFluxIdentifier diffFluxId,
-            int polOrd, 
+            int polOrd,
             int passUId,
             bool returnAdvectionPart, bool returnDiffusionPart >
   class AdvectionDiffusionDGPrimalModel :
-    public AdvectionDiffusionDGPrimalModelBase< 
-              AdvectionDiffusionDGPrimalTraits < Model, NumFlux, diffFluxId, 
-              polOrd, passUId, returnAdvectionPart, returnDiffusionPart > > 
+    public AdvectionDiffusionDGPrimalModelBase<
+              AdvectionDiffusionDGPrimalTraits < Model, NumFlux, diffFluxId,
+              polOrd, passUId, returnAdvectionPart, returnDiffusionPart > >
   {
   public:
     typedef AdvectionDiffusionDGPrimalTraits
-      < Model, NumFlux, diffFluxId, polOrd, passUId, 
+      < Model, NumFlux, diffFluxId, polOrd, passUId,
         returnAdvectionPart, returnDiffusionPart >   Traits;
 
     typedef AdvectionDiffusionDGPrimalModelBase< Traits > BaseType ;
@@ -475,7 +475,7 @@ namespace Dune {
   //--------------------------------
 
   //! \brief forward declaration
-  template <class Model, class NumFlux, 
+  template <class Model, class NumFlux,
             DGDiffusionFluxIdentifier diffFluxId,
             int polOrd, int passUId,
             bool returnAdvectionPart, bool returnDiffsuionPart >
@@ -489,42 +489,42 @@ namespace Dune {
             DGDiffusionFluxIdentifier diffFluxId,
             int polOrd, int passUId,
             bool returnAdvectionPart, bool returnDiffusionPart >
-  struct AdaptiveAdvectionDiffusionDGPrimalTraits 
-   : public AdvectionDiffusionDGPrimalTraits 
-        < Model, NumFlux, diffFluxId, polOrd, passUId, returnAdvectionPart, returnDiffusionPart > 
+  struct AdaptiveAdvectionDiffusionDGPrimalTraits
+   : public AdvectionDiffusionDGPrimalTraits
+        < Model, NumFlux, diffFluxId, polOrd, passUId, returnAdvectionPart, returnDiffusionPart >
   {
-    // type of base class 
-    typedef AdaptiveAdvectionModel< Model, NumFlux, polOrd, 
+    // type of base class
+    typedef AdaptiveAdvectionModel< Model, NumFlux, polOrd,
                passUId, -1, returnAdvectionPart >     AdvectionModelType ;
 
-    // type of my discrete model 
+    // type of my discrete model
     typedef AdaptiveAdvectionDiffusionDGPrimalModel
-      < Model, NumFlux, diffFluxId, polOrd, passUId, 
+      < Model, NumFlux, diffFluxId, polOrd, passUId,
         returnAdvectionPart, returnDiffusionPart >                   DGDiscreteModelType;
   };
 
   // AdaptiveAdvectionDiffusionDGPrimalModel
   //----------------------------------------
 
-  template< class Model, 
-            class NumFlux, 
+  template< class Model,
+            class NumFlux,
             DGDiffusionFluxIdentifier diffFluxId,
-            int polOrd, 
+            int polOrd,
             int passUId,
             bool returnAdvectionPart, bool returnDiffusionPart >
   class AdaptiveAdvectionDiffusionDGPrimalModel :
-    public AdvectionDiffusionDGPrimalModelBase< 
-       AdaptiveAdvectionDiffusionDGPrimalTraits< Model, NumFlux, diffFluxId, 
+    public AdvectionDiffusionDGPrimalModelBase<
+       AdaptiveAdvectionDiffusionDGPrimalTraits< Model, NumFlux, diffFluxId,
        polOrd, passUId, returnAdvectionPart, returnDiffusionPart > >
   {
   public:
     typedef AdaptiveAdvectionDiffusionDGPrimalTraits
-      < Model, NumFlux, diffFluxId, polOrd, passUId, 
+      < Model, NumFlux, diffFluxId, polOrd, passUId,
           returnAdvectionPart, returnDiffusionPart >   Traits;
 
     typedef AdvectionDiffusionDGPrimalModelBase< Traits >  BaseType;
 
-    using BaseType :: uVar; 
+    using BaseType :: uVar;
     using BaseType :: inside;
     using BaseType :: outside;
     using BaseType :: model_;
@@ -534,8 +534,8 @@ namespace Dune {
     enum { dimDomain = Traits :: dimDomain };
     enum { dimRange  = Traits :: dimRange };
 
-    enum { advection = returnAdvectionPart }; // true if advection is enabled 
-    enum { diffusion = returnDiffusionPart }; // this should be disabled for LDG 
+    enum { advection = returnAdvectionPart }; // true if advection is enabled
+    enum { diffusion = returnDiffusionPart }; // this should be disabled for LDG
 
     typedef typename BaseType :: DomainType      DomainType;
     typedef typename BaseType :: FaceDomainType  FaceDomainType;
@@ -547,7 +547,7 @@ namespace Dune {
 
     typedef typename Traits :: DiscreteFunctionSpaceType DiscreteFunctionSpaceType;
 
-    // type of diffusion flux implementation 
+    // type of diffusion flux implementation
     typedef typename BaseType :: DiffusionFluxType  DiffusionFluxType;
 
     enum { evaluateJacobian = DiffusionFluxType :: evaluateJacobian  }; // we need to evaluate jacobians here
@@ -577,13 +577,13 @@ namespace Dune {
      *         To estimate the time step |T|/wave is used
      */
     template <class QuadratureImp,
-              class ArgumentTuple, 
+              class ArgumentTuple,
               class JacobianTuple >          /*@LST0S@*/
     double numericalFlux(const Intersection& it,
                          const double time,
                          const QuadratureImp& faceQuadInner,
                          const QuadratureImp& faceQuadOuter,
-                         const int quadPoint, 
+                         const int quadPoint,
                          const ArgumentTuple& uLeft,
                          const ArgumentTuple& uRight,
                          const JacobianTuple& jacLeft,
@@ -593,43 +593,43 @@ namespace Dune {
                          JacobianRangeType& gDiffLeft,
                          JacobianRangeType& gDiffRight ) const
     {
-      // do not take into account part of the domain which is not 
+      // do not take into account part of the domain which is not
       // of computation significance (i.e. a damping layer)
       if( ! model_.allowsRefinement( it, time, faceQuadInner.localPoint( quadPoint ) ) )
         return 0.;
 
-      // call numerical flux of base type 
+      // call numerical flux of base type
       const double ldt = BaseType :: numericalFlux( it, time, faceQuadInner, faceQuadOuter, quadPoint,
-                                              uLeft, uRight, jacLeft, jacRight, 
+                                              uLeft, uRight, jacLeft, jacRight,
                                               gLeft, gRight, gDiffLeft, gDiffRight );
 
-      if( diffusion && adaptation_ ) 
+      if( diffusion && adaptation_ )
       {
         JacobianRangeType diffmatrix;
         RangeType error;
         DomainType normal = it.integrationOuterNormal( faceQuadInner.localPoint( quadPoint ) );
 
         // G(u-)grad(u-) for multiplication with phi
-        // call on inside 
-        model_.diffusion( inside(), time, faceQuadInner.point( quadPoint ), 
+        // call on inside
+        model_.diffusion( inside(), time, faceQuadInner.point( quadPoint ),
                           uLeft[uVar], jacLeft[uVar], diffmatrix );
 
         diffmatrix.mv( normal, error );
 
         // G(u+)grad(u+) for multiplication with phi
-        // call on outside 
-        model_.diffusion( outside(), time, faceQuadOuter.point( quadPoint ), 
+        // call on outside
+        model_.diffusion( outside(), time, faceQuadOuter.point( quadPoint ),
                           uRight[uVar], jacRight[uVar], diffmatrix );
 
         diffmatrix.mmv( normal, error );
 
         error *= 0.5;
 
-        // calculate grid width 
+        // calculate grid width
         double weight = weight_ *
           (0.5 * ( this->enVolume() + this->nbVolume() ) / normal.two_norm() );
 
-        // add error to indicator 
+        // add error to indicator
         enIndicator_.add( error, weight );
         nbIndicator_.addChecked( error, weight );
       }
@@ -641,10 +641,10 @@ namespace Dune {
     /**
      * @brief same as numericalFlux() but for fluxes over boundary interfaces
      */
-    template <class QuadratureImp, 
+    template <class QuadratureImp,
               class ArgumentTuple, class JacobianTuple>
     double boundaryFlux(const Intersection& it,
-                        const double time, 
+                        const double time,
                         const QuadratureImp& faceQuadInner,
                         const int quadPoint,
                         const ArgumentTuple& uLeft,
@@ -652,19 +652,19 @@ namespace Dune {
                         RangeType& gLeft,
                         JacobianRangeType& gDiffLeft ) const   /*@LST0E@*/
     {
-      const double ldt = BaseType :: boundaryFlux( it, time, faceQuadInner, quadPoint, 
+      const double ldt = BaseType :: boundaryFlux( it, time, faceQuadInner, quadPoint,
                   uLeft, jacLeft, gLeft, gDiffLeft );
 
-      if( diffusion && adaptation_ ) 
+      if( diffusion && adaptation_ )
       {
-        // implement error indicator here 
+        // implement error indicator here
       }
 
       return ldt ;
     }
 
   protected:
-    // defined in AdvectionModel 
+    // defined in AdvectionModel
     using BaseType :: adaptation_ ;
     using BaseType :: enIndicator_;
     using BaseType :: nbIndicator_;

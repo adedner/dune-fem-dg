@@ -34,7 +34,7 @@ namespace Dune
 
     public:
       typedef typename ShapeFunctionSet::FunctionSpaceType FunctionSpaceType;
-      
+
       typedef typename ShapeFunctionSet::DomainType DomainType;
       typedef typename ShapeFunctionSet::RangeType RangeType;
       typedef typename ShapeFunctionSet::JacobianRangeType JacobianRangeType;
@@ -82,8 +82,8 @@ namespace Dune
         const bool cacheable = Conversion< Quadrature, CachingInterface >::exists;
         evaluateEach( x.quadrature(), x.point(), functor, integral_constant< bool, cacheable >() );
       }
-     
-      template< class Point, class Functor > 
+
+      template< class Point, class Functor >
       void jacobianEach ( const Point &x, Functor functor ) const
       {
         return shapeFunctionSet_.jacobianEach( x, functor );
@@ -96,24 +96,24 @@ namespace Dune
         jacobianEach( x.quadrature(), x.point(), functor, integral_constant< bool, cacheable >() );
       }
 
-      template< class Point, class Functor > 
+      template< class Point, class Functor >
       void hessianEach ( const Point &x, Functor functor ) const
       {
         return shapeFunctionSet_.hessianEach( x, functor );
       }
 
       GeometryType type () const DUNE_DEPRECATED {  return type_; }
-      
+
       GeometryType geometryType () const DUNE_DEPRECATED {  return type(); }
 
-      template< class Quad, bool cacheable > 
-      struct ReturnCache 
+      template< class Quad, bool cacheable >
+      struct ReturnCache
       {
-        static unsigned int maxCachingPoint( const Quad& quad ) 
+        static unsigned int maxCachingPoint( const Quad& quad )
         {
-          unsigned int maxCp = 0; 
-          const unsigned int nop = quad.nop(); 
-          for( unsigned int i=0; i<nop; ++i ) 
+          unsigned int maxCp = 0;
+          const unsigned int nop = quad.nop();
+          for( unsigned int i=0; i<nop; ++i )
           {
             const unsigned int cp = quad.cachingPoint( i );
             maxCp = std::max( cp, maxCp );
@@ -121,24 +121,24 @@ namespace Dune
           return maxCp;
         }
 
-        static const RangeVectorType& 
-        ranges( const ThisType& shapeFunctionSet, 
-                const Quad& quad,     
+        static const RangeVectorType&
+        ranges( const ThisType& shapeFunctionSet,
+                const Quad& quad,
                 const ValueCacheVectorType&,
-                RangeVectorType& storage ) 
+                RangeVectorType& storage )
         {
-          // evaluate all basis functions and multiply with dof value 
-          const unsigned int nop  = quad.nop(); 
+          // evaluate all basis functions and multiply with dof value
+          const unsigned int nop  = quad.nop();
           const unsigned int size = shapeFunctionSet.size();
 
-          // check caching points 
+          // check caching points
           assert( maxCachingPoint( quad ) < nop );
 
-          // make sure cache has the appropriate size 
+          // make sure cache has the appropriate size
           storage.resize( nop );
 
           typedef MutableArray<RangeType>         RangeVector;
-          for( unsigned int qp = 0 ; qp < nop; ++ qp ) 
+          for( unsigned int qp = 0 ; qp < nop; ++ qp )
           {
             const int cacheQp = quad.cachingPoint( qp );
             storage[ cacheQp ].resize( size );
@@ -149,23 +149,23 @@ namespace Dune
         }
 
         static const JacobianRangeVectorType&
-        jacobians( const ThisType& shapeFunctionSet, 
+        jacobians( const ThisType& shapeFunctionSet,
                    const Quad& quad,
                    const JacobianCacheVectorType&,
-                   JacobianRangeVectorType& storage ) 
+                   JacobianRangeVectorType& storage )
         {
-          // evaluate all basis functions and multiply with dof value 
-          const unsigned int nop  = quad.nop(); 
+          // evaluate all basis functions and multiply with dof value
+          const unsigned int nop  = quad.nop();
           const unsigned int size = shapeFunctionSet.size();
 
-          // check caching points 
+          // check caching points
           assert( maxCachingPoint( quad ) < nop );
 
-          // make sure cache has the appropriate size 
+          // make sure cache has the appropriate size
           storage.resize( nop );
 
           typedef MutableArray<JacobianRangeType> JacobianRangeVector;
-          for( unsigned int qp = 0 ; qp < nop; ++ qp ) 
+          for( unsigned int qp = 0 ; qp < nop; ++ qp )
           {
             const int cacheQp = quad.cachingPoint( qp );
             storage[ cacheQp ].resize( size );
@@ -176,39 +176,39 @@ namespace Dune
         }
       };
 
-      template< class Quad > 
-      struct ReturnCache< Quad, true >  
+      template< class Quad >
+      struct ReturnCache< Quad, true >
       {
-        static const RangeVectorType& 
-        ranges( const ThisType& shapeFunctionSet, 
+        static const RangeVectorType&
+        ranges( const ThisType& shapeFunctionSet,
                 const Quad& quad,
                 const ValueCacheVectorType& cache,
-                const RangeVectorType& ) 
+                const RangeVectorType& )
         {
           return cache[ quad.id() ];
         }
 
-        static const JacobianRangeVectorType&  
-        jacobians( const ThisType& shapeFunctionSet, 
+        static const JacobianRangeVectorType&
+        jacobians( const ThisType& shapeFunctionSet,
                    const Quad& quad,
                    const JacobianCacheVectorType& cache,
-                   const JacobianRangeVectorType& ) 
+                   const JacobianRangeVectorType& )
         {
           return cache[ quad.id() ];
         }
       };
 
-      template < class QuadratureType > 
-      const RangeVectorType& rangeCache( const QuadratureType& quadrature ) const 
+      template < class QuadratureType >
+      const RangeVectorType& rangeCache( const QuadratureType& quadrature ) const
       {
-        return ReturnCache< QuadratureType, Conversion< QuadratureType, CachingInterface >::exists > :: 
+        return ReturnCache< QuadratureType, Conversion< QuadratureType, CachingInterface >::exists > ::
           ranges( *this, quadrature, valueCaches_, *localRangeCache_ );
       }
 
-      template < class QuadratureType > 
-      const JacobianRangeVectorType& jacobianCache( const QuadratureType& quadrature ) const 
+      template < class QuadratureType >
+      const JacobianRangeVectorType& jacobianCache( const QuadratureType& quadrature ) const
       {
-        return ReturnCache< QuadratureType, Conversion< QuadratureType, CachingInterface >::exists > :: 
+        return ReturnCache< QuadratureType, Conversion< QuadratureType, CachingInterface >::exists > ::
           jacobians( *this, quadrature, jacobianCaches_, *localJacobianCache_ );
       }
 
@@ -299,7 +299,7 @@ namespace Dune
     inline void CachingShapeFunctionSet< ShapeFunctionSet >
       ::cacheQuadrature( std::size_t id, std::size_t codim, std::size_t size )
     {
-      if( id >= valueCaches_.size() ) 
+      if( id >= valueCaches_.size() )
       {
         valueCaches_.resize( id+10 );
         jacobianCaches_.resize( id+10 );

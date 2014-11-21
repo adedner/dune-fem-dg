@@ -40,15 +40,16 @@
 template <class GridType> 
 struct ProblemCreator
 {
+  static const int dimRange = 1 ;
   typedef Dune :: ProblemInterface<
-             Dune::Fem::FunctionSpace< double, double, GridType::dimension, DIMRANGE> >  ProblemType;
+             Dune::Fem::FunctionSpace< double, double, GridType::dimension, dimRange> >  ProblemType;
 
   template <class GridPart>
   struct Traits
   {
-    typedef ProblemType  InitialDataType;
-    typedef PoissonModel< GridPart, InitialDataType > ModelType;
-    typedef Dune::NoFlux< ModelType > FluxType;
+    typedef ProblemType                                InitialDataType;
+    typedef PoissonModel< GridPart, InitialDataType >  ModelType;
+    typedef Dune::NoFlux< ModelType >                  FluxType;
     // choice of diffusion flux (see diffusionflux.hh for methods)
     static const Dune :: DGDiffusionFluxIdentifier PrimalDiffusionFluxId 
       = Dune :: method_general ;
@@ -195,7 +196,7 @@ struct ProblemCreator
   {
     // choice of benchmark problem 
     int probNr = Dune::Fem::Parameter::getValue< int > ( "femhowto.problem" );
-    return new Dune :: PoissonProblem< GridType > ( probNr );
+    return new Dune :: PoissonProblem< GridType,dimRange > ( probNr );
   }
 
   // type of stepper to be used

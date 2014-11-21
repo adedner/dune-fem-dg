@@ -3,7 +3,7 @@
 
 #include <string>
 
-namespace Dune 
+namespace Dune
 {
 
 template <class ModelType>

@@ -8,13 +8,13 @@
 
 namespace Dune {
 
-  class Diagnostics : public Fem::AutoPersistentObject 
+  class Diagnostics : public Fem::AutoPersistentObject
   {
     typedef Fem :: MPIManager :: CollectiveCommunication CommunicatorType;
-    const CommunicatorType& comm_; 
+    const CommunicatorType& comm_;
     const std::string runFileName_;
-    const int writeDiagnostics_; // 0 don't, 1 only speedup file, 2 write all diagnosticss 
-                             // 3 only write 0, others at end, 4 all files at end 
+    const int writeDiagnostics_; // 0 don't, 1 only speedup file, 2 write all diagnosticss
+                             // 3 only write 0, others at end, 4 all files at end
     std::ostream* diagnostics_;
 
     std::vector< double > times_ ;
@@ -23,17 +23,17 @@ namespace Dune {
     double maxDofs_;
     size_t timesteps_;
 
-    static const size_t width = 12; 
-    
+    static const size_t width = 12;
+
     // write in milli seconds
     inline size_t inMS(const double t) const
     {
       return (size_t (t * 1e3));
     }
 
-    void writeHeader(std::ostream& diagnostics) 
+    void writeHeader(std::ostream& diagnostics)
     {
-      // write header 
+      // write header
       diagnostics << "# Time          ";
       diagnostics << "   dt         ";
       diagnostics << "  Elements   ";
@@ -48,33 +48,33 @@ namespace Dune {
       diagnostics.flush();
     }
 
-    std::string runFileName(const int rank) const 
+    std::string runFileName(const int rank) const
     {
       std::stringstream diagnostics;
-      diagnostics << Fem :: Parameter :: commonOutputPath() << "/run." << rank; 
+      diagnostics << Fem :: Parameter :: commonOutputPath() << "/run." << rank;
       return diagnostics.str();
     }
 
-    std::ostream* createDiagnostics( const int rank, 
-                                     const int writeId, 
-                                     const bool newStart ) 
+    std::ostream* createDiagnostics( const int rank,
+                                     const int writeId,
+                                     const bool newStart )
     {
       // in case of no writing or only speedup table don't create diagnostics
       if( writeId <= 1 ) return 0;
 
       bool writeAtOnce = ( writeId > 2 );
-      // when writeId == 2 then only for rank 0 write file every time step 
+      // when writeId == 2 then only for rank 0 write file every time step
       // this is for monitoring issues
       if( rank == 0 && writeId == 3 ) writeAtOnce = false ;
 
-      if( writeAtOnce ) 
+      if( writeAtOnce )
       {
         return new std::stringstream();
       }
-      else 
+      else
       {
         std::ofstream* file = new std::ofstream( runFileName_.c_str(), ( newStart ) ? std::ios::out : std::ios::app );
-        if( ! file ) 
+        if( ! file )
         {
           std::cerr << "Couldn't open run file <"<<runFileName_<<">, ciao!" << std::endl;
           abort();
@@ -82,26 +82,26 @@ namespace Dune {
         return file;
       }
     }
-  public:  
+  public:
     explicit Diagnostics( const bool newStart )
       : comm_( Fem :: MPIManager :: comm() )
       , runFileName_( runFileName( comm_.rank() ) )
       , writeDiagnostics_( Fem :: Parameter :: getValue< int > ("fem.parallel.diagnostics", 0 ) )
-      , diagnostics_( createDiagnostics( comm_.rank(), writeDiagnostics_, newStart ) ) 
-      , times_() 
-      , timesPerElem_() 
+      , diagnostics_( createDiagnostics( comm_.rank(), writeDiagnostics_, newStart ) )
+      , times_()
+      , timesPerElem_()
       , elements_( 0.0 )
       , maxDofs_( 0.0 )
       , timesteps_( 0 )
     {
-      if( diagnostics_ && newStart ) 
+      if( diagnostics_ && newStart )
       {
         writeHeader( *diagnostics_ );
       }
     }
 
-    //! destructor 
-    ~Diagnostics() 
+    //! destructor
+    ~Diagnostics()
     {
       delete diagnostics_;
     }
@@ -109,16 +109,16 @@ namespace Dune {
 
   protected:
     template <class T>
-    void writeVectors(std::ostream& file, 
-                      const std::string& descr, 
+    void writeVectors(std::ostream& file,
+                      const std::string& descr,
                       const std::vector< T >& sumTimes,
                       const std::vector< T >& maxTimes,
                       const std::vector< T >& minTimes,
-                      const std::string& sumDescr, 
-                      const std::string& maxDescr ) const 
+                      const std::string& sumDescr,
+                      const std::string& maxDescr ) const
     {
       const size_t size = sumTimes.size();
-      file.precision(6); 
+      file.precision(6);
       file << std::scientific ;
       file << "########################################################################################" << std::endl ;
       file << "# Sum " << descr << sumDescr << std::endl;
@@ -141,10 +141,10 @@ namespace Dune {
       file << std::endl;
     }
 
-  public:  
+  public:
     void flush() const
     {
-      // if write is > 0 then create speedup file 
+      // if write is > 0 then create speedup file
       if( writeDiagnostics_ )
       {
         const size_t size = times_.size();
@@ -157,19 +157,19 @@ namespace Dune {
         maxTimes.reserve( 2*size+1 );
         minTimes.reserve( 2*size+1 );
 
-        for( size_t i=0; i<size; ++ i ) 
+        for( size_t i=0; i<size; ++ i )
         {
           sumTimes.push_back( timesPerElem_[i] );
           maxTimes.push_back( timesPerElem_[i] );
           minTimes.push_back( timesPerElem_[i] );
         }
 
-        // add number of elements 
+        // add number of elements
         sumTimes.push_back( elements_ );
         maxTimes.push_back( elements_ );
         minTimes.push_back( elements_ );
 
-        // sum, max, and min for all procs 
+        // sum, max, and min for all procs
         comm_.sum( &sumTimes[ 0 ], sumTimes.size() );
         comm_.min( &minTimes[ 0 ], minTimes.size() );
 
@@ -179,7 +179,7 @@ namespace Dune {
         const double maxDofs = maxTimes.back();
         maxTimes.pop_back();
 
-        if( comm_.rank() == 0 && timesteps_ > 0 ) 
+        if( comm_.rank() == 0 && timesteps_ > 0 )
         {
           const int maxThreads = Fem :: ThreadManager :: maxThreads ();
           const double timesteps = double(timesteps_);
@@ -204,14 +204,14 @@ namespace Dune {
           minTimes.resize( size );
 
           std::stringstream diagnostics;
-          diagnostics << Fem :: Parameter :: commonOutputPath() << "/speedup." << comm_.size(); 
+          diagnostics << Fem :: Parameter :: commonOutputPath() << "/speedup." << comm_.size();
           std::ofstream file ( diagnostics.str().c_str() );
-          if( file ) 
+          if( file )
           {
             const double tasks = comm_.size();// * maxThreads ;
             const double averageElements = sumElements / tasks ;
 
-            // get information about communication type 
+            // get information about communication type
             const bool nonBlocking = NonBlockingCommParameter :: nonBlockingCommunication() ;
 
             file << "# Procs = " << comm_.size() << " * " << maxThreads << " (MPI * threads)" << std::endl ;
@@ -236,13 +236,13 @@ namespace Dune {
             file << std::setw(width+1) << "   LB ";
             file << std::setw(width+5) << "TIMESTEP" << std::endl;
 
-            // multiply sumTimes with maxThhreads since the sum would be to small otherwise 
+            // multiply sumTimes with maxThhreads since the sum would be to small otherwise
             for(size_t i=0; i<size; ++i)
             {
               sumTimes[ i ] *= maxThreads ;
               sumTimesPerElem[ i ] *= maxThreads;
             }
-            { 
+            {
               std::string sumDescr("(opt: stays constant over #core increase)");
               std::string maxDescr("(opt: inversely proportional to #core increase)");
               {
@@ -268,7 +268,7 @@ namespace Dune {
               writeVectors( file, descr, sumTimesPerElem, maxTimesPerElem, minTimesPerElem, sumDescrPerElem, maxDescrPerElem );
             }
 
-            // devide per elem times by timesteps 
+            // devide per elem times by timesteps
             for(size_t i=0; i<size; ++i)
             {
               sumTimesPerElem[ i ] /= timesteps;
@@ -281,16 +281,16 @@ namespace Dune {
               writeVectors( file, descr, sumTimesPerElem, maxTimesPerElem, minTimesPerElem, sumDescrPerElem, maxDescrPerElem );
             }
           }
-        } // end speedup file 
+        } // end speedup file
 
-        if( diagnostics_ ) 
+        if( diagnostics_ )
         {
-          std::stringstream* str = dynamic_cast< std::stringstream* > (diagnostics_); 
-          if( str ) 
+          std::stringstream* str = dynamic_cast< std::stringstream* > (diagnostics_);
+          if( str )
           {
             std::ofstream file( runFileName_.c_str() );
 
-            if( ! file ) 
+            if( ! file )
             {
               std::cerr << "Couldn't open run file <"<<runFileName_<<">, ciao!" << std::endl;
               abort();
@@ -304,9 +304,9 @@ namespace Dune {
       }
     }
 
-    //! write timestep data 
-    inline void write( const double t, 
-                       const double ldt, 
+    //! write timestep data
+    inline void write( const double t,
+                       const double ldt,
                        const size_t nElements,
                        const size_t maxDofs,
                        const double dgOperatorTime,
@@ -317,7 +317,7 @@ namespace Dune {
                        const std::vector<double>& limitSteps = std::vector<double>() )
     {
       std::vector< double > times( 5 + limitSteps.size(), 0.0 );
-      times[ 0 ] = dgOperatorTime; 
+      times[ 0 ] = dgOperatorTime;
       times[ 1 ] = odeSolve;
       times[ 2 ] = adaptTime;
       times[ 3 ] = lbTime;
@@ -330,21 +330,21 @@ namespace Dune {
       write( t, ldt, nElements, times );
     }
 
-    //! clone of write method 
-    inline void write( const double t, 
-                       const double ldt, 
+    //! clone of write method
+    inline void write( const double t,
+                       const double ldt,
                        const size_t nElements,
                        const std::vector<double>& times )
     {
-      if( writeDiagnostics_ ) 
+      if( writeDiagnostics_ )
       {
         const size_t size = times.size() ;
         const size_t oldsize = times_.size();
         if( oldsize < size  )
         {
-          times_.resize( size ); 
+          times_.resize( size );
           timesPerElem_.resize( size );
-          for( size_t i=oldsize; i<size; ++i) 
+          for( size_t i=oldsize; i<size; ++i)
           {
             times_[ i ] = 0;
             timesPerElem_[ i ] = 0;
@@ -352,22 +352,22 @@ namespace Dune {
         }
 
         elements_ += double( nElements );
-        for(size_t i=0; i<size; ++i ) 
+        for(size_t i=0; i<size; ++i )
         {
-          times_[ i ]        += times[ i ] ; 
+          times_[ i ]        += times[ i ] ;
           timesPerElem_[ i ] += times[ i ] / double( nElements );
         }
 
         ++timesteps_ ;
 
-        if( diagnostics_ ) 
+        if( diagnostics_ )
         {
           std::ostream& diagnostics = (*diagnostics_);
           const int space = 12;
           diagnostics << std::scientific << t  << "  ";
           diagnostics << std::setw(space) << ldt << "  ";
           diagnostics << std::setw(space) << nElements << " ";
-          for(size_t i=0; i<size; ++i) 
+          for(size_t i=0; i<size; ++i)
             diagnostics << std::setw(space) << inMS( times[ i ] ) << " ";
           diagnostics << std::endl;
 
@@ -376,11 +376,11 @@ namespace Dune {
       }
     }
 
-    //! backup routine 
-    void backup() const 
+    //! backup routine
+    void backup() const
     {
-      // flush run file 
-      flush(); 
+      // flush run file
+      flush();
 
       typedef Fem :: PersistenceManager :: BackupStreamType  BackupStreamType ;
       BackupStreamType& stream = Fem :: PersistenceManager :: backupStream();
@@ -390,18 +390,18 @@ namespace Dune {
       stream << timesteps_ ;
       const size_t tSize = times_.size();
       stream << tSize ;
-      for( size_t i=0; i<tSize; ++i ) 
+      for( size_t i=0; i<tSize; ++i )
       {
         stream << times_[ i ];
       }
-      for( size_t i=0; i<tSize; ++i ) 
+      for( size_t i=0; i<tSize; ++i )
       {
         stream << timesPerElem_[ i ];
       }
     }
 
-    //! restore routine 
-    void restore () 
+    //! restore routine
+    void restore ()
     {
       typedef Fem :: PersistenceManager :: RestoreStreamType  RestoreStreamType ;
       RestoreStreamType& stream = Fem :: PersistenceManager :: restoreStream();
@@ -414,17 +414,17 @@ namespace Dune {
       stream >> tSize ;
 
       times_.resize( tSize );
-      for( size_t i=0; i<tSize; ++i ) 
+      for( size_t i=0; i<tSize; ++i )
       {
         stream >> times_[ i ];
       }
       timesPerElem_.resize( tSize );
-      for( size_t i=0; i<tSize; ++i ) 
+      for( size_t i=0; i<tSize; ++i )
       {
         stream >> timesPerElem_[ i ];
       }
     }
   }; // end class diagnostics
 
-} // end namespace Dune 
+} // end namespace Dune
 #endif

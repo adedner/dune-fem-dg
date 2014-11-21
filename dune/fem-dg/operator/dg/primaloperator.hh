@@ -16,19 +16,19 @@
 #include <dune/fem-dg/operator/dg/operatorbase.hh>
 #include <dune/fem-dg/pass/dgpass.hh>
 
-namespace Dune {  
+namespace Dune {
 
   // CDGAdvectionDiffusionTraits
   //----------------------------
 
-  template <class Mod, class NumFlux, 
+  template <class Mod, class NumFlux,
             DGDiffusionFluxIdentifier diffFluxId,
-            int pOrd, 
+            int pOrd,
             bool advection, bool diffusion >
-  struct CDGAdvectionDiffusionTraits 
+  struct CDGAdvectionDiffusionTraits
   {
     enum { u, cdgpass };
-    
+
     typedef Mod  Model;
     enum { dimRange = Model::dimRange };
     typedef NumFlux NumFluxType;
@@ -39,8 +39,8 @@ namespace Dune {
 
   template< class Model, class NumFlux,
             DGDiffusionFluxIdentifier diffFluxId, int polOrd >
-  struct DGAdvectionDiffusionOperator : public 
-    DGAdvectionDiffusionOperatorBase< 
+  struct DGAdvectionDiffusionOperator : public
+    DGAdvectionDiffusionOperatorBase<
        CDGAdvectionDiffusionTraits<Model, NumFlux, diffFluxId, polOrd, true, true> >
   {
     typedef CDGAdvectionDiffusionTraits<Model, NumFlux, diffFluxId, polOrd, true, true> Traits;
@@ -48,7 +48,7 @@ namespace Dune {
     typedef typename BaseType :: GridPartType  GridPartType;
     typedef typename BaseType :: ProblemType   ProblemType;
 
-    DGAdvectionDiffusionOperator( GridPartType& gridPart, ProblemType& problem ) 
+    DGAdvectionDiffusionOperator( GridPartType& gridPart, ProblemType& problem )
       : BaseType( gridPart, problem )
     {}
 
@@ -70,14 +70,14 @@ namespace Dune {
     using BaseType::numflux_;
   };
 
-  
+
   // DGAdvectionOperator
   //--------------------
 
   template< class Model, class NumFlux,
             DGDiffusionFluxIdentifier diffFluxId, int polOrd >
-  struct DGAdvectionOperator : public 
-    DGAdvectionDiffusionOperatorBase< 
+  struct DGAdvectionOperator : public
+    DGAdvectionDiffusionOperatorBase<
        CDGAdvectionDiffusionTraits<Model, NumFlux, diffFluxId, polOrd, true, false> >
   {
     typedef CDGAdvectionDiffusionTraits<Model, NumFlux, diffFluxId, polOrd, true, false> Traits;
@@ -111,10 +111,10 @@ namespace Dune {
   // DGDiffusionOperator
   //--------------------
 
-  template< class Model, class NumFlux, 
+  template< class Model, class NumFlux,
             DGDiffusionFluxIdentifier diffFluxId, int polOrd >
-  class DGDiffusionOperator : public 
-    DGAdvectionDiffusionOperatorBase< 
+  class DGDiffusionOperator : public
+    DGAdvectionDiffusionOperatorBase<
         CDGAdvectionDiffusionTraits<Model, NumFlux, diffFluxId, polOrd, false, true> >
   {
   public:
@@ -126,8 +126,8 @@ namespace Dune {
   private:
     using BaseType::discreteModel_;
 
-  public:  
-    DGDiffusionOperator( GridPartType& gridPart, ProblemType& problem ) 
+  public:
+    DGDiffusionOperator( GridPartType& gridPart, ProblemType& problem )
       : BaseType( gridPart, problem )
     {}
 
@@ -152,14 +152,14 @@ namespace Dune {
   ////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////
 
-  template <class Mod, class NumFlux, 
+  template <class Mod, class NumFlux,
             DGDiffusionFluxIdentifier diffFluxId,
-            int pOrd, 
+            int pOrd,
             bool advection, bool diffusion >
-  struct CDGAdaptationIndicatorTraits 
+  struct CDGAdaptationIndicatorTraits
   {
     enum { u, cdgpass };
-    
+
     typedef Mod  Model;
     enum { dimRange = Model::dimRange };
     typedef NumFlux NumFluxType;
@@ -168,14 +168,14 @@ namespace Dune {
       < Model, NumFluxType, diffFluxId, polOrd, u, advection, diffusion> DiscreteModelType;
   };
 
-  // DGAdaptationIndicatorOperator 
+  // DGAdaptationIndicatorOperator
   //------------------------------
 
   template< class Model, class NumFlux,
             DGDiffusionFluxIdentifier diffFluxId, int polOrd,
             bool advection, bool diffusion = false >
-  struct DGAdaptationIndicatorOperator : public 
-    DGAdvectionDiffusionOperatorBase< 
+  struct DGAdaptationIndicatorOperator : public
+    DGAdvectionDiffusionOperatorBase<
        CDGAdaptationIndicatorTraits< Model, NumFlux, diffFluxId, polOrd, advection, diffusion > >
   {
     typedef CDGAdaptationIndicatorTraits< Model, NumFlux, diffFluxId, polOrd, advection, diffusion > Traits ;
@@ -183,7 +183,7 @@ namespace Dune {
     typedef typename BaseType :: GridPartType  GridPartType;
     typedef typename BaseType :: ProblemType   ProblemType ;
 
-    DGAdaptationIndicatorOperator( GridPartType& gridPart, ProblemType& problem ) 
+    DGAdaptationIndicatorOperator( GridPartType& gridPart, ProblemType& problem )
       : BaseType( gridPart, problem )
     {}
 
@@ -224,11 +224,11 @@ namespace Dune {
    *  \tparam polOrd Polynomial degree
    *  \tparam advection Advection
    */
-  template< class Model, class NumFlux, 
-            DGDiffusionFluxIdentifier diffFluxId, // diffusion flux identifier 
-            int pOrd, bool advection = true, bool diffusion = false> 
+  template< class Model, class NumFlux,
+            DGDiffusionFluxIdentifier diffFluxId, // diffusion flux identifier
+            int pOrd, bool advection = true, bool diffusion = false>
   class DGLimitedAdvectionOperator :
-    public Fem::SpaceOperatorInterface 
+    public Fem::SpaceOperatorInterface
       < typename PassTraits< Model, Model::Traits::dimRange, (pOrd < 0 ) ? 0 : pOrd> :: DestinationType >
   {
     enum PassIdType { u, limitPassId, advectPassId };
@@ -244,7 +244,7 @@ namespace Dune {
 
     // The model of the advection pass (advectPassId)
     typedef AdvectionDiffusionDGPrimalModel
-      < Model, NumFluxType, diffFluxId, polOrd, limitPassId, advection, diffusion > 
+      < Model, NumFluxType, diffFluxId, polOrd, limitPassId, advection, diffusion >
                                                                         DiscreteModel1Type;
 
     typedef typename DiscreteModel1Type :: DiffusionFluxType            DiffusionFluxType;
@@ -278,7 +278,7 @@ namespace Dune {
     typedef ThreadPass     < InnerPass1Type, Fem::ThreadIterator< GridPartType >, true > Pass1Type;
     typedef LocalCDGPass   < DiscreteModel1Type, Pass1Type, advectPassId > InnerPass2Type;
     typedef ThreadPass     < InnerPass2Type, Fem::DomainDecomposedIteratorStorage<GridPartType >, true > Pass2Type;
-#else 
+#else
     typedef Fem::StartPass < DiscreteFunctionType, u >                          Pass0Type;
     typedef LimitDGPass    < LimiterDiscreteModelType, Pass0Type, limitPassId > Pass1Type;
     typedef LocalCDGPass   < DiscreteModel1Type, Pass1Type, advectPassId >      Pass2Type;
@@ -308,11 +308,11 @@ namespace Dune {
                                DestinationType& dest)
       {
       }
-    }; 
+    };
 
-    void createIndicator() 
+    void createIndicator()
     {
-      // if indicator output is enabled create objects 
+      // if indicator output is enabled create objects
       if( Fem::Parameter::getValue<bool> ("femdg.limiter.indicatoroutput", false ) )
       {
         fvSpc_     = new IndicatorSpaceType( gridPart_ );
@@ -322,14 +322,14 @@ namespace Dune {
     }
 
   public:
-    DGLimitedAdvectionOperator( GridPartType& gridPart, ProblemType& problem ) 
+    DGLimitedAdvectionOperator( GridPartType& gridPart, ProblemType& problem )
       : model_( problem )
       , numflux_( model_ )
       , gridPart_( gridPart )
       , space_( gridPart_ )
       , limiterSpace_( gridPart_ )
       , uTmp_( 0 )
-      , fvSpc_( 0 ) 
+      , fvSpc_( 0 )
       , indicator_( 0 )
       , diffFlux_( gridPart_, model_ )
       , problem1_( model_, numflux_, diffFlux_ )
@@ -338,21 +338,21 @@ namespace Dune {
       , pass1_( limitProblem_, pass0_, limiterSpace_ )
       , pass2_( problem1_, pass1_, space_ )
     {
-      // create indicator if enabled 
+      // create indicator if enabled
       createIndicator();
     }
 
-    ~DGLimitedAdvectionOperator() 
-    { 
+    ~DGLimitedAdvectionOperator()
+    {
       delete uTmp_; uTmp_ = 0;
-      if( indicator_ ) 
+      if( indicator_ )
       {
         delete indicator_; indicator_ = 0;
         delete fvSpc_;     fvSpc_     = 0;
       }
     }
 
-    void setAdaptationHandler( AdaptationType& adHandle, double weight = 1 ) 
+    void setAdaptationHandler( AdaptationType& adHandle, double weight = 1 )
     {
 #ifdef USE_SMP_PARALLEL
       pass2_.setAdaptation( adHandle, weight );
@@ -361,12 +361,12 @@ namespace Dune {
 #endif
     }
 
-    void setTime(const double time) 
+    void setTime(const double time)
     {
 	    pass2_.setTime( time );
     }
 
-    double timeStepEstimate() const 
+    double timeStepEstimate() const
     {
 	    return pass2_.timeStepEstimate();
     }
@@ -378,9 +378,9 @@ namespace Dune {
 
     inline const SpaceType& space() const {
 	    return space_;
-    } 
+    }
 
-    inline void switchupwind() 
+    inline void switchupwind()
     {}
 
     double limitTime() const
@@ -393,30 +393,30 @@ namespace Dune {
       return limitPass().computeTimeSteps();
     }
 
-    inline double computeTime() const 
+    inline double computeTime() const
     {
       return pass2_.computeTime();
     }
 
-    inline size_t numberOfElements () const 
+    inline size_t numberOfElements () const
     {
       return pass2_.numberOfElements();
     }
-    
+
     const Pass1Type& limitPass() const
     {
       return pass1_;
     }
 
-    // return pointer to indicator function 
+    // return pointer to indicator function
     IndicatorType* indicator() { return indicator_ ; }
 
     inline void limit( DestinationType& U ) const
     {
       // copy U to uTmp_
-      if( polOrd > 0 ) 
+      if( polOrd > 0 )
       {
-        if( ! uTmp_ ) 
+        if( ! uTmp_ )
           uTmp_ = new LimiterDestinationType("limitTmp", limiterSpace_);
 
         assert( uTmp_ );
@@ -425,12 +425,12 @@ namespace Dune {
         limit( *uTmp_, U );
       }
     }
-    
+
     inline void limit( const DestinationType& arg, DestinationType& U ) const
     {
       LimiterCall< Pass1Type, polOrd >::limit( limitPass(), arg, U );
     }
-    
+
     void printmyInfo(std::string filename) const
     {
 	    std::ostringstream filestream;
@@ -472,7 +472,7 @@ namespace Dune {
 
   protected:
     DiffusionFluxType   diffFlux_;
-    
+
   private:
     DiscreteModel1Type  problem1_;
     LimiterDiscreteModelType  limitProblem_;
@@ -483,17 +483,17 @@ namespace Dune {
 
 
 
-  template< class Model, class NumFlux, 
-            DGDiffusionFluxIdentifier diffFluxId, // diffusion flux identifier 
+  template< class Model, class NumFlux,
+            DGDiffusionFluxIdentifier diffFluxId, // diffusion flux identifier
             int pOrd, bool advection = true, bool diffusion = true >
-  class DGLimitedAdvectionDiffusionOperator 
+  class DGLimitedAdvectionDiffusionOperator
   : public DGLimitedAdvectionOperator< Model, NumFlux, diffFluxId, pOrd, advection, diffusion >
   {
     typedef DGLimitedAdvectionOperator< Model, NumFlux, diffFluxId, pOrd, advection, diffusion > BaseType;
 
     typedef typename BaseType :: GridPartType GridPartType;
     typedef typename BaseType :: ProblemType  ProblemType;
-   
+
   public:
     DGLimitedAdvectionDiffusionOperator ( GridPartType& gridPart, ProblemType& problem )
     : BaseType( gridPart, problem )
