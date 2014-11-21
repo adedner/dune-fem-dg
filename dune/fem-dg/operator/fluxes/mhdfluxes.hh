@@ -14,7 +14,7 @@
 #include <dune/fem-dg/operator/fluxes/mhd_eqns.hh>
 #include <dune/fem-dg/operator/fluxes/rotator.hh>
 
-// Dai-Woodward 
+// Dai-Woodward
 template <class Model>
 class DWNumFlux;
 
@@ -24,7 +24,7 @@ class HLLEMNumFlux;
 
 // ************************************************
 template <int dimDomain>
-class ConsVec : public Dune :: FieldVector< double, dimDomain+2> 
+class ConsVec : public Dune :: FieldVector< double, dimDomain+2>
 {
 public:
   explicit ConsVec (const double& t) : Dune :: FieldVector<double,dimDomain+2>(t) {}
@@ -58,22 +58,22 @@ public:
 
   typedef double value_t[ 9 ];
 
-protected:  
-  MHDNumFluxBase(const Model& mod) 
+protected:
+  MHDNumFluxBase(const Model& mod)
    : model_(mod),
      eos( MhdSolverType::Eosmode::me_ideal ),
      numFlux_(eos,  mod.c_p() * mod.c_v_inv(), 1.0 ),
-     rot_(1) 
+     rot_(1)
   {
-    if( fluxtype == Mhd :: HLLEM ) 
+    if( fluxtype == Mhd :: HLLEM )
     {
       if( Dune :: Fem :: Parameter :: verbose () )
         std::cout << "Choosing HLLEM Flux " << std::endl;
 
-      numFlux_.init(Mhd :: MhdSolver :: mf_rghllem ); 
+      numFlux_.init(Mhd :: MhdSolver :: mf_rghllem );
     }
   }
-  
+
 public:
   // Return value: maximum wavespeed*length of integrationOuterNormal
   // gLeft,gRight are fluxed * length of integrationOuterNormal
@@ -103,7 +103,7 @@ protected:
 
 template < class Model, Mhd :: MhdFluxType fluxtype >
 template< class Intersection, class QuadratureImp >
-inline double MHDNumFluxBase< Model, fluxtype > :: 
+inline double MHDNumFluxBase< Model, fluxtype > ::
 numericalFlux( const Intersection& intersection,
                const EntityType& inside,
                const EntityType& outside,
@@ -134,7 +134,7 @@ numericalFlux( const Intersection& intersection,
 
   value_t entity = { 0,0,0,0,0,0,0,0 };
   value_t neigh  = { 0,0,0,0,0,0,0,0 };
-  for(int i=0; i<e; ++i) 
+  for(int i=0; i<e; ++i)
   {
     entity[ i ] = ul[ i ];
     neigh [ i ] = ur[ i ];
@@ -145,14 +145,14 @@ numericalFlux( const Intersection& intersection,
 
   const double ldt = numFlux_(entity, neigh, dummy, res);
 
-  // copy first components 
-  for(int i=0; i<e; ++i) 
+  // copy first components
+  for(int i=0; i<e; ++i)
     gLeft[ i ] = res[ i ];
 
-  // copy energy 
+  // copy energy
   gLeft[ e ] = res[ 7 ];
 
-  // rotate flux 
+  // rotate flux
   rot_.rotateBack( gLeft, normal );
 
   // conservation
@@ -163,17 +163,17 @@ numericalFlux( const Intersection& intersection,
 
 //////////////////////////////////////////////////////////
 //
-//  Flux Implementations 
+//  Flux Implementations
 //
 //////////////////////////////////////////////////////////
 
 template < class Model >
 class DWNumFlux : public MHDNumFluxBase< Model, Mhd::DW >
 {
-  typedef MHDNumFluxBase< Model, Mhd::DW > BaseType ; 
-public:  
-  DWNumFlux( const Model& model ) 
-    : BaseType( model ) 
+  typedef MHDNumFluxBase< Model, Mhd::DW > BaseType ;
+public:
+  DWNumFlux( const Model& model )
+    : BaseType( model )
   {}
   static std::string name () { return "DW (Mhd)"; }
 };
@@ -181,10 +181,10 @@ public:
 template < class Model >
 class HLLEMNumFlux : public MHDNumFluxBase< Model, Mhd::HLLEM >
 {
-  typedef MHDNumFluxBase< Model, Mhd::HLLEM > BaseType ; 
-public:  
-  HLLEMNumFlux( const Model& model ) 
-    : BaseType( model ) 
+  typedef MHDNumFluxBase< Model, Mhd::HLLEM > BaseType ;
+public:
+  HLLEMNumFlux( const Model& model )
+    : BaseType( model )
   {}
   static std::string name () { return "HLLEM (Mhd)"; }
 };

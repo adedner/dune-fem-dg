@@ -11,13 +11,13 @@ namespace Dune {
 template< class Traits >
 class NSFlux
 {
-  enum { dimDomain = Traits :: dimDomain }; 
+  enum { dimDomain = Traits :: dimDomain };
 
   enum { e = dimDomain + 1 };
   enum { e_ = e };
   enum { dimRange = Traits :: dimRange };
   enum { dimGradRange = dimRange * dimDomain };
-  
+
 public:
   typedef typename Traits::ProblemType ProblemType;
   typedef typename Traits::DomainType  DomainType;
@@ -26,12 +26,12 @@ public:
   typedef typename Traits::JacobianRangeType  JacobianRangeType;
 
   typedef Dune::FieldMatrix< double, dimGradRange, dimDomain > JacobianFluxRangeType;
-  typedef Dune::Fem::FieldMatrixConverter< GradientRangeType, JacobianRangeType > 
+  typedef Dune::Fem::FieldMatrixConverter< GradientRangeType, JacobianRangeType >
     ConvertedJacobianRangeType;
   typedef Dune::FieldMatrix< double, dimDomain, dimDomain > VelocityGradientType;
 
   NSFlux( const ProblemType& problem )
-    : eulerFlux_() 
+    : eulerFlux_()
     , problem_( problem )
     , gamma_( problem.gamma() )
     , R_d_inv_( problem.thermodynamics().R_d_inv() )
@@ -87,14 +87,14 @@ protected:
 
 
 /////////////////////////////////////////////
-// Implementation of flux functions 
+// Implementation of flux functions
 /////////////////////////////////////////////
 template< class Traits >
 template< class JacobianRangeImp >
-void NSFlux< Traits > 
+void NSFlux< Traits >
 :: diffusion( const RangeType& u,
               const JacobianRangeImp& du,
-              JacobianRangeType& diff ) const 
+              JacobianRangeType& diff ) const
 {
   //std::cout << du << " du " << std::endl;
   assert( u[0] > 1e-10 );
@@ -105,19 +105,19 @@ void NSFlux< Traits >
   for( int i = 0; i < dimDomain; ++i )
     v[i] = u[ i+1 ] * rho_inv;
 
-  // | v |^2 
-  const double vTwoNorm = v.two_norm2(); 
+  // | v |^2
+  const double vTwoNorm = v.two_norm2();
 
   // get all partial derivatives of all velocities
   VelocityGradientType dVel;
-  for( int j = 0; j < dimDomain; ++j ) // v components 
+  for( int j = 0; j < dimDomain; ++j ) // v components
   {
-    for( int i = 0; i < dimDomain; ++i ) // space derivatives 
+    for( int i = 0; i < dimDomain; ++i ) // space derivatives
     {
-      // substract d_x rho * v from the derivative of the conservative variables 
+      // substract d_x rho * v from the derivative of the conservative variables
       dVel[ j ][ i ] = rho_inv * (du[ j+1 ][ i ] - v[ j ]*du[ 0 ][ i ]);
     }
-  } 
+  }
 
   DomainType vGradVel;
   for( int i = 0; i < dimDomain; ++i )
@@ -147,23 +147,23 @@ void NSFlux< Traits >
   for( int i = 0; i < dimDomain; ++i )
     divVel += dVel[ i ][ i ];
 
-  // apply lambda to divergence 
+  // apply lambda to divergence
   divVel *= lambda( T );
 
   for( int i = 0; i < dimDomain; ++i )
   {
     // assemble the diffusion part for the density equation
-    // this equation is purely hyperbolic, so no diffusion 
+    // this equation is purely hyperbolic, so no diffusion
     diff[ 0 ][ i ] = 0;
 
     // assemble the diffusion part for the momentum equation
-    // the stesstensor tau 
+    // the stesstensor tau
     for( int j = 0; j < dimDomain; ++j )
     {
       diff[ j+1 ][ i ] = muLoc*(dVel[ j ][ i ] + dVel[ i ][ j ]);
     }
 
-    // add   lambda * div v * 1I 
+    // add   lambda * div v * 1I
     diff[ i+1 ][ i ] += divVel;
   }
 

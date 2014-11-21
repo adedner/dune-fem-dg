@@ -1,24 +1,24 @@
-// this programm only works without MPI and without threads 
+// this programm only works without MPI and without threads
 #undef ENABLE_PETSC
 #undef ENABLE_MPI
-#undef USE_PTHREADS 
+#undef USE_PTHREADS
 #undef _OPENMP
 
 //************************************************************
 //
-//  (C) written and directed by Robert Kloefkorn 
+//  (C) written and directed by Robert Kloefkorn
 //
 //************************************************************
-#if defined YASPGRID 
-//&& HAVE_MPI == 1 
+#if defined YASPGRID
+//&& HAVE_MPI == 1
 
 #ifndef ENABLE_ADAPTIVELEAFINDEXSET_FOR_YASPGRID
 #error "Put -DENABLE_ADAPTIVELEAFINDEXSET_FOR_YASPGRID to CPPFLAGS for simul and disp program"
 #endif
 
 #warning "Switching from YASPGRID to SGRID for parallel display!"
-#undef YASPGRID 
-#define SGRID 
+#undef YASPGRID
+#define SGRID
 #endif
 #include <config.h>
 
@@ -28,7 +28,7 @@
 
 ///////////////////////////////////////////////////
 //
-// Include your header defining all necessary types 
+// Include your header defining all necessary types
 //
 ///////////////////////////////////////////////////
 #include <dune/fem-dg/main/main_pol.cc>
@@ -37,7 +37,7 @@
 
 #include <dune/fem/operator/projection/vtxprojection.hh>
 
-void appendUserParameter() 
+void appendUserParameter()
 {
   Dune::Fem::Parameter :: append("parameter");
 }
@@ -52,15 +52,15 @@ typedef CheckPointingStepper<GridType,
 
 typedef StepperType :: IOTupleType InTupleType ;
 
-// type of discrete function tuple to restore 
+// type of discrete function tuple to restore
 typedef InTupleType GR_InputType;
 
-  
+
 template < int dimRange, int probDimRange >
 struct AdditionalVariables
 {
-  template <class DestinationType> 
-  static DestinationType* setup( const double, const DestinationType& ) 
+  template <class DestinationType>
+  static DestinationType* setup( const double, const DestinationType& )
   {
     return 0;
   }
@@ -69,11 +69,11 @@ struct AdditionalVariables
 template < int dimRange >
 struct AdditionalVariables< dimRange, dimRange >
 {
-  template <class DestinationType> 
-  static DestinationType* setup( const double time, const DestinationType& Uh ) 
+  template <class DestinationType>
+  static DestinationType* setup( const double time, const DestinationType& Uh )
   {
     DestinationType* additionalVariables = 0;
-    if( ParameterType :: getValue< bool >("femhowto.additionalvariables", false) ) 
+    if( ParameterType :: getValue< bool >("femhowto.additionalvariables", false) )
     {
       /*
       std::cout << "Setup additional variables" << std::endl;
@@ -81,9 +81,9 @@ struct AdditionalVariables< dimRange, dimRange >
       typedef typename StepperType :: InitialDataType InitialDataType;
       InitialDataType* problem = ProblemTraits :: problem() ;
       typedef typename StepperType :: ModelType  ModelType;
-      ModelType model( *problem ); 
+      ModelType model( *problem );
 
-      // create TimeProvider provider with given time 
+      // create TimeProvider provider with given time
       Dune::Fem::TimeProviderBase tp( time );
 
       setupAdditionalVariables( tp, Uh, model, *additionalVariables );
@@ -121,26 +121,26 @@ template <class GR_GridType,
     typedef typename DiscreteFunctionSpaceType :: GridPartType GridPartType;
     typedef typename StepperType :: InitialDataType InitialDataType;
 
-    DestinationType* additionalVariables = 
-      AdditionalVariables< DiscreteFunctionSpaceType::dimRange, 
-                           InitialDataType :: dimRange > ::  setup( time, Uh ); 
+    DestinationType* additionalVariables =
+      AdditionalVariables< DiscreteFunctionSpaceType::dimRange,
+                           InitialDataType :: dimRange > ::  setup( time, Uh );
 
     typedef Dune::Fem::AdaptiveLeafGridPart< typename GridPartType::GridType > VtxGridPartType;
-    typedef Dune::Fem::LagrangeDiscreteFunctionSpace< typename DiscreteFunctionSpaceType::FunctionSpaceType, 
+    typedef Dune::Fem::LagrangeDiscreteFunctionSpace< typename DiscreteFunctionSpaceType::FunctionSpaceType,
                                            VtxGridPartType, 1 > VtxSpaceType;
                                           // DiscreteFunctionSpaceType::polynomialOrder >  VtxSpaceType;
-    typedef Dune::Fem::AdaptiveDiscreteFunction< VtxSpaceType > VtxFunctionType;                                      
+    typedef Dune::Fem::AdaptiveDiscreteFunction< VtxSpaceType > VtxFunctionType;
 
 
     typedef Dune::Fem::Parameter  ParameterType ;
 
     const int subSamplingLevel = ParameterType :: getValue< int >("fem.io.subsamplinglevel", 0);
 
-    // subsampling vtk output 
+    // subsampling vtk output
     //Dune::Fem::VTKIO< GridPartType > vtkio( Uh.space().gridPart() );
-    
+
     Dune::Fem::DataOutputParameters parameter;
-    if( parameter.outputformat() == 1 ) // vtk-vertex 
+    if( parameter.outputformat() == 1 ) // vtk-vertex
     {
       if( ParameterType :: verbose() )
         std::cout << "Writing vertex data" << std::endl;
@@ -149,36 +149,36 @@ template <class GR_GridType,
       VtxSpaceType xvSpace( vxGridPart );
       Dune::Fem::SubsamplingVTKIO< VtxGridPartType > vtkio( vxGridPart, subSamplingLevel );
 
-      VtxFunctionType vtxValues( "vx", xvSpace ); 
-      VtxFunctionType* addValues = ( additionalVariables ) ? new VtxFunctionType( "add", xvSpace ) : 0 ; 
+      VtxFunctionType vtxValues( "vx", xvSpace );
+      VtxFunctionType* addValues = ( additionalVariables ) ? new VtxFunctionType( "add", xvSpace ) : 0 ;
 
       Dune::Fem::VtxProjection< DestinationType, VtxFunctionType > vxpro;
       vxpro( Uh, vtxValues );
 
-      if( additionalVariables ) 
+      if( additionalVariables )
       {
         vxpro( *additionalVariables, *addValues );
       }
 
       vtkio.addVertexData( vtxValues );
-      if( addValues ) 
+      if( addValues )
         vtkio.addVertexData( *addValues );
 
       const bool verbose = ParameterType::verbose() ;
-      // get data name 
-      std::string name( (Uh.name() == "") ? "sol" : Uh.name() ); 
+      // get data name
+      std::string name( (Uh.name() == "") ? "sol" : Uh.name() );
       // get file name
       std::string filename = Dune :: Fem :: generateFilename(name,timestep,6);
 
-      if( verbose ) 
+      if( verbose )
         std::cout <<"Writing vtk output " <<filename <<"...";
 
-      // write vtk output 
-      vtkio.write( filename, 
+      // write vtk output
+      vtkio.write( filename,
                    Dune::VTK::appendedraw,
                    myRank, numProcs
                  );
-      if( verbose ) 
+      if( verbose )
         std::cout <<"[ok]" << std::endl;
 
       delete addValues;
@@ -191,31 +191,31 @@ template <class GR_GridType,
       if( Uh.space().order() > 0 )
       {
         vtkio.addVertexData(Uh);
-        if( additionalVariables ) 
+        if( additionalVariables )
           vtkio.addVertexData( *additionalVariables );
       }
       else
       {
         vtkio.addCellData(Uh);
-        if( additionalVariables ) 
+        if( additionalVariables )
           vtkio.addCellData( *additionalVariables );
       }
 
       const bool verbose = ParameterType::verbose() ;
-      // get data name 
-      std::string name( (Uh.name() == "") ? "sol" : Uh.name() ); 
+      // get data name
+      std::string name( (Uh.name() == "") ? "sol" : Uh.name() );
       // get file name
       std::string filename = Dune :: Fem :: generateFilename(name,timestep,6);
 
-      if( verbose ) 
+      if( verbose )
         std::cout <<"Writing vtk output " <<filename <<"...";
 
-      // write vtk output 
-      vtkio.write( filename, 
+      // write vtk output
+      vtkio.write( filename,
                    Dune::VTK::appendedraw,
                    myRank, numProcs
                  );
-      if( verbose ) 
+      if( verbose )
         std::cout <<"[ok]" << std::endl;
 
       if( additionalVariables )
@@ -234,11 +234,11 @@ void process(const GR_GridType& grid,
              const int myRank,
              const int numProcs)
 {
-#ifdef WRITE_VTK 
+#ifdef WRITE_VTK
   Dune :: ForLoop< ProcessElement, 0, 0 > // Dune::tuple_size< InTupleType > :: value-1 >
     :: apply( grid, data, time, timestep, myRank, numProcs );
 #endif
 }
 
-// include main program 
+// include main program
 #include <dune/fem/io/visual/grape/datadisp/dataconvert.cc>

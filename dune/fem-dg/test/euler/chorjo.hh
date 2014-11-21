@@ -17,7 +17,7 @@
 
 namespace EULERCHORIN {
 
-double hilf(double,double,double);       
+double hilf(double,double,double);
 double maximum(double,double);
 void iteration(double,double,double,double,double,double,double *p,
                double *u,double);

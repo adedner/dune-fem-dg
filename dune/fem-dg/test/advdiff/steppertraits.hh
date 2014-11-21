@@ -9,9 +9,9 @@
 #include <dune/fem-dg/operator/dg/dgoperatorchoice.hh>
 
 template <class GridImp,
-          class ProblemTraits, 
+          class ProblemTraits,
           int polOrd>
-struct StepperTraits 
+struct StepperTraits
 {
   enum { polynomialOrder = polOrd };
 
@@ -23,11 +23,11 @@ struct StepperTraits
   typedef HostGridPartType  GridPartType ;
   //typedef Dune :: Fem :: IdGridPart< HostGridPartType >       GridPartType;
 
-  // problem dependent types 
+  // problem dependent types
   typedef typename ProblemTraits :: template Traits< GridPartType > :: InitialDataType   InitialDataType;
   typedef typename ProblemTraits :: template Traits< GridPartType > :: ModelType         ModelType;
   typedef typename ProblemTraits :: template Traits< GridPartType > :: FluxType          FluxType;
-  static const Dune::DGDiffusionFluxIdentifier DiffusionFluxId 
+  static const Dune::DGDiffusionFluxIdentifier DiffusionFluxId
     = ProblemTraits :: template Traits< GridPartType > ::PrimalDiffusionFluxId ;
 
 private:
@@ -37,34 +37,34 @@ private:
 #ifdef LIMITER
   #if (not defined EULER) and (defined FLUXDG)
   #warning "DGAdvectionDiffusionOperator: using LIMITER."
-    typedef Dune :: DGLimitedAdvectionDiffusionOperator< 
+    typedef Dune :: DGLimitedAdvectionDiffusionOperator<
                         ModelType, FluxType, DiffusionFluxId, polynomialOrder >  DgType;
   #else
   #warning "DGAdvectionDiffusionOperator: LIMITER can NOT be used. Not supported -> LIMITER, no EULER, no FLUXDG."
-    typedef Dune :: DGAdvectionDiffusionOperator< 
+    typedef Dune :: DGAdvectionDiffusionOperator<
                         ModelType, FluxType, DiffusionFluxId, polynomialOrder >  DgType;
   #endif
-  #ifndef HIGHER_ORDER_FV 
+  #ifndef HIGHER_ORDER_FV
   #warning "DGAdvectionOperator: using LIMITER."
     typedef Dune :: DGLimitedAdvectionOperator< ModelType, FluxType,
                                                 DiffusionFluxId, polynomialOrder >      DgAdvectionType;
-  #else 
+  #else
   #warning "DGAdvectionOperator: using HIGHER ORDER FV."
     typedef Dune :: DGLimitedAdvectionOperator< ModelType, FluxType,
                                                 DiffusionFluxId, -1 >      DgAdvectionType;
   #endif
-#else // no LIMITER 
+#else // no LIMITER
 #warning "No limiter is applied to the numerical solution !!"
   typedef Dune :: DGAdvectionDiffusionOperator< ModelType, FluxType,
                                                 DiffusionFluxId,  polynomialOrder >   DgType;
   typedef Dune :: DGAdvectionOperator< ModelType, FluxType,
                                        DiffusionFluxId, polynomialOrder >      DgAdvectionType;
-#endif                                       
+#endif
   typedef Dune :: DGDiffusionOperator< ModelType, FluxType,
                                        DiffusionFluxId, polynomialOrder >      DgDiffusionType;
 
 
-  // default is that both are enabled 
+  // default is that both are enabled
   template < bool advection, bool diffusion >
   struct OperatorChooser
   {
@@ -82,7 +82,7 @@ private:
     typedef FullOperatorType ExplicitOperatorType;
   };
 
-  // diffusion operator only, i.e. for the heat equation 
+  // diffusion operator only, i.e. for the heat equation
   template < bool diffusion >
   struct OperatorChooser< false, diffusion >
   {
@@ -104,7 +104,7 @@ public:
   // The discrete function for the unknown solution is defined in the DgOperator
   typedef typename DgType :: DestinationType                         DiscreteFunctionType;
 
-  // The indicator function in case of limiting 
+  // The indicator function in case of limiting
   typedef typename DgAdvectionType :: IndicatorType                  IndicatorType;
 
   // ... as well as the Space type
@@ -113,10 +113,10 @@ public:
   // The ODE Solvers                                                         /*@LST1S@*/
   typedef DuneODE :: OdeSolverInterface< DiscreteFunctionType > OdeSolverType ;
 
-  // type of restriction/prolongation projection for adaptive simulations 
+  // type of restriction/prolongation projection for adaptive simulations
   typedef Dune :: Fem :: RestrictProlongDefault< DiscreteFunctionType > RestrictionProlongationType;
 
-  // type of IOTuple 
+  // type of IOTuple
   typedef Dune::tuple< DiscreteFunctionType*, DiscreteFunctionType*, IndicatorType* >  IOTupleType;
 
   // type of linear solver for implicit ode

@@ -55,9 +55,9 @@ public:
   }
 
   double diffusion( const RangeType& u, const JacobianRangeType& gradU ) const
-  { 
+  {
     return epsilon_*u;
-  } 
+  }
 
   double startTime() const { return startTime_; }
 
@@ -93,14 +93,14 @@ public:
   /**
    * @brief evaluate stiff source function
    */
-  double nonStiffSource( const DomainType& arg, 
+  double nonStiffSource( const DomainType& arg,
                          const double t,
                          const RangeType& u,
                          RangeType& res ) const /*@LST0S@@LST0E@*/
   {
     res = 0.;
 
-    // time step restriction from the stiff source term 
+    // time step restriction from the stiff source term
     return 0.;
   }
 
@@ -108,8 +108,8 @@ public:
    * @brief evaluate non stiff source function
    */
   double stiffSource( const DomainType& arg,
-                         const double t, 
-                         const RangeType& u, 
+                         const double t,
+                         const RangeType& u,
                          RangeType& res ) const /*@LST0S@@LST0E@*/
   {
     const double x = arg[0];
@@ -122,7 +122,7 @@ public:
     res = (-std::exp(-2.*epsilon_*t )*(cosx2*siny2 + cosy2*sinx2) + 2*u*u - u);
     res *= epsilon_;
 
-    // time step restriction from the non stiff source term 
+    // time step restriction from the non stiff source term
     return 0.0;
   }
 
@@ -134,7 +134,7 @@ public:
     std::ostringstream ofs;
 
     ofs << "Problem: " << myName
-      << ", Epsilon: " << epsilon_ 
+      << ", Epsilon: " << epsilon_
       << ", End time: " << ParameterType::getValue<double>("femhowto.endTime");
 
     return ofs.str();
@@ -143,7 +143,7 @@ public:
 
   /*  \brief finalize the simulation using the calculated numerical
    *  solution u for this problem
-   *  
+   *
    *  \param[in] variablesToOutput Numerical solution in the suitably chosen variables
    *  \param[in] eocloop Specific EOC loop
    */

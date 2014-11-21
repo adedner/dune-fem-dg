@@ -4,7 +4,7 @@
 
 //#define WANT_ISTL 1
 
-#ifndef NDEBUG 
+#ifndef NDEBUG
 // enable fvector and fmatrix checking
 #define DUNE_ISTL_WITH_CHECKING
 #endif
@@ -37,7 +37,7 @@
 #include "poissonproblem.hh"
 #include "models.hh"
 
-template <class GridType> 
+template <class GridType>
 struct ProblemCreator
 {
   static const int dimRange = 1 ;
@@ -51,7 +51,7 @@ struct ProblemCreator
     typedef PoissonModel< GridPart, InitialDataType >  ModelType;
     typedef Dune::NoFlux< ModelType >                  FluxType;
     // choice of diffusion flux (see diffusionflux.hh for methods)
-    static const Dune :: DGDiffusionFluxIdentifier PrimalDiffusionFluxId 
+    static const Dune :: DGDiffusionFluxIdentifier PrimalDiffusionFluxId
       = Dune :: method_general ;
   };
 
@@ -66,15 +66,15 @@ struct ProblemCreator
 
   static inline Dune::GridPtr<GridType> initializeGrid()
   {
-    // use default implementation 
-    std::string filename = Dune::Fem::Parameter::getValue< std::string >(Dune::Fem::IOInterface::defaultGridKey(GridType :: dimension, false)); 
-  
+    // use default implementation
+    std::string filename = Dune::Fem::Parameter::getValue< std::string >(Dune::Fem::IOInterface::defaultGridKey(GridType :: dimension, false));
+
     std::string description ("poisson-"+diffusionFluxName());
     // initialize grid
     Dune::GridPtr< GridType > gridptr = initialize< GridType >( description );
 
     std::string::size_type position = std::string::npos;
-    if( GridType::dimension == 2) 
+    if( GridType::dimension == 2)
       position = filename.find("mesh3");
     if( GridType::dimension == 3 )
       position = filename.find("_locraf.msh" );
@@ -105,8 +105,8 @@ struct ProblemCreator
         }
       }
     }
-    else if ( position != std::string::npos || 
-              locraf   != std::string::npos ) 
+    else if ( position != std::string::npos ||
+              locraf   != std::string::npos )
     {
       std::cout << "Create local refined grid" << std::endl;
       if( grid.comm().rank() == 0)
@@ -124,15 +124,15 @@ struct ProblemCreator
           {
             const typename IteratorType :: Entity & entity = *it ;
             const typename IteratorType :: Entity :: Geometry& geo = entity.geometry();
-            bool inside = true ; 
+            bool inside = true ;
             const int corners = geo.corners();
-            for( int c = 0; c<corners; ++ c) 
+            for( int c = 0; c<corners; ++ c)
             {
               for( int i = 0; i<GridType::dimension; ++i )
               {
-                if( geo.corner( c )[ i ] - point[ i ] > 1e-8 ) 
+                if( geo.corner( c )[ i ] - point[ i ] > 1e-8 )
                 {
-                  inside = false ; 
+                  inside = false ;
                   break ;
                 }
               }
@@ -142,16 +142,16 @@ struct ProblemCreator
         }
       }
     }
-    else if ( checkerboard != std::string::npos ) 
+    else if ( checkerboard != std::string::npos )
     {
       std::cout << "Create Checkerboard mesh" << std::endl;
       int moduloNum = 32 ;
-      for( int i = 2; i<32; i *= 2 ) 
+      for( int i = 2; i<32; i *= 2 )
       {
-        std::stringstream key; 
+        std::stringstream key;
         key << i << "x" << i << "x" << i;
         std::string::size_type counter = filename.find( key.str() );
-        if( counter != std::string::npos ) 
+        if( counter != std::string::npos )
         {
           moduloNum = i;
           break ;
@@ -169,10 +169,10 @@ struct ProblemCreator
         for(IteratorType it = grid.template leafbegin<0>(); it != endit ; ++it, ++ count )
         {
           const typename IteratorType :: Entity & entity = *it ;
-          if( count % 2 == modul ) 
+          if( count % 2 == modul )
             grid.mark(refineelement, entity );
 
-          if( count % moduloNum == 0 ) 
+          if( count % moduloNum == 0 )
             modul = 1 - modul ;
 
           if( count % (moduloNum * moduloNum) == 0 )
@@ -181,7 +181,7 @@ struct ProblemCreator
       }
     }
 
-    // adapt the grid 
+    // adapt the grid
     grid.preAdapt();
     grid.adapt();
     grid.postAdapt();
@@ -194,13 +194,13 @@ struct ProblemCreator
 
   static ProblemType* problem( )
   {
-    // choice of benchmark problem 
+    // choice of benchmark problem
     int probNr = Dune::Fem::Parameter::getValue< int > ( "femhowto.problem" );
     return new Dune :: PoissonProblem< GridType,dimRange > ( probNr );
   }
 
   // type of stepper to be used
-  typedef EllipticAlgorithm< GridType, ProblemCreator<GridType>, POLORDER > StepperType; 
+  typedef EllipticAlgorithm< GridType, ProblemCreator<GridType>, POLORDER > StepperType;
 };
 
 #define NEW_STEPPER_SELECTOR_USED

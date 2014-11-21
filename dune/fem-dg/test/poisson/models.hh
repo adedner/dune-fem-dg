@@ -214,13 +214,13 @@ public:
         f[r][d] = v[ d ] * u[ r ];
   }
 
-  bool hasDirichletBoundary () const 
+  bool hasDirichletBoundary () const
   {
     return true ;
   }
 
-  bool isDirichletPoint( const DomainType& global ) const 
-  { 
+  bool isDirichletPoint( const DomainType& global ) const
+  {
     return true ;
   }
 
@@ -258,8 +258,8 @@ public:
         a[dimDomain*r+d][d] = u[r];
   }
 
-  template <class T> 
-  T SQR( const T& a ) const 
+  template <class T>
+  T SQR( const T& a ) const
   {
     return (a * a);
   }
@@ -270,44 +270,44 @@ public:
                           const RangeType& u,
                           RangeType& maxValue) const
   {
-    DiffusionMatrixType K ; 
+    DiffusionMatrixType K ;
     DomainType xgl = en.geometry().global( x );
     problem_.K( xgl, K );
 
     DomainType values ;
-    // calculate eigenvalues 
+    // calculate eigenvalues
     Dune::FMatrixHelp :: eigenValues( K, values );
 
     maxValue = SQR(values[ dimDomain -1 ]) /values[0];
     return ;
 
-    // take max eigenvalue 
+    // take max eigenvalue
     maxValue = values.infinity_norm();
   }
 
-  inline double lambdaK( const DiffusionMatrixType& K ) const 
+  inline double lambdaK( const DiffusionMatrixType& K ) const
   {
     DomainType values ;
-    // calculate eigenvalues 
+    // calculate eigenvalues
     Dune::FMatrixHelp :: eigenValues( K, values );
 
-    // value[ 0 ] is smallest ev 
+    // value[ 0 ] is smallest ev
     return SQR(values[ dimDomain -1 ]) / values[ 0 ];
   }
 
   inline double penaltyFactor( const EntityType& inside,
-                               const EntityType& outside, 
-                               const double time, 
-                               const DomainType& xInside, 
-                               const RangeType& uLeft, 
-                               const RangeType& uRight ) const 
+                               const EntityType& outside,
+                               const double time,
+                               const DomainType& xInside,
+                               const RangeType& uLeft,
+                               const RangeType& uRight ) const
   {
     DiffusionMatrixType K ;
     double betaK, betaInside, betaOutside ;
-    if( problem_.constantK() ) 
+    if( problem_.constantK() )
     {
-      DiffusionMatrixType Kinside ; 
-      DiffusionMatrixType Koutside; 
+      DiffusionMatrixType Kinside ;
+      DiffusionMatrixType Koutside;
 
       const DomainType xglIn = inside.geometry().center();
       problem_.K( xglIn , Kinside );
@@ -315,38 +315,38 @@ public:
       problem_.K( xglOut , Koutside );
 
       K = Kinside ;
-      K += Koutside ; 
-      K *= 0.5 ; 
-    
+      K += Koutside ;
+      K *= 0.5 ;
+
       betaInside  = lambdaK( Kinside );
       betaOutside = lambdaK( Koutside );
 
       betaK = lambdaK( K );
     }
-    else 
+    else
     {
       const DomainType xgl = inside.geometry().global( xInside );
       problem_.K( xgl , K );
-      
+
       betaK = lambdaK( K );
       betaInside = betaOutside = betaK;
     }
 
     const double jump = std::tanh( std::abs( betaInside - betaOutside ) );
 
-    // only for small values of betS apply betS in smooth cases 
+    // only for small values of betS apply betS in smooth cases
     const double betaN = std :: min( betaK , 1.0 );
 
-    // betS becomes 1 if the eigen values of both matrices are the same 
+    // betS becomes 1 if the eigen values of both matrices are the same
     betaK = betaK * jump + (1.0 - jump) * betaN;
 
     return betaK ;
   }
 
   inline double penaltyBoundary( const EntityType& inside,
-                                 const double time, 
-                                 const DomainType& xInside, 
-                                 const RangeType& uLeft ) const 
+                                 const double time,
+                                 const DomainType& xInside,
+                                 const RangeType& uLeft ) const
   {
     return penaltyFactor( inside, inside, time, xInside, uLeft, uLeft );
   }
@@ -363,16 +363,16 @@ public:
                         FluxRangeType& A) const
   {
     // for constant K evalute at center (see Problem 4)
-    const DomainType xgl = ( problem_.constantK() ) ? 
+    const DomainType xgl = ( problem_.constantK() ) ?
       en.geometry().center () : en.geometry().global( x )  ;
 
-    DiffusionMatrixType K ; 
+    DiffusionMatrixType K ;
 
-    // fill diffusion matrix 
+    // fill diffusion matrix
     problem_.K( xgl, K );
 
-    // apply diffusion 
-    for( int r =0; r<dimRange; ++r ) 
+    // apply diffusion
+    for( int r =0; r<dimRange; ++r )
       K.mv( jac[ r ] , A[ r ] );
   }
 
@@ -397,7 +397,7 @@ public:
     return 0;
   }
 
-public:                            
+public:
   /**
    * @brief checks for existence of dirichlet boundary values
    */
@@ -443,7 +443,7 @@ public:
                                        const FaceDomainType& x,
                                        const RangeType& uLeft,
                                        const GradientType& gradLeft,
-                                       RangeType& gLeft ) const  
+                                       RangeType& gLeft ) const
   {
     Dune :: Fem :: FieldMatrixConverter< GradientType, JacobianRangeType> jacLeft( gradLeft );
     return diffusionBoundaryFlux( it, time, x, uLeft, jacLeft, gLeft );
@@ -457,7 +457,7 @@ public:
                                        const FaceDomainType& x,
                                        const RangeType& uLeft,
                                        const JacobianRangeImp& jacLeft,
-                                       RangeType& gLeft ) const  
+                                       RangeType& gLeft ) const
   {
     std::cerr <<"diffusionBoundaryFlux shouldn't be used in this model" <<std::endl;
     abort();

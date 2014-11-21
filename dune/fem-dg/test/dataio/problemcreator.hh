@@ -2,7 +2,7 @@
 #define FEMDG_CHECKPOINTING_RPOBLEMCREATOR_HH
 #include <config.h>
 
-#ifndef POLORDER 
+#ifndef POLORDER
 #define POLORDER 2
 #endif
 
@@ -20,7 +20,7 @@
 // this implements the Stepper
 #include "checkpointing.hh"
 
-template< class GridType > 
+template< class GridType >
 struct ProblemCreator
 {
   typedef Dune :: U0< GridType > ProblemType;
@@ -30,11 +30,11 @@ struct ProblemCreator
     typedef ProblemType InitialDataType;
   };
 
-  static inline Dune::GridPtr<GridType>               
+  static inline Dune::GridPtr<GridType>
   initializeGrid()
   {
     std::string description ("noflux");
-    // use default implementation 
+    // use default implementation
     return initialize< GridType > ( description );
   }
 

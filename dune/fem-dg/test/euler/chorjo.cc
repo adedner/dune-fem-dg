@@ -6,29 +6,29 @@ namespace EULERCHORIN {
 *    Bestimmung von phi (siehe Artikel)                              *
 *********************************************************************/
 double hilf(double h1,double h2,double ny)
-{ 
+{
    double erg,h,w,z;
 
    w=h1/h2;
    if (w < 1)
      { z=(ny-1.0)/(2.0*ny);
-       h=pow(w,z); 
+       h=pow(w,z);
        erg=(1.0-w)/(1.0-h)*(ny-1.0)/(2.0*std::sqrt(ny));
      }
    else
        erg=std::sqrt((ny+1.0)/2.0*w+(ny-1.0)/2.0);
    return(erg);
 }
- 
-         
 
-/*********************************************************************   
+
+
+/*********************************************************************
 *   liefert Maximum zweier reeller Zahlen                            *
-*********************************************************************/    
+*********************************************************************/
 double maximum(double z1,double z2)
-{  
-   double max; 
- 
+{
+   double max;
+
    if (z1 > z2)
      max=z1;
    else
@@ -36,7 +36,7 @@ double maximum(double z1,double z2)
    return(max);
 }
 
-         
+
 
 
 /*********************************************************************
@@ -45,30 +45,30 @@ double maximum(double z1,double z2)
 *********************************************************************/
 void iteration(double ql,double qr,double ul,double ur,double pl,\
                double pr,double *p,double *u,double ny)
-{  
+{
    double  ml,mr,ml_v,mr_v;
    double  erg,p1,p2,eps,a;
-   int     z,l,abbruch1,abbruch2;                 
+   int     z,l,abbruch1,abbruch2;
 
    abbruch1=20;
    abbruch2=10;
    l=0;
    z=0;
    a=0.5;
-   eps=10E-06; 
+   eps=10E-06;
    ml_v=10E20;
    mr_v=10E20;
- 
+
    *p=(pl+pr)/2.0;
 marke:
    erg=hilf(*p,pl,ny);
-   ml=-std::sqrt(pl*ql)*erg;       
-   erg=hilf(*p,pr,ny);   
+   ml=-std::sqrt(pl*ql)*erg;
+   erg=hilf(*p,pr,ny);
    mr=std::sqrt(pr*qr)*erg;
    p1=(ul-ur+pr/mr-pl/ml)/(1.0/mr-1.0/ml);
    p2=maximum(p1,eps);
-   *p=a*p2+(1.0-a)*(*p); 
-   erg=maximum(std::abs(mr-mr_v),std::abs(ml-ml_v));  
+   *p=a*p2+(1.0-a)*(*p);
+   erg=maximum(std::abs(mr-mr_v),std::abs(ml-ml_v));
    if (erg >= eps) {
        ml_v=ml;
        mr_v=mr;
@@ -77,7 +77,7 @@ marke:
           goto marke;
        else {
          z=z+1;
-         if (z <= abbruch2) { 
+         if (z <= abbruch2) {
              a=a/2.0;
              l=0;
              goto marke;
@@ -85,11 +85,11 @@ marke:
          else ;
               /*printf(" Ueberpruefen der Konvergenz !! "); */
          }
-       }  
+       }
    *u=(*p-pl)/ml+ul;
 }
-                                                            
-         
+
+
 
 
 
@@ -101,24 +101,24 @@ marke:
 *********************************************************************/
 void lsg(double x,double t,double *q_erg,double *u_erg,double *p_erg,\
          double ql,double qr,double ul,double ur,double pl,double pr,\
-         double ny) 
-{  
+         double ny)
+{
    double  q,s,h1,h2,h3,p,u;
    double  links,rechts,cl,cr,c;
 
-/*  Bestimmung von p* und u*  */    
+/*  Bestimmung von p* und u*  */
    iteration(ql,qr,ul,ur,pl,pr,&p,&u,ny);
 
 /*  Punkt liegt links der Kontaktunstetigkeit  */
-   if(x <= u*t) {    
-/*  linke Welle ist ein Schock  */ 
-       if (pl < p) { 
+   if(x <= u*t) {
+/*  linke Welle ist ein Schock  */
+       if (pl < p) {
            h1=p/pl;
            h2=(ny+1.0)/(ny-1.0);
            q=(1.0+h1*h2)/(h1+h2)*ql;
            s=(ql*ul-q*u)/(ql-q);
 /*  Punkt liegt links vom Schock  */
-           if (x < s*t) { 
+           if (x < s*t) {
                *q_erg=ql;
                *u_erg=ul;
                *p_erg=pl;
@@ -133,25 +133,25 @@ void lsg(double x,double t,double *q_erg,double *u_erg,double *p_erg,\
            }
        else {
            cl=std::sqrt(ny*pl/ql);
-           c=cl+0.5*(ny-1.0)*(ul-u); 
-           q=ny*p/(c*c);   
+           c=cl+0.5*(ny-1.0)*(ul-u);
+           q=ny*p/(c*c);
            rechts=u-c;
-           links=ul-cl;      
+           links=ul-cl;
 /*  Punkt liegt links der Verduennungswelle  */
-           if (x < links*t) { 
+           if (x < links*t) {
                   *q_erg=ql;
                   *u_erg=ul;
                   *p_erg=pl;
                   }
 /*  Punkt liegt rechts der Verduennungswelle  */
            else {
-                if (x > rechts*t) { 
+                if (x > rechts*t) {
                      *q_erg=q;
                      *u_erg=u;
-                     *p_erg=p; 
+                     *p_erg=p;
                      }
 /*  Punkt liegt in der Verduennungswelle  */
-              else {  
+              else {
                   cl=std::sqrt(ny*pl/ql);
                   c=std::sqrt(ny*p/q);
                   *u_erg=(x/t+c+0.5*(ny-1.0)*u)/(1.0+0.5*(ny-1.0));
@@ -161,11 +161,11 @@ void lsg(double x,double t,double *q_erg,double *u_erg,double *p_erg,\
                   h3=1.0/(ny-1.0);
                   *q_erg=pow(h2,h3);
                   *p_erg=c*c*(*q_erg)/ny;
-                  } 
-           }         
+                  }
+           }
        }
-    }          
-/*  Punkt liegt rechts der Kontaktunstetigkeit  */                                    
+    }
+/*  Punkt liegt rechts der Kontaktunstetigkeit  */
    else {
 /* rechte Welle ist ein Schock  */
         if (p > pr) {
@@ -173,14 +173,14 @@ void lsg(double x,double t,double *q_erg,double *u_erg,double *p_erg,\
              h2=(ny+1.0)/(ny-1.0);
              q=(h1+h2)/(1.0+h1*h2)*qr;
              s=(qr*ur-q*u)/(qr-q);
-/*  Punkt liegt links vom Schock  */  
+/*  Punkt liegt links vom Schock  */
              if (x <= s*t) {
                   *q_erg=q;
-                  *u_erg=u;   
-                  *p_erg=p; 
+                  *u_erg=u;
+                  *p_erg=p;
                   }
 /*  Punkt liegt rechts vom Schock  */
-             else { 
+             else {
                  *q_erg=qr;
                  *u_erg=ur;
                  *p_erg=pr;
@@ -189,27 +189,27 @@ void lsg(double x,double t,double *q_erg,double *u_erg,double *p_erg,\
 /*  rechte Welle ist eine Verduennungswelle  */
         else {
             cr=std::sqrt(ny*pr/qr);
-            c=cr+0.5*(ny-1.0)*(u-ur); 
-            q=ny*p/(c*c);   
+            c=cr+0.5*(ny-1.0)*(u-ur);
+            q=ny*p/(c*c);
             links=u+c;
             rechts=ur+cr;
 /*  Punkt liegt links der Verduennungswelle  */
-            if (x <= links*t) {     
+            if (x <= links*t) {
                  *q_erg=q;
                  *u_erg=u;
                  *p_erg=p;
                  }
-            else { 
-/*  Punkt liegt rechts der Verduennungswelle  */  
-                 if (x >= rechts*t) { 
+            else {
+/*  Punkt liegt rechts der Verduennungswelle  */
+                 if (x >= rechts*t) {
                      *q_erg=qr;
-                     *u_erg=ur; 
+                     *u_erg=ur;
                      *p_erg=pr;
-                     }    
+                     }
 /*  Punkt liegt in der Verduennungswelle  */
                 else {
-                   cr=std::sqrt(ny*pr/qr);  
-                   *u_erg=(x/t-cr+ur/2.0*(ny-1.0))/(1.0+(ny-1.0)/2.0); 
+                   cr=std::sqrt(ny*pr/qr);
+                   *u_erg=(x/t-cr+ur/2.0*(ny-1.0))/(1.0+(ny-1.0)/2.0);
                    c=x/t-(*u_erg);
                    h1=pow(qr,ny);
                    h2=c*c/ny*h1/pr;
@@ -217,32 +217,32 @@ void lsg(double x,double t,double *q_erg,double *u_erg,double *p_erg,\
                    *q_erg=pow(h2,h3);
                    *p_erg=c*c*(*q_erg)/ny;
                    }
-              }   
+              }
           }
-     }                      
+     }
 }
 
 }
 
-         
+
 #if 0
-/**  TEST-PROGRAM  **/  
-void main()         
+/**  TEST-PROGRAM  **/
+void main()
 {  double  ql,qr,ul,ur,pl,pr,ny;
    double  p,u;
    double  q_erg,u_erg,p_erg;
-   double  x1,t; 
+   double  x1,t;
    int     m,i,test;
    int     n;
    FILE    *safe;
-     
+
    printf(" Geben Sie Anfangswerte (ql,qr,ul,ur,pl,pr) ein : \n");
    scanf("%lf",&ql);
    scanf("%lf",&qr);
    scanf("%lf",&ul);
    scanf("%lf",&ur);
    scanf("%lf",&pl);
-   scanf("%lf",&pr); 
+   scanf("%lf",&pr);
    ny=1.4;
    /*ql=1.0;
    qr=0.125;

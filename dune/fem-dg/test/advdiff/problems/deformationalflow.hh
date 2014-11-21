@@ -1,6 +1,6 @@
 #ifndef DUNE_DEFORMATIONALFLOW_HH
 #define DUNE_DEFORMATIONALFLOW_HH
- 
+
 // dune-fem includes
 #include <dune/fem/io/parameter.hh>
 #include <dune/fem/space/common/functionspace.hh>
@@ -85,7 +85,7 @@ public:
     return 0.0;
   }
 
-  double diffusion( const RangeType& u, const JacobianRangeType& gradU ) const 
+  double diffusion( const RangeType& u, const JacobianRangeType& gradU ) const
   {
     return epsilon_;
   }
@@ -135,12 +135,12 @@ public:
     p -= c2;
 
     const double rtilde = p.two_norm() * 5.0;
-    if( rtilde <= 1.0 ) 
+    if( rtilde <= 1.0 )
     {
-      double rc = 0.5 * ( 1.0 + std::cos( M_PI * rtilde) ); 
+      double rc = 0.5 * ( 1.0 + std::cos( M_PI * rtilde) );
       res = rc * rc ;
     }
-    else 
+    else
     {
       res = 0.0;
     }
@@ -160,7 +160,7 @@ public:
 
   /*  \brief finalize the simulation using the calculated numerical
    *  solution u for this problem
-   *  
+   *
    *  \param[in] variablesToOutput Numerical solution in the suitably chosen variables
    *  \param[in] eocloop Specific EOC loop
    */

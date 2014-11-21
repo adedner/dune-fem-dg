@@ -64,19 +64,19 @@ class Thermodynamics
    *         for conservative variables: \f$[\rho,\rho\boldsymbol{v},\rho e]\f$
    *
    *  Calculate the pressure and temperature from the conservative variables
-   *  \f$[\rho,\rho\boldsymbol{v},\rho e]\f$, where \f$ e \f$ is the sum of 
+   *  \f$[\rho,\rho\boldsymbol{v},\rho e]\f$, where \f$ e \f$ is the sum of
    *  the internal and the kinetic energy.
    *
    *  \param[in] cons Conervative variables
    *
-   *  \return pressure in energy form 
+   *  \return pressure in energy form
    */
   template< class RangeType >
   inline double pressureEnergyForm( const RangeType& cons ) const
   {
-    // cons = [rho, rho*v, rho*e]  
+    // cons = [rho, rho*v, rho*e]
     assert( cons[0] > 1e-20 );
-    assert( cons[energyId] > 1e-20 ); 
+    assert( cons[energyId] > 1e-20 );
 
     // kinetic energy
     double kin = 0.;
@@ -91,7 +91,7 @@ class Thermodynamics
    *         for conservative variables: \f$[\rho,\rho\boldsymbol{v},\rho e]\f$
    *
    *  Calculate the pressure and temperature from the conservative variables
-   *  \f$[\rho,\rho\boldsymbol{v},\rho e]\f$, where \f$ e \f$ is the sum of 
+   *  \f$[\rho,\rho\boldsymbol{v},\rho e]\f$, where \f$ e \f$ is the sum of
    *  the internal and the kinetic energy.
    *
    *  \param[in] cons Conervative variables
@@ -101,8 +101,8 @@ class Thermodynamics
    *  \tparam RangeType Type of the range value
    */
   template< class RangeType >
-  inline double temperatureEnergyForm( const RangeType& cons, 
-                                       const double p ) const 
+  inline double temperatureEnergyForm( const RangeType& cons,
+                                       const double p ) const
   {
     assert( cons[0] > 1e-20 );
     return R_d_inv_ * p / cons[ 0 ];
@@ -112,12 +112,12 @@ class Thermodynamics
    *         for conservative variables: \f$[\rho,\rho\boldsymbol{v},\rho e]\f$
    *
    *  Calculate the pressure and temperature from the conservative variables
-   *  \f$[\rho,\rho\boldsymbol{v},\rho e]\f$, where \f$ e \f$ is the sum of 
+   *  \f$[\rho,\rho\boldsymbol{v},\rho e]\f$, where \f$ e \f$ is the sum of
    *  the internal and the kinetic energy.
    *
    *  \param[in] cons Conervative variables
    *
-   *  \return pressure in energy form 
+   *  \return pressure in energy form
    */
   template< class RangeType >
   inline double temperatureEnergyForm( const RangeType& cons ) const
@@ -135,17 +135,17 @@ class Thermodynamics
    *  \tparam RangeType Type of the range value
    */
   template< class RangeType >
-  inline double densityThetaForm( const RangeType& prim ) const 
+  inline double densityThetaForm( const RangeType& prim ) const
   {
     const double p     = prim[ energyId - 1 ];
     const double theta = prim[ energyId ];
 
     assert( p > 1e-12 );
-    assert( theta > 1e-12 ); 
+    assert( theta > 1e-12 );
 
     const double rho = std::pow( p/p0_ , gamma_inv_ ) * p0_ * R_d_inv_ / theta ;
 
-    assert( rho > 0.0 );  
+    assert( rho > 0.0 );
     return rho;
   }
 
@@ -184,9 +184,9 @@ public:
   inline double Re() const { return Re_; }
   //! the inverse Reynolds number (1/Re)
   inline double Re_inv() const { return Re_inv_; }
-  //! the Prandtl number Pr 
+  //! the Prandtl number Pr
   inline double Pr() const { return Pr_; }
-  //! the inverse Prandtl number (1/Pr) 
+  //! the inverse Prandtl number (1/Pr)
   inline double Pr_inv() const { return Pr_inv_; }
 
 private:
@@ -285,14 +285,14 @@ template< class RangeType >
 void Thermodynamics< dimDomain >
 :: primitiveToConservativeThetaForm( const RangeType& prim, RangeType& cons ) const
 {
-  // p,theta  --> rho 
+  // p,theta  --> rho
   cons[ 0 ] = densityThetaForm( prim );
 
-  // v_i  --> v_i+1 * rho 
+  // v_i  --> v_i+1 * rho
   for( int i = 0; i < dimDomain; ++i )
     cons[ i+1 ] = prim[ i ] * cons[0];
 
-  // theta --> theta * rho 
+  // theta --> theta * rho
   cons[ energyId ] = prim[ energyId ] * cons[ 0 ];
 }
 

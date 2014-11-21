@@ -38,7 +38,7 @@ namespace Dune
 
     // Allow generalization to systems
     typedef Fem::FunctionSpace< ctype, double, dimDomain, dimRange >      FunctionSpaceType;
-    typedef Fem::DiscontinuousGalerkinSpace< 
+    typedef Fem::DiscontinuousGalerkinSpace<
                                         FunctionSpaceType,
                                         GridPartType, polOrd,
                                         Fem::CachingStorage >             DiscreteFunctionSpaceType;
@@ -51,6 +51,6 @@ namespace Dune
     typedef AdaptationHandler< GridType, FunctionSpaceType >  AdaptationHandlerType ;
   };
 
-} // end namespace Dune 
+} // end namespace Dune
 
 #endif

@@ -12,7 +12,7 @@
 #include <dune/fem/operator/projection/l2projection.hh>
 #include <dune/fem/solver/odesolver.hh>
 
-// space and function 
+// space and function
 #include <dune/fem/space/discontinuousgalerkin.hh>
 #include <dune/fem/gridpart/adaptiveleafgridpart.hh>
 #include <dune/fem/function/adaptivefunction.hh>
@@ -20,7 +20,7 @@
 
 // include local header files
 #include <dune/fem-dg/stepper/baseevolution.hh>
-#include "problem.hh" 
+#include "problem.hh"
 
 template <class GridImp, class ProblemTraits, int order>               /*@LST1S@*/
 struct StepperTraits {
@@ -32,10 +32,10 @@ struct StepperTraits {
   //typedef AdaptiveLeafGridPart< GridType >                         GridPartType;
   //typedef IdBasedLeafGridPart< GridType >                         GridPartType;
 
-  // type of initial data 
+  // type of initial data
   typedef typename ProblemTraits :: template Traits< GridPartType > :: InitialDataType  InitialDataType;
 
-  // type of function space 
+  // type of function space
   typedef typename InitialDataType :: FunctionSpaceType  FunctionSpaceType;
 
   // ... as well as the Space type
@@ -44,18 +44,18 @@ struct StepperTraits {
   // The discrete function for the unknown solution is defined in the DgOperator
   typedef Dune::Fem::AdaptiveDiscreteFunction< DiscreteSpaceType >           DiscreteFunctionType;
 
-  // type of restriction/prolongation projection for adaptive simulations 
+  // type of restriction/prolongation projection for adaptive simulations
   typedef Dune::Fem::RestrictProlongDefault< DiscreteFunctionType >  RestrictionProlongationType;
 
-  // fake indicator type 
+  // fake indicator type
   typedef DiscreteFunctionType  IndicatorType ;
 
-  // type of IOTuple 
+  // type of IOTuple
   typedef Dune::tuple< DiscreteFunctionType*, DiscreteFunctionType* >  IOTupleType;
 };
 
 
-// calculates || u-u_h ||_L2 including the ghost cells 
+// calculates || u-u_h ||_L2 including the ghost cells
 template <class DiscreteFunctionType>
 class L2ErrorNoComm
 {
@@ -107,10 +107,10 @@ public:
 template <class GridImp, class ProblemTraits, int order>               /*@LST1S@*/
 struct CheckPointingStepper : public AlgorithmBase< StepperTraits< GridImp, ProblemTraits, order> >
 {
-  // my traits class 
+  // my traits class
   typedef StepperTraits< GridImp, ProblemTraits, order> Traits ;
 
-  // my base class 
+  // my base class
   typedef AlgorithmBase < Traits > BaseType;
 
   // type of Grid
@@ -119,7 +119,7 @@ struct CheckPointingStepper : public AlgorithmBase< StepperTraits< GridImp, Prob
   // Choose a suitable GridView
   typedef typename Traits :: GridPartType              GridPartType;
 
-  // type of problem data 
+  // type of problem data
   typedef typename Traits :: InitialDataType           InitialDataType ;
 
   // The discrete function for the unknown solution is defined in the DgOperator
@@ -134,7 +134,7 @@ struct CheckPointingStepper : public AlgorithmBase< StepperTraits< GridImp, Prob
 
   typedef typename BaseType :: SolverMonitorType  SolverMonitorType;
 
-  // type of most simple check pointer 
+  // type of most simple check pointer
   typedef Dune::Fem::CheckPointer< GridType >   CheckPointerType;
 
   using BaseType :: grid_;
@@ -156,54 +156,54 @@ struct CheckPointingStepper : public AlgorithmBase< StepperTraits< GridImp, Prob
 
   const InitialDataType& problem () const { assert( problem_ ); return *problem_; }
 
-  // return reference to discrete function holding solution 
+  // return reference to discrete function holding solution
   DiscreteFunctionType& solution() { return solution_; }
 
   IOTupleType dataTuple()
   {
-    // tuple with additionalVariables 
+    // tuple with additionalVariables
     return IOTupleType( &solution_, (DiscreteFunctionType*) 0 );
   }
 
   CheckPointerType& checkPointer( TimeProviderType& tp ) const
   {
-    // create check point if not exsistent 
-    if( ! checkPointer_ ) 
+    // create check point if not exsistent
+    if( ! checkPointer_ )
       checkPointer_.reset( new CheckPointerType( grid_, tp ) );
 
     return *checkPointer_;
   }
 
-  // restore data, return true for new start 
+  // restore data, return true for new start
   bool restoreFromCheckPoint(TimeProviderType& tp )
   {
-    // add solution to persistence manager for check pointing 
+    // add solution to persistence manager for check pointing
     bool writeData = Dune::Fem::Parameter::getValue<bool>("fem.io.writedata", true );
-    if( writeData ) 
+    if( writeData )
     {
       Dune::Fem::persistenceManager << solution_ ;
     }
 
     std::string checkPointRestartFile = checkPointRestartFileName();
 
-    // if check file is non-zero a restart is performed 
+    // if check file is non-zero a restart is performed
     if( checkPointRestartFile.size() > 0 )
     {
-      // restore data 
+      // restore data
       checkPointer( tp ).restoreData( grid_, checkPointRestartFile );
-  
-      // check consistency of check point 
+
+      // check consistency of check point
       consistencyCheck( tp, solution_ );
 
       // return false for no new start
       return false;
     }
-    // do new start 
+    // do new start
     return true ;
   }
 
-  // backup data  
-  void writeCheckPoint(TimeProviderType& tp) const 
+  // backup data
+  void writeCheckPoint(TimeProviderType& tp) const
   {
     if( Dune::Fem::Parameter::verbose() )
     {
@@ -212,21 +212,21 @@ struct CheckPointingStepper : public AlgorithmBase< StepperTraits< GridImp, Prob
     checkPointer( tp ).write( tp );
   }
 
-  // before first step, do data initialization 
+  // before first step, do data initialization
   void initializeStep(TimeProviderType& tp, const int loop )
   {
     Dune::Fem::L2Projection< InitialDataType, DiscreteFunctionType > l2pro;
     l2pro( problem(), solution_);
   }
 
-  // solve ODE for one time step 
-  void step(TimeProviderType& tp, SolverMonitorType& monitor ) 
+  // solve ODE for one time step
+  void step(TimeProviderType& tp, SolverMonitorType& monitor )
   {
-    // do new projection 
+    // do new projection
     typedef Dune::Fem::TimeDependentFunction< InitialDataType > FunctionType;
     FunctionType function( problem(), tp.time() );
     Dune::Fem::L2Projection< FunctionType, DiscreteFunctionType > l2pro;
-    l2pro(function, solution_); 
+    l2pro(function, solution_);
 
     // exchange data to ghost cells
     solution_.communicate();
@@ -244,7 +244,7 @@ struct CheckPointingStepper : public AlgorithmBase< StepperTraits< GridImp, Prob
     return l2norm.norm( function, u );
   }
 
-  // after last step, do EOC calculation 
+  // after last step, do EOC calculation
   void finalizeStep(TimeProviderType& tp)
   {
     // ... and print the statistics out to the eocOutputPath file
@@ -252,10 +252,10 @@ struct CheckPointingStepper : public AlgorithmBase< StepperTraits< GridImp, Prob
   }
 
 
-  // reset solution on ghost cells 
-  void resetNonInterior( DiscreteFunctionType& solution ) 
+  // reset solution on ghost cells
+  void resetNonInterior( DiscreteFunctionType& solution )
   {
-    typedef typename GridPartType :: template Codim< 0 > :: template 
+    typedef typename GridPartType :: template Codim< 0 > :: template
         Partition< Dune::All_Partition > :: IteratorType  IteratorType;
 
     typedef typename IteratorType :: Entity  EntityType ;
@@ -273,21 +273,21 @@ struct CheckPointingStepper : public AlgorithmBase< StepperTraits< GridImp, Prob
     }
   }
 
-  // after last step, do EOC calculation 
+  // after last step, do EOC calculation
   void consistencyCheck(TimeProviderType& tp, DiscreteFunctionType& u)
   {
     // reset ghost cells to make sure we rely on the communication
     resetNonInterior( u );
 
-    // communicate data first to check communication 
+    // communicate data first to check communication
     u.communicate();
 
     // Compute L2 error of discretized solution ...
     double error = computeError( tp, u );
 
-    std::cout << "Stepper::consistencyCheck: L2-error after restore: " << error 
+    std::cout << "Stepper::consistencyCheck: L2-error after restore: " << error
               << "  stored value: " << error_ << std::endl;
-    if( std::abs( error - error_ ) > 1e-14 ) 
+    if( std::abs( error - error_ ) > 1e-14 )
     {
       std::cerr << "ERROR: backup/restore not consistent" << std::endl;
       //DUNE_THROW(Dune::InvalidStateException, "Error in backup/restore" );
@@ -305,9 +305,9 @@ protected:
   // Initial flux for advection discretization (UpwindFlux)
   const unsigned int      eocId_;
 
-  // check point writer 
+  // check point writer
   mutable std::unique_ptr< CheckPointerType > checkPointer_;
-  // name of checkpoint file 
+  // name of checkpoint file
   const char* checkFile_;
 
   double error_;

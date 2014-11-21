@@ -24,7 +24,7 @@ namespace Dune
   {
 
     template< class GridPart >
-    class EulerModelTraits 
+    class EulerModelTraits
     {
      public:
       typedef GridPart GridPartType;
@@ -41,9 +41,9 @@ namespace Dune
       typedef typename FunctionSpaceType :: DomainType         DomainType;
       typedef typename FunctionSpaceType :: RangeType          RangeType;
       typedef typename FunctionSpaceType :: JacobianRangeType  JacobianRangeType;
-      typedef JacobianRangeType                                FluxRangeType ; 
+      typedef JacobianRangeType                                FluxRangeType ;
       typedef typename FunctionSpaceType :: RangeFieldType     FieldType ;
-      typedef typename ToNewDimDomainFunctionSpace< 
+      typedef typename ToNewDimDomainFunctionSpace<
         FunctionSpaceType, dimDomain-1 > :: Type :: DomainType    FaceDomainType ;
 
       typedef typename GradientFunctionSpaceType :: RangeType          GradientType;
@@ -97,7 +97,7 @@ namespace Dune
       EulerModel( const ProblemType& problem )
         : gamma_( problem.gamma() )
         , problem_( problem )
-        , fieldRotator_( 1 ) // insert number of fist velocity component   
+        , fieldRotator_( 1 ) // insert number of fist velocity component
       {}
 
       double gamma () const { return gamma_; }
@@ -123,7 +123,7 @@ namespace Dune
                             const JacobianRangeType& jac,
                             RangeType & s) const
       {
-        return stiffSource( en, time, x, u, s ); 
+        return stiffSource( en, time, x, u, s );
       }
 
 
@@ -131,10 +131,10 @@ namespace Dune
                           , const double time
                           , const DomainType& x
                           , const RangeType& u
-                          , RangeType& s ) const 
+                          , RangeType& s ) const
       {
         s = 0;
-        return 0; 
+        return 0;
       }
 
 
@@ -160,17 +160,17 @@ namespace Dune
                             RangeType& s) const
       {
         s = 0;
-        return 0; 
+        return 0;
       }
 
-      inline double pressure( const RangeType& u ) const 
+      inline double pressure( const RangeType& u ) const
       {
         return EulerAnalyticalFlux< dimDomain >().pressure( gamma_ , u );
       }
 
-      inline void conservativeToPrimitive( const double time, 
+      inline void conservativeToPrimitive( const double time,
                                            const DomainType& xgl,
-                                           const RangeType& cons, 
+                                           const RangeType& cons,
                                            RangeType& prim,
                                            const bool ) const
       {
@@ -182,7 +182,7 @@ namespace Dune
                              const double time,
                              const DomainType& x,
                              const RangeType& u,
-                             FluxRangeType& f ) const 
+                             FluxRangeType& f ) const
       {
         EulerAnalyticalFlux<dimDomain>().analyticalFlux( gamma_ , u , f );
       }
@@ -217,7 +217,7 @@ namespace Dune
       {
         EulerAnalyticalFlux<dimDomain>().jacobian( gamma_ , u , du , A );
       }
-      
+
 
       enum { Inflow = 1, Outflow = 2, Reflection = 3 , Slip = 4 };
       enum { MaxBnd = Slip };
@@ -225,13 +225,13 @@ namespace Dune
       inline bool hasBoundaryValue( const IntersectionType& it,
                                     const double time,
                                     const FaceDomainType& x ) const
-      { 
+      {
         const int bndId = problem_.boundaryId( it.boundaryId() );
-        // on slip boundary we use boundaryFlux 
+        // on slip boundary we use boundaryFlux
         return bndId != Slip;
       }
 
-      // return iRight for insertion into the numerical flux 
+      // return iRight for insertion into the numerical flux
       inline void boundaryValue( const IntersectionType& it,
                                  const double time,
                                  const FaceDomainType& x,
@@ -240,7 +240,7 @@ namespace Dune
       {
         // Neumann boundary condition
         //uRight = uLeft;
-        // 5 and 6 is also Reflection 
+        // 5 and 6 is also Reflection
         //const int bndId = (it.boundaryId() > MaxBnd) ? MaxBnd : it.boundaryId();
         const int bndId = problem_.boundaryId( it.boundaryId() );
 
@@ -288,7 +288,7 @@ namespace Dune
           abort();
         }
       }
-     
+
       // boundary condition here is slip boundary cond. <u,n>=0
       // gLeft= p*[0 n(global(x)) 0]
       inline double boundaryFlux( const IntersectionType& it,
@@ -297,12 +297,12 @@ namespace Dune
                                   const RangeType& uLeft,
                                   RangeType& gLeft ) const
       {
-        // Slip boundary condition 
-        const DomainType normal = it.integrationOuterNormal( x ); 
-        
+        // Slip boundary condition
+        const DomainType normal = it.integrationOuterNormal( x );
+
         const double p = EulerAnalyticalFlux< dimDomain >().pressure( gamma_ , uLeft );
         gLeft = 0;
-        for ( int i = 0 ; i < dimDomain ; ++i ) 
+        for ( int i = 0 ; i < dimDomain ; ++i )
           gLeft[i+1] = normal[i] * p;
         return 0.;
       }
@@ -334,7 +334,7 @@ namespace Dune
                                            const FaceDomainType& x,
                                            const RangeType& uLeft,
                                            const GradientType& gradLeft,
-                                           RangeType& gLeft ) const  
+                                           RangeType& gLeft ) const
       {
         FieldMatrixConverter< GradientType, JacobianRangeType> jacLeft( gradLeft );
         return diffusionBoundaryFlux( it, time, x, uLeft, jacLeft, gLeft );
@@ -348,7 +348,7 @@ namespace Dune
                                            const FaceDomainType& x,
                                            const RangeType& uLeft,
                                            const JacobianRangeImp& jacLeft,
-                                           RangeType& gLeft ) const  
+                                           RangeType& gLeft ) const
       {
         return 0.;
       }
@@ -366,7 +366,7 @@ namespace Dune
         totalspeed = advspeed;
       }
 
-      inline const ProblemType& problem() const 
+      inline const ProblemType& problem() const
       {
         return problem_;
       }
@@ -374,7 +374,7 @@ namespace Dune
       const double gamma_;
 
       /////////////////////////////////////////////////////////////////
-      // Limiter section 
+      // Limiter section
       ////////////////////////////////////////////////////////////////
       inline void velocity(
                  const EntityType& en,
@@ -391,15 +391,15 @@ namespace Dune
         }
       }
 
-      // we have physical check for this model 
+      // we have physical check for this model
       bool hasPhysical() const
       {
         return true;
       }
 
-      // calculate jump between left and right value 
-      inline bool physical(const EntityType& entity, 
-                           const DomainType& xGlobal, 
+      // calculate jump between left and right value
+      inline bool physical(const EntityType& entity,
+                           const DomainType& xGlobal,
                            const RangeType& u) const
       {
         if (u[0]<1e-8)
@@ -411,39 +411,39 @@ namespace Dune
         }
       }
 
-      // adjust average value if necessary 
+      // adjust average value if necessary
       // (e.g. transform from conservative to primitive variables )
       void adjustAverageValue( const EntityType& entity,
                                const DomainType& xLocal,
                                RangeType& u ) const
       {
-        // nothing to be done here for this test case 
+        // nothing to be done here for this test case
       }
 
-      // calculate jump between left and right value 
+      // calculate jump between left and right value
       inline void jump(const IntersectionType& it,
-                       const double time, 
+                       const double time,
                        const FaceDomainType& x,
                        const RangeType& uLeft,
                        const RangeType& uRight,
                        RangeType& jump) const
       {
-        // take pressure as shock detection values 
+        // take pressure as shock detection values
         const FieldType pl = pressure( uLeft );
         const FieldType pr = pressure( uRight );
         jump  = (pl-pr)/(0.5*(pl+pr));
       }
 
-      // calculate jump between left and right value 
+      // calculate jump between left and right value
       inline void adaptationIndicator(
                        const IntersectionType& it,
-                       const double time, 
+                       const double time,
                        const FaceDomainType& x,
                        const RangeType& uLeft,
                        const RangeType& uRight,
                        RangeType& indicator) const
       {
-        // take density as shock detection values 
+        // take density as shock detection values
         indicator = (uLeft[0] - uRight[0])/(0.5 * (uLeft[0]+uRight[0]));
 
         const DomainType unitNormal = it.unitOuterNormal(x);

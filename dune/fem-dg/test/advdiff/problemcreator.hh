@@ -31,7 +31,7 @@
 #include "models.hh"
 
 
-template< class GridType > 
+template< class GridType >
 struct ProblemCreator
 {
   typedef Dune :: EvolutionProblemInterface<
@@ -49,7 +49,7 @@ struct ProblemCreator
 
     //typedef UpwindFlux< ModelType > FluxType;
     // choice of diffusion flux (see diffusionflux.hh for methods)
-     static const Dune :: DGDiffusionFluxIdentifier PrimalDiffusionFluxId 
+     static const Dune :: DGDiffusionFluxIdentifier PrimalDiffusionFluxId
        =  Dune :: method_general ;
   };
 
@@ -72,11 +72,11 @@ struct ProblemCreator
   }
 
 
-  static inline Dune::GridPtr<GridType> 
+  static inline Dune::GridPtr<GridType>
   initializeGrid()
   {
     std::string description( advectionFluxName() + " " + diffusionFluxName() );
-    // use default implementation 
+    // use default implementation
     return initialize< GridType > ( description );
   }
 
@@ -85,15 +85,15 @@ struct ProblemCreator
     // choice of explicit or implicit ode solver
     static const std::string probString[]  = { "heat" ,"quasi", "pulse", "sin" };
     const int probNr = Dune::Fem::Parameter::getEnum( "advdiff.problem", probString, 0 );
-    if( probNr == 0 ) 
+    if( probNr == 0 )
       return new Dune :: U0< GridType > ();
-    else if ( probNr == 1 ) 
+    else if ( probNr == 1 )
       return new Dune :: QuasiHeatEqnSolution< GridType > ();
-    else if ( probNr == 2 ) 
+    else if ( probNr == 2 )
       return new Dune :: Pulse< GridType > ();
-    else if ( probNr == 3 ) 
+    else if ( probNr == 3 )
       return new Dune :: U0Sin< GridType > ();
-    else 
+    else
     {
       abort();
       return 0;

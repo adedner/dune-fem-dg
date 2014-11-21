@@ -22,7 +22,7 @@
 
 #include <dune/fem-dg/stepper/advectionstepper.hh>
 
-template <class GridType> 
+template <class GridType>
 struct ProblemCreator
 {
   typedef ProblemBase< GridType > ProblemType ;
@@ -34,13 +34,13 @@ struct ProblemCreator
     typedef Dune::Fem::EulerModel< GridPart, ProblemType > ModelType;
 
     // choice of diffusion flux (see diffusionflux.hh for methods)
-    static const Dune :: DGDiffusionFluxIdentifier PrimalDiffusionFluxId 
+    static const Dune :: DGDiffusionFluxIdentifier PrimalDiffusionFluxId
          = Dune :: method_general ;
 
 // for header check
 #ifndef FLUX
 #define FLUX 1
-#endif 
+#endif
 
 // ******************************** NUMERICAL FLUX *****************************
 #if (FLUX==1)
@@ -77,11 +77,11 @@ struct ProblemCreator
 #endif
   }
 
-  static inline Dune::GridPtr<GridType> 
+  static inline Dune::GridPtr<GridType>
   initializeGrid()
   {
     std::string description( advectionFluxName() );
-    // use default implementation 
+    // use default implementation
     return initialize< GridType >( description );
   }
 
@@ -91,25 +91,25 @@ struct ProblemCreator
         = { "sod" , "withman", "withmansmooth", "smooth1d" , "ffs" , "diffraction" , "shockbubble", "p123" };
 
     const int problemNumber = Dune :: Fem :: Parameter :: getEnum ( "euler.problem" , problemNames );
-    
-    if( problemNames[ problemNumber ] == "sod" ) 
+
+    if( problemNames[ problemNumber ] == "sod" )
     {
       return new U0Sod< GridType > ( );
     }
-    else if( problemNames[ problemNumber ] == "smooth1d" ) 
+    else if( problemNames[ problemNumber ] == "smooth1d" )
     {
       return new U0Smooth1D< GridType > ();
     }
-    else if( problemNames[ problemNumber ] == "ffs" ) 
+    else if( problemNames[ problemNumber ] == "ffs" )
     {
       return new U0FFS< GridType > ();
     }
     /*
-    else if( problemNames[ problemNumber ] == "sod" ) 
+    else if( problemNames[ problemNumber ] == "sod" )
     {
       return new SodProblem< GridType > ();
     }
-    else if( problemNames[ problemNumber ] == "sod" ) 
+    else if( problemNames[ problemNumber ] == "sod" )
     {
       return new SodProblem< GridType > ();
     }
@@ -118,7 +118,7 @@ struct ProblemCreator
     {
       return new U0P123< GridType >();
     }
-      
+
     std::cerr << "Error: Problem " << problemNames[ problemNumber ]
               << " not implemented." << std::endl;
 

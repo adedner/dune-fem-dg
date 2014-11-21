@@ -1,6 +1,6 @@
 #ifndef  DUNE_PROBLEM_SIN_HH
 #define  DUNE_PROBLEM_SIN_HH
- 
+
 // dune-fem includes
 #include <dune/fem/io/parameter.hh>
 #include <dune/fem/space/common/functionspace.hh>
@@ -33,7 +33,7 @@ public:
    */
   U0Sin () :
     BaseType () ,
-    velocity_( 1 ), 
+    velocity_( 1 ),
     startTime_( ParameterType::getValue<double>("femhowto.startTime",0.0) ),
     epsilon_( ParameterType::getValue<double>("femhowto.epsilon",0.1) ),
     rhsFactor_( epsilon_ * 2.0 * std:: pow( 2.0, (double) dimDomain) * M_PI * M_PI ),
@@ -59,14 +59,14 @@ public:
                         const RangeType& u,
                         RangeType& res) const
   {
-    // eval solution 
+    // eval solution
     evaluate( arg, t, res );
     // apply factor
     res *= rhsFactor_;
     return 0.0;
   }
 
-  double diffusion( const RangeType& u, const JacobianRangeType& gradU ) const 
+  double diffusion( const RangeType& u, const JacobianRangeType& gradU ) const
   {
     return epsilon();
   }
@@ -123,7 +123,7 @@ public:
 
   /*  \brief finalize the simulation using the calculated numerical
    *  solution u for this problem
-   *  
+   *
    *  \param[in] variablesToOutput Numerical solution in the suitably chosen variables
    *  \param[in] eocloop Specific EOC loop
    */

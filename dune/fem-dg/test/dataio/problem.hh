@@ -27,13 +27,13 @@ namespace Dune {
  * \Omega}\f$.
  *
  */
-template <class GridType>                                      
+template <class GridType>
 struct U0 : public EvolutionProblemInterface<
-                      Dune::Fem::FunctionSpace< double, double, 
+                      Dune::Fem::FunctionSpace< double, double,
                       GridType::dimensionworld, GridType::dimensionworld+2 >,
                       true >
 {
-  double SQR( const double a ) const 
+  double SQR( const double a ) const
   {
     return (a * a);
   }
@@ -224,6 +224,6 @@ public:
   std::string myName;
 };
 
-} // end namespace Dune 
-#endif 
+} // end namespace Dune
+#endif
 

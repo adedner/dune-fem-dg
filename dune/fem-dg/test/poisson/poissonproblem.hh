@@ -1,6 +1,6 @@
 #ifndef DUNE_FEM_DG_POISSONPROBLEM_HH
 #define DUNE_FEM_DG_POISSONPROBLEM_HH
- 
+
 #include <dune/fem/io/parameter.hh>
 #include <dune/fem/space/common/functionspace.hh>
 
@@ -10,10 +10,10 @@
 
 namespace Dune {
 
-template <class GridType, int dimRange>                                         
+template <class GridType, int dimRange>
 struct PoissonProblem : public ProblemInterface<
      Dune :: Fem :: FunctionSpace< double, double, GridType::dimension, dimRange> >
-{                                                                  
+{
 public:
   typedef ProblemInterface<
        Dune :: Fem::FunctionSpace< double, double,
@@ -33,10 +33,10 @@ public:
   /**
    * @brief define problem parameters
    */
-  PoissonProblem(const int problemNumber) :   
+  PoissonProblem(const int problemNumber) :
     BaseType (),
     data_(0)
-  {            
+  {
     FieldType shift = Dune :: Fem::Parameter :: getValue< double > ("femhowto.globalshift", 0);
     FieldType factor = Dune :: Fem::Parameter :: getValue< double > ("femhowto.factor", 1);
     if( problemNumber == 0 )
@@ -74,7 +74,7 @@ public:
     if( problemNumber == 8 )
     {
       //DUNE_THROW(InvalidStateException,"Problem 8 not available");
-      data_ = new CurvedRidges< dim, FieldType,FieldType> (shift,factor); 
+      data_ = new CurvedRidges< dim, FieldType,FieldType> (shift,factor);
     }
     if( problemNumber == 9 )
     {
@@ -86,7 +86,7 @@ public:
     }
     if( problemNumber == 11 )
     {
-      data_ = new Excercise2_3< dim, FieldType,FieldType> (shift,factor); 
+      data_ = new Excercise2_3< dim, FieldType,FieldType> (shift,factor);
     }
     if( problemNumber == 12 )
     {
@@ -149,9 +149,9 @@ public:
       data_ = new FicheraCorner<dim,FieldType,FieldType> (shift,factor);
     }
 
-    if( data_ == 0 ) 
+    if( data_ == 0 )
     {
-      std::cerr << "ERROR: wrong problem number " << std::endl; 
+      std::cerr << "ERROR: wrong problem number " << std::endl;
       abort();
     }
 
@@ -193,9 +193,9 @@ public:
 
   bool constantK() const { return data().constantLocalK();  }
 
-  void K(const DomainType& x, DiffusionMatrixType& m) const 
+  void K(const DomainType& x, DiffusionMatrixType& m) const
   {
-    double k[ dimDomain ][ dimDomain ]; 
+    double k[ dimDomain ][ dimDomain ];
     data().K( &x[0], k );
 
     for(int i=0; i<dimDomain; ++i)
@@ -236,8 +236,8 @@ public:
   }
 
   void gradient(const DomainType& x,
-                JacobianRangeType& grad) const 
-  { 
+                JacobianRangeType& grad) const
+  {
     for (int i=0;i<RangeType::dimension;++i)
       data().gradExact( &x[ 0 ], &grad[ i ][ 0 ] );
   }

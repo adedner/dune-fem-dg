@@ -24,11 +24,11 @@
 #include <dune/fem-dg/stepper/advectiondiffusionstepper.hh>
 
 
-template< class GridType > 
+template< class GridType >
 struct ProblemCreator
 {
   static const int polynomialOrder =  POLORDER ;
-  typedef NSWaves< GridType > ProblemType;  
+  typedef NSWaves< GridType > ProblemType;
 
   template< class GridPart >
   struct Traits
@@ -36,10 +36,10 @@ struct ProblemCreator
     typedef ProblemType      InitialDataType;
     typedef Dune::NSModel< GridPart, InitialDataType > ModelType;
     // choice of diffusion flux (see diffusionflux.hh for methods)
-    static const Dune :: DGDiffusionFluxIdentifier PrimalDiffusionFluxId 
+    static const Dune :: DGDiffusionFluxIdentifier PrimalDiffusionFluxId
            = Dune :: method_general ;
 
-// for header check 
+// for header check
 #ifndef FLUX
 #define FLUX 1
 #endif
@@ -66,7 +66,7 @@ struct ProblemCreator
 #else
 #error "Set the flag FLUX! See Makefile.am for details!"
 #endif
-    
+
 // ****************************** END NUMERICAL FLUX ***************************
   };
 
@@ -98,11 +98,11 @@ struct ProblemCreator
 #endif
   }
 
-  static inline Dune::GridPtr<GridType>               
+  static inline Dune::GridPtr<GridType>
   initializeGrid()
   {
-    std::string description( advectionFluxName() + " " + diffusionFluxName() ); 
-    // use default implementation 
+    std::string description( advectionFluxName() + " " + diffusionFluxName() );
+    // use default implementation
     return initialize< GridType > ( description );
   }
 

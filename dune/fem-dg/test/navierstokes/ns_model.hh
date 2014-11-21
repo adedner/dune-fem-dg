@@ -16,14 +16,14 @@ namespace Dune {
 
 //////////////////////////////////////////////////////
 //
-//                 NAVIER-STOKES EQNS 
+//                 NAVIER-STOKES EQNS
 //
 //////////////////////////////////////////////////////
-template< class GridPart, class Problem > 
-class NSModelTraits 
+template< class GridPart, class Problem >
+class NSModelTraits
 {
   public:
-  typedef Problem  ProblemType;  
+  typedef Problem  ProblemType;
   typedef GridPart GridPartType;
   typedef typename GridPart :: GridType                     GridType;
   enum { dimDomain = GridType :: dimensionworld };
@@ -32,7 +32,7 @@ class NSModelTraits
   enum { dimGradient = dimDomain + 1 };
 
   typedef Fem :: FunctionSpace< double, double, dimDomain, dimRange > FunctionSpaceType ;
-  
+
   typedef typename FunctionSpaceType :: DomainType         DomainType ;
   typedef typename FunctionSpaceType :: DomainFieldType    DomainFieldType ;
   typedef FieldVector< DomainFieldType, dimDomain - 1 >    FaceDomainType;
@@ -86,7 +86,7 @@ class NSModel : public DefaultModel < NSModelTraits< GridPartType, ProblemImp > 
   typedef typename Traits :: ThermodynamicsType             ThermodynamicsType;
 
  public:
-  NSModel( const ProblemType& problem ) 
+  NSModel( const ProblemType& problem )
     : thermodynamics_( problem.thermodynamics() )
     , problem_( problem )
     , nsFlux_( problem )
@@ -118,7 +118,7 @@ class NSModel : public DefaultModel < NSModelTraits< GridPartType, ProblemImp > 
                         const JacobianRangeType& jac,
                         RangeType & s) const
   {
-    return stiffSource( en, time, x, u, s ); 
+    return stiffSource( en, time, x, u, s );
   }
 
 
@@ -126,7 +126,7 @@ class NSModel : public DefaultModel < NSModelTraits< GridPartType, ProblemImp > 
                       , const double time
                       , const DomainType& x
                       , const RangeType& u
-                      , RangeType& s ) const 
+                      , RangeType& s ) const
   {
     // some special RHS for testcases/NSWaves
     const DomainType& xgl = en.geometry().global(x);
@@ -163,13 +163,13 @@ class NSModel : public DefaultModel < NSModelTraits< GridPartType, ProblemImp > 
                          const double time,
                          const DomainType& x,
                          const RangeType& u,
-                         JacobianRangeType& f ) const 
+                         JacobianRangeType& f ) const
   {
     nsFlux_.analyticalFlux( u, f );
   }
 
   /////////////////////////////////////////////////////////////////
-  // Limiter section 
+  // Limiter section
   ////////////////////////////////////////////////////////////////
   inline void velocity( const EntityType& en,
                         const double time,
@@ -185,16 +185,16 @@ class NSModel : public DefaultModel < NSModelTraits< GridPartType, ProblemImp > 
     }
   }
 
-  // adjust average value if necessary 
+  // adjust average value if necessary
   // (e.g. transform from conservative to primitive variables )
   void adjustAverageValue( const EntityType& entity,
                            const DomainType& xLocal,
                            RangeType& u ) const
   {
-    // nothing to be done here for this test case 
+    // nothing to be done here for this test case
   }
 
-  // calculate jump between left and right value 
+  // calculate jump between left and right value
   inline void jump(const IntersectionType& it,
                    const double time,
                    const FaceDomainType& x,
@@ -205,11 +205,11 @@ class NSModel : public DefaultModel < NSModelTraits< GridPartType, ProblemImp > 
     const double pl = pressure( uLeft );
     const double pr = pressure( uRight );
 
-    // take pressure as shock detection values 
+    // take pressure as shock detection values
     jump  = (pl-pr)/(0.5*(pl+pr));
   }
 
-  // calculate jump between left and right value 
+  // calculate jump between left and right value
   inline void adaptationIndicator(
                    const IntersectionType& it,
                    const double time,
@@ -253,32 +253,32 @@ class NSModel : public DefaultModel < NSModelTraits< GridPartType, ProblemImp > 
     // look at Ch. Merkle Diplom thesis, pg. 38
     // get value of mu at temperature T
 
-    // get mu 
+    // get mu
     const double mu = problem_.mu( u );
 
-    // ksi = 0.25 
+    // ksi = 0.25
     return mu * circumEstimate * alpha_ / (0.25 * u[0] * enVolume);
   }
 
 
-  //! return analyticalFlux for 1st pass 
+  //! return analyticalFlux for 1st pass
   inline void jacobian( const EntityType& en,
                         const double time,
                         const DomainType& x,
-                        const RangeType& u, 
-                        JacobianFluxRangeType& a ) const 
+                        const RangeType& u,
+                        JacobianFluxRangeType& a ) const
   {
     nsFlux_.jacobian( u, a );
   }
-  
+
 
   inline bool hasBoundaryValue( const IntersectionType& it,
                                 const double time,
-                                const FaceDomainType& x ) const 
-  { 
+                                const FaceDomainType& x ) const
+  {
     return true;
   }
- 
+
 
   inline double boundaryFlux( const IntersectionType& it,
                               const double time,
@@ -300,7 +300,7 @@ class NSModel : public DefaultModel < NSModelTraits< GridPartType, ProblemImp > 
   {
     abort();
     DomainType xgl=it.intersectionGlobal().global(x);
-    const typename Traits :: DomainType normal = it.integrationOuterNormal(x); 
+    const typename Traits :: DomainType normal = it.integrationOuterNormal(x);
     double p;
     double T;
     pressAndTemp( uLeft, p, T );
@@ -311,14 +311,14 @@ class NSModel : public DefaultModel < NSModelTraits< GridPartType, ProblemImp > 
       gLeft[i+1] = normal[i]*p;
 
     return 0.0;
-  } 
+  }
 
   inline double diffusionBoundaryFlux( const IntersectionType& it,
                                        const double time,
                                        const FaceDomainType& x,
                                        const RangeType& uLeft,
                                        const GradientRangeType& gradLeft,
-                                       RangeType& gLeft ) const  
+                                       RangeType& gLeft ) const
   {
     Fem::FieldMatrixConverter< GradientRangeType, JacobianRangeType> jacLeft( gradLeft );
     return diffusionBoundaryFlux( it, time, x, uLeft, jacLeft, gLeft );
@@ -332,7 +332,7 @@ class NSModel : public DefaultModel < NSModelTraits< GridPartType, ProblemImp > 
                                        const FaceDomainType& x,
                                        const RangeType& uLeft,
                                        const JacobianRangeImp& jacLeft,
-                                       RangeType& gLeft ) const  
+                                       RangeType& gLeft ) const
   {
     std::cerr <<"diffusionBoundaryFlux shouldn't be used for this testcase" <<std::endl;
     abort();
@@ -348,7 +348,7 @@ class NSModel : public DefaultModel < NSModelTraits< GridPartType, ProblemImp > 
     const DomainType xgl = it.geometry().global( x );
     problem_.evaluate( time , xgl , uRight );
   }
-  
+
   // here x is in global coordinates
   inline void maxSpeed( const EntityType& entity,
                         const double time,
@@ -356,7 +356,7 @@ class NSModel : public DefaultModel < NSModelTraits< GridPartType, ProblemImp > 
                         const DomainType& normal,
                         const RangeType& u,
                         double& advspeed,
-                        double& totalspeed ) const 
+                        double& totalspeed ) const
   {
     advspeed = nsFlux_.maxSpeed( normal , u );
     totalspeed=advspeed;
@@ -393,7 +393,7 @@ class NSModel : public DefaultModel < NSModelTraits< GridPartType, ProblemImp > 
 
   inline void conservativeToPrimitive( const double time,
                                        const DomainType& xgl,
-                                       const RangeType& cons, 
+                                       const RangeType& cons,
                                        RangeType& result,
                                        bool ) const
   {

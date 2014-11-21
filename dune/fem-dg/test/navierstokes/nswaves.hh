@@ -14,11 +14,11 @@
 
 
 /***********************************************************
- *                                                   
- * 2d problem                                        
+ *
+ * 2d problem
  * PhD thesis Gregor Gassner, pg. 99
  *   Analytical solution for the Navier-Stokes equations
- *                                                  
+ *
  **********************************************************/
 
 
@@ -51,8 +51,8 @@ class NSWaves : public EvolutionProblemInterface<
     omegaGNS_( ParameterType::getValue< double >( "omegaGNS" ) ),
     kGNS_( ParameterType::getValue< double >( "kGNS" ) ),
     gammaGNS_( ParameterType::getValue< double >( "gammaGNS" ) ),
-    endTime_ ( ParameterType::getValue<double>( "femhowto.endTime" )), 
-    mu_( ParameterType :: getValue< double >( "mu" )), 
+    endTime_ ( ParameterType::getValue<double>( "femhowto.endTime" )),
+    mu_( ParameterType :: getValue< double >( "mu" )),
     k_ ( c_pd() * Pr_inv() * mu_),
     A_( init( true ) ),
     B_( init( false ) )
@@ -60,35 +60,35 @@ class NSWaves : public EvolutionProblemInterface<
   }
 
 
-  // initialize A and B 
+  // initialize A and B
   double init(const bool returnA ) const ;
 
-  // print info 
+  // print info
   void printInitInfo() const;
 
-  // source implementations 
+  // source implementations
   inline bool hasStiffSource() const { return false; }
   inline bool hasNonStiffSource() const  { return true; }
   inline double stiffSource( const double t, const DomainType& x, const RangeType& u, RangeType& res ) const;
   inline double nonStiffSource( const double t, const DomainType& x, const RangeType& u, RangeType& res ) const;
 
   // this is the initial data
-  inline void evaluate( const DomainType& arg , RangeType& res ) const 
+  inline void evaluate( const DomainType& arg , RangeType& res ) const
   {
     evaluate( 0., arg, res );
   }
 
-  // evaluate function 
+  // evaluate function
   inline void evaluate( const double t, const DomainType& x, RangeType& res ) const;
 
-  // cloned method 
+  // cloned method
   inline void evaluate( const DomainType& x, const double t, RangeType& res ) const
   {
     evaluate( t, x, res );
   }
 
   //template< class RangeImp >
-  double pressure( const RangeType& u ) const 
+  double pressure( const RangeType& u ) const
   {
     return thermodynamics().pressureEnergyForm( u );
   }
@@ -98,14 +98,14 @@ class NSWaves : public EvolutionProblemInterface<
     return thermodynamics().temperatureEnergyForm( u, pressure( u ) );
   }
 
-  // pressure and temperature 
+  // pressure and temperature
   template< class RangeImp >
   inline void pressAndTemp( const RangeImp& u, double& p, double& T ) const;
 
 
   /*  \brief finalize the simulation using the calculated numerical
    *  solution u for this problem
-   *  
+   *
    *  \param[in] variablesToOutput Numerical solution in the suitably chosen variables
    *  \param[in] eocloop Specific EOC loop
    */
@@ -120,9 +120,9 @@ class NSWaves : public EvolutionProblemInterface<
   using ThermodynamicsType :: Re_inv;
   using ThermodynamicsType :: Pr;
   using ThermodynamicsType :: Pr_inv;
-  using ThermodynamicsType :: c_pd; 
+  using ThermodynamicsType :: c_pd;
   using ThermodynamicsType :: c_pd_inv;
-  using ThermodynamicsType :: c_vd; 
+  using ThermodynamicsType :: c_vd;
   using ThermodynamicsType :: c_vd_inv;
   using ThermodynamicsType :: gamma;
   using ThermodynamicsType :: g;
@@ -132,12 +132,12 @@ class NSWaves : public EvolutionProblemInterface<
   inline std::string myName() const { return myName_; }
   void paraview_conv2prim() const {}
   std::string description() const;
- 
+
   inline double mu( const RangeType& ) const { return mu_; }
   inline double mu( const double T ) const { return mu_; }
   inline double lambda( const double T ) const { return -2./3.*mu(T); }
-  inline double k( const double T ) const { return c_pd() *mu(T) * Pr_inv(); } 
-  
+  inline double k( const double T ) const { return c_pd() *mu(T) * Pr_inv(); }
+
 protected:
   const std::string myName_;
   const double omegaGNS_;
@@ -153,27 +153,27 @@ protected:
 
 template <class GridType>
 inline double NSWaves<GridType>
-:: init(const bool returnA ) const 
+:: init(const bool returnA ) const
 {
   if( dimension == 1 )
   {
-    if( returnA ) // A 
+    if( returnA ) // A
       return (-omegaGNS_ + kGNS_*(3.5*gamma()-2.5));
-    else // B 
+    else // B
       return ( kGNS_*(0.5+3.5*gamma()) - 4.*omegaGNS_ );
   }
-  if( dimension == 2 ) 
+  if( dimension == 2 )
   {
-    if( returnA ) // A 
+    if( returnA ) // A
       return (-omegaGNS_ + kGNS_*(3.*gamma() - 1.));
-    else // B 
+    else // B
       return ( kGNS_*(2.+6.*gamma()) - 4.*omegaGNS_ );
   }
-  else if( dimension == 3 ) 
+  else if( dimension == 3 )
   {
-    if( returnA ) // A 
+    if( returnA ) // A
       return (-omegaGNS_ + 0.5*kGNS_*(5.*gamma() + 1.));
-    else // B 
+    else // B
      return (kGNS_*(4.5+7.5*gamma()) - 4.*omegaGNS_);
   }
 
@@ -222,7 +222,7 @@ inline double NSWaves<GridType>
   for(int i=2; i<energyId; ++i )
     res[ i ] = res[ 1 ];
 
-  res[ energyId ]  = 0.5*((9.+Kappa*15.)*Omega-8.*a)*std::cos(Omega*sumX-a*t) 
+  res[ energyId ]  = 0.5*((9.+Kappa*15.)*Omega-8.*a)*std::cos(Omega*sumX-a*t)
               +Amplitude*(3.*Omega*Kappa-a)*std::sin(2.*(Omega*sumX-a*t))
               +3.*mu0*Kappa*(Omega*Omega)*Pr_inv()*std::sin(Omega*sumX-a*t);
 
@@ -246,7 +246,7 @@ inline double NSWaves<GridType>
 
   res[ energyId ] = gammaGNS_*( sin2BetaGamma*( dimension * gamma()*kGNS_ - omegaGNS_ ) );
   res[ energyId ] += gammaGNS_*( cosBeta *B_ );
-  res[ energyId ] += dimension * gammaGNS_ * kGNS_ * kGNS_* k_ * c_vd_inv() 
+  res[ energyId ] += dimension * gammaGNS_ * kGNS_ * kGNS_* k_ * c_vd_inv()
                      * Re_inv() * sinBeta;
 
   // time step restriction
@@ -257,7 +257,7 @@ inline double NSWaves<GridType>
 
 template <class GridType>
 inline void NSWaves<GridType>
-:: evaluate( const double t, const DomainType& x, RangeType& res ) const 
+:: evaluate( const double t, const DomainType& x, RangeType& res ) const
 {
 #ifdef WBPROBLEM
   // 10-0.7*(10.*x-x*x*2.) , 10.-x*4.
@@ -293,7 +293,7 @@ inline void NSWaves<GridType>
   const double sinBeta = std::sin( beta );
   const double sinGamma2 = sinBeta * gammaGNS_ + 2.;
 
-  for(int i=0; i<energyId; ++i) 
+  for(int i=0; i<energyId; ++i)
   {
     res[ i ] = sinGamma2; // constant velocity field
   }
@@ -321,7 +321,7 @@ inline std::string NSWaves<GridType>
   stream <<"{\\bf Problem:}" <<myName_
          <<", {\\bf $\\mu$:} " <<mu_
          <<", {\\bf End time:} " <<endTime_
-         <<", {$\\gamma_{GNS}$:} " <<gammaGNS_ 
+         <<", {$\\gamma_{GNS}$:} " <<gammaGNS_
          <<"\n"
          <<", {$\\omega_{GNS}$:} " <<omegaGNS_
          <<", {$k_{GNS}$:} " <<kGNS_;

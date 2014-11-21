@@ -38,7 +38,7 @@ namespace Dune {
 
 #if HAVE_UG
     template <int dim>
-    struct FaceQuadChooser< const Dune::UGGrid< dim >, dim > 
+    struct FaceQuadChooser< const Dune::UGGrid< dim >, dim >
     {
       typedef Dune::Fem::ElementQuadrature< GridPartType, 1 > Type;
     };
@@ -46,13 +46,13 @@ namespace Dune {
 
     // CACHING
     typedef typename FaceQuadChooser< const GridType, GridType::dimension > :: Type  FaceQuadratureType;
-    typedef Dune::Fem::CachingQuadrature< GridPartType, 0 >     VolumeQuadratureType; 
+    typedef Dune::Fem::CachingQuadrature< GridPartType, 0 >     VolumeQuadratureType;
 
     // Allow generalization to systems
     typedef Dune::Fem::FunctionSpace< ctype, double, dimDomain, dimRange >      FunctionSpaceType;
 #if DGSCHEME
 #if ONB
-    #warning using DG space with ONB 
+    #warning using DG space with ONB
     typedef Dune::Fem::DiscontinuousGalerkinSpace
 #elif LAG
     #warning using DG space with Lagrange base functions
@@ -69,7 +69,7 @@ namespace Dune {
 #else
 #define USE_STRONG_BC
 #if LAGRANGESPACE
-    #warning using Lagrange space 
+    #warning using Lagrange space
     typedef Dune::Fem::LagrangeDiscreteFunctionSpace
 #else
 #define USE_STRONG_BC
@@ -79,14 +79,14 @@ namespace Dune {
 #endif
 #endif
        < FunctionSpaceType, GridPartType, polOrd, Dune::Fem::CachingStorage > DiscreteFunctionSpaceType;
-    
+
     static const bool symmetricSolver = true ;
 #if WANT_ISTL
-    typedef Solvers<DiscreteFunctionSpaceType, istl,  symmetricSolver> SolversType; 
+    typedef Solvers<DiscreteFunctionSpaceType, istl,  symmetricSolver> SolversType;
 #elif WANT_PETSC
-    typedef Solvers<DiscreteFunctionSpaceType, petsc, symmetricSolver> SolversType; 
+    typedef Solvers<DiscreteFunctionSpaceType, petsc, symmetricSolver> SolversType;
 #else
-    typedef Solvers<DiscreteFunctionSpaceType, fem,   symmetricSolver> SolversType; 
+    typedef Solvers<DiscreteFunctionSpaceType, fem,   symmetricSolver> SolversType;
 #endif
 
     typedef typename SolversType :: DiscreteFunctionType       DestinationType;
@@ -95,5 +95,5 @@ namespace Dune {
 
   };
 
-} // end namespace Dune 
+} // end namespace Dune
 #endif

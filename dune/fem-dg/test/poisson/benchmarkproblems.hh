@@ -8,88 +8,88 @@
 
 #include <dune/common/exceptions.hh>
 
-template<int dim, class DomainField, class Field> 
+template<int dim, class DomainField, class Field>
 class DataFunctionIF
 {
-protected:  
+protected:
   DataFunctionIF() {}
-public:  
-  // destructor 
+public:
+  // destructor
   virtual ~DataFunctionIF() {}
-  
-  // returns true if K is constant on one element 
+
+  // returns true if K is constant on one element
   virtual bool constantLocalK () const { return true; }
-  
-  // diffusion tensor 
+
+  // diffusion tensor
   virtual void K(const DomainField x[dim], Field k[dim][dim] ) const = 0;
-  // right hand side 
+  // right hand side
   virtual Field rhs  (const DomainField x[dim]) const = 0;
-  // right hand side 
-  virtual Field rhs  (const double time, const DomainField x[dim]) const 
+  // right hand side
+  virtual Field rhs  (const double time, const DomainField x[dim]) const
   {
-    return rhs( x ); 
+    return rhs( x );
   }
   virtual void velocity(const DomainField x[dim], DomainField v[dim]) const
   {
-    for(int i=0; i<dim; ++i) 
+    for(int i=0; i<dim; ++i)
       v[i] = 0.;
   }
 
-  // exact solution 
+  // exact solution
   virtual Field exact(const DomainField x[dim]) const = 0;
 
-  // exact solution (time dependent) 
-  virtual Field exact(const double time, const DomainField x[dim]) const 
+  // exact solution (time dependent)
+  virtual Field exact(const double time, const DomainField x[dim]) const
   {
-    return exact( x ); 
+    return exact( x );
   }
 
-  // exact gradient 
+  // exact gradient
   virtual void gradExact(const DomainField x[dim], Field grad[dim] ) const = 0;
 
-  // boundary data 
+  // boundary data
   virtual bool boundaryDataFunction(const DomainField x[dim], Field & val) const = 0;
 
-  // neumann boundary 
-  virtual void neumann(const DomainField x[dim], Field grad[dim]) const 
+  // neumann boundary
+  virtual void neumann(const DomainField x[dim], Field grad[dim]) const
   {
     Field tmp[dim];
     gradExact(x,tmp);
     Field k[dim][dim];
     K(x, k);
-    for(int i=0; i<dim; ++i) 
+    for(int i=0; i<dim; ++i)
     {
       grad[i] = 0;
-      for(int j=0; j<dim; ++j) 
+      for(int j=0; j<dim; ++j)
         grad[i] += tmp[j] * k[i][j];
     }
   }
 
-  // boundary data 
-  virtual bool boundaryDataFunction(const double time, 
-                                    const DomainField x[dim], 
-                                    Field & val) const 
+  // boundary data
+  virtual bool boundaryDataFunction(const double time,
+                                    const DomainField x[dim],
+                                    Field & val) const
   {
-    return boundaryDataFunction(x, val); 
+    return boundaryDataFunction(x, val);
   }
 
-  // neumann boundary 
-  virtual void neumann(const double time, 
-                       const DomainField x[dim], Field grad[dim]) const 
+  // neumann boundary
+  virtual void neumann(const double time,
+                       const DomainField x[dim], Field grad[dim]) const
   {
     return neumann(x, grad);
   }
 
-  virtual int getBoundaryId(const DomainField x[dim]) const 
+  virtual int getBoundaryId(const DomainField x[dim]) const
   {
-    for(int i=0; i<dim; ++i) 
+    for(int i=0; i<dim; ++i)
     {
       const int id = 2 * i;
-      if( x[i] <= 1e-10 ) 
+      if( x[i] <= 1e-10 )
       {
         return id;
       }
-      else if ( x[i]  >= 0.99999999 ) 
+      else if ( x[i]  >= 0.99999999 )
       {
         return id + 1;
       }
@@ -100,12 +100,12 @@ public:
     return -1;
   }
   virtual int getBoundaryId(const DomainField x[dim],
-                            const DomainField n[dim]) const 
+                            const DomainField n[dim]) const
   {
     return getBoundaryId( x );
   }
 
-  Field SQR( const Field& a ) const 
+  Field SQR( const Field& a ) const
   {
     return (a * a);
   }
@@ -116,34 +116,34 @@ class AlbertaProblem : public DataFunctionIF<dim,DomainField,Field>
 {
   const Field globalShift_;
   const Field factor_;
-public:  
+public:
   virtual ~AlbertaProblem() {}
   AlbertaProblem(Field globalShift, Field factor)
     : globalShift_(0.0)
-    , factor_(1.0) 
+    , factor_(1.0)
   {
     //assert(dim == 2);
   }
 
-  virtual void K(const DomainField x[dim], Field k[dim][dim] ) const 
+  virtual void K(const DomainField x[dim], Field k[dim][dim] ) const
   {
-    for(int i=0; i<dim; ++i) 
+    for(int i=0; i<dim; ++i)
     {
       for(int j=0; j<dim; ++j) k[i][j] = 0;
       k[i][i] = factor_;
     }
   }
 
-  inline Field xSqr(const DomainField x[dim]) const 
+  inline Field xSqr(const DomainField x[dim]) const
   {
-    Field xsqr = 0.0; 
+    Field xsqr = 0.0;
     for(int i=0; i<dim; ++i) xsqr += x[i] * x[i];
     return xsqr;
   }
 
-  virtual Field rhs  (const DomainField x[dim]) const 
+  virtual Field rhs  (const DomainField x[dim]) const
   {
-    const Field xsqr = xSqr( x ); 
+    const Field xsqr = xSqr( x );
     return -(400.0 * xsqr - 20.0 * dim) *  std :: exp( -10.0 * xsqr );
   }
 
@@ -151,46 +151,46 @@ public:
   {
     return std :: exp( -10.0 * xSqr( x ) );
   }
-  
-  virtual void gradExact(const DomainField x[dim], Field grad[dim] ) const 
+
+  virtual void gradExact(const DomainField x[dim], Field grad[dim] ) const
   {
     const Field factor = -20.0 * std :: exp( -10.0 * xSqr( x ) );
-    for(int i=0; i<dim; ++i) 
+    for(int i=0; i<dim; ++i)
       grad[i] = x[i] * factor ;
   }
-  
+
   virtual bool boundaryDataFunction(const DomainField x[dim], Field & val) const
   {
-    val = exact( x ); 
+    val = exact( x );
     //if(x[0] <= 0.0) return false;
     //if(x[1] <= 0.0) return false;
-    return true; 
-    //return false; 
+    return true;
+    //return false;
   }
 };
 
 
-template <int dim, class DomainField, class Field> 
+template <int dim, class DomainField, class Field>
 class SinSinSin : public DataFunctionIF<dim,DomainField,Field>
 {
   Field K_[dim][dim];
-public:  
+public:
   virtual ~SinSinSin() {}
   SinSinSin(Field globalShift, Field factor)
   {
-    for(int i=0; i<dim; ++i) 
+    for(int i=0; i<dim; ++i)
     {
-      for(int j=0; j<dim; ++j) 
+      for(int j=0; j<dim; ++j)
       {
-        if( i == j ) 
+        if( i == j )
         {
-          if( i == 0 ) 
+          if( i == 0 )
             K_[i][j] = 10.;//factor;
-          else 
+          else
             K_[i][j] = 0.1;//factor;
         }
         /*
-        else if( std::abs( i - j ) == 1 ) 
+        else if( std::abs( i - j ) == 1 )
         {
           K_[i][j] = 0.5;
         }
@@ -200,36 +200,36 @@ public:
     }
 
     /*
-    for(int i=0; i<dim; ++i) 
+    for(int i=0; i<dim; ++i)
     {
-      for(int j=0; j<dim; ++j) 
+      for(int j=0; j<dim; ++j)
       {
         std::cout << K_[i][j] << " ";
-      }   
+      }
       std::cout << std::endl;
     }
     */
   }
 
-  virtual void K(const DomainField x[dim], Field k[dim][dim] ) const 
+  virtual void K(const DomainField x[dim], Field k[dim][dim] ) const
   {
-    for(int i=0; i<dim; ++i) 
+    for(int i=0; i<dim; ++i)
     {
-      for(int j=0; j<dim; ++j) 
+      for(int j=0; j<dim; ++j)
       {
         k[i][j] = K_[i][j];
       }
     }
   }
 
-  virtual Field rhs  (const DomainField x[dim]) const 
+  virtual Field rhs  (const DomainField x[dim]) const
   {
     Field sum = 0;
     int comp[ dim - 1 ] ;
-    for(int i=0; i<dim; ++i) 
+    for(int i=0; i<dim; ++i)
     {
       comp[0] = i;
-      for(int j=0; j<dim; ++j) 
+      for(int j=0; j<dim; ++j)
       {
         comp[ dim - 2 ] = j;
         sum += K_[j][i] * laplace( x, comp );
@@ -242,43 +242,43 @@ public:
   {
     const Field pi = 2.0 * M_PI;
     Field val = 1.0;
-    for(int i=0; i<dim; ++i) 
+    for(int i=0; i<dim; ++i)
     {
       val *= sin( pi * x[i] );
     }
     return val;
   }
-  
-  double laplace(const DomainField x[dim], const int comp[dim - 1] ) const 
-  {
-    const Field pi = 2.0 * M_PI; 
-    Field val = pi * pi; 
 
-    std::set<int> comps ; 
-    for( int j=0; j<dim-1; ++j) 
+  double laplace(const DomainField x[dim], const int comp[dim - 1] ) const
+  {
+    const Field pi = 2.0 * M_PI;
+    Field val = pi * pi;
+
+    std::set<int> comps ;
+    for( int j=0; j<dim-1; ++j)
     {
       comps.insert( comp[j] );
     }
 
-    if( comps.size() == 1 ) 
+    if( comps.size() == 1 )
     {
-      // add other components 
-      for(int i=0; i<dim; ++i) 
+      // add other components
+      for(int i=0; i<dim; ++i)
       {
         val *= sin( pi * x[ i ] );
       }
 
-      // minus because sin'' = -sin 
+      // minus because sin'' = -sin
       return -val;
     }
-    else 
+    else
     {
-      for( int i=0; i<dim-1; ++i) 
+      for( int i=0; i<dim-1; ++i)
       {
         val *= cos( pi * x[ comp[i] ] );
       }
 
-      for(int i=0; i<dim; ++i) 
+      for(int i=0; i<dim; ++i)
       {
         if( comps.find( i ) == comps.end() )
           val *= sin( pi * x[ i ] );
@@ -287,53 +287,53 @@ public:
     }
   }
 
-  double gradient(const DomainField x[dim], const int comp) const 
+  double gradient(const DomainField x[dim], const int comp) const
   {
-    const Field pi = 2.0 * M_PI; 
+    const Field pi = 2.0 * M_PI;
     Field val = pi * cos( pi * x[ comp ] );
-    // add other components 
-    for(int j=1; j<dim; ++j) 
+    // add other components
+    for(int j=1; j<dim; ++j)
     {
       val *= sin( pi * x[ (comp + j) % dim ] );
     }
     return val;
   }
 
-  virtual void gradExact(const DomainField x[dim], Field grad[dim] ) const 
+  virtual void gradExact(const DomainField x[dim], Field grad[dim] ) const
   {
-    for(int i=0; i<dim; ++i) 
+    for(int i=0; i<dim; ++i)
     {
       grad[i] = gradient( x, i );
     }
   }
-  
+
   virtual bool boundaryDataFunction(const DomainField x[dim], Field & val) const
   {
-    val = exact( x ); 
+    val = exact( x );
     //if(x[0] <= 0.0) return false;
-    return true; 
-    //return false; 
+    return true;
+    //return false;
   }
 };
 
 
-template <int dim, class DomainField, class Field> 
+template <int dim, class DomainField, class Field>
 class SinSin : public DataFunctionIF<dim,DomainField,Field>
 {
   const Field globalShift_;
   const Field factor_;
-public:  
+public:
   virtual ~SinSin() {}
   SinSin(Field globalShift, Field factor)
     : globalShift_(globalShift)
-    , factor_(factor) 
+    , factor_(factor)
   {
     //assert(dim == 2);
   }
 
-  virtual void K(const DomainField x[dim], Field k[dim][dim] ) const 
+  virtual void K(const DomainField x[dim], Field k[dim][dim] ) const
   {
-    for(int i=0; i<dim; ++i) 
+    for(int i=0; i<dim; ++i)
     {
       k[i][i] = factor_;
       for(int j=0; j<i; ++j)     k[i][j] = 0;
@@ -341,7 +341,7 @@ public:
     }
   }
 
-  virtual Field rhs  (const DomainField x[dim]) const 
+  virtual Field rhs  (const DomainField x[dim]) const
   {
     Field sin_x = sin(2.0*M_PI*x[0]);
     Field sin_y = sin(2.0*M_PI*x[1]);
@@ -357,42 +357,42 @@ public:
     val += globalShift_;
     return val;
   }
-  
-  virtual void gradExact(const DomainField x[dim], Field grad[dim] ) const 
+
+  virtual void gradExact(const DomainField x[dim], Field grad[dim] ) const
   {
     grad[0] = 2.0*M_PI*cos(2.0*M_PI*x[0])*sin(2.0*M_PI*x[1]);
     grad[1] = 2.0*M_PI*sin(2.0*M_PI*x[0])*cos(2.0*M_PI*x[1]);
 
-    // initial grad with zero for 3d 
+    // initial grad with zero for 3d
     for( int i=2; i<dim; ++i) grad[i] = 0;
   }
-  
+
   virtual bool boundaryDataFunction(const DomainField x[dim], Field & val) const
   {
-    val = exact( x ); 
+    val = exact( x );
     //if(x[0] <= 0.0) return false;
-    return true; 
-    //return false; 
+    return true;
+    //return false;
   }
 };
 
-template <int dim, class DomainField, class Field> 
+template <int dim, class DomainField, class Field>
 class CosCos : public DataFunctionIF<dim,DomainField,Field>
 {
   const Field globalShift_;
   const Field factor_;
-public:  
+public:
   virtual ~CosCos() {}
   CosCos(Field globalShift, Field factor)
     : globalShift_(globalShift)
-    , factor_(factor) 
+    , factor_(factor)
   {
     //assert(dim == 2);
   }
 
-  virtual void K(const DomainField x[dim], Field k[dim][dim] ) const 
+  virtual void K(const DomainField x[dim], Field k[dim][dim] ) const
   {
-    for(int i=0; i<dim; ++i) 
+    for(int i=0; i<dim; ++i)
     {
       k[i][i] = factor_;
       for(int j=0; j<i; ++j)     k[i][j] = 0;
@@ -401,11 +401,11 @@ public:
   }
 
 
-  virtual Field rhs  (const DomainField x[dim]) const 
+  virtual Field rhs  (const DomainField x[dim]) const
   {
     Field cos_x = cos(2.0*M_PI*x[0]);
     Field cos_y = cos(2.0*M_PI*x[1]);
-       
+
     Field val = 8.0 * M_PI*M_PI* cos_x * cos_y ;
     val *= factor_;
     return val;
@@ -419,45 +419,45 @@ public:
     return val;
     //return x[1];
   }
-  
-  virtual void gradExact(const DomainField x[dim], Field grad[dim] ) const 
+
+  virtual void gradExact(const DomainField x[dim], Field grad[dim] ) const
   {
     grad[0] = 2.0*M_PI*-sin(2.0*M_PI*x[0])*cos(2.0*M_PI*x[1]);
     grad[1] = 2.0*M_PI*cos(2.0*M_PI*x[0])*-sin(2.0*M_PI*x[1]);
     //grad[0] = 0.;
     //grad[1] = 1.;
-    
-    // initial grad with zero for 3d 
+
+    // initial grad with zero for 3d
     for( int i=2; i<dim; ++i) grad[i] = 0;
   }
-  
+
   virtual bool boundaryDataFunction(const DomainField x[dim], Field & val) const
   {
-    val = exact( x ); 
+    val = exact( x );
     //if(x[0] <= 0.0) return false;
-    return true; 
+    return true;
   }
 };
 
-//! problem from Castillo paper 
-template <int dim, class DomainField, class Field> 
+//! problem from Castillo paper
+template <int dim, class DomainField, class Field>
 class CastilloProblem : public DataFunctionIF<dim,DomainField,Field>
 {
   using DataFunctionIF<dim,DomainField,Field> :: SQR;
   const Field globalShift_;
   const Field factor_;
-public:  
+public:
   virtual ~CastilloProblem() {}
   CastilloProblem(Field globalShift, Field factor)
     : globalShift_(globalShift)
-    , factor_(factor) 
+    , factor_(factor)
   {
     assert(dim == 2);
   }
 
-  virtual void K(const DomainField x[dim], Field k[dim][dim] ) const 
+  virtual void K(const DomainField x[dim], Field k[dim][dim] ) const
   {
-    for(int i=0; i<dim; ++i) 
+    for(int i=0; i<dim; ++i)
     {
       k[i][i] = factor_;
       for(int j=0; j<i; ++j)     k[i][j] = 0;
@@ -466,7 +466,7 @@ public:
   }
 
 
-  virtual Field rhs  (const DomainField x[dim]) const 
+  virtual Field rhs  (const DomainField x[dim]) const
   {
     Field ret = 0.0;
     Field tmp =-23+7*SQR(x[1])-24*x[0]+24*x[0]*SQR(x[1])+7*SQR(x[0])+9*SQR(x[0])*SQR(x[1])-24
@@ -484,41 +484,41 @@ public:
     val += globalShift_;
     return val;
   }
-  
-  virtual void gradExact(const DomainField x[dim], Field grad[dim] ) const 
+
+  virtual void gradExact(const DomainField x[dim], Field grad[dim] ) const
   {
-    // not implemented yet 
-    grad[0] = grad[1] = 0.0; 
+    // not implemented yet
+    grad[0] = grad[1] = 0.0;
   }
-  
+
   virtual bool boundaryDataFunction(const DomainField x[dim], Field & val) const
   {
-    val = exact( x ); 
-    return true; 
+    val = exact( x );
+    return true;
   }
 };
 
-//! problem Einstringende Ecke 
-template <class DomainField, class Field> 
+//! problem Einstringende Ecke
+template <class DomainField, class Field>
 class InSpringingCorner2d : public DataFunctionIF<2,DomainField,Field>
 {
   enum { dim = 2 };
   const Field globalShift_;
   const Field factor_;
   const Field lambda_;
-public:  
+public:
   virtual ~InSpringingCorner2d() {}
   InSpringingCorner2d(Field globalShift, Field factor)
     : globalShift_(0.0)
-    , factor_(1.0) 
+    , factor_(1.0)
     , lambda_(180./270.)
   {
     assert(dim == 2);
   }
 
-  virtual void K(const DomainField x[dim], Field k[dim][dim] ) const 
+  virtual void K(const DomainField x[dim], Field k[dim][dim] ) const
   {
-    for(int i=0; i<dim; ++i) 
+    for(int i=0; i<dim; ++i)
     {
       k[i][i] = factor_;
       for(int j=0; j<i; ++j)     k[i][j] = 0;
@@ -526,7 +526,7 @@ public:
     }
   }
 
-  virtual Field rhs  (const DomainField x[dim]) const 
+  virtual Field rhs  (const DomainField x[dim]) const
   {
     return 0.0;
   }
@@ -537,8 +537,8 @@ public:
     double phi = argphi(x[0],x[1]);
     return pow(r2,lambda_*0.5)*sin(lambda_*phi);
   }
-  
-  virtual void gradExact(const DomainField x[dim], Field grad[dim] ) const 
+
+  virtual void gradExact(const DomainField x[dim], Field grad[dim] ) const
   {
     double r2=radius(x[0],x[1]);
     double phi=argphi(x[0],x[1]);
@@ -557,24 +557,24 @@ public:
 
   virtual bool boundaryDataFunction(const DomainField x[dim], Field & val) const
   {
-    val = exact( x ); 
-    return true; 
+    val = exact( x );
+    return true;
   }
 
   private:
   /** \brief proper implementation of atan(x,y)
    */
-  inline double argphi(double x,double y) const 
+  inline double argphi(double x,double y) const
   {
     double phi=arg(std::complex<double>(x,y));
     if (y<0) phi+=2.*M_PI;
     return phi;
   }
-  
-  /** \brief implementation for the radius squared 
+
+  /** \brief implementation for the radius squared
    * (^0.5 is part of function implementation)
    */
-  inline double radius(double x, double y) const 
+  inline double radius(double x, double y) const
   {
     double ret =0;
     ret = x*x +y*y;
@@ -583,14 +583,14 @@ public:
 };
 
 //! problem Einstringende Ecke 3d
-template <int dim, class DomainField, class Field> 
+template <int dim, class DomainField, class Field>
 class InSpringingCorner : public DataFunctionIF<dim,DomainField,Field>
 {
   typedef InSpringingCorner2d<DomainField, Field> Corner2dType ;
   Corner2dType corner2d_;
   const Field factor_;
 
-public:  
+public:
   virtual ~InSpringingCorner() {}
   InSpringingCorner(Field globalShift, Field factor)
     : corner2d_(globalShift, factor),
@@ -598,9 +598,9 @@ public:
   {
   }
 
-  virtual void K(const DomainField x[dim], Field k[dim][dim] ) const 
+  virtual void K(const DomainField x[dim], Field k[dim][dim] ) const
   {
-    for(int i=0; i<dim; ++i) 
+    for(int i=0; i<dim; ++i)
     {
       k[i][i] = factor_;
       for(int j=0; j<i; ++j)     k[i][j] = 0;
@@ -608,7 +608,7 @@ public:
     }
   }
 
-  virtual Field rhs  (const DomainField x[dim]) const 
+  virtual Field rhs  (const DomainField x[dim]) const
   {
     return 0.0;
   }
@@ -616,12 +616,12 @@ public:
   virtual Field exact(const DomainField x[dim]) const
   {
     DomainField x2d[ 2 ];
-    if ( dim == 2 ) 
+    if ( dim == 2 )
     {
       for( int i=0; i<dim; ++i ) x2d[ i ] = x[ i ];
       return corner2d_.exact( x2d );
     }
-    else 
+    else
     {
       double sum = 0;
       // ( x, y)
@@ -639,11 +639,11 @@ public:
       return sum ;
     }
   }
-  
-  virtual void gradExact(const DomainField x[dim], Field grad[dim] ) const 
+
+  virtual void gradExact(const DomainField x[dim], Field grad[dim] ) const
   {
     for( int i=0; i<dim; ++i ) grad[ i ] = 0;
-    if ( dim == 2 ) 
+    if ( dim == 2 )
     {
       DomainField x2d[ 2 ];
       for( int i=0; i<dim; ++i ) x2d[ i ] = x[ i ];
@@ -653,19 +653,19 @@ public:
 
   virtual bool boundaryDataFunction(const DomainField x[dim], Field & val) const
   {
-    val = exact( x ); 
-    return true; 
+    val = exact( x );
+    return true;
   }
 };
 
 //! problem Einstringende Ecke 3d
-template <int dim, class DomainField, class Field> 
+template <int dim, class DomainField, class Field>
 class FicheraCorner : public DataFunctionIF<dim,DomainField,Field>
 {
   const Field globalShift_;
   const Field factor_;
 
-public:  
+public:
   virtual ~FicheraCorner() {}
   FicheraCorner(Field globalShift, Field factor)
     : globalShift_( globalShift ),
@@ -673,9 +673,9 @@ public:
   {
   }
 
-  virtual void K(const DomainField x[dim], Field k[dim][dim] ) const 
+  virtual void K(const DomainField x[dim], Field k[dim][dim] ) const
   {
-    for(int i=0; i<dim; ++i) 
+    for(int i=0; i<dim; ++i)
     {
       k[i][i] = factor_;
       for(int j=0; j<i; ++j)     k[i][j] = 0;
@@ -683,7 +683,7 @@ public:
     }
   }
 
-  virtual Field rhs  (const DomainField x[dim]) const 
+  virtual Field rhs  (const DomainField x[dim]) const
   {
     const double u = exact( x );
     return -3.0/(4.0* u * u * u );
@@ -692,43 +692,43 @@ public:
   virtual Field exact(const DomainField x[dim]) const
   {
     double xAbs = 0;
-    for( int i=0; i<dim; ++i ) 
+    for( int i=0; i<dim; ++i )
       xAbs += x[ i ] * x[ i ];
     return std::pow( xAbs, 0.25 );
   }
-  
-  virtual void gradExact(const DomainField x[dim], Field grad[dim] ) const 
+
+  virtual void gradExact(const DomainField x[dim], Field grad[dim] ) const
   {
     const double u  = exact( x );
     const double u3 = 2.0 * u * u * u ;
-    for( int i=0; i<dim; ++i ) grad[ i ] = x[ i ] / u3 ; 
+    for( int i=0; i<dim; ++i ) grad[ i ] = x[ i ] / u3 ;
   }
 
   virtual bool boundaryDataFunction(const DomainField x[dim], Field & val) const
   {
-    val = exact( x ); 
-    return true; 
+    val = exact( x );
+    return true;
   }
 };
 
 //! problem single Hump
-template <int dim, class DomainField, class Field> 
+template <int dim, class DomainField, class Field>
 class Hump : public DataFunctionIF<dim,DomainField,Field>
 {
   const Field globalShift_;
   const Field factor_;
-public:  
+public:
   virtual ~Hump() {}
   Hump(Field globalShift, Field factor)
     : globalShift_(0.0)
-    , factor_(1.0) 
+    , factor_(1.0)
   {
     assert(dim == 2);
   }
 
-  virtual void K(const DomainField x[dim], Field k[dim][dim] ) const 
+  virtual void K(const DomainField x[dim], Field k[dim][dim] ) const
   {
-    for(int i=0; i<dim; ++i) 
+    for(int i=0; i<dim; ++i)
     {
       k[i][i] = factor_;
       for(int j=0; j<i; ++j)     k[i][j] = 0;
@@ -736,11 +736,11 @@ public:
     }
   }
 
-  virtual Field rhs  (const DomainField x[dim]) const 
+  virtual Field rhs  (const DomainField x[dim]) const
   {
     double w=10.*x[0]*x[0]+10.*x[1];
     double v=(x[0]-x[0]*x[0])*(x[1]-x[1]*x[1]);
-    double dwx = 20.*x[0]; 
+    double dwx = 20.*x[0];
     double dwy = 10.;
     double dwxx = 20.;
     double dwyy = 0.;
@@ -762,12 +762,12 @@ public:
     double v=(x[0]-x[0]*x[0])*(x[1]-x[1]*x[1]);
     return exp(w)*v*v;
   }
-  
-  virtual void gradExact(const DomainField x[dim], Field grad[dim] ) const 
+
+  virtual void gradExact(const DomainField x[dim], Field grad[dim] ) const
   {
     double w=10.*x[0]*x[0]+10.*x[1];
     double v=(x[0]-x[0]*x[0])*(x[1]-x[1]*x[1]);
-    double dwx = 20.*x[0]; 
+    double dwx = 20.*x[0];
     double dwy = 10.;
     double dvx = (1.-2.*x[0])*(x[1]-x[1]*x[1]);
     double dvy = (1.-2.*x[1])*(x[0]-x[0]*x[0]);
@@ -777,31 +777,31 @@ public:
 
   virtual bool boundaryDataFunction(const DomainField x[dim], Field & val) const
   {
-    val = exact( x ); 
-    return true; 
+    val = exact( x );
+    return true;
   }
 };
 
 
-//! problem Riviere-Bastian 
-template <int dim, class DomainField, class Field> 
+//! problem Riviere-Bastian
+template <int dim, class DomainField, class Field>
 class RiviereProblem : public DataFunctionIF<dim,DomainField,Field>
 {
   using DataFunctionIF<dim,DomainField,Field> :: SQR;
   const Field globalShift_;
   const Field factor_;
-public:  
+public:
   virtual ~RiviereProblem() {}
   RiviereProblem(Field globalShift, Field factor)
     : globalShift_(0.0)
-    , factor_(1.0) 
+    , factor_(1.0)
   {
     assert(dim == 2);
   }
 
-  virtual void K(const DomainField x[dim], Field k[dim][dim] ) const 
+  virtual void K(const DomainField x[dim], Field k[dim][dim] ) const
   {
-    for(int i=0; i<dim; ++i) 
+    for(int i=0; i<dim; ++i)
     {
       k[i][i] = factor_;
       for(int j=0; j<i; ++j)     k[i][j] = 0;
@@ -809,11 +809,11 @@ public:
     }
   }
 
-  virtual Field rhs  (const DomainField x[dim]) const 
+  virtual Field rhs  (const DomainField x[dim]) const
   {
     Field val = exact(x);
-    Field x_part = val * SQR(-2.0 * (x[0] - 0.5)) - 2.0 * val; 
-    Field y_part = val * SQR(-2.0 * (x[1] - 0.5)) - 2.0 * val; 
+    Field x_part = val * SQR(-2.0 * (x[0] - 0.5)) - 2.0 * val;
+    Field y_part = val * SQR(-2.0 * (x[1] - 0.5)) - 2.0 * val;
     return -(x_part + y_part);
   }
 
@@ -822,40 +822,40 @@ public:
     Field power = -( SQR( x[0] - 0.5 ) + SQR( x[1] - 0.5 ) );
     return pow( M_E , power );
   }
-  
-  virtual void gradExact(const DomainField x[dim], Field grad[dim] ) const 
+
+  virtual void gradExact(const DomainField x[dim], Field grad[dim] ) const
   {
     Field val = exact( x );
     grad[0] = val * ( -2.0*x[0] + 1.0 );
     grad[1] = val * ( -2.0*x[1] + 1.0 );
   }
-  
+
   virtual bool boundaryDataFunction(const DomainField x[dim], Field & val) const
   {
-    val = exact( x ); 
-    return true; 
+    val = exact( x );
+    return true;
   }
 };
 
 
-//! problem Riviere-Bastian 
-template <int dim, class DomainField, class Field> 
+//! problem Riviere-Bastian
+template <int dim, class DomainField, class Field>
 class HeatProblem : public DataFunctionIF<dim,DomainField,Field>
 {
   const Field globalShift_;
   const Field factor_;
-public:  
+public:
   virtual ~HeatProblem() {}
   HeatProblem(Field globalShift, Field factor)
     : globalShift_(0.0)
-    , factor_(1.0) 
+    , factor_(1.0)
   {
     assert(dim == 2);
   }
 
-  virtual void K(const DomainField x[dim], Field k[dim][dim] ) const 
+  virtual void K(const DomainField x[dim], Field k[dim][dim] ) const
   {
-    for(int i=0; i<dim; ++i) 
+    for(int i=0; i<dim; ++i)
     {
       k[i][i] = factor_;
       for(int j=0; j<i; ++j)     k[i][j] = 0;
@@ -863,19 +863,19 @@ public:
     }
   }
 
-  double scp(const DomainField x[dim]) const 
+  double scp(const DomainField x[dim]) const
   {
     double r2 = 0.0;
     for(int i=0; i<dim; ++i) r2 += x[i]*x[i];
     return r2;
   }
 
-  virtual Field rhs  (const DomainField x[dim]) const 
+  virtual Field rhs  (const DomainField x[dim]) const
   {
     return rhs(0.0, x);
   }
 
-  virtual Field rhs  (const double time, const DomainField x[dim]) const 
+  virtual Field rhs  (const double time, const DomainField x[dim]) const
   {
     double r2 = scp( x );
 
@@ -888,38 +888,38 @@ public:
   {
     return exact(0.0, x);
   }
-  
+
   virtual Field exact(const double time, const DomainField x[dim]) const
   {
     double r2 = scp( x );
     return(std::sin( M_PI * time) * std::exp( -10.0 * r2));
   }
-  
-  virtual void gradExact(const DomainField x[dim], Field grad[dim] ) const 
+
+  virtual void gradExact(const DomainField x[dim], Field grad[dim] ) const
   {
     grad[0] = grad[1] = 0.0;
   }
-  
+
   virtual bool boundaryDataFunction(const DomainField x[dim], Field & val) const
   {
     assert( false );
-    val = exact( x ); 
-    return true; 
+    val = exact( x );
+    return true;
   }
 
   virtual bool boundaryDataFunction(const double time,
-                                    const DomainField x[dim], 
+                                    const DomainField x[dim],
                                     Field & val) const
   {
-    val = exact( time, x ); 
-    return true; 
+    val = exact( time, x );
+    return true;
   }
 };
 
 template <int dim, class DomainField, class Field>
 class BoundaryLayerProblem : public DataFunctionIF<dim,DomainField,Field>
 {
-public:  
+public:
   virtual ~BoundaryLayerProblem() {}
   BoundaryLayerProblem(Field globalShift, Field factor)
     : eps_(factor)
@@ -927,9 +927,9 @@ public:
     assert( eps_ > 0 );
   }
 
-  virtual void K(const DomainField x[dim], Field k[dim][dim] ) const 
+  virtual void K(const DomainField x[dim], Field k[dim][dim] ) const
   {
-    for(int i=0; i<dim; ++i) 
+    for(int i=0; i<dim; ++i)
     {
       for(int j=0; j<dim; ++j) k[i][j] = 0;
       k[i][i] = 1.; // eps_;
@@ -938,11 +938,11 @@ public:
 
   void velocity(const DomainField x[dim], DomainField v[dim]) const
   {
-    for(int i=0; i<dim; ++i) 
+    for(int i=0; i<dim; ++i)
       v[i] = 1./eps_;
   }
 
-  virtual Field rhs  (const DomainField x[dim]) const 
+  virtual Field rhs  (const DomainField x[dim]) const
   {
     return 0;
   }
@@ -954,8 +954,8 @@ public:
       ret *= u1( x[i] );
     return ret;
   }
-  
-  virtual void gradExact(const DomainField x[dim], Field grad[dim] ) const 
+
+  virtual void gradExact(const DomainField x[dim], Field grad[dim] ) const
   {
     for (int i=0;i<dim;++i)
     {
@@ -967,8 +967,8 @@ public:
   }
   virtual bool boundaryDataFunction(const DomainField x[dim], Field & val) const
   {
-    val = exact( x ); 
-    return true; 
+    val = exact( x );
+    return true;
   }
 private:
   double u1(double x) const
@@ -983,24 +983,24 @@ private:
 };
 
 
-//! problem CurvedRidges (deal.II step-14) 
-template <int dim, class DomainField, class Field> 
+//! problem CurvedRidges (deal.II step-14)
+template <int dim, class DomainField, class Field>
 class CurvedRidges : public DataFunctionIF<dim,DomainField,Field>
 {
   const Field globalShift_;
   const Field factor_;
-public:  
+public:
   virtual ~CurvedRidges() {}
   CurvedRidges(Field globalShift, Field factor)
     : globalShift_(0.0)
-    , factor_(1.0) 
+    , factor_(1.0)
   {
     assert(dim == 2);
   }
 
-  virtual void K(const DomainField x[dim], Field k[dim][dim] ) const 
+  virtual void K(const DomainField x[dim], Field k[dim][dim] ) const
   {
-    for(int i=0; i<dim; ++i) 
+    for(int i=0; i<dim; ++i)
     {
       k[i][i] = factor_;
       for(int j=0; j<i; ++j)     k[i][j] = 0;
@@ -1008,7 +1008,7 @@ public:
     }
   }
 
-  virtual Field rhs  (const DomainField p[dim]) const 
+  virtual Field rhs  (const DomainField p[dim]) const
   {
     double q = p[ 0 ];
     for (unsigned int i=1; i<dim; ++i)
@@ -1040,8 +1040,8 @@ public:
     const double exponential = std::exp(q);
     return exponential;
   }
-  
-  virtual void gradExact(const DomainField p[dim], Field grad[dim] ) const 
+
+  virtual void gradExact(const DomainField p[dim], Field grad[dim] ) const
   {
     double u = exact(p);
     grad[0] = 1.;
@@ -1054,35 +1054,35 @@ public:
       grad[i] *= u;
     }
   }
-  
+
   virtual bool boundaryDataFunction(const DomainField x[dim], Field & val) const
   {
-    val = exact( x ); 
-    return true; 
+    val = exact( x );
+    return true;
   }
 };
 
 
-//! problem CurvedRidges (deal.II step-14) 
-template <int dim, class DomainField, class Field> 
+//! problem CurvedRidges (deal.II step-14)
+template <int dim, class DomainField, class Field>
 class Excercise2_3 : public DataFunctionIF<dim,DomainField,Field>
 {
   const Field globalShift_;
   const Field factor_;
   Field point_ [ dim ];
-public:  
+public:
   virtual ~Excercise2_3() {}
   Excercise2_3(Field globalShift, Field factor)
     : globalShift_(0.0)
-    , factor_(1.0) 
+    , factor_(1.0)
   {
     for(int i=0; i<dim; ++i) point_[ i ] = 0.75;
     assert(dim == 2);
   }
 
-  virtual void K(const DomainField x[dim], Field k[dim][dim] ) const 
+  virtual void K(const DomainField x[dim], Field k[dim][dim] ) const
   {
-    for(int i=0; i<dim; ++i) 
+    for(int i=0; i<dim; ++i)
     {
       k[i][i] = factor_;
       for(int j=0; j<i; ++j)     k[i][j] = 0;
@@ -1090,43 +1090,43 @@ public:
     }
   }
 
-  virtual Field rhs  (const DomainField p[dim]) const 
+  virtual Field rhs  (const DomainField p[dim]) const
   {
     return 1.0;
   }
 
   virtual Field exact(const DomainField p[dim]) const
   {
-    // exact solution not known 
+    // exact solution not known
     return 0.0;
   }
-  
-  virtual void gradExact(const DomainField x[dim], Field grad[dim] ) const 
+
+  virtual void gradExact(const DomainField x[dim], Field grad[dim] ) const
   {
-    grad[0] = 0; 
-    grad[1] = 0; 
+    grad[0] = 0;
+    grad[1] = 0;
   }
-  
+
   virtual bool boundaryDataFunction(const DomainField x[dim], Field & val) const
   {
-    val = exact( x ); 
-    return true; 
+    val = exact( x );
+    return true;
   }
 };
 
-template <int dim, class DomainField, class Field> 
+template <int dim, class DomainField, class Field>
 class BenchMark_1 : public DataFunctionIF<dim,DomainField,Field>
 {
   const Field globalShift_;
   Field factor_[dim][dim];
-public:  
+public:
   virtual ~BenchMark_1() {}
   BenchMark_1(Field globalShift, Field factor)
     : globalShift_( globalShift )
   {
-    for(int i=0; i<dim; ++i) 
+    for(int i=0; i<dim; ++i)
     {
-      for(int j=0; j<dim; ++j) 
+      for(int j=0; j<dim; ++j)
       {
         if( i == j ) factor_[i][j] = 1.5;
         else if( std::abs( i - j ) == 1 ) factor_[i][j] = 0.5;
@@ -1137,15 +1137,15 @@ public:
 
   virtual void K(const DomainField x[dim], Field k[dim][dim] ) const
   {
-    // copy values 
+    // copy values
     for(int i=0; i<dim; ++i)
     {
-      for(int j=0; j<dim; ++j)  
+      for(int j=0; j<dim; ++j)
          k[i][j] = factor_[i][j];
     }
   }
 
-  virtual Field rhs  (const DomainField arg[dim]) const 
+  virtual Field rhs  (const DomainField arg[dim]) const
   {
     double x = arg[0];
     double y = arg[1];
@@ -1160,13 +1160,13 @@ public:
   virtual Field exact(const DomainField x[dim]) const
   {
     Field val = 16.;
-    for(int i=0; i<dim; ++i) 
+    for(int i=0; i<dim; ++i)
       val *= (x[i] - (x[i]*x[i]));
     val += globalShift_ ;
     return val;
   }
-  
-  virtual void gradExact(const DomainField arg[dim], Field grad[dim] ) const 
+
+  virtual void gradExact(const DomainField arg[dim], Field grad[dim] ) const
   {
     double x = arg[0];
     double y = arg[1];
@@ -1174,28 +1174,28 @@ public:
     grad[0] = (-2.*x+1)*y*(1-y)*16.;
     grad[1] = (-2.*y+1)*x*(1-x)*16.;
   }
-  
+
   virtual bool boundaryDataFunction(const DomainField x[dim], Field & val) const
   {
-    val = exact( x ); 
-    return true; 
+    val = exact( x );
+    return true;
   }
 };
 
 
-template <int dim, class DomainField, class Field> 
+template <int dim, class DomainField, class Field>
 class BenchMark_1_2 : public DataFunctionIF<dim,DomainField,Field>
 {
   const Field globalShift_;
   Field factor_[dim][dim];
-public:  
+public:
   virtual ~BenchMark_1_2() {}
   BenchMark_1_2(Field globalShift, Field factor)
     : globalShift_(0.0)
   {
-    for(int i=0; i<dim; ++i) 
+    for(int i=0; i<dim; ++i)
     {
-      for(int j=0; j<dim; ++j) 
+      for(int j=0; j<dim; ++j)
       {
         if( i == j ) factor_[i][j] = 1.5;
         else factor_[i][j] = 0.5;
@@ -1214,7 +1214,7 @@ public:
   }
 
 
-  virtual Field rhs  (const DomainField arg[dim]) const 
+  virtual Field rhs  (const DomainField arg[dim]) const
   {
     double x1 = 1.-arg[0];
     double y1 = 1.-arg[1];
@@ -1231,8 +1231,8 @@ public:
     double y1 = 1.-arg[1];
     return sin(x1*y1) + x1*x1*x1 * y1*y1;
   }
-  
-  virtual void gradExact(const DomainField arg[dim], Field grad[dim] ) const 
+
+  virtual void gradExact(const DomainField arg[dim], Field grad[dim] ) const
   {
     double x1 = 1.-arg[0];
     double y1 = 1.-arg[1];
@@ -1240,16 +1240,16 @@ public:
     grad[0] = -y1*cos(x1*y1) - 3.* (x1*y1)* (x1*y1);
     grad[1] = -x1*cos(x1*y1) - 2.*y1* x1*x1*x1;
   }
-  
+
   virtual bool boundaryDataFunction(const DomainField x[dim], Field & val) const
   {
-    val = exact( x ); 
-    return true; 
+    val = exact( x );
+    return true;
   }
 };
 
 
-template <int dim, class DomainField, class Field> 
+template <int dim, class DomainField, class Field>
 class BenchMark_2 : public DataFunctionIF<dim,DomainField,Field>
 {
   const Field globalShift_;
@@ -1258,14 +1258,14 @@ class BenchMark_2 : public DataFunctionIF<dim,DomainField,Field>
   const Field sqrtDelta_;
   const Field x1_;
   const Field x2_;
-public:  
+public:
   virtual ~BenchMark_2() {}
   BenchMark_2(Field globalShift, Field factor)
     : globalShift_(0.0)
     , delta_(factor)
     , sqrtDelta_( sqrt(delta_) )
     , x1_ ( 8. * atan(1.) )
-    , x2_ ( x1_ / sqrtDelta_ ) 
+    , x2_ ( x1_ / sqrtDelta_ )
   {
     factor_[0][0] = 1;
     factor_[0][1] = factor_[1][0] = 0.0;
@@ -1282,7 +1282,7 @@ public:
     }
   }
 
-  virtual Field rhs  (const DomainField arg[dim]) const 
+  virtual Field rhs  (const DomainField arg[dim]) const
   {
     return 0.0;
   }
@@ -1291,13 +1291,13 @@ public:
   {
     return sin(x1_* x[0])*exp(-x2_* x[1]);
   }
-  
-  virtual void gradExact(const DomainField x[dim], Field grad[dim] ) const 
+
+  virtual void gradExact(const DomainField x[dim], Field grad[dim] ) const
   {
     grad[0] = x1_ * cos(x1_* x[0])*exp(-x2_ * x[1]);
     grad[1] = -x2_ * exact(x);
   }
-  
+
   virtual bool boundaryDataFunction(const DomainField x[dim], Field & val) const
   {
     val = exact(x);
@@ -1309,7 +1309,7 @@ public:
 
 
 
-template <int dim, class DomainField, class Field> 
+template <int dim, class DomainField, class Field>
 class BenchMark_3 : public DataFunctionIF<dim,DomainField,Field>
 {
   const Field globalShift_;
@@ -1318,14 +1318,14 @@ class BenchMark_3 : public DataFunctionIF<dim,DomainField,Field>
   const Field pi_;
   const Field cost_;
   const Field sint_;
-public:  
+public:
   virtual ~BenchMark_3() {}
   BenchMark_3(Field globalShift, Field factor)
     : globalShift_(0.0)
     , delta_(1e-3)
     , pi_ ( 4. * atan(1.) )
     , cost_ ( cos( 40. * pi_ / 180. ) )
-    , sint_ ( sqrt(1. - cost_*cost_) ) 
+    , sint_ ( sqrt(1. - cost_*cost_) )
   {
     factor_[0][0] = cost_*cost_+delta_*sint_*sint_;
     factor_[1][0] = factor_[0][1] = cost_*sint_*(1.-delta_);
@@ -1342,68 +1342,68 @@ public:
     }
   }
 
-  virtual Field rhs  (const DomainField arg[dim]) const 
+  virtual Field rhs  (const DomainField arg[dim]) const
   {
     return 0.0;
   }
 
-  double bndFunc (const double x, 
-                  const double lower, 
+  double bndFunc (const double x,
+                  const double lower,
                   const double upper,
                   const double lowval,
-                  const double upval)  const 
+                  const double upval)  const
   {
     if( x <= lower ) return lowval;
     if( x >= upper ) return upval;
 
     const double scale = (x - lower)/(upper - lower);
     assert( scale >= 0 && scale <= 1 );
-    
+
     return (1. - scale) * lowval + scale * upval;
   }
-    
+
   virtual Field exact(const DomainField x[dim]) const
   {
     const int bndId = this->getBoundaryId( x , x );
-    if( bndId == 0 ) 
+    if( bndId == 0 )
     {
       return bndFunc(x[1],0.2,0.3,1,0.5);
     }
-    else if( bndId == 1 ) 
+    else if( bndId == 1 )
     {
       return bndFunc(x[1],0.7,0.8,0.5,0);
     }
-    else if( bndId == 2 ) 
+    else if( bndId == 2 )
     {
       return bndFunc(x[0],0.2,0.3,1,0.5);
     }
-    else if( bndId == 3 ) 
+    else if( bndId == 3 )
     {
       return bndFunc(x[0],0.7,0.8,0.5,0);
     }
     return 0.5;
   }
-  
-  virtual void gradExact(const DomainField x[dim], Field grad[dim] ) const 
+
+  virtual void gradExact(const DomainField x[dim], Field grad[dim] ) const
   {
     grad[0] = 0.0;
     grad[1] = 0.0;
   }
-  
+
   virtual bool boundaryDataFunction(const DomainField x[dim], Field & val) const
   {
-    val = exact( x ); 
+    val = exact( x );
     // only dirichlet for this problem
     return true;
   }
 };
 
 
-template <int dim, class DomainField, class Field> 
+template <int dim, class DomainField, class Field>
 class BenchMark_4 : public DataFunctionIF<dim,DomainField,Field>
 {
   const Field globalShift_;
-public:  
+public:
   virtual ~BenchMark_4() {}
   BenchMark_4(Field globalShift, Field factor)
     : globalShift_(0.0)
@@ -1412,11 +1412,11 @@ public:
 
   virtual void K(const DomainField x[dim], Field k[dim][dim] ) const
   {
-    for(int i=0; i<dim; ++i) 
+    for(int i=0; i<dim; ++i)
       for(int j=0; j<dim; ++j )
         k[i][j] = 0;
 
-    if( omega1(x) ) 
+    if( omega1(x) )
     {
       k[0][0] = 1e2;
       k[1][1] = 1e1;
@@ -1429,7 +1429,7 @@ public:
         k[2][1] = 5;
       }
     }
-    else 
+    else
     {
       k[0][0] = 1e-2;
       k[1][1] = 1e-3;
@@ -1444,11 +1444,11 @@ public:
     }
   }
 
-  bool omega1(const DomainField x[dim]) const 
+  bool omega1(const DomainField x[dim]) const
   {
     if( dim == 2 )
     {
-      if (x[0] <= 0.5) 
+      if (x[0] <= 0.5)
       {
         int inty = int(10.0 * (x[1] + 0.15));
         // if even then omega1 else omega2
@@ -1461,9 +1461,9 @@ public:
         return ((inty%2) == 0);
       }
     }
-    else if ( dim == 3 ) 
+    else if ( dim == 3 )
     {
-      if (x[0] <= 0.5) 
+      if (x[0] <= 0.5)
       {
         int inty = int(16.0 * (x[1] + 0.0625));
         // if even then omega1 else omega2
@@ -1478,7 +1478,7 @@ public:
     }
   }
 
-  virtual Field rhs  (const DomainField arg[dim]) const 
+  virtual Field rhs  (const DomainField arg[dim]) const
   {
     return 0.0;
   }
@@ -1486,33 +1486,33 @@ public:
   virtual Field exact(const DomainField x[dim]) const
   {
     double val = (1.0 - x[0]);
-    if( dim > 2 ) 
+    if( dim > 2 )
       val *= (1 - x[2]);
     return val;
   }
-  
-  virtual void gradExact(const DomainField x[dim], Field grad[dim] ) const 
+
+  virtual void gradExact(const DomainField x[dim], Field grad[dim] ) const
   {
     grad[0] = 0.0;
     grad[1] = 0.0;
     grad[dim-1] = 0.0;
   }
-  
+
   virtual bool boundaryDataFunction(const DomainField x[dim], Field & val) const
   {
-    val = exact( x ); 
-    return true; 
+    val = exact( x );
+    return true;
   }
 };
 
 
-template <int dim, class DomainField, class Field> 
+template <int dim, class DomainField, class Field>
 class BenchMark_5 : public DataFunctionIF<dim,DomainField,Field>
 {
   const Field globalShift_;
   const Field delta_;
   const Field pi;
-public:  
+public:
   virtual ~BenchMark_5() {}
   BenchMark_5(Field globalShift, Field factor)
     : globalShift_(0.0)
@@ -1533,7 +1533,7 @@ public:
     k[1][0] = k[0][1] = -(1-delta_)*x*y/rt;
   }
 
-  virtual Field rhs  (const DomainField arg[dim]) const 
+  virtual Field rhs  (const DomainField arg[dim]) const
   {
     Field k[dim][dim];
     K(arg,k);
@@ -1544,7 +1544,7 @@ public:
     double ux = pi * cos(pi*x)*sin(pi*y);
     double uy = pi * cos(pi*y)*sin(pi*x);
 
-    double f0 = sin(pi*x)*sin(pi*y)*pi*pi*(1+delta_)*(x*x+y*y) 
+    double f0 = sin(pi*x)*sin(pi*y)*pi*pi*(1+delta_)*(x*x+y*y)
               + cos(pi*x)*sin(pi*y)*pi*(1.-3.*delta_)*x
               + cos(pi*y)*sin(pi*x)*pi*(1.-3.*delta_)*y
               + cos(pi*y)*cos(pi*x)*2.*pi*pi*(1.-delta_)*x*y;
@@ -1558,35 +1558,35 @@ public:
   {
     return sin(pi*x[0])*sin(pi*x[1]);
   }
-  
-  virtual void gradExact(const DomainField x[dim], Field grad[dim] ) const 
+
+  virtual void gradExact(const DomainField x[dim], Field grad[dim] ) const
   {
     grad[0] = pi * cos(pi*x[0])*sin(pi*x[1]);
     grad[1] = pi * cos(pi*x[1])*sin(pi*x[0]);
   }
-  
+
   virtual bool boundaryDataFunction(const DomainField x[dim], Field & val) const
   {
-    val = exact( x ); 
-    return true; 
+    val = exact( x );
+    return true;
   }
 };
 
 
-template <int dim, class DomainField, class Field> 
+template <int dim, class DomainField, class Field>
 class BenchMark_6 : public DataFunctionIF<dim,DomainField,Field>
 {
   const Field globalShift_;
   const Field delta_;
   const Field cost_;
   const Field sint_;
-public:  
+public:
   virtual ~BenchMark_6() {}
   BenchMark_6(Field globalShift, Field factor)
     : globalShift_(0.0)
     , delta_(0.2)
     , cost_ ( 1./sqrt(1.+delta_*delta_) )
-    , sint_ ( delta_*cost_ ) 
+    , sint_ ( delta_*cost_ )
   {
   }
 
@@ -1597,7 +1597,7 @@ public:
 
     double alpha = 0.0;
     double beta  = 0.0;
-    if (phi1<0 || phi2>0) 
+    if (phi1<0 || phi2>0)
     {
        alpha = 1.0;
        beta  = 0.1;
@@ -1613,7 +1613,7 @@ public:
     k[1][1] = alpha*sint_*sint_+beta*cost_*cost_;
   }
 
-  virtual Field rhs  (const DomainField arg[dim]) const 
+  virtual Field rhs  (const DomainField arg[dim]) const
   {
     return 0.0;
   }
@@ -1622,28 +1622,28 @@ public:
   {
     return - x[0] - x[1] * delta_;
   }
-  
-  virtual void gradExact(const DomainField x[dim], Field grad[dim] ) const 
+
+  virtual void gradExact(const DomainField x[dim], Field grad[dim] ) const
   {
     grad[0] = -1.0;
     grad[1] = -delta_;
   }
-  
+
   virtual bool boundaryDataFunction(const DomainField x[dim], Field & val) const
   {
-    val = exact( x ); 
-    // we have neumann boundary here 
-    return true; 
+    val = exact( x );
+    // we have neumann boundary here
+    return true;
   }
 };
 
 
-template <int dim, class DomainField, class Field> 
+template <int dim, class DomainField, class Field>
 class BenchMark_7 : public DataFunctionIF<dim,DomainField,Field>
 {
   const Field globalShift_;
   const Field delta_;
-public:  
+public:
   virtual ~BenchMark_7() {}
   BenchMark_7(Field globalShift, Field factor)
     : globalShift_(0.0)
@@ -1657,34 +1657,34 @@ public:
     double phi2 = phi1 - .05;
 
     int dom = domain( phi1, phi2 );
-    if( dom == 1 || dom == 3 ) 
+    if( dom == 1 || dom == 3 )
     {
       k[0][0] = k[1][1] = 1;
       k[1][0] = k[0][1] = 0;
     }
-    else 
+    else
     {
       k[0][0] = k[1][1] = 0.01;
       k[1][0] = k[0][1] = 0;
     }
   }
 
-  double phi(const DomainField x[dim]) const 
+  double phi(const DomainField x[dim]) const
   {
     return x[1] - delta_ * (x[0] - .5) - .475;
   }
 
-  int domain(const double phi1, const double phi2) const 
+  int domain(const double phi1, const double phi2) const
   {
-    if (phi1<0) 
+    if (phi1<0)
       return 1;
-    else if (phi2<0) 
-      return 2; 
+    else if (phi2<0)
+      return 2;
     else
       return 3;
   }
 
-  virtual Field rhs  (const DomainField arg[dim]) const 
+  virtual Field rhs  (const DomainField arg[dim]) const
   {
     return 0.0;
   }
@@ -1695,7 +1695,7 @@ public:
     double phi2 = phi1 - .05;
 
     int dom = domain( phi1, phi2 );
-    if( dom == 1 ) 
+    if( dom == 1 )
     {
       return -phi1;
     }
@@ -1703,37 +1703,37 @@ public:
     {
       return -phi1/.01;
     }
-    else 
+    else
     {
       return -phi2 - 5.;
     }
   }
-  
-  virtual void gradExact(const DomainField x[dim], Field grad[dim] ) const 
+
+  virtual void gradExact(const DomainField x[dim], Field grad[dim] ) const
   {
     double phi1 = phi(x);
-    double phi2 = phi1 - .05; 
+    double phi2 = phi1 - .05;
     int dom = domain( phi1, phi2 );
     if( dom == 1 || dom == 3 )
     {
       grad[0] = delta_;
       grad[1] = -1.0;
     }
-    else // if (dom == 2) 
+    else // if (dom == 2)
     {
       grad[0] = delta_/.01;
       grad[1] = - 1./.01;
     }
   }
-  
+
   virtual bool boundaryDataFunction(const DomainField x[dim], Field & val) const
   {
-    val = exact( x ); 
-    return true; 
+    val = exact( x );
+    return true;
   }
 };
 
-#if PROBLEM_8 
+#if PROBLEM_8
 #include <dune/fem/gridpart/gridpart.hh>
 #include <dune/fem/space/fvspace.hh>
 #include <dune/fem/space/lagrangespace.hh>
@@ -1750,12 +1750,12 @@ typedef AdaptiveDiscreteFunction<ParamDiscreteFunctionSpaceType>
 ParamDiscreteFunctionType* paramDiscreteFunction;
 
 
-template <int dim, class DomainField, class Field> 
+template <int dim, class DomainField, class Field>
 class BenchMark_8 : public DataFunctionIF<dim,DomainField,Field>
 {
   const Field globalShift_;
   const Field delta_;
-public:  
+public:
   virtual ~BenchMark_8() {}
   BenchMark_8(Field globalShift, Field factor)
     : globalShift_(0.0)
@@ -1769,7 +1769,7 @@ public:
     k[1][0] = k[0][1] = 0;
   }
 
-  virtual Field rhs  (const DomainField arg[dim]) const 
+  virtual Field rhs  (const DomainField arg[dim]) const
   {
     FieldVector<double,dim> p(0);
     FieldVector<double,1> ret(0);
@@ -1778,15 +1778,15 @@ public:
 
     const ParamGridPartType& gridPart = paramDiscreteFunction->space().gridPart();
     const typename ParamGridPartType::IndexSetType& index = gridPart.indexSet();
-    HierarchicSearch<GridType,ParamGridPartType::IndexSetType> 
+    HierarchicSearch<GridType,ParamGridPartType::IndexSetType>
       search(gridPart.grid(),index);
-    typename ParamDiscreteFunctionType::LocalFunctionType lf = 
+    typename ParamDiscreteFunctionType::LocalFunctionType lf =
       paramDiscreteFunction->localFunction((*(search.findEntity(p))));
-    
+
     lf.evaluate(search.findEntity(p)->geometry().local(p),ret);
     /*
     std::cout << search.findEntity(p)->geometry().local(p)
-              << " " << p 
+              << " " << p
               << " " << ret[0] << std::endl;
               */
     return ret[0];
@@ -1796,20 +1796,20 @@ public:
   {
     return 0.0;
   }
-  
-  virtual void gradExact(const DomainField x[dim], Field grad[dim] ) const 
+
+  virtual void gradExact(const DomainField x[dim], Field grad[dim] ) const
   {
     grad[0] = 0.0;
     grad[1] = 0.0;
   }
-  
+
   virtual bool boundaryDataFunction(const DomainField x[dim], Field & val) const
   {
-    val = 0.0; 
-    return true; 
+    val = 0.0;
+    return true;
   }
   virtual int getBoundaryId(const DomainField x[dim],
-                            const DomainField n[dim]) const 
+                            const DomainField n[dim]) const
   {
     if (std::abs(n[0]) > 1e-8) {
       if (n[1] < 0.) return 0;
@@ -1823,14 +1823,14 @@ public:
     return 0;
   }
 };
-#endif  
+#endif
 
-template <int dim, class DomainField, class Field> 
+template <int dim, class DomainField, class Field>
 class BenchMark_9 : public DataFunctionIF<dim,DomainField,Field>
 {
   const Field globalShift_;
   const Field delta_;
-public:  
+public:
   virtual ~BenchMark_9() {}
   BenchMark_9(Field globalShift, Field factor)
     : globalShift_(0.0)
@@ -1845,7 +1845,7 @@ public:
   }
 
 
-  virtual Field rhs  (const DomainField arg[dim]) const 
+  virtual Field rhs  (const DomainField arg[dim]) const
   {
     return 0.;
   }
@@ -1854,18 +1854,18 @@ public:
   {
     return 0.0;
   }
-  
-  virtual void gradExact(const DomainField x[dim], Field grad[dim] ) const 
+
+  virtual void gradExact(const DomainField x[dim], Field grad[dim] ) const
   {
     grad[0] = 0.0;
     grad[1] = 0.0;
   }
-  
+
   virtual bool boundaryDataFunction(const DomainField x[dim], Field & val) const
   {
     val = (x[0]<0.6)?1.:0.;
-    if (x[0]<=0 || x[0]>=1) 
-      return false; 
+    if (x[0]<=0 || x[0]>=1)
+      return false;
     if (x[1]<=0 || x[1]>=1)
       return false;
     return true;
@@ -1875,10 +1875,10 @@ public:
 
 /////////////////////////////////////////////////////////////////////
 //
-//  3D Benchmark Problems 
+//  3D Benchmark Problems
 //
 /////////////////////////////////////////////////////////////////////
-template <int dim, class DomainField, class Field> 
+template <int dim, class DomainField, class Field>
 class BenchMark3d_1 : public DataFunctionIF<dim,DomainField,Field>
 {
 
@@ -1908,13 +1908,13 @@ public:
 
   virtual void K(const DomainField x[dim], Field k[dim][dim] ) const
   {
-    // just copy tensor 
+    // just copy tensor
     for(int i=0; i<dim; ++i)
       for(int j=0; j<dim; ++j)
         k[i][j] = K_[i][j];
   }
 
-  virtual Field rhs  (const DomainField x[dim]) const 
+  virtual Field rhs  (const DomainField x[dim]) const
   {
     return M_PI*M_PI*(3.0*sin(M_PI*x[0])*sin(M_PI*(x[1]+0.5))*sin(M_PI*(x[2]+(1.0/3.0)))
           -cos(M_PI*x[0])*cos(M_PI*(x[1]+0.5))*sin(M_PI*(x[2]+(1.0/3.0)))
@@ -1925,24 +1925,24 @@ public:
   {
     return 1.0+sin(M_PI*x[0])*sin(M_PI*(x[1]+0.5))*sin(M_PI*(x[2]+(1.0/3.0)));
   }
-  
-  virtual void gradExact(const DomainField x[dim], Field grad[dim] ) const 
+
+  virtual void gradExact(const DomainField x[dim], Field grad[dim] ) const
   {
     grad[0] = M_PI*cos(M_PI*x[0])*sin(M_PI*(x[1]+0.5))*sin(M_PI*(x[2]+(1.0/3.0)));
     grad[1] = M_PI*sin(M_PI*x[0])*cos(M_PI*(x[1]+0.5))*sin(M_PI*(x[2]+(1.0/3.0)));
     grad[2] = M_PI*sin(M_PI*x[0])*sin(M_PI*(x[1]+0.5))*cos(M_PI*(x[2]+(1.0/3.0)));
   }
-  
+
   virtual bool boundaryDataFunction(const DomainField x[dim], Field & val) const
   {
-    val = exact( x ); 
-    return true; 
+    val = exact( x );
+    return true;
   }
 
 };
 
 
-template <int dim, class DomainField, class Field> 
+template <int dim, class DomainField, class Field>
 class BenchMark3d_3 : public DataFunctionIF<dim,DomainField,Field>
 {
 
@@ -1960,7 +1960,7 @@ public:
       for(int j=0; j<dim; ++j)
         K_[ i ][ j ] = 0 ;
 
-    // set diagonal 
+    // set diagonal
     K_[0][0] = 1;
     K_[1][1] = 1;
     K_[2][2] = 1e3 ;
@@ -1977,7 +1977,7 @@ public:
     }
   }
 
-  virtual Field rhs  (const DomainField x[dim]) const 
+  virtual Field rhs  (const DomainField x[dim]) const
   {
     return 1002.0*4.0*M_PI*M_PI*sin(2.0*M_PI*x[0])*sin(2.0*M_PI*x[1])*sin(2.0*M_PI*x[2]);
   }
@@ -1986,29 +1986,29 @@ public:
   {
     return sin(2.0*M_PI*x[0])*sin(2.0*M_PI*x[1])*sin(2.0*M_PI*x[2]);
   }
-  
-  virtual void gradExact(const DomainField x[dim], Field grad[dim] ) const 
+
+  virtual void gradExact(const DomainField x[dim], Field grad[dim] ) const
   {
     const Field pi2 = 2.0*M_PI;
     grad[0] = pi2 * cos( pi2 * x[0]) * sin( pi2 * x[1]) * sin( pi2 * x[2]);
     grad[1] = pi2 * sin( pi2 * x[0]) * cos( pi2 * x[1]) * sin( pi2 * x[2]);
     grad[2] = pi2 * sin( pi2 * x[0]) * sin( pi2 * x[1]) * cos( pi2 * x[2]);
   }
-  
+
   virtual bool boundaryDataFunction(const DomainField x[dim], Field & val) const
   {
-    val = exact( x ); 
-    return true; 
+    val = exact( x );
+    return true;
   }
 
 };
 
 
-template <int dim, class DomainField, class Field> 
+template <int dim, class DomainField, class Field>
 class BenchMark3d_4 : public DataFunctionIF<dim,DomainField,Field>
 {
   const Field tau_ ;
-public:  
+public:
   virtual ~BenchMark3d_4() {}
   BenchMark3d_4(Field globalShift, Field factor)
     : tau_( 0.2 )
@@ -2021,7 +2021,7 @@ public:
 
   virtual void K(const DomainField x[dim], Field k[dim][dim] ) const
   {
-    for(int i=0; i<dim; ++i) 
+    for(int i=0; i<dim; ++i)
       for(int j=0; j<dim; ++j )
         k[i][j] = 0;
 
@@ -2029,12 +2029,12 @@ public:
     k[2][2] = tau_ ;
   }
 
-  int getDomain(const DomainField x[dim]) const 
+  int getDomain(const DomainField x[dim]) const
   {
     return 0;
   }
 
-  virtual Field rhs  (const DomainField arg[dim]) const 
+  virtual Field rhs  (const DomainField arg[dim]) const
   {
     return 0.0;
   }
@@ -2045,8 +2045,8 @@ public:
     calculsolwell(x[0],x[1],x[2],u,u_x,u_y,u_z,1.0,0.0,0.0,1.0,0.0,tau_);
     return u;
   }
-  
-  virtual void gradExact(const DomainField x[dim], Field grad[dim] ) const 
+
+  virtual void gradExact(const DomainField x[dim], Field grad[dim] ) const
   {
     Field u,u_x,u_y,u_z;
     calculsolwell(x[0],x[1],x[2],u,u_x,u_y,u_z,1.0,0.0,0.0,1.0,0.0,tau_);
@@ -2054,14 +2054,14 @@ public:
     grad[1] = u_y;
     grad[dim-1] = u_z;
   }
-  
+
   virtual bool boundaryDataFunction(const DomainField x[dim], Field & val) const
   {
-    val = exact( x ); 
-    return true; 
+    val = exact( x );
+    return true;
   }
 
-  void calculsolwell (Field x, Field y, Field z, 
+  void calculsolwell (Field x, Field y, Field z,
                       Field& p, Field& px, Field& py, Field& pz,
                       Field lxx, Field lxy, Field lxz, Field lyy, Field lyz, Field lzz) const
   {
@@ -2140,7 +2140,7 @@ public:
 };
 
 
-template <int dim, class DomainField, class Field> 
+template <int dim, class DomainField, class Field>
 class BenchMark3d_5 : public DataFunctionIF<dim,DomainField,Field>
 {
   enum { numDomain = 4 };
@@ -2148,7 +2148,7 @@ class BenchMark3d_5 : public DataFunctionIF<dim,DomainField,Field>
   Field alpha_[ numDomain ];
   Field trace_[ numDomain ];
   const Field pi2_ ;
-public:  
+public:
   virtual ~BenchMark3d_5() {}
   BenchMark3d_5(Field globalShift, Field factor)
     : pi2_( 2.0 * M_PI )
@@ -2160,28 +2160,28 @@ public:
 
     {
       Field (&tensor)[dim] = tensor_[ 0 ];
-      tensor[0] = 1.0; 
+      tensor[0] = 1.0;
       tensor[1] = 10.0;
       tensor[2] = 0.01;
     }
 
     {
       Field (&tensor)[dim] = tensor_[ 1 ];
-      tensor[0] = 1.0; 
+      tensor[0] = 1.0;
       tensor[1] = 0.1;
       tensor[2] = 100.0;
     }
 
     {
       Field (&tensor)[dim] = tensor_[ 2 ];
-      tensor[0] = 1.0; 
+      tensor[0] = 1.0;
       tensor[1] = 0.01;
       tensor[2] = 10.0;
     }
 
     {
       Field (&tensor)[dim] = tensor_[ 3 ];
-      tensor[0] = 1.0; 
+      tensor[0] = 1.0;
       tensor[1] = 100.0;
       tensor[2] = 0.1;
     }
@@ -2191,10 +2191,10 @@ public:
     alpha_[ 2 ] = 100.0;
     alpha_[ 3 ] = 0.01;
 
-    for(int i=0; i<numDomain; ++i ) 
+    for(int i=0; i<numDomain; ++i )
     {
       trace_[ i ] = 0;
-      for( int j=0; j<dim; ++ j) 
+      for( int j=0; j<dim; ++ j)
         trace_[ i ]  += tensor_[ i ][ j ];
     }
   }
@@ -2203,15 +2203,15 @@ public:
   {
     const int domain = getDomain( x );
     assert( domain >= 0 && domain < numDomain );
-    for(int i=0; i<dim; ++i) 
+    for(int i=0; i<dim; ++i)
       for(int j=0; j<dim; ++j )
         k[i][j] = 0;
-    // set diagonal 
+    // set diagonal
     for(int j=0; j<dim; ++j )
       k[j][j] = tensor_[ domain ][ j ];
   }
 
-  int getDomain(const DomainField x[dim]) const 
+  int getDomain(const DomainField x[dim]) const
   {
     if (x[1]<=0.5)
     {
@@ -2223,7 +2223,7 @@ public:
     }
   }
 
-  virtual Field rhs  (const DomainField x[dim]) const 
+  virtual Field rhs  (const DomainField x[dim]) const
   {
     const int domain = getDomain(x);
     assert( domain >= 0 && domain < numDomain );
@@ -2240,8 +2240,8 @@ public:
     val *= alpha_[ domain ];
     return val ;
   }
-  
-  virtual void gradExact(const DomainField x[dim], Field grad[dim] ) const 
+
+  virtual void gradExact(const DomainField x[dim], Field grad[dim] ) const
   {
     const int domain = getDomain(x);
     assert( domain >= 0 && domain < numDomain );
@@ -2254,14 +2254,14 @@ public:
     grad[1] = pi2_ * sin( x_pi ) * cos( y_pi ) * sin( z_pi );
     grad[2] = pi2_ * sin( x_pi ) * sin( y_pi ) * cos( z_pi );
 
-    for(int i=0; i<dim; ++i ) 
+    for(int i=0; i<dim; ++i )
       grad[ i ] *= alpha_[ domain ];
   }
-  
+
   virtual bool boundaryDataFunction(const DomainField x[dim], Field & val) const
   {
     val = exact( x );
-    return true; 
+    return true;
   }
 };
 

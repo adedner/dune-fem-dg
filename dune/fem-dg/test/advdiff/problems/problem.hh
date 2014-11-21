@@ -1,6 +1,6 @@
 #ifndef  DUNE_PROBLEM_HH__
 #define  DUNE_PROBLEM_HH__
- 
+
 // dune-fem includes
 #include <dune/fem/io/parameter.hh>
 #include <dune/fem/space/common/functionspace.hh>
@@ -128,7 +128,7 @@ public:
     return 0.0;
   }
 
-  double diffusion( const RangeType& u, const JacobianRangeType& gradU ) const 
+  double diffusion( const RangeType& u, const JacobianRangeType& gradU ) const
   {
     return epsilon();
   }
@@ -156,7 +156,7 @@ public:
   }
 
   template <class T>
-  double SQR( const T& a ) const 
+  double SQR( const T& a ) const
   {
     return ( a * a );
   }
@@ -207,12 +207,12 @@ public:
     std::ostringstream ofs;
 
     ofs << "Problem: " << myName
-      << ", Epsilon: " << epsilon_ 
+      << ", Epsilon: " << epsilon_
       << ", Advection vector: (" <<velocity_[0];
 
-    if (dimDomain > 1)  
+    if (dimDomain > 1)
       ofs <<"," <<velocity_[1];
-    if (dimDomain > 2)  
+    if (dimDomain > 2)
       ofs <<"," <<velocity_[2];
     ofs <<")";
 
@@ -223,7 +223,7 @@ public:
 
   /*  \brief finalize the simulation using the calculated numerical
    *  solution u for this problem
-   *  
+   *
    *  \param[in] variablesToOutput Numerical solution in the suitably chosen variables
    *  \param[in] eocloop Specific EOC loop
    */

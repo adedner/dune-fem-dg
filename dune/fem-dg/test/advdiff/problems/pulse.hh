@@ -1,6 +1,6 @@
 #ifndef  DUNE_PROBLEM_PULSE_HH
 #define  DUNE_PROBLEM_PULSE_HH
- 
+
 // dune-fem includes
 #include <dune/fem/io/parameter.hh>
 #include <dune/fem/space/common/functionspace.hh>
@@ -87,7 +87,7 @@ public:
     return 0.0;
   }
 
-  double diffusion( const RangeType& u, const JacobianRangeType& gradU ) const 
+  double diffusion( const RangeType& u, const JacobianRangeType& gradU ) const
   {
     return epsilon();
   }
@@ -150,7 +150,7 @@ public:
 
   /*  \brief finalize the simulation using the calculated numerical
    *  solution u for this problem
-   *  
+   *
    *  \param[in] variablesToOutput Numerical solution in the suitably chosen variables
    *  \param[in] eocloop Specific EOC loop
    */

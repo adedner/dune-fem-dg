@@ -19,7 +19,7 @@
 /**
  * @brief Traits class for HeatEqnModel
  */
-template <class GridPart, int dimR > 
+template <class GridPart, int dimR >
 class HeatEqnModelTraits
 {
 public:
@@ -85,11 +85,11 @@ public:
 //
 ////////////////////////////////////////////////////////
 template <class GridPartType,class ProblemImp>
-class HeatEqnModel : 
+class HeatEqnModel :
   public DefaultModel < HeatEqnModelTraits< GridPartType,ProblemImp::dimRange > >
 {
 public:
-  // for heat equations advection is disabled 
+  // for heat equations advection is disabled
   static const bool hasAdvection = true ;
   static const bool hasDiffusion = true ;
 
@@ -98,7 +98,7 @@ public:
   static const int ConstantVelocity = ProblemType :: ConstantVelocity;
   typedef typename GridPartType :: GridType                        GridType;
   typedef HeatEqnModelTraits< GridPartType,ProblemImp::dimRange >  Traits;
-  static const int dimDomain = Traits :: dimDomain ; 
+  static const int dimDomain = Traits :: dimDomain ;
   static const int dimRange  = Traits :: dimRange ;
   typedef typename Traits :: DomainType                          DomainType;
   typedef typename Traits :: RangeType                           RangeType;
@@ -228,7 +228,7 @@ public:
   inline  void velocity(const EntityType& en,
                         const double time,
                         const DomainType& x,
-                        const RangeType& u, 
+                        const RangeType& u,
                         DomainType& v) const
   {
     velocity( en.geometry().global(x), time, v );
@@ -278,13 +278,13 @@ public:
     DomainType values ;
     for( int r = 0; r<dimRange; ++r )
     {
-      // setup matrix 
-      for(int i=0; i<dimDomain; ++i) 
+      // setup matrix
+      for(int i=0; i<dimDomain; ++i)
         K[i][i] = problem_.diffusion( u,A );
 
-      // calculate eigenvalues 
+      // calculate eigenvalues
       Dune::FMatrixHelp :: eigenValues( K, values );
-      // take max eigenvalue 
+      // take max eigenvalue
       maxValue[ r ] = values.infinity_norm();
     }
     */
@@ -301,10 +301,10 @@ public:
                         const JacobianType& jac,
                         FluxRangeType& A) const
   {
-    // copy v to A 
+    // copy v to A
     A = jac;
 
-    // apply diffusion coefficient 
+    // apply diffusion coefficient
     //double d =  0.; //(1.-en.geometry().global(x)[0])*en.geometry().global(x)[0]+
     //                //(1.-en.geometry().global(x)[1])*en.geometry().global(x)[1];
     A *= problem_.diffusion( u, A );//*(1.+d);
@@ -336,14 +336,14 @@ public:
    */
   inline void conservativeToPrimitive( const double time,
                                        const DomainType& xgl,
-                                       const RangeType& cons, 
+                                       const RangeType& cons,
                                        RangeType& prim,
                                        const bool ) const
   {
     prim = cons;
   }
 
-public:                            
+public:
   /**
    * @brief checks for existence of dirichlet boundary values
    */
@@ -386,7 +386,7 @@ public:
                                        const FaceDomainType& x,
                                        const RangeType& uLeft,
                                        const GradientType& gradLeft,
-                                       RangeType& gLeft ) const  
+                                       RangeType& gLeft ) const
   {
     Dune::Fem::FieldMatrixConverter< GradientType, JacobianRangeType> jacLeft( gradLeft );
     return diffusionBoundaryFlux( it, time, x, uLeft, jacLeft, gLeft );
@@ -400,7 +400,7 @@ public:
                                        const FaceDomainType& x,
                                        const RangeType& uLeft,
                                        const JacobianRangeImp& jacLeft,
-                                       RangeType& gLeft ) const  
+                                       RangeType& gLeft ) const
   {
     std::cerr <<"diffusionBoundaryFlux shouldn't be used for this testcase" <<std::endl;
     abort();
@@ -440,15 +440,15 @@ public:
   }
 
  protected:
-  DomainType getVelocity() const 
+  DomainType getVelocity() const
   {
     DomainType velocity(0);
     if(ConstantVelocity) {
       problem_.velocity(velocity,velocity);
     }
-    return velocity;  
+    return velocity;
   }
-  double getTStepEps() const 
+  double getTStepEps() const
   {
     // if diffusionTimeStep is set to non-zero in the parameterfile, the
     // deltaT in the timeprovider is updated according to the diffusion

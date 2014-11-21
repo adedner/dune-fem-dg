@@ -24,9 +24,9 @@ namespace Dune {
 //typedef float FIELDTYPE;
 typedef double FIELDTYPE;
 
-template <class GridType> 
-class ProblemBase : 
-  public EvolutionProblemInterface< 
+template <class GridType>
+class ProblemBase :
+  public EvolutionProblemInterface<
               Dune::Fem::FunctionSpace< double, double, GridType::dimensionworld, GridType::dimensionworld+2>,
               false >
 {
@@ -34,17 +34,17 @@ class ProblemBase :
               Dune::Fem::FunctionSpace< double, double, GridType::dimensionworld, GridType::dimensionworld+2>,
               false > BaseType ;
 
-public:  
+public:
   using BaseType :: evaluate ;
   using BaseType::fixedTimeFunction;
 
   typedef Dune::Fem::Parameter ParameterType;
 
-  enum { Inflow = 1, Outflow = 2, Reflection = 3 , Slip = 4 }; 
+  enum { Inflow = 1, Outflow = 2, Reflection = 3 , Slip = 4 };
   enum { MaxBnd = Slip };
   typedef Dune::Fem::FunctionSpace< double, double, GridType::dimension, GridType::dimension+2 > FunctionSpaceType ;
 
-  enum { dimDomain = GridType::dimensionworld };  
+  enum { dimDomain = GridType::dimensionworld };
   typedef typename FunctionSpaceType :: RangeType  RangeType ;
   typedef typename FunctionSpaceType :: DomainType DomainType ;
 
@@ -56,10 +56,10 @@ public:
   const int eocId_ ;
 
   ProblemBase() : gamma_( 1.4 ), V_( 1.0 ), eocId_( addToFemEoc() )  {}
-  ProblemBase( const FieldType gamma, const FieldType  V ) 
+  ProblemBase( const FieldType gamma, const FieldType  V )
     : gamma_( gamma ), V_( V ), eocId_( addToFemEoc() ) {}
 
-  int addToFemEoc() const 
+  int addToFemEoc() const
   {
     return Dune::Fem::FemEoc::addEntry(std::string("$L^1$-error"));
   }
@@ -73,13 +73,13 @@ public:
 
   void bg ( const DomainType&, RangeType& ) const {}
 
-  /*  \brief calculate EOC between exact and numerical solution 
-   *  
-   *  \param[in] tp     time provider 
-   *  \param[in] u      numerical solution 
+  /*  \brief calculate EOC between exact and numerical solution
+   *
+   *  \param[in] tp     time provider
+   *  \param[in] u      numerical solution
    *  \param[in] eocId  for FemEoc
-   * 
-   *  \return true if no EOC was calculated 
+   *
+   *  \return true if no EOC was calculated
    */
   template< class TimeProviderType, class DiscreteFunctionType >
   bool calculateEOC( TimeProviderType& tp, DiscreteFunctionType& u,
@@ -94,7 +94,7 @@ public:
 
   /*  \brief finalize the simulation using the calculated numerical
    *  solution u for this problem
-   *  
+   *
    *  \param[in] variablesToOutput Numerical solution in the suitably chosen var
    *  \param[in] eocloop Specific EOC loop
    */
@@ -103,17 +103,17 @@ public:
                            const int eocloop) const
   {}
 
-  //! methods for gradient based indicator 
+  //! methods for gradient based indicator
   bool twoIndicators() const { return false ; }
 
-  //! methods for gradient based indicator 
+  //! methods for gradient based indicator
   double indicator1( const DomainType& xgl, const RangeType& u ) const
   {
-    // use density as indicator 
+    // use density as indicator
     return u[ 0 ];
   }
 
-  virtual int boundaryId ( const int id ) const 
+  virtual int boundaryId ( const int id ) const
   {
     return 2;
   }
@@ -135,14 +135,14 @@ public:
   DomainType u_;
   std::string myName;
 
-public:  
+public:
   U0Smooth1D() : BaseType( 1.4, 1.0 ),
-    u_(0), myName("Advection") 
+    u_(0), myName("Advection")
   {
     init();
   }
 
-  void init() 
+  void init()
   {
     enum { dim = DomainType :: dimension  };
     u_[ 0 ] = std::cos(M_PI/5.0);
@@ -156,7 +156,7 @@ public:
     return 0.2;
   }
 
-  void evaluate(const DomainType& x, const double time, RangeType& res) const 
+  void evaluate(const DomainType& x, const double time, RangeType& res) const
   {
     enum { dimR = RangeType :: dimension  };
     enum { dim = DomainType :: dimension  };
@@ -202,30 +202,30 @@ public:
 
   const std::string myName;
 
-  double endtime() 
+  double endtime()
   {
     return 5.0;
   }
 
-  void evaluate(const DomainType& arg, double t, RangeType& res) const 
+  void evaluate(const DomainType& arg, double t, RangeType& res) const
   {
     evaluate(t,arg,res);
   }
-  
+
   template <class DomainType, class RangeType>
-  void evaluate(double t,const DomainType& arg, RangeType& res) const 
+  void evaluate(double t,const DomainType& arg, RangeType& res) const
   {
     enum { dimR = RangeType :: dimension };
-    // reset all values 
+    // reset all values
     res = 0;
-    
+
     // initial values
-    res[0] = gamma(); // density 
-    res[1] = V() * res[0]; // velocity-x 
+    res[0] = gamma(); // density
+    res[1] = V() * res[0]; // velocity-x
     res[dimR-1] = 8.8;
 
     //std::cout << "Initial value : "<< res << "\n";
-    //RangeType prim; 
+    //RangeType prim;
     //cons2prim( res, prim );
     //std::cout << "Initial value : "<< prim << "\n";
   }
@@ -233,23 +233,23 @@ public:
   void cons2prim(const RangeType& u,RangeType& v) const {
     v[0] = u[0];
     enum { dimDomain = BaseType :: dimDomain };
-    for (int i=1;i<=dimDomain;i++) 
+    for (int i=1;i<=dimDomain;i++)
     {
       v[i] = u[i]/u[0];
     }
     v[dimDomain+1] = EulerAnalyticalFlux<dimDomain>().pressure(gamma,u);
   }
 
-  int boundaryId( const int id ) const 
+  int boundaryId( const int id ) const
   {
     return (id > BaseType::MaxBnd) ? BaseType::MaxBnd : id;
   }
 
-  int determineBndId(const DomainType& x) const 
+  int determineBndId(const DomainType& x) const
   {
-    if( x[0] <= 1e-8     ) return 1; // Inflow 
-    if( x[0] >= 3.0-1e-8 ) return 2; // Outflow 
-    // reflection elsewhere 
+    if( x[0] <= 1e-8     ) return 1; // Inflow
+    if( x[0] >= 3.0-1e-8 ) return 2; // Outflow
+    // reflection elsewhere
     return 3;
   }
 
@@ -259,7 +259,7 @@ public:
 template <class GridType>
 class U0Sod : public ProblemBase< GridType > {
   double T,startTime;
-  Dune::Fem::FieldVectorAdapter<FieldVector<double,6> > Ulr;  
+  Dune::Fem::FieldVectorAdapter<FieldVector<double,6> > Ulr;
   enum { dim = GridType :: dimension };
 public:
   typedef ProblemBase< GridType > BaseType ;
@@ -273,11 +273,11 @@ public:
 
   enum { dimDomain = GridType::dimensionworld,
          dimRange = dimDomain+2,
-         energ = dimRange-1};  
+         energ = dimRange-1};
 
   U0Sod() : T(0.4), startTime(0), flag(0) {
     myName = "RP-Sod";
-    
+
     // default is sod's rp
     Ulr[0] = 1.0;
     Ulr[3] = 0.125;
@@ -285,14 +285,14 @@ public:
     Ulr[4] = 0.;
     Ulr[2] = 1.0;
     Ulr[5] = 0.1;
-    
+
     //ParameterType::get("euler.riemanndata", Ulr, Ulr );
     T = ParameterType::getValue("femhowto.endTime", T);
     ParameterType::get("femhowto.startTime", startTime, startTime );
     flag = ParameterType::getValue("euler.problemflag", flag);
   }
 
-  int boundaryId( const int id ) const 
+  int boundaryId( const int id ) const
   {
     return ( id > 2 ) ? BaseType::Reflection : id;
     //return BaseType::Inflow;
@@ -314,7 +314,7 @@ public:
     return flag==0;
   }
 
-  void evaluate(const DomainType& arg, const double t, RangeType& res) const 
+  void evaluate(const DomainType& arg, const double t, RangeType& res) const
   {
     if (flag==0) {
       res[2] = 0.;
@@ -336,9 +336,9 @@ public:
     else {
       DomainType c(0.075);
       DomainType velo(0.5);
-      c[0] = 0.1;  
+      c[0] = 0.1;
       velo[0] = 4.5;
-      
+
       DomainType x(arg);
       DomainType v(velo);
       x -= c;
@@ -346,7 +346,7 @@ public:
       x -= v;
       double r2=0.004;
       double z=x*x/r2;
-      
+
       res[0] = 0.1;
       if (flag<=3) {
         if (z < 1.) {
@@ -357,7 +357,7 @@ public:
           }
           else if (flag==2)
             res[0] += (1.-z);
-          else  
+          else
             res[0] += 1.0;
         }
       } else if (flag>=4) {
@@ -372,7 +372,7 @@ public:
           while (x[1]<0)    x[1]+=0.25;
           while (x[1]>0.25) x[1]-=0.25;
           res[0] = 0.6+0.5*std::abs(sin(M_PI*x[0]))*std::abs(sin(2.*M_PI*x[1]));
-          if (flag==6) 
+          if (flag==6)
             if (x[0]-M_PI*x[1]>0)
               res[0]+=1.;
           if (flag==7)
@@ -409,13 +409,13 @@ public:
     filestream << filename;
 
     std::ofstream ofs(filestream.str().c_str(), std::ios::app);
-  
+
     ofs << "Problem: " << myName << "\n\n"
         << "gamma = " << gamma() << "\n\n";
     ofs << "\n\n";
-  
+
     ofs.close();
-      
+
   }
   std::string dataPrefix() const { return myName; }
   std::string myName;
@@ -451,19 +451,19 @@ public:
     startTime( 0 )
   {
     myName = "RP-123";
-    
+
     Ulr[0] = 1.0;
     Ulr[3] = 1.0;
     Ulr[1] = -2.0;
     Ulr[4] = 2.0;
     Ulr[2] = 0.4;
     Ulr[5] = 0.4;
-    
+
     T = ParameterType::getValue( "femhowto.endTime", T );
     ParameterType::get( "femhowto.startTime", startTime, startTime );
   }
 
-  int boundaryId ( const int id ) const 
+  int boundaryId ( const int id ) const
   {
     return ( id > 2 ) ? BaseType::Reflection : id;
     //return BaseType::Inflow;
@@ -518,11 +518,11 @@ public:
     filestream << filename;
 
     std::ofstream ofs(filestream.str().c_str(), std::ios::app);
-  
+
     ofs << "Problem: " << myName << "\n\n"
         << "gamma = " << gamma() << "\n\n";
     ofs << "\n\n";
-  
+
     ofs.close();
   }
 
@@ -535,20 +535,20 @@ public:
 
 #if 0
 /*****************************************************************/
-// Diffraction 
+// Diffraction
 template <class GridType>
 class U0Diffraction : public ProblemBase< GridType > {
 public:
-  enum { dimDomain = GridType::dimensionworld };  
+  enum { dimDomain = GridType::dimensionworld };
   typedef FunctionSpace<double,double,dimDomain,dimDomain+2> FunctionSpaceType;
-  U0Diffraction() : 
+  U0Diffraction() :
     gamma(1.4),myName("Shock Diffraction Problem")
   , pAB_( pAlphaBeta( V() ) )
   , rhoAB_( rhoAlphaBeta( pAB_ ) )
-  // c = std::sqrt( 1.4 * 1 / 1.4 ) = 1 
+  // c = std::sqrt( 1.4 * 1 / 1.4 ) = 1
   , us_ ( u_s(1., pAB_ ))
   {}
-  U0Diffraction(std::string,double,bool diff_timestep=true) : 
+  U0Diffraction(std::string,double,bool diff_timestep=true) :
     gamma(1.4),myName("Shock Diffraction Problem")
   , pAB_( pAlphaBeta( V() ) )
   , rhoAB_( rhoAlphaBeta( pAB_ ) )
@@ -563,58 +563,58 @@ public:
   const double us_;
 
   void printmyInfo(std::string filename) {}
-  double endtime() 
+  double endtime()
   {
     return 2.3;
   }
 
   double V() const { return 5.09; }
-  
-  double pAlphaBeta(const double machNumber ) const 
+
+  double pAlphaBeta(const double machNumber ) const
   {
     return ( 1. + ( (2*gamma)/(gamma+1) * ( (machNumber*machNumber) - 1.) ) );
   }
-  
-  double rhoAlphaBeta(const double pAB ) const 
+
+  double rhoAlphaBeta(const double pAB ) const
   {
     const double gammaPlusMinus = ((gamma+1.)/(gamma-1.));
     return (1. + gammaPlusMinus * pAB ) /( gammaPlusMinus + pAB );
   }
 
-  double u_s (const double c, double pAB ) const 
+  double u_s (const double c, double pAB ) const
   {
-    return c/gamma * (pAB - 1.) * std::sqrt(((2*gamma)/(gamma+1))/(pAB + ((gamma-1.)/(gamma+1.)) )); 
+    return c/gamma * (pAB - 1.) * std::sqrt(((2*gamma)/(gamma+1))/(pAB + ((gamma-1.)/(gamma+1.)) ));
   }
-  
+
   template <class DomainType, class RangeType>
   void evaluate(const DomainType& arg, RangeType& res) const {
     evaluate(0,arg,res);
   }
   template <class DomainType, class RangeType>
-  void evaluate(const DomainType& arg,double t, RangeType& res) const 
+  void evaluate(const DomainType& arg,double t, RangeType& res) const
   {
     evaluate(t,arg,res);
   }
-  
+
   template <class DomainType, class RangeType>
-  void evaluate(double t,const DomainType& arg, RangeType& res) const 
+  void evaluate(double t,const DomainType& arg, RangeType& res) const
   {
     enum { dimR = RangeType :: dimension };
     enum { e = dimR - 1 };
 
-    // reset all values 
+    // reset all values
     res = 0;
-    
-    // density 
-    res[0] = gamma; 
 
-    // pressure 
+    // density
+    res[0] = gamma;
+
+    // pressure
     res[e] = 1;
 
-    // check area 
+    // check area
     double x = arg[0];
-    
-    if( x <= 0.5 ) 
+
+    if( x <= 0.5 )
     {
       res[0] *= rhoAB_;
       res[1] = us_;
@@ -623,14 +623,14 @@ public:
 
     const double sqrVelo = res[1] * res[1];
 
-    // get impuls 
+    // get impuls
     res[1] *= res[0];
 
-    // calculate energy 
+    // calculate energy
     res[e] = res[e]/(gamma-1.) + 0.5 * sqrVelo * res[0];
 
     //std::cout << "Initial value : "<< res << "\n";
-    //RangeType prim; 
+    //RangeType prim;
     //cons2prim( res, prim );
     //std::cout << "Initial value : "<< prim << "\n";
   }
@@ -638,7 +638,7 @@ public:
   template <class RangeType>
   void cons2prim(const RangeType& u,RangeType& v) const {
     v[0] = u[0];
-    for (int i=1;i<=dimDomain;i++) 
+    for (int i=1;i<=dimDomain;i++)
     {
       v[i] = u[i]/u[0];
     }
@@ -646,31 +646,31 @@ public:
   }
 
   template <class DomainType>
-  int determineBndId(const DomainType& x) const 
+  int determineBndId(const DomainType& x) const
   {
     if( x[0] <= 0.) return 1;
     if( x[1] >= 11.0 ) return 4;
     if( x[0] >= 13.0 ) return 2;
-  
+
     return 3;
   }
 };
 /*****************************************************************/
 /*****************************************************************/
-// Diffraction 
+// Diffraction
 template <class GridType>
 class U0DoubleMachReflect : public ProblemBase {
 public:
-  enum { dimDomain = GridType::dimensionworld };  
+  enum { dimDomain = GridType::dimensionworld };
   typedef FunctionSpace<double,double,dimDomain,dimDomain+2> FunctionSpaceType;
-  U0DoubleMachReflect() : 
+  U0DoubleMachReflect() :
     gamma(1.4),myName("Double Mach Reflection")
   , pAB_( pAlphaBeta( V() ) )
   , rhoAB_( rhoAlphaBeta( pAB_ ) )
-  // c = sqrt( 1.4 * 1 / 1.4 ) = 1 
+  // c = sqrt( 1.4 * 1 / 1.4 ) = 1
   , us_ ( u_s(1., pAB_ ))
   {}
-  U0DoubleMachReflect(std::string,double,bool diff_timestep=true) : 
+  U0DoubleMachReflect(std::string,double,bool diff_timestep=true) :
     gamma(1.4),myName("Double Mach Reflection")
   , pAB_( pAlphaBeta( V() ) )
   , rhoAB_( rhoAlphaBeta( pAB_ ) )
@@ -685,58 +685,58 @@ public:
   const double us_;
 
   void printmyInfo(std::string filename) {}
-  double endtime() 
+  double endtime()
   {
     return 1.0;
   }
 
   double V() const { return 10.; }
-  
-  double pAlphaBeta(const double machNumber ) const 
+
+  double pAlphaBeta(const double machNumber ) const
   {
     return ( 1. + ( (2*gamma)/(gamma+1) * ( (machNumber*machNumber) - 1.) ) );
   }
-  
-  double rhoAlphaBeta(const double pAB ) const 
+
+  double rhoAlphaBeta(const double pAB ) const
   {
     const double gammaPlusMinus = ((gamma+1.)/(gamma-1.));
     return (1. + gammaPlusMinus * pAB ) /( gammaPlusMinus + pAB );
   }
 
-  double u_s (const double c, double pAB ) const 
+  double u_s (const double c, double pAB ) const
   {
-    return c/gamma * (pAB - 1.) * std::sqrt(((2*gamma)/(gamma+1))/(pAB + ((gamma+1.)/(gamma-1.)))); 
+    return c/gamma * (pAB - 1.) * std::sqrt(((2*gamma)/(gamma+1))/(pAB + ((gamma+1.)/(gamma-1.))));
   }
-  
+
   template <class DomainType, class RangeType>
   void evaluate(const DomainType& arg, RangeType& res) const {
     evaluate(time(),arg,res);
   }
   template <class DomainType, class RangeType>
-  void evaluate(const DomainType& arg,double t, RangeType& res) const 
+  void evaluate(const DomainType& arg,double t, RangeType& res) const
   {
     evaluate(t,arg,res);
   }
-  
+
   template <class DomainType, class RangeType>
-  void evaluate(double t,const DomainType& arg, RangeType& res) const 
+  void evaluate(double t,const DomainType& arg, RangeType& res) const
   {
     enum { dimR = RangeType :: dimension };
     enum { e = dimR - 1 };
 
-    // reset all values 
+    // reset all values
     res = 0;
-    
-    // density 
-    res[0] = gamma; 
 
-    // pressure 
+    // density
+    res[0] = gamma;
+
+    // pressure
     res[e] = 1;
 
-    // check area 
+    // check area
     double x = arg[0];
-    
-    if( x <= 0. ) 
+
+    if( x <= 0. )
     {
       res[0] *= rhoAB_;
       res[1] = us_;
@@ -745,14 +745,14 @@ public:
 
     const double sqrVelo = res[1] * res[1];
 
-    // get impuls 
+    // get impuls
     res[1] *= res[0];
 
-    // calculate energy 
+    // calculate energy
     res[e] = res[e]/(gamma-1.) + 0.5 * sqrVelo * res[0];
 
     //std::cout << "Conservative value : "<< res << "\n";
-    //RangeType prim; 
+    //RangeType prim;
     //cons2prim( res, prim );
     //std::cout << "Primitve value : "<< prim << "\n";
   }
@@ -760,7 +760,7 @@ public:
   template <class RangeType>
   void cons2prim(const RangeType& u,RangeType& v) const {
     v[0] = u[0];
-    for (int i=1;i<=dimDomain;i++) 
+    for (int i=1;i<=dimDomain;i++)
     {
       v[i] = u[i]/u[0];
     }
@@ -769,67 +769,67 @@ public:
 };
 
 /*****************************************************************/
-// ShockBubble  
+// ShockBubble
 template <class GridType>
 class U0ShockBubble : public ProblemBase {
 public:
-  enum { dimDomain = GridType::dimensionworld };  
+  enum { dimDomain = GridType::dimensionworld };
   typedef FunctionSpace<double,double,dimDomain,dimDomain+2> FunctionSpaceType;
 
   typedef typename FunctionSpaceType :: DomainType DomainType;
-  
+
   // public member, Andreas .....
   const double gamma;
   const std::string myName;
-  DomainType center_; 
-  const double radius2_; 
+  DomainType center_;
+  const double radius2_;
 
-  U0ShockBubble() : 
-    gamma(1.4),myName("Shock Bubble Problem")  
-   , center_(0.5) , radius2_( 0.2 * 0.2 ) 
+  U0ShockBubble() :
+    gamma(1.4),myName("Shock Bubble Problem")
+   , center_(0.5) , radius2_( 0.2 * 0.2 )
   {
     center_[dimDomain-1] = 0;
   }
-  
-  U0ShockBubble(std::string,double,bool diff_timestep=true) : 
-    gamma(1.4),myName("Shock Bubble Problem") 
-   , center_(0) , radius2_( 0.2 * 0.2 ) 
+
+  U0ShockBubble(std::string,double,bool diff_timestep=true) :
+    gamma(1.4),myName("Shock Bubble Problem")
+   , center_(0) , radius2_( 0.2 * 0.2 )
   {
     center_[0] = 0.5;
   }
 
   void printmyInfo(std::string filename) {}
-  double endtime() 
+  double endtime()
   {
     return 0.3;
   }
 
   double V() const { return 2.95; }
-  
+
   template <class DomainType, class RangeType>
   void evaluate(const DomainType& arg, RangeType& res) const {
     evaluate(time(),arg,res);
   }
   template <class DomainType, class RangeType>
-  void evaluate(const DomainType& arg,double t, RangeType& res) const 
+  void evaluate(const DomainType& arg,double t, RangeType& res) const
   {
     evaluate(t,arg,res);
   }
-  
+
   template <class DomainType, class RangeType>
-  void evaluate(double t, const DomainType& arg, RangeType& res) const 
+  void evaluate(double t, const DomainType& arg, RangeType& res) const
   {
     enum { dimR = RangeType :: dimension };
 
-    // reset all values 
+    // reset all values
     res = 0;
-    
-    // behind shock 
-    if ( arg[0] <= 0.2 ) 
+
+    // behind shock
+    if ( arg[0] <= 0.2 )
     {
       /*
       const double gamma1 = gamma-1.;
-      // pressure left of shock 
+      // pressure left of shock
       const double pinf = 10.0;
       const double rinf = ( gamma1 + (gamma+1)*pinf )/( (gamma+1) + gamma1*pinf );
       const double vinf = V();
@@ -844,7 +844,7 @@ public:
       */
 
       const double gamma1 = gamma-1.;
-      // pressure left of shock 
+      // pressure left of shock
       const double pinf = 5;
       const double rinf = ( gamma1 + (gamma+1)*pinf )/( (gamma+1) + gamma1*pinf );
       const double vinf = (1.0/std::sqrt(gamma)) * (pinf - 1.)/
@@ -858,23 +858,23 @@ public:
       //cons2prim( res, prim );
       //std::cout << "Primitve behind: "<< prim << "\n";
     }
-    else if( (arg - center_).two_norm2() <= radius2_ ) 
+    else if( (arg - center_).two_norm2() <= radius2_ )
     {
       res[0] = 0.1;
-      // pressure in bubble  
+      // pressure in bubble
       res[dimR-1] = 2.5;
 
-      //RangeType prim; 
+      //RangeType prim;
       //cons2prim( res, prim );
       //std::cout << "Primitve inside : "<< prim << "\n";
     }
-    // elsewhere 
-    else 
+    // elsewhere
+    else
     {
       res[0] = 1;
       res[dimR-1] = 2.5;
 
-      //RangeType prim; 
+      //RangeType prim;
       //cons2prim( res, prim );
       //std::cout << "Primitve outside : "<< prim << "\n";
     }
@@ -883,7 +883,7 @@ public:
   template <class RangeType>
   void cons2prim(const RangeType& u,RangeType& v) const {
     v[0] = u[0];
-    for (int i=1;i<=dimDomain;i++) 
+    for (int i=1;i<=dimDomain;i++)
     {
       v[i] = u[i]/u[0];
     }
@@ -893,13 +893,13 @@ public:
 template <class GridType>
 class U0Sin : public ProblemBase {
 public:
-  enum { dimDomain = GridType::dimensionworld };  
+  enum { dimDomain = GridType::dimensionworld };
   typedef FunctionSpace<double,double,dimDomain,dimDomain+2> FunctionSpaceType;
-  U0Sin() : 
+  U0Sin() :
     gamma(), startTime(0) {
     ParameterType::get("StartTime",startTime,startTime);
   }
-  U0Sin(std::string,double,bool diff_timestep=true) : 
+  U0Sin(std::string,double,bool diff_timestep=true) :
     gamma(1.4), startTime(0) {
     ParameterType::get("StartTime",startTime,startTime);
   }
@@ -921,7 +921,7 @@ public:
     evaluate(time(),arg,res);
   }
   template <class DomainType, class RangeType>
-  void evaluate(const DomainType& arg,double t, RangeType& res) const 
+  void evaluate(const DomainType& arg,double t, RangeType& res) const
   {
     evaluate(t,arg,res);
   }
@@ -953,11 +953,11 @@ public:
     filestream << filename;
 
     std::ofstream ofs(filestream.str().c_str(), std::ios::app);
-  
+
     ofs << "Problem: " << myName << "\n\n"
         << "gamma = " << gamma << "\n\n";
     ofs << "\n\n";
-  
+
     ofs.close();
   }
   double gamma,startTime;
@@ -966,13 +966,13 @@ public:
 template <class GridType>
 class U0RotatingCone : public ProblemBase {
 public:
-  enum { dimDomain = GridType::dimensionworld };  
+  enum { dimDomain = GridType::dimensionworld };
   typedef FunctionSpace<double,double,dimDomain,dimDomain+2> FunctionSpaceType;
-  U0RotatingCone() : 
+  U0RotatingCone() :
     gamma(), startTime(0) {
     ParameterType::get("StartTime",startTime,startTime);
   }
-  U0RotatingCone(std::string,double,bool diff_timestep=true) : 
+  U0RotatingCone(std::string,double,bool diff_timestep=true) :
     gamma(1.4), startTime(0) {
     ParameterType::get("StartTime",startTime,startTime);
   }
@@ -987,7 +987,7 @@ public:
     evaluate(startTime,arg,res);
   }
   template <class DomainType, class RangeType>
-  void evaluate(const DomainType& arg,double t, RangeType& res) const 
+  void evaluate(const DomainType& arg,double t, RangeType& res) const
   {
     evaluate(t,arg,res);
   }
@@ -1014,10 +1014,10 @@ public:
     }
     res[DomainType::size+1] = 2.;
     if (arg.size>1) {
-      res[DomainType::size+1] += 
+      res[DomainType::size+1] +=
   0.5*(res[1]*res[1]+res[2]*res[2])/res[0];
     } else {
-      res[DomainType::size+1] += 
+      res[DomainType::size+1] +=
   0.5*(res[1]*res[1])/res[0];
     }
   }
@@ -1027,13 +1027,13 @@ public:
     filestream << filename;
 
     std::ofstream ofs(filestream.str().c_str(), std::ios::app);
-  
+
     ofs << "Problem: " << myName << "\n\n"
         << "gamma = " << gamma << "\n\n";
     ofs << "\n\n";
-  
+
     ofs.close();
-      
+
   }
   double gamma,startTime;
   std::string myName;
@@ -1058,7 +1058,7 @@ public:
  * 0.5              yupper      = top edge of computational domain
  * 0.0              zlower      = front edge of computational domain
  * 0.5              zupper      = back edge of computational domain
- * 
+ *
  * 1.4                       gamma
  * 0.5    0.5    0.2         x0, y0, r0:  center and radius of bubble
  * 0.1                       rhoin: density in bubble
@@ -1068,7 +1068,7 @@ public:
  * rhoout = 1.d0
  * pout   = 1.d0
  * pin    = 1.d0
- * 
+ *
  * # Compute density and velocity behind shock from Hugoniot relations:
  * # gamma1 = gamma-1
  * rinf = ( gamma1 + (gamma+1)*pinf )/( (gamma+1) + gamma1*pinf )
