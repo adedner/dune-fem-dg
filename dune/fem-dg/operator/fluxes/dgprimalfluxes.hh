@@ -1,7 +1,6 @@
 #ifndef DUNE_FEM_DG_DGPRIMALFLUXES_HH
 #define DUNE_FEM_DG_DGPRIMALFLUXES_HH
 
-#include <dune/fem/misc/boundaryidentifier.hh>
 #include <dune/fem/misc/fmatrixconverter.hh>
 #include <dune/fem/operator/1order/localmassmatrix.hh>
 #include <dune/fem/pass/localdg/discretemodel.hh>

@@ -1,7 +1,6 @@
 #ifndef DUNE_FEM_DG_DISCRETEMODELCOMMON_HH
 #define DUNE_FEM_DG_DISCRETEMODELCOMMON_HH
 
-#include <dune/fem/misc/boundaryidentifier.hh>
 #include <dune/fem/misc/fmatrixconverter.hh>
 #include <dune/fem/pass/localdg/discretemodel.hh>
 #include <dune/fem/quadrature/cachingquadrature.hh>

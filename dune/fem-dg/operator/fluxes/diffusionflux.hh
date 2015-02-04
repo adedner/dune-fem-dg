@@ -2,7 +2,6 @@
 #define DUNE_FEM_DG_DIFFUSIONFLUXES_HH
 
 #include <dune/fem/function/localfunction/temporary.hh>
-#include <dune/fem/misc/boundaryidentifier.hh>
 #include <dune/fem/misc/fmatrixconverter.hh>
 #include <dune/fem/pass/localdg/discretemodel.hh>
 #include <dune/fem/quadrature/cachingquadrature.hh>
