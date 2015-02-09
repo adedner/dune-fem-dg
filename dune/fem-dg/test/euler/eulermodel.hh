@@ -31,12 +31,12 @@ namespace Dune
       typedef typename GridPart::GridType                           GridType;
       enum{ dimDomain = GridType::dimensionworld };
       enum{ dimRange = dimDomain + 2 }; // the Euler equations
-      enum{ dimGrad = dimRange * dimDomain };
+      enum{ dimGradRange = dimRange * dimDomain };
 
       typedef typename GridType :: ctype  ctype ;
 
       typedef FunctionSpace< ctype, ctype, dimDomain, dimRange > FunctionSpaceType ;
-      typedef typename ToNewDimRangeFunctionSpace< FunctionSpaceType, dimGrad > :: Type  GradientFunctionSpaceType;
+      typedef typename ToNewDimRangeFunctionSpace< FunctionSpaceType, dimGradRange > :: Type  GradientFunctionSpaceType;
 
       typedef typename FunctionSpaceType :: DomainType         DomainType;
       typedef typename FunctionSpaceType :: RangeType          RangeType;
