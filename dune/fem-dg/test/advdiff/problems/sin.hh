@@ -10,15 +10,15 @@
 
 namespace Dune {
 
-template <class GridType>
+template <class GridType, int dimRange>
 class U0Sin : public EvolutionProblemInterface<
-                Fem::FunctionSpace< double, double, GridType::dimension, DIMRANGE>,
+                Fem::FunctionSpace< double, double, GridType::dimension, dimRange>,
                 false >
 {
 public:
   typedef EvolutionProblemInterface<
                  Fem::FunctionSpace< double, double,
-                                     GridType::dimension, DIMRANGE >,
+                                     GridType::dimension, dimRange >,
                  false >                                BaseType;
 
   enum{ dimDomain = BaseType :: dimDomain };

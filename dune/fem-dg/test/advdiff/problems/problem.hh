@@ -34,15 +34,15 @@ namespace Dune {
  * \Omega}\f$.
  *
  */
-template <class GridType>                                          /*@LST0S@*/
+template <class GridTypem, int dimRange>                                          /*@LST0S@*/
 struct U0 : public EvolutionProblemInterface<
-                  Fem::FunctionSpace< double, double, GridType::dimension, DIMRANGE>,
+                  Fem::FunctionSpace< double, double, GridType::dimension, dimRange>,
                   false >
 {                                                                  /*@LST0E@*/
 public:
   typedef EvolutionProblemInterface<
                  Fem::FunctionSpace< double, double,
-                                     GridType::dimension, DIMRANGE >,
+                                     GridType::dimension, dimRange >,
                  false >                                              BaseType;
 
   enum{ dimDomain = BaseType :: dimDomain };

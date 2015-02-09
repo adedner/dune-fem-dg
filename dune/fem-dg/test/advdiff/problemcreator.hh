@@ -86,13 +86,13 @@ struct ProblemCreator
     static const std::string probString[]  = { "heat" ,"quasi", "pulse", "sin" };
     const int probNr = Dune::Fem::Parameter::getEnum( "advdiff.problem", probString, 0 );
     if( probNr == 0 )
-      return new Dune :: U0< GridType > ();
+      return new Dune :: U0< GridType, DIMRANGE > ();
     else if ( probNr == 1 )
-      return new Dune :: QuasiHeatEqnSolution< GridType > ();
+      return new Dune :: QuasiHeatEqnSolution< GridType, DIMRANGE > ();
     else if ( probNr == 2 )
-      return new Dune :: Pulse< GridType > ();
+      return new Dune :: Pulse< GridType, DIMRANGE > ();
     else if ( probNr == 3 )
-      return new Dune :: U0Sin< GridType > ();
+      return new Dune :: U0Sin< GridType, DIMRANGE > ();
     else
     {
       abort();

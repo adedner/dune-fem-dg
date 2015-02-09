@@ -17,15 +17,15 @@ namespace Dune {
 /**
  * @brief describes the initial and exact solution of the advection-diffusion model
  */
-template <class GridType>                                          /*@LST0S@*/
+template <class GridType, int dimRange >                                 /*@LST0S@*/
 struct QuasiHeatEqnSolution : public EvolutionProblemInterface<
-                  Dune::Fem::FunctionSpace< double, double, GridType::dimension, DIMRANGE>,
+                  Dune::Fem::FunctionSpace< double, double, GridType::dimension, dimRange>,
                   false >
 {                                                                  /*@LST0E@*/
 public:
   typedef EvolutionProblemInterface<
                  Dune::Fem::FunctionSpace< double, double,
-                                           GridType::dimension, DIMRANGE >,
+                                           GridType::dimension, dimRange >,
                  false >                                              BaseType;
 
   enum{ dimDomain = BaseType :: dimDomain };
@@ -44,7 +44,7 @@ public:
     startTime_( ParameterType::getValue<double>("femhowto.startTime",0.0) ),
     epsilon_( ParameterType::getValue<double>("femhowto.epsilon") )
   {                                                             /*@LST0E@*/
-    if ( (DIMRANGE != 1) || (dimDomain != 2) )
+    if ( (dimRange != 1) || (dimDomain != 2) )
     {
       std::cout <<"QuasiHeatEqn only supports dimRange=1 and dimDomain=2\n";
       abort();
