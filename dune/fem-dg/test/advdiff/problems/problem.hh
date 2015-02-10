@@ -34,7 +34,7 @@ namespace Dune {
  * \Omega}\f$.
  *
  */
-template <class GridTypem, int dimRange>                                          /*@LST0S@*/
+template <class GridType, int dimRange>                                          /*@LST0S@*/
 struct U0 : public EvolutionProblemInterface<
                   Fem::FunctionSpace< double, double, GridType::dimension, dimRange>,
                   false >
