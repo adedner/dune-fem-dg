@@ -235,8 +235,6 @@ class DGPrimalMatrixAssembly
   typedef Dune::Fem::ElementQuadrature< GridPartType, 1 > FaceQuadratureType;
   typedef Dune::Fem::CachingQuadrature< GridPartType, 0 > QuadratureType;
 
-  typedef typename GridPartType :: GridType :: template Codim< 0 > :: EntityPointer EntityPointerType;
-
   typedef ExtendedDGPrimalDiffusionFlux<DiscreteFunctionSpaceType,Model> FluxType;
   typedef AdvFlux AdvFluxType;
 
@@ -674,8 +672,7 @@ class DGPrimalMatrixAssembly
     // make sure we got the right conforming statement
     assert( intersection.conforming() == conforming );
 
-    EntityPointerType ep = intersection.outside();
-    const EntityType& neighbor = *ep ;
+    const EntityType neighbor = intersection.outside();
 
     const int entityOrder   = dfSpace.order( entity );
     const int neighborOrder = dfSpace.order( neighbor );
@@ -845,8 +842,7 @@ class DGPrimalMatrixAssembly
         const IntersectionType& intersection = *iit ;
         if ( !intersection.neighbor() )
           continue;
-        EntityPointerType ep = intersection.outside();
-        const EntityType& neighbor = *ep ;
+        const EntityType neighbor = intersection.outside();
 
         LocalMatrixType localOpNb1 = matrix.localMatrix( entity, neighbor );
         LocalMatrixType localOpNb2 = matrix.localMatrix( neighbor, entity );

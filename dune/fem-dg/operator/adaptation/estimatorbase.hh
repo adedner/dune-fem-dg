@@ -50,7 +50,6 @@ public:
   typedef typename IntersectionIteratorType :: Intersection         IntersectionType;
 
   typedef typename GridPartType :: template Codim< 0 > :: EntityType        ElementType;
-  typedef typename GridPartType :: template Codim< 0 > :: EntityPointerType ElementPointerType;
   typedef typename GridType :: template Codim< 0 > :: Entity                GridElementType;
   typedef typename ElementType::Geometry                             GeometryType;
   static const int dimension = GridType :: dimension;

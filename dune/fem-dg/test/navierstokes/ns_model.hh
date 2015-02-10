@@ -49,7 +49,6 @@ class NSModelTraits
   typedef typename IntersectionIterator::Intersection       Intersection;
   typedef Intersection       IntersectionType;
   typedef typename GridPartType :: template Codim<0> :: EntityType  EntityType;
-  typedef typename EntityType :: EntityPointer              EntityPointerType;
 
   typedef Thermodynamics< dimDomain >                       ThermodynamicsType;
 
@@ -73,7 +72,6 @@ class NSModel : public DefaultModel < NSModelTraits< GridPartType, ProblemImp > 
   enum { dimGradRange = Traits::dimGradRange } ;
 
   typedef typename Traits :: EntityType                     EntityType;
-  typedef typename Traits :: EntityPointerType              EntityPointerType;
   typedef typename Traits :: IntersectionIterator           IntersectionIterator;
   typedef typename Traits :: Intersection                   IntersectionType;
   typedef typename Traits :: FaceDomainType                 FaceDomainType;

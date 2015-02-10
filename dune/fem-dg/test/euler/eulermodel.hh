@@ -53,7 +53,6 @@ namespace Dune
       typedef typename GridPart::IntersectionIteratorType           IntersectionIteratorType;
       typedef typename IntersectionIteratorType::Intersection       IntersectionType;
       typedef typename GridType::template Codim<0>::Entity          EntityType;
-      typedef typename GridType::template Codim<0>::EntityPointer   EntityPointerType;
 
       typedef Thermodynamics< dimDomain >                           ThermodynamicsType;
 
@@ -78,7 +77,6 @@ namespace Dune
 
       typedef typename Traits :: GridType                       GridType;
       typedef typename Traits :: EntityType                     EntityType;
-      typedef typename Traits :: EntityPointerType              EntityPointerType;
       typedef typename Traits :: IntersectionIteratorType       IntersectionIteratorType;
       typedef typename Traits :: IntersectionType               IntersectionType;
       typedef typename Traits :: FaceDomainType                 FaceDomainType;

@@ -334,7 +334,6 @@ namespace Dune {
     typedef typename GridPartType :: IntersectionIteratorType          IntersectionIterator;
     typedef typename IntersectionIterator :: Intersection              Intersection;
     typedef typename BaseType :: EntityType                            EntityType;
-    typedef typename BaseType :: EntityPointerType                     EntityPointerType;
     typedef typename Traits :: RangeFieldType                          RangeFieldType;
     typedef typename Traits :: DomainFieldType                         DomainFieldType;
     typedef typename Traits :: RangeType                               RangeType;

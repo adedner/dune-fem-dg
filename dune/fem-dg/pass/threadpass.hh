@@ -151,7 +151,6 @@ namespace Dune {
 
     // Types from the base class
     typedef typename BaseType::EntityType  EntityType;
-    typedef typename EntityType :: EntityPointer EntityPointerType;
     typedef typename BaseType::ArgumentType ArgumentType;
 
     // Types from the traits

@@ -45,7 +45,6 @@ public:
   typedef typename BaseType :: IntersectionIteratorType       IntersectionIteratorType;
   typedef typename BaseType :: IntersectionType               IntersectionType;
   typedef typename BaseType :: ElementType                    ElementType;
-  typedef typename BaseType :: ElementPointerType             ElementPointerType;
   typedef typename BaseType :: GridElementType                GridElementType;
   typedef typename BaseType :: GeometryType                   GeometryType;
 
@@ -138,8 +137,7 @@ protected:
       const IntersectionType& intersection = *nb ;
       if( intersection.neighbor() )
       {
-        ElementPointerType outside = intersection.outside();
-        const GridElementType& neighbor = Dune :: Fem :: gridEntity( *outside );
+        const GridElementType& neighbor = Dune :: Fem :: gridEntity( intersection.outside() );
         // only do the following when the neighbor is not a ghost entity
         if( neighbor.partitionType() != Dune::GhostEntity )
         {
@@ -263,8 +261,7 @@ public:
       if( intersection.neighbor() )
       {
         // access neighbor
-        ElementPointerType outside = intersection.outside();
-        const ElementType& neighbor = *outside;
+        const ElementType neighbor = intersection.outside();
         const int nbIdx = indexSet_.index( neighbor );
 
         // handle face from one side only

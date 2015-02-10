@@ -47,7 +47,6 @@ public:
   typedef typename Traits::GridType                   GridType;
   typedef typename GridType::ctype                    ctype;
   typedef typename Traits::EntityType                 EntityType;
-  typedef typename Traits::EntityPointerType          EntityPointerType;
 
   typedef typename Traits::DomainType                 DomainType;
   typedef typename Traits::FaceDomainType             FaceDomainType;

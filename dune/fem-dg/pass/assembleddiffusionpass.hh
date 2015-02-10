@@ -43,7 +43,6 @@ namespace Dune {
     typedef typename AdvectionBaseType::Entity EntityType;
     typedef const EntityType ConstEntityType;
 
-    typedef typename EntityType :: EntityPointer EntityPointerType;
     typedef typename AdvectionBaseType::ArgumentType ArgumentType;
 
     typedef typename AdvectionBaseType :: SelectorType SelectorType ;

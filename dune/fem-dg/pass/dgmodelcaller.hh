@@ -109,7 +109,7 @@ namespace Dune
     {
       assert( intersection.boundary() );
 
-      BaseType::setBoundary( *(intersection.inside()), quadrature );
+      BaseType::setBoundary( intersection.inside(), quadrature );
       if( evaluateJacobian )
       {
         jacobiansInside_.resize( quadrature.nop() );

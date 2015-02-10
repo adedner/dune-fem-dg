@@ -56,7 +56,6 @@ namespace Dune {
 
     // Types from the base class
     typedef typename BaseType::EntityType  EntityType;
-    typedef typename EntityType :: EntityPointer EntityPointerType;
     typedef typename BaseType::ArgumentType ArgumentType;
 
     // Types from the traits
@@ -549,8 +548,7 @@ namespace Dune {
           if( intersection.neighbor() )
           {
             // get neighbor
-            EntityPointerType outside = intersection.outside();
-            const EntityType & nb = * outside;
+            const EntityType nb =  intersection.outside();
 
             // check whether we have to skip this intersection
             if( nbChecker.skipIntersection( nb ) )

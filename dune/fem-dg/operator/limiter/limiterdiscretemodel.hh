@@ -49,7 +49,6 @@ namespace Fem {
     typedef typename Traits::JacobianRangeType JacobianRangeType;
     typedef typename GridPartType::IntersectionIteratorType :: Intersection IntersectionType;
     typedef typename GridPartType::template Codim<0>::EntityType        EntityType;
-    typedef typename GridPartType::template Codim<0>::EntityPointerType EntityPointerType;
     typedef typename GridType::template Codim<0>::Entity                GridEntityType;
 
     enum { dimGrid = GridType :: dimension };

@@ -205,7 +205,7 @@ namespace Dune {
             ++numFaces ;
             if ( intersection.neighbor() )
             {
-              double outsideVol = intersection.outside()->geometry().volume();
+              double outsideVol = intersection.outside().geometry().volume();
               numOutflowFaces += (determineDirection(areaSwitch_, insideVol,outsideVol,intersection) ? 1 : 0);
               if ( !areaSwitch_ || insideVol/outsideVol < 1)
                 maxNeighborsVolumeRatio_ = std::max( maxNeighborsVolumeRatio_, insideVol/outsideVol );

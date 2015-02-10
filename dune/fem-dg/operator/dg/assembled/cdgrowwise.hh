@@ -104,7 +104,6 @@ namespace Dune {
     typedef typename BaseType::Entity EntityType;
     typedef const EntityType ConstEntityType;
 
-    typedef typename EntityType::EntityPointer EntityPointerType;
     typedef typename BaseType::ArgumentType ArgumentType;
 
     // Types from the traits

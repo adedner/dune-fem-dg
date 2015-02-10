@@ -101,7 +101,6 @@ namespace Dune {
     typedef typename BaseType::Entity EntityType;
     typedef const EntityType ConstEntityType;
 
-    typedef typename EntityType::EntityPointer EntityPointerType;
     typedef typename BaseType::ArgumentType ArgumentType;
 
     // Types from the traits
@@ -1053,8 +1052,7 @@ protected:
         // if neighbor exists
         if( inter.neighbor() && applyNeighborFlux )
         {
-          EntityPointerType neighEp = inter.outside();
-          ConstEntityType& nb = *neighEp;
+          ConstEntityType nb = inter.outside();
 
           // get partition type
           const bool ghostEntity =

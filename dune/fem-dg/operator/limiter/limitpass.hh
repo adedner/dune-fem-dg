@@ -193,8 +193,7 @@ namespace Dune {
       // BaseType :: evaluateQuad( quadrature, qp, localFunctionsInside_, values_ );
 
       // call problem checkDirection
-      typename IntersectionType::EntityPointer inside = intersection.inside();
-      const typename BaseType::EntityType &entity = *inside;
+      const typename BaseType::EntityType entity = intersection.inside();
       return discreteModel().checkPhysical( entity, entity.geometry().local( intersection.geometry().global( quadrature.localPoint( qp ) ) ), ranges_ );
     }
 
@@ -301,7 +300,6 @@ namespace Dune {
     typedef typename GridPartType::IntersectionIteratorType IntersectionIteratorType;
     typedef typename IntersectionIteratorType :: Intersection IntersectionType;
     typedef typename GridPartType::template Codim<0>::EntityType        EntityType;
-    typedef typename GridPartType::template Codim<0>::EntityPointerType EntityPointerType;
     typedef typename DomainType :: field_type DomainFieldType;
 
     typedef typename Traits :: LimiterFunctionType  LimiterFunctionType;
@@ -648,7 +646,6 @@ namespace Dune {
     // Types extracted from the underlying grids
     typedef typename GridPartType :: IntersectionIteratorType IntersectionIteratorType;
     typedef typename IntersectionIteratorType :: Intersection IntersectionType;
-    typedef typename GridPartType::template Codim<0>::EntityPointerType  EntityPointerType;
     typedef typename GridPartType::template Codim<0>::GeometryType       Geometry;
     typedef typename Geometry::LocalCoordinate LocalDomainType;
 
@@ -1255,12 +1252,8 @@ namespace Dune {
           const IntersectionType& intersection = *nit;
           if( intersection.neighbor() )
           {
-            // get neighbor
-            EntityPointerType outside = intersection.outside();
-            const EntityType & nb = * outside;
-
             // check whether we have to skip this intersection
-            if( nbChecker.skipIntersection( nb ) )
+            if( nbChecker.skipIntersection( intersection.outside() ) )
             {
               return ;
             }
@@ -1416,8 +1409,7 @@ namespace Dune {
           if ( hasNeighbor )
           {
             // check all neighbors
-            EntityPointerType ep = intersection.outside();
-            const EntityType& nb = *ep;
+            const EntityType nb = intersection.outside();
 
             // get U on entity
             const LocalFunctionType uNb = U.localFunction(nb);
@@ -2429,12 +2421,8 @@ namespace Dune {
         // if we have an outflow intersection check other side too
         if (intersection.neighbor() && ! inflowIntersection )
         {
-          // get neighbor entity
-          EntityPointerType ep = intersection.outside();
-          const EntityType& nb = *ep;
-
           // set neighbor to caller
-          caller().setNeighbor( nb );
+          caller().setNeighbor( intersection.outside() );
 
           if( intersection.conforming() )
           {
@@ -2474,8 +2462,7 @@ namespace Dune {
           if (intersection.neighbor())
           {
             // get neighbor entity
-            EntityPointerType ep = intersection.outside();
-            const EntityType& nb = *ep;
+            const EntityType nb = intersection.outside();
 
             // conforming case
             if( ! conformingGridPart && ! intersection.conforming() )

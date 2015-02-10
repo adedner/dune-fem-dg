@@ -62,7 +62,6 @@ namespace Dune
     // discrete function type of adaptive functions
     typedef typename FunctionSpaceType::RangeType RangeType;
     typedef typename GridType::template Codim< 0 >::Entity GridEntityType;
-    typedef typename GridType::template Codim< 0 >::EntityPointer EntityPointerType;
 
     typedef typename GridPartType::IntersectionIteratorType IntersectionIteratorType;
 
