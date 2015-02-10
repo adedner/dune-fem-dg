@@ -9,10 +9,6 @@
 #include <cassert>
 #include <cstddef>
 
-#if HAVE_BGQ_L1PREFETCH
-#include <l1p/pprefetch.h>
-#endif
-
 // dune-common includes
 #include <dune/common/nullptr.hh>
 #include <dune/common/typetraits.hh>
