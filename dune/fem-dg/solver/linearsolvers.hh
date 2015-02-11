@@ -5,6 +5,7 @@
 #include <iostream>
 
 // include gridpart
+#include <dune/fem/gridpart/leafgridpart.hh>
 #include <dune/fem/gridpart/adaptiveleafgridpart.hh>
 
 // include discrete function
