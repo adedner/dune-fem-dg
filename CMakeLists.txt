@@ -15,8 +15,10 @@ list(APPEND CMAKE_MODULE_PATH ${dune-common_MODULE_PATH}
 #include the dune macros
 include(DuneMacros)
 
+
 # start a dune project with information from dune.module
 dune_project()
+
 
 # $Id: duneproject 5842 2010-01-20 18:48:34Z joe $
 # we need the module file to be able to build via dunecontrol
@@ -26,6 +28,7 @@ if( BUILD_DOCS)
 # TODO: set up documentation tree automatically
 #SUBDIRS += doc
 endif( BUILD_DOCS )
+
 # don't follow the full GNU-standard
 # we need automake 1.5
 set(AUTOMAKE_OPTIONS  foreign 1.5)
@@ -35,6 +38,7 @@ set(DISTCHECK_CONFIGURE_FLAGS  --with-dune-common=${DUNE_COMMON_ROOT} --with-dun
 # include $(top_srcdir)/am/top-rules
 # include not needed for CMake
 # include $(top_srcdir)/am/global-rules
+
 foreach(i ${SUBDIRS})
   if(${i} STREQUAL "test")
     set(opt EXCLUDE_FROM_ALL)
@@ -42,6 +46,17 @@ foreach(i ${SUBDIRS})
   add_subdirectory(${i} ${opt})
   unset(opt)
 endforeach(i ${SUBDIRS})
+
+# small hack since test directories are not set correctly in dune-common-scripts
+# (...or not the way we want it to be...) see FindFiles.cmake
+# we want sub folders in test directories
+set( ADD_TEST_DIR dune/fem-dg/test )
+set( _dirs advdiff euler navierstokes poisson dataio )
+foreach(_dir ${_dirs})
+  set( _dir "${ADD_TEST_DIR}/${_dir}" )
+  set_property(DIRECTORY ${_dir} PROPERTY TEST_INCLUDE_FILE ${CMAKE_BINARY_DIR}/${_dir}/BuildTests.cmake)
+endforeach(_dir ${_dirs})
+
 
 add_subdirectory(cmake/modules)
 # finalize the dune project, e.g., generate config.h etc.
