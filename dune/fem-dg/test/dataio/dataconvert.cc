@@ -33,7 +33,6 @@
 ///////////////////////////////////////////////////
 #include <dune/fem-dg/main/main_pol.cc>
 #include <dune/fem/io/file/vtkio.hh>
-#include <dune/fem/io/file/vtkio.hh>
 
 #include <dune/fem/operator/projection/vtxprojection.hh>
 
