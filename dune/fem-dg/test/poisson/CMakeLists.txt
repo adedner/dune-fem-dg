@@ -19,13 +19,14 @@ add_definitions( "-DFLUX=${FLUX}" )
 add_definitions( "-DPRIMALDG" )
 add_definitions( "-DUSE_ASSERT_THROW" ) 
 
-add_executable( poissonall "${MAININCLUDE_PATH}/main_0.cc" 
+add_executable( poissonall "${MAININCLUDE_PATH}/main.cc" 
+                           "${MAININCLUDE_PATH}/main_0.cc" 
                            "${MAININCLUDE_PATH}/main_1.cc"
                            "${MAININCLUDE_PATH}/main_2.cc" 
                            "${MAININCLUDE_PATH}/main_3.cc")
 dune_target_link_libraries(poissonall ${DUNE_LIBS})
 
-add_executable( poisson "${MAININCLUDE_PATH}/main_pol.cc")
+add_executable( poisson "${MAININCLUDE_PATH}/main.cc" "${MAININCLUDE_PATH}/main_pol.cc")
 dune_target_link_libraries(poisson ${DUNE_LIBS})
 set_property(TARGET poisson APPEND PROPERTY 
              COMPILE_DEFINITIONS "ONLY_ONE_P;POLORDER=${POLORDER}")

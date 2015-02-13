@@ -17,7 +17,8 @@ add_definitions( "-DFLUX=${FLUX}" )
 add_definitions( "-D${DIFFFLUXTYPE}" )
 add_definitions( "-DWANT_CACHED_COMM_MANAGER=0" )
 
-add_executable( eulerall "${MAININCLUDE_PATH}/main_0.cc" 
+add_executable( eulerall "${MAININCLUDE_PATH}/main.cc" 
+                         "${MAININCLUDE_PATH}/main_0.cc" 
                          "${MAININCLUDE_PATH}/main_1.cc"
                          "${MAININCLUDE_PATH}/main_2.cc" 
                          "${MAININCLUDE_PATH}/main_3.cc" chorjo.cc )
@@ -25,7 +26,7 @@ dune_target_link_libraries(eulerall ${DUNE_LIBS})
 set_property(TARGET eulerall APPEND PROPERTY 
   COMPILE_DEFINITIONS "LIMITER")
 
-add_executable( euler "${MAININCLUDE_PATH}/main_pol.cc" chorjo.cc )
+add_executable( euler "${MAININCLUDE_PATH}/main.cc" "${MAININCLUDE_PATH}/main_pol.cc" chorjo.cc )
 dune_target_link_libraries(euler ${DUNE_LIBS})
 set_property(TARGET euler APPEND PROPERTY 
              COMPILE_DEFINITIONS "ONLY_ONE_P;POLORDER=${POLORDER}")
