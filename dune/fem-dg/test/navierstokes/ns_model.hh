@@ -200,8 +200,8 @@ class NSModel : public DefaultModel < NSModelTraits< GridPartType, ProblemImp > 
                    const RangeType& uRight,
                    RangeType& jump) const
   {
-    const double pl = pressure( uLeft );
-    const double pr = pressure( uRight );
+    const double pl = problem_.pressure( uLeft );
+    const double pr = problem_.pressure( uRight );
 
     // take pressure as shock detection values
     jump  = (pl-pr)/(0.5*(pl+pr));
@@ -232,7 +232,7 @@ class NSModel : public DefaultModel < NSModelTraits< GridPartType, ProblemImp > 
       return false;
     else
     {
-      const double p = pressure( u );
+      const double p = problem_.pressure( u );
       return p > 1e-8;
     }
 
