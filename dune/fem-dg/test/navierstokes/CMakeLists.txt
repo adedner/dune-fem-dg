@@ -25,12 +25,11 @@ add_executable( navierstokesall "${MAININCLUDE_PATH}/main.cc"
                                 "${MAININCLUDE_PATH}/main_2.cc" 
                                 "${MAININCLUDE_PATH}/main_3.cc")
 dune_target_link_libraries(navierstokesall ${DUNE_LIBS})
-set_property(TARGET navierstokesall APPEND PROPERTY 
-             COMPILE_DEFINITIONS "ONLY_ONE_P;POLORDER=${POLORDER}")
 
 add_executable( navierstokes "${MAININCLUDE_PATH}/main.cc" "${MAININCLUDE_PATH}/main_pol.cc" )
 dune_target_link_libraries(navierstokes ${DUNE_LIBS})
 set_property(TARGET navierstokes APPEND PROPERTY 
-  COMPILE_DEFINITIONS "LIMITER")
+             COMPILE_DEFINITIONS "ONLY_ONE_P;POLORDER=${POLORDER}")
+
 
 dune_add_test( navierstokes navierstokesall )
