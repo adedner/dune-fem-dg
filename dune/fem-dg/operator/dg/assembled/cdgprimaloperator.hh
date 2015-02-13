@@ -9,7 +9,7 @@
 #include <dune/fem/quadrature/caching/twistutility.hh>
 
 //- local includes
-#include <dune/fem/pass/pass.hh>
+#include <dune/fem/pass/common/local.hh>
 // use model caller from fem-dg
 #include <dune/fem-dg/pass/ellipticmodelcaller.hh>
 
