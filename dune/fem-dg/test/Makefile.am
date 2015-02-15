@@ -1,4 +1,4 @@
-SUBDIRS = dataio advdiff euler navierstokes
+SUBDIRS = dataio advdiff euler navierstokes poisson
 include $(top_srcdir)/am/global-rules
 
 testdir = $(includedir)/dune/fem-dg/test
