@@ -13,7 +13,7 @@ set(PROBLEM 2)
 set(FLUX 1)
 set(DIFFFLUX PRIMALDG)
 
-configure_file(parameter ${CMAKE_CURRENT_BINARY_DIR}/parameter COPYONLY)
+configure_file(parameter.in ${CMAKE_CURRENT_BINARY_DIR}/parameter )
 
 add_definitions( "-D${GRIDTYPE}" )
 add_definitions( "-DGRIDDIM=${GRIDDIM}" )
