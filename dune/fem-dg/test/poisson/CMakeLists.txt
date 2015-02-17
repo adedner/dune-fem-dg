@@ -26,7 +26,7 @@ add_executable( poissonall "${MAININCLUDE_PATH}/main.cc"
                            "${MAININCLUDE_PATH}/main_3.cc")
 dune_target_link_libraries(poissonall ${DUNE_LIBS})
 set_property(TARGET poissonall APPEND PROPERTY 
-  COMPILE_DEFINITIONS "LAG")
+  COMPILE_DEFINITIONS "DGSCHEME;ONB")
 
 add_executable( poisson "${MAININCLUDE_PATH}/main.cc" "${MAININCLUDE_PATH}/main_pol.cc")
 dune_target_link_libraries(poisson ${DUNE_LIBS})
