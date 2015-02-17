@@ -6,11 +6,13 @@ include_directories(${MAININCLUDE_PATH})
 include_directories("${CMAKE_SOURCE_DIR}/dune/fem-dg/test/advdiff/")
 
 
-set(GRIDTYPE  YASPGRID)
+set(GRIDTYPE  YASPGRID )#ALUGRID_SIMPLEX)
 set(POLORDER  2)
 set(GRIDDIM  2)
 set(DIMRANGE  1)
 set(FLUX 1) #2
+
+configure_file(parameter ${CMAKE_CURRENT_BINARY_DIR}/parameter COPYONLY)
 
 add_definitions( "-D${GRIDTYPE}" )
 add_definitions( "-DGRIDDIM=${GRIDDIM}" )

@@ -12,6 +12,8 @@ set(GRIDDIM  2)
 set(DIMRANGE  1)
 set(FLUX 1) #2
 
+configure_file(parameter ${CMAKE_CURRENT_BINARY_DIR}/parameter COPYONLY)
+
 add_definitions( "-D${GRIDTYPE}" )
 add_definitions( "-DGRIDDIM=${GRIDDIM}" )
 add_definitions( "-DDIMRANGE=${DIMRANGE}" )

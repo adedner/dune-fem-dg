@@ -10,6 +10,7 @@ set(POLORDER  2)
 set(DIMRANGE 5)
 set(USE_SIONLIB 0)
 
+configure_file(parameter ${CMAKE_CURRENT_BINARY_DIR}/parameter COPYONLY)
 
 add_definitions( "-D${GRIDTYPE}" )
 add_definitions( "-DGRIDDIM=${GRIDDIM}" )
