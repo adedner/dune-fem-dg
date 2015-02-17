@@ -28,5 +28,5 @@ add_executable( checkpointing "${MAININCLUDE_PATH}/main.cc"
 dune_target_link_libraries( checkpointing "${DUNE_LIBS}")
 dune_target_link_libraries( dataconvert "${DUNE_LIBS}")
 
-dune_add_test( advdiff advdiffall )
+dune_add_test( checkpointing dataconvert )
 
