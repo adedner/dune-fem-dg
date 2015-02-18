@@ -262,7 +262,7 @@ public:
       if( intersection.neighbor() )
       {
         // access neighbor
-        typename ElementType::EntityType outside = intersection.outside();
+        typename ElementType::EntityPointer outside = intersection.outside();
         const ElementType& neighbor = *outside;
         const int nbIdx = indexSet_.index( neighbor );
 
