@@ -193,7 +193,7 @@ namespace Dune {
         for( IteratorType it = gridPart.template begin<0>(); it != itend; ++it )
         {
           const EntityType& entity = * it ;
-          const double insideVol = entity.geometry().volume();
+          const double insideVol = entity->geometry().volume();
           int numFaces = 0;
           int numOutflowFaces = 0;
           const IntersectionIteratorType intitend = gridPart.iend( entity );

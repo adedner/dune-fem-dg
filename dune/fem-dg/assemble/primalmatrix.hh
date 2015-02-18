@@ -672,7 +672,8 @@ class DGPrimalMatrixAssembly
     // make sure we got the right conforming statement
     assert( intersection.conforming() == conforming );
 
-    const EntityType neighbor = intersection.outside();
+    typename EntityType::EntityPointer ep = intersection.outside();
+    const EntityType& neighbor = *ep ;
 
     const int entityOrder   = dfSpace.order( entity );
     const int neighborOrder = dfSpace.order( neighbor );
@@ -842,7 +843,8 @@ class DGPrimalMatrixAssembly
         const IntersectionType& intersection = *iit ;
         if ( !intersection.neighbor() )
           continue;
-        const EntityType neighbor = intersection.outside();
+        typename EntityType::EntityPointer ep = intersection.outside();
+        const EntityType& neighbor = *ep ;
 
         LocalMatrixType localOpNb1 = matrix.localMatrix( entity, neighbor );
         LocalMatrixType localOpNb2 = matrix.localMatrix( neighbor, entity );

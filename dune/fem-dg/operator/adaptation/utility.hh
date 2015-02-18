@@ -102,8 +102,8 @@ namespace Dune
       // otherwise write min and max volume on backup/restore
       if( hasGridHierarchy && entity.level() > 0 )
       {
-        Entity father = entity.father();
-        return findCoarsestVolume( father, hasGridHierarchy );
+        typename Entity::EntityPointer father = entity.father();
+        return findCoarsestVolume( *father, hasGridHierarchy );
       }
       else  // return entity's volume
         return entity.geometry().volume();

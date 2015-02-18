@@ -195,7 +195,8 @@ namespace Dune
         const IntersectionType& intersection = *iit ;
         if( intersection.neighbor() )
         {
-          const EntityType neighbor = intersection.outside();
+          typename EntityType::EntityPointer outside = intersection.outside();
+          const EntityType& neighbor = *outside ;
           const Geometry& geometryNb = neighbor.geometry();
 
 
@@ -261,7 +262,8 @@ namespace Dune
         const IntersectionType& intersection = *iit ;
         if( intersection.neighbor() )
         {
-          const EntityType neighbor = intersection.outside();
+          typename EntityType::EntityPointer outside = intersection.outside();
+          const EntityType& neighbor = *outside ;
           const Geometry& geometryNb = neighbor.geometry();
           unsigned int nbIdx = gridPart().indexSet().index(neighbor);
           unsigned int nbOrder = std::max( uint(2 * u.space().order( neighbor )) , order );

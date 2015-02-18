@@ -223,7 +223,8 @@ public:
       typedef typename Operator :: FaceQuadratureType  FaceQuadratureType ;
       typedef Dune::Fem::IntersectionQuadrature< FaceQuadratureType, conforming > IntersectionQuadratureType;
       typedef typename IntersectionQuadratureType :: FaceQuadratureType QuadratureImp;
-      const EntityType outside = intersection.outside();
+      const typename EntityType::EntityPointer pOutside = intersection.outside();
+      const EntityType &outside = *pOutside;
       typename DF::LocalFunctionType uOutside = df_.localFunction(outside);
 
       const int enOrder = df_.space().order( entity );

@@ -137,7 +137,8 @@ protected:
       const IntersectionType& intersection = *nb ;
       if( intersection.neighbor() )
       {
-        const GridElementType& neighbor = Dune :: Fem :: gridEntity( intersection.outside() );
+        typename GridElementType::EntityPointer outside = intersection.outside();
+        const GridElementType& neighbor = Dune :: Fem :: gridEntity( *outside );
         // only do the following when the neighbor is not a ghost entity
         if( neighbor.partitionType() != Dune::GhostEntity )
         {
@@ -261,7 +262,8 @@ public:
       if( intersection.neighbor() )
       {
         // access neighbor
-        const ElementType neighbor = intersection.outside();
+        typename ElementType::EntityType outside = intersection.outside();
+        const ElementType& neighbor = *outside;
         const int nbIdx = indexSet_.index( neighbor );
 
         // handle face from one side only

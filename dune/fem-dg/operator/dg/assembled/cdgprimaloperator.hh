@@ -1052,7 +1052,8 @@ protected:
         // if neighbor exists
         if( inter.neighbor() && applyNeighborFlux )
         {
-          ConstEntityType nb = inter.outside();
+          typename EntityType::EntityPointer neighEp = inter.outside();
+          ConstEntityType& nb = *neighEp;
 
           // get partition type
           const bool ghostEntity =

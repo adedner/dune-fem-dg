@@ -193,7 +193,8 @@ namespace Dune {
       // BaseType :: evaluateQuad( quadrature, qp, localFunctionsInside_, values_ );
 
       // call problem checkDirection
-      const typename BaseType::EntityType entity = intersection.inside();
+      typename IntersectionType::EntityPointer inside = intersection.inside();
+      const typename BaseType::EntityType &entity = *inside;
       return discreteModel().checkPhysical( entity, entity.geometry().local( intersection.geometry().global( quadrature.localPoint( qp ) ) ), ranges_ );
     }
 
@@ -1252,8 +1253,12 @@ namespace Dune {
           const IntersectionType& intersection = *nit;
           if( intersection.neighbor() )
           {
+            // get neighbor
+            typename EntityType::EntityPointer outside = intersection.outside();
+            const EntityType & nb = * outside;
+
             // check whether we have to skip this intersection
-            if( nbChecker.skipIntersection( intersection.outside() ) )
+            if( nbChecker.skipIntersection( nb ) )
             {
               return ;
             }
@@ -1409,7 +1414,8 @@ namespace Dune {
           if ( hasNeighbor )
           {
             // check all neighbors
-            const EntityType nb = intersection.outside();
+            typename EntityType::EntityPointer ep = intersection.outside();
+            const EntityType& nb = *ep;
 
             // get U on entity
             const LocalFunctionType uNb = U.localFunction(nb);
@@ -2421,8 +2427,12 @@ namespace Dune {
         // if we have an outflow intersection check other side too
         if (intersection.neighbor() && ! inflowIntersection )
         {
+          // get neighbor entity
+          typename EntityType::EntityPointer ep = intersection.outside();
+          const EntityType& nb = *ep;
+
           // set neighbor to caller
-          caller().setNeighbor( intersection.outside() );
+          caller().setNeighbor( nb );
 
           if( intersection.conforming() )
           {
@@ -2462,7 +2472,8 @@ namespace Dune {
           if (intersection.neighbor())
           {
             // get neighbor entity
-            const EntityType nb = intersection.outside();
+            typename EntityType::EntityPointer ep = intersection.outside();
+            const EntityType& nb = *ep;
 
             // conforming case
             if( ! conformingGridPart && ! intersection.conforming() )

@@ -548,7 +548,8 @@ namespace Dune {
           if( intersection.neighbor() )
           {
             // get neighbor
-            const EntityType nb =  intersection.outside();
+            typename EntityType::EntityPointer outside = intersection.outside();
+            const EntityType & nb = * outside;
 
             // check whether we have to skip this intersection
             if( nbChecker.skipIntersection( nb ) )
