@@ -48,11 +48,11 @@ class NSWaves : public EvolutionProblemInterface<
 
   NSWaves() : ThermodynamicsType(),
     myName_( "NSWaves" ),
-    omegaGNS_( ParameterType::getValue< double >( "omegaGNS" ) ),
-    kGNS_( ParameterType::getValue< double >( "kGNS" ) ),
-    gammaGNS_( ParameterType::getValue< double >( "gammaGNS" ) ),
-    endTime_ ( ParameterType::getValue<double>( "femhowto.endTime" )),
-    mu_( ParameterType :: getValue< double >( "mu" )),
+    omegaGNS_( ParameterType::template getValue< double >( "omegaGNS" ) ),
+    kGNS_( ParameterType::template getValue< double >( "kGNS" ) ),
+    gammaGNS_( ParameterType::template getValue< double >( "gammaGNS" ) ),
+    endTime_ ( ParameterType::template getValue<double>( "femhowto.endTime" )),
+    mu_( ParameterType::template getValue< double >( "mu" )),
     k_ ( c_pd() * Pr_inv() * mu_),
     A_( init( true ) ),
     B_( init( false ) )

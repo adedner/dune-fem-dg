@@ -30,8 +30,8 @@ class Thermodynamics
   typedef Fem::Parameter  ParameterType ;
 
   Thermodynamics() :
-    Re_( ParameterType::getValue< double >( "Re" ) ),
-    Pr_( ParameterType::getValue< double >( "Pr" ) ),
+    Re_( ParameterType::template getValue< double >( "Re" ) ),
+    Pr_( ParameterType::template getValue< double >( "Pr" ) ),
     g_( ParameterType::getValue< double >( "g", 9.81 ) ),
     p0_(ParameterType::getValue< double >( "p0", 100000. )),
     p0Star_( ParameterType::getValue< double >( "p0Star", 610.7 )),

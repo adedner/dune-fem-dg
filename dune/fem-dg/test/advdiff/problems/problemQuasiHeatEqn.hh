@@ -42,7 +42,7 @@ public:
     BaseType () ,
     velocity_( 0 ),
     startTime_( ParameterType::getValue<double>("femhowto.startTime",0.0) ),
-    epsilon_( ParameterType::getValue<double>("femhowto.epsilon") )
+    epsilon_( ParameterType::template getValue<double>("femhowto.epsilon") )
   {                                                             /*@LST0E@*/
     if ( (dimRange != 1) || (dimDomain != 2) )
     {
@@ -135,7 +135,7 @@ public:
 
     ofs << "Problem: " << myName
       << ", Epsilon: " << epsilon_
-      << ", End time: " << ParameterType::getValue<double>("femhowto.endTime");
+      << ", End time: " << ParameterType::template getValue<double>("femhowto.endTime");
 
     return ofs.str();
   }

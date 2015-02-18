@@ -59,7 +59,7 @@ public:
     BaseType () ,
     center_( 0.5 ),
     startTime_( ParameterType::getValue<double>("femhowto.startTime",0.0) ),
-    endTime_( ParameterType::getValue<double>("femhowto.endTime") ),
+    endTime_( ParameterType::template getValue<double>("femhowto.endTime") ),
     epsilon_( ParameterType::getValue<double>("femhowto.epsilon", 0.0 ) )
   {
     myName = "DeformationalFlow";

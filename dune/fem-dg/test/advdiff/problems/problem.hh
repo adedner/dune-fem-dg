@@ -216,7 +216,7 @@ public:
       ofs <<"," <<velocity_[2];
     ofs <<")";
 
-    ofs << ", End time: " << ParameterType::getValue<double>("femhowto.endTime");
+    ofs << ", End time: " << ParameterType::template getValue<double>("femhowto.endTime");
 
     return ofs.str();
   }

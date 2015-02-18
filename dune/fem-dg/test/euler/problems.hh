@@ -287,7 +287,7 @@ public:
     Ulr[5] = 0.1;
 
     //ParameterType::get("euler.riemanndata", Ulr, Ulr );
-    T = ParameterType::getValue("femhowto.endTime", T);
+    T = ParameterType::template getValue<double>("femhowto.endTime"/*, T*/);
     ParameterType::get("femhowto.startTime", startTime, startTime );
     flag = ParameterType::getValue("euler.problemflag", flag);
   }
@@ -459,7 +459,7 @@ public:
     Ulr[2] = 0.4;
     Ulr[5] = 0.4;
 
-    T = ParameterType::getValue( "femhowto.endTime", T );
+    T = ParameterType::template getValue<double>( "femhowto.endTime"/*, T*/ );
     ParameterType::get( "femhowto.startTime", startTime, startTime );
   }
 
