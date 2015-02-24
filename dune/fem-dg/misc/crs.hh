@@ -86,7 +86,7 @@ namespace Dune
     int N () const { return rows; }
     int M () const { return cols; }
 
-    struct Plus
+    struct Add
     {
       template <class T>
       void operator()( T& a, const T& b ) const
@@ -95,7 +95,7 @@ namespace Dune
       }
     };
 
-    struct Minus
+    struct Substract
     {
       template <class T>
       void operator()( T& a, const T& b ) const
@@ -122,7 +122,13 @@ namespace Dune
     template <class X, class Y>
     void mmv ( const X& x, Y& y ) const
     {
-      mult( x, y, Minus() );
+      mult( x, y, Substract() );
+    }
+
+    template <class X, class Y>
+    void umv ( const X& x, Y& y ) const
+    {
+      mult( x, y, Add() );
     }
 
     template <class X, class Y, class Op>
