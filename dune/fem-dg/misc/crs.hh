@@ -86,8 +86,47 @@ namespace Dune
     int N () const { return rows; }
     int M () const { return cols; }
 
+    struct Plus
+    {
+      template <class T>
+      void operator()( T& a, const T& b ) const
+      {
+        a += b;
+      }
+    };
+
+    struct Minus
+    {
+      template <class T>
+      void operator()( T& a, const T& b ) const
+      {
+        a -= b;
+      }
+    };
+
+    struct Set
+    {
+      template <class T>
+      void operator()( T& a, const T& b ) const
+      {
+        a = b;
+      }
+    };
+
     template <class X, class Y>
     void mv ( const X& x, Y& y ) const
+    {
+      mult( x, y, Set() );
+    }
+
+    template <class X, class Y>
+    void mmv ( const X& x, Y& y ) const
+    {
+      mult( x, y, Minus() );
+    }
+
+    template <class X, class Y, class Op>
+    void mult ( const X& x, Y& y, const Op op ) const
     {
       for( int row=0; row<rows; ++row )
       {
@@ -96,7 +135,7 @@ namespace Dune
         {
           sum += data_[ c ] * x[ cols_[ c ] ];
         }
-        y[ row ] = sum;
+        op( y[ row ], sum );
       }
     }
 
