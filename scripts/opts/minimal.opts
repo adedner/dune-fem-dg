@@ -4,15 +4,12 @@ USE_CMAKE=no
 MODULEDIR=/hosts/raid5/aragorn/dune/modules/$HOSTTYPE
 CONFIGURE_FLAGS="\
 --enable-experimental-grid-extensions \
---enable-fieldvector-size-is-method \
 --without-gmp \
 --enable-parallel \
 --with-petsc=$MODULEDIR/petsc \
 --prefix=/hosts/gandalf/raid5/morgoth/dune/src/dune \
---x-includes=/usr/X11R6/include \
---x-libraries=/usr/X11R6/lib \
---disable-documentation"
-MAKE_FLAGS=
+--disable-documentation \
+--disable-dependency-tracking "
 
 #--with-grape=$MODULEDIR/grape"
 
