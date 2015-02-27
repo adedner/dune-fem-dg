@@ -34,7 +34,7 @@ struct AdvectionDiffusionStepper
   // The DG space operator
   // The first operator is sum of the other two
   // The other two are needed for semi-implicit time discretization
-  typedef typename BaseType :: FullOperatorType                    FullOperatorType;
+  typedef typename BaseType :: FullOperatorType               FullOperatorType;
   typedef typename BaseType :: ExplicitOperatorType           ExplicitOperatorType;
   typedef typename BaseType :: ImplicitOperatorType           ImplicitOperatorType;
 

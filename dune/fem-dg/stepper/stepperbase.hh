@@ -326,6 +326,7 @@ struct StepperBase
     monitor.ils_iterations        = odeSolverMonitor_.linearSolverIterations_;
     monitor.max_newton_iterations = odeSolverMonitor_.maxNewtonIterations_ ;
     monitor.max_ils_iterations    = odeSolverMonitor_.maxLinearSolverIterations_;
+    monitor.operator_calls        = odeSolverMonitor_.spaceOperatorCalls_;
 
     // set time step size to monitor
     monitor.setTimeStepInfo( tp );
