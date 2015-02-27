@@ -52,6 +52,8 @@ public:
   int total_ils_iterations;
   int max_newton_iterations;
   int max_ils_iterations;
+  int operator_calls;
+  int total_operator_calls;
 
   unsigned long elements ;
 
@@ -69,6 +71,8 @@ public:
     max_newton_iterations = 0;
     max_ils_iterations = 0;
     elements = 0;
+    operator_calls = 0;
+    total_operator_calls = 0;
   }
 
   void setTimeStepInfo( const Dune::Fem::TimeProviderBase& tp )
@@ -84,6 +88,7 @@ public:
     // accumulate iteration information
     total_newton_iterations += newton_iterations;
     total_ils_iterations += ils_iterations;
+    total_operator_calls += operator_calls;
   }
 
   void finalize( const double h = 0, const unsigned long el = 0 )
@@ -103,10 +108,11 @@ public:
     if( max_newton_iterations > 0 || max_ils_iterations > 0 )
     {
       out << "SolverMonitorInfo (iterations):" << std::endl;
-      out << "newton max: " << max_newton_iterations << std::endl;
-      out << "newton tot: " << total_newton_iterations << std::endl;
-      out << "ils    max: " << max_ils_iterations << std::endl;
-      out << "ils    tot: " << total_ils_iterations << std::endl;
+      out << "newton   max: " << max_newton_iterations << std::endl;
+      out << "newton   tot: " << total_newton_iterations << std::endl;
+      out << "ils      max: " << max_ils_iterations << std::endl;
+      out << "ils      tot: " << total_ils_iterations << std::endl;
+      out << "op calls tot: " << total_operator_calls << std::endl;
     }
     out << std::endl;
   }
@@ -371,8 +377,13 @@ public:
         UInt64Type grSize = gridSize();
         if( grid.comm().rank() == 0 )
         {
-          std::cout << "step: " << timeStep << "  time = " << tp.time() << ", dt = " << deltaT
-                    <<",  grid size: " << grSize << ",  Newton: " << monitor.newton_iterations << "  ILS: " << monitor.ils_iterations << std::endl;
+          std::cout << "step: " << timeStep << "  time = " << tp.time()+tp.deltaT() << ", dt = " << deltaT
+                    <<",  grid size: " << grSize << ", elapsed time: ";
+          Dune::FemTimer::print(std::cout,timeStepTimer_);
+          std::cout << ",  Newton: " << monitor.newton_iterations
+                    << "  ILS: " << monitor.ils_iterations
+                    << "  OC: " << monitor.operator_calls << std::endl;
+
         }
       }
 
