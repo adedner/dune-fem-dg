@@ -520,7 +520,6 @@ namespace Dune {
 
         if ( computeBoth )
         {
-          liftingEvalLePlus_.resize( quadNoInp );
           if ( ! LePlusLifting_ )
             LePlusLifting_ = new Lifting( gradSpc_ );
 
@@ -534,6 +533,7 @@ namespace Dune {
           const QuadratureImp& faceQuad2 = ( insideIsInflow_ ) ? quadInner : quadOuter;
 
           const size_t quadNoOutp = quadOuter.nop();
+          liftingEvalLePlus_.resize( quadNoOutp );
           for(size_t qp = 0; qp < quadNoOutp; ++qp )
           {
             // get value of 2*r_e in quadrature point
