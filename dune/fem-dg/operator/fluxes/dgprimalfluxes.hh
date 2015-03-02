@@ -51,9 +51,9 @@ namespace Dune {
 
     typedef typename BaseType :: DiscreteGradientSpaceType              DiscreteGradientSpaceType;
     typedef typename DiscreteGradientSpaceType :: RangeType             GradientType;
-    typedef Fem::TemporaryLocalFunction< DiscreteGradientSpaceType >         LiftingFunctionType;
+    typedef Fem::TemporaryLocalFunction< DiscreteGradientSpaceType >    LiftingFunctionType;
 
-    typedef Fem::CachingQuadrature< GridPartType, 0>                         VolumeQuadratureType ;
+    typedef Fem::CachingQuadrature< GridPartType, 0>                    VolumeQuadratureType ;
 
     typedef Fem::LocalMassMatrix
       < DiscreteGradientSpaceType, VolumeQuadratureType >               LocalMassMatrixType;
@@ -368,10 +368,12 @@ namespace Dune {
                                 const ArgumentTupleVector& uRightVec)
     {
       if( hasLifting() )
+      {
         computeLiftings( intersection, inside, outside, time,
                          quadInner, quadOuter,
                          uLeftVec, uRightVec,
                          (method_ == method_br2 ) );
+      }
     }
 
     template <class QuadratureImp, class ArgumentTupleVector >
@@ -409,7 +411,7 @@ namespace Dune {
         const ArgumentTupleVector& u = ( insideIsInflow_ ) ? uRightVec : uLeftVec;
 
         const size_t quadNoInp = quadInner.nop();
-        liftTmp_.resize( quadNoInp );
+        liftingEvalLeMinus_.resize( quadNoInp );
 
         // get the right quadrature for the lifting entity
         const QuadratureImp& faceQuad = ( insideIsInflow_ ) ? quadOuter : quadInner;
@@ -432,10 +434,10 @@ namespace Dune {
           {
             // get value of 2*r_e in quadrature point
             addLifting(intersection, time, faceQuad2, qp,
-                       uLeftVec[ qp ], uRightVec[ qp ], liftTmp_[ qp ] );
+                       uLeftVec[ qp ], uRightVec[ qp ], liftingEvalLeMinus_[ qp ] );
           }
           // add to local function
-          LeMinusLifting().function().axpyQuadrature( faceQuad, liftTmp_ );
+          LeMinusLifting().function().axpyQuadrature( faceQuad, liftingEvalLeMinus_ );
 
           LeMinusLifting().finalize();
         }
@@ -457,9 +459,9 @@ namespace Dune {
         {
           // get value of 2*r_e in quadrature point
           addLifting(intersection, time, faceQuad, qp,
-                     uLeftVec[ qp ], uRightVec[ qp ], liftTmp_ );
+                     uLeftVec[ qp ], uRightVec[ qp ], liftingEvalLeMinus_ );
         }
-        LeMinusLifting2().function().axpyQuadrature( faceQuad, liftTmp_ );
+        LeMinusLifting2().function().axpyQuadrature( faceQuad, liftingEvalLeMinus_ );
         LeMinusLifting2().finalize();
 
         // calculate 4*\int_Ke-(r_e*r_e)
@@ -505,16 +507,20 @@ namespace Dune {
         for(size_t qp = 0; qp < quadNoInp; ++qp )
         {
           addLifting(intersection, entity, u[ qp ], time, faceQuad,  qp,
-                     uLeftVec[ qp ], uRightVec[ qp ], liftTmp_[ qp ] );
+                     uLeftVec[ qp ], uRightVec[ qp ], liftingEvalLeMinus_[ qp ] );
         }
         // add to local function
-        LeMinusLifting().function().axpyQuadrature( faceQuad, liftTmp_ );
+        LeMinusLifting().function().axpyQuadrature( faceQuad, liftingEvalLeMinus_ );
 
         // LeMinusLifting_ has L_e=2*r_e on Ke-
         LeMinusLifting().finalize( );
 
+        // already evaluate for all quadrature points
+        LeMinusLifting().function().evaluateQuadrature( faceQuad, liftingEvalLeMinus_ );
+
         if ( computeBoth )
         {
+          liftingEvalLePlus_.resize( quadNoInp );
           if ( ! LePlusLifting_ )
             LePlusLifting_ = new Lifting( gradSpc_ );
 
@@ -533,14 +539,17 @@ namespace Dune {
             // get value of 2*r_e in quadrature point
             // use correct order on interface quadratures!
             addLifting(intersection, entity2, u2[ qp ], time, faceQuad2,  qp,
-                       uLeftVec[ qp ], uRightVec[ qp ], liftTmp_[ qp ] );
+                       uLeftVec[ qp ], uRightVec[ qp ], liftingEvalLePlus_[ qp ] );
           }
 
           // add to local function
-          LePlusLifting().function().axpyQuadrature( faceQuad2, liftTmp_ );
+          LePlusLifting().function().axpyQuadrature( faceQuad2, liftingEvalLePlus_ );
 
           // LePlusLifting_ carries 2*r_e on Ke+
           LePlusLifting().finalize( );
+
+          // already evaluate for all quadrature points, reuse liftTmp here
+          LeMinusLifting().function().evaluateQuadrature( faceQuad, liftingEvalLePlus_ );
         }
       }
     }
@@ -581,15 +590,18 @@ namespace Dune {
         LeMinusLifting().initialize( entity );
 
         const size_t quadNop = quadInner.nop();
-        liftTmp_.resize( quadNop );
+        liftingEvalLeMinus_.resize( quadNop );
         for(size_t qp = 0; qp < quadNop; ++qp )
         {
           addLifting(intersection, entity, uLeftVec[ qp ], time, quadInner, qp,
-                     uLeftVec[ qp ], uRight[ qp ] , liftTmp_[ qp ] );
+                     uLeftVec[ qp ], uRight[ qp ] , liftingEvalLeMinus_[ qp ] );
         }
         // add to local function
-        LeMinusLifting().function().axpyQuadrature( quadInner, liftTmp_ );
+        LeMinusLifting().function().axpyQuadrature( quadInner, liftingEvalLeMinus_ );
+        // finalize function
         LeMinusLifting().finalize();
+        // already evaluate all liftings
+        LeMinusLifting().function().evaluateQuadrature( quadInner, liftingEvalLeMinus_ );
       }
     }
 
@@ -628,19 +640,19 @@ namespace Dune {
     }
 
     /** @return A(u)L_e*n */
-    template <class QuadratureImp>
-    void applyLifting(const QuadratureImp& faceQuad,
-                      const int quadPoint,
+    template <class LocalPoint>
+    void applyLifting(const EntityType& entity,
                       const double time,
+                      const LocalPoint& x,
                       const DomainType& normal,
                       const RangeType& u,
-                      LiftingFunctionType& r_e,
+                      const GradientType& sigma,
                       RangeType& lift) const
     {
-      GradientType sigma;
+      //GradientType sigma;
 
       // evaluate lifting at quadrature point
-      r_e.evaluate( faceQuad[ quadPoint ], sigma );
+      //r_e.evaluate( faceQuad[ quadPoint ], sigma );
 
       Fem::FieldMatrixConverter< GradientType, JacobianRangeType> gradient( sigma );
 
@@ -648,9 +660,7 @@ namespace Dune {
       {
         JacobianRangeType mat;
         // set mat = G(u)L_e
-        model_.diffusion( r_e.entity(),
-                          time, faceQuad.point( quadPoint ),
-                          u, gradient, mat );
+        model_.diffusion( entity, time, x, u, gradient, mat );
         // set lift = G(u)L_e*n
         mat.mv( normal, lift );
       }
@@ -916,9 +926,9 @@ namespace Dune {
         const RangeType& u = ( insideIsInflow_ ) ? uRight : uLeft;
 
         RangeType lift;
-        LiftingFunctionType& LeLeft = LeMinusLifting().function();
+        LiftingFunctionType& LeMinus = LeMinusLifting().function();
         // get value of G(u-)L_e-*n into liftTotal
-        applyLifting( faceQuad, quadPoint, time, normal, u, LeLeft, lift );
+        applyLifting( LeMinus.entity(), time, faceQuad.point(quadPoint), normal, u, liftingEvalLeMinus_[ quadPoint ], lift );
 
         // only for CDG-type methods
         if (method_ != method_br2)
@@ -965,11 +975,11 @@ namespace Dune {
           const RangeType& uPlus = ( ! insideIsInflow_ ) ? uRight : uLeft;
 
           RangeType liftTotal;
-          LiftingFunctionType& LeRight = LePlusLifting().function();
+          LiftingFunctionType& LePlus = LePlusLifting().function();
 
           // get value of G(u+)L_e+*n into liftTotal
-          applyLifting( faceQuadPlus, quadPoint, time,
-                        normal, uPlus, LeRight, liftTotal );
+          applyLifting( LePlus.entity(), time, faceQuadPlus.point(quadPoint),
+                        normal, uPlus, liftingEvalLePlus_[ quadPoint ], liftTotal );
 
           // set liftTotal = {G(u)r_e}*n = 0.25*(G(u+)L_e+*n + G(u-)L_e-*n)
           liftTotal += lift;
@@ -1051,11 +1061,11 @@ namespace Dune {
 
       if( hasLifting() )
       {
-        LiftingFunctionType& LeLeft = LeMinusLifting().function();
+        LiftingFunctionType& LeMinus = LeMinusLifting().function();
 
         RangeType lift;
         // get value of G(u)L_e*n into lift
-        applyLifting( faceQuadInner, quadPoint, time, normal, uRight, LeLeft, lift );
+        applyLifting( LeMinus.entity(), time, faceQuadInner.point(quadPoint), normal, uRight, liftingEvalLeMinus_[quadPoint], lift );
 
         if( method_ == method_br2 )
         {
@@ -1173,7 +1183,9 @@ namespace Dune {
 #ifdef LOCALDEBUG
     Lifting*          LeMinusLifting2_;
 #endif
-    mutable Fem::MutableArray< GradientType > liftTmp_ ;
+    mutable Fem::MutableArray< GradientType > liftingEvalLeMinus_ ;
+    mutable Fem::MutableArray< GradientType > liftingEvalLePlus_ ;
+
     double            maxNeighborsVolumeRatio_; // for CDG2 only
     double            ainsworthFactor_;
     bool              insideIsInflow_;
@@ -1393,11 +1405,13 @@ namespace Dune {
     typedef DGPrimalDiffusionFluxImpl< DiscreteFunctionSpaceImp, Model >      BaseType;
 
   public:
-    typedef typename BaseType::GridPartType GridPartType;
-    typedef typename BaseType::Intersection Intersection;
-    typedef typename BaseType::EntityType EntityType;
-    typedef typename BaseType::RangeType RangeType;
-    typedef typename BaseType::JacobianRangeType JacobianRangeType;
+    typedef typename BaseType::GridPartType        GridPartType;
+    typedef typename BaseType::Intersection        Intersection;
+    typedef typename BaseType::EntityType          EntityType;
+    typedef typename BaseType::RangeType           RangeType;
+    typedef typename BaseType::JacobianRangeType   JacobianRangeType;
+    typedef typename BaseType::GradientType        GradientType;
+    typedef typename BaseType::DomainType          DomainType;
 
     ExtendedDGPrimalDiffusionFlux( GridPartType& gridPart,
                                    const Model& model ) :
@@ -1444,13 +1458,17 @@ namespace Dune {
       assert( this->LeMinusLifting().isInitialized() );
       if ( this->insideIsInflow_)
       {
-        applyLifting( faceQuadInner, quadPoint, time, uEn, this->LePlusLifting().function(), liftEn );
-        applyLifting( faceQuadOuter, quadPoint, time, uNb, this->LeMinusLifting().function(), liftNb );
+        applyLifting( this->LePlusLifting().function().entity(), time,
+                      faceQuadInner.point(quadPoint), uEn, liftingEvalLePlus_[quadPoint], liftEn );
+        applyLifting( this->LeMinusLifting().function().entity(), time,
+                      faceQuadOuter.point(quadPoint), uNb, liftingEvalLeMinus_[quadPoint], liftNb );
       }
       else
       {
-        applyLifting( faceQuadInner, quadPoint, time, uEn, this->LeMinusLifting().function(), liftEn );
-        applyLifting( faceQuadOuter, quadPoint, time, uNb, this->LePlusLifting().function(), liftNb );
+        applyLifting( this->LeMinusLifting().function().entity(), time,
+                      faceQuadInner.point(quadPoint), uEn, liftingEvalLeMinus_[quadPoint], liftEn );
+        applyLifting( this->LePlusLifting().function().entity(), time,
+                      faceQuadOuter.point(quadPoint), uNb, liftingEvalLePlus_[quadPoint], liftNb );
       }
       assert( liftEn == liftEn );
       assert( liftNb == liftNb );
@@ -1472,26 +1490,21 @@ namespace Dune {
     }
 
   protected:
-    template <class QuadratureImp>
-    void applyLifting(const QuadratureImp& faceQuad,
-                      const int quadPoint,
+    using BaseType :: liftingEvalLeMinus_;
+    using BaseType :: liftingEvalLePlus_;
+
+    template <class LocalPoint>
+    void applyLifting(const EntityType& entity,
                       const double time,
+                      const LocalPoint& x,
+                      const DomainType& normal,
                       const RangeType& u,
-                      typename BaseType::LiftingFunctionType& r_e,
+                      const GradientType& sigma,
                       JacobianRangeType& mat) const
     {
-      typedef typename BaseType::GradientType GradientType;
-      GradientType sigma;
-
-      // evaluate lifting at quadrature point
-      r_e.evaluate( faceQuad[ quadPoint ], sigma );
-
       Fem::FieldMatrixConverter< GradientType, JacobianRangeType> gradient( sigma );
-
       // set mat = G(u)L_e
-      this->model_.diffusion( r_e.entity(),
-                        time, faceQuad.point( quadPoint ),
-                        u, gradient, mat );
+      this->model_.diffusion( entity, time, x, u, gradient, mat );
     }
   }; // end ExtendedDGPrimalDiffusionFlux
 
