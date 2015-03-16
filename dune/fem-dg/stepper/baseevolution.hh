@@ -372,7 +372,7 @@ public:
       // Check that no NAN have been generated
       checkDofsValid( tp, loop );
 
-      if( (printCount > 0) && (timeStep % printCount == 0))
+      if( (printCount > 0) && (((timeStep+1) % printCount) == 0))
       {
         UInt64Type grSize = gridSize();
         if( grid.comm().rank() == 0 )
