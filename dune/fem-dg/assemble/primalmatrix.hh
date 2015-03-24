@@ -409,7 +409,9 @@ class DGPrimalMatrixAssembly
     std::vector< RangeType > phi( maxNumBasisFunctions );
     std::vector< JacobianRangeType > dphi( maxNumBasisFunctions );
 
-    // flux_.initialize( dfSpace );
+#ifndef EULER
+    flux_.initialize( dfSpace );
+#endif
 
     const RangeType uZero(0);
     const JacobianRangeType uJacZero(0);
@@ -585,7 +587,9 @@ class DGPrimalMatrixAssembly
     const DiscreteFunctionSpaceType &dfSpace = rhs.space();
     const size_t maxNumBasisFunctions = maxNumScalarBasisFunctions( dfSpace );
 
-    // flux_.initialize(dfSpace);
+#ifndef EULER
+    flux_.initialize(dfSpace);
+#endif
 
     const RangeType uZero(0);
     const JacobianRangeType uJacZero(0);
@@ -878,25 +882,25 @@ class DGPrimalMatrixAssembly
             RetType &retNb, DRetType &dretNb) const
   {
     RangeType gLeft,gRight;
-    /*
+#ifndef EULER
     flux_.initializeIntersection( intersectionStorage.intersection(),
                                   intersectionStorage.inside(),
                                   intersectionStorage.outside(), time,
                                   //zero_, zero_,
                                   faceQuadInside, faceQuadOutside,
                                   valueEn, valueNb);
-    */
+#endif
     const size_t numFaceQuadPoints = faceQuadInside.nop();
     for( size_t pt = 0; pt < numFaceQuadPoints; ++pt )
     {
-    /*
+#ifndef EULER
       flux_.numericalFlux( intersectionStorage.intersection(),
                            intersectionStorage,
                            time, faceQuadInside, faceQuadOutside, pt,
                            valueEn[ pt ], valueNb[ pt ], dvalueEn[ pt ], dvalueNb[ pt ],
                            retEn[ pt ], retNb[ pt ],
                            dretEn[ pt ], dretNb[ pt ]);
-     */
+#endif
       retEn[pt] = RangeType(0);
       retNb[pt] = RangeType(0);
       advFlux_.numericalFlux(intersectionStorage.intersection(),
@@ -955,11 +959,11 @@ class DGPrimalMatrixAssembly
     const size_t numFaceQuadPoints = faceQuadInside.nop();
     for( size_t pt = 0; pt < numFaceQuadPoints; ++pt )
     {
-    /*
+#ifndef EULER
       flux_.evaluateLifting(faceQuadInside,faceQuadOutside,pt,time,
                             valueEn[pt],valueNb[pt],
                             liftEn[pt],liftNb[pt]);
-     */
+#endif
     }
   }
   template <class FaceQuadrature,class Quadrature,class Value,class DValue,class RetType, class DRetType>
@@ -986,11 +990,11 @@ class DGPrimalMatrixAssembly
     const size_t numQuadPoints = quadInside.nop();
     for( size_t pt = 0; pt < numQuadPoints; ++pt )
     {
-    /*
+#ifndef EULER
       flux_.evaluateLifting(quadInside,quadOutside,pt,time,
                             valueEn[pt],valueNb[pt],
                             liftEn[pt],liftNb[pt]);
-     */
+#endif
     }
   }
   template <class FaceQuadrature,class Value,class LiftingFunction>
@@ -1002,13 +1006,13 @@ class DGPrimalMatrixAssembly
                const Value &valueEn, const Value &valueNb,
                LiftingFunction &lifting) const
   {
-  /*
+#ifndef EULER
     flux_.initializeIntersection( intersection, entity, neighbor, time,
                                   // zero_, zero_,
                                   faceQuadInside, faceQuadOutside,
                                   valueEn, valueNb, true );
     lifting += flux_.getInsideLifting();
-  */
+#endif
   }
 
   template <class Quadrature,class RetType>
@@ -1036,25 +1040,25 @@ class DGPrimalMatrixAssembly
             RetType &retEn, DRetType &dretEn) const
   {
     RangeType gLeft,gRight;
-    /*
+#ifndef EULER
     flux_.initializeBoundary( intersection, entity, time,
                               // zero_,
                               faceQuadInside,
                               valueEn, valueNb );
-    */
+#endif
     IntersectionStorage intersectionStorage( intersection, entity, entity, entity.geometry().volume(), entity.geometry().volume() );
     const size_t numFaceQuadPoints = faceQuadInside.nop();
     for( size_t pt = 0; pt < numFaceQuadPoints; ++pt )
     {
       if ( model_.hasBoundaryValue(intersection,time,faceQuadInside.localPoint(pt)) )
       {
-      /*
+#ifndef EULER
         flux_.boundaryFlux( intersection, intersectionStorage,
                             time, faceQuadInside, pt,
                             valueEn[ pt ], valueNb[ pt ],
                             dvalueEn[ pt ],
                             retEn[ pt ], dretEn[ pt ]);
-        */
+#endif
         retEn[pt] = RangeType(0);
         advFlux_.numericalFlux(intersection,entity,entity,
                                time,faceQuadInside,faceQuadInside,pt,
