@@ -259,23 +259,19 @@ namespace Dune {
       // add u to argument tuple
       this->previousPass_.pass(u);
       typename PreviousPassType::NextArgumentType prevArg=this->previousPass_.localArgument();
-      const typename BaseType::TotalArgumentType totalArg(&u, prevArg);
-      arg_ = const_cast<ArgumentType*>(&totalArg);
+      typename BaseType::TotalArgumentType totalArg(&u, prevArg);
 
-      caller_ = new DiscreteModelCallerType( *arg_, discreteModel_ );
-      caller_->setTime( this->time() );
+      DiscreteModelCallerType caller( totalArg, discreteModel_ );
+      caller.setTime( this->time() );
 
-      caller_.setEntity( entity );
-      caller_.initializeIntersection( nb, intersection, faceQuadInner, faceQuadOuter );
+      caller.setEntity( entity );
+      caller.initializeIntersection( nb, intersection, faceQuadInner, faceQuadOuter );
 
       JacobianRangeType diffFluxEn, diffFluxNb;
 
-      caller_.numericalFlux(intersection, faceQuadInner, faceQuadOuter, l,
-                            fluxEn, fluxNb, diffFluxEn, diffFluxNb);
+      caller.numericalFlux(intersection, faceQuadInner, faceQuadOuter, l,
+                           fluxEn, fluxNb, diffFluxEn, diffFluxNb);
 
-      if( caller_ )
-        delete caller_;
-      caller_ = 0;
       arg_  = 0;
     }
 
@@ -302,6 +298,7 @@ namespace Dune {
         dest_->clear();
       }
 
+      assert( ! caller_ );
       // set arguments to caller
       caller_ = new DiscreteModelCallerType( *arg_, discreteModel_ );
       caller_->setTime( this->time() );
