@@ -3,6 +3,7 @@
 
 //- Dune-fem includes
 #include <dune/fem-dg/operator/adaptation/estimatorbase.hh>
+#include <dune/fem/misc/compatibility.hh>
 
 // Estimator
 // ---------
@@ -262,8 +263,7 @@ public:
       if( intersection.neighbor() )
       {
         // access neighbor
-        typename ElementType::EntityPointer outside = intersection.outside();
-        const ElementType& neighbor = *outside;
+        const ElementType neighbor = Fem::make_entity( intersection.outside() );
         const int nbIdx = indexSet_.index( neighbor );
 
         // handle face from one side only

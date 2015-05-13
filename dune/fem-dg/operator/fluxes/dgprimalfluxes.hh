@@ -1,6 +1,8 @@
 #ifndef DUNE_FEM_DG_DGPRIMALFLUXES_HH
 #define DUNE_FEM_DG_DGPRIMALFLUXES_HH
 
+#include <dune/common/version.hh>
+
 #include <dune/fem/misc/fmatrixconverter.hh>
 #include <dune/fem/operator/1order/localmassmatrix.hh>
 #include <dune/fem/pass/localdg/discretemodel.hh>
@@ -193,7 +195,7 @@ namespace Dune {
         for( IteratorType it = gridPart.template begin<0>(); it != itend; ++it )
         {
           const EntityType& entity = * it ;
-          const double insideVol = entity->geometry().volume();
+          const double insideVol = entity.geometry().volume();
           int numFaces = 0;
           int numOutflowFaces = 0;
           const IntersectionIteratorType intitend = gridPart.iend( entity );
@@ -205,7 +207,11 @@ namespace Dune {
             ++numFaces ;
             if ( intersection.neighbor() )
             {
+#if DUNE_VERSION_NEWER(DUNE_GRID,2,4)
+              double outsideVol = intersection.outside().geometry().volume();
+#else
               double outsideVol = intersection.outside()->geometry().volume();
+#endif
               numOutflowFaces += (determineDirection(areaSwitch_, insideVol,outsideVol,intersection) ? 1 : 0);
               if ( !areaSwitch_ || insideVol/outsideVol < 1)
                 maxNeighborsVolumeRatio_ = std::max( maxNeighborsVolumeRatio_, insideVol/outsideVol );

@@ -17,6 +17,7 @@
 #include <dune/fem/space/common/arrays.hh>
 
 #include <dune/fem-dg/pass/dgmodelcaller.hh>
+#include <dune/fem/misc/compatibility.hh>
 
 namespace Dune {
 /*! @addtogroup PassHyp
@@ -545,8 +546,7 @@ namespace Dune {
           if( intersection.neighbor() )
           {
             // get neighbor
-            typename EntityType::EntityPointer outside = intersection.outside();
-            const EntityType & nb = * outside;
+            const EntityType nb = Fem::make_entity( intersection.outside() );
 
             // check whether we have to skip this intersection
             if( nbChecker.skipIntersection( nb ) )

@@ -6,6 +6,7 @@
 
 #include <dune/fem/pass/localdg/modelcaller.hh>
 #include <dune/fem/version.hh>
+#include <dune/fem/misc/compatibility.hh>
 
 namespace Dune
 {
@@ -109,7 +110,7 @@ namespace Dune
     {
       assert( intersection.boundary() );
 
-      BaseType::setBoundary( *(intersection.inside()), quadrature );
+      BaseType::setBoundary( Fem::make_entity( intersection.inside() ), quadrature );
       if( evaluateJacobian )
       {
         jacobiansInside_.resize( quadrature.nop() );
