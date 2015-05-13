@@ -4,7 +4,7 @@
 #include <dune/common/version.hh>
 #include <dune/common/exceptions.hh>
 
-#include <dune/fem/function/common/timedependentfunction.hh>
+#include <dune/fem/function/common/instationary.hh>
 #include <dune/fem/misc/gridsolution.hh>
 
 namespace Dune {
@@ -47,12 +47,13 @@ protected:
   }
 
 public:
-  typedef Fem :: TimeDependentFunction< ThisType > TimeDependentFunctionType;
+  typedef Fem :: InstationaryFunction< ThisType, Fem::__InstationaryFunction::HoldReference > InstationaryFunctionType;
+  typedef InstationaryFunctionType  TimeDependentFunctionType;
 
   //! turn timedependent function into function by fixing time
-  TimeDependentFunctionType fixedTimeFunction( const double time ) const
+  InstationaryFunctionType fixedTimeFunction( const double time ) const
   {
-    return TimeDependentFunctionType( *this, time );
+    return InstationaryFunctionType( *this, time );
   }
 
   // return prefix for data loops
