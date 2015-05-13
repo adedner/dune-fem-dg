@@ -427,13 +427,14 @@ public:
   // here x is in global coordinates
   inline void maxSpeed( const EntityType& entity,
                         const double time,
-                        const DomainType& xGlobal,
+                        const DomainType& xLocal,
                         const DomainType& normal,
                         const RangeType& u,
                         double& advspeed,
                         double& totalspeed ) const
   {
     DomainType v;
+    const DomainType xGlobal = entity.geometry().global( xLocal );
     problem_.velocity( xGlobal, time, v );
     advspeed   = v * normal ;
     totalspeed = advspeed;
@@ -499,7 +500,7 @@ protected:
       {
         const DomainType normal = it.integrationOuterNormal(x);
         DomainType velocity;
-        model.velocity(*it.inside(),time,
+        model.velocity( Dune::Fem::make_entity( it.inside() ),time,
                        it.geometryInInside().global(x),
                        uLeft,velocity);
         return normal*velocity;
