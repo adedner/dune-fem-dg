@@ -2,6 +2,7 @@
 #define DUNE_ADAPTATION_UTILITY_HH
 
 // include restricion, prolongation and adaptation operator classes for discrete functions
+#include <dune/common/version.hh>
 #include <dune/fem/io/parameter.hh>
 #include <dune/fem/gridpart/common/capabilities.hh>
 
@@ -102,8 +103,12 @@ namespace Dune
       // otherwise write min and max volume on backup/restore
       if( hasGridHierarchy && entity.level() > 0 )
       {
+#if DUNE_VERSION_NEWER(DUNE_GRID,2,4)
+        return findCoarsestVolume( entity.father(), hasGridHierarchy );
+#else
         typename Entity::EntityPointer father = entity.father();
         return findCoarsestVolume( *father, hasGridHierarchy );
+#endif
       }
       else  // return entity's volume
         return entity.geometry().volume();
