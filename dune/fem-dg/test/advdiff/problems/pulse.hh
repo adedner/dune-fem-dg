@@ -122,8 +122,8 @@ public:
    */
   void evaluate(const DomainType& arg, const double t, RangeType& res) const
   {
-    const double x = arg[0];
-    const double y = arg[1];
+    const double x = arg[0];// - center_[ 0 ];
+    const double y = arg[1];// - center_[ 1 ];
 
     const double sig2 = 0.004; /* Siehe Paper P.Bastian Gl. 30 */
     const double sig2PlusDt4 = sig2+(4.0*epsilon_*t);
