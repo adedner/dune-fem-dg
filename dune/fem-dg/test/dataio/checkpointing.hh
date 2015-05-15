@@ -223,7 +223,7 @@ struct CheckPointingStepper : public AlgorithmBase< StepperTraits< GridImp, Prob
   void step(TimeProviderType& tp, SolverMonitorType& monitor )
   {
     // do new projection
-    typedef Dune::Fem::TimeDependentFunction< InitialDataType > FunctionType;
+    typedef Dune::Fem::InstationaryFunction< InitialDataType, Dune::Fem::__InstationaryFunction::HoldReference > FunctionType;
     FunctionType function( problem(), tp.time() );
     Dune::Fem::L2Projection< FunctionType, DiscreteFunctionType > l2pro;
     l2pro(function, solution_);
@@ -239,7 +239,7 @@ struct CheckPointingStepper : public AlgorithmBase< StepperTraits< GridImp, Prob
   {
     L2ErrorNoComm< DiscreteFunctionType > l2norm;
     // Compute L2 error of discretized solution ...
-    typedef Dune::Fem::TimeDependentFunction< InitialDataType > FunctionType;
+    typedef Dune::Fem::InstationaryFunction< InitialDataType, Dune::Fem::__InstationaryFunction::HoldReference > FunctionType;
     FunctionType function( problem(), tp.time() );
     return l2norm.norm( function, u );
   }
