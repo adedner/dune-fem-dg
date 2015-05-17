@@ -27,6 +27,7 @@
 #include <dune/fem/function/adaptivefunction.hh>
 
 #include <dune/fem-dg/pass/dgmodelcaller.hh>
+#include <dune/fem/misc/compatibility.hh>
 
 //*************************************************************
 namespace Dune {
@@ -193,8 +194,7 @@ namespace Dune {
       // BaseType :: evaluateQuad( quadrature, qp, localFunctionsInside_, values_ );
 
       // call problem checkDirection
-      typename IntersectionType::EntityPointer inside = intersection.inside();
-      const typename BaseType::EntityType &entity = *inside;
+      const typename BaseType::EntityType &entity = Dune::Fem::make_entity( intersection.inside() );
       return discreteModel().checkPhysical( entity, entity.geometry().local( intersection.geometry().global( quadrature.localPoint( qp ) ) ), ranges_ );
     }
 
@@ -471,7 +471,7 @@ namespace Dune {
                         const ArgumentTuple& uLeft) const
     {
       // evaluate velocity
-      model_.velocity(this->inside(),time,it.inside()->geometry().local( it.geometry().global(x) ), uLeft[ uVar ], velocity_);
+      model_.velocity(this->inside(),time, this->inside().geometry().local( it.geometry().global(x) ), uLeft[ uVar ], velocity_);
       return checkDirection(it, x, velocity_);
     }
 
@@ -1414,8 +1414,7 @@ namespace Dune {
           if ( hasNeighbor )
           {
             // check all neighbors
-            typename EntityType::EntityPointer ep = intersection.outside();
-            const EntityType& nb = *ep;
+            const EntityType& nb = Dune::Fem::make_entity( intersection.outside() );
 
             // get U on entity
             const LocalFunctionType uNb = U.localFunction(nb);
@@ -2428,8 +2427,7 @@ namespace Dune {
         if (intersection.neighbor() && ! inflowIntersection )
         {
           // get neighbor entity
-          typename EntityType::EntityPointer ep = intersection.outside();
-          const EntityType& nb = *ep;
+          const EntityType& nb = Dune::Fem::make_entity( intersection.outside() );
 
           // set neighbor to caller
           caller().setNeighbor( nb );
@@ -2472,8 +2470,7 @@ namespace Dune {
           if (intersection.neighbor())
           {
             // get neighbor entity
-            typename EntityType::EntityPointer ep = intersection.outside();
-            const EntityType& nb = *ep;
+            const EntityType& nb = Dune::Fem::make_entity( intersection.outside() );
 
             // conforming case
             if( ! conformingGridPart && ! intersection.conforming() )
