@@ -2,6 +2,7 @@
 #define DUNE_FEMDG_DGNORM_HH
 
 #include <dune/fem/misc/l2norm.hh>
+#include <dune/fem/misc/compatibility.hh>
 
 namespace Dune
 {
@@ -195,8 +196,7 @@ namespace Dune
         const IntersectionType& intersection = *iit ;
         if( intersection.neighbor() )
         {
-          typename EntityType::EntityPointer outside = intersection.outside();
-          const EntityType& neighbor = *outside ;
+          const EntityType& neighbor = make_entity( intersection.outside() );
           const Geometry& geometryNb = neighbor.geometry();
 
 
@@ -262,8 +262,7 @@ namespace Dune
         const IntersectionType& intersection = *iit ;
         if( intersection.neighbor() )
         {
-          typename EntityType::EntityPointer outside = intersection.outside();
-          const EntityType& neighbor = *outside ;
+          const EntityType& neighbor = make_entity( intersection.outside() );
           const Geometry& geometryNb = neighbor.geometry();
           unsigned int nbIdx = gridPart().indexSet().index(neighbor);
           unsigned int nbOrder = std::max( uint(2 * u.space().order( neighbor )) , order );
