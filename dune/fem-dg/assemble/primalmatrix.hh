@@ -8,6 +8,8 @@
 #include <dune/fem-dg/operator/fluxes/dgprimalfluxes.hh>
 #include <dune/fem-dg/operator/dg/primaloperator.hh>
 
+#include <dune/fem/misc/compatibility.hh>
+
 namespace Dune {
 
 template <class ModelType>
@@ -676,8 +678,7 @@ class DGPrimalMatrixAssembly
     // make sure we got the right conforming statement
     assert( intersection.conforming() == conforming );
 
-    typename EntityType::EntityPointer ep = intersection.outside();
-    const EntityType& neighbor = *ep ;
+    const EntityType& neighbor = Dune::Fem::make_entity( intersection.outside() );
 
     const int entityOrder   = dfSpace.order( entity );
     const int neighborOrder = dfSpace.order( neighbor );
@@ -847,8 +848,8 @@ class DGPrimalMatrixAssembly
         const IntersectionType& intersection = *iit ;
         if ( !intersection.neighbor() )
           continue;
-        typename EntityType::EntityPointer ep = intersection.outside();
-        const EntityType& neighbor = *ep ;
+
+        const EntityType& neighbor = Dune::Fem::make_entity( intersection.outside() );
 
         LocalMatrixType localOpNb1 = matrix.localMatrix( entity, neighbor );
         LocalMatrixType localOpNb2 = matrix.localMatrix( neighbor, entity );
