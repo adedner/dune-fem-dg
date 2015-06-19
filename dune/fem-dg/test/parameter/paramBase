@@ -2,7 +2,7 @@
 #------------
 
 # number of threads used in OMP program
-fem.parallel.numberofthreads: 8
+fem.parallel.numberofthreads: 0
 
 # write diagnostics file (
 # 0 don't, 1 only speedup file, 2 write all runfiles 
@@ -28,7 +28,7 @@ fem.threads.partitioningmethod: sfc
 fem.verboserank: 0 
 
 fem.prefix: ./data
-fem.io.outputformat: vtk-cell # binary, vtk-cell, vtk-vertex, gnuplot, sub-vtk-cell
+fem.io.outputformat: gnuplot # vtk-cell # binary, vtk-cell, vtk-vertex, gnuplot, sub-vtk-cell
 fem.io.subsamplinglevel: 0
 fem.io.grapedisplay: 0
 

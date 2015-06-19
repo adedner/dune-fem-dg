@@ -164,7 +164,7 @@ public:
    : grid_( grid ),
      // Initialize Timer for CPU time measurements
      timeStepTimer_( Dune::FemTimer::addTo("max time/timestep") ),
-     fixedTimeStep_( ParameterType::getValue<double>("fixedTimeStep",0) ),
+     fixedTimeStep_( ParameterType::getValue<double>("fixedTimeStep") ),
      fixedTimeStepEocLoopFactor_( ParameterType::getValue<double>("fixedTimeStepEocLoopFactor",1.) )
   {
   }

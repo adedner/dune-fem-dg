@@ -21,9 +21,12 @@ static double minRatioOfSums = 1e+100;
 #include <iostream>
 #include <string>
 
+#include <dune/geometry/quadraturerules.hh>
+
 // Dune includes
 #include <dune/fem/misc/l2norm.hh>
 #include <dune/fem/operator/projection/l2projection.hh>
+#include <dune/fem/operator/projection/vtxprojection.hh>
 
 #include <dune/fem-dg/operator/dg/dgoperatorchoice.hh>
 
@@ -33,6 +36,10 @@ static double minRatioOfSums = 1e+100;
 
 #include <dune/fem-dg/misc/diagnostics.hh>
 #include <dune/fem-dg/operator/adaptation/estimatorbase.hh>
+
+#include <dune/fem/space/lagrange.hh>
+
+#include "hermite.hh"
 
 using namespace Dune;
 
@@ -46,7 +53,7 @@ struct StepperBase
   // my traits class
   typedef StepperTraits< GridImp, ProblemTraits, polynomialOrder> Traits ;
   typedef AlgorithmBase< Traits > BaseType;
-
+  typedef StepperBase<GridImp,ProblemTraits,polynomialOrder> ThisType;
 
   // type of Grid
   typedef typename Traits :: GridType                 GridType;
@@ -78,6 +85,7 @@ struct StepperBase
 
   // ... as well as the Space type
   typedef typename Traits :: DiscreteSpaceType        DiscreteSpaceType;
+  typedef typename DiscreteSpaceType :: FunctionSpaceType FunctionSpaceType;
 
   // The ODE Solvers
   typedef typename Traits :: OdeSolverType            OdeSolverType;
@@ -116,12 +124,99 @@ struct StepperBase
   using BaseType :: grid_ ;
   using BaseType :: limitSolution ;
 
+  typedef Dune::Fem::LagrangeDiscreteFunctionSpace<FunctionSpaceType, GridPartType, polynomialOrder+1> ResidualSpaceType;
+  typedef Dune::Fem::AdaptiveDiscreteFunction<ResidualSpaceType> ResidualSpaceFunctionType;
+  struct LocalResidual
+  {
+    typedef ResidualSpaceType P1DiscreteFunctionSpaceType;
+    typedef ResidualSpaceFunctionType P1DiscreteFunctionType;
+    // typedef typename Dune::Fem::FunctionSpace<double,double,1,3> FunctionSpaceType;
+    typedef DiscreteFunctionType DGDiscreteFunctionType;
+    typedef typename DGDiscreteFunctionType::DiscreteFunctionSpaceType DGDiscreteFunctionSpaceType;
+    typedef typename DGDiscreteFunctionSpaceType::FunctionSpaceType FunctionSpaceType;
+    typedef typename DGDiscreteFunctionSpaceType::GridPartType GridPartType;
+    typedef typename GridPartType::template Codim< 0 >::EntityType EntityType;
+    typedef typename FunctionSpaceType::RangeType RangeType;
+    LocalResidual(const ThisType &stepper, const P1DiscreteFunctionSpaceType &space)
+      : stepper_(stepper),
+        dgU_("dgU", stepper.space()),
+        dtU_("dtU", stepper.space()), 
+        divF_("divF", stepper.space()),
+        U_("U", space), 
+        lU_(U_), ldtU_(dtU_), ldivF_(divF_),
+        init_(false)
+    {
+    }
+    void init(double t)
+    {
+      stepper_.hermite_.evaluate(t,dgU_);
+      Dune::Fem::VtxProjection<DGDiscreteFunctionType,P1DiscreteFunctionType> projection;
+      projection(dgU_,U_);
+      stepper_.apply( dgU_, divF_ );
+      stepper_.hermite_.derivative(t, dtU_);
+      init_ = true;
+    }
+    template< class PointType >
+    void evaluate ( const PointType &x, RangeType &ret )
+    {
+      if (!init_)
+      {
+        ret = RangeType(0.);;
+        return;
+      }
+      typename P1DiscreteFunctionSpaceType::RangeType valU,valL,valdtU,flux;
+      typename P1DiscreteFunctionSpaceType::JacobianRangeType jacU;
+      lU_.evaluate( x, valU );
+      lU_.jacobian( x, jacU );
+      ldtU_.evaluate( x, valdtU );
+      ldivF_.evaluate( x, valL );
+      // ret = {valU[0],valdtU[0],valL[0]};
+      // ret = valdtU; ret -= valL;
+      
+      stepper_.model().jacobian(lU_.entity(),0,Dune::Fem::coordinate(x),valU,jacU,flux);
+      ret = valdtU; ret += flux;
+    }
+    void init ( const EntityType &entity )
+    {
+      lU_.init( entity );
+      ldtU_.init( entity );
+      ldivF_.init( entity );
+    }
+
+    LocalResidual(const LocalResidual&) = delete;
+    LocalResidual &operator=(const LocalResidual &) = delete;
+    private:
+    const ThisType &stepper_;
+    DGDiscreteFunctionType dgU_, divF_,dtU_;
+    P1DiscreteFunctionType U_;
+    typename P1DiscreteFunctionType::LocalFunctionType lU_;
+    typename DGDiscreteFunctionType::LocalFunctionType ldtU_, ldivF_;
+    bool init_;
+  };
+  struct ResidualDataOutputParameters
+  : public Dune::Fem::LocalParameter< Dune::Fem::DataOutputParameters, ResidualDataOutputParameters >
+  {
+    ResidualDataOutputParameters ( )
+    {}
+    std::string prefix () const
+    {
+      std::stringstream s;
+      s << "residual-";
+      return s.str();
+    }
+  };
+  typedef LocalResidual LocalResidualType;
+  typedef Dune::Fem::LocalFunctionAdapter< LocalResidualType > ResidualFunctionType;
+  typedef Dune::tuple< const ResidualFunctionType * > ResidualIOTupleType;
+  typedef Dune::Fem::DataOutput< GridType, ResidualIOTupleType > ResidualDataOutputType;
+
   // constructor taking grid
   StepperBase(GridType& grid) :
     BaseType( grid ),
     gridPart_( grid_ ),
     space_( gridPart_ ),
     solution_( "U", space() ),
+    fU_( "f(U)", space() ),
     additionalVariables_( ParameterType :: getValue< bool >("femhowto.additionalvariables", false) ?
         new DiscreteFunctionType("A", space() ) : 0 ),
     problem_( ProblemTraits::problem() ),
@@ -134,7 +229,15 @@ struct StepperBase
     rp_( solution_ ),
     adaptationManager_( grid_, rp_ ),
     adaptationParameters_( ),
-    dataWriter_( 0 )
+    dataWriter_( 0 ),
+
+    residualSpace_(gridPart_),
+    localResidual_(*this,residualSpace_),
+    residualFunction_("residual",localResidual_,gridPart_, 5),
+    residualIOTuple_(&residualFunction_),
+    residualDataOutput_( grid, residualIOTuple_, ResidualDataOutputParameters() ),
+    hermSetup_(true),
+    residualError_(0)
   {
     // set refine weight
     rp_.setFatherChildWeight( Dune::DGFGridInfo<GridType> :: refineWeight() );
@@ -192,10 +295,44 @@ struct StepperBase
       }
 
       dataWriter_->write( tp );
+
+      if (!hermSetup_)
+      {
+        hermite_.init();
+        if (tp.time()>0.2)
+        {
+          std::cout << "compute residual" << std::endl;
+
+          typedef Dune::Fem::L2Norm< GridPartType > NormType;
+          NormType norm( gridPart_ );
+          typedef Dune::QuadratureRule<double, 1> Quad;
+          const Quad & quad = Dune::QuadratureRules<double,1>::
+            rule( Dune::GeometryType(Dune::GeometryType::simplex,1), 
+                  2*space_.polynomialOrder,  
+                  Dune::QuadratureType::GaussLegendre );
+          double localError = 0.;
+          for (auto qp=quad.begin(); qp!=quad.end(); ++qp)
+          {
+            const Dune::FieldVector< double, 1 > &x = qp->position();
+            const double weight = qp->weight();
+            localResidual_.init(x[0]);
+            localError += tp.deltaT() * weight *
+                pow(norm.norm( residualFunction_ ),2);
+          }
+          residualError_ += localError;
+          static double maxError = 0.;
+          maxError = std::max( maxError, sqrt(localError/tp.deltaT()));
+          std::cout << tp.time() << " " << sqrt(residualError_/tp.time()) << " "  << maxError << " # reisdual error" << std::endl;
+        }
+        if( reallyWrite )
+          localResidual_.init(0.3);
+      }
+      residualDataOutput_.write( tp );
     }
 
     // possibly write a grid solution
     problem().postProcessTimeStep( grid_, solution(), tp.time() );
+
   }
 
   bool adaptive () const { return adaptationManager_.adaptive(); }
@@ -269,6 +406,7 @@ struct StepperBase
     return latexInfo;
   }
 
+  virtual void apply(const DiscreteFunctionType &u, DiscreteFunctionType &v) const = 0;
   // before first step, do data initialization
   void initializeStep( TimeProviderType& tp, const int loop )
   {
@@ -299,10 +437,18 @@ struct StepperBase
 
     // L2 project initial data
     l2pro( problem().fixedTimeFunction( tp.time() ), U );
+    // std::cout << "index set size = " << U.gridPart().indexSet().size(0) << std::endl;
+    // std::cout << "grid size = " << U.gridPart().grid().size(0) << std::endl;
+    // for (int i=0;i<U.size();++i)
+    //   std::cout << i << " = " << U.leakPointer()[i] << " " << solution_.leakPointer()[i] << std::endl;
+    writeData(tp);
 
     // ode.initialize applies the DG Operator once to get an initial
     // estimate on the time step. This does not change the initial data u.
     odeSolver_->initialize( U );
+    hermite_.setup();
+    apply(U,fU_);
+    hermSetup_ = hermite_.add(U, fU_);
   }
 
 
@@ -317,6 +463,9 @@ struct StepperBase
     // solve ODE
     assert(odeSolver_);
     odeSolver_->solve( U, odeSolverMonitor_ );
+
+    apply(U,fU_);
+    hermSetup_ = hermite_.add(U, fU_);
 
     // limit solution if necessary
     limitSolution ();
@@ -356,6 +505,7 @@ struct StepperBase
   void finalizeStep(TimeProviderType& tp)
   {
     DiscreteFunctionType& u = solution();
+
     // write run file (in writeatonce mode)
     diagnostics_.flush();
 
@@ -442,6 +592,7 @@ protected:
 
   // the solution
   DiscreteFunctionType   solution_;
+  DiscreteFunctionType   fU_;
   DiscreteFunctionType*  additionalVariables_;
 
   // InitialDataType is a Dune::Operator that evaluates to $u_0$ and also has a
@@ -469,5 +620,14 @@ protected:
 
   IOTupleType             dataTuple_ ;
   DataWriterType*         dataWriter_ ;
+
+  ResidualSpaceType residualSpace_;
+  Hermite2<DiscreteFunctionType> hermite_;
+  LocalResidualType localResidual_;
+  ResidualFunctionType residualFunction_;
+  ResidualIOTupleType residualIOTuple_;
+  ResidualDataOutputType residualDataOutput_;
+  bool hermSetup_;
+  double residualError_;
 };
 #endif // FEMHOWTO_STEPPER_HH

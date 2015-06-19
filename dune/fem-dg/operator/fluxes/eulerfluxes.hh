@@ -166,6 +166,26 @@ void EulerAnalyticalFlux<3>::analyticalFlux(const FieldType gamma,
 template <>
 template <class RangeType, class FluxRangeType>
 inline
+void EulerAnalyticalFlux<1>::jacobian(const FieldType gamma,
+                                      const RangeType& u,
+                                      const FluxRangeType& du,
+                                      RangeType& A) const
+{
+  assert(u[0]>1e-10);
+  FieldType v = u[1]/u[0];
+
+  A[0] = du[1][0];
+  A[1] = -du[0][0]*(3.-gamma)/2.*v*v;
+  A[1] += du[1][0]*(3.-gamma)*v;
+  A[1] += du[2][0]*(gamma-1);
+  A[2] = du[0][0]*( (gamma-1.)*v*v*v-gamma*v*u[2]/u[0] );
+  A[2] += du[1][0]*( -(3./2.*(gamma-1.)*v*v)+gamma*u[2]/u[0] );
+  A[2] += du[2][0]*( gamma*v );
+}
+
+template <>
+template <class RangeType, class FluxRangeType>
+inline
 void EulerAnalyticalFlux<2>::jacobian(const FieldType gamma,
                                       const RangeType& u,
                                       const FluxRangeType& du,
@@ -174,7 +194,7 @@ void EulerAnalyticalFlux<2>::jacobian(const FieldType gamma,
   assert(u[0]>1e-10);
   FieldType v[2] = {u[1]/u[0],u[2]/u[0]};
 
-  A[0] = du[1][0] + du[1][1];
+  A[0] = du[1][0] + du[2][1];
   A[1] = du[0][0]*((gamma-3.0)/2.0*v[0]*v[0] +(gamma-1.0)/2.0*v[1]*v[1])-
     du[0][1]*v[0]*v[1];
   A[1] += du[1][0]*(3.0-gamma)*v[0] + du[1][1]*v[1];
@@ -757,6 +777,7 @@ public:
 
   LLFFlux(const Model& mod )
     : model_(mod)
+    , useGForce_( Dune::Fem::Parameter::getValue<double>( "flux.use_gforce", 0. ) )
   {}
 
   static std::string name () { return "LLF"; }
@@ -785,17 +806,17 @@ public:
     normal *= 1./len;
 
     RangeType visc;
-    FluxRangeType anaflux;
+    FluxRangeType anafluxL, anafluxR;
 
     model_.advection( inside, time, faceQuadInner.point( quadPoint ),
-                      uLeft, anaflux );
+                      uLeft, anafluxL );
 
     // set gLeft
-    anaflux.mv( normal, gLeft );
+    anafluxL.mv( normal, gLeft );
 
     model_.advection( outside, time, faceQuadOuter.point( quadPoint ),
-                      uRight, anaflux );
-    anaflux.umv( normal, gLeft );
+                      uRight, anafluxR );
+    anafluxR.umv( normal, gLeft );
 
     double maxspeedl, maxspeedr, maxspeed;
     double viscparal, viscparar, viscpara;
@@ -812,7 +833,21 @@ public:
     visc *= viscpara;
     gLeft -= visc;
 
+    if (useGForce_>0)
+    {
+      gLeft *= (1.-useGForce_);
+      RangeType uStar = uLeft;  
+      uStar += uRight;
+      uStar *= 0.5;
+      anafluxL.usmv(  1./(2.*viscpara), normal, uStar );
+      anafluxR.usmv( -1./(2.*viscpara), normal, uStar );
+      FluxRangeType anaflux;
+      model_.advection( outside, time, faceQuadOuter.point( quadPoint ),
+                        uStar, anaflux );
+      anaflux.usmv( 2.*useGForce_, normal, gLeft );
+    }
     gLeft *= 0.5*len;
+
     gRight = gLeft;
 
 #if WELLBALANCE
@@ -845,6 +880,7 @@ public:
 
  protected:
   const Model& model_;
+  double useGForce_;
 };
 
 /////////////////////////////////////////////////////////////

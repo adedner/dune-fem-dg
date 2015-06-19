@@ -20,7 +20,7 @@
 #include <dune/fem-dg/operator/fluxes/diffusionflux.hh>
 
 // overload default stepper traits
-#include "steppertraits.hh"
+// #include "steppertraits.hh"
 #include <dune/fem-dg/stepper/advectiondiffusionstepper.hh>
 
 #include "problems/problem.hh"

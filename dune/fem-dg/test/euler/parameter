@@ -1,7 +1,10 @@
+flux.use_gforce: 0.0
+fem.timeprovider.factor: 0.15
+
 # PROBLEM SELECTION 
 #------------------
 # possible: "sod" , "withman", "withmansmooth", "smooth1d" , "ffs" , "diffraction" , "shockbubble"
-euler.problem: sod 
+euler.problem:  sinwave # smooth1d # sod
 
 # euler.problemflag: 0
 # euler.riemanndata: [1., -1., 1.,    1., 1., 1.]
@@ -40,7 +43,7 @@ gridsol.filename: straka-checkpoint
 
 paramfile: ../parameter/paramBase
 
-femhowto.eocSteps: 3
+femhowto.eocSteps: 1
 problem.verboserank: 0
 
 
@@ -51,7 +54,7 @@ paramfile: ../parameter/paramPhysicalConstants
 
 g: 1. # gravity force [m/ss]
 femhowto.startTime: 0.
-femhowto.endTime: 0.15
+femhowto.endTime: 3.
 hSpeed0: 1. # x-axis speed [m/s]
 vSpeed0: 1.25 # z-axis speed [m/s]
 p0: 1. # surface pressure [Pa]
@@ -81,3 +84,8 @@ fem.io.macroGridFile_3d: ../grids/unitcube3.dgf
 #---------------------
 
 paramfile: ../parameter/paramSolver
+
+fem.ode.order: 3
+hermite.q: 3
+hermite.q1: 3
+fixedTimeStep: 0.0025

@@ -60,7 +60,7 @@ fem.io.savestep: 0.1
 fem.io.savecount: 1
 
 # output format: binary | vtk-cell | vtk-vertex (projected in DG case) | none 
-fem.io.outputformat: binary
+fem.io.outputformat: gnuplot # binary
 # toggle grape display (0 = off | 1 = on)
 fem.io.grapedisplay: 0
 

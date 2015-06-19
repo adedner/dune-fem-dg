@@ -2,11 +2,11 @@ DGF
 Interval       
 0 0
 1.0  0.25
-8 2 
+50 4
 %16 4 
 #
 
-PERIODICFACETRANSFORMATION
+% PERIODICFACETRANSFORMATION
 % set periodic boundaries in x direction
 1 0, 0 1 + 0 0.25
 #

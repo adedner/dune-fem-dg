@@ -19,8 +19,8 @@ struct StepperTraits
   typedef GridImp                                   GridType;
 
   // Choose a suitable GridView
-  //typedef Dune :: Fem :: DGAdaptiveLeafGridPart< GridType >       HostGridPartType;
-  typedef Dune :: Fem :: LeafGridPart< GridType >       HostGridPartType;
+  typedef Dune :: Fem :: AdaptiveLeafGridPart< GridType >       HostGridPartType;
+  // typedef Dune :: Fem :: LeafGridPart< GridType >       HostGridPartType;
   typedef HostGridPartType  GridPartType ;
   //typedef Dune :: Fem :: IdGridPart< HostGridPartType >       GridPartType;
 

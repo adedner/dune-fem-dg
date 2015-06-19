@@ -1645,7 +1645,7 @@ namespace Dune {
                                   const bool nonConforming,
                                   const bool cartesian ) const
     {
-      assert( !StructuredGrid || cartesian );
+      // assert( !StructuredGrid || cartesian );
       // use matrix cache in case of structured grid
       const bool useCache = cartesian
                             && ! nonConforming

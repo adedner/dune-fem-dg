@@ -319,17 +319,17 @@ public:
     if (flag==0) {
       res[2] = 0.;
       if (t>1e-8) {
-        chorin(t,arg[0]-0.5,res[0],res[1],res[3]);
+        chorin(t,arg[0]-0.5,res[0],res[1],res[energ]);
       }
       else {
         if (arg[0]<0.5) {
           res[0]=Ulr[0];
           res[1]=Ulr[1];
-          res[3]=Ulr[2];
+          res[energ]=Ulr[2];
         } else {
           res[0]=Ulr[3];
           res[1]=Ulr[4];
-          res[3]=Ulr[5];
+          res[energ]=Ulr[5];
         }
       }
     }
@@ -488,13 +488,13 @@ public:
       {
         res[0]= Ulr[ 0 ];
         res[1]= Ulr[ 1 ];
-        res[3]= Ulr[ 2 ];
+        res[energ]= Ulr[ 2 ];
       }
       else
       {
         res[ 0 ] = Ulr[ 3 ];
         res[ 1 ] = Ulr[ 4 ];
-        res[ 3 ] = Ulr[ 5 ];
+        res[ energ ] = Ulr[ 5 ];
       }
     }
     double kinEnerg = 0;
@@ -540,7 +540,7 @@ template <class GridType>
 class U0Diffraction : public ProblemBase< GridType > {
 public:
   enum { dimDomain = GridType::dimensionworld };
-  typedef FunctionSpace<double,double,dimDomain,dimDomain+2> FunctionSpaceType;
+  typedef Dune::Fem::FunctionSpace<double,double,dimDomain,dimDomain+2> FunctionSpaceType;
   U0Diffraction() :
     gamma(1.4),myName("Shock Diffraction Problem")
   , pAB_( pAlphaBeta( V() ) )
@@ -642,7 +642,8 @@ public:
     {
       v[i] = u[i]/u[0];
     }
-    v[dimDomain+1] = EulerFlux<dimDomain>().pressure(gamma,u);
+    // v[dimDomain+1] = EulerFlux<dimDomain>().pressure(gamma,u);
+    abort();
   }
 
   template <class DomainType>
@@ -659,7 +660,7 @@ public:
 /*****************************************************************/
 // Diffraction
 template <class GridType>
-class U0DoubleMachReflect : public ProblemBase {
+class U0DoubleMachReflect : public ProblemBase<GridType> {
 public:
   enum { dimDomain = GridType::dimensionworld };
   typedef FunctionSpace<double,double,dimDomain,dimDomain+2> FunctionSpaceType;
@@ -890,62 +891,84 @@ public:
     v[dimDomain+1] = EulerFlux<dimDomain>().pressure(gamma,u);
   }
 };
+#endif
+
 template <class GridType>
-class U0Sin : public ProblemBase {
+class U0Sin : public ProblemBase< GridType > {
+  double T,startTime;
+  enum { dim = GridType :: dimension };
 public:
-  enum { dimDomain = GridType::dimensionworld };
-  typedef FunctionSpace<double,double,dimDomain,dimDomain+2> FunctionSpaceType;
-  U0Sin() :
-    gamma(), startTime(0) {
-    ParameterType::get("StartTime",startTime,startTime);
+  typedef ProblemBase< GridType > BaseType ;
+  typedef typename BaseType :: RangeType   RangeType ;
+  typedef typename BaseType :: DomainType  DomainType ;
+
+  typedef typename BaseType :: ParameterType ParameterType;
+
+  using BaseType :: gamma ;
+  using BaseType :: V ;
+
+  enum { dimDomain = GridType::dimensionworld,
+         dimRange = dimDomain+2,
+         energ = dimRange-1};
+
+  U0Sin() : T(0.4), startTime(0), flag(0) {
+    myName = "U0Sin";
+
+    //ParameterType::get("euler.riemanndata", Ulr, Ulr );
+    T = ParameterType::template getValue<double>("femhowto.endTime"/*, T*/);
+    ParameterType::get("femhowto.startTime", startTime, startTime );
   }
-  U0Sin(std::string,double,bool diff_timestep=true) :
-    gamma(1.4), startTime(0) {
-    ParameterType::get("StartTime",startTime,startTime);
+
+  int boundaryId( const int id ) const
+  {
+    // return ( id > 2 ) ? BaseType::Reflection : id;
+    return BaseType::Inflow;
+    //return ( id == 1 ) ? BaseType::Inflow : BaseType::Outflow ;
+    //return BaseType::OutFlow;
+    //return (id > BaseType::Inflow) ? BaseType::OutFlow : id;
   }
+
   double endtime() {
-    return 2.;
+    return T;
   }
   double saveinterval() {
-    return 0.1;
+    return 0.01;
   }
   bool useReflectBndLR() const {
     return false;
   }
   bool useReflectBndTB() const {
-    return true;
+    return flag==0;
   }
 
-  template <class DomainType, class RangeType>
-  void evaluate(const DomainType& arg, RangeType& res) const {
-    evaluate(time(),arg,res);
-  }
-  template <class DomainType, class RangeType>
-  void evaluate(const DomainType& arg,double t, RangeType& res) const
+  static double smooth(double x,double ul,double ur)
   {
-    evaluate(t,arg,res);
+    return (1.-std::tanh(x/2.))/2.*(ul-ur)+ur;
   }
-  template <class DomainType, class RangeType>
-  void evaluate(double t,const DomainType& arg, RangeType& res) const {
-    int e = DomainType::size + 1;
-    double x = (arg[0]-10.);
+  void evaluate(const DomainType& arg, const double t, RangeType& res) const
+  {
+    RangeType ul, ur;
+    double x = (arg[0]-15.);
+    double vx = x+t*3.549648;
+    // if (x>20.5) x=20.5;
     res=0.;
-    if (x<0) {
-      res[0]=3.857143;
-      res[1]=-0.920279;      // 2.629369;
-      res[e]=10.33333;
-    } else if (x<10) {
-      res[0]= 1. + 0.2 * sin(5.*x);
-      res[1]=-3.549648;     // 0.0
-      res[e]=1.0;
-    } else {
-      res[0]= 1.;
-      res[1]=-3.549648;     // 0.0
-      res[e]=1.0;
-    }
+
+    ul[0]=3.857143;
+    ul[1]=-0.920279;      // 2.629369;
+    ul[energ]=10.33333;
+    ur[0]= 1. + 0.2 * sin(M_PI*vx);
+    ur[1]=-3.549648;     // 0.0
+    ur[energ]=1.0;
+    res[0] = smooth(x,ul[0],ur[0]);
+    res[1] = smooth(x,ul[1],ur[1]);
+    res[energ] = smooth(x,ul[energ],ur[energ]);
     res[1] *= res[0];
-    res[e] = res[e]/(gamma-1.0)+
+    res[energ] = res[energ]/(gamma()-1.0)+
       0.5*(res[1]*res[1])/res[0];
+  }
+  void chorin(double t,double x,
+        double& q_erg,double& u_erg,double& p_erg) const
+  {
   }
   void printmyInfo(std::string filename)
   {
@@ -955,19 +978,22 @@ public:
     std::ofstream ofs(filestream.str().c_str(), std::ios::app);
 
     ofs << "Problem: " << myName << "\n\n"
-        << "gamma = " << gamma << "\n\n";
+        << "gamma = " << gamma() << "\n\n";
     ofs << "\n\n";
 
     ofs.close();
+
   }
-  double gamma,startTime;
+  std::string dataPrefix() const { return myName; }
   std::string myName;
+  int flag;
 };
+
 template <class GridType>
-class U0RotatingCone : public ProblemBase {
+class U0RotatingCone : public ProblemBase<GridType> {
 public:
   enum { dimDomain = GridType::dimensionworld };
-  typedef FunctionSpace<double,double,dimDomain,dimDomain+2> FunctionSpaceType;
+  typedef Dune::Fem::FunctionSpace<double,double,dimDomain,dimDomain+2> FunctionSpaceType;
   U0RotatingCone() :
     gamma(), startTime(0) {
     ParameterType::get("StartTime",startTime,startTime);
@@ -982,10 +1008,12 @@ public:
   double saveinterval() {
     return 0.01;
   }
+  /*
   template <class DomainType, class RangeType>
   void evaluate(const DomainType& arg, RangeType& res) const {
     evaluate(startTime,arg,res);
   }
+  */
   template <class DomainType, class RangeType>
   void evaluate(const DomainType& arg,double t, RangeType& res) const
   {
@@ -1039,7 +1067,6 @@ public:
   std::string myName;
 };
 
-#endif
 
 } // end namespace Dune
 

@@ -145,6 +145,11 @@ struct AdvectionStepper
 
   const ModelType& model() const { return dgAdvectionOperator_.model(); }
 
+  virtual void apply(const DiscreteFunctionType &u, DiscreteFunctionType &v) const
+  {
+    dgAdvectionOperator_(u,v);
+  }
+
 protected:
   ExplicitOperatorType    dgAdvectionOperator_;
   DGIndicatorType         dgIndicator_;

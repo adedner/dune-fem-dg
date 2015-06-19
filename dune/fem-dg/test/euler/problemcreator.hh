@@ -11,7 +11,7 @@
 
 #include <dune/grid/io/file/dgfparser/dgfparser.hh>
 
-#include "passtraits.hh"
+// #include "passtraits.hh"
 
 // get a numerical flux
 #include <dune/fem-dg/operator/fluxes/eulerfluxes.hh>
@@ -88,12 +88,13 @@ struct ProblemCreator
   static ProblemType* problem()
   {
     const std::string problemNames []
-        = { "sod" , "withman", "withmansmooth", "smooth1d" , "ffs" , "diffraction" , "shockbubble", "p123" };
+        = { "sod" , "withman", "withmansmooth", "smooth1d" , "ffs" , "diffraction" , "shockbubble", "p123", "sinwave" };
 
     const int problemNumber = Dune :: Fem :: Parameter :: getEnum ( "euler.problem" , problemNames );
 
     if( problemNames[ problemNumber ] == "sod" )
     {
+      std::cout << "creating sod initial data" << std::endl;
       return new U0Sod< GridType > ( );
     }
     else if( problemNames[ problemNumber ] == "smooth1d" )
@@ -104,19 +105,13 @@ struct ProblemCreator
     {
       return new U0FFS< GridType > ();
     }
-    /*
-    else if( problemNames[ problemNumber ] == "sod" )
-    {
-      return new SodProblem< GridType > ();
-    }
-    else if( problemNames[ problemNumber ] == "sod" )
-    {
-      return new SodProblem< GridType > ();
-    }
-    */
     else if( problemNames[ problemNumber ] == "p123" )
     {
       return new U0P123< GridType >();
+    }
+    else if( problemNames[ problemNumber ] == "sinwave" )
+    {
+      return new U0Sin< GridType >();
     }
 
     std::cerr << "Error: Problem " << problemNames[ problemNumber ]

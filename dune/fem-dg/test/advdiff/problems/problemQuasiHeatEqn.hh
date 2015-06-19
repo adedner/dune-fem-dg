@@ -56,7 +56,7 @@ public:
 
   double diffusion( const RangeType& u, const JacobianRangeType& gradU ) const
   {
-    return epsilon_*u;
+    return epsilon_*u[0];
   }
 
   double startTime() const { return startTime_; }
@@ -119,7 +119,7 @@ public:
     const double cosy2 = cos(y)*cos(y);
     const double siny2 = sin(y)*sin(y);
 
-    res = (-std::exp(-2.*epsilon_*t )*(cosx2*siny2 + cosy2*sinx2) + 2*u*u - u);
+    res = (-std::exp(-2.*epsilon_*t )*(cosx2*siny2 + cosy2*sinx2) + 2*u[0]*u[0] - u[0]);
     res *= epsilon_;
 
     // time step restriction from the non stiff source term

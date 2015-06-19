@@ -377,6 +377,11 @@ public:
     return latexInfo;
   }
 
+  void apply(const DiscreteFunctionType &u, DiscreteFunctionType &fu)
+  {
+    advectionOperator_(u,fu);
+  }
+
 protected:
   void resetComputeTime() const
   {
