@@ -14,6 +14,10 @@
 // streams for backup
 #include <dune/fem-dg/misc/streams.hh>
 
+#if HAVE_DUNE_SPGRID
+#include <dune/grid/spgrid.hh>
+#endif
+
 // local includes
 #include <dune/fem-dg/main/main.hh>
 
