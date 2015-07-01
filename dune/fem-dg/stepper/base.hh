@@ -96,10 +96,10 @@ Dune::GridPtr< HGridType > initialize( const std::string& problemDescription )
   {
     // ----- read in runtime parameters ------
     const std::string filekey = Dune::Fem::IOInterface::defaultGridKey( HGridType::dimension );
-    const std::string filename = ParameterType::getValue< std::string >( filekey );
+    const std::string filename = ParameterType::getValue< std::string >(  filekey );
 
     // initialize grid with given macro file name
-    gridptr = Dune::GridPtr< HGridType >( filename );
+    gridptr = Dune::GridPtr< HGridType >( ParameterType::commonInputPath() + "/" + filename );
     ParameterType::appendDGF( filename );
 
     // load balance grid in case of parallel runs
