@@ -5,19 +5,12 @@ set(MAININCLUDE_PATH  "${dune-fem-dg_SOURCE_DIR}/dune/fem-dg/main/")
 include_directories(${MAININCLUDE_PATH})
 include_directories("${CMAKE_SOURCE_DIR}/dune/fem-dg/test/advdiff/")
 
-
-set(GRIDTYPE  YASPGRID )#ALUGRID_SIMPLEX)
-set(POLORDER  2)
-set(GRIDDIM  2)
-set(DIMRANGE  1)
-set(FLUX 1) #2
-
 configure_file(parameter.in ${CMAKE_CURRENT_BINARY_DIR}/parameter)
 
-add_definitions( "-D${GRIDTYPE}" )
-add_definitions( "-DGRIDDIM=${GRIDDIM}" )
-add_definitions( "-DDIMRANGE=${DIMRANGE}" )
-add_definitions( "-DFLUX=${FLUX}" )
+add_definitions( "-DYASPGRID" )
+add_definitions( "-DGRIDDIM=2" )
+add_definitions( "-DDIMRANGE=1" )
+add_definitions( "-DFLUX=1" )
 add_definitions( "-DPRIMALDG" )
 add_definitions( "-DUSE_ASSERT_THROW" ) 
 
@@ -32,6 +25,6 @@ dune_target_link_libraries(advdiffall "${DUNE_LIBS}")
 add_executable( advdiff "${MAININCLUDE_PATH}/main.cc" "${MAININCLUDE_PATH}/main_pol.cc")
 dune_target_link_libraries(advdiff "${DUNE_LIBS}")
 set_property(TARGET advdiff APPEND PROPERTY 
-             COMPILE_DEFINITIONS "ONLY_ONE_P;POLORDER=${POLORDER}")
+             COMPILE_DEFINITIONS "ONLY_ONE_P;POLORDER=2")
 
 dune_add_test( advdiff advdiffall )
