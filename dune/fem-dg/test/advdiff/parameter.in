@@ -2,6 +2,7 @@
 #------------
 
 fem.prefix: ${CMAKE_CURRENT_SOURCE_DIR}/data # specify directory for data output (is created if not exists)
+fem.prefix.input: ${CMAKE_CURRENT_SOURCE_DIR}
 fem.io.datafileprefix: heat # prefix data data files 
 fem.io.savestep: 0.1 # save data every time interval 
 fem.io.savecount: -1 # save every i-th step
@@ -18,7 +19,7 @@ gridsol.filename: heat-checkpoint
 # GENERAL
 #--------
 
-paramfile: ${CMAKE_CURRENT_SOURCE_DIR}/../parameter/paramBase
+paramfile: ../parameter/paramBase
 
 
 # PROBLEM SETUP
@@ -40,13 +41,13 @@ femhowto.zvelocity: 0.    # the only advection part for the linear heat eqn
 # DOMAIN
 #-------
 
-fem.io.macroGridFile_1d: ${CMAKE_CURRENT_SOURCE_DIR}/../grids/unitcube1.dgf
-fem.io.macroGridFile_2d: ${CMAKE_CURRENT_SOURCE_DIR}/../grids/unitcube2.dgf
-fem.io.macroGridFile_3d: ${CMAKE_CURRENT_SOURCE_DIR}/../grids/unitcube3.dgf
+fem.io.macroGridFile_1d: ../grids/unitcube1.dgf
+fem.io.macroGridFile_2d: ../grids/unitcube2.dgf
+fem.io.macroGridFile_3d: ../grids/unitcube3.dgf
 
 
 # SOLVER
 #-------
 dgdiffusionflux.upwind: -1 -0.001
-paramfile: ${CMAKE_CURRENT_SOURCE_DIR}/../parameter/paramSolver
+paramfile: ../parameter/paramSolver
 femhowto.maxTimeStep: 0.5

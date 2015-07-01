@@ -1,3 +1,12 @@
+# specify directory for data output (is created if not exists)
+fem.prefix: ${CMAKE_CURRENT_SOURCE_DIR}/data
+fem.prefix.input: ${CMAKE_CURRENT_SOURCE_DIR}
+# prefix data data files 
+fem.io.datafileprefix: solution
+# if you want to add time stemp to eoc file name
+# # to avoid overwriting the eoc files
+fem.io.eocFileTimeStamp: 0
+
 femhowto.eocSteps: 30
 UseBlocking: 0
 
@@ -31,12 +40,12 @@ fem.solver.matrixfilename: matrixfile
 
 # macro grid file
 
-fem.io.macroGridFile_2d: ${CMAKE_CURRENT_SOURCE_DIR}/../grids/unitcube2.dgf
-#fem.io.macroGridFile_2d: ${CMAKE_CURRENT_SOURCE_DIR}/../grids/nonaffine.dgf
-#fem.io.macroGridFile_2d: ${CMAKE_CURRENT_SOURCE_DIR}/../grids/corner_cube.dgf
-#fem.io.macroGridFile_2d: ${CMAKE_CURRENT_SOURCE_DIR}/../grids/corner.dgf
-#fem.io.macroGridFile_2d: ${CMAKE_CURRENT_SOURCE_DIR}/../grids/corner_green.dgf
-#fem.io.macroGridFile_2d: ${CMAKE_CURRENT_SOURCE_DIR}/../grids/corner_red.dgf
+fem.io.macroGridFile_2d: ../grids/unitcube2.dgf
+#fem.io.macroGridFile_2d:../grids/nonaffine.dgf
+#fem.io.macroGridFile_2d:../grids/corner_cube.dgf
+#fem.io.macroGridFile_2d:../grids/corner.dgf
+#fem.io.macroGridFile_2d:../grids/corner_green.dgf
+#fem.io.macroGridFile_2d:../grids/corner_red.dgf
 
 
 femhowto.epsilon: 0.1
@@ -66,13 +75,6 @@ femhowto.startLevel: 0
 
 # number of EOC steps 
 
-# specify directory for data output (is created if not exists)
-fem.prefix: ${CMAKE_CURRENT_SOURCE_DIR}/data
-# prefix data data files 
-fem.io.datafileprefix: solution
-# if you want to add time stemp to eoc file name
-# # to avoid overwriting the eoc files
-fem.io.eocFileTimeStamp: 0
 
 # output format: grape | vtk-cell | vtk-vertex (projected in DG case),  sub-vtk-cell
 fem.io.outputformat: vtk-cell
@@ -84,7 +86,7 @@ fem.io.grapedisplay: 0
 # the end time along given line
 femhowto.sampleAlongLine: 0
 
-paramfile: solverparameter
+paramfile: ../parameter/paramSolver
 
 poisson.nonConformOrigin: false
 

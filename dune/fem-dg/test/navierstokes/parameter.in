@@ -10,6 +10,7 @@
 #------------
 
 fem.prefix: ${CMAKE_CURRENT_SOURCE_DIR}/data
+fem.prefix.input: ${CMAKE_CURRENT_SOURCE_DIR}
 fem.io.datafileprefix: NS
 fem.io.savestep: 0.01 # SaveStep (write data every `saveStep' time period, <=0 deactivates)
 fem.io.savecount: -1 # SaveCount (write data every saveCount time steps, <=0 deactivates)
@@ -22,7 +23,7 @@ femhowto.additionalvariables: false
 # GENERAL
 #--------
 
-paramfile: ${CMAKE_CURRENT_SOURCE_DIR}/../parameter/paramBase
+paramfile: ../parameter/paramBase
 
 
 # GRID SOLUTION 
@@ -36,7 +37,7 @@ gridsol.filename: nseq-checkpoint
 # PROBLEM SETUP
 #--------------
 
-paramfile: ${CMAKE_CURRENT_SOURCE_DIR}/../parameter/paramPhysicalConstants
+paramfile: ../parameter/paramPhysicalConstants
 
 # WBPROBLEM
 # g: 0.7 # m/(ss)
@@ -58,18 +59,18 @@ kGNS: 3.1415926535897932385
 # DOMAIN CONFIGURATION
 #---------------------
 
-fem.io.macroGridFile_1d: ${CMAKE_CURRENT_SOURCE_DIR}/../grids/nswaves_1d.dgf
-fem.io.macroGridFile_2d: ${CMAKE_CURRENT_SOURCE_DIR}/../grids/nswaves_2d.dgf
-#fem.io.macroGridFile_2d: ${CMAKE_CURRENT_SOURCE_DIR}/../grids/mesh4_1_2.typ1.dgf
-#fem.io.macroGridFile_2d: ${CMAKE_CURRENT_SOURCE_DIR}/../grids/mesh4_1_1.typ1.dgf
-#fem.io.macroGridFile_2d: ${CMAKE_CURRENT_SOURCE_DIR}/../grids/nswaves_2d_unstr.dgf
-fem.io.macroGridFile_3d: ${CMAKE_CURRENT_SOURCE_DIR}/../grids/nswaves_3d.dgf
-#fem.io.macroGridFile_3d: ${CMAKE_CURRENT_SOURCE_DIR}/../grids/dkershaw08.msh.dgf
-#fem.io.macroGridFile_3d: ${CMAKE_CURRENT_SOURCE_DIR}/../grids/RandMesh4.msh.dgf
+fem.io.macroGridFile_1d:  ../grids/nswaves_1d.dgf
+fem.io.macroGridFile_2d:  ../grids/nswaves_2d.dgf
+#fem.io.macroGridFile_2d: ../grids/mesh4_1_2.typ1.dgf
+#fem.io.macroGridFile_2d: ../grids/mesh4_1_1.typ1.dgf
+#fem.io.macroGridFile_2d: ../grids/nswaves_2d_unstr.dgf
+fem.io.macroGridFile_3d:  ../grids/nswaves_3d.dgf
+#fem.io.macroGridFile_3d: ../grids/dkershaw08.msh.dgf
+#fem.io.macroGridFile_3d: ../grids/RandMesh4.msh.dgf
 
 
 # SOLVER CONFIGURATION
 #---------------------
 
-paramfile: ${CMAKE_CURRENT_SOURCE_DIR}/../parameter/paramSolver
+paramfile: ../parameter/paramSolver
 
