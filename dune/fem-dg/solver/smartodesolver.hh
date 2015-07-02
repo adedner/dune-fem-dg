@@ -11,9 +11,11 @@ namespace Dune {
 
 struct SmartOdeSolverParameters : public DuneODE :: ODEParameters
 {
+  using DuneODE :: ODEParameters :: keyPrefix_;
+
   virtual double explicitFactor() const
   {
-    return Fem::Parameter::getValue< double >( "fem.ode.explicitfactor" , 1.0 );
+    return Fem::Parameter::getValue< double >( keyPrefix_ + "explicitfactor" , 1.0 );
   }
 
   SmartOdeSolverParameters* clone() const
@@ -27,9 +29,9 @@ struct SmartOdeSolverParameters : public DuneODE :: ODEParameters
     // defined here, so that it can be used later in two different
     // methods
     static const std::string odeSolver[]  = { "EX", "IM" ,"IMEX", "IMEX+"  };
-    std::string key( "fem.ode.odesolver" );
+    std::string key( keyPrefix_ + "odesolver" );
     if( Fem :: Parameter :: exists( key ) )
-      return Fem::Parameter::getEnum( "fem.ode.odesolver", odeSolver, 0 );
+      return Fem::Parameter::getEnum( key, odeSolver, 0 );
     else
     {
       std::cerr << "WARNING: deprecated key, use `fem.ode.odesolver' instread!" << std::endl;
@@ -39,7 +41,7 @@ struct SmartOdeSolverParameters : public DuneODE :: ODEParameters
 
   virtual int obtainRungeKuttaSteps( const int defaultRKOrder ) const
   {
-    std::string key("fem.ode.order");
+    std::string key( keyPrefix_ + "order");
     if ( Fem :: Parameter :: exists( key ) )
       return Fem::Parameter::getValue< int > ( key );
     else
