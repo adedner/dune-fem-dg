@@ -141,9 +141,6 @@ public:
   // choose a suitable GridView
   typedef typename Traits :: GridPartType              GridPartType;
 
-  // the indicator function type (for limiting only)
-  typedef typename Traits :: IndicatorType             IndicatorType;
-
   // type of IOTuple
   typedef typename Traits :: IOTupleType  IOTupleType ;
 
@@ -187,9 +184,6 @@ public:
     UInt64Type grSize = grid_.size( 0 );
     return grid_.comm().sum( grSize );
   }
-
-  // return reference to additional variables
-  virtual IndicatorType* indicator()  { return 0; }
 
   //! initialize method for time loop, i.e. L2-project initial data
   virtual void initializeStep( TimeProviderType& tp, const int loop ) = 0;

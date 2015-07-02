@@ -79,6 +79,9 @@ struct StepperBase
   // ... as well as the Space type
   typedef typename Traits :: DiscreteSpaceType        DiscreteSpaceType;
 
+  // the indicator function type (for limiting only)
+  typedef typename Traits :: IndicatorType            IndicatorType;
+
   // The ODE Solvers
   typedef typename Traits :: OdeSolverType            OdeSolverType;
   typedef typename OdeSolverType :: MonitorType       OdeSolverMonitorType ;
@@ -112,7 +115,6 @@ struct StepperBase
   // type of adaptation manager
   typedef Dune::Fem::AdaptationManager< GridType, RestrictionProlongationType > AdaptationManagerType ;
 
-  using BaseType :: indicator;
   using BaseType :: grid_ ;
   using BaseType :: limitSolution ;
 
@@ -138,6 +140,7 @@ struct StepperBase
   {
     // set refine weight
     rp_.setFatherChildWeight( Dune::DGFGridInfo<GridType> :: refineWeight() );
+
   }
 
   //! destructor
@@ -392,6 +395,9 @@ struct StepperBase
     assert( problem_ );
     return *problem_;
   }
+
+  // return reference to additional variables
+  virtual IndicatorType* indicator()  { return 0; }
 
   virtual const ModelType& model() const = 0 ;
 
