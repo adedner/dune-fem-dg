@@ -1423,9 +1423,12 @@ namespace Dune {
     typedef typename BaseType::GradientType        GradientType;
     typedef typename BaseType::DomainType          DomainType;
 
+    typedef typename BaseType :: ParameterType  ParameterType;
+
     ExtendedDGPrimalDiffusionFlux( GridPartType& gridPart,
-                                   const Model& model ) :
-      BaseType( gridPart, model, this->getMethod() )
+                                   const Model& model,
+                                   const ParameterType& parameters = ParameterType() )
+      : BaseType( gridPart, model, parameters.getMethod(), parameters )
     { }
 
     //! copy constructor (needed for thread parallel programs)
