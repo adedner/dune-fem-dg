@@ -41,6 +41,7 @@ struct EocDataOutputParameters :   /*@LST1S@*/
 class SolverMonitor
 {
 public:
+  //std::map< std::string, >
   double gridWidth;
   double avgTimeStep;
   double minTimeStep;
@@ -215,7 +216,7 @@ public:
     estimateMarkAdapt( );
   }
 
-  virtual void checkDofsValid( TimeProviderType& tp, const int loop  ) const {}
+  virtual bool checkDofsValid( TimeProviderType& tp, const int loop  ) const { return true; }
 
   virtual bool adaptive () const { return false ; }
 
@@ -364,7 +365,11 @@ public:
       Dune::FemTimer::stop(timeStepTimer_,Dune::FemTimer::max);
 
       // Check that no NAN have been generated
-      checkDofsValid( tp, loop );
+      if( !checkDofsValid( tp, loop ) )
+      {
+        writeData( tp, true );
+        std::abort();
+      }
 
       if( (printCount > 0) && (((timeStep+1) % printCount) == 0))
       {

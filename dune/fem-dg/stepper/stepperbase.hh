@@ -173,15 +173,9 @@ struct StepperBase
     return IOTupleType( &solution_, additionalVariables_, indicator() );
   }
 
-  void checkDofsValid ( TimeProviderType& tp, const int loop ) const
+  bool checkDofsValid ( TimeProviderType& tp, const int loop ) const
   {
-    if( ! solution_.dofsValid() )
-    {
-      std::cout << "Loop(" << loop << "): Invalid DOFs" << std::endl;
-      if( dataWriter_ )
-        dataWriter_->write( tp );
-      abort();
-    }
+    return solution_.dofsValid();
   }
 
   void writeData( TimeProviderType& tp, const bool writeAnyway = false )
@@ -194,6 +188,7 @@ struct StepperBase
         setupAdditionalVariables( tp, solution(), model(), *additionalVariables_ );
       }
 
+      //todo: check it
       dataWriter_->write( tp );
     }
 
