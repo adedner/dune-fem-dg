@@ -174,10 +174,8 @@ void compute(Algorithm& algorithm)
     {
       std::stringstream eocInfo ;
       // generate EOC information
-      Dune::Fem::FemEoc::write( monitor.gridWidth, monitor.elements, runTime,
-                      monitor.timeSteps, monitor.avgTimeStep, monitor.minTimeStep,
-                      monitor.maxTimeStep, monitor.total_newton_iterations, monitor.total_ils_iterations,
-                      monitor.max_newton_iterations, monitor.max_ils_iterations, eocInfo );
+      Dune::Fem::FemEoc::write( monitor.gridWidth, monitor.elements, runTime, monitor.timeSteps,
+                                monitor.doubleValues(), monitor.intValues(), eocInfo );
 
       // in verbose mode write EOC info to std::cout
       if( ParameterType :: verbose() )

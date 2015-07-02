@@ -41,7 +41,9 @@ struct EocDataOutputParameters :   /*@LST1S@*/
 class SolverMonitor
 {
 public:
-  //std::map< std::string, >
+  typedef std::pair< std::string, double > DoublePairType;
+  typedef std::pair< std::string, int    > IntPairType;
+
   double gridWidth;
   double avgTimeStep;
   double minTimeStep;
@@ -97,6 +99,27 @@ public:
     avgTimeStep /= double( timeSteps );
     gridWidth = h;
     elements = el;
+  }
+
+  std::vector< DoublePairType > doubleValues() const
+  {
+    std::vector< DoublePairType > values;
+    values.reserve( 3 );
+    values.push_back( DoublePairType("avg dt", avgTimeStep ) );
+    values.push_back( DoublePairType("min dt", minTimeStep ) );
+    values.push_back( DoublePairType("max dt", maxTimeStep ) );
+    return std::move( values );
+  }
+
+  std::vector< IntPairType > intValues() const
+  {
+    std::vector< IntPairType > values;
+    values.reserve( 4 );
+    values.push_back( IntPairType("Newton", total_newton_iterations ) );
+    values.push_back( IntPairType("ILS", total_ils_iterations ) );
+    values.push_back( IntPairType("max{Newton/linS}", max_newton_iterations ) );
+    values.push_back( IntPairType("max{ILS/linS}", max_ils_iterations ) );
+    return std::move( values );
   }
 
   void dump( std::ostream& out ) const
@@ -198,6 +221,9 @@ public:
 
   //! finalize this EOC loop and possibly calculate EOC ...
   virtual void finalizeStep(TimeProviderType& tp) = 0;
+
+  //! add all persistent objects to PersistenceManager
+  virtual void addPersistentObjects() {}
 
   //! restore all data from check point (overload to do something)
   //! return true if the simulation was newly started
