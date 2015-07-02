@@ -127,13 +127,13 @@ namespace Dune {
     using BaseType :: nonconformingFactor_;
     using BaseType :: numericalFlux ;
     using BaseType :: upwind_ ;
-    using BaseType :: methodNames ;
-
-    typedef typename BaseType :: MethodType  MethodType;
-    typedef typename BaseType :: LiftingType  LiftingType;
-    using BaseType :: getLifting ;
 
   public:
+    typedef typename BaseType :: MethodType     MethodType;
+    typedef typename BaseType :: LiftingType    LiftingType;
+    typedef typename BaseType :: ParameterType  ParameterType;
+
+    using BaseType :: parameter ;
 
     bool initAreaSwitch() const
     {
@@ -154,16 +154,17 @@ namespace Dune {
      */
     DGPrimalDiffusionFluxImpl( GridPartType& gridPart,
                                const Model& model,
-                               const MethodType method ) :
-      BaseType( model, true ),
+                               const MethodType method,
+                               const ParameterType& parameters ) :
+      BaseType( model, true, parameters ),
       gridPart_( gridPart ),
       method_( method ),
-      penalty_( Fem::Parameter::getValue<double>("dgdiffusionflux.penalty") ),
+      penalty_( parameter().penalty() ),
       nipgFactor_( (method_ == method_nipg) ||
                    (method_ == method_bo)
                    ? 0.5 : -0.5 ),
-      liftFactor_( Fem::Parameter::getValue<double>("dgdiffusionflux.liftfactor") ),
-      liftingMethod_( getLifting() ),
+      liftFactor_( parameter().liftfactor() ),
+      liftingMethod_( parameter().getLifting() ),
       penaltyTerm_( method_ip || ((std::abs(  penalty_ ) > 0) &&
                     method_ != method_br2 &&
                     method_ != method_bo )),
@@ -181,7 +182,7 @@ namespace Dune {
       // calculate maxNeighborVolumeRatio_
       maxNeighborsVolumeRatio_ = 1.;
 
-      double theoryFactor = Fem::Parameter::getValue< double >( "dgdiffusionflux.theoryparameters", 0. );
+      double theoryFactor = parameter().theoryparameters();
       useTheoryParams_ = (theoryFactor > 0.);
 
       double n_k = DiscreteFunctionSpaceType :: polynomialOrder ;
@@ -318,7 +319,7 @@ namespace Dune {
 
     void diffusionFluxName( std::ostream& out ) const
     {
-      out << methodNames( method_ );
+      out << ParameterType::methodNames( method_ );
       if( areaSwitch_ )
         out <<"(area)";
       else
@@ -1223,18 +1224,15 @@ namespace Dune {
   public:
     typedef DiscreteFunctionSpaceImp DiscreteFunctionSpaceType;
     typedef typename DiscreteFunctionSpaceType :: GridPartType GridPartType;
+    typedef typename BaseType :: ParameterType ParameterType ;
 
-  protected:
-    typedef typename BaseType :: MethodType  MethodType;
-    using BaseType :: getMethod ;
-
-  public:
     /**
       * @brief constructor reading parameters
       */
     DGPrimalDiffusionFlux( GridPartType& gridPart,
-                           const Model& model)
-      : BaseType( gridPart, model, getMethod() )
+                           const Model& model,
+                           const ParameterType& parameters = ParameterType() )
+      : BaseType( gridPart, model, parameters.getMethod(), parameters )
     {
     }
   };
@@ -1255,14 +1253,15 @@ namespace Dune {
   public:
     typedef DiscreteFunctionSpaceImp DiscreteFunctionSpaceType;
     typedef typename DiscreteFunctionSpaceType :: GridPartType GridPartType;
+    typedef typename BaseType :: ParameterType  ParameterType;
 
-  public:
     /**
       * @brief constructor reading parameters
       */
     DGPrimalDiffusionFlux( GridPartType& gridPart,
-                           const Model& model)
-      : BaseType( gridPart, model, method_cdg2 )
+                           const Model& model,
+                           const ParameterType& parameters = ParameterType() )
+      : BaseType( gridPart, model, method_cdg2, parameters )
     {
     }
   };
@@ -1284,14 +1283,15 @@ namespace Dune {
   public:
     typedef DiscreteFunctionSpaceImp DiscreteFunctionSpaceType;
     typedef typename DiscreteFunctionSpaceType :: GridPartType GridPartType;
+    typedef typename BaseType :: ParameterType  ParameterType;
 
-  public:
     /**
       * @brief constructor reading parameters
       */
     DGPrimalDiffusionFlux( GridPartType& gridPart,
-                           const Model& model)
-      : BaseType( gridPart, model, method_cdg )
+                           const Model& model,
+                           const ParameterType& parameters = ParameterType() )
+      : BaseType( gridPart, model, method_cdg, parameters )
     {
     }
   };
@@ -1313,14 +1313,15 @@ namespace Dune {
   public:
     typedef DiscreteFunctionSpaceImp DiscreteFunctionSpaceType;
     typedef typename DiscreteFunctionSpaceType :: GridPartType GridPartType;
+    typedef typename BaseType :: ParameterType  ParameterType;
 
-  public:
     /**
       * @brief constructor reading parameters
       */
     DGPrimalDiffusionFlux( GridPartType& gridPart,
-                           const Model& model)
-      : BaseType( gridPart, model, method_br2 )
+                           const Model& model,
+                           const ParameterType& parameters = ParameterType() )
+      : BaseType( gridPart, model, method_br2, parameters )
     {
     }
   };
@@ -1342,14 +1343,15 @@ namespace Dune {
   public:
     typedef DiscreteFunctionSpaceImp DiscreteFunctionSpaceType;
     typedef typename DiscreteFunctionSpaceType :: GridPartType GridPartType;
+    typedef typename BaseType :: ParameterType  ParameterType;
 
-  public:
     /**
       * @brief constructor reading parameters
       */
     DGPrimalDiffusionFlux( GridPartType& gridPart,
-                           const Model& model)
-      : BaseType( gridPart, model, method_ip )
+                           const Model& model,
+                           const ParameterType& parameters = ParameterType() )
+      : BaseType( gridPart, model, method_ip, parameters )
     {
     }
   };
@@ -1370,14 +1372,16 @@ namespace Dune {
   public:
     typedef DiscreteFunctionSpaceImp DiscreteFunctionSpaceType;
     typedef typename DiscreteFunctionSpaceType :: GridPartType GridPartType;
+    typedef typename BaseType :: ParameterType  ParameterType;
 
   public:
     /**
       * @brief constructor reading parameters
       */
     DGPrimalDiffusionFlux( GridPartType& gridPart,
-                           const Model& model)
-      : BaseType( model, false )
+                           const Model& model,
+                           const ParameterType& parameters = ParameterType() )
+      : BaseType( model, false, parameters )
     {
     }
 

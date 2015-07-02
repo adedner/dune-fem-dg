@@ -56,9 +56,18 @@ namespace Dune {
     lifting_A_A      = 2   // int_Omega r([u]).Atau = -int_e [u].{Atau}
   };
 
-  struct DGPrimalMethodNames
+  class DGPrimalFormulationParameters
+    : public Dune::Fem::LocalParameter< DGPrimalFormulationParameters, DGPrimalFormulationParameters >
   {
+    const std::string keyPrefix_;
+  public:
     typedef DGDiffusionFluxIdentifier MethodType;
+    typedef DGLiftingFluxIdentifier   LiftingType;
+
+    DGPrimalFormulationParameters( const std::string keyPrefix = "dgdiffusionflux" )
+      : keyPrefix_( keyPrefix + "." )
+    {}
+
     static std::string methodNames( const MethodType mthd )
     {
       const std::string method []
@@ -67,7 +76,7 @@ namespace Dune {
       return method[ mthd ];
     }
 
-    static MethodType getMethod()
+    virtual MethodType getMethod() const
     {
       const std::string method []
         = { methodNames( method_cdg2 ),
@@ -77,24 +86,45 @@ namespace Dune {
             methodNames( method_nipg ),
             methodNames( method_bo )
           };
-      return (MethodType) Fem::Parameter::getEnum( "dgdiffusionflux.method", method );
+      return (MethodType) Fem::Parameter::getEnum( keyPrefix_ + "method", method );
     }
 
-    typedef DGLiftingFluxIdentifier LiftingType;
     static std::string liftingNames( const LiftingType mthd )
     {
       const std::string method []
         = { "id_id", "id_A" , "A_A" };
       return method[ mthd ];
     }
-    static LiftingType getLifting()
+
+    virtual LiftingType getLifting() const
     {
       const std::string method []
         = { liftingNames( lifting_id_id ),
             liftingNames( lifting_id_A ),
             liftingNames( lifting_A_A )
           };
-      return (LiftingType) Fem::Parameter::getEnum( "dgdiffusionflux.lifting", method, 0 );
+      return (LiftingType) Fem::Parameter::getEnum( keyPrefix_ + "lifting", method, 0 );
+    }
+
+    virtual double penalty() const
+    {
+      return Fem::Parameter::getValue<double>( keyPrefix_ + "penalty" );
+    }
+
+    virtual double liftfactor() const
+    {
+      return Fem::Parameter::getValue<double>( keyPrefix_ + "liftfactor" );
+    }
+
+    virtual double theoryparameters() const
+    {
+      return Fem::Parameter::getValue<double>( keyPrefix_ + "theoryparameters", 0. );
+    }
+
+    template <class DomainType>
+    void upwind( DomainType& upwd ) const
+    {
+      Fem::Parameter::get(keyPrefix_ + "upwind", upwd, upwd);
     }
   };
 
@@ -104,11 +134,15 @@ namespace Dune {
 
   template <class DiscreteFunctionSpaceImp,
             class Model >
-  class DGDiffusionFluxBase : public DGPrimalMethodNames
+  class DGDiffusionFluxBase
   {
   public:
     enum { evaluateJacobian = false };
     typedef DiscreteFunctionSpaceImp DiscreteFunctionSpaceType;
+
+    typedef DGPrimalFormulationParameters ParameterType;
+    typedef typename ParameterType :: MethodType   MethodType;
+    typedef typename ParameterType :: LiftingType  LiftingType;
 
     enum { dimDomain = DiscreteFunctionSpaceType :: dimDomain };
     enum { dimRange  = DiscreteFunctionSpaceType :: dimRange };
@@ -151,8 +185,11 @@ namespace Dune {
     /**
      * @brief constructor
      */
-    DGDiffusionFluxBase( const Model& mod, const bool initUpwind ) :
-      model_(mod),
+    DGDiffusionFluxBase( const Model& mod,
+                         const bool initUpwind,
+                         const ParameterType& parameters )
+    : model_(mod),
+      param_( parameters.clone() ),
       upwind_( upwindDefault() ),
       // Set CFL number for penalty term (compare diffusion in first pass)
       cflDiffinv_(8. * (polOrd+1.) ),
@@ -161,15 +198,16 @@ namespace Dune {
     {
       if( initUpwind )
       {
-        Fem::Parameter::get("dgdiffusionflux.upwind", upwind_, upwind_);
+        parameter().upwind( upwind_ );
         if( Fem::Parameter :: verbose() )
           std::cout << "Using upwind = " << upwind_ << std::endl;
       }
     }
 
     //! copy constructor
-    DGDiffusionFluxBase( const DGDiffusionFluxBase& other ) :
-      model_( other.model_ ),
+    DGDiffusionFluxBase( const DGDiffusionFluxBase& other )
+    : model_( other.model_ ),
+      param_( other.parameter().clone() ),
       upwind_( other.upwind_ ),
       cflDiffinv_( other.cflDiffinv_ ),
       dimensionFactor_( other.dimensionFactor_ ),
@@ -297,9 +335,11 @@ namespace Dune {
     }
 
     const Model &model () const { return model_; }
+    const ParameterType& parameter() const { return *param_; }
 
   protected:
     const Model   &model_;
+    std::unique_ptr< ParameterType > param_;
     DomainType upwind_;
     const double cflDiffinv_;
     const double dimensionFactor_;
