@@ -58,6 +58,8 @@ public:
 
   typedef std::pair< OdeSolverInterfaceType* ,  HelmHoltzOperatorType* > solverpair_t ;
 
+  typedef SmartOdeSolverParameters ParameterType;
+
   /////////////////////////////////////////////////////////////////////////
   //  ODE solvers from dune-fem/dune/fem/solver/rungekutta
   /////////////////////////////////////////////////////////////////////////
