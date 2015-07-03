@@ -59,7 +59,7 @@ namespace Dune {
     using BaseType :: dimensionFactor_;
     using BaseType :: nonconformingFactor_;
     using BaseType :: numericalFlux ;
-
+    using BaseType :: parameter;
 
   public:
     /**

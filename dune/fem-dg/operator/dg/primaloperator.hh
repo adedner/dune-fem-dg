@@ -331,7 +331,8 @@ namespace Dune {
       , uTmp_( 0 )
       , fvSpc_( 0 )
       , indicator_( 0 )
-      , diffFlux_( gridPart_, model_, DGPrimalFormulationParameters( "dgdiffusionFlux." + keyPrefix )  )
+      , dgdiffusionfluxPrefix_( "dgdiffusionflux"+ std::string(keyPrefix=="" ? "" : "." ) )
+      , diffFlux_( gridPart_, model_, DGPrimalFormulationParameters( dgdiffusionfluxPrefix_ + keyPrefix ) )
       , problem1_( model_, numflux_, diffFlux_ )
       , limitProblem_( model_ , space_.order() )
       , pass0_()
@@ -469,6 +470,8 @@ namespace Dune {
 
     IndicatorSpaceType*  fvSpc_;
     IndicatorType*       indicator_;
+    const std::string dgdiffusionfluxPrefix_;
+
 
   protected:
     DiffusionFluxType   diffFlux_;

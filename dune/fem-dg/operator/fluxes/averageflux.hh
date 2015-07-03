@@ -63,6 +63,7 @@ namespace Dune {
     using BaseType :: model_;
     using BaseType :: cflDiffinv_;
     using BaseType :: numericalFlux ;
+    using BaseType :: parameter ;
 
 
   public:
