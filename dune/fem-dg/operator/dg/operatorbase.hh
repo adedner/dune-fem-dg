@@ -89,12 +89,12 @@ namespace Dune {
     typedef typename DiscreteModelType :: AdaptationType  AdaptationType;
 
   public:
-    DGAdvectionDiffusionOperatorBase( GridPartType& gridPart, ProblemType& problem )
+    DGAdvectionDiffusionOperatorBase( GridPartType& gridPart, ProblemType& problem, const std::string keyPrefix = "" )
       : model_( problem )
       , numflux_( model_ )
       , gridPart_( gridPart )
       , space_( gridPart_ )
-      , discreteModel_( model_, numflux_, DiffusionFluxType( gridPart_, model_ ) )
+      , discreteModel_( model_, numflux_, DiffusionFluxType( gridPart_, model_, DGPrimalFormulationParameters( "dgdiffusionflux." + keyPrefix ) ) )
       , startPass_()
       , pass1_( discreteModel_, startPass_, space_ )
     {}

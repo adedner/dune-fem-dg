@@ -48,8 +48,8 @@ namespace Dune {
     typedef typename BaseType :: GridPartType  GridPartType;
     typedef typename BaseType :: ProblemType   ProblemType;
 
-    DGAdvectionDiffusionOperator( GridPartType& gridPart, ProblemType& problem )
-      : BaseType( gridPart, problem )
+    DGAdvectionDiffusionOperator( GridPartType& gridPart, ProblemType& problem, const std::string keyPrefix = "" )
+      : BaseType( gridPart, problem, keyPrefix )
     {}
 
     std::string description() const
@@ -85,8 +85,8 @@ namespace Dune {
     typedef typename BaseType :: GridPartType  GridPartType;
     typedef typename BaseType :: ProblemType   ProblemType ;
 
-    DGAdvectionOperator( GridPartType& gridPart, ProblemType& problem )
-      : BaseType( gridPart, problem )
+    DGAdvectionOperator( GridPartType& gridPart, ProblemType& problem, const std::string keyPrefix = ""  )
+      : BaseType( gridPart, problem, keyPrefix )
     {}
 
     std::string description() const
@@ -127,8 +127,8 @@ namespace Dune {
     using BaseType::discreteModel_;
 
   public:
-    DGDiffusionOperator( GridPartType& gridPart, ProblemType& problem )
-      : BaseType( gridPart, problem )
+    DGDiffusionOperator( GridPartType& gridPart, ProblemType& problem, const std::string keyPrefix = ""  )
+      : BaseType( gridPart, problem, keyPrefix )
     {}
 
     std::string description() const
@@ -183,8 +183,8 @@ namespace Dune {
     typedef typename BaseType :: GridPartType  GridPartType;
     typedef typename BaseType :: ProblemType   ProblemType ;
 
-    DGAdaptationIndicatorOperator( GridPartType& gridPart, ProblemType& problem )
-      : BaseType( gridPart, problem )
+    DGAdaptationIndicatorOperator( GridPartType& gridPart, ProblemType& problem, const std::string keyPrefix = ""  )
+      : BaseType( gridPart, problem, keyPrefix )
     {}
 
     std::string description() const
@@ -322,7 +322,7 @@ namespace Dune {
     }
 
   public:
-    DGLimitedAdvectionOperator( GridPartType& gridPart, ProblemType& problem )
+    DGLimitedAdvectionOperator( GridPartType& gridPart, ProblemType& problem, const std::string keyPrefix = "" )
       : model_( problem )
       , numflux_( model_ )
       , gridPart_( gridPart )
@@ -331,7 +331,7 @@ namespace Dune {
       , uTmp_( 0 )
       , fvSpc_( 0 )
       , indicator_( 0 )
-      , diffFlux_( gridPart_, model_ )
+      , diffFlux_( gridPart_, model_, DGPrimalFormulationParameters( "dgdiffusionFlux." + keyPrefix )  )
       , problem1_( model_, numflux_, diffFlux_ )
       , limitProblem_( model_ , space_.order() )
       , pass0_()
@@ -495,8 +495,8 @@ namespace Dune {
     typedef typename BaseType :: ProblemType  ProblemType;
 
   public:
-    DGLimitedAdvectionDiffusionOperator ( GridPartType& gridPart, ProblemType& problem )
-    : BaseType( gridPart, problem )
+    DGLimitedAdvectionDiffusionOperator ( GridPartType& gridPart, ProblemType& problem, const std::string keyPrefix = "" )
+    : BaseType( gridPart, problem, keyPrefix )
     {}
 
     void printmyInfo(std::string filename) const

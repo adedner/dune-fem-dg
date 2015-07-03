@@ -80,9 +80,9 @@ struct AdvectionStepper
   // constructor
   AdvectionStepper( GridType& grid, const std::string name = "" ) :
     BaseType( grid, name ),
-    dgAdvectionOperator_(gridPart_, problem() ),
-    dgIndicator_( gridPart_, problem() ),
-    gradientIndicator_( space(), problem() )
+    dgAdvectionOperator_(gridPart_, problem(), name ),
+    dgIndicator_( gridPart_, problem(), name ),
+    gradientIndicator_( space(), problem(), name )
   {
   }
 
