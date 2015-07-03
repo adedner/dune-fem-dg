@@ -38,6 +38,8 @@ namespace Dune {
     enum { dimGradRange = dimDomain * dimRange };
     enum { polOrd = DiscreteFunctionSpaceType :: polynomialOrder };
 
+    typedef typename BaseType :: ParameterType  ParameterType;
+
 #if DUNE_VERSION_NEWER_REV(DUNE_FEM,1,1,0)
     // type of gradient space
     typedef typename DiscreteFunctionSpaceType ::
@@ -68,9 +70,10 @@ namespace Dune {
      * @brief constructor
      */
     LDGDiffusionFlux(GridPartType& gridPart,
-                     const Model& mod) :
-      BaseType( mod ),
-      penalty_( Fem::Parameter::getValue<double>("dgdiffusionflux.penalty") ),
+                     const Model& mod,
+                     const ParameterType& param ) :
+      BaseType( mod, true, param ),
+      penalty_( parameter().penalty() ),
       // Set CFL number for penalty term (compare diffusion in first pass)
       penaltyTerm_( std::abs(  penalty_ ) > 0 )
     {
