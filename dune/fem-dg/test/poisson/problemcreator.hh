@@ -64,6 +64,11 @@ struct ProblemCreator
 #endif
   }
 
+  static inline std::string moduleName()
+  {
+    return "poisson";
+  }
+
   static inline Dune::GridPtr<GridType> initializeGrid()
   {
     // use default implementation

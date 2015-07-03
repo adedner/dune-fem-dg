@@ -98,6 +98,11 @@ struct ProblemCreator
 #endif
   }
 
+  static inline std::string moduleName()
+  {
+    return "navierstokes";
+  }
+
   static inline Dune::GridPtr<GridType>
   initializeGrid()
   {
@@ -105,6 +110,8 @@ struct ProblemCreator
     // use default implementation
     return initialize< GridType > ( description );
   }
+
+
 
   static ProblemType* problem()
   {

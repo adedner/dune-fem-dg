@@ -71,6 +71,10 @@ struct ProblemCreator
 #endif
   }
 
+  static inline std::string moduleName()
+  {
+    return "advdiff";
+  }
 
   static inline Dune::GridPtr<GridType>
   initializeGrid()

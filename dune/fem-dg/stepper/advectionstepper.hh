@@ -78,8 +78,8 @@ struct AdvectionStepper
   using BaseType :: doEstimateMarkAdapt ;
 
   // constructor
-  AdvectionStepper( GridType& grid ) :
-    BaseType( grid ),
+  AdvectionStepper( GridType& grid, const std::string name = "" ) :
+    BaseType( grid, name ),
     dgAdvectionOperator_(gridPart_, problem() ),
     dgIndicator_( gridPart_, problem() ),
     gradientIndicator_( space(), problem() )

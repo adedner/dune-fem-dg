@@ -38,6 +38,11 @@ struct ProblemCreator
     return initialize< GridType > ( description );
   }
 
+  static inline std::string moduleName()
+  {
+    return "dataio";
+  }
+
   static ProblemType* problem()
   {
     // choice of explicit or implicit ode solver

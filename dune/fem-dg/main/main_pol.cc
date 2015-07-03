@@ -143,7 +143,7 @@ namespace LOOPSPACE {
     std::unique_ptr< GridType > gridptr( ProblemTraits :: initializeGrid().release() );
 
     typedef ProblemTraits :: StepperType StepperType;
-    std::unique_ptr< StepperType > stepper( new StepperType( *gridptr ) );
+    std::unique_ptr< StepperType > stepper( new StepperType( *gridptr, ProblemTraits::moduleName() ) );
 
     // new method, the ProblemGenerator simply creates the stepper
     compute( *stepper );

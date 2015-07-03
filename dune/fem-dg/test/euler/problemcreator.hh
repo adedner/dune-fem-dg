@@ -77,6 +77,11 @@ struct ProblemCreator
 #endif
   }
 
+  static inline std::string moduleName()
+  {
+    return "euler";
+  }
+
   static inline Dune::GridPtr<GridType>
   initializeGrid()
   {

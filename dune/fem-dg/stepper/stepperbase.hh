@@ -119,8 +119,8 @@ struct StepperBase
   using BaseType :: limitSolution ;
 
   // constructor taking grid
-  StepperBase(GridType& grid) :
-    BaseType( grid ),
+  StepperBase(GridType& grid, const std::string name = "" ) :
+    BaseType( grid, name  ),
     gridPart_( grid_ ),
     space_( gridPart_ ),
     solution_( "U", space() ),

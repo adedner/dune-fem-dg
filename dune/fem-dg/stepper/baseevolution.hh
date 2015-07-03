@@ -154,7 +154,7 @@ inline std::ostream& operator << ( std::ostream& out, const SolverMonitor& monit
 //  Base class for evolutionary problems
 //
 /////////////////////////////////////////////////////////////////////////////
-template <class TraitsImp>
+template <class TraitsImp, class SolverMonitorImp = SolverMonitor >
 class AlgorithmBase
 {
   typedef TraitsImp Traits ;
@@ -181,17 +181,23 @@ public:
   typedef Dune::Fem::Parameter  ParameterType ;
 
   //! constructor
-  AlgorithmBase( GridType& grid )
+  AlgorithmBase( GridType& grid, const std::string algorithmName = "" )
    : grid_( grid ),
      // Initialize Timer for CPU time measurements
      timeStepTimer_( Dune::FemTimer::addTo("max time/timestep") ),
      fixedTimeStep_( ParameterType::getValue<double>("fixedTimeStep",0) ),
-     fixedTimeStepEocLoopFactor_( ParameterType::getValue<double>("fixedTimeStepEocLoopFactor",1.) )
+     fixedTimeStepEocLoopFactor_( ParameterType::getValue<double>("fixedTimeStepEocLoopFactor",1.) ),
+     algorithmName_( algorithmName )
   {
   }
 
   // nothing to do here
   virtual ~AlgorithmBase() {}
+
+  virtual const std::string name()
+  {
+    return algorithmName_;
+  }
 
   //! return default data tuple for data output
   virtual IOTupleType dataTuple() = 0 ;
@@ -468,6 +474,7 @@ protected:
   // use fixed time step if fixedTimeStep>0
   double fixedTimeStep_;
   double fixedTimeStepEocLoopFactor_;
+  const std::string algorithmName_;
 };
 
 #endif

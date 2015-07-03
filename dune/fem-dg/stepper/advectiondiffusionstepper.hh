@@ -75,8 +75,8 @@ struct AdvectionDiffusionStepper
   using BaseType :: adaptive ;
   using BaseType :: doEstimateMarkAdapt ;
 
-  AdvectionDiffusionStepper( GridType& grid ) :
-    BaseType( grid ),
+  AdvectionDiffusionStepper( GridType& grid, const std::string name = "" ) :
+    BaseType( grid, name ),
     dgOperator_( gridPart_, problem() ),
     dgAdvectionOperator_( gridPart_, problem() ),
     dgDiffusionOperator_( gridPart_, problem() ),
