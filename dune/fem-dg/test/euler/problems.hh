@@ -148,7 +148,7 @@ public:
     u_[ 0 ] = std::cos(M_PI/5.0);
     for(int i=1; i<dim; ++i)
     {
-      u_[ i ] = std::sin(M_PI/5.0);
+      u_[ i ] = 0.1;
     }
   }
 
@@ -163,7 +163,6 @@ public:
 
     res = 0;
     DomainType y(0.5);
-    const double p = 0.3;
 
     double tmp_c[dim], tmp=0.0, u_sq=0.0;
     for(int i=0; i<dim; ++i)
@@ -175,11 +174,13 @@ public:
     tmp *= 16.0;
 
     const double cos_tmp = cos(tmp * M_PI) + 1.0;
-    const double rho = (tmp > 1.0)? 0.5: 0.25 * cos_tmp*cos_tmp + 0.5;
+    double pert = (tmp > 1.0)? 0.5: 0.25 * cos_tmp*cos_tmp + 0.5;
+    pert *= 0.02;
 
-    res[0] = rho;
-    for(int i=0; i<dim; i++) res[1+i] = u_[i] * rho;
-    res[dim+1] = p/(gamma() - 1.0) + 0.5*rho*u_sq;
+    res[0] = 1.0 ; // pert
+    double p = 0.3 + pert;
+    for(int i=0; i<dim; i++) res[1+i] = u_[i] * res[0];
+    res[dim+1] = p/(gamma() - 1.0) + 0.5*res[0]*u_sq;
   }
 
   std::string dataPrefix() const { return "smooth1d"; }
@@ -943,12 +944,13 @@ public:
 
   static double smooth(double x,double ul,double ur)
   {
-    return (1.-std::tanh(x/2.))/2.*(ul-ur)+ur;
+    return exp(-x*x/30.)*(ul-ur)+ur;
+    // return (1.-std::tanh(x*0.2))/2.*(ul-ur)+ur;
   }
   void evaluate(const DomainType& arg, const double t, RangeType& res) const
   {
     RangeType ul, ur;
-    double x = (arg[0]-15.);
+    double x = (arg[0]-25.);
     double vx = x+t*3.549648;
     // if (x>20.5) x=20.5;
     res=0.;
@@ -956,7 +958,7 @@ public:
     ul[0]=3.857143;
     ul[1]=-0.920279;      // 2.629369;
     ul[energ]=10.33333;
-    ur[0]= 1. + 0.2 * sin(M_PI*vx);
+    ur[0]= 1.; // + 0.2 * sin(M_PI*vx);
     ur[1]=-3.549648;     // 0.0
     ur[energ]=1.0;
     res[0] = smooth(x,ul[0],ur[0]);

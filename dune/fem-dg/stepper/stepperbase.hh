@@ -152,7 +152,7 @@ struct StepperBase
       stepper_.hermite_.evaluate(t,dgU_);
       Dune::Fem::VtxProjection<DGDiscreteFunctionType,P1DiscreteFunctionType> projection;
       projection(dgU_,U_);
-      stepper_.apply( dgU_, divF_ );
+      // stepper_.apply( dgU_, divF_ );
       stepper_.hermite_.derivative(t, dtU_);
       init_ = true;
     }
@@ -296,38 +296,12 @@ struct StepperBase
 
       dataWriter_->write( tp );
 
-      if (!hermSetup_)
+      if( reallyWrite && !hermSetup_ && tp.timeStep()>20)
       {
         hermite_.init();
-        if (tp.time()>0.2)
-        {
-          std::cout << "compute residual" << std::endl;
-
-          typedef Dune::Fem::L2Norm< GridPartType > NormType;
-          NormType norm( gridPart_ );
-          typedef Dune::QuadratureRule<double, 1> Quad;
-          const Quad & quad = Dune::QuadratureRules<double,1>::
-            rule( Dune::GeometryType(Dune::GeometryType::simplex,1), 
-                  2*space_.polynomialOrder,  
-                  Dune::QuadratureType::GaussLegendre );
-          double localError = 0.;
-          for (auto qp=quad.begin(); qp!=quad.end(); ++qp)
-          {
-            const Dune::FieldVector< double, 1 > &x = qp->position();
-            const double weight = qp->weight();
-            localResidual_.init(x[0]);
-            localError += tp.deltaT() * weight *
-                pow(norm.norm( residualFunction_ ),2);
-          }
-          residualError_ += localError;
-          static double maxError = 0.;
-          maxError = std::max( maxError, sqrt(localError/tp.deltaT()));
-          std::cout << tp.time() << " " << sqrt(residualError_/tp.time()) << " "  << maxError << " # reisdual error" << std::endl;
-        }
-        if( reallyWrite )
-          localResidual_.init(0.3);
+        localResidual_.init(0.3);
+        residualDataOutput_.write( tp );
       }
-      residualDataOutput_.write( tp );
     }
 
     // possibly write a grid solution
@@ -466,6 +440,31 @@ struct StepperBase
 
     apply(U,fU_);
     hermSetup_ = hermite_.add(U, fU_);
+
+   if (!hermSetup_ && tp.timeStep()>20)
+    {
+      static double maxError = 0.;
+      hermite_.init();
+      typedef Dune::Fem::L2Norm< GridPartType > NormType;
+      NormType norm( gridPart_ );
+      typedef Dune::QuadratureRule<double, 1> Quad;
+      const Quad & quad = Dune::QuadratureRules<double,1>::
+        rule( Dune::GeometryType(Dune::GeometryType::simplex,1), 
+              2*space_.polynomialOrder+1,  
+              Dune::QuadratureType::GaussLegendre );
+      double localError = 0.;
+      for (auto qp=quad.begin(); qp!=quad.end(); ++qp)
+      {
+        const Dune::FieldVector< double, 1 > &x = qp->position();
+        const double weight = qp->weight();
+        localResidual_.init(x[0]);
+        double spaceError = norm.norm( residualFunction_ );
+        localError += tp.deltaT() * weight * spaceError*spaceError;
+        maxError = std::max( maxError, spaceError );
+      }
+      residualError_ += localError;
+      std::cout << tp.time() << " " << sqrt(residualError_/tp.time()) << " "  << maxError << " # residual error" << std::endl;
+    }
 
     // limit solution if necessary
     limitSolution ();

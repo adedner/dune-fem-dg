@@ -199,7 +199,7 @@ struct Hermite2 : public Hermite<Range>
   void init()
   {
     if (stuetz_.size()==0)
-      for (int i=0;i<q_+1;++i)
+      for (int i=0;i<=q_;++i)
         stuetz_.push_back( new Range("tmp", operator_.func().space() ) );
     int val = 0;
     for (int i=0;i<=q_;++i)
