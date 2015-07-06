@@ -38,7 +38,7 @@ struct SmartOdeSolverParameters : public DuneODE :: ODEParameters
       return Fem::Parameter::getEnum( key, odeSolver, 0 );
     else
     {
-      std::cerr << "WARNING: deprecated key, use `fem.ode.odesolver' instread!" << std::endl;
+      std::cerr << "WARNING: deprecated key, use `fem.ode.odesolver' instead!" << std::endl;
       return Fem::Parameter::getEnum( "femhowto.odesolver", odeSolver, 0 );
     }
   }
