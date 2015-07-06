@@ -94,10 +94,10 @@ namespace Dune {
       , numflux_( model_ )
       , gridPart_( gridPart )
       , space_( gridPart_ )
-      , dgdiffusionfluxPrefix_( "dgdiffusionflux"+ std::string(keyPrefix=="" ? "" : "." ) )
+      , dgdiffusionfluxPrefix_( keyPrefix + "dgdiffusionflux" )
       , discreteModel_( model_, numflux_,
                         DiffusionFluxType( gridPart_, model_,
-                                           DGPrimalFormulationParameters( dgdiffusionfluxPrefix_+ keyPrefix ) ) )
+                                           DGPrimalFormulationParameters( keyPrefix + dgdiffusionfluxPrefix_ ) ) )
       , startPass_()
       , pass1_( discreteModel_, startPass_, space_ )
     {}

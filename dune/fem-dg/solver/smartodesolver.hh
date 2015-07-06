@@ -11,7 +11,7 @@ namespace Dune {
 
 struct SmartOdeSolverParameters : public DuneODE :: ODEParameters
 {
-  SmartOdeSolverParameters( const std::string keyPrefix = "fem.ode" )
+  SmartOdeSolverParameters( const std::string keyPrefix = "fem.ode." )
     : DuneODE :: ODEParameters( keyPrefix )
   {}
 

@@ -64,8 +64,8 @@ namespace Dune {
     typedef DGDiffusionFluxIdentifier MethodType;
     typedef DGLiftingFluxIdentifier   LiftingType;
 
-    DGPrimalFormulationParameters( const std::string keyPrefix = "dgdiffusionflux" )
-      : keyPrefix_( keyPrefix + "." )
+    DGPrimalFormulationParameters( const std::string keyPrefix = "dgdiffusionflux." )
+      : keyPrefix_( keyPrefix )
     {}
 
     static std::string methodNames( const MethodType mthd )
