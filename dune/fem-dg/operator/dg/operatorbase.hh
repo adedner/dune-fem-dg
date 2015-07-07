@@ -9,6 +9,7 @@
 // dune-fem-dg includes
 #include <dune/fem-dg/pass/dgpass.hh>
 #include <dune/fem-dg/operator/dg/passtraits.hh>
+#include <dune/fem-dg/misc/parameterkey.hh>
 
 #ifdef USE_SMP_PARALLEL
 #include <dune/fem/misc/threads/domainthreaditerator.hh>
@@ -89,15 +90,13 @@ namespace Dune {
     typedef typename DiscreteModelType :: AdaptationType  AdaptationType;
 
   public:
-    DGAdvectionDiffusionOperatorBase( GridPartType& gridPart, ProblemType& problem, const std::string keyPrefix = "" )
+    DGAdvectionDiffusionOperatorBase( GridPartType& gridPart, ProblemType& problem, const std::string name = "" )
       : model_( problem )
       , numflux_( model_ )
       , gridPart_( gridPart )
       , space_( gridPart_ )
-      , dgdiffusionfluxPrefix_( keyPrefix + "dgdiffusionflux" )
       , discreteModel_( model_, numflux_,
-                        DiffusionFluxType( gridPart_, model_,
-                                           DGPrimalFormulationParameters( keyPrefix + dgdiffusionfluxPrefix_ ) ) )
+                        DiffusionFluxType( gridPart_, model_, DGPrimalFormulationParameters( ParameterKey::generate( name, "dgdiffusionflux." ) ) ) )
       , startPass_()
       , pass1_( discreteModel_, startPass_, space_ )
     {}
@@ -196,7 +195,6 @@ namespace Dune {
     GridPartType& gridPart_;
 
     AdvDFunctionSpaceType space_;
-    const std::string dgdiffusionfluxPrefix_;
     DiscreteModelType discreteModel_;
     Pass0Type startPass_;
     Pass1Type pass1_;

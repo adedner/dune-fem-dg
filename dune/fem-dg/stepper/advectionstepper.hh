@@ -76,6 +76,7 @@ struct AdvectionStepper
   using BaseType :: adaptive ;
   using BaseType :: adaptationParameters_;
   using BaseType :: doEstimateMarkAdapt ;
+  using BaseType :: name ;
 
   // constructor
   AdvectionStepper( GridType& grid, const std::string name = "" ) :
@@ -103,7 +104,8 @@ struct AdvectionStepper
                               LinearInverseOperatorType > OdeSolverImpl;
     return new OdeSolverImpl( tp, dgAdvectionOperator_,
                               dgAdvectionOperator_,
-                              dgAdvectionOperator_ );
+                              dgAdvectionOperator_,
+                              name() );
   }
 
   //! return overal number of grid elements

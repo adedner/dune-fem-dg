@@ -74,10 +74,11 @@ struct AdvectionDiffusionStepper
   using BaseType :: adaptationParameters_;
   using BaseType :: adaptive ;
   using BaseType :: doEstimateMarkAdapt ;
+  using BaseType :: name ;
 
   AdvectionDiffusionStepper( GridType& grid, const std::string name = "" ) :
     BaseType( grid, name ),
-    dgOperator_( gridPart_, problem(), name ),
+    dgOperator_( gridPart_, problem(), name  ),
     dgAdvectionOperator_( gridPart_, problem(), name ),
     dgDiffusionOperator_( gridPart_, problem(), name ),
     dgIndicator_( gridPart_, problem() ),
@@ -134,7 +135,8 @@ struct AdvectionDiffusionStepper
                               LinearInverseOperatorType > OdeSolverImpl;
     return new OdeSolverImpl( tp, dgOperator_,
                               dgAdvectionOperator_,
-                              dgDiffusionOperator_ );
+                              dgDiffusionOperator_,
+                              name() );
   }
 
   //! estimate and mark solution
