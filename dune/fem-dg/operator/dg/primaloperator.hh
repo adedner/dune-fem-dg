@@ -24,7 +24,8 @@ namespace Dune {
   template <class Mod, class NumFlux,
             DGDiffusionFluxIdentifier diffFluxId,
             int pOrd,
-            bool advection, bool diffusion >
+            bool advection, bool diffusion,
+            class Tuple >
   struct CDGAdvectionDiffusionTraits
   {
     enum { u, cdgpass };
@@ -35,21 +36,26 @@ namespace Dune {
     enum { polOrd = pOrd };
     typedef AdvectionDiffusionDGPrimalModel
       < Model, NumFluxType, diffFluxId, polOrd, u, advection, diffusion> DiscreteModelType;
+    typedef Tuple ExtraParameterTupleType ;
   };
 
   template< class Model, class NumFlux,
-            DGDiffusionFluxIdentifier diffFluxId, int polOrd >
+            DGDiffusionFluxIdentifier diffFluxId, int polOrd,
+            class Tuple = std::tuple< > >
   struct DGAdvectionDiffusionOperator : public
     DGAdvectionDiffusionOperatorBase<
-       CDGAdvectionDiffusionTraits<Model, NumFlux, diffFluxId, polOrd, true, true> >
+       CDGAdvectionDiffusionTraits<Model, NumFlux, diffFluxId, polOrd, true, true, Tuple> >
   {
-    typedef CDGAdvectionDiffusionTraits<Model, NumFlux, diffFluxId, polOrd, true, true> Traits;
+    typedef CDGAdvectionDiffusionTraits<Model, NumFlux, diffFluxId, polOrd, true, true, Tuple> Traits;
     typedef DGAdvectionDiffusionOperatorBase< Traits >  BaseType;
     typedef typename BaseType :: GridPartType  GridPartType;
     typedef typename BaseType :: ProblemType   ProblemType;
+    typedef typename BaseType :: ExtraParameterTupleType  ExtraParameterTupleType;
 
-    DGAdvectionDiffusionOperator( GridPartType& gridPart, ProblemType& problem, const std::string keyPrefix = "" )
-      : BaseType( gridPart, problem, keyPrefix )
+    DGAdvectionDiffusionOperator( GridPartType& gridPart, ProblemType& problem,
+                                  ExtraParameterTupleType tuple =  ExtraParameterTupleType(),
+                                  const std::string keyPrefix = "" )
+      : BaseType( gridPart, problem, tuple, keyPrefix )
     {}
 
     std::string description() const
@@ -75,18 +81,22 @@ namespace Dune {
   //--------------------
 
   template< class Model, class NumFlux,
-            DGDiffusionFluxIdentifier diffFluxId, int polOrd >
+            DGDiffusionFluxIdentifier diffFluxId, int polOrd,
+            class Tuple = std::tuple< > >
   struct DGAdvectionOperator : public
     DGAdvectionDiffusionOperatorBase<
-       CDGAdvectionDiffusionTraits<Model, NumFlux, diffFluxId, polOrd, true, false> >
+       CDGAdvectionDiffusionTraits<Model, NumFlux, diffFluxId, polOrd, true, false, Tuple> >
   {
-    typedef CDGAdvectionDiffusionTraits<Model, NumFlux, diffFluxId, polOrd, true, false> Traits;
+    typedef CDGAdvectionDiffusionTraits<Model, NumFlux, diffFluxId, polOrd, true, false, Tuple> Traits;
     typedef DGAdvectionDiffusionOperatorBase< Traits >  BaseType;
     typedef typename BaseType :: GridPartType  GridPartType;
     typedef typename BaseType :: ProblemType   ProblemType ;
+    typedef typename BaseType :: ExtraParameterTupleType  ExtraParameterTupleType;
 
-    DGAdvectionOperator( GridPartType& gridPart, ProblemType& problem, const std::string keyPrefix = ""  )
-      : BaseType( gridPart, problem, keyPrefix )
+    DGAdvectionOperator( GridPartType& gridPart, ProblemType& problem,
+                         ExtraParameterTupleType tuple = ExtraParameterTupleType(),
+                         const std::string keyPrefix = ""  )
+      : BaseType( gridPart, problem, tuple, keyPrefix )
     {}
 
     std::string description() const
@@ -112,23 +122,27 @@ namespace Dune {
   //--------------------
 
   template< class Model, class NumFlux,
-            DGDiffusionFluxIdentifier diffFluxId, int polOrd >
+            DGDiffusionFluxIdentifier diffFluxId, int polOrd,
+            class Tuple = std::tuple< > >
   class DGDiffusionOperator : public
     DGAdvectionDiffusionOperatorBase<
-        CDGAdvectionDiffusionTraits<Model, NumFlux, diffFluxId, polOrd, false, true> >
+        CDGAdvectionDiffusionTraits<Model, NumFlux, diffFluxId, polOrd, false, true,  Tuple> >
   {
   public:
-    typedef CDGAdvectionDiffusionTraits<Model, NumFlux, diffFluxId, polOrd, false, true> Traits;
+    typedef CDGAdvectionDiffusionTraits<Model, NumFlux, diffFluxId, polOrd, false, true, Tuple > Traits;
     typedef DGAdvectionDiffusionOperatorBase< Traits >  BaseType;
-    typedef typename BaseType :: GridPartType  GridPartType;
-    typedef typename BaseType :: ProblemType   ProblemType;
+    typedef typename BaseType :: GridPartType         GridPartType;
+    typedef typename BaseType :: ProblemType          ProblemType;
+    typedef typename BaseType :: ExtraParameterTupleType  ExtraParameterTupleType;
 
   private:
     using BaseType::discreteModel_;
 
   public:
-    DGDiffusionOperator( GridPartType& gridPart, ProblemType& problem, const std::string keyPrefix = ""  )
-      : BaseType( gridPart, problem, keyPrefix )
+    DGDiffusionOperator( GridPartType& gridPart, ProblemType& problem,
+                         ExtraParameterTupleType tuple = ExtraParameterTupleType(),
+                         const std::string keyPrefix = ""  )
+      : BaseType( gridPart, problem, tuple, keyPrefix )
     {}
 
     std::string description() const
@@ -155,7 +169,7 @@ namespace Dune {
   template <class Mod, class NumFlux,
             DGDiffusionFluxIdentifier diffFluxId,
             int pOrd,
-            bool advection, bool diffusion >
+            bool advection, bool diffusion , class Tuple >
   struct CDGAdaptationIndicatorTraits
   {
     enum { u, cdgpass };
@@ -166,6 +180,8 @@ namespace Dune {
     enum { polOrd = pOrd };
     typedef AdaptiveAdvectionDiffusionDGPrimalModel
       < Model, NumFluxType, diffFluxId, polOrd, u, advection, diffusion> DiscreteModelType;
+
+    typedef Tuple ExtraParameterTupleType;
   };
 
   // DGAdaptationIndicatorOperator
@@ -173,18 +189,22 @@ namespace Dune {
 
   template< class Model, class NumFlux,
             DGDiffusionFluxIdentifier diffFluxId, int polOrd,
-            bool advection, bool diffusion = false >
+            bool advection, bool diffusion = false,
+            class Tuple = std::tuple<> >
   struct DGAdaptationIndicatorOperator : public
     DGAdvectionDiffusionOperatorBase<
-       CDGAdaptationIndicatorTraits< Model, NumFlux, diffFluxId, polOrd, advection, diffusion > >
+       CDGAdaptationIndicatorTraits< Model, NumFlux, diffFluxId, polOrd, advection, diffusion, Tuple > >
   {
-    typedef CDGAdaptationIndicatorTraits< Model, NumFlux, diffFluxId, polOrd, advection, diffusion > Traits ;
+    typedef CDGAdaptationIndicatorTraits< Model, NumFlux, diffFluxId, polOrd, advection, diffusion, Tuple > Traits ;
     typedef DGAdvectionDiffusionOperatorBase< Traits >  BaseType;
     typedef typename BaseType :: GridPartType  GridPartType;
     typedef typename BaseType :: ProblemType   ProblemType ;
+    typedef typename BaseType :: ExtraParameterTupleType  ExtraParameterTupleType;
 
-    DGAdaptationIndicatorOperator( GridPartType& gridPart, ProblemType& problem, const std::string keyPrefix = ""  )
-      : BaseType( gridPart, problem, keyPrefix )
+    DGAdaptationIndicatorOperator( GridPartType& gridPart, ProblemType& problem,
+                                   ExtraParameterTupleType tuple = ExtraParameterTupleType(),
+                                   const std::string keyPrefix = ""  )
+      : BaseType( gridPart, problem, tuple, keyPrefix )
     {}
 
     std::string description() const
@@ -494,12 +514,16 @@ namespace Dune {
   {
     typedef DGLimitedAdvectionOperator< Model, NumFlux, diffFluxId, pOrd, advection, diffusion > BaseType;
 
+  public:
     typedef typename BaseType :: GridPartType GridPartType;
     typedef typename BaseType :: ProblemType  ProblemType;
+    typedef typename BaseType :: ExtraParameterTupleType  ExtraParameterTupleType;
 
   public:
-    DGLimitedAdvectionDiffusionOperator ( GridPartType& gridPart, ProblemType& problem, const std::string keyPrefix = "" )
-    : BaseType( gridPart, problem, keyPrefix )
+    DGLimitedAdvectionDiffusionOperator ( GridPartType& gridPart, ProblemType& problem,
+                                          ExtraParameterTupleType tuple = ExtraParameterTupleType(),
+                                          const std::string keyPrefix = "" )
+    : BaseType( gridPart, problem, tuple, keyPrefix )
     {}
 
     void printmyInfo(std::string filename) const

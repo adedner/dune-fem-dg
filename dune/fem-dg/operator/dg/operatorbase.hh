@@ -50,8 +50,6 @@ namespace Dune {
 
     typedef typename Model::Traits::GridType GridType;
 
-    typedef typename Model::ModelParameterTypes ModelParameterTypes;
-
     typedef typename Traits :: DiscreteModelType DiscreteModelType;
     typedef typename DiscreteModelType :: DiffusionFluxType DiffusionFluxType;
 
@@ -68,21 +66,35 @@ namespace Dune {
 #endif
       > Pass0Type;
 
+    typedef typename Traits :: ExtraParameterTupleType ExtraParameterTupleType;
+
     template <class Tuple, int i>
     struct InsertFunctions
     {
-      typedef typename InsertFunctions< Tuple, i-1 > :: PassType PreviousPass ;
+      typedef InsertFunctions< Tuple, i-1 > PreviousInsertFunctions;
+      typedef typename PreviousInsertFunctions :: PassType PreviousPass ;
       typedef typename std::tuple_element< i-1, Tuple >::type DiscreteFunction;
       typedef Dune::Fem::InsertFunctionPass< DiscreteFunction, PreviousPass, i > PassType;
+
+      static std::shared_ptr< PassType > createPass( Tuple& tuple )
+      {
+        std::shared_ptr< PreviousPass > previousPass = PreviousInsertFunctions::createPass( tuple );
+        return std::shared_ptr< PassType > ( new PassType( std::get< Tuple, i-1 >( tuple ), previousPass ) );
+      }
     };
 
     template <class Tuple>
     struct InsertFunctions< Tuple, 0 >
     {
       typedef Pass0Type PassType;
+      static std::shared_ptr< PassType > createPass( Tuple& tuple )
+      {
+        return std::shared_ptr< PassType > ( new PassType() );
+      }
     };
 
-    typedef typename InsertFunctions< ModelParameterTypes, std::tuple_size< ModelParameterTypes >::value > :: PassType InsertFunctionPassType;
+    typedef InsertFunctions< ExtraParameterTupleType, std::tuple_size< ExtraParameterTupleType >::value > InsertFunctionsType;
+    typedef typename InsertFunctionsType :: PassType InsertFunctionPassType;
 
     typedef
 #ifdef USE_SMP_PARALLEL
@@ -108,7 +120,9 @@ namespace Dune {
     typedef typename DiscreteModelType :: AdaptationType  AdaptationType;
 
   public:
-    DGAdvectionDiffusionOperatorBase( GridPartType& gridPart, ProblemType& problem, const std::string keyPrefix = "" )
+    DGAdvectionDiffusionOperatorBase( GridPartType& gridPart, ProblemType& problem,
+                                      ExtraParameterTupleType& tuple,
+                                      const std::string keyPrefix = "" )
       : model_( problem )
       , numflux_( model_ )
       , gridPart_( gridPart )
@@ -117,8 +131,8 @@ namespace Dune {
       , discreteModel_( model_, numflux_,
                         DiffusionFluxType( gridPart_, model_,
                                            DGPrimalFormulationParameters( keyPrefix + dgdiffusionfluxPrefix_ ) ) )
-      , startPass_()
-      , pass1_( discreteModel_, startPass_, space_ )
+      , previousPass_( InsertFunctionsType::createPass( tuple ) )
+      , pass1_( discreteModel_, *previousPass_, space_ )
     {}
 
     IndicatorType* indicator() { return 0; }
@@ -217,7 +231,7 @@ namespace Dune {
     AdvDFunctionSpaceType space_;
     const std::string dgdiffusionfluxPrefix_;
     DiscreteModelType discreteModel_;
-    Pass0Type startPass_;
+    std::shared_ptr< InsertFunctionPassType > previousPass_;
     Pass1Type pass1_;
   };
 
