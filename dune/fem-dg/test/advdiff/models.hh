@@ -10,6 +10,7 @@
 
 // local includes
 #include <dune/fem-dg/models/defaultmodel.hh>
+#include <dune/fem-dg/pass/dgpass.hh>
 
 
 /**********************************************
@@ -84,11 +85,17 @@ public:
 //  where V is constant vector
 //
 ////////////////////////////////////////////////////////
-template <class GridPartType,class ProblemImp>
+template <class GridPartType, class ProblemImp, class VelocityType >
 class HeatEqnModel :
   public DefaultModel < HeatEqnModelTraits< GridPartType,ProblemImp::dimRange > >
 {
 public:
+  enum { velo };
+  //typedef Dune::Fem::Selector< velo >  ModelParameterSelectorType;
+  //typedef std::tuple< VelocityType* >  ModelParameterTypes;
+  typedef Dune::Fem::Selector< >  ModelParameterSelectorType;
+  typedef std::tuple< >  ModelParameterTypes;
+
   // for heat equations advection is disabled
   static const bool hasAdvection = true ;
   static const bool hasDiffusion = true ;
@@ -293,7 +300,7 @@ public:
   /**
    * @brief diffusion term \f$A\f$
    */
-  template <class JacobianType>
+  template <class ArgumentTuple, class JacobianTuple>
   inline void diffusion(const EntityType& en,
                         const double time,
                         const DomainType& x,

@@ -380,6 +380,7 @@ namespace Dune {
 
     // These type definitions allow a convenient access to arguments of pass.
     integral_constant< int, passUId > uVar;
+    integral_constant< int, -1  > testVar;
 
   public:
     enum { dimDomain = Traits :: dimDomain };
@@ -538,6 +539,7 @@ namespace Dune {
 
       if( BaseType :: advection && adaptation_ )
       {
+        uLeft[ testVar ];
         RangeType error ;
         RangeType v ;
         // v = g( ul, ul ) = f( ul )

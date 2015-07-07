@@ -5,6 +5,7 @@
 
 #include <dune/fem/solver/timeprovider.hh>
 #include <dune/fem/operator/common/spaceoperatorif.hh>
+#include <dune/fem/pass/insertfunction.hh>
 
 // dune-fem-dg includes
 #include <dune/fem-dg/pass/dgpass.hh>
@@ -49,6 +50,8 @@ namespace Dune {
 
     typedef typename Model::Traits::GridType GridType;
 
+    typedef typename Model::ModelParameterTypes ModelParameterTypes;
+
     typedef typename Traits :: DiscreteModelType DiscreteModelType;
     typedef typename DiscreteModelType :: DiffusionFluxType DiffusionFluxType;
 
@@ -65,11 +68,27 @@ namespace Dune {
 #endif
       > Pass0Type;
 
+    template <class Tuple, int i>
+    struct InsertFunctions
+    {
+      typedef typename InsertFunctions< Tuple, i-1 > :: PassType PreviousPass ;
+      typedef typename std::tuple_element< i-1, Tuple >::type DiscreteFunction;
+      typedef Dune::Fem::InsertFunctionPass< DiscreteFunction, PreviousPass, i > PassType;
+    };
+
+    template <class Tuple>
+    struct InsertFunctions< Tuple, 0 >
+    {
+      typedef Pass0Type PassType;
+    };
+
+    typedef typename InsertFunctions< ModelParameterTypes, std::tuple_size< ModelParameterTypes >::value > :: PassType InsertFunctionPassType;
+
     typedef
 #ifdef USE_SMP_PARALLEL
       ThreadPass <
 #endif
-      LocalCDGPass< DiscreteModelType, Pass0Type, cdgpass >
+      LocalCDGPass< DiscreteModelType, InsertFunctionPassType, cdgpass >
 #ifdef USE_SMP_PARALLEL
       , Fem::DomainDecomposedIteratorStorage< GridPartType >
     //, Fem::ThreadIterator< GridPartType >

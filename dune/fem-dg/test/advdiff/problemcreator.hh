@@ -44,7 +44,12 @@ struct ProblemCreator
   struct Traits
   {
     typedef ProblemType  InitialDataType;
-    typedef HeatEqnModel< GridPart, InitialDataType > ModelType;
+    typedef typename ProblemType :: FunctionSpaceType FunctionSpaceType;
+    typedef Dune::Fem::DiscontinuousGalerkinSpace< FunctionSpaceType, GridPart, 1 > SpaceType;
+    typedef Dune::Fem::AdaptiveDiscreteFunction< SpaceType > DiscreteFunctionType;
+
+
+    typedef HeatEqnModel< GridPart, InitialDataType, DiscreteFunctionType > ModelType;
     typedef LLFFlux< ModelType > FluxType;
 
     //typedef UpwindFlux< ModelType > FluxType;

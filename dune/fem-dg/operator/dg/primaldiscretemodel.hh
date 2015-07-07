@@ -239,21 +239,6 @@ namespace Dune {
                          JacobianRangeType& gDiffLeft,
                          JacobianRangeType& gDiffRight ) const
     {
-      ///////////////////////////////////////////////////////////////
-      // for SIPG the total numerical flux for multiplication with phi
-      // is given with
-      //    gLeft = numflux(f(u))*n - {G(u)grad(u)}*n + C11/h mu [u]*n
-      // and for STSIPG
-      //    gLeft = numflux(f(u))*n - {G(u)grad(u)}*n + C11/h {G(u)}[u]*n
-      // The total numerical flux for multiplication with grad(phi) is
-      //    gDiffLeft = -0.5*G(u-)[u]
-      // where h = min(|e+|,|e-|) / |it|.
-      //
-      // INFO: SIPG gives a suboptimal EOC for k=0,2,
-      //       STSIPG gives an optimal results for EOC
-      //       see R.Hartman,P.Houston JCP2008
-      ///////////////////////////////////////////////////////////////
-
       /*****************************
        * Advection                 *
        ****************************/
