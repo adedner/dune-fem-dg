@@ -93,6 +93,11 @@ namespace Dune
       return markStrategy_ == 1;
     }
 
+    virtual int adaptCount() const
+    {
+      return ParameterType::getValue<int>( keyPrefix_ + "adaptcount", 1 );
+    }
+
     //! return true if verbosity mode is enabled
     virtual bool verbose () const { return Fem::Parameter::getValue< bool >( keyPrefix_ + "verbose", false ); }
   };
