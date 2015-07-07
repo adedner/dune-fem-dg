@@ -81,8 +81,8 @@ struct AdvectionDiffusionStepper
     dgOperator_( gridPart_, problem(), name  ),
     dgAdvectionOperator_( gridPart_, problem(), name ),
     dgDiffusionOperator_( gridPart_, problem(), name ),
-    dgIndicator_( gridPart_, problem() ),
-    gradientIndicator_( space(), problem() )
+    dgIndicator_( gridPart_, problem(), name ),
+    gradientIndicator_( space(), problem(), AdaptationParameters( ParameterKey::generate( name, "fem.adaptation." ) ) )
   {
   }
 

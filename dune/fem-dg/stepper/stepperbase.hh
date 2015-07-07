@@ -33,6 +33,7 @@ static double minRatioOfSums = 1e+100;
 
 #include <dune/fem-dg/misc/diagnostics.hh>
 #include <dune/fem-dg/operator/adaptation/estimatorbase.hh>
+#include <dune/fem-dg/misc/parameterkey.hh>
 
 using namespace Dune;
 
@@ -135,7 +136,7 @@ struct StepperBase
     odeSolver_( 0 ),
     rp_( solution_ ),
     adaptationManager_( grid_, rp_ ),
-    adaptationParameters_( ),
+    adaptationParameters_( AdaptationParameters( ParameterKey::generate( name, "fem.adaptation." ) ) ),
     dataWriter_( 0 )
   {
     // set refine weight

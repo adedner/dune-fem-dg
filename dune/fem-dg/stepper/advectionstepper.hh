@@ -83,7 +83,7 @@ struct AdvectionStepper
     BaseType( grid, name ),
     dgAdvectionOperator_(gridPart_, problem(), name ),
     dgIndicator_( gridPart_, problem(), name ),
-    gradientIndicator_( space(), problem(), name )
+    gradientIndicator_( space(), problem(), ParameterKey::generate( name, "fem.adaptation." ) )
   {
   }
 
