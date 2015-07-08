@@ -22,25 +22,22 @@ namespace Dune {
   //----------------------------
 
   template <class Traits,
-            bool advection, bool diffusion,
-            class Tuple >
+            bool advection, bool diffusion>
   struct CDGAdvectionDiffusionTraits : public Traits,
                                        public Traits :: ModelType :: Traits
   {
     // choose ids different to the tuple entries
-    enum { u = std::tuple_size< Tuple > ::value + 2 , cdgpass = u + 1 };
+    enum { u = std::tuple_size< typename Traits::ExtraParameterTupleType > ::value + 2 , cdgpass = u + 1 };
 
     typedef AdvectionDiffusionDGPrimalModel< Traits, u, advection, diffusion> DiscreteModelType;
-    typedef Tuple ExtraParameterTupleType ;
   };
 
-  template< class OpTraits,
-            class Tuple = std::tuple< > >
+  template< class OpTraits >
   struct DGAdvectionDiffusionOperator : public
     DGAdvectionDiffusionOperatorBase<
-       CDGAdvectionDiffusionTraits< OpTraits, true, true, Tuple> >
+       CDGAdvectionDiffusionTraits< OpTraits, true, true > >
   {
-    typedef CDGAdvectionDiffusionTraits< OpTraits, true, true, Tuple> Traits;
+    typedef CDGAdvectionDiffusionTraits< OpTraits, true, true > Traits;
     typedef DGAdvectionDiffusionOperatorBase< Traits >  BaseType;
     typedef typename BaseType :: GridPartType  GridPartType;
     typedef typename BaseType :: ProblemType   ProblemType;
@@ -74,13 +71,12 @@ namespace Dune {
   // DGAdvectionOperator
   //--------------------
 
-  template< class OpTraits,
-            class Tuple = std::tuple< > >
+  template< class OpTraits >
   struct DGAdvectionOperator : public
     DGAdvectionDiffusionOperatorBase<
-       CDGAdvectionDiffusionTraits< OpTraits, true, false, Tuple> >
+       CDGAdvectionDiffusionTraits< OpTraits, true, false > >
   {
-    typedef CDGAdvectionDiffusionTraits< OpTraits, true, false, Tuple> Traits;
+    typedef CDGAdvectionDiffusionTraits< OpTraits, true, false > Traits;
     typedef DGAdvectionDiffusionOperatorBase< Traits >  BaseType;
     typedef typename BaseType :: GridPartType  GridPartType;
     typedef typename BaseType :: ProblemType   ProblemType ;
@@ -114,14 +110,13 @@ namespace Dune {
   // DGDiffusionOperator
   //--------------------
 
-  template< class OpTraits,
-            class Tuple = std::tuple< > >
+  template< class OpTraits >
   class DGDiffusionOperator : public
     DGAdvectionDiffusionOperatorBase<
-        CDGAdvectionDiffusionTraits< OpTraits, false, true,  Tuple> >
+        CDGAdvectionDiffusionTraits< OpTraits, false, true > >
   {
   public:
-    typedef CDGAdvectionDiffusionTraits< OpTraits, false, true, Tuple > Traits;
+    typedef CDGAdvectionDiffusionTraits< OpTraits, false, true > Traits;
     typedef DGAdvectionDiffusionOperatorBase< Traits >  BaseType;
     typedef typename BaseType :: GridPartType         GridPartType;
     typedef typename BaseType :: ProblemType          ProblemType;
@@ -159,29 +154,26 @@ namespace Dune {
   ////////////////////////////////////////////////////////////////////////////
 
   template <class OpTraits,
-            bool advection, bool diffusion , class Tuple >
+            bool advection, bool diffusion >
   struct CDGAdaptationIndicatorTraits : public OpTraits,
                                         public OpTraits :: ModelType :: Traits
   {
     // choose ids different to the tuple entries
-    enum { u = std::tuple_size< Tuple > ::value + 2 , cdgpass = u + 1 };
+    enum { u = std::tuple_size< typename OpTraits::ExtraParameterTupleType > ::value + 2 , cdgpass = u + 1 };
 
     typedef AdaptiveAdvectionDiffusionDGPrimalModel< OpTraits, u, advection, diffusion> DiscreteModelType;
-
-    typedef Tuple ExtraParameterTupleType;
   };
 
   // DGAdaptationIndicatorOperator
   //------------------------------
 
   template< class OpTraits,
-            bool advection, bool diffusion = false,
-            class Tuple = std::tuple<> >
+            bool advection, bool diffusion = false >
   struct DGAdaptationIndicatorOperator : public
     DGAdvectionDiffusionOperatorBase<
-       CDGAdaptationIndicatorTraits< OpTraits, advection, diffusion, Tuple > >
+       CDGAdaptationIndicatorTraits< OpTraits, advection, diffusion > >
   {
-    typedef CDGAdaptationIndicatorTraits< OpTraits, advection, diffusion, Tuple > Traits ;
+    typedef CDGAdaptationIndicatorTraits< OpTraits, advection, diffusion > Traits ;
     typedef DGAdvectionDiffusionOperatorBase< Traits >  BaseType;
     typedef typename BaseType :: GridPartType  GridPartType;
     typedef typename BaseType :: ProblemType   ProblemType ;

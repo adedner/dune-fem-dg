@@ -31,8 +31,13 @@ struct StepperTraits
 
   //typedef Dune :: Fem :: IdGridPart< HostGridPartType >       GridPartType;
 
+  struct OperatorTraits :
+    public ProblemTraits :: template Traits< GridPartType, polOrd >
+  {
+    typedef ExtraParameterTuple ExtraParameterTupleType;
+  };
+
   // problem dependent types
-  typedef typename ProblemTraits :: template Traits< GridPartType, polOrd >  OperatorTraits;
   typedef typename OperatorTraits :: InitialDataType   InitialDataType;
   typedef typename OperatorTraits :: ModelType         ModelType;
   typedef typename OperatorTraits :: FluxType          FluxType;
@@ -61,10 +66,10 @@ private:
   #endif
 #else // no LIMITER
 #warning "No limiter is applied to the numerical solution !!"
-  typedef Dune :: DGAdvectionDiffusionOperator< OperatorTraits, ExtraParameterTuple >  DgType;
-  typedef Dune :: DGAdvectionOperator< OperatorTraits, ExtraParameterTuple >           DgAdvectionType;
+  typedef Dune :: DGAdvectionDiffusionOperator< OperatorTraits >  DgType;
+  typedef Dune :: DGAdvectionOperator< OperatorTraits >           DgAdvectionType;
 #endif
-  typedef Dune :: DGDiffusionOperator< OperatorTraits, ExtraParameterTuple >           DgDiffusionType;
+  typedef Dune :: DGDiffusionOperator< OperatorTraits >           DgDiffusionType;
 
   // default is that both are enabled
   template < bool advection, bool diffusion >
