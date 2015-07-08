@@ -40,22 +40,20 @@ struct ProblemCreator
                       false > ProblemType;
   // define problem type here if interface should be avoided
 
-  template< class GridPart >
+  template< class GridPart, int polOrder >
   struct Traits
   {
     typedef ProblemType  InitialDataType;
-    typedef typename ProblemType :: FunctionSpaceType FunctionSpaceType;
-    typedef Dune::Fem::DiscontinuousGalerkinSpace< FunctionSpaceType, GridPart, 1 > SpaceType;
-    typedef Dune::Fem::AdaptiveDiscreteFunction< SpaceType > DiscreteFunctionType;
-
-
-    typedef HeatEqnModel< GridPart, InitialDataType, DiscreteFunctionType > ModelType;
-    typedef LLFFlux< ModelType > FluxType;
+    typedef HeatEqnModel< GridPart, InitialDataType > ModelType;
+    typedef LLFFlux< ModelType >                      FluxType;
 
     //typedef UpwindFlux< ModelType > FluxType;
     // choice of diffusion flux (see diffusionflux.hh for methods)
      static const Dune :: DGDiffusionFluxIdentifier PrimalDiffusionFluxId
        =  Dune :: method_general ;
+
+     // polynomial order of discrete space
+     static const int polynomialOrder = polOrder ;
   };
 
 

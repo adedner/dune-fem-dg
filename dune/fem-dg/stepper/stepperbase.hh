@@ -39,13 +39,14 @@ using namespace Dune;
 
 template <class GridImp,
           class ProblemTraits,
-          int polynomialOrder>
+          int polynomialOrder,
+          class ExtraParameterTuple = std::tuple<> >
 struct StepperBase
-  : public AlgorithmBase< StepperTraits< GridImp, ProblemTraits, polynomialOrder> >
+  : public AlgorithmBase< GridImp >
 {
   // my traits class
-  typedef StepperTraits< GridImp, ProblemTraits, polynomialOrder> Traits ;
-  typedef AlgorithmBase< Traits > BaseType;
+  typedef StepperTraits< GridImp, ProblemTraits, polynomialOrder, ExtraParameterTuple> Traits ;
+  typedef AlgorithmBase< GridImp > BaseType;
 
 
   // type of Grid
@@ -56,6 +57,9 @@ struct StepperBase
 
   // initial data type
   typedef typename Traits :: InitialDataType          InitialDataType;
+
+  // model type
+  typedef typename Traits :: OperatorTraits           OperatorTraits;
 
   // model type
   typedef typename Traits :: ModelType                ModelType ;
@@ -101,7 +105,7 @@ struct StepperBase
   typedef typename BaseType :: SolverMonitorType      SolverMonitorType;
 
   // type of solver monitor
-  typedef typename BaseType :: IOTupleType            IOTupleType;
+  typedef typename Traits :: IOTupleType            IOTupleType;
 
   // type of data writer
   typedef Dune::Fem::DataWriter< GridType, IOTupleType >    DataWriterType;
@@ -167,7 +171,7 @@ struct StepperBase
   // return reference to discrete function holding solution
   DiscreteFunctionType& solution() { return solution_; }
 
-  IOTupleType dataTuple()
+  virtual IOTupleType dataTuple()
   {
     // tuple with additionalVariables
     return IOTupleType( &solution_, additionalVariables_, indicator() );

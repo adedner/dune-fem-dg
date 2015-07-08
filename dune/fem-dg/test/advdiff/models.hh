@@ -20,12 +20,19 @@
 /**
  * @brief Traits class for HeatEqnModel
  */
-template <class GridPart, int dimR >
+template <class GridPart, int dimR>
 class HeatEqnModelTraits
 {
 public:
+  enum { velo = 0, press = 1, blabla = 2 };
+  typedef std::integral_constant< int, velo   > velocityVar;
+  typedef std::integral_constant< int, press  > pressure;
+  typedef std::integral_constant< int, blabla > blablabla;
+  typedef std::tuple < velocityVar, pressure, blablabla > ModelParameter;
+
   typedef GridPart                                                   GridPartType;
   typedef typename GridPartType :: GridType                          GridType;
+
   static const int dimDomain = GridType::dimensionworld;
   static const int dimRange = dimR;
   static const int dimGradRange = dimRange * dimDomain ;
@@ -85,16 +92,21 @@ public:
 //  where V is constant vector
 //
 ////////////////////////////////////////////////////////
-template <class GridPartType, class ProblemImp, class VelocityType >
+template <class GridPartType, class ProblemImp>
 class HeatEqnModel :
-  public DefaultModel < HeatEqnModelTraits< GridPartType,ProblemImp::dimRange > >
+  public DefaultModel < HeatEqnModelTraits< GridPartType,ProblemImp::dimRange> >
 {
 public:
-  enum { velo };
+  enum { velo = 0, press = 1, blabla = 2 };
+  typedef std::integral_constant< int, velo   > velocityVar;
+  typedef std::integral_constant< int, press  > pressure;
+  typedef std::integral_constant< int, blabla > blablabla;
+  typedef std::tuple < velocityVar, pressure, blablabla > ModelParameter;
+
   //typedef Dune::Fem::Selector< velo >  ModelParameterSelectorType;
   //typedef std::tuple< VelocityType* >  ModelParameterTypes;
-  typedef Dune::Fem::Selector< >  ModelParameterSelectorType;
-  typedef std::tuple< >  ModelParameterTypes;
+  //typedef Dune::Fem::Selector< >  ModelParameterSelectorType;
+  //typedef std::tuple< >  ModelParameterTypes;
 
   // for heat equations advection is disabled
   static const bool hasAdvection = true ;
@@ -142,20 +154,22 @@ public:
   inline bool hasNonStiffSource() const { return problem_.hasNonStiffSource(); }
 
   inline double nonStiffSource( const EntityType& en,
-                        const double time,
-                        const DomainType& x,
-                        const RangeType& u,
-                        const GradientType& du,
-                        RangeType & s) const
+                                const double time,
+                                const DomainType& x,
+                                const RangeType& u,
+                                const GradientType& du,
+                                RangeType & s) const
   {
     //FieldMatrixConverter< GradientType, JacobianRangeType> jac( du );
     return nonStiffSource( en, time, x, u, s );
   }
 
+  //template < class ArgumentTuple >
   inline double nonStiffSource( const EntityType& en,
                         const double time,
                         const DomainType& x,
                         const RangeType& u,
+    //                    const ArgumentTuple& uExtra,
                         const JacobianRangeType& jac,
                         RangeType & s) const
   {
@@ -232,24 +246,24 @@ public:
   /**
    * @brief velocity calculation, is called by advection()
    */
+  //template <class ArgumentTuple>
   inline  void velocity(const EntityType& en,
                         const double time,
                         const DomainType& x,
                         const RangeType& u,
+      //                  const ArgumentTuple& uExtra,
                         DomainType& v) const
   {
-    velocity( en.geometry().global(x), time, v );
+    //if( uExtra[ velocity ].active() )
+    //{
+    //  v = uExtra[ velocity ];
+    //}
+    //else
+    {
+      problem_.velocity( en.geometry().global(x), time, v);
+    }
   }
 
-  /*
-   * @brief velocity calculation, is called by advection()
-   */
-  inline  void velocity(const DomainType& xGlobal,
-                        const double time,
-                        DomainType& v) const
-  {
-    problem_.velocity(xGlobal, time, v);
-  }
 
   /**
    * @brief diffusion term \f$a\f$
@@ -300,12 +314,11 @@ public:
   /**
    * @brief diffusion term \f$A\f$
    */
-  template <class ArgumentTuple, class JacobianTuple>
   inline void diffusion(const EntityType& en,
                         const double time,
                         const DomainType& x,
                         const RangeType& u,
-                        const JacobianType& jac,
+                        const JacobianRangeType& jac,
                         FluxRangeType& A) const
   {
     // copy v to A
@@ -441,8 +454,7 @@ public:
                         double& totalspeed ) const
   {
     DomainType v;
-    const DomainType xGlobal = entity.geometry().global( xLocal );
-    problem_.velocity( xGlobal, time, v );
+    velocity( entity, time, xLocal, u, v );
     advspeed   = v * normal ;
     totalspeed = advspeed;
   }

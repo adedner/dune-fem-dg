@@ -10,7 +10,8 @@
 
 template <class GridImp,
           class ProblemTraits,
-          int polOrd>
+          int polOrd,
+          class ExtraParameterTuple >
 struct StepperTraits
 {
   enum { polynomialOrder = polOrd };
@@ -57,12 +58,12 @@ private:
 #else // no LIMITER
 #warning "No limiter is applied to the numerical solution !!"
   typedef Dune :: DGAdvectionDiffusionOperator< ModelType, FluxType,
-                        DiffusionFluxId,  polynomialOrder >            DgType;
+                        DiffusionFluxId,  polynomialOrder, ExtraParameterTuple >            DgType;
   typedef Dune :: DGAdvectionOperator< ModelType, FluxType,
-                               DiffusionFluxId, polynomialOrder >      DgAdvectionType;
+                               DiffusionFluxId, polynomialOrder, ExtraParameterTuple >      DgAdvectionType;
 #endif
   typedef Dune :: DGDiffusionOperator< ModelType, FluxType,
-                               DiffusionFluxId, polynomialOrder >      DgDiffusionType;
+                               DiffusionFluxId, polynomialOrder, ExtraParameterTuple >      DgDiffusionType;
 
 public:
   typedef DgType          FullOperatorType;

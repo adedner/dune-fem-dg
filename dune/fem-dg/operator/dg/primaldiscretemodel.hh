@@ -43,8 +43,8 @@ namespace Dune {
     typedef typename BaseType :: DomainType     DomainType;
     typedef typename BaseType :: FaceDomainType FaceDomainType;
 
-    typedef typename BaseType :: ModelType    ModelType ;
-    typedef typename BaseType :: NumFluxType  NumFluxType ;
+    typedef typename BaseType :: ModelType          ModelType ;
+    typedef typename BaseType :: AdvectionFluxType  AdvectionFluxType ;
 
 #if defined TESTOPERATOR
 #warning NO MASSOPERATOR APPLIED
@@ -74,7 +74,7 @@ namespace Dune {
      * @brief constructor
      */
     AdvectionDiffusionDGPrimalModelBase(const ModelType& mod,
-                                        const NumFluxType& numf,
+                                        const AdvectionFluxType& numf,
                                         const DiffusionFluxType& diffflux )
       : BaseType( mod, numf ),
         diffFlux_( diffflux )
@@ -398,9 +398,8 @@ namespace Dune {
   //--------------------------------
 
   //! \brief forward declaration
-  template <class Model, class NumFlux,
-            DGDiffusionFluxIdentifier diffFluxId,
-            int polOrd, int passUId,
+  template <class OpTraits,
+            int passUId,
             bool returnAdvectionPart, bool returnDiffusionPart >
   class AdvectionDiffusionDGPrimalModel;
 
@@ -408,14 +407,13 @@ namespace Dune {
   // AdvectionDiffusionDGPrimalTraits
   //---------------------------------
 
-  template <class Model, class NumFlux,
-            DGDiffusionFluxIdentifier dFluxId,
-            int polOrd, int pUId,
+  template <class OpTraits,
+            int pUId,
             bool returnAdvectionPart, bool returnDiffusionPart >
   struct AdvectionDiffusionDGPrimalTraits
-   : public AdvectionTraits< Model, NumFlux, polOrd, pUId, -1, returnAdvectionPart>
+   : public AdvectionTraits< OpTraits, pUId, -1, returnAdvectionPart>
   {
-    static const DGDiffusionFluxIdentifier diffFluxId = dFluxId ;
+    static const DGDiffusionFluxIdentifier diffFluxId = OpTraits :: PrimalDiffusionFluxId;
 
     enum { advection = returnAdvectionPart };
     enum { diffusion = returnDiffusionPart };
@@ -423,39 +421,33 @@ namespace Dune {
     enum { passUId = pUId };
 
     // type of base class
-    typedef AdvectionModel< Model, NumFlux, polOrd,
-        passUId, -1, returnAdvectionPart >     AdvectionModelType ;
+    typedef AdvectionModel< OpTraits, passUId, -1, returnAdvectionPart >     AdvectionModelType ;
 
     // type of my discrete model
-    typedef AdvectionDiffusionDGPrimalModel
-      < Model, NumFlux, diffFluxId, polOrd, passUId,
-        returnAdvectionPart, returnDiffusionPart >                   DGDiscreteModelType;
+    typedef AdvectionDiffusionDGPrimalModel< OpTraits, passUId, returnAdvectionPart, returnDiffusionPart > DGDiscreteModelType;
   };
 
   // AdvectionDiffusionDGPrimalModel
   //--------------------------------
 
-  template< class Model,
-            class NumFlux,
-            DGDiffusionFluxIdentifier diffFluxId,
-            int polOrd,
+  template< class OpTraits,
             int passUId,
             bool returnAdvectionPart, bool returnDiffusionPart >
   class AdvectionDiffusionDGPrimalModel :
     public AdvectionDiffusionDGPrimalModelBase<
-              AdvectionDiffusionDGPrimalTraits < Model, NumFlux, diffFluxId,
-              polOrd, passUId, returnAdvectionPart, returnDiffusionPart > >
+              AdvectionDiffusionDGPrimalTraits < OpTraits, passUId, returnAdvectionPart, returnDiffusionPart > >
   {
   public:
     typedef AdvectionDiffusionDGPrimalTraits
-      < Model, NumFlux, diffFluxId, polOrd, passUId,
-        returnAdvectionPart, returnDiffusionPart >   Traits;
+      < OpTraits, passUId, returnAdvectionPart, returnDiffusionPart >   Traits;
 
     typedef AdvectionDiffusionDGPrimalModelBase< Traits > BaseType ;
     typedef typename BaseType :: DiffusionFluxType  DiffusionFluxType ;
+    typedef typename BaseType :: ModelType          ModelType ;
+    typedef typename BaseType :: AdvectionFluxType  AdvectionFluxType ;
 
-    AdvectionDiffusionDGPrimalModel(const Model& mod,
-                                    const NumFlux& numf,
+    AdvectionDiffusionDGPrimalModel(const ModelType& mod,
+                                    const AdvectionFluxType& numf,
                                     const DiffusionFluxType& diffflux )
       : BaseType( mod, numf, diffflux )
     {
@@ -473,9 +465,8 @@ namespace Dune {
   //--------------------------------
 
   //! \brief forward declaration
-  template <class Model, class NumFlux,
-            DGDiffusionFluxIdentifier diffFluxId,
-            int polOrd, int passUId,
+  template <class OpTraits,
+            int passUId,
             bool returnAdvectionPart, bool returnDiffusionPart >
   class AdaptiveAdvectionDiffusionDGPrimalModel;
 
@@ -483,42 +474,35 @@ namespace Dune {
   // AdvectionDiffusionDGPrimalTraits
   //---------------------------------
 
-  template <class Model, class NumFlux,
-            DGDiffusionFluxIdentifier diffFluxId,
-            int polOrd, int passUId,
+  template <class OpTraits,
+            int passUId,
             bool returnAdvectionPart, bool returnDiffusionPart >
   struct AdaptiveAdvectionDiffusionDGPrimalTraits
    : public AdvectionDiffusionDGPrimalTraits
-        < Model, NumFlux, diffFluxId, polOrd, passUId, returnAdvectionPart, returnDiffusionPart >
+        < OpTraits, passUId, returnAdvectionPart, returnDiffusionPart >
   {
     // type of base class
-    typedef AdaptiveAdvectionModel< Model, NumFlux, polOrd,
-               passUId, -1, returnAdvectionPart >     AdvectionModelType ;
+    typedef AdaptiveAdvectionModel< OpTraits, passUId, -1, returnAdvectionPart >     AdvectionModelType ;
 
     // type of my discrete model
     typedef AdaptiveAdvectionDiffusionDGPrimalModel
-      < Model, NumFlux, diffFluxId, polOrd, passUId,
+      < OpTraits, passUId,
         returnAdvectionPart, returnDiffusionPart >                   DGDiscreteModelType;
   };
 
   // AdaptiveAdvectionDiffusionDGPrimalModel
   //----------------------------------------
 
-  template< class Model,
-            class NumFlux,
-            DGDiffusionFluxIdentifier diffFluxId,
-            int polOrd,
+  template< class OpTraits,
             int passUId,
             bool returnAdvectionPart, bool returnDiffusionPart >
   class AdaptiveAdvectionDiffusionDGPrimalModel :
     public AdvectionDiffusionDGPrimalModelBase<
-       AdaptiveAdvectionDiffusionDGPrimalTraits< Model, NumFlux, diffFluxId,
-       polOrd, passUId, returnAdvectionPart, returnDiffusionPart > >
+       AdaptiveAdvectionDiffusionDGPrimalTraits< OpTraits, passUId, returnAdvectionPart, returnDiffusionPart > >
   {
   public:
     typedef AdaptiveAdvectionDiffusionDGPrimalTraits
-      < Model, NumFlux, diffFluxId, polOrd, passUId,
-          returnAdvectionPart, returnDiffusionPart >   Traits;
+      < OpTraits, passUId, returnAdvectionPart, returnDiffusionPart >   Traits;
 
     typedef AdvectionDiffusionDGPrimalModelBase< Traits >  BaseType;
 
@@ -546,15 +530,17 @@ namespace Dune {
     typedef typename Traits :: DiscreteFunctionSpaceType DiscreteFunctionSpaceType;
 
     // type of diffusion flux implementation
+    typedef typename BaseType :: AdvectionFluxType  AdvectionFluxType;
     typedef typename BaseType :: DiffusionFluxType  DiffusionFluxType;
+    typedef typename BaseType :: ModelType          ModelType;
 
     enum { evaluateJacobian = DiffusionFluxType :: evaluateJacobian  }; // we need to evaluate jacobians here
   public:
     /**
      * @brief constructor
      */
-    AdaptiveAdvectionDiffusionDGPrimalModel(const Model& mod,
-                                            const NumFlux& numf,
+    AdaptiveAdvectionDiffusionDGPrimalModel(const ModelType& mod,
+                                            const AdvectionFluxType& numf,
                                             const DiffusionFluxType& diffflux )
       : BaseType( mod, numf, diffflux )
     {

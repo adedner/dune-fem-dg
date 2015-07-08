@@ -18,9 +18,8 @@ namespace Dune {
   // AdvectionModel
   //---------------
 
-  template< class Model,
-            class NumFlux,
-            int polOrd, int passUId, int passGradId,
+  template< class OpTraits,
+            int passUId, int passGradId,
             bool returnAdvectionPart>
   class AdvectionModel;
 
@@ -28,17 +27,20 @@ namespace Dune {
   // AdvectionTraits
   //----------------
 
-  template <class Model, class NumFlux,
-            int polOrd, int passUId, int passGradId, bool returnAdvectionPart>
+  template <class OpTraits,
+            int passUId, int passGradId, bool returnAdvectionPart>
   struct AdvectionTraits
   {
-    typedef typename Model :: Traits                                 ModelTraits;
+    typedef typename OpTraits::ModelType                             ModelType;
+    typedef typename OpTraits::FluxType                              FluxType;
+    typedef typename ModelType :: Traits                             ModelTraits;
     typedef typename ModelTraits :: GridType                         GridType;
 
     enum { dimRange = ModelTraits::dimRange };
     enum { dimDomain = ModelTraits::dimDomain };
+    static const int polynomialOrder = OpTraits :: polynomialOrder;
 
-    typedef PassTraits< Model, dimRange, polOrd >                    Traits;
+    typedef PassTraits< ModelType, dimRange, polynomialOrder >       Traits;
     typedef typename Traits :: FunctionSpaceType                     FunctionSpaceType;
 
     typedef typename Traits :: VolumeQuadratureType                  VolumeQuadratureType;
@@ -56,8 +58,7 @@ namespace Dune {
 
     typedef typename Traits :: AdaptationHandlerType                 AdaptationType ;
 
-    typedef AdvectionModel
-      < Model, NumFlux, polOrd, passUId, passGradId, returnAdvectionPart >       DGDiscreteModelType;
+    typedef AdvectionModel< OpTraits, passUId, passGradId, returnAdvectionPart >       DGDiscreteModelType;
   };
 
 
@@ -73,24 +74,23 @@ namespace Dune {
    *  \tparam passGradId The id of a pass whose value is used here
    *  \tparam returnAdvectionPart Switch on/off the advection
    */
-  template< class Model,
-            class NumFlux,
-            int polOrd, int passUId, int passGradId,
+  template< class OpTraits,
+            int passUId, int passGradId,
             bool returnAdvectionPart>
   class AdvectionModel :
     public Fem::DGDiscreteModelDefaultWithInsideOutside
-      <AdvectionTraits<Model, NumFlux, polOrd, passUId, passGradId, returnAdvectionPart>,
-       passUId, passGradId>
+      < AdvectionTraits< OpTraits, passUId, passGradId, returnAdvectionPart >,
+        passUId, passGradId
+      >
   {
   public:
-    typedef AdvectionTraits
-      <Model, NumFlux, polOrd, passUId, passGradId, returnAdvectionPart> Traits;
+    typedef AdvectionTraits< OpTraits, passUId, passGradId, returnAdvectionPart > Traits;
 
-    typedef Model   ModelType ;
-    typedef NumFlux NumFluxType ;
+    typedef typename Traits :: ModelType    ModelType ;
+    typedef typename Traits :: FluxType     AdvectionFluxType;
 
     typedef Fem::DGDiscreteModelDefaultWithInsideOutside
-              < Traits, passUId, passGradId >                          BaseType;
+        < Traits, passUId, passGradId >                    BaseType;
 
     // These type definitions allow a convenient access to arguments of pass.
     integral_constant< int, passUId > uVar;
@@ -102,6 +102,7 @@ namespace Dune {
     enum { advection = returnAdvectionPart  };
     enum { evaluateJacobian = false };
 
+    // TODO: extract this from the model
     typedef FieldVector< double, dimDomain >               DomainType;
     typedef FieldVector< double, dimDomain-1 >             FaceDomainType;
 
@@ -123,8 +124,8 @@ namespace Dune {
     /**
      * @brief constructor
      */
-    AdvectionModel(const Model& mod,
-                   const NumFlux& numf)
+    AdvectionModel(const ModelType& mod,
+                   const AdvectionFluxType& numf)
       : model_(mod),
         numflux_( numf )
     {
@@ -328,8 +329,8 @@ namespace Dune {
       return hasBndValue;
     }
 
-    const Model&   model_;
-    const NumFlux& numflux_;
+    const ModelType&   model_;
+    const AdvectionFluxType& numflux_;
     mutable RangeType uBnd_;
   };                                              /*@LST0E@*/
 
@@ -339,20 +340,19 @@ namespace Dune {
   // AdaptiveAdvectionModel
   //
   //////////////////////////////////////////////////////
-  template< class Model,
-            class NumFlux,
-            int polOrd, int passUId, int passGradId,
+  template< class OpTraits,
+            int passUId, int passGradId,
             bool returnAdvectionPart>
   class AdaptiveAdvectionModel ;
 
-  template <class Model, class NumFlux,
-            int polOrd, int passUId, int passGradId, bool returnAdvectionPart>
+  template <class OpTraits,
+            int passUId, int passGradId, bool returnAdvectionPart>
   struct AdaptiveAdvectionTraits
-    : public AdvectionTraits< Model, NumFlux, polOrd, passUId, passGradId,
+    : public AdvectionTraits< OpTraits, passUId, passGradId,
                               returnAdvectionPart >
   {
-    typedef AdaptiveAdvectionModel< Model, NumFlux, polOrd, passUId, passGradId,
-                  returnAdvectionPart >       DGDiscreteModelType;
+    typedef AdaptiveAdvectionModel< OpTraits, passUId, passGradId,
+                                    returnAdvectionPart >       DGDiscreteModelType;
   };
 
   /*  \class AdvectionModel
@@ -364,19 +364,16 @@ namespace Dune {
    *  \tparam passGradId The id of a pass whose value is used here
    *  \tparam returnAdvectionPart Switch on/off the advection
    */
-  template< class Model,
-            class NumFlux,
-            int polOrd, int passUId, int passGradId,
+  template< class OpTraits,
+            int passUId, int passGradId,
             bool returnAdvectionPart>
   class AdaptiveAdvectionModel
-    : public AdvectionModel< Model, NumFlux, polOrd, passUId,  passGradId, returnAdvectionPart >
+    : public AdvectionModel< OpTraits, passUId,  passGradId, returnAdvectionPart >
   {
   public:
-    typedef AdaptiveAdvectionTraits
-      <Model, NumFlux, polOrd, passUId, passGradId, returnAdvectionPart> Traits;
+    typedef AdaptiveAdvectionTraits< OpTraits, passUId, passGradId, returnAdvectionPart> Traits;
 
-    typedef AdvectionModel< Model, NumFlux, polOrd, passUId,  passGradId,
-            returnAdvectionPart > BaseType ;
+    typedef AdvectionModel< OpTraits, passUId,  passGradId, returnAdvectionPart > BaseType ;
 
     // These type definitions allow a convenient access to arguments of pass.
     integral_constant< int, passUId > uVar;
@@ -384,6 +381,9 @@ namespace Dune {
   public:
     enum { dimDomain = Traits :: dimDomain };
     enum { dimRange  = Traits :: dimRange };
+
+    typedef typename BaseType :: ModelType          ModelType;
+    typedef typename BaseType :: AdvectionFluxType  AdvectionFluxType;
 
     typedef typename BaseType :: DomainType      DomainType ;
     typedef typename BaseType :: FaceDomainType  FaceDomainType;
@@ -410,8 +410,8 @@ namespace Dune {
     /**
      * @brief constructor
      */
-    AdaptiveAdvectionModel(const Model& mod,
-                           const NumFlux& numf)
+    AdaptiveAdvectionModel(const ModelType& mod,
+                           const AdvectionFluxType& numf)
       : BaseType( mod, numf ),
         adaptation_( 0 ),
         threadFilter_( 0 ),

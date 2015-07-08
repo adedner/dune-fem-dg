@@ -154,19 +154,12 @@ inline std::ostream& operator << ( std::ostream& out, const SolverMonitor& monit
 //  Base class for evolutionary problems
 //
 /////////////////////////////////////////////////////////////////////////////
-template <class TraitsImp, class SolverMonitorImp = SolverMonitor >
+template <class GridImp, class SolverMonitorImp = SolverMonitor >
 class AlgorithmBase
 {
-  typedef TraitsImp Traits ;
 public:
   // type of Grid
-  typedef typename Traits :: GridType                  GridType;
-
-  // choose a suitable GridView
-  typedef typename Traits :: GridPartType              GridPartType;
-
-  // type of IOTuple
-  typedef typename Traits :: IOTupleType  IOTupleType ;
+  typedef GridImp     GridType;
 
   // type of time provider organizing time for time loops
   typedef Dune::Fem::GridTimeProvider< GridType >                 TimeProviderType;
@@ -198,9 +191,6 @@ public:
   {
     return algorithmName_;
   }
-
-  //! return default data tuple for data output
-  virtual IOTupleType dataTuple() = 0 ;
 
   //! return reference to hierarchical grid
   GridType& grid() { return grid_ ; }

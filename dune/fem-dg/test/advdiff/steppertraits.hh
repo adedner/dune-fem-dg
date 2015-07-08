@@ -10,7 +10,8 @@
 
 template <class GridImp,
           class ProblemTraits,
-          int polOrd>
+          int polOrd,
+          class ExtraParameterTuple = std::tuple<> >
 struct StepperTraits
 {
   enum { polynomialOrder = polOrd };
@@ -21,14 +22,22 @@ struct StepperTraits
   // Choose a suitable GridView
   typedef Dune :: Fem :: DGAdaptiveLeafGridPart< GridType >       HostGridPartType;
   typedef HostGridPartType  GridPartType ;
+
+  typedef typename ProblemTraits :: ProblemType :: FunctionSpaceType FuncSpaceType;
+  typedef Dune::Fem::DiscontinuousGalerkinSpace< FuncSpaceType, GridPartType, 2 >  SpaceType;
+  typedef Dune::Fem::AdaptiveDiscreteFunction< SpaceType > DFType;
+
+  typedef std::tuple< DFType* > ExtraParameterTupleType;
+
   //typedef Dune :: Fem :: IdGridPart< HostGridPartType >       GridPartType;
 
   // problem dependent types
-  typedef typename ProblemTraits :: template Traits< GridPartType > :: InitialDataType   InitialDataType;
-  typedef typename ProblemTraits :: template Traits< GridPartType > :: ModelType         ModelType;
-  typedef typename ProblemTraits :: template Traits< GridPartType > :: FluxType          FluxType;
+  typedef typename ProblemTraits :: template Traits< GridPartType, polOrd >  OperatorTraits;
+  typedef typename OperatorTraits :: InitialDataType   InitialDataType;
+  typedef typename OperatorTraits :: ModelType         ModelType;
+  typedef typename OperatorTraits :: FluxType          FluxType;
   static const Dune::DGDiffusionFluxIdentifier DiffusionFluxId
-    = ProblemTraits :: template Traits< GridPartType > ::PrimalDiffusionFluxId ;
+    = OperatorTraits :: PrimalDiffusionFluxId ;
 
 private:
   // The DG Operator (using 2 Passes)
@@ -37,32 +46,25 @@ private:
 #ifdef LIMITER
   #if (not defined EULER) and (defined FLUXDG)
   #warning "DGAdvectionDiffusionOperator: using LIMITER."
-    typedef Dune :: DGLimitedAdvectionDiffusionOperator<
-                        ModelType, FluxType, DiffusionFluxId, polynomialOrder >  DgType;
+    typedef Dune :: DGLimitedAdvectionDiffusionOperator< OperatorTraits >  DgType;
   #else
   #warning "DGAdvectionDiffusionOperator: LIMITER can NOT be used. Not supported -> LIMITER, no EULER, no FLUXDG."
-    typedef Dune :: DGAdvectionDiffusionOperator<
-                        ModelType, FluxType, DiffusionFluxId, polynomialOrder >  DgType;
+    typedef Dune :: DGAdvectionDiffusionOperator< OperatorTraits >  DgType;
   #endif
   #ifndef HIGHER_ORDER_FV
   #warning "DGAdvectionOperator: using LIMITER."
-    typedef Dune :: DGLimitedAdvectionOperator< ModelType, FluxType,
-                                                DiffusionFluxId, polynomialOrder >      DgAdvectionType;
+    typedef Dune :: DGLimitedAdvectionOperator< OperatorTraits >    DgAdvectionType;
   #else
   #warning "DGAdvectionOperator: using HIGHER ORDER FV."
-    typedef Dune :: DGLimitedAdvectionOperator< ModelType, FluxType,
-                                                DiffusionFluxId, -1 >      DgAdvectionType;
+    typedef typename ProblemTraits :: template Traits< GridPartType, -1 > FVOperatorTraits;
+    typedef Dune :: DGLimitedAdvectionOperator< FVOperatorTraits >  DgAdvectionType;
   #endif
 #else // no LIMITER
 #warning "No limiter is applied to the numerical solution !!"
-  typedef Dune :: DGAdvectionDiffusionOperator< ModelType, FluxType,
-                                                DiffusionFluxId,  polynomialOrder >   DgType;
-  typedef Dune :: DGAdvectionOperator< ModelType, FluxType,
-                                       DiffusionFluxId, polynomialOrder >      DgAdvectionType;
+  typedef Dune :: DGAdvectionDiffusionOperator< OperatorTraits, ExtraParameterTuple >  DgType;
+  typedef Dune :: DGAdvectionOperator< OperatorTraits, ExtraParameterTuple >           DgAdvectionType;
 #endif
-  typedef Dune :: DGDiffusionOperator< ModelType, FluxType,
-                                       DiffusionFluxId, polynomialOrder >      DgDiffusionType;
-
+  typedef Dune :: DGDiffusionOperator< OperatorTraits, ExtraParameterTuple >           DgDiffusionType;
 
   // default is that both are enabled
   template < bool advection, bool diffusion >

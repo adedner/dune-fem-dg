@@ -27,33 +27,33 @@ namespace Dune {
   class DGAdvectionDiffusionOperatorBase :
     public Fem::SpaceOperatorInterface
       < typename PassTraits<
-          typename Traits :: Model, Traits::dimRange, Traits :: polOrd > :: DestinationType >
+          typename Traits :: ModelType, Traits::ModelType::dimRange, Traits :: polynomialOrder > :: DestinationType >
   {
     enum { u = Traits :: u,
            cdgpass  = Traits :: cdgpass };
 
-    enum { polOrd = Traits :: polOrd };
+    enum { polynomialOrder = Traits :: polynomialOrder };
 
-    typedef Fem::SpaceOperatorInterface < typename PassTraits<
-                      typename Traits :: Model, Traits::dimRange, Traits :: polOrd > ::
-                      DestinationType > BaseType ;
+    typedef Fem::SpaceOperatorInterface <
+      typename PassTraits< typename Traits :: ModelType, Traits::dimRange, Traits :: polynomialOrder > :: DestinationType
+            > BaseType ;
 
   public:
     using BaseType :: operator () ;
 
-    typedef typename Traits :: NumFluxType NumFluxType;
-    typedef typename Traits :: Model Model;
-    typedef typename Model  :: ProblemType ProblemType ;
+    typedef typename Traits :: FluxType           AdvectionFluxType;
+    typedef typename Traits :: ModelType          ModelType;
+    typedef typename ModelType :: ProblemType     ProblemType ;
 
-    enum { dimRange = Model::dimRange };
-    enum { dimDomain = Model::Traits::dimDomain };
+    enum { dimRange  = Traits::dimRange };
+    enum { dimDomain = Traits::dimDomain };
 
-    typedef typename Model::Traits::GridType GridType;
-
+    typedef typename Traits :: GridType GridType;
     typedef typename Traits :: DiscreteModelType DiscreteModelType;
+
     typedef typename DiscreteModelType :: DiffusionFluxType DiffusionFluxType;
 
-    typedef typename DiscreteModelType::Traits AdvTraits;
+    typedef typename DiscreteModelType::Traits       AdvTraits;
 
     typedef typename AdvTraits::DiscreteFunctionType AdvDFunctionType;
     // for convenience (not used here)
@@ -66,6 +66,7 @@ namespace Dune {
 #endif
       > Pass0Type;
 
+    typedef typename Traits :: ModelParameter ModelParameter;
     typedef typename Traits :: ExtraParameterTupleType ExtraParameterTupleType;
 
     template <class Tuple, int i>
@@ -74,7 +75,8 @@ namespace Dune {
       typedef InsertFunctions< Tuple, i-1 > PreviousInsertFunctions;
       typedef typename PreviousInsertFunctions :: PassType PreviousPass ;
       typedef typename std::tuple_element< i-1, Tuple >::type DiscreteFunction;
-      typedef Dune::Fem::InsertFunctionPass< DiscreteFunction, PreviousPass, i > PassType;
+      static const int passId = std::tuple_element< i-1, ModelParameter >::value;
+      typedef Dune::Fem::InsertFunctionPass< DiscreteFunction, PreviousPass, passId > PassType;
 
       static std::shared_ptr< PassType > createPass( Tuple& tuple )
       {
@@ -221,12 +223,12 @@ namespace Dune {
 
     virtual std::string description() const = 0;
 
-    const Model& model() const { return model_; }
+    const ModelType& model() const { return model_; }
 
   protected:
-    Model         model_;
-    NumFluxType   numflux_;
-    GridPartType& gridPart_;
+    ModelType           model_;
+    AdvectionFluxType   numflux_;
+    GridPartType&       gridPart_;
 
     AdvDFunctionSpaceType space_;
     const std::string dgdiffusionfluxPrefix_;

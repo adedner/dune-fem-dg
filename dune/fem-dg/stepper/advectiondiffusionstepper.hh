@@ -10,11 +10,12 @@
 
 template <class GridImp,
           class ProblemTraits,
-          int polynomialOrder>
+          int polynomialOrder,
+          class ExtraParameterTuple = std::tuple<> >
 struct AdvectionDiffusionStepper
   : public StepperBase< GridImp, ProblemTraits, polynomialOrder >
 {
-  typedef StepperBase< GridImp, ProblemTraits, polynomialOrder > BaseType ;
+  typedef StepperBase< GridImp, ProblemTraits, polynomialOrder, ExtraParameterTuple > BaseType ;
 
   // type of Grid
   typedef typename BaseType :: GridType                 GridType;
@@ -57,14 +58,15 @@ struct AdvectionDiffusionStepper
     BaseType::Traits::DiffusionFluxId ;
 
   // advection = true , diffusion = true
-  typedef Dune :: DGAdaptationIndicatorOperator< ModelType, FluxType,
-            DiffusionFluxId, polynomialOrder, true, true >  DGIndicatorType;
+  typedef Dune :: DGAdaptationIndicatorOperator< typename BaseType::OperatorTraits, true, true >  DGIndicatorType;
 
   // gradient estimator
   typedef Estimator< DiscreteFunctionType, InitialDataType > GradientIndicatorType ;
 
   // type of 64bit unsigned integer
   typedef typename BaseType :: UInt64Type  UInt64Type;
+
+  typedef typename FullOperatorType :: ExtraParameterTupleType  ExtraParameterTupleType;
 
   using BaseType :: grid_;
   using BaseType :: gridPart_;
@@ -75,12 +77,14 @@ struct AdvectionDiffusionStepper
   using BaseType :: adaptive ;
   using BaseType :: doEstimateMarkAdapt ;
 
-  AdvectionDiffusionStepper( GridType& grid, const std::string name = "" ) :
+  AdvectionDiffusionStepper( GridType& grid,
+                             const std::string name = "",
+                             ExtraParameterTupleType tuple = ExtraParameterTupleType() ) :
     BaseType( grid, name ),
-    dgOperator_( gridPart_, problem(), name ),
-    dgAdvectionOperator_( gridPart_, problem(), name ),
-    dgDiffusionOperator_( gridPart_, problem(), name ),
-    dgIndicator_( gridPart_, problem() ),
+    dgOperator_( gridPart_, problem(), tuple, name ),
+    dgAdvectionOperator_( gridPart_, problem(), tuple, name ),
+    dgDiffusionOperator_( gridPart_, problem(), tuple, name ),
+    dgIndicator_( gridPart_, problem(), tuple ),
     gradientIndicator_( space(), problem() )
   {
   }
