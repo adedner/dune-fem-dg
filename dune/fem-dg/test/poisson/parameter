@@ -1,12 +1,4 @@
 femhowto.eocSteps: 30
-UseBlocking: 0
-
-# enable or disable DG stabilization 
-use_dgstabilization: true
-use_oldassemble: false
-
-# enable or disable strong boundary conditions 
-use_strongbnd: false
 
 # polynomial order = 0,1,2,3,4
 femhowto.polynomialOrder: 2
@@ -17,17 +9,12 @@ femhowto.problem: 8 # 5 6 13 16
 femhowto.globalshift: 0
 femhowto.factor: 1
 femhowto.tolerance: 1e-4     # global adapt with tolerance=0 
-femhowto.adaptive.theta: 0.05 # equal distribution with theta=0, tolerance>0
-# true = maximum (theta defines the percentage) | false = Doerfler 
-femhowto.adaptive.maximumstrategy: false
 
 # none = disabled | coeffroot | prior2p 
 padaptive.method: none
 
 femhowto.verbose: 1
 fem.solver.verbose: 1
-
-fem.solver.matrixfilename: matrixfile
 
 # macro grid file
 
@@ -40,9 +27,6 @@ fem.io.macroGridFile_2d: ../grids/unitcube2.dgf
 
 
 femhowto.epsilon: 0.1
-#femhowto.xvelocity: 1.    # the only advection part for the linear heat eqn
-#femhowto.yvelocity: 3.    # the only advection part for the linear heat eqn
-#femhowto.zvelocity: 0.    # the only advection part for the linear heat eqn
 femhowto.xvelocity: 0.    # the only advection part for the linear heat eqn
 femhowto.yvelocity: 0.    # the only advection part for the linear heat eqn
 femhowto.zvelocity: 0.    # the only advection part for the linear heat eqn
@@ -91,5 +75,3 @@ poisson.nonConformOrigin: false
 istl.preconditioning.method: ilu-0
 istl.preconditioning.iterations: 1
 istl.preconditioning.relaxation: 1
-
-nonconformitydifference: -1
