@@ -56,14 +56,14 @@ namespace Dune
     }
 
     //! return maximal level achieved by refinement
-    virtual int finestLevel ( const int refineStepsForHalf ) const
+    virtual int finestLevel ( const int refineStepsForHalf = 1 ) const
     {
       return refineStepsForHalf *
              Fem::Parameter::getValue< int >( keyPrefix_ + "finestLevel" );
     }
 
     //! return minimal level achieved by refinement
-    virtual int coarsestLevel ( const int refineStepsForHalf ) const
+    virtual int coarsestLevel ( const int refineStepsForHalf = 1 ) const
     {
       return refineStepsForHalf *
              Fem::Parameter::getValue< int >( keyPrefix_ + "coarsestLevel", 0 );
