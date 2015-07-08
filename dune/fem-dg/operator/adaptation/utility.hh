@@ -95,7 +95,7 @@ namespace Dune
 
     virtual int adaptCount() const
     {
-      return ParameterType::getValue<int>( keyPrefix_ + "adaptcount", 1 );
+      return Fem::Parameter::getValue<int>( keyPrefix_ + "adaptcount", 1 );
     }
 
     //! return true if verbosity mode is enabled
