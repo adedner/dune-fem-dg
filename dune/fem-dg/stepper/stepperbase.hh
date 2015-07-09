@@ -201,7 +201,6 @@ struct StepperBase
         setupAdditionalVariables( tp, solution(), model(), *additionalVariables_ );
       }
 
-      //todo: check it
       dataWriter_->write( tp );
     }
 

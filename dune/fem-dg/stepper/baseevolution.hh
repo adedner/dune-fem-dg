@@ -78,7 +78,7 @@ struct EocParameters :
 
   virtual int quadOrder() const
   {
-    return Dune::Fem::Parameter::getValue< bool >( keyPrefix_ + "quadorder", -1 );
+    return Dune::Fem::Parameter::getValue< int >( keyPrefix_ + "quadorder", -1 );
   }
 
   private:
