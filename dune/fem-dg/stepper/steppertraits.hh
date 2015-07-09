@@ -29,8 +29,7 @@ struct StepperTraits
 
   // traits for the operator class
   struct OperatorTraits :
-    public ModelTraits,
-    public Dune::PassTraits< ModelTraits, polynomialOrder == -1 ? 0 : polynomialOrder >
+    public Dune::PassTraits< ModelTraits, polynomialOrder == -1 ? 0 : polynomialOrder, ModelTraits::ModelType::dimRange >
   {
     static const int limiterPolynomialOrder = polynomialOrder == -1 ? 1 : polynomialOrder;
     typedef ExtraParameterTuple ExtraParameterTupleType;

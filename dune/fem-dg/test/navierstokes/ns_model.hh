@@ -107,59 +107,25 @@ class NSModel : public DefaultModel < NSModelTraits< GridPartType, ProblemImp > 
   inline bool hasNonStiffSource() const { return problem_.hasNonStiffSource(); }
   inline bool hasFlux() const { return true ; }
 
+  template <class JacobianRangeImp>
   inline double stiffSource( const EntityType& en,
-                        const double time,
-                        const DomainType& x,
-                        const RangeType& u,
-                        const GradientRangeType& du,
-                        RangeType & s) const
-  {
-    return stiffSource( en, time, x, u, s );
-  }
-
-
-  inline double stiffSource( const EntityType& en,
-                        const double time,
-                        const DomainType& x,
-                        const RangeType& u,
-                        const JacobianRangeType& jac,
-                        RangeType & s) const
-  {
-    return stiffSource( en, time, x, u, s );
-  }
-
-
-  inline double stiffSource( const EntityType& en
-                      , const double time
-                      , const DomainType& x
-                      , const RangeType& u
-                      , RangeType& s ) const
+                             const double time,
+                             const DomainType& x,
+                             const RangeType& u,
+                             const JacobianRangeImp& jac,
+                             RangeType& s ) const
   {
     // some special RHS for testcases/NSWaves
     const DomainType& xgl = en.geometry().global(x);
     return problem_.stiffSource( time, xgl, u, s );
   }
 
-
+  template <class JacobianRangeImp>
   inline double nonStiffSource( const EntityType& en,
                                 const double time,
                                 const DomainType& x,
                                 const RangeType& u,
-                                const GradientRangeType& du,
-                                RangeType & s) const
-  {
-    Fem::FieldMatrixConverter< GradientRangeType, JacobianRangeType > jac( du );
-    return nonStiffSource( en, time, x, u, jac, s );
-  }
-
-
-
-  template< class JacobianRangeTypeImp >
-  inline double nonStiffSource( const EntityType& en,
-                                const double time,
-                                const DomainType& x,
-                                const RangeType& u,
-                                const JacobianRangeTypeImp& jac,
+                                const JacobianRangeImp& jac,
                                 RangeType& s) const
   {
     const DomainType& xgl = en.geometry().global(x);
@@ -320,17 +286,6 @@ class NSModel : public DefaultModel < NSModelTraits< GridPartType, ProblemImp > 
     return 0.0;
   }
 
-  inline double diffusionBoundaryFlux( const IntersectionType& it,
-                                       const double time,
-                                       const FaceDomainType& x,
-                                       const RangeType& uLeft,
-                                       const GradientRangeType& gradLeft,
-                                       RangeType& gLeft ) const
-  {
-    Fem::FieldMatrixConverter< GradientRangeType, JacobianRangeType> jacLeft( gradLeft );
-    return diffusionBoundaryFlux( it, time, x, uLeft, jacLeft, gLeft );
-  }
-
   /** \brief boundary flux for the diffusion part
    */
   template <class JacobianRangeImp>
@@ -367,18 +322,6 @@ class NSModel : public DefaultModel < NSModelTraits< GridPartType, ProblemImp > 
   {
     advspeed = nsFlux_.maxSpeed( normal , u );
     totalspeed=advspeed;
-  }
-
-
-  void diffusion( const EntityType& en,
-                  const double time,
-                  const DomainType& x,
-                  const RangeType& u,
-                  const GradientRangeType& v,
-                  JacobianRangeType& diff ) const
-  {
-    Fem::FieldMatrixConverter< GradientRangeType, JacobianRangeType> jac( v );
-    diffusion( en, time, x, u, jac, diff );
   }
 
 

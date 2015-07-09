@@ -49,10 +49,13 @@ namespace Dune {
     // Pass 2 Model (advection)
     typedef AdvectionDiffusionLDGModel< Traits, u, gradPass, advection, diffusion >     DiscreteModel2Type;
 
+    typedef ModelType Model;
+
     // Pass 1 Model (gradient)
     typedef typename DiscreteModel2Type :: DiffusionFluxType  DiffusionFluxType;
-    struct GradientTraits : public Traits
+    struct GradientTraits : public PassTraits< Traits, Traits::polynomialOrder, ModelType::dimGradRange >
     {
+      typedef Model              ModelType;
       typedef DiffusionFluxType  FluxType;
     };
 
@@ -301,14 +304,17 @@ namespace Dune {
     enum { dimRange  = ModelType::dimRange };
     enum { dimDomain = ModelType::Traits::dimDomain };
 
+    typedef ModelType Model;
+
     // Pass 2 Model (advectPassId)
     typedef AdvectionDiffusionLDGModel
       < Traits, limitPassId, gradPassId, advection, true > DiscreteModel3Type;
 
     // Pass 1 Model (gradPassId)
     typedef typename DiscreteModel3Type :: DiffusionFluxType  DiffusionFluxType;
-    struct GradientTraits : public Traits
+    struct GradientTraits : public PassTraits< Traits, Traits::polynomialOrder, ModelType::dimGradRange >
     {
+      typedef Model ModelType;
       typedef DiffusionFluxType  FluxType;
     };
     typedef GradientModel< GradientTraits, limitPassId >     DiscreteModel2Type;

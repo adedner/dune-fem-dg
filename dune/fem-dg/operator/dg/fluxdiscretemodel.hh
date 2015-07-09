@@ -294,7 +294,6 @@ namespace Dune {
     typedef typename Traits :: DomainFieldType                         DomainFieldType;
     typedef typename Traits :: RangeType                               RangeType;
     typedef typename Traits :: JacobianRangeType                       JacobianRangeType;
-    typedef typename Traits :: GradientType                            GradientType;
 
     typedef typename Traits :: DiscreteFunctionSpaceType DiscreteFunctionSpaceType;
 
@@ -333,8 +332,8 @@ namespace Dune {
 
       double dtEst = std::numeric_limits< double > :: max();
 
-      typedef typename Traits :: GradientType GradientType;
-      Dune::Fem::FieldMatrixConverter< GradientType, JacobianRangeType > uJac( local.values()[ sigmaVar ] );
+      typedef typename DiffusionFluxType :: GradientRangeType GradientRangeType;
+      Dune::Fem::FieldMatrixConverter< GradientRangeType, JacobianRangeType > uJac( local.values()[ sigmaVar ] );
 
       if (diffusion)
       {
@@ -406,17 +405,12 @@ namespace Dune {
       double diffTimeStep = 0.0;
       if( diffusion )
       {
-        typedef typename Traits :: GradientType GradientType;
-        typedef Dune::Fem::FieldMatrixConverter< GradientType, JacobianRangeType >  ConverterType;
-        ConverterType uJacLeft ( left.values() [ sigmaVar ] );
-        ConverterType uJacRight( right.values()[ sigmaVar ] );
-
         RangeType dLeft, dRight;
         diffTimeStep =
           diffFlux_.numericalFlux(left.intersection(), *this,
                                   left.time(), left.quadrature(), right.quadrature(), left.index(),
                                   left.values()[ uVar ], right.values()[ uVar ],
-                                  uJacLeft, uJacRight,
+                                  left.values() [ sigmaVar ], right.values()[ sigmaVar ],
                                   dLeft, dRight,
                                   gDiffLeft, gDiffRight);
 
@@ -451,9 +445,6 @@ namespace Dune {
       bool hasBoundaryValue =
         model_.hasBoundaryValue( left.intersection(), left.time(), left.localPoint() );
 
-      typedef typename Traits :: GradientType GradientType;
-      Dune::Fem::FieldMatrixConverter< GradientType, JacobianRangeType > uJac( left.values()[ sigmaVar ] );
-
       if( diffusion && hasBoundaryValue )
       {
         // diffusion boundary flux for Dirichlet boundaries
@@ -462,7 +453,7 @@ namespace Dune {
                                *this,
                                left.time(), left.quadrature(), left.index(),
                                left.values()[ uVar ], uBnd_, // is set during call of  BaseType::boundaryFlux
-                               uJac,
+                               left.values()[ sigmaVar ],
                                dLeft,
                                gDiffLeft);
         gLeft += dLeft;
@@ -470,6 +461,10 @@ namespace Dune {
       else if ( diffusion )
       {
         RangeType diffBndFlux ( 0 );
+
+        typedef typename DiffusionFluxType :: GradientRangeType GradientRangeType;
+        Dune::Fem::FieldMatrixConverter< GradientRangeType, JacobianRangeType > uJac( left.values()[ sigmaVar ] );
+
         model_.diffusionBoundaryFlux( left.intersection(), left.time(), left.localPoint(),
                                       left.values()[uVar], uJac, diffBndFlux );
         gLeft += diffBndFlux;
@@ -496,8 +491,10 @@ namespace Dune {
       if( diffusion )
       {
         JacobianRangeType diffmatrix;
-        typedef typename Traits :: GradientType GradientType ;
-        Dune::Fem::FieldMatrixConverter< GradientType, JacobianRangeType > uJac( local.values[ sigmaVar ] );
+
+        typedef typename DiffusionFluxType :: GradientRangeType GradientRangeType;
+        Dune::Fem::FieldMatrixConverter< GradientRangeType, JacobianRangeType > uJac( local.values()[ sigmaVar ] );
+
         model_.diffusion( local.entity(), local.time(), local.point(), local.values()[ uVar ], uJac, diffmatrix);
         // ldg case
         f += diffmatrix;

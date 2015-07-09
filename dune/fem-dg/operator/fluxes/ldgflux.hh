@@ -128,20 +128,20 @@ namespace Dune {
       if( useInterior )
       {
         model_.jacobian(inside,         /* inside entity */
-                         time,           /* for time dependent diffusion */
-                         faceQuadInner.point( quadPoint ),      /* inside point on intersection */
-                         uLeft,          /* { u_(x^-) } */
-                         diffmatrix      /* return diffusion tensor */
-                          );
+                        time,           /* for time dependent diffusion */
+                        faceQuadInner.point( quadPoint ),      /* inside point on intersection */
+                        uLeft,          /* { u_(x^-) } */
+                        diffmatrix      /* return diffusion tensor */
+                       );
       }
       else
       {
         model_.jacobian(outside,       /* outside entity */
-                         time,          /* for time dependent diffusion */
-                         faceQuadOuter.point( quadPoint ),  /* outside point on intersection */
-                         uRight,        /* { u_(x^+) } */
-                         diffmatrix     /* return diffusion tensor */
-                        );
+                        time,          /* for time dependent diffusion */
+                        faceQuadOuter.point( quadPoint ),  /* outside point on intersection */
+                        uRight,        /* { u_(x^+) } */
+                        diffmatrix     /* return diffusion tensor */
+                       );
       }
 
       // mutliply with normal
@@ -271,6 +271,7 @@ namespace Dune {
 
       // determine side (needs to be opposite of above)
       const bool useExterior = ! determineDirection( normal );
+
 
       if( useExterior )
       {

@@ -238,7 +238,7 @@ namespace Dune {
     enum { dimDomain = ModelType::Traits::dimDomain };
 
     typedef Traits                                    PassTraitsType;
-    typedef PassTraits< Traits, limiterPolOrd >       LimiterTraitsType;
+    typedef PassTraits< Traits, limiterPolOrd, dimRange >       LimiterTraitsType;
 
     // The model of the advection pass (advectPassId)
     typedef AdvectionDiffusionDGPrimalModel< Traits, limitPassId, advection, diffusion > DiscreteModel1Type;

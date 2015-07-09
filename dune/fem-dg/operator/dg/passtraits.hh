@@ -15,16 +15,36 @@ namespace Dune {
   //PassTraits
   //----------
 
-  template <class Traits, int polOrd>
-  class PassTraits : public Traits::ModelType::Traits
+  template <class Traits, int polOrd, int dimR>
+  class PassTraits
   {
   public:
-    typedef typename Traits::ModelType::Traits ModelTraits;
+    // inherit types from Traits
+    typedef typename Traits::InitialDataType InitialDataType;
+    typedef typename Traits::ModelType  ModelType ;
+    typedef typename Traits::FluxType   FluxType;
+    static const Dune :: DGDiffusionFluxIdentifier PrimalDiffusionFluxId  = Traits :: PrimalDiffusionFluxId ;
+
+    typedef typename ModelType :: Traits ModelTraits;
+
     typedef typename ModelTraits  :: GridPartType        GridPartType;
     typedef typename ModelTraits  :: GridType            GridType;
     typedef typename GridType     :: ctype               ctype;
 
+
     static const int polynomialOrder = polOrd ;
+    static const int dimRange  = dimR ;
+    static const int dimDomain = Traits::ModelType::dimDomain ;
+
+    typedef typename ModelTraits::FaceDomainType  FaceDomainType;
+    typedef Fem::FunctionSpace< ctype, double, dimDomain, dimRange >      FunctionSpaceType;
+
+    typedef typename FunctionSpaceType :: DomainType         DomainType;
+    typedef typename FunctionSpaceType :: RangeType          RangeType;
+    typedef typename FunctionSpaceType :: JacobianRangeType  JacobianRangeType;
+    typedef typename FunctionSpaceType :: RangeFieldType     RangeFieldType ;
+    typedef typename FunctionSpaceType :: DomainFieldType    DomainFieldType ;
+
     //static const int dimRange  = ModelTraits::dimRange;
     //static const int dimDomain = ModelTraits::dimDomain;
     //typedef Fem::ElementQuadrature< GridPartType, 0 >                     VolumeQuadratureType;
@@ -34,7 +54,6 @@ namespace Dune {
     typedef Fem::CachingQuadrature< GridPartType, 1 >    FaceQuadratureType;
 
     // Allow generalization to systems
-    typedef Fem::FunctionSpace< ctype, double, ModelTraits::dimDomain, ModelTraits::dimRange >      FunctionSpaceType;
     typedef Fem::DiscontinuousGalerkinSpace<
                                         FunctionSpaceType,
                                         GridPartType, polynomialOrder,
