@@ -127,15 +127,11 @@ namespace Dune {
     /**
      * @brief Stiff source associated with advection
      */
-    template <class ArgumentTuple, class JacobianTuple >
-    inline double source( const EntityType& en,
-                 const double time,
-                 const DomainType& x,
-                 const ArgumentTuple& u,
-                 const JacobianTuple& jac,
-                 RangeType& s ) const
+    template <class LocalEvaluation>
+    inline double source( const LocalEvaluation& local,
+                          RangeType& s ) const
     {
-      return model_.nonStiffSource( en, time, x, u[ uVar ], s );
+      return model_.nonStiffSource( local.entity(), local.time(), coordinate( local.point() ), local.values()[ uVar ], s );
     }
 
 
@@ -180,18 +176,9 @@ namespace Dune {
      * @return wave speed estimate (multiplied with the integration element of the intersection),
      *              to estimate the time step |T|/wave.
      */
-    template <class QuadratureImp,
-              class ArgumentTuple,
-              class JacobianTuple >          /*@LST0S@*/
-    double numericalFlux(const Intersection& it,
-                         const double time,
-                         const QuadratureImp& faceQuadInner,
-                         const QuadratureImp& faceQuadOuter,
-                         const int quadPoint,
-                         const ArgumentTuple& uLeft,
-                         const ArgumentTuple& uRight,
-                         const JacobianTuple& jacLeft,
-                         const JacobianTuple& jacRight,
+    template <class LocalEvaluation>
+    double numericalFlux(const LocalEvaluation& left,
+                         const LocalEvaluation& right,
                          RangeType& gLeft,
                          RangeType& gRight,
                          JacobianRangeType& gDiffLeft,
@@ -203,9 +190,9 @@ namespace Dune {
       if( advection )
       {
         // returns advection wave speed
-        return numflux_.numericalFlux(it, this->inside(), this->outside(),
-                                      time, faceQuadInner, faceQuadOuter, quadPoint,
-                                      uLeft[ uVar ], uRight[ uVar ], gLeft, gRight);
+        return numflux_.numericalFlux(left.intersection(), left.entity(), right.entity(),
+                                      left.time(), left.quadrature(), right.quadrature(), left.index(),
+                                      left.values()[ uVar ], right.values()[ uVar ], gLeft, gRight);
       }
       else
       {
@@ -218,22 +205,14 @@ namespace Dune {
     /**
      * @brief same as numericalFlux() but for fluxes over boundary interfaces
      */
-    template <class QuadratureImp,
-              class ArgumentTuple, class JacobianTuple>
-    double boundaryFlux(const Intersection& it,
-                        const double time,
-                        const QuadratureImp& faceQuadInner,
-                        const int quadPoint,
-                        const ArgumentTuple& uLeft,
-                        const JacobianTuple& jacLeft,
+    template <class LocalEvaluation>
+    double boundaryFlux(const LocalEvaluation& left,
                         RangeType& gLeft,
                         JacobianRangeType& gDiffLeft ) const   /*@LST0E@*/
     {
-      const FaceDomainType& x = faceQuadInner.localPoint( quadPoint );
+      const FaceDomainType& x = left.localPoint();
 
-      const bool hasBndValue = boundaryValue( it, time,
-                                              faceQuadInner, quadPoint,
-                                              uLeft );
+      const bool hasBndValue = boundaryValue( left );
 
       // make sure user sets specific boundary implementation
       gLeft = std::numeric_limits< double >::quiet_NaN();
@@ -245,14 +224,14 @@ namespace Dune {
         {
           RangeType gRight;
           // returns advection wave speed
-          return numflux_.numericalFlux(it, this->inside(), this->inside(),
-                                        time, faceQuadInner, faceQuadInner, quadPoint,
-                                        uLeft[ uVar ], uBnd_, gLeft, gRight);
+          return numflux_.numericalFlux(left.intersection(), left.entity(), left.entity(),
+                                        left.time(), left.quadrature(), left.quadrature(), left.index(),
+                                        left.values()[ uVar ], uBnd_, gLeft, gRight);
         }
         else
         {
           // returns advection wave speed
-          return model_.boundaryFlux( it, time, x, uLeft[uVar], gLeft );
+          return model_.boundaryFlux( left.intersection(), left.time(), left.localPoint(), left.values()[uVar], gLeft );
         }
       }
       else
@@ -265,35 +244,27 @@ namespace Dune {
     /**
      * @brief analytical flux function for advection only
      */
-    template <class ArgumentTuple, class JacobianTuple >
-    void analyticalFlux( const EntityType& en,
-                         const double time,
-                         const DomainType& x,
-                         const ArgumentTuple& u,
-                         const JacobianTuple& jac,
+    template <class LocalEvaluation>
+    void analyticalFlux( const LocalEvaluation& local,
                          JacobianRangeType& f ) const
     {
       if( advection )
-        model_.advection(en, time, x, u[ uVar ], f);
+        model_.advection( local.entity(), local.time(), local.point(), local.values()[ uVar ], f);
       else
         f = 0;
     }
 
 
   protected:
-    template <class QuadratureImp,
-              class ArgumentTuple>
-    bool boundaryValue(const Intersection& it,
-                       const double time,
-                       const QuadratureImp& faceQuadInner,
-                       const int quadPoint,
-                       const ArgumentTuple& uLeft ) const
+    template <class LocalEvaluation>
+    bool boundaryValue(const LocalEvaluation& left) const
     {
-      const FaceDomainType& x = faceQuadInner.localPoint( quadPoint );
-      const bool hasBndValue = model_.hasBoundaryValue(it, time, x);
+      const FaceDomainType& x = left.localPoint();
+      const bool hasBndValue = model_.hasBoundaryValue( left.intersection(), left.time(), left.localPoint() );
       if( hasBndValue )
       {
-        model_.boundaryValue(it, time, x, uLeft[ uVar ], uBnd_ );
+        model_.boundaryValue( left.intersection(), left.time(), left.localPoint(),
+                              left.values()[ uVar ], uBnd_ );
       }
       else
         // do something bad to uBnd_ as it shouldn't be used
@@ -485,44 +456,33 @@ namespace Dune {
      * @return wave speed estimate (multiplied with the integration element of the intersection),
      *              to estimate the time step |T|/wave.
      */
-    template <class QuadratureImp,
-              class ArgumentTuple,
-              class JacobianTuple >          /*@LST0S@*/
-    double numericalFlux(const Intersection& it,
-                         const double time,
-                         const QuadratureImp& faceQuadInner,
-                         const QuadratureImp& faceQuadOuter,
-                         const int quadPoint,
-                         const ArgumentTuple& uLeft,
-                         const ArgumentTuple& uRight,
-                         const JacobianTuple& jacLeft,
-                         const JacobianTuple& jacRight,
+    template <class LocalEvaluation>
+    double numericalFlux(const LocalEvaluation& left,
+                         const LocalEvaluation& right,
                          RangeType& gLeft,
                          RangeType& gRight,
                          JacobianRangeType& gDiffLeft,
                          JacobianRangeType& gDiffRight ) const
     {
-      if( ! model_.allowsRefinement( it, time, faceQuadInner.localPoint( quadPoint ) ) )
+      if( ! model_.allowsRefinement( left.intersection(), left.time(), left.localPoint() ) )
         return 0.;
 
-      double ldt = BaseType :: numericalFlux( it, time, faceQuadInner, faceQuadOuter, quadPoint,
-                                              uLeft, uRight, jacLeft, jacRight,
-                                              gLeft, gRight, gDiffLeft, gDiffRight );
+      double ldt = BaseType :: numericalFlux( left, gLeft, gRight, gDiffLeft, gDiffRight );
 
       if( BaseType :: advection && adaptation_ )
       {
         RangeType error ;
         RangeType v ;
         // v = g( ul, ul ) = f( ul )
-        numflux_.numericalFlux(it, inside(), outside(),
-                               time, faceQuadInner, faceQuadOuter, quadPoint,
-                               uLeft[ uVar ], uLeft[ uVar ], v, error);
+        numflux_.numericalFlux(left.intersection(), left.entity(), right.entity(),
+                               left.time(), left.quadrature(), right.quadrature(), left.index(),
+                               left.values()[ uVar ], left.values(), v, error);
 
         RangeType w ;
         // v = g( ur, ur ) = f( ur )
-        numflux_.numericalFlux(it, inside(), outside(),
-                               time, faceQuadInner, faceQuadOuter, quadPoint,
-                               uRight[ uVar ], uRight[ uVar ], w, error);
+        numflux_.numericalFlux(left.intersection(), left.entity(), right.entity(),
+                               left.time(), left.quadrature(), right.quadrature(), left.index(),
+                               right.values()[ uVar ], right.values()[ uVar ], w, error);
 
         // err = 2 * g(u,v) - g(u,u) - g(v,v)
         // 2 * g(u,v) = gLeft + gRight
@@ -543,7 +503,7 @@ namespace Dune {
         }
 
         // get face volume
-        const double faceVol = it.geometry().integrationElement( faceQuadInner.localPoint( quadPoint ) );
+        const double faceVol = left.intersection().geometry().integrationElement( left.localPoint() );
 
         // calculate grid width
         double weight = weight_ *
@@ -560,19 +520,12 @@ namespace Dune {
     /**
      * @brief same as numericalFlux() but for fluxes over boundary interfaces
      */
-    template <class QuadratureImp,
-              class ArgumentTuple, class JacobianTuple>
-    double boundaryFlux(const Intersection& it,
-                        const double time,
-                        const QuadratureImp& faceQuadInner,
-                        const int quadPoint,
-                        const ArgumentTuple& uLeft,
-                        const JacobianTuple& jacLeft,
+    template <class LocalEvaluation>
+    double boundaryFlux(const LocalEvaluation& left,
                         RangeType& gLeft,
                         JacobianRangeType& gDiffLeft ) const
     {
-      return BaseType :: boundaryFlux( it, time, faceQuadInner, quadPoint, uLeft,
-          jacLeft, gLeft, gDiffLeft );
+      return BaseType :: boundaryFlux( left, gLeft, gDiffLeft );
     }
 
   protected:
