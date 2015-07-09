@@ -9,8 +9,6 @@
 // system includes
 #include <string>
 
-#include "passtraits.hh"
-
 // dune includes
 #include <dune/common/version.hh>
 #include <dune/fem/io/parameter.hh>

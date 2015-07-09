@@ -21,26 +21,31 @@ namespace Dune {
 //////////////////////////////////////////////////////
 template< class GridPart, class Problem >
 class NSModelTraits
+  : public Fem :: FunctionSpace< double, double,
+                                 GridPart::GridType::dimensionworld,
+                                 GridPart::GridType::dimensionworld + 2 >
 {
-  public:
+  typedef Fem :: FunctionSpace< double, double,
+                                 GridPart::GridType::dimensionworld,
+                                 GridPart::GridType::dimensionworld + 2 > BaseType;
+
+public:
   typedef Problem  ProblemType;
   typedef GridPart GridPartType;
   typedef typename GridPart :: GridType                     GridType;
+
   enum { dimDomain = GridType :: dimensionworld };
   enum { dimRange = dimDomain + 2 };
   enum { dimGradRange = dimRange * dimDomain };
   enum { dimGradient = dimDomain + 1 };
 
-  typedef Fem :: FunctionSpace< double, double, dimDomain, dimRange > FunctionSpaceType ;
+  typedef BaseType FunctionSpaceType ;
 
-  typedef typename FunctionSpaceType :: DomainType         DomainType ;
   typedef typename FunctionSpaceType :: DomainFieldType    DomainFieldType ;
-  typedef FieldVector< DomainFieldType, dimDomain - 1 >    FaceDomainType;
-  typedef typename FunctionSpaceType :: RangeType          RangeType ;
+  typedef FieldVector< DomainFieldType, FunctionSpaceType::dimDomain - 1 >    FaceDomainType;
 
   typedef FieldVector< double, dimGradRange >               GradientType;
-  typedef typename FunctionSpaceType :: JacobianRangeType  JacobianRangeType;
-  typedef JacobianRangeType                                FluxRangeType;
+  typedef typename FunctionSpaceType :: JacobianRangeType   FluxRangeType;
 
   typedef FieldVector< double, dimGradRange >               GradientRangeType;
   typedef FieldMatrix< double, dimGradRange, dimDomain >    JacobianFluxRangeType;
@@ -82,6 +87,10 @@ class NSModel : public DefaultModel < NSModelTraits< GridPartType, ProblemImp > 
   typedef typename Traits :: JacobianRangeType              JacobianRangeType;
   typedef typename Traits :: JacobianFluxRangeType          JacobianFluxRangeType;
   typedef typename Traits :: ThermodynamicsType             ThermodynamicsType;
+
+  // for heat equations advection is disabled
+  static const bool hasAdvection = true ;
+  static const bool hasDiffusion = true ;
 
  public:
   NSModel( const ProblemType& problem )
