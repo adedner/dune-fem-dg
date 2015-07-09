@@ -67,8 +67,8 @@ namespace Dune {
      */
     LDGDiffusionFlux(GridPartType& gridPart,
                      const Model& model,
-                     const ParameterType& param ) :
-      BaseType( model, true, param ),
+                     const ParameterType& parameters = ParameterType() )
+    : BaseType( model, true, parameters ),
       penalty_( parameter().penalty() ),
       // Set CFL number for penalty term (compare diffusion in first pass)
       penaltyTerm_( std::abs(  penalty_ ) > 0 )

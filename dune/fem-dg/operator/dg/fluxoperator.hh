@@ -27,42 +27,44 @@ namespace Dune {
   // DGAdvectionDiffusionOperator
   //-----------------------------
 
-  template< class Model, class NumFlux,
-            DGDiffusionFluxIdentifier diffFluxId,
-            int polOrd, bool advection = true , bool diffusion = true >
+  template< class Traits, bool advection = true , bool diffusion = true >
   class DGAdvectionDiffusionOperator :
     public Fem::SpaceOperatorInterface
-      < typename PassTraits< Model, Model::Traits::dimRange, polOrd > :: DestinationType >
+      < typename Traits :: DestinationType >
   {
     // Id's for the three Passes (including StartPass)
     enum PassIdType { u, gradPass, advectPass };
 
   public:
-    enum { dimRange = Model::dimRange };
-    enum { dimDomain = Model::Traits::dimDomain };
+    typedef typename Traits :: FluxType  AdvectionFluxType;
+    typedef typename Traits :: ModelType ModelType;
+    typedef typename ModelType :: ProblemType  ProblemType;
 
-    typedef NumFlux NumFluxType;
-    typedef typename Model :: ProblemType  ProblemType;
+    enum { dimRange  = ModelType::dimRange };
+    enum { dimDomain = ModelType::Traits::dimDomain };
 
-    typedef PassTraits< Model, Model::Traits::dimRange, polOrd >     PassTraitsType ;
-    typedef typename PassTraitsType::IndicatorType                   IndicatorType;
-    typedef typename IndicatorType::DiscreteFunctionSpaceType        IndicatorSpaceType;
+    typedef typename Traits::IndicatorType                          IndicatorType;
+    typedef typename IndicatorType::DiscreteFunctionSpaceType       IndicatorSpaceType;
 
     // Pass 2 Model (advection)
-    typedef AdvectionDiffusionLDGModel
-      < Model, NumFluxType, polOrd, u, gradPass, advection, diffusion >     DiscreteModel2Type;
+    typedef AdvectionDiffusionLDGModel< Traits, u, gradPass, advection, diffusion >     DiscreteModel2Type;
 
     // Pass 1 Model (gradient)
     typedef typename DiscreteModel2Type :: DiffusionFluxType  DiffusionFluxType;
-    typedef GradientModel< Model, DiffusionFluxType, polOrd, u >       DiscreteModel1Type;
+    struct GradientTraits : public Traits
+    {
+      typedef DiffusionFluxType  FluxType;
+    };
+
+    typedef GradientModel< GradientTraits, u >       DiscreteModel1Type;
 
     typedef typename DiscreteModel1Type :: Traits                      Traits1;
     typedef typename DiscreteModel2Type :: Traits                      Traits2;
 
-    typedef typename Model :: Traits :: GridType                       GridType;
+    typedef typename Traits  :: GridType                       GridType;
 
     typedef typename Traits2 :: DomainType                             DomainType;
-    typedef typename Traits2 :: DiscreteFunctionType                   DiscreteFunction2Type;
+    typedef typename Traits2 :: DestinationType                        DiscreteFunction2Type;
 
     typedef typename Traits1 :: DiscreteFunctionSpaceType              Space1Type;
     typedef typename Traits2 :: DiscreteFunctionSpaceType              Space2Type;
@@ -77,8 +79,13 @@ namespace Dune {
     typedef LocalCDGPass< DiscreteModel1Type, Pass0Type, gradPass >    Pass1Type;
     typedef LocalCDGPass< DiscreteModel2Type, Pass1Type, advectPass >  Pass2Type;
 
+    typedef typename Traits :: ExtraParameterTupleType ExtraParameterTupleType;
+
   public:
-    DGAdvectionDiffusionOperator( GridPartType& gridPart, ProblemType& problem ) :
+    DGAdvectionDiffusionOperator( GridPartType& gridPart,
+                                  ProblemType& problem,
+                                  ExtraParameterTupleType tuple =  ExtraParameterTupleType(),
+                                  const std::string keyPrefix = "" ) :
       model_( problem ),
       numflux_( model_ ),
       gridPart_( gridPart ),
@@ -139,14 +146,14 @@ namespace Dune {
 	    std::ostringstream filestream;
             filestream << filename;
             std::ofstream ofs(filestream.str().c_str(), std::ios::app);
-            ofs << "LDG Op., polynomial order: " << polOrd << "\\\\\n\n";
+            ofs << "LDG Op., polynomial order: " << Traits::polynomialOrder << "\\\\\n\n";
             ofs.close();
     }
 
     std::string description() const
     {
       std::stringstream stream;
-      stream <<" {\\bf LDG Diff. Op.}, flux formulation, order: " << polOrd+1
+      stream <<" {\\bf LDG Diff. Op.}, flux formulation, order: " << Traits::polynomialOrder+1
              <<", $\\eta = ";
       diffFlux_.diffusionFluxPenalty( stream );
       stream <<"$, {\\bf Adv. Flux:} ";
@@ -158,11 +165,11 @@ namespace Dune {
       return stream.str();
     }
 
-    const Model& model() const { return model_; }
+    const ModelType& model() const { return model_; }
 
   private:
-    Model               model_;
-    NumFluxType         numflux_;
+    ModelType           model_;
+    AdvectionFluxType   numflux_;
     GridPartType&       gridPart_;
     Space1Type          space1_;
     Space2Type          space2_;
@@ -182,45 +189,42 @@ namespace Dune {
   // LDGAdvectionTraits
   //-------------------
 
-  template <class Mod, class NumFlux,
-            int pOrd,
+  template <class Traits,
             bool advection>
-  struct LDGAdvectionTraits
+  struct LDGAdvectionTraits : public Traits
   {
-    enum PassIdType { u, cdgpass };    /*@\label{ad:passids}@*/
+    enum PassIdType { u, cdgpass };
 
-    typedef Mod  Model;
-    enum { dimRange = Model::dimRange };
-    typedef NumFlux   NumFluxType;
-    enum { polOrd = pOrd };
     typedef AdvectionDiffusionDGPrimalModel
       // put a method_none here to avoid diffusion
-      < Model, NumFluxType, method_none, polOrd, u, advection, false> DiscreteModelType;
+      < Traits, u, advection, false> DiscreteModelType;
   };
 
 
   // DGAdvectionOperator
   //--------------------
 
-  template< class Model, class NumFlux,
-            DGDiffusionFluxIdentifier diffFluxId, // dummy parameter
-            int polOrd >
+  template< class OpTraits >
   class DGAdvectionOperator : public
-    DGAdvectionDiffusionOperatorBase< LDGAdvectionTraits<Model, NumFlux, polOrd, true> >
+    DGAdvectionDiffusionOperatorBase< LDGAdvectionTraits< OpTraits, true > >
   {
-    typedef LDGAdvectionTraits<Model, NumFlux, polOrd, true> Traits;
+    typedef LDGAdvectionTraits< OpTraits, true> Traits;
     typedef DGAdvectionDiffusionOperatorBase< Traits >  BaseType;
+  public:
     typedef typename BaseType :: GridPartType  GridPartType;
     typedef typename BaseType :: ProblemType   ProblemType;
-  public:
-    DGAdvectionOperator( GridPartType& gridPart, ProblemType& problem )
-      : BaseType( gridPart, problem )
+    typedef typename BaseType :: ExtraParameterTupleType ExtraParameterTupleType;
+
+    DGAdvectionOperator( GridPartType& gridPart, ProblemType& problem,
+                         ExtraParameterTupleType  tuple =  ExtraParameterTupleType(),
+                         const std::string keyPrefix = "" )
+      : BaseType( gridPart, problem, tuple, keyPrefix )
     {}
 
     std::string description() const
     {
       std::stringstream stream;
-      stream <<"{\\bf Adv. Op.}, flux formulation, order: " << polOrd+1
+      stream <<"{\\bf Adv. Op.}, flux formulation, order: " << Traits::polynomialOrder+1
              <<", {\\bf Adv. Flux:} ";
       if (FLUX==1)
         stream <<"LLF";
@@ -235,25 +239,27 @@ namespace Dune {
   // DGDiffusionOperator
   //--------------------
 
-  template< class Model, class NumFlux,
-            DGDiffusionFluxIdentifier diffFluxId, // dummy parameter
-            int polOrd >
+  template< class Traits >
   class DGDiffusionOperator : public
-    DGAdvectionDiffusionOperator< Model, NumFlux, diffFluxId, polOrd, false >
+    DGAdvectionDiffusionOperator< Traits, false >
   {
-    typedef DGAdvectionDiffusionOperator< Model, NumFlux, diffFluxId, polOrd, false >  BaseType;
-    typedef typename BaseType :: GridPartType  GridPartType;
-    typedef typename BaseType :: ProblemType   ProblemType;
+    typedef DGAdvectionDiffusionOperator< Traits, false >  BaseType;
 
   public:
-    DGDiffusionOperator( GridPartType& gridPart, ProblemType& problem )
-      : BaseType( gridPart, problem )
+    typedef typename BaseType :: GridPartType  GridPartType;
+    typedef typename BaseType :: ProblemType   ProblemType;
+    typedef typename BaseType :: ExtraParameterTupleType ExtraParameterTupleType;
+
+    DGDiffusionOperator( GridPartType& gridPart, ProblemType& problem,
+                         ExtraParameterTupleType  tuple =  ExtraParameterTupleType(),
+                         const std::string keyPrefix = "" )
+      : BaseType( gridPart, problem, tuple, keyPrefix )
     {}
 
     std::string description() const
     {
       std::stringstream stream;
-      stream <<"{\\bf LDG Diff. Op.}, flux formulation, order: " << polOrd+1
+      stream <<"{\\bf LDG Diff. Op.}, flux formulation, order: " << Traits::polynomialOrder+1
              <<", $\\eta = ";
       diffFlux_.diffusionFluxPenalty( stream );
       stream <<"$, {\\bf Adv. Flux:} ";
@@ -279,33 +285,35 @@ namespace Dune {
    *  \tparam polOrd Polynomial degree
    *  \tparam advection Advection
    */
-  template< class Model, class NumFlux,
-            DGDiffusionFluxIdentifier diffFluxId, // dummy parameter
-            int polOrd, bool advection = true >
+  template< class Traits,
+            bool advection = true >
   class DGLimitedAdvectionDiffusionOperator :
     public Fem::SpaceOperatorInterface
-      < typename PassTraits< Model, Model::Traits::dimRange, polOrd > :: DestinationType >
+      < typename Traits :: DestinationType >
   {
-    enum PassIdType { u, limitPassId, gradPassId, advectPassId };    /*@\label{ad:passids}@*/
+    enum PassIdType { u, limitPassId, gradPassId, advectPassId };
 
   public:
-    enum { dimRange = Model::dimRange };
-    enum { dimDomain = Model::Traits::dimDomain };
+    typedef typename Traits :: ModelType   ModelType;
+    typedef typename Traits :: FluxType    AdvectionFluxType;
+    typedef typename ModelType :: ProblemType  ProblemType;
 
-    typedef NumFlux NumFluxType;
-    typedef typename Model :: ProblemType  ProblemType;
-    typedef PassTraits< Model, dimRange, polOrd > PassTraitsType;
+    enum { dimRange  = ModelType::dimRange };
+    enum { dimDomain = ModelType::Traits::dimDomain };
 
     // Pass 2 Model (advectPassId)
     typedef AdvectionDiffusionLDGModel
-      < Model, NumFluxType, polOrd, limitPassId, gradPassId, advection, true > DiscreteModel3Type;
+      < Traits, limitPassId, gradPassId, advection, true > DiscreteModel3Type;
 
     // Pass 1 Model (gradPassId)
     typedef typename DiscreteModel3Type :: DiffusionFluxType  DiffusionFluxType;
-    typedef GradientModel< Model, DiffusionFluxType, polOrd, limitPassId >
-                                                                       DiscreteModel2Type;
+    struct GradientTraits : public Traits
+    {
+      typedef DiffusionFluxType  FluxType;
+    };
+    typedef GradientModel< GradientTraits, limitPassId >     DiscreteModel2Type;
     // The model of the limiter pass (limitPassId)
-    typedef Fem :: StandardLimiterDiscreteModel< PassTraitsType, Model, u > LimiterDiscreteModelType;
+    typedef Fem :: StandardLimiterDiscreteModel< Traits, ModelType, u > LimiterDiscreteModelType;
 
     // Pass 0 Model (limitPassId)
     typedef LimiterDiscreteModelType                                   DiscreteModel1Type;
@@ -315,7 +323,7 @@ namespace Dune {
     typedef typename DiscreteModel2Type :: Traits                      Traits2;
     typedef typename DiscreteModel3Type :: Traits                      Traits3;
 
-    typedef typename Model :: Traits :: GridType                       GridType;
+    typedef typename Traits :: GridType                                GridType;
 
     typedef typename Traits3 :: DomainType                             DomainType;
     typedef typename Traits3 :: DiscreteFunctionType                   DiscreteFunction3Type;
@@ -335,8 +343,9 @@ namespace Dune {
     typedef LocalCDGPass< DiscreteModel2Type, Pass1Type, gradPassId >    Pass2Type;
     typedef LocalCDGPass< DiscreteModel3Type, Pass2Type, advectPassId >  Pass3Type;
 
-    typedef typename PassTraitsType::IndicatorType                     IndicatorType;
+    typedef typename Traits::IndicatorType                             IndicatorType;
     typedef typename IndicatorType::DiscreteFunctionSpaceType          IndicatorSpaceType;
+    typedef typename Traits :: ExtraParameterTupleType                 ExtraParameterTupleType;
 
     template <class Limiter, int pOrd>
     struct LimiterCall
@@ -366,14 +375,16 @@ namespace Dune {
     };
 
   public:
-    DGLimitedAdvectionDiffusionOperator( GridPartType& gridPart, ProblemType& problem )
+    DGLimitedAdvectionDiffusionOperator( GridPartType& gridPart, ProblemType& problem,
+                                         ExtraParameterTupleType  tuple =  ExtraParameterTupleType(),
+                                         const std::string keyPrefix = "" )
       : model_( problem )
       , numflux_( model_ )
       , gridPart_( gridPart )
       , space1_( gridPart_ )
       , space2_( gridPart_ )
       , space3_( gridPart_ )
-      , uTmp_( (polOrd > 0) ? (new DestinationType("limitTmp", space3_)) : 0 )
+      , uTmp_( (Traits::polynomialOrder > 0) ? (new DestinationType("limitTmp", space3_)) : 0 )
       , fvSpc_( gridPart_ )
       , indicator_( "Indicator", fvSpc_ )
       , diffFlux_( gridPart_, model_ )
@@ -427,21 +438,21 @@ namespace Dune {
     inline void limit( const DestinationType& arg, DestinationType& dest) const
     {
       pass1_.enableFirstCall();
-      LimiterCall< Pass1Type, polOrd >::limit( pass1_, uTmp_, dest );
+      LimiterCall< Pass1Type, Traits::polynomialOrder >::limit( pass1_, uTmp_, dest );
     }
 
     void printmyInfo(std::string filename) const {
 	    std::ostringstream filestream;
             filestream << filename;
             std::ofstream ofs(filestream.str().c_str(), std::ios::app);
-            ofs << "Limited LDG Op., polynomial order: " << polOrd << "\\\\\n\n";
+            ofs << "Limited LDG Op., polynomial order: " << Traits::poolynomialOrder << "\\\\\n\n";
             ofs.close();
     }
 
     std::string description() const
     {
       std::stringstream stream;
-      stream <<" {\\bf LDG Diff. Op.}, dual form, order: " << polOrd+1
+      stream <<" {\\bf LDG Diff. Op.}, dual form, order: " << Traits::poolynomialOrder+1
              <<", penalty: ";
       diffFlux_.diffusionFluxPenalty( stream );
       stream <<", {\\bf Adv. Flux:} ";
@@ -453,11 +464,11 @@ namespace Dune {
       return stream.str();
     }
 
-    const Model& model() const { return model_; }
+    const ModelType& model() const { return model_; }
 
   private:
-    Model               model_;
-    NumFluxType         numflux_;
+    ModelType           model_;
+    AdvectionFluxType   numflux_;
     GridPartType&       gridPart_;
     Space1Type          space1_;
     Space2Type          space2_;
@@ -484,39 +495,35 @@ namespace Dune {
   ////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////
 
-  template <class Mod, class NumFlux,
-            DGDiffusionFluxIdentifier diffFluxId,
-            int pOrd,
+  template <class Traits,
             bool advection, bool diffusion >
-  struct AdaptationIndicatorTraits
+  struct AdaptationIndicatorTraits : public Traits
   {
     enum { u, cdgpass };
 
-    typedef Mod  Model;
-    enum { dimRange = Model::dimRange };
-    typedef NumFlux NumFluxType;
-    enum { polOrd = pOrd };
     typedef AdaptiveAdvectionDiffusionDGPrimalModel
-      < Model, NumFluxType, diffFluxId, polOrd, u, advection, diffusion> DiscreteModelType;
+      < Traits, u, advection, diffusion> DiscreteModelType;
   };
 
   // DGAdaptationIndicatorOperator
   //------------------------------
 
-  template< class Model, class NumFlux,
-            DGDiffusionFluxIdentifier diffFluxId, int polOrd,
+  template< class OpTraits,
             bool advection, bool diffusion = false >
   struct DGAdaptationIndicatorOperator : public
     DGAdvectionDiffusionOperatorBase<
-       AdaptationIndicatorTraits< Model, NumFlux, diffFluxId, polOrd, advection, diffusion > >
+       AdaptationIndicatorTraits< OpTraits, advection, diffusion > >
   {
-    typedef AdaptationIndicatorTraits< Model, NumFlux, diffFluxId, polOrd, advection, diffusion > Traits ;
+    typedef AdaptationIndicatorTraits< OpTraits, advection, diffusion > Traits ;
     typedef DGAdvectionDiffusionOperatorBase< Traits >  BaseType;
     typedef typename BaseType :: GridPartType  GridPartType;
     typedef typename BaseType :: ProblemType   ProblemType ;
+    typedef typename BaseType :: ExtraParameterTupleType ExtraParameterTupleType;
 
-    DGAdaptationIndicatorOperator( GridPartType& gridPart, ProblemType& problem )
-      : BaseType( gridPart, problem )
+    DGAdaptationIndicatorOperator( GridPartType& gridPart, ProblemType& problem,
+                                   ExtraParameterTupleType  tuple =  ExtraParameterTupleType(),
+                                   const std::string keyPrefix = "" )
+      : BaseType( gridPart, problem, tuple, keyPrefix )
     {
       if ( Fem::Parameter::verbose() )
       {
@@ -529,7 +536,7 @@ namespace Dune {
     {
       std::stringstream stream;
       discreteModel_.diffusionFlux().diffusionFluxName( stream );
-      stream <<" {\\bf Adv. Op.} in primal formulation, order: " << polOrd+1
+      stream <<" {\\bf Adv. Op.} in primal formulation, order: " << Traits::polynomialOrder+1
              <<", $\\eta = ";
       discreteModel_.diffusionFlux().diffusionFluxPenalty( stream );
       stream <<"$, $\\chi = ";
