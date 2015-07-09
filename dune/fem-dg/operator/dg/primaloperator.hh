@@ -52,7 +52,7 @@ namespace Dune {
     {
       std::stringstream stream;
       discreteModel_.diffusionFlux().diffusionFluxName( stream );
-      stream <<" {\\bf Diff. Op.} in primal formulation, order: " << OpTraits::polynomialOrder+1
+      stream <<" {\\bf Diff. Op.} in primal formulation, order: " << Traits::polynomialOrder+1
              <<", $\\eta = ";
       discreteModel_.diffusionFlux().diffusionFluxPenalty( stream );
       stream <<"$, $\\chi = ";
@@ -91,7 +91,7 @@ namespace Dune {
     {
       std::stringstream stream;
       discreteModel_.diffusionFlux().diffusionFluxName( stream );
-      stream <<" {\\bf Adv. Op.} in primal formulation, order: " << OpTraits::polynomialOrder+1
+      stream <<" {\\bf Adv. Op.} in primal formulation, order: " << Traits::polynomialOrder+1
              <<", $\\eta = ";
       discreteModel_.diffusionFlux().diffusionFluxPenalty( stream );
       stream <<"$, $\\chi = ";
@@ -135,7 +135,7 @@ namespace Dune {
     {
       std::stringstream stream;
       discreteModel_.diffusionFlux().diffusionFluxName( stream );
-      stream <<" {\\bf Diff. Op.} in primal formulation, order: " << OpTraits::polynomialOrder+1
+      stream <<" {\\bf Diff. Op.} in primal formulation, order: " << Traits::polynomialOrder+1
              <<", $\\eta = ";
       discreteModel_.diffusionFlux().diffusionFluxPenalty( stream );
       stream <<"$, $\\chi = ";
@@ -152,14 +152,14 @@ namespace Dune {
   ////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////
 
-  template <class OpTraits,
+  template <class Traits,
             bool advection, bool diffusion >
-  struct CDGAdaptationIndicatorTraits : public OpTraits
+  struct CDGAdaptationIndicatorTraits : public Traits
   {
     // choose ids different to the tuple entries
-    enum { u = std::tuple_size< typename OpTraits::ExtraParameterTupleType > ::value + 2 , cdgpass = u + 1 };
+    enum { u = std::tuple_size< typename Traits::ExtraParameterTupleType > ::value + 2 , cdgpass = u + 1 };
 
-    typedef AdaptiveAdvectionDiffusionDGPrimalModel< OpTraits, u, advection, diffusion> DiscreteModelType;
+    typedef AdaptiveAdvectionDiffusionDGPrimalModel< Traits, u, advection, diffusion> DiscreteModelType;
   };
 
   // DGAdaptationIndicatorOperator
@@ -187,7 +187,7 @@ namespace Dune {
     {
       std::stringstream stream;
       discreteModel_.diffusionFlux().diffusionFluxName( stream );
-      stream <<" {\\bf Adv. Op.} in primal formulation, order: " << OpTraits::polynomialOrder+1
+      stream <<" {\\bf Adv. Op.} in primal formulation, order: " << Traits::polynomialOrder+1
              <<", $\\eta = ";
       discreteModel_.diffusionFlux().diffusionFluxPenalty( stream );
       stream <<"$, $\\chi = ";
@@ -220,34 +220,32 @@ namespace Dune {
    *  \tparam polOrd Polynomial degree
    *  \tparam advection Advection
    */
-  template< class OpTraits,
+  template< class Traits,
             bool advection = true, bool diffusion = false>
   class DGLimitedAdvectionOperator :
-    public Fem::SpaceOperatorInterface< typename OpTraits :: DestinationType >
+    public Fem::SpaceOperatorInterface< typename Traits :: DestinationType >
   {
     enum PassIdType { u, limitPassId, advectPassId };
-    enum { polOrd = OpTraits::polynomialOrder };
-    enum { limiterPolOrd = OpTraits::limiterPolynomialOrder };
+    enum { polOrd = Traits::polynomialOrder };
+    enum { limiterPolOrd = Traits::limiterPolynomialOrder };
 
   public:
-    typedef typename OpTraits :: ModelType         ModelType;
-    typedef typename OpTraits :: AdvectionFluxType AdvectionFluxType;
+    typedef typename Traits :: ModelType         ModelType;
+    typedef typename Traits :: AdvectionFluxType AdvectionFluxType;
     enum { dimRange  = ModelType::dimRange };
     enum { dimDomain = ModelType::Traits::dimDomain };
 
-    typedef OpTraits                                                    PassTraitsType;
-    typedef PassTraits< OpTraits, limiterPolOrd >            LimiterPassTraitsType;
+    typedef Traits                                    PassTraitsType;
+    typedef PassTraits< Traits, limiterPolOrd >       LimiterPassTraitsType;
 
     // The model of the advection pass (advectPassId)
-    typedef AdvectionDiffusionDGPrimalModel< OpTraits, limitPassId, advection, diffusion > DiscreteModel1Type;
+    typedef AdvectionDiffusionDGPrimalModel< Traits, limitPassId, advection, diffusion > DiscreteModel1Type;
 
     typedef typename DiscreteModel1Type :: DiffusionFluxType            DiffusionFluxType;
     typedef typename DiscreteModel1Type :: AdaptationType               AdaptationType;
 
     // The model of the limiter pass (limitPassId)
     typedef Fem :: StandardLimiterDiscreteModel< LimiterPassTraitsType, ModelType, u > LimiterDiscreteModelType;
-
-    typedef typename DiscreteModel1Type :: Traits                       Traits;
 
     typedef typename ModelType :: ProblemType                           ProblemType;
     typedef typename ModelType :: Traits :: GridType                    GridType;

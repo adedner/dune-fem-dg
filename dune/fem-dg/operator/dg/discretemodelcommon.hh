@@ -31,7 +31,6 @@ namespace Dune {
             int passUId, int passGradId, bool returnAdvectionPart>
   struct AdvectionTraits : public Traits
   {
-    typedef typename Traits::DestinationType                                         DiscreteFunctionType;
     typedef AdvectionModel< Traits, passUId, passGradId, returnAdvectionPart >       DGDiscreteModelType;
   };
 
