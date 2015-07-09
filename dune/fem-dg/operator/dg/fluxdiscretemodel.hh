@@ -551,7 +551,9 @@ namespace Dune {
       if( diffusion )
       {
         JacobianRangeType diffmatrix;
-        model_.diffusion(en, time, x, u[ uVar ], u[ sigmaVar ], diffmatrix);
+        typedef typename Traits :: GradientType GradientType ;
+        Dune::Fem::FieldMatrixConverter< GradientType, JacobianRangeType > uJac( u[ sigmaVar ] );
+        model_.diffusion(en, time, x, u[ uVar ], uJac, diffmatrix);
         // ldg case
         f += diffmatrix;
       }

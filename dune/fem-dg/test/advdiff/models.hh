@@ -339,17 +339,6 @@ public:
     A *= problem_.diffusion( u, A );//*(1.+d);
   }
 
-  inline void diffusion(const EntityType& en,
-                        const double time,
-                        const DomainType& x,
-                        const RangeType& u,
-                        const GradientType& vecJac,
-                        FluxRangeType& A) const
-  {
-    Dune::Fem::FieldMatrixConverter< GradientType, FluxRangeType> jac( vecJac );
-    diffusion( en, time, x, u, jac, A );
-  }
-
   inline double diffusionTimeStep( const IntersectionType &it,
                                    const double enVolume,
                                    const double circumEstimate,
