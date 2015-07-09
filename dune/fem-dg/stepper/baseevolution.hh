@@ -8,10 +8,13 @@
 #include <dune/fem/io/file/datawriter.hh>
 #include <dune/fem/space/common/adaptmanager.hh>
 #include <dune/fem/misc/gridwidth.hh>
+#include <dune/fem/io/parameter.hh>
 
 // local includes
 #include <dune/fem-dg/stepper/base.hh>
+#include <dune/fem-dg/operator/adaptation/utility.hh>
 #include <dune/fem-dg/misc/cons2prim.hh>
+#include <dune/fem-dg/misc/parameterkey.hh>
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -19,10 +22,12 @@
 //
 /////////////////////////////////////////////////////////////////////////////
 
-struct EocDataOutputParameters :   /*@LST1S@*/
+struct EocDataOutputParameters :
        public Dune::Fem::LocalParameter<Dune::Fem::DataWriterParameters,EocDataOutputParameters>
 {
+  protected:
   std::string loop_;
+  public:
   EocDataOutputParameters(int loop, const std::string& name) {
     std::stringstream ss;
     ss << name << loop;
@@ -34,6 +39,61 @@ struct EocDataOutputParameters :   /*@LST1S@*/
   std::string path() const {
     return loop_;
   }
+};
+
+
+struct EocParameters :
+       public Dune::Fem::LocalParameter<EocParameters,EocParameters>
+{
+  protected:
+  std::string keyPrefix_;
+
+  public:
+  EocParameters( const std::string keyPrefix = "fem.eoc.")
+    : keyPrefix_( keyPrefix )
+  {}
+
+  const EocDataOutputParameters dataOutputParameters( int loop, const std::string& name ) const
+  {
+    return EocDataOutputParameters( loop, name );
+  }
+
+  virtual int steps() const
+  {
+    checkOldParameterUsed( "eocSteps" );
+    return Dune::Fem::Parameter::getValue<int>( keyPrefix_ + "steps", 1);
+  }
+
+  virtual std::string outputPath() const
+  {
+    checkOldParameterUsed( "eocOutputPath" );
+    return Dune::Fem::Parameter::getValue<std::string>( keyPrefix_ + "outputpath", "./");
+  }
+
+  virtual std::string fileName() const
+  {
+    checkOldParameterUsed( "eocFileName" );
+    return Dune::Fem::Parameter::getValue<std::string>( keyPrefix_ + "filename", "eoc" );
+  }
+
+  virtual int quadOrder() const
+  {
+    return Dune::Fem::Parameter::getValue< bool >( keyPrefix_ + "quadorder", -1 );
+  }
+
+  private:
+
+  //helper function for deprecation warnings
+  void checkOldParameterUsed( const std::string old ) const
+  {
+    if( Dune::Fem::Parameter::exists( old ) )
+    {
+      std::cerr << "WARNING: deprecated key, please update your parameter '" << old << "'!" << std::endl;
+      //enforce parameter update by throwing an abort();
+      abort();
+    }
+  }
+
 };
 
 //! solver statistics and further info
@@ -149,6 +209,84 @@ inline std::ostream& operator << ( std::ostream& out, const SolverMonitor& monit
   return out;
 }
 
+class StepperParameters
+: public Dune::Fem::LocalParameter< StepperParameters, StepperParameters >
+{
+  protected:
+  const std::string keyPrefix_;
+
+  public:
+  StepperParameters( const std::string keyPrefix = "femdg.stepper." )
+    : keyPrefix_( keyPrefix )
+  {}
+
+  virtual double fixedTimeStep() const
+  {
+    checkOldParameterUsed( "FixedTimeStep" );
+    return Dune::Fem::Parameter::getValue< double >( keyPrefix_ + "fixedtimestep" , 0.0 );
+  }
+
+  virtual double fixedTimeStepEocLoopFactor() const
+  {
+    checkOldParameterUsed( "FixedTimeStepEocLoopFactor" );
+    return Dune::Fem::Parameter::getValue< double >( keyPrefix_ + "fixedtimestepeocloopfactor" , 1.0 );
+  }
+
+  virtual double startTime() const
+  {
+    checkOldParameterUsed( "startTime" );
+    return Dune::Fem::Parameter::getValue< double >( keyPrefix_ + "starttime" , 0.0 );
+  }
+
+  virtual double endTime() const
+  {
+    checkOldParameterUsed( "endTime" );
+    return Dune::Fem::Parameter::getValue< double >( keyPrefix_ + "endtime"/*, 1.0 */);
+  }
+
+  virtual int printCount() const
+  {
+    checkOldParameterUsed( "printCount" );
+    return Dune::Fem::Parameter::getValue< int >( keyPrefix_ + "printcount" , -1 );
+  }
+
+  virtual double maxTimeStep() const
+  {
+    checkOldParameterUsed( "maxTimeStep" );
+    return Dune::Fem::Parameter::getValue< double >( keyPrefix_ + "maxtimestep", std::numeric_limits<double>::max());
+  }
+
+  virtual int maximalTimeSteps () const
+  {
+    checkOldParameterUsed( "maximaltimesteps" );
+    return Dune::Fem::Parameter::getValue< int >(  keyPrefix_ + "maximaltimesteps", std::numeric_limits<int>::max());
+  }
+
+  virtual bool stopAtEndTime() const
+  {
+    checkOldParameterUsed( "stopatendtime" );
+    return Dune::Fem::Parameter::getValue< bool >( keyPrefix_ + "stopatendtime", bool(false) );
+  }
+
+
+  private:
+
+  //helper function for deprecation warnings
+  void checkOldParameterUsed( const std::string old ) const
+  {
+    if( Dune::Fem::Parameter::exists( old ) )
+    {
+      std::cerr << "WARNING: deprecated key, please update your parameter '" << old << "'!" << std::endl;
+      //enforce parameter update by throwing an abort();
+      abort();
+    }
+  }
+
+
+
+};
+
+
 /////////////////////////////////////////////////////////////////////////////
 //
 //  Base class for evolutionary problems
@@ -165,28 +303,34 @@ public:
   // choose a suitable GridView
   typedef typename Traits :: GridPartType              GridPartType;
 
-  // type of IOTuple
-  typedef typename Traits :: IOTupleType  IOTupleType ;
-
   // type of time provider organizing time for time loops
-  typedef Dune::Fem::GridTimeProvider< GridType >                 TimeProviderType;
+  typedef Dune::Fem::GridTimeProvider< GridType >      TimeProviderType;
 
   // type of 64bit unsigned integer
-  typedef uint64_t UInt64Type ;
+  typedef uint64_t                                     UInt64Type ;
 
   // type of statistics monitor
-  typedef SolverMonitor  SolverMonitorType ;
+  typedef SolverMonitor                                SolverMonitorType;
 
-  // type of parameter class
-  typedef Dune::Fem::Parameter  ParameterType ;
+  // type of stepper parameters
+  typedef StepperParameters                            StepperParametersType;
+
+  // type of adaptation parameters
+  typedef Dune::AdaptationParameters                   AdaptationParametersType;
+
+  // type of eoc parameter
+  typedef EocParameters                                EocParametersType;
 
   //! constructor
   AlgorithmBase( GridType& grid, const std::string algorithmName = "" )
    : grid_( grid ),
+     param_( StepperParametersType( Dune::ParameterKey::generate( "", "femdg.stepper." ) ) ),
+     adaptParam_( AdaptationParametersType( Dune::ParameterKey::generate( "", "fem.adaptation." ) ) ),
+     eocParam_( EocParametersType( Dune::ParameterKey::generate( "", "fem.eoc." ) ) ),
      // Initialize Timer for CPU time measurements
      timeStepTimer_( Dune::FemTimer::addTo("max time/timestep") ),
-     fixedTimeStep_( ParameterType::getValue<double>("fixedTimeStep",0) ),
-     fixedTimeStepEocLoopFactor_( ParameterType::getValue<double>("fixedTimeStepEocLoopFactor",1.) ),
+     fixedTimeStep_( param_.fixedTimeStep() ),
+     fixedTimeStepEocLoopFactor_( param_.fixedTimeStepEocLoopFactor() ),
      algorithmName_( algorithmName )
   {
   }
@@ -198,9 +342,6 @@ public:
   {
     return algorithmName_;
   }
-
-  //! return default data tuple for data output
-  virtual IOTupleType dataTuple() = 0 ;
 
   //! return reference to hierarchical grid
   GridType& grid() { return grid_ ; }
@@ -258,12 +399,14 @@ public:
   virtual void writeData( TimeProviderType& tp,
                           const bool reallyWrite = false ) {}
 
+  virtual void writeDiagnostics( TimeProviderType& tp ){}
+
   //! default time loop implementation, overload for changes in derived classes !!!
   virtual SolverMonitorType solve ( const int loop )
   {
     // get start and end time from parameter file
-    const double startTime = ParameterType::getValue<double>("femhowto.startTime", 0.0);
-    const double endTime   = ParameterType::getValue<double>("femhowto.endTime");
+    const double startTime = param_.startTime();
+    const double endTime   = param_.endTime();
 
     // Initialize TimeProvider
     TimeProviderType tp( startTime, this->grid() );
@@ -281,12 +424,11 @@ public:
     GridType& grid = this->grid();
 
     // verbosity
-    const bool verbose = ParameterType :: verbose ();
+    const bool verbose = Dune::Fem::Parameter::verbose ();
     // print info on each printCount step
-    const int printCount = ParameterType::getValue<int>("femhowto.printCount", -1);
+    const int printCount = param_.printCount();
 
-    double maxTimeStep =
-      ParameterType::getValue("femhowto.maxTimeStep", std::numeric_limits<double>::max());
+    double maxTimeStep = param_.maxTimeStep();
 
 #ifdef BASEFUNCTIONSET_CODEGEN_GENERATE
     // in codegen modus make endTime large and only compute one timestep
@@ -294,8 +436,7 @@ public:
     const int maximalTimeSteps = 1;
 #else
     // if this variable is set then only maximalTimeSteps timesteps will be computed
-    const int maximalTimeSteps =
-      ParameterType::getValue("femhowto.maximaltimesteps", std::numeric_limits<int>::max());
+    const int maximalTimeSteps = param_.maximalTimeSteps();
 #endif
 
     // create monitor object (initialize all varialbes)
@@ -306,12 +447,12 @@ public:
     int maxAdaptationLevel = 0;
     if( adaptive() )
     {
-      adaptCount = ParameterType::getValue<int>("fem.adaptation.adaptcount");
-      maxAdaptationLevel = ParameterType::getValue<int>("fem.adaptation.finestLevel");
+      adaptCount = adaptParam_.adaptCount();
+      maxAdaptationLevel = adaptParam_.finestLevel();
     }
 
     // only do checkpointing when number of EOC steps is 1
-    const bool doCheckPointing = ( InitFemEoc :: eocSteps() == 1 );
+    const bool doCheckPointing = ( eocParam_.steps() == 1 );
 
     // restoreData if checkpointing is enabled (default is disabled)
     const bool newStart = ( doCheckPointing ) ? restoreFromCheckPoint( tp ) : false ;
@@ -355,7 +496,7 @@ public:
     }
 
     // true if last time step should match end time
-    const bool stopAtEndTime =  ParameterType::getValue("femdg.stopatendtime", bool(false) );
+    const bool stopAtEndTime =  param_.stopAtEndTime();
 
     //******************************
     //*  Time Loop                 *
@@ -392,6 +533,9 @@ public:
 
       // perform the solve for one time step, i.e. solve ODE
       step( tp, monitor );
+
+      // write diagnostics
+      writeDiagnostics( tp );
 
       // stop FemTimer for this time step
       Dune::FemTimer::stop(timeStepTimer_,Dune::FemTimer::max);
@@ -432,7 +576,7 @@ public:
       // for debugging and codegen only
       if( tp.timeStep() >= maximalTimeSteps )
       {
-        if( ParameterType :: verbose() )
+        if( Dune::Fem::Parameter::verbose() )
           std::cerr << "ABORT: time step count reached max limit of " << maximalTimeSteps << std::endl;
         break ;
       }
@@ -468,6 +612,9 @@ public:
 protected:
   // reference to hierarchical grid
   GridType& grid_ ;
+  const StepperParametersType param_;
+  const AdaptationParametersType adaptParam_;
+  const EocParametersType eocParam_;
 
   unsigned int timeStepTimer_;
 

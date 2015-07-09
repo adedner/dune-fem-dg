@@ -71,7 +71,7 @@ struct AdvectionDiffusionStepper
   using BaseType :: space;
   using BaseType :: problem;
   using BaseType :: adaptationHandler_ ;
-  using BaseType :: adaptationParameters_;
+  using BaseType :: adaptParam_;
   using BaseType :: adaptive ;
   using BaseType :: doEstimateMarkAdapt ;
   using BaseType :: name ;
@@ -82,7 +82,7 @@ struct AdvectionDiffusionStepper
     dgAdvectionOperator_( gridPart_, problem(), name ),
     dgDiffusionOperator_( gridPart_, problem(), name ),
     dgIndicator_( gridPart_, problem(), name ),
-    gradientIndicator_( space(), problem(), AdaptationParameters( ParameterKey::generate( name, "fem.adaptation." ) ) )
+    gradientIndicator_( space(), problem(), adaptParam_ )
   {
   }
 
@@ -123,7 +123,7 @@ struct AdvectionDiffusionStepper
     // create adaptation handler in case of apost indicator
     if( adaptive() )
     {
-      if( ! adaptationHandler_ && adaptationParameters_.aposterioriIndicator() )
+      if( ! adaptationHandler_ && adaptParam_.aposterioriIndicator() )
       {
         adaptationHandler_ = new AdaptationHandlerType( grid_, tp );
         dgIndicator_.setAdaptation( *adaptationHandler_ );

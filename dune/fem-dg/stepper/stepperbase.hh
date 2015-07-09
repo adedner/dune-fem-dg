@@ -102,7 +102,7 @@ struct StepperBase
   typedef typename BaseType :: SolverMonitorType      SolverMonitorType;
 
   // type of solver monitor
-  typedef typename BaseType :: IOTupleType            IOTupleType;
+  typedef typename Traits :: IOTupleType              IOTupleType;
 
   // type of data writer
   typedef Dune::Fem::DataWriter< GridType, IOTupleType >    DataWriterType;
@@ -116,17 +116,24 @@ struct StepperBase
   // type of adaptation manager
   typedef Dune::Fem::AdaptationManager< GridType, RestrictionProlongationType > AdaptationManagerType ;
 
+
+  // type of check pointer parameter
+  typedef Dune::Fem::CheckPointerParameters           CheckPointerParametersType;
+
   using BaseType :: grid_ ;
   using BaseType :: limitSolution ;
+  using BaseType :: adaptParam_ ;
+  using BaseType :: eocParam_;
+  using BaseType :: param_;
 
   // constructor taking grid
   StepperBase(GridType& grid, const std::string name = "" ) :
     BaseType( grid, name  ),
     gridPart_( grid_ ),
     space_( gridPart_ ),
-    solution_( "U", space() ),
-    additionalVariables_( ParameterType :: getValue< bool >("femhowto.additionalvariables", false) ?
-        new DiscreteFunctionType("A", space() ) : 0 ),
+    solution_( "U_"+name, space() ),
+    additionalVariables_( ParameterType :: getValue< bool >( ParameterKey::generate( name, "femdg.additionalvariables"), false) ?
+        new DiscreteFunctionType("A_"+name, space() ) : 0 ),
     problem_( ProblemTraits::problem() ),
     adaptationHandler_( 0 ),
     diagnostics_( true ),
@@ -135,8 +142,8 @@ struct StepperBase
     eocId_( Fem::FemEoc::addEntry(std::string("$L^2$-error")) ),
     odeSolver_( 0 ),
     rp_( solution_ ),
-    adaptationManager_( grid_, rp_ ),
-    adaptationParameters_( AdaptationParameters( ParameterKey::generate( name, "fem.adaptation." ) ) ),
+    adaptationManager_( 0 ),
+    checkPointerParameters_( CheckPointerParametersType( ParameterKey::generate( "", "fem.io." ) ) ),
     dataWriter_( 0 )
   {
     // set refine weight
@@ -159,6 +166,11 @@ struct StepperBase
     adaptationHandler_ = 0;
     delete additionalVariables_;
     additionalVariables_ = 0;
+  }
+
+  virtual const RestrictionProlongationType& restrictionProlongation() const
+  {
+    return rp_;
   }
 
   virtual const DiscreteSpaceType& space() const { return space_ ; }
@@ -197,16 +209,16 @@ struct StepperBase
     problem().postProcessTimeStep( grid_, solution(), tp.time() );
   }
 
-  bool adaptive () const { return adaptationManager_.adaptive(); }
+  bool adaptive () const { return adaptParam_.adaptive(); }
 
   // function creating the ode solvers
   virtual OdeSolverType* createOdeSolver( TimeProviderType& ) = 0;
 
   CheckPointerType& checkPointer( TimeProviderType& tp ) const
   {
-    // create check point if not exsistent
+    // create check point if not existent
     if( ! checkPointer_ )
-      checkPointer_ = new CheckPointerType( grid_, tp );
+      checkPointer_ = new CheckPointerType( grid_, tp, checkPointerParameters_ );
 
     return *checkPointer_;
   }
@@ -230,7 +242,7 @@ struct StepperBase
     return true ;
   }
 
-  void writeDiagnostics( TimeProviderType& tp ) const
+  void writeDiagnostics( TimeProviderType& tp )
   {
     const double ldt = tp.deltaT();
     const int maxNumDofs = space().blockMapper().maxNumDofs() * space().localBlockSize;
@@ -241,8 +253,8 @@ struct StepperBase
                     maxNumDofs,                             // number of dofs per element (max)
                     odeSolverMonitor_.operatorTime_,        // time for operator evaluation
                     odeSolverMonitor_.odeSolveTime_,        // ode solver
-                    adaptationManager_.adaptationTime(),    // time for adaptation
-                    adaptationManager_.loadBalanceTime(),   // time for load balance
+                    adaptationManager().adaptationTime(),    // time for adaptation
+                    adaptationManager().loadBalanceTime(),   // time for load balance
                     overallTimer_.elapsed());               // time step overall time
   }
 
@@ -281,7 +293,7 @@ struct StepperBase
       // copy data tuple
       dataTuple_ = dataTuple () ;
       dataWriter_ = new DataWriterType( grid_, dataTuple_, tp,
-        EocDataOutputParameters( loop, problem_->dataPrefix() ) );
+        eocParam_.dataOutputParameters( loop, problem_->dataPrefix() ) );
     }
     assert( dataWriter_ );
 
@@ -343,12 +355,12 @@ struct StepperBase
     sum2_ = 0.;
 #endif
 
-    writeDiagnostics( tp );
-  }
+      }
 
   inline double error(TimeProviderType& tp, DiscreteFunctionType& u)
   {
-    Fem :: L2Norm< GridPartType > l2norm( u.space().gridPart(), 2*u.space().order()+4 );
+    const int order = eocParam_.quadOrder() < 0 ? 2*u.space().order()+4 : eocParam_.quadOrder();
+    Fem :: L2Norm< GridPartType > l2norm( u.space().gridPart(), order );
     return l2norm.distance( problem().fixedTimeFunction( tp.time() ), u );
   }
 
@@ -397,13 +409,20 @@ struct StepperBase
 
   virtual const ModelType& model() const = 0 ;
 
+  virtual AdaptationManagerType& adaptationManager()
+  {
+    if( !adaptationManager_ )
+      adaptationManager_ = new AdaptationManagerType( grid_, rp_ );
+    return *adaptationManager_;
+  }
+
 protected:
   template <class IndicatorOperator, class GradientIndicator>
   void doEstimateMarkAdapt( const IndicatorOperator& dgIndicator,
                             GradientIndicator& gradientIndicator,
                             const bool initialAdaptation = false )
   {
-    if( adaptationManager_.adaptive() )
+    if( adaptParam_.adaptive() )
     {
       // get grid sequence before adaptation
       const int sequence = space().sequence();
@@ -414,17 +433,17 @@ protected:
         dgIndicator.evaluateOnly( solution_ );
 
         // do marking and adaptation
-        adaptationHandler_->adapt( adaptationManager_, initialAdaptation );
+        adaptationHandler_->adapt( adaptationManager(), initialAdaptation );
       }
-      else if( adaptationParameters_.gradientBasedIndicator() )
+      else if( adaptParam_.gradientBasedIndicator() )
       {
         gradientIndicator.estimateAndMark( solution_ );
-        adaptationManager_.adapt();
+        adaptationManager().adapt();
       }
-      else if( adaptationParameters_.shockIndicator() )
+      else if( adaptParam_.shockIndicator() )
       {
         // marking has been done by limiter
-        adaptationManager_.adapt();
+        adaptationManager().adapt();
       }
 
       // if grid has changed then limit solution again
@@ -466,8 +485,8 @@ protected:
 
   RestrictionProlongationType rp_;
 
-  AdaptationManagerType   adaptationManager_;
-  AdaptationParameters    adaptationParameters_;
+  AdaptationManagerType*   adaptationManager_;
+  CheckPointerParametersType checkPointerParameters_;
 
   IOTupleType             dataTuple_ ;
   DataWriterType*         dataWriter_ ;
