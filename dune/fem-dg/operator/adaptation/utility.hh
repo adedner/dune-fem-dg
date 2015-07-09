@@ -101,8 +101,8 @@ namespace Dune
     virtual bool method () const
     {
       const std::string names[] = { "none", "generic", "callback" };
-      // default value is none
-      return Fem::Parameter::getEnum( keyPrefix_ + "method", names, 0 );
+      // default value is generic
+      return Fem::Parameter::getEnum( keyPrefix_ + "method", names, 1 );
     }
 
     virtual bool adaptive () const
