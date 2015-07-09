@@ -14,6 +14,8 @@ template < class Traits >
 class DefaultModel
 {
 public:
+  typedef std::tuple <>  ModelParameter;
+
   static const int dimDomain = Traits :: dimDomain ;
   static const int dimRange  = Traits :: dimRange ;
 

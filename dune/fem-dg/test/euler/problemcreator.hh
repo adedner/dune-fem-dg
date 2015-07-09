@@ -11,8 +11,6 @@
 
 #include <dune/grid/io/file/dgfparser/dgfparser.hh>
 
-#include "passtraits.hh"
-
 // get a numerical flux
 #include <dune/fem-dg/operator/fluxes/eulerfluxes.hh>
 #include <dune/fem-dg/operator/fluxes/diffusionflux.hh>

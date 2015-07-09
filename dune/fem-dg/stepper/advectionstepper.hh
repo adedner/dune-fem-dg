@@ -54,12 +54,14 @@ struct AdvectionStepper
   typedef typename BaseType :: AdaptationHandlerType     AdaptationHandlerType;
   typedef typename BaseType :: IndicatorType             IndicatorType;
 
+
+  typedef typename FullOperatorType :: ExtraParameterTupleType  ExtraParameterTupleType;
+
   static const Dune::DGDiffusionFluxIdentifier DiffusionFluxId =
     BaseType::Traits::DiffusionFluxId ;
 
   // advection = true , diffusion = false
-  typedef Dune :: DGAdaptationIndicatorOperator< ModelType, FluxType,
-            DiffusionFluxId, polynomialOrder, true, false >  DGIndicatorType;
+  typedef Dune :: DGAdaptationIndicatorOperator< typename BaseType::OperatorTraits, true, false >  DGIndicatorType;
 
   // gradient estimator
   typedef Estimator< DiscreteFunctionType, InitialDataType > GradientIndicatorType ;
@@ -78,11 +80,12 @@ struct AdvectionStepper
   using BaseType :: doEstimateMarkAdapt ;
 
   // constructor
-  AdvectionStepper( GridType& grid, const std::string name = "" ) :
+  AdvectionStepper( GridType& grid, const std::string name = "",
+                    ExtraParameterTupleType tuple = ExtraParameterTupleType() ) :
     BaseType( grid, name ),
-    dgAdvectionOperator_(gridPart_, problem(), name ),
-    dgIndicator_( gridPart_, problem(), name ),
-    gradientIndicator_( space(), problem(), name )
+    dgAdvectionOperator_(gridPart_, problem(), tuple, name ),
+    dgIndicator_( gridPart_, problem(), tuple, name ),
+    gradientIndicator_( space(), problem() )
   {
   }
 

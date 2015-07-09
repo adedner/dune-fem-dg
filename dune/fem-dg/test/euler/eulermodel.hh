@@ -25,29 +25,31 @@ namespace Dune
 
     template< class GridPart >
     class EulerModelTraits
+      : public FunctionSpace< double, double,
+                              GridPart::GridType::dimensionworld,
+                              GridPart::GridType::dimensionworld + 2 >
     {
-     public:
+      typedef FunctionSpace< double, double,
+                             GridPart::GridType::dimensionworld,
+                             GridPart::GridType::dimensionworld + 2 >  BaseType;
+    public:
+
       typedef GridPart GridPartType;
-      typedef typename GridPart::GridType                           GridType;
+      typedef typename GridPart::GridType     GridType;
+
       enum{ dimDomain = GridType::dimensionworld };
-      enum{ dimRange = dimDomain + 2 }; // the Euler equations
+      enum{ dimRange  = dimDomain + 2 }; // the Euler equations
       enum{ dimGradRange = dimRange * dimDomain };
 
-      typedef typename GridType :: ctype  ctype ;
-
-      typedef FunctionSpace< ctype, ctype, dimDomain, dimRange > FunctionSpaceType ;
+      typedef BaseType FunctionSpaceType ;
       typedef typename ToNewDimRangeFunctionSpace< FunctionSpaceType, dimGradRange > :: Type  GradientFunctionSpaceType;
 
-      typedef typename FunctionSpaceType :: DomainType         DomainType;
-      typedef typename FunctionSpaceType :: RangeType          RangeType;
-      typedef typename FunctionSpaceType :: JacobianRangeType  JacobianRangeType;
-      typedef JacobianRangeType                                FluxRangeType ;
-      typedef typename FunctionSpaceType :: RangeFieldType     FieldType ;
+      typedef typename FunctionSpaceType :: JacobianRangeType    FluxRangeType ;
       typedef typename ToNewDimDomainFunctionSpace<
-        FunctionSpaceType, dimDomain-1 > :: Type :: DomainType    FaceDomainType ;
+        FunctionSpaceType, dimDomain-1 > :: Type :: DomainType   FaceDomainType ;
 
-      typedef typename GradientFunctionSpaceType :: RangeType          GradientType;
-      typedef GradientType                                        DiffusionType;
+      typedef typename GradientFunctionSpaceType :: RangeType    GradientType;
+      typedef GradientType                                       DiffusionType;
       typedef typename GradientFunctionSpaceType :: JacobianRangeType  JacobianFluxRangeType ;
 
       typedef typename GridPart::IntersectionIteratorType           IntersectionIteratorType;
@@ -56,7 +58,7 @@ namespace Dune
 
       typedef Thermodynamics< dimDomain >                           ThermodynamicsType;
 
-      typedef MinModLimiter< FieldType > LimiterFunctionType ;
+      typedef MinModLimiter< typename FunctionSpaceType :: RangeFieldType > LimiterFunctionType ;
       //typedef SuperBeeLimiter< FieldType > LimiterFunctionType ;
       //typedef VanLeerLimiter< FieldType > LimiterFunctionType ;
     };
@@ -90,6 +92,10 @@ namespace Dune
       typedef typename Traits :: JacobianFluxRangeType          JacobianFluxRangeType;
 
       typedef typename Traits::ThermodynamicsType               ThermodynamicsType;
+
+      // for Euler equations diffusion is disabled
+      static const bool hasAdvection = true ;
+      static const bool hasDiffusion = false ;
 
      public:
       EulerModel( const ProblemType& problem )

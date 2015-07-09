@@ -166,27 +166,18 @@ namespace Fem {
       grid.mark( refinement, gridEntity );
     }
 
-    template <class FaceQuadratureImp,
-              class ArgumentTuple,
-              class JacobianTuple>
-    double numericalFlux(const IntersectionType& it,
-                         const double time,
-                         const FaceQuadratureImp& innerQuad,
-                         const FaceQuadratureImp& outerQuad,
-                         const int quadPoint,
-                         const ArgumentTuple& uLeft,
-                         const ArgumentTuple& uRight,
-                         const JacobianTuple& jacLeft,
-                         const JacobianTuple& jacRight,
+    template <class LocalEvaluation>
+    double numericalFlux(const LocalEvaluation& left,
+                         const LocalEvaluation& right,
                          RangeType& shockIndicator,
                          RangeType& adaptIndicator,
                          JacobianRangeType&,
                          JacobianRangeType& ) const
     {
-      const FaceLocalDomainType& x = innerQuad.localPoint( quadPoint );
+      const FaceLocalDomainType& x = left.localPoint();
 
-      if (! physical(inside(), innerQuad.point( quadPoint ), uLeft[ uVar ] ) ||
-          ! physical(outside(), outerQuad.point( quadPoint ), uRight[ uVar ] ) )
+      if (! physical(left.entity(),  left.point(),  left.values()[ uVar ] ) ||
+          ! physical(right.entity(), right.point(), right.values()[ uVar ] ) )
       {
         adaptIndicator = shockIndicator = 1e10;
         return -1.;
@@ -194,42 +185,40 @@ namespace Fem {
       else
       {
         // evaluate adaptation indicator
-        model_.adaptationIndicator(it, time, x, uLeft[ uVar ], uRight[ uVar ], adaptIndicator );
-        model_.jump( it, time, x, uLeft[ uVar ], uRight[ uVar ], shockIndicator );
+        model_.adaptationIndicator( left.intersection(), left.time(), x,
+                                    left.values()[ uVar ], right.values()[ uVar ],
+                                    adaptIndicator );
+
+        model_.jump( left.intersection(), left.time(), x,
+                     left.values()[ uVar ], right.values()[ uVar ],
+                     shockIndicator );
         return 1.;
       }
     }
 
     //! returns difference between internal value and boundary
     //! value
-    template <class FaceQuadratureImp,
-              class ArgumentTuple,
-              class JacobianTuple>
-    double boundaryFlux(const IntersectionType& it,
-                        const double time,
-                        const FaceQuadratureImp& innerQuad,
-                        const int quadPoint,
-                        const ArgumentTuple& uLeft,
-                        const JacobianTuple& jacLeft,
+    template <class LocalEvaluation>
+    double boundaryFlux(const LocalEvaluation& left,
                         RangeType& adaptIndicator,
                         JacobianRangeType& gDiffLeft ) const
     {
-      const FaceLocalDomainType& x = innerQuad.localPoint( quadPoint );
+      const FaceLocalDomainType& x = left.localPoint();
 
       RangeType uRight;
 
       // evaluate boundary value
-      model_.boundaryValue(it, time, x, uLeft[ uVar ], uRight );
+      model_.boundaryValue( left.intersection(), left.time(), x, left.values()[ uVar ], uRight );
 
-      if (! physical(inside(), innerQuad.point( quadPoint ), uLeft[ uVar ] ) ||
-          ! physical(inside(), innerQuad.point( quadPoint ), uRight ) )
+      if (! physical(left.entity(), left.point(), left.values()[ uVar ] ) ||
+          ! physical(left.entity(), left.point(), uRight ) )
       {
         adaptIndicator = 1e10;
         return -1.;
       }
       else
       {
-        model_.jump( it, time, x, uLeft[ uVar ], uRight, adaptIndicator);
+        model_.jump( left.intersection(), left.time(), x, left.values()[ uVar ], uRight, adaptIndicator);
         return 1.;
       }
     }

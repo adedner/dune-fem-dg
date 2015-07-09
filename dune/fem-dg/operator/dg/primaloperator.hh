@@ -230,13 +230,15 @@ namespace Dune {
     enum { limiterPolOrd = Traits::limiterPolynomialOrder };
 
   public:
+    typedef typename Traits :: ExtraParameterTupleType  ExtraParameterTupleType;
+
     typedef typename Traits :: ModelType         ModelType;
-    typedef typename Traits :: AdvectionFluxType AdvectionFluxType;
+    typedef typename Traits :: FluxType          AdvectionFluxType;
     enum { dimRange  = ModelType::dimRange };
     enum { dimDomain = ModelType::Traits::dimDomain };
 
     typedef Traits                                    PassTraitsType;
-    typedef PassTraits< Traits, limiterPolOrd >       LimiterPassTraitsType;
+    typedef PassTraits< Traits, limiterPolOrd >       LimiterTraitsType;
 
     // The model of the advection pass (advectPassId)
     typedef AdvectionDiffusionDGPrimalModel< Traits, limitPassId, advection, diffusion > DiscreteModel1Type;
@@ -245,37 +247,34 @@ namespace Dune {
     typedef typename DiscreteModel1Type :: AdaptationType               AdaptationType;
 
     // The model of the limiter pass (limitPassId)
-    typedef Fem :: StandardLimiterDiscreteModel< LimiterPassTraitsType, ModelType, u > LimiterDiscreteModelType;
+    typedef Fem :: StandardLimiterDiscreteModel< LimiterTraitsType, ModelType, u > LimiterDiscreteModelType;
 
     typedef typename ModelType :: ProblemType                           ProblemType;
     typedef typename ModelType :: Traits :: GridType                    GridType;
 
     typedef typename Traits :: DomainType                               DomainType;
-    typedef typename Traits :: DiscreteFunctionType                     DiscreteFunctionType;
 
     typedef typename Traits :: DiscreteFunctionSpaceType                SpaceType;
     typedef typename Traits :: DestinationType                          DestinationType;
 
     typedef typename Traits :: GridPartType                             GridPartType;
 
-    typedef typename LimiterDiscreteModelType :: Traits  LimiterTraits ;
-    typedef typename LimiterTraits :: DiscreteFunctionType
-      LimiterDestinationType ;
+    typedef typename LimiterTraitsType :: DestinationType                 LimiterDestinationType ;
     typedef typename LimiterDestinationType :: DiscreteFunctionSpaceType  LimiterSpaceType;
 
 #ifdef USE_SMP_PARALLEL
-    typedef Fem::StartPass < DiscreteFunctionType, u, NonBlockingCommHandle< DiscreteFunctionType > > Pass0Type;
+    typedef Fem::StartPass < DestinationType, u, NonBlockingCommHandle< DestinationType > > Pass0Type;
     typedef LimitDGPass    < LimiterDiscreteModelType, Pass0Type, limitPassId > InnerPass1Type;
     typedef ThreadPass     < InnerPass1Type, Fem::ThreadIterator< GridPartType >, true > Pass1Type;
     typedef LocalCDGPass   < DiscreteModel1Type, Pass1Type, advectPassId > InnerPass2Type;
     typedef ThreadPass     < InnerPass2Type, Fem::DomainDecomposedIteratorStorage<GridPartType >, true > Pass2Type;
 #else
-    typedef Fem::StartPass < DiscreteFunctionType, u >                          Pass0Type;
+    typedef Fem::StartPass < DestinationType, u >                          Pass0Type;
     typedef LimitDGPass    < LimiterDiscreteModelType, Pass0Type, limitPassId > Pass1Type;
     typedef LocalCDGPass   < DiscreteModel1Type, Pass1Type, advectPassId >      Pass2Type;
 #endif
 
-    typedef typename LimiterDiscreteModelType::IndicatorType                      IndicatorType;
+    typedef typename LimiterDiscreteModelType::IndicatorType            IndicatorType;
     typedef typename IndicatorType::DiscreteFunctionSpaceType           IndicatorSpaceType;
 
     template< class Limiter, int pO >
@@ -313,7 +312,10 @@ namespace Dune {
     }
 
   public:
-    DGLimitedAdvectionOperator( GridPartType& gridPart, ProblemType& problem, const std::string keyPrefix = "" )
+    DGLimitedAdvectionOperator( GridPartType& gridPart,
+                                ProblemType& problem,
+                                ExtraParameterTupleType tuple =  ExtraParameterTupleType(),
+                                const std::string keyPrefix = "" )
       : model_( problem )
       , numflux_( model_ )
       , gridPart_( gridPart )

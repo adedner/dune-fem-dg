@@ -62,7 +62,7 @@ namespace Dune {
 #endif
       > Pass0Type;
 
-    typedef typename Traits :: ModelParameter ModelParameter;
+    typedef typename ModelType :: ModelParameter ModelParameter;
     typedef typename Traits :: ExtraParameterTupleType ExtraParameterTupleType;
 
     template <class Tuple, int i>

@@ -57,8 +57,10 @@ struct AdvectionDiffusionStepper
   static const Dune::DGDiffusionFluxIdentifier DiffusionFluxId =
     BaseType::Traits::DiffusionFluxId ;
 
+  typedef typename BaseType::OperatorTraits OperatorTraits;
+
   // advection = true , diffusion = true
-  typedef Dune :: DGAdaptationIndicatorOperator< typename BaseType::OperatorTraits, true, true >  DGIndicatorType;
+  typedef Dune :: DGAdaptationIndicatorOperator< OperatorTraits, true, true >  DGIndicatorType;
 
   // gradient estimator
   typedef Estimator< DiscreteFunctionType, InitialDataType > GradientIndicatorType ;
@@ -66,7 +68,7 @@ struct AdvectionDiffusionStepper
   // type of 64bit unsigned integer
   typedef typename BaseType :: UInt64Type  UInt64Type;
 
-  typedef typename FullOperatorType :: ExtraParameterTupleType  ExtraParameterTupleType;
+  typedef typename OperatorTraits :: ExtraParameterTupleType  ExtraParameterTupleType;
 
   using BaseType :: grid_;
   using BaseType :: gridPart_;
