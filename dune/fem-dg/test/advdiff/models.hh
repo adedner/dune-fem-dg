@@ -36,6 +36,9 @@ public:
   static const int dimDomain = GridType::dimensionworld;
   static const int dimRange = dimR;
   static const int dimGradRange = dimRange * dimDomain ;
+  typedef double    RangeFieldType;
+  typedef double    DomainFieldType;
+
   // Definition of domain and range types
   typedef Dune::FieldVector< double, dimDomain >                     DomainType;
   typedef Dune::FieldVector< double, dimDomain-1 >                   FaceDomainType;

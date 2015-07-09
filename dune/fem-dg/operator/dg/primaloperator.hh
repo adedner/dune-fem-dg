@@ -23,8 +23,7 @@ namespace Dune {
 
   template <class Traits,
             bool advection, bool diffusion>
-  struct CDGAdvectionDiffusionTraits : public Traits,
-                                       public Traits :: ModelType :: Traits
+  struct CDGAdvectionDiffusionTraits : public Traits
   {
     // choose ids different to the tuple entries
     enum { u = std::tuple_size< typename Traits::ExtraParameterTupleType > ::value + 2 , cdgpass = u + 1 };
@@ -155,8 +154,7 @@ namespace Dune {
 
   template <class OpTraits,
             bool advection, bool diffusion >
-  struct CDGAdaptationIndicatorTraits : public OpTraits,
-                                        public OpTraits :: ModelType :: Traits
+  struct CDGAdaptationIndicatorTraits : public OpTraits
   {
     // choose ids different to the tuple entries
     enum { u = std::tuple_size< typename OpTraits::ExtraParameterTupleType > ::value + 2 , cdgpass = u + 1 };
@@ -225,14 +223,11 @@ namespace Dune {
   template< class OpTraits,
             bool advection = true, bool diffusion = false>
   class DGLimitedAdvectionOperator :
-    public Fem::SpaceOperatorInterface
-      < typename PassTraits< typename OpTraits::ModelType,
-                             OpTraits::ModelType::dimRange,
-                             (OpTraits::polynomialOrder < 0 ) ? 0 : OpTraits::polynomialOrder> :: DestinationType >
+    public Fem::SpaceOperatorInterface< typename OpTraits :: DestinationType >
   {
     enum PassIdType { u, limitPassId, advectPassId };
-    enum { polOrd = ( OpTraits::polynomialOrder < 0 ) ? 0 : OpTraits::polynomialOrder };
-    enum { limiterPolOrd = ( OpTraits::polynomialOrder < 0 ) ? 1 : OpTraits::polynomialOrder };
+    enum { polOrd = OpTraits::polynomialOrder };
+    enum { limiterPolOrd = OpTraits::limiterPolynomialOrder };
 
   public:
     typedef typename OpTraits :: ModelType         ModelType;
@@ -240,8 +235,8 @@ namespace Dune {
     enum { dimRange  = ModelType::dimRange };
     enum { dimDomain = ModelType::Traits::dimDomain };
 
-    typedef PassTraits< ModelType, dimRange, polOrd >                   PassTraitsType;
-    typedef PassTraits< ModelType, dimRange, limiterPolOrd >            LimiterPassTraitsType;
+    typedef OpTraits                                                    PassTraitsType;
+    typedef PassTraits< OpTraits, limiterPolOrd >            LimiterPassTraitsType;
 
     // The model of the advection pass (advectPassId)
     typedef AdvectionDiffusionDGPrimalModel< OpTraits, limitPassId, advection, diffusion > DiscreteModel1Type;

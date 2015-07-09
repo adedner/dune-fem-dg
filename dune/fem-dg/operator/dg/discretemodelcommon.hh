@@ -27,38 +27,12 @@ namespace Dune {
   // AdvectionTraits
   //----------------
 
-  template <class OpTraits,
+  template <class Traits,
             int passUId, int passGradId, bool returnAdvectionPart>
-  struct AdvectionTraits
+  struct AdvectionTraits : public Traits
   {
-    typedef typename OpTraits::ModelType                             ModelType;
-    typedef typename OpTraits::FluxType                              FluxType;
-    typedef typename ModelType :: Traits                             ModelTraits;
-    typedef typename ModelTraits :: GridType                         GridType;
-
-    enum { dimRange = ModelTraits::dimRange };
-    enum { dimDomain = ModelTraits::dimDomain };
-    static const int polynomialOrder = OpTraits :: polynomialOrder;
-
-    typedef PassTraits< ModelType, dimRange, polynomialOrder >       Traits;
-    typedef typename Traits :: FunctionSpaceType                     FunctionSpaceType;
-
-    typedef typename Traits :: VolumeQuadratureType                  VolumeQuadratureType;
-    typedef typename Traits :: FaceQuadratureType                    FaceQuadratureType;
-    typedef typename Traits :: GridPartType                          GridPartType;
-    typedef typename Traits :: DiscreteFunctionSpaceType             DiscreteFunctionSpaceType;
-    typedef typename Traits :: DestinationType                       DestinationType;
-    typedef DestinationType                                          DiscreteFunctionType;
-
-    typedef typename DestinationType :: DomainType                   DomainType;
-    typedef typename DestinationType :: RangeType                    RangeType;
-    typedef typename DestinationType :: RangeFieldType               RangeFieldType;
-    typedef typename DestinationType :: DomainFieldType              DomainFieldType;
-    typedef typename DestinationType :: JacobianRangeType            JacobianRangeType;
-
-    typedef typename Traits :: AdaptationHandlerType                 AdaptationType ;
-
-    typedef AdvectionModel< OpTraits, passUId, passGradId, returnAdvectionPart >       DGDiscreteModelType;
+    typedef typename Traits::DestinationType                                         DiscreteFunctionType;
+    typedef AdvectionModel< Traits, passUId, passGradId, returnAdvectionPart >       DGDiscreteModelType;
   };
 
 
@@ -118,7 +92,7 @@ namespace Dune {
     typedef typename Traits :: JacobianRangeType                       JacobianRangeType;
 
     // discrete function storing the adaptation indicator information
-    typedef typename Traits :: AdaptationType   AdaptationType ;
+    typedef typename Traits :: AdaptationHandlerType   AdaptationType ;
 
   public:
     /**
@@ -399,7 +373,7 @@ namespace Dune {
     typedef typename Traits :: JacobianRangeType                       JacobianRangeType;
 
     // discrete function storing the adaptation indicator information
-    typedef typename Traits :: AdaptationType    AdaptationType ;
+    typedef typename Traits :: AdaptationHandlerType    AdaptationType ;
 
     typedef typename AdaptationType :: LocalIndicatorType  LocalIndicatorType;
 

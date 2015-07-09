@@ -25,18 +25,14 @@ namespace Dune {
 
   template< class Traits >
   class DGAdvectionDiffusionOperatorBase :
-    public Fem::SpaceOperatorInterface
-      < typename PassTraits<
-          typename Traits :: ModelType, Traits::ModelType::dimRange, Traits :: polynomialOrder > :: DestinationType >
+    public Fem::SpaceOperatorInterface< typename Traits :: DestinationType >
   {
     enum { u = Traits :: u,
            cdgpass  = Traits :: cdgpass };
 
     enum { polynomialOrder = Traits :: polynomialOrder };
 
-    typedef Fem::SpaceOperatorInterface <
-      typename PassTraits< typename Traits :: ModelType, Traits::dimRange, Traits :: polynomialOrder > :: DestinationType
-            > BaseType ;
+    typedef Fem::SpaceOperatorInterface< typename Traits :: DestinationType >  BaseType ;
 
   public:
     using BaseType :: operator () ;
@@ -53,7 +49,7 @@ namespace Dune {
 
     typedef typename DiscreteModelType :: DiffusionFluxType DiffusionFluxType;
 
-    typedef typename DiscreteModelType::Traits       AdvTraits;
+    typedef typename DiscreteModelType :: Traits       AdvTraits;
 
     typedef typename AdvTraits::DiscreteFunctionType AdvDFunctionType;
     // for convenience (not used here)

@@ -20,7 +20,6 @@
 #include <dune/fem-dg/operator/fluxes/diffusionflux.hh>
 
 // overload default stepper traits
-#include "steppertraits.hh"
 #include <dune/fem-dg/stepper/advectiondiffusionstepper.hh>
 
 #include "problems/problem.hh"
@@ -40,7 +39,7 @@ struct ProblemCreator
                       false > ProblemType;
   // define problem type here if interface should be avoided
 
-  template< class GridPart, int polOrder >
+  template< class GridPart >
   struct Traits
   {
     typedef ProblemType  InitialDataType;
@@ -51,9 +50,6 @@ struct ProblemCreator
     // choice of diffusion flux (see diffusionflux.hh for methods)
      static const Dune :: DGDiffusionFluxIdentifier PrimalDiffusionFluxId
        =  Dune :: method_general ;
-
-     // polynomial order of discrete space
-     static const int polynomialOrder = polOrder ;
   };
 
 

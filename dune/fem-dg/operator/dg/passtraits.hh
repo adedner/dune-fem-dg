@@ -15,27 +15,29 @@ namespace Dune {
   //PassTraits
   //----------
 
-  template <class Model,int dimRange,int polOrd>
-  class PassTraits
+  template <class Traits, int polOrd>
+  class PassTraits : public Traits::ModelType::Traits
   {
   public:
-    typedef typename Model :: Traits                                 ModelTraits;
-    typedef typename ModelTraits :: GridPartType                     GridPartType;
-    typedef typename GridPartType :: GridType                        GridType;
-    typedef typename GridType :: ctype                               ctype;
-    static const int dimDomain = Model :: Traits :: dimDomain;
+    typedef typename Traits::ModelType::Traits ModelTraits;
+    typedef typename ModelTraits  :: GridPartType        GridPartType;
+    typedef typename ModelTraits  :: GridType            GridType;
+    typedef typename GridType     :: ctype               ctype;
 
+    static const int polynomialOrder = polOrd ;
+    //static const int dimRange  = ModelTraits::dimRange;
+    //static const int dimDomain = ModelTraits::dimDomain;
     //typedef Fem::ElementQuadrature< GridPartType, 0 >                     VolumeQuadratureType;
     //typedef ElementQuadrature< GridPartType, 1 >                     FaceQuadratureType;
 
-    typedef Fem::CachingQuadrature< GridPartType, 0 >                     VolumeQuadratureType;
-    typedef Fem::CachingQuadrature< GridPartType, 1 >                     FaceQuadratureType;
+    typedef Fem::CachingQuadrature< GridPartType, 0 >    VolumeQuadratureType;
+    typedef Fem::CachingQuadrature< GridPartType, 1 >    FaceQuadratureType;
 
     // Allow generalization to systems
-    typedef Fem::FunctionSpace< ctype, double, dimDomain, dimRange >      FunctionSpaceType;
+    typedef Fem::FunctionSpace< ctype, double, ModelTraits::dimDomain, ModelTraits::dimRange >      FunctionSpaceType;
     typedef Fem::DiscontinuousGalerkinSpace<
                                         FunctionSpaceType,
-                                        GridPartType, polOrd,
+                                        GridPartType, polynomialOrder,
                                         Fem::CachingStorage >             DiscreteFunctionSpaceType;
     //typedef Fem::LegendreDiscontinuousGalerkinSpace< FunctionSpaceType,
     //                                    GridPartType, polOrd,
@@ -43,7 +45,7 @@ namespace Dune {
     typedef Fem::AdaptiveDiscreteFunction< DiscreteFunctionSpaceType >    DestinationType;
 
     // Indicator for Limiter
-    typedef Fem::FunctionSpace< ctype, double, dimDomain, 3> FVFunctionSpaceType;
+    typedef Fem::FunctionSpace< ctype, double, ModelTraits::dimDomain, 3> FVFunctionSpaceType;
     typedef Fem::FiniteVolumeSpace<FVFunctionSpaceType,GridPartType, 0, Fem::SimpleStorage> IndicatorSpaceType;
     typedef Fem::AdaptiveDiscreteFunction<IndicatorSpaceType> IndicatorType;
 
