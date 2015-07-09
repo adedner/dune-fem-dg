@@ -34,7 +34,7 @@ namespace Dune
     //! simulation end time
     virtual double endTime () const
     {
-      return Fem::Parameter::getValue< double >( "femhowto.endTime" );
+      return Fem::Parameter::getValue< double >( "femdg.stepper.endtime" );
     }
 
     //! retujrn refinement tolerance
@@ -96,6 +96,18 @@ namespace Dune
     virtual int adaptCount() const
     {
       return Fem::Parameter::getValue<int>( keyPrefix_ + "adaptcount", 1 );
+    }
+
+    virtual bool method () const
+    {
+      const std::string names[] = { "none", "generic", "callback" };
+      // default value is none
+      return Fem::Parameter::getEnum( keyPrefix_ + "method", names, 0 );
+    }
+
+    virtual bool adaptive () const
+    {
+      return method() != 0;
     }
 
     //! return true if verbosity mode is enabled
