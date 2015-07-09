@@ -22,7 +22,15 @@
  */
 template <class GridPart, int dimR>
 class HeatEqnModelTraits
+  : public Dune::Fem::FunctionSpace< typename GridPart::GridType::ctype,
+                                     double,
+                                     GridPart::GridType::dimensionworld,
+                                     dimR >
 {
+  typedef Dune::Fem::FunctionSpace< typename GridPart::GridType::ctype,
+                                    double,
+                                    GridPart::GridType::dimensionworld,
+                                    dimR >  BaseType;
 public:
   enum { velo = 0, press = 1, blabla = 2 };
   typedef std::integral_constant< int, velo   > velocityVar;
@@ -30,28 +38,26 @@ public:
   typedef std::integral_constant< int, blabla > blablabla;
   typedef std::tuple < velocityVar, pressure, blablabla > ModelParameter;
 
-  typedef GridPart                                                   GridPartType;
-  typedef typename GridPartType :: GridType                          GridType;
+  typedef GridPart                                                      GridPartType;
+  typedef typename GridPartType :: GridType                             GridType;
 
-  static const int dimDomain = GridType::dimensionworld;
-  static const int dimRange = dimR;
+  typedef typename BaseType::RangeFieldType                             RangeFieldType;
+  typedef typename BaseType::DomainFieldType                            DomainFieldType;
+
+  enum { dimRange  = BaseType :: dimRange };
+  enum { dimDomain = BaseType :: dimDomain };
   static const int dimGradRange = dimRange * dimDomain ;
-  typedef double    RangeFieldType;
-  typedef double    DomainFieldType;
 
   // Definition of domain and range types
-  typedef Dune::FieldVector< double, dimDomain >                     DomainType;
-  typedef Dune::FieldVector< double, dimDomain-1 >                   FaceDomainType;
-  typedef Dune::FieldVector< double, dimRange >                      RangeType;
-  typedef Dune::FieldVector< double, dimGradRange >                  GradientType;
+  typedef Dune::FieldVector< DomainFieldType, dimDomain-1 >             FaceDomainType;
+  typedef Dune::FieldVector< RangeFieldType, dimGradRange >             GradientType;
   // ATTENTION: These are matrices (c.f. HeatEqnModel)
-  typedef Dune::FieldMatrix< double, dimRange, dimDomain >           FluxRangeType;
-  typedef Dune::FieldMatrix< double, dimRange, dimDomain >           JacobianRangeType;
-  typedef Dune::FieldMatrix< double, dimGradRange, dimDomain >       DiffusionRangeType;
-  typedef Dune::FieldMatrix< double, dimDomain, dimDomain >          DiffusionMatrixType;
-  typedef typename GridType :: template Codim< 0 > :: Entity         EntityType;
-  typedef typename GridPartType :: IntersectionIteratorType          IntersectionIterator;
-  typedef typename IntersectionIterator :: Intersection              IntersectionType;
+  typedef typename BaseType :: JacobianRangeType                        FluxRangeType;
+  typedef Dune::FieldMatrix< RangeFieldType, dimGradRange, dimDomain >  DiffusionRangeType;
+  typedef Dune::FieldMatrix< RangeFieldType, dimDomain, dimDomain >     DiffusionMatrixType;
+  typedef typename GridType :: template Codim< 0 > :: Entity            EntityType;
+  typedef typename GridPartType :: IntersectionIteratorType             IntersectionIterator;
+  typedef typename IntersectionIterator :: Intersection                 IntersectionType;
 
   //typedef Dune::Fem::MinModLimiter< FieldType > LimiterFunctionType ;
   //typedef SuperBeeLimiter< FieldType > LimiterFunctionType ;
