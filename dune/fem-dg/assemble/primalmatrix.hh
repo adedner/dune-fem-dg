@@ -341,49 +341,51 @@ class DGPrimalMatrixAssembly
 
   const void operator()(const DestinationType &arg, DestinationType &dest) const
   {
-    static const Dune :: DGDiffusionFluxIdentifier PrimalDiffusionFluxId = Dune :: method_general ;
-    typedef DGAdvectionDiffusionOperator< Model, AdvFluxType, PrimalDiffusionFluxId, DiscreteFunctionSpaceType::polynomialOrder >
-            DgOperatorType;
-    static const AdvFluxType flux( model_ );
-    static const DgOperatorType dgOperator( space().gridPart(), flux );
-    dgOperator(arg,dest);
+    abort();
+    //static const Dune :: DGDiffusionFluxIdentifier PrimalDiffusionFluxId = Dune :: method_general ;
+    //typedef DGAdvectionDiffusionOperator< Model, AdvFluxType, PrimalDiffusionFluxId, DiscreteFunctionSpaceType::polynomialOrder >
+    //        DgOperatorType;
+    //static const AdvFluxType flux( model_ );
+    //static const DgOperatorType dgOperator( space().gridPart(), flux );
+    //dgOperator(arg,dest);
   }
   template <class Matrix>
   void operator2Matrix( Matrix& matrix, DestinationType& rhs ) const
   {
-    static const Dune :: DGDiffusionFluxIdentifier PrimalDiffusionFluxId = Dune :: method_general ;
-    typedef DGAdvectionDiffusionOperator< Model, AdvFluxType, PrimalDiffusionFluxId, DiscreteFunctionSpaceType::polynomialOrder >
-            DgOperatorType;
-    const AdvFluxType flux( model_ );
-    const DgOperatorType dgOperator( space().gridPart(), flux );
+    abort();
+    //static const Dune :: DGDiffusionFluxIdentifier PrimalDiffusionFluxId = Dune :: method_general ;
+    //typedef DGAdvectionDiffusionOperator< Model, AdvFluxType, PrimalDiffusionFluxId, DiscreteFunctionSpaceType::polynomialOrder >
+    //        DgOperatorType;
+    //const AdvFluxType flux( model_ );
+    //const DgOperatorType dgOperator( space().gridPart(), flux );
 
-    DestinationType vector("Op2Mat::arg", space() );
-    DestinationType matrixRow("Op2Mat::matixRow", space() );
-    DestinationType result("Op2Mat::result", space() );
-    vector.clear();
+    //DestinationType vector("Op2Mat::arg", space() );
+    //DestinationType matrixRow("Op2Mat::matixRow", space() );
+    //DestinationType result("Op2Mat::result", space() );
+    //vector.clear();
 
-    matrix.clear();
+    //matrix.clear();
 
-    // get right hand side, = op( 0 )
-    this->operator()( vector, rhs );
+    //// get right hand side, = op( 0 )
+    //this->operator()( vector, rhs );
 
-    const int size = space().size();
-    for(int i=0; i<size; ++i)
-    {
-      vector.leakPointer()[ i ] = 1;
-      this->operator()( vector, matrixRow );
-      vector.leakPointer()[ i ] = 0;
-      matrixRow *= -1.0;
-      matrixRow += rhs;
-      for(int j=0; j<size; ++j)
-      {
-        const double value = matrixRow.leakPointer()[ j ];
-        if( std::abs( value ) > 0 )
-        {
-          matrix.add( i, j, value );
-        }
-      }
-    }
+    //const int size = space().size();
+    //for(int i=0; i<size; ++i)
+    //{
+    //  vector.leakPointer()[ i ] = 1;
+    //  this->operator()( vector, matrixRow );
+    //  vector.leakPointer()[ i ] = 0;
+    //  matrixRow *= -1.0;
+    //  matrixRow += rhs;
+    //  for(int j=0; j<size; ++j)
+    //  {
+    //    const double value = matrixRow.leakPointer()[ j ];
+    //    if( std::abs( value ) > 0 )
+    //    {
+    //      matrix.add( i, j, value );
+    //    }
+    //  }
+    //}
   }
 
   size_t maxNumScalarBasisFunctions( const DiscreteFunctionSpaceType& space ) const
