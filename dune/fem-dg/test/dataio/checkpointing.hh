@@ -104,14 +104,14 @@ public:
 };
 
 
-template <class GridImp, class ProblemTraits, int order>               /*@LST1S@*/
-struct CheckPointingStepper : public AlgorithmBase< StepperTraits< GridImp, ProblemTraits, order> >
+template <class GridImp, class ProblemTraits, int order>
+struct CheckPointingStepper : public AlgorithmBase< GridImp>
 {
   // my traits class
   typedef StepperTraits< GridImp, ProblemTraits, order> Traits ;
 
   // my base class
-  typedef AlgorithmBase < Traits > BaseType;
+  typedef AlgorithmBase < GridImp > BaseType;
 
   // type of Grid
   typedef typename Traits :: GridType                  GridType;
@@ -139,11 +139,11 @@ struct CheckPointingStepper : public AlgorithmBase< StepperTraits< GridImp, Prob
 
   using BaseType :: grid_;
 
-  CheckPointingStepper( GridType& grid )
-  : BaseType ( grid ),
+  CheckPointingStepper( GridType& grid, const std::string name = "" )
+  : BaseType ( grid, name ),
     gridPart_( grid ),
     space_( gridPart_ ),
-    solution_( "solution", space() ),
+    solution_( "solution-"+name, space() ),
     problem_( ProblemTraits::problem() ),
     eocId_( Dune::Fem::FemEoc::addEntry(std::string("$L^2$-error")) ),
     checkPointer_(),
