@@ -1,6 +1,6 @@
 # install these headers 
 advdiffdir=$(includedir)/test/advdiff
-advdiff_HEADERS = models.hh  problemcreator.hh steppertraits.hh
+advdiff_HEADERS = models.hh  problemcreator.hh
 
 LDADD = $(ALL_PKG_LDFLAGS) $(ALL_PKG_LIBS) $(LOCAL_LIBS) $(DUNEMPILDFLAGS) $(DUNEMPILIBS)
 
