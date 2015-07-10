@@ -1,6 +1,10 @@
+# toggle verbosity of on process 
+# (-1: off, p: process p is verbose, in general 0 is a good choice)
+fem.verboserank: 0 
+
+
 # DATA WRITER
 #------------
-
 fem.prefix: ./data # specify directory for data output (is created if not exists)
 fem.io.datafileprefix: heat # prefix data data files 
 fem.io.savestep: 0.1 # save data every time interval 
@@ -17,7 +21,6 @@ gridsol.filename: heat-checkpoint
 
 # GENERAL
 #--------
-
 paramfile: ../parameter/paramBase
 
 
@@ -25,16 +28,16 @@ paramfile: ../parameter/paramBase
 #--------------
 
 # problem: heat, quasi, plaplace
-#advdiff.problem: deformational
-advdiff.problem: pulse
+#problem: deformational
+problem: pulse
 
-femhowto.endTime: 1.0
-femhowto.diffusionTimeStep: 1
-femhowto.epsilon: 0.0
-femhowto.plaplace: 3.0 
-femhowto.xvelocity: 1.    # the only advection part for the linear heat eqn
-femhowto.yvelocity: 3.    # the only advection part for the linear heat eqn
-femhowto.zvelocity: 0.    # the only advection part for the linear heat eqn
+femdg.stepper.endtime: 1.0
+femdg.stepper.diffusiontimestep: 1
+epsilon: 0.0
+plaplace: 3.0 
+xvelocity: 1.    # the only advection part for the linear heat eqn
+yvelocity: 3.    # the only advection part for the linear heat eqn
+zvelocity: 0.    # the only advection part for the linear heat eqn
 
 
 # DOMAIN
@@ -48,5 +51,5 @@ fem.io.macroGridFile_3d: ../grids/unitcube3.dgf
 # SOLVER
 #-------
 dgdiffusionflux.upwind: -1 -0.001
+femdg.stepper.maxtimestep: 0.5
 paramfile: ../parameter/paramSolver
-femhowto.maxTimeStep: 0.5

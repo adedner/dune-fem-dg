@@ -58,18 +58,18 @@ public:
   U0 () :                                                        /*@LST0S@*/
     BaseType () ,
     velocity_( 0 ),
-    startTime_( ParameterType::getValue<double>("femhowto.startTime",0.0) ),
-    epsilon_( ParameterType::getValue<double>("femhowto.epsilon",0.1) )
+    startTime_( ParameterType::getValue<double>("femdg.stepper.starttime",0.0) ),
+    epsilon_( ParameterType::getValue<double>("epsilon",0.1) )
   {                                                             /*@LST0E@*/
     std::cout <<"Problem: HeatEqnWithAdvection, epsilon " << epsilon_ << "\n";
     //std::cout <<"Problem: HeatEqnWithAdvection, epsilon_" <<  epsilon_ << "\n";
 
     // an advection vector, default to 0
-    velocity_[0] = ParameterType::getValue<double>( "femhowto.xvelocity", 0. );
+    velocity_[0] = ParameterType::getValue<double>( "xvelocity", 0. );
     if (dimDomain > 1)
-      velocity_[1] = ParameterType::getValue<double>( "femhowto.yvelocity", 0. );
+      velocity_[1] = ParameterType::getValue<double>( "yvelocity", 0. );
     if (dimDomain > 2)
-      velocity_[2] = ParameterType::getValue<double>( "femhowto.zvelocity", 0. );
+      velocity_[2] = ParameterType::getValue<double>( "zvelocity", 0. );
 
     max_n_of_coefs_ = 2;
 
@@ -216,7 +216,7 @@ public:
       ofs <<"," <<velocity_[2];
     ofs <<")";
 
-    ofs << ", End time: " << ParameterType::template getValue<double>("femhowto.endTime");
+    ofs << ", End time: " << ParameterType::template getValue<double>("femdg.stepper.endtime");
 
     return ofs.str();
   }

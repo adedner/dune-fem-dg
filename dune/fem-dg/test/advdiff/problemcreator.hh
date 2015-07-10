@@ -72,7 +72,7 @@ struct ProblemCreator
 
   static inline std::string moduleName()
   {
-    return "advdiff";
+    return "";
   }
 
   static inline Dune::GridPtr<GridType>
@@ -87,7 +87,7 @@ struct ProblemCreator
   {
     // choice of explicit or implicit ode solver
     static const std::string probString[]  = { "heat" ,"quasi", "pulse", "sin" };
-    const int probNr = Dune::Fem::Parameter::getEnum( "advdiff.problem", probString, 0 );
+    const int probNr = Dune::Fem::Parameter::getEnum( "problem", probString, 0 );
     if( probNr == 0 )
       return new Dune :: U0< GridType, DIMRANGE > ();
     else if ( probNr == 1 )

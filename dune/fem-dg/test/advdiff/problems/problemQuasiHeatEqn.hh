@@ -41,8 +41,8 @@ public:
   QuasiHeatEqnSolution () :                                                        /*@LST0S@*/
     BaseType () ,
     velocity_( 0 ),
-    startTime_( ParameterType::getValue<double>("femhowto.startTime",0.0) ),
-    epsilon_( ParameterType::template getValue<double>("femhowto.epsilon") )
+    startTime_( ParameterType::getValue<double>("femdg.stepper.starttime",0.0) ),
+    epsilon_( ParameterType::template getValue<double>("epsilon") )
   {                                                             /*@LST0E@*/
     if ( (dimRange != 1) || (dimDomain != 2) )
     {
@@ -139,7 +139,7 @@ public:
 
     ofs << "Problem: " << myName
       << ", Epsilon: " << epsilon_
-      << ", End time: " << ParameterType::template getValue<double>("femhowto.endTime");
+      << ", End time: " << ParameterType::template getValue<double>("femdg.stepper.endtime");
 
     return ofs.str();
   }

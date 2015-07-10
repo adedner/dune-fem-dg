@@ -472,7 +472,7 @@ public:
     // deltaT in the timeprovider is updated according to the diffusion
     // parameter epsilon.
     bool diff_tstep;
-    Dune::Fem::Parameter::get("femhowto.diffusionTimeStep", diff_tstep);
+    Dune::Fem::Parameter::get("femdg.stepper.diffusiontimestep", diff_tstep);
     return diff_tstep ? epsilon_ : 0;
   }
 

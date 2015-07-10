@@ -34,8 +34,8 @@ public:
   U0Sin () :
     BaseType () ,
     velocity_( 1 ),
-    startTime_( ParameterType::getValue<double>("femhowto.startTime",0.0) ),
-    epsilon_( ParameterType::getValue<double>("femhowto.epsilon",0.1) ),
+    startTime_( ParameterType::getValue<double>("femdg.stepper.starttime",0.0) ),
+    epsilon_( ParameterType::getValue<double>("epsilon",0.1) ),
     rhsFactor_( epsilon_ * 2.0 * std:: pow( 2.0, (double) dimDomain) * M_PI * M_PI ),
     myName_("U0Sin")
   {
@@ -116,7 +116,7 @@ public:
     ofs << "Problem: " << myName_
       << ", Epsilon: " << epsilon_ ;
 
-    ofs << ", End time: " << ParameterType::template getValue<double>("femhowto.endTime");
+    ofs << ", End time: " << ParameterType::template getValue<double>("femdg.stepper.endtime");
 
     return ofs.str();
   }
