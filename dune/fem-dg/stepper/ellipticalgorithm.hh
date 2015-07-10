@@ -339,7 +339,7 @@ public:
   typedef SolverMonitor  SolverMonitorType ;
 
 public:
-  EllipticAlgorithm(GridType& grid) :
+  EllipticAlgorithm(GridType& grid, const std::string name ) :
     grid_( grid ),
     gridPart_( grid_ ),
     problem_( ProblemTraits::problem() ),
@@ -349,14 +349,14 @@ public:
     invDgOperator_(),
     linDgOperator_(),
     space_( const_cast<DiscreteSpaceType &> (dgOperator_.space()) ),
-    solution_("solution", space_ ),
-    rhs_("rhs", space_ ),
+    solution_("solution-"+name, space_ ),
+    rhs_("rhs-"+name, space_ ),
     sigmaSpace_( gridPart_ ),
-    sigmaDiscreteFunction_( "sigma", sigmaSpace_ ),
+    sigmaDiscreteFunction_( "sigma-"+name, sigmaSpace_ ),
     sigmaLocalEstimate_( solution_, dgOperator_ ),
-    sigmaEstimateFunction_( "function 4 estimate", sigmaLocalEstimate_, gridPart_, space_.order() ),
+    sigmaEstimateFunction_( "function 4 estimate-"+name, sigmaLocalEstimate_, gridPart_, space_.order() ),
     //estimator_( solution_, sigmaDiscreteFunction_, dgOperator_, grid ),
-    //estimateData_( "estimator", estimator_, gridPart_, space_.order() ),
+    //estimateData_( "estimator-"+name, estimator_, gridPart_, space_.order() ),
     ioTuple_( &solution_ ), // &sigmaEstimateFunction_), &estimateData_ ),
     polOrderContainer_(grid_ , 0),
     eocId_( -1 ),
@@ -372,8 +372,8 @@ public:
 
     runFile_ << "# h | elements | CPU time | iter | l_min | l_max | cond  | L2 error" << std::endl;
 
-    std::string name = Fem :: gridName( grid_ );
-    if( name == "ALUGrid" || name == "ALUConformGrid" || name == "ALUSimplexGrid" )
+    std::string gridName = Fem :: gridName( grid_ );
+    if( gridName == "ALUGrid" || gridName == "ALUConformGrid" || gridName == "ALUSimplexGrid" )
     {
       if( space_.begin() != space_.end() )
       {

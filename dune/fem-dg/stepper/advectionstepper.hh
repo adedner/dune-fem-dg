@@ -76,8 +76,9 @@ struct AdvectionStepper
   using BaseType :: space ;
   using BaseType :: solution ;
   using BaseType :: adaptive ;
-  using BaseType :: adaptationParameters_;
+  using BaseType :: adaptParam_;
   using BaseType :: doEstimateMarkAdapt ;
+  using BaseType :: name ;
 
   // constructor
   AdvectionStepper( GridType& grid, const std::string name = "",
@@ -85,7 +86,7 @@ struct AdvectionStepper
     BaseType( grid, name ),
     dgAdvectionOperator_(gridPart_, problem(), tuple, name ),
     dgIndicator_( gridPart_, problem(), tuple, name ),
-    gradientIndicator_( space(), problem(), ParameterKey::generate( name, "fem.adaptation." ) )
+    gradientIndicator_( space(), problem(), adaptParam_ )
   {
   }
 
@@ -93,7 +94,7 @@ struct AdvectionStepper
   {
     if( adaptive() )
     {
-      if( ! adaptationHandler_ && adaptationParameters_.aposterioriIndicator() )
+      if( ! adaptationHandler_ && adaptParam_.aposterioriIndicator() )
       {
         adaptationHandler_ = new AdaptationHandlerType( grid_, tp );
         dgIndicator_.setAdaptation( *adaptationHandler_ );
