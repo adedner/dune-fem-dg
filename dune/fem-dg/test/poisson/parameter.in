@@ -1,3 +1,7 @@
+# toggle verbosity of on process 
+# (-1: off, p: process p is verbose, in general 0 is a good choice)
+fem.verboserank: 0
+
 # specify directory for data output (is created if not exists)
 fem.prefix: ${CMAKE_CURRENT_SOURCE_DIR}/data
 fem.prefix.input: ${CMAKE_CURRENT_SOURCE_DIR}
@@ -6,39 +10,34 @@ fem.io.datafileprefix: solution
 # if you want to add time stemp to eoc file name
 # # to avoid overwriting the eoc files
 fem.io.eocFileTimeStamp: 0
-
-femhowto.eocSteps: 30
+fem.eoc.steps: 30
 
 # polynomial order = 0,1,2,3,4
-femhowto.polynomialOrder: 2
+femdg.polynomialOrder: 2
 
+
+
+# PROBLEM
+# ----------
 # problem number 
-femhowto.problem: 8 # 5 6 13 16
+problem: 8 # 5 6 13 16
+globalshift: 0
+factor: 1
+epsilon: 0.1
+xvelocity: 0.    # the only advection part for the linear heat eqn
+yvelocity: 0.    # the only advection part for the linear heat eqn
+zvelocity: 0.    # the only advection part for the linear heat eqn
 
-femhowto.globalshift: 0
-femhowto.factor: 1
-femhowto.tolerance: 1e-4     # global adapt with tolerance=0 
-
-# none = disabled | coeffroot | prior2p 
-padaptive.method: none
-
-femhowto.verbose: 1
 fem.solver.verbose: 1
 
 # macro grid file
-
 fem.io.macroGridFile_2d: ../grids/unitcube2.dgf
 #fem.io.macroGridFile_2d:../grids/nonaffine.dgf
 #fem.io.macroGridFile_2d:../grids/corner_cube.dgf
 #fem.io.macroGridFile_2d:../grids/corner.dgf
 #fem.io.macroGridFile_2d:../grids/corner_green.dgf
 #fem.io.macroGridFile_2d:../grids/corner_red.dgf
-
-
-femhowto.epsilon: 0.1
-femhowto.xvelocity: 0.    # the only advection part for the linear heat eqn
-femhowto.yvelocity: 0.    # the only advection part for the linear heat eqn
-femhowto.zvelocity: 0.    # the only advection part for the linear heat eqn
+nonConformOrigin: false
 
 # choises are: CDG2, CDG, IP, NIPG, BO, BR2
 dgdiffusionflux.method: CDG2 
@@ -49,31 +48,23 @@ dgdiffusionflux.lifting: id_id
 dgdiffusionflux.penalty: 0    # for CDG, CDG2, LDG
 dgdiffusionflux.liftfactor: 0
 
-# toggle verbosity of on process 
-# (-1: off, p: process p is verbose, in general 0 is a good choice)
-fem.verboserank: 0
+# ADAPTATION
+# ----------
 fem.adaptation.method: generic 
 
-#number of global refinements before start of simulation 
-femhowto.startLevel: 0
 
-# number of EOC steps 
-
-
+# DATAWRITER
+# ----------
 # output format: grape | vtk-cell | vtk-vertex (projected in DG case),  sub-vtk-cell
 fem.io.outputformat: vtk-cell
 fem.io.subsamplinglevel: 0
 # toggle grape display (0 = off | 1 = on)
 fem.io.grapedisplay: 0
 
-# write file with values of numerical solution at
-# the end time along given line
-femhowto.sampleAlongLine: 0
 
+# SOLVER
+# ------
 paramfile: ../parameter/paramSolver
-
-poisson.nonConformOrigin: false
-
 istl.preconditioning.method: ilu-0
 istl.preconditioning.iterations: 1
 istl.preconditioning.relaxation: 1
