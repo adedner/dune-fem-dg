@@ -1,7 +1,7 @@
 # install these headers 
 eulerdir=$(includedir)/dune/fem-dg/test/euler
 euler_HEADERS= eulermodel.hh  problems.hh problemcreator.hh \
-chorjo.hh chorjo.cc passtraits.hh
+chorjo.hh chorjo.cc
 
 LDADD = $(ALL_PKG_LDFLAGS) $(ALL_PKG_LIBS) $(LOCAL_LIBS) $(DUNEMPILDFLAGS) $(DUNEMPILIBS)
 

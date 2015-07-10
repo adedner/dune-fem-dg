@@ -58,7 +58,6 @@ namespace Dune {
     using BaseType :: cflDiffinv_;
     using BaseType :: dimensionFactor_;
     using BaseType :: nonconformingFactor_;
-    using BaseType :: numericalFlux ;
     using BaseType :: parameter;
 
   public:
