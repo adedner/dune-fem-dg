@@ -72,7 +72,7 @@ struct AdditionalVariables< dimRange, dimRange >
   static DestinationType* setup( const double time, const DestinationType& Uh )
   {
     DestinationType* additionalVariables = 0;
-    if( ParameterType :: getValue< bool >("femhowto.additionalvariables", false) )
+    if( ParameterType :: getValue< bool >("femdg.additionalvariables", false) )
     {
       /*
       std::cout << "Setup additional variables" << std::endl;
