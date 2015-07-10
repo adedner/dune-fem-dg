@@ -11,36 +11,42 @@ namespace Dune
   struct AdaptationParameters
     : public Fem::LocalParameter< AdaptationParameters, AdaptationParameters >
   {
+    protected:
+    const std::string keyPrefix_;
     int markStrategy_;
+
+
+
+    public:
+    //! constructor
+    AdaptationParameters( const std::string keyPrefix = "fem.adaptation." )
+      : keyPrefix_( keyPrefix ),
+        markStrategy_( getStrategy() )
+    {}
 
     int getStrategy () const
     {
       const std::string names[] = { "shockind", "apost", "grad" };
       // default value is gradient
-      return Fem::Parameter::getEnum( "fem.adaptation.markingStrategy", names, 2 );
+      return Fem::Parameter::getEnum( keyPrefix_ + "markingStrategy", names, 2 );
     }
-
-    //! constructor
-    AdaptationParameters ()
-      : markStrategy_( getStrategy() )
-    {}
 
     //! simulation end time
     virtual double endTime () const
     {
-      return Fem::Parameter::getValue< double >( "femhowto.endTime" );
+      return Fem::Parameter::getValue< double >( "femdg.stepper.endtime" );
     }
 
     //! retujrn refinement tolerance
     virtual double refinementTolerance () const
     {
-      return Fem::Parameter::getValue< double >( "fem.adaptation.refineTolerance" );
+      return Fem::Parameter::getValue< double >( keyPrefix_ + "refineTolerance" );
     }
 
     //! return percentage of refinement tolerance used for coarsening tolerance
     virtual double coarsenPercentage () const
     {
-      return Fem::Parameter::getValue< double >( "fem.adaptation.coarsenPercent", 0.1 );
+      return Fem::Parameter::getValue< double >( keyPrefix_ + "coarsenPercent", 0.1 );
     }
 
     //! return product of refinementTolerance and coarsenPercentage
@@ -50,23 +56,23 @@ namespace Dune
     }
 
     //! return maximal level achieved by refinement
-    virtual int finestLevel ( const int refineStepsForHalf ) const
+    virtual int finestLevel ( const int refineStepsForHalf = 1 ) const
     {
       return refineStepsForHalf *
-             Fem::Parameter::getValue< int >( "fem.adaptation.finestLevel" );
+             Fem::Parameter::getValue< int >( keyPrefix_ + "finestLevel" );
     }
 
     //! return minimal level achieved by refinement
-    virtual int coarsestLevel ( const int refineStepsForHalf ) const
+    virtual int coarsestLevel ( const int refineStepsForHalf = 1 ) const
     {
       return refineStepsForHalf *
-             Fem::Parameter::getValue< int >( "fem.adaptation.coarsestLevel", 0 );
+             Fem::Parameter::getValue< int >( keyPrefix_ + "coarsestLevel", 0 );
     }
 
     //! return depth for refining neighbors of a cell marked for refinement
     virtual int neighborRefLevel () const
     {
-      return Fem::Parameter::getValue< int >( "fem.adaptation.grad.neighborRefLevel", 1 );
+      return Fem::Parameter::getValue< int >( keyPrefix_ + "grad.neighborRefLevel", 1 );
     }
 
     //! return true if marking strategy is based on shock indicator
@@ -87,8 +93,25 @@ namespace Dune
       return markStrategy_ == 1;
     }
 
+    virtual int adaptCount() const
+    {
+      return Fem::Parameter::getValue<int>( keyPrefix_ + "adaptcount", 1 );
+    }
+
+    virtual bool method () const
+    {
+      const std::string names[] = { "none", "generic", "callback" };
+      // default value is generic
+      return Fem::Parameter::getEnum( keyPrefix_ + "method", names, 1 );
+    }
+
+    virtual bool adaptive () const
+    {
+      return method() != 0;
+    }
+
     //! return true if verbosity mode is enabled
-    virtual bool verbose () const { return Fem::Parameter::getValue< bool >( "fem.adaptation.verbose", false ); }
+    virtual bool verbose () const { return Fem::Parameter::getValue< bool >( keyPrefix_ + "verbose", false ); }
   };
 
   class ComputeMinMaxVolume

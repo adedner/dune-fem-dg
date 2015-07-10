@@ -189,7 +189,7 @@ namespace Dune {
                          const bool initUpwind,
                          const ParameterType& parameters )
     : model_(mod),
-      param_( parameters.clone() ),
+      param_( parameters ),
       upwind_( upwindDefault() ),
       // Set CFL number for penalty term (compare diffusion in first pass)
       cflDiffinv_(8. * (polOrd+1.) ),
@@ -207,7 +207,7 @@ namespace Dune {
     //! copy constructor
     DGDiffusionFluxBase( const DGDiffusionFluxBase& other )
     : model_( other.model_ ),
-      param_( other.parameter().clone() ),
+      param_( other.parameter() ),
       upwind_( other.upwind_ ),
       cflDiffinv_( other.cflDiffinv_ ),
       dimensionFactor_( other.dimensionFactor_ ),
@@ -335,11 +335,11 @@ namespace Dune {
     }
 
     const Model &model () const { return model_; }
-    const ParameterType& parameter() const { return *param_; }
+    const ParameterType& parameter() const { return param_; }
 
   protected:
     const Model   &model_;
-    std::unique_ptr< ParameterType > param_;
+    const ParameterType& param_;
     DomainType upwind_;
     const double cflDiffinv_;
     const double dimensionFactor_;

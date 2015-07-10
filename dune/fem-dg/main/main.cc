@@ -214,7 +214,7 @@ int main(int argc, char ** argv)
   Dune :: Fem :: ThreadManager :: setMaxNumberThreads( numThreads );
 
   int polynomialOrder = 1;
-  polynomialOrder = Dune::Fem::Parameter :: getValue("femhowto.polynomialOrder", polynomialOrder );
+  polynomialOrder = Dune::Fem::Parameter :: getValue("femdg.polynomialOrder", polynomialOrder );
 
   // write parameters used (before simulation starts)
   Dune::Fem::Parameter::write("parameter.log");

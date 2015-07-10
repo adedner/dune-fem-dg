@@ -15,6 +15,7 @@
 #include <dune/fem-dg/operator/dg/primaldiscretemodel.hh>
 #include <dune/fem-dg/operator/dg/operatorbase.hh>
 #include <dune/fem-dg/pass/dgpass.hh>
+#include <dune/fem-dg/misc/parameterkey.hh>
 
 namespace Dune {
 
@@ -22,7 +23,7 @@ namespace Dune {
   //----------------------------
 
   template <class Traits,
-            bool advection, bool diffusion>
+            bool advection, bool diffusion >
   struct CDGAdvectionDiffusionTraits : public Traits
   {
     // choose ids different to the tuple entries
@@ -44,8 +45,8 @@ namespace Dune {
 
     DGAdvectionDiffusionOperator( GridPartType& gridPart, ProblemType& problem,
                                   ExtraParameterTupleType tuple =  ExtraParameterTupleType(),
-                                  const std::string keyPrefix = "" )
-      : BaseType( gridPart, problem, tuple, keyPrefix )
+                                  const std::string name = "" )
+      : BaseType( gridPart, problem, tuple, name )
     {}
 
     std::string description() const
@@ -83,8 +84,8 @@ namespace Dune {
 
     DGAdvectionOperator( GridPartType& gridPart, ProblemType& problem,
                          ExtraParameterTupleType tuple = ExtraParameterTupleType(),
-                         const std::string keyPrefix = ""  )
-      : BaseType( gridPart, problem, tuple, keyPrefix )
+                         const std::string name = ""  )
+      : BaseType( gridPart, problem, tuple, name )
     {}
 
     std::string description() const
@@ -117,8 +118,8 @@ namespace Dune {
   public:
     typedef CDGAdvectionDiffusionTraits< OpTraits, false, true > Traits;
     typedef DGAdvectionDiffusionOperatorBase< Traits >  BaseType;
-    typedef typename BaseType :: GridPartType         GridPartType;
-    typedef typename BaseType :: ProblemType          ProblemType;
+    typedef typename BaseType :: GridPartType  GridPartType;
+    typedef typename BaseType :: ProblemType   ProblemType;
     typedef typename BaseType :: ExtraParameterTupleType  ExtraParameterTupleType;
 
   private:
@@ -127,8 +128,8 @@ namespace Dune {
   public:
     DGDiffusionOperator( GridPartType& gridPart, ProblemType& problem,
                          ExtraParameterTupleType tuple = ExtraParameterTupleType(),
-                         const std::string keyPrefix = ""  )
-      : BaseType( gridPart, problem, tuple, keyPrefix )
+                         const std::string name = ""  )
+      : BaseType( gridPart, problem, tuple, name )
     {}
 
     std::string description() const
@@ -179,8 +180,8 @@ namespace Dune {
 
     DGAdaptationIndicatorOperator( GridPartType& gridPart, ProblemType& problem,
                                    ExtraParameterTupleType tuple = ExtraParameterTupleType(),
-                                   const std::string keyPrefix = ""  )
-      : BaseType( gridPart, problem, tuple, keyPrefix )
+                                   const std::string name = ""  )
+      : BaseType( gridPart, problem, tuple, name )
     {}
 
     std::string description() const
@@ -274,7 +275,7 @@ namespace Dune {
     typedef LocalCDGPass   < DiscreteModel1Type, Pass1Type, advectPassId >      Pass2Type;
 #endif
 
-    typedef typename LimiterDiscreteModelType::IndicatorType            IndicatorType;
+    typedef typename LimiterDiscreteModelType::IndicatorType                      IndicatorType;
     typedef typename IndicatorType::DiscreteFunctionSpaceType           IndicatorSpaceType;
 
     template< class Limiter, int pO >
@@ -315,18 +316,17 @@ namespace Dune {
     DGLimitedAdvectionOperator( GridPartType& gridPart,
                                 ProblemType& problem,
                                 ExtraParameterTupleType tuple =  ExtraParameterTupleType(),
-                                const std::string keyPrefix = "" )
+                                const std::string name = "" )
       : model_( problem )
-      , numflux_( model_ )
+      , advflux_( model_ )
       , gridPart_( gridPart )
       , space_( gridPart_ )
       , limiterSpace_( gridPart_ )
       , uTmp_( 0 )
       , fvSpc_( 0 )
       , indicator_( 0 )
-      , dgdiffusionfluxPrefix_( keyPrefix + "dgdiffusionflux." )
-      , diffFlux_( gridPart_, model_, DGPrimalFormulationParameters( keyPrefix + dgdiffusionfluxPrefix_ ) )
-      , problem1_( model_, numflux_, diffFlux_ )
+      , diffFlux_( gridPart_, model_, DGPrimalFormulationParameters( ParameterKey::generate( name, "dgdiffusionflux." ) ) )
+      , problem1_( model_, advflux_, diffFlux_ )
       , limitProblem_( model_ , space_.order() )
       , pass0_()
       , pass1_( limitProblem_, pass0_, limiterSpace_ )
@@ -455,7 +455,7 @@ namespace Dune {
 
   private:
     ModelType           model_;
-    AdvectionFluxType   numflux_;
+    AdvectionFluxType   advflux_;
     GridPartType&       gridPart_;
     SpaceType           space_;
     LimiterSpaceType    limiterSpace_;
@@ -463,7 +463,6 @@ namespace Dune {
 
     IndicatorSpaceType*  fvSpc_;
     IndicatorType*       indicator_;
-    const std::string dgdiffusionfluxPrefix_;
 
 
   protected:
@@ -479,23 +478,18 @@ namespace Dune {
 
 
 
-  template< class OpTraits,
-            bool advection = true, bool diffusion = true >
+  template< class Traits, bool advection = true, bool diffusion = true >
   class DGLimitedAdvectionDiffusionOperator
-  : public DGLimitedAdvectionOperator< OpTraits, advection, diffusion >
+  : public DGLimitedAdvectionOperator< Traits, advection, diffusion >
   {
-    typedef DGLimitedAdvectionOperator< OpTraits, advection, diffusion > BaseType;
+    typedef DGLimitedAdvectionOperator< Traits, advection, diffusion > BaseType;
 
-  public:
     typedef typename BaseType :: GridPartType GridPartType;
     typedef typename BaseType :: ProblemType  ProblemType;
-    typedef typename BaseType :: ExtraParameterTupleType  ExtraParameterTupleType;
 
   public:
-    DGLimitedAdvectionDiffusionOperator ( GridPartType& gridPart, ProblemType& problem,
-                                          ExtraParameterTupleType tuple = ExtraParameterTupleType(),
-                                          const std::string keyPrefix = "" )
-    : BaseType( gridPart, problem, tuple, keyPrefix )
+    DGLimitedAdvectionDiffusionOperator ( GridPartType& gridPart, ProblemType& problem, const std::string keyPrefix = "" )
+    : BaseType( gridPart, problem, keyPrefix )
     {}
 
     void printmyInfo(std::string filename) const
@@ -503,7 +497,7 @@ namespace Dune {
 	    std::ostringstream filestream;
             filestream << filename;
             std::ofstream ofs(filestream.str().c_str(), std::ios::app);
-            ofs << "Limited Adv. Diff. Op., polynomial order: " << OpTraits::polynomialOrder << "\\\\\n\n";
+            ofs << "Limited Adv. Diff. Op., polynomial order: " << Traits::polynomialOrder << "\\\\\n\n";
             ofs.close();
     }
 

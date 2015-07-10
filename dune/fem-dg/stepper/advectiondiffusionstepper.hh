@@ -75,9 +75,10 @@ struct AdvectionDiffusionStepper
   using BaseType :: space;
   using BaseType :: problem;
   using BaseType :: adaptationHandler_ ;
-  using BaseType :: adaptationParameters_;
+  using BaseType :: adaptParam_;
   using BaseType :: adaptive ;
   using BaseType :: doEstimateMarkAdapt ;
+  using BaseType :: name ;
 
   AdvectionDiffusionStepper( GridType& grid,
                              const std::string name = "",
@@ -86,8 +87,8 @@ struct AdvectionDiffusionStepper
     dgOperator_( gridPart_, problem(), tuple, name ),
     dgAdvectionOperator_( gridPart_, problem(), tuple, name ),
     dgDiffusionOperator_( gridPart_, problem(), tuple, name ),
-    dgIndicator_( gridPart_, problem(), tuple ),
-    gradientIndicator_( space(), problem() )
+    dgIndicator_( gridPart_, problem(), tuple, name ),
+    gradientIndicator_( space(), problem(), adaptParam_ )
   {
   }
 
@@ -128,7 +129,7 @@ struct AdvectionDiffusionStepper
     // create adaptation handler in case of apost indicator
     if( adaptive() )
     {
-      if( ! adaptationHandler_ && adaptationParameters_.aposterioriIndicator() )
+      if( ! adaptationHandler_ && adaptParam_.aposterioriIndicator() )
       {
         adaptationHandler_ = new AdaptationHandlerType( grid_, tp );
         dgIndicator_.setAdaptation( *adaptationHandler_ );
@@ -140,7 +141,8 @@ struct AdvectionDiffusionStepper
                               LinearInverseOperatorType > OdeSolverImpl;
     return new OdeSolverImpl( tp, dgOperator_,
                               dgAdvectionOperator_,
-                              dgDiffusionOperator_ );
+                              dgDiffusionOperator_,
+                              name() );
   }
 
   //! estimate and mark solution

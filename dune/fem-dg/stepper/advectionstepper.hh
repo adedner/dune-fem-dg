@@ -85,7 +85,7 @@ struct AdvectionStepper
     BaseType( grid, name ),
     dgAdvectionOperator_(gridPart_, problem(), tuple, name ),
     dgIndicator_( gridPart_, problem(), tuple, name ),
-    gradientIndicator_( space(), problem() )
+    gradientIndicator_( space(), problem(), ParameterKey::generate( name, "fem.adaptation." ) )
   {
   }
 
@@ -106,7 +106,8 @@ struct AdvectionStepper
                               LinearInverseOperatorType > OdeSolverImpl;
     return new OdeSolverImpl( tp, dgAdvectionOperator_,
                               dgAdvectionOperator_,
-                              dgAdvectionOperator_ );
+                              dgAdvectionOperator_,
+                              name() );
   }
 
   //! return overal number of grid elements
