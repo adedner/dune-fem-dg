@@ -77,7 +77,7 @@ struct ProblemCreator
 
   static inline std::string moduleName()
   {
-    return "euler";
+    return "";
   }
 
   static inline Dune::GridPtr<GridType>
@@ -93,7 +93,7 @@ struct ProblemCreator
     const std::string problemNames []
         = { "sod" , "withman", "withmansmooth", "smooth1d" , "ffs" , "diffraction" , "shockbubble", "p123" };
 
-    const int problemNumber = Dune :: Fem :: Parameter :: getEnum ( "euler.problem" , problemNames );
+    const int problemNumber = Dune :: Fem :: Parameter :: getEnum ( "problem" , problemNames );
 
     if( problemNames[ problemNumber ] == "sod" )
     {

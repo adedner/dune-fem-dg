@@ -1,14 +1,14 @@
+problem.verboserank: 0
+
 # PROBLEM SELECTION 
 #------------------
 # possible: "sod" , "withman", "withmansmooth", "smooth1d" , "ffs" , "diffraction" , "shockbubble"
-euler.problem: sod 
-
-# euler.problemflag: 0
-# euler.riemanndata: [1., -1., 1.,    1., 1., 1.]
+problem: sod 
+# problemflag: 0
+# riemanndata: [1., -1., 1.,    1., 1., 1.]
 
 # LIMITER SETTINGS
 #-----------------
-
 # 0 = only dg solution | 1 = only reconstruction | 2 = both 
 femdg.limiter.admissiblefunctions: 1 
 # tolerance for shock indicator 
@@ -20,8 +20,7 @@ femdg.limiter.indicatoroutput: true
 
 # DATA WRITER
 #------------
-
-fem.io.path: ./data/euler
+fem.io.path: /data/euler
 fem.io.datafileprefix: RC
 fem.io.savestep: 0.01 # SaveStep (write data every `saveStep' time period, <=0 deactivates)
 fem.io.savecount: -1 # SaveCount (write data every saveCount time steps, <=0 deactivates)
@@ -29,7 +28,6 @@ fem.io.savecount: -1 # SaveCount (write data every saveCount time steps, <=0 dea
 
 # GRID SOLUTION 
 #--------------
-
 gridsol.savestep: 0.5
 gridsol.firstwrite: 0.5
 gridsol.filename: straka-checkpoint
@@ -37,21 +35,22 @@ gridsol.filename: straka-checkpoint
 
 # GENERAL
 #--------
-
 paramfile: ../parameter/paramBase
 
-femhowto.eocSteps: 3
-problem.verboserank: 0
+
+# STEPPER
+#--------
+fem.eoc.steps: 3
+femdg.stepper.starttime: 0.
+femdg.stepper.endtime: 0.15
+
 
 
 # PROBLEM SETUP
 #--------------
-
 paramfile: ../parameter/paramPhysicalConstants
 
 g: 1. # gravity force [m/ss]
-femhowto.startTime: 0.
-femhowto.endTime: 0.15
 hSpeed0: 1. # x-axis speed [m/s]
 vSpeed0: 1.25 # z-axis speed [m/s]
 p0: 1. # surface pressure [Pa]
@@ -70,14 +69,11 @@ r: 0.25 # radius of perturbation ball
 
 # DOMAIN SETUP
 #-------------
-
-fem.io.macroGridFile_1d: ../grids/unitcube1.dgf
-#fem.io.macroGridFile_2d: ../grids/unitcube2.dgf
-fem.io.macroGridFile_2d: ../grids/grid2d_str1d.dgf
-fem.io.macroGridFile_3d: ../grids/unitcube3.dgf
+fem.io.macroGridFile_1d:  ../grids/unitcube1.dgf
+fem.io.macroGridFile_2d:  ../grids/grid2d_str1d.dgf
+fem.io.macroGridFile_3d:  ../grids/unitcube3.dgf
 
 
 # SOLVER CONFIGURATION
 #---------------------
-
 paramfile: ../parameter/paramSolver
