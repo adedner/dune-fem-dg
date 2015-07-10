@@ -56,8 +56,8 @@ public:
   U0 () :                                                        /*@LST0S@*/
     BaseType () ,
     velocity_( 0 ),
-    startTime_( ParameterType::getValue<double>("femhowto.startTime",0.0) ),
-    epsilon_  ( ParameterType::getValue<double>("femhowto.epsilon"  ,0.1) )
+    startTime_( ParameterType::getValue<double>("femdg.stepper.starttime",0.0) ),
+    epsilon_  ( ParameterType::getValue<double>("epsilon"  ,0.1) )
   {                                                             /*@LST0E@*/
       velocity_[0]=0.8;
       velocity_[1]=0.6;
