@@ -41,11 +41,11 @@ gridsol.usegridsolution: false
 
 # STEPPER
 #-----------------
-femdg.stepper.eocsteps: 5
+fem.eoc.steps: 5
 femdg.stepper.printcount: 10
 # maximal number of timesteps done (for debugging)
 # femdg.stepper.maximaltimesteps: 10
-femdg.stepper.fixedtimestep: 0.002 # when 0 then use dynamic time step
+#femdg.stepper.fixedtimestep: 0.002 # when 0 then use dynamic time step
 femdg.fixedtimestepeocloopfactor: 1. # fixed time step is scaled with the inverse of this in each eoc loop
 
 # GRID ADAPTATION

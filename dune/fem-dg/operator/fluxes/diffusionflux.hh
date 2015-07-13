@@ -28,10 +28,15 @@ namespace Dune {
       : vec_( vec )
     {}
 
-    const ValueType& operator [] (const size_t i) const
+    const TupleType& tuple( const size_t i ) const
     {
       assert( i < vec_.size() );
-      return vec_[ i ][ uVar ];
+      return vec_[ i ];
+    }
+
+    const ValueType& operator [] ( const size_t i ) const
+    {
+      return tuple( i )[ uVar ];
     }
   };
 

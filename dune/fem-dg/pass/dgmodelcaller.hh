@@ -23,6 +23,7 @@ namespace Dune
     const JacobianTuple& jacobians_;
 
     const double time_;
+    const double volume_;
     const int qp_;
   public:
       typedef Entity          EntityType;
@@ -34,16 +35,18 @@ namespace Dune
       typedef typename QuadratureType :: LocalCoordinateType          LocalCoordinateType;
 
       ElementQuadraturePointContext( const Entity& entity,
-                             const Quadrature& quadrature,
-                             const RangeTuple& values,
-                             const JacobianTuple& jacobians,
-                             const int qp,
-                             const double time )
+                                     const Quadrature& quadrature,
+                                     const RangeTuple& values,
+                                     const JacobianTuple& jacobians,
+                                     const int qp,
+                                     const double time,
+                                     const double volume )
        : entity_( entity ),
          quad_( quadrature ),
          values_( values ),
          jacobians_( jacobians ),
          time_( time ),
+         volume_( volume ),
          qp_( qp )
     {}
 
@@ -52,10 +55,34 @@ namespace Dune
     const RangeTuple& values() const { return values_; }
     const JacobianTuple& jacobians() const { return jacobians_; }
     const double time () const { return time_; }
+    const double volume() const { return volume_; }
     const QuadraturePointWrapperType quadraturePoint() const { return quadrature()[ index() ]; }
     const CoordinateType& point() const { return quadrature().point( index() ); }
     const LocalCoordinateType& localPoint() const { return quadrature().localPoint( index() ); }
     const int index() const { return qp_; }
+
+    /*
+    // if ReturnType exists in RangeTuple
+    template <class ReturnType, class Functor, typename... Args>
+    const ReturnType& doEvaluate( const ReturnType& ret, const Functor& functor, Args... args ) const
+    {
+      return ret;
+    }
+
+    // if ReturnType does not exists in RangeTuple
+    template <class Functor, typename... Args>
+    decltype(Functor::operator()) doEvaluate( const RangeTuple&, const Functor& functor, Args... args ) const
+    {
+      return functor( args );
+    }
+
+    template <class VarId, class Functor, typename... Args>
+    decltype(doEvaluate(values()[ VarId::value ], const Functor& functor, Args... args ))
+    evaluate( const Functor& functor, Args... args ) const
+    {
+      return doEvaluate( values()[ VarId::value ], functor, args );
+    }
+    */
   };
 
   template <class Intersection,
@@ -80,8 +107,9 @@ namespace Dune
                                           const RangeTuple& values,
                                           const JacobianTuple& jacobians,
                                           const int qp,
-                                          const double time )
-       : BaseType( entity, quadrature, values, jacobians, qp, time ),
+                                          const double time,
+                                          const double volume )
+       : BaseType( entity, quadrature, values, jacobians, qp, time, volume ),
          intersection_( intersection )
     {}
 
@@ -214,7 +242,7 @@ namespace Dune
       assert( quadId_ == quadrature.id() );
       assert( (int) values_.size() > qp );
 
-      ElementQuadratureContextType context( entity, quadrature, values_[ qp ], jacobianValue( jacobians_, qp ), qp, time() );
+      ElementQuadratureContextType context( entity, quadrature, values_[ qp ], jacobianValue( jacobians_, qp ), qp, time(), discreteModel().enVolume() );
       discreteModel().analyticalFlux( context, flux );
     }
 
@@ -226,7 +254,7 @@ namespace Dune
       assert( quadId_ == quadrature.id() );
       assert( (int) values_.size() > qp );
 
-      ElementQuadratureContextType context( entity, quadrature, values_[ qp ], jacobianValue( jacobians_, qp ), qp, time() );
+      ElementQuadratureContextType context( entity, quadrature, values_[ qp ], jacobianValue( jacobians_, qp ), qp, time(), discreteModel().enVolume() );
       return discreteModel().source( context, source );
     }
 
@@ -236,7 +264,7 @@ namespace Dune
                                     JacobianRangeType &flux,
                                     RangeType &source )
     {
-      ElementQuadratureContextType context( entity, quadrature, values_[ qp ], jacobianValue( jacobians_, qp ), qp, time() );
+      ElementQuadratureContextType context( entity, quadrature, values_[ qp ], jacobianValue( jacobians_, qp ), qp, time(), discreteModel().enVolume() );
       discreteModel().analyticalFlux( context, flux );
       return discreteModel().source( context, source );
     }
@@ -261,8 +289,8 @@ namespace Dune
                      Dune::TypeIndexedTuple< RangeTupleType, Selector >,
                      Dune::TypeIndexedTuple< JacobianRangeTupleType, Selector > > QuadratureContextType ;
 
-      QuadratureContextType ctxLeft ( intersection, localFunctionsInside_.entity(),  inside,  valuesInside_[ qp ],  jacobianValue( jacobiansInside_, qp ),  qp, time() );
-      QuadratureContextType ctxRight( intersection, localFunctionsOutside_.entity(), outside, valuesOutside_[ qp ], jacobianValue( jacobiansOutside_, qp ), qp, time() );
+      QuadratureContextType ctxLeft ( intersection, localFunctionsInside_.entity(),  inside,  valuesInside_[ qp ],  jacobianValue( jacobiansInside_, qp ),  qp, time(), discreteModel().enVolume() );
+      QuadratureContextType ctxRight( intersection, localFunctionsOutside_.entity(), outside, valuesOutside_[ qp ], jacobianValue( jacobiansOutside_, qp ), qp, time(), discreteModel().nbVolume() );
 
       return discreteModel().numericalFlux( ctxLeft, ctxRight,
                                             gLeft, gRight, hLeft, hRight );
@@ -281,7 +309,7 @@ namespace Dune
                      Dune::TypeIndexedTuple< RangeTupleType, Selector >,
                      Dune::TypeIndexedTuple< JacobianRangeTupleType, Selector > > QuadratureContextType ;
 
-      QuadratureContextType ctxLeft ( intersection, localFunctionsInside_.entity(), quadrature, valuesInside_[ qp ],  jacobianValue( jacobiansInside_, qp ),  qp, time() );
+      QuadratureContextType ctxLeft ( intersection, localFunctionsInside_.entity(), quadrature, valuesInside_[ qp ],  jacobianValue( jacobiansInside_, qp ),  qp, time(), discreteModel().enVolume() );
 
       return discreteModel().boundaryFlux( ctxLeft, gLeft, hLeft );
     }

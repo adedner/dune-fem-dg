@@ -208,7 +208,8 @@ public:
                         FluxRangeType & f) const
   {
     // evaluate velocity V
-    const DomainType v ( 0 );//= local.evaluate< velocityVar >( ComputeVelocity(), local, problem_ );
+    // const DomainType v ( 0 );//= local.evaluate< velocityVar >( ComputeVelocity(), local, problem_ );
+    const DomainType& v = ComputeVelocity()( local, problem_ );
 
     // f = uV;
     for( int r=0; r<dimRange; ++r )
@@ -224,6 +225,7 @@ public:
                         DomainType& v) const
   {
     // v = local.evaluate< velocityVar >( ComputeVelocity(), local, problem_ );
+    v = ComputeVelocity()( local, problem_ );
   }
 
 

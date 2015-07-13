@@ -295,19 +295,6 @@ namespace Dune {
     {
     }
 
-    //! destructor deleting liftings
-    ~DGPrimalDiffusionFluxImpl()
-    {
-      delete LeMinusLifting_;
-      LeMinusLifting_ = 0;
-      delete LePlusLifting_;
-      LePlusLifting_ = 0;
-#ifdef LOCALDEBUG
-      delete LeMinusLifting2_;
-      LeMinusLifting2_ = 0;
-#endif
-    }
-
     // return reference to gradient discrete function space
     const DiscreteGradientSpaceType& gradientSpace() const { return gradSpc_; }
 
@@ -397,7 +384,7 @@ namespace Dune {
       if( hasLifting() || computeBoth )
       {
         if ( ! LeMinusLifting_ )
-          LeMinusLifting_ = new Lifting( gradSpc_ );
+          LeMinusLifting_.reset( new Lifting( gradSpc_ ) );
 
         // define for an intersection e
         //  Ke+ := { e in bnd(Ke+), s * n_Ke+ < 0 }
@@ -422,7 +409,7 @@ namespace Dune {
 
         // get the right quadrature for the lifting entity
         const QuadratureImp& faceQuad = ( insideIsInflow_ ) ? quadOuter : quadInner;
-
+  /*
 #ifdef LOCALDEBUG
         const size_t quadNoOutp = quadOuter.nop();
         double sum = 0;
@@ -506,6 +493,7 @@ namespace Dune {
         sum_ += sum;
         sum2_ += sum2;
 #endif
+        */
 
         // back to the real computation, entity=Ke-
         LeMinusLifting().initialize( entity );
@@ -513,8 +501,9 @@ namespace Dune {
         // calculate real lifting
         for(size_t qp = 0; qp < quadNoInp; ++qp )
         {
-          addLifting(intersection, entity, u[ qp ], time, faceQuad,  qp,
-                     uLeftVec[ qp ], uRightVec[ qp ], liftingEvalLeMinus_[ qp ] );
+          addLifting(intersection, entity, u.tuple( qp ), u[ qp ], time, faceQuad,  qp,
+                     uLeftVec[ qp ], uRightVec[ qp ],
+                     liftingEvalLeMinus_[ qp ] );
         }
         // add to local function
         LeMinusLifting().function().axpyQuadrature( faceQuad, liftingEvalLeMinus_ );
@@ -528,7 +517,7 @@ namespace Dune {
         if ( computeBoth )
         {
           if ( ! LePlusLifting_ )
-            LePlusLifting_ = new Lifting( gradSpc_ );
+            LePlusLifting_.reset( new Lifting( gradSpc_ ) );
 
           // get Ke+ in entity2
           // calculate 2*r_e on Ke+
@@ -545,7 +534,7 @@ namespace Dune {
           {
             // get value of 2*r_e in quadrature point
             // use correct order on interface quadratures!
-            addLifting(intersection, entity2, u2[ qp ], time, faceQuad2,  qp,
+            addLifting(intersection, entity2, u2.tuple( qp ), u2[ qp ], time, faceQuad2,  qp,
                        uLeftVec[ qp ], uRightVec[ qp ], liftingEvalLePlus_[ qp ] );
           }
 
@@ -600,7 +589,7 @@ namespace Dune {
         liftingEvalLeMinus_.resize( quadNop );
         for(size_t qp = 0; qp < quadNop; ++qp )
         {
-          addLifting(intersection, entity, uLeftVec[ qp ], time, quadInner, qp,
+          addLifting(intersection, entity, uLeftVec.tuple( qp ), uLeftVec[ qp ], time, quadInner, qp,
                      uLeftVec[ qp ], uRight[ qp ] , liftingEvalLeMinus_[ qp ] );
         }
         // add to local function
@@ -616,16 +605,17 @@ namespace Dune {
     template <class QuadratureImp, class ArgumentTuple, class LiftingFunction >
     void addLifting(const Intersection& intersection,
                     const EntityType &entity,
-                    const ArgumentTuple &u,
+                    const ArgumentTuple &uTuple,
+                    const RangeType& u,
                     const double time,
                     const QuadratureImp& faceQuad,
                     const int quadPoint,
-                    const ArgumentTuple& uLeft,
-                    const ArgumentTuple& uRight,
+                    const RangeType& uLeft,
+                    const RangeType& uRight,
                     LiftingFunction& func ) const
     {
       IntersectionQuadraturePointContext< Intersection, EntityType, QuadratureImp, ArgumentTuple, ArgumentTuple >
-        local( intersection, entity, faceQuad, uLeft, uLeft, quadPoint, time, entity.geometry().volume() );
+        local( intersection, entity, faceQuad, uTuple, uTuple, quadPoint, time, entity.geometry().volume() );
 
       const FaceDomainType& x = faceQuad.localPoint( quadPoint );
       DomainType normal = intersection.integrationOuterNormal( x );
@@ -1136,10 +1126,10 @@ namespace Dune {
     LiftingType       liftingMethod_;
     const bool        penaltyTerm_;
     DiscreteGradientSpaceType  gradSpc_;
-    Lifting*          LeMinusLifting_;
-    Lifting*          LePlusLifting_;
+    std::unique_ptr< Lifting > LeMinusLifting_;
+    std::unique_ptr< Lifting > LePlusLifting_;
 #ifdef LOCALDEBUG
-    Lifting*          LeMinusLifting2_;
+    std::unique_ptr< Lifting > LeMinusLifting2_;
 #endif
     mutable Fem::MutableArray< GradientType > liftingEvalLeMinus_ ;
     mutable Fem::MutableArray< GradientType > liftingEvalLePlus_ ;
