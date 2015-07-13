@@ -98,7 +98,7 @@ struct ProblemCreator
 
   static inline std::string moduleName()
   {
-    return "navierstokes";
+    return "";
   }
 
   static inline Dune::GridPtr<GridType>

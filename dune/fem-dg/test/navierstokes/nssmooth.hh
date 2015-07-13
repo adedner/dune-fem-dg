@@ -42,7 +42,7 @@ class NSSmoothSolution : public EvolutionProblemInterface<
     omegaGNS_( ParameterType::template getValue< double >( "omegaGNS" ) ),
     kGNS_( ParameterType::template getValue< double >( "kGNS" ) ),
     gammaGNS_( ParameterType::template getValue< double >( "gammaGNS" ) ),
-    endTime_ ( ParameterType::template getValue<double>( "femhowto.endTime" )),
+    endTime_ ( ParameterType::template getValue<double>( "femdg.stepper.endtime" )),
     mu_( ParameterType::template getValue< double >( "mu" )),
     //k_ ( c_pd() * Pr_inv() * mu_),
     k_ ( 2.0 ),

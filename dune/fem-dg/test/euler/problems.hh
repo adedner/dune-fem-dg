@@ -287,9 +287,9 @@ public:
     Ulr[5] = 0.1;
 
     //ParameterType::get("euler.riemanndata", Ulr, Ulr );
-    T = ParameterType::template getValue<double>("femhowto.endTime"/*, T*/);
-    ParameterType::get("femhowto.startTime", startTime, startTime );
-    flag = ParameterType::getValue("euler.problemflag", flag);
+    T = ParameterType::template getValue<double>("femdg.stepper.endtime"/*, T*/);
+    ParameterType::get("femdg.stepper.starttime", startTime, startTime );
+    flag = ParameterType::getValue("problemflag", flag);
   }
 
   int boundaryId( const int id ) const
@@ -459,8 +459,8 @@ public:
     Ulr[2] = 0.4;
     Ulr[5] = 0.4;
 
-    T = ParameterType::template getValue<double>( "femhowto.endTime"/*, T*/ );
-    ParameterType::get( "femhowto.startTime", startTime, startTime );
+    T = ParameterType::template getValue<double>( "femdg.stepper.endtime"/*, T*/ );
+    ParameterType::get( "femdg.stepper.starttime", startTime, startTime );
   }
 
   int boundaryId ( const int id ) const
@@ -897,11 +897,11 @@ public:
   typedef FunctionSpace<double,double,dimDomain,dimDomain+2> FunctionSpaceType;
   U0Sin() :
     gamma(), startTime(0) {
-    ParameterType::get("StartTime",startTime,startTime);
+    ParameterType::get("femdg.stepper.starttime",startTime,startTime);
   }
   U0Sin(std::string,double,bool diff_timestep=true) :
     gamma(1.4), startTime(0) {
-    ParameterType::get("StartTime",startTime,startTime);
+    ParameterType::get("femdg.stepper.starttime",startTime,startTime);
   }
   double endtime() {
     return 2.;
@@ -970,11 +970,11 @@ public:
   typedef FunctionSpace<double,double,dimDomain,dimDomain+2> FunctionSpaceType;
   U0RotatingCone() :
     gamma(), startTime(0) {
-    ParameterType::get("StartTime",startTime,startTime);
+    ParameterType::get("femdg.stepper.starttime",startTime,startTime);
   }
   U0RotatingCone(std::string,double,bool diff_timestep=true) :
     gamma(1.4), startTime(0) {
-    ParameterType::get("StartTime",startTime,startTime);
+    ParameterType::get("femdg.stepper.starttime",startTime,startTime);
   }
   double endtime() {
     return 0.5;

@@ -457,7 +457,7 @@ public:
     //return ;
 #if 0
 #ifdef PADAPTSPACE
-    int polOrder = Dune::Fem:: Parameter::getValue<double>("femhowto.polynomialOrder",1);
+    int polOrder = Dune::Fem:: Parameter::getValue<double>("femdg.polynomialOrder",1);
     const int minimalOrder = estimator_.minimalmemory
     // only implemented for PAdaptiveSpace
     std::vector<int> polOrderVec( space_.gridPart().indexSet().size(0) );

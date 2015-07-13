@@ -66,14 +66,14 @@ struct ProblemCreator
 
   static inline std::string moduleName()
   {
-    return "poisson";
+    return "";
   }
 
   static inline Dune::GridPtr<GridType> initializeGrid()
   {
     // use default implementation
-    std::string filename = Dune::Fem::Parameter::getValue< std::string >(
-        ParameterType::commonInputPath() + "/" + Dune::Fem::IOInterface::defaultGridKey(GridType :: dimension, false));
+    std::string filename = ParameterType::commonInputPath() + "/" +
+               Dune::Fem::Parameter::getValue< std::string >(Dune::Fem::IOInterface::defaultGridKey(GridType :: dimension, false));
 
     std::string description ("poisson-"+diffusionFluxName());
     // initialize grid
@@ -93,7 +93,7 @@ struct ProblemCreator
 
     const int refineelement = 1 ;
 
-    bool nonConformOrigin = Dune::Fem::Parameter::getValue< bool > ( "poisson.nonConformOrigin",false );
+    bool nonConformOrigin = Dune::Fem::Parameter::getValue< bool > ( "nonConformOrigin",false );
 
     if ( nonConformOrigin )
     {
@@ -201,7 +201,7 @@ struct ProblemCreator
   static ProblemType* problem( )
   {
     // choice of benchmark problem
-    int probNr = Dune::Fem::Parameter::getValue< int > ( "femhowto.problem" );
+    int probNr = Dune::Fem::Parameter::getValue< int > ( "problem" );
     return new Dune :: PoissonProblem< GridType,dimRange > ( probNr );
   }
 

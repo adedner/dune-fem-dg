@@ -37,8 +37,8 @@ public:
     BaseType (),
     data_(0)
   {
-    FieldType shift = Dune :: Fem::Parameter :: getValue< double > ("femhowto.globalshift", 0);
-    FieldType factor = Dune :: Fem::Parameter :: getValue< double > ("femhowto.factor", 1);
+    FieldType shift = Dune :: Fem::Parameter :: getValue< double > ("globalshift", 0);
+    FieldType factor = Dune :: Fem::Parameter :: getValue< double > ("factor", 1);
     if( problemNumber == 0 )
     {
       data_ = new BenchMark_1<dim,FieldType,FieldType> (shift,factor);
@@ -250,7 +250,7 @@ public:
     std::ostringstream ofs;
 
     ofs << "Problem: " << myName ;
-    ofs << ", End time: " << Dune:: Fem ::  Parameter::getValue<double>("femhowto.endTime");
+    ofs << ", End time: " << Dune:: Fem ::  Parameter::getValue<double>("femdg.stepper.endtime");
 
     return ofs.str();
   }
