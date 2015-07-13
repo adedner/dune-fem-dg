@@ -765,45 +765,36 @@ public:
 
   // Return value: maximum wavespeed*length of integrationOuterNormal
   // gLeft,gRight are fluxed * length of integrationOuterNormal
-  template< class Intersection, class QuadratureImp >
+  template< class LocalEvaluation >
   inline double
-  numericalFlux( const Intersection& intersection,
-                 const EntityType& inside,
-                 const EntityType& outside,
-                 const double time,
-                 const QuadratureImp& faceQuadInner,
-                 const QuadratureImp& faceQuadOuter,
-                 const int quadPoint,
+  numericalFlux( const LocalEvaluation& left,
+                 const LocalEvaluation& right,
                  const RangeType& uLeft,
                  const RangeType& uRight,
                  RangeType& gLeft,
                  RangeType& gRight) const
   {
-    const FaceDomainType& x = faceQuadInner.localPoint( quadPoint );
-    DomainType normal = intersection.integrationOuterNormal(x);
+    const FaceDomainType& x = left.localPoint();
+    DomainType normal = left.intersection().integrationOuterNormal(x);
     const double len = normal.two_norm();
     normal *= 1./len;
 
     RangeType visc;
     FluxRangeType anaflux;
 
-    model_.advection( inside, time, faceQuadInner.point( quadPoint ),
-                      uLeft, anaflux );
+    model_.advection( left, uLeft, anaflux );
 
     // set gLeft
     anaflux.mv( normal, gLeft );
 
-    model_.advection( outside, time, faceQuadOuter.point( quadPoint ),
-                      uRight, anaflux );
+    model_.advection( right, uRight, anaflux );
     anaflux.umv( normal, gLeft );
 
     double maxspeedl, maxspeedr, maxspeed;
     double viscparal, viscparar, viscpara;
 
-    model_.maxSpeed( inside, time, faceQuadInner.point( quadPoint ),
-                     normal, uLeft, viscparal, maxspeedl );
-    model_.maxSpeed( outside, time, faceQuadOuter.point( quadPoint ),
-                     normal, uRight, viscparar, maxspeedr );
+    model_.maxSpeed( left,  normal, uLeft,  viscparal, maxspeedl );
+    model_.maxSpeed( right, normal, uRight, viscparar, maxspeedr );
 
     maxspeed = (maxspeedl > maxspeedr) ? maxspeedl : maxspeedr;
     viscpara = (viscparal > viscparar) ? viscparal : viscparar;
@@ -816,7 +807,7 @@ public:
     gRight = gLeft;
 
 #if WELLBALANCE
-    const DomainType xGlobal = intersection.geometry().global(x);
+    const DomainType xGlobal = left.intersection().geometry().global(x);
     const double g = model_.problem().g();
 
     // calculate geopotential in the grid elements sharing 'it'
@@ -877,15 +868,10 @@ class NumFluxBase {
 
   // Return value: maximum wavespeed*length of integrationOuterNormal
   // gLeft,gRight are fluxed * length of integrationOuterNormal
-  template< class Intersection, class QuadratureImp >
+  template< class LocalEvaluation >
   inline double
-  numericalFlux( const Intersection& intersection,
-                 const EntityType& inside,
-                 const EntityType& outside,
-                 const double time,
-                 const QuadratureImp& faceQuadInner,
-                 const QuadratureImp& faceQuadOuter,
-                 const int quadPoint,
+  numericalFlux( const LocalEvaluation& left,
+                 const LocalEvaluation& right,
                  const RangeType& uLeft,
                  const RangeType& uRight,
                  RangeType& gLeft,
@@ -900,22 +886,17 @@ protected:
 };
 
 template<class Model, EULERNUMFLUX::EulerFluxType fluxtype>
-template<class Intersection, class QuadratureImp>
+template<class LocalEvaluation>
 inline double
 NumFluxBase<Model, fluxtype> ::
-numericalFlux( const Intersection& intersection,
-               const EntityType& inside,
-               const EntityType& outside,
-               const double time,
-               const QuadratureImp& faceQuadInner,
-               const QuadratureImp& faceQuadOuter,
-               const int quadPoint,
+numericalFlux( const LocalEvaluation& left,
+               const LocalEvaluation& right,
                const RangeType& uLeft,
                const RangeType& uRight,
                RangeType& gLeft,
                RangeType& gRight) const
 {
-  DomainType normal = intersection.integrationOuterNormal( faceQuadInner.localPoint( quadPoint ) );
+  DomainType normal = left.intersection().integrationOuterNormal( left.localPoint() );
   const double len = normal.two_norm();
   normal *= 1./len;
 

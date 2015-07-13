@@ -44,9 +44,11 @@ struct ProblemCreator
   {
     typedef ProblemType  InitialDataType;
     typedef HeatEqnModel< GridPart, InitialDataType > ModelType;
-    typedef LLFFlux< ModelType >                      FluxType;
 
-    //typedef UpwindFlux< ModelType > FluxType;
+    // TODO: flux does not work yet
+    //typedef LLFFlux< ModelType >                      FluxType;
+
+    typedef UpwindFlux< ModelType > FluxType;
     // choice of diffusion flux (see diffusionflux.hh for methods)
      static const Dune :: DGDiffusionFluxIdentifier PrimalDiffusionFluxId
        =  Dune :: method_general ;

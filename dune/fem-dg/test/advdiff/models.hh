@@ -153,79 +153,45 @@ public:
   HeatEqnModel(const ProblemType& problem) :
     problem_(problem),
     epsilon_(problem.epsilon()),
-    tstepEps_( getTStepEps() ),
-    velocity_( getVelocity() )
+    tstepEps_( getTStepEps() )
   {}
 
-  inline bool hasFlux() const { return true ; }
   inline const ProblemType& problem() const { return problem_; }
+
+  inline bool hasFlux() const { return true ; }
   inline bool hasStiffSource() const { return problem_.hasStiffSource(); }
   inline bool hasNonStiffSource() const { return problem_.hasNonStiffSource(); }
 
-  inline double nonStiffSource( const EntityType& en,
-                                const double time,
-                                const DomainType& x,
+  template <class LocalEvaluation>
+  inline double nonStiffSource( const LocalEvaluation& local,
                                 const RangeType& u,
-                                const GradientType& du,
+                                const JacobianRangeType& du,
                                 RangeType & s) const
   {
-    //FieldMatrixConverter< GradientType, JacobianRangeType> jac( du );
-    return nonStiffSource( en, time, x, u, s );
+    DomainType xgl = local.entity().geometry().global( local.point() );
+    return problem_.nonStiffSource( xgl, local.time(), u, s );
   }
 
-  //template < class ArgumentTuple >
-  inline double nonStiffSource( const EntityType& en,
-                        const double time,
-                        const DomainType& x,
-                        const RangeType& u,
-    //                    const ArgumentTuple& uExtra,
-                        const JacobianRangeType& jac,
-                        RangeType & s) const
+  template <class LocalEvaluation>
+  inline double stiffSource( const LocalEvaluation& local,
+                             const RangeType& u,
+                             const JacobianRangeType& jac,
+                             RangeType & s) const
   {
-    return nonStiffSource( en, time, x, u, s );
+    DomainType xgl = local.entity().geometry().global( local.point() );
+    return problem_.stiffSource( xgl, local.time(), u, s );
   }
 
-  inline double nonStiffSource( const EntityType& en,
-                        const double time,
-                        const DomainType& x,
-                        const RangeType& u,
-                        RangeType & s) const
+  struct ComputeVelocity
   {
-    DomainType xgl = en.geometry().global( x );
-    return problem_.nonStiffSource( xgl, time, u, s );
-  }
-
-  inline double stiffSource( const EntityType& en,
-                        const double time,
-                        const DomainType& x,
-                        const RangeType& u,
-                        const GradientType& du,
-                        RangeType & s) const
-  {
-    //FieldMatrixConverter< GradientType, JacobianRangeType> jac( du );
-    return stiffSource( en, time, x, u, s );
-  }
-
-
-  inline double stiffSource( const EntityType& en,
-                        const double time,
-                        const DomainType& x,
-                        const RangeType& u,
-                        const JacobianRangeType& jac,
-                        RangeType & s) const
-  {
-    return stiffSource( en, time, x, u, s );
-  }
-
-  inline double stiffSource( const EntityType& en,
-                        const double time,
-                        const DomainType& x,
-                        const RangeType& u,
-                        RangeType & s) const
-  {
-    DomainType xgl = en.geometry().global( x );
-    return problem_.stiffSource( xgl, time, u, s );
-  }
+    template <class LocalEvaluation>
+    DomainType operator() (const LocalEvaluation& local, const ProblemType& problem ) const
+    {
+      DomainType v;
+      problem.velocity( local.entity().geometry().global( local.point() ), local.time(), v);
+      return v;
+    }
+  };
 
   /**
    * @brief advection term \f$F\f$
@@ -236,15 +202,13 @@ public:
    * @param u \f$U\f$
    * @param f \f$f(U)\f$
    */
-  inline  void advection(const EntityType& en,
-                         const double time,
-                         const DomainType& x,
-                         const RangeType& u,
-                         FluxRangeType & f) const
+  template <class LocalEvaluation>
+  inline void advection(const LocalEvaluation& local,
+                        const RangeType& u,
+                        FluxRangeType & f) const
   {
     // evaluate velocity V
-    DomainType v;
-    velocity( en, time, x, u, v );
+    const DomainType v ( 0 );//= local.evaluate< velocityVar >( ComputeVelocity(), local, problem_ );
 
     // f = uV;
     for( int r=0; r<dimRange; ++r )
@@ -255,33 +219,21 @@ public:
   /**
    * @brief velocity calculation, is called by advection()
    */
-  //template <class ArgumentTuple>
-  inline  void velocity(const EntityType& en,
-                        const double time,
-                        const DomainType& x,
-                        const RangeType& u,
-      //                  const ArgumentTuple& uExtra,
+  template <class LocalEvaluation>
+  inline void velocity(const LocalEvaluation& local,
                         DomainType& v) const
   {
-    //if( uExtra[ velocity ].active() )
-    //{
-    //  v = uExtra[ velocity ];
-    //}
-    //else
-    {
-      problem_.velocity( en.geometry().global(x), time, v);
-    }
+    // v = local.evaluate< velocityVar >( ComputeVelocity(), local, problem_ );
   }
 
 
   /**
    * @brief diffusion term \f$a\f$
    */
-  inline void jacobian(const EntityType& en,
-                        const double time,
-                        const DomainType& x,
-                        const RangeType& u,
-                        DiffusionRangeType& a) const
+  template <class LocalEvaluation>
+  inline void jacobian(const LocalEvaluation& local,
+                       const RangeType& u,
+                       DiffusionRangeType& a) const
   {
     a = 0;
 
@@ -293,39 +245,20 @@ public:
         a[dimDomain*r+d][d] = u[r];
   }
 
-  inline void eigenValues(const EntityType& en,
-                          const double time,
-                          const DomainType& x,
+  template <class LocalEvaluation>
+  inline void eigenValues(const LocalEvaluation& local,
                           const RangeType& u,
                           RangeType& maxValue) const
   {
     FluxRangeType A(0);
     maxValue = RangeType( problem_.diffusion( u,A ) );
-    return;
-    abort();
-    /*
-    DiffusionMatrixType K(0) ;
-    DomainType values ;
-    for( int r = 0; r<dimRange; ++r )
-    {
-      // setup matrix
-      for(int i=0; i<dimDomain; ++i)
-        K[i][i] = problem_.diffusion( u,A );
-
-      // calculate eigenvalues
-      Dune::FMatrixHelp :: eigenValues( K, values );
-      // take max eigenvalue
-      maxValue[ r ] = values.infinity_norm();
-    }
-    */
   }
 
   /**
    * @brief diffusion term \f$A\f$
    */
-  inline void diffusion(const EntityType& en,
-                        const double time,
-                        const DomainType& x,
+  template <class LocalEvaluation>
+  inline void diffusion(const LocalEvaluation& local,
                         const RangeType& u,
                         const JacobianRangeType& jac,
                         FluxRangeType& A) const
@@ -339,12 +272,10 @@ public:
     A *= problem_.diffusion( u, A );//*(1.+d);
   }
 
-  inline double diffusionTimeStep( const IntersectionType &it,
-                                   const double enVolume,
-                                   const double circumEstimate,
-                                   const double time,
-                                   const FaceDomainType& x,
-                                   const RangeType& u ) const
+  template <class LocalEvaluation>
+  inline double diffusionTimeStep(const LocalEvaluation& local,
+                                  const double circumEstimate,
+                                  const RangeType& u ) const
   {
     return tstepEps_;
   }
@@ -365,9 +296,8 @@ public:
   /**
    * @brief checks for existence of dirichlet boundary values
    */
-  inline bool hasBoundaryValue(const IntersectionType& it,
-                               const double time,
-                               const FaceDomainType& x) const
+  template <class LocalEvaluation>
+  inline bool hasBoundaryValue(const LocalEvaluation& local ) const
   {
     return true;
   }
@@ -375,9 +305,8 @@ public:
   /**
    * @brief neuman boundary values \f$g_N\f$ for pass2
    */
-  inline double boundaryFlux(const IntersectionType& it,
-                             const double time,
-                             const FaceDomainType& x,
+  template <class LocalEvaluation>
+  inline double boundaryFlux(const LocalEvaluation& local,
                              const RangeType& uLeft,
                              const GradientType& vLeft,
                              RangeType& gLeft) const
@@ -389,9 +318,8 @@ public:
   /**
    * @brief neuman boundary values \f$g_N\f$ for pass1
    */
-  inline double boundaryFlux(const IntersectionType& it,
-                             const double time,
-                             const FaceDomainType& x,
+  template <class LocalEvaluation>
+  inline double boundaryFlux(const LocalEvaluation& local,
                              const RangeType& uLeft,
                              RangeType& gLeft) const
   {
@@ -399,23 +327,10 @@ public:
     return 0.;
   }
 
-  inline double diffusionBoundaryFlux( const IntersectionType& it,
-                                       const double time,
-                                       const FaceDomainType& x,
-                                       const RangeType& uLeft,
-                                       const GradientType& gradLeft,
-                                       RangeType& gLeft ) const
-  {
-    Dune::Fem::FieldMatrixConverter< GradientType, JacobianRangeType> jacLeft( gradLeft );
-    return diffusionBoundaryFlux( it, time, x, uLeft, jacLeft, gLeft );
-  }
-
   /** \brief boundary flux for the diffusion part
    */
-  template <class JacobianRangeImp>
-  inline double diffusionBoundaryFlux( const IntersectionType& it,
-                                       const double time,
-                                       const FaceDomainType& x,
+  template <class LocalEvaluation, class JacobianRangeImp>
+  inline double diffusionBoundaryFlux( const LocalEvaluation& local,
                                        const RangeType& uLeft,
                                        const JacobianRangeImp& jacLeft,
                                        RangeType& gLeft ) const
@@ -427,9 +342,8 @@ public:
   /**
    * @brief dirichlet boundary values
    */
-  inline  void boundaryValue(const IntersectionType& it,
-                             const double time,
-                             const FaceDomainType& x,
+  template <class LocalEvaluation>
+  inline  void boundaryValue(const LocalEvaluation& local,
                              const RangeType& uLeft,
                              RangeType& uRight) const
   {
@@ -437,35 +351,26 @@ public:
   uRight = 0;
   return;
 #endif
-    DomainType xgl = it.geometry().global( x );
-    problem_.evaluate(xgl, time, uRight);
+    DomainType xgl = local.intersection().geometry().global( local.localPoint() );
+    problem_.evaluate(xgl, local.time(), uRight);
   }
 
 
   // here x is in global coordinates
-  inline void maxSpeed( const EntityType& entity,
-                        const double time,
-                        const DomainType& xLocal,
+  template <class LocalEvaluation>
+  inline void maxSpeed( const LocalEvaluation& local,
                         const DomainType& normal,
                         const RangeType& u,
                         double& advspeed,
                         double& totalspeed ) const
   {
     DomainType v;
-    velocity( entity, time, xLocal, u, v );
-    advspeed   = v * normal ;
+    velocity( local, v );
+    advspeed   = std::abs( v * normal );
     totalspeed = advspeed;
   }
 
  protected:
-  DomainType getVelocity() const
-  {
-    DomainType velocity(0);
-    if(ConstantVelocity) {
-      problem_.velocity(velocity,velocity);
-    }
-    return velocity;
-  }
   double getTStepEps() const
   {
     // if diffusionTimeStep is set to non-zero in the parameterfile, the
@@ -480,9 +385,6 @@ public:
   const ProblemType& problem_;
   const double epsilon_;
   const double tstepEps_;
- public:
-  const DomainType velocity_;
-
 };
 
 
@@ -502,45 +404,6 @@ public:
   typedef typename Model :: FaceDomainType  FaceDomainType;
   typedef typename Model :: EntityType  EntityType;
   typedef typename Model :: IntersectionType  IntersectionType;
-protected:
-  template <class Model, bool constVelo>
-    struct Velocity
-    {
-      /**
-       * @brief computes and returns the wind direction
-       */
-      static inline double upwind(const Model& model,
-                                  const IntersectionType& it,
-                                  const double time,
-                                  const FaceDomainType& x,
-                                  const RangeType& uLeft)
-      {
-        const DomainType normal = it.integrationOuterNormal(x);
-        DomainType velocity;
-        model.velocity( Dune::Fem::make_entity( it.inside() ),time,
-                       it.geometryInInside().global(x),
-                       uLeft,velocity);
-        return normal*velocity;
-      }
-    };
-
-  template <class Model>
-    struct Velocity<Model,true>
-    {
-      /**
-       * @brief computes and returns the wind direction for models with
-       * constant velocity
-       */
-      static inline double upwind( const Model& model,
-                                   const IntersectionType& it,
-                                   const double time,
-                                   const FaceDomainType& x,
-                                   const RangeType& uLeft )
-      {
-        const DomainType normal = it.integrationOuterNormal(x);
-        return normal * model.velocity_;
-      }
-    };
 
 public:
   /**
@@ -557,22 +420,23 @@ public:
    *
    * @return maximum wavespeed * normal
    */
-  template <class QuadratureImp>
-  inline double numericalFlux( const IntersectionType& it,
-                               const EntityType& inside,
-                               const EntityType& outside,
-                               const double time,
-                               const QuadratureImp& faceQuadInner,
-                               const QuadratureImp& faceQuadOuter,
-                               const int quadPoint,
+  template <class LocalEvaluation>
+  inline double numericalFlux( const LocalEvaluation& left,
+                               const LocalEvaluation& right,
                                const RangeType& uLeft,
                                const RangeType& uRight,
                                RangeType& gLeft,
                                RangeType& gRight ) const
   {
-    const FaceDomainType& x = faceQuadInner.localPoint( quadPoint );
-    const double upwind = Velocity<Model,Model::ConstantVelocity>::
-      upwind(model_,it,time,x,uLeft);
+    const FaceDomainType& x = left.localPoint();
+
+    // get normal from intersection
+    const DomainType normal = left.intersection().integrationOuterNormal(x);
+
+    // get velocity
+    DomainType velocity;
+    model_.velocity( left, velocity );
+    const double upwind = normal * velocity ;
 
     if (upwind>0)
       gLeft = uLeft;

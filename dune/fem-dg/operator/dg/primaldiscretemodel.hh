@@ -117,16 +117,14 @@ namespace Dune {
 
       if ( model_.hasStiffSource() )
       {
-        const double dtStiff = model_.stiffSource( local.entity(), local.time(), local.point(),
-                                                   local.values()[uVar], local.jacobians()[uVar], s );
+        const double dtStiff = model_.stiffSource( local, local.values()[uVar], local.jacobians()[uVar], s );
         dtEst = ( dtStiff > 0 ) ? dtStiff : dtEst;
       }
 
       if ( model_.hasNonStiffSource() )
       {
         RangeType sNonStiff (0);
-        const double dtNon = model_.nonStiffSource( local.entity(), local.time(), local.point(),
-                                                    local.values()[uVar], local.jacobians()[uVar], sNonStiff );
+        const double dtNon = model_.nonStiffSource( local, local.values()[uVar], local.jacobians()[uVar], sNonStiff );
 
         // add to source
         s += sNonStiff;
@@ -176,7 +174,11 @@ namespace Dune {
         typedef DGFluxTupleToVectorConverter< ArgumentTupleVector, passUId > ConverterType;
         if( diffFlux_.hasLifting() )
         {
-          const bool hasBoundaryValue = model_.hasBoundaryValue(it, time, quadInner.localPoint( 0 ));
+          typedef typename ArgumentTupleVector :: value_type ArgumentTuple ;
+          typedef IntersectionQuadraturePointContext< Intersection, EntityType, QuadratureImp, ArgumentTuple, ArgumentTuple > IntersectionQuadraturePointContextType;
+          IntersectionQuadraturePointContextType local0( it, inside(), quadInner, uLeftVec[ 0 ], uLeftVec[ 0 ], 0, time, this->enVolume() );
+          const bool hasBoundaryValue = model_.hasBoundaryValue( local0 );
+
 
           // turns uLeftVec into a fake
           // vector of RangeTypes by storing the passUId
@@ -187,12 +189,14 @@ namespace Dune {
 
           for(size_t qp = 0; qp < quadNop; ++qp)
           {
+            IntersectionQuadraturePointContextType
+              local( it, inside(), quadInner, uLeftVec[ qp ], uLeftVec[ qp ], qp, time, this->enVolume() );
+
             assert( hasBoundaryValue ==
-                model_.hasBoundaryValue(it, time, quadInner.localPoint( qp )) );
+                model_.hasBoundaryValue( local ) );
 
             if( hasBoundaryValue )
-              model_.boundaryValue(it, time, quadInner.localPoint( qp ),
-                                   uLeft[ qp ], uBndVec_[ qp ] );
+              model_.boundaryValue(local, uLeft[ qp ], uBndVec_[ qp ] );
             else
               // do something bad to uBndVec as it shouldn't be used
               uBndVec_[ qp ] = std::numeric_limits< double >::quiet_NaN();
@@ -241,8 +245,7 @@ namespace Dune {
         RangeType dLeft, dRight;
 
         diffusionWaveSpeed =
-          diffFlux_.numericalFlux(left.intersection(), *this,
-                                  left.time(), left.quadrature(), right.quadrature(), left.index(),
+          diffFlux_.numericalFlux(left, right,
                                   left.values()[ uVar ], right.values()[ uVar ],
                                   left.jacobians()[ uVar ], right.jacobians()[ uVar ],
                                   dLeft, dRight,
@@ -280,16 +283,14 @@ namespace Dune {
       double diffusionWaveSpeed = 0.0;
 
       const bool hasBoundaryValue =
-        model_.hasBoundaryValue( left.intersection(), left.time(), left.localPoint() );
+        model_.hasBoundaryValue( left );
 
       if( diffusion && hasBoundaryValue )
       {
         // diffusion boundary flux for Dirichlet boundaries
         RangeType dLeft ( 0 );
         diffusionWaveSpeed =
-          diffFlux_.boundaryFlux(left.intersection(),
-                                 *this,
-                                 left.time(), left.quadrature(), left.index(),
+          diffFlux_.boundaryFlux(left,
                                  left.values()[ uVar ], uBnd_, // is set during call of  BaseType::boundaryFlux
                                  left.jacobians()[ uVar ],
                                  dLeft,
@@ -299,7 +300,7 @@ namespace Dune {
       else if ( diffusion )
       {
         RangeType diffBndFlux ( 0 );
-        model_.diffusionBoundaryFlux( left.intersection(), left.time(), left.quadrature().localPoint( left.index() ),
+        model_.diffusionBoundaryFlux( left,
                                       left.values()[uVar], left.jacobians()[uVar], diffBndFlux );
         gLeft += diffBndFlux;
         // gDiffLeft not set here ????
@@ -328,7 +329,7 @@ namespace Dune {
       if( diffusion && hasFlux() )
       {
         JacobianRangeType diffmatrix;
-        model_.diffusion( local.entity(), local.time(), local.point(),
+        model_.diffusion( local,
                           local.values()[ uVar ], local.jacobians()[ uVar ], diffmatrix);
         // primal case
         f -= diffmatrix;

@@ -49,14 +49,14 @@ namespace Dune {
     static const int modParamSize = std::tuple_size< ModelParameter > :: value ;
     static const int extParamSize = std::tuple_size< ExtraParameterTupleType > :: value ;
     static const int selectedSize = ( extParamSize < modParamSize ) ? extParamSize :  modParamSize ;
-    static_assert( selectedSize == 1, " selected size ");
+    //static_assert( selectedSize == 1, " selected size ");
     //static const int modId = typename std::tuple_element< 0, ModelParameter>::type::value;
     static const int newId = 0;//( modParamSize > 0 ) ? modId : 0;
     typedef typename SelectTupleElements< ModelParameter, 0, selectedSize > :: type ExtraParameterType;
 
   public:
     // overload selector type to add model parameters
-    typedef typename Dune::Fem::Selector< newId, passUId, passGradId > ::Type Selector ;
+    typedef typename Dune::Fem::Selector<  passUId, passGradId > ::Type Selector ;
       //Dune::Fem::ElementTuple< ModelParameterpassUId, passGradId, -1, -1, -1, -1, -1, -1, -1, ExtraParameterType > >::Type  Selector;
     //typedef typename Dune::Fem::Selector< passUId, passGradId > :: Type Selector;
 
@@ -187,7 +187,7 @@ namespace Dune {
     inline double source( const LocalEvaluation& local,
                           RangeType& s ) const
     {
-      return model_.nonStiffSource( local.entity(), local.time(), coordinate( local.point() ), local.values()[ uVar ], s );
+      return model_.nonStiffSource( local, local.values()[ uVar ], s );
     }
 
 
@@ -246,8 +246,7 @@ namespace Dune {
       if( advection )
       {
         // returns advection wave speed
-        return numflux_.numericalFlux(left.intersection(), left.entity(), right.entity(),
-                                      left.time(), left.quadrature(), right.quadrature(), left.index(),
+        return numflux_.numericalFlux(left, right,
                                       left.values()[ uVar ], right.values()[ uVar ], gLeft, gRight);
       }
       else
@@ -266,8 +265,6 @@ namespace Dune {
                         RangeType& gLeft,
                         JacobianRangeType& gDiffLeft ) const   /*@LST0E@*/
     {
-      const FaceDomainType& x = left.localPoint();
-
       const bool hasBndValue = boundaryValue( left );
 
       // make sure user sets specific boundary implementation
@@ -280,14 +277,13 @@ namespace Dune {
         {
           RangeType gRight;
           // returns advection wave speed
-          return numflux_.numericalFlux(left.intersection(), left.entity(), left.entity(),
-                                        left.time(), left.quadrature(), left.quadrature(), left.index(),
+          return numflux_.numericalFlux(left, left,
                                         left.values()[ uVar ], uBnd_, gLeft, gRight);
         }
         else
         {
           // returns advection wave speed
-          return model_.boundaryFlux( left.intersection(), left.time(), left.localPoint(), left.values()[uVar], gLeft );
+          return model_.boundaryFlux( left, left.values()[uVar], gLeft );
         }
       }
       else
@@ -305,7 +301,7 @@ namespace Dune {
                          JacobianRangeType& f ) const
     {
       if( advection )
-        model_.advection( local.entity(), local.time(), local.point(), local.values()[ uVar ], f);
+        model_.advection( local, local.values()[ uVar ], f);
       else
         f = 0;
     }
@@ -315,12 +311,10 @@ namespace Dune {
     template <class LocalEvaluation>
     bool boundaryValue(const LocalEvaluation& left) const
     {
-      const FaceDomainType& x = left.localPoint();
-      const bool hasBndValue = model_.hasBoundaryValue( left.intersection(), left.time(), left.localPoint() );
+      const bool hasBndValue = model_.hasBoundaryValue( left );
       if( hasBndValue )
       {
-        model_.boundaryValue( left.intersection(), left.time(), left.localPoint(),
-                              left.values()[ uVar ], uBnd_ );
+        model_.boundaryValue( left, left.values()[ uVar ], uBnd_ );
       }
       else
         // do something bad to uBnd_ as it shouldn't be used
@@ -530,14 +524,12 @@ namespace Dune {
         RangeType error ;
         RangeType v ;
         // v = g( ul, ul ) = f( ul )
-        numflux_.numericalFlux(left.intersection(), left.entity(), right.entity(),
-                               left.time(), left.quadrature(), right.quadrature(), left.index(),
-                               left.values()[ uVar ], left.values(), v, error);
+        numflux_.numericalFlux(left, left,
+                               left.values()[ uVar ], left.values()[ uVar ], v, error);
 
         RangeType w ;
         // v = g( ur, ur ) = f( ur )
-        numflux_.numericalFlux(left.intersection(), left.entity(), right.entity(),
-                               left.time(), left.quadrature(), right.quadrature(), left.index(),
+        numflux_.numericalFlux(right, right,
                                right.values()[ uVar ], right.values()[ uVar ], w, error);
 
         // err = 2 * g(u,v) - g(u,u) - g(v,v)
