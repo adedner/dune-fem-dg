@@ -72,8 +72,8 @@ struct ProblemCreator
   static inline Dune::GridPtr<GridType> initializeGrid()
   {
     // use default implementation
-    std::string filename = Dune::Fem::Parameter::getValue< std::string >(
-        ParameterType::commonInputPath() + "/" + Dune::Fem::IOInterface::defaultGridKey(GridType :: dimension, false));
+    std::string filename = ParameterType::commonInputPath() + "/" +
+               Dune::Fem::Parameter::getValue< std::string >(Dune::Fem::IOInterface::defaultGridKey(GridType :: dimension, false));
 
     std::string description ("poisson-"+diffusionFluxName());
     // initialize grid
