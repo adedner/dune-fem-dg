@@ -107,34 +107,30 @@ class NSModel : public DefaultModel < NSModelTraits< GridPartType, ProblemImp > 
   inline bool hasNonStiffSource() const { return problem_.hasNonStiffSource(); }
   inline bool hasFlux() const { return true ; }
 
-  template <class JacobianRangeImp>
-  inline double stiffSource( const EntityType& en,
-                             const double time,
-                             const DomainType& x,
+  template <class LocalEvaluation>
+  inline double stiffSource( const LocalEvaluation& local,
                              const RangeType& u,
-                             const JacobianRangeImp& jac,
+                             const JacobianRangeType& jac,
                              RangeType& s ) const
   {
     // some special RHS for testcases/NSWaves
-    const DomainType& xgl = en.geometry().global(x);
-    return problem_.stiffSource( time, xgl, u, s );
+    const DomainType& xgl = local.entity().geometry().global( local.point() );
+    return problem_.stiffSource( local.time(), xgl, u, s );
   }
 
-  template <class JacobianRangeImp>
-  inline double nonStiffSource( const EntityType& en,
-                                const double time,
-                                const DomainType& x,
+  template <class LocalEvaluation>
+  inline double nonStiffSource( const LocalEvaluation& local,
                                 const RangeType& u,
-                                const JacobianRangeImp& jac,
-                                RangeType& s) const
+                                const JacobianRangeType& jac,
+                                RangeType& s ) const
   {
-    const DomainType& xgl = en.geometry().global(x);
-    return problem_.nonStiffSource( time, xgl, u, s );
+    // some special RHS for testcases/NSWaves
+    const DomainType& xgl = local.entity().geometry().global( local.point() );
+    return problem_.nonStiffSource( local.time(), xgl, u, s );
   }
 
-  inline void advection( const EntityType& en,
-                         const double time,
-                         const DomainType& x,
+  template <class LocalEvaluation>
+  inline void advection( const LocalEvaluation& local,
                          const RangeType& u,
                          JacobianRangeType& f ) const
   {
@@ -216,11 +212,9 @@ class NSModel : public DefaultModel < NSModelTraits< GridPartType, ProblemImp > 
   }
 
 
-  inline double diffusionTimeStep( const IntersectionType& it,
-                                   const double enVolume,
+  template <class LocalEvaluation>
+  inline double diffusionTimeStep( const LocalEvaluation& local,
                                    const double circumEstimate,
-                                   const double time,
-                                   const FaceDomainType& x,
                                    const RangeType& u ) const
   {
     // look at Ch. Merkle Diplom thesis, pg. 38
@@ -230,14 +224,13 @@ class NSModel : public DefaultModel < NSModelTraits< GridPartType, ProblemImp > 
     const double mu = problem_.mu( u );
 
     // ksi = 0.25
-    return mu * circumEstimate * alpha_ / (0.25 * u[0] * enVolume);
+    return mu * circumEstimate * alpha_ / (0.25 * u[0] * local.volume());
   }
 
 
   //! return analyticalFlux for 1st pass
-  inline void jacobian( const EntityType& en,
-                        const double time,
-                        const DomainType& x,
+  template <class LocalEvaluation>
+  inline void jacobian( const LocalEvaluation& local,
                         const RangeType& u,
                         JacobianFluxRangeType& a ) const
   {
@@ -245,17 +238,15 @@ class NSModel : public DefaultModel < NSModelTraits< GridPartType, ProblemImp > 
   }
 
 
-  inline bool hasBoundaryValue( const IntersectionType& it,
-                                const double time,
-                                const FaceDomainType& x ) const
+  template <class LocalEvaluation>
+  inline bool hasBoundaryValue( const LocalEvaluation& local ) const
   {
     return true;
   }
 
 
-  inline double boundaryFlux( const IntersectionType& it,
-                              const double time,
-                              const FaceDomainType& x,
+  template <class LocalEvaluation>
+  inline double boundaryFlux( const LocalEvaluation& local,
                               const RangeType& uLeft,
                               RangeType& gLeft ) const
   {
@@ -264,16 +255,15 @@ class NSModel : public DefaultModel < NSModelTraits< GridPartType, ProblemImp > 
     return 0.0;
   }
 
-  inline double boundaryFlux( const IntersectionType& it,
-                              const double time,
-                              const FaceDomainType& x,
+  template <class LocalEvaluation>
+  inline double boundaryFlux( const LocalEvaluation& local,
                               const RangeType& uLeft,
                               const GradientRangeType& duLeft,
                               RangeType& gLeft ) const
   {
     abort();
-    DomainType xgl=it.intersectionGlobal().global(x);
-    const typename Traits :: DomainType normal = it.integrationOuterNormal(x);
+    DomainType xgl= local.intersection().intersectionGlobal().global( local.localPoint() );
+    const DomainType normal = local.intersection().integrationOuterNormal( local.localPoint() );
     double p;
     double T;
     pressAndTemp( uLeft, p, T );
@@ -288,12 +278,10 @@ class NSModel : public DefaultModel < NSModelTraits< GridPartType, ProblemImp > 
 
   /** \brief boundary flux for the diffusion part
    */
-  template <class JacobianRangeImp>
-  inline double diffusionBoundaryFlux( const IntersectionType& it,
-                                       const double time,
-                                       const FaceDomainType& x,
+  template <class LocalEvaluation>
+  inline double diffusionBoundaryFlux( const LocalEvaluation& local,
                                        const RangeType& uLeft,
-                                       const JacobianRangeImp& jacLeft,
+                                       const JacobianRangeType& jacLeft,
                                        RangeType& gLeft ) const
   {
     std::cerr <<"diffusionBoundaryFlux shouldn't be used for this testcase" <<std::endl;
@@ -301,36 +289,32 @@ class NSModel : public DefaultModel < NSModelTraits< GridPartType, ProblemImp > 
   }
 
 
-  inline void boundaryValue( const IntersectionType& it,
-                             const double time,
-                             const FaceDomainType& x,
+  template <class LocalEvaluation>
+  inline void boundaryValue( const LocalEvaluation& local,
                              const RangeType& uLeft,
                              RangeType& uRight ) const
   {
-    const DomainType xgl = it.geometry().global( x );
-    problem_.evaluate( time , xgl , uRight );
+    const DomainType xgl = local.intersection().geometry().global( local.localPoint() );
+    problem_.evaluate( local.time(), xgl, uRight );
   }
 
   // here x is in global coordinates
-  inline void maxSpeed( const EntityType& entity,
-                        const double time,
-                        const DomainType& x,
+  template <class LocalEvaluation>
+  inline void maxSpeed( const LocalEvaluation& local,
                         const DomainType& normal,
                         const RangeType& u,
                         double& advspeed,
                         double& totalspeed ) const
   {
-    advspeed = nsFlux_.maxSpeed( normal , u );
-    totalspeed=advspeed;
+    advspeed   = nsFlux_.maxSpeed( normal , u );
+    totalspeed = advspeed;
   }
 
 
-  template <class JacobianRangeImp>
-  void diffusion( const EntityType& en,
-                  const double time,
-                  const DomainType& x,
+  template <class LocalEvaluation>
+  void diffusion( const LocalEvaluation& local,
                   const RangeType& u,
-                  const JacobianRangeImp& jac,
+                  const JacobianRangeType& jac,
                   JacobianRangeType& diff ) const
   {
     nsFlux_.diffusion( u, jac, diff );

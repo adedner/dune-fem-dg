@@ -208,7 +208,7 @@ namespace Fem {
       RangeType uRight;
 
       // evaluate boundary value
-      model_.boundaryValue( left.intersection(), left.time(), x, left.values()[ uVar ], uRight );
+      model_.boundaryValue( left, left.values()[ uVar ], uRight );
 
       if (! physical(left.entity(), left.point(), left.values()[ uVar ] ) ||
           ! physical(left.entity(), left.point(), uRight ) )
@@ -225,13 +225,12 @@ namespace Fem {
 
     //! returns difference between internal value and boundary
     //! value
-    inline void boundaryValue(const IntersectionType& it,
-                              const double time,
-                              const FaceLocalDomainType& x,
+    template <class LocalEvaluation>
+    inline void boundaryValue(const LocalEvaluation& local,
                               const RangeType& uLeft,
                               RangeType& uRight) const
     {
-      model_.boundaryValue(it, time, x, uLeft, uRight);
+      model_.boundaryValue( local, uLeft, uRight);
     }
 
     /** \brief returns true if model provides physical check */

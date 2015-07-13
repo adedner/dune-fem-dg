@@ -36,6 +36,7 @@ public:
   inline bool hasStiffSource() const { return false ; }
   inline bool hasNonStiffSource() const { return false ; }
 
+
   inline double nonStiffSource( const EntityType& en,
                                 const double time,
                                 const DomainType& x,
@@ -147,9 +148,8 @@ public:
         a[dimDomain*r+d][d] = u[r];
   }
 
-  inline void eigenValues(const EntityType& en,
-                          const double time,
-                          const DomainType& x,
+  template <class LocalEvaluation>
+  inline void eigenValues(const LocalEvaluation& local,
                           const RangeType& u,
                           RangeType& maxValue) const
   {

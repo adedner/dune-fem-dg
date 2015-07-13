@@ -1481,12 +1481,13 @@ namespace Dune {
               const FaceLocalDomainType localPoint
                     ( interGeo.local( lambda + enBary ) );
 
-              if( discreteModel_.hasBoundaryValue(intersection, currentTime_,
-                                                  localPoint) )
+              if( discreteModel_.hasBoundaryValue( intersection, currentTime_, localPoint ) )
               {
-                discreteModel_.boundaryValue(intersection, currentTime_,
-                                             localPoint,
-                                             enVal, nbVal);
+                FaceQuadratureType faceQuadInner(gridPart_,intersection, 0, FaceQuadratureType::INSIDE);
+                IntersectionQuadraturePointContext< IntersectionType, EntityType,
+                  FaceQuadratureType, RangeType, RangeType > local( intersection, en, faceQuadInner, enVal, enVal, 0, currentTime_, geo.volume() );
+                discreteModel_.boundaryValue( local,
+                                              enVal, nbVal);
                 // calculate difference
                 nbVal -= enVal;
               }
