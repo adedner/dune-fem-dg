@@ -14,6 +14,62 @@
 
 namespace Dune {
 
+  template < int idx >
+  struct PrintTupleValues
+  {
+    template <class Tuple>
+    static void apply( const Tuple*  )
+    {
+      std::cout << "Tuple< " << idx << " > = " << std::tuple_element< idx, Tuple >::type::value << std::endl;
+    }
+  };
+
+  template< class Tuple, int begin, int end>
+  struct SelectTupleElements
+  {
+    typedef typename CutOutTuple< Tuple, begin, end > :: type type;
+  };
+
+  template< class Tuple, int begin>
+  struct SelectTupleElements< Tuple, begin, begin >
+  {
+    typedef std::tuple<> type;
+  };
+
+  template< class Traits,
+            int passUId, int passGradId >
+  class FemDGBaseDiscreteModel : public Fem::DGDiscreteModelDefaultWithInsideOutside< Traits, passUId, passGradId >
+  {
+    typedef Fem::DGDiscreteModelDefaultWithInsideOutside< Traits, passUId, passGradId > BaseType;
+    typedef typename BaseType :: Selector BaseSelectorType ;
+
+    typedef typename Traits :: ModelType :: ModelParameter ModelParameter;
+    typedef typename Traits :: ExtraParameterTupleType ExtraParameterTupleType;
+
+    static const int modParamSize = std::tuple_size< ModelParameter > :: value ;
+    static const int extParamSize = std::tuple_size< ExtraParameterTupleType > :: value ;
+    static const int selectedSize = ( extParamSize < modParamSize ) ? extParamSize :  modParamSize ;
+    static_assert( selectedSize == 1, " selected size ");
+    //static const int modId = typename std::tuple_element< 0, ModelParameter>::type::value;
+    static const int newId = 0;//( modParamSize > 0 ) ? modId : 0;
+    typedef typename SelectTupleElements< ModelParameter, 0, selectedSize > :: type ExtraParameterType;
+
+  public:
+    // overload selector type to add model parameters
+    typedef typename Dune::Fem::Selector< newId, passUId, passGradId > ::Type Selector ;
+      //Dune::Fem::ElementTuple< ModelParameterpassUId, passGradId, -1, -1, -1, -1, -1, -1, -1, ExtraParameterType > >::Type  Selector;
+    //typedef typename Dune::Fem::Selector< passUId, passGradId > :: Type Selector;
+
+    FemDGBaseDiscreteModel()
+    {
+#ifndef NDEBUG
+      if( Dune::Fem::Parameter::verbose() )
+      {
+        ForLoop< PrintTupleValues, 0, std::tuple_size< Selector >::value-1 >::apply( ( Selector* ) 0 );
+      }
+#endif
+    }
+  };
 
   // AdvectionModel
   //---------------
@@ -51,10 +107,9 @@ namespace Dune {
             int passUId, int passGradId,
             bool returnAdvectionPart>
   class AdvectionModel :
-    public Fem::DGDiscreteModelDefaultWithInsideOutside
-      < AdvectionTraits< OpTraits, passUId, passGradId, returnAdvectionPart >,
-        passUId, passGradId
-      >
+    public FemDGBaseDiscreteModel< AdvectionTraits< OpTraits, passUId, passGradId, returnAdvectionPart >,
+                                   passUId, passGradId
+                                 >
   {
   public:
     typedef AdvectionTraits< OpTraits, passUId, passGradId, returnAdvectionPart > Traits;
@@ -62,8 +117,9 @@ namespace Dune {
     typedef typename Traits :: ModelType    ModelType ;
     typedef typename Traits :: FluxType     AdvectionFluxType;
 
-    typedef Fem::DGDiscreteModelDefaultWithInsideOutside
-        < Traits, passUId, passGradId >                    BaseType;
+    typedef FemDGBaseDiscreteModel< Traits, passUId, passGradId >  BaseType;
+    //typedef Fem::DGDiscreteModelDefaultWithInsideOutside
+    //    < Traits, passUId, passGradId >                    BaseType;
 
     // These type definitions allow a convenient access to arguments of pass.
     integral_constant< int, passUId > uVar;

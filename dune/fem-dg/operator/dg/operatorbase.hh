@@ -71,14 +71,15 @@ namespace Dune {
     {
       typedef InsertFunctions< Tuple, i-1 > PreviousInsertFunctions;
       typedef typename PreviousInsertFunctions :: PassType PreviousPass ;
-      typedef typename std::tuple_element< i-1, Tuple >::type DiscreteFunction;
-      static const int passId = std::tuple_element< i-1, ModelParameter >::value;
+      typedef typename std::remove_pointer< typename std::tuple_element< i-1, Tuple > ::type > :: type  DiscreteFunction;
+      static const int passId = std::tuple_element< i-1, ModelParameter >::type::value;
       typedef Dune::Fem::InsertFunctionPass< DiscreteFunction, PreviousPass, passId > PassType;
 
       static std::shared_ptr< PassType > createPass( Tuple& tuple )
       {
         std::shared_ptr< PreviousPass > previousPass = PreviousInsertFunctions::createPass( tuple );
-        return std::shared_ptr< PassType > ( new PassType( std::get< Tuple, i-1 >( tuple ), previousPass ) );
+        const DiscreteFunction* df = std::get< i-1 >( tuple );
+        return std::shared_ptr< PassType > ( new PassType( df, previousPass ) );
       }
     };
 
