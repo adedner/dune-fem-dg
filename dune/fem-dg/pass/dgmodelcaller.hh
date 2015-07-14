@@ -26,28 +26,28 @@ namespace Dune
     const double volume_;
     const int qp_;
   public:
-      typedef Entity          EntityType;
-      typedef Quadrature      QuadratureType;
-      typedef RangeTuple      RangeTupleType;
-      typedef JacobianTuple   JacobianTupleType;
-      typedef typename QuadratureType :: QuadraturePointWrapperType   QuadraturePointWrapperType;
-      typedef typename QuadratureType :: CoordinateType               CoordinateType;
-      typedef typename QuadratureType :: LocalCoordinateType          LocalCoordinateType;
+    typedef Entity          EntityType;
+    typedef Quadrature      QuadratureType;
+    typedef RangeTuple      RangeTupleType;
+    typedef JacobianTuple   JacobianTupleType;
+    typedef typename QuadratureType :: QuadraturePointWrapperType   QuadraturePointWrapperType;
+    typedef typename QuadratureType :: CoordinateType               CoordinateType;
+    typedef typename QuadratureType :: LocalCoordinateType          LocalCoordinateType;
 
-      ElementQuadraturePointContext( const Entity& entity,
-                                     const Quadrature& quadrature,
-                                     const RangeTuple& values,
-                                     const JacobianTuple& jacobians,
-                                     const int qp,
-                                     const double time,
-                                     const double volume )
-       : entity_( entity ),
-         quad_( quadrature ),
-         values_( values ),
-         jacobians_( jacobians ),
-         time_( time ),
-         volume_( volume ),
-         qp_( qp )
+    ElementQuadraturePointContext( const Entity& entity,
+                                   const Quadrature& quadrature,
+                                   const RangeTuple& values,
+                                   const JacobianTuple& jacobians,
+                                   const int qp,
+                                   const double time,
+                                   const double volume )
+     : entity_( entity ),
+       quad_( quadrature ),
+       values_( values ),
+       jacobians_( jacobians ),
+       time_( time ),
+       volume_( volume ),
+       qp_( qp )
     {}
 
     const Entity& entity() const { return entity_; }
@@ -61,28 +61,44 @@ namespace Dune
     const LocalCoordinateType& localPoint() const { return quadrature().localPoint( index() ); }
     const int index() const { return qp_; }
 
-    /*
-    // if ReturnType exists in RangeTuple
-    template <class ReturnType, class Functor, typename... Args>
-    const ReturnType& doEvaluate( const ReturnType& ret, const Functor& functor, Args... args ) const
-    {
-      return ret;
-    }
+    template <class Functor, bool containedInTuple >
+    struct Evaluate;
 
-    // if ReturnType does not exists in RangeTuple
-    template <class Functor, typename... Args>
-    decltype(Functor::operator()) doEvaluate( const RangeTuple&, const Functor& functor, Args... args ) const
+    template <class Functor>
+    struct Evaluate<Functor, true>
     {
-      return functor( args );
-    }
+      typedef typename Functor :: VarId   VarId;
+      typedef typename RangeTuple :: template Value< VarId > :: Type ReturnType;
 
-    template <class VarId, class Functor, typename... Args>
-    decltype(doEvaluate(values()[ VarId::value ], const Functor& functor, Args... args ))
-    evaluate( const Functor& functor, Args... args ) const
+      template< class ... Args >
+      static const ReturnType& eval( const RangeTuple& tuple, const Functor& functor, const Args& ... args )
+      {
+        return tuple.template at< VarId > ();
+      }
+
+    };
+
+    template <class Functor>
+    struct Evaluate<Functor, false>
     {
-      return doEvaluate( values()[ VarId::value ], functor, args );
+      typedef typename Functor::ReturnType ReturnType;
+
+      template< class ... Args >
+      //static auto
+      static ReturnType
+      eval( const RangeTuple& tuple, const Functor& functor, const Args& ... args )
+       // -> decltype(functor( args ... ))
+      {
+        return functor( args ... );
+      }
+    };
+
+    template <class Functor, class ... Args>
+    typename Evaluate< Functor, RangeTuple::template Contains< typename Functor::VarId >::value >::ReturnType
+    evaluate( const Functor& functor, const Args& ... args ) const
+    {
+      return Evaluate< Functor, RangeTuple::template Contains< typename Functor::VarId >::value>::eval( values(), functor, args ... );
     }
-    */
   };
 
   template <class Intersection,

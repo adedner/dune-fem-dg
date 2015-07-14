@@ -184,6 +184,9 @@ public:
 
   struct ComputeVelocity
   {
+    typedef std::integral_constant< int, velo > VarId;
+    typedef DomainType  ReturnType;
+
     template <class LocalEvaluation>
     DomainType operator() (const LocalEvaluation& local, const ProblemType& problem ) const
     {
@@ -207,9 +210,7 @@ public:
                         const RangeType& u,
                         FluxRangeType & f) const
   {
-    // evaluate velocity V
-    // const DomainType v ( 0 );//= local.evaluate< velocityVar >( ComputeVelocity(), local, problem_ );
-    const DomainType& v = ComputeVelocity()( local, problem_ );
+    const DomainType& v = velocity( local );
 
     // f = uV;
     for( int r=0; r<dimRange; ++r )
@@ -221,11 +222,9 @@ public:
    * @brief velocity calculation, is called by advection()
    */
   template <class LocalEvaluation>
-  inline void velocity(const LocalEvaluation& local,
-                        DomainType& v) const
+  inline DomainType velocity(const LocalEvaluation& local) const
   {
-    // v = local.evaluate< velocityVar >( ComputeVelocity(), local, problem_ );
-    v = ComputeVelocity()( local, problem_ );
+    return local.evaluate( ComputeVelocity(), local, problem_ );
   }
 
 
@@ -366,8 +365,7 @@ public:
                         double& advspeed,
                         double& totalspeed ) const
   {
-    DomainType v;
-    velocity( local, v );
+    const DomainType& v = velocity( local );
     advspeed   = std::abs( v * normal );
     totalspeed = advspeed;
   }
@@ -436,9 +434,8 @@ public:
     const DomainType normal = left.intersection().integrationOuterNormal(x);
 
     // get velocity
-    DomainType velocity;
-    model_.velocity( left, velocity );
-    const double upwind = normal * velocity ;
+    const DomainType v = model_.velocity( left );
+    const double upwind = normal * v;
 
     if (upwind>0)
       gLeft = uLeft;
