@@ -24,16 +24,19 @@ namespace Dune {
     }
   };
 
-  template< class Tuple, int begin, int end>
-  struct SelectTupleElements
+  template< class Tuple, int begin, int end, class ArgTuple >
+  struct SelectTupleElements;
+
+  template< class Tuple, int begin, int end, class ... TupleArgs >
+  struct SelectTupleElements< Tuple, begin, end, std::tuple< TupleArgs ... > >
   {
-    typedef typename CutOutTuple< Tuple, begin, end > :: type type;
+    typedef typename SelectTupleElements< Tuple, begin+1, end, std::tuple< TupleArgs ..., typename std::tuple_element< begin, Tuple >::type > > :: type type;
   };
 
-  template< class Tuple, int begin>
-  struct SelectTupleElements< Tuple, begin, begin >
+  template< class Tuple, int end, class ... TupleArgs >
+  struct SelectTupleElements< Tuple, end, end, std::tuple< TupleArgs ... >  >
   {
-    typedef std::tuple<> type;
+    typedef std::tuple< TupleArgs ... > type;
   };
 
   template< class Traits,
@@ -48,18 +51,17 @@ namespace Dune {
 
     static const int modParamSize = std::tuple_size< ModelParameter > :: value ;
     static const int extParamSize = std::tuple_size< ExtraParameterTupleType > :: value ;
-    static const int selectedSize = ( extParamSize < modParamSize ) ? extParamSize :  modParamSize ;
-    //static_assert( selectedSize == 1, " selected size ");
-    //static const int modId = typename std::tuple_element< 0, ModelParameter>::type::value;
-    static const int newId = 0;//( modParamSize > 0 ) ? modId : 0;
-    typedef typename SelectTupleElements< ModelParameter, 0, selectedSize > :: type ExtraParameterType;
-
+    static const int selectedSize = ( extParamSize < modParamSize ) ? extParamSize : modParamSize ;
   public:
-    // overload selector type to add model parameters
-    typedef typename Dune::Fem::Selector<  passUId, passGradId > ::Type Selector ;
-      //Dune::Fem::ElementTuple< ModelParameterpassUId, passGradId, -1, -1, -1, -1, -1, -1, -1, ExtraParameterType > >::Type  Selector;
-    //typedef typename Dune::Fem::Selector< passUId, passGradId > :: Type Selector;
+    typedef typename SelectTupleElements< ModelParameter, 0, selectedSize, std::tuple<> > :: type SelectedModelParameterType;
 
+    // the orignal selector
+    //typedef typename Dune::Fem::Selector<  passUId, passGradId > ::Type Selector ;
+
+    // overload selector type to add model parameters
+    typedef typename Dune::Fem::SelectorBase< Dune::Fem::ElementTuple< passUId, passGradId, -1, -1, -1, -1, -1, -1, -1, SelectedModelParameterType > >::Type  Selector;
+
+    /*
     FemDGBaseDiscreteModel()
     {
 #ifndef NDEBUG
@@ -69,6 +71,7 @@ namespace Dune {
       }
 #endif
     }
+    */
   };
 
   // AdvectionModel
