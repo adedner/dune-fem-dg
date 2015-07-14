@@ -351,6 +351,21 @@ namespace Dune {
     {
     }
 
+    template <class LocalEvaluation, class ArgumentTupleVector >
+    void initializeIntersection(const LocalEvaluation& left,
+                                const LocalEvaluation& right,
+                                const ArgumentTupleVector& uLeftVec,
+                                const ArgumentTupleVector& uRightVec)
+    {
+      if( hasLifting() )
+      {
+        computeLiftings( left.intersection(), left.entity(), right.entity(), left.time(),
+                         left.quadrature(), right.quadrature(),
+                         uLeftVec, uRightVec,
+                         (method_ == method_br2 ) );
+      }
+    }
+
     template <class QuadratureImp, class ArgumentTupleVector >
     void initializeIntersection(const Intersection& intersection,
                                 const EntityType& inside,
@@ -569,6 +584,14 @@ namespace Dune {
       return sum;
     }
 #endif
+
+    template <class LocalEvaluation, class ArgumentTupleVector>
+    void initializeBoundary(const LocalEvaluation& local,
+                            const ArgumentTupleVector& uLeftVec,
+                            const std::vector< RangeType >& uRight)
+    {
+      initializeBoundary( local.intersection(), local.entity(), local.time(), local.quadrature(), uLeftVec, uRight );
+    }
 
 
     template <class QuadratureImp, class ArgumentTupleVector>
@@ -1379,51 +1402,44 @@ namespace Dune {
     }
 
     using BaseType::initializeIntersection;
-    template <class QuadratureImp, class ArgumentTupleVector>
-    void initializeIntersection(const Intersection& intersection,
-                                const EntityType& inside,
-                                const EntityType& outside,
-                                const double time,
-                                const QuadratureImp& quadInner,
-                                const QuadratureImp& quadOuter,
+    template <class LocalEvaluation, class ArgumentTupleVector>
+    void initializeIntersection(const LocalEvaluation& left,
+                                const LocalEvaluation& right,
                                 const ArgumentTupleVector& uLeftVec,
                                 const ArgumentTupleVector& uRightVec,
                                 bool computeBoth)
     {
-      this->computeLiftings(intersection,inside,outside,time,
-                            quadInner,quadOuter,
+      this->computeLiftings(left.intersection(), left.entity(), right.entity(), left.time(),
+                            left.quadrature(), right.quadrature(),
                             uLeftVec,uRightVec,
-                            computeBoth
-                           );
+                            computeBoth );
     }
 
-#if 0
     // return AL_e.n on element and neighbor
-    template <class QuadratureImp>
-    void evaluateLifting(const QuadratureImp& faceQuadInner,
-                         const QuadratureImp& faceQuadOuter,
-                         const int quadPoint,
-                         const double time,
+    template <class LocalEvaluation>
+    void evaluateLifting(const LocalEvaluation& left,
+                         const LocalEvaluation& right,
                          const RangeType& uEn,
                          const RangeType& uNb,
                          JacobianRangeType& liftEn,
                          JacobianRangeType& liftNb) const
     {
+#if 0
       assert( this->LePlusLifting().isInitialized() );
       assert( this->LeMinusLifting().isInitialized() );
       if ( this->insideIsInflow_)
       {
         applyLifting( this->LePlusLifting().function().entity(), time,
-                      faceQuadInner, quadPoint, uEn, liftingEvalLePlus_[quadPoint], liftEn );
+                      left.quadrature(), quadPoint, uEn, liftingEvalLePlus_[quadPoint], liftEn );
         applyLifting( this->LeMinusLifting().function().entity(), time,
-                      faceQuadOuter, quadPoint, uNb, liftingEvalLeMinus_[quadPoint], liftNb );
+                      right.quadrature(), quadPoint, uNb, liftingEvalLeMinus_[quadPoint], liftNb );
       }
       else
       {
         applyLifting( this->LeMinusLifting().function().entity(), time,
-                      faceQuadInner, quadPoint, uEn, liftingEvalLeMinus_[quadPoint], liftEn );
+                      right.quadrature(), quadPoint, uEn, liftingEvalLeMinus_[quadPoint], liftEn );
         applyLifting( this->LePlusLifting().function().entity(), time,
-                      faceQuadOuter, quadPoint, uNb, liftingEvalLePlus_[quadPoint], liftNb );
+                      left.quadrature(), quadPoint, uNb, liftingEvalLePlus_[quadPoint], liftNb );
       }
       assert( liftEn == liftEn );
       assert( liftNb == liftNb );
@@ -1442,8 +1458,8 @@ namespace Dune {
       {
         return this->LeMinusLifting().function();
       }
-    }
 #endif
+    }
 
   protected:
     using BaseType :: liftingEvalLeMinus_;
