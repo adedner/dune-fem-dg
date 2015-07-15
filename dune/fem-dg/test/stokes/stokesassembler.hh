@@ -2,10 +2,9 @@
 #define DUNE_STOKESASSEMBLER_HH
 
 #include <dune/fem/operator/linear/spoperator.hh>
-#include "../common/tensorhelper.hh"
+#include "tensorhelper.hh"
 #include <dune/fem/solver/timeprovider.hh>
 
-#include "../common/probleminterfaces.hh"
 //#include "matrixoperator.hh"
 #include <dune/common/fvector.hh>
 #include <dune/grid/common/grid.hh>
@@ -15,14 +14,14 @@ namespace Dune {
 #define PRESSURESTABILIZATION 0
 
   //! implementation of the operator
-  template <class DiscreteFunction,class DiscretePressureFunction,class ProblemImp, class Model>
+  template <class DiscreteFunction,class DiscretePressureFunction, class Traits>
   class StokesAssembler
   {
   public:
+    typedef typename Traits :: InitialDataType  ProblemType;
     //! type of discrete functions
     typedef DiscreteFunction DiscreteFunctionType;
     typedef DiscretePressureFunction DiscretePressureFunctionType;
-    typedef ProblemImp ProblemType;
 
     //! type of discrete function spaceS
     typedef typename DiscreteFunctionType :: DiscreteFunctionSpaceType
@@ -84,8 +83,7 @@ namespace Dune {
     typedef typename GridType::template Codim<0>::Geometry GeometryType;
     //! type of quadrature to be used
 
-     typedef PassTraits<Model,DiscreteFunctionSpaceType::dimRange,
-                              polynomialOrder> PassTraitsType;
+     typedef PassTraits< Traits, polynomialOrder, DiscreteFunctionSpaceType::dimRange> PassTraitsType;
 
 
      typedef typename PassTraitsType::VolumeQuadratureType VolumeQuadratureType;

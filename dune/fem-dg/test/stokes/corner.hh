@@ -6,7 +6,7 @@
 
 #include <dune/common/array.hh>
 
-#include "../common/probleminterfaces.hh"
+#include <dune/fem-dg/models/stokesprobleminterfaces.hh>
 
 namespace Dune
 {

@@ -14,6 +14,7 @@
 #endif
 
 #include <dune/fem-dg/main/codegen.hh>
+
 #include "passtraits.hh"
 
 // dune-grid includes
@@ -25,30 +26,36 @@
 // dune-fem-dg includes
 #include <dune/fem-dg/operator/fluxes/diffusionflux.hh>
 
-
 #include <dune/fem-dg/operator/dg/dgoperatorchoice.hh>
 #include <dune/fem-dg/operator/fluxes/noflux.hh>
 #include <dune/fem-dg/assemble/primalmatrix.hh>
 
 #include <dune/fem-dg/solver/linearsolvers.hh>
-#include <dune/fem-dg/stepper/ellipticalgorithm.hh>
+//#include <dune/fem-dg/stepper/ellipticalgorithm.hh>
+
+#include <dune/fem-dg/models/stokesprobleminterfaces.hh>
 
 // local includes
-#include "poissonproblem.hh"
+#include "problem.hh"
+#include "corner.hh"
 #include "models.hh"
+
+#include "stokes.hh"
 
 template <class GridType>
 struct ProblemCreator
 {
-  static const int dimRange = 1 ;
-  typedef Dune :: ProblemInterface<
-             Dune::Fem::FunctionSpace< double, double, GridType::dimension, dimRange> >  ProblemType;
+  static const int polynomialOrder = POLORDER;
+  static const int dimRange = GridType::dimension ;
+  typedef Dune :: StokesProblemInterface<
+                 Dune::Fem::FunctionSpace< double, double, GridType::dimension, dimRange>,
+                 Dune::Fem::FunctionSpace< double, double, GridType::dimension, 1> >  ProblemType;
 
   template <class GridPart>
   struct Traits
   {
     typedef ProblemType                                InitialDataType;
-    typedef PoissonModel< GridPart, InitialDataType >  ModelType;
+    typedef StokesModel< GridPart, InitialDataType >   ModelType;
     typedef Dune::NoFlux< ModelType >                  FluxType;
     // choice of diffusion flux (see diffusionflux.hh for methods)
     static const Dune :: DGDiffusionFluxIdentifier PrimalDiffusionFluxId
@@ -201,12 +208,11 @@ struct ProblemCreator
   static ProblemType* problem( )
   {
     // choice of benchmark problem
-    int probNr = Dune::Fem::Parameter::getValue< int > ( "problem" );
-    return new Dune :: PoissonProblem< GridType,dimRange > ( probNr );
+    return new Dune :: StokesProblemDefault< GridType > ();
   }
 
   // type of stepper to be used
-  typedef EllipticAlgorithm< GridType, ProblemCreator<GridType>, POLORDER > StepperType;
+  typedef StokesAlgorithm< GridType, ProblemCreator<GridType>, polynomialOrder > StepperType;
 };
 
 #define NEW_STEPPER_SELECTOR_USED

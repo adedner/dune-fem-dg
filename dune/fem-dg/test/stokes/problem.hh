@@ -5,9 +5,8 @@
 #include <cmath>
 
 #include <dune/common/array.hh>
+#include "corner.hh"
 
-#include "../common/probleminterfaces.hh"
-#include "cornerdata.hh"
 namespace Dune
 {
 

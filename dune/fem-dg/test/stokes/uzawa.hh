@@ -5,9 +5,8 @@
 #include <dune/fem/function/common/discretefunction.hh>
 #include <dune/fem/operator/common/operator.hh>
 
-
-#include "../common/mymatrix.hh"
-#include "../common/spmatextra.hh"
+//#include "../common/mymatrix.hh"
+//#include "../common/spmatextra.hh"
 
 //#include "matrixoperator.hh"
 

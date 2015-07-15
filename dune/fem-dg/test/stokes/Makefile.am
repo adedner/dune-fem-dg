@@ -1,6 +1,6 @@
 # install these headers 
-poissondir=$(includedir)/test/poisson
-poisson_HEADERS = benchmarkproblems.hh models.hh passtraits.hh poissonproblem.hh problemcreator.hh
+stokesdir=$(includedir)/test/stokes
+stokes_HEADERS = problem.hh corner.hh problemcreator.hh stokesassembler.hh uzawa.hh
 
 LDADD = $(ALL_PKG_LDFLAGS) $(ALL_PKG_LIBS) $(LOCAL_LIBS) $(DUNEMPILDFLAGS) $(DUNEMPILIBS)
 
@@ -19,19 +19,19 @@ WANT_ISTL=1
 
 #USE_OMP=-fopenmp
 
-EXTRA_PROGRAMS = poisson_all # quasiadvdiff quasiadvdiff12 plaplace plaplace12
-check_PROGRAMS = poisson # quasiadvdiff quasiadvdiff12 plaplace plaplace12
+EXTRA_PROGRAMS = stokes_all 
+check_PROGRAMS = stokes 
 
-poisson_all_SOURCES = $(BASEDIR)/main.cc $(BASEDIR)/main_1.cc $(BASEDIR)/main_2.cc \
+stokes_all_SOURCES = $(BASEDIR)/main.cc $(BASEDIR)/main_1.cc $(BASEDIR)/main_2.cc \
                   $(BASEDIR)/main_0.cc $(BASEDIR)/main_3.cc
-poisson_SOURCES = $(BASEDIR)/main.cc $(BASEDIR)/main_pol.cc
+stokes_SOURCES = $(BASEDIR)/main.cc $(BASEDIR)/main_pol.cc
 
 AM_CPPFLAGS = $(USE_OMP)  $(ALL_PKG_CPPFLAGS) -DGRIDDIM=$(GRIDDIM) \
               -D$(GRIDTYPE) $(DUNEMPICPPFLAGS) -DDGSCHEME -DONB \
-              -DFLUX=$(FLUX) -DPRIMALDG -DUSE_ASSERT_THROW -DWANT_ISTL=$(WANT_ISTL)
+              -DFLUX=$(FLUX) -DPRIMALDG -DUSE_ASSERT_THROW -DWANT_ISTL=$(WANT_ISTL) -DSTOKES
 AM_LDFLAGS = $(ALL_PKG_LDFLAGS) $(LAPACK_LDFLAGS) $(USE_OMP)
 
-poisson_CPPFLAGS = $(AM_CPPFLAGS) -DONLY_ONE_P -DPOLORDER=$(POLORDER)
+stokes_CPPFLAGS = $(AM_CPPFLAGS) -DONLY_ONE_P -DPOLORDER=$(POLORDER)
 
 DISTCHECK_CONFIGURE_FLAGS = DOXYGEN="true"
 
@@ -39,7 +39,7 @@ EXTRA_DIST = parameter
 
 CLEANFILES=manager.*.log eoc_*.tex
 
-PROG=poissononep
+PROG=stokes
 # codegeneration 
 generatecode:
 	$(MAKE) -i clean
