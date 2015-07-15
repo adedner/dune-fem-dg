@@ -296,6 +296,31 @@ class DGPrimalMatrixAssembly
 
   public:
 
+  struct IntersectionStorage
+  {
+    IntersectionStorage(
+        const IntersectionType& intersection,
+        const EntityType &entity, const EntityType &neighbor, const double areaEn, const double areaNb )
+      : intersection_( intersection ),
+        en_(entity),
+        nb_(neighbor),
+        areaEn_(areaEn), areaNb_(areaNb)
+    {}
+
+    const IntersectionType& intersection() const { return intersection_; }
+    const EntityType &inside() const { return en_; }
+    const EntityType &outside() const { return nb_; }
+    const double enVolume() const { return areaEn_; }
+    const double nbVolume() const { return areaNb_; }
+
+    private:
+    const IntersectionType& intersection_;
+    const EntityType &en_,&nb_;
+    const double areaEn_, areaNb_;
+  };
+
+
+
   //! constructor for DG matrix assembly
   DGPrimalMatrixAssembly( GridPartType& gridPart,
                           const OperatorType& op,
@@ -615,127 +640,138 @@ class DGPrimalMatrixAssembly
                              typename Matrix::LocalMatrixType& localOpEn,
                              LocalFunctionType &rhsLocal) const
   {
-//    const size_t maxNumBasisFunctions = maxNumScalarBasisFunctions( dfSpace );
-//    typedef typename Matrix::LocalMatrixType LocalMatrixType;
-//    // make sure we got the right conforming statement
-//    assert( intersection.conforming() == conforming );
-//
-//    const EntityType& neighbor = Fem::make_entity( intersection.outside() );
-//
-//    const int entityOrder   = dfSpace.order( entity );
-//    const int neighborOrder = dfSpace.order( neighbor );
-//
-//    // get local matrix for face entries
-//    LocalMatrixType localOpNb = matrix.localMatrix( entity, neighbor );
-//    const BasisFunctionSetType &baseSetNb = localOpNb.rangeBasisFunctionSet();
-//
-//    // get neighbor's base function set
-//    const unsigned int numBasisFunctionsEn = baseSet.size();
-//    const unsigned int numBasisFunctionsNb = baseSetNb.size();
-//
-//    // only do one sided evaluation if the polynomial orders match
-//    const bool oneSidedEvaluation = ( numBasisFunctionsEn == numBasisFunctionsNb );
-//
-//    const bool updateOnNeighbor   =
-//      dfSpace.gridPart().indexSet().index(entity) >
-//      dfSpace.gridPart().indexSet().index(neighbor) ;
-//
-//    // only do one sided evaluation if the polynomial orders match
-//    if( updateOnNeighbor && oneSidedEvaluation )
-//      return;
-//
-//    const int polOrdOnFace = std::max( entityOrder, neighborOrder );
-//
-//    // use IntersectionQuadrature to create appropriate face quadratures
-//    typedef Fem :: IntersectionQuadrature< FaceQuadratureType, conforming > IntersectionQuadratureType;
-//    typedef typename IntersectionQuadratureType :: FaceQuadratureType QuadratureImp;
-//
-//    // create intersection quadrature (without neighbor check)
-//    IntersectionQuadratureType interQuad( dfSpace.gridPart(), intersection, faceQuadOrder( polOrdOnFace ), true);
-//
-//    // get appropriate references
-//    const QuadratureImp &faceQuadInside  = interQuad.inside();
-//    const QuadratureImp &faceQuadOutside = interQuad.outside();
-//
-//    // const GeometryType& nbGeometry = neighbor.geometry();
-//    const size_t numFaceQuadPoints = faceQuadInside.nop();
-//    resize( numFaceQuadPoints, maxNumBasisFunctions );
-//
-//    // evalute base functions
-//    for( size_t pt = 0; pt < numFaceQuadPoints; ++pt )
-//    {
-//      // resize is done in evaluateAll and jacobianAll
-//      baseSet.evaluateAll( faceQuadInside[ pt ], phiFaceEn[pt] );
-//      baseSet.jacobianAll( faceQuadInside[ pt ], dphiFaceEn[pt] );
-//      baseSetNb.evaluateAll( faceQuadOutside[ pt ], phiFaceNb[pt] );
-//      baseSetNb.jacobianAll( faceQuadOutside[ pt ], dphiFaceNb[pt] );
-//    }
-//
-//    flux(left, right,
-//         RangeValues(-1,phiFaceEn), JacobianRangeValues(-1,dphiFaceEn),
-//         RangeValues(-1,phiFaceEn), JacobianRangeValues(-1,dphiFaceEn),
-//         rhsValueEn, rhsDValueEn, rhsValueNb, rhsDValueNb );
-//
-//    // compute fluxes and assemble matrix
-//    for( unsigned int localCol = 0; localCol < numBasisFunctionsEn; ++localCol )
-//    {
-//      // compute flux for one base function, i.e.,
-//      // - uLeft=phiFaceEn[.][localCol]
-//      // - uRight=0
-//      flux(left, right, RangeValues(localCol,phiFaceEn), JacobianRangeValues(localCol,dphiFaceEn),
-//           RangeValues(-1,phiFaceEn), JacobianRangeValues(-1,dphiFaceEn),
-//           valueEn, dvalueEn, valueNb, dvalueNb );
-//
-//      for( size_t pt = 0; pt < numFaceQuadPoints; ++pt )
-//      {
-//        const double weight = faceQuadInside.weight( pt );
-//        valueEn[pt] -= rhsValueEn[pt];
-//        dvalueEn[pt] -= rhsDValueEn[pt];
-//        valueNb[pt] -= rhsValueNb[pt];
-//        dvalueNb[pt] -= rhsDValueNb[pt];
-//        localOpEn.column( localCol ).axpy( phiFaceEn[pt], dphiFaceEn[pt],
-//                                           valueEn[pt], dvalueEn[pt], weight );
-//        localOpNb.column( localCol ).axpy( phiFaceNb[pt], dphiFaceNb[pt],
-//                                           valueNb[pt], dvalueNb[pt], -weight );
-//      }
-//    }
-//
-//    // assemble part from neighboring row
-//    if( oneSidedEvaluation )
-//    {
-//      LocalMatrixType localOpNbNb = matrix.localMatrix( neighbor, neighbor );
-//      LocalMatrixType localOpNbEn = matrix.localMatrix( neighbor, entity );
-//      for( unsigned int localCol = 0; localCol < numBasisFunctionsEn; ++localCol )
-//      {
-//        // compute flux for one base function, i.e.,
-//        // - uLeft=phiFaceEn[.][localCol]
-//        // - uRight=0
-//        flux(left, right, RangeValues(-1,phiFaceNb), JacobianRangeValues(-1,dphiFaceNb),
-//             RangeValues(localCol,phiFaceNb), JacobianRangeValues(localCol,dphiFaceNb),
-//             valueEn, dvalueEn, valueNb, dvalueNb );
-//        for( size_t pt = 0; pt < numFaceQuadPoints; ++pt )
-//        {
-//          const double weight = faceQuadInside.weight( pt );
-//          valueEn[pt] -= rhsValueEn[pt];
-//          dvalueEn[pt] -= rhsDValueEn[pt];
-//          valueNb[pt] -= rhsValueNb[pt];
-//          dvalueNb[pt] -= rhsDValueNb[pt];
-//          localOpNbNb.column( localCol ).axpy( phiFaceNb[pt], dphiFaceNb[pt],  // +
-//                                               valueNb[pt], dvalueNb[pt], -weight );
-//          localOpNbEn.column( localCol ).axpy( phiFaceEn[pt], dphiFaceEn[pt],  // -
-//                                               valueEn[pt], dvalueEn[pt], weight );
-//        }
-//      }
-//    }
-//
-//    // now move affine part to right hand side
-//    for( size_t pt = 0; pt < numFaceQuadPoints; ++pt )
-//    {
-//      const double weight = faceQuadInside.weight( pt );
-//      rhsValueEn[pt] *= -weight;
-//      rhsDValueEn[pt] *= -weight;
-//    }
-//    rhsLocal.axpyQuadrature( faceQuadInside, rhsValueEn, rhsDValueEn );
+    const size_t maxNumBasisFunctions = maxNumScalarBasisFunctions( dfSpace );
+    typedef typename Matrix::LocalMatrixType LocalMatrixType;
+    // make sure we got the right conforming statement
+    assert( intersection.conforming() == conforming );
+
+    const EntityType& neighbor = Fem::make_entity( intersection.outside() );
+
+    const int entityOrder   = dfSpace.order( entity );
+    const int neighborOrder = dfSpace.order( neighbor );
+
+    // get local matrix for face entries
+    LocalMatrixType localOpNb = matrix.localMatrix( entity, neighbor );
+    const BasisFunctionSetType &baseSetNb = localOpNb.rangeBasisFunctionSet();
+
+    // get neighbor's base function set
+    const unsigned int numBasisFunctionsEn = baseSet.size();
+    const unsigned int numBasisFunctionsNb = baseSetNb.size();
+
+    // only do one sided evaluation if the polynomial orders match
+    const bool oneSidedEvaluation = ( numBasisFunctionsEn == numBasisFunctionsNb );
+
+    const bool updateOnNeighbor   =
+      dfSpace.gridPart().indexSet().index(entity) >
+      dfSpace.gridPart().indexSet().index(neighbor) ;
+
+    // only do one sided evaluation if the polynomial orders match
+    if( updateOnNeighbor && oneSidedEvaluation )
+      return;
+
+    const int polOrdOnFace = std::max( entityOrder, neighborOrder );
+
+    // use IntersectionQuadrature to create appropriate face quadratures
+    typedef Fem :: IntersectionQuadrature< FaceQuadratureType, conforming > IntersectionQuadratureType;
+    typedef typename IntersectionQuadratureType :: FaceQuadratureType QuadratureImp;
+
+    // create intersection quadrature (without neighbor check)
+    IntersectionQuadratureType interQuad( dfSpace.gridPart(), intersection, faceQuadOrder( polOrdOnFace ), true);
+
+    // get appropriate references
+    const QuadratureImp &faceQuadInside  = interQuad.inside();
+    const QuadratureImp &faceQuadOutside = interQuad.outside();
+
+
+    IntersectionStorage intersectionStorage( intersection,
+                                             entity, neighbor,
+                                             entity.geometry().volume(),
+                                             neighbor.geometry().volume() );
+
+    // const GeometryType& nbGeometry = neighbor.geometry();
+    const size_t numFaceQuadPoints = faceQuadInside.nop();
+    resize( numFaceQuadPoints, maxNumBasisFunctions );
+
+    // evalute base functions
+    for( size_t pt = 0; pt < numFaceQuadPoints; ++pt )
+    {
+      // resize is done in evaluateAll and jacobianAll
+      baseSet.evaluateAll( faceQuadInside[ pt ], phiFaceEn[pt] );
+      baseSet.jacobianAll( faceQuadInside[ pt ], dphiFaceEn[pt] );
+      baseSetNb.evaluateAll( faceQuadOutside[ pt ], phiFaceNb[pt] );
+      baseSetNb.jacobianAll( faceQuadOutside[ pt ], dphiFaceNb[pt] );
+    }
+
+    flux(dfSpace.gridPart(), intersectionStorage, time,
+         faceQuadInside, faceQuadOutside,
+         RangeValues(-1,phiFaceEn), JacobianRangeValues(-1,dphiFaceEn),
+         RangeValues(-1,phiFaceEn), JacobianRangeValues(-1,dphiFaceEn),
+         rhsValueEn, rhsDValueEn, rhsValueNb, rhsDValueNb );
+
+    // compute fluxes and assemble matrix
+    for( unsigned int localCol = 0; localCol < numBasisFunctionsEn; ++localCol )
+    {
+      // compute flux for one base function, i.e.,
+      // - uLeft=phiFaceEn[.][localCol]
+      // - uRight=0
+      flux(dfSpace.gridPart(), intersectionStorage, time,
+           faceQuadInside, faceQuadOutside,
+           RangeValues(localCol,phiFaceEn), JacobianRangeValues(localCol,dphiFaceEn),
+           RangeValues(-1,phiFaceEn), JacobianRangeValues(-1,dphiFaceEn),
+           valueEn, dvalueEn, valueNb, dvalueNb );
+
+      for( size_t pt = 0; pt < numFaceQuadPoints; ++pt )
+      {
+        const double weight = faceQuadInside.weight( pt );
+        valueEn[pt] -= rhsValueEn[pt];
+        dvalueEn[pt] -= rhsDValueEn[pt];
+        valueNb[pt] -= rhsValueNb[pt];
+        dvalueNb[pt] -= rhsDValueNb[pt];
+        localOpEn.column( localCol ).axpy( phiFaceEn[pt], dphiFaceEn[pt],
+                                           valueEn[pt], dvalueEn[pt], weight );
+        localOpNb.column( localCol ).axpy( phiFaceNb[pt], dphiFaceNb[pt],
+                                           valueNb[pt], dvalueNb[pt], -weight );
+      }
+    }
+
+    // assemble part from neighboring row
+    if( oneSidedEvaluation )
+    {
+      LocalMatrixType localOpNbNb = matrix.localMatrix( neighbor, neighbor );
+      LocalMatrixType localOpNbEn = matrix.localMatrix( neighbor, entity );
+      for( unsigned int localCol = 0; localCol < numBasisFunctionsEn; ++localCol )
+      {
+        // compute flux for one base function, i.e.,
+        // - uLeft=phiFaceEn[.][localCol]
+        // - uRight=0
+        flux(dfSpace.gridPart(), intersectionStorage, time,
+             faceQuadInside, faceQuadOutside,
+             RangeValues(-1,phiFaceNb), JacobianRangeValues(-1,dphiFaceNb),
+             RangeValues(localCol,phiFaceNb), JacobianRangeValues(localCol,dphiFaceNb),
+             valueEn, dvalueEn, valueNb, dvalueNb );
+        for( size_t pt = 0; pt < numFaceQuadPoints; ++pt )
+        {
+          const double weight = faceQuadInside.weight( pt );
+          valueEn[pt] -= rhsValueEn[pt];
+          dvalueEn[pt] -= rhsDValueEn[pt];
+          valueNb[pt] -= rhsValueNb[pt];
+          dvalueNb[pt] -= rhsDValueNb[pt];
+          localOpNbNb.column( localCol ).axpy( phiFaceNb[pt], dphiFaceNb[pt],  // +
+                                               valueNb[pt], dvalueNb[pt], -weight );
+          localOpNbEn.column( localCol ).axpy( phiFaceEn[pt], dphiFaceEn[pt],  // -
+                                               valueEn[pt], dvalueEn[pt], weight );
+        }
+      }
+    }
+
+    // now move affine part to right hand side
+    for( size_t pt = 0; pt < numFaceQuadPoints; ++pt )
+    {
+      const double weight = faceQuadInside.weight( pt );
+      rhsValueEn[pt] *= -weight;
+      rhsDValueEn[pt] *= -weight;
+    }
+    rhsLocal.axpyQuadrature( faceQuadInside, rhsValueEn, rhsDValueEn );
   }
 
   template <class Matrix>
@@ -799,9 +835,11 @@ class DGPrimalMatrixAssembly
 //      std::cout << "non symmetric off diagonal: " << maxSymError_offdiagonal << std::endl;
   }
 
-    template <class LocalEvaluation, class Value,class DValue,class RetType, class DRetType>
-  void flux(const LocalEvaluation& left,
-            const LocalEvaluation& right,
+  template <class Quadrature,class Value,class DValue,class RetType, class DRetType>
+  void flux(const GridPartType &gridPart,
+            const IntersectionStorage& intersectionStorage,
+            const double time,
+            const Quadrature &faceQuadInside, const Quadrature &faceQuadOutside,
             const Value &valueEn, const DValue &dvalueEn,
             const Value &valueNb, const DValue &dvalueNb,
             RetType &retEn, DRetType &dretEn,
@@ -809,11 +847,24 @@ class DGPrimalMatrixAssembly
   {
     RangeType gLeft,gRight;
 #ifndef EULER
-    flux_.initializeIntersection( left, right, valueEn, valueNb);
+    flux_.initializeIntersection( intersectionStorage.intersection(),
+                                  intersectionStorage.inside(),
+                                  intersectionStorage.outside(), time,
+                                  //zero_, zero_,
+                                  faceQuadInside, faceQuadOutside,
+                                  valueEn, valueNb);
 #endif
-    const size_t numFaceQuadPoints = left.quadrature().nop();
+    const size_t numFaceQuadPoints = faceQuadInside.nop();
     for( size_t pt = 0; pt < numFaceQuadPoints; ++pt )
     {
+      typedef RangeType           RangeTuple;
+      typedef JacobianRangeType   JacobianTuple;
+      typedef IntersectionQuadraturePointContext< IntersectionType, EntityType, Quadrature, RangeTuple, JacobianTuple > IntersectionLocalEvaluationType;
+      IntersectionLocalEvaluationType left( intersectionStorage.intersection(), intersectionStorage.inside(),
+                                            faceQuadInside, valueEn[ pt ], dvalueEn[ pt ], pt, time, intersectionStorage.enVolume() );
+      IntersectionLocalEvaluationType right( intersectionStorage.intersection(), intersectionStorage.outside(),
+                                            faceQuadInside, valueNb[ pt ], dvalueNb[ pt ], pt, time, intersectionStorage.nbVolume() );
+
 #ifndef EULER
       flux_.numericalFlux( left, right, valueEn[ pt ], valueNb[ pt ], dvalueEn[ pt ], dvalueNb[ pt ],
                            retEn[ pt ], retNb[ pt ],
@@ -837,7 +888,7 @@ class DGPrimalMatrixAssembly
                    RetType &retNb, DRetType &dretNb,
                    DRetType &liftEn, DRetType &liftNb) const
   {
-   flux(left, right, valueEn,dvalueEn,valueNb,dvalueNb,
+    flux(left, right, valueEn,dvalueEn,valueNb,dvalueNb,
          retEn,dretEn,retNb,dretNb);
 
 #ifndef EULER
