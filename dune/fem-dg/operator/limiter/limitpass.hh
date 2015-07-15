@@ -29,6 +29,8 @@
 #include <dune/fem-dg/pass/dgmodelcaller.hh>
 #include <dune/fem/misc/compatibility.hh>
 
+#include <dune/fem-dg/pass/context.hh>
+
 //*************************************************************
 namespace Dune {
 /*! @addtogroup PassLimit
