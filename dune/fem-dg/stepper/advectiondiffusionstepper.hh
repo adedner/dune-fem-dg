@@ -84,10 +84,10 @@ struct AdvectionDiffusionStepper
                              const std::string name = "",
                              ExtraParameterTupleType tuple = ExtraParameterTupleType() ) :
     BaseType( grid, name ),
-    vSpace_( gridPart_ ),
-    velo_( "velocity", vSpace_ ),
-    tuple_( &velo_ ),
-    //tuple_( ),
+    //vSpace_( gridPart_ ),
+    //velo_( "velocity", vSpace_ ),
+    //tuple_( &velo_ ),
+    tuple_( ),
     dgOperator_( gridPart_, problem(), tuple_, name ),
     dgAdvectionOperator_( gridPart_, problem(), tuple_, name ),
     dgDiffusionOperator_( gridPart_, problem(), tuple_, name ),
@@ -164,8 +164,8 @@ struct AdvectionDiffusionStepper
   const ModelType& model() const { return dgOperator_.model(); }
 
 protected:
-  typename OperatorTraits::SpaceType vSpace_;
-  typename OperatorTraits::VeloType  velo_;
+  //typename OperatorTraits::SpaceType vSpace_;
+  //typename OperatorTraits::VeloType  velo_;
   ExtraParameterTupleType tuple_;
 
   FullOperatorType        dgOperator_;
