@@ -559,74 +559,83 @@ class DGPrimalMatrixAssembly
   void assemble( const double time,
                  DestinationType& rhs ) const
   {
-//    rhs.clear();
-//
-//    const DiscreteFunctionSpaceType &dfSpace = rhs.space();
-//    const size_t maxNumBasisFunctions = maxNumScalarBasisFunctions( dfSpace );
-//
-//    flux_.initialize(dfSpace);
-//
-//    const RangeType uZero(0);
-//    const JacobianRangeType uJacZero(0);
-//
-//    const IteratorType end = dfSpace.end();
-//    for( IteratorType it = dfSpace.begin(); it != end; ++it )
-//    {
-//      const EntityType &entity = *it;
-//      const GeometryType &geometry = entity.geometry();
-//
-//      LocalFunctionType rhsLocal = rhs.localFunction( entity );
-//
-//      const BasisFunctionSetType &baseSet = rhsLocal.baseFunctionSet();
-//      const unsigned int numBasisFunctionsEn = baseSet.size();
-//
-//      const IntersectionIteratorType endiit = dfSpace.gridPart().iend( entity );
-//      for ( IntersectionIteratorType iit = dfSpace.gridPart().ibegin( entity );
-//            iit != endiit ; ++ iit )
-//      {
-//        const IntersectionType& intersection = *iit ;
-//
-//        if( intersection.neighbor() && calculateFluxes_ )
-//        {
-//        }
-//        else if ( intersection.boundary() && ! useStrongBoundaryCondition_ )
-//        {
-//          FaceQuadratureType faceQuadInside(dfSpace.gridPart(), intersection,
-//                                            faceQuadOrder( dfSpace.order( entity ) ),
-//                                            FaceQuadratureType::INSIDE);
-//
-//          const size_t numFaceQuadPoints = faceQuadInside.nop();
-//          resize( numFaceQuadPoints, maxNumBasisFunctions );
-//
-//          // store all basis functions
-//
-//          // evalute base functions
-//          for( size_t pt = 0; pt < numFaceQuadPoints; ++pt )
-//          {
-//            baseSet.evaluateAll( faceQuadInside[ pt ], phiFaceEn[pt] );
-//            baseSet.jacobianAll( faceQuadInside[ pt ], dphiFaceEn[pt] );
-//          }
-//
-//          boundaryValues(local,bndValues);
-//
-//          // first compute affine part of boundary flux
-//          boundaryFlux(local, RangeValues(-1,phiFaceEn), JacobianRangeValues(-1,dphiFaceEn),bndValues,
-//                       valueNb,dvalueNb);
-//
-//          // now move affine part to right hand side
-//          for( size_t pt = 0; pt < numFaceQuadPoints; ++pt )
-//          {
-//            RangeType& rhsFlux          = valueNb[ pt ];
-//            JacobianRangeType& drhsFlux = dvalueNb[ pt ];
-//
-//            const double weight = faceQuadInside.weight( pt );
-//            rhsFlux *= -weight;
-//            drhsFlux *= -weight;
-//          }
-//          rhsLocal.axpyQuadrature( faceQuadInside, valueNb, dvalueNb );
-//        }
-//      }
-//    }
+    rhs.clear();
+
+    const DiscreteFunctionSpaceType &dfSpace = rhs.space();
+    const size_t maxNumBasisFunctions = maxNumScalarBasisFunctions( dfSpace );
+
+#ifndef EULER
+    flux_.initialize(dfSpace);
+#endif
+
+    const RangeType uZero(0);
+    const JacobianRangeType uJacZero(0);
+
+    const IteratorType end = dfSpace.end();
+    for( IteratorType it = dfSpace.begin(); it != end; ++it )
+    {
+      const EntityType &entity = *it;
+      const GeometryType &geometry = entity.geometry();
+      const double volume = geometry.volume();
+
+      LocalFunctionType rhsLocal = rhs.localFunction( entity );
+
+      const BasisFunctionSetType &baseSet = rhsLocal.baseFunctionSet();
+      const unsigned int numBasisFunctionsEn = baseSet.size();
+
+      const IntersectionIteratorType endiit = dfSpace.gridPart().iend( entity );
+      for ( IntersectionIteratorType iit = dfSpace.gridPart().ibegin( entity );
+            iit != endiit ; ++ iit )
+      {
+        const IntersectionType& intersection = *iit ;
+
+        if( intersection.neighbor() && calculateFluxes_ )
+        {
+        }
+        else if ( intersection.boundary() && ! useStrongBoundaryCondition_ )
+        {
+          FaceQuadratureType faceQuadInside(dfSpace.gridPart(), intersection,
+                                            faceQuadOrder( dfSpace.order( entity ) ),
+                                            FaceQuadratureType::INSIDE);
+
+          const size_t numFaceQuadPoints = faceQuadInside.nop();
+          resize( numFaceQuadPoints, maxNumBasisFunctions );
+
+          // store all basis functions
+
+          // evalute base functions
+          for( size_t pt = 0; pt < numFaceQuadPoints; ++pt )
+          {
+            baseSet.evaluateAll( faceQuadInside[ pt ], phiFaceEn[pt] );
+            baseSet.jacobianAll( faceQuadInside[ pt ], dphiFaceEn[pt] );
+          }
+
+          typedef RangeType           RangeTuple;
+          typedef JacobianRangeType   JacobianTuple;
+          typedef IntersectionQuadraturePointContext< IntersectionType, EntityType, FaceQuadratureType, RangeTuple, JacobianTuple > IntersectionLocalEvaluationType;
+          IntersectionLocalEvaluationType local( intersection, entity, faceQuadInside, uZero, uJacZero, 0, time, volume );
+          boundaryValues( local, bndValues);
+
+          // first compute affine part of boundary flux
+          boundaryFlux(dfSpace.gridPart(),intersection,entity,time,faceQuadInside,
+                       RangeValues(-1,phiFaceEn), JacobianRangeValues(-1,dphiFaceEn),
+                       bndValues,
+                       valueNb,dvalueNb);
+
+          // now move affine part to right hand side
+          for( size_t pt = 0; pt < numFaceQuadPoints; ++pt )
+          {
+            RangeType& rhsFlux          = valueNb[ pt ];
+            JacobianRangeType& drhsFlux = dvalueNb[ pt ];
+
+            const double weight = faceQuadInside.weight( pt );
+            rhsFlux *= -weight;
+            drhsFlux *= -weight;
+          }
+          rhsLocal.axpyQuadrature( faceQuadInside, valueNb, dvalueNb );
+        }
+      }
+    }
   }
 
   template <bool conforming, class Matrix>
