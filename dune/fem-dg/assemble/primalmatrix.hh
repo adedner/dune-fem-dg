@@ -236,7 +236,7 @@ class DGPrimalMatrixAssembly
   // CACHING
   // typedef Dune::Fem::CachingQuadrature< GridPartType, 1 > FaceQuadratureType;
   typedef Dune::Fem::ElementQuadrature< GridPartType, 1 > FaceQuadratureType;
-  typedef Dune::Fem::CachingQuadrature< GridPartType, 0 > QuadratureType;
+  typedef Dune::Fem::CachingQuadrature< GridPartType, 0 > VolumeQuadratureType;
 
   typedef ExtendedDGPrimalDiffusionFlux<DiscreteFunctionSpaceType,ModelType> FluxType;
   typedef LLFAdvFlux<ModelType> AdvFluxType;
@@ -261,6 +261,8 @@ class DGPrimalMatrixAssembly
     typedef std::vector< std::vector< RangeType > > VectorType;
     RangeValues(int col, const VectorType &vec) : col_(col), vec_(vec), zero_(0)
     {}
+
+    const RangeType& tuple( int i ) const { return this->operator[] ( i ); }
     const RangeType &operator[](int row) const
     {
       if (col_==-1)
@@ -278,6 +280,7 @@ class DGPrimalMatrixAssembly
     typedef std::vector< std::vector< JacobianRangeType > > VectorType;
     JacobianRangeValues(int col, const VectorType &vec) : col_(col), vec_(vec), zero_(0)
     {}
+    const JacobianRangeType& tuple( int i ) const { return this->operator[] ( i ); }
     const JacobianRangeType &operator[](int row) const
     {
       if (col_==-1)
@@ -329,44 +332,6 @@ class DGPrimalMatrixAssembly
     //static const DgOperatorType dgOperator( space().gridPart(), flux );
     //dgOperator(arg,dest);
   }
-  template <class Matrix>
-  void operator2Matrix( Matrix& matrix, DestinationType& rhs ) const
-  {
-    abort();
-    //static const Dune :: DGDiffusionFluxIdentifier PrimalDiffusionFluxId = Dune :: method_general ;
-    //typedef DGAdvectionDiffusionOperator< ModelType, AdvFluxType, PrimalDiffusionFluxId, DiscreteFunctionSpaceType::polynomialOrder >
-    //        DgOperatorType;
-    //const AdvFluxType flux( model_ );
-    //const DgOperatorType dgOperator( space().gridPart(), flux );
-
-    //DestinationType vector("Op2Mat::arg", space() );
-    //DestinationType matrixRow("Op2Mat::matixRow", space() );
-    //DestinationType result("Op2Mat::result", space() );
-    //vector.clear();
-
-    //matrix.clear();
-
-    //// get right hand side, = op( 0 )
-    //this->operator()( vector, rhs );
-
-    //const int size = space().size();
-    //for(int i=0; i<size; ++i)
-    //{
-    //  vector.leakPointer()[ i ] = 1;
-    //  this->operator()( vector, matrixRow );
-    //  vector.leakPointer()[ i ] = 0;
-    //  matrixRow *= -1.0;
-    //  matrixRow += rhs;
-    //  for(int j=0; j<size; ++j)
-    //  {
-    //    const double value = matrixRow.leakPointer()[ j ];
-    //    if( std::abs( value ) > 0 )
-    //    {
-    //      matrix.add( i, j, value );
-    //    }
-    //  }
-    //}
-  }
 
   size_t maxNumScalarBasisFunctions( const DiscreteFunctionSpaceType& space ) const
   {
@@ -381,186 +346,189 @@ class DGPrimalMatrixAssembly
   void assemble( const double time,
                  Matrix& matrix, DestinationType& rhs ) const
   {
-//    typedef ElementQuadraturePointContext< EntityType, QuadratureType, RangeTuple, JacobianTuple > LocalEvaluationType;
-//    typedef IntersectionQuadraturePointContext< EntityType, QuadratureType, RangeTuple, JacobianTuple > IntersectionLocalEvaluationType;
+    typedef RangeType           RangeTuple;
+    typedef JacobianRangeType   JacobianTuple;
+    typedef ElementQuadraturePointContext< EntityType, VolumeQuadratureType, RangeTuple, JacobianTuple >      LocalEvaluationType;
+    typedef IntersectionQuadraturePointContext< IntersectionType, EntityType, FaceQuadratureType, RangeTuple, JacobianTuple > IntersectionLocalEvaluationType;
 
-//    typedef typename Matrix::LocalMatrixType LocalMatrixType;
-//    matrix.clear();
-//    rhs.clear();
+    typedef typename Matrix::LocalMatrixType LocalMatrixType;
+    matrix.clear();
+    rhs.clear();
+
+    const DiscreteFunctionSpaceType &dfSpace = rhs.space();
+    const size_t maxNumBasisFunctions = maxNumScalarBasisFunctions( dfSpace );
+
+    std::vector< RangeType > phi( maxNumBasisFunctions );
+    std::vector< JacobianRangeType > dphi( maxNumBasisFunctions );
+
+    flux_.initialize( dfSpace );
+
+    const RangeType uZero(0);
+    const JacobianRangeType uJacZero(0);
+
+    std::cout << "DG matrix assemble" << std::endl;
+
+    const IteratorType end = dfSpace.end();
+    for( IteratorType it = dfSpace.begin(); it != end; ++it )
+    {
+      const EntityType &entity = *it;
+      const GeometryType &geometry = entity.geometry();
+      const double volume = geometry.volume();
+
+      LocalMatrixType localOpEn = matrix.localMatrix( entity, entity );
+      LocalFunctionType rhsLocal = rhs.localFunction( entity );
+
+      const BasisFunctionSetType &baseSet = localOpEn.domainBasisFunctionSet();
+      const unsigned int numBasisFunctionsEn = baseSet.size();
+
+      VolumeQuadratureType quadrature( entity, elementQuadOrder( dfSpace.order( entity ) ) );
+      const size_t numQuadraturePoints = quadrature.nop();
+      for( size_t pt = 0; pt < numQuadraturePoints; ++pt )
+      {
+        LocalEvaluationType local( entity, quadrature, uZero, uJacZero, pt, time, volume );
+
+        const typename VolumeQuadratureType::CoordinateType &x = quadrature.point( pt );
+        const double weight = quadrature.weight( pt ) * geometry.integrationElement( x );
+
+        // resize of phi and dphi is done in evaluate methods
+        baseSet.evaluateAll( quadrature[ pt ], phi );
+        baseSet.jacobianAll( quadrature[ pt ], dphi );
+
+        RangeType arhs(0);
+        // first assemble rhs (evaluate source with u=0)
+        if ( model_.hasStiffSource() )
+        model_.stiffSource( local, uZero, uJacZero, arhs );
+        if ( model_.hasNonStiffSource() )
+        {
+          RangeType sNonStiff (0);
+          model_.nonStiffSource( local, uZero, uJacZero, sNonStiff );
+          arhs += sNonStiff;
+        }
+
+        //if model_.hasFlux()
+        //else()
+        //endif
+        //...
+
+        JacobianRangeType arhsdphi;
+        model_.diffusion( local, uZero, uJacZero, arhsdphi);
+        JacobianRangeType brhsphi;
+        model_.advection( local, uZero, brhsphi);
+        arhsdphi -= brhsphi;
+
+        for( unsigned int localCol = 0; localCol < numBasisFunctionsEn; ++localCol )
+        {
+          // now assemble source part depending on u (mass part)
+          RangeType aphi(0);
+          if ( model_.hasStiffSource() )
+            model_.stiffSource( local, phi[localCol], dphi[localCol], aphi );
+          if ( model_.hasNonStiffSource() )
+          {
+            RangeType sNonStiff (0);
+            model_.nonStiffSource( local, phi[localCol], dphi[localCol], sNonStiff );
+            aphi += sNonStiff;
+          }
+          // subtract affine part and move to left hand side
+          aphi -= arhs;
+          aphi *= -1;
+
+          JacobianRangeType adphi;
+          model_.diffusion( local, phi[localCol], dphi[localCol], adphi);
+
+          JacobianRangeType bphi;
+          model_.advection( local, phi[localCol], bphi);
+
+          adphi -= bphi;
+
+          adphi -= arhsdphi;
+
+          // get column object and call axpy method
+          localOpEn.column( localCol ).axpy( phi, dphi, aphi, adphi, weight );
+        }
+        // assemble rhs
+        arhs *= weight;
+        arhsdphi *= -weight;
+        rhsLocal.axpy( quadrature[ pt ], arhs, arhsdphi );
+      }
+
+      const IntersectionIteratorType endiit = dfSpace.gridPart().iend( entity );
+      for ( IntersectionIteratorType iit = dfSpace.gridPart().ibegin( entity );
+            iit != endiit ; ++ iit )
+      {
+        const IntersectionType& intersection = *iit ;
+
+        if( intersection.neighbor() && calculateFluxes_ )
+        {
+          if ( dfSpace.continuous(intersection) ) continue;
+          if( intersection.conforming() )
+          {
+            assembleIntersection< true > ( time, entity, geometry, intersection, dfSpace, baseSet, matrix, localOpEn, rhsLocal );
+          }
+          else
+          {
+            assembleIntersection< false > ( time, entity, geometry, intersection, dfSpace, baseSet, matrix, localOpEn, rhsLocal );
+          }
+        }
+        else if ( intersection.boundary() && ! useStrongBoundaryCondition_ )
+        {
+          FaceQuadratureType faceQuadInside(dfSpace.gridPart(), intersection,
+                                            faceQuadOrder( dfSpace.order( entity ) ),
+                                            FaceQuadratureType::INSIDE);
+
+          const size_t numFaceQuadPoints = faceQuadInside.nop();
+          resize( numFaceQuadPoints, maxNumBasisFunctions );
+
+          // evalute base functions
+          for( size_t pt = 0; pt < numFaceQuadPoints; ++pt )
+          {
+            baseSet.evaluateAll( faceQuadInside[ pt ], phiFaceEn[pt] );
+            baseSet.jacobianAll( faceQuadInside[ pt ], dphiFaceEn[pt] );
+          }
+
+          IntersectionLocalEvaluationType local( intersection, entity, faceQuadInside, uZero, uJacZero, 0, time, volume );
+          // storage for all flux values
           //
-//    const DiscreteFunctionSpaceType &dfSpace = rhs.space();
-//    const size_t maxNumBasisFunctions = maxNumScalarBasisFunctions( dfSpace );
-//
-//    std::vector< RangeType > phi( maxNumBasisFunctions );
-//    std::vector< JacobianRangeType > dphi( maxNumBasisFunctions );
-//
-//    flux_.initialize( dfSpace );
-//
-//    const RangeType uZero(0);
-//    const JacobianRangeType uJacZero(0);
-//
-//    std::cout << "DG matrix assemble" << std::endl;
-//
-//    const IteratorType end = dfSpace.end();
-//    for( IteratorType it = dfSpace.begin(); it != end; ++it )
-//    {
-//      const EntityType &entity = *it;
-//      const GeometryType &geometry = entity.geometry();
-//
-//      LocalMatrixType localOpEn = matrix.localMatrix( entity, entity );
-//      LocalFunctionType rhsLocal = rhs.localFunction( entity );
-//
-//      const BasisFunctionSetType &baseSet = localOpEn.domainBasisFunctionSet();
-//      const unsigned int numBasisFunctionsEn = baseSet.size();
-//
-//      QuadratureType quadrature( entity, elementQuadOrder( dfSpace.order( entity ) ) );
-//      const size_t numQuadraturePoints = quadrature.nop();
-//      for( size_t pt = 0; pt < numQuadraturePoints; ++pt )
-//      {
-//    LocalEvaluationType local( en, quadrature, uZero, uJacZero, pt, time, volume )
+          boundaryValues(local,bndValues);
 
-//        const typename QuadratureType::CoordinateType &x = quadrature.point( pt );
-//        const double weight = quadrature.weight( pt ) * geometry.integrationElement( x );
-//
-//        // resize of phi and dphi is done in evaluate methods
-//        baseSet.evaluateAll( quadrature[ pt ], phi );
-//        baseSet.jacobianAll( quadrature[ pt ], dphi );
-//
-//        RangeType arhs(0);
-//        // first assemble rhs (evaluate source with u=0)
-//        if ( model_.hasStiffSource() )
-//        model_.stiffSource( local, uZero, uJacZero, arhs );
-//        if ( model_.hasNonStiffSource() )
-//        {
-//          RangeType sNonStiff (0);
-//          model_.nonStiffSource( local, uZero, uJacZero, sNonStiff );
-//          arhs += sNonStiff;
-//        }
-//
-//        //if model_.hasFlux()
-//        //else()
-//        //endif
-//        //...
-//
-//        JacobianRangeType arhsdphi;
-//        model_.diffusion( local, uZero, uJacZero, arhsdphi);
-//        JacobianRangeType brhsphi;
-//        model_.advection( local, uZero, brhsphi);
-//        arhsdphi -= brhsphi;
-//
-//        for( unsigned int localCol = 0; localCol < numBasisFunctionsEn; ++localCol )
-//        {
-//          // now assemble source part depending on u (mass part)
-//          RangeType aphi(0);
-//          if ( model_.hasStiffSource() )
-//            model_.stiffSource( local, phi[localCol], dphi[localCol], aphi );
-//          if ( model_.hasNonStiffSource() )
-//          {
-//            RangeType sNonStiff (0);
-//            model_.nonStiffSource( local, phi[localCol], dphi[localCol], sNonStiff );
-//            aphi += sNonStiff;
-//          }
-//          // subtract affine part and move to left hand side
-//          aphi -= arhs;
-//          aphi *= -1;
-//
-//          JacobianRangeType adphi;
-//          model_.diffusion( local, phi[localCol], dphi[localCol], adphi);
-//
-//          JacobianRangeType bphi;
-//          model_.advection( local, phi[localCol], bphi);
-//
-//          adphi -= bphi;
-//
-//          adphi -= arhsdphi;
-//
-//          // get column object and call axpy method
-//          localOpEn.column( localCol ).axpy( phi, dphi, aphi, adphi, weight );
-//        }
-//        // assemble rhs
-//        arhs *= weight;
-//        arhsdphi *= -weight;
-//        rhsLocal.axpy( quadrature[ pt ], arhs, arhsdphi );
-//      }
-//
-//      const IntersectionIteratorType endiit = dfSpace.gridPart().iend( entity );
-//      for ( IntersectionIteratorType iit = dfSpace.gridPart().ibegin( entity );
-//            iit != endiit ; ++ iit )
-//      {
-//        const IntersectionType& intersection = *iit ;
-//
-//        if( intersection.neighbor() && calculateFluxes_ )
-//        {
-//          if ( dfSpace.continuous(intersection) ) continue;
-//          if( intersection.conforming() )
-//          {
-//            assembleIntersection< true > ( time, entity, geometry, intersection, dfSpace, baseSet, matrix, localOpEn, rhsLocal );
-//          }
-//          else
-//          {
-//            assembleIntersection< false > ( time, entity, geometry, intersection, dfSpace, baseSet, matrix, localOpEn, rhsLocal );
-//          }
-//        }
-//        else if ( intersection.boundary() && ! useStrongBoundaryCondition_ )
-//        {
-//          FaceQuadratureType faceQuadInside(dfSpace.gridPart(), intersection,
-//                                            faceQuadOrder( dfSpace.order( entity ) ),
-//                                            FaceQuadratureType::INSIDE);
-//
-//          const size_t numFaceQuadPoints = faceQuadInside.nop();
-//          resize( numFaceQuadPoints, maxNumBasisFunctions );
-//
-//          // evalute base functions
+
+          // first compute affine part of boundary flux
+          boundaryFlux(intersection, entity, time, volume, faceQuadInside,
+                       RangeValues(-1,phiFaceEn), JacobianRangeValues(-1,dphiFaceEn),bndValues, valueNb,dvalueNb);
+
           // for( size_t pt = 0; pt < numFaceQuadPoints; ++pt )
-//          {
-//            baseSet.evaluateAll( faceQuadInside[ pt ], phiFaceEn[pt] );
-//            baseSet.jacobianAll( faceQuadInside[ pt ],
-//                                 // geometry.jacobianInverseTransposed( faceQuadInside.point( pt ) ),
-//                                 dphiFaceEn[pt] );
-//          }
-//
-//          // storage for all flux values
-//          //
-//          boundaryValues(local,bndValues);
-//
-//
-//          // first compute affine part of boundary flux
-//          boundaryFlux(local, RangeValues(-1,phiFaceEn), JacobianRangeValues(-1,dphiFaceEn),bndValues,
-//                       valueNb,dvalueNb);
-//
-//          // for( size_t pt = 0; pt < numFaceQuadPoints; ++pt )
-//          //   bndValues[pt] = RangeType(0);
-//          // compute boundary fluxes depending on u
-//          for( unsigned int localCol = 0; localCol < numBasisFunctionsEn; ++localCol )
-//          {
-//            boundaryFlux(local, RangeValues(localCol,phiFaceEn), JacobianRangeValues(localCol,dphiFaceEn),bndValues,
-//                         valueEn,dvalueEn);
-//            for( size_t pt = 0; pt < numFaceQuadPoints; ++pt )
-//            {
-//              const double weight = faceQuadInside.weight( pt );
-//              valueEn[pt] -= valueNb[pt];
-//              dvalueEn[pt] -= dvalueNb[pt];
-//              localOpEn.column( localCol ).axpy( phiFaceEn[pt], dphiFaceEn[pt],
-//                                                 valueEn[pt], dvalueEn[pt], weight );
-//            }
-//          }
-//          // now move affine part to right hand side
-//          for( size_t pt = 0; pt < numFaceQuadPoints; ++pt )
-//          {
-//            RangeType& rhsFlux          = valueNb[ pt ];
-//            JacobianRangeType& drhsFlux = dvalueNb[ pt ];
-//
-//            const double weight = faceQuadInside.weight( pt );
-//            rhsFlux *= -weight;
-//            drhsFlux *= -weight;
-//          }
-//          rhsLocal.axpyQuadrature( faceQuadInside, valueNb, dvalueNb );
-//        }
-//      }
-//    }
-//
-//    // finish matrix build process (mostly for PETSc)
-//    matrix.communicate();
+          //   bndValues[pt] = RangeType(0);
+          // compute boundary fluxes depending on u
+          for( unsigned int localCol = 0; localCol < numBasisFunctionsEn; ++localCol )
+          {
+            boundaryFlux(intersection, entity, time, volume, faceQuadInside,
+                         RangeValues(localCol,phiFaceEn), JacobianRangeValues(localCol,dphiFaceEn),bndValues,
+                         valueEn,dvalueEn);
+            for( size_t pt = 0; pt < numFaceQuadPoints; ++pt )
+            {
+              const double weight = faceQuadInside.weight( pt );
+              valueEn[pt] -= valueNb[pt];
+              dvalueEn[pt] -= dvalueNb[pt];
+              localOpEn.column( localCol ).axpy( phiFaceEn[pt], dphiFaceEn[pt],
+                                                 valueEn[pt], dvalueEn[pt], weight );
+            }
+          }
+          // now move affine part to right hand side
+          for( size_t pt = 0; pt < numFaceQuadPoints; ++pt )
+          {
+            RangeType& rhsFlux          = valueNb[ pt ];
+            JacobianRangeType& drhsFlux = dvalueNb[ pt ];
+
+            const double weight = faceQuadInside.weight( pt );
+            rhsFlux *= -weight;
+            drhsFlux *= -weight;
+          }
+          rhsLocal.axpyQuadrature( faceQuadInside, valueNb, dvalueNb );
+        }
+      }
+    }
+
+    // finish matrix build process (mostly for PETSc)
+    matrix.communicate();
   }
   // assemble vector containing boundary fluxes for right hand side
   void assemble( const double time,
@@ -881,6 +849,7 @@ class DGPrimalMatrixAssembly
    }
 #endif EULER
   }
+
   template <class FaceQuadrature,class Value,class LiftingFunction>
   void lifting(const GridPartType &gridPart,
                const IntersectionType &intersection,
@@ -891,35 +860,47 @@ class DGPrimalMatrixAssembly
                LiftingFunction &lifting) const
   {
 #ifndef EULER
-    flux_.initializeIntersection( left, right,  valueEn, valueNb, true );
+    flux_.initializeIntersection( intersection, entity, neighbor, time, faceQuadInside, faceQuadOutside, valueEn, valueNb, true );
     lifting += flux_.getInsideLifting();
 #endif
   }
 
   template <class LocalEvaluation,class RetType>
   void boundaryValues(const LocalEvaluation local,
-            RetType &bndValues) const
+                      RetType &bndValues) const
   {
     const RangeType uZero(0);
-    const size_t numFaceQuadPoints = faceQuadInside.nop();
+    const size_t numFaceQuadPoints = local.quadrature().nop();
     for( size_t pt = 0; pt < numFaceQuadPoints; ++pt )
       model_.boundaryValue(local, bndValues[ pt ]);
   }
-  template <class LocalEvaluation,class Value,class DValue,class GValue,class RetType, class DRetType>
-  void boundaryFlux( const LocalEvaluation& local,
+
+  template <class QuadratureImp, class Value,class DValue,class GValue,class RetType, class DRetType>
+  void boundaryFlux( const IntersectionType& intersection,
+                     const EntityType& entity,
+                     const double time,
+                     const double volume,
+                     const QuadratureImp& faceQuadInside,
                      const Value &valueEn,
                      const DValue &dvalueEn,
-            const GValue &valueNb,
+                     const GValue &valueNb,
                      RetType &retEn,
                      DRetType &dretEn) const
   {
     RangeType gLeft,gRight;
 #ifndef EULER
-    flux_.initializeBoundary( local, valueEn, valueNb );
+    flux_.initializeBoundary( intersection, entity, time, faceQuadInside, valueEn, valueNb );
 #endif
+
+
     const size_t numFaceQuadPoints = faceQuadInside.nop();
     for( size_t pt = 0; pt < numFaceQuadPoints; ++pt )
     {
+      typedef RangeType           RangeTuple;
+      typedef JacobianRangeType   JacobianTuple;
+      typedef IntersectionQuadraturePointContext< IntersectionType, EntityType, QuadratureImp, RangeTuple, JacobianTuple > IntersectionLocalEvaluationType;
+      IntersectionLocalEvaluationType local( intersection, entity, faceQuadInside, valueEn[ pt ], dvalueEn[ pt ], pt, time, volume );
+
       if ( model_.hasBoundaryValue( local) )
       {
 #ifndef EULER
@@ -933,7 +914,7 @@ class DGPrimalMatrixAssembly
       }
       else
       {
-        model_.boundaryFlux(local,valueEn[pt],retEn[pt]);
+        model_.boundaryFlux(local,valueEn[pt], dvalueEn[ pt ], retEn[pt]);
         dretEn[pt] = 0;
       }
     }
