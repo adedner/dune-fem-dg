@@ -275,6 +275,21 @@ class DGPrimalMatrixAssembly
     const VectorType& vec_;
     const RangeType zero_;
   };
+
+  struct VectorToTupleVector
+  {
+    typedef std::vector< RangeType > VectorType;
+    VectorToTupleVector(const VectorType &vec) : vec_(vec)
+    {}
+
+    const RangeType& tuple( int i ) const { return this->operator[] ( i ); }
+    const RangeType &operator[](int i) const
+    {
+      return vec_[ i ];
+    }
+  private:
+    const VectorType& vec_;
+  };
   struct JacobianRangeValues
   {
     typedef std::vector< std::vector< JacobianRangeType > > VectorType;
@@ -919,8 +934,10 @@ class DGPrimalMatrixAssembly
                const Value &valueEn, const Value &valueNb,
                LiftingFunction &lifting) const
   {
+    VectorToTupleVector valEn( valueEn );
+    VectorToTupleVector valNb( valueNb );
 #ifndef EULER
-    flux_.initializeIntersection( intersection, entity, neighbor, time, faceQuadInside, faceQuadOutside, valueEn, valueNb, true );
+    flux_.initializeIntersection( intersection, entity, neighbor, time, faceQuadInside, faceQuadOutside, valEn, valNb, true );
     lifting += flux_.getInsideLifting();
 #endif
   }
