@@ -192,9 +192,8 @@ public:
   }
 
   //! maximal wave speed due to advection part
-  inline void maxSpeed( const EntityType& entity,
-                        const double time,
-                        const DomainType& x,
+  template <class LocalEvaluation>
+  inline void maxSpeed( const LocalEvaluation&,
                         const DomainType& normal,
                         const RangeType& u,
                         double& advspeed,
@@ -242,9 +241,8 @@ public:
   /**
    * @brief neuman boundary values \f$g_N\f$ for pass1
    */
-  inline double boundaryFlux(const IntersectionType& it,
-                             const double time,
-                             const FaceDomainType& x,
+  template <class LocalEvalution>
+  inline double boundaryFlux(const LocalEvalution&,
                              const RangeType& uLeft,
                              RangeType& gLeft) const
   {
