@@ -5,6 +5,8 @@
 #include <dune/fem/misc/fmatrixconverter.hh>
 #include <dune/fem/io/parameter.hh>
 
+#include <dune/fem-dg/models/defaultmodel.hh>
+
 namespace Dune
 {
   template <class ModelType>
@@ -17,16 +19,20 @@ namespace Dune
 /**
  * @brief Traits class for StokesModel
  */
-template <class GridPart,int dimRange2,
-          int dimRange1=dimRange2* GridPart::GridType::dimensionworld>
+template <class GridPart,
+          class ProblemImp>
 class StokesModelTraits
 {
 public:
+  typedef ProblemImp  ProblemType;
   typedef GridPart                                                   GridPartType;
   typedef typename GridPartType :: GridType                          GridType;
   static const int dimDomain = GridType::dimensionworld;
-  static const int dimRange = dimRange2;
-  static const int dimGradRange = dimRange1;
+  static const int dimRange = ProblemType :: dimRange;
+  static const int dimGradRange = dimRange * dimDomain;
+
+  typedef double RangeFieldType;
+  typedef double DomainFieldType;
   // Definition of domain and range types
   typedef Dune::FieldVector< double, dimDomain >                     DomainType;
   typedef Dune::FieldVector< double, dimDomain-1 >                   FaceDomainType;
@@ -80,7 +86,7 @@ public:
 //
 ////////////////////////////////////////////////////////
 template <class GridPartType, class ProblemImp>
-class StokesModel
+class StokesModel : public DefaultModel< StokesModelTraits< GridPartType, ProblemImp > >
 {
 public:
   typedef ProblemImp  ProblemType ;
@@ -88,8 +94,9 @@ public:
   typedef typename GridPartType :: GridType                          GridType;
   static const int dimDomain = GridType::dimensionworld;
   static const int dimRange = ProblemType :: dimRange;
-  typedef StokesModelTraits< GridPartType, dimRange,
-                              dimRange*dimDomain >                   Traits;
+  typedef StokesModelTraits< GridPartType, ProblemType >             Traits;
+  typedef typename Traits :: DomainFieldType                         DomainFieldType;
+  typedef typename Traits :: RangeFieldType                          RangeFieldType;
   typedef typename Traits :: DomainType                              DomainType;
   typedef typename Traits :: RangeType                               RangeType;
   typedef typename Traits :: GradientType                            GradientType;
@@ -153,37 +160,28 @@ public:
     return 0;
   }
 
-  inline double stiffSource( const EntityType& en,
-                        const double time,
-                        const DomainType& x,
+  template <class LocalEvaluation>
+  inline double stiffSource( const LocalEvaluation& local,
                         const RangeType& u,
-                        const GradientType& du,
+                        const JacobianRangeType& du,
                         RangeType & s) const
   {
-    return stiffSource( en, time, x, u, s );
-  }
-
-
-  inline double stiffSource( const EntityType& en,
-                        const double time,
-                        const DomainType& x,
-                        const RangeType& u,
-                        const JacobianRangeType& jac,
-                        RangeType & s) const
-  {
-    return stiffSource( en, time, x, u, s );
-  }
-
-  inline double stiffSource( const EntityType& en,
-                        const double time,
-                        const DomainType& x,
-                        const RangeType& u,
-                        RangeType & s) const
-  {
-    DomainType xgl = en.geometry().global( x );
+    DomainType xgl = local.entity().geometry().global( local.point() );
     problem_.f( xgl, s );
-    return 0;
+    return 0.0;
   }
+
+  template <class LocalEvaluation>
+  inline double nonStiffSource( const LocalEvaluation& local,
+                        const RangeType& u,
+                        const JacobianRangeType& du,
+                        RangeType & s) const
+  {
+    DomainType xgl = local.entity().geometry().global( local.point() );
+    problem_.f( xgl, s );
+    return 0.0;
+  }
+
 
   /**
    * @brief advection term \f$F\f$
@@ -194,15 +192,14 @@ public:
    * @param u \f$U\f$
    * @param f \f$f(U)\f$
    */
-  inline  void advection(const EntityType& en,
-                         const double time,
-                         const DomainType& x,
+  template <class LocalEvaluation>
+  inline  void advection(const LocalEvaluation& local,
                          const RangeType& u,
                          FluxRangeType & f) const
   {
     // evaluate velocity V
     DomainType v;
-    velocity( en, time, x, v );
+    velocity( local.entity(), local.time(), local.point(), v );
 
     //f = uV;
     for( int r=0; r<dimRange; ++r )
@@ -238,9 +235,8 @@ public:
   /**
    * @brief diffusion term \f$a\f$
    */
-  inline void jacobian(const EntityType& en,
-                        const double time,
-                        const DomainType& x,
+  template <class LocalEvaluation>
+  inline void jacobian(const LocalEvaluation& local,
                         const RangeType& u,
                         DiffusionRangeType& a) const
   {
@@ -260,14 +256,13 @@ public:
     return (a * a);
   }
 
-  inline void eigenValues(const EntityType& en,
-                          const double time,
-                          const DomainType& x,
+  template <class LocalEvaluation>
+  inline void eigenValues(const LocalEvaluation& local,
                           const RangeType& u,
                           RangeType& maxValue) const
   {
     DiffusionMatrixType K ;
-    DomainType xgl = en.geometry().global( x );
+    DomainType xgl = local.entity().geometry().global( local.point() );
     problem_.K( xgl, K );
 
     DomainType values ;
@@ -291,10 +286,9 @@ public:
     return SQR(values[ dimDomain -1 ]) / values[ 0 ];
   }
 
-  inline double penaltyFactor( const EntityType& inside,
-                               const EntityType& outside,
-                               const double time,
-                               const DomainType& xInside,
+  template <class LocalEvaluation>
+  inline double penaltyFactor( const LocalEvaluation& left,
+                               const LocalEvaluation& right,
                                const RangeType& uLeft,
                                const RangeType& uRight ) const
   {
@@ -305,9 +299,9 @@ public:
       DiffusionMatrixType Kinside ;
       DiffusionMatrixType Koutside;
 
-      const DomainType xglIn = inside.geometry().center();
+      const DomainType xglIn = left.entity().geometry().center();
       problem_.K( xglIn , Kinside );
-      const DomainType xglOut = outside.geometry().center();
+      const DomainType xglOut = right.entity().geometry().center();
       problem_.K( xglOut , Koutside );
 
       K = Kinside ;
@@ -321,7 +315,7 @@ public:
     }
     else
     {
-      const DomainType xgl = inside.geometry().global( xInside );
+      const DomainType xgl = left.entity().geometry().global( left.point() );
       problem_.K( xgl , K );
 
       betaK = lambdaK( K );
@@ -350,17 +344,15 @@ public:
   /**
    * @brief diffusion term \f$A\f$
    */
-  template <class JacobianType>
-  inline void diffusion(const EntityType& en,
-                        const double time,
-                        const DomainType& x,
+  template <class LocalEvaluation>
+  inline void diffusion(const LocalEvaluation& local,
                         const RangeType& u,
-                        const JacobianType& jac,
+                        const JacobianRangeType& jac,
                         FluxRangeType& A) const
   {
     // for constant K evalute at center (see Problem 4)
     const DomainType xgl = ( problem_.constantK() ) ?
-      en.geometry().center () : en.geometry().global( x )  ;
+      local.entity().geometry().center () : local.entity().geometry().global(local.point())  ;
 
     DiffusionMatrixType K ;
 
@@ -372,22 +364,9 @@ public:
       K.mv( jac[ r ] , A[ r ] );
   }
 
-  inline void diffusion(const EntityType& en,
-                        const double time,
-                        const DomainType& x,
-                        const RangeType& u,
-                        const GradientType& vecJac,
-                        FluxRangeType& A) const
-  {
-    Dune :: Fem :: FieldMatrixConverter< GradientType, FluxRangeType> jac( vecJac );
-    diffusion( en, time, x, u, jac, A );
-  }
-
-  inline double diffusionTimeStep( const IntersectionType &it,
-                                   const double enVolume,
+  template <class LocalEvaluation>
+  inline double diffusionTimeStep( const LocalEvaluation& local,
                                    const double circumEstimate,
-                                   const double time,
-                                   const FaceDomainType& x,
                                    const RangeType& u ) const
   {
     return 0;
@@ -397,33 +376,37 @@ public:
   /**
    * @brief checks for existence of dirichlet boundary values
    */
-  inline bool hasBoundaryValue(const IntersectionType& it,
-                               const double time,
-                               const FaceDomainType& x) const
+  template <class LocalEvaluation>
+  inline bool hasBoundaryValue(const LocalEvaluation& local ) const
   {
     return true;
   }
 
   /**
+   * @brief checks for existence of dirichlet boundary values
+   */
+  template <class LocalEvaluation>
+  inline void boundaryValue(const LocalEvaluation& local,
+                            RangeType& uBnd) const
+  {
+    uBnd = 0;
+  }
+
+  /**
    * @brief neuman boundary values \f$g_N\f$ for pass2
    */
-  inline double boundaryFlux(const IntersectionType& it,
-                             const double time,
-                             const FaceDomainType& x,
+  template <class LocalEvaluation>
+  inline double boundaryFlux(const LocalEvaluation& local,
                              const RangeType& uLeft,
-                             const GradientType& vLeft,
+                             const JacobianRangeType& vLeft,
                              RangeType& gLeft) const
   {
     gLeft = 0.;
     return 0.;
   }
 
-  /**
-   * @brief neuman boundary values \f$g_N\f$ for pass1
-   */
-  inline double boundaryFlux(const IntersectionType& it,
-                             const double time,
-                             const FaceDomainType& x,
+  template <class LocalEvaluation>
+  inline double boundaryFlux(const LocalEvaluation& local,
                              const RangeType& uLeft,
                              RangeType& gLeft) const
   {
@@ -434,49 +417,29 @@ public:
   /**
    * @brief diffusion boundary flux
    */
-  inline double diffusionBoundaryFlux( const IntersectionType& it,
-                                       const double time,
-                                       const FaceDomainType& x,
+  template <class LocalEvaluation>
+  inline double diffusionBoundaryFlux( const LocalEvaluation& local,
                                        const RangeType& uLeft,
-                                       const GradientType& gradLeft,
+                                       const JacobianRangeType& gradLeft,
                                        RangeType& gLeft ) const
   {
-    Dune :: Fem :: FieldMatrixConverter< GradientType, JacobianRangeType> jacLeft( gradLeft );
-    return diffusionBoundaryFlux( it, time, x, uLeft, jacLeft, gLeft );
   }
-
-  /** \brief boundary flux for the diffusion part
-   */
-  template <class JacobianRangeImp>
-  inline double diffusionBoundaryFlux( const IntersectionType& it,
-                                       const double time,
-                                       const FaceDomainType& x,
-                                       const RangeType& uLeft,
-                                       const JacobianRangeImp& jacLeft,
-                                       RangeType& gLeft ) const
-  {
-    std::cerr <<"diffusionBoundaryFlux shouldn't be used in this model" <<std::endl;
-    abort();
-  }
-
-
 
   /**
    * @brief dirichlet boundary values
    */
-  inline  void boundaryValue(const IntersectionType& it,
-                             const double time,
-                             const FaceDomainType& x,
+  template <class LocalEvaluation>
+  inline  void boundaryValue(const LocalEvaluation& local,
                              const RangeType& uLeft,
                              RangeType& uRight) const
   {
-    if (it.boundaryId() == 99) // Dirichlet zero boundary conditions
+    if ( local.intersection().boundaryId() == 99) // Dirichlet zero boundary conditions
     {
       uRight = 0;
     }
     else
     {
-      DomainType xgl = it.geometry().global( x );
+      DomainType xgl = local.entity().geometry().global( local.point() );
       problem_.g(xgl, uRight);
     }
   }

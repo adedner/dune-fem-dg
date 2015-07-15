@@ -16,6 +16,8 @@
 #include <dune/fem-dg/solver/linearsolvers.hh>
 #include <dune/fem-dg/operator/fluxes/diffusionflux.hh>
 
+#include <dune/fem-dg/operator/adaptation/adaptation.hh>
+
 namespace Dune {
 
   //PassTraits
@@ -45,6 +47,12 @@ namespace Dune {
 
     typedef Fem::FunctionSpace< ctype, double, dimDomain, dimRange >      FunctionSpaceType;
     typedef Fem::FunctionSpace< ctype, double, dimDomain, 1 >             PressureFunctionSpaceType;
+
+    typedef typename FunctionSpaceType :: DomainType         DomainType;
+    typedef typename FunctionSpaceType :: RangeType          RangeType;
+    typedef typename FunctionSpaceType :: JacobianRangeType  JacobianRangeType;
+    typedef typename FunctionSpaceType :: RangeFieldType     RangeFieldType ;
+    typedef typename FunctionSpaceType :: DomainFieldType    DomainFieldType ;
 
     // CACHING
     typedef Dune::Fem::CachingQuadrature< GridPartType, 1 >  FaceQuadratureType;
@@ -99,6 +107,13 @@ namespace Dune {
     typedef typename SolversType :: DiscreteFunctionType       DestinationType;
     typedef typename SolversType :: LinearOperatorType         LinearOperatorType;
     typedef typename SolversType :: LinearInverseOperatorType  LinearInverseOperatorType;
+
+    // Indicator for Limiter
+    typedef Fem::FunctionSpace< ctype, double, ModelTraits::dimDomain, 3> FVFunctionSpaceType;
+    typedef Fem::FiniteVolumeSpace<FVFunctionSpaceType,GridPartType, 0, Fem::SimpleStorage> IndicatorSpaceType;
+    typedef Fem::AdaptiveDiscreteFunction<IndicatorSpaceType> IndicatorType;
+
+    typedef AdaptationHandler< GridType, FunctionSpaceType >  AdaptationHandlerType ;
   };
 
 } // end namespace Dune
