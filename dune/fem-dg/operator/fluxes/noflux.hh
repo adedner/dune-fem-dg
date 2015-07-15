@@ -28,6 +28,20 @@ public:
 
   const Model& model() const {return model_;}
 
+  template< class LocalEvaluation >
+  inline double
+  numericalFlux( const LocalEvaluation& left,
+                 const LocalEvaluation& right,
+                 const RangeType& uLeft,
+                 const RangeType& uRight,
+                 RangeType& gLeft,
+                 RangeType& gRight) const
+  {
+    gLeft  = 0;
+    gRight = 0;
+    return 0;
+  }
+
   /**
    * @brief evaluates the flux \f$g(u,v)\f$
    *
