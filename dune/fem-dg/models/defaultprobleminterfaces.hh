@@ -276,7 +276,7 @@ public:
   //! destructor
   virtual ~ProblemInterface() {}
 
-  virtual std::string name () const { return "none"; }
+  virtual std::string name () const { return ""; }
 
   //! evaluates the right hand side (Function like bahavior)
   inline void evaluate(const DomainType& x, RangeType& ret) const
