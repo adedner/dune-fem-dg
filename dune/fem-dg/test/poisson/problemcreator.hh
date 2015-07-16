@@ -66,7 +66,7 @@ struct ProblemCreator
 
   static inline std::string moduleName()
   {
-    return "poisson";
+    return "";
   }
 
   static inline Dune::GridPtr<GridType> initializeGrid()
