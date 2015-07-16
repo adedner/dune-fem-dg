@@ -37,7 +37,7 @@ static double minRatioOfSums = 1e+100;
 
 // #include "../base/baseevolution.hh"
 #include "ellipt.hh"
-#include "estimator1.hh"
+#include <dune/fem-dg/operator/adaptation/stokesestimator.hh>
 
 using namespace Dune;
 
@@ -293,7 +293,7 @@ public:
   };
 
   typedef Dune::Fem::LocalFunctionAdapter< SigmaEval<DiscreteFunctionType,DiscretePressureFunctionType,DgType> > StokesEstimateFunction;
-  typedef Dune::StokesEstimator1< DiscreteFunctionType, StokesEstimateFunction, StokesFlux > StokesEstimatorType;
+  typedef Dune::StokesErrorEstimator< DiscreteFunctionType, StokesEstimateFunction, StokesFlux > StokesEstimatorType;
 
   typedef Dune::Fem::LocalFunctionAdapter< StokesEstimatorType >          StokesEstimateDataType;
   typedef tuple< const DiscreteFunctionType*, const DiscretePressureFunctionType*, const StokesEstimateDataType* >  IOTupleType;
