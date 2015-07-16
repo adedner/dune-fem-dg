@@ -101,9 +101,9 @@ namespace Dune
   //              method to compute -hatK, only fluxEn and fluxNb is used
 
   template<class UFunction, class SigmaFunction, class DGOperator>
-  class Estimator1
+  class ErrorEstimator
   {
-    typedef Estimator1< UFunction, SigmaFunction, DGOperator> ThisType;
+    typedef ErrorEstimator< UFunction, SigmaFunction, DGOperator> ThisType;
 
   public:
     typedef UFunction DiscreteFunctionType;
@@ -153,8 +153,8 @@ namespace Dune
     typedef typename HierarchicSimplexDGSpaceType::Type  SimplexDGSpaceType;
     typedef typename HierarchicCubeDGSpaceType::Type     CubeDGSpaceType ;
 
-    SimplexDGSpaceType * dgSimplexSpace_;
-    CubeDGSpaceType*     dgCubeSpace_;
+    std::unique_ptr< SimplexDGSpaceType > dgSimplexSpace_;
+    std::unique_ptr< CubeDGSpaceType    > dgCubeSpace_;
 
     ErrorIndicatorType indicator_;
     ErrorIndicatorType R2_,R1_,Rorth_,smoothness_;
@@ -191,7 +191,7 @@ namespace Dune
 
 
   public:
-    Estimator1 (const DiscreteFunctionType &uh,
+    ErrorEstimator (const DiscreteFunctionType &uh,
                 const SigmaFunction &sigma,
                 const DGOperator &oper,
                 GridType &grid)
@@ -203,8 +203,8 @@ namespace Dune
        gridPart_( dfSpace_.gridPart() ),
        indexSet_( gridPart_.indexSet() ),
        grid_( grid ),
-       dgSimplexSpace_( 0 ),
-       dgCubeSpace_( 0 ),
+       dgSimplexSpace_(),
+       dgCubeSpace_(),
        indicator_( indexSet_.size( 0 )),
        R2_( indexSet_.size( 0 )),
        R1_( indexSet_.size( 0 )),
@@ -220,23 +220,21 @@ namespace Dune
       clear();
     }
 
-    ~Estimator1 ()
-    {
-      delete dgSimplexSpace_;
-      delete dgCubeSpace_;
-    }
-
     SimplexDGSpaceType& dgSimplexSpace()
     {
-      if( dgSimplexSpace_ == 0 )
-        dgSimplexSpace_ = new SimplexDGSpaceType( gridPart_ );
+      if( ! dgSimplexSpace_ )
+      {
+        dgSimplexSpace_.reset( new SimplexDGSpaceType( gridPart_ ) );
+      }
       return *dgSimplexSpace_ ;
     }
 
     CubeDGSpaceType& dgCubeSpace()
     {
-      if( dgCubeSpace_ == 0 )
-        dgCubeSpace_ = new CubeDGSpaceType( gridPart_ );
+      if( ! dgCubeSpace_  )
+      {
+        dgCubeSpace_.reset( new CubeDGSpaceType( gridPart_ ) );
+      }
       return *dgCubeSpace_ ;
     }
 

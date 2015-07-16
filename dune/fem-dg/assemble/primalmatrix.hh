@@ -171,7 +171,7 @@ public:
     model_.maxSpeed( left,  normal, uLeft,  viscparal, maxspeedl );
     model_.maxSpeed( right, normal, uRight, viscparar, maxspeedr );
 
-    //maxspeed = (maxspeedl > maxspeedr) ? maxspeedl : maxspeedr;
+    maxspeed = (maxspeedl > maxspeedr) ? maxspeedl : maxspeedr;
     viscpara = (viscparal > viscparar) ? viscparal : viscparar;
     visc = uRight;
     visc -= uLeft;
@@ -922,7 +922,7 @@ class DGPrimalMatrixAssembly
       flux_.evaluateLifting(left, right, valueEn[pt],valueNb[pt],
                             liftEn[pt],liftNb[pt]);
    }
-#endif EULER
+#endif
   }
 
   template <class FaceQuadrature,class Value,class LiftingFunction>

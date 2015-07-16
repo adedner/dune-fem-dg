@@ -39,7 +39,7 @@ static double minRatioOfSums = 1e+100;
 //#include <dune/fem/operator/linear/istloperator.hh>
 #include <dune/fem/solver/istlsolver.hh>
 
-#include "poissonestimator.hh"
+#include <dune/fem-dg/operator/adaptation/poissonestimator.hh>
 
 /*
 #if HAVE_PETSC
@@ -262,9 +262,14 @@ public:
       typedef typename Operator :: FaceQuadratureType  FaceQuadratureType ;
       typedef Dune::Fem::IntersectionQuadrature< FaceQuadratureType, conforming > IntersectionQuadratureType;
       typedef typename IntersectionQuadratureType :: FaceQuadratureType QuadratureImp;
+#if DUNE_VERSION_NEWER(DUNE_GRID,2,4)
+      const EntityType &outside = intersection.outside();
+#else
       const typename EntityType::EntityPointer pOutside = intersection.outside();
       const EntityType &outside = *pOutside;
+#endif
       typename DF::LocalFunctionType uOutside = df_.localFunction(outside);
+
 
       const int enOrder = df_.space().order( entity );
       const int nbOrder = df_.space().order( outside );
@@ -295,7 +300,7 @@ public:
   };
 
   typedef Dune::Fem::LocalFunctionAdapter< SigmaLocal<DiscreteFunctionType, DgAssembledOperatorType> > SigmaEstimateFunction;
-  typedef Dune::Estimator1< DiscreteFunctionType, SigmaDiscreteFunctionType, DgAssembledOperatorType > EstimatorType;
+  typedef Dune::ErrorEstimator< DiscreteFunctionType, SigmaDiscreteFunctionType, DgAssembledOperatorType > EstimatorType;
 
   typedef Dune::Fem::LocalFunctionAdapter< EstimatorType > EstimateDataType;
   typedef std::tuple< const DiscreteFunctionType*, const SigmaEstimateFunction*, const EstimateDataType* >  IOTupleType;

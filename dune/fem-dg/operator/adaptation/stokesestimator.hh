@@ -25,10 +25,10 @@ namespace Dune
   //              method to compute -hatK, only fluxEn and fluxNb is used
 
   template<class UFunction, class SigmaFunction, class DGOperator>
-  class StokesEstimator1 : public Estimator1<UFunction,SigmaFunction,DGOperator>
+  class StokesErrorEstimator : public ErrorEstimator<UFunction,SigmaFunction,DGOperator>
   {
-    typedef Estimator1< UFunction, SigmaFunction, DGOperator> BaseType;
-    typedef StokesEstimator1< UFunction, SigmaFunction, DGOperator> ThisType;
+    typedef ErrorEstimator< UFunction, SigmaFunction, DGOperator> BaseType;
+    typedef StokesErrorEstimator< UFunction, SigmaFunction, DGOperator> ThisType;
 
   public:
     typedef UFunction DiscreteFunctionType;
@@ -74,10 +74,10 @@ namespace Dune
     using BaseType::theta_;
     typename BaseType::ErrorIndicatorType Rdiv_;
   public:
-    explicit StokesEstimator1 (const DiscreteFunctionType &uh,
-                               const SigmaFunction &sigma,
-                               const DGOperator &oper,
-                               GridType &grid)
+    explicit StokesErrorEstimator (const DiscreteFunctionType &uh,
+                                   const SigmaFunction &sigma,
+                                   const DGOperator &oper,
+                                   GridType &grid)
     : BaseType(uh,sigma,oper,grid),
       Rdiv_( this->indexSet_.size( 0 ))
     {
