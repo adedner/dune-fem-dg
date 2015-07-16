@@ -428,8 +428,8 @@ class DGPrimalMatrixAssembly
       {
         LocalEvaluationType local( entity, quadrature, uZero, uJacZero, pt, time, volume );
 
-        const typename VolumeQuadratureType::CoordinateType &x = quadrature.point( pt );
-        const double weight = quadrature.weight( pt ) * geometry.integrationElement( x );
+        //const typename VolumeQuadratureType::CoordinateType &x = quadrature.point( pt );
+        const double weight = quadrature.weight( pt ) * geometry.integrationElement( local.point() );
 
         // resize of phi and dphi is done in evaluate methods
         baseSet.evaluateAll( quadrature[ pt ], phi );
@@ -526,15 +526,13 @@ class DGPrimalMatrixAssembly
             baseSet.jacobianAll( faceQuadInside[ pt ], dphiFaceEn[pt] );
           }
 
-          IntersectionLocalEvaluationType local( intersection, entity, faceQuadInside, uZero, uJacZero, 0, time, volume );
           // storage for all flux values
-          //
-          boundaryValues(local,bndValues);
-
+          boundaryValues(intersection, entity, time, faceQuadInside, volume, bndValues);
 
           // first compute affine part of boundary flux
           boundaryFlux(intersection, entity, time, volume, faceQuadInside,
-                       RangeValues(-1,phiFaceEn), JacobianRangeValues(-1,dphiFaceEn),bndValues, valueNb,dvalueNb);
+                       RangeValues(-1,phiFaceEn), JacobianRangeValues(-1,dphiFaceEn),
+                       bndValues, valueNb,dvalueNb);
 
           // for( size_t pt = 0; pt < numFaceQuadPoints; ++pt )
           //   bndValues[pt] = RangeType(0);
@@ -560,7 +558,7 @@ class DGPrimalMatrixAssembly
             JacobianRangeType& drhsFlux = dvalueNb[ pt ];
 
             const double weight = faceQuadInside.weight( pt );
-            rhsFlux *= -weight;
+            rhsFlux  *= -weight;
             drhsFlux *= -weight;
           }
           rhsLocal.axpyQuadrature( faceQuadInside, valueNb, dvalueNb );
@@ -571,6 +569,7 @@ class DGPrimalMatrixAssembly
     // finish matrix build process
     matrix.communicate();
     //matrix.systemMatrix().matrix().print( std::cout );
+    //rhs.print( std::cout );
     //abort();
   }
   // assemble vector containing boundary fluxes for right hand side
@@ -628,11 +627,8 @@ class DGPrimalMatrixAssembly
             baseSet.jacobianAll( faceQuadInside[ pt ], dphiFaceEn[pt] );
           }
 
-          typedef RangeType           RangeTuple;
-          typedef JacobianRangeType   JacobianTuple;
-          typedef IntersectionQuadraturePointContext< IntersectionType, EntityType, FaceQuadratureType, RangeTuple, JacobianTuple > IntersectionLocalEvaluationType;
-          IntersectionLocalEvaluationType local( intersection, entity, faceQuadInside, uZero, uJacZero, 0, time, volume );
-          boundaryValues( local, bndValues);
+          // store for all flux values
+          boundaryValues(intersection, entity, time, faceQuadInside, volume, bndValues);
 
           // first compute affine part of boundary flux
           boundaryFlux(dfSpace.gridPart(),intersection,entity,time,faceQuadInside,
@@ -647,7 +643,7 @@ class DGPrimalMatrixAssembly
             JacobianRangeType& drhsFlux = dvalueNb[ pt ];
 
             const double weight = faceQuadInside.weight( pt );
-            rhsFlux *= -weight;
+            rhsFlux  *= -weight;
             drhsFlux *= -weight;
           }
           rhsLocal.axpyQuadrature( faceQuadInside, valueNb, dvalueNb );
@@ -804,9 +800,9 @@ class DGPrimalMatrixAssembly
   template <class Matrix>
   void testSymmetrie(const Matrix &matrix) const
   {
-//    // NOTE: this is bad coding style
-//    // not check at the moment
-//    return;
+    // NOTE: this is bad coding style
+    // not check at the moment
+    return;
 //
 //
 //    typedef typename Matrix::LocalMatrixType LocalMatrixType;
@@ -945,14 +941,27 @@ class DGPrimalMatrixAssembly
 #endif
   }
 
-  template <class LocalEvaluation,class RetType>
-  void boundaryValues(const LocalEvaluation local,
+  template <class Quadrature,class RetType>
+  void boundaryValues(const IntersectionType &intersection,
+                      const EntityType &entity,
+                      const double time,
+                      const Quadrature &faceQuadInside,
+                      const double volume,
                       RetType &bndValues) const
   {
     const RangeType uZero(0);
-    const size_t numFaceQuadPoints = local.quadrature().nop();
+    const JacobianRangeType uJacZero( 0 );
+
+    typedef RangeType           RangeTuple;
+    typedef JacobianRangeType   JacobianTuple;
+    typedef IntersectionQuadraturePointContext< IntersectionType, EntityType, Quadrature, RangeTuple, JacobianTuple > IntersectionLocalEvaluationType;
+
+    const size_t numFaceQuadPoints = faceQuadInside.nop();
     for( size_t pt = 0; pt < numFaceQuadPoints; ++pt )
-      model_.boundaryValue(local, bndValues[ pt ]);
+    {
+      IntersectionLocalEvaluationType local( intersection, entity, faceQuadInside, uZero, uJacZero, pt, time, volume );
+      model_.boundaryValue(local, uZero, bndValues[ pt ]);
+    }
   }
 
   template <class QuadratureImp, class Value,class DValue,class GValue,class RetType, class DRetType>
@@ -981,7 +990,7 @@ class DGPrimalMatrixAssembly
       typedef IntersectionQuadraturePointContext< IntersectionType, EntityType, QuadratureImp, RangeTuple, JacobianTuple > IntersectionLocalEvaluationType;
       IntersectionLocalEvaluationType local( intersection, entity, faceQuadInside, valueEn[ pt ], dvalueEn[ pt ], pt, time, volume );
 
-      if ( model_.hasBoundaryValue( local) )
+      if ( model_.hasBoundaryValue( local ) )
       {
 #ifndef EULER
         flux_.boundaryFlux( local, valueEn[ pt ], valueNb[ pt ],  dvalueEn[ pt ],
