@@ -88,11 +88,14 @@ namespace Dune {
 #endif
     */
     typedef Dune::Fem::DiscontinuousGalerkinSpace
+    //typedef Dune::Fem::LagrangeDiscreteFunctionSpace
        < FunctionSpaceType, GridPartType, polOrd, Dune::Fem::CachingStorage > DiscreteFunctionSpaceType;
 
     static const bool symmetricSolver = true ;
-//#if WANT_ISTL
     typedef Solvers<DiscreteFunctionSpaceType, istl,  symmetricSolver> SolversType;
+ //   typedef Solvers<DiscreteFunctionSpaceType, fem,   symmetricSolver> SolversType;
+//#if WANT_ISTL
+//    typedef Solvers<DiscreteFunctionSpaceType, istl,  symmetricSolver> SolversType;
 /*
 #elif WANT_PETSC
     typedef Solvers<DiscreteFunctionSpaceType, petsc, symmetricSolver> SolversType;
