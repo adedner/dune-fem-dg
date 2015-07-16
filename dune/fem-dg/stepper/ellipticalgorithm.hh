@@ -339,7 +339,7 @@ public:
   typedef SolverMonitor  SolverMonitorType ;
 
 public:
-  EllipticAlgorithm(GridType& grid) :
+  EllipticAlgorithm(GridType& grid, std::string moduleName = "" ) :
     grid_( grid ),
     gridPart_( grid_ ),
     problem_( ProblemTraits::problem() ),
