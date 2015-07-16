@@ -276,6 +276,8 @@ public:
   //! destructor
   virtual ~ProblemInterface() {}
 
+  virtual std::string name () const { return ""; }
+
   //! evaluates the right hand side (Function like bahavior)
   inline void evaluate(const DomainType& x, RangeType& ret) const
   {
@@ -283,16 +285,16 @@ public:
   }
 
   //! the right hand side
-  virtual void f(const DomainType& x, RangeType& ret) const = 0;
+  virtual void f(const DomainType& x, RangeType& ret) const { std::abort(); }// = 0;
 
   //! the exact solution
-  virtual void u(const DomainType& x, RangeType& ret) const = 0;
+  virtual void u(const DomainType& x, RangeType& ret) const { std::abort(); }//= 0;
 
   //! the diffusion matrix
-  virtual void K(const DomainType& x, DiffusionMatrixType& m) const = 0;
+  virtual void K(const DomainType& x, DiffusionMatrixType& m) const { std::abort(); }//= 0;
 
   //! returns true if diffusion coefficient is constant
-  virtual bool constantK() const = 0;
+  virtual bool constantK() const { std::abort(); return false; }//= 0;
 
   //! the Dirichlet boundary data function
   virtual void g(const DomainType& x, RangeType& ret) const

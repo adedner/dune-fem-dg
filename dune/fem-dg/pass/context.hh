@@ -57,6 +57,18 @@ namespace Dune
     const LocalCoordinateType& localPoint() const { return quadrature().localPoint( index() ); }
     const int index() const { return qp_; }
 
+    template <class Tuple, class VarId >
+    struct Contains
+    {
+      static const bool value = false;
+    };
+
+    template <class Tuple, class Types, class VarId >
+    struct Contains< TypeIndexedTuple< Tuple, Types >, VarId >
+    {
+      static const bool value = TypeIndexedTuple< Tuple, Types >::template Contains< VarId > :: value;
+    };
+
     template <class Functor, bool containedInTuple >
     struct Evaluate;
 
@@ -90,12 +102,13 @@ namespace Dune
     };
 
     template <class Functor, class ... Args>
-    typename Evaluate< Functor, RangeTuple::template Contains< typename Functor::VarId >::value >::ReturnType
+    typename Evaluate< Functor, Contains< RangeTuple, typename Functor::VarId >::value >::ReturnType
     evaluate( const Functor& functor, const Args& ... args ) const
     {
-      return Evaluate< Functor, RangeTuple::template Contains< typename Functor::VarId >::value>::eval( values(), functor, args ... );
+      return Evaluate< Functor, Contains< RangeTuple, typename Functor::VarId >::value>::eval( values(), functor, args ... );
     }
   };
+
 
   template <class Intersection,
             class Entity,

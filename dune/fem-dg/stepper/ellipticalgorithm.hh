@@ -35,7 +35,8 @@ using namespace Dune;
 
 template <class GridImp,
           class ProblemTraits,
-          int polOrd>
+          int polOrd,
+          class ExtraParameterTuple = std::tuple<> >
 struct ElliptTraits
 {
   enum { polynomialOrder = polOrd };
@@ -46,18 +47,34 @@ struct ElliptTraits
   // Choose a suitable GridView
   typedef Dune::Fem::AdaptiveLeafGridPart< GridType >    GridPartType;
 
+  typedef typename ProblemTraits :: template Traits< GridPartType >   ModelTraits;
+  // traits for the operator class
+  struct OperatorTraits :
+    public Dune::PassTraits< ModelTraits, polynomialOrder, ModelTraits::ModelType::dimRange >
+  {
+    static const int limiterPolynomialOrder = polynomialOrder;
+    //typedef Dune::Fem::FunctionSpace< double, double, GridType::dimensionworld, GridType::dimensionworld > FS;
+    //typedef Dune::Fem::FiniteVolumeSpace< FS, GridPartType, 0 > SpaceType;
+    //typedef Dune::Fem::AdaptiveDiscreteFunction< SpaceType > VeloType;
+    //typedef std::tuple< VeloType* > ExtraParameterTupleType;
+
+    typedef ExtraParameterTuple ExtraParameterTupleType;
+  };
+
+
   // problem dependent types
-  typedef typename ProblemTraits :: template Traits< GridPartType > :: InitialDataType  InitialDataType;
-  typedef typename ProblemTraits :: template Traits< GridPartType > :: ModelType        ModelType;
-  typedef typename ProblemTraits :: template Traits< GridPartType > :: FluxType         FluxType;
-  static const Dune :: DGDiffusionFluxIdentifier DiffusionFluxId =
-    ProblemTraits :: template Traits< GridPartType > :: PrimalDiffusionFluxId ;
+  typedef typename OperatorTraits :: InitialDataType   InitialDataType;
+  typedef typename OperatorTraits :: ModelType         ModelType;
+  typedef typename OperatorTraits :: FluxType          FluxType;
+  static const Dune::DGDiffusionFluxIdentifier DiffusionFluxId
+    = OperatorTraits :: PrimalDiffusionFluxId ;
   static const int dimRange = InitialDataType :: dimRange ;
 
-  typedef PassTraits<ModelType,dimRange,polynomialOrder>      PassTraitsType;
-  typedef typename PassTraitsType::DestinationType            DiscreteFunctionType;
-  typedef typename PassTraitsType::LinearOperatorType         LinearOperatorType;
-  typedef typename PassTraitsType::LinearInverseOperatorType  LinearInverseOperatorType;
+  //typedef Dune :: DGAdvectionDiffusionOperator< OperatorTraits >  DgType;
+
+  typedef typename OperatorTraits::DestinationType            DiscreteFunctionType;
+  typedef typename OperatorTraits::LinearOperatorType         LinearOperatorType;
+  typedef typename OperatorTraits::LinearInverseOperatorType  LinearInverseOperatorType;
 
   typedef DGPrimalMatrixAssembly<DiscreteFunctionType,ModelType,FluxType > DgType;
 

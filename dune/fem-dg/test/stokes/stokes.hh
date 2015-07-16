@@ -309,8 +309,8 @@ public:
     BaseType(grid),
     pressurespace_( gridPart_ ),
     pressuresolution_("pressuresolution", pressurespace_ ),
-    stkFlux_(pressuresolution_,dgOperator_),
-    stkLocalEstimate_(solution_,pressuresolution_,dgOperator_),
+    stkFlux_(pressuresolution_,dgAssembledOperator_),
+    stkLocalEstimate_(solution_,pressuresolution_,dgAssembledOperator_),
     stkEstimateFunction_("stokes estimate",stkLocalEstimate_,gridPart_,space_.order()),
     stkEstimator_( solution_, stkEstimateFunction_,stkFlux_, grid),
     stkEstimateData_("stokesEstimator",stkEstimator_,gridPart_,space_.order()),
@@ -360,7 +360,7 @@ public:
   {
     std::string latexInfo;
 
-    latexInfo = dgOperator_.description();
+    latexInfo = dgAssembledOperator_.description();
 
     // latexInfo = dgAdvectionOperator_.description()
     //            + dgDiffusionOperator_.description();
@@ -428,12 +428,12 @@ public:
 
     linDgOperator_->reserve(stencil);
 		linDgOperator_->clear();
-		dgOperator_.assemble(0, *linDgOperator_, rhs_);
+		dgAssembledOperator_.assemble(0, *linDgOperator_, rhs_);
 		invDgOperator_ = new InverseOperatorType(*linDgOperator_, reduction, absLimit );
 #else
 // 			{
 abort();
-				invDgOperator_ = new InverseOperatorType(dgOperator_, 1e-12, 1e-12, step_++ );
+				invDgOperator_ = new InverseOperatorType(dgAssembledOperator_, 1e-12, 1e-12, step_++ );
 
 // 			}
 #endif
@@ -558,7 +558,7 @@ private:
   using BaseType::gridPart_;       // reference to grid part, i.e. the leaf grid
   using BaseType::problem_;
 	using BaseType::model_;
-	using BaseType::dgOperator_;
+	using BaseType::dgAssembledOperator_;
 	using BaseType::invDgOperator_;
 #if WANT_ISTL
   using BaseType::linDgOperator_;

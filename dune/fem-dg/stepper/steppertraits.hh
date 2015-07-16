@@ -33,12 +33,12 @@ struct StepperTraits
   {
     static const int limiterPolynomialOrder = polynomialOrder == -1 ? 1 : polynomialOrder;
 
-    typedef Dune::Fem::FunctionSpace< double, double, GridType::dimensionworld, GridType::dimensionworld > FS;
-    typedef Dune::Fem::FiniteVolumeSpace< FS, GridPartType, 0 > SpaceType;
-    typedef Dune::Fem::AdaptiveDiscreteFunction< SpaceType > VeloType;
-    typedef std::tuple< VeloType* > ExtraParameterTupleType;
+    //typedef Dune::Fem::FunctionSpace< double, double, GridType::dimensionworld, GridType::dimensionworld > FS;
+    //typedef Dune::Fem::FiniteVolumeSpace< FS, GridPartType, 0 > SpaceType;
+    //typedef Dune::Fem::AdaptiveDiscreteFunction< SpaceType > VeloType;
+    //typedef std::tuple< VeloType* > ExtraParameterTupleType;
 
-    //typedef ExtraParameterTuple ExtraParameterTupleType;
+    typedef ExtraParameterTuple ExtraParameterTupleType;
   };
 
   // problem dependent types

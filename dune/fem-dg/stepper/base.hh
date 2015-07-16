@@ -124,7 +124,7 @@ void compute(Algorithm& algorithm)
 
   typename Algorithm::IOTupleType dataTup = algorithm.dataTuple() ;
 
-  typedef Dune::Fem::DataWriter<GridType, typename Algorithm::IOTupleType> DataOutputType;
+  typedef Dune::Fem::DataOutput<GridType, typename Algorithm::IOTupleType> DataOutputType;
   DataOutputType dataOutput( grid, dataTup );
 
   typedef typename Algorithm::SolverMonitorType SolverMonitorType;

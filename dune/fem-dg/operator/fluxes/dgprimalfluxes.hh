@@ -1415,6 +1415,23 @@ namespace Dune {
                             computeBoth );
     }
 
+    template <class QuadratureImp, class ArgumentTupleVector >
+    void initializeIntersection(const Intersection& intersection,
+                                const EntityType& inside,
+                                const EntityType& outside,
+                                const double time,
+                                const QuadratureImp& quadInner,
+                                const QuadratureImp& quadOuter,
+                                const ArgumentTupleVector& uLeftVec,
+                                const ArgumentTupleVector& uRightVec,
+                                const bool computeBoth )
+    {
+      this->computeLiftings(intersection, inside, outside, time,
+                            quadInner, quadOuter,
+                            uLeftVec,uRightVec,
+                            computeBoth );
+    }
+
     // return AL_e.n on element and neighbor
     template <class LocalEvaluation>
     void evaluateLifting(const LocalEvaluation& left,
@@ -1424,9 +1441,9 @@ namespace Dune {
                          JacobianRangeType& liftEn,
                          JacobianRangeType& liftNb) const
     {
-#if 0
       assert( this->LePlusLifting().isInitialized() );
       assert( this->LeMinusLifting().isInitialized() );
+      const int quadPoint = left.index();
       if ( this->insideIsInflow_)
       {
         applyLifting( this->LePlusLifting().function().entity(), time,
@@ -1458,7 +1475,6 @@ namespace Dune {
       {
         return this->LeMinusLifting().function();
       }
-#endif
     }
 
   protected:
