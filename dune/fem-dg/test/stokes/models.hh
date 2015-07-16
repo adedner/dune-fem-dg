@@ -128,38 +128,6 @@ public:
   inline bool hasStiffSource() const { return true ; }
   inline bool hasNonStiffSource() const { return false ; }
 
-  inline double nonStiffSource( const EntityType& en,
-                        const double time,
-                        const DomainType& x,
-                        const RangeType& u,
-                        const GradientType& du,
-                        RangeType & s) const
-  {
-    return nonStiffSource( en, time, x, u, s );
-  }
-
-  inline double nonStiffSource( const EntityType& en,
-                        const double time,
-                        const DomainType& x,
-                        const RangeType& u,
-                        const JacobianRangeType& jac,
-                        RangeType & s) const
-  {
-    return nonStiffSource( en, time, x, u, s );
-  }
-
-  inline double nonStiffSource( const EntityType& en,
-                        const double time,
-                        const DomainType& x,
-                        const RangeType& u,
-                        RangeType & s) const
-  {
-    abort();
-    DomainType xgl = en.geometry().global( x );
-    problem_.f( xgl, s );
-    return 0;
-  }
-
   template <class LocalEvaluation>
   inline double stiffSource( const LocalEvaluation& local,
                         const RangeType& u,
@@ -383,49 +351,6 @@ public:
   }
 
   /**
-   * @brief checks for existence of dirichlet boundary values
-   */
-  template <class LocalEvaluation>
-  inline void boundaryValue(const LocalEvaluation& local,
-                            RangeType& uBnd) const
-  {
-    uBnd = 0;
-  }
-
-  /**
-   * @brief neuman boundary values \f$g_N\f$ for pass2
-   */
-  template <class LocalEvaluation>
-  inline double boundaryFlux(const LocalEvaluation& local,
-                             const RangeType& uLeft,
-                             const JacobianRangeType& vLeft,
-                             RangeType& gLeft) const
-  {
-    gLeft = 0.;
-    return 0.;
-  }
-
-  template <class LocalEvaluation>
-  inline double boundaryFlux(const LocalEvaluation& local,
-                             const RangeType& uLeft,
-                             RangeType& gLeft) const
-  {
-    gLeft = 0.;
-    return 0.;
-  }
-
-  /**
-   * @brief diffusion boundary flux
-   */
-  template <class LocalEvaluation>
-  inline double diffusionBoundaryFlux( const LocalEvaluation& local,
-                                       const RangeType& uLeft,
-                                       const JacobianRangeType& gradLeft,
-                                       RangeType& gLeft ) const
-  {
-  }
-
-  /**
    * @brief dirichlet boundary values
    */
   template <class LocalEvaluation>
@@ -443,10 +368,16 @@ public:
       problem_.g(xgl, uRight);
     }
   }
-  inline  void boundaryValue(const DomainType& xgl,
-                             RangeType& uRight) const
+
+  /**
+   * @brief diffusion boundary flux
+   */
+  template <class LocalEvaluation>
+  inline double diffusionBoundaryFlux( const LocalEvaluation& local,
+                                       const RangeType& uLeft,
+                                       const JacobianRangeType& gradLeft,
+                                       RangeType& gLeft ) const
   {
-    problem_.g(xgl, uRight);
   }
 
   const ProblemType& problem () const { return problem_; }

@@ -425,6 +425,7 @@ public:
     StencilType stencil( space_, space_);
 
     SolverMonitorType monitor;
+    monitor.gridWidth = h; // space_.size();
 
     linDgOperator_->reserve(stencil);
 		linDgOperator_->clear();
