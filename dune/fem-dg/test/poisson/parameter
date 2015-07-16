@@ -9,7 +9,7 @@ fem.io.datafileprefix: solution
 # if you want to add time stemp to eoc file name
 # # to avoid overwriting the eoc files
 fem.io.eocFileTimeStamp: 0
-fem.eoc.steps: 3
+fem.eoc.steps: 6
 
 # polynomial order = 0,1,2,3,4
 femdg.polynomialOrder: 2

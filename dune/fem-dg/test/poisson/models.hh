@@ -355,9 +355,17 @@ public:
    */
   template <class LocalEvaluation>
   inline void boundaryValue(const LocalEvaluation& local,
-                            RangeType& uBnd) const
+                            RangeType& uRight) const
   {
-    uBnd = 0;
+    if ( local.intersection().boundaryId() == 99) // Dirichlet zero boundary conditions
+    {
+      uRight = 0;
+    }
+    else
+    {
+      DomainType xgl = local.entity().geometry().global( local.point() );
+      problem_.g(xgl, uRight);
+    }
   }
 
   /**
@@ -401,16 +409,9 @@ public:
                              const RangeType& uLeft,
                              RangeType& uRight) const
   {
-    if ( local.intersection().boundaryId() == 99) // Dirichlet zero boundary conditions
-    {
-      uRight = 0;
-    }
-    else
-    {
-      DomainType xgl = local.entity().geometry().global( local.point() );
-      problem_.g(xgl, uRight);
-    }
+    boundaryValue( local, uRight );
   }
+
   inline  void boundaryValue(const DomainType& xgl,
                              RangeType& uRight) const
   {
