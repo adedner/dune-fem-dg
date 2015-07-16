@@ -20,7 +20,6 @@ public:
   typedef typename Model :: DomainType DomainType;
   typedef typename Model :: RangeType RangeType;
   typedef typename Model :: FluxRangeType FluxRangeType;
-  // typedef typename Model :: DiffusionRangeType DiffusionRangeType;
   typedef typename Model :: FaceDomainType  FaceDomainType;
   typedef typename Model :: EntityType  EntityType;
   typedef typename Model :: IntersectionType  IntersectionType;
@@ -239,7 +238,9 @@ class DGPrimalMatrixAssembly
   typedef Dune::Fem::CachingQuadrature< GridPartType, 0 > VolumeQuadratureType;
 
   typedef ExtendedDGPrimalDiffusionFlux<DiscreteFunctionSpaceType,ModelType> FluxType;
-  typedef LLFAdvFlux<ModelType> AdvFluxType;
+  typedef typename OperatorType :: AdvectionFluxType AdvFluxType;
+
+  //typedef LLFAdvFlux<ModelType> AdvFluxType;
 
   struct ZeroFunction
   {
@@ -567,8 +568,10 @@ class DGPrimalMatrixAssembly
       }
     }
 
-    // finish matrix build process (mostly for PETSc)
+    // finish matrix build process
     matrix.communicate();
+    //matrix.systemMatrix().matrix().print( std::cout );
+    //abort();
   }
   // assemble vector containing boundary fluxes for right hand side
   void assemble( const double time,
@@ -894,8 +897,8 @@ class DGPrimalMatrixAssembly
                            retEn[ pt ], retNb[ pt ],
                            dretEn[ pt ], dretNb[ pt ]);
 #endif
-      retEn[pt] = RangeType(0);
-      retNb[pt] = RangeType(0);
+      //retEn[pt] = RangeType(0);
+      //retNb[pt] = RangeType(0);
       advFlux_.numericalFlux(left, right, valueEn[ pt ],valueNb[ pt ],
                              gLeft, gRight);
       retEn[pt] += gLeft;
@@ -984,7 +987,7 @@ class DGPrimalMatrixAssembly
         flux_.boundaryFlux( local, valueEn[ pt ], valueNb[ pt ],  dvalueEn[ pt ],
                             retEn[ pt ], dretEn[ pt ]);
 #endif
-        retEn[pt] = RangeType(0);
+        //retEn[pt] = RangeType(0);
         advFlux_.numericalFlux(local, local, valueEn[ pt ],valueNb[ pt ],
                                gLeft,gRight);
         retEn[pt] += gLeft;
