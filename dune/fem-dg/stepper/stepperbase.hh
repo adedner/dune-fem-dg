@@ -256,8 +256,8 @@ struct StepperBase
                     maxNumDofs,                             // number of dofs per element (max)
                     odeSolverMonitor_.operatorTime_,        // time for operator evaluation
                     odeSolverMonitor_.odeSolveTime_,        // ode solver
-                    adaptationManager().adaptationTime(),    // time for adaptation
-                    adaptationManager().loadBalanceTime(),   // time for load balance
+                    adaptationManager_? adaptationManager().adaptationTime() : 0.0,    // time for adaptation
+                    adaptationManager_? adaptationManager().loadBalanceTime() : 0.0,   // time for load balance
                     overallTimer_.elapsed());               // time step overall time
   }
 
