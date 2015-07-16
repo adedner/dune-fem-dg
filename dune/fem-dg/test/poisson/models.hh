@@ -1,5 +1,5 @@
-#ifndef DUNE_FEM_DG_STOKES_MODEL_HH
-#define DUNE_FEM_DG_STOKES_MODEL_HH
+#ifndef DUNE_FEM_DG_POISSON_MODEL_HH
+#define DUNE_FEM_DG_POISSON_MODEL_HH
 
 #include <dune/fem/version.hh>
 #include <dune/fem/misc/fmatrixconverter.hh>
