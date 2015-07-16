@@ -225,18 +225,18 @@ public:
   }
 
   /**
-   * @brief neuman boundary values \f$g_N\f$ for pass2
+   * @brief neuman boundary values \f$g_N\f$ for pass1
    */
-  inline double boundaryFlux(const IntersectionType& it,
-                             const double time,
-                             const FaceDomainType& x,
+  template <class LocalEvalution>
+  inline double boundaryFlux(const LocalEvalution&,
                              const RangeType& uLeft,
-                             const GradientType& vLeft,
+                             const JacobianRangeType& jac,
                              RangeType& gLeft) const
   {
     gLeft = 0.;
     return 0.;
   }
+
 
   /**
    * @brief neuman boundary values \f$g_N\f$ for pass1

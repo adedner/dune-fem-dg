@@ -64,6 +64,6 @@ fem.io.grapedisplay: 0
 # SOLVER
 # ------
 paramfile: ../parameter/paramSolver
-istl.preconditioning.method: ilu-0
+istl.preconditioning.method: none
 istl.preconditioning.iterations: 1
 istl.preconditioning.relaxation: 1

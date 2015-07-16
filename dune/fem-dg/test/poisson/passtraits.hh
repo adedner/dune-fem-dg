@@ -87,8 +87,8 @@ namespace Dune {
 #endif
 #endif
     */
-    typedef Dune::Fem::DiscontinuousGalerkinSpace
-    //typedef Dune::Fem::LagrangeDiscreteFunctionSpace
+   // typedef Dune::Fem::DiscontinuousGalerkinSpace
+   typedef Dune::Fem::LagrangeDiscreteFunctionSpace
        < FunctionSpaceType, GridPartType, polOrd, Dune::Fem::CachingStorage > DiscreteFunctionSpaceType;
 
     static const bool symmetricSolver = true ;

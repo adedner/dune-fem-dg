@@ -351,11 +351,12 @@ public:
   }
 
   /**
-   * @brief checks for existence of dirichlet boundary values
+   * @brief dirichlet boundary values
    */
   template <class LocalEvaluation>
-  inline void boundaryValue(const LocalEvaluation& local,
-                            RangeType& uRight) const
+  inline  void boundaryValue(const LocalEvaluation& local,
+                             const RangeType& uLeft,
+                             RangeType& uRight) const
   {
     if ( local.intersection().boundaryId() == 99) // Dirichlet zero boundary conditions
     {
@@ -369,28 +370,6 @@ public:
   }
 
   /**
-   * @brief neuman boundary values \f$g_N\f$ for pass2
-   */
-  template <class LocalEvaluation>
-  inline double boundaryFlux(const LocalEvaluation& local,
-                             const RangeType& uLeft,
-                             const JacobianRangeType& vLeft,
-                             RangeType& gLeft) const
-  {
-    gLeft = 0.;
-    return 0.;
-  }
-
-  template <class LocalEvaluation>
-  inline double boundaryFlux(const LocalEvaluation& local,
-                             const RangeType& uLeft,
-                             RangeType& gLeft) const
-  {
-    gLeft = 0.;
-    return 0.;
-  }
-
-  /**
    * @brief diffusion boundary flux
    */
   template <class LocalEvaluation>
@@ -399,23 +378,6 @@ public:
                                        const JacobianRangeType& gradLeft,
                                        RangeType& gLeft ) const
   {
-  }
-
-  /**
-   * @brief dirichlet boundary values
-   */
-  template <class LocalEvaluation>
-  inline  void boundaryValue(const LocalEvaluation& local,
-                             const RangeType& uLeft,
-                             RangeType& uRight) const
-  {
-    boundaryValue( local, uRight );
-  }
-
-  inline  void boundaryValue(const DomainType& xgl,
-                             RangeType& uRight) const
-  {
-    problem_.g(xgl, uRight);
   }
 
   const ProblemType& problem () const { return problem_; }
