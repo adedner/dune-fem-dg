@@ -418,7 +418,7 @@ public:
 
     const std::string eocDescription[] = { "$L^2$-error", "DG-error", "sigma-norm" };
     eocId_ = Dune::Fem::FemEoc::addEntry( eocDescription, 3);
-  }                                                                        /*@LST1E@*/
+  }
 
   GridType& grid () { return grid_; }
 
@@ -429,7 +429,7 @@ public:
   }
 
   //! return reference to discrete space
-  DiscreteSpaceType & space() { return space_; }                    /*@LST0E@*/
+  DiscreteSpaceType & space() { return space_; }
 
   //! returns data prefix for EOC loops ( default is loop )
   virtual std::string dataPrefix() const
@@ -467,6 +467,7 @@ public:
     // calculate grid width
     const double h = Dune::Fem::GridWidth::calcGridWidth(gridPart_);
     numbers_.push_back( h );
+    monitor.gridWidth = h;
 
     const double size = grid_.size(0);
     numbers_.push_back( size );
@@ -552,7 +553,7 @@ public:
     // calculate new sigma
     Dune::Fem:: DGL2ProjectionImpl :: project( sigmaEstimateFunction_, sigmaDiscreteFunction_ );
 
-    //Dune::Fem::DGL2ProjectionImpl :: project( problem(), solution_ );
+    //Dune::Fem::DGL2ProjectionImpl :: project( problem().exactSolution(), solution_ );
     return monitor;
   }
 
