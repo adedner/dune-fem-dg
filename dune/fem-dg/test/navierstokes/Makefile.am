@@ -70,7 +70,7 @@ generatecode:
 	$(MAKE) generate
 
 generate:
-	./$(PROG) femhowto.eocSteps:1 femhowto.maximaltimesteps:1 fem.io.outputformat:none fem.ode.order:1 paramFiles/paramNSWaves 
+	./$(PROG) fem.eoc.steps:1 femhowto.maximaltimesteps:1 fem.io.outputformat:none fem.ode.order:1 parameter 
 
 compilecode:
 	$(MAKE) clean 
