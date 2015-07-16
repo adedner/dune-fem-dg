@@ -70,13 +70,15 @@ struct ElliptTraits
     = OperatorTraits :: PrimalDiffusionFluxId ;
   static const int dimRange = InitialDataType :: dimRange ;
 
-  //typedef Dune :: DGAdvectionDiffusionOperator< OperatorTraits >  DgType;
+  //typedef Dune :: DGAdvectionDiffusionOperator< OperatorTraits >  DgAssembledOperatorType;
 
   typedef typename OperatorTraits::DestinationType            DiscreteFunctionType;
   typedef typename OperatorTraits::LinearOperatorType         LinearOperatorType;
   typedef typename OperatorTraits::LinearInverseOperatorType  LinearInverseOperatorType;
 
-  typedef DGPrimalMatrixAssembly<DiscreteFunctionType,ModelType,FluxType > DgType;
+  typedef Dune :: DGAdvectionDiffusionOperator< OperatorTraits >  DgOperatorType;
+
+  typedef DGPrimalMatrixAssembly< DgOperatorType >                DgAssembledOperatorType;
 
   // ... as well as the Space type
   typedef typename DiscreteFunctionType :: DiscreteFunctionSpaceType   DiscreteSpaceType;
@@ -112,7 +114,10 @@ public:
   typedef typename Traits :: FluxType                    FluxType;
 
   // The DG space operator
-  typedef typename Traits :: DgType                      DgType;
+  typedef typename Traits :: DgOperatorType              DgOperatorType;
+
+  // The DG space operator
+  typedef typename Traits :: DgAssembledOperatorType     DgAssembledOperatorType;
 
   // The discrete function for the unknown solution is defined in the DgOperator
   typedef typename Traits :: DiscreteFunctionType        DiscreteFunctionType;
@@ -273,8 +278,8 @@ public:
     LiftingFunctionType localre_;
   };
 
-  typedef Dune::Fem::LocalFunctionAdapter< SigmaLocal<DiscreteFunctionType, DgType> > SigmaEstimateFunction;
-  //typedef Estimator1< DiscreteFunctionType, SigmaDiscreteFunctionType, DgType > EstimatorType;
+  typedef Dune::Fem::LocalFunctionAdapter< SigmaLocal<DiscreteFunctionType, DgAssembledOperatorType> > SigmaEstimateFunction;
+  //typedef Estimator1< DiscreteFunctionType, SigmaDiscreteFunctionType, DgAssembledOperatorType > EstimatorType;
 
   //typedef Dune::Fem::LocalFunctionAdapter< EstimatorType > EstimateDataType;
   //typedef tuple< const DiscreteFunctionType*, const SigmaEstimateFunction*, const EstimateDataType* >  IOTupleType;
@@ -360,19 +365,18 @@ public:
     grid_( grid ),
     gridPart_( grid_ ),
     problem_( ProblemTraits::problem() ),
-    model_( new ModelType( problem() ) ),
-    convectionFlux_( *model_ ),
-    dgOperator_(gridPart_, *model_),
+    dgOperator_( gridPart_, *problem_ ),
+    dgAssembledOperator_( gridPart_, dgOperator_ ),
     invDgOperator_(),
     linDgOperator_(),
-    space_( const_cast<DiscreteSpaceType &> (dgOperator_.space()) ),
+    space_( const_cast<DiscreteSpaceType &> (dgAssembledOperator_.space()) ),
     solution_("solution-"+name, space_ ),
     rhs_("rhs-"+name, space_ ),
     sigmaSpace_( gridPart_ ),
     sigmaDiscreteFunction_( "sigma-"+name, sigmaSpace_ ),
-    sigmaLocalEstimate_( solution_, dgOperator_ ),
+    sigmaLocalEstimate_( solution_, dgAssembledOperator_ ),
     sigmaEstimateFunction_( "function 4 estimate-"+name, sigmaLocalEstimate_, gridPart_, space_.order() ),
-    //estimator_( solution_, sigmaDiscreteFunction_, dgOperator_, grid ),
+    //estimator_( solution_, sigmaDiscreteFunction_, dgAssembledOperator_, grid ),
     //estimateData_( "estimator-"+name, estimator_, gridPart_, space_.order() ),
     ioTuple_( &solution_ ), // &sigmaEstimateFunction_), &estimateData_ ),
     polOrderContainer_(grid_ , 0),
@@ -439,7 +443,7 @@ public:
   {
     std::string latexInfo;
 
-    latexInfo = dgOperator_.description();
+    latexInfo = dgAssembledOperator_.description();
 
     // latexInfo = dgAdvectionOperator_.description()
     //            + dgDiffusionOperator_.description();
@@ -527,8 +531,8 @@ public:
 
       linDgOperator_->reserve( stencil );
       linDgOperator_->clear();
-      dgOperator_.assemble(0, *linDgOperator_, rhs_);
-			dgOperator_.testSymmetrie(*linDgOperator_);
+      dgAssembledOperator_.assemble(0, *linDgOperator_, rhs_);
+			dgAssembledOperator_.testSymmetrie(*linDgOperator_);
 
       double absLimit   = Dune::Fem:: Parameter::getValue<double>("istl.absLimit",1.e-10);
       double reduction  = Dune::Fem:: Parameter::getValue<double>("istl.reduction",1.e-10);
@@ -579,7 +583,7 @@ public:
     const double dgerror = dgnorm.distance( ugrid, solution_ );
 
     Dune::Fem::H1Norm< GridPartType > sigmanorm( gridPart_ );
-    typedef SigmaLocalFunction<SigmaLocal<DiscreteFunctionType, DgType> >
+    typedef SigmaLocalFunction<SigmaLocal<DiscreteFunctionType, DgAssembledOperatorType> >
       SigmaLocalFunctionType;
     SigmaLocalFunctionType sigmaLocalFunction( solution_, sigmaDiscreteFunction_, sigmaLocalEstimate_ );
     Dune::Fem::LocalFunctionAdapter<SigmaLocalFunctionType> sigma( "sigma function", sigmaLocalFunction, gridPart_, space_.order() );
@@ -623,13 +627,13 @@ public:
   }
 
   const InitialDataType& problem() const { assert( problem_ ); return *problem_; }
-  const ModelType& model() const { assert( model_ ); return *model_; }
+  const ModelType& model() const { return dgOperator_.model(); }
   const DiscreteFunctionType& solution() const { return solution_; }
   DiscreteFunctionType& solution() { return solution_; }
   IOTupleType& ioTuple() { return ioTuple_; }
-  const DgType &oper() const
+  const DgAssembledOperatorType &oper() const
   {
-    return dgOperator_;
+    return dgAssembledOperator_;
   }
   protected:
 
@@ -637,10 +641,10 @@ public:
   GridPartType gridPart_;       // reference to grid part, i.e. the leaf grid
   // InitialDataType is a Dune::Operator that evaluates to $u_0$ and also has a
   // method that gives you the exact solution.
-  std::unique_ptr< const InitialDataType > problem_;
-  std::unique_ptr< ModelType >             model_;
-  FluxType                convectionFlux_;
-  DgType                  dgOperator_;
+  std::unique_ptr< InitialDataType > problem_;
+
+  DgOperatorType           dgOperator_;
+  DgAssembledOperatorType  dgAssembledOperator_;
 
   std::unique_ptr< LinearInverseOperatorType > invDgOperator_;
   std::unique_ptr< LinearOperatorType        > linDgOperator_;
@@ -652,7 +656,7 @@ public:
   SigmaDiscreteFunctionSpaceType sigmaSpace_;
   SigmaDiscreteFunctionType sigmaDiscreteFunction_;
 
-  SigmaLocal<DiscreteFunctionType, DgType> sigmaLocalEstimate_;
+  SigmaLocal<DiscreteFunctionType, DgAssembledOperatorType> sigmaLocalEstimate_;
   SigmaEstimateFunction sigmaEstimateFunction_;
   //EstimatorType estimator_;
   //EstimateDataType estimateData_;
