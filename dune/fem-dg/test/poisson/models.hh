@@ -128,38 +128,6 @@ public:
   inline bool hasStiffSource() const { return true ; }
   inline bool hasNonStiffSource() const { return false ; }
 
-  inline double nonStiffSource( const EntityType& en,
-                        const double time,
-                        const DomainType& x,
-                        const RangeType& u,
-                        const GradientType& du,
-                        RangeType & s) const
-  {
-    return nonStiffSource( en, time, x, u, s );
-  }
-
-  inline double nonStiffSource( const EntityType& en,
-                        const double time,
-                        const DomainType& x,
-                        const RangeType& u,
-                        const JacobianRangeType& jac,
-                        RangeType & s) const
-  {
-    return nonStiffSource( en, time, x, u, s );
-  }
-
-  inline double nonStiffSource( const EntityType& en,
-                        const double time,
-                        const DomainType& x,
-                        const RangeType& u,
-                        RangeType & s) const
-  {
-    abort();
-    DomainType xgl = en.geometry().global( x );
-    problem_.f( xgl, s );
-    return 0;
-  }
-
   template <class LocalEvaluation>
   inline double stiffSource( const LocalEvaluation& local,
                         const RangeType& u,
