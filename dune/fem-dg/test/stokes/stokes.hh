@@ -32,7 +32,7 @@ static double minRatioOfSums = 1e+100;
 #include <dune/fem-dg/operator/dg/dgoperatorchoice.hh>
 // include local header files
 #include "stokesassembler.hh"
-#include "uzawa.hh"
+#include <dune/fem-dg/solver/uzawa.hh>
 #include <dune/fem-dg/stepper/base.hh>
 
 // #include "../base/baseevolution.hh"

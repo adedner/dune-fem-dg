@@ -223,9 +223,6 @@ namespace Dune {
 			pressureRhs_.clear();
 
 
-			int size=spc_.size();
-			int pressuresize=pressurespc_.size();
-
       typedef typename DiscreteFunctionSpaceType :: IteratorType IteratorType;
       IteratorType end = spc_.end();
       for(IteratorType it = spc_.begin(); it != end; ++it)
@@ -275,7 +272,6 @@ namespace Dune {
 
       //- typedefs
       typedef typename EntityType :: Geometry Geometry;
-      typedef typename EntityType :: EntityPointer EntityPointerType;
       const Geometry& geo=en.geometry();
 
       VolumeQuadratureType volQuad(en, volumeQuadOrd_);
@@ -338,9 +334,13 @@ namespace Dune {
 
         if(edge.neighbor())
           {
+#if DUNE_VERSION_NEWER(DUNE_GRID,2,4)
+            const EntityType& nb= edge.outside();
+#else
             //Access to the neighbor Element
             EntityPointerType neighEp=edge.outside();
             const EntityType& nb=  *neighEp;
+#endif
 
             if(edge.conforming() )
               {
