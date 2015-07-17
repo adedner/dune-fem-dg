@@ -24,9 +24,9 @@ namespace Dune {
     PressureDiscreteFunctionType,PressureDiscreteFunctionType>
   {
 
-		// typedef Dune::SparseRowMatrixExtra< double > MatrixType ;
+    // typedef Dune::SparseRowMatrixExtra< double > MatrixType ;
 
-		typedef typename PressureDiscreteFunctionType::DiscreteFunctionSpaceType PressureSpaceType;
+    typedef typename PressureDiscreteFunctionType::DiscreteFunctionSpaceType PressureSpaceType;
     typedef typename DiscreteFunctionType::DiscreteFunctionSpaceType VeloSpaceType;
 
     typedef AssemblerType MappingType;
@@ -46,49 +46,47 @@ namespace Dune {
     //!aufSolver is the InverseOperator for Solving the elliptic Problem A^-1
     //!rhs1 is  stored as member,no better idea
     UzawaSolver(const MappingType& op,
-								const InverseOperatorType& aufSolver,
-								double redEps,
-								double absLimit,
-								int maxIter,
-								int verbose=1
-								)
+                const InverseOperatorType& aufSolver,
+                double redEps,
+                double absLimit,
+                int maxIter,
+                int verbose=1
+               )
       : op_(op), _redEps ( redEps ), epsilon_ ( absLimit ) ,
         maxIter_ (maxIter ) , _verbose ( verbose ),aufSolver_(aufSolver), bop_(op_.getBOP()),
-				btop_(op_.getBTOP()),
-				cop_(op_.getCOP()),
-				rhs1_(aufSolver_.affineShift()),
-				rhs2_(op_.veloRhs()),
-				pressurespc_(op_.pressurespc()),
-				spc_(op.spc()),
-				velocity_("VELO",spc_),
-				iter_(0),
-				linIter_(0)
-		{
-
+        btop_(op_.getBTOP()),
+        cop_(op_.getCOP()),
+        rhs1_(aufSolver_.affineShift()),
+        rhs2_(op_.veloRhs()),
+        pressurespc_(op_.pressurespc()),
+        spc_(op.spc()),
+        velocity_("VELO",spc_),
+        iter_(0),
+        linIter_(0)
+    {
     }
 
 
     UzawaSolver(const MappingType& op,
-								const InverseOperatorType& aufSolver,
-								DiscreteFunctionType& rhs,
-								double redEps,
-								double absLimit,
-								int maxIter,
-								int verbose=1
-								)
+                const InverseOperatorType& aufSolver,
+                DiscreteFunctionType& rhs,
+                double redEps,
+                double absLimit,
+                int maxIter,
+                int verbose=1
+                )
       : op_(op), _redEps ( redEps ), epsilon_ ( absLimit ) ,
         maxIter_ (maxIter ) , _verbose ( verbose ),aufSolver_(aufSolver), bop_(op_.getBOP()),
-				btop_(op_.getBTOP()),
-				cop_(op_.getCOP()),
-				rhs1_(rhs),
-				rhs2_(op_.veloRhs()),
-				pressurespc_(op_.pressurespc()),
-				spc_(op.spc()),
-				velocity_("VELO",spc_),
-				iter_(0),
-				linIter_(0)
-		{
-
+        btop_(op_.getBTOP()),
+        cop_(op_.getCOP()),
+        rhs1_(rhs),
+        rhs2_(op_.veloRhs()),
+        pressurespc_(op_.pressurespc()),
+        spc_(op.spc()),
+        velocity_("VELO",spc_),
+        iter_(0),
+        linIter_(0)
+    {
     }
 
 
@@ -96,19 +94,18 @@ namespace Dune {
     virtual void operator()(const PressureDiscreteFunctionType& arg,
                             PressureDiscreteFunctionType& dest ) const
     {
-			typedef typename DiscreteFunctionType::DiscreteFunctionSpaceType FunctionSpaceType;
+      typedef typename DiscreteFunctionType::DiscreteFunctionSpaceType FunctionSpaceType;
       typedef typename FunctionSpaceType::RangeFieldType Field;
-      typedef typename PressureDiscreteFunctionType::DiscreteFunctionSpaceType PressureFunctionSpaceType;
        Field spa=0, spn, q, quad;
 
 
       DiscreteFunctionType f("f",spc_);
-		  f.assign(rhs1_);
-		  DiscreteFunctionType u("u",spc_);
+      f.assign(rhs1_);
+      DiscreteFunctionType u("u",spc_);
       u.clear();
       DiscreteFunctionType tmp1("tmp1",spc_);
 
-			tmp1.clear();
+      tmp1.clear();
       DiscreteFunctionType xi("xi",spc_);
       xi.clear();
       PressureDiscreteFunctionType tmp2("tmp2",pressurespc_);
@@ -123,15 +120,15 @@ namespace Dune {
       h.clear();
       PressureDiscreteFunctionType g("g",pressurespc_);
       g.clear();
-			PressureDiscreteFunctionType r("r",pressurespc_);
+      PressureDiscreteFunctionType r("r",pressurespc_);
       r.assign(arg);
 
       bop_.apply(dest,tmp1);
-			f-=tmp1;
-			aufSolver_(f,u);
-			linIter_+=aufSolver_.iterations();
-		 	btop_.apply(u,tmp2);
-		 	r-=tmp2;
+      f-=tmp1;
+      aufSolver_(f,u);
+      linIter_+=aufSolver_.iterations();
+      btop_.apply(u,tmp2);
+      r-=tmp2;
     //   r.axpy(-1.,tmp2);
       tmp2.clear();
 
@@ -141,49 +138,51 @@ namespace Dune {
 
       spn = r.scalarProductDofs( r );
       while((spn > epsilon_) && (iter_+=1 < maxIter_))
-				{
+      {
+        if(iter_ > 1)
+        {
+          const Field e = spn / spa;
 
-					if(iter_ > 1)
-						{
-							const Field e = spn / spa;
+          p *= e;
+          p += r;
+        }
 
-							p *= e;
-							p += r;
-						}
+        tmp1.clear();
+        // B * p = tmp1
+        bop_.apply(p,tmp1);
+        // A^-1 * tmp1 = xi
+        aufSolver_(tmp1,xi);
+        linIter_+=aufSolver_.iterations();
+        // B^T * xi = h
+        btop_.apply(xi,h);
 
-					tmp1.clear();
-					bop_.apply(p,tmp1);
-					aufSolver_(tmp1,xi);
-					linIter_+=aufSolver_.iterations();
-					btop_.apply(xi,h);
+        quad = p.scalarProductDofs( h );
 
-					quad = p.scalarProductDofs( h );
+        q    = spn / quad;
 
-					q    = spn / quad;
+        dest.axpy( -q, p );
+        u.axpy(q,xi);
+        r.axpy( -q,h );
 
-					dest.axpy( -q, p );
-					u.axpy(q,xi);
-					r.axpy( -q,h );
-
-					spa = spn;
+        spa = spn;
 
 
-					spn = r.scalarProductDofs( r );
+        spn = r.scalarProductDofs( r );
 
-					if(_verbose > 0)
-						std::cerr << " SPcg-Iterationen  " << iter_ << " Residuum:" << spn << "        \r";
-				}
+        if(_verbose > 0)
+          std::cerr << " SPcg-Iterationen  " << iter_ << " Residuum:" << spn << "        \r";
+      }
       if(_verbose > 0)
-				std::cerr << "\n";
-	    velocity_.assign(u);
-		}
+        std::cerr << "\n";
+      velocity_.assign(u);
+    }
 
     DiscreteFunctionType& velocity()     {
       return velocity_;
     }
 
-		int iterations(){return iter_;}
-		double averageLinIter(){return linIter_/iter_;}
+    int iterations(){return iter_;}
+    double averageLinIter(){return linIter_/iter_;}
 
   private:
     // reference to operator which should be inverted
@@ -214,7 +213,7 @@ namespace Dune {
     const VeloSpaceType& spc_;
     mutable DiscreteFunctionType velocity_;
     mutable int iter_;
-		mutable int linIter_;
+    mutable int linIter_;
   };
 
 

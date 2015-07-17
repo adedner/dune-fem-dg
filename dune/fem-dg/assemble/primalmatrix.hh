@@ -390,7 +390,6 @@ class DGPrimalMatrixAssembly
     typedef RangeType           RangeTuple;
     typedef JacobianRangeType   JacobianTuple;
     typedef ElementQuadraturePointContext< EntityType, VolumeQuadratureType, RangeTuple, JacobianTuple >      LocalEvaluationType;
-    typedef IntersectionQuadraturePointContext< IntersectionType, EntityType, FaceQuadratureType, RangeTuple, JacobianTuple > IntersectionLocalEvaluationType;
 
     typedef typename Matrix::LocalMatrixType LocalMatrixType;
     matrix.clear();
@@ -428,7 +427,6 @@ class DGPrimalMatrixAssembly
       {
         LocalEvaluationType local( entity, quadrature, uZero, uJacZero, pt, time, volume );
 
-        //const typename VolumeQuadratureType::CoordinateType &x = quadrature.point( pt );
         const double weight = quadrature.weight( pt ) * geometry.integrationElement( local.point() );
 
         // resize of phi and dphi is done in evaluate methods
