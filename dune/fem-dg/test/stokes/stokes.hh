@@ -36,7 +36,8 @@ static double minRatioOfSums = 1e+100;
 #include <dune/fem-dg/stepper/base.hh>
 
 // #include "../base/baseevolution.hh"
-#include "ellipt.hh"
+//#include "ellipt.hh"
+#include <dune/fem-dg/stepper/ellipticalgorithm.hh>
 #include <dune/fem-dg/operator/adaptation/stokesestimator.hh>
 
 using namespace Dune;
@@ -126,9 +127,9 @@ public:
   // The DG space operator
   // The first operator is sum of the other two
   // The other two are needed for semi-implicit time discretization
-  typedef typename Traits :: DgType                    DgType;
+  //typedef typename Traits :: DgOperatorType            DgOperatorType;
+  typedef typename Traits :: DgAssembledOperatorType   DgAssembledOperatorType;
   typedef typename Traits :: StokesAssemblerType       StokesAssemblerType;
-
 
   // The discrete function for the unknown solution is defined in the DgOperator
 
@@ -138,10 +139,8 @@ public:
   typedef typename Traits :: DiscreteSpaceType                 DiscreteSpaceType;
   typedef typename Traits :: DiscretePressureSpaceType         DiscretePressureSpaceType;
 
-#if WANT_ISTL
-	typedef typename BaseType::LinearOperatorType LinearOperatorType;
-#endif
-	typedef typename BaseType::InverseOperatorType  InverseOperatorType;
+	typedef typename BaseType::LinearOperatorType         LinearOperatorType;
+	typedef typename BaseType::LinearInverseOperatorType  LinearInverseOperatorType;
 
   typedef SolverMonitor  SolverMonitorType;
 
@@ -193,10 +192,10 @@ public:
     typedef typename GridPartType::IntersectionIteratorType IntersectionIteratorType;
     typedef typename GridPartType::IntersectionType IntersectionType;
 
-    typedef typename DgType::FaceQuadratureType FaceQuadratureType;
-    typedef typename DgType::VolumeQuadratureType VolumeQuadratureType;
+    typedef typename DgAssembledOperatorType::FaceQuadratureType   FaceQuadratureType;
+    typedef typename DgAssembledOperatorType::VolumeQuadratureType VolumeQuadratureType;
 
-    StokesFlux(const DiscretePressureFunctionType &p, const DgType &oper)
+    StokesFlux(const DiscretePressureFunctionType &p, const DgAssembledOperatorType &oper)
     : p_(p),
       oper_(oper)
       {}
@@ -289,10 +288,10 @@ public:
     }
     private:
     const DiscretePressureFunctionType &p_;
-    const DgType &oper_;
+    const DgAssembledOperatorType &oper_;
   };
 
-  typedef Dune::Fem::LocalFunctionAdapter< SigmaEval<DiscreteFunctionType,DiscretePressureFunctionType,DgType> > StokesEstimateFunction;
+  typedef Dune::Fem::LocalFunctionAdapter< SigmaEval<DiscreteFunctionType,DiscretePressureFunctionType,DgAssembledOperatorType> > StokesEstimateFunction;
   typedef Dune::StokesErrorEstimator< DiscreteFunctionType, StokesEstimateFunction, StokesFlux > StokesEstimatorType;
 
   typedef Dune::Fem::LocalFunctionAdapter< StokesEstimatorType >          StokesEstimateDataType;
@@ -399,12 +398,9 @@ public:
 		space_.adapt( polOrderVec );
 		pressurespace_.adapt( polOrderVecPressure);
 #endif
-		//     typedef SolveBenchOp< DgType > InverseOperatorType ;
 
 
-
-
-		typedef Dune::UzawaSolver< DiscreteFunctionType,DiscretePressureFunctionType,StokesAssemblerType,InverseOperatorType >UzawaType;
+		typedef Dune::UzawaSolver< DiscreteFunctionType,DiscretePressureFunctionType,StokesAssemblerType,LinearInverseOperatorType >UzawaType;
 
 		DiscretePressureFunctionType pressure("press",pressurespace_);
 		DiscreteFunctionType veloprojection("veloprojection",space_);
@@ -415,7 +411,7 @@ public:
     double uzawareduction  = Dune::Fem:: Parameter::getValue<double>("uzawareduction",reduction*100.);
 
 #if WANT_ISTL
-    linDgOperator_ = new LinearOperatorType("dg operator", space_, space_ );
+    linDgOperator_.reset( new LinearOperatorType("dg operator", space_, space_ ) );
 
 #if DGSCHEME // for all dg schemes including pdg (later not working)
       typedef Dune::Fem::DiagonalAndNeighborStencil<DiscreteSpaceType,DiscreteSpaceType> StencilType ;
@@ -430,11 +426,11 @@ public:
     linDgOperator_->reserve(stencil);
 		linDgOperator_->clear();
 		dgAssembledOperator_.assemble(0, *linDgOperator_, rhs_);
-		invDgOperator_ = new InverseOperatorType(*linDgOperator_, reduction, absLimit );
+		invDgOperator_.reset( new LinearInverseOperatorType(*linDgOperator_, reduction, absLimit ) );
 #else
 // 			{
 abort();
-				invDgOperator_ = new InverseOperatorType(dgAssembledOperator_, 1e-12, 1e-12, step_++ );
+				invDgOperator_.reset( new LinearInverseOperatorType(dgAssembledOperator_, 1e-12, 1e-12, step_++ ) );
 
 // 			}
 #endif
@@ -486,7 +482,7 @@ abort();
     //		dgerror+=l2press;
     Dune::Fem::H1Norm< GridPartType > sigmanorm( gridPart_ );
 
-   typedef typename BaseType::template SigmaLocalFunction<typename BaseType::template SigmaLocal<DiscreteFunctionType,DgType> >
+   typedef typename BaseType::template SigmaLocalFunction<typename BaseType::template SigmaLocal<DiscreteFunctionType,DgAssembledOperatorType> >
       SigmaLocalFunctionType;
     SigmaLocalFunctionType sigmaLocalFunction( solution_, sigmaDiscreteFunction_, sigmaLocalEstimate_ );
     Dune::Fem::LocalFunctionAdapter<SigmaLocalFunctionType> sigma( "sigma function", sigmaLocalFunction, gridPart_, space_.order() );
@@ -512,12 +508,9 @@ abort();
 		// submit error to the FEM EOC calculator
     Dune::Fem::FemEoc :: setErrors(eocId_, errors);
     Dune::Fem::FemEoc :: setErrors(eocpId_,perr);
-		delete invDgOperator_;
-    invDgOperator_ = 0;
-#if WANT_ISTL
-    delete linDgOperator_;
-    linDgOperator_ = 0;
-#endif
+
+		invDgOperator_.reset();
+    linDgOperator_.reset();
   }
 
 
@@ -548,7 +541,6 @@ abort();
 //   }
 
   const InitialDataType& problem() const { assert( problem_ ); return *problem_; }
-  const ModelType& model() const { assert( model_ ); return *model_; }
   const DiscreteFunctionType& solution() const { return solution_; }
   DiscreteFunctionType& solution() { return solution_; }
   IOTupleType& ioTuple() { return ioTuple_; }
@@ -558,7 +550,7 @@ private:
   using BaseType::grid_;
   using BaseType::gridPart_;       // reference to grid part, i.e. the leaf grid
   using BaseType::problem_;
-	using BaseType::model_;
+	using BaseType::model;
 	using BaseType::dgAssembledOperator_;
 	using BaseType::invDgOperator_;
 #if WANT_ISTL
@@ -581,7 +573,7 @@ private:
   DiscretePressureFunctionType pressuresolution_;
 
   StokesFlux stkFlux_;
-  SigmaEval<DiscreteFunctionType,DiscretePressureFunctionType,DgType> stkLocalEstimate_;
+  SigmaEval<DiscreteFunctionType,DiscretePressureFunctionType,DgAssembledOperatorType> stkLocalEstimate_;
 
   StokesEstimateFunction stkEstimateFunction_;
   StokesEstimatorType  stkEstimator_;

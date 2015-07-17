@@ -9,7 +9,7 @@ fem.io.datafileprefix: solution
 # if you want to add time stemp to eoc file name
 # # to avoid overwriting the eoc files
 fem.io.eocFileTimeStamp: 0
-fem.eoc.steps: 30
+fem.eoc.steps: 5
 
 # polynomial order = 0,1,2,3,4
 femdg.polynomialOrder: 2
@@ -54,7 +54,7 @@ fem.adaptation.method: generic
 padaptive.method: coeffroot
 femhowto.globalshift: 0
 femhowto.factor: 1
-femhowto.tolerance: 0  # global adapt with tolerance=0 
+femhowto.tolerance: -1  # global adapt with tolerance=0 
 fem.adaptation.theta: 0.5 # equal distribution with theta=0, tolerance>0
 # true = maximum (theta defines the percentage) | false = Doerfler 
 fem.adaptation.maximumstrategy: true
@@ -76,6 +76,6 @@ use_dgstabilization: true
 # SOLVER
 # ------
 paramfile: ../parameter/paramSolver
-istl.preconditioning.method: ilu-0
+istl.preconditioning.method: amg-ilu-0
 istl.preconditioning.iterations: 1
 istl.preconditioning.relaxation: 1
