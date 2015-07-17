@@ -85,55 +85,53 @@ namespace Dune
     }
   };
 
-
-
-template <int polynomialOrder, class ProblemTraits>
-inline void simulate(const ProblemTraits& problem)
-{
-  int polOrder = 1;
-  polOrder = Dune::Fem::Parameter :: getValue("femdg.polynomialOrder", polOrder );
-
-  // if polOrder and polynomialOrder differ don't do anything.
-  if( polOrder != polynomialOrder ) return ;
-
-  // get number of desired threads (default is 1)
-  const int numThreads = Dune::Fem::Parameter::getValue< int >("fem.parallel.numberofthreads", 1);
-  Dune :: Fem :: ThreadManager :: setMaxNumberThreads( numThreads );
-
-  Dune::Fem::FemEoc::clear();
-
-  const bool countFlops = Dune::Fem::Parameter::getValue< bool >("femdg.flopcounter", false );
-
-  // if flop count is enabled count floating point operations (PAPI needed)
-  // start flop counters for all threads
-  if( countFlops )
+  template <int polynomialOrder, class ProblemTraits>
+  inline void simulate(const ProblemTraits& problem)
   {
-    FlopStartObject startObj ;
-    Dune::Fem::ThreadHandle::run( startObj );
-  }
+    int polOrder = 1;
+    polOrder = Dune::Fem::Parameter :: getValue("femdg.polynomialOrder", polOrder );
 
-  typedef Dune::GridSelector :: GridType GridType;
+    // if polOrder and polynomialOrder differ don't do anything.
+    if( polOrder != polynomialOrder ) return ;
 
-  // typedef ProblemCreator< GridType, polynomialOrder > ProblemTraits;
+    // get number of desired threads (default is 1)
+    const int numThreads = Dune::Fem::Parameter::getValue< int >("fem.parallel.numberofthreads", 1);
+    Dune :: Fem :: ThreadManager :: setMaxNumberThreads( numThreads );
 
-  // return type of initializeGrid is Dune::GridPtr, use release such that memory of GridPtr is released
-  std::unique_ptr< GridType > gridptr( problem.initializeGrid().release() );
+    Dune::Fem::FemEoc::clear();
 
-  typedef typename ProblemTraits :: template Stepper< polynomialOrder > :: Type StepperType;
-  std::unique_ptr< StepperType > stepper( new StepperType( *gridptr, problem.moduleName() ) );
+    const bool countFlops = Dune::Fem::Parameter::getValue< bool >("femdg.flopcounter", false );
 
-  // new method, the ProblemGenerator simply creates the stepper
-  compute( *stepper );
+    // if flop count is enabled count floating point operations (PAPI needed)
+    // start flop counters for all threads
+    if( countFlops )
+    {
+      FlopStartObject startObj ;
+      Dune::Fem::ThreadHandle::run( startObj );
+    }
 
-  // stop flop counters for all threads
-  if( countFlops )
-  {
-    FlopStopObject stopObj ;
-    Dune::Fem::ThreadHandle::run( stopObj );
-    // print results
-    Dune::Fem::FlopCounter::print( std::cout );
-  }
-} // end simulate
+    typedef Dune::GridSelector :: GridType GridType;
+
+    // typedef ProblemCreator< GridType, polynomialOrder > ProblemTraits;
+
+    // return type of initializeGrid is Dune::GridPtr, use release such that memory of GridPtr is released
+    std::unique_ptr< GridType > gridptr( problem.initializeGrid().release() );
+
+    typedef typename ProblemTraits :: template Stepper< polynomialOrder > :: Type StepperType;
+    std::unique_ptr< StepperType > stepper( new StepperType( *gridptr, problem.moduleName() ) );
+
+    // new method, the ProblemGenerator simply creates the stepper
+    compute( *stepper );
+
+    // stop flop counters for all threads
+    if( countFlops )
+    {
+      FlopStopObject stopObj ;
+      Dune::Fem::ThreadHandle::run( stopObj );
+      // print results
+      Dune::Fem::FlopCounter::print( std::cout );
+    }
+  } // end simulate
 
   template <int polOrd>
   struct SimulatePolOrd

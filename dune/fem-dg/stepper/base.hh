@@ -21,6 +21,82 @@
 
 typedef Dune::Fem::Parameter  ParameterType ;
 
+struct EocDataOutputParameters :
+       public Dune::Fem::LocalParameter<Dune::Fem::DataWriterParameters,EocDataOutputParameters>
+{
+  protected:
+  std::string loop_;
+  public:
+  EocDataOutputParameters(int loop, const std::string& name) {
+    std::stringstream ss;
+    ss << name << loop;
+    loop_ = ss.str();
+  }
+  EocDataOutputParameters(const EocDataOutputParameters& other)
+  : loop_(other.loop_) {}
+
+  std::string path() const {
+    return loop_;
+  }
+};
+
+
+
+struct EocParameters :
+       public Dune::Fem::LocalParameter<EocParameters,EocParameters>
+{
+  protected:
+  std::string keyPrefix_;
+
+  public:
+  EocParameters( const std::string keyPrefix = "fem.eoc.")
+    : keyPrefix_( keyPrefix )
+  {}
+
+  const EocDataOutputParameters dataOutputParameters( int loop, const std::string& name ) const
+  {
+    return EocDataOutputParameters( loop, name );
+  }
+
+  virtual int steps() const
+  {
+    checkOldParameterUsed( "eocSteps" );
+    return Dune::Fem::Parameter::getValue<int>( keyPrefix_ + "steps", 1);
+  }
+
+  virtual std::string outputPath() const
+  {
+    checkOldParameterUsed( "eocOutputPath" );
+    return Dune::Fem::Parameter::getValue<std::string>( keyPrefix_ + "outputpath", "./");
+  }
+
+  virtual std::string fileName() const
+  {
+    checkOldParameterUsed( "eocFileName" );
+    return Dune::Fem::Parameter::getValue<std::string>( keyPrefix_ + "filename", "eoc" );
+  }
+
+  virtual int quadOrder() const
+  {
+    return Dune::Fem::Parameter::getValue< int >( keyPrefix_ + "quadorder", -1 );
+  }
+
+  private:
+
+  //helper function for deprecation warnings
+  void checkOldParameterUsed( const std::string old ) const
+  {
+    if( Dune::Fem::Parameter::exists( old ) )
+    {
+      std::cerr << "WARNING: deprecated key, please update your parameter '" << old << "'!" << std::endl;
+      //enforce parameter update by throwing an abort();
+      abort();
+    }
+  }
+
+};
+
+
 static inline std::string checkPointRestartFileName ()
 {
   static bool initialized = false ;
