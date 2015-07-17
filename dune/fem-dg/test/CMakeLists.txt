@@ -1,1 +1,1 @@
-dune_add_subdirs( dataio advdiff euler navierstokes poisson)
+dune_add_subdirs( dataio advdiff euler navierstokes poisson stokes )

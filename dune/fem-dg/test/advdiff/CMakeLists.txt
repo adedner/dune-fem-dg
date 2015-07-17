@@ -52,7 +52,8 @@ add_custom_target( compile_code
 add_custom_target( codegen
                    generate_code
                    COMMAND compile_code )
-                 add_dependencies( codegen generate_code compile_code )
+
+add_dependencies( codegen generate_code compile_code )
 
 #add_dependencies( advdiff generate )
 
