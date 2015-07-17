@@ -43,7 +43,7 @@
 #include "stokes.hh"
 
 template <class GridType>
-struct ProblemCreator
+struct StokesProblemCreator
 {
   static const int polynomialOrder = POLORDER;
   static const int dimRange = GridType::dimension ;
@@ -212,8 +212,12 @@ struct ProblemCreator
   }
 
   // type of stepper to be used
-  typedef StokesAlgorithm< GridType, ProblemCreator<GridType>, polynomialOrder > StepperType;
+  typedef StokesAlgorithm< GridType, StokesProblemCreator<GridType>, polynomialOrder > StepperType;
 };
+
+#ifndef COMBINED_PROBLEM_CREATOR
+#define ProblemCreator StokesProblemCreator
+#endif
 
 #define NEW_STEPPER_SELECTOR_USED
 #endif // FEMHOWTO_POISSONSTEPPER_HH
