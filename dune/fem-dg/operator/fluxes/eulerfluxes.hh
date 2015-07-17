@@ -752,7 +752,8 @@ public:
 
   typedef typename Traits::DomainType                 DomainType;
   typedef typename Traits::FaceDomainType             FaceDomainType;
-  typedef typename Traits::RangeType RangeType;
+  typedef typename Traits::RangeType                  RangeType;
+  typedef typename Traits::JacobianRangeType          JacobianRangeType;
   typedef typename Traits::FluxRangeType              FluxRangeType;
 
   LLFFlux(const Model& mod )
@@ -771,6 +772,8 @@ public:
                  const LocalEvaluation& right,
                  const RangeType& uLeft,
                  const RangeType& uRight,
+                 const JacobianRangeType& jacLeft,
+                 const JacobianRangeType& jacRight,
                  RangeType& gLeft,
                  RangeType& gRight) const
   {
@@ -782,12 +785,12 @@ public:
     RangeType visc;
     FluxRangeType anaflux;
 
-    model_.advection( left, uLeft, anaflux );
+    model_.advection( left, uLeft, jacLeft, anaflux );
 
     // set gLeft
     anaflux.mv( normal, gLeft );
 
-    model_.advection( right, uRight, anaflux );
+    model_.advection( right, uRight, jacRight, anaflux );
     anaflux.umv( normal, gLeft );
 
     double maxspeedl, maxspeedr, maxspeed;

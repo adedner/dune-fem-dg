@@ -150,6 +150,7 @@ namespace Dune
       template <class LocalEvaluation>
       inline void advection( const LocalEvaluation& local,
                              const RangeType& u,
+                             const FluxRangeType& jacu,
                              FluxRangeType& f ) const
       {
         EulerAnalyticalFlux<dimDomain>().analyticalFlux( gamma_ , u , f );
