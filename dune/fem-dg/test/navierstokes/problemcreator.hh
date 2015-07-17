@@ -21,11 +21,9 @@
 
 #include <dune/fem-dg/stepper/advectiondiffusionstepper.hh>
 
-
 template< class GridType >
-struct ProblemCreator
+struct NavierStokesProblemCreator
 {
-  static const int polynomialOrder =  POLORDER ;
   typedef NSWaves< GridType > ProblemType;
 
   template< class GridPart >
@@ -109,17 +107,23 @@ struct ProblemCreator
     return initialize< GridType > ( description );
   }
 
-
-
   static ProblemType* problem()
   {
     // choice of explicit or implicit ode solver
     return new ProblemType ();
   }
 
-  // this should be ok but could lead to a henn-egg problem
-  typedef AdvectionDiffusionStepper< GridType, ProblemCreator< GridType>, polynomialOrder > StepperType;
+  template <int polynomialOrder>
+  struct Stepper
+  {
+    // this should be ok but could lead to a henn-egg problem
+    typedef AdvectionDiffusionStepper< GridType, NavierStokesProblemCreator< GridType>, polynomialOrder > Type;
+  };
 };
+
+#ifndef COMBINED_PROBLEM_CREATOR
+#define ProblemCreator NavierStokesProblemCreator
+#endif
 
 #define NEW_STEPPER_SELECTOR_USED
 #endif // FEMHOWTO_NSEQ_RPOBLEMCREATOR_HH

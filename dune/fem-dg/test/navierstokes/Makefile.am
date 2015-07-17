@@ -8,12 +8,7 @@ ns_model_spec.hh nssmooth.hh thermodynamics.hh
 
 LDADD=$(ALL_PKG_LDFLAGS) $(ALL_PKG_LIBS) $(LOCAL_LIBS) $(DUNEMPILDFLAGS) $(DUNEMPILIBS)
 
-BASEDIR=../../main
-
-SOURCESONEP = $(BASEDIR)/main.cc $(BASEDIR)/main_pol.cc 
-SOURCES = $(BASEDIR)/main.cc $(BASEDIR)/main_0.cc $(BASEDIR)/main_1.cc \
-          $(BASEDIR)/main_2.cc $(BASEDIR)/main_3.cc $(BASEDIR)/main_4.cc
-SOURCES12 = $(BASEDIR)/main.cc $(BASEDIR)/main_1.cc $(BASEDIR)/main_2.cc
+SOURCES = main.cc
 
 #GRIDTYPE = ALUGRID_SIMPLEX
 #GRIDTYPE=PARALLELGRID_ALUGRID_CUBE
@@ -49,8 +44,8 @@ EXTRA_PROGRAMS = nseq nseq12
 check_PROGRAMS = nseqonep
 
 nodist_nseq_SOURCES = $(SOURCES) 
-nodist_nseqonep_SOURCES = $(SOURCESONEP) 
-nodist_nseq12_SOURCES = $(SOURCES12) 
+nodist_nseqonep_SOURCES = $(SOURCES) 
+nodist_nseq12_SOURCES = $(SOURCES) 
 
 nseq_CPPFLAGS = $(AM_CPPFLAGS)
 nseqonep_CPPFLAGS = $(nseq_CPPFLAGS) -DONLY_ONE_P -DPOLORDER=$(POLORDER)
