@@ -88,6 +88,8 @@ public:
                                const int quadPoint,
                                const RangeType& uLeft,
                                const RangeType& uRight,
+                               const JacobianRangeType& jacLeft,
+                               const JacobianRangeType& jacRight,
                                RangeType& gLeft,
                                RangeType& gRight ) const
   {
@@ -145,6 +147,8 @@ public:
                                const LocalEvaluation& right,
                                const RangeType& uLeft,
                                const RangeType& uRight,
+                               const JacobianRangeType& jacLeft,
+                               const JacobianRangeType& jacRight,
                                RangeType& gLeft,
                                RangeType& gRight ) const
   {
@@ -156,12 +160,12 @@ public:
     RangeType visc;
     FluxRangeType anaflux;
 
-    model_.advection( left, uLeft, anaflux );
+    model_.advection( left, uLeft, jacLeft, anaflux );
 
     // set gLeft
     anaflux.mv( normal, gLeft );
 
-    model_.advection( right, uRight, anaflux );
+    model_.advection( right, uRight, jacRight, anaflux );
     anaflux.umv( normal, gLeft );
 
     double maxspeedl, maxspeedr, maxspeed;
@@ -452,7 +456,7 @@ class DGPrimalMatrixAssembly
         JacobianRangeType arhsdphi;
         model_.diffusion( local, uZero, uJacZero, arhsdphi);
         JacobianRangeType brhsphi;
-        model_.advection( local, uZero, brhsphi);
+        model_.advection( local, uZero, uJacZero, brhsphi);
         arhsdphi -= brhsphi;
 
         for( unsigned int localCol = 0; localCol < numBasisFunctionsEn; ++localCol )
@@ -475,7 +479,7 @@ class DGPrimalMatrixAssembly
           model_.diffusion( local, phi[localCol], dphi[localCol], adphi);
 
           JacobianRangeType bphi;
-          model_.advection( local, phi[localCol], bphi);
+          model_.advection( local, phi[localCol], dphi[localCol], bphi);
 
           adphi -= bphi;
 
