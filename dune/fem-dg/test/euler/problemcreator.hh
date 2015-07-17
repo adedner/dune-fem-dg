@@ -132,7 +132,7 @@ struct EulerProblemCreator
   struct Stepper
   {
     // this should be ok but could lead to a henn-egg problem
-    typedef AdvectionStepper< GridType, EulerProblemCreator< GridType> , POLORDER > Type;
+    typedef AdvectionStepper< GridType, EulerProblemCreator< GridType> , polynomialOrder > Type;
   };
 };
 

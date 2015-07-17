@@ -209,7 +209,7 @@ struct PoissonProblemCreator
   struct Stepper
   {
     // this should be ok but could lead to a henn-egg problem
-    typedef EllipticAlgorithm< GridType, PoissonProblemCreator<GridType>, POLORDER > Type;
+    typedef EllipticAlgorithm< GridType, PoissonProblemCreator<GridType>, polynomialOrder > Type;
   };
 };
 
