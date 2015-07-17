@@ -38,7 +38,7 @@
 #include "models.hh"
 
 template <class GridType>
-struct ProblemCreator
+struct PoissonProblemCreator
 {
   static const int dimRange = 1 ;
   typedef Dune :: ProblemInterface<
@@ -49,7 +49,7 @@ struct ProblemCreator
   {
     typedef ProblemType                                InitialDataType;
     typedef PoissonModel< GridPart, InitialDataType >  ModelType;
-    typedef Dune::LLFAdvFlux< ModelType >                  FluxType;
+    typedef Dune::LLFAdvFlux< ModelType >              FluxType;
     //typedef Dune::NoFlux< ModelType >                  FluxType;
     // choice of diffusion flux (see diffusionflux.hh for methods)
     static const Dune :: DGDiffusionFluxIdentifier PrimalDiffusionFluxId
@@ -207,8 +207,12 @@ struct ProblemCreator
   }
 
   // type of stepper to be used
-  typedef EllipticAlgorithm< GridType, ProblemCreator<GridType>, POLORDER > StepperType;
+  typedef EllipticAlgorithm< GridType, PoissonProblemCreator<GridType>, POLORDER > StepperType;
 };
+
+#ifndef COMBINED_PROBLEM_CREATOR
+#define ProblemCreator PoissonProblemCreator
+#endif
 
 #define NEW_STEPPER_SELECTOR_USED
 #endif // FEMHOWTO_POISSONSTEPPER_HH
