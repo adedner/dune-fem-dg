@@ -205,9 +205,12 @@ struct PoissonProblemCreator
     int probNr = Dune::Fem::Parameter::getValue< int > ( "problem" );
     return new Dune :: PoissonProblem< GridType,dimRange > ( probNr );
   }
-
-  // type of stepper to be used
-  typedef EllipticAlgorithm< GridType, PoissonProblemCreator<GridType>, POLORDER > StepperType;
+  template <int polynomialOrder>
+  struct Stepper
+  {
+    // this should be ok but could lead to a henn-egg problem
+    typedef EllipticAlgorithm< GridType, PoissonProblemCreator<GridType>, POLORDER > Type;
+  };
 };
 
 #ifndef COMBINED_PROBLEM_CREATOR
