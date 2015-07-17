@@ -19,6 +19,7 @@ public:
   enum { dimRange = Model::dimRange };
   typedef typename Model :: DomainType DomainType;
   typedef typename Model :: RangeType RangeType;
+  typedef typename Model :: JacobianRangeType JacobianRangeType;
   typedef typename Model :: FluxRangeType FluxRangeType;
   typedef typename Model :: FaceDomainType  FaceDomainType;
   typedef typename Model :: EntityType  EntityType;
@@ -129,6 +130,7 @@ public:
   enum { dimRange = Model::dimRange };
   typedef typename Model :: DomainType DomainType;
   typedef typename Model :: RangeType RangeType;
+  typedef typename Model :: JacobianRangeType JacobianRangeType;
   typedef typename Model :: FluxRangeType FluxRangeType;
   typedef typename Model :: FaceDomainType  FaceDomainType;
   typedef typename Model :: EntityType  EntityType;
@@ -897,7 +899,7 @@ class DGPrimalMatrixAssembly
 #endif
       //retEn[pt] = RangeType(0);
       //retNb[pt] = RangeType(0);
-      advFlux_.numericalFlux(left, right, valueEn[ pt ],valueNb[ pt ],
+      advFlux_.numericalFlux(left, right, valueEn[ pt ],valueNb[ pt ], dvalueEn[ pt ],dvalueNb[ pt ],
                              gLeft, gRight);
       retEn[pt] += gLeft;
       retNb[pt] += gRight;
@@ -999,7 +1001,7 @@ class DGPrimalMatrixAssembly
                             retEn[ pt ], dretEn[ pt ]);
 #endif
         //retEn[pt] = RangeType(0);
-        advFlux_.numericalFlux(local, local, valueEn[ pt ],valueNb[ pt ],
+        advFlux_.numericalFlux(local, local, valueEn[ pt ],valueNb[ pt ], dvalueEn[ pt ],dvalueNb[ pt ],
                                gLeft,gRight);
         retEn[pt] += gLeft;
       }

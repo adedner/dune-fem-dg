@@ -14,6 +14,7 @@ public:
   enum { dimRange = Model::dimRange };
   typedef typename Model :: DomainType DomainType;
   typedef typename Model :: RangeType RangeType;
+  typedef typename Model :: JacobianRangeType JacobianRangeType;
   typedef typename Model :: FluxRangeType FluxRangeType;
   typedef typename Model :: FaceDomainType  FaceDomainType;
   typedef typename Model :: EntityType  EntityType;
@@ -34,6 +35,8 @@ public:
                  const LocalEvaluation& right,
                  const RangeType& uLeft,
                  const RangeType& uRight,
+                 const JacobianRangeType& jacLeft,
+                 const JacobianRangeType& jacRight,
                  RangeType& gLeft,
                  RangeType& gRight) const
   {
@@ -57,6 +60,8 @@ public:
                                const int quadPoint,
                                const RangeType& uLeft,
                                const RangeType& uRight,
+                               const JacobianRangeType& jacLeft,
+                               const JacobianRangeType& jacRight,
                                RangeType& gLeft,
                                RangeType& gRight ) const
   {
