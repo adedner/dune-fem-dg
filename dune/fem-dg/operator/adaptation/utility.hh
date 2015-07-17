@@ -98,7 +98,7 @@ namespace Dune
       return Fem::Parameter::getValue<int>( keyPrefix_ + "adaptcount", 1 );
     }
 
-    virtual bool method () const
+    virtual int method () const
     {
       const std::string names[] = { "none", "generic", "callback" };
       // default value is generic
@@ -113,6 +113,13 @@ namespace Dune
     virtual bool maximumStrategy() const
     {
       return Fem::Parameter::getValue<bool>( keyPrefix_ + "maximumstrategy", true );
+    }
+
+    virtual int padaptiveMethod () const
+    {
+      const std::string names[] = { "none", "coeffroot", "prior2p" };
+      // default value is generic
+      return Fem::Parameter::getEnum( keyPrefix_ + "padaptive.method", names, 1 );
     }
 
     virtual bool adaptive () const

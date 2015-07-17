@@ -51,10 +51,8 @@ dgdiffusionflux.liftfactor: 0
 # ----------
 fem.adaptation.method: generic 
 # coeffroot or prior2p
-padaptive.method: coeffroot
-femhowto.globalshift: 0
-femhowto.factor: 1
-femhowto.tolerance: -1  # global adapt with tolerance=0 
+fem.adaptation.padaptive.method: coeffroot
+fem.adaptation.refineTolerance: -1  # global adapt with tolerance=0 
 fem.adaptation.theta: 0.5 # equal distribution with theta=0, tolerance>0
 # true = maximum (theta defines the percentage) | false = Doerfler 
 fem.adaptation.maximumstrategy: true
