@@ -21,7 +21,7 @@
 #include <dune/fem-dg/stepper/advectionstepper.hh>
 
 template <class GridType>
-struct ProblemCreator
+struct EulerProblemCreator
 {
   typedef ProblemBase< GridType > ProblemType ;
 
@@ -130,8 +130,13 @@ struct ProblemCreator
   }
 
   // this should be ok but could lead to a henn-egg problem
-  typedef AdvectionStepper< GridType, ProblemCreator< GridType> , POLORDER > StepperType;
+  typedef AdvectionStepper< GridType, EulerProblemCreator< GridType> , POLORDER > StepperType;
 };
+
+#ifndef COMBINED_PROBLEM_CREATOR
+#define ProblemCreator EulerProblemCreator
+#endif
+
 
 #define NEW_STEPPER_SELECTOR_USED
 #endif // FEMHOWTO_NSEQ_RPOBLEMCREATOR_HH
