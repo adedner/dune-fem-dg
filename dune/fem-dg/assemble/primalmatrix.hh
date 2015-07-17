@@ -20,6 +20,7 @@ public:
   typedef typename Model :: DomainType DomainType;
   typedef typename Model :: RangeType RangeType;
   typedef typename Model :: FluxRangeType FluxRangeType;
+  typedef typename Model :: JacobianRangeType  JacobianRangeType;
   typedef typename Model :: FaceDomainType  FaceDomainType;
   typedef typename Model :: EntityType  EntityType;
   typedef typename Model :: IntersectionType  IntersectionType;
@@ -130,6 +131,7 @@ public:
   typedef typename Model :: DomainType DomainType;
   typedef typename Model :: RangeType RangeType;
   typedef typename Model :: FluxRangeType FluxRangeType;
+  typedef typename Model :: JacobianRangeType JacobianRangeType;
   typedef typename Model :: FaceDomainType  FaceDomainType;
   typedef typename Model :: EntityType  EntityType;
   typedef typename Model :: IntersectionType  IntersectionType;
@@ -241,10 +243,11 @@ class DGPrimalMatrixAssembly
   typedef Dune::Fem::ElementQuadrature< GridPartType, 1 > FaceQuadratureType;
   typedef Dune::Fem::CachingQuadrature< GridPartType, 0 > VolumeQuadratureType;
 
-  typedef ExtendedDGPrimalDiffusionFlux<DiscreteFunctionSpaceType,ModelType> FluxType;
-  typedef typename OperatorType :: AdvectionFluxType AdvFluxType;
+  typedef ExtendedDGPrimalDiffusionFlux<DiscreteFunctionSpaceType,ModelType> DiffusionFluxType;
+  // deprecated FluxType
+  typedef DiffusionFluxType  FluxType;
 
-  //typedef LLFAdvFlux<ModelType> AdvFluxType;
+  typedef typename OperatorType :: AdvectionFluxType AdvectionFluxType;
 
   struct ZeroFunction
   {
@@ -351,7 +354,7 @@ class DGPrimalMatrixAssembly
       space_(gridPart),
       zero_(),
       advFlux_(model_),
-      flux_(gridPart, model_, DGPrimalFormulationParameters( ParameterKey::generate( model_.problem().name(), "dgdiffusionflux." ) ) ),
+      diffusionFlux_(gridPart, model_, DGPrimalFormulationParameters( ParameterKey::generate( model_.problem().name(), "dgdiffusionflux." ) ) ),
       calculateFluxes_( calculateFluxes ),
       useStrongBoundaryCondition_( strongBC )
   {
@@ -362,20 +365,14 @@ class DGPrimalMatrixAssembly
     return space_;
   }
 
-  const typename FluxType::DiscreteGradientSpaceType &gradientSpace() const
+  const typename DiffusionFluxType::DiscreteGradientSpaceType &gradientSpace() const
   {
-    return flux_.gradientSpace();
+    return diffusionFlux_.gradientSpace();
   }
 
   const void operator()(const DestinationType &arg, DestinationType &dest) const
   {
-    abort();
-    //static const Dune :: DGDiffusionFluxIdentifier PrimalDiffusionFluxId = Dune :: method_general ;
-    //typedef DGAdvectionDiffusionOperator< ModelType, AdvFluxType, PrimalDiffusionFluxId, DiscreteFunctionSpaceType::polynomialOrder >
-    //        DgOperatorType;
-    //static const AdvFluxType flux( model_ );
-    //static const DgOperatorType dgOperator( space().gridPart(), flux );
-    //dgOperator(arg,dest);
+    op_( arg, dest );
   }
 
   size_t maxNumScalarBasisFunctions( const DiscreteFunctionSpaceType& space ) const
@@ -405,7 +402,7 @@ class DGPrimalMatrixAssembly
     std::vector< RangeType > phi( maxNumBasisFunctions );
     std::vector< JacobianRangeType > dphi( maxNumBasisFunctions );
 
-    flux_.initialize( dfSpace );
+    diffusionFlux_.initialize( dfSpace );
 
     const RangeType uZero(0);
     const JacobianRangeType uJacZero(0);
@@ -584,7 +581,7 @@ class DGPrimalMatrixAssembly
     const size_t maxNumBasisFunctions = maxNumScalarBasisFunctions( dfSpace );
 
 #ifndef EULER
-    flux_.initialize(dfSpace);
+    diffusionFlux_.initialize(dfSpace);
 #endif
 
     const RangeType uZero(0);
@@ -872,7 +869,7 @@ class DGPrimalMatrixAssembly
   {
     RangeType gLeft,gRight;
 #ifndef EULER
-    flux_.initializeIntersection( intersectionStorage.intersection(),
+    diffusionFlux_.initializeIntersection( intersectionStorage.intersection(),
                                   intersectionStorage.inside(),
                                   intersectionStorage.outside(), time,
                                   //zero_, zero_,
@@ -891,13 +888,15 @@ class DGPrimalMatrixAssembly
                                             faceQuadInside, valueNb[ pt ], dvalueNb[ pt ], pt, time, intersectionStorage.nbVolume() );
 
 #ifndef EULER
-      flux_.numericalFlux( left, right, valueEn[ pt ], valueNb[ pt ], dvalueEn[ pt ], dvalueNb[ pt ],
+      diffusionFlux_.numericalFlux( left, right,
+                           valueEn[ pt ], valueNb[ pt ],
+                           dvalueEn[ pt ], dvalueNb[ pt ],
                            retEn[ pt ], retNb[ pt ],
                            dretEn[ pt ], dretNb[ pt ]);
 #endif
-      //retEn[pt] = RangeType(0);
-      //retNb[pt] = RangeType(0);
-      advFlux_.numericalFlux(left, right, valueEn[ pt ],valueNb[ pt ],
+      advFlux_.numericalFlux(left, right,
+                             valueEn[ pt ],valueNb[ pt ],
+                             dvalueEn[ pt ], dvalueNb[ pt ],
                              gLeft, gRight);
       retEn[pt] += gLeft;
       retNb[pt] += gRight;
@@ -920,7 +919,7 @@ class DGPrimalMatrixAssembly
    const size_t numFaceQuadPoints = left.quadrature().nop();
    for( size_t pt = 0; pt < numFaceQuadPoints; ++pt )
    {
-      flux_.evaluateLifting(left, right, valueEn[pt],valueNb[pt],
+      diffusionFlux_.evaluateLifting(left, right, valueEn[pt],valueNb[pt],
                             liftEn[pt],liftNb[pt]);
    }
 #endif
@@ -938,8 +937,8 @@ class DGPrimalMatrixAssembly
     VectorToTupleVector valEn( valueEn );
     VectorToTupleVector valNb( valueNb );
 #ifndef EULER
-    flux_.initializeIntersection( intersection, entity, neighbor, time, faceQuadInside, faceQuadOutside, valEn, valNb, true );
-    lifting += flux_.getInsideLifting();
+    diffusionFlux_.initializeIntersection( intersection, entity, neighbor, time, faceQuadInside, faceQuadOutside, valEn, valNb, true );
+    lifting += diffusionFlux_.getInsideLifting();
 #endif
   }
 
@@ -980,7 +979,7 @@ class DGPrimalMatrixAssembly
   {
     RangeType gLeft,gRight;
 #ifndef EULER
-    flux_.initializeBoundary( intersection, entity, time, faceQuadInside, valueEn, valueNb );
+    diffusionFlux_.initializeBoundary( intersection, entity, time, faceQuadInside, valueEn, valueNb );
 #endif
 
 
@@ -995,11 +994,12 @@ class DGPrimalMatrixAssembly
       if ( model_.hasBoundaryValue( local ) )
       {
 #ifndef EULER
-        flux_.boundaryFlux( local, valueEn[ pt ], valueNb[ pt ],  dvalueEn[ pt ],
+        diffusionFlux_.boundaryFlux( local, valueEn[ pt ], valueNb[ pt ],  dvalueEn[ pt ],
                             retEn[ pt ], dretEn[ pt ]);
 #endif
-        //retEn[pt] = RangeType(0);
-        advFlux_.numericalFlux(local, local, valueEn[ pt ],valueNb[ pt ],
+        advFlux_.numericalFlux(local, local,
+                               valueEn[ pt ],valueNb[ pt ],
+                               dvalueEn[ pt ], dvalueEn[ pt ],
                                gLeft,gRight);
         retEn[pt] += gLeft;
       }
@@ -1056,8 +1056,8 @@ private:
   DiscreteFunctionSpaceType space_;
   ZeroFunction zero_;
 
-  AdvFluxType advFlux_;
-  mutable FluxType flux_;
+  AdvectionFluxType advFlux_;
+  mutable DiffusionFluxType diffusionFlux_;
   const bool calculateFluxes_ ;
   const bool useStrongBoundaryCondition_ ;
 
