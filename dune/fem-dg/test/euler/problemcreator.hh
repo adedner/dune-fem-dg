@@ -128,9 +128,12 @@ struct EulerProblemCreator
     // choice of explicit or implicit ode solver
     return new U0Smooth1D< GridType > ();
   }
-
-  // this should be ok but could lead to a henn-egg problem
-  typedef AdvectionStepper< GridType, EulerProblemCreator< GridType> , POLORDER > StepperType;
+  template <int polynomialOrder>
+  struct Stepper
+  {
+    // this should be ok but could lead to a henn-egg problem
+    typedef AdvectionStepper< GridType, EulerProblemCreator< GridType> , POLORDER > Type;
+  };
 };
 
 #ifndef COMBINED_PROBLEM_CREATOR
