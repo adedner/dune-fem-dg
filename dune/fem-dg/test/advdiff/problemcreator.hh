@@ -105,8 +105,13 @@ struct AdvectionDiffusionProblemCreator
     }
   }
 
-  // this should be ok but could lead to a henn-egg problem
-  typedef AdvectionDiffusionStepper< GridType, AdvectionDiffusionProblemCreator<GridType>, POLORDER > StepperType;
+  template <int polynomialOrder>
+  struct Stepper
+  {
+    // this should be ok but could lead to a henn-egg problem
+    typedef AdvectionDiffusionStepper< GridType, AdvectionDiffusionProblemCreator<GridType>, polynomialOrder > Type;
+  };
+
 };
 
 #ifndef COMBINED_PROBLEM_CREATOR
