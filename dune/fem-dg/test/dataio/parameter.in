@@ -1,5 +1,4 @@
-femhowto.verboserank: 0
-femhowto.verbose: 1
+fem.verboserank: 0
 
 # macro grid file
 fem.io.macroGridFile: ${CMAKE_CURRENT_SOURCE_DIR}/../grids/unitcube2.dgf
@@ -13,27 +12,23 @@ fem.io.writedata: true
 #fem.io.checkpointrestartfile: ${CMAKE_CURRENT_SOURCE_DIR}/checkpoint
 
 # number of EOC steps (only 1 for checkpointing)
-femhowto.eocSteps: 1
+fem.eoc.steps: 1
 
-femhowto.endTime: 1.0
-femhowto.odesolver: explicit
-femhowto.diffusionTimeStep: 1
-femhowto.epsilon: 2.
-femhowto.penalty: 1.
+femdg.stepper.endtime: 1.0
+fem.ode.odesolver: EX
+femdg.stepper.diffusiontimestep: 1
+epsilon: 2.
+penalty: 1.
 fem.timeprovider.factor: 1.
 fem.io.savestep: 0.1
 
 fem.io.sionlib.numfiles: 1
 fem.io.sionlib.blocksize: 128
 
-#number of global refinements before start of simulation 
-femhowto.startLevel: 2
-
 # parameters from time dependent problems 
-femhowto.startTime: 0
-femhowto.endTime: 0.4
-femhowto.maxTimeStep: 0.1
-femhowto.printCount: 1
+femdg.stepper.starttime: 0
+femdg.stepper.maxtimestep: 0.1
+femdg.stepper.printcount: 1
 
 # SaveStep (write data every `saveStep' time period, <=0 deactivates) 
 fem.io.savestep: 0.1
@@ -46,9 +41,6 @@ fem.verboserank: 0
 #number of global refinements before start of simulation 
 fem.adaptation.coarsestLevel: 2
 fem.adaptation.finestLevel: 2
-
-# number of EOC steps 
-femhowto.eocSteps: 4
 
 # specify directory for data output (is created if not exists)
 fem.prefix:  ${CMAKE_CURRENT_SOURCE_DIR}/data
