@@ -31,7 +31,7 @@
 
 
 template< class GridType >
-struct ProblemCreator
+struct AdvectionDiffusionProblemCreator
 {
   typedef Dune :: EvolutionProblemInterface<
                       Dune::Fem::FunctionSpace< double, double, GridType::dimension,
@@ -106,8 +106,12 @@ struct ProblemCreator
   }
 
   // this should be ok but could lead to a henn-egg problem
-  typedef AdvectionDiffusionStepper< GridType, ProblemCreator<GridType>, POLORDER > StepperType;
+  typedef AdvectionDiffusionStepper< GridType, AdvectionDiffusionProblemCreator<GridType>, POLORDER > StepperType;
 };
+
+#ifndef COMBINED_PROBLEM_CREATOR
+#define ProblemCreator AdvectionDiffusionProblemCreator
+#endif
 
 #define NEW_STEPPER_SELECTOR_USED
 #endif // FEMHOWTO_HEATSTEPPER_HH
