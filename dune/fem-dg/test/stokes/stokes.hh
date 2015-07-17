@@ -390,7 +390,7 @@ public:
     numbers_.push_back( size );
 
 #ifdef PADAPTSPACE
-    int polOrder = Dune::Fem::Parameter::getValue<double>("femhowto.polynomialOrder",1);
+    int polOrder = Dune::Fem::Parameter::getValue<double>("femdg.polynomialOrder",1);
 		// only implemented for PAdaptiveSpace
     std::vector<int> polOrderVec( space_.gridPart().indexSet().size(0) );
     std::vector<int> polOrderVecPressure( pressurespace_.gridPart().indexSet().size(0) );

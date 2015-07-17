@@ -192,9 +192,10 @@ namespace Dune
 
   public:
     ErrorEstimator (const DiscreteFunctionType &uh,
-                const SigmaFunction &sigma,
-                const DGOperator &oper,
-                GridType &grid)
+                    const SigmaFunction &sigma,
+                    const DGOperator &oper,
+                    GridType &grid,
+                    const Dune::AdaptationParameters& param = Dune::AdaptationParameters() )
      : oper_(oper),
        uh_( uh ),
        sigma_( sigma ),
@@ -211,8 +212,8 @@ namespace Dune
        Rorth_( indexSet_.size( 0 )),
        totalIndicator2_(0),
        maxIndicator_(0),
-       theta_( Dune::Fem::Parameter::getValue("femhowto.adaptive.theta",0.5) ),
-       maximumStrategy_( Dune::Fem::Parameter::getValue("femhowto.adaptive.maximumstrategy", true ) ),
+       theta_( param.theta() ),
+       maximumStrategy_( param.maximumStrategy() ),
        nonConformityDifference_( Dune::Fem::Parameter::getValue("nonconformitydifference",1) ),
        eocId_( -1 ),
        padaptiveMethod_(PAdaptiveMethodNames::getMethod())

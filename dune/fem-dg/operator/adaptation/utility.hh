@@ -105,6 +105,16 @@ namespace Dune
       return Fem::Parameter::getEnum( keyPrefix_ + "method", names, 1 );
     }
 
+    virtual double theta() const
+    {
+      return Fem::Parameter::getValue<double>( keyPrefix_ + "theta", 0.5);
+    }
+
+    virtual bool maximumStrategy() const
+    {
+      return Fem::Parameter::getValue<bool>( keyPrefix_ + "maximumstrategy", true );
+    }
+
     virtual bool adaptive () const
     {
       return method() != 0;

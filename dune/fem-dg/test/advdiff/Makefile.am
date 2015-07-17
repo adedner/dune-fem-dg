@@ -60,7 +60,7 @@ PROG=advdiffonep
 generatecode:
 	$(MAKE) -i clean
 	$(MAKE) CXXFLAGS="-O0 -Wall -DNDEBUG -DBASEFUNCTIONSET_CODEGEN_GENERATE" $(PROG)
-	./$(PROG) femhowto.maximaltimesteps:1 fem.io.outputformat:none codegenparameter
+	./$(PROG) femdg.stepper.maximaltimesteps:1 fem.io.outputformat:none codegenparameter
 
 # compile fast code  
 compilecode:

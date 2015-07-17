@@ -63,7 +63,7 @@ add_dependencies( codegen generate_code compile_code )
 #	$(MAKE) generate
 #
 #generate:
-#	./$(PROG) femhowto.eocSteps:1 femdg.stepper.maximaltimesteps:1 fem.io.outputformat:none fem.ode.order:1 paramFiles/paramNSWaves 
+#	./$(PROG) fem.eoc.steps:1 femdg.stepper.maximaltimesteps:1 fem.io.outputformat:none fem.ode.order:1 paramFiles/paramNSWaves 
 #
 #compilecode:
 #	$(MAKE) clean 

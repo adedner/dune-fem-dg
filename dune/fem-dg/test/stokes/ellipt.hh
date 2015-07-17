@@ -498,7 +498,7 @@ public:
     //Dune::Fem::DGL2ProjectionImpl :: project( problem(), solution_ );
     //return ;
 #ifdef PADAPTSPACE
-    int polOrder = Dune::Fem:: Parameter::getValue<double>("femhowto.polynomialOrder",1);
+    int polOrder = Dune::Fem:: Parameter::getValue<double>("femdg.polynomialOrder",1);
     const int minimalOrder = estimator_.minimalOrder() ;
 
     // only implemented for PAdaptiveSpace

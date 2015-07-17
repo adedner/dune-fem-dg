@@ -55,9 +55,9 @@ padaptive.method: coeffroot
 femhowto.globalshift: 0
 femhowto.factor: 1
 femhowto.tolerance: 0  # global adapt with tolerance=0 
-femhowto.adaptive.theta: 0.5 # equal distribution with theta=0, tolerance>0
+fem.adaptation.theta: 0.5 # equal distribution with theta=0, tolerance>0
 # true = maximum (theta defines the percentage) | false = Doerfler 
-femhowto.adaptive.maximumstrategy: true
+fem.adaptation.maximumstrategy: true
 
 # DATAWRITER
 # ----------
