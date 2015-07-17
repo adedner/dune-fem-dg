@@ -13,12 +13,15 @@ add_definitions( "-DFLUX=1" )
 add_definitions( "-DPRIMALDG" )
 add_definitions( "-DUSE_ASSERT_THROW" ) 
 add_definitions( "-DWANT_ISTL" ) 
+add_definitions( "-DDGSCHEME" )
+add_definitions( "-DONB" )
+add_definitions( "-DSTOKES" )
 
 add_executable( stokesall "${MAININCLUDE_PATH}/main.cc"  
-                            "${MAININCLUDE_PATH}/main_0.cc" 
-                            "${MAININCLUDE_PATH}/main_1.cc"
-                            "${MAININCLUDE_PATH}/main_2.cc" 
-                            "${MAININCLUDE_PATH}/main_3.cc")
+                          "${MAININCLUDE_PATH}/main_0.cc" 
+                          "${MAININCLUDE_PATH}/main_1.cc"
+                          "${MAININCLUDE_PATH}/main_2.cc" 
+                          "${MAININCLUDE_PATH}/main_3.cc")
 
 dune_target_link_libraries(stokesall "${DUNE_LIBS}")
 
