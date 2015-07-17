@@ -19,9 +19,10 @@ femdg.polynomialOrder: 2
 # PROBLEM
 # ----------
 # problem number 
-problem: 8 # 5 6 13 16
+problem: 19 # 8 5 6 13 16
 globalshift: 0
 factor: 1
+advection: 1
 epsilon: 0.1
 xvelocity: 0.    # the only advection part for the linear heat eqn
 yvelocity: 0.    # the only advection part for the linear heat eqn
@@ -64,6 +65,6 @@ fem.io.grapedisplay: 0
 # SOLVER
 # ------
 paramfile: ../parameter/paramSolver
-istl.preconditioning.method: none
+istl.preconditioning.method: ilu-0
 istl.preconditioning.iterations: 1
 istl.preconditioning.relaxation: 1
