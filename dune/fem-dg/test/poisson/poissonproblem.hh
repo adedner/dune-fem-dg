@@ -39,6 +39,7 @@ public:
   {
     FieldType shift = Dune :: Fem::Parameter :: getValue< double > ("globalshift", 0);
     FieldType factor = Dune :: Fem::Parameter :: getValue< double > ("factor", 1);
+    FieldType advection = Dune :: Fem::Parameter :: getValue< double > ("advection", 1);
     if( problemNumber == 0 )
     {
       data_ = new BenchMark_1<dim,FieldType,FieldType> (shift,factor);
@@ -118,7 +119,7 @@ public:
     }
     if( problemNumber == 19 )
     {
-      data_ = new SinSinSin<dim,FieldType,FieldType> (shift,factor);
+      data_ = new SinSinSin<dim,FieldType,FieldType> (shift,factor,advection);
     }
     if( problemNumber == 20 )
     {
@@ -190,6 +191,8 @@ public:
 
   //! return start time
   double startTime() const { return 0; }
+
+  double constantAdvection() const { return data().advection(); }
 
   bool constantK() const { return data().constantLocalK();  }
 

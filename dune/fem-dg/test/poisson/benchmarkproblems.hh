@@ -20,6 +20,8 @@ public:
   // returns true if K is constant on one element
   virtual bool constantLocalK () const { return true; }
 
+  virtual double advection () const { return 0.0; }
+
   // diffusion tensor
   virtual void K(const DomainField x[dim], Field k[dim][dim] ) const = 0;
   // right hand side
@@ -213,6 +215,8 @@ public:
     */
   }
 
+  virtual double advection() const { return advection_; }
+
   virtual void K(const DomainField x[dim], Field k[dim][dim] ) const
   {
     for(int i=0; i<dim; ++i)
@@ -241,12 +245,7 @@ public:
     {
       for(int i=0; i<dim; ++i)
       {
-        comp[0] = i;
-        for(int j=0; j<dim; ++j)
-        {
-          comp[ dim - 2 ] = j;
-          sum += advection_ * gradient( x, comp );
-        }
+        sum += advection_ * gradient( x, i );
       }
     }
     return sum;

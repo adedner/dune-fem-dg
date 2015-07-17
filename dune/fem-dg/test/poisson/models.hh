@@ -163,16 +163,16 @@ public:
   template <class LocalEvaluation>
   inline  void advection(const LocalEvaluation& local,
                          const RangeType& u,
+                         const JacobianRangeType& jac,
                          FluxRangeType & f) const
   {
-    // evaluate velocity V
-    DomainType v;
-    velocity( local.entity(), local.time(), local.point(), v );
+    // evaluate advection coefficient
+    const double a = problem().constantAdvection();
 
     //f = uV;
     for( int r=0; r<dimRange; ++r )
       for( int d=0; d<dimDomain; ++d )
-        f[r][d] = v[ d ] * u[ r ];
+        f[r][d] = a * u[ r ];
   }
 
   bool hasDirichletBoundary () const
@@ -183,19 +183,6 @@ public:
   bool isDirichletPoint( const DomainType& global ) const
   {
     return true ;
-  }
-
-protected:
-
-  /**
-   * @brief velocity calculation, is called by advection()
-   */
-  inline  void velocity(const EntityType& en,
-                        const double time,
-                        const DomainType& x,
-                        DomainType& v) const
-  {
-    problem_.velocity(en.geometry().global(x), v);
   }
 
 public:
