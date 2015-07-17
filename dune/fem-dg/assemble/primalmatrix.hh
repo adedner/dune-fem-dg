@@ -17,14 +17,13 @@ public:
   typedef ModelType Model;
   typedef typename Model::Traits Traits;
   enum { dimRange = Model::dimRange };
-  typedef typename Model :: DomainType DomainType;
-  typedef typename Model :: RangeType RangeType;
-  typedef typename Model :: JacobianRangeType JacobianRangeType;
-  typedef typename Model :: FluxRangeType FluxRangeType;
-  typedef typename Model :: JacobianRangeType  JacobianRangeType;
-  typedef typename Model :: FaceDomainType  FaceDomainType;
-  typedef typename Model :: EntityType  EntityType;
-  typedef typename Model :: IntersectionType  IntersectionType;
+  typedef typename Model :: DomainType          DomainType;
+  typedef typename Model :: RangeType           RangeType;
+  typedef typename Model :: JacobianRangeType   JacobianRangeType;
+  typedef typename Model :: FluxRangeType       FluxRangeType;
+  typedef typename Model :: FaceDomainType      FaceDomainType;
+  typedef typename Model :: EntityType          EntityType;
+  typedef typename Model :: IntersectionType    IntersectionType;
 protected:
   template <class Model, bool constVelo>
     struct Velocity
@@ -129,14 +128,13 @@ public:
   typedef ModelType Model;
   typedef typename Model::Traits Traits;
   enum { dimRange = Model::dimRange };
-  typedef typename Model :: DomainType DomainType;
-  typedef typename Model :: RangeType RangeType;
-  typedef typename Model :: JacobianRangeType JacobianRangeType;
-  typedef typename Model :: FluxRangeType FluxRangeType;
-  typedef typename Model :: JacobianRangeType JacobianRangeType;
-  typedef typename Model :: FaceDomainType  FaceDomainType;
-  typedef typename Model :: EntityType  EntityType;
-  typedef typename Model :: IntersectionType  IntersectionType;
+  typedef typename Model :: DomainType          DomainType;
+  typedef typename Model :: RangeType           RangeType;
+  typedef typename Model :: JacobianRangeType   JacobianRangeType;
+  typedef typename Model :: FluxRangeType       FluxRangeType;
+  typedef typename Model :: FaceDomainType      FaceDomainType;
+  typedef typename Model :: EntityType          EntityType;
+  typedef typename Model :: IntersectionType    IntersectionType;
   /**
    * @brief Constructor
    */
