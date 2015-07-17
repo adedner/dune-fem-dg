@@ -250,7 +250,9 @@ namespace Dune {
       {
         // returns advection wave speed
         return numflux_.numericalFlux(left, right,
-                                      left.values()[ uVar ], right.values()[ uVar ], gLeft, gRight);
+                                      left.values()[ uVar ], right.values()[ uVar ], 
+                                      left.jacobians()[ uVar ], right.jacobians()[ uVar ],
+                                      gLeft, gRight);
       }
       else
       {
@@ -281,7 +283,8 @@ namespace Dune {
           RangeType gRight;
           // returns advection wave speed
           return numflux_.numericalFlux(left, left,
-                                        left.values()[ uVar ], uBnd_, gLeft, gRight);
+                                        left.values()[ uVar ], uBnd_, left.jacobians()[uVar], left.jacobians()[uVar],
+                                        gLeft, gRight);
         }
         else
         {
@@ -304,7 +307,7 @@ namespace Dune {
                          JacobianRangeType& f ) const
     {
       if( advection )
-        model_.advection( local, local.values()[ uVar ], f);
+        model_.advection( local, local.values()[ uVar ],local.jacobians()[uVar], f);
       else
         f = 0;
     }
