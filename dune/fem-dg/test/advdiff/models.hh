@@ -208,6 +208,7 @@ public:
   template <class LocalEvaluation>
   inline void advection(const LocalEvaluation& local,
                         const RangeType& u,
+                        const JacobianRangeType& jacu,
                         FluxRangeType & f) const
   {
     const DomainType& v = velocity( local );
@@ -399,6 +400,7 @@ public:
   enum { dimRange = Model::dimRange };
   typedef typename Model :: DomainType DomainType;
   typedef typename Model :: RangeType RangeType;
+  typedef typename Model :: JacobianRangeType JacobianRangeType;
   typedef typename Model :: FluxRangeType FluxRangeType;
   typedef typename Model :: DiffusionRangeType DiffusionRangeType;
   typedef typename Model :: FaceDomainType  FaceDomainType;
@@ -425,6 +427,8 @@ public:
                                const LocalEvaluation& right,
                                const RangeType& uLeft,
                                const RangeType& uRight,
+                               const JacobianRangeType& jacLeft,
+                               const JacobianRangeType& jacRight,
                                RangeType& gLeft,
                                RangeType& gRight ) const
   {
