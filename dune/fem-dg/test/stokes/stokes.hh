@@ -347,6 +347,7 @@ public:
   //! return reference to discrete space
   DiscreteSpaceType & space() { return space_; }                    /*@LST0E@*/
   DiscretePressureSpaceType & pressurespace() { return space_; }
+
   //! returns data prefix for EOC loops ( default is loop )
   virtual std::string dataPrefix() const
   {
