@@ -35,8 +35,8 @@ public:
                  const LocalEvaluation& right,
                  const RangeType& uLeft,
                  const RangeType& uRight,
-                 const JacobianRangeType& uJacLeft,
-                 const JacobianRangeType& uJacRight,
+                 const JacobianRangeType& jacLeft,
+                 const JacobianRangeType& jacRight,
                  RangeType& gLeft,
                  RangeType& gRight) const
   {

@@ -284,6 +284,9 @@ public:
     u(x , ret);
   }
 
+  //! advection factor a if available
+  virtual double constantAdvection() const { return 0.0; }
+
   //! the right hand side
   virtual void f(const DomainType& x, RangeType& ret) const { std::abort(); }// = 0;
 

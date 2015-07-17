@@ -163,6 +163,7 @@ public:
   template <class LocalEvaluation>
   inline  void advection(const LocalEvaluation& local,
                          const RangeType& u,
+                         const JacobianRangeType& jacu,
                          FluxRangeType & f) const
   {
     // evaluate velocity V

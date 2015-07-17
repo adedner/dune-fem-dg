@@ -19,6 +19,7 @@ public:
   enum { dimRange = Model::dimRange };
   typedef typename Model :: DomainType DomainType;
   typedef typename Model :: RangeType RangeType;
+  typedef typename Model :: JacobianRangeType JacobianRangeType;
   typedef typename Model :: FluxRangeType FluxRangeType;
   typedef typename Model :: JacobianRangeType  JacobianRangeType;
   typedef typename Model :: FaceDomainType  FaceDomainType;
@@ -130,6 +131,7 @@ public:
   enum { dimRange = Model::dimRange };
   typedef typename Model :: DomainType DomainType;
   typedef typename Model :: RangeType RangeType;
+  typedef typename Model :: JacobianRangeType JacobianRangeType;
   typedef typename Model :: FluxRangeType FluxRangeType;
   typedef typename Model :: JacobianRangeType JacobianRangeType;
   typedef typename Model :: FaceDomainType  FaceDomainType;

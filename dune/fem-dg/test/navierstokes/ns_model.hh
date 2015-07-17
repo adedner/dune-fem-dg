@@ -132,6 +132,7 @@ class NSModel : public DefaultModel < NSModelTraits< GridPartType, ProblemImp > 
   template <class LocalEvaluation>
   inline void advection( const LocalEvaluation& local,
                          const RangeType& u,
+                         const JacobianRangeType& jacu,
                          JacobianRangeType& f ) const
   {
     nsFlux_.analyticalFlux( u, f );
