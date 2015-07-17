@@ -211,8 +211,12 @@ struct StokesProblemCreator
     return new Dune :: StokesProblemDefault< GridType > ();
   }
 
-  // type of stepper to be used
-  typedef StokesAlgorithm< GridType, StokesProblemCreator<GridType>, polynomialOrder > StepperType;
+  template <int polynomialOrder>
+  struct Stepper
+  {
+    // this should be ok but could lead to a henn-egg problem
+    typedef StokesAlgorithm< GridType, StokesProblemCreator<GridType>, polynomialOrder >  Type;
+  };
 };
 
 #ifndef COMBINED_PROBLEM_CREATOR
