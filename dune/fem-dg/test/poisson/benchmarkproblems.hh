@@ -174,9 +174,11 @@ template <int dim, class DomainField, class Field>
 class SinSinSin : public DataFunctionIF<dim,DomainField,Field>
 {
   Field K_[dim][dim];
+  const double advection_;
 public:
   virtual ~SinSinSin() {}
-  SinSinSin(Field globalShift, Field factor)
+  SinSinSin(Field globalShift, Field factor, const double advection = 0.0 )
+    : advection_( advection )
   {
     for(int i=0; i<dim; ++i)
     {
@@ -232,10 +234,22 @@ public:
       for(int j=0; j<dim; ++j)
       {
         comp[ dim - 2 ] = j;
-        sum += K_[j][i] * laplace( x, comp );
+        sum -= K_[j][i] * laplace( x, comp );
       }
     }
-    return -sum;
+    if( std::abs( advection_ ) > 0 )
+    {
+      for(int i=0; i<dim; ++i)
+      {
+        comp[0] = i;
+        for(int j=0; j<dim; ++j)
+        {
+          comp[ dim - 2 ] = j;
+          sum += advection_ * gradient( x, comp );
+        }
+      }
+    }
+    return sum;
   }
 
   virtual Field exact(const DomainField x[dim]) const
