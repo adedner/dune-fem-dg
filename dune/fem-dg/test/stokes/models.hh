@@ -378,6 +378,7 @@ public:
                                        const JacobianRangeType& gradLeft,
                                        RangeType& gLeft ) const
   {
+    return 0.0;
   }
 
   const ProblemType& problem () const { return problem_; }
