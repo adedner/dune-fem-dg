@@ -22,16 +22,16 @@ WANT_ISTL=1
 EXTRA_PROGRAMS = stokes_all 
 check_PROGRAMS = stokes 
 
-stokes_all_SOURCES = $(BASEDIR)/main.cc $(BASEDIR)/main_1.cc $(BASEDIR)/main_2.cc \
-                  $(BASEDIR)/main_0.cc $(BASEDIR)/main_3.cc
-stokes_SOURCES = $(BASEDIR)/main.cc $(BASEDIR)/main_pol.cc
+stokes_all_SOURCES = main.cc
+stokes_SOURCES = main.cc
 
 AM_CPPFLAGS = $(USE_OMP)  $(ALL_PKG_CPPFLAGS) -DGRIDDIM=$(GRIDDIM) \
               -D$(GRIDTYPE) $(DUNEMPICPPFLAGS) -DDGSCHEME -DONB \
               -DFLUX=$(FLUX) -DPRIMALDG -DUSE_ASSERT_THROW -DWANT_ISTL=$(WANT_ISTL) -DSTOKES
 AM_LDFLAGS = $(ALL_PKG_LDFLAGS) $(LAPACK_LDFLAGS) $(USE_OMP)
 
-stokes_CPPFLAGS = $(AM_CPPFLAGS) -DONLY_ONE_P -DPOLORDER=$(POLORDER)
+stokes_all_CPPFLAGS = $(AM_CPPFLAGS)
+stokes_CPPFLAGS = $(stokes_all_CPPFLAGS) -DONLY_ONE_P -DPOLORDER=$(POLORDER)
 
 DISTCHECK_CONFIGURE_FLAGS = DOXYGEN="true"
 
