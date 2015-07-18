@@ -88,12 +88,6 @@ namespace Dune
   template <int polynomialOrder, class ProblemTraits>
   inline void simulate(const ProblemTraits& problem)
   {
-    int polOrder = 1;
-    polOrder = Dune::Fem::Parameter :: getValue("femdg.polynomialOrder", polOrder );
-
-    // if polOrder and polynomialOrder differ don't do anything.
-    if( polOrder != polynomialOrder ) return ;
-
     // get number of desired threads (default is 1)
     const int numThreads = Dune::Fem::Parameter::getValue< int >("fem.parallel.numberofthreads", 1);
     Dune :: Fem :: ThreadManager :: setMaxNumberThreads( numThreads );
@@ -137,9 +131,14 @@ namespace Dune
   struct SimulatePolOrd
   {
     template <class ProblemTraits>
-    static void apply( const ProblemTraits& problem )
+    static void apply( const ProblemTraits& problem, const int polynomialOrder, const bool computeAnyway )
     {
-      simulate< polOrd > ( problem );
+      if( computeAnyway || polOrd == polynomialOrder )
+      {
+        if( Dune::Fem::Parameter::verbose() )
+          std::cout << "Simulator: run for polynomialOrder = " << polOrd << std::endl;
+        simulate< polOrd > ( problem );
+      }
     }
   };
 
@@ -148,7 +147,12 @@ namespace Dune
     template <class ProblemTraits>
     static void run( const ProblemTraits& problem )
     {
-      Dune::ForLoop< SimulatePolOrd, MIN_POLORD, MAX_POLORD > :: apply( problem );
+      int polOrder = 1;
+      polOrder = Dune::Fem::Parameter :: getValue("femdg.polynomialOrder", polOrder );
+
+      // run through all available polynomial order and check with dynamic polOrder
+      // when -DONLY_ONE_P was passed only POLORDER is used
+      Dune::ForLoop< SimulatePolOrd, MIN_POLORD, MAX_POLORD > :: apply( problem, polOrder, bool(MIN_POLORD == MAX_POLORD) );
     }
   };
 
