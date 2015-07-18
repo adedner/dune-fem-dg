@@ -13,7 +13,6 @@
 #define POLORDER 1
 #endif
 
-#include <dune/fem-dg/main/codegen.hh>
 #include "passtraits.hh"
 
 // dune-grid includes
