@@ -5,14 +5,8 @@ chorjo.hh chorjo.cc
 
 LDADD = $(ALL_PKG_LDFLAGS) $(ALL_PKG_LIBS) $(LOCAL_LIBS) $(DUNEMPILDFLAGS) $(DUNEMPILIBS)
 
-BASEDIR=../../main
-
 # helper variables
-SOURCEBASE= $(BASEDIR)/main.cc chorjo.cc
-SOURCES = $(SOURCEBASE) $(BASEDIR)/main_0.cc $(BASEDIR)/main_1.cc \
-					$(BASEDIR)/main_2.cc $(BASEDIR)/main_3.cc 
-SOURCES12 = $(SOURCEBASE) $(BASEDIR)/main_1.cc $(BASEDIR)/main_2.cc
-SOURCEONEP = $(SOURCEBASE) $(BASEDIR)/main_pol.cc 
+SOURCES = main.cc chorjo.cc
 
 # INFO FLUX
 #  set FLUX to 1 for LLF
@@ -44,19 +38,17 @@ POLORDER=2
 
 AM_CPPFLAGS = $(USE_OMP) -I../../problems/coldbubble  $(ALL_PKG_CPPFLAGS) -DGRIDDIM=$(GRIDDIM) \
               -D$(GRIDTYPE) $(DUNEMPICPPFLAGS) \
-              -DFLUX=$(FLUX) -D$(DIFFFLUXTYPE) -DWANT_CACHED_COMM_MANAGER=0
+              -DFLUX=$(FLUX) -D$(DIFFFLUXTYPE) # -DWANT_CACHED_COMM_MANAGER=0
 AM_LDFLAGS = $(ALL_PKG_LDFLAGS) $(LAPACK_LDFLAGS) $(USE_OMP)
 
-EXTRA_PROGRAMS = euler euler12
-check_PROGRAMS = euleronep 
+EXTRA_PROGRAMS = euler_all
+check_PROGRAMS = euler 
 
 euler_SOURCES = $(SOURCES)
-euler12_SOURCES = $(SOURCES12)
-euleronep_SOURCES = $(SOURCEONEP)
+euler_all_SOURCES = $(SOURCE)
 
-euler_CPPFLAGS = $(AM_CPPFLAGS) -DLIMITER
-euler12_CPPFLAGS = $(euler_CPPFLAGS) -DONLY_P1_P2
-euleronep_CPPFLAGS = $(euler_CPPFLAGS) -DONLY_ONE_P -DPOLORDER=$(POLORDER)
+euler_all_CPPFLAGS = $(AM_CPPFLAGS) -DLIMITER  -DONLY_ONE_P -DPOLORDER=$(POLORDER)
+euler_CPPFLAGS = $(euler_all_CPPFLAGS) -DONLY_ONE_P -DPOLORDER=$(POLORDER)
 
 DISTCHECK_CONFIGURE_FLAGS = DOXYGEN="true"
 
