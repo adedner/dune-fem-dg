@@ -539,8 +539,8 @@ public:
       dgAssembledOperator_.assemble(0, *linDgOperator_, rhs_);
 			dgAssembledOperator_.testSymmetrie(*linDgOperator_);
 
-      double absLimit   = Dune::Fem:: Parameter::getValue<double>("istl.absLimit",1.e-10);
-      double reduction  = Dune::Fem:: Parameter::getValue<double>("istl.reduction",1.e-10);
+      double absLimit   = Dune::Fem:: Parameter::getValue<double>("istl.absLimit",1.e-6);
+      double reduction  = Dune::Fem:: Parameter::getValue<double>("istl.reduction",1.e-6);
       // this describes the factor for max iterations in terms of spaces size
       int maxIterFactor = Dune::Fem:: Parameter::getValue<double>("istl.maxiterfactor", int(-1) );
 
