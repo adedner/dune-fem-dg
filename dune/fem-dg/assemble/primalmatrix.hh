@@ -178,6 +178,7 @@ public:
 
     maxspeed = (maxspeedl > maxspeedr) ? maxspeedl : maxspeedr;
     viscpara = (viscparal > viscparar) ? viscparal : viscparar;
+
     visc = uRight;
     visc -= uLeft;
     visc *= viscpara;
@@ -186,7 +187,7 @@ public:
     gLeft *= 0.5*len;
     gRight = gLeft;
 
-    return 0.;
+    return maxspeed;
   }
 protected:
   const Model& model_;
