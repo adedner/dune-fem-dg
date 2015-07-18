@@ -40,16 +40,14 @@ AM_CPPFLAGS = $(USE_OMP) -I../../problems/nseq  $(ALL_PKG_CPPFLAGS) -DGRIDDIM=$(
               -DFLUX=$(FLUX) -D$(DIFFFLUX) # -DLEGENDREBASIS # -DWBPROBLEM -DWELLBALANCE
 AM_LDFLAGS = $(ALL_PKG_LDFLAGS) $(LAPACK_LDFLAGS) $(USE_OMP) 
 
-EXTRA_PROGRAMS = nseq nseq12
-check_PROGRAMS = nseqonep
+EXTRA_PROGRAMS = navierstokes_all
+check_PROGRAMS = navierstokes
 
-nodist_nseq_SOURCES = $(SOURCES) 
-nodist_nseqonep_SOURCES = $(SOURCES) 
-nodist_nseq12_SOURCES = $(SOURCES) 
+nodist_navierstokes_all_SOURCES = $(SOURCES) 
+nodist_navierstokes_SOURCES = $(SOURCES) 
 
-nseq_CPPFLAGS = $(AM_CPPFLAGS)
-nseqonep_CPPFLAGS = $(nseq_CPPFLAGS) -DONLY_ONE_P -DPOLORDER=$(POLORDER)
-nseq12_CPPFLAGS = $(nseq_CPPFLAGS) -DONLY_P1_P2
+navierstokes_all_CPPFLAGS = $(AM_CPPFLAGS)
+navierstokes_CPPFLAGS = $(navierstokes_all_CPPFLAGS) -DONLY_ONE_P -DPOLORDER=$(POLORDER)
 
 DISTCHECK_CONFIGURE_FLAGS = DOXYGEN="true"
 
@@ -57,7 +55,7 @@ EXTRA_DIST = parameter
 
 CLEANFILES = manager.*.log 
 
-PROG=nseqonep
+PROG=navierstokes
 # codegeneration 
 generatecode:
 	$(MAKE) -i clean
