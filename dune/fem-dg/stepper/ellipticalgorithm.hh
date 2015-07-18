@@ -465,12 +465,11 @@ public:
     numbers_.resize( 0 );
 
     // calculate grid width
-    const double h = Dune::Fem::GridWidth::calcGridWidth(gridPart_);
-    numbers_.push_back( h );
-    monitor.gridWidth = h;
+    monitor.gridWidth = Dune::Fem::GridWidth::calcGridWidth(gridPart_);
+    numbers_.push_back( monitor.gridWidth );
 
-    const double size = grid_.size(0);
-    numbers_.push_back( size );
+    monitor.elements = grid_.size(0);
+    numbers_.push_back( monitor.elements );
 
     //assert( solution_.space().size() > 0 );
 
@@ -523,14 +522,19 @@ public:
     {
       linDgOperator_.reset( new LinearOperatorType("dg operator", space_, space_ ) );
 
-#if DGSCHEME // for all dg schemes including pdg (later not working)
-      typedef Dune::Fem::DiagonalAndNeighborStencil<DiscreteSpaceType,DiscreteSpaceType> StencilType ;
-#else
-      typedef Dune::Fem::DiagonalStencil<DiscreteSpaceType,DiscreteSpaceType> StencilType ;
-#endif
-      StencilType stencil( space_, space_ );
+      if( space_.continuous() )
+      {
+        typedef Dune::Fem::DiagonalStencil<DiscreteSpaceType,DiscreteSpaceType> StencilType ;
+        StencilType stencil( space_, space_ );
+        linDgOperator_->reserve( stencil );
+      }
+      else // DG case
+      {
+        typedef Dune::Fem::DiagonalAndNeighborStencil<DiscreteSpaceType,DiscreteSpaceType> StencilType ;
+        StencilType stencil( space_, space_ );
+        linDgOperator_->reserve( stencil );
+      }
 
-      linDgOperator_->reserve( stencil );
       linDgOperator_->clear();
       dgAssembledOperator_.assemble(0, *linDgOperator_, rhs_);
 			dgAssembledOperator_.testSymmetrie(*linDgOperator_);
