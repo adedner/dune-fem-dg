@@ -7,12 +7,6 @@
 
 #include <dune/fem-dg/models/defaultmodel.hh>
 
-namespace Dune
-{
-  template <class ModelType>
-  class UpwindFlux;
-}
-
 /**********************************************
  * Analytical model                           *
  *********************************************/
@@ -172,10 +166,8 @@ public:
                          const JacobianRangeType& jac,
                          FluxRangeType & f) const
   {
-    // evaluate advection coefficient
-    const double a = problem().constantAdvection();
+    const DomainType v = velocity( local );
 
-    DomainType v( a );
     //f = uV;
     for( int r=0; r<dimRange; ++r )
     {
@@ -184,6 +176,12 @@ public:
         f[r][d] = v[ d ] * u[ r ];
       }
     }
+  }
+
+  template <class LocalEvaluation>
+  DomainType velocity( const LocalEvaluation& local ) const
+  {
+    return DomainType( problem().constantAdvection() );
   }
 
   bool hasDirichletBoundary () const
@@ -391,7 +389,6 @@ public:
  protected:
   const ProblemType& problem_;
   DiffusionMatrixType K_ ;
-  friend class Dune::UpwindFlux<PoissonModel>;
 };
 
 #endif
