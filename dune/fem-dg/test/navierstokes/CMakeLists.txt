@@ -3,9 +3,10 @@ dune_install( ns_model.hh problemcreator.hh nswaves.hh ns_model_spec.hh nssmooth
 include_directories("${CMAKE_SOURCE_DIR}/dune/fem-dg/test/navierstokes/")
 configure_file(parameter.in ${CMAKE_CURRENT_BINARY_DIR}/parameter )
 
+# default settings for the test case
 set(POLORDER 2)
 add_definitions( "-DYASPGRID" )
-add_definitions( "-DGRIDDIM=3" )
+add_definitions( "-DGRIDDIM=2" )
 add_definitions( "-DFLUX=1" )
 add_definitions( "-DPRIMALDG" )
 add_definitions( "-DPROBLEM=2" )
