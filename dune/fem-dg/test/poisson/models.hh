@@ -175,10 +175,15 @@ public:
     // evaluate advection coefficient
     const double a = problem().constantAdvection();
 
+    DomainType v( a );
     //f = uV;
     for( int r=0; r<dimRange; ++r )
+    {
       for( int d=0; d<dimDomain; ++d )
-        f[r][d] = a * u[ r ];
+      {
+        f[r][d] = v[ d ] * u[ r ];
+      }
+    }
   }
 
   bool hasDirichletBoundary () const
