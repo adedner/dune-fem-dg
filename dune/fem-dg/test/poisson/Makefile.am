@@ -22,16 +22,16 @@ WANT_ISTL=1
 EXTRA_PROGRAMS = poisson_all # quasiadvdiff quasiadvdiff12 plaplace plaplace12
 check_PROGRAMS = poisson # quasiadvdiff quasiadvdiff12 plaplace plaplace12
 
-poisson_all_SOURCES = $(BASEDIR)/main.cc $(BASEDIR)/main_1.cc $(BASEDIR)/main_2.cc \
-                  $(BASEDIR)/main_0.cc $(BASEDIR)/main_3.cc
-poisson_SOURCES = $(BASEDIR)/main.cc $(BASEDIR)/main_pol.cc
+poisson_all_SOURCES = main.cc
+poisson_SOURCES = main.cc
 
 AM_CPPFLAGS = $(USE_OMP)  $(ALL_PKG_CPPFLAGS) -DGRIDDIM=$(GRIDDIM) \
               -D$(GRIDTYPE) $(DUNEMPICPPFLAGS) -DDGSCHEME -DONB \
               -DFLUX=$(FLUX) -DPRIMALDG -DUSE_ASSERT_THROW -DWANT_ISTL=$(WANT_ISTL)
 AM_LDFLAGS = $(ALL_PKG_LDFLAGS) $(LAPACK_LDFLAGS) $(USE_OMP)
 
-poisson_CPPFLAGS = $(AM_CPPFLAGS) -DONLY_ONE_P -DPOLORDER=$(POLORDER)
+poisson_all_CPPFLAGS = $(AM_CPPFLAGS)
+poisson_CPPFLAGS = $(poisson_all_CPPFLAGS) -DONLY_ONE_P -DPOLORDER=$(POLORDER)
 
 DISTCHECK_CONFIGURE_FLAGS = DOXYGEN="true"
 
@@ -39,7 +39,7 @@ EXTRA_DIST = parameter
 
 CLEANFILES=manager.*.log eoc_*.tex
 
-PROG=poissononep
+PROG=poisson
 # codegeneration 
 generatecode:
 	$(MAKE) -i clean
