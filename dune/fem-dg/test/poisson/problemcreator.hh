@@ -49,8 +49,8 @@ struct PoissonProblemCreator
   {
     typedef ProblemType                                InitialDataType;
     typedef PoissonModel< GridPart, InitialDataType >  ModelType;
-    typedef Dune::LLFAdvFlux< ModelType >              FluxType;
-    //typedef Dune::NoFlux< ModelType >                  FluxType;
+    //typedef Dune::LLFAdvFlux< ModelType >              FluxType;
+    typedef Dune::NoFlux< ModelType >                  FluxType;
     // choice of diffusion flux (see diffusionflux.hh for methods)
     static const Dune :: DGDiffusionFluxIdentifier PrimalDiffusionFluxId
       = Dune :: method_general ;
