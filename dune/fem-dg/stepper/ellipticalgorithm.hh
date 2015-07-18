@@ -522,7 +522,7 @@ public:
     {
       linDgOperator_.reset( new LinearOperatorType("dg operator", space_, space_ ) );
 
-      if( space_.continuous() )
+      if( space_.continuous() ) // Lagrange case
       {
         typedef Dune::Fem::DiagonalStencil<DiscreteSpaceType,DiscreteSpaceType> StencilType ;
         StencilType stencil( space_, space_ );
@@ -604,8 +604,8 @@ public:
     Dune::Fem::FemEoc :: setErrors(eocId_, errors);
 
     // delete solver and linear operator for next step
-    delete invDgOperator_.release();
-    delete linDgOperator_.release();
+    invDgOperator_.reset();
+    linDgOperator_.reset();
   }
 
   bool adaptation(const double tolerance)
