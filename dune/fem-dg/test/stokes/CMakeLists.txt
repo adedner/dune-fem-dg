@@ -21,4 +21,6 @@ dune_target_link_libraries(stokes "${DUNE_LIBS}")
 set_property(TARGET stokes APPEND PROPERTY 
              COMPILE_DEFINITIONS "ONLY_ONE_P;POLORDER=2")
 
+add_code_generate_targets( stokes stokesall )
+
 dune_add_test( stokes stokesall )

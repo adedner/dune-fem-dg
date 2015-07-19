@@ -19,4 +19,6 @@ dune_target_link_libraries(navierstokes ${DUNE_LIBS})
 set_property(TARGET navierstokes APPEND PROPERTY 
              COMPILE_DEFINITIONS "ONLY_ONE_P;POLORDER=${POLORDER}")
 
+add_code_generate_targets( navierstokes navierstokesall )
+
 dune_add_test( navierstokes navierstokesall )

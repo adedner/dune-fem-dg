@@ -18,7 +18,6 @@ dune_target_link_libraries(advdiff "${DUNE_LIBS}")
 set_property(TARGET advdiff APPEND PROPERTY 
              COMPILE_DEFINITIONS "ONLY_ONE_P;POLORDER=2")
 
-add_code_generate_targets( advdiff main.cc )
-add_code_generate_targets( advdiffall main.cc )
+add_code_generate_targets( advdiff advdiffall )
 
 dune_add_test( advdiff advdiffall )
