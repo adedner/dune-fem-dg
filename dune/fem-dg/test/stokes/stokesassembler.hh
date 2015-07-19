@@ -113,28 +113,21 @@ namespace Dune {
   public:
 #if 0
     typedef Dune::Fem::ISTLMatrixOperator< DiscretePressurteFunctionType, DiscreteFunctionType, MyMatrixTraits >PressureGradMatType;
-#else
-    typedef Dune::Fem::SparseRowLinearOperator< DiscretePressureFunctionType, DiscreteFunctionType >PressureGradMatType;
-#endif
-    typedef typename PressureGradMatType::LocalMatrixType LocalPressureGradMatType;
-//    typedef typename PressureGradMatType::MatrixType  PGMType;
-    typedef PressureGradMatType PGMType;
-
-#if 0
     typedef Dune::Fem::ISTLMatrixOperator< DiscreteFunctionType, DiscretePressureFunctionType,MyMatrixTraits > PressureDivMatType;
-#else
-    typedef Dune::Fem::SparseRowLinearOperator<DiscreteFunctionType, DiscretePressureFunctionType > PressureDivMatType;
-#endif
-    typedef typename PressureDivMatType::LocalMatrixType LocalPressureDivMatType;
-    //typedef typename PressureDivMatType::MatrixType  PDMType;:
-    typedef PressureDivMatType PDMType;
-#if 0
     typedef Dune::Fem::SparseRowMatrixOperator< DiscretePressureFunctionType,  DiscretePressureFunctionType, MyMatrixTraits >PressureStabMatType;
 #else
+    typedef Dune::Fem::SparseRowLinearOperator< DiscretePressureFunctionType, DiscreteFunctionType >PressureGradMatType;
+    typedef Dune::Fem::SparseRowLinearOperator<DiscreteFunctionType, DiscretePressureFunctionType > PressureDivMatType;
     typedef Dune::Fem::SparseRowLinearOperator< DiscretePressureFunctionType,  DiscretePressureFunctionType >PressureStabMatType;
 #endif
+    typedef typename PressureGradMatType::LocalMatrixType LocalPressureGradMatType;
+    typedef typename PressureDivMatType::LocalMatrixType LocalPressureDivMatType;
     typedef typename PressureStabMatType::LocalMatrixType LocalPressureStabMatType;
+    //typedef typename PressureGradMatType::MatrixType  PGMType;
+    //typedef typename PressureDivMatType::MatrixType  PDMType;:
     //typedef typename PressureStabMatType::MatrixType PSMType;
+    typedef PressureGradMatType PGMType;
+    typedef PressureDivMatType PDMType;
     typedef PressureStabMatType PSMType;
 
     typedef FieldMatrix<double,dimension,dimension> JacobianInverseType;
