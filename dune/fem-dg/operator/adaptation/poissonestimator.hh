@@ -34,14 +34,9 @@ namespace Dune
     static int numDGBaseFcts( int polOrder )
     {
       if( dimension == 2 )
-      {
         return  (polOrder + 2) * (polOrder + 1) / 2;
-      }
       else if ( dimension == 3 )
-      {
-        return ((polOrder+1)*(polOrder+2)*(2*polOrder+3)/6
-                + (polOrder+1)*(polOrder+2)/2)/2;
-      }
+        return ((polOrder+1)*(polOrder+2)*(2*polOrder+3)/6  + (polOrder+1)*(polOrder+2)/2)/2;
       else
         abort();
     }
@@ -205,18 +200,14 @@ namespace Dune
     SimplexDGSpaceType& dgSimplexSpace()
     {
       if( ! dgSimplexSpace_ )
-      {
         dgSimplexSpace_.reset( new SimplexDGSpaceType( gridPart_ ) );
-      }
       return *dgSimplexSpace_ ;
     }
 
     CubeDGSpaceType& dgCubeSpace()
     {
       if( ! dgCubeSpace_  )
-      {
         dgCubeSpace_.reset( new CubeDGSpaceType( gridPart_ ) );
-      }
       return *dgCubeSpace_ ;
     }
 
@@ -299,11 +290,11 @@ namespace Dune
 
       }
       std::cout << "*************** hen = " << henMin << std::endl;
-			eocIndicator();
+      eocIndicator();
       return computeIndicator();
     }
 
-		double computeIndicator()
+    double computeIndicator()
     {
       totalIndicator2_ = 0.0;
       maxIndicator_ = 0.0;
@@ -325,7 +316,7 @@ namespace Dune
           maxIndicator_ = std::max(maxIndicator_,indicator_[i]);
         }
         // comput global max indicator
-			  maxIndicator_ = grid_.comm().max( maxIndicator_ );
+        maxIndicator_ = grid_.comm().max( maxIndicator_ );
       }
       else
       {
@@ -358,7 +349,7 @@ namespace Dune
       return sqrt( totalIndicator2_ );
     }
 
-		void eocIndicator()
+    void eocIndicator()
     {
       totalIndicator2_ = 0.0;
       maxIndicator_ = 0.0;
@@ -375,30 +366,28 @@ namespace Dune
       }
       else
       {
-				const unsigned int size = indicator_.size();
+        const unsigned int size = indicator_.size();
         for (unsigned int i=0;i<size;++i)
         {
           if (indicator_[i]<1e-10) continue;
           errorParts[0] += R2_[i];
           errorParts[1] += R1_[i];
           errorParts[2] += Rorth_[i];
-					assert( std::abs(indicator_[i] - (R2_[i] + R1_[i] + Rorth_[i]) ) < 1e-8*indicator_[i] );
+          assert( std::abs(indicator_[i] - (R2_[i] + R1_[i] + Rorth_[i]) ) < 1e-8*indicator_[i] );
         }
 
-
       }
-			errorParts[0] = sqrt(errorParts[0]);
+      errorParts[0] = sqrt(errorParts[0]);
       errorParts[1] = sqrt(errorParts[1]);
       errorParts[2] = sqrt(errorParts[2]);
       Dune::Fem::FemEoc :: setErrors(eocId_, errorParts );
 
     }
 
-
     //! mark all elements due to given tolerance
     bool mark ( const double tolerance ) const
     {
-    	int marked = 0;
+      int marked = 0;
       int hmarked = 0;
 
       if (tolerance < 0)
@@ -409,7 +398,7 @@ namespace Dune
           const ElementType &entity = *it;
           grid_.mark( 1, entity );
           ++marked;
-	      }
+        }
       }
       else
       {
@@ -418,7 +407,7 @@ namespace Dune
                 ( theta_*theta_ * maxIndicator_ ) :
                 tolerance*tolerance / (double)indexSet_.size( 0 );
 
-	      // loop over all elements
+        // loop over all elements
         const IteratorType end = dfSpace_.end();
         for( IteratorType it = dfSpace_.begin(); it != end; ++it )
         {
@@ -427,7 +416,7 @@ namespace Dune
           if( (maximumStrategy_ && indicator_[ indexSet_.index( entity ) ] > localTol2)
               ||
               indicator_[ indexSet_.index( entity ) ] == -1 )
-      	  {
+          {
             ++marked;
             if ( !isPadaptive() ||
                 ( dfSpace_.order(entity) > smoothness_[ indexSet_.index( entity ) ]
@@ -436,7 +425,7 @@ namespace Dune
               ++hmarked;
               grid_.mark( 1, entity );
             }
-	        }
+          }
         }
       }
       if (nonConformityDifference_ >= 0)
@@ -525,15 +514,15 @@ namespace Dune
 
         RangeType y(0.),tmp(0.);
 
-	      const DomainType global = geometry.global(quad.point(qp));
-	      rhs.f(global,y);
+        const DomainType global = geometry.global(quad.point(qp));
+        rhs.f(global,y);
 
-	      divergence( entity, geometry, quad, qp, h2, uLocal, sigmaLocal, tmp);
+        divergence( entity, geometry, quad, qp, h2, uLocal, sigmaLocal, tmp);
 
-      	y+=tmp;
+        y+=tmp;
 
-	      const double weight = quad.weight( qp ) * geometry.integrationElement( quad.point( qp ) );
-		    indicator_[ index ] +=h2*weight * (y * y);
+        const double weight = quad.weight( qp ) * geometry.integrationElement( quad.point( qp ) );
+        indicator_[ index ] +=h2*weight * (y * y);
 
         R2_[ index ] += h2*weight * (y * y);
       }
@@ -645,11 +634,11 @@ namespace Dune
     }
 
     void estimateBoundary ( const IntersectionType &intersection,
-			    const ElementType &inside,
+          const ElementType &inside,
           const LocalFunctionType &uInside, const SigmaLocalFunctionType &sigmaInside )
     {
       double volume = inside.geometry().volume() ;
- 	    const double h = ( (dimension == 1 ? volume : std::pow(0.5* volume, 1.0 / (double)dimension )) ) /
+      const double h = ( (dimension == 1 ? volume : std::pow(0.5* volume, 1.0 / (double)dimension )) ) /
                        ( uInside.order() );
       const int quadOrder = 2*(dfSpace_.order()+1);
       const int insideIndex = indexSet_.index( inside );
@@ -668,10 +657,10 @@ namespace Dune
       fluxEn.resize( numQuadraturePoints );
       dfluxEn.resize( numQuadraturePoints );
       oper_.boundaryFlux(dfSpace_.gridPart(),
-                 intersection, inside, 0, quadInside,
-                 uValuesEn, duValuesEn, uValuesNb,
-                 fluxEn, dfluxEn
-                 );
+                         intersection, inside, 0, quadInside,
+                         uValuesEn, duValuesEn, uValuesNb,
+                         fluxEn, dfluxEn
+                         );
 
       sigmaValuesEn.resize( numQuadraturePoints );
       sigmaInside.evaluateQuadrature( quadInside, sigmaValuesEn );
@@ -683,12 +672,12 @@ namespace Dune
       volume/=3*faceVol;
 
       for( int qp = 0; qp < numQuadraturePoints; ++qp )
-	    {
-	      DomainType unitNormal
-	             = intersection.integrationOuterNormal( quadInside.localPoint( qp ) );
+      {
+        DomainType unitNormal
+               = intersection.integrationOuterNormal( quadInside.localPoint( qp ) );
         const double integrationElement = unitNormal.two_norm();
 
-       	unitNormal/=integrationElement;
+        unitNormal/=integrationElement;
 
         // R_1 = h| (d u_l * n_l) + (d u_r * n_r) |^2 = h| (d u_l - d u_r) * n_l |^2
         JacobianRangeType AJacEn;
@@ -699,18 +688,18 @@ namespace Dune
         AJacEn.umv( unitNormal, fluxEn[qp]);
 
         // R_orth = h^{-1} |u_l-u_r|
-	      RangeType jump;
-	      jump=uValuesEn[qp];
-	      jump-=uValuesNb[qp];
+        RangeType jump;
+        jump=uValuesEn[qp];
+        jump-=uValuesNb[qp];
 
-	      errorInside  += quadInside.weight( qp ) *h* (fluxEn[qp] * fluxEn[qp]) *integrationElement;
-	      errorInside  += quadInside.weight( qp ) *1./h* (jump * jump) *integrationElement;
+        errorInside  += quadInside.weight( qp ) *h* (fluxEn[qp] * fluxEn[qp]) *integrationElement;
+        errorInside  += quadInside.weight( qp ) *1./h* (jump * jump) *integrationElement;
 
-  	    R1_[ insideIndex ] += quadInside.weight( qp ) *h* (fluxEn[qp]*fluxEn[qp]) *integrationElement;
-	      Rorth_[ insideIndex ] += quadInside.weight( qp ) *1./h* (jump * jump) *integrationElement;
+        R1_[ insideIndex ] += quadInside.weight( qp ) *h* (fluxEn[qp]*fluxEn[qp]) *integrationElement;
+        Rorth_[ insideIndex ] += quadInside.weight( qp ) *1./h* (jump * jump) *integrationElement;
       }
       if( errorInside > 0.0 )
-	      indicator_[ insideIndex ] +=  errorInside;
+        indicator_[ insideIndex ] +=  errorInside;
     }
     //! caclulate error on boundary intersections
     void estimateIntersection ( const IntersectionType &intersection,
@@ -731,10 +720,10 @@ namespace Dune
         const LocalFunctionType uOutside = uh_.localFunction( outside );
         const SigmaLocalFunctionType sigmaOutside = sigma_.localFunction( outside );
 
-      	// const double volume = std::max( inside.geometry().volume() , outside.geometry().volume() );
+        // const double volume = std::max( inside.geometry().volume() , outside.geometry().volume() );
         // const double h = 2.*volume / intersection.geometry().volume();
-      	const double volume = ( inside.geometry().volume() + outside.geometry().volume() );
- 	      const double h = (dimension == 1 ? volume : std::pow(0.5* volume, 1.0 / (double)dimension )) /
+        const double volume = ( inside.geometry().volume() + outside.geometry().volume() );
+        const double h = (dimension == 1 ? volume : std::pow(0.5* volume, 1.0 / (double)dimension )) /
                          ( uInside.order() );
 
         double errorInside, errorOutside;
@@ -753,10 +742,10 @@ namespace Dune
                                          errorInside, errorOutside);
         }
         if( errorInside > 0.0 )
-	      {
-	        indicator_[ insideIndex ] +=  errorInside;
-	        if( isOutsideInterior )
-	          indicator_[ outsideIndex ] +=  errorOutside;
+        {
+          indicator_[ insideIndex ] +=  errorInside;
+          if( isOutsideInterior )
+            indicator_[ outsideIndex ] +=  errorOutside;
         }
       }
     }
@@ -772,7 +761,7 @@ namespace Dune
                                 const SigmaLocalFunctionType &sigmaInside,
                                 const LocalFunctionType &uOutside,
                                 const SigmaLocalFunctionType &sigmaOutside,
-	                              const double h, double volume,
+                                const double h, double volume,
                                 double &errorInside, double &errorOutside)
     {
       // use IntersectionQuadrature to create appropriate face quadratures
@@ -820,12 +809,12 @@ namespace Dune
       volume/=3*faceVol;
 
       for( int qp = 0; qp < numQuadraturePoints; ++qp )
-	    {
-	      DomainType unitNormal
-	             = intersection.integrationOuterNormal( quadInside.localPoint( qp ) );
+      {
+        DomainType unitNormal
+               = intersection.integrationOuterNormal( quadInside.localPoint( qp ) );
         const double integrationElement = unitNormal.two_norm();
 
-       	unitNormal/=integrationElement;
+        unitNormal/=integrationElement;
 
         // R_1 = h| (d u_l * n_l) + (d u_r * n_r) |^2 = h| (d u_l - d u_r) * n_l |^2
         JacobianRangeType AJacEn,AJacNb;
@@ -840,17 +829,17 @@ namespace Dune
         AJacNb.umv( unitNormal, fluxNb[qp]);
 
         // R_orth = h^{-1} |u_l-u_r|
-	      RangeType jump;
-	      jump=uValuesEn[qp];
-	      jump-=uValuesNb[qp];
+        RangeType jump;
+        jump=uValuesEn[qp];
+        jump-=uValuesNb[qp];
 
-	      errorInside  += quadInside.weight( qp ) *h* (fluxEn[qp] * fluxEn[qp]) *integrationElement;
-	      errorInside  += quadInside.weight( qp ) *1./h* (jump * jump) *integrationElement;
-	      errorOutside += quadOutside.weight( qp ) *h* (fluxNb[qp] * fluxNb[qp]) *integrationElement;
-	      errorOutside += quadOutside.weight( qp ) *1./h* (jump * jump) *integrationElement;
+        errorInside  += quadInside.weight( qp ) *h* (fluxEn[qp] * fluxEn[qp]) *integrationElement;
+        errorInside  += quadInside.weight( qp ) *1./h* (jump * jump) *integrationElement;
+        errorOutside += quadOutside.weight( qp ) *h* (fluxNb[qp] * fluxNb[qp]) *integrationElement;
+        errorOutside += quadOutside.weight( qp ) *1./h* (jump * jump) *integrationElement;
 
-  	    R1_[ insideIndex ] += quadInside.weight( qp ) *h* (fluxEn[qp]*fluxEn[qp]) *integrationElement;
-	      Rorth_[ insideIndex ] += quadInside.weight( qp ) *1./h* (jump * jump) *integrationElement;
+        R1_[ insideIndex ] += quadInside.weight( qp ) *h* (fluxEn[qp]*fluxEn[qp]) *integrationElement;
+        Rorth_[ insideIndex ] += quadInside.weight( qp ) *1./h* (jump * jump) *integrationElement;
         R1_[ outsideIndex ] += quadOutside.weight( qp ) *h* (fluxNb[qp]*fluxNb[qp]) *integrationElement;
         Rorth_[ outsideIndex ] += quadOutside.weight( qp ) *1./h* (jump * jump) *integrationElement;
       }
@@ -859,14 +848,14 @@ namespace Dune
     mutable double henMin;
     template<class Quadrature>
     void divergence(const ElementType &entity,
-       const GeometryType & geo,
-			 const Quadrature &quad,
-			 const int qp,
-       double h2,
-			 const LocalFunctionType &u_h,
-			 const SigmaLocalFunctionType &sigma_h,
-			 RangeType& result
-			 ) const
+                    const GeometryType & geo,
+                    const Quadrature &quad,
+                    const int qp,
+                    double h2,
+                    const LocalFunctionType &u_h,
+                    const SigmaLocalFunctionType &sigma_h,
+                    RangeType& result
+                    ) const
     {
 #if 0
       // This version would only work for affine geometry and piecewise constant K
@@ -880,14 +869,14 @@ namespace Dune
         /*
         typename LocalFunctionType::HessianRangeType hessian;
         for( int r = 0; r < RangeType::dimension; ++r )
-	      {
-	        for( int i = 0; i < dimension; ++i )
-	          result[ r ] += hessian[ r ][ i ][ i ];
-	      }
+        {
+          for( int i = 0; i < dimension; ++i )
+            result[ r ] += hessian[ r ][ i ][ i ];
+        }
         */
         assert( RangeType::dimension == 1 );
-	      for( int i = 0; i < dimension; ++i )
-	        result[ 0 ] += hessian[ i ][ i ];
+        for( int i = 0; i < dimension; ++i )
+          result[ 0 ] += hessian[ i ][ i ];
       }
       else
 #endif
