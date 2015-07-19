@@ -168,25 +168,6 @@ namespace Dune
       coeffroot = 1,
       prior2p = 2
     };
-    struct PAdaptiveMethodNames
-    {
-      typedef PAdaptiveMethodIdentifier MethodType;
-      static std::string methodNames( const MethodType mthd )
-      {
-        static const std::string method []
-          = { "none", "coeffroot", "prior2p" };
-        return method[ mthd ];
-      }
-      static MethodType getMethod()
-      {
-        const std::string method []
-          = { methodNames( none ),
-              methodNames( coeffroot ),
-              methodNames( prior2p ),
-            };
-        return (MethodType) Dune::Fem::Parameter::getEnum( "padaptive.method", method );
-      }
-    };
     PAdaptiveMethodIdentifier padaptiveMethod_;
 
 
@@ -216,7 +197,7 @@ namespace Dune
        maximumStrategy_( param.maximumStrategy() ),
        nonConformityDifference_( Dune::Fem::Parameter::getValue("nonconformitydifference",1) ),
        eocId_( -1 ),
-       padaptiveMethod_(PAdaptiveMethodNames::getMethod())
+       padaptiveMethod_( (PAdaptiveMethodIdentifier) param.padaptiveMethod() )
     {
       clear();
     }
