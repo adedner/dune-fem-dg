@@ -83,11 +83,11 @@ namespace Dune {
     typedef typename GridType::template Codim<0>::Geometry GeometryType;
     //! type of quadrature to be used
 
-     typedef PassTraits< Traits, polynomialOrder, DiscreteFunctionSpaceType::dimRange> PassTraitsType;
+    typedef PassTraits< Traits, polynomialOrder, DiscreteFunctionSpaceType::dimRange> PassTraitsType;
 
 
-     typedef typename PassTraitsType::VolumeQuadratureType VolumeQuadratureType;
-     typedef typename PassTraitsType::FaceQuadratureType FaceQuadratureType;
+    typedef typename PassTraitsType::VolumeQuadratureType VolumeQuadratureType;
+    typedef typename PassTraitsType::FaceQuadratureType FaceQuadratureType;
 //    typedef Dune::Fem::ElementQuadrature< GridPartType, 0 > VolumeQuadratureType;
   //  typedef Dune::Fem::ElementQuadrature<GridPartType,1> FaceQuadratureType;
 
@@ -137,21 +137,15 @@ namespace Dune {
     //typedef typename PressureStabMatType::MatrixType PSMType;
     typedef PressureStabMatType PSMType;
 
-
-
     typedef FieldMatrix<double,dimension,dimension> JacobianInverseType;
   private:
     //Class Members
     const DiscreteFunctionSpaceType& spc_;
-     const ProblemType& problem_;
+    const ProblemType& problem_;
     const DiscretePressureSpaceType& pressurespc_;
-
     mutable DiscreteFunctionType veloRhs_;
-
     mutable DiscretePressureFunctionType pressureRhs_;
-
     double grads_;
-
     int volumeQuadOrd_,faceQuadOrd_;
 
     PressureGradMatType pressureGradMatrix_;
@@ -180,7 +174,6 @@ namespace Dune {
       pressureStabMatrix_("psm",pressurespc_,pressurespc_),//PSM
       d11_(d11)
     {}
-
 
     const DiscretePressureSpaceType& pressurespc()const
     {return pressurespc_;}
@@ -245,16 +238,11 @@ namespace Dune {
           }
         }
       }
-
       //      pressureDivMatrix_.matrix().print(std::cout);
-
       //      std::cout<<"&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&\n\n";
       //      pressureGradMatrix_.matrix().print(std::cout);
 #endif
-
     }
-
-
 
 
     template<class EntityType>
@@ -340,21 +328,11 @@ namespace Dune {
 
           if(edge.conforming() )
           {
-            FaceQuadratureType faceQuadInner(gridPart,edge, faceQuadOrd_,
-                                               FaceQuadratureType::INSIDE);
-            FaceQuadratureType faceQuadOuter(gridPart,edge, faceQuadOrd_,
-                                              FaceQuadratureType::OUTSIDE);
+            FaceQuadratureType faceQuadInner(gridPart,edge, faceQuadOrd_, FaceQuadratureType::INSIDE);
+            FaceQuadratureType faceQuadOuter(gridPart,edge, faceQuadOrd_, FaceQuadratureType::OUTSIDE);
 
-            applyNeighbor(edge,
-                          en,
-                          nb,
-                          faceQuadInner,
-                          faceQuadOuter,
-                          bsetEn ,
-                          pressurebsetEn,
-                          enPGrad,
-                          enPDiv,
-                          enPStab);
+            applyNeighbor(edge, en, nb, faceQuadInner, faceQuadOuter,
+                          bsetEn, pressurebsetEn, enPGrad, enPDiv, enPStab);
           }
           else
           {
@@ -362,16 +340,8 @@ namespace Dune {
                                                             NonConformingFaceQuadratureType::OUTSIDE);
             NonConformingFaceQuadratureType  faceQuadInner(gridPart, edge, faceQuadOrd_,
                                                            NonConformingFaceQuadratureType::INSIDE);
-            applyNeighbor(edge,
-                          en,
-                          nb,
-                          faceQuadInner,
-                          faceQuadOuter,
-                          bsetEn ,
-                          pressurebsetEn,
-                          enPGrad,
-                          enPDiv,
-                          enPStab);
+            applyNeighbor(edge, en, nb, faceQuadInner, faceQuadOuter,
+                          bsetEn, pressurebsetEn, enPGrad, enPDiv, enPStab);
 
           }
         }
@@ -382,28 +352,16 @@ namespace Dune {
             FaceQuadratureType faceQuadInner(gridPart,edge, faceQuadOrd_,
                                              FaceQuadratureType::INSIDE);
 
-            applyBoundary(edge,
-                          en,
-                          faceQuadInner,
-                          bsetEn ,
-                          pressurebsetEn,
-                          enPGrad,
-                          enPDiv,
-                          enPStab);
+            applyBoundary(edge, en, faceQuadInner,
+                          bsetEn, pressurebsetEn, enPGrad, enPDiv, enPStab);
           }
           else
           {
             NonConformingFaceQuadratureType   faceQuadInner(gridPart, edge, faceQuadOrd_,
                                                             NonConformingFaceQuadratureType::INSIDE);
 
-            applyBoundary(edge,
-                          en,
-                          faceQuadInner,
-                          bsetEn ,
-                          pressurebsetEn,
-                          enPGrad,
-                          enPDiv,
-                          enPStab);
+            applyBoundary(edge, en, faceQuadInner,
+                          bsetEn, pressurebsetEn, enPGrad, enPDiv, enPStab);
 
           }
         }
@@ -430,20 +388,17 @@ namespace Dune {
       const size_t numPBaseFunctionsEn=pressurebsetEn.size();
       const size_t numPBaseFunctionsNb=pressurebsetNb.size();
 
-
       std::vector<RangeType> phiEn(numBaseFunctionsEn);
       std::vector<JacobianRangeType> dphiEn(numBaseFunctionsEn);
 
       std::vector<PressureRangeType> quEn(numPBaseFunctionsEn);
       std::vector<PressureJacobianRangeType> dquEn(numPBaseFunctionsEn);
 
-
       std::vector<RangeType> phiNb(numBaseFunctionsNb);
       std::vector<JacobianRangeType> dphiNb(numBaseFunctionsNb);
 
       std::vector<PressureRangeType> quNb(numPBaseFunctionsNb);
       std::vector<PressureJacobianRangeType> dquNb(numPBaseFunctionsNb);
-
 
       PressureRangeType phiNormal(0.);
       RangeType quNormal(0.);
@@ -467,7 +422,6 @@ namespace Dune {
 
         double intWeight=faceQuadInner.weight(l);
 
-
         for(unsigned int j=0; j< numBaseFunctionsEn; ++j)
         {
           for(unsigned int n = 0; n < numPBaseFunctionsEn ; ++n)
@@ -475,28 +429,19 @@ namespace Dune {
             // ******************************************************************************
             // v+*qu+*n+
             // ******************************************************************************
-
             quNormal=normal;
-
             quNormal*=quEn[n][0];
-
             double PGM_en=(phiEn[j]*quNormal*intWeight);
-
             PGM_en*=0.5;
-
             enPressGrad.add(j,n,PGM_en);
 
             // ******************************************************************************
             // -qu+*v+*n+
             // ******************************************************************************
-
             phiNormal[0]=phiEn[j]*normal;
-
             double PDM_en=(quEn[n]*phiNormal)*intWeight;
             PDM_en*=-0.5;
-
             enPressDiv.add(n,j,PDM_en);
-
 
 #if PRESSURESTABILIZATION
             if(j==0)
@@ -521,16 +466,11 @@ namespace Dune {
         {
           for(unsigned int n = 0; n < numPBaseFunctionsNb ; ++n)
           {
-
             quNormal=normal;
             quNormal*=quNb[n][0];
-
             double PGM_nb=(phiEn[j]*quNormal*intWeight);
-
             PGM_nb*=0.5;
-
             nbPressGrad.add(j,n,PGM_nb);
-
           }
         }
 
@@ -595,7 +535,6 @@ namespace Dune {
       for (int l = 0; l < quadNop ; ++l)
       {
         bsetEn.evaluateAll(faceQuadInner[l],phiEn);
-
         pressurebsetEn.evaluateAll(faceQuadInner[l],quEn);
 
         DomainType normal=edge.integrationOuterNormal(faceQuadInner.localPoint(l));
