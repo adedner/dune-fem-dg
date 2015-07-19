@@ -77,8 +77,9 @@ namespace Dune
     explicit StokesErrorEstimator (const DiscreteFunctionType &uh,
                                    const SigmaFunction &sigma,
                                    const DGOperator &oper,
-                                   GridType &grid)
-    : BaseType(uh,sigma,oper,grid),
+                                   GridType &grid
+                                   const Dune::AdaptationParameters& param = Dune::AdaptationParameters() )
+    : BaseType(uh,sigma,oper,grid,param),
       Rdiv_( this->indexSet_.size( 0 ))
     {
     }
