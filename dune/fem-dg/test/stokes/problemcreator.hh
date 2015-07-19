@@ -197,9 +197,6 @@ struct StokesProblemCreator
     grid.adapt();
     grid.postAdapt();
 
-    //Dune :: GrapeGridDisplay< GridType > grape( grid );
-    //grape.display ();
-
     return gridptr ;
   }
 
