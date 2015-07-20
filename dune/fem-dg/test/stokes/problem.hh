@@ -165,7 +165,6 @@ namespace Dune
     //! the exact solution
     void u ( const DomainType &p, RangeType &ret ) const
     {
-
       double x=p[0];
       double y=p[1];
 
@@ -180,19 +179,12 @@ namespace Dune
       ret[1]*=(1-y)*(1-y);
       ret[1]*=2*x-6*x*x+4*x*x*x;
 			ret[1]+=1.;
-
-
-
     }
 
     //! the exact solution
     void p(const DomainType& x, PressureRangeType& ret) const
     {
-
-
       ret[0]=x[0]*(1-x[0]);
-
-
     }
 
 
@@ -220,6 +212,86 @@ namespace Dune
   };
 
 
+  template< class GridImp>
+  class GeneralizedStokesProblem
+    : public StokesProblemInterface<Dune::Fem::FunctionSpace< double, double, GridImp :: dimension, GridImp :: dimension > ,
+				    Dune::Fem::FunctionSpace< double, double, GridImp :: dimension, 1 >  >
+  {
+    typedef Dune::Fem::FunctionSpace< double, double, GridImp :: dimension, GridImp :: dimension > FunctionSpaceType ;
+    typedef Dune::Fem::FunctionSpace< double, double, GridImp :: dimension, 1 > PressureFunctionSpaceType ;
+    typedef StokesProblemInterface<FunctionSpaceType,PressureFunctionSpaceType> BaseType;
+
+  public:
+
+    static const int dimRange = FunctionSpaceType::dimRange;
+    static const int dimDomain = FunctionSpaceType::dimDomain;
+
+    typedef typename BaseType::DomainType DomainType;
+    typedef typename BaseType::RangeType  RangeType;
+    typedef typename BaseType::PressureRangeType  PressureRangeType;
+    typedef typename BaseType::JacobianRangeType JacobianRangeType;
+    typedef typename BaseType::DomainFieldType DomainFieldType;
+    typedef typename BaseType::RangeFieldType  RangeFieldType;
+
+    typedef typename FunctionSpaceType::HessianRangeType HessianRangeType;
+
+    typedef typename BaseType::DiffusionMatrixType DiffusionMatrixType;
+
+    GeneralizedStokesProblem()
+      : mu_(Dune::Fem:: Parameter::getValue<double>( "mu", 1.0 ) ),
+        alpha_(Dune::Fem:: Parameter::getValue<double>( "alpha", 1.0 ) )
+    {}
+
+
+    //! the right hand side (i.e., the Laplace of u)
+     void f ( const DomainType &p, RangeType &ret ) const
+    {
+      double x=p[0];
+      double y=p[1];
+      ret[0] = cos(0.5*M_PI*(x+y)) * (alpha_+0.5*mu_*M_PI*M_PI) + 0.5*M_PI*cos(M_PI*(x-y) );
+      ret[1] = - ret[0];
+    }
+    //! the exact solution
+    void u ( const DomainType &p, RangeType &ret ) const
+    {
+      double x=p[0];
+      double y=p[1];
+      //u1
+      ret[0] = cos(0.5*M_PI*(x+y));
+      ret[1] = -ret[0];
+    }
+
+    //! the exact solution
+    void p(const DomainType& x, PressureRangeType& ret) const
+    {
+      ret[0] = sin(0.5*M_PI*(x[0]-x[1]));
+    }
+
+    //! the diffusion matrix
+    void K ( const DomainType &x, DiffusionMatrixType &m ) const
+    {
+      m = 0;
+      for( int i = 0; i < dimDomain; ++i )
+        m[ i ][ i ] = mu_;
+    }
+
+    bool constantK () const
+    {
+      return true;
+    }
+
+    //! the gradient of the exact solution
+     void gradient ( const DomainType &x, JacobianRangeType &grad ) const
+    {
+      //todo: to be implemented...
+      grad=0.0;
+    }
+
+  private:
+    double mu_;
+    double alpha_;
+  };
+
 
   template< class GridImp >
   static StokesProblemInterface<Dune::Fem::FunctionSpace< double, double, GridImp::dimensionworld,GridImp::dimensionworld  >,
@@ -227,12 +299,13 @@ namespace Dune
   createProblem()
   {
     std::cout<<"CREATEPROBLEM\n";
-    int problemFunction = 1; // default value
+    int problemFunction = 2; // default value
 
     switch( 0 )
       {
       case 0: return new StokesProblemDefault< GridImp >();
       case 1: return new StokesProblemPeriodic<GridImp> ( );
+      case 2: return new GeneralizedStokesProblem<GridImp> ( );
       default: std::cerr << "Wrong problem value, bye, bye!" << std::endl;
 	abort();
       }

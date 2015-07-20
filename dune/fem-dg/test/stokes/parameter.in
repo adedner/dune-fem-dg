@@ -26,6 +26,8 @@ epsilon: 0.1
 xvelocity: 0.    # the only advection part for the linear heat eqn
 yvelocity: 0.    # the only advection part for the linear heat eqn
 zvelocity: 0.    # the only advection part for the linear heat eqn
+alpha: 1.0
+mu: 1.0
 
 fem.solver.verbose: 1
 
