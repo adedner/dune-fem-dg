@@ -409,38 +409,32 @@ public:
     double reduction  = Dune::Fem:: Parameter::getValue<double>("istl.reduction",1.e-10);
     double uzawareduction  = Dune::Fem:: Parameter::getValue<double>("uzawareduction",reduction*100.);
 
-#if WANT_ISTL
-    linDgOperator_.reset( new LinearOperatorType("dg operator", space_, space_ ) );
-
-#if DGSCHEME // for all dg schemes including pdg (later not working)
-      typedef Dune::Fem::DiagonalAndNeighborStencil<DiscreteSpaceType,DiscreteSpaceType> StencilType ;
-#else
-      typedef Dune::Fem::DiagonalStencil<DiscreteSpaceType,DiscreteSpaceType> StencilType ;
-#endif
-    StencilType stencil( space_, space_);
-
     SolverMonitorType monitor;
     monitor.gridWidth = h; // space_.size();
 
-    linDgOperator_->reserve(stencil);
+    linDgOperator_.reset( new LinearOperatorType("dg operator", space_, space_ ) );
+
+    if( space_.continuous() ) // Lagrange space
+    {
+      typedef Dune::Fem::DiagonalStencil<DiscreteSpaceType,DiscreteSpaceType> StencilType ;
+      StencilType stencil( space_, space_);
+      linDgOperator_->reserve(stencil);
+    }
+    else // DG space
+    {
+      typedef Dune::Fem::DiagonalAndNeighborStencil<DiscreteSpaceType,DiscreteSpaceType> StencilType ;
+      StencilType stencil( space_, space_);
+      linDgOperator_->reserve(stencil);
+    }
+
     linDgOperator_->clear();
     dgAssembledOperator_.assemble(0, *linDgOperator_, rhs_);
     invDgOperator_.reset( new LinearInverseOperatorType(*linDgOperator_, reduction, absLimit ) );
-#else
-//      {
-abort();
-        invDgOperator_.reset( new LinearInverseOperatorType(dgAssembledOperator_, 1e-12, 1e-12, step_++ ) );
-
-//      }
-#endif
 
     stokesAssembler_.assemble( *problem_);
 
-#if WANT_ISTL
-        UzawaType uzawa(stokesAssembler_,*invDgOperator_,rhs_,uzawareduction,uzawareduction,100000);
-#else
-        UzawaType uzawa(stokesAssembler_,*invDgOperator_,uzawareduction, uzawareduction,100000);
-#endif
+    UzawaType uzawa(stokesAssembler_,*invDgOperator_,rhs_,uzawareduction,uzawareduction,100000);
+
     pressuresolution_.clear();
     uzawa(stokesAssembler_.pressureRhs(),pressuresolution_);
 
