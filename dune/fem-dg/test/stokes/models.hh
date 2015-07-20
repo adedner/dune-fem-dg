@@ -134,8 +134,13 @@ public:
                         const JacobianRangeType& du,
                         RangeType & s) const
   {
-    DomainType xgl = local.entity().geometry().global( local.point() );
-    problem_.f( xgl, s );
+    const DomainType x = local.entity().geometry().global( local.point() );
+    // right hand side
+    problem_.f( x, s );
+
+    RangeType mass( u );
+    mass *= problem_.gamma() ;
+    s += mass;
     return 0.0;
   }
 
@@ -145,8 +150,7 @@ public:
                         const JacobianRangeType& du,
                         RangeType & s) const
   {
-    DomainType xgl = local.entity().geometry().global( local.point() );
-    problem_.f( xgl, s );
+    s = 0;
     return 0.0;
   }
 
