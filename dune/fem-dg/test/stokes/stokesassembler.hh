@@ -34,7 +34,7 @@ namespace Dune {
     DiscretePressureSpaceType;
     //! type of problem
     //  typedef StokesProblemInterface< typename DiscreteFunctionSpaceType :: FunctionSpaceType,
-    // 				    typename DiscretePressureSpaceType :: FunctionSpaceType >
+    //            typename DiscretePressureSpaceType :: FunctionSpaceType >
 
     typedef typename DiscreteFunctionSpaceType :: RangeFieldType
     RangeFieldType;
@@ -83,11 +83,11 @@ namespace Dune {
     typedef typename GridType::template Codim<0>::Geometry GeometryType;
     //! type of quadrature to be used
 
-     typedef PassTraits< Traits, polynomialOrder, DiscreteFunctionSpaceType::dimRange> PassTraitsType;
+    typedef PassTraits< Traits, polynomialOrder, DiscreteFunctionSpaceType::dimRange> PassTraitsType;
 
 
-     typedef typename PassTraitsType::VolumeQuadratureType VolumeQuadratureType;
-     typedef typename PassTraitsType::FaceQuadratureType FaceQuadratureType;
+    typedef typename PassTraitsType::VolumeQuadratureType VolumeQuadratureType;
+    typedef typename PassTraitsType::FaceQuadratureType FaceQuadratureType;
 //    typedef Dune::Fem::ElementQuadrature< GridPartType, 0 > VolumeQuadratureType;
   //  typedef Dune::Fem::ElementQuadrature<GridPartType,1> FaceQuadratureType;
 
@@ -112,51 +112,38 @@ namespace Dune {
 
   public:
 #if 0
-		typedef Dune::Fem::ISTLMatrixOperator< DiscretePressurteFunctionType, DiscreteFunctionType, MyMatrixTraits >PressureGradMatType;
+    typedef Dune::Fem::ISTLMatrixOperator< DiscretePressurteFunctionType, DiscreteFunctionType, MyMatrixTraits >PressureGradMatType;
+    typedef Dune::Fem::ISTLMatrixOperator< DiscreteFunctionType, DiscretePressureFunctionType,MyMatrixTraits > PressureDivMatType;
+    typedef Dune::Fem::SparseRowMatrixOperator< DiscretePressureFunctionType,  DiscretePressureFunctionType, MyMatrixTraits >PressureStabMatType;
 #else
-		typedef Dune::Fem::SparseRowLinearOperator< DiscretePressureFunctionType, DiscreteFunctionType >PressureGradMatType;
+    typedef Dune::Fem::SparseRowLinearOperator< DiscretePressureFunctionType, DiscreteFunctionType >PressureGradMatType;
+    typedef Dune::Fem::SparseRowLinearOperator<DiscreteFunctionType, DiscretePressureFunctionType > PressureDivMatType;
+    typedef Dune::Fem::SparseRowLinearOperator< DiscretePressureFunctionType,  DiscretePressureFunctionType >PressureStabMatType;
 #endif
-		typedef typename PressureGradMatType::LocalMatrixType LocalPressureGradMatType;
-//    typedef typename PressureGradMatType::MatrixType  PGMType;
-    typedef PressureGradMatType PGMType;
-
-#if 0
-		typedef Dune::Fem::ISTLMatrixOperator< DiscreteFunctionType, DiscretePressureFunctionType,MyMatrixTraits > PressureDivMatType;
-#else
-		typedef Dune::Fem::SparseRowLinearOperator<DiscreteFunctionType, DiscretePressureFunctionType > PressureDivMatType;
-#endif
-		typedef typename PressureDivMatType::LocalMatrixType LocalPressureDivMatType;
+    typedef typename PressureGradMatType::LocalMatrixType LocalPressureGradMatType;
+    typedef typename PressureDivMatType::LocalMatrixType LocalPressureDivMatType;
+    typedef typename PressureStabMatType::LocalMatrixType LocalPressureStabMatType;
+    //typedef typename PressureGradMatType::MatrixType  PGMType;
     //typedef typename PressureDivMatType::MatrixType  PDMType;:
-    typedef PressureDivMatType PDMType;
-#if 0
-  	typedef Dune::Fem::SparseRowMatrixOperator< DiscretePressureFunctionType,  DiscretePressureFunctionType, MyMatrixTraits >PressureStabMatType;
-#else
-		typedef Dune::Fem::SparseRowLinearOperator< DiscretePressureFunctionType,  DiscretePressureFunctionType >PressureStabMatType;
-#endif
-		typedef typename PressureStabMatType::LocalMatrixType LocalPressureStabMatType;
     //typedef typename PressureStabMatType::MatrixType PSMType;
+    typedef PressureGradMatType PGMType;
+    typedef PressureDivMatType PDMType;
     typedef PressureStabMatType PSMType;
-
-
 
     typedef FieldMatrix<double,dimension,dimension> JacobianInverseType;
   private:
     //Class Members
-		const DiscreteFunctionSpaceType& spc_;
-     const ProblemType& problem_;
-		const DiscretePressureSpaceType& pressurespc_;
-
+    const DiscreteFunctionSpaceType& spc_;
+    const ProblemType& problem_;
+    const DiscretePressureSpaceType& pressurespc_;
     mutable DiscreteFunctionType veloRhs_;
-
     mutable DiscretePressureFunctionType pressureRhs_;
-
     double grads_;
-
     int volumeQuadOrd_,faceQuadOrd_;
 
-		PressureGradMatType pressureGradMatrix_;
-		PressureDivMatType  pressureDivMatrix_;
-		PressureStabMatType pressureStabMatrix_;
+    PressureGradMatType pressureGradMatrix_;
+    PressureDivMatType  pressureDivMatrix_;
+    PressureStabMatType pressureStabMatrix_;
 
     double d11_;
     DomainType direction_;
@@ -164,9 +151,9 @@ namespace Dune {
 
     //Constructor
     StokesAssembler( DiscreteFunctionSpaceType& spc,
-										 DiscretePressureSpaceType& pressurespc,
-										 const ProblemType& problem,
-										 double d11=1.) :
+                     DiscretePressureSpaceType& pressurespc,
+                     const ProblemType& problem,
+                     double d11=1.) :
       spc_(spc),
       problem_(problem),
       pressurespc_( pressurespc ),
@@ -179,10 +166,7 @@ namespace Dune {
       pressureDivMatrix_("pdm",spc_,pressurespc_),//PDM
       pressureStabMatrix_("psm",pressurespc_,pressurespc_),//PSM
       d11_(d11)
-    {
-
-    }
-
+    {}
 
     const DiscretePressureSpaceType& pressurespc()const
     {return pressurespc_;}
@@ -200,7 +184,7 @@ namespace Dune {
     {
       divu=0.;
       for( int i=0;i<dimension;++i)
-				divu+=du[i][i];
+        divu+=du[i][i];
     }
 
     void assemble(const ProblemType& prob )
@@ -217,46 +201,41 @@ namespace Dune {
       pressureDivMatrix_.reserve( pdstencil );
       pressureDivMatrix_.clear();
 #if PRESSURESTABILIZATION
-			pressureStabMatrix_.reserve();
-			pressureStabMatrix_.clear();
+      pressureStabMatrix_.reserve();
+      pressureStabMatrix_.clear();
 #endif
-			pressureRhs_.clear();
-
+      pressureRhs_.clear();
 
       typedef typename DiscreteFunctionSpaceType :: IteratorType IteratorType;
       IteratorType end = spc_.end();
       for(IteratorType it = spc_.begin(); it != end; ++it)
-				{
-					assembleLocal( *it,prob );
-
-				}
+      {
+        assembleLocal( *it,prob );
+      }
 
 #define SYMMCHECK 0
 #if SYMMCHECK
-			int size=spc_.size();
-			int pressuresize=pressurespc_.size();
+      int size=spc_.size();
+      int pressuresize=pressurespc_.size();
 
-			for(int i=0; i<size; ++i)
-				{
-					for(int j=0;j<pressuresize; ++j)
-						{
-							double error=0.0;
-							error=fabs(pressureDivMatrix_.matrix()(j,i) - pressureGradMatrix_.matrix()(i,j));
-							if(error > 1e-10)
-								{  std::cout<<"Wrong at:"<<i<<" , "<< j<<"error="<<error<<"\n";
-									abort();}
-						}
-	      }
-
-			// 	    pressureDivMatrix_.matrix().print(std::cout);
-
-			// 	    std::cout<<"&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&\n\n";
-			// 	    pressureGradMatrix_.matrix().print(std::cout);
+      for(int i=0; i<size; ++i)
+      {
+        for(int j=0;j<pressuresize; ++j)
+        {
+          double error=0.0;
+          error=fabs(pressureDivMatrix_.matrix()(j,i) - pressureGradMatrix_.matrix()(i,j));
+          if(error > 1e-10)
+          {
+            std::cout<<"Wrong at:"<<i<<" , "<< j<<"error="<<error<<"\n";
+            abort();
+          }
+        }
+      }
+      //      pressureDivMatrix_.matrix().print(std::cout);
+      //      std::cout<<"&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&\n\n";
+      //      pressureGradMatrix_.matrix().print(std::cout);
 #endif
-
-		}
-
-
+    }
 
 
     template<class EntityType>
@@ -283,10 +262,10 @@ namespace Dune {
       std::vector<PressureJacobianRangeType> dqu(numPBaseFunctions);
 
 
-     LocalPressureGradMatType enPGrad = pressureGradMatrix_.localMatrix(en,en);
-     LocalPressureDivMatType  enPDiv  = pressureDivMatrix_.localMatrix(en,en);
-     LocalPressureStabMatType enPStab = pressureStabMatrix_.localMatrix(en,en);
-     JacobianInverseType inv;
+      LocalPressureGradMatType enPGrad = pressureGradMatrix_.localMatrix(en,en);
+      LocalPressureDivMatType  enPDiv  = pressureDivMatrix_.localMatrix(en,en);
+      LocalPressureStabMatType enPStab = pressureStabMatrix_.localMatrix(en,en);
+      JacobianInverseType inv;
 
       const size_t quadNop = volQuad.nop();
       for (size_t l = 0; l < quadNop ; ++l)
@@ -296,145 +275,111 @@ namespace Dune {
         bsetEn.evaluateAll(volQuad[l],phi);
         bsetEn.jacobianAll(volQuad[l],dphi);
 
-  //     bsetEn.jacobianAll(volQuad[l],inv,dphi);
+ //     bsetEn.jacobianAll(volQuad[l],inv,dphi);
         pressurebsetEn.evaluateAll(volQuad[l],qu);
-         pressurebsetEn.jacobianAll(volQuad[l],dqu);
-	 //     pressurebsetEn.jacobianAll(volQuad[l],inv,dqu);
+        pressurebsetEn.jacobianAll(volQuad[l],dqu);
+ //     pressurebsetEn.jacobianAll(volQuad[l],inv,dqu);
 
         double quadWeight = volQuad.weight(l)*geo.integrationElement(x);
 
         for(unsigned int k = 0;k < numBaseFunctions ;++k)
+        {
+          PressureRangeType divphi(0.0);
+          divergence(dphi[k],divphi);
+
+          //pressureGradientMatrix , pressureDivMatrix
+          for(unsigned int n = 0; n < numPBaseFunctions ; ++n)
           {
-            PressureRangeType divphi(0.0);
+            //eval (-q_n*div phi_j)
+            double PGM=qu[n]*divphi*quadWeight;
+            PGM*=-1;
+            enPGrad.add(k,n,PGM);
 
-            divergence(dphi[k],divphi);
-
-            //pressureGradientMatrix , pressureDivMatrix
-            for(unsigned int n = 0; n < numPBaseFunctions ; ++n)
-              {
-                //eval (-q_n*div phi_j)
-                double PGM=qu[n]*divphi*quadWeight;
-                PGM*=-1;
-                enPGrad.add(k,n,PGM);
-
-                //eval -(-phi_j*grad q_n)
-                double PDM =(phi[k]*dqu[n][0])*quadWeight;
-                enPDiv.add(n,k,PDM);
-
-              }
-						}
+            //eval -(-phi_j*grad q_n)
+            double PDM =(phi[k]*dqu[n][0])*quadWeight;
+            enPDiv.add(n,k,PDM);
+          }
+        }
       }
 
-    IntersectionIterator endnit = gridPart.iend(en);
-    typedef typename FaceQuadratureType :: NonConformingQuadratureType NonConformingFaceQuadratureType;
+      IntersectionIterator endnit = gridPart.iend(en);
+      typedef typename FaceQuadratureType :: NonConformingQuadratureType NonConformingFaceQuadratureType;
 
-    for (IntersectionIterator nit = gridPart.ibegin(en); nit != endnit; ++nit)
+      for (IntersectionIterator nit = gridPart.ibegin(en); nit != endnit; ++nit)
       {
         const IntersectionType& edge=*nit;
 
         if(edge.neighbor())
-          {
+        {
 #if DUNE_VERSION_NEWER(DUNE_GRID,2,4)
-            const EntityType& nb= edge.outside();
+          const EntityType& nb= edge.outside();
 #else
-            //Access to the neighbor Element
-            EntityPointerType neighEp=edge.outside();
-            const EntityType& nb=  *neighEp;
+         //Access to the neighbor Element
+          EntityPointerType neighEp=edge.outside();
+          const EntityType& nb=  *neighEp;
 #endif
 
-            if(edge.conforming() )
-              {
-                FaceQuadratureType faceQuadInner(gridPart,edge, faceQuadOrd_,
-																									 FaceQuadratureType::INSIDE);
-                FaceQuadratureType faceQuadOuter(gridPart,edge, faceQuadOrd_,
-                                                  FaceQuadratureType::OUTSIDE);
+          if(edge.conforming() )
+          {
+            FaceQuadratureType faceQuadInner(gridPart,edge, faceQuadOrd_, FaceQuadratureType::INSIDE);
+            FaceQuadratureType faceQuadOuter(gridPart,edge, faceQuadOrd_, FaceQuadratureType::OUTSIDE);
 
-                applyNeighbor(edge,
-                              en,
-                              nb,
-                              faceQuadInner,
-                              faceQuadOuter,
-                              bsetEn ,
-                              pressurebsetEn,
-                              enPGrad,
-                              enPDiv,
-                              enPStab);
-								}
-							else
-								{
-									NonConformingFaceQuadratureType  faceQuadOuter(gridPart, edge, faceQuadOrd_,
-																																	NonConformingFaceQuadratureType::OUTSIDE);
-									NonConformingFaceQuadratureType  faceQuadInner(gridPart, edge, faceQuadOrd_,
-																																 NonConformingFaceQuadratureType::INSIDE);
-									applyNeighbor(edge,
-																en,
-																nb,
-																faceQuadInner,
-																faceQuadOuter,
-																bsetEn ,
-																pressurebsetEn,
-																enPGrad,
-																enPDiv,
-																enPStab);
+            applyNeighbor(edge, en, nb, faceQuadInner, faceQuadOuter,
+                          bsetEn, pressurebsetEn, enPGrad, enPDiv, enPStab);
+          }
+          else
+          {
+            NonConformingFaceQuadratureType  faceQuadOuter(gridPart, edge, faceQuadOrd_,
+                                                            NonConformingFaceQuadratureType::OUTSIDE);
+            NonConformingFaceQuadratureType  faceQuadInner(gridPart, edge, faceQuadOrd_,
+                                                           NonConformingFaceQuadratureType::INSIDE);
+            applyNeighbor(edge, en, nb, faceQuadInner, faceQuadOuter,
+                          bsetEn, pressurebsetEn, enPGrad, enPDiv, enPStab);
 
-								}
-						}
-					else if(edge.boundary())
-						{
+          }
+        }
+        else if(edge.boundary())
+        {
+          if(edge.conforming() )
+          {
+            FaceQuadratureType faceQuadInner(gridPart,edge, faceQuadOrd_,
+                                             FaceQuadratureType::INSIDE);
 
-							if(edge.conforming() )
-								{
-									FaceQuadratureType faceQuadInner(gridPart,edge, faceQuadOrd_,
-																									 FaceQuadratureType::INSIDE);
+            applyBoundary(edge, en, faceQuadInner,
+                          bsetEn, pressurebsetEn, enPGrad, enPDiv, enPStab);
+          }
+          else
+          {
+            NonConformingFaceQuadratureType   faceQuadInner(gridPart, edge, faceQuadOrd_,
+                                                            NonConformingFaceQuadratureType::INSIDE);
 
-									applyBoundary(edge,
-																en,
-																faceQuadInner,
-																bsetEn ,
-																pressurebsetEn,
-																enPGrad,
-																enPDiv,
-																enPStab);
-								}
-							else
-								{
-									NonConformingFaceQuadratureType   faceQuadInner(gridPart, edge, faceQuadOrd_,
-																																	NonConformingFaceQuadratureType::INSIDE);
+            applyBoundary(edge, en, faceQuadInner,
+                          bsetEn, pressurebsetEn, enPGrad, enPDiv, enPStab);
 
-									applyBoundary(edge,
-																en,
-																faceQuadInner,
-																bsetEn ,
-																pressurebsetEn,
-																enPGrad,
-																enPDiv,
-																enPStab);
-
-								}
-						}
-      	}
+          }
+        }
+      }
     }
   private:
     template<class Quad,class Entity>
     void applyNeighbor(const IntersectionType &edge,
-											 const Entity &en,
-											 const Entity &nb,
-											 const Quad &faceQuadInner,
-											 const Quad &faceQuadOuter,
-											 const BaseFunctionSetType &bsetEn,
-											 const PressureBaseFunctionSetType & pressurebsetEn,
-											 LocalPressureGradMatType&  enPressGrad,
-											 LocalPressureDivMatType&   enPressDiv,
-											 LocalPressureStabMatType&  enPressStab
-											 ) const
+                       const Entity &en,
+                       const Entity &nb,
+                       const Quad &faceQuadInner,
+                       const Quad &faceQuadOuter,
+                       const BaseFunctionSetType &bsetEn,
+                       const PressureBaseFunctionSetType & pressurebsetEn,
+                       LocalPressureGradMatType&  enPressGrad,
+                       LocalPressureDivMatType&   enPressDiv,
+                       LocalPressureStabMatType&  enPressStab
+                       ) const
     {
       const BaseFunctionSetType&  bsetNb  =  spc_.basisFunctionSet(nb);
       const PressureBaseFunctionSetType& pressurebsetNb=pressurespc_.basisFunctionSet(nb);
       const size_t numBaseFunctionsEn=bsetEn.size();
       const size_t numBaseFunctionsNb=bsetNb.size();
       const size_t numPBaseFunctionsEn=pressurebsetEn.size();
-			const size_t numPBaseFunctionsNb=pressurebsetNb.size();
-
+      const size_t numPBaseFunctionsNb=pressurebsetNb.size();
 
       std::vector<RangeType> phiEn(numBaseFunctionsEn);
       std::vector<JacobianRangeType> dphiEn(numBaseFunctionsEn);
@@ -442,18 +387,14 @@ namespace Dune {
       std::vector<PressureRangeType> quEn(numPBaseFunctionsEn);
       std::vector<PressureJacobianRangeType> dquEn(numPBaseFunctionsEn);
 
-
       std::vector<RangeType> phiNb(numBaseFunctionsNb);
       std::vector<JacobianRangeType> dphiNb(numBaseFunctionsNb);
 
       std::vector<PressureRangeType> quNb(numPBaseFunctionsNb);
       std::vector<PressureJacobianRangeType> dquNb(numPBaseFunctionsNb);
 
-
       PressureRangeType phiNormal(0.);
       RangeType quNormal(0.);
-
-
 
       const int quadNop = faceQuadInner.nop();
 
@@ -461,129 +402,116 @@ namespace Dune {
       LocalPressureDivMatType   nbPressDiv=pressureDivMatrix_.localMatrix(nb,en);
 
 #if PRESSURESTABILIZATION
-			LocalPressureStabMatType  nbPressStab=pressureStabMatrix_.localMatrix(nb,en);
+      LocalPressureStabMatType  nbPressStab=pressureStabMatrix_.localMatrix(nb,en);
 #endif
       for (int l = 0; l < quadNop ; ++l)
-				{
-					bsetEn.evaluateAll(faceQuadInner[l],phiEn);
-					bsetNb.evaluateAll(faceQuadOuter[l],phiNb);
-					pressurebsetEn.evaluateAll(faceQuadInner[l],quEn);
-					pressurebsetNb.evaluateAll(faceQuadOuter[l],quNb);
+      {
+        bsetEn.evaluateAll(faceQuadInner[l],phiEn);
+        bsetNb.evaluateAll(faceQuadOuter[l],phiNb);
+        pressurebsetEn.evaluateAll(faceQuadInner[l],quEn);
+        pressurebsetNb.evaluateAll(faceQuadOuter[l],quNb);
 
-					DomainType normal=edge.integrationOuterNormal(faceQuadInner.localPoint(l));
+        DomainType normal=edge.integrationOuterNormal(faceQuadInner.localPoint(l));
 
-					double intWeight=faceQuadInner.weight(l);
+        double intWeight=faceQuadInner.weight(l);
 
+        for(unsigned int j=0; j< numBaseFunctionsEn; ++j)
+        {
+          for(unsigned int n = 0; n < numPBaseFunctionsEn ; ++n)
+          {
+            // ******************************************************************************
+            // v+*qu+*n+
+            // ******************************************************************************
+            quNormal=normal;
+            quNormal*=quEn[n][0];
+            double PGM_en=(phiEn[j]*quNormal*intWeight);
+            PGM_en*=0.5;
+            enPressGrad.add(j,n,PGM_en);
 
-					for(unsigned int j=0; j< numBaseFunctionsEn; ++j)
-						{
-							for(unsigned int n = 0; n < numPBaseFunctionsEn ; ++n)
-								{
-									// ******************************************************************************
-									// v+*qu+*n+
-									// ******************************************************************************
-
-									quNormal=normal;
-
-									quNormal*=quEn[n][0];
-
-									double PGM_en=(phiEn[j]*quNormal*intWeight);
-
-									PGM_en*=0.5;
-
-									enPressGrad.add(j,n,PGM_en);
-
-									// ******************************************************************************
-									// -qu+*v+*n+
-									// ******************************************************************************
-
-									phiNormal[0]=phiEn[j]*normal;
-
-									double PDM_en=(quEn[n]*phiNormal)*intWeight;
-									PDM_en*=-0.5;
-
-									enPressDiv.add(n,j,PDM_en);
-
+            // ******************************************************************************
+            // -qu+*v+*n+
+            // ******************************************************************************
+            phiNormal[0]=phiEn[j]*normal;
+            double PDM_en=(quEn[n]*phiNormal)*intWeight;
+            PDM_en*=-0.5;
+            enPressDiv.add(n,j,PDM_en);
 
 #if PRESSURESTABILIZATION
-									if(j==0)
-										for(unsigned int m=0;m<pressureNumDofs;++m)
-											{
-												pressurebsetNeigh.evaluate(n,faceQuadInner[l],pEn);
-												pressurebsetEn.evaluate(n,faceQuadInner[l],pNb);
-												double PSM_en=-quEn*pEn*intWeight;
+            if(j==0)
+            {
+              for(unsigned int m=0;m<pressureNumDofs;++m)
+              {
+                pressurebsetNeigh.evaluate(n,faceQuadInner[l],pEn);
+                pressurebsetEn.evaluate(n,faceQuadInner[l],pNb);
+                double PSM_en=-quEn*pEn*intWeight;
 
-												double PSM_nb=-quEn*pNb*intWeight;
+                double PSM_nb=-quEn*pNb*intWeight;
 
-												enPressStab.add(m,n,PSM_en);
-												nbPressStab.add(m,n,PSM_nb);
-											}
+                enPressStab.add(m,n,PSM_en);
+                nbPressStab.add(m,n,PSM_nb);
+              }
+            }
 #endif
-								}
-						}
+          }
+        }
 
-					for(unsigned int j=0; j< numBaseFunctionsEn; ++j)
-						{
-							for(unsigned int n = 0; n < numPBaseFunctionsNb ; ++n)
-								{
+        for(unsigned int j=0; j< numBaseFunctionsEn; ++j)
+        {
+          for(unsigned int n = 0; n < numPBaseFunctionsNb ; ++n)
+          {
+            quNormal=normal;
+            quNormal*=quNb[n][0];
+            double PGM_nb=(phiEn[j]*quNormal*intWeight);
+            PGM_nb*=0.5;
+            nbPressGrad.add(j,n,PGM_nb);
+          }
+        }
 
-									quNormal=normal;
-									quNormal*=quNb[n][0];
-
-									double PGM_nb=(phiEn[j]*quNormal*intWeight);
-
-									PGM_nb*=0.5;
-
-									nbPressGrad.add(j,n,PGM_nb);
-
-								}
-						}
-
-					for(unsigned int j=0; j< numBaseFunctionsNb; ++j)
-						{
-							for(unsigned int n = 0; n < numPBaseFunctionsEn ; ++n)
-								{
-									phiNormal[0]=phiNb[j]*normal;
-									double PDM_nb =( quEn[n]*phiNormal[0])*intWeight;
-									PDM_nb*=-0.5;
-									nbPressDiv.add(n,j,PDM_nb);
+        for(unsigned int j=0; j< numBaseFunctionsNb; ++j)
+        {
+          for(unsigned int n = 0; n < numPBaseFunctionsEn ; ++n)
+          {
+            phiNormal[0]=phiNb[j]*normal;
+            double PDM_nb =( quEn[n]*phiNormal[0])*intWeight;
+            PDM_nb*=-0.5;
+            nbPressDiv.add(n,j,PDM_nb);
 
 #if PRESSURESTABILIZATION
-									if(j==0)
-										for(unsigned int m=0;m<pressureNumDofs;++m)
-											{
-												pressurebsetNeigh.evaluate(n,faceQuadInner[l],pEn);
-												pressurebsetEn.evaluate(n,faceQuadInner[l],pNb);
-												double PSM_en=-quEn*pEn*intWeight;
+            if(j==0)
+            {
+              for(unsigned int m=0;m<pressureNumDofs;++m)
+              {
+                pressurebsetNeigh.evaluate(n,faceQuadInner[l],pEn);
+                pressurebsetEn.evaluate(n,faceQuadInner[l],pNb);
+                double PSM_en=-quEn*pEn*intWeight;
 
-												double PSM_nb=-quEn*pNb*intWeight;
+                double PSM_nb=-quEn*pNb*intWeight;
 
-												enPressStab.add(m,n,PSM_en);
-												nbPressStab.add(m,n,PSM_nb);
-											}
+                enPressStab.add(m,n,PSM_en);
+                nbPressStab.add(m,n,PSM_nb);
+              }
+            }
 #endif
-								}
-						}
-				}
+          }
+        }
+      }
     }
-
-
 
 
 
     template<class Quad,class Entity>
     void applyBoundary(const IntersectionType &edge,
-											 const Entity &en,
-											 const Quad &faceQuadInner,
-											 const BaseFunctionSetType &bsetEn,
-											 const PressureBaseFunctionSetType & pressurebsetEn,
-											 LocalPressureGradMatType&  enPressGrad,
-											 LocalPressureDivMatType&   enPressDiv,
-											 LocalPressureStabMatType&  enPressStab
-											 ) const
+                       const Entity &en,
+                       const Quad &faceQuadInner,
+                       const BaseFunctionSetType &bsetEn,
+                       const PressureBaseFunctionSetType & pressurebsetEn,
+                       LocalPressureGradMatType&  enPressGrad,
+                       LocalPressureDivMatType&   enPressDiv,
+                       LocalPressureStabMatType&  enPressStab
+                       ) const
     {
-			const size_t numBaseFunctions=bsetEn.size();
-			const size_t numPBaseFunctions=pressurebsetEn.size();
+      const size_t numBaseFunctions=bsetEn.size();
+      const size_t numPBaseFunctions=pressurebsetEn.size();
       std::vector<RangeType> phiEn(numBaseFunctions);
       std::vector<JacobianRangeType> dphiEn(numBaseFunctions);
 
@@ -598,42 +526,41 @@ namespace Dune {
       int quadNop=faceQuadInner.nop();
 
       for (int l = 0; l < quadNop ; ++l)
-				{
-					bsetEn.evaluateAll(faceQuadInner[l],phiEn);
+      {
+        bsetEn.evaluateAll(faceQuadInner[l],phiEn);
+        pressurebsetEn.evaluateAll(faceQuadInner[l],quEn);
 
-					pressurebsetEn.evaluateAll(faceQuadInner[l],quEn);
+        DomainType normal=edge.integrationOuterNormal(faceQuadInner.localPoint(l));
 
-					DomainType normal=edge.integrationOuterNormal(faceQuadInner.localPoint(l));
+        double intWeight=faceQuadInner.weight(l);
+        DomainType quadInEn=edge.geometry().global(faceQuadInner.localPoint(l));
 
-					double intWeight=faceQuadInner.weight(l);
-					DomainType quadInEn=edge.geometry().global(faceQuadInner.localPoint(l));
+        problem_.g(quadInEn,dirichletValue);
+        double pressureDirichlet;
 
-					problem_.g(quadInEn,dirichletValue);
-					double pressureDirichlet;
+        for(unsigned int n = 0; n <localPressure.numDofs() ; ++n)
+        {
+          pressureDirichlet=normal*dirichletValue;
+          pressureDirichlet*=quEn[n][0];
+          pressureDirichlet*=intWeight;
+          //pressureDirichlet*=-1.;
+          localPressure[n]+=pressureDirichlet;
+        }
 
-					for(unsigned int n = 0; n <localPressure.numDofs() ; ++n)
-						{
-							pressureDirichlet=normal*dirichletValue;
-							pressureDirichlet*=quEn[n][0];
-							pressureDirichlet*=intWeight;
-							//pressureDirichlet*=-1.;
-              localPressure[n]+=pressureDirichlet;
-						}
-
-					for(unsigned int j=0; j< numBaseFunctions; ++j)
-						{
-							for(unsigned int n = 0; n <numPBaseFunctions ; ++n)
-								{
-									// ******************************************************************************
-									// v+*qu+*n+
-									// ******************************************************************************
-									quNormal=normal;
-									quNormal*=quEn[n][0];
-									double PGM_en=(quNormal*phiEn[j]) *intWeight;
-									enPressGrad.add(j,n,PGM_en);
-								}
-						}
-				}
+        for(unsigned int j=0; j< numBaseFunctions; ++j)
+        {
+          for(unsigned int n = 0; n <numPBaseFunctions ; ++n)
+          {
+            // ******************************************************************************
+            // v+*qu+*n+
+            // ******************************************************************************
+            quNormal=normal;
+            quNormal*=quEn[n][0];
+            double PGM_en=(quNormal*phiEn[j]) *intWeight;
+            enPressGrad.add(j,n,PGM_en);
+          }
+        }
+      }
     }
   };
 }

@@ -13,8 +13,6 @@
 #define POLORDER 1
 #endif
 
-#include <dune/fem-dg/main/codegen.hh>
-
 #include "passtraits.hh"
 
 // dune-grid includes
@@ -198,9 +196,6 @@ struct StokesProblemCreator
     grid.preAdapt();
     grid.adapt();
     grid.postAdapt();
-
-    //Dune :: GrapeGridDisplay< GridType > grape( grid );
-    //grape.display ();
 
     return gridptr ;
   }

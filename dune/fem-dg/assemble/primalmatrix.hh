@@ -17,56 +17,18 @@ public:
   typedef ModelType Model;
   typedef typename Model::Traits Traits;
   enum { dimRange = Model::dimRange };
-  typedef typename Model :: DomainType          DomainType;
-  typedef typename Model :: RangeType           RangeType;
-  typedef typename Model :: JacobianRangeType   JacobianRangeType;
-  typedef typename Model :: FluxRangeType       FluxRangeType;
-  typedef typename Model :: FaceDomainType      FaceDomainType;
-  typedef typename Model :: EntityType          EntityType;
-  typedef typename Model :: IntersectionType    IntersectionType;
-protected:
-  template <class Model, bool constVelo>
-    struct Velocity
-    {
-      /**
-       * @brief computes and returns the wind direction
-       */
-      static inline double upwind(const Model& model,
-                                  const IntersectionType& it,
-                                  const double time,
-                                  const FaceDomainType& x,
-                                  const RangeType& uLeft)
-      {
-        const DomainType normal = it.integrationOuterNormal(x);
-        DomainType velocity;
-        model.velocity(*it.inside(),time,
-                       it.geometryInInside().global(x),
-                       velocity);
-        return normal*velocity;
-      }
-    };
-
-  template <class Model>
-    struct Velocity<Model,true>
-    {
-      /**
-       * @brief computes and returns the wind direction for models with
-       * constant velocity
-       */
-      static inline double upwind( const Model& model,
-                                   const IntersectionType& it,
-                                   const double time,
-                                   const FaceDomainType& x,
-                                   const RangeType& uLeft )
-      {
-        const DomainType normal = it.integrationOuterNormal(x);
-        return normal * model.velocity_;
-      }
-    };
+  typedef typename Model :: DomainType DomainType;
+  typedef typename Model :: RangeType RangeType;
+  typedef typename Model :: JacobianRangeType JacobianRangeType;
+  typedef typename Model :: FluxRangeType FluxRangeType;
+  typedef typename Model :: DiffusionRangeType DiffusionRangeType;
+  typedef typename Model :: FaceDomainType  FaceDomainType;
+  typedef typename Model :: EntityType  EntityType;
+  typedef typename Model :: IntersectionType  IntersectionType;
 
 public:
   /**
-   * @brief constructor
+   * @brief Constructor
    */
   UpwindFlux(const Model& mod) : model_(mod) {}
 
@@ -79,14 +41,9 @@ public:
    *
    * @return maximum wavespeed * normal
    */
-  template <class QuadratureImp>
-  inline double numericalFlux( const IntersectionType& it,
-                               const EntityType& inside,
-                               const EntityType& outside,
-                               const double time,
-                               const QuadratureImp& faceQuadInner,
-                               const QuadratureImp& faceQuadOuter,
-                               const int quadPoint,
+  template <class LocalEvaluation>
+  inline double numericalFlux( const LocalEvaluation& left,
+                               const LocalEvaluation& right,
                                const RangeType& uLeft,
                                const RangeType& uRight,
                                const JacobianRangeType& jacLeft,
@@ -94,26 +51,20 @@ public:
                                RangeType& gLeft,
                                RangeType& gRight ) const
   {
-    const FaceDomainType& x = faceQuadInner.localPoint( quadPoint );
-    const double upwind = Velocity<Model,Model::ConstantVelocity>::
-      upwind(model_,it,time,x,uLeft);
+    const FaceDomainType& x = left.localPoint();
 
-    RangeType uFlux;
+    // get normal from intersection
+    const DomainType normal = left.intersection().integrationOuterNormal(x);
+
+    // get velocity
+    const DomainType v = model_.velocity( left );
+    const double upwind = normal * v;
+
     if (upwind>0)
-      uFlux = uLeft;
+      gLeft = uLeft;
     else
-      uFlux = uRight;
-    uFlux *= upwind;
-
-    /*
-    RangeType cFlux;
-    cFlux = uLeft;
-    cFlux += uRight;
-    cFlux *= 0.5;
-    cFlux *= upwind;
-    */
-
-    gLeft  = uFlux;
+      gLeft = uRight;
+    gLeft *= upwind;
     gRight = gLeft;
     return std::abs(upwind);
   }
@@ -178,6 +129,7 @@ public:
 
     maxspeed = (maxspeedl > maxspeedr) ? maxspeedl : maxspeedr;
     viscpara = (viscparal > viscparar) ? viscparal : viscparar;
+
     visc = uRight;
     visc -= uLeft;
     visc *= viscpara;
@@ -186,7 +138,7 @@ public:
     gLeft *= 0.5*len;
     gRight = gLeft;
 
-    return 0.;
+    return maxspeed;
   }
 protected:
   const Model& model_;
@@ -388,6 +340,8 @@ class DGPrimalMatrixAssembly
   void assemble( const double time,
                  Matrix& matrix, DestinationType& rhs ) const
   {
+    Dune::Timer timer ;
+
     typedef RangeType           RangeTuple;
     typedef JacobianRangeType   JacobianTuple;
     typedef ElementQuadraturePointContext< EntityType, VolumeQuadratureType, RangeTuple, JacobianTuple >      LocalEvaluationType;
@@ -406,8 +360,6 @@ class DGPrimalMatrixAssembly
 
     const RangeType uZero(0);
     const JacobianRangeType uJacZero(0);
-
-    std::cout << "DG matrix assemble" << std::endl;
 
     const IteratorType end = dfSpace.end();
     for( IteratorType it = dfSpace.begin(); it != end; ++it )
@@ -461,7 +413,9 @@ class DGPrimalMatrixAssembly
           // now assemble source part depending on u (mass part)
           RangeType aphi(0);
           if ( model_.hasStiffSource() )
+          {
             model_.stiffSource( local, phi[localCol], dphi[localCol], aphi );
+          }
           if ( model_.hasNonStiffSource() )
           {
             RangeType sNonStiff (0);
@@ -570,6 +524,11 @@ class DGPrimalMatrixAssembly
     //matrix.systemMatrix().matrix().print( std::cout );
     //rhs.print( std::cout );
     //abort();
+    //
+    if( Dune::Fem::Parameter::verbose() )
+    {
+      std::cout << "DG( " << dfSpace.grid().size( 0 ) << " ) matrix assemble took " << timer.elapsed() << " sec." << std::endl;
+    }
   }
   // assemble vector containing boundary fluxes for right hand side
   void assemble( const double time,
@@ -728,7 +687,7 @@ class DGPrimalMatrixAssembly
          faceQuadInside, faceQuadOutside,
          RangeValues(-1,phiFaceEn), JacobianRangeValues(-1,dphiFaceEn),
          RangeValues(-1,phiFaceEn), JacobianRangeValues(-1,dphiFaceEn),
-         rhsValueEn, rhsDValueEn, rhsValueNb, rhsDValueNb );
+         rhsValueEn, rhsDValueEn, rhsValueNb, rhsDValueNb, true );
 
     // compute fluxes and assemble matrix
     for( unsigned int localCol = 0; localCol < numBasisFunctionsEn; ++localCol )
@@ -740,7 +699,7 @@ class DGPrimalMatrixAssembly
            faceQuadInside, faceQuadOutside,
            RangeValues(localCol,phiFaceEn), JacobianRangeValues(localCol,dphiFaceEn),
            RangeValues(-1,phiFaceEn), JacobianRangeValues(-1,dphiFaceEn),
-           valueEn, dvalueEn, valueNb, dvalueNb );
+           valueEn, dvalueEn, valueNb, dvalueNb, true );
 
       for( size_t pt = 0; pt < numFaceQuadPoints; ++pt )
       {
@@ -770,7 +729,7 @@ class DGPrimalMatrixAssembly
              faceQuadInside, faceQuadOutside,
              RangeValues(-1,phiFaceNb), JacobianRangeValues(-1,dphiFaceNb),
              RangeValues(localCol,phiFaceNb), JacobianRangeValues(localCol,dphiFaceNb),
-             valueEn, dvalueEn, valueNb, dvalueNb );
+             valueEn, dvalueEn, valueNb, dvalueNb, true );
         for( size_t pt = 0; pt < numFaceQuadPoints; ++pt )
         {
           const double weight = faceQuadInside.weight( pt );
@@ -865,16 +824,19 @@ class DGPrimalMatrixAssembly
             const Value &valueEn, const DValue &dvalueEn,
             const Value &valueNb, const DValue &dvalueNb,
             RetType &retEn, DRetType &dretEn,
-            RetType &retNb, DRetType &dretNb) const
+            RetType &retNb, DRetType &dretNb,
+            const bool initializeIntersection = true ) const
   {
     RangeType gLeft,gRight;
 #ifndef EULER
-    diffusionFlux_.initializeIntersection( intersectionStorage.intersection(),
-                                  intersectionStorage.inside(),
-                                  intersectionStorage.outside(), time,
-                                  //zero_, zero_,
-                                  faceQuadInside, faceQuadOutside,
-                                  valueEn, valueNb);
+    if( initializeIntersection )
+    {
+      diffusionFlux_.initializeIntersection( intersectionStorage.intersection(),
+                                             intersectionStorage.inside(),
+                                             intersectionStorage.outside(), time,
+                                             faceQuadInside, faceQuadOutside,
+                                             valueEn, valueNb);
+    }
 #endif
     const size_t numFaceQuadPoints = faceQuadInside.nop();
     for( size_t pt = 0; pt < numFaceQuadPoints; ++pt )
@@ -889,10 +851,10 @@ class DGPrimalMatrixAssembly
 
 #ifndef EULER
       diffusionFlux_.numericalFlux( left, right,
-                           valueEn[ pt ], valueNb[ pt ],
-                           dvalueEn[ pt ], dvalueNb[ pt ],
-                           retEn[ pt ], retNb[ pt ],
-                           dretEn[ pt ], dretNb[ pt ]);
+                                    valueEn[ pt ], valueNb[ pt ],
+                                    dvalueEn[ pt ], dvalueNb[ pt ],
+                                    retEn[ pt ], retNb[ pt ],
+                                    dretEn[ pt ], dretNb[ pt ]);
 #endif
       advFlux_.numericalFlux(left, right,
                              valueEn[ pt ],valueNb[ pt ],
@@ -920,7 +882,7 @@ class DGPrimalMatrixAssembly
    for( size_t pt = 0; pt < numFaceQuadPoints; ++pt )
    {
       diffusionFlux_.evaluateLifting(left, right, valueEn[pt],valueNb[pt],
-                            liftEn[pt],liftNb[pt]);
+                                     liftEn[pt],liftNb[pt]);
    }
 #endif
   }
@@ -995,7 +957,7 @@ class DGPrimalMatrixAssembly
       {
 #ifndef EULER
         diffusionFlux_.boundaryFlux( local, valueEn[ pt ], valueNb[ pt ],  dvalueEn[ pt ],
-                            retEn[ pt ], dretEn[ pt ]);
+                                     retEn[ pt ], dretEn[ pt ]);
 #endif
         advFlux_.numericalFlux(local, local,
                                valueEn[ pt ],valueNb[ pt ],

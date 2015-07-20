@@ -21,4 +21,6 @@ dune_target_link_libraries(poisson ${DUNE_LIBS})
 set_property(TARGET poisson APPEND PROPERTY 
              COMPILE_DEFINITIONS "ONLY_ONE_P;POLORDER=${POLORDER}")
 
+add_code_generate_targets( poisson poissonall )
+
 dune_add_test( poisson poissonall )

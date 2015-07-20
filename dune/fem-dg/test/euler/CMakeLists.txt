@@ -20,4 +20,6 @@ dune_target_link_libraries(euler ${DUNE_LIBS})
 set_property(TARGET euler APPEND PROPERTY 
              COMPILE_DEFINITIONS "ONLY_ONE_P;POLORDER=${POLORDER}")
 
+add_code_generate_targets( euler eulerall )
+
 dune_add_test( euler eulerall )

@@ -1,8 +1,8 @@
 // configure macros
 #include <config.h>
 
-#include "problemcreator.hh"
 #include <dune/fem-dg/misc/simulator.hh>
+#include "problemcreator.hh"
 
 
 int main(int argc, char ** argv)

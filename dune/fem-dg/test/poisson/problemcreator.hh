@@ -13,7 +13,6 @@
 #define POLORDER 1
 #endif
 
-#include <dune/fem-dg/main/codegen.hh>
 #include "passtraits.hh"
 
 // dune-grid includes
@@ -49,7 +48,8 @@ struct PoissonProblemCreator
   {
     typedef ProblemType                                InitialDataType;
     typedef PoissonModel< GridPart, InitialDataType >  ModelType;
-    typedef Dune::LLFAdvFlux< ModelType >              FluxType;
+    //typedef Dune::LLFAdvFlux< ModelType >              FluxType;
+    typedef Dune::UpwindFlux< ModelType >              FluxType;
     //typedef Dune::NoFlux< ModelType >                  FluxType;
     // choice of diffusion flux (see diffusionflux.hh for methods)
     static const Dune :: DGDiffusionFluxIdentifier PrimalDiffusionFluxId

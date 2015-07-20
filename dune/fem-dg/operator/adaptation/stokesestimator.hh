@@ -74,11 +74,12 @@ namespace Dune
     using BaseType::theta_;
     typename BaseType::ErrorIndicatorType Rdiv_;
   public:
-    explicit StokesErrorEstimator (const DiscreteFunctionType &uh,
-                                   const SigmaFunction &sigma,
-                                   const DGOperator &oper,
-                                   GridType &grid)
-    : BaseType(uh,sigma,oper,grid),
+    StokesErrorEstimator (const DiscreteFunctionType &uh,
+                          const SigmaFunction &sigma,
+                          const DGOperator &oper,
+                          GridType &grid,
+                          const Dune::AdaptationParameters& param = Dune::AdaptationParameters() )
+    : BaseType(uh,sigma,oper,grid,param),
       Rdiv_( this->indexSet_.size( 0 ))
     {
     }
@@ -118,39 +119,39 @@ namespace Dune
       }
       indicatorEoc();
 
-			return BaseType::computeIndicator();
+      return BaseType::computeIndicator();
     }
 
-		void indicatorEoc()
-		{
-			FieldVector<double,4> errorParts(0);
+    void indicatorEoc()
+    {
+      FieldVector<double,4> errorParts(0);
       if (theta_ == 0)
-				{
-					for (unsigned int i=0;i<indicator_.size();++i)
-						{
-							errorParts[0] += R2_[i];
-							errorParts[1] += R1_[i];
-							errorParts[2] += Rorth_[i];
-							errorParts[3] += Rdiv_[i];
-						}
-				}
+      {
+        for (unsigned int i=0;i<indicator_.size();++i)
+        {
+          errorParts[0] += R2_[i];
+          errorParts[1] += R1_[i];
+          errorParts[2] += Rorth_[i];
+          errorParts[3] += Rdiv_[i];
+        }
+      }
       else
-				{
-					for (unsigned int i=0;i<indicator_.size();++i)
-						{
-							errorParts[0] += R2_[i];
-							errorParts[1] += R1_[i];
-							errorParts[2] += Rorth_[i];
-							errorParts[3] += Rdiv_[i];
-						}
-				}
+      {
+        for (unsigned int i=0;i<indicator_.size();++i)
+        {
+          errorParts[0] += R2_[i];
+          errorParts[1] += R1_[i];
+          errorParts[2] += Rorth_[i];
+          errorParts[3] += Rdiv_[i];
+        }
+      }
 
       errorParts[0] = sqrt(errorParts[0]);
       errorParts[1] = sqrt(errorParts[1]);
       errorParts[2] = sqrt(errorParts[2]);
       errorParts[3] = sqrt(errorParts[3]);
       Dune::Fem::FemEoc :: setErrors(eocId_, errorParts );
-		}
+    }
 
 
 
@@ -166,7 +167,7 @@ namespace Dune
       const double h2 = (dimension == 2 ? volume : std :: pow( volume, 2.0 / (double)dimension ))/
                         ( uLocal.order()*uLocal.order() );
 
-			const int index = this->indexSet_.index( entity );
+      const int index = this->indexSet_.index( entity );
 
       typename SigmaLocalFunctionType::RangeType sigmaVal;
       ElementQuadratureType quad( entity, 2*(dfSpace_.order() + 2) );
@@ -174,22 +175,21 @@ namespace Dune
 
       const int numQuadraturePoints = quad.nop();
       for( int qp = 0; qp < numQuadraturePoints; ++qp )
-				{
-					const typename  ElementQuadratureType::CoordinateType &x=quad.point(qp);
-					inv = geometry.jacobianInverseTransposed(x);
-					JacobianRangeType uJac(0.);
-					uLocal.jacobian(quad[qp],uJac);
+      {
+        const typename  ElementQuadratureType::CoordinateType &x=quad.point(qp);
+        inv = geometry.jacobianInverseTransposed(x);
+        JacobianRangeType uJac(0.);
+        uLocal.jacobian(quad[qp],uJac);
 
+        double divergence = 0;
+        for (int i=0;i<uJac.rows;++i)
+        {
+          divergence += uJac[i][i];
+        }
+        const double weight = quad.weight( qp ) * geometry.integrationElement( quad.point( qp ) );
+        indicator_[ index ] += h2*weight * (divergence * divergence);
 
-	  double divergence = 0;
-	  for (int i=0;i<uJac.rows;++i)
-	    {
-	      divergence += uJac[i][i];
-	    }
-	  const double weight = quad.weight( qp ) * geometry.integrationElement( quad.point( qp ) );
-	  indicator_[ index ] += h2*weight * (divergence * divergence);
-
-	  Rdiv_[ index ] += h2*weight * (divergence * divergence);
+        Rdiv_[ index ] += h2*weight * (divergence * divergence);
       }
 
     }

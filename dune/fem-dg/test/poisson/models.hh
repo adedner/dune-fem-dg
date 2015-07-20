@@ -7,12 +7,6 @@
 
 #include <dune/fem-dg/models/defaultmodel.hh>
 
-namespace Dune
-{
-  template <class ModelType>
-  class UpwindFlux;
-}
-
 /**********************************************
  * Analytical model                           *
  *********************************************/
@@ -119,8 +113,14 @@ public:
    *
    * @param problem Class describing the initial(t=0) and exact solution
    */
-  PoissonModel(const ProblemType& problem) : problem_(problem)
+  PoissonModel(const ProblemType& problem)
+    : problem_(problem), K_( 0 )
   {
+    if( problem_.constantK() )
+    {
+      DomainType xgl( 0 );
+      problem_.K( xgl, K_ );
+    }
   }
 
   inline bool hasFlux() const { return true ; }
@@ -166,13 +166,22 @@ public:
                          const JacobianRangeType& jac,
                          FluxRangeType & f) const
   {
-    // evaluate advection coefficient
-    const double a = problem().constantAdvection();
+    const DomainType v = velocity( local );
 
     //f = uV;
     for( int r=0; r<dimRange; ++r )
+    {
       for( int d=0; d<dimDomain; ++d )
-        f[r][d] = a * u[ r ];
+      {
+        f[r][d] = v[ d ] * u[ r ];
+      }
+    }
+  }
+
+  template <class LocalEvaluation>
+  DomainType velocity( const LocalEvaluation& local ) const
+  {
+    return DomainType( problem().constantAdvection() );
   }
 
   bool hasDirichletBoundary () const
@@ -192,8 +201,8 @@ public:
    */
   template <class LocalEvaluation>
   inline void jacobian(const LocalEvaluation& local,
-                        const RangeType& u,
-                        DiffusionRangeType& a) const
+                       const RangeType& u,
+                       DiffusionRangeType& a) const
   {
     a = 0;
 
@@ -305,18 +314,25 @@ public:
                         const JacobianRangeType& jac,
                         FluxRangeType& A) const
   {
-    // for constant K evalute at center (see Problem 4)
-    const DomainType xgl = ( problem_.constantK() ) ?
-      local.entity().geometry().center () : local.entity().geometry().global(local.point())  ;
+    if( problem_.constantK() )
+    {
+      // apply diffusion
+      for( int r =0; r<dimRange; ++r )
+        K_.mv( jac[ r ] , A[ r ] );
+    }
+    else
+    {
+      // for constant K evalute at center (see Problem 4)
+      const DomainType xgl = local.entity().geometry().global(local.point());
 
-    DiffusionMatrixType K ;
+      DiffusionMatrixType K ;
 
-    // fill diffusion matrix
-    problem_.K( xgl, K );
-
-    // apply diffusion
-    for( int r =0; r<dimRange; ++r )
-      K.mv( jac[ r ] , A[ r ] );
+      // fill diffusion matrix
+      problem_.K( xgl, K );
+      // apply diffusion
+      for( int r =0; r<dimRange; ++r )
+        K.mv( jac[ r ] , A[ r ] );
+    }
   }
 
   template <class LocalEvaluation>
@@ -365,13 +381,14 @@ public:
                                        const JacobianRangeType& gradLeft,
                                        RangeType& gLeft ) const
   {
+    return 0.0;
   }
 
   const ProblemType& problem () const { return problem_; }
 
  protected:
   const ProblemType& problem_;
-  friend class Dune::UpwindFlux<PoissonModel>;
+  DiffusionMatrixType K_ ;
 };
 
 #endif
