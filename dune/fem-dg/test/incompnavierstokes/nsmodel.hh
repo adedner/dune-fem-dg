@@ -18,10 +18,10 @@
  *********************************************/
 
 /**
- * @brief Traits class for HeatEqnModel
+ * @brief Traits class for NavierStokesModel
  */
 template <class GridPart, int dimR>
-class HeatEqnModelTraits
+class NavierStokesModelTraits
   : public Dune::Fem::FunctionSpace< typename GridPart::GridType::ctype,
                                      double,
                                      GridPart::GridType::dimensionworld,
@@ -51,7 +51,7 @@ public:
   // Definition of domain and range types
   typedef Dune::FieldVector< DomainFieldType, dimDomain-1 >             FaceDomainType;
   typedef Dune::FieldVector< RangeFieldType, dimGradRange >             GradientType;
-  // ATTENTION: These are matrices (c.f. HeatEqnModel)
+  // ATTENTION: These are matrices (c.f. NavierStokesModel)
   typedef typename BaseType :: JacobianRangeType                        FluxRangeType;
   typedef Dune::FieldMatrix< RangeFieldType, dimGradRange, dimDomain >  DiffusionRangeType;
   typedef Dune::FieldMatrix< RangeFieldType, dimDomain, dimDomain >     DiffusionMatrixType;
@@ -102,15 +102,15 @@ public:
 //
 ////////////////////////////////////////////////////////
 template <class GridPartType, class ProblemImp>
-class HeatEqnModel :
-  public DefaultModel < HeatEqnModelTraits< GridPartType,ProblemImp::dimRange> >
+class NavierStokesModel :
+  public DefaultModel < NavierStokesModelTraits< GridPartType,ProblemImp::dimRange> >
 {
 public:
-  enum { velo = 0, press = 1, blabla = 2 };
-  typedef std::integral_constant< int, velo   > velocityVar;
-  typedef std::integral_constant< int, press  > pressure;
-  typedef std::integral_constant< int, blabla > blablabla;
-  typedef std::tuple < velocityVar, pressure, blablabla > ModelParameter;
+  enum { velo = 0, laplaceU = 1, gradP = 2 };
+  typedef std::integral_constant< int, velo      > velocityVar;
+  typedef std::integral_constant< int, laplaceU  > laplaceUVar;
+  typedef std::integral_constant< int, gradP     > gradientPressureVar;
+  typedef std::tuple < velocityVar, laplaceUVar, gradientPressureVar > ModelParameter;
 
   //typedef Dune::Fem::Selector< velo >  ModelParameterSelectorType;
   //typedef std::tuple< VelocityType* >  ModelParameterTypes;
@@ -125,7 +125,7 @@ public:
 
   static const int ConstantVelocity = ProblemType :: ConstantVelocity;
   typedef typename GridPartType :: GridType                        GridType;
-  typedef HeatEqnModelTraits< GridPartType,ProblemImp::dimRange >  Traits;
+  typedef NavierStokesModelTraits< GridPartType,ProblemImp::dimRange >  Traits;
   static const int dimDomain = Traits :: dimDomain ;
   static const int dimRange  = Traits :: dimRange ;
   typedef typename Traits :: DomainType                          DomainType;
@@ -140,8 +140,8 @@ public:
   typedef typename Traits :: EntityType                          EntityType;
   typedef typename Traits :: IntersectionType                    IntersectionType;
 
-  HeatEqnModel(const HeatEqnModel& otehr);
-  const HeatEqnModel &operator=(const HeatEqnModel &other);
+  NavierStokesModel(const NavierStokesModel& otehr);
+  const NavierStokesModel &operator=(const NavierStokesModel &other);
 public:
   /**
    * @brief Constructor
@@ -150,17 +150,18 @@ public:
    *
    * @param problem Class describing the initial(t=0) and exact solution
    */
-  HeatEqnModel(const ProblemType& problem) :
+  NavierStokesModel(const ProblemType& problem, const bool rightHandSideModel ) :
     problem_(problem),
     epsilon_(problem.epsilon()),
-    tstepEps_( getTStepEps() )
+    tstepEps_( getTStepEps() ),
+    rightHandSideModel_( rightHandSideModel )
   {}
 
   inline const ProblemType& problem() const { return problem_; }
 
   inline bool hasFlux() const { return true ; }
-  inline bool hasStiffSource() const { return problem_.hasStiffSource(); }
-  inline bool hasNonStiffSource() const { return problem_.hasNonStiffSource(); }
+  inline bool hasStiffSource() const { return true; }
+  inline bool hasNonStiffSource() const { return false; }
 
   template <class LocalEvaluation>
   inline double nonStiffSource( const LocalEvaluation& local,
@@ -168,9 +169,35 @@ public:
                                 const JacobianRangeType& du,
                                 RangeType & s) const
   {
-    DomainType xgl = local.entity().geometry().global( local.point() );
-    return problem_.nonStiffSource( xgl, local.time(), u, s );
+    s = 0;
+    return 0;
   }
+
+  struct ComputeLaplaceU
+  {
+    typedef laplaceUVar VarId;
+    typedef RangeType  ReturnType;
+
+    template <class LocalEvaluation>
+    RangeType operator() (const LocalEvaluation& local) const
+    {
+      return RangeType( 0 );
+    }
+  };
+
+  struct ComputeGradientPressure
+  {
+    typedef gradientPressureVar VarId;
+    typedef RangeType  ReturnType;
+
+    template <class LocalEvaluation>
+    RangeType operator() (const LocalEvaluation& local) const
+    {
+      return RangeType( 0 );
+    }
+  };
+
+
 
   template <class LocalEvaluation>
   inline double stiffSource( const LocalEvaluation& local,
@@ -179,20 +206,37 @@ public:
                              RangeType & s) const
   {
     DomainType xgl = local.entity().geometry().global( local.point() );
-    return problem_.stiffSource( xgl, local.time(), u, s );
+    // right hand side f
+    problem_.stiffSource( xgl, local.time(), u, s );
+
+    if( ! rightHandSideModel_ )
+    {
+      // + \alpha \mu \Delta u^n+\theta
+      RangeType laplaceU ( local.evaluate( ComputeLaplaceU, local ) );
+      laplaceU *= problem_.alphaMu();
+      s += laplaceU;
+
+      // + \nable p^n+\theta
+      s += local.evaluate( ComputeGradientPressure, local );
+    }
+    else
+    {
+      // + u^n * \theta \Delta t
+      RangeType uS ( u );
+      uS *= theta_;
+      s += uS;
+    }
   }
 
   struct ComputeVelocity
   {
-    typedef std::integral_constant< int, velo > VarId;
+    typedef velocityVar VarId;
     typedef DomainType  ReturnType;
 
     template <class LocalEvaluation>
-    DomainType operator() (const LocalEvaluation& local, const ProblemType& problem ) const
+    const RangeType& operator() (const LocalEvaluation& local, const RangeType& u ) const
     {
-      DomainType v;
-      problem.velocity( local.entity().geometry().global( local.point() ), local.time(), v);
-      return v;
+      return u;
     }
   };
 
@@ -211,7 +255,7 @@ public:
                         const JacobianRangeType& jacu,
                         FluxRangeType & f) const
   {
-    const DomainType& v = velocity( local );
+    const DomainType& v = velocity( local, u );
 
     // f = uV;
     for( int r=0; r<dimRange; ++r )
@@ -223,9 +267,9 @@ public:
    * @brief velocity calculation, is called by advection()
    */
   template <class LocalEvaluation>
-  inline DomainType velocity(const LocalEvaluation& local) const
+  inline DomainType velocity(const LocalEvaluation& local, const RangeType& u ) const
   {
-    return local.evaluate( ComputeVelocity(), local, problem_ );
+    return local.evaluate( ComputeVelocity(), local, u);
   }
 
 
@@ -269,9 +313,7 @@ public:
     A = jac;
 
     // apply diffusion coefficient
-    //double d =  0.; //(1.-en.geometry().global(x)[0])*en.geometry().global(x)[0]+
-    //                //(1.-en.geometry().global(x)[1])*en.geometry().global(x)[1];
-    A *= problem_.diffusion( u, A );//*(1.+d);
+    A *= problem_.betaMu();// diffusion( u, A );//*(1.+d);
   }
 
   template <class LocalEvaluation>
@@ -386,9 +428,11 @@ public:
   const ProblemType& problem_;
   const double epsilon_;
   const double tstepEps_;
+  const bool rightHandSideModel_;
 };
 
 
+#if 0
 /**
  * @brief defines the advective flux
  */
@@ -452,5 +496,6 @@ public:
 protected:
   const Model& model_;
 };
+#endif
 
 #endif
