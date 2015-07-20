@@ -1,6 +1,5 @@
 #ifndef STOKES_ALGORITHM_HH
 #define STOKES_ALGORITHM_HH
-#include <config.h>
 
 #ifndef NDEBUG
 // enable fvector and fmatrix checking
@@ -25,6 +24,7 @@
 #include <dune/fem-dg/stepper/base.hh>
 #include <dune/fem-dg/stepper/ellipticalgorithm.hh>
 #include <dune/fem-dg/solver/uzawa.hh>
+#include <dune/fem-dg/solver/linearsolvers.hh>
 
 // include local header files
 #include <dune/fem-dg/test/stokes/stokesassembler.hh>
@@ -328,11 +328,11 @@ public:
         }
       }
     }
-  }                                                                        /*@LST1E@*/
+  }
 
   //! return reference to discrete space
-  DiscreteSpaceType & space() { return space_; }                    /*@LST0E@*/
-  DiscretePressureSpaceType & pressurespace() { return space_; }
+  const DiscreteSpaceType & space() const { return space_; }
+  const DiscretePressureSpaceType & pressurespace() const { return space_; }
 
   //! returns data prefix for EOC loops ( default is loop )
   virtual std::string dataPrefix() const
