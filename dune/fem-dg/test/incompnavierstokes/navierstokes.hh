@@ -163,6 +163,8 @@ struct AdvectionDiffusionStepper
 
     DiscreteFunctionType& U = solution();
 
+    stokes_.assemble() ;
+
     // reset overall timer
     overallTimer_.reset();
 
@@ -175,7 +177,8 @@ struct AdvectionDiffusionStepper
     rhsOperator_( U, rhs_ );
 
     // stokes solve (step 1)
-    stokes_.solve( &rhs_ );
+    stokes_.solve( rhs_ );
+
     // update solution
     U.assign( stokes_.solution() );
 

@@ -83,22 +83,14 @@ template< class GridType >
 struct IncompressibleNavierStokesProblemCreator
 {
   typedef StokesProblemCreator< GridType >  StokesProblemTraits;
-
   typedef NavierStokesProblemDefault< GridType > ProblemType;
-  //typedef Dune :: EvolutionProblemInterface<
-  //                    Dune::Fem::FunctionSpace< double, double, GridType::dimension,
-  //                    DIMRANGE>,
-  //                    false > ProblemType;
-  // define problem type here if interface should be avoided
 
   template< class GridPart >
   struct Traits
   {
     typedef ProblemType                                     InitialDataType;
     typedef NavierStokesModel< GridPart, InitialDataType >  ModelType;
-
     typedef LLFFlux< ModelType >                      FluxType;
-    //typedef UpwindFlux< ModelType > FluxType;
 
     // choice of diffusion flux (see diffusionflux.hh for methods)
      static const Dune :: DGDiffusionFluxIdentifier PrimalDiffusionFluxId

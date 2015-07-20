@@ -146,7 +146,7 @@ public:
   NavierStokesModel(const ProblemType& problem, const bool rightHandSideModel = false ) :
     problem_(problem),
     epsilon_(problem.epsilon()),
-    tstepEps_( getTStepEps() ),
+    tstepEps_( problem.betaMu() ),
     theta_( 1 ),
     rightHandSideModel_( rightHandSideModel )
   {}
@@ -192,7 +192,8 @@ public:
   {
     DomainType xgl = local.entity().geometry().global( local.point() );
     // right hand side f
-    problem_.stiffSource( xgl, local.time(), u, s );
+    problem_.setTime( local.time() );
+    problem_.f( xgl, s );
 
     if( ! rightHandSideModel_ )
     {
@@ -392,17 +393,6 @@ public:
     const DomainType& v = velocity( local, u );
     advspeed   = std::abs( v * normal );
     totalspeed = advspeed;
-  }
-
- protected:
-  double getTStepEps() const
-  {
-    // if diffusionTimeStep is set to non-zero in the parameterfile, the
-    // deltaT in the timeprovider is updated according to the diffusion
-    // parameter epsilon.
-    bool diff_tstep;
-    Dune::Fem::Parameter::get("femdg.stepper.diffusiontimestep", diff_tstep);
-    return diff_tstep ? epsilon_ : 0;
   }
 
  protected:
