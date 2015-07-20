@@ -21,15 +21,13 @@
 
 // dune-fem-dg includes
 #include <dune/fem-dg/operator/dg/dgoperatorchoice.hh>
-// include local header files
-#include "stokesassembler.hh"
-#include <dune/fem-dg/solver/uzawa.hh>
-#include <dune/fem-dg/stepper/base.hh>
-
-// #include "../base/baseevolution.hh"
-//#include "ellipt.hh"
-#include <dune/fem-dg/stepper/ellipticalgorithm.hh>
 #include <dune/fem-dg/operator/adaptation/stokesestimator.hh>
+#include <dune/fem-dg/stepper/base.hh>
+#include <dune/fem-dg/stepper/ellipticalgorithm.hh>
+#include <dune/fem-dg/solver/uzawa.hh>
+
+// include local header files
+#include <dune/fem-dg/test/stokes/stokesassembler.hh>
 
 using namespace Dune;
 
@@ -50,6 +48,7 @@ public:
   typedef Dune::Fem::FunctionSpace< double, double, GridImp::dimension, 1 >   PressureFunctionSpaceType;
 
 
+#if 0
 #if DGSCHEME
 #if ONB
     #warning using DG space with ONB
@@ -70,18 +69,16 @@ public:
     typedef Fem::PAdaptiveLagrangeSpace
 #define PADAPTSPACE
 #endif
-    < PressureFunctionSpaceType,GridPartType, ( polOrd > 0 ) ? polOrd-1 : 0, Dune::Fem::CachingStorage>          DiscretePressureSpaceType;
-
-#if WANT_ISTL
-  typedef  Dune::Fem::ISTLBlockVectorDiscreteFunction< DiscretePressureSpaceType >   DiscretePressureFunctionType;
-#else
-typedef Dune::Fem::AdaptiveDiscreteFunction< DiscretePressureSpaceType >   DiscretePressureFunctionType;
 #endif
-  typedef StokesAssembler< DiscreteFunctionType,
-         DiscretePressureFunctionType, typename BaseType::OperatorTraits>
-  StokesAssemblerType;
 
+  typedef Dune::Fem::DiscontinuousGalerkinSpace
+      < PressureFunctionSpaceType,GridPartType, ( polOrd > 0 ) ? polOrd-1 : 0, Dune::Fem::CachingStorage>          DiscretePressureSpaceType;
 
+  static const bool symmetricSolver = true ;
+  typedef typename Solvers<DiscretePressureSpaceType, istl,  symmetricSolver> :: DiscreteFunctionType DiscretePressureFunctionType;
+
+  typedef StokesAssembler< DiscreteFunctionType,  DiscretePressureFunctionType, typename BaseType::OperatorTraits>
+      StokesAssemblerType;
 };
 
 
@@ -548,9 +545,7 @@ private:
   using BaseType::model;
   using BaseType::dgAssembledOperator_;
   using BaseType::invDgOperator_;
-#if WANT_ISTL
   using BaseType::linDgOperator_;
-#endif
   using BaseType::space_;    // the discrete function space
   using BaseType::rhs_;    // the discrete function space
   using BaseType::sigmaSpace_;
