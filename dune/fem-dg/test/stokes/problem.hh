@@ -248,7 +248,7 @@ namespace Dune
     {
       double x=p[0];
       double y=p[1];
-      ret[0] = cos(0.5*M_PI*(x+y)) * (alpha_+0.5*mu_*M_PI*M_PI) + 0.5*M_PI*cos(M_PI*(x-y) );
+      ret[0] = cos(0.5*M_PI*(x+y)) * (alpha_+0.5*mu_*M_PI*M_PI) + 0.5*M_PI*cos(0.5*M_PI*(x-y) );
       ret[1] = - ret[0];
     }
     //! the exact solution
