@@ -143,7 +143,7 @@ public:
    *
    * @param problem Class describing the initial(t=0) and exact solution
    */
-  NavierStokesModel(const ProblemType& problem, const bool rightHandSideModel ) :
+  NavierStokesModel(const ProblemType& problem, const bool rightHandSideModel = false ) :
     problem_(problem),
     epsilon_(problem.epsilon()),
     tstepEps_( getTStepEps() ),
@@ -389,7 +389,7 @@ public:
                         double& advspeed,
                         double& totalspeed ) const
   {
-    const DomainType& v = velocity( local );
+    const DomainType& v = velocity( local, u );
     advspeed   = std::abs( v * normal );
     totalspeed = advspeed;
   }

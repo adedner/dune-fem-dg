@@ -39,7 +39,9 @@ namespace Dune
 
     NavierStokesProblemDefault()
       : time_( 0 ),
-        mu_( 1 )
+        mu_( 1 ),
+        alpha_( 1 ),
+        beta_( 1 )
     {}
 
     void setTime( const double time ) const
@@ -101,9 +103,16 @@ namespace Dune
     void gradient ( const DomainType &p, JacobianRangeType &grad ) const
     {
     }
+
+    double betaMu() const { return beta_ * mu_; }
+    double alphaMu() const { return alpha_ * mu_; }
+
+    using BaseType :: dataPrefix;
   protected:
     mutable double time_;
     const double mu_;
+    const double alpha_;
+    const double beta_;
   };
 
 }
