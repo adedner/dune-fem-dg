@@ -2,15 +2,6 @@
 #define STOKES_ALGORITHM_HH
 #include <config.h>
 
-#ifdef LOCALDEBUG
-static double sum_ = 0.;
-static double sum2_ = 0.;
-static double localMaxRatio_ = 0.;
-static double localMinRatio_ = 1e+100;
-static double maxRatioOfSums = 0.;
-static double minRatioOfSums = 1e+100;
-#endif
-
 #ifndef NDEBUG
 // enable fvector and fmatrix checking
 #define DUNE_ISTL_WITH_CHECKING
@@ -377,16 +368,12 @@ public:
   //! default time loop implementation, overload for changes
   SolverMonitorType solve( int loop )
   {
-    numbers_.resize( 0 );
+    assemble( &rhs_ );
+    return solve( rhs_ );
+  }
 
-    // calculate grid width
-    const double h = Dune::Fem::GridWidth::calcGridWidth(gridPart_);
-    numbers_.push_back( h );
-
-
-    const double size = grid_.size(0);
-    numbers_.push_back( size );
-
+  void assemble( DiscreteFunctionType* rhs )
+  {
 #ifdef PADAPTSPACE
     int polOrder = Dune::Fem::Parameter::getValue<double>("femdg.polynomialOrder",1);
     // only implemented for PAdaptiveSpace
@@ -397,20 +384,6 @@ public:
     space_.adapt( polOrderVec );
     pressurespace_.adapt( polOrderVecPressure);
 #endif
-
-
-    typedef Dune::UzawaSolver< DiscreteFunctionType,DiscretePressureFunctionType,StokesAssemblerType,LinearInverseOperatorType >UzawaType;
-
-    DiscretePressureFunctionType pressure("press",pressurespace_);
-    DiscreteFunctionType veloprojection("veloprojection",space_);
-    pressure.clear();
-    veloprojection.clear();
-    double absLimit   = Dune::Fem:: Parameter::getValue<double>("istl.absLimit",1.e-10);
-    double reduction  = Dune::Fem:: Parameter::getValue<double>("istl.reduction",1.e-10);
-    double uzawareduction  = Dune::Fem:: Parameter::getValue<double>("uzawareduction",reduction*100.);
-
-    SolverMonitorType monitor;
-    monitor.gridWidth = h; // space_.size();
 
     linDgOperator_.reset( new LinearOperatorType("dg operator", space_, space_ ) );
 
@@ -428,19 +401,52 @@ public:
     }
 
     linDgOperator_->clear();
-    dgAssembledOperator_.assemble(0, *linDgOperator_, rhs_);
+    if( rhs )
+    {
+      dgAssembledOperator_.assemble(0, *linDgOperator_, *rhs );
+    }
+    else
+    {
+      dgAssembledOperator_.assemble(0, *linDgOperator_ );
+    }
+
+    double reduction  = Dune::Fem:: Parameter::getValue<double>("istl.reduction",1.e-10);
+    double absLimit   = Dune::Fem:: Parameter::getValue<double>("istl.absLimit",1.e-10);
+
     invDgOperator_.reset( new LinearInverseOperatorType(*linDgOperator_, reduction, absLimit ) );
 
     stokesAssembler_.assemble( *problem_);
+  }
 
-    UzawaType uzawa(stokesAssembler_,*invDgOperator_,rhs_,uzawareduction,uzawareduction,100000);
+  SolverMonitorType solve( const DiscreteFunctionType& rhs )
+  {
+    numbers_.resize( 0 );
+
+    // calculate grid width
+    const double h = Dune::Fem::GridWidth::calcGridWidth(gridPart_);
+    numbers_.push_back( h );
+
+    const double size = grid_.size(0);
+    numbers_.push_back( size );
+
+    typedef Dune::UzawaSolver< DiscreteFunctionType,DiscretePressureFunctionType,StokesAssemblerType,LinearInverseOperatorType >UzawaType;
+
+    double reduction  = Dune::Fem:: Parameter::getValue<double>("istl.reduction",1.e-10);
+    double uzawareduction  = Dune::Fem:: Parameter::getValue<double>("uzawareduction",reduction*100.);
+
+    SolverMonitorType monitor;
+    monitor.gridWidth = h; // space_.size();
+
+    UzawaType uzawa(stokesAssembler_, *invDgOperator_, rhs, uzawareduction, uzawareduction, 3*space_.size() );
 
     pressuresolution_.clear();
-    uzawa(stokesAssembler_.pressureRhs(),pressuresolution_);
+    uzawa(stokesAssembler_.pressureRhs(), pressuresolution_);
 
-    solution_.assign(uzawa.velocity());
+    solution_.assign( uzawa.velocity() );
+
     monitor.ils_iterations = uzawa.iterations();
-    averageIter_=uzawa. averageLinIter();
+    averageIter_ = uzawa. averageLinIter();
+
     // calculate new sigma
     Dune::Fem:: DGL2ProjectionImpl :: project( sigmaEstimateFunction_, sigmaDiscreteFunction_ );
 
