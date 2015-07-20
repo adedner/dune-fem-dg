@@ -77,23 +77,6 @@ struct AdvectionDiffusionStepper
 
   typedef typename OperatorTraits :: ExtraParameterTupleType  ExtraParameterTupleType;
 
-  typedef typename ProblemTraits :: template Traits< GridPartType >   ModelTraits;
-
-  // traits for the operator class
-  struct RhsOperatorTraits :
-    public Dune::PassTraits< ModelTraits, polynomialOrder == -1 ? 0 : polynomialOrder, ModelTraits::ModelType::dimRange >
-  {
-    static const int limiterPolynomialOrder = polynomialOrder == -1 ? 1 : polynomialOrder;
-
-    //typedef Dune::Fem::FunctionSpace< double, double, GridType::dimensionworld, GridType::dimensionworld > FS;
-    //typedef Dune::Fem::FiniteVolumeSpace< FS, GridPartType, 0 > SpaceType;
-    //typedef Dune::Fem::AdaptiveDiscreteFunction< SpaceType > VeloType;
-    //typedef std::tuple< VeloType* > ExtraParameterTupleType;
-
-    typedef ExtraParameterTuple ExtraParameterTupleType;
-  };
-
-
 
   using BaseType :: grid_;
   using BaseType :: gridPart_;
@@ -115,8 +98,8 @@ struct AdvectionDiffusionStepper
     BaseType( grid, name ),
     subTimeProvider_( 0.0, grid ),
     stokes_( grid, name ),
-    velocity_( "velocity", stokes_.space() ),
-    rhs_( "rhs", stokes_.space() ),
+    velocity_( "velocity", space() ),
+    rhs_( "rhs", space() ),
     tuple_( &velocity_, &rhs_ ),
     tupleV_( &velocity_ ),
     dgOperator_( gridPart_, problem(), tuple_, name ),
