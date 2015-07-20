@@ -74,11 +74,11 @@ namespace Dune
     using BaseType::theta_;
     typename BaseType::ErrorIndicatorType Rdiv_;
   public:
-    explicit StokesErrorEstimator (const DiscreteFunctionType &uh,
-                                   const SigmaFunction &sigma,
-                                   const DGOperator &oper,
-                                   GridType &grid
-                                   const Dune::AdaptationParameters& param = Dune::AdaptationParameters() )
+    StokesErrorEstimator (const DiscreteFunctionType &uh,
+                          const SigmaFunction &sigma,
+                          const DGOperator &oper,
+                          GridType &grid,
+                          const Dune::AdaptationParameters& param = Dune::AdaptationParameters() )
     : BaseType(uh,sigma,oper,grid,param),
       Rdiv_( this->indexSet_.size( 0 ))
     {

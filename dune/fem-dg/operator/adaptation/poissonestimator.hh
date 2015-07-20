@@ -19,6 +19,8 @@
 #include <dune/fem/misc/h1norm.hh>
 #include <dune/fem/misc/nonconformitylevel.hh>
 
+#include <dune/fem-dg/operator/adaptation/utility.hh>
+
 namespace Dune
 {
 
