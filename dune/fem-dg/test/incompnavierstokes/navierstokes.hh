@@ -6,7 +6,7 @@
 #include <dune/fem-dg/solver/rungekuttasolver.hh>
 
 // local includes
-#include "stepperbase.hh"
+#include <dune/fem-dg/stepper/stepperbase.hh>
 #include "../stokes/stokes.hh"
 
 template <class GridImp,

@@ -21,7 +21,7 @@
 #include <dune/fem-dg/operator/fluxes/noflux.hh>
 
 // overload default stepper traits
-#include <dune/fem-dg/stepper/advectiondiffusionstepper.hh>
+#include "navierstokes.hh"
 
 #include "problem.hh"
 #include "nsmodel.hh"
