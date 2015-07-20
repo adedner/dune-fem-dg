@@ -413,7 +413,9 @@ class DGPrimalMatrixAssembly
           // now assemble source part depending on u (mass part)
           RangeType aphi(0);
           if ( model_.hasStiffSource() )
+          {
             model_.stiffSource( local, phi[localCol], dphi[localCol], aphi );
+          }
           if ( model_.hasNonStiffSource() )
           {
             RangeType sNonStiff (0);
