@@ -481,14 +481,10 @@ public:
     Dune::Fem::LocalFunctionAdapter<SigmaLocalFunctionType> sigma( "sigma function", sigmaLocalFunction, gridPart_, space_.order() );
     const double sigmaerror = sigmanorm.distance( ugrid, sigma );
 
-
-
-
     for(size_t i=0; i<numbers_.size(); ++i)
       runFile_ << numbers_[ i ] << " ";
 
     runFile_ << std::endl;
-
 
     // store values
     std::vector<double> errors;
