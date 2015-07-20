@@ -47,6 +47,8 @@ public:
     ret = 0;
   }
 
+  //! mass factor gamma
+  virtual double gamma() const { return 0.0; }
 
   //! the gradient of the exact solution
   //virtual void gradient(const DomainType& x,
