@@ -132,13 +132,8 @@ public:
   typedef typename Traits :: LinearInverseOperatorType   LinearInverseOperatorType;
 
   enum { dimension = GridType :: dimension  };
-#if STOKES
   typedef typename DiscreteSpaceType ::
-   template ToNewDimRange< dimension*dimension > :: NewFunctionSpaceType SigmaFunctionSpaceType ;
-#else
-  typedef typename DiscreteSpaceType ::
-   template ToNewDimRange< dimension > :: NewFunctionSpaceType SigmaFunctionSpaceType ;
-#endif
+   template ToNewDimRange< dimension * ModelType::dimRange > :: NewFunctionSpaceType SigmaFunctionSpaceType ;
 
   //- hybrid spaces use PAdaptiveDGSpace
   template <class Grid, int topoId>

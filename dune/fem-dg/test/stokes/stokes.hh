@@ -1,15 +1,5 @@
 #ifndef STOKES_ALGORITHM_HH
 #define STOKES_ALGORITHM_HH
-#include <config.h>
-
-#ifdef LOCALDEBUG
-static double sum_ = 0.;
-static double sum2_ = 0.;
-static double localMaxRatio_ = 0.;
-static double localMinRatio_ = 1e+100;
-static double maxRatioOfSums = 0.;
-static double minRatioOfSums = 1e+100;
-#endif
 
 #ifndef NDEBUG
 // enable fvector and fmatrix checking
@@ -30,15 +20,14 @@ static double minRatioOfSums = 1e+100;
 
 // dune-fem-dg includes
 #include <dune/fem-dg/operator/dg/dgoperatorchoice.hh>
-// include local header files
-#include "stokesassembler.hh"
-#include <dune/fem-dg/solver/uzawa.hh>
-#include <dune/fem-dg/stepper/base.hh>
-
-// #include "../base/baseevolution.hh"
-//#include "ellipt.hh"
-#include <dune/fem-dg/stepper/ellipticalgorithm.hh>
 #include <dune/fem-dg/operator/adaptation/stokesestimator.hh>
+#include <dune/fem-dg/stepper/base.hh>
+#include <dune/fem-dg/stepper/ellipticalgorithm.hh>
+#include <dune/fem-dg/solver/uzawa.hh>
+#include <dune/fem-dg/solver/linearsolvers.hh>
+
+// include local header files
+#include <dune/fem-dg/test/stokes/stokesassembler.hh>
 
 using namespace Dune;
 
@@ -59,6 +48,7 @@ public:
   typedef Dune::Fem::FunctionSpace< double, double, GridImp::dimension, 1 >   PressureFunctionSpaceType;
 
 
+#if 0
 #if DGSCHEME
 #if ONB
     #warning using DG space with ONB
@@ -79,18 +69,16 @@ public:
     typedef Fem::PAdaptiveLagrangeSpace
 #define PADAPTSPACE
 #endif
-    < PressureFunctionSpaceType,GridPartType, ( polOrd > 0 ) ? polOrd-1 : 0, Dune::Fem::CachingStorage>          DiscretePressureSpaceType;
-
-#if WANT_ISTL
-  typedef  Dune::Fem::ISTLBlockVectorDiscreteFunction< DiscretePressureSpaceType >   DiscretePressureFunctionType;
-#else
-typedef Dune::Fem::AdaptiveDiscreteFunction< DiscretePressureSpaceType >   DiscretePressureFunctionType;
 #endif
-  typedef StokesAssembler< DiscreteFunctionType,
-         DiscretePressureFunctionType, typename BaseType::OperatorTraits>
-  StokesAssemblerType;
 
+  typedef Dune::Fem::DiscontinuousGalerkinSpace
+      < PressureFunctionSpaceType,GridPartType, ( polOrd > 0 ) ? polOrd-1 : 0, Dune::Fem::CachingStorage>          DiscretePressureSpaceType;
 
+  static const bool symmetricSolver = true ;
+  typedef typename Solvers<DiscretePressureSpaceType, istl,  symmetricSolver> :: DiscreteFunctionType DiscretePressureFunctionType;
+
+  typedef StokesAssembler< DiscreteFunctionType,  DiscretePressureFunctionType, typename BaseType::OperatorTraits>
+      StokesAssemblerType;
 };
 
 
@@ -340,11 +328,11 @@ public:
         }
       }
     }
-  }                                                                        /*@LST1E@*/
+  }
 
   //! return reference to discrete space
-  DiscreteSpaceType & space() { return space_; }                    /*@LST0E@*/
-  DiscretePressureSpaceType & pressurespace() { return space_; }
+  const DiscreteSpaceType & space() const { return space_; }
+  const DiscretePressureSpaceType & pressurespace() const { return space_; }
 
   //! returns data prefix for EOC loops ( default is loop )
   virtual std::string dataPrefix() const
@@ -377,16 +365,12 @@ public:
   //! default time loop implementation, overload for changes
   SolverMonitorType solve( int loop )
   {
-    numbers_.resize( 0 );
+    assemble( &rhs_ );
+    return solve( rhs_ );
+  }
 
-    // calculate grid width
-    const double h = Dune::Fem::GridWidth::calcGridWidth(gridPart_);
-    numbers_.push_back( h );
-
-
-    const double size = grid_.size(0);
-    numbers_.push_back( size );
-
+  void assemble( DiscreteFunctionType* rhs )
+  {
 #ifdef PADAPTSPACE
     int polOrder = Dune::Fem::Parameter::getValue<double>("femdg.polynomialOrder",1);
     // only implemented for PAdaptiveSpace
@@ -397,20 +381,6 @@ public:
     space_.adapt( polOrderVec );
     pressurespace_.adapt( polOrderVecPressure);
 #endif
-
-
-    typedef Dune::UzawaSolver< DiscreteFunctionType,DiscretePressureFunctionType,StokesAssemblerType,LinearInverseOperatorType >UzawaType;
-
-    DiscretePressureFunctionType pressure("press",pressurespace_);
-    DiscreteFunctionType veloprojection("veloprojection",space_);
-    pressure.clear();
-    veloprojection.clear();
-    double absLimit   = Dune::Fem:: Parameter::getValue<double>("istl.absLimit",1.e-10);
-    double reduction  = Dune::Fem:: Parameter::getValue<double>("istl.reduction",1.e-10);
-    double uzawareduction  = Dune::Fem:: Parameter::getValue<double>("uzawareduction",reduction*100.);
-
-    SolverMonitorType monitor;
-    monitor.gridWidth = h; // space_.size();
 
     linDgOperator_.reset( new LinearOperatorType("dg operator", space_, space_ ) );
 
@@ -428,19 +398,52 @@ public:
     }
 
     linDgOperator_->clear();
-    dgAssembledOperator_.assemble(0, *linDgOperator_, rhs_);
+    if( rhs )
+    {
+      dgAssembledOperator_.assemble(0, *linDgOperator_, *rhs );
+    }
+    else
+    {
+      dgAssembledOperator_.assemble(0, *linDgOperator_ );
+    }
+
+    double reduction  = Dune::Fem:: Parameter::getValue<double>("istl.reduction",1.e-10);
+    double absLimit   = Dune::Fem:: Parameter::getValue<double>("istl.absLimit",1.e-10);
+
     invDgOperator_.reset( new LinearInverseOperatorType(*linDgOperator_, reduction, absLimit ) );
 
     stokesAssembler_.assemble( *problem_);
+  }
 
-    UzawaType uzawa(stokesAssembler_,*invDgOperator_,rhs_,uzawareduction,uzawareduction,100000);
+  SolverMonitorType solve( const DiscreteFunctionType& rhs )
+  {
+    numbers_.resize( 0 );
+
+    // calculate grid width
+    const double h = Dune::Fem::GridWidth::calcGridWidth(gridPart_);
+    numbers_.push_back( h );
+
+    const double size = grid_.size(0);
+    numbers_.push_back( size );
+
+    typedef Dune::UzawaSolver< DiscreteFunctionType,DiscretePressureFunctionType,StokesAssemblerType,LinearInverseOperatorType >UzawaType;
+
+    double reduction  = Dune::Fem:: Parameter::getValue<double>("istl.reduction",1.e-10);
+    double uzawareduction  = Dune::Fem:: Parameter::getValue<double>("uzawareduction",reduction*100.);
+
+    SolverMonitorType monitor;
+    monitor.gridWidth = h; // space_.size();
+
+    UzawaType uzawa(stokesAssembler_, *invDgOperator_, rhs, uzawareduction, uzawareduction, 3*space_.size() );
 
     pressuresolution_.clear();
-    uzawa(stokesAssembler_.pressureRhs(),pressuresolution_);
+    uzawa(stokesAssembler_.pressureRhs(), pressuresolution_);
 
-    solution_.assign(uzawa.velocity());
+    solution_.assign( uzawa.velocity() );
+
     monitor.ils_iterations = uzawa.iterations();
-    averageIter_=uzawa. averageLinIter();
+    averageIter_ = uzawa. averageLinIter();
+
     // calculate new sigma
     Dune::Fem:: DGL2ProjectionImpl :: project( sigmaEstimateFunction_, sigmaDiscreteFunction_ );
 
@@ -542,9 +545,7 @@ private:
   using BaseType::model;
   using BaseType::dgAssembledOperator_;
   using BaseType::invDgOperator_;
-#if WANT_ISTL
   using BaseType::linDgOperator_;
-#endif
   using BaseType::space_;    // the discrete function space
   using BaseType::rhs_;    // the discrete function space
   using BaseType::sigmaSpace_;

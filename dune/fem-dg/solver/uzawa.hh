@@ -69,7 +69,7 @@ namespace Dune {
 
     UzawaSolver(const MappingType& op,
                 const InverseOperatorType& aufSolver,
-                DiscreteFunctionType& rhs,
+                const DiscreteFunctionType& rhs,
                 double redEps,
                 double absLimit,
                 int maxIter,

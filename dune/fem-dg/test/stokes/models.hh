@@ -93,7 +93,7 @@ public:
 
   typedef typename GridPartType :: GridType                          GridType;
   static const int dimDomain = GridType::dimensionworld;
-  static const int dimRange = ProblemType :: dimRange;
+  static const int dimRange  = ProblemType :: dimRange;
   typedef StokesModelTraits< GridPartType, ProblemType >             Traits;
   typedef typename Traits :: DomainFieldType                         DomainFieldType;
   typedef typename Traits :: RangeFieldType                          RangeFieldType;

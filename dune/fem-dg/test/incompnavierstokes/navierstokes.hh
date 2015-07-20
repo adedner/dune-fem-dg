@@ -6,7 +6,7 @@
 #include <dune/fem-dg/solver/rungekuttasolver.hh>
 
 // local includes
-#include "stepperbase.hh"
+#include <dune/fem-dg/stepper/stepperbase.hh>
 #include "../stokes/stokes.hh"
 
 template <class GridImp,
@@ -18,8 +18,8 @@ struct AdvectionDiffusionStepper
 {
   typedef StepperBase< GridImp, ProblemTraits, polynomialOrder, ExtraParameterTuple > BaseType ;
 
-  typedef typename ProblemTraits :: StokesProblemTraits StokesProblemTraits;
-  typedef StokesAlgorithm< GridImp, StokesProblemTraits, polynomialOrder >  StokesAlgorithm;
+  typedef typename BaseType :: Traits     Traits ;
+  typedef typename Traits :: StokesAlgorithmType  StokesAlgorithmType;
 
   // type of Grid
   typedef typename BaseType :: GridType                 GridType;
@@ -39,9 +39,11 @@ struct AdvectionDiffusionStepper
   // The DG space operator
   // The first operator is sum of the other two
   // The other two are needed for semi-implicit time discretization
-  typedef typename BaseType :: FullOperatorType               FullOperatorType;
-  typedef typename BaseType :: ExplicitOperatorType           ExplicitOperatorType;
-  typedef typename BaseType :: ImplicitOperatorType           ImplicitOperatorType;
+  typedef typename BaseType :: FullOperatorType          FullOperatorType;
+  typedef typename BaseType :: ExplicitOperatorType      ExplicitOperatorType;
+  typedef typename BaseType :: ImplicitOperatorType      ImplicitOperatorType;
+
+  typedef typename Traits :: RhsOperatorType             RhsOperatorType;
 
   typedef typename BaseType :: LinearInverseOperatorType LinearInverseOperatorType;
 
@@ -62,6 +64,7 @@ struct AdvectionDiffusionStepper
     BaseType::Traits::DiffusionFluxId ;
 
   typedef typename BaseType::OperatorTraits OperatorTraits;
+  typedef typename BaseType::SolverMonitorType  SolverMonitorType;
 
   // advection = true , diffusion = true
   typedef Dune :: DGAdaptationIndicatorOperator< OperatorTraits, true, true >  DGIndicatorType;
@@ -74,6 +77,7 @@ struct AdvectionDiffusionStepper
 
   typedef typename OperatorTraits :: ExtraParameterTupleType  ExtraParameterTupleType;
 
+
   using BaseType :: grid_;
   using BaseType :: gridPart_;
   using BaseType :: space;
@@ -83,17 +87,21 @@ struct AdvectionDiffusionStepper
   using BaseType :: adaptive ;
   using BaseType :: doEstimateMarkAdapt ;
   using BaseType :: name ;
+  using BaseType :: solution;
+  using BaseType :: overallTimer_;
+  using BaseType :: odeSolver_;
+  using BaseType :: odeSolverMonitor_;
 
   AdvectionDiffusionStepper( GridType& grid,
                              const std::string name = "",
                              ExtraParameterTupleType tuple = ExtraParameterTupleType() ) :
     BaseType( grid, name ),
-    stokes_( grid, name ),
-    velocity_( stokes_.solution() ),
-    rhs_( stokes_.solution() ),
-    tuple_( &velo_, &rhs_ ),
-    tupleV_( &velo_ ),
     subTimeProvider_( 0.0, grid ),
+    stokes_( grid, name ),
+    velocity_( "velocity", space() ),
+    rhs_( "rhs", space() ),
+    tuple_( &velocity_, &rhs_ ),
+    tupleV_( &velocity_ ),
     dgOperator_( gridPart_, problem(), tuple_, name ),
     rhsOperator_( gridPart_, problem(), tupleV_, name )
     // rhsOperator2_( gridPart_, problem(), tuple_, name )
@@ -118,11 +126,8 @@ struct AdvectionDiffusionStepper
     }
 
     // one of them is not zero,
-    size_t advSize     = dgAdvectionOperator_.numberOfElements();
-    size_t diffSize    = dgDiffusionOperator_.numberOfElements();
-    size_t dgIndSize   = gradientIndicator_.numberOfElements();
     size_t dgSize      = dgOperator_.numberOfElements();
-    UInt64Type grSize  = std::max( std::max(advSize, dgSize ), std::max( diffSize, dgIndSize ) );
+    UInt64Type grSize  = dgSize ;
     double minMax[ 2 ] = { double(grSize), 1.0/double(grSize) } ;
     grid_.comm().max( &minMax[ 0 ], 2 );
     if( Dune::Fem::Parameter :: verbose () )
@@ -134,16 +139,6 @@ struct AdvectionDiffusionStepper
 
   virtual OdeSolverType* createOdeSolver(TimeProviderType& tp)
   {
-    // create adaptation handler in case of apost indicator
-    if( adaptive() )
-    {
-      if( ! adaptationHandler_ && adaptParam_.aposterioriIndicator() )
-      {
-        adaptationHandler_ = new AdaptationHandlerType( grid_, tp );
-        dgIndicator_.setAdaptation( *adaptationHandler_ );
-      }
-    }
-
     // create ODE solver
     typedef RungeKuttaSolver< FullOperatorType, FullOperatorType, FullOperatorType,
                               LinearInverseOperatorType > OdeSolverImpl;
@@ -226,13 +221,11 @@ struct AdvectionDiffusionStepper
   //! estimate and mark solution
   virtual void initialEstimateMarkAdapt( )
   {
-    doEstimateMarkAdapt( dgIndicator_, gradientIndicator_, true );
   }
 
   //! estimate and mark solution
   virtual void estimateMarkAdapt( )
   {
-    doEstimateMarkAdapt( dgIndicator_, gradientIndicator_, false );
   }
 
   const ModelType& model() const { return dgOperator_.model(); }
@@ -240,14 +233,16 @@ struct AdvectionDiffusionStepper
 protected:
   //typename OperatorTraits::SpaceType vSpace_;
   //typename OperatorTraits::VeloType  velo_;
-  ExtraParameterTupleType tuple_;
-  StokesAlgorithm         stokes_;
   TimeProviderType        subTimeProvider_;
+  StokesAlgorithmType     stokes_;
+
+  DiscreteFunctionType    velocity_;
+  DiscreteFunctionType    rhs_;
+
+  std::tuple< DiscreteFunctionType*, DiscreteFunctionType* > tuple_;
+  std::tuple< DiscreteFunctionType* > tupleV_;
 
   FullOperatorType        dgOperator_;
-  ExplicitOperatorType    dgAdvectionOperator_;
-  ImplicitOperatorType    dgDiffusionOperator_;
-  DGIndicatorType         dgIndicator_;
-  GradientIndicatorType   gradientIndicator_;
+  RhsOperatorType         rhsOperator_;
 };
 #endif // FEMHOWTO_STEPPER_HH
