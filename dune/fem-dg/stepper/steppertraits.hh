@@ -11,7 +11,7 @@
 template <class GridImp,
           class ProblemTraits,
           int polOrd,
-          class ExtraParameterTuple = std::tuple<> >
+          class ExtraParameterTuple = std::tuple< > >
 struct StepperTraits
 {
   static const int polynomialOrder = polOrd ;
