@@ -340,6 +340,25 @@ class DGPrimalMatrixAssembly
   void assemble( const double time,
                  Matrix& matrix, DestinationType& rhs ) const
   {
+    doAssemble( time, matrix, &rhs );
+  }
+
+  template <class Matrix>
+  void assemble( const double time,
+                 Matrix& matrix ) const
+  {
+    doAssemble( time, matrix, (DestinationType * ) 0 );
+  }
+
+
+  /*
+   * Assemble Matrix for Elliptic Problem using the DGPrimalDIffusionFlux
+   * implementation.
+   */
+  template <class Matrix>
+  void doAssemble( const double time,
+                   Matrix& matrix, DestinationType* rhs ) const
+  {
     Dune::Timer timer ;
 
     typedef RangeType           RangeTuple;
@@ -348,9 +367,12 @@ class DGPrimalMatrixAssembly
 
     typedef typename Matrix::LocalMatrixType LocalMatrixType;
     matrix.clear();
-    rhs.clear();
+    if( rhs )
+    {
+      rhs->clear();
+    }
 
-    const DiscreteFunctionSpaceType &dfSpace = rhs.space();
+    const DiscreteFunctionSpaceType &dfSpace = op_.space();
     const size_t maxNumBasisFunctions = maxNumScalarBasisFunctions( dfSpace );
 
     std::vector< RangeType > phi( maxNumBasisFunctions );
@@ -361,6 +383,8 @@ class DGPrimalMatrixAssembly
     const RangeType uZero(0);
     const JacobianRangeType uJacZero(0);
 
+    Dune::Fem::TemporaryLocalFunction< DiscreteFunctionSpaceType > rhsLocal( dfSpace );
+
     const IteratorType end = dfSpace.end();
     for( IteratorType it = dfSpace.begin(); it != end; ++it )
     {
@@ -369,7 +393,12 @@ class DGPrimalMatrixAssembly
       const double volume = geometry.volume();
 
       LocalMatrixType localOpEn = matrix.localMatrix( entity, entity );
-      LocalFunctionType rhsLocal = rhs.localFunction( entity );
+
+      if( rhs )
+      {
+        rhsLocal.init( entity );
+        rhsLocal.clear();
+      }
 
       const BasisFunctionSetType &baseSet = localOpEn.domainBasisFunctionSet();
       const unsigned int numBasisFunctionsEn = baseSet.size();
@@ -439,10 +468,14 @@ class DGPrimalMatrixAssembly
           // get column object and call axpy method
           localOpEn.column( localCol ).axpy( phi, dphi, aphi, adphi, weight );
         }
-        // assemble rhs
-        arhs *= weight;
-        arhsdphi *= -weight;
-        rhsLocal.axpy( quadrature[ pt ], arhs, arhsdphi );
+
+        if( rhs )
+        {
+          // assemble rhs
+          arhs *= weight;
+          arhsdphi *= -weight;
+          rhsLocal.axpy( quadrature[ pt ], arhs, arhsdphi );
+        }
       }
 
       const IntersectionIteratorType endiit = dfSpace.gridPart().iend( entity );
@@ -456,11 +489,11 @@ class DGPrimalMatrixAssembly
           if ( dfSpace.continuous(intersection) ) continue;
           if( intersection.conforming() )
           {
-            assembleIntersection< true > ( time, entity, geometry, intersection, dfSpace, baseSet, matrix, localOpEn, rhsLocal );
+            assembleIntersection< true > ( time, entity, geometry, intersection, dfSpace, baseSet, matrix, localOpEn, rhsLocal, rhs != 0 );
           }
           else
           {
-            assembleIntersection< false > ( time, entity, geometry, intersection, dfSpace, baseSet, matrix, localOpEn, rhsLocal );
+            assembleIntersection< false > ( time, entity, geometry, intersection, dfSpace, baseSet, matrix, localOpEn, rhsLocal, rhs != 0 );
           }
         }
         else if ( intersection.boundary() && ! useStrongBoundaryCondition_ )
@@ -514,10 +547,21 @@ class DGPrimalMatrixAssembly
             rhsFlux  *= -weight;
             drhsFlux *= -weight;
           }
-          rhsLocal.axpyQuadrature( faceQuadInside, valueNb, dvalueNb );
+
+          if( rhs )
+          {
+            rhsLocal.axpyQuadrature( faceQuadInside, valueNb, dvalueNb );
+          }
         }
       }
-    }
+
+      // accumulate right hand side
+      if( rhs )
+      {
+        rhs->localFunction( entity ) += rhsLocal ;
+      }
+
+    } // end grid iteration
 
     // finish matrix build process
     matrix.communicate();
@@ -610,7 +654,7 @@ class DGPrimalMatrixAssembly
     }
   }
 
-  template <bool conforming, class Matrix>
+  template <bool conforming, class Matrix, class LocalFunction>
   void assembleIntersection( const double time,
                              const EntityType& entity,
                              const GeometryType& geometry,
@@ -619,7 +663,8 @@ class DGPrimalMatrixAssembly
                              const BasisFunctionSetType& baseSet,
                              Matrix& matrix,
                              typename Matrix::LocalMatrixType& localOpEn,
-                             LocalFunctionType &rhsLocal) const
+                             LocalFunction& rhsLocal,
+                             const bool assembleRHS ) const
   {
     const size_t maxNumBasisFunctions = maxNumScalarBasisFunctions( dfSpace );
     typedef typename Matrix::LocalMatrixType LocalMatrixType;
@@ -752,7 +797,11 @@ class DGPrimalMatrixAssembly
       rhsValueEn[pt] *= -weight;
       rhsDValueEn[pt] *= -weight;
     }
-    rhsLocal.axpyQuadrature( faceQuadInside, rhsValueEn, rhsDValueEn );
+
+    if( assembleRHS )
+    {
+      rhsLocal.axpyQuadrature( faceQuadInside, rhsValueEn, rhsDValueEn );
+    }
   }
 
   template <class Matrix>
