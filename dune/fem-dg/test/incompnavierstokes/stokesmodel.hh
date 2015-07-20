@@ -85,7 +85,7 @@ public:
 //  where V is constant vector
 //
 ////////////////////////////////////////////////////////
-template <class GridPartType, class ProblemImp>
+template <class GridPartType, class ProblemImp, bool rightHandSideModel >
 class StokesModel : public DefaultModel< StokesModelTraits< GridPartType, ProblemImp > >
 {
 public:
@@ -123,10 +123,9 @@ public:
    *
    * @param problem Class describing the initial(t=0) and exact solution
    */
-  StokesModel(const ProblemType& problem, const bool rightHandSideModel = false )
+  StokesModel(const ProblemType& problem)
     : problem_(problem),
-      theta_( 1 ),
-      rightHandSideModel_( rightHandSideModel )
+      theta_( 1 )
   {
   }
 
@@ -154,15 +153,15 @@ public:
                              const JacobianRangeType& du,
                              RangeType & s) const
   {
-    if( ! rightHandSideModel_ )
-    {
-      s  = u ;
-      s /= theta_;
-    }
-    else
+    if( rightHandSideModel )
     {
       s  = local.evaluate( ComputeRHS(), local );
       s *= -1;
+    }
+    else
+    {
+      s  = u ;
+      s /= theta_;
     }
     return 0;
   }
@@ -412,7 +411,6 @@ public:
  protected:
   const ProblemType& problem_;
   double theta_;
-  const bool rightHandSideModel_;
 };
 
 #endif

@@ -20,6 +20,9 @@
 #include <dune/fem-dg/operator/fluxes/diffusionflux.hh>
 #include <dune/fem-dg/operator/fluxes/noflux.hh>
 
+#include "passtraits.hh"
+#include "steppertraits.hh"
+
 // overload default stepper traits
 #include "navierstokes.hh"
 
@@ -38,12 +41,12 @@ struct StokesProblemCreator
                  Dune::Fem::FunctionSpace< double, double, GridType::dimension, 1> >  ProblemType;
 
   // define problem type here if interface should be avoided
-  template< class GridPart >
+  template< class GridPart, bool rhsModel = false >
   struct Traits
   {
-    typedef ProblemType                               InitialDataType;
-    typedef StokesModel< GridPart, InitialDataType >  ModelType;
-    typedef NoFlux< ModelType >                       FluxType;
+    typedef ProblemType                                         InitialDataType;
+    typedef StokesModel< GridPart, InitialDataType, rhsModel >  ModelType;
+    typedef NoFlux< ModelType >                                 FluxType;
 
     // choice of diffusion flux (see diffusionflux.hh for methods)
      static const Dune :: DGDiffusionFluxIdentifier PrimalDiffusionFluxId
@@ -85,12 +88,12 @@ struct IncompressibleNavierStokesProblemCreator
   typedef StokesProblemCreator< GridType >  StokesProblemTraits;
   typedef NavierStokesProblemDefault< GridType > ProblemType;
 
-  template< class GridPart >
+  template< class GridPart, bool rhsModel = false >
   struct Traits
   {
-    typedef ProblemType                                     InitialDataType;
-    typedef NavierStokesModel< GridPart, InitialDataType >  ModelType;
-    typedef LLFFlux< ModelType >                      FluxType;
+    typedef ProblemType                                               InitialDataType;
+    typedef NavierStokesModel< GridPart, InitialDataType, rhsModel >  ModelType;
+    typedef LLFFlux< ModelType >                                      FluxType;
 
     // choice of diffusion flux (see diffusionflux.hh for methods)
      static const Dune :: DGDiffusionFluxIdentifier PrimalDiffusionFluxId

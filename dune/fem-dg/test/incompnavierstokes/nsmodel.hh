@@ -95,7 +95,7 @@ public:
 //  where V is constant vector
 //
 ////////////////////////////////////////////////////////
-template <class GridPartType, class ProblemImp>
+template <class GridPartType, class ProblemImp, bool rightHandSideModel >
 class NavierStokesModel :
   public DefaultModel < NavierStokesModelTraits< GridPartType,ProblemImp::dimRange> >
 {
@@ -143,12 +143,11 @@ public:
    *
    * @param problem Class describing the initial(t=0) and exact solution
    */
-  NavierStokesModel(const ProblemType& problem, const bool rightHandSideModel = false ) :
+  NavierStokesModel(const ProblemType& problem) :
     problem_(problem),
     epsilon_(problem.epsilon()),
     tstepEps_( problem.betaMu() ),
-    theta_( 1 ),
-    rightHandSideModel_( rightHandSideModel )
+    theta_( 1 )
   {}
 
   inline const ProblemType& problem() const { return problem_; }
@@ -195,17 +194,17 @@ public:
     problem_.setTime( local.time() );
     problem_.f( xgl, s );
 
-    if( ! rightHandSideModel_ )
-    {
-      // + \alpha \mu \Delta u^n+\theta - \nabla p
-      s += local.evaluate( ComputeRHS(), local ) ;
-    }
-    else
+    if( rightHandSideModel )
     {
       // + u^n * \theta \Delta t
       RangeType uS ( u );
       uS /= theta_;
       s += uS;
+    }
+    else
+    {
+      // + \alpha \mu \Delta u^n+\theta - \nabla p
+      s += local.evaluate( ComputeRHS(), local ) ;
     }
     return 0;
   }
@@ -400,7 +399,6 @@ public:
   const double epsilon_;
   const double tstepEps_;
   double theta_;
-  const bool rightHandSideModel_;
 };
 
 
