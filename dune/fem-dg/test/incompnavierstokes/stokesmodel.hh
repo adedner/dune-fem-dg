@@ -89,6 +89,11 @@ template <class GridPartType, class ProblemImp>
 class StokesModel : public DefaultModel< StokesModelTraits< GridPartType, ProblemImp > >
 {
 public:
+  enum { rhs = 0 };
+  typedef std::integral_constant< int, rhs       > rhsVar;
+  typedef std::tuple < rhsVar > ModelParameter;
+
+
   typedef ProblemImp  ProblemType ;
 
   typedef typename GridPartType :: GridType                          GridType;
@@ -118,7 +123,10 @@ public:
    *
    * @param problem Class describing the initial(t=0) and exact solution
    */
-  StokesModel(const ProblemType& problem) : problem_(problem), theta_( 1 )
+  StokesModel(const ProblemType& problem, const bool rightHandSideModel = false )
+    : problem_(problem),
+      theta_( 1 ),
+      rightHandSideModel_( rightHandSideModel )
   {
   }
 
@@ -127,14 +135,35 @@ public:
   inline bool hasStiffSource() const { return true ; }
   inline bool hasNonStiffSource() const { return false ; }
 
+  struct ComputeRHS
+  {
+    typedef rhsVar     VarId;
+    typedef RangeType  ReturnType;
+
+    template <class LocalEvaluation>
+    RangeType operator() (const LocalEvaluation& local) const
+    {
+      return RangeType( 0 );
+    }
+  };
+
+
   template <class LocalEvaluation>
   inline double stiffSource( const LocalEvaluation& local,
                              const RangeType& u,
                              const JacobianRangeType& du,
                              RangeType & s) const
   {
-    s  = u ;
-    s /= theta_;
+    if( ! rightHandSideModel_ )
+    {
+      s  = u ;
+      s /= theta_;
+    }
+    else
+    {
+      s  = local.evaluate( ComputeRHS(), local );
+      s *= -1;
+    }
     return 0;
   }
 
@@ -383,6 +412,7 @@ public:
  protected:
   const ProblemType& problem_;
   double theta_;
+  const bool rightHandSideModel_;
 };
 
 #endif

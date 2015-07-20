@@ -32,12 +32,6 @@ class NavierStokesModelTraits
                                     GridPart::GridType::dimensionworld,
                                     dimR >  BaseType;
 public:
-  enum { velo = 0, press = 1, blabla = 2 };
-  typedef std::integral_constant< int, velo   > velocityVar;
-  typedef std::integral_constant< int, press  > pressure;
-  typedef std::integral_constant< int, blabla > blablabla;
-  typedef std::tuple < velocityVar, pressure, blablabla > ModelParameter;
-
   typedef GridPart                                                      GridPartType;
   typedef typename GridPartType :: GridType                             GridType;
 
@@ -106,11 +100,10 @@ class NavierStokesModel :
   public DefaultModel < NavierStokesModelTraits< GridPartType,ProblemImp::dimRange> >
 {
 public:
-  enum { velo = 0, laplaceU = 1, gradP = 2 };
+  enum { velo = 0, rhs = 1 };
   typedef std::integral_constant< int, velo      > velocityVar;
-  typedef std::integral_constant< int, laplaceU  > laplaceUVar;
-  typedef std::integral_constant< int, gradP     > gradientPressureVar;
-  typedef std::tuple < velocityVar, laplaceUVar, gradientPressureVar > ModelParameter;
+  typedef std::integral_constant< int, rhs       > rhsVar;
+  typedef std::tuple < velocityVar, rhsVar > ModelParameter;
 
   //typedef Dune::Fem::Selector< velo >  ModelParameterSelectorType;
   //typedef std::tuple< VelocityType* >  ModelParameterTypes;
@@ -154,6 +147,7 @@ public:
     problem_(problem),
     epsilon_(problem.epsilon()),
     tstepEps_( getTStepEps() ),
+    theta_( 1 ),
     rightHandSideModel_( rightHandSideModel )
   {}
 
@@ -162,6 +156,11 @@ public:
   inline bool hasFlux() const { return true ; }
   inline bool hasStiffSource() const { return true; }
   inline bool hasNonStiffSource() const { return false; }
+
+  void setTime( const double time )
+  {
+    problem_.setTime( time );
+  }
 
   template <class LocalEvaluation>
   inline double nonStiffSource( const LocalEvaluation& local,
@@ -173,9 +172,9 @@ public:
     return 0;
   }
 
-  struct ComputeLaplaceU
+  struct ComputeRHS
   {
-    typedef laplaceUVar VarId;
+    typedef rhsVar     VarId;
     typedef RangeType  ReturnType;
 
     template <class LocalEvaluation>
@@ -184,20 +183,6 @@ public:
       return RangeType( 0 );
     }
   };
-
-  struct ComputeGradientPressure
-  {
-    typedef gradientPressureVar VarId;
-    typedef RangeType  ReturnType;
-
-    template <class LocalEvaluation>
-    RangeType operator() (const LocalEvaluation& local) const
-    {
-      return RangeType( 0 );
-    }
-  };
-
-
 
   template <class LocalEvaluation>
   inline double stiffSource( const LocalEvaluation& local,
@@ -211,13 +196,8 @@ public:
 
     if( ! rightHandSideModel_ )
     {
-      // + \alpha \mu \Delta u^n+\theta
-      RangeType laplaceU ( local.evaluate( ComputeLaplaceU, local ) );
-      laplaceU *= problem_.alphaMu();
-      s += laplaceU;
-
-      // + \nable p^n+\theta
-      s += local.evaluate( ComputeGradientPressure, local );
+      // + \alpha \mu \Delta u^n+\theta - \nabla p
+      s += local.evaluate( ComputeRHS(), local ) ;
     }
     else
     {
@@ -226,6 +206,7 @@ public:
       uS /= theta_;
       s += uS;
     }
+    return 0;
   }
 
   struct ComputeVelocity
@@ -428,6 +409,7 @@ public:
   const ProblemType& problem_;
   const double epsilon_;
   const double tstepEps_;
+  double theta_;
   const bool rightHandSideModel_;
 };
 

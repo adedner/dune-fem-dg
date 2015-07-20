@@ -7,6 +7,7 @@
 
 // local includes
 #include "stepperbase.hh"
+#include "../stokes/stokes.hh"
 
 template <class GridImp,
           class ProblemTraits,
@@ -16,6 +17,9 @@ struct AdvectionDiffusionStepper
   : public StepperBase< GridImp, ProblemTraits, polynomialOrder >
 {
   typedef StepperBase< GridImp, ProblemTraits, polynomialOrder, ExtraParameterTuple > BaseType ;
+
+  typedef typename ProblemTraits :: StokesProblemTraits StokesProblemTraits;
+  typedef StokesAlgorithm< GridImp, StokesProblemTraits, polynomialOrder >  StokesAlgorithm;
 
   // type of Grid
   typedef typename BaseType :: GridType                 GridType;
@@ -84,15 +88,15 @@ struct AdvectionDiffusionStepper
                              const std::string name = "",
                              ExtraParameterTupleType tuple = ExtraParameterTupleType() ) :
     BaseType( grid, name ),
-    //vSpace_( gridPart_ ),
-    //velo_( "velocity", vSpace_ ),
-    //tuple_( &velo_ ),
-    tuple_( ),
+    stokes_( grid, name ),
+    velocity_( stokes_.solution() ),
+    rhs_( stokes_.solution() ),
+    tuple_( &velo_, &rhs_ ),
+    tupleV_( &velo_ ),
+    subTimeProvider_( 0.0, grid ),
     dgOperator_( gridPart_, problem(), tuple_, name ),
-    dgAdvectionOperator_( gridPart_, problem(), tuple_, name ),
-    dgDiffusionOperator_( gridPart_, problem(), tuple_, name ),
-    dgIndicator_( gridPart_, problem(), tuple_, name ),
-    gradientIndicator_( space(), problem(), adaptParam_ )
+    rhsOperator_( gridPart_, problem(), tupleV_, name )
+    // rhsOperator2_( gridPart_, problem(), tuple_, name )
   {
   }
 
@@ -141,30 +145,67 @@ struct AdvectionDiffusionStepper
     }
 
     // create ODE solver
-    typedef RungeKuttaSolver< FullOperatorType, ExplicitOperatorType, ImplicitOperatorType,
+    typedef RungeKuttaSolver< FullOperatorType, FullOperatorType, FullOperatorType,
                               LinearInverseOperatorType > OdeSolverImpl;
-    return new OdeSolverImpl( tp, dgOperator_,
-                              dgAdvectionOperator_,
-                              dgDiffusionOperator_,
+    return new OdeSolverImpl( subTimeProvider_,
+                              dgOperator_,
+                              dgOperator_,
+                              dgOperator_,
                               name() );
   }
 
   void step(TimeProviderType& tp,
             SolverMonitorType& monitor )
   {
-    // solve stokes
+    const double theta = 1.0 - 1.0/M_SQRT2 ;
+    const double time  = tp.time();
+    const double dt    = tp.deltaT();
 
     DiscreteFunctionType& U = solution();
 
     // reset overall timer
     overallTimer_.reset();
 
-    // solve ODE
+    // u^* = u^n
+    velocity_.assign( stokes_.solution() );
+
+    // set operator time
+    rhsOperator_.setTime( time );
+    // compute right hand side
+    rhsOperator_( U, rhs_ );
+
+    // stokes solve (step 1)
+    stokes_.solve( &rhs_ );
+    // update solution
+    U.assign( stokes_.solution() );
+
+    // u^* = (2 theta - 1)/theta * u^n + (1 - theta)/theta u^n+theta
+    velocity_ *= ( 2.0*theta - 1.0 ) / theta ;
+    velocity_.axpy( (1.0-theta)/theta, U );
+
+    rhsOperator2_( U, rhs_ );
+
+    // set time for ode solve
+    subTimeProvider_.setTime( time + dt * theta );
+    // compute time step for advection-diffusion step
+    subTimeProvider_.provideTimeStepEstimate( (1.0 - 2.0 *theta) * dt / subTimeProvider_.factor() );
+    // TODO: set time step correctly
+
+    // solve advection-diffusion step (step 2)
     assert(odeSolver_);
     odeSolver_->solve( U, odeSolverMonitor_ );
 
+    // set operator time
+    rhsOperator_.setTime( time + (1.0-theta) * dt );
+    // compute right hand side
+    rhsOperator_( U, rhs_ );
+
+    // stokes solve (step 3)
+    stokes_.solve( rhs_ );
+    U.assign( stokes_.solution() );
+
     // limit solution if necessary
-    limitSolution ();
+    // limitSolution ();
 
     // copy information to solver monitor
     monitor.newton_iterations     = odeSolverMonitor_.newtonIterations_;
@@ -175,19 +216,6 @@ struct AdvectionDiffusionStepper
 
     // set time step size to monitor
     monitor.setTimeStepInfo( tp );
-
-#ifdef LOCALDEBUG
-    maxRatioOfSums = std::max( maxRatioOfSums, std::abs(sum_/sum2_) );
-    minRatioOfSums = std::min( minRatioOfSums, std::abs(sum_/sum2_) );
-
-    std::cout <<"localMaxRatioPerTimeStep: " <<localMaxRatio_ <<std::endl;
-    std::cout <<"localMinRatioPerTimeStep: " <<localMinRatio_ <<std::endl;
-    std::cout <<"maxRatioOfSumsPerTimeStep: " <<maxRatioOfSums <<std::endl;
-    std::cout <<"minRatioOfSumsPerTimeStep: " <<minRatioOfSums <<std::endl;
-
-    sum_ = 0.;
-    sum2_ = 0.;
-#endif
 
   }
 
@@ -210,6 +238,8 @@ protected:
   //typename OperatorTraits::SpaceType vSpace_;
   //typename OperatorTraits::VeloType  velo_;
   ExtraParameterTupleType tuple_;
+  StokesAlgorithm         stokes_;
+  TimeProviderType        subTimeProvider_;
 
   FullOperatorType        dgOperator_;
   ExplicitOperatorType    dgAdvectionOperator_;
