@@ -472,7 +472,7 @@ class DGPrimalMatrixAssembly
         if( rhs )
         {
           // assemble rhs
-          arhs *= weight;
+          arhs     *=  weight;
           arhsdphi *= -weight;
           rhsLocal.axpy( quadrature[ pt ], arhs, arhsdphi );
         }
