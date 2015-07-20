@@ -223,7 +223,7 @@ public:
     {
       // + u^n * \theta \Delta t
       RangeType uS ( u );
-      uS *= theta_;
+      uS /= theta_;
       s += uS;
     }
   }

@@ -111,7 +111,6 @@ public:
   typedef typename Traits :: IntersectionType                 IntersectionType;
 
 public:
-  static const int ConstantVelocity = false;
   /**
    * @brief Constructor
    *
@@ -119,7 +118,7 @@ public:
    *
    * @param problem Class describing the initial(t=0) and exact solution
    */
-  StokesModel(const ProblemType& problem) : problem_(problem)
+  StokesModel(const ProblemType& problem) : problem_(problem), theta_( 1 )
   {
   }
 
@@ -130,28 +129,23 @@ public:
 
   template <class LocalEvaluation>
   inline double stiffSource( const LocalEvaluation& local,
-                        const RangeType& u,
-                        const JacobianRangeType& du,
-                        RangeType & s) const
+                             const RangeType& u,
+                             const JacobianRangeType& du,
+                             RangeType & s) const
   {
-    const DomainType x = local.entity().geometry().global( local.point() );
-    // right hand side
-    problem_.f( x, s );
-
-    RangeType mass( u );
-    mass *= problem_.gamma() ;
-    s += mass;
-    return 0.0;
+    s  = u ;
+    s /= theta_;
+    return 0;
   }
 
   template <class LocalEvaluation>
   inline double nonStiffSource( const LocalEvaluation& local,
-                        const RangeType& u,
-                        const JacobianRangeType& du,
-                        RangeType & s) const
+                                const RangeType& u,
+                                const JacobianRangeType& du,
+                                RangeType & s) const
   {
     s = 0;
-    return 0.0;
+    return 0;
   }
 
 
@@ -170,14 +164,7 @@ public:
                          const JacobianRangeType& jacu,
                          FluxRangeType & f) const
   {
-    // evaluate velocity V
-    DomainType v;
-    velocity( local.entity(), local.time(), local.point(), v );
-
-    //f = uV;
-    for( int r=0; r<dimRange; ++r )
-      for( int d=0; d<dimDomain; ++d )
-        f[r][d] = v[ d ] * u[ r ];
+    f = 0 ;
   }
 
   bool hasDirichletBoundary () const
@@ -388,9 +375,14 @@ public:
 
   const ProblemType& problem () const { return problem_; }
 
+  void setTheta( const double theta )
+  {
+    theta_ = theta ;
+  }
+
  protected:
   const ProblemType& problem_;
-  friend class Dune::UpwindFlux<StokesModel>;
+  double theta_;
 };
 
 #endif

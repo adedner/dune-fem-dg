@@ -234,13 +234,13 @@ struct CombinedStepper
     // }
 
     // solve stokes problem
-    stokes_.solve();
+    stokes_.solve( 0 );
 
     // solve advection-diffusion problem
     advectionDiffusion_.step( tp, monitor );
 
     // solve stokes problem
-    stokes_.solve();
+    stokes_.solve( 1 );
   }
 
   void finalizeStep(TimeProviderType& tp)
