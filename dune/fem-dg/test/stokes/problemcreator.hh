@@ -203,7 +203,8 @@ struct StokesProblemCreator
   static ProblemType* problem( )
   {
     // choice of benchmark problem
-    return new Dune :: StokesProblemDefault< GridType > ();
+    //return new Dune :: StokesProblemDefault< GridType > ();
+    return new Dune :: GeneralizedStokesProblem< GridType > ();
   }
 
   template <int polynomialOrder>
