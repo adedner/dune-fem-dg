@@ -40,9 +40,9 @@ namespace Dune
     NavierStokesProblemDefault()
       : time_( 0 ),
         mu_( 1 ),
-        alpha_( 1 ),
-        beta_( 1 ),
-        theta_( 1.0 - 1.0/M_SQRT2 )
+        theta_( 1.0 - 1.0/M_SQRT2 ),
+        alpha_( (1.0 - 2.0 * theta_ )/(1.0 - theta_) ),
+        beta_( theta_/ ( 1.0 - theta_ ) )
     {}
 
     double theta () const { return theta_; }
@@ -114,9 +114,9 @@ namespace Dune
   protected:
     mutable double time_;
     const double mu_;
+    const double theta_;
     const double alpha_;
     const double beta_;
-    const double theta_;
   };
 
 }

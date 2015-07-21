@@ -373,15 +373,8 @@ public:
                              const RangeType& uLeft,
                              RangeType& uRight) const
   {
-    if ( local.intersection().boundaryId() == 99) // Dirichlet zero boundary conditions
-    {
-      uRight = 0;
-    }
-    else
-    {
-      DomainType xgl = local.entity().geometry().global( local.point() );
-      problem_.g(xgl, uRight);
-    }
+    DomainType xgl = local.entity().geometry().global( local.point() );
+    problem_.g(xgl, uRight);
   }
 
   /**
@@ -398,14 +391,9 @@ public:
 
   const ProblemType& problem () const { return problem_; }
 
-  void setTheta( const double theta )
-  {
-    theta_ = theta ;
-  }
-
  protected:
   const ProblemType& problem_;
-  double theta_;
+  const double theta_;
 };
 
 #endif

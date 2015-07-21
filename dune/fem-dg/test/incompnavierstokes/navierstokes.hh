@@ -210,7 +210,7 @@ struct AdvectionDiffusionStepper
     typedef typename RhsOperatorType::DestinationType RhsDestinationType;
     RhsDestinationType tmp1( "tmp1", space() );
     RhsDestinationType tmp2( "tmp2", space() );
-    tmp1.assign( velocity_ );
+    tmp1.assign( U );
 
     // set operator time
     rhsOperator_.setTime( time );
@@ -223,6 +223,8 @@ struct AdvectionDiffusionStepper
 
     // update solution
     U.assign( stokes_.solution() );
+
+    return ;
 
     // u^* = (2 theta - 1)/theta * u^n + (1 - theta)/theta u^n+theta
     velocity_ *= ( 2.0*theta - 1.0 ) / theta ;
