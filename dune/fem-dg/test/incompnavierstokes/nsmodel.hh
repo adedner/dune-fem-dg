@@ -147,7 +147,7 @@ public:
     problem_(problem),
     epsilon_(problem.epsilon()),
     tstepEps_( problem.betaMu() ),
-    theta_( 1 )
+    theta_( problem.theta() )
   {}
 
   inline const ProblemType& problem() const { return problem_; }

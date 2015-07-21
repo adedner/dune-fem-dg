@@ -125,7 +125,7 @@ public:
    */
   StokesModel(const ProblemType& problem)
     : problem_(problem),
-      theta_( 1 )
+      theta_( problem.theta() )
   {
   }
 
