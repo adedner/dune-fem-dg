@@ -5,6 +5,7 @@
 #include <cmath>
 
 #include <dune/common/array.hh>
+#include <dune/fem-dg/models/stokesprobleminterfaces.hh>
 #include "corner.hh"
 
 namespace Dune
@@ -283,8 +284,13 @@ namespace Dune
     //! the gradient of the exact solution
      void gradient ( const DomainType &x, JacobianRangeType &grad ) const
     {
-      //todo: to be implemented...
-      grad=0.0;
+      grad[0][0] = -0.5*M_PI*sin(0.5*M_PI*(x[0]+x[1]));
+//grad[0][1] = grad[0][0];
+//grad[1][0] = 0.5*M_PI*sin(0.5*M_PI*(x[0]+x[1]));
+
+      grad[1][0] = grad[0][0];
+      grad[0][1] = 0.5*M_PI*sin(0.5*M_PI*(x[0]+x[1]));
+      grad[1][1] = grad[1][0];
     }
 
   private:
