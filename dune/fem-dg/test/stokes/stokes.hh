@@ -369,7 +369,7 @@ public:
     return solve( rhs_ );
   }
 
-  void assemble( DiscreteFunctionType* rhs )
+  void assemble( DiscreteFunctionType* rhs = 0)
   {
 #ifdef PADAPTSPACE
     int polOrder = Dune::Fem::Parameter::getValue<double>("femdg.polynomialOrder",1);
@@ -413,6 +413,12 @@ public:
     invDgOperator_.reset( new LinearInverseOperatorType(*linDgOperator_, reduction, absLimit ) );
 
     stokesAssembler_.assemble( *problem_);
+  }
+
+  void pressureGradient( DiscreteFunctionType& gradP ) const
+  {
+    // compute gradient of pressure
+    stokesAssembler_.getBOP()( pressuresolution_, gradP );
   }
 
   SolverMonitorType solve( const DiscreteFunctionType& rhs )
