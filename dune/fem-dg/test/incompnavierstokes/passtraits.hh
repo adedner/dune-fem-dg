@@ -25,7 +25,7 @@ namespace Dune {
   //PassTraits
   //----------
 
-  template <class Traits, int polOrd, int dimR>
+  template <class Traits, int polOrd, int dimR, SolverType solverType = istl>
   class PassTraits
   {
   public:
@@ -97,7 +97,7 @@ namespace Dune {
 
     static const bool symmetricSolver = true ;
 //#if WANT_ISTL
-    typedef Solvers<DiscreteFunctionSpaceType, istl,  symmetricSolver> SolversType;
+    typedef Solvers<DiscreteFunctionSpaceType, solverType,  symmetricSolver> SolversType;
 /*
 #elif WANT_PETSC
     typedef Solvers<DiscreteFunctionSpaceType, petsc, symmetricSolver> SolversType;

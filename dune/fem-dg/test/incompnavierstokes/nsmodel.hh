@@ -20,17 +20,17 @@
 /**
  * @brief Traits class for NavierStokesModel
  */
-template <class GridPart, int dimR>
+template <class GridPart>
 class NavierStokesModelTraits
   : public Dune::Fem::FunctionSpace< typename GridPart::GridType::ctype,
                                      double,
                                      GridPart::GridType::dimensionworld,
-                                     dimR >
+                                     GridPart::GridType::dimensionworld >
 {
   typedef Dune::Fem::FunctionSpace< typename GridPart::GridType::ctype,
                                     double,
                                     GridPart::GridType::dimensionworld,
-                                    dimR >  BaseType;
+                                    GridPart::GridType::dimensionworld >  BaseType;
 public:
   typedef GridPart                                                      GridPartType;
   typedef typename GridPartType :: GridType                             GridType;
@@ -97,7 +97,7 @@ public:
 ////////////////////////////////////////////////////////
 template <class GridPartType, class ProblemImp, bool rightHandSideModel >
 class NavierStokesModel :
-  public DefaultModel < NavierStokesModelTraits< GridPartType,ProblemImp::dimRange> >
+  public DefaultModel < NavierStokesModelTraits< GridPartType > >
 {
 public:
   enum { velo = 0, rhs = 1 };
@@ -118,7 +118,7 @@ public:
 
   static const int ConstantVelocity = ProblemType :: ConstantVelocity;
   typedef typename GridPartType :: GridType                        GridType;
-  typedef NavierStokesModelTraits< GridPartType,ProblemImp::dimRange >  Traits;
+  typedef NavierStokesModelTraits< GridPartType >  Traits;
   static const int dimDomain = Traits :: dimDomain ;
   static const int dimRange  = Traits :: dimRange ;
   typedef typename Traits :: DomainType                          DomainType;
