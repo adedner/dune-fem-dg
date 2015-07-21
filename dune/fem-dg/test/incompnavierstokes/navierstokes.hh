@@ -44,6 +44,7 @@ struct AdvectionDiffusionStepper
   typedef typename BaseType :: ImplicitOperatorType      ImplicitOperatorType;
 
   typedef typename Traits :: RhsOperatorType             RhsOperatorType;
+  typedef typename Traits :: RhsStokesOperatorType       RhsStokesOperatorType;
 
   typedef typename BaseType :: LinearInverseOperatorType LinearInverseOperatorType;
 
@@ -99,12 +100,13 @@ struct AdvectionDiffusionStepper
     subTimeProvider_( 0.0, grid ),
     stokes_( grid, name ),
     velocity_( "velocity", space() ),
+    tmp_( "tmp", space() ),
     rhs_( "rhs", space() ),
     tuple_( &velocity_, &rhs_ ),
     tupleV_( &velocity_ ),
-    dgOperator_( gridPart_, problem(), tuple_, name ),
-    rhsOperator_( gridPart_, problem(), tupleV_, name )
-    // rhsOperator2_( gridPart_, problem(), tuple_, name )
+    dgOperator_( gridPart_, problem(), tuple_, name )
+    //rhsOperator_( gridPart_, problem(), tupleV_, name ),
+    //rhsStokesOperator_( gridPart_, problem(), std::tuple<>(), name )
   {
   }
 
@@ -167,9 +169,9 @@ struct AdvectionDiffusionStepper
     velocity_.assign( stokes_.solution() );
 
     // set operator time
-    rhsOperator_.setTime( time );
+    //rhsOperator_.setTime( time );
     // compute right hand side
-    rhsOperator_( U, rhs_ );
+    //rhsOperator_( U, rhs_ );
 
     // stokes solve (step 1)
     stokes_.solve( rhs_ );
@@ -177,11 +179,17 @@ struct AdvectionDiffusionStepper
     // update solution
     U.assign( stokes_.solution() );
 
+    // compute grad p
+    stokes_.pressureGradient( tmp_ );
+    // compute laplace U
+    //rhsStokesOperator_( U, rhs_ );
+
+    // rhs = \alpha\mu\laplace U - \grad P
+    rhs_ -= tmp_;
+
     // u^* = (2 theta - 1)/theta * u^n + (1 - theta)/theta u^n+theta
     velocity_ *= ( 2.0*theta - 1.0 ) / theta ;
     velocity_.axpy( (1.0-theta)/theta, U );
-
-    rhsOperator2_( U, rhs_ );
 
     // set time for ode solve
     subTimeProvider_.setTime( time + dt * theta );
@@ -194,9 +202,9 @@ struct AdvectionDiffusionStepper
     odeSolver_->solve( U, odeSolverMonitor_ );
 
     // set operator time
-    rhsOperator_.setTime( time + (1.0-theta) * dt );
+    //rhsOperator_.setTime( time + (1.0-theta) * dt );
     // compute right hand side
-    rhsOperator_( U, rhs_ );
+    //rhsOperator_( U, rhs_ );
 
     // stokes solve (step 3)
     stokes_.solve( rhs_ );
@@ -237,12 +245,14 @@ protected:
   StokesAlgorithmType     stokes_;
 
   DiscreteFunctionType    velocity_;
+  DiscreteFunctionType    tmp_;
   DiscreteFunctionType    rhs_;
 
   std::tuple< DiscreteFunctionType*, DiscreteFunctionType* > tuple_;
   std::tuple< DiscreteFunctionType* > tupleV_;
 
   FullOperatorType        dgOperator_;
-  RhsOperatorType         rhsOperator_;
+  //RhsOperatorType         rhsOperator_;
+  RhsStokesOperatorType   rhsStokesOperator_;
 };
 #endif // FEMHOWTO_STEPPER_HH

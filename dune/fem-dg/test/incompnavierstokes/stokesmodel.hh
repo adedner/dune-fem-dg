@@ -153,12 +153,7 @@ public:
                              const JacobianRangeType& du,
                              RangeType & s) const
   {
-    if( rightHandSideModel )
-    {
-      s  = local.evaluate( ComputeRHS(), local );
-      s *= -1;
-    }
-    else
+    if( ! rightHandSideModel )
     {
       s  = u ;
       s /= theta_;
