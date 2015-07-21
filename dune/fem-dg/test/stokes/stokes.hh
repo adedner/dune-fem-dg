@@ -280,8 +280,14 @@ public:
   typedef Dune::Fem::LocalFunctionAdapter< SigmaEval<DiscreteFunctionType,DiscretePressureFunctionType,DgAssembledOperatorType> > StokesEstimateFunction;
   typedef Dune::StokesErrorEstimator< DiscreteFunctionType, StokesEstimateFunction, StokesFlux > StokesEstimatorType;
 
+  typedef typename InitialDataType :: ExactSolutionType ExactSolutionType;
+  typedef Dune::Fem::GridFunctionAdapter< ExactSolutionType, GridPartType >  GridExactSolutionType;
+  typedef Dune::Fem::GridFunctionAdapter< ExactPressureType, GridPartType >  GridExactPressureType;
+
+
   typedef Dune::Fem::LocalFunctionAdapter< StokesEstimatorType >          StokesEstimateDataType;
-  typedef tuple< const DiscreteFunctionType*, const DiscretePressureFunctionType*, const StokesEstimateDataType* >  IOTupleType;
+  typedef tuple< const DiscreteFunctionType*, const DiscretePressureFunctionType*, const StokesEstimateDataType*,
+                 const GridExactSolutionType*, const GridExactPressureType* >  IOTupleType;
   typedef Dune::Fem::DataOutput<GridType,IOTupleType>         DataWriterType;
 
   //---- Local Restriction and Prolongation Operator -------------------------
@@ -299,8 +305,12 @@ public:
     stkEstimateFunction_("stokes estimate",stkLocalEstimate_,gridPart_,space_.order()),
     stkEstimator_( solution_, stkEstimateFunction_,stkFlux_, grid),
     stkEstimateData_("stokesEstimator",stkEstimator_,gridPart_,space_.order()),
-    ioTuple_( &solution_, &pressuresolution_,&stkEstimateData_ ),
-    stokesAssembler_(space_ , pressurespace_, problem()),
+    ugrid_( "exact solution", problem().exactSolution(), gridPart_, 2 ),
+    pgrid_( "exact pressure", problem().exactPressure_, gridPart_,2),
+    ioTuple_( &solution_, &pressuresolution_,&stkEstimateData_, &ugrid_, &pgrid_ ),
+    stokesAssembler_(space_ , pressurespace_, problem(),
+                     Dune::Fem::Parameter::getValue<double>("d11",1.),
+                     Dune::Fem::Parameter::getValue<double>("d12",1.) ),
     averageIter_(0),
     eocpId_(-1)
   {
@@ -369,7 +379,7 @@ public:
     return solve( rhs_ );
   }
 
-  void assemble( DiscreteFunctionType* rhs = 0)
+  void assemble( DiscreteFunctionType* rhs )
   {
 #ifdef PADAPTSPACE
     int polOrder = Dune::Fem::Parameter::getValue<double>("femdg.polynomialOrder",1);
@@ -413,12 +423,6 @@ public:
     invDgOperator_.reset( new LinearInverseOperatorType(*linDgOperator_, reduction, absLimit ) );
 
     stokesAssembler_.assemble( *problem_);
-  }
-
-  void pressureGradient( DiscreteFunctionType& gradP ) const
-  {
-    // compute gradient of pressure
-    stokesAssembler_.getBOP()( pressuresolution_, gradP );
   }
 
   SolverMonitorType solve( const DiscreteFunctionType& rhs )
@@ -574,6 +578,9 @@ private:
   StokesEstimateFunction stkEstimateFunction_;
   StokesEstimatorType  stkEstimator_;
   StokesEstimateDataType  stkEstimateData_;
+  GridExactSolutionType ugrid_;
+  GridExactPressureType pgrid_;
+
   IOTupleType ioTuple_;
   StokesAssemblerType         stokesAssembler_;
 

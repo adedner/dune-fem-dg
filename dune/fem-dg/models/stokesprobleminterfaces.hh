@@ -44,7 +44,7 @@ public:
 
   virtual void gp(const DomainType& x, PressureRangeType& ret) const
   {
-    ret = 0;
+    p(x, ret ); //ret = 0;
   }
 
   //! mass factor gamma

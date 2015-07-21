@@ -57,7 +57,7 @@ namespace Dune {
         btop_(op_.getBTOP()),
         cop_(op_.getCOP()),
         rhs1_(aufSolver_.affineShift()),
-        rhs2_(op_.veloRhs()),
+        rhs2_(op_.pressureRhs()),
         pressurespc_(op_.pressurespc()),
         spc_(op.spc()),
         velocity_("VELO",spc_),
@@ -80,7 +80,7 @@ namespace Dune {
         btop_(op_.getBTOP()),
         cop_(op_.getCOP()),
         rhs1_(rhs),
-        rhs2_(op_.veloRhs()),
+        rhs2_(op_.pressureRhs()),
         pressurespc_(op_.pressurespc()),
         spc_(op.spc()),
         velocity_("VELO",spc_),
@@ -100,6 +100,7 @@ namespace Dune {
 
 
       DiscreteFunctionType f("f",spc_);
+      // f := rhs1
       f.assign(rhs1_);
       DiscreteFunctionType u("u",spc_);
       u.clear();
@@ -110,8 +111,8 @@ namespace Dune {
       xi.clear();
       PressureDiscreteFunctionType tmp2("tmp2",pressurespc_);
       tmp2.clear();
-
-
+      PressureDiscreteFunctionType tmp3("tmp3",pressurespc_);
+      tmp3.clear();
 
       //p<->d
       PressureDiscreteFunctionType p("p",pressurespc_);
@@ -121,28 +122,43 @@ namespace Dune {
       PressureDiscreteFunctionType g("g",pressurespc_);
       g.clear();
       PressureDiscreteFunctionType r("r",pressurespc_);
-      r.assign(arg);
 
+      // r = arg
+      r.assign(arg);
+      // B * dest = tmp1
       bop_.apply(dest,tmp1);
+      // C * dest = tmp3
+      //cop_.apply(dest,tmp3);
+      // f -= tmp1
       f-=tmp1;
+      // A^-1 * f = u
       aufSolver_(f,u);
-      linIter_+=aufSolver_.iterations();
+      // B^T * u = tmp2
       btop_.apply(u,tmp2);
+      //=> tmp2 = B^T * A^-1 * ( F - B * p )
+
+      //-------------
+      // add missing parts G and C
+     // tmp2 -= rhs2_;
+      // tmp2 -= tmp3;
+
+      // r -= tmp2
       r-=tmp2;
-    //   r.axpy(-1.,tmp2);
       tmp2.clear();
 
+      // p := r;
       p.assign(r);
 
+      // save iteration number
+      linIter_+=aufSolver_.iterations();
 
-
+      // spn = (r,r)
       spn = r.scalarProductDofs( r );
       while((spn > epsilon_) && (iter_+=1 < maxIter_))
       {
         if(iter_ > 1)
         {
           const Field e = spn / spa;
-
           p *= e;
           p += r;
         }
@@ -152,23 +168,32 @@ namespace Dune {
         bop_.apply(p,tmp1);
         // A^-1 * tmp1 = xi
         aufSolver_(tmp1,xi);
-        linIter_+=aufSolver_.iterations();
         // B^T * xi = h
         btop_.apply(xi,h);
+        // => h = B^T * A^-1 * B * p
+        // C * dest = tmp3
+        // cop_.apply(dest,tmp3);
+        //h -= tmp3;
+        //
 
+        // quad = (p,h)
         quad = p.scalarProductDofs( h );
-
+        // q = spn / quad
         q    = spn / quad;
-
+        // dest -= q * p
         dest.axpy( -q, p );
+        // u += q * xi
         u.axpy(q,xi);
+        // r -= q * h
         r.axpy( -q,h );
 
         spa = spn;
 
-
+        // spn = (r,r)
         spn = r.scalarProductDofs( r );
 
+        // save iteration number
+        linIter_+=aufSolver_.iterations();
         if(_verbose > 0)
           std::cerr << " SPcg-Iterationen  " << iter_ << " Residuum:" << spn << "        \r";
       }
@@ -208,7 +233,7 @@ namespace Dune {
     const COPType& cop_;
 
     const DiscreteFunctionType& rhs1_;
-    const DiscreteFunctionType& rhs2_;
+    const PressureDiscreteFunctionType& rhs2_;
     const PressureSpaceType& pressurespc_;
     const VeloSpaceType& spc_;
     mutable DiscreteFunctionType velocity_;
