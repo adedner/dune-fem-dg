@@ -16,7 +16,6 @@ add_definitions( "-D${GRIDTYPE}" )
 add_definitions( "-DGRIDDIM=${GRIDDIM}" )
 add_definitions( "-DUSE_SIONLIB=${USE_SIONLIB}" )
 add_definitions( "-DPOLORDER=${POLORDER}" )
-add_definitions( "-DONLY_ONE_P" )
 add_definitions( "-DDIMRANGE=${DIMRANGE}" )
 add_definitions( "-DENABLE_ADAPTIVELEAFINDEXSET_FOR_YASPGRID" ) 
 

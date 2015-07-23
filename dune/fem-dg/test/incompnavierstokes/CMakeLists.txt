@@ -19,7 +19,7 @@ dune_target_link_libraries(incompnavierstokesall ${DUNE_LIBS})
 add_executable( incompnavierstokes main.cc )
 dune_target_link_libraries(incompnavierstokes ${DUNE_LIBS})
 set_property(TARGET incompnavierstokes APPEND PROPERTY 
-             COMPILE_DEFINITIONS "ONLY_ONE_P;POLORDER=${POLORDER}")
+             COMPILE_DEFINITIONS "POLORDER=${POLORDER}")
 
 add_code_generate_targets( incompnavierstokes incompnavierstokesall )
 

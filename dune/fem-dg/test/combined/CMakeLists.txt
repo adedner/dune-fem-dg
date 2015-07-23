@@ -32,7 +32,7 @@ dune_target_link_libraries(combined ${DUNE_LIBS})
 add_dune_papi_flags(combined)
 
 set_property(TARGET combined APPEND PROPERTY 
-  COMPILE_DEFINITIONS "ONLY_ONE_P;POLORDER=${POLORDER};" )
+  COMPILE_DEFINITIONS "POLORDER=${POLORDER};" )
 
 add_dune_alugrid_flags( combined combinedall )
 

@@ -17,7 +17,7 @@ dune_target_link_libraries(navierstokesall ${DUNE_LIBS})
 add_executable( navierstokes main.cc )
 dune_target_link_libraries(navierstokes ${DUNE_LIBS})
 set_property(TARGET navierstokes APPEND PROPERTY 
-             COMPILE_DEFINITIONS "ONLY_ONE_P;POLORDER=${POLORDER}")
+             COMPILE_DEFINITIONS "POLORDER=${POLORDER}")
 
 add_code_generate_targets( navierstokes navierstokesall )
 

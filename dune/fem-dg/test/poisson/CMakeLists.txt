@@ -19,7 +19,7 @@ set_property(TARGET poissonall APPEND PROPERTY
 add_executable( poisson main.cc )
 dune_target_link_libraries(poisson ${DUNE_LIBS})
 set_property(TARGET poisson APPEND PROPERTY 
-             COMPILE_DEFINITIONS "ONLY_ONE_P;POLORDER=${POLORDER}")
+             COMPILE_DEFINITIONS "POLORDER=${POLORDER}")
 
 add_code_generate_targets( poisson poissonall )
 
