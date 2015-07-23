@@ -52,17 +52,19 @@ namespace Dune {
                 int maxIter,
                 int verbose=1
                )
-      : op_(op), _redEps ( redEps ), epsilon_ ( absLimit ) ,
-        maxIter_ (maxIter ) , _verbose ( verbose ),aufSolver_(aufSolver), bop_(op_.getBOP()),
+      : op_(op), redEps_( redEps ), outer_absLimit_ ( absLimit ) ,
+        maxIter_ (maxIter ) , verbose_( verbose ),aufSolver_(aufSolver), bop_(op_.getBOP()),
         btop_(op_.getBTOP()),
         cop_(op_.getCOP()),
-        rhs1_(aufSolver_.affineShift()),
+        rhs1_(aufSolver_.inv().affineShift()),
         rhs2_(op_.pressureRhs()),
         pressurespc_(op_.pressurespc()),
         spc_(op.spc()),
         velocity_("VELO",spc_),
         iter_(0),
-        linIter_(0)
+        linIter_(0),
+        tau_(0.2),
+        inner_absLimit_( tau_*outer_absLimit_)
     {
     }
 
@@ -75,8 +77,8 @@ namespace Dune {
                 int maxIter,
                 int verbose=1
                 )
-      : op_(op), _redEps ( redEps ), epsilon_ ( absLimit ) ,
-        maxIter_ (maxIter ) , _verbose ( verbose ),aufSolver_(aufSolver), bop_(op_.getBOP()),
+      : op_(op), redEps_( redEps ), outer_absLimit_ ( absLimit ) ,
+        maxIter_ (maxIter ) , verbose_( verbose ),aufSolver_(aufSolver), bop_(op_.getBOP()),
         btop_(op_.getBTOP()),
         cop_(op_.getCOP()),
         rhs1_(rhs),
@@ -85,25 +87,27 @@ namespace Dune {
         spc_(op.spc()),
         velocity_("VELO",spc_),
         iter_(0),
-        linIter_(0)
+        linIter_(0),
+        tau_(0.2),
+        inner_absLimit_( tau_*outer_absLimit_)
     {
     }
 
 
     /** \todo Please doc me! */
     virtual void operator()(const PressureDiscreteFunctionType& arg,
-                            PressureDiscreteFunctionType& dest ) const
+                            PressureDiscreteFunctionType& pressure ) const
     {
       typedef typename DiscreteFunctionType::DiscreteFunctionSpaceType FunctionSpaceType;
       typedef typename FunctionSpaceType::RangeFieldType Field;
-       Field spa=0, spn, q, quad;
+       Field gamma=0, delta, rho;
 
 
       DiscreteFunctionType f("f",spc_);
       // f := rhs1
       f.assign(rhs1_);
-      DiscreteFunctionType u("u",spc_);
-      u.clear();
+      DiscreteFunctionType velocity("velocity",spc_);
+      velocity.clear();
       DiscreteFunctionType tmp1("tmp1",spc_);
 
       tmp1.clear();
@@ -111,95 +115,96 @@ namespace Dune {
       xi.clear();
       PressureDiscreteFunctionType tmp2("tmp2",pressurespc_);
       tmp2.clear();
-      PressureDiscreteFunctionType tmp3("tmp3",pressurespc_);
-      tmp3.clear();
 
       //p<->d
-      PressureDiscreteFunctionType p("p",pressurespc_);
-      p.clear();
+      PressureDiscreteFunctionType d("d",pressurespc_);
+      d.clear();
       PressureDiscreteFunctionType h("h",pressurespc_);
       h.clear();
       PressureDiscreteFunctionType g("g",pressurespc_);
       g.clear();
-      PressureDiscreteFunctionType r("r",pressurespc_);
+      PressureDiscreteFunctionType residuum("residuum",pressurespc_);
 
-      // r = arg
-      r.assign(arg);
-      // B * dest = tmp1
-      bop_.apply(dest,tmp1);
-      // C * dest = tmp3
-      //cop_.apply(dest,tmp3);
+      // residuum = arg
+      residuum.assign(arg);
+      // B * pressure = tmp1
+      bop_.apply(pressure,tmp1);
       // f -= tmp1
       f-=tmp1;
-      // A^-1 * f = u
-      aufSolver_(f,u);
-      // B^T * u = tmp2
-      btop_.apply(u,tmp2);
-      //=> tmp2 = B^T * A^-1 * ( F - B * p )
+#if 0
+      aufSolver_.set( inner_absLimit_ );
+#endif
+      // A^-1 * f = velocity
+      aufSolver_.inv()(f,velocity);
+      // B^T * velocity = tmp2
+      btop_.apply(velocity,tmp2);
+      //=> tmp2 = B^T * A^-1 * ( F - B * d )
 
-      //-------------
-      // add missing parts G and C
-     // tmp2 -= rhs2_;
-      // tmp2 -= tmp3;
-
-      // r -= tmp2
-      r-=tmp2;
+      // residuum -= tmp2
+      residuum-=tmp2;
+      //=> residuum = arg - B^T * A^-1 * ( F - B * d )
       tmp2.clear();
 
-      // p := r;
-      p.assign(r);
+      // C * pressure = tmp2
+      cop_.apply(pressure, tmp2);
+      // residuum += tmp2
+      residuum += tmp2;
+
+      // d := residuum;
+      d.assign(residuum);
 
       // save iteration number
-      linIter_+=aufSolver_.iterations();
+      linIter_+=aufSolver_.inv().iterations();
 
-      // spn = (r,r)
-      spn = r.scalarProductDofs( r );
-      while((spn > epsilon_) && (iter_+=1 < maxIter_))
+      // delta = (residuum,residuum)
+      delta = residuum.scalarProductDofs( residuum );
+      while((delta > outer_absLimit_) && (iter_+=1 < maxIter_))
       {
-        if(iter_ > 1)
-        {
-          const Field e = spn / spa;
-          p *= e;
-          p += r;
-        }
-
         tmp1.clear();
-        // B * p = tmp1
-        bop_.apply(p,tmp1);
+        // B * d = tmp1
+        bop_.apply(d,tmp1);
+#if 0
+        inner_absLimit_ = std::max( delta/redEps_, tau_*outer_absLimit_ );
+        //inner_absLimit_ = tau_ * std::min( 1.0, outer_absLimit_ / std::min( delta, 1.0 ) );
+        //inner_absLimit_ = tau_ * delta;
+        aufSolver_.set( inner_absLimit_ );
+#endif
         // A^-1 * tmp1 = xi
-        aufSolver_(tmp1,xi);
+        aufSolver_.inv()(tmp1,xi);
         // B^T * xi = h
         btop_.apply(xi,h);
-        // => h = B^T * A^-1 * B * p
-        // C * dest = tmp3
-        // cop_.apply(dest,tmp3);
-        //h -= tmp3;
-        //
+        // => h = B^T * A^-1 * B * d
+        tmp2.clear();
+        cop_.apply( d, tmp2 );
+        h += tmp2;
 
-        // quad = (p,h)
-        quad = p.scalarProductDofs( h );
-        // q = spn / quad
-        q    = spn / quad;
-        // dest -= q * p
-        dest.axpy( -q, p );
-        // u += q * xi
-        u.axpy(q,xi);
-        // r -= q * h
-        r.axpy( -q,h );
+        // rho = delta / d.scalarProductDofs( h );
+        rho    = delta / d.scalarProductDofs( h );
+        // pressure -= rho * d
+        pressure.axpy( -rho, d );
+        // velocity += rho * xi
+        velocity.axpy(rho,xi);
+        // residuum -= rho * h
+        residuum.axpy( -rho,h );
 
-        spa = spn;
+        double oldDelta = delta;
 
-        // spn = (r,r)
-        spn = r.scalarProductDofs( r );
+        // delta = (residuum,residuum)
+        delta = residuum.scalarProductDofs( residuum );
 
         // save iteration number
-        linIter_+=aufSolver_.iterations();
-        if(_verbose > 0)
-          std::cerr << " SPcg-Iterationen  " << iter_ << " Residuum:" << spn << "        \r";
+        linIter_+=aufSolver_.inv().iterations();
+        if( verbose_ > 0)
+          std::cout << "SPcg-Iterationen " << iter_ << "   Residuum:"
+                    << delta << "   lin. iter:" << aufSolver_.inv().iterations() <<std::endl;
+
+        d *= delta / oldDelta;
+        d += residuum;
+
       }
-      if(_verbose > 0)
-        std::cerr << "\n";
-      velocity_.assign(u);
+      if( verbose_ > 0)
+        std::cout << std::endl;
+      velocity_.assign(velocity);
     }
 
     DiscreteFunctionType& velocity()     {
@@ -214,16 +219,16 @@ namespace Dune {
     const AssemblerType & op_;
 
     // reduce error each step by
-    double _redEps;
+    double redEps_;
 
     // minial error to reach
-    typename DiscreteFunctionType::RangeFieldType epsilon_;
+    typename DiscreteFunctionType::RangeFieldType outer_absLimit_;
 
     // number of maximal iterations
     int maxIter_;
 
     // level of output
-    int _verbose ;
+    int verbose_;
 
     //the CGSolver for A^-1
     const InverseOperatorType& aufSolver_;
@@ -239,6 +244,8 @@ namespace Dune {
     mutable DiscreteFunctionType velocity_;
     mutable int iter_;
     mutable int linIter_;
+    const double tau_;
+    mutable double inner_absLimit_;
   };
 
 

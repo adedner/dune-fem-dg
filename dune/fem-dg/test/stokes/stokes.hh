@@ -295,6 +295,40 @@ public:
   //---- Adaptation Manager --------------------------------------------------
   typedef Dune::Fem::AdaptationManager< GridType, RestrictionProlongationType > AdaptationManagerType;
 
+  class InverseDgOperatorContainer
+  {
+    public:
+
+    InverseDgOperatorContainer( const LinearOperatorType& linDgOperator,
+                                const double red,
+                                const double eps)
+    : linearDgOperator_( linDgOperator ),
+      linearInverseDgOperator_( ),
+      red_( red ),
+      eps_( eps )
+    {
+      set( eps_ );
+    }
+
+    void set( double epsilon ) const
+    {
+      linearInverseDgOperator_.reset( new LinearInverseOperatorType(linearDgOperator_, red_, epsilon ) );
+    }
+
+    const LinearInverseOperatorType& inv() const
+    {
+      return *linearInverseDgOperator_;
+    }
+
+
+    private:
+    const LinearOperatorType& linearDgOperator_;
+    mutable std::unique_ptr< LinearInverseOperatorType > linearInverseDgOperator_;
+    const double red_;
+    const double eps_;
+
+  };
+
 public:
   explicit StokesAlgorithm(GridType& grid, std::string moduleName = "" ) :
     BaseType(grid),
@@ -417,13 +451,10 @@ public:
       dgAssembledOperator_.assemble(0, *linDgOperator_ );
     }
 
-    double reduction  = Dune::Fem:: Parameter::getValue<double>("istl.reduction",1.e-10);
-    double absLimit   = Dune::Fem:: Parameter::getValue<double>("istl.absLimit",1.e-10);
-
-    invDgOperator_.reset( new LinearInverseOperatorType(*linDgOperator_, reduction, absLimit ) );
-
     stokesAssembler_.assemble( *problem_);
   }
+
+
 
   SolverMonitorType solve( const DiscreteFunctionType& rhs )
   {
@@ -436,15 +467,18 @@ public:
     const double size = grid_.size(0);
     numbers_.push_back( size );
 
-    typedef Dune::UzawaSolver< DiscreteFunctionType,DiscretePressureFunctionType,StokesAssemblerType,LinearInverseOperatorType >UzawaType;
+    typedef Dune::UzawaSolver< DiscreteFunctionType,DiscretePressureFunctionType,StokesAssemblerType,InverseDgOperatorContainer >UzawaType;
 
     double reduction  = Dune::Fem:: Parameter::getValue<double>("istl.reduction",1.e-10);
+    double absLimit   = Dune::Fem:: Parameter::getValue<double>("istl.absLimit",1.e-10);
     double uzawareduction  = Dune::Fem:: Parameter::getValue<double>("uzawareduction",reduction*100.);
 
     SolverMonitorType monitor;
     monitor.gridWidth = h; // space_.size();
 
-    UzawaType uzawa(stokesAssembler_, *invDgOperator_, rhs, uzawareduction, uzawareduction, 3*space_.size() );
+    InverseDgOperatorContainer invDgOperatorContainer_( *linDgOperator_, reduction, absLimit );
+
+    UzawaType uzawa(stokesAssembler_, invDgOperatorContainer_, rhs, uzawareduction, absLimit, 3*space_.size() );
 
     pressuresolution_.clear();
     uzawa(stokesAssembler_.pressureRhs(), pressuresolution_);
