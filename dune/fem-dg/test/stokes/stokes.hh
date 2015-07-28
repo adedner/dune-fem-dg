@@ -71,6 +71,7 @@ public:
 #endif
 #endif
 
+
   typedef Dune::Fem::DiscontinuousGalerkinSpace
       < PressureFunctionSpaceType,GridPartType, ( polOrd > 0 ) ? polOrd-1 : 0, Dune::Fem::CachingStorage>          DiscretePressureSpaceType;
 
@@ -472,13 +473,14 @@ public:
     double reduction  = Dune::Fem:: Parameter::getValue<double>("istl.reduction",1.e-10);
     double absLimit   = Dune::Fem:: Parameter::getValue<double>("istl.absLimit",1.e-10);
     double uzawareduction  = Dune::Fem:: Parameter::getValue<double>("uzawareduction",reduction*100.);
+    double tau  = Dune::Fem:: Parameter::getValue<double>("tau",1.);
 
     SolverMonitorType monitor;
     monitor.gridWidth = h; // space_.size();
 
     InverseDgOperatorContainer invDgOperatorContainer_( *linDgOperator_, reduction, absLimit );
 
-    UzawaType uzawa(stokesAssembler_, invDgOperatorContainer_, rhs, uzawareduction, absLimit, 3*space_.size() );
+    UzawaType uzawa(stokesAssembler_, invDgOperatorContainer_, rhs, uzawareduction, absLimit, 3*space_.size(), tau );
 
     pressuresolution_.clear();
     uzawa(stokesAssembler_.pressureRhs(), pressuresolution_);
@@ -486,7 +488,7 @@ public:
     solution_.assign( uzawa.velocity() );
 
     monitor.ils_iterations = uzawa.iterations();
-    averageIter_ = uzawa. averageLinIter();
+    averageIter_ = uzawa.averageLinIter();
 
     // calculate new sigma
     Dune::Fem:: DGL2ProjectionImpl :: project( sigmaEstimateFunction_, sigmaDiscreteFunction_ );

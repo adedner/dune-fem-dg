@@ -90,8 +90,8 @@ namespace Dune {
     */
     typedef Dune::Fem::DiscontinuousGalerkinSpace
        < FunctionSpaceType, GridPartType, polOrd, Dune::Fem::CachingStorage > DiscreteFunctionSpaceType;
-    typedef Dune::Fem::DiscontinuousGalerkinSpace < PressureFunctionSpaceType, GridPartType,
-            polOrd, Dune::Fem::CachingStorage > PressureDiscreteFunctionSpaceType;
+    //typedef Dune::Fem::LagrangeDiscreteFunctionSpace < PressureFunctionSpaceType, GridPartType,
+    //        polOrd - 1, Dune::Fem::CachingStorage > PressureDiscreteFunctionSpaceType;
 
     static const bool symmetricSolver = true ;
 //#if WANT_ISTL

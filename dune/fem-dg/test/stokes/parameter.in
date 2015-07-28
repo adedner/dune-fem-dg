@@ -9,7 +9,7 @@ fem.io.datafileprefix: solution
 # if you want to add time stemp to eoc file name
 # # to avoid overwriting the eoc files
 fem.io.eocFileTimeStamp: 0
-fem.eoc.steps: 6
+fem.eoc.steps: 9
 
 # polynomial order = 0,1,2,3,4
 femdg.polynomialOrder: 2
@@ -26,12 +26,14 @@ epsilon: 0.1
 xvelocity: 0.    # the only advection part for the linear heat eqn
 yvelocity: 0.    # the only advection part for the linear heat eqn
 zvelocity: 0.    # the only advection part for the linear heat eqn
-alpha: 1.0
+alpha: 0.0
 mu: 1.0
 d11: 100.0
 d12: 1.0
 uzawareduction: 1000000000
-
+istl.absLimit: 1e-10
+istl.reduction: 1e-10
+tau: 1e-1
 fem.solver.verbose: 0
 
 # macro grid file
@@ -66,9 +68,10 @@ fem.adaptation.maximumstrategy: true
 # DATAWRITER
 # ----------
 # output format: grape | vtk-cell | vtk-vertex (projected in DG case),  sub-vtk-cell
-fem.io.outputformat: sub-vtk-cell
+fem.io.outputformat: vtk-cell
 # toggle grape display (0 = off | 1 = on)
 fem.io.grapedisplay: 0
+fem.io.subsamplinglevel: 0
 
 poisson.nonConformOrigin: false
 edges: 1

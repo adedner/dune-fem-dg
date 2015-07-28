@@ -50,6 +50,7 @@ namespace Dune {
                 double redEps,
                 double absLimit,
                 int maxIter,
+                double tau,
                 int verbose=1
                )
       : op_(op), redEps_( redEps ), outer_absLimit_ ( absLimit ) ,
@@ -63,7 +64,7 @@ namespace Dune {
         velocity_("VELO",spc_),
         iter_(0),
         linIter_(0),
-        tau_(0.2),
+        tau_(tau),
         inner_absLimit_( tau_*outer_absLimit_)
     {
     }
@@ -75,6 +76,7 @@ namespace Dune {
                 double redEps,
                 double absLimit,
                 int maxIter,
+                double tau,
                 int verbose=1
                 )
       : op_(op), redEps_( redEps ), outer_absLimit_ ( absLimit ) ,
@@ -88,7 +90,7 @@ namespace Dune {
         velocity_("VELO",spc_),
         iter_(0),
         linIter_(0),
-        tau_(0.2),
+        tau_(tau),
         inner_absLimit_( tau_*outer_absLimit_)
     {
     }
@@ -131,6 +133,7 @@ namespace Dune {
       bop_.apply(pressure,tmp1);
       // f -= tmp1
       f-=tmp1;
+      aufSolver_.set( inner_absLimit_ );
 #if 0
       aufSolver_.set( inner_absLimit_ );
 #endif
