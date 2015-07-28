@@ -20,17 +20,11 @@
 /**
  * @brief Traits class for HeatEqnModel
  */
-template <class GridPart, int dimR>
+template <class GridPart, class ProblemImp >
 class HeatEqnModelTraits
-  : public Dune::Fem::FunctionSpace< typename GridPart::GridType::ctype,
-                                     double,
-                                     GridPart::GridType::dimensionworld,
-                                     dimR >
+  : public ProblemImp::FunctionSpaceType
 {
-  typedef Dune::Fem::FunctionSpace< typename GridPart::GridType::ctype,
-                                    double,
-                                    GridPart::GridType::dimensionworld,
-                                    dimR >  BaseType;
+  typedef typename ProblemImp::FunctionSpaceType  BaseType;
 public:
   enum { velo = 0, press = 1, blabla = 2 };
   typedef std::integral_constant< int, velo   > velocityVar;
@@ -40,10 +34,12 @@ public:
 
   typedef GridPart                                                      GridPartType;
   typedef typename GridPartType :: GridType                             GridType;
+  typedef typename GridType :: template Codim< 0 > :: Entity            EntityType;
+  typedef typename GridPartType :: IntersectionIteratorType             IntersectionIterator;
+  typedef typename IntersectionIterator :: Intersection                 IntersectionType;
 
   typedef typename BaseType::RangeFieldType                             RangeFieldType;
   typedef typename BaseType::DomainFieldType                            DomainFieldType;
-
   enum { dimRange  = BaseType :: dimRange };
   enum { dimDomain = BaseType :: dimDomain };
   static const int dimGradRange = dimRange * dimDomain ;
@@ -55,9 +51,6 @@ public:
   typedef typename BaseType :: JacobianRangeType                        FluxRangeType;
   typedef Dune::FieldMatrix< RangeFieldType, dimGradRange, dimDomain >  DiffusionRangeType;
   typedef Dune::FieldMatrix< RangeFieldType, dimDomain, dimDomain >     DiffusionMatrixType;
-  typedef typename GridType :: template Codim< 0 > :: Entity            EntityType;
-  typedef typename GridPartType :: IntersectionIteratorType             IntersectionIterator;
-  typedef typename IntersectionIterator :: Intersection                 IntersectionType;
 
   //typedef Dune::Fem::MinModLimiter< FieldType > LimiterFunctionType ;
   //typedef SuperBeeLimiter< FieldType > LimiterFunctionType ;
@@ -103,7 +96,7 @@ public:
 ////////////////////////////////////////////////////////
 template <class GridPartType, class ProblemImp>
 class HeatEqnModel :
-  public DefaultModel < HeatEqnModelTraits< GridPartType,ProblemImp::dimRange> >
+  public DefaultModel < HeatEqnModelTraits< GridPartType, ProblemImp > >
 {
 public:
   enum { velo = 0, press = 1, blabla = 2 };
@@ -124,8 +117,8 @@ public:
   typedef ProblemImp ProblemType ;
 
   static const int ConstantVelocity = ProblemType :: ConstantVelocity;
-  typedef typename GridPartType :: GridType                        GridType;
-  typedef HeatEqnModelTraits< GridPartType,ProblemImp::dimRange >  Traits;
+  typedef typename GridPartType :: GridType                      GridType;
+  typedef HeatEqnModelTraits< GridPartType, ProblemImp >         Traits;
   static const int dimDomain = Traits :: dimDomain ;
   static const int dimRange  = Traits :: dimRange ;
   typedef typename Traits :: DomainType                          DomainType;
@@ -171,6 +164,7 @@ public:
     DomainType xgl = local.entity().geometry().global( local.point() );
     return problem_.nonStiffSource( xgl, local.time(), u, s );
   }
+
 
   template <class LocalEvaluation>
   inline double stiffSource( const LocalEvaluation& local,
