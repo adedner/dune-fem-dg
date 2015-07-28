@@ -124,7 +124,7 @@ namespace Dune
 
     virtual bool adaptive () const
     {
-      return method() != 0;
+      return (method() != 0 && adaptCount() != 0);
     }
 
     //! return true if verbosity mode is enabled
