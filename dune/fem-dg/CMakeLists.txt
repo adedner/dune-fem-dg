@@ -1,1 +1,1 @@
-dune_add_subdirs( assemble main misc models operator pass solver stepper test)
+dune_add_subdirs( algorithm assemble main misc models operator pass solver stepper test)
