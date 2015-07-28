@@ -65,6 +65,7 @@
 #endif
 #endif
 
+//#include <dune/fem-dg/algorithm/base.hh>
 #include <dune/fem-dg/stepper/base.hh>
 
 #include <dune/fem/misc/femeoc.hh>
@@ -154,8 +155,6 @@ namespace Dune
 #endif
     Dune :: Fem :: ThreadManager :: setMaxNumberThreads( numThreads );
 
-    Dune::Fem::FemEoc::clear();
-
     const bool countFlops = Dune::Fem::Parameter::getValue< bool >("femdg.flopcounter", false );
 
     // if flop count is enabled count floating point operations (PAPI needed)
@@ -167,8 +166,6 @@ namespace Dune
     }
 
     typedef Dune::GridSelector :: GridType GridType;
-
-    // typedef ProblemCreator< GridType, polynomialOrder > ProblemTraits;
 
     // return type of initializeGrid is Dune::GridPtr, use release such that memory of GridPtr is released
     std::unique_ptr< GridType > gridptr( problem.initializeGrid().release() );

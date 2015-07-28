@@ -201,10 +201,8 @@ void compute(Algorithm& algorithm)
 
   // initialize FemEoc if eocSteps > 1
   EocParameters eocParam( Dune::ParameterKey::generate( "", "fem.eoc." ) );
-  Dune::Fem::FemEoc::initialize( eocParam.outputPath(), eocParam.fileName(), problemDescription );
-
   Dune::Fem::FemEoc::clear();
-
+  Dune::Fem::FemEoc::initialize( eocParam.outputPath(), eocParam.fileName(), problemDescription );
 
   const unsigned int femTimerId = Dune::FemTimer::addTo("timestep");
   for(int eocloop=0; eocloop < eocParam.eocSteps(); ++eocloop )
