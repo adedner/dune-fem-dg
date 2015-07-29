@@ -160,7 +160,7 @@ enum DiscreteFunctionSpacesType
 };
 
 
-template< class FunctionSpaceImp, class GridPartImp, int polOrder, DiscreteFunctionSpacesType dfType, OperatorType opType >
+template< class FunctionSpaceImp, class GridPartImp, int polOrder, DiscreteFunctionSpacesType dfType, GalerkinType opType >
 struct DiscreteFunctionSpaces;
 
 template< class FunctionSpaceImp, class GridPartImp, int polOrder >
@@ -177,7 +177,7 @@ struct DiscreteFunctionSpaces< FunctionSpaceImp, GridPartImp, polOrder, _legendr
 
 
 
-template< class TimeDependentFunctionImp, class DiscreteFunctionImp, OperatorType op >
+template< class TimeDependentFunctionImp, class DiscreteFunctionImp, GalerkinType gt >
 struct InitialProjectors;
 
 template< class TimeDependentFunctionImp, class DiscreteFunctionImp >
@@ -193,22 +193,12 @@ struct InitialProjectors< TimeDependentFunctionImp, DiscreteFunctionImp, dg >
 };
 
 
-
-enum DiscreteFunctionsType
-{
-  _fem = 0,
-  _istl = 1,
-  _petsc = 2,
-  _general = 3
-};
-
-
-template< class DiscreteFunctionSpaceImp, DiscreteFunctionsType df >
+template< class DiscreteFunctionSpaceImp, SolverType solverType >
 struct DiscreteFunctions;
 
 
 template< class DiscreteFunctionSpaceImp >
-struct DiscreteFunctions< DiscreteFunctionSpaceImp, _fem >
+struct DiscreteFunctions< DiscreteFunctionSpaceImp, fem >
 {
   typedef Dune::Fem::AdaptiveDiscreteFunction< DiscreteFunctionSpaceImp > type;
   typedef Dune::Fem::SparseRowLinearOperator< type, type >                jacobian;
@@ -216,7 +206,7 @@ struct DiscreteFunctions< DiscreteFunctionSpaceImp, _fem >
 
 #if HAVE_DUNE_ISTL
 template< class DiscreteFunctionSpaceImp >
-struct DiscreteFunctions< DiscreteFunctionSpaceImp, _istl >
+struct DiscreteFunctions< DiscreteFunctionSpaceImp, istl >
 {
   typedef Dune::Fem::ISTLBlockVectorDiscreteFunction< DiscreteFunctionSpaceImp >  type;
   typedef Dune::Fem::ISTLLinearOperator< type, type >                             jacobian;
@@ -225,7 +215,7 @@ struct DiscreteFunctions< DiscreteFunctionSpaceImp, _istl >
 
 #if HAVE_PETSC
 template< class DiscreteFunctionSpaceImp >
-struct DiscreteFunctions< DiscreteFunctionSpaceImp, _petsc >
+struct DiscreteFunctions< DiscreteFunctionSpaceImp, petsc >
 {
   typedef Dune::Fem::PetscDiscreteFunction< DiscreteFunctionSpaceImp > type;
   typedef Dune::Fem::PetscLinearOperator< type, type >                 jacobian;
@@ -331,10 +321,11 @@ public:
     }
 
     static const int quadOrder = polynomialOrder * 3 + 1;
+    static const SolverType solverType = fem ;
 
     typedef typename DiscreteFunctionSpaces< FunctionSpaceType, GridPartType, polynomialOrder, _legendre, dg >::type    DiscreteFunctionSpaceType;
-    typedef typename DiscreteFunctions< DiscreteFunctionSpaceType, _fem >::type                                       DiscreteFunctionType;
-    typedef typename DiscreteFunctions< DiscreteFunctionType, _fem >::jacobian                                        JacobianOperatorType;
+    typedef typename DiscreteFunctions< DiscreteFunctionSpaceType, solverType >::type                                   DiscreteFunctionType;
+    typedef typename DiscreteFunctions< DiscreteFunctionType, solverType >::jacobian                                    JacobianOperatorType;
 
     typedef typename InitialProjectors< typename AnalyticalTraitsType::TimeDependentFunctionType, DiscreteFunctionType, dg >::type   InitialProjectorType;
 
