@@ -274,11 +274,6 @@ namespace Fem
     virtual void writeData ( TimeProviderType &tp, const bool reallyWrite = false ) {}
     // -----------------------------------
 
-    // ----------- DiagnosticWriter ---------
-    virtual void writeDiagnostics( TimeProviderType& tp ){}
-    // -----------------------------------
-
-
     virtual bool checkDofsValid( TimeProviderType& tp, const int loop  ) const { return true; }
 
     //! initialize method for time loop, i.e. L2-project initial data
@@ -410,9 +405,6 @@ namespace Fem
 
         // perform the solve for one time step, i.e. solve ODE
         step( tp, monitor );
-
-        // write diagnostics
-        writeDiagnostics( tp );
 
         // stop FemTimer for this time step
         Dune::FemTimer::stop(timeStepTimer_,Dune::FemTimer::max);

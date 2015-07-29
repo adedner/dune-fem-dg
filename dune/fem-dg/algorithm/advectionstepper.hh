@@ -17,12 +17,11 @@ namespace Fem
 
   template <class GridImp,
             class ProblemTraits,
-            int polynomialOrder,
-            class ExtraParameterTuple = std::tuple<> >
+            int polynomialOrder >
   struct AdvectionStepper
-    : public EvolutionAlgorithm< GridImp, ProblemTraits, polynomialOrder, ExtraParameterTuple >
+    : public EvolutionAlgorithm< GridImp, ProblemTraits, polynomialOrder >
   {
-    typedef EvolutionAlgorithm< GridImp, ProblemTraits, polynomialOrder, ExtraParameterTuple > BaseType ;
+    typedef EvolutionAlgorithm< GridImp, ProblemTraits, polynomialOrder > BaseType ;
 
     // type of Grid
     typedef typename BaseType :: GridType                 GridType;

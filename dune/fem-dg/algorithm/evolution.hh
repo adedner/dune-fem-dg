@@ -23,7 +23,9 @@
 #include <dune/fem-dg/pass/threadpass.hh>
 #include <dune/common/timer.hh>
 #include "monitor.hh"
-#include <dune/fem-dg/misc/diagnostics.hh>
+
+
+#include <dune/fem-dg/algorithm/diagnosticshandler.hh>
 
 namespace Dune
 {
@@ -37,7 +39,7 @@ namespace Fem
   template< class Grid,
             class ProblemTraits,
             int polOrder,
-            class ExtraParameterTuple = std::tuple< > >
+            class DiagnosticsHandlerImp >
   struct EvolutionAlgorithmTraits
   {
     static const int polynomialOrder = polOrder;
@@ -71,6 +73,8 @@ namespace Fem
 
     typedef typename DiscreteTraits::OperatorTraitsType            OperatorTraits;
 
+    typedef typename DiscreteTraits::ExtraParameterTuple           ExtraParameterTuple;
+
     // wrap operator
     //typedef typename DgHelmHoltzOperatorType::JacobianOperatorType JacobianOperatorType;
     //typedef typename ProblemTraits::template Solver< DgHelmHoltzOperatorType >::Type OdeSolverType;
@@ -95,19 +99,21 @@ namespace Fem
     typedef Dune::AdaptationHandler< GridType, FunctionSpaceType >                 AdaptationHandlerType;
     typedef Dune::Fem::AdaptationManager< GridType, RestrictionProlongationType >  AdaptationManagerType;
     typedef typename OdeSolverType::MonitorType                                    OdeSolverMonitorType;
-    typedef Diagnostics                                                            DiagnosticsType;
+
+    typedef DiagnosticsHandlerImp                                            DiagnosticsHandlerType;
   };
 
 
   // EvolutionAlgorithm
   // ------------------
 
-  template< class Grid, class ProblemTraits, int polynomialOrder, class ExtraParameterTuple = std::tuple< >>
+  template< class Grid, class ProblemTraits, int polynomialOrder,
+            class DiagnosticsHandlerImp = DefaultDiagnosticsHandler >
   class EvolutionAlgorithm
-    : public EvolutionAlgorithmBase< EvolutionAlgorithmTraits< Grid, ProblemTraits, polynomialOrder, ExtraParameterTuple > >
+    : public EvolutionAlgorithmBase< EvolutionAlgorithmTraits< Grid, ProblemTraits, polynomialOrder, DiagnosticsHandlerImp > >
   {
-    typedef EvolutionAlgorithmTraits< Grid, ProblemTraits, polynomialOrder, ExtraParameterTuple > Traits;
-    typedef EvolutionAlgorithmBase< Traits >                                                      BaseType;
+    typedef EvolutionAlgorithmTraits< Grid, ProblemTraits, polynomialOrder, DiagnosticsHandlerImp >    Traits;
+    typedef EvolutionAlgorithmBase< Traits >                                    BaseType;
 
   public:
     typedef typename BaseType::GridType GridType;
@@ -152,9 +158,12 @@ namespace Fem
     typedef typename Traits::EOCErrorIDs EOCErrorIDs;
 
 
+    typedef DiagnosticsHandlerImp                   DiagnosticsHandlerType;
+
+    typedef typename Traits::ExtraParameterTuple ExtraParameterTuple;
+
 
     typedef typename Traits::AdaptationHandlerType        AdaptationHandlerType;
-    typedef typename Traits::DiagnosticsType              DiagnosticsType;
     typedef typename Traits::OdeSolverMonitorType         OdeSolverMonitorType;
     typedef typename Traits::RestrictionProlongationType  RestrictionProlongationType;
     typedef typename Traits::AdaptationManagerType        AdaptationManagerType;
@@ -173,7 +182,7 @@ namespace Fem
       problem_( ProblemTraits::problem() ),
       model_( *problem_ ),
       adaptationHandler_(),
-      diagnostics_( true ),
+      diagnosticsHandler_(),
       overallTimer_(),
       eocIds_( AnalyticalTraits::initEoc() ),
       odeSolver_(),
@@ -275,6 +284,13 @@ namespace Fem
       // set time step size to monitor
       monitor.setTimeStepInfo( tp );
 
+      //TODO needs to be improved
+      double maxNumDofs = space().blockMapper().maxNumDofs() * space().localBlockSize;
+      if( adaptParam_.adaptive() )
+        diagnosticsHandler_.write( tp, maxNumDofs, odeSolverMonitor_, overallTimer_.elapsed(), *adaptationManager_ );
+      else
+        diagnosticsHandler_.write( tp, maxNumDofs, odeSolverMonitor_, overallTimer_.elapsed() );
+
 #ifdef LOCALDEBUG
       maxRatioOfSums = std::max( maxRatioOfSums, std::abs(sum_/sum2_) );
       minRatioOfSums = std::min( minRatioOfSums, std::abs(sum_/sum2_) );
@@ -292,8 +308,7 @@ namespace Fem
     void finalizeStep ( TimeProviderType &tp )
     {
       DiscreteFunctionType& u = solution();
-      // write run file (in writeatonce mode)
-      diagnostics_.flush();
+      diagnosticsHandler_.finalize();
 
       AnalyticalTraits::addEOCErrors( eocIds_, tp, u, model(), problem() );
 
@@ -390,9 +405,7 @@ namespace Fem
     ModelType            model_;
     // Initial flux for advection discretization (UpwindFlux)
     std::unique_ptr< AdaptationHandlerType >  adaptationHandler_;
-
-    // diagnostics file
-    mutable DiagnosticsType diagnostics_;
+    DiagnosticsHandlerType diagnosticsHandler_;
 
     Dune::Timer             overallTimer_;
     double                  odeSolve_;

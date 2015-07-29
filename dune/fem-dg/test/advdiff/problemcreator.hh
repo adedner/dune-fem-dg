@@ -218,7 +218,7 @@ struct AdvectionDiffusionProblemCreator
   typedef Dune::Fem::FunctionSpace< typename GridType::ctype, double, GridType::dimension, DIMRANGE> FunctionSpaceType;
 
   // define problem type here if interface should be avoided
-  typedef Dune::EvolutionProblemInterface< FunctionSpaceType,false >      ProblemInterfaceType;
+    typedef Dune::EvolutionProblemInterface< FunctionSpaceType,false >      ProblemInterfaceType;
 
   template< class GridPart > // TODO: is this template parameter needed?
   struct AnalyticalTraits
@@ -290,7 +290,7 @@ struct AdvectionDiffusionProblemCreator
   struct DiscreteTraits
   {
 public:
-    typedef AnalyticalTraits< GridPartType >           AnalyticalTraitsType;
+    typedef AnalyticalTraits< GridPartType >                              AnalyticalTraitsType;
 
     static const int polynomialOrder = polOrd;
 
@@ -353,6 +353,35 @@ public:
   {
     // this should be ok but could lead to a henn-egg problem
     typedef Dune::Fem::AdvectionDiffusionStepper< GridType, AdvectionDiffusionProblemCreator<GridType>, polOrd > Type;
+
+    // advection diffusion stepper using passes
+    //typedef Dune::Fem::AdvectionDiffusionStepper< GridTypeImp,
+    //                                              AdvectionDiffusionProblemCreator<GridTypeImp>,
+    //                                              polOrd,
+    //                                              NoDataWriter,
+    //                                              NoDiagnostics,
+    //                                              NoAdaptivity,
+    //                                              NoEOCWriter,
+    //                                              NoCheckPointing,
+    //                                              NoLimiting > StepperType1;
+
+    //algorithm from Tobias without passes
+    //typedef Dune::Fem::Tobias::EvolutionAlgorithm< GridTypeImp,
+    //                                               Tobias::AdvectionDiffusionProblemCreator<GridTypeImp>,
+    //                                               polOrd > StepperType2
+    //
+
+    // combined stepper
+    // typedef Dune::Fem::CombinedStepper< StepperType1, StepperType2,
+    //                                     CombinedDataWriter,
+    //                                     CombinedDiagnostics,
+    //                                     CombinedAdaptivity,
+    //                                     CombinedEOCWriter,
+    //                                     CombinedChecPointing,
+    //                                     CombinedLimiting >
+
+
+
   };
 
 
