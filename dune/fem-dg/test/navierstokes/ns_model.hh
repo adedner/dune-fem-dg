@@ -13,7 +13,7 @@
 
 namespace Dune {
 
-typedef Dune::Fem::Double NSFieldType;
+typedef double NSFieldType ;
 
 //////////////////////////////////////////////////////
 //
@@ -48,6 +48,9 @@ public:
 
   typedef FieldVector< RangeFieldType, dimGradRange >      GradientType;
   typedef typename FunctionSpaceType :: JacobianRangeType  FluxRangeType;
+
+  typedef typename FunctionSpaceType :: DomainType DomainType;
+  typedef typename FunctionSpaceType :: RangeType  RangeType;
 
   typedef FieldVector< RangeFieldType, dimGradRange >             GradientRangeType;
   typedef FieldMatrix< RangeFieldType, dimGradRange, dimDomain >  JacobianFluxRangeType;
