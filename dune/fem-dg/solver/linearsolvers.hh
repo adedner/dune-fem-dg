@@ -47,12 +47,13 @@ enum SolverType
   umfpack,     // use the direct solver umfpack
   petsc        // use the petsc package
 };
-enum OperatorType
+
+enum GalerkinType
 {
   cg, dg
 };
 
-template <class Grid, OperatorType op>
+template <class Grid, GalerkinType op>
 struct GridPartChooser;
 template <class Grid>
 struct GridPartChooser<Grid,cg>
