@@ -53,18 +53,18 @@ namespace Fem
     typedef typename ProblemTraits::template DiscreteTraits< HostGridPartType, polynomialOrder >  DiscreteTraits;
 
     // obtain the problem dependent types, analytical context
-    typedef typename AnalyticalTraits::ModelType                 ModelType;
-    typedef typename AnalyticalTraits::ProblemType               ProblemType;
-    typedef typename AnalyticalTraits::InitialDataType           InitialDataType;
+    typedef typename AnalyticalTraits::ModelType                   ModelType;
+    typedef typename AnalyticalTraits::ProblemType                 ProblemType;
+    typedef typename AnalyticalTraits::InitialDataType             InitialDataType;
 
     // type of discrete function space and discrete function
 
-    typedef typename DiscreteTraits::InitialProjectorType  InitialProjectorType;
+    typedef typename DiscreteTraits::InitialProjectorType          InitialProjectorType;
 
     // type of dg operator
-    typedef typename DiscreteTraits::FullOperatorType      FullOperatorType;
-    typedef typename DiscreteTraits::ImplicitOperatorType  ImplicitOperatorType;
-    typedef typename DiscreteTraits::ExplicitOperatorType  ExplicitOperatorType;
+    typedef typename DiscreteTraits::FullOperatorType              FullOperatorType;
+    typedef typename DiscreteTraits::ImplicitOperatorType          ImplicitOperatorType;
+    typedef typename DiscreteTraits::ExplicitOperatorType          ExplicitOperatorType;
 
     typedef typename ProblemTraits::FunctionSpaceType              FunctionSpaceType;
     typedef typename DiscreteTraits::DiscreteFunctionSpaceType     DiscreteFunctionSpaceType;
@@ -83,15 +83,15 @@ namespace Fem
     typedef typename DiscreteTraits::RestrictionProlongationType   RestrictionProlongationType;
 
     // type of IOTuple
-    typedef Dune::tuple< DiscreteFunctionType * >  IOTupleType;
+    typedef Dune::tuple< DiscreteFunctionType * >                  IOTupleType;
 
-    typedef SolverMonitor<1>                       SolverMonitorType;
+    typedef SolverMonitor<1>                                       SolverMonitorType;
 
     // type of Data io
-    typedef DataWriter< GridType, IOTupleType >    DataWriterType;
+    typedef DataWriter< GridType, IOTupleType >                    DataWriterType;
 
     // error handling
-    typedef std::vector< int >  EOCErrorIDs;
+    typedef typename AnalyticalTraits::EOCErrorIDs                 EOCErrorIDs;
 
 
     typedef Dune::AdaptationHandler< GridType, FunctionSpaceType >                 AdaptationHandlerType;
@@ -177,7 +177,7 @@ namespace Fem
       adaptationHandler_( 0 ),
       diagnostics_( true ),
       overallTimer_(),
-      eocId_( Fem::FemEoc::addEntry(std::string("$L^2$-error")) ),
+      eocIds_( AnalyticalTraits::initEoc() ),
       odeSolver_( 0 ),
       rp_( solution_ ),
       adaptationManager_( 0 ),
@@ -260,12 +260,11 @@ namespace Fem
       // but has to be avoided otherwise (because of implicit solver)
       const bool doCommunicate = ! NonBlockingCommParameter :: nonBlockingCommunication ();
 
-      // create L2 projection
-      Fem :: L2Projection< TimeDependentFunctionType,
-          DiscreteFunctionType > l2pro( 2 * U.space().order(), doCommunicate );
+      // create projection
+      InitialProjectorType projection( 2 * U.space().order(), doCommunicate );
 
       // L2 project initial data
-      l2pro( problem().fixedTimeFunction( tp.time() ), U );
+      projection( problem().fixedTimeFunction( tp.time() ), U );
 
       // ode.initialize applies the DG Operator once to get an initial
       // estimate on the time step. This does not change the initial data u.
@@ -312,24 +311,13 @@ namespace Fem
 #endif
     }
 
-    inline double error(TimeProviderType& tp, DiscreteFunctionType& u)
-    {
-      const int order = eocParam_.quadOrder() < 0 ? 2*u.space().order()+4 : eocParam_.quadOrder();
-      Fem :: L2Norm< GridPartType > l2norm( u.space().gridPart(), order );
-      return l2norm.distance( problem().fixedTimeFunction( tp.time() ), u );
-    }
-
     void finalizeStep ( TimeProviderType &tp )
     {
       DiscreteFunctionType& u = solution();
       // write run file (in writeatonce mode)
       diagnostics_.flush();
 
-      bool doFemEoc = problem().calculateEOC( tp, u, eocId_ );
-
-      // ... and print the statistics out to a file
-      if( doFemEoc )
-        Fem::FemEoc::setErrors(eocId_, error(tp, u ));
+      AnalyticalTraits::addEOCErrors( eocIds_, tp, u, model(), problem() );
 
   #ifdef LOCALDEBUG
       std::cout <<"maxRatioOfSums: " <<maxRatioOfSums <<std::endl;
@@ -436,7 +424,7 @@ namespace Fem
 
     Dune::Timer             overallTimer_;
     double                  odeSolve_;
-    const unsigned int      eocId_;
+    EOCErrorIDs             eocIds_;
     OdeSolverType*          odeSolver_;
     OdeSolverMonitorType    odeSolverMonitor_;
     int                     odeSolverType_;

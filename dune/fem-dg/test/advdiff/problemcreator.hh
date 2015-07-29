@@ -25,7 +25,9 @@
 #include <dune/fem-dg/algorithm/gridinitializer.hh>
 
 #include <dune/fem/operator/linear/spoperator.hh>
+#include <dune/fem-dg/solver/linearsolvers.hh>
 
+#include <dune/fem/misc/l2norm.hh>
 
 #include "problems/problem.hh"
 #include "problems/problemQuasiHeatEqn.hh"
@@ -86,6 +88,150 @@ struct OperatorTraits
   typedef ExtraParameterTupleImp                                       ExtraParameterTupleType;
 };
 
+
+enum AdvectionDiffusionOperatorType
+{
+  _unlimited = 0,
+  _limited = 1,
+};
+
+
+template< class Op, class DiffusionOp, class AdvectionOp, bool advection, bool diffusion >
+struct OperatorChooser
+{
+  typedef Op                   FullOperatorType;
+  typedef DiffusionOp          ImplicitOperatorType;
+  typedef AdvectionOp          ExplicitOperatorType;
+};
+template< class Op, class DiffusionOp, class AdvectionOp, bool advection >
+struct OperatorChooser< Op, DiffusionOp, AdvectionOp, advection, false >
+{
+  typedef AdvectionOp          FullOperatorType;
+  typedef FullOperatorType     ImplicitOperatorType;
+  typedef FullOperatorType     ExplicitOperatorType;
+};
+template<class Op, class DiffusionOp, class AdvectionOp, bool diffusion >
+struct OperatorChooser< Op, DiffusionOp, AdvectionOp, false, diffusion >
+{
+  typedef DiffusionOp          FullOperatorType;
+  typedef FullOperatorType     ImplicitOperatorType;
+  typedef FullOperatorType     ExplicitOperatorType;
+};
+
+
+
+template< class OperatorTraits, bool advection, bool diffusion, AdvectionDiffusionOperatorType op >
+class AdvectionDiffusionOperators;
+
+
+template< class OperatorTraits, bool advection, bool diffusion >
+class AdvectionDiffusionOperators< OperatorTraits, advection, diffusion, _unlimited >
+{
+  typedef Dune::DGAdvectionDiffusionOperator< OperatorTraits >             DgType;
+  typedef Dune::DGAdvectionOperator< OperatorTraits >                      DgAdvectionType;
+  typedef Dune::DGDiffusionOperator< OperatorTraits >                      DgDiffusionType;
+  typedef OperatorChooser< DgType, DgAdvectionType, DgDiffusionType, advection, diffusion >
+                                                                           OperatorChooserType;
+public:
+  typedef typename OperatorChooserType::FullOperatorType                            FullOperatorType;
+  typedef typename OperatorChooserType::ImplicitOperatorType                        ImplicitOperatorType;
+  typedef typename OperatorChooserType::ExplicitOperatorType                        ExplicitOperatorType;
+};
+
+template< class OperatorTraits, bool advection, bool diffusion >
+class AdvectionDiffusionOperators< OperatorTraits, advection, diffusion, _limited >
+{
+  typedef Dune::DGLimitedAdvectionDiffusionOperator< OperatorTraits >      DgType;
+  typedef Dune::DGLimitedAdvectionOperator< OperatorTraits >               DgAdvectionType;
+  typedef Dune::DGDiffusionOperator< OperatorTraits >                      DgDiffusionType;
+  typedef OperatorChooser< DgType, DgAdvectionType, DgDiffusionType, advection, diffusion >
+                                                                           OperatorChooserType;
+public:
+  typedef typename OperatorChooserType::FullOperatorType                            FullOperatorType;
+  typedef typename OperatorChooserType::ImplicitOperatorType                        ImplicitOperatorType;
+  typedef typename OperatorChooserType::ExplicitOperatorType                        ExplicitOperatorType;
+};
+
+
+enum DiscreteFunctionSpacesType
+{
+  _lagrange = 0,
+  _legendre = 1,
+};
+
+
+template< class FunctionSpaceImp, class GridPartImp, int polOrder, DiscreteFunctionSpacesType dfType, OperatorType opType >
+struct DiscreteFunctionSpaces;
+
+template< class FunctionSpaceImp, class GridPartImp, int polOrder >
+struct DiscreteFunctionSpaces< FunctionSpaceImp, GridPartImp, polOrder, _lagrange, cg >
+{
+  typedef Dune::Fem::LagrangeDiscreteFunctionSpace< FunctionSpaceImp, GridPartImp, polOrder, Dune::Fem::CachingStorage > type;
+};
+
+template< class FunctionSpaceImp, class GridPartImp, int polOrder >
+struct DiscreteFunctionSpaces< FunctionSpaceImp, GridPartImp, polOrder, _legendre, dg >
+{
+  typedef Dune::Fem::DiscontinuousGalerkinSpace< FunctionSpaceImp, GridPartImp, polOrder, Dune::Fem::CachingStorage > type;
+};
+
+
+
+template< class TimeDependentFunctionImp, class DiscreteFunctionImp, OperatorType op >
+struct InitialProjectors;
+
+template< class TimeDependentFunctionImp, class DiscreteFunctionImp >
+struct InitialProjectors< TimeDependentFunctionImp, DiscreteFunctionImp, cg >
+{
+  typedef Dune::Fem::LagrangeInterpolation< TimeDependentFunctionImp, DiscreteFunctionImp >                           type;
+};
+
+template< class TimeDependentFunctionImp, class DiscreteFunctionImp >
+struct InitialProjectors< TimeDependentFunctionImp, DiscreteFunctionImp, dg >
+{
+  typedef Dune::Fem::L2Projection< TimeDependentFunctionImp, DiscreteFunctionImp >                                    type;
+};
+
+
+
+enum DiscreteFunctionsType
+{
+  _fem = 0,
+  _istl = 1,
+  _petsc = 2,
+  _general = 3
+};
+
+
+template< class DiscreteFunctionSpaceImp, DiscreteFunctionsType df >
+struct DiscreteFunctions;
+
+
+template< class DiscreteFunctionSpaceImp >
+struct DiscreteFunctions< DiscreteFunctionSpaceImp, _fem >
+{
+  typedef Dune::Fem::AdaptiveDiscreteFunction< DiscreteFunctionSpaceImp > type;
+  typedef Dune::Fem::SparseRowLinearOperator< type, type >                jacobian;
+};
+
+#if HAVE_DUNE_ISTL
+template< class DiscreteFunctionSpaceImp >
+struct DiscreteFunctions< DiscreteFunctionSpaceImp, _istl >
+{
+  typedef Dune::Fem::ISTLBlockVectorDiscreteFunction< DiscreteFunctionSpaceImp >  type;
+  typedef Dune::Fem::ISTLLinearOperator< type, type >                             jacobian;
+};
+#endif
+
+#if HAVE_PETSC
+template< class DiscreteFunctionSpaceImp >
+struct DiscreteFunctions< DiscreteFunctionSpaceImp, _petsc >
+{
+  typedef Dune::Fem::PetscDiscreteFunction< DiscreteFunctionSpaceImp > type;
+  typedef Dune::Fem::PetscLinearOperator< type, type >                 jacobian;
+};
+#endif
+
 template< class GridTypeImp >
 struct AdvectionDiffusionProblemCreator
 {
@@ -102,6 +248,29 @@ struct AdvectionDiffusionProblemCreator
     typedef ProblemInterfaceType                                InitialDataType;
     typedef HeatEqnModel< GridPart, InitialDataType >           ModelType;
     typedef typename InitialDataType::TimeDependentFunctionType TimeDependentFunctionType;
+
+    typedef std::vector< int >                                  EOCErrorIDs;
+
+    static EOCErrorIDs initEoc ()
+    {
+      EOCErrorIDs ids;
+      ids.resize( 1 );
+      ids[ 0 ] = Dune::Fem::FemEoc::addEntry( std::string( "$L^2$-error" ) );
+      return ids;
+    }
+
+    template< class Solution, class Model, class ExactFunction, class TimeProvider >
+    static void addEOCErrors ( const EOCErrorIDs &ids, TimeProvider& tp,
+                               Solution &u, Model &model, ExactFunction &f )
+    {
+      if( !model.problem().calculateEOC( tp, u, 0 ) )
+      {
+        const int order = 2*u.space().order()+4;
+        Dune::Fem::L2Norm< typename Solution::DiscreteFunctionSpaceType::GridPartType > l2norm( u.space().gridPart(), order );
+        const double error = l2norm.distance( model.problem().fixedTimeFunction( tp.time() ), u );
+        Dune::Fem::FemEoc::setErrors( ids[ 0 ], error );
+      }
+    }
   };
 
   static inline std::string moduleName()
@@ -158,45 +327,18 @@ public:
 
     static inline std::string diffusionFluxName()
     {
-#ifdef EULER
-      return "";
-#elif (defined PRIMALDG)
       return Dune::Fem::Parameter::getValue< std::string >("dgdiffusionflux.method");
-#else
-      return "LDG";
-#endif
     }
 
     static const int quadOrder = polynomialOrder * 3 + 1;
 
-#ifdef CONTINOUSFUNCTIONS
-    typedef Dune::Fem::LagrangeDiscreteFunctionSpace< FunctionSpaceType, GridPartType, polynomialOrder, Dune::Fem::CachingStorage > DiscreteFunctionSpaceType;
-#elif defined USE_MINIELEMENT
-    typedef Dune::Fem::MiniElementDiscontinuousGalerkinSpace< FunctionSpaceType, GridPartType, polynomialOrder, Dune::Fem::CachingStorage > DiscreteFunctionSpaceType;
-#else
-    typedef Dune::Fem::DiscontinuousGalerkinSpace< FunctionSpaceType, GridPartType, polynomialOrder, Dune::Fem::CachingStorage > DiscreteFunctionSpaceType;
-#endif
+    typedef typename DiscreteFunctionSpaces< FunctionSpaceType, GridPartType, polynomialOrder, _legendre, dg >::type    DiscreteFunctionSpaceType;
+    typedef typename DiscreteFunctions< DiscreteFunctionSpaceType, _fem >::type                                       DiscreteFunctionType;
+    typedef typename DiscreteFunctions< DiscreteFunctionType, _fem >::jacobian                                        JacobianOperatorType;
 
-#ifdef ISTLVEC
-    typedef Dune::Fem::ISTLBlockVectorDiscreteFunction< DiscreteFunctionSpaceType > DiscreteFunctionType;
-    typedef Dune::Fem::ISTLLinearOperator< DiscreteFunctionType, DiscreteFunctionType > JacobianOperatorType;
-#elif defined PETSCVEC
-    typedef Dune::Fem::PetscDiscreteFunction< DiscreteFunctionSpaceType > DiscreteFunctionType;
-    typedef Dune::Fem::PetscLinearOperator< DiscreteFunctionType, DiscreteFunctionType > JacobianOperatorType;
-#else
-    typedef Dune::Fem::AdaptiveDiscreteFunction< DiscreteFunctionSpaceType > DiscreteFunctionType;
-    typedef Dune::Fem::SparseRowLinearOperator< DiscreteFunctionType, DiscreteFunctionType > JacobianOperatorType;
-#endif
-
-
-#ifdef CONTINOUSFUNCTIONS
-    typedef Dune::Fem::LagrangeInterpolation< typename AnalyticalTraitsType::TimeDependentFunctionType, DiscreteFunctionType > InitialProjectorType;
-#else
-    typedef Dune::Fem::L2Projection< typename AnalyticalTraitsType::TimeDependentFunctionType, DiscreteFunctionType > InitialProjectorType;
-#endif
+    typedef typename InitialProjectors< typename AnalyticalTraitsType::TimeDependentFunctionType, DiscreteFunctionType, dg >::type   InitialProjectorType;
 
     typedef std::tuple<> ExtraParameterTuple;
-
 
 private:
     typedef Dune::Fem::FunctionSpace< typename GridType::ctype, double, AnalyticalTraitsType::ModelType::dimDomain, 3> FVFunctionSpaceType;
@@ -206,77 +348,27 @@ public:
 
 
 
-    typedef DuneODE::OdeSolverInterface< DiscreteFunctionType >                           OdeSolverType;
+    typedef DuneODE::OdeSolverInterface< DiscreteFunctionType >                                 OdeSolverType;
     // type of restriction/prolongation projection for adaptive simulations
-    typedef Dune::Fem::RestrictProlongDefault< DiscreteFunctionType >                     RestrictionProlongationType;
+    typedef Dune::Fem::RestrictProlongDefault< DiscreteFunctionType >                           RestrictionProlongationType;
     // type of linear solver for implicit ode
-    typedef Dune::Fem::ParDGGeneralizedMinResInverseOperator< DiscreteFunctionType >      BasicLinearSolverType;
+    typedef Dune::Fem::ParDGGeneralizedMinResInverseOperator< DiscreteFunctionType >            BasicLinearSolverType;
 
-    typedef Dune::AdaptationHandler< GridType, FunctionSpaceType >                        AdaptationHandlerType;
+    typedef Dune::AdaptationHandler< GridType, FunctionSpaceType >                              AdaptationHandlerType;
 
 
     // --------- Operators using PASSES --------------------------
     //============================================================
     typedef OperatorTraits< GridPartType, polynomialOrder, AnalyticalTraitsType,
                             DiscreteFunctionType, IndicatorType,
-                            AdaptationHandlerType, ExtraParameterTuple >                  OperatorTraitsType;
+                            AdaptationHandlerType, ExtraParameterTuple >                        OperatorTraitsType;
 
-private:
-#ifdef LIMITER
-    #if (not defined EULER) and (defined FLUXDG)
-    #warning "DGAdvectionDiffusionOperator: using LIMITER."
-      typedef Dune :: DGLimitedAdvectionDiffusionOperator< OperatorTraitsType >  DgType;
-    #else
-    #warning "DGAdvectionDiffusionOperator: LIMITER can NOT be used. Not supported -> LIMITER, no EULER, no FLUXDG."
-      typedef Dune :: DGAdvectionDiffusionOperator< OperatorTraitsType >  DgType;
-    #endif
-    #ifndef HIGHER_ORDER_FV
-    #warning "DGAdvectionOperator: using LIMITER."
-      typedef Dune :: DGLimitedAdvectionOperator< OperatorTraitsType >    DgAdvectionType;
-    #else
-    #warning "DGAdvectionOperator: using HIGHER ORDER FV."
-      typedef AnalyticalTraitsType< GridPartType, -1 >                    FVOperatorTraitsType;
-      typedef Dune :: DGLimitedAdvectionOperator< FVOperatorTraitsType >  DgAdvectionType;
-    #endif
-#else // no LIMITER
-#warning "No limiter is applied to the numerical solution !!"
-    typedef Dune :: DGAdvectionDiffusionOperator< OperatorTraitsType >    DgType;
-    typedef Dune :: DGAdvectionOperator< OperatorTraitsType >             DgAdvectionType;
-#endif
-    typedef Dune :: DGDiffusionOperator< OperatorTraitsType >             DgDiffusionType;
-    // default is that both are enabled
-    template < bool advection, bool diffusion >
-    struct OperatorChooser
-    {
-      typedef DgType          FullOperatorType;
-      typedef DgDiffusionType ImplicitOperatorType;
-      typedef DgAdvectionType ExplicitOperatorType;
-    };
-    // advection operator only, i.e. linear advection equation
-    template < bool advection >
-    struct OperatorChooser< advection, false >
-    {
-      typedef DgAdvectionType  FullOperatorType;
-      typedef FullOperatorType ImplicitOperatorType;
-      typedef FullOperatorType ExplicitOperatorType;
-    };
-    // diffusion operator only, i.e. for the heat equation
-    template < bool diffusion >
-    struct OperatorChooser< false, diffusion >
-    {
-      typedef DgDiffusionType  FullOperatorType;
-      typedef FullOperatorType ImplicitOperatorType;
-      typedef FullOperatorType ExplicitOperatorType;
-    };
+    typedef AdvectionDiffusionOperators< OperatorTraitsType, AnalyticalTraitsType::ModelType::hasAdvection,
+                                 AnalyticalTraitsType::ModelType::hasDiffusion, _unlimited >    AdvectionDiffusionOperatorType;
 
-    static const bool advection = AnalyticalTraitsType::ModelType::hasAdvection;
-    static const bool diffusion = AnalyticalTraitsType::ModelType::hasDiffusion;
-    typedef OperatorChooser< advection, diffusion > OperatorChooserType;
-
-public:
-    typedef typename OperatorChooserType :: FullOperatorType      FullOperatorType;
-    typedef typename OperatorChooserType :: ImplicitOperatorType  ImplicitOperatorType;
-    typedef typename OperatorChooserType :: ExplicitOperatorType  ExplicitOperatorType;
+    typedef typename AdvectionDiffusionOperatorType::FullOperatorType                           FullOperatorType;
+    typedef typename AdvectionDiffusionOperatorType::ImplicitOperatorType                       ImplicitOperatorType;
+    typedef typename AdvectionDiffusionOperatorType::ExplicitOperatorType                       ExplicitOperatorType;
     // --------- Operators using PASSES --------------------------
     //============================================================
   };
