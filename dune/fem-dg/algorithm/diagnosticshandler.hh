@@ -46,7 +46,7 @@ namespace Fem
     }
 
 
-    template< class TimeProviderImp, class OdeSolverMonitorImp, class AdaptationManagerImp >
+    template< class TimeProviderImp, class OdeSolverMonitorImp >
     void write( TimeProviderImp& tp, const double maxNumDofs,
                 const OdeSolverMonitorImp& odeSolverMonitor,
                 const double time )
