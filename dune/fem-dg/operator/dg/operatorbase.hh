@@ -42,9 +42,6 @@ namespace Dune {
     typedef typename Traits :: ModelType          ModelType;
     typedef typename ModelType :: ProblemType     ProblemType ;
 
-    enum { dimRange  = Traits::dimRange };
-    enum { dimDomain = Traits::dimDomain };
-
     typedef typename Traits :: GridType GridType;
     typedef typename Traits :: DiscreteModelType DiscreteModelType;
 

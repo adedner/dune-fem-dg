@@ -128,25 +128,23 @@ namespace Dune {
     integral_constant< int, passUId > uVar;
 
   public:
-    enum { dimDomain = Traits :: dimDomain };
-    enum { dimRange  = Traits :: dimRange };
-
     enum { advection = returnAdvectionPart  };
     enum { evaluateJacobian = false };
 
     typedef typename Traits :: GridPartType                            GridPartType;
     typedef typename Traits :: GridType                                GridType;
+    typedef typename Traits :: DiscreteFunctionSpaceType               DiscreteFunctionSpaceType;
+
     typedef typename GridPartType :: IntersectionIteratorType          IntersectionIteratorType;
     typedef typename IntersectionIteratorType :: Intersection          IntersectionType;
     typedef typename BaseType :: EntityType                            EntityType;
-    typedef typename Traits :: FunctionSpaceType                       FunctionSpaceType;
+    typedef typename DiscreteFunctionSpaceType :: FunctionSpaceType    FunctionSpaceType;
     typedef typename FunctionSpaceType :: RangeFieldType               RangeFieldType;
     typedef typename FunctionSpaceType :: DomainFieldType              DomainFieldType;
     typedef typename FunctionSpaceType :: DomainType                   DomainType;
     typedef typename FunctionSpaceType :: RangeType                    RangeType;
     typedef typename FunctionSpaceType :: JacobianRangeType            JacobianRangeType;
 
-    typedef typename Traits :: DiscreteFunctionSpaceType               DiscreteFunctionSpaceType;
 
     // discrete function storing the adaptation indicator information
     typedef typename Traits :: AdaptationHandlerType   AdaptationType ;
@@ -378,9 +376,6 @@ namespace Dune {
     integral_constant< int, passUId > uVar;
 
   public:
-    enum { dimDomain = Traits :: dimDomain };
-    enum { dimRange  = Traits :: dimRange };
-
     typedef typename BaseType :: ModelType          ModelType;
     typedef typename BaseType :: AdvectionFluxType  AdvectionFluxType;
 
@@ -389,6 +384,7 @@ namespace Dune {
     typedef typename BaseType :: GridType                              GridType;
     typedef typename BaseType :: IntersectionIteratorType              IntersectionIteratorType;
     typedef typename BaseType :: IntersectionType                      IntersectionType;
+    typedef typename BaseType :: FunctionSpaceType                     FunctionSpaceType;
     typedef typename BaseType :: EntityType                            EntityType;
     typedef typename BaseType :: DomainType                            DomainType ;
     typedef typename BaseType :: RangeFieldType                        RangeFieldType;
@@ -544,6 +540,7 @@ namespace Dune {
         error -= v;
         error -= w;
 
+        const int dimRange = FunctionSpaceType :: dimRange;
         for( int i=0; i<dimRange; ++i )
         {
           error[ i ] = std::abs( error[ i ] );

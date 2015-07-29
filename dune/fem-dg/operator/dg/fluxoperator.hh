@@ -53,10 +53,26 @@ namespace Dune {
 
     // Pass 1 Model (gradient)
     typedef typename DiscreteModel2Type :: DiffusionFluxType  DiffusionFluxType;
-    struct GradientTraits : public PassTraits< Traits, Traits::polynomialOrder, ModelType::dimGradRange >
+
+    struct GradientTraits : public Traits
     {
-      typedef Model              ModelType;
-      typedef DiffusionFluxType  FluxType;
+      // overload discrete function space
+      typedef typename Traits :: DiscreteFunctionSpaceType :: template
+        ToNewDimRange< ModelType::dimGradRange > :: Type                   DiscreteFunctionSpaceType;
+
+      template < template <class> DF >
+      struct ToNewSpace< DF< typename Traits :: DiscreteFunctionSpaceType > >
+      {
+        typedef DF< DiscreteFunctionSpaceType > Type;
+      };
+
+      template < class Arg, template <class, class> DF >
+      struct ToNewSpace< DF< typename Traits :: DiscreteFunctionSpaceType, Arg > >
+      {
+        typedef DF< DiscreteFunctionSpaceType, Arg > Type;
+      };
+
+      typedef typename ToNewSpace< DestinationType > :: Type       DestinationType;
     };
 
     typedef GradientModel< GradientTraits, u >       DiscreteModel1Type;

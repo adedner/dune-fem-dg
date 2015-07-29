@@ -32,9 +32,6 @@ namespace Dune {
     using BaseType :: uBnd_;
 
   public:
-    enum { dimDomain = Traits :: dimDomain };
-    enum { dimRange  = Traits :: dimRange };
-
     static const bool advection = Traits :: advection ; // true if advection is enabled
     static const bool diffusion = Traits :: diffusion ; // this should be disabled for LDG
 
@@ -475,12 +472,8 @@ namespace Dune {
     using BaseType :: uBnd_;
 
   public:
-    enum { dimDomain = Traits :: dimDomain };
-    enum { dimRange  = Traits :: dimRange };
-
-    enum { advection = returnAdvectionPart }; // true if advection is enabled
-    enum { diffusion = returnDiffusionPart }; // this should be disabled for LDG
-
+    static const bool advection = returnAdvectionPart; // true if advection is enabled
+    static const bool diffusion = returnDiffusionPart; // this should be disabled for LDG
 
     typedef typename BaseType :: IntersectionType    IntersectionType;
     typedef typename BaseType :: EntityType          EntityType;

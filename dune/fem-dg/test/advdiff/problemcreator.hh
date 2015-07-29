@@ -45,13 +45,12 @@ template< class GridPart,
           class IndicatorFunctionImp,
           class AdaptationHandlerImp,
           class ExtraParameterTupleImp = std::tuple<>
-          >
+        >
 struct OperatorTraits
 {
   typedef GridPart                                                     GridPartType;
   typedef typename GridPartType::GridType                              GridType;
   typedef AnalyticalTraits                                             AnalyticalTraitsType;
-
 
   typedef typename AnalyticalTraitsType::InitialDataType               InitialDataType;
   typedef typename AnalyticalTraitsType::ModelType                     ModelType ;
@@ -59,17 +58,19 @@ struct OperatorTraits
   //typedef LLFFlux< ModelType >                    FluxType;
   static const Dune::DGDiffusionFluxIdentifier PrimalDiffusionFluxId = Dune::method_general;
 
-
   static const int polynomialOrder = polOrd == -1 ? 0 : polOrd;
+  // static const SolverType solverType = solverT;
 
-  typedef DiscreteFunctionImp                                          DiscreteFunctionType;
-  typedef DiscreteFunctionType                                         DestinationType;
-  typedef typename DiscreteFunctionType::DiscreteFunctionSpaceType     DiscreteFunctionSpaceType;
-  typedef typename DiscreteFunctionType::FunctionSpaceType             FunctionSpaceType;
+  typedef DiscreteFunctionImp DestinationType ;
+  typedef typename DestinationType :: DiscreteFunctionSpaceType  DiscreteFunctionSpaceType;
 
-  static const int dimRange  = FunctionSpaceType::dimRange;
-  static const int dimDomain = FunctionSpaceType::dimDomain ;
+  //typedef DiscreteFunctionSpaceImp                                                        DiscreteFunctionSpaceType;
+  //typedef typename DiscreteFunctions< DiscreteFunctionSpaceType, solverType > :: type     DestinationType;
 
+  //typedef typename DiscreteFunctions< DiscreteFunctionSpaceType, solverType > :: jacobian JacobianOperatorType;
+
+  //static const int dimRange  = FunctionSpaceType::dimRange;
+  //static const int dimDomain = FunctionSpaceType::dimDomain ;
 
   typedef Dune::Fem::CachingQuadrature< GridPartType, 0 >              VolumeQuadratureType;
   typedef Dune::Fem::CachingQuadrature< GridPartType, 1 >              FaceQuadratureType;
