@@ -476,6 +476,7 @@ namespace Fem
       // adjust average time step size
       monitor.finalize( gridWidth(), gridSize() );
 
+      return monitor;
     }
 
     //! finalize problem, i.e. calculated EOC ...

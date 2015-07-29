@@ -174,31 +174,17 @@ namespace Fem
       solution_( "U_"+name, space() ),
       problem_( ProblemTraits::problem() ),
       model_( *problem_ ),
-      adaptationHandler_( 0 ),
+      adaptationHandler_(),
       diagnostics_( true ),
       overallTimer_(),
       eocIds_( AnalyticalTraits::initEoc() ),
-      odeSolver_( 0 ),
+      odeSolver_(),
       rp_( solution_ ),
-      adaptationManager_( 0 ),
-      dataWriter_( 0 )
+      adaptationManager_(),
+      dataWriter_()
     {
       // set refine weight
       rp_.setFatherChildWeight( Dune::DGFGridInfo<GridType> :: refineWeight() );
-    }
-
-
-    //! destructor
-    ~EvolutionAlgorithm ()
-    {
-      delete odeSolver_;
-      odeSolver_ = 0;
-      delete dataWriter_;
-      dataWriter_ = 0 ;
-      delete problem_ ;
-      problem_ = 0;
-      delete adaptationHandler_ ;
-      adaptationHandler_ = 0;
     }
 
     // function creating the ode solvers
@@ -241,20 +227,14 @@ namespace Fem
     {
       DiscreteFunctionType& U = solution_;
 
-      if( odeSolver_ == 0 ) odeSolver_ = this->createOdeSolver( tp );
+      odeSolver_.reset( this->createOdeSolver( tp ) );
       assert( odeSolver_ );
 
-      if( dataWriter_ == 0 )
-      {
-        // copy data tuple
-        dataTuple_ = dataTuple();
-        dataWriter_ = new DataWriterType( grid_, dataTuple_, tp,
-          eocParam_.dataOutputParameters( loop, problem_->dataPrefix() ) );
-      }
+      // copy data tuple
+      dataTuple_ = dataTuple();
+      dataWriter_.reset( new DataWriterType( grid_, dataTuple_, tp,
+        eocParam_.dataOutputParameters( loop, problem_->dataPrefix() ) ) );
       assert( dataWriter_ );
-
-      typedef typename ProblemType::TimeDependentFunctionType
-        TimeDependentFunctionType;
 
       // communication is needed when blocking communication is used
       // but has to be avoided otherwise (because of implicit solver)
@@ -325,15 +305,9 @@ namespace Fem
   #endif
 
       // delete ode solver
-      delete odeSolver_;
-      odeSolver_ = 0;
-
-      delete dataWriter_;
-      dataWriter_ = 0 ;
-
-      delete adaptationHandler_;
-      adaptationHandler_ = 0;
-
+      odeSolver_.reset();
+      dataWriter_.reset();
+      adaptationHandler_.reset();
     }
 
     std::string description () const { return problem().description(); }
@@ -358,7 +332,7 @@ namespace Fem
     virtual AdaptationManagerType& adaptationManager()
     {
       if( !adaptationManager_ )
-        adaptationManager_ = new AdaptationManagerType( grid_, rp_ );
+        adaptationManager_.reset( new AdaptationManagerType( grid_, rp_ ) );
       return *adaptationManager_;
     }
 
@@ -414,10 +388,10 @@ namespace Fem
 
     // InitialDataType is a Dune::Operator that evaluates to $u_0$ and also has a
     // method that gives you the exact solution.
-    ProblemType*         problem_;
+    std::unique_ptr< ProblemType >            problem_;
     ModelType            model_;
     // Initial flux for advection discretization (UpwindFlux)
-    AdaptationHandlerType*  adaptationHandler_;
+    std::unique_ptr< AdaptationHandlerType >  adaptationHandler_;
 
     // diagnostics file
     mutable DiagnosticsType diagnostics_;
@@ -425,16 +399,16 @@ namespace Fem
     Dune::Timer             overallTimer_;
     double                  odeSolve_;
     EOCErrorIDs             eocIds_;
-    OdeSolverType*          odeSolver_;
+    std::unique_ptr< OdeSolverType > odeSolver_;
     OdeSolverMonitorType    odeSolverMonitor_;
     int                     odeSolverType_;
 
     RestrictionProlongationType rp_;
 
-    AdaptationManagerType*   adaptationManager_;
+    std::unique_ptr< AdaptationManagerType >  adaptationManager_;
 
     IOTupleType             dataTuple_ ;
-    DataWriterType*         dataWriter_ ;
+    std::unique_ptr< DataWriterType >         dataWriter_ ;
   };
 
 } // namespace Fem

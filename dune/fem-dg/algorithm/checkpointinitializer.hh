@@ -1,6 +1,8 @@
 #ifndef FEMDG_CHECKPOINTINITIALIZER_HH
 #define FEMDG_CHECKPGRIDINITIALIZER_HH
 
+#include <memory>
+
 #include <dune/fem/misc/mpimanager.hh>
 #include <dune/fem/io/file/datawriter.hh>
 #include <dune/fem/io/parameter.hh>
@@ -21,17 +23,8 @@ namespace Fem
     typedef Dune::Fem::CheckPointer< GridImp, DataImp >   CheckPointerType;
 
     DefaultCheckPointInitializer()
-      : checkPointer_(0)
+      : checkPointer_()
     {}
-
-
-    ~DefaultCheckPointInitializer()
-    {
-      delete checkPointer_;
-      checkPointer_ = 0;
-    }
-
-
 
     static bool checkPointExists()
     {
@@ -84,6 +77,7 @@ namespace Fem
     bool writeData( const GridImp& grid, const TimeProviderImp& tp ) const
     {
       checkPointer( grid, tp ).write( tp );
+      return true;
     }
 
 
@@ -92,7 +86,7 @@ namespace Fem
     {
       // create check point if not existent
       if( ! checkPointer_ )
-        checkPointer_ = new CheckPointerType( grid, tp, Dune::Fem::CheckPointerParameters( Dune::ParameterKey::generate( "", "fem.io." ) )  );
+        checkPointer_.reset( new CheckPointerType( grid, tp, Dune::Fem::CheckPointerParameters( Dune::ParameterKey::generate( "", "fem.io." ) )  ) );
       return *checkPointer_;
     }
 
@@ -103,7 +97,7 @@ namespace Fem
     }
 
     private:
-    mutable CheckPointerType* checkPointer_;
+    mutable std::unique_ptr< CheckPointerType > checkPointer_;
 
   };
 

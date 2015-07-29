@@ -65,8 +65,8 @@
 #endif
 #endif
 
-//#include <dune/fem-dg/algorithm/base.hh>
-#include <dune/fem-dg/stepper/base.hh>
+#include <dune/fem-dg/algorithm/base.hh>
+//#include <dune/fem-dg/stepper/base.hh>
 
 #include <dune/fem/misc/femeoc.hh>
 #include <dune/fem/misc/flops.hh>

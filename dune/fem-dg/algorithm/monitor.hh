@@ -100,7 +100,7 @@ namespace Fem
 
     void dump( std::ostream& out, int monitorNumber = -1 ) const
     {
-      if( monitorNumber = -1 )
+      if( monitorNumber == -1 )
         monitorNumber = monitorNumber_;
 
       out << "SolverMonitorInfo (timesteps):" << std::endl;

@@ -139,7 +139,7 @@ namespace Fem
       {
         if( ! adaptationHandler_ && adaptParam_.aposterioriIndicator() )
         {
-          adaptationHandler_ = new AdaptationHandlerType( grid_, tp );
+          adaptationHandler_.reset( new AdaptationHandlerType( grid_, tp ) );
           dgIndicator_.setAdaptation( *adaptationHandler_ );
         }
       }
