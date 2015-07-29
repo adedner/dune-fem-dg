@@ -1,6 +1,7 @@
 // configure macros
 #include <config.h>
 
+#include <dune/fem-dg/stepper/base.hh>
 #include <dune/fem-dg/misc/simulator.hh>
 #include "problemcreator.hh"
 

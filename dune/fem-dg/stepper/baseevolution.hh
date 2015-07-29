@@ -246,7 +246,6 @@ public:
      eocParam_( EocParametersType( Dune::ParameterKey::generate( "", "fem.eoc." ) ) ),
      timeStepTimer_( Dune::FemTimer::addTo("max time/timestep") ),
      fixedTimeStep_( param_.fixedTimeStep() ),
-     fixedTimeStepEocLoopFactor_( param_.fixedTimeStepEocLoopFactor() ),
      algorithmName_( algorithmName )
   {
   }

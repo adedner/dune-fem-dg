@@ -1,5 +1,6 @@
 #ifndef FEMHOWTO_BASE_HH
 #define FEMHOWTO_BASE_HH
+#define DUNE_FEMDG_ALGORITHM_BASE_HH
 
 #include <sstream>
 #include <sys/time.h>
@@ -199,13 +200,14 @@ void compute(Algorithm& algorithm)
 
   typedef typename Algorithm::SolverMonitorType SolverMonitorType;
 
+  std::string problemDescription = "default" ;
   // initialize FemEoc if eocSteps > 1
   EocParameters eocParam( Dune::ParameterKey::generate( "", "fem.eoc." ) );
   Dune::Fem::FemEoc::clear();
   Dune::Fem::FemEoc::initialize( eocParam.outputPath(), eocParam.fileName(), problemDescription );
 
   const unsigned int femTimerId = Dune::FemTimer::addTo("timestep");
-  for(int eocloop=0; eocloop < eocParam.eocSteps(); ++eocloop )
+  for(int eocloop=0; eocloop < eocParam.steps(); ++eocloop )
   {
     // start fem timer (enable with -DFEMTIMER)
     Dune::FemTimer :: start(femTimerId);
@@ -243,7 +245,7 @@ void compute(Algorithm& algorithm)
 
     // Refine the grid for the next EOC Step. If the scheme uses adaptation,
     // the refinement level needs to be set in the algorithms' initialize method.
-    if( eocParam.eocSteps() > 1 )
+    if( eocParam.steps() > 1 )
       Dune::Fem::GlobalRefine::apply(grid,Dune::DGFGridInfo<GridType>::refineStepsForHalf());
 
   } /***** END of EOC Loop *****/
