@@ -14,7 +14,6 @@ namespace Dune {
 
   //PassTraits
   //----------
-
   template <class Traits, int polOrd, int dimR>
   class PassTraits
   {

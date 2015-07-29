@@ -44,7 +44,8 @@ template< class GridPart,
           class DiscreteFunctionImp,
           class IndicatorFunctionImp,
           class AdaptationHandlerImp,
-          class ExtraParameterTupleImp = std::tuple<> >
+          class ExtraParameterTupleImp = std::tuple<>
+          >
 struct OperatorTraits
 {
   typedef GridPart                                                     GridPartType;
@@ -60,8 +61,6 @@ struct OperatorTraits
 
 
   static const int polynomialOrder = polOrd == -1 ? 0 : polOrd;
-
-  typedef typename ModelType::Traits::FaceDomainType                   FaceDomainType;
 
   typedef DiscreteFunctionImp                                          DiscreteFunctionType;
   typedef DiscreteFunctionType                                         DestinationType;
