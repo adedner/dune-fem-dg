@@ -11,8 +11,9 @@
 #include "thermodynamics.hh"
 #include "ns_model_spec.hh"
 
-
 namespace Dune {
+
+typedef double NSFieldType ;
 
 //////////////////////////////////////////////////////
 //
@@ -21,13 +22,13 @@ namespace Dune {
 //////////////////////////////////////////////////////
 template< class GridPart, class Problem >
 class NSModelTraits
-  : public Fem :: FunctionSpace< double, double,
+  : public Fem :: FunctionSpace< NSFieldType, NSFieldType,
                                  GridPart::GridType::dimensionworld,
                                  GridPart::GridType::dimensionworld + 2 >
 {
-  typedef Fem :: FunctionSpace< double, double,
-                                 GridPart::GridType::dimensionworld,
-                                 GridPart::GridType::dimensionworld + 2 > BaseType;
+  typedef Fem :: FunctionSpace< NSFieldType, NSFieldType,
+                                GridPart::GridType::dimensionworld,
+                                GridPart::GridType::dimensionworld + 2 > BaseType;
 
 public:
   typedef Problem  ProblemType;
@@ -42,13 +43,17 @@ public:
   typedef BaseType FunctionSpaceType ;
 
   typedef typename FunctionSpaceType :: DomainFieldType    DomainFieldType ;
+  typedef typename FunctionSpaceType :: RangeFieldType     RangeFieldType ;
   typedef FieldVector< DomainFieldType, FunctionSpaceType::dimDomain - 1 >    FaceDomainType;
 
-  typedef FieldVector< double, dimGradRange >               GradientType;
-  typedef typename FunctionSpaceType :: JacobianRangeType   FluxRangeType;
+  typedef FieldVector< RangeFieldType, dimGradRange >      GradientType;
+  typedef typename FunctionSpaceType :: JacobianRangeType  FluxRangeType;
 
-  typedef FieldVector< double, dimGradRange >               GradientRangeType;
-  typedef FieldMatrix< double, dimGradRange, dimDomain >    JacobianFluxRangeType;
+  typedef typename FunctionSpaceType :: DomainType DomainType;
+  typedef typename FunctionSpaceType :: RangeType  RangeType;
+
+  typedef FieldVector< RangeFieldType, dimGradRange >             GradientRangeType;
+  typedef FieldMatrix< RangeFieldType, dimGradRange, dimDomain >  JacobianFluxRangeType;
 
   typedef typename GridPart :: IntersectionIteratorType     IntersectionIterator;
   typedef typename IntersectionIterator::Intersection       Intersection;

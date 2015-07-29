@@ -36,13 +36,13 @@ namespace Dune {
     static const int dimDomain = Traits::ModelType::dimDomain ;
 
     typedef typename ModelTraits::FaceDomainType  FaceDomainType;
-    typedef Fem::FunctionSpace< ctype, double, dimDomain, dimRange >      FunctionSpaceType;
+    typedef typename ModelTraits::DomainFieldType DomainFieldType;
+    typedef typename ModelTraits::RangeFieldType  RangeFieldType;
+    typedef Fem::FunctionSpace< DomainFieldType, RangeFieldType, dimDomain, dimRange >      FunctionSpaceType;
 
     typedef typename FunctionSpaceType :: DomainType         DomainType;
     typedef typename FunctionSpaceType :: RangeType          RangeType;
     typedef typename FunctionSpaceType :: JacobianRangeType  JacobianRangeType;
-    typedef typename FunctionSpaceType :: RangeFieldType     RangeFieldType ;
-    typedef typename FunctionSpaceType :: DomainFieldType    DomainFieldType ;
 
     //static const int dimRange  = ModelTraits::dimRange;
     //static const int dimDomain = ModelTraits::dimDomain;
