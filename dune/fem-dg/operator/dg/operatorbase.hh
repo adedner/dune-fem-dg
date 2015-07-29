@@ -109,11 +109,9 @@ namespace Dune {
 #endif
     Pass1Type;
 
-    typedef typename AdvTraits::DomainType AdvDomainType;
     typedef typename AdvTraits::DiscreteFunctionSpaceType AdvDFunctionSpaceType;
     typedef typename AdvTraits::DestinationType AdvDestinationType;
 
-    typedef AdvDomainType DomainType;
     typedef AdvDFunctionSpaceType DiscreteFunctionSpaceType;
     typedef AdvDestinationType DestinationType;
 

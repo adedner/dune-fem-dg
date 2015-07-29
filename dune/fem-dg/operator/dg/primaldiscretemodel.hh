@@ -41,7 +41,6 @@ namespace Dune {
     enum { passUId = Traits :: passUId };
 
     typedef typename BaseType :: DomainType     DomainType;
-    typedef typename BaseType :: FaceDomainType FaceDomainType;
 
     typedef typename BaseType :: ModelType          ModelType ;
     typedef typename BaseType :: AdvectionFluxType  AdvectionFluxType ;
@@ -53,17 +52,17 @@ namespace Dune {
     enum { ApplyInverseMassOperator = true };
 #endif
 
-    typedef typename Traits :: GridPartType                            GridPartType;
-    typedef typename Traits :: GridType                                GridType;
-    typedef typename GridPartType :: IntersectionIteratorType          IntersectionIterator;
-    typedef typename IntersectionIterator :: Intersection              Intersection;
-    typedef typename BaseType :: EntityType                            EntityType;
-    typedef typename Traits :: RangeFieldType                          RangeFieldType;
-    typedef typename Traits :: DomainFieldType                         DomainFieldType;
-    typedef typename Traits :: RangeType                               RangeType;
-    typedef typename Traits :: JacobianRangeType                       JacobianRangeType;
+    typedef typename BaseType :: GridPartType                            GridPartType;
+    typedef typename BaseType :: GridType                                GridType;
+    typedef typename BaseType :: IntersectionIteratorType                IntersectionIteratorType;
+    typedef typename BaseType :: IntersectionType                        IntersectionType;
+    typedef typename BaseType :: EntityType                              EntityType;
+    typedef typename BaseType :: RangeFieldType                          RangeFieldType;
+    typedef typename BaseType :: DomainFieldType                         DomainFieldType;
+    typedef typename BaseType :: RangeType                               RangeType;
+    typedef typename BaseType :: JacobianRangeType                       JacobianRangeType;
 
-    typedef typename Traits :: DiscreteFunctionSpaceType DiscreteFunctionSpaceType;
+    typedef typename BaseType :: DiscreteFunctionSpaceType DiscreteFunctionSpaceType;
 
     // type of diffusion flux implementation
     typedef DGPrimalDiffusionFlux< DiscreteFunctionSpaceType, ModelType, Traits :: diffFluxId > DiffusionFluxType;
@@ -145,7 +144,7 @@ namespace Dune {
     }
 
     template <class QuadratureImp, class ArgumentTupleVector >
-    void initializeIntersection(const Intersection& it,
+    void initializeIntersection(const IntersectionType& it,
                                 const double time,
                                 const QuadratureImp& quadInner,
                                 const QuadratureImp& quadOuter,
@@ -164,7 +163,7 @@ namespace Dune {
     }
 
     template <class QuadratureImp, class ArgumentTupleVector >
-    void initializeBoundary(const Intersection& it,
+    void initializeBoundary(const IntersectionType& it,
                             const double time,
                             const QuadratureImp& quadInner,
                             const ArgumentTupleVector& uLeftVec)
@@ -175,7 +174,7 @@ namespace Dune {
         if( diffFlux_.hasLifting() )
         {
           typedef typename ArgumentTupleVector :: value_type ArgumentTuple ;
-          typedef IntersectionQuadraturePointContext< Intersection, EntityType, QuadratureImp, ArgumentTuple, ArgumentTuple > IntersectionQuadraturePointContextType;
+          typedef IntersectionQuadraturePointContext< IntersectionType, EntityType, QuadratureImp, ArgumentTuple, ArgumentTuple > IntersectionQuadraturePointContextType;
           IntersectionQuadraturePointContextType local0( it, inside(), quadInner, uLeftVec[ 0 ], uLeftVec[ 0 ], 0, time, this->enVolume() );
           const bool hasBoundaryValue = model_.hasBoundaryValue( local0 );
 
@@ -482,13 +481,12 @@ namespace Dune {
     enum { advection = returnAdvectionPart }; // true if advection is enabled
     enum { diffusion = returnDiffusionPart }; // this should be disabled for LDG
 
-    typedef typename BaseType :: DomainType      DomainType;
-    typedef typename BaseType :: FaceDomainType  FaceDomainType;
 
-    typedef typename BaseType :: Intersection        Intersection;
+    typedef typename BaseType :: IntersectionType    IntersectionType;
     typedef typename BaseType :: EntityType          EntityType;
-    typedef typename Traits :: RangeType             RangeType;
-    typedef typename Traits :: JacobianRangeType     JacobianRangeType;
+    typedef typename BaseType :: RangeType           RangeType;
+    typedef typename BaseType :: JacobianRangeType   JacobianRangeType;
+    typedef typename BaseType :: DomainType          DomainType;
 
     typedef typename Traits :: DiscreteFunctionSpaceType DiscreteFunctionSpaceType;
 

@@ -134,20 +134,19 @@ namespace Dune {
     enum { advection = returnAdvectionPart  };
     enum { evaluateJacobian = false };
 
-    // TODO: extract this from the model
-    typedef FieldVector< double, dimDomain >               DomainType;
-    typedef FieldVector< double, dimDomain-1 >             FaceDomainType;
-
-
     typedef typename Traits :: GridPartType                            GridPartType;
     typedef typename Traits :: GridType                                GridType;
-    typedef typename GridPartType :: IntersectionIteratorType          IntersectionIterator;
-    typedef typename IntersectionIterator :: Intersection              Intersection;
+    typedef typename GridPartType :: IntersectionIteratorType          IntersectionIteratorType;
+    typedef typename IntersectionIteratorType :: Intersection          IntersectionType;
     typedef typename BaseType :: EntityType                            EntityType;
-    typedef typename Traits :: RangeFieldType                          RangeFieldType;
-    typedef typename Traits :: DomainFieldType                         DomainFieldType;
-    typedef typename Traits :: RangeType                               RangeType;
-    typedef typename Traits :: JacobianRangeType                       JacobianRangeType;
+    typedef typename Traits :: FunctionSpaceType                       FunctionSpaceType;
+    typedef typename FunctionSpaceType :: RangeFieldType               RangeFieldType;
+    typedef typename FunctionSpaceType :: DomainFieldType              DomainFieldType;
+    typedef typename FunctionSpaceType :: DomainType                   DomainType;
+    typedef typename FunctionSpaceType :: RangeType                    RangeType;
+    typedef typename FunctionSpaceType :: JacobianRangeType            JacobianRangeType;
+
+    typedef typename Traits :: DiscreteFunctionSpaceType               DiscreteFunctionSpaceType;
 
     // discrete function storing the adaptation indicator information
     typedef typename Traits :: AdaptationHandlerType   AdaptationType ;
@@ -195,7 +194,7 @@ namespace Dune {
 
 
     template <class QuadratureImp, class ArgumentTupleVector >
-    void initializeIntersection(const Intersection& it,
+    void initializeIntersection(const IntersectionType& it,
                                 const double time,
                                 const QuadratureImp& quadInner,
                                 const QuadratureImp& quadOuter,
@@ -205,7 +204,7 @@ namespace Dune {
     }
 
     template <class QuadratureImp, class ArgumentTupleVector >
-    void initializeBoundary(const Intersection& it,
+    void initializeBoundary(const IntersectionType& it,
                             const double time,
                             const QuadratureImp& quadInner,
                             const ArgumentTupleVector& uLeftVec)
@@ -250,7 +249,7 @@ namespace Dune {
       {
         // returns advection wave speed
         return numflux_.numericalFlux(left, right,
-                                      left.values()[ uVar ], right.values()[ uVar ], 
+                                      left.values()[ uVar ], right.values()[ uVar ],
                                       left.jacobians()[ uVar ], right.jacobians()[ uVar ],
                                       gLeft, gRight);
       }
@@ -385,18 +384,17 @@ namespace Dune {
     typedef typename BaseType :: ModelType          ModelType;
     typedef typename BaseType :: AdvectionFluxType  AdvectionFluxType;
 
-    typedef typename BaseType :: DomainType      DomainType ;
-    typedef typename BaseType :: FaceDomainType  FaceDomainType;
 
-    typedef typename Traits :: GridPartType                            GridPartType;
-    typedef typename Traits :: GridType                                GridType;
-    typedef typename GridPartType :: IntersectionIteratorType          IntersectionIterator;
-    typedef typename IntersectionIterator :: Intersection              Intersection;
+    typedef typename BaseType :: GridPartType                          GridPartType;
+    typedef typename BaseType :: GridType                              GridType;
+    typedef typename BaseType :: IntersectionIteratorType              IntersectionIteratorType;
+    typedef typename BaseType :: IntersectionType                      IntersectionType;
     typedef typename BaseType :: EntityType                            EntityType;
-    typedef typename Traits :: RangeFieldType                          RangeFieldType;
-    typedef typename Traits :: DomainFieldType                         DomainFieldType;
-    typedef typename Traits :: RangeType                               RangeType;
-    typedef typename Traits :: JacobianRangeType                       JacobianRangeType;
+    typedef typename BaseType :: DomainType                            DomainType ;
+    typedef typename BaseType :: RangeFieldType                        RangeFieldType;
+    typedef typename BaseType :: DomainFieldType                       DomainFieldType;
+    typedef typename BaseType :: RangeType                             RangeType;
+    typedef typename BaseType :: JacobianRangeType                     JacobianRangeType;
 
     // discrete function storing the adaptation indicator information
     typedef typename Traits :: AdaptationHandlerType    AdaptationType ;

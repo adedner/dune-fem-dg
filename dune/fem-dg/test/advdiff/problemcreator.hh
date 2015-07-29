@@ -71,11 +71,6 @@ struct OperatorTraits
   static const int dimRange  = FunctionSpaceType::dimRange;
   static const int dimDomain = FunctionSpaceType::dimDomain ;
 
-  typedef typename FunctionSpaceType :: DomainType                     DomainType;
-  typedef typename FunctionSpaceType :: RangeType                      RangeType;
-  typedef typename FunctionSpaceType :: JacobianRangeType              JacobianRangeType;
-  typedef typename FunctionSpaceType :: RangeFieldType                 RangeFieldType ;
-  typedef typename FunctionSpaceType :: DomainFieldType                DomainFieldType ;
 
   typedef Dune::Fem::CachingQuadrature< GridPartType, 0 >              VolumeQuadratureType;
   typedef Dune::Fem::CachingQuadrature< GridPartType, 1 >              FaceQuadratureType;
