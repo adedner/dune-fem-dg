@@ -44,10 +44,8 @@ namespace Fem
 
     // type of Grid
     typedef Grid                                          GridType;
-
-    typedef DGAdaptiveLeafGridPart< GridType >            HostGridPartType;
-
-    typedef HostGridPartType                              GridPartType;
+    typedef typename ProblemTraits :: HostGridPartType    HostGridPartType;
+    typedef typename ProblemTraits :: GridPartType        GridPartType;
 
     typedef typename ProblemTraits::template AnalyticalTraits< HostGridPartType >  AnalyticalTraits;
     typedef typename ProblemTraits::template DiscreteTraits< HostGridPartType, polynomialOrder >  DiscreteTraits;

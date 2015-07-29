@@ -59,18 +59,9 @@ struct OperatorTraits
   static const Dune::DGDiffusionFluxIdentifier PrimalDiffusionFluxId = Dune::method_general;
 
   static const int polynomialOrder = polOrd == -1 ? 0 : polOrd;
-  // static const SolverType solverType = solverT;
 
   typedef DiscreteFunctionImp DestinationType ;
   typedef typename DestinationType :: DiscreteFunctionSpaceType  DiscreteFunctionSpaceType;
-
-  //typedef DiscreteFunctionSpaceImp                                                        DiscreteFunctionSpaceType;
-  //typedef typename DiscreteFunctions< DiscreteFunctionSpaceType, solverType > :: type     DestinationType;
-
-  //typedef typename DiscreteFunctions< DiscreteFunctionSpaceType, solverType > :: jacobian JacobianOperatorType;
-
-  //static const int dimRange  = FunctionSpaceType::dimRange;
-  //static const int dimDomain = FunctionSpaceType::dimDomain ;
 
   typedef Dune::Fem::CachingQuadrature< GridPartType, 0 >              VolumeQuadratureType;
   typedef Dune::Fem::CachingQuadrature< GridPartType, 1 >              FaceQuadratureType;
@@ -217,16 +208,19 @@ struct DiscreteFunctions< DiscreteFunctionSpaceImp, petsc >
 };
 #endif
 
-template< class GridTypeImp >
+template< class GridImp >
 struct AdvectionDiffusionProblemCreator
 {
+  typedef GridImp                                         GridType;
+  typedef Dune::Fem::DGAdaptiveLeafGridPart< GridType >   HostGridPartType;
+  typedef HostGridPartType                                GridPartType;
 
-  typedef Dune::Fem::FunctionSpace< typename GridTypeImp::ctype, double, GridTypeImp::dimension, DIMRANGE> FunctionSpaceType;
+  typedef Dune::Fem::FunctionSpace< typename GridType::ctype, double, GridType::dimension, DIMRANGE> FunctionSpaceType;
 
   // define problem type here if interface should be avoided
-    typedef Dune::EvolutionProblemInterface< FunctionSpaceType,false >      ProblemInterfaceType;
+  typedef Dune::EvolutionProblemInterface< FunctionSpaceType,false >      ProblemInterfaceType;
 
-  template< class GridPart >
+  template< class GridPart > // TODO: is this template parameter needed?
   struct AnalyticalTraits
   {
     typedef ProblemInterfaceType                                ProblemType;
@@ -263,11 +257,11 @@ struct AdvectionDiffusionProblemCreator
     return "";
   }
 
-  static inline Dune::GridPtr<GridTypeImp>
+  static inline Dune::GridPtr<GridType>
   initializeGrid()
   {
     // use default implementation
-    return Dune::Fem::DefaultGridInitializer< GridTypeImp >::initialize();
+    return Dune::Fem::DefaultGridInitializer< GridType >::initialize();
   }
 
   static ProblemInterfaceType* problem()
@@ -276,13 +270,13 @@ struct AdvectionDiffusionProblemCreator
     static const std::string probString[]  = { "heat" ,"quasi", "pulse", "sin" };
     const int probNr = Dune::Fem::Parameter::getEnum( "problem", probString, 0 );
     if( probNr == 0 )
-      return new Dune :: U0< GridTypeImp, DIMRANGE > ();
+      return new Dune :: U0< GridType, DIMRANGE > ();
     else if ( probNr == 1 )
-      return new Dune :: QuasiHeatEqnSolution< GridTypeImp, DIMRANGE > ();
+      return new Dune :: QuasiHeatEqnSolution< GridType, DIMRANGE > ();
     else if ( probNr == 2 )
-      return new Dune :: Pulse< GridTypeImp, DIMRANGE > ();
+      return new Dune :: Pulse< GridType, DIMRANGE > ();
     else if ( probNr == 3 )
-      return new Dune :: U0Sin< GridTypeImp, DIMRANGE > ();
+      return new Dune :: U0Sin< GridType, DIMRANGE > ();
     else
     {
       abort();
@@ -292,16 +286,11 @@ struct AdvectionDiffusionProblemCreator
 
 
   //Stepper Traits
-  template< class GridPart, int polOrd >
+  template< class GridPart, int polOrd > // TODO: is GridPart as a template parameter needed?
   struct DiscreteTraits
   {
 public:
-
-    typedef GridPart                                                      GridPartType;
-    typedef typename GridPartType::GridType                               GridType;
-    typedef GridPartType                                                  HostGridPartType;
-
-    typedef AnalyticalTraits< GridPartType >                              AnalyticalTraitsType;
+    typedef AnalyticalTraits< GridPartType >           AnalyticalTraitsType;
 
     static const int polynomialOrder = polOrd;
 
@@ -363,7 +352,7 @@ public:
   struct Stepper
   {
     // this should be ok but could lead to a henn-egg problem
-    typedef Dune::Fem::AdvectionDiffusionStepper< GridTypeImp, AdvectionDiffusionProblemCreator<GridTypeImp>, polOrd > Type;
+    typedef Dune::Fem::AdvectionDiffusionStepper< GridType, AdvectionDiffusionProblemCreator<GridType>, polOrd > Type;
   };
 
 
