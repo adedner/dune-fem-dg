@@ -351,27 +351,24 @@ namespace Fem
         tp.init();
 
       // for simulation new start do start adaptation
-      if( adaptive() )
+      if( adaptive() && newStart )
       {
-        if( newStart )
+        // adapt the grid to the initial data
+        for( int startCount = 0; startCount < adaptParam_.finestLevel(); ++ startCount )
         {
-          // adapt the grid to the initial data
-          for( int startCount = 0; startCount < adaptParam_.finestLevel(); ++ startCount )
+          // call initial adaptation
+          initialEstimateMarkAdapt( );
+
+          // setup problem again
+          initializeStep( tp, loop, monitor );
+
+          // get grid size (outside of verbose if)
+          UInt64Type grSize = gridSize();
+          // some info in verbose mode
+          if( verbose )
           {
-            // call initial adaptation
-            initialEstimateMarkAdapt( );
-
-            // setup problem again
-            initializeStep( tp, loop, monitor );
-
-            // get grid size (outside of verbose if)
-            UInt64Type grSize = gridSize();
-            // some info in verbose mode
-            if( verbose )
-            {
-              std::cout << "Start adaptation: step " << startCount << ",  dt = " << tp.deltaT() << ",  grid size: " << grSize
-                        << std::endl;
-            }
+            std::cout << "Start adaptation: step " << startCount << ",  dt = " << tp.deltaT() << ",  grid size: " << grSize
+                      << std::endl;
           }
         }
       }
