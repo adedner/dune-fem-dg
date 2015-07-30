@@ -123,7 +123,7 @@ namespace Fem
     public:
     typedef Dune::Fem::CheckPointer< GridImp, DataImp >   CheckPointerType;
 
-    NoCheckPointHandler( const std::string& keyPrefix = "" )
+    NoCheckPointHandler( const std::string& = "" )
     {}
 
     template< class ... Args>

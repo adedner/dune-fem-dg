@@ -241,7 +241,7 @@ namespace Fem
     // before first step, do data initialization
     void initializeStep ( TimeProviderType &tp, int loop, SolverMonitorType &monitor )
     {
-      DiscreteFunctionType& U = solution_;
+      DiscreteFunctionType& U = solution();
 
       odeSolver_.reset( this->createOdeSolver( tp ) );
       assert( odeSolver_ );
