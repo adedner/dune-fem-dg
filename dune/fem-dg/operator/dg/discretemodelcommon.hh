@@ -102,19 +102,17 @@ namespace Dune {
     enum { advection = returnAdvectionPart  };
     enum { evaluateJacobian = false };
 
-    typedef FieldVector< double, dimDomain >               DomainType;
-    typedef FieldVector< double, dimDomain-1 >             FaceDomainType;
-
-
     typedef typename Traits :: GridPartType                            GridPartType;
     typedef typename Traits :: GridType                                GridType;
     typedef typename GridPartType :: IntersectionIteratorType          IntersectionIterator;
     typedef typename IntersectionIterator :: Intersection              Intersection;
     typedef typename BaseType :: EntityType                            EntityType;
     typedef typename Traits :: RangeFieldType                          RangeFieldType;
+    typedef typename Traits :: DomainType                              DomainType;
     typedef typename Traits :: DomainFieldType                         DomainFieldType;
     typedef typename Traits :: RangeType                               RangeType;
     typedef typename Traits :: JacobianRangeType                       JacobianRangeType;
+    typedef FieldVector< DomainFieldType, dimDomain-1 >                FaceDomainType;
 
     // discrete function storing the adaptation indicator information
     typedef typename Traits :: AdaptationType   AdaptationType ;
