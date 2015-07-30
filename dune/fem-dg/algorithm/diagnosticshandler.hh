@@ -71,8 +71,8 @@ namespace Fem
   class NoDiagnosticsHandler
   {
   public:
-    template <typename ... Args>
-    void write(Args ... a) const {};
+    template <class ... Args>
+    void write( Args& ... a) const {};
 
     void finalize() const {};
   };
