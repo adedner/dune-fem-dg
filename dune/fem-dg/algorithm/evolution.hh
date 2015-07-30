@@ -284,12 +284,10 @@ namespace Fem
       // set time step size to monitor
       monitor.setTimeStepInfo( tp );
 
-      //TODO needs to be improved
-      double maxNumDofs = space().blockMapper().maxNumDofs() * space().localBlockSize;
       if( adaptParam_.adaptive() )
-        diagnosticsHandler_.write( tp, maxNumDofs, odeSolverMonitor_, overallTimer_.elapsed(), *adaptationManager_ );
+        diagnosticsHandler_.write( tp, solution(), odeSolverMonitor_, overallTimer_, *adaptationManager_ );
       else
-        diagnosticsHandler_.write( tp, maxNumDofs, odeSolverMonitor_, overallTimer_.elapsed() );
+        diagnosticsHandler_.write( tp, solution(), odeSolverMonitor_, overallTimer_ );
 
 #ifdef LOCALDEBUG
       maxRatioOfSums = std::max( maxRatioOfSums, std::abs(sum_/sum2_) );

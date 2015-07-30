@@ -16,41 +16,12 @@ namespace Fem
       : diagnostics_( true )
     {}
 
-    template< class TimeProviderImp, class OdeSolverMonitorImp >
-    void write( TimeProviderImp& tp, const OdeSolverMonitorImp& odeSolverMonitor )
-    {
-      const double nElements = odeSolverMonitor.numberOfElements_;
-      const double ldt = tp.deltaT();
-
-      std::vector<double> times(3);
-      times[0] = odeSolverMonitor.operatorTime_;
-      times[1] = odeSolverMonitor.odeSolveTime_;
-
-      diagnostics_.write( tp.time() + ldt, ldt, nElements, times );
-    }
-
-
-    template< class TimeProviderImp, class OdeSolverMonitorImp >
-    void write( TimeProviderImp& tp, const double maxNumDofs,
-                const OdeSolverMonitorImp& odeSolverMonitor )
-    {
-      const double nElements = odeSolverMonitor.numberOfElements_;
-      const double ldt = tp.deltaT();
-
-      std::vector<double> times(3);
-      times[0] = maxNumDofs;
-      times[1] = odeSolverMonitor.operatorTime_;
-      times[2] = odeSolverMonitor.odeSolveTime_;
-
-      diagnostics_.write( tp.time() + ldt, ldt, nElements, times );
-    }
-
-
-    template< class TimeProviderImp, class OdeSolverMonitorImp >
-    void write( TimeProviderImp& tp, const double maxNumDofs,
+    template< class TimeProviderImp, class DiscreteSolutionImp, class OdeSolverMonitorImp, class TimerImp >
+    void write( TimeProviderImp& tp, const DiscreteSolutionImp& solution,
                 const OdeSolverMonitorImp& odeSolverMonitor,
-                const double time )
+                const TimerImp& timer )
     {
+      double maxNumDofs = solution.space().blockMapper().maxNumDofs() * solution.space().localBlockSize;
       const double nElements = odeSolverMonitor.numberOfElements_;
       const double ldt = tp.deltaT();
 
@@ -58,17 +29,18 @@ namespace Fem
       times[0] = maxNumDofs;
       times[1] = odeSolverMonitor.operatorTime_;
       times[2] = odeSolverMonitor.odeSolveTime_;
-      times[3] = time;
+      times[3] = timer.elapsed();
 
       diagnostics_.write( tp.time() + ldt, ldt, nElements, times );
     }
 
-    template< class TimeProviderImp, class OdeSolverMonitorImp, class AdaptationManagerImp >
-    void write( TimeProviderImp& tp, const double maxNumDofs,
+    template< class TimeProviderImp, class DiscreteSolutionImp, class OdeSolverMonitorImp, class TimerImp, class AdaptationManagerImp >
+    void write( TimeProviderImp& tp, const DiscreteSolutionImp& solution,
                 const OdeSolverMonitorImp& odeSolverMonitor,
-                const double time,
+                const TimerImp& timer,
                 const AdaptationManagerImp& adaptManager )
     {
+      double maxNumDofs = solution.space().blockMapper().maxNumDofs() * solution.space().localBlockSize;
       const double nElements = odeSolverMonitor.numberOfElements_;
       const double ldt = tp.deltaT();
 
@@ -78,7 +50,7 @@ namespace Fem
       times[2] = odeSolverMonitor.odeSolveTime_;
       times[3] = adaptManager.adaptationTime();
       times[4] = adaptManager.loadBalanceTime();
-      times[5] = time;
+      times[5] = timer.elapsed();
 
       diagnostics_.write( tp.time() + ldt, ldt, nElements, times );
     }
