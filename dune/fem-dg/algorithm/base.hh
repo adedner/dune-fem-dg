@@ -210,15 +210,17 @@ namespace Fem
     typedef EvolutionAlgorithmBase< AlgorithmTraits > ThisType;
 
   public:
-    typedef typename BaseType::GridType                  GridType;
-    typedef typename BaseType::IOTupleType               IOTupleType;
-    typedef typename BaseType::SolverMonitorType         SolverMonitorType;
-    typedef GridTimeProvider< GridType >                 TimeProviderType;
+    typedef typename BaseType::GridType                           GridType;
+    typedef typename BaseType::IOTupleType                        IOTupleType;
+    typedef typename BaseType::SolverMonitorType                  SolverMonitorType;
+    typedef GridTimeProvider< GridType >                          TimeProviderType;
 
-    typedef uint64_t                                     UInt64Type ;
-    typedef StepperParameters                            StepperParametersType;
-    typedef EocParameters                                EocParametersType;
-    typedef AdaptationParameters                         AdaptationParametersType;
+    typedef uint64_t                                              UInt64Type ;
+    typedef StepperParameters                                     StepperParametersType;
+    typedef EocParameters                                         EocParametersType;
+    typedef AdaptationParameters                                  AdaptationParametersType;
+
+    typedef typename AlgorithmTraits::CheckPointHandlerType       CheckPointHandlerType;
 
     using BaseType::grid;
 
@@ -228,6 +230,7 @@ namespace Fem
         param_( StepperParametersType( Dune::ParameterKey::generate( "", "femdg.stepper." ) ) ),
         eocParam_( EocParametersType( Dune::ParameterKey::generate( "", "fem.eoc." ) ) ),
         adaptParam_( AdaptationParametersType( Dune::ParameterKey::generate( "", "fem.adaptation." ) ) ),
+        checkPointHandler_( "" ),
         timeStepTimer_( Dune::FemTimer::addTo("max time/timestep") ),
         fixedTimeStep_( param_.fixedTimeStep() )
     {}
@@ -241,19 +244,6 @@ namespace Fem
       UInt64Type grSize = grid().size( 0 );
       return grid().comm().sum( grSize );
     }
-
-    // --------- CheckPointing -----------
-    virtual bool checkPointing() const { return false; }
-    virtual bool doCheckPointRestoreData( const GridType& grid, TimeProviderType& tp ) const { return false; }
-    virtual void doCheckPointWriteData( TimeProviderType& tp ) const { }
-    void checkPointWriteData( TimeProviderType& tp ) const { if( checkPointing() ) doCheckPointWriteData( tp ); }
-    bool checkPointRestoreData( const GridType& grid, TimeProviderType& tp ) const
-    {
-      if( checkPointing() )
-        return doCheckPointRestoreData( grid, tp );
-      return false;
-    }
-    // -----------------------------------
 
     // ---------- Adaptation ------------
     virtual bool adaptive () const { return false ; }
@@ -328,7 +318,7 @@ namespace Fem
       SolverMonitorType monitor;
 
       // restoreData if checkpointing is enabled (default is disabled)
-      const bool newStart = checkPointRestoreData( grid, tp );
+      bool newStart = ( eocParam_.steps() == 1) ? checkPointHandler_.restoreData( grid, tp ) : false;
 
       // set initial data (and create ode solver)
       initializeStep( tp, loop, monitor );
@@ -380,7 +370,7 @@ namespace Fem
         writeData( tp );
 
         // possibly write check point (default is disabled)
-        checkPointWriteData( tp );
+        checkPointHandler_.writeData( grid, tp );
 
         // reset time step estimate
         tp.provideTimeStepEstimate( maxTimeStep );
@@ -479,6 +469,7 @@ namespace Fem
     StepperParametersType param_;
     EocParametersType eocParam_;
     AdaptationParametersType adaptParam_;
+    CheckPointHandlerType checkPointHandler_;
     unsigned int timeStepTimer_;
     double fixedTimeStep_;
   };

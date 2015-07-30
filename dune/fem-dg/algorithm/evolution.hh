@@ -26,6 +26,7 @@
 
 
 #include <dune/fem-dg/algorithm/diagnosticshandler.hh>
+#include <dune/fem-dg/algorithm/checkpointhandler.hh>
 
 namespace Dune
 {
@@ -39,7 +40,8 @@ namespace Fem
   template< class Grid,
             class ProblemTraits,
             int polOrder,
-            class DiagnosticsHandlerImp >
+            class DiagnosticsHandlerImp,
+            class CheckPointHandlerImp >
   struct EvolutionAlgorithmTraits
   {
     static const int polynomialOrder = polOrder;
@@ -101,6 +103,7 @@ namespace Fem
     typedef typename OdeSolverType::MonitorType                                    OdeSolverMonitorType;
 
     typedef DiagnosticsHandlerImp                                            DiagnosticsHandlerType;
+    typedef CheckPointHandlerImp                                              CheckPointHandlerType;
   };
 
 
@@ -108,11 +111,14 @@ namespace Fem
   // ------------------
 
   template< class Grid, class ProblemTraits, int polynomialOrder,
-            class DiagnosticsHandlerImp = DefaultDiagnosticsHandler >
+            class DiagnosticsHandlerImp = DefaultDiagnosticsHandler,
+            class CheckPointHandlerImp = DefaultCheckPointHandler< Grid > >
   class EvolutionAlgorithm
-    : public EvolutionAlgorithmBase< EvolutionAlgorithmTraits< Grid, ProblemTraits, polynomialOrder, DiagnosticsHandlerImp > >
+    : public EvolutionAlgorithmBase< EvolutionAlgorithmTraits< Grid, ProblemTraits, polynomialOrder,
+                                                               DiagnosticsHandlerImp, CheckPointHandlerImp > >
   {
-    typedef EvolutionAlgorithmTraits< Grid, ProblemTraits, polynomialOrder, DiagnosticsHandlerImp >    Traits;
+    typedef EvolutionAlgorithmTraits< Grid, ProblemTraits, polynomialOrder,
+                                      DiagnosticsHandlerImp, CheckPointHandlerImp >    Traits;
     typedef EvolutionAlgorithmBase< Traits >                                    BaseType;
 
   public:
@@ -158,7 +164,9 @@ namespace Fem
     typedef typename Traits::EOCErrorIDs EOCErrorIDs;
 
 
-    typedef DiagnosticsHandlerImp                   DiagnosticsHandlerType;
+    typedef DiagnosticsHandlerImp                  DiagnosticsHandlerType;
+
+    typedef CheckPointHandlerImp                   CheckPointHandlerType;
 
     typedef typename Traits::ExtraParameterTuple ExtraParameterTuple;
 
@@ -173,6 +181,7 @@ namespace Fem
     using BaseType::eocParam_;
     using BaseType::param_;
     using BaseType::limitSolution;
+    using BaseType::checkPointHandler_;
 
     EvolutionAlgorithm ( GridType &grid, const std::string name = "" )
     : BaseType( grid, name  ),
@@ -242,6 +251,9 @@ namespace Fem
       dataWriter_.reset( new DataWriterType( grid_, dataTuple_, tp,
         eocParam_.dataOutputParameters( loop, problem_->dataPrefix() ) ) );
       assert( dataWriter_ );
+
+      // register data functions to check pointer
+      checkPointHandler_.registerData( solution() );
 
       // communication is needed when blocking communication is used
       // but has to be avoided otherwise (because of implicit solver)

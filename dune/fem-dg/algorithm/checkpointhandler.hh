@@ -1,7 +1,8 @@
 #ifndef FEMDG_CHECKPOINTHANDLER_HH
-#define FEMDG_CHECKPGRIDHANDLER_HH
+#define FEMDG_CHECKPOINTHANDLER_HH
 
 #include <memory>
+#include <tuple>
 
 #include <dune/fem/misc/mpimanager.hh>
 #include <dune/fem/io/file/datawriter.hh>
@@ -15,7 +16,7 @@ namespace Fem
 {
 
 
-  template< class GridImp, class DataImp = tuple<> >
+  template< class GridImp, class DataImp = std::tuple<> >
   class DefaultCheckPointHandler
   {
 
@@ -48,24 +49,27 @@ namespace Fem
       return gridptr;
     }
 
-
-    template< class TimeProviderImp, class FirstArg, class ... Args>
-    bool restoreData( const GridImp& grid, TimeProviderImp& tp, const FirstArg& head, const Args& ... tail ) const
+    template< class FirstArg, class ... Args>
+    void registerData( FirstArg& head, Args& ... tail ) const
     {
-      addPersistentObject( head );
-      return restoreData( grid, tp, tail... );
-    };
+      if( checkPointExists(keyPrefix_) )
+      {
+        Dune::Fem::persistenceManager << head;
+        registerData( tail... );
+      }
+    }
+
+    void registerData() const
+    {}
+
 
     template< class TimeProviderImp >
     bool restoreData( const GridImp& grid, const TimeProviderImp& tp ) const
     {
-      std::string checkPointRestartFile = checkPointFile( keyPrefix_ );
-
-      // if check file is non-zero a restart is performed
-      if( checkPointRestartFile.size() > 0 )
+      if( checkPointExists(keyPrefix_) )
       {
         // restore data
-        checkPointer( grid, tp ).restoreData( grid, checkPointRestartFile );
+        checkPointer( grid, tp ).restoreData( grid, checkPointFile( keyPrefix_ ) );
         return false;
       }
       return true;
@@ -107,51 +111,39 @@ namespace Fem
       return *checkPointer_;
     }
 
-    template< class ObjImp >
-    void addPersistentObject( const ObjImp& obj ) const
-    {
-      Dune::Fem::persistenceManager << obj;
-    }
-
     mutable std::unique_ptr< CheckPointerType > checkPointer_;
     const std::string keyPrefix_;
 
   };
 
 
-  template< class GridImp, class DataImp = tuple<> >
+  template< class GridImp, class DataImp = std::tuple<> >
   class NoCheckPointHandler
   {
     public:
     typedef Dune::Fem::CheckPointer< GridImp, DataImp >   CheckPointerType;
 
-    NoCheckPointHandler()
+    NoCheckPointHandler( const std::string& keyPrefix = "" )
     {}
 
     template< class ... Args>
-    static bool checkPointExists( const Args& ... args )
-    {
-      return false;
-    }
+    static bool checkPointExists( const Args& ... ) {return false;}
 
     template< class ... Args>
-    static Dune::GridPtr< GridImp > restoreGrid( const Args& ... args )
+    static Dune::GridPtr< GridImp > restoreGrid( const Args& ... )
     {
       Dune::GridPtr< GridImp > gridptr;
       return gridptr;
     }
 
     template< class ... Args>
-    bool restoreData( const Args& ... args ) const
-    {
-      return false;
-    }
+    void registerData( Args& ... ) const {}
 
     template< class ... Args>
-    bool writeData( const Args& ... args ) const
-    {
-      return false;
-    }
+    bool restoreData( const Args& ... ) const { return false;}
+
+    template< class ... Args>
+    bool writeData( const Args& ... ) const { return false; }
 
   };
 
