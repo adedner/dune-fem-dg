@@ -74,7 +74,8 @@ namespace Fem
     template <class ... Args>
     void write( Args& ... a) const {};
 
-    void finalize() const {};
+    template <class ... Args>
+    void finalize(Args& ... a) const {};
   };
 
 }

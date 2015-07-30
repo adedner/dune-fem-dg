@@ -10,7 +10,7 @@
 #include <dune/fem/misc/femtimer.hh>
 #include <dune/fem-dg/misc/parameterkey.hh>
 
-#include <dune/fem-dg/algorithm/checkpointinitializer.hh>
+#include <dune/fem-dg/algorithm/checkpointhandler.hh>
 
 namespace Dune
 {
@@ -18,10 +18,10 @@ namespace Fem
 {
 
   template< class GridImp,
-            class CheckPointInitializerImp = DefaultCheckPointInitializer< GridImp > >
+            class CheckPointHandlerImp = DefaultCheckPointHandler< GridImp > >
   class DefaultGridInitializer
   {
-    typedef CheckPointInitializerImp  CheckPointInitializerType;
+    typedef CheckPointHandlerImp  CheckPointHandlerType;
     public:
 
     static Dune::GridPtr< GridImp > initialize( const std::string name = "" )
@@ -35,18 +35,8 @@ namespace Fem
       // grid pointer object
       Dune::GridPtr< GridImp > gridptr;
 
-      if( CheckPointInitializerType::checkPointExists() )
-      {
-        if( 0 == Dune::Fem::MPIManager :: rank () )
-        {
-          std::cout << std::endl;
-          std::cout << "********************************************************" << std::endl;
-          std::cout << "**   Restart from checkpoint `" << CheckPointInitializerType::checkPointFile() << "' " << std::endl;
-          std::cout << "********************************************************" << std::endl;
-          std::cout << std::endl;
-        }
-        gridptr = CheckPointInitializerType::restoreGrid();
-      }
+      if( CheckPointHandlerType::checkPointExists("") )
+        gridptr = CheckPointHandlerType::restoreGrid("");
       else  // normal new start
       {
         // ----- read in runtime parameters ------
