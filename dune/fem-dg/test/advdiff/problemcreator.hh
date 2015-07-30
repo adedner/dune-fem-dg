@@ -315,6 +315,8 @@ public:
 
     typedef std::tuple<> ExtraParameterTuple;
 
+    typedef std::tuple< DiscreteFunctionType*, DiscreteFunctionType* > IOTupleType;
+
 private:
     typedef Dune::Fem::FunctionSpace< typename GridType::ctype, double, AnalyticalTraitsType::ModelType::dimDomain, 3> FVFunctionSpaceType;
     typedef Dune::Fem::FiniteVolumeSpace<FVFunctionSpaceType,GridPartType, 0, Dune::Fem::SimpleStorage> IndicatorSpaceType;

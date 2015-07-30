@@ -27,6 +27,8 @@
 
 #include <dune/fem-dg/algorithm/diagnosticshandler.hh>
 #include <dune/fem-dg/algorithm/checkpointhandler.hh>
+#include <dune/fem-dg/algorithm/datawriterhandler.hh>
+#include <dune/fem-dg/algorithm/additionaloutputhandler.hh>
 
 namespace Dune
 {
@@ -41,7 +43,9 @@ namespace Fem
             class ProblemTraits,
             int polOrder,
             class DiagnosticsHandlerImp,
-            class CheckPointHandlerImp >
+            class CheckPointHandlerImp,
+            class DataWriterHandlerImp,
+            class AdditionalOutputHandlerImp >
   struct EvolutionAlgorithmTraits
   {
     static const int polynomialOrder = polOrder;
@@ -76,6 +80,7 @@ namespace Fem
     typedef typename DiscreteTraits::OperatorTraitsType            OperatorTraits;
 
     typedef typename DiscreteTraits::ExtraParameterTuple           ExtraParameterTuple;
+    typedef typename DiscreteTraits::IOTupleType                   IOTupleType;
 
     // wrap operator
     //typedef typename DgHelmHoltzOperatorType::JacobianOperatorType JacobianOperatorType;
@@ -85,9 +90,6 @@ namespace Fem
 
     typedef typename DiscreteTraits::BasicLinearSolverType         BasicLinearSolverType;
     typedef typename DiscreteTraits::RestrictionProlongationType   RestrictionProlongationType;
-
-    // type of IOTuple
-    typedef Dune::tuple< DiscreteFunctionType * >                  IOTupleType;
 
     typedef SolverMonitor<1>                                       SolverMonitorType;
 
@@ -103,7 +105,9 @@ namespace Fem
     typedef typename OdeSolverType::MonitorType                                    OdeSolverMonitorType;
 
     typedef DiagnosticsHandlerImp                                            DiagnosticsHandlerType;
-    typedef CheckPointHandlerImp                                              CheckPointHandlerType;
+    typedef CheckPointHandlerImp                                             CheckPointHandlerType;
+    typedef DataWriterHandlerImp                                             DataWriterHandlerType;
+    typedef AdditionalOutputHandlerImp                                       AdditionalOutputHandlerType;
   };
 
 
@@ -112,13 +116,16 @@ namespace Fem
 
   template< class Grid, class ProblemTraits, int polynomialOrder,
             class DiagnosticsHandlerImp = DefaultDiagnosticsHandler,
-            class CheckPointHandlerImp = DefaultCheckPointHandler< Grid > >
+            class CheckPointHandlerImp = DefaultCheckPointHandler< Grid >,
+            class DataWriterHandlerImp = DefaultDataWriterHandler< Grid, typename ProblemTraits::template DiscreteTraits< typename ProblemTraits::HostGridPartType, polynomialOrder >::IOTupleType >, /*TODO: Gurke entfernen */
+            class AdditionalOutputHandlerImp = NoAdditionalOutputHandler >
   class EvolutionAlgorithm
     : public EvolutionAlgorithmBase< EvolutionAlgorithmTraits< Grid, ProblemTraits, polynomialOrder,
-                                                               DiagnosticsHandlerImp, CheckPointHandlerImp > >
+                                                               DiagnosticsHandlerImp, CheckPointHandlerImp,
+                                                               DataWriterHandlerImp, AdditionalOutputHandlerImp > >
   {
     typedef EvolutionAlgorithmTraits< Grid, ProblemTraits, polynomialOrder,
-                                      DiagnosticsHandlerImp, CheckPointHandlerImp >    Traits;
+                                      DiagnosticsHandlerImp, CheckPointHandlerImp, DataWriterHandlerImp, AdditionalOutputHandlerImp >    Traits;
     typedef EvolutionAlgorithmBase< Traits >                                    BaseType;
 
   public:
@@ -163,10 +170,10 @@ namespace Fem
     // error handling
     typedef typename Traits::EOCErrorIDs EOCErrorIDs;
 
-
     typedef DiagnosticsHandlerImp                  DiagnosticsHandlerType;
-
     typedef CheckPointHandlerImp                   CheckPointHandlerType;
+    typedef DataWriterHandlerImp                   DataWriterHandlerType;
+    typedef AdditionalOutputHandlerImp             AdditionalOutputHandlerType;
 
     typedef typename Traits::ExtraParameterTuple ExtraParameterTuple;
 
@@ -182,6 +189,7 @@ namespace Fem
     using BaseType::param_;
     using BaseType::limitSolution;
     using BaseType::checkPointHandler_;
+    using BaseType::dataWriterHandler_;
 
     EvolutionAlgorithm ( GridType &grid, const std::string name = "" )
     : BaseType( grid, name  ),
@@ -192,12 +200,12 @@ namespace Fem
       model_( *problem_ ),
       adaptationHandler_(),
       diagnosticsHandler_(),
+      additionalOutputHandler_( space_ ),
       overallTimer_(),
       eocIds_( AnalyticalTraits::initEoc() ),
       odeSolver_(),
       rp_( solution_ ),
-      adaptationManager_(),
-      dataWriter_()
+      adaptationManager_()
     {
       // set refine weight
       rp_.setFatherChildWeight( Dune::DGFGridInfo<GridType> :: refineWeight() );
@@ -220,16 +228,8 @@ namespace Fem
 
     IOTupleType dataTuple ()
     {
-      return IOTupleType( &solution_ );
-    }
-
-
-    void writeData ( TimeProviderType &tp, const bool writeAnyway = false )
-    {
-      if( dataWriter_ && dataWriter_->willWrite( tp ) )
-      {
-        dataWriter_->write( tp );
-      }
+      IOTupleType test = std::tuple_cat( std::make_tuple( &solution_ ), std::make_tuple( &solution_ ) );
+      return test; //std::tuple_cat( std::make_tuple( &solution_ ), additionalOutputHandler_.result() );
     }
 
     //! returns data prefix for EOC loops ( default is loop )
@@ -246,11 +246,7 @@ namespace Fem
       odeSolver_.reset( this->createOdeSolver( tp ) );
       assert( odeSolver_ );
 
-      // copy data tuple
-      dataTuple_ = dataTuple();
-      dataWriter_.reset( new DataWriterType( grid_, dataTuple_, tp,
-        eocParam_.dataOutputParameters( loop, problem_->dataPrefix() ) ) );
-      assert( dataWriter_ );
+      dataWriterHandler_.init( tp, dataTuple(), eocParam_.dataOutputParameters( loop, problem_->dataPrefix() ) );
 
       // register data functions to check pointer
       checkPointHandler_.registerData( solution() );
@@ -329,7 +325,6 @@ namespace Fem
 
       // delete ode solver
       odeSolver_.reset();
-      dataWriter_.reset();
       adaptationHandler_.reset();
     }
 
@@ -416,6 +411,7 @@ namespace Fem
     // Initial flux for advection discretization (UpwindFlux)
     std::unique_ptr< AdaptationHandlerType >  adaptationHandler_;
     DiagnosticsHandlerType diagnosticsHandler_;
+    AdditionalOutputHandlerType additionalOutputHandler_;
 
     Dune::Timer             overallTimer_;
     double                  odeSolve_;
@@ -428,8 +424,7 @@ namespace Fem
 
     std::unique_ptr< AdaptationManagerType >  adaptationManager_;
 
-    IOTupleType             dataTuple_ ;
-    std::unique_ptr< DataWriterType >         dataWriter_ ;
+    IOTupleType             dataTuple_;
   };
 
 } // namespace Fem

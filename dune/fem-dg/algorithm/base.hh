@@ -221,6 +221,7 @@ namespace Fem
     typedef AdaptationParameters                                  AdaptationParametersType;
 
     typedef typename AlgorithmTraits::CheckPointHandlerType       CheckPointHandlerType;
+    typedef typename AlgorithmTraits::DataWriterHandlerType       DataWriterHandlerType;
 
     using BaseType::grid;
 
@@ -231,6 +232,7 @@ namespace Fem
         eocParam_( EocParametersType( Dune::ParameterKey::generate( "", "fem.eoc." ) ) ),
         adaptParam_( AdaptationParametersType( Dune::ParameterKey::generate( "", "fem.adaptation." ) ) ),
         checkPointHandler_( "" ),
+        dataWriterHandler_( grid, "" ),
         timeStepTimer_( Dune::FemTimer::addTo("max time/timestep") ),
         fixedTimeStep_( param_.fixedTimeStep() )
     {}
@@ -257,11 +259,6 @@ namespace Fem
     void doEstimateMarkAdapt( const IndicatorOperator& dgIndicator,
                               GradientIndicator& gradientIndicator,
                               const bool initialAdaptation = false ){}
-    // -----------------------------------
-
-    // ---------- DataWriter ---------------
-    //! write data, this should be overloaded in the derived implementation (default does nothing)
-    virtual void writeData ( TimeProviderType &tp, const bool reallyWrite = false ) {}
     // -----------------------------------
 
     virtual bool checkDofsValid( TimeProviderType& tp, const int loop  ) const { return true; }
@@ -367,7 +364,7 @@ namespace Fem
       for( ; tp.time() < endTime; )
       {
         // write data for current time
-        writeData( tp );
+        dataWriterHandler_.writeData( tp );
 
         // possibly write check point (default is disabled)
         checkPointHandler_.writeData( grid, tp );
@@ -402,7 +399,7 @@ namespace Fem
         // Check that no NAN have been generated
         if( !checkDofsValid( tp, loop ) )
         {
-          writeData( tp, true );
+          dataWriterHandler_.writeData( tp, true );
           std::abort();
         }
 
@@ -447,7 +444,7 @@ namespace Fem
       } /****** END of time loop *****/
 
       // write last time step
-      writeData( tp, true );
+      dataWriterHandler_.writeData( tp, true );
 
       // finalize eoc step
       finalizeStep( tp );
@@ -470,6 +467,7 @@ namespace Fem
     EocParametersType eocParam_;
     AdaptationParametersType adaptParam_;
     CheckPointHandlerType checkPointHandler_;
+    DataWriterHandlerType dataWriterHandler_;
     unsigned int timeStepTimer_;
     double fixedTimeStep_;
   };
