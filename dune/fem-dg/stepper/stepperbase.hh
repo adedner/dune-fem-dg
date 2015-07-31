@@ -122,9 +122,6 @@ struct StepperBase
 
   using BaseType :: grid_ ;
   using BaseType :: limitSolution ;
-  using BaseType :: adaptParam_ ;
-  using BaseType :: eocParam_;
-  using BaseType :: param_;
 
   // constructor taking grid
   StepperBase(GridType& grid, const std::string name = "" ) :
@@ -186,10 +183,12 @@ struct StepperBase
     return IOTupleType( &solution_, additionalVariables_, indicator() );
   }
 
+  /*
   bool checkDofsValid ( TimeProviderType& tp, const int loop ) const
   {
     return solution_.dofsValid();
   }
+  */
 
   void writeData( TimeProviderType& tp, const bool writeAnyway = false )
   {
@@ -208,7 +207,7 @@ struct StepperBase
     problem().postProcessTimeStep( grid_, solution(), tp.time() );
   }
 
-  bool adaptive () const { return adaptParam_.adaptive(); }
+  bool adaptive () const { return false; }
 
   // function creating the ode solvers
   virtual OdeSolverType* createOdeSolver( TimeProviderType& ) = 0;
@@ -291,10 +290,10 @@ struct StepperBase
     {
       // copy data tuple
       dataTuple_ = dataTuple () ;
-      dataWriter_ = new DataWriterType( grid_, dataTuple_, tp,
-        eocParam_.dataOutputParameters( loop, problem_->dataPrefix() ) );
+      //dataWriter_ = new DataWriterType( grid_, dataTuple_, tp ); //,
+      //  eocParam_.dataOutputParameters( loop, problem_->dataPrefix() ) );
+      //assert( dataWriter_ );
     }
-    assert( dataWriter_ );
 
     typedef typename InitialDataType :: TimeDependentFunctionType
       TimeDependentFunctionType;
@@ -358,7 +357,8 @@ struct StepperBase
 
   inline double error(TimeProviderType& tp, DiscreteFunctionType& u)
   {
-    const int order = eocParam_.quadOrder() < 0 ? 2*u.space().order()+4 : eocParam_.quadOrder();
+    // const int order = eocParam_.quadOrder() < 0 ? 2*u.space().order()+4 : eocParam_.quadOrder();
+    const int order = 2*u.space().order()+4 ;
     Fem :: L2Norm< GridPartType > l2norm( u.space().gridPart(), order );
     return l2norm.distance( problem().fixedTimeFunction( tp.time() ), u );
   }
@@ -421,7 +421,7 @@ protected:
                             GradientIndicator& gradientIndicator,
                             const bool initialAdaptation = false )
   {
-    if( adaptParam_.adaptive() )
+    if( adaptive() )
     {
       // get grid sequence before adaptation
       const int sequence = space().sequence();
@@ -434,6 +434,7 @@ protected:
         // do marking and adaptation
         adaptationHandler_->adapt( adaptationManager(), initialAdaptation );
       }
+/*
       else if( adaptParam_.gradientBasedIndicator() )
       {
         gradientIndicator.estimateAndMark( solution_ );
@@ -444,7 +445,7 @@ protected:
         // marking has been done by limiter
         adaptationManager().adapt();
       }
-
+*/
       // if grid has changed then limit solution again
       if( sequence != space().sequence() )
       {

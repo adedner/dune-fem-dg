@@ -71,18 +71,16 @@ struct AdvectionDiffusionStepper
   using BaseType :: space;
   using BaseType :: problem;
   using BaseType :: adaptationHandler_ ;
-  using BaseType :: adaptParam_;
   using BaseType :: adaptive ;
   using BaseType :: doEstimateMarkAdapt ;
-  using BaseType :: name ;
 
   AdvectionDiffusionStepper( GridType& grid, const std::string name = "" ) :
     BaseType( grid, name ),
     dgOperator_( gridPart_, problem(), name  ),
     dgAdvectionOperator_( gridPart_, problem(), name ),
     dgDiffusionOperator_( gridPart_, problem(), name ),
-    dgIndicator_( gridPart_, problem(), name ),
-    gradientIndicator_( space(), problem(), adaptParam_ )
+    dgIndicator_( gridPart_, problem(), name )
+    // gradientIndicator_( space(), problem(), adaptParam_ )
   {
   }
 
@@ -104,11 +102,8 @@ struct AdvectionDiffusionStepper
     }
 
     // one of them is not zero,
-    size_t advSize     = dgAdvectionOperator_.numberOfElements();
-    size_t diffSize    = dgDiffusionOperator_.numberOfElements();
-    size_t dgIndSize   = gradientIndicator_.numberOfElements();
     size_t dgSize      = dgOperator_.numberOfElements();
-    UInt64Type grSize  = std::max( std::max(advSize, dgSize ), std::max( diffSize, dgIndSize ) );
+    UInt64Type grSize  = dgSize; // std::max( std::max(advSize, dgSize ), std::max( diffSize, dgIndSize ) );
     double minMax[ 2 ] = { double(grSize), 1.0/double(grSize) } ;
     grid_.comm().max( &minMax[ 0 ], 2 );
     if( Dune::Fem::Parameter :: verbose () )
@@ -123,7 +118,7 @@ struct AdvectionDiffusionStepper
     // create adaptation handler in case of apost indicator
     if( adaptive() )
     {
-      if( ! adaptationHandler_ && adaptParam_.aposterioriIndicator() )
+      if( ! adaptationHandler_ ) // && adaptParam_.aposterioriIndicator() )
       {
         adaptationHandler_ = new AdaptationHandlerType( grid_, tp );
         dgIndicator_.setAdaptation( *adaptationHandler_ );
@@ -135,20 +130,19 @@ struct AdvectionDiffusionStepper
                               LinearInverseOperatorType > OdeSolverImpl;
     return new OdeSolverImpl( tp, dgOperator_,
                               dgAdvectionOperator_,
-                              dgDiffusionOperator_,
-                              name() );
+                              dgDiffusionOperator_ );
   }
 
   //! estimate and mark solution
   virtual void initialEstimateMarkAdapt( )
   {
-    doEstimateMarkAdapt( dgIndicator_, gradientIndicator_, true );
+    // doEstimateMarkAdapt( dgIndicator_, gradientIndicator_, true );
   }
 
   //! estimate and mark solution
   virtual void estimateMarkAdapt( )
   {
-    doEstimateMarkAdapt( dgIndicator_, gradientIndicator_, false );
+    // doEstimateMarkAdapt( dgIndicator_, gradientIndicator_, false );
   }
 
   const ModelType& model() const { return dgOperator_.model(); }
@@ -158,6 +152,6 @@ protected:
   ExplicitOperatorType    dgAdvectionOperator_;
   ImplicitOperatorType    dgDiffusionOperator_;
   DGIndicatorType         dgIndicator_;
-  GradientIndicatorType   gradientIndicator_;
+  //GradientIndicatorType   gradientIndicator_;
 };
 #endif // FEMHOWTO_STEPPER_HH

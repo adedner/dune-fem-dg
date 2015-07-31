@@ -79,6 +79,9 @@ public:
     static solverpair_t
     createImplicitSolver( Op& op, Fem::TimeProviderBase& tp, const int rkSteps, const OdeParameter& param, const std::string& name = "" )
     {
+#ifdef COUNT_FLOPS
+      return solverpair_t();
+#else
       typedef Dune::Fem::DGHelmholtzOperator< Op >  HelmholtzOperatorType;
       HelmholtzOperatorType* helmOp = new HelmholtzOperatorType( op );
 
@@ -92,6 +95,7 @@ public:
       typedef typename NonlinearInverseOperatorType::ParametersType NonlinParametersType;
 
       return solverpair_t(new ImplicitOdeSolverType( *helmOp, tp, rkSteps, param, NonlinParametersType( ParameterKey::generate( name, "fem.solver.newton." ) ) ), helmOp );
+#endif
     }
 
     template < class ExplOp, class ImplOp, class OdeParameter >
@@ -99,6 +103,9 @@ public:
     createSemiImplicitSolver( ExplOp& explOp, ImplOp& implOp, Fem::TimeProviderBase& tp,
                               const int rkSteps, const OdeParameter& param, const std::string& name = "" )
     {
+#ifdef COUNT_FLOPS
+      return solverpair_t();
+#else
       typedef Dune::Fem::DGHelmholtzOperator< ImplOp >  HelmholtzOperatorType;
       HelmholtzOperatorType* helmOp = new HelmholtzOperatorType( implOp );
 
@@ -114,6 +121,7 @@ public:
 
 
       return solverpair_t(new SemiImplicitOdeSolverType( explOp, *helmOp, tp, rkSteps, param, NonlinParametersType( ParameterKey::generate( name, "fem.solver.newton." ) ) ), helmOp );
+#endif
     }
 
   };
@@ -153,7 +161,7 @@ public:
 
   };
 
-  static const bool useParDGSolvers = true ;
+  static const bool useParDGSolvers = false ;
   typedef OdeSolverSelection< OperatorType, DestinationType, useParDGSolvers >  OdeSolversType ;
 
   using BaseType :: solve;

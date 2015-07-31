@@ -25,7 +25,11 @@ class EulerAnalyticalFlux
 {
  public:
   enum { e = dimDomain+1 };
+#ifdef COUNT_FLOPS
+  typedef Dune::Fem::Double FieldType;
+#else
   typedef double FieldType;
+#endif
   typedef Dune :: FieldVector< FieldType, dimDomain> DomainType;
 
   template <class RangeType, class FluxRangeType>
@@ -48,7 +52,7 @@ class EulerAnalyticalFlux
     assert(u[0]>1e-10);
     const FieldType rhoe = rhoeps(u);
     assert( rhoe>1e-10 );
-    return (gamma-1)*rhoe;
+    return (gamma-1.0)*rhoe;
   }
 
   template <class RangeType>
