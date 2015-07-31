@@ -72,10 +72,10 @@ namespace Fem
   {
   public:
     template <class ... Args>
-    void write( Args& ... ) const {};
+    void write( Args&& ... ) const {};
 
     template <class ... Args>
-    void finalize(Args& ... ) const {};
+    void finalize(Args&& ... ) const {};
   };
 
 }

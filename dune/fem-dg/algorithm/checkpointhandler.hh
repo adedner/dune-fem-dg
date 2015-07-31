@@ -19,10 +19,9 @@ namespace Fem
   template< class GridImp, class DataImp = std::tuple<> >
   class DefaultCheckPointHandler
   {
-
-    public:
     typedef Dune::Fem::CheckPointer< GridImp, DataImp >   CheckPointerType;
 
+    public:
     DefaultCheckPointHandler( const std::string keyPrefix = "" )
       : checkPointer_(),
         keyPrefix_( keyPrefix )
@@ -116,34 +115,33 @@ namespace Fem
 
   };
 
-
-  template< class GridImp, class DataImp = std::tuple<> >
+  template< class GridImp>
   class NoCheckPointHandler
   {
     public:
-    typedef Dune::Fem::CheckPointer< GridImp, DataImp >   CheckPointerType;
 
-    NoCheckPointHandler( const std::string& = "" )
+    template< class ... Args >
+    NoCheckPointHandler( Args&& ... )
     {}
 
     template< class ... Args>
-    static bool checkPointExists( const Args& ... ) {return false;}
+    static bool checkPointExists( Args&& ... ) {return false;}
 
     template< class ... Args>
-    static Dune::GridPtr< GridImp > restoreGrid( const Args& ... )
+    static Dune::GridPtr< GridImp > restoreGrid( Args&& ... )
     {
       Dune::GridPtr< GridImp > gridptr;
       return gridptr;
     }
 
     template< class ... Args>
-    void registerData( Args& ... ) const {}
+    void registerData( Args&& ... ) const {}
 
     template< class ... Args>
-    bool restoreData( const Args& ... ) const { return false;}
+    bool restoreData( Args&& ... ) const { return false;}
 
     template< class ... Args>
-    bool writeData( const Args& ... ) const { return false; }
+    bool writeData( Args&& ... ) const { return false; }
 
   };
 

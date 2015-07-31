@@ -68,13 +68,19 @@ namespace Fem
   };
 
 
-  template< class GridImp, class DataImp = std::tuple<> >
   class NoDataWriterHandler
   {
+    public:
 
-    NoDataWriterHandler( const std::string& keyPrefix = "" )
+    template< class ... Args >
+    NoDataWriterHandler( Args&& ... )
     {}
 
+    template< class ... Args >
+    void init( Args&& ...  ) {}
+
+    template< class ... Args >
+    void writeData( Args&& ...  ) {}
 
   };
 

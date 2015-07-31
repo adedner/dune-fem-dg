@@ -19,6 +19,7 @@ namespace Dune
 namespace Fem
 {
 
+  //TODO: Improve class and make it more flexible
   template< class ConsDiscreteFunctionImp, class PrimDiscreteFunctionImp >
   class Cons2PrimCalculator
   {
@@ -112,15 +113,15 @@ namespace Fem
     typedef std::tuple<>                   TupleType;
 
     template< class ... Args >
-    NoAdditionalOutputHandler( Args& ... )
+    NoAdditionalOutputHandler( Args&& ... )
     {}
 
     template< class ... Args >
-    void setup( Args&... )
+    void setup( Args&&... )
     {}
 
     template< class ... Args >
-    TupleType& result( Args&... )
+    TupleType& result( Args&&... )
     {
       return tuple_;
     }
