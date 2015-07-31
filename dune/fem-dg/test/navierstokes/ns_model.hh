@@ -31,19 +31,20 @@ class NSModelTraits
   enum { dimGradRange = dimRange * dimDomain };
   enum { dimGradient = dimDomain + 1 };
 
-  typedef Fem :: FunctionSpace< double, double, dimDomain, dimRange > FunctionSpaceType ;
+  typedef typename ProblemType :: FunctionSpaceType FunctionSpaceType;
 
   typedef typename FunctionSpaceType :: DomainType         DomainType ;
   typedef typename FunctionSpaceType :: DomainFieldType    DomainFieldType ;
+  typedef typename FunctionSpaceType :: RangeFieldType     RangeFieldType ;
   typedef FieldVector< DomainFieldType, dimDomain - 1 >    FaceDomainType;
   typedef typename FunctionSpaceType :: RangeType          RangeType ;
 
-  typedef FieldVector< double, dimGradRange >               GradientType;
+  typedef FieldVector< DomainFieldType, dimGradRange >               GradientType;
   typedef typename FunctionSpaceType :: JacobianRangeType  JacobianRangeType;
   typedef JacobianRangeType                                FluxRangeType;
 
-  typedef FieldVector< double, dimGradRange >               GradientRangeType;
-  typedef FieldMatrix< double, dimGradRange, dimDomain >    JacobianFluxRangeType;
+  typedef FieldVector< DomainFieldType, dimGradRange >               GradientRangeType;
+  typedef FieldMatrix< DomainFieldType, dimGradRange, dimDomain >    JacobianFluxRangeType;
 
   typedef typename GridPart :: IntersectionIteratorType     IntersectionIterator;
   typedef typename IntersectionIterator::Intersection       Intersection;

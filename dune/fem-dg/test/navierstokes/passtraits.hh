@@ -38,7 +38,7 @@ namespace Dune {
     //typedef Fem::ElementQuadrature< GridPartType, 1 >                     FaceQuadratureType;
 
     // Allow generalization to systems
-    typedef Fem::FunctionSpace< ctype, double, dimDomain, dimRange >      FunctionSpaceType;
+    typedef Fem::FunctionSpace< ctype, ctype, dimDomain, dimRange >      FunctionSpaceType;
 #ifdef LEGENDREBASIS
 #warning "Using Legendre basis functions"
     typedef Fem::LegendreDiscontinuousGalerkinSpace< FunctionSpaceType,
@@ -51,7 +51,7 @@ namespace Dune {
                                         Fem::CachingStorage >             DiscreteFunctionSpaceType;
 #else
 #warning "Using standard modal basis functions"
-    typedef Fem::DiscontinuousGalerkinSpace< Fem::FunctionSpace< ctype, double, dimDomain, 1 >,
+    typedef Fem::DiscontinuousGalerkinSpace< Fem::FunctionSpace< ctype, ctype, dimDomain, 1 >,
                                              GridPartType, polOrd, Fem::CachingStorage >        ContainedSpaceType;
     typedef Fem::CombinedSpace< ContainedSpaceType, dimRange, Fem::VariableBased > DiscreteFunctionSpaceType;
 #endif
@@ -59,7 +59,7 @@ namespace Dune {
     //typedef Fem::PetscDiscreteFunction< DiscreteFunctionSpaceType >    DestinationType;
 
     // Indicator for Limiter
-    typedef Fem::FunctionSpace< ctype, double, dimDomain, 3> FVFunctionSpaceType;
+    typedef Fem::FunctionSpace< ctype, ctype, dimDomain, 3> FVFunctionSpaceType;
     typedef Fem::FiniteVolumeSpace<FVFunctionSpaceType,GridPartType, 0, Fem::SimpleStorage> IndicatorSpaceType;
     typedef Fem::AdaptiveDiscreteFunction<IndicatorSpaceType> IndicatorType;
 

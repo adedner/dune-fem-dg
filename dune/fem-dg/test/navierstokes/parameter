@@ -48,7 +48,8 @@ Re: 1. #(Reynold's number)
 Pr: 0.72 # 0.72 #(Prandtl's number)
 femhowto.startTime: 0. # s
 femhowto.endTime: 0.1
-femhowto.eocSteps: 5
+femdg.stepper.endtime: 0.1
+fem.eoc.steps: 2
 
 gammaGNS: 0.5
 omegaGNS: 1.

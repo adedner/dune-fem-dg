@@ -26,14 +26,19 @@ namespace Dune {
 
 template <class GridType>
 class NSWaves : public EvolutionProblemInterface<
-                  Dune::Fem::FunctionSpace< double, double, GridType::dimension, GridType::dimension + 2 >,
+                  Dune::Fem::FunctionSpace< typename GridType::ctype,
+                                            typename GridType::ctype,
+                                            //double,
+                                            GridType::dimension, GridType::dimension + 2 >,
                   true >,
                 public Thermodynamics< GridType::dimensionworld >
 {
   NSWaves( const NSWaves& );
   public:
   typedef Fem::FunctionSpace<typename GridType::ctype,
-                             double, GridType::dimensionworld,
+                             typename GridType::ctype,
+                             // double,
+                             GridType::dimensionworld,
                              GridType::dimensionworld + 2 > FunctionSpaceType ;
 
   typedef Fem::Parameter  ParameterType ;
@@ -140,14 +145,14 @@ class NSWaves : public EvolutionProblemInterface<
 
 protected:
   const std::string myName_;
-  const double omegaGNS_;
-  const double kGNS_;
-  const double gammaGNS_;
+  const DomainFieldType omegaGNS_;
+  const DomainFieldType kGNS_;
+  const DomainFieldType gammaGNS_;
   const double endTime_;
-  const double mu_;
-  const double k_;
-  const double A_;
-  const double B_;
+  const DomainFieldType mu_;
+  const DomainFieldType k_;
+  const DomainFieldType A_;
+  const DomainFieldType B_;
 };
 
 
@@ -229,13 +234,13 @@ inline double NSWaves<GridType>
   res *= Amplitude;
   */
 
-  double sumX = 0;
+  DomainFieldType sumX = 0;
   for( int i=0; i< dimension; ++i ) sumX += x[i];
-  const double beta = kGNS_ * sumX - omegaGNS_*t;
-  const double cosBeta = std::cos( beta );
-  const double sinBeta = std::sin( beta );
-  const double sin2BetaGamma = std::sin( 2.*beta ) * gammaGNS_;
-  const double sinGammaKappa = sin2BetaGamma * kGNS_ * (gamma() - 1.);
+  const DomainFieldType beta = kGNS_ * sumX - omegaGNS_*t;
+  const DomainFieldType cosBeta = std::cos( beta );
+  const DomainFieldType sinBeta = std::sin( beta );
+  const DomainFieldType sin2BetaGamma = std::sin( 2.*beta ) * gammaGNS_;
+  const DomainFieldType sinGammaKappa = sin2BetaGamma * kGNS_ * (gamma() - 1.);
 
   res[0] = gammaGNS_*( cosBeta * ( dimension * kGNS_ - omegaGNS_) );
   res[1] = gammaGNS_*( cosBeta * A_ + sinGammaKappa );
@@ -287,11 +292,11 @@ inline void NSWaves<GridType>
   res[ energyId ] *= res[ 0 ];
   */
 
-  double sumX = 0;
+  DomainFieldType sumX = 0;
   for( int i=0; i< dimension; ++i ) sumX += x[i];
-  const double beta = kGNS_ * sumX - omegaGNS_*t;
-  const double sinBeta = std::sin( beta );
-  const double sinGamma2 = sinBeta * gammaGNS_ + 2.;
+  const DomainFieldType beta = kGNS_ * sumX - omegaGNS_*t;
+  const DomainFieldType sinBeta = std::sin( beta );
+  const DomainFieldType sinGamma2 = sinBeta * gammaGNS_ + 2.;
 
   for(int i=0; i<energyId; ++i)
   {
