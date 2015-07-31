@@ -51,7 +51,7 @@ class NSModelTraits
   typedef Intersection       IntersectionType;
   typedef typename GridPartType :: template Codim<0> :: EntityType  EntityType;
 
-  typedef Thermodynamics< dimDomain >                       ThermodynamicsType;
+  typedef typename ProblemType :: ThermodynamicsType   ThermodynamicsType;
 
   typedef MinModLimiter< DomainFieldType > LimiterFunctionType;
 };
@@ -79,6 +79,7 @@ class NSModel : public DefaultModel < NSModelTraits< GridPartType, ProblemImp > 
 
   typedef typename Traits :: DomainType                     DomainType;
   typedef typename Traits :: RangeType                      RangeType;
+  typedef typename Traits :: RangeFieldType                 RangeFieldType;
   typedef typename Traits :: GradientRangeType              GradientRangeType;
   typedef typename Traits :: JacobianRangeType              JacobianRangeType;
   typedef typename Traits :: JacobianFluxRangeType          JacobianFluxRangeType;
@@ -300,8 +301,8 @@ class NSModel : public DefaultModel < NSModelTraits< GridPartType, ProblemImp > 
     abort();
     DomainType xgl=it.intersectionGlobal().global(x);
     const typename Traits :: DomainType normal = it.integrationOuterNormal(x);
-    double p;
-    double T;
+    RangeFieldType p;
+    RangeFieldType T;
     pressAndTemp( uLeft, p, T );
     gLeft = 0;
 
@@ -385,7 +386,7 @@ class NSModel : public DefaultModel < NSModelTraits< GridPartType, ProblemImp > 
     nsFlux_.diffusion( u, jac, diff );
   }
 
-  inline void pressAndTemp( const RangeType& u, double& p, double& T ) const
+  inline void pressAndTemp( const RangeType& u, RangeFieldType& p, RangeFieldType& T ) const
   {
     thermodynamics_.pressAndTempEnergyForm( u, p, T );
   }

@@ -11,10 +11,11 @@
 
 fem.prefix: data
 fem.io.datafileprefix: NS
+fem.io.outputformat: vtk-cell
 fem.io.savestep: 0.01 # SaveStep (write data every `saveStep' time period, <=0 deactivates)
 fem.io.savecount: -1 # SaveCount (write data every saveCount time steps, <=0 deactivates)
+femdg.stepper.printcount: 1000
 
-femhowto.printCount: 1
 
 femhowto.additionalvariables: false
 
@@ -49,7 +50,7 @@ Pr: 0.72 # 0.72 #(Prandtl's number)
 femhowto.startTime: 0. # s
 femhowto.endTime: 0.1
 femdg.stepper.endtime: 0.1
-fem.eoc.steps: 2
+fem.eoc.steps: 1
 
 gammaGNS: 0.5
 omegaGNS: 1.

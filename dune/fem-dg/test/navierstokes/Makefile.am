@@ -18,11 +18,11 @@ SOURCES12 = $(BASEDIR)/main.cc $(BASEDIR)/main_1.cc $(BASEDIR)/main_2.cc
 #GRIDTYPE = ALUGRID_SIMPLEX
 #GRIDTYPE=PARALLELGRID_ALUGRID_CUBE
 #GRIDTYPE=PARALLELGRID_ALUGRID_SIMPLEX
-#GRIDTYPE=SPGRID_COUNT_FLOPS
+GRIDTYPE=SPGRID_COUNT_FLOPS
 #GRIDTYPE=SPGRID
 #GRIDTYPE=CARTESIANGRID_ALUGRID_CUBE
-# GRIDTYPE = ALUGRID_CUBE
-GRIDTYPE=YASPGRID
+#GRIDTYPE = ALUGRID_CUBE
+#GRIDTYPE=YASPGRID
 #GRIDTYPE = YASPGRID
 GRIDDIM=2
 POLORDER=2
@@ -31,7 +31,6 @@ PROBLEM = 2 # check ./problemtype.hh
 FLUX = 1 # check ./problemcreator.hh
 
 DIFFFLUX=PRIMALDG
-VTK=1
 #DIFFFLUX=FLUXDG
 
 # INFO SPACE OPERATOR:
@@ -44,7 +43,7 @@ VTK=1
 #     1. define LIMITER to limit the advection part of the solution (not checked)
 AM_CPPFLAGS = $(USE_OMP) -I../../problems/nseq  $(ALL_PKG_CPPFLAGS) -DGRIDDIM=$(GRIDDIM) \
               -DPROBLEM=$(PROBLEM) -D$(GRIDTYPE) $(DUNEMPICPPFLAGS) \
-              -DFLUX=$(FLUX) -DUSE_VTKWRITER=$(VTK) -D$(DIFFFLUX) -DCOUNT_FLOPS # -DLEGENDREBASIS # -DWBPROBLEM -DWELLBALANCE
+              -DFLUX=$(FLUX) -D$(DIFFFLUX) -DLEGENDREBASIS -DCOUNT_FLOPS # -DLEGENDREBASIS # -DWBPROBLEM -DWELLBALANCE
 AM_LDFLAGS = $(ALL_PKG_LDFLAGS) $(LAPACK_LDFLAGS) $(USE_OMP)
 
 EXTRA_PROGRAMS = nseq nseq12
@@ -65,14 +64,17 @@ EXTRA_DIST = parameter
 CLEANFILES = manager.*.log 
 
 PROG=nseqonep
+# width of SIMD unit (usually 2 or 4)
+SIMDWIDTH=4
+
 # codegeneration 
 generatecode:
 	$(MAKE) -i clean
-	$(MAKE) CODEGEN_OBJFILE=  CXXFLAGS="-g -Wall -Wfatal-errors -DBASEFUNCTIONSET_CODEGEN_GENERATE" $(PROG)
+	$(MAKE) CXXFLAGS="-g -Wall -Wfatal-errors -DBASEFUNCTIONSET_CODEGEN_GENERATE -DCODEGEN_SIMD_WIDTH=$(SIMDWIDTH)" $(PROG)
 	$(MAKE) generate
 
 generate:
-	./$(PROG) femhowto.eocSteps:1 femhowto.maximaltimesteps:1 fem.io.outputformat:none fem.ode.order:1 parameter 
+	./$(PROG) fem.eoc.steps:1 fem.io.outputformat:none fem.ode.order:1 parameter 
 
 compilecode:
 	$(MAKE) clean 
