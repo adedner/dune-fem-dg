@@ -71,9 +71,9 @@ public:
 
   //! stiff source term
   virtual inline double stiffSource( const DomainType& arg,
-                              const double time,
-                              const RangeType& u,
-                              RangeType& res) const
+                                     const double time,
+                                     const RangeType& u,
+                                     RangeType& res) const
   {
     abort();
     res = 0;
@@ -82,9 +82,9 @@ public:
 
   //! non stiff source term
   virtual inline double nonStiffSource( const DomainType& arg,
-                                 const double time,
-                                 const RangeType& u,
-                                 RangeType& res) const
+                                        const double time,
+                                        const RangeType& u,
+                                        RangeType& res) const
   {
     abort();
     res = 0;
