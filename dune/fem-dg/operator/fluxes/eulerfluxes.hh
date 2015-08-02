@@ -833,6 +833,9 @@ public:
     visc *= viscpara;
     gLeft -= visc;
 
+#if 0
+
+#if 0
     if (useGForce_>0)
     {
       gLeft *= (1.-useGForce_);
@@ -846,6 +849,8 @@ public:
                         uStar, anaflux );
       anaflux.usmv( 2.*useGForce_, normal, gLeft );
     }
+#endif
+
     gLeft *= 0.5*len;
 
     gRight = gLeft;
@@ -873,6 +878,24 @@ public:
 
     gLeft[dimDomain]  -= 0.25*normal[dimDomain-1]*( g*z*rhoJump )*len;
     gRight[dimDomain] += 0.25*normal[dimDomain-1]*( g*z*rhoJump )*len;
+#endif
+#else
+    RangeType average = uLeft;
+    average += uRight;
+    average *= 0.5;
+    RangeType fjump;
+    anafluxR.mv( normal, fjump );
+    anafluxL.mmv( normal, fjump );
+    fjump *= 0.5;
+    fjump *= 1./viscpara; // 0.06;
+    gLeft = average;
+    gLeft -= fjump;
+    gLeft *= len;
+
+    model_.advection( inside, time, faceQuadInner.point( quadPoint ),
+                      gLeft, anafluxL );
+    anafluxL.mv( normal, gLeft );
+    gRight = gLeft;
 #endif
 
     return maxspeed * len;

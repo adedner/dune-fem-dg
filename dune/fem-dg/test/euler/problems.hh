@@ -175,7 +175,7 @@ public:
 
     const double cos_tmp = cos(tmp * M_PI) + 1.0;
     double pert = (tmp > 1.0)? 0.5: 0.25 * cos_tmp*cos_tmp + 0.5;
-    pert *= 0.02;
+    pert *= 0.2;
 
     res[0] = 1.0 ; // pert
     double p = 0.3 + pert;
