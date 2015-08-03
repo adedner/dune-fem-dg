@@ -1,6 +1,6 @@
 #ifndef DUNE_CDGPRIMALOPERATOR_HH
 #define DUNE_CDGPRIMALOPERATOR_HH
-
+#if 0
 //- Dune includes
 #include <dune/common/typetraits.hh>
 #include <dune/common/timer.hh>
@@ -14,7 +14,7 @@
 #include <dune/fem-dg/pass/ellipticmodelcaller.hh>
 
 #include <dune/fem/solver/timeprovider.hh>
-#include <dune/fem/misc/boundaryidentifier.hh>
+//#include <dune/fem/misc/boundaryidentifier.hh>
 #include <dune/fem/solver/oemsolver/preconditioning.hh>
 
 #include <dune/fem/space/combinedspace.hh>
@@ -179,7 +179,7 @@ namespace Dune {
     typedef typename MatrixObjectType::MatrixType MatrixType;
     typedef typename MatrixObjectType::PreconditionMatrixType PreconditionMatrixType;
 
-    typedef typename DiscreteModelType :: BoundaryIdentifierType BoundaryIdentifierType;
+   // typedef typename DiscreteModelType :: BoundaryIdentifierType BoundaryIdentifierType;
 
     typedef FieldMatrix< RangeFieldType, dimDomain, dimDomain> FluxRangeType;
     typedef FieldVector< FluxRangeType , dimRange > CoeffMatrixType;
@@ -1289,11 +1289,11 @@ protected:
         RangeType boundaryValue(0.0);
 
         // call boundary value function
-        BoundaryIdentifierType bndType =
+        //BoundaryIdentifierType bndType =
           caller_.boundaryValue(nit, faceQuadInner, l, boundaryValue);
 
         // only Dirichlet and Neumann Boundary supported right now
-        assert( bndType.isDirichletType() || bndType.isNeumannType() );
+        //assert( bndType.isDirichletType() || bndType.isNeumannType() );
 
         ///////////////////////////////
         //  evaluate coefficients
@@ -1334,7 +1334,7 @@ protected:
 
 #if USE_COMPACT_LDG
         // only add compact LDG values on dicrichlet boundary
-        if( hasLifting() && ! spc_.continuous() && bndType.isDirichletType() )
+        if( hasLifting() && ! spc_.continuous() /*&& bndType.isDirichletType()*/ )
         {
           addCompactDG = true;
           GradRangeType& tmp = rRets_[0];
@@ -1398,7 +1398,7 @@ protected:
         // if not Babuska-Zlamal method, add boundary terms
         {
           // only change right hand side if exists
-          if( bndType.isDirichletNonZero() && rhs_ )
+          if( /*bndType.isDirichletNonZero() &&*/ rhs_ )
           {
             // fill right hand side
             for(int k=0; k<numDofs; ++k)
@@ -1412,7 +1412,7 @@ protected:
           }
 
           // only on non Neumann type boundaries
-          if( matrixEnPtr && bndType.isDirichletType() )
+          if( matrixEnPtr /*&& bndType.isDirichletType()*/ )
           {
             // fill matrix entries
             for(int dk=0; dk<numDiffDofs; ++dk)
@@ -1445,7 +1445,7 @@ protected:
 
         // dirichlet boundary values for u
         // only change right hand side if exists
-        if(bndType.isNeumannNonZero() && rhs_ )
+        /*if(bndType.isNeumannNonZero() && rhs_ )
         {
           // fill right hand side
           for(int dk=0; dk<numDiffDofs; ++dk)
@@ -1460,12 +1460,12 @@ protected:
               singleRhs[k] += rhsVal;
             }
           }
-        }
+        }*/
 
         if( hasPenaltyTerm )
         {
           // stabilization
-          if( matrixEnPtr && bndType.isDirichletType() )
+          if( matrixEnPtr /*&& bndType.isDirichletType()*/ )
           {
             // fill matrix entries
             // fill matrix entries
@@ -1488,7 +1488,7 @@ protected:
 
             // dirichlet boundary values for u
             // only change right hand side if exists
-            if(bndType.isDirichletNonZero() && rhs_ )
+            if(/*bndType.isDirichletNonZero() &&*/ rhs_ )
             {
               // fill right hand side
               for (int dj = 0; dj < numDiffDofs; ++dj)
@@ -2863,4 +2863,5 @@ protected:
 #undef DG_DOUBLE_FEATURE
 #undef USE_COMPACT_LDG
 } // end namespace Dune
+#endif
 #endif

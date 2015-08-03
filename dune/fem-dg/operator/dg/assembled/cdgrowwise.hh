@@ -1,6 +1,6 @@
 #ifndef DUNE_CDGROWWISEOPERATOR_HH
 #define DUNE_CDGROWWISEOPERATOR_HH
-
+#if 0
 #include <dune/fem/operator/matrix/spmatrix.hh>
 #include <dune/fem-dg/operator/dg/assembled/rowwisematrix.hh>
 #include <dune/fem-dg/operator/dg/assembled/cdgprimaloperator.hh>
@@ -316,4 +316,5 @@ namespace Dune {
     };
   };
 } // end namespace Dune
+#endif
 #endif

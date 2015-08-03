@@ -1,6 +1,6 @@
 #ifndef DUNE_ROWWISEMATRIX_HH
 #define DUNE_ROWWISEMATRIX_HH
-
+#if 0
 //- system includes
 #include <stack>
 #include <dune/fem/operator/matrix/istlmatrix.hh>
@@ -461,4 +461,5 @@ public:
 
 
 } // end namespace Dune
+#endif
 #endif
