@@ -17,6 +17,7 @@
 #include <dune/fem/io/file/datawriter.hh>
 
 #include <dune/fem-dg/operator/adaptation/utility.hh>
+#include <dune/fem-dg/misc/parameterkey.hh>
 
 typedef Dune::Fem::Parameter  ParameterType ;
 
