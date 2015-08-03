@@ -7,8 +7,10 @@
 #include <dune/fem/quadrature/cachingquadrature.hh>
 #include <dune/fem/space/discontinuousgalerkin.hh>
 #include <dune/fem/space/finitevolume.hh>
+#include <dune/fem/operator/common/stencil.hh>
 
 #include <dune/fem-dg/operator/adaptation/adaptation.hh>
+#include <dune/fem-dg/operator/fluxes/diffusionflux.hh>
 
 namespace Dune {
 
