@@ -1,6 +1,8 @@
 #ifndef PARAMETERKEY_HH
 #define PARAMETERKEY_HH
 
+#include <string>
+
 namespace Dune
 {
   /**
