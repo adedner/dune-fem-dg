@@ -1,18 +1,6 @@
 #ifndef FEMDG_UPWIND_FLUX_HH
 #define FEMDG_UPWIND_FLUX_HH
 
-#include <dune/fem/version.hh>
-#include <dune/fem/misc/fmatrixconverter.hh>
-#include <dune/fem/io/parameter.hh>
-
-
-#include <dune/fem-dg/operator/limiter/limitpass.hh>
-
-// local includes
-#include <dune/fem-dg/models/defaultmodel.hh>
-#include <dune/fem-dg/pass/dgpass.hh>
-
-
 /**
  * @brief defines the advective flux
  */
