@@ -1,68 +1,71 @@
 #ifndef FEMDG_UPWIND_FLUX_HH
 #define FEMDG_UPWIND_FLUX_HH
 
-/**
- * @brief defines the advective flux
- */
-template <class ModelType>
-class UpwindFlux {
-public:
-  typedef ModelType Model;
-  typedef typename Model::Traits Traits;
-  enum { dimRange = Model::dimRange };
-  typedef typename Model :: DomainType DomainType;
-  typedef typename Model :: RangeType RangeType;
-  typedef typename Model :: JacobianRangeType JacobianRangeType;
-  typedef typename Model :: FluxRangeType FluxRangeType;
-  typedef typename Model :: DiffusionRangeType DiffusionRangeType;
-  typedef typename Model :: FaceDomainType  FaceDomainType;
-  typedef typename Model :: EntityType  EntityType;
-  typedef typename Model :: IntersectionType  IntersectionType;
 
-public:
+namespace Dune
+{
   /**
-   * @brief Constructor
+   * @brief defines the advective flux
    */
-  UpwindFlux(const Model& mod) : model_(mod) {}
+  template <class ModelType>
+  class UpwindFlux {
+  public:
+    typedef ModelType Model;
+    typedef typename Model::Traits Traits;
+    enum { dimRange = Model::dimRange };
+    typedef typename Model :: DomainType DomainType;
+    typedef typename Model :: RangeType RangeType;
+    typedef typename Model :: JacobianRangeType JacobianRangeType;
+    typedef typename Model :: FluxRangeType FluxRangeType;
+    typedef typename Model :: DiffusionRangeType DiffusionRangeType;
+    typedef typename Model :: FaceDomainType  FaceDomainType;
+    typedef typename Model :: EntityType  EntityType;
+    typedef typename Model :: IntersectionType  IntersectionType;
 
-  static std::string name () { return "UpwindFlux"; }
+  public:
+    /**
+     * @brief Constructor
+     */
+    UpwindFlux(const Model& mod) : model_(mod) {}
 
-  const Model& model() const {return model_;}
+    static std::string name () { return "UpwindFlux"; }
 
-  /**
-   * @brief evaluates the flux \f$g(u,v)\f$
-   *
-   * @return maximum wavespeed * normal
-   */
-  template <class LocalEvaluation>
-  inline double numericalFlux( const LocalEvaluation& left,
-                               const LocalEvaluation& right,
-                               const RangeType& uLeft,
-                               const RangeType& uRight,
-                               const JacobianRangeType& jacLeft,
-                               const JacobianRangeType& jacRight,
-                               RangeType& gLeft,
-                               RangeType& gRight ) const
-  {
-    const FaceDomainType& x = left.localPoint();
+    const Model& model() const {return model_;}
 
-    // get normal from intersection
-    const DomainType normal = left.intersection().integrationOuterNormal(x);
+    /**
+     * @brief evaluates the flux \f$g(u,v)\f$
+     *
+     * @return maximum wavespeed * normal
+     */
+    template <class LocalEvaluation>
+    inline double numericalFlux( const LocalEvaluation& left,
+                                 const LocalEvaluation& right,
+                                 const RangeType& uLeft,
+                                 const RangeType& uRight,
+                                 const JacobianRangeType& jacLeft,
+                                 const JacobianRangeType& jacRight,
+                                 RangeType& gLeft,
+                                 RangeType& gRight ) const
+    {
+      const FaceDomainType& x = left.localPoint();
 
-    // get velocity
-    const DomainType v = model_.velocity( left );
-    const double upwind = normal * v;
+      // get normal from intersection
+      const DomainType normal = left.intersection().integrationOuterNormal(x);
 
-    if (upwind>0)
-      gLeft = uLeft;
-    else
-      gLeft = uRight;
-    gLeft *= upwind;
-    gRight = gLeft;
-    return std::abs(upwind);
-  }
-protected:
-  const Model& model_;
-};
+      // get velocity
+      const DomainType v = model_.velocity( left );
+      const double upwind = normal * v;
 
+      if (upwind>0)
+        gLeft = uLeft;
+      else
+        gLeft = uRight;
+      gLeft *= upwind;
+      gRight = gLeft;
+      return std::abs(upwind);
+    }
+  protected:
+    const Model& model_;
+  };
+}
 #endif

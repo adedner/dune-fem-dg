@@ -1,77 +1,81 @@
 #ifndef FEMDG_LLFADVFLUX_FLUX_HH
 #define FEMDG_LLFADVFLUX_FLUX_HH
 
-template <class ModelType>
-class LLFAdvFlux
+
+namespace Dune
 {
-public:
-  typedef ModelType Model;
-  typedef typename Model::Traits Traits;
-  enum { dimRange = Model::dimRange };
-  typedef typename Model :: DomainType          DomainType;
-  typedef typename Model :: RangeType           RangeType;
-  typedef typename Model :: JacobianRangeType   JacobianRangeType;
-  typedef typename Model :: FluxRangeType       FluxRangeType;
-  typedef typename Model :: FaceDomainType      FaceDomainType;
-  typedef typename Model :: EntityType          EntityType;
-  typedef typename Model :: IntersectionType    IntersectionType;
-  /**
-   * @brief Constructor
-   */
-  LLFAdvFlux(const Model& mod) : model_(mod) {}
 
-  static std::string name () { return "LaxFriedrichsFlux"; }
-
-  const Model& model() const {return model_;}
-
-  template <class LocalEvaluation>
-  inline double numericalFlux( const LocalEvaluation& left,
-                               const LocalEvaluation& right,
-                               const RangeType& uLeft,
-                               const RangeType& uRight,
-                               const JacobianRangeType& jacLeft,
-                               const JacobianRangeType& jacRight,
-                               RangeType& gLeft,
-                               RangeType& gRight ) const
+  template <class ModelType>
+  class LLFAdvFlux
   {
-    const FaceDomainType& x = left.localPoint();
-    DomainType normal = left.intersection().integrationOuterNormal(x);
-    const double len = normal.two_norm();
-    normal *= 1./len;
+  public:
+    typedef ModelType Model;
+    typedef typename Model::Traits Traits;
+    enum { dimRange = Model::dimRange };
+    typedef typename Model :: DomainType          DomainType;
+    typedef typename Model :: RangeType           RangeType;
+    typedef typename Model :: JacobianRangeType   JacobianRangeType;
+    typedef typename Model :: FluxRangeType       FluxRangeType;
+    typedef typename Model :: FaceDomainType      FaceDomainType;
+    typedef typename Model :: EntityType          EntityType;
+    typedef typename Model :: IntersectionType    IntersectionType;
+    /**
+     * @brief Constructor
+     */
+    LLFAdvFlux(const Model& mod) : model_(mod) {}
 
-    RangeType visc;
-    FluxRangeType anaflux;
+    static std::string name () { return "LaxFriedrichsFlux"; }
 
-    model_.advection( left, uLeft, jacLeft, anaflux );
+    const Model& model() const {return model_;}
 
-    // set gLeft
-    anaflux.mv( normal, gLeft );
+    template <class LocalEvaluation>
+    inline double numericalFlux( const LocalEvaluation& left,
+                                 const LocalEvaluation& right,
+                                 const RangeType& uLeft,
+                                 const RangeType& uRight,
+                                 const JacobianRangeType& jacLeft,
+                                 const JacobianRangeType& jacRight,
+                                 RangeType& gLeft,
+                                 RangeType& gRight ) const
+    {
+      const FaceDomainType& x = left.localPoint();
+      DomainType normal = left.intersection().integrationOuterNormal(x);
+      const double len = normal.two_norm();
+      normal *= 1./len;
 
-    model_.advection( right, uRight, jacRight, anaflux );
-    anaflux.umv( normal, gLeft );
+      RangeType visc;
+      FluxRangeType anaflux;
 
-    double maxspeedl, maxspeedr, maxspeed;
-    double viscparal, viscparar, viscpara;
+      model_.advection( left, uLeft, jacLeft, anaflux );
 
-    model_.maxSpeed( left,  normal, uLeft,  viscparal, maxspeedl );
-    model_.maxSpeed( right, normal, uRight, viscparar, maxspeedr );
+      // set gLeft
+      anaflux.mv( normal, gLeft );
 
-    maxspeed = (maxspeedl > maxspeedr) ? maxspeedl : maxspeedr;
-    viscpara = (viscparal > viscparar) ? viscparal : viscparar;
+      model_.advection( right, uRight, jacRight, anaflux );
+      anaflux.umv( normal, gLeft );
 
-    visc = uRight;
-    visc -= uLeft;
-    visc *= viscpara;
-    gLeft -= visc;
+      double maxspeedl, maxspeedr, maxspeed;
+      double viscparal, viscparar, viscpara;
 
-    gLeft *= 0.5*len;
-    gRight = gLeft;
+      model_.maxSpeed( left,  normal, uLeft,  viscparal, maxspeedl );
+      model_.maxSpeed( right, normal, uRight, viscparar, maxspeedr );
 
-    return maxspeed;
-  }
-protected:
-  const Model& model_;
-};
+      maxspeed = (maxspeedl > maxspeedr) ? maxspeedl : maxspeedr;
+      viscpara = (viscparal > viscparar) ? viscparal : viscparar;
 
+      visc = uRight;
+      visc -= uLeft;
+      visc *= viscpara;
+      gLeft -= visc;
 
+      gLeft *= 0.5*len;
+      gRight = gLeft;
+
+      return maxspeed;
+    }
+  protected:
+    const Model& model_;
+  };
+
+}
 #endif
