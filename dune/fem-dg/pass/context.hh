@@ -3,6 +3,8 @@
 
 #include <cassert>
 #include <vector>
+#include <dune/fem/common/typeindexedtuple.hh>
+
 
 namespace Dune
 {
