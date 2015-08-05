@@ -183,7 +183,9 @@ namespace Fem
     virtual IOTupleType dataTuple() = 0;
 
     // solve the problem for eoc loop 'loop' and return statistics
-    virtual SolverMonitorType solve ( const int loop ) = 0;
+    virtual void solve ( const int loop ) = 0;
+
+    virtual SolverMonitorType& monitor() = 0;
 
     //! finalize problem, i.e. calculated EOC ...
     virtual void finalize ( const int eocloop ) = 0;
@@ -199,278 +201,6 @@ namespace Fem
   };
 
 
-  // EvolutionAlgorithmBase
-  // ----------------------
-
-  template< class AlgorithmTraits >
-  class EvolutionAlgorithmBase
-    : public AlgorithmBase< AlgorithmTraits >
-  {
-    typedef AlgorithmBase< AlgorithmTraits > BaseType;
-    typedef EvolutionAlgorithmBase< AlgorithmTraits > ThisType;
-
-  public:
-    typedef typename BaseType::GridType                           GridType;
-    typedef typename BaseType::IOTupleType                        IOTupleType;
-    typedef typename BaseType::SolverMonitorType                  SolverMonitorType;
-    typedef GridTimeProvider< GridType >                          TimeProviderType;
-
-    typedef uint64_t                                              UInt64Type ;
-    typedef StepperParameters                                     StepperParametersType;
-    typedef EocParameters                                         EocParametersType;
-    typedef AdaptationParameters                                  AdaptationParametersType;
-
-    typedef typename AlgorithmTraits::CheckPointHandlerType       CheckPointHandlerType;
-    typedef typename AlgorithmTraits::DataWriterHandlerType       DataWriterHandlerType;
-
-    using BaseType::grid;
-
-    //! constructor
-    EvolutionAlgorithmBase ( GridType &grid, const std::string algorithmName = "" )
-      : BaseType( grid, algorithmName ),
-        param_( StepperParametersType( Dune::ParameterKey::generate( "", "femdg.stepper." ) ) ),
-        eocParam_( EocParametersType( Dune::ParameterKey::generate( "", "fem.eoc." ) ) ),
-        adaptParam_( AdaptationParametersType( Dune::ParameterKey::generate( "", "fem.adaptation." ) ) ),
-        checkPointHandler_( "" ),
-        dataWriterHandler_( grid, "" ),
-        timeStepTimer_( Dune::FemTimer::addTo("max time/timestep") ),
-        fixedTimeStep_( param_.fixedTimeStep() )
-    {}
-
-    // return grid width of grid (overload in derived classes)
-    virtual double gridWidth() const { return 0.0; }
-
-    // return size of grid
-    virtual UInt64Type gridSize() const
-    {
-      UInt64Type grSize = grid().size( 0 );
-      return grid().comm().sum( grSize );
-    }
-
-    // ---------- Adaptation ------------
-    virtual bool adaptive () const { return false ; }
-    //! estimate and mark cell for refinement/coarsening (default does nothing)
-    virtual void estimateMarkAdapt( ) { }
-    //! initial estimate and mark cell for refinement/coarsening
-    //! the default redirects to estimateMarkAdapt
-    virtual void initialEstimateMarkAdapt( ) { estimateMarkAdapt( ); }
-
-    template <class IndicatorOperator, class GradientIndicator>
-    void doEstimateMarkAdapt( const IndicatorOperator& dgIndicator,
-                              GradientIndicator& gradientIndicator,
-                              const bool initialAdaptation = false ){}
-    // -----------------------------------
-
-    virtual bool checkDofsValid( TimeProviderType& tp, const int loop  ) const { return true; }
-
-    //! initialize method for time loop, i.e. L2-project initial data
-    virtual void initializeStep( TimeProviderType &tp, const int loop, SolverMonitorType &monitor ) = 0;
-
-    //! solve one time step
-    virtual void step( TimeProviderType &tp, SolverMonitorType &monitor ) = 0;
-
-    //! call limiter if necessary
-    virtual void limitSolution () {}
-
-    //! finalize this EOC loop and possibly calculate EOC ...
-    virtual void finalizeStep( TimeProviderType &tp ) = 0;
-
-    //! default time loop implementation, overload for changes in derived classes !!!
-    virtual SolverMonitorType solve ( const int loop )
-    {
-      // get start and end time from parameter file
-      const double startTime = param_.startTime();
-      const double endTime   = param_.endTime();
-
-      // Initialize TimeProvider
-      TimeProviderType tp( startTime, this->grid() );
-
-      // call solve implementation taking start and end time
-      return solve( loop, tp, endTime );
-    }
-
-    //! default time loop implementation, overload for changes in derived classes !!!
-    virtual SolverMonitorType solve ( const int loop, TimeProviderType& tp, const double endTime  )
-    {
-      // get grid reference
-      GridType& grid = this->grid();
-
-      // verbosity
-      const bool verbose = Fem::Parameter::verbose ();
-      // print info on each printCount step
-      const int printCount = param_.printCount();
-
-      double maxTimeStep = param_.maxTimeStep();
-
-  #ifdef BASEFUNCTIONSET_CODEGEN_GENERATE
-      // in codegen modus make endTime large and only compute one timestep
-      // const double endTime = startTime + 1e8;
-      const int maximalTimeSteps = 1;
-  #else
-      // if this variable is set then only maximalTimeSteps timesteps will be computed
-      const int maximalTimeSteps = param_.maximalTimeSteps();
-  #endif
-
-      // create monitor object (initialize all varialbes)
-      SolverMonitorType monitor;
-
-      // restoreData if checkpointing is enabled (default is disabled)
-      bool newStart = ( eocParam_.steps() == 1) ? checkPointHandler_.restoreData( grid, tp ) : false;
-
-      // set initial data (and create ode solver)
-      initializeStep( tp, loop, monitor );
-
-      // start first time step with prescribed fixed time step
-      // if it is not 0 otherwise use the internal estimate
-      tp.provideTimeStepEstimate(maxTimeStep);
-
-      // adjust fixed time step with timeprovider.factor()
-      const double fixedTimeStep = fixedTimeStep_/tp.factor() ;
-
-      if ( fixedTimeStep > 1e-20 )
-        tp.init( fixedTimeStep );
-      else
-        tp.init();
-
-      // for simulation new start do start adaptation
-      if( adaptive() && newStart )
-      {
-        // adapt the grid to the initial data
-        for( int startCount = 0; startCount < adaptParam_.finestLevel(); ++ startCount )
-        {
-          // call initial adaptation
-          initialEstimateMarkAdapt( );
-
-          // setup problem again
-          initializeStep( tp, loop, monitor );
-
-          // get grid size (outside of verbose if)
-          UInt64Type grSize = gridSize();
-          // some info in verbose mode
-          if( verbose )
-          {
-            std::cout << "Start adaptation: step " << startCount << ",  dt = " << tp.deltaT() << ",  grid size: " << grSize
-                      << std::endl;
-          }
-        }
-      }
-
-      // true if last time step should match end time
-      const bool stopAtEndTime =  param_.stopAtEndTime();
-
-      //******************************
-      //*  Time Loop                 *
-      //******************************
-      for( ; tp.time() < endTime; )
-      {
-        // write data for current time
-        dataWriterHandler_.writeData( tp );
-
-        // possibly write check point (default is disabled)
-        checkPointHandler_.writeData( grid, tp );
-
-        // reset time step estimate
-        tp.provideTimeStepEstimate( maxTimeStep );
-
-        // current time step size
-        const double deltaT = tp.deltaT();
-
-        // current time step number
-        const int timeStep  = tp.timeStep();
-
-        //************************************************
-        //* Compute an ODE timestep                      *
-        //************************************************
-        Dune::FemTimer::start( timeStepTimer_ );
-
-        if( adaptive() )
-        {
-          // grid adaptation (including marking of elements)
-          if( timeStep % adaptParam_.adaptCount() == 0 )
-            estimateMarkAdapt();
-        }
-
-        // perform the solve for one time step, i.e. solve ODE
-        step( tp, monitor );
-
-        // stop FemTimer for this time step
-        Dune::FemTimer::stop(timeStepTimer_,Dune::FemTimer::max);
-
-        // Check that no NAN have been generated
-        if( !checkDofsValid( tp, loop ) )
-        {
-          dataWriterHandler_.writeData( tp, true );
-          std::abort();
-        }
-
-        if( (printCount > 0) && (((timeStep+1) % printCount) == 0))
-        {
-          UInt64Type grSize = gridSize();
-          if( grid.comm().rank() == 0 )
-          {
-            std::cout << "step: " << timeStep << "  time = " << tp.time()+tp.deltaT() << ", dt = " << deltaT
-                      <<",  grid size: " << grSize << ", elapsed time: ";
-            Dune::FemTimer::print(std::cout,timeStepTimer_);
-            std::cout << ",  Newton: " << *monitor.newton_iterations
-                      << "  ILS: " << *monitor.ils_iterations
-                      << "  OC: " << *monitor.operator_calls << std::endl;
-
-          }
-        }
-
-        // next advance should not exceed endtime
-        if( stopAtEndTime )
-          tp.provideTimeStepEstimate( (endTime - tp.time()) );
-
-        // next time step is prescribed by fixedTimeStep
-        if ( fixedTimeStep > 1e-20 )
-          tp.next( fixedTimeStep );
-        else
-          tp.next();
-
-        // for debugging and codegen only
-        if( tp.timeStep() >= maximalTimeSteps )
-        {
-          if( Fem::Parameter::verbose() )
-            std::cerr << "ABORT: time step count reached max limit of " << maximalTimeSteps << std::endl;
-          break ;
-        }
-
-        if (tp.timeStep()<2)
-        {
-          // write parameters used (before simulation starts)
-          Fem::Parameter::write("parameter.log");
-        }
-      } /****** END of time loop *****/
-
-      // write last time step
-      dataWriterHandler_.writeData( tp, true );
-
-      // finalize eoc step
-      finalizeStep( tp );
-
-      // prepare the fixed time step for the next eoc loop
-      fixedTimeStep_ /= param_.fixedTimeStepEocLoopFactor();
-
-      // adjust average time step size
-      monitor.finalize( gridWidth(), gridSize() );
-
-      return monitor;
-    }
-
-    //! finalize problem, i.e. calculated EOC ...
-    virtual void finalize ( const int eocloop )
-    {}
-
-  protected:
-    StepperParametersType param_;
-    EocParametersType eocParam_;
-    AdaptationParametersType adaptParam_;
-    CheckPointHandlerType checkPointHandler_;
-    DataWriterHandlerType dataWriterHandler_;
-    unsigned int timeStepTimer_;
-    double fixedTimeStep_;
-  };
 
   /////////////////////////////////////////////////////////////////////////////
   //
@@ -490,8 +220,6 @@ namespace Fem
     typedef Fem::DataOutput<GridType, typename Algorithm::IOTupleType> DataOutputType;
     DataOutputType dataOutput( grid, dataTup );
 
-    typedef typename Algorithm::SolverMonitorType SolverMonitorType;
-
     // initialize FemEoc if eocSteps > 1
     EocParameters eocParam( Dune::ParameterKey::generate( "", "fem.eoc." ) );
     FemEoc::clear();
@@ -507,7 +235,7 @@ namespace Fem
       Dune::Timer timer ;
 
       // call algorithm and return solver statistics and some info
-      SolverMonitorType monitor = algorithm.solve( eocloop );
+      algorithm.solve( eocloop );
 
       // get run time
       const double runTime = timer.elapsed();
@@ -522,8 +250,8 @@ namespace Fem
 
       std::stringstream eocInfo ;
       // generate EOC information
-      Fem::FemEoc::write( *monitor.gridWidth, *monitor.elements, runTime, *monitor.timeSteps,
-                          monitor.doubleValues(), monitor.intValues(), eocInfo );
+      Fem::FemEoc::write( *algorithm.monitor().gridWidth, *algorithm.monitor().elements, runTime, *algorithm.monitor().timeSteps,
+                          algorithm.monitor().doubleValues(), algorithm.monitor().intValues(), eocInfo );
 
       // in verbose mode write EOC info to std::cout
       if( Fem::Parameter::verbose() )

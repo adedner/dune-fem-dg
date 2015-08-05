@@ -21,6 +21,7 @@
 
 // overload default stepper traits
 #include <dune/fem-dg/algorithm/advectiondiffusionstepper.hh>
+#include <dune/fem-dg/algorithm/advectionstepper.hh>
 
 #include <dune/fem-dg/algorithm/gridinitializer.hh>
 
@@ -340,14 +341,33 @@ public:
                             DiscreteFunctionType, IndicatorType,
                             AdaptationHandlerType, ExtraParameterTuple >                        OperatorTraitsType;
 
-    typedef AdvectionDiffusionOperators< OperatorTraitsType, AnalyticalTraitsType::ModelType::hasAdvection,
-                                 AnalyticalTraitsType::ModelType::hasDiffusion, _unlimited >    AdvectionDiffusionOperatorType;
+    // TODO: advection/diffusion should not be precribed by model
+    static const int hasAdvection = AnalyticalTraitsType::ModelType::hasAdvection;
+    static const int hasDiffusion = AnalyticalTraitsType::ModelType::hasDiffusion;
+
+    typedef AdvectionDiffusionOperators< OperatorTraitsType, hasAdvection, hasDiffusion, _unlimited > AdvectionDiffusionOperatorType;
 
     typedef typename AdvectionDiffusionOperatorType::FullOperatorType                           FullOperatorType;
     typedef typename AdvectionDiffusionOperatorType::ImplicitOperatorType                       ImplicitOperatorType;
     typedef typename AdvectionDiffusionOperatorType::ExplicitOperatorType                       ExplicitOperatorType;
     // --------- Operators using PASSES --------------------------
     //============================================================
+
+
+
+    //---------Adaptivity ----------------------------------------------
+    // advection = true , diffusion = true
+    typedef Dune :: DGAdaptationIndicatorOperator< OperatorTraitsType, hasAdvection, hasDiffusion >  DGIndicatorType;
+    // gradient estimator
+    typedef Estimator< DiscreteFunctionType, typename  AnalyticalTraitsType::ProblemType >                   GradientIndicatorType ;
+    typedef std::tuple< DGIndicatorType*, GradientIndicatorType* >             IndicatorTupleType;
+    // --------Adaptivity ----------------------------------------------
+
+    //------------- Limiter ---------------------------------------------
+    typedef FullOperatorType                                                   LimiterOperatorType;
+    //------------ Limiter ---------------------------------------------
+
+
   };
 
   template <int polOrd>

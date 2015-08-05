@@ -10,7 +10,7 @@
 #include <dune/fem/misc/femtimer.hh>
 #include <dune/fem-dg/misc/parameterkey.hh>
 
-#include <dune/fem-dg/algorithm/checkpointhandler.hh>
+#include <dune/fem-dg/algorithm/handler/checkpoint.hh>
 
 namespace Dune
 {

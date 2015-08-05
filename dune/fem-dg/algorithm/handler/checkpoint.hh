@@ -20,12 +20,16 @@ namespace Fem
   class DefaultCheckPointHandler
   {
     typedef Dune::Fem::CheckPointer< GridImp, DataImp >   CheckPointerType;
+    typedef Dune::Fem::CheckPointerParameters             CheckPointerParametersType;
 
     public:
-    DefaultCheckPointHandler( const std::string keyPrefix = "" )
+    DefaultCheckPointHandler( const GridImp& grid, const std::string keyPrefix = "" )
       : checkPointer_(),
-        keyPrefix_( keyPrefix )
-    {}
+        keyPrefix_( keyPrefix ),
+        grid_( grid ),
+        checkParam_( Dune::ParameterKey::generate( keyPrefix, "fem.io." ) )
+    {
+    }
 
     static bool checkPointExists( const std::string keyPrefix = "" )
     {
@@ -44,7 +48,7 @@ namespace Fem
       }
       Dune::GridPtr< GridImp > gridptr ;
       gridptr = CheckPointerType::restoreGrid( checkPointFile( keyPrefix ), -1,
-                                               Dune::Fem::CheckPointerParameters( Dune::ParameterKey::generate( keyPrefix, "fem.io." ) ) );
+                                               CheckPointerParametersType( Dune::ParameterKey::generate( keyPrefix, "fem.io." ) ) );
       return gridptr;
     }
 
@@ -61,57 +65,50 @@ namespace Fem
     void registerData() const
     {}
 
-
     template< class TimeProviderImp >
-    bool restoreData( const GridImp& grid, const TimeProviderImp& tp ) const
+    bool restoreData( TimeProviderImp& tp ) const
     {
       if( checkPointExists(keyPrefix_) )
       {
         // restore data
-        checkPointer( grid, tp ).restoreData( grid, checkPointFile( keyPrefix_ ) );
+        checkPointer( tp ).restoreData( grid_, checkPointFile( keyPrefix_ ) );
         return false;
       }
       return true;
     }
 
     template< class TimeProviderImp >
-    bool writeData( const GridImp& grid, const TimeProviderImp& tp ) const
+    void step( TimeProviderImp& tp ) const
     {
-      checkPointer( grid, tp ).write( tp );
-      return true;
+      checkPointer( tp ).write( tp );
     }
 
   private:
+
     static inline std::string checkPointFile ( const std::string keyPrefix = "" )
     {
-      static bool initialized = false ;
       static std::string checkFileName ;
-      if( ! initialized )
-      {
-        const std::string key( Dune::ParameterKey::generate( keyPrefix, "fem.io.checkpointrestartfile" ) );
-        if( Fem::Parameter::exists( key ) )
-        {
-          checkFileName = Fem::Parameter::getValue<std::string> ( key );
-        }
-        else
-          checkFileName = "" ;
-        initialized = true ;
-      }
-
+      const std::string key( Dune::ParameterKey::generate( keyPrefix, "fem.io.checkpointrestartfile" ) );
+      if( Fem::Parameter::exists( key ) )
+        checkFileName = Fem::Parameter::getValue<std::string> ( key );
+      else
+        checkFileName = "" ;
       return checkFileName ;
     }
 
     template< class TimeProviderImp >
-    CheckPointerType& checkPointer( const GridImp& grid, const TimeProviderImp& tp  ) const
+    CheckPointerType& checkPointer( const TimeProviderImp& tp  ) const
     {
       // create check point if not existent
       if( ! checkPointer_ )
-        checkPointer_.reset( new CheckPointerType( grid, tp, Dune::Fem::CheckPointerParameters( Dune::ParameterKey::generate( keyPrefix_, "fem.io." ) )  ) );
+        checkPointer_.reset( new CheckPointerType( grid_, tp, checkParam_) );
       return *checkPointer_;
     }
 
     mutable std::unique_ptr< CheckPointerType > checkPointer_;
     const std::string keyPrefix_;
+    const GridImp& grid_;
+    CheckPointerParametersType checkParam_;
 
   };
 
@@ -141,7 +138,7 @@ namespace Fem
     bool restoreData( Args&& ... ) const { return false;}
 
     template< class ... Args>
-    bool writeData( Args&& ... ) const { return false; }
+    void step( Args&& ... ) const {}
 
   };
 

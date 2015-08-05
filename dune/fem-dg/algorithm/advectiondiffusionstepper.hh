@@ -54,19 +54,11 @@ namespace Fem
     typedef typename BaseType :: OdeSolverType     OdeSolverType;
 
     typedef typename BaseType :: TimeProviderType       TimeProviderType;
-    typedef typename BaseType :: AdaptationManagerType  AdaptationManagerType;
-    typedef typename BaseType :: AdaptationHandlerType  AdaptationHandlerType;
-
-    static const Dune::DGDiffusionFluxIdentifier DiffusionFluxId =
-      BaseType::Traits::DiffusionFluxId ;
 
     typedef typename BaseType::OperatorTraits OperatorTraits;
 
-    // advection = true , diffusion = true
-    typedef Dune :: DGAdaptationIndicatorOperator< OperatorTraits, true, true >  DGIndicatorType;
-
-    // gradient estimator
-    typedef Estimator< DiscreteFunctionType, ProblemType > GradientIndicatorType ;
+    typedef typename std::remove_pointer<typename std::tuple_element<0,typename BaseType::IndicatorTupleType>::type>::type  DGIndicatorType;
+    typedef typename std::remove_pointer<typename std::tuple_element<1,typename BaseType::IndicatorTupleType>::type>::type GradientIndicatorType ;
 
     // type of 64bit unsigned integer
     typedef typename BaseType :: UInt64Type  UInt64Type;
@@ -77,11 +69,8 @@ namespace Fem
     using BaseType :: gridPart_;
     using BaseType :: space;
     using BaseType :: problem;
-    using BaseType :: adaptationHandler_ ;
-    using BaseType :: adaptParam_;
-    using BaseType :: adaptive ;
-    using BaseType :: doEstimateMarkAdapt;
     using BaseType :: name ;
+    using BaseType :: adaptHandler_ ;
 
     AdvectionDiffusionStepper( GridType& grid,
                                const std::string name = "",
@@ -95,26 +84,17 @@ namespace Fem
       dgAdvectionOperator_( gridPart_, problem(), tuple_, name ),
       dgDiffusionOperator_( gridPart_, problem(), tuple_, name ),
       dgIndicator_( gridPart_, problem(), tuple_, name ),
-      gradientIndicator_( space(), problem(), adaptParam_ )
+      gradientIndicator_( space(), problem(), adaptHandler_.params() )
     {
+      adaptHandler_.setIndicator( &dgIndicator_, &gradientIndicator_ );
     }
 
     //! return overal number of grid elements
     virtual UInt64Type gridSize() const
     {
-      // is adaptation handler exists use the information to avoid global comm
-      if( adaptationHandler_ )
-      {
-        UInt64Type globalElements = adaptationHandler_->globalNumberOfElements() ;
-        if( Dune::Fem::Parameter::verbose () )
-        {
-          std::cout << "grid size (sum,min,max) = ( "
-            << globalElements << " , "
-            << adaptationHandler_->minNumberOfElements() << " , "
-            << adaptationHandler_->maxNumberOfElements() << ")" << std::endl;
-        }
+      int globalElements = adaptHandler_.globalNumberOfElements();
+      if( globalElements > 0 )
         return globalElements;
-      }
 
       // one of them is not zero,
       size_t advSize     = dgAdvectionOperator_.numberOfElements();
@@ -133,15 +113,7 @@ namespace Fem
 
     virtual OdeSolverType* createOdeSolver(TimeProviderType& tp)
     {
-      // create adaptation handler in case of apost indicator
-      if( adaptive() )
-      {
-        if( ! adaptationHandler_ && adaptParam_.aposterioriIndicator() )
-        {
-          adaptationHandler_.reset( new AdaptationHandlerType( grid_, tp ) );
-          dgIndicator_.setAdaptation( *adaptationHandler_ );
-        }
-      }
+      adaptHandler_.setAdaptation( tp, dgIndicator_ );
 
       // create ODE solver
       typedef RungeKuttaSolver< FullOperatorType, ExplicitOperatorType, ImplicitOperatorType,
@@ -150,18 +122,6 @@ namespace Fem
                                 dgAdvectionOperator_,
                                 dgDiffusionOperator_,
                                 name() );
-    }
-
-    //! estimate and mark solution
-    virtual void initialEstimateMarkAdapt( )
-    {
-      doEstimateMarkAdapt( dgIndicator_, gradientIndicator_, true );
-    }
-
-    //! estimate and mark solution
-    virtual void estimateMarkAdapt( )
-    {
-      doEstimateMarkAdapt( dgIndicator_, gradientIndicator_, false );
     }
 
     const ModelType& model() const { return dgOperator_.model(); }

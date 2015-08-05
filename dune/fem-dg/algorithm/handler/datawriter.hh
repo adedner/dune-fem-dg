@@ -51,13 +51,23 @@ namespace Fem
     //}
 
     template< class TimeProviderImp >
-    void writeData( TimeProviderImp& tp, const bool writeAnyway = false )
+    void step( TimeProviderImp& tp )
     {
       if( dataWriter_ && dataWriter_->willWrite( tp ) )
       {
         dataWriter_->write( tp );
       }
     }
+
+    template< class TimeProviderImp >
+    void finalize( TimeProviderImp& tp )
+    {
+      if( dataWriter_ && dataWriter_->willWrite( tp ) )
+      {
+        dataWriter_->write( tp );
+      }
+    }
+
 
     private:
     IOTupleImp             dataTuple_;
@@ -80,8 +90,10 @@ namespace Fem
     void init( Args&& ...  ) {}
 
     template< class ... Args >
-    void writeData( Args&& ...  ) {}
+    void writeStep( Args&& ...  ) {}
 
+    template< class ... Args >
+    void finalize( Args&& ...  ) {}
   };
 
 

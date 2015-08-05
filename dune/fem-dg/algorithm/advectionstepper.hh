@@ -29,14 +29,8 @@ namespace Fem
     // Choose a suitable GridView
     typedef typename BaseType :: GridPartType             GridPartType;
 
-    // initial data type
-    typedef typename BaseType :: InitialDataType          InitialDataType;
-
     // An analytical version of our model
     typedef typename BaseType :: ModelType                 ModelType;
-
-    // The flux for the discretization of advection terms
-    typedef typename BaseType :: FluxType                  FluxType;
 
     // The DG space operator
     // The first operator is sum of the other two
@@ -45,33 +39,23 @@ namespace Fem
     typedef FullOperatorType  ExplicitOperatorType;
     typedef FullOperatorType  ImplicitOperatorType;
 
-    typedef typename BaseType :: LinearInverseOperatorType LinearInverseOperatorType;
+    typedef typename BaseType :: BasicLinearSolverType          BasicLinearSolverType;
 
     // The discrete function for the unknown solution is defined in the DgOperator
     typedef typename BaseType :: DiscreteFunctionType      DiscreteFunctionType;
 
     // ... as well as the Space type
-    typedef typename BaseType :: DiscreteSpaceType         DiscreteSpaceType;
+    typedef typename BaseType :: DiscreteFunctionSpaceType         DiscreteFunctionSpaceType;
 
     // The ODE Solvers
     typedef typename BaseType :: OdeSolverType             OdeSolverType;
 
     typedef typename BaseType :: TimeProviderType          TimeProviderType;
-    typedef typename BaseType :: AdaptationManagerType     AdaptationManagerType;
-    typedef typename BaseType :: AdaptationHandlerType     AdaptationHandlerType;
-    typedef typename BaseType :: IndicatorType             IndicatorType;
-
 
     typedef typename FullOperatorType :: ExtraParameterTupleType  ExtraParameterTupleType;
 
-    static const Dune::DGDiffusionFluxIdentifier DiffusionFluxId =
-      BaseType::Traits::DiffusionFluxId ;
-
-    // advection = true , diffusion = false
-    typedef Dune :: DGAdaptationIndicatorOperator< typename BaseType::OperatorTraits, true, false >  DGIndicatorType;
-
-    // gradient estimator
-    typedef Estimator< DiscreteFunctionType, InitialDataType > GradientIndicatorType ;
+    typedef typename std::remove_pointer<typename std::tuple_element<0,typename BaseType::IndicatorTupleType>::type>::type  DGIndicatorType;
+    typedef typename std::remove_pointer<typename std::tuple_element<1,typename BaseType::IndicatorTupleType>::type>::type GradientIndicatorType ;
 
     // type of 64bit unsigned integer
     typedef typename BaseType :: UInt64Type  UInt64Type;
@@ -79,13 +63,11 @@ namespace Fem
     using BaseType :: grid_;
     using BaseType :: gridPart_;
     using BaseType :: problem;
-    using BaseType :: adaptationHandler_ ;
     using BaseType :: space ;
     using BaseType :: solution ;
-    using BaseType :: adaptive ;
-    using BaseType :: adaptParam_;
-    using BaseType :: doEstimateMarkAdapt ;
     using BaseType :: name ;
+    using BaseType :: adaptHandler_;
+    using BaseType :: solutionLimiterHandler_;
 
     // constructor
     AdvectionStepper( GridType& grid, const std::string name = "",
@@ -93,25 +75,17 @@ namespace Fem
       BaseType( grid, name ),
       dgAdvectionOperator_(gridPart_, problem(), tuple, name ),
       dgIndicator_( gridPart_, problem(), tuple, name ),
-      gradientIndicator_( space(), problem(), adaptParam_ )
+      gradientIndicator_( space(), problem(), adaptHandler_.params() )
     {
+       solutionLimiterHandler_.setLimiter( &dgAdvectionOperator_ );
     }
 
     virtual OdeSolverType* createOdeSolver(TimeProviderType& tp)
     {
-      if( adaptive() )
-      {
-        if( ! adaptationHandler_ && adaptParam_.aposterioriIndicator() )
-        {
-          adaptationHandler_ = new AdaptationHandlerType( grid_, tp );
-          dgIndicator_.setAdaptation( *adaptationHandler_ );
-        }
-      }
-
-      //typedef SmartOdeSolver< ExplicitOperatorType, ExplicitOperatorType, ExplicitOperatorType > OdeSolverImpl;
+      adaptHandler_.setAdaptation( tp, dgIndicator_ );
 
       typedef RungeKuttaSolver< ExplicitOperatorType, ExplicitOperatorType, ExplicitOperatorType,
-                                LinearInverseOperatorType > OdeSolverImpl;
+                                BasicLinearSolverType > OdeSolverImpl;
       return new OdeSolverImpl( tp, dgAdvectionOperator_,
                                 dgAdvectionOperator_,
                                 dgAdvectionOperator_,
@@ -121,38 +95,12 @@ namespace Fem
     //! return overal number of grid elements
     virtual uint64_t gridSize() const
     {
-      // is adaptation handler exists use the information to avoid global comm
-      if( adaptationHandler_ )
-        return adaptationHandler_->globalNumberOfElements() ;
+      adaptHandler_.globalNumberOfElements();
 
       size_t  advSize   = dgAdvectionOperator_.numberOfElements();
       size_t  dgIndSize = gradientIndicator_.numberOfElements();
       uint64_t grSize   = std::max( advSize, dgIndSize );
       return grid_.comm().sum( grSize );
-    }
-
-    //! call limiter (only if dgAdvectionOperator_ is DGLimitedAdvectionOperator)
-    void limitSolution()
-    {
-      dgAdvectionOperator_.limit( solution() );
-    }
-
-    // return indicator pointer for data output, see above
-    IndicatorType* indicator ()
-    {
-      return dgAdvectionOperator_.indicator();
-    }
-
-    //! estimate and mark solution
-    virtual void initialEstimateMarkAdapt( )
-    {
-      doEstimateMarkAdapt( dgIndicator_, gradientIndicator_, true );
-    }
-
-    //! estimate and mark solution
-    virtual void estimateMarkAdapt( )
-    {
-      doEstimateMarkAdapt( dgIndicator_, gradientIndicator_, false );
     }
 
     const ModelType& model() const { return dgAdvectionOperator_.model(); }

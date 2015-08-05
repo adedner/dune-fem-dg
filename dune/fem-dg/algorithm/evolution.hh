@@ -11,6 +11,7 @@
 
 #include <dune/fem-dg/algorithm/base.hh>
 #include <dune/fem-dg/operator/dg/passtraits.hh>
+#include <dune/fem-dg/operator/dg/dgoperatorchoice.hh>
 #include <dune/fem/misc/femtimer.hh>
 
 // include std libs
@@ -25,10 +26,13 @@
 #include "monitor.hh"
 
 
-#include <dune/fem-dg/algorithm/diagnosticshandler.hh>
-#include <dune/fem-dg/algorithm/checkpointhandler.hh>
-#include <dune/fem-dg/algorithm/datawriterhandler.hh>
-#include <dune/fem-dg/algorithm/additionaloutputhandler.hh>
+#include <dune/fem-dg/algorithm/handler/diagnostics.hh>
+#include <dune/fem-dg/algorithm/handler/solvermonitor.hh>
+#include <dune/fem-dg/algorithm/handler/checkpoint.hh>
+#include <dune/fem-dg/algorithm/handler/datawriter.hh>
+#include <dune/fem-dg/algorithm/handler/additionaloutput.hh>
+#include <dune/fem-dg/algorithm/handler/solutionlimiter.hh>
+#include <dune/fem-dg/algorithm/handler/adapt.hh>
 
 namespace Dune
 {
@@ -43,9 +47,12 @@ namespace Fem
             class ProblemTraits,
             int polOrder,
             class DiagnosticsHandlerImp,
+            class SolverMonitorHandlerImp,
             class CheckPointHandlerImp,
             class DataWriterHandlerImp,
-            class AdditionalOutputHandlerImp >
+            class AdditionalOutputHandlerImp,
+            class SolutionLimiterHandlerImp,
+            class AdaptHandlerImp >
   struct EvolutionAlgorithmTraits
   {
     static const int polynomialOrder = polOrder;
@@ -85,54 +92,70 @@ namespace Fem
     // wrap operator
     //typedef typename DgHelmHoltzOperatorType::JacobianOperatorType JacobianOperatorType;
     //typedef typename ProblemTraits::template Solver< DgHelmHoltzOperatorType >::Type OdeSolverType;
+    typedef GridTimeProvider< GridType >                           TimeProviderType;
 
     typedef typename DiscreteTraits::OdeSolverType                 OdeSolverType;
 
     typedef typename DiscreteTraits::BasicLinearSolverType         BasicLinearSolverType;
     typedef typename DiscreteTraits::RestrictionProlongationType   RestrictionProlongationType;
 
-    typedef SolverMonitor<1>                                       SolverMonitorType;
+    typedef typename DiscreteTraits::LimiterOperatorType           LimiterOperatorType;
 
-    // type of Data io
-    typedef DataWriter< GridType, IOTupleType >                    DataWriterType;
 
     // error handling
     typedef typename AnalyticalTraits::EOCErrorIDs                 EOCErrorIDs;
 
+    typedef typename DiscreteTraits::IndicatorTupleType            IndicatorTupleType;
 
-    typedef Dune::AdaptationHandler< GridType, FunctionSpaceType >                 AdaptationHandlerType;
-    typedef Dune::Fem::AdaptationManager< GridType, RestrictionProlongationType >  AdaptationManagerType;
-    typedef typename OdeSolverType::MonitorType                                    OdeSolverMonitorType;
+    typedef SolverMonitor<1>                                       SolverMonitorType;
 
-    typedef DiagnosticsHandlerImp                                            DiagnosticsHandlerType;
-    typedef CheckPointHandlerImp                                             CheckPointHandlerType;
-    typedef DataWriterHandlerImp                                             DataWriterHandlerType;
-    typedef AdditionalOutputHandlerImp                                       AdditionalOutputHandlerType;
+    typedef DiagnosticsHandlerImp                                  DiagnosticsHandlerType;
+    typedef SolverMonitorHandlerImp                                SolverMonitorHandlerType;
+    typedef CheckPointHandlerImp                                   CheckPointHandlerType;
+    typedef DataWriterHandlerImp                                   DataWriterHandlerType;
+    typedef AdditionalOutputHandlerImp                             AdditionalOutputHandlerType;
+    typedef SolutionLimiterHandlerImp                              SolutionLimiterHandlerType;
+    typedef AdaptHandlerImp                                        AdaptHandlerType;
   };
 
+
+  template< class ProblemTraits, int polynomialOrder >
+  struct EvolAlgHelper
+  {
+    typedef typename ProblemTraits::template DiscreteTraits< typename ProblemTraits::HostGridPartType, polynomialOrder > type;
+  };
 
   // EvolutionAlgorithm
   // ------------------
 
   template< class Grid, class ProblemTraits, int polynomialOrder,
             class DiagnosticsHandlerImp = DefaultDiagnosticsHandler,
+            class SolverMonitorHandlerImp = DefaultSolverMonitorHandler,
             class CheckPointHandlerImp = DefaultCheckPointHandler< Grid >,
-            class DataWriterHandlerImp = DefaultDataWriterHandler< Grid, typename ProblemTraits::template DiscreteTraits< typename ProblemTraits::HostGridPartType, polynomialOrder >::IOTupleType >, /*TODO: Gurke entfernen */
-            class AdditionalOutputHandlerImp = NoAdditionalOutputHandler >
+            class DataWriterHandlerImp = DefaultDataWriterHandler< Grid, typename EvolAlgHelper< ProblemTraits, polynomialOrder >::type::IOTupleType >,
+            class AdditionalOutputHandlerImp = NoAdditionalOutputHandler,
+            class SolutionLimiterHandlerImp = DefaultSolutionLimiterHandler< typename EvolAlgHelper< ProblemTraits, polynomialOrder >::type::LimiterOperatorType >,
+            class AdaptHandlerImp = DefaultAdaptHandler< Grid, typename EvolAlgHelper< ProblemTraits, polynomialOrder >::type::DiscreteFunctionType ,
+                                                         typename EvolAlgHelper< ProblemTraits, polynomialOrder >::type::RestrictionProlongationType,
+                                                         typename EvolAlgHelper< ProblemTraits, polynomialOrder >::type::IndicatorTupleType,
+                                                         SolutionLimiterHandlerImp > >
   class EvolutionAlgorithm
-    : public EvolutionAlgorithmBase< EvolutionAlgorithmTraits< Grid, ProblemTraits, polynomialOrder,
-                                                               DiagnosticsHandlerImp, CheckPointHandlerImp,
-                                                               DataWriterHandlerImp, AdditionalOutputHandlerImp > >
+    : public AlgorithmBase< EvolutionAlgorithmTraits< Grid, ProblemTraits, polynomialOrder,
+                                                      DiagnosticsHandlerImp, SolverMonitorHandlerImp,
+                                                      CheckPointHandlerImp, DataWriterHandlerImp,
+                                                      AdditionalOutputHandlerImp, SolutionLimiterHandlerImp,
+                                                      AdaptHandlerImp > >
   {
     typedef EvolutionAlgorithmTraits< Grid, ProblemTraits, polynomialOrder,
-                                      DiagnosticsHandlerImp, CheckPointHandlerImp, DataWriterHandlerImp, AdditionalOutputHandlerImp >    Traits;
-    typedef EvolutionAlgorithmBase< Traits >                                    BaseType;
+                                      DiagnosticsHandlerImp, SolverMonitorHandlerImp, CheckPointHandlerImp, DataWriterHandlerImp,
+                                      AdditionalOutputHandlerImp, SolutionLimiterHandlerImp, AdaptHandlerImp >    Traits;
+    typedef AlgorithmBase< Traits >                                                   BaseType;
 
   public:
     typedef typename BaseType::GridType GridType;
     typedef typename BaseType::IOTupleType IOTupleType;
     typedef typename BaseType::SolverMonitorType SolverMonitorType;
-    typedef typename BaseType::TimeProviderType TimeProviderType;
+    typedef typename Traits::TimeProviderType TimeProviderType;
 
     typedef typename Traits::HostGridPartType HostGridPartType;
 
@@ -158,9 +181,6 @@ namespace Fem
     // type of initial interpolation
     typedef typename Traits::InitialProjectorType InitialProjectorType;
 
-    // type of DataWriter
-    typedef typename Traits::DataWriterType DataWriterType;
-
     // analytical Tratis
     typedef typename Traits::AnalyticalTraits AnalyticalTraits;
 
@@ -170,45 +190,208 @@ namespace Fem
     // error handling
     typedef typename Traits::EOCErrorIDs EOCErrorIDs;
 
+    typedef typename Traits::IndicatorTupleType    IndicatorTupleType;
+
     typedef DiagnosticsHandlerImp                  DiagnosticsHandlerType;
+    typedef SolverMonitorHandlerImp                SolverMonitorHandlerType;
     typedef CheckPointHandlerImp                   CheckPointHandlerType;
     typedef DataWriterHandlerImp                   DataWriterHandlerType;
     typedef AdditionalOutputHandlerImp             AdditionalOutputHandlerType;
+    typedef SolutionLimiterHandlerImp              SolutionLimiterHandlerType;
+    typedef AdaptHandlerImp                        AdaptHandlerType;
 
     typedef typename Traits::ExtraParameterTuple ExtraParameterTuple;
 
-
-    typedef typename Traits::AdaptationHandlerType        AdaptationHandlerType;
-    typedef typename Traits::OdeSolverMonitorType         OdeSolverMonitorType;
-    typedef typename Traits::RestrictionProlongationType  RestrictionProlongationType;
-    typedef typename Traits::AdaptationManagerType        AdaptationManagerType;
+    typedef uint64_t                                              UInt64Type ;
+    typedef StepperParameters                                     StepperParametersType;
+    typedef EocParameters                                         EocParametersType;
+    typedef AdaptationParameters                                  AdaptationParametersType;
 
     using BaseType::grid_;
-    using BaseType::adaptParam_ ;
-    using BaseType::eocParam_;
-    using BaseType::param_;
-    using BaseType::limitSolution;
-    using BaseType::checkPointHandler_;
-    using BaseType::dataWriterHandler_;
+    using BaseType::grid;
 
     EvolutionAlgorithm ( GridType &grid, const std::string name = "" )
     : BaseType( grid, name  ),
+      param_( StepperParametersType( Dune::ParameterKey::generate( "", "femdg.stepper." ) ) ),
+      eocParam_( EocParametersType( Dune::ParameterKey::generate( "", "fem.eoc." ) ) ),
       gridPart_( grid_ ),
       space_( gridPart_ ),
       solution_( "U_"+name, space() ),
       problem_( ProblemTraits::problem() ),
       model_( *problem_ ),
-      adaptationHandler_(),
+      checkPointHandler_( grid_, "" ),
+      solverMonitorHandler_( "" ),
+      dataWriterHandler_( grid_, "" ),
       diagnosticsHandler_(),
       additionalOutputHandler_( space_ ),
+      solutionLimiterHandler_( name ),
+      adaptHandler_( grid_, solution(), solutionLimiterHandler_, name ),
       overallTimer_(),
       eocIds_( AnalyticalTraits::initEoc() ),
       odeSolver_(),
-      rp_( solution_ ),
-      adaptationManager_()
+      timeStepTimer_( Dune::FemTimer::addTo("max time/timestep") ),
+      fixedTimeStep_( param_.fixedTimeStep() )
+    {}
+    // return grid width of grid (overload in derived classes)
+    virtual double gridWidth () const { return 0.0; }
+
+    // return size of grid
+    virtual UInt64Type gridSize () const
     {
-      // set refine weight
-      rp_.setFatherChildWeight( Dune::DGFGridInfo<GridType> :: refineWeight() );
+      UInt64Type grSize = grid().size( 0 );
+      return grid().comm().sum( grSize );
+    }
+
+    virtual bool checkDofsValid( TimeProviderType& tp, const int loop  ) const
+    {
+      return solution_.dofsValid();
+    }
+
+    //! default time loop implementation, overload for changes in derived classes !!!
+    void solve ( const int loop )
+    {
+      // get start and end time from parameter file
+      const double startTime = param_.startTime();
+      const double endTime   = param_.endTime();
+
+      // Initialize TimeProvider
+      TimeProviderType tp( startTime, this->grid() );
+
+      // call solve implementation taking start and end time
+      solve( loop, tp, endTime );
+    }
+
+    //! default time loop implementation, overload for changes in derived classes !!!
+    virtual void solve ( const int loop, TimeProviderType& tp, const double endTime )
+    {
+      // get grid reference
+      GridType& grid = this->grid();
+
+      // print info on each printCount step
+      const int printCount = param_.printCount();
+
+      double maxTimeStep = param_.maxTimeStep();
+
+#ifdef BASEFUNCTIONSET_CODEGEN_GENERATE
+      // in codegen modus make endTime large and only compute one timestep
+      const int maximalTimeSteps = 1;
+#else
+      // if this variable is set then only maximalTimeSteps timesteps will be computed
+      const int maximalTimeSteps = param_.maximalTimeSteps();
+#endif
+
+      // set initial data (and create ode solver)
+      // -> calls initializeStep()
+      preInitializeStep( tp, loop );
+
+      // start first time step with prescribed fixed time step
+      // if it is not 0 otherwise use the internal estimate
+      tp.provideTimeStepEstimate(maxTimeStep);
+
+      // adjust fixed time step with timeprovider.factor()
+      const double fixedTimeStep = fixedTimeStep_/tp.factor() ;
+      if ( fixedTimeStep > 1e-20 )
+        tp.init( fixedTimeStep );
+      else
+        tp.init();
+
+      // true if last time step should match end time
+      const bool stopAtEndTime =  param_.stopAtEndTime();
+
+      //******************************
+      //*  Time Loop                 *
+      //******************************
+      for( ; tp.time() < endTime; )
+      {
+        // write data for current time
+        dataWriterHandler_.step( tp );
+
+        // possibly write check point (default is disabled)
+        checkPointHandler_.step( tp );
+
+        // reset time step estimate
+        tp.provideTimeStepEstimate( maxTimeStep );
+
+        // current time step size
+        const double deltaT = tp.deltaT();
+
+        // current time step number
+        const int timeStep  = tp.timeStep();
+
+        //************************************************
+        //* Compute an ODE timestep                      *
+        //************************************************
+        Dune::FemTimer::start( timeStepTimer_ );
+        overallTimer_.reset();
+
+        // estimate, mark, adapt
+        if( timeStep % adaptHandler_.params().adaptCount() == 0 )
+          adaptHandler_.step();
+
+        // perform the solve for one time step, i.e. solve ODE
+        step( tp );
+
+        // stop FemTimer for this time step
+        Dune::FemTimer::stop(timeStepTimer_,Dune::FemTimer::max);
+
+        // Check that no NAN have been generated
+        if( !checkDofsValid( tp, loop ) )
+        {
+          dataWriterHandler_.finalize( tp );
+          std::abort();
+        }
+
+        if( (printCount > 0) && (((timeStep+1) % printCount) == 0))
+        {
+          UInt64Type grSize = gridSize();
+          if( grid.comm().rank() == 0 )
+          {
+            std::cout << "step: " << timeStep << "  time = " << tp.time()+tp.deltaT() << ", dt = " << deltaT
+                      <<",  grid size: " << grSize << ", elapsed time: ";
+            Dune::FemTimer::print(std::cout,timeStepTimer_);
+            solverMonitorHandler_.stepPrint();
+          }
+        }
+
+        // next advance should not exceed endtime
+        if( stopAtEndTime )
+          tp.provideTimeStepEstimate( (endTime - tp.time()) );
+
+        // next time step is prescribed by fixedTimeStep
+        if ( fixedTimeStep > 1e-20 )
+          tp.next( fixedTimeStep );
+        else
+          tp.next();
+
+        // for debugging and codegen only
+        if( tp.timeStep() >= maximalTimeSteps )
+        {
+          if( Fem::Parameter::verbose() )
+            std::cerr << "ABORT: time step count reached max limit of " << maximalTimeSteps << std::endl;
+          break ;
+        }
+
+        if (tp.timeStep()<2)
+        {
+          // write parameters used (before simulation starts)
+          Fem::Parameter::write("parameter.log");
+        }
+      } /****** END of time loop *****/
+
+      // finalize eoc step
+      finalizeStep( tp );
+
+      // prepare the fixed time step for the next eoc loop
+      fixedTimeStep_ /= param_.fixedTimeStepEocLoopFactor();
+    }
+
+    //! finalize problem, i.e. calculated EOC ...
+    virtual void finalize ( const int eocloop )
+    {}
+
+    virtual SolverMonitorType& monitor()
+    {
+      return solverMonitorHandler_.monitor();
     }
 
     // function creating the ode solvers
@@ -238,18 +421,49 @@ namespace Fem
       return problem().dataPrefix();
     }
 
+    // before data initialization
+    void preInitializeStep ( TimeProviderType &tp, int loop )
+    {
+      // restoreData if checkpointing is enabled (default is disabled)
+      //bool newStart = ( eocParam_.steps() == 1) ? checkPointHandler_.restoreData( grid, tp ) : false;
+      bool newStart = false;
+      if( eocParam_.steps() == 1 )
+        checkPointHandler_.restoreData( tp );
+
+      initializeStep( tp, loop );
+
+      if( adaptHandler_.adaptive() && newStart )
+      {
+        // adapt the grid to the initial data
+        for( int startCount = 0; startCount < adaptHandler_.params().finestLevel(); ++ startCount )
+        {
+          // call initial adaptation
+          adaptHandler_.init();
+
+          // setup problem again
+          initializeStep( tp, loop );
+
+          // some info in verbose mode
+          if( Fem::Parameter::verbose() )
+          {
+            std::cout << "Start adaptation: step " << startCount << ",  dt = " << tp.deltaT() << ",  grid size: " << gridSize()
+                      << std::endl;
+          }
+        }
+      }
+      dataWriterHandler_.init( tp, dataTuple(), eocParam_.dataOutputParameters( loop, problem_->dataPrefix() ) );
+
+      // register data functions to check pointer
+      checkPointHandler_.registerData( solution() );
+    }
+
     // before first step, do data initialization
-    void initializeStep ( TimeProviderType &tp, int loop, SolverMonitorType &monitor )
+    virtual void initializeStep ( TimeProviderType &tp, int loop )
     {
       DiscreteFunctionType& U = solution();
 
       odeSolver_.reset( this->createOdeSolver( tp ) );
       assert( odeSolver_ );
-
-      dataWriterHandler_.init( tp, dataTuple(), eocParam_.dataOutputParameters( loop, problem_->dataPrefix() ) );
-
-      // register data functions to check pointer
-      checkPointHandler_.registerData( solution() );
 
       // communication is needed when blocking communication is used
       // but has to be avoided otherwise (because of implicit solver)
@@ -258,7 +472,7 @@ namespace Fem
       // create projection
       InitialProjectorType projection( 2 * U.space().order(), doCommunicate );
 
-      // L2 project initial data
+      // project initial data
       projection( problem().fixedTimeFunction( tp.time() ), U );
 
       // ode.initialize applies the DG Operator once to get an initial
@@ -267,65 +481,44 @@ namespace Fem
     }
 
 
-    void step ( TimeProviderType &tp,
-                SolverMonitorType &monitor )
+    virtual void step ( TimeProviderType &tp )
     {
       DiscreteFunctionType& U = solution();
 
-      // reset overall timer
-      overallTimer_.reset();
-
       // solve ODE
       assert(odeSolver_);
-      odeSolver_->solve( U, odeSolverMonitor_ );
+
+      typename OdeSolverType::MonitorType odeSolverMonitor;
+      odeSolver_->solve( U, odeSolverMonitor );
 
       // limit solution if necessary
-      limitSolution ();
+      solutionLimiterHandler_.step( U );
 
-      // copy information to solver monitor
-      *monitor.newton_iterations     = odeSolverMonitor_.newtonIterations_;
-      *monitor.ils_iterations        = odeSolverMonitor_.linearSolverIterations_;
-      *monitor.max_newton_iterations = odeSolverMonitor_.maxNewtonIterations_ ;
-      *monitor.max_ils_iterations    = odeSolverMonitor_.maxLinearSolverIterations_;
-      *monitor.operator_calls        = odeSolverMonitor_.spaceOperatorCalls_;
+      // copy information to solver monitor and update time step information
+      solverMonitorHandler_.step( odeSolverMonitor, tp );
 
-      // set time step size to monitor
-      monitor.setTimeStepInfo( tp );
-
-      if( adaptParam_.adaptive() )
-        diagnosticsHandler_.write( tp, solution(), odeSolverMonitor_, overallTimer_, *adaptationManager_ );
-      else
-        diagnosticsHandler_.write( tp, solution(), odeSolverMonitor_, overallTimer_ );
-
-#ifdef LOCALDEBUG
-      maxRatioOfSums = std::max( maxRatioOfSums, std::abs(sum_/sum2_) );
-      minRatioOfSums = std::min( minRatioOfSums, std::abs(sum_/sum2_) );
-
-      std::cout <<"localMaxRatioPerTimeStep: " <<localMaxRatio_ <<std::endl;
-      std::cout <<"localMinRatioPerTimeStep: " <<localMinRatio_ <<std::endl;
-      std::cout <<"maxRatioOfSumsPerTimeStep: " <<maxRatioOfSums <<std::endl;
-      std::cout <<"minRatioOfSumsPerTimeStep: " <<minRatioOfSums <<std::endl;
-
-      sum_ = 0.;
-      sum2_ = 0.;
-#endif
+      diagnosticsHandler_.step( tp, solution(), odeSolverMonitor, overallTimer_, adaptHandler_ );
     }
 
     void finalizeStep ( TimeProviderType &tp )
     {
       DiscreteFunctionType& u = solution();
+
+      // flush diagnostics data
       diagnosticsHandler_.finalize();
+
+      // write last time step
+      dataWriterHandler_.finalize( tp );
+
+      // adjust average time step size
+      solverMonitorHandler_.finalize( gridWidth(), gridSize() );
 
       AnalyticalTraits::addEOCErrors( eocIds_, tp, u, model(), problem() );
 
-  #ifdef LOCALDEBUG
-      std::cout <<"maxRatioOfSums: " <<maxRatioOfSums <<std::endl;
-      std::cout <<"minRatioOfSums: " <<minRatioOfSums <<std::endl;
-  #endif
-
       // delete ode solver
       odeSolver_.reset();
-      adaptationHandler_.reset();
+
+      adaptHandler_.finalize();
     }
 
     std::string description () const { return problem().description(); }
@@ -347,12 +540,6 @@ namespace Fem
 
     GridPartType &gridPart () { return gridPart_; }
 
-    virtual AdaptationManagerType& adaptationManager()
-    {
-      if( !adaptationManager_ )
-        adaptationManager_.reset( new AdaptationManagerType( grid_, rp_ ) );
-      return *adaptationManager_;
-    }
 
   protected:
     OdeSolverType &odeSolver ()
@@ -361,71 +548,63 @@ namespace Fem
       return *odeSolver_;
     }
 
-    template <class IndicatorOperator, class GradientIndicator>
-    void doEstimateMarkAdapt( const IndicatorOperator& dgIndicator,
-                              GradientIndicator& gradientIndicator,
-                              const bool initialAdaptation = false )
-    {
-      if( adaptParam_.adaptive() )
-      {
-        // get grid sequence before adaptation
-        const int sequence = space().sequence();
-
-        if( adaptationHandler_ )
-        {
-          // call operator once to calculate indicator
-          dgIndicator.evaluateOnly( solution_ );
-
-          // do marking and adaptation
-          adaptationHandler_->adapt( adaptationManager(), initialAdaptation );
-        }
-        else if( adaptParam_.gradientBasedIndicator() )
-        {
-          gradientIndicator.estimateAndMark( solution_ );
-          adaptationManager().adapt();
-        }
-        else if( adaptParam_.shockIndicator() )
-        {
-          // marking has been done by limiter
-          adaptationManager().adapt();
-        }
-
-        // if grid has changed then limit solution again
-        if( sequence != space().sequence() )
-        {
-          limitSolution();
-        }
-      }
-    }
-
-    GridPartType              gridPart_;
-    DiscreteFunctionSpaceType space_;
+    GridPartType                   gridPart_;
+    StepperParametersType          param_;
+    EocParametersType              eocParam_;
+    DiscreteFunctionSpaceType      space_;
 
     // the solution
-    DiscreteFunctionType     solution_;
+    DiscreteFunctionType           solution_;
 
-    // InitialDataType is a Dune::Operator that evaluates to $u_0$ and also has a
-    // method that gives you the exact solution.
-    std::unique_ptr< ProblemType >            problem_;
-    ModelType            model_;
-    // Initial flux for advection discretization (UpwindFlux)
-    std::unique_ptr< AdaptationHandlerType >  adaptationHandler_;
-    DiagnosticsHandlerType diagnosticsHandler_;
-    AdditionalOutputHandlerType additionalOutputHandler_;
+    // InitialDataType evaluates to $u_0$
+    std::unique_ptr< ProblemType > problem_;
+    ModelType                      model_;
 
-    Dune::Timer             overallTimer_;
-    double                  odeSolve_;
-    EOCErrorIDs             eocIds_;
+    CheckPointHandlerType          checkPointHandler_;
+    DataWriterHandlerType          dataWriterHandler_;
+    DiagnosticsHandlerType         diagnosticsHandler_;
+    SolverMonitorHandlerType       solverMonitorHandler_;
+    AdditionalOutputHandlerType    additionalOutputHandler_;
+    SolutionLimiterHandlerType     solutionLimiterHandler_;
+    AdaptHandlerType               adaptHandler_;
+
+    Dune::Timer                    overallTimer_;
+    double                         odeSolve_;
+    EOCErrorIDs                    eocIds_;
     std::unique_ptr< OdeSolverType > odeSolver_;
-    OdeSolverMonitorType    odeSolverMonitor_;
-    int                     odeSolverType_;
-
-    RestrictionProlongationType rp_;
-
-    std::unique_ptr< AdaptationManagerType >  adaptationManager_;
-
-    IOTupleType             dataTuple_;
+    unsigned int                   timeStepTimer_;
+    double                         fixedTimeStep_;
   };
+
+
+
+
+  template< class Grid, class ProblemTraits, int polynomialOrder >
+  struct BasicEvolutionAlgorithm
+  : public EvolutionAlgorithm< Grid, ProblemTraits, polynomialOrder,
+                               NoDiagnosticsHandler,
+                               NoCheckPointHandler< Grid >,
+                               NoDataWriterHandler,
+                               NoAdditionalOutputHandler,
+                               NoSolutionLimiterHandler,
+                               NoAdaptHandler< Grid, typename EvolAlgHelper< ProblemTraits, polynomialOrder >::type::RestrictionProlongationType > >
+  {
+    typedef EvolutionAlgorithm< Grid, ProblemTraits, polynomialOrder,
+                                NoDiagnosticsHandler,
+                                NoCheckPointHandler< Grid >,
+                                NoDataWriterHandler,
+                                NoAdditionalOutputHandler,
+                                NoSolutionLimiterHandler,
+                                NoAdaptHandler< Grid, typename EvolAlgHelper< ProblemTraits, polynomialOrder >::type::RestrictionProlongationType > >
+      BaseType;
+
+    BasicEvolutionAlgorithm( Grid& grid, const std::string name = "" )
+      : BaseType( grid, name )
+    {}
+
+  };
+
+
 
 } // namespace Fem
 
