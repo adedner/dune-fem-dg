@@ -10,32 +10,28 @@
 #define POLORDER 1
 #endif
 
-// dune-fem includes
+// misc
 #include <dune/fem/io/parameter.hh>
-
 #include <dune/grid/io/file/dgfparser/dgfparser.hh>
-#include <dune/fem-dg/operator/fluxes/eulerfluxes.hh>
+#include <dune/fem/misc/l2norm.hh>
 
-// local includes
-#include <dune/fem-dg/operator/fluxes/diffusionflux.hh>
-
-// overload default stepper traits
-#include <dune/fem-dg/algorithm/advectiondiffusionstepper.hh>
-#include <dune/fem-dg/algorithm/advectionstepper.hh>
-
+//--------- GRID HELPER ---------------------
 #include <dune/fem-dg/algorithm/gridinitializer.hh>
-
+//--------- OPERATOR/SOLVER -----------------
 #include <dune/fem/operator/linear/spoperator.hh>
 #include <dune/fem-dg/solver/linearsolvers.hh>
 #include <dune/fem-dg/operator/dg/operatortraits.hh>
 
-#include <dune/fem/misc/l2norm.hh>
-
+//--------- STEPPER -------------------------
+#include <dune/fem-dg/algorithm/advectiondiffusionstepper.hh>
+#include <dune/fem-dg/algorithm/advectionstepper.hh>
+//--------- PROBLEMS ------------------------
 #include "problems/problem.hh"
 #include "problems/problemQuasiHeatEqn.hh"
 #include "problems/pulse.hh"
 #include "problems/sin.hh"
 #include "problems/deformationalflow.hh"
+//--------- MODELS --------------------------
 #include "models.hh"
 
 
@@ -171,6 +167,8 @@ struct DiscreteFunctions< DiscreteFunctionSpaceImp, petsc >
   typedef Dune::Fem::PetscLinearOperator< type, type >                 jacobian;
 };
 #endif
+
+
 
 template< class GridImp >
 struct AdvectionDiffusionProblemCreator
