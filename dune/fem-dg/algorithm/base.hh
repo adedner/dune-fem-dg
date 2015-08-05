@@ -80,60 +80,6 @@ namespace Fem
   };
 
 
-  class StepperParameters
-  : public Dune::Fem::LocalParameter< StepperParameters, StepperParameters >
-  {
-    protected:
-    const std::string keyPrefix_;
-
-    public:
-    StepperParameters( const std::string keyPrefix = "femdg.stepper." )
-      : keyPrefix_( keyPrefix )
-    {}
-
-    virtual double fixedTimeStep() const
-    {
-      return Dune::Fem::Parameter::getValue< double >( keyPrefix_ + "fixedtimestep" , 0.0 );
-    }
-
-    virtual double fixedTimeStepEocLoopFactor() const
-    {
-      return Dune::Fem::Parameter::getValue< double >( keyPrefix_ + "fixedtimestepeocloopfactor" , 1.0 );
-    }
-
-    virtual double startTime() const
-    {
-      return Dune::Fem::Parameter::getValue< double >( keyPrefix_ + "starttime" , 0.0 );
-    }
-
-    virtual double endTime() const
-    {
-      return Dune::Fem::Parameter::getValue< double >( keyPrefix_ + "endtime"/*, 1.0 */);
-    }
-
-    virtual int printCount() const
-    {
-      return Dune::Fem::Parameter::getValue< int >( keyPrefix_ + "printcount" , -1 );
-    }
-
-    virtual double maxTimeStep() const
-    {
-      return Dune::Fem::Parameter::getValue< double >( keyPrefix_ + "maxtimestep", std::numeric_limits<double>::max());
-    }
-
-    virtual int maximalTimeSteps () const
-    {
-      return Dune::Fem::Parameter::getValue< int >(  keyPrefix_ + "maximaltimesteps", std::numeric_limits<int>::max());
-    }
-
-    virtual bool stopAtEndTime() const
-    {
-      return Dune::Fem::Parameter::getValue< bool >( keyPrefix_ + "stopatendtime", bool(false) );
-    }
-
-  };
-
-
   //! get memory in MB
   inline double getMemoryUsage()
   {
@@ -153,18 +99,23 @@ namespace Fem
 
   public:
     // type of Grid
-    typedef typename Traits::GridType            GridType;
+    typedef typename Traits::GridType              GridType;
 
     // type of IOTuple
-    typedef typename Traits::IOTupleType         IOTupleType;
+    typedef typename Traits::IOTupleType           IOTupleType;
+
+    typedef Fem::DataOutput<GridType, IOTupleType> DataOutputType;
 
     // type of statistics monitor
-    typedef typename Traits::SolverMonitorType   SolverMonitorType;
+    typedef typename Traits::SolverMonitorType     SolverMonitorType;
+
+    typedef EocParameters                          EocParametersType;
 
     //! constructor
     AlgorithmBase ( GridType &grid, const std::string algorithmName = "" )
       : grid_( grid ),
-        algorithmName_( algorithmName )
+        algorithmName_( algorithmName ),
+        eocParam_( Dune::ParameterKey::generate( "", "fem.eoc." ) )
     {}
 
     virtual ~AlgorithmBase () {}
@@ -187,6 +138,12 @@ namespace Fem
 
     virtual SolverMonitorType& monitor() = 0;
 
+    EocParametersType& eocParams()
+    {
+      return eocParam_;
+    }
+
+
     //! finalize problem, i.e. calculated EOC ...
     virtual void finalize ( const int eocloop ) = 0;
 
@@ -198,6 +155,7 @@ namespace Fem
   protected:
     GridType &grid_;
     const std::string algorithmName_;
+    EocParameters eocParam_;
   };
 
 
@@ -210,18 +168,17 @@ namespace Fem
   template <class Algorithm>
   void compute(Algorithm& algorithm)
   {
-    const std::string name = "";
+    typedef typename Algorithm::GridType             GridType;
+    typedef typename Algorithm::DataOutputType       DataOutputType;
+    typedef typename Algorithm::IOTupleType          IOTupleType;
+    typedef typename Algorithm::EocParametersType    EocParametersType;
 
-    typedef typename Algorithm::GridType GridType;
     GridType& grid = algorithm.grid();
-
-    typename Algorithm::IOTupleType dataTup = algorithm.dataTuple() ;
-
-    typedef Fem::DataOutput<GridType, typename Algorithm::IOTupleType> DataOutputType;
+    IOTupleType dataTup = algorithm.dataTuple() ;
     DataOutputType dataOutput( grid, dataTup );
 
     // initialize FemEoc if eocSteps > 1
-    EocParameters eocParam( Dune::ParameterKey::generate( "", "fem.eoc." ) );
+    EocParametersType& eocParam( algorithm.eocParams() );
     FemEoc::clear();
     FemEoc::initialize( eocParam.outputPath(), eocParam.fileName(), algorithm.description() );
 

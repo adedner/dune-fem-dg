@@ -40,6 +40,62 @@ namespace Dune
 namespace Fem
 {
 
+
+  class StepperParameters
+  : public Dune::Fem::LocalParameter< StepperParameters, StepperParameters >
+  {
+    protected:
+    const std::string keyPrefix_;
+
+    public:
+    StepperParameters( const std::string keyPrefix = "femdg.stepper." )
+      : keyPrefix_( keyPrefix )
+    {}
+
+    virtual double fixedTimeStep() const
+    {
+      return Dune::Fem::Parameter::getValue< double >( keyPrefix_ + "fixedtimestep" , 0.0 );
+    }
+
+    virtual double fixedTimeStepEocLoopFactor() const
+    {
+      return Dune::Fem::Parameter::getValue< double >( keyPrefix_ + "fixedtimestepeocloopfactor" , 1.0 );
+    }
+
+    virtual double startTime() const
+    {
+      return Dune::Fem::Parameter::getValue< double >( keyPrefix_ + "starttime" , 0.0 );
+    }
+
+    virtual double endTime() const
+    {
+      return Dune::Fem::Parameter::getValue< double >( keyPrefix_ + "endtime"/*, 1.0 */);
+    }
+
+    virtual int printCount() const
+    {
+      return Dune::Fem::Parameter::getValue< int >( keyPrefix_ + "printcount" , -1 );
+    }
+
+    virtual double maxTimeStep() const
+    {
+      return Dune::Fem::Parameter::getValue< double >( keyPrefix_ + "maxtimestep", std::numeric_limits<double>::max());
+    }
+
+    virtual int maximalTimeSteps () const
+    {
+      return Dune::Fem::Parameter::getValue< int >(  keyPrefix_ + "maximaltimesteps", std::numeric_limits<int>::max());
+    }
+
+    virtual bool stopAtEndTime() const
+    {
+      return Dune::Fem::Parameter::getValue< bool >( keyPrefix_ + "stopatendtime", bool(false) );
+    }
+
+  };
+
+
+
   // EvolutionAlgorithmTraits
   // -------------------------
 
@@ -204,16 +260,14 @@ namespace Fem
 
     typedef uint64_t                                              UInt64Type ;
     typedef StepperParameters                                     StepperParametersType;
-    typedef EocParameters                                         EocParametersType;
-    typedef AdaptationParameters                                  AdaptationParametersType;
 
     using BaseType::grid_;
+    using BaseType::eocParam_;
     using BaseType::grid;
 
     EvolutionAlgorithm ( GridType &grid, const std::string name = "" )
     : BaseType( grid, name  ),
       param_( StepperParametersType( Dune::ParameterKey::generate( "", "femdg.stepper." ) ) ),
-      eocParam_( EocParametersType( Dune::ParameterKey::generate( "", "fem.eoc." ) ) ),
       gridPart_( grid_ ),
       space_( gridPart_ ),
       solution_( "U_"+name, space() ),
@@ -425,10 +479,10 @@ namespace Fem
     void preInitializeStep ( TimeProviderType &tp, int loop )
     {
       // restoreData if checkpointing is enabled (default is disabled)
-      //bool newStart = ( eocParam_.steps() == 1) ? checkPointHandler_.restoreData( grid, tp ) : false;
-      bool newStart = false;
-      if( eocParam_.steps() == 1 )
-        checkPointHandler_.restoreData( tp );
+      bool newStart = ( eocParam_.steps() == 1) ? checkPointHandler_.restoreData( tp ) : false;
+      //bool newStart = false;
+      //if( eocParam_.steps() == 1 )
+      //  checkPointHandler_.restoreData( tp );
 
       initializeStep( tp, loop );
 
@@ -550,7 +604,6 @@ namespace Fem
 
     GridPartType                   gridPart_;
     StepperParametersType          param_;
-    EocParametersType              eocParam_;
     DiscreteFunctionSpaceType      space_;
 
     // the solution

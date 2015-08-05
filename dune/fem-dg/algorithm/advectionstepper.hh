@@ -24,41 +24,41 @@ namespace Fem
     typedef EvolutionAlgorithm< GridImp, ProblemTraits, polynomialOrder > BaseType ;
 
     // type of Grid
-    typedef typename BaseType :: GridType                 GridType;
+    typedef typename BaseType :: GridType                        GridType;
 
     // Choose a suitable GridView
-    typedef typename BaseType :: GridPartType             GridPartType;
+    typedef typename BaseType :: GridPartType                    GridPartType;
 
     // An analytical version of our model
-    typedef typename BaseType :: ModelType                 ModelType;
+    typedef typename BaseType :: ModelType                       ModelType;
 
     // The DG space operator
     // The first operator is sum of the other two
     // The other two are needed for semi-implicit time discretization
-    typedef typename BaseType :: ExplicitOperatorType           FullOperatorType;
+    typedef typename BaseType :: ExplicitOperatorType            FullOperatorType;
     typedef FullOperatorType  ExplicitOperatorType;
     typedef FullOperatorType  ImplicitOperatorType;
 
-    typedef typename BaseType :: BasicLinearSolverType          BasicLinearSolverType;
+    typedef typename BaseType :: BasicLinearSolverType           BasicLinearSolverType;
 
     // The discrete function for the unknown solution is defined in the DgOperator
-    typedef typename BaseType :: DiscreteFunctionType      DiscreteFunctionType;
+    typedef typename BaseType :: DiscreteFunctionType            DiscreteFunctionType;
 
     // ... as well as the Space type
-    typedef typename BaseType :: DiscreteFunctionSpaceType         DiscreteFunctionSpaceType;
+    typedef typename BaseType :: DiscreteFunctionSpaceType       DiscreteFunctionSpaceType;
 
     // The ODE Solvers
-    typedef typename BaseType :: OdeSolverType             OdeSolverType;
+    typedef typename BaseType :: OdeSolverType                   OdeSolverType;
 
-    typedef typename BaseType :: TimeProviderType          TimeProviderType;
+    typedef typename BaseType :: TimeProviderType                TimeProviderType;
 
-    typedef typename FullOperatorType :: ExtraParameterTupleType  ExtraParameterTupleType;
+    typedef typename FullOperatorType :: ExtraParameterTupleType ExtraParameterTupleType;
 
     typedef typename std::remove_pointer<typename std::tuple_element<0,typename BaseType::IndicatorTupleType>::type>::type  DGIndicatorType;
     typedef typename std::remove_pointer<typename std::tuple_element<1,typename BaseType::IndicatorTupleType>::type>::type GradientIndicatorType ;
 
     // type of 64bit unsigned integer
-    typedef typename BaseType :: UInt64Type  UInt64Type;
+    typedef typename BaseType :: UInt64Type                      UInt64Type;
 
     using BaseType :: grid_;
     using BaseType :: gridPart_;

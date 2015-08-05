@@ -24,16 +24,16 @@ namespace Fem
     typedef EvolutionAlgorithm< GridImp, ProblemTraits, polynomialOrder > BaseType ;
 
     // type of Grid
-    typedef typename BaseType :: GridType                 GridType;
+    typedef typename BaseType :: GridType                       GridType;
 
     // Choose a suitable GridView
-    typedef typename BaseType :: GridPartType             GridPartType;
+    typedef typename BaseType :: GridPartType                   GridPartType;
 
     // initial data type
-    typedef typename BaseType :: ProblemType              ProblemType;
+    typedef typename BaseType :: ProblemType                    ProblemType;
 
     // An analytical version of our model
-    typedef typename BaseType :: ModelType                 ModelType;
+    typedef typename BaseType :: ModelType                      ModelType;
 
     // The DG space operator
     // The first operator is sum of the other two
@@ -51,17 +51,17 @@ namespace Fem
     typedef typename BaseType :: DiscreteFunctionSpaceType      DiscreteFunctionSpaceType;
 
     // The ODE Solvers
-    typedef typename BaseType :: OdeSolverType     OdeSolverType;
+    typedef typename BaseType :: OdeSolverType                  OdeSolverType;
 
-    typedef typename BaseType :: TimeProviderType       TimeProviderType;
+    typedef typename BaseType :: TimeProviderType               TimeProviderType;
 
-    typedef typename BaseType::OperatorTraits OperatorTraits;
+    typedef typename BaseType::OperatorTraits                   OperatorTraits;
 
     typedef typename std::remove_pointer<typename std::tuple_element<0,typename BaseType::IndicatorTupleType>::type>::type  DGIndicatorType;
     typedef typename std::remove_pointer<typename std::tuple_element<1,typename BaseType::IndicatorTupleType>::type>::type GradientIndicatorType ;
 
     // type of 64bit unsigned integer
-    typedef typename BaseType :: UInt64Type  UInt64Type;
+    typedef typename BaseType :: UInt64Type                     UInt64Type;
 
     typedef typename OperatorTraits :: ExtraParameterTupleType  ExtraParameterTupleType;
 
