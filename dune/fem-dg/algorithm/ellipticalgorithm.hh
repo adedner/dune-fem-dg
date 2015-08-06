@@ -59,8 +59,8 @@ namespace Fem
       sigmaSpace_( gridPart_ ),
       sigmaDiscreteFunction_( "sigma-"+name, sigmaSpace_ ),
       sigmaLocalEstimate_( solution_, assembledOperator_ ),
-      sigmaEstimateFunction_( "function 4 estimate-"+name, sigmaLocalEstimate_, gridPart_, solution_.space().order() ),
-      sigma_( nullptr )
+      sigmaLocalFunction_( solution_, sigmaDiscreteFunction_, sigmaLocalEstimate_ ),
+      sigmaEstimateFunction_( "function 4 estimate-"+name, sigmaLocalEstimate_, gridPart_, solution_.space().order() )
     {}
 
 
@@ -254,22 +254,20 @@ namespace Fem
       SigmaLocalFunctionType;
 
     typedef Dune::Fem::LocalFunctionAdapter<SigmaLocalFunctionType> SigmaLocalFunctionAdapterType;
-
+                                            //StokesEstimatorType   StokesEstimateDataType;
 
     void update ()
     {
       Dune::Fem::DGL2ProjectionImpl::project( sigmaEstimateFunction_, sigmaDiscreteFunction_ );
     }
 
-    SigmaLocalFunctionAdapterType& sigma ()
+    SigmaLocalFunctionAdapterType* sigma ()
     {
-      SigmaLocalFunctionType sigmaLocalFunction( solution_, sigmaDiscreteFunction_, sigmaLocalEstimate_ );
-      sigma_.reset( new SigmaLocalFunctionAdapterType( "sigma function", sigmaLocalFunction, gridPart_, solution_.space().order() ) );
-      return *sigma_;
+      return new SigmaLocalFunctionAdapterType( "sigma function", sigmaLocalFunction_, gridPart_, solution_.space().order() );
     }
 
 
-  private:
+  public:
 
     GridPartType& gridPart_;
     const DiscreteFunctionType& solution_;
@@ -278,9 +276,8 @@ namespace Fem
     SigmaDiscreteFunctionType sigmaDiscreteFunction_;
 
     SigmaLocal<DiscreteFunctionType, AssembledOperatorType> sigmaLocalEstimate_;
+    SigmaLocalFunctionType sigmaLocalFunction_;
     SigmaEstimateFunction sigmaEstimateFunction_;
-
-    std::unique_ptr< SigmaLocalFunctionAdapterType >  sigma_;
 
   };
 
@@ -490,8 +487,7 @@ namespace Fem
       typedef Dune::Fem::GridFunctionAdapter< ExactSolutionType, GridPartType > GridExactSolutionType;
       GridExactSolutionType ugrid( "exact solution", problem().exactSolution(), gridPart_, 1 );
 
-      // create grid function adapter
-      AnalyticalTraits::addEOCErrors( eocIds_, solution(), dgOperator_.model(), ugrid, poissonSigmaEstimator_.sigma() );
+      AnalyticalTraits::addEOCErrors( eocIds_, solution(), dgOperator_.model(), ugrid, *poissonSigmaEstimator_.sigma() );
 
       // delete solver and linear operator for next step
       invDgOperator_.reset();

@@ -195,8 +195,8 @@ struct PoissonProblemCreator
       return ids;
     }
 
-    template< class SolutionImp, class Model, class ExactFunction, class SigmaEstimator >
-    static void addEOCErrors ( const EOCErrorIDs &ids, SolutionImp &u, const Model &model, ExactFunction &f, const SigmaEstimator& sigma  )
+    template< class SolutionImp, class Model, class ExactFunction, class SigmaEstimatorImp >
+    static void addEOCErrors ( const EOCErrorIDs &ids, SolutionImp &u, const Model &model, const ExactFunction &f, SigmaEstimatorImp& sigma  )
     {
       // calculate L2 - Norm
       Dune::Fem::L2Norm< GridPartType > l2norm( u.space().gridPart() );
@@ -206,7 +206,7 @@ struct PoissonProblemCreator
       const double dgerror = dgnorm.distance( f, u );
 
       Dune::Fem::H1Norm< GridPartType > sigmanorm( u.space().gridPart() );
-      const double sigmaerror = 0.0;// sigmanorm.distance( f, sigma );
+      const double sigmaerror = sigmanorm.distance( f, sigma );
 
       Dune::Fem::FemEoc::setErrors( ids[ 0 ], l2error );
       Dune::Fem::FemEoc::setErrors( ids[ 1 ], dgerror );
@@ -458,35 +458,6 @@ public:
   {
     // this should be ok but could lead to a henn-egg problem
     typedef Dune::Fem::EllipticAlgorithm< GridType, PoissonProblemCreator<GridType>, polOrd > Type;
-
-    // advection diffusion stepper using passes
-    //typedef Dune::Fem::AdvectionDiffusionStepper< GridTypeImp,
-    //                                              AdvectionDiffusionProblemCreator<GridTypeImp>,
-    //                                              polOrd,
-    //                                              NoDataWriter,
-    //                                              NoDiagnostics,
-    //                                              NoAdaptivity,
-    //                                              NoEOCWriter,
-    //                                              NoCheckPointing,
-    //                                              NoLimiting > StepperType1;
-
-    //algorithm from Tobias without passes
-    //typedef Dune::Fem::Tobias::EvolutionAlgorithm< GridTypeImp,
-    //                                               Tobias::AdvectionDiffusionProblemCreator<GridTypeImp>,
-    //                                               polOrd > StepperType2
-    //
-
-    // combined stepper
-    // typedef Dune::Fem::CombinedStepper< StepperType1, StepperType2,
-    //                                     CombinedDataWriter,
-    //                                     CombinedDiagnostics,
-    //                                     CombinedAdaptivity,
-    //                                     CombinedEOCWriter,
-    //                                     CombinedChecPointing,
-    //                                     CombinedLimiting >
-
-
-
   };
 
 
