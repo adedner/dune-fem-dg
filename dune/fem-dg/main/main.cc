@@ -8,6 +8,7 @@
 #include <config.h>
 
 #if defined USE_BASEFUNCTIONSET_CODEGEN || defined BASEFUNCTIONSET_CODEGEN_GENERATE
+#warning "Codegen enabled!"
 #define USE_FEMDG_BASISFUNCTIONSET
 #endif
 

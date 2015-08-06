@@ -143,7 +143,7 @@ class Thermodynamics
     assert( p > 1e-12 );
     assert( theta > 1e-12 );
 
-    const Field rho = std::pow( p/p0_ , gamma_inv_ ) * p0_ * R_d_inv_ / theta ;
+    const Field rho = std::pow( double(p/p0_) , double(gamma_inv_) ) * p0_ * R_d_inv_ / theta ;
 
     assert( rho > 0.0 );
     return rho;

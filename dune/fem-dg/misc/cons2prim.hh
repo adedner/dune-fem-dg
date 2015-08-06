@@ -27,6 +27,7 @@ void setupAdditionalVariables( const TimeProvider& tp,
                                const ModelType& model,
                                PrimDiscreteFunctionType& primDF )
 {
+#if 0
   typedef typename ConsDiscreteFunctionType::Traits::DiscreteFunctionSpaceType
     ConsDiscreteFunctionSpaceType;
   typedef typename PrimDiscreteFunctionType::Traits::DiscreteFunctionSpaceType
@@ -78,6 +79,7 @@ void setupAdditionalVariables( const TimeProvider& tp,
       primLF.axpy( quad[qP] , prim );
     }
   }
+#endif
 }
 
 #endif

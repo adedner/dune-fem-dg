@@ -11,7 +11,7 @@
 
 fem.prefix: data
 fem.io.datafileprefix: NS
-fem.io.outputformat: vtk-cell
+fem.io.outputformat: none
 fem.io.savestep: 0.01 # SaveStep (write data every `saveStep' time period, <=0 deactivates)
 fem.io.savecount: -1 # SaveCount (write data every saveCount time steps, <=0 deactivates)
 femdg.stepper.printcount: 1000

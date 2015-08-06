@@ -20,7 +20,7 @@ namespace Dune
   template<class K, int ROWS, int COLS>
   class BlockCRSMatrix
   {
-    std::vector< double > data_;
+    std::vector< K > data_;
     std::vector< int > rows_;
     std::vector< int > cols_;
   public:
