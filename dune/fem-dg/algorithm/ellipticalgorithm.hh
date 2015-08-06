@@ -26,478 +26,402 @@
 #include <dune/fem/misc/gridname.hh>
 
 // include local header files
-#include "base.hh"
-#include "baseevolution.hh"
+#include "steadystate.hh"
 
 
-using namespace Dune;
 
 
-template <class GridImp,
-          class ProblemTraits,
-          int polOrd,
-          class ExtraParameterTuple = std::tuple<> >
-struct ElliptTraits
+namespace Dune
 {
-  enum { polynomialOrder = polOrd };
-
-  // type of Grid
-  typedef GridImp                                        GridType;
-
-  // Choose a suitable GridView
-  typedef Dune::Fem::AdaptiveLeafGridPart< GridType >    GridPartType;
-
-  typedef typename ProblemTraits :: template Traits< GridPartType >   ModelTraits;
-  // traits for the operator class
-  struct OperatorTraits :
-    public Dune::PassTraits< ModelTraits, polynomialOrder, ModelTraits::ModelType::dimRange >
-  {
-    static const int limiterPolynomialOrder = polynomialOrder;
-    typedef ExtraParameterTuple ExtraParameterTupleType;
-  };
-
-
-  // problem dependent types
-  typedef typename OperatorTraits :: InitialDataType   InitialDataType;
-  typedef typename OperatorTraits :: ModelType         ModelType;
-  typedef typename OperatorTraits :: FluxType          FluxType;
-  static const Dune::DGDiffusionFluxIdentifier DiffusionFluxId
-    = OperatorTraits :: PrimalDiffusionFluxId ;
-  static const int dimRange = InitialDataType :: dimRange ;
-
-  typedef typename OperatorTraits::DestinationType            DiscreteFunctionType;
-  typedef typename OperatorTraits::LinearOperatorType         LinearOperatorType;
-  typedef typename OperatorTraits::LinearInverseOperatorType  LinearInverseOperatorType;
-
-  typedef Dune :: DGAdvectionDiffusionOperator< OperatorTraits >  DgOperatorType;
-
-  typedef DGPrimalMatrixAssembly< DgOperatorType >                DgAssembledOperatorType;
-
-  // ... as well as the Space type
-  typedef typename DiscreteFunctionType :: DiscreteFunctionSpaceType   DiscreteSpaceType;
-
-  // type of restriction/prolongation projection for adaptive simulations
-  typedef Dune::Fem::RestrictProlongDefault< DiscreteFunctionType > RestrictionProlongationType;
-};
-
-
-template <class GridImp,
-          class ProblemTraits,
-          int polynomialOrder>
-class EllipticAlgorithm
-  : public SteadyStateAlgorithm< Grid, ProblemTraits, polOrder >
+namespace Fem
 {
-public:
-  typedef SteadyStateAlgorithm< Grid, ProblemTraits, polOrder > BaseType;
 
-  // my traits class
-  typedef ElliptTraits< GridImp, ProblemTraits, polynomialOrder> Traits ;
 
-  // type of Grid
-  typedef typename Traits :: GridType                    GridType;
-
-  // Choose a suitable GridView
-  typedef typename Traits :: GridPartType                GridPartType;
-
-  // initial data type
-  typedef typename Traits :: InitialDataType             InitialDataType;
-
-  // An analytical version of our model
-  typedef typename Traits :: ModelType                   ModelType;
-
-  // The flux for the discretization of advection terms
-  typedef typename Traits :: FluxType                    FluxType;
-
-  // The DG space operator
-  typedef typename Traits :: DgOperatorType              DgOperatorType;
-
-  // The DG space operator
-  typedef typename Traits :: DgAssembledOperatorType     DgAssembledOperatorType;
-
-  // The discrete function for the unknown solution is defined in the DgOperator
-  typedef typename Traits :: DiscreteFunctionType        DiscreteFunctionType;
-
-  // ... as well as the Space type
-  typedef typename Traits :: DiscreteSpaceType           DiscreteSpaceType;
-
-  // type of linear operator (i.e. matrix implementation)
-  typedef typename Traits :: LinearOperatorType          LinearOperatorType;
-
-  // type of inverse operator (i.e. linear solver implementation)
-  typedef typename Traits :: LinearInverseOperatorType   LinearInverseOperatorType;
-
-  enum { dimension = GridType :: dimension  };
-  typedef typename DiscreteSpaceType ::
-   template ToNewDimRange< dimension * ModelType::dimRange > :: NewFunctionSpaceType SigmaFunctionSpaceType ;
-
-  using BaseType::problem;
-
-  //- hybrid spaces use PAdaptiveDGSpace
-  template <class Grid, int topoId>
-  struct SigmaSpaceChooser
+  template< class GridPartImp, class DiscreteFunctionImp, class SigmaFunctionSpaceImp, class AssembledOperatorImp, int polOrder>
+  class PoissonSigmaEstimator
   {
-    typedef Fem :: PAdaptiveDGSpace< SigmaFunctionSpaceType, GridPartType, polynomialOrder > Type ;
-  };
+  public:
 
-  //- cubes use LegendreDGSpace
-  template <class Grid>
-  struct SigmaSpaceChooser< Grid, 1 >
-  {
-    typedef Dune::Fem:: LegendreDiscontinuousGalerkinSpace< SigmaFunctionSpaceType, GridPartType, polynomialOrder > Type ;
-  };
+    typedef DiscreteFunctionImp             DiscreteFunctionType;
+    typedef SigmaFunctionSpaceImp           SigmaFunctionSpaceType;
+    typedef GridPartImp                     GridPartType;
+    typedef typename GridPartType::GridType GridType;
+    typedef AssembledOperatorImp            AssembledOperatorType;
 
-  //- cubes use OrthonormalDGSpace
-  template <class Grid>
-  struct SigmaSpaceChooser< Grid, 0 >
-  {
-    typedef Dune::Fem:: DiscontinuousGalerkinSpace< SigmaFunctionSpaceType, GridPartType, polynomialOrder > Type ;
-  };
 
-  // work arround internal compiler error
-  enum { simplexTopoId =  GenericGeometry :: SimplexTopology< dimension > :: type :: id,
-         cubeTopoId    =  GenericGeometry :: CubeTopology< dimension > :: type :: id,
-         myTopo        =  Capabilities::hasSingleGeometryType< GridType > :: topologyId
-       };
-
-  enum { topoId = (simplexTopoId == myTopo) ? 0 :  // 0 = simplex, 1 = cube, -1 = hybrid
-                    (myTopo == cubeTopoId) ? 1 : -1 };
-
-  typedef typename SigmaSpaceChooser< GridType, topoId > :: Type  SigmaDiscreteFunctionSpaceType ;
-
-  typedef Dune::Fem::AdaptiveDiscreteFunction< SigmaDiscreteFunctionSpaceType >
-    SigmaDiscreteFunctionType;
-
-  // compute the function sigma = grad u + sum_e r_e
-  template <class DF, class Operator>
-  struct SigmaLocal : public Fem :: LocalFunctionAdapterHasInitialize
-  {
-    typedef typename DF::DiscreteFunctionSpaceType UDFS;
-    typedef typename UDFS::GridPartType GridPartType;
-    typedef typename GridPartType::GridType::template Codim<0>::Entity EntityType;
-    typedef typename GridPartType::IntersectionIteratorType IntersectionIteratorType;
-    typedef typename GridPartType::IntersectionType IntersectionType;
-
-    typedef typename Operator::FluxType::LiftingFunctionType LiftingFunctionType;
-    typedef typename LiftingFunctionType::RangeType RangeType;
-    typedef typename LiftingFunctionType::DiscreteFunctionSpaceType DiscreteFunctionSpaceType;
-    typedef typename DiscreteFunctionSpaceType::FunctionSpaceType FunctionSpaceType;
-
-    typedef typename DF::RangeType URangeType;
-    typedef typename DF::JacobianRangeType UJacobianRangeType;
-
-    SigmaLocal( const DF &df, const Operator &oper )
-    : df_(df), oper_(oper), localdf_(df_), reSpace_( oper.gradientSpace() ), localre_( reSpace_ )
+    PoissonSigmaEstimator( GridPartType& gridPart,
+                           const DiscreteFunctionType& solution,
+                           const AssembledOperatorType& assembledOperator,
+                           const std::string name = "" )
+    : gridPart_( gridPart ),
+      solution_( solution ),
+      assembledOperator_( assembledOperator ),
+      sigmaSpace_( gridPart_ ),
+      sigmaDiscreteFunction_( "sigma-"+name, sigmaSpace_ ),
+      sigmaLocalEstimate_( solution_, assembledOperator_ ),
+      sigmaEstimateFunction_( "function 4 estimate-"+name, sigmaLocalEstimate_, gridPart_, solution_.space().order() ),
+      sigma_( nullptr )
     {}
-    SigmaLocal(const SigmaLocal &other)
-    : df_(other.df_), oper_(other.oper_), localdf_(df_), reSpace_(other.reSpace_), localre_( reSpace_ )
-    {}
-    ~SigmaLocal()
-    {
-    }
-    template <class PointType>
-    void evaluate(const PointType& x, RangeType& val) const
-    {
-      typename DF::JacobianRangeType jac;
-      localdf_.jacobian(x,jac);
-      localre_.evaluate(x,val);
-      Dune::Fem::FieldMatrixConverter< RangeType, typename DF::JacobianRangeType> val1( val );
-      val1 += jac;
-    }
-    void init(const EntityType& entity)
-    {
-      localdf_.init(entity);
 
-      localre_.init(entity);
-      localre_.clear();
-      IntersectionIteratorType end = df_.space().gridPart().iend( entity );
-      for( IntersectionIteratorType it = df_.space().gridPart().ibegin( entity ); it != end; ++it )
+
+    //- hybrid spaces use PAdaptiveDGSpace
+    template <class Grid, int topoId>
+    struct SigmaSpaceChooser
+    {
+      typedef Fem::PAdaptiveDGSpace< SigmaFunctionSpaceType, GridPartType, polOrder > Type ;
+    };
+
+    //- cubes use LegendreDGSpace
+    template <class Grid>
+    struct SigmaSpaceChooser< Grid, 1 >
+    {
+      typedef Dune::Fem:: LegendreDiscontinuousGalerkinSpace< SigmaFunctionSpaceType, GridPartType, polOrder > Type ;
+    };
+
+    //- cubes use OrthonormalDGSpace
+    template <class Grid>
+    struct SigmaSpaceChooser< Grid, 0 >
+    {
+      typedef Dune::Fem:: DiscontinuousGalerkinSpace< SigmaFunctionSpaceType, GridPartType, polOrder > Type ;
+    };
+
+    // work arround internal compiler error
+    enum { simplexTopoId =  GenericGeometry::SimplexTopology< GridType::dimension >::type::id,
+           cubeTopoId    =  GenericGeometry::CubeTopology< GridType::dimension >::type::id,
+           myTopo        =  Dune::Capabilities::hasSingleGeometryType< GridType >::topologyId
+         };
+
+    enum { topoId = (simplexTopoId == myTopo) ? 0 :  // 0 = simplex, 1 = cube, -1 = hybrid
+                      (myTopo == cubeTopoId) ? 1 : -1 };
+
+    typedef typename SigmaSpaceChooser< GridType, topoId >::Type  SigmaDiscreteFunctionSpaceType ;
+
+    typedef Dune::Fem::AdaptiveDiscreteFunction< SigmaDiscreteFunctionSpaceType >
+      SigmaDiscreteFunctionType;
+
+    // compute the function sigma = grad u + sum_e r_e
+    template <class DF, class Operator>
+    struct SigmaLocal : public Fem::LocalFunctionAdapterHasInitialize
+    {
+      typedef typename DF::DiscreteFunctionSpaceType UDFS;
+      typedef typename UDFS::GridPartType GridPartType;
+      typedef typename GridPartType::GridType::template Codim<0>::Entity EntityType;
+      typedef typename GridPartType::IntersectionIteratorType IntersectionIteratorType;
+      typedef typename GridPartType::IntersectionType IntersectionType;
+
+      typedef typename Operator::FluxType::LiftingFunctionType LiftingFunctionType;
+      typedef typename LiftingFunctionType::RangeType RangeType;
+      typedef typename LiftingFunctionType::DiscreteFunctionSpaceType DiscreteFunctionSpaceType;
+      typedef typename DiscreteFunctionSpaceType::FunctionSpaceType FunctionSpaceType;
+
+      typedef typename DF::RangeType URangeType;
+      typedef typename DF::JacobianRangeType UJacobianRangeType;
+
+      SigmaLocal( const DF &df, const Operator &oper )
+      : df_(df), oper_(oper), localdf_(df_), reSpace_( oper.gradientSpace() ), localre_( reSpace_ )
+      {}
+      SigmaLocal(const SigmaLocal &other)
+      : df_(other.df_), oper_(other.oper_), localdf_(df_), reSpace_(other.reSpace_), localre_( reSpace_ )
+      {}
+      ~SigmaLocal()
       {
-        const IntersectionType &intersection = *it;
-        if ( intersection.neighbor() && df_.space().continuous(intersection) )
-        {
-          if( ! intersection.conforming() )
-            getLifting< false > ( intersection, entity ) ;
-          else
-            getLifting< true > ( intersection, entity );
-        }
       }
-    }
-    private:
-    template <bool conforming>
-    void getLifting( const IntersectionType &intersection, const EntityType &entity)
-    {
-      // CACHING
-      typedef typename Operator :: FaceQuadratureType  FaceQuadratureType ;
-      typedef Dune::Fem::IntersectionQuadrature< FaceQuadratureType, conforming > IntersectionQuadratureType;
-      typedef typename IntersectionQuadratureType :: FaceQuadratureType QuadratureImp;
-
-      const EntityType &outside = Dune::Fem::make_entity( intersection.outside() );
-
-      typename DF::LocalFunctionType uOutside = df_.localFunction(outside);
-
-      const int enOrder = df_.space().order( entity );
-      const int nbOrder = df_.space().order( outside );
-
-      const int quadOrder = 2 * std::max( enOrder, nbOrder ) + 1;
-
-      IntersectionQuadratureType interQuad( df_.space().gridPart(), intersection, quadOrder );
-      const QuadratureImp &quadInside  = interQuad.inside();
-      const QuadratureImp &quadOutside = interQuad.outside();
-      const int numQuadraturePoints = quadInside.nop();
-
-      // obtain all required function values on intersection
-      std::vector< URangeType > uValuesEn( numQuadraturePoints );
-      std::vector< URangeType > uValuesNb( numQuadraturePoints );
-      localdf_.evaluateQuadrature( quadInside, uValuesEn );
-      uOutside.evaluateQuadrature( quadOutside, uValuesNb );
-      oper_.lifting(df_.space().gridPart(),
-                    intersection, entity, outside, 0, quadInside, quadOutside,
-                    uValuesEn, uValuesNb,
-                    localre_
-                   );
-    }
-    const DF &df_;
-    const Operator &oper_;
-    typename DF::LocalFunctionType localdf_;
-    const DiscreteFunctionSpaceType &reSpace_;
-    LiftingFunctionType localre_;
-  };
-
-  typedef Dune::Fem::LocalFunctionAdapter< SigmaLocal<DiscreteFunctionType, DgAssembledOperatorType> > SigmaEstimateFunction;
-
-  typedef tuple< const DiscreteFunctionType* > IOTupleType;
-  typedef Dune::Fem::DataWriter<GridType,IOTupleType> DataWriterType;
-
-  template <class SigmaLocalType>
-  struct SigmaLocalFunction : public Fem :: LocalFunctionAdapterHasInitialize
-  {
-    typedef typename DiscreteFunctionType::DiscreteFunctionSpaceType
-                     DiscreteFunctionSpaceType;
-    typedef typename DiscreteFunctionType::RangeType RangeType;
-    typedef typename DiscreteFunctionType::JacobianRangeType JacobianRangeType;
-    typedef typename DiscreteFunctionType::EntityType EntityType;
-    typedef typename DiscreteFunctionSpaceType::FunctionSpaceType FunctionSpaceType;
-    typedef typename DiscreteFunctionSpaceType::GridPartType GridPartType;
-
-    SigmaLocalFunction( const DiscreteFunctionType &u,
-                        const SigmaDiscreteFunctionType &q,
-                        const SigmaLocalType &sigmaLocal )
-    : u_(u), uLocal_(u), q_(q), qLocal_(q), sigmaLocal_(sigmaLocal)
-    {}
-    SigmaLocalFunction(const SigmaLocalFunction &other)
-    : u_(other.u_), uLocal_(u_), q_(other.q_), qLocal_(q_), sigmaLocal_(other.sigmaLocal_)
-    {}
-    ~SigmaLocalFunction()
-    {
-    }
-    template <class PointType>
-    void evaluate(const PointType& x, RangeType& val) const
-    {
-      uLocal_.evaluate(x,val);
-    }
-    template <class PointType>
-    void jacobian(const PointType& x, JacobianRangeType& val) const
-    {
-      typename SigmaLocalType::RangeType qval;
-      qLocal_.evaluate(x,qval);
-      // sigmaLocal_.evaluate(x,qval);
-      Dune::Fem::FieldMatrixConverter< typename SigmaLocalType::RangeType, JacobianRangeType> val1( qval );
-      val = val1;
-      // uLocal_.jacobian(x,val);
-    }
-    void init(const EntityType& entity)
-    {
-      uLocal_.init(entity);
-      qLocal_.init(entity);
-      sigmaLocal_.init(entity);
-    }
-    private:
-    const DiscreteFunctionType &u_;
-    typename DiscreteFunctionType::LocalFunctionType uLocal_;
-    const SigmaDiscreteFunctionType &q_;
-    typename SigmaDiscreteFunctionType::LocalFunctionType qLocal_;
-    SigmaLocalType sigmaLocal_;
-  };
-
-
-  //---- Local Restriction and Prolongation Operator -------------------------
-  typedef Dune::Fem::RestrictProlongDefault< DiscreteFunctionType > RestrictionProlongationType;
-  //---- Adaptation Manager --------------------------------------------------
-  typedef Dune::Fem::AdaptationManager< GridType, RestrictionProlongationType > AdaptationManagerType;
-  struct PolOrderStructure
-  {
-    // set polynomial order to 2 by default
-    PolOrderStructure() : val_( -1 ) {}
-    explicit PolOrderStructure(int init) : val_( init ) {}
-    const int value() const
-    {
-      assert( val_ > 0 );
-      return val_;
-    }
-    int &value() { return val_; }
-    int val_;
-  };
-  typedef PersistentContainer<GridType,PolOrderStructure> PolOrderContainer;
-
-  // type of statistics monitor
-  typedef SolverMonitor  SolverMonitorType ;
-
-public:
-  EllipticAlgorithm(GridType& grid, const std::string name = "" ) :
-    grid_( grid ),
-    gridPart_( grid_ ),
-    problem_( ProblemTraits::problem() ),
-    dgOperator_( gridPart_, *problem_ ),
-    dgAssembledOperator_( gridPart_, dgOperator_ ),
-    invDgOperator_(),
-    linDgOperator_(),
-    space_( const_cast<DiscreteSpaceType &> (dgAssembledOperator_.space()) ),
-    solution_("solution-"+name, space_ ),
-    rhs_("rhs-"+name, space_ ),
-    sigmaSpace_( gridPart_ ),
-    sigmaDiscreteFunction_( "sigma-"+name, sigmaSpace_ ),
-    sigmaLocalEstimate_( solution_, dgAssembledOperator_ ),
-    sigmaEstimateFunction_( "function 4 estimate-"+name, sigmaLocalEstimate_, gridPart_, space_.order() ),
-    ioTuple_( &solution_ ),
-    polOrderContainer_(grid_ , 0),
-    eocId_( -1 ),
-    step_( 0 )
-  {
-    std::string filename( Dune::Fem::Parameter::commonOutputPath() );
-    filename += "/run.gnu";
-    runFile_.open( filename.c_str() );
-    if( ! runFile_.is_open() )
-    {
-      std::cerr << filename << "runfile not open" << std::endl;
-    }
-
-    runFile_ << "# h | elements | CPU time | iter | l_min | l_max | cond  | L2 error" << std::endl;
-
-    std::string gridName = Fem :: gridName( grid_ );
-    if( gridName == "ALUGrid" || gridName == "ALUConformGrid" || gridName == "ALUSimplexGrid" )
-    {
-      if( space_.begin() != space_.end() )
+      template <class PointType>
+      void evaluate(const PointType& x, RangeType& val) const
       {
-        if( space_.begin()->type().isSimplex() && space_.order() > 2 && space_.continuous() && GridType :: dimension > 2 )
-        {
-          std::cerr << std::endl<< "ERROR: Lagrange spaces for p>2 do not work on simplex grids due to the twist problem !!!" << std::endl << std::endl;
-        }
+        typename DF::JacobianRangeType jac;
+        localdf_.jacobian(x,jac);
+        localre_.evaluate(x,val);
+        Dune::Fem::FieldMatrixConverter< RangeType, typename DF::JacobianRangeType> val1( val );
+        val1 += jac;
       }
-    }
-
-    solution_.clear();
-
-    // we start with max order
-    typedef typename PolOrderContainer :: Iterator Iterator ;
-    const Iterator end = polOrderContainer_.end();
-    const int minimalOrder = solution_.space().order(); // estimator_.minimalOrder() ;
-    for( Iterator it = polOrderContainer_.begin(); it != end; ++it )
-    {
-      (*it).value() = minimalOrder ;
-    }
-
-    const std::string eocDescription[] = { "$L^2$-error", "DG-error", "sigma-norm" };
-    eocId_ = Dune::Fem::FemEoc::addEntry( eocDescription, 3);
-  }
-
-  GridType& grid () { return grid_; }
-
-  //! return reference to discrete space
-  DiscreteSpaceType & space() { return space_; }
-
-  // gather information from the space operator, the time integratior
-  // and the problem to output before each table in tex file
-  std::string description() const
-  {
-    std::string latexInfo;
-
-    latexInfo = dgAssembledOperator_.description();
-
-    std::stringstream odeInfo;
-
-    latexInfo += odeInfo.str()
-                  + "\n"
-                  + problem_->description()
-                  + "\n\n";
-
-    return latexInfo;
-  }
-
-  //! default time loop implementation, overload for changes
-  SolverMonitorType solve( const int loop )
-  {
-    SolverMonitorType monitor;
-    numbers_.resize( 0 );
-
-    // calculate grid width
-    monitor.gridWidth = Dune::Fem::GridWidth::calcGridWidth(gridPart_);
-    numbers_.push_back( monitor.gridWidth );
-
-    monitor.elements = grid_.size(0);
-    numbers_.push_back( monitor.elements );
-
-#if 0
-#ifdef PADAPTSPACE
-    int polOrder = Dune::Fem:: Parameter::getValue<double>("femdg.polynomialOrder",1);
-    const int minimalOrder = estimator_.minimalmemory
-    // only implemented for PAdaptiveSpace
-    std::vector<int> polOrderVec( space_.gridPart().indexSet().size(0) );
-    std::fill( polOrderVec.begin(), polOrderVec.end(), polOrder );
-
-    polOrderContainer_.update();
-    if ( estimator_.isPadaptive() )
-    {
-      typedef typename DiscreteSpaceType::IteratorType IteratorType;
-      typedef typename IteratorType::Entity EntityType ;
-      const IteratorType end = space_.end();
-      for( IteratorType it = space_.begin(); it != end; ++it )
+      void init(const EntityType& entity)
       {
-        const EntityType& entity = *it;
-        int order = polOrderContainer_[ entity ].value();
+        localdf_.init(entity);
 
-        // use constrcutor here, operator = is deprecated
-        typename EntityType::EntityPointer hit ( it );
-        while (order == -1) // is a new element
+        localre_.init(entity);
+        localre_.clear();
+        IntersectionIteratorType end = df_.space().gridPart().iend( entity );
+        for( IntersectionIteratorType it = df_.space().gridPart().ibegin( entity ); it != end; ++it )
         {
-          if ( entity.level() == 0)
+          const IntersectionType &intersection = *it;
+          if ( intersection.neighbor() && df_.space().continuous(intersection) )
           {
-            order = minimalOrder;
-          }
-          else
-          {
-            hit = hit->father();
-            // don't call father twice
-            order = polOrderContainer_[ *hit ].value();
-            assert(order > 0);
+            if( ! intersection.conforming() )
+              getLifting< false > ( intersection, entity ) ;
+            else
+              getLifting< true > ( intersection, entity );
           }
         }
-        polOrderVec[space_.gridPart().indexSet().index(entity)] = order;
+      }
+      private:
+      template <bool conforming>
+      void getLifting( const IntersectionType &intersection, const EntityType &entity)
+      {
+        // CACHING
+        typedef typename Operator::FaceQuadratureType  FaceQuadratureType ;
+        typedef Dune::Fem::IntersectionQuadrature< FaceQuadratureType, conforming > IntersectionQuadratureType;
+        typedef typename IntersectionQuadratureType::FaceQuadratureType QuadratureImp;
+
+        const EntityType &outside = Dune::Fem::make_entity( intersection.outside() );
+
+        typename DF::LocalFunctionType uOutside = df_.localFunction(outside);
+
+        const int enOrder = df_.space().order( entity );
+        const int nbOrder = df_.space().order( outside );
+
+        const int quadOrder = 2 * std::max( enOrder, nbOrder ) + 1;
+
+        IntersectionQuadratureType interQuad( df_.space().gridPart(), intersection, quadOrder );
+        const QuadratureImp &quadInside  = interQuad.inside();
+        const QuadratureImp &quadOutside = interQuad.outside();
+        const int numQuadraturePoints = quadInside.nop();
+
+        // obtain all required function values on intersection
+        std::vector< URangeType > uValuesEn( numQuadraturePoints );
+        std::vector< URangeType > uValuesNb( numQuadraturePoints );
+        localdf_.evaluateQuadrature( quadInside, uValuesEn );
+        uOutside.evaluateQuadrature( quadOutside, uValuesNb );
+        oper_.lifting(df_.space().gridPart(),
+                      intersection, entity, outside, 0, quadInside, quadOutside,
+                      uValuesEn, uValuesNb,
+                      localre_
+                     );
+      }
+      const DF &df_;
+      const Operator &oper_;
+      typename DF::LocalFunctionType localdf_;
+      const DiscreteFunctionSpaceType &reSpace_;
+      LiftingFunctionType localre_;
+    };
+
+    typedef Dune::Fem::LocalFunctionAdapter< SigmaLocal<DiscreteFunctionType, AssembledOperatorType> > SigmaEstimateFunction;
+
+    template <class SigmaLocalType>
+    struct SigmaLocalFunction : public Fem::LocalFunctionAdapterHasInitialize
+    {
+      typedef typename DiscreteFunctionType::DiscreteFunctionSpaceType
+                       DiscreteFunctionSpaceType;
+      typedef typename DiscreteFunctionType::RangeType RangeType;
+      typedef typename DiscreteFunctionType::JacobianRangeType JacobianRangeType;
+      typedef typename DiscreteFunctionType::EntityType EntityType;
+      typedef typename DiscreteFunctionSpaceType::FunctionSpaceType FunctionSpaceType;
+      typedef typename DiscreteFunctionSpaceType::GridPartType GridPartType;
+
+      SigmaLocalFunction( const DiscreteFunctionType &u,
+                          const SigmaDiscreteFunctionType &q,
+                          const SigmaLocalType &sigmaLocal )
+      : u_(u), uLocal_(u), q_(q), qLocal_(q), sigmaLocal_(sigmaLocal)
+      {}
+      SigmaLocalFunction(const SigmaLocalFunction &other)
+      : u_(other.u_), uLocal_(u_), q_(other.q_), qLocal_(q_), sigmaLocal_(other.sigmaLocal_)
+      {}
+      ~SigmaLocalFunction()
+      {
+      }
+      template <class PointType>
+      void evaluate(const PointType& x, RangeType& val) const
+      {
+        uLocal_.evaluate(x,val);
+      }
+      template <class PointType>
+      void jacobian(const PointType& x, JacobianRangeType& val) const
+      {
+        typename SigmaLocalType::RangeType qval;
+        qLocal_.evaluate(x,qval);
+        // sigmaLocal_.evaluate(x,qval);
+        Dune::Fem::FieldMatrixConverter< typename SigmaLocalType::RangeType, JacobianRangeType> val1( qval );
+        val = val1;
+        // uLocal_.jacobian(x,val);
+      }
+      void init(const EntityType& entity)
+      {
+        uLocal_.init(entity);
+        qLocal_.init(entity);
+        sigmaLocal_.init(entity);
+      }
+      private:
+      const DiscreteFunctionType &u_;
+      typename DiscreteFunctionType::LocalFunctionType uLocal_;
+      const SigmaDiscreteFunctionType &q_;
+      typename SigmaDiscreteFunctionType::LocalFunctionType qLocal_;
+      SigmaLocalType sigmaLocal_;
+    };
+
+    typedef SigmaLocal<DiscreteFunctionType, AssembledOperatorType> SigmaLocalEstimateType;
+
+    typedef SigmaLocalFunction<SigmaLocal<DiscreteFunctionType, AssembledOperatorType> >
+      SigmaLocalFunctionType;
+
+    typedef Dune::Fem::LocalFunctionAdapter<SigmaLocalFunctionType> SigmaLocalFunctionAdapterType;
+
+
+    void update ()
+    {
+      Dune::Fem::DGL2ProjectionImpl::project( sigmaEstimateFunction_, sigmaDiscreteFunction_ );
+    }
+
+    SigmaLocalFunctionAdapterType& sigma ()
+    {
+      SigmaLocalFunctionType sigmaLocalFunction( solution_, sigmaDiscreteFunction_, sigmaLocalEstimate_ );
+      sigma_.reset( new SigmaLocalFunctionAdapterType( "sigma function", sigmaLocalFunction, gridPart_, solution_.space().order() ) );
+      return *sigma_;
+    }
+
+
+  private:
+
+    GridPartType& gridPart_;
+    const DiscreteFunctionType& solution_;
+    const AssembledOperatorType& assembledOperator_;
+    SigmaDiscreteFunctionSpaceType sigmaSpace_;
+    SigmaDiscreteFunctionType sigmaDiscreteFunction_;
+
+    SigmaLocal<DiscreteFunctionType, AssembledOperatorType> sigmaLocalEstimate_;
+    SigmaEstimateFunction sigmaEstimateFunction_;
+
+    std::unique_ptr< SigmaLocalFunctionAdapterType >  sigma_;
+
+  };
+
+
+
+
+  template <class GridImp,
+            class ProblemTraits,
+            int polOrder>
+  class EllipticAlgorithm
+    : public SteadyStateAlgorithm< GridImp, ProblemTraits, polOrder >
+  {
+  public:
+    typedef SteadyStateAlgorithm< GridImp, ProblemTraits, polOrder > BaseType;
+
+    // type of Grid
+    typedef typename BaseType::GridType                    GridType;
+
+    // Choose a suitable GridView
+    typedef typename BaseType::GridPartType                GridPartType;
+
+    // initial data type
+    typedef typename BaseType::ProblemType                 ProblemType;
+
+    // An analytical version of our model
+    typedef typename BaseType::ModelType                   ModelType;
+
+    // The flux for the discretization of advection terms
+    typedef typename BaseType::DiscreteTraits::FluxType    FluxType;
+
+    // type of linear operator (i.e. matrix implementation)
+    typedef typename BaseType::FullOperatorType            FullOperatorType;
+
+    // The DG space operator
+    typedef typename BaseType::AssemblyOperatorType        AssemblyOperatorType;
+    typedef typename BaseType::AssembledOperatorType       AssembledOperatorType;
+
+    // The discrete function for the unknown solution is defined in the DgOperator
+    typedef typename BaseType::DiscreteFunctionType        DiscreteFunctionType;
+
+    // ... as well as the Space type
+    typedef typename BaseType::DiscreteFunctionSpaceType   DiscreteFunctionSpaceType;
+
+    // type of inverse operator (i.e. linear solver implementation)
+    typedef typename BaseType::BasicLinearSolverType       BasicLinearSolverType;
+
+    typedef typename BaseType::RestrictionProlongationType RestrictionProlongationType;
+
+    typedef typename BaseType::EOCErrorIDs                 EOCErrorIDs;
+
+    enum { dimension = GridType::dimension  };
+
+    typedef typename DiscreteFunctionSpaceType ::
+      template ToNewDimRange< dimension * ModelType::dimRange >::NewFunctionSpaceType SigmaFunctionSpaceType;
+
+    typedef PoissonSigmaEstimator< GridPartType, DiscreteFunctionType, SigmaFunctionSpaceType, AssembledOperatorType, polOrder > PoissonSigmaEstimatorType;
+
+    typedef typename  BaseType::AnalyticalTraits    AnalyticalTraits;
+
+    using BaseType::problem;
+    using BaseType::model;
+    using BaseType::grid;
+    using BaseType::gridWidth;
+    using BaseType::gridSize;
+    using BaseType::eocIds_;
+    using BaseType::space;
+    using BaseType::solution;
+    using BaseType::rhs_;
+
+
+    struct PolOrderStructure
+    {
+      // set polynomial order to 2 by default
+      PolOrderStructure() : val_( -1 ) {}
+      explicit PolOrderStructure(int init) : val_( init ) {}
+      const int value() const
+      {
+        assert( val_ > 0 );
+        return val_;
+      }
+      int &value() { return val_; }
+      int val_;
+    };
+    typedef PersistentContainer<GridType,PolOrderStructure> PolOrderContainer;
+
+  public:
+    EllipticAlgorithm(GridType& grid, const std::string name = "" )
+    : BaseType( grid, name ),
+      grid_( grid ),
+      gridPart_( grid_ ),
+      dgOperator_( gridPart_, problem() ),
+      dgAssembledOperator_( gridPart_, dgOperator_ ),
+      invDgOperator_(),
+      linDgOperator_(),
+      space_( const_cast<DiscreteFunctionSpaceType &> (dgAssembledOperator_.space()) ),
+      poissonSigmaEstimator_( gridPart_, solution(), dgAssembledOperator_, name ),
+      polOrderContainer_(grid_ , 0),
+      step_( 0 )
+    {
+      std::string gridName = Fem::gridName( grid_ );
+      if( gridName == "ALUGrid" || gridName == "ALUConformGrid" || gridName == "ALUSimplexGrid" )
+      {
+        if( space_.begin() != space_.end() )
+        {
+          if( space_.begin()->type().isSimplex() && space_.order() > 2 && space_.continuous() && GridType::dimension > 2 )
+          {
+            std::cerr << std::endl<< "ERROR: Lagrange spaces for p>2 do not work on simplex grids due to the twist problem !!!" << std::endl << std::endl;
+          }
+        }
+      }
+
+      // we start with max order
+      typedef typename PolOrderContainer::Iterator Iterator ;
+      const Iterator end = polOrderContainer_.end();
+      const int minimalOrder = solution().space().order(); // estimator_.minimalOrder() ;
+      for( Iterator it = polOrderContainer_.begin(); it != end; ++it )
+      {
+        (*it).value() = minimalOrder ;
       }
     }
-    space_.adapt( polOrderVec );
-#endif
-#endif
 
-    if (!invDgOperator_)
+    virtual BasicLinearSolverType* createSolver()
     {
-      linDgOperator_.reset( new LinearOperatorType("dg operator", space_, space_ ) );
+      linDgOperator_.reset( new FullOperatorType("dg operator", space_, space_ ) );
 
       if( space_.continuous() ) // Lagrange case
       {
-        typedef Dune::Fem::DiagonalStencil<DiscreteSpaceType,DiscreteSpaceType> StencilType ;
+        typedef Dune::Fem::DiagonalStencil<DiscreteFunctionSpaceType,DiscreteFunctionSpaceType> StencilType ;
         StencilType stencil( space_, space_ );
         linDgOperator_->reserve( stencil );
       }
       else // DG case
       {
-        typedef Dune::Fem::DiagonalAndNeighborStencil<DiscreteSpaceType,DiscreteSpaceType> StencilType ;
+        typedef Dune::Fem::DiagonalAndNeighborStencil<DiscreteFunctionSpaceType,DiscreteFunctionSpaceType> StencilType ;
         StencilType stencil( space_, space_ );
         linDgOperator_->reserve( stencil );
       }
 
       linDgOperator_->clear();
       dgAssembledOperator_.assemble(0, *linDgOperator_, rhs_);
-			dgAssembledOperator_.testSymmetrie(*linDgOperator_);
+  		dgAssembledOperator_.testSymmetrie(*linDgOperator_);
 
       double absLimit   = Dune::Fem:: Parameter::getValue<double>("istl.absLimit",1.e-6);
       double reduction  = Dune::Fem:: Parameter::getValue<double>("istl.reduction",1.e-6);
@@ -508,128 +432,121 @@ public:
       if( maxIterFactor < 0 )
         maxIterFactor = 2;
 
-      invDgOperator_.reset( new LinearInverseOperatorType(*linDgOperator_, reduction, absLimit ));
-      (*invDgOperator_)(rhs_,solution_);
-      monitor.ils_iterations = invDgOperator_->iterations();
+      return new BasicLinearSolverType(*linDgOperator_, reduction, absLimit );
     }
 
-    // calculate new sigma
-    Dune::Fem:: DGL2ProjectionImpl :: project( sigmaEstimateFunction_, sigmaDiscreteFunction_ );
-
-    //Dune::Fem::DGL2ProjectionImpl :: project( problem().exactSolution(), solution_ );
-    return monitor;
-  }
-
-
-  //! finalize computation by calculating errors and EOCs
-  void finalize( const int eocloop )
-  {
-    typedef typename InitialDataType :: ExactSolutionType  ExactSolutionType ;
-    //---- Adapter for exact solution ------------------------------------------
-    typedef Dune::Fem::GridFunctionAdapter< ExactSolutionType, GridPartType >
-        GridExactSolutionType;
-
-    // create grid function adapter
-    GridExactSolutionType ugrid( "exact solution", problem().exactSolution(), gridPart_, 1 );
-
-    // calculate L2 - Norm
-    Dune::Fem::L2Norm< GridPartType > l2norm( gridPart_ );
-    const double l2error = l2norm.distance( ugrid, solution_ );
-
-    numbers_.push_back( l2error );
-
-    for(size_t i=0; i<numbers_.size(); ++i)
-      runFile_ << numbers_[ i ] << " ";
-
-    runFile_ << std::endl;
-
-    Dune::Fem::DGNorm< GridPartType > dgnorm( gridPart_ );
-    const double dgerror = dgnorm.distance( ugrid, solution_ );
-
-    Dune::Fem::H1Norm< GridPartType > sigmanorm( gridPart_ );
-    typedef SigmaLocalFunction<SigmaLocal<DiscreteFunctionType, DgAssembledOperatorType> >
-      SigmaLocalFunctionType;
-    SigmaLocalFunctionType sigmaLocalFunction( solution_, sigmaDiscreteFunction_, sigmaLocalEstimate_ );
-    Dune::Fem::LocalFunctionAdapter<SigmaLocalFunctionType> sigma( "sigma function", sigmaLocalFunction, gridPart_, space_.order() );
-    const double sigmaerror = sigmanorm.distance( ugrid, sigma );
-
-    // store values
-    std::vector<double> errors;
-    errors.push_back( l2error );
-    errors.push_back( dgerror );
-    errors.push_back( sigmaerror );
-
-    // submit error to the FEM EOC calculator
-    Dune::Fem::FemEoc :: setErrors(eocId_, errors);
-
-    // delete solver and linear operator for next step
-    invDgOperator_.reset();
-    linDgOperator_.reset();
-  }
-
-  bool adaptation(const double tolerance)
-  {
-    // resize container
-    polOrderContainer_.resize();
-
-    const double error = 0.0;//estimator_.estimate( problem() );
-    std::cout << "ESTIMATE: " << error << std::endl;
-    typedef typename DiscreteSpaceType::IteratorType IteratorType;
-    const IteratorType end = space_.end();
-    for( IteratorType it = space_.begin(); it != end; ++it )
+    //! default time loop implementation, overload for changes
+    void solve ( const int loop )
     {
-      const typename IteratorType::Entity &entity = *it;
-      //polOrderContainer_[entity].value() =
-      //  estimator_.newOrder( 0.98*tolerance, entity );
+  #if 0
+  #ifdef PADAPTSPACE
+      int polOrder = Dune::Fem:: Parameter::getValue<double>("femdg.polynomialOrder",1);
+      const int minimalOrder = estimator_.minimalmemory
+      // only implemented for PAdaptiveSpace
+      std::vector<int> polOrderVec( space_.gridPart().indexSet().size(0) );
+      std::fill( polOrderVec.begin(), polOrderVec.end(), polOrder );
+
+      polOrderContainer_.update();
+      if ( estimator_.isPadaptive() )
+      {
+        typedef typename DiscreteFunctionSpaceType::IteratorType IteratorType;
+        typedef typename IteratorType::Entity EntityType ;
+        const IteratorType end = space_.end();
+        for( IteratorType it = space_.begin(); it != end; ++it )
+        {
+          const EntityType& entity = *it;
+          int order = polOrderContainer_[ entity ].value();
+          // use constrcutor here, operator = is deprecated
+          typename EntityType::EntityPointer hit ( it );
+          while (order == -1) // is a new element
+          {
+            if ( entity.level() == 0)
+              order = minimalOrder;
+            else
+            {
+              hit = hit->father();
+              // don't call father twice
+              order = polOrderContainer_[ *hit ].value();
+              assert(order > 0);
+            }
+          }
+          polOrderVec[space_.gridPart().indexSet().index(entity)] = order;
+        }
+      }
+      space_.adapt( polOrderVec );
+  #endif
+  #endif
+      BaseType::solve( loop );
+
+      // calculate new sigma
+      poissonSigmaEstimator_.update();
     }
-    return false ;
-    //return (error < std::abs(tolerance) ? false : estimator_.mark( 0.98 * tolerance));
-  }
-  void closure()
-  {
-    //estimator_.closure();
-  }
 
-  const InitialDataType& problem() const { assert( problem_ ); return *problem_; }
-  const ModelType& model() const { return dgOperator_.model(); }
-  const DiscreteFunctionType& solution() const { return solution_; }
-  DiscreteFunctionType& solution() { return solution_; }
-  IOTupleType& ioTuple() { return ioTuple_; }
-  const DgAssembledOperatorType &oper() const
-  {
-    return dgAssembledOperator_;
-  }
-  protected:
 
-  GridType& grid_;
-  GridPartType gridPart_;       // reference to grid part, i.e. the leaf grid
-  // InitialDataType is a Dune::Operator that evaluates to $u_0$ and also has a
-  // method that gives you the exact solution.
-  std::unique_ptr< InitialDataType > problem_;
+    //! finalize computation by calculating errors and EOCs
+    void finalize( const int eocloop )
+    {
+      typedef typename ProblemType::ExactSolutionType  ExactSolutionType ;
+      typedef Dune::Fem::GridFunctionAdapter< ExactSolutionType, GridPartType > GridExactSolutionType;
+      GridExactSolutionType ugrid( "exact solution", problem().exactSolution(), gridPart_, 1 );
 
-  DgOperatorType           dgOperator_;
-  DgAssembledOperatorType  dgAssembledOperator_;
+      // create grid function adapter
+      AnalyticalTraits::addEOCErrors( eocIds_, solution(), dgOperator_.model(), ugrid, poissonSigmaEstimator_.sigma() );
 
-  std::unique_ptr< LinearInverseOperatorType > invDgOperator_;
-  std::unique_ptr< LinearOperatorType        > linDgOperator_;
+      // delete solver and linear operator for next step
+      invDgOperator_.reset();
+      linDgOperator_.reset();
+    }
 
-  DiscreteSpaceType &space_;    // the discrete function space
-  // the solution
-  DiscreteFunctionType   solution_, rhs_;
+    bool adaptation(const double tolerance)
+    {
+      // resize container
+      polOrderContainer_.resize();
 
-  SigmaDiscreteFunctionSpaceType sigmaSpace_;
-  SigmaDiscreteFunctionType sigmaDiscreteFunction_;
+      const double error = 0.0;//estimator_.estimate( problem() );
+      std::cout << "ESTIMATE: " << error << std::endl;
+      typedef typename DiscreteFunctionSpaceType::IteratorType IteratorType;
+      const IteratorType end = space_.end();
+      for( IteratorType it = space_.begin(); it != end; ++it )
+      {
+        const typename IteratorType::Entity &entity = *it;
+        //polOrderContainer_[entity].value() =
+        //  estimator_.newOrder( 0.98*tolerance, entity );
+      }
+      return false ;
+      //return (error < std::abs(tolerance) ? false : estimator_.mark( 0.98 * tolerance));
+    }
+    void closure()
+    {
+      //estimator_.closure();
+    }
 
-  SigmaLocal<DiscreteFunctionType, DgAssembledOperatorType> sigmaLocalEstimate_;
-  SigmaEstimateFunction sigmaEstimateFunction_;
-  IOTupleType ioTuple_;
-  PolOrderContainer polOrderContainer_;
+    const AssembledOperatorType &oper() const
+    {
+      return dgAssembledOperator_;
+    }
 
-  // Initial flux for advection discretization (UpwindFlux)
-  int  eocId_;
-  int  step_;
+    protected:
 
-  std::vector<double> numbers_;
-  std::ofstream runFile_;
-};
+    GridType& grid_;
+    GridPartType gridPart_;       // reference to grid part, i.e. the leaf grid
+
+    AssemblyOperatorType           dgOperator_;
+    AssembledOperatorType          dgAssembledOperator_;
+
+    std::unique_ptr< BasicLinearSolverType > invDgOperator_;
+    std::unique_ptr< FullOperatorType      > linDgOperator_;
+
+    DiscreteFunctionSpaceType &space_;    // the discrete function space
+
+    PoissonSigmaEstimatorType poissonSigmaEstimator_;
+
+    PolOrderContainer polOrderContainer_;
+
+    int  step_;
+
+  };
+
+}
+}
 #endif // FEMHOWTO_STEPPER_HH

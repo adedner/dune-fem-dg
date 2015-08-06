@@ -127,7 +127,6 @@ namespace Fem
     typedef typename AnalyticalTraits::InitialDataType             InitialDataType;
 
     // type of discrete function space and discrete function
-
     typedef typename DiscreteTraits::InitialProjectorType          InitialProjectorType;
 
     // type of dg operator
@@ -146,8 +145,6 @@ namespace Fem
     typedef typename DiscreteTraits::IOTupleType                   IOTupleType;
 
     // wrap operator
-    //typedef typename DgHelmHoltzOperatorType::JacobianOperatorType JacobianOperatorType;
-    //typedef typename ProblemTraits::template Solver< DgHelmHoltzOperatorType >::Type OdeSolverType;
     typedef GridTimeProvider< GridType >                           TimeProviderType;
 
     typedef typename DiscreteTraits::OdeSolverType                 OdeSolverType;
@@ -286,8 +283,9 @@ namespace Fem
       timeStepTimer_( Dune::FemTimer::addTo("max time/timestep") ),
       fixedTimeStep_( param_.fixedTimeStep() )
     {}
+
     // return grid width of grid (overload in derived classes)
-    virtual double gridWidth () const { return 0.0; }
+    virtual double gridWidth () const { return GridWidth::calcGridWidth( gridPart_ ); }
 
     // return size of grid
     virtual UInt64Type gridSize () const

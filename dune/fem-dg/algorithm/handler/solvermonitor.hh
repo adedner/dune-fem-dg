@@ -54,6 +54,52 @@ namespace Fem
   };
 
 
+  class DefaultSteadyStateSolverMonitorHandler
+  {
+  public:
+    typedef SolverMonitor<1>     SolverMonitorType;
+
+    DefaultSteadyStateSolverMonitorHandler( const std::string keyPrefix = "" )
+      : solverMonitor_()
+    {}
+
+
+    void stepPrint()
+    {
+      std::cout << ",  Newton: " << *solverMonitor_.newton_iterations
+                << "  ILS: " << *solverMonitor_.ils_iterations << std::endl;
+    }
+
+    template< class OdeSolverMonitorImp, class TimeProviderImp >
+    void step( OdeSolverMonitorImp& odeSolverMonitor, TimeProviderImp& tp )
+    {
+    }
+
+    template< class LinearSolverMonitorImp >
+    void finalize( const double gridWidth, const double gridSize, const LinearSolverMonitorImp& solver )
+    {
+      *solverMonitor_.gridWidth = gridWidth;
+      *solverMonitor_.elements = gridSize;
+
+      //*solverMonitor_.ils_iterations = invDgOperator_->iterations();
+      //*solverMonitor_.totalNewtonIterations_ = solver.iterations();
+      //*solverMonitor_.totalLinearSolverIterations_ = solver.linearIterations();
+
+      *solverMonitor_.newton_iterations     = 0;
+      *solverMonitor_.ils_iterations        = solver.iterations();
+      *solverMonitor_.max_newton_iterations = 0;
+      *solverMonitor_.max_ils_iterations    = 0;
+      *solverMonitor_.operator_calls        = 0;
+    }
+
+    SolverMonitorType& monitor()
+    {
+      return solverMonitor_;
+    }
+
+  private:
+    SolverMonitorType solverMonitor_;
+  };
 
   class NoSolverMonitorHandler
   {

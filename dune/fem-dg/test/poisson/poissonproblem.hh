@@ -253,8 +253,6 @@ public:
     std::ostringstream ofs;
 
     ofs << "Problem: " << myName ;
-    ofs << ", End time: " << Dune:: Fem ::  Parameter::getValue<double>("femdg.stepper.endtime");
-
     return ofs.str();
   }
 

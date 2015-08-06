@@ -29,9 +29,9 @@ class DGPrimalMatrixAssembly
   typedef OperatorImp OperatorType;
   typedef typename OperatorType::Traits::ModelType ModelType;
   typedef typename OperatorType::Traits::DestinationType DestinationType;
-  typedef typename OperatorType::Traits::DiscreteModelType DiscreteModelType;
-  typedef typename DiscreteModelType::Selector   SelectorType;
-  static const Dune::DGDiffusionFluxIdentifier DGDiffusionFluxIdentifier = OperatorType::Traits::PrimalDiffusionFluxId;
+  //typedef typename OperatorType::Traits::DiscreteModelType DiscreteModelType;
+  //typedef typename DiscreteModelType::Selector   SelectorType;
+  //static const Dune::DGDiffusionFluxIdentifier DGDiffusionFluxIdentifier = OperatorType::Traits::PrimalDiffusionFluxId;
   typedef typename DestinationType::DiscreteFunctionSpaceType DiscreteFunctionSpaceType;
   typedef typename DiscreteFunctionSpaceType::IteratorType IteratorType;
   typedef typename IteratorType::Entity EntityType;

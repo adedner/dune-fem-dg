@@ -15,8 +15,6 @@ fem.eoc.steps: 30
 # polynomial order = 0,1,2,3,4
 femdg.polynomialOrder: 2
 
-
-
 # PROBLEM
 # ----------
 # problem number 
@@ -65,6 +63,6 @@ fem.io.grapedisplay: 0
 # SOLVER
 # ------
 paramfile: ../parameter/paramSolver
-istl.preconditioning.method: ilu-0
+istl.preconditioning.method: amg-ilu-0
 istl.preconditioning.iterations: 1
 istl.preconditioning.relaxation: 1

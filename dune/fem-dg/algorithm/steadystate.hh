@@ -13,198 +13,230 @@
 
 #include <dune/fem-dg/algorithm/base.hh>
 
+#include <dune/fem-dg/algorithm/handler/solvermonitor.hh>
+
+
 namespace Dune
 {
 
 namespace Fem
 {
 
-  template< class Grid,
+  template< class GridImp,
             class ProblemTraits,
             int polOrd,
-            ExtraParameterTuple = std::tuple<> >
+            class SolverMonitorHandlerImp >
   struct SteadyStateTraits
   {
     enum { polynomialOrder = polOrd };
 
     // type of Grid
-    typedef Grid                                      GridType;
+    typedef GridImp                                                GridType;
 
     // Choose a suitable GridView
-    typedef AdaptiveLeafGridPart< GridType >          HostGridPartType;
+    typedef AdaptiveLeafGridPart< GridType >                       HostGridPartType;
 
-    typedef typename ProblemTraits::GridPartType      GridPartType;
+    typedef typename ProblemTraits::GridPartType                   GridPartType;
 
-    typedef typename ProblemTraits::AnalyticalTraits  ModelTraits;
+    typedef typename ProblemTraits::template AnalyticalTraits< HostGridPartType >  AnalyticalTraits;
+    typedef typename ProblemTraits::template DiscreteTraits< HostGridPartType, polynomialOrder >  DiscreteTraits;
 
     // obtain the problem dependent types, analytical context
-    typedef typename ModelTraits::ModelType           ModelType;
-    typedef typename ModelTraits::ProblemType         ProblemType;
-
-    struct OperatorTraits :
-      public Dune::PassTraits< ModelTraits, polynomialOrder, ModelType::dimRange >
-    {
-      static const int limiterPolynomialOrder = polynomialOrder;
-      typedef ExtraParameterTuple ExtraParameterTupleType;
-    };
-
+    typedef typename AnalyticalTraits::ModelType                   ModelType;
+    typedef typename AnalyticalTraits::ProblemType                 ProblemType;
 
     // type of discrete function space and discrete function
-    typedef typename OperatorTraits::DestinationType                  DiscreteFunctionType;
-    typedef typename DiscreteFunctionType::DiscreteFunctionSpaceType  DiscreteFunctionSpaceType;
+    typedef typename ProblemTraits::FunctionSpaceType              FunctionSpaceType;
+    typedef typename DiscreteTraits::DiscreteFunctionSpaceType     DiscreteFunctionSpaceType;
+    typedef typename DiscreteTraits::DiscreteFunctionType          DiscreteFunctionType;
 
+    //typedef typename DiscreteTraits::OperatorTraitsType            OperatorTraits;
 
-    typedef typename OperatorTraits::LinearOperatorType               LinearOperatorType;
-    typedef typename OperatorTraits::LinearInverseOperatorType        LinearInverseOperatorType;
+    typedef typename DiscreteTraits::ExtraParameterTuple           ExtraParameterTuple;
 
-    typedef Dune::DGAdvectionDiffusionOperator< OperatorTraits >      FullOperatorType;
-    typedef DGPrimalMatrixAssembly< FullOperatorType >                AssembledOperatorType;
+    typedef typename DiscreteTraits::FluxType                      FluxType;
+
+    //typedef typename DiscreteTraits::OdeSolverType                 OdeSolverType;
+    typedef typename DiscreteTraits::BasicLinearSolverType         BasicLinearSolverType;
+
+    typedef SolverMonitor<1>                                       SolverMonitorType;
 
     // tpye of jacobian operator used in the nested newton loops
-    typedef typename FullOperatorType::JacobianOperatorType           JacobianOperatorType;
+    typedef typename DiscreteTraits::FullOperatorType              FullOperatorType;
+
+    typedef typename DiscreteTraits::AssemblyOperatorType          AssemblyOperatorType;
+    typedef typename DiscreteTraits::AssembledOperatorType         AssembledOperatorType;
 
     // type of IOTuple
-    typedef Dune::tuple< DiscreteFunctionType * >                     IOTupleType;
+    typedef typename DiscreteTraits::IOTupleType                   IOTupleType;
 
     // type of restriction/prolongation projection for adaptive simulations
-    typedef Dune::Fem::RestrictProlongDefault< DiscreteFunctionType > RestrictionProlongationType;
+    typedef typename DiscreteTraits::RestrictionProlongationType   RestrictionProlongationType;
+
+    typedef typename AnalyticalTraits::EOCErrorIDs                 EOCErrorIDs;
+
+    typedef SolverMonitorHandlerImp                                SolverMonitorHandlerType;
   };
 
 
-};
+  template< class Grid, class ProblemTraits, int polynomialOrder,
+            class SolverMonitorHandlerImp = DefaultSteadyStateSolverMonitorHandler >
+  class SteadyStateAlgorithm
+    : public AlgorithmBase< SteadyStateTraits< Grid, ProblemTraits, polynomialOrder,
+                            SolverMonitorHandlerImp > >
+  {
+    typedef SteadyStateTraits< Grid, ProblemTraits, polynomialOrder, SolverMonitorHandlerImp > Traits;
+    typedef AlgorithmBase< Traits > BaseType;
 
+  public:
+    typedef typename BaseType::GridType GridType;
+    typedef typename BaseType::IOTupleType IOTupleType;
+    typedef typename BaseType::SolverMonitorType SolverMonitorType;
 
+    typedef typename Traits::HostGridPartType HostGridPartType;
 
-    template< class Grid, class ProblemTraits, int polynomialOrder, class ExtraParameterTuple = std::tuple< > >
-    class SteadyStateAlgorithm
-      : public AlgorithmBase< SteadyStateTraits< Grid, ProblemTraits, polynomialOrder, ExtraParameterTuple > >
+    // initial data type
+    typedef typename Traits::ProblemType ProblemType;
+
+    // An analytical version of our model
+    typedef typename Traits::ModelType ModelType;
+
+    typedef typename Traits::GridPartType GridPartType;
+    typedef typename Traits::DiscreteFunctionSpaceType DiscreteFunctionSpaceType;
+    typedef typename Traits::DiscreteFunctionType DiscreteFunctionType;
+
+    // The DG space operator
+    typedef typename Traits::FullOperatorType FullOperatorType;
+
+    // type of steady state solver
+    typedef typename Traits::BasicLinearSolverType BasicLinearSolverType;
+
+    // type of analytical traits
+    typedef typename Traits::AnalyticalTraits AnalyticalTraits;
+
+    // type of discrete traits
+    typedef typename Traits::DiscreteTraits DiscreteTraits;
+
+    typedef typename Traits::RestrictionProlongationType    RestrictionProlongationType;
+
+    typedef typename Traits::AssemblyOperatorType          AssemblyOperatorType;
+    typedef typename Traits::AssembledOperatorType         AssembledOperatorType;
+
+    // Error Handling
+    typedef typename Traits::EOCErrorIDs EOCErrorIDs;
+
+    typedef SolverMonitorHandlerImp                SolverMonitorHandlerType;
+
+    typedef uint64_t                                              UInt64Type ;
+
+    using BaseType::grid;
+
+    SteadyStateAlgorithm ( GridType &grid, const std::string name = ""  )
+      : BaseType( grid, name ),
+        problem_( ProblemTraits::problem() ),
+        model_( problem() ),
+        solverMonitorHandler_( "" ),
+        gridPart_( grid ),
+        space_( gridPart_ ),
+        solution_( "solution-" + name, space_ ),
+        rhs_( "rhs-" + name, space_ ),
+        eocIds_( AnalyticalTraits::initEoc() )
     {
-      // my traits class
-      typedef SteadyStateTraits< Grid, ProblemTraits, polynomialOrder, ExtraParameterTuple > Traits;
+      solution().clear();
+    }
 
-      typedef AlgorithmBase< Traits > BaseType;
-      typedef SteadyStateAlgorithm< Grid, ProblemTraits, polynomialOrder > This;
+    //! return reference to discrete space
+    DiscreteFunctionSpaceType &space () { return space_; }
 
-    public:
-      typedef typename BaseType::GridType GridType;
-      typedef typename BaseType::IOTupleType IOTupleType;
-      typedef typename BaseType::SolverMonitorType SolverMonitorType;
+    DiscreteFunctionType& solution ()
+    {
+      return solution_;
+    }
 
-      typedef typename Traits::HostGridPartType HostGridPartType;
+    std::string description () const { return problem().description(); }
 
-      // initial data type
-      typedef typename Traits::ProblemType ProblemType;
+    //! returns data prefix for EOC loops ( default is loop )
+    virtual std::string dataPrefix () const
+    {
+      return problem().dataPrefix();
+    }
 
-      // An analytical version of our model
-      typedef typename Traits::ModelType ModelType;
+    IOTupleType dataTuple ()
+    {
+      IOTupleType test = std::make_tuple( &solution_ );
+      return test;
+    }
 
-      typedef typename Traits::GridPartType GridPartType;
-      typedef typename Traits::DiscreteFunctionSpaceType DiscreteFunctionSpaceType;
-      typedef typename Traits::DiscreteFunctionType DiscreteFunctionType;
+    virtual SolverMonitorType& monitor()
+    {
+      return solverMonitorHandler_.monitor();
+    }
 
-      // The DG space operator
-      typedef typename Traits::FullOperatorType FullOperatorType;
+    // return grid width of grid (overload in derived classes)
+    virtual double gridWidth () const { return GridWidth::calcGridWidth( gridPart_ ); }
 
-      // type of steady state solver
-      typedef typename Traits::InverseOperatorType InverseOperatorType;
+    // return size of grid
+    virtual UInt64Type gridSize () const
+    {
+      UInt64Type grSize = grid().size( 0 );
+      return grid().comm().sum( grSize );
+    }
 
-      // type of analytical traits
-      typedef typename Traits::AnalyticalTraits AnalyticalTraits;
+    virtual BasicLinearSolverType* createSolver() = 0;
 
-      // type of discrete traits
-      typedef typename Traits::DiscreteTraits DiscreteTraits;
+    virtual void solve ( int step )
+    {
+      rhs_.clear();
+      solution_.clear();
 
-      // Error Handling
-      typedef typename AnalyticalTraits::EOCErrorIDs EOCErrorIDs;
+      solver_.reset( this->createSolver() );
+      assert( solver_ );
 
-      SteadyStateAlgorithm ( GridType &grid )
-        : BaseType( grid ),
-          problem_( AnalyticalTraits::problem() ),
-          model_( problem() ),
-          gridPart_( grid ),
-          space_( gridPart_ ),
-          solution_( "solution", space_ ),
-          dgOperator_( space_, model(), DiscreteTraits::quadOrder ),
-          eocIds_( AnalyticalTraits::initEoc() ),
-          description_( "Steady state scheme,\nOperator: " + dgOperator_.description() +"\nProblem: " + problem().description() )
-      {}
+      (*solver_)( rhs_, solution_ );
 
-      //! return reference to discrete space
-      DiscreteFunctionSpaceType &space () { return space_; }
-
-      //! returns data prefix for EOC loops ( default is loop )
-      virtual std::string dataPrefix () const
-      {
-        return problem().dataPrefix();
-      }
-
-      IOTupleType dataTuple ()
-      {
-        return IOTupleType( &solution_ );
-      }
-
-      SolverMonitorType solve ( int step )
-      {
-        SolverMonitorType monitor;
-        DiscreteFunctionType rhs( "rhs", space_ );
-
-        rhs.clear();
-        solution_.clear();
-
-        InverseOperatorType invOp( dgOperator_, NestedNewtonParameter() );
-
-        auto callBack = [ this ] ( const double f ) { dgOperator_.setRelaxFactor( f ); };
-        invOp( rhs, solution_, callBack );
-
-        monitor.gridwidth_ = GridWidth::calcGridWidth( gridPart_ );
-        monitor.totalNewtonIterations_ = invOp.iterations();
-        monitor.totalLinearSolverIterations_ = invOp.linearIterations();
-
-        monitor.finalize();
-
-        return monitor;
-      }
+      solverMonitorHandler_.finalize( gridWidth(), gridSize(), *solver_ );
+    }
 
 
-      //! finalize computation by calculating errors and EOCs
-      void finalize ( const int eocloop )
-      {
-        // submit error to the FEM EOC calculator
-        AnalyticalTraits::addEOCErrors( eocIds_, 0., solution_, model(), problem() );
-      }
+    //! finalize computation by calculating errors and EOCs
+    void finalize ( const int eocloop )
+    {
+      // submit error to the FEM EOC calculator
+      //AnalyticalTraits::addEOCErrors( eocIds_, solution_, model(), problem() );
+    }
 
-      std::string description () const { return description_; }
+    const ProblemType &problem () const
+    {
+      assert( problem_ );
+      return *problem_;
+    }
 
-      const ProblemType &problem () const
-      {
-        assert( problem_ );
-        return *problem_;
-      }
+    ProblemType &problem ()
+    {
+      assert( problem_ );
+      return *problem_;
+    }
 
-      ProblemType &problem ()
-      {
-        assert( problem_ );
-        return *problem_;
-      }
+    ModelType &model () { return model_; }
+    const ModelType &model () const { return model_; }
 
-      ModelType &model () { return model_; }
-      const ModelType &model () const { return model_; }
+  protected:
+    ProblemType *problem_;
+    ModelType model_;
 
-    protected:
-      ProblemType *problem_;
-      ModelType model_;
+    SolverMonitorHandlerType       solverMonitorHandler_;
 
-      GridPartType gridPart_;      // reference to grid part, i.e. the leaf grid
-      DiscreteFunctionSpaceType space_;    // the discrete function space
-      DiscreteFunctionType solution_;
+    GridPartType gridPart_;      // reference to grid part, i.e. the leaf grid
+    DiscreteFunctionSpaceType space_;    // the discrete function space
+    DiscreteFunctionType solution_;
+    DiscreteFunctionType   rhs_;
 
-      FullOperatorType dgOperator_;
-      EOCErrorIDs eocIds_;
+    std::unique_ptr< BasicLinearSolverType > solver_;
 
-      std::string description_;
-    };
+    EOCErrorIDs eocIds_;
+  };
 
-  }  // namespace Fem
+}  // namespace Fem
 
 } // namespace Dune
 
