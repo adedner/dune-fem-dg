@@ -81,11 +81,8 @@ namespace Dune {
     typedef typename GridType::template Codim<0>::Geometry GeometryType;
     //! type of quadrature to be used
 
-    typedef PassTraits< Traits, polynomialOrder, DiscreteFunctionSpaceType::dimRange> PassTraitsType;
-
-
-    typedef typename PassTraitsType::VolumeQuadratureType VolumeQuadratureType;
-    typedef typename PassTraitsType::FaceQuadratureType FaceQuadratureType;
+    typedef typename Traits::VolumeQuadratureType VolumeQuadratureType;
+    typedef typename Traits::FaceQuadratureType FaceQuadratureType;
 #if 0
 #warning USING ISTL
 #if DGSCHEME // for all dg schemes including pdg (later not working)
@@ -131,7 +128,6 @@ namespace Dune {
     const DiscretePressureSpaceType& pressurespc_;
     mutable DiscreteFunctionType veloRhs_;
     mutable DiscretePressureFunctionType pressureRhs_;
-    double grads_;
     int volumeQuadOrd_,faceQuadOrd_;
 
     PressureGradMatType pressureGradMatrix_;
@@ -154,14 +150,13 @@ namespace Dune {
       pressurespc_( pressurespc ),
       veloRhs_("VelocityRhs",spc_),
       pressureRhs_("PressureRhs",pressurespc_),
-      grads_(0.0),
       volumeQuadOrd_( 2*spc_.order()+1),
       faceQuadOrd_( 2*spc_.order()+1 ),
       pressureGradMatrix_("pgm",pressurespc_,spc_),//PGM
       pressureDivMatrix_("pdm",spc_,pressurespc_),//PDM
       pressureStabMatrix_("psm",pressurespc_,pressurespc_),//PSM
       d11_(d11),
-      d12_(d11)
+      d12_(d12)
     {}
 
     const DiscretePressureSpaceType& pressurespc()const
@@ -240,7 +235,7 @@ namespace Dune {
     void assembleLocal(const EntityType& en/*,DiscreteFunctionType& rhs*/,const ProblemType& problem) const
     {
 
-      const GridPartType & gridPart = spc_.gridPart();
+      GridPartType& gridPart = spc_.gridPart();
 
       const BaseFunctionSetType& bsetEn = spc_.basisFunctionSet(en);
       const PressureBaseFunctionSetType& pressurebsetEn = pressurespc_.basisFunctionSet(en);
@@ -467,10 +462,10 @@ namespace Dune {
             // -p+*u-.n+
             // ******************************************************************************
 
-            uNormal[0]=uNb[j]*normal;
-            double PDM_nb =( pEn[n]*uNormal[0])*intWeight;
-            PDM_nb*=-0.5;
-            nbPressDiv.add(n,j,PDM_nb);
+            //uNormal[0]=uNb[j]*normal;
+            //double PDM_nb =( pEn[n]*uNormal[0])*intWeight;
+            //PDM_nb*=-0.5;
+            //nbPressDiv.add(n,j,PDM_nb);
 
 #if PRESSURESTABILIZATION
             if(j==0)
@@ -536,7 +531,7 @@ namespace Dune {
         problem_.g(quadInEn,dirichletValue);
         double pressureDirichlet;
 
-        for(unsigned int n = 0; n <localPressure.numDofs() ; ++n)
+        for(unsigned int n = 0; n <(unsigned int)localPressure.numDofs() ; ++n)
         {
           // ******************************************************************************
           // p+.u_D+*n+

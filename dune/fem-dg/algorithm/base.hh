@@ -104,8 +104,6 @@ namespace Fem
     // type of IOTuple
     typedef typename Traits::IOTupleType           IOTupleType;
 
-    typedef Fem::DataOutput<GridType, IOTupleType> DataOutputType;
-
     // type of statistics monitor
     typedef typename Traits::SolverMonitorType     SolverMonitorType;
 
@@ -131,7 +129,7 @@ namespace Fem
     }
 
     //! return default data tuple for data output
-    virtual IOTupleType dataTuple() = 0;
+    //virtual IOTupleType dataTuple() = 0;
 
     // solve the problem for eoc loop 'loop'
     virtual void solve ( const int loop ) = 0;
@@ -169,13 +167,11 @@ namespace Fem
   void compute(Algorithm& algorithm)
   {
     typedef typename Algorithm::GridType             GridType;
-    typedef typename Algorithm::DataOutputType       DataOutputType;
-    typedef typename Algorithm::IOTupleType          IOTupleType;
     typedef typename Algorithm::EocParametersType    EocParametersType;
 
     GridType& grid = algorithm.grid();
-    IOTupleType dataTup = algorithm.dataTuple() ;
-    DataOutputType dataOutput( grid, dataTup );
+    auto dataTup = algorithm.dataTuple() ;
+    Fem::DataOutput<GridType, decltype( dataTup ) > dataOutput( grid, dataTup );
 
     // initialize FemEoc if eocSteps > 1
     EocParametersType& eocParam( algorithm.eocParams() );

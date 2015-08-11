@@ -21,608 +21,405 @@
 // dune-fem-dg includes
 #include <dune/fem-dg/operator/dg/dgoperatorchoice.hh>
 #include <dune/fem-dg/operator/adaptation/stokesestimator.hh>
-#include <dune/fem-dg/stepper/base.hh>
-#include <dune/fem-dg/stepper/ellipticalgorithm.hh>
+#include <dune/fem-dg/algorithm/ellipticalgorithm.hh>
 #include <dune/fem-dg/solver/uzawa.hh>
 #include <dune/fem-dg/solver/linearsolvers.hh>
 
 // include local header files
 #include <dune/fem-dg/test/stokes/stokesassembler.hh>
 
-using namespace Dune;
-
-
-template <class GridImp,
-          class ProblemTraits,
-          int polOrd>
-struct StokesTraits : public ElliptTraits<GridImp, ProblemTraits,polOrd>
+namespace Dune
 {
 
-public:
-  typedef ElliptTraits<GridImp, ProblemTraits,polOrd> BaseType;
-  typedef typename BaseType::GridPartType GridPartType;
-  typedef typename BaseType::DiscreteFunctionType DiscreteFunctionType;
-  typedef typename BaseType::ModelType ModelType;
-  typedef typename ProblemTraits :: ProblemType ProblemType;
-  typedef typename ProblemType::ExactPressureType ExactPressureType;
-  typedef Dune::Fem::FunctionSpace< double, double, GridImp::dimension, 1 >   PressureFunctionSpaceType;
-
-
-#if 0
-#if DGSCHEME
-#if ONB
-    #warning using DG space with ONB
-    typedef Dune::Fem::DiscontinuousGalerkinSpace
-#elif LAG
-    #warning using DG space with Lagrange base functions
-    typedef Dune::Fem::LagrangeDiscontinuousGalerkinSpace
-#elif LEG
-    #warning using DG space with Legendre base functions
-    typedef Dune::Fem::LegendreDiscontinuousGalerkinSpace
-#else
-    #warning using p-adaptive DG space
-    typedef Dune::Fem::PAdaptiveDGSpace
-#define PADAPTSPACE
-#endif
-#else
-#warning using p-adaptive Lagrange space
-    typedef Fem::PAdaptiveLagrangeSpace
-#define PADAPTSPACE
-#endif
-#endif
-
-
-  typedef Dune::Fem::DiscontinuousGalerkinSpace
-      < PressureFunctionSpaceType,GridPartType, ( polOrd > 0 ) ? polOrd-1 : 0, Dune::Fem::CachingStorage>          DiscretePressureSpaceType;
-
-  static const bool symmetricSolver = true ;
-  typedef typename Solvers<DiscretePressureSpaceType, istl,  symmetricSolver> :: DiscreteFunctionType DiscretePressureFunctionType;
-
-  typedef StokesAssembler< DiscreteFunctionType,  DiscretePressureFunctionType, typename BaseType::OperatorTraits>
-      StokesAssemblerType;
-};
-
-
-template <class GridImp,
-          class ProblemTraits,
-          int polynomialOrder>
-class StokesAlgorithm : public EllipticAlgorithm<GridImp,ProblemTraits,polynomialOrder>
+namespace Fem
 {
 
-  typedef EllipticAlgorithm<GridImp,ProblemTraits,polynomialOrder> BaseType;
-
-
-  // my traits class
-  typedef StokesTraits< GridImp, ProblemTraits, polynomialOrder> Traits ;
-public:
-  // type of Grid
-  typedef typename Traits :: GridType                 GridType;
-
-  // Choose a suitable GridView
-  typedef typename Traits :: GridPartType             GridPartType;
-
-  // initial data type
-  typedef typename Traits :: InitialDataType          InitialDataType;
-
-  typedef typename Traits::ExactPressureType           ExactPressureType;
-
-
-  // An analytical version of our model
-  typedef typename Traits :: ModelType                 ModelType;
-
-  // The flux for the discretization of advection terms
-  typedef typename Traits :: FluxType                  FluxType;
-
-  // The DG space operator
-  // The first operator is sum of the other two
-  // The other two are needed for semi-implicit time discretization
-  //typedef typename Traits :: DgOperatorType            DgOperatorType;
-  typedef typename Traits :: DgAssembledOperatorType   DgAssembledOperatorType;
-  typedef typename Traits :: StokesAssemblerType       StokesAssemblerType;
-
-  // The discrete function for the unknown solution is defined in the DgOperator
-
-  typedef typename Traits :: DiscreteFunctionType              DiscreteFunctionType;
-  typedef typename Traits :: DiscretePressureFunctionType      DiscretePressureFunctionType;
-  // ... as well as the Space type
-  typedef typename Traits :: DiscreteSpaceType                 DiscreteSpaceType;
-  typedef typename Traits :: DiscretePressureSpaceType         DiscretePressureSpaceType;
-
-  typedef typename BaseType::LinearOperatorType         LinearOperatorType;
-  typedef typename BaseType::LinearInverseOperatorType  LinearInverseOperatorType;
-
-  typedef SolverMonitor  SolverMonitorType;
-
-
-  template<class DiscreteFunction,class DiscretePressureFunction,class Operator>
-  class SigmaEval: public BaseType::template SigmaLocal<DiscreteFunction,Operator>
+  template< class GridPartImp, class DiscreteVelocityFunctionImp, class DiscretePressureFunctionImp, class SigmaFunctionSpaceImp, class AssemblerImp, class ModelImp, int polOrder>
+  class StokesSigmaEstimator: public PoissonSigmaEstimator<GridPartImp, DiscreteVelocityFunctionImp, SigmaFunctionSpaceImp, AssemblerImp, polOrder >
   {
-  public:
-    typedef typename BaseType::template SigmaLocal<DiscreteFunction,Operator> SigmaBaseType;
-    typedef DiscretePressureFunction DiscretePressureFunctionType;
-    typedef typename DiscretePressureFunctionType::RangeType PRangeType;
-
-  private:
-    const DiscretePressureFunctionType& ph_;
-    typename DiscretePressureFunctionType::LocalFunctionType localp_;
+    typedef PoissonSigmaEstimator<GridPartImp, DiscreteVelocityFunctionImp, SigmaFunctionSpaceImp, AssemblerImp, polOrder > BaseType;
 
   public:
-    SigmaEval(const DiscreteFunction &uh,
-        const DiscretePressureFunctionType &ph,
-        const Operator& oper)
-      : SigmaBaseType(uh,oper),
-       ph_(ph),
-       localp_(ph_)
-    {}
-    SigmaEval(const SigmaEval &other)
-    : SigmaBaseType(other), ph_(other.ph_), localp_(ph_)
-    {}
-    void init(const typename SigmaBaseType::EntityType &en)
+    typedef DiscreteVelocityFunctionImp     DiscreteVelocityFunctionType;
+    typedef DiscretePressureFunctionImp     DiscretePressureFunctionType;
+    typedef SigmaFunctionSpaceImp           SigmaFunctionSpaceType;
+    typedef GridPartImp                     GridPartType;
+    typedef typename GridPartType::GridType GridType;
+    typedef AssemblerImp                    AssemblerType;
+    typedef ModelImp                        ModelType;
+
+    using BaseType::sigmaSpace_;
+    using BaseType::sigmaDiscreteFunction_;
+    using BaseType::sigmaLocalFunction_;
+    using BaseType::sigmaLocalEstimate_;
+    using BaseType::assembler_;
+    using BaseType::gridPart_;
+    using BaseType::solution_;
+
+    template<class DiscreteFunction,class DiscretePressureFunction,class Operator>
+    class SigmaEval: public BaseType::SigmaLocalType
     {
-      SigmaBaseType::init(en);
-      localp_.init(en);
-    }
-    template< class PointType >
-    void evaluate(const PointType& x,typename SigmaBaseType::RangeType& res) const
-    {
-      SigmaBaseType::evaluate(x,res);
-      PRangeType p;
-      localp_.evaluate(x,p);
-      Dune::Fem::FieldMatrixConverter< typename SigmaBaseType::RangeType, typename DiscreteFunction::JacobianRangeType> res1( res );
-      for(int i=0;i<res1.rows;++i)
-        res1[i][i] -= p;
-    }
-
-
-};
-  struct StokesFlux
-  {
-    typedef typename GridPartType::GridType::template Codim<0>::Entity EntityType;
-    typedef typename GridPartType::IntersectionIteratorType IntersectionIteratorType;
-    typedef typename GridPartType::IntersectionType IntersectionType;
-
-    typedef typename DgAssembledOperatorType::FaceQuadratureType   FaceQuadratureType;
-    typedef typename DgAssembledOperatorType::VolumeQuadratureType VolumeQuadratureType;
-
-    StokesFlux(const DiscretePressureFunctionType &p, const DgAssembledOperatorType &oper)
-    : p_(p),
-      oper_(oper)
-      {}
-    template <class Quadrature,class Value,class DValue,class RetType, class DRetType>
-    void flux(const GridPartType &gridPart,
-              const IntersectionType &intersection,
-              const EntityType &entity, const EntityType &neighbor,
-              const double time,
-              const Quadrature &faceQuadInside, const Quadrature &faceQuadOutside,
-              const Value &valueEn, const DValue &dvalueEn,
-              const Value &valueNb, const DValue &dvalueNb,
-              RetType &retEn, DRetType &dretEn,
-              RetType &retNb, DRetType &dretNb) const
-    {
-      //\hat{K}
-      oper_.flux(gridPart,intersection,entity,neighbor,time,faceQuadInside,faceQuadOutside,
-                 valueEn,dvalueEn,valueNb,dvalueNb,retEn,dretEn,retNb,dretNb);
-      typename DiscretePressureFunctionType::LocalFunctionType pEn = p_.localFunction(entity);
-      typename DiscretePressureFunctionType::LocalFunctionType pNb = p_.localFunction(neighbor);
-      std::vector< typename DiscretePressureFunctionType::RangeType > pValuesEn( faceQuadInside.nop() );
-      std::vector< typename DiscretePressureFunctionType::RangeType > pValuesNb( faceQuadOutside.nop() );
-
-      pEn.evaluateQuadrature( faceQuadInside, pValuesEn );
-      pNb.evaluateQuadrature( faceQuadOutside, pValuesNb );
-
-      assert(retEn.size() == faceQuadInside.nop() );
-
-      for (unsigned int i=0;i<retEn.size();++i)
-      {
-        typename IntersectionType::GlobalCoordinate normal = intersection.integrationOuterNormal( faceQuadInside.localPoint(i) );
-        double value=0.5*(pValuesEn[i]+pValuesNb[i]);
-        normal*=value;
-
-        retEn[i]+=normal;
-        retNb[i]+=normal;
-
-      }
-
-    }
-
-    template<class Quadrature,class RetType>
-    void boundaryValues(const GridPartType &gridPart,
-                        const IntersectionType &intersection,
-                        const EntityType &entity,
-                        const double time,
-                        const Quadrature &faceQuadInside,
-                        RetType &retEn) const
-    {
-      oper_.boundaryValues(gridPart,
-                           intersection, entity, time, faceQuadInside,
-                           retEn);
-    }
-
-
-    template<class Quadrature,class Value,class DValue,class RetType, class DRetType>
-    void boundaryFlux(const GridPartType &gridPart,
-              const IntersectionType &intersection,
-              const EntityType &entity,
-              const double time,
-              const Quadrature &faceQuadInside,
-              const Value &valueEn, const DValue &dvalueEn,
-              const Value &valueNb,
-              RetType &retEn, DRetType &dretEn) const
-
-    {
-      oper_.boundaryFlux(gridPart,
-                         intersection, entity, time, faceQuadInside,
-                         valueEn, dvalueEn, valueNb,
-                         retEn, dretEn );
-      typename DiscretePressureFunctionType::LocalFunctionType pEn = p_.localFunction(entity);
-      std::vector< typename DiscretePressureFunctionType::RangeType > pValuesEn( faceQuadInside.nop() );
-
-      pEn.evaluateQuadrature( faceQuadInside, pValuesEn );
-      assert(retEn.size() == faceQuadInside.nop() );
-
-      for (unsigned int i=0;i<retEn.size();++i)
-      {
-        typename IntersectionType::GlobalCoordinate normal = intersection.integrationOuterNormal( faceQuadInside.localPoint(i) );
-        normal*=pValuesEn[i];
-
-        retEn[i]+=normal;
-
-      }
-    }
-    const ModelType &model() const
-    {
-      return oper_.model();
-    }
-    private:
-    const DiscretePressureFunctionType &p_;
-    const DgAssembledOperatorType &oper_;
-  };
-
-  typedef Dune::Fem::LocalFunctionAdapter< SigmaEval<DiscreteFunctionType,DiscretePressureFunctionType,DgAssembledOperatorType> > StokesEstimateFunction;
-  typedef Dune::StokesErrorEstimator< DiscreteFunctionType, StokesEstimateFunction, StokesFlux > StokesEstimatorType;
-
-  typedef typename InitialDataType :: ExactSolutionType ExactSolutionType;
-  typedef Dune::Fem::GridFunctionAdapter< ExactSolutionType, GridPartType >  GridExactSolutionType;
-  typedef Dune::Fem::GridFunctionAdapter< ExactPressureType, GridPartType >  GridExactPressureType;
-
-
-  typedef Dune::Fem::LocalFunctionAdapter< StokesEstimatorType >          StokesEstimateDataType;
-  typedef tuple< const DiscreteFunctionType*, const DiscretePressureFunctionType*, const StokesEstimateDataType*,
-                 const GridExactSolutionType*, const GridExactPressureType* >  IOTupleType;
-  typedef Dune::Fem::DataOutput<GridType,IOTupleType>         DataWriterType;
-
-  //---- Local Restriction and Prolongation Operator -------------------------
-  typedef Dune::Fem::RestrictProlongDefault< DiscreteFunctionType > RestrictionProlongationType;
-  //---- Adaptation Manager --------------------------------------------------
-  typedef Dune::Fem::AdaptationManager< GridType, RestrictionProlongationType > AdaptationManagerType;
-
-  class InverseDgOperatorContainer
-  {
+      typedef typename BaseType::SigmaLocalType SigmaBaseType;
     public:
-
-    InverseDgOperatorContainer( const LinearOperatorType& linDgOperator,
-                                const double red,
-                                const double eps)
-    : linearDgOperator_( linDgOperator ),
-      linearInverseDgOperator_( ),
-      red_( red ),
-      eps_( eps )
-    {
-      set( eps_ );
-    }
-
-    void set( double epsilon ) const
-    {
-      linearInverseDgOperator_.reset( new LinearInverseOperatorType(linearDgOperator_, red_, epsilon ) );
-    }
-
-    const LinearInverseOperatorType& inv() const
-    {
-      return *linearInverseDgOperator_;
-    }
-
+      typedef DiscretePressureFunction DiscretePressureFunctionType;
+      typedef typename DiscretePressureFunctionType::RangeType PRangeType;
 
     private:
-    const LinearOperatorType& linearDgOperator_;
-    mutable std::unique_ptr< LinearInverseOperatorType > linearInverseDgOperator_;
-    const double red_;
-    const double eps_;
+      const DiscretePressureFunctionType& ph_;
+      typename DiscretePressureFunctionType::LocalFunctionType localp_;
 
-  };
-
-public:
-  explicit StokesAlgorithm(GridType& grid, std::string moduleName = "" ) :
-    BaseType(grid),
-    pressurespace_( gridPart_ ),
-    pressuresolution_("pressuresolution", pressurespace_ ),
-    stkFlux_(pressuresolution_,dgAssembledOperator_),
-    stkLocalEstimate_(solution_,pressuresolution_,dgAssembledOperator_),
-    stkEstimateFunction_("stokes estimate",stkLocalEstimate_,gridPart_,space_.order()),
-    stkEstimator_( solution_, stkEstimateFunction_,stkFlux_, grid),
-    stkEstimateData_("stokesEstimator",stkEstimator_,gridPart_,space_.order()),
-    ugrid_( "exact solution", problem().exactSolution(), gridPart_, 2 ),
-    pgrid_( "exact pressure", problem().exactPressure_, gridPart_,2),
-    ioTuple_( &solution_, &pressuresolution_,&stkEstimateData_, &ugrid_, &pgrid_ ),
-    stokesAssembler_(space_ , pressurespace_, problem(),
-                     Dune::Fem::Parameter::getValue<double>("d11",1.),
-                     Dune::Fem::Parameter::getValue<double>("d12",1.) ),
-    averageIter_(0),
-    eocpId_(-1)
-  {
-    std::string filename(Dune::Fem:: Parameter::commonOutputPath() );
-    filename += "/run.gnu";
-    runFile_.open( filename.c_str() );
-    if( ! runFile_.is_open() )
-    {
-      std::cerr << filename << "runfile not open" << std::endl;
-      abort();
-    }
-    runFile_ << "# h | elements | CPU time | iter | l_min | l_max | cond  | L2 error" << std::endl;
-    const std::string eocpDescription[]={"$L^2$-p-error","Average Iterations"};
-    eocpId_ = Dune::Fem::FemEoc::addEntry(eocpDescription,2);
-
-
-    std::string name = Fem :: gridName( grid_ );
-    if( name == "ALUGrid" || name == "ALUConformGrid" || name == "ALUSimplexGrid" )
-    {
-      if( space_.begin() != space_.end() )
+    public:
+      SigmaEval(const DiscreteFunction &uh,
+          const DiscretePressureFunctionType &ph,
+          const Operator& oper)
+        : SigmaBaseType(uh,oper),
+         ph_(ph),
+         localp_(ph_)
+      {}
+      SigmaEval(const SigmaEval &other)
+      : SigmaBaseType(other), ph_(other.ph_), localp_(ph_)
+      {}
+      void init(const typename SigmaBaseType::EntityType &en)
       {
-        if( space_.begin()->type().isSimplex() && space_.order() > 2 && space_.continuous() )
+        SigmaBaseType::init(en);
+        localp_.init(en);
+      }
+      template< class PointType >
+      void evaluate(const PointType& x,typename SigmaBaseType::RangeType& res) const
+      {
+        SigmaBaseType::evaluate(x,res);
+        PRangeType p;
+        localp_.evaluate(x,p);
+        Dune::Fem::FieldMatrixConverter< typename SigmaBaseType::RangeType, typename DiscreteFunction::JacobianRangeType> res1( res );
+        for(int i=0;i<res1.rows;++i)
+          res1[i][i] -= p;
+      }
+    };
+
+    struct StokesFlux
+    {
+      typedef typename GridPartType::GridType::template Codim<0>::Entity EntityType;
+      typedef typename GridPartType::IntersectionIteratorType IntersectionIteratorType;
+      typedef typename GridPartType::IntersectionType IntersectionType;
+
+      typedef typename AssemblerType::FaceQuadratureType   FaceQuadratureType;
+      typedef typename AssemblerType::VolumeQuadratureType VolumeQuadratureType;
+
+      StokesFlux(const DiscretePressureFunctionType &p, const AssemblerType &oper)
+      : p_(p),
+        oper_(oper)
+        {}
+      template <class Quadrature,class Value,class DValue,class RetType, class DRetType>
+      void flux(const GridPartType &gridPart,
+                const IntersectionType &intersection,
+                const EntityType &entity, const EntityType &neighbor,
+                const double time,
+                const Quadrature &faceQuadInside, const Quadrature &faceQuadOutside,
+                const Value &valueEn, const DValue &dvalueEn,
+                const Value &valueNb, const DValue &dvalueNb,
+                RetType &retEn, DRetType &dretEn,
+                RetType &retNb, DRetType &dretNb) const
+      {
+        //\hat{K}
+        oper_.flux(gridPart,intersection,entity,neighbor,time,faceQuadInside,faceQuadOutside,
+                   valueEn,dvalueEn,valueNb,dvalueNb,retEn,dretEn,retNb,dretNb);
+        typename DiscretePressureFunctionType::LocalFunctionType pEn = p_.localFunction(entity);
+        typename DiscretePressureFunctionType::LocalFunctionType pNb = p_.localFunction(neighbor);
+        std::vector< typename DiscretePressureFunctionType::RangeType > pValuesEn( faceQuadInside.nop() );
+        std::vector< typename DiscretePressureFunctionType::RangeType > pValuesNb( faceQuadOutside.nop() );
+
+        pEn.evaluateQuadrature( faceQuadInside, pValuesEn );
+        pNb.evaluateQuadrature( faceQuadOutside, pValuesNb );
+
+        assert(retEn.size() == faceQuadInside.nop() );
+
+        for (unsigned int i=0;i<retEn.size();++i)
         {
-          std::cerr << std::endl<< "ERROR: Lagrange spaces for p>2 do not work on simplex grids due to the twist problem !!!";
+          typename IntersectionType::GlobalCoordinate normal = intersection.integrationOuterNormal( faceQuadInside.localPoint(i) );
+          double value=0.5*(pValuesEn[i]+pValuesNb[i]);
+          normal*=value;
+
+          retEn[i]+=normal;
+          retNb[i]+=normal;
+
+        }
+
+      }
+
+      template<class Quadrature,class RetType>
+      void boundaryValues(const GridPartType &gridPart,
+                          const IntersectionType &intersection,
+                          const EntityType &entity,
+                          const double time,
+                          const Quadrature &faceQuadInside,
+                          RetType &retEn) const
+      {
+        oper_.boundaryValues(gridPart,
+                             intersection, entity, time, faceQuadInside,
+                             retEn);
+      }
+
+
+      template<class Quadrature,class Value,class DValue,class RetType, class DRetType>
+      void boundaryFlux(const GridPartType &gridPart,
+                const IntersectionType &intersection,
+                const EntityType &entity,
+                const double time,
+                const Quadrature &faceQuadInside,
+                const Value &valueEn, const DValue &dvalueEn,
+                const Value &valueNb,
+                RetType &retEn, DRetType &dretEn) const
+
+      {
+        oper_.boundaryFlux(gridPart,
+                           intersection, entity, time, faceQuadInside,
+                           valueEn, dvalueEn, valueNb,
+                           retEn, dretEn );
+        typename DiscretePressureFunctionType::LocalFunctionType pEn = p_.localFunction(entity);
+        std::vector< typename DiscretePressureFunctionType::RangeType > pValuesEn( faceQuadInside.nop() );
+
+        pEn.evaluateQuadrature( faceQuadInside, pValuesEn );
+        assert(retEn.size() == faceQuadInside.nop() );
+
+        for (unsigned int i=0;i<retEn.size();++i)
+        {
+          typename IntersectionType::GlobalCoordinate normal = intersection.integrationOuterNormal( faceQuadInside.localPoint(i) );
+          normal*=pValuesEn[i];
+
+          retEn[i]+=normal;
+
         }
       }
+      const ModelType &model() const
+      {
+        return oper_.model();
+      }
+      private:
+      const DiscretePressureFunctionType &p_;
+      const AssemblerType &oper_;
+    };
+
+
+
+    typedef Dune::Fem::LocalFunctionAdapter< SigmaEval<DiscreteVelocityFunctionType,DiscretePressureFunctionType,AssemblerType> > StokesEstimateFunction;
+    typedef Dune::StokesErrorEstimator< DiscreteVelocityFunctionType, StokesEstimateFunction, StokesFlux > StokesEstimatorType;
+    typedef Dune::Fem::LocalFunctionAdapter< StokesEstimatorType >          StokesEstimateDataType;
+
+
+    StokesSigmaEstimator( GridPartType& gridPart,
+                          const DiscreteVelocityFunctionType& solution,
+                          const DiscretePressureFunctionType& pressureSolution,
+                          const AssemblerType& assembler,
+                          const std::string keyPrefix = "" )
+    : BaseType( gridPart, solution, assembler, keyPrefix ),
+      stkFlux_( pressureSolution, assembler_),
+      stkLocalEstimate_( solution_, pressureSolution, assembler_ ),
+      stkEstimateFunction_("stokes estimate", stkLocalEstimate_, gridPart_, solution_.space().order() ),
+      stkEstimator_( solution_, stkEstimateFunction_, stkFlux_, gridPart_.grid() ),
+      stkEstimateData_("stokesEstimator", stkEstimator_, gridPart_, solution_.space().order() )
+    {}
+
+
+    StokesEstimatorType& estimator() const
+    {
+      return stkEstimator_;
+    };
+
+    StokesEstimateDataType& data() const
+    {
+      return stkEstimateData_;
     }
-  }
 
-  //! return reference to discrete space
-  const DiscreteSpaceType & space() const { return space_; }
-  const DiscretePressureSpaceType & pressurespace() const { return space_; }
 
-  //! returns data prefix for EOC loops ( default is loop )
-  virtual std::string dataPrefix() const
+  private:
+    StokesFlux stkFlux_;
+    SigmaEval<DiscreteVelocityFunctionType,DiscretePressureFunctionType,AssemblerType> stkLocalEstimate_;
+
+    StokesEstimateFunction stkEstimateFunction_;
+    StokesEstimatorType  stkEstimator_;
+    StokesEstimateDataType  stkEstimateData_;
+
+
+  };
+
+
+  template <class GridImp, class ProblemTraits, class ElliptProblemTraits, int polynomialOrder >
+  class StokesAlgorithm : public SteadyStateAlgorithm<GridImp,ProblemTraits,polynomialOrder>
   {
-    return problem_->dataPrefix();
-  }
 
-  // gather information from the space operator, the time integratior
-  // and the problem to output before each table in tex file
-  std::string description() const
-  {
-    std::string latexInfo;
+    typedef SteadyStateAlgorithm<GridImp,ProblemTraits,polynomialOrder> BaseType;
 
-    latexInfo = dgAssembledOperator_.description();
+  public:
+    typedef typename ElliptProblemTraits::template Stepper<polynomialOrder>::Type  EllipticalAlgorithmType;
 
-    // latexInfo = dgAdvectionOperator_.description()
-    //            + dgDiffusionOperator_.description();
+    // type of Grid
+    typedef typename BaseType::GridType                             GridType;
 
-    std::stringstream odeInfo;
+    // Choose a suitable GridView
+    typedef typename BaseType::GridPartType                         GridPartType;
 
-    latexInfo += odeInfo.str()
-      + "\n"
-      + problem_->description()
-      + "\n\n";
+    // initial data type
+    typedef typename BaseType::ProblemType                          ProblemType;
 
-    return latexInfo;
-  }
+    typedef typename BaseType::DiscreteTraits::ExactPressureType    ExactSolutionType;
 
+    // An analytical version of our model
+    typedef typename BaseType::ModelType                            ModelType;
 
-  //! default time loop implementation, overload for changes
-  SolverMonitorType solve( int loop )
-  {
-    assemble( &rhs_ );
-    return solve( rhs_ );
-  }
+    typedef typename BaseType::AssemblerType                        AssemblerType;
+    // The discrete function for the unknown solution is defined in the DgOperator
 
-  void assemble( DiscreteFunctionType* rhs )
-  {
+    typedef typename EllipticalAlgorithmType::DiscreteTraits::DiscreteFunctionType
+                                                                    DiscreteVelocityFunctionType;
+    typedef typename BaseType::DiscreteFunctionType                 DiscreteFunctionType;
+    // ... as well as the Space type
+    typedef typename EllipticalAlgorithmType::DiscreteTraits::DiscreteFunctionSpaceType
+                                                                    DiscreteVelocityFunctionSpaceType;
+    typedef typename BaseType::DiscreteFunctionSpaceType            DiscreteFunctionSpaceType;
+
+    typedef typename BaseType::SolverMonitorType                    SolverMonitorType;
+
+    // type of inverse operator (i.e. linear solver implementation)
+    typedef typename BaseType::BasicLinearSolverType                BasicLinearSolverType;
+
+    enum { dimension = GridType::dimension  };
+
+    typedef typename DiscreteVelocityFunctionSpaceType ::
+      template ToNewDimRange< dimension * ModelType::dimRange >::NewFunctionSpaceType SigmaFunctionSpaceType;
+
+    typedef StokesSigmaEstimator< GridPartType, DiscreteVelocityFunctionType, DiscreteFunctionType,
+                                  SigmaFunctionSpaceType, typename EllipticalAlgorithmType::DiscreteTraits::AssemblerType, ModelType, polynomialOrder > StokesSigmaEstimatorType;
+
+    typedef Dune::Fem::GridFunctionAdapter< ExactSolutionType, GridPartType >  GridExactSolutionType;
+
+    typedef typename BaseType::IOTupleType                                         IOTupleType;
+    typedef Dune::Fem::DataOutput<GridType,IOTupleType>         DataWriterType;
+
+    typedef typename  BaseType::AnalyticalTraits    AnalyticalTraits;
+
+    using BaseType::problem;
+    using BaseType::model;
+    using BaseType::grid;
+    using BaseType::gridWidth;
+    using BaseType::gridSize;
+    using BaseType::eocIds_;
+    using BaseType::space;
+    using BaseType::solution;
+    using BaseType::solver_;
+
+  public:
+    explicit StokesAlgorithm(GridType& grid, std::string moduleName = "" ) :
+      BaseType( grid, moduleName ),
+      ellAlg_( grid, moduleName ),
+      gridPart_( grid ),
+      space_( gridPart_ ),
+      solution_("pressuresolution-" + moduleName, space_ ),
+      stokesSigmaEstimator_( gridPart_, ellAlg_.solution(), solution_, ellAlg_.assembler(), moduleName ),
+      exact_( "exact pressure-" + moduleName, problem().exactPressure(), gridPart_, 2 ),
+      assembler_( ellAlg_.space() , space_, problem() )
+    {}
+
+    //! return reference to discrete space
+    const DiscreteFunctionSpaceType & space() const { return space_; }
+
+    virtual BasicLinearSolverType* createSolver( DiscreteFunctionType* rhs )
+    {
+      assembler_.assemble( problem() );
+
+      double absLimit   = Dune::Fem:: Parameter::getValue<double>("istl.absLimit",1.e-10);
+      solution_.clear();
+#if 0
 #ifdef PADAPTSPACE
-    int polOrder = Dune::Fem::Parameter::getValue<double>("femdg.polynomialOrder",1);
-    // only implemented for PAdaptiveSpace
-    std::vector<int> polOrderVec( space_.gridPart().indexSet().size(0) );
-    std::vector<int> polOrderVecPressure( pressurespace_.gridPart().indexSet().size(0) );
-    std::fill( polOrderVec.begin(), polOrderVec.end(), polOrder );
-    std::fill( polOrderVecPressure.begin(), polOrderVecPressure.end(), polOrder-1 );
-    space_.adapt( polOrderVec );
-    pressurespace_.adapt( polOrderVecPressure);
+      int polOrder = Dune::Fem::Parameter::getValue<double>("femdg.polynomialOrder",1);
+      // only implemented for PAdaptiveSpace
+      std::vector<int> polOrderVec( ellAlg_.space().gridPart().indexSet().size(0) );
+      std::vector<int> polOrderVecPressure( space_.gridPart().indexSet().size(0) );
+      std::fill( polOrderVec.begin(), polOrderVec.end(), polOrder );
+      std::fill( polOrderVecPressure.begin(), polOrderVecPressure.end(), polOrder-1 );
+      ellAlg_.space().adapt( polOrderVec );
+      space_.adapt( polOrderVecPressure);
+#endif
 #endif
 
-    linDgOperator_.reset( new LinearOperatorType("dg operator", space_, space_ ) );
-
-    if( space_.continuous() ) // Lagrange space
-    {
-      typedef Dune::Fem::DiagonalStencil<DiscreteSpaceType,DiscreteSpaceType> StencilType ;
-      StencilType stencil( space_, space_);
-      linDgOperator_->reserve(stencil);
-    }
-    else // DG space
-    {
-      typedef Dune::Fem::DiagonalAndNeighborStencil<DiscreteSpaceType,DiscreteSpaceType> StencilType ;
-      StencilType stencil( space_, space_);
-      linDgOperator_->reserve(stencil);
+      return new BasicLinearSolverType( assembler_, ellAlg_.solver(), ellAlg_.rhs(), absLimit, 3*ellAlg_.space().size() );
     }
 
-    linDgOperator_->clear();
-    if( rhs )
+    virtual DiscreteFunctionType& rhs()
     {
-      dgAssembledOperator_.assemble(0, *linDgOperator_, *rhs );
-    }
-    else
-    {
-      dgAssembledOperator_.assemble(0, *linDgOperator_ );
+      return assembler_.pressureRhs();
     }
 
-    stokesAssembler_.assemble( *problem_);
-  }
-
-
-
-  SolverMonitorType solve( const DiscreteFunctionType& rhs )
-  {
-    numbers_.resize( 0 );
-
-    // calculate grid width
-    const double h = Dune::Fem::GridWidth::calcGridWidth(gridPart_);
-    numbers_.push_back( h );
-
-    const double size = grid_.size(0);
-    numbers_.push_back( size );
-
-    typedef Dune::UzawaSolver< DiscreteFunctionType,DiscretePressureFunctionType,StokesAssemblerType,InverseDgOperatorContainer >UzawaType;
-
-    double reduction  = Dune::Fem:: Parameter::getValue<double>("istl.reduction",1.e-10);
-    double absLimit   = Dune::Fem:: Parameter::getValue<double>("istl.absLimit",1.e-10);
-    double uzawareduction  = Dune::Fem:: Parameter::getValue<double>("uzawareduction",reduction*100.);
-    double tau  = Dune::Fem:: Parameter::getValue<double>("tau",1.);
-
-    SolverMonitorType monitor;
-    monitor.gridWidth = h; // space_.size();
-
-    InverseDgOperatorContainer invDgOperatorContainer_( *linDgOperator_, reduction, absLimit );
-
-    UzawaType uzawa(stokesAssembler_, invDgOperatorContainer_, rhs, uzawareduction, absLimit, 3*space_.size(), tau );
-
-    pressuresolution_.clear();
-    uzawa(stokesAssembler_.pressureRhs(), pressuresolution_);
-
-    solution_.assign( uzawa.velocity() );
-
-    monitor.ils_iterations = uzawa.iterations();
-    averageIter_ = uzawa.averageLinIter();
-
-    // calculate new sigma
-    Dune::Fem:: DGL2ProjectionImpl :: project( sigmaEstimateFunction_, sigmaDiscreteFunction_ );
-
-    return monitor;
-  }
-
-
-
-  //! finalize computation by calculating errors and EOCs
-  void finalize( const int eocloop )
-  {
-    //---- Adapter for exact solution ------------------------------------------
-    typedef typename InitialDataType :: ExactSolutionType ExactSolutionType;
-    typedef Dune::Fem::GridFunctionAdapter< ExactSolutionType, GridPartType >
-      GridExactSolutionType;
-
-    typedef Dune::Fem::GridFunctionAdapter< ExactPressureType, GridPartType >  GridExactPressureType;
-
-    // create grid function adapter
-    GridExactSolutionType ugrid( "exact solution", problem().exactSolution(), gridPart_, 1 );
-    GridExactPressureType pgrid( "exact pressure", problem().exactPressure_, gridPart_,1);
-
-      // calculate L2 - Norm
-    Dune::Fem::L2Norm< GridPartType > l2norm( gridPart_ );
-    const double l2error = l2norm.distance( ugrid, solution_ );
-    numbers_.push_back( l2error );
-    const double l2press = l2norm.distance( pgrid,pressuresolution_);
-    Dune::Fem::DGNorm< GridPartType > dgnorm( gridPart_ );
-    double dgerror = dgnorm.distance( ugrid, solution_ );
-    //double dgerror = dgnorm.norm( ugrid );
-
-    //    dgerror+=l2press;
-    Dune::Fem::H1Norm< GridPartType > sigmanorm( gridPart_ );
-
-    typedef typename BaseType::template SigmaLocalFunction<typename BaseType::template SigmaLocal<DiscreteFunctionType,DgAssembledOperatorType> >
-      SigmaLocalFunctionType;
-    SigmaLocalFunctionType sigmaLocalFunction( solution_, sigmaDiscreteFunction_, sigmaLocalEstimate_ );
-    Dune::Fem::LocalFunctionAdapter<SigmaLocalFunctionType> sigma( "sigma function", sigmaLocalFunction, gridPart_, space_.order() );
-    const double sigmaerror = sigmanorm.distance( ugrid, sigma );
-
-    for(size_t i=0; i<numbers_.size(); ++i)
-      runFile_ << numbers_[ i ] << " ";
-
-    runFile_ << std::endl;
-
-    // store values
-    std::vector<double> errors;
-    errors.push_back( l2error );
-    errors.push_back( dgerror );
-    errors.push_back( sigmaerror );
-    std::vector<double> perr;
-    perr.push_back(l2press);
-    perr.push_back(averageIter_);
-    // submit error to the FEM EOC calculator
-    Dune::Fem::FemEoc :: setErrors(eocId_, errors);
-    Dune::Fem::FemEoc :: setErrors(eocpId_,perr);
-
-    invDgOperator_.reset();
-    linDgOperator_.reset();
-  }
-
-
-  bool adaptation(const double tolerance)
-  {
-    // update to current
-    polOrderContainer_.resize();
-
-    const double error = stkEstimator_.estimate( problem() );
-    typedef typename DiscreteSpaceType::IteratorType IteratorType;
-    const IteratorType end = space_.end();
-    for( IteratorType it = space_.begin(); it != end; ++it )
+    void solve( const int loop )
     {
-      const typename IteratorType::Entity &entity = *it;
-      polOrderContainer_[entity].value() =
-        stkEstimator_.newOrder( 0.98*tolerance, entity );
+      BaseType::solve( loop );
+
+      ellAlg_.solution().assign( solver_->velocity() );
+
+      // TODO check wheather we need the following line
+      stokesSigmaEstimator_.update();
     }
-    return (error < std::abs(tolerance) ? false : stkEstimator_.mark( 0.98 * tolerance));
-  }
+
+    //! finalize computation by calculating errors and EOCs
+    void finalize( const int eocloop )
+    {
+      ellAlg_.finalize( eocloop );
+      AnalyticalTraits::addEOCErrors( eocIds_, solution_, ellAlg_.model(), exact_ );
+    }
+
+    bool adaptation(const double tolerance)
+    {
+#if 0
+#if PADAPTSPACE
+      // update to current
+      polOrderContainer_.resize();
+
+      const double error = stokesSigmaEstimator_.estimator().estimate( problem() );
+      typedef typename DiscreteVelocityFunctionSpaceType::IteratorType IteratorType;
+      const IteratorType end = ellAlg_.space().end();
+      for( IteratorType it = ellAlg_.space().begin(); it != end; ++it )
+      {
+        const typename IteratorType::Entity &entity = *it;
+        polOrderContainer_[entity].value() =
+          stokesSigmaEstimator_.estimator().newOrder( 0.98*tolerance, entity );
+      }
+#endif
+#endif
+      return (error < std::abs(tolerance) ? false : stokesSigmaEstimator_.estimator().mark( 0.98 * tolerance));
+    }
+
+    DiscreteFunctionType& solution()
+    {
+      return solution_;
+    }
+
+  private:
+    //dummy
+    const GridExactSolutionType& exact() const
+    {
+      return exact_;
+    }
+
+  private:
+    EllipticalAlgorithmType           ellAlg_;
+    GridPartType                      gridPart_;
+    DiscreteFunctionSpaceType         space_;
+    DiscreteFunctionType              solution_;
+
+    StokesSigmaEstimatorType          stokesSigmaEstimator_;
+    GridExactSolutionType             exact_;
+    AssemblerType                     assembler_;
+
+  public:
+
+    virtual auto dataTuple () -> decltype( std::tuple_cat( this->ellAlg_.dataTuple(), std::make_tuple( &this->solution(), &this->exact() ) ) )
+    {
+      return std::tuple_cat( ellAlg_.dataTuple(), std::make_tuple( &this->solution(), &this->exact() ) );
+      //return make_tuple( &solution_, &solution_,&stokesSigmaEstimator_.data(), &ugrid_, &pgrid_ );
+    }
+
+  };
 
 
-
-
-//   bool adaptation(const double tolerance)
-//   {
-//     const double error = stkEstimator_.estimate( problem() );
-//         return (error < std::abs(tolerance) ? false : stkEstimator_.mark( 0.98 * tolerance));
-//   }
-
-  const InitialDataType& problem() const { assert( problem_ ); return *problem_; }
-  const DiscreteFunctionType& solution() const { return solution_; }
-  DiscreteFunctionType& solution() { return solution_; }
-  IOTupleType& ioTuple() { return ioTuple_; }
-  IOTupleType dataTuple() { return IOTupleType( ioTuple_ ); }
-
-private:
-  using BaseType::grid_;
-  using BaseType::gridPart_;       // reference to grid part, i.e. the leaf grid
-  using BaseType::problem_;
-  using BaseType::model;
-  using BaseType::dgAssembledOperator_;
-  using BaseType::invDgOperator_;
-  using BaseType::linDgOperator_;
-  using BaseType::space_;    // the discrete function space
-  using BaseType::rhs_;    // the discrete function space
-  using BaseType::sigmaSpace_;
-  using BaseType::sigmaDiscreteFunction_;
-  using BaseType::sigmaLocalEstimate_;
-  using BaseType::sigmaEstimateFunction_;
-  using BaseType::solution_;
-  using BaseType::polOrderContainer_;
-  using BaseType::eocId_;
-  using BaseType::step_;
-  using BaseType::numbers_;
-  using BaseType::runFile_;
-
-  DiscretePressureSpaceType pressurespace_;
-  DiscretePressureFunctionType pressuresolution_;
-
-  StokesFlux stkFlux_;
-  SigmaEval<DiscreteFunctionType,DiscretePressureFunctionType,DgAssembledOperatorType> stkLocalEstimate_;
-
-  StokesEstimateFunction stkEstimateFunction_;
-  StokesEstimatorType  stkEstimator_;
-  StokesEstimateDataType  stkEstimateData_;
-  GridExactSolutionType ugrid_;
-  GridExactPressureType pgrid_;
-
-  IOTupleType ioTuple_;
-  StokesAssemblerType         stokesAssembler_;
-
-  // Initial flux for advection discretization (UpwindFlux)
-
-  mutable double averageIter_;
-  int eocpId_;
-};
+}
+}
 #endif // FEMHOWTO_STEPPER_HH

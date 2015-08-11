@@ -1,223 +1,200 @@
-#ifndef FEMHOWTO_POISSONSTEPPER_HH
-#define FEMHOWTO_POISSONSTEPPER_HH
+#ifndef FEMDG_STOKESSTEPPER_HH
+#define FEMDG_STOKESSTEPPER_HH
 #include <config.h>
 
-//#define WANT_ISTL 1
-
-#ifndef NDEBUG
-// enable fvector and fmatrix checking
-#define DUNE_ISTL_WITH_CHECKING
+#ifndef DIMRANGE
+#define DIMRANGE GRIDDIM
 #endif
 
 #ifndef POLORDER
 #define POLORDER 1
 #endif
 
-#include "passtraits.hh"
-
-// dune-grid includes
-#include <dune/grid/io/file/dgfparser/dgfparser.hh>
-
-// dune-fem includes
 #include <dune/fem/io/parameter.hh>
-
-// dune-fem-dg includes
-#include <dune/fem-dg/operator/fluxes/diffusionflux.hh>
-
-#include <dune/fem-dg/operator/dg/dgoperatorchoice.hh>
-#include <dune/fem-dg/operator/fluxes/noflux.hh>
-#include <dune/fem-dg/assemble/primalmatrix.hh>
-
-#include <dune/fem-dg/solver/linearsolvers.hh>
-//#include <dune/fem-dg/stepper/ellipticalgorithm.hh>
-
-#include <dune/fem-dg/models/stokesprobleminterfaces.hh>
-
-// local includes
-#include "problem.hh"
+#include <dune/grid/io/file/dgfparser/dgfparser.hh>
+#include <dune/fem/misc/l2norm.hh>
 #include "corner.hh"
+
+//--------- GRID HELPER ---------------------
+#include <dune/fem-dg/algorithm/gridinitializer.hh>
+//--------- OPERATOR/SOLVER -----------------
+#include <dune/fem-dg/assemble/primalmatrix.hh>
+#include <dune/fem-dg/solver/linearsolvers.hh>
+#include <dune/fem-dg/operator/dg/operatortraits.hh>
+//--------- FLUXES ---------------------------
+#include <dune/fem-dg/operator/fluxes/upwindflux.hh>
+#include <dune/fem-dg/operator/fluxes/eulerfluxes.hh>
+#include <dune/fem-dg/operator/fluxes/noflux.hh>
+//--------- STEPPER -------------------------
+#include <dune/fem-dg/test/stokes/stokes.hh>
+//--------- PROBLEMS ------------------------
+#include <dune/fem-dg/models/stokesprobleminterfaces.hh>
+#include "problem.hh"
+//--------- MODELS --------------------------
 #include "models.hh"
 
-#include "stokes.hh"
 
-template <class GridType>
+//--------- PROBLEMCREATOR ------------------
+#include "../poisson/problemcreator.hh"
+
+
+
+template< class GridImp >
 struct StokesProblemCreator
 {
-  static const int polynomialOrder = POLORDER;
-  static const int dimRange = GridType::dimension ;
-  typedef Dune :: StokesProblemInterface<
-                 Dune::Fem::FunctionSpace< double, double, GridType::dimension, dimRange>,
-                 Dune::Fem::FunctionSpace< double, double, GridType::dimension, 1> >  ProblemType;
+  typedef PoissonProblemCreator<GridImp>                           PoissonProblemCreatorType;
 
-  template <class GridPart>
-  struct Traits
+  typedef typename PoissonProblemCreatorType::GridType             GridType;
+  typedef typename PoissonProblemCreatorType::HostGridPartType     HostGridPartType;
+  typedef typename PoissonProblemCreatorType::GridPartType         GridPartType;
+
+
+private:
+  typedef typename PoissonProblemCreatorType::FunctionSpaceType  VelocityFunctionSpaceType;
+  typedef Dune::Fem::FunctionSpace< typename GridType::ctype, double, GridType::dimension, 1 >
+                                                                PressureFunctionSpaceType;
+public:
+  // define problem type here if interface should be avoided
+  typedef typename PoissonProblemCreatorType::FunctionSpaceType FunctionSpaceType;
+
+
+  typedef Dune::StokesProblemInterface< VelocityFunctionSpaceType, PressureFunctionSpaceType >       ProblemInterfaceType;
+
+  template< class GridPart > // TODO: is this template parameter needed?
+  struct AnalyticalTraits
   {
-    typedef ProblemType                                InitialDataType;
-    typedef StokesModel< GridPart, InitialDataType >   ModelType;
-    typedef Dune::NoFlux< ModelType >                  FluxType;
-    // choice of diffusion flux (see diffusionflux.hh for methods)
-    static const Dune :: DGDiffusionFluxIdentifier PrimalDiffusionFluxId
-      = Dune :: method_general ;
+    typedef ProblemInterfaceType                                      ProblemType;
+    typedef ProblemInterfaceType                                      InitialDataType;
+    typedef StokesModel< GridPart, InitialDataType >                  ModelType;
+
+    typedef typename PoissonProblemCreatorType::template AnalyticalTraits< GridPart >::EOCErrorIDs     EOCErrorIDs;
+
+    static EOCErrorIDs initEoc ()
+    {
+      //todo: correction
+      EOCErrorIDs ids = PoissonProblemCreatorType::template AnalyticalTraits< GridPart >::initEoc();
+      ids[ 3 ] = Dune::Fem::FemEoc::addEntry( std::string( "$L^2$-p-error" ) );
+      return ids;
+    }
+
+    template< class SolutionImp, class Model, class ExactFunction, class SigmaEstimatorImp >
+    static void addEOCErrors ( const EOCErrorIDs &ids, SolutionImp &u, const Model &model, const ExactFunction &f, SigmaEstimatorImp& sigma  )
+    {
+      typename PoissonProblemCreatorType::template AnalyticalTraits< GridPart > addEOCErrors( ids, u, model, f, sigma );
+    }
+
+    template< class SolutionPressureImp, class Model, class ExactPressureFunction >
+    static void addEOCErrors ( const EOCErrorIDs &ids, SolutionPressureImp &p, const Model &model, const ExactPressureFunction &g  )
+    {
+      // calculate L2 - p-Norm
+      Dune::Fem::L2Norm< GridPartType > l2pnorm( p.space().gridPart() );
+      const double l2perror = l2pnorm.distance( g, p );
+      Dune::Fem::FemEoc::setErrors( ids[ 1 ], l2perror );
+    }
   };
-
-  static inline std::string diffusionFluxName()
-  {
-#if (defined PRIMALDG)
-    return Dune::Fem::Parameter::getValue< std::string >("dgdiffusionflux.method");
-#else
-    return "LDG";
-#endif
-  }
 
   static inline std::string moduleName()
   {
     return "";
   }
 
-  static inline Dune::GridPtr<GridType> initializeGrid()
+  static inline Dune::GridPtr<GridType>
+  initializeGrid()
   {
-    // use default implementation
-    std::string filename = ParameterType::commonInputPath() + "/" +
-               Dune::Fem::Parameter::getValue< std::string >(Dune::Fem::IOInterface::defaultGridKey(GridType :: dimension, false));
-
-    std::string description ("poisson-"+diffusionFluxName());
-    // initialize grid
-    Dune::GridPtr< GridType > gridptr = initialize< GridType >( description );
-
-    std::string::size_type position = std::string::npos;
-    if( GridType::dimension == 2)
-      position = filename.find("mesh3");
-    if( GridType::dimension == 3 )
-      position = filename.find("_locraf.msh" );
-
-    std::string::size_type locraf = filename.find("locrafgrid_");
-
-    std::string::size_type checkerboard = filename.find("heckerboard" );;
-
-    GridType& grid = *gridptr ;
-
-    const int refineelement = 1 ;
-
-    bool nonConformOrigin = Dune::Fem::Parameter::getValue< bool > ( "nonConformOrigin",false );
-
-    if ( nonConformOrigin )
-    {
-      std::cout << "Create local refined grid" << std::endl;
-      if( grid.comm().rank() == 0)
-      {
-        typedef typename GridType:: template Codim<0>::LeafIterator IteratorType;
-        IteratorType endit = grid.template leafend<0>();
-        for(IteratorType it = grid.template leafbegin<0>(); it != endit ; ++it)
-        {
-          const typename IteratorType :: Entity & entity = *it ;
-          const typename IteratorType :: Entity :: Geometry& geo = entity.geometry();
-          if (geo.center().two_norm() < 0.5)
-            grid.mark(refineelement, entity );
-        }
-      }
-    }
-    else if ( position != std::string::npos ||
-              locraf   != std::string::npos )
-    {
-      std::cout << "Create local refined grid" << std::endl;
-      if( grid.comm().rank() == 0)
-      {
-        typedef typename GridType:: template Codim<0>::LeafIterator IteratorType;
-        Dune::FieldVector<double,GridType::dimension> point(1.0);
-        if( locraf != std::string::npos ) point[ 0 ] = 3.0;
-        const int loops = ( GridType::dimension == 2 ) ? 2 : 1;
-        for (int i=0; i < loops; ++i)
-        {
-          point /= 2.0 ;
-
-          IteratorType endit = grid.template leafend<0>();
-          for(IteratorType it = grid.template leafbegin<0>(); it != endit ; ++it)
-          {
-            const typename IteratorType :: Entity & entity = *it ;
-            const typename IteratorType :: Entity :: Geometry& geo = entity.geometry();
-            bool inside = true ;
-            const int corners = geo.corners();
-            for( int c = 0; c<corners; ++ c)
-            {
-              for( int i = 0; i<GridType::dimension; ++i )
-              {
-                if( geo.corner( c )[ i ] - point[ i ] > 1e-8 )
-                {
-                  inside = false ;
-                  break ;
-                }
-              }
-            }
-            if( inside ) grid.mark(refineelement, entity );
-          }
-        }
-      }
-    }
-    else if ( checkerboard != std::string::npos )
-    {
-      std::cout << "Create Checkerboard mesh" << std::endl;
-      int moduloNum = 32 ;
-      for( int i = 2; i<32; i *= 2 )
-      {
-        std::stringstream key;
-        key << i << "x" << i << "x" << i;
-        std::string::size_type counter = filename.find( key.str() );
-        if( counter != std::string::npos )
-        {
-          moduloNum = i;
-          break ;
-        }
-      }
-
-      std::cout << "Found checkerboard cell number " << moduloNum << std::endl;
-
-      if( grid.comm().rank() == 0)
-      {
-        typedef typename GridType:: template Codim<0>::LeafIterator IteratorType;
-        IteratorType endit = grid.template leafend<0>();
-        int count = 1;
-        int modul = 1; // start with 1, such that the fine cube is at (0,0,0)
-        for(IteratorType it = grid.template leafbegin<0>(); it != endit ; ++it, ++ count )
-        {
-          const typename IteratorType :: Entity & entity = *it ;
-          if( count % 2 == modul )
-            grid.mark(refineelement, entity );
-
-          if( count % moduloNum == 0 )
-            modul = 1 - modul ;
-
-          if( count % (moduloNum * moduloNum) == 0 )
-            modul = 1 - modul ;
-        }
-      }
-    }
-
-    // adapt the grid
-    grid.preAdapt();
-    grid.adapt();
-    grid.postAdapt();
-
-    return gridptr ;
+    return PoissonProblemCreatorType::initializeGrid();
   }
 
-  static ProblemType* problem( )
+  static ProblemInterfaceType* problem()
   {
-    // choice of benchmark problem
-    //return new Dune :: StokesProblemDefault< GridType > ();
-    return new Dune :: GeneralizedStokesProblem< GridType > ();
+    return new Dune::GeneralizedStokesProblem< GridType > ();
   }
 
-  template <int polynomialOrder>
+
+  //Stepper Traits
+  template< class GridPart, int polOrd > // TODO: is GridPart as a template parameter needed?
+  struct DiscreteTraits
+  {
+    typedef typename PoissonProblemCreatorType::template DiscreteTraits< GridPart, polOrd >       PoissonDiscreteTraits;
+public:
+    typedef AnalyticalTraits<GridPart>                                                            AnalyticalTraitsType;
+
+    static const int polynomialOrder = PoissonDiscreteTraits::polynomialOrder;
+
+    static inline std::string advectionFluxName()
+    {
+      return PoissonDiscreteTraits::advectionFluxName();
+    }
+
+    static inline std::string diffusionFluxName()
+    {
+      return PoissonDiscreteTraits::diffusionFluxName();
+    }
+
+    static const int quadOrder = PoissonDiscreteTraits::quadOrder;
+    static const SolverType solverType = PoissonDiscreteTraits::solverType;
+
+    typedef typename DiscreteFunctionSpaces< PressureFunctionSpaceType, GridPartType, polynomialOrder, _legendre, dg >::type    DiscreteFunctionSpaceType;
+    typedef typename DiscreteFunctions< DiscreteFunctionSpaceType, solverType >::type                                   DiscreteFunctionType;
+    typedef typename DiscreteFunctions< DiscreteFunctionSpaceType, solverType >::jacobian                               JacobianOperatorType;
+
+    typedef typename  std::tuple<> ExtraParameterTuple;
+
+
+private:
+    typedef Dune::Fem::FunctionSpace< typename GridType::ctype, double, AnalyticalTraitsType::ModelType::dimDomain, 3> FVFunctionSpaceType;
+    typedef Dune::Fem::FiniteVolumeSpace<FVFunctionSpaceType,GridPartType, 0, Dune::Fem::SimpleStorage> IndicatorSpaceType;
+public:
+    typedef Dune::Fem::AdaptiveDiscreteFunction<IndicatorSpaceType>                             IndicatorType;
+
+    typedef Dune::Fem::RestrictProlongDefault< DiscreteFunctionType >                           RestrictionProlongationType;
+
+    typedef Dune::AdaptationHandler< GridType, FunctionSpaceType >                              AdaptationHandlerType;
+
+
+    //############################ stokes ############################
+    static const bool symmetricSolver = true ;
+    //typedef Solvers<DiscreteFunctionSpaceType, solverType, symmetricSolver> SolversType;
+    typedef Dune::NoFlux< typename AnalyticalTraitsType::ModelType >              FluxType;
+    typedef typename PoissonDiscreteTraits::FullOperatorType                      FullOperatorType;
+
+    //----------- passes! ------------------------
+    typedef Dune::OperatorTraits< GridPartType, polynomialOrder, AnalyticalTraitsType,
+                                  DiscreteFunctionType, FluxType, IndicatorType,
+                                  AdaptationHandlerType, ExtraParameterTuple >                  OperatorTraitsType;
+    typedef typename Dune::StokesAssembler< typename PoissonDiscreteTraits::DiscreteFunctionType,
+                                            DiscreteFunctionType,
+                                            OperatorTraitsType>                   AssemblerType;
+    //------------------------------------------------------------
+
+    static_assert( (int)DiscreteFunctionSpaceType::FunctionSpaceType::dimRange == 1 , "pressure dimrange does not fit");
+
+    typedef Dune::UzawaSolver< typename PoissonDiscreteTraits::DiscreteFunctionType, DiscreteFunctionType, AssemblerType,
+                               typename PoissonDiscreteTraits::BasicLinearSolverType >    BasicLinearSolverType;
+
+    //#########################################################################
+
+    //------------- Limiter ---------------------------------------------
+    typedef typename PoissonDiscreteTraits::LimiterOperatorType                                         LimiterOperatorType;
+    //------------ Limiter ---------------------------------------------
+
+    typedef typename AnalyticalTraitsType::ProblemType::ExactPressureType ExactPressureType;
+    typedef typename AnalyticalTraitsType::ProblemType::ExactSolutionType ExactSolutionType;
+    typedef Dune::Fem::GridFunctionAdapter< ExactSolutionType, GridPartType >  GridExactSolutionType;
+    typedef Dune::Fem::GridFunctionAdapter< ExactPressureType, GridPartType >  GridExactPressureType;
+
+    typedef std::tuple< typename std::tuple_element<0,typename PoissonDiscreteTraits::IOTupleType>::type, GridExactSolutionType*,
+                        DiscreteFunctionType*, GridExactPressureType* > IOTupleType;
+  };
+
+  template <int polOrd>
   struct Stepper
   {
     // this should be ok but could lead to a henn-egg problem
-    typedef StokesAlgorithm< GridType, StokesProblemCreator<GridType>, polynomialOrder >  Type;
+    typedef Dune::Fem::StokesAlgorithm< GridType, StokesProblemCreator<GridType>, PoissonProblemCreatorType, polOrd > Type;
   };
+
+
 };
 
-#ifndef COMBINED_PROBLEM_CREATOR
-#define ProblemCreator StokesProblemCreator
-#endif
-
 #define NEW_STEPPER_SELECTOR_USED
-#endif // FEMHOWTO_POISSONSTEPPER_HH
+#endif // FEMHOWTO_HEATSTEPPER_HH

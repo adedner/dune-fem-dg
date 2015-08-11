@@ -21,7 +21,9 @@
 #include <dune/fem/operator/linear/spoperator.hh>
 #include <dune/fem-dg/solver/linearsolvers.hh>
 #include <dune/fem-dg/operator/dg/operatortraits.hh>
-
+//--------- FLUXES ---------------------------
+#include <dune/fem-dg/operator/fluxes/upwindflux.hh>
+#include <dune/fem-dg/operator/fluxes/eulerfluxes.hh>
 //--------- STEPPER -------------------------
 #include <dune/fem-dg/algorithm/advectiondiffusionstepper.hh>
 #include <dune/fem-dg/algorithm/advectionstepper.hh>
@@ -298,8 +300,10 @@ public:
 
     // --------- Operators using PASSES --------------------------
     //============================================================
+    typedef Dune::UpwindFlux< typename AnalyticalTraitsType::ModelType >                        FluxType;
+
     typedef Dune::OperatorTraits< GridPartType, polynomialOrder, AnalyticalTraitsType,
-                                  DiscreteFunctionType, IndicatorType,
+                                  DiscreteFunctionType, FluxType, IndicatorType,
                                   AdaptationHandlerType, ExtraParameterTuple >                  OperatorTraitsType;
 
     // TODO: advection/diffusion should not be precribed by model

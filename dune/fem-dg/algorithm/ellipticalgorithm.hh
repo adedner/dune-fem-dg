@@ -37,7 +37,7 @@ namespace Fem
 {
 
 
-  template< class GridPartImp, class DiscreteFunctionImp, class SigmaFunctionSpaceImp, class AssembledOperatorImp, int polOrder>
+  template< class GridPartImp, class DiscreteFunctionImp, class SigmaFunctionSpaceImp, class AssemblerImp, int polOrder>
   class PoissonSigmaEstimator
   {
   public:
@@ -46,19 +46,19 @@ namespace Fem
     typedef SigmaFunctionSpaceImp           SigmaFunctionSpaceType;
     typedef GridPartImp                     GridPartType;
     typedef typename GridPartType::GridType GridType;
-    typedef AssembledOperatorImp            AssembledOperatorType;
+    typedef AssemblerImp                    AssemblerType;
 
 
     PoissonSigmaEstimator( GridPartType& gridPart,
                            const DiscreteFunctionType& solution,
-                           const AssembledOperatorType& assembledOperator,
+                           const AssemblerType& assembler,
                            const std::string name = "" )
     : gridPart_( gridPart ),
       solution_( solution ),
-      assembledOperator_( assembledOperator ),
+      assembler_( assembler ),
       sigmaSpace_( gridPart_ ),
       sigmaDiscreteFunction_( "sigma-"+name, sigmaSpace_ ),
-      sigmaLocalEstimate_( solution_, assembledOperator_ ),
+      sigmaLocalEstimate_( solution_, assembler_ ),
       sigmaLocalFunction_( solution_, sigmaDiscreteFunction_, sigmaLocalEstimate_ ),
       sigma_( "sigma function", sigmaLocalFunction_, gridPart_, solution_.space().order() ),
       sigmaEstimateFunction_( "function 4 estimate-"+name, sigmaLocalEstimate_, gridPart_, solution_.space().order() )
@@ -196,8 +196,6 @@ namespace Fem
       LiftingFunctionType localre_;
     };
 
-    typedef Dune::Fem::LocalFunctionAdapter< SigmaLocal<DiscreteFunctionType, AssembledOperatorType> > SigmaEstimateFunction;
-
     template <class SigmaLocalType>
     struct SigmaLocalFunction : public Fem::LocalFunctionAdapterHasInitialize
     {
@@ -249,13 +247,10 @@ namespace Fem
       SigmaLocalType sigmaLocal_;
     };
 
-    typedef SigmaLocal<DiscreteFunctionType, AssembledOperatorType> SigmaLocalEstimateType;
-
-    typedef SigmaLocalFunction<SigmaLocal<DiscreteFunctionType, AssembledOperatorType> >
-      SigmaLocalFunctionType;
-
+    typedef Dune::Fem::LocalFunctionAdapter< SigmaLocal<DiscreteFunctionType, AssemblerType> > SigmaEstimateFunctionType;
+    typedef SigmaLocal<DiscreteFunctionType, AssemblerType>         SigmaLocalType;
+    typedef SigmaLocalFunction<SigmaLocalType >                     SigmaLocalFunctionType;
     typedef Dune::Fem::LocalFunctionAdapter<SigmaLocalFunctionType> SigmaLocalFunctionAdapterType;
-                                            //StokesEstimatorType   StokesEstimateDataType;
 
     void update ()
     {
@@ -272,16 +267,179 @@ namespace Fem
 
     GridPartType& gridPart_;
     const DiscreteFunctionType& solution_;
-    const AssembledOperatorType& assembledOperator_;
+    const AssemblerType& assembler_;
     SigmaDiscreteFunctionSpaceType sigmaSpace_;
     SigmaDiscreteFunctionType sigmaDiscreteFunction_;
 
-    SigmaLocal<DiscreteFunctionType, AssembledOperatorType> sigmaLocalEstimate_;
+    SigmaLocal<DiscreteFunctionType, AssemblerType> sigmaLocalEstimate_;
     SigmaLocalFunctionType sigmaLocalFunction_;
     SigmaLocalFunctionAdapterType sigma_;
-    SigmaEstimateFunction sigmaEstimateFunction_;
+    SigmaEstimateFunctionType sigmaEstimateFunction_;
 
   };
+
+
+
+  template< int polOrder >
+  class NoEstimator
+  {
+    public:
+
+    NoEstimator(){}
+
+
+    int minimalOrder()
+    {
+      return polOrder;
+    }
+
+    bool isPadaptive()
+    {
+      return false;
+    }
+
+    template< class ProblemImp>
+    double estimate( ProblemImp problem )
+    { return 0.0; }
+
+    template< class EntityImp >
+    int newOrder( double tolerance, EntityImp& entity )
+    {
+      return minimalOrder();
+    }
+
+    bool mark( double tolerance ){ return false; }
+
+    void closure(){}
+  };
+
+
+
+  template< class GridImp, int polOrder, class DiscreteFunctionSpaceImp, class EstimatorImp = NoEstimator<polOrder> >
+  class PAdaptivity
+  {
+
+  public:
+    typedef GridImp                         GridType;
+    typedef EstimatorImp                    EstimatorType;
+    typedef DiscreteFunctionSpaceImp        DiscreteFunctionSpaceType;
+
+
+    struct PolOrderStructure
+    {
+      // set polynomial order to 2 by default
+      PolOrderStructure() : val_( -1 ) {}
+      explicit PolOrderStructure(int init) : val_( init ) {}
+      const int value() const
+      {
+        assert( val_ > 0 );
+        return val_;
+      }
+      int &value() { return val_; }
+      int val_;
+    };
+    typedef PersistentContainer<GridType,PolOrderStructure> PolOrderContainer;
+
+
+    PAdaptivity( GridType& grid, DiscreteFunctionSpaceType& space )
+      : polOrderContainer_( grid, 0 ),
+        space_( space ),
+        estimator_()
+    {
+#ifdef PADAPTSPACE
+      // we start with max order
+      typedef typename PolOrderContainer::Iterator Iterator ;
+      const Iterator end = polOrderContainer_.end();
+      const int minimalOrder = estimator_.minimalOrder() ;
+      for( Iterator it = polOrderContainer_.begin(); it != end; ++it )
+      {
+        (*it).value() = minimalOrder ;
+      }
+#endif
+    }
+
+
+    void prepare()
+    {
+#ifdef PADAPTSPACE
+      const int minimalOrder = estimator_.minimalOrder();
+      // only implemented for PAdaptiveSpace
+      std::vector<int> polOrderVec( space_.gridPart().indexSet().size(0) );
+      std::fill( polOrderVec.begin(), polOrderVec.end(), polOrder );
+
+      //todo: correct following line
+      //polOrderContainer_.update();
+      if ( estimator_.isPadaptive() )
+      {
+        typedef typename DiscreteFunctionSpaceType::IteratorType IteratorType;
+        typedef typename IteratorType::Entity EntityType ;
+        const IteratorType end = space_.end();
+        for( IteratorType it = space_.begin(); it != end; ++it )
+        {
+          const EntityType& entity = *it;
+          int order = polOrderContainer_[ entity ].value();
+          // use constrcutor here, operator = is deprecated
+          typename EntityType::EntityPointer hit ( it );
+          while (order == -1) // is a new element
+          {
+            if ( entity.level() == 0)
+              order = minimalOrder;
+            else
+            {
+              hit = hit->father();
+              // don't call father twice
+              order = polOrderContainer_[ *hit ].value();
+              assert(order > 0);
+            }
+          }
+          polOrderVec[space_.gridPart().indexSet().index(entity)] = order;
+        }
+      }
+      space_.adapt( polOrderVec );
+#endif
+    }
+
+
+    template< class ProblemImp >
+    bool adaptation( const ProblemImp& problem, const double tolerance)
+    {
+#ifdef PADAPTSPACE
+      // resize container
+      polOrderContainer_.resize();
+
+      const double error = estimator_.estimate( problem );
+      std::cout << "ESTIMATE: " << error << std::endl;
+      typedef typename DiscreteFunctionSpaceType::IteratorType IteratorType;
+      const IteratorType end = space_.end();
+      for( IteratorType it = space_.begin(); it != end; ++it )
+      {
+        const typename IteratorType::Entity &entity = *it;
+        polOrderContainer_[entity].value() =
+          estimator_.newOrder( 0.98*tolerance, entity );
+      }
+      return (error < std::abs(tolerance) ? false : estimator_.mark( 0.98 * tolerance));
+#else
+      return false;
+#endif
+    }
+    void closure()
+    {
+#ifdef PADAPTSPACE
+      estimator_.closure();
+#endif
+    }
+
+    private:
+
+    PolOrderContainer          polOrderContainer_;
+    const DiscreteFunctionSpaceType& space_;
+    EstimatorType              estimator_;
+
+  };
+
+
+
+
 
 
 
@@ -314,8 +472,8 @@ namespace Fem
     typedef typename BaseType::FullOperatorType            FullOperatorType;
 
     // The DG space operator
-    typedef typename BaseType::AssemblyOperatorType        AssemblyOperatorType;
-    typedef typename BaseType::AssembledOperatorType       AssembledOperatorType;
+    typedef typename BaseType::AssemblerType               AssemblerType;
+    typedef typename AssemblerType::OperatorType           AssemblyOperatorType;
 
     // The discrete function for the unknown solution is defined in the DgOperator
     typedef typename BaseType::DiscreteFunctionType        DiscreteFunctionType;
@@ -326,18 +484,24 @@ namespace Fem
     // type of inverse operator (i.e. linear solver implementation)
     typedef typename BaseType::BasicLinearSolverType       BasicLinearSolverType;
 
-    typedef typename BaseType::RestrictionProlongationType RestrictionProlongationType;
-
     typedef typename BaseType::EOCErrorIDs                 EOCErrorIDs;
 
     enum { dimension = GridType::dimension  };
 
+    typedef typename ProblemType::ExactSolutionType                             ExactSolutionType;
+
+    typedef Dune::Fem::GridFunctionAdapter< ExactSolutionType, GridPartType >  GridExactSolutionType;
+
     typedef typename DiscreteFunctionSpaceType ::
       template ToNewDimRange< dimension * ModelType::dimRange >::NewFunctionSpaceType SigmaFunctionSpaceType;
 
-    typedef PoissonSigmaEstimator< GridPartType, DiscreteFunctionType, SigmaFunctionSpaceType, AssembledOperatorType, polOrder > PoissonSigmaEstimatorType;
+    typedef PoissonSigmaEstimator< GridPartType, DiscreteFunctionType, SigmaFunctionSpaceType, AssemblerType, polOrder > PoissonSigmaEstimatorType;
 
     typedef typename  BaseType::AnalyticalTraits    AnalyticalTraits;
+
+    typedef typename BaseType::IOTupleType          IOTupleType;
+
+    typedef PAdaptivity< GridType, polOrder, DiscreteFunctionSpaceType >        PAdaptivityType;
 
     using BaseType::problem;
     using BaseType::model;
@@ -347,23 +511,7 @@ namespace Fem
     using BaseType::eocIds_;
     using BaseType::space;
     using BaseType::solution;
-    using BaseType::rhs_;
-
-
-    struct PolOrderStructure
-    {
-      // set polynomial order to 2 by default
-      PolOrderStructure() : val_( -1 ) {}
-      explicit PolOrderStructure(int init) : val_( init ) {}
-      const int value() const
-      {
-        assert( val_ > 0 );
-        return val_;
-      }
-      int &value() { return val_; }
-      int val_;
-    };
-    typedef PersistentContainer<GridType,PolOrderStructure> PolOrderContainer;
+    using BaseType::solver_;
 
   public:
     EllipticAlgorithm(GridType& grid, const std::string name = "" )
@@ -371,12 +519,13 @@ namespace Fem
       grid_( grid ),
       gridPart_( grid_ ),
       dgOperator_( gridPart_, problem() ),
-      dgAssembledOperator_( gridPart_, dgOperator_ ),
-      invDgOperator_(),
-      linDgOperator_(),
-      space_( const_cast<DiscreteFunctionSpaceType &> (dgAssembledOperator_.space()) ),
-      poissonSigmaEstimator_( gridPart_, solution(), dgAssembledOperator_, name ),
-      polOrderContainer_(grid_ , 0),
+      assembler_( gridPart_, dgOperator_ ),
+      linOperator_(),
+      space_( const_cast<DiscreteFunctionSpaceType &> (assembler_.space()) ),
+      rhs_( "rhs-" + name, space_ ),
+      poissonSigmaEstimator_( gridPart_, solution(), assembler_, name ),
+      exact_( "exact solution", problem().exactSolution(), gridPart_, 2 ),
+      pAdapt_(grid_, space_),
       step_( 0 )
     {
       std::string gridName = Fem::gridName( grid_ );
@@ -390,138 +539,97 @@ namespace Fem
           }
         }
       }
-
-      // we start with max order
-      typedef typename PolOrderContainer::Iterator Iterator ;
-      const Iterator end = polOrderContainer_.end();
-      const int minimalOrder = solution().space().order(); // estimator_.minimalOrder() ;
-      for( Iterator it = polOrderContainer_.begin(); it != end; ++it )
-      {
-        (*it).value() = minimalOrder ;
-      }
     }
 
-    virtual BasicLinearSolverType* createSolver()
+    virtual DiscreteFunctionType& rhs()
     {
-      linDgOperator_.reset( new FullOperatorType("dg operator", space_, space_ ) );
+      return rhs_;
+    }
+
+    virtual BasicLinearSolverType* createSolver( DiscreteFunctionType* rhs )
+    {
+      linOperator_.reset( new FullOperatorType("dg operator", space_, space_ ) );
 
       if( space_.continuous() ) // Lagrange case
       {
         typedef Dune::Fem::DiagonalStencil<DiscreteFunctionSpaceType,DiscreteFunctionSpaceType> StencilType ;
         StencilType stencil( space_, space_ );
-        linDgOperator_->reserve( stencil );
+        linOperator_->reserve( stencil );
       }
       else // DG case
       {
         typedef Dune::Fem::DiagonalAndNeighborStencil<DiscreteFunctionSpaceType,DiscreteFunctionSpaceType> StencilType ;
         StencilType stencil( space_, space_ );
-        linDgOperator_->reserve( stencil );
+        linOperator_->reserve( stencil );
       }
 
-      linDgOperator_->clear();
-      dgAssembledOperator_.assemble(0, *linDgOperator_, rhs_);
-  		dgAssembledOperator_.testSymmetrie(*linDgOperator_);
+      linOperator_->clear();
+      if( rhs )
+        assembler_.assemble(0, *linOperator_, *rhs );
+      else
+        assembler_.assemble(0, *linOperator_ );
 
-      double absLimit   = Dune::Fem:: Parameter::getValue<double>("istl.absLimit",1.e-6);
+      assembler_.testSymmetrie(*linOperator_);
+
+      double absLimit   = Dune::Fem:: Parameter::getValue<double>("istl.absLimit",1.e-10);
       double reduction  = Dune::Fem:: Parameter::getValue<double>("istl.reduction",1.e-6);
-      // this describes the factor for max iterations in terms of spaces size
-      int maxIterFactor = Dune::Fem:: Parameter::getValue<double>("istl.maxiterfactor", int(-1) );
 
-      // if max iterations is negative set it to twice the spaces size
-      if( maxIterFactor < 0 )
-        maxIterFactor = 2;
-
-      return new BasicLinearSolverType(*linDgOperator_, reduction, absLimit );
+      return new BasicLinearSolverType(*linOperator_, reduction, absLimit );
     }
 
-    //! default time loop implementation, overload for changes
-    void solve ( const int loop )
+    BasicLinearSolverType& solver ()
     {
-  #if 0
-  #ifdef PADAPTSPACE
-      int polOrder = Dune::Fem:: Parameter::getValue<double>("femdg.polynomialOrder",1);
-      const int minimalOrder = estimator_.minimalmemory
-      // only implemented for PAdaptiveSpace
-      std::vector<int> polOrderVec( space_.gridPart().indexSet().size(0) );
-      std::fill( polOrderVec.begin(), polOrderVec.end(), polOrder );
+      if( !solver_ )
+        solver_.reset( this->createSolver( &rhs() ) );
+      assert( solver_ );
+      return *solver_;
+    }
 
-      polOrderContainer_.update();
-      if ( estimator_.isPadaptive() )
-      {
-        typedef typename DiscreteFunctionSpaceType::IteratorType IteratorType;
-        typedef typename IteratorType::Entity EntityType ;
-        const IteratorType end = space_.end();
-        for( IteratorType it = space_.begin(); it != end; ++it )
-        {
-          const EntityType& entity = *it;
-          int order = polOrderContainer_[ entity ].value();
-          // use constrcutor here, operator = is deprecated
-          typename EntityType::EntityPointer hit ( it );
-          while (order == -1) // is a new element
-          {
-            if ( entity.level() == 0)
-              order = minimalOrder;
-            else
-            {
-              hit = hit->father();
-              // don't call father twice
-              order = polOrderContainer_[ *hit ].value();
-              assert(order > 0);
-            }
-          }
-          polOrderVec[space_.gridPart().indexSet().index(entity)] = order;
-        }
-      }
-      space_.adapt( polOrderVec );
-  #endif
-  #endif
+
+    //! default time loop implementation, overload for changes
+    virtual void solve ( const int loop )
+    {
+      pAdapt_.prepare();
+
       BaseType::solve( loop );
 
       // calculate new sigma
       poissonSigmaEstimator_.update();
     }
 
+    auto dataTuple () -> decltype(std::make_tuple( &this->solution() ))
+    {
+      return std::make_tuple( &solution() );
+    }
 
     //! finalize computation by calculating errors and EOCs
-    void finalize( const int eocloop )
+    virtual void finalize( const int eocloop )
     {
-      typedef typename ProblemType::ExactSolutionType  ExactSolutionType ;
-      typedef Dune::Fem::GridFunctionAdapter< ExactSolutionType, GridPartType > GridExactSolutionType;
-      GridExactSolutionType ugrid( "exact solution", problem().exactSolution(), gridPart_, 1 );
-
-      AnalyticalTraits::addEOCErrors( eocIds_, solution(), dgOperator_.model(), ugrid, poissonSigmaEstimator_.sigma() );
+      AnalyticalTraits::addEOCErrors( eocIds_, solution(), model(), exact_, poissonSigmaEstimator_.sigma() );
 
       // delete solver and linear operator for next step
-      invDgOperator_.reset();
-      linDgOperator_.reset();
+      solver_.reset();
+      linOperator_.reset();
     }
 
     bool adaptation(const double tolerance)
     {
-      // resize container
-      polOrderContainer_.resize();
-
-      const double error = 0.0;//estimator_.estimate( problem() );
-      std::cout << "ESTIMATE: " << error << std::endl;
-      typedef typename DiscreteFunctionSpaceType::IteratorType IteratorType;
-      const IteratorType end = space_.end();
-      for( IteratorType it = space_.begin(); it != end; ++it )
-      {
-        const typename IteratorType::Entity &entity = *it;
-        //polOrderContainer_[entity].value() =
-        //  estimator_.newOrder( 0.98*tolerance, entity );
-      }
-      return false ;
-      //return (error < std::abs(tolerance) ? false : estimator_.mark( 0.98 * tolerance));
+      return pAdapt_.adaptation( problem(), tolerance );
     }
     void closure()
     {
-      //estimator_.closure();
+      pAdapt_.closure();
     }
 
-    const AssembledOperatorType &oper() const
+    const AssemblerType& assembler() const
     {
-      return dgAssembledOperator_;
+      return assembler_;
+    }
+
+    const FullOperatorType& linOper() const
+    {
+      assert( linOperator_ );
+      return *linOperator_;
     }
 
     protected:
@@ -530,17 +638,14 @@ namespace Fem
     GridPartType gridPart_;       // reference to grid part, i.e. the leaf grid
 
     AssemblyOperatorType           dgOperator_;
-    AssembledOperatorType          dgAssembledOperator_;
+    AssemblerType                  assembler_;
 
-    std::unique_ptr< BasicLinearSolverType > invDgOperator_;
-    std::unique_ptr< FullOperatorType      > linDgOperator_;
-
-    DiscreteFunctionSpaceType &space_;    // the discrete function space
-
+    std::unique_ptr< FullOperatorType      > linOperator_;
+    DiscreteFunctionSpaceType& space_;
+    DiscreteFunctionType         rhs_;
     PoissonSigmaEstimatorType poissonSigmaEstimator_;
-
-    PolOrderContainer polOrderContainer_;
-
+    GridExactSolutionType exact_;
+    PAdaptivityType           pAdapt_;
     int  step_;
 
   };

@@ -20,6 +20,10 @@
 #include <dune/fem-dg/assemble/primalmatrix.hh>
 #include <dune/fem-dg/solver/linearsolvers.hh>
 #include <dune/fem-dg/operator/dg/operatortraits.hh>
+//--------- FLUXES ---------------------------
+#include <dune/fem-dg/operator/fluxes/upwindflux.hh>
+#include <dune/fem-dg/operator/fluxes/eulerfluxes.hh>
+#include <dune/fem-dg/operator/fluxes/noflux.hh>
 //--------- STEPPER -------------------------
 #include <dune/fem-dg/algorithm/ellipticalgorithm.hh>
 //--------- PROBLEMS ------------------------
@@ -171,7 +175,7 @@ struct PoissonProblemCreator
   typedef HostGridPartType                                GridPartType;
 
   // define problem type here if interface should be avoided
-  typedef Dune::Fem::FunctionSpace< typename GridType::ctype, double, GridType::dimension, 1 >
+  typedef Dune::Fem::FunctionSpace< typename GridType::ctype, double, GridType::dimension, DIMRANGE >
                                                                 FunctionSpaceType;
   typedef Dune::ProblemInterface< FunctionSpaceType >           ProblemInterfaceType;
 
@@ -348,7 +352,7 @@ struct PoissonProblemCreator
   static ProblemInterfaceType* problem()
   {
     int probNr = Dune::Fem::Parameter::getValue< int > ( "problem" );
-    return new Dune :: PoissonProblem< GridType, 1 > ( probNr );
+    return new Dune :: PoissonProblem< GridType, DIMRANGE > ( probNr );
   }
 
 
@@ -410,10 +414,10 @@ public:
 
     //----------- passes! ------------------------
     typedef Dune::OperatorTraits< GridPartType, polynomialOrder, AnalyticalTraitsType,
-                                  DiscreteFunctionType, IndicatorType,
+                                  DiscreteFunctionType, FluxType,  IndicatorType,
                                   AdaptationHandlerType, ExtraParameterTuple >                  OperatorTraitsType;
     typedef Dune::DGAdvectionDiffusionOperator< OperatorTraitsType >  AssemblyOperatorType;
-    typedef Dune::DGPrimalMatrixAssembly< AssemblyOperatorType >            AssembledOperatorType;
+    typedef Dune::DGPrimalMatrixAssembly< AssemblyOperatorType >            AssemblerType;
 
     //#########################################################################
 
@@ -462,10 +466,6 @@ public:
 
 
 };
-
-#ifndef COMBINED_PROBLEM_CREATOR
-#define ProblemCreator PoissonProblemCreator
-#endif
 
 #define NEW_STEPPER_SELECTOR_USED
 #endif // FEMHOWTO_HEATSTEPPER_HH

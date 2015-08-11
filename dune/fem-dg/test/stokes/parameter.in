@@ -30,11 +30,9 @@ alpha: 0.0
 mu: 1.0
 d11: 100.0
 d12: 1.0
-uzawareduction: 1000000000
 istl.absLimit: 1e-10
-istl.reduction: 1e-10
-tau: 1e-1
-fem.solver.verbose: 0
+istl.reduction: 1e-6
+fem.solver.verbose: 1
 
 # macro grid file
 #fem.io.macroGridFile_2d: ../grids/unitcube2.dgf

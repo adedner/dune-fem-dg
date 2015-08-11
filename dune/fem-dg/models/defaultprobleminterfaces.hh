@@ -175,18 +175,6 @@ public:
   virtual void evaluate(const DomainType& arg,
                         const double t, RangeType& res) const = 0 ;
 
-  /** \brief calculate reference solution for BgFix scheme
-   *  \param[in] xgl Point in global coordinates
-   *  \param[out] res Background solution (default to 0)
-   *
-   *  \note BgFix is explained in the PhD thesis of A. Dedner (2003)
-   */
-  virtual inline void bgFixReference( const DomainType& xgl, RangeType& res ) const
-  {
-    std::cout <<"ProblemInterface::bgFixReference( const DomainType&, RangeType& ) not implemented!!! Aborting!"
-              <<std::endl;
-    abort();
-  }
 
   /**
    * @brief latex output for EocOutput, default is empty

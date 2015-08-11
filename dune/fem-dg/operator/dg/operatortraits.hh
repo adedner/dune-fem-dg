@@ -3,8 +3,6 @@
 
 #include <dune/fem/quadrature/cachingquadrature.hh>
 #include <dune/fem-dg/operator/fluxes/diffusionflux.hh>
-#include <dune/fem-dg/operator/fluxes/upwindflux.hh>
-#include <dune/fem-dg/operator/fluxes/eulerfluxes.hh>
 
 namespace Dune {
 
@@ -13,6 +11,7 @@ namespace Dune {
             int polOrd,
             class AnalyticalTraits,
             class DiscreteFunctionImp,
+            class AdvectionFluxImp,
             class IndicatorFunctionImp,
             class AdaptationHandlerImp,
             class ExtraParameterTupleImp = std::tuple<>
@@ -25,8 +24,8 @@ namespace Dune {
 
     typedef typename AnalyticalTraitsType::InitialDataType               InitialDataType;
     typedef typename AnalyticalTraitsType::ModelType                     ModelType ;
-    typedef UpwindFlux< ModelType >                                      FluxType;
-    //typedef LLFFlux< ModelType >                    FluxType;
+    typedef AdvectionFluxImp                                             FluxType;
+
     static const Dune::DGDiffusionFluxIdentifier PrimalDiffusionFluxId = Dune::method_general;
 
     static const int polynomialOrder = polOrd == -1 ? 0 : polOrd;

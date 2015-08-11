@@ -64,8 +64,7 @@ namespace Fem
     // tpye of jacobian operator used in the nested newton loops
     typedef typename DiscreteTraits::FullOperatorType              FullOperatorType;
 
-    typedef typename DiscreteTraits::AssemblyOperatorType          AssemblyOperatorType;
-    typedef typename DiscreteTraits::AssembledOperatorType         AssembledOperatorType;
+    typedef typename DiscreteTraits::AssemblerType                 AssemblerType;
 
     // type of IOTuple
     typedef typename DiscreteTraits::IOTupleType                   IOTupleType;
@@ -119,8 +118,7 @@ namespace Fem
 
     typedef typename Traits::RestrictionProlongationType    RestrictionProlongationType;
 
-    typedef typename Traits::AssemblyOperatorType          AssemblyOperatorType;
-    typedef typename Traits::AssembledOperatorType         AssembledOperatorType;
+    typedef typename Traits::AssemblerType                  AssemblerType;
 
     // Error Handling
     typedef typename Traits::EOCErrorIDs EOCErrorIDs;
@@ -139,19 +137,21 @@ namespace Fem
         gridPart_( grid ),
         space_( gridPart_ ),
         solution_( "solution-" + name, space_ ),
-        rhs_( "rhs-" + name, space_ ),
         eocIds_( AnalyticalTraits::initEoc() )
     {
       solution().clear();
     }
 
     //! return reference to discrete space
-    DiscreteFunctionSpaceType &space () { return space_; }
+    DiscreteFunctionSpaceType& space () { return space_; }
+    const DiscreteFunctionSpaceType& space () const { return space_; }
 
     DiscreteFunctionType& solution ()
     {
       return solution_;
     }
+
+    virtual DiscreteFunctionType& rhs() = 0;
 
     std::string description () const { return problem().description(); }
 
@@ -161,10 +161,9 @@ namespace Fem
       return problem().dataPrefix();
     }
 
-    IOTupleType dataTuple ()
+    auto dataTuple () -> decltype( std::make_tuple( &this->solution() ))
     {
-      IOTupleType test = std::make_tuple( &solution_ );
-      return test;
+      return std::make_tuple( &solution_ );
     }
 
     virtual SolverMonitorType& monitor()
@@ -182,28 +181,23 @@ namespace Fem
       return grid().comm().sum( grSize );
     }
 
-    virtual BasicLinearSolverType* createSolver() = 0;
+    virtual BasicLinearSolverType* createSolver( DiscreteFunctionType* rhs ) = 0;
 
-    virtual void solve ( int step )
+    virtual void solve ( const int loop )
     {
-      rhs_.clear();
-      solution_.clear();
+      //rhs().clear();
+      //solution().clear();
 
-      solver_.reset( this->createSolver() );
-      assert( solver_ );
+      solver_.reset( this->createSolver( &rhs() ) );
 
-      (*solver_)( rhs_, solution_ );
+      (*solver_)( rhs(), solution() );
 
       solverMonitorHandler_.finalize( gridWidth(), gridSize(), *solver_ );
     }
 
-
     //! finalize computation by calculating errors and EOCs
-    void finalize ( const int eocloop )
-    {
-      // submit error to the FEM EOC calculator
-      //AnalyticalTraits::addEOCErrors( eocIds_, solution_, model(), problem() );
-    }
+    virtual void finalize ( const int eocloop )
+    {}
 
     const ProblemType &problem () const
     {
@@ -229,7 +223,6 @@ namespace Fem
     GridPartType gridPart_;      // reference to grid part, i.e. the leaf grid
     DiscreteFunctionSpaceType space_;    // the discrete function space
     DiscreteFunctionType solution_;
-    DiscreteFunctionType   rhs_;
 
     std::unique_ptr< BasicLinearSolverType > solver_;
 

@@ -461,7 +461,7 @@ namespace Fem
       return solution_;
     }
 
-    IOTupleType dataTuple ()
+    virtual IOTupleType dataTuple ()
     {
       IOTupleType test = std::tuple_cat( std::make_tuple( &solution_ ), std::make_tuple( &solution_ ) );
       return test; //std::tuple_cat( std::make_tuple( &solution_ ), additionalOutputHandler_.result() );

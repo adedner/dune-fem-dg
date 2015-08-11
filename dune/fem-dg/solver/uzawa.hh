@@ -47,25 +47,21 @@ namespace Dune {
     //!rhs1 is  stored as member,no better idea
     UzawaSolver(const MappingType& op,
                 const InverseOperatorType& aufSolver,
-                double redEps,
                 double absLimit,
                 int maxIter,
-                double tau,
                 int verbose=1
                )
-      : op_(op), redEps_( redEps ), outer_absLimit_ ( absLimit ) ,
+      : op_(op), outer_absLimit_ ( absLimit ) ,
         maxIter_ (maxIter ) , verbose_( verbose ),aufSolver_(aufSolver), bop_(op_.getBOP()),
         btop_(op_.getBTOP()),
         cop_(op_.getCOP()),
-        rhs1_(aufSolver_.inv().affineShift()),
+        rhs1_(aufSolver_.affineShift()),
         rhs2_(op_.pressureRhs()),
         pressurespc_(op_.pressurespc()),
         spc_(op.spc()),
         velocity_("VELO",spc_),
         iter_(0),
-        linIter_(0),
-        tau_(tau),
-        inner_absLimit_( tau_*outer_absLimit_)
+        linIter_(0)
     {
     }
 
@@ -73,13 +69,11 @@ namespace Dune {
     UzawaSolver(const MappingType& op,
                 const InverseOperatorType& aufSolver,
                 const DiscreteFunctionType& rhs,
-                double redEps,
                 double absLimit,
                 int maxIter,
-                double tau,
                 int verbose=1
                 )
-      : op_(op), redEps_( redEps ), outer_absLimit_ ( absLimit ) ,
+      : op_(op), outer_absLimit_ ( absLimit ) ,
         maxIter_ (maxIter ) , verbose_( verbose ),aufSolver_(aufSolver), bop_(op_.getBOP()),
         btop_(op_.getBTOP()),
         cop_(op_.getCOP()),
@@ -89,11 +83,12 @@ namespace Dune {
         spc_(op.spc()),
         velocity_("VELO",spc_),
         iter_(0),
-        linIter_(0),
-        tau_(tau),
-        inner_absLimit_( tau_*outer_absLimit_)
+        linIter_(0)
     {
     }
+
+    static_assert( (int)DiscreteFunctionType::DiscreteFunctionSpaceType::FunctionSpaceType::dimRange == DIMRANGE , "stokes assembler: velocity dimrange does not fit");
+    static_assert( (int)PressureDiscreteFunctionType::DiscreteFunctionSpaceType::FunctionSpaceType::dimRange == 1 , "stokes assembler: pressure dimrange does not fit");
 
 
     /** \todo Please doc me! */
@@ -133,12 +128,9 @@ namespace Dune {
       bop_.apply(pressure,tmp1);
       // f -= tmp1
       f-=tmp1;
-      aufSolver_.set( inner_absLimit_ );
-#if 0
-      aufSolver_.set( inner_absLimit_ );
-#endif
+
       // A^-1 * f = velocity
-      aufSolver_.inv()(f,velocity);
+      aufSolver_(f,velocity);
       // B^T * velocity = tmp2
       btop_.apply(velocity,tmp2);
       //=> tmp2 = B^T * A^-1 * ( F - B * d )
@@ -157,7 +149,7 @@ namespace Dune {
       d.assign(residuum);
 
       // save iteration number
-      linIter_+=aufSolver_.inv().iterations();
+      linIter_+=aufSolver_.iterations();
 
       // delta = (residuum,residuum)
       delta = residuum.scalarProductDofs( residuum );
@@ -166,14 +158,9 @@ namespace Dune {
         tmp1.clear();
         // B * d = tmp1
         bop_.apply(d,tmp1);
-#if 0
-        inner_absLimit_ = std::max( delta/redEps_, tau_*outer_absLimit_ );
-        //inner_absLimit_ = tau_ * std::min( 1.0, outer_absLimit_ / std::min( delta, 1.0 ) );
-        //inner_absLimit_ = tau_ * delta;
-        aufSolver_.set( inner_absLimit_ );
-#endif
+
         // A^-1 * tmp1 = xi
-        aufSolver_.inv()(tmp1,xi);
+        aufSolver_(tmp1,xi);
         // B^T * xi = h
         btop_.apply(xi,h);
         // => h = B^T * A^-1 * B * d
@@ -196,10 +183,10 @@ namespace Dune {
         delta = residuum.scalarProductDofs( residuum );
 
         // save iteration number
-        linIter_+=aufSolver_.inv().iterations();
+        linIter_+=aufSolver_.iterations();
         if( verbose_ > 0)
           std::cout << "SPcg-Iterationen " << iter_ << "   Residuum:"
-                    << delta << "   lin. iter:" << aufSolver_.inv().iterations() <<std::endl;
+                    << delta << "   lin. iter:" << aufSolver_.iterations() <<std::endl;
 
         d *= delta / oldDelta;
         d += residuum;
@@ -214,15 +201,12 @@ namespace Dune {
       return velocity_;
     }
 
-    int iterations(){return iter_;}
-    double averageLinIter(){return linIter_/iter_;}
+    int iterations() const {return iter_;}
+    double averageLinIter() const {return linIter_/iter_;}
 
   private:
     // reference to operator which should be inverted
     const AssemblerType & op_;
-
-    // reduce error each step by
-    double redEps_;
 
     // minial error to reach
     typename DiscreteFunctionType::RangeFieldType outer_absLimit_;
@@ -247,8 +231,6 @@ namespace Dune {
     mutable DiscreteFunctionType velocity_;
     mutable int iter_;
     mutable int linIter_;
-    const double tau_;
-    mutable double inner_absLimit_;
   };
 
 
