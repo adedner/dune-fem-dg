@@ -293,6 +293,10 @@ public:
     u( x, ret );
   }
 
+  //! mass factor gamma
+  virtual double gamma() const { return 0.0; }
+
+
   //! the Neumann boundary data function
   virtual void psi(const DomainType& x,
                    JacobianRangeType& dn) const

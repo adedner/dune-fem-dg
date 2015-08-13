@@ -386,7 +386,10 @@ public:
 
     typedef std::tuple<> ExtraParameterTuple;
 
-    typedef std::tuple< DiscreteFunctionType* > IOTupleType;
+    typedef typename AnalyticalTraitsType::ProblemType::ExactSolutionType ExactSolutionType;
+    typedef Dune::Fem::GridFunctionAdapter< ExactSolutionType, GridPartType >  GridExactSolutionType;
+
+    typedef std::tuple< DiscreteFunctionType*, GridExactSolutionType* > IOTupleType;
 
 private:
     typedef Dune::Fem::FunctionSpace< typename GridType::ctype, double, AnalyticalTraitsType::ModelType::dimDomain, 3> FVFunctionSpaceType;

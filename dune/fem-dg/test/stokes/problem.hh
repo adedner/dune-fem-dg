@@ -183,7 +183,7 @@ namespace Dune
     }
 
     //! the exact solution
-    void p(const DomainType& x, PressureRangeType& ret) const
+    void p (const DomainType& x, PressureRangeType& ret) const
     {
       ret[0]=x[0]*(1-x[0]);
     }
@@ -263,7 +263,7 @@ namespace Dune
     }
 
     //! the exact solution
-    void p(const DomainType& x, PressureRangeType& ret) const
+    void p (const DomainType& x, PressureRangeType& ret) const
     {
       ret[0] = sin(0.5*M_PI*(x[0]-x[1]));
     }

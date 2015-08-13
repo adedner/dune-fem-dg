@@ -462,10 +462,10 @@ namespace Dune {
             // -p+*u-.n+
             // ******************************************************************************
 
-            //uNormal[0]=uNb[j]*normal;
-            //double PDM_nb =( pEn[n]*uNormal[0])*intWeight;
-            //PDM_nb*=-0.5;
-            //nbPressDiv.add(n,j,PDM_nb);
+            uNormal[0]=uNb[j]*normal;
+            double PDM_nb =( pEn[n]*uNormal[0])*intWeight;
+            PDM_nb*=-0.5;
+            nbPressDiv.add(n,j,PDM_nb);
 
 #if PRESSURESTABILIZATION
             if(j==0)

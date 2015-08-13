@@ -170,18 +170,8 @@ public:
 
     //f = uV;
     for( int r=0; r<dimRange; ++r )
-    {
       for( int d=0; d<dimDomain; ++d )
-      {
         f[r][d] = v[ d ] * u[ r ];
-      }
-    }
-  }
-
-  template <class LocalEvaluation>
-  DomainType velocity( const LocalEvaluation& local ) const
-  {
-    return DomainType( problem().constantAdvection() );
   }
 
   bool hasDirichletBoundary () const
@@ -194,6 +184,11 @@ public:
     return true ;
   }
 
+  template <class LocalEvaluation>
+  DomainType velocity( const LocalEvaluation& local ) const
+  {
+    return DomainType( problem().constantAdvection() );
+  }
 public:
 
   /**

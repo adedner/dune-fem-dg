@@ -261,8 +261,6 @@ namespace Fem
     // initial data type
     typedef typename BaseType::ProblemType                          ProblemType;
 
-    typedef typename BaseType::DiscreteTraits::ExactPressureType    ExactSolutionType;
-
     // An analytical version of our model
     typedef typename BaseType::ModelType                            ModelType;
 
@@ -290,7 +288,7 @@ namespace Fem
     typedef StokesSigmaEstimator< GridPartType, DiscreteVelocityFunctionType, DiscreteFunctionType,
                                   SigmaFunctionSpaceType, typename EllipticalAlgorithmType::DiscreteTraits::AssemblerType, ModelType, polynomialOrder > StokesSigmaEstimatorType;
 
-    typedef Dune::Fem::GridFunctionAdapter< ExactSolutionType, GridPartType >  GridExactSolutionType;
+    typedef typename ProblemTraits::template DiscreteTraits< GridPartType, polynomialOrder>::GridExactSolutionType               GridExactSolutionType;
 
     typedef typename BaseType::IOTupleType                                         IOTupleType;
     typedef Dune::Fem::DataOutput<GridType,IOTupleType>         DataWriterType;
@@ -309,12 +307,11 @@ namespace Fem
 
   public:
     explicit StokesAlgorithm(GridType& grid, std::string moduleName = "" ) :
-      BaseType( grid, moduleName ),
+      BaseType( grid, moduleName, "pressure" ),
       ellAlg_( grid, moduleName ),
       gridPart_( grid ),
       space_( gridPart_ ),
-      solution_("pressuresolution-" + moduleName, space_ ),
-      stokesSigmaEstimator_( gridPart_, ellAlg_.solution(), solution_, ellAlg_.assembler(), moduleName ),
+      stokesSigmaEstimator_( gridPart_, ellAlg_.solution(), solution(), ellAlg_.assembler(), moduleName ),
       exact_( "exact pressure-" + moduleName, problem().exactPressure(), gridPart_, 2 ),
       assembler_( ellAlg_.space() , space_, problem() )
     {}
@@ -326,8 +323,8 @@ namespace Fem
     {
       assembler_.assemble( problem() );
 
-      double absLimit   = Dune::Fem:: Parameter::getValue<double>("istl.absLimit",1.e-10);
-      solution_.clear();
+      double absLimit = Dune::Fem::Parameter::getValue<double>("istl.absLimit",1.e-10);
+      solution().clear();
 #if 0
 #ifdef PADAPTSPACE
       int polOrder = Dune::Fem::Parameter::getValue<double>("femdg.polynomialOrder",1);
@@ -363,7 +360,7 @@ namespace Fem
     void finalize( const int eocloop )
     {
       ellAlg_.finalize( eocloop );
-      AnalyticalTraits::addEOCErrors( eocIds_, solution_, ellAlg_.model(), exact_ );
+      AnalyticalTraits::addEOCErrors( eocIds_, solution(), ellAlg_.model(), exact_ );
     }
 
     bool adaptation(const double tolerance)
@@ -387,23 +384,10 @@ namespace Fem
       return (error < std::abs(tolerance) ? false : stokesSigmaEstimator_.estimator().mark( 0.98 * tolerance));
     }
 
-    DiscreteFunctionType& solution()
-    {
-      return solution_;
-    }
-
-  private:
-    //dummy
-    const GridExactSolutionType& exact() const
-    {
-      return exact_;
-    }
-
   private:
     EllipticalAlgorithmType           ellAlg_;
     GridPartType                      gridPart_;
     DiscreteFunctionSpaceType         space_;
-    DiscreteFunctionType              solution_;
 
     StokesSigmaEstimatorType          stokesSigmaEstimator_;
     GridExactSolutionType             exact_;
@@ -411,9 +395,13 @@ namespace Fem
 
   public:
 
-    virtual auto dataTuple () -> decltype( std::tuple_cat( this->ellAlg_.dataTuple(), std::make_tuple( &this->solution(), &this->exact() ) ) )
+    IOTupleType dataTuple ()
     {
-      return std::tuple_cat( ellAlg_.dataTuple(), std::make_tuple( &this->solution(), &this->exact() ) );
+      //return ellAlg_.dataTuple();
+      //return std::tuple_cat( ellAlg_.dataTuple(), std::make_tuple( &exact_ ) );
+      solution().print( std::cout );
+      //return std::tuple_cat( ellAlg_.dataTuple(), std::make_tuple( &exact_ ) );
+      return std::tuple_cat( ellAlg_.dataTuple(), std::make_tuple( &exact_, &solution() ) );
       //return make_tuple( &solution_, &solution_,&stokesSigmaEstimator_.data(), &ugrid_, &pgrid_ );
     }
 

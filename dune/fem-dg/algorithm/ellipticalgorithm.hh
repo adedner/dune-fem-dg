@@ -488,9 +488,7 @@ namespace Fem
 
     enum { dimension = GridType::dimension  };
 
-    typedef typename ProblemType::ExactSolutionType                             ExactSolutionType;
-
-    typedef Dune::Fem::GridFunctionAdapter< ExactSolutionType, GridPartType >  GridExactSolutionType;
+    typedef typename ProblemTraits::template DiscreteTraits< GridPartType, polOrder>::GridExactSolutionType               GridExactSolutionType;
 
     typedef typename DiscreteFunctionSpaceType ::
       template ToNewDimRange< dimension * ModelType::dimRange >::NewFunctionSpaceType SigmaFunctionSpaceType;
@@ -597,9 +595,9 @@ namespace Fem
       poissonSigmaEstimator_.update();
     }
 
-    auto dataTuple () -> decltype(std::make_tuple( &this->solution() ))
+    IOTupleType dataTuple()
     {
-      return std::make_tuple( &solution() );
+      return std::make_tuple( &solution(), &exact_ );
     }
 
     //! finalize computation by calculating errors and EOCs

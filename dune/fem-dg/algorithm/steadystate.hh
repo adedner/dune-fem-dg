@@ -129,14 +129,14 @@ namespace Fem
 
     using BaseType::grid;
 
-    SteadyStateAlgorithm ( GridType &grid, const std::string name = ""  )
+    SteadyStateAlgorithm ( GridType &grid, const std::string name = "", std::string solName = ""  )
       : BaseType( grid, name ),
         problem_( ProblemTraits::problem() ),
         model_( problem() ),
         solverMonitorHandler_( "" ),
         gridPart_( grid ),
         space_( gridPart_ ),
-        solution_( "solution-" + name, space_ ),
+        solution_( "solution-" + solName + name, space_ ),
         eocIds_( AnalyticalTraits::initEoc() )
     {
       solution().clear();
@@ -146,7 +146,7 @@ namespace Fem
     DiscreteFunctionSpaceType& space () { return space_; }
     const DiscreteFunctionSpaceType& space () const { return space_; }
 
-    DiscreteFunctionType& solution ()
+    virtual DiscreteFunctionType& solution ()
     {
       return solution_;
     }
