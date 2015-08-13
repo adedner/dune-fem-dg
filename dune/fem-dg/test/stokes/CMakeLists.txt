@@ -1,4 +1,4 @@
-dune_install(problem.hh corner.hh problemcreator.hh stokesassembler.hh)
+dune_install(models.hh  problemcreator.hh  problems.hh  stokesalgorithm.hh  stokesassembler.hh  tensorhelper.hh)
      
 include_directories("${CMAKE_SOURCE_DIR}/dune/fem-dg/test/stokes/")
 configure_file(parameter.in ${CMAKE_CURRENT_BINARY_DIR}/parameter)

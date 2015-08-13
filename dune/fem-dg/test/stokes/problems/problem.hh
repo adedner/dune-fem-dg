@@ -6,7 +6,6 @@
 
 #include <dune/common/array.hh>
 #include <dune/fem-dg/models/stokesprobleminterfaces.hh>
-#include "corner.hh"
 
 namespace Dune
 {

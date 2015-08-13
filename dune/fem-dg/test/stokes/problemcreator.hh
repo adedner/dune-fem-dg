@@ -13,7 +13,6 @@
 #include <dune/fem/io/parameter.hh>
 #include <dune/grid/io/file/dgfparser/dgfparser.hh>
 #include <dune/fem/misc/l2norm.hh>
-#include "corner.hh"
 
 //--------- GRID HELPER ---------------------
 #include <dune/fem-dg/algorithm/gridinitializer.hh>
@@ -26,10 +25,9 @@
 #include <dune/fem-dg/operator/fluxes/eulerfluxes.hh>
 #include <dune/fem-dg/operator/fluxes/noflux.hh>
 //--------- STEPPER -------------------------
-#include <dune/fem-dg/test/stokes/stokes.hh>
+#include <dune/fem-dg/test/stokes/stokesalgorithm.hh>
 //--------- PROBLEMS ------------------------
-#include <dune/fem-dg/models/stokesprobleminterfaces.hh>
-#include "problem.hh"
+#include "problems.hh"
 //--------- MODELS --------------------------
 #include "models.hh"
 

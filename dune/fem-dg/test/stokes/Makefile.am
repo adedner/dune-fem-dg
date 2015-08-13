@@ -1,6 +1,6 @@
 # install these headers 
 stokesdir=$(includedir)/test/stokes
-stokes_HEADERS = problem.hh corner.hh problemcreator.hh stokesassembler.hh
+stokes_HEADERS = models.hh  problemcreator.hh  problems.hh  stokesalgorithm.hh  stokesassembler.hh  tensorhelper.hh
 
 LDADD = $(ALL_PKG_LDFLAGS) $(ALL_PKG_LIBS) $(LOCAL_LIBS) $(DUNEMPILDFLAGS) $(DUNEMPILIBS)
 
