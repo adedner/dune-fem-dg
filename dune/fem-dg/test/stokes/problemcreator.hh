@@ -459,8 +459,8 @@ public:
       return ids;
     }
 
-    template< class SolutionPressureImp, class Model, class ExactPressureFunction >
-    static void addEOCErrors ( const EOCErrorIDs &ids, SolutionPressureImp &p, const Model &model, const ExactPressureFunction &g  )
+    template< class SolutionImp, class Model, class ExactFunction >
+    static void addEOCErrors ( const EOCErrorIDs &ids, SolutionImp &p, const Model &model, const ExactFunction &g  )
     {
       // calculate L2 - p-Norm
       Dune::Fem::L2Norm< GridPartType > l2pnorm( p.space().gridPart() );
