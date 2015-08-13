@@ -470,5 +470,4 @@ public:
 
 };
 
-#define NEW_STEPPER_SELECTOR_USED
 #endif // FEMHOWTO_HEATSTEPPER_HH
