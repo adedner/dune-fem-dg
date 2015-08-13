@@ -397,10 +397,6 @@ namespace Fem
 
     IOTupleType dataTuple ()
     {
-      //return ellAlg_.dataTuple();
-      //return std::tuple_cat( ellAlg_.dataTuple(), std::make_tuple( &exact_ ) );
-      solution().print( std::cout );
-      //return std::tuple_cat( ellAlg_.dataTuple(), std::make_tuple( &exact_ ) );
       return std::tuple_cat( ellAlg_.dataTuple(), std::make_tuple( &exact_, &solution() ) );
       //return make_tuple( &solution_, &solution_,&stokesSigmaEstimator_.data(), &ugrid_, &pgrid_ );
     }
