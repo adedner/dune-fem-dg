@@ -9,7 +9,7 @@
 #include <dune/fem-dg/models/defaultmodel.hh>
 #include <dune/fem-dg/operator/limiter/limitpass.hh>
 #include "thermodynamics.hh"
-#include "ns_model_spec.hh"
+#include "navierstokesflux.hh"
 
 namespace Dune {
 

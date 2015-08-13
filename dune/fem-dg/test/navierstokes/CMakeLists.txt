@@ -1,4 +1,4 @@
-dune_install( ns_model.hh problemcreator.hh nswaves.hh ns_model_spec.hh nssmooth.hh thermodynamics.hh passtraits.hh)
+dune_install( ns_model.hh problemcreator.hh ns_model_spec.hh thermodynamics.hh passtraits.hh)
 
 include_directories("${CMAKE_SOURCE_DIR}/dune/fem-dg/test/navierstokes/")
 configure_file(parameter.in ${CMAKE_CURRENT_BINARY_DIR}/parameter )

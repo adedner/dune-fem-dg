@@ -16,8 +16,8 @@
 // local includes
 #include <dune/fem-dg/operator/fluxes/eulerfluxes.hh>
 #include <dune/fem-dg/operator/fluxes/diffusionflux.hh>
-#include "nswaves.hh"
-#include "ns_model.hh"
+#include "problems.hh"
+#include "models.hh"
 
 #include <dune/fem-dg/stepper/advectiondiffusionstepper.hh>
 
