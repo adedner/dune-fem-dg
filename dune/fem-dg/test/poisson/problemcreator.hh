@@ -27,7 +27,7 @@
 //--------- STEPPER -------------------------
 #include <dune/fem-dg/algorithm/ellipticalgorithm.hh>
 //--------- PROBLEMS ------------------------
-#include "poissonproblem.hh"
+#include "problems.hh"
 //--------- MODELS --------------------------
 #include "models.hh"
 

@@ -1,4 +1,4 @@
-dune_install( benchmarkproblems.hh models.hh passtraits.hh problemcreator.hh poissonproblem.hh )
+dune_install( models.hh  problemcreator.hh  problems.hh )
 
 include_directories("${CMAKE_SOURCE_DIR}/dune/fem-dg/test/poisson/")
 configure_file(parameter.in ${CMAKE_CURRENT_BINARY_DIR}/parameter)

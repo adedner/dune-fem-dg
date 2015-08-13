@@ -1,6 +1,6 @@
 # install these headers 
 poissondir=$(includedir)/test/poisson
-poisson_HEADERS = benchmarkproblems.hh models.hh passtraits.hh poissonproblem.hh problemcreator.hh
+poisson_HEADERS = models.hh  problemcreator.hh  problems.hh
 
 LDADD = $(ALL_PKG_LDFLAGS) $(ALL_PKG_LIBS) $(LOCAL_LIBS) $(DUNEMPILDFLAGS) $(DUNEMPILIBS)
 
