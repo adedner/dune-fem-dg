@@ -28,11 +28,7 @@
 #include <dune/fem-dg/algorithm/advectiondiffusionstepper.hh>
 #include <dune/fem-dg/algorithm/advectionstepper.hh>
 //--------- PROBLEMS ------------------------
-#include "problems/problem.hh"
-#include "problems/problemQuasiHeatEqn.hh"
-#include "problems/pulse.hh"
-#include "problems/sin.hh"
-#include "problems/deformationalflow.hh"
+#include "problems.hh"
 //--------- MODELS --------------------------
 #include "models.hh"
 
@@ -374,9 +370,4 @@ public:
 
 };
 
-#ifndef COMBINED_PROBLEM_CREATOR
-#define ProblemCreator AdvectionDiffusionProblemCreator
-#endif
-
-#define NEW_STEPPER_SELECTOR_USED
 #endif // FEMHOWTO_HEATSTEPPER_HH
