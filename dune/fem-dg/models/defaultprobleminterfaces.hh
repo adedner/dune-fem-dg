@@ -262,17 +262,9 @@ protected:
       data_.gradient( x, time_, ret );
     }
 
-    inline void evaluate ( const double time,
-                           const DomainType& x, RangeType& phi) const
-    {
-      abort();
-      data_.evaluate( x, time, phi );
-    }
-
     inline void evaluate (const DomainType &x,
                           const double time, RangeType &phi ) const
     {
-      abort();
       data_.evaluate( x, time, phi );
     }
   }; // end class ExactSolution
