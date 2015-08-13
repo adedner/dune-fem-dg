@@ -561,7 +561,6 @@ namespace Fem
         linOperator_->reserve( stencil );
       }
 
-      linOperator_->clear();
       if( rhs )
         assembler_.assemble(0, *linOperator_, *rhs );
       else

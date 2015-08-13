@@ -185,8 +185,7 @@ namespace Fem
 
     virtual void solve ( const int loop )
     {
-      //rhs().clear();
-      //solution().clear();
+      solution().clear();
 
       solver_.reset( this->createSolver( &rhs() ) );
 

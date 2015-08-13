@@ -30,7 +30,7 @@ alpha: 0.0
 mu: 1.0
 d11: 100.0
 d12: 1.0
-istl.absLimit: 1e-11
+istl.absLimit: 1e-10
 istl.reduction: 1e-10
 fem.solver.verbose: 0
 

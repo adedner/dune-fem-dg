@@ -322,9 +322,7 @@ namespace Fem
     virtual BasicLinearSolverType* createSolver( DiscreteFunctionType* rhs )
     {
       assembler_.assemble( problem() );
-
       double absLimit = Dune::Fem::Parameter::getValue<double>("istl.absLimit",1.e-10);
-      solution().clear();
 #if 0
 #ifdef PADAPTSPACE
       int polOrder = Dune::Fem::Parameter::getValue<double>("femdg.polynomialOrder",1);
@@ -337,7 +335,6 @@ namespace Fem
       space_.adapt( polOrderVecPressure);
 #endif
 #endif
-
       return new BasicLinearSolverType( assembler_, ellAlg_.solver(), ellAlg_.rhs(), absLimit, 3*ellAlg_.space().size() );
     }
 
@@ -350,6 +347,9 @@ namespace Fem
     {
       BaseType::solve( loop );
 
+      // velocity solution of elliptical algorithm is computed by stokes solver,
+      // i.e.: solve() method of elliptical algorithm is never called here
+      // -> workaround by copying the dofs...
       ellAlg_.solution().assign( solver_->velocity() );
 
       // TODO check wheather we need the following line
