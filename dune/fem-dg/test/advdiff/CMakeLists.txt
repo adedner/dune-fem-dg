@@ -17,8 +17,6 @@ dune_target_link_libraries(advdiff "${DUNE_LIBS}")
 set_property(TARGET advdiff APPEND PROPERTY 
              COMPILE_DEFINITIONS "POLORDER=2")
 
-SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -O0 -g" )
-
 add_code_generate_targets( advdiff advdiffall )
 
 dune_add_test( advdiff advdiffall )
