@@ -1,12 +1,11 @@
 # install these headers 
 eulerdir=$(includedir)/dune/fem-dg/test/euler
-euler_HEADERS= eulermodel.hh  problems.hh problemcreator.hh \
-chorjo.hh chorjo.cc
+euler_HEADERS= models.hh  problemcreator.hh  problems.hh
 
 LDADD = $(ALL_PKG_LDFLAGS) $(ALL_PKG_LIBS) $(LOCAL_LIBS) $(DUNEMPILDFLAGS) $(DUNEMPILIBS)
 
 # helper variables
-SOURCES = main.cc chorjo.cc
+SOURCES = main.cc problems/chorjo.cc
 
 # INFO FLUX
 #  set FLUX to 1 for LLF

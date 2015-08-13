@@ -1,7 +1,6 @@
 // configure macros
 #include <config.h>
 
-#include <dune/fem-dg/stepper/base.hh>
 #include <dune/fem-dg/misc/simulator.hh>
 #include "problemcreator.hh"
 
@@ -25,7 +24,7 @@ int main(int argc, char ** argv)
     EulerProblemCreator< GridType > problem;
 
     // run simulation
-    Simulator::run( problem );
+    Dune::Simulator::run( problem );
   }
   catch (const Dune::Exception &e)
   {
