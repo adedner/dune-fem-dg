@@ -289,8 +289,9 @@ public:
 
     typedef std::tuple<> ExtraParameterTuple;
 
+
     typedef typename AnalyticalTraitsType::ProblemType::ExactSolutionType ExactSolutionType;
-    typedef Dune::Fem::GridFunctionAdapter< typename ProblemInterface< FunctionSpaceType >::ExactSolutionType, GridPartType >  GridExactSolutionType;
+    typedef Dune::Fem::GridFunctionAdapter< ExactSolutionType, GridPartType >  GridExactSolutionType;
     typedef std::tuple< DiscreteFunctionType*, DiscreteFunctionType* > IOTupleType;
 
 private:
