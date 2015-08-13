@@ -77,6 +77,7 @@ namespace Fem
       dgIndicator_( gridPart_, problem(), tuple, name ),
       gradientIndicator_( space(), problem(), adaptHandler_.params() )
     {
+       adaptHandler_.setIndicator( &dgIndicator_, &gradientIndicator_ );
        solutionLimiterHandler_.setLimiter( &dgAdvectionOperator_ );
     }
 
