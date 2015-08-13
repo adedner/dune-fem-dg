@@ -161,11 +161,6 @@ namespace Fem
       return problem().dataPrefix();
     }
 
-    auto dataTuple () -> decltype( std::make_tuple( &this->solution() ))
-    {
-      return std::make_tuple( &solution_ );
-    }
-
     virtual SolverMonitorType& monitor()
     {
       return solverMonitorHandler_.monitor();

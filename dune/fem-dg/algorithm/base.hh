@@ -129,7 +129,7 @@ namespace Fem
     }
 
     //! return default data tuple for data output
-    //virtual IOTupleType dataTuple() = 0;
+    virtual IOTupleType dataTuple() = 0;
 
     // solve the problem for eoc loop 'loop'
     virtual void solve ( const int loop ) = 0;
