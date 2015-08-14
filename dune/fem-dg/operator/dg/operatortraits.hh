@@ -12,7 +12,7 @@ namespace Dune {
             class AnalyticalTraits,
             class DiscreteFunctionImp,
             class AdvectionFluxImp,
-            class IndicatorFunctionImp,
+            class LimiterIndicatorFunctionImp,
             class AdaptationHandlerImp,
             class ExtraParameterTupleImp = std::tuple<>
           >
@@ -36,7 +36,7 @@ namespace Dune {
     typedef Dune::Fem::CachingQuadrature< GridPartType, 0 >              VolumeQuadratureType;
     typedef Dune::Fem::CachingQuadrature< GridPartType, 1 >              FaceQuadratureType;
 
-    typedef IndicatorFunctionImp                                         IndicatorType;
+    typedef LimiterIndicatorFunctionImp                                  LimiterIndicatorType;
 
     typedef AdaptationHandlerImp                                         AdaptationHandlerType ;
 

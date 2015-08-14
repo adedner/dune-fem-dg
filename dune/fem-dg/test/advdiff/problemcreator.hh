@@ -134,14 +134,6 @@ public:
     typedef Dune::Fem::GridFunctionAdapter< ExactSolutionType, GridPartType >  GridExactSolutionType;
     typedef std::tuple< DiscreteFunctionType*, DiscreteFunctionType* > IOTupleType;
 
-private:
-    typedef Dune::Fem::FunctionSpace< typename GridType::ctype, double, AnalyticalTraitsType::ModelType::dimDomain, 3> FVFunctionSpaceType;
-    typedef Dune::Fem::FiniteVolumeSpace<FVFunctionSpaceType,GridPartType, 0, Dune::Fem::SimpleStorage> IndicatorSpaceType;
-public:
-    typedef Dune::Fem::AdaptiveDiscreteFunction<IndicatorSpaceType>                             IndicatorType;
-
-
-
     typedef DuneODE::OdeSolverInterface< DiscreteFunctionType >                                 OdeSolverType;
     // type of restriction/prolongation projection for adaptive simulations
     typedef Dune::Fem::RestrictProlongDefault< DiscreteFunctionType >                           RestrictionProlongationType;
@@ -154,9 +146,14 @@ public:
     // --------- Operators using PASSES --------------------------
     //============================================================
     typedef Dune::UpwindFlux< typename AnalyticalTraitsType::ModelType >                        FluxType;
+private:
+    typedef Dune::Fem::FunctionSpace< typename GridType::ctype, double, AnalyticalTraitsType::ModelType::dimDomain, 3> FVFunctionSpaceType;
+    typedef Dune::Fem::FiniteVolumeSpace<FVFunctionSpaceType,GridPartType, 0, Dune::Fem::SimpleStorage> IndicatorSpaceType;
+    typedef Dune::Fem::AdaptiveDiscreteFunction<IndicatorSpaceType>                             LimiterIndicatorType;
+public:
 
     typedef Dune::OperatorTraits< GridPartType, polynomialOrder, AnalyticalTraitsType,
-                                  DiscreteFunctionType, FluxType, IndicatorType,
+                                  DiscreteFunctionType, FluxType, LimiterIndicatorType,
                                   AdaptationHandlerType, ExtraParameterTuple >                  OperatorTraitsType;
 
     // TODO: advection/diffusion should not be precribed by model

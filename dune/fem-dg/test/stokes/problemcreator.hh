@@ -125,12 +125,6 @@ public:
     typedef Dune::Fem::GridFunctionAdapter< ExactSolutionType, GridPartType >  GridExactSolutionType;
     typedef std::tuple< DiscreteFunctionType*, GridExactSolutionType* > IOTupleType;
 
-private:
-    typedef Dune::Fem::FunctionSpace< typename GridType::ctype, double, AnalyticalTraitsType::ModelType::dimDomain, 3> FVFunctionSpaceType;
-    typedef Dune::Fem::FiniteVolumeSpace<FVFunctionSpaceType,GridPartType, 0, Dune::Fem::SimpleStorage> IndicatorSpaceType;
-public:
-    typedef Dune::Fem::AdaptiveDiscreteFunction<IndicatorSpaceType>                             IndicatorType;
-
     // type of restriction/prolongation projection for adaptive simulations
     typedef Dune::Fem::RestrictProlongDefault< DiscreteFunctionType >                           RestrictionProlongationType;
     // type of linear solver for implicit ode
@@ -146,6 +140,12 @@ public:
 
     typedef typename SolversType::LinearOperatorType         FullOperatorType;
     typedef typename SolversType::LinearInverseOperatorType  BasicLinearSolverType;
+
+private:
+    typedef Dune::Fem::FunctionSpace< typename GridType::ctype, double, AnalyticalTraitsType::ModelType::dimDomain, 3> FVFunctionSpaceType;
+    typedef Dune::Fem::FiniteVolumeSpace<FVFunctionSpaceType,GridPartType, 0, Dune::Fem::SimpleStorage> IndicatorSpaceType;
+    typedef Dune::Fem::AdaptiveDiscreteFunction<IndicatorSpaceType>                             IndicatorType;
+public:
 
     //----------- passes! ------------------------
     typedef Dune::OperatorTraits< GridPartType, polynomialOrder, AnalyticalTraitsType,
@@ -259,12 +259,6 @@ public:
     typedef typename  std::tuple<> ExtraParameterTuple;
 
 
-private:
-    typedef Dune::Fem::FunctionSpace< typename GridType::ctype, double, AnalyticalTraitsType::ModelType::dimDomain, 3> FVFunctionSpaceType;
-    typedef Dune::Fem::FiniteVolumeSpace<FVFunctionSpaceType,GridPartType, 0, Dune::Fem::SimpleStorage> IndicatorSpaceType;
-public:
-    typedef Dune::Fem::AdaptiveDiscreteFunction<IndicatorSpaceType>                             IndicatorType;
-
     typedef Dune::Fem::RestrictProlongDefault< DiscreteFunctionType >                           RestrictionProlongationType;
 
     typedef Dune::AdaptationHandler< GridType, VelocityFunctionSpaceType >                              AdaptationHandlerType;
@@ -275,6 +269,12 @@ public:
     //typedef Solvers<DiscreteFunctionSpaceType, solverType, symmetricSolver> SolversType;
     typedef Dune::NoFlux< typename AnalyticalTraitsType::ModelType >              FluxType;
     typedef typename PoissonDiscreteTraits::FullOperatorType                      FullOperatorType;
+
+private:
+    typedef Dune::Fem::FunctionSpace< typename GridType::ctype, double, AnalyticalTraitsType::ModelType::dimDomain, 3> FVFunctionSpaceType;
+    typedef Dune::Fem::FiniteVolumeSpace<FVFunctionSpaceType,GridPartType, 0, Dune::Fem::SimpleStorage> IndicatorSpaceType;
+    typedef Dune::Fem::AdaptiveDiscreteFunction<IndicatorSpaceType>                             IndicatorType;
+public:
 
     //----------- passes! ------------------------
     typedef Dune::OperatorTraits< GridPartType, polynomialOrder, AnalyticalTraitsType,

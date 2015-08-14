@@ -128,12 +128,6 @@ public:
 
     typedef std::tuple< DiscreteFunctionType*, GridExactSolutionType* > IOTupleType;
 
-private:
-    typedef Dune::Fem::FunctionSpace< typename GridType::ctype, double, AnalyticalTraitsType::ModelType::dimDomain, 3> FVFunctionSpaceType;
-    typedef Dune::Fem::FiniteVolumeSpace<FVFunctionSpaceType,GridPartType, 0, Dune::Fem::SimpleStorage> IndicatorSpaceType;
-public:
-    typedef Dune::Fem::AdaptiveDiscreteFunction<IndicatorSpaceType>                             IndicatorType;
-
     //typedef DuneODE::OdeSolverInterface< DiscreteFunctionType >                                 OdeSolverType;
     // type of restriction/prolongation projection for adaptive simulations
     typedef Dune::Fem::RestrictProlongDefault< DiscreteFunctionType >                           RestrictionProlongationType;
@@ -151,6 +145,12 @@ public:
 
     typedef typename SolversType::LinearOperatorType         FullOperatorType;
     typedef typename SolversType::LinearInverseOperatorType  BasicLinearSolverType;
+
+private:
+    typedef Dune::Fem::FunctionSpace< typename GridType::ctype, double, AnalyticalTraitsType::ModelType::dimDomain, 3> FVFunctionSpaceType;
+    typedef Dune::Fem::FiniteVolumeSpace<FVFunctionSpaceType,GridPartType, 0, Dune::Fem::SimpleStorage> IndicatorSpaceType;
+    typedef Dune::Fem::AdaptiveDiscreteFunction<IndicatorSpaceType>                             IndicatorType;
+public:
 
     //----------- passes! ------------------------
     typedef Dune::OperatorTraits< GridPartType, polynomialOrder, AnalyticalTraitsType,

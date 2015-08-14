@@ -137,7 +137,6 @@ namespace Fem
     typedef typename ProblemTraits::FunctionSpaceType              FunctionSpaceType;
     typedef typename DiscreteTraits::DiscreteFunctionSpaceType     DiscreteFunctionSpaceType;
     typedef typename DiscreteTraits::DiscreteFunctionType          DiscreteFunctionType;
-    typedef typename DiscreteTraits::IndicatorType                 IndicatorType;
 
     typedef typename DiscreteTraits::OperatorTraitsType            OperatorTraits;
 

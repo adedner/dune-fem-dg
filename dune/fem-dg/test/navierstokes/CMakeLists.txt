@@ -19,6 +19,8 @@ dune_target_link_libraries(navierstokes ${DUNE_LIBS})
 set_property(TARGET navierstokes APPEND PROPERTY 
              COMPILE_DEFINITIONS "POLORDER=${POLORDER}")
 
+           #           set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0 -g" )
+
 add_code_generate_targets( navierstokes navierstokesall )
 
 dune_add_test( navierstokes navierstokesall )

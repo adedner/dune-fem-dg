@@ -66,8 +66,8 @@ namespace Dune {
 
     // Indicator for Limiter
     typedef Fem::FunctionSpace< ctype, double, ModelTraits::dimDomain, 3> FVFunctionSpaceType;
-    typedef Fem::FiniteVolumeSpace<FVFunctionSpaceType,GridPartType, 0, Fem::SimpleStorage> IndicatorSpaceType;
-    typedef Fem::AdaptiveDiscreteFunction<IndicatorSpaceType> IndicatorType;
+    typedef Fem::FiniteVolumeSpace<FVFunctionSpaceType,GridPartType, 0, Fem::SimpleStorage> LimiterIndicatorSpaceType;
+    typedef Fem::AdaptiveDiscreteFunction<LimiterIndicatorSpaceType> LimiterIndicatorType;
 
     typedef AdaptationHandler< GridType, FunctionSpaceType >  AdaptationHandlerType ;
   };

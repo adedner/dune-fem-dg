@@ -43,8 +43,8 @@ namespace Dune {
     enum { dimRange  = ModelType::dimRange };
     enum { dimDomain = ModelType::Traits::dimDomain };
 
-    typedef typename Traits::IndicatorType                          IndicatorType;
-    typedef typename IndicatorType::DiscreteFunctionSpaceType       IndicatorSpaceType;
+    typedef typename Traits::LimiterIndicatorType                       LimiterIndicatorType;
+    typedef typename LimiterIndicatorType::DiscreteFunctionSpaceType    LimiterIndicatorSpaceType;
 
     // Pass 2 Model (advection)
     typedef AdvectionDiffusionLDGModel< Traits, u, gradPass, advection, diffusion >     DiscreteModel2Type;
@@ -365,8 +365,8 @@ namespace Dune {
     typedef LocalCDGPass< DiscreteModel2Type, Pass1Type, gradPassId >    Pass2Type;
     typedef LocalCDGPass< DiscreteModel3Type, Pass2Type, advectPassId >  Pass3Type;
 
-    typedef typename Traits::IndicatorType                             IndicatorType;
-    typedef typename IndicatorType::DiscreteFunctionSpaceType          IndicatorSpaceType;
+    typedef typename Traits::LimiterIndicatorType                      LimiterIndicatorType;
+    typedef typename LimiterIndicatorType::DiscreteFunctionSpaceType   LimiterIndicatorSpaceType;
     typedef typename Traits :: ExtraParameterTupleType                 ExtraParameterTupleType;
 
     template <class Limiter, int pOrd>
@@ -489,15 +489,15 @@ namespace Dune {
     const ModelType& model() const { return model_; }
 
   private:
-    ModelType           model_;
-    AdvectionFluxType   numflux_;
-    GridPartType&       gridPart_;
-    Space1Type          space1_;
-    Space2Type          space2_;
-    Space3Type          space3_;
-    mutable DestinationType* uTmp_;
-    IndicatorSpaceType  fvSpc_;
-    IndicatorType       indicator_;
+    ModelType                   model_;
+    AdvectionFluxType           numflux_;
+    GridPartType&               gridPart_;
+    Space1Type                  space1_;
+    Space2Type                  space2_;
+    Space3Type                  space3_;
+    mutable DestinationType*    uTmp_;
+    LimiterIndicatorSpaceType   fvSpc_;
+    LimiterIndicatorType        indicator_;
 
   protected:
     DiffusionFluxType   diffFlux_;
