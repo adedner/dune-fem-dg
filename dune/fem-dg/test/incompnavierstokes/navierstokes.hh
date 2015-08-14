@@ -7,7 +7,7 @@
 
 // local includes
 #include <dune/fem-dg/stepper/stepperbase.hh>
-#include "../stokes/stokes.hh"
+#include "../stokes/stokesalgorithm.hh"
 
 template <class GridImp,
           class ProblemTraits,

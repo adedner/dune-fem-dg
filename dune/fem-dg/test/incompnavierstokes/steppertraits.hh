@@ -11,7 +11,7 @@
 #include <dune/fem-dg/operator/dg/dgoperatorchoice.hh>
 
 #include "passtraits.hh"
-#include "../stokes/stokes.hh"
+#include "../stokes/stokesalgorithm.hh"
 
 template <class GridImp,
           class ProblemTraits,
