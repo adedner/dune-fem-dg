@@ -202,7 +202,7 @@ struct AdvectionDiffusionProblemCreator
     static void addEOCErrors ( const EOCErrorIDs &ids, TimeProvider& tp,
                                Solution &u, Model &model, ExactFunction &f )
     {
-      if( !model.problem().calculateEOC( tp, u, 0 ) )
+      if( model.problem().calculateEOC( tp, u, 0 ) )
       {
         const int order = 2*u.space().order()+4;
         Dune::Fem::L2Norm< typename Solution::DiscreteFunctionSpaceType::GridPartType > l2norm( u.space().gridPart(), order );
