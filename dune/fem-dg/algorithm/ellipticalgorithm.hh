@@ -465,9 +465,6 @@ namespace Fem
     // An analytical version of our model
     typedef typename BaseType::ModelType                   ModelType;
 
-    // The flux for the discretization of advection terms
-    typedef typename BaseType::DiscreteTraits::FluxType    FluxType;
-
     // type of linear operator (i.e. matrix implementation)
     typedef typename BaseType::FullOperatorType            FullOperatorType;
 

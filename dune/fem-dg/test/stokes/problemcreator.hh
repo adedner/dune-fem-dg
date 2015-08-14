@@ -107,58 +107,58 @@ struct PoissonProblemCreator
   template< class GridPart, int polOrd > // TODO: is GridPart as a template parameter needed?
   struct DiscreteTraits
   {
-public:
-    typedef AnalyticalTraits< GridPartType >                              AnalyticalTraitsType;
+    static const SolverType solverType = istl ;
+  public:
+    typedef AnalyticalTraits< GridPartType >                                                   AnalyticalTraitsType;
 
     static const int polynomialOrder = polOrd;
 
     static const int quadOrder = polynomialOrder * 3 + 1;
-    static const SolverType solverType = istl ;
 
     typedef typename DiscreteFunctionSpaces< FunctionSpaceType, GridPartType, polynomialOrder, _legendre, dg >::type    DiscreteFunctionSpaceType;
     typedef typename DiscreteFunctions< DiscreteFunctionSpaceType, solverType >::type                                   DiscreteFunctionType;
     typedef typename DiscreteFunctions< DiscreteFunctionSpaceType, solverType >::jacobian                               JacobianOperatorType;
 
-    typedef std::tuple<> ExtraParameterTuple;
+    typedef std::tuple<>                                                                        ExtraParameterTuple;
 
-    typedef typename AnalyticalTraitsType::ProblemType::ExactSolutionType ExactSolutionType;
-    typedef Dune::Fem::GridFunctionAdapter< ExactSolutionType, GridPartType >  GridExactSolutionType;
-    typedef std::tuple< DiscreteFunctionType*, GridExactSolutionType* > IOTupleType;
+  private:
+    typedef typename AnalyticalTraitsType::ProblemType::ExactSolutionType                       ExactSolutionType;
 
-    // type of restriction/prolongation projection for adaptive simulations
-    typedef Dune::Fem::RestrictProlongDefault< DiscreteFunctionType >                           RestrictionProlongationType;
-    // type of linear solver for implicit ode
     typedef Dune::AdaptationHandler< GridType, FunctionSpaceType >                              AdaptationHandlerType;
+    //typedef Dune::UpwindFlux< typename AnalyticalTraitsType::ModelType >                      FluxType;
+    typedef Dune::NoFlux< typename AnalyticalTraitsType::ModelType >                            FluxType;
 
-
-    //############################ poisson issues ############################
-    static const bool symmetricSolver = true ;
-    typedef Solvers<DiscreteFunctionSpaceType, solverType, symmetricSolver> SolversType;
-
-    //typedef Dune::UpwindFlux< typename AnalyticalTraitsType::ModelType >              FluxType;
-    typedef Dune::NoFlux< typename AnalyticalTraitsType::ModelType >              FluxType;
-
-    typedef typename SolversType::LinearOperatorType         FullOperatorType;
-    typedef typename SolversType::LinearInverseOperatorType  BasicLinearSolverType;
-
-private:
     typedef Dune::Fem::FunctionSpace< typename GridType::ctype, double, AnalyticalTraitsType::ModelType::dimDomain, 3> FVFunctionSpaceType;
     typedef Dune::Fem::FiniteVolumeSpace<FVFunctionSpaceType,GridPartType, 0, Dune::Fem::SimpleStorage> IndicatorSpaceType;
     typedef Dune::Fem::AdaptiveDiscreteFunction<IndicatorSpaceType>                             IndicatorType;
-public:
 
-    //----------- passes! ------------------------
     typedef Dune::OperatorTraits< GridPartType, polynomialOrder, AnalyticalTraitsType,
                                   DiscreteFunctionType, FluxType,  IndicatorType,
                                   AdaptationHandlerType, ExtraParameterTuple >                  OperatorTraitsType;
-    typedef Dune::DGAdvectionDiffusionOperator< OperatorTraitsType >  AssemblyOperatorType;
-    typedef Dune::DGPrimalMatrixAssembly< AssemblyOperatorType >            AssemblerType;
-    //#########################################################################
 
-    //------------- Limiter ---------------------------------------------
-    typedef FullOperatorType                                                   LimiterOperatorType;
-    //------------ Limiter ---------------------------------------------
+    typedef Dune::DGAdvectionDiffusionOperator< OperatorTraitsType >                            AssemblyOperatorType;
+  public:
+    typedef Dune::Fem::GridFunctionAdapter< ExactSolutionType, GridPartType >                   GridExactSolutionType;
 
+    typedef std::tuple< DiscreteFunctionType*, GridExactSolutionType* >                         IOTupleType;
+
+    static const bool symmetricSolver = true ;
+    typedef Solvers<DiscreteFunctionSpaceType, solverType, symmetricSolver>                     SolversType;
+
+    typedef Dune::DGPrimalMatrixAssembly< AssemblyOperatorType >                                AssemblerType;
+    typedef typename SolversType::LinearOperatorType                                            FullOperatorType;
+
+    typedef typename SolversType::LinearInverseOperatorType                                     BasicLinearSolverType;
+
+    //------HANDLER-----------------------------------------------------
+    struct HandlerTraits
+    {
+    private:
+      // type of restriction/prolongation projection for adaptive simulations
+      typedef Dune::Fem::RestrictProlongDefault< DiscreteFunctionType >                         RestrictionProlongationType;
+    public:
+      typedef Dune::Fem::DefaultSteadyStateSolverMonitorHandler                                 SolverMonitorHandlerType;
+    };
 
   };
 
@@ -201,9 +201,9 @@ public:
   {
     typedef ProblemInterfaceType                                      ProblemType;
     typedef ProblemInterfaceType                                      InitialDataType;
-    typedef StokesModel< GridPart, InitialDataType >                  ModelType;
+    typedef StokesModel< GridPartType, InitialDataType >              ModelType;
 
-    typedef typename PoissonProblemCreatorType::template AnalyticalTraits< GridPart >::EOCErrorIDs     EOCErrorIDs;
+    typedef typename PoissonProblemCreatorType::template AnalyticalTraits< GridPartType >::EOCErrorIDs     EOCErrorIDs;
 
     static EOCErrorIDs initEoc ()
     {
@@ -243,64 +243,62 @@ public:
   template< class GridPart, int polOrd > // TODO: is GridPart as a template parameter needed?
   struct DiscreteTraits
   {
+  private:
     typedef typename PoissonProblemCreatorType::template DiscreteTraits< GridPart, polOrd >       PoissonDiscreteTraits;
-public:
-    typedef AnalyticalTraits<GridPart>                                                            AnalyticalTraitsType;
+    static const SolverType solverType = PoissonDiscreteTraits::solverType;
+  public:
+    typedef AnalyticalTraits< GridPart >                                                        AnalyticalTraitsType;
 
     static const int polynomialOrder = PoissonDiscreteTraits::polynomialOrder;
 
     static const int quadOrder = PoissonDiscreteTraits::quadOrder;
-    static const SolverType solverType = PoissonDiscreteTraits::solverType;
 
     typedef typename DiscreteFunctionSpaces< PressureFunctionSpaceType, GridPartType, polynomialOrder, _legendre, dg >::type    DiscreteFunctionSpaceType;
     typedef typename DiscreteFunctions< DiscreteFunctionSpaceType, solverType >::type                                   DiscreteFunctionType;
     typedef typename DiscreteFunctions< DiscreteFunctionSpaceType, solverType >::jacobian                               JacobianOperatorType;
 
-    typedef typename  std::tuple<> ExtraParameterTuple;
+    typedef std::tuple<>                                                                        ExtraParameterTuple;
 
+  private:
+    typedef typename AnalyticalTraitsType::ProblemType::ExactPressureType                       ExactSolutionType;
 
-    typedef Dune::Fem::RestrictProlongDefault< DiscreteFunctionType >                           RestrictionProlongationType;
+    typedef Dune::AdaptationHandler< GridType, VelocityFunctionSpaceType >                      AdaptationHandlerType;
 
-    typedef Dune::AdaptationHandler< GridType, VelocityFunctionSpaceType >                              AdaptationHandlerType;
+    typedef Dune::NoFlux< typename AnalyticalTraitsType::ModelType >                            FluxType;
 
-
-    //############################ stokes ############################
-    static const bool symmetricSolver = true ;
-    //typedef Solvers<DiscreteFunctionSpaceType, solverType, symmetricSolver> SolversType;
-    typedef Dune::NoFlux< typename AnalyticalTraitsType::ModelType >              FluxType;
-    typedef typename PoissonDiscreteTraits::FullOperatorType                      FullOperatorType;
-
-private:
     typedef Dune::Fem::FunctionSpace< typename GridType::ctype, double, AnalyticalTraitsType::ModelType::dimDomain, 3> FVFunctionSpaceType;
     typedef Dune::Fem::FiniteVolumeSpace<FVFunctionSpaceType,GridPartType, 0, Dune::Fem::SimpleStorage> IndicatorSpaceType;
     typedef Dune::Fem::AdaptiveDiscreteFunction<IndicatorSpaceType>                             IndicatorType;
-public:
 
-    //----------- passes! ------------------------
     typedef Dune::OperatorTraits< GridPartType, polynomialOrder, AnalyticalTraitsType,
                                   DiscreteFunctionType, FluxType, IndicatorType,
                                   AdaptationHandlerType, ExtraParameterTuple >                  OperatorTraitsType;
+
+
+  public:
+    typedef Dune::Fem::GridFunctionAdapter< ExactSolutionType, GridPartType >                   GridExactSolutionType;
+    typedef std::tuple< typename std::tuple_element<0,typename PoissonDiscreteTraits::IOTupleType>::type, typename std::tuple_element<1,typename PoissonDiscreteTraits::IOTupleType>::type,
+                        GridExactSolutionType*, DiscreteFunctionType* >                         IOTupleType;
+    static const bool symmetricSolver = true ;
+
     typedef typename Dune::StokesAssembler< typename PoissonDiscreteTraits::DiscreteFunctionType,
                                             DiscreteFunctionType,
-                                            OperatorTraitsType>                   AssemblerType;
-    //------------------------------------------------------------
+                                            OperatorTraitsType>                                 AssemblerType;
+    typedef typename PoissonDiscreteTraits::FullOperatorType                                    FullOperatorType;
+    typedef Dune::UzawaSolver< typename PoissonDiscreteTraits::DiscreteFunctionType, DiscreteFunctionType, AssemblerType,
+                               typename PoissonDiscreteTraits::BasicLinearSolverType >          BasicLinearSolverType;
 
     static_assert( (int)DiscreteFunctionSpaceType::FunctionSpaceType::dimRange == 1 , "pressure dimrange does not fit");
+    //------HANDLER-----------------------------------------------------
+    struct HandlerTraits
+    {
+    private:
+      // type of restriction/prolongation projection for adaptive simulations
+      typedef Dune::Fem::RestrictProlongDefault< DiscreteFunctionType >                         RestrictionProlongationType;
+    public:
+      typedef Dune::Fem::DefaultSteadyStateSolverMonitorHandler                                 SolverMonitorHandlerType;
+    };
 
-    typedef Dune::UzawaSolver< typename PoissonDiscreteTraits::DiscreteFunctionType, DiscreteFunctionType, AssemblerType,
-                               typename PoissonDiscreteTraits::BasicLinearSolverType >    BasicLinearSolverType;
-
-    //#########################################################################
-
-    //------------- Limiter ---------------------------------------------
-    typedef typename PoissonDiscreteTraits::LimiterOperatorType                                         LimiterOperatorType;
-    //------------ Limiter ---------------------------------------------
-
-    typedef typename AnalyticalTraitsType::ProblemType::ExactPressureType ExactSolutionType;
-    typedef Dune::Fem::GridFunctionAdapter< ExactSolutionType, GridPartType >  GridExactSolutionType;
-
-    typedef std::tuple< typename std::tuple_element<0,typename PoissonDiscreteTraits::IOTupleType>::type, typename std::tuple_element<1,typename PoissonDiscreteTraits::IOTupleType>::type,
-                        GridExactSolutionType*, DiscreteFunctionType* > IOTupleType;
   };
 
   template <int polOrd>

@@ -107,93 +107,59 @@ struct PoissonProblemCreator
   template< class GridPart, int polOrd > // TODO: is GridPart as a template parameter needed?
   struct DiscreteTraits
   {
-public:
-    typedef AnalyticalTraits< GridPartType >                              AnalyticalTraitsType;
+  private:
+    static const SolverType solverType = istl ;
+  public:
+    typedef AnalyticalTraits< GridPartType >                                                    AnalyticalTraitsType;
 
     static const int polynomialOrder = polOrd;
 
     static const int quadOrder = polynomialOrder * 3 + 1;
-    static const SolverType solverType = istl ;
 
     typedef typename DiscreteFunctionSpaces< FunctionSpaceType, GridPartType, polynomialOrder, _legendre, dg >::type    DiscreteFunctionSpaceType;
     typedef typename DiscreteFunctions< DiscreteFunctionSpaceType, solverType >::type                                   DiscreteFunctionType;
     typedef typename DiscreteFunctions< DiscreteFunctionSpaceType, solverType >::jacobian                               JacobianOperatorType;
 
-    //typedef typename InitialProjectors< typename AnalyticalTraitsType::ProblemType::TimeDependentFunctionType, DiscreteFunctionType, dg >::type   InitialProjectorType;
+    typedef std::tuple<>                                                                        ExtraParameterTuple;
 
-    typedef std::tuple<> ExtraParameterTuple;
-
-    typedef typename AnalyticalTraitsType::ProblemType::ExactSolutionType ExactSolutionType;
-    typedef Dune::Fem::GridFunctionAdapter< ExactSolutionType, GridPartType >  GridExactSolutionType;
-
-    typedef std::tuple< DiscreteFunctionType*, GridExactSolutionType* > IOTupleType;
-
-    //typedef DuneODE::OdeSolverInterface< DiscreteFunctionType >                                 OdeSolverType;
-    // type of restriction/prolongation projection for adaptive simulations
-    typedef Dune::Fem::RestrictProlongDefault< DiscreteFunctionType >                           RestrictionProlongationType;
-    // type of linear solver for implicit ode
-    // typedef Dune::Fem::ParDGGeneralizedMinResInverseOperator< DiscreteFunctionType >            BasicLinearSolverType;
+  private:
+    typedef typename AnalyticalTraitsType::ProblemType::ExactSolutionType                       ExactSolutionType;
 
     typedef Dune::AdaptationHandler< GridType, FunctionSpaceType >                              AdaptationHandlerType;
 
+    typedef Dune::UpwindFlux< typename AnalyticalTraitsType::ModelType >                        FluxType;
 
-    //############################ poisson issues ############################
-    static const bool symmetricSolver = true ;
-    typedef Solvers<DiscreteFunctionSpaceType, solverType, symmetricSolver> SolversType;
-
-    typedef Dune::UpwindFlux< typename AnalyticalTraitsType::ModelType >              FluxType;
-
-    typedef typename SolversType::LinearOperatorType         FullOperatorType;
-    typedef typename SolversType::LinearInverseOperatorType  BasicLinearSolverType;
-
-private:
     typedef Dune::Fem::FunctionSpace< typename GridType::ctype, double, AnalyticalTraitsType::ModelType::dimDomain, 3> FVFunctionSpaceType;
     typedef Dune::Fem::FiniteVolumeSpace<FVFunctionSpaceType,GridPartType, 0, Dune::Fem::SimpleStorage> IndicatorSpaceType;
     typedef Dune::Fem::AdaptiveDiscreteFunction<IndicatorSpaceType>                             IndicatorType;
-public:
 
-    //----------- passes! ------------------------
     typedef Dune::OperatorTraits< GridPartType, polynomialOrder, AnalyticalTraitsType,
                                   DiscreteFunctionType, FluxType,  IndicatorType,
                                   AdaptationHandlerType, ExtraParameterTuple >                  OperatorTraitsType;
-    typedef Dune::DGAdvectionDiffusionOperator< OperatorTraitsType >  AssemblyOperatorType;
-    typedef Dune::DGPrimalMatrixAssembly< AssemblyOperatorType >            AssemblerType;
 
-    //#########################################################################
+    typedef Dune::DGAdvectionDiffusionOperator< OperatorTraitsType >                            AssemblyOperatorType;
+  public:
+    typedef Dune::Fem::GridFunctionAdapter< ExactSolutionType, GridPartType >                   GridExactSolutionType;
 
+    typedef std::tuple< DiscreteFunctionType*, GridExactSolutionType* >                         IOTupleType;
 
-    // --------- Operators using PASSES --------------------------
-    //============================================================
-    //typedef Dune::OperatorTraits< GridPartType, polynomialOrder, AnalyticalTraitsType,
-    //                              DiscreteFunctionType, IndicatorType,
-    //                              AdaptationHandlerType, ExtraParameterTuple >                  OperatorTraitsType;
+    static const bool symmetricSolver = true ;
+    typedef Solvers<DiscreteFunctionSpaceType, solverType, symmetricSolver>                     SolversType;
 
-    //// TODO: advection/diffusion should not be precribed by model
-    //static const int hasAdvection = AnalyticalTraitsType::ModelType::hasAdvection;
-    //static const int hasDiffusion = AnalyticalTraitsType::ModelType::hasDiffusion;
+    typedef Dune::DGPrimalMatrixAssembly< AssemblyOperatorType >                                AssemblerType;
+    typedef typename SolversType::LinearOperatorType                                            FullOperatorType;
 
-    //typedef AdvectionDiffusionOperators< OperatorTraitsType, hasAdvection, hasDiffusion, _unlimited > AdvectionDiffusionOperatorType;
+    typedef typename SolversType::LinearInverseOperatorType                                     BasicLinearSolverType;
 
-    //typedef typename AdvectionDiffusionOperatorType::FullOperatorType                           FullOperatorType;
-    //typedef typename AdvectionDiffusionOperatorType::ImplicitOperatorType                       ImplicitOperatorType;
-    //typedef typename AdvectionDiffusionOperatorType::ExplicitOperatorType                       ExplicitOperatorType;
-    // --------- Operators using PASSES --------------------------
-    //============================================================
-
-
-
-    //---------Adaptivity ----------------------------------------------
-    // advection = true , diffusion = true
-    //typedef Dune :: DGAdaptationIndicatorOperator< OperatorTraitsType, hasAdvection, hasDiffusion >  DGIndicatorType;
-    // gradient estimator
-    //typedef Estimator< DiscreteFunctionType, typename  AnalyticalTraitsType::ProblemType >                   GradientIndicatorType ;
-    //typedef std::tuple< DGIndicatorType*, GradientIndicatorType* >             IndicatorTupleType;
-    // --------Adaptivity ----------------------------------------------
-
-    //------------- Limiter ---------------------------------------------
-    typedef FullOperatorType                                                   LimiterOperatorType;
-    //------------ Limiter ---------------------------------------------
-
+    //------HANDLER-----------------------------------------------------
+    struct HandlerTraits
+    {
+    private:
+      // type of restriction/prolongation projection for adaptive simulations
+      typedef Dune::Fem::RestrictProlongDefault< DiscreteFunctionType >                         RestrictionProlongationType;
+    public:
+      typedef Dune::Fem::DefaultSteadyStateSolverMonitorHandler                                 SolverMonitorHandlerType;
+    };
 
   };
 

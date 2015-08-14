@@ -52,8 +52,6 @@ namespace Fem
 
     typedef typename DiscreteTraits::ExtraParameterTuple           ExtraParameterTuple;
 
-    typedef typename DiscreteTraits::FluxType                      FluxType;
-
     //typedef typename DiscreteTraits::OdeSolverType                 OdeSolverType;
     typedef typename DiscreteTraits::BasicLinearSolverType         BasicLinearSolverType;
 
@@ -67,8 +65,6 @@ namespace Fem
     // type of IOTuple
     typedef typename DiscreteTraits::IOTupleType                   IOTupleType;
 
-    // type of restriction/prolongation projection for adaptive simulations
-    typedef typename DiscreteTraits::RestrictionProlongationType   RestrictionProlongationType;
 
     typedef typename AnalyticalTraits::EOCErrorIDs                 EOCErrorIDs;
 
@@ -76,52 +72,50 @@ namespace Fem
   };
 
 
-  template< class Grid, class ProblemTraits, int polynomialOrder,
-            class SolverMonitorHandlerImp = DefaultSteadyStateSolverMonitorHandler >
+  template< class Grid, class ProblemTraits, int polOrder, class HandlerTraits = typename ProblemTraits::template DiscreteTraits< Grid, polOrder >::HandlerTraits >
   class SteadyStateAlgorithm
-    : public AlgorithmBase< SteadyStateTraits< Grid, ProblemTraits, polynomialOrder,
-                            SolverMonitorHandlerImp > >
+    : public AlgorithmBase< SteadyStateTraits< Grid, ProblemTraits, polOrder,
+                            typename HandlerTraits::SolverMonitorHandlerType > >
   {
-    typedef SteadyStateTraits< Grid, ProblemTraits, polynomialOrder, SolverMonitorHandlerImp > Traits;
+    typedef SteadyStateTraits< Grid, ProblemTraits, polOrder,
+                               typename HandlerTraits::SolverMonitorHandlerType > Traits;
     typedef AlgorithmBase< Traits > BaseType;
 
   public:
-    typedef typename BaseType::GridType GridType;
-    typedef typename BaseType::IOTupleType IOTupleType;
-    typedef typename BaseType::SolverMonitorType SolverMonitorType;
+    typedef typename BaseType::GridType                           GridType;
+    typedef typename BaseType::IOTupleType                        IOTupleType;
+    typedef typename BaseType::SolverMonitorType                  SolverMonitorType;
 
-    typedef typename Traits::HostGridPartType HostGridPartType;
+    typedef typename Traits::HostGridPartType                     HostGridPartType;
 
     // initial data type
-    typedef typename Traits::ProblemType ProblemType;
+    typedef typename Traits::ProblemType                          ProblemType;
 
     // An analytical version of our model
-    typedef typename Traits::ModelType ModelType;
+    typedef typename Traits::ModelType                            ModelType;
 
-    typedef typename Traits::GridPartType GridPartType;
-    typedef typename Traits::DiscreteFunctionSpaceType DiscreteFunctionSpaceType;
-    typedef typename Traits::DiscreteFunctionType DiscreteFunctionType;
+    typedef typename Traits::GridPartType                         GridPartType;
+    typedef typename Traits::DiscreteFunctionSpaceType            DiscreteFunctionSpaceType;
+    typedef typename Traits::DiscreteFunctionType                 DiscreteFunctionType;
 
     // The DG space operator
-    typedef typename Traits::FullOperatorType FullOperatorType;
+    typedef typename Traits::FullOperatorType                     FullOperatorType;
 
     // type of steady state solver
-    typedef typename Traits::BasicLinearSolverType BasicLinearSolverType;
+    typedef typename Traits::BasicLinearSolverType                BasicLinearSolverType;
 
     // type of analytical traits
-    typedef typename Traits::AnalyticalTraits AnalyticalTraits;
+    typedef typename Traits::AnalyticalTraits                     AnalyticalTraits;
 
     // type of discrete traits
-    typedef typename Traits::DiscreteTraits DiscreteTraits;
+    typedef typename Traits::DiscreteTraits                       DiscreteTraits;
 
-    typedef typename Traits::RestrictionProlongationType    RestrictionProlongationType;
-
-    typedef typename Traits::AssemblerType                  AssemblerType;
+    typedef typename Traits::AssemblerType                        AssemblerType;
 
     // Error Handling
-    typedef typename Traits::EOCErrorIDs EOCErrorIDs;
+    typedef typename Traits::EOCErrorIDs                          EOCErrorIDs;
 
-    typedef SolverMonitorHandlerImp                SolverMonitorHandlerType;
+    typedef typename Traits::SolverMonitorHandlerType             SolverMonitorHandlerType;
 
     typedef uint64_t                                              UInt64Type ;
 
