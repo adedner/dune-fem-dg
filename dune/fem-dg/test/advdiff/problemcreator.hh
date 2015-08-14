@@ -52,7 +52,6 @@ struct AdvectionDiffusionProblemCreator
     typedef ProblemInterfaceType                                ProblemType;
     typedef ProblemInterfaceType                                InitialDataType;
     typedef HeatEqnModel< GridPart, InitialDataType >           ModelType;
-    typedef typename InitialDataType::TimeDependentFunctionType TimeDependentFunctionType;
 
     typedef std::vector< int >                                  EOCErrorIDs;
 
@@ -137,7 +136,7 @@ public:
     typedef typename DiscreteFunctions< DiscreteFunctionSpaceType, solverType >::type                                   DiscreteFunctionType;
     typedef typename DiscreteFunctions< DiscreteFunctionSpaceType, solverType >::jacobian                               JacobianOperatorType;
 
-    typedef typename InitialProjectors< typename AnalyticalTraitsType::TimeDependentFunctionType, DiscreteFunctionType, dg >::type   InitialProjectorType;
+    typedef typename InitialProjectors< typename AnalyticalTraitsType::ProblemType::TimeDependentFunctionType, DiscreteFunctionType, dg >::type   InitialProjectorType;
 
     typedef std::tuple<> ExtraParameterTuple;
 

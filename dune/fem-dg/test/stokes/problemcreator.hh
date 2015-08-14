@@ -53,7 +53,6 @@ struct PoissonProblemCreator
     typedef ProblemInterfaceType                                ProblemType;
     typedef ProblemInterfaceType                                InitialDataType;
     typedef StokesModel< GridPart, InitialDataType >           ModelType;
-    //typedef typename InitialDataType::TimeDependentFunctionType TimeDependentFunctionType;
 
     typedef std::vector< int >                                  EOCErrorIDs;
 
