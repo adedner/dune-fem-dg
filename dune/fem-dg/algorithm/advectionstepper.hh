@@ -54,9 +54,6 @@ namespace Fem
 
     typedef typename FullOperatorType :: ExtraParameterTupleType ExtraParameterTupleType;
 
-    typedef typename std::remove_pointer<typename std::tuple_element<0,typename BaseType::IndicatorTupleType>::type>::type  DGIndicatorType;
-    typedef typename std::remove_pointer<typename std::tuple_element<1,typename BaseType::IndicatorTupleType>::type>::type GradientIndicatorType ;
-
     // type of 64bit unsigned integer
     typedef typename BaseType :: UInt64Type                      UInt64Type;
 
@@ -73,17 +70,15 @@ namespace Fem
     AdvectionStepper( GridType& grid, const std::string name = "",
                       ExtraParameterTupleType tuple = ExtraParameterTupleType() ) :
       BaseType( grid, name ),
-      dgAdvectionOperator_(gridPart_, problem(), tuple, name ),
-      dgIndicator_( gridPart_, problem(), tuple, name ),
-      gradientIndicator_( space(), problem(), adaptHandler_.params() )
+      dgAdvectionOperator_(gridPart_, problem(), tuple, name )
     {
-       adaptHandler_.setIndicator( &dgIndicator_, &gradientIndicator_ );
+       adaptHandler_.setIndicator( problem(), tuple );
        solutionLimiterHandler_.setLimiter( &dgAdvectionOperator_ );
     }
 
     virtual OdeSolverType* createOdeSolver(TimeProviderType& tp)
     {
-      adaptHandler_.setAdaptation( tp, dgIndicator_ );
+      adaptHandler_.setAdaptation( tp );
 
       typedef RungeKuttaSolver< ExplicitOperatorType, ExplicitOperatorType, ExplicitOperatorType,
                                 BasicLinearSolverType > OdeSolverImpl;
@@ -99,7 +94,7 @@ namespace Fem
       adaptHandler_.globalNumberOfElements();
 
       size_t  advSize   = dgAdvectionOperator_.numberOfElements();
-      size_t  dgIndSize = gradientIndicator_.numberOfElements();
+      size_t  dgIndSize = adaptHandler_.numberOfElements();
       uint64_t grSize   = std::max( advSize, dgIndSize );
       return grid_.comm().sum( grSize );
     }
@@ -108,8 +103,6 @@ namespace Fem
 
   protected:
     ExplicitOperatorType    dgAdvectionOperator_;
-    DGIndicatorType         dgIndicator_;
-    GradientIndicatorType   gradientIndicator_;
   };
 }
 }

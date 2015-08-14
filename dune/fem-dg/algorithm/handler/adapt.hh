@@ -21,36 +21,42 @@ namespace Fem
 {
 
 
-  template< class GridImp, class DiscreteFunctionImp, class RestrictionProlongationImp, class IndicatorTupleImp, class SolutionLimiterHandlerImp = NoSolutionLimiterHandler >
+  template< class GridPartImp, class DiscreteFunctionImp, class RestrictionProlongationImp, class IndicatorImp,
+            class GradientIndicatorImp, class SolutionLimiterHandlerImp = NoSolutionLimiterHandler >
   class DefaultAdaptHandler
   {
   public:
-    typedef Dune::AdaptationHandler< GridImp,
+    typedef GridPartImp                                                                        GridPartType;
+    typedef typename GridPartImp::GridType                                                     GridType;
+    typedef Dune::AdaptationHandler< GridType,
               typename DiscreteFunctionImp::DiscreteFunctionSpaceType::FunctionSpaceType >     AdaptationHandlerType;
-    typedef Dune::Fem::AdaptationManager< GridImp, RestrictionProlongationImp >                AdaptationManagerType;
+    typedef Dune::Fem::AdaptationManager< GridType, RestrictionProlongationImp >               AdaptationManagerType;
     typedef uint64_t                                                                           UInt64Type;
     typedef Dune::AdaptationParameters                                                         AdaptationParametersType;
+    typedef IndicatorImp                                                                       IndicatorType;
+    typedef GradientIndicatorImp                                                               GradientIndicatorType;
 
-    DefaultAdaptHandler( GridImp& grid, DiscreteFunctionImp& sol,
+    DefaultAdaptHandler( GridPartType& gridPart, DiscreteFunctionImp& sol,
                          SolutionLimiterHandlerImp& limiterHandler, const std::string keyPrefix = "" )
-    : grid_( grid ),
+    : gridPart_( gridPart ),
       sol_( sol ),
       adaptationHandler_(),
       rp_( sol ),
       adaptationManager_(),
-      indicatorTuple_( std::make_tuple( nullptr, nullptr ) ),
+      indicator_( nullptr ),
+      gradientIndicator_( nullptr ),
       keyPrefix_( keyPrefix ),
       adaptParam_( AdaptationParametersType( Dune::ParameterKey::generate( keyPrefix, "fem.adaptation." ) ) ),
       limiterHandler_( limiterHandler )
     {
       if( adaptive() )
-        rp_.setFatherChildWeight( Dune::DGFGridInfo<GridImp> :: refineWeight() );
+        rp_.setFatherChildWeight( Dune::DGFGridInfo<GridType> :: refineWeight() );
     }
 
     AdaptationManagerType& adaptationManager()
     {
       if( !adaptationManager_ )
-        adaptationManager_.reset( new AdaptationManagerType( grid_, rp_ ) );
+        adaptationManager_.reset( new AdaptationManagerType( gridPart_.grid(), rp_ ) );
       return *adaptationManager_;
     }
 
@@ -59,22 +65,28 @@ namespace Fem
       return true;
     }
 
-    template< class IndicatorImp, class GradientIndicatorImp >
-    void setIndicator( IndicatorImp* ind, GradientIndicatorImp* gradInd )
+    template< class Problem, class ExtraTupleParameter >
+    void setIndicator( Problem& problem, const ExtraTupleParameter& tuple )
     {
-      indicatorTuple_ = std::make_tuple( ind, gradInd );
+      indicator_.reset( new IndicatorType( gridPart_, problem, tuple, keyPrefix_ ) );
+      gradientIndicator_.reset( new GradientIndicatorType( sol_.space(), problem, adaptParam_ ) );
     }
 
     void step()
     {
-      if( adaptive() )
-        doEstimateMarkAdapt( *get<0>(indicatorTuple_), *get<1>(indicatorTuple_), false );
+      doEstimateMarkAdapt( false );
     }
 
     void init()
     {
-      if( adaptive() )
-        doEstimateMarkAdapt( *get<0>(indicatorTuple_), *get<1>(indicatorTuple_), true );
+      doEstimateMarkAdapt( true );
+    }
+
+    size_t numberOfElements() const
+    {
+      if( gradientIndicator_ )
+        return gradientIndicator_->numberOfElements();
+      return 0;
     }
 
     UInt64Type globalNumberOfElements() const
@@ -94,16 +106,16 @@ namespace Fem
       return 0;
     }
 
-    template< class TimeProviderImp, class IndicatorImp >
-    void setAdaptation( TimeProviderImp& tp, IndicatorImp& indicator )
+    template< class TimeProviderImp >
+    void setAdaptation( TimeProviderImp& tp )
     {
       // create adaptation handler in case of apost indicator
-      if( adaptive() )
+      if( adaptive() && indicator_ )
       {
-        if( ! adaptationHandler_ && adaptParam_.aposterioriIndicator() )
+        if( !adaptationHandler_ && adaptParam_.aposterioriIndicator() )
         {
-          adaptationHandler_.reset( new AdaptationHandlerType( grid_, tp ) );
-          indicator.setAdaptation( *adaptationHandler_ );
+          adaptationHandler_.reset( new AdaptationHandlerType( gridPart_.grid(), tp ) );
+          indicator_->setAdaptation( *adaptationHandler_ );
         }
       }
     }
@@ -118,27 +130,24 @@ namespace Fem
 
   protected:
 
-    template <class IndicatorOperator, class GradientIndicator>
-    void doEstimateMarkAdapt( const IndicatorOperator& dgIndicator,
-                              GradientIndicator& gradientIndicator,
-                              const bool initialAdaptation = false )
+    void doEstimateMarkAdapt( const bool initialAdaptation = false )
     {
       if( adaptive() )
       {
         // get grid sequence before adaptation
         const int sequence = sol_.space().sequence();
 
-        if( adaptationHandler_ )
+        if( adaptationHandler_ && indicator_ )
         {
           // call operator once to calculate indicator
-          dgIndicator.evaluateOnly( sol_ );
+          indicator_->evaluateOnly( sol_ );
 
           // do marking and adaptation
           adaptationHandler_->adapt( adaptationManager(), initialAdaptation );
         }
-        else if( adaptParam_.gradientBasedIndicator() )
+        else if( adaptParam_.gradientBasedIndicator() && gradientIndicator_ )
         {
-          gradientIndicator.estimateAndMark( sol_ );
+          gradientIndicator_->estimateAndMark( sol_ );
           adaptationManager().adapt();
         }
         else if( adaptParam_.shockIndicator() )
@@ -157,12 +166,13 @@ namespace Fem
 
   private:
 
-    GridImp&                                  grid_;
+    GridPartImp&                              gridPart_;
     DiscreteFunctionImp&                      sol_;
     std::unique_ptr< AdaptationHandlerType >  adaptationHandler_;
     RestrictionProlongationImp                rp_;
     std::unique_ptr< AdaptationManagerType >  adaptationManager_;
-    IndicatorTupleImp                         indicatorTuple_;
+    std::unique_ptr< IndicatorType >          indicator_;
+    std::unique_ptr< GradientIndicatorType >  gradientIndicator_;
     const std::string                         keyPrefix_;
     const AdaptationParametersType            adaptParam_;
     SolutionLimiterHandlerImp&                limiterHandler_;
@@ -204,6 +214,10 @@ namespace Fem
 
     template< class ... Args >
     void init( Args&& ... ) {}
+
+    template< class ... Args >
+    size_t numberOfElements( Args&& ... ) const
+    { return 0; }
 
     template< class ... Args >
     UInt64Type globalNumberOfElements( Args&& ... ) const

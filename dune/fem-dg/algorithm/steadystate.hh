@@ -50,8 +50,6 @@ namespace Fem
     typedef typename DiscreteTraits::DiscreteFunctionSpaceType     DiscreteFunctionSpaceType;
     typedef typename DiscreteTraits::DiscreteFunctionType          DiscreteFunctionType;
 
-    //typedef typename DiscreteTraits::OperatorTraitsType            OperatorTraits;
-
     typedef typename DiscreteTraits::ExtraParameterTuple           ExtraParameterTuple;
 
     typedef typename DiscreteTraits::FluxType                      FluxType;

@@ -55,15 +55,10 @@ namespace Fem
 
     typedef typename BaseType :: TimeProviderType               TimeProviderType;
 
-    typedef typename BaseType::OperatorTraits                   OperatorTraits;
-
-    typedef typename std::remove_pointer<typename std::tuple_element<0,typename BaseType::IndicatorTupleType>::type>::type  DGIndicatorType;
-    typedef typename std::remove_pointer<typename std::tuple_element<1,typename BaseType::IndicatorTupleType>::type>::type GradientIndicatorType ;
-
     // type of 64bit unsigned integer
     typedef typename BaseType :: UInt64Type                     UInt64Type;
 
-    typedef typename OperatorTraits :: ExtraParameterTupleType  ExtraParameterTupleType;
+    typedef typename BaseType::ExtraParameterTupleType    ExtraParameterTupleType;
 
     using BaseType :: grid_;
     using BaseType :: gridPart_;
@@ -82,11 +77,9 @@ namespace Fem
       tuple_( ),
       dgOperator_( gridPart_, problem(), tuple_, name ),
       dgAdvectionOperator_( gridPart_, problem(), tuple_, name ),
-      dgDiffusionOperator_( gridPart_, problem(), tuple_, name ),
-      dgIndicator_( gridPart_, problem(), tuple_, name ),
-      gradientIndicator_( space(), problem(), adaptHandler_.params() )
+      dgDiffusionOperator_( gridPart_, problem(), tuple_, name )
     {
-      adaptHandler_.setIndicator( &dgIndicator_, &gradientIndicator_ );
+      adaptHandler_.setIndicator( problem(), tuple );
     }
 
     //! return overal number of grid elements
@@ -99,7 +92,7 @@ namespace Fem
       // one of them is not zero,
       size_t advSize     = dgAdvectionOperator_.numberOfElements();
       size_t diffSize    = dgDiffusionOperator_.numberOfElements();
-      size_t dgIndSize   = gradientIndicator_.numberOfElements();
+      size_t dgIndSize   = adaptHandler_.numberOfElements();
       size_t dgSize      = dgOperator_.numberOfElements();
       UInt64Type grSize  = std::max( std::max(advSize, dgSize ), std::max( diffSize, dgIndSize ) );
       double minMax[ 2 ] = { double(grSize), 1.0/double(grSize) } ;
@@ -113,7 +106,7 @@ namespace Fem
 
     virtual OdeSolverType* createOdeSolver(TimeProviderType& tp)
     {
-      adaptHandler_.setAdaptation( tp, dgIndicator_ );
+      adaptHandler_.setAdaptation( tp );
 
       // create ODE solver
       typedef RungeKuttaSolver< FullOperatorType, ExplicitOperatorType, ImplicitOperatorType,
@@ -134,8 +127,6 @@ namespace Fem
     FullOperatorType        dgOperator_;
     ExplicitOperatorType    dgAdvectionOperator_;
     ImplicitOperatorType    dgDiffusionOperator_;
-    DGIndicatorType         dgIndicator_;
-    GradientIndicatorType   gradientIndicator_;
   };
 
 }

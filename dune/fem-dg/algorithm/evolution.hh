@@ -138,9 +138,7 @@ namespace Fem
     typedef typename DiscreteTraits::DiscreteFunctionSpaceType     DiscreteFunctionSpaceType;
     typedef typename DiscreteTraits::DiscreteFunctionType          DiscreteFunctionType;
 
-    typedef typename DiscreteTraits::OperatorTraitsType            OperatorTraits;
-
-    typedef typename DiscreteTraits::ExtraParameterTuple           ExtraParameterTuple;
+    typedef typename DiscreteTraits::ExtraParameterTuple           ExtraParameterTupleType;
     typedef typename DiscreteTraits::IOTupleType                   IOTupleType;
 
     // wrap operator
@@ -149,15 +147,10 @@ namespace Fem
     typedef typename DiscreteTraits::OdeSolverType                 OdeSolverType;
 
     typedef typename DiscreteTraits::BasicLinearSolverType         BasicLinearSolverType;
-    typedef typename DiscreteTraits::RestrictionProlongationType   RestrictionProlongationType;
-
-    typedef typename DiscreteTraits::LimiterOperatorType           LimiterOperatorType;
 
 
     // error handling
     typedef typename AnalyticalTraits::EOCErrorIDs                 EOCErrorIDs;
-
-    typedef typename DiscreteTraits::IndicatorTupleType            IndicatorTupleType;
 
     typedef SolverMonitor<1>                                       SolverMonitorType;
 
@@ -171,36 +164,28 @@ namespace Fem
   };
 
 
-  template< class ProblemTraits, int polOrder >
-  struct EvolAlgHelper
-  {
-    typedef typename ProblemTraits::template DiscreteTraits< typename ProblemTraits::HostGridPartType, polOrder > type;
-  };
-
   // EvolutionAlgorithm
   // ------------------
 
-  template< class Grid, class ProblemTraits, int polOrder,
-            class DiagnosticsHandlerImp = DefaultDiagnosticsHandler,
-            class SolverMonitorHandlerImp = DefaultSolverMonitorHandler,
-            class CheckPointHandlerImp = DefaultCheckPointHandler< Grid >,
-            class DataWriterHandlerImp = DefaultDataWriterHandler< Grid, typename EvolAlgHelper< ProblemTraits, polOrder >::type::IOTupleType >,
-            class AdditionalOutputHandlerImp = NoAdditionalOutputHandler,
-            class SolutionLimiterHandlerImp = DefaultSolutionLimiterHandler< typename EvolAlgHelper< ProblemTraits, polOrder >::type::LimiterOperatorType >,
-            class AdaptHandlerImp = DefaultAdaptHandler< Grid, typename EvolAlgHelper< ProblemTraits, polOrder >::type::DiscreteFunctionType ,
-                                                         typename EvolAlgHelper< ProblemTraits, polOrder >::type::RestrictionProlongationType,
-                                                         typename EvolAlgHelper< ProblemTraits, polOrder >::type::IndicatorTupleType,
-                                                         SolutionLimiterHandlerImp > >
+  template< class Grid, class ProblemTraits, int polOrder, class HandlerTraits = typename ProblemTraits::template DiscreteTraits< Grid, polOrder >::HandlerTraits >
   class EvolutionAlgorithm
     : public AlgorithmBase< EvolutionAlgorithmTraits< Grid, ProblemTraits, polOrder,
-                                                      DiagnosticsHandlerImp, SolverMonitorHandlerImp,
-                                                      CheckPointHandlerImp, DataWriterHandlerImp,
-                                                      AdditionalOutputHandlerImp, SolutionLimiterHandlerImp,
-                                                      AdaptHandlerImp > >
+                                                      typename HandlerTraits::DiagnosticsHandlerType,
+                                                      typename HandlerTraits::SolverMonitorHandlerType,
+                                                      typename HandlerTraits::CheckPointHandlerType,
+                                                      typename HandlerTraits::DataWriterHandlerType,
+                                                      typename HandlerTraits::AdditionalOutputHandlerType,
+                                                      typename HandlerTraits::SolutionLimiterHandlerType,
+                                                      typename HandlerTraits::AdaptHandlerType > >
   {
     typedef EvolutionAlgorithmTraits< Grid, ProblemTraits, polOrder,
-                                      DiagnosticsHandlerImp, SolverMonitorHandlerImp, CheckPointHandlerImp, DataWriterHandlerImp,
-                                      AdditionalOutputHandlerImp, SolutionLimiterHandlerImp, AdaptHandlerImp >    Traits;
+                                      typename HandlerTraits::DiagnosticsHandlerType,
+                                      typename HandlerTraits::SolverMonitorHandlerType,
+                                      typename HandlerTraits::CheckPointHandlerType,
+                                      typename HandlerTraits::DataWriterHandlerType,
+                                      typename HandlerTraits::AdditionalOutputHandlerType,
+                                      typename HandlerTraits::SolutionLimiterHandlerType,
+                                      typename HandlerTraits::AdaptHandlerType >    Traits;
     typedef AlgorithmBase< Traits >                                                   BaseType;
 
   public:
@@ -226,7 +211,6 @@ namespace Fem
     typedef typename Traits::ExplicitOperatorType ExplicitOperatorType;
     typedef typename Traits::ImplicitOperatorType ImplicitOperatorType;
 
-    typedef typename Traits::OperatorTraits       OperatorTraits;
     // The ODE Solvers
     typedef typename Traits::OdeSolverType OdeSolverType;
 
@@ -242,19 +226,17 @@ namespace Fem
     // error handling
     typedef typename Traits::EOCErrorIDs EOCErrorIDs;
 
-    typedef typename Traits::IndicatorTupleType    IndicatorTupleType;
-
     typedef typename ProblemTraits::template DiscreteTraits< GridPartType, polOrder>::GridExactSolutionType               GridExactSolutionType;
 
-    typedef DiagnosticsHandlerImp                  DiagnosticsHandlerType;
-    typedef SolverMonitorHandlerImp                SolverMonitorHandlerType;
-    typedef CheckPointHandlerImp                   CheckPointHandlerType;
-    typedef DataWriterHandlerImp                   DataWriterHandlerType;
-    typedef AdditionalOutputHandlerImp             AdditionalOutputHandlerType;
-    typedef SolutionLimiterHandlerImp              SolutionLimiterHandlerType;
-    typedef AdaptHandlerImp                        AdaptHandlerType;
+    typedef typename Traits::DiagnosticsHandlerType                     DiagnosticsHandlerType;
+    typedef typename Traits::SolverMonitorHandlerType                   SolverMonitorHandlerType;
+    typedef typename Traits::CheckPointHandlerType                      CheckPointHandlerType;
+    typedef typename Traits::DataWriterHandlerType                      DataWriterHandlerType;
+    typedef typename Traits::AdditionalOutputHandlerType                AdditionalOutputHandlerType;
+    typedef typename Traits::SolutionLimiterHandlerType                 SolutionLimiterHandlerType;
+    typedef typename Traits::AdaptHandlerType                           AdaptHandlerType;
 
-    typedef typename Traits::ExtraParameterTuple ExtraParameterTuple;
+    typedef typename Traits::ExtraParameterTupleType  ExtraParameterTupleType;
 
     typedef uint64_t                                              UInt64Type ;
     typedef StepperParameters                                     StepperParametersType;
@@ -278,7 +260,7 @@ namespace Fem
       diagnosticsHandler_(),
       additionalOutputHandler_( space_ ),
       solutionLimiterHandler_( name ),
-      adaptHandler_( grid_, solution(), solutionLimiterHandler_, name ),
+      adaptHandler_( gridPart_, solution(), solutionLimiterHandler_, name ),
       overallTimer_(),
       eocIds_( AnalyticalTraits::initEoc() ),
       odeSolver_(),
@@ -634,26 +616,32 @@ namespace Fem
   };
 
 
+  template< class ProblemTraits, int polOrder >
+  struct EvolAlgHelper
+  {
+    typedef typename ProblemTraits::template DiscreteTraits< typename ProblemTraits::HostGridPartType, polOrder > type;
+  };
+
+  template< class Grid, class ProblemTraits, int polOrder >
+  struct NoHandlerTraits
+  {
+    typedef NoDiagnosticsHandler                                                         DiagnosticsHandlerType;
+    typedef NoSolverMonitorHandler                                                       SolverMonitorHandlerType;
+    typedef NoCheckPointHandler< Grid >                                                  CheckPointHandlerType;
+    typedef NoDataWriterHandler                                                          DataWriterHandlerType;
+    typedef NoAdditionalOutputHandler                                                    AdditionalOutputHandlerType;
+    typedef NoSolutionLimiterHandler                                                     SolutionLimiterHandler;
+    typedef NoAdaptHandler< Grid, typename EvolAlgHelper< ProblemTraits, polOrder >::type::RestrictionProlongationType >
+                                                                                         AdaptHandlerType;
+  };
 
 
   template< class Grid, class ProblemTraits, int polOrder >
   struct BasicEvolutionAlgorithm
-  : public EvolutionAlgorithm< Grid, ProblemTraits, polOrder,
-                               NoDiagnosticsHandler,
-                               NoCheckPointHandler< Grid >,
-                               NoDataWriterHandler,
-                               NoAdditionalOutputHandler,
-                               NoSolutionLimiterHandler,
-                               NoAdaptHandler< Grid, typename EvolAlgHelper< ProblemTraits, polOrder >::type::RestrictionProlongationType > >
+  : public EvolutionAlgorithm< Grid, ProblemTraits, polOrder, NoHandlerTraits< Grid, ProblemTraits, polOrder > >
   {
-    typedef EvolutionAlgorithm< Grid, ProblemTraits, polOrder,
-                                NoDiagnosticsHandler,
-                                NoCheckPointHandler< Grid >,
-                                NoDataWriterHandler,
-                                NoAdditionalOutputHandler,
-                                NoSolutionLimiterHandler,
-                                NoAdaptHandler< Grid, typename EvolAlgHelper< ProblemTraits, polOrder >::type::RestrictionProlongationType > >
-      BaseType;
+    typedef EvolutionAlgorithm< Grid, ProblemTraits, polOrder, NoHandlerTraits< Grid, ProblemTraits, polOrder > >
+                                                                                           BaseType;
 
     BasicEvolutionAlgorithm( Grid& grid, const std::string name = "" )
       : BaseType( grid, name )
