@@ -135,16 +135,6 @@ public:
 
     static const int polynomialOrder = polOrd;
 
-    static inline std::string advectionFluxName()
-    {
-      return "LLF";
-    }
-
-    static inline std::string diffusionFluxName()
-    {
-      return Dune::Fem::Parameter::getValue< std::string >("dgdiffusionflux.method");
-    }
-
     static const int quadOrder = polynomialOrder * 3 + 1;
     static const SolverType solverType = fem ;
 

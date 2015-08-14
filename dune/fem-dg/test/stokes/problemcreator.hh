@@ -112,16 +112,6 @@ public:
 
     static const int polynomialOrder = polOrd;
 
-    static inline std::string advectionFluxName()
-    {
-      return "LLF";
-    }
-
-    static inline std::string diffusionFluxName()
-    {
-      return Dune::Fem::Parameter::getValue< std::string >("dgdiffusionflux.method");
-    }
-
     static const int quadOrder = polynomialOrder * 3 + 1;
     static const SolverType solverType = istl ;
 
@@ -258,16 +248,6 @@ public:
     typedef AnalyticalTraits<GridPart>                                                            AnalyticalTraitsType;
 
     static const int polynomialOrder = PoissonDiscreteTraits::polynomialOrder;
-
-    static inline std::string advectionFluxName()
-    {
-      return PoissonDiscreteTraits::advectionFluxName();
-    }
-
-    static inline std::string diffusionFluxName()
-    {
-      return PoissonDiscreteTraits::diffusionFluxName();
-    }
 
     static const int quadOrder = PoissonDiscreteTraits::quadOrder;
     static const SolverType solverType = PoissonDiscreteTraits::solverType;
