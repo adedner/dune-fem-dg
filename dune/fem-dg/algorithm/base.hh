@@ -80,6 +80,15 @@ namespace Fem
   };
 
 
+  //! add solver Monitor data to Fem Eoc
+  template< class Monitor >
+  void writeFemEoc ( const Monitor &monitor, const double runTime, std::stringstream &out )
+  {
+    Fem::FemEoc::write( *monitor.gridWidth, *monitor.elements, runTime, *monitor.timeSteps,
+        monitor.doubleValues(), monitor.intValues(), out );
+  }
+
+
   //! get memory in MB
   inline double getMemoryUsage()
   {
@@ -202,9 +211,9 @@ namespace Fem
       algorithm.finalize( eocloop );
 
       std::stringstream eocInfo ;
+
       // generate EOC information
-      Fem::FemEoc::write( *algorithm.monitor().gridWidth, *algorithm.monitor().elements, runTime, *algorithm.monitor().timeSteps,
-                          algorithm.monitor().doubleValues(), algorithm.monitor().intValues(), eocInfo );
+      writeFemEoc( algorithm.monitor(), runTime, eocInfo );
 
       // in verbose mode write EOC info to std::cout
       if( Fem::Parameter::verbose() )
