@@ -146,7 +146,7 @@ struct PoissonProblemCreator
     typedef Solvers<DiscreteFunctionSpaceType, solverType, symmetricSolver>                     SolversType;
 
     typedef Dune::DGPrimalMatrixAssembly< AssemblyOperatorType >                                AssemblerType;
-    typedef typename SolversType::LinearOperatorType                                            FullOperatorType;
+    typedef typename SolversType::LinearOperatorType                                            OperatorType;
 
     typedef typename SolversType::LinearInverseOperatorType                                     BasicLinearSolverType;
 
@@ -284,7 +284,7 @@ public:
     typedef typename Dune::StokesAssembler< typename PoissonDiscreteTraits::DiscreteFunctionType,
                                             DiscreteFunctionType,
                                             OperatorTraitsType>                                 AssemblerType;
-    typedef typename PoissonDiscreteTraits::FullOperatorType                                    FullOperatorType;
+    typedef typename PoissonDiscreteTraits::OperatorType                                        OperatorType;
     typedef Dune::UzawaSolver< typename PoissonDiscreteTraits::DiscreteFunctionType, DiscreteFunctionType, AssemblerType,
                                typename PoissonDiscreteTraits::BasicLinearSolverType >          BasicLinearSolverType;
 

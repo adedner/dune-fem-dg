@@ -144,41 +144,45 @@ struct AdvectionDiffusionProblemCreator
     // type of linear solver for implicit ode
     typedef Dune::Fem::ParDGGeneralizedMinResInverseOperator< DiscreteFunctionType >            BasicLinearSolverType;
 
-  private:
-    typedef Dune::AdaptationHandler< GridType, FunctionSpaceType >                              AdaptationHandlerType;
+    class HandlerTraits;
 
-    typedef Dune::UpwindFlux< typename AnalyticalTraitsType::ModelType >                        FluxType;
+    class OperatorType
+    {
+      friend HandlerTraits;
+      typedef Dune::AdaptationHandler< GridType, FunctionSpaceType >                              AdaptationHandlerType;
 
-    typedef Dune::Fem::FunctionSpace< typename GridType::ctype, double, AnalyticalTraitsType::ModelType::dimDomain, 3> FVFunctionSpaceType;
-    typedef Dune::Fem::FiniteVolumeSpace<FVFunctionSpaceType,GridPartType, 0, Dune::Fem::SimpleStorage> IndicatorSpaceType;
-    typedef Dune::Fem::AdaptiveDiscreteFunction<IndicatorSpaceType>                             LimiterIndicatorType;
+      typedef Dune::UpwindFlux< typename AnalyticalTraitsType::ModelType >                        FluxType;
 
-    typedef Dune::OperatorTraits< GridPartType, polynomialOrder, AnalyticalTraitsType,
-                                  DiscreteFunctionType, FluxType, LimiterIndicatorType,
-                                  AdaptationHandlerType, ExtraParameterTuple >                  OperatorTraitsType;
+      typedef Dune::Fem::FunctionSpace< typename GridType::ctype, double, AnalyticalTraitsType::ModelType::dimDomain, 3> FVFunctionSpaceType;
+      typedef Dune::Fem::FiniteVolumeSpace<FVFunctionSpaceType,GridPartType, 0, Dune::Fem::SimpleStorage> IndicatorSpaceType;
+      typedef Dune::Fem::AdaptiveDiscreteFunction<IndicatorSpaceType>                             LimiterIndicatorType;
 
-    // TODO: advection/diffusion should not be precribed by model
-    static const int hasAdvection = AnalyticalTraitsType::ModelType::hasAdvection;
-    static const int hasDiffusion = AnalyticalTraitsType::ModelType::hasDiffusion;
+      typedef Dune::OperatorTraits< GridPartType, polynomialOrder, AnalyticalTraitsType,
+                                    DiscreteFunctionType, FluxType, LimiterIndicatorType,
+                                    AdaptationHandlerType, ExtraParameterTuple >                  OperatorTraitsType;
 
-  public:
-    typedef AdvectionDiffusionOperators< OperatorTraitsType, hasAdvection, hasDiffusion, _unlimited > AdvectionDiffusionOperatorType;
-
-    typedef typename AdvectionDiffusionOperatorType::FullOperatorType                           FullOperatorType;
-    typedef typename AdvectionDiffusionOperatorType::ImplicitOperatorType                       ImplicitOperatorType;
-    typedef typename AdvectionDiffusionOperatorType::ExplicitOperatorType                       ExplicitOperatorType;
+      // TODO: advection/diffusion should not be precribed by model
+      static const int hasAdvection = AnalyticalTraitsType::ModelType::hasAdvection;
+      static const int hasDiffusion = AnalyticalTraitsType::ModelType::hasDiffusion;
+      typedef AdvectionDiffusionOperators< OperatorTraitsType, hasAdvection, hasDiffusion, _unlimited > AdvectionDiffusionOperatorType;
+    public:
+      typedef typename AdvectionDiffusionOperatorType::FullOperatorType                         FullType;
+      typedef typename AdvectionDiffusionOperatorType::ImplicitOperatorType                     ImplicitType;
+      typedef typename AdvectionDiffusionOperatorType::ExplicitOperatorType                     ExplicitType;
+    };
 
     //------HANDLER-----------------------------------------------------
-    struct HandlerTraits
+    class HandlerTraits
     {
-      private:
       //adaptivity
-      typedef Dune::DGAdaptationIndicatorOperator< OperatorTraitsType, hasAdvection, hasDiffusion >  IndicatorType;
+      typedef Dune::DGAdaptationIndicatorOperator< typename OperatorType::OperatorTraitsType,
+                                                   OperatorType::hasAdvection,
+                                                   OperatorType::hasDiffusion >                      IndicatorType;
       typedef Estimator< DiscreteFunctionType, typename  AnalyticalTraitsType::ProblemType >         GradientIndicatorType ;
       typedef Dune::Fem::RestrictProlongDefault< DiscreteFunctionType >                              RestrictionProlongationType;
       //limiting
-      typedef FullOperatorType                                                                       LimiterOperatorType;
-      public:
+      typedef typename OperatorType::FullType                                                        LimiterOperatorType;
+    public:
       typedef Dune::Fem::DefaultDiagnosticsHandler                                                   DiagnosticsHandlerType;
       typedef Dune::Fem::DefaultSolverMonitorHandler                                                 SolverMonitorHandlerType;
       typedef Dune::Fem::DefaultCheckPointHandler< GridType >                                        CheckPointHandlerType;

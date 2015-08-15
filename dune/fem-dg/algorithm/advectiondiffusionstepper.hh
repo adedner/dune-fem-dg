@@ -24,48 +24,48 @@ namespace Fem
     typedef EvolutionAlgorithm< GridImp, ProblemTraits, polynomialOrder > BaseType ;
 
     // type of Grid
-    typedef typename BaseType :: GridType                       GridType;
+    typedef typename BaseType::GridType                       GridType;
 
     // Choose a suitable GridView
-    typedef typename BaseType :: GridPartType                   GridPartType;
+    typedef typename BaseType::GridPartType                   GridPartType;
 
     // initial data type
-    typedef typename BaseType :: ProblemType                    ProblemType;
+    typedef typename BaseType::ProblemType                    ProblemType;
 
     // An analytical version of our model
-    typedef typename BaseType :: ModelType                      ModelType;
+    typedef typename BaseType::ModelType                      ModelType;
 
     // The DG space operator
     // The first operator is sum of the other two
     // The other two are needed for semi-implicit time discretization
-    typedef typename BaseType :: FullOperatorType               FullOperatorType;
-    typedef typename BaseType :: ExplicitOperatorType           ExplicitOperatorType;
-    typedef typename BaseType :: ImplicitOperatorType           ImplicitOperatorType;
+    typedef typename BaseType::OperatorType::FullType         FullOperatorType;
+    typedef typename BaseType::OperatorType::ExplicitType     ExplicitOperatorType;
+    typedef typename BaseType::OperatorType::ImplicitType     ImplicitOperatorType;
 
-    typedef typename BaseType :: BasicLinearSolverType          BasicLinearSolverType;
+    typedef typename BaseType::BasicLinearSolverType          BasicLinearSolverType;
 
     // The discrete function for the unknown solution is defined in the DgOperator
-    typedef typename BaseType :: DiscreteFunctionType           DiscreteFunctionType;
+    typedef typename BaseType::DiscreteFunctionType           DiscreteFunctionType;
 
     // ... as well as the Space type
-    typedef typename BaseType :: DiscreteFunctionSpaceType      DiscreteFunctionSpaceType;
+    typedef typename BaseType::DiscreteFunctionSpaceType      DiscreteFunctionSpaceType;
 
     // The ODE Solvers
-    typedef typename BaseType :: OdeSolverType                  OdeSolverType;
+    typedef typename BaseType::OdeSolverType                  OdeSolverType;
 
-    typedef typename BaseType :: TimeProviderType               TimeProviderType;
+    typedef typename BaseType::TimeProviderType               TimeProviderType;
 
     // type of 64bit unsigned integer
-    typedef typename BaseType :: UInt64Type                     UInt64Type;
+    typedef typename BaseType::UInt64Type                     UInt64Type;
 
     typedef typename BaseType::ExtraParameterTupleType    ExtraParameterTupleType;
 
-    using BaseType :: grid_;
-    using BaseType :: gridPart_;
-    using BaseType :: space;
-    using BaseType :: problem;
-    using BaseType :: name ;
-    using BaseType :: adaptHandler_ ;
+    using BaseType::grid_;
+    using BaseType::gridPart_;
+    using BaseType::space;
+    using BaseType::problem;
+    using BaseType::name ;
+    using BaseType::adaptHandler_ ;
 
     AdvectionDiffusionStepper( GridType& grid,
                                const std::string name = "",
@@ -97,7 +97,7 @@ namespace Fem
       UInt64Type grSize  = std::max( std::max(advSize, dgSize ), std::max( diffSize, dgIndSize ) );
       double minMax[ 2 ] = { double(grSize), 1.0/double(grSize) } ;
       grid_.comm().max( &minMax[ 0 ], 2 );
-      if( Dune::Fem::Parameter :: verbose () )
+      if( Dune::Fem::Parameter::verbose () )
       {
         std::cout << "grid size (min,max) = ( " << size_t(1.0/minMax[ 1 ]) << " , " << size_t(minMax[ 0 ]) << ")" << std::endl;
       }

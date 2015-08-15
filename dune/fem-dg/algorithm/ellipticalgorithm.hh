@@ -466,7 +466,7 @@ namespace Fem
     typedef typename BaseType::ModelType                   ModelType;
 
     // type of linear operator (i.e. matrix implementation)
-    typedef typename BaseType::FullOperatorType            FullOperatorType;
+    typedef typename BaseType::OperatorType                OperatorType;
 
     // The DG space operator
     typedef typename BaseType::AssemblerType               AssemblerType;
@@ -543,7 +543,7 @@ namespace Fem
 
     virtual BasicLinearSolverType* createSolver( DiscreteFunctionType* rhs )
     {
-      linOperator_.reset( new FullOperatorType("dg operator", space_, space_ ) );
+      linOperator_.reset( new OperatorType("dg operator", space_, space_ ) );
 
       if( space_.continuous() ) // Lagrange case
       {
@@ -620,7 +620,7 @@ namespace Fem
       return assembler_;
     }
 
-    const FullOperatorType& linOper() const
+    const OperatorType& linOper() const
     {
       assert( linOperator_ );
       return *linOperator_;
@@ -628,19 +628,19 @@ namespace Fem
 
     protected:
 
-    GridType& grid_;
-    GridPartType gridPart_;       // reference to grid part, i.e. the leaf grid
+    GridType&                       grid_;
+    GridPartType                    gridPart_;       // reference to grid part, i.e. the leaf grid
 
-    AssemblyOperatorType           dgOperator_;
-    AssemblerType                  assembler_;
+    AssemblyOperatorType            dgOperator_;
+    AssemblerType                   assembler_;
 
-    std::unique_ptr< FullOperatorType      > linOperator_;
-    DiscreteFunctionSpaceType& space_;
-    DiscreteFunctionType         rhs_;
-    PoissonSigmaEstimatorType poissonSigmaEstimator_;
-    GridExactSolutionType exact_;
-    PAdaptivityType           pAdapt_;
-    int  step_;
+    std::unique_ptr< OperatorType > linOperator_;
+    DiscreteFunctionSpaceType&      space_;
+    DiscreteFunctionType            rhs_;
+    PoissonSigmaEstimatorType       poissonSigmaEstimator_;
+    GridExactSolutionType           exact_;
+    PAdaptivityType                 pAdapt_;
+    int                             step_;
 
   };
 

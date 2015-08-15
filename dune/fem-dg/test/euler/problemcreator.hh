@@ -103,21 +103,13 @@ struct EulerProblemCreator
     const int problemNumber = Dune :: Fem :: Parameter :: getEnum ( "problem" , problemNames );
 
     if( problemNames[ problemNumber ] == "sod" )
-    {
       return new U0Sod< GridType > ( );
-    }
     else if( problemNames[ problemNumber ] == "smooth1d" )
-    {
       return new U0Smooth1D< GridType > ();
-    }
     else if( problemNames[ problemNumber ] == "ffs" )
-    {
       return new U0FFS< GridType > ();
-    }
     else if( problemNames[ problemNumber ] == "p123" )
-    {
       return new U0P123< GridType >();
-    }
     std::cerr << "Error: Problem " << problemNames[ problemNumber ]
               << " not implemented." << std::endl;
 
@@ -159,43 +151,47 @@ struct EulerProblemCreator
     // type of linear solver for implicit ode
     typedef Dune::Fem::ParDGGeneralizedMinResInverseOperator< DiscreteFunctionType >            BasicLinearSolverType;
 
-  private:
-    typedef Dune::AdaptationHandler< GridType, FunctionSpaceType >                              AdaptationHandlerType;
+    class HandlerTraits;
 
-    typedef LLFFlux< typename AnalyticalTraitsType::ModelType >                                 FluxType;
-    //typedef HLLNumFlux< typename AnalyticalTraitsType::ModelType >                            FluxType;
-    //typedef HLLCNumFlux< typename AnalyticalTraitsType::ModelType >                           FluxType;
+    class OperatorType
+    {
+      friend HandlerTraits;
+      typedef Dune::AdaptationHandler< GridType, FunctionSpaceType >                              AdaptationHandlerType;
 
-    typedef Dune::Fem::FunctionSpace< typename GridType::ctype, double, AnalyticalTraitsType::ModelType::dimDomain, 3> FVFunctionSpaceType;
-    typedef Dune::Fem::FiniteVolumeSpace<FVFunctionSpaceType,GridPartType, 0, Dune::Fem::SimpleStorage> IndicatorSpaceType;
-    typedef Dune::Fem::AdaptiveDiscreteFunction<IndicatorSpaceType>                             IndicatorType;
+      typedef LLFFlux< typename AnalyticalTraitsType::ModelType >                                 FluxType;
+      //typedef HLLNumFlux< typename AnalyticalTraitsType::ModelType >                            FluxType;
+      //typedef HLLCNumFlux< typename AnalyticalTraitsType::ModelType >                           FluxType;
 
-    typedef Dune::OperatorTraits< GridPartType, polynomialOrder, AnalyticalTraitsType,
-                                  DiscreteFunctionType, FluxType, IndicatorType,
-                                  AdaptationHandlerType, ExtraParameterTuple >                  OperatorTraitsType;
+      typedef Dune::Fem::FunctionSpace< typename GridType::ctype, double, AnalyticalTraitsType::ModelType::dimDomain, 3> FVFunctionSpaceType;
+      typedef Dune::Fem::FiniteVolumeSpace<FVFunctionSpaceType,GridPartType, 0, Dune::Fem::SimpleStorage> IndicatorSpaceType;
+      typedef Dune::Fem::AdaptiveDiscreteFunction<IndicatorSpaceType>                             IndicatorType;
 
-    // TODO: advection/diffusion should not be precribed by model
-    static const int hasAdvection = AnalyticalTraitsType::ModelType::hasAdvection;
-    static const int hasDiffusion = AnalyticalTraitsType::ModelType::hasDiffusion;
+      typedef Dune::OperatorTraits< GridPartType, polynomialOrder, AnalyticalTraitsType,
+                                    DiscreteFunctionType, FluxType, IndicatorType,
+                                    AdaptationHandlerType, ExtraParameterTuple >                  OperatorTraitsType;
 
-  public:
-    typedef AdvectionDiffusionOperators< OperatorTraitsType, hasAdvection, hasDiffusion, _unlimited > AdvectionDiffusionOperatorType;
-
-    typedef typename AdvectionDiffusionOperatorType::FullOperatorType                           FullOperatorType;
-    typedef typename AdvectionDiffusionOperatorType::ImplicitOperatorType                       ImplicitOperatorType;
-    typedef typename AdvectionDiffusionOperatorType::ExplicitOperatorType                       ExplicitOperatorType;
+      // TODO: advection/diffusion should not be precribed by model
+      static const int hasAdvection = AnalyticalTraitsType::ModelType::hasAdvection;
+      static const int hasDiffusion = AnalyticalTraitsType::ModelType::hasDiffusion;
+      typedef AdvectionDiffusionOperators< OperatorTraitsType, hasAdvection, hasDiffusion, _unlimited > AdvectionDiffusionOperatorType;
+    public:
+      typedef typename AdvectionDiffusionOperatorType::FullOperatorType                           FullType;
+      typedef typename AdvectionDiffusionOperatorType::ImplicitOperatorType                       ImplicitType;
+      typedef typename AdvectionDiffusionOperatorType::ExplicitOperatorType                       ExplicitType;
+    };
 
     //------HANDLER-----------------------------------------------------
-    struct HandlerTraits
+    class HandlerTraits
     {
-      private:
       //adaptivity
-      typedef Dune::DGAdaptationIndicatorOperator< OperatorTraitsType, hasAdvection, hasDiffusion >  IndicatorType;
+      typedef Dune::DGAdaptationIndicatorOperator< typename OperatorType::OperatorTraitsType,
+                                                   OperatorType::hasAdvection,
+                                                   OperatorType::hasDiffusion >                      IndicatorType;
       typedef Estimator< DiscreteFunctionType, typename  AnalyticalTraitsType::ProblemType >         GradientIndicatorType ;
       typedef Dune::Fem::RestrictProlongDefault< DiscreteFunctionType >                              RestrictionProlongationType;
       //limiting
-      typedef FullOperatorType                                                                       LimiterOperatorType;
-      public:
+      typedef typename OperatorType::FullType                                                        LimiterOperatorType;
+    public:
       typedef Dune::Fem::DefaultDiagnosticsHandler                                                   DiagnosticsHandlerType;
       typedef Dune::Fem::DefaultSolverMonitorHandler                                                 SolverMonitorHandlerType;
       typedef Dune::Fem::DefaultCheckPointHandler< GridType >                                        CheckPointHandlerType;

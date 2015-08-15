@@ -58,7 +58,7 @@ namespace Fem
     typedef SolverMonitor<1>                                       SolverMonitorType;
 
     // tpye of jacobian operator used in the nested newton loops
-    typedef typename DiscreteTraits::FullOperatorType              FullOperatorType;
+    typedef typename DiscreteTraits::OperatorType                  OperatorType;
 
     typedef typename DiscreteTraits::AssemblerType                 AssemblerType;
 
@@ -99,7 +99,7 @@ namespace Fem
     typedef typename Traits::DiscreteFunctionType                 DiscreteFunctionType;
 
     // The DG space operator
-    typedef typename Traits::FullOperatorType                     FullOperatorType;
+    typedef typename Traits::OperatorType                         OperatorType;
 
     // type of steady state solver
     typedef typename Traits::BasicLinearSolverType                BasicLinearSolverType;

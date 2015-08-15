@@ -130,9 +130,7 @@ namespace Fem
     typedef typename DiscreteTraits::InitialProjectorType          InitialProjectorType;
 
     // type of dg operator
-    typedef typename DiscreteTraits::FullOperatorType              FullOperatorType;
-    typedef typename DiscreteTraits::ImplicitOperatorType          ImplicitOperatorType;
-    typedef typename DiscreteTraits::ExplicitOperatorType          ExplicitOperatorType;
+    typedef typename DiscreteTraits::OperatorType                  OperatorType;
 
     typedef typename ProblemTraits::FunctionSpaceType              FunctionSpaceType;
     typedef typename DiscreteTraits::DiscreteFunctionSpaceType     DiscreteFunctionSpaceType;
@@ -189,44 +187,43 @@ namespace Fem
     typedef AlgorithmBase< Traits >                                                   BaseType;
 
   public:
-    typedef typename BaseType::GridType GridType;
-    typedef typename BaseType::IOTupleType IOTupleType;
-    typedef typename BaseType::SolverMonitorType SolverMonitorType;
-    typedef typename Traits::TimeProviderType TimeProviderType;
+    typedef typename BaseType::GridType                          GridType;
+    typedef typename BaseType::IOTupleType                       IOTupleType;
+    typedef typename BaseType::SolverMonitorType                 SolverMonitorType;
+    typedef typename Traits::TimeProviderType                    TimeProviderType;
 
-    typedef typename Traits::HostGridPartType HostGridPartType;
+    typedef typename Traits::HostGridPartType                    HostGridPartType;
 
     // An analytical version of our model
-    typedef typename Traits::ModelType ModelType;
-    typedef typename Traits::ProblemType ProblemType;
+    typedef typename Traits::ModelType                           ModelType;
+    typedef typename Traits::ProblemType                         ProblemType;
 
-    typedef typename Traits::GridPartType GridPartType;
-    typedef typename Traits::DiscreteFunctionSpaceType DiscreteFunctionSpaceType;
-    typedef typename Traits::DiscreteFunctionType DiscreteFunctionType;
+    typedef typename Traits::GridPartType                        GridPartType;
+    typedef typename Traits::DiscreteFunctionSpaceType           DiscreteFunctionSpaceType;
+    typedef typename Traits::DiscreteFunctionType                DiscreteFunctionType;
 
-    typedef typename Traits::BasicLinearSolverType   BasicLinearSolverType;
+    typedef typename Traits::BasicLinearSolverType               BasicLinearSolverType;
 
     // The DG space operator
-    typedef typename Traits::FullOperatorType     FullOperatorType;
-    typedef typename Traits::ExplicitOperatorType ExplicitOperatorType;
-    typedef typename Traits::ImplicitOperatorType ImplicitOperatorType;
+    typedef typename Traits::OperatorType                        OperatorType;
 
     // The ODE Solvers
-    typedef typename Traits::OdeSolverType OdeSolverType;
+    typedef typename Traits::OdeSolverType                       OdeSolverType;
 
     // type of initial interpolation
-    typedef typename Traits::InitialProjectorType InitialProjectorType;
+    typedef typename Traits::InitialProjectorType                InitialProjectorType;
 
     // analytical Tratis
-    typedef typename Traits::AnalyticalTraits AnalyticalTraits;
+    typedef typename Traits::AnalyticalTraits                    AnalyticalTraits;
 
     // discrete Traits
-    typedef typename Traits::DiscreteTraits DiscreteTraits;
+    typedef typename Traits::DiscreteTraits                      DiscreteTraits;
 
     // error handling
-    typedef typename Traits::EOCErrorIDs EOCErrorIDs;
+    typedef typename Traits::EOCErrorIDs                         EOCErrorIDs;
 
-    typedef typename ProblemTraits::template DiscreteTraits< GridPartType, polOrder>::GridExactSolutionType               GridExactSolutionType;
+    typedef typename ProblemTraits::template DiscreteTraits< GridPartType, polOrder>::GridExactSolutionType
+                                                                 GridExactSolutionType;
 
     typedef typename Traits::DiagnosticsHandlerType                     DiagnosticsHandlerType;
     typedef typename Traits::SolverMonitorHandlerType                   SolverMonitorHandlerType;
