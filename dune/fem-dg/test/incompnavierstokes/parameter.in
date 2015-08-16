@@ -1,0 +1,9 @@
+fem.verboserank: 0
+
+# DATA WRITER
+#------------
+fem.prefix: ${CMAKE_CURRENT_SOURCE_DIR}/data
+fem.prefix.input: ${CMAKE_CURRENT_SOURCE_DIR}
+
+paramfile: parameter_cmake
+
