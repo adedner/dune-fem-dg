@@ -340,9 +340,6 @@ namespace Fem
         // current time step size
         const double deltaT = tp.deltaT();
 
-        // current time step number
-        const int timeStep  = tp.timeStep();
-
         //************************************************
         //* Compute an ODE timestep                      *
         //************************************************
@@ -350,8 +347,7 @@ namespace Fem
         overallTimer_.reset();
 
         // estimate, mark, adapt
-        if( timeStep % adaptHandler_.params().adaptCount() == 0 )
-          adaptHandler_.step();
+        adaptHandler_.step( tp );
 
         // perform the solve for one time step, i.e. solve ODE
         step( tp );
@@ -366,12 +362,12 @@ namespace Fem
           std::abort();
         }
 
-        if( (printCount > 0) && (((timeStep+1) % printCount) == 0))
+        if( (printCount > 0) && (((tp.timeStep()) % printCount) == 0))
         {
           UInt64Type grSize = gridSize();
           if( grid.comm().rank() == 0 )
           {
-            std::cout << "step: " << timeStep << "  time = " << tp.time()+tp.deltaT() << ", dt = " << deltaT
+            std::cout << "step: " << tp.timeStep()-1 << "  time = " << tp.time()+tp.deltaT() << ", dt = " << deltaT
                       <<",  grid size: " << grSize << ", elapsed time: ";
             Dune::FemTimer::print(std::cout,timeStepTimer_);
             solverMonitorHandler_.stepPrint();
@@ -450,16 +446,13 @@ namespace Fem
     {
       // restoreData if checkpointing is enabled (default is disabled)
       bool newStart = ( eocParam_.steps() == 1) ? checkPointHandler_.restoreData( tp ) : false;
-      //bool newStart = false;
-      //if( eocParam_.steps() == 1 )
-      //  checkPointHandler_.restoreData( tp );
 
       initializeStep( tp, loop );
 
       if( adaptHandler_.adaptive() && newStart )
       {
         // adapt the grid to the initial data
-        for( int startCount = 0; startCount < adaptHandler_.params().finestLevel(); ++ startCount )
+        for( int startCount = 0; startCount < adaptHandler_.finestLevel(); ++ startCount )
         {
           // call initial adaptation
           adaptHandler_.init();
@@ -604,12 +597,6 @@ namespace Fem
   };
 
 
-  template< class ProblemTraits, int polOrder >
-  struct EvolAlgHelper
-  {
-    typedef typename ProblemTraits::template DiscreteTraits< typename ProblemTraits::HostGridPartType, polOrder > type;
-  };
-
   template< class Grid, class ProblemTraits, int polOrder >
   struct NoHandlerTraits
   {
@@ -619,8 +606,7 @@ namespace Fem
     typedef NoDataWriterHandler                                                          DataWriterHandlerType;
     typedef NoAdditionalOutputHandler                                                    AdditionalOutputHandlerType;
     typedef NoSolutionLimiterHandler                                                     SolutionLimiterHandler;
-    typedef NoAdaptHandler< Grid, typename EvolAlgHelper< ProblemTraits, polOrder >::type::RestrictionProlongationType >
-                                                                                         AdaptHandlerType;
+    typedef NoAdaptHandler                                                               AdaptHandlerType;
   };
 
 

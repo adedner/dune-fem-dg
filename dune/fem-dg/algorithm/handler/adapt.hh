@@ -25,7 +25,6 @@ namespace Fem
             class GradientIndicatorImp, class SolutionLimiterHandlerImp = NoSolutionLimiterHandler >
   class DefaultAdaptHandler
   {
-  public:
     typedef GridPartImp                                                                        GridPartType;
     typedef typename GridPartImp::GridType                                                     GridType;
     typedef Dune::AdaptationHandler< GridType,
@@ -35,6 +34,7 @@ namespace Fem
     typedef Dune::AdaptationParameters                                                         AdaptationParametersType;
     typedef IndicatorImp                                                                       IndicatorType;
     typedef GradientIndicatorImp                                                               GradientIndicatorType;
+  public:
 
     DefaultAdaptHandler( GridPartType& gridPart, DiscreteFunctionImp& sol,
                          SolutionLimiterHandlerImp& limiterHandler, const std::string keyPrefix = "" )
@@ -53,13 +53,6 @@ namespace Fem
         rp_.setFatherChildWeight( Dune::DGFGridInfo<GridType> :: refineWeight() );
     }
 
-    AdaptationManagerType& adaptationManager()
-    {
-      if( !adaptationManager_ )
-        adaptationManager_.reset( new AdaptationManagerType( gridPart_.grid(), rp_ ) );
-      return *adaptationManager_;
-    }
-
     bool adaptive() const
     {
       return true;
@@ -72,9 +65,12 @@ namespace Fem
       gradientIndicator_.reset( new GradientIndicatorType( sol_.space(), problem, adaptParam_ ) );
     }
 
-    void step()
+
+    template< class TimeProviderImp >
+    void step( TimeProviderImp& tp )
     {
-      doEstimateMarkAdapt( false );
+      if( tp.timeStep() % adaptParam_.adaptCount() == 0 )
+        doEstimateMarkAdapt( false );
     }
 
     void init()
@@ -96,7 +92,7 @@ namespace Fem
         UInt64Type globalElements = adaptationHandler_->globalNumberOfElements() ;
         if( Dune::Fem::Parameter::verbose () )
         {
-          std::cout << "grid size (sum,min,max) = ( "
+           std::cout << "grid size (sum,min,max) = ( "
             << globalElements << " , "
             << adaptationHandler_->minNumberOfElements() << " , "
             << adaptationHandler_->maxNumberOfElements() << ")" << std::endl;
@@ -125,10 +121,28 @@ namespace Fem
       adaptationHandler_.reset();
     }
 
-    const AdaptationParametersType& params() const
-    { return adaptParam_; }
+    const double adaptationTime()
+    {
+      return adaptive() ? adaptationManager().adaptationTime() : 0.0;
+    }
+
+    const double loadBalanceTime()
+    {
+      return adaptive() ? adaptationManager().loadBalanceTime() : 0.0;
+    }
+
+    const double finestLevel() const
+    {
+      return adaptParam_.finestLevel();
+    }
 
   protected:
+    AdaptationManagerType& adaptationManager()
+    {
+      if( !adaptationManager_ )
+        adaptationManager_.reset( new AdaptationManagerType( gridPart_.grid(), rp_ ) );
+      return *adaptationManager_;
+    }
 
     void doEstimateMarkAdapt( const bool initialAdaptation = false )
     {
@@ -178,30 +192,13 @@ namespace Fem
     SolutionLimiterHandlerImp&                limiterHandler_;
   };
 
-  template< class GridImp, class RestrictionProlongationImp >
   class NoAdaptHandler
   {
-    public:
-    typedef Dune::Fem::AdaptationManager< GridImp, RestrictionProlongationImp >                          AdaptationManagerType;
-    typedef uint64_t UInt64Type;
-    typedef Dune::AdaptationParameters                                                         AdaptationParametersType;
-
-    template< class Arg1, class Arg2, class Arg3, class ... Args >
-    NoAdaptHandler( Arg1&, Arg2&, Arg3, const std::string keyPrefix = "",Args&& ... )
-    : adaptationManager_(nullptr),
-      adaptParam_( AdaptationParametersType( Dune::ParameterKey::generate( keyPrefix, "fem.adaptation." ) ) )
-    {}
-
+    typedef uint64_t                                                                           UInt64Type;
+  public:
     template< class ... Args >
     NoAdaptHandler( Args&& ... )
-    : adaptationManager_(nullptr),
-      adaptParam_( AdaptationParametersType( Dune::ParameterKey::generate( "", "fem.adaptation." ) ) )
     {}
-
-    AdaptationManagerType& adaptationManager() const
-    {
-      return *adaptationManager_;
-    }
 
     template< class ... Args >
     bool adaptive( Args&& ... ) const { return false; }
@@ -229,13 +226,15 @@ namespace Fem
     template< class ... Args >
     void finalize( Args&& ... ) {}
 
+
     template< class ... Args >
-    const AdaptationParametersType& params() const { return adaptParam_; }
+    const double adaptationTime() const { return 0.0; }
 
+    template< class ... Args >
+    const double loadBalanceTime() const { return 0.0; }
 
-    private:
-    mutable std::unique_ptr< AdaptationManagerType >  adaptationManager_;
-    const AdaptationParametersType            adaptParam_;
+    template< class ... Args >
+    const double finestLevel() const { return 0.0; }
   };
 
 }

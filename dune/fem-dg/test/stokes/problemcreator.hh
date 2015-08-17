@@ -129,10 +129,6 @@ struct PoissonProblemCreator
     //------HANDLER-----------------------------------------------------
     struct HandlerTraits
     {
-    private:
-      // type of restriction/prolongation projection for adaptive simulations
-      typedef Dune::Fem::RestrictProlongDefault< DiscreteFunctionType >                         RestrictionProlongationType;
-    public:
       typedef Dune::Fem::DefaultSteadyStateSolverMonitorHandler                                 SolverMonitorHandlerType;
     };
 
@@ -248,10 +244,6 @@ public:
     //------HANDLER-----------------------------------------------------
     struct HandlerTraits
     {
-    private:
-      // type of restriction/prolongation projection for adaptive simulations
-      typedef Dune::Fem::RestrictProlongDefault< DiscreteFunctionType >                         RestrictionProlongationType;
-    public:
       typedef Dune::Fem::DefaultSteadyStateSolverMonitorHandler                                 SolverMonitorHandlerType;
     };
 

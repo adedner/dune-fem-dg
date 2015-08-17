@@ -32,8 +32,8 @@ namespace Fem
       times.push_back( odeSolverMonitor.odeSolveTime_ );
       if( adaptHandler.adaptive() )
       {
-        times.push_back( adaptHandler.adaptationManager().adaptationTime() );
-        times.push_back( adaptHandler.adaptationManager().loadBalanceTime() );
+        times.push_back( adaptHandler.adaptationTime() );
+        times.push_back( adaptHandler.loadBalanceTime() );
       }
       times.push_back( timer.elapsed() );
 

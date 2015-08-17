@@ -112,8 +112,6 @@ struct AdvectionDiffusionProblemCreator
     typedef std::tuple< DiscreteFunctionType*, DiscreteFunctionType* >                          IOTupleType;
 
     typedef DuneODE::OdeSolverInterface< DiscreteFunctionType >                                 OdeSolverType;
-    // type of restriction/prolongation projection for adaptive simulations
-    typedef Dune::Fem::RestrictProlongDefault< DiscreteFunctionType >                           RestrictionProlongationType;
     // type of linear solver for implicit ode
     typedef Dune::Fem::ParDGGeneralizedMinResInverseOperator< DiscreteFunctionType >            BasicLinearSolverType;
 
