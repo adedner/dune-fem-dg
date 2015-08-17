@@ -65,9 +65,6 @@ namespace Fem
     // type of IOTuple
     typedef typename DiscreteTraits::IOTupleType                   IOTupleType;
 
-
-    typedef typename AnalyticalTraits::EOCErrorIDs                 EOCErrorIDs;
-
     typedef SolverMonitorHandlerImp                                SolverMonitorHandlerType;
   };
 
@@ -112,9 +109,6 @@ namespace Fem
 
     typedef typename Traits::AssemblerType                        AssemblerType;
 
-    // Error Handling
-    typedef typename Traits::EOCErrorIDs                          EOCErrorIDs;
-
     typedef typename Traits::SolverMonitorHandlerType             SolverMonitorHandlerType;
 
     typedef uint64_t                                              UInt64Type ;
@@ -128,8 +122,7 @@ namespace Fem
         solverMonitorHandler_( "" ),
         gridPart_( grid ),
         space_( gridPart_ ),
-        solution_( "solution-" + solName + name, space_ ),
-        eocIds_( AnalyticalTraits::initEoc() )
+        solution_( "solution-" + solName + name, space_ )
     {
       solution().clear();
     }
@@ -211,8 +204,6 @@ namespace Fem
     DiscreteFunctionType solution_;
 
     std::unique_ptr< BasicLinearSolverType > solver_;
-
-    EOCErrorIDs eocIds_;
   };
 
 }  // namespace Fem

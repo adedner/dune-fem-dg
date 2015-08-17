@@ -146,10 +146,6 @@ namespace Fem
 
     typedef typename DiscreteTraits::BasicLinearSolverType         BasicLinearSolverType;
 
-
-    // error handling
-    typedef typename AnalyticalTraits::EOCErrorIDs                 EOCErrorIDs;
-
     typedef SolverMonitor<1>                                       SolverMonitorType;
 
     typedef DiagnosticsHandlerImp                                  DiagnosticsHandlerType;
@@ -219,9 +215,6 @@ namespace Fem
     // discrete Traits
     typedef typename Traits::DiscreteTraits                      DiscreteTraits;
 
-    // error handling
-    typedef typename Traits::EOCErrorIDs                         EOCErrorIDs;
-
     typedef typename ProblemTraits::template DiscreteTraits< GridPartType, polOrder>::GridExactSolutionType
                                                                  GridExactSolutionType;
 
@@ -259,7 +252,6 @@ namespace Fem
       solutionLimiterHandler_( name ),
       adaptHandler_( gridPart_, solution(), solutionLimiterHandler_, name ),
       overallTimer_(),
-      eocIds_( AnalyticalTraits::initEoc() ),
       odeSolver_(),
       timeStepTimer_( Dune::FemTimer::addTo("max time/timestep") ),
       fixedTimeStep_( param_.fixedTimeStep() )
@@ -549,7 +541,7 @@ namespace Fem
       // adjust average time step size
       solverMonitorHandler_.finalize( gridWidth(), gridSize() );
 
-      AnalyticalTraits::addEOCErrors( eocIds_, tp, u, model(), problem() );
+      AnalyticalTraits::addEOCErrors( tp, u, model(), problem() );
 
       // delete ode solver
       odeSolver_.reset();
@@ -606,7 +598,6 @@ namespace Fem
 
     Dune::Timer                    overallTimer_;
     double                         odeSolve_;
-    EOCErrorIDs                    eocIds_;
     std::unique_ptr< OdeSolverType > odeSolver_;
     unsigned int                   timeStepTimer_;
     double                         fixedTimeStep_;

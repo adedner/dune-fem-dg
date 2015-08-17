@@ -10,10 +10,6 @@
 #define POLORDER 1
 #endif
 
-#include <dune/fem/io/parameter.hh>
-#include <dune/grid/io/file/dgfparser/dgfparser.hh>
-#include <dune/fem/misc/l2norm.hh>
-
 //--------- GRID HELPER ---------------------
 #include <dune/fem-dg/algorithm/gridinitializer.hh>
 #include <dune/fem-dg/test/poisson/gridinitializer.hh>
@@ -27,6 +23,10 @@
 #include <dune/fem-dg/operator/fluxes/noflux.hh>
 //--------- STEPPER -------------------------
 #include <dune/fem-dg/test/stokes/stokesalgorithm.hh>
+//--------- EOCERROR ------------------------
+#include <dune/fem-dg/misc/error/l2eocerror.hh>
+#include <dune/fem-dg/misc/error/h1eocerror.hh>
+#include <dune/fem-dg/misc/error/dgeocerror.hh>
 //--------- PROBLEMS ------------------------
 #include "problems.hh"
 //--------- MODELS --------------------------
@@ -54,46 +54,22 @@ struct PoissonProblemCreator
     typedef ProblemInterfaceType                                InitialDataType;
     typedef StokesModel< GridPart, InitialDataType >           ModelType;
 
-    typedef std::vector< int >                                  EOCErrorIDs;
-
-    static EOCErrorIDs initEoc()
+    template< class Solution, class Model, class ExactFunction, class SigmaFunction>
+    static void addEOCErrors ( Solution &u, Model &model, ExactFunction &f, SigmaFunction& sigma )
     {
-      EOCErrorIDs ids;
-      ids.push_back( Dune::Fem::FemEoc::addEntry( std::string( "$L^2$-error" ) ) );
-      ids.push_back( Dune::Fem::FemEoc::addEntry( std::string( "DG-error" ) ) );
-      ids.push_back( Dune::Fem::FemEoc::addEntry( std::string( "sigma-norm" ) ) );
-      return ids;
-    }
-
-    template< class SolutionImp, class Model, class ExactFunction, class SigmaEstimatorImp >
-    static void addEOCErrors ( const EOCErrorIDs &ids, SolutionImp &u, const Model &model, const ExactFunction &f, SigmaEstimatorImp& sigma  )
-    {
-      // calculate L2 - Norm
-      Dune::Fem::L2Norm< GridPartType > l2norm( u.space().gridPart() );
-      const double l2error = l2norm.distance( f, u );
-
-      Dune::Fem::DGNorm< GridPartType > dgnorm( u.space().gridPart() );
-      const double dgerror = dgnorm.distance( f, u );
-
-      Dune::Fem::H1Norm< GridPartType > sigmanorm( u.space().gridPart() );
-      const double sigmaerror = sigmanorm.distance( f, sigma );
-
-      Dune::Fem::FemEoc::setErrors( ids[ 0 ], l2error );
-      Dune::Fem::FemEoc::setErrors( ids[ 1 ], dgerror );
-      Dune::Fem::FemEoc::setErrors( ids[ 2 ], sigmaerror );
+      static L2EOCError l2EocError( "$L^2$-Error" );
+      l2EocError.add( u, f );
+      static DGEOCError dgEocError( "DG-Error" );
+      dgEocError.add( u, f );
+      static H1EOCError sigmaEocError( "sigma-norm" );
+      sigmaEocError.add( sigma, f );
     }
   };
 
-  static inline std::string moduleName()
-  {
-    return "";
-  }
+  static inline std::string moduleName() { return "";}
 
   static inline Dune::GridPtr<GridType>
-  initializeGrid()
-  {
-    return Dune::Fem::PoissonGridInitializer< GridType >::initializeGrid();
-  }
+  initializeGrid() { return Dune::Fem::PoissonGridInitializer< GridType >::initializeGrid(); }
 
   static ProblemInterfaceType* problem()
   {
@@ -203,40 +179,20 @@ public:
     typedef ProblemInterfaceType                                      InitialDataType;
     typedef StokesModel< GridPartType, InitialDataType >              ModelType;
 
-    typedef typename PoissonProblemCreatorType::template AnalyticalTraits< GridPartType >::EOCErrorIDs     EOCErrorIDs;
-
-    static EOCErrorIDs initEoc ()
+    template< class Solution, class Model, class ExactFunction >
+    static void addEOCErrors ( Solution &u, Model &model, ExactFunction &f )
     {
-      EOCErrorIDs ids;
-      ids.push_back(Dune::Fem::FemEoc::addEntry( std::string( "$L^2$-p-error" ) ) );
-      return ids;
-    }
-
-    template< class SolutionImp, class Model, class ExactFunction >
-    static void addEOCErrors ( const EOCErrorIDs &ids, SolutionImp &p, const Model &model, const ExactFunction &g  )
-    {
-      // calculate L2 - p-Norm
-      Dune::Fem::L2Norm< GridPartType > l2pnorm( p.space().gridPart() );
-      const double l2perror = l2pnorm.distance( g, p );
-      Dune::Fem::FemEoc::setErrors( ids[ 0 ], l2perror );
+      static L2EOCError l2EocError( "$L^2$-p-Error" );
+      l2EocError.add( u, f );
     }
   };
 
-  static inline std::string moduleName()
-  {
-    return "";
-  }
+  static inline std::string moduleName() { return "";}
 
   static inline Dune::GridPtr<GridType>
-  initializeGrid()
-  {
-    return PoissonProblemCreatorType::initializeGrid();
-  }
+  initializeGrid() { return PoissonProblemCreatorType::initializeGrid(); }
 
-  static ProblemInterfaceType* problem()
-  {
-    return new Dune::GeneralizedStokesProblem< GridType > ();
-  }
+  static ProblemInterfaceType* problem() { return new Dune::GeneralizedStokesProblem< GridType > (); }
 
 
   //Stepper Traits

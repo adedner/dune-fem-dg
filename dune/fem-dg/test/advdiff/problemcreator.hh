@@ -10,11 +10,6 @@
 #define POLORDER 1
 #endif
 
-// misc
-#include <dune/fem/io/parameter.hh>
-#include <dune/grid/io/file/dgfparser/dgfparser.hh>
-#include <dune/fem/misc/l2norm.hh>
-
 //--------- GRID HELPER ---------------------
 #include <dune/fem-dg/algorithm/gridinitializer.hh>
 //--------- OPERATOR/SOLVER -----------------
@@ -26,13 +21,14 @@
 //--------- STEPPER -------------------------
 #include <dune/fem-dg/algorithm/advectiondiffusionstepper.hh>
 #include <dune/fem-dg/algorithm/advectionstepper.hh>
+//--------- EOCERROR ------------------------
+#include <dune/fem-dg/misc/error/l2eocerror.hh>
 //--------- PROBLEMS ------------------------
 #include "problems.hh"
 //--------- MODELS --------------------------
 #include "models.hh"
 //--------- PROBLEMCREATORSELECTOR ----------
 #include <dune/fem-dg/misc/problemcreatorselector.hh>
-
 
 template< class GridImp >
 struct AdvectionDiffusionProblemCreator
@@ -53,41 +49,18 @@ struct AdvectionDiffusionProblemCreator
     typedef ProblemInterfaceType                                InitialDataType;
     typedef HeatEqnModel< GridPart, InitialDataType >           ModelType;
 
-    typedef std::vector< int >                                  EOCErrorIDs;
-
-    static EOCErrorIDs initEoc ()
-    {
-      EOCErrorIDs ids;
-      ids.resize( 1 );
-      ids[ 0 ] = Dune::Fem::FemEoc::addEntry( std::string( "$L^2$-error" ) );
-      return ids;
-    }
-
     template< class Solution, class Model, class ExactFunction, class TimeProvider >
-    static void addEOCErrors ( const EOCErrorIDs &ids, TimeProvider& tp,
-                               Solution &u, Model &model, ExactFunction &f )
+    static void addEOCErrors ( TimeProvider& tp, Solution &u, Model &model, ExactFunction &f )
     {
-      if( model.problem().calculateEOC( tp, u, 0 ) )
-      {
-        const int order = 2*u.space().order()+4;
-        Dune::Fem::L2Norm< typename Solution::DiscreteFunctionSpaceType::GridPartType > l2norm( u.space().gridPart(), order );
-        const double error = l2norm.distance( model.problem().fixedTimeFunction( tp.time() ), u );
-        Dune::Fem::FemEoc::setErrors( ids[ 0 ], error );
-      }
+      static L2EOCError l2EocError( "$L^2$-Error");
+      l2EocError.add( tp, u, model, f );
     }
   };
 
-  static inline std::string moduleName()
-  {
-    return "";
-  }
+  static inline std::string moduleName() { return ""; }
 
   static inline Dune::GridPtr<GridType>
-  initializeGrid()
-  {
-    // use default implementation
-    return Dune::Fem::DefaultGridInitializer< GridType >::initialize();
-  }
+  initializeGrid() { return Dune::Fem::DefaultGridInitializer< GridType >::initialize(); }
 
   static ProblemInterfaceType* problem()
   {

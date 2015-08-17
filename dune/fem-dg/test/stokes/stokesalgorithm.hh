@@ -300,7 +300,6 @@ namespace Fem
     using BaseType::grid;
     using BaseType::gridWidth;
     using BaseType::gridSize;
-    using BaseType::eocIds_;
     using BaseType::space;
     using BaseType::solution;
     using BaseType::solver_;
@@ -360,7 +359,7 @@ namespace Fem
     void finalize( const int eocloop )
     {
       ellAlg_.finalize( eocloop );
-      AnalyticalTraits::addEOCErrors( eocIds_, solution(), ellAlg_.model(), exact_ );
+      AnalyticalTraits::addEOCErrors( solution(), ellAlg_.model(), exact_ );
     }
 
     bool adaptation(const double tolerance)

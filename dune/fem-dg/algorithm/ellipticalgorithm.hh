@@ -481,8 +481,6 @@ namespace Fem
     // type of inverse operator (i.e. linear solver implementation)
     typedef typename BaseType::BasicLinearSolverType       BasicLinearSolverType;
 
-    typedef typename BaseType::EOCErrorIDs                 EOCErrorIDs;
-
     enum { dimension = GridType::dimension  };
 
     typedef typename ProblemTraits::template DiscreteTraits< GridPartType, polOrder>::GridExactSolutionType               GridExactSolutionType;
@@ -503,7 +501,6 @@ namespace Fem
     using BaseType::grid;
     using BaseType::gridWidth;
     using BaseType::gridSize;
-    using BaseType::eocIds_;
     using BaseType::space;
     using BaseType::solution;
     using BaseType::solver_;
@@ -599,7 +596,7 @@ namespace Fem
     //! finalize computation by calculating errors and EOCs
     virtual void finalize( const int eocloop )
     {
-      AnalyticalTraits::addEOCErrors( eocIds_, solution(), model(), exact_, poissonSigmaEstimator_.sigma() );
+      AnalyticalTraits::addEOCErrors( solution(), model(), exact_, poissonSigmaEstimator_.sigma() );
 
       // delete solver and linear operator for next step
       solver_.reset();
