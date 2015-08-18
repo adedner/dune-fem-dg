@@ -22,7 +22,7 @@ public:
   template< class Solution, class ExactFunction >
   void add ( Solution &u, const ExactFunction &f )
   {
-    Dune::Fem::H1Norm< typename Solution::DiscreteFunctionSpaceType::GridPartType > norm( u.space().gridPart() );
+    Dune::Fem::L1Norm< typename Solution::DiscreteFunctionSpaceType::GridPartType > norm( u.space().gridPart() );
     const double error = norm.distance( f, u );
     Dune::Fem::FemEoc::setErrors( id_, error );
   }
