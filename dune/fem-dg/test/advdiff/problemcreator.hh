@@ -89,9 +89,8 @@ struct AdvectionDiffusionProblemCreator
   {
   private:
     static const SolverType solverType = fem ;
-
-  public:
     typedef AnalyticalTraits< GridPartType >                              AnalyticalTraitsType;
+  public:
 
     static const int polynomialOrder = polOrd;
 

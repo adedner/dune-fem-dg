@@ -102,16 +102,12 @@ namespace Fem
   template< class Grid,
             class ProblemTraits,
             int polOrder,
-            class DiagnosticsHandlerImp,
-            class SolverMonitorHandlerImp,
-            class CheckPointHandlerImp,
-            class DataWriterHandlerImp,
-            class AdditionalOutputHandlerImp,
-            class SolutionLimiterHandlerImp,
-            class AdaptHandlerImp >
+            class HandlerTraits >
   struct EvolutionAlgorithmTraits
   {
     static const int polynomialOrder = polOrder;
+
+    typedef ProblemTraits                                         ProblemTraitsType;
 
     // type of Grid
     typedef Grid                                          GridType;
@@ -148,39 +144,66 @@ namespace Fem
 
     typedef SolverMonitor<1>                                       SolverMonitorType;
 
-    typedef DiagnosticsHandlerImp                                  DiagnosticsHandlerType;
-    typedef SolverMonitorHandlerImp                                SolverMonitorHandlerType;
-    typedef CheckPointHandlerImp                                   CheckPointHandlerType;
-    typedef DataWriterHandlerImp                                   DataWriterHandlerType;
-    typedef AdditionalOutputHandlerImp                             AdditionalOutputHandlerType;
-    typedef SolutionLimiterHandlerImp                              SolutionLimiterHandlerType;
-    typedef AdaptHandlerImp                                        AdaptHandlerType;
+    typedef typename HandlerTraits::DiagnosticsHandlerType         DiagnosticsHandlerType;
+    typedef typename HandlerTraits::SolverMonitorHandlerType       SolverMonitorHandlerType;
+    typedef typename HandlerTraits::CheckPointHandlerType          CheckPointHandlerType;
+    typedef typename HandlerTraits::DataWriterHandlerType          DataWriterHandlerType;
+    typedef typename HandlerTraits::AdditionalOutputHandlerType    AdditionalOutputHandlerType;
+    typedef typename HandlerTraits::SolutionLimiterHandlerType     SolutionLimiterHandlerType;
+    typedef typename HandlerTraits::AdaptHandlerType               AdaptHandlerType;
   };
 
+
+  template< class Grid, class ProblemTraits, int polOrder >
+  struct NoHandlerTraits
+  {
+    typedef NoDiagnosticsHandler                                                         DiagnosticsHandlerType;
+    typedef NoSolverMonitorHandler                                                       SolverMonitorHandlerType;
+    typedef NoCheckPointHandler< Grid >                                                  CheckPointHandlerType;
+    typedef NoDataWriterHandler                                                          DataWriterHandlerType;
+    typedef NoAdditionalOutputHandler                                                    AdditionalOutputHandlerType;
+    typedef NoSolutionLimiterHandler                                                     SolutionLimiterHandler;
+    typedef NoAdaptHandler                                                               AdaptHandlerType;
+  };
+
+
+  template< class EvolutionAlgorithmTraits >
+  class EvolutionAlgorithmBase;
+
+  template< class Grid, class ProblemTraits, int polOrder, class HandlerTraits = typename ProblemTraits::template DiscreteTraits< Grid, polOrder >::HandlerTraits >
+  class EvolutionAlgorithm
+    : public EvolutionAlgorithmBase< EvolutionAlgorithmTraits< Grid, ProblemTraits, polOrder, HandlerTraits > >
+  {
+    typedef EvolutionAlgorithmTraits< Grid, ProblemTraits, polOrder, HandlerTraits >     Traits;
+    typedef EvolutionAlgorithmBase< Traits >                                             BaseType;
+  public:
+    EvolutionAlgorithm( Grid &grid, const std::string name = "" )
+    : BaseType( grid, name  )
+    {}
+  };
+
+  template< class Grid, class ProblemTraits, int polOrder >
+  struct EvolutionAlgorithmNoHandler
+  : public EvolutionAlgorithm< Grid, ProblemTraits, polOrder, NoHandlerTraits< Grid, ProblemTraits, polOrder > >
+  {
+    typedef EvolutionAlgorithm< Grid, ProblemTraits, polOrder, NoHandlerTraits< Grid, ProblemTraits, polOrder > >
+                                                                                           BaseType;
+
+    EvolutionAlgorithmNoHandler( Grid& grid, const std::string name = "" )
+      : BaseType( grid, name )
+    {}
+
+  };
 
   // EvolutionAlgorithm
   // ------------------
 
-  template< class Grid, class ProblemTraits, int polOrder, class HandlerTraits = typename ProblemTraits::template DiscreteTraits< Grid, polOrder >::HandlerTraits >
-  class EvolutionAlgorithm
-    : public AlgorithmBase< EvolutionAlgorithmTraits< Grid, ProblemTraits, polOrder,
-                                                      typename HandlerTraits::DiagnosticsHandlerType,
-                                                      typename HandlerTraits::SolverMonitorHandlerType,
-                                                      typename HandlerTraits::CheckPointHandlerType,
-                                                      typename HandlerTraits::DataWriterHandlerType,
-                                                      typename HandlerTraits::AdditionalOutputHandlerType,
-                                                      typename HandlerTraits::SolutionLimiterHandlerType,
-                                                      typename HandlerTraits::AdaptHandlerType > >
+  template< class EvolutionAlgorithmTraits >
+  class EvolutionAlgorithmBase
+    : public AlgorithmBase< EvolutionAlgorithmTraits >
   {
-    typedef EvolutionAlgorithmTraits< Grid, ProblemTraits, polOrder,
-                                      typename HandlerTraits::DiagnosticsHandlerType,
-                                      typename HandlerTraits::SolverMonitorHandlerType,
-                                      typename HandlerTraits::CheckPointHandlerType,
-                                      typename HandlerTraits::DataWriterHandlerType,
-                                      typename HandlerTraits::AdditionalOutputHandlerType,
-                                      typename HandlerTraits::SolutionLimiterHandlerType,
-                                      typename HandlerTraits::AdaptHandlerType >    Traits;
-    typedef AlgorithmBase< Traits >                                                   BaseType;
+    typedef EvolutionAlgorithmTraits                                                    Traits;
+    typedef AlgorithmBase< Traits >                                                     BaseType;
 
   public:
     typedef typename BaseType::GridType                          GridType;
@@ -215,7 +238,7 @@ namespace Fem
     // discrete Traits
     typedef typename Traits::DiscreteTraits                      DiscreteTraits;
 
-    typedef typename ProblemTraits::template DiscreteTraits< GridPartType, polOrder>::GridExactSolutionType
+    typedef typename Traits::DiscreteTraits::GridExactSolutionType
                                                                  GridExactSolutionType;
 
     typedef typename Traits::DiagnosticsHandlerType                     DiagnosticsHandlerType;
@@ -235,13 +258,13 @@ namespace Fem
     using BaseType::eocParam_;
     using BaseType::grid;
 
-    EvolutionAlgorithm ( GridType &grid, const std::string name = "" )
+    EvolutionAlgorithmBase ( GridType &grid, const std::string name = "" )
     : BaseType( grid, name  ),
       param_( StepperParametersType( Dune::ParameterKey::generate( "", "femdg.stepper." ) ) ),
       gridPart_( grid_ ),
       space_( gridPart_ ),
       solution_( "U_"+name, space() ),
-      problem_( ProblemTraits::problem() ),
+      problem_( Traits::ProblemTraitsType::problem() ),
       model_( *problem_ ),
       exact_( "exact solution", space() ),
       checkPointHandler_( grid_, "" ),
@@ -590,37 +613,9 @@ namespace Fem
     AdaptHandlerType               adaptHandler_;
 
     Dune::Timer                    overallTimer_;
-    double                         odeSolve_;
     std::unique_ptr< OdeSolverType > odeSolver_;
     unsigned int                   timeStepTimer_;
     double                         fixedTimeStep_;
-  };
-
-
-  template< class Grid, class ProblemTraits, int polOrder >
-  struct NoHandlerTraits
-  {
-    typedef NoDiagnosticsHandler                                                         DiagnosticsHandlerType;
-    typedef NoSolverMonitorHandler                                                       SolverMonitorHandlerType;
-    typedef NoCheckPointHandler< Grid >                                                  CheckPointHandlerType;
-    typedef NoDataWriterHandler                                                          DataWriterHandlerType;
-    typedef NoAdditionalOutputHandler                                                    AdditionalOutputHandlerType;
-    typedef NoSolutionLimiterHandler                                                     SolutionLimiterHandler;
-    typedef NoAdaptHandler                                                               AdaptHandlerType;
-  };
-
-
-  template< class Grid, class ProblemTraits, int polOrder >
-  struct BasicEvolutionAlgorithm
-  : public EvolutionAlgorithm< Grid, ProblemTraits, polOrder, NoHandlerTraits< Grid, ProblemTraits, polOrder > >
-  {
-    typedef EvolutionAlgorithm< Grid, ProblemTraits, polOrder, NoHandlerTraits< Grid, ProblemTraits, polOrder > >
-                                                                                           BaseType;
-
-    BasicEvolutionAlgorithm( Grid& grid, const std::string name = "" )
-      : BaseType( grid, name )
-    {}
-
   };
 
 
