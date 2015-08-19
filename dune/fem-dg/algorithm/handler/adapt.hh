@@ -21,23 +21,29 @@ namespace Fem
 {
 
 
-  template< class GridPartImp, class DiscreteFunctionImp, class RestrictionProlongationImp, class IndicatorImp,
-            class GradientIndicatorImp, class SolutionLimiterHandlerImp = NoSolutionLimiterHandler >
+  template< class IndicatorImp, class GradientIndicatorImp, class SolutionLimiterHandlerImp = NoSolutionLimiterHandler >
   class DefaultAdaptHandler
   {
-    typedef GridPartImp                                                                        GridPartType;
-    typedef typename GridPartImp::GridType                                                     GridType;
-    typedef Dune::AdaptationHandler< GridType,
-              typename DiscreteFunctionImp::DiscreteFunctionSpaceType::FunctionSpaceType >     AdaptationHandlerType;
-    typedef Dune::Fem::AdaptationManager< GridType, RestrictionProlongationImp >               AdaptationManagerType;
     typedef uint64_t                                                                           UInt64Type;
-    typedef Dune::AdaptationParameters                                                         AdaptationParametersType;
+
     typedef IndicatorImp                                                                       IndicatorType;
     typedef GradientIndicatorImp                                                               GradientIndicatorType;
+    typedef typename IndicatorType::DestinationType                                            DiscreteFunctionType;
+    typedef typename DiscreteFunctionType::DiscreteFunctionSpaceType                           DiscreteFunctionSpaceType;
+    typedef typename DiscreteFunctionSpaceType::GridPartType                                   GridPartType;
+    typedef typename GridPartType::GridType                                                    GridType;
+    typedef Dune::AdaptationParameters                                                         AdaptationParametersType;
+
+    typedef Dune::Fem::RestrictProlongDefault< DiscreteFunctionType >                          RestrictionProlongationType;
+    typedef SolutionLimiterHandlerImp                                                          SolutionLimiterHandlerType;
+
+    typedef Dune::AdaptationHandler< GridType, typename DiscreteFunctionSpaceType::FunctionSpaceType >
+                                                                                               AdaptationHandlerType;
+    typedef Dune::Fem::AdaptationManager< GridType, RestrictionProlongationType >              AdaptationManagerType;
   public:
 
-    DefaultAdaptHandler( GridPartType& gridPart, DiscreteFunctionImp& sol,
-                         SolutionLimiterHandlerImp& limiterHandler, const std::string keyPrefix = "" )
+    DefaultAdaptHandler( GridPartType& gridPart, DiscreteFunctionType& sol,
+                         SolutionLimiterHandlerType& limiterHandler, const std::string keyPrefix = "" )
     : gridPart_( gridPart ),
       sol_( sol ),
       adaptationHandler_(),
@@ -180,16 +186,16 @@ namespace Fem
 
   private:
 
-    GridPartImp&                              gridPart_;
-    DiscreteFunctionImp&                      sol_;
+    GridPartType&                             gridPart_;
+    DiscreteFunctionType&                     sol_;
     std::unique_ptr< AdaptationHandlerType >  adaptationHandler_;
-    RestrictionProlongationImp                rp_;
+    RestrictionProlongationType               rp_;
     std::unique_ptr< AdaptationManagerType >  adaptationManager_;
     std::unique_ptr< IndicatorType >          indicator_;
     std::unique_ptr< GradientIndicatorType >  gradientIndicator_;
     const std::string                         keyPrefix_;
     const AdaptationParametersType            adaptParam_;
-    SolutionLimiterHandlerImp&                limiterHandler_;
+    SolutionLimiterHandlerType&               limiterHandler_;
   };
 
   class NoAdaptHandler
