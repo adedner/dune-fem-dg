@@ -50,12 +50,12 @@ namespace Fem
   {
     static const int polynomialOrder = polOrder;
 
-    typedef ProblemTraits                                         ProblemTraitsType;
+    typedef ProblemTraits                                          ProblemTraitsType;
 
     // type of Grid
-    typedef Grid                                          GridType;
-    typedef typename ProblemTraits :: HostGridPartType    HostGridPartType;
-    typedef typename ProblemTraits :: GridPartType        GridPartType;
+    typedef Grid                                                   GridType;
+    typedef typename ProblemTraits::HostGridPartType               HostGridPartType;
+    typedef typename ProblemTraits::GridPartType                   GridPartType;
 
     typedef typename ProblemTraits::AnalyticalTraits               AnalyticalTraits;
     typedef typename ProblemTraits::template DiscreteTraits< polynomialOrder >  DiscreteTraits;

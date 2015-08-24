@@ -97,113 +97,42 @@ namespace Fem
 
   // EvolutionAlgorithmTraits
   // -------------------------
-  template< class Grid,
-            int polOrder,
-            class HandlerTraits,
-            class ProblemTraits,
-            class... Tail  >
+  template< int polOrder, class ... ProblemTraits >
   struct CombinedEvolutionAlgorithmTraits
   {
-    static const int polynomialOrder = polOrder;
-
-    typedef ProblemTraits                                         ProblemTraitsType;
-
     // type of Grid
-    typedef Grid                                          GridType;
-    typedef typename ProblemTraits :: HostGridPartType    HostGridPartType;
-    typedef typename ProblemTraits :: GridPartType        GridPartType;
-
-    typedef typename ProblemTraits::AnalyticalTraits               AnalyticalTraits;
-    typedef typename ProblemTraits::template DiscreteTraits< polynomialOrder >  DiscreteTraits;
-
-    // obtain the problem dependent types, analytical context
-    typedef typename AnalyticalTraits::ModelType                   ModelType;
-    typedef typename AnalyticalTraits::ProblemType                 ProblemType;
-    typedef typename AnalyticalTraits::InitialDataType             InitialDataType;
-
-    // type of discrete function space and discrete function
-    typedef typename DiscreteTraits::InitialProjectorType          InitialProjectorType;
-
-    // type of dg operator
-    typedef typename DiscreteTraits::OperatorType                  OperatorType;
-
-    typedef typename ProblemTraits::FunctionSpaceType              FunctionSpaceType;
-    typedef typename DiscreteTraits::DiscreteFunctionSpaceType     DiscreteFunctionSpaceType;
-    typedef typename DiscreteTraits::DiscreteFunctionType          DiscreteFunctionType;
-
-    typedef typename DiscreteTraits::ExtraParameterTuple           ExtraParameterTupleType;
-    typedef typename DiscreteTraits::IOTupleType                   IOTupleType;
+    typedef typename std::tuple_element<0, std::tuple< ProblemTraits... > >::type::GridType  GridType;
 
     // wrap operator
-    typedef GridTimeProvider< GridType >                           TimeProviderType;
+    typedef GridTimeProvider< GridType >                                   TimeProviderType;
 
-    typedef typename DiscreteTraits::OdeSolverType                 OdeSolverType;
+    typedef Dune::Fem::CombinedDefaultDiagnosticsHandler    < typename ProblemTraits::template Stepper<polOrder>::Type...  > DiagnosticsHandlerType;
+    typedef Dune::Fem::CombinedDefaultSolverMonitorHandler  < typename ProblemTraits::template Stepper<polOrder>::Type...  > SolverMonitorHandlerType;
+    typedef Dune::Fem::CombinedDefaultCheckPointHandler     < typename ProblemTraits::template Stepper<polOrder>::Type...  > CheckPointHandlerType;
+    typedef Dune::Fem::CombinedDefaultDataWriterHandler     < typename ProblemTraits::template Stepper<polOrder>::Type...  > DataWriterHandlerType;
+    typedef Dune::Fem::NoAdditionalOutputHandler                                                                             AdditionalOutputHandlerType;
+    typedef Dune::Fem::CombinedDefaultSolutionLimiterHandler< typename ProblemTraits::template Stepper<polOrder>::Type...  > SolutionLimiterHandlerType;
+    typedef Dune::Fem::CombinedDefaultAdaptHandler          < typename ProblemTraits::template Stepper<polOrder>::Type...  > AdaptHandlerType;
 
-    typedef typename DiscreteTraits::BasicLinearSolverType         BasicLinearSolverType;
-
-    typedef typename HandlerTraits::DiagnosticsHandlerType         DiagnosticsHandlerType;
-    typedef typename HandlerTraits::SolverMonitorHandlerType       SolverMonitorHandlerType;
-    typedef typename HandlerTraits::CheckPointHandlerType          CheckPointHandlerType;
-    typedef typename HandlerTraits::DataWriterHandlerType          DataWriterHandlerType;
-    typedef typename HandlerTraits::AdditionalOutputHandlerType    AdditionalOutputHandlerType;
-    typedef typename HandlerTraits::SolutionLimiterHandlerType     SolutionLimiterHandlerType;
-    typedef typename HandlerTraits::AdaptHandlerType               AdaptHandlerType;
+    typedef typename DataWriterHandlerType::IOTupleType                                                                      IOTupleType;
   };
 
 
   // EvolutionAlgorithm
   // ------------------
 
-  template< int polOrder, class HandlerTraits, class ProblemHead, class... ProblemTail >
+  template< int polOrder, class... ProblemTraits >
   class CombinedEvolutionAlgorithm
-    : public AlgorithmBase< CombinedEvolutionAlgorithmTraits< typename ProblemHead::GridType,
-                                                              polOrder,
-                                                              HandlerTraits,
-                                                              ProblemHead,
-                                                              ProblemTail... > >
+    : public AlgorithmBase< CombinedEvolutionAlgorithmTraits< polOrder, ProblemTraits... > >
   {
-    typedef CombinedEvolutionAlgorithmTraits< typename ProblemHead::GridType,
-                                                              polOrder,
-                                                              HandlerTraits,
-                                                              ProblemHead,
-                                                              ProblemTail... >                 Traits;
-    typedef AlgorithmBase< Traits >                                                     BaseType;
+    typedef CombinedEvolutionAlgorithmTraits< polOrder, ProblemTraits... >       Traits;
+    typedef AlgorithmBase< Traits >                                              BaseType;
   public:
     typedef typename BaseType::GridType                          GridType;
     typedef typename BaseType::IOTupleType                       IOTupleType;
     typedef typename BaseType::SolverMonitorHandlerType          SolverMonitorHandlerType;
 
     typedef typename Traits::TimeProviderType                    TimeProviderType;
-
-    typedef typename Traits::HostGridPartType                    HostGridPartType;
-
-    // An analytical version of our model
-    typedef typename Traits::ModelType                           ModelType;
-    typedef typename Traits::ProblemType                         ProblemType;
-
-    typedef typename Traits::GridPartType                        GridPartType;
-    typedef typename Traits::DiscreteFunctionSpaceType           DiscreteFunctionSpaceType;
-    typedef typename Traits::DiscreteFunctionType                DiscreteFunctionType;
-
-    typedef typename Traits::BasicLinearSolverType               BasicLinearSolverType;
-
-    // The DG space operator
-    typedef typename Traits::OperatorType                        OperatorType;
-
-    // The ODE Solvers
-    typedef typename Traits::OdeSolverType                       OdeSolverType;
-
-    // type of initial interpolation
-    typedef typename Traits::InitialProjectorType                InitialProjectorType;
-
-    // analytical Tratis
-    typedef typename Traits::AnalyticalTraits                    AnalyticalTraits;
-
-    // discrete Traits
-    typedef typename Traits::DiscreteTraits                      DiscreteTraits;
-
-    typedef typename Traits::DiscreteTraits::GridExactSolutionType
-                                                                 GridExactSolutionType;
 
     typedef typename Traits::DiagnosticsHandlerType                     DiagnosticsHandlerType;
     typedef typename Traits::CheckPointHandlerType                      CheckPointHandlerType;
@@ -212,13 +141,10 @@ namespace Fem
     typedef typename Traits::SolutionLimiterHandlerType                 SolutionLimiterHandlerType;
     typedef typename Traits::AdaptHandlerType                           AdaptHandlerType;
 
-    typedef typename Traits::ExtraParameterTupleType  ExtraParameterTupleType;
+    typedef uint64_t                                                    UInt64Type ;
+    typedef StepperParameters                                           StepperParametersType;
 
-    typedef uint64_t                                              UInt64Type ;
-    typedef StepperParameters                                     StepperParametersType;
-
-    typedef std::tuple< typename std::add_pointer< typename ProblemHead::template Stepper<polOrder>::Type >::type,
-                        typename std::add_pointer< typename ProblemTail::template Stepper<polOrder>::Type >::type... >     StepperTupleType;
+    typedef std::tuple< typename std::add_pointer< typename ProblemTraits::template Stepper<polOrder>::Type >::type... > StepperTupleType;
 
     using BaseType::grid_;
     using BaseType::eocParam_;
@@ -307,7 +233,7 @@ namespace Fem
     static StepperTupleType createStepper( GridType &grid, const std::string name = "" )
     {
       StepperTupleType tuple;
-      ForLoop< Constructor, 0, sizeof ... ( ProblemTail ) >::apply( tuple, grid, name );
+      ForLoop< Constructor, 0, sizeof ... ( ProblemTraits )-1 >::apply( tuple, grid, name );
       return tuple;
     }
 
@@ -315,7 +241,7 @@ namespace Fem
     double gridWidth () const
     {
       double res=0.0;
-      ForLoop< GridWidth, 0, sizeof ... ( ProblemTail ) >::apply( tuple_, res );
+      ForLoop< GridWidth, 0, sizeof ... ( ProblemTraits )-1 >::apply( tuple_, res );
       return res;
     }
 
@@ -323,14 +249,14 @@ namespace Fem
     UInt64Type gridSize () const
     {
       UInt64Type res=0;
-      ForLoop< GridSize, 0, sizeof ... ( ProblemTail ) >::apply( tuple_, res );
+      ForLoop< GridSize, 0, sizeof ... ( ProblemTraits )-1 >::apply( tuple_, res );
       return res;
     }
 
     bool checkDofsValid( TimeProviderType& tp, const int loop  ) const
     {
       bool res = true;
-      ForLoop< CheckDofsValid, 0, sizeof ... ( ProblemTail ) >::apply( tuple_, res, tp, loop );
+      ForLoop< CheckDofsValid, 0, sizeof ... ( ProblemTraits )-1 >::apply( tuple_, res, tp, loop );
       return res;
     }
 
@@ -530,13 +456,13 @@ namespace Fem
     // before first step, do data initialization
     virtual void initializeStep ( TimeProviderType &tp, int loop )
     {
-      ForLoop< InitializeStep, 0, sizeof ... ( ProblemTail ) >::apply( tuple_, tp, loop );
+      ForLoop< InitializeStep, 0, sizeof ... ( ProblemTraits )-1 >::apply( tuple_, tp, loop );
     }
 
     //Needs to be overridden to enable fancy steps
     virtual void step ( TimeProviderType &tp )
     {
-      ForLoop< Step, 0, sizeof ... ( ProblemTail ) >::apply( tuple_, tp );
+      ForLoop< Step, 0, sizeof ... ( ProblemTraits )-1 >::apply( tuple_, tp );
     }
 
     void finalizeStep ( TimeProviderType &tp )
@@ -552,7 +478,7 @@ namespace Fem
 
       adaptHandler_.finalize();
 
-      ForLoop< FinalizeStep, 0, sizeof ... ( ProblemTail ) >::apply( tuple_, tp );
+      ForLoop< FinalizeStep, 0, sizeof ... ( ProblemTraits )-1 >::apply( tuple_, tp );
     }
 
   protected:
