@@ -19,9 +19,9 @@ namespace Fem
             class ProblemTraits,
             int polynomialOrder >
   struct AdvectionStepper
-    : public EvolutionAlgorithm< GridImp, ProblemTraits, polynomialOrder >
+    : public SubEvolutionAlgorithm< GridImp, ProblemTraits, polynomialOrder >
   {
-    typedef EvolutionAlgorithm< GridImp, ProblemTraits, polynomialOrder > BaseType ;
+    typedef SubEvolutionAlgorithm< GridImp, ProblemTraits, polynomialOrder > BaseType ;
 
     // type of Grid
     typedef typename BaseType::GridType                        GridType;

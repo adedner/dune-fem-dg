@@ -98,7 +98,7 @@ namespace Fem
   // EvolutionAlgorithmTraits
   // -------------------------
   template< int polOrder, class ... ProblemTraits >
-  struct CombinedEvolutionAlgorithmTraits
+  struct EvolutionAlgorithmTraits
   {
     // type of Grid
     typedef typename std::tuple_element<0, std::tuple< ProblemTraits... > >::type::GridType  GridType;
@@ -122,10 +122,10 @@ namespace Fem
   // ------------------
 
   template< int polOrder, class... ProblemTraits >
-  class CombinedEvolutionAlgorithm
-    : public AlgorithmBase< CombinedEvolutionAlgorithmTraits< polOrder, ProblemTraits... > >
+  class EvolutionAlgorithm
+    : public AlgorithmBase< EvolutionAlgorithmTraits< polOrder, ProblemTraits... > >
   {
-    typedef CombinedEvolutionAlgorithmTraits< polOrder, ProblemTraits... >       Traits;
+    typedef EvolutionAlgorithmTraits< polOrder, ProblemTraits... >               Traits;
     typedef AlgorithmBase< Traits >                                              BaseType;
   public:
     typedef typename BaseType::GridType                          GridType;
@@ -215,7 +215,7 @@ namespace Fem
       }
     };
 
-    CombinedEvolutionAlgorithm ( GridType &grid, const std::string name = "" )
+    EvolutionAlgorithm ( GridType &grid, const std::string name = "" )
     : BaseType( grid, name  ),
       tuple_( createStepper( grid, name ) ),
       param_( StepperParametersType( Dune::ParameterKey::generate( "", "femdg.stepper." ) ) ),

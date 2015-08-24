@@ -40,13 +40,13 @@ namespace Dune
 namespace Fem
 {
 
-  // EvolutionAlgorithmTraits
+  // SubEvolutionAlgorithmTraits
   // -------------------------
 
   template< class Grid,
             class ProblemTraits,
             int polOrder >
-  struct EvolutionAlgorithmTraits
+  struct SubEvolutionAlgorithmTraits
   {
     static const int polynomialOrder = polOrder;
 
@@ -91,29 +91,29 @@ namespace Fem
 
 
 
-  template< class EvolutionAlgorithmTraits >
-  class EvolutionAlgorithmBase;
+  template< class SubEvolutionAlgorithmTraits >
+  class SubEvolutionAlgorithmBase;
 
   template< class Grid, class ProblemTraits, int polOrder >
-  class EvolutionAlgorithm
-    : public EvolutionAlgorithmBase< EvolutionAlgorithmTraits< Grid, ProblemTraits, polOrder > >
+  class SubEvolutionAlgorithm
+    : public SubEvolutionAlgorithmBase< SubEvolutionAlgorithmTraits< Grid, ProblemTraits, polOrder > >
   {
-    typedef EvolutionAlgorithmTraits< Grid, ProblemTraits, polOrder >                    Traits;
-    typedef EvolutionAlgorithmBase< Traits >                                             BaseType;
+    typedef SubEvolutionAlgorithmTraits< Grid, ProblemTraits, polOrder >                    Traits;
+    typedef SubEvolutionAlgorithmBase< Traits >                                             BaseType;
   public:
-    EvolutionAlgorithm( Grid &grid, const std::string name = "" )
+    SubEvolutionAlgorithm( Grid &grid, const std::string name = "" )
     : BaseType( grid, name  )
     {}
   };
 
 
-  // EvolutionAlgorithm
+  // SubEvolutionAlgorithm
   // ------------------
 
-  template< class EvolutionAlgorithmTraits >
-  class EvolutionAlgorithmBase
+  template< class SubEvolutionAlgorithmTraits >
+  class SubEvolutionAlgorithmBase
   {
-    typedef EvolutionAlgorithmTraits                                                    Traits;
+    typedef SubEvolutionAlgorithmTraits                          Traits;
 
   public:
     typedef typename Traits::GridType                            GridType;
@@ -162,7 +162,7 @@ namespace Fem
     typedef typename Traits::SolverMonitorHandlerType            SolverMonitorHandlerType;
 
 
-    EvolutionAlgorithmBase ( GridType &grid, const std::string name = "" )
+    SubEvolutionAlgorithmBase ( GridType &grid, const std::string name = "" )
     : grid_( grid ),
       algorithmName_( name ),
       gridPart_( grid_ ),

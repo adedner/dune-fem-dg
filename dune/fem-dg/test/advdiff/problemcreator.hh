@@ -178,7 +178,7 @@ struct AdvectionDiffusionProblemCreator
   template <int polOrd>
   struct Stepper
   {
-    typedef Dune::Fem::CombinedEvolutionAlgorithm< polOrd, SubAdvectionDiffusionProblemCreator > Type;
+    typedef Dune::Fem::EvolutionAlgorithm< polOrd, SubAdvectionDiffusionProblemCreator > Type;
   };
 
 };
