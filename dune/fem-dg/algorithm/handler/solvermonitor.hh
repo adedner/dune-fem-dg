@@ -9,6 +9,97 @@ namespace Dune
 namespace Fem
 {
 
+  template< class... StepperArg >
+  class CombinedDefaultSolverMonitorHandler
+  {
+  public:
+    typedef std::tuple< typename std::add_pointer< StepperArg >::type... >                               StepperTupleType;
+    typedef typename std::remove_pointer< typename std::tuple_element<0,StepperTupleType>::type >::type  FirstStepperType;
+    typedef typename FirstStepperType::GridType                                                          GridType;
+
+    template< int i >
+    struct SetTimeStepInformation
+    {
+      template< class Tuple, class ... Args >
+      static void apply ( Tuple &tuple, Args && ... args )
+      {
+         std::get< i >( tuple )->monitor().monitor().setTimeStepInfo( args... );
+      }
+    };
+    template< int i >
+    struct Finalize
+    {
+      template< class Tuple, class ... Args >
+      static void apply ( Tuple &tuple, Args && ... args )
+      {
+         std::get< i >( tuple )->monitor().finalize( args... );
+      }
+    };
+    template< int i >
+    struct StepPrintNewtonIterations
+    {
+      template< class Tuple, class ... Args >
+      static void apply ( Tuple &tuple, Args && ... args )
+      {
+        std::cout << *std::get< i >( tuple )->monitor().monitor().newton_iterations;
+        if( i != std::tuple_size<Tuple>::value - 1 )
+          std::cout << " | " << std::endl;
+      }
+    };
+    template< int i >
+    struct StepPrintILSIterations
+    {
+      template< class Tuple, class ... Args >
+      static void apply ( Tuple &tuple, Args && ... args )
+      {
+        std::cout << *std::get< i >( tuple )->monitor().monitor().ils_iterations;
+        if( i != std::tuple_size<Tuple>::value - 1 )
+          std::cout << " | " << std::endl;
+      }
+    };
+    template< int i >
+    struct StepPrintOperatorCalls
+    {
+      template< class Tuple, class ... Args >
+      static void apply ( Tuple &tuple, Args && ... args )
+      {
+        std::cout << *std::get< i >( tuple )->monitor().monitor().operator_calls;
+        if( i != std::tuple_size<Tuple>::value - 1 )
+          std::cout << " | " << std::endl;
+      }
+    };
+    CombinedDefaultSolverMonitorHandler( const StepperTupleType& tuple )
+      : tuple_( tuple )
+    {}
+
+
+    void stepPrint()
+    {
+      std::cout << ",  Newton: ";
+      ForLoop< StepPrintNewtonIterations, 0, sizeof ... ( StepperArg )-1 >::apply( tuple_ );
+      std::cout << "  ILS: ";
+      ForLoop< StepPrintILSIterations, 0, sizeof ... ( StepperArg )-1 >::apply( tuple_ );
+      std::cout << "  OC: ";
+      ForLoop< StepPrintOperatorCalls, 0, sizeof ... ( StepperArg )-1 >::apply( tuple_ );
+      std::cout << std::endl;
+    }
+
+    template< class TimeProviderImp >
+    void step( TimeProviderImp& tp )
+    {
+      ForLoop< SetTimeStepInformation, 0, sizeof ... ( StepperArg )-1 >::apply( tuple_, tp );
+    }
+
+    void finalize( const double gridWidth, const double gridSize )
+    {
+      ForLoop< Finalize, 0, sizeof ... ( StepperArg )-1 >::apply( tuple_, gridWidth, gridSize );
+    }
+
+  private:
+    const StepperTupleType&  tuple_;
+  };
+
+
   class DefaultSolverMonitorHandler
   {
   public:
@@ -26,17 +117,14 @@ namespace Fem
                 << "  OC: " << *solverMonitor_.operator_calls << std::endl;
     }
 
-    template< class OdeSolverMonitorImp, class TimeProviderImp >
-    void step( OdeSolverMonitorImp& odeSolverMonitor, TimeProviderImp& tp )
+    template< class OdeSolverMonitorImp >
+    void step( OdeSolverMonitorImp& odeSolverMonitor )
     {
       *solverMonitor_.newton_iterations     = odeSolverMonitor.newtonIterations_;
       *solverMonitor_.ils_iterations        = odeSolverMonitor.linearSolverIterations_;
       *solverMonitor_.max_newton_iterations = odeSolverMonitor.maxNewtonIterations_ ;
       *solverMonitor_.max_ils_iterations    = odeSolverMonitor.maxLinearSolverIterations_;
       *solverMonitor_.operator_calls        = odeSolverMonitor.spaceOperatorCalls_;
-
-      //set time step size to monitor
-      solverMonitor_.setTimeStepInfo( tp );
     }
 
     void finalize( const double gridWidth, const double gridSize )
@@ -104,7 +192,10 @@ namespace Fem
   class NoSolverMonitorHandler
   {
   public:
+    typedef SolverMonitor<1>     SolverMonitorType;
+
     NoSolverMonitorHandler( const std::string keyPrefix = "" )
+      : monitor_()
     {}
 
     template <class ... Args>
@@ -115,6 +206,13 @@ namespace Fem
 
     template <class ... Args>
     void finalize(Args&& ... ) const {};
+
+    template <class ... Args>
+    SolverMonitorType& monitor(Args&& ... ) { return monitor_; };
+
+  private:
+    SolverMonitorType monitor_;
+
   };
 
 }

@@ -50,6 +50,8 @@ namespace Fem
     // ... as well as the Space type
     typedef typename BaseType::DiscreteFunctionSpaceType      DiscreteFunctionSpaceType;
 
+    typedef typename BaseType::IOTupleType                       IOTupleType;
+
     // The ODE Solvers
     typedef typename BaseType::OdeSolverType                  OdeSolverType;
 
@@ -60,12 +62,14 @@ namespace Fem
 
     typedef typename BaseType::ExtraParameterTupleType    ExtraParameterTupleType;
 
+    typedef typename BaseType::AdaptIndicatorType             AdaptIndicatorType;
+
     using BaseType::grid_;
     using BaseType::gridPart_;
     using BaseType::space;
+    using BaseType::solution;
     using BaseType::problem;
-    using BaseType::name ;
-    using BaseType::adaptHandler_ ;
+    using BaseType::name;
 
     AdvectionDiffusionStepper( GridType& grid,
                                const std::string name = "",
@@ -77,22 +81,28 @@ namespace Fem
       tuple_( ),
       dgOperator_( gridPart_, problem(), tuple_, name ),
       dgAdvectionOperator_( gridPart_, problem(), tuple_, name ),
-      dgDiffusionOperator_( gridPart_, problem(), tuple_, name )
+      dgDiffusionOperator_( gridPart_, problem(), tuple_, name ),
+      adaptIndicator_( solution(), problem(), tuple_, name )
     {
-      adaptHandler_.setIndicator( problem(), tuple );
+    }
+
+    virtual AdaptIndicatorType* adaptIndicator()
+    {
+      return &adaptIndicator_;
     }
 
     //! return overal number of grid elements
     virtual UInt64Type gridSize() const
     {
-      int globalElements = adaptHandler_.globalNumberOfElements();
+      int globalElements = adaptIndicator_.globalNumberOfElements();
+
       if( globalElements > 0 )
         return globalElements;
 
       // one of them is not zero,
       size_t advSize     = dgAdvectionOperator_.numberOfElements();
       size_t diffSize    = dgDiffusionOperator_.numberOfElements();
-      size_t dgIndSize   = adaptHandler_.numberOfElements();
+      size_t dgIndSize   = adaptIndicator_.numberOfElements();
       size_t dgSize      = dgOperator_.numberOfElements();
       UInt64Type grSize  = std::max( std::max(advSize, dgSize ), std::max( diffSize, dgIndSize ) );
       double minMax[ 2 ] = { double(grSize), 1.0/double(grSize) } ;
@@ -106,7 +116,7 @@ namespace Fem
 
     virtual OdeSolverType* createOdeSolver(TimeProviderType& tp)
     {
-      adaptHandler_.setAdaptation( tp );
+      adaptIndicator_.setAdaptation( tp );
 
       // create ODE solver
       typedef RungeKuttaSolver< FullOperatorType, ExplicitOperatorType, ImplicitOperatorType,
@@ -124,9 +134,10 @@ namespace Fem
     //typename OperatorTraits::VeloType  velo_;
     ExtraParameterTupleType tuple_;
 
-    FullOperatorType        dgOperator_;
-    ExplicitOperatorType    dgAdvectionOperator_;
-    ImplicitOperatorType    dgDiffusionOperator_;
+    FullOperatorType         dgOperator_;
+    ExplicitOperatorType     dgAdvectionOperator_;
+    ImplicitOperatorType     dgDiffusionOperator_;
+    mutable AdaptIndicatorType       adaptIndicator_;
   };
 
 }

@@ -165,12 +165,18 @@ namespace Dune
     }
 
     typedef Dune::GridSelector :: GridType GridType;
-
+#if 1
     // return type of initializeGrid is Dune::GridPtr, use release such that memory of GridPtr is released
     std::unique_ptr< GridType > gridptr( problem.initializeGrid().release() );
 
     typedef typename ProblemTraits :: template Stepper< polynomialOrder > :: Type StepperType;
     std::unique_ptr< StepperType > stepper( new StepperType( *gridptr, problem.moduleName() ) );
+#else
+    GridType* gridptr;
+    auto stepper = ProblemTraits::template createStepper< polynomialOrder>( gridptr );
+    assert( stepper );
+    assert( gridptr );
+#endif
 
     // new method, the ProblemGenerator simply creates the stepper
     compute( *stepper );

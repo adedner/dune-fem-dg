@@ -84,8 +84,8 @@ namespace Fem
   template< class Monitor >
   void writeFemEoc ( const Monitor &monitor, const double runTime, std::stringstream &out )
   {
-    Fem::FemEoc::write( *monitor.gridWidth, *monitor.elements, runTime, *monitor.timeSteps,
-        monitor.doubleValues(), monitor.intValues(), out );
+    //Fem::FemEoc::write( *monitor.gridWidth, *monitor.elements, runTime, *monitor.timeSteps,
+    //    monitor.doubleValues(), monitor.intValues(), out );
   }
 
 
@@ -108,15 +108,15 @@ namespace Fem
 
   public:
     // type of Grid
-    typedef typename Traits::GridType              GridType;
+    typedef typename Traits::GridType                 GridType;
 
     // type of IOTuple
-    typedef typename Traits::IOTupleType           IOTupleType;
+    typedef typename Traits::IOTupleType              IOTupleType;
 
     // type of statistics monitor
-    typedef typename Traits::SolverMonitorType     SolverMonitorType;
+    typedef typename Traits::SolverMonitorHandlerType SolverMonitorHandlerType;
 
-    typedef EocParameters                          EocParametersType;
+    typedef EocParameters                             EocParametersType;
 
     //! constructor
     AlgorithmBase ( GridType &grid, const std::string algorithmName = "" )
@@ -138,12 +138,12 @@ namespace Fem
     }
 
     //! return default data tuple for data output
-    virtual IOTupleType dataTuple() = 0;
+    virtual IOTupleType* dataTuple() = 0;
 
     // solve the problem for eoc loop 'loop'
     virtual void solve ( const int loop ) = 0;
 
-    virtual SolverMonitorType& monitor() = 0;
+    virtual SolverMonitorHandlerType& monitor() = 0;
 
     EocParametersType& eocParams()
     {
@@ -177,10 +177,11 @@ namespace Fem
   {
     typedef typename Algorithm::GridType             GridType;
     typedef typename Algorithm::EocParametersType    EocParametersType;
+    typedef typename Algorithm::IOTupleType          IOTupleType;
 
     GridType& grid = algorithm.grid();
-    auto dataTup = algorithm.dataTuple() ;
-    Fem::DataOutput<GridType, decltype( dataTup ) > dataOutput( grid, dataTup );
+    IOTupleType dataTup = *algorithm.dataTuple() ;
+    Fem::DataOutput<GridType, IOTupleType > dataOutput( grid, dataTup );
 
     // initialize FemEoc if eocSteps > 1
     EocParametersType& eocParam( algorithm.eocParams() );

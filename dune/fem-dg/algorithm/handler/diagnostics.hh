@@ -8,36 +8,91 @@ namespace Dune
 namespace Fem
 {
 
+  template< class... StepperArg >
+  class CombinedDefaultDiagnosticsHandler
+  {
+    typedef std::tuple< typename std::add_pointer< StepperArg >::type... >                               StepperTupleType;
+    typedef typename std::remove_pointer< typename std::tuple_element<0,StepperTupleType>::type >::type  FirstStepperType;
+    typedef typename FirstStepperType::GridType                                                          GridType;
+
+    template< int i >
+    struct Write
+    {
+      template< class Tuple, class ... Args >
+      static void apply ( Tuple &tuple, Args && ... args )
+      {
+        std::get< i >( tuple )->diagnostics().step( args... );
+      }
+    };
+    template< int i >
+    struct Finalize
+    {
+      template< class Tuple, class ... Args >
+      static void apply ( Tuple &tuple, Args && ... args )
+      {
+        std::get< i >( tuple )->diagnostics().finalize( args... );
+      }
+    };
+
+
+
+  public:
+
+    CombinedDefaultDiagnosticsHandler( const StepperTupleType& tuple )
+      : tuple_( tuple )
+    {}
+
+    template< class TimeProviderImp >
+    void step( TimeProviderImp& tp, int numElements )
+    {
+      ForLoop< Write, 0, sizeof ... ( StepperArg )-1 >::apply( tuple_, tp, numElements );
+    }
+
+
+    void finalize() const
+    {
+      ForLoop< Finalize, 0, sizeof ... ( StepperArg )-1 >::apply( tuple_ );
+    }
+
+
+  private:
+    StepperTupleType tuple_;
+  };
+
+
+
   class DefaultDiagnosticsHandler
   {
   public:
 
     DefaultDiagnosticsHandler()
-      : diagnostics_( true )
+      : diagnostics_( true ),
+        timings_()
     {}
 
-    template< class TimeProviderImp, class DiscreteSolutionImp, class OdeSolverMonitorImp, class TimerImp, class AdaptationHandlerImp >
-    void step( TimeProviderImp& tp, const DiscreteSolutionImp& solution,
-               const OdeSolverMonitorImp& odeSolverMonitor,
-               const TimerImp& timer,
-               AdaptationHandlerImp& adaptHandler )
+    template< class... DoubleArg >
+    void addTimings( double head, DoubleArg... tail )
     {
-      double maxNumDofs = solution.space().blockMapper().maxNumDofs() * solution.space().localBlockSize;
-      const double nElements = odeSolverMonitor.numberOfElements_;
+      timings_.push_back( head );
+      addTimings( tail... );
+    }
+
+    void addTimings()
+    {}
+
+    template< class... DoubleVectorArg >
+    void addTimings( std::vector< double >& head, DoubleVectorArg&... tail )
+    {
+      timings_.insert( timings_.end(), head.begin(), head.end() );
+      addTimings( tail... );
+    }
+
+    template< class TimeProviderImp >
+    void step( TimeProviderImp& tp, int numElements )
+    {
       const double ldt = tp.deltaT();
-
-      std::vector< double > times;
-      times.push_back( maxNumDofs );
-      times.push_back( odeSolverMonitor.operatorTime_ );
-      times.push_back( odeSolverMonitor.odeSolveTime_ );
-      if( adaptHandler.adaptive() )
-      {
-        times.push_back( adaptHandler.adaptationTime() );
-        times.push_back( adaptHandler.loadBalanceTime() );
-      }
-      times.push_back( timer.elapsed() );
-
-      diagnostics_.write( tp.time() + ldt, ldt, nElements, times );
+      diagnostics_.write( tp.time() + ldt, ldt, numElements, timings_ );
+      timings_.clear();
     }
 
 
@@ -49,6 +104,7 @@ namespace Fem
 
   private:
     Diagnostics diagnostics_;
+    std::vector< double > timings_;
   };
 
 
