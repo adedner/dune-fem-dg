@@ -103,9 +103,7 @@ struct AdvectionDiffusionProblemCreator
 
       static const int polynomialOrder = polOrd;
 
-      static const int quadOrder = polynomialOrder * 3 + 1;
-
-      typedef typename DiscreteFunctionSpaces< FunctionSpaceType, GridPartType, polynomialOrder, _legendre, dg >::type    DiscreteFunctionSpaceType;
+      typedef typename DiscreteFunctionSpaces< FunctionSpaceType, GridPartType, polOrd, _legendre, dg >::type             DiscreteFunctionSpaceType;
       typedef typename DiscreteFunctions< DiscreteFunctionSpaceType, solverType >::type                                   DiscreteFunctionType;
       typedef typename DiscreteFunctions< DiscreteFunctionSpaceType, solverType >::jacobian                               JacobianOperatorType;
 
@@ -134,7 +132,7 @@ struct AdvectionDiffusionProblemCreator
         typedef Dune::Fem::FiniteVolumeSpace<FVFunctionSpaceType,GridPartType, 0, Dune::Fem::SimpleStorage> IndicatorSpaceType;
         typedef Dune::Fem::AdaptiveDiscreteFunction<IndicatorSpaceType>                             LimiterIndicatorType;
 
-        typedef Dune::OperatorTraits< GridPartType, polynomialOrder, AnalyticalTraits,
+        typedef Dune::OperatorTraits< GridPartType, polOrd, AnalyticalTraits,
                                       DiscreteFunctionType, FluxType, LimiterIndicatorType,
                                       AdaptationHandlerType, ExtraParameterTuple >                  OperatorTraitsType;
 
@@ -168,6 +166,12 @@ struct AdvectionDiffusionProblemCreator
 
   };
 
+  template <int polOrd>
+  struct Stepper
+  {
+    typedef Dune::Fem::EvolutionAlgorithm< polOrd, SubAdvectionDiffusionProblemCreator > Type;
+  };
+
   typedef GridImp                                         GridType;
 
   static inline std::string moduleName() { return ""; }
@@ -175,11 +179,6 @@ struct AdvectionDiffusionProblemCreator
   static inline Dune::GridPtr<GridType>
   initializeGrid() { return Dune::Fem::DefaultGridInitializer< GridType >::initialize(); }
 
-  template <int polOrd>
-  struct Stepper
-  {
-    typedef Dune::Fem::EvolutionAlgorithm< polOrd, SubAdvectionDiffusionProblemCreator > Type;
-  };
 
 };
 

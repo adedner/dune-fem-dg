@@ -18,7 +18,7 @@ namespace Fem
 {
 
   template< class GridImp,
-            class CheckPointHandlerImp = DefaultCheckPointHandler< GridImp > >
+            class CheckPointHandlerImp = DefaultGridCheckPointHandler< GridImp > >
   class DefaultGridInitializer
   {
     typedef CheckPointHandlerImp  CheckPointHandlerType;
