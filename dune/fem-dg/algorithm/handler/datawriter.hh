@@ -7,7 +7,7 @@
 #include <dune/fem/misc/mpimanager.hh>
 #include <dune/fem/io/file/datawriter.hh>
 #include <dune/fem/io/parameter.hh>
-#include <dune/fem-dg/misc/tupleconcat.hh>
+#include <dune/fem-dg/misc/tupleutility.hh>
 #include <dune/fem/common/utility.hh>
 #include <dune/fem-dg/misc/parameterkey.hh>
 
