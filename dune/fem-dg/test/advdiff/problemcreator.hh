@@ -59,8 +59,8 @@ struct AdvectionDiffusionProblemCreator
 
     struct AnalyticalTraits
     {
-      typedef ProblemInterfaceType                                ProblemType;
-      typedef ProblemInterfaceType                                InitialDataType;
+      typedef ProblemInterfaceType                                    ProblemType;
+      typedef ProblemInterfaceType                                    InitialDataType;
       typedef HeatEqnModel< GridPartType, InitialDataType >           ModelType;
 
       template< class Solution, class Model, class ExactFunction, class TimeProvider >
@@ -124,12 +124,9 @@ struct AdvectionDiffusionProblemCreator
       // type of linear solver for implicit ode
       typedef Dune::Fem::ParDGGeneralizedMinResInverseOperator< DiscreteFunctionType >            BasicLinearSolverType;
 
-      class HandlerTraits;
-
       class OperatorType
       {
-        public: //TODO private later
-        friend HandlerTraits;
+        friend DiscreteTraits;
         typedef Dune::AdaptationHandler< GridType, FunctionSpaceType >                              AdaptationHandlerType;
 
         typedef Dune::UpwindFlux< typename AnalyticalTraits::ModelType >                            FluxType;
@@ -264,12 +261,9 @@ struct AdvectionDiffusionProblemCreator
     // type of linear solver for implicit ode
     typedef Dune::Fem::ParDGGeneralizedMinResInverseOperator< DiscreteFunctionType >            BasicLinearSolverType;
 
-    class HandlerTraits;
-
     class OperatorType
     {
-      public: //private later
-      friend HandlerTraits;
+      friend DiscreteTraits;
       typedef Dune::AdaptationHandler< GridType, FunctionSpaceType >                              AdaptationHandlerType;
 
       typedef Dune::UpwindFlux< typename AnalyticalTraits::ModelType >                            FluxType;
@@ -302,8 +296,6 @@ struct AdvectionDiffusionProblemCreator
     //------HANDLER-----------------------------------------------------
     class HandlerTraits
     {
-            //limiting
-      typedef typename OperatorType::FullType                                                        LimiterOperatorType;
       typedef typename SubAdvectionDiffusionProblemCreator<GridType>::template Stepper<polOrd>::Type SubStepperType;
     public:
       typedef Dune::Fem::CombinedDefaultDiagnosticsHandler< SubStepperType >                         DiagnosticsHandlerType;
