@@ -101,7 +101,7 @@ struct AdvectionDiffusionProblemCreator
       static const SolverType solverType = fem ;
     public:
 
-      static const int polynomialOrder = polOrd;
+      //static const int polynomialOrder = polOrd;
 
       typedef typename DiscreteFunctionSpaces< FunctionSpaceType, GridPartType, polOrd, _legendre, dg >::type             DiscreteFunctionSpaceType;
       typedef typename DiscreteFunctions< DiscreteFunctionSpaceType, solverType >::type                                   DiscreteFunctionType;

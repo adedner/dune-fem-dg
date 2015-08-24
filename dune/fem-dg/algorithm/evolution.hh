@@ -206,7 +206,7 @@ namespace Fem
     virtual DiagnosticsHandlerType& diagnostics() { return diagnosticsHandler_; }
 
     //LIMITING
-    virtual void limit( const LimitDiscreteFunctionType& limitSolution ){}
+    virtual void limit(){}
     virtual LimitDiscreteFunctionType* limitSolution () { return &solution_; }
 
     //ADAPTATION

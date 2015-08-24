@@ -95,7 +95,6 @@ namespace Fem
     virtual UInt64Type gridSize() const
     {
       int globalElements = adaptIndicator_.globalNumberOfElements();
-
       if( globalElements > 0 )
         return globalElements;
 
@@ -139,7 +138,6 @@ namespace Fem
     ImplicitOperatorType     dgDiffusionOperator_;
     mutable AdaptIndicatorType       adaptIndicator_;
   };
-
 }
 }
 #endif // FEMHOWTO_STEPPER_HH

@@ -14,7 +14,6 @@ namespace Dune
 namespace Fem
 {
 
-
   template <class GridImp,
             class ProblemTraits,
             int polynomialOrder >
@@ -29,6 +28,9 @@ namespace Fem
     // Choose a suitable GridView
     typedef typename BaseType::GridPartType                    GridPartType;
 
+    // initial data type
+    typedef typename BaseType::ProblemType                    ProblemType;
+
     // An analytical version of our model
     typedef typename BaseType::ModelType                       ModelType;
 
@@ -36,8 +38,8 @@ namespace Fem
     // The first operator is sum of the other two
     // The other two are needed for semi-implicit time discretization
     typedef typename BaseType::OperatorType::FullType          FullOperatorType;
-    typedef FullOperatorType                                   ExplicitOperatorType;
-    typedef FullOperatorType                                   ImplicitOperatorType;
+    typedef typename BaseType::OperatorType::ExplicitType     ExplicitOperatorType;
+    typedef typename BaseType::OperatorType::ImplicitType     ImplicitOperatorType;
 
     typedef typename BaseType::BasicLinearSolverType           BasicLinearSolverType;
 
@@ -47,38 +49,65 @@ namespace Fem
     // ... as well as the Space type
     typedef typename BaseType::DiscreteFunctionSpaceType       DiscreteFunctionSpaceType;
 
+    typedef typename BaseType::IOTupleType                       IOTupleType;
+
     // The ODE Solvers
     typedef typename BaseType::OdeSolverType                   OdeSolverType;
 
     typedef typename BaseType::TimeProviderType                TimeProviderType;
 
-    typedef typename FullOperatorType::ExtraParameterTupleType ExtraParameterTupleType;
-
-    // type of 64bit unsigned integer
+     // type of 64bit unsigned integer
     typedef typename BaseType::UInt64Type                      UInt64Type;
+
+    typedef typename BaseType::ExtraParameterTupleType    ExtraParameterTupleType;
+
+    typedef typename BaseType::AdaptIndicatorType             AdaptIndicatorType;
 
     using BaseType::grid_;
     using BaseType::gridPart_;
-    using BaseType::problem;
     using BaseType::space ;
     using BaseType::solution ;
+    using BaseType::problem;
     using BaseType::name ;
-    using BaseType::adaptHandler_;
-    using BaseType::solutionLimiterHandler_;
+    using BaseType::limitSolution;
 
     // constructor
     AdvectionStepper( GridType& grid, const std::string name = "",
                       ExtraParameterTupleType tuple = ExtraParameterTupleType() ) :
       BaseType( grid, name ),
-      dgAdvectionOperator_(gridPart_, problem(), tuple, name )
+      tuple_( ),
+      dgAdvectionOperator_(gridPart_, problem(), tuple, name ),
+      adaptIndicator_( solution(), problem(), tuple_, name )
+    {}
+
+    virtual AdaptIndicatorType* adaptIndicator()
     {
-       adaptHandler_.setIndicator( problem(), tuple );
-       solutionLimiterHandler_.setLimiter( &dgAdvectionOperator_ );
+      return &adaptIndicator_;
+    }
+
+    virtual void limit()
+    {
+      if( limitSolution() )
+        dgAdvectionOperator_.limit( *limitSolution() );
+    }
+
+    //! return overal number of grid elements
+    virtual UInt64Type gridSize() const
+    {
+      int globalElements = adaptIndicator_.globalNumberOfElements();
+      if( globalElements > 0 )
+        return globalElements;
+
+      // one of them is not zero,
+      size_t  advSize   = dgAdvectionOperator_.numberOfElements();
+      size_t  dgIndSize = adaptIndicator_.numberOfElements();
+      UInt64Type grSize   = std::max( advSize, dgIndSize );
+      return grid_.comm().sum( grSize );
     }
 
     virtual OdeSolverType* createOdeSolver(TimeProviderType& tp)
     {
-      adaptHandler_.setAdaptation( tp );
+      adaptIndicator_.setAdaptation( tp );
 
       typedef RungeKuttaSolver< ExplicitOperatorType, ExplicitOperatorType, ExplicitOperatorType,
                                 BasicLinearSolverType > OdeSolverImpl;
@@ -88,21 +117,14 @@ namespace Fem
                                 name() );
     }
 
-    //! return overal number of grid elements
-    virtual uint64_t gridSize() const
-    {
-      adaptHandler_.globalNumberOfElements();
-
-      size_t  advSize   = dgAdvectionOperator_.numberOfElements();
-      size_t  dgIndSize = adaptHandler_.numberOfElements();
-      uint64_t grSize   = std::max( advSize, dgIndSize );
-      return grid_.comm().sum( grSize );
-    }
-
-    const ModelType& model() const { return dgAdvectionOperator_.model(); }
+   const ModelType& model() const { return dgAdvectionOperator_.model(); }
 
   protected:
+    ExtraParameterTupleType tuple_;
+
+
     ExplicitOperatorType    dgAdvectionOperator_;
+    mutable AdaptIndicatorType       adaptIndicator_;
   };
 }
 }

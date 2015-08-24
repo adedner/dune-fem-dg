@@ -24,8 +24,7 @@ namespace Fem
       template< class Tuple, class ... Args >
       static void apply ( Tuple &tuple, Args && ... args )
       {
-        if( std::get< i >( tuple )->limitSolution() )
-          std::get< i >( tuple )->limit( *(std::get< i >( tuple )->limitSolution()) );
+        std::get< i >( tuple )->limit( args... );
       }
     };
 
