@@ -113,8 +113,8 @@ namespace Fem
     typedef typename ProblemTraits :: HostGridPartType    HostGridPartType;
     typedef typename ProblemTraits :: GridPartType        GridPartType;
 
-    typedef typename ProblemTraits::template AnalyticalTraits< HostGridPartType >  AnalyticalTraits;
-    typedef typename ProblemTraits::template DiscreteTraits< HostGridPartType, polynomialOrder >  DiscreteTraits;
+    typedef typename ProblemTraits::AnalyticalTraits               AnalyticalTraits;
+    typedef typename ProblemTraits::template DiscreteTraits< polynomialOrder >  DiscreteTraits;
 
     // obtain the problem dependent types, analytical context
     typedef typename AnalyticalTraits::ModelType                   ModelType;
@@ -439,6 +439,7 @@ namespace Fem
 
         // perform the solve for one time step, i.e. solve ODE
         step( tp );
+
 
         // limit solution if necessary
         solutionLimiterHandler_.step();

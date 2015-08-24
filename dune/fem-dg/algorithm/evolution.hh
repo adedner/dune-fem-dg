@@ -57,8 +57,8 @@ namespace Fem
     typedef typename ProblemTraits :: HostGridPartType    HostGridPartType;
     typedef typename ProblemTraits :: GridPartType        GridPartType;
 
-    typedef typename ProblemTraits::template AnalyticalTraits< HostGridPartType >  AnalyticalTraits;
-    typedef typename ProblemTraits::template DiscreteTraits< HostGridPartType, polynomialOrder >  DiscreteTraits;
+    typedef typename ProblemTraits::AnalyticalTraits               AnalyticalTraits;
+    typedef typename ProblemTraits::template DiscreteTraits< polynomialOrder >  DiscreteTraits;
 
     // obtain the problem dependent types, analytical context
     typedef typename AnalyticalTraits::ModelType                   ModelType;
@@ -224,14 +224,14 @@ namespace Fem
 
     virtual void initializeStep ( TimeProviderType &tp, int loop )
     {
-      // setup ode solver
-      odeSolver_.reset( this->createOdeSolver( tp ) );
-      assert( odeSolver_ );
-
       // project initial data
       const bool doCommunicate = ! NonBlockingCommParameter :: nonBlockingCommunication ();
       InitialProjectorType projection( 2 * solution().space().order(), doCommunicate );
       projection( problem().fixedTimeFunction( tp.time() ), solution() );
+
+      // setup ode solver
+      odeSolver_.reset( this->createOdeSolver( tp ) );
+      assert( odeSolver_ );
 
       // initialize ode solver
       odeSolver_->initialize( solution() );

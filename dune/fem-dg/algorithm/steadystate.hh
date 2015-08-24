@@ -38,8 +38,8 @@ namespace Fem
 
     typedef typename ProblemTraits::GridPartType                   GridPartType;
 
-    typedef typename ProblemTraits::template AnalyticalTraits< HostGridPartType >  AnalyticalTraits;
-    typedef typename ProblemTraits::template DiscreteTraits< HostGridPartType, polynomialOrder >  DiscreteTraits;
+    typedef typename ProblemTraits::AnalyticalTraits               AnalyticalTraits;
+    typedef typename ProblemTraits::template DiscreteTraits< polynomialOrder >  DiscreteTraits;
 
     // obtain the problem dependent types, analytical context
     typedef typename AnalyticalTraits::ModelType                   ModelType;
@@ -69,7 +69,7 @@ namespace Fem
   };
 
 
-  template< class Grid, class ProblemTraits, int polOrder, class HandlerTraits = typename ProblemTraits::template DiscreteTraits< Grid, polOrder >::HandlerTraits >
+  template< class Grid, class ProblemTraits, int polOrder, class HandlerTraits = typename ProblemTraits::template DiscreteTraits< polOrder >::HandlerTraits >
   class SteadyStateAlgorithm
     : public AlgorithmBase< SteadyStateTraits< Grid, ProblemTraits, polOrder,
                             typename HandlerTraits::SolverMonitorHandlerType > >

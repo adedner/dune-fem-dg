@@ -57,12 +57,11 @@ struct AdvectionDiffusionProblemCreator
     // define problem type here if interface should be avoided
     typedef Dune::EvolutionProblemInterface< FunctionSpaceType,false >      ProblemInterfaceType;
 
-    template< class GridPart > // TODO: is this template parameter needed?
     struct AnalyticalTraits
     {
       typedef ProblemInterfaceType                                ProblemType;
       typedef ProblemInterfaceType                                InitialDataType;
-      typedef HeatEqnModel< GridPart, InitialDataType >           ModelType;
+      typedef HeatEqnModel< GridPartType, InitialDataType >           ModelType;
 
       template< class Solution, class Model, class ExactFunction, class TimeProvider >
       static void addEOCErrors ( TimeProvider& tp, Solution &u, Model &model, ExactFunction &f )
@@ -96,12 +95,11 @@ struct AdvectionDiffusionProblemCreator
 
 
     //Stepper Traits
-    template< class GridPart, int polOrd > // TODO: is GridPart as a template parameter needed?
+    template< int polOrd >
     struct DiscreteTraits
     {
     private:
       static const SolverType solverType = fem ;
-      typedef AnalyticalTraits< GridPartType >                              AnalyticalTraitsType;
     public:
 
       static const int polynomialOrder = polOrd;
@@ -112,12 +110,12 @@ struct AdvectionDiffusionProblemCreator
       typedef typename DiscreteFunctions< DiscreteFunctionSpaceType, solverType >::type                                   DiscreteFunctionType;
       typedef typename DiscreteFunctions< DiscreteFunctionSpaceType, solverType >::jacobian                               JacobianOperatorType;
 
-      typedef typename InitialProjectors< typename AnalyticalTraitsType::ProblemType::TimeDependentFunctionType, DiscreteFunctionType, dg >::type   InitialProjectorType;
+      typedef typename InitialProjectors< typename AnalyticalTraits::ProblemType::TimeDependentFunctionType, DiscreteFunctionType, dg >::type   InitialProjectorType;
 
       typedef std::tuple<> ExtraParameterTuple;
 
     private:
-      typedef typename AnalyticalTraitsType::ProblemType::ExactSolutionType                       ExactSolutionType;
+      typedef typename AnalyticalTraits::ProblemType::ExactSolutionType                           ExactSolutionType;
     public:
       typedef Dune::Fem::GridFunctionAdapter< ExactSolutionType, GridPartType >                   GridExactSolutionType;
       typedef std::tuple< DiscreteFunctionType*, DiscreteFunctionType* >                          IOTupleType;
@@ -134,19 +132,19 @@ struct AdvectionDiffusionProblemCreator
         friend HandlerTraits;
         typedef Dune::AdaptationHandler< GridType, FunctionSpaceType >                              AdaptationHandlerType;
 
-        typedef Dune::UpwindFlux< typename AnalyticalTraitsType::ModelType >                        FluxType;
+        typedef Dune::UpwindFlux< typename AnalyticalTraits::ModelType >                            FluxType;
 
-        typedef Dune::Fem::FunctionSpace< typename GridType::ctype, double, AnalyticalTraitsType::ModelType::dimDomain, 3> FVFunctionSpaceType;
+        typedef Dune::Fem::FunctionSpace< typename GridType::ctype, double, AnalyticalTraits::ModelType::dimDomain, 3> FVFunctionSpaceType;
         typedef Dune::Fem::FiniteVolumeSpace<FVFunctionSpaceType,GridPartType, 0, Dune::Fem::SimpleStorage> IndicatorSpaceType;
         typedef Dune::Fem::AdaptiveDiscreteFunction<IndicatorSpaceType>                             LimiterIndicatorType;
 
-        typedef Dune::OperatorTraits< GridPartType, polynomialOrder, AnalyticalTraitsType,
+        typedef Dune::OperatorTraits< GridPartType, polynomialOrder, AnalyticalTraits,
                                       DiscreteFunctionType, FluxType, LimiterIndicatorType,
                                       AdaptationHandlerType, ExtraParameterTuple >                  OperatorTraitsType;
 
         // TODO: advection/diffusion should not be precribed by model
-        static const int hasAdvection = AnalyticalTraitsType::ModelType::hasAdvection;
-        static const int hasDiffusion = AnalyticalTraitsType::ModelType::hasDiffusion;
+        static const int hasAdvection = AnalyticalTraits::ModelType::hasAdvection;
+        static const int hasDiffusion = AnalyticalTraits::ModelType::hasDiffusion;
         typedef AdvectionDiffusionOperators< OperatorTraitsType, hasAdvection, hasDiffusion, _unlimited > AdvectionDiffusionOperatorType;
       public:
         typedef typename AdvectionDiffusionOperatorType::FullOperatorType                         FullType;
@@ -157,7 +155,7 @@ struct AdvectionDiffusionProblemCreator
     private:
       typedef Dune::DGAdaptationIndicatorOperator< typename OperatorType::OperatorTraitsType, OperatorType::hasAdvection, OperatorType::hasDiffusion >
                                                                                                     IndicatorType;
-      typedef Estimator< DiscreteFunctionType, typename AnalyticalTraitsType::ProblemType >         GradientIndicatorType ;
+      typedef Estimator< DiscreteFunctionType, typename AnalyticalTraits::ProblemType >             GradientIndicatorType ;
     public:
 
       typedef Dune::Fem::AdaptIndicator< IndicatorType, GradientIndicatorType >                     AdaptIndicatorType;
@@ -186,12 +184,11 @@ struct AdvectionDiffusionProblemCreator
   // define problem type here if interface should be avoided
   typedef Dune::EvolutionProblemInterface< FunctionSpaceType,false >      ProblemInterfaceType;
 
-  template< class GridPart > // TODO: is this template parameter needed?
   struct AnalyticalTraits
   {
     typedef ProblemInterfaceType                                ProblemType;
     typedef ProblemInterfaceType                                InitialDataType;
-    typedef HeatEqnModel< GridPart, InitialDataType >           ModelType;
+    typedef HeatEqnModel< GridPartType, InitialDataType >           ModelType;
 
     template< class Solution, class Model, class ExactFunction, class TimeProvider >
     static void addEOCErrors ( TimeProvider& tp, Solution &u, Model &model, ExactFunction &f )
@@ -226,24 +223,23 @@ struct AdvectionDiffusionProblemCreator
     }
   }
 
-  template< class GridPart, int polOrd >
+  template< int polOrd >
   struct DiscreteTraits;
 
 
   template <int polOrd>
   struct Stepper
   {
-    typedef Dune::Fem::CombinedEvolutionAlgorithm< polOrd, typename DiscreteTraits< GridPartType, polOrd>::HandlerTraits, SubAdvectionDiffusionProblemCreator<GridType> > Type;
+    typedef Dune::Fem::CombinedEvolutionAlgorithm< polOrd, typename DiscreteTraits< polOrd>::HandlerTraits, SubAdvectionDiffusionProblemCreator<GridType> > Type;
   };
 
 
   //Stepper Traits
-  template< class GridPart, int polOrd > // TODO: is GridPart as a template parameter needed?
+  template< int polOrd >
   struct DiscreteTraits
   {
   private:
     static const SolverType solverType = fem ;
-    typedef AnalyticalTraits< GridPartType >                              AnalyticalTraitsType;
   public:
 
     static const int polynomialOrder = polOrd;
@@ -254,12 +250,12 @@ struct AdvectionDiffusionProblemCreator
     typedef typename DiscreteFunctions< DiscreteFunctionSpaceType, solverType >::type                                   DiscreteFunctionType;
     typedef typename DiscreteFunctions< DiscreteFunctionSpaceType, solverType >::jacobian                               JacobianOperatorType;
 
-    typedef typename InitialProjectors< typename AnalyticalTraitsType::ProblemType::TimeDependentFunctionType, DiscreteFunctionType, dg >::type   InitialProjectorType;
+    typedef typename InitialProjectors< typename AnalyticalTraits::ProblemType::TimeDependentFunctionType, DiscreteFunctionType, dg >::type   InitialProjectorType;
 
     typedef std::tuple<> ExtraParameterTuple;
 
   private:
-    typedef typename AnalyticalTraitsType::ProblemType::ExactSolutionType                       ExactSolutionType;
+    typedef typename AnalyticalTraits::ProblemType::ExactSolutionType                           ExactSolutionType;
   public:
     typedef Dune::Fem::GridFunctionAdapter< ExactSolutionType, GridPartType >                   GridExactSolutionType;
     typedef std::tuple< DiscreteFunctionType*, DiscreteFunctionType* >                          IOTupleType;
@@ -276,19 +272,19 @@ struct AdvectionDiffusionProblemCreator
       friend HandlerTraits;
       typedef Dune::AdaptationHandler< GridType, FunctionSpaceType >                              AdaptationHandlerType;
 
-      typedef Dune::UpwindFlux< typename AnalyticalTraitsType::ModelType >                        FluxType;
+      typedef Dune::UpwindFlux< typename AnalyticalTraits::ModelType >                            FluxType;
 
-      typedef Dune::Fem::FunctionSpace< typename GridType::ctype, double, AnalyticalTraitsType::ModelType::dimDomain, 3> FVFunctionSpaceType;
+      typedef Dune::Fem::FunctionSpace< typename GridType::ctype, double, AnalyticalTraits::ModelType::dimDomain, 3> FVFunctionSpaceType;
       typedef Dune::Fem::FiniteVolumeSpace<FVFunctionSpaceType,GridPartType, 0, Dune::Fem::SimpleStorage> IndicatorSpaceType;
       typedef Dune::Fem::AdaptiveDiscreteFunction<IndicatorSpaceType>                             LimiterIndicatorType;
 
-      typedef Dune::OperatorTraits< GridPartType, polynomialOrder, AnalyticalTraitsType,
+      typedef Dune::OperatorTraits< GridPartType, polynomialOrder, AnalyticalTraits,
                                     DiscreteFunctionType, FluxType, LimiterIndicatorType,
                                     AdaptationHandlerType, ExtraParameterTuple >                  OperatorTraitsType;
 
       // TODO: advection/diffusion should not be precribed by model
-      static const int hasAdvection = AnalyticalTraitsType::ModelType::hasAdvection;
-      static const int hasDiffusion = AnalyticalTraitsType::ModelType::hasDiffusion;
+      static const int hasAdvection = AnalyticalTraits::ModelType::hasAdvection;
+      static const int hasDiffusion = AnalyticalTraits::ModelType::hasDiffusion;
       typedef AdvectionDiffusionOperators< OperatorTraitsType, hasAdvection, hasDiffusion, _unlimited > AdvectionDiffusionOperatorType;
     public:
       typedef typename AdvectionDiffusionOperatorType::FullOperatorType                         FullType;
@@ -299,7 +295,7 @@ struct AdvectionDiffusionProblemCreator
   private:
     typedef Dune::DGAdaptationIndicatorOperator< typename OperatorType::OperatorTraitsType, OperatorType::hasAdvection, OperatorType::hasDiffusion >
                                                                                                   IndicatorType;
-    typedef Estimator< DiscreteFunctionType, typename AnalyticalTraitsType::ProblemType >         GradientIndicatorType ;
+    typedef Estimator< DiscreteFunctionType, typename AnalyticalTraits::ProblemType     >         GradientIndicatorType ;
   public:
     typedef Dune::Fem::AdaptIndicator< IndicatorType, GradientIndicatorType >                                AdaptIndicatorType;
 
