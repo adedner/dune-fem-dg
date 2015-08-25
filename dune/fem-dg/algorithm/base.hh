@@ -145,14 +145,7 @@ namespace Fem
 
     virtual SolverMonitorHandlerType& monitor() = 0;
 
-    EocParametersType& eocParams()
-    {
-      return eocParam_;
-    }
-
-
-    //! finalize problem, i.e. calculated EOC ...
-    virtual void finalize ( const int eocloop ) = 0;
+    EocParametersType& eocParams() { return eocParam_; }
 
     //! name of the scheme
     virtual std::string description () const = 0;
@@ -207,9 +200,6 @@ namespace Fem
       FemTimer::stop(femTimerId);
       FemTimer::printFile("./timer.out");
       FemTimer::reset(femTimerId);
-
-      // finalize the algorithm
-      algorithm.finalize( eocloop );
 
       std::stringstream eocInfo ;
 

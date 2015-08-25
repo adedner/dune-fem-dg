@@ -161,30 +161,49 @@ namespace Fem
       }
     };
     template< int i >
-    struct InitializeStep
+    struct Initialize
     {
       template< class Tuple, class ... Args >
       static void apply ( Tuple &tuple, Args && ... args )
       {
-        std::get< i >( tuple )->initializeStep( args... );
+        std::get< i >( tuple )->initialize( args... );
       }
     };
     template< int i >
-    struct Step
+    struct PreSolve
     {
       template< class Tuple, class ... Args >
       static void apply ( Tuple &tuple, Args && ... args )
       {
-        std::get< i >( tuple )->step( args... );
+        std::get< i >( tuple )->preSolve( args... );
       }
     };
     template< int i >
-    struct FinalizeStep
+    struct Solve
     {
       template< class Tuple, class ... Args >
       static void apply ( Tuple &tuple, Args && ... args )
       {
-        std::get< i >( tuple )->finalizeStep( args... );
+        std::get< i >( tuple )->solve( args... );
+      }
+    };
+    template< int i >
+    struct PostSolve
+    {
+      template< class Tuple, class ... Args >
+      static void apply ( Tuple &tuple, Args && ... args )
+      {
+        std::get< i >( tuple )->postSolve( args... );
+      }
+    };
+
+    template< int i >
+    struct Finalize
+    {
+      template< class Tuple, class ... Args >
+      static void apply ( Tuple &tuple, Args && ... args )
+      {
+        std::get< i >( tuple )->finalize( args... );
       }
     };
     template< int i >
@@ -296,7 +315,7 @@ namespace Fem
       // restoreData if checkpointing is enabled (default is disabled)
       bool newStart = ( eocParam_.steps() == 1) ? checkPointHandler_.restoreData( tp ) : false;
 
-      initializeStep( tp, loop );
+      initialize( loop, tp );
 
       if( adaptHandler_.adaptive() && newStart )
       {
@@ -307,7 +326,7 @@ namespace Fem
           adaptHandler_.init();
 
            // setup problem again
-           initializeStep( tp, loop );
+           initialize( loop, tp );
 
            // some info in verbose mode
            if( Fem::Parameter::verbose() )
@@ -360,15 +379,18 @@ namespace Fem
         Dune::FemTimer::start( timeStepTimer_ );
         overallTimer_.reset();
 
+        preStep( loop, tp );
+
         // estimate, mark, adapt
         adaptHandler_.step( tp );
 
         // perform the solve for one time step, i.e. solve ODE
-        step( tp );
-
+        step( loop, tp );
 
         // limit solution if necessary
         solutionLimiterHandler_.step();
+
+        postStep( loop, tp );
 
         // update time step information
         solverMonitorHandler_.step( tp );
@@ -424,17 +446,13 @@ namespace Fem
       } /****** END of time loop *****/
 
       // finalize eoc step
-      finalizeStep( tp );
+      finalize( loop, tp );
 
       // prepare the fixed time step for the next eoc loop
       fixedTimeStep_ /= param_.fixedTimeStepEocLoopFactor();
     }
 
     std::string description () const { return "global algorithm"; }
-
-    //! finalize problem, i.e. calculated EOC ...
-    virtual void finalize ( const int eocloop )
-    {}
 
     virtual SolverMonitorHandlerType& monitor()
     {
@@ -454,18 +472,31 @@ namespace Fem
     }
 
     // before first step, do data initialization
-    virtual void initializeStep ( TimeProviderType &tp, int loop )
+    virtual void initialize ( int loop, TimeProviderType &tp )
     {
-      ForLoop< InitializeStep, 0, sizeof ... ( ProblemTraits )-1 >::apply( tuple_, tp, loop );
+      ForLoop< Initialize, 0, sizeof ... ( ProblemTraits )-1 >::apply( tuple_, loop, tp );
     }
 
     //Needs to be overridden to enable fancy steps
-    virtual void step ( TimeProviderType &tp )
+    virtual void preStep ( int loop, TimeProviderType &tp )
     {
-      ForLoop< Step, 0, sizeof ... ( ProblemTraits )-1 >::apply( tuple_, tp );
+      ForLoop< PreSolve, 0, sizeof ... ( ProblemTraits )-1 >::apply( tuple_, loop, tp );
     }
 
-    void finalizeStep ( TimeProviderType &tp )
+    //Needs to be overridden to enable fancy steps
+    virtual void step ( int loop, TimeProviderType &tp )
+    {
+      ForLoop< Solve, 0, sizeof ... ( ProblemTraits )-1 >::apply( tuple_, loop, tp );
+    }
+
+    //Needs to be overridden to enable fancy steps
+    virtual void postStep ( int loop, TimeProviderType &tp )
+    {
+      ForLoop< PostSolve, 0, sizeof ... ( ProblemTraits )-1 >::apply( tuple_, loop, tp );
+    }
+
+
+    void finalize ( int loop, TimeProviderType &tp )
     {
       // flush diagnostics data
       diagnosticsHandler_.finalize();
@@ -478,7 +509,7 @@ namespace Fem
 
       adaptHandler_.finalize();
 
-      ForLoop< FinalizeStep, 0, sizeof ... ( ProblemTraits )-1 >::apply( tuple_, tp );
+      ForLoop< Finalize, 0, sizeof ... ( ProblemTraits )-1 >::apply( tuple_, loop, tp );
     }
 
   protected:

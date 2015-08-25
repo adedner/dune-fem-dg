@@ -222,7 +222,7 @@ namespace Fem
     //! returns data prefix for EOC loops ( default is loop )
     virtual std::string dataPrefix () const {  return problem().dataPrefix(); }
 
-    virtual void initializeStep ( TimeProviderType &tp, int loop )
+    virtual void initialize ( int loop, TimeProviderType &tp )
     {
       // project initial data
       const bool doCommunicate = ! NonBlockingCommParameter :: nonBlockingCommunication ();
@@ -237,8 +237,10 @@ namespace Fem
       odeSolver_->initialize( solution() );
     }
 
+    virtual void preSolve( int loop, TimeProviderType& tp )
+    {}
 
-    virtual void step ( TimeProviderType &tp )
+    virtual void solve ( int loop, TimeProviderType &tp )
     {
       overallTimer_.reset();
 
@@ -256,7 +258,10 @@ namespace Fem
       //diagnosticsHandler_.addTimings( timer_.timings() );
     }
 
-    void finalizeStep ( TimeProviderType &tp )
+    virtual void postSolve( int loop, TimeProviderType& tp )
+    {}
+
+    void finalize ( int loop, TimeProviderType &tp )
     {
       // setup exact solution
       // TODO: Add this projection to addtional output writer, later
@@ -268,9 +273,6 @@ namespace Fem
       // delete ode solver
       odeSolver_.reset();
     }
-
-    //! finalize problem, i.e. calculated EOC ...
-    virtual void finalize ( const int eocloop ) {}
 
     std::string description () const { return problem().description(); }
 
