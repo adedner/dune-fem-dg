@@ -183,17 +183,19 @@ namespace Fem
   };
 
 
+  template< class ... StepperArg >
+  class CombinedDefaultAdaptHandler;
 
-  template< class... StepperArg >
-  class CombinedDefaultAdaptHandler
+
+  template< class StepperHead, class... StepperArg >
+  class CombinedDefaultAdaptHandler< StepperHead, StepperArg... >
   {
     typedef uint64_t                                                                           UInt64Type;
 
-    typedef std::tuple< typename std::add_pointer< StepperArg >::type... >                               StepperTupleType;
-    typedef typename std::remove_pointer< typename std::tuple_element<0,StepperTupleType>::type >::type  FirstStepperType;
-    typedef typename FirstStepperType::GridType                                                          GridType;
+    typedef std::tuple< typename std::add_pointer< StepperHead >::type, typename std::add_pointer< StepperArg >::type... > StepperTupleType;
+    typedef typename StepperHead::GridType GridType;
 
-    typedef Dune::Fem::RestrictProlongDefaultTuple< typename StepperArg::DiscreteFunctionType ... >      RestrictionProlongationType;
+    typedef Dune::Fem::RestrictProlongDefaultTuple< typename StepperHead::DiscreteFunctionType, typename StepperArg::DiscreteFunctionType ... >      RestrictionProlongationType;
 
     typedef Dune::Fem::AdaptationManager< GridType, RestrictionProlongationType >              AdaptationManagerType;
 
@@ -258,7 +260,6 @@ namespace Fem
 
   public:
 
-
     CombinedDefaultAdaptHandler( StepperTupleType& tuple )
     : tuple_( tuple ),
       rp_( nullptr ),
@@ -266,7 +267,7 @@ namespace Fem
       keyPrefix_( "" ),
       adaptParam_( AdaptationParametersType( Dune::ParameterKey::generate( keyPrefix_, "fem.adaptation." ) ) )
     {
-      setRestrProlong( Std::index_sequence_for< StepperArg ... >() );
+      setRestrProlong( Std::index_sequence_for< StepperHead, StepperArg ... >() );
       if( adaptive() )
         rp_->setFatherChildWeight( Dune::DGFGridInfo<GridType> :: refineWeight() );
     }
@@ -282,7 +283,8 @@ namespace Fem
     {
       return Std::And( std::get< i >( tuple_ )->adaptIndicator()->adaptive() ... );
     }
-    bool adaptive () const { return adaptive( Std::index_sequence_for< StepperArg ... >() ); }
+
+    bool adaptive () const { return adaptive( Std::index_sequence_for< StepperHead, StepperArg ... >() ); }
 
     template< class TimeProviderImp >
     void step( TimeProviderImp& tp )
@@ -305,7 +307,8 @@ namespace Fem
     {
       return Std::max( std::get< i >( tuple_ )->adaptIndicator()->adaptationHandler()->numberOfElements()... );
     }
-    size_t numberOfElements() const { return numberOfElements( Std::index_sequence_for< StepperArg ... >() ); }
+
+    size_t numberOfElements() const { return numberOfElements( Std::index_sequence_for< StepperHead, StepperArg ... >() ); }
 
 
     template< std::size_t ... i >
@@ -318,7 +321,7 @@ namespace Fem
         {
           double min = std::numeric_limits< double >::max;
           double max = 0.0;
-          ForLoop< MinMaxNumElements, 0, sizeof ... ( StepperArg )-1 >::apply( tuple_, min, max );
+          ForLoop< MinMaxNumElements, 0, sizeof ... ( StepperArg ) >::apply( tuple_, min, max );
            std::cout << "grid size (sum,min,max) = ( "
             << globalElements << " , " << min << " , " << max << ")" << std::endl;
         }
@@ -326,19 +329,18 @@ namespace Fem
       }
       return 0;
     }
-    UInt64Type globalNumberOfElements() const { return globalNumberOfElements( Std::index_sequence_for< StepperArg ... >() );}
 
-
+    UInt64Type globalNumberOfElements() const { return globalNumberOfElements( Std::index_sequence_for< StepperHead, StepperArg ... >() ); }
 
     template< class TimeProviderImp >
     void setAdaptation( TimeProviderImp& tp )
     {
-      ForLoop< SetAdaptation, 0, sizeof ... ( StepperArg )-1 >::apply( tuple_, tp );
+      ForLoop< SetAdaptation, 0, sizeof ... ( StepperArg ) >::apply( tuple_, tp );
     }
 
     void finalize()
     {
-      ForLoop< Finalize, 0, sizeof ... ( StepperArg )-1 >::apply( tuple_ );
+      ForLoop< Finalize, 0, sizeof ... ( StepperArg ) >::apply( tuple_ );
     }
 
     const double adaptationTime()
@@ -369,17 +371,19 @@ namespace Fem
     }
 
   protected:
+    GridType &grid () { return std::get< 0 >( tuple_ )->grid(); }
+
     AdaptationManagerType& adaptationManager()
     {
       if( !adaptationManager_ )
-        adaptationManager_.reset( new AdaptationManagerType( get<0>(tuple_)->grid(), *rp_ ) );
+        adaptationManager_.reset( new AdaptationManagerType( grid(), *rp_ ) );
       return *adaptationManager_;
     }
 
     void estimateMark( const bool initialAdaptation = false )
     {
       if( adaptive() )
-        ForLoop< EstimateMark, 0, sizeof ... ( StepperArg )-1 >::apply( tuple_, initialAdaptation );
+        ForLoop< EstimateMark, 0, sizeof ... ( StepperArg ) >::apply( tuple_, initialAdaptation );
     }
 
     void adapt()
@@ -388,9 +392,9 @@ namespace Fem
       {
         int sequence = get<0>( tuple_ )->adaptIndicator()->solution().space().sequence();
 
-        ForLoop< PreAdapt, 0, sizeof ... ( StepperArg )-1 >::apply( tuple_ );
+        ForLoop< PreAdapt, 0, sizeof ... ( StepperArg ) >::apply( tuple_ );
         adaptationManager().adapt();
-        ForLoop< PostAdapt, 0, sizeof ... ( StepperArg )-1 >::apply( tuple_ );
+        ForLoop< PostAdapt, 0, sizeof ... ( StepperArg ) >::apply( tuple_ );
 
         //TODO include limiterHandler
         //if( sequence !=  get<0>( tuple_ )->adapIndicator()->solution().space().sequence() )
@@ -406,6 +410,51 @@ namespace Fem
     const std::string                         keyPrefix_;
     const AdaptationParametersType            adaptParam_;
   };
+
+
+  template<>
+  class CombinedDefaultAdaptHandler<>
+  {
+    typedef uint64_t                                                                           UInt64Type;
+  public:
+
+    template< class ... Args >
+    CombinedDefaultAdaptHandler ( Args && ... ) {}
+
+    template< class ... Args >
+    bool adaptive( Args&& ... ) const { return false; }
+
+    template< class ... Args >
+    void setIndicator( Args&& ... ) {}
+
+    template< class ... Args >
+    void step( Args&& ... ) {}
+
+    template< class ... Args >
+    void init( Args&& ... ) {}
+
+    template< class ... Args >
+    size_t numberOfElements( Args&& ... ) const { return 0; }
+
+    template< class ... Args >
+    UInt64Type globalNumberOfElements( Args&& ... ) const { return 0; }
+
+    template< class ... Args >
+    void setAdaptation( Args&& ... ){}
+
+    template< class ... Args >
+    void finalize( Args&& ... ) {}
+
+    template< class ... Args >
+    const double adaptationTime( Args&& ... ) const { return 0.0; }
+
+    template< class ... Args >
+    const double loadBalanceTime( Args&& ... ) const { return 0.0; }
+
+    template< class ... Args >
+    const double finestLevel( Args&& ... ) const { return 0.0; }
+  };
+
 
   class NoAdaptHandler
   {

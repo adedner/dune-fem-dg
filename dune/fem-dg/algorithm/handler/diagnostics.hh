@@ -9,11 +9,15 @@ namespace Fem
 {
 
   template< class... StepperArg >
-  class CombinedDefaultDiagnosticsHandler
+  class CombinedDefaultDiagnosticsHandler;
+
+
+  template< class StepperHead, class ... StepperArg >
+  class CombinedDefaultDiagnosticsHandler< StepperHead, StepperArg ... >
   {
-    typedef std::tuple< typename std::add_pointer< StepperArg >::type... >                               StepperTupleType;
-    typedef typename std::remove_pointer< typename std::tuple_element<0,StepperTupleType>::type >::type  FirstStepperType;
-    typedef typename FirstStepperType::GridType                                                          GridType;
+    typedef std::tuple< typename std::add_pointer< StepperHead >::type,
+      typename std::add_pointer< StepperArg >::type... >                                StepperTupleType;
+    typedef typename StepperHead::GridType                                              GridType;
 
     template< int i >
     struct Write
@@ -45,13 +49,13 @@ namespace Fem
     template< class TimeProviderImp >
     void step( TimeProviderImp& tp, int numElements )
     {
-      ForLoop< Write, 0, sizeof ... ( StepperArg )-1 >::apply( tuple_, tp, numElements );
+      ForLoop< Write, 0, sizeof ... ( StepperArg ) >::apply( tuple_, tp, numElements );
     }
 
 
     void finalize() const
     {
-      ForLoop< Finalize, 0, sizeof ... ( StepperArg )-1 >::apply( tuple_ );
+      ForLoop< Finalize, 0, sizeof ... ( StepperArg ) >::apply( tuple_ );
     }
 
 
@@ -59,6 +63,20 @@ namespace Fem
     StepperTupleType tuple_;
   };
 
+
+  template<>
+  class CombinedDefaultDiagnosticsHandler<>
+  {
+  public:
+    template< class ... Args >
+    CombinedDefaultDiagnosticsHandler ( Args && ... ) {}
+
+    template <class ... Args>
+    void step( Args&& ... ) const {};
+
+    template <class ... Args>
+    void finalize(Args&& ... ) const {};
+  };
 
 
   class DefaultDiagnosticsHandler

@@ -61,18 +61,19 @@ namespace Fem
 
 
   template< class... StepperArg >
-  class CombinedDefaultCheckPointHandler
+  class CombinedDefaultCheckPointHandler;
+
+  template< class StepperHead, class ... StepperArg >
+  class CombinedDefaultCheckPointHandler< StepperHead, StepperArg ... >
   {
-    typedef DefaultGridCheckPointHandler< typename tuple_head< StepperArg... >::type::GridType >    BaseType;
+    typedef DefaultGridCheckPointHandler< typename StepperHead::GridType >                          BaseType;
     typedef typename BaseType::GridType                                                             GridType;
     typedef typename BaseType::CheckPointerType                                                     CheckPointerType;
     typedef typename BaseType::CheckPointerParametersType                                           CheckPointerParametersType;
-    typedef std::tuple< typename std::add_pointer< StepperArg >::type... >                          StepperTupleType;
+    typedef std::tuple< typename std::add_pointer< StepperHead >::type, typename std::add_pointer< StepperArg >::type... > StepperTupleType;
 
-    static_assert( Std::are_all_same< typename StepperArg::GridType... >::value,
+    static_assert( Std::are_all_same< typename StepperHead::GridType, typename StepperArg::GridType... >::value,
                    "CombinedDefaultCheckPointHandler: GridType has to be equal for all steppers" );
-    static_assert( sizeof ... ( StepperArg ) > 0,
-                   "CombinedDefaultCheckPointHandler: called with zero steppers" );
 
     template< int i >
     struct RegisterData
@@ -87,11 +88,6 @@ namespace Fem
 
   public:
 
-    //explicit CombinedDefaultCheckPointHandler( StepperArg &&... arg )
-    //  : tuple_( std::forward< StepperArg >( arg )... )
-    //  ....
-    //{}
-
     CombinedDefaultCheckPointHandler( const StepperTupleType& tuple )
       : tuple_( tuple ),
         checkPointer_(),
@@ -102,7 +98,7 @@ namespace Fem
     void registerData()
     {
       if( BaseType::checkPointExists(keyPrefix_) )
-        ForLoop< RegisterData, 0, sizeof ... ( StepperArg )-1 >::apply( tuple_ );
+        ForLoop< RegisterData, 0, sizeof ... ( StepperArg ) >::apply( tuple_ );
     }
 
     template< class TimeProviderImp >
@@ -111,7 +107,7 @@ namespace Fem
       if( BaseType::checkPointExists(keyPrefix_) )
       {
         // restore data
-        checkPointer( tp ).restoreData( std::get<0>(tuple_)->space().grid(), BaseType::checkPointFile( keyPrefix_ ) );
+        checkPointer( tp ).restoreData( std::get<0>(tuple_)->solution().space().grid(), BaseType::checkPointFile( keyPrefix_ ) );
         return false;
       }
       return true;
@@ -128,7 +124,7 @@ namespace Fem
     {
       // create check point if not existent
       if( ! checkPointer_ )
-        checkPointer_.reset( new CheckPointerType( std::get<0>(tuple_)->space().grid(), tp, checkParam_) );
+        checkPointer_.reset( new CheckPointerType( std::get<0>(tuple_)->solution().space().grid(), tp, checkParam_) );
       return *checkPointer_;
     }
 
@@ -136,7 +132,35 @@ namespace Fem
     mutable std::unique_ptr< CheckPointerType > checkPointer_;
     const std::string keyPrefix_;
     CheckPointerParametersType checkParam_;
+  };
 
+
+  template<>
+  class CombinedDefaultCheckPointHandler<>
+  {
+    public:
+
+    template< class ... Args >
+    CombinedDefaultCheckPointHandler( Args&& ... ) {}
+
+    template< class ... Args>
+    static bool checkPointExists( Args&& ... ) {return false;}
+
+    template< class GridImp, class ... Args>
+    static Dune::GridPtr< GridImp > restoreGrid( Args&& ... )
+    {
+      Dune::GridPtr< GridImp > gridptr;
+      return gridptr;
+    }
+
+    template< class ... Args>
+    void registerData( Args&& ... ) const {}
+
+    template< class ... Args>
+    bool restoreData( Args&& ... ) const { return false;}
+
+    template< class ... Args>
+    void step( Args&& ... ) const {}
   };
 
 

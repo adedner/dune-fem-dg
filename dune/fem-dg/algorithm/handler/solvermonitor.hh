@@ -10,12 +10,16 @@ namespace Fem
 {
 
   template< class... StepperArg >
-  class CombinedDefaultSolverMonitorHandler
+  class CombinedDefaultSolverMonitorHandler;
+
+
+  template< class StepperHead, class ... StepperArg >
+  class CombinedDefaultSolverMonitorHandler< StepperHead, StepperArg... >
   {
   public:
-    typedef std::tuple< typename std::add_pointer< StepperArg >::type... >                               StepperTupleType;
-    typedef typename std::remove_pointer< typename std::tuple_element<0,StepperTupleType>::type >::type  FirstStepperType;
-    typedef typename FirstStepperType::GridType                                                          GridType;
+    typedef std::tuple< typename std::add_pointer< StepperHead >::type,
+      typename std::add_pointer< StepperArg >::type... >                               StepperTupleType;
+    typedef typename StepperHead::GridType                                             GridType;
 
     template< int i >
     struct SetTimeStepInformation
@@ -53,7 +57,7 @@ namespace Fem
       static void apply ( Tuple &tuple, Args && ... args )
       {
         std::cout << *std::get< i >( tuple )->monitor().monitor().ils_iterations;
-        if( i != std::tuple_size<Tuple>::value - 1 )
+        if( i != std::tuple_size<Tuple>::value )
           std::cout << " | " << std::endl;
       }
     };
@@ -64,7 +68,7 @@ namespace Fem
       static void apply ( Tuple &tuple, Args && ... args )
       {
         std::cout << *std::get< i >( tuple )->monitor().monitor().operator_calls;
-        if( i != std::tuple_size<Tuple>::value - 1 )
+        if( i != std::tuple_size<Tuple>::value )
           std::cout << " | " << std::endl;
       }
     };
@@ -76,27 +80,45 @@ namespace Fem
     void stepPrint()
     {
       std::cout << ",  Newton: ";
-      ForLoop< StepPrintNewtonIterations, 0, sizeof ... ( StepperArg )-1 >::apply( tuple_ );
+      ForLoop< StepPrintNewtonIterations, 0, sizeof ... ( StepperArg ) >::apply( tuple_ );
       std::cout << "  ILS: ";
-      ForLoop< StepPrintILSIterations, 0, sizeof ... ( StepperArg )-1 >::apply( tuple_ );
+      ForLoop< StepPrintILSIterations, 0, sizeof ... ( StepperArg ) >::apply( tuple_ );
       std::cout << "  OC: ";
-      ForLoop< StepPrintOperatorCalls, 0, sizeof ... ( StepperArg )-1 >::apply( tuple_ );
+      ForLoop< StepPrintOperatorCalls, 0, sizeof ... ( StepperArg ) >::apply( tuple_ );
       std::cout << std::endl;
     }
 
     template< class TimeProviderImp >
     void step( TimeProviderImp& tp )
     {
-      ForLoop< SetTimeStepInformation, 0, sizeof ... ( StepperArg )-1 >::apply( tuple_, tp );
+      ForLoop< SetTimeStepInformation, 0, sizeof ... ( StepperArg ) >::apply( tuple_, tp );
     }
 
     void finalize( const double gridWidth, const double gridSize )
     {
-      ForLoop< Finalize, 0, sizeof ... ( StepperArg )-1 >::apply( tuple_, gridWidth, gridSize );
+      ForLoop< Finalize, 0, sizeof ... ( StepperArg ) >::apply( tuple_, gridWidth, gridSize );
     }
 
   private:
     const StepperTupleType&  tuple_;
+  };
+
+
+  template<>
+  class CombinedDefaultSolverMonitorHandler<>
+  {
+  public:
+    template< class ... Args >
+    CombinedDefaultSolverMonitorHandler ( Args && ... ) {}
+
+    template <class ... Args>
+    void stepPrint(Args&& ... ) const {};
+
+    template <class ... Args>
+    void step(Args&& ... ) const {};
+
+    template <class ... Args>
+    void finalize(Args&& ... ) const {};
   };
 
 
