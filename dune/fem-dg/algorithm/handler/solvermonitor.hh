@@ -72,7 +72,7 @@ namespace Fem
           std::cout << " | " << std::endl;
       }
     };
-    CombinedDefaultSolverMonitorHandler( const StepperTupleType& tuple )
+    CombinedDefaultSolverMonitorHandler( StepperTupleType& tuple )
       : tuple_( tuple )
     {}
 
@@ -100,7 +100,7 @@ namespace Fem
     }
 
   private:
-    const StepperTupleType&  tuple_;
+    StepperTupleType&  tuple_;
   };
 
 

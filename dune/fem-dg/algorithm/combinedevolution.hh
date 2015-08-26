@@ -6,12 +6,7 @@
 #include <dune/fem/gridpart/leafgridpart.hh>
 #include <dune/fem/misc/gridwidth.hh>
 
-// helm holz operator wrapper
-//#include <dune/fem/operator/dg/helmholtz.hh>
-
 #include <dune/fem-dg/algorithm/base.hh>
-#include <dune/fem-dg/operator/dg/passtraits.hh>
-#include <dune/fem-dg/operator/dg/dgoperatorchoice.hh>
 #include <dune/fem/misc/femtimer.hh>
 
 // include std libs
@@ -23,7 +18,6 @@
 #include <dune/fem/operator/projection/l2projection.hh>
 #include <dune/fem-dg/pass/threadpass.hh>
 #include <dune/common/timer.hh>
-#include <dune/fem-dg/algorithm/monitor.hh>
 
 
 #include <dune/fem-dg/algorithm/handler/diagnostics.hh>
@@ -154,10 +148,10 @@ namespace Fem
     struct Constructor
     {
       template< class Tuple, class ... Args >
-      static void apply ( Tuple &tuple, Args && ... args )
+      static void apply ( Tuple &tuple, GridType &grid, Args && ... args )
       {
         typedef typename std::remove_pointer< typename std::tuple_element< i, Tuple >::type >::type Element;
-        std::get< i >( tuple ) = new Element( std::forward< Args >( args ) ... );
+        std::get< i >( tuple ) = new Element( grid, std::forward< Args >( args ) ... );
       }
     };
     template< int i >
@@ -239,9 +233,9 @@ namespace Fem
       tuple_( createStepper( grid, name ) ),
       param_( StepperParametersType( Dune::ParameterKey::generate( "", "femdg.stepper." ) ) ),
       checkPointHandler_( tuple_ ),
-      solverMonitorHandler_( tuple_ ),
       dataWriterHandler_( tuple_ ),
       diagnosticsHandler_( tuple_ ),
+      solverMonitorHandler_( tuple_ ),
       additionalOutputHandler_( tuple_ ),
       solutionLimiterHandler_( tuple_ ),
       adaptHandler_( tuple_ ),
