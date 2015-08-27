@@ -114,6 +114,15 @@ namespace Fem
     typedef Dune::Fem::CombinedDefaultSolutionLimiterHandler< typename ProblemTraits::template Stepper<polOrder>::Type...  > SolutionLimiterHandlerType;
     typedef Dune::Fem::CombinedDefaultAdaptHandler          < typename ProblemTraits::template Stepper<polOrder>::Type...  > AdaptHandlerType;
 
+    typedef std::tuple<  typename std::add_pointer<typename ProblemTraits::template Stepper<polOrder>::Type >::type... > StepperTupleType;
+
+    template< size_t... i >
+    static StepperTupleType  createSolverMonitorHandlerTuple( StepperTupleType& tuple, Std::index_sequence< i... > )
+    {
+      return std::make_tuple( std::get<i>( tuple )... );
+    }
+
+
     typedef typename DataWriterHandlerType::IOTupleType                                                                      IOTupleType;
   };
 
@@ -163,10 +172,12 @@ namespace Fem
     template< int i >
     struct Initialize
     {
-      template< class Tuple, class ... Args >
-      static void apply ( Tuple &tuple, Args && ... args )
+      template< class Tuple, class AdaptHandler, class ... Args >
+      static void apply ( Tuple &tuple, AdaptHandler& handler, Args && ... args )
       {
         std::get< i >( tuple )->initialize( args... );
+        std::get< i >( tuple )->diagnostics().registerData( "AdaptationTime", &handler.adaptationTime() );
+        std::get< i >( tuple )->diagnostics().registerData( "LoadBalanceTime", &handler.loadBalanceTime() );
       }
     };
     template< int i >
@@ -239,7 +250,7 @@ namespace Fem
       tuple_( createStepper( grid, name ) ),
       param_( StepperParametersType( Dune::ParameterKey::generate( "", "femdg.stepper." ) ) ),
       checkPointHandler_( tuple_ ),
-      solverMonitorHandler_( tuple_ ),
+      solverMonitorHandler_( Traits::createSolverMonitorHandlerTuple( tuple_, Std::index_sequence_for< ProblemTraits... >() ) ),
       dataWriterHandler_( tuple_ ),
       diagnosticsHandler_( tuple_ ),
       additionalOutputHandler_( tuple_ ),
@@ -247,6 +258,7 @@ namespace Fem
       adaptHandler_( tuple_ ),
       fixedTimeStep_( param_.fixedTimeStep() )
     {}
+
 
     // create Tuple of contained subspaces
     static StepperTupleType createStepper( GridType &grid, const std::string name = "" )
@@ -396,7 +408,7 @@ namespace Fem
         solverMonitorHandler_.step( tp );
 
         //write diagnostics
-        diagnosticsHandler_.step( tp, 123456789 /*odeSolverMonitor.numberOfElements_*/ );
+        diagnosticsHandler_.step( tp ); /*odeSolverMonitor.numberOfElements_);*/
 
 
         // stop FemTimer for this time step
@@ -413,10 +425,11 @@ namespace Fem
         {
           if( grid.comm().rank() == 0 )
           {
-            std::cout << "step: " << tp.timeStep()-1 << "  time = " << tp.time()+tp.deltaT() << ", dt = " << deltaT
+            std::cout << "step: " << tp.timeStep() << "  time = " << tp.time()+tp.deltaT() << ", dt = " << deltaT
                       <<",  grid size: " << gridSize() << ", elapsed time: ";
             Dune::FemTimer::print(std::cout,timeStepTimer_);
-            solverMonitorHandler_.stepPrint();
+            solverMonitorHandler_.print( "Newton", "ILS", "OC" );
+            std::cout << std::endl;
           }
         }
 
@@ -474,10 +487,10 @@ namespace Fem
     // before first step, do data initialization
     virtual void initialize ( int loop, TimeProviderType &tp )
     {
-      ForLoop< Initialize, 0, sizeof ... ( ProblemTraits )-1 >::apply( tuple_, loop, tp );
+      ForLoop< Initialize, 0, sizeof ... ( ProblemTraits )-1 >::apply( tuple_, adaptHandler_, loop, tp );
+
     }
 
-    //Needs to be overridden to enable fancy steps
     virtual void preStep ( int loop, TimeProviderType &tp )
     {
       ForLoop< PreSolve, 0, sizeof ... ( ProblemTraits )-1 >::apply( tuple_, loop, tp );
@@ -489,7 +502,6 @@ namespace Fem
       ForLoop< Solve, 0, sizeof ... ( ProblemTraits )-1 >::apply( tuple_, loop, tp );
     }
 
-    //Needs to be overridden to enable fancy steps
     virtual void postStep ( int loop, TimeProviderType &tp )
     {
       ForLoop< PostSolve, 0, sizeof ... ( ProblemTraits )-1 >::apply( tuple_, loop, tp );

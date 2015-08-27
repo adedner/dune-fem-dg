@@ -34,26 +34,21 @@ namespace Fem
       }
     };
 
-
-
   public:
-
     CombinedDefaultDiagnosticsHandler( const StepperTupleType& tuple )
       : tuple_( tuple )
     {}
 
     template< class TimeProviderImp >
-    void step( TimeProviderImp& tp, int numElements )
+    void step( TimeProviderImp& tp )
     {
-      ForLoop< Write, 0, sizeof ... ( StepperArg )-1 >::apply( tuple_, tp, numElements );
+      ForLoop< Write, 0, sizeof ... ( StepperArg )-1 >::apply( tuple_, tp );
     }
-
 
     void finalize() const
     {
       ForLoop< Finalize, 0, sizeof ... ( StepperArg )-1 >::apply( tuple_ );
     }
-
 
   private:
     StepperTupleType tuple_;
@@ -61,52 +56,61 @@ namespace Fem
 
 
 
+  template< class DiagnosticsImp >
   class DefaultDiagnosticsHandler
   {
   public:
+    typedef DiagnosticsImp DiagnosticsType;
+    typedef std::map< std::string, long unsigned int* > DataIntType;
+    typedef std::map< std::string, double* > DataDoubleType;
+
 
     DefaultDiagnosticsHandler()
       : diagnostics_( true ),
-        timings_()
+        dataInt_(),
+        dataDouble_()
     {}
 
-    template< class... DoubleArg >
-    void addTimings( double head, DoubleArg... tail )
+    void registerData( const std::string name, double* diagnosticsData )
     {
-      timings_.push_back( head );
-      addTimings( tail... );
+      assert( diagnosticsData );
+      dataDouble_.insert( std::make_pair(name, diagnosticsData ) );
     }
 
-    void addTimings()
-    {}
-
-    template< class... DoubleVectorArg >
-    void addTimings( std::vector< double >& head, DoubleVectorArg&... tail )
+    void registerData( const std::string name, long unsigned int* diagnosticsData )
     {
-      timings_.insert( timings_.end(), head.begin(), head.end() );
-      addTimings( tail... );
+      assert( diagnosticsData );
+      dataInt_.insert( std::make_pair(name, diagnosticsData ) );
+    }
+
+    const double getData( const std::string name )
+    {
+      if( dataInt_.find(name) != dataInt_.end() )
+      {
+        assert( dataInt_[ name ] );
+        return (double)*dataInt_[ name ];
+      }
+      assert( dataDouble_[ name ] );
+      return *dataDouble_[ name ];
     }
 
     template< class TimeProviderImp >
-    void step( TimeProviderImp& tp, int numElements )
+    void step( TimeProviderImp& tp )
     {
       const double ldt = tp.deltaT();
-      diagnostics_.write( tp.time() + ldt, ldt, numElements, timings_ );
-      timings_.clear();
+      diagnostics_.write( tp.time() + ldt, ldt, getData( "Elements" ), std::vector<double>() );
     }
-
 
     void finalize() const
     {
       diagnostics_.flush();
     }
 
-
   private:
-    Diagnostics diagnostics_;
-    std::vector< double > timings_;
+    DiagnosticsType diagnostics_;
+    DataIntType        dataInt_;
+    DataDoubleType     dataDouble_;
   };
-
 
 
   class NoDiagnosticsHandler

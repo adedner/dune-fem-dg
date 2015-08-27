@@ -86,12 +86,6 @@ namespace Fem
     };
 
   public:
-
-    //explicit CombinedDefaultCheckPointHandler( StepperArg &&... arg )
-    //  : tuple_( std::forward< StepperArg >( arg )... )
-    //  ....
-    //{}
-
     CombinedDefaultCheckPointHandler( const StepperTupleType& tuple )
       : tuple_( tuple ),
         checkPointer_(),

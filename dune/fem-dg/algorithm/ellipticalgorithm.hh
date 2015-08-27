@@ -448,10 +448,10 @@ namespace Fem
             class ProblemTraits,
             int polOrder>
   class EllipticAlgorithm
-    : public SteadyStateAlgorithm< GridImp, ProblemTraits, polOrder >
+    : public SubSteadyStateAlgorithm< GridImp, ProblemTraits, polOrder >
   {
   public:
-    typedef SteadyStateAlgorithm< GridImp, ProblemTraits, polOrder > BaseType;
+    typedef SubSteadyStateAlgorithm< GridImp, ProblemTraits, polOrder > BaseType;
 
     // type of Grid
     typedef typename BaseType::GridType                    GridType;
@@ -483,7 +483,7 @@ namespace Fem
 
     enum { dimension = GridType::dimension  };
 
-    typedef typename ProblemTraits::template DiscreteTraits< GridPartType, polOrder>::GridExactSolutionType               GridExactSolutionType;
+    typedef typename ProblemTraits::template DiscreteTraits< polOrder>::GridExactSolutionType               GridExactSolutionType;
 
     typedef typename DiscreteFunctionSpaceType ::
       template ToNewDimRange< dimension * ModelType::dimRange >::NewFunctionSpaceType SigmaFunctionSpaceType;
@@ -516,9 +516,10 @@ namespace Fem
       space_( const_cast<DiscreteFunctionSpaceType &> (assembler_.space()) ),
       rhs_( "rhs-" + name, space_ ),
       poissonSigmaEstimator_( gridPart_, solution(), assembler_, name ),
-      exact_( "exact solution", problem().exactSolution(), gridPart_, 2 ),
+      exact_( "exact solution", problem().exactSolution(), gridPart_ ),
       pAdapt_(grid_, space_),
-      step_( 0 )
+      step_( 0 ),
+      dataTuple_( std::make_tuple( &solution(), &exact_ ) )
     {
       std::string gridName = Fem::gridName( grid_ );
       if( gridName == "ALUGrid" || gridName == "ALUConformGrid" || gridName == "ALUSimplexGrid" )
@@ -588,9 +589,9 @@ namespace Fem
       poissonSigmaEstimator_.update();
     }
 
-    IOTupleType dataTuple()
+    IOTupleType* dataTuple()
     {
-      return std::make_tuple( &solution(), &exact_ );
+      return &dataTuple_;
     }
 
     //! finalize computation by calculating errors and EOCs
@@ -638,6 +639,7 @@ namespace Fem
     GridExactSolutionType           exact_;
     PAdaptivityType                 pAdapt_;
     int                             step_;
+    IOTupleType                     dataTuple_;
 
   };
 

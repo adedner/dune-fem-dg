@@ -183,7 +183,6 @@ namespace Fem
   };
 
 
-
   template< class... StepperArg >
   class CombinedDefaultAdaptHandler
   {
@@ -341,14 +340,16 @@ namespace Fem
       ForLoop< Finalize, 0, sizeof ... ( StepperArg )-1 >::apply( tuple_ );
     }
 
-    const double adaptationTime()
+    double& adaptationTime()
     {
-      return adaptive() ? adaptationManager().adaptationTime() : 0.0;
+      adaptationTime_ = adaptive() ? adaptationManager().adaptationTime() : 0.0;
+      return adaptationTime_;
     }
 
-    const double loadBalanceTime()
+    double& loadBalanceTime()
     {
-      return adaptive() ? adaptationManager().loadBalanceTime() : 0.0;
+      loadBalanceTime_ = adaptive() ? adaptationManager().loadBalanceTime() : 0.0;
+      return loadBalanceTime_;
     }
 
     const std::vector< double > timings()
@@ -405,6 +406,8 @@ namespace Fem
     std::unique_ptr< AdaptationManagerType >  adaptationManager_;
     const std::string                         keyPrefix_;
     const AdaptationParametersType            adaptParam_;
+    double                                    adaptationTime_;
+    double                                    loadBalanceTime_;
   };
 
   class NoAdaptHandler

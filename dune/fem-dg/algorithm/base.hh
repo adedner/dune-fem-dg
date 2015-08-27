@@ -84,8 +84,8 @@ namespace Fem
   template< class Monitor >
   void writeFemEoc ( const Monitor &monitor, const double runTime, std::stringstream &out )
   {
-    //Fem::FemEoc::write( *monitor.gridWidth, *monitor.elements, runTime, *monitor.timeSteps,
-    //    monitor.doubleValues(), monitor.intValues(), out );
+    Fem::FemEoc::write( monitor.getData( "GridWidth" ), monitor.getData( "Elements" ), runTime, monitor.getData( "TimeSteps" ) );
+   //     monitor.doubleValues(), monitor.intValues(), out );
   }
 
 

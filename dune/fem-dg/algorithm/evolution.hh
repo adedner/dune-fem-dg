@@ -25,7 +25,6 @@
 #include <dune/common/timer.hh>
 #include "monitor.hh"
 
-
 #include <dune/fem-dg/algorithm/handler/diagnostics.hh>
 #include <dune/fem-dg/algorithm/handler/solvermonitor.hh>
 #include <dune/fem-dg/algorithm/handler/checkpoint.hh>
@@ -159,7 +158,7 @@ namespace Fem
 
     typedef typename Traits::AdaptIndicatorType                   AdaptIndicatorType;
     typedef typename Traits::DiagnosticsHandlerType               DiagnosticsHandlerType;
-    typedef typename Traits::SolverMonitorHandlerType            SolverMonitorHandlerType;
+    typedef typename Traits::SolverMonitorHandlerType             SolverMonitorHandlerType;
 
 
     SubEvolutionAlgorithmBase ( GridType &grid, const std::string name = "" )
@@ -173,11 +172,15 @@ namespace Fem
       exact_( "exact solution", space() ),
       dataTuple_( std::make_tuple( &solution(), &exact_ ) ),
       solverMonitorHandler_( "" ),
+      odeSolverMonitor_(),
       diagnosticsHandler_(),
       overallTimer_(),
-      odeSolver_()
+      odeSolver_(),
+      overallTime_( 0 )
     {}
-
+      //diagnosticsHandler_.registerData( "AdaptationTime", &adaptIndicator()->adaptationTime() );
+      //diagnosticsHandler_.registerData( "LoadBalanceTime", &adaptIndicator()->loadBalanceTime() );
+      //diagnosticsHandler_.registerData( "OverallTimer", &overallTimer_.elapsed() )
     virtual const std::string name () { return algorithmName_; }
 
     GridType& grid () const { return grid_; }
@@ -235,6 +238,22 @@ namespace Fem
 
       // initialize ode solver
       odeSolver_->initialize( solution() );
+
+      //initialize solverMonitor
+      solverMonitorHandler_.registerData( "GridWidth", solverMonitorHandler_.monitor().gridWidth, nullptr, true );
+      solverMonitorHandler_.registerData( "Elements", solverMonitorHandler_.monitor().elements, nullptr, true );
+      solverMonitorHandler_.registerData( "TimeSteps", solverMonitorHandler_.monitor().timeSteps, nullptr, true );
+      solverMonitorHandler_.registerData( "Newton", solverMonitorHandler_.monitor().newton_iterations,       &odeSolverMonitor_.newtonIterations_);
+      solverMonitorHandler_.registerData( "ILS", solverMonitorHandler_.monitor().ils_iterations,             &odeSolverMonitor_.linearSolverIterations_);
+      solverMonitorHandler_.registerData( "OC", solverMonitorHandler_.monitor().operator_calls,              &odeSolverMonitor_.spaceOperatorCalls_);
+      solverMonitorHandler_.registerData( "maxNewton",solverMonitorHandler_.monitor().max_newton_iterations, &odeSolverMonitor_.maxNewtonIterations_ );
+      solverMonitorHandler_.registerData( "minNewton",solverMonitorHandler_.monitor().max_ils_iterations,    &odeSolverMonitor_.maxLinearSolverIterations_ );
+
+      //initialize diagnosticsHandler
+      diagnosticsHandler_.registerData( "OperatorTime", &odeSolverMonitor_.operatorTime_ );
+      diagnosticsHandler_.registerData( "OdeSolveTime", &odeSolverMonitor_.odeSolveTime_ );
+      diagnosticsHandler_.registerData( "OverallTimer", &overallTime_ );
+      diagnosticsHandler_.registerData( "NumberOfElements", &odeSolverMonitor_.numberOfElements_ );
     }
 
     virtual void preSolve( int loop, TimeProviderType& tp )
@@ -243,19 +262,13 @@ namespace Fem
     virtual void solve ( int loop, TimeProviderType &tp )
     {
       overallTimer_.reset();
+      odeSolverMonitor_.reset();
 
       // solve ODE
       assert(odeSolver_);
-      typename OdeSolverType::MonitorType odeSolverMonitor;
-      odeSolver_->solve( solution(), odeSolverMonitor );
+      odeSolver_->solve( solution(), odeSolverMonitor_ );
 
-      // diagnostic information
-      solverMonitorHandler_.step( odeSolverMonitor );
-      diagnosticsHandler_.addTimings( odeSolverMonitor.operatorTime_, odeSolverMonitor.odeSolveTime_ );
-      //TODO: fix the following line
-      //if( adaptIndicator() )
-      //  diagnosticsHandler_.addTimings( adaptIndicator()->timings() );
-      //diagnosticsHandler_.addTimings( timer_.timings() );
+      overallTime_ = overallTimer_.stop();
     }
 
     virtual void postSolve( int loop, TimeProviderType& tp )
@@ -317,9 +330,11 @@ namespace Fem
 
     DiagnosticsHandlerType         diagnosticsHandler_;
     SolverMonitorHandlerType       solverMonitorHandler_;
+    typename OdeSolverType::MonitorType odeSolverMonitor_;
 
     Dune::Timer                    overallTimer_;
     std::unique_ptr< OdeSolverType > odeSolver_;
+    double overallTime_;
   };
 
 

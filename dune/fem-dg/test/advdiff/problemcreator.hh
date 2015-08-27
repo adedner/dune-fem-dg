@@ -18,6 +18,8 @@
 #include <dune/fem-dg/algorithm/handler/additionaloutput.hh>
 #include <dune/fem-dg/algorithm/handler/solutionlimiter.hh>
 #include <dune/fem-dg/algorithm/handler/adapt.hh>
+#include <dune/fem-dg/algorithm/monitor.hh>
+#include <dune/fem-dg/algorithm/monitor.hh>
 
 //--------- GRID HELPER ---------------------
 #include <dune/fem-dg/algorithm/gridinitializer.hh>
@@ -153,8 +155,8 @@ struct AdvectionDiffusionProblemCreator
     public:
 
       typedef Dune::Fem::AdaptIndicator< IndicatorType, GradientIndicatorType >                     AdaptIndicatorType;
-      typedef Dune::Fem::DefaultSolverMonitorHandler                                                SolverMonitorHandlerType;
-      typedef Dune::Fem::DefaultDiagnosticsHandler                                                  DiagnosticsHandlerType;
+      typedef Dune::Fem::DefaultSolverMonitorHandler< Dune::Fem::SolverMonitor< 1 > >               SolverMonitorHandlerType;
+      typedef Dune::Fem::DefaultDiagnosticsHandler< Dune::Diagnostics >                             DiagnosticsHandlerType;
     };
 
     template <int polOrd>

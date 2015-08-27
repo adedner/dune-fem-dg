@@ -24,7 +24,8 @@ namespace Fem
     typedef std::tuple< typename std::add_pointer< StepperArg >::type... >                               StepperTupleType;
     typedef typename std::remove_pointer< typename std::tuple_element<0,StepperTupleType>::type >::type  FirstStepperType;
     typedef typename FirstStepperType::GridType                                                          GridType;
-    typedef typename tuple_concat< typename StepperArg::IOTupleType... >::type                           IOTupleType;
+   // typedef typename tuple_concat< typename StepperArg::IOTupleType... >::type                           IOTupleType;
+    typedef typename FirstStepperType::IOTupleType                                                       IOTupleType;
     typedef DataWriter< GridType, IOTupleType >                                                          DataWriterType;
 
 
@@ -45,7 +46,7 @@ namespace Fem
     template< class TimeProviderImp, class ParameterType >
     void init( TimeProviderImp& tp, ParameterType& param  )
     {
-      dataWriter_.reset( new DataWriterType( std::get<0>(tuple_)->space().grid(), dataTuple_, tp, param ) );
+      dataWriter_.reset( new DataWriterType( std::get<0>(tuple_)->solution().space().grid(), dataTuple_, tp, param ) );
     }
 
     template< class TimeProviderImp >
