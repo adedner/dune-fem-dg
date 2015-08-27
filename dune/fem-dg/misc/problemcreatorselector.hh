@@ -2,7 +2,7 @@
 #define FEMDG_PROBLEMCREATOR_SELECTOR_HH
 
 #include <dune/fem-dg/solver/linearsolvers.hh>
-
+#include <dune/fem-dg/operator/dg/dgoperatorchoice.hh>
 
 
 enum AdvectionDiffusionOperatorType

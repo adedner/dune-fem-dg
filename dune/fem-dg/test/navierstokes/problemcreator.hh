@@ -138,8 +138,8 @@ struct NavierStokesProblemCreator
     public:
 
       typedef Dune::Fem::AdaptIndicator< IndicatorType, GradientIndicatorType >                     AdaptIndicatorType;
-      typedef Dune::Fem::DefaultSolverMonitorHandler                                                SolverMonitorHandlerType;
-      typedef Dune::Fem::DefaultDiagnosticsHandler                                                  DiagnosticsHandlerType;
+      typedef Dune::Fem::SubSolverMonitorHandler< Dune::Fem::SolverMonitor< 1 > >                   SolverMonitorHandlerType;
+      typedef Dune::Fem::SubDiagnosticsHandler< Dune::Diagnostics >                                 DiagnosticsHandlerType;
 
     };
 
