@@ -222,22 +222,22 @@ namespace Fem
     {}
 
     template <class ... Args>
-    double registerData(Args&& ... ) const {};
+    void registerData(Args&& ... ) const {}
 
     template <class ... Args>
-    double getData(Args&& ... ) const {};
+    double getData(Args&& ... ) const { return 0.0; }
 
     template <class ... Args>
-    void print(Args&& ... ) const {};
+    void print(Args&& ... ) const {}
 
     template <class ... Args>
-    void step(Args&& ... ) const {};
+    void step(Args&& ... ) const {}
 
     template <class ... Args>
-    void finalize(Args&& ... ) const {};
+    void finalize(Args&& ... ) const {}
 
     template <class ... Args>
-    SolverMonitorType& monitor(Args&& ... ) { return monitor_; };
+    SolverMonitorType& monitor(Args&& ... ) { return monitor_; }
 
   private:
     SolverMonitorType monitor_;
