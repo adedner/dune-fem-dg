@@ -48,10 +48,10 @@ namespace Dune {
       diagnostics.flush();
     }
 
-    std::string runFileName(const int rank) const
+    std::string runFileName(const int rank, const std::string keyPrefix = "" ) const
     {
       std::stringstream diagnostics;
-      diagnostics << Fem :: Parameter :: commonOutputPath() << "/run." << rank;
+      diagnostics << Fem :: Parameter :: commonOutputPath() << "/run" << keyPrefix << "." << rank;
       return diagnostics.str();
     }
 
@@ -83,9 +83,9 @@ namespace Dune {
       }
     }
   public:
-    explicit Diagnostics( const bool newStart )
+    explicit Diagnostics( const bool newStart, const std::string keyPrefix = "" )
       : comm_( Fem :: MPIManager :: comm() )
-      , runFileName_( runFileName( comm_.rank() ) )
+      , runFileName_( runFileName( comm_.rank(), keyPrefix ) )
       , writeDiagnostics_( Fem :: Parameter :: getValue< int > ("fem.parallel.diagnostics", 0 ) )
       , diagnostics_( createDiagnostics( comm_.rank(), writeDiagnostics_, newStart ) )
       , times_()

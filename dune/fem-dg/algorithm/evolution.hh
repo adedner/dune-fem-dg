@@ -148,9 +148,9 @@ namespace Fem
       model_( *problem_ ),
       exact_( "exact solution", space() ),
       dataTuple_( std::make_tuple( &solution(), &exact_ ) ),
-      solverMonitorHandler_( "" ),
+      solverMonitorHandler_( name ),
       odeSolverMonitor_(),
-      diagnosticsHandler_(),
+      diagnosticsHandler_( name ),
       overallTimer_(),
       odeSolver_(),
       overallTime_( 0 )

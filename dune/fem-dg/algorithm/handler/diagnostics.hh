@@ -87,8 +87,9 @@ namespace Fem
     typedef std::map< std::string, double* > DataDoubleType;
 
 
-    SubDiagnosticsHandler()
-      : diagnostics_( true ),
+    SubDiagnosticsHandler( const std::string keyPrefix = "" )
+      : keyPrefix_( keyPrefix ),
+        diagnostics_( true, keyPrefix ),
         dataInt_(),
         dataDouble_()
     {}
@@ -129,6 +130,7 @@ namespace Fem
     }
 
   private:
+    std::string keyPrefix_;
     DiagnosticsType diagnostics_;
     DataIntType        dataInt_;
     DataDoubleType     dataDouble_;
