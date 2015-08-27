@@ -69,14 +69,14 @@ namespace Fem
     {
       std::cout << str << ":  " << getData( str ) << ", ";
       print( tail... );
-    }
+      }
 
     void print() {};
 
     const double getData( const std::string name, CombinationType comb = CombinationType::max ) const
     {
       return getData( tuple_, name, comb, Std::index_sequence_for< StepperHead, StepperArg ... >() );
-    }
+      }
 
     template< std::size_t ... i >
     static double getData( const StepperTupleType& tuple, const std::string name, CombinationType comb, Std::index_sequence< i ... > )
@@ -93,15 +93,15 @@ namespace Fem
             return Std::sum( std::get< i >( tuple )->monitor().getData( name )... ) / std::tuple_size< StepperTupleType >::value;
         default: return 0;
       }
-    }
+     }
 
     template< class TimeProviderImp >
-    void step ( TimeProviderImp& tp )
+    void step( TimeProviderImp& tp )
     {
       ForLoop< Step, 0, sizeof ... ( StepperArg ) >::apply( tuple_, tp );
     }
 
-    void finalize ( const double gridWidth, const double gridSize )
+    void finalize( const double gridWidth, const double gridSize )
     {
       ForLoop< Finalize, 0, sizeof ... ( StepperArg ) >::apply( tuple_, gridWidth, gridSize );
     }
@@ -160,7 +160,7 @@ namespace Fem
 
     template< class... StringType >
     void print( std::string str, StringType&... tail )
-    {
+  {
       std::cout << str << ":  " << getData( str ) << ", ";
       print( tail... );
     }
@@ -192,7 +192,6 @@ namespace Fem
     DataDoubleType            dataDouble_;
     DataIntType               dataInt_;
   };
-
 
   class NoSolverMonitorHandler
   {

@@ -18,29 +18,27 @@ namespace Fem
 {
 
   template< class... StepperArg >
-  class CombinedDefaultDataWriterHandler
+  class CombinedDefaultDataWriterHandler;
+
+  template< class StepperHead, class ... StepperArg >
+  class CombinedDefaultDataWriterHandler< StepperHead, StepperArg ... >
   {
   public:
-    typedef std::tuple< typename std::add_pointer< StepperArg >::type... >                               StepperTupleType;
+    typedef std::tuple< typename std::add_pointer< StepperHead >::type, typename std::add_pointer< StepperArg >::type... > StepperTupleType;
     typedef typename std::remove_pointer< typename std::tuple_element<0,StepperTupleType>::type >::type  FirstStepperType;
-    typedef typename FirstStepperType::GridType                                                          GridType;
-   // typedef typename tuple_concat< typename StepperArg::IOTupleType... >::type                           IOTupleType;
-    typedef typename FirstStepperType::IOTupleType                                                       IOTupleType;
+    typedef typename StepperHead::GridType                                                               GridType;
+    typedef typename tuple_concat< typename StepperHead::IOTupleType, typename StepperArg::IOTupleType... >::type IOTupleType;
     typedef DataWriter< GridType, IOTupleType >                                                          DataWriterType;
 
-
-    static_assert( Std::are_all_same< typename StepperArg::GridType... >::value,
+    static_assert( Std::are_all_same< GridType, typename StepperArg::GridType... >::value,
                    "CombinedDefaultDataWriterHandler: GridType has to be equal for all steppers" );
-    static_assert( sizeof ... ( StepperArg ) > 0,
-                   "CombinedDefaultDataWriterHandler: called with zero steppers" );
-
 
     CombinedDefaultDataWriterHandler( const StepperTupleType& tuple )
       : tuple_( tuple ),
         dataTuple_(),
         dataWriter_()
     {
-      setDataTuple( tuple, Std::index_sequence_for< StepperArg ... >() );
+      setDataTuple( tuple, Std::index_sequence_for< StepperHead, StepperArg ... >() );
     }
 
     template< class TimeProviderImp, class ParameterType >
@@ -80,18 +78,29 @@ namespace Fem
       dataTuple_ = std::tuple_cat( *(std::get< i >( tuple )->dataTuple())... );
     }
 
-    //template< class Element >
-    //Element& returnDataTuple( Element&& elem )
-    //{
-    //  if( elem )
-    //    return elem;
-    //  return std::make_tuple( decltype( elem ) );
-    //}
 
     const StepperTupleType&           tuple_;
     IOTupleType                       dataTuple_;
     std::unique_ptr< DataWriterType > dataWriter_;
 
+  };
+
+  template<>
+  class CombinedDefaultDataWriterHandler<>
+  {
+    public:
+
+    template< class ... Args >
+    CombinedDefaultDataWriterHandler( Args&& ... ) {}
+
+    template< class ... Args >
+    void init( Args&& ...  ) {}
+
+    template< class ... Args >
+    void step( Args&& ...  ) {}
+
+    template< class ... Args >
+    void finalize( Args&& ...  ) {}
   };
 
 

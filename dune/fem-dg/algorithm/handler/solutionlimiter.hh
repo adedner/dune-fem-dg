@@ -7,16 +7,17 @@ namespace Dune
 {
 namespace Fem
 {
-  template< class... StepperArg >
-  class CombinedDefaultSolutionLimiterHandler
+
+  template< class ... StepperArg >
+  class CombinedDefaultSolutionLimiterHandler;
+
+
+  template< class StepperHead, class... StepperArg >
+  class CombinedDefaultSolutionLimiterHandler< StepperHead, StepperArg ... >
   {
   public:
-    typedef std::tuple< typename std::add_pointer< StepperArg >::type... >                               StepperTupleType;
-    typedef typename std::remove_pointer< typename std::tuple_element<0,StepperTupleType>::type >::type  FirstStepperType;
-
-
-    static_assert( sizeof ... ( StepperArg ) > 0,
-                   "CombinedDefaultSolutionLimiterHandler: called with zero steppers" );
+    typedef std::tuple< typename std::add_pointer< StepperHead >::type,
+      typename std::add_pointer< StepperArg >::type... >                               StepperTupleType;
 
     template< int i >
     struct LimitSolution
@@ -34,12 +35,21 @@ namespace Fem
 
     void step()
     {
-      ForLoop< LimitSolution, 0, sizeof ... ( StepperArg )-1 >::apply( tuple_ );
+      ForLoop< LimitSolution, 0, sizeof ... ( StepperArg ) >::apply( tuple_ );
     }
 
   private:
     const StepperTupleType& tuple_;
+  };
 
+  template<>
+  class CombinedDefaultSolutionLimiterHandler<>
+  {
+  public:
+    template< class ... Args >
+    CombinedDefaultSolutionLimiterHandler ( Args && ... ) {}
+
+    void step () {}
   };
 
 
