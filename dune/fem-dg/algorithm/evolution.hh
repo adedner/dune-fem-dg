@@ -206,6 +206,15 @@ namespace Fem
       InitialProjectorType projection( 2 * solution().space().order(), doCommunicate );
       projection( problem().fixedTimeFunction( tp.time() ), solution() );
 
+      //TODO check whether this version would also work (goal: avoid InitialProjectorType typedef :D
+      //auto ftp = problem().fixedTimeFunction( tp.time() );
+      //GridFunctionAdapter< typename ProblemType::InstationaryFunctionType, GridPartType >
+      //  adapter( "-exact", ftp, gridPart() );
+      //interpolate( adapter, solution() );
+      //if( NonBlockingCommParameter::nonBlockingCommunication() )
+      //  solution().communicate();
+
+
       // setup ode solver
       odeSolver_.reset( this->createOdeSolver( tp ) );
 
