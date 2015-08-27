@@ -184,11 +184,11 @@ namespace Fem
 
 
   template< class ... StepperArg >
-  class CombinedDefaultAdaptHandler;
+  class AdaptHandler;
 
 
   template< class StepperHead, class... StepperArg >
-  class CombinedDefaultAdaptHandler< StepperHead, StepperArg... >
+  class AdaptHandler< StepperHead, StepperArg... >
   {
     typedef uint64_t                                                                           UInt64Type;
 
@@ -260,7 +260,7 @@ namespace Fem
 
   public:
 
-    CombinedDefaultAdaptHandler( StepperTupleType& tuple )
+    AdaptHandler( StepperTupleType& tuple )
     : tuple_( tuple ),
       rp_( nullptr ),
       adaptationManager_(),
@@ -329,7 +329,7 @@ namespace Fem
       }
       return 0;
     }
-    
+
    UInt64Type globalNumberOfElements() const { return globalNumberOfElements( Std::index_sequence_for< StepperHead, StepperArg ... >() ); }
 
     template< class TimeProviderImp >
@@ -417,13 +417,13 @@ namespace Fem
 
 
   template<>
-  class CombinedDefaultAdaptHandler<>
+  class AdaptHandler<>
   {
     typedef uint64_t                                                                           UInt64Type;
   public:
 
     template< class ... Args >
-    CombinedDefaultAdaptHandler ( Args && ... ) {}
+    AdaptHandler ( Args && ... ) {}
 
     template< class ... Args >
     bool adaptive( Args&& ... ) const { return false; }

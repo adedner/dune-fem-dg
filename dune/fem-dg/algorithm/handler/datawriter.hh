@@ -18,10 +18,10 @@ namespace Fem
 {
 
   template< class... StepperArg >
-  class CombinedDefaultDataWriterHandler;
+  class DataWriterHandler;
 
   template< class StepperHead, class ... StepperArg >
-  class CombinedDefaultDataWriterHandler< StepperHead, StepperArg ... >
+  class DataWriterHandler< StepperHead, StepperArg ... >
   {
   public:
     typedef std::tuple< typename std::add_pointer< StepperHead >::type, typename std::add_pointer< StepperArg >::type... > StepperTupleType;
@@ -31,9 +31,9 @@ namespace Fem
     typedef DataWriter< GridType, IOTupleType >                                                          DataWriterType;
 
     static_assert( Std::are_all_same< GridType, typename StepperArg::GridType... >::value,
-                   "CombinedDefaultDataWriterHandler: GridType has to be equal for all steppers" );
+                   "DataWriterHandler: GridType has to be equal for all steppers" );
 
-    CombinedDefaultDataWriterHandler( const StepperTupleType& tuple )
+    DataWriterHandler( const StepperTupleType& tuple )
       : tuple_( tuple ),
         dataTuple_(),
         dataWriter_()
@@ -86,12 +86,12 @@ namespace Fem
   };
 
   template<>
-  class CombinedDefaultDataWriterHandler<>
+  class DataWriterHandler<>
   {
     public:
 
     template< class ... Args >
-    CombinedDefaultDataWriterHandler( Args&& ... ) {}
+    DataWriterHandler( Args&& ... ) {}
 
     template< class ... Args >
     void init( Args&& ...  ) {}
@@ -103,24 +103,6 @@ namespace Fem
     void finalize( Args&& ...  ) {}
   };
 
-
-  class NoDataWriterHandler
-  {
-    public:
-
-    template< class ... Args >
-    NoDataWriterHandler( Args&& ... )
-    {}
-
-    template< class ... Args >
-    void init( Args&& ...  ) {}
-
-    template< class ... Args >
-    void step( Args&& ...  ) {}
-
-    template< class ... Args >
-    void finalize( Args&& ...  ) {}
-  };
 
 
 }

@@ -11,14 +11,14 @@ namespace Fem
 {
 
   template< class... StepperArg >
-  class CombinedDefaultSolverMonitorHandler;
+  class SolverMonitorHandler;
 
   template< >
-  class CombinedDefaultSolverMonitorHandler<>
+  class SolverMonitorHandler<>
   {
   public:
     template <class ... Args>
-    CombinedDefaultSolverMonitorHandler(Args&& ... )
+    SolverMonitorHandler(Args&& ... )
     {}
 
     template <class ... Args>
@@ -33,7 +33,7 @@ namespace Fem
 
 
   template< class StepperHead, class... StepperArg >
-  class CombinedDefaultSolverMonitorHandler< StepperHead, StepperArg... >
+  class SolverMonitorHandler< StepperHead, StepperArg... >
   {
   public:
     typedef std::tuple< typename std::add_pointer< StepperHead >::type,
@@ -60,7 +60,7 @@ namespace Fem
       }
     };
 
-    CombinedDefaultSolverMonitorHandler( const StepperTupleType& tuple )
+    SolverMonitorHandler( const StepperTupleType& tuple )
       : tuple_( tuple )
     {}
 
@@ -110,9 +110,12 @@ namespace Fem
     StepperTupleType  tuple_;
   };
 
+  template< class... SolverMonitorImp >
+  class SubSolverMonitorHandler;
+
 
   template< class SolverMonitorImp >
-  class DefaultSolverMonitorHandler
+  class SubSolverMonitorHandler< SolverMonitorImp >
   {
   public:
     typedef SolverMonitorImp               SolverMonitorType;
@@ -120,7 +123,7 @@ namespace Fem
     typedef std::map< std::string, std::tuple< double*, double*, bool > > DataDoubleType;
     typedef std::map< std::string, std::tuple< long unsigned int*, long unsigned int*, bool > >       DataIntType;
 
-    DefaultSolverMonitorHandler( const std::string keyPrefix = "" )
+    SubSolverMonitorHandler( const std::string keyPrefix = "" )
       : solverMonitor_()
     {}
 
@@ -160,7 +163,7 @@ namespace Fem
 
     template< class... StringType >
     void print( std::string str, StringType&... tail )
-  {
+    {
       std::cout << str << ":  " << getData( str ) << ", ";
       print( tail... );
     }
@@ -193,12 +196,28 @@ namespace Fem
     DataIntType               dataInt_;
   };
 
-  class NoSolverMonitorHandler
-  {
-  public:
-    typedef SolverMonitor<1>     SolverMonitorType;
 
-    NoSolverMonitorHandler( const std::string keyPrefix = "" )
+  template<>
+  class SubSolverMonitorHandler<>
+  {
+    //simple no solver monitor handler
+    //capturing most famous issues
+    struct NoSolverMonitorType
+    {
+      double gridWidth;
+      unsigned long int elements;
+      int timeSteps;
+      int newton_iterations;
+      int ils_iterations;
+      int operator_calls;
+      int max_newton_iterations;
+      int max_ils_iterations;
+    };
+  public:
+
+    typedef NoSolverMonitorType    SolverMonitorType;
+
+    SubSolverMonitorHandler( const std::string keyPrefix = "" )
       : monitor_()
     {}
 

@@ -9,11 +9,11 @@ namespace Fem
 {
 
   template< class... StepperArg >
-  class CombinedDefaultDiagnosticsHandler;
+  class DiagnosticsHandler;
 
 
   template< class StepperHead, class ... StepperArg >
-  class CombinedDefaultDiagnosticsHandler< StepperHead, StepperArg ... >
+  class DiagnosticsHandler< StepperHead, StepperArg ... >
   {
     typedef std::tuple< typename std::add_pointer< StepperHead >::type,
       typename std::add_pointer< StepperArg >::type... >                                StepperTupleType;
@@ -40,7 +40,7 @@ namespace Fem
 
   public:
 
-    CombinedDefaultDiagnosticsHandler( const StepperTupleType& tuple )
+    DiagnosticsHandler( const StepperTupleType& tuple )
       : tuple_( tuple )
     {}
 
@@ -60,11 +60,11 @@ namespace Fem
   };
 
   template<>
-  class CombinedDefaultDiagnosticsHandler<>
+  class DiagnosticsHandler<>
   {
   public:
     template< class ... Args >
-    CombinedDefaultDiagnosticsHandler ( Args && ... ) {}
+    DiagnosticsHandler ( Args && ... ) {}
 
     template <class ... Args>
     void step( Args&& ... ) const {};
@@ -74,8 +74,12 @@ namespace Fem
   };
 
 
+
+  template< class... DiagnosticsImp >
+  class SubDiagnosticsHandler;
+
   template< class DiagnosticsImp >
-  class DefaultDiagnosticsHandler
+  class SubDiagnosticsHandler< DiagnosticsImp >
   {
   public:
     typedef DiagnosticsImp DiagnosticsType;
@@ -83,7 +87,7 @@ namespace Fem
     typedef std::map< std::string, double* > DataDoubleType;
 
 
-    DefaultDiagnosticsHandler()
+    SubDiagnosticsHandler()
       : diagnostics_( true ),
         dataInt_(),
         dataDouble_()
@@ -131,10 +135,27 @@ namespace Fem
   };
 
 
-
-  class NoDiagnosticsHandler
+  template<>
+  class SubDiagnosticsHandler<>
   {
+    struct NoDiagnosticsType
+    {
+      template <class ... Args>
+      void step( Args&& ... ) const {};
+
+      template <class ... Args>
+      void finalize( Args&& ... ) const {};
+    };
+
   public:
+    typedef NoDiagnosticsType     DiagnosticsType;
+
+    template <class ... Args>
+    double getData( Args&& ... ) const { return 0.0; };
+
+    template <class ... Args>
+    void registerData( Args&& ... ) const {};
+
     template <class ... Args>
     void step( Args&& ... ) const {};
 

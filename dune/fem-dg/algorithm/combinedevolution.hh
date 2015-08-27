@@ -100,13 +100,13 @@ namespace Fem
     // wrap operator
     typedef GridTimeProvider< GridType >                                   TimeProviderType;
 
-    typedef Dune::Fem::CombinedDefaultDiagnosticsHandler    < typename ProblemTraits::template Stepper<polOrder>::Type...  > DiagnosticsHandlerType;
-    typedef Dune::Fem::CombinedDefaultSolverMonitorHandler  < typename ProblemTraits::template Stepper<polOrder>::Type...  > SolverMonitorHandlerType;
-    typedef Dune::Fem::CombinedDefaultCheckPointHandler     < typename ProblemTraits::template Stepper<polOrder>::Type...  > CheckPointHandlerType;
-    typedef Dune::Fem::CombinedDefaultDataWriterHandler     < typename ProblemTraits::template Stepper<polOrder>::Type...  > DataWriterHandlerType;
-    typedef Dune::Fem::NoAdditionalOutputHandler                                                                             AdditionalOutputHandlerType;
-    typedef Dune::Fem::CombinedDefaultSolutionLimiterHandler< typename ProblemTraits::template Stepper<polOrder>::Type...  > SolutionLimiterHandlerType;
-    typedef Dune::Fem::CombinedDefaultAdaptHandler          < typename ProblemTraits::template Stepper<polOrder>::Type...  > AdaptHandlerType;
+    typedef Dune::Fem::DiagnosticsHandler    < typename ProblemTraits::template Stepper<polOrder>::Type...  > DiagnosticsHandlerType;
+    typedef Dune::Fem::SolverMonitorHandler  < typename ProblemTraits::template Stepper<polOrder>::Type...  > SolverMonitorHandlerType;
+    typedef Dune::Fem::CheckPointHandler     < typename ProblemTraits::template Stepper<polOrder>::Type...  > CheckPointHandlerType;
+    typedef Dune::Fem::DataWriterHandler     < typename ProblemTraits::template Stepper<polOrder>::Type...  > DataWriterHandlerType;
+    typedef Dune::Fem::NoAdditionalOutputHandler                                                              AdditionalOutputHandlerType;
+    typedef Dune::Fem::SolutionLimiterHandler< typename ProblemTraits::template Stepper<polOrder>::Type...  > SolutionLimiterHandlerType;
+    typedef Dune::Fem::AdaptHandler          < typename ProblemTraits::template Stepper<polOrder>::Type...  > AdaptHandlerType;
 
     typedef typename DataWriterHandlerType::IOTupleType                                                                      IOTupleType;
   };

@@ -17,7 +17,7 @@ namespace Fem
 {
 
   template< class GridImp >
-  class DefaultGridCheckPointHandler
+  class GridCheckPointHandler
   {
   public:
     typedef GridImp                                            GridType;
@@ -61,20 +61,20 @@ namespace Fem
 
 
   template< class... StepperArg >
-  class CombinedDefaultCheckPointHandler;
+  class CheckPointHandler;
 
   template< class StepperHead, class ... StepperArg >
-  class CombinedDefaultCheckPointHandler< StepperHead, StepperArg ... >
+  class CheckPointHandler< StepperHead, StepperArg ... >
   {
-    typedef DefaultGridCheckPointHandler< typename StepperHead::GridType >                          BaseType;
+    typedef GridCheckPointHandler< typename StepperHead::GridType >                                 BaseType;
     typedef typename BaseType::GridType                                                             GridType;
     typedef typename BaseType::CheckPointerType                                                     CheckPointerType;
     typedef typename BaseType::CheckPointerParametersType                                           CheckPointerParametersType;
     typedef std::tuple< typename std::add_pointer< StepperHead >::type, typename std::add_pointer< StepperArg >::type... > StepperTupleType;
 
     static_assert( Std::are_all_same< typename StepperHead::GridType, typename StepperArg::GridType... >::value,
-                   "CombinedDefaultCheckPointHandler: GridType has to be equal for all steppers" );
-  
+                   "CheckPointHandler: GridType has to be equal for all steppers" );
+
     template< int i >
     struct RegisterData
     {
@@ -88,7 +88,7 @@ namespace Fem
 
   public:
 
-    CombinedDefaultCheckPointHandler( const StepperTupleType& tuple )
+    CheckPointHandler( const StepperTupleType& tuple )
       : tuple_( tuple ),
         checkPointer_(),
         keyPrefix_( std::get<0>( tuple_ )->name() ),
@@ -136,12 +136,12 @@ namespace Fem
 
 
   template<>
-  class CombinedDefaultCheckPointHandler<>
+  class CheckPointHandler<>
   {
     public:
 
     template< class ... Args >
-    CombinedDefaultCheckPointHandler( Args&& ... ) {}
+    CheckPointHandler( Args&& ... ) {}
 
     template< class ... Args>
     static bool checkPointExists( Args&& ... ) {return false;}
@@ -162,38 +162,6 @@ namespace Fem
     template< class ... Args>
     void step( Args&& ... ) const {}
   };
-
-
-  template< class GridImp>
-  class NoCheckPointHandler
-  {
-    public:
-
-    template< class ... Args >
-    NoCheckPointHandler( Args&& ... )
-    {}
-
-    template< class ... Args>
-    static bool checkPointExists( Args&& ... ) {return false;}
-
-    template< class ... Args>
-    static Dune::GridPtr< GridImp > restoreGrid( Args&& ... )
-    {
-      Dune::GridPtr< GridImp > gridptr;
-      return gridptr;
-    }
-
-    template< class ... Args>
-    void registerData( Args&& ... ) const {}
-
-    template< class ... Args>
-    bool restoreData( Args&& ... ) const { return false;}
-
-    template< class ... Args>
-    void step( Args&& ... ) const {}
-
-  };
-
 
 }
 }

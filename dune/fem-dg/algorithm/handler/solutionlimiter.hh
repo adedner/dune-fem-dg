@@ -9,11 +9,11 @@ namespace Fem
 {
 
   template< class ... StepperArg >
-  class CombinedDefaultSolutionLimiterHandler;
+  class SolutionLimiterHandler;
 
 
   template< class StepperHead, class... StepperArg >
-  class CombinedDefaultSolutionLimiterHandler< StepperHead, StepperArg ... >
+  class SolutionLimiterHandler< StepperHead, StepperArg ... >
   {
   public:
     typedef std::tuple< typename std::add_pointer< StepperHead >::type,
@@ -29,7 +29,7 @@ namespace Fem
       }
     };
 
-    CombinedDefaultSolutionLimiterHandler( const StepperTupleType& tuple )
+    SolutionLimiterHandler( const StepperTupleType& tuple )
       : tuple_( tuple )
     {}
 
@@ -43,55 +43,13 @@ namespace Fem
   };
 
   template<>
-  class CombinedDefaultSolutionLimiterHandler<>
+  class SolutionLimiterHandler<>
   {
   public:
     template< class ... Args >
-    CombinedDefaultSolutionLimiterHandler ( Args && ... ) {}
+    SolutionLimiterHandler ( Args && ... ) {}
 
     void step () {}
-  };
-
-
-  template< class LimiterOperatorImp >
-  class DefaultSolutionLimiterHandler
-  {
-  public:
-    typedef LimiterOperatorImp   LimiterOperatorType;
-
-    DefaultSolutionLimiterHandler( const std::string keyPrefix = "" )
-    {}
-
-    template< class SolutionImp >
-    void step( SolutionImp& sol )
-    {
-      limOp_->limit( sol );
-    }
-
-    void setLimiter( LimiterOperatorType* limOp )
-    {
-      limOp_ = limOp;
-    }
-
-
-  private:
-    LimiterOperatorType* limOp_;
-
-  };
-
-
-
-  class NoSolutionLimiterHandler
-  {
-  public:
-    NoSolutionLimiterHandler( const std::string keyPrefix = "" )
-    {}
-
-    template < class ... Args >
-    void step( Args&& ... ) {};
-
-    template < class ... Args >
-    void setLimiter( Args&& ... ) {};
   };
 
 }

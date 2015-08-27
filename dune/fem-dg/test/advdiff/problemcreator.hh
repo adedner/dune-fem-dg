@@ -155,8 +155,8 @@ struct AdvectionDiffusionProblemCreator
     public:
 
       typedef Dune::Fem::AdaptIndicator< IndicatorType, GradientIndicatorType >                     AdaptIndicatorType;
-      typedef Dune::Fem::DefaultSolverMonitorHandler< Dune::Fem::SolverMonitor< 1 > >               SolverMonitorHandlerType;
-      typedef Dune::Fem::DefaultDiagnosticsHandler< Dune::Diagnostics >                             DiagnosticsHandlerType;
+      typedef Dune::Fem::SubSolverMonitorHandler< Dune::Fem::SolverMonitor< 1 > >                   SolverMonitorHandlerType;
+      typedef Dune::Fem::SubDiagnosticsHandler< >                                 DiagnosticsHandlerType;
     };
 
     template <int polOrd>

@@ -241,7 +241,7 @@ namespace Fem
       solverMonitorHandler_.registerData( "TimeSteps", solverMonitorHandler_.monitor().timeSteps, nullptr, true );
       solverMonitorHandler_.registerData( "Newton", solverMonitorHandler_.monitor().newton_iterations,       &odeSolverMonitor_.newtonIterations_);
       solverMonitorHandler_.registerData( "ILS", solverMonitorHandler_.monitor().ils_iterations,             &odeSolverMonitor_.linearSolverIterations_);
-      solverMonitorHandler_.registerData( "OC", solverMonitorHandler_.monitor().operator_calls,              &odeSolverMonitor_.spaceOperatorCalls_);
+      //solverMonitorHandler_.registerData( "OC", solverMonitorHandler_.monitor().operator_calls,              &odeSolverMonitor_.spaceOperatorCalls_);
       solverMonitorHandler_.registerData( "maxNewton",solverMonitorHandler_.monitor().max_newton_iterations, &odeSolverMonitor_.maxNewtonIterations_ );
       solverMonitorHandler_.registerData( "minNewton",solverMonitorHandler_.monitor().max_ils_iterations,    &odeSolverMonitor_.maxLinearSolverIterations_ );
 
@@ -279,7 +279,7 @@ namespace Fem
       AnalyticalTraits::addEOCErrors( tp, solution(), model(), problem() );
 
       // delete ode solver
-      odeSolver().reset();
+      odeSolver_.reset();
     }
 
     std::string description () const { return problem().description(); }
