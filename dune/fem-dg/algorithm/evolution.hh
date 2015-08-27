@@ -1,37 +1,14 @@
 #ifndef DUNE_FEMDG_ALGORITHM_EVOLUTION_HH
 #define DUNE_FEMDG_ALGORITHM_EVOLUTION_HH
 
-
-#include <dune/fem/gridpart/adaptiveleafgridpart.hh>
-#include <dune/fem/gridpart/leafgridpart.hh>
-#include <dune/fem/misc/gridwidth.hh>
-
-// helm holz operator wrapper
-//#include <dune/fem/operator/dg/helmholtz.hh>
-
-#include <dune/fem-dg/algorithm/base.hh>
-#include <dune/fem-dg/operator/dg/passtraits.hh>
-#include <dune/fem-dg/operator/dg/dgoperatorchoice.hh>
-#include <dune/fem/misc/femtimer.hh>
-
-// include std libs
 #include <iostream>
 #include <string>
 
-// Dune includes
-#include <dune/fem/misc/l2norm.hh>
-#include <dune/fem/operator/projection/l2projection.hh>
-#include <dune/fem-dg/pass/threadpass.hh>
-#include <dune/common/timer.hh>
-#include "monitor.hh"
+#include <dune/fem/misc/gridwidth.hh>
 
-#include <dune/fem-dg/algorithm/handler/diagnostics.hh>
-#include <dune/fem-dg/algorithm/handler/solvermonitor.hh>
-#include <dune/fem-dg/algorithm/handler/checkpoint.hh>
-#include <dune/fem-dg/algorithm/handler/datawriter.hh>
-#include <dune/fem-dg/algorithm/handler/additionaloutput.hh>
-#include <dune/fem-dg/algorithm/handler/solutionlimiter.hh>
-#include <dune/fem-dg/algorithm/handler/adapt.hh>
+#include <dune/fem/misc/femtimer.hh>
+#include <dune/common/timer.hh>
+#include <dune/fem/space/common/interpolate.hh>
 
 namespace Dune
 {
@@ -273,7 +250,11 @@ namespace Fem
     {
       // setup exact solution
       // TODO: Add this projection to addtional output writer, later
-      Dune::Fem::DGL2ProjectionImpl::project( problem().exactSolution( tp.time() ), exact_ );
+      auto ftp = problem().fixedTimeFunction( tp.time() );
+      GridFunctionAdapter< typename ProblemType::InstationaryFunctionType, GridPartType >
+        adapter( "-exact", ftp, gridPart() );
+      interpolate( adapter, exact_ );
+
 
       // add eoc errors
       AnalyticalTraits::addEOCErrors( tp, solution(), model(), problem() );
