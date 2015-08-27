@@ -178,9 +178,6 @@ namespace Fem
       odeSolver_(),
       overallTime_( 0 )
     {}
-      //diagnosticsHandler_.registerData( "AdaptationTime", &adaptIndicator()->adaptationTime() );
-      //diagnosticsHandler_.registerData( "LoadBalanceTime", &adaptIndicator()->loadBalanceTime() );
-      //diagnosticsHandler_.registerData( "OverallTimer", &overallTimer_.elapsed() )
     virtual const std::string name () { return algorithmName_; }
 
     GridType& grid () const { return grid_; }
@@ -234,10 +231,9 @@ namespace Fem
 
       // setup ode solver
       odeSolver_.reset( this->createOdeSolver( tp ) );
-      assert( odeSolver_ );
 
       // initialize ode solver
-      odeSolver_->initialize( solution() );
+      odeSolver().initialize( solution() );
 
       //initialize solverMonitor
       solverMonitorHandler_.registerData( "GridWidth", solverMonitorHandler_.monitor().gridWidth, nullptr, true );
@@ -265,8 +261,7 @@ namespace Fem
       odeSolverMonitor_.reset();
 
       // solve ODE
-      assert(odeSolver_);
-      odeSolver_->solve( solution(), odeSolverMonitor_ );
+      odeSolver().solve( solution(), odeSolverMonitor_ );
 
       overallTime_ = overallTimer_.stop();
     }
@@ -284,7 +279,7 @@ namespace Fem
       AnalyticalTraits::addEOCErrors( tp, solution(), model(), problem() );
 
       // delete ode solver
-      odeSolver_.reset();
+      odeSolver().reset();
     }
 
     std::string description () const { return problem().description(); }
