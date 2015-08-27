@@ -22,20 +22,16 @@ namespace Dune
 namespace Fem
 {
 
-  template< class GridImp,
+  template<class Grid,
             class ProblemTraits,
-            int polOrd,
-            class SolverMonitorHandlerImp >
-  struct SteadyStateTraits
+            int polOrd >
+  struct SubSteadyStateTraits
   {
     enum { polynomialOrder = polOrd };
 
     // type of Grid
-    typedef GridImp                                                GridType;
-
-    // Choose a suitable GridView
-    typedef AdaptiveLeafGridPart< GridType >                       HostGridPartType;
-
+    typedef Grid                                                   GridType;
+    typedef typename ProblemTraits::HostGridPartType               HostGridPartType;
     typedef typename ProblemTraits::GridPartType                   GridPartType;
 
     typedef typename ProblemTraits::AnalyticalTraits               AnalyticalTraits;
@@ -65,23 +61,21 @@ namespace Fem
     // type of IOTuple
     typedef typename DiscreteTraits::IOTupleType                   IOTupleType;
 
-    typedef SolverMonitorHandlerImp                                SolverMonitorHandlerType;
+    //typedef typename DiscreteTraits::AdaptIndicatorType            AdaptIndicatorType;
+    typedef typename DiscreteTraits::SolverMonitorHandlerType      SolverMonitorHandlerType;
+    typedef typename DiscreteTraits::DiagnosticsHandlerType        DiagnosticsHandlerType;
   };
 
 
-  template< class Grid, class ProblemTraits, int polOrder, class HandlerTraits = typename ProblemTraits::template DiscreteTraits< polOrder >::HandlerTraits >
-  class SteadyStateAlgorithm
-    : public AlgorithmBase< SteadyStateTraits< Grid, ProblemTraits, polOrder,
-                            typename HandlerTraits::SolverMonitorHandlerType > >
+  template< class Grid, class ProblemTraits, int polOrder >
+  class SubSteadyStateAlgorithm
   {
-    typedef SteadyStateTraits< Grid, ProblemTraits, polOrder,
-                               typename HandlerTraits::SolverMonitorHandlerType > Traits;
-    typedef AlgorithmBase< Traits > BaseType;
+    typedef SubSteadyStateTraits< Grid, ProblemTraits, polOrder >    Traits;
 
   public:
-    typedef typename BaseType::GridType                           GridType;
-    typedef typename BaseType::IOTupleType                        IOTupleType;
-    typedef typename BaseType::SolverMonitorType                  SolverMonitorType;
+    typedef typename Traits::GridType                           GridType;
+    typedef typename Traits::IOTupleType                        IOTupleType;
+    typedef typename Traits::SolverMonitorType                  SolverMonitorType;
 
     typedef typename Traits::HostGridPartType                     HostGridPartType;
 
@@ -109,14 +103,15 @@ namespace Fem
 
     typedef typename Traits::AssemblerType                        AssemblerType;
 
-    typedef typename Traits::SolverMonitorHandlerType             SolverMonitorHandlerType;
-
     typedef uint64_t                                              UInt64Type ;
 
-    using BaseType::grid;
+    //typedef typename Traits::AdaptIndicatorType                   AdaptIndicatorType;
+    typedef typename Traits::SolverMonitorHandlerType             SolverMonitorHandlerType;
+    typedef typename Traits::DiagnosticsHandlerType               DiagnosticsHandlerType;
 
-    SteadyStateAlgorithm ( GridType &grid, const std::string name = "", std::string solName = ""  )
-      : BaseType( grid, name ),
+    SubSteadyStateAlgorithm ( GridType &grid, const std::string name = "", std::string solName = ""  )
+      : grid_( grid ),
+        algorithmName_( name ),
         problem_( ProblemTraits::problem() ),
         model_( problem() ),
         solverMonitorHandler_( "" ),
@@ -127,14 +122,15 @@ namespace Fem
       solution().clear();
     }
 
+    virtual const std::string name () { return algorithmName_; }
+
+    GridType& grid () const { return grid_; }
+
     //! return reference to discrete space
     DiscreteFunctionSpaceType& space () { return space_; }
     const DiscreteFunctionSpaceType& space () const { return space_; }
 
-    virtual DiscreteFunctionType& solution ()
-    {
-      return solution_;
-    }
+    virtual DiscreteFunctionType& solution () { return solution_; }
 
     virtual DiscreteFunctionType& rhs() = 0;
 
@@ -163,20 +159,31 @@ namespace Fem
 
     virtual BasicLinearSolverType* createSolver( DiscreteFunctionType* rhs ) = 0;
 
-    virtual void solve ( const int loop )
+    virtual void initialize ( const int loop )
+    {
+      solverMonitorHandler_.registerData( "ILS", solverMonitorHandler_.monitor().ils_iterations, &solver_.iterations() );
+    }
+
+    virtual void preSolve( const int loop )
     {
       solution().clear();
-
       solver_.reset( this->createSolver( &rhs() ) );
+    }
 
+    virtual void solve ( const int loop )
+    {
       (*solver_)( rhs(), solution() );
+    }
 
+    virtual void postSolve( const int loop )
+    {
       solverMonitorHandler_.finalize( gridWidth(), gridSize(), *solver_ );
     }
 
-    //! finalize computation by calculating errors and EOCs
-    virtual void finalize ( const int eocloop )
-    {}
+    void finalize ( const int loop )
+    {
+      solver_.reset( nullptr );
+    }
 
     const ProblemType &problem () const
     {
@@ -194,6 +201,8 @@ namespace Fem
     const ModelType &model () const { return model_; }
 
   protected:
+    GridType&   grid_;
+    std::string algorithmName_;
     ProblemType *problem_;
     ModelType model_;
 

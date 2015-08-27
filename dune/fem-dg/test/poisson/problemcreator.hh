@@ -10,6 +10,15 @@
 #define POLORDER 1
 #endif
 
+//--------- HANDLER --------------------------------
+#include <dune/fem-dg/algorithm/handler/diagnostics.hh>
+#include <dune/fem-dg/algorithm/handler/solvermonitor.hh>
+#include <dune/fem-dg/algorithm/handler/checkpoint.hh>
+#include <dune/fem-dg/algorithm/handler/datawriter.hh>
+#include <dune/fem-dg/algorithm/handler/additionaloutput.hh>
+#include <dune/fem-dg/algorithm/handler/solutionlimiter.hh>
+#include <dune/fem-dg/algorithm/handler/adapt.hh>
+
 //--------- GRID HELPER ---------------------
 #include <dune/fem-dg/algorithm/gridinitializer.hh>
 #include "gridinitializer.hh"
@@ -23,6 +32,7 @@
 #include <dune/fem-dg/operator/fluxes/noflux.hh>
 //--------- STEPPER -------------------------
 #include <dune/fem-dg/algorithm/ellipticalgorithm.hh>
+#include <dune/fem-dg/algorithm/combinedsteadystate.hh>
 //--------- EOCERROR ------------------------
 #include <dune/fem-dg/misc/error/l2eocerror.hh>
 #include <dune/fem-dg/misc/error/h1eocerror.hh>
@@ -34,106 +44,107 @@
 //--------- PROBLEMCREATORSELECTOR ----------
 #include <dune/fem-dg/misc/problemcreatorselector.hh>
 
-
 template< class GridImp >
 struct PoissonProblemCreator
 {
-  typedef GridImp                                         GridType;
-  typedef Dune::Fem::DGAdaptiveLeafGridPart< GridType >   HostGridPartType;
-  typedef HostGridPartType                                GridPartType;
 
-  // define problem type here if interface should be avoided
-  typedef Dune::Fem::FunctionSpace< typename GridType::ctype, double, GridType::dimension, DIMRANGE >
-                                                                FunctionSpaceType;
-  typedef Dune::ProblemInterface< FunctionSpaceType >           ProblemInterfaceType;
 
-  template< class GridPart > // TODO: is this template parameter needed?
-  struct AnalyticalTraits
+  struct SubPoissonProblemCreator
   {
-    typedef ProblemInterfaceType                                ProblemType;
-    typedef ProblemInterfaceType                                InitialDataType;
-    typedef PoissonModel< GridPart, InitialDataType >           ModelType;
+    typedef GridImp                                         GridType;
+    typedef Dune::Fem::DGAdaptiveLeafGridPart< GridType >   HostGridPartType;
+    typedef HostGridPartType                                GridPartType;
 
-    template< class Solution, class Model, class ExactFunction, class SigmaFunction>
-    static void addEOCErrors ( Solution &u, Model &model, ExactFunction &f, SigmaFunction& sigma )
+    // define problem type here if interface should be avoided
+    typedef Dune::Fem::FunctionSpace< typename GridType::ctype, double, GridType::dimension, DIMRANGE >
+                                                                  FunctionSpaceType;
+    typedef Dune::ProblemInterface< FunctionSpaceType >           ProblemInterfaceType;
+
+    struct AnalyticalTraits
     {
-      static L2EOCError l2EocError( "$L^2$-Error" );
-      l2EocError.add( u, f );
-      static DGEOCError dgEocError( "DG-Error" );
-      dgEocError.add( u, f );
-      static H1EOCError sigmaEocError( "sigma-norm" );
-      sigmaEocError.add( sigma, f );
+      typedef ProblemInterfaceType                                ProblemType;
+      typedef ProblemInterfaceType                                InitialDataType;
+      typedef PoissonModel< GridPartType, InitialDataType >       ModelType;
+
+      template< class Solution, class Model, class ExactFunction, class SigmaFunction>
+      static void addEOCErrors ( Solution &u, Model &model, ExactFunction &f, SigmaFunction& sigma )
+      {
+        static L2EOCError l2EocError( "$L^2$-Error" );
+        l2EocError.add( u, f );
+        static DGEOCError dgEocError( "DG-Error" );
+        dgEocError.add( u, f );
+        static H1EOCError sigmaEocError( "sigma-norm" );
+        sigmaEocError.add( sigma, f );
+      }
+
+    };
+
+    static inline std::string moduleName() { return ""; }
+
+    static ProblemInterfaceType* problem()
+    {
+      int probNr = Dune::Fem::Parameter::getValue< int > ( "problem" );
+      return new Dune :: PoissonProblem< GridType, DIMRANGE > ( probNr );
     }
 
-  };
 
-  static inline std::string moduleName() { return ""; }
-
-  static inline Dune::GridPtr<GridType> initializeGrid() { return Dune::Fem::PoissonGridInitializer< GridType >::initializeGrid(); }
-
-  static ProblemInterfaceType* problem()
-  {
-    int probNr = Dune::Fem::Parameter::getValue< int > ( "problem" );
-    return new Dune :: PoissonProblem< GridType, DIMRANGE > ( probNr );
-  }
-
-
-  //Stepper Traits
-  template< class GridPart, int polOrd > // TODO: is GridPart as a template parameter needed?
-  struct DiscreteTraits
-  {
-  private:
-    static const SolverType solverType = istl ;
-  public:
-    typedef AnalyticalTraits< GridPartType >                                                    AnalyticalTraitsType;
-
-    static const int polynomialOrder = polOrd;
-
-    static const int quadOrder = polynomialOrder * 3 + 1;
-
-    typedef typename DiscreteFunctionSpaces< FunctionSpaceType, GridPartType, polynomialOrder, _legendre, dg >::type    DiscreteFunctionSpaceType;
-    typedef typename DiscreteFunctions< DiscreteFunctionSpaceType, solverType >::type                                   DiscreteFunctionType;
-    typedef typename DiscreteFunctions< DiscreteFunctionSpaceType, solverType >::jacobian                               JacobianOperatorType;
-
-    typedef std::tuple<>                                                                        ExtraParameterTuple;
-
-  private:
-    typedef typename AnalyticalTraitsType::ProblemType::ExactSolutionType                       ExactSolutionType;
-
-    typedef Dune::AdaptationHandler< GridType, FunctionSpaceType >                              AdaptationHandlerType;
-
-    typedef Dune::UpwindFlux< typename AnalyticalTraitsType::ModelType >                        FluxType;
-
-    typedef Dune::Fem::FunctionSpace< typename GridType::ctype, double, AnalyticalTraitsType::ModelType::dimDomain, 3> FVFunctionSpaceType;
-    typedef Dune::Fem::FiniteVolumeSpace<FVFunctionSpaceType,GridPartType, 0, Dune::Fem::SimpleStorage> IndicatorSpaceType;
-    typedef Dune::Fem::AdaptiveDiscreteFunction<IndicatorSpaceType>                             IndicatorType;
-
-    typedef Dune::OperatorTraits< GridPartType, polynomialOrder, AnalyticalTraitsType,
-                                  DiscreteFunctionType, FluxType,  IndicatorType,
-                                  AdaptationHandlerType, ExtraParameterTuple >                  OperatorTraitsType;
-
-    typedef Dune::DGAdvectionDiffusionOperator< OperatorTraitsType >                            AssemblyOperatorType;
-  public:
-    typedef Dune::Fem::GridFunctionAdapter< ExactSolutionType, GridPartType >                   GridExactSolutionType;
-
-    typedef std::tuple< DiscreteFunctionType*, GridExactSolutionType* >                         IOTupleType;
-
-    static const bool symmetricSolver = true ;
-    typedef Solvers<DiscreteFunctionSpaceType, solverType, symmetricSolver>                     SolversType;
-
-    typedef Dune::DGPrimalMatrixAssembly< AssemblyOperatorType >                                AssemblerType;
-    typedef typename SolversType::LinearOperatorType                                            OperatorType;
-
-    typedef typename SolversType::LinearInverseOperatorType                                     BasicLinearSolverType;
-
-    //------HANDLER-----------------------------------------------------
-    struct HandlerTraits
+    //Stepper Traits
+    template< int polOrd >
+    struct DiscreteTraits
     {
     private:
-      // type of restriction/prolongation projection for adaptive simulations
-      typedef Dune::Fem::RestrictProlongDefault< DiscreteFunctionType >                         RestrictionProlongationType;
+      static const SolverType solverType = istl ;
     public:
-      typedef Dune::Fem::DefaultSteadyStateSolverMonitorHandler                                 SolverMonitorHandlerType;
+      typedef typename DiscreteFunctionSpaces< FunctionSpaceType, GridPartType, polOrd, _legendre, dg >::type    DiscreteFunctionSpaceType;
+      typedef typename DiscreteFunctions< DiscreteFunctionSpaceType, solverType >::type                          DiscreteFunctionType;
+      typedef typename DiscreteFunctions< DiscreteFunctionSpaceType, solverType >::jacobian                      JacobianOperatorType;
+
+      typedef std::tuple<>                                                                        ExtraParameterTuple;
+
+    private:
+      typedef typename AnalyticalTraits::ProblemType::ExactSolutionType                           ExactSolutionType;
+
+      typedef Dune::AdaptationHandler< GridType, FunctionSpaceType >                              AdaptationHandlerType;
+
+      typedef Dune::UpwindFlux< typename AnalyticalTraits::ModelType >                            FluxType;
+
+      typedef Dune::Fem::FunctionSpace< typename GridType::ctype, double, AnalyticalTraits::ModelType::dimDomain, 3> FVFunctionSpaceType;
+      typedef Dune::Fem::FiniteVolumeSpace<FVFunctionSpaceType,GridPartType, 0, Dune::Fem::SimpleStorage> IndicatorSpaceType;
+      typedef Dune::Fem::AdaptiveDiscreteFunction<IndicatorSpaceType>                             IndicatorType;
+
+      typedef Dune::OperatorTraits< GridPartType, polOrd, AnalyticalTraits,
+                                    DiscreteFunctionType, FluxType,  IndicatorType,
+                                    AdaptationHandlerType, ExtraParameterTuple >                  OperatorTraitsType;
+
+      typedef Dune::DGAdvectionDiffusionOperator< OperatorTraitsType >                            AssemblyOperatorType;
+    public:
+      typedef Dune::Fem::GridFunctionAdapter< ExactSolutionType, GridPartType >                   GridExactSolutionType;
+
+      typedef std::tuple< DiscreteFunctionType*, GridExactSolutionType* >                         IOTupleType;
+
+      static const bool symmetricSolver = true ;
+      typedef Solvers<DiscreteFunctionSpaceType, solverType, symmetricSolver>                     SolversType;
+
+      typedef Dune::DGPrimalMatrixAssembly< AssemblyOperatorType >                                AssemblerType;
+      typedef typename SolversType::LinearOperatorType                                            OperatorType;
+
+      typedef typename SolversType::LinearInverseOperatorType                                     BasicLinearSolverType;
+
+    private:
+      //typedef Dune::DGAdaptationIndicatorOperator< OperatorTraitsType, true, true >                 IndicatorType;
+      //typedef Estimator< DiscreteFunctionType, typename AnalyticalTraits::ProblemType >             GradientIndicatorType ;
+    public:
+
+      //typedef Dune::Fem::AdaptIndicator< IndicatorType, GradientIndicatorType >                     AdaptIndicatorType;
+      typedef Dune::Fem::DefaultSolverMonitorHandler                                                SolverMonitorHandlerType;
+      typedef Dune::Fem::DefaultDiagnosticsHandler                                                  DiagnosticsHandlerType;
+    };
+
+    template <int polOrd>
+    struct Stepper
+    {
+      // this should be ok but could lead to a henn-egg problem
+      typedef Dune::Fem::EllipticAlgorithm< GridType, SubPoissonProblemCreator, polOrd > Type;
     };
 
   };
@@ -141,9 +152,16 @@ struct PoissonProblemCreator
   template <int polOrd>
   struct Stepper
   {
-    // this should be ok but could lead to a henn-egg problem
-    typedef Dune::Fem::EllipticAlgorithm< GridType, PoissonProblemCreator<GridType>, polOrd > Type;
+    typedef Dune::Fem::SteadyStateAlgorithm< polOrd, SubPoissonProblemCreator > Type;
   };
+
+  typedef GridImp                                         GridType;
+
+  static inline std::string moduleName() { return ""; }
+
+  static inline Dune::GridPtr<GridType>
+  initializeGrid() { return Dune::Fem::DefaultGridInitializer< GridType >::initialize(); }
+
 
 
 };
