@@ -460,51 +460,6 @@ namespace Fem
   };
 
 
-  class NoAdaptHandler
-  {
-    typedef uint64_t                                                                           UInt64Type;
-  public:
-    template< class ... Args >
-    NoAdaptHandler( Args&& ... )
-    {}
-
-    template< class ... Args >
-    bool adaptive( Args&& ... ) const { return false; }
-
-    template< class ... Args >
-    void setIndicator( Args&& ... ) {}
-
-    template< class ... Args >
-    void step( Args&& ... ) {}
-
-    template< class ... Args >
-    void init( Args&& ... ) {}
-
-    template< class ... Args >
-    size_t numberOfElements( Args&& ... ) const
-    { return 0; }
-
-    template< class ... Args >
-    UInt64Type globalNumberOfElements( Args&& ... ) const
-    { return 0; }
-
-    template< class ... Args >
-    void setAdaptation( Args&& ... ){}
-
-    template< class ... Args >
-    void finalize( Args&& ... ) {}
-
-
-    template< class ... Args >
-    const double adaptationTime() const { return 0.0; }
-
-    template< class ... Args >
-    const double loadBalanceTime() const { return 0.0; }
-
-    template< class ... Args >
-    const double finestLevel() const { return 0.0; }
-  };
-
 }
 }
 #endif
