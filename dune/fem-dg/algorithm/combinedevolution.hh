@@ -161,8 +161,10 @@ namespace Fem
       static void apply ( Tuple &tuple, AdaptHandler& handler, Args && ... args )
       {
         std::get< i >( tuple )->initialize( args... );
+        /*
         std::get< i >( tuple )->diagnostics().registerData( "AdaptationTime", &handler.adaptationTime() );
         std::get< i >( tuple )->diagnostics().registerData( "LoadBalanceTime", &handler.loadBalanceTime() );
+        */
       }
     };
     template< int i >
@@ -456,9 +458,9 @@ namespace Fem
       return solverMonitorHandler_;
     }
 
-    virtual IOTupleType* dataTuple ()
+    virtual IOTupleType dataTuple ()
     {
-      return &dataWriterHandler_.dataTuple();
+      return dataWriterHandler_.dataTuple();
     }
 
     //! returns data prefix for EOC loops ( default is loop )
@@ -506,6 +508,9 @@ namespace Fem
 
       ForLoop< Finalize, 0, sizeof ... ( ProblemTraits )-1 >::apply( tuple_, loop, tp );
     }
+
+    StepperTupleType &stepperTuple () { return tuple_; }
+    const StepperTupleType &stepperTuple () const { return tuple_; }
 
   protected:
     StepperTupleType               tuple_;

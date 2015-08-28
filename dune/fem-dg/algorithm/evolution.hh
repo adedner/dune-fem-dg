@@ -147,7 +147,6 @@ namespace Fem
       problem_( Traits::ProblemTraitsType::problem() ),
       model_( *problem_ ),
       exact_( "exact solution", space() ),
-      dataTuple_( std::make_tuple( &solution(), &exact_ ) ),
       solverMonitorHandler_( name ),
       odeSolverMonitor_(),
       diagnosticsHandler_( name ),
@@ -194,7 +193,7 @@ namespace Fem
     virtual CheckPointDiscreteFunctionType* checkPointSolution () { return &solution_; }
 
     //DATAWRITING
-    virtual IOTupleType* dataTuple () { return &dataTuple_; }
+    virtual IOTupleType dataTuple () { return std::make_tuple( &solution(), &exact_ ); }
 
     //! returns data prefix for EOC loops ( default is loop )
     virtual std::string dataPrefix () const {  return problem().dataPrefix(); }
@@ -311,7 +310,6 @@ namespace Fem
     std::unique_ptr< ProblemType > problem_;
     ModelType                      model_;
     DiscreteFunctionType           exact_;
-    IOTupleType                    dataTuple_;
 
     DiagnosticsHandlerType         diagnosticsHandler_;
     SolverMonitorHandlerType       solverMonitorHandler_;

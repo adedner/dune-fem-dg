@@ -519,7 +519,6 @@ namespace Fem
       exact_( "exact solution", problem().exactSolution(), gridPart_ ),
       pAdapt_(grid_, space_),
       step_( 0 ),
-      dataTuple_( std::make_tuple( &solution(), &exact_ ) )
     {
       std::string gridName = Fem::gridName( grid_ );
       if( gridName == "ALUGrid" || gridName == "ALUConformGrid" || gridName == "ALUSimplexGrid" )
@@ -589,10 +588,7 @@ namespace Fem
       poissonSigmaEstimator_.update();
     }
 
-    IOTupleType* dataTuple()
-    {
-      return &dataTuple_;
-    }
+    IOTupleType dataTuple () { return std::make_tuple( &solution(), &exact_ ); }
 
     //! finalize computation by calculating errors and EOCs
     virtual void finalize( const int eocloop )
@@ -639,7 +635,6 @@ namespace Fem
     GridExactSolutionType           exact_;
     PAdaptivityType                 pAdapt_;
     int                             step_;
-    IOTupleType                     dataTuple_;
 
   };
 

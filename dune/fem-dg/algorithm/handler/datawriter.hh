@@ -35,11 +35,9 @@ namespace Fem
 
     DataWriterHandler( const StepperTupleType& tuple )
       : tuple_( tuple ),
-        dataTuple_(),
-        dataWriter_()
-    {
-      setDataTuple( tuple, Std::index_sequence_for< StepperHead, StepperArg ... >() );
-    }
+        dataWriter_(),
+        dataTuple_( tuple, Std::index_sequence_for< StepperHead, StepperArg ... >() )
+    {}
 
     template< class TimeProviderImp, class ParameterType >
     void init( TimeProviderImp& tp, ParameterType& param  )
@@ -65,24 +63,22 @@ namespace Fem
       }
     }
 
-    IOTupleType& dataTuple()
+    IOTupleType dataTuple()
     {
       return dataTuple_;
     }
 
     private:
     template< std::size_t ... i >
-    void setDataTuple ( const StepperTupleType &tuple, Std::index_sequence< i ... > )
+    IOTupleType dataTuple ( const StepperTupleType &tuple, Std::index_sequence< i ... > )
     {
-      //TODO check tuple elements pointing to null pointer
-      dataTuple_ = std::tuple_cat( *(std::get< i >( tuple )->dataTuple())... );
+      return std::tuple_cat( std::get< i >( tuple )->dataTuple()... );
     }
 
 
     const StepperTupleType&           tuple_;
     IOTupleType                       dataTuple_;
     std::unique_ptr< DataWriterType > dataWriter_;
-
   };
 
   template<>
