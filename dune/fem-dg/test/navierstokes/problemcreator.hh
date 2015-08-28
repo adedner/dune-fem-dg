@@ -95,10 +95,6 @@ struct NavierStokesProblemCreator
 
       typedef std::tuple<> ExtraParameterTuple;
 
-    private:
-      typedef typename AnalyticalTraits::ProblemType::ExactSolutionType                       ExactSolutionType;
-    public:
-      typedef Dune::Fem::GridFunctionAdapter< ExactSolutionType, GridPartType >                   GridExactSolutionType;
       typedef std::tuple< DiscreteFunctionType*, DiscreteFunctionType* >                          IOTupleType;
 
       typedef DuneODE::OdeSolverInterface< DiscreteFunctionType >                                 OdeSolverType;
@@ -140,7 +136,7 @@ struct NavierStokesProblemCreator
       typedef Dune::Fem::AdaptIndicator< IndicatorType, GradientIndicatorType >                     AdaptIndicatorType;
       typedef Dune::Fem::SubSolverMonitorHandler< Dune::Fem::SolverMonitor< 1 > >                   SolverMonitorHandlerType;
       typedef Dune::Fem::SubDiagnosticsHandler< Dune::Diagnostics >                                 DiagnosticsHandlerType;
-
+      typedef Dune::Fem::ExactSolutionOutputHandler< DiscreteFunctionType >                         AdditionalOutputHandlerType;
     };
 
     template <int polOrd>

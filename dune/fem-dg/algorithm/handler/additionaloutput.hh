@@ -116,6 +116,16 @@ namespace Fem
     DiscreteFunctionType& solution_;
   };
 
+  class NoOutputHandler
+  {
+  public:
+    template< class... Args >
+    NoOutputHandler( Args&& ...){}
+
+    template< class... Args >
+    void step( Args&& ...  ){}
+  };
+
 }
 }
 
