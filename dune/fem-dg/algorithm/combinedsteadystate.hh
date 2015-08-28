@@ -210,7 +210,11 @@ namespace Fem
 
     virtual void solve ( const int loop )
     {
+      initialize( loop );
+      preSolve( loop );
       ForLoop< Solve, 0, sizeof ... ( ProblemTraits )-1 >::apply( tuple_, loop );
+      postSolve( loop );
+      finalize( loop );
     }
 
     virtual void postSolve( const int loop )

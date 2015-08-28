@@ -483,8 +483,6 @@ namespace Fem
 
     enum { dimension = GridType::dimension  };
 
-    typedef typename ProblemTraits::template DiscreteTraits< polOrder>::GridExactSolutionType               GridExactSolutionType;
-
     typedef typename DiscreteFunctionSpaceType ::
       template ToNewDimRange< dimension * ModelType::dimRange >::NewFunctionSpaceType SigmaFunctionSpaceType;
 
@@ -503,6 +501,7 @@ namespace Fem
     using BaseType::gridSize;
     using BaseType::space;
     using BaseType::solution;
+    using BaseType::exactSolution_;
     using BaseType::solver_;
 
   public:
@@ -516,9 +515,8 @@ namespace Fem
       space_( const_cast<DiscreteFunctionSpaceType &> (assembler_.space()) ),
       rhs_( "rhs-" + name, space_ ),
       poissonSigmaEstimator_( gridPart_, solution(), assembler_, name ),
-      exact_( "exact solution", problem().exactSolution(), gridPart_ ),
       pAdapt_(grid_, space_),
-      step_( 0 ),
+      step_( 0 )
     {
       std::string gridName = Fem::gridName( grid_ );
       if( gridName == "ALUGrid" || gridName == "ALUConformGrid" || gridName == "ALUSimplexGrid" )
@@ -588,12 +586,12 @@ namespace Fem
       poissonSigmaEstimator_.update();
     }
 
-    IOTupleType dataTuple () { return std::make_tuple( &solution(), &exact_ ); }
+    //IOTupleType dataTuple () { return std::make_tuple( &solution(), &exactSolution_ ); }
 
     //! finalize computation by calculating errors and EOCs
     virtual void finalize( const int eocloop )
     {
-      AnalyticalTraits::addEOCErrors( solution(), model(), exact_, poissonSigmaEstimator_.sigma() );
+      AnalyticalTraits::addEOCErrors( solution(), model(), problem().exactSolution(), poissonSigmaEstimator_.sigma() );
 
       // delete solver and linear operator for next step
       solver_.reset();
@@ -632,7 +630,6 @@ namespace Fem
     DiscreteFunctionSpaceType&      space_;
     DiscreteFunctionType            rhs_;
     PoissonSigmaEstimatorType       poissonSigmaEstimator_;
-    GridExactSolutionType           exact_;
     PAdaptivityType                 pAdapt_;
     int                             step_;
 

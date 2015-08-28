@@ -115,7 +115,7 @@ namespace Fem
         gridPart_( grid ),
         space_( gridPart_ ),
         solution_( "solution-" + solName + name, space_ ),
-        dataTuple_( std::make_tuple( &solution(), &exact_ ) ),
+        exactSolution_( "exact-solution-" + solName + name, space_ ),
         solverIterations_()
     {
       solution().clear();
@@ -160,7 +160,12 @@ namespace Fem
 
     virtual void initialize ( const int loop )
     {
+      //initialize solverMonitor
+      solverMonitorHandler_.registerData( "GridWidth", solverMonitorHandler_.monitor().gridWidth, nullptr, true );
+      solverMonitorHandler_.registerData( "Elements", solverMonitorHandler_.monitor().elements, nullptr, true );
+      solverMonitorHandler_.registerData( "TimeSteps", solverMonitorHandler_.monitor().timeSteps, nullptr, true );
       solverMonitorHandler_.registerData( "ILS", solverMonitorHandler_.monitor().ils_iterations, &solverIterations_ );
+      solverMonitorHandler_.registerData( "MaxILS", solverMonitorHandler_.monitor().max_ils_iterations );
     }
 
     virtual void preSolve( const int loop )
@@ -182,11 +187,14 @@ namespace Fem
 
     void finalize ( const int loop )
     {
+      // add eoc errors
+      AnalyticalTraits::addEOCErrors( solution(), model(), problem() );
+
       solver_.reset( nullptr );
     }
 
     //DATAWRITING
-    virtual IOTupleType* dataTuple () { return &dataTuple_; }
+    virtual IOTupleType dataTuple () { return std::make_tuple( &solution(), &exactSolution_ ); }
 
     const ProblemType &problem () const
     {
@@ -214,9 +222,9 @@ namespace Fem
     GridPartType gridPart_;      // reference to grid part, i.e. the leaf grid
     DiscreteFunctionSpaceType space_;    // the discrete function space
     DiscreteFunctionType solution_;
+    DiscreteFunctionType exactSolution_;
 
     std::unique_ptr< BasicLinearSolverType > solver_;
-    IOTupleType                    dataTuple_;
     int solverIterations_;
   };
 

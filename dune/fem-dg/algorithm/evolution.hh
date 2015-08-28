@@ -226,11 +226,14 @@ namespace Fem
       solverMonitorHandler_.registerData( "GridWidth", solverMonitorHandler_.monitor().gridWidth, nullptr, true );
       solverMonitorHandler_.registerData( "Elements", solverMonitorHandler_.monitor().elements, nullptr, true );
       solverMonitorHandler_.registerData( "TimeSteps", solverMonitorHandler_.monitor().timeSteps, nullptr, true );
+      solverMonitorHandler_.registerData( "AvgTimeStep", solverMonitorHandler_.monitor().avgTimeStep );
+      solverMonitorHandler_.registerData( "MinTimeStep", solverMonitorHandler_.monitor().minTimeStep );
+      solverMonitorHandler_.registerData( "MaxTimeStep", solverMonitorHandler_.monitor().maxTimeStep );
       solverMonitorHandler_.registerData( "Newton", solverMonitorHandler_.monitor().newton_iterations,       &odeSolverMonitor_.newtonIterations_);
       solverMonitorHandler_.registerData( "ILS", solverMonitorHandler_.monitor().ils_iterations,             &odeSolverMonitor_.linearSolverIterations_);
       //solverMonitorHandler_.registerData( "OC", solverMonitorHandler_.monitor().operator_calls,              &odeSolverMonitor_.spaceOperatorCalls_);
-      solverMonitorHandler_.registerData( "maxNewton",solverMonitorHandler_.monitor().max_newton_iterations, &odeSolverMonitor_.maxNewtonIterations_ );
-      solverMonitorHandler_.registerData( "minNewton",solverMonitorHandler_.monitor().max_ils_iterations,    &odeSolverMonitor_.maxLinearSolverIterations_ );
+      solverMonitorHandler_.registerData( "MaxNewton",solverMonitorHandler_.monitor().max_newton_iterations, &odeSolverMonitor_.maxNewtonIterations_ );
+      solverMonitorHandler_.registerData( "MaxILS",solverMonitorHandler_.monitor().max_ils_iterations,    &odeSolverMonitor_.maxLinearSolverIterations_ );
 
       //initialize diagnosticsHandler
       diagnosticsHandler_.registerData( "OperatorTime", &odeSolverMonitor_.operatorTime_ );

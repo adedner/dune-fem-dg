@@ -102,8 +102,6 @@ struct PoissonProblemCreator
       typedef std::tuple<>                                                                        ExtraParameterTuple;
 
     private:
-      typedef typename AnalyticalTraits::ProblemType::ExactSolutionType                           ExactSolutionType;
-
       typedef Dune::AdaptationHandler< GridType, FunctionSpaceType >                              AdaptationHandlerType;
 
       typedef Dune::UpwindFlux< typename AnalyticalTraits::ModelType >                            FluxType;
@@ -118,9 +116,7 @@ struct PoissonProblemCreator
 
       typedef Dune::DGAdvectionDiffusionOperator< OperatorTraitsType >                            AssemblyOperatorType;
     public:
-      typedef Dune::Fem::GridFunctionAdapter< ExactSolutionType, GridPartType >                   GridExactSolutionType;
-
-      typedef std::tuple< DiscreteFunctionType*, GridExactSolutionType* >                         IOTupleType;
+      typedef std::tuple< DiscreteFunctionType*, DiscreteFunctionType* >                          IOTupleType;
 
       static const bool symmetricSolver = true ;
       typedef Solvers<DiscreteFunctionSpaceType, solverType, symmetricSolver>                     SolversType;

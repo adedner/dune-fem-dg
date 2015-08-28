@@ -82,10 +82,11 @@ namespace Fem
 
   //! add solver Monitor data to Fem Eoc
   template< class Monitor >
-  void writeFemEoc ( const Monitor &monitor, const double runTime, std::stringstream &out )
+  void writeFemEoc ( const Monitor &m, const double runTime, std::stringstream &out )
   {
-    Fem::FemEoc::write( monitor.getData( "GridWidth" ), monitor.getData( "Elements" ), runTime, monitor.getData( "TimeSteps" ) );
-   //     monitor.doubleValues(), monitor.intValues(), out );
+    Fem::FemEoc::write( m.getData( "GridWidth" ), m.getData( "Elements" ), runTime, m.getData( "TimeSteps" ),
+                        m.getData( "AvgTimeStep" ), m.getData( "MinTimeStep" ), m.getData( "MaxTimeStep" ),
+                        m.getData( "Newton" ), m.getData( "ILS" ), m.getData( "MaxNewton" ), m.getData( "MaxILS" ), out );
   }
 
 
