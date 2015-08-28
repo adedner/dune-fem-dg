@@ -34,6 +34,15 @@ namespace Dune
 namespace Fem
 {
 
+  // internal forward declarations
+  // -----------------------------
+
+  template< class Traits >
+  class EvolutionAlgorithmBase;
+
+
+  // StepperParametersType
+  // ---------------------
 
   class StepperParameters
   : public Dune::Fem::LocalParameter< StepperParameters, StepperParameters >
@@ -109,23 +118,55 @@ namespace Fem
     typedef Dune::Fem::AdaptHandler          < typename ProblemTraits::template Stepper<polOrder>::Type...  > AdaptHandlerType;
 
     typedef typename DataWriterHandlerType::IOTupleType                                                                      IOTupleType;
+    typedef std::tuple< typename std::add_pointer< typename ProblemTraits::template Stepper<polOrder>::Type >::type... > StepperTupleType;
+
+    template< std::size_t ...i >
+    static StepperTupleType createStepper ( Std::index_sequence< i... >, GridType &grid, const std::string name = "" )
+    {
+      return std::make_tuple( new typename std::remove_pointer< typename std::tuple_element< i, StepperTupleType >::type >::type( grid, name ) ... );
+    }
+
+    // create Tuple of contained sub algorithms
+    static StepperTupleType createStepper( GridType &grid, const std::string name = "" )
+    {
+      return createStepper( Std::index_sequence_for< ProblemTraits ... >(), grid, name );
+    }
   };
 
 
   // EvolutionAlgorithm
   // ------------------
 
-  template< int polOrder, class... ProblemTraits >
+  template< int polOrder, class ... ProblemTraits >
   class EvolutionAlgorithm
-    : public AlgorithmBase< EvolutionAlgorithmTraits< polOrder, ProblemTraits... > >
+  : public EvolutionAlgorithmBase< EvolutionAlgorithmTraits< polOrder, ProblemTraits ... > >
   {
-    typedef EvolutionAlgorithmTraits< polOrder, ProblemTraits... >               Traits;
+    typedef EvolutionAlgorithmTraits< polOrder, ProblemTraits... > Traits;
+    typedef EvolutionAlgorithmBase< Traits > BaseType;
+  public:
+    typedef typename BaseType::GridType GridType;
+
+    EvolutionAlgorithm ( GridType &grid, const std::string name = "" )
+      : BaseType( grid, name )
+    {}
+  };
+
+
+
+  // EvolutionAlgorithmBase
+  // ----------------------
+
+  template< class Traits >
+  class EvolutionAlgorithmBase
+    : public AlgorithmBase< Traits >
+  {
     typedef AlgorithmBase< Traits >                                              BaseType;
   public:
     typedef typename BaseType::GridType                          GridType;
     typedef typename BaseType::IOTupleType                       IOTupleType;
     typedef typename BaseType::SolverMonitorHandlerType          SolverMonitorHandlerType;
 
+    typedef typename Traits::StepperTupleType                    StepperTupleType;
     typedef typename Traits::TimeProviderType                    TimeProviderType;
 
     typedef typename Traits::DiagnosticsHandlerType                     DiagnosticsHandlerType;
@@ -136,24 +177,13 @@ namespace Fem
     typedef typename Traits::AdaptHandlerType                           AdaptHandlerType;
 
     typedef uint64_t                                                    UInt64Type ;
-    typedef StepperParameters                                           StepperParametersType;
 
-    typedef std::tuple< typename std::add_pointer< typename ProblemTraits::template Stepper<polOrder>::Type >::type... > StepperTupleType;
+    typedef StepperParameters                                           StepperParametersType;
 
     using BaseType::grid_;
     using BaseType::eocParam_;
     using BaseType::grid;
 
-    template< int i >
-    struct Constructor
-    {
-      template< class Tuple, class ... Args >
-      static void apply ( Tuple &tuple, GridType &grid, Args && ... args )
-      {
-        typedef typename std::remove_pointer< typename std::tuple_element< i, Tuple >::type >::type Element;
-        std::get< i >( tuple ) = new Element( grid, std::forward< Args >( args ) ... );
-      }
-    };
     template< int i >
     struct Initialize
     {
@@ -232,9 +262,11 @@ namespace Fem
       }
     };
 
-    EvolutionAlgorithm ( GridType &grid, const std::string name = "" )
+    static const int numSteppers = std::tuple_size< StepperTupleType >::value;
+
+    EvolutionAlgorithmBase ( GridType &grid, const std::string name = "" )
     : BaseType( grid, name  ),
-      tuple_( createStepper( grid, name ) ),
+      tuple_( Traits::createStepper( grid, name ) ),
       param_( StepperParametersType( Dune::ParameterKey::generate( "", "femdg.stepper." ) ) ),
       checkPointHandler_( tuple_ ),
       solverMonitorHandler_( tuple_ ),
@@ -246,19 +278,11 @@ namespace Fem
       fixedTimeStep_( param_.fixedTimeStep() )
     {}
 
-    // create Tuple of contained subspaces
-    static StepperTupleType createStepper( GridType &grid, const std::string name = "" )
-    {
-      StepperTupleType tuple;
-      ForLoop< Constructor, 0, sizeof ... ( ProblemTraits )-1 >::apply( tuple, grid, name );
-      return tuple;
-    }
-
     // return grid width of grid (overload in derived classes)
     double gridWidth () const
     {
       double res=0.0;
-      ForLoop< GridWidth, 0, sizeof ... ( ProblemTraits )-1 >::apply( tuple_, res );
+      ForLoop< GridWidth, 0, numSteppers - 1 >::apply( tuple_, res );
       return res;
     }
 
@@ -266,14 +290,14 @@ namespace Fem
     UInt64Type gridSize () const
     {
       UInt64Type res=0;
-      ForLoop< GridSize, 0, sizeof ... ( ProblemTraits )-1 >::apply( tuple_, res );
+      ForLoop< GridSize, 0, numSteppers - 1 >::apply( tuple_, res );
       return res;
     }
 
     bool checkDofsValid( TimeProviderType& tp, const int loop  ) const
     {
       bool res = true;
-      ForLoop< CheckDofsValid, 0, sizeof ... ( ProblemTraits )-1 >::apply( tuple_, res, tp, loop );
+      ForLoop< CheckDofsValid, 0, numSteppers - 1 >::apply( tuple_, res, tp, loop );
       return res;
     }
 
@@ -473,23 +497,23 @@ namespace Fem
     // before first step, do data initialization
     virtual void initialize ( int loop, TimeProviderType &tp )
     {
-      ForLoop< Initialize, 0, sizeof ... ( ProblemTraits )-1 >::apply( tuple_, adaptHandler_, loop, tp );
+      ForLoop< Initialize, 0, numSteppers - 1 >::apply( tuple_, adaptHandler_, loop, tp );
     }
 
     virtual void preStep ( int loop, TimeProviderType &tp )
     {
-      ForLoop< PreSolve, 0, sizeof ... ( ProblemTraits )-1 >::apply( tuple_, loop, tp );
+      ForLoop< PreSolve, 0, numSteppers - 1 >::apply( tuple_, loop, tp );
     }
 
     //Needs to be overridden to enable fancy steps
     virtual void step ( int loop, TimeProviderType &tp )
     {
-      ForLoop< Solve, 0, sizeof ... ( ProblemTraits )-1 >::apply( tuple_, loop, tp );
+      ForLoop< Solve, 0, numSteppers - 1 >::apply( tuple_, loop, tp );
     }
 
     virtual void postStep ( int loop, TimeProviderType &tp )
     {
-      ForLoop< PostSolve, 0, sizeof ... ( ProblemTraits )-1 >::apply( tuple_, loop, tp );
+      ForLoop< PostSolve, 0, numSteppers - 1 >::apply( tuple_, loop, tp );
     }
 
 
@@ -506,7 +530,7 @@ namespace Fem
 
       adaptHandler_.finalize();
 
-      ForLoop< Finalize, 0, sizeof ... ( ProblemTraits )-1 >::apply( tuple_, loop, tp );
+      ForLoop< Finalize, 0, numSteppers - 1 >::apply( tuple_, loop, tp );
     }
 
     StepperTupleType &stepperTuple () { return tuple_; }
