@@ -113,7 +113,6 @@ namespace Fem
     typedef Dune::Fem::SolverMonitorHandler  < typename ProblemTraits::template Stepper<polOrder>::Type...  > SolverMonitorHandlerType;
     typedef Dune::Fem::CheckPointHandler     < typename ProblemTraits::template Stepper<polOrder>::Type...  > CheckPointHandlerType;
     typedef Dune::Fem::DataWriterHandler     < typename ProblemTraits::template Stepper<polOrder>::Type...  > DataWriterHandlerType;
-    typedef Dune::Fem::NoAdditionalOutputHandler                                                              AdditionalOutputHandlerType;
     typedef Dune::Fem::SolutionLimiterHandler< typename ProblemTraits::template Stepper<polOrder>::Type...  > SolutionLimiterHandlerType;
     typedef Dune::Fem::AdaptHandler          < typename ProblemTraits::template Stepper<polOrder>::Type...  > AdaptHandlerType;
 
@@ -172,7 +171,6 @@ namespace Fem
     typedef typename Traits::DiagnosticsHandlerType                     DiagnosticsHandlerType;
     typedef typename Traits::CheckPointHandlerType                      CheckPointHandlerType;
     typedef typename Traits::DataWriterHandlerType                      DataWriterHandlerType;
-    typedef typename Traits::AdditionalOutputHandlerType                AdditionalOutputHandlerType;
     typedef typename Traits::SolutionLimiterHandlerType                 SolutionLimiterHandlerType;
     typedef typename Traits::AdaptHandlerType                           AdaptHandlerType;
 
@@ -272,7 +270,6 @@ namespace Fem
       solverMonitorHandler_( tuple_ ),
       dataWriterHandler_( tuple_ ),
       diagnosticsHandler_( tuple_ ),
-      additionalOutputHandler_( tuple_ ),
       solutionLimiterHandler_( tuple_ ),
       adaptHandler_( tuple_ ),
       fixedTimeStep_( param_.fixedTimeStep() )
@@ -544,7 +541,6 @@ namespace Fem
     DataWriterHandlerType          dataWriterHandler_;
     DiagnosticsHandlerType         diagnosticsHandler_;
     SolverMonitorHandlerType       solverMonitorHandler_;
-    AdditionalOutputHandlerType    additionalOutputHandler_;
     SolutionLimiterHandlerType     solutionLimiterHandler_;
     AdaptHandlerType               adaptHandler_;
 

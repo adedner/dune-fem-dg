@@ -19,49 +19,39 @@ namespace Dune
 namespace Fem
 {
 
-  //TODO: Improve class and make it more flexible
-  template< class ConsDiscreteFunctionImp, class PrimDiscreteFunctionImp >
-  class Cons2PrimCalculator
+  template< class DiscreteFunctionImp >
+  class Cons2PrimOutputHandler
   {
     public:
 
-    typedef ConsDiscreteFunctionImp                                       InDiscreteFunctionType;
-    typedef typename InDiscreteFunctionType::DiscreteFunctionSpaceType    InDiscreteFunctionSpaceType;
-    typedef PrimDiscreteFunctionImp                                       OutDiscreteFunctionType;
-    typedef typename OutDiscreteFunctionType::DiscreteFunctionSpaceType   OutDiscreteFunctionSpaceType;
-
-    typedef typename InDiscreteFunctionSpaceType::GridPartType  GridPartType;
-    typedef typename InDiscreteFunctionSpaceType::IteratorType  Iterator;
-    typedef typename Iterator::Entity                           Entity;
-    typedef typename Entity::Geometry                           Geometry;
-    typedef typename InDiscreteFunctionSpaceType::DomainType    DomainType;
-    typedef typename InDiscreteFunctionSpaceType::RangeType     InRangeType;
-    typedef typename OutDiscreteFunctionSpaceType::RangeType    OutRangeType;
-
-    typedef typename InDiscreteFunctionType::LocalFunctionType  InLocalFuncType;
-    typedef typename OutDiscreteFunctionType::LocalFunctionType OutLocalFuncType;
-
-    typedef std::tuple< OutDiscreteFunctionType* >              TupleType;
-
-    Cons2PrimCalculator( const OutDiscreteFunctionSpaceType& space )
-      : outDf_( "_prim", space )
+    Cons2PrimOutputHandler( const DiscreteFunctionImp& df )
+      : solution_( df )
     {}
 
     /** \brief converts a discrete function of conservative variables to
      *    a discrete function of primitive variables for a visualization purpose only
-     *
-     *  \param[in] consDF The discrete function of conservative variables
-     *  \param[in] model The analytical model
-     *  \param[out] primDF The discrete function of primitive variables
      */
-    template< class TimeProvider,
-              class ModelType >
-    void setup( const InDiscreteFunctionType& consDF,
-                const TimeProvider& tp,
-                const ModelType& model )
+    template< class TimeProviderImp, class SubStepperImp >
+    void step( const TimeProviderImp& tp, const SubStepperImp& stepper )
     {
-      const InDiscreteFunctionSpaceType& space =  consDF.space();
-      outDf_.clear();
+      typedef typename SubStepperImp::DiscreteFunctionType                  InDiscreteFunctionType;
+      typedef typename InDiscreteFunctionType::DiscreteFunctionSpaceType    InDiscreteFunctionSpaceType;
+      typedef DiscreteFunctionImp                                           OutDiscreteFunctionType;
+      typedef typename OutDiscreteFunctionType::DiscreteFunctionSpaceType   OutDiscreteFunctionSpaceType;
+
+      typedef typename InDiscreteFunctionSpaceType::GridPartType  GridPartType;
+      typedef typename InDiscreteFunctionSpaceType::IteratorType  Iterator;
+      typedef typename Iterator::Entity                           Entity;
+      typedef typename Entity::Geometry                           Geometry;
+      typedef typename InDiscreteFunctionSpaceType::DomainType    DomainType;
+      typedef typename InDiscreteFunctionSpaceType::RangeType     InRangeType;
+      typedef typename OutDiscreteFunctionSpaceType::RangeType    OutRangeType;
+
+      typedef typename InDiscreteFunctionType::LocalFunctionType  InLocalFuncType;
+      typedef typename OutDiscreteFunctionType::LocalFunctionType OutLocalFuncType;
+
+      const InDiscreteFunctionSpaceType& space =  stepper.solution().space();
+      solution_.clear();
 
       InRangeType cons(0.0);
       InRangeType cons_bg(0.0);
@@ -78,8 +68,8 @@ namespace Fem
         // get quadrature rule for L2 projection
         Dune::Fem::CachingQuadrature< GridPartType, 0 > quad( entity, 2*space.order()+1 );
 
-        InLocalFuncType consLF = consDF.localFunction( entity );
-        OutLocalFuncType primLF = outDf_.localFunction( entity );
+        InLocalFuncType consLF = stepper.solution().localFunction( entity );
+        OutLocalFuncType primLF = solution_.localFunction( entity );
 
         const int quadNop = quad.nop();
         for(int qP = 0; qP < quadNop; ++qP)
@@ -89,46 +79,41 @@ namespace Fem
 
           // it is useful to visualize better suited quantities
           bool forVisual = true;
-          model.conservativeToPrimitive( tp.time(), xgl, cons, prim, forVisual );
+          stepper.model().conservativeToPrimitive( tp.time(), xgl, cons, prim, forVisual );
 
           prim *=  quad.weight(qP);
           primLF.axpy( quad[qP] , prim );
         }
       }
     }
+  private:
+    DiscreteFunctionImp&     solution_;
+  };
 
-    OutDiscreteFunctionType& result()
+
+  template< class DiscreteFunctionImp >
+  class ExactSolutionOutputHandler
+  {
+    public:
+    typedef DiscreteFunctionImp                                                      DiscreteFunctionType;
+    typedef typename DiscreteFunctionType::DiscreteFunctionSpaceType::GridPartType   GridPartType;
+
+    ExactSolutionOutputHandler( DiscreteFunctionType& df, const std::string keyPrefix = "" )
+      : solution_( df )
+    {}
+
+    template< class TimeProviderImp, class SubStepperImp >
+    void step( TimeProviderImp& tp, SubStepperImp& stepper )
     {
-      return std::make_tuple( &outDf_ );
+      typedef typename SubStepperImp::ProblemType::InstationaryFunctionType      ExactSolutionType;
+      typedef Dune::Fem::GridFunctionAdapter< ExactSolutionType, GridPartType >  GridFunctionAdapterType;
+      auto ftf = stepper.problem().fixedTimeFunction( tp.time() );
+      GridFunctionAdapterType adapter( "temporary adapter", ftf , stepper.gridPart(), solution_.space().order()+2 );
+      interpolate( adapter, solution_ );
     }
 
     private:
-    OutDiscreteFunctionType     outDf_;
-
-  };
-
-  class NoAdditionalOutputHandler
-  {
-  public:
-    typedef std::tuple<>                   TupleType;
-
-    template< class ... Args >
-    NoAdditionalOutputHandler( Args&& ... )
-    {}
-
-    template< class ... Args >
-    void setup( Args&&... )
-    {}
-
-    template< class ... Args >
-    TupleType& result( Args&&... )
-    {
-      return tuple_;
-    }
-
-  private:
-    TupleType tuple_;
-
+    DiscreteFunctionType& solution_;
   };
 
 }

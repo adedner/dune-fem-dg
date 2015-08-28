@@ -153,11 +153,15 @@ namespace Fem
     {
       if( dataInt_.find(name) != dataInt_.end() )
       {
-        assert( *std::get<0>(dataInt_[ name ]) );
+        assert( std::get<0>(dataInt_[ name ]) );
         return (double)*std::get<0>(dataInt_[ name ]);
       }
-      assert( std::get<0>(dataDouble_[ name ]) );
-      return *std::get<0>(dataDouble_[ name ]);
+      if( dataDouble_.find(name) != dataDouble_.end() )
+      {
+        assert( std::get<0>(dataDouble_[ name ]) );
+        return *std::get<0>(dataDouble_[ name ]);
+      }
+      return 0.0;
     }
 
 

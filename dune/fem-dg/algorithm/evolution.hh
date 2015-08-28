@@ -63,6 +63,7 @@ namespace Fem
     typedef typename DiscreteTraits::AdaptIndicatorType            AdaptIndicatorType;
     typedef typename DiscreteTraits::SolverMonitorHandlerType      SolverMonitorHandlerType;
     typedef typename DiscreteTraits::DiagnosticsHandlerType        DiagnosticsHandlerType;
+    typedef typename DiscreteTraits::AdditionalOutputHandlerType   AdditionalOutputHandlerType;
   };
 
 
@@ -123,8 +124,6 @@ namespace Fem
     // discrete Traits
     typedef typename Traits::DiscreteTraits                      DiscreteTraits;
 
-    typedef typename Traits::DiscreteTraits::GridExactSolutionType
-                                                                 GridExactSolutionType;
     typedef typename Traits::ExtraParameterTupleType  ExtraParameterTupleType;
 
     typedef uint64_t                                              UInt64Type ;
@@ -136,6 +135,7 @@ namespace Fem
     typedef typename Traits::AdaptIndicatorType                   AdaptIndicatorType;
     typedef typename Traits::DiagnosticsHandlerType               DiagnosticsHandlerType;
     typedef typename Traits::SolverMonitorHandlerType             SolverMonitorHandlerType;
+    typedef typename Traits::AdditionalOutputHandlerType          AdditionalOutputHandlerType;
 
 
     SubEvolutionAlgorithmBase ( GridType &grid, const std::string name = "" )
@@ -144,12 +144,13 @@ namespace Fem
       gridPart_( grid_ ),
       space_( gridPart_ ),
       solution_( "U_"+name, space() ),
+      exactSolution_( "U_exact"+name, space() ),
       problem_( Traits::ProblemTraitsType::problem() ),
       model_( *problem_ ),
-      exact_( "exact solution", space() ),
-      solverMonitorHandler_( name ),
-      odeSolverMonitor_(),
       diagnosticsHandler_( name ),
+      solverMonitorHandler_( name ),
+      additionalOutputHandler_( exactSolution_, name ),
+      odeSolverMonitor_(),
       overallTimer_(),
       odeSolver_(),
       overallTime_( 0 )
@@ -181,6 +182,9 @@ namespace Fem
     //DIAGNOSTICS
     virtual DiagnosticsHandlerType& diagnostics() { return diagnosticsHandler_; }
 
+    //ADDITIONALOUTPUT
+    virtual AdditionalOutputHandlerType& additionalOutput() { return additionalOutputHandler_; }
+
     //LIMITING
     virtual void limit(){}
     virtual LimitDiscreteFunctionType* limitSolution () { return &solution_; }
@@ -193,7 +197,7 @@ namespace Fem
     virtual CheckPointDiscreteFunctionType* checkPointSolution () { return &solution_; }
 
     //DATAWRITING
-    virtual IOTupleType dataTuple () { return std::make_tuple( &solution(), &exact_ ); }
+    virtual IOTupleType dataTuple () { return std::make_tuple( &solution(), &exactSolution_ ); }
 
     //! returns data prefix for EOC loops ( default is loop )
     virtual std::string dataPrefix () const {  return problem().dataPrefix(); }
@@ -204,7 +208,6 @@ namespace Fem
       const bool doCommunicate = ! NonBlockingCommParameter :: nonBlockingCommunication ();
       InitialProjectorType projection( 2 * solution().space().order(), doCommunicate );
       projection( problem().fixedTimeFunction( tp.time() ), solution() );
-
       //TODO check whether this version would also work (goal: avoid InitialProjectorType typedef :D
       //auto ftp = problem().fixedTimeFunction( tp.time() );
       //GridFunctionAdapter< typename ProblemType::InstationaryFunctionType, GridPartType >
@@ -212,7 +215,6 @@ namespace Fem
       //interpolate( adapter, solution() );
       //if( NonBlockingCommParameter::nonBlockingCommunication() )
       //  solution().communicate();
-
 
       // setup ode solver
       odeSolver_.reset( this->createOdeSolver( tp ) );
@@ -256,14 +258,6 @@ namespace Fem
 
     void finalize ( int loop, TimeProviderType &tp )
     {
-      // setup exact solution
-      // TODO: Add this projection to addtional output writer, later
-      auto ftp = problem().fixedTimeFunction( tp.time() );
-      GridFunctionAdapter< typename ProblemType::InstationaryFunctionType, GridPartType >
-        adapter( "-exact", ftp, gridPart() );
-      interpolate( adapter, exact_ );
-
-
       // add eoc errors
       AnalyticalTraits::addEOCErrors( tp, solution(), model(), problem() );
 
@@ -305,14 +299,15 @@ namespace Fem
 
     // the solution
     DiscreteFunctionType           solution_;
+    DiscreteFunctionType           exactSolution_;
 
     // InitialDataType evaluates to $u_0$
     std::unique_ptr< ProblemType > problem_;
     ModelType                      model_;
-    DiscreteFunctionType           exact_;
 
     DiagnosticsHandlerType         diagnosticsHandler_;
     SolverMonitorHandlerType       solverMonitorHandler_;
+    AdditionalOutputHandlerType    additionalOutputHandler_;
     typename OdeSolverType::MonitorType odeSolverMonitor_;
 
     Dune::Timer                    overallTimer_;

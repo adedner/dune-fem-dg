@@ -51,8 +51,6 @@ namespace Fem
     //typedef typename DiscreteTraits::OdeSolverType                 OdeSolverType;
     typedef typename DiscreteTraits::BasicLinearSolverType         BasicLinearSolverType;
 
-    typedef SolverMonitor<1>                                       SolverMonitorType;
-
     // tpye of jacobian operator used in the nested newton loops
     typedef typename DiscreteTraits::OperatorType                  OperatorType;
 
@@ -75,7 +73,6 @@ namespace Fem
   public:
     typedef typename Traits::GridType                           GridType;
     typedef typename Traits::IOTupleType                        IOTupleType;
-    typedef typename Traits::SolverMonitorType                  SolverMonitorType;
 
     typedef typename Traits::HostGridPartType                     HostGridPartType;
 
@@ -117,7 +114,9 @@ namespace Fem
         solverMonitorHandler_( "" ),
         gridPart_( grid ),
         space_( gridPart_ ),
-        solution_( "solution-" + solName + name, space_ )
+        solution_( "solution-" + solName + name, space_ ),
+        dataTuple_( std::make_tuple( &solution(), &exact_ ) ),
+        solverIterations_()
     {
       solution().clear();
     }
@@ -142,9 +141,9 @@ namespace Fem
       return problem().dataPrefix();
     }
 
-    virtual SolverMonitorType& monitor()
+    virtual SolverMonitorHandlerType& monitor()
     {
-      return solverMonitorHandler_.monitor();
+      return solverMonitorHandler_;
     }
 
     // return grid width of grid (overload in derived classes)
@@ -161,7 +160,7 @@ namespace Fem
 
     virtual void initialize ( const int loop )
     {
-      solverMonitorHandler_.registerData( "ILS", solverMonitorHandler_.monitor().ils_iterations, &solver_.iterations() );
+      solverMonitorHandler_.registerData( "ILS", solverMonitorHandler_.monitor().ils_iterations, &solverIterations_ );
     }
 
     virtual void preSolve( const int loop )
@@ -173,17 +172,21 @@ namespace Fem
     virtual void solve ( const int loop )
     {
       (*solver_)( rhs(), solution() );
+      solverIterations_ = solver_->iterations();
     }
 
     virtual void postSolve( const int loop )
     {
-      solverMonitorHandler_.finalize( gridWidth(), gridSize(), *solver_ );
+      solverMonitorHandler_.finalize( gridWidth(), gridSize() );
     }
 
     void finalize ( const int loop )
     {
       solver_.reset( nullptr );
     }
+
+    //DATAWRITING
+    virtual IOTupleType* dataTuple () { return &dataTuple_; }
 
     const ProblemType &problem () const
     {
@@ -213,6 +216,8 @@ namespace Fem
     DiscreteFunctionType solution_;
 
     std::unique_ptr< BasicLinearSolverType > solver_;
+    IOTupleType                    dataTuple_;
+    int solverIterations_;
   };
 
 }  // namespace Fem

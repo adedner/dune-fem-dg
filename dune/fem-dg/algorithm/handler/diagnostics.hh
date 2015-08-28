@@ -113,8 +113,12 @@ namespace Fem
         assert( dataInt_[ name ] );
         return (double)*dataInt_[ name ];
       }
-      assert( dataDouble_[ name ] );
-      return *dataDouble_[ name ];
+      if( dataDouble_.find(name) != dataDouble_.end() )
+      {
+        assert( dataDouble_[ name ] );
+        return *dataDouble_[ name ];
+      }
+      return 0.0;
     }
 
     template< class TimeProviderImp >

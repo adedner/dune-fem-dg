@@ -35,8 +35,8 @@ namespace Fem
     // type of Grid
     typedef typename std::tuple_element<0, std::tuple< ProblemTraits... > >::type::GridType  GridType;
 
-    typedef Dune::Fem::CombinedDefaultSolverMonitorHandler < typename ProblemTraits::template Stepper<polOrder>::Type... > SolverMonitorHandlerType;
-    typedef Dune::Fem::CombinedDefaultDataWriterHandler    < typename ProblemTraits::template Stepper<polOrder>::Type... > DataWriterHandlerType;
+    typedef Dune::Fem::SolverMonitorHandler < typename ProblemTraits::template Stepper<polOrder>::Type... > SolverMonitorHandlerType;
+    typedef Dune::Fem::DataWriterHandler    < typename ProblemTraits::template Stepper<polOrder>::Type... > DataWriterHandlerType;
 
     typedef typename DataWriterHandlerType::IOTupleType                                                                    IOTupleType;
   };

@@ -33,6 +33,19 @@ namespace Fem
     static_assert( Std::are_all_same< GridType, typename StepperArg::GridType... >::value,
                    "DataWriterHandler: GridType has to be equal for all steppers" );
 
+  private:
+    template< int i >
+    struct AdditionalOutput
+    {
+      template< class Tuple, class TimeProviderImp, class ... Args >
+      static void apply ( Tuple &tuple, TimeProviderImp& tp, Args && ... args )
+      {
+         std::get< i >(tuple)->additionalOutput().step( tp, *get<i>( tuple ) );
+      }
+    };
+  public:
+
+
     DataWriterHandler( const StepperTupleType& tuple )
       : tuple_( tuple ),
         dataWriter_(),
@@ -50,6 +63,9 @@ namespace Fem
     {
       if( dataWriter_ && dataWriter_->willWrite( tp ) )
       {
+        //update all additional Output
+        ForLoop< AdditionalOutput, 0, sizeof ... ( StepperArg ) >::apply( tuple_, tp );
+        //writeData
         dataWriter_->write( tp );
       }
     }
@@ -59,6 +75,9 @@ namespace Fem
     {
       if( dataWriter_ && dataWriter_->willWrite( tp ) )
       {
+        //update all additional Output
+        ForLoop< AdditionalOutput, 0, sizeof ... ( StepperArg ) >::apply( tuple_, tp );
+        //writeData
         dataWriter_->write( tp );
       }
     }
@@ -98,8 +117,6 @@ namespace Fem
     template< class ... Args >
     void finalize( Args&& ...  ) {}
   };
-
-
 
 }
 }

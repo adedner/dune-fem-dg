@@ -19,7 +19,6 @@
 #include <dune/fem-dg/algorithm/handler/solutionlimiter.hh>
 #include <dune/fem-dg/algorithm/handler/adapt.hh>
 #include <dune/fem-dg/algorithm/monitor.hh>
-#include <dune/fem-dg/algorithm/monitor.hh>
 
 //--------- GRID HELPER ---------------------
 #include <dune/fem-dg/algorithm/gridinitializer.hh>
@@ -113,11 +112,7 @@ struct AdvectionDiffusionProblemCreator
 
       typedef std::tuple<> ExtraParameterTuple;
 
-    private:
-      typedef typename AnalyticalTraits::ProblemType::ExactSolutionType                           ExactSolutionType;
-    public:
-      typedef Dune::Fem::GridFunctionAdapter< ExactSolutionType, GridPartType >                   GridExactSolutionType;
-      typedef std::tuple< DiscreteFunctionType*, DiscreteFunctionType* >                          IOTupleType;
+      typedef std::tuple< DiscreteFunctionType*, DiscreteFunctionType* >                         IOTupleType;
 
       typedef DuneODE::OdeSolverInterface< DiscreteFunctionType >                                 OdeSolverType;
       // type of linear solver for implicit ode
@@ -157,6 +152,7 @@ struct AdvectionDiffusionProblemCreator
       typedef Dune::Fem::AdaptIndicator< IndicatorType, GradientIndicatorType >                     AdaptIndicatorType;
       typedef Dune::Fem::SubSolverMonitorHandler< Dune::Fem::SolverMonitor< 1 > >                   SolverMonitorHandlerType;
       typedef Dune::Fem::SubDiagnosticsHandler< Dune::Diagnostics >                                 DiagnosticsHandlerType;
+      typedef Dune::Fem::ExactSolutionOutputHandler< DiscreteFunctionType >                         AdditionalOutputHandlerType;
     };
 
     template <int polOrd>
