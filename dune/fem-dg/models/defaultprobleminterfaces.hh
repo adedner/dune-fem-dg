@@ -42,8 +42,7 @@ protected:
   : writeGridSolution_( ParameterType::getValue<bool>("gridsol.writesolution", false) ),
     saveStep_( ParameterType :: getValue< double >("gridsol.firstwrite", 0.0 ) ),
     saveInterval_( ParameterType :: getValue< double >("gridsol.savestep", 0.0 ) ),
-    writeCounter_( 0 ),
-    exactSolution_( nullptr )
+    writeCounter_( 0 )
   {
   }
 
@@ -230,63 +229,10 @@ public:
   {}
 
 protected:
-  //! the exact solution to the problem for EOC calculation
-  class ExactSolution
-  : public Fem:: Function< FunctionSpaceType, ExactSolution >
-  {
-  private:
-    typedef Fem:: Function< FunctionSpaceType, ExactSolution >      BaseType;
-
-    typedef EvolutionProblemInterface< FunctionSpaceType, ConstantVelocity>   DataType;
-  protected:
-    FunctionSpaceType  functionSpace_;
-    const DataType &data_;
-    double time_;
-
-  public:
-    inline ExactSolution ( const ThisType& data, const double time = startTime() )
-    : BaseType( ),
-      functionSpace_(),
-      data_( data ),
-      time_( time )
-    {
-    }
-
-    inline void evaluate ( const DomainType &x, RangeType &ret ) const
-    {
-      data_.evaluate( x, time_, ret );
-    }
-
-    inline void jacobian ( const DomainType &x, JacobianRangeType &ret ) const
-    {
-      data_.gradient( x, time_, ret );
-    }
-
-    inline void evaluate (const DomainType &x,
-                          const double time, RangeType &phi ) const
-    {
-      data_.evaluate( x, time, phi );
-    }
-  }; // end class ExactSolution
-
-public:
-  //! type of function converter for exact solution and gradient
-  typedef ExactSolution ExactSolutionType;
-
-protected:
   const bool writeGridSolution_;
   mutable double saveStep_ ;
   const double saveInterval_ ;
   mutable int writeCounter_ ;
-  mutable std::unique_ptr<ExactSolutionType> exactSolution_;
-
-public:
-  const ExactSolutionType& exactSolution( const double time = startTime() ) const
-  {
-    exactSolution_.reset( new ExactSolutionType( *this, time ) );
-    assert( exactSolution_ );
-    return *exactSolution_;
-  }
 
 };
 
