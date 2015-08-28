@@ -172,9 +172,9 @@ namespace Fem
       return std::get<0>( tuple_ )->dataPrefix();
     }
 
-    virtual IOTupleType* dataTuple ()
+    virtual IOTupleType dataTuple ()
     {
-      return &dataWriterHandler_.dataTuple();
+      return dataWriterHandler_.dataTuple();
     }
 
     virtual SolverMonitorHandlerType& monitor()
