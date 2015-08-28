@@ -138,7 +138,7 @@ namespace Fem
     }
 
     //! return default data tuple for data output
-    virtual IOTupleType* dataTuple() = 0;
+    virtual IOTupleType dataTuple() = 0;
 
     // solve the problem for eoc loop 'loop'
     virtual void solve ( const int loop ) = 0;
@@ -173,7 +173,7 @@ namespace Fem
     typedef typename Algorithm::IOTupleType          IOTupleType;
 
     GridType& grid = algorithm.grid();
-    IOTupleType dataTup = *algorithm.dataTuple() ;
+    IOTupleType dataTup = algorithm.dataTuple() ;
     Fem::DataOutput<GridType, IOTupleType > dataOutput( grid, dataTup );
 
     // initialize FemEoc if eocSteps > 1

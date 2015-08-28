@@ -36,7 +36,7 @@ namespace Fem
     DataWriterHandler( const StepperTupleType& tuple )
       : tuple_( tuple ),
         dataWriter_(),
-        dataTuple_( tuple, Std::index_sequence_for< StepperHead, StepperArg ... >() )
+        dataTuple_( dataTuple( tuple, Std::index_sequence_for< StepperHead, StepperArg ... >() ) )
     {}
 
     template< class TimeProviderImp, class ParameterType >
