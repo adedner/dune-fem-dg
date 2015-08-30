@@ -586,8 +586,6 @@ namespace Fem
       poissonSigmaEstimator_.update();
     }
 
-    //IOTupleType dataTuple () { return std::make_tuple( &solution(), &exactSolution_ ); }
-
     //! finalize computation by calculating errors and EOCs
     virtual void finalize( const int eocloop )
     {

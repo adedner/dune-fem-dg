@@ -24,6 +24,7 @@
 #include <dune/fem-dg/algorithm/ellipticalgorithm.hh>
 #include <dune/fem-dg/solver/uzawa.hh>
 #include <dune/fem-dg/solver/linearsolvers.hh>
+#include <dune/fem-dg/misc/tupleutility.hh>
 
 // include local header files
 #include <dune/fem-dg/test/stokes/stokesassembler.hh>
@@ -243,14 +244,14 @@ namespace Fem
   };
 
 
-  template <class GridImp, class ProblemTraits, class ElliptProblemTraits, int polynomialOrder >
-  class StokesAlgorithm : public SteadyStateAlgorithm<GridImp,ProblemTraits,polynomialOrder>
+  template <class GridImp, class ProblemTraits, class ElliptProblemTraits, int polOrd >
+  class StokesAlgorithm : public SubSteadyStateAlgorithm<GridImp,ProblemTraits,polOrd>
   {
 
-    typedef SteadyStateAlgorithm<GridImp,ProblemTraits,polynomialOrder> BaseType;
+    typedef SubSteadyStateAlgorithm<GridImp,ProblemTraits,polOrd> BaseType;
 
   public:
-    typedef typename ElliptProblemTraits::template Stepper<polynomialOrder>::Type  EllipticalAlgorithmType;
+    typedef typename ElliptProblemTraits::template Stepper<polOrd>::Type  EllipticalAlgorithmType;
 
     // type of Grid
     typedef typename BaseType::GridType                             GridType;
@@ -275,7 +276,7 @@ namespace Fem
                                                                     DiscreteVelocityFunctionSpaceType;
     typedef typename BaseType::DiscreteFunctionSpaceType            DiscreteFunctionSpaceType;
 
-    typedef typename BaseType::SolverMonitorType                    SolverMonitorType;
+    typedef typename BaseType::SolverMonitorHandlerType             SolverMonitorHandlerType;
 
     // type of inverse operator (i.e. linear solver implementation)
     typedef typename BaseType::BasicLinearSolverType                BasicLinearSolverType;
@@ -286,12 +287,9 @@ namespace Fem
       template ToNewDimRange< dimension * ModelType::dimRange >::NewFunctionSpaceType SigmaFunctionSpaceType;
 
     typedef StokesSigmaEstimator< GridPartType, DiscreteVelocityFunctionType, DiscreteFunctionType,
-                                  SigmaFunctionSpaceType, typename EllipticalAlgorithmType::DiscreteTraits::AssemblerType, ModelType, polynomialOrder > StokesSigmaEstimatorType;
+                                  SigmaFunctionSpaceType, typename EllipticalAlgorithmType::DiscreteTraits::AssemblerType, ModelType, polOrd > StokesSigmaEstimatorType;
 
-    typedef typename ProblemTraits::template DiscreteTraits< GridPartType, polynomialOrder>::GridExactSolutionType               GridExactSolutionType;
-
-    typedef typename BaseType::IOTupleType                                         IOTupleType;
-    typedef Dune::Fem::DataOutput<GridType,IOTupleType>         DataWriterType;
+    typedef typename tuple_concat< typename EllipticalAlgorithmType::IOTupleType, typename BaseType::IOTupleType >::type     IOTupleType;
 
     typedef typename  BaseType::AnalyticalTraits    AnalyticalTraits;
 
@@ -303,6 +301,7 @@ namespace Fem
     using BaseType::space;
     using BaseType::solution;
     using BaseType::solver_;
+    using BaseType::exactSolution_;
 
   public:
     explicit StokesAlgorithm(GridType& grid, std::string moduleName = "" ) :
@@ -311,7 +310,6 @@ namespace Fem
       gridPart_( grid ),
       space_( gridPart_ ),
       stokesSigmaEstimator_( gridPart_, ellAlg_.solution(), solution(), ellAlg_.assembler(), moduleName ),
-      exact_( "exact pressure-" + moduleName, problem().exactPressure(), gridPart_, 2 ),
       assembler_( ellAlg_.space() , space_, problem() )
     {}
 
@@ -324,7 +322,7 @@ namespace Fem
       double absLimit = Dune::Fem::Parameter::getValue<double>("istl.absLimit",1.e-10);
 #if 0
 #ifdef PADAPTSPACE
-      int polOrder = Dune::Fem::Parameter::getValue<double>("femdg.polynomialOrder",1);
+      int polOrder = Dune::Fem::Parameter::getValue<double>("femdg.polOrd",1);
       // only implemented for PAdaptiveSpace
       std::vector<int> polOrderVec( ellAlg_.space().gridPart().indexSet().size(0) );
       std::vector<int> polOrderVecPressure( space_.gridPart().indexSet().size(0) );
@@ -359,7 +357,12 @@ namespace Fem
     void finalize( const int eocloop )
     {
       ellAlg_.finalize( eocloop );
-      AnalyticalTraits::addEOCErrors( solution(), ellAlg_.model(), exact_ );
+      AnalyticalTraits::addEOCErrors( solution(), ellAlg_.model(), problem().exactPressure() );
+    }
+
+    IOTupleType dataTuple ()
+    {
+      return std::tuple_cat( ellAlg_.dataTuple(), BaseType::dataTuple() );
     }
 
     bool adaptation(const double tolerance)
@@ -389,16 +392,7 @@ namespace Fem
     DiscreteFunctionSpaceType         space_;
 
     StokesSigmaEstimatorType          stokesSigmaEstimator_;
-    GridExactSolutionType             exact_;
     AssemblerType                     assembler_;
-
-  public:
-
-    IOTupleType dataTuple ()
-    {
-      return std::tuple_cat( ellAlg_.dataTuple(), std::make_tuple( &exact_, &solution() ) );
-      //return make_tuple( &solution_, &solution_,&stokesSigmaEstimator_.data(), &ugrid_, &pgrid_ );
-    }
 
   };
 

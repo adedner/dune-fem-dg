@@ -194,7 +194,7 @@ namespace Fem
     }
 
     //DATAWRITING
-    virtual IOTupleType dataTuple () { return std::make_tuple( &solution(), &exactSolution_ ); }
+    IOTupleType dataTuple () { return std::make_tuple( &solution(), &exactSolution_ ); }
 
     const ProblemType &problem () const
     {
