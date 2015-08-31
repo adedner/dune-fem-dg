@@ -25,7 +25,11 @@ class EulerAnalyticalFlux
 {
  public:
   enum { e = dimDomain+1 };
+#ifdef COUNT_FLOPS
+  typedef Dune::Fem::Double FieldType;
+#else
   typedef double FieldType;
+#endif
   typedef Dune :: FieldVector< FieldType, dimDomain> DomainType;
 
   template <class RangeType, class FluxRangeType>
@@ -48,7 +52,7 @@ class EulerAnalyticalFlux
     assert(u[0]>1e-10);
     const FieldType rhoe = rhoeps(u);
     assert( rhoe>1e-10 );
-    return (gamma-1)*rhoe;
+    return (gamma-1.0)*rhoe;
   }
 
   template <class RangeType>
@@ -70,7 +74,7 @@ inline
 EulerAnalyticalFlux<1>::FieldType EulerAnalyticalFlux<1>::pressure(const FieldType gamma,const RangeType& u) const {
   FieldType rhoe = rhoeps(u);
   assert(rhoe>1e-10);
-  return (gamma-1)*rhoe;
+  return (gamma-1.0)*rhoe;
 }
 template <>
 template <class RangeType, class FluxRangeType>
@@ -101,7 +105,7 @@ EulerAnalyticalFlux<2>::FieldType EulerAnalyticalFlux<2>::pressure(const FieldTy
 {
   const FieldType re = rhoeps(u);
   assert(re>=1e-10);
-  return (gamma-1)*re;
+  return (gamma-1.0)*re;
 }
 
 template <>
@@ -219,7 +223,7 @@ EulerAnalyticalFlux<2>::maxSpeed(const FieldType gamma,
                                  const RangeType& u) const
 {
   assert( u[0] > 1e-10 );
-  FieldType u_normal = (u[1]*n[0]+u[2]*n[1]) / u[0];
+  FieldType u_normal = FieldType(u[1]*n[0]+u[2]*n[1]) / u[0];
   FieldType p = pressure(gamma,u);
   FieldType c2 = gamma * p/ u[0] * n.two_norm2();
   assert( c2 > 1e-10 );
