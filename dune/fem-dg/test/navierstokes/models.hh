@@ -8,7 +8,7 @@
 // local includes
 #include <dune/fem-dg/models/defaultmodel.hh>
 #include <dune/fem-dg/operator/limiter/limitpass.hh>
-#include "problems/thermodynamics.hh"
+#include "thermodynamics.hh"
 #include "navierstokesflux.hh"
 
 namespace Dune {
