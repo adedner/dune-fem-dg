@@ -139,8 +139,8 @@ struct CheckPointingStepper : public AlgorithmBase< StepperTraits< GridImp, Prob
 
   using BaseType :: grid_;
 
-  CheckPointingStepper( GridType& grid )
-  : BaseType ( grid ),
+  CheckPointingStepper( GridType& grid, const std::string name = "" )
+  : BaseType ( grid, name ),
     gridPart_( grid ),
     space_( gridPart_ ),
     solution_( "solution", space() ),
