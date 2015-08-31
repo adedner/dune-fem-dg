@@ -268,9 +268,9 @@ namespace Fem
       model_( *problem_ ),
       exact_( "exact solution", space() ),
       checkPointHandler_( grid_, "" ),
-      solverMonitorHandler_( "" ),
       dataWriterHandler_( grid_, "" ),
       diagnosticsHandler_(),
+      solverMonitorHandler_( "" ),
       additionalOutputHandler_( space_ ),
       solutionLimiterHandler_( name ),
       adaptHandler_( gridPart_, solution(), solutionLimiterHandler_, name ),
@@ -592,8 +592,8 @@ namespace Fem
       return *odeSolver_;
     }
 
-    GridPartType                   gridPart_;
     StepperParametersType          param_;
+    GridPartType                   gridPart_;
     DiscreteFunctionSpaceType      space_;
 
     // the solution
