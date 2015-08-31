@@ -16,7 +16,7 @@ femdg.nonblockingcomm: true
 fem.threads.verbose: true
 # if true thread 0 only communicates data but does not computation
 fem.threads.communicationthread: false
-fem.threads.partitioningmethod: sfc
+fem.threads.partitioningmethod: recursive
 
 
 # DATA WRITER
