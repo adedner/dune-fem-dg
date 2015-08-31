@@ -74,7 +74,7 @@ struct AdvectionStepper
   using BaseType :: space ;
   using BaseType :: solution ;
   using BaseType :: adaptive ;
-  using BaseType :: adaptationParameters_;
+  using BaseType :: adaptParam_;
   using BaseType :: doEstimateMarkAdapt ;
   using BaseType :: name ;
 
@@ -91,7 +91,7 @@ struct AdvectionStepper
   {
     if( adaptive() )
     {
-      if( ! adaptationHandler_ && adaptationParameters_.aposterioriIndicator() )
+      if( ! adaptationHandler_ && adaptParam_.aposterioriIndicator() )
       {
         adaptationHandler_ = new AdaptationHandlerType( grid_, tp );
         dgIndicator_.setAdaptation( *adaptationHandler_ );
