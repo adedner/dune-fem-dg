@@ -2,10 +2,6 @@
 #define FEMDG_EULERPROBLEMCREATOR_HH
 #include <config.h>
 
-#ifndef DIMRANGE
-#define DIMRANGE GRIDDIM + 2
-#endif
-
 #ifndef POLORDER
 #define POLORDER 1
 #endif
@@ -40,10 +36,10 @@ struct EulerProblemCreator
   typedef Dune::Fem::DGAdaptiveLeafGridPart< GridType >   HostGridPartType;
   typedef HostGridPartType                                GridPartType;
 
-  typedef Dune::Fem::FunctionSpace< typename GridType::ctype, double, GridType::dimension, DIMRANGE> FunctionSpaceType;
-
   // define problem type here if interface should be avoided
   typedef ProblemBase< GridType >  ProblemInterfaceType;
+
+  typedef typename ProblemInterfaceType :: FunctionSpaceType FunctionSpaceType;
 
   template< class GridPart > // TODO: is this template parameter needed?
   struct AnalyticalTraits
