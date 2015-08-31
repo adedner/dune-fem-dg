@@ -21,10 +21,10 @@ int main(int argc, char ** argv)
     Dune::Fem::Parameter::write("parameter.log");
 
     typedef Dune::GridSelector :: GridType GridType;
-    Dune::IncompressibleNavierStokesProblemCreator< GridType > problem;
+    IncompressibleNavierStokesProblemCreator< GridType > problem;
 
     // run simulation
-    Simulator::run( problem );
+    Dune::Simulator::run( problem );
   }
   catch (const Dune::Exception &e)
   {

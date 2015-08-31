@@ -88,7 +88,7 @@ struct IncompressibleNavierStokesProblemCreator
 
       static ProblemInterfaceType* problem()
       {
-        return new Dune::GeneralizedStokesProblem< GridType > ();
+        return new Dune::NavierStokesProblemDefault< GridType > ();
       }
 
 
@@ -171,7 +171,7 @@ struct IncompressibleNavierStokesProblemCreator
 
     static inline std::string moduleName() { return "";}
 
-    static ProblemInterfaceType* problem() { return new Dune::GeneralizedStokesProblem< GridType > (); }
+    static ProblemInterfaceType* problem() { return new Dune::NavierStokesProblemDefault< GridType > (); }
 
     //Stepper Traits
     template< int polOrd >
@@ -259,9 +259,6 @@ struct IncompressibleNavierStokesProblemCreator
 
     static inline std::string moduleName() { return ""; }
 
-    static inline Dune::GridPtr<GridType>
-    initializeGrid() { return Dune::Fem::DefaultGridInitializer< GridType >::initialize(); }
-
     static ProblemInterfaceType* problem() { return new ProblemInterfaceType(); }
 
 
@@ -345,7 +342,7 @@ struct IncompressibleNavierStokesProblemCreator
   static inline std::string moduleName() { return ""; }
 
   static inline Dune::GridPtr<GridType>
-  initializeGrid() { return Dune::Fem::DefaultGridInitializer< GridType >::initializeGrid(); }
+  initializeGrid() { return Dune::Fem::DefaultGridInitializer< GridType >::initialize(); }
 
 };
 
