@@ -96,8 +96,8 @@ namespace Fem
 
 
     const StepperTupleType&           tuple_;
-    IOTupleType                       dataTuple_;
     std::unique_ptr< DataWriterType > dataWriter_;
+    IOTupleType                       dataTuple_;
   };
 
   template<>

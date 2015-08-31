@@ -267,9 +267,9 @@ namespace Fem
       tuple_( Traits::createStepper( grid, name ) ),
       param_( StepperParametersType( Dune::ParameterKey::generate( "", "femdg.stepper." ) ) ),
       checkPointHandler_( tuple_ ),
-      solverMonitorHandler_( tuple_ ),
       dataWriterHandler_( tuple_ ),
       diagnosticsHandler_( tuple_ ),
+      solverMonitorHandler_( tuple_ ),
       solutionLimiterHandler_( tuple_ ),
       adaptHandler_( tuple_ ),
       fixedTimeStep_( param_.fixedTimeStep() )

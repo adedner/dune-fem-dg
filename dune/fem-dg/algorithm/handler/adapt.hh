@@ -392,7 +392,7 @@ namespace Fem
     {
       if( adaptive() )
       {
-        int sequence = get<0>( tuple_ )->adaptIndicator()->solution().space().sequence();
+        //int sequence = get<0>( tuple_ )->adaptIndicator()->solution().space().sequence();
 
         ForLoop< PreAdapt, 0, sizeof ... ( StepperArg ) >::apply( tuple_ );
         adaptationManager().adapt();
