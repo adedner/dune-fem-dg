@@ -34,15 +34,17 @@ struct StepperTraits
   typedef HostGridPartType  GridPartType ;
   //typedef Dune :: Fem :: IdGridPart< HostGridPartType >       GridPartType;
 
-  typedef typename StokesProblemTraits :: template Traits< GridPartType, true > RhsStokesModelTraits;
+private:
+  typedef typename StokesProblemTraits :: template Traits< GridPartType, true > RhsLaplaceModelTraits;
 
   // traits for the operator class
-  struct RhsStokesOperatorTraits :
-    public Dune::PassTraits< RhsStokesModelTraits, polynomialOrder, RhsStokesModelTraits::ModelType::dimRange, istl >
+  struct RhsLaplaceOperatorTraits :
+    public Dune::PassTraits< RhsLaplaceModelTraits, polynomialOrder, RhsLaplaceModelTraits::ModelType::dimRange, istl >
   {
     static const int limiterPolynomialOrder = polynomialOrder;
     typedef std::tuple<> ExtraParameterTupleType;
   };
+public:
 
   typedef typename ProblemTraits :: template Traits< GridPartType >   ModelTraits;
 
@@ -81,7 +83,7 @@ public:
   typedef DgType    ExplicitOperatorType;
 
   typedef Dune :: DGAdvectionDiffusionOperator< RhsOperatorTraits >  RhsOperatorType;
-  typedef Dune :: DGDiffusionOperator< RhsStokesOperatorTraits >     RhsStokesOperatorType;
+  typedef Dune :: DGDiffusionOperator< RhsLaplaceOperatorTraits >     RhsLaplaceOperatorType;
 
   // The discrete function for the unknown solution is defined in the DgOperator
   typedef typename DgType :: DestinationType                         DiscreteFunctionType;
