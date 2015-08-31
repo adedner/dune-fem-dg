@@ -140,7 +140,6 @@ namespace Fem {
       out << std::endl;
 
       // make length simd conform
-      //out << "    field_type resultTmp[ " << numRows * dimRange << " ] = { 0 };" << std::endl << std::endl;
       out << "    field_type resultTmp[ " << numRows * dimRange << " ];" << std::endl;
       out << "    for( int i=0; i<" << numRows * dimRange << "; ++i ) resultTmp[ i ] = 0;" << std::endl << std::endl;
 
@@ -288,7 +287,6 @@ namespace Fem {
       // axpy
       ////////////////////////////////////////////////////
 
-      //out << "   " << doubletype() << " dofResult[ " << numCols * dimRange << " ] = { 0 };" << std::endl << std::endl ;
       out << "   " << doubletype() << " dofResult[ " << numCols * dimRange << " ];" << std::endl << std::endl ;
       out << "    for( int i=0; i<" << numCols * dimRange << "; ++i) dofResult[ i ] = 0;" << std::endl;
       const size_t simdRows  = simdWidth * (numRows / simdWidth) ;
@@ -329,7 +327,6 @@ namespace Fem {
       if( numRows > simdRows )
       {
         out << "    typedef typename RangeVectorType :: value_type value_type;" << std::endl;
-        //out << "    typedef typename ScalarRangeType :: field_type field_type;" << std::endl;
         out << std::endl;
 
         out << "    // remainder iteration" << std::endl;
@@ -479,13 +476,6 @@ namespace Fem {
       out << "    }" << std::endl;
       out << std::endl;
 
-      /*
-      for( int d = 0; d < dim ; ++ d )
-      {
-        // make length simd conform
-        out << "    field_type resultTmp" << d << "[ " << numRows * dimRange << " ] = { 0 }; " << std::endl;
-      }
-      */
       for( int d = 0; d < dim ; ++ d )
       {
         // make length simd conform
@@ -684,9 +674,6 @@ namespace Fem {
       out << "    typedef typename JacobianRangeVectorType :: value_type  value_type;" << std::endl;
       out << "    typedef typename JacobianRangeType :: field_type field_type;" << std::endl;
       const size_t dofs = dimRange * numCols ;
-      //out << "    field_type result [ " << dofs << " ] = {";
-      //for( size_t dof = 0 ; dof < dofs-1 ; ++ dof ) out << " 0,";
-      //out << " 0 };" << std::endl << std::endl;
       out << "    field_type result [ " << dofs << " ];" << std::endl;
       out << "    for ( int i=0; i<" << dofs << "; ++i ) result[ i ] = 0;" << std::endl;
       for( int r=0; r<dimRange; ++r )
