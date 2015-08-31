@@ -8,6 +8,10 @@
 #include <dune/common/fvector.hh>
 #include <dune/common/fmatrix.hh>
 
+#ifdef COUNT_FLOPS
+#include <dune/fem/misc/double.hh>
+#endif
+
 // dune-grid includes
 #if WELLBALANCE
 #include <dune/grid/common/genericreferenceelements.hh>
