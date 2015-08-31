@@ -1,7 +1,6 @@
 # install these headers 
 nseqdir=$(includedir)/dune/fem-dg/test/navierstokes
-nseq_HEADERS= models.hh problemcreator.hh nswaves.hh \
-ns_model_spec.hh nssmooth.hh thermodynamics.hh
+nseq_HEADERS= models.hh problemcreator.hh thermodynamics.hh
 
 #USE_OMP=-fopenmp
 #USE_OMP=-DUSE_PTHREADS=1
@@ -14,10 +13,11 @@ SOURCES = main.cc
 #GRIDTYPE=PARALLELGRID_ALUGRID_CUBE
 #GRIDTYPE=PARALLELGRID_ALUGRID_SIMPLEX
 # GRIDTYPE=SPGRID
+#GRIDTYPE=SPGRID_COUNT_FLOPS
 #GRIDTYPE=CARTESIANGRID_ALUGRID_CUBE
 # GRIDTYPE = ALUGRID_CUBE
-#GRIDTYPE=YASPGRID
-GRIDTYPE = YASPGRID
+GRIDTYPE=YASPGRID
+#GRIDTYPE = YASPGRID
 GRIDDIM=2
 POLORDER=2
 
@@ -37,7 +37,7 @@ DIFFFLUX=PRIMALDG
 #     1. define LIMITER to limit the advection part of the solution (not checked)
 AM_CPPFLAGS = $(USE_OMP) -I../../problems/nseq  $(ALL_PKG_CPPFLAGS) -DGRIDDIM=$(GRIDDIM) \
               -DPROBLEM=$(PROBLEM) -D$(GRIDTYPE) $(DUNEMPICPPFLAGS) \
-              -DFLUX=$(FLUX) -D$(DIFFFLUX) # -DLEGENDREBASIS # -DWBPROBLEM -DWELLBALANCE
+              -DFLUX=$(FLUX) -D$(DIFFFLUX) # -DCOUNT_FLOPS # -DLEGENDREBASIS # -DWBPROBLEM -DWELLBALANCE
 AM_LDFLAGS = $(ALL_PKG_LDFLAGS) $(LAPACK_LDFLAGS) $(USE_OMP) 
 
 EXTRA_PROGRAMS = navierstokes_all
