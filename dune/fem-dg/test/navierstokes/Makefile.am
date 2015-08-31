@@ -1,6 +1,6 @@
 # install these headers 
 nseqdir=$(includedir)/dune/fem-dg/test/navierstokes
-nseq_HEADERS= ns_model.hh problemcreator.hh nswaves.hh \
+nseq_HEADERS= models.hh problemcreator.hh nswaves.hh \
 ns_model_spec.hh nssmooth.hh thermodynamics.hh
 
 #USE_OMP=-fopenmp

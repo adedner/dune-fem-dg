@@ -168,9 +168,9 @@ struct EulerProblemCreator
       typedef Dune::Fem::DefaultDataWriterHandler< GridType, IOTupleType >                           DataWriterHandlerType;
       typedef Dune::Fem::NoAdditionalOutputHandler                                                   AdditionalOutputHandlerType;
       typedef Dune::Fem::DefaultSolutionLimiterHandler< LimiterOperatorType >                        SolutionLimiterHandlerType;
-      typedef Dune::Fem::DefaultAdaptHandler< GridPartType, DiscreteFunctionType,
-                                              RestrictionProlongationType, IndicatorType,
-                                              GradientIndicatorType, SolutionLimiterHandlerType >    AdaptHandlerType;
+      typedef Dune::Fem::DefaultAdaptHandler< IndicatorType,
+                                              GradientIndicatorType,
+                                              SolutionLimiterHandlerType >                           AdaptHandlerType;
     };
 
   };

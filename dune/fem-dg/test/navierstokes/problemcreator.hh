@@ -138,21 +138,21 @@ struct NavierStokesProblemCreator
       //adaptivity
       typedef Dune::DGAdaptationIndicatorOperator< typename OperatorType::OperatorTraitsType,
                                                    OperatorType::hasAdvection,
-                                                   OperatorType::hasDiffusion >                      IndicatorType;
-      typedef Estimator< DiscreteFunctionType, typename  AnalyticalTraitsType::ProblemType >         GradientIndicatorType ;
-      typedef Dune::Fem::RestrictProlongDefault< DiscreteFunctionType >                              RestrictionProlongationType;
+                                                   OperatorType::hasDiffusion >                   IndicatorType;
+      typedef Estimator< DiscreteFunctionType, typename  AnalyticalTraitsType::ProblemType >      GradientIndicatorType ;
+      typedef Dune::Fem::RestrictProlongDefault< DiscreteFunctionType >                           RestrictionProlongationType;
       //limiting
-      typedef typename OperatorType::FullType                                                        LimiterOperatorType;
+      typedef typename OperatorType::FullType                                                     LimiterOperatorType;
       public:
-      typedef Dune::Fem::DefaultDiagnosticsHandler                                                   DiagnosticsHandlerType;
-      typedef Dune::Fem::DefaultSolverMonitorHandler                                                 SolverMonitorHandlerType;
-      typedef Dune::Fem::DefaultCheckPointHandler< GridType >                                        CheckPointHandlerType;
-      typedef Dune::Fem::DefaultDataWriterHandler< GridType, IOTupleType >                           DataWriterHandlerType;
-      typedef Dune::Fem::NoAdditionalOutputHandler                                                   AdditionalOutputHandlerType;
-      typedef Dune::Fem::DefaultSolutionLimiterHandler< LimiterOperatorType >                        SolutionLimiterHandlerType;
-      typedef Dune::Fem::DefaultAdaptHandler< GridPartType, DiscreteFunctionType,
-                                              RestrictionProlongationType, IndicatorType,
-                                              GradientIndicatorType, SolutionLimiterHandlerType >    AdaptHandlerType;
+      typedef Dune::Fem::DefaultDiagnosticsHandler                                                DiagnosticsHandlerType;
+      typedef Dune::Fem::DefaultSolverMonitorHandler                                              SolverMonitorHandlerType;
+      typedef Dune::Fem::DefaultCheckPointHandler< GridType >                                     CheckPointHandlerType;
+      typedef Dune::Fem::DefaultDataWriterHandler< GridType, IOTupleType >                        DataWriterHandlerType;
+      typedef Dune::Fem::NoAdditionalOutputHandler                                                AdditionalOutputHandlerType;
+      typedef Dune::Fem::DefaultSolutionLimiterHandler< LimiterOperatorType >                     SolutionLimiterHandlerType;
+      typedef Dune::Fem::DefaultAdaptHandler< IndicatorType,
+                                              GradientIndicatorType,
+                                              SolutionLimiterHandlerType >                        AdaptHandlerType;
     };
 
 
