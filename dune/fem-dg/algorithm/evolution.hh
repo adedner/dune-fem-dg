@@ -4,6 +4,7 @@
 #include <iostream>
 #include <string>
 
+#include <dune/fem-dg/pass/threadpass.hh>
 #include <dune/fem/misc/gridwidth.hh>
 
 #include <dune/fem/misc/femtimer.hh>
