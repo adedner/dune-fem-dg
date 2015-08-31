@@ -1,9 +1,9 @@
 #ifndef DUNE_FEM_DG_MAINHEADER_HH
 #define DUNE_FEM_DG_MAINHEADER_HH
 
-//#ifdef COUNT_FLOPS
+#ifdef COUNT_FLOPS
 #include <dune/fem/misc/double.hh>
-//#endif
+#endif
 
 // streams for backup
 #include <dune/fem-dg/misc/streams.hh>
