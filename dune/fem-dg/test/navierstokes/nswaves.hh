@@ -31,7 +31,7 @@ class NSWaves : public EvolutionProblemInterface<
                                             //double,
                                             GridType::dimension, GridType::dimension + 2 >,
                   true >,
-                public Thermodynamics< GridType::dimensionworld >
+                public Thermodynamics< GridType::dimensionworld, typename GridType::ctype >
 {
   NSWaves( const NSWaves& );
   public:
@@ -49,7 +49,7 @@ class NSWaves : public EvolutionProblemInterface<
   typedef typename FunctionSpaceType :: DomainType        DomainType;
   typedef typename FunctionSpaceType :: RangeFieldType    RangeFieldType;
   typedef typename FunctionSpaceType :: RangeType         RangeType;
-  typedef Thermodynamics< dimension >                     ThermodynamicsType;
+  typedef Thermodynamics< dimension, RangeFieldType >    ThermodynamicsType;
 
   NSWaves() : ThermodynamicsType(),
     myName_( "NSWaves" ),
@@ -66,7 +66,7 @@ class NSWaves : public EvolutionProblemInterface<
 
 
   // initialize A and B
-  double init(const bool returnA ) const ;
+  RangeFieldType init(const bool returnA ) const ;
 
   // print info
   void printInitInfo() const;
@@ -93,19 +93,19 @@ class NSWaves : public EvolutionProblemInterface<
   }
 
   //template< class RangeImp >
-  double pressure( const RangeType& u ) const
+  RangeFieldType pressure( const RangeType& u ) const
   {
     return thermodynamics().pressureEnergyForm( u );
   }
 
-  double temperature( const RangeType& u ) const
+  RangeFieldType temperature( const RangeType& u ) const
   {
     return thermodynamics().temperatureEnergyForm( u, pressure( u ) );
   }
 
   // pressure and temperature
   template< class RangeImp >
-  inline void pressAndTemp( const RangeImp& u, double& p, double& T ) const;
+  inline void pressAndTemp( const RangeImp& u, RangeFieldType& p, RangeFieldType& T ) const;
 
 
   /*  \brief finalize the simulation using the calculated numerical
@@ -138,10 +138,10 @@ class NSWaves : public EvolutionProblemInterface<
   void paraview_conv2prim() const {}
   std::string description() const;
 
-  inline double mu( const RangeType& ) const { return mu_; }
-  inline double mu( const double T ) const { return mu_; }
-  inline double lambda( const double T ) const { return -2./3.*mu(T); }
-  inline double k( const double T ) const { return c_pd() *mu(T) * Pr_inv(); }
+  inline RangeFieldType mu( const RangeType& ) const { return mu_; }
+  inline RangeFieldType mu( const RangeFieldType T ) const { return mu_; }
+  inline RangeFieldType lambda( const RangeFieldType T ) const { return -2./3.*mu(T); }
+  inline RangeFieldType k( const RangeFieldType T ) const { return c_pd() *mu(T) * Pr_inv(); }
 
 protected:
   const std::string myName_;
@@ -157,8 +157,8 @@ protected:
 
 
 template <class GridType>
-inline double NSWaves<GridType>
-:: init(const bool returnA ) const
+inline typename NSWaves<GridType> :: RangeFieldType
+NSWaves<GridType>:: init(const bool returnA ) const
 {
   if( dimension == 1 )
   {
@@ -183,7 +183,7 @@ inline double NSWaves<GridType>
   }
 
   abort();
-  return 0;
+  return RangeFieldType(0);
 }
 
 
@@ -311,7 +311,7 @@ inline void NSWaves<GridType>
 template <class GridType>
 template< class RangeImp >
 inline void NSWaves<GridType>
-:: pressAndTemp( const RangeImp& u, double& p, double& T ) const
+:: pressAndTemp( const RangeImp& u, RangeFieldType& p, RangeFieldType& T ) const
 {
   thermodynamics().pressAndTempEnergyForm( u, p, T );
 }

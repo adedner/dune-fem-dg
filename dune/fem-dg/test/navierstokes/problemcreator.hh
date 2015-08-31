@@ -1,5 +1,11 @@
 #ifndef FEMHOWTO_NSEQ_RPOBLEMCREATOR_HH
 #define FEMHOWTO_NSEQ_RPOBLEMCREATOR_HH
+
+#ifdef SPGRID_COUNT_FLOPS
+//#define COUNT_FLOPS
+#warning "FLOP/s counting enabled!"
+#endif
+
 #include <config.h>
 
 #ifndef POLORDER
