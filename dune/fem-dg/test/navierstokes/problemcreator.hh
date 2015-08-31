@@ -47,10 +47,10 @@ struct NavierStokesProblemCreator
   typedef Dune::Fem::DGAdaptiveLeafGridPart< GridType >   HostGridPartType;
   typedef HostGridPartType                                GridPartType;
 
-  typedef Dune::Fem::FunctionSpace< typename GridType::ctype, double, GridType::dimension, DIMRANGE> FunctionSpaceType;
-
   // define problem type here if interface should be avoided
   typedef Dune::NSWaves< GridType >                             ProblemInterfaceType;
+
+  typedef typename ProblemInterfaceType :: FunctionSpaceType    FunctionSpaceType;
 
   template< class GridPart > // TODO: is this template parameter needed?
   struct AnalyticalTraits
