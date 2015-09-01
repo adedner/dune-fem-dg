@@ -42,7 +42,6 @@ namespace Fem
     typedef typename AnalyticalTraits::ProblemType                 ProblemType;
 
     // type of discrete function space and discrete function
-    typedef typename ProblemTraits::FunctionSpaceType              FunctionSpaceType;
     typedef typename DiscreteTraits::DiscreteFunctionSpaceType     DiscreteFunctionSpaceType;
     typedef typename DiscreteTraits::DiscreteFunctionType          DiscreteFunctionType;
 

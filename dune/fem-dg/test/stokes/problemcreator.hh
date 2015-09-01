@@ -142,16 +142,11 @@ struct StokesProblemCreator
     typedef typename SubPoissonProblemCreator::HostGridPartType     HostGridPartType;
     typedef typename SubPoissonProblemCreator::GridPartType         GridPartType;
 
-
-  private:
-    typedef typename SubPoissonProblemCreator::FunctionSpaceType  VelocityFunctionSpaceType;
     typedef Dune::Fem::FunctionSpace< typename GridType::ctype, double, GridType::dimension, 1 >
-                                                                  PressureFunctionSpaceType;
-  public:
+                                                                    FunctionSpaceType;
     // define problem type here if interface should be avoided
-    typedef typename SubPoissonProblemCreator::FunctionSpaceType FunctionSpaceType;
-
-    typedef Dune::StokesProblemInterface< VelocityFunctionSpaceType, PressureFunctionSpaceType >       ProblemInterfaceType;
+    typedef Dune::StokesProblemInterface< typename SubPoissonProblemCreator::FunctionSpaceType /*velocity*/,
+                                          FunctionSpaceType >       ProblemInterfaceType;
 
     struct AnalyticalTraits
     {
@@ -180,9 +175,9 @@ struct StokesProblemCreator
       static const SolverType solverType = PoissonDiscreteTraits::solverType;
       static const bool symmetricSolver = true ;
     public:
-      typedef typename DiscreteFunctionSpaces< PressureFunctionSpaceType, GridPartType, polOrd, _legendre, dg >::type    DiscreteFunctionSpaceType;
-      typedef typename DiscreteFunctions< DiscreteFunctionSpaceType, solverType >::type                                   DiscreteFunctionType;
-      typedef typename DiscreteFunctions< DiscreteFunctionSpaceType, solverType >::jacobian                               JacobianOperatorType;
+      typedef typename DiscreteFunctionSpaces< FunctionSpaceType, GridPartType, polOrd, _legendre, dg >::type    DiscreteFunctionSpaceType;
+      typedef typename DiscreteFunctions< DiscreteFunctionSpaceType, solverType >::type                          DiscreteFunctionType;
+      typedef typename DiscreteFunctions< DiscreteFunctionSpaceType, solverType >::jacobian                      JacobianOperatorType;
 
       typedef std::tuple<>                                                                        ExtraParameterTuple;
 
@@ -195,7 +190,8 @@ struct StokesProblemCreator
         typedef Dune::NoFlux< typename AnalyticalTraits::ModelType >                                FluxType;
 
         typedef Dune::DefaultOperatorTraits< GridPartType, polOrd, AnalyticalTraits,
-                                      DiscreteFunctionType, FluxType, ExtraParameterTuple, VelocityFunctionSpaceType >         OperatorTraitsType;
+                                      DiscreteFunctionType, FluxType, ExtraParameterTuple,
+                                      typename SubPoissonProblemCreator::FunctionSpaceType >        OperatorTraitsType;
       public:
 
         typedef typename Dune::StokesAssembler< typename PoissonDiscreteTraits::DiscreteFunctionType,
