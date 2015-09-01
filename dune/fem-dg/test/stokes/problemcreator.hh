@@ -93,6 +93,7 @@ struct StokesProblemCreator
       struct DiscreteTraits
       {
         static const SolverType solverType = istl ;
+        static const bool symmetricSolver = true ;
       public:
         typedef typename DiscreteFunctionSpaces< FunctionSpaceType, GridPartType, polOrd, _legendre, dg >::type    DiscreteFunctionSpaceType;
         typedef typename DiscreteFunctions< DiscreteFunctionSpaceType, solverType >::type                          DiscreteFunctionType;
@@ -111,7 +112,6 @@ struct StokesProblemCreator
       public:
         typedef std::tuple< DiscreteFunctionType*, DiscreteFunctionType* >                          IOTupleType;
 
-        static const bool symmetricSolver = true ;
         typedef Solvers<DiscreteFunctionSpaceType, solverType, symmetricSolver>                     SolversType;
 
         typedef Dune::DGPrimalMatrixAssembly< AssemblyOperatorType >                                AssemblerType;
@@ -173,6 +173,7 @@ struct StokesProblemCreator
     private:
       typedef typename SubPoissonProblemCreator::template DiscreteTraits< polOrd >          PoissonDiscreteTraits;
       static const SolverType solverType = PoissonDiscreteTraits::solverType;
+      static const bool symmetricSolver = true ;
     public:
       typedef typename DiscreteFunctionSpaces< PressureFunctionSpaceType, GridPartType, polOrd, _legendre, dg >::type    DiscreteFunctionSpaceType;
       typedef typename DiscreteFunctions< DiscreteFunctionSpaceType, solverType >::type                                   DiscreteFunctionType;
@@ -189,7 +190,6 @@ struct StokesProblemCreator
 
     public:
       typedef std::tuple< DiscreteFunctionType*, DiscreteFunctionType* >                          IOTupleType;
-      static const bool symmetricSolver = true ;
 
       typedef typename Dune::StokesAssembler< typename PoissonDiscreteTraits::DiscreteFunctionType,
                                               DiscreteFunctionType,

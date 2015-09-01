@@ -94,6 +94,7 @@ struct PoissonProblemCreator
     {
     private:
       static const SolverType solverType = istl ;
+      static const bool symmetricSolver = true ;
     public:
       typedef typename DiscreteFunctionSpaces< FunctionSpaceType, GridPartType, polOrd, _legendre, dg >::type    DiscreteFunctionSpaceType;
       typedef typename DiscreteFunctions< DiscreteFunctionSpaceType, solverType >::type                          DiscreteFunctionType;
@@ -111,7 +112,6 @@ struct PoissonProblemCreator
     public:
       typedef std::tuple< DiscreteFunctionType*, DiscreteFunctionType* >                          IOTupleType;
 
-      static const bool symmetricSolver = true ;
       typedef Solvers<DiscreteFunctionSpaceType, solverType, symmetricSolver>                     SolversType;
 
       typedef Dune::DGPrimalMatrixAssembly< AssemblyOperatorType >                                AssemblerType;
