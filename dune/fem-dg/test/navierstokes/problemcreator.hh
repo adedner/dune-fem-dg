@@ -101,22 +101,13 @@ struct NavierStokesProblemCreator
       // type of linear solver for implicit ode
       typedef Dune::Fem::ParDGGeneralizedMinResInverseOperator< DiscreteFunctionType >            BasicLinearSolverType;
 
-      class HandlerTraits;
-
       class OperatorType
       {
         friend DiscreteTraits;
-        typedef Dune::AdaptationHandler< GridType, FunctionSpaceType >                              AdaptationHandlerType;
+        typedef LLFFlux< typename AnalyticalTraits::ModelType >                                    FluxType;
 
-        typedef LLFFlux< typename AnalyticalTraits::ModelType >                                 FluxType;
-
-        typedef Dune::Fem::FunctionSpace< typename GridType::ctype, double, AnalyticalTraits::ModelType::dimDomain, 3> FVFunctionSpaceType;
-        typedef Dune::Fem::FiniteVolumeSpace<FVFunctionSpaceType,GridPartType, 0, Dune::Fem::SimpleStorage> IndicatorSpaceType;
-        typedef Dune::Fem::AdaptiveDiscreteFunction<IndicatorSpaceType>                             IndicatorType;
-
-        typedef Dune::OperatorTraits< GridPartType, polOrd, AnalyticalTraits,
-                                      DiscreteFunctionType, FluxType, IndicatorType,
-                                      AdaptationHandlerType, ExtraParameterTuple >                  OperatorTraitsType;
+        typedef Dune::DefaultOperatorTraits< GridPartType, polOrd, AnalyticalTraits,
+                                             DiscreteFunctionType, FluxType, ExtraParameterTuple > OperatorTraitsType;
 
         static const int hasAdvection = AnalyticalTraits::ModelType::hasAdvection;
         static const int hasDiffusion = AnalyticalTraits::ModelType::hasDiffusion;

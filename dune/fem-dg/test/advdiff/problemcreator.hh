@@ -121,17 +121,10 @@ struct AdvectionDiffusionProblemCreator
       class OperatorType
       {
         friend DiscreteTraits;
-        typedef Dune::AdaptationHandler< GridType, FunctionSpaceType >                              AdaptationHandlerType;
-
         typedef Dune::UpwindFlux< typename AnalyticalTraits::ModelType >                            FluxType;
 
-        typedef Dune::Fem::FunctionSpace< typename GridType::ctype, double, AnalyticalTraits::ModelType::dimDomain, 3> FVFunctionSpaceType;
-        typedef Dune::Fem::FiniteVolumeSpace<FVFunctionSpaceType,GridPartType, 0, Dune::Fem::SimpleStorage> IndicatorSpaceType;
-        typedef Dune::Fem::AdaptiveDiscreteFunction<IndicatorSpaceType>                             LimiterIndicatorType;
-
-        typedef Dune::OperatorTraits< GridPartType, polOrd, AnalyticalTraits,
-                                      DiscreteFunctionType, FluxType, LimiterIndicatorType,
-                                      AdaptationHandlerType, ExtraParameterTuple >                  OperatorTraitsType;
+        typedef Dune::DefaultOperatorTraits< GridPartType, polOrd, AnalyticalTraits, DiscreteFunctionType, FluxType, ExtraParameterTuple >
+                                                                                                  OperatorTraitsType;
 
         // TODO: advection/diffusion should not be precribed by model
         static const int hasAdvection = AnalyticalTraits::ModelType::hasAdvection;

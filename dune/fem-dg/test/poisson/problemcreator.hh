@@ -102,17 +102,10 @@ struct PoissonProblemCreator
       typedef std::tuple<>                                                                        ExtraParameterTuple;
 
     private:
-      typedef Dune::AdaptationHandler< GridType, FunctionSpaceType >                              AdaptationHandlerType;
-
       typedef Dune::UpwindFlux< typename AnalyticalTraits::ModelType >                            FluxType;
 
-      typedef Dune::Fem::FunctionSpace< typename GridType::ctype, double, AnalyticalTraits::ModelType::dimDomain, 3> FVFunctionSpaceType;
-      typedef Dune::Fem::FiniteVolumeSpace<FVFunctionSpaceType,GridPartType, 0, Dune::Fem::SimpleStorage> IndicatorSpaceType;
-      typedef Dune::Fem::AdaptiveDiscreteFunction<IndicatorSpaceType>                             IndicatorType;
-
-      typedef Dune::OperatorTraits< GridPartType, polOrd, AnalyticalTraits,
-                                    DiscreteFunctionType, FluxType,  IndicatorType,
-                                    AdaptationHandlerType, ExtraParameterTuple >                  OperatorTraitsType;
+      typedef Dune::DefaultOperatorTraits< GridPartType, polOrd, AnalyticalTraits,
+                                           DiscreteFunctionType, FluxType, ExtraParameterTuple >  OperatorTraitsType;
 
       typedef Dune::DGAdvectionDiffusionOperator< OperatorTraitsType >                            AssemblyOperatorType;
     public:
