@@ -466,10 +466,10 @@ namespace Fem
     typedef typename BaseType::ModelType                   ModelType;
 
     // type of linear operator (i.e. matrix implementation)
-    typedef typename BaseType::OperatorType                OperatorType;
+    typedef typename BaseType::OperatorType::type          OperatorType;
 
     // The DG space operator
-    typedef typename BaseType::AssemblerType               AssemblerType;
+    typedef typename BaseType::OperatorType::AssemblerType AssemblerType;
     typedef typename AssemblerType::OperatorType           AssemblyOperatorType;
 
     // The discrete function for the unknown solution is defined in the DgOperator
@@ -479,7 +479,7 @@ namespace Fem
     typedef typename BaseType::DiscreteFunctionSpaceType   DiscreteFunctionSpaceType;
 
     // type of inverse operator (i.e. linear solver implementation)
-    typedef typename BaseType::BasicLinearSolverType       BasicLinearSolverType;
+    typedef typename BaseType::SolverType::type            BasicLinearSolverType;
 
     enum { dimension = GridType::dimension  };
 

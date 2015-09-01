@@ -37,11 +37,11 @@ namespace Fem
     // The DG space operator
     // The first operator is sum of the other two
     // The other two are needed for semi-implicit time discretization
-    typedef typename BaseType::OperatorType::FullType          FullOperatorType;
+    typedef typename BaseType::OperatorType::type             FullOperatorType;
     typedef typename BaseType::OperatorType::ExplicitType     ExplicitOperatorType;
     typedef typename BaseType::OperatorType::ImplicitType     ImplicitOperatorType;
 
-    typedef typename BaseType::BasicLinearSolverType           BasicLinearSolverType;
+    typedef typename BaseType::SolverType::BasicLinearSolverType BasicLinearSolverType;
 
     // The discrete function for the unknown solution is defined in the DgOperator
     typedef typename BaseType::DiscreteFunctionType            DiscreteFunctionType;
@@ -49,10 +49,10 @@ namespace Fem
     // ... as well as the Space type
     typedef typename BaseType::DiscreteFunctionSpaceType       DiscreteFunctionSpaceType;
 
-    typedef typename BaseType::IOTupleType                       IOTupleType;
+    typedef typename BaseType::IOTupleType                     IOTupleType;
 
     // The ODE Solvers
-    typedef typename BaseType::OdeSolverType                   OdeSolverType;
+    typedef typename BaseType::SolverType::type                SolverType;
 
     typedef typename BaseType::TimeProviderType                TimeProviderType;
 
@@ -76,7 +76,7 @@ namespace Fem
                       ExtraParameterTupleType tuple = ExtraParameterTupleType() ) :
       BaseType( grid, name ),
       tuple_( ),
-      dgAdvectionOperator_(gridPart_, problem(), tuple, name ),
+      advectionOperator_(gridPart_, problem(), tuple, name ),
       adaptIndicator_( solution(), problem(), tuple_, name )
     {}
 
@@ -88,7 +88,7 @@ namespace Fem
     virtual void limit()
     {
       if( limitSolution() )
-        dgAdvectionOperator_.limit( *limitSolution() );
+        advectionOperator_.limit( *limitSolution() );
     }
 
     //! return overal number of grid elements
@@ -99,31 +99,31 @@ namespace Fem
         return globalElements;
 
       // one of them is not zero,
-      size_t  advSize   = dgAdvectionOperator_.numberOfElements();
+      size_t  advSize   = advectionOperator_.numberOfElements();
       size_t  dgIndSize = adaptIndicator_.numberOfElements();
       UInt64Type grSize   = std::max( advSize, dgIndSize );
       return grid_.comm().sum( grSize );
     }
 
-    virtual OdeSolverType* createOdeSolver(TimeProviderType& tp)
+    virtual SolverType* createSolver(TimeProviderType& tp)
     {
       adaptIndicator_.setAdaptation( tp );
 
       typedef RungeKuttaSolver< ExplicitOperatorType, ExplicitOperatorType, ExplicitOperatorType,
-                                BasicLinearSolverType > OdeSolverImpl;
-      return new OdeSolverImpl( tp, dgAdvectionOperator_,
-                                dgAdvectionOperator_,
-                                dgAdvectionOperator_,
-                                name() );
+                                BasicLinearSolverType > SolverImpl;
+      return new SolverImpl( tp, advectionOperator_,
+                             advectionOperator_,
+                             advectionOperator_,
+                             name() );
     }
 
-   const ModelType& model() const { return dgAdvectionOperator_.model(); }
+   const ModelType& model() const { return advectionOperator_.model(); }
 
   protected:
     ExtraParameterTupleType tuple_;
 
 
-    ExplicitOperatorType    dgAdvectionOperator_;
+    ExplicitOperatorType    advectionOperator_;
     mutable AdaptIndicatorType       adaptIndicator_;
   };
 }

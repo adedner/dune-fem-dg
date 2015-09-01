@@ -265,8 +265,7 @@ namespace Fem
     // An analytical version of our model
     typedef typename BaseType::ModelType                            ModelType;
 
-    typedef typename BaseType::AssemblerType                        AssemblerType;
-    // The discrete function for the unknown solution is defined in the DgOperator
+    typedef typename BaseType::OperatorType::AssemblerType          AssemblerType;
 
     typedef typename EllipticalAlgorithmType::DiscreteTraits::DiscreteFunctionType
                                                                     DiscreteVelocityFunctionType;
@@ -279,7 +278,7 @@ namespace Fem
     typedef typename BaseType::SolverMonitorHandlerType             SolverMonitorHandlerType;
 
     // type of inverse operator (i.e. linear solver implementation)
-    typedef typename BaseType::BasicLinearSolverType                BasicLinearSolverType;
+    typedef typename BaseType::SolverType::type                     BasicLinearSolverType;
 
     enum { dimension = GridType::dimension  };
 
@@ -287,7 +286,7 @@ namespace Fem
       template ToNewDimRange< dimension * ModelType::dimRange >::NewFunctionSpaceType SigmaFunctionSpaceType;
 
     typedef StokesSigmaEstimator< GridPartType, DiscreteVelocityFunctionType, DiscreteFunctionType,
-                                  SigmaFunctionSpaceType, typename EllipticalAlgorithmType::DiscreteTraits::AssemblerType, ModelType, polOrd > StokesSigmaEstimatorType;
+                                  SigmaFunctionSpaceType, typename EllipticalAlgorithmType::AssemblerType, ModelType, polOrd > StokesSigmaEstimatorType;
 
     typedef typename tuple_concat< typename EllipticalAlgorithmType::IOTupleType, typename BaseType::IOTupleType >::type     IOTupleType;
 

@@ -100,24 +100,30 @@ struct PoissonProblemCreator
       typedef typename DiscreteFunctions< DiscreteFunctionSpaceType, solverType >::type                          DiscreteFunctionType;
       typedef typename DiscreteFunctions< DiscreteFunctionSpaceType, solverType >::jacobian                      JacobianOperatorType;
 
-      typedef std::tuple<>                                                                        ExtraParameterTuple;
-
-    private:
-      typedef Dune::UpwindFlux< typename AnalyticalTraits::ModelType >                            FluxType;
-
-      typedef Dune::DefaultOperatorTraits< GridPartType, polOrd, AnalyticalTraits,
-                                           DiscreteFunctionType, FluxType, ExtraParameterTuple >  OperatorTraitsType;
-
-      typedef Dune::DGAdvectionDiffusionOperator< OperatorTraitsType >                            AssemblyOperatorType;
-    public:
       typedef std::tuple< DiscreteFunctionType*, DiscreteFunctionType* >                          IOTupleType;
 
-      typedef Solvers<DiscreteFunctionSpaceType, solverType, symmetricSolver>                     SolversType;
+      typedef std::tuple<>                                                                        ExtraParameterTuple;
 
-      typedef Dune::DGPrimalMatrixAssembly< AssemblyOperatorType >                                AssemblerType;
-      typedef typename SolversType::LinearOperatorType                                            OperatorType;
+      class Operator
+      {
+        friend DiscreteTraits;
+        friend SolverType;
+        typedef Dune::UpwindFlux< typename AnalyticalTraits::ModelType >                            FluxType;
 
-      typedef typename SolversType::LinearInverseOperatorType                                     BasicLinearSolverType;
+        typedef Dune::DefaultOperatorTraits< GridPartType, polOrd, AnalyticalTraits,
+                                             DiscreteFunctionType, FluxType, ExtraParameterTuple >  OperatorTraitsType;
+
+        typedef Dune::DGAdvectionDiffusionOperator< OperatorTraitsType >                            AssemblyOperatorType;
+        typedef Solvers<DiscreteFunctionSpaceType, solverType, symmetricSolver>                     SolversType;
+      public:
+        typedef Dune::DGPrimalMatrixAssembly< AssemblyOperatorType >                                AssemblerType;
+        typedef typename SolversType::LinearOperatorType                                            type;
+      };
+
+      struct Solver
+      {
+        typedef typename Operator::SolversType::LinearInverseOperatorType                           type;
+      };
 
     private:
       //typedef Dune::DGAdaptationIndicatorOperator< OperatorTraitsType, true, true >                 IndicatorType;

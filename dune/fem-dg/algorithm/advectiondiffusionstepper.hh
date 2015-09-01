@@ -38,11 +38,11 @@ namespace Fem
     // The DG space operator
     // The first operator is sum of the other two
     // The other two are needed for semi-implicit time discretization
-    typedef typename BaseType::OperatorType::FullType         FullOperatorType;
+    typedef typename BaseType::OperatorType::type             OperatorType;
     typedef typename BaseType::OperatorType::ExplicitType     ExplicitOperatorType;
     typedef typename BaseType::OperatorType::ImplicitType     ImplicitOperatorType;
 
-    typedef typename BaseType::BasicLinearSolverType          BasicLinearSolverType;
+    typedef typename BaseType::SolverType::BasicLinearSolverType BasicLinearSolverType;
 
     // The discrete function for the unknown solution is defined in the DgOperator
     typedef typename BaseType::DiscreteFunctionType           DiscreteFunctionType;
@@ -50,17 +50,17 @@ namespace Fem
     // ... as well as the Space type
     typedef typename BaseType::DiscreteFunctionSpaceType      DiscreteFunctionSpaceType;
 
-    typedef typename BaseType::IOTupleType                       IOTupleType;
+    typedef typename BaseType::IOTupleType                    IOTupleType;
 
     // The ODE Solvers
-    typedef typename BaseType::OdeSolverType                  OdeSolverType;
+    typedef typename BaseType::SolverType::type               SolverType;
 
     typedef typename BaseType::TimeProviderType               TimeProviderType;
 
     // type of 64bit unsigned integer
     typedef typename BaseType::UInt64Type                     UInt64Type;
 
-    typedef typename BaseType::ExtraParameterTupleType    ExtraParameterTupleType;
+    typedef typename BaseType::ExtraParameterTupleType        ExtraParameterTupleType;
 
     typedef typename BaseType::AdaptIndicatorType             AdaptIndicatorType;
 
@@ -79,9 +79,9 @@ namespace Fem
       //velo_( "velocity", vSpace_ ),
       //tuple_( &velo_ ),
       tuple_( ),
-      dgOperator_( gridPart_, problem(), tuple_, name ),
-      dgAdvectionOperator_( gridPart_, problem(), tuple_, name ),
-      dgDiffusionOperator_( gridPart_, problem(), tuple_, name ),
+      operator_( gridPart_, problem(), tuple_, name ),
+      advectionOperator_( gridPart_, problem(), tuple_, name ),
+      diffusionOperator_( gridPart_, problem(), tuple_, name ),
       adaptIndicator_( solution(), problem(), tuple_, name )
     {
     }
@@ -99,10 +99,10 @@ namespace Fem
         return globalElements;
 
       // one of them is not zero,
-      size_t advSize     = dgAdvectionOperator_.numberOfElements();
-      size_t diffSize    = dgDiffusionOperator_.numberOfElements();
+      size_t advSize     = advectionOperator_.numberOfElements();
+      size_t diffSize    = diffusionOperator_.numberOfElements();
       size_t dgIndSize   = adaptIndicator_.numberOfElements();
-      size_t dgSize      = dgOperator_.numberOfElements();
+      size_t dgSize      = operator_.numberOfElements();
       UInt64Type grSize  = std::max( std::max(advSize, dgSize ), std::max( diffSize, dgIndSize ) );
       double minMax[ 2 ] = { double(grSize), 1.0/double(grSize) } ;
       grid_.comm().max( &minMax[ 0 ], 2 );
@@ -113,29 +113,29 @@ namespace Fem
       return grid_.comm().sum( grSize );
     }
 
-    virtual OdeSolverType* createOdeSolver(TimeProviderType& tp)
+    virtual SolverType* createSolver(TimeProviderType& tp)
     {
       adaptIndicator_.setAdaptation( tp );
 
       // create ODE solver
-      typedef RungeKuttaSolver< FullOperatorType, ExplicitOperatorType, ImplicitOperatorType,
-                                BasicLinearSolverType > OdeSolverImpl;
-      return new OdeSolverImpl( tp, dgOperator_,
-                                dgAdvectionOperator_,
-                                dgDiffusionOperator_,
-                                name() );
+      typedef RungeKuttaSolver< OperatorType, ExplicitOperatorType, ImplicitOperatorType,
+                                BasicLinearSolverType > SolverImpl;
+      return new SolverImpl( tp, operator_,
+                             advectionOperator_,
+                             diffusionOperator_,
+                             name() );
     }
 
-    const ModelType& model() const { return dgOperator_.model(); }
+    const ModelType& model() const { return operator_.model(); }
 
   protected:
     //typename OperatorTraits::SpaceType vSpace_;
     //typename OperatorTraits::VeloType  velo_;
     ExtraParameterTupleType tuple_;
 
-    FullOperatorType         dgOperator_;
-    ExplicitOperatorType     dgAdvectionOperator_;
-    ImplicitOperatorType     dgDiffusionOperator_;
+    OperatorType             operator_;
+    ExplicitOperatorType     advectionOperator_;
+    ImplicitOperatorType     diffusionOperator_;
     mutable AdaptIndicatorType       adaptIndicator_;
   };
 }

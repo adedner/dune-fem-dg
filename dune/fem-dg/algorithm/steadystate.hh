@@ -48,13 +48,9 @@ namespace Fem
 
     typedef typename DiscreteTraits::ExtraParameterTuple           ExtraParameterTuple;
 
-    //typedef typename DiscreteTraits::OdeSolverType                 OdeSolverType;
-    typedef typename DiscreteTraits::BasicLinearSolverType         BasicLinearSolverType;
+    typedef typename DiscreteTraits::Solver                        SolverType;
 
-    // tpye of jacobian operator used in the nested newton loops
-    typedef typename DiscreteTraits::OperatorType                  OperatorType;
-
-    typedef typename DiscreteTraits::AssemblerType                 AssemblerType;
+    typedef typename DiscreteTraits::Operator                      OperatorType;
 
     // type of IOTuple
     typedef typename DiscreteTraits::IOTupleType                   IOTupleType;
@@ -90,15 +86,13 @@ namespace Fem
     typedef typename Traits::OperatorType                         OperatorType;
 
     // type of steady state solver
-    typedef typename Traits::BasicLinearSolverType                BasicLinearSolverType;
+    typedef typename Traits::SolverType                           SolverType;
 
     // type of analytical traits
     typedef typename Traits::AnalyticalTraits                     AnalyticalTraits;
 
     // type of discrete traits
     typedef typename Traits::DiscreteTraits                       DiscreteTraits;
-
-    typedef typename Traits::AssemblerType                        AssemblerType;
 
     typedef uint64_t                                              UInt64Type ;
 
@@ -156,7 +150,7 @@ namespace Fem
       return grid().comm().sum( grSize );
     }
 
-    virtual BasicLinearSolverType* createSolver( DiscreteFunctionType* rhs ) = 0;
+    virtual typename SolverType::type* createSolver( DiscreteFunctionType* rhs ) = 0;
 
     virtual void initialize ( const int loop )
     {
@@ -224,7 +218,7 @@ namespace Fem
     DiscreteFunctionType solution_;
     DiscreteFunctionType exactSolution_;
 
-    std::unique_ptr< BasicLinearSolverType > solver_;
+    std::unique_ptr< typename SolverType::type > solver_;
     int solverIterations_;
   };
 

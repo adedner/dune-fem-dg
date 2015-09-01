@@ -101,23 +101,28 @@ struct StokesProblemCreator
 
         typedef std::tuple<>                                                                        ExtraParameterTuple;
 
-      private:
-        //typedef Dune::UpwindFlux< typename AnalyticalTraits::ModelType >                          FluxType;
-        typedef Dune::NoFlux< typename AnalyticalTraits::ModelType >                                FluxType;
-
-        typedef Dune::DefaultOperatorTraits< GridPartType, polOrd, AnalyticalTraits,
-                                      DiscreteFunctionType, FluxType, ExtraParameterTuple> OperatorTraitsType;
-
-        typedef Dune::DGAdvectionDiffusionOperator< OperatorTraitsType >                            AssemblyOperatorType;
-      public:
         typedef std::tuple< DiscreteFunctionType*, DiscreteFunctionType* >                          IOTupleType;
 
-        typedef Solvers<DiscreteFunctionSpaceType, solverType, symmetricSolver>                     SolversType;
+        class Operator
+        {
+          friend DiscreteTraits;
+          friend SolverType;
+          typedef Dune::NoFlux< typename AnalyticalTraits::ModelType >                                FluxType;
 
-        typedef Dune::DGPrimalMatrixAssembly< AssemblyOperatorType >                                AssemblerType;
-        typedef typename SolversType::LinearOperatorType                                            OperatorType;
+          typedef Dune::DefaultOperatorTraits< GridPartType, polOrd, AnalyticalTraits,
+                                               DiscreteFunctionType, FluxType, ExtraParameterTuple >  OperatorTraitsType;
 
-        typedef typename SolversType::LinearInverseOperatorType                                     BasicLinearSolverType;
+          typedef Dune::DGAdvectionDiffusionOperator< OperatorTraitsType >                            AssemblyOperatorType;
+          typedef Solvers<DiscreteFunctionSpaceType, solverType, symmetricSolver>                     SolversType;
+        public:
+          typedef Dune::DGPrimalMatrixAssembly< AssemblyOperatorType >                                AssemblerType;
+          typedef typename SolversType::LinearOperatorType                                            type;
+        };
+
+        struct Solver
+        {
+          typedef typename Operator::SolversType::LinearInverseOperatorType                           type;
+        };
 
 
         typedef Dune::Fem::SubSolverMonitorHandler< Dune::Fem::SolverMonitor< 1 > >               SolverMonitorHandlerType;
@@ -181,22 +186,29 @@ struct StokesProblemCreator
 
       typedef std::tuple<>                                                                        ExtraParameterTuple;
 
-    private:
-      typedef Dune::NoFlux< typename AnalyticalTraits::ModelType >                                FluxType;
-
-      typedef Dune::DefaultOperatorTraits< GridPartType, polOrd, AnalyticalTraits,
-                                    DiscreteFunctionType, FluxType, ExtraParameterTuple, VelocityFunctionSpaceType >         OperatorTraitsType;
-
-
-    public:
       typedef std::tuple< DiscreteFunctionType*, DiscreteFunctionType* >                          IOTupleType;
 
-      typedef typename Dune::StokesAssembler< typename PoissonDiscreteTraits::DiscreteFunctionType,
-                                              DiscreteFunctionType,
-                                              OperatorTraitsType>                                 AssemblerType;
-      typedef typename PoissonDiscreteTraits::OperatorType                                        OperatorType;
-      typedef Dune::UzawaSolver< typename PoissonDiscreteTraits::DiscreteFunctionType, DiscreteFunctionType, AssemblerType,
-                                 typename PoissonDiscreteTraits::BasicLinearSolverType >          BasicLinearSolverType;
+      class Operator
+      {
+        friend DiscreteTraits;
+        friend SolverType;
+        typedef Dune::NoFlux< typename AnalyticalTraits::ModelType >                                FluxType;
+
+        typedef Dune::DefaultOperatorTraits< GridPartType, polOrd, AnalyticalTraits,
+                                      DiscreteFunctionType, FluxType, ExtraParameterTuple, VelocityFunctionSpaceType >         OperatorTraitsType;
+      public:
+
+        typedef typename Dune::StokesAssembler< typename PoissonDiscreteTraits::DiscreteFunctionType,
+                                                DiscreteFunctionType,
+                                                OperatorTraitsType>                                 AssemblerType;
+        typedef typename PoissonDiscreteTraits::Operator::type                                      type;
+      };
+
+      struct Solver
+      {
+        typedef Dune::UzawaSolver< typename PoissonDiscreteTraits::DiscreteFunctionType, DiscreteFunctionType, typename Operator::AssemblerType,
+                                   typename PoissonDiscreteTraits::Solver::type >                   type;
+      };
 
       static_assert( (int)DiscreteFunctionSpaceType::FunctionSpaceType::dimRange == 1 , "pressure dimrange does not fit");
 

@@ -101,7 +101,7 @@ struct NavierStokesProblemCreator
       // type of linear solver for implicit ode
       typedef Dune::Fem::ParDGGeneralizedMinResInverseOperator< DiscreteFunctionType >            BasicLinearSolverType;
 
-      class OperatorType
+      class Operator
       {
         friend DiscreteTraits;
         typedef LLFFlux< typename AnalyticalTraits::ModelType >                                    FluxType;
@@ -113,13 +113,21 @@ struct NavierStokesProblemCreator
         static const int hasDiffusion = AnalyticalTraits::ModelType::hasDiffusion;
         typedef AdvectionDiffusionOperators< OperatorTraitsType, hasAdvection, hasDiffusion, _unlimited > AdvectionDiffusionOperatorType;
       public:
-        typedef typename AdvectionDiffusionOperatorType::FullOperatorType                           FullType;
+        typedef typename AdvectionDiffusionOperatorType::FullOperatorType                           type;
         typedef typename AdvectionDiffusionOperatorType::ImplicitOperatorType                       ImplicitType;
         typedef typename AdvectionDiffusionOperatorType::ExplicitOperatorType                       ExplicitType;
       };
 
+      struct Solver
+      {
+        // type of linear solver for implicit ode
+        typedef Dune::Fem::ParDGGeneralizedMinResInverseOperator< DiscreteFunctionType >            BasicLinearSolverType;
+
+        typedef DuneODE::OdeSolverInterface< DiscreteFunctionType >                                 type;
+      };
+
     private:
-      typedef Dune::DGAdaptationIndicatorOperator< typename OperatorType::OperatorTraitsType, OperatorType::hasAdvection, OperatorType::hasDiffusion >
+      typedef Dune::DGAdaptationIndicatorOperator< typename Operator::OperatorTraitsType, Operator::hasAdvection, Operator::hasDiffusion >
                                                                                                     IndicatorType;
       typedef Estimator< DiscreteFunctionType, typename AnalyticalTraits::ProblemType >             GradientIndicatorType ;
     public:

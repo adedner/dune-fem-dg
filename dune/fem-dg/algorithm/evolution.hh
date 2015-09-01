@@ -46,7 +46,7 @@ namespace Fem
     typedef typename DiscreteTraits::InitialProjectorType          InitialProjectorType;
 
     // type of dg operator
-    typedef typename DiscreteTraits::OperatorType                  OperatorType;
+    typedef typename DiscreteTraits::Operator                      OperatorType;
 
     typedef typename DiscreteTraits::DiscreteFunctionSpaceType     DiscreteFunctionSpaceType;
     typedef typename DiscreteTraits::DiscreteFunctionType          DiscreteFunctionType;
@@ -57,9 +57,7 @@ namespace Fem
     // wrap operator
     typedef GridTimeProvider< GridType >                           TimeProviderType;
 
-    typedef typename DiscreteTraits::OdeSolverType                 OdeSolverType;
-
-    typedef typename DiscreteTraits::BasicLinearSolverType         BasicLinearSolverType;
+    typedef typename DiscreteTraits::Solver                        SolverType;
 
     typedef typename DiscreteTraits::AdaptIndicatorType            AdaptIndicatorType;
     typedef typename DiscreteTraits::SolverMonitorHandlerType      SolverMonitorHandlerType;
@@ -108,13 +106,10 @@ namespace Fem
     typedef typename Traits::DiscreteFunctionSpaceType           DiscreteFunctionSpaceType;
     typedef typename Traits::DiscreteFunctionType                DiscreteFunctionType;
 
-    typedef typename Traits::BasicLinearSolverType               BasicLinearSolverType;
+    typedef typename Traits::SolverType                          SolverType;
 
     // The DG space operator
     typedef typename Traits::OperatorType                        OperatorType;
-
-    // The ODE Solvers
-    typedef typename Traits::OdeSolverType                       OdeSolverType;
 
     // type of initial interpolation
     typedef typename Traits::InitialProjectorType                InitialProjectorType;
@@ -153,7 +148,7 @@ namespace Fem
       additionalOutputHandler_( exactSolution_, name ),
       odeSolverMonitor_(),
       overallTimer_(),
-      odeSolver_(),
+      solver_(),
       overallTime_( 0 )
     {}
     virtual const std::string name () { return algorithmName_; }
@@ -169,7 +164,7 @@ namespace Fem
     virtual bool checkDofsValid ( TimeProviderType& tp, const int loop  ) const { return solution_.dofsValid(); }
 
     // function creating the ode solvers
-    virtual OdeSolverType* createOdeSolver ( TimeProviderType& ) = 0;
+    virtual typename SolverType::type* createSolver ( TimeProviderType& ) = 0;
 
     // return reference to the discrete function space
     const DiscreteFunctionSpaceType& space () const { return space_; }
@@ -218,10 +213,10 @@ namespace Fem
       //  solution().communicate();
 
       // setup ode solver
-      odeSolver_.reset( this->createOdeSolver( tp ) );
+      solver_.reset( this->createSolver( tp ) );
 
       // initialize ode solver
-      odeSolver().initialize( solution() );
+      solver().initialize( solution() );
 
       //initialize solverMonitor
       solverMonitorHandler_.registerData( "GridWidth", solverMonitorHandler_.monitor().gridWidth, nullptr, true );
@@ -252,7 +247,7 @@ namespace Fem
       odeSolverMonitor_.reset();
 
       // solve ODE
-      odeSolver().solve( solution(), odeSolverMonitor_ );
+      solver().solve( solution(), odeSolverMonitor_ );
 
       overallTime_ = overallTimer_.stop();
     }
@@ -266,7 +261,7 @@ namespace Fem
       AnalyticalTraits::addEOCErrors( tp, solution(), model(), problem() );
 
       // delete ode solver
-      odeSolver_.reset();
+      solver_.reset();
     }
 
     std::string description () const { return problem().description(); }
@@ -290,10 +285,10 @@ namespace Fem
 
 
   protected:
-    OdeSolverType &odeSolver ()
+    typename SolverType::type &solver ()
     {
-      assert( odeSolver_ );
-      return *odeSolver_;
+      assert( solver_ );
+      return *solver_;
     }
 
     GridType&                      grid_;
@@ -312,10 +307,10 @@ namespace Fem
     DiagnosticsHandlerType         diagnosticsHandler_;
     SolverMonitorHandlerType       solverMonitorHandler_;
     AdditionalOutputHandlerType    additionalOutputHandler_;
-    typename OdeSolverType::MonitorType odeSolverMonitor_;
+    typename SolverType::type::MonitorType odeSolverMonitor_;
 
     Dune::Timer                    overallTimer_;
-    std::unique_ptr< OdeSolverType > odeSolver_;
+    std::unique_ptr< typename SolverType::type > solver_;
     double overallTime_;
   };
 
