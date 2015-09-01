@@ -155,11 +155,11 @@ namespace Fem
     virtual void initialize ( const int loop )
     {
       //initialize solverMonitor
-      solverMonitorHandler_.registerData( "GridWidth", solverMonitorHandler_.monitor().gridWidth, nullptr, true );
-      solverMonitorHandler_.registerData( "Elements", solverMonitorHandler_.monitor().elements, nullptr, true );
-      solverMonitorHandler_.registerData( "TimeSteps", solverMonitorHandler_.monitor().timeSteps, nullptr, true );
-      solverMonitorHandler_.registerData( "ILS", solverMonitorHandler_.monitor().ils_iterations, &solverIterations_ );
-      solverMonitorHandler_.registerData( "MaxILS", solverMonitorHandler_.monitor().max_ils_iterations );
+      solverMonitorHandler_.registerData( "GridWidth", &solverMonitorHandler_.monitor().gridWidth, nullptr, true );
+      solverMonitorHandler_.registerData( "Elements", &solverMonitorHandler_.monitor().elements, nullptr, true );
+      solverMonitorHandler_.registerData( "TimeSteps", &solverMonitorHandler_.monitor().timeSteps, nullptr, true );
+      solverMonitorHandler_.registerData( "ILS", &solverMonitorHandler_.monitor().ils_iterations, &solverIterations_ );
+      solverMonitorHandler_.registerData( "MaxILS", &solverMonitorHandler_.monitor().max_ils_iterations );
     }
 
     virtual void preSolve( const int loop )

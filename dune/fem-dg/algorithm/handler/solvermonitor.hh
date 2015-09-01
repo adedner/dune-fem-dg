@@ -216,6 +216,9 @@ namespace Fem
       int operator_calls;
       int max_newton_iterations;
       int max_ils_iterations;
+      double avgTimeStep;
+      double minTimeStep;
+      double maxTimeStep;
     };
   public:
 
