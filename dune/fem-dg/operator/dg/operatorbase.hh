@@ -186,6 +186,7 @@ namespace Dune {
     virtual std::string description() const = 0;
 
     const Model& model() const { return model_; }
+    const NumFluxType& numericalFlux() const { return numflux_; }
 
   protected:
     Model         model_;

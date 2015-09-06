@@ -149,6 +149,10 @@ struct AdvectionStepper
   {
     dgAdvectionOperator_(u,v);
   }
+  virtual const typename BaseType::FluxType &numFlux() const override
+  {
+    return dgAdvectionOperator_.numericalFlux();
+  }
 
 protected:
   ExplicitOperatorType    dgAdvectionOperator_;

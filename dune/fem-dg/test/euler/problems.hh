@@ -175,9 +175,9 @@ public:
 
     const double cos_tmp = cos(tmp * M_PI) + 1.0;
     double pert = (tmp > 1.0)? 0.5: 0.25 * cos_tmp*cos_tmp + 0.5;
-    pert *= 0.2;
+    pert *= 0.05;
 
-    res[0] = 1.0 ; // pert
+    res[0] = 1.0 ; 
     double p = 0.3 + pert;
     for(int i=0; i<dim; i++) res[1+i] = u_[i] * res[0];
     res[dim+1] = p/(gamma() - 1.0) + 0.5*res[0]*u_sq;

@@ -458,6 +458,7 @@ namespace Dune {
     }
 
     const Model& model () const { return model_; }
+    const NumFluxType& numericalFlux() const { return numflux_; }
 
   private:
     Model               model_;

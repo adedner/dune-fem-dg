@@ -4,14 +4,18 @@
 #include <cmath>
 #include <tgmath.h>
 
+#include "fluxprojection.hh"
 #include "polynomial.hh"
 
-template <class Range>
+template <class Range, class NumFlux>
 struct Hermite
 {
   struct Op;
 
-  typedef Hermite<Range> This;
+  typedef Range ResultType;
+  typedef typename Range::DiscreteFunctionSpaceType DiscreteFunctionSpaceType;
+  typedef typename DiscreteFunctionSpaceType::GridPartType GridPartType;
+  typedef Hermite<Range,NumFlux> This;
   typedef std::vector<Range*> Vector;
   static typename Op::Approximate getApprox()
   {
@@ -21,25 +25,48 @@ struct Hermite
     return approx[approxNumber];
   }
     
-  Hermite( int q, int q1, typename Op::Approximate approx)
-  : q_(q), q1_(q1), 
+  Hermite( const DiscreteFunctionSpaceType &space,
+           int q, int q1, typename Op::Approximate approx)
+  : space_(space),
+    numflux_(0),
+    q_(q), q1_(q1), 
     tau_( Dune::Fem::Parameter::getValue<double>("fixedTimeStep" ) ),
     x_(q+1), stuetz_(0),
     operator_(tau_, q, approx)
   {
   }
-  Hermite()
-  : Hermite( Fem::Parameter::getValue<int>("hermite.q"),
+  Hermite( const DiscreteFunctionSpaceType &space, const NumFlux &numflux)
+  : Hermite( space,numflux,
+             Fem::Parameter::getValue<int>("hermite.q"),
              Fem::Parameter::getValue<int>("hermite.q1"),
              getApprox() )
   {
   }
-  bool add(const Range &u, const Range &fu)
+  bool add( const Range &u, const Range &fu)
   {
     return operator_.add(u,fu);
   }
-  void setup()
+  template <class DF>
+  bool add( const DF &v, const DF &fv)
   {
+    Range u("u-tmp",space_),
+          fu("fu-tmp",space_);
+    Dune::Fem::WeightDefault<GridPartType> weight;
+#if HERMITEDG==2
+    Dune::Fem::FullProjectionImpl::project(v,u, weight, *numflux_);
+#else
+    Dune::Fem::FluxProjectionImpl::project(v,u, weight, *numflux_);
+#endif
+    Dune::Fem::VtxProjectionImpl::project(fv,fu,weight);
+    return add(u,fu);
+  }
+  const typename Range::DiscreteFunctionSpaceType &space() const
+  {
+    return space_;
+  }
+  void setup(const NumFlux &numflux)
+  {
+    numflux_ = &numflux;
     std::cout << "#" << " q=" << q_ << " q1=" << q1_;
     int i=0;
     for (;i<q1_;++i)
@@ -79,6 +106,17 @@ struct Hermite
       Polynomial p(i,x_);
       val.axpy(p.evaluate(point), *(stuetz_[i]));
     }
+  }
+  template <class DF>
+  void evaluate(double point, DF &val) const
+  {
+    Range v("tmp",space_);
+    evaluate(point,v);
+#if HERMITEDG==2
+    Dune::Fem::FullProjectionImpl::project(v,val, *numflux_);
+#else
+    Dune::Fem::FluxProjectionImpl::project(v,val, *numflux_);
+#endif
   }
   void derivative(double point, Range &val) const
   {
@@ -162,6 +200,8 @@ struct Hermite
     for(i=0; i<n; i++) 
       stuetz_[i]->assign( koeffSchema[i] );
   }
+  const typename Range::DiscreteFunctionSpaceType &space_;
+  const NumFlux *numflux_;
   int q_, q1_;
   double tau_;
   std::vector<double> x_;
@@ -170,22 +210,24 @@ struct Hermite
 };
 
 
-template <class Range>
-struct Hermite2 : public Hermite<Range>
+template <class Range,class NumFlux>
+struct Hermite2 : public Hermite<Range,NumFlux>
 {
-  typedef Hermite<Range> Base;
-  typedef Hermite2<Range> This;
+  typedef Hermite<Range,NumFlux> Base;
+  typedef Hermite2<Range,NumFlux> This;
   typedef std::vector<Range> Vector;
-  Hermite2( int q)
-  : Base(q,2,Base::Op::Approximate::fd3)
+  typedef typename Base::DiscreteFunctionSpaceType DiscreteFunctionSpaceType;
+  Hermite2( const DiscreteFunctionSpaceType &space, int q)
+  : Base(space,q,2,Base::Op::Approximate::fd3)
   {
   }
-  Hermite2()
-  : Hermite2(Fem::Parameter::getValue<int>("hermite.q"))
+  Hermite2( const DiscreteFunctionSpaceType &space)
+  : Hermite2(space, Fem::Parameter::getValue<int>("hermite.q"))
   {
   }
-  void setup()
+  void setup(const NumFlux &numflux)
   {
+    Base::numflux_ = &numflux;
     std::cout << "#" << " q=" << q_ << " q1=" << q1_;
     double point = 1.; // tau;
     for (int i=0;i<=q_;++i)
@@ -221,8 +263,8 @@ struct Hermite2 : public Hermite<Range>
 };
 
 
-template <class Range>
-struct Hermite<Range>::Op
+template <class Range,class NumFlux>
+struct Hermite<Range,NumFlux>::Op
 {
   std::vector<Range*> dtf, dttf;
   // fd3:   finite difference of order 3 at t^n using t^{n+1} and one sided of order 4 at t^{n+1}

@@ -2,6 +2,10 @@
 #define FEMHOWTO_DGSTEPPERBASE_HH
 #include <config.h>
 
+// 1=use Lag and Vertex projection in Hermite -> Lagrange function from Hermite
+// 2=use DG in Hermite and use flux projection in evaluate
+#define HERMITEDG 2   
+
 #ifdef LOCALDEBUG
 static double sum_ = 0.;
 static double sum2_ = 0.;
@@ -40,8 +44,10 @@ static double minRatioOfSums = 1e+100;
 #include <dune/fem/space/lagrange.hh>
 
 #include "hermite.hh"
+#include "fluxprojection.hh"
 
 using namespace Dune;
+
 
 
 template <class GridImp,
@@ -124,36 +130,46 @@ struct StepperBase
   using BaseType :: grid_ ;
   using BaseType :: limitSolution ;
 
+#if HERMITEDG==2
+  typedef Dune::Fem::DiscontinuousGalerkinSpace<FunctionSpaceType, GridPartType, polynomialOrder+1> ResidualSpaceType;
+#else
   typedef Dune::Fem::LagrangeDiscreteFunctionSpace<FunctionSpaceType, GridPartType, polynomialOrder+1> ResidualSpaceType;
+#endif
+
   typedef Dune::Fem::AdaptiveDiscreteFunction<ResidualSpaceType> ResidualSpaceFunctionType;
+
+#ifdef HERMITEDG
+  typedef Hermite2<DiscreteFunctionType,FluxType> HermiteType;
+#else
+  typedef Hermite2<ResidualSpaceFunctionType,FluxType> HermiteType;
+#endif
+
   struct LocalResidual
   {
     typedef ResidualSpaceType P1DiscreteFunctionSpaceType;
     typedef ResidualSpaceFunctionType P1DiscreteFunctionType;
-    // typedef typename Dune::Fem::FunctionSpace<double,double,1,3> FunctionSpaceType;
-    typedef DiscreteFunctionType DGDiscreteFunctionType;
-    typedef typename DGDiscreteFunctionType::DiscreteFunctionSpaceType DGDiscreteFunctionSpaceType;
-    typedef typename DGDiscreteFunctionSpaceType::FunctionSpaceType FunctionSpaceType;
-    typedef typename DGDiscreteFunctionSpaceType::GridPartType GridPartType;
+    typedef typename HermiteType::ResultType HermiteDiscreteFunctionType;
+    typedef typename HermiteDiscreteFunctionType::DiscreteFunctionSpaceType HermiteDiscreteFunctionSpaceType;
+    typedef typename HermiteDiscreteFunctionSpaceType::FunctionSpaceType FunctionSpaceType;
+    typedef typename HermiteDiscreteFunctionSpaceType::GridPartType GridPartType;
     typedef typename GridPartType::template Codim< 0 >::EntityType EntityType;
     typedef typename FunctionSpaceType::RangeType RangeType;
     LocalResidual(const ThisType &stepper, const P1DiscreteFunctionSpaceType &space)
       : stepper_(stepper),
-        dgU_("dgU", stepper.space()),
-        dtU_("dtU", stepper.space()), 
-        divF_("divF", stepper.space()),
-        U_("U", space), 
+        dtU_("dtU", stepper.hermite_.space()),        // d_t u^t in dg
+        divF_("divF", stepper.hermite_.space()),      // pointwise div F(u^t) 
+        U_("U", space),                      // projection of u^t into CG space (u^tx)
         lU_(U_), ldtU_(dtU_), ldivF_(divF_),
         init_(false)
     {
     }
     void init(double t)
     {
-      stepper_.hermite_.evaluate(t,dgU_);
-      Dune::Fem::VtxProjection<DGDiscreteFunctionType,P1DiscreteFunctionType> projection;
-      projection(dgU_,U_);
-      // stepper_.apply( dgU_, divF_ );
+      // u^t and d/dt u^t in DG space of order q
+      stepper_.hermite_.evaluate(t,U_);
       stepper_.hermite_.derivative(t, dtU_);
+
+      // stepper_.apply( dgU_, divF_ );
       init_ = true;
     }
     template< class PointType >
@@ -161,18 +177,21 @@ struct StepperBase
     {
       if (!init_)
       {
-        ret = RangeType(0.);;
+        ret = RangeType(0.);
         return;
       }
       typename P1DiscreteFunctionSpaceType::RangeType valU,valL,valdtU,flux;
       typename P1DiscreteFunctionSpaceType::JacobianRangeType jacU;
+      // evaluate function and derivative of CG projection of u^t (u^tx)
       lU_.evaluate( x, valU );
       lU_.jacobian( x, jacU );
+      // evaluate d/dt u^t 
       ldtU_.evaluate( x, valdtU );
-      ldivF_.evaluate( x, valL );
+      // ldivF_.evaluate( x, valL );
       // ret = {valU[0],valdtU[0],valL[0]};
       // ret = valdtU; ret -= valL;
       
+      // Df(u^{tx}) . grad u^{tx}
       stepper_.model().jacobian(lU_.entity(),0,Dune::Fem::coordinate(x),valU,jacU,flux);
       ret = valdtU; ret += flux;
     }
@@ -187,10 +206,10 @@ struct StepperBase
     LocalResidual &operator=(const LocalResidual &) = delete;
     private:
     const ThisType &stepper_;
-    DGDiscreteFunctionType dgU_, divF_,dtU_;
+    HermiteDiscreteFunctionType divF_,dtU_;
     P1DiscreteFunctionType U_;
     typename P1DiscreteFunctionType::LocalFunctionType lU_;
-    typename DGDiscreteFunctionType::LocalFunctionType ldtU_, ldivF_;
+    typename HermiteDiscreteFunctionType::LocalFunctionType ldtU_, ldivF_;
     bool init_;
   };
   struct ResidualDataOutputParameters
@@ -232,6 +251,12 @@ struct StepperBase
     dataWriter_( 0 ),
 
     residualSpace_(gridPart_),
+#ifdef HERMITEDG
+    hermite_( space_ ),
+#else
+    hermite_( residualSpace_ ),
+#endif
+
     localResidual_(*this,residualSpace_),
     residualFunction_("residual",localResidual_,gridPart_, 5),
     residualIOTuple_(&residualFunction_),
@@ -381,6 +406,7 @@ struct StepperBase
   }
 
   virtual void apply(const DiscreteFunctionType &u, DiscreteFunctionType &v) const = 0;
+  virtual const FluxType &numFlux() const = 0;
   // before first step, do data initialization
   void initializeStep( TimeProviderType& tp, const int loop )
   {
@@ -403,7 +429,7 @@ struct StepperBase
 
     // communication is needed when blocking communication is used
     // but has to be avoided otherwise (because of implicit solver)
-    const bool doCommunicate = ! NonBlockingCommParameter :: nonBlockingCommunication ();
+    const bool doCommunicate = true; // ! NonBlockingCommParameter :: nonBlockingCommunication ();
 
     // create L2 projection
     Fem :: L2Projection< TimeDependentFunctionType,
@@ -411,16 +437,16 @@ struct StepperBase
 
     // L2 project initial data
     l2pro( problem().fixedTimeFunction( tp.time() ), U );
+    writeData(tp);
     // std::cout << "index set size = " << U.gridPart().indexSet().size(0) << std::endl;
     // std::cout << "grid size = " << U.gridPart().grid().size(0) << std::endl;
     // for (int i=0;i<U.size();++i)
     //   std::cout << i << " = " << U.leakPointer()[i] << " " << solution_.leakPointer()[i] << std::endl;
-    writeData(tp);
 
     // ode.initialize applies the DG Operator once to get an initial
     // estimate on the time step. This does not change the initial data u.
     odeSolver_->initialize( U );
-    hermite_.setup();
+    hermite_.setup(numFlux());
     apply(U,fU_);
     hermSetup_ = hermite_.add(U, fU_);
   }
@@ -620,8 +646,10 @@ protected:
   IOTupleType             dataTuple_ ;
   DataWriterType*         dataWriter_ ;
 
+  HermiteType hermite_;
+
   ResidualSpaceType residualSpace_;
-  Hermite2<DiscreteFunctionType> hermite_;
+
   LocalResidualType localResidual_;
   ResidualFunctionType residualFunction_;
   ResidualIOTupleType residualIOTuple_;

@@ -800,6 +800,7 @@ public:
                  RangeType& gLeft,
                  RangeType& gRight) const
   {
+#if 0
     const FaceDomainType& x = faceQuadInner.localPoint( quadPoint );
     DomainType normal = intersection.integrationOuterNormal(x);
     const double len = normal.two_norm();
@@ -832,74 +833,65 @@ public:
     visc -= uLeft;
     visc *= viscpara;
     gLeft -= visc;
-
-#if 0
-
-#if 0
-    if (useGForce_>0)
-    {
-      gLeft *= (1.-useGForce_);
-      RangeType uStar = uLeft;  
-      uStar += uRight;
-      uStar *= 0.5;
-      anafluxL.usmv(  1./(2.*viscpara), normal, uStar );
-      anafluxR.usmv( -1./(2.*viscpara), normal, uStar );
-      FluxRangeType anaflux;
-      model_.advection( outside, time, faceQuadOuter.point( quadPoint ),
-                        uStar, anaflux );
-      anaflux.usmv( 2.*useGForce_, normal, gLeft );
-    }
-#endif
-
-    gLeft *= 0.5*len;
-
-    gRight = gLeft;
-
-#if WELLBALANCE
-    const DomainType xGlobal = intersection.geometry().global(x);
-    const double g = model_.problem().g();
-
-    // calculate geopotential in the grid elements sharing 'it'
-    const double z = xGlobal[dimDomain-1];
-
-    // calculate num. flux for pressure
-    double pInside, TInside;
-    double pOutside, TOutside;
-    model_.pressAndTemp( uLeft, pInside, TInside );
-    model_.pressAndTemp( uRight, pOutside, TOutside );
-    const double pNumFlux = 0.5*(pInside + pOutside);
-
-    const double rhoAvg = 0.5*(uLeft[0] + uRight[0]);
-    const double rhoJump = uRight[0] - uLeft[0];
-
-    // add well-balancing terms to vertical momentum flux, scaled with normal
-    gLeft[dimDomain]  += 0.5*normal[dimDomain-1]*( -2.*(pNumFlux-pInside))*len;
-    gRight[dimDomain] += 0.5*normal[dimDomain-1]*( -2.*(pNumFlux-pOutside))*len;
-
-    gLeft[dimDomain]  -= 0.25*normal[dimDomain-1]*( g*z*rhoJump )*len;
-    gRight[dimDomain] += 0.25*normal[dimDomain-1]*( g*z*rhoJump )*len;
-#endif
+    double ldt = maxspeed * len;
 #else
-    RangeType average = uLeft;
-    average += uRight;
-    average *= 0.5;
+    const FaceDomainType& x = faceQuadInner.localPoint( quadPoint );
+    DomainType normal = intersection.integrationOuterNormal(x);
+    RangeType ustar;
+    double ldt = uStar(intersection,inside,outside,time,faceQuadInner,faceQuadOuter,quadPoint,uLeft,uRight,ustar);
+    FluxRangeType anafluxL;
+    model_.advection( inside, time, faceQuadInner.point( quadPoint ), ustar, anafluxL );
+    anafluxL.mv( normal, gLeft );
+    gRight = gLeft;
+#endif
+    return ldt;
+  }
+
+  template< class Intersection, class QuadratureImp >
+  inline double
+  uStar( const Intersection& intersection,
+         const EntityType& inside,
+         const EntityType& outside,
+         const double time,
+         const QuadratureImp& faceQuadInner,
+         const QuadratureImp& faceQuadOuter,
+         const int quadPoint,
+         const RangeType& uLeft,
+         const RangeType& uRight,
+         RangeType& ustar) const
+  {
+    const FaceDomainType& x = faceQuadInner.localPoint( quadPoint );
+    DomainType normal = intersection.integrationOuterNormal(x);
+    const double len = normal.two_norm();
+    normal *= 1./len;
+    double maxspeedl, maxspeedr, maxspeed;
+    double viscparal, viscparar, viscpara;
+    model_.maxSpeed( inside, time, faceQuadInner.point( quadPoint ),
+                     normal, uLeft, viscparal, maxspeedl );
+    model_.maxSpeed( outside, time, faceQuadOuter.point( quadPoint ),
+                     normal, uRight, viscparar, maxspeedr );
+    maxspeed = (maxspeedl > maxspeedr) ? maxspeedl : maxspeedr;
+    viscpara = (viscparal > viscparar) ? viscparal : viscparar;
+
+    FluxRangeType anafluxL, anafluxR;
+    model_.advection( inside, time, faceQuadInner.point( quadPoint ),
+                      uLeft, anafluxL );
+    model_.advection( outside, time, faceQuadOuter.point( quadPoint ),
+                      uRight, anafluxR );
+    ustar = uLeft;
+    ustar += uRight;
+    ustar *= 0.5;
     RangeType fjump;
     anafluxR.mv( normal, fjump );
     anafluxL.mmv( normal, fjump );
     fjump *= 0.5;
     fjump *= 1./viscpara; // 0.06;
-    gLeft = average;
-    gLeft -= fjump;
-    gLeft *= len;
-
-    model_.advection( inside, time, faceQuadInner.point( quadPoint ),
-                      gLeft, anafluxL );
-    anafluxL.mv( normal, gLeft );
-    gRight = gLeft;
-#endif
+    
+    ustar -= fjump;
 
     return maxspeed * len;
   }
+
 
  protected:
   const Model& model_;
