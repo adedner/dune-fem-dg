@@ -86,7 +86,7 @@ namespace Fem
         case CombinationType::max:
             return Std::max( std::get< i >( tuple )->monitor().getData( name )... );
         case CombinationType::min:
-            //return Std::min( std::get< i >( tuple )->monitor().getData( name )... );
+            return Std::min( std::get< i >( tuple )->monitor().getData( name )... );
         case CombinationType::sum:
             return Std::sum( std::get< i >( tuple )->monitor().getData( name )... );
         case CombinationType::avg:
