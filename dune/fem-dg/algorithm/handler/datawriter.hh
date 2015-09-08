@@ -37,10 +37,21 @@ namespace Fem
     template< int i >
     struct AdditionalOutput
     {
-      template< class Tuple, class TimeProviderImp, class ... Args >
-      static void apply ( Tuple &tuple, TimeProviderImp& tp, Args && ... args )
+      template<class T, class... Args >
+      static typename enable_if< std::is_void< typename std::remove_pointer<T>::type::AdditionalOutputHandlerType >::value >::type
+      additionalOutput( T, Args&& ... ){}
+      template<class T, class TimeProviderImp, class... Args >
+      static typename enable_if< !std::is_void< typename std::remove_pointer<T>::type::AdditionalOutputHandlerType >::value >::type
+      additionalOutput( T elem, TimeProviderImp& tp, Args && ... args )
       {
-         std::get< i >(tuple)->additionalOutput().step( tp, *get<i>( tuple ) );
+        if( elem->additionalOutput() )
+          elem->additionalOutput()->step( tp, *elem, args... );
+      }
+
+      template< class Tuple, class ... Args >
+      static void apply ( Tuple &tuple, Args && ... args )
+      {
+        additionalOutput( std::get<i>( tuple ), args... );
       }
     };
   public:

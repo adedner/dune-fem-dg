@@ -158,7 +158,7 @@ public:
       s  = u ;
       s /= theta_;
     }
-    return 0;
+    return 0; //step 2, RhsLaplace ()
   }
 
   template <class LocalEvaluation>

@@ -251,12 +251,12 @@ namespace Fem
       }
     };
     template< int i >
-    struct CheckDofsValid
+    struct CheckSolutionValid
     {
       template< class Tuple, class ... Args >
       static void apply ( Tuple &tuple, bool& res, Args && ... args )
       {
-        res &= std::get< i >( tuple )->checkDofsValid( args... );
+        res &= std::get< i >( tuple )->checkSolutionValid( args... );
       }
     };
 
@@ -291,10 +291,10 @@ namespace Fem
       return res;
     }
 
-    bool checkDofsValid( TimeProviderType& tp, const int loop  ) const
+    bool checkSolutionValid( const int loop, TimeProviderType& tp ) const
     {
       bool res = true;
-      ForLoop< CheckDofsValid, 0, numSteppers - 1 >::apply( tuple_, res, tp, loop );
+      ForLoop< CheckSolutionValid, 0, numSteppers - 1 >::apply( tuple_, res, loop, tp );
       return res;
     }
 
@@ -422,7 +422,7 @@ namespace Fem
         Dune::FemTimer::stop(timeStepTimer_,Dune::FemTimer::max);
 
         // Check that no NAN have been generated
-        if( !checkDofsValid( tp, loop ) )
+        if( !checkSolutionValid( loop, tp ) )
         {
           dataWriterHandler_.finalize( tp );
           std::abort();

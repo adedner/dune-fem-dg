@@ -41,8 +41,7 @@ template <class GridImp,
   // The first operator is sum of the other two
   // The other two are needed for semi-implicit time discretization
   typedef typename BaseType::OperatorType::FullType         FullOperatorType;
-  typedef typename BaseType::OperatorType::ExplicitType     ExplicitOperatorType;
-  typedef typename BaseType::OperatorType::ImplicitType     ImplicitOperatorType;
+  typedef typename BaseType::OperatorType::RhsOperator      RhsOperatorType;
 
   typedef typename Traits::VelocityFunctionType             VelocityFunctionType;
 
@@ -120,11 +119,11 @@ template <class GridImp,
   virtual OdeSolverType* createOdeSolver(TimeProviderType& tp)
   {
     // create ODE solver
-    typedef RungeKuttaSolver< FullOperatorType, ExplicitOperatorType, ImplicitOperatorType,
+    typedef RungeKuttaSolver< FullOperatorType, FullOperatorType, FullOperatorType,
                               BasicLinearSolverType > OdeSolverImpl;
     return new OdeSolverImpl( tp, dgOperator_,
-                              dgAdvectionOperator_,
-                              dgDiffusionOperator_,
+                              dgOperator_,
+                              dgOperator_,
                               name() );
   }
 

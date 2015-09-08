@@ -3,6 +3,7 @@
 
 #include <memory>
 #include <tuple>
+#include <type_traits>
 
 #include <dune/fem/misc/mpimanager.hh>
 #include <dune/fem/io/file/datawriter.hh>
@@ -36,8 +37,6 @@ namespace Fem
     typedef typename GridPartType::GridType                                                    GridType;
     typedef Dune::AdaptationParameters                                                         AdaptationParametersType;
 
-    typedef Dune::Fem::RestrictProlongDefault< DiscreteFunctionType >                          RestrictionProlongationType;
-
     typedef Dune::AdaptationHandler< GridType, typename DiscreteFunctionSpaceType::FunctionSpaceType >
                                                                                                AdaptationHandlerType;
 
@@ -45,7 +44,6 @@ namespace Fem
     AdaptIndicator( DiscreteFunctionType& sol, Problem& problem, const ExtraTupleParameter& tuple, const std::string keyPrefix = "" )
     : sol_( sol ),
       adaptationHandler_( nullptr ),
-      rp_( sol_ ),
       keyPrefix_( keyPrefix ),
       adaptParam_( AdaptationParametersType( Dune::ParameterKey::generate( keyPrefix, "fem.adaptation." ) ) ),
       indicator_( const_cast<GridPartType&>(sol_.gridPart()), problem, tuple, keyPrefix_ ),
@@ -54,7 +52,7 @@ namespace Fem
 
     bool adaptive() const
     {
-      return true;
+      return adaptParam_.adaptive();
     }
 
     size_t numberOfElements() const
@@ -120,13 +118,7 @@ namespace Fem
     }
 
     void preAdapt()
-    {
-    }
-
-    const RestrictionProlongationType& restrictProlong() const
-    {
-      return rp_;
-    }
+    {}
 
     int minNumberOfElements() const
     {
@@ -140,28 +132,17 @@ namespace Fem
       return adaptationHandler_->maxNumberOfElements();
     }
 
+    const int finestLevel() const
+    {
+      return adaptParam_.finestLevel();
+    }
+
+  private:
     AdaptationHandlerType* adaptationHandler()
     {
       assert( adaptationHandler_ );
       return adaptationHandler_;
     }
-
-    const double finestLevel() const
-    {
-      return adaptParam_.finestLevel();
-    }
-
-    const DiscreteFunctionType& solution() const
-    {
-      return sol_;
-    }
-
-    DiscreteFunctionType& solution()
-    {
-      return sol_;
-    }
-
-  private:
 
     bool useIndicator() const
     {
@@ -175,7 +156,6 @@ namespace Fem
 
     DiscreteFunctionType&                         sol_;
     std::unique_ptr< AdaptationHandlerType >      adaptationHandler_;
-    RestrictionProlongationType                   rp_;
     const std::string                             keyPrefix_;
     const AdaptationParametersType                adaptParam_;
     IndicatorType                                 indicator_;
@@ -201,62 +181,210 @@ namespace Fem
 
     typedef Dune::AdaptationParameters                                                         AdaptationParametersType;
 
-
     template< int i >
     struct EstimateMark
     {
+      template<class T, class... Args >
+      static typename enable_if< std::is_void< typename std::remove_pointer<T>::type::AdaptIndicatorType >::value >::type
+      adaptIndicator( T, Args&& ... ){}
+      template<class T, class... Args >
+      static typename enable_if< !std::is_void< typename std::remove_pointer<T>::type::AdaptIndicatorType >::value >::type
+      adaptIndicator( T elem, Args && ... args )
+      {
+        if( elem->adaptIndicator() )
+          elem->adaptIndicator()->estimateMark( args... );
+      }
+
       template< class Tuple, class ... Args >
       static void apply ( Tuple &tuple, Args && ... args )
       {
-        std::get< i >( tuple )->adaptIndicator()->estimateMark( args... );
+        adaptIndicator( std::get<i>( tuple ), args... );
       }
     };
     template< int i >
     struct SetAdaptation
     {
+      template<class T, class... Args >
+      static typename enable_if< std::is_void< typename std::remove_pointer<T>::type::AdaptIndicatorType >::value >::type
+      adaptIndicator( T, Args&& ... ){}
+      template<class T, class... Args >
+      static typename enable_if< !std::is_void< typename std::remove_pointer<T>::type::AdaptIndicatorType >::value >::type
+      adaptIndicator( T elem, Args && ... args )
+      {
+        if( elem->adaptIndicator() )
+          elem->adaptIndicator()->setAdaptation( args... );
+      }
+
       template< class Tuple, class ... Args >
       static void apply ( Tuple &tuple, Args && ... args )
       {
-        std::get< i >( tuple )->adaptIndicator()->setAdaptation( args... );
+        adaptIndicator( std::get<i>( tuple ), args... );
       }
     };
     template< int i >
     struct PreAdapt
     {
+      template<class T, class... Args >
+      static typename enable_if< std::is_void< typename std::remove_pointer<T>::type::AdaptIndicatorType >::value >::type
+      adaptIndicator( T, Args&& ... ){}
+      template<class T, class... Args >
+      static typename enable_if< !std::is_void< typename std::remove_pointer<T>::type::AdaptIndicatorType >::value >::type
+      adaptIndicator( T elem, Args && ... args )
+      {
+        if( elem->adaptIndicator() )
+          elem->adaptIndicator()->preAdapt( args... );
+      }
+
       template< class Tuple, class ... Args >
       static void apply ( Tuple &tuple, Args && ... args )
       {
-        std::get< i >( tuple )->adaptIndicator()->preAdapt( args... );
+        adaptIndicator( std::get<i>( tuple ), args... );
       }
     };
     template< int i >
     struct PostAdapt
     {
+      template<class T, class... Args >
+      static typename enable_if< std::is_void< typename std::remove_pointer<T>::type::AdaptIndicatorType >::value >::type
+      adaptIndicator( T, Args&& ... ){}
+      template<class T, class... Args >
+      static typename enable_if< !std::is_void< typename std::remove_pointer<T>::type::AdaptIndicatorType >::value >::type
+      adaptIndicator( T elem, Args && ... args )
+      {
+        if( elem->adaptIndicator() )
+          elem->adaptIndicator()->postAdapt( args... );
+      }
+
       template< class Tuple, class ... Args >
       static void apply ( Tuple &tuple, Args && ... args )
       {
-        std::get< i >( tuple )->adaptIndicator()->postAdapt( args... );
+        adaptIndicator( std::get<i>( tuple ), args... );
       }
     };
     template< int i >
     struct Finalize
     {
+      template<class T, class... Args >
+      static typename enable_if< std::is_void< typename std::remove_pointer<T>::type::AdaptIndicatorType >::value >::type
+      adaptIndicator( T, Args&& ... ){}
+      template<class T, class... Args >
+      static typename enable_if< !std::is_void< typename std::remove_pointer<T>::type::AdaptIndicatorType >::value >::type
+      adaptIndicator( T elem, Args && ... args )
+      {
+        if( elem->adaptIndicator() )
+          elem->adaptIndicator()->finalize( args... );
+      }
+
       template< class Tuple, class ... Args >
       static void apply ( Tuple &tuple, Args && ... args )
       {
-        std::get< i >( tuple )->adaptIndicator()->finalize( args... );
+        adaptIndicator( std::get<i>( tuple ), args... );
       }
     };
     template< int i >
     struct MinMaxNumElements
     {
+      template<class T, class... Args >
+      static typename enable_if< std::is_void< typename std::remove_pointer<T>::type::AdaptIndicatorType >::value >::type
+      adaptIndicator( T, Args&& ... ){}
+      template<class T, class... Args >
+      static typename enable_if< !std::is_void< typename std::remove_pointer<T>::type::AdaptIndicatorType >::value >::type
+      adaptIndicator( T elem, int& min, int& max, Args && ... args )
+      {
+        if( elem->adaptIndicator() )
+        {
+          min = std::min( min, elem->adaptIndicator()->minNumberOfElements( args... ) );
+          max = std::max( max, elem->adaptIndicator()->maxNumberOfElements( args... ) );
+        }
+      }
+
       template< class Tuple, class ... Args >
       static void apply ( Tuple &tuple, double& min, double& max, Args && ... args )
       {
-        min = std::min( min, std::get< i >( tuple )->adaptIndicator()->minNumberOfElements( args... ) );
-        max = std::max( max, std::get< i >( tuple )->adaptIndicator()->minNumberOfElements( args... ) );
+        adaptIndicator( std::get<i>( tuple ), min, max, args... );
       }
     };
+    template< int i >
+    struct NumberOfElements
+    {
+      template<class T, class... Args >
+      static typename enable_if< std::is_void< typename std::remove_pointer<T>::type::AdaptIndicatorType >::value >::type
+      adaptIndicator( T, Args&& ... ){}
+      template<class T, class... Args >
+      static typename enable_if< !std::is_void< typename std::remove_pointer<T>::type::AdaptIndicatorType >::value >::type
+      adaptIndicator( T elem, int& max, Args && ... args )
+      {
+        if( elem->adaptIndicator() )
+          max = std::max( max, elem->adaptIndicator()->numberOfElements( args... ) );
+      }
+
+      template< class Tuple, class ... Args >
+      static void apply ( Tuple &tuple, int& max, Args && ... args )
+      {
+        adaptIndicator( std::get<i>( tuple ), max, args... );
+      }
+    };
+    template< int i >
+    struct GlobalNumberOfElements
+    {
+      template<class T, class... Args >
+      static typename enable_if< std::is_void< typename std::remove_pointer<T>::type::AdaptIndicatorType >::value >::type
+      adaptIndicator( T, Args&& ... ){}
+      template<class T, class... Args >
+      static typename enable_if< !std::is_void< typename std::remove_pointer<T>::type::AdaptIndicatorType >::value >::type
+      adaptIndicator( T elem, UInt64Type& max, Args && ... args )
+      {
+        if( elem->adaptIndicator() )
+          max = std::max( max, elem->adaptIndicator()->globalNumberOfElements( args... ) );
+      }
+
+      template< class Tuple, class ... Args >
+      static void apply ( Tuple &tuple, UInt64Type& max, Args && ... args )
+      {
+        adaptIndicator( std::get<i>( tuple ), max, args... );
+      }
+    };
+    template< int i >
+    struct FinestLevel
+    {
+      template<class T, class... Args >
+      static typename enable_if< std::is_void< typename std::remove_pointer<T>::type::AdaptIndicatorType >::value >::type
+      adaptIndicator( T, Args&& ... ){}
+      template<class T, class... Args >
+      static typename enable_if< !std::is_void< typename std::remove_pointer<T>::type::AdaptIndicatorType >::value >::type
+      adaptIndicator( T elem, int& max, Args && ... args )
+      {
+        if( elem->adaptIndicator() )
+          max = std::max( max, elem->adaptIndicator()->finestLevel( args... ) );
+      }
+
+      template< class Tuple, class ... Args >
+      static void apply ( Tuple &tuple, int& max, Args && ... args )
+      {
+        adaptIndicator( std::get<i>( tuple ), max, args... );
+      }
+    };
+    template< int i >
+    struct Adaptive
+    {
+      template<class T, class... Args >
+      static typename enable_if< std::is_void< typename std::remove_pointer<T>::type::AdaptIndicatorType >::value >::type
+      adaptIndicator( T, Args&& ... ){}
+      template<class T, class... Args >
+      static typename enable_if< !std::is_void< typename std::remove_pointer<T>::type::AdaptIndicatorType >::value >::type
+      adaptIndicator( T elem, bool& adaptive, Args && ... args )
+      {
+        if( elem->adaptIndicator() )
+          adaptive |= elem->adaptIndicator()->adaptive( args... );
+      }
+
+      template< class Tuple, class ... Args >
+      static void apply ( Tuple &tuple, bool& adaptive, Args && ... args )
+      {
+        adaptIndicator( std::get<i>( tuple ), adaptive, args... );
+      }
+    };
+
 
   public:
 
@@ -275,16 +403,15 @@ namespace Fem
     template< std::size_t ... i >
     void setRestrProlong( Std::index_sequence< i ... > )
     {
-      rp_.reset( new RestrictionProlongationType( std::get< i >( tuple_ )->adaptIndicator()->solution()... ) );
+      rp_.reset( new RestrictionProlongationType( *std::get< i >( tuple_ )->adaptationSolution()... ) );
     }
 
-    template< std::size_t ... i >
-    bool adaptive ( Std::index_sequence< i ... > ) const
+    bool adaptive () const
     {
-      return Std::And( std::get< i >( tuple_ )->adaptIndicator()->adaptive() ... );
+      bool adaptive = false;
+      ForLoop< Adaptive, 0, sizeof ... ( StepperArg ) >::apply( tuple_, adaptive );
+      return adaptive;
     }
-
-    bool adaptive () const { return adaptive( Std::index_sequence_for< StepperHead, StepperArg ... >() ); }
 
     template< class TimeProviderImp >
     void step( TimeProviderImp& tp )
@@ -302,21 +429,19 @@ namespace Fem
       adapt();
     }
 
-    template< std::size_t ... i >
-    size_t numberOfElements( Std::index_sequence< i ... > ) const
+    size_t numberOfElements() const
     {
-      return Std::max( std::get< i >( tuple_ )->adaptIndicator()->adaptationHandler()->numberOfElements()... );
+      int numElements = 0;
+      ForLoop< NumberOfElements, 0, sizeof ... ( StepperArg ) >::apply( tuple_, numElements );
+      return numElements;
     }
 
-    size_t numberOfElements() const { return numberOfElements( Std::index_sequence_for< StepperHead, StepperArg ... >() ); }
-
-
-    template< std::size_t ... i >
-    UInt64Type globalNumberOfElements( Std::index_sequence< i ... > ) const
+    UInt64Type globalNumberOfElements() const
     {
       if( adaptive() )
       {
-        UInt64Type globalElements = Std::max( std::get< i >( tuple_ )->adaptIndicator()->adaptationHandler()->globalNumberOfElements()... ) ;
+        UInt64Type globalElements = 0;
+        ForLoop< GlobalNumberOfElements, 0, sizeof ... ( StepperArg ) >::apply( tuple_, globalElements );
         if( Dune::Fem::Parameter::verbose () )
         {
           double min = std::numeric_limits< double >::max;
@@ -329,8 +454,6 @@ namespace Fem
       }
       return 0;
     }
-
-   UInt64Type globalNumberOfElements() const { return globalNumberOfElements( Std::index_sequence_for< StepperHead, StepperArg ... >() ); }
 
     template< class TimeProviderImp >
     void setAdaptation( TimeProviderImp& tp )
@@ -355,21 +478,11 @@ namespace Fem
       return loadBalanceTime_;
     }
 
-    const std::vector< double > timings()
+    const int finestLevel() const
     {
-      std::vector< double > timings;
-      if( adaptive() )
-      {
-        timings.push_back( adaptationTime() );
-        timings.push_back( loadBalanceTime() );
-      }
-      return timings;
-    }
-
-    const double finestLevel() const
-    {
-      // only take first tuple, should be exact enough...
-      return get<0>(tuple_)->adaptIndicator()->finestLevel();
+      int finestLevel = 0;
+      ForLoop< FinestLevel, 0, sizeof ... ( StepperArg ) >::apply( tuple_, finestLevel );
+      return finestLevel;
     }
 
   protected:
@@ -392,15 +505,15 @@ namespace Fem
     {
       if( adaptive() )
       {
-        //int sequence = get<0>( tuple_ )->adaptIndicator()->solution().space().sequence();
+        //int sequence = get<0>( tuple_ )->adaptationSolution()->space().sequence();
 
         ForLoop< PreAdapt, 0, sizeof ... ( StepperArg ) >::apply( tuple_ );
         adaptationManager().adapt();
         ForLoop< PostAdapt, 0, sizeof ... ( StepperArg ) >::apply( tuple_ );
 
         //TODO include limiterHandler
-        //if( sequence !=  get<0>( tuple_ )->adapIndicator()->solution().space().sequence() )
-          //limiterHandler_.step( sol_ );
+        //if( sequence !=  get<0>( tuple_ )->adaptationSolution()->space().sequence() )
+          //limiterHandler_.step( get<0>( tuple_ )->adaptationSolution() );
       }
     }
 

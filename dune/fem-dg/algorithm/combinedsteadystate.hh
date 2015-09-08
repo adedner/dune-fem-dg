@@ -135,12 +135,12 @@ namespace Fem
       }
     };
     template< int i >
-    struct CheckDofsValid
+    struct CheckSolutionValid
     {
       template< class Tuple, class ... Args >
       static void apply ( Tuple &tuple, bool& res, Args && ... args )
       {
-        res &= std::get< i >( tuple )->checkDofsValid( args... );
+        res &= std::get< i >( tuple )->checkSolutionValid( args... );
       }
     };
 

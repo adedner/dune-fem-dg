@@ -66,11 +66,11 @@ public:
 private:
   typedef Dune :: DGAdvectionDiffusionOperator< OperatorTraits >  DgType;
 
-  typedef typename ProblemTraits :: template Traits< GridPartType, false >  RhsModelTraits;
+  typedef typename ProblemTraits :: template Traits< GridPartType, false >  RhsNSModelTraits;
 
   // traits for the operator class
   struct RhsOperatorTraits :
-    public Dune::PassTraits< RhsModelTraits, polynomialOrder, RhsModelTraits::ModelType::dimRange, istl >
+    public Dune::PassTraits< RhsNSModelTraits, polynomialOrder, RhsNSModelTraits::ModelType::dimRange, istl >
   {
     static const int limiterPolynomialOrder = polynomialOrder;
     typedef std::tuple< VelocityFunctionType* > ExtraParameterTupleType;

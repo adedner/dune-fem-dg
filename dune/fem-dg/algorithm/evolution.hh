@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <string>
+#include <type_traits>
 
 #include <dune/fem-dg/pass/threadpass.hh>
 #include <dune/fem/misc/gridwidth.hh>
@@ -11,11 +12,14 @@
 #include <dune/common/timer.hh>
 #include <dune/fem/space/common/interpolate.hh>
 
+
 namespace Dune
 {
 
 namespace Fem
 {
+
+
 
   // SubEvolutionAlgorithmTraits
   // -------------------------
@@ -25,6 +29,50 @@ namespace Fem
             int polOrder >
   struct SubEvolutionAlgorithmTraits
   {
+  private:
+    // if AdaptIndicatorType is not defined, use "void" as "marker"
+    template< class T, bool exists >
+    struct AdaptIndicatorHelper
+    { typedef void type; };
+
+    template< class T >
+    struct AdaptIndicatorHelper< T, true >
+    { typedef typename T::AdaptIndicatorType type; };
+
+    template< class T >
+    struct AdaptIndicators
+    {
+      template <typename TT>
+      static auto apply(TT const&) -> decltype( std::declval<typename TT::AdaptIndicatorType>(), std::true_type()) {
+        return std::true_type();
+      }
+      static std::false_type apply(...) { return std::false_type(); }
+
+      typedef typename AdaptIndicatorHelper< T, decltype( apply( std::declval<T>() ) )::value >::type type;
+    };
+
+    // if AdditionalOutputHandlerType is not defined, use "void" as "marker"
+    template< class T, bool exists >
+    struct AdditionalOutputHandlerHelper
+    { typedef void type; };
+
+    template< class T >
+    struct AdditionalOutputHandlerHelper< T, true >
+    { typedef typename T::AdditionalOutputHandlerType type; };
+
+    template< class T >
+    struct AdditionalOutputHandlers
+    {
+      template <typename TT>
+      static auto apply(TT const&) -> decltype( std::declval<typename TT::AdditionalOutputHandlerType>(), std::true_type()) {
+        return std::true_type();
+      }
+      static std::false_type apply(...) { return std::false_type(); }
+
+      typedef typename AdditionalOutputHandlerHelper< T, decltype( apply( std::declval<T>() ) )::value >::type type;
+    };
+
+  public:
     static const int polynomialOrder = polOrder;
 
     typedef ProblemTraits                                          ProblemTraitsType;
@@ -59,10 +107,12 @@ namespace Fem
 
     typedef typename DiscreteTraits::Solver                        SolverType;
 
-    typedef typename DiscreteTraits::AdaptIndicatorType            AdaptIndicatorType;
+    typedef typename AdaptIndicators< DiscreteTraits >::type       AdaptIndicatorType;
+    typedef typename AdditionalOutputHandlers< DiscreteTraits >::type AdditionalOutputHandlerType;
+
+
     typedef typename DiscreteTraits::SolverMonitorHandlerType      SolverMonitorHandlerType;
     typedef typename DiscreteTraits::DiagnosticsHandlerType        DiagnosticsHandlerType;
-    typedef typename DiscreteTraits::AdditionalOutputHandlerType   AdditionalOutputHandlerType;
   };
 
 
@@ -82,7 +132,6 @@ namespace Fem
     {}
   };
 
-
   // SubEvolutionAlgorithm
   // ------------------
 
@@ -91,6 +140,9 @@ namespace Fem
   {
     typedef SubEvolutionAlgorithmTraits                          Traits;
 
+    static_assert( !std::is_void< typename Traits::AdditionalOutputHandlerType >::value,
+                   "SubEvolutionAlgorithmBase wants to create an object of type AdditionalOuputHandlerType."
+                   "Please define 'AdditionalOutputHandlerType' in your SubProblemCreator creating this class." );
   public:
     typedef typename Traits::GridType                            GridType;
     typedef typename Traits::IOTupleType                         IOTupleType;
@@ -161,7 +213,7 @@ namespace Fem
     // return size of grid
     virtual UInt64Type gridSize () const { UInt64Type grSize = grid().size(0); return grid().comm().sum( grSize); }
 
-    virtual bool checkDofsValid ( TimeProviderType& tp, const int loop  ) const { return solution_.dofsValid(); }
+    virtual bool checkSolutionValid ( const int loop, TimeProviderType& tp ) const { return solution_.dofsValid(); }
 
     // function creating the ode solvers
     virtual typename SolverType::type* createSolver ( TimeProviderType& ) = 0;
@@ -179,14 +231,14 @@ namespace Fem
     virtual DiagnosticsHandlerType& diagnostics() { return diagnosticsHandler_; }
 
     //ADDITIONALOUTPUT
-    virtual AdditionalOutputHandlerType& additionalOutput() { return additionalOutputHandler_; }
+    virtual AdditionalOutputHandlerType* additionalOutput() { return &additionalOutputHandler_; }
 
     //LIMITING
     virtual void limit(){}
     virtual LimitDiscreteFunctionType* limitSolution () { return &solution_; }
 
     //ADAPTATION
-    virtual AdaptIndicatorType* adaptIndicator() { return (AdaptIndicatorType*)0; }
+    virtual AdaptIndicatorType* adaptIndicator() { return nullptr; }
     virtual AdaptationDiscreteFunctionType* adaptationSolution () { return &solution_; }
 
     //CHECKPOINTING

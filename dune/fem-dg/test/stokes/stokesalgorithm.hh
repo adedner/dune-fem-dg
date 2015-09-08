@@ -304,7 +304,7 @@ namespace Fem
 
   public:
     explicit StokesAlgorithm(GridType& grid, std::string moduleName = "" ) :
-      BaseType( grid, moduleName, "pressure" ),
+      BaseType( grid, moduleName ),
       ellAlg_( grid, moduleName ),
       gridPart_( grid ),
       space_( gridPart_ ),

@@ -1,9 +1,7 @@
 dune_install( ns_model.hh problemcreator.hh nswaves.hh ns_model_spec.hh nssmooth.hh thermodynamics.hh passtraits.hh)
 
 include_directories("${CMAKE_SOURCE_DIR}/dune/fem-dg/test/incompnavierstokes/")
-if(EXISTS parameter.in)
-  configure_file(parameter.in ${CMAKE_CURRENT_BINARY_DIR}/parameter )
-endif()
+configure_file(parameter.in ${CMAKE_CURRENT_BINARY_DIR}/parameter )
 
 # default settings for the test case
 set(POLORDER 2)
