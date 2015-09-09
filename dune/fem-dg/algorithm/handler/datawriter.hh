@@ -11,7 +11,6 @@
 #include <dune/fem/common/utility.hh>
 #include <dune/fem-dg/misc/parameterkey.hh>
 
-
 namespace Dune
 {
 namespace Fem
@@ -51,9 +50,10 @@ namespace Fem
       template< class Tuple, class ... Args >
       static void apply ( Tuple &tuple, Args && ... args )
       {
-        additionalOutput( std::get<i>( tuple ), args... );
+        additionalOutput( std::get<i>( tuple ), std::forward<Args>(args)... );
       }
     };
+
   public:
 
 
@@ -61,7 +61,8 @@ namespace Fem
       : tuple_( tuple ),
         dataWriter_(),
         dataTuple_( dataTuple( tuple, Std::index_sequence_for< StepperHead, StepperArg ... >() ) )
-    {}
+    {
+    }
 
     template< class TimeProviderImp, class ParameterType >
     void init( TimeProviderImp& tp, ParameterType& param  )
@@ -76,6 +77,7 @@ namespace Fem
       {
         //update all additional Output
         ForLoop< AdditionalOutput, 0, sizeof ... ( StepperArg ) >::apply( tuple_, tp );
+
         //writeData
         dataWriter_->write( tp );
       }

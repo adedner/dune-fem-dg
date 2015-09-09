@@ -23,18 +23,18 @@ namespace Fem
     struct Write
     {
       template< class Tuple, class ... Args >
-      static void apply ( Tuple &tuple, Args && ... args )
+      static void apply ( Tuple &tuple, Args&&... a )
       {
-        std::get< i >( tuple )->diagnostics().step( args... );
+        std::get< i >( tuple )->diagnostics().step( std::forward<Args>(a)... );
       }
     };
     template< int i >
     struct Finalize
     {
       template< class Tuple, class ... Args >
-      static void apply ( Tuple &tuple, Args && ... args )
+      static void apply ( Tuple &tuple, Args&& ... a )
       {
-        std::get< i >( tuple )->diagnostics().finalize( args... );
+        std::get< i >( tuple )->diagnostics().finalize( std::forward<Args>(a)... );
       }
     };
 
@@ -70,7 +70,7 @@ namespace Fem
     void step( Args&& ... ) const {};
 
     template <class ... Args>
-    void finalize(Args&& ... ) const {};
+    void finalize( Args&& ... ) const {};
   };
 
 
@@ -166,7 +166,7 @@ namespace Fem
     void step( Args&& ... ) const {}
 
     template <class ... Args>
-    void finalize(Args&& ... ) const {}
+    void finalize( Args&& ... ) const {}
   };
 
 }

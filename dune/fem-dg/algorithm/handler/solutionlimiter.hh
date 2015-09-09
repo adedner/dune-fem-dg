@@ -23,9 +23,9 @@ namespace Fem
     struct LimitSolution
     {
       template< class Tuple, class ... Args >
-      static void apply ( Tuple &tuple, Args && ... args )
+      static void apply ( Tuple &tuple, Args&& ... a )
       {
-        std::get< i >( tuple )->limit( args... );
+        std::get< i >( tuple )->limit( std::forward<Args>(a)... );
       }
     };
 

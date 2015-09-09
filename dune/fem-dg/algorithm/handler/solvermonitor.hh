@@ -45,18 +45,18 @@ namespace Fem
     struct Step
     {
       template< class Tuple, class ... Args >
-      static void apply ( Tuple &tuple, Args && ... args )
+      static void apply ( Tuple &tuple, Args&& ... a )
       {
-         std::get< i >( tuple )->monitor().step( args... );
+         std::get< i >( tuple )->monitor().step( std::forward<Args>(a)... );
       }
     };
     template< int i >
     struct Finalize
     {
       template< class Tuple, class ... Args >
-      static void apply ( Tuple &tuple, Args && ... args )
+      static void apply ( Tuple &tuple, Args&& ... a )
       {
-         std::get< i >( tuple )->monitor().finalize( args... );
+         std::get< i >( tuple )->monitor().finalize( std::forward<Args>(a)... );
       }
     };
 
@@ -69,14 +69,14 @@ namespace Fem
     {
       std::cout << str << ":  " << getData( str ) << ", ";
       print( tail... );
-      }
+    }
 
     void print() {};
 
     const double getData( const std::string name, CombinationType comb = CombinationType::max ) const
     {
       return getData( tuple_, name, comb, Std::index_sequence_for< StepperHead, StepperArg ... >() );
-      }
+    }
 
     template< std::size_t ... i >
     static double getData( const StepperTupleType& tuple, const std::string name, CombinationType comb, Std::index_sequence< i ... > )
