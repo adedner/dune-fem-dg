@@ -535,13 +535,13 @@ namespace Fem
 
     //ADAPTATION
     virtual AdaptIndicatorType* adaptIndicator() { return nullptr; }
-    virtual AdaptationDiscreteFunctionType* adaptationSolution () { return nullptr; }
+    virtual AdaptationDiscreteFunctionType* adaptationSolution () { return &BaseType::solution(); }
 
     //CHECKPOINTING
     virtual CheckPointDiscreteFunctionType* checkPointSolution () { return &BaseType::solution(); }
 
     //DATAWRITING
-    virtual IOTupleType dataTuple () { return IOTupleType(); }
+    virtual IOTupleType dataTuple () { return std::make_tuple( &BaseType::solution(), nullptr ); }
 
     const ProblemType &problem () const
     {
