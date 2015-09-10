@@ -46,20 +46,20 @@ struct Hermite
   {
     return operator_.add(u,fu);
   }
+#if HERMITEDG==1
   template <class DF>
   bool add( const DF &v, const DF &fv)
   {
+    assert(0);
+    abort();
     Range u("u-tmp",space_),
           fu("fu-tmp",space_);
     Dune::Fem::WeightDefault<GridPartType> weight;
-#if HERMITEDG==2
-    Dune::Fem::FullProjectionImpl::project(v,u, weight, *numflux_);
-#else
-    Dune::Fem::FluxProjectionImpl::project(v,u, weight, *numflux_);
-#endif
-    Dune::Fem::VtxProjectionImpl::project(fv,fu,weight);
+    Dune::Fem::L2FluxProjectionImpl::project(v,u, weight, *numflux_);
+    // Dune::Fem::VtxProjectionImpl::project(fv,fu,weight);
     return add(u,fu);
   }
+#endif
   const typename Range::DiscreteFunctionSpaceType &space() const
   {
     return space_;
@@ -107,17 +107,17 @@ struct Hermite
       val.axpy(p.evaluate(point), *(stuetz_[i]));
     }
   }
+#if HERMITEDG==2
   template <class DF>
   void evaluate(double point, DF &val) const
   {
     Range v("tmp",space_);
     evaluate(point,v);
-#if HERMITEDG==2
-    Dune::Fem::FullProjectionImpl::project(v,val, *numflux_);
-#else
-    Dune::Fem::FluxProjectionImpl::project(v,val, *numflux_);
-#endif
+    Dune::Fem::WeightDefault<GridPartType> weight;
+    Dune::Fem::L2FluxProjectionImpl::project(v,val, *numflux_);
+    // Dune::Fem::VtxProjectionImpl::project(v,val,weight);
   }
+#endif
   void derivative(double point, Range &val) const
   {
     val.clear();
@@ -128,30 +128,18 @@ struct Hermite
     }
     val /= tau_;
   }
-  /*
-  Range derivative(int k,double point) const
+#if HERMITEDG==2
+  template <class DF>
+  void derivative(double point, DF &val) const
   {
-    Range val(0);
-    for (int i=0;i<stuetz_.size();++i)
-    {
-      Polynomial p(i,x_);
-      val.axpy(p.derivative(k,point), *(stuetz_[i]));
-    }
-    val /= pow(tau_,k);
-    return val;
+    Range v("tmp",space_), dv("dtmp",space_);
+    evaluate(point,v);
+    derivative(point,dv);
+    Dune::Fem::WeightDefault<GridPartType> weight;
+    Dune::Fem::L2FluxProjectionImpl::project(v,dv,val, *numflux_);
+    // Dune::Fem::VtxProjectionImpl::project(dv,val,weight);
   }
-  Range derivative_end(int k) const
-  {
-    Range val(0);
-    for (int i=0;i<stuetz_.size();++i)
-    {
-      Polynomial p(i,x_);
-      val.axpy(p.derivative_end(k), stuetz_[i]);
-    }
-    val /= pow(tau_,k);
-    return val;
-  }
-  */
+#endif
 
   protected:
 

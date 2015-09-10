@@ -4,7 +4,7 @@
 
 // 1=use Lag and Vertex projection in Hermite -> Lagrange function from Hermite
 // 2=use DG in Hermite and use flux projection in evaluate
-#define HERMITEDG 2   
+#define HERMITEDG 2
 
 #ifdef LOCALDEBUG
 static double sum_ = 0.;
@@ -130,7 +130,7 @@ struct StepperBase
   using BaseType :: grid_ ;
   using BaseType :: limitSolution ;
 
-#if HERMITEDG==2
+#if 0 // HERMITEDG==2
   typedef Dune::Fem::DiscontinuousGalerkinSpace<FunctionSpaceType, GridPartType, polynomialOrder+1> ResidualSpaceType;
 #else
   typedef Dune::Fem::LagrangeDiscreteFunctionSpace<FunctionSpaceType, GridPartType, polynomialOrder+1> ResidualSpaceType;
@@ -138,7 +138,7 @@ struct StepperBase
 
   typedef Dune::Fem::AdaptiveDiscreteFunction<ResidualSpaceType> ResidualSpaceFunctionType;
 
-#ifdef HERMITEDG
+#if HERMITEDG==2
   typedef Hermite2<DiscreteFunctionType,FluxType> HermiteType;
 #else
   typedef Hermite2<ResidualSpaceFunctionType,FluxType> HermiteType;
@@ -146,20 +146,21 @@ struct StepperBase
 
   struct LocalResidual
   {
-    typedef ResidualSpaceType P1DiscreteFunctionSpaceType;
-    typedef ResidualSpaceFunctionType P1DiscreteFunctionType;
     typedef typename HermiteType::ResultType HermiteDiscreteFunctionType;
     typedef typename HermiteDiscreteFunctionType::DiscreteFunctionSpaceType HermiteDiscreteFunctionSpaceType;
     typedef typename HermiteDiscreteFunctionSpaceType::FunctionSpaceType FunctionSpaceType;
     typedef typename HermiteDiscreteFunctionSpaceType::GridPartType GridPartType;
     typedef typename GridPartType::template Codim< 0 >::EntityType EntityType;
     typedef typename FunctionSpaceType::RangeType RangeType;
-    LocalResidual(const ThisType &stepper, const P1DiscreteFunctionSpaceType &space)
+    // typedef typename HermiteType::ResultType P1DiscreteFunctionType;
+    // typedef HermiteDiscreteFunctionSpaceType P1DiscreteFunctionSpaceType;
+    typedef ResidualSpaceType P1DiscreteFunctionSpaceType;
+    typedef ResidualSpaceFunctionType P1DiscreteFunctionType;
+    LocalResidual(const ThisType &stepper, const ResidualSpaceType &space)
       : stepper_(stepper),
-        dtU_("dtU", stepper.hermite_.space()),        // d_t u^t in dg
-        divF_("divF", stepper.hermite_.space()),      // pointwise div F(u^t) 
-        U_("U", space),                      // projection of u^t into CG space (u^tx)
-        lU_(U_), ldtU_(dtU_), ldivF_(divF_),
+        U_("U", space),                               // projection of u^t into CG space (u^tx)
+        dtU_("dtU", space),                           // d_t u^t in dg
+        lU_(U_), ldtU_(dtU_),
         init_(false)
     {
     }
@@ -169,7 +170,6 @@ struct StepperBase
       stepper_.hermite_.evaluate(t,U_);
       stepper_.hermite_.derivative(t, dtU_);
 
-      // stepper_.apply( dgU_, divF_ );
       init_ = true;
     }
     template< class PointType >
@@ -187,10 +187,7 @@ struct StepperBase
       lU_.jacobian( x, jacU );
       // evaluate d/dt u^t 
       ldtU_.evaluate( x, valdtU );
-      // ldivF_.evaluate( x, valL );
-      // ret = {valU[0],valdtU[0],valL[0]};
-      // ret = valdtU; ret -= valL;
-      
+
       // Df(u^{tx}) . grad u^{tx}
       stepper_.model().jacobian(lU_.entity(),0,Dune::Fem::coordinate(x),valU,jacU,flux);
       ret = valdtU; ret += flux;
@@ -199,17 +196,14 @@ struct StepperBase
     {
       lU_.init( entity );
       ldtU_.init( entity );
-      ldivF_.init( entity );
     }
 
     LocalResidual(const LocalResidual&) = delete;
     LocalResidual &operator=(const LocalResidual &) = delete;
     private:
     const ThisType &stepper_;
-    HermiteDiscreteFunctionType divF_,dtU_;
-    P1DiscreteFunctionType U_;
-    typename P1DiscreteFunctionType::LocalFunctionType lU_;
-    typename HermiteDiscreteFunctionType::LocalFunctionType ldtU_, ldivF_;
+    P1DiscreteFunctionType U_,dtU_;
+    typename P1DiscreteFunctionType::LocalFunctionType lU_,ldtU_;
     bool init_;
   };
   struct ResidualDataOutputParameters
@@ -251,7 +245,7 @@ struct StepperBase
     dataWriter_( 0 ),
 
     residualSpace_(gridPart_),
-#ifdef HERMITEDG
+#if HERMITEDG==2
     hermite_( space_ ),
 #else
     hermite_( residualSpace_ ),
@@ -410,6 +404,8 @@ struct StepperBase
   // before first step, do data initialization
   void initializeStep( TimeProviderType& tp, const int loop )
   {
+    double fixedDT = ParameterType::getValue<double>("fixedTimeStep");
+    VISCPARA = gridWidth()/fixedDT;
     DiscreteFunctionType& U = solution_;
 
     if( odeSolver_ == 0 ) odeSolver_ = this->createOdeSolver( tp );

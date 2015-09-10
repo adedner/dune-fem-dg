@@ -4,7 +4,7 @@ fem.timeprovider.factor: 0.15
 # PROBLEM SELECTION 
 #------------------
 # possible: "sod" , "withman", "withmansmooth", "smooth1d" , "ffs" , "diffraction" , "shockbubble"
-euler.problem:  smooth1d # sinwave # smooth1d # sod
+euler.problem: smooth1d # sinwave # smooth1d # sod
 
 # euler.problemflag: 0
 # euler.riemanndata: [1., -1., 1.,    1., 1., 1.]

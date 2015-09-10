@@ -15,6 +15,9 @@
 
 #include <dune/fem-dg/operator/fluxes/rotator.hh>
 
+double maxWave = 1000;
+double VISCPARA;
+
 ///////////////////////////////////////////////////////////
 //
 //  EulerAnalyticalFlux
@@ -807,17 +810,17 @@ public:
     normal *= 1./len;
 
     RangeType visc;
-    FluxRangeType anafluxL, anafluxR;
+    FluxRangeType anaflux;
 
     model_.advection( inside, time, faceQuadInner.point( quadPoint ),
-                      uLeft, anafluxL );
+                      uLeft, anaflux );
 
     // set gLeft
-    anafluxL.mv( normal, gLeft );
+    anaflux.mv( normal, gLeft );
 
     model_.advection( outside, time, faceQuadOuter.point( quadPoint ),
-                      uRight, anafluxR );
-    anafluxR.umv( normal, gLeft );
+                      uRight, anaflux );
+    anaflux.umv( normal, gLeft );
 
     double maxspeedl, maxspeedr, maxspeed;
     double viscparal, viscparar, viscpara;
@@ -829,10 +832,12 @@ public:
 
     maxspeed = (maxspeedl > maxspeedr) ? maxspeedl : maxspeedr;
     viscpara = (viscparal > viscparar) ? viscparal : viscparar;
+    // viscpara = VISCPARA;
     visc = uRight;
     visc -= uLeft;
     visc *= viscpara;
     gLeft -= visc;
+    gLeft *= 0.5*len;
     double ldt = maxspeed * len;
 #else
     const FaceDomainType& x = faceQuadInner.localPoint( quadPoint );
@@ -842,8 +847,8 @@ public:
     FluxRangeType anafluxL;
     model_.advection( inside, time, faceQuadInner.point( quadPoint ), ustar, anafluxL );
     anafluxL.mv( normal, gLeft );
-    gRight = gLeft;
 #endif
+    gRight = gLeft;
     return ldt;
   }
 
@@ -860,6 +865,8 @@ public:
          const RangeType& uRight,
          RangeType& ustar) const
   {
+    // Lax-Wendroff:
+    // 1/2*(uL+uR) - 1/2v (f(uR)-f(uL)).n
     const FaceDomainType& x = faceQuadInner.localPoint( quadPoint );
     DomainType normal = intersection.integrationOuterNormal(x);
     const double len = normal.two_norm();
@@ -885,11 +892,61 @@ public:
     anafluxR.mv( normal, fjump );
     anafluxL.mmv( normal, fjump );
     fjump *= 0.5;
-    fjump *= 1./viscpara; // 0.06;
+    viscpara = VISCPARA;
+    fjump /= viscpara; 
+    // if (viscpara < maxWave)
+    //   std::cout << "new max: " << viscpara << std::endl;
+    maxWave = std::min(maxWave, viscpara);
     
     ustar -= fjump;
 
     return maxspeed * len;
+  }
+  template< class Intersection, class QuadratureImp >
+  inline double
+  duStar( const Intersection& intersection,
+          const EntityType& inside,
+          const EntityType& outside,
+          const double time,
+          const QuadratureImp& faceQuadInner,
+          const QuadratureImp& faceQuadOuter,
+          const int quadPoint,
+          const RangeType& uLeft,
+          const RangeType& uRight,
+          const RangeType& duLeft,
+          const RangeType& duRight,
+          RangeType& dustar) const
+  {
+    // LW Flux:
+    // u1/2*(uL+uR) - 1/2v (f(uR)-f(uL)).n   f(uR) in (r,d) so f(uR).n in (r)
+    // Derivative:
+    // dustarL.dtuL = 1/2 dtuL + 1/2v Df(uL).dtuL.n 
+    // dustarR.dtuR = 1/2 dtuR - 1/2v Df(uR).dtuR.n
+    // double viscpara = 1.455; // 1./0.03;
+    const FaceDomainType& x = faceQuadInner.localPoint( quadPoint );
+    DomainType normal = intersection.integrationOuterNormal(x);
+    const double len = normal.two_norm();
+    normal *= 1./len;
+    dustar  = duLeft;
+    dustar += duRight;
+    dustar *= 0.5;
+    FluxRangeType duLxn,duRxn;
+    for (int r=0;r<duRight.size();++r)
+    {
+      for (int d=0;d<normal.size();++d)
+      {
+        duLxn[r][d] = duLeft[r]*normal[d];
+        duRxn[r][d] = duRight[r]*normal[d];
+      }
+    }
+    RangeType tmpL,tmpR;
+    model_.jacobian(inside,time,faceQuadInner.point(quadPoint),uLeft,duLxn,tmpL);
+    model_.jacobian(outside,time,faceQuadOuter.point(quadPoint),uRight,duRxn,tmpR);
+    tmpR -= tmpL;
+    tmpR *= 0.5;
+    double viscpara = VISCPARA;
+    tmpR /= viscpara;
+    dustar -= tmpR;
   }
 
 

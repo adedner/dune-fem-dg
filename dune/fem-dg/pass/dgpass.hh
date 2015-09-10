@@ -362,7 +362,7 @@ namespace Dune {
     {
       bool operator ()(const EntityType& , const EntityType& nb ) const
       {
-#if HAVE_MPI
+#if 0 // HAVE_MPI
         // only update when neighbor is interior
         return nb.partitionType() == InteriorEntity ;
 #else
@@ -591,6 +591,7 @@ namespace Dune {
           // compute boundary only in applyLocal and interiorIntegral
           else if( computeBoundary && intersection.boundary() )
           {
+            std::cout << "dgpass.hh: came across neighbor but should be perioridc..." << std::endl;
             FaceQuadratureType faceQuadInner(gridPart_, intersection, faceQuadratureOrder( entity ),
                                              FaceQuadratureType::INSIDE);
 
