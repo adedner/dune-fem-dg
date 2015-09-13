@@ -54,7 +54,7 @@ paramfile: ../parameter/paramPhysicalConstants
 
 g: 1. # gravity force [m/ss]
 femhowto.startTime: 0.
-femhowto.endTime: 1.
+femhowto.endTime: 0.1
 hSpeed0: 1. # x-axis speed [m/s]
 vSpeed0: 1.25 # z-axis speed [m/s]
 p0: 1. # surface pressure [Pa]
@@ -85,9 +85,10 @@ fem.io.macroGridFile_3d: ../grids/unitcube3.dgf
 
 paramfile: ../parameter/paramSolver
 
-fem.ode.order: 3
+fem.ode.order: 5
 hermite.q: 5
 hermite.q1: 3
+hermite.approx: fd3
 #fixedTimeStep: 0.0025    # p=2,N=800,dt=0.00125
 fixedTimeStep: 0.0001    # p=2,N=800,dt=0.00125
 #fixedTimeStep: 0.004    # p=2,N=800,dt=0.00125

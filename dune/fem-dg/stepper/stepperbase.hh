@@ -161,7 +161,11 @@ struct StepperBase
         U_("U", space),                               // projection of u^t into CG space (u^tx)
         dtU_("dtU", space),                           // d_t u^t in dg
         lU_(U_), ldtU_(dtU_),
-        init_(false)
+        Udg_("Udg", stepper.space()),                               // projection of u^t into CG space (u^tx)
+        dtUdg_("dtUdg", stepper.space()),                           // d_t u^t in dg
+        lUdg_(Udg_), ldtUdg_(dtUdg_),
+        init_(false),
+        t_(-1)
     {
     }
     void init(double t)
@@ -169,7 +173,9 @@ struct StepperBase
       // u^t and d/dt u^t in DG space of order q
       stepper_.hermite_.evaluate(t,U_);
       stepper_.hermite_.derivative(t, dtU_);
-
+      stepper_.hermite_.evaluate(t,Udg_);
+      stepper_.hermite_.derivative(t, dtUdg_);
+      t_ = t;
       init_ = true;
     }
     template< class PointType >
@@ -180,22 +186,35 @@ struct StepperBase
         ret = RangeType(0.);
         return;
       }
-      typename P1DiscreteFunctionSpaceType::RangeType valU,valL,valdtU,flux;
+      typename P1DiscreteFunctionSpaceType::RangeType valU,valL,valdtU,flux,s;
       typename P1DiscreteFunctionSpaceType::JacobianRangeType jacU;
       // evaluate function and derivative of CG projection of u^t (u^tx)
       lU_.evaluate( x, valU );
       lU_.jacobian( x, jacU );
       // evaluate d/dt u^t 
       ldtU_.evaluate( x, valdtU );
+      stepper_.model().jacobian(lU_.entity(),t_,Dune::Fem::coordinate(x),valU,jacU,flux);
+      // stepper_.model().nonStiffSource(lU_.entity(),t_,Dune::Fem::coordinate(x),valU,jacU,s);
 
-      // Df(u^{tx}) . grad u^{tx}
-      stepper_.model().jacobian(lU_.entity(),0,Dune::Fem::coordinate(x),valU,jacU,flux);
+      typename HermiteDiscreteFunctionSpaceType::RangeType valUdg,valLdg,valdtUdg,fluxdg,sdg;
+      typename HermiteDiscreteFunctionSpaceType::JacobianRangeType jacUdg;
+      // evaluate function and derivative of CG projection of u^t (u^tx)
+      lUdg_.evaluate( x, valUdg );
+      lUdg_.jacobian( x, jacUdg );
+      // evaluate d/dt u^t 
+      ldtUdg_.evaluate( x, valdtUdg );
+      stepper_.model().jacobian(lUdg_.entity(),t_,Dune::Fem::coordinate(x),valUdg,jacUdg,fluxdg);
+
       ret = valdtU; ret += flux;
+      // ret = valdtUdg; ret -= valdtU;
+      // ret = flux; ret -= fluxdg;
     }
     void init ( const EntityType &entity )
     {
       lU_.init( entity );
       ldtU_.init( entity );
+      lUdg_.init( entity );
+      ldtUdg_.init( entity );
     }
 
     LocalResidual(const LocalResidual&) = delete;
@@ -204,6 +223,9 @@ struct StepperBase
     const ThisType &stepper_;
     P1DiscreteFunctionType U_,dtU_;
     typename P1DiscreteFunctionType::LocalFunctionType lU_,ldtU_;
+    HermiteDiscreteFunctionType Udg_,dtUdg_;
+    typename HermiteDiscreteFunctionType::LocalFunctionType lUdg_,ldtUdg_;
+    double t_;
     bool init_;
   };
   struct ResidualDataOutputParameters
@@ -243,20 +265,19 @@ struct StepperBase
     adaptationManager_( grid_, rp_ ),
     adaptationParameters_( ),
     dataWriter_( 0 ),
-
     residualSpace_(gridPart_),
 #if HERMITEDG==2
     hermite_( space_ ),
 #else
     hermite_( residualSpace_ ),
 #endif
-
     localResidual_(*this,residualSpace_),
     residualFunction_("residual",localResidual_,gridPart_, 5),
     residualIOTuple_(&residualFunction_),
     residualDataOutput_( grid, residualIOTuple_, ResidualDataOutputParameters() ),
     hermSetup_(true),
-    residualError_(0)
+    residualError2_(0),
+    Ust_("reconstruction",residualSpace_)
   {
     // set refine weight
     rp_.setFatherChildWeight( Dune::DGFGridInfo<GridType> :: refineWeight() );
@@ -445,6 +466,15 @@ struct StepperBase
     hermite_.setup(numFlux());
     apply(U,fU_);
     hermSetup_ = hermite_.add(U, fU_);
+    {
+      Fem :: L2Norm< GridPartType > l2norm( solution().space().gridPart(), 2*(solution().space().order()+3) );
+      Dune::Fem::L2FluxProjectionImpl::project(solution(),Ust_,numFlux() );
+      double l2errorA = l2norm.distance( problem().fixedTimeFunction( tp.time() ),solution() );
+      double l2errorB = l2norm.distance( Ust_, solution() );
+      std::cout << 0 << " " << 0 << " " << 0 << " "
+                << l2errorA << " " << l2errorB 
+                << " # residual and l2 error" << std::endl;
+    }
   }
 
 
@@ -463,29 +493,35 @@ struct StepperBase
     apply(U,fU_);
     hermSetup_ = hermite_.add(U, fU_);
 
-   if (!hermSetup_ && tp.timeStep()>20)
     {
       static double maxError = 0.;
-      hermite_.init();
-      typedef Dune::Fem::L2Norm< GridPartType > NormType;
-      NormType norm( gridPart_ );
+      Fem :: L2Norm< GridPartType > l2norm( solution().space().gridPart(), 2*(solution().space().order()+3) );
       typedef Dune::QuadratureRule<double, 1> Quad;
-      const Quad & quad = Dune::QuadratureRules<double,1>::
-        rule( Dune::GeometryType(Dune::GeometryType::simplex,1), 
-              2*space_.polynomialOrder+1,  
-              Dune::QuadratureType::GaussLegendre );
-      double localError = 0.;
-      for (auto qp=quad.begin(); qp!=quad.end(); ++qp)
+      if (!hermSetup_ && tp.timeStep()>20)
       {
-        const Dune::FieldVector< double, 1 > &x = qp->position();
-        const double weight = qp->weight();
-        localResidual_.init(x[0]);
-        double spaceError = norm.norm( residualFunction_ );
-        localError += tp.deltaT() * weight * spaceError*spaceError;
-        maxError = std::max( maxError, spaceError );
+        hermite_.init();
+        const Quad & quad = Dune::QuadratureRules<double,1>::
+          rule( Dune::GeometryType(Dune::GeometryType::simplex,1), 
+                2*space_.polynomialOrder+5,  
+                Dune::QuadratureType::GaussLegendre );
+        double localError2 = 0.;
+        for (auto qp=quad.begin(); qp!=quad.end(); ++qp)
+        {
+          const Dune::FieldVector< double, 1 > &x = qp->position();
+          const double weight = qp->weight();
+          localResidual_.init(x[0]);
+          double spaceError = l2norm.norm( residualFunction_ );
+          localError2 += tp.deltaT() * weight * spaceError*spaceError;
+          maxError = std::max( maxError, spaceError );
+        }
+        residualError2_ += localError2;
       }
-      residualError_ += localError;
-      std::cout << tp.time() << " " << sqrt(residualError_/tp.time()) << " "  << maxError << " # residual error" << std::endl;
+      Dune::Fem::L2FluxProjectionImpl::project(solution(),Ust_,numFlux() );
+      double l2errorA = l2norm.distance( problem().fixedTimeFunction( tp.time()+tp.deltaT() ),solution() );
+      double l2errorB = l2norm.distance( Ust_, solution() );
+      std::cout << tp.time() << " " << sqrt(residualError2_/tp.time()) << " " << maxError << " "
+                << l2errorA << " " << l2errorB 
+                << " # residual and l2 error" << std::endl;
     }
 
     // limit solution if necessary
@@ -651,6 +687,7 @@ protected:
   ResidualIOTupleType residualIOTuple_;
   ResidualDataOutputType residualDataOutput_;
   bool hermSetup_;
-  double residualError_;
+  double residualError2_;
+  ResidualSpaceFunctionType Ust_;
 };
 #endif // FEMHOWTO_STEPPER_HH

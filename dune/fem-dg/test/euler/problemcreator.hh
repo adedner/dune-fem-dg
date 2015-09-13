@@ -17,7 +17,11 @@
 #include <dune/fem-dg/operator/fluxes/eulerfluxes.hh>
 #include <dune/fem-dg/operator/fluxes/diffusionflux.hh>
 
+#ifndef ADVECTION
 #include "eulermodel.hh"
+#else
+#include "testmodel.hh"
+#endif
 #include "problems.hh"
 
 #include <dune/fem-dg/stepper/advectionstepper.hh>
@@ -31,7 +35,11 @@ struct ProblemCreator
   struct Traits
   {
     typedef ProblemType  InitialDataType;
+#ifndef ADVECTION
     typedef Dune::Fem::EulerModel< GridPart, ProblemType > ModelType;
+#else
+    typedef Dune::Fem::TestModel< GridPart, ProblemType > ModelType;
+#endif
 
     // choice of diffusion flux (see diffusionflux.hh for methods)
     static const Dune :: DGDiffusionFluxIdentifier PrimalDiffusionFluxId

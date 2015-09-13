@@ -20,7 +20,7 @@ struct Hermite
   static typename Op::Approximate getApprox()
   {
     const std::string approxNames [] = { "fd3", "fd4", "fd6" };
-    const typename Op::Approximate approx [] = { Op::fd3, Op::fd4, Op::fd6 };
+    const typename Op::Approximate approx [] = { Op::Approximate::fd3, Op::Approximate::fd4, Op::Approximate::fd6 };
     const int approxNumber = Dune::Fem::Parameter::getEnum("hermite.approx", approxNames );
     return approx[approxNumber];
   }
@@ -35,8 +35,8 @@ struct Hermite
     operator_(tau_, q, approx)
   {
   }
-  Hermite( const DiscreteFunctionSpaceType &space, const NumFlux &numflux)
-  : Hermite( space,numflux,
+  Hermite( const DiscreteFunctionSpaceType &space)
+  : Hermite( space,
              Fem::Parameter::getValue<int>("hermite.q"),
              Fem::Parameter::getValue<int>("hermite.q1"),
              getApprox() )
@@ -93,7 +93,7 @@ struct Hermite
     }
     for (int i=q1_;i<=q_;++i)
     {
-      stuetz_[i]->assing( *(operator_(i-q1_,1) ) );
+      stuetz_[i]->assign( *(operator_(i-q1_,1) ) );
       *(stuetz_[i]) *= pow(tau_,i-q1_);
     }
     diviDiff( );
@@ -249,6 +249,56 @@ struct Hermite2 : public Hermite<Range,NumFlux>
   using Base::stuetz_;
   using Base::operator_;
 };
+template <class Range,class NumFlux>
+struct Hermite1 : public Hermite<Range,NumFlux>
+{
+  typedef Hermite<Range,NumFlux> Base;
+  typedef Hermite1<Range,NumFlux> This;
+  typedef std::vector<Range> Vector;
+  typedef typename Base::DiscreteFunctionSpaceType DiscreteFunctionSpaceType;
+  Hermite1( const DiscreteFunctionSpaceType &space, int q)
+  : Base(space,q,1,Base::Op::Approximate::fd3)
+  {
+  }
+  Hermite1( const DiscreteFunctionSpaceType &space)
+  : Hermite1(space, Fem::Parameter::getValue<int>("hermite.q"))
+  {
+  }
+  void setup(const NumFlux &numflux)
+  {
+    Base::numflux_ = &numflux;
+    std::cout << "#" << " q=" << q_ << " q1=" << q1_;
+    double point = 1.; // tau;
+    for (int i=0;i<=q_;++i)
+    {
+      x_[i] = point;
+      point -= 1.; // tau
+      std::cout << " " << x_[i];
+    }
+    std::cout << std::endl;
+  }
+  void init()
+  {
+    if (stuetz_.size()==0)
+      for (int i=0;i<=q_;++i)
+        stuetz_.push_back( new Range("tmp", operator_.func().space() ) );
+    int val = 0;
+    for (int i=0;i<=q_;++i)
+    {
+      // assert( u.size() > val );
+      stuetz_[i]->assign( *(operator_(0,1-val) ) );
+      ++val;
+    }
+    Base::diviDiff( );
+  }
+  protected:
+  using Base::q_;
+  using Base::q1_;
+  using Base::tau_;
+  using Base::x_;
+  using Base::stuetz_;
+  using Base::operator_;
+};
 
 
 template <class Range,class NumFlux>
@@ -281,7 +331,8 @@ struct Hermite<Range,NumFlux>::Op
       dttf.push_back(new Range(u));
       dttf.push_back(new Range(u));
     }
-    const int values_needed = std::max(8, (int)(std::floor(q/2.)+1));
+    // const int values_needed = std::max(8, (int)(std::floor(q/2.)+1));
+    const int values_needed = std::max(8, q+1);
 
     if (fvalues.size()>values_needed)
     {

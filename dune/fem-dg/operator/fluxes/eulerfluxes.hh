@@ -865,12 +865,13 @@ public:
          const RangeType& uRight,
          RangeType& ustar) const
   {
-    // Lax-Wendroff:
-    // 1/2*(uL+uR) - 1/2v (f(uR)-f(uL)).n
     const FaceDomainType& x = faceQuadInner.localPoint( quadPoint );
     DomainType normal = intersection.integrationOuterNormal(x);
     const double len = normal.two_norm();
     normal *= 1./len;
+#ifndef ADVECTION
+    // Lax-Wendroff:
+    // 1/2*(uL+uR) - 1/2v (f(uR)-f(uL)).n
     double maxspeedl, maxspeedr, maxspeed;
     double viscparal, viscparar, viscpara;
     model_.maxSpeed( inside, time, faceQuadInner.point( quadPoint ),
@@ -899,8 +900,12 @@ public:
     maxWave = std::min(maxWave, viscpara);
     
     ustar -= fjump;
-
     return maxspeed * len;
+#else
+    ustar = uLeft;
+    ustar[0] = (uLeft[1]*normal[0]>0.)?uLeft[0]:uRight[0];
+    return std::abs(uLeft[1])*len;
+#endif
   }
   template< class Intersection, class QuadratureImp >
   inline double
@@ -917,16 +922,17 @@ public:
           const RangeType& duRight,
           RangeType& dustar) const
   {
+    const FaceDomainType& x = faceQuadInner.localPoint( quadPoint );
+    DomainType normal = intersection.integrationOuterNormal(x);
+    const double len = normal.two_norm();
+    normal *= 1./len;
+#ifndef ADVECTION
     // LW Flux:
     // u1/2*(uL+uR) - 1/2v (f(uR)-f(uL)).n   f(uR) in (r,d) so f(uR).n in (r)
     // Derivative:
     // dustarL.dtuL = 1/2 dtuL + 1/2v Df(uL).dtuL.n 
     // dustarR.dtuR = 1/2 dtuR - 1/2v Df(uR).dtuR.n
     // double viscpara = 1.455; // 1./0.03;
-    const FaceDomainType& x = faceQuadInner.localPoint( quadPoint );
-    DomainType normal = intersection.integrationOuterNormal(x);
-    const double len = normal.two_norm();
-    normal *= 1./len;
     dustar  = duLeft;
     dustar += duRight;
     dustar *= 0.5;
@@ -947,6 +953,10 @@ public:
     double viscpara = VISCPARA;
     tmpR /= viscpara;
     dustar -= tmpR;
+#else
+    dustar = 0.;
+    dustar[0] = (uLeft[1]*normal[0]>0.)? duLeft[0]:duRight[0];
+#endif
   }
 
 

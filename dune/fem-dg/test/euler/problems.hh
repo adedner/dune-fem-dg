@@ -150,6 +150,9 @@ public:
     {
       u_[ i ] = 0.1;
     }
+#ifdef ADVECTION
+    u_ *= 10.;
+#endif
   }
 
   double endtime() {
@@ -168,6 +171,8 @@ public:
     for(int i=0; i<dim; ++i)
     {
       tmp_c[i] = x[i] - y[i] - time * u_[i];
+      while (tmp_c[i]<-0.5) tmp_c[i]+=2.;
+      while (tmp_c[i]>1.5) tmp_c[i]-=2.;
       tmp += tmp_c[i]*tmp_c[i];
       u_sq += u_[i] * u_[i];
     }
@@ -177,10 +182,16 @@ public:
     double pert = (tmp > 1.0)? 0.5: 0.25 * cos_tmp*cos_tmp + 0.5;
     // pert *= 0.05;
 
-    res[0] = 1.0; // + pert; 
-    double p = 1.3 + pert;
+#ifndef ADVECTION
+    res[0] = 1.0 + pert; 
+    double p = 1.3; // + pert;
     for(int i=0; i<dim; i++) res[1+i] = u_[i] * res[0];
     res[dim+1] = p/(gamma() - 1.0) + 0.5*res[0]*u_sq;
+#else
+    res[0] = 1.+0.5*sin(M_PI*tmp_c[0]); // 1.0+pert;
+    for(int i=0; i<dim; i++) res[1+i] = u_[i];
+    res[dim+1] = 1.;
+#endif 
   }
 
   std::string dataPrefix() const { return "smooth1d"; }

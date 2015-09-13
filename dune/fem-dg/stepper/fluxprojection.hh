@@ -353,7 +353,7 @@ namespace Dune
         const int numDofs = testDofs + 2*dimRange;
 
         typedef Dune::FieldMatrix< double, numDofs, numDofs > MatrixType;
-        typedef Dune::FieldVector< double, numDofs >         VectorType;
+        typedef Dune::FieldVector< double, numDofs >          VectorType;
         std::vector<RangeType> phi(numDofs);
         std::vector<RangeType> psi(testDofs);
 
