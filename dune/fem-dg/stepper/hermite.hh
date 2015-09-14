@@ -30,9 +30,9 @@ struct Hermite
   : space_(space),
     numflux_(0),
     q_(q), q1_(q1), 
-    tau_( Dune::Fem::Parameter::getValue<double>("fixedTimeStep" ) ),
+    tau_( -1 ), // Dune::Fem::Parameter::getValue<double>("fixedTimeStep" ) ),
     x_(q+1), stuetz_(0),
-    operator_(tau_, q, approx)
+    operator_(-1, q, approx)
   {
   }
   Hermite( const DiscreteFunctionSpaceType &space)
@@ -64,8 +64,10 @@ struct Hermite
   {
     return space_;
   }
-  void setup(const NumFlux &numflux)
+  void setup(const NumFlux &numflux,double tau)
   {
+    tau_ = tau;
+    operator_.setTau(tau_);
     numflux_ = &numflux;
     std::cout << "#" << " q=" << q_ << " q1=" << q1_;
     int i=0;
@@ -213,9 +215,11 @@ struct Hermite2 : public Hermite<Range,NumFlux>
   : Hermite2(space, Fem::Parameter::getValue<int>("hermite.q"))
   {
   }
-  void setup(const NumFlux &numflux)
+  void setup(const NumFlux &numflux,double tau)
   {
+    Base::tau_ = tau;
     Base::numflux_ = &numflux;
+    Base::operator_.setTau(tau);
     std::cout << "#" << " q=" << q_ << " q1=" << q1_;
     double point = 1.; // tau;
     for (int i=0;i<=q_;++i)
@@ -264,9 +268,11 @@ struct Hermite1 : public Hermite<Range,NumFlux>
   : Hermite1(space, Fem::Parameter::getValue<int>("hermite.q"))
   {
   }
-  void setup(const NumFlux &numflux)
+  void setup(const NumFlux &numflux,double tau)
   {
+    Base::tau_ = tau;
     Base::numflux_ = &numflux;
+    Base::operator_.setTau(tau);
     std::cout << "#" << " q=" << q_ << " q1=" << q1_;
     double point = 1.; // tau;
     for (int i=0;i<=q_;++i)
@@ -320,6 +326,11 @@ struct Hermite<Range,NumFlux>::Op
   , steps(0)
   , first(0)
   {}
+  void setTau(double ptau) 
+  {
+    // assert( tau < 0.);
+    tau = ptau;
+  }
   bool add(const Range &u, const Range &fu)
   {
     if (dtf.size()==0)

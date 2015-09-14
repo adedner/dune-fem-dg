@@ -289,9 +289,6 @@ public:
     // restoreData if checkpointing is enabled (default is disabled)
     const bool newStart = ( doCheckPointing ) ? restoreFromCheckPoint( tp ) : false ;
 
-    // set initial data (and create ode solver)
-    initializeStep( tp, loop );
-
     // start first time step with prescribed fixed time step
     // if it is not 0 otherwise use the internal estimate
     tp.provideTimeStepEstimate(maxTimeStep);
@@ -303,6 +300,9 @@ public:
       tp.init( fixedTimeStep );
     else
       tp.init();
+
+    // set initial data (and create ode solver)
+    initializeStep( tp, loop );
 
     // for simulation new start do start adaptation
     if( newStart && adaptCount > 0 )

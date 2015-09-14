@@ -1,0 +1,31 @@
+set terminal postscript color enhanced 18
+set output "adv_upw.ps"
+
+set title "linear advection and upwind flux"
+set xlabel "h"
+set logscale x
+unset key
+
+set ylabel "error"
+set logscale y
+p "p0/eoc_body.tex" u 2:11 w lp pt 5 ps 3 ,\
+  "p1/eoc_body.tex" u 2:11 w lp pt 7 ps 3 ,\
+  "p2/eoc_body.tex" u 2:11 w lp pt 9 ps 3 ,\
+  "p3/eoc_body.tex" u 2:11 w lp pt 11 ps 3 ,\
+  "p0/eoc_body.tex" u 2:7 w lp pt 4 ps 3 ,\
+  "p1/eoc_body.tex" u 2:7 w lp pt 4 ps 3 ,\
+  "p2/eoc_body.tex" u 2:7 w lp pt 4 ps 3 ,\
+  "p3/eoc_body.tex" u 2:7 w lp pt 4 ps 3 
+
+set ylabel "eoc"
+unset logscale y
+p "p0/eoc_body.tex" u 2:12 w lp pt 5 ps 3 ,\
+  "p1/eoc_body.tex" u 2:12 w lp pt 7 ps 3 ,\
+  "p2/eoc_body.tex" u 2:12 w lp pt 9 ps 3 ,\
+  "p3/eoc_body.tex" u 2:12 w lp pt 11 ps 3 ,\
+  "p0/eoc_body.tex" u 2:8 w lp pt 4 ps 3 ,\
+  "p1/eoc_body.tex" u 2:8 w lp pt 4 ps 3 ,\
+  "p2/eoc_body.tex" u 2:8 w lp pt 4 ps 3 ,\
+  "p3/eoc_body.tex" u 2:8 w lp pt 4 ps 3 ,\
+  1 , 2 , 3 , 4
+

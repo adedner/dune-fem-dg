@@ -61,6 +61,7 @@ public:
 
   int addToFemEoc() const
   {
+    return -1;
     return Dune::Fem::FemEoc::addEntry(std::string("$L^1$-error"));
   }
 

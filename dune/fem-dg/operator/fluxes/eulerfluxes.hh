@@ -869,7 +869,7 @@ public:
     DomainType normal = intersection.integrationOuterNormal(x);
     const double len = normal.two_norm();
     normal *= 1./len;
-#ifndef ADVECTION
+#if 1 // ndef ADVECTION
     // Lax-Wendroff:
     // 1/2*(uL+uR) - 1/2v (f(uR)-f(uL)).n
     double maxspeedl, maxspeedr, maxspeed;
@@ -926,7 +926,7 @@ public:
     DomainType normal = intersection.integrationOuterNormal(x);
     const double len = normal.two_norm();
     normal *= 1./len;
-#ifndef ADVECTION
+#if 1 // ndef ADVECTION
     // LW Flux:
     // u1/2*(uL+uR) - 1/2v (f(uR)-f(uL)).n   f(uR) in (r,d) so f(uR).n in (r)
     // Derivative:

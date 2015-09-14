@@ -160,14 +160,28 @@ struct StepperBase
       : stepper_(stepper),
         U_("U", space),                               // projection of u^t into CG space (u^tx)
         dtU_("dtU", space),                           // d_t u^t in dg
-        lU_(U_), ldtU_(dtU_),
+        rhs_("rhs", space),
+        lU_(U_), ldtU_(dtU_), lrhs_(rhs_),
         Udg_("Udg", stepper.space()),                               // projection of u^t into CG space (u^tx)
         dtUdg_("dtUdg", stepper.space()),                           // d_t u^t in dg
-        lUdg_(Udg_), ldtUdg_(dtUdg_),
+        rhsdg_("rhsdg",stepper.space()),
+        lUdg_(Udg_), ldtUdg_(dtUdg_), lrhsdg_(rhsdg_),
         init_(false),
-        t_(-1)
+        t_(-1),
+        compute_(0)
     {
     }
+    void compute(int c)
+    {
+      compute_ = c;
+    }
+    /*
+    double rhsError() const 
+    {
+      rhs_.addScaled(-1,rhsdg_);
+      return std::sqrt(rhs_.scalarProductDofs(rhs_));
+    }
+    */
     void init(double t)
     {
       // u^t and d/dt u^t in DG space of order q
@@ -175,6 +189,10 @@ struct StepperBase
       stepper_.hermite_.derivative(t, dtU_);
       stepper_.hermite_.evaluate(t,Udg_);
       stepper_.hermite_.derivative(t, dtUdg_);
+      /*
+      stepper_.apply(Udg_,rhsdg_);
+      stepper_.apply(U_,rhs_);
+      */
       t_ = t;
       init_ = true;
     }
@@ -194,7 +212,6 @@ struct StepperBase
       // evaluate d/dt u^t 
       ldtU_.evaluate( x, valdtU );
       stepper_.model().jacobian(lU_.entity(),t_,Dune::Fem::coordinate(x),valU,jacU,flux);
-      // stepper_.model().nonStiffSource(lU_.entity(),t_,Dune::Fem::coordinate(x),valU,jacU,s);
 
       typename HermiteDiscreteFunctionSpaceType::RangeType valUdg,valLdg,valdtUdg,fluxdg,sdg;
       typename HermiteDiscreteFunctionSpaceType::JacobianRangeType jacUdg;
@@ -204,9 +221,15 @@ struct StepperBase
       // evaluate d/dt u^t 
       ldtUdg_.evaluate( x, valdtUdg );
       stepper_.model().jacobian(lUdg_.entity(),t_,Dune::Fem::coordinate(x),valUdg,jacUdg,fluxdg);
-
-      ret = valdtU; ret += flux;
-      // ret = valdtUdg; ret -= valdtU;
+      
+      if (compute_ == 1)
+      {
+        ret = valdtUdg; ret -= valdtU;
+      }
+      else 
+      {
+        ret = valdtU; ret += flux;
+      }
       // ret = flux; ret -= fluxdg;
     }
     void init ( const EntityType &entity )
@@ -221,12 +244,13 @@ struct StepperBase
     LocalResidual &operator=(const LocalResidual &) = delete;
     private:
     const ThisType &stepper_;
-    P1DiscreteFunctionType U_,dtU_;
-    typename P1DiscreteFunctionType::LocalFunctionType lU_,ldtU_;
-    HermiteDiscreteFunctionType Udg_,dtUdg_;
-    typename HermiteDiscreteFunctionType::LocalFunctionType lUdg_,ldtUdg_;
+    P1DiscreteFunctionType U_,dtU_,rhs_;
+    typename P1DiscreteFunctionType::LocalFunctionType lU_,ldtU_,lrhs_;
+    HermiteDiscreteFunctionType Udg_,dtUdg_,rhsdg_;
+    typename HermiteDiscreteFunctionType::LocalFunctionType lUdg_,ldtUdg_,lrhsdg_;
     double t_;
     bool init_;
+    int compute_;
   };
   struct ResidualDataOutputParameters
   : public Dune::Fem::LocalParameter< Dune::Fem::DataOutputParameters, ResidualDataOutputParameters >
@@ -259,7 +283,8 @@ struct StepperBase
     diagnostics_( true ),
     checkPointer_( 0 ),
     overallTimer_(),
-    eocId_( Fem::FemEoc::addEntry(std::string("$L^2$-error")) ),
+    // eocId_( Fem::FemEoc::addEntry(std::string("$L^2$-error")) ),
+    eocId_( Fem::FemEoc::addEntry( std::vector<std::string>( {"L^2","U^st-U^n","R","dt(U^st-U^n","R^n"} ) )),
     odeSolver_( 0 ),
     rp_( solution_ ),
     adaptationManager_( grid_, rp_ ),
@@ -277,6 +302,11 @@ struct StepperBase
     residualDataOutput_( grid, residualIOTuple_, ResidualDataOutputParameters() ),
     hermSetup_(true),
     residualError2_(0),
+    timeError2_(0),
+    maxError_(0),
+    rhsError_(0),
+    l2errorA_(0),
+    l2errorB_(0),
     Ust_("reconstruction",residualSpace_)
   {
     // set refine weight
@@ -425,7 +455,8 @@ struct StepperBase
   // before first step, do data initialization
   void initializeStep( TimeProviderType& tp, const int loop )
   {
-    double fixedDT = ParameterType::getValue<double>("fixedTimeStep");
+    double fixedDT = tp.deltaT();
+    std::cout << "starting with dt=" << fixedDT << std::endl;
     VISCPARA = gridWidth()/fixedDT;
     DiscreteFunctionType& U = solution_;
 
@@ -463,17 +494,17 @@ struct StepperBase
     // ode.initialize applies the DG Operator once to get an initial
     // estimate on the time step. This does not change the initial data u.
     odeSolver_->initialize( U );
-    hermite_.setup(numFlux());
+    hermite_.setup(numFlux(),fixedDT);
     apply(U,fU_);
     hermSetup_ = hermite_.add(U, fU_);
     {
       Fem :: L2Norm< GridPartType > l2norm( solution().space().gridPart(), 2*(solution().space().order()+3) );
       Dune::Fem::L2FluxProjectionImpl::project(solution(),Ust_,numFlux() );
-      double l2errorA = l2norm.distance( problem().fixedTimeFunction( tp.time() ),solution() );
-      double l2errorB = l2norm.distance( Ust_, solution() );
-      std::cout << 0 << " " << 0 << " " << 0 << " "
-                << l2errorA << " " << l2errorB 
-                << " # residual and l2 error" << std::endl;
+      l2errorA_ = l2norm.distance( problem().fixedTimeFunction( tp.time() ),solution() ) ;
+      l2errorB_ = l2norm.distance( Ust_, solution() ) ;
+      residualError2_ = 0.;
+      timeError2_ = 0.;
+      maxError_ = 0.;
     }
   }
 
@@ -494,7 +525,6 @@ struct StepperBase
     hermSetup_ = hermite_.add(U, fU_);
 
     {
-      static double maxError = 0.;
       Fem :: L2Norm< GridPartType > l2norm( solution().space().gridPart(), 2*(solution().space().order()+3) );
       typedef Dune::QuadratureRule<double, 1> Quad;
       if (!hermSetup_ && tp.timeStep()>20)
@@ -504,24 +534,39 @@ struct StepperBase
           rule( Dune::GeometryType(Dune::GeometryType::simplex,1), 
                 2*space_.polynomialOrder+5,  
                 Dune::QuadratureType::GaussLegendre );
-        double localError2 = 0.;
+        double localError2 = 0., localtimeError2 = 0.;
+        double rhsError = 0;
         for (auto qp=quad.begin(); qp!=quad.end(); ++qp)
         {
           const Dune::FieldVector< double, 1 > &x = qp->position();
           const double weight = qp->weight();
           localResidual_.init(x[0]);
-          double spaceError = l2norm.norm( residualFunction_ );
-          localError2 += tp.deltaT() * weight * spaceError*spaceError;
-          maxError = std::max( maxError, spaceError );
+
+          localResidual_.compute(0);
+          double fullError = l2norm.norm( residualFunction_ );
+          localError2 += tp.deltaT() * weight * fullError*fullError;
+          localResidual_.compute(1);
+          double timeError = l2norm.norm( residualFunction_ );
+          localtimeError2 += tp.deltaT() * weight * timeError*timeError;
         }
         residualError2_ += localError2;
+        timeError2_ += localtimeError2;
+
+        localResidual_.init(1.);
+        localResidual_.compute(0);
+        double error = l2norm.norm( residualFunction_ );
+        maxError_ = std::max( maxError_, error );
+        // rhsError_ = std::max( rhsError_, localResidual_.rhsError() );
       }
       Dune::Fem::L2FluxProjectionImpl::project(solution(),Ust_,numFlux() );
-      double l2errorA = l2norm.distance( problem().fixedTimeFunction( tp.time()+tp.deltaT() ),solution() );
-      double l2errorB = l2norm.distance( Ust_, solution() );
-      std::cout << tp.time() << " " << sqrt(residualError2_/tp.time()) << " " << maxError << " "
-                << l2errorA << " " << l2errorB 
-                << " # residual and l2 error" << std::endl;
+      l2errorA_ = std::max(l2errorA_, l2norm.distance( problem().fixedTimeFunction( tp.time()+tp.deltaT() ),solution() ) );
+      l2errorB_ = std::max(l2errorB_, l2norm.distance( Ust_, solution() ) );
+      if (tp.timeStep()%100==0)
+        std::cout << tp.time() << " " 
+                  << l2errorA_ << " " << l2errorB_ << " "
+                  << sqrt(residualError2_/tp.time()) << " " << sqrt(timeError2_/tp.time()) << " "
+                  << maxError_ // << " " << rhsError_
+                  << " # residual and l2 error" << std::endl;
     }
 
     // limit solution if necessary
@@ -566,11 +611,15 @@ struct StepperBase
     // write run file (in writeatonce mode)
     diagnostics_.flush();
 
-    bool doFemEoc = problem().calculateEOC( tp, u, eocId_ );
+    bool doFemEoc = true; // problem().calculateEOC( tp, u, eocId_ );
 
     // ... and print the statistics out to a file
     if( doFemEoc )
-      Fem::FemEoc::setErrors(eocId_, error(tp, u ));
+    {
+      // Fem::FemEoc::setErrors(eocId_, error(tp, u ));
+      Fem::FemEoc::setErrors(eocId_,std::vector<double>(
+          {l2errorA_,l2errorB_,sqrt(residualError2_/tp.time()), sqrt(timeError2_/tp.time()), maxError_} ) );
+    }
 
 #ifdef LOCALDEBUG
     std::cout <<"maxRatioOfSums: " <<maxRatioOfSums <<std::endl;
@@ -687,7 +736,8 @@ protected:
   ResidualIOTupleType residualIOTuple_;
   ResidualDataOutputType residualDataOutput_;
   bool hermSetup_;
-  double residualError2_;
+  double residualError2_,timeError2_,maxError_,rhsError_;
+  double l2errorA_,l2errorB_;
   ResidualSpaceFunctionType Ust_;
 };
 #endif // FEMHOWTO_STEPPER_HH
