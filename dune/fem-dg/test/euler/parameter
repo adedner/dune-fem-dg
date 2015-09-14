@@ -54,7 +54,7 @@ paramfile: ../parameter/paramPhysicalConstants
 
 g: 1. # gravity force [m/ss]
 femhowto.startTime: 0.
-femhowto.endTime: 0.1
+femhowto.endTime: 1.
 hSpeed0: 1. # x-axis speed [m/s]
 vSpeed0: 1.25 # z-axis speed [m/s]
 p0: 1. # surface pressure [Pa]
