@@ -225,10 +225,10 @@ namespace Fem
     DiscreteFunctionType& solution () { return solution_; }
 
     //SOLVERMONITOR
-    virtual SolverMonitorHandlerType& monitor() { return solverMonitorHandler_; }
+    virtual SolverMonitorHandlerType* monitor() { return &solverMonitorHandler_; }
 
     //DIAGNOSTICS
-    virtual DiagnosticsHandlerType& diagnostics() { return diagnosticsHandler_; }
+    virtual DiagnosticsHandlerType* diagnostics() { return &diagnosticsHandler_; }
 
     //ADDITIONALOUTPUT
     virtual AdditionalOutputHandlerType* additionalOutput() { return &additionalOutputHandler_; }

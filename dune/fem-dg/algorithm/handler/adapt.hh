@@ -371,19 +371,31 @@ namespace Fem
     {
       if( adaptive() )
       {
-        //int sequence = get<0>( tuple_ )->adaptationSolution()->space().sequence();
+        //int sequence = getSequence( get<0>( tuple_ ) );
 
         ForLoop< LoopCallee<PreAdapt>::template Apply, 0, sizeof ... ( StepperArg ) >::apply( tuple_ );
         adaptationManager().adapt();
         ForLoop< LoopCallee<PostAdapt>::template Apply, 0, sizeof ... ( StepperArg ) >::apply( tuple_ );
 
         //TODO include limiterHandler
-        //if( sequence !=  get<0>( tuple_ )->adaptationSolution()->space().sequence() )
+        //if( sequence !=  getSequence( get<0>( tuple_ ) ) )
           //limiterHandler_.step( get<0>( tuple_ )->adaptationSolution() );
       }
     }
 
   private:
+
+    //template< class T >
+    //static typename enable_if< std::is_void< typename std::remove_pointer<T>::type::AdaptIndicatorType >::value, int >::type
+    //getSequence( T ){}
+    //template< class T >
+    //static typename enable_if< !std::is_void< typename std::remove_pointer<T>::type::AdaptIndicatorType >::value, int >::type
+    //getSequence( T elem )
+    //{
+    //  if( elem->adaptationSolution() )
+    //    return elem->adaptationSolution()->space().sequence();
+    //  return 0;
+    //}
 
     StepperTupleType&                         tuple_;
     std::unique_ptr< RestrictionProlongationType > rp_;

@@ -29,6 +29,11 @@ namespace Fem
 
     template <class ... Args>
     void finalize(Args&& ... ) const {};
+
+    template <class ... Args>
+    const double getData( Args&& ... ) const
+    { return 0.0; }
+
   };
 
 
@@ -41,22 +46,53 @@ namespace Fem
 
     enum CombinationType { max, min, sum, avg };
 
-    template< int i >
-    struct Step
+    template< class Caller >
+    class LoopCallee
     {
-      template< class Tuple, class ... Args >
-      static void apply ( Tuple &tuple, Args&& ... a )
+      template<class C, class T, class... Args >
+      static typename enable_if< std::is_void< typename std::remove_pointer<T>::type::SolverMonitorHandlerType >::value >::type
+      getMonitor( T, Args&& ... ){}
+      template<class C, class T, class... Args >
+      static typename enable_if< !std::is_void< typename std::remove_pointer<T>::type::SolverMonitorHandlerType >::value >::type
+      getMonitor( T elem, Args &&... a )
       {
-         std::get< i >( tuple )->monitor().step( std::forward<Args>(a)... );
+        if( elem->monitor() )
+          C::applyImpl(elem->monitor(), std::forward<Args>(a)... );
       }
-    };
-    template< int i >
-    struct Finalize
-    {
-      template< class Tuple, class ... Args >
-      static void apply ( Tuple &tuple, Args&& ... a )
+    public:
+      template< int i >
+      struct Apply
       {
-         std::get< i >( tuple )->monitor().finalize( std::forward<Args>(a)... );
+        template< class Tuple, class ... Args >
+        static void apply ( Tuple &tuple, Args&& ... a )
+        {
+          getMonitor< Caller >( std::get<i>( tuple ), std::forward<Args>(a)... );
+        }
+      };
+    };
+
+    struct Step {
+      template<class T, class... Args > static void applyImpl( T e, Args&& ... a )
+      { e->step( std::forward<Args>(a)... ); }
+    };
+
+    struct Finalize {
+      template<class T, class... Args > static void applyImpl( T e, Args&& ... a )
+      { e->finalize( std::forward<Args>(a)... ); }
+    };
+
+    struct GetData {
+      template<class T, class... Args > static void applyImpl( T e, double& res, const std::string name, CombinationType comb, Args&& ... a )
+      {
+        switch( comb )
+        {
+          case CombinationType::max:
+            res = std::max( res, e->getData( name ) );
+          case CombinationType::min:
+            res = std::min( res, e->getData( name ) );
+          case CombinationType::sum:
+            res += e->getData( name );
+        }
       }
     };
 
@@ -75,35 +111,20 @@ namespace Fem
 
     const double getData( const std::string name, CombinationType comb = CombinationType::max ) const
     {
-      return getData( tuple_, name, comb, Std::index_sequence_for< StepperHead, StepperArg ... >() );
+      double res;
+      ForLoop< LoopCallee<GetData>::template Apply, 0, sizeof ... ( StepperArg ) >::apply( tuple_, res, name, comb );
+      return res;
     }
-
-    template< std::size_t ... i >
-    static double getData( const StepperTupleType& tuple, const std::string name, CombinationType comb, Std::index_sequence< i ... > )
-    {
-      switch( comb )
-      {
-        case CombinationType::max:
-            return Std::max( std::get< i >( tuple )->monitor().getData( name )... );
-        case CombinationType::min:
-            return Std::min( std::get< i >( tuple )->monitor().getData( name )... );
-        case CombinationType::sum:
-            return Std::sum( std::get< i >( tuple )->monitor().getData( name )... );
-        case CombinationType::avg:
-            return Std::sum( std::get< i >( tuple )->monitor().getData( name )... ) / std::tuple_size< StepperTupleType >::value;
-        default: return 0;
-      }
-     }
 
     template< class TimeProviderImp >
     void step( TimeProviderImp& tp )
     {
-      ForLoop< Step, 0, sizeof ... ( StepperArg ) >::apply( tuple_, tp );
+      ForLoop< LoopCallee<Step>::template Apply, 0, sizeof ... ( StepperArg ) >::apply( tuple_, tp );
     }
 
     void finalize( const double gridWidth, const double gridSize )
     {
-      ForLoop< Finalize, 0, sizeof ... ( StepperArg ) >::apply( tuple_, gridWidth, gridSize );
+      ForLoop< LoopCallee<Finalize>::template Apply, 0, sizeof ... ( StepperArg ) >::apply( tuple_, gridWidth, gridSize );
     }
 
   private:

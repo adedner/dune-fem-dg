@@ -19,23 +19,39 @@ namespace Fem
       typename std::add_pointer< StepperArg >::type... >                                StepperTupleType;
     typedef typename StepperHead::GridType                                              GridType;
 
-    template< int i >
-    struct Write
+
+    template< class Caller >
+    class LoopCallee
     {
-      template< class Tuple, class ... Args >
-      static void apply ( Tuple &tuple, Args&&... a )
+      template<class C, class T, class... Args >
+      static typename enable_if< std::is_void< typename std::remove_pointer<T>::type::DiagnosticsHandlerType >::value >::type
+      getDiagnostics( T, Args&& ... ){}
+      template<class C, class T, class... Args >
+      static typename enable_if< !std::is_void< typename std::remove_pointer<T>::type::DiagnosticsHandlerType >::value >::type
+      getDiagnostics( T elem, Args &&... a )
       {
-        std::get< i >( tuple )->diagnostics().step( std::forward<Args>(a)... );
+        if( elem->diagnostics() )
+          C::applyImpl(elem->diagnostics(), std::forward<Args>(a)... );
       }
+    public:
+      template< int i >
+      struct Apply
+      {
+        template< class Tuple, class ... Args >
+        static void apply ( Tuple &tuple, Args&& ... a )
+        {
+          getDiagnostics< Caller >( std::get<i>( tuple ), std::forward<Args>(a)... );
+        }
+      };
     };
-    template< int i >
-    struct Finalize
-    {
-      template< class Tuple, class ... Args >
-      static void apply ( Tuple &tuple, Args&& ... a )
-      {
-        std::get< i >( tuple )->diagnostics().finalize( std::forward<Args>(a)... );
-      }
+
+    struct Write {
+      template<class T, class... Args > static void applyImpl( T e, Args&& ... a )
+      { e->step( std::forward<Args>(a)... ); }
+    };
+    struct Finalize {
+      template<class T, class... Args > static void applyImpl( T e, Args&& ... a )
+      { e->finalize( std::forward<Args>(a)... ); }
     };
 
   public:
@@ -47,12 +63,12 @@ namespace Fem
     template< class TimeProviderImp >
     void step( TimeProviderImp& tp )
     {
-      ForLoop< Write, 0, sizeof ... ( StepperArg ) >::apply( tuple_, tp );
+      ForLoop< LoopCallee<Write>::template Apply, 0, sizeof ... ( StepperArg ) >::apply( tuple_, tp );
     }
 
     void finalize() const
     {
-      ForLoop< Finalize, 0, sizeof ... ( StepperArg ) >::apply( tuple_ );
+      ForLoop< LoopCallee<Finalize>::template Apply, 0, sizeof ... ( StepperArg ) >::apply( tuple_ );
     }
 
   private:

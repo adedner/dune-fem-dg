@@ -223,9 +223,9 @@ namespace Fem
     virtual AdaptIndicatorType* adaptIndicator() { return nullptr; }
     virtual AdaptationDiscreteFunctionType* adaptationSolution () { return &solution_; }
 
-    virtual SolverMonitorHandlerType& monitor()
+    virtual SolverMonitorHandlerType* monitor()
     {
-      return solverMonitorHandler_;
+      return &solverMonitorHandler_;
     }
 
     // return grid width of grid (overload in derived classes)
@@ -284,7 +284,7 @@ namespace Fem
     IOTupleType dataTuple () { return std::make_tuple( &solution(), nullptr ); }
 
     //DIAGNOSTICS
-    virtual DiagnosticsHandlerType& diagnostics() { return diagnosticsHandler_; }
+    virtual DiagnosticsHandlerType* diagnostics() { return &diagnosticsHandler_; }
 
     const ProblemType &problem () const
     {
@@ -521,10 +521,10 @@ namespace Fem
     }
 
     //SOLVERMONITOR
-    virtual SolverMonitorHandlerType& monitor() { return BaseType::monitor(); }
+    virtual SolverMonitorHandlerType* monitor() { return BaseType::monitor(); }
 
     //DIAGNOSTICS
-    virtual DiagnosticsHandlerType& diagnostics() { return BaseType::diagnostics(); }
+    virtual DiagnosticsHandlerType* diagnostics() { return BaseType::diagnostics(); }
 
     //ADDITIONALOUTPUT
     virtual AdditionalOutputHandlerType* additionalOutput() { return nullptr; }
