@@ -2,6 +2,7 @@
 #define FEMDG_ALGORITHM_DIAGNOSTICSHANDLER_HH
 
 #include <dune/fem-dg/misc/diagnostics.hh>
+#include <dune/fem-dg/misc/optional.hh>
 
 namespace Dune
 {
@@ -170,6 +171,10 @@ namespace Fem
     };
 
   public:
+    template <class ... Args>
+    SubDiagnosticsHandler( Args&& ... )
+    {}
+
     typedef NoDiagnosticsType     DiagnosticsType;
 
     template <class ... Args>
@@ -185,6 +190,29 @@ namespace Fem
     void finalize( Args&& ... ) const {}
   };
 
+  template< class Obj >
+  class DiagnosticsHandlerOptional
+    : public OptionalObject< Obj >
+  {
+    typedef OptionalObject< Obj >    BaseType;
+  public:
+    template< class... Args >
+    DiagnosticsHandlerOptional( Args&&... args )
+      : BaseType( std::forward<Args>(args)... )
+    {}
+  };
+
+  template<>
+  class DiagnosticsHandlerOptional< void >
+    : public OptionalNullPtr< SubDiagnosticsHandler<> >
+  {
+    typedef OptionalNullPtr< SubDiagnosticsHandler<> >    BaseType;
+  public:
+    template< class... Args >
+    DiagnosticsHandlerOptional( Args&&... args )
+      : BaseType( std::forward<Args>(args)... )
+    {}
+  };
 }
 }
 

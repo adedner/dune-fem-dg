@@ -10,6 +10,8 @@
 
 #include <dune/fem-dg/operator/dg/primaloperator.hh>
 
+#include <dune/fem-dg/algorithm/handler/adapt.hh>
+
 namespace Dune
 {
 namespace Fem
@@ -21,6 +23,7 @@ namespace Fem
   struct AdvectionDiffusionStepper
     : public SubEvolutionAlgorithm< GridImp, ProblemTraits, polynomialOrder >
   {
+
     typedef SubEvolutionAlgorithm< GridImp, ProblemTraits, polynomialOrder > BaseType ;
 
     // type of Grid
@@ -83,25 +86,24 @@ namespace Fem
       advectionOperator_( gridPart_, problem(), tuple_, name ),
       diffusionOperator_( gridPart_, problem(), tuple_, name ),
       adaptIndicator_( solution(), problem(), tuple_, name )
-    {
-    }
+    {}
 
     virtual AdaptIndicatorType* adaptIndicator()
     {
-      return &adaptIndicator_;
+      return adaptIndicator_.value();
     }
 
     //! return overal number of grid elements
     virtual UInt64Type gridSize() const
     {
-      int globalElements = adaptIndicator_.globalNumberOfElements();
+      int globalElements = adaptIndicator_ ? adaptIndicator_.globalNumberOfElements() : 0;
       if( globalElements > 0 )
         return globalElements;
 
       // one of them is not zero,
       size_t advSize     = advectionOperator_.numberOfElements();
       size_t diffSize    = diffusionOperator_.numberOfElements();
-      size_t dgIndSize   = adaptIndicator_.numberOfElements();
+      size_t dgIndSize   = adaptIndicator_ ? adaptIndicator_.numberOfElements() : diffSize;
       size_t dgSize      = operator_.numberOfElements();
       UInt64Type grSize  = std::max( std::max(advSize, dgSize ), std::max( diffSize, dgIndSize ) );
       double minMax[ 2 ] = { double(grSize), 1.0/double(grSize) } ;
@@ -115,7 +117,8 @@ namespace Fem
 
     virtual SolverType* createSolver(TimeProviderType& tp)
     {
-      adaptIndicator_.setAdaptation( tp );
+      if( adaptIndicator_ )
+        adaptIndicator_.setAdaptation( tp );
 
       // create ODE solver
       typedef RungeKuttaSolver< OperatorType, ExplicitOperatorType, ImplicitOperatorType,
@@ -133,10 +136,10 @@ namespace Fem
     //typename OperatorTraits::VeloType  velo_;
     ExtraParameterTupleType tuple_;
 
-    OperatorType             operator_;
-    ExplicitOperatorType     advectionOperator_;
-    ImplicitOperatorType     diffusionOperator_;
-    mutable AdaptIndicatorType       adaptIndicator_;
+    OperatorType                         operator_;
+    ExplicitOperatorType                 advectionOperator_;
+    ImplicitOperatorType                 diffusionOperator_;
+    mutable AdaptIndicatorOptional<AdaptIndicatorType> adaptIndicator_;
   };
 }
 }

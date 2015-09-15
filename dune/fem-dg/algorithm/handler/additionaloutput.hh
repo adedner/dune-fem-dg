@@ -9,7 +9,7 @@
 #include <time.h>
 
 #include <dune/fem/quadrature/cachingquadrature.hh>
-
+#include <dune/fem-dg/misc/optional.hh>
 
 
 
@@ -124,6 +124,30 @@ namespace Fem
 
     template< class... Args >
     void step( Args&& ...  ){}
+  };
+
+  template< class Obj >
+  class AdditionalOutputHandlerOptional
+    : public OptionalObject< Obj >
+  {
+    typedef OptionalObject< Obj >    BaseType;
+  public:
+    template< class... Args >
+    AdditionalOutputHandlerOptional( Args&&... args )
+      : BaseType( std::forward<Args>(args)... )
+    {}
+  };
+
+  template<>
+  class AdditionalOutputHandlerOptional< void >
+    : public OptionalNullPtr< NoOutputHandler >
+  {
+    typedef OptionalNullPtr< NoOutputHandler >    BaseType;
+  public:
+    template< class... Args >
+    AdditionalOutputHandlerOptional( Args&&... args )
+      : BaseType( std::forward<Args>(args)... )
+    {}
   };
 
 }

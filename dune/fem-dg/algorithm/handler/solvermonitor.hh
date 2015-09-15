@@ -4,7 +4,7 @@
 #include <string>
 #include <dune/fem/common/utility.hh>
 #include <dune/fem-dg/algorithm/monitor.hh>
-
+#include <dune/fem-dg/misc/optional.hh>
 namespace Dune
 {
 namespace Fem
@@ -91,6 +91,8 @@ namespace Fem
           case CombinationType::min:
             res = std::min( res, e->getData( name ) );
           case CombinationType::sum:
+            res += e->getData( name );
+          case CombinationType::avg:
             res += e->getData( name );
         }
       }
@@ -270,6 +272,31 @@ namespace Fem
   private:
     SolverMonitorType monitor_;
 
+  };
+
+
+  template< class Obj >
+  class SolverMonitorHandlerOptional
+    : public OptionalObject< Obj >
+  {
+    typedef OptionalObject< Obj >    BaseType;
+  public:
+    template< class... Args >
+    SolverMonitorHandlerOptional( Args&&... args )
+      : BaseType( std::forward<Args>(args)... )
+    {}
+  };
+
+  template<>
+  class SolverMonitorHandlerOptional< void >
+    : public OptionalNullPtr< SubSolverMonitorHandler<> >
+  {
+    typedef OptionalNullPtr< SubSolverMonitorHandler<> >    BaseType;
+  public:
+    template< class... Args >
+    SolverMonitorHandlerOptional( Args&&... args )
+      : BaseType( std::forward<Args>(args)... )
+    {}
   };
 
 }

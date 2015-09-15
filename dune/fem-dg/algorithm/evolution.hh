@@ -8,10 +8,15 @@
 #include <dune/fem-dg/pass/threadpass.hh>
 #include <dune/fem/misc/gridwidth.hh>
 
+#include <dune/fem-dg/misc/typedefcheck.hh>
+
 #include <dune/fem/misc/femtimer.hh>
 #include <dune/common/timer.hh>
 #include <dune/fem/space/common/interpolate.hh>
 
+#include <dune/fem-dg/algorithm/handler/solvermonitor.hh>
+#include <dune/fem-dg/algorithm/handler/diagnostics.hh>
+#include <dune/fem-dg/algorithm/handler/additionaloutput.hh>
 
 namespace Dune
 {
@@ -30,47 +35,10 @@ namespace Fem
   struct SubEvolutionAlgorithmTraits
   {
   private:
-    // if AdaptIndicatorType is not defined, use "void" as "marker"
-    template< class T, bool exists >
-    struct AdaptIndicatorHelper
-    { typedef void type; };
-
-    template< class T >
-    struct AdaptIndicatorHelper< T, true >
-    { typedef typename T::AdaptIndicatorType type; };
-
-    template< class T >
-    struct AdaptIndicators
-    {
-      template <typename TT>
-      static auto apply(TT const&) -> decltype( std::declval<typename TT::AdaptIndicatorType>(), std::true_type()) {
-        return std::true_type();
-      }
-      static std::false_type apply(...) { return std::false_type(); }
-
-      typedef typename AdaptIndicatorHelper< T, decltype( apply( std::declval<T>() ) )::value >::type type;
-    };
-
-    // if AdditionalOutputHandlerType is not defined, use "void" as "marker"
-    template< class T, bool exists >
-    struct AdditionalOutputHandlerHelper
-    { typedef void type; };
-
-    template< class T >
-    struct AdditionalOutputHandlerHelper< T, true >
-    { typedef typename T::AdditionalOutputHandlerType type; };
-
-    template< class T >
-    struct AdditionalOutputHandlers
-    {
-      template <typename TT>
-      static auto apply(TT const&) -> decltype( std::declval<typename TT::AdditionalOutputHandlerType>(), std::true_type()) {
-        return std::true_type();
-      }
-      static std::false_type apply(...) { return std::false_type(); }
-
-      typedef typename AdditionalOutputHandlerHelper< T, decltype( apply( std::declval<T>() ) )::value >::type type;
-    };
+    CHECK_TYPEDEF_EXISTS( AdaptIndicatorType )
+    CHECK_TYPEDEF_EXISTS( AdditionalOutputHandlerType )
+    CHECK_TYPEDEF_EXISTS( SolverMonitorHandlerType )
+    CHECK_TYPEDEF_EXISTS( DiagnosticsHandlerType )
 
   public:
     static const int polynomialOrder = polOrder;
@@ -107,12 +75,10 @@ namespace Fem
 
     typedef typename DiscreteTraits::Solver                        SolverType;
 
-    typedef typename AdaptIndicators< DiscreteTraits >::type       AdaptIndicatorType;
-    typedef typename AdditionalOutputHandlers< DiscreteTraits >::type AdditionalOutputHandlerType;
-
-
-    typedef typename DiscreteTraits::SolverMonitorHandlerType      SolverMonitorHandlerType;
-    typedef typename DiscreteTraits::DiagnosticsHandlerType        DiagnosticsHandlerType;
+    typedef typename AdaptIndicatorTypes< DiscreteTraits >::type            AdaptIndicatorType;
+    typedef typename AdditionalOutputHandlerTypes< DiscreteTraits >::type   AdditionalOutputHandlerType;
+    typedef typename SolverMonitorHandlerTypes< DiscreteTraits >::type      SolverMonitorHandlerType;
+    typedef typename DiagnosticsHandlerTypes< DiscreteTraits >::type        DiagnosticsHandlerType;
   };
 
 
@@ -140,9 +106,9 @@ namespace Fem
   {
     typedef SubEvolutionAlgorithmTraits                          Traits;
 
-    static_assert( !std::is_void< typename Traits::AdditionalOutputHandlerType >::value,
-                   "SubEvolutionAlgorithmBase wants to create an object of type AdditionalOuputHandlerType."
-                   "Please define 'AdditionalOutputHandlerType' in your SubProblemCreator creating this class." );
+    //static_assert( !std::is_void< typename Traits::AdditionalOutputHandlerType >::value,
+    //               "SubEvolutionAlgorithmBase wants to create an object of type AdditionalOuputHandlerType."
+    //               "Please define 'AdditionalOutputHandlerType' in your SubProblemCreator creating this class." );
   public:
     typedef typename Traits::GridType                            GridType;
     typedef typename Traits::IOTupleType                         IOTupleType;
@@ -196,8 +162,8 @@ namespace Fem
       problem_( Traits::ProblemTraitsType::problem() ),
       model_( *problem_ ),
       diagnosticsHandler_( name ),
-      solverMonitorHandler_( name ),
-      additionalOutputHandler_( exactSolution_, name ),
+      solverMonitorHandler_(  name ),
+      additionalOutputHandler_( nullptr ),
       odeSolverMonitor_(),
       overallTimer_(),
       solver_(),
@@ -225,13 +191,13 @@ namespace Fem
     DiscreteFunctionType& solution () { return solution_; }
 
     //SOLVERMONITOR
-    virtual SolverMonitorHandlerType* monitor() { return &solverMonitorHandler_; }
+    virtual SolverMonitorHandlerType* monitor() { return solverMonitorHandler_.value(); }
 
     //DIAGNOSTICS
-    virtual DiagnosticsHandlerType* diagnostics() { return &diagnosticsHandler_; }
+    virtual DiagnosticsHandlerType* diagnostics() { return diagnosticsHandler_.value(); }
 
     //ADDITIONALOUTPUT
-    virtual AdditionalOutputHandlerType* additionalOutput() { return &additionalOutputHandler_; }
+    virtual AdditionalOutputHandlerType* additionalOutput() { return additionalOutputHandler_.value(); }
 
     //LIMITING
     virtual void limit(){}
@@ -271,23 +237,29 @@ namespace Fem
       solver().initialize( solution() );
 
       //initialize solverMonitor
-      solverMonitorHandler_.registerData( "GridWidth", &solverMonitorHandler_.monitor().gridWidth, nullptr, true );
-      solverMonitorHandler_.registerData( "Elements", &solverMonitorHandler_.monitor().elements, nullptr, true );
-      solverMonitorHandler_.registerData( "TimeSteps", &solverMonitorHandler_.monitor().timeSteps, nullptr, true );
-      solverMonitorHandler_.registerData( "AvgTimeStep", &solverMonitorHandler_.monitor().avgTimeStep );
-      solverMonitorHandler_.registerData( "MinTimeStep", &solverMonitorHandler_.monitor().minTimeStep );
-      solverMonitorHandler_.registerData( "MaxTimeStep", &solverMonitorHandler_.monitor().maxTimeStep );
-      solverMonitorHandler_.registerData( "Newton", &solverMonitorHandler_.monitor().newton_iterations,       &odeSolverMonitor_.newtonIterations_);
-      solverMonitorHandler_.registerData( "ILS", &solverMonitorHandler_.monitor().ils_iterations,             &odeSolverMonitor_.linearSolverIterations_);
-      //solverMonitorHandler_.registerData( "OC", &solverMonitorHandler_.monitor().operator_calls,              &odeSolverMonitor_.spaceOperatorCalls_);
-      solverMonitorHandler_.registerData( "MaxNewton",&solverMonitorHandler_.monitor().max_newton_iterations, &odeSolverMonitor_.maxNewtonIterations_ );
-      solverMonitorHandler_.registerData( "MaxILS",&solverMonitorHandler_.monitor().max_ils_iterations,    &odeSolverMonitor_.maxLinearSolverIterations_ );
+      if( solverMonitorHandler_ )
+      {
+        solverMonitorHandler_.registerData( "GridWidth", &solverMonitorHandler_.monitor().gridWidth, nullptr, true );
+        solverMonitorHandler_.registerData( "Elements", &solverMonitorHandler_.monitor().elements, nullptr, true );
+        solverMonitorHandler_.registerData( "TimeSteps", &solverMonitorHandler_.monitor().timeSteps, nullptr, true );
+        solverMonitorHandler_.registerData( "AvgTimeStep", &solverMonitorHandler_.monitor().avgTimeStep );
+        solverMonitorHandler_.registerData( "MinTimeStep", &solverMonitorHandler_.monitor().minTimeStep );
+        solverMonitorHandler_.registerData( "MaxTimeStep", &solverMonitorHandler_.monitor().maxTimeStep );
+        solverMonitorHandler_.registerData( "Newton", &solverMonitorHandler_.monitor().newton_iterations,       &odeSolverMonitor_.newtonIterations_);
+        solverMonitorHandler_.registerData( "ILS", &solverMonitorHandler_.monitor().ils_iterations,             &odeSolverMonitor_.linearSolverIterations_);
+        //solverMonitorHandler_.registerData( "OC", &solverMonitorHandler_.monitor().operator_calls,              &odeSolverMonitor_.spaceOperatorCalls_);
+        solverMonitorHandler_.registerData( "MaxNewton",&solverMonitorHandler_.monitor().max_newton_iterations, &odeSolverMonitor_.maxNewtonIterations_ );
+        solverMonitorHandler_.registerData( "MaxILS",&solverMonitorHandler_.monitor().max_ils_iterations,    &odeSolverMonitor_.maxLinearSolverIterations_ );
+      }
 
       //initialize diagnosticsHandler
-      diagnosticsHandler_.registerData( "OperatorTime", &odeSolverMonitor_.operatorTime_ );
-      diagnosticsHandler_.registerData( "OdeSolveTime", &odeSolverMonitor_.odeSolveTime_ );
-      diagnosticsHandler_.registerData( "OverallTimer", &overallTime_ );
-      diagnosticsHandler_.registerData( "NumberOfElements", &odeSolverMonitor_.numberOfElements_ );
+      if( diagnosticsHandler_ )
+      {
+        diagnosticsHandler_.registerData( "OperatorTime", &odeSolverMonitor_.operatorTime_ );
+        diagnosticsHandler_.registerData( "OdeSolveTime", &odeSolverMonitor_.odeSolveTime_ );
+        diagnosticsHandler_.registerData( "OverallTimer", &overallTime_ );
+        diagnosticsHandler_.registerData( "NumberOfElements", &odeSolverMonitor_.numberOfElements_ );
+      }
     }
 
     virtual void preSolve( int loop, TimeProviderType& tp )
@@ -356,9 +328,9 @@ namespace Fem
     std::unique_ptr< ProblemType > problem_;
     ModelType                      model_;
 
-    DiagnosticsHandlerType         diagnosticsHandler_;
-    SolverMonitorHandlerType       solverMonitorHandler_;
-    AdditionalOutputHandlerType    additionalOutputHandler_;
+    DiagnosticsHandlerOptional< DiagnosticsHandlerType >           diagnosticsHandler_;
+    SolverMonitorHandlerOptional< SolverMonitorHandlerType >       solverMonitorHandler_;
+    AdditionalOutputHandlerOptional< AdditionalOutputHandlerType > additionalOutputHandler_;
     typename SolverType::type::MonitorType odeSolverMonitor_;
 
     Dune::Timer                    overallTimer_;

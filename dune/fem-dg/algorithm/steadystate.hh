@@ -12,11 +12,15 @@
 #include <dune/fem/solver/newtoninverseoperator.hh>
 
 #include <dune/fem-dg/misc/parameterkey.hh>
+#include <dune/fem-dg/misc/typedefcheck.hh>
+#include <dune/fem-dg/misc/optional.hh>
 
 #include <dune/fem-dg/algorithm/base.hh>
 #include <dune/fem-dg/algorithm/evolution.hh>
 
 #include <dune/fem-dg/algorithm/handler/solvermonitor.hh>
+#include <dune/fem-dg/algorithm/handler/diagnostics.hh>
+#include <dune/fem-dg/algorithm/handler/additionaloutput.hh>
 
 
 namespace Dune
@@ -61,49 +65,13 @@ namespace Fem
             int polOrd >
   struct SubSteadyStateTraits
   {
-     private:
-    // if not AdaptIndicatorType is defined, use void as "marker"
-    template< class T, bool exists >
-    struct AdaptIndicatorHelper
-    { typedef void type; };
+  private:
 
-    template< class T >
-    struct AdaptIndicatorHelper< T, true >
-    { typedef typename T::AdaptIndicatorType type; };
-
-    template< class T >
-    struct AdaptIndicators
-    {
-      template <typename TT>
-      static auto apply(TT const&) -> decltype( typename TT::AdaptIndicatorType(), std::true_type()) {
-        return std::true_type();
-      }
-      static std::false_type apply(...) { return std::false_type(); }
-
-      typedef typename AdaptIndicatorHelper< T, decltype( apply( std::declval<T>() ) )::value >::type type;
-    };
-
-    // if AdditionalOutputHandlerType is not defined, use void as "marker"
-    template< class T, bool exists >
-    struct AdditionalOutputHandlerHelper
-    { typedef void type; };
-
-    template< class T >
-    struct AdditionalOutputHandlerHelper< T, true >
-    { typedef typename T::AdditionalOutputHandlerType type; };
-
-    template< class T >
-    struct AdditionalOutputHandlers
-    {
-      template <typename TT>
-      static auto apply(TT const&) -> decltype( typename TT::AdditionalOutputHandlerType(), std::true_type()) {
-        return std::true_type();
-      }
-      static std::false_type apply(...) { return std::false_type(); }
-
-      typedef typename AdditionalOutputHandlerHelper< T, decltype( apply( std::declval<T>() ) )::value >::type type;
-    };
-
+    CHECK_TYPEDEF_EXISTS( AdaptIndicatorType )
+    CHECK_TYPEDEF_EXISTS( AdditionalOutputHandlerType )
+    CHECK_TYPEDEF_EXISTS( SolverMonitorHandlerType )
+    CHECK_TYPEDEF_EXISTS( DiagnosticsHandlerType )
+    CHECK_TYPEDEF_EXISTS( RhsType )
 
   public:
     enum { polynomialOrder = polOrd };
@@ -133,10 +101,11 @@ namespace Fem
     // type of IOTuple
     typedef typename DiscreteTraits::IOTupleType                   IOTupleType;
 
-    typedef typename AdaptIndicators< DiscreteTraits >::type       AdaptIndicatorType;
-    typedef typename AdditionalOutputHandlers< DiscreteTraits >::type AdditionalOutputHandlerType;
-    typedef typename DiscreteTraits::SolverMonitorHandlerType      SolverMonitorHandlerType;
-    typedef typename DiscreteTraits::DiagnosticsHandlerType        DiagnosticsHandlerType;
+    typedef typename AdaptIndicatorTypes< DiscreteTraits >::type            AdaptIndicatorType;
+    typedef typename AdditionalOutputHandlerTypes< DiscreteTraits >::type   AdditionalOutputHandlerType;
+    typedef typename SolverMonitorHandlerTypes< DiscreteTraits >::type      SolverMonitorHandlerType;
+    typedef typename DiagnosticsHandlerTypes< DiscreteTraits >::type        DiagnosticsHandlerType;
+    typedef typename RhsTypes< typename DiscreteTraits::Operator >::type             RhsType;
   };
 
 
@@ -191,6 +160,7 @@ namespace Fem
         model_( problem() ),
         solverMonitorHandler_( "" ),
         diagnosticsHandler_( "" ),
+        additionalOutputHandler_( "" ),
         gridPart_( grid ),
         space_( gridPart_ ),
         solution_( "solution-" + name + IDGenerator::instance().nextId(), space_ ),
@@ -223,10 +193,6 @@ namespace Fem
     virtual AdaptIndicatorType* adaptIndicator() { return nullptr; }
     virtual AdaptationDiscreteFunctionType* adaptationSolution () { return &solution_; }
 
-    virtual SolverMonitorHandlerType* monitor()
-    {
-      return &solverMonitorHandler_;
-    }
 
     // return grid width of grid (overload in derived classes)
     virtual double gridWidth () const { return GridWidth::calcGridWidth( gridPart_ ); }
@@ -245,11 +211,11 @@ namespace Fem
     virtual void initialize ( const int loop )
     {
       //initialize solverMonitor
-      solverMonitorHandler_.registerData( "GridWidth", &solverMonitorHandler_.monitor().gridWidth, nullptr, true );
-      solverMonitorHandler_.registerData( "Elements", &solverMonitorHandler_.monitor().elements, nullptr, true );
-      solverMonitorHandler_.registerData( "TimeSteps", &solverMonitorHandler_.monitor().timeSteps, nullptr, true );
-      solverMonitorHandler_.registerData( "ILS", &solverMonitorHandler_.monitor().ils_iterations, &solverIterations_ );
-      solverMonitorHandler_.registerData( "MaxILS", &solverMonitorHandler_.monitor().max_ils_iterations );
+      monitor()->registerData( "GridWidth", &monitor()->monitor().gridWidth, nullptr, true );
+      monitor()->registerData( "Elements", &monitor()->monitor().elements, nullptr, true );
+      monitor()->registerData( "TimeSteps", &monitor()->monitor().timeSteps, nullptr, true );
+      monitor()->registerData( "ILS", &monitor()->monitor().ils_iterations, &solverIterations_ );
+      monitor()->registerData( "MaxILS", &monitor()->monitor().max_ils_iterations );
     }
 
     virtual void preSolve( const int loop )
@@ -266,7 +232,7 @@ namespace Fem
 
     virtual void postSolve( const int loop )
     {
-      solverMonitorHandler_.finalize( gridWidth(), gridSize() );
+      monitor()->finalize( gridWidth(), gridSize() );
     }
 
     void finalize ( const int loop )
@@ -277,14 +243,17 @@ namespace Fem
       solver_.reset( nullptr );
     }
 
+    //SOLVERMONITOR
+    virtual SolverMonitorHandlerType* monitor() { return solverMonitorHandler_.value(); }
+
     //ADDITIONALOUTPUT
-    virtual AdditionalOutputHandlerType* additionalOutput() { return nullptr; }
+    virtual AdditionalOutputHandlerType* additionalOutput() { return additionalOutputHandler_.value(); }
 
     //DATAWRITING
     IOTupleType dataTuple () { return std::make_tuple( &solution(), nullptr ); }
 
     //DIAGNOSTICS
-    virtual DiagnosticsHandlerType* diagnostics() { return &diagnosticsHandler_; }
+    virtual DiagnosticsHandlerType* diagnostics() { return diagnosticsHandler_.value(); }
 
     const ProblemType &problem () const
     {
@@ -307,8 +276,9 @@ namespace Fem
     ProblemType *problem_;
     ModelType model_;
 
-    SolverMonitorHandlerType       solverMonitorHandler_;
-    DiagnosticsHandlerType         diagnosticsHandler_;
+    SolverMonitorHandlerOptional< SolverMonitorHandlerType >       solverMonitorHandler_;
+    DiagnosticsHandlerOptional< DiagnosticsHandlerType >           diagnosticsHandler_;
+    AdditionalOutputHandlerOptional< AdditionalOutputHandlerType > additionalOutputHandler_;
 
     GridPartType gridPart_;      // reference to grid part, i.e. the leaf grid
     DiscreteFunctionSpaceType space_;    // the discrete function space
@@ -527,18 +497,18 @@ namespace Fem
     virtual DiagnosticsHandlerType* diagnostics() { return BaseType::diagnostics(); }
 
     //ADDITIONALOUTPUT
-    virtual AdditionalOutputHandlerType* additionalOutput() { return nullptr; }
+    virtual AdditionalOutputHandlerType* additionalOutput() { return BaseType::additionalOutput(); }
 
     //LIMITING
     virtual void limit(){}
     virtual LimitDiscreteFunctionType* limitSolution () { return nullptr; }
 
     //ADAPTATION
-    virtual AdaptIndicatorType* adaptIndicator() { return nullptr; }
-    virtual AdaptationDiscreteFunctionType* adaptationSolution () { return &BaseType::solution(); }
+    virtual AdaptIndicatorType* adaptIndicator() { return BaseType::adaptIndicator(); }
+    virtual AdaptationDiscreteFunctionType* adaptationSolution () { return BaseType::adaptationSolution(); }
 
     //CHECKPOINTING
-    virtual CheckPointDiscreteFunctionType* checkPointSolution () { return &BaseType::solution(); }
+    virtual CheckPointDiscreteFunctionType* checkPointSolution () { return nullptr; }
 
     //DATAWRITING
     virtual IOTupleType dataTuple () { return std::make_tuple( &BaseType::solution(), nullptr ); }

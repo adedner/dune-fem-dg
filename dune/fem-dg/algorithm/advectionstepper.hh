@@ -8,6 +8,7 @@
 // local includes
 #include <dune/fem-dg/algorithm/evolution.hh>
 
+#include <dune/fem-dg/algorithm/handler/adapt.hh>
 
 namespace Dune
 {
@@ -82,7 +83,7 @@ namespace Fem
 
     virtual AdaptIndicatorType* adaptIndicator()
     {
-      return &adaptIndicator_;
+      return adaptIndicator_.value();
     }
 
     virtual void limit()
@@ -94,20 +95,21 @@ namespace Fem
     //! return overal number of grid elements
     virtual UInt64Type gridSize() const
     {
-      int globalElements = adaptIndicator_.globalNumberOfElements();
+      int globalElements = adaptIndicator_ ? adaptIndicator_.globalNumberOfElements() : 0;
       if( globalElements > 0 )
         return globalElements;
 
       // one of them is not zero,
       size_t  advSize   = advectionOperator_.numberOfElements();
-      size_t  dgIndSize = adaptIndicator_.numberOfElements();
+      size_t  dgIndSize = adaptIndicator_ ? adaptIndicator_.numberOfElements() : advSize;
       UInt64Type grSize   = std::max( advSize, dgIndSize );
       return grid_.comm().sum( grSize );
     }
 
     virtual SolverType* createSolver(TimeProviderType& tp)
     {
-      adaptIndicator_.setAdaptation( tp );
+      if( adaptIndicator_ )
+        adaptIndicator_.setAdaptation( tp );
 
       typedef RungeKuttaSolver< ExplicitOperatorType, ExplicitOperatorType, ExplicitOperatorType,
                                 BasicLinearSolverType > SolverImpl;
@@ -124,7 +126,7 @@ namespace Fem
 
 
     ExplicitOperatorType    advectionOperator_;
-    mutable AdaptIndicatorType       adaptIndicator_;
+    mutable AdaptIndicatorOptional<AdaptIndicatorType> adaptIndicator_;
   };
 }
 }

@@ -17,14 +17,18 @@
 #include <dune/fem-dg/operator/adaptation/adaptation.hh>
 #include <dune/fem-dg/operator/adaptation/utility.hh>
 #include <dune/fem/space/common/adaptmanager.hh>
+#include <dune/fem-dg/misc/optional.hh>
 
 namespace Dune
 {
 namespace Fem
 {
 
+  template< class... IndicatorArgs >
+  class AdaptIndicator;
+
   template< class IndicatorImp, class GradientIndicatorImp >
-  class AdaptIndicator
+  class AdaptIndicator< IndicatorImp, GradientIndicatorImp >
   {
   public:
     typedef uint64_t                                                                           UInt64Type;
@@ -160,6 +164,42 @@ namespace Fem
     const AdaptationParametersType                adaptParam_;
     IndicatorType                                 indicator_;
     GradientIndicatorType                         gradientIndicator_;
+  };
+
+
+  template<>
+  class AdaptIndicator<>
+  {
+  public:
+   typedef uint64_t                                                                           UInt64Type;
+
+    template< class... Args >
+    AdaptIndicator( Args&& ... args )
+    {}
+
+    bool adaptive() const { return false; }
+
+    size_t numberOfElements() const { return 0; }
+
+    UInt64Type globalNumberOfElements() const { return 0; }
+
+    template< class TimeProviderImp >
+    void setAdaptation( TimeProviderImp& tp ){}
+
+    void finalize() {}
+
+    void estimateMark( const bool initialAdapt = false ) {}
+
+    void postAdapt() {}
+
+    void preAdapt() {}
+
+    int minNumberOfElements() const { return 0; }
+
+    int maxNumberOfElements() const { return 0; }
+
+    const int finestLevel() const { return 0; }
+
   };
 
 
@@ -449,6 +489,31 @@ namespace Fem
     template< class ... Args >
     const double finestLevel( Args&& ... ) const { return 0.0; }
   };
+
+  template< class Obj >
+  class AdaptIndicatorOptional
+    : public OptionalObject< Obj >
+  {
+    typedef OptionalObject< Obj >    BaseType;
+  public:
+    template< class... Args >
+    AdaptIndicatorOptional( Args&&... args )
+      : BaseType( std::forward<Args>(args)... )
+    {}
+  };
+
+  template<>
+  class AdaptIndicatorOptional< void >
+    : public OptionalNullPtr< AdaptIndicator<> >
+  {
+    typedef OptionalNullPtr< AdaptIndicator<> >    BaseType;
+  public:
+    template< class... Args >
+    AdaptIndicatorOptional( Args&&... args )
+      : BaseType( std::forward<Args>(args)... )
+    {}
+  };
+
 
 
 }
