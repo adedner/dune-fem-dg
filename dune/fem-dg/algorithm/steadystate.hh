@@ -105,7 +105,44 @@ namespace Fem
     typedef typename AdditionalOutputHandlerTypes< DiscreteTraits >::type   AdditionalOutputHandlerType;
     typedef typename SolverMonitorHandlerTypes< DiscreteTraits >::type      SolverMonitorHandlerType;
     typedef typename DiagnosticsHandlerTypes< DiscreteTraits >::type        DiagnosticsHandlerType;
-    typedef typename RhsTypes< typename DiscreteTraits::Operator >::type             RhsType;
+    typedef typename RhsTypes< OperatorType >::type                         RhsType;
+  };
+
+
+  template< class Obj >
+  class RhsOptional
+    : public OptionalObject< Obj >
+  {
+    typedef OptionalObject< Obj >    BaseType;
+  public:
+    template< class... Args >
+    RhsOptional( Args&&... args )
+      : BaseType( std::forward<Args>(args)... )
+    {}
+  };
+
+
+  class EmptyOperator
+  {
+  public:
+    template< class... Args >
+    EmptyOperator( Args&&... ){}
+
+    template< class... Args >
+    void operator()( Args&&... args )
+    {}
+  };
+
+  template<>
+  class RhsOptional< void >
+    : public OptionalNullPtr< EmptyOperator >
+  {
+    typedef OptionalNullPtr< EmptyOperator >    BaseType;
+  public:
+    template< class... Args >
+    RhsOptional( Args&&... args )
+      : BaseType( std::forward<Args>(args)... )
+    {}
   };
 
 
@@ -153,18 +190,22 @@ namespace Fem
     typedef typename Traits::SolverMonitorHandlerType             SolverMonitorHandlerType;
     typedef typename Traits::DiagnosticsHandlerType               DiagnosticsHandlerType;
 
+    typedef typename Traits::RhsType                              RhsType;
+
+
     SubSteadyStateAlgorithm ( GridType &grid, const std::string name = ""  )
       : grid_( grid ),
         algorithmName_( name ),
         problem_( ProblemTraits::problem() ),
         model_( problem() ),
-        solverMonitorHandler_( "" ),
-        diagnosticsHandler_( "" ),
-        additionalOutputHandler_( "" ),
+        solverMonitorHandler_( name ),
+        diagnosticsHandler_( name ),
+        additionalOutputHandler_( name ),
         gridPart_( grid ),
         space_( gridPart_ ),
         solution_( "solution-" + name + IDGenerator::instance().nextId(), space_ ),
         exactSolution_( "exact-solution-" + name + IDGenerator::instance().id(), space_ ),
+        rhsOperator_( gridPart_, problem(), std::tuple<>(), name ),
         solverIterations_()
     {
       solution().clear();
@@ -211,15 +252,17 @@ namespace Fem
     virtual void initialize ( const int loop )
     {
       //initialize solverMonitor
-      monitor()->registerData( "GridWidth", &monitor()->monitor().gridWidth, nullptr, true );
-      monitor()->registerData( "Elements", &monitor()->monitor().elements, nullptr, true );
-      monitor()->registerData( "TimeSteps", &monitor()->monitor().timeSteps, nullptr, true );
-      monitor()->registerData( "ILS", &monitor()->monitor().ils_iterations, &solverIterations_ );
-      monitor()->registerData( "MaxILS", &monitor()->monitor().max_ils_iterations );
+      solverMonitorHandler_.registerData( "GridWidth", &solverMonitorHandler_.monitor().gridWidth, nullptr, true );
+      solverMonitorHandler_.registerData( "Elements", &solverMonitorHandler_.monitor().elements, nullptr, true );
+      solverMonitorHandler_.registerData( "TimeSteps", &solverMonitorHandler_.monitor().timeSteps, nullptr, true );
+      solverMonitorHandler_.registerData( "ILS", &solverMonitorHandler_.monitor().ils_iterations, &solverIterations_ );
+      solverMonitorHandler_.registerData( "MaxILS", &solverMonitorHandler_.monitor().max_ils_iterations );
     }
 
     virtual void preSolve( const int loop )
     {
+      if( rhsOperator_ )
+        rhsOperator_( solution(), rhs() );
       solution().clear();
       solver_.reset( this->createSolver( &rhs() ) );
     }
@@ -281,9 +324,11 @@ namespace Fem
     AdditionalOutputHandlerOptional< AdditionalOutputHandlerType > additionalOutputHandler_;
 
     GridPartType gridPart_;      // reference to grid part, i.e. the leaf grid
-    DiscreteFunctionSpaceType space_;    // the discrete function space
-    DiscreteFunctionType solution_;
-    DiscreteFunctionType exactSolution_;
+    DiscreteFunctionSpaceType  space_;    // the discrete function space
+    DiscreteFunctionType       solution_;
+    DiscreteFunctionType       exactSolution_;
+
+    RhsOptional<RhsType >      rhsOperator_;
 
     std::unique_ptr< typename SolverType::type > solver_;
     int solverIterations_;
