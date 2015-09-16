@@ -339,6 +339,18 @@ namespace Fem
       return assembler_.pressureRhs();
     }
 
+    void initialize ( const int loop )
+    {
+      ellAlg_.initialize( loop );
+      BaseType::initialize( loop );
+    }
+
+    void preSolve( int loop )
+    {
+      ellAlg_.preSolve( loop );
+      BaseType::preSolve( loop );
+    }
+
     void solve( const int loop )
     {
       BaseType::solve( loop );
@@ -350,6 +362,12 @@ namespace Fem
 
       // TODO check wheather we need the following line
       stokesSigmaEstimator_.update();
+    }
+
+    virtual void postSolve( int loop )
+    {
+      ellAlg_.postSolve( loop );
+      BaseType::postSolve( loop );
     }
 
     //! finalize computation by calculating errors and EOCs
