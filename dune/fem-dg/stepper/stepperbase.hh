@@ -458,6 +458,8 @@ struct StepperBase
     double fixedDT = tp.deltaT();
     std::cout << "starting with dt=" << fixedDT << std::endl;
     VISCPARA = gridWidth()/fixedDT;
+    SUPERVISC = gridWidth();
+    SUPERVISC *= ParameterType :: getValue< double >("flux.hyervisc");
     DiscreteFunctionType& U = solution_;
 
     if( odeSolver_ == 0 ) odeSolver_ = this->createOdeSolver( tp );
@@ -525,7 +527,7 @@ struct StepperBase
     hermSetup_ = hermite_.add(U, fU_);
 
     {
-      Fem :: L2Norm< GridPartType > l2norm( solution().space().gridPart(), 2*(solution().space().order()+3) );
+      Fem :: L2Norm< GridPartType > l2norm( solution().space().gridPart(), 2*(solution().space().order()+3)-1 );
       typedef Dune::QuadratureRule<double, 1> Quad;
       if (!hermSetup_ && tp.timeStep()>20)
       {

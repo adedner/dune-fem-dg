@@ -151,8 +151,8 @@ public:
     {
       u_[ i ] = 0.1;
     }
-#ifdef ADVECTION
-    u_ *= 10.;
+#if 1 // def ADVECTION
+    u_ *= 1.; // 10.;
 #endif
   }
 
@@ -184,14 +184,28 @@ public:
     // pert *= 0.05;
 
 #ifndef ADVECTION
-    res[0] = 1.0 + pert; 
-    double p = 1.3; // + pert;
+    pert = 0.5*sin(M_PI*tmp_c[0]);
+    res[0] = 1.0; // + pert; 
+    double p = 1.3 + pert;
     for(int i=0; i<dim; i++) res[1+i] = u_[i] * res[0];
     res[dim+1] = p/(gamma() - 1.0) + 0.5*res[0]*u_sq;
 #else
     res[0] = 1.+0.5*sin(M_PI*tmp_c[0]); // 1.0+pert;
     for(int i=0; i<dim; i++) res[1+i] = u_[i];
-    res[dim+1] = 1.;
+    res[dim+1] = 0; // -2.*sin(M_PI*x[0]);
+    double t = time;
+    if (t>1e-8)
+    {
+      double add;
+      int k = 1;
+      do {
+        add = jn(k,2.*k*t*M_PI)*sin(M_PI*k*x[0])/(k*t*M_PI);
+        res[dim+1] -= 2.*add;
+        ++k;
+      } while (std::abs(add)>1e-14);
+    }
+    else
+      res[dim+1] = -2.*sin(x*M_PI);
 #endif 
   }
 

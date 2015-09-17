@@ -16,7 +16,7 @@
 #include <dune/fem-dg/operator/fluxes/rotator.hh>
 
 double maxWave = 1000;
-double VISCPARA;
+double VISCPARA, SUPERVISC;
 
 ///////////////////////////////////////////////////////////
 //
@@ -803,15 +803,14 @@ public:
                  RangeType& gLeft,
                  RangeType& gRight) const
   {
-#if 0
     const FaceDomainType& x = faceQuadInner.localPoint( quadPoint );
     DomainType normal = intersection.integrationOuterNormal(x);
     const double len = normal.two_norm();
+    FluxRangeType anaflux;
+#if 0
     normal *= 1./len;
 
     RangeType visc;
-    FluxRangeType anaflux;
-
     model_.advection( inside, time, faceQuadInner.point( quadPoint ),
                       uLeft, anaflux );
 
@@ -840,18 +839,53 @@ public:
     gLeft *= 0.5*len;
     double ldt = maxspeed * len;
 #else
-    const FaceDomainType& x = faceQuadInner.localPoint( quadPoint );
-    DomainType normal = intersection.integrationOuterNormal(x);
+/*
+    const double alpha = 1. + sqrt(5./2.);
+    const double beta = 0.5;
+    gLeft = 0;
+    model_.advection( inside, time, faceQuadInner.point( quadPoint ),
+                      uLeft, anaflux );
+    anaflux *= 0.5*(1.-(1.-beta)/alpha);
+    anaflux.mv( normal, gLeft );
+    model_.advection( outside, time, faceQuadOuter.point( quadPoint ),
+                      uRight, anaflux );
+    anaflux *= 0.5*(1.-beta/alpha);
+    anaflux.umv( normal, gLeft );
+*/
+    gLeft = 0.;
     RangeType ustar;
     double ldt = uStar(intersection,inside,outside,time,faceQuadInner,faceQuadOuter,quadPoint,uLeft,uRight,ustar);
-    FluxRangeType anafluxL;
-    model_.advection( inside, time, faceQuadInner.point( quadPoint ), ustar, anafluxL );
-    anafluxL.mv( normal, gLeft );
+    model_.advection( inside, time, faceQuadInner.point( quadPoint ), ustar, anaflux );
+    // anaflux *= 0.5/alpha;
+    anaflux.umv( normal, gLeft );
+
+    RangeType visc;
+    double viscpara = VISCPARA * SUPERVISC;
+    visc = uRight;
+    visc -= uLeft;
+    visc *= 0.5*viscpara;
+    gLeft -= visc;
+
 #endif
+
     gRight = gLeft;
     return ldt;
   }
 
+  const double eps = 1.;
+
+  double sign(double normal,double a) const
+  {
+    // return std::copysign(normal, a);
+    double y = normal/eps*a;
+    return std::atan(y)*2./M_PI;
+  }
+  double dsign(double normal,double a) const
+  {
+    // return 0;
+    double y = normal/eps*a;
+    return 1./(1.+y*y)*normal/eps*2./M_PI;
+  }
   template< class Intersection, class QuadratureImp >
   inline double
   uStar( const Intersection& intersection,
@@ -904,6 +938,11 @@ public:
 #else
     ustar = uLeft;
     ustar[0] = (uLeft[1]*normal[0]>0.)?uLeft[0]:uRight[0];
+    double fa = (1.+sign(normal[0], uLeft[2]));
+    double fb = (1.-sign(normal[0], uRight[2]));
+    double u = sqrt( 0.5*uLeft[2]*uLeft[2]*fa+
+                     0.5*uRight[2]*uRight[2]*fb + 1e-3);
+    ustar[2] = u;
     return std::abs(uLeft[1])*len;
 #endif
   }
@@ -956,6 +995,16 @@ public:
 #else
     dustar = 0.;
     dustar[0] = (uLeft[1]*normal[0]>0.)? duLeft[0]:duRight[0];
+    double fa = (1.+sign(normal[0], uLeft[2]));
+    double fb = (1.-sign(normal[0], uRight[2]));
+    double dfa = dsign(normal[0], uLeft[2]);
+    double dfb = -dsign(normal[0], uRight[2]);
+    double u = sqrt( 0.5*uLeft[2]*uLeft[2]*fa+
+                     0.5*uRight[2]*uRight[2]*fb + 1e-3);
+    dustar[2] = 1./(2.*u) * ( duLeft[2]  * uLeft[2]  * (fa + 0.5*uLeft[2]*dfa)
+                              + 
+                              duRight[2] * uRight[2] * (fb + 0.5*uRight[2]*dfb)
+                            );
 #endif
   }
 

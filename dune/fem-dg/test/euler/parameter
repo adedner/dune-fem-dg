@@ -54,7 +54,6 @@ paramfile: ../parameter/paramPhysicalConstants
 
 g: 1. # gravity force [m/ss]
 femhowto.startTime: 0.
-femhowto.endTime: 1.
 hSpeed0: 1. # x-axis speed [m/s]
 vSpeed0: 1.25 # z-axis speed [m/s]
 p0: 1. # surface pressure [Pa]
@@ -89,6 +88,8 @@ fem.ode.order: 5
 hermite.q: 5
 hermite.q1: 3
 hermite.approx: fd3
+flux.hyervisc: 0.5
+femhowto.endTime: 2.
 #fixedTimeStep: 0.0025    # p=2,N=800,dt=0.00125
 fixedTimeStep: 0.0001    # p=2,N=800,dt=0.00125
 #fixedTimeStep: 0.004    # p=2,N=800,dt=0.00125
