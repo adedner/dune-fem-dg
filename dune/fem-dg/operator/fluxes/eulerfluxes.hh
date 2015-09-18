@@ -807,36 +807,31 @@ public:
     DomainType normal = intersection.integrationOuterNormal(x);
     const double len = normal.two_norm();
     FluxRangeType anaflux;
-#if 0
-    normal *= 1./len;
 
     RangeType visc;
+    double maxspeedl, maxspeedr, maxspeed;
+    double viscparal, viscparar, viscpara;
+    model_.maxSpeed( inside, time, faceQuadInner.point( quadPoint ),
+                     normal, uLeft, viscparal, maxspeedl );
+    model_.maxSpeed( outside, time, faceQuadOuter.point( quadPoint ),
+                     normal, uRight, viscparar, maxspeedr );
+    maxspeed = (maxspeedl > maxspeedr) ? maxspeedl : maxspeedr;
+    viscpara = (viscparal > viscparar) ? viscparal : viscparar;
+    // viscpara = VISCPARA;
+    visc = uRight;
+    visc -= uLeft;
+    visc *= viscpara*0.5*len;
+#if 0
     model_.advection( inside, time, faceQuadInner.point( quadPoint ),
                       uLeft, anaflux );
-
-    // set gLeft
     anaflux.mv( normal, gLeft );
 
     model_.advection( outside, time, faceQuadOuter.point( quadPoint ),
                       uRight, anaflux );
     anaflux.umv( normal, gLeft );
 
-    double maxspeedl, maxspeedr, maxspeed;
-    double viscparal, viscparar, viscpara;
-
-    model_.maxSpeed( inside, time, faceQuadInner.point( quadPoint ),
-                     normal, uLeft, viscparal, maxspeedl );
-    model_.maxSpeed( outside, time, faceQuadOuter.point( quadPoint ),
-                     normal, uRight, viscparar, maxspeedr );
-
-    maxspeed = (maxspeedl > maxspeedr) ? maxspeedl : maxspeedr;
-    viscpara = (viscparal > viscparar) ? viscparal : viscparar;
-    // viscpara = VISCPARA;
-    visc = uRight;
-    visc -= uLeft;
-    visc *= viscpara;
+    gLeft *= 0.5;
     gLeft -= visc;
-    gLeft *= 0.5*len;
     double ldt = maxspeed * len;
 #else
 /*
@@ -852,20 +847,18 @@ public:
     anaflux *= 0.5*(1.-beta/alpha);
     anaflux.umv( normal, gLeft );
 */
-    gLeft = 0.;
     RangeType ustar;
     double ldt = uStar(intersection,inside,outside,time,faceQuadInner,faceQuadOuter,quadPoint,uLeft,uRight,ustar);
     model_.advection( inside, time, faceQuadInner.point( quadPoint ), ustar, anaflux );
-    // anaflux *= 0.5/alpha;
-    anaflux.umv( normal, gLeft );
+    anaflux.mv( normal, gLeft );
 
-    RangeType visc;
-    double viscpara = VISCPARA * SUPERVISC;
-    visc = uRight;
-    visc -= uLeft;
-    visc *= 0.5*viscpara;
+    ustar = uLeft;
+    ustar -= uRight;
+
+    // visc *= SUPERVISC;
+    for (int r=0;r<dimRange;++r)
+      visc[r] *= std::abs(ustar[r])*SUPERVISC/viscpara;
     gLeft -= visc;
-
 #endif
 
     gRight = gLeft;

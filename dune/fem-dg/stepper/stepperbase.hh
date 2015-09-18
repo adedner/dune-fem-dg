@@ -458,8 +458,8 @@ struct StepperBase
     double fixedDT = tp.deltaT();
     std::cout << "starting with dt=" << fixedDT << std::endl;
     VISCPARA = gridWidth()/fixedDT;
-    SUPERVISC = gridWidth();
-    SUPERVISC *= ParameterType :: getValue< double >("flux.hyervisc");
+    SUPERVISC = fixedDT; // gridWidth();
+    SUPERVISC = ParameterType :: getValue< double >("flux.hyervisc");
     DiscreteFunctionType& U = solution_;
 
     if( odeSolver_ == 0 ) odeSolver_ = this->createOdeSolver( tp );
