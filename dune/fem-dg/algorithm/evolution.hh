@@ -288,8 +288,6 @@ namespace Fem
       solver_.reset();
     }
 
-    std::string description () const { return problem().description(); }
-
     ProblemType &problem ()
     {
       assert( problem_ );

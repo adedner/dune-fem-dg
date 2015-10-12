@@ -186,9 +186,9 @@ namespace Fem
     struct Initialize
     {
       template< class Tuple, class AdaptHandler, class ... Args >
-      static void apply ( Tuple &tuple, AdaptHandler& handler, Args && ... args )
+      static void apply ( Tuple &tuple, AdaptHandler& handler, Args&& ... a )
       {
-        std::get< i >( tuple )->initialize( args... );
+        std::get< i >( tuple )->initialize( std::forward<Args>(a) ... );
         /*
         std::get< i >( tuple )->diagnostics().registerData( "AdaptationTime", &handler.adaptationTime() );
         std::get< i >( tuple )->diagnostics().registerData( "LoadBalanceTime", &handler.loadBalanceTime() );
@@ -199,27 +199,27 @@ namespace Fem
     struct PreSolve
     {
       template< class Tuple, class ... Args >
-      static void apply ( Tuple &tuple, Args && ... args )
+      static void apply ( Tuple &tuple, Args&& ... a )
       {
-        std::get< i >( tuple )->preSolve( args... );
+        std::get< i >( tuple )->preSolve( std::forward<Args>(a)... );
       }
     };
     template< int i >
     struct Solve
     {
       template< class Tuple, class ... Args >
-      static void apply ( Tuple &tuple, Args && ... args )
+      static void apply ( Tuple &tuple, Args&& ... a )
       {
-        std::get< i >( tuple )->solve( args... );
+        std::get< i >( tuple )->solve( std::forward<Args>(a)... );
       }
     };
     template< int i >
     struct PostSolve
     {
       template< class Tuple, class ... Args >
-      static void apply ( Tuple &tuple, Args && ... args )
+      static void apply ( Tuple &tuple, Args&& ... a )
       {
-        std::get< i >( tuple )->postSolve( args... );
+        std::get< i >( tuple )->postSolve( std::forward<Args>(a)... );
       }
     };
 
@@ -227,36 +227,36 @@ namespace Fem
     struct Finalize
     {
       template< class Tuple, class ... Args >
-      static void apply ( Tuple &tuple, Args && ... args )
+      static void apply ( Tuple &tuple, Args&& ... a )
       {
-        std::get< i >( tuple )->finalize( args... );
+        std::get< i >( tuple )->finalize( std::forward<Args>(a)... );
       }
     };
     template< int i >
     struct GridWidth
     {
       template< class Tuple, class ... Args >
-      static void apply ( Tuple &tuple, double& res, Args && ... args )
+      static void apply ( Tuple &tuple, double& res, Args&& ... a )
       {
-        res = std::max( res, std::get< i >( tuple )->gridWidth( args... ) );
+        res = std::max( res, std::get< i >( tuple )->gridWidth( std::forward<Args>(a)... ) );
       }
     };
     template< int i >
     struct GridSize
     {
       template< class Tuple, class ... Args >
-      static void apply ( Tuple &tuple, UInt64Type& res, Args && ... args )
+      static void apply ( Tuple &tuple, UInt64Type& res, Args&& ... a )
       {
-        res = std::max( res, std::get< i >( tuple )->gridSize( args... ) );
+        res = std::max( res, std::get< i >( tuple )->gridSize( std::forward<Args>(a)... ) );
       }
     };
     template< int i >
     struct CheckSolutionValid
     {
       template< class Tuple, class ... Args >
-      static void apply ( Tuple &tuple, bool& res, Args && ... args )
+      static void apply ( Tuple &tuple, bool& res, Args&& ... a )
       {
-        res &= std::get< i >( tuple )->checkSolutionValid( args... );
+        res &= std::get< i >( tuple )->checkSolutionValid( std::forward<Args>(a)... );
       }
     };
 
@@ -471,8 +471,6 @@ namespace Fem
       // prepare the fixed time step for the next eoc loop
       fixedTimeStep_ /= param_.fixedTimeStepEocLoopFactor();
     }
-
-    std::string description () const { return "global algorithm"; }
 
     virtual SolverMonitorHandlerType& monitor()
     {

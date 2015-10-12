@@ -223,8 +223,6 @@ namespace Fem
 
     virtual DiscreteFunctionType& rhs() = 0;
 
-    std::string description () const { return problem().description(); }
-
     //! returns data prefix for EOC loops ( default is loop )
     virtual std::string dataPrefix () const
     {
@@ -490,8 +488,6 @@ namespace Fem
     virtual DiscreteFunctionType& solution () { return BaseType::solution(); }
 
     virtual DiscreteFunctionType& rhs() { return BaseType::rhs(); };
-
-    std::string description () const { return BaseType::description(); }
 
     //! returns data prefix for EOC loops ( default is loop )
     virtual std::string dataPrefix () const

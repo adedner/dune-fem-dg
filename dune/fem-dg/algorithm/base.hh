@@ -148,9 +148,6 @@ namespace Fem
 
     EocParametersType& eocParams() { return eocParam_; }
 
-    //! name of the scheme
-    virtual std::string description () const = 0;
-
     virtual const std::string name() { return algorithmName_; }
 
   protected:
@@ -180,7 +177,7 @@ namespace Fem
     // initialize FemEoc if eocSteps > 1
     EocParametersType& eocParam( algorithm.eocParams() );
     FemEoc::clear();
-    FemEoc::initialize( eocParam.outputPath(), eocParam.fileName(), algorithm.description() );
+    FemEoc::initialize( eocParam.outputPath(), eocParam.fileName(), "results" );
 
     const unsigned int femTimerId = FemTimer::addTo("timestep");
     for(int eocloop=0; eocloop < eocParam.steps(); ++eocloop )

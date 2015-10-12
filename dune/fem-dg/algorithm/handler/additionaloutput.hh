@@ -99,21 +99,27 @@ namespace Fem
     typedef typename DiscreteFunctionType::DiscreteFunctionSpaceType::GridPartType   GridPartType;
 
     ExactSolutionOutputHandler( DiscreteFunctionType& df, const std::string keyPrefix = "" )
-      : solution_( df )
+      : solution_( &df )
     {}
+
+    template< class... Args >
+    ExactSolutionOutputHandler( Args&&... ){}
 
     template< class TimeProviderImp, class SubStepperImp >
     void step( TimeProviderImp& tp, SubStepperImp& stepper )
     {
-      typedef typename SubStepperImp::ProblemType::InstationaryFunctionType      ExactSolutionType;
-      typedef Dune::Fem::GridFunctionAdapter< ExactSolutionType, GridPartType >  GridFunctionAdapterType;
-      auto ftf = stepper.problem().fixedTimeFunction( tp.time() );
-      GridFunctionAdapterType adapter( "temporary adapter", ftf , stepper.gridPart(), solution_.space().order()+2 );
-      interpolate( adapter, solution_ );
+      if( solution_ )
+      {
+        typedef typename SubStepperImp::ProblemType::InstationaryFunctionType      ExactSolutionType;
+        typedef Dune::Fem::GridFunctionAdapter< ExactSolutionType, GridPartType >  GridFunctionAdapterType;
+        auto ftf = stepper.problem().fixedTimeFunction( tp.time() );
+        GridFunctionAdapterType adapter( "temporary adapter", ftf , stepper.gridPart(), solution_->space().order()+2 );
+        interpolate( adapter, *solution_ );
+      }
     }
 
     private:
-    DiscreteFunctionType& solution_;
+    DiscreteFunctionType* solution_;
   };
 
   class NoOutputHandler

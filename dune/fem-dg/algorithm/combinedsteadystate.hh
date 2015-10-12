@@ -163,8 +163,6 @@ namespace Fem
       return tuple;
     }
 
-    std::string description () const { return "global steady state algorithm"; }
-
     //! returns data prefix for EOC loops ( default is loop )
     virtual std::string dataPrefix () const
     {

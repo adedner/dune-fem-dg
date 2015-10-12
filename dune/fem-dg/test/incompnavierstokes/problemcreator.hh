@@ -117,9 +117,26 @@ struct IncompressibleNavierStokesProblemCreator
 
           typedef Dune::DGAdvectionDiffusionOperator< OperatorTraitsType >                            AssemblyOperatorType;
           typedef Solvers<DiscreteFunctionSpaceType, solverType, symmetricSolver>                     SolversType;
+
+
+
+          struct RhsAnalyticalTraits
+          {
+            typedef ProblemInterfaceType                                   ProblemType;
+            typedef ProblemInterfaceType                                   InitialDataType;
+            typedef StokesModel< GridPartType, InitialDataType, true >     ModelType;
+          };
+
+          typedef Dune::NoFlux< typename RhsAnalyticalTraits::ModelType >                                RhsFluxType;
+          typedef Dune::DefaultOperatorTraits< GridPartType, polOrd, RhsAnalyticalTraits,
+                                        DiscreteFunctionType, RhsFluxType, ExtraParameterTuple,
+                                        FunctionSpaceType >                                           RhsOperatorTraitsType;
+
+
         public:
           typedef Dune::DGPrimalMatrixAssembly< AssemblyOperatorType >                                AssemblerType;
           typedef typename SolversType::LinearOperatorType                                            type;
+          typedef Dune::DGAdvectionDiffusionOperator< RhsOperatorTraitsType >                         RhsType;
         };
 
         struct Solver
@@ -197,8 +214,9 @@ struct IncompressibleNavierStokesProblemCreator
           typedef StokesModel< GridPartType, InitialDataType, true >     ModelType;
         };
 
+        typedef Dune::NoFlux< typename RhsAnalyticalTraits::ModelType >                                RhsFluxType;
         typedef Dune::DefaultOperatorTraits< GridPartType, polOrd, RhsAnalyticalTraits,
-                                      DiscreteFunctionType, FluxType, ExtraParameterTuple,
+                                      DiscreteFunctionType, RhsFluxType, ExtraParameterTuple,
                                       typename SubPoissonProblemCreator::FunctionSpaceType >        RhsOperatorTraitsType;
 
       public:
@@ -207,7 +225,8 @@ struct IncompressibleNavierStokesProblemCreator
                                                 DiscreteFunctionType,
                                                 OperatorTraitsType>                                 AssemblerType;
         typedef typename PoissonDiscreteTraits::Operator::type                                      type;
-        typedef Dune::DGAdvectionDiffusionOperator< RhsOperatorTraitsType >                         RhsType;
+        //typedef Dune::DGAdvectionDiffusionOperator< RhsOperatorTraitsType >                         RhsType;
+        typedef void                         RhsType;
       };
 
       struct Solver
@@ -300,8 +319,10 @@ struct IncompressibleNavierStokesProblemCreator
           typedef NavierStokesModel< GridPartType, InitialDataType, true >   ModelType;
         };
 
+        typedef LLFFlux< typename RhsAnalyticalTraits::ModelType >                                  RhsFluxType;
+
         typedef Dune::DefaultOperatorTraits< GridPartType, polOrd, RhsAnalyticalTraits,
-                                      DiscreteFunctionType, FluxType, ExtraParameterTuple >         RhsOperatorTraitsType;
+                                      DiscreteFunctionType, RhsFluxType, ExtraParameterTuple >         RhsOperatorTraitsType;
 
 
       public:
@@ -328,7 +349,7 @@ struct IncompressibleNavierStokesProblemCreator
       typedef Dune::Fem::AdaptIndicator< IndicatorType, GradientIndicatorType >                     AdaptIndicatorType;
       typedef Dune::Fem::SubSolverMonitorHandler< Dune::Fem::SolverMonitor >                        SolverMonitorHandlerType;
       typedef Dune::Fem::SubDiagnosticsHandler< Dune::Diagnostics >                                 DiagnosticsHandlerType;
-      typedef Dune::Fem::ExactSolutionOutputHandler< DiscreteFunctionType >                         AdditionalOutputHandlerType;
+     // typedef Dune::Fem::ExactSolutionOutputHandler< DiscreteFunctionType >                         AdditionalOutputHandlerType;
     };
 
     template <int polOrd>
