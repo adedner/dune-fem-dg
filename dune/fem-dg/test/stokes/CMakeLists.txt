@@ -20,6 +20,9 @@ dune_target_link_libraries(stokes "${DUNE_LIBS}")
 set_property(TARGET stokes APPEND PROPERTY 
              COMPILE_DEFINITIONS "POLORDER=2")
 
+add_dune_superlu_flags( stokes stokesall )
+add_dune_umfpack_flags( stokes stokesall )
+
 add_code_generate_targets( stokes stokesall )
 
 dune_add_test( stokes stokesall )

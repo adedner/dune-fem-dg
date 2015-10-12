@@ -17,6 +17,8 @@ add_executable( euler main.cc problems/chorjo.cc )
 dune_target_link_libraries(euler ${DUNE_LIBS})
 set_property(TARGET euler APPEND PROPERTY 
              COMPILE_DEFINITIONS "POLORDER=2")
+add_dune_superlu_flags( euler eulerall )
+add_dune_umfpack_flags( euler eulerall )
 
 add_code_generate_targets( euler eulerall )
 

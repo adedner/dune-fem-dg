@@ -21,6 +21,9 @@ dune_target_link_libraries(poisson ${DUNE_LIBS})
 set_property(TARGET poisson APPEND PROPERTY 
              COMPILE_DEFINITIONS "POLORDER=${POLORDER}")
 
+add_dune_superlu_flags( poisson poissonall )
+add_dune_umfpack_flags( poisson poissonall )
+
 add_code_generate_targets( poisson poissonall )
 
 dune_add_test( poisson poissonall )

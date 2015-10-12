@@ -16,6 +16,8 @@ add_executable( advdiff main.cc )
 dune_target_link_libraries(advdiff "${DUNE_LIBS}")
 set_property(TARGET advdiff APPEND PROPERTY 
              COMPILE_DEFINITIONS "POLORDER=2")
+add_dune_superlu_flags( advdiff advdiffall )
+add_dune_umfpack_flags( advdiff advdiffall )
 
 add_code_generate_targets( advdiff advdiffall )
 

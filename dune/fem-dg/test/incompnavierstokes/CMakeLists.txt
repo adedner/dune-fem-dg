@@ -19,6 +19,9 @@ dune_target_link_libraries(incompnavierstokes ${DUNE_LIBS})
 set_property(TARGET incompnavierstokes APPEND PROPERTY 
              COMPILE_DEFINITIONS "POLORDER=${POLORDER}")
 
+add_dune_superlu_flags( incompnavierstokes incompnavierstokesall )
+add_dune_umfpack_flags( incompnavierstokes incompnavierstokesall )
+
 add_code_generate_targets( incompnavierstokes incompnavierstokesall )
 
 dune_add_test( incompnavierstokes incompnavierstokesall )
