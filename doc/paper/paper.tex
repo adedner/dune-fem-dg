@@ -1,0 +1,426 @@
+\documentclass{ansarticle}
+
+\title{Preparing articles for submission to the \\
+       Archive of Numerical Software}
+\author[1]{Editor O. Archive\thanks{Additional thanks to my neighbor's dog
+  for waking me up on time to work on this style file}}
+\author[2]{Author O. Software}
+\affil[1]{The Archive of Numerical Software}
+\affil[2]{The Worlds Best Place for Numerical Software}
+\runningtitle{Preparing articles for ANS}
+\runningauthor{Archive Editors}
+
+%------------------------------------------------------------------------------
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+  This document describes the general structure of the
+  \emp{ansarticle} document class and serves as an example for its
+  usage. The \emp{ansarticle} document class is based on the standard
+  \LaTeX{} \emp{article} document class and a few other standard
+  packages. It fixes style parameters to the preferred style of the
+  Archive of Numerical Software (ANS).
+\end{abstract}
+
+%------------------------------------------------------------------------------
+\section{Requirements}
+
+To write an article for ANS, you need to download the following files
+from the ANS web page:
+\begin{itemize}
+\item
+  \emp{paper.tex}, the source file for this document and a template for
+  authors;
+\item
+  \emp{ansarticle.cls}, the ANS document class file;
+\item
+  \emp{anslistings.sty}, the ANS style file for typesetting of code;
+\item
+  \emp{bibliography.bib}, a bibliography with some important
+  references;
+\item
+  \emp{Makefile}, useful for building your document.
+\end{itemize}
+These files are all included in the tarball \emp{ansarticle.tgz}.
+
+The file \emp{ansarticle.cls} loads the standard LaTeX
+\emp{article.cls} and some additional packages. It also sets up the
+layout. Hardly any of the options of the packages are available to the
+author, in order to keep the journal style consistent.
+
+Upon loading, \emp{ansarticle.cls} requires the following packages:
+\emp{a4wide},
+%\emp{anslistings},
+\emp{algorithm}, \emp{algorithmicx}, \emp{algpseudocode},
+\emp{authblk},
+\emp{amsmath}, \emp{amssymb},
+\emp{booktabs},
+\emp{fancyhdr},
+\emp{graphicx},
+\emp{hyperref},
+\emp{lastpage},
+\emp{listings},
+\emp{todonotes}.
+These packages are part of standard \LaTeX{} distributions and should
+not cause any difficulties.
+
+%------------------------------------------------------------------------------
+\section{Usage}
+
+\subsection{Building the document}
+
+Use this file (\emp{paper.tex}) as a template for your article. Then
+simply type \emp{make} to build your article. This will call
+\emp{pdflatex} to generate the PDF file \emp{paper.pdf}. To also call
+\emp{bibtex}, type \emp{make final}.
+
+\subsection{Typesetting mathematical formul\ae}
+
+The ANS document class uses the \emp{amsmath} and \emp{amssymb}
+packages for improved typesetting of mathematical formul\ae like,
+e.g., this one:
+\begin{equation}
+  \cfrac{1}{\sqrt{2}+
+    \cfrac{1}{\sqrt{2}+
+      \cfrac{1}{\sqrt{2}+\dotsb
+  }}}.
+\end{equation}
+
+Make sure that you familiarize yourself with the \emp{amsmath}
+environments \emp{multline}, \emp{align} and \emp{split} (and know the
+differences between them). Avoid home-made splitting using
+\emp{\{array\}\{rcl\}}. For details, refer to the \emp{amsmath}
+documentation.
+
+\subsection{Typesetting tables}
+
+Use the commands provided by the \emp{booktabs} package for better
+looking typesetting of tables, as illustrated in
+Table~\ref{tab:tableexample}.
+
+\begin{table}
+  \begin{center}
+    \begin{tabular}{lcc}
+      \toprule
+      Entity & Dimension & Codimension \\
+      \hline
+      Vertex & $0$ & $D$ \\
+      Edge & $1$ & $D-1$ \\
+      Face & $2$ & $D-2$ \\
+      & & \\
+      Facet & $D-1$ & $1$ \\
+      Cell & $D$ & $0$ \\
+      \bottomrule
+    \end{tabular}
+  \end{center}
+    \caption{Mesh entities and their dimensions/codimensions.}
+    \label{tab:tableexample}
+\end{table}
+
+\subsection{Typesetting algorithms}
+
+Use the functionality provided by the packages \emp{algorithm},
+\emp{algorithmic} and \emp{algpseudocode}, automatically included by
+the \emp{ansarticle} document class, to typeset algorithms. This is
+illustrated in Algorithm~\ref{alg:algorithmexample}.
+
+\begin{algorithm}
+  \begin{algorithmic}
+    \State $D^{0,0}(x,y) := 1$
+    \State $D^{1,0}(x,y) := \frac{1+2x+y}{2}$
+    \For{$p \gets 1$, $d-1$}
+    \State $D^{p+1,0}(x,y) := \left( \frac{2p+1}{p+1} \right)
+    \left( \frac{1 + 2x + y}{2} \right) D^{p,0}(x,y)
+    - \left( \frac{p}{p+1} \right) \left( \frac{1-y}{2} \right)^2
+    D^{p-1,0}(x,y)$
+    \EndFor
+    \For{$p \gets 0,d-1$}
+    \State $D^{p,1}(x,y) := D^{p,0}(x,y) \left( \frac{1+2p+(3+2p) y}{2} \right)$
+    \EndFor
+    \For{$p \gets 0,d-1$}
+    \For{$q \gets 1,d-p-1$}
+    \State $D^{p,q+1}(x,y) :=
+    \left( a_{q}^{2p+1,0} y + b_q^{2p+1,0} \right) D^{p,q}(x,y)
+    - c_q^{2p+1,0} D^{p,q-1}(x,y)$
+    \EndFor
+    \EndFor
+  \end{algorithmic}
+  \caption{Compute all triangular orthogonal polynomials up to degree
+    $d$ by recurrence}
+  \label{alg:algorithmexample}
+\end{algorithm}
+
+\subsection{Typesetting code}
+
+All code listings are based on the \emp{listings}
+package~\citep{HeinzMoses07}. The package \emp{anslistings},
+automatically included by \emp{ansarticle} document class, provides
+standard styles for a variety of common programming
+languages. Changing any style parameters for this package is not
+encouraged and may lead to unexpected outcomes in the final
+publication.
+
+Below, we provide samples of listings for the some of the languages
+available. If a language is missing, please contact the managing
+editor for an updated style file.
+
+\subsubsection{C++}
+
+Code should be compliant with the current C++ standard. Two commands
+are provided to prettyprint C++ code. First, an environment to put C++
+code into the LaTeX file, namely
+
+\begin{latexcode}
+\begin{c++}
+  // Your C++ code here
+\end{c++}
+\end{latexcode}
+
+Alternatively, it is possible to use
+\lstinline[language=TeX]!\inputcpp{file.cc}!  to print the C++ code in
+a file. Here is an example of typesetting of C++ code:
+
+\begin{c++}
+// Get dimensions of local mesh_data
+const unsigned int num_local_cells = mesh_data.cell_vertices.size();
+assert(global_cell_indices.size() == num_local_cells);
+const unsigned int num_cell_vertices = mesh_data.cell_vertices[0].size();
+
+// Build array of cell-vertex connectivity and partition vector
+std::vector<unsigned int> cell_vertices;
+std::vector<unsigned int> cell_vertices_partition;
+const unsigned int size = num_local_cells*(num_cell_vertices + 1);
+cell_vertices.reserve(size);
+cell_vertices_partition.reserve(size);
+for (unsigned int i = 0; i < num_local_cells; i++)
+{
+  cell_vertices.push_back(global_cell_indices[i]);
+  cell_vertices_partition.push_back(cell_partition[i]);
+  for (unsigned int j = 0; j < num_cell_vertices; j++)
+  {
+    cell_vertices.push_back(mesh_data.cell_vertices[i][j]);
+    cell_vertices_partition.push_back(cell_partition[i]);
+  }
+}
+
+// Distribute cell-vertex connectivity
+MPI::distribute(cell_vertices, cell_vertices_partition);
+assert(cell_vertices.size());
+cell_vertices_partition.clear();
+\end{c++}
+
+\subsubsection{Python}
+
+The following illustrates typesetting of Python code:
+
+\begin{python}
+# Time-stepping
+t = dt
+while t < T:
+
+    # Compute tentative velocity step
+    b1 = assemble(L1)
+    [bc.apply(A1, b1) for bc in bcu]
+    solve(A1, u1.vector(), b1, "gmres", "ilu")
+
+    # Pressure correction
+    b2 = assemble(L2)
+    [bc.apply(A2, b2) for bc in bcp]
+    solve(A2, p1.vector(), b2, "gmres", "amg_hypre")
+
+    # Velocity correction
+    b3 = assemble(L3)
+    [bc.apply(A3, b3) for bc in bcu]
+    solve(A3, u1.vector(), b3, "gmres", "ilu")
+
+    # Plot solution
+    plot(p1, title="Pressure", rescale=True)
+    plot(u1, title="Velocity", rescale=True)
+
+    # Save to file
+    ufile << u1
+    pfile << p1
+
+    # Move to next time step
+    u0.assign(u1)
+    t += dt
+\end{python}
+
+\subsection{Handling supplementary material}
+
+Additional material which is not part of the article text, but part of
+the submission, for instance setup scripts or video output, can be
+linked from the article, using the \emp{hyperref} commands
+(\emp{hyperref} is automaticly included by
+\emp{ansarticle}). URLs to such material should start with the
+filename. A suitable prefix will be added to the links in the
+editorial process.
+
+\subsection{Citations}
+
+The \emp{ansarticle} document class imports the \emp{natbib} package,
+which provides the commands \emp{\textbackslash{}citet\{\}} and
+\emp{\textbackslash{}citep\{\}}. These should be used in place of the
+regular \emp{\textbackslash{}cite\{\}} command as illustrated by the
+following passage: It was found by \citet{Wittgenstein1921} that what
+we cannot speak about we must pass over in silence, contrary to common
+belief~\citep{Newton1687}.
+
+\subsection{Other}
+
+The \emp{ansarticle} document class provides a number of useful
+notation macros which you can find by browsing through the file
+\emp{ansarticle.cls}.
+
+\subsection{Checklist}
+
+Before submitting your manuscript to ANS, please review the following
+checklist:
+\begin{enumerate}
+\item
+  Have you run a spell checker on your manuscript (using an American English
+  dictionary)?
+\item
+  Have you referenced all libraries you have been using and the
+  appropriate versions and descriptive publications?
+\item
+  Have you referred to all figures and tables (callouts)?
+\item
+  Have you used a scalable vector graphics format for all images where
+  possible?
+\end{enumerate}
+
+Before submitting your source code to ANS, please review the following
+checklist:
+\begin{enumerate}
+\item Does a simple 'make' or similar build and run the program in a
+  default configuration?
+\item Did you include all configuration information necessary?
+\item Did you include instructions on how to reproduce the examples in
+  the text?
+\end{enumerate}
+
+%------------------------------------------------------------------------------
+\section{Production after article was accepted}
+
+\subsection{The manuscript}
+
+Once the article is accepted, the editor will send you a file
+\emp{ansinfo.tex} in the same directory. The file contains macros
+defining the publication information like in the following listing:
+
+\inputlatex{ansinfo.tex}
+
+Please copy this file where \LaTeX{} can find it and recompile your
+manuscript to produce the finale version of the PDF.
+
+\subsection{The source code}
+
+If necessary, clean up the source code directory. Make sure you
+include only the files readers should download with the source (see
+the next subsection on media files). Make sure, a simple 'make' or
+similar will run a first example. Assert that the data in the
+manuscript can be reproduced.
+
+\subsection{The media directory}
+
+Every article comes with a media directory. This directory contains a
+file \texttt{index.html} which is linked from the article page and
+should serve as an entry point to your media files. The minimum
+requirement on this file is the following head:
+
+\begin{lstlisting}[language=html]
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+  <title>ANS V(N) Authors: Title</title>
+  <link rel="stylesheet" type="text/css" href="/ans.css"/>
+</head>
+
+<body>
+  <h2>Archive of Numerical Software V(N)</h2>
+  <h1>Title</h1>
+  <h2>Authors</h2>
+
+  Text and links
+</body>
+</html>
+\end{lstlisting}
+
+The occurences of \lstinline[language=html]!V(N)! should be replaced
+by the assigned volume and number of the publication,
+\lstinline[language=html]!Title! and
+\lstinline[language=html]!Authors! accordingly.  You are welcome to
+use image tags in this file.
+
+Add your image files and movies to this directory, not to the source
+code!
+
+%------------------------------------------------------------------------------
+\section{Philosophi\ae{} Naturalis Principia Mathematica}
+
+\fixme{Also add main references for all libraries listed on the ANS
+  web page.}
+
+As an example text, we present an excerpt from~\citet{Newton1687}.
+
+\subsection{Definitiones}
+
+\subsubsection{Def. I}
+
+Quantitas Materi\ae{} est mensura ejusdem orta ex illius Densitate \&
+Magnitudine conjunctim.
+
+\paragraph{Aer}  duplo densior in duplo spatio quadruplus est. Idem
+intellige de Nive et Pulveribus per compressionem vel liquefactionem
+condensatis. Et par est ratio corporum omnium, qu\ae{} per causas
+quascunq; diversimode condensantur. Medii interea, si quod fuerit,
+interstitia partium libere pervadentis, hic nullam rationem
+habeo. Hanc autem quantitatem sub nomine corporis vel Mass\ae{} in
+sequentibus passim intelligo. Innotescit ea per corporis cujusq;
+pondus. Nam ponderi proportionalem esse reperi per experimenta
+pendulorum accuratissime instituta, uti posthac docebitur.
+
+\subsubsection{Def. II}
+Quantitas motus est mensura ejusdem orta ex Velocitate et quantitate
+Materi\ae{} conjunctim.
+
+\paragraph{Motus}
+totius est summa motuum in partibus singulis, adeoq; in corpore duplo
+majore \ae{}quali cum Velocitate duplus est, et dupla cum Velocitate
+quadruplus.
+
+\subsubsection{Def. III}
+Materi\ae{} vis insita est potentia resistendi, qua corpus unumquodq;,
+quantum in se est, perseverat in statu suo vel quiescendi vel movendi
+uniformiter in directum.
+
+\paragraph{H\ae{}c}
+semper proportionalis est suo corpori, neq; differt quicquam ab
+inertia Mass\ae{}, nisi in modo concipiendi. Per inertiam materi\ae{} fit ut
+corpus omne de statu suo vel quiescendi vel movendi difficulter
+deturbetur. Unde etiam vis insita nomine significantissimo vis inerti\ae{}
+dici possit. Exercet vero corpus hanc vim solummodo in mutatione
+status sui per vim aliam in se impressam facta, estq; exercitium ejus
+sub diverso respectu et Resistentia et Impetus: Resistentia quatenus
+corpus ad conservandum statum suum reluctatur vi impress\ae{}; Impetus
+quatenus corpus idem, vi resistentis obstaculi difficulter cedendo,
+conatur statum ejus mutare. Vulgus Resistentiam quiescentibus et
+Impetum moventibus tribuit; sed motus et quies, uti vulgo
+concipiuntur, respectu solo distinguuntur ab invicem, neq; semper vere
+quiescunt qu\ae{} vulgo tanquam quiescentia spectantur.
+
+\subparagraph{A subparagraph} If you really want to nest that deeply, go
+ahead! But, while you might have enjoyed
+reading~\citet{Wittgenstein1921,Wittgenstein1981}, you are encouraged to
+question the applicability to a publication on a thing as profane as
+software.
+
+\bibliographystyle{abbrvnat}
+\bibliography{submitting}
+\end{document}
