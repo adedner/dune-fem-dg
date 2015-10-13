@@ -25,11 +25,15 @@ namespace Dune {
 template <class GridType>
 class ProblemBase :
   public EvolutionProblemInterface<
-              Dune::Fem::FunctionSpace< double, double, GridType::dimensionworld, GridType::dimensionworld+2>,
+              Dune::Fem::FunctionSpace< typename GridType::ctype,
+                                        typename GridType::ctype,
+                                        GridType::dimensionworld, GridType::dimensionworld+2>,
               false >
 {
   typedef EvolutionProblemInterface<
-              Dune::Fem::FunctionSpace< double, double, GridType::dimensionworld, GridType::dimensionworld+2>,
+              Dune::Fem::FunctionSpace< typename GridType::ctype,
+                                        typename GridType::ctype,
+                                        GridType::dimensionworld, GridType::dimensionworld+2>,
               false > BaseType ;
 
 public:
@@ -40,7 +44,8 @@ public:
 
   enum { Inflow = 1, Outflow = 2, Reflection = 3 , Slip = 4 };
   enum { MaxBnd = Slip };
-  typedef Dune::Fem::FunctionSpace< double, double, GridType::dimension, GridType::dimension+2 > FunctionSpaceType ;
+
+  typedef typename BaseType :: FunctionSpaceType  FunctionSpaceType;
 
   enum { dimDomain = GridType::dimensionworld };
   typedef typename FunctionSpaceType :: RangeType  RangeType ;

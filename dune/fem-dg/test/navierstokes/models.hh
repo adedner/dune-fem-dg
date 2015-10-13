@@ -13,8 +13,6 @@
 
 namespace Dune {
 
-typedef double NSFieldType ;
-
 //////////////////////////////////////////////////////
 //
 //                 NAVIER-STOKES EQNS
@@ -22,13 +20,9 @@ typedef double NSFieldType ;
 //////////////////////////////////////////////////////
 template< class GridPart, class Problem >
 class NSModelTraits
-  : public Fem :: FunctionSpace< NSFieldType, NSFieldType,
-                                 GridPart::GridType::dimensionworld,
-                                 GridPart::GridType::dimensionworld + 2 >
+  : public Problem :: FunctionSpaceType
 {
-  typedef Fem :: FunctionSpace< NSFieldType, NSFieldType,
-                                GridPart::GridType::dimensionworld,
-                                GridPart::GridType::dimensionworld + 2 > BaseType;
+  typedef typename Problem :: FunctionSpaceType BaseType;
 
 public:
   typedef Problem  ProblemType;
@@ -60,7 +54,7 @@ public:
   typedef Intersection       IntersectionType;
   typedef typename GridPartType :: template Codim<0> :: EntityType  EntityType;
 
-  typedef Thermodynamics< dimDomain >                       ThermodynamicsType;
+  typedef typename ProblemType :: ThermodynamicsType                ThermodynamicsType;
 
   typedef MinModLimiter< DomainFieldType > LimiterFunctionType;
 };
@@ -88,6 +82,7 @@ class NSModel : public DefaultModel < NSModelTraits< GridPartType, ProblemImp > 
 
   typedef typename Traits :: DomainType                     DomainType;
   typedef typename Traits :: RangeType                      RangeType;
+  typedef typename Traits :: RangeFieldType                 RangeFieldType;
   typedef typename Traits :: GradientRangeType              GradientRangeType;
   typedef typename Traits :: JacobianRangeType              JacobianRangeType;
   typedef typename Traits :: JacobianFluxRangeType          JacobianFluxRangeType;
@@ -106,7 +101,7 @@ class NSModel : public DefaultModel < NSModelTraits< GridPartType, ProblemImp > 
   {
   }
 
-  double gamma() const { return problem_.gamma() ; }
+  RangeFieldType gamma() const { return problem_.gamma() ; }
 
   inline bool hasStiffSource() const { return problem_.hasStiffSource(); }
   inline bool hasNonStiffSource() const { return problem_.hasNonStiffSource(); }
@@ -227,7 +222,7 @@ class NSModel : public DefaultModel < NSModelTraits< GridPartType, ProblemImp > 
     // get value of mu at temperature T
 
     // get mu
-    const double mu = problem_.mu( u );
+    const RangeFieldType mu = problem_.mu( u );
 
     // ksi = 0.25
     return mu * circumEstimate * alpha_ / (0.25 * u[0] * local.volume());
@@ -270,8 +265,8 @@ class NSModel : public DefaultModel < NSModelTraits< GridPartType, ProblemImp > 
     abort();
     DomainType xgl= local.intersection().intersectionGlobal().global( local.localPoint() );
     const DomainType normal = local.intersection().integrationOuterNormal( local.localPoint() );
-    double p;
-    double T;
+    RangeFieldType p;
+    RangeFieldType T;
     pressAndTemp( uLeft, p, T );
     gLeft = 0;
 
@@ -348,7 +343,7 @@ class NSModel : public DefaultModel < NSModelTraits< GridPartType, ProblemImp > 
   const ThermodynamicsType& thermodynamics_;
   const ProblemType& problem_;
   const FluxType  nsFlux_;
-  const double alpha_;
+  const RangeFieldType alpha_;
 };
 
 } // end namespace Dune
