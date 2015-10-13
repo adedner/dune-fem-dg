@@ -1,0 +1,46 @@
+/**
+<!---------------------------------------------->
+\page DocRules Some Basic Remarks Concerning Documentation
+<!---------------------------------------------->
+In the following some remarks on how to add to the Doxygen documentation of
+dune-fem. Details on doxygen can be found on the Doxygen homepage (see link at
+bottom of each page). Warnings concerning faullty documentation are recorded in
+dune-fem/doc/doxygen.out. So this file should be empty...
+
+- Mathematical formulas can be inserted into the documentation quite easily
+  using a latex style notation.
+- References to other classes or groups are automatically inserted if the name
+  of the class or group is used in the text.\n
+  Specific references can be added using the \\ref command followed by the text
+  which should be highlighted using quotes ("...").
+- The documentation of classes, typedefs, members, etc. always preceed the
+  actual statement in the code.
+- For deprecated members the command \\deprecated should be included in the
+  documentation. For deprecated files the \\deprecated command can be inserted
+  into a file documentation. All thus marked blocks will be linked into a
+  related page.
+- A new implementation can be marked as such by adding \\newimplementation to
+  the documentation. This helps others to get an overview over new additions.
+  Again, a related page linking all new classes is generated.
+- Global parameters (using the Dune::Parameter class) should be
+  documented (e.g. in the documentation of the class using this
+  parameter) through the command 
+  \c femparameter
+  This command takes three arguments: 
+  first argument is the name of the parameter, e.g., \c fem.timeprovider.factor,
+  the second argument is a brief description and the third argument
+  is a default value (if present, otherwise use two arguments).
+  Example:
+  \code
+    \femparameter{fem.timeprovider.factor,a global factor for reducing the
+                  timestep,1.}
+    \femparameter{fem.example, a parmeter without default}
+  \endcode
+  Note the comma for seperating parameters for the command. If the
+  description needs a comma in the text use \c \\,.
+.
+
+The following are of course only guidlines - please add to them.
+
+
+*/
