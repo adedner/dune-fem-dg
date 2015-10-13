@@ -226,12 +226,13 @@ EulerAnalyticalFlux<2>::maxSpeed(const FieldType gamma,
                                  const DomainType& n,
                                  const RangeType& u) const
 {
-  assert( u[0] > 1e-10 );
+  assert( u[0] > FieldType( 1e-10 ) );
   FieldType u_normal = FieldType(u[1]*n[0]+u[2]*n[1]) / u[0];
   FieldType p = pressure(gamma,u);
   FieldType c2 = gamma * p/ u[0] * n.two_norm2();
-  assert( c2 > 1e-10 );
-  return std::abs(u_normal) + std::sqrt(c2);
+  assert( c2 > FieldType( 1e-10 ) );
+  FieldType maxspd = std::abs(double(u_normal)) + std::sqrt(double(c2));
+  return maxspd;
 }
 
 template <>
