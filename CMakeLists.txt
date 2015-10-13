@@ -1,9 +1,6 @@
 # set up project
 project("dune-fem-dg" C CXX)
 
-#circumvent not building docs
-set(BUILD_DOCS 1)
-
 # general stuff
 cmake_minimum_required(VERSION 2.8.6)
 
@@ -15,49 +12,13 @@ list(APPEND CMAKE_MODULE_PATH ${dune-common_MODULE_PATH}
 #include the dune macros
 include(DuneMacros)
 
-
 # start a dune project with information from dune.module
 dune_project()
 
+include(DuneMPI)
 
-# $Id: duneproject 5842 2010-01-20 18:48:34Z joe $
-# we need the module file to be able to build via dunecontrol
-set(EXTRA_DIST dune.module)
-set(SUBDIRS  dune m4 lib)
-if( BUILD_DOCS)
-# TODO: set up documentation tree automatically
-#SUBDIRS += doc
-endif( BUILD_DOCS )
+#add sub directories
+dune_add_subdirs( dune m4 lib doc cmake/modules )
 
-# don't follow the full GNU-standard
-# we need automake 1.5
-set(AUTOMAKE_OPTIONS  foreign 1.5)
-# pass most important options when "make distcheck" is used
-set(DISTCHECK_CONFIGURE_FLAGS  --with-dune-common=${DUNE_COMMON_ROOT} --with-dune-grid=${DUNE_GRID_ROOT} --with-dune-fem=${DUNE_FEM_ROOT}  CXX="${CXX}" CC="${CC}")
-# include not needed for CMake
-# include $(top_srcdir)/am/top-rules
-# include not needed for CMake
-# include $(top_srcdir)/am/global-rules
-
-foreach(i ${SUBDIRS})
-  if(${i} STREQUAL "test")
-    set(opt EXCLUDE_FROM_ALL)
-  endif(${i} STREQUAL "test")
-  add_subdirectory(${i} ${opt})
-  unset(opt)
-endforeach(i ${SUBDIRS})
-
-# small hack since test directories are not set correctly in dune-common-scripts
-# (...or not the way we want it to be...) see FindFiles.cmake
-# we want sub folders in test directories
-set( ADD_TEST_DIR dune/fem-dg/test )
-set( _dirs advdiff euler navierstokes poisson dataio )
-foreach(_dir ${_dirs})
-  set( _dir "${ADD_TEST_DIR}/${_dir}" )
-  set_property(DIRECTORY ${_dir} PROPERTY TEST_INCLUDE_FILE ${CMAKE_BINARY_DIR}/${_dir}/BuildTests.cmake)
-endforeach(_dir ${_dirs})
-
-
-add_subdirectory(cmake/modules)
 # finalize the dune project, e.g., generate config.h etc.
 finalize_dune_project(GENERATE_CONFIG_H_CMAKE)
