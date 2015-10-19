@@ -31,8 +31,8 @@ struct is_tuple
   static const int value = false;
 };
 
-template< class T >
-struct is_tuple< std::tuple< T > >
+template< class... TElem >
+struct is_tuple< std::tuple< TElem... > >
 {
   static const int value = true;
 };
