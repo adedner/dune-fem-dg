@@ -32,7 +32,7 @@
 #include <dune/fem-dg/operator/fluxes/noflux.hh>
 //--------- STEPPER -------------------------
 #include <dune/fem-dg/test/stokes/stokesalgorithm.hh>
-#include <dune/fem-dg/algorithm/combinedsteadystate.hh>
+#include <dune/fem-dg/algorithm/steadystate.hh>
 //--------- EOCERROR ------------------------
 #include <dune/fem-dg/misc/error/l2eocerror.hh>
 #include <dune/fem-dg/misc/error/h1eocerror.hh>
@@ -94,8 +94,8 @@ struct StokesProblemCreator
       {
         static const SolverType solverType = istl ;
         static const bool symmetricSolver = true ;
-      public:
         typedef typename DiscreteFunctionSpaces< FunctionSpaceType, GridPartType, polOrd, _legendre, dg >::type    DiscreteFunctionSpaceType;
+      public:
         typedef typename DiscreteFunctions< DiscreteFunctionSpaceType, solverType >::type                          DiscreteFunctionType;
         typedef typename DiscreteFunctions< DiscreteFunctionSpaceType, solverType >::jacobian                      JacobianOperatorType;
 
@@ -174,8 +174,8 @@ struct StokesProblemCreator
       typedef typename SubPoissonProblemCreator::template DiscreteTraits< polOrd >          PoissonDiscreteTraits;
       static const SolverType solverType = PoissonDiscreteTraits::solverType;
       static const bool symmetricSolver = true ;
-    public:
       typedef typename DiscreteFunctionSpaces< FunctionSpaceType, GridPartType, polOrd, _legendre, dg >::type    DiscreteFunctionSpaceType;
+    public:
       typedef typename DiscreteFunctions< DiscreteFunctionSpaceType, solverType >::type                          DiscreteFunctionType;
       typedef typename DiscreteFunctions< DiscreteFunctionSpaceType, solverType >::jacobian                      JacobianOperatorType;
 

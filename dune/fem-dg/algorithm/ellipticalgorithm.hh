@@ -26,7 +26,7 @@
 #include <dune/fem/misc/gridname.hh>
 
 // include local header files
-#include "steadystate.hh"
+#include "substeadystate.hh"
 
 
 
@@ -488,9 +488,11 @@ namespace Fem
 
     typedef PoissonSigmaEstimator< GridPartType, DiscreteFunctionType, SigmaFunctionSpaceType, AssemblerType, polOrder > PoissonSigmaEstimatorType;
 
-    typedef typename  BaseType::AnalyticalTraits    AnalyticalTraits;
+    typedef typename  BaseType::AnalyticalTraits           AnalyticalTraits;
 
-    typedef typename BaseType::IOTupleType          IOTupleType;
+    typedef typename BaseType::IOTupleType                 IOTupleType;
+
+    typedef typename BaseType::TimeProviderType            TimeProviderType;
 
     typedef PAdaptivity< GridType, polOrder, DiscreteFunctionSpaceType >        PAdaptivityType;
 
@@ -499,12 +501,18 @@ namespace Fem
     using BaseType::grid;
     using BaseType::gridWidth;
     using BaseType::gridSize;
-    using BaseType::space;
     using BaseType::solution;
     using BaseType::exactSolution_;
     using BaseType::solver_;
 
   public:
+    using BaseType::checkSolutionValid;
+    using BaseType::initialize;
+    using BaseType::preSolve;
+    using BaseType::solve;
+    using BaseType::postSolve;
+    using BaseType::finalize;
+
     EllipticAlgorithm(GridType& grid, const std::string name = "" )
     : BaseType( grid, name ),
       grid_( grid ),
@@ -587,7 +595,7 @@ namespace Fem
     }
 
     //! finalize computation by calculating errors and EOCs
-    virtual void finalize( const int eocloop )
+    virtual void finalize( const int loop )
     {
       AnalyticalTraits::addEOCErrors( solution(), model(), problem().exactSolution(), poissonSigmaEstimator_.sigma() );
 

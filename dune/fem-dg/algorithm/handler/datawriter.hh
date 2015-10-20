@@ -11,6 +11,7 @@
 #include <dune/fem/common/utility.hh>
 #include <dune/fem-dg/misc/parameterkey.hh>
 
+//#include <dune/common/classname.hh>
 namespace Dune
 {
 namespace Fem
@@ -26,7 +27,8 @@ namespace Fem
     typedef std::tuple< typename std::add_pointer< StepperHead >::type, typename std::add_pointer< StepperArg >::type... > StepperTupleType;
     typedef typename std::remove_pointer< typename std::tuple_element<0,StepperTupleType>::type >::type  FirstStepperType;
     typedef typename StepperHead::GridType                                                               GridType;
-    typedef typename tuple_concat< typename StepperHead::IOTupleType, typename StepperArg::IOTupleType... >::type IOTupleType;
+    typedef typename tuple_concat< typename StepperHead::IOTupleType::type, typename StepperArg::IOTupleType::type... >::type IOTupleType;
+
     typedef DataWriter< GridType, IOTupleType >                                                          DataWriterType;
 
     static_assert( Std::are_all_same< GridType, typename StepperArg::GridType... >::value,
@@ -54,6 +56,42 @@ namespace Fem
       }
     };
 
+//    struct DataTupleElement
+//    {
+//      template< class Tuple, class ... Args >
+//      static void apply ( Tuple &tuple, Args && ... args )
+//      {
+//        auto data = std::get<i>( tuple );
+//        //std::cout << i << ":" << className( data ) << std::end;
+//        std::cout << data << ", ";
+//      }
+//    };
+//
+//    template< int i >
+//    struct DataTuple
+//    {
+//      template< class Tuple, class ... Args >
+//      static void apply ( Tuple &tuple, Args && ... args )
+//      {
+//        auto data = std::get<i>( tuple )->dataTuple();
+//        //std::cout << "IOTuple" << i << ":" << className( data ) << std::endl << std::endl;
+//        std::cout << "|";
+//        ForLoop< DataTupleElement, 0, std::tuple_size<decltype( data )>::value -1 >::apply( data );
+//      }
+//    };
+//
+//    template< int i >
+//    struct DataTupleConverted
+//    {
+//      template< class Tuple, class ... Args >
+//      static void apply ( Tuple &tuple, Args && ... args )
+//      {
+//        auto data = std::get<i>( tuple );
+//        std::cout << data << ", ";
+//      }
+//    };
+
+
   public:
 
 
@@ -62,6 +100,9 @@ namespace Fem
         dataWriter_(),
         dataTuple_( dataTuple( tuple, Std::index_sequence_for< StepperHead, StepperArg ... >() ) )
     {
+      //std::cout << "============================" <<std::endl << "DataIOTuple";
+      //ForLoop< DataTupleConverted, 0, tuple_size< decltype( dataTuple_ ) >::value - 1 >::apply( dataTuple_ );
+      //std::cout << std::endl;
     }
 
     template< class TimeProviderImp, class ParameterType >
@@ -78,6 +119,9 @@ namespace Fem
         //update all additional Output
         ForLoop< AdditionalOutput, 0, sizeof ... ( StepperArg ) >::apply( tuple_, tp );
 
+        //std::cout << "============================" <<std::endl;
+        //ForLoop< DataTuple, 0, sizeof ... ( StepperArg ) >::apply( tuple_, tp );
+        //std::cout << std::endl;
         //writeData
         dataWriter_->write( tp );
       }
@@ -104,7 +148,7 @@ namespace Fem
     template< std::size_t ... i >
     IOTupleType dataTuple ( const StepperTupleType &tuple, Std::index_sequence< i ... > )
     {
-      return std::tuple_cat( std::get< i >( tuple )->dataTuple()... );
+      return std::tuple_cat( (*std::get< i >( tuple )->dataTuple() )... );
     }
 
 

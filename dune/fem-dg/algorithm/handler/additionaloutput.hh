@@ -113,7 +113,7 @@ namespace Fem
         typedef typename SubStepperImp::ProblemType::InstationaryFunctionType      ExactSolutionType;
         typedef Dune::Fem::GridFunctionAdapter< ExactSolutionType, GridPartType >  GridFunctionAdapterType;
         auto ftf = stepper.problem().fixedTimeFunction( tp.time() );
-        GridFunctionAdapterType adapter( "temporary adapter", ftf , stepper.gridPart(), solution_->space().order()+2 );
+        GridFunctionAdapterType adapter( "temporary adapter", ftf , solution_->space().gridPart(), solution_->space().order()+2 );
         interpolate( adapter, *solution_ );
       }
     }

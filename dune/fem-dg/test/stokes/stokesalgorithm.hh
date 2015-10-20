@@ -288,32 +288,39 @@ namespace Fem
     typedef StokesSigmaEstimator< GridPartType, DiscreteVelocityFunctionType, DiscreteFunctionType,
                                   SigmaFunctionSpaceType, typename EllipticalAlgorithmType::AssemblerType, ModelType, polOrd > StokesSigmaEstimatorType;
 
-    typedef typename tuple_concat< typename EllipticalAlgorithmType::IOTupleType, typename BaseType::IOTupleType >::type     IOTupleType;
+    typedef CovariantTuple< typename BaseType::IOTupleType::type, typename EllipticalAlgorithmType::IOTupleType::type >
+                                                                    IOTupleType;
 
-    typedef typename  BaseType::AnalyticalTraits    AnalyticalTraits;
+    typedef typename BaseType::TimeProviderType                     TimeProviderType;
+
+    typedef typename  BaseType::AnalyticalTraits                    AnalyticalTraits;
 
     using BaseType::problem;
     using BaseType::model;
     using BaseType::grid;
     using BaseType::gridWidth;
     using BaseType::gridSize;
-    using BaseType::space;
     using BaseType::solution;
     using BaseType::solver_;
     using BaseType::exactSolution_;
 
   public:
+    using BaseType::checkSolutionValid;
+    using BaseType::initialize;
+    using BaseType::preSolve;
+    using BaseType::solve;
+    using BaseType::postSolve;
+    using BaseType::finalize;
+
     explicit StokesAlgorithm(GridType& grid, std::string moduleName = "" ) :
       BaseType( grid, moduleName ),
       ellAlg_( grid, moduleName ),
       gridPart_( grid ),
       space_( gridPart_ ),
       stokesSigmaEstimator_( gridPart_, ellAlg_.solution(), solution(), ellAlg_.assembler(), moduleName ),
-      assembler_( ellAlg_.space() , space_, problem() )
+      assembler_( ellAlg_.solution().space() , space_, problem() ),
+      ioTuple_( *BaseType::dataTuple(), *ellAlg_.dataTuple() )
     {}
-
-    //! return reference to discrete space
-    const DiscreteFunctionSpaceType & space() const { return space_; }
 
     virtual BasicLinearSolverType* createSolver( DiscreteFunctionType* rhs )
     {
@@ -331,7 +338,7 @@ namespace Fem
       space_.adapt( polOrderVecPressure);
 #endif
 #endif
-      return new BasicLinearSolverType( assembler_, ellAlg_.solver(), ellAlg_.rhs(), absLimit, 3*ellAlg_.space().size() );
+      return new BasicLinearSolverType( assembler_, ellAlg_.solver(), ellAlg_.rhs(), absLimit, 3*ellAlg_.solution().space().size() );
     }
 
     virtual DiscreteFunctionType& rhs()
@@ -339,19 +346,19 @@ namespace Fem
       return assembler_.pressureRhs();
     }
 
-    void initialize ( const int loop )
+    virtual void initialize ( const int loop )
     {
       ellAlg_.initialize( loop );
       BaseType::initialize( loop );
     }
 
-    void preSolve( int loop )
+    virtual void preSolve( const int loop )
     {
       ellAlg_.preSolve( loop );
       BaseType::preSolve( loop );
     }
 
-    void solve( const int loop )
+    virtual void solve( const int loop )
     {
       BaseType::solve( loop );
 
@@ -364,22 +371,22 @@ namespace Fem
       stokesSigmaEstimator_.update();
     }
 
-    virtual void postSolve( int loop )
+    virtual void postSolve( const int loop )
     {
       ellAlg_.postSolve( loop );
       BaseType::postSolve( loop );
     }
 
     //! finalize computation by calculating errors and EOCs
-    void finalize( const int eocloop )
+    virtual void finalize( const int loop )
     {
-      ellAlg_.finalize( eocloop );
+      ellAlg_.finalize( loop );
       AnalyticalTraits::addEOCErrors( solution(), ellAlg_.model(), problem().exactPressure() );
     }
 
-    IOTupleType dataTuple ()
+    virtual IOTupleType& dataTuple ()
     {
-      return std::tuple_cat( ellAlg_.dataTuple(), BaseType::dataTuple() );
+      return ioTuple_;
     }
 
     bool adaptation(const double tolerance)
@@ -410,6 +417,7 @@ namespace Fem
 
     StokesSigmaEstimatorType          stokesSigmaEstimator_;
     AssemblerType                     assembler_;
+    IOTupleType                       ioTuple_;
 
   };
 

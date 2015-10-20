@@ -28,7 +28,7 @@
 #include <dune/fem-dg/algorithm/advectiondiffusionstepper.hh>
 #include <dune/fem-dg/algorithm/advectionstepper.hh>
 #include <dune/fem-dg/test/stokes/stokesalgorithm.hh>
-#include <dune/fem-dg/algorithm/combinedevolution.hh>
+#include <dune/fem-dg/algorithm/evolution.hh>
 //--------- EOCERROR ------------------------
 #include <dune/fem-dg/misc/error/l2eocerror.hh>
 #include <dune/fem-dg/misc/error/h1eocerror.hh>
@@ -97,8 +97,8 @@ struct IncompressibleNavierStokesProblemCreator
       {
         static const bool symmetricSolver = true ;
         static const SolverType solverType = istl ;
-      public:
         typedef typename DiscreteFunctionSpaces< FunctionSpaceType, GridPartType, polOrd, _legendre, dg >::type    DiscreteFunctionSpaceType;
+      public:
         typedef typename DiscreteFunctions< DiscreteFunctionSpaceType, solverType >::type                          DiscreteFunctionType;
         typedef typename DiscreteFunctions< DiscreteFunctionSpaceType, solverType >::jacobian                      JacobianOperatorType;
 
@@ -188,8 +188,8 @@ struct IncompressibleNavierStokesProblemCreator
       typedef typename SubPoissonProblemCreator::template DiscreteTraits< polOrd >          PoissonDiscreteTraits;
       static const SolverType solverType = PoissonDiscreteTraits::solverType;
       static const bool symmetricSolver = true ;
-    public:
       typedef typename DiscreteFunctionSpaces< FunctionSpaceType, GridPartType, polOrd, _legendre, dg >::type    DiscreteFunctionSpaceType;
+    public:
       typedef typename DiscreteFunctions< DiscreteFunctionSpaceType, solverType >::type                                   DiscreteFunctionType;
       typedef typename DiscreteFunctions< DiscreteFunctionSpaceType, solverType >::jacobian                               JacobianOperatorType;
 
@@ -244,7 +244,8 @@ struct IncompressibleNavierStokesProblemCreator
     template <int polOrd>
     struct Stepper
     {
-      typedef Dune::Fem::SubSteadyState2EvolutionAlgorithm< GridType, Dune::Fem::StokesAlgorithm< GridType, SubStokesProblemCreator, SubPoissonProblemCreator, polOrd >, polOrd >Type;
+      //typedef Dune::Fem::SubSteadyState2EvolutionAlgorithm< GridType, Dune::Fem::StokesAlgorithm< GridType, SubStokesProblemCreator, SubPoissonProblemCreator, polOrd >, polOrd >Type;
+      typedef Dune::Fem::StokesAlgorithm< GridType, SubStokesProblemCreator, SubPoissonProblemCreator, polOrd > Type;
     };
   };
 
@@ -289,8 +290,8 @@ struct IncompressibleNavierStokesProblemCreator
     {
     private:
       static const SolverType solverType = fem;
+      typedef typename DiscreteFunctionSpaces< FunctionSpaceType, GridPartType, polOrd, _legendre, dg >::type             DiscreteFunctionSpaceType;
     public:
-      typedef typename DiscreteFunctionSpaces< FunctionSpaceType, GridPartType, polOrd, _legendre, dg >::type    DiscreteFunctionSpaceType;
       typedef typename DiscreteFunctions< DiscreteFunctionSpaceType, solverType >::type                                   DiscreteFunctionType;
       typedef typename DiscreteFunctions< DiscreteFunctionSpaceType, solverType >::jacobian                               JacobianOperatorType;
 

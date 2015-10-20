@@ -140,8 +140,8 @@ namespace Dune {
   public:
 
     //Constructor
-    StokesAssembler( DiscreteFunctionSpaceType& spc,
-                     DiscretePressureSpaceType& pressurespc,
+    StokesAssembler( const DiscreteFunctionSpaceType& spc,
+                     const DiscretePressureSpaceType& pressurespc,
                      const ProblemType& problem,
                      double d11=1.,
                      double d12=1.) :

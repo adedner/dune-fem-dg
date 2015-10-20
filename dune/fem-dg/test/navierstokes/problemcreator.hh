@@ -30,7 +30,7 @@
 //--------- STEPPER -------------------------
 #include <dune/fem-dg/algorithm/advectiondiffusionstepper.hh>
 #include <dune/fem-dg/algorithm/advectionstepper.hh>
-#include <dune/fem-dg/algorithm/combinedevolution.hh>
+#include <dune/fem-dg/algorithm/evolution.hh>
 //--------- EOCERROR ------------------------
 #include <dune/fem-dg/misc/error/l2eocerror.hh>
 #include <dune/fem-dg/misc/error/l1eocerror.hh>
@@ -86,8 +86,8 @@ struct NavierStokesProblemCreator
     {
     private:
       static const SolverType solverType = fem;
+      typedef typename DiscreteFunctionSpaces< FunctionSpaceType, GridPartType, polOrd, _legendre, dg >::type             DiscreteFunctionSpaceType;
     public:
-      typedef typename DiscreteFunctionSpaces< FunctionSpaceType, GridPartType, polOrd, _legendre, dg >::type    DiscreteFunctionSpaceType;
       typedef typename DiscreteFunctions< DiscreteFunctionSpaceType, solverType >::type                                   DiscreteFunctionType;
       typedef typename DiscreteFunctions< DiscreteFunctionSpaceType, solverType >::jacobian                               JacobianOperatorType;
 

@@ -1,22 +1,32 @@
-#ifndef DUNE_FEMDG_ALGORITHM_EVOLUTION_HH
-#define DUNE_FEMDG_ALGORITHM_EVOLUTION_HH
+#ifndef DUNE_FEMDG_ALGORITHM_COMBINED_EVOLUTION_HH
+#define DUNE_FEMDG_ALGORITHM_COMBINED_EVOLUTION_HH
 
-#include <iostream>
-#include <string>
-#include <type_traits>
 
-#include <dune/fem-dg/pass/threadpass.hh>
+#include <dune/fem/gridpart/adaptiveleafgridpart.hh>
+#include <dune/fem/gridpart/leafgridpart.hh>
 #include <dune/fem/misc/gridwidth.hh>
 
-#include <dune/fem-dg/misc/typedefcheck.hh>
-
+#include <dune/fem-dg/algorithm/base.hh>
 #include <dune/fem/misc/femtimer.hh>
-#include <dune/common/timer.hh>
-#include <dune/fem/space/common/interpolate.hh>
 
-#include <dune/fem-dg/algorithm/handler/solvermonitor.hh>
+// include std libs
+#include <iostream>
+#include <string>
+
+// Dune includes
+#include <dune/fem/misc/l2norm.hh>
+#include <dune/fem/operator/projection/l2projection.hh>
+#include <dune/fem-dg/pass/threadpass.hh>
+#include <dune/common/timer.hh>
+
+
 #include <dune/fem-dg/algorithm/handler/diagnostics.hh>
+#include <dune/fem-dg/algorithm/handler/solvermonitor.hh>
+#include <dune/fem-dg/algorithm/handler/checkpoint.hh>
+#include <dune/fem-dg/algorithm/handler/datawriter.hh>
 #include <dune/fem-dg/algorithm/handler/additionaloutput.hh>
+#include <dune/fem-dg/algorithm/handler/solutionlimiter.hh>
+#include <dune/fem-dg/algorithm/handler/adapt.hh>
 
 namespace Dune
 {
@@ -24,316 +34,517 @@ namespace Dune
 namespace Fem
 {
 
+  // internal forward declarations
+  // -----------------------------
+
+  template< class Traits >
+  class EvolutionAlgorithmBase;
 
 
-  // SubEvolutionAlgorithmTraits
-  // -------------------------
+  // StepperParametersType
+  // ---------------------
 
-  template< class Grid,
-            class ProblemTraits,
-            int polOrder >
-  struct SubEvolutionAlgorithmTraits
+  class StepperParameters
+  : public Dune::Fem::LocalParameter< StepperParameters, StepperParameters >
   {
-  private:
-    CHECK_TYPEDEF_EXISTS( AdaptIndicatorType )
-    CHECK_TYPEDEF_EXISTS( AdditionalOutputHandlerType )
-    CHECK_TYPEDEF_EXISTS( SolverMonitorHandlerType )
-    CHECK_TYPEDEF_EXISTS( DiagnosticsHandlerType )
+    protected:
+    const std::string keyPrefix_;
 
-  public:
-    static const int polynomialOrder = polOrder;
+    public:
+    StepperParameters( const std::string keyPrefix = "femdg.stepper." )
+      : keyPrefix_( keyPrefix )
+    {}
 
-    typedef ProblemTraits                                          ProblemTraitsType;
+    virtual double fixedTimeStep() const
+    {
+      return Dune::Fem::Parameter::getValue< double >( keyPrefix_ + "fixedtimestep" , 0.0 );
+    }
 
+    virtual double fixedTimeStepEocLoopFactor() const
+    {
+      return Dune::Fem::Parameter::getValue< double >( keyPrefix_ + "fixedtimestepeocloopfactor" , 1.0 );
+    }
+
+    virtual double startTime() const
+    {
+      return Dune::Fem::Parameter::getValue< double >( keyPrefix_ + "starttime" , 0.0 );
+    }
+
+    virtual double endTime() const
+    {
+      return Dune::Fem::Parameter::getValue< double >( keyPrefix_ + "endtime"/*, 1.0 */);
+    }
+
+    virtual int printCount() const
+    {
+      return Dune::Fem::Parameter::getValue< int >( keyPrefix_ + "printcount" , -1 );
+    }
+
+    virtual double maxTimeStep() const
+    {
+      return Dune::Fem::Parameter::getValue< double >( keyPrefix_ + "maxtimestep", std::numeric_limits<double>::max());
+    }
+
+    virtual int maximalTimeSteps () const
+    {
+      return Dune::Fem::Parameter::getValue< int >(  keyPrefix_ + "maximaltimesteps", std::numeric_limits<int>::max());
+    }
+
+    virtual bool stopAtEndTime() const
+    {
+      return Dune::Fem::Parameter::getValue< bool >( keyPrefix_ + "stopatendtime", bool(false) );
+    }
+
+  };
+
+
+  // EvolutionAlgorithmTraits
+  // -------------------------
+  template< int polOrder, class ... ProblemTraits >
+  struct EvolutionAlgorithmTraits
+  {
     // type of Grid
-    typedef Grid                                                   GridType;
-    typedef typename ProblemTraits::HostGridPartType               HostGridPartType;
-    typedef typename ProblemTraits::GridPartType                   GridPartType;
-
-    typedef typename ProblemTraits::AnalyticalTraits               AnalyticalTraits;
-    typedef typename ProblemTraits::template DiscreteTraits< polynomialOrder >  DiscreteTraits;
-
-    // obtain the problem dependent types, analytical context
-    typedef typename AnalyticalTraits::ModelType                   ModelType;
-    typedef typename AnalyticalTraits::ProblemType                 ProblemType;
-    typedef typename AnalyticalTraits::InitialDataType             InitialDataType;
-
-    // type of discrete function space and discrete function
-    typedef typename DiscreteTraits::InitialProjectorType          InitialProjectorType;
-
-    // type of dg operator
-    typedef typename DiscreteTraits::Operator                      OperatorType;
-
-    typedef typename DiscreteTraits::DiscreteFunctionSpaceType     DiscreteFunctionSpaceType;
-    typedef typename DiscreteTraits::DiscreteFunctionType          DiscreteFunctionType;
-
-    typedef typename DiscreteTraits::ExtraParameterTuple           ExtraParameterTupleType;
-    typedef typename DiscreteTraits::IOTupleType                   IOTupleType;
+    typedef typename std::tuple_element<0, std::tuple< ProblemTraits... > >::type::GridType  GridType;
 
     // wrap operator
-    typedef GridTimeProvider< GridType >                           TimeProviderType;
+    typedef GridTimeProvider< GridType >                                   TimeProviderType;
 
-    typedef typename DiscreteTraits::Solver                        SolverType;
+    typedef Dune::Fem::DiagnosticsHandler    < typename ProblemTraits::template Stepper<polOrder>::Type...  > DiagnosticsHandlerType;
+    typedef Dune::Fem::SolverMonitorHandler  < typename ProblemTraits::template Stepper<polOrder>::Type...  > SolverMonitorHandlerType;
+    typedef Dune::Fem::CheckPointHandler     < typename ProblemTraits::template Stepper<polOrder>::Type...  > CheckPointHandlerType;
+    typedef Dune::Fem::DataWriterHandler     < typename ProblemTraits::template Stepper<polOrder>::Type...  > DataWriterHandlerType;
+    typedef Dune::Fem::SolutionLimiterHandler< typename ProblemTraits::template Stepper<polOrder>::Type...  > SolutionLimiterHandlerType;
+    typedef Dune::Fem::AdaptHandler          < typename ProblemTraits::template Stepper<polOrder>::Type...  > AdaptHandlerType;
 
-    typedef typename AdaptIndicatorTypes< DiscreteTraits >::type            AdaptIndicatorType;
-    typedef typename AdditionalOutputHandlerTypes< DiscreteTraits >::type   AdditionalOutputHandlerType;
-    typedef typename SolverMonitorHandlerTypes< DiscreteTraits >::type      SolverMonitorHandlerType;
-    typedef typename DiagnosticsHandlerTypes< DiscreteTraits >::type        DiagnosticsHandlerType;
+    typedef typename DataWriterHandlerType::IOTupleType                                                                      IOTupleType;
+    typedef std::tuple< typename std::add_pointer< typename ProblemTraits::template Stepper<polOrder>::Type >::type... > StepperTupleType;
+
+    template< std::size_t ...i >
+    static StepperTupleType createStepper ( Std::index_sequence< i... >, GridType &grid, const std::string name = "" )
+    {
+      return std::make_tuple( new typename std::remove_pointer< typename std::tuple_element< i, StepperTupleType >::type >::type( grid, name ) ... );
+    }
+
+    // create Tuple of contained sub algorithms
+    static StepperTupleType createStepper( GridType &grid, const std::string name = "" )
+    {
+      return createStepper( Std::index_sequence_for< ProblemTraits ... >(), grid, name );
+    }
   };
 
 
-
-  template< class SubEvolutionAlgorithmTraits >
-  class SubEvolutionAlgorithmBase;
-
-  template< class Grid, class ProblemTraits, int polOrder >
-  class SubEvolutionAlgorithm
-    : public SubEvolutionAlgorithmBase< SubEvolutionAlgorithmTraits< Grid, ProblemTraits, polOrder > >
-  {
-    typedef SubEvolutionAlgorithmTraits< Grid, ProblemTraits, polOrder >                    Traits;
-    typedef SubEvolutionAlgorithmBase< Traits >                                             BaseType;
-  public:
-    SubEvolutionAlgorithm( Grid &grid, const std::string name = "" )
-    : BaseType( grid, name  )
-    {}
-  };
-
-  // SubEvolutionAlgorithm
+  // EvolutionAlgorithm
   // ------------------
 
-  template< class SubEvolutionAlgorithmTraits >
-  class SubEvolutionAlgorithmBase
+  template< int polOrder, class ... ProblemTraits >
+  class EvolutionAlgorithm
+  : public EvolutionAlgorithmBase< EvolutionAlgorithmTraits< polOrder, ProblemTraits ... > >
   {
-    typedef SubEvolutionAlgorithmTraits                          Traits;
-
-    //static_assert( !std::is_void< typename Traits::AdditionalOutputHandlerType >::value,
-    //               "SubEvolutionAlgorithmBase wants to create an object of type AdditionalOuputHandlerType."
-    //               "Please define 'AdditionalOutputHandlerType' in your SubProblemCreator creating this class." );
+    typedef EvolutionAlgorithmTraits< polOrder, ProblemTraits... > Traits;
+    typedef EvolutionAlgorithmBase< Traits > BaseType;
   public:
-    typedef typename Traits::GridType                            GridType;
-    typedef typename Traits::IOTupleType                         IOTupleType;
+    typedef typename BaseType::GridType GridType;
+
+    EvolutionAlgorithm ( GridType &grid, const std::string name = "" )
+      : BaseType( grid, name )
+    {}
+  };
+
+
+
+  // EvolutionAlgorithmBase
+  // ----------------------
+
+  template< class Traits >
+  class EvolutionAlgorithmBase
+    : public AlgorithmInterface< Traits >
+  {
+    typedef AlgorithmInterface< Traits >                                              BaseType;
+  public:
+    typedef typename BaseType::GridType                          GridType;
+    typedef typename BaseType::IOTupleType                       IOTupleType;
+    typedef typename BaseType::SolverMonitorHandlerType          SolverMonitorHandlerType;
+
+    typedef typename Traits::StepperTupleType                    StepperTupleType;
     typedef typename Traits::TimeProviderType                    TimeProviderType;
 
-    typedef typename Traits::HostGridPartType                    HostGridPartType;
+    typedef typename Traits::DiagnosticsHandlerType                     DiagnosticsHandlerType;
+    typedef typename Traits::CheckPointHandlerType                      CheckPointHandlerType;
+    typedef typename Traits::DataWriterHandlerType                      DataWriterHandlerType;
+    typedef typename Traits::SolutionLimiterHandlerType                 SolutionLimiterHandlerType;
+    typedef typename Traits::AdaptHandlerType                           AdaptHandlerType;
 
-    // An analytical version of our model
-    typedef typename Traits::ModelType                           ModelType;
-    typedef typename Traits::ProblemType                         ProblemType;
+    typedef uint64_t                                                    UInt64Type ;
 
-    typedef typename Traits::GridPartType                        GridPartType;
-    typedef typename Traits::DiscreteFunctionSpaceType           DiscreteFunctionSpaceType;
-    typedef typename Traits::DiscreteFunctionType                DiscreteFunctionType;
+    typedef StepperParameters                                           StepperParametersType;
 
-    typedef typename Traits::SolverType                          SolverType;
+    using BaseType::grid_;
+    using BaseType::eocParam_;
+    using BaseType::grid;
 
-    // The DG space operator
-    typedef typename Traits::OperatorType                        OperatorType;
+    template< int i >
+    struct Initialize
+    {
+      template< class Tuple, class AdaptHandler, class ... Args >
+      static void apply ( Tuple &tuple, AdaptHandler& handler, Args&& ... a )
+      {
+        std::get< i >( tuple )->initialize( std::forward<Args>(a) ... );
+        /*
+        std::get< i >( tuple )->diagnostics().registerData( "AdaptationTime", &handler.adaptationTime() );
+        std::get< i >( tuple )->diagnostics().registerData( "LoadBalanceTime", &handler.loadBalanceTime() );
+        */
+      }
+    };
+    template< int i >
+    struct PreSolve
+    {
+      template< class Tuple, class ... Args >
+      static void apply ( Tuple &tuple, Args&& ... a )
+      {
+        std::get< i >( tuple )->preSolve( std::forward<Args>(a)... );
+      }
+    };
+    template< int i >
+    struct Solve
+    {
+      template< class Tuple, class ... Args >
+      static void apply ( Tuple &tuple, Args&& ... a )
+      {
+        std::get< i >( tuple )->solve( std::forward<Args>(a)... );
+      }
+    };
+    template< int i >
+    struct PostSolve
+    {
+      template< class Tuple, class ... Args >
+      static void apply ( Tuple &tuple, Args&& ... a )
+      {
+        std::get< i >( tuple )->postSolve( std::forward<Args>(a)... );
+      }
+    };
 
-    // type of initial interpolation
-    typedef typename Traits::InitialProjectorType                InitialProjectorType;
+    template< int i >
+    struct Finalize
+    {
+      template< class Tuple, class ... Args >
+      static void apply ( Tuple &tuple, Args&& ... a )
+      {
+        std::get< i >( tuple )->finalize( std::forward<Args>(a)... );
+      }
+    };
+    template< int i >
+    struct GridWidth
+    {
+      template< class Tuple, class ... Args >
+      static void apply ( Tuple &tuple, double& res, Args&& ... a )
+      {
+        res = std::max( res, std::get< i >( tuple )->gridWidth( std::forward<Args>(a)... ) );
+      }
+    };
+    template< int i >
+    struct GridSize
+    {
+      template< class Tuple, class ... Args >
+      static void apply ( Tuple &tuple, UInt64Type& res, Args&& ... a )
+      {
+        res = std::max( res, std::get< i >( tuple )->gridSize( std::forward<Args>(a)... ) );
+      }
+    };
+    template< int i >
+    struct CheckSolutionValid
+    {
+      template< class Tuple, class ... Args >
+      static void apply ( Tuple &tuple, bool& res, Args&& ... a )
+      {
+        res &= std::get< i >( tuple )->checkSolutionValid( std::forward<Args>(a)... );
+      }
+    };
 
-    // analytical Tratis
-    typedef typename Traits::AnalyticalTraits                    AnalyticalTraits;
+    static const int numSteppers = std::tuple_size< StepperTupleType >::value;
 
-    // discrete Traits
-    typedef typename Traits::DiscreteTraits                      DiscreteTraits;
-
-    typedef typename Traits::ExtraParameterTupleType  ExtraParameterTupleType;
-
-    typedef uint64_t                                              UInt64Type ;
-
-    typedef DiscreteFunctionType                                  CheckPointDiscreteFunctionType;
-    typedef DiscreteFunctionType                                  LimitDiscreteFunctionType;
-    typedef DiscreteFunctionType                                  AdaptationDiscreteFunctionType;
-
-    typedef typename Traits::AdaptIndicatorType                   AdaptIndicatorType;
-    typedef typename Traits::DiagnosticsHandlerType               DiagnosticsHandlerType;
-    typedef typename Traits::SolverMonitorHandlerType             SolverMonitorHandlerType;
-    typedef typename Traits::AdditionalOutputHandlerType          AdditionalOutputHandlerType;
-
-
-    SubEvolutionAlgorithmBase ( GridType &grid, const std::string name = "" )
-    : grid_( grid ),
-      algorithmName_( name ),
-      gridPart_( grid_ ),
-      space_( gridPart_ ),
-      solution_( "U_"+name, space() ),
-      exactSolution_( "U_exact"+name, space() ),
-      problem_( Traits::ProblemTraitsType::problem() ),
-      model_( *problem_ ),
-      diagnosticsHandler_( name ),
-      solverMonitorHandler_(  name ),
-      additionalOutputHandler_( nullptr ),
-      odeSolverMonitor_(),
-      overallTimer_(),
-      solver_(),
-      overallTime_( 0 )
+    EvolutionAlgorithmBase ( GridType &grid, const std::string name = "" )
+    : BaseType( grid, name  ),
+      tuple_( Traits::createStepper( grid, name ) ),
+      param_( StepperParametersType( Dune::ParameterKey::generate( "", "femdg.stepper." ) ) ),
+      checkPointHandler_( tuple_ ),
+      dataWriterHandler_( tuple_ ),
+      diagnosticsHandler_( tuple_ ),
+      solverMonitorHandler_( tuple_ ),
+      solutionLimiterHandler_( tuple_ ),
+      adaptHandler_( tuple_ ),
+      fixedTimeStep_( param_.fixedTimeStep() )
     {}
-    virtual const std::string name () { return algorithmName_; }
-
-    GridType& grid () const { return grid_; }
 
     // return grid width of grid (overload in derived classes)
-    virtual double gridWidth () const { return GridWidth::calcGridWidth( gridPart_ ); }
+    double gridWidth () const
+    {
+      double res=0.0;
+      ForLoop< GridWidth, 0, numSteppers - 1 >::apply( tuple_, res );
+      return res;
+    }
 
     // return size of grid
-    virtual UInt64Type gridSize () const { UInt64Type grSize = grid().size(0); return grid().comm().sum( grSize); }
+    UInt64Type gridSize () const
+    {
+      UInt64Type res=0;
+      ForLoop< GridSize, 0, numSteppers - 1 >::apply( tuple_, res );
+      return res;
+    }
 
-    virtual bool checkSolutionValid ( const int loop, TimeProviderType& tp ) const { return solution_.dofsValid(); }
+    bool checkSolutionValid( const int loop, TimeProviderType& tp ) const
+    {
+      bool res = true;
+      ForLoop< CheckSolutionValid, 0, numSteppers - 1 >::apply( tuple_, res, loop, &tp );
+      return res;
+    }
 
-    // function creating the ode solvers
-    virtual typename SolverType::type* createSolver ( TimeProviderType& ) = 0;
+    //! default time loop implementation, overload for changes in derived classes !!!
+    void solve ( const int loop )
+    {
+      // get start and end time from parameter file
+      const double startTime = param_.startTime();
+      const double endTime   = param_.endTime();
 
-    // return reference to the discrete function space
-    const DiscreteFunctionSpaceType& space () const { return space_; }
+      // Initialize TimeProvider
+      TimeProviderType tp( startTime, this->grid() );
 
-    // return reference to discrete function holding solution
-    DiscreteFunctionType& solution () { return solution_; }
+      // call solve implementation taking start and end time
+      solve( loop, tp, endTime );
+    }
 
-    //SOLVERMONITOR
-    virtual SolverMonitorHandlerType* monitor() { return solverMonitorHandler_.value(); }
+    //! default time loop implementation, overload for changes in derived classes !!!
+    void solve ( const int loop, TimeProviderType& tp, const double endTime )
+    {
+      // get grid reference
+      GridType& grid = this->grid();
 
-    //DIAGNOSTICS
-    virtual DiagnosticsHandlerType* diagnostics() { return diagnosticsHandler_.value(); }
+      // print info on each printCount step
+      const int printCount = param_.printCount();
 
-    //ADDITIONALOUTPUT
-    virtual AdditionalOutputHandlerType* additionalOutput() { return additionalOutputHandler_.value(); }
+      double maxTimeStep = param_.maxTimeStep();
 
-    //LIMITING
-    virtual void limit(){}
-    virtual LimitDiscreteFunctionType* limitSolution () { return &solution_; }
+#ifdef BASEFUNCTIONSET_CODEGEN_GENERATE
+      // in codegen modus make endTime large and only compute one timestep
+      const int maximalTimeSteps = 1;
+#else
+      // if this variable is set then only maximalTimeSteps timesteps will be computed
+      const int maximalTimeSteps = param_.maximalTimeSteps();
+#endif
 
-    //ADAPTATION
-    virtual AdaptIndicatorType* adaptIndicator() { return nullptr; }
-    virtual AdaptationDiscreteFunctionType* adaptationSolution () { return &solution_; }
+      // restoreData if checkpointing is enabled (default is disabled)
+      bool newStart = ( eocParam_.steps() == 1) ? checkPointHandler_.restoreData( tp ) : false;
 
-    //CHECKPOINTING
-    virtual CheckPointDiscreteFunctionType* checkPointSolution () { return &solution_; }
+      initialize( loop, tp );
 
-    //DATAWRITING
-    virtual IOTupleType dataTuple () { return std::make_tuple( &solution(), &exactSolution_ ); }
+      if( adaptHandler_.adaptive() && newStart )
+      {
+        // adapt the grid to the initial data
+        for( int startCount = 0; startCount < adaptHandler_.finestLevel(); ++ startCount )
+        {
+          // call initial adaptation
+          adaptHandler_.init();
+
+           // setup problem again
+           initialize( loop, tp );
+
+           // some info in verbose mode
+           if( Fem::Parameter::verbose() )
+           {
+             std::cout << "Start adaptation: step " << startCount << ",  dt = " << tp.deltaT() << ",  grid size: " << gridSize()
+                       << std::endl;
+          }
+        }
+      }
+
+      dataWriterHandler_.init( tp, eocParam_.dataOutputParameters( loop, dataPrefix() ) );
+
+      // register data functions to check pointer
+      checkPointHandler_.registerData();
+
+      // start first time step with prescribed fixed time step
+      // if it is not 0 otherwise use the internal estimate
+      tp.provideTimeStepEstimate(maxTimeStep);
+
+      // adjust fixed time step with timeprovider.factor()
+      const double fixedTimeStep = fixedTimeStep_/tp.factor() ;
+      if ( fixedTimeStep > 1e-20 )
+        tp.init( fixedTimeStep );
+      else
+        tp.init();
+
+      // true if last time step should match end time
+      const bool stopAtEndTime =  param_.stopAtEndTime();
+
+      //******************************
+      //*  Time Loop                 *
+      //******************************
+      for( ; tp.time() < endTime; )
+      {
+        // write data for current time
+        dataWriterHandler_.step( tp );
+
+        // possibly write check point (default is disabled)
+        checkPointHandler_.step( tp );
+
+        // reset time step estimate
+        tp.provideTimeStepEstimate( maxTimeStep );
+
+        // current time step size
+        const double deltaT = tp.deltaT();
+
+        //************************************************
+        //* Compute an ODE timestep                      *
+        //************************************************
+        Dune::FemTimer::start( timeStepTimer_ );
+        overallTimer_.reset();
+
+        preStep( loop, tp );
+
+        // estimate, mark, adapt
+        adaptHandler_.step( tp );
+
+        // perform the solve for one time step, i.e. solve ODE
+        step( loop, tp );
+
+        // limit solution if necessary
+        solutionLimiterHandler_.step();
+
+        postStep( loop, tp );
+
+        // update time step information
+        solverMonitorHandler_.step( tp );
+
+        //write diagnostics
+        diagnosticsHandler_.step( tp );
+
+
+        // stop FemTimer for this time step
+        Dune::FemTimer::stop(timeStepTimer_,Dune::FemTimer::max);
+
+        // Check that no NAN have been generated
+        if( !checkSolutionValid( loop, tp ) )
+        {
+          dataWriterHandler_.finalize( tp );
+          std::abort();
+        }
+
+        if( (printCount > 0) && (((tp.timeStep()) % printCount) == 0))
+        {
+          if( grid.comm().rank() == 0 )
+          {
+            std::cout << "step: " << tp.timeStep() << "  time = " << tp.time()+tp.deltaT() << ", dt = " << deltaT
+                      <<",  grid size: " << gridSize() << ", elapsed time: ";
+            Dune::FemTimer::print(std::cout,timeStepTimer_);
+            solverMonitorHandler_.print( "Newton", "ILS", "OC" );
+            std::cout << std::endl;
+          }
+        }
+
+        // next advance should not exceed endtime
+        if( stopAtEndTime )
+          tp.provideTimeStepEstimate( (endTime - tp.time()) );
+
+        // next time step is prescribed by fixedTimeStep
+        if ( fixedTimeStep > 1e-20 )
+          tp.next( fixedTimeStep );
+        else
+          tp.next();
+
+        // for debugging and codegen only
+        if( tp.timeStep() >= maximalTimeSteps )
+        {
+          if( Fem::Parameter::verbose() )
+            std::cerr << "ABORT: time step count reached max limit of " << maximalTimeSteps << std::endl;
+          break ;
+        }
+
+        if (tp.timeStep()<2)
+        {
+          // write parameters used (before simulation starts)
+          Fem::Parameter::write("parameter.log");
+        }
+      } /****** END of time loop *****/
+
+      // finalize eoc step
+      finalize( loop, tp );
+
+      // prepare the fixed time step for the next eoc loop
+      fixedTimeStep_ /= param_.fixedTimeStepEocLoopFactor();
+    }
+
+    virtual SolverMonitorHandlerType& monitor()
+    {
+      return solverMonitorHandler_;
+    }
+
+    virtual IOTupleType dataTuple ()
+    {
+      return dataWriterHandler_.dataTuple();
+    }
 
     //! returns data prefix for EOC loops ( default is loop )
-    virtual std::string dataPrefix () const {  return problem().dataPrefix(); }
+    virtual std::string dataPrefix () const
+    {
+      //only dataPrefix from first tuple element
+      return std::get<0>( tuple_ )->problem().dataPrefix();
+    }
 
+    // before first step, do data initialization
     virtual void initialize ( int loop, TimeProviderType &tp )
     {
-      // project initial data
-      const bool doCommunicate = ! NonBlockingCommParameter :: nonBlockingCommunication ();
-      InitialProjectorType projection( 2 * solution().space().order(), doCommunicate );
-      projection( problem().fixedTimeFunction( tp.time() ), solution() );
-      //TODO check whether this version would also work (goal: avoid InitialProjectorType typedef :D
-      //auto ftp = problem().fixedTimeFunction( tp.time() );
-      //GridFunctionAdapter< typename ProblemType::InstationaryFunctionType, GridPartType >
-      //  adapter( "-exact", ftp, gridPart() );
-      //interpolate( adapter, solution() );
-      //if( NonBlockingCommParameter::nonBlockingCommunication() )
-      //  solution().communicate();
-
-      // setup ode solver
-      solver_.reset( this->createSolver( tp ) );
-
-      // initialize ode solver
-      solver().initialize( solution() );
-
-      //initialize solverMonitor
-      if( solverMonitorHandler_ )
-      {
-        solverMonitorHandler_.registerData( "GridWidth", &solverMonitorHandler_.monitor().gridWidth, nullptr, true );
-        solverMonitorHandler_.registerData( "Elements", &solverMonitorHandler_.monitor().elements, nullptr, true );
-        solverMonitorHandler_.registerData( "TimeSteps", &solverMonitorHandler_.monitor().timeSteps, nullptr, true );
-        solverMonitorHandler_.registerData( "AvgTimeStep", &solverMonitorHandler_.monitor().avgTimeStep );
-        solverMonitorHandler_.registerData( "MinTimeStep", &solverMonitorHandler_.monitor().minTimeStep );
-        solverMonitorHandler_.registerData( "MaxTimeStep", &solverMonitorHandler_.monitor().maxTimeStep );
-        solverMonitorHandler_.registerData( "Newton", &solverMonitorHandler_.monitor().newton_iterations,       &odeSolverMonitor_.newtonIterations_);
-        solverMonitorHandler_.registerData( "ILS", &solverMonitorHandler_.monitor().ils_iterations,             &odeSolverMonitor_.linearSolverIterations_);
-        //solverMonitorHandler_.registerData( "OC", &solverMonitorHandler_.monitor().operator_calls,              &odeSolverMonitor_.spaceOperatorCalls_);
-        solverMonitorHandler_.registerData( "MaxNewton",&solverMonitorHandler_.monitor().max_newton_iterations, &odeSolverMonitor_.maxNewtonIterations_ );
-        solverMonitorHandler_.registerData( "MaxILS",&solverMonitorHandler_.monitor().max_ils_iterations,    &odeSolverMonitor_.maxLinearSolverIterations_ );
-      }
-
-      //initialize diagnosticsHandler
-      if( diagnosticsHandler_ )
-      {
-        diagnosticsHandler_.registerData( "OperatorTime", &odeSolverMonitor_.operatorTime_ );
-        diagnosticsHandler_.registerData( "OdeSolveTime", &odeSolverMonitor_.odeSolveTime_ );
-        diagnosticsHandler_.registerData( "OverallTimer", &overallTime_ );
-        diagnosticsHandler_.registerData( "NumberOfElements", &odeSolverMonitor_.numberOfElements_ );
-      }
+      ForLoop< Initialize, 0, numSteppers - 1 >::apply( tuple_, adaptHandler_, loop, &tp );
     }
 
-    virtual void preSolve( int loop, TimeProviderType& tp )
-    {}
-
-    virtual void solve ( int loop, TimeProviderType &tp )
+    virtual void preStep ( int loop, TimeProviderType &tp )
     {
-      overallTimer_.reset();
-      odeSolverMonitor_.reset();
-
-      // solve ODE
-      solver().solve( solution(), odeSolverMonitor_ );
-
-      overallTime_ = overallTimer_.stop();
+      ForLoop< PreSolve, 0, numSteppers - 1 >::apply( tuple_, loop, &tp );
     }
 
-    virtual void postSolve( int loop, TimeProviderType& tp )
-    {}
+    //Needs to be overridden to enable fancy steps
+    virtual void step ( int loop, TimeProviderType &tp )
+    {
+      ForLoop< Solve, 0, numSteppers - 1 >::apply( tuple_, loop, &tp );
+    }
+
+    virtual void postStep ( int loop, TimeProviderType &tp )
+    {
+      ForLoop< PostSolve, 0, numSteppers - 1 >::apply( tuple_, loop, &tp );
+    }
+
 
     void finalize ( int loop, TimeProviderType &tp )
     {
-      // add eoc errors
-      AnalyticalTraits::addEOCErrors( tp, solution(), model(), problem() );
+      // flush diagnostics data
+      diagnosticsHandler_.finalize();
 
-      // delete ode solver
-      solver_.reset();
+      // write last time step
+      dataWriterHandler_.finalize( tp );
+
+      // adjust average time step size
+      solverMonitorHandler_.finalize( gridWidth(), gridSize() );
+
+      adaptHandler_.finalize();
+
+      ForLoop< Finalize, 0, numSteppers - 1 >::apply( tuple_, loop, &tp );
     }
 
-    ProblemType &problem ()
-    {
-      assert( problem_ );
-      return *problem_;
-    }
-
-    const ProblemType &problem () const
-    {
-      assert( problem_ );
-      return *problem_;
-    }
-
-    const ModelType &model () const { return model_; }
-    ModelType &model () { return model_; }
-
-    GridPartType &gridPart () { return gridPart_; }
-
+    StepperTupleType &stepperTuple () { return tuple_; }
+    const StepperTupleType &stepperTuple () const { return tuple_; }
 
   protected:
-    typename SolverType::type &solver ()
-    {
-      assert( solver_ );
-      return *solver_;
-    }
+    StepperTupleType               tuple_;
+    StepperParametersType          param_;
 
-    GridType&                      grid_;
-    std::string                    algorithmName_;
-    GridPartType                   gridPart_;
-    DiscreteFunctionSpaceType      space_;
-
-    // the solution
-    DiscreteFunctionType           solution_;
-    DiscreteFunctionType           exactSolution_;
-
-    // InitialDataType evaluates to $u_0$
-    std::unique_ptr< ProblemType > problem_;
-    ModelType                      model_;
-
-    DiagnosticsHandlerOptional< DiagnosticsHandlerType >           diagnosticsHandler_;
-    SolverMonitorHandlerOptional< SolverMonitorHandlerType >       solverMonitorHandler_;
-    AdditionalOutputHandlerOptional< AdditionalOutputHandlerType > additionalOutputHandler_;
-    typename SolverType::type::MonitorType odeSolverMonitor_;
+    CheckPointHandlerType          checkPointHandler_;
+    DataWriterHandlerType          dataWriterHandler_;
+    DiagnosticsHandlerType         diagnosticsHandler_;
+    SolverMonitorHandlerType       solverMonitorHandler_;
+    SolutionLimiterHandlerType     solutionLimiterHandler_;
+    AdaptHandlerType               adaptHandler_;
 
     Dune::Timer                    overallTimer_;
-    std::unique_ptr< typename SolverType::type > solver_;
-    double overallTime_;
+    unsigned int                   timeStepTimer_;
+    double                         fixedTimeStep_;
   };
 
 

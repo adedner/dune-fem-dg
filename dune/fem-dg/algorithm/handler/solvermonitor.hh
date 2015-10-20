@@ -71,9 +71,49 @@ namespace Fem
       };
     };
 
+    //template <typename... T>
+    //class Action {
+    //public:
+
+    //  using bind_type = decltype(std::bind(std::declval<std::function<void(T...)> >(),std::ref(std::declval<T>())...));
+
+    //  template <typename... ConstrT>
+    //  Action(std::function<void(T...)> f, ConstrT&&... args)
+    //    : bind_(f,std::forward<ConstrT>(args)...)
+    //  { }
+
+    //  void operator()()
+    //  { bind_(); }
+
+    //private:
+    //  bind_type bind_;
+    //};
+
+
+    template< class T, class... A >
+    struct Signature
+    {
+      typedef decltype(std::bind(std::declval<std::function<void(A...)> >(),std::ref(std::declval<A>())...)) type;
+    };
+
     struct Step {
-      template<class T, class... Args > static void applyImpl( T e, Args&& ... a )
-      { e->step( std::forward<Args>(a)... ); }
+      template<class T, class... A > static void applyImpl( T e, A&& ... a )
+      {
+        //typedef decltype(std::bind(std::declval<std::function<void(void)> >() ) ) BindType2;
+
+        //typename Signature< T, A... >::type ddf( [&e]( A&& ... a ){ e->step( std::forward<A>(a)...); }, std::forward<A>(a)... );
+        //ddf();
+
+        //BindType2 dddf( [&](){ e->step( std::forward<A>(a)...); } );
+        //dddf( std::forward<A>(a)... );
+
+
+        ////Action< A... > df( [&]( A&& ... a ){ e->step( std::forward<A>(a)...); } , std::forward<A>(a)... );
+        //Action< A... > df( [&]( A&& ... a ){ e->step( std::forward<A>(a)...); }, std::forward<A>(a)... );
+        //df();
+        //
+        e->step( std::forward<A>(a)... );
+      }
     };
 
     struct Finalize {

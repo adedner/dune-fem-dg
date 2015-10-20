@@ -6,7 +6,7 @@
 #include <dune/fem-dg/solver/rungekuttasolver.hh>
 
 // local includes
-#include <dune/fem-dg/algorithm/evolution.hh>
+#include <dune/fem-dg/algorithm/subevolution.hh>
 
 #include <dune/fem-dg/algorithm/handler/adapt.hh>
 
@@ -66,7 +66,6 @@ namespace Fem
 
     using BaseType::grid_;
     using BaseType::gridPart_;
-    using BaseType::space ;
     using BaseType::solution ;
     using BaseType::problem;
     using BaseType::name ;

@@ -105,13 +105,13 @@ public:
 
 
 template <class GridImp, class ProblemTraits, int order>
-struct CheckPointingStepper : public AlgorithmBase< GridImp>
+struct CheckPointingStepper : public AlgorithmInterface< GridImp>
 {
   // my traits class
   typedef StepperTraits< GridImp, ProblemTraits, order> Traits ;
 
   // my base class
-  typedef AlgorithmBase < GridImp > BaseType;
+  typedef AlgorithmInterface < GridImp > BaseType;
 
   // type of Grid
   typedef typename Traits :: GridType                  GridType;

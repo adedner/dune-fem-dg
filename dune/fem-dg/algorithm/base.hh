@@ -99,11 +99,11 @@ namespace Fem
   }
 
 
-  // AlgorithmBase
+  // AlgorithmInterface
   // -------------
 
   template< class AlgorithmTraits >
-  class AlgorithmBase
+  class AlgorithmInterface
   {
     typedef AlgorithmTraits Traits;
 
@@ -120,13 +120,11 @@ namespace Fem
     typedef EocParameters                             EocParametersType;
 
     //! constructor
-    AlgorithmBase ( GridType &grid, const std::string algorithmName = "" )
+    AlgorithmInterface ( GridType &grid, const std::string algorithmName = "" )
       : grid_( grid ),
         algorithmName_( algorithmName ),
         eocParam_( Dune::ParameterKey::generate( "", "fem.eoc." ) )
     {}
-
-    virtual ~AlgorithmBase () {}
 
     //! return reference to hierarchical grid
     GridType &grid () const { return grid_; }
