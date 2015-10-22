@@ -7,9 +7,19 @@
 
 #include <dune/fem/misc/fmatrixconverter.hh>
 
-/**********************************************
- * Default model
- *********************************************/
+/**
+ *  \defgroup AnalyticalModels
+ *
+ *  Analytical Models
+ */
+
+
+
+/**
+ * \brief Analytical model interface
+ *
+ * \ingroup AnalyticalModels
+ */
 template < class Traits >
 class DefaultModel
 {

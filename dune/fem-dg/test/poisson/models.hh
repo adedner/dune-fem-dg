@@ -45,6 +45,8 @@ public:
 /**
  * @brief describes the analytical model
  *
+ * \ingroup AnalyticalModels
+ *
  * This is an description class for the problem
  * \f{eqnarray*}{ V + \nabla a(U)      & = & 0 \\
  * \partial_t U + \nabla (F(U)+A(U,V)) & = & 0 \\
@@ -70,15 +72,6 @@ public:
  * @param GridPart GridPart for extraction of dimension
  * @param ProblemType Class describing the initial(t=0) and exact solution
  */
-
-
-////////////////////////////////////////////////////////
-//
-//  Analytical model for the Heat Equation
-//      dx(u) + div(uV) - epsilon*lap(u)) = 0
-//  where V is constant vector
-//
-////////////////////////////////////////////////////////
 template <class GridPartType, class ProblemImp>
 class PoissonModel : public DefaultModel< PoissonModelTraits< GridPartType, ProblemImp > >
 {

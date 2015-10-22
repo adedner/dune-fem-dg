@@ -64,7 +64,11 @@ namespace Dune
     };
 
 
-    // Euler equations for dry atmosphere
+    /**
+     * \brief Euler equations for dry atmosphere
+     *
+     * \ingroup AnalyticalModels
+     */
     template< class GridPartType , class ProblemImp >
     class EulerModel :
       public DefaultModel< EulerModelTraits< GridPartType > >

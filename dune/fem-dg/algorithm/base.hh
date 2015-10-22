@@ -148,7 +148,7 @@ namespace Fem
 
     virtual const std::string name() { return algorithmName_; }
 
-  protected:
+  private:
     GridType &grid_;
     const std::string algorithmName_;
     EocParameters eocParam_;

@@ -58,7 +58,9 @@ public:
 };
 
 /**
- * @brief describes the analytical model
+ * \brief describes the analytical model
+ *
+ * \ingroup AnalyticalModels
  *
  * This is an description class for the problem
  * \f{eqnarray*}{ V + \nabla a(U)      & = & 0 \\
@@ -82,18 +84,9 @@ public:
  *
  * for a matrix \f$M\in \mathbf{M}^{n\times m}\f$.
  *
- * @param GridPart GridPart for extraction of dimension
- * @param ProblemType Class describing the initial(t=0) and exact solution
+ * \param GridPart GridPart for extraction of dimension
+ * \param ProblemType Class describing the initial(t=0) and exact solution
  */
-
-
-////////////////////////////////////////////////////////
-//
-//  Analytical model for the Heat Equation
-//      dt(u) + div(uV) - epsilon*lap(u)) = 0
-//  where V is constant vector
-//
-////////////////////////////////////////////////////////
 template <class GridPartType, class ProblemImp>
 class HeatEqnModel :
   public DefaultModel < HeatEqnModelTraits< GridPartType, ProblemImp > >
@@ -176,9 +169,11 @@ public:
     return problem_.stiffSource( xgl, local.time(), u, s );
   }
 
-  struct ComputeVelocity
+private:
+  template< int id >
+  struct GetVelocity
   {
-    typedef std::integral_constant< int, velo > VarId;
+    typedef std::integral_constant< int, id > VarId;
     typedef DomainType  ReturnType;
 
     template <class LocalEvaluation>
@@ -189,6 +184,7 @@ public:
       return v;
     }
   };
+public:
 
   /**
    * @brief advection term \f$F\f$
@@ -219,7 +215,7 @@ public:
   template <class LocalEvaluation>
   inline DomainType velocity(const LocalEvaluation& local) const
   {
-    return local.evaluate( ComputeVelocity(), local, problem_ );
+    return local.evaluate( GetVelocity< velo >(), local, problem_ );
   }
 
 

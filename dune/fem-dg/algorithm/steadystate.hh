@@ -144,8 +144,6 @@ namespace Fem
       }
     };
 
-    using BaseType::grid_;
-    using BaseType::eocParam_;
     using BaseType::grid;
 
     SteadyStateAlgorithm ( GridType &grid, const std::string name = "" )

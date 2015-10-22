@@ -3,7 +3,9 @@ INPUT                 += @srcdir@/modules \
                          @srcdir@/pages/ \
                          @top_srcdir@/dune/fem-dg  \
 
-EXCLUDE               += @top_srcdir@/dune/fem-dg/test 
+#EXCLUDE               += @top_srcdir@/dune/fem-dg/test 
+
+EXCLUDE_PATTERNS       = 
 
 ALIASES              += notcleardoc="\xrefitem notcleardoc \"documentation will be extended\" \"Needs extended documentation\"" \
                         parametername="\xrefitem parametername \"DUNE-FEM-DG parameter\" \"Parameters used in DUNE-FEM-DG \"" \
@@ -15,3 +17,5 @@ ALIASES              += notcleardoc="\xrefitem notcleardoc \"documentation will 
 FILE_PATTERNS       += *.hh *.dist *.dev *.page
 
 EXAMPLE_PATH        +=  @top_srcdir@/dune/fem-dg/test
+
+EXTRA_PACKAGES = amsmath xr amsfonts

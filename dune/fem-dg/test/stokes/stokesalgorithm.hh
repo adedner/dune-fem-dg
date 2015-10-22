@@ -21,7 +21,7 @@
 // dune-fem-dg includes
 #include <dune/fem-dg/operator/dg/dgoperatorchoice.hh>
 #include <dune/fem-dg/operator/adaptation/stokesestimator.hh>
-#include <dune/fem-dg/algorithm/ellipticalgorithm.hh>
+#include <dune/fem-dg/algorithm/sub/elliptic.hh>
 #include <dune/fem-dg/solver/uzawa.hh>
 #include <dune/fem-dg/solver/linearsolvers.hh>
 #include <dune/fem-dg/misc/tupleutility.hh>
@@ -243,7 +243,11 @@ namespace Fem
 
   };
 
-
+  /**
+   *  \brief Algorithm for solving the Stokes equation.
+   *
+   *  \ingroup Algorithms
+   */
   template <class GridImp, class ProblemTraits, class ElliptProblemTraits, int polOrd >
   class StokesAlgorithm : public SubSteadyStateAlgorithm<GridImp,ProblemTraits,polOrd>
   {
@@ -293,7 +297,7 @@ namespace Fem
 
     typedef typename BaseType::TimeProviderType                     TimeProviderType;
 
-    typedef typename  BaseType::AnalyticalTraits                    AnalyticalTraits;
+    typedef typename BaseType::AnalyticalTraits                     AnalyticalTraits;
 
     using BaseType::problem;
     using BaseType::model;
@@ -305,12 +309,6 @@ namespace Fem
     using BaseType::exactSolution_;
 
   public:
-    using BaseType::checkSolutionValid;
-    using BaseType::initialize;
-    using BaseType::preSolve;
-    using BaseType::solve;
-    using BaseType::postSolve;
-    using BaseType::finalize;
 
     explicit StokesAlgorithm(GridType& grid, std::string moduleName = "" ) :
       BaseType( grid, moduleName ),
@@ -322,67 +320,6 @@ namespace Fem
       ioTuple_( *BaseType::dataTuple(), *ellAlg_.dataTuple() )
     {}
 
-    virtual BasicLinearSolverType* createSolver( DiscreteFunctionType* rhs )
-    {
-      assembler_.assemble( problem() );
-      double absLimit = Dune::Fem::Parameter::getValue<double>("istl.absLimit",1.e-10);
-#if 0
-#ifdef PADAPTSPACE
-      int polOrder = Dune::Fem::Parameter::getValue<double>("femdg.polOrd",1);
-      // only implemented for PAdaptiveSpace
-      std::vector<int> polOrderVec( ellAlg_.space().gridPart().indexSet().size(0) );
-      std::vector<int> polOrderVecPressure( space_.gridPart().indexSet().size(0) );
-      std::fill( polOrderVec.begin(), polOrderVec.end(), polOrder );
-      std::fill( polOrderVecPressure.begin(), polOrderVecPressure.end(), polOrder-1 );
-      ellAlg_.space().adapt( polOrderVec );
-      space_.adapt( polOrderVecPressure);
-#endif
-#endif
-      return new BasicLinearSolverType( assembler_, ellAlg_.solver(), ellAlg_.rhs(), absLimit, 3*ellAlg_.solution().space().size() );
-    }
-
-    virtual DiscreteFunctionType& rhs()
-    {
-      return assembler_.pressureRhs();
-    }
-
-    virtual void initialize ( const int loop )
-    {
-      ellAlg_.initialize( loop );
-      BaseType::initialize( loop );
-    }
-
-    virtual void preSolve( const int loop )
-    {
-      ellAlg_.preSolve( loop );
-      BaseType::preSolve( loop );
-    }
-
-    virtual void solve( const int loop )
-    {
-      BaseType::solve( loop );
-
-      // velocity solution of elliptical algorithm is computed by stokes solver,
-      // i.e.: solve() method of elliptical algorithm is never called here
-      // -> workaround by copying the dofs...
-      ellAlg_.solution().assign( solver_->velocity() );
-
-      // TODO check wheather we need the following line
-      stokesSigmaEstimator_.update();
-    }
-
-    virtual void postSolve( const int loop )
-    {
-      ellAlg_.postSolve( loop );
-      BaseType::postSolve( loop );
-    }
-
-    //! finalize computation by calculating errors and EOCs
-    virtual void finalize( const int loop )
-    {
-      ellAlg_.finalize( loop );
-      AnalyticalTraits::addEOCErrors( solution(), ellAlg_.model(), problem().exactPressure() );
-    }
 
     virtual IOTupleType& dataTuple ()
     {
@@ -411,6 +348,69 @@ namespace Fem
     }
 
   private:
+   virtual BasicLinearSolverType* doCreateSolver() override
+    {
+      assembler_.assemble( problem() );
+      double absLimit = Dune::Fem::Parameter::getValue<double>("istl.absLimit",1.e-10);
+#if 0
+#ifdef PADAPTSPACE
+      int polOrder = Dune::Fem::Parameter::getValue<double>("femdg.polOrd",1);
+      // only implemented for PAdaptiveSpace
+      std::vector<int> polOrderVec( ellAlg_.space().gridPart().indexSet().size(0) );
+      std::vector<int> polOrderVecPressure( space_.gridPart().indexSet().size(0) );
+      std::fill( polOrderVec.begin(), polOrderVec.end(), polOrder );
+      std::fill( polOrderVecPressure.begin(), polOrderVecPressure.end(), polOrder-1 );
+      ellAlg_.space().adapt( polOrderVec );
+      space_.adapt( polOrderVecPressure);
+#endif
+#endif
+      return new BasicLinearSolverType( assembler_, ellAlg_.solver(), ellAlg_.rhs(), absLimit, 3*ellAlg_.solution().space().size() );
+    }
+
+    virtual DiscreteFunctionType* doCreateRhs() override
+    {
+      return &assembler_.pressureRhs();
+    }
+
+    virtual void doInitialize ( const int loop ) override
+    {
+      ellAlg_.initialize( loop );
+      BaseType::doInitialize( loop );
+    }
+
+    virtual void doPreSolve( const int loop ) override
+    {
+      ellAlg_.preSolve( loop );
+      BaseType::doPreSolve( loop );
+    }
+
+    virtual void doSolve( const int loop ) override
+    {
+      BaseType::doSolve( loop );
+
+      // velocity solution of elliptical algorithm is computed by stokes solver,
+      // i.e.: solve() method of elliptical algorithm is never called here
+      // -> workaround by copying the dofs...
+      ellAlg_.solution().assign( solver_->velocity() );
+
+      // TODO check wheather we need the following line
+      stokesSigmaEstimator_.update();
+    }
+
+    virtual void doPostSolve( const int loop ) override
+    {
+      ellAlg_.postSolve( loop );
+      BaseType::doPostSolve( loop );
+    }
+
+    //! finalize computation by calculating errors and EOCs
+    virtual void doFinalize( const int loop ) override
+    {
+      ellAlg_.finalize( loop );
+      AnalyticalTraits::addEOCErrors( solution(), ellAlg_.model(), problem().exactPressure() );
+    }
+
+  protected:
     EllipticalAlgorithmType           ellAlg_;
     GridPartType                      gridPart_;
     DiscreteFunctionSpaceType         space_;

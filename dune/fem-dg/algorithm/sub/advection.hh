@@ -6,7 +6,7 @@
 #include <dune/fem-dg/solver/rungekuttasolver.hh>
 
 // local includes
-#include <dune/fem-dg/algorithm/subevolution.hh>
+#include <dune/fem-dg/algorithm/sub/evolution.hh>
 
 #include <dune/fem-dg/algorithm/handler/adapt.hh>
 
@@ -18,7 +18,7 @@ namespace Fem
   template <class GridImp,
             class ProblemTraits,
             int polynomialOrder >
-  struct AdvectionStepper
+  struct AdvectionAlgorithm
     : public SubEvolutionAlgorithm< GridImp, ProblemTraits, polynomialOrder >
   {
     typedef SubEvolutionAlgorithm< GridImp, ProblemTraits, polynomialOrder > BaseType ;
@@ -72,27 +72,27 @@ namespace Fem
     using BaseType::limitSolution;
 
     // constructor
-    AdvectionStepper( GridType& grid, const std::string name = "",
-                      ExtraParameterTupleType tuple = ExtraParameterTupleType() ) :
+    AdvectionAlgorithm( GridType& grid, const std::string name = "",
+                        ExtraParameterTupleType tuple = ExtraParameterTupleType() ) :
       BaseType( grid, name ),
       tuple_( ),
       advectionOperator_(gridPart_, problem(), tuple, name ),
       adaptIndicator_( solution(), problem(), tuple_, name )
     {}
 
-    virtual AdaptIndicatorType* adaptIndicator()
+    virtual AdaptIndicatorType* adaptIndicator ()
     {
       return adaptIndicator_.value();
     }
 
-    virtual void limit()
+    virtual void limit ()
     {
       if( limitSolution() )
         advectionOperator_.limit( *limitSolution() );
     }
 
     //! return overal number of grid elements
-    virtual UInt64Type gridSize() const
+    virtual UInt64Type gridSize () const
     {
       int globalElements = adaptIndicator_ ? adaptIndicator_.globalNumberOfElements() : 0;
       if( globalElements > 0 )
@@ -105,7 +105,7 @@ namespace Fem
       return grid_.comm().sum( grSize );
     }
 
-    virtual SolverType* createSolver(TimeProviderType& tp)
+    virtual SolverType* doCreateSolver ( TimeProviderType& tp ) override
     {
       if( adaptIndicator_ )
         adaptIndicator_.setAdaptation( tp );
@@ -118,7 +118,7 @@ namespace Fem
                              name() );
     }
 
-   const ModelType& model() const { return advectionOperator_.model(); }
+   const ModelType& model () const { return advectionOperator_.model(); }
 
   protected:
     ExtraParameterTupleType tuple_;

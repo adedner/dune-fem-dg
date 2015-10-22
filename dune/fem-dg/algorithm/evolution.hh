@@ -178,8 +178,7 @@ namespace Fem
 
     typedef StepperParameters                                           StepperParametersType;
 
-    using BaseType::grid_;
-    using BaseType::eocParam_;
+    using BaseType::eocParams;
     using BaseType::grid;
 
     template< int i >
@@ -332,7 +331,7 @@ namespace Fem
 #endif
 
       // restoreData if checkpointing is enabled (default is disabled)
-      bool newStart = ( eocParam_.steps() == 1) ? checkPointHandler_.restoreData( tp ) : false;
+      bool newStart = ( eocParams().steps() == 1) ? checkPointHandler_.restoreData( tp ) : false;
 
       initialize( loop, tp );
 
@@ -356,7 +355,7 @@ namespace Fem
         }
       }
 
-      dataWriterHandler_.init( tp, eocParam_.dataOutputParameters( loop, dataPrefix() ) );
+      dataWriterHandler_.init( tp, eocParams().dataOutputParameters( loop, dataPrefix() ) );
 
       // register data functions to check pointer
       checkPointHandler_.registerData();

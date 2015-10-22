@@ -6,7 +6,7 @@
 #include <dune/fem-dg/solver/rungekuttasolver.hh>
 
 // local includes
-#include <dune/fem-dg/algorithm/subevolution.hh>
+#include <dune/fem-dg/algorithm/sub/evolution.hh>
 
 #include <dune/fem-dg/operator/dg/primaloperator.hh>
 
@@ -20,7 +20,7 @@ namespace Fem
   template <class GridImp,
             class ProblemTraits,
             int polynomialOrder >
-  struct AdvectionDiffusionStepper
+  struct AdvectionDiffusionAlgorithm
     : public SubEvolutionAlgorithm< GridImp, ProblemTraits, polynomialOrder >
   {
 
@@ -67,15 +67,15 @@ namespace Fem
 
     typedef typename BaseType::AdaptIndicatorType             AdaptIndicatorType;
 
-    using BaseType::grid_;
+    using BaseType::grid;
     using BaseType::gridPart_;
     using BaseType::solution;
     using BaseType::problem;
     using BaseType::name;
 
-    AdvectionDiffusionStepper( GridType& grid,
-                               const std::string name = "",
-                               ExtraParameterTupleType tuple = ExtraParameterTupleType() ) :
+    AdvectionDiffusionAlgorithm( GridType& grid,
+                                 const std::string name = "",
+                                 ExtraParameterTupleType tuple = ExtraParameterTupleType() ) :
       BaseType( grid, name ),
       //vSpace_( gridPart_ ),
       //velo_( "velocity", vSpace_ ),
@@ -87,13 +87,13 @@ namespace Fem
       adaptIndicator_( solution(), problem(), tuple_, name )
     {}
 
-    virtual AdaptIndicatorType* adaptIndicator()
+    virtual AdaptIndicatorType* adaptIndicator ()
     {
       return adaptIndicator_.value();
     }
 
     //! return overal number of grid elements
-    virtual UInt64Type gridSize() const
+    virtual UInt64Type gridSize () const
     {
       int globalElements = adaptIndicator_ ? adaptIndicator_.globalNumberOfElements() : 0;
       if( globalElements > 0 )
@@ -106,15 +106,15 @@ namespace Fem
       size_t dgSize      = operator_.numberOfElements();
       UInt64Type grSize  = std::max( std::max(advSize, dgSize ), std::max( diffSize, dgIndSize ) );
       double minMax[ 2 ] = { double(grSize), 1.0/double(grSize) } ;
-      grid_.comm().max( &minMax[ 0 ], 2 );
+      grid().comm().max( &minMax[ 0 ], 2 );
       if( Dune::Fem::Parameter::verbose () )
       {
         std::cout << "grid size (min,max) = ( " << size_t(1.0/minMax[ 1 ]) << " , " << size_t(minMax[ 0 ]) << ")" << std::endl;
       }
-      return grid_.comm().sum( grSize );
+      return grid().comm().sum( grSize );
     }
 
-    virtual SolverType* createSolver(TimeProviderType& tp)
+    virtual SolverType* doCreateSolver ( TimeProviderType& tp ) override
     {
       if( adaptIndicator_ )
         adaptIndicator_.setAdaptation( tp );
@@ -128,7 +128,7 @@ namespace Fem
                              name() );
     }
 
-    const ModelType& model() const { return operator_.model(); }
+    const ModelType& model () const { return operator_.model(); }
 
   protected:
     //typename OperatorTraits::SpaceType vSpace_;

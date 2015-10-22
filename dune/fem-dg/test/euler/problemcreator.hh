@@ -30,7 +30,7 @@
 #include <dune/fem-dg/operator/fluxes/eulerfluxes.hh>
 #include <dune/fem-dg/operator/fluxes/diffusionflux.hh>
 //--------- STEPPER -------------------------
-#include <dune/fem-dg/algorithm/advectionstepper.hh>
+#include <dune/fem-dg/algorithm/sub/advection.hh>
 #include <dune/fem-dg/algorithm/evolution.hh>
 //--------- EOCERROR ------------------------
 #include <dune/fem-dg/misc/error/l2eocerror.hh>
@@ -161,7 +161,7 @@ struct EulerProblemCreator
     struct Stepper
     {
      // this should be ok but could lead to a henn-egg problem
-      typedef Dune::Fem::AdvectionStepper< GridType, SubEulerProblemCreator, polOrd > Type;
+      typedef Dune::Fem::AdvectionAlgorithm< GridType, SubEulerProblemCreator, polOrd > Type;
     };
 
   };

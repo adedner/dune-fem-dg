@@ -60,7 +60,11 @@ public:
 };
 
 
-
+/**
+ *  \brief Analytical Model for the compressible Navier-Stokes equations
+ *
+ *  \ingroup AnalyticalModels
+ */
 template< class GridPartType , class ProblemImp >
 class NSModel : public DefaultModel < NSModelTraits< GridPartType, ProblemImp > >
 {

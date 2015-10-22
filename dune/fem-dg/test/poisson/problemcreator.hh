@@ -31,7 +31,7 @@
 #include <dune/fem-dg/operator/fluxes/eulerfluxes.hh>
 #include <dune/fem-dg/operator/fluxes/noflux.hh>
 //--------- STEPPER -------------------------
-#include <dune/fem-dg/algorithm/ellipticalgorithm.hh>
+#include <dune/fem-dg/algorithm/sub/elliptic.hh>
 #include <dune/fem-dg/algorithm/steadystate.hh>
 //--------- EOCERROR ------------------------
 #include <dune/fem-dg/misc/error/l2eocerror.hh>

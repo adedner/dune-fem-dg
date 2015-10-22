@@ -26,8 +26,8 @@ namespace Dune {
  * Z_0(z) &:=&  0.1\cdot \cos(1.3\pi (z-v_3t)) - 0.4\cdot \sin(1.3\pi (z-v_3t)) \\
  * T_1(t) &:=&  e^{-\varepsilon t \pi^2 (0.7^2 + 0.5^2 + 0.1^2 )} \\
  * X_1(x) &:=&  0.9\cdot \cos(0.7\pi (x-v_1t)) + 0.2\cdot \sin(0.7\pi (x-v_1t)) \\
- * Y_1(y) &:=&  0.3\cdot \cos(0.5\pi (y-v_2t)) + 0.1\cdot \sin(0.5\pi (y-v_2t))
- * Z_1(z) &:=&  -0.3\cdot \cos(0.1\pi (z-v_3t)) + 0.2\cdot \sin(0.1\pi (z-v_3t)) \\
+ * Y_1(y) &:=&  0.3\cdot \cos(0.5\pi (y-v_2t)) + 0.1\cdot \sin(0.5\pi (y-v_2t)) \\
+ * Z_1(z) &:=&  -0.3\cdot \cos(0.1\pi (z-v_3t)) + 0.2\cdot \sin(0.1\pi (z-v_3t))
  * \f}
  *
  * This is a solution of the AdvectionDiffusionModel for \f$g_D = u|_{\partial

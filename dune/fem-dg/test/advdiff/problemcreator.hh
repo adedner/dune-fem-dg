@@ -29,8 +29,8 @@
 #include <dune/fem-dg/operator/fluxes/upwindflux.hh>
 #include <dune/fem-dg/operator/fluxes/eulerfluxes.hh>
 //--------- STEPPER -------------------------
-#include <dune/fem-dg/algorithm/advectiondiffusionstepper.hh>
-#include <dune/fem-dg/algorithm/advectionstepper.hh>
+#include <dune/fem-dg/algorithm/sub/advectiondiffusion.hh>
+#include <dune/fem-dg/algorithm/sub/advection.hh>
 #include <dune/fem-dg/algorithm/evolution.hh>
 //--------- EOCERROR ------------------------
 #include <dune/fem-dg/misc/error/l2eocerror.hh>
@@ -41,6 +41,10 @@
 //--------- PROBLEMCREATORSELECTOR ----------
 #include <dune/fem-dg/misc/problemcreatorselector.hh>
 
+
+/**
+ *  \brief problem creator for an advection diffusion problem
+ */
 template< class GridImp >
 struct AdvectionDiffusionProblemCreator
 {
@@ -154,7 +158,7 @@ struct AdvectionDiffusionProblemCreator
     struct Stepper
     {
      // this should be ok but could lead to a henn-egg problem
-      typedef Dune::Fem::AdvectionDiffusionStepper< GridType, SubAdvectionDiffusionProblemCreator, polOrd > Type;
+      typedef Dune::Fem::AdvectionDiffusionAlgorithm< GridType, SubAdvectionDiffusionProblemCreator, polOrd > Type;
     };
 
   };

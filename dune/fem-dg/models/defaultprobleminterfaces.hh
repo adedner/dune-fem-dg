@@ -10,8 +10,16 @@
 namespace Dune {
 
 /**
- * @brief describes the interface for
+ * \addtogroup Problems
+ *
+ * A Problem class defines all data.
+ */
+
+/**
+ * \brief describes the interface for
  * initial and exact solution of the advection-diffusion model
+ *
+ * \ingroup Problems
  */
 template< class FunctionSpaceImp, bool constantVelocity = false >
 class EvolutionProblemInterface
@@ -240,7 +248,11 @@ protected:
 
 // ProblemInterface
 //-----------------
-
+/**
+ * \brief problem interface for a poisson problem
+ *
+ * \ingroup Problems
+ */
 template <class FunctionSpaceImp>
 class ProblemInterface
 {

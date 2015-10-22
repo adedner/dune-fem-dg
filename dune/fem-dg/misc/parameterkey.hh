@@ -5,6 +5,9 @@ namespace Dune
 {
   /**
    * \brief helper class to generate parameter keys with an additional prefix.
+   *
+   * This implemenation adds a prefix to the beginning of an key and adds
+   * an separator ".", if the prefix is not empty.
    */
   struct ParameterKey
   {

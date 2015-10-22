@@ -26,7 +26,7 @@
 #include <dune/fem/misc/gridname.hh>
 
 // include local header files
-#include "substeadystate.hh"
+#include "steadystate.hh"
 
 
 
@@ -443,7 +443,11 @@ namespace Fem
 
 
 
-
+  /**
+   *  \brief Algorithm for solving an elliptic PDE.
+   *
+   *  \ingroup Algorithms
+   */
   template <class GridImp,
             class ProblemTraits,
             int polOrder>
@@ -502,31 +506,25 @@ namespace Fem
     using BaseType::gridWidth;
     using BaseType::gridSize;
     using BaseType::solution;
-    using BaseType::exactSolution_;
-    using BaseType::solver_;
+    using BaseType::rhs;
+    using BaseType::exactSolution;
+    using BaseType::solver;
 
   public:
-    using BaseType::checkSolutionValid;
-    using BaseType::initialize;
-    using BaseType::preSolve;
-    using BaseType::solve;
-    using BaseType::postSolve;
-    using BaseType::finalize;
 
     EllipticAlgorithm(GridType& grid, const std::string name = "" )
     : BaseType( grid, name ),
-      grid_( grid ),
-      gridPart_( grid_ ),
+      gridPart_( grid ),
       dgOperator_( gridPart_, problem() ),
       assembler_( gridPart_, dgOperator_ ),
       linOperator_(),
       space_( const_cast<DiscreteFunctionSpaceType &> (assembler_.space()) ),
-      rhs_( "rhs-" + name, space_ ),
       poissonSigmaEstimator_( gridPart_, solution(), assembler_, name ),
-      pAdapt_(grid_, space_),
-      step_( 0 )
+      pAdapt_(grid, space_),
+      step_( 0 ),
+      time_( 0 )
     {
-      std::string gridName = Fem::gridName( grid_ );
+      std::string gridName = Fem::gridName( grid );
       if( gridName == "ALUGrid" || gridName == "ALUConformGrid" || gridName == "ALUSimplexGrid" )
       {
         if( space_.begin() != space_.end() )
@@ -539,12 +537,27 @@ namespace Fem
       }
     }
 
-    virtual DiscreteFunctionType& rhs()
+    void virtual setTime ( const double time ) override
     {
-      return rhs_;
+      time_ = time;
     }
 
-    virtual BasicLinearSolverType* createSolver( DiscreteFunctionType* rhs )
+    bool adaptation ( const double tolerance)
+    {
+      return pAdapt_.adaptation( problem(), tolerance );
+    }
+    void closure()
+    {
+      pAdapt_.closure();
+    }
+
+    const AssemblerType& assembler () const
+    {
+      return assembler_;
+    }
+
+  protected:
+    virtual BasicLinearSolverType* doCreateSolver() override
     {
       linOperator_.reset( new OperatorType("dg operator", space_, space_ ) );
 
@@ -561,10 +574,10 @@ namespace Fem
         linOperator_->reserve( stencil );
       }
 
-      if( rhs )
-        assembler_.assemble(0, *linOperator_, *rhs );
-      else
-        assembler_.assemble(0, *linOperator_ );
+      //if( &rhs() == nullptr )
+      //  assembler_.assemble(0, *linOperator_ );
+      //else
+        assembler_.assemble(0, *linOperator_, rhs() );
 
       assembler_.testSymmetrie(*linOperator_);
 
@@ -574,70 +587,40 @@ namespace Fem
       return new BasicLinearSolverType(*linOperator_, reduction, absLimit );
     }
 
-    BasicLinearSolverType& solver ()
-    {
-      if( !solver_ )
-        solver_.reset( this->createSolver( &rhs() ) );
-      assert( solver_ );
-      return *solver_;
-    }
-
-
     //! default time loop implementation, overload for changes
-    virtual void solve ( const int loop )
+    virtual void doPreSolve ( const int loop ) override
     {
       pAdapt_.prepare();
 
-      BaseType::solve( loop );
+      BaseType::doPreSolve( loop );
 
       // calculate new sigma
       poissonSigmaEstimator_.update();
     }
 
     //! finalize computation by calculating errors and EOCs
-    virtual void finalize( const int loop )
+    virtual void doFinalize ( const int loop ) override
     {
       AnalyticalTraits::addEOCErrors( solution(), model(), problem().exactSolution(), poissonSigmaEstimator_.sigma() );
 
       // delete solver and linear operator for next step
-      solver_.reset();
       linOperator_.reset();
     }
 
-    bool adaptation(const double tolerance)
-    {
-      return pAdapt_.adaptation( problem(), tolerance );
-    }
-    void closure()
-    {
-      pAdapt_.closure();
-    }
 
-    const AssemblerType& assembler() const
-    {
-      return assembler_;
-    }
+  protected:
 
-    const OperatorType& linOper() const
-    {
-      assert( linOperator_ );
-      return *linOperator_;
-    }
+    GridPartType                            gridPart_;       // reference to grid part, i.e. the leaf grid
 
-    protected:
+    AssemblyOperatorType                    dgOperator_;
+    AssemblerType                           assembler_;
 
-    GridType&                       grid_;
-    GridPartType                    gridPart_;       // reference to grid part, i.e. the leaf grid
-
-    AssemblyOperatorType            dgOperator_;
-    AssemblerType                   assembler_;
-
-    std::unique_ptr< OperatorType > linOperator_;
-    DiscreteFunctionSpaceType&      space_;
-    DiscreteFunctionType            rhs_;
-    PoissonSigmaEstimatorType       poissonSigmaEstimator_;
-    PAdaptivityType                 pAdapt_;
-    int                             step_;
+    std::unique_ptr< OperatorType >         linOperator_;
+    DiscreteFunctionSpaceType&              space_;
+    PoissonSigmaEstimatorType               poissonSigmaEstimator_;
+    PAdaptivityType                         pAdapt_;
+    int                                     step_;
+    double                                  time_;
 
   };
 

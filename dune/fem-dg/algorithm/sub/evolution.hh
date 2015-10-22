@@ -15,7 +15,7 @@
 #include <dune/common/timer.hh>
 #include <dune/fem/space/common/interpolate.hh>
 
-#include <dune/fem-dg/algorithm/interface.hh>
+#include <dune/fem-dg/algorithm/sub/interface.hh>
 #include <dune/fem-dg/algorithm/handler/solvermonitor.hh>
 #include <dune/fem-dg/algorithm/handler/diagnostics.hh>
 #include <dune/fem-dg/algorithm/handler/additionaloutput.hh>
@@ -71,9 +71,11 @@ namespace Fem
     {}
   };
 
-  // SubEvolutionAlgorithm
-  // ------------------
-
+  /**
+   *  \brief Algorithm for solving an instationary PDE.
+   *
+   *  \ingroup Algorithms
+   */
   template< class SubTraits >
   class SubEvolutionAlgorithmBase
     : public SubAlgorithmInterface< typename SubTraits::GridType,
@@ -128,36 +130,48 @@ namespace Fem
     typedef typename Traits::DiscreteTraits                          DiscreteTraits;
 
 
-    using BaseType::grid_;
-    using BaseType::algorithmName_;
+    using BaseType::grid;
+    using BaseType::name;
     using BaseType::problem;
     using BaseType::model;
     using BaseType::gridSize;
 
     SubEvolutionAlgorithmBase ( GridType &grid, const std::string name = "" )
     : BaseType( grid, name ),
-      gridPart_( grid_ ),
+      gridPart_( grid ),
       space_( gridPart_ ),
-      solution_( "U_"+name, space_ ),
-      exactSolution_( "U_exact"+name, space_ ),
+      solution_( doCreateSolution() ),
+      exactSolution_( doCreateExactSolution() ),
       diagnosticsHandler_( name ),
       solverMonitorHandler_(  name ),
       additionalOutputHandler_( nullptr ),
       odeSolverMonitor_(),
       overallTimer_(),
-      solver_(),
+      solver_( nullptr ),
       overallTime_( 0 ),
-      ioTuple_( std::make_tuple( &solution(), &exactSolution_ ) )
+      ioTuple_( std::make_tuple( &solution(), &exactSolution() ) )
     {}
+
+    typename SolverType::type& solver()
+    {
+      assert( solver_ );
+      return *solver_;
+    }
+
+    DiscreteFunctionType& solution ()
+    {
+      assert( solution_ );
+      return *solution_;
+    }
+
+    DiscreteFunctionType& exactSolution ()
+    {
+      assert( exactSolution_ );
+      return *exactSolution_;
+    }
 
     // return grid width of grid (overload in derived classes)
     virtual double gridWidth () const { return GridWidth::calcGridWidth( gridPart_ ); }
-
-    // function creating the ode solvers
-    virtual typename SolverType::type* createSolver ( TimeProviderType& ) = 0;
-
-    // return reference to discrete function holding solution
-    DiscreteFunctionType& solution () { return solution_; }
 
     //SOLVERMONITOR
     virtual SolverMonitorHandlerType* monitor() { return solverMonitorHandler_.value(); }
@@ -170,26 +184,42 @@ namespace Fem
 
     //LIMITING
     virtual void limit(){}
-    virtual LimitDiscreteFunctionType* limitSolution () { return &solution_; }
+    virtual LimitDiscreteFunctionType* limitSolution () { return solution_.get(); }
 
     //ADAPTATION
     virtual AdaptIndicatorType* adaptIndicator() { return nullptr; }
-    virtual AdaptationDiscreteFunctionType* adaptationSolution () { return &solution_; }
+    virtual AdaptationDiscreteFunctionType* adaptationSolution () { return solution_.get(); }
 
     //CHECKPOINTING
-    virtual CheckPointDiscreteFunctionType* checkPointSolution () { return &solution_; }
+    virtual CheckPointDiscreteFunctionType* checkPointSolution () { return solution_.get(); }
 
     //DATAWRITING
     virtual IOTupleType& dataTuple () { return ioTuple_; }
 
-    virtual bool checkSolutionValid ( const int loop, TimeProviderType* tp ) const { return solution_.dofsValid(); }
+  private:
+    virtual typename SolverType::type* doCreateSolver( TimeProviderType& tp )
+    {
+      return nullptr;
+    }
 
-    virtual void initialize ( const int loop, TimeProviderType* tp )
+    virtual DiscreteFunctionType* doCreateSolution()
+    {
+      return new DiscreteFunctionType( "U_"+name(), space_ );
+    }
+
+    virtual DiscreteFunctionType* doCreateExactSolution()
+    {
+      return new DiscreteFunctionType( "U_exact" + name(), space_ );
+    }
+
+    virtual bool doCheckSolutionValid ( const int loop, TimeProviderType& tp ) const override { return solution_->dofsValid(); }
+
+    virtual void doInitialize ( const int loop, TimeProviderType& tp ) override
     {
       // project initial data
       const bool doCommunicate = ! NonBlockingCommParameter :: nonBlockingCommunication ();
       InitialProjectorType projection( 2 * solution().space().order(), doCommunicate );
-      projection( problem().fixedTimeFunction( tp->time() ), solution() );
+      projection( problem().fixedTimeFunction( tp.time() ), solution() );
       //TODO check whether this version would also work (goal: avoid InitialProjectorType typedef :D
       //auto ftp = problem().fixedTimeFunction( tp.time() );
       //GridFunctionAdapter< typename ProblemType::InstationaryFunctionType, GridPartType >
@@ -199,7 +229,7 @@ namespace Fem
       //  solution().communicate();
 
       // setup ode solver
-      solver_.reset( this->createSolver( *tp ) );
+      solver_.reset( this->doCreateSolver( tp ) );
 
       // initialize ode solver
       solver().initialize( solution() );
@@ -230,10 +260,7 @@ namespace Fem
       }
     }
 
-    virtual void preSolve( const int loop, TimeProviderType* tp )
-    {}
-
-    virtual void solve ( const int loop, TimeProviderType* tp )
+    virtual void doSolve ( const int loop, TimeProviderType& tp ) override
     {
       overallTimer_.reset();
       odeSolverMonitor_.reset();
@@ -244,41 +271,32 @@ namespace Fem
       overallTime_ = overallTimer_.stop();
     }
 
-    virtual void postSolve( const int loop, TimeProviderType* tp )
-    {}
-
-    virtual void finalize ( const int loop, TimeProviderType* tp )
+    virtual void doFinalize ( const int loop, TimeProviderType& tp ) override
     {
       // add eoc errors
-      AnalyticalTraits::addEOCErrors( *tp, solution(), model(), problem() );
+      AnalyticalTraits::addEOCErrors( tp, solution(), model(), problem() );
 
       // delete ode solver
-      solver_.reset();
+      solver_.release();
     }
 
   protected:
-    typename SolverType::type &solver ()
-    {
-      assert( solver_ );
-      return *solver_;
-    }
-
-    GridPartType                   gridPart_;
-    DiscreteFunctionSpaceType      space_;
+    GridPartType                            gridPart_;
+    DiscreteFunctionSpaceType               space_;
 
     // the solution
-    DiscreteFunctionType           solution_;
-    DiscreteFunctionType           exactSolution_;
+    std::unique_ptr< DiscreteFunctionType > solution_;
+    std::unique_ptr< DiscreteFunctionType > exactSolution_;
 
     DiagnosticsHandlerOptional< DiagnosticsHandlerType >           diagnosticsHandler_;
     SolverMonitorHandlerOptional< SolverMonitorHandlerType >       solverMonitorHandler_;
     AdditionalOutputHandlerOptional< AdditionalOutputHandlerType > additionalOutputHandler_;
-    typename SolverType::type::MonitorType odeSolverMonitor_;
+    typename SolverType::type::MonitorType                         odeSolverMonitor_;
 
-    Dune::Timer                    overallTimer_;
+    Dune::Timer                                  overallTimer_;
     std::unique_ptr< typename SolverType::type > solver_;
-    double overallTime_;
-    IOTupleType ioTuple_;
+    double                                       overallTime_;
+    IOTupleType                                  ioTuple_;
   };
 
 

@@ -9,6 +9,14 @@
 
 namespace Dune {
 
+/**
+ * \brief describes the interface for a stokes problem
+ *
+ * \tparam FunctionSpaceImp type of the discrete function space describing the velocity
+ * \tparam PressureSpaceImp type of the (scalar) discrete function space describing the pressure
+ *
+ * \ingroup Problems
+ */
 template <class FunctionSpaceImp, class PressureSpaceImp>
 class StokesProblemInterface : public ProblemInterface < FunctionSpaceImp >
 {

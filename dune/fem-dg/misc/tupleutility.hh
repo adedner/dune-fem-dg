@@ -4,6 +4,21 @@
 #include <tuple>
 #include <type_traits>
 
+/**
+ * \brief concats tuples and flattens the result
+ *
+ * \tparam Args variadic list of tuples
+ *
+ * Usage
+ * \code{.cpp}
+ *   typedef std::tuple< double > FirstTuple;
+ *   typedef std::tuple< int >    SecondTuple;
+ *   typedef std::tuple< bool >   ThirdTuple;
+ *
+ *   typedef typename tuple_concat< FirstTuple, SecondTuple, ThirdTuple >::type ConcatTuple;
+ *   //type of ConcatTuple is std::tuple< double, int, bool >
+ * \endcode
+ */
 template < class... Args >
 class tuple_concat
 {
@@ -13,9 +28,16 @@ class tuple_concat
     return std::tuple_cat(args2...);
   }
   public:
+  //! type of a concatenated, flattened tuple
   typedef decltype(apply(std::declval<Args>()...)) type;
 };
 
+
+/**
+ * \brief Extracts the first element out of a variadic list of Arguments
+ *
+ * \tparam Args a variadic lists of elements.
+ */
 template < class... Args >
 struct tuple_head
 {
@@ -25,6 +47,17 @@ struct tuple_head
 };
 
 
+/**
+ * \brief typedef check if a type is a std::tuple<>
+ *
+ * usage
+ * \code{.cpp}
+ *   typedef
+ *   static const int =
+ * \endcode
+ *
+ * \tparam T type to be checked.
+ */
 template< class T >
 struct is_tuple
 {
@@ -36,51 +69,5 @@ struct is_tuple< std::tuple< TElem... > >
 {
   static const int value = true;
 };
-
-template< class Tuple, class T >
-struct has_type
-{ static_assert( is_tuple<Tuple>::value, "First template parameter is not of type std::tuple<...>" ); };
-
-template< class T >
-struct has_type< std::tuple<>, T > : std::false_type {};
-
-template< typename U, typename... Ts, class T>
-struct has_type< std::tuple<U, Ts...>, T > : has_type<T, std::tuple< Ts... > > {};
-
-template< class... Ts, class T>
-struct has_type< std::tuple<T, Ts...>, T > : std::true_type {};
-
-
-template< class T >
-struct wrap_tuple
-{
-  typedef typename std::conditional< is_tuple< T >::value,
-                                     T,
-                                     std::tuple<T>
-                                      >::type                 type;
-};
-
-//
-//template< class T1, class T2 >
-//class tuple_check
-//{
-//  static_assert( false, "no tuple inserted" );
-//};
-//
-//template< class T1, class T2 >
-//class tuple_check
-//{
-//  static_assert( is_tuple< T1 >::value, "First Parameter is no std::tuple" );
-//  static_assert( is_tuple< T2 >::value, "Second Parameter is no std::tuple" );
-//
-//
-//  public:
-//  static_assert( std::tuple_size< T1 >::value == std::tuple_size< T2 >::value,
-//                 "size of tuple does not fit" );
-//
-//  static_assert( ForLoop< T1, 0, std::tuple_size< T1 >::value >
-//                 "ddd" );
-//
-//};
 
 #endif

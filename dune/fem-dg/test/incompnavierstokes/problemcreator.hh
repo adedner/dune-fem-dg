@@ -25,8 +25,8 @@
 #include <dune/fem-dg/operator/fluxes/eulerfluxes.hh>
 #include <dune/fem-dg/operator/fluxes/noflux.hh>
 //--------- STEPPER -------------------------
-#include <dune/fem-dg/algorithm/advectiondiffusionstepper.hh>
-#include <dune/fem-dg/algorithm/advectionstepper.hh>
+#include <dune/fem-dg/algorithm/sub/advectiondiffusion.hh>
+#include <dune/fem-dg/algorithm/sub/advection.hh>
 #include <dune/fem-dg/test/stokes/stokesalgorithm.hh>
 #include <dune/fem-dg/algorithm/evolution.hh>
 //--------- EOCERROR ------------------------
@@ -356,7 +356,7 @@ struct IncompressibleNavierStokesProblemCreator
     template <int polOrd>
     struct Stepper
     {
-      typedef Dune::Fem::AdvectionDiffusionStepper< GridType, SubNavierStokesProblemCreator, polOrd > Type;
+      typedef Dune::Fem::AdvectionDiffusionAlgorithm< GridType, SubNavierStokesProblemCreator, polOrd > Type;
     };
 
   };

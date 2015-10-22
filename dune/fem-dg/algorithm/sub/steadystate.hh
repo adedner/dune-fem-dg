@@ -18,8 +18,8 @@
 #include <dune/fem-dg/misc/covarianttuple.hh>
 
 #include <dune/fem-dg/algorithm/base.hh>
-#include <dune/fem-dg/algorithm/subevolution.hh>
-#include <dune/fem-dg/algorithm/interface.hh>
+#include <dune/fem-dg/algorithm/sub/evolution.hh>
+#include <dune/fem-dg/algorithm/sub/interface.hh>
 
 #include <dune/fem-dg/algorithm/handler/solvermonitor.hh>
 #include <dune/fem-dg/algorithm/handler/diagnostics.hh>
@@ -102,7 +102,7 @@ namespace Fem
   };
 
 
-  template<class Grid,
+  template< class Grid,
             class ProblemTraits,
             int polOrd >
   struct SubSteadyStateTraits
@@ -124,7 +124,11 @@ namespace Fem
     typedef typename RhsTypes< OperatorType >::type                    RhsType;
   };
 
-
+  /**
+   *  \brief Algorithm for solving a stationary PDE.
+   *
+   *  \ingroup Algorithms
+   */
   template< class Grid, class ProblemTraits, int polOrder >
   class SubSteadyStateAlgorithm
     : public SubAlgorithmInterface< Grid, ProblemTraits, polOrder >
@@ -174,86 +178,64 @@ namespace Fem
 
     typedef typename Traits::RhsType                                 RhsType;
 
-    using BaseType::grid_;
-    using BaseType::algorithmName_;
+  public:
+    using BaseType::grid;
+    using BaseType::name;
     using BaseType::problem;
     using BaseType::model;
     using BaseType::gridSize;
 
   public:
-    using BaseType::checkSolutionValid;
-    using BaseType::initialize;
-    using BaseType::preSolve;
-    using BaseType::solve;
-    using BaseType::postSolve;
-    using BaseType::finalize;
-
     SubSteadyStateAlgorithm ( GridType &grid, const std::string name = ""  )
       : BaseType( grid, name ),
+        stringId_( name + IDGenerator::instance().nextId() ),
         solverMonitorHandler_( name ),
         diagnosticsHandler_( name ),
         additionalOutputHandler_( name ),
         gridPart_( grid ),
         space_( gridPart_ ),
-        solution_( "solution-" + name + IDGenerator::instance().nextId(), space_ ),
-        exactSolution_( "exact-solution-" + name + IDGenerator::instance().id(), space_ ),
+        solution_( doCreateSolution() ),
+        exactSolution_( doCreateExactSolution() ),
+        rhs_( doCreateRhs() ),
         rhsOperator_( gridPart_, problem(), std::tuple<>(), name ),
-        ioTuple_( std::make_tuple( &solution(), &exactSolution_ ) ),
+        ioTuple_( std::make_tuple( &solution(), &exactSolution() ) ),
+        solver_( doCreateSolver() ),
         solverIterations_()
     {
       solution().clear();
     }
 
+    typename SolverType::type& solver()
+    {
+      assert( solver_ );
+      return *solver_;
+    }
+
+    DiscreteFunctionType& solution ()
+    {
+      assert( solution_ );
+      return *solution_;
+    }
+
+    DiscreteFunctionType& rhs ()
+    {
+      assert( rhs_ );
+      return *rhs_;
+    }
+
+    DiscreteFunctionType& exactSolution ()
+    {
+      assert( exactSolution_ );
+      return *exactSolution_;
+    }
+
+    virtual void setTime( const double time ){}
+
     // return grid width of grid (overload in derived classes)
     virtual double gridWidth () const { return GridWidth::calcGridWidth( gridPart_ ); }
 
-    virtual DiscreteFunctionType& solution () { return solution_; }
-
-    virtual DiscreteFunctionType& rhs() = 0;
-
-    virtual typename SolverType::type* createSolver( DiscreteFunctionType* rhs ) = 0;
-
-    virtual bool checkSolutionValid ( const int loop ) const { return solution_.dofsValid(); }
-
-    virtual void initialize ( const int loop )
-    {
-      //initialize solverMonitor
-      solverMonitorHandler_.registerData( "GridWidth", &solverMonitorHandler_.monitor().gridWidth, nullptr, true );
-      solverMonitorHandler_.registerData( "Elements", &solverMonitorHandler_.monitor().elements, nullptr, true );
-      solverMonitorHandler_.registerData( "TimeSteps", &solverMonitorHandler_.monitor().timeSteps, nullptr, true );
-      solverMonitorHandler_.registerData( "ILS", &solverMonitorHandler_.monitor().ils_iterations, &solverIterations_ );
-      solverMonitorHandler_.registerData( "MaxILS", &solverMonitorHandler_.monitor().max_ils_iterations );
-    }
-
-    virtual void preSolve( const int loop )
-    {
-      if( rhsOperator_ )
-        rhsOperator_( solution(), rhs() );
-      solution().clear();
-      solver_.reset( this->createSolver( &rhs() ) );
-    }
-
-    virtual void solve ( const int loop )
-    {
-      (*solver_)( rhs(), solution() );
-      solverIterations_ = solver_->iterations();
-    }
-
-    virtual void postSolve( const int loop )
-    {
-      monitor()->finalize( gridWidth(), gridSize() );
-    }
-
-    virtual void finalize ( const int loop )
-    {
-      // add eoc errors
-      //AnalyticalTraits::addEOCErrors( solution(), model(), problem() );
-
-      solver_.reset( nullptr );
-    }
-
     //ADAPTATION
-    virtual AdaptationDiscreteFunctionType* adaptationSolution () { return &solution_; }
+    virtual AdaptationDiscreteFunctionType* adaptationSolution () { return solution_.get(); }
 
     //SOLVERMONITOR
     virtual SolverMonitorHandlerType* monitor() { return solverMonitorHandler_.value(); }
@@ -265,25 +247,93 @@ namespace Fem
     IOTupleType& dataTuple () { return ioTuple_; }
 
     //DIAGNOSTICS
-    virtual DiagnosticsHandlerType* diagnostics() { return diagnosticsHandler_.value(); }
+    virtual DiagnosticsHandlerType* diagnostics()
+    {
+      return diagnosticsHandler_.value();
+    }
 
   protected:
+    virtual typename SolverType::type* doCreateSolver()
+    {
+      return nullptr;
+    }
+
+    virtual DiscreteFunctionType* doCreateSolution()
+    {
+      return new DiscreteFunctionType( "solution-" + stringId_, space_ );
+    }
+
+    virtual DiscreteFunctionType* doCreateRhs()
+    {
+      return new DiscreteFunctionType( "rhs-" + stringId_, space_ );
+    }
+
+    virtual DiscreteFunctionType* doCreateExactSolution()
+    {
+      return new DiscreteFunctionType( "exactSolution-" + stringId_, space_ );
+    }
+
+    virtual bool doCheckSolutionValid ( const int loop ) const override
+    {
+      return solution_->dofsValid();
+    }
+
+    virtual void doInitialize ( const int loop )
+    {
+      //initialize solverMonitor
+      solverMonitorHandler_.registerData( "GridWidth", &solverMonitorHandler_.monitor().gridWidth, nullptr, true );
+      solverMonitorHandler_.registerData( "Elements", &solverMonitorHandler_.monitor().elements, nullptr, true );
+      solverMonitorHandler_.registerData( "TimeSteps", &solverMonitorHandler_.monitor().timeSteps, nullptr, true );
+      solverMonitorHandler_.registerData( "ILS", &solverMonitorHandler_.monitor().ils_iterations, &solverIterations_ );
+      solverMonitorHandler_.registerData( "MaxILS", &solverMonitorHandler_.monitor().max_ils_iterations );
+    }
+
+    virtual void doPreSolve ( const int loop )
+    {
+      if( rhsOperator_ )
+        rhsOperator_( solution(), rhs() );
+      solution().clear();
+      solver_.reset( this->doCreateSolver() );
+    }
+
+    virtual void doSolve ( const int loop )
+    {
+      (*solver_)( rhs(), solution() );
+      solverIterations_ = solver_->iterations();
+    }
+
+    virtual void doPostSolve( const int loop )
+    {
+      monitor()->finalize( gridWidth(), gridSize() );
+    }
+
+    virtual void doFinalize ( const int loop )
+    {
+      // add eoc errors
+      //AnalyticalTraits::addEOCErrors( solution(), model(), problem() );
+
+      solver_.reset();
+    }
+  protected:
+
+    const std::string          stringId_;
 
     SolverMonitorHandlerOptional< SolverMonitorHandlerType >       solverMonitorHandler_;
     DiagnosticsHandlerOptional< DiagnosticsHandlerType >           diagnosticsHandler_;
     AdditionalOutputHandlerOptional< AdditionalOutputHandlerType > additionalOutputHandler_;
 
-    GridPartType               gridPart_; // reference to grid part, i.e. the leaf grid
-    DiscreteFunctionSpaceType  space_;    // the discrete function space
-    DiscreteFunctionType       solution_;
-    DiscreteFunctionType       exactSolution_;
+    GridPartType                                 gridPart_; // reference to grid part, i.e. the leaf grid
+    DiscreteFunctionSpaceType                    space_;    // the discrete function space
+    std::unique_ptr< DiscreteFunctionType >      solution_;
+    std::unique_ptr< DiscreteFunctionType >      exactSolution_;
 
-    RhsOptional<RhsType >      rhsOperator_;
+    std::unique_ptr< DiscreteFunctionType >      rhs_;
+    RhsOptional<RhsType >                        rhsOperator_;
 
-    IOTupleType                ioTuple_;
+    IOTupleType                                  ioTuple_;
 
     std::unique_ptr< typename SolverType::type > solver_;
-    int solverIterations_;
+    int                                          solverIterations_;
   };
 
 

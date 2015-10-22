@@ -17,7 +17,7 @@ namespace Dune
  * Analytical model                           *
  *********************************************/
 /**
- * @brief Traits class for StokesModel
+ * \brief Traits class for StokesModel
  */
 template <class GridPart,
           class ProblemImp>
@@ -49,7 +49,11 @@ public:
 };
 
 /**
- * @brief describes the analytical model
+ * \brief describes the analytical model
+ *
+ * \ingroup AnalyticalModels
+ *
+ * Analytical Model for the stokes problem.
  *
  * This is an description class for the problem
  * \f{eqnarray*}{ V + \nabla a(U)      & = & 0 \\
@@ -73,18 +77,9 @@ public:
  *
  * for a matrix \f$M\in \mathbf{M}^{n\times m}\f$.
  *
- * @param GridPart GridPart for extraction of dimension
- * @param ProblemType Class describing the initial(t=0) and exact solution
+ * \param GridPart GridPart for extraction of dimension
+ * \param ProblemType Class describing the initial(t=0) and exact solution
  */
-
-
-////////////////////////////////////////////////////////
-//
-//  Analytical model for the Heat Equation
-//      dx(u) + div(uV) - epsilon*lap(u)) = 0
-//  where V is constant vector
-//
-////////////////////////////////////////////////////////
 template <class GridPartType, class ProblemImp>
 class StokesModel : public DefaultModel< StokesModelTraits< GridPartType, ProblemImp > >
 {
