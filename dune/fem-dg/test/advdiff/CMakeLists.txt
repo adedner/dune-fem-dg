@@ -10,10 +10,10 @@ add_definitions( "-DFLUX=1" )
 add_definitions( "-DPRIMALDG" )
 
 add_executable( advdiffall main.cc )
-dune_target_link_libraries(advdiffall "${DUNE_LIBS}")
+dune_target_enable_all_packages( advdiffall )
 
 add_executable( advdiff main.cc )
-dune_target_link_libraries(advdiff "${DUNE_LIBS}")
+dune_target_enable_all_packages( advdiff )
 set_property(TARGET advdiff APPEND PROPERTY 
              COMPILE_DEFINITIONS "POLORDER=2")
 
