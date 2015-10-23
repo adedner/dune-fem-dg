@@ -24,9 +24,8 @@ add_executable( dataconvert dataconvert.cc )
 add_executable( checkpointing "${MAININCLUDE_PATH}/main.cc" 
                              "${MAININCLUDE_PATH}/main_pol.cc" )
 
-
-dune_target_link_libraries( checkpointing "${DUNE_LIBS}")
-dune_target_link_libraries( dataconvert "${DUNE_LIBS}")
+dune_target_enable_all_packages( checkpointing )
+dune_target_enable_all_packages( dataconvert )
 
 dune_add_test( checkpointing dataconvert )
 

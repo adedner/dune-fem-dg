@@ -9,12 +9,12 @@ add_definitions( "-DFLUX=1" )
 add_definitions( "-DPRIMALDG" )
 
 add_executable( eulerall main.cc problems/chorjo.cc )
-dune_target_link_libraries(eulerall ${DUNE_LIBS})
+dune_target_enable_all_packages( eulerall )
 set_property(TARGET eulerall APPEND PROPERTY 
              COMPILE_DEFINITIONS "LIMITER")
 
 add_executable( euler main.cc problems/chorjo.cc )
-dune_target_link_libraries(euler ${DUNE_LIBS})
+dune_target_enable_all_packages( euler )
 set_property(TARGET euler APPEND PROPERTY 
              COMPILE_DEFINITIONS "POLORDER=2")
 

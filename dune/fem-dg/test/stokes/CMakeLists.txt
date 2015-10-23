@@ -13,10 +13,10 @@ add_definitions( "-DONB" )
 
 
 add_executable( stokesall main.cc )
-dune_target_link_libraries(stokesall "${DUNE_LIBS}")
+dune_target_enable_all_packages( stokesall )
 
 add_executable( stokes main.cc )
-dune_target_link_libraries(stokes "${DUNE_LIBS}")
+dune_target_enable_all_packages( stokes )
 set_property(TARGET stokes APPEND PROPERTY 
              COMPILE_DEFINITIONS "POLORDER=2")
 
