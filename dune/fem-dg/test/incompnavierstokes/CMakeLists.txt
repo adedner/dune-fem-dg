@@ -23,4 +23,4 @@ set_property(TARGET incompnavierstokes APPEND PROPERTY
 
 add_code_generate_targets( incompnavierstokes incompnavierstokesall )
 
-dune_add_test( incompnavierstokes incompnavierstokesall )
+dune_fem_add_test( incompnavierstokes incompnavierstokesall )

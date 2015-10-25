@@ -23,4 +23,4 @@ set_property(TARGET navierstokes APPEND PROPERTY
 
 add_code_generate_targets( navierstokes navierstokesall )
 
-dune_add_test( navierstokes navierstokesall )
+dune_fem_add_test( navierstokes navierstokesall )

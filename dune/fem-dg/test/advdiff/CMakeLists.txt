@@ -19,4 +19,4 @@ set_property(TARGET advdiff APPEND PROPERTY
 
 add_code_generate_targets( advdiff advdiffall )
 
-dune_add_test( advdiff advdiffall )
+dune_fem_add_test( advdiff advdiffall )

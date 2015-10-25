@@ -20,4 +20,4 @@ set_property(TARGET euler APPEND PROPERTY
 
 add_code_generate_targets( euler eulerall )
 
-dune_add_test( euler eulerall )
+dune_fem_add_test( euler eulerall )

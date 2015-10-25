@@ -22,4 +22,4 @@ set_property(TARGET stokes APPEND PROPERTY
 
 add_code_generate_targets( stokes stokesall )
 
-dune_add_test( stokes stokesall )
+dune_fem_add_test( stokes stokesall )

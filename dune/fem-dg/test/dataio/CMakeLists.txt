@@ -27,5 +27,5 @@ add_executable( checkpointing "${MAININCLUDE_PATH}/main.cc"
 dune_target_enable_all_packages( checkpointing )
 dune_target_enable_all_packages( dataconvert )
 
-dune_add_test( checkpointing dataconvert )
+dune_fem_add_test( checkpointing dataconvert )
 

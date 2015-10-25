@@ -23,4 +23,4 @@ set_property(TARGET poisson APPEND PROPERTY
 
 add_code_generate_targets( poisson poissonall )
 
-dune_add_test( poisson poissonall )
+dune_fem_add_test( poisson poissonall )
