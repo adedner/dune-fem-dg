@@ -14,13 +14,13 @@ add_definitions( "-DPRIMALDG" )
 add_definitions( "-DPROBLEM=2" )
 
 add_executable( incompnavierstokesall main.cc )
-dune_target_link_libraries(incompnavierstokesall ${DUNE_LIBS})
+dune_target_enable_all_packages( incompnavierstokesall )
 
 add_executable( incompnavierstokes main.cc )
-dune_target_link_libraries(incompnavierstokes ${DUNE_LIBS})
+dune_target_enable_all_packages( incompnavierstokes )
 set_property(TARGET incompnavierstokes APPEND PROPERTY 
-             COMPILE_DEFINITIONS "ONLY_ONE_P;POLORDER=${POLORDER}")
+             COMPILE_DEFINITIONS "POLORDER=${POLORDER}")
 
 add_code_generate_targets( incompnavierstokes incompnavierstokesall )
 
-dune_add_test( incompnavierstokes incompnavierstokesall )
+dune_fem_add_test( incompnavierstokes incompnavierstokesall )

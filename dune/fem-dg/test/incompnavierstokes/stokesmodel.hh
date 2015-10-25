@@ -125,7 +125,7 @@ public:
    */
   StokesModel(const ProblemType& problem)
     : problem_(problem),
-      theta_( 1 )
+      theta_( problem.theta() )
   {
   }
 
@@ -153,12 +153,7 @@ public:
                              const JacobianRangeType& du,
                              RangeType & s) const
   {
-    if( rightHandSideModel )
-    {
-      s  = local.evaluate( ComputeRHS(), local );
-      s *= -1;
-    }
-    else
+    if( ! rightHandSideModel )
     {
       s  = u ;
       s /= theta_;
@@ -378,15 +373,8 @@ public:
                              const RangeType& uLeft,
                              RangeType& uRight) const
   {
-    if ( local.intersection().boundaryId() == 99) // Dirichlet zero boundary conditions
-    {
-      uRight = 0;
-    }
-    else
-    {
-      DomainType xgl = local.entity().geometry().global( local.point() );
-      problem_.g(xgl, uRight);
-    }
+    DomainType xgl = local.entity().geometry().global( local.point() );
+    problem_.g(xgl, uRight);
   }
 
   /**
@@ -403,14 +391,9 @@ public:
 
   const ProblemType& problem () const { return problem_; }
 
-  void setTheta( const double theta )
-  {
-    theta_ = theta ;
-  }
-
  protected:
   const ProblemType& problem_;
-  double theta_;
+  const double theta_;
 };
 
 #endif

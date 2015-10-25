@@ -7,14 +7,15 @@
 #include <dune/fem/quadrature/cachingquadrature.hh>
 #include <dune/fem/space/discontinuousgalerkin.hh>
 #include <dune/fem/space/finitevolume.hh>
+#include <dune/fem/operator/common/stencil.hh>
 
 #include <dune/fem-dg/operator/adaptation/adaptation.hh>
+#include <dune/fem-dg/operator/fluxes/diffusionflux.hh>
 
 namespace Dune {
 
   //PassTraits
   //----------
-
   template <class Traits, int polOrd, int dimR>
   class PassTraits
   {
@@ -37,13 +38,13 @@ namespace Dune {
     static const int dimDomain = Traits::ModelType::dimDomain ;
 
     typedef typename ModelTraits::FaceDomainType  FaceDomainType;
-    typedef Fem::FunctionSpace< ctype, double, dimDomain, dimRange >      FunctionSpaceType;
+    typedef typename ModelTraits::DomainFieldType DomainFieldType;
+    typedef typename ModelTraits::RangeFieldType  RangeFieldType;
+    typedef Fem::FunctionSpace< DomainFieldType, RangeFieldType, dimDomain, dimRange >      FunctionSpaceType;
 
     typedef typename FunctionSpaceType :: DomainType         DomainType;
     typedef typename FunctionSpaceType :: RangeType          RangeType;
     typedef typename FunctionSpaceType :: JacobianRangeType  JacobianRangeType;
-    typedef typename FunctionSpaceType :: RangeFieldType     RangeFieldType ;
-    typedef typename FunctionSpaceType :: DomainFieldType    DomainFieldType ;
 
     //static const int dimRange  = ModelTraits::dimRange;
     //static const int dimDomain = ModelTraits::dimDomain;
@@ -65,8 +66,8 @@ namespace Dune {
 
     // Indicator for Limiter
     typedef Fem::FunctionSpace< ctype, double, ModelTraits::dimDomain, 3> FVFunctionSpaceType;
-    typedef Fem::FiniteVolumeSpace<FVFunctionSpaceType,GridPartType, 0, Fem::SimpleStorage> IndicatorSpaceType;
-    typedef Fem::AdaptiveDiscreteFunction<IndicatorSpaceType> IndicatorType;
+    typedef Fem::FiniteVolumeSpace<FVFunctionSpaceType,GridPartType, 0, Fem::SimpleStorage> LimiterIndicatorSpaceType;
+    typedef Fem::AdaptiveDiscreteFunction<LimiterIndicatorSpaceType> LimiterIndicatorType;
 
     typedef AdaptationHandler< GridType, FunctionSpaceType >  AdaptationHandlerType ;
   };

@@ -7,7 +7,7 @@
 
 // local includes
 #include <dune/fem-dg/stepper/stepperbase.hh>
-#include "../stokes/stokes.hh"
+#include "../stokes/stokesalgorithm.hh"
 
 template <class GridImp,
           class ProblemTraits,
@@ -43,7 +43,10 @@ struct AdvectionDiffusionStepper
   typedef typename BaseType :: ExplicitOperatorType      ExplicitOperatorType;
   typedef typename BaseType :: ImplicitOperatorType      ImplicitOperatorType;
 
+  typedef typename Traits :: VelocityFunctionType        VelocityFunctionType;
+
   typedef typename Traits :: RhsOperatorType             RhsOperatorType;
+  typedef typename Traits :: RhsStokesOperatorType       RhsStokesOperatorType;
 
   typedef typename BaseType :: LinearInverseOperatorType LinearInverseOperatorType;
 
@@ -96,15 +99,16 @@ struct AdvectionDiffusionStepper
                              const std::string name = "",
                              ExtraParameterTupleType tuple = ExtraParameterTupleType() ) :
     BaseType( grid, name ),
-    subTimeProvider_( 0.0, grid ),
+    subTimeProvider_( 0.0, 1.0, grid ),
     stokes_( grid, name ),
-    velocity_( "velocity", space() ),
-    rhs_( "rhs", space() ),
+    velocity_( "velocity", stokes_.space() ),
+    tmp_( "tmp", stokes_.space() ),
+    rhs_( "rhs", stokes_.space() ),
     tuple_( &velocity_, &rhs_ ),
     tupleV_( &velocity_ ),
     dgOperator_( gridPart_, problem(), tuple_, name ),
-    rhsOperator_( gridPart_, problem(), tupleV_, name )
-    // rhsOperator2_( gridPart_, problem(), tuple_, name )
+    rhsOperator_( gridPart_, problem(), tupleV_, name ),
+    rhsStokesOperator_( gridPart_, problem(), std::tuple<>(), name )
   {
   }
 
@@ -149,14 +153,48 @@ struct AdvectionDiffusionStepper
                               name() );
   }
 
+  // before first step, do data initialization
+  void initializeStep( TimeProviderType& tp, const int loop )
+  {
+    const double theta = problem().theta();
+    BaseType :: initializeStep( tp, loop );
+    // pass dt estimate to time provider
+    const double dtEstimate = subTimeProvider_.timeStepEstimate();
+    tp.provideTimeStepEstimate( dtEstimate / (1.0 - 2.0 * theta) );
+  }
+
   void step(TimeProviderType& tp,
             SolverMonitorType& monitor )
   {
-    const double theta = 1.0 - 1.0/M_SQRT2 ;
+    const double theta = problem().theta();
     const double time  = tp.time();
     const double dt    = tp.deltaT();
 
     DiscreteFunctionType& U = solution();
+    std::cout << "Sizes: ";
+    std::cout << velocity_.size() << "  " << stokes_.solution().size() << "  " <<
+      U.size() << std::endl;
+
+/*
+    typedef typename InitialDataType :: TimeDependentFunctionType
+      TimeDependentFunctionType;
+
+    // communication is needed when blocking communication is used
+    // but has to be avoided otherwise (because of implicit solver)
+    const bool doCommunicate = ! NonBlockingCommParameter :: nonBlockingCommunication ();
+
+    // create L2 projection
+    Fem :: L2Projection< TimeDependentFunctionType,
+        DiscreteFunctionType > l2pro( 2 * U.space().order(), doCommunicate );
+
+    // L2 project initial data
+    l2pro( problem().fixedTimeFunction( tp.time() ), U );
+    tp.provideTimeStepEstimate( 1e-1 );
+    return ;
+*/
+
+    assert( velocity_.size() == stokes_.solution().size() );
+    assert( U.size() == velocity_.size() );
 
     stokes_.assemble() ;
 
@@ -164,12 +202,21 @@ struct AdvectionDiffusionStepper
     overallTimer_.reset();
 
     // u^* = u^n
-    velocity_.assign( stokes_.solution() );
+    velocity_.assign( U );
+
+    // set time for problem
+    problem().setTime( time );
+
+    typedef typename RhsOperatorType::DestinationType RhsDestinationType;
+    RhsDestinationType tmp1( "tmp1", space() );
+    RhsDestinationType tmp2( "tmp2", space() );
+    tmp1.assign( U );
 
     // set operator time
     rhsOperator_.setTime( time );
     // compute right hand side
-    rhsOperator_( U, rhs_ );
+    rhsOperator_( tmp1, tmp2 );
+    rhs_.assign( tmp2 );
 
     // stokes solve (step 1)
     stokes_.solve( rhs_ );
@@ -177,26 +224,55 @@ struct AdvectionDiffusionStepper
     // update solution
     U.assign( stokes_.solution() );
 
+    return ;
+
     // u^* = (2 theta - 1)/theta * u^n + (1 - theta)/theta u^n+theta
     velocity_ *= ( 2.0*theta - 1.0 ) / theta ;
-    velocity_.axpy( (1.0-theta)/theta, U );
+    velocity_.axpy( (1.0-theta)/theta, stokes_.solution() );
 
-    rhsOperator2_( U, rhs_ );
+    // set time for problem
+    problem().setTime( time + theta * dt );
+
+    tmp1.assign( stokes_.solution() );
+    // compute laplace U
+    rhsStokesOperator_( tmp1, tmp2 );
+    rhs_.assign( tmp2 );
+
+    // compute grad p
+    stokes_.pressureGradient( tmp_ );
+
+    // rhs = \alpha\mu\laplace U - \grad P
+    rhs_ -= tmp_;
 
     // set time for ode solve
-    subTimeProvider_.setTime( time + dt * theta );
+    subTimeProvider_.init();
+    subTimeProvider_.provideTimeStepEstimate( time + dt * theta );
+    subTimeProvider_.next();
+    subTimeProvider_.next( (1.0 - 2.0 *theta) * dt );
+
+    // set time for problem
+    problem().setTime( time + (1.0 - 2.0*theta) * dt );
+
+    std::cout << time << "  t | dt  " << dt << "  " << std::endl;
+    std::cout << subTimeProvider_.time() << "  t | dt  " << subTimeProvider_.deltaT() << std::endl;
+    // subTimeProvider_.setTime( time + dt * theta );
     // compute time step for advection-diffusion step
-    subTimeProvider_.provideTimeStepEstimate( (1.0 - 2.0 *theta) * dt / subTimeProvider_.factor() );
+    // subTimeProvider_.provideTimeStepEstimate( (1.0 - 2.0 *theta) * dt / subTimeProvider_.factor() );
     // TODO: set time step correctly
 
     // solve advection-diffusion step (step 2)
     assert(odeSolver_);
     odeSolver_->solve( U, odeSolverMonitor_ );
 
+    // set time for problem
+    problem().setTime( time + (1.0-theta) * dt );
+
     // set operator time
     rhsOperator_.setTime( time + (1.0-theta) * dt );
+    tmp1.assign( U );
     // compute right hand side
-    rhsOperator_( U, rhs_ );
+    rhsOperator_( tmp1, tmp2 );
+    rhs_.assign( tmp2 );
 
     // stokes solve (step 3)
     stokes_.solve( rhs_ );
@@ -215,6 +291,8 @@ struct AdvectionDiffusionStepper
     // set time step size to monitor
     monitor.setTimeStepInfo( tp );
 
+    const double dtEstimate = subTimeProvider_.timeStepEstimate();
+    tp.provideTimeStepEstimate( dtEstimate / (1.0 - 2.0 * theta) );
   }
 
 
@@ -236,13 +314,15 @@ protected:
   TimeProviderType        subTimeProvider_;
   StokesAlgorithmType     stokes_;
 
-  DiscreteFunctionType    velocity_;
-  DiscreteFunctionType    rhs_;
+  VelocityFunctionType    velocity_;
+  VelocityFunctionType    tmp_;
+  VelocityFunctionType    rhs_;
 
-  std::tuple< DiscreteFunctionType*, DiscreteFunctionType* > tuple_;
-  std::tuple< DiscreteFunctionType* > tupleV_;
+  std::tuple< VelocityFunctionType*, VelocityFunctionType * > tuple_;
+  std::tuple< VelocityFunctionType* > tupleV_;
 
   FullOperatorType        dgOperator_;
   RhsOperatorType         rhsOperator_;
+  RhsStokesOperatorType   rhsStokesOperator_;
 };
 #endif // FEMHOWTO_STEPPER_HH

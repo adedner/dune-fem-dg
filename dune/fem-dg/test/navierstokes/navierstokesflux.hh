@@ -21,14 +21,16 @@ class NSFlux
 public:
   typedef typename Traits::ProblemType ProblemType;
   typedef typename Traits::DomainType  DomainType;
+  typedef typename Traits::DomainFieldType  DomainFieldType;
+  typedef typename Traits::RangeFieldType   RangeFieldType;
   typedef typename Traits::RangeType   RangeType;
-  typedef Dune::FieldVector< double, dimGradRange > GradientRangeType;
+  typedef Dune::FieldVector< RangeFieldType, dimGradRange > GradientRangeType;
   typedef typename Traits::JacobianRangeType  JacobianRangeType;
 
-  typedef Dune::FieldMatrix< double, dimGradRange, dimDomain > JacobianFluxRangeType;
+  typedef Dune::FieldMatrix< RangeFieldType, dimGradRange, dimDomain > JacobianFluxRangeType;
   typedef Dune::Fem::FieldMatrixConverter< GradientRangeType, JacobianRangeType >
     ConvertedJacobianRangeType;
-  typedef Dune::FieldMatrix< double, dimDomain, dimDomain > VelocityGradientType;
+  typedef Dune::FieldMatrix< RangeFieldType, dimDomain, dimDomain > VelocityGradientType;
 
   NSFlux( const ProblemType& problem )
     : eulerFlux_()

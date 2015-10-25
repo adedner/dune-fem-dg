@@ -275,8 +275,8 @@ namespace Dune {
     typedef LocalCDGPass   < DiscreteModel1Type, Pass1Type, advectPassId >      Pass2Type;
 #endif
 
-    typedef typename LimiterDiscreteModelType::IndicatorType                      IndicatorType;
-    typedef typename IndicatorType::DiscreteFunctionSpaceType           IndicatorSpaceType;
+    typedef typename LimiterDiscreteModelType::LimiterIndicatorType     LimiterIndicatorType;
+    typedef typename LimiterIndicatorType::DiscreteFunctionSpaceType    LimiterIndicatorSpaceType;
 
     template< class Limiter, int pO >
     struct LimiterCall
@@ -306,8 +306,8 @@ namespace Dune {
       // if indicator output is enabled create objects
       if( Fem::Parameter::getValue<bool> ("femdg.limiter.indicatoroutput", false ) )
       {
-        fvSpc_     = new IndicatorSpaceType( gridPart_ );
-        indicator_ = new IndicatorType( "SE", *fvSpc_ );
+        fvSpc_     = new LimiterIndicatorSpaceType( gridPart_ );
+        indicator_ = new LimiterIndicatorType( "SE", *fvSpc_ );
         limitProblem_.setIndicator( indicator_ );
       }
     }
@@ -403,7 +403,7 @@ namespace Dune {
     }
 
     // return pointer to indicator function
-    IndicatorType* indicator() { return indicator_ ; }
+    LimiterIndicatorType* indicator() { return indicator_ ; }
 
     inline void limit( DestinationType& U ) const
     {
@@ -454,15 +454,15 @@ namespace Dune {
     const ModelType& model () const { return model_; }
 
   private:
-    ModelType           model_;
-    AdvectionFluxType   advflux_;
-    GridPartType&       gridPart_;
-    SpaceType           space_;
-    LimiterSpaceType    limiterSpace_;
+    ModelType                  model_;
+    AdvectionFluxType          advflux_;
+    GridPartType&              gridPart_;
+    SpaceType                  space_;
+    LimiterSpaceType           limiterSpace_;
     mutable LimiterDestinationType* uTmp_;
 
-    IndicatorSpaceType*  fvSpc_;
-    IndicatorType*       indicator_;
+    LimiterIndicatorSpaceType* fvSpc_;
+    LimiterIndicatorType*      indicator_;
 
 
   protected:

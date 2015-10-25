@@ -143,49 +143,49 @@ class StepperParameters
 
   virtual double fixedTimeStep() const
   {
-    checkOldParameterUsed( "FixedTimeStep" );
+    checkOldParameterUsed( "femhowto.fixedTimeStep" );
     return Dune::Fem::Parameter::getValue< double >( keyPrefix_ + "fixedtimestep" , 0.0 );
   }
 
   virtual double fixedTimeStepEocLoopFactor() const
   {
-    checkOldParameterUsed( "FixedTimeStepEocLoopFactor" );
+    checkOldParameterUsed( "femhowto.fixedTimeStepEocLoopFactor" );
     return Dune::Fem::Parameter::getValue< double >( keyPrefix_ + "fixedtimestepeocloopfactor" , 1.0 );
   }
 
   virtual double startTime() const
   {
-    checkOldParameterUsed( "startTime" );
+    checkOldParameterUsed( "femhowto.startTime" );
     return Dune::Fem::Parameter::getValue< double >( keyPrefix_ + "starttime" , 0.0 );
   }
 
   virtual double endTime() const
   {
-    checkOldParameterUsed( "endTime" );
+    checkOldParameterUsed( "femhowto.endTime" );
     return Dune::Fem::Parameter::getValue< double >( keyPrefix_ + "endtime"/*, 1.0 */);
   }
 
   virtual int printCount() const
   {
-    checkOldParameterUsed( "printCount" );
+    checkOldParameterUsed( "femhowto.printCount" );
     return Dune::Fem::Parameter::getValue< int >( keyPrefix_ + "printcount" , -1 );
   }
 
   virtual double maxTimeStep() const
   {
-    checkOldParameterUsed( "maxTimeStep" );
+    checkOldParameterUsed( "femhowto.maxTimeStep" );
     return Dune::Fem::Parameter::getValue< double >( keyPrefix_ + "maxtimestep", std::numeric_limits<double>::max());
   }
 
   virtual int maximalTimeSteps () const
   {
-    checkOldParameterUsed( "maximaltimesteps" );
+    checkOldParameterUsed( "femhowto.maximaltimesteps" );
     return Dune::Fem::Parameter::getValue< int >(  keyPrefix_ + "maximaltimesteps", std::numeric_limits<int>::max());
   }
 
   virtual bool stopAtEndTime() const
   {
-    checkOldParameterUsed( "stopatendtime" );
+    checkOldParameterUsed( "femhowto.stopatendtime" );
     return Dune::Fem::Parameter::getValue< bool >( keyPrefix_ + "stopatendtime", bool(false) );
   }
 
@@ -227,7 +227,7 @@ public:
   typedef uint64_t UInt64Type ;
 
   // type of statistics monitor
-  typedef SolverMonitor  SolverMonitorType ;
+  typedef SolverMonitorImp  SolverMonitorType ;
 
   // type of stepper parameters
   typedef StepperParameters                            StepperParametersType;
@@ -244,10 +244,8 @@ public:
      param_( StepperParametersType( Dune::ParameterKey::generate( "", "femdg.stepper." ) ) ),
      adaptParam_( AdaptationParametersType( Dune::ParameterKey::generate( "", "fem.adaptation." ) ) ),
      eocParam_( EocParametersType( Dune::ParameterKey::generate( "", "fem.eoc." ) ) ),
-     // Initialize Timer for CPU time measurements
      timeStepTimer_( Dune::FemTimer::addTo("max time/timestep") ),
      fixedTimeStep_( param_.fixedTimeStep() ),
-     fixedTimeStepEocLoopFactor_( param_.fixedTimeStepEocLoopFactor() ),
      algorithmName_( algorithmName )
   {
   }
@@ -359,15 +357,6 @@ public:
     // create monitor object (initialize all varialbes)
     SolverMonitorType monitor;
 
-    // if adaptCount is 0 then no dynamics grid adaptation
-    int adaptCount = 0;
-    int maxAdaptationLevel = 0;
-    if( adaptive() )
-    {
-      adaptCount = adaptParam_.adaptCount();
-      maxAdaptationLevel = adaptParam_.finestLevel();
-    }
-
     // only do checkpointing when number of EOC steps is 1
     const bool doCheckPointing = ( eocParam_.steps() == 1 );
 
@@ -390,10 +379,10 @@ public:
       tp.init();
 
     // for simulation new start do start adaptation
-    if( newStart && adaptCount > 0 )
+    if( adaptive() &&  newStart )
     {
       // adapt the grid to the initial data
-      for( int startCount = 0; startCount < maxAdaptationLevel; ++ startCount )
+      for( int startCount = 0; startCount < adaptParam_.finestLevel(); ++ startCount )
       {
         // call initial adaptation
         initialEstimateMarkAdapt( );
@@ -444,9 +433,12 @@ public:
       //************************************************
       Dune::FemTimer::start( timeStepTimer_ );
 
-      // grid adaptation (including marking of elements)
-      if( (adaptCount > 0) && (timeStep % adaptCount) == 0 )
-        estimateMarkAdapt();
+      if( adaptive() )
+      {
+        // grid adaptation (including marking of elements)
+        if( timeStep % adaptParam_.adaptCount() == 0 )
+          estimateMarkAdapt();
+      }
 
       // perform the solve for one time step, i.e. solve ODE
       step( tp, monitor );
@@ -512,7 +504,7 @@ public:
     finalizeStep( tp );
 
     // prepare the fixed time step for the next eoc loop
-    fixedTimeStep_ /= fixedTimeStepEocLoopFactor_;
+    fixedTimeStep_ /= param_.fixedTimeStepEocLoopFactor();
 
     // adjust average time step size
     monitor.finalize( gridWidth(),  // h
@@ -537,7 +529,6 @@ protected:
 
   // use fixed time step if fixedTimeStep>0
   double fixedTimeStep_;
-  double fixedTimeStepEocLoopFactor_;
   const std::string algorithmName_;
 };
 

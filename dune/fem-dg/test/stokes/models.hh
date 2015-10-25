@@ -202,7 +202,6 @@ protected:
   {
     problem_.velocity(en.geometry().global(x), v);
   }
-
 public:
 
   /**
@@ -331,7 +330,6 @@ public:
 
     // fill diffusion matrix
     problem_.K( xgl, K );
-
     // apply diffusion
     for( int r =0; r<dimRange; ++r )
       K.mv( jac[ r ] , A[ r ] );

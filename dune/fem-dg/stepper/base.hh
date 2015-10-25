@@ -1,5 +1,6 @@
 #ifndef FEMHOWTO_BASE_HH
 #define FEMHOWTO_BASE_HH
+#define DUNE_FEMDG_ALGORITHM_BASE_HH
 
 #include <sstream>
 #include <sys/time.h>
@@ -60,19 +61,19 @@ struct EocParameters :
 
   virtual int steps() const
   {
-    checkOldParameterUsed( "eocSteps" );
+    checkOldParameterUsed( "femhowto.eocSteps" );
     return Dune::Fem::Parameter::getValue<int>( keyPrefix_ + "steps", 1);
   }
 
   virtual std::string outputPath() const
   {
-    checkOldParameterUsed( "eocOutputPath" );
+    checkOldParameterUsed( "femhowto.eocOutputPath" );
     return Dune::Fem::Parameter::getValue<std::string>( keyPrefix_ + "outputpath", "./");
   }
 
   virtual std::string fileName() const
   {
-    checkOldParameterUsed( "eocFileName" );
+    checkOldParameterUsed( "femhowto.eocFileName" );
     return Dune::Fem::Parameter::getValue<std::string>( keyPrefix_ + "filename", "eoc" );
   }
 
@@ -189,14 +190,8 @@ inline double getMemoryUsage()
 template <class Algorithm>
 void compute(Algorithm& algorithm)
 {
-  const std::string name = "";
-
   typedef typename Algorithm::GridType GridType;
   GridType& grid = algorithm.grid();
-
-  // get number of eoc steps
-  EocParameters eocParam( Dune::ParameterKey::generate( name, "fem.eoc." ) );
-  const int eocSteps = eocParam.steps();
 
   typename Algorithm::IOTupleType dataTup = algorithm.dataTuple() ;
 
@@ -205,8 +200,14 @@ void compute(Algorithm& algorithm)
 
   typedef typename Algorithm::SolverMonitorType SolverMonitorType;
 
+  std::string problemDescription = "default" ;
+  // initialize FemEoc if eocSteps > 1
+  EocParameters eocParam( Dune::ParameterKey::generate( "", "fem.eoc." ) );
+  Dune::Fem::FemEoc::clear();
+  Dune::Fem::FemEoc::initialize( eocParam.outputPath(), eocParam.fileName(), problemDescription );
+
   const unsigned int femTimerId = Dune::FemTimer::addTo("timestep");
-  for(int eocloop=0; eocloop < eocSteps; ++eocloop )
+  for(int eocloop=0; eocloop < eocParam.steps(); ++eocloop )
   {
     // start fem timer (enable with -DFEMTIMER)
     Dune::FemTimer :: start(femTimerId);
@@ -228,28 +229,24 @@ void compute(Algorithm& algorithm)
     // finalize the algorithm
     algorithm.finalize( eocloop );
 
-    // only do this if we have more than 1 eoc step
-    //if( eocSteps > 1 )
+    std::stringstream eocInfo ;
+    // generate EOC information
+    Dune::Fem::FemEoc::write( monitor.gridWidth, monitor.elements, runTime, monitor.timeSteps,
+                              monitor.doubleValues(), monitor.intValues(), eocInfo );
+
+    // in verbose mode write EOC info to std::cout
+    if( ParameterType :: verbose() )
     {
-      std::stringstream eocInfo ;
-      // generate EOC information
-      Dune::Fem::FemEoc::write( monitor.gridWidth, monitor.elements, runTime, monitor.timeSteps,
-                                monitor.doubleValues(), monitor.intValues(), eocInfo );
-
-      // in verbose mode write EOC info to std::cout
-      if( ParameterType :: verbose() )
-      {
-        std::cout << std::endl << "EOC info: " << std::endl << eocInfo.str() << std::endl;
-      }
-
-      // write eoc step
-      dataOutput.writeData( eocloop );
-
-      // Refine the grid for the next EOC Step. If the scheme uses adaptation,
-      // the refinement level needs to be set in the algorithms' initialize method.
-      if( eocSteps > 1 )
-        Dune::Fem::GlobalRefine::apply(grid,Dune::DGFGridInfo<GridType>::refineStepsForHalf());
+      std::cout << std::endl << "EOC info: " << std::endl << eocInfo.str() << std::endl;
     }
+
+    // write eoc step
+    dataOutput.writeData( eocloop );
+
+    // Refine the grid for the next EOC Step. If the scheme uses adaptation,
+    // the refinement level needs to be set in the algorithms' initialize method.
+    if( eocParam.steps() > 1 )
+      Dune::Fem::GlobalRefine::apply(grid,Dune::DGFGridInfo<GridType>::refineStepsForHalf());
 
   } /***** END of EOC Loop *****/
 

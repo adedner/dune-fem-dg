@@ -24,7 +24,7 @@ int main(int argc, char ** argv)
     PoissonProblemCreator< GridType > problem;
 
     // run simulation
-    Simulator::run( problem );
+    Dune::Simulator::run( problem );
   }
   catch (const Dune::Exception &e)
   {

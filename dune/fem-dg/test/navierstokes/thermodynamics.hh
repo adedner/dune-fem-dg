@@ -21,7 +21,7 @@ using namespace Dune;
  *
  *  \tparam dimDomain dimension of the domain
  */
-template< int dimDomain >
+template< int dimDomain, class Field = double >
 class Thermodynamics
 {
   enum{ energyId = dimDomain+1 };
@@ -72,14 +72,14 @@ class Thermodynamics
    *  \return pressure in energy form
    */
   template< class RangeType >
-  inline double pressureEnergyForm( const RangeType& cons ) const
+  inline Field pressureEnergyForm( const RangeType& cons ) const
   {
     // cons = [rho, rho*v, rho*e]
     assert( cons[0] > 1e-20 );
     assert( cons[energyId] > 1e-20 );
 
     // kinetic energy
-    double kin = 0.;
+    Field kin = 0.;
     for( int i=1; i<=dimDomain; ++i )
       kin += cons[ i ] * cons[ i ];
     kin *= 0.5 / cons[ 0 ];
@@ -101,8 +101,8 @@ class Thermodynamics
    *  \tparam RangeType Type of the range value
    */
   template< class RangeType >
-  inline double temperatureEnergyForm( const RangeType& cons,
-                                       const double p ) const
+  inline Field temperatureEnergyForm( const RangeType& cons,
+                                       const Field p ) const
   {
     assert( cons[0] > 1e-20 );
     return R_d_inv_ * p / cons[ 0 ];
@@ -120,7 +120,7 @@ class Thermodynamics
    *  \return pressure in energy form
    */
   template< class RangeType >
-  inline double temperatureEnergyForm( const RangeType& cons ) const
+  inline Field temperatureEnergyForm( const RangeType& cons ) const
   {
     return temperatureEnergyForm( cons, pressureEnergyForm( cons ) );
   }
@@ -135,15 +135,15 @@ class Thermodynamics
    *  \tparam RangeType Type of the range value
    */
   template< class RangeType >
-  inline double densityThetaForm( const RangeType& prim ) const
+  inline Field densityThetaForm( const RangeType& prim ) const
   {
-    const double p     = prim[ energyId - 1 ];
-    const double theta = prim[ energyId ];
+    const Field p     = prim[ energyId - 1 ];
+    const Field theta = prim[ energyId ];
 
     assert( p > 1e-12 );
     assert( theta > 1e-12 );
 
-    const double rho = std::pow( p/p0_ , gamma_inv_ ) * p0_ * R_d_inv_ / theta ;
+    const Field rho = std::pow( double(p/p0_) , double(gamma_inv_) ) * p0_ * R_d_inv_ / theta ;
 
     assert( rho > 0.0 );
     return rho;
@@ -160,62 +160,62 @@ class Thermodynamics
   void conservativeToPrimitiveEnergyForm( const RangeType& cons, RangeType& prim ) const;
 
 public:
-  inline double g() const { return g_; }
-  inline double c_pd() const { return c_pd_; }
-  inline double c_pd_inv() const { return c_pd_inv_; }
-  inline double c_vd() const { return c_vd_; }
-  inline double c_vd_inv() const { return c_vd_inv_; }
-  inline double c_pl() const { return c_pl_; }
-  inline double c_pl_inv() const { return c_pl_inv_; }
-  inline double R_d() const { return R_d_; }
-  inline double R_d_inv() const { return R_d_inv_; }
-  inline double T0() const { return T0_; }
-  inline double T0_inv() const { return T0_inv_; }
-  inline double L0() const { return L0_; }
-  inline double p0Star() const { return p0Star_; }
-  inline double p0() const { return p0_; }
-  inline double p0_inv() const { return p0_inv_; }
-  inline double gamma() const { return gamma_; }
-  inline double gamma_inv() const { return gamma_inv_; }
-  inline double kappa() const { return kappa_; }
-  inline double kappa_inv() const { return kappa_inv_; }
+  inline Field g() const { return g_; }
+  inline Field c_pd() const { return c_pd_; }
+  inline Field c_pd_inv() const { return c_pd_inv_; }
+  inline Field c_vd() const { return c_vd_; }
+  inline Field c_vd_inv() const { return c_vd_inv_; }
+  inline Field c_pl() const { return c_pl_; }
+  inline Field c_pl_inv() const { return c_pl_inv_; }
+  inline Field R_d() const { return R_d_; }
+  inline Field R_d_inv() const { return R_d_inv_; }
+  inline Field T0() const { return T0_; }
+  inline Field T0_inv() const { return T0_inv_; }
+  inline Field L0() const { return L0_; }
+  inline Field p0Star() const { return p0Star_; }
+  inline Field p0() const { return p0_; }
+  inline Field p0_inv() const { return p0_inv_; }
+  inline Field gamma() const { return gamma_; }
+  inline Field gamma_inv() const { return gamma_inv_; }
+  inline Field kappa() const { return kappa_; }
+  inline Field kappa_inv() const { return kappa_inv_; }
 
   //! the Reynolds number Re
-  inline double Re() const { return Re_; }
+  inline Field Re() const { return Re_; }
   //! the inverse Reynolds number (1/Re)
-  inline double Re_inv() const { return Re_inv_; }
+  inline Field Re_inv() const { return Re_inv_; }
   //! the Prandtl number Pr
-  inline double Pr() const { return Pr_; }
+  inline Field Pr() const { return Pr_; }
   //! the inverse Prandtl number (1/Pr)
-  inline double Pr_inv() const { return Pr_inv_; }
+  inline Field Pr_inv() const { return Pr_inv_; }
 
 private:
-  const double Re_;
-  const double Pr_;
-  const double g_;
-  const double p0_;               // surface pressure
-  const double p0Star_;
-  const double T0_;               // freezing temperature
-  const double c_pd_;             // specific heat capacity of dry air w.r.t. pressure
-  const double c_vd_;             // specific heat capacity of water vapour w.r.t. pressure
-  const double c_pl_;             // specific heat capacity of liquid water w.r.t. pressure
-  const double L0_;               // latent heat of evaporasion at 0 Celsius [J/kg]
-  const double relCloud_;
+  const Field Re_;
+  const Field Pr_;
+  const Field g_;
+  const Field p0_;               // surface pressure
+  const Field p0Star_;
+  const Field T0_;               // freezing temperature
+  const Field c_pd_;             // specific heat capacity of dry air w.r.t. pressure
+  const Field c_vd_;             // specific heat capacity of water vapour w.r.t. pressure
+  const Field c_pl_;             // specific heat capacity of liquid water w.r.t. pressure
+  const Field L0_;               // latent heat of evaporasion at 0 Celsius [J/kg]
+  const Field relCloud_;
 
-  const double Re_inv_;
-  const double Pr_inv_;
-  const double c_pd_inv_;
-  const double c_vd_inv_;
-  const double c_pl_inv_;
-  const double R_d_;              // gas constant for dry air
-  const double R_d_inv_;
-  const double p0_inv_;
-  const double T0_inv_;
-  const double kappa_;
-  const double kappa_inv_;
-  const double gamma_;
-  const double gammaM1_;
-  const double gamma_inv_;
+  const Field Re_inv_;
+  const Field Pr_inv_;
+  const Field c_pd_inv_;
+  const Field c_vd_inv_;
+  const Field c_pl_inv_;
+  const Field R_d_;              // gas constant for dry air
+  const Field R_d_inv_;
+  const Field p0_inv_;
+  const Field T0_inv_;
+  const Field kappa_;
+  const Field kappa_inv_;
+  const Field gamma_;
+  const Field gammaM1_;
+  const Field gamma_inv_;
 };
 
 
@@ -231,17 +231,17 @@ private:
  *  \tparam dimDomain dimension of the domain
  *  \tparam RangeType type of the range value
  */
-template< int dimDomain >
+template< int dimDomain, class Field >
 template< class RangeType >
-void Thermodynamics< dimDomain >
+void Thermodynamics< dimDomain, Field >
 :: conservativeToPrimitiveEnergyForm( const RangeType& cons, RangeType& prim ) const
 {
   std::cerr <<"conservativeToPrimitiveEnergyForm not implemented" <<std::endl;
   abort();
 
-  //const double rho_inv = 1./ cons[0];
+  //const Field rho_inv = 1./ cons[0];
 
-  //double p, T;
+  //Field p, T;
   //pressAndTempEnergyForm( cons, p, T );
 
   //prim[energyId-1] = p;
@@ -262,15 +262,15 @@ void Thermodynamics< dimDomain >
  *  \tparam dimDomain dimension of the domain
  *  \tparam RangeType type of the range value
  */
-template< int dimDomain >
+template< int dimDomain, class Field >
 template< class RangeType >
-void Thermodynamics< dimDomain >
+void Thermodynamics< dimDomain, Field >
 :: conservativeToPrimitiveThetaForm( const RangeType& cons, RangeType& prim ) const
 {
   assert( cons[0] > 0. );
   assert( cons[energyId] > 0. );
 
-  double p, T;
+  Field p, T;
   pressAndTempThetaForm( cons, p, T );
 
   for( int i = 0; i < dimDomain; ++i )
@@ -280,9 +280,9 @@ void Thermodynamics< dimDomain >
   prim[energyId] = cons[energyId] / cons[0];
 }
 
-template< int dimDomain >
+template< int dimDomain, class Field >
 template< class RangeType >
-void Thermodynamics< dimDomain >
+void Thermodynamics< dimDomain, Field >
 :: primitiveToConservativeThetaForm( const RangeType& prim, RangeType& cons ) const
 {
   // p,theta  --> rho

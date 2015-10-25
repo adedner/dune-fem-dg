@@ -43,8 +43,8 @@ namespace Dune {
     enum { dimRange  = ModelType::dimRange };
     enum { dimDomain = ModelType::Traits::dimDomain };
 
-    typedef typename Traits::IndicatorType                          IndicatorType;
-    typedef typename IndicatorType::DiscreteFunctionSpaceType       IndicatorSpaceType;
+    typedef typename Traits::LimiterIndicatorType                       LimiterIndicatorType;
+    typedef typename LimiterIndicatorType::DiscreteFunctionSpaceType    LimiterIndicatorSpaceType;
 
     // Pass 2 Model (advection)
     typedef AdvectionDiffusionLDGModel< Traits, u, gradPass, advection, diffusion >     DiscreteModel2Type;
@@ -53,10 +53,26 @@ namespace Dune {
 
     // Pass 1 Model (gradient)
     typedef typename DiscreteModel2Type :: DiffusionFluxType  DiffusionFluxType;
-    struct GradientTraits : public PassTraits< Traits, Traits::polynomialOrder, ModelType::dimGradRange >
+
+    struct GradientTraits : public Traits
     {
-      typedef Model              ModelType;
-      typedef DiffusionFluxType  FluxType;
+      // overload discrete function space
+      typedef typename Traits :: DiscreteFunctionSpaceType :: template
+        ToNewDimRange< ModelType::dimGradRange > :: Type                   DiscreteFunctionSpaceType;
+
+      template < template <class> DF >
+      struct ToNewSpace< DF< typename Traits :: DiscreteFunctionSpaceType > >
+      {
+        typedef DF< DiscreteFunctionSpaceType > Type;
+      };
+
+      template < class Arg, template <class, class> DF >
+      struct ToNewSpace< DF< typename Traits :: DiscreteFunctionSpaceType, Arg > >
+      {
+        typedef DF< DiscreteFunctionSpaceType, Arg > Type;
+      };
+
+      typedef typename ToNewSpace< DestinationType > :: Type       DestinationType;
     };
 
     typedef GradientModel< GradientTraits, u >       DiscreteModel1Type;
@@ -349,8 +365,8 @@ namespace Dune {
     typedef LocalCDGPass< DiscreteModel2Type, Pass1Type, gradPassId >    Pass2Type;
     typedef LocalCDGPass< DiscreteModel3Type, Pass2Type, advectPassId >  Pass3Type;
 
-    typedef typename Traits::IndicatorType                             IndicatorType;
-    typedef typename IndicatorType::DiscreteFunctionSpaceType          IndicatorSpaceType;
+    typedef typename Traits::LimiterIndicatorType                      LimiterIndicatorType;
+    typedef typename LimiterIndicatorType::DiscreteFunctionSpaceType   LimiterIndicatorSpaceType;
     typedef typename Traits :: ExtraParameterTupleType                 ExtraParameterTupleType;
 
     template <class Limiter, int pOrd>
@@ -473,15 +489,15 @@ namespace Dune {
     const ModelType& model() const { return model_; }
 
   private:
-    ModelType           model_;
-    AdvectionFluxType   numflux_;
-    GridPartType&       gridPart_;
-    Space1Type          space1_;
-    Space2Type          space2_;
-    Space3Type          space3_;
-    mutable DestinationType* uTmp_;
-    IndicatorSpaceType  fvSpc_;
-    IndicatorType       indicator_;
+    ModelType                   model_;
+    AdvectionFluxType           numflux_;
+    GridPartType&               gridPart_;
+    Space1Type                  space1_;
+    Space2Type                  space2_;
+    Space3Type                  space3_;
+    mutable DestinationType*    uTmp_;
+    LimiterIndicatorSpaceType   fvSpc_;
+    LimiterIndicatorType        indicator_;
 
   protected:
     DiffusionFluxType   diffFlux_;

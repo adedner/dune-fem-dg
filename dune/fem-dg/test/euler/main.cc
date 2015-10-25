@@ -24,7 +24,7 @@ int main(int argc, char ** argv)
     EulerProblemCreator< GridType > problem;
 
     // run simulation
-    Simulator::run( problem );
+    Dune::Simulator::run( problem );
   }
   catch (const Dune::Exception &e)
   {

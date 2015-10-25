@@ -1,6 +1,8 @@
 #ifndef DUNE_FEM_DG_PASSTRAITS_HH
 #define DUNE_FEM_DG_PASSTRAITS_HH
 
+#warning "Overloaded passtraits"
+
 // Dune includes
 #include <dune/fem/gridpart/adaptiveleafgridpart.hh>
 
@@ -23,7 +25,7 @@ namespace Dune {
   //PassTraits
   //----------
 
-  template <class Traits, int polOrd, int dimR>
+  template <class Traits, int polOrd, int dimR, SolverType solverType = istl>
   class PassTraits
   {
   public:
@@ -46,6 +48,7 @@ namespace Dune {
     typedef typename ModelTraits::FaceDomainType  FaceDomainType;
 
     typedef Fem::FunctionSpace< ctype, double, dimDomain, dimRange >      FunctionSpaceType;
+    typedef Fem::FunctionSpace< ctype, double, dimDomain, 1 >             PressureFunctionSpaceType;
 
     typedef typename FunctionSpaceType :: DomainType         DomainType;
     typedef typename FunctionSpaceType :: RangeType          RangeType;
@@ -87,15 +90,14 @@ namespace Dune {
 #endif
 #endif
     */
-   typedef Dune::Fem::DiscontinuousGalerkinSpace
-   //typedef Dune::Fem::LagrangeDiscreteFunctionSpace
+    typedef Dune::Fem::DiscontinuousGalerkinSpace
        < FunctionSpaceType, GridPartType, polOrd, Dune::Fem::CachingStorage > DiscreteFunctionSpaceType;
+    typedef Dune::Fem::DiscontinuousGalerkinSpace < PressureFunctionSpaceType, GridPartType,
+            polOrd, Dune::Fem::CachingStorage > PressureDiscreteFunctionSpaceType;
 
     static const bool symmetricSolver = true ;
-    typedef Solvers<DiscreteFunctionSpaceType, istl,  symmetricSolver> SolversType;
- //   typedef Solvers<DiscreteFunctionSpaceType, fem,   symmetricSolver> SolversType;
 //#if WANT_ISTL
-//    typedef Solvers<DiscreteFunctionSpaceType, istl,  symmetricSolver> SolversType;
+    typedef Solvers<DiscreteFunctionSpaceType, solverType,  symmetricSolver> SolversType;
 /*
 #elif WANT_PETSC
     typedef Solvers<DiscreteFunctionSpaceType, petsc, symmetricSolver> SolversType;

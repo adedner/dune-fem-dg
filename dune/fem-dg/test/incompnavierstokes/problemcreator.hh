@@ -36,9 +36,7 @@ struct StokesProblemCreator
   static const int polynomialOrder = POLORDER;
   static const int dimRange = GridType::dimension ;
 
-  typedef Dune :: StokesProblemInterface<
-                 Dune::Fem::FunctionSpace< double, double, GridType::dimension, dimRange>,
-                 Dune::Fem::FunctionSpace< double, double, GridType::dimension, 1> >  ProblemType;
+  typedef NavierStokesProblemDefault< GridType > ProblemType;
 
   // define problem type here if interface should be avoided
   template< class GridPart, bool rhsModel = false >

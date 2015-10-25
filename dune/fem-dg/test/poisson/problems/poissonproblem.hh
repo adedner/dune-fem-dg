@@ -6,7 +6,7 @@
 
 // local includes
 #include <dune/fem-dg/models/defaultprobleminterfaces.hh>
-#include <dune/fem-dg/test/poisson/benchmarkproblems.hh>
+#include "benchmarkproblems.hh"
 
 namespace Dune {
 
@@ -253,8 +253,6 @@ public:
     std::ostringstream ofs;
 
     ofs << "Problem: " << myName ;
-    ofs << ", End time: " << Dune:: Fem ::  Parameter::getValue<double>("femdg.stepper.endtime");
-
     return ofs.str();
   }
 

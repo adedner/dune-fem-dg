@@ -9,140 +9,10 @@
 #include <dune/fem-dg/operator/fluxes/dgprimalfluxes.hh>
 #include <dune/fem-dg/operator/dg/primaloperator.hh>
 
+#include <dune/fem-dg/operator/fluxes/upwindflux.hh>
+#include <dune/fem-dg/operator/fluxes/llfadvflux.hh>
+
 namespace Dune {
-
-template <class ModelType>
-class UpwindFlux {
-public:
-  typedef ModelType Model;
-  typedef typename Model::Traits Traits;
-  enum { dimRange = Model::dimRange };
-  typedef typename Model :: DomainType DomainType;
-  typedef typename Model :: RangeType RangeType;
-  typedef typename Model :: JacobianRangeType JacobianRangeType;
-  typedef typename Model :: FluxRangeType FluxRangeType;
-  typedef typename Model :: DiffusionRangeType DiffusionRangeType;
-  typedef typename Model :: FaceDomainType  FaceDomainType;
-  typedef typename Model :: EntityType  EntityType;
-  typedef typename Model :: IntersectionType  IntersectionType;
-
-public:
-  /**
-   * @brief Constructor
-   */
-  UpwindFlux(const Model& mod) : model_(mod) {}
-
-  static std::string name () { return "UpwindFlux"; }
-
-  const Model& model() const {return model_;}
-
-  /**
-   * @brief evaluates the flux \f$g(u,v)\f$
-   *
-   * @return maximum wavespeed * normal
-   */
-  template <class LocalEvaluation>
-  inline double numericalFlux( const LocalEvaluation& left,
-                               const LocalEvaluation& right,
-                               const RangeType& uLeft,
-                               const RangeType& uRight,
-                               const JacobianRangeType& jacLeft,
-                               const JacobianRangeType& jacRight,
-                               RangeType& gLeft,
-                               RangeType& gRight ) const
-  {
-    const FaceDomainType& x = left.localPoint();
-
-    // get normal from intersection
-    const DomainType normal = left.intersection().integrationOuterNormal(x);
-
-    // get velocity
-    const DomainType v = model_.velocity( left );
-    const double upwind = normal * v;
-
-    if (upwind>0)
-      gLeft = uLeft;
-    else
-      gLeft = uRight;
-    gLeft *= upwind;
-    gRight = gLeft;
-    return std::abs(upwind);
-  }
-protected:
-  const Model& model_;
-};
-
-template <class ModelType>
-class LLFAdvFlux
-{
-public:
-  typedef ModelType Model;
-  typedef typename Model::Traits Traits;
-  enum { dimRange = Model::dimRange };
-  typedef typename Model :: DomainType          DomainType;
-  typedef typename Model :: RangeType           RangeType;
-  typedef typename Model :: JacobianRangeType   JacobianRangeType;
-  typedef typename Model :: FluxRangeType       FluxRangeType;
-  typedef typename Model :: FaceDomainType      FaceDomainType;
-  typedef typename Model :: EntityType          EntityType;
-  typedef typename Model :: IntersectionType    IntersectionType;
-  /**
-   * @brief Constructor
-   */
-  LLFAdvFlux(const Model& mod) : model_(mod) {}
-
-  static std::string name () { return "LaxFriedrichsFlux"; }
-
-  const Model& model() const {return model_;}
-
-  template <class LocalEvaluation>
-  inline double numericalFlux( const LocalEvaluation& left,
-                               const LocalEvaluation& right,
-                               const RangeType& uLeft,
-                               const RangeType& uRight,
-                               const JacobianRangeType& jacLeft,
-                               const JacobianRangeType& jacRight,
-                               RangeType& gLeft,
-                               RangeType& gRight ) const
-  {
-    const FaceDomainType& x = left.localPoint();
-    DomainType normal = left.intersection().integrationOuterNormal(x);
-    const double len = normal.two_norm();
-    normal *= 1./len;
-
-    RangeType visc;
-    FluxRangeType anaflux;
-
-    model_.advection( left, uLeft, jacLeft, anaflux );
-
-    // set gLeft
-    anaflux.mv( normal, gLeft );
-
-    model_.advection( right, uRight, jacRight, anaflux );
-    anaflux.umv( normal, gLeft );
-
-    double maxspeedl, maxspeedr, maxspeed;
-    double viscparal, viscparar, viscpara;
-
-    model_.maxSpeed( left,  normal, uLeft,  viscparal, maxspeedl );
-    model_.maxSpeed( right, normal, uRight, viscparar, maxspeedr );
-
-    maxspeed = (maxspeedl > maxspeedr) ? maxspeedl : maxspeedr;
-    viscpara = (viscparal > viscparar) ? viscparal : viscparar;
-
-    visc = uRight;
-    visc -= uLeft;
-    visc *= viscpara;
-    gLeft -= visc;
-
-    gLeft *= 0.5*len;
-    gRight = gLeft;
-
-    return maxspeed;
-  }
-protected:
-  const Model& model_;
-};
 
 
 /*************************
@@ -159,9 +29,9 @@ class DGPrimalMatrixAssembly
   typedef OperatorImp OperatorType;
   typedef typename OperatorType::Traits::ModelType ModelType;
   typedef typename OperatorType::Traits::DestinationType DestinationType;
-  typedef typename OperatorType::Traits::DiscreteModelType DiscreteModelType;
-  typedef typename DiscreteModelType::Selector   SelectorType;
-  static const Dune::DGDiffusionFluxIdentifier DGDiffusionFluxIdentifier = OperatorType::Traits::PrimalDiffusionFluxId;
+  //typedef typename OperatorType::Traits::DiscreteModelType DiscreteModelType;
+  //typedef typename DiscreteModelType::Selector   SelectorType;
+  //static const Dune::DGDiffusionFluxIdentifier DGDiffusionFluxIdentifier = OperatorType::Traits::PrimalDiffusionFluxId;
   typedef typename DestinationType::DiscreteFunctionSpaceType DiscreteFunctionSpaceType;
   typedef typename DiscreteFunctionSpaceType::IteratorType IteratorType;
   typedef typename IteratorType::Entity EntityType;

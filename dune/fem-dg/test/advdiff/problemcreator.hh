@@ -10,81 +10,59 @@
 #define POLORDER 1
 #endif
 
-// dune-fem includes
-#include <dune/fem/io/parameter.hh>
-
-#include <dune/grid/io/file/dgfparser/dgfparser.hh>
+//--------- GRID HELPER ---------------------
+#include <dune/fem-dg/algorithm/gridinitializer.hh>
+//--------- OPERATOR/SOLVER -----------------
+#include <dune/fem/operator/linear/spoperator.hh>
+#include <dune/fem-dg/operator/dg/operatortraits.hh>
+//--------- FLUXES ---------------------------
+#include <dune/fem-dg/operator/fluxes/upwindflux.hh>
 #include <dune/fem-dg/operator/fluxes/eulerfluxes.hh>
-
-// local includes
-#include <dune/fem-dg/operator/fluxes/diffusionflux.hh>
-
-// overload default stepper traits
-#include <dune/fem-dg/stepper/advectiondiffusionstepper.hh>
-
-#include "problems/problem.hh"
-#include "problems/problemQuasiHeatEqn.hh"
-#include "problems/pulse.hh"
-#include "problems/sin.hh"
-#include "problems/deformationalflow.hh"
+//--------- STEPPER -------------------------
+#include <dune/fem-dg/algorithm/advectiondiffusionstepper.hh>
+#include <dune/fem-dg/algorithm/advectionstepper.hh>
+//--------- EOCERROR ------------------------
+#include <dune/fem-dg/misc/error/l2eocerror.hh>
+//--------- PROBLEMS ------------------------
+#include "problems.hh"
+//--------- MODELS --------------------------
 #include "models.hh"
+//--------- PROBLEMCREATORSELECTOR ----------
+#include <dune/fem-dg/misc/problemcreatorselector.hh>
 
-
-template< class GridType >
+template< class GridImp >
 struct AdvectionDiffusionProblemCreator
 {
-  typedef Dune :: EvolutionProblemInterface<
-                      Dune::Fem::FunctionSpace< double, double, GridType::dimension,
-                      DIMRANGE>,
-                      false > ProblemType;
+  typedef GridImp                                         GridType;
+  typedef Dune::Fem::DGAdaptiveLeafGridPart< GridType >   HostGridPartType;
+  typedef HostGridPartType                                GridPartType;
+
+  typedef Dune::Fem::FunctionSpace< typename GridType::ctype, double, GridType::dimension, DIMRANGE> FunctionSpaceType;
+
   // define problem type here if interface should be avoided
+  typedef Dune::EvolutionProblemInterface< FunctionSpaceType,false >      ProblemInterfaceType;
 
-  template< class GridPart >
-  struct Traits
+  template< class GridPart > // TODO: is this template parameter needed?
+  struct AnalyticalTraits
   {
-    typedef ProblemType  InitialDataType;
-    typedef HeatEqnModel< GridPart, InitialDataType > ModelType;
+    typedef ProblemInterfaceType                                ProblemType;
+    typedef ProblemInterfaceType                                InitialDataType;
+    typedef HeatEqnModel< GridPart, InitialDataType >           ModelType;
 
-    //typedef LLFFlux< ModelType >                      FluxType;
-    typedef UpwindFlux< ModelType > FluxType;
-
-    // choice of diffusion flux (see diffusionflux.hh for methods)
-     static const Dune :: DGDiffusionFluxIdentifier PrimalDiffusionFluxId
-       =  Dune :: method_general ;
+    template< class Solution, class Model, class ExactFunction, class TimeProvider >
+    static void addEOCErrors ( TimeProvider& tp, Solution &u, Model &model, ExactFunction &f )
+    {
+      static L2EOCError l2EocError( "$L^2$-Error");
+      l2EocError.add( tp, u, model, f );
+    }
   };
 
-
-  static inline std::string advectionFluxName()
-  {
-    return "LLF";
-  }
-
-
-  static inline std::string diffusionFluxName()
-  {
-#ifdef EULER
-    return "";
-#elif (defined PRIMALDG)
-    return Dune::Fem::Parameter::getValue< std::string >("dgdiffusionflux.method");
-#else
-    return "LDG";
-#endif
-  }
-
-  static inline std::string moduleName()
-  {
-    return "";
-  }
+  static inline std::string moduleName() { return ""; }
 
   static inline Dune::GridPtr<GridType>
-  initializeGrid()
-  {
-    std::string description( advectionFluxName() + " " + diffusionFluxName() );
-    // use default implementation
-    return initialize< GridType > ( description );
-  }
+  initializeGrid() { return Dune::Fem::DefaultGridInitializer< GridType >::initialize(); }
 
-  static ProblemType* problem()
+  static ProblemInterfaceType* problem()
   {
     // choice of explicit or implicit ode solver
     static const std::string probString[]  = { "heat" ,"quasi", "pulse", "sin" };
@@ -104,18 +82,127 @@ struct AdvectionDiffusionProblemCreator
     }
   }
 
-  template <int polynomialOrder>
+
+  //Stepper Traits
+  template< class GridPart, int polOrd > // TODO: is GridPart as a template parameter needed?
+  struct DiscreteTraits
+  {
+  private:
+    static const SolverType solverType = fem ;
+    typedef AnalyticalTraits< GridPartType >                              AnalyticalTraitsType;
+  public:
+
+    static const int polynomialOrder = polOrd;
+
+    static const int quadOrder = polynomialOrder * 3 + 1;
+
+    typedef typename DiscreteFunctionSpaces< FunctionSpaceType, GridPartType, polynomialOrder, _legendre, dg >::type    DiscreteFunctionSpaceType;
+    typedef typename DiscreteFunctions< DiscreteFunctionSpaceType, solverType >::type                                   DiscreteFunctionType;
+    typedef typename DiscreteFunctions< DiscreteFunctionSpaceType, solverType >::jacobian                               JacobianOperatorType;
+
+    typedef typename InitialProjectors< typename AnalyticalTraitsType::ProblemType::TimeDependentFunctionType, DiscreteFunctionType, dg >::type   InitialProjectorType;
+
+    typedef std::tuple<> ExtraParameterTuple;
+
+  private:
+    typedef typename AnalyticalTraitsType::ProblemType::ExactSolutionType                       ExactSolutionType;
+  public:
+    typedef Dune::Fem::GridFunctionAdapter< ExactSolutionType, GridPartType >                   GridExactSolutionType;
+    typedef std::tuple< DiscreteFunctionType*, DiscreteFunctionType* >                          IOTupleType;
+
+    typedef DuneODE::OdeSolverInterface< DiscreteFunctionType >                                 OdeSolverType;
+    // type of linear solver for implicit ode
+    typedef Dune::Fem::ParDGGeneralizedMinResInverseOperator< DiscreteFunctionType >            BasicLinearSolverType;
+
+    class HandlerTraits;
+
+    class OperatorType
+    {
+      friend HandlerTraits;
+      typedef Dune::AdaptationHandler< GridType, FunctionSpaceType >                              AdaptationHandlerType;
+
+      typedef Dune::UpwindFlux< typename AnalyticalTraitsType::ModelType >                        FluxType;
+
+      typedef Dune::Fem::FunctionSpace< typename GridType::ctype, double, AnalyticalTraitsType::ModelType::dimDomain, 3> FVFunctionSpaceType;
+      typedef Dune::Fem::FiniteVolumeSpace<FVFunctionSpaceType,GridPartType, 0, Dune::Fem::SimpleStorage> IndicatorSpaceType;
+      typedef Dune::Fem::AdaptiveDiscreteFunction<IndicatorSpaceType>                             LimiterIndicatorType;
+
+      typedef Dune::OperatorTraits< GridPartType, polynomialOrder, AnalyticalTraitsType,
+                                    DiscreteFunctionType, FluxType, LimiterIndicatorType,
+                                    AdaptationHandlerType, ExtraParameterTuple >                  OperatorTraitsType;
+
+      // TODO: advection/diffusion should not be precribed by model
+      static const int hasAdvection = AnalyticalTraitsType::ModelType::hasAdvection;
+      static const int hasDiffusion = AnalyticalTraitsType::ModelType::hasDiffusion;
+      typedef AdvectionDiffusionOperators< OperatorTraitsType, hasAdvection, hasDiffusion, _unlimited > AdvectionDiffusionOperatorType;
+    public:
+      typedef typename AdvectionDiffusionOperatorType::FullOperatorType                         FullType;
+      typedef typename AdvectionDiffusionOperatorType::ImplicitOperatorType                     ImplicitType;
+      typedef typename AdvectionDiffusionOperatorType::ExplicitOperatorType                     ExplicitType;
+    };
+
+    //------HANDLER-----------------------------------------------------
+    class HandlerTraits
+    {
+      //adaptivity
+      typedef Dune::DGAdaptationIndicatorOperator< typename OperatorType::OperatorTraitsType,
+                                                   OperatorType::hasAdvection,
+                                                   OperatorType::hasDiffusion >                      IndicatorType;
+      typedef Estimator< DiscreteFunctionType, typename  AnalyticalTraitsType::ProblemType >         GradientIndicatorType ;
+      typedef Dune::Fem::RestrictProlongDefault< DiscreteFunctionType >                              RestrictionProlongationType;
+      //limiting
+      typedef typename OperatorType::FullType                                                        LimiterOperatorType;
+    public:
+      typedef Dune::Fem::DefaultDiagnosticsHandler                                                   DiagnosticsHandlerType;
+      typedef Dune::Fem::DefaultSolverMonitorHandler                                                 SolverMonitorHandlerType;
+      typedef Dune::Fem::DefaultCheckPointHandler< GridType >                                        CheckPointHandlerType;
+      typedef Dune::Fem::DefaultDataWriterHandler< GridType, IOTupleType >                           DataWriterHandlerType;
+      typedef Dune::Fem::NoAdditionalOutputHandler                                                   AdditionalOutputHandlerType;
+      typedef Dune::Fem::DefaultSolutionLimiterHandler< LimiterOperatorType >                        SolutionLimiterHandlerType;
+      typedef Dune::Fem::DefaultAdaptHandler< IndicatorType,
+                                              GradientIndicatorType,
+                                              SolutionLimiterHandlerType >                           AdaptHandlerType;
+    };
+
+  };
+
+  template <int polOrd>
   struct Stepper
   {
     // this should be ok but could lead to a henn-egg problem
-    typedef AdvectionDiffusionStepper< GridType, AdvectionDiffusionProblemCreator<GridType>, polynomialOrder > Type;
+    typedef Dune::Fem::AdvectionDiffusionStepper< GridType, AdvectionDiffusionProblemCreator<GridType>, polOrd > Type;
+
+    // advection diffusion stepper using passes
+    //typedef Dune::Fem::AdvectionDiffusionStepper< GridTypeImp,
+    //                                              AdvectionDiffusionProblemCreator<GridTypeImp>,
+    //                                              polOrd,
+    //                                              NoDataWriter,
+    //                                              NoDiagnostics,
+    //                                              NoAdaptivity,
+    //                                              NoEOCWriter,
+    //                                              NoCheckPointing,
+    //                                              NoLimiting > StepperType1;
+
+    //algorithm from Tobias without passes
+    //typedef Dune::Fem::Tobias::EvolutionAlgorithm< GridTypeImp,
+    //                                               Tobias::AdvectionDiffusionProblemCreator<GridTypeImp>,
+    //                                               polOrd > StepperType2
+    //
+
+    // combined stepper
+    // typedef Dune::Fem::CombinedStepper< StepperType1, StepperType2,
+    //                                     CombinedDataWriter,
+    //                                     CombinedDiagnostics,
+    //                                     CombinedAdaptivity,
+    //                                     CombinedEOCWriter,
+    //                                     CombinedChecPointing,
+    //                                     CombinedLimiting >
+
+
+
   };
+
 
 };
 
-#ifndef COMBINED_PROBLEM_CREATOR
-#define ProblemCreator AdvectionDiffusionProblemCreator
-#endif
-
-#define NEW_STEPPER_SELECTOR_USED
 #endif // FEMHOWTO_HEATSTEPPER_HH

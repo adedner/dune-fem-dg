@@ -1,0 +1,53 @@
+
+What is dune-fem-dg?
+====================
+
+dune-fem-dg is a modular toolbox for solving partial differential equations. 
+
+A particular strength of dune-fem-dg is the possibility to test different numerical schemes with different parameters, i.e.:
+
+DiffusionFlux = BR, CDG, CDG2...
+AdvectionFlux = LLF, HLLC...
+GalerkinType = CG, DG
+Solver = istl, fem...
+polOrder = 0, 1, 2...
+GridDim = 1,2,3...
+Adaptation = no, yes (Estimator...)
+DimRange = 1,2,3..
+Assembly = matrix-free/matrix-based
+Codegen = yes/no
+Parallel = yes/no
+
+
+Which further PDEs are relevant for applications?
+=================================================
+* Navier-Stokes + Combustion
+* MHD
+* Biharmonic
+* Wave equations
+* Elasticity
+* PDEs on surfaces
+
+
+How should dune-fem-dg be used?
+===============================
+
+1. Prediscribed (i.e. already implemented) problems (i.e. exange of data functions problem.hh...)
+
+2. Combine diverse modules with each other (multi physics)
+
+3. Hardware optimization
+
+4. Exchange and addition of simple mathematical methods ( (DG-)method, time discretization, preconditioning... )
+
+
+Possible Papers regarding dune-fem-dg
+=====================================
+
+1. Use already simple implemented modules:
+a) instationaryInstationär: Advection-Diffusion, Euler, compressible Navier-Stokes, scalar Advection, hyperbolic conservation laws (1 example for each)
+b) stationary: Poisson, Stokes, Navier-Stokes (1 example for each)
+
+2. Coupling of different modules (i.e. simulation of Atherosclerosis, Fluid-Structure-Interaction...)
+
+3. [Stefan] biological motivated case studies regarding "Atherosclerosis"

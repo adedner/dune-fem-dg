@@ -40,9 +40,12 @@ namespace Dune
     NavierStokesProblemDefault()
       : time_( 0 ),
         mu_( 1 ),
-        alpha_( 1 ),
-        beta_( 1 )
+        theta_( 1.0 - 1.0/M_SQRT2 ),
+        alpha_( (1.0 - 2.0 * theta_ )/(1.0 - theta_) ),
+        beta_( theta_/ ( 1.0 - theta_ ) )
     {}
+
+    double theta () const { return theta_; }
 
     void setTime( const double time ) const
     {
@@ -73,7 +76,7 @@ namespace Dune
     }
 
     virtual void evaluate(const DomainType& arg,
-                         const double t, RangeType& res) const
+                          const double t, RangeType& res) const
     {
       setTime( t );
       u( arg, res );
@@ -111,6 +114,7 @@ namespace Dune
   protected:
     mutable double time_;
     const double mu_;
+    const double theta_;
     const double alpha_;
     const double beta_;
   };

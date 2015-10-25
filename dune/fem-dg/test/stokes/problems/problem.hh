@@ -6,7 +6,6 @@
 
 #include <dune/common/array.hh>
 #include <dune/fem-dg/models/stokesprobleminterfaces.hh>
-#include "corner.hh"
 
 namespace Dune
 {
@@ -183,7 +182,7 @@ namespace Dune
     }
 
     //! the exact solution
-    void p(const DomainType& x, PressureRangeType& ret) const
+    void p (const DomainType& x, PressureRangeType& ret) const
     {
       ret[0]=x[0]*(1-x[0]);
     }
@@ -249,7 +248,7 @@ namespace Dune
     {
       double x=p[0];
       double y=p[1];
-      ret[0] = cos(0.5*M_PI*(x+y)) * (alpha_+0.5*mu_*M_PI*M_PI) + 0.5*M_PI*cos(0.5*M_PI*(x-y) );
+      ret[0] = cos(0.5*M_PI*(x+y)) * (-alpha_+0.5*mu_*M_PI*M_PI) + 0.5*M_PI*cos(0.5*M_PI*(x-y) );
       ret[1] = - ret[0];
     }
     //! the exact solution
@@ -263,7 +262,7 @@ namespace Dune
     }
 
     //! the exact solution
-    void p(const DomainType& x, PressureRangeType& ret) const
+    void p (const DomainType& x, PressureRangeType& ret) const
     {
       ret[0] = sin(0.5*M_PI*(x[0]-x[1]));
     }
@@ -292,6 +291,8 @@ namespace Dune
       grad[0][1] = 0.5*M_PI*sin(0.5*M_PI*(x[0]+x[1]));
       grad[1][1] = grad[1][0];
     }
+
+    virtual double gamma() const { return alpha_; }
 
   private:
     double mu_;
