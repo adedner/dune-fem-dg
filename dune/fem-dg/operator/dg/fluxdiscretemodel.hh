@@ -17,7 +17,7 @@ namespace Dune {
   // GradientModel
   //--------------
 
-  template <class Traits, int passUId> /*@LST1S@*/
+  template <class Traits, int passUId>
   class GradientModel;
 
 
@@ -34,7 +34,7 @@ namespace Dune {
   // GradientModel
   //--------------
 
-  template < class OpTraits, int passUId> /*@LST1S@*/
+  template < class OpTraits, int passUId>
   class GradientModel :
     public Fem::DGDiscreteModelDefaultWithInsideOutside
       < GradientTraits< OpTraits, passUId>, passUId >
@@ -71,9 +71,9 @@ namespace Dune {
 
   public:
     /**
-     * @brief constructor
+     * \brief constructor
      */
-    GradientModel(const ModelType& mod,        /*@LST1S@*/
+    GradientModel(const ModelType& mod,
                   const NumFluxType& numf) :
       model_( mod ),
       gradientFlux_( numf ),
@@ -88,7 +88,7 @@ namespace Dune {
     void setTime ( double time ) { const_cast< ModelType& >( model_ ).setTime( time ); }
 
     bool hasSource() const { return false; }
-    bool hasFlux() const { return true; }  /*@LST1E@*/
+    bool hasFlux() const { return true; }
 
     template< class LocalEvaluation >
     inline double source( const LocalEvaluation&,
@@ -119,7 +119,7 @@ namespace Dune {
     void switchUpwind() const {}
 
     /**
-     * @brief flux function on interfaces between cells for advection and diffusion
+     * \brief flux function on interfaces between cells for advection and diffusion
      *
      * @param[in] it intersection
      * @param[in] time current time given by TimeProvider
@@ -137,7 +137,7 @@ namespace Dune {
      *
      * @note For dual operators we have \c gDiffLeft = 0 and \c gDiffRight = 0.
      *
-     * @return wave speed estimate (multiplied with the integration element of the intersection),
+     * \return wave speed estimate (multiplied with the integration element of the intersection),
      *              to estimate the time step |T|/wave.
      */
     template <class LocalEvaluation>
@@ -156,7 +156,7 @@ namespace Dune {
     }
 
     /**
-     * @brief method required by LocalDGPass
+     * \brief method required by LocalDGPass
      */
     template <class LocalEvaluation>
     void analyticalFlux(const LocalEvaluation& local,
@@ -166,7 +166,7 @@ namespace Dune {
     }
 
     /**
-     * @brief same as numericalFlux() but for the boundary
+     * \brief same as numericalFlux() but for the boundary
      */
     template <class LocalEvaluation>
     double boundaryFlux(const LocalEvaluation& left,
@@ -303,7 +303,7 @@ namespace Dune {
     enum { evaluateJacobian = false };
   public:
     /**
-     * @brief constructor
+     * \brief constructor
      */
     AdvectionDiffusionLDGModel(const ModelType& mod,
                                const AdvectionFluxType& numf,
@@ -322,7 +322,7 @@ namespace Dune {
     bool hasFlux() const { return advection || diffusion; };
 
     /**
-     * @brief analytical flux function$
+     * \brief analytical flux function$
      */
     template <class LocalEvaluation>
     double source( const LocalEvaluation& local,
@@ -365,25 +365,22 @@ namespace Dune {
 
   public:
     /**
-     * @brief flux function on interfaces between cells for advection and diffusion
+     * \brief flux function on interfaces between cells for advection and diffusion
      *
-     * @param[in] it intersection
-     * @param[in] time current time given by TimeProvider
-     * @param[in] x coordinate of required evaluation local to \c it
-     * @param[in] uLeft DOF evaluation on this side of \c it
-     * @param[in] uRight DOF evaluation on the other side of \c it
-     * @param[out] gLeft num. flux projected on normal on this side
+     * \param[in]  left local evaluation context of inside cell
+     * \param[in]  right local evaluation context of outside cell
+     * \param[out] gLeft num. flux projected on normal on this side
      *             of \c it for multiplication with \f$ \phi \f$
-     * @param[out] gRight advection flux projected on normal for the other side
+     * \param[out] gRight advection flux projected on normal for the other side
      *             of \c it for multiplication with \f$ \phi \f$
-     * @param[out] gDiffLeft num. flux projected on normal on this side
+     * \param[out] gDiffLeft num. flux projected on normal on this side
      *             of \c it for multiplication with \f$ \nabla\phi \f$
-     * @param[out] gDiffRight advection flux projected on normal for the other side
+     * \param[out] gDiffRight advection flux projected on normal for the other side
      *             of \c it for multiplication with \f$ \nabla\phi \f$
      *
-     * @note For dual operators we have \c gDiffLeft = 0 and \c gDiffRight = 0.
+     * \note For dual operators we have \c gDiffLeft = 0 and \c gDiffRight = 0.
      *
-     * @return wave speed estimate (multiplied with the integration element of the intersection),
+     * \return wave speed estimate (multiplied with the integration element of the intersection),
      *              to estimate the time step |T|/wave.
      */
     template< class LocalEvaluation >
@@ -426,7 +423,7 @@ namespace Dune {
 
 
     /**
-     * @brief same as numericalFlux() but for fluxes over boundary interfaces
+     * \brief same as numericalFlux() but for fluxes over boundary interfaces
      */
     template <class LocalEvaluation>
     double boundaryFlux(const LocalEvaluation& left,
@@ -476,7 +473,7 @@ namespace Dune {
     }
 
     /**
-     * @brief analytical flux function$
+     * \brief analytical flux function$
      */
     template <class LocalEvaluation>
     void analyticalFlux( const LocalEvaluation& local,

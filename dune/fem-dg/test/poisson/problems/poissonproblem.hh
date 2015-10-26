@@ -31,7 +31,7 @@ public:
   typedef DataFunctionIF< dimDomain, FieldType, FieldType > DataFunctionType;
 
   /**
-   * @brief define problem parameters
+   * \brief define problem parameters
    */
   PoissonProblem(const int problemNumber) :
     BaseType (),
@@ -207,7 +207,7 @@ public:
   }
 
   /**
-   * @brief getter for the velocity
+   * \brief getter for the velocity
    */
   void velocity(const DomainType& x, DomainType& v) const
   {
@@ -223,7 +223,7 @@ public:
   }
 
   /**
-   * @brief evaluates \f$ u_0(x) \f$
+   * \brief evaluates \f$ u_0(x) \f$
    */
   void evaluate(const DomainType& arg, RangeType& res) const
   {
@@ -231,7 +231,7 @@ public:
   }
 
   /**
-   * @brief evaluate exact solution
+   * \brief evaluate exact solution
    */
   void evaluate(const DomainType& arg, const double t, RangeType& res) const
   {
@@ -246,7 +246,7 @@ public:
   }
 
   /**
-   * @brief latex output for EocOutput
+   * \brief latex output for EocOutput
    */
   std::string description() const
   {

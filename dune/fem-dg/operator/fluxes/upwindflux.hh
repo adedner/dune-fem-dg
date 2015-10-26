@@ -1,43 +1,48 @@
 #ifndef FEMDG_UPWIND_FLUX_HH
 #define FEMDG_UPWIND_FLUX_HH
 
+#include <dune/fem-dg/operator/fluxes/advectionflux.hh>
 
 namespace Dune
 {
   /**
    * \brief defines the advective flux using an upwind scheme
    *
-   * \ingroup Fluxes
+   * \ingroup AdvectionFluxes
    */
-  template <class ModelType>
-  class UpwindFlux {
+  template <class Model>
+  class UpwindFlux
+    : public DGAdvectionFluxBase< Model >
+  {
+    typedef DGAdvectionFluxBase< Model >               BaseType;
   public:
-    typedef ModelType Model;
-    typedef typename Model::Traits Traits;
-    enum { dimRange = Model::dimRange };
-    typedef typename Model :: DomainType DomainType;
-    typedef typename Model :: RangeType RangeType;
-    typedef typename Model :: JacobianRangeType JacobianRangeType;
-    typedef typename Model :: FluxRangeType FluxRangeType;
-    typedef typename Model :: DiffusionRangeType DiffusionRangeType;
-    typedef typename Model :: FaceDomainType  FaceDomainType;
-    typedef typename Model :: EntityType  EntityType;
-    typedef typename Model :: IntersectionType  IntersectionType;
+    typedef Model                                  ModelType;
+    typedef typename ModelType::Traits             Traits;
+    enum { dimRange = ModelType::dimRange };
+    typedef typename ModelType::DomainType         DomainType;
+    typedef typename ModelType::RangeType          RangeType;
+    typedef typename ModelType::JacobianRangeType  JacobianRangeType;
+    typedef typename ModelType::FluxRangeType      FluxRangeType;
+    typedef typename ModelType::DiffusionRangeType DiffusionRangeType;
+    typedef typename ModelType::FaceDomainType     FaceDomainType;
+    typedef typename ModelType::EntityType         EntityType;
+    typedef typename ModelType::IntersectionType   IntersectionType;
 
   public:
     /**
-     * @brief Constructor
+     * \brief Constructor
      */
-    UpwindFlux(const Model& mod) : model_(mod) {}
+    UpwindFlux( const ModelType& mod )
+      : BaseType( mod ),
+        model_(mod)
+    {}
 
     static std::string name () { return "UpwindFlux"; }
 
-    const Model& model() const {return model_;}
-
     /**
-     * @brief evaluates the flux \f$g(u,v)\f$
+     * \brief evaluates the flux \f$g(u,v)\f$
      *
-     * @return maximum wavespeed * normal
+     * \return maximum wavespeed * normal
      */
     template <class LocalEvaluation>
     inline double numericalFlux( const LocalEvaluation& left,

@@ -10,7 +10,7 @@ namespace Dune {
   /**
    * \brief diffusion flux
    *
-   * \ingroup Fluxes
+   * \ingroup DiffusionFluxes
    */
   template <class DiscreteFunctionSpaceImp,
             class Model>
@@ -64,7 +64,7 @@ namespace Dune {
 
   public:
     /**
-     * @brief constructor
+     * \brief constructor
      */
     LDGDiffusionFlux(GridPartType& gridPart,
                      const Model& model,
@@ -90,7 +90,7 @@ namespace Dune {
 
   public:
     /**
-     * @brief flux function on interfaces between cells
+     * \brief flux function on interfaces between cells
      *
      * @param intersection intersection
      * @param time current time given by TimeProvider
@@ -99,7 +99,7 @@ namespace Dune {
      * @param uRight DOF evaluation on the other side of \c intersection
      * @param gLeft result for this side of \c intersection
      * @param gRight result for the other side of \c intersection
-     * @return wave speed estimate (multiplied with the integration element of the intersection).
+     * \return wave speed estimate (multiplied with the integration element of the intersection).
      *         To estimate the time step |T|/wave is used
      */
     template <class QuadratureImp>
@@ -159,7 +159,7 @@ namespace Dune {
     }
 
     /*
-     * @brief numerical flux for u given as u_h
+     * \brief numerical flux for u given as u_h
     */
     template <class QuadratureImp>
     double gradientBoundaryFlux(const Intersection& intersection,
@@ -204,7 +204,7 @@ namespace Dune {
 
 
     /**
-     * @brief flux function on interfaces between cells
+     * \brief flux function on interfaces between cells
      *
      * @param intersection intersection
      * @param time current time given by TimeProvider
@@ -213,7 +213,7 @@ namespace Dune {
      * @param uRight DOF evaluation on the other side of \c intersection
      * @param gLeft result for this side of \c intersection
      * @param gRight result for the other side of \c intersection
-     * @return wave speed estimate (multiplied with the integration element of the intersection).
+     * \return wave speed estimate (multiplied with the integration element of the intersection).
      *         To estimate the time step |T|/wave is used
      */
     template <class DiscreteModelImp,
@@ -345,7 +345,7 @@ namespace Dune {
 
 
     /**
-     * @brief same as numericalFlux() but for fluxes over boundary interfaces
+     * \brief same as numericalFlux() but for fluxes over boundary interfaces
      */
     template <class DiscreteModelImp,
               class QuadratureImp>
@@ -367,7 +367,7 @@ namespace Dune {
     }
 
     /**
-     * @brief same as numericalFlux() but for fluxes over boundary interfaces
+     * \brief same as numericalFlux() but for fluxes over boundary interfaces
      */
     template< class DiscreteModelImp,
               class QuadratureImp, class JacobianRangeTypeImp >

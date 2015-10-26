@@ -17,27 +17,32 @@ namespace Dune {
   // AdvectionDiffusionDGPrimalModelBase
   //------------------------------------
 
+  /**
+   *  \brief discrete model for advection diffusion operator
+   *
+   *  \ingroup DiscreteModels
+   */
   template< class TraitsImp >
   class AdvectionDiffusionDGPrimalModelBase :
-    public TraitsImp :: AdvectionModelType
+    public TraitsImp::AdvectionModelType
   {
   public:
-    typedef TraitsImp  Traits ;
-    typedef typename Traits :: AdvectionModelType  BaseType;
+    typedef TraitsImp                               Traits;
+    typedef typename Traits::AdvectionModelType     BaseType;
 
-    using BaseType :: uVar;
-    using BaseType :: inside;
-    using BaseType :: outside;
-    using BaseType :: model_;
-    using BaseType :: uBnd_;
+    using BaseType::uVar;
+    using BaseType::inside;
+    using BaseType::outside;
+    using BaseType::model_;
+    using BaseType::uBnd_;
 
   public:
-    static const bool advection = Traits :: advection ; // true if advection is enabled
-    static const bool diffusion = Traits :: diffusion ; // this should be disabled for LDG
+    static const bool advection = Traits::advection; // true if advection is enabled
+    static const bool diffusion = Traits::diffusion; // this should be disabled for LDG
 
     enum { passUId = Traits :: passUId };
 
-    typedef typename BaseType :: DomainType     DomainType;
+    typedef typename BaseType :: DomainType         DomainType;
 
     typedef typename BaseType :: ModelType          ModelType ;
     typedef typename BaseType :: AdvectionFluxType  AdvectionFluxType ;
@@ -67,7 +72,7 @@ namespace Dune {
     enum { evaluateJacobian = DiffusionFluxType :: evaluateJacobian  }; // we need to evaluate jacobians here
   public:
     /**
-     * @brief constructor
+     * \brief constructor
      */
     AdvectionDiffusionDGPrimalModelBase(const ModelType& mod,
                                         const AdvectionFluxType& numf,
@@ -101,7 +106,7 @@ namespace Dune {
     }
 
     /**
-     * @brief analytical flux function
+     * \brief analytical flux function
      */
     template <class LocalEvaluation>
     double source( const LocalEvaluation& local,
@@ -208,16 +213,15 @@ namespace Dune {
 
   public:
     /**
-     * @brief flux function on interfaces between cells
+     * \brief flux function on interfaces between cells
      *
-     * @param it intersection
-     * @param time current time given by TimeProvider
-     * @param x coordinate of required evaluation local to \c it
-     * @param uLeft DOF evaluation on this side of \c it
-     * @param uRight DOF evaluation on the other side of \c it
-     * @param gLeft result for this side of \c it
-     * @param gRight result for the other side of \c it
-     * @return wave speed estimate (multiplied with the integration element of the intersection).
+     * \param left local evaluation
+     * \param right local evaluation
+     * \param uLeft DOF evaluation on this side of \c it
+     * \param uRight DOF evaluation on the other side of \c it
+     * \param gLeft result for this side of \c it
+     * \param gRight result for the other side of \c it
+     * \return wave speed estimate (multiplied with the integration element of the intersection).
      *         To estimate the time step |T|/wave is used
      */
     template <class LocalEvaluation>
@@ -261,12 +265,12 @@ namespace Dune {
 
 
     /**
-     * @brief same as numericalFlux() but for fluxes over boundary interfaces
+     * \brief same as numericalFlux() but for fluxes over boundary interfaces
      */
     template <class LocalEvaluation>
     double boundaryFlux(const LocalEvaluation& left,
                         RangeType& gLeft,
-                        JacobianRangeType& gDiffLeft ) const   /*@LST0E@*/
+                        JacobianRangeType& gDiffLeft ) const
     {
       /****************************/
       /* Advection                *
@@ -306,9 +310,9 @@ namespace Dune {
 
       return advectionWaveSpeed + diffusionWaveSpeed;
     }
-                                                  /*@LST0S@*/
+
     /**
-     * @brief analytical flux function$
+     * \brief analytical flux function
      */
     template <class LocalEvaluation>
     void analyticalFlux( const LocalEvaluation& local,
@@ -342,7 +346,7 @@ namespace Dune {
     mutable DiffusionFluxType diffFlux_;
     // storage for boundary values
     std::vector< RangeType > uBndVec_;
-  };                                              /*@LST0E@*/
+  };
 
 
 
@@ -388,7 +392,11 @@ namespace Dune {
 
   // AdvectionDiffusionDGPrimalModel
   //--------------------------------
-
+  /**
+   *  \brief discrete model for advection diffusion operator
+   *
+   *  \ingroup DiscreteModels
+   */
   template< class OpTraits,
             int passUId,
             bool returnAdvectionPart, bool returnDiffusionPart >
@@ -432,7 +440,11 @@ namespace Dune {
 
   // AdvectionDiffusionDGPrimalTraits
   //---------------------------------
-
+  /**
+   *  \brief discrete model for advection diffusion operator
+   *
+   *  \ingroup DiscreteModels
+   */
   template <class OpTraits,
             int passUId,
             bool returnAdvectionPart, bool returnDiffusionPart >
@@ -451,7 +463,11 @@ namespace Dune {
 
   // AdaptiveAdvectionDiffusionDGPrimalModel
   //----------------------------------------
-
+  /**
+   *  \brief discrete model for advection diffusion operator
+   *
+   *  \ingroup DiscreteModels
+   */
   template< class OpTraits,
             int passUId,
             bool returnAdvectionPart, bool returnDiffusionPart >
@@ -491,7 +507,7 @@ namespace Dune {
     enum { evaluateJacobian = DiffusionFluxType :: evaluateJacobian  }; // we need to evaluate jacobians here
   public:
     /**
-     * @brief constructor
+     * \brief constructor
      */
     AdaptiveAdvectionDiffusionDGPrimalModel(const ModelType& mod,
                                             const AdvectionFluxType& numf,
@@ -502,16 +518,15 @@ namespace Dune {
 
   public:
     /**
-     * @brief flux function on interfaces between cells
+     * \brief flux function on interfaces between cells
      *
-     * @param it intersection
-     * @param time current time given by TimeProvider
-     * @param x coordinate of required evaluation local to \c it
-     * @param uLeft DOF evaluation on this side of \c it
-     * @param uRight DOF evaluation on the other side of \c it
-     * @param gLeft result for this side of \c it
-     * @param gRight result for the other side of \c it
-     * @return wave speed estimate (multiplied with the integration element of the intersection).
+     * \param[in]  left local evaluation context of inside cell
+     * \param[in]  right local evaluation context of outside cell
+     * \param[out] uLeft DOF evaluation on this side of \c it
+     * \param[out] uRight DOF evaluation on the other side of \c it
+     * \param[out] gLeft result for this side of \c it
+     * \param[out] gRight result for the other side of \c it
+     * \return wave speed estimate (multiplied with the integration element of the intersection).
      *         To estimate the time step |T|/wave is used
      */
     template <class LocalEvaluation>
@@ -571,12 +586,12 @@ namespace Dune {
 
 
     /**
-     * @brief same as numericalFlux() but for fluxes over boundary interfaces
+     * \brief same as numericalFlux() but for fluxes over boundary interfaces
      */
     template <class LocalEvaluation>
     double boundaryFlux(const LocalEvaluation& left,
                         RangeType& gLeft,
-                        JacobianRangeType& gDiffLeft ) const   /*@LST0E@*/
+                        JacobianRangeType& gDiffLeft ) const
     {
       const double ldt = BaseType :: boundaryFlux( left, gLeft, gDiffLeft );
 
@@ -594,7 +609,7 @@ namespace Dune {
     using BaseType :: enIndicator_;
     using BaseType :: nbIndicator_;
     using BaseType :: weight_ ;
-  };                                              /*@LST0E@*/
+  };
 
 } // namespace Dune
 

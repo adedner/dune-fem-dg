@@ -11,7 +11,7 @@
 namespace Dune {
 
 /**
- * @brief describes the initial and exact solution of the advection-diffusion model
+ * \brief describes the initial and exact solution of the advection-diffusion model
  * for given constant velocity vector v=(v1,v2)
  *
  * \f[u(x,y,z,t):=\displaystyle{\sum_{i=0}^{1}} T_i(t) \cdot X_i(x) \cdot
@@ -34,11 +34,11 @@ namespace Dune {
  * \Omega}\f$.
  *
  */
-template <class GridType, int dimRange>                                          /*@LST0S@*/
+template <class GridType, int dimRange>
 struct U0 : public EvolutionProblemInterface<
                   Fem::FunctionSpace< double, double, GridType::dimension, dimRange>,
                   false >
-{                                                                  /*@LST0E@*/
+{
 public:
   typedef EvolutionProblemInterface<
                  Fem::FunctionSpace< double, double,
@@ -53,14 +53,14 @@ public:
   typedef Fem::Parameter  ParameterType;
 
   /**
-   * @brief define problem parameters
+   * \brief define problem parameters
    */
-  U0 () :                                                        /*@LST0S@*/
+  U0 () :
     BaseType () ,
     velocity_( 0 ),
     startTime_( ParameterType::getValue<double>("femdg.stepper.starttime",0.0) ),
     epsilon_( ParameterType::getValue<double>("epsilon",0.1) )
-  {                                                             /*@LST0E@*/
+  {
     std::cout <<"Problem: HeatEqnWithAdvection, epsilon " << epsilon_ << "\n";
     //std::cout <<"Problem: HeatEqnWithAdvection, epsilon_" <<  epsilon_ << "\n";
 
@@ -140,7 +140,7 @@ public:
   double epsilon() const { return epsilon_; }
 
   /**
-   * @brief getter for the velocity
+   * \brief getter for the velocity
    */
   void velocity(const DomainType& x, DomainType& v) const
   {
@@ -148,9 +148,9 @@ public:
   }
 
   /**
-   * @brief evaluates \f$ u_0(x) \f$
+   * \brief evaluates \f$ u_0(x) \f$
    */
-  void evaluate(const DomainType& arg, RangeType& res) const         /*@LST0S@@LST0E@*/
+  void evaluate(const DomainType& arg, RangeType& res) const
   {
     evaluate(arg, startTime_, res);
   }
@@ -163,9 +163,9 @@ public:
 
 
   /**
-   * @brief evaluate exact solution
+   * \brief evaluate exact solution
    */
-  void evaluate(const DomainType& arg, const double t, RangeType& res) const /*@LST0S@@LST0E@*/
+  void evaluate(const DomainType& arg, const double t, RangeType& res) const
   {
 
     res = 0;
@@ -200,7 +200,7 @@ public:
   }
 
   /**
-   * @brief latex output for EocOutput
+   * \brief latex output for EocOutput
    */
   std::string description() const
   {

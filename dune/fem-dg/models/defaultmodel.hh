@@ -111,13 +111,13 @@ public:
   }
 
   /**
-   * @brief advection term \f$F\f$
+   * \brief advection term \f$F\f$
    *
-   * @param en entity on which to evaluate the advection term
-   * @param time current time of TimeProvider
-   * @param x coordinate local to entity
-   * @param u \f$U\f$
-   * @param f \f$f(U)\f$
+   * \param en entity on which to evaluate the advection term
+   * \param time current time of TimeProvider
+   * \param x coordinate local to entity
+   * \param u \f$U\f$
+   * \param f \f$f(U)\f$
    */
   inline  void advection(const EntityType& en,
                          const double time,
@@ -129,7 +129,7 @@ public:
   }
 
   /**
-   * @brief velocity calculation, is called by advection()
+   * \brief velocity calculation, is called by advection()
    */
   inline  void velocity(const EntityType& en,
                         const double time,
@@ -140,7 +140,7 @@ public:
   }
 
   /**
-   * @brief diffusion term \f$a\f$
+   * \brief diffusion term \f$a\f$
    */
   inline void jacobian(const EntityType& en,
                        const double time,
@@ -178,7 +178,7 @@ public:
   }
 
   /**
-   * @brief diffusion term \f$A\f$
+   * \brief diffusion term \f$A\f$
    */
   template <class JacobianType>
   inline void diffusion(const EntityType& en,
@@ -225,7 +225,7 @@ public:
 
 public:
   /**
-   * @brief checks for existence of dirichlet boundary values
+   * \brief checks for existence of dirichlet boundary values
    */
   inline bool hasBoundaryValue(const IntersectionType& it,
                                const double time,
@@ -235,7 +235,7 @@ public:
   }
 
   /**
-   * @brief neuman boundary values \f$g_N\f$ for pass1
+   * \brief neuman boundary values \f$g_N\f$ for pass1
    */
   template <class LocalEvalution>
   inline double boundaryFlux(const LocalEvalution&,
@@ -249,7 +249,7 @@ public:
 
 
   /**
-   * @brief neuman boundary values \f$g_N\f$ for pass1
+   * \brief neuman boundary values \f$g_N\f$ for pass1
    */
   template <class LocalEvalution>
   inline double boundaryFlux(const LocalEvalution&,
@@ -261,7 +261,7 @@ public:
   }
 
   /**
-   * @brief diffusion boundary flux
+   * \brief diffusion boundary flux
    */
   inline double diffusionBoundaryFlux( const IntersectionType& it,
                                        const double time,
@@ -291,7 +291,7 @@ public:
 
 
   /**
-   * @brief dirichlet boundary values
+   * \brief dirichlet boundary values
    */
   inline  void boundaryValue(const IntersectionType& it,
                              const double time,

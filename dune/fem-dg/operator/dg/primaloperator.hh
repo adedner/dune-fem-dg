@@ -32,16 +32,23 @@ namespace Dune {
     typedef AdvectionDiffusionDGPrimalModel< Traits, u, advection, diffusion> DiscreteModelType;
   };
 
+  /**
+   * \brief advection diffusion operator for CDG
+   *
+   * \note This operator is based on the Pass-Concept
+   *
+   * \ingroup SpaceOperators
+   */
   template< class OpTraits >
   struct DGAdvectionDiffusionOperator : public
     DGAdvectionDiffusionOperatorBase<
        CDGAdvectionDiffusionTraits< OpTraits, true, true > >
   {
     typedef CDGAdvectionDiffusionTraits< OpTraits, true, true > Traits;
-    typedef DGAdvectionDiffusionOperatorBase< Traits >  BaseType;
-    typedef typename BaseType :: GridPartType  GridPartType;
-    typedef typename BaseType :: ProblemType   ProblemType;
-    typedef typename BaseType :: ExtraParameterTupleType  ExtraParameterTupleType;
+    typedef DGAdvectionDiffusionOperatorBase< Traits >          BaseType;
+    typedef typename BaseType::GridPartType                     GridPartType;
+    typedef typename BaseType::ProblemType                      ProblemType;
+    typedef typename BaseType::ExtraParameterTupleType          ExtraParameterTupleType;
 
     DGAdvectionDiffusionOperator( GridPartType& gridPart, ProblemType& problem,
                                   ExtraParameterTupleType tuple =  ExtraParameterTupleType(),
@@ -71,16 +78,23 @@ namespace Dune {
   // DGAdvectionOperator
   //--------------------
 
+  /**
+   * \brief advection operator for CDG
+   *
+   * \note This operator is based on the Pass-Concept
+   *
+   * \ingroup SpaceOperators
+   */
   template< class OpTraits >
   struct DGAdvectionOperator : public
     DGAdvectionDiffusionOperatorBase<
        CDGAdvectionDiffusionTraits< OpTraits, true, false > >
   {
     typedef CDGAdvectionDiffusionTraits< OpTraits, true, false > Traits;
-    typedef DGAdvectionDiffusionOperatorBase< Traits >  BaseType;
-    typedef typename BaseType :: GridPartType  GridPartType;
-    typedef typename BaseType :: ProblemType   ProblemType ;
-    typedef typename BaseType :: ExtraParameterTupleType  ExtraParameterTupleType;
+    typedef DGAdvectionDiffusionOperatorBase< Traits >           BaseType;
+    typedef typename BaseType::GridPartType                      GridPartType;
+    typedef typename BaseType::ProblemType                       ProblemType;
+    typedef typename BaseType::ExtraParameterTupleType           ExtraParameterTupleType;
 
     DGAdvectionOperator( GridPartType& gridPart, ProblemType& problem,
                          ExtraParameterTupleType tuple = ExtraParameterTupleType(),
@@ -110,6 +124,13 @@ namespace Dune {
   // DGDiffusionOperator
   //--------------------
 
+  /**
+   * \brief diffusion operator for CDG
+   *
+   * \note This operator is based on the Pass-Concept
+   *
+   * \ingroup SpaceOperators
+   */
   template< class OpTraits >
   class DGDiffusionOperator : public
     DGAdvectionDiffusionOperatorBase<
@@ -166,6 +187,15 @@ namespace Dune {
   // DGAdaptationIndicatorOperator
   //------------------------------
 
+  /**
+   * \brief diffusion operator for CDG
+   *
+   * This is a helper operator class for indicating error estimates
+   *
+   * \note This operator is based on the Pass-Concept
+   *
+   * \ingroup SpaceOperators
+   */
   template< class OpTraits,
             bool advection, bool diffusion = false >
   struct DGAdaptationIndicatorOperator : public
@@ -212,14 +242,13 @@ namespace Dune {
   // DGLimitedAdvectionOperator
   //------------------------------------
 
-  /** \class DGLimitedAdvectionOperator
-   *  \brief Advection operator with a limiting
+  /**
+   * \brief Advection operator for CDG with a limiting
    *         of the numerical solution
    *
-   *  \tparam Model Analytical model
-   *  \tparam NumFlux Numerical flux
-   *  \tparam polOrd Polynomial degree
-   *  \tparam advection Advection
+   * \tparam Traits
+   * \tparam advection Advection
+   * \tparam diffusion Diffusion
    */
   template< class Traits,
             bool advection = true, bool diffusion = false>
@@ -231,52 +260,52 @@ namespace Dune {
     enum { limiterPolOrd = Traits::limiterPolynomialOrder };
 
   public:
-    typedef typename Traits :: ExtraParameterTupleType  ExtraParameterTupleType;
+    typedef typename Traits::ExtraParameterTupleType                              ExtraParameterTupleType;
 
-    typedef typename Traits :: ModelType         ModelType;
-    typedef typename Traits :: FluxType          AdvectionFluxType;
+    typedef typename Traits::ModelType                                            ModelType;
+    typedef typename Traits::FluxType                                             AdvectionFluxType;
     enum { dimRange  = ModelType::dimRange };
     enum { dimDomain = ModelType::Traits::dimDomain };
 
-    typedef Traits                                    PassTraitsType;
-    typedef PassTraits< Traits, limiterPolOrd, dimRange >       LimiterTraitsType;
+    typedef Traits                                                                PassTraitsType;
+    typedef PassTraits< Traits, limiterPolOrd, dimRange >                         LimiterTraitsType;
 
     // The model of the advection pass (advectPassId)
     typedef AdvectionDiffusionDGPrimalModel< Traits, limitPassId, advection, diffusion > DiscreteModel1Type;
 
-    typedef typename DiscreteModel1Type :: DiffusionFluxType            DiffusionFluxType;
-    typedef typename DiscreteModel1Type :: AdaptationType               AdaptationType;
+    typedef typename DiscreteModel1Type::DiffusionFluxType                        DiffusionFluxType;
+    typedef typename DiscreteModel1Type::AdaptationType                           AdaptationType;
 
     // The model of the limiter pass (limitPassId)
-    typedef Fem :: StandardLimiterDiscreteModel< LimiterTraitsType, ModelType, u > LimiterDiscreteModelType;
+    typedef Fem::StandardLimiterDiscreteModel< LimiterTraitsType, ModelType, u >  LimiterDiscreteModelType;
 
-    typedef typename ModelType :: ProblemType                           ProblemType;
-    typedef typename ModelType :: Traits :: GridType                    GridType;
+    typedef typename ModelType::ProblemType                                       ProblemType;
+    typedef typename ModelType::Traits::GridType                                  GridType;
 
-    typedef typename Traits :: DomainType                               DomainType;
+    typedef typename Traits::DomainType                                           DomainType;
 
-    typedef typename Traits :: DiscreteFunctionSpaceType                SpaceType;
-    typedef typename Traits :: DestinationType                          DestinationType;
+    typedef typename Traits::DiscreteFunctionSpaceType                            SpaceType;
+    typedef typename Traits::DestinationType                                      DestinationType;
 
-    typedef typename Traits :: GridPartType                             GridPartType;
+    typedef typename Traits::GridPartType                                         GridPartType;
 
-    typedef typename LimiterTraitsType :: DestinationType                 LimiterDestinationType ;
-    typedef typename LimiterDestinationType :: DiscreteFunctionSpaceType  LimiterSpaceType;
+    typedef typename LimiterTraitsType::DestinationType                           LimiterDestinationType ;
+    typedef typename LimiterDestinationType::DiscreteFunctionSpaceType            LimiterSpaceType;
 
 #ifdef USE_SMP_PARALLEL
     typedef Fem::StartPass < DestinationType, u, NonBlockingCommHandle< DestinationType > > Pass0Type;
-    typedef LimitDGPass    < LimiterDiscreteModelType, Pass0Type, limitPassId > InnerPass1Type;
-    typedef ThreadPass     < InnerPass1Type, Fem::ThreadIterator< GridPartType >, true > Pass1Type;
-    typedef LocalCDGPass   < DiscreteModel1Type, Pass1Type, advectPassId > InnerPass2Type;
+    typedef LimitDGPass    < LimiterDiscreteModelType, Pass0Type, limitPassId >             InnerPass1Type;
+    typedef ThreadPass     < InnerPass1Type, Fem::ThreadIterator< GridPartType >, true >    Pass1Type;
+    typedef LocalCDGPass   < DiscreteModel1Type, Pass1Type, advectPassId >                  InnerPass2Type;
     typedef ThreadPass     < InnerPass2Type, Fem::DomainDecomposedIteratorStorage<GridPartType >, true > Pass2Type;
 #else
-    typedef Fem::StartPass < DestinationType, u >                          Pass0Type;
-    typedef LimitDGPass    < LimiterDiscreteModelType, Pass0Type, limitPassId > Pass1Type;
-    typedef LocalCDGPass   < DiscreteModel1Type, Pass1Type, advectPassId >      Pass2Type;
+    typedef Fem::StartPass < DestinationType, u >                                 Pass0Type;
+    typedef LimitDGPass    < LimiterDiscreteModelType, Pass0Type, limitPassId >   Pass1Type;
+    typedef LocalCDGPass   < DiscreteModel1Type, Pass1Type, advectPassId >        Pass2Type;
 #endif
 
-    typedef typename LimiterDiscreteModelType::LimiterIndicatorType     LimiterIndicatorType;
-    typedef typename LimiterIndicatorType::DiscreteFunctionSpaceType    LimiterIndicatorSpaceType;
+    typedef typename LimiterDiscreteModelType::LimiterIndicatorType               LimiterIndicatorType;
+    typedef typename LimiterIndicatorType::DiscreteFunctionSpaceType              LimiterIndicatorSpaceType;
 
     template< class Limiter, int pO >
     struct LimiterCall
@@ -477,15 +506,22 @@ namespace Dune {
   };
 
 
-
+  /**
+   * \brief Advection diffusion operator for CDG with a limiting
+   *         of the numerical solution
+   *
+   * \tparam Traits
+   * \tparam advection Advection
+   * \tparam diffusion Diffusion
+   */
   template< class Traits, bool advection = true, bool diffusion = true >
   class DGLimitedAdvectionDiffusionOperator
   : public DGLimitedAdvectionOperator< Traits, advection, diffusion >
   {
     typedef DGLimitedAdvectionOperator< Traits, advection, diffusion > BaseType;
 
-    typedef typename BaseType :: GridPartType GridPartType;
-    typedef typename BaseType :: ProblemType  ProblemType;
+    typedef typename BaseType::GridPartType                            GridPartType;
+    typedef typename BaseType::ProblemType                             ProblemType;
 
   public:
     DGLimitedAdvectionDiffusionOperator ( GridPartType& gridPart, ProblemType& problem, const std::string keyPrefix = "" )

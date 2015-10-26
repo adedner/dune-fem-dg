@@ -7,7 +7,7 @@
 
 namespace Dune {
 
-/*! @ingroup EllipticOperator
+/*! \ingroup EllipticOperator
  * Description: Solver for equations of the form
 ** \f{eqnarray*}
 **   div(A(x)\nabla u) &=& f(x)  \quad\mbox{in}\quad \Omega    \\

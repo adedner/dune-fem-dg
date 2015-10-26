@@ -43,7 +43,7 @@ public:
   typedef Fem :: Parameter ParameterType ;
 
   /**
-   * @brief define problem parameters
+   * \brief define problem parameters
    */
 protected:
   EvolutionProblemInterface()
@@ -156,7 +156,7 @@ public:
   virtual double epsilon() const { return 0.0; }
 
   /**
-   * @brief getter for the velocity
+   * \brief getter for the velocity
    */
   virtual void velocity(const DomainType& x, DomainType& v) const {}
 
@@ -166,7 +166,7 @@ public:
   }
 
   /**
-   * @brief old version of the exact solution
+   * \brief old version of the exact solution
    *
    * old version of evaluate(const DomainType& arg, double t, RangeType& res),
    * which is still needed by the DataWriter
@@ -178,14 +178,14 @@ public:
   }
 
   /**
-   * @brief evaluate exact solution, to be implemented in derived classes
+   * \brief evaluate exact solution, to be implemented in derived classes
    */
   virtual void evaluate(const DomainType& arg,
                         const double t, RangeType& res) const = 0 ;
 
 
   /**
-   * @brief latex output for EocOutput, default is empty
+   * \brief latex output for EocOutput, default is empty
    */
   virtual std::string description() const
   {
@@ -318,7 +318,7 @@ public:
   }
 
   /**
-   * @brief getter for the velocity
+   * \brief getter for the velocity
    */
   virtual void velocity(const DomainType& x, DomainType& v) const
   {
@@ -346,7 +346,7 @@ public:
   }
 
   /**
-   * @brief latex output for EocOutput, default is empty
+   * \brief latex output for EocOutput, default is empty
    */
   virtual std::string description() const
   {

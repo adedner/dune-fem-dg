@@ -9,6 +9,16 @@
 
 namespace Dune {
 
+  /**
+   * \defgroup DiffusionFluxes Diffusion Fluxes
+   *
+   * \ingroup Fluxes
+   *
+   * A flux class for diffusive numerical fluxes.
+   *
+   */
+
+
 
   // DGFluxTupleToVectorConverter
   //-----------------------------
@@ -137,7 +147,7 @@ namespace Dune {
   /**
    * \brief Base class for all diffusion fluxes.
    *
-   * \ingroup Fluxes
+   * \ingroup DiffusionFluxes
    */
   template <class DiscreteFunctionSpaceImp,
             class Model >
@@ -190,7 +200,7 @@ namespace Dune {
     }
   public:
     /**
-     * @brief constructor
+     * \brief constructor
      */
     DGDiffusionFluxBase( const Model& mod,
                          const bool initUpwind,
@@ -280,7 +290,7 @@ namespace Dune {
 
   public:
     /**
-     * @brief flux function on interfaces between cells for advection and diffusion
+     * \brief flux function on interfaces between cells for advection and diffusion
      *
      * @param[in] it intersection
      * @param[in] time current time given by TimeProvider
@@ -296,7 +306,7 @@ namespace Dune {
      * @param[out] gDiffRight advection flux projected on normal for the other side
      *             of \c it for multiplication with \f$ \nabla\phi \f$
      *
-     * @return wave speed estimate (multiplied with the integration element of the intersection),
+     * \return wave speed estimate (multiplied with the integration element of the intersection),
      *              to estimate the time step |T|/wave.
      */
     template <class DiscreteModelImp, class QuadratureImp>
@@ -322,7 +332,7 @@ namespace Dune {
 
 
     /**
-     * @brief same as numericalFlux() but for fluxes over boundary interfaces
+     * \brief same as numericalFlux() but for fluxes over boundary interfaces
      */
     template <class DiscreteModelImp, class QuadratureImp>
     double boundaryFlux(const Intersection& intersection,

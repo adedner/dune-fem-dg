@@ -15,13 +15,13 @@
 namespace Dune {
 
 /**
- * @brief describes the initial and exact solution of the advection-diffusion model
+ * \brief describes the initial and exact solution of the advection-diffusion model
  */
-template <class GridType, int dimRange >                                 /*@LST0S@*/
+template <class GridType, int dimRange >
 struct QuasiHeatEqnSolution : public EvolutionProblemInterface<
                   Dune::Fem::FunctionSpace< double, double, GridType::dimension, dimRange>,
                   false >
-{                                                                  /*@LST0E@*/
+{
 public:
   typedef EvolutionProblemInterface<
                  Dune::Fem::FunctionSpace< double, double,
@@ -36,14 +36,14 @@ public:
   typedef Fem :: Parameter  ParameterType ;
 
   /**
-   * @brief define problem parameters
+   * \brief define problem parameters
    */
-  QuasiHeatEqnSolution () :                                                        /*@LST0S@*/
+  QuasiHeatEqnSolution () :
     BaseType () ,
     velocity_( 0 ),
     startTime_( ParameterType::getValue<double>("femdg.stepper.starttime",0.0) ),
     epsilon_( ParameterType::template getValue<double>("epsilon") )
-  {                                                             /*@LST0E@*/
+  {
     if ( (dimRange != 1) || (dimDomain != 2) )
     {
       std::cout <<"QuasiHeatEqn only supports dimRange=1 and dimDomain=2\n";
@@ -64,7 +64,7 @@ public:
   double epsilon() const { return epsilon_; }
 
   /**
-   * @brief getter for the velocity
+   * \brief getter for the velocity
    */
   void velocity(const DomainType& x, DomainType& v) const
   {
@@ -72,17 +72,17 @@ public:
   }
 
   /**
-   * @brief evaluates \f$ u_0(x) \f$
+   * \brief evaluates \f$ u_0(x) \f$
    */
-  void evaluate(const DomainType& arg, RangeType& res) const         /*@LST0S@@LST0E@*/
+  void evaluate(const DomainType& arg, RangeType& res) const
   {
     evaluate(arg, startTime_, res);
   }
 
   /**
-   * @brief evaluate exact solution
+   * \brief evaluate exact solution
    */
-  void evaluate(const DomainType& arg, const double t, RangeType& res) const /*@LST0S@@LST0E@*/
+  void evaluate(const DomainType& arg, const double t, RangeType& res) const
   {
     res = std::sin(arg[0]) * std::sin(arg[1]) * std::exp( -epsilon_*t );
   }
@@ -91,12 +91,12 @@ public:
   bool hasNonStiffSource() const { return false; }
 
   /**
-   * @brief evaluate stiff source function
+   * \brief evaluate stiff source function
    */
   double nonStiffSource( const DomainType& arg,
                          const double t,
                          const RangeType& u,
-                         RangeType& res ) const /*@LST0S@@LST0E@*/
+                         RangeType& res ) const
   {
     res = 0.;
 
@@ -105,12 +105,12 @@ public:
   }
 
   /**
-   * @brief evaluate non stiff source function
+   * \brief evaluate non stiff source function
    */
   double stiffSource( const DomainType& arg,
                          const double t,
                          const RangeType& u,
-                         RangeType& res ) const /*@LST0S@@LST0E@*/
+                         RangeType& res ) const
   {
     const double x = arg[0];
     const double y = arg[1];
@@ -131,7 +131,7 @@ public:
   }
 
   /**
-   * @brief latex output for EocOutput
+   * \brief latex output for EocOutput
    */
   std::string description() const
   {

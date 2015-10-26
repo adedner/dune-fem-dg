@@ -21,9 +21,24 @@
 namespace Dune {
 
 
+
+  /**
+   *  \defgroup SpaceOperators Space operator
+   *
+   *  These operators are used for the spatial discretization of a PDE.
+   */
+
+
   // DGAdvectionDiffusionOperatorBase
   //---------------------------------
 
+  /**
+   * \brief advection diffusion operator
+   *
+   * \note This operator is based on the Pass-Concept
+   *
+   * \ingroup SpaceOperators
+   */
   template< class Traits >
   class DGAdvectionDiffusionOperatorBase :
     public Fem::SpaceOperatorInterface< typename Traits :: DestinationType >

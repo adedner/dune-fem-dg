@@ -2,32 +2,42 @@
 #define DUNE_FEMDG_NOFLUX_HH
 
 #include <string>
+#include <dune/fem-dg/operator/fluxes/advectionflux.hh>
 
 namespace Dune
 {
 
-template <class ModelType>
-class NoFlux {
+/**
+ * \brief advective flux returning zero
+ *
+ * \ingroup AdvectionFluxes
+ */
+template <class Model>
+class NoFlux
+  : public DGAdvectionFluxBase< Model >
+{
+  typedef DGAdvectionFluxBase< Model >          BaseType;
 public:
-  typedef ModelType Model;
-  typedef typename Model::Traits Traits;
-  enum { dimRange = Model::dimRange };
-  typedef typename Model :: DomainType          DomainType;
-  typedef typename Model :: RangeType           RangeType;
-  typedef typename Model :: JacobianRangeType   JacobianRangeType;
-  typedef typename Model :: FluxRangeType       FluxRangeType;
-  typedef typename Model :: FaceDomainType      FaceDomainType;
-  typedef typename Model :: EntityType          EntityType;
-  typedef typename Model :: IntersectionType    IntersectionType;
+  typedef Model                                 ModelType;
+  typedef typename ModelType::Traits            Traits;
+  enum { dimRange = ModelType::dimRange };
+  typedef typename ModelType::DomainType        DomainType;
+  typedef typename ModelType::RangeType         RangeType;
+  typedef typename ModelType::JacobianRangeType JacobianRangeType;
+  typedef typename ModelType::FluxRangeType     FluxRangeType;
+  typedef typename ModelType::FaceDomainType    FaceDomainType;
+  typedef typename ModelType::EntityType        EntityType;
+  typedef typename ModelType::IntersectionType  IntersectionType;
 public:
   /**
-   * @brief constructor
+   * \brief constructor
    */
-  NoFlux(const Model& mod) : model_(mod) {}
+  NoFlux(const ModelType& mod)
+    : BaseType( mod ),
+      model_(mod)
+  {}
 
-  static std::string name () { return "UpwindFlux"; }
-
-  const Model& model() const {return model_;}
+  static std::string name () { return "NoFlux"; }
 
   template< class LocalEvaluation >
   inline double
@@ -46,7 +56,7 @@ public:
   }
 
 protected:
-  const Model& model_;
+  const ModelType& model_;
 };
 
 }

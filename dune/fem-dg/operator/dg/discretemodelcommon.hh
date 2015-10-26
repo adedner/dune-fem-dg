@@ -14,6 +14,12 @@
 
 namespace Dune {
 
+  /**
+   * \defgroup DiscreteModels
+   *
+   */
+
+
   template < int idx >
   struct PrintTupleValues
   {
@@ -39,21 +45,28 @@ namespace Dune {
     typedef std::tuple< TupleArgs ... > type;
   };
 
+  /**
+   * \brief A discrete model that can take additional model parameters
+   *
+   * This discrete model allows us to "insert" additional model parameters.
+   *
+   * \ingroups DiscreteModels
+   */
   template< class Traits,
             int passUId, int passGradId >
   class FemDGBaseDiscreteModel : public Fem::DGDiscreteModelDefaultWithInsideOutside< Traits, passUId, passGradId >
   {
     typedef Fem::DGDiscreteModelDefaultWithInsideOutside< Traits, passUId, passGradId > BaseType;
-    typedef typename BaseType :: Selector BaseSelectorType ;
+    typedef typename BaseType::Selector                   BaseSelectorType;
 
-    typedef typename Traits :: ModelType :: ModelParameter ModelParameter;
-    typedef typename Traits :: ExtraParameterTupleType ExtraParameterTupleType;
+    typedef typename Traits::ModelType::ModelParameter    ModelParameter;
+    typedef typename Traits::ExtraParameterTupleType      ExtraParameterTupleType;
 
-    static const int modParamSize = std::tuple_size< ModelParameter > :: value ;
-    static const int extParamSize = std::tuple_size< ExtraParameterTupleType > :: value ;
+    static const int modParamSize = std::tuple_size< ModelParameter >::value ;
+    static const int extParamSize = std::tuple_size< ExtraParameterTupleType >::value ;
     static const int selectedSize = ( extParamSize < modParamSize ) ? extParamSize : modParamSize ;
   public:
-    typedef typename SelectTupleElements< ModelParameter, 0, selectedSize, std::tuple<> > :: type SelectedModelParameterType;
+    typedef typename SelectTupleElements< ModelParameter, 0, selectedSize, std::tuple<> >::type SelectedModelParameterType;
 
     // the orignal selector
     //typedef typename Dune::Fem::Selector<  passUId, passGradId > ::Type Selector ;
@@ -94,14 +107,11 @@ namespace Dune {
   };
 
 
-  // AdvectionModel
-  //---------------
-
-  /*  \class AdvectionModel
+  /*  \brief Discrete model for advection terms
    *
-   *  \tparam Model Mathematical model
-   *  \tparam NumFlux Numerical flux
-   *  \tparam polOrd Polynomial degree
+   *  \ingroup DiscreteModels
+   *
+   *  \tparam OpTraits Operator traits describing the operator
    *  \tparam passUId The id of a pass whose value is used here
    *  \tparam passGradId The id of a pass whose value is used here
    *  \tparam returnAdvectionPart Switch on/off the advection
@@ -121,8 +131,6 @@ namespace Dune {
     typedef typename Traits :: FluxType     AdvectionFluxType;
 
     typedef FemDGBaseDiscreteModel< Traits, passUId, passGradId >  BaseType;
-    //typedef Fem::DGDiscreteModelDefaultWithInsideOutside
-    //    < Traits, passUId, passGradId >                    BaseType;
 
     // These type definitions allow a convenient access to arguments of pass.
     integral_constant< int, passUId > uVar;
@@ -151,7 +159,7 @@ namespace Dune {
 
   public:
     /**
-     * @brief constructor
+     * \brief constructor
      */
     AdvectionModel(const ModelType& mod,
                    const AdvectionFluxType& numf)
@@ -181,7 +189,7 @@ namespace Dune {
     inline bool hasFlux() const { return advection; }
 
     /**
-     * @brief Stiff source associated with advection
+     * \brief Stiff source associated with advection
      */
     template <class LocalEvaluation>
     inline double source( const LocalEvaluation& local,
@@ -211,25 +219,22 @@ namespace Dune {
 
   public:
     /**
-     * @brief flux function on interfaces between cells for advection and diffusion
+     * \brief flux function on interfaces between cells for advection and diffusion
      *
-     * @param[in] it intersection
-     * @param[in] time current time given by TimeProvider
-     * @param[in] x coordinate of required evaluation local to \c it
-     * @param[in] uLeft DOF evaluation on this side of \c it
-     * @param[in] uRight DOF evaluation on the other side of \c it
-     * @param[out] gLeft num. flux projected on normal on this side
+     * \param[in]  left local evaluation context of inside cell
+     * \param[in]  right local evaluation context of outside cell
+     * \param[out] gLeft num. flux projected on normal on this side
      *             of \c it for multiplication with \f$ \phi \f$
-     * @param[out] gRight advection flux projected on normal for the other side
+     * \param[out] gRight advection flux projected on normal for the other side
      *             of \c it for multiplication with \f$ \phi \f$
-     * @param[out] gDiffLeft num. flux projected on normal on this side
+     * \param[out] gDiffLeft num. flux projected on normal on this side
      *             of \c it for multiplication with \f$ \nabla\phi \f$
-     * @param[out] gDiffRight advection flux projected on normal for the other side
+     * \param[out] gDiffRight advection flux projected on normal for the other side
      *             of \c it for multiplication with \f$ \nabla\phi \f$
      *
-     * @note For dual operators we have \c gDiffLeft = 0 and \c gDiffRight = 0.
+     * \note For dual operators we have \c gDiffLeft = 0 and \c gDiffRight = 0.
      *
-     * @return wave speed estimate (multiplied with the integration element of the intersection),
+     * \return wave speed estimate (multiplied with the integration element of the intersection),
      *              to estimate the time step |T|/wave.
      */
     template <class LocalEvaluation>
@@ -260,7 +265,7 @@ namespace Dune {
     }
 
     /**
-     * @brief same as numericalFlux() but for fluxes over boundary interfaces
+     * \brief same as numericalFlux() but for fluxes over boundary interfaces
      */
     template <class LocalEvaluation>
     double boundaryFlux(const LocalEvaluation& left,
@@ -297,7 +302,7 @@ namespace Dune {
     }
                                                   /*@LST0S@*/
     /**
-     * @brief analytical flux function for advection only
+     * \brief analytical flux function for advection only
      */
     template <class LocalEvaluation>
     void analyticalFlux( const LocalEvaluation& local,
@@ -352,11 +357,11 @@ namespace Dune {
                                     returnAdvectionPart >       DGDiscreteModelType;
   };
 
-  /*  \class AdvectionModel
+  /*  \brief discrete model for adaptive operator
    *
-   *  \tparam Model Mathematical model
-   *  \tparam NumFlux Numerical flux
-   *  \tparam polOrd Polynomial degree
+   *  \ingroup DiscreteModels
+   *
+   *  \tparam OpTraits Operator traits describing the operator
    *  \tparam passUId The id of a pass whose value is used here
    *  \tparam passGradId The id of a pass whose value is used here
    *  \tparam returnAdvectionPart Switch on/off the advection
@@ -402,7 +407,7 @@ namespace Dune {
 
   public:
     /**
-     * @brief constructor
+     * \brief constructor
      */
     AdaptiveAdvectionModel(const ModelType& mod,
                            const AdvectionFluxType& numf)
@@ -485,25 +490,22 @@ namespace Dune {
 
   public:
     /**
-     * @brief flux function on interfaces between cells for advection and diffusion
+     * \brief flux function on interfaces between cells for advection and diffusion
      *
-     * @param[in] it intersection
-     * @param[in] time current time given by TimeProvider
-     * @param[in] x coordinate of required evaluation local to \c it
-     * @param[in] uLeft DOF evaluation on this side of \c it
-     * @param[in] uRight DOF evaluation on the other side of \c it
-     * @param[out] gLeft num. flux projected on normal on this side
+     * \param[in]  left local evaluation context of inside cell
+     * \param[in]  right local evaluation context of outside cell
+     * \param[out] gLeft num. flux projected on normal on this side
      *             of \c it for multiplication with \f$ \phi \f$
-     * @param[out] gRight advection flux projected on normal for the other side
+     * \param[out] gRight advection flux projected on normal for the other side
      *             of \c it for multiplication with \f$ \phi \f$
-     * @param[out] gDiffLeft num. flux projected on normal on this side
+     * \param[out] gDiffLeft num. flux projected on normal on this side
      *             of \c it for multiplication with \f$ \nabla\phi \f$
-     * @param[out] gDiffRight advection flux projected on normal for the other side
+     * \param[out] gDiffRight advection flux projected on normal for the other side
      *             of \c it for multiplication with \f$ \nabla\phi \f$
      *
-     * @note For dual operators we have \c gDiffLeft = 0 and \c gDiffRight = 0.
+     * \note For dual operators we have \c gDiffLeft = 0 and \c gDiffRight = 0.
      *
-     * @return wave speed estimate (multiplied with the integration element of the intersection),
+     * \return wave speed estimate (multiplied with the integration element of the intersection),
      *              to estimate the time step |T|/wave.
      */
     template <class LocalEvaluation>
@@ -567,7 +569,7 @@ namespace Dune {
     }
 
     /**
-     * @brief same as numericalFlux() but for fluxes over boundary interfaces
+     * \brief same as numericalFlux() but for fluxes over boundary interfaces
      */
     template <class LocalEvaluation>
     double boundaryFlux(const LocalEvaluation& left,

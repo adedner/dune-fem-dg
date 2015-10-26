@@ -22,7 +22,7 @@
 #include <dune/fem-dg/stepper/baseevolution.hh>
 #include "problem.hh"
 
-template <class GridImp, class ProblemTraits, int order>               /*@LST1S@*/
+template <class GridImp, class ProblemTraits, int order>
 struct StepperTraits {
   // type of Grid
   typedef GridImp                                                    GridType;

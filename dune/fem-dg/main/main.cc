@@ -179,7 +179,7 @@ void codegen()
 #endif
 
 /**
- * @brief main function for the LocalDG Advection-Diffusion application
+ * \brief main function for the LocalDG Advection-Diffusion application
  *
  * \c main starts the Simulation of an advection-diffusion pde with
  * the localdg method with EOC analysis and visual output to grape, paraview or
@@ -189,7 +189,7 @@ void codegen()
  *
  * @param argc number of arguments from command line
  * @param argv array of arguments from command line
- * @return 0 we don't program bugs. :)
+ * \return 0 we don't program bugs. :)
  */
 int main(int argc, char ** argv)
 {

@@ -11,7 +11,7 @@
 namespace Dune {
 
 /**
- * @brief describes the initial and exact solution of the advection-diffusion model
+ * \brief describes the initial and exact solution of the advection-diffusion model
  * for given constant velocity vector v=(v1,v2)
  *
  * \f[u(x,y,z,t):=\displaystyle{\sum_{i=0}^{1}} T_i(t) \cdot X_i(x) \cdot
@@ -53,7 +53,7 @@ public:
   typedef Fem::Parameter  ParameterType;
 
   /**
-   * @brief define problem parameters
+   * \brief define problem parameters
    */
   Pulse () :
     BaseType () ,
@@ -99,7 +99,7 @@ public:
   double epsilon() const { return epsilon_; }
 
   /**
-   * @brief getter for the velocity
+   * \brief getter for the velocity
    */
   void velocity(const DomainType& x, DomainType& v) const
   {
@@ -110,7 +110,7 @@ public:
   }
 
   /**
-   * @brief evaluates \f$ u_0(x) \f$
+   * \brief evaluates \f$ u_0(x) \f$
    */
   void evaluate(const DomainType& arg, RangeType& res) const
   {
@@ -118,7 +118,7 @@ public:
   }
 
   /**
-   * @brief evaluate exact solution
+   * \brief evaluate exact solution
    */
   void evaluate(const DomainType& arg, const double t, RangeType& res) const
   {
@@ -134,7 +134,7 @@ public:
   }
 
   /**
-   * @brief latex output for EocOutput
+   * \brief latex output for EocOutput
    */
   std::string description() const
   {

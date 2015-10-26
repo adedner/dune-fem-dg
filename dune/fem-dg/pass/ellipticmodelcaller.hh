@@ -19,7 +19,7 @@ namespace Dune
 {
 
   /**
-   * @brief Wrapper class for all the template magic used to call the problem
+   * \brief Wrapper class for all the template magic used to call the problem
    * methods.
    */
   template <class DiscreteModelImp, class ArgumentImp, class SelectorImp>

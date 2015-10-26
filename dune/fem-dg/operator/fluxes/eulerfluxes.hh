@@ -19,11 +19,11 @@
 
 #include <dune/fem-dg/operator/fluxes/rotator.hh>
 
-///////////////////////////////////////////////////////////
-//
-//  EulerAnalyticalFlux
-//
-///////////////////////////////////////////////////////////
+/**
+ *  \brief Analytical flux for the euler problem.
+ *
+ *  \ingroups AnalyticalFluxes
+ */
 template < int dimDomain >
 class EulerAnalyticalFlux
 {

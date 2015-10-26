@@ -1,6 +1,7 @@
 #ifndef FEMDG_LLFADVFLUX_FLUX_HH
 #define FEMDG_LLFADVFLUX_FLUX_HH
 
+#include <dune/fem-dg/operator/fluxes/advectionflux.hh>
 
 namespace Dune
 {
@@ -8,30 +9,33 @@ namespace Dune
   /**
    *  \brief advection flux using local Lax-Friedrichs
    *
-   *  \ingroup Fluxes
+   *  \ingroup AdvectionFluxes
    */
-  template <class ModelType>
+  template <class Model>
   class LLFAdvFlux
+    : public DGAdvectionFluxBase< Model >
   {
+    typedef DGAdvectionFluxBase< Model >          BaseType;
   public:
-    typedef ModelType Model;
-    typedef typename Model::Traits Traits;
-    enum { dimRange = Model::dimRange };
-    typedef typename Model :: DomainType          DomainType;
-    typedef typename Model :: RangeType           RangeType;
-    typedef typename Model :: JacobianRangeType   JacobianRangeType;
-    typedef typename Model :: FluxRangeType       FluxRangeType;
-    typedef typename Model :: FaceDomainType      FaceDomainType;
-    typedef typename Model :: EntityType          EntityType;
-    typedef typename Model :: IntersectionType    IntersectionType;
+    typedef Model                                 ModelType;
+    typedef typename ModelType::Traits            Traits;
+    enum { dimRange = ModelType::dimRange };
+    typedef typename ModelType::DomainType        DomainType;
+    typedef typename ModelType::RangeType         RangeType;
+    typedef typename ModelType::JacobianRangeType JacobianRangeType;
+    typedef typename ModelType::FluxRangeType     FluxRangeType;
+    typedef typename ModelType::FaceDomainType    FaceDomainType;
+    typedef typename ModelType::EntityType        EntityType;
+    typedef typename ModelType::IntersectionType  IntersectionType;
+
     /**
-     * @brief Constructor
+     * \brief Constructor
      */
-    LLFAdvFlux(const Model& mod) : model_(mod) {}
+    LLFAdvFlux(const ModelType& mod) : model_(mod) {}
 
     static std::string name () { return "LaxFriedrichsFlux"; }
 
-    const Model& model() const {return model_;}
+    const ModelType& model() const {return model_;}
 
     template <class LocalEvaluation>
     inline double numericalFlux( const LocalEvaluation& left,
@@ -79,7 +83,7 @@ namespace Dune
       return maxspeed;
     }
   protected:
-    const Model& model_;
+    const ModelType& model_;
   };
 
 }

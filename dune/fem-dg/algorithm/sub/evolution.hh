@@ -74,7 +74,7 @@ namespace Fem
   /**
    *  \brief Algorithm for solving an instationary PDE.
    *
-   *  \ingroup Algorithms
+   *  \ingroup SubAlgorithms
    */
   template< class SubTraits >
   class SubEvolutionAlgorithmBase

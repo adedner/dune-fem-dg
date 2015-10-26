@@ -23,7 +23,7 @@ namespace Dune {
   /**
    * \brief diffusion flux
    *
-   * \ingroup Fluxes
+   * \ingroup DiffusionFluxes
    */
   template <class DiscreteFunctionSpaceImp,
             class Model>
@@ -156,7 +156,7 @@ namespace Dune {
     enum { evaluateJacobian = true };
 
     /**
-     * @brief constructor reading parameters
+     * \brief constructor reading parameters
      */
     DGPrimalDiffusionFluxImpl( GridPartType& gridPart,
                                const Model& model,
@@ -668,7 +668,7 @@ namespace Dune {
       func *= -faceQuad.weight( quadPoint );
     }
 
-    /** @return A(u)L_e*n */
+    /** \return A(u)L_e*n */
     template <class LocalEvaluation>
     void applyLifting(const LocalEvaluation& local,
                       const DomainType& normal,
@@ -723,7 +723,7 @@ namespace Dune {
 
   public:
     /**
-     * @brief flux function on interfaces between cells
+     * \brief flux function on interfaces between cells
      *
      * @param intersection intersection
      * @param time current time given by TimeProvider
@@ -760,7 +760,7 @@ namespace Dune {
      *          in gLeft:      same like above, but without numflux(f(u))
      *          in gDiffLeft:  same like above
      *
-     * @return wave speed estimate (multiplied with the integration element of the intersection).
+     * \return wave speed estimate (multiplied with the integration element of the intersection).
      *         To estimate the time step |T|/wave is used
      */
     template <class LocalEvaluation>
@@ -1018,7 +1018,7 @@ namespace Dune {
 
 
     /**
-     * @brief same as numericalFlux() but for fluxes over boundary interfaces
+     * \brief same as numericalFlux() but for fluxes over boundary interfaces
      */
     template <class LocalEvaluation>
     double boundaryFlux(const LocalEvaluation& left,
@@ -1197,7 +1197,7 @@ namespace Dune {
     typedef typename BaseType :: ParameterType ParameterType ;
 
     /**
-      * @brief constructor reading parameters
+      * \brief constructor reading parameters
       */
     DGPrimalDiffusionFlux( GridPartType& gridPart,
                            const Model& model,
@@ -1226,7 +1226,7 @@ namespace Dune {
     typedef typename BaseType :: ParameterType  ParameterType;
 
     /**
-      * @brief constructor reading parameters
+      * \brief constructor reading parameters
       */
     DGPrimalDiffusionFlux( GridPartType& gridPart,
                            const Model& model,
@@ -1256,7 +1256,7 @@ namespace Dune {
     typedef typename BaseType :: ParameterType  ParameterType;
 
     /**
-      * @brief constructor reading parameters
+      * \brief constructor reading parameters
       */
     DGPrimalDiffusionFlux( GridPartType& gridPart,
                            const Model& model,
@@ -1286,7 +1286,7 @@ namespace Dune {
     typedef typename BaseType :: ParameterType  ParameterType;
 
     /**
-      * @brief constructor reading parameters
+      * \brief constructor reading parameters
       */
     DGPrimalDiffusionFlux( GridPartType& gridPart,
                            const Model& model,
@@ -1316,7 +1316,7 @@ namespace Dune {
     typedef typename BaseType :: ParameterType  ParameterType;
 
     /**
-      * @brief constructor reading parameters
+      * \brief constructor reading parameters
       */
     DGPrimalDiffusionFlux( GridPartType& gridPart,
                            const Model& model,
@@ -1346,7 +1346,7 @@ namespace Dune {
 
   public:
     /**
-      * @brief constructor reading parameters
+      * \brief constructor reading parameters
       */
     DGPrimalDiffusionFlux( GridPartType& gridPart,
                            const Model& model,

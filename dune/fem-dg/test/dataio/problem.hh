@@ -7,7 +7,7 @@
 namespace Dune {
 
 /**
- * @brief describes the initial and exact solution of the advection-diffusion model
+ * \brief describes the initial and exact solution of the advection-diffusion model
  *
  * \f[u(x,y,z,t):=\displaystyle{\sum_{i=0}^{1}} v_i(t) \cdot \mu_i(x) \cdot
  * \nu_i(y) \cdot \omega_i(z)\f]
@@ -51,14 +51,14 @@ public:
   typedef Dune::Fem::Parameter  ParameterType ;
 
   /**
-   * @brief define problem parameters
+   * \brief define problem parameters
    */
-  U0 () :                                                        /*@LST0S@*/
+  U0 () :
     BaseType () ,
     velocity_( 0 ),
     startTime_( ParameterType::getValue<double>("femdg.stepper.starttime",0.0) ),
     epsilon_  ( ParameterType::getValue<double>("epsilon"  ,0.1) )
-  {                                                             /*@LST0E@*/
+  {
       velocity_[0]=0.8;
       velocity_[1]=0.6;
 
@@ -106,7 +106,7 @@ public:
   double epsilon() const { return epsilon_; }
 
   /**
-   * @brief getter for the velocity
+   * \brief getter for the velocity
    */
   void velocity(const DomainType& x, DomainType& v) const
   {
@@ -114,17 +114,17 @@ public:
   }
 
   /**
-   * @brief evaluates \f$ u_0(x) \f$
+   * \brief evaluates \f$ u_0(x) \f$
    */
-  void evaluate(const DomainType& arg, RangeType& res) const         /*@LST0S@@LST0E@*/
+  void evaluate(const DomainType& arg, RangeType& res) const
   {
     evaluate(arg, startTime_, res);
   }
 
   /**
-   * @brief evaluate exact solution
+   * \brief evaluate exact solution
    */
-  void evaluate(const DomainType& arg, const double t, RangeType& res) const /*@LST0S@@LST0E@*/
+  void evaluate(const DomainType& arg, const double t, RangeType& res) const
   {
 
     res = 0;
@@ -159,7 +159,7 @@ public:
   }
 
   /**
-   * @brief latex output for EocOutput
+   * \brief latex output for EocOutput
    */
   std::string description() const
   {

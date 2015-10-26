@@ -18,7 +18,7 @@
  *********************************************/
 
 /**
- * @brief Traits class for HeatEqnModel
+ * \brief Traits class for HeatEqnModel
  */
 template <class GridPart, class ProblemImp >
 class HeatEqnModelTraits
@@ -130,11 +130,11 @@ public:
   const HeatEqnModel &operator=(const HeatEqnModel &other);
 public:
   /**
-   * @brief Constructor
+   * \brief Constructor
    *
    * initializes model parameter
    *
-   * @param problem Class describing the initial(t=0) and exact solution
+   * \param problem Class describing the initial(t=0) and exact solution
    */
   HeatEqnModel(const ProblemType& problem) :
     problem_(problem),
@@ -187,13 +187,13 @@ private:
 public:
 
   /**
-   * @brief advection term \f$F\f$
+   * \brief advection term \f$F\f$
    *
-   * @param en entity on which to evaluate the advection term
-   * @param time current time of TimeProvider
-   * @param x coordinate local to entity
-   * @param u \f$U\f$
-   * @param f \f$f(U)\f$
+   * \param en entity on which to evaluate the advection term
+   * \param time current time of TimeProvider
+   * \param x coordinate local to entity
+   * \param u \f$U\f$
+   * \param f \f$f(U)\f$
    */
   template <class LocalEvaluation>
   inline void advection(const LocalEvaluation& local,
@@ -210,7 +210,7 @@ public:
   }
 
   /**
-   * @brief velocity calculation, is called by advection()
+   * \brief velocity calculation, is called by advection()
    */
   template <class LocalEvaluation>
   inline DomainType velocity(const LocalEvaluation& local) const
@@ -220,7 +220,7 @@ public:
 
 
   /**
-   * @brief diffusion term \f$a\f$
+   * \brief diffusion term \f$a\f$
    */
   template <class LocalEvaluation>
   inline void jacobian(const LocalEvaluation& local,
@@ -247,7 +247,7 @@ public:
   }
 
   /**
-   * @brief diffusion term \f$A\f$
+   * \brief diffusion term \f$A\f$
    */
   template <class LocalEvaluation>
   inline void diffusion(const LocalEvaluation& local,
@@ -286,7 +286,7 @@ public:
 
 public:
   /**
-   * @brief checks for existence of dirichlet boundary values
+   * \brief checks for existence of dirichlet boundary values
    */
   template <class LocalEvaluation>
   inline bool hasBoundaryValue(const LocalEvaluation& local ) const
@@ -295,7 +295,7 @@ public:
   }
 
   /**
-   * @brief neuman boundary values \f$g_N\f$ for pass2
+   * \brief neuman boundary values \f$g_N\f$ for pass2
    */
   template <class LocalEvaluation>
   inline double boundaryFlux(const LocalEvaluation& local,
@@ -308,7 +308,7 @@ public:
   }
 
   /**
-   * @brief neuman boundary values \f$g_N\f$ for pass1
+   * \brief neuman boundary values \f$g_N\f$ for pass1
    */
   template <class LocalEvaluation>
   inline double boundaryFlux(const LocalEvaluation& local,
@@ -332,7 +332,7 @@ public:
   }
 
   /**
-   * @brief dirichlet boundary values
+   * \brief dirichlet boundary values
    */
   template <class LocalEvaluation>
   inline  void boundaryValue(const LocalEvaluation& local,

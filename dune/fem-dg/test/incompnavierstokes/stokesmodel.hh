@@ -17,7 +17,7 @@ namespace Dune
  * Analytical model                           *
  *********************************************/
 /**
- * @brief Traits class for StokesModel
+ * \brief Traits class for StokesModel
  */
 template <class GridPart,
           class ProblemImp>
@@ -49,7 +49,7 @@ public:
 };
 
 /**
- * @brief describes the analytical model
+ * \brief describes the analytical model
  *
  * This is an description class for the problem
  * \f{eqnarray*}{ V + \nabla a(U)      & = & 0 \\
@@ -73,8 +73,8 @@ public:
  *
  * for a matrix \f$M\in \mathbf{M}^{n\times m}\f$.
  *
- * @param GridPart GridPart for extraction of dimension
- * @param ProblemType Class describing the initial(t=0) and exact solution
+ * \param GridPart GridPart for extraction of dimension
+ * \param ProblemType Class describing the initial(t=0) and exact solution
  */
 
 
@@ -117,11 +117,11 @@ public:
 
 public:
   /**
-   * @brief Constructor
+   * \brief Constructor
    *
    * initializes model parameter
    *
-   * @param problem Class describing the initial(t=0) and exact solution
+   * \param problem Class describing the initial(t=0) and exact solution
    */
   StokesModel(const ProblemType& problem)
     : problem_(problem),
@@ -173,13 +173,13 @@ public:
 
 
   /**
-   * @brief advection term \f$F\f$
+   * \brief advection term \f$F\f$
    *
-   * @param en entity on which to evaluate the advection term
-   * @param time current time of TimeProvider
-   * @param x coordinate local to entity
-   * @param u \f$U\f$
-   * @param f \f$f(U)\f$
+   * \param en entity on which to evaluate the advection term
+   * \param time current time of TimeProvider
+   * \param x coordinate local to entity
+   * \param u \f$U\f$
+   * \param f \f$f(U)\f$
    */
   template <class LocalEvaluation>
   inline  void advection(const LocalEvaluation& local,
@@ -203,7 +203,7 @@ public:
 protected:
 
   /**
-   * @brief velocity calculation, is called by advection()
+   * \brief velocity calculation, is called by advection()
    */
   inline  void velocity(const EntityType& en,
                         const double time,
@@ -216,7 +216,7 @@ protected:
 public:
 
   /**
-   * @brief diffusion term \f$a\f$
+   * \brief diffusion term \f$a\f$
    */
   template <class LocalEvaluation>
   inline void jacobian(const LocalEvaluation& local,
@@ -325,7 +325,7 @@ public:
   }
 
   /**
-   * @brief diffusion term \f$A\f$
+   * \brief diffusion term \f$A\f$
    */
   template <class LocalEvaluation>
   inline void diffusion(const LocalEvaluation& local,
@@ -357,7 +357,7 @@ public:
 
 public:
   /**
-   * @brief checks for existence of dirichlet boundary values
+   * \brief checks for existence of dirichlet boundary values
    */
   template <class LocalEvaluation>
   inline bool hasBoundaryValue(const LocalEvaluation& local ) const
@@ -366,7 +366,7 @@ public:
   }
 
   /**
-   * @brief dirichlet boundary values
+   * \brief dirichlet boundary values
    */
   template <class LocalEvaluation>
   inline  void boundaryValue(const LocalEvaluation& local,
@@ -378,7 +378,7 @@ public:
   }
 
   /**
-   * @brief diffusion boundary flux
+   * \brief diffusion boundary flux
    */
   template <class LocalEvaluation>
   inline double diffusionBoundaryFlux( const LocalEvaluation& local,
