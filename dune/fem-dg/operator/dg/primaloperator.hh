@@ -41,12 +41,19 @@ namespace Dune {
     typedef DGAdvectionDiffusionOperatorBase< Traits >  BaseType;
     typedef typename BaseType :: GridPartType  GridPartType;
     typedef typename BaseType :: ProblemType   ProblemType;
+    typedef typename BaseType :: ModelType     ModelType;
     typedef typename BaseType :: ExtraParameterTupleType  ExtraParameterTupleType;
 
     DGAdvectionDiffusionOperator( GridPartType& gridPart, ProblemType& problem,
                                   ExtraParameterTupleType tuple =  ExtraParameterTupleType(),
                                   const std::string name = "" )
       : BaseType( gridPart, problem, tuple, name )
+    {}
+
+    DGAdvectionDiffusionOperator( GridPartType& gridPart, const ModelType& model,
+                                  ExtraParameterTupleType tuple =  ExtraParameterTupleType(),
+                                  const std::string name = "" )
+      : BaseType( gridPart, model, tuple, name )
     {}
 
     std::string description() const

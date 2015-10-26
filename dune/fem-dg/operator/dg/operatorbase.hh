@@ -128,6 +128,19 @@ namespace Dune {
       , pass1_( discreteModel_, *previousPass_, space_ )
     {}
 
+    DGAdvectionDiffusionOperatorBase( GridPartType& gridPart, const ModelType& model,
+                                      ExtraParameterTupleType& tuple,
+                                      const std::string name = "" )
+      : model_( model )
+      , numflux_( model_ )
+      , gridPart_( gridPart )
+      , space_( gridPart_ )
+      , discreteModel_( model_, numflux_,
+                        DiffusionFluxType( gridPart_, model_, DGPrimalFormulationParameters( ParameterKey::generate( name, "dgdiffusionflux." ) ) ) )
+      , previousPass_( InsertFunctionsType::createPass( tuple ) )
+      , pass1_( discreteModel_, *previousPass_, space_ )
+    {}
+
     IndicatorType* indicator() { return 0; }
 
     void setAdaptation( AdaptationType& adHandle, double weight = 1 )
