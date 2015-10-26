@@ -134,9 +134,11 @@ namespace Dune {
   };
 
 
-  // DGDiffusionFluxBase
-  //--------------------
-
+  /**
+   * \brief Base class for all diffusion fluxes.
+   *
+   * \ingroup Fluxes
+   */
   template <class DiscreteFunctionSpaceImp,
             class Model >
   class DGDiffusionFluxBase

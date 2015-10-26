@@ -5,7 +5,9 @@
 namespace Dune
 {
   /**
-   * @brief defines the advective flux
+   * \brief defines the advective flux using an upwind scheme
+   *
+   * \ingroup Fluxes
    */
   template <class ModelType>
   class UpwindFlux {

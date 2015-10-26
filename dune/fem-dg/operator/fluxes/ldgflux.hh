@@ -7,9 +7,11 @@
 namespace Dune {
 
 
-  // LDGDiffusionFlux
-  //-----------------
-
+  /**
+   * \brief diffusion flux
+   *
+   * \ingroup Fluxes
+   */
   template <class DiscreteFunctionSpaceImp,
             class Model>
   class LDGDiffusionFlux :

@@ -5,6 +5,11 @@
 namespace Dune
 {
 
+  /**
+   *  \brief advection flux using local Lax-Friedrichs
+   *
+   *  \ingroup Fluxes
+   */
   template <class ModelType>
   class LLFAdvFlux
   {

@@ -20,6 +20,11 @@ namespace Dune {
   // DGPrimalDiffusionFluxImpl
   //----------------------
 
+  /**
+   * \brief diffusion flux
+   *
+   * \ingroup Fluxes
+   */
   template <class DiscreteFunctionSpaceImp,
             class Model>
   class DGPrimalDiffusionFluxImpl
