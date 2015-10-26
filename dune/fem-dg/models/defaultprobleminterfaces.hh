@@ -281,6 +281,8 @@ protected:
   mutable std::unique_ptr<ExactSolutionType> exactSolution_;
 
 public:
+  virtual bool hasExactSolution() const { return true; }
+
   const ExactSolutionType& exactSolution( const double time = startTime() ) const
   {
     exactSolution_.reset( new ExactSolutionType( *this, time ) );

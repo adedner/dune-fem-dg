@@ -61,7 +61,7 @@ namespace Fem
 
     bool adaptive() const
     {
-      return true;
+      return adaptParam_.adaptive();
     }
 
     template< class Problem, class ExtraTupleParameter >

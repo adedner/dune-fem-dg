@@ -266,7 +266,6 @@ namespace Fem
       solution_( "U_"+name, space() ),
       problem_( Traits::ProblemTraitsType::problem() ),
       model_( *problem_ ),
-      exact_( "exact solution", space() ),
       checkPointHandler_( grid_, "" ),
       dataWriterHandler_( grid_, "" ),
       diagnosticsHandler_(),
@@ -278,7 +277,12 @@ namespace Fem
       odeSolver_(),
       timeStepTimer_( Dune::FemTimer::addTo("max time/timestep") ),
       fixedTimeStep_( param_.fixedTimeStep() )
-    {}
+    {
+      if( problem().hasExactSolution() )
+      {
+        exact_.reset( new DiscreteFunctionType("exact solution", space() ) );
+      }
+    }
 
     // return grid width of grid (overload in derived classes)
     virtual double gridWidth () const { return GridWidth::calcGridWidth( gridPart_ ); }
@@ -455,7 +459,7 @@ namespace Fem
 
     virtual IOTupleType dataTuple ()
     {
-      return std::make_tuple( &solution(), &exact_ );
+      return std::make_tuple( &solution(), exact_.operator->() );
     }
 
     //! returns data prefix for EOC loops ( default is loop )
@@ -548,8 +552,11 @@ namespace Fem
       diagnosticsHandler_.finalize();
 
       // setup exact solution
-      // TODO: Add this projection to addtional output writer, later
-      Dune::Fem::DGL2ProjectionImpl::project( problem().exactSolution( tp.time() ), exact_ );
+      if( exact_ )
+      {
+        // TODO: Add this projection to addtional output writer, later
+        Dune::Fem::DGL2ProjectionImpl::project( problem().exactSolution( tp.time() ), *exact_ );
+      }
 
       // write last time step
       dataWriterHandler_.finalize( tp );
@@ -602,7 +609,7 @@ namespace Fem
     // InitialDataType evaluates to $u_0$
     std::unique_ptr< ProblemType > problem_;
     ModelType                      model_;
-    DiscreteFunctionType           exact_;
+    std::unique_ptr< DiscreteFunctionType > exact_;
 
     CheckPointHandlerType          checkPointHandler_;
     DataWriterHandlerType          dataWriterHandler_;
