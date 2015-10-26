@@ -1,6 +1,8 @@
 # set up project
 project("dune-fem-dg" C CXX)
 
+set(REENABLE_ADD_TEST TRUE)
+
 # general stuff
 cmake_minimum_required(VERSION 2.8.12)
 
