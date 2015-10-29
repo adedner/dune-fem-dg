@@ -15,10 +15,6 @@
 #ifndef ENABLE_ADAPTIVELEAFINDEXSET_FOR_YASPGRID
 #error "Put -DENABLE_ADAPTIVELEAFINDEXSET_FOR_YASPGRID to CPPFLAGS for simul and disp program"
 #endif
-
-#warning "Switching from YASPGRID to SGRID for parallel display!"
-#undef YASPGRID
-#define SGRID
 #endif
 #include <config.h>
 
