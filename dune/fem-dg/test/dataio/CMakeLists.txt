@@ -10,7 +10,7 @@ set(USE_SIONLIB 0)
 
 configure_file(parameter.in ${CMAKE_CURRENT_BINARY_DIR}/parameter)
 
-add_definitions( "-DYASPGRID" )
+add_definitions( "-DALUGRID_SIMPLEX" )
 add_definitions( "-DGRIDDIM=3" )
 add_definitions( "-DUSE_SIONLIB=0" )
 add_definitions( "-DPOLORDER=2" )
