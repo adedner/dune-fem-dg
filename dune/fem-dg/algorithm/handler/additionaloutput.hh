@@ -103,7 +103,9 @@ namespace Fem
     {}
 
     template< class... Args >
-    ExactSolutionOutputHandler( Args&&... ){}
+    ExactSolutionOutputHandler( Args&&... )
+      : solution_( nullptr )
+    {}
 
     template< class TimeProviderImp, class SubStepperImp >
     void step( TimeProviderImp& tp, SubStepperImp& stepper )
