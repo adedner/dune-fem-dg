@@ -30,7 +30,7 @@ namespace Fem
     typedef typename BaseType::GridPartType                    GridPartType;
 
     // initial data type
-    typedef typename BaseType::ProblemType                    ProblemType;
+    typedef typename BaseType::ProblemType                     ProblemType;
 
     // An analytical version of our model
     typedef typename BaseType::ModelType                       ModelType;
@@ -38,9 +38,9 @@ namespace Fem
     // The DG space operator
     // The first operator is sum of the other two
     // The other two are needed for semi-implicit time discretization
-    typedef typename BaseType::OperatorType::type             FullOperatorType;
-    typedef typename BaseType::OperatorType::ExplicitType     ExplicitOperatorType;
-    typedef typename BaseType::OperatorType::ImplicitType     ImplicitOperatorType;
+    typedef typename BaseType::OperatorType::type              FullOperatorType;
+    typedef typename BaseType::OperatorType::ExplicitType      ExplicitOperatorType;
+    typedef typename BaseType::OperatorType::ImplicitType      ImplicitOperatorType;
 
     typedef typename BaseType::SolverType::BasicLinearSolverType BasicLinearSolverType;
 
@@ -60,9 +60,9 @@ namespace Fem
      // type of 64bit unsigned integer
     typedef typename BaseType::UInt64Type                      UInt64Type;
 
-    typedef typename BaseType::ExtraParameterTupleType    ExtraParameterTupleType;
+    typedef typename BaseType::ExtraParameterTupleType         ExtraParameterTupleType;
 
-    typedef typename BaseType::AdaptIndicatorType             AdaptIndicatorType;
+    typedef typename BaseType::AdaptIndicatorType              AdaptIndicatorType;
 
     using BaseType::grid_;
     using BaseType::gridPart_;

@@ -364,7 +364,7 @@ namespace Fem
       space_.adapt( polOrderVecPressure);
 #endif
 #endif
-      return new BasicLinearSolverType( assembler_, ellAlg_.solver(), ellAlg_.rhs(), absLimit, 3*ellAlg_.solution().space().size() );
+      return new BasicLinearSolverType( assembler_, *ellAlg_.solver(), ellAlg_.rhs(), absLimit, 3*ellAlg_.solution().space().size() );
     }
 
     virtual DiscreteFunctionType* doCreateRhs() override

@@ -152,10 +152,9 @@ namespace Fem
       ioTuple_( std::make_tuple( &solution(), &exactSolution() ) )
     {}
 
-    typename SolverType::type& solver()
+    typename SolverType::type* solver()
     {
-      assert( solver_ );
-      return *solver_;
+      return solver_;
     }
 
     DiscreteFunctionType& solution ()
@@ -232,7 +231,7 @@ namespace Fem
       solver_.reset( this->doCreateSolver( tp ) );
 
       // initialize ode solver
-      solver().initialize( solution() );
+      solver()->initialize( solution() );
 
       //initialize solverMonitor
       if( solverMonitorHandler_ )
@@ -266,7 +265,7 @@ namespace Fem
       odeSolverMonitor_.reset();
 
       // solve ODE
-      solver().solve( solution(), odeSolverMonitor_ );
+      solver()->solve( solution(), odeSolverMonitor_ );
 
       overallTime_ = overallTimer_.stop();
     }

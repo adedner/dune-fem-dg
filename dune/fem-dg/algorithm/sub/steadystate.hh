@@ -205,10 +205,9 @@ namespace Fem
       solution().clear();
     }
 
-    typename SolverType::type& solver()
+    typename SolverType::type* solver()
     {
-      assert( solver_ );
-      return *solver_;
+      return solver_;
     }
 
     DiscreteFunctionType& solution ()

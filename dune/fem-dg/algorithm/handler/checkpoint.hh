@@ -66,14 +66,6 @@ namespace Fem
   template< class StepperHead, class ... StepperArg >
   class CheckPointHandler< StepperHead, StepperArg ... >
   {
-    typedef GridCheckPointHandler< typename StepperHead::GridType >                                 BaseType;
-    typedef typename BaseType::GridType                                                             GridType;
-    typedef typename BaseType::CheckPointerType                                                     CheckPointerType;
-    typedef typename BaseType::CheckPointerParametersType                                           CheckPointerParametersType;
-    typedef std::tuple< typename std::add_pointer< StepperHead >::type, typename std::add_pointer< StepperArg >::type... > StepperTupleType;
-
-    static_assert( Std::are_all_same< typename StepperHead::GridType, typename StepperArg::GridType... >::value,
-                   "CheckPointHandler: GridType has to be equal for all steppers" );
 
     template< int i >
     struct RegisterData
@@ -85,6 +77,16 @@ namespace Fem
           Dune::Fem::persistenceManager << *(std::get< i >( tuple )->checkPointSolution());
       }
     };
+
+  public:
+    typedef GridCheckPointHandler< typename StepperHead::GridType >                                 BaseType;
+    typedef typename BaseType::GridType                                                             GridType;
+    typedef typename BaseType::CheckPointerType                                                     CheckPointerType;
+    typedef typename BaseType::CheckPointerParametersType                                           CheckPointerParametersType;
+    typedef std::tuple< typename std::add_pointer< StepperHead >::type, typename std::add_pointer< StepperArg >::type... > StepperTupleType;
+
+    static_assert( Std::are_all_same< typename StepperHead::GridType, typename StepperArg::GridType... >::value,
+                   "CheckPointHandler: GridType has to be equal for all steppers" );
 
   public:
 
@@ -128,6 +130,7 @@ namespace Fem
       return *checkPointer_;
     }
 
+  protected:
     const StepperTupleType&           tuple_;
     mutable std::unique_ptr< CheckPointerType > checkPointer_;
     const std::string keyPrefix_;

@@ -1,316 +1,287 @@
 #ifndef DUNE_FEMDG_CHECKPOINTING_STEPPER_HH
 #define DUNE_FEMDG_CHECKPOINTING_STEPPER_HH
 
-#include <dune/fem-dg/misc/streams.hh>
 
-// include std libs
-#include <iostream>
-#include <string>
+// local includes
+#include <dune/fem-dg/algorithm/sub/evolution.hh>
+#include <dune/fem/function/common/instationary.hh>
+#include <dune/fem/space/common/interpolate.hh>
+#include <dune/fem-dg/algorithm/handler/checkpoint.hh>
+#include <dune/fem-dg/test/dataio/checkedcheckpointhandler.hh>
 
-// Dune includes
-#include <dune/fem/misc/l2norm.hh>
-#include <dune/fem/operator/projection/l2projection.hh>
-#include <dune/fem/solver/odesolver.hh>
-
-// space and function
-#include <dune/fem/space/discontinuousgalerkin.hh>
-#include <dune/fem/gridpart/adaptiveleafgridpart.hh>
-#include <dune/fem/function/adaptivefunction.hh>
-#include <dune/fem/quadrature/cachingquadrature.hh>
-
-// include local header files
-#include <dune/fem-dg/stepper/baseevolution.hh>
-#include "problem.hh"
-
-template <class GridImp, class ProblemTraits, int order>
-struct StepperTraits {
-  // type of Grid
-  typedef GridImp                                                    GridType;
-  // Choose a suitable GridView
-  //typedef Dune::Fem::LeafGridPart< GridType >              GridPartType;
-  typedef Dune::Fem::DGAdaptiveLeafGridPart< GridType >              GridPartType;
-  //typedef AdaptiveLeafGridPart< GridType >                         GridPartType;
-  //typedef IdBasedLeafGridPart< GridType >                         GridPartType;
-
-  // type of initial data
-  typedef typename ProblemTraits :: template Traits< GridPartType > :: InitialDataType  InitialDataType;
-
-  // type of function space
-  typedef typename InitialDataType :: FunctionSpaceType  FunctionSpaceType;
-
-  // ... as well as the Space type
-  typedef Dune::Fem::DiscontinuousGalerkinSpace < FunctionSpaceType, GridPartType, order> DiscreteSpaceType;
-
-  // The discrete function for the unknown solution is defined in the DgOperator
-  typedef Dune::Fem::AdaptiveDiscreteFunction< DiscreteSpaceType >           DiscreteFunctionType;
-
-  // type of restriction/prolongation projection for adaptive simulations
-  typedef Dune::Fem::RestrictProlongDefault< DiscreteFunctionType >  RestrictionProlongationType;
-
-  // fake indicator type
-  typedef DiscreteFunctionType  IndicatorType ;
-
-  // type of IOTuple
-  typedef Dune::tuple< DiscreteFunctionType*, DiscreteFunctionType* >  IOTupleType;
-};
-
-
-// calculates || u-u_h ||_L2 including the ghost cells
-template <class DiscreteFunctionType>
-class L2ErrorNoComm
+namespace Dune
 {
-  typedef typename DiscreteFunctionType::DiscreteFunctionSpaceType
-    DiscreteFunctionSpaceType;
+namespace Fem
+{
 
-public:
-  template<class FunctionType >
-  double norm (FunctionType &f, DiscreteFunctionType &discFunc, int polOrd = -1 )
+  // calculates || u-u_h ||_L2 including the ghost cells
+  template <class DiscreteFunctionType>
+  class L2ErrorNoComm
   {
-    const DiscreteFunctionSpaceType &space = discFunc.space();
+    typedef typename DiscreteFunctionType::DiscreteFunctionSpaceType
+      DiscreteFunctionSpaceType;
 
-    typedef typename DiscreteFunctionSpaceType::GridPartType GridPartType;
-    typedef typename DiscreteFunctionSpaceType::RangeType RangeType;
-
-    typedef typename GridPartType :: template Codim< 0 > ::
-      template Partition< Dune::All_Partition > :: IteratorType IteratorType ;
-
-    typedef typename DiscreteFunctionType::LocalFunctionType LocalFuncType;
-
-    if( polOrd < 0 ) polOrd = 2*space.order() + 4 ;
-
-    RangeType ret (0.0);
-    RangeType phi (0.0);
-
-    double sum = 0.0;
-
-    IteratorType it    = space.gridPart().template begin< 0, Dune::All_Partition > ();
-    IteratorType endit = space.gridPart().template end< 0, Dune::All_Partition > ();
-
-    for(; it != endit ; ++it)
+  public:
+    template<class FunctionType >
+    double norm (FunctionType &f, DiscreteFunctionType &discFunc, int polOrd = -1 )
     {
-      Dune::Fem::CachingQuadrature<GridPartType,0> quad(*it, polOrd);
-      LocalFuncType lf = discFunc.localFunction(*it);
-      for( size_t qP = 0; qP < quad.nop(); ++qP )
+      const DiscreteFunctionSpaceType &space = discFunc.space();
+
+      typedef typename DiscreteFunctionSpaceType::GridPartType GridPartType;
+      typedef typename DiscreteFunctionSpaceType::RangeType RangeType;
+
+      typedef typename GridPartType :: template Codim< 0 > ::
+        template Partition< Dune::All_Partition > :: IteratorType IteratorType ;
+
+      typedef typename DiscreteFunctionType::LocalFunctionType LocalFuncType;
+
+      if( polOrd < 0 ) polOrd = 2*space.order() + 4 ;
+
+      RangeType ret (0.0);
+      RangeType phi (0.0);
+
+      double sum = 0.0;
+
+      IteratorType it    = space.gridPart().template begin< 0, Dune::All_Partition > ();
+      IteratorType endit = space.gridPart().template end< 0, Dune::All_Partition > ();
+
+      for(; it != endit ; ++it)
       {
-        double det = (*it).geometry().integrationElement(quad.point(qP));
-        f.evaluate((*it).geometry().global(quad.point(qP)), ret);
-        lf.evaluate(quad[qP],phi);
-        RangeType diff = ret - phi ;
-        sum += det * quad.weight(qP) * ( diff * diff );
+        Dune::Fem::CachingQuadrature<GridPartType,0> quad(*it, polOrd);
+        LocalFuncType lf = discFunc.localFunction(*it);
+        for( size_t qP = 0; qP < quad.nop(); ++qP )
+        {
+          double det = (*it).geometry().integrationElement(quad.point(qP));
+          f.evaluate((*it).geometry().global(quad.point(qP)), ret);
+          lf.evaluate(quad[qP],phi);
+          RangeType diff = ret - phi ;
+          sum += det * quad.weight(qP) * ( diff * diff );
+        }
+      }
+      return std::sqrt( Dune::Fem::MPIManager::comm().sum( sum ) );
+    }
+  };
+
+
+  // EvolutionAlgorithmTraits
+  // -------------------------
+  template< int polOrder, class ... ProblemTraits >
+  struct CheckPointEvolutionAlgorithmTraits
+  {
+    // type of Grid
+    typedef typename std::tuple_element<0, std::tuple< ProblemTraits... > >::type::GridType  GridType;
+
+    // wrap operator
+    typedef GridTimeProvider< GridType >                                   TimeProviderType;
+
+    typedef Dune::Fem::DiagnosticsHandler      < > DiagnosticsHandlerType;
+    typedef Dune::Fem::SolverMonitorHandler    < > SolverMonitorHandlerType;
+    typedef Dune::Fem::CheckedCheckPointHandler< typename ProblemTraits::template Stepper<polOrder>::Type...  > CheckPointHandlerType;
+    typedef Dune::Fem::DataWriterHandler       < typename ProblemTraits::template Stepper<polOrder>::Type...  > DataWriterHandlerType;
+    typedef Dune::Fem::SolutionLimiterHandler  < > SolutionLimiterHandlerType;
+    typedef Dune::Fem::AdaptHandler            < > AdaptHandlerType;
+
+    typedef typename DataWriterHandlerType::IOTupleType                                                                      IOTupleType;
+    typedef std::tuple< typename std::add_pointer< typename ProblemTraits::template Stepper<polOrder>::Type >::type... > StepperTupleType;
+
+    template< std::size_t ...i >
+    static StepperTupleType createStepper ( Std::index_sequence< i... >, GridType &grid, const std::string name = "" )
+    {
+      return std::make_tuple( new typename std::remove_pointer< typename std::tuple_element< i, StepperTupleType >::type >::type( grid, name ) ... );
+    }
+
+    // create Tuple of contained sub algorithms
+    static StepperTupleType createStepper( GridType &grid, const std::string name = "" )
+    {
+      return createStepper( Std::index_sequence_for< ProblemTraits ... >(), grid, name );
+    }
+  };
+
+
+
+
+
+ /**
+   *  \brief Algorithm for solving an instationary PDE.
+   *
+   *  \ingroup SubAlgorithms
+   */
+  template <class GridImp,
+            class ProblemTraits,
+            int polynomialOrder >
+  class SubCheckPointingAlgorithm
+    : public SubAlgorithmInterface< GridImp, ProblemTraits, polynomialOrder >
+  {
+
+    typedef SubAlgorithmInterface< GridImp, ProblemTraits, polynomialOrder > BaseType ;
+
+  public:
+
+    // type of Grid
+    typedef typename BaseType::GridType                       GridType;
+
+    // Choose a suitable GridView
+    typedef typename BaseType::GridPartType                   GridPartType;
+
+    // initial data type
+    typedef typename BaseType::ProblemType                    ProblemType;
+
+    // An analytical version of our model
+    typedef typename BaseType::ModelType                      ModelType;
+
+    // The discrete function for the unknown solution is defined in the DgOperator
+    typedef typename BaseType::DiscreteFunctionType           DiscreteFunctionType;
+
+    // ... as well as the Space type
+    typedef typename DiscreteFunctionType::DiscreteFunctionSpaceType DiscreteFunctionSpaceType;
+
+    typedef typename BaseType::IOTupleType                    IOTupleType;
+
+    typedef typename BaseType::TimeProviderType               TimeProviderType;
+
+    // type of 64bit unsigned integer
+    typedef typename BaseType::UInt64Type                     UInt64Type;
+
+    typedef typename BaseType::AdaptIndicatorType             AdaptIndicatorType;
+    typedef typename BaseType::DiagnosticsHandlerType         DiagnosticsHandlerType;
+    typedef typename BaseType::SolverMonitorHandlerType       SolverMonitorHandlerType;
+    typedef typename BaseType::AdditionalOutputHandlerType    AdditionalOutputHandlerType;
+    typedef typename BaseType::LimitDiscreteFunctionType      LimitDiscreteFunctionType;
+    typedef typename BaseType::CheckPointDiscreteFunctionType CheckPointDiscreteFunctionType;
+    typedef typename BaseType::AdaptationDiscreteFunctionType AdaptationDiscreteFunctionType;
+
+
+    typedef typename ProblemTraits::AnalyticalTraits               AnalyticalTraits;
+
+    using BaseType::grid;
+    using BaseType::name;
+    using BaseType::problem;
+    using BaseType::model;
+    using BaseType::solution;
+    using BaseType::gridSize;
+
+    SubCheckPointingAlgorithm ( GridType &grid, const std::string name = "" )
+    : BaseType( grid, name ),
+      gridPart_( grid ),
+      space_( gridPart_ ),
+      solution_( doCreateSolution() ),
+      ioTuple_( std::make_tuple( &solution(), nullptr ) ),
+      error_( 0.0 )
+    {}
+
+    //CHECKPOINTING
+    virtual CheckPointDiscreteFunctionType* checkPointSolution () { return &solution(); }
+
+    //DATAWRITING
+    virtual IOTupleType& dataTuple () { return ioTuple_; }
+
+    virtual DiscreteFunctionType& solution () { return *solution_; }
+
+    void checkCheckPointSolutionValid( TimeProviderType& tp )
+    {
+      // reset ghost cells to make sure we rely on the communication
+      resetNonInterior( solution() );
+
+      // communicate data first to check communication
+      solution().communicate();
+
+      // Compute L2 error of discretized solution ...
+      double error = computeError( tp, solution() );
+
+      std::cout << "Stepper::consistencyCheck: L2-error after restore: " << error
+                << "  stored value: " << error_ << std::endl;
+      if( std::abs( error - error_ ) > 1e-14 )
+      {
+        std::cerr << "ERROR: backup/restore not consistent" << std::endl;
+        //DUNE_THROW(Dune::InvalidStateException, "Error in backup/restore" );
       }
     }
-    return std::sqrt( Dune::Fem::MPIManager::comm().sum( sum ) );
-  }
-};
 
-
-template <class GridImp, class ProblemTraits, int order>
-struct CheckPointingStepper : public AlgorithmInterface< GridImp>
-{
-  // my traits class
-  typedef StepperTraits< GridImp, ProblemTraits, order> Traits ;
-
-  // my base class
-  typedef AlgorithmInterface < GridImp > BaseType;
-
-  // type of Grid
-  typedef typename Traits :: GridType                  GridType;
-
-  // Choose a suitable GridView
-  typedef typename Traits :: GridPartType              GridPartType;
-
-  // type of problem data
-  typedef typename Traits :: InitialDataType           InitialDataType ;
-
-  // The discrete function for the unknown solution is defined in the DgOperator
-  typedef typename Traits :: DiscreteFunctionType      DiscreteFunctionType;
-
-  // ... as well as the Space type
-  typedef typename Traits :: DiscreteSpaceType         DiscreteSpaceType;
-
-  typedef typename BaseType :: TimeProviderType   TimeProviderType;
-
-  typedef typename Traits :: IOTupleType     IOTupleType;
-
-  typedef typename BaseType :: SolverMonitorType  SolverMonitorType;
-
-  // type of most simple check pointer
-  typedef Dune::Fem::CheckPointer< GridType >   CheckPointerType;
-
-  using BaseType :: grid_;
-
-  CheckPointingStepper( GridType& grid, const std::string name = "" )
-  : BaseType ( grid, name ),
-    gridPart_( grid ),
-    space_( gridPart_ ),
-    solution_( "solution-"+name, space() ),
-    problem_( ProblemTraits::problem() ),
-    eocId_( Dune::Fem::FemEoc::addEntry(std::string("$L^2$-error")) ),
-    checkPointer_(),
-    checkFile_( 0 )
-  {
-    Dune::Fem::persistenceManager << error_;
-  }
-
-  const DiscreteSpaceType& space() const { return space_ ; }
-
-  const InitialDataType& problem () const { assert( problem_ ); return *problem_; }
-
-  // return reference to discrete function holding solution
-  DiscreteFunctionType& solution() { return solution_; }
-
-  IOTupleType dataTuple()
-  {
-    // tuple with additionalVariables
-    return IOTupleType( &solution_, (DiscreteFunctionType*) 0 );
-  }
-
-  CheckPointerType& checkPointer( TimeProviderType& tp ) const
-  {
-    // create check point if not exsistent
-    if( ! checkPointer_ )
-      checkPointer_.reset( new CheckPointerType( grid_, tp ) );
-
-    return *checkPointer_;
-  }
-
-  // restore data, return true for new start
-  bool restoreFromCheckPoint(TimeProviderType& tp )
-  {
-    // add solution to persistence manager for check pointing
-    bool writeData = Dune::Fem::Parameter::getValue<bool>("fem.io.writedata", true );
-    if( writeData )
+  private:
+    virtual DiscreteFunctionType* doCreateSolution()
     {
-      Dune::Fem::persistenceManager << solution_ ;
+      return new DiscreteFunctionType( "U_"+name(), space_ );
     }
 
-    std::string checkPointRestartFile = checkPointRestartFileName();
-
-    // if check file is non-zero a restart is performed
-    if( checkPointRestartFile.size() > 0 )
+    virtual void doInitialize ( const int loop, TimeProviderType& tp ) override
     {
-      // restore data
-      checkPointer( tp ).restoreData( grid_, checkPointRestartFile );
-
-      // check consistency of check point
-      consistencyCheck( tp, solution_ );
-
-      // return false for no new start
-      return false;
+      auto ftp = problem().fixedTimeFunction( tp.time() );
+      GridFunctionAdapter< typename ProblemType::InstationaryFunctionType, GridPartType >
+        adapter( "-exact", ftp, solution().gridPart(), solution().space().order()+2 );
+      interpolate( adapter, solution());
     }
-    // do new start
-    return true ;
-  }
 
-  // backup data
-  void writeCheckPoint(TimeProviderType& tp) const
-  {
-    if( Dune::Fem::Parameter::verbose() )
+    virtual void doPreSolve ( const int loop, TimeProviderType& tp ) override
     {
-      std::cout << "Try to write checkpoint: error = " << error_ << std::endl;
-    }
-    checkPointer( tp ).write( tp );
-  }
-
-  // before first step, do data initialization
-  void initializeStep(TimeProviderType& tp, const int loop )
-  {
-    Dune::Fem::L2Projection< InitialDataType, DiscreteFunctionType > l2pro;
-    l2pro( problem(), solution_);
-  }
-
-  // solve ODE for one time step
-  void step(TimeProviderType& tp, SolverMonitorType& monitor )
-  {
-    // do new projection
-    typedef Dune::Fem::InstationaryFunction< InitialDataType, Dune::Fem::__InstationaryFunction::HoldReference > FunctionType;
-    FunctionType function( problem(), tp.time() );
-    Dune::Fem::L2Projection< FunctionType, DiscreteFunctionType > l2pro;
-    l2pro(function, solution_);
-
-    // exchange data to ghost cells
-    solution_.communicate();
-
-    // compute error for backup and restore (including ghost cells)
-    error_ = computeError(tp, solution_ );
-  }
-
-  double computeError(TimeProviderType& tp, DiscreteFunctionType& u)
-  {
-    L2ErrorNoComm< DiscreteFunctionType > l2norm;
-    // Compute L2 error of discretized solution ...
-    typedef Dune::Fem::InstationaryFunction< InitialDataType, Dune::Fem::__InstationaryFunction::HoldReference > FunctionType;
-    FunctionType function( problem(), tp.time() );
-    return l2norm.norm( function, u );
-  }
-
-  // after last step, do EOC calculation
-  void finalizeStep(TimeProviderType& tp)
-  {
-    // ... and print the statistics out to the eocOutputPath file
-    Dune::Fem::FemEoc::setErrors(eocId_, computeError(tp, solution_ ) );
-  }
-
-
-  // reset solution on ghost cells
-  void resetNonInterior( DiscreteFunctionType& solution )
-  {
-    typedef typename GridPartType :: template Codim< 0 > :: template
-        Partition< Dune::All_Partition > :: IteratorType  IteratorType;
-
-    typedef typename IteratorType :: Entity  EntityType ;
-
-    IteratorType it    = solution.space().gridPart().template begin< 0, Dune::All_Partition > ();
-    IteratorType endit = solution.space().gridPart().template end  < 0, Dune::All_Partition > ();
-
-    for( ; it != endit; ++ it )
-    {
-      const EntityType& entity = * it ;
-      if( entity.partitionType() != Dune::InteriorEntity )
+      if( Dune::Fem::Parameter::verbose() )
       {
-        solution.localFunction( entity ).clear();
+        std::cout << "Try to write checkpoint: error = " << error_ << std::endl;
       }
     }
-  }
 
-  // after last step, do EOC calculation
-  void consistencyCheck(TimeProviderType& tp, DiscreteFunctionType& u)
-  {
-    // reset ghost cells to make sure we rely on the communication
-    resetNonInterior( u );
-
-    // communicate data first to check communication
-    u.communicate();
-
-    // Compute L2 error of discretized solution ...
-    double error = computeError( tp, u );
-
-    std::cout << "Stepper::consistencyCheck: L2-error after restore: " << error
-              << "  stored value: " << error_ << std::endl;
-    if( std::abs( error - error_ ) > 1e-14 )
+    virtual void doSolve ( const int loop, TimeProviderType& tp ) override
     {
-      std::cerr << "ERROR: backup/restore not consistent" << std::endl;
-      //DUNE_THROW(Dune::InvalidStateException, "Error in backup/restore" );
+      auto ftp = problem().fixedTimeFunction( tp.time() );
+      GridFunctionAdapter< typename ProblemType::InstationaryFunctionType, GridPartType >
+        adapter( "-exact", ftp, solution().gridPart(), solution().space().order()+2 );
+      interpolate( adapter, solution() );
+
+      // exchange data to ghost cells
+      solution().communicate();
+
+      // compute error for backup and restore (including ghost cells)
+      error_ = computeError(tp, solution() );
     }
-  }
 
-protected:
-  GridPartType          gridPart_;
-  DiscreteSpaceType     space_;
-  DiscreteFunctionType  solution_;
+    virtual void doFinalize ( const int loop, TimeProviderType& tp ) override
+    {
+      // add eoc errors
+      AnalyticalTraits::addEOCErrors( tp, solution(), model(), problem() );
 
-  // InitialDataType is a Dune::Operator that evaluates to $u_0$ and also has a
-  // method that gives you the exact solution.
-  std::unique_ptr< const InitialDataType > problem_;
-  // Initial flux for advection discretization (UpwindFlux)
-  const unsigned int      eocId_;
+    }
 
-  // check point writer
-  mutable std::unique_ptr< CheckPointerType > checkPointer_;
-  // name of checkpoint file
-  const char* checkFile_;
+    double computeError(TimeProviderType& tp, DiscreteFunctionType& u)
+    {
+      L2ErrorNoComm< DiscreteFunctionType > l2norm;
+      // Compute L2 error of discretized solution ...
+      typedef Dune::Fem::InstationaryFunction< ProblemType, Dune::Fem::__InstationaryFunction::HoldReference > FunctionType;
+      FunctionType function( problem(), tp.time() );
+      return l2norm.norm( function, u );
+    }
 
-  double error_;
-};
+    // reset solution on ghost cells
+    void resetNonInterior( DiscreteFunctionType& solution )
+    {
+      typedef typename GridPartType :: template Codim< 0 > :: template
+          Partition< Dune::All_Partition > :: IteratorType  IteratorType;
+
+      typedef typename IteratorType :: Entity  EntityType ;
+
+      IteratorType it    = solution.space().gridPart().template begin< 0, Dune::All_Partition > ();
+      IteratorType endit = solution.space().gridPart().template end  < 0, Dune::All_Partition > ();
+
+      for( ; it != endit; ++ it )
+      {
+        const EntityType& entity = * it ;
+        if( entity.partitionType() != Dune::InteriorEntity )
+        {
+          solution.localFunction( entity ).clear();
+        }
+      }
+    }
+
+  protected:
+    GridPartType                            gridPart_;
+    DiscreteFunctionSpaceType               space_;
+    DiscreteFunctionType*                   solution_;
+
+    IOTupleType                             ioTuple_;
+    double                                  error_;
+
+  };
+
+
+}
+}
 
 #endif // #ifndef DUNE_FEMDG_CHECKPOINTING_STEPPER_HH

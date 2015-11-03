@@ -50,6 +50,32 @@ namespace Dune {
 
     typedef Fem::SpaceOperatorInterface< typename Traits :: DestinationType >  BaseType ;
 
+    template <class Tuple, class StartPassImp, class ModelParameterImp, int i>
+    struct InsertFunctions
+    {
+      typedef InsertFunctions< Tuple, StartPassImp, ModelParameterImp, i-1 >                         PreviousInsertFunctions;
+      typedef typename PreviousInsertFunctions::PassType                                             PreviousPass ;
+      typedef typename std::remove_pointer< typename std::tuple_element< i-1, Tuple >::type >::type  DiscreteFunction;
+      static const int passId = std::tuple_element< i-1, ModelParameterImp >::type::value;
+      typedef Dune::Fem::InsertFunctionPass< DiscreteFunction, PreviousPass, passId >                PassType;
+
+      static std::shared_ptr< PassType > createPass( Tuple& tuple )
+      {
+        std::shared_ptr< PreviousPass > previousPass = PreviousInsertFunctions::createPass( tuple );
+        const DiscreteFunction* df = std::get< i-1 >( tuple );
+        return std::shared_ptr< PassType > ( new PassType( df, previousPass ) );
+      }
+    };
+
+    template <class Tuple, class StartPassImp, class ModelParameterImp >
+    struct InsertFunctions< Tuple, StartPassImp, ModelParameterImp, 0 >
+    {
+      typedef StartPassImp            PassType;
+      static std::shared_ptr< PassType > createPass( Tuple& tuple )
+      {
+        return std::shared_ptr< PassType > ( new PassType() );
+      }
+    };
   public:
     using BaseType :: operator () ;
 
@@ -78,34 +104,8 @@ namespace Dune {
     typedef typename ModelType :: ModelParameter ModelParameter;
     typedef typename Traits :: ExtraParameterTupleType ExtraParameterTupleType;
 
-    template <class Tuple, int i>
-    struct InsertFunctions
-    {
-      typedef InsertFunctions< Tuple, i-1 > PreviousInsertFunctions;
-      typedef typename PreviousInsertFunctions :: PassType PreviousPass ;
-      typedef typename std::remove_pointer< typename std::tuple_element< i-1, Tuple > ::type > :: type  DiscreteFunction;
-      static const int passId = std::tuple_element< i-1, ModelParameter >::type::value;
-      typedef Dune::Fem::InsertFunctionPass< DiscreteFunction, PreviousPass, passId > PassType;
-
-      static std::shared_ptr< PassType > createPass( Tuple& tuple )
-      {
-        std::shared_ptr< PreviousPass > previousPass = PreviousInsertFunctions::createPass( tuple );
-        const DiscreteFunction* df = std::get< i-1 >( tuple );
-        return std::shared_ptr< PassType > ( new PassType( df, previousPass ) );
-      }
-    };
-
-    template <class Tuple>
-    struct InsertFunctions< Tuple, 0 >
-    {
-      typedef Pass0Type PassType;
-      static std::shared_ptr< PassType > createPass( Tuple& tuple )
-      {
-        return std::shared_ptr< PassType > ( new PassType() );
-      }
-    };
-
-    typedef InsertFunctions< ExtraParameterTupleType, std::tuple_size< ExtraParameterTupleType >::value > InsertFunctionsType;
+    typedef InsertFunctions< ExtraParameterTupleType, Pass0Type, ModelParameter,
+                             std::tuple_size< ExtraParameterTupleType >::value > InsertFunctionsType;
     typedef typename InsertFunctionsType :: PassType InsertFunctionPassType;
 
     typedef

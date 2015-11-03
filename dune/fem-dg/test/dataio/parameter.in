@@ -1,63 +1,8 @@
-fem.verboserank: 0
+# toggle verbosity of on process 
+# (-1: off, p: process p is verbose, in general 0 is a good choice)
+fem.verboserank: 0 
 
-# macro grid file
-fem.io.macroGridFile: ${CMAKE_CURRENT_SOURCE_DIR}/../grids/unitcube2.dgf
+fem.prefix: ${CMAKE_CURRENT_SOURCE_DIR}/data # specify directory for data output (is created if not exists)
+fem.prefix.input: ${CMAKE_CURRENT_SOURCE_DIR}
 
-# macro grid file
-fem.io.macroGridFile_3d: ${CMAKE_CURRENT_SOURCE_DIR}/../grids/unitcube3.dgf
-
-# if false no discrete function data is written (for debugging)
-fem.io.writedata: true
-
-#fem.io.checkpointrestartfile: ${CMAKE_CURRENT_SOURCE_DIR}/checkpoint
-
-# number of EOC steps (only 1 for checkpointing)
-fem.eoc.steps: 1
-
-femdg.stepper.endtime: 1.0
-fem.ode.odesolver: EX
-femdg.stepper.diffusiontimestep: 1
-epsilon: 2.
-penalty: 1.
-fem.timeprovider.factor: 1.
-fem.io.savestep: 0.1
-
-fem.io.sionlib.numfiles: 1
-fem.io.sionlib.blocksize: 128
-
-# parameters from time dependent problems 
-femdg.stepper.starttime: 0
-femdg.stepper.maxtimestep: 0.1
-femdg.stepper.printcount: 1
-
-# SaveStep (write data every `saveStep' time period, <=0 deactivates) 
-fem.io.savestep: 0.1
-# SaveCount (write daa every saveCount time steps, <=0 deactivates)
-fem.io.savecount: 0
-
-# toggle verbosity of on process (-1: off, p: process p is verbose, in general 0 is a good choice)
-fem.verboserank: 0
-
-#number of global refinements before start of simulation 
-fem.adaptation.coarsestLevel: 2
-fem.adaptation.finestLevel: 2
-
-# specify directory for data output (is created if not exists)
-fem.prefix:  ${CMAKE_CURRENT_SOURCE_DIR}/data
-# prefix data data files 
-fem.io.datafileprefix: solution
-# save data every time interval 
-fem.io.savestep: 0.1
-# save every i-th step
-fem.io.savecount: 1
-
-# output format: binary | vtk-cell | vtk-vertex (projected in DG case) | none 
-fem.io.outputformat: binary
-# toggle grape display (0 = off | 1 = on)
-fem.io.grapedisplay: 0
-
-# write checkpoint every 'checkpointstep' timestep 
-fem.io.checkpointstep: 7
-# write 'checkpointmax' number of different check points 
-fem.io.checkpointmax: 8 
-
+paramfile: parameter_cmake
