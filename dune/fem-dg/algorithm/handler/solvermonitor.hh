@@ -153,7 +153,7 @@ namespace Fem
 
     const double getData( const std::string name, CombinationType comb = CombinationType::max ) const
     {
-      double res;
+      double res = (comb == CombinationType::max) ? std::numeric_limits<double>::max() : 0.0;
       ForLoop< LoopCallee<GetData>::template Apply, 0, sizeof ... ( StepperArg ) >::apply( tuple_, res, name, comb );
       return res;
     }
