@@ -11,8 +11,6 @@
 #ifndef DUNE_ADAPTATIONOBJECT_HH
 #define DUNE_ADAPTATIONOBJECT_HH
 
-#include <dune/common/nullptr.hh>
-
 // include restricion, prolongation and adaptation operator classes for discrete functions
 #include <dune/grid/utility/persistentcontainer.hh>
 

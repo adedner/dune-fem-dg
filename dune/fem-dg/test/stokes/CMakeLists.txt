@@ -11,18 +11,10 @@ add_definitions( "-DUSE_ASSERT_THROW" )
 add_definitions( "-DDGSCHEME" )
 add_definitions( "-DONB" )
 
-
-add_executable( stokesall main.cc )
-dune_target_link_libraries(stokesall "${DUNE_LIBS}")
-
-add_executable( stokes main.cc )
-dune_target_link_libraries(stokes "${DUNE_LIBS}")
-set_property(TARGET stokes APPEND PROPERTY 
-             COMPILE_DEFINITIONS "POLORDER=2")
-
-add_dune_superlu_flags( stokes stokesall )
-add_dune_umfpack_flags( stokes stokesall )
+dune_add_test( NAME stokes
+               SOURCES main.cc
+               COMPILE_DEFINITIONS POLORDER=2 )
+dune_add_test( NAME stokesall 
+               SOURCES main.cc )
 
 add_code_generate_targets( stokes stokesall )
-
-dune_add_test( stokes stokesall )

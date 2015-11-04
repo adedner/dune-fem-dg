@@ -9,16 +9,10 @@ add_definitions( "-DDIMRANGE=1" )
 add_definitions( "-DFLUX=1" )
 add_definitions( "-DPRIMALDG" )
 
-add_executable( advdiffall main.cc )
-dune_target_link_libraries(advdiffall "${DUNE_LIBS}")
-
-add_executable( advdiff main.cc )
-dune_target_link_libraries(advdiff "${DUNE_LIBS}")
-set_property(TARGET advdiff APPEND PROPERTY 
-             COMPILE_DEFINITIONS "POLORDER=2")
-add_dune_superlu_flags( advdiff advdiffall )
-add_dune_umfpack_flags( advdiff advdiffall )
+dune_add_test( NAME advdiff 
+               SOURCES main.cc
+               COMPILE_DEFINITIONS POLORDER=2 )
+dune_add_test( NAME advdiffall 
+               SOURCES main.cc )
 
 add_code_generate_targets( advdiff advdiffall )
-
-dune_add_test( advdiff advdiffall )
