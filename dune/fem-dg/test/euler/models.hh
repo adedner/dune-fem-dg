@@ -257,6 +257,7 @@ namespace Dune
       template <class LocalEvaluation>
       inline double boundaryFlux( const LocalEvaluation& local,
                                   const RangeType& uLeft,
+                                  const JacobianRangeType&,
                                   RangeType& gLeft ) const
       {
         // Slip boundary condition
