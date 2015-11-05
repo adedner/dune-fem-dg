@@ -343,10 +343,10 @@ namespace Fem
     virtual void doFinalize ( int loop, TimeProviderType& tp ){}
     virtual void doFinalize ( int loop ){}
 
-    GridType&    grid_;
-    std::string  algorithmName_;
-    ProblemType* problem_;
-    ModelType    model_;
+    GridType&                      grid_;
+    std::string                    algorithmName_;
+    std::unique_ptr< ProblemType > problem_;
+    ModelType                      model_;
 
   };
 

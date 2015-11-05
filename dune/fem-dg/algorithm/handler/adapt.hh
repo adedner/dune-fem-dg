@@ -18,6 +18,7 @@
 #include <dune/fem-dg/operator/adaptation/utility.hh>
 #include <dune/fem/space/common/adaptmanager.hh>
 #include <dune/fem-dg/misc/optional.hh>
+#include <dune/fem-dg/misc/tupleutility.hh>
 
 namespace Dune
 {
@@ -203,23 +204,43 @@ namespace Fem
   };
 
 
-  template< class ... StepperArg >
+
+
+
+  template< class AlgTupleImp,
+            class IndexSequenceImp=typename Std::make_index_sequence_impl< std::tuple_size< AlgTupleImp >::value >::type >
   class AdaptHandler;
 
 
-  template< class StepperHead, class... StepperArg >
-  class AdaptHandler< StepperHead, StepperArg... >
+  template< class AlgTupleImp, std::size_t... Ints >
+  class AdaptHandler< AlgTupleImp, Std::index_sequence< Ints... > >
   {
+    template< class TupleType > struct RPDefaultTupleExtractor;
+    template< class ... Args > struct RPDefaultTupleExtractor< std::tuple< Args... > >
+    { typedef Dune::Fem::RestrictProlongDefaultTuple< typename std::remove_pointer< Args >::type::DiscreteFunctionType... > type; };
+
+    typedef AlgTupleImp                                                                        AlgTupleType;
+
+    typedef Std::index_sequence< Ints... >                                                     IndexSequenceType;
+    static const int numAlgs = IndexSequenceType::size();
+    typedef tuple_reducer<AlgTupleType, IndexSequenceType >                                    TupleReducerType;
+    typedef typename TupleReducerType::type                                                    TupleType;
+
+    static_assert( std::tuple_size< TupleType >::value>=1, "Empty Tuples not allowed..." );
+
     typedef uint64_t                                                                           UInt64Type;
 
-    typedef std::tuple< typename std::add_pointer< StepperHead >::type, typename std::add_pointer< StepperArg >::type... > StepperTupleType;
-    typedef typename StepperHead::GridType GridType;
+    typedef typename std::remove_pointer< typename std::tuple_element< 0, TupleType >::type >::type::GridType
+                                                                                               GridType;
 
-    typedef Dune::Fem::RestrictProlongDefaultTuple< typename StepperHead::DiscreteFunctionType, typename StepperArg::DiscreteFunctionType ... >      RestrictionProlongationType;
+
+    typedef typename RPDefaultTupleExtractor< TupleType >::type                                RestrictionProlongationType;
 
     typedef Dune::Fem::AdaptationManager< GridType, RestrictionProlongationType >              AdaptationManagerType;
 
     typedef Dune::AdaptationParameters                                                         AdaptationParametersType;
+
+
 
     struct EstimateMark {
       template<class T, class... Args > static void applyImpl( T e, Args&& ... a )
@@ -292,16 +313,23 @@ namespace Fem
 
 
 
+
+    template< class Caller >
+    using ForLoopType = ForLoop< LoopCallee<Caller>::template Apply, 0, numAlgs - 1 >;
+
+
+
   public:
 
-    AdaptHandler( StepperTupleType& tuple )
-    : tuple_( tuple ),
+    AdaptHandler( AlgTupleType& tuple )
+    : tuple_( TupleReducerType::apply( tuple ) ),
       rp_( nullptr ),
       adaptationManager_(),
       keyPrefix_( "" ),
       adaptParam_( AdaptationParametersType( Dune::ParameterKey::generate( keyPrefix_, "fem.adaptation." ) ) )
     {
-      setRestrProlong( Std::index_sequence_for< StepperHead, StepperArg ... >() );
+
+      setRestrProlong( IndexSequenceType() );
       if( adaptive() )
         rp_->setFatherChildWeight( Dune::DGFGridInfo<GridType> :: refineWeight() );
     }
@@ -315,7 +343,7 @@ namespace Fem
     bool adaptive () const
     {
       bool adaptive = false;
-      ForLoop< LoopCallee<Adaptive>::template Apply, 0, sizeof ... ( StepperArg ) >::apply( tuple_, adaptive );
+      ForLoopType< Adaptive >::apply( tuple_, adaptive );
       return adaptive;
     }
 
@@ -338,7 +366,7 @@ namespace Fem
     size_t numberOfElements() const
     {
       int numElements = 0;
-      ForLoop< LoopCallee<NumberOfElements>::template Apply, 0, sizeof ... ( StepperArg ) >::apply( tuple_, numElements );
+      ForLoopType< NumberOfElements >::apply( tuple_, numElements );
       return numElements;
     }
 
@@ -347,12 +375,12 @@ namespace Fem
       if( adaptive() )
       {
         UInt64Type globalElements = 0;
-        ForLoop< LoopCallee<GlobalNumberOfElements>::template Apply, 0, sizeof ... ( StepperArg ) >::apply( tuple_, globalElements );
+        ForLoopType< GlobalNumberOfElements >::apply( tuple_, globalElements );
         if( Dune::Fem::Parameter::verbose () )
         {
           double min = std::numeric_limits< double >::max;
           double max = 0.0;
-          ForLoop< LoopCallee<MinMaxNumElements>::template Apply, 0, sizeof ... ( StepperArg ) >::apply( tuple_, min, max );
+          ForLoopType< MinMaxNumElements >::apply( tuple_, min, max );
            std::cout << "grid size (sum,min,max) = ( "
             << globalElements << " , " << min << " , " << max << ")" << std::endl;
         }
@@ -364,12 +392,12 @@ namespace Fem
     template< class TimeProviderImp >
     void setAdaptation( TimeProviderImp& tp )
     {
-      ForLoop< LoopCallee<SetAdaptation>::template Apply, 0, sizeof ... ( StepperArg ) >::apply( tuple_, tp );
+      ForLoopType< SetAdaptation >::apply( tuple_, tp );
     }
 
     void finalize()
     {
-      ForLoop< LoopCallee<Finalize>::template Apply, 0, sizeof ... ( StepperArg ) >::apply( tuple_ );
+      ForLoopType< Finalize >::apply( tuple_ );
     }
 
     double& adaptationTime()
@@ -387,7 +415,7 @@ namespace Fem
     const int finestLevel() const
     {
       int finestLevel = 0;
-      ForLoop< LoopCallee<FinestLevel>::template Apply, 0, sizeof ... ( StepperArg ) >::apply( tuple_, finestLevel );
+      ForLoopType< FinestLevel >::apply( tuple_, finestLevel );
       return finestLevel;
     }
 
@@ -404,7 +432,7 @@ namespace Fem
     void estimateMark( const bool initialAdaptation = false )
     {
       if( adaptive() )
-        ForLoop< LoopCallee<EstimateMark>::template Apply, 0, sizeof ... ( StepperArg ) >::apply( tuple_, initialAdaptation );
+        ForLoopType< EstimateMark >::apply( tuple_, initialAdaptation );
     }
 
     void adapt()
@@ -413,9 +441,9 @@ namespace Fem
       {
         //int sequence = getSequence( get<0>( tuple_ ) );
 
-        ForLoop< LoopCallee<PreAdapt>::template Apply, 0, sizeof ... ( StepperArg ) >::apply( tuple_ );
+        ForLoopType< PreAdapt >::apply( tuple_ );
         adaptationManager().adapt();
-        ForLoop< LoopCallee<PostAdapt>::template Apply, 0, sizeof ... ( StepperArg ) >::apply( tuple_ );
+        ForLoopType< PostAdapt >::apply( tuple_ );
 
         //TODO include limiterHandler
         //if( sequence !=  getSequence( get<0>( tuple_ ) ) )
@@ -424,20 +452,7 @@ namespace Fem
     }
 
   private:
-
-    //template< class T >
-    //static typename enable_if< std::is_void< typename std::remove_pointer<T>::type::AdaptIndicatorType >::value, int >::type
-    //getSequence( T ){}
-    //template< class T >
-    //static typename enable_if< !std::is_void< typename std::remove_pointer<T>::type::AdaptIndicatorType >::value, int >::type
-    //getSequence( T elem )
-    //{
-    //  if( elem->adaptationSolution() )
-    //    return elem->adaptationSolution()->space().sequence();
-    //  return 0;
-    //}
-
-    StepperTupleType&                         tuple_;
+    TupleType                                 tuple_;
     std::unique_ptr< RestrictionProlongationType > rp_;
     std::unique_ptr< AdaptationManagerType >  adaptationManager_;
     const std::string                         keyPrefix_;
@@ -447,8 +462,8 @@ namespace Fem
   };
 
 
-  template<>
-  class AdaptHandler<>
+  template< class TupleImp >
+  class AdaptHandler< TupleImp, Std::index_sequence<> >
   {
     typedef uint64_t                                                                           UInt64Type;
   public:

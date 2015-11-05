@@ -10,6 +10,9 @@
 #define POLORDER 2
 #endif
 
+#include <dune/fem/solver/timeprovider.hh>
+#include <dune/common/std/utility.hh>
+
 //--------- HANDLER --------------------------------
 #include <dune/fem-dg/algorithm/handler/diagnostics.hh>
 #include <dune/fem-dg/algorithm/handler/solvermonitor.hh>
@@ -38,6 +41,45 @@
 #include "models.hh"
 //....
 #include <dune/fem/space/discontinuousgalerkin/space.hh>
+
+// EvolutionAlgorithmTraits
+// -------------------------
+template< int polOrder, class ... ProblemTraits >
+struct CheckPointEvolutionAlgorithmTraits
+{
+  // type of Grid
+  typedef typename std::tuple_element<0, std::tuple< ProblemTraits... > >::type::GridType  GridType;
+
+  // wrap operator
+  typedef Dune::Fem::GridTimeProvider< GridType >                                   TimeProviderType;
+
+  typedef std::tuple< typename std::add_pointer< typename ProblemTraits::template Stepper<polOrder>::Type >::type... > StepperTupleType;
+
+  typedef typename Dune::Std::make_index_sequence_impl< std::tuple_size< StepperTupleType >::value >::type  IndexSequenceType;
+  typedef Dune::Std::index_sequence<>                                                                       NoIndexSequenceType;
+
+  typedef Dune::Fem::AdaptHandler< StepperTupleType, NoIndexSequenceType >            AdaptHandlerType;
+  typedef Dune::Fem::DiagnosticsHandler < StepperTupleType, NoIndexSequenceType >     DiagnosticsHandlerType;
+  typedef Dune::Fem::SolverMonitorHandler < StepperTupleType, NoIndexSequenceType >   SolverMonitorHandlerType;
+  typedef Dune::Fem::CheckedCheckPointHandler < StepperTupleType >                    CheckPointHandlerType;
+  typedef Dune::Fem::DataWriterHandler < StepperTupleType >                           DataWriterHandlerType;
+  typedef Dune::Fem::SolutionLimiterHandler < StepperTupleType, NoIndexSequenceType > SolutionLimiterHandlerType;
+
+  typedef typename DataWriterHandlerType::IOTupleType                                                                      IOTupleType;
+
+  template< std::size_t ...i >
+  static StepperTupleType createStepper ( Dune::Std::index_sequence< i... >, GridType &grid, const std::string name = "" )
+  {
+    static auto tuple = std::make_tuple( new typename std::remove_pointer< typename std::tuple_element< i, StepperTupleType >::type >::type( grid, name ) ... );
+    return tuple;
+  }
+
+  // create Tuple of contained sub algorithms
+  static StepperTupleType createStepper( GridType &grid, const std::string name = "" )
+  {
+    return createStepper( Dune::Std::index_sequence_for< ProblemTraits ... >(), grid, name );
+  }
+};
 
 
 /**
@@ -111,11 +153,10 @@ struct CheckPointingProblemCreator
 
   };
 
-
   template <int polOrd>
   struct Stepper
   {
-    typedef Dune::Fem::EvolutionAlgorithmBase< Dune::Fem::CheckPointEvolutionAlgorithmTraits< polOrd, SubCheckPointingProblemCreator > > Type;
+    typedef Dune::Fem::EvolutionAlgorithmBase< CheckPointEvolutionAlgorithmTraits< polOrd, SubCheckPointingProblemCreator > > Type;
   };
 
   typedef GridImp                                         GridType;

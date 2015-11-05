@@ -52,9 +52,9 @@ struct AdvectionDiffusionProblemCreator
   struct SubAdvectionDiffusionProblemCreator
   {
 
-    typedef GridImp                                         GridType;
-    typedef Dune::Fem::DGAdaptiveLeafGridPart< GridType >   HostGridPartType;
-    typedef HostGridPartType                                GridPartType;
+    typedef GridImp                                       GridType;
+    typedef Dune::Fem::DGAdaptiveLeafGridPart< GridType > HostGridPartType;
+    typedef HostGridPartType                              GridPartType;
 
     typedef Dune::Fem::FunctionSpace< typename GridType::ctype, double, GridType::dimension, DIMRANGE> FunctionSpaceType;
 

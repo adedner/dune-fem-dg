@@ -5,6 +5,7 @@
 // local includes
 #include <dune/fem-dg/algorithm/sub/evolution.hh>
 #include <dune/fem/function/common/instationary.hh>
+#include <dune/fem/function/common/rangegenerators.hh>
 #include <dune/fem/space/common/interpolate.hh>
 #include <dune/fem-dg/algorithm/handler/checkpoint.hh>
 #include <dune/fem-dg/test/dataio/checkedcheckpointhandler.hh>
@@ -59,41 +60,6 @@ namespace Fem
         }
       }
       return std::sqrt( Dune::Fem::MPIManager::comm().sum( sum ) );
-    }
-  };
-
-
-  // EvolutionAlgorithmTraits
-  // -------------------------
-  template< int polOrder, class ... ProblemTraits >
-  struct CheckPointEvolutionAlgorithmTraits
-  {
-    // type of Grid
-    typedef typename std::tuple_element<0, std::tuple< ProblemTraits... > >::type::GridType  GridType;
-
-    // wrap operator
-    typedef GridTimeProvider< GridType >                                   TimeProviderType;
-
-    typedef Dune::Fem::DiagnosticsHandler      < > DiagnosticsHandlerType;
-    typedef Dune::Fem::SolverMonitorHandler    < > SolverMonitorHandlerType;
-    typedef Dune::Fem::CheckedCheckPointHandler< typename ProblemTraits::template Stepper<polOrder>::Type...  > CheckPointHandlerType;
-    typedef Dune::Fem::DataWriterHandler       < typename ProblemTraits::template Stepper<polOrder>::Type...  > DataWriterHandlerType;
-    typedef Dune::Fem::SolutionLimiterHandler  < > SolutionLimiterHandlerType;
-    typedef Dune::Fem::AdaptHandler            < > AdaptHandlerType;
-
-    typedef typename DataWriterHandlerType::IOTupleType                                                                      IOTupleType;
-    typedef std::tuple< typename std::add_pointer< typename ProblemTraits::template Stepper<polOrder>::Type >::type... > StepperTupleType;
-
-    template< std::size_t ...i >
-    static StepperTupleType createStepper ( Std::index_sequence< i... >, GridType &grid, const std::string name = "" )
-    {
-      return std::make_tuple( new typename std::remove_pointer< typename std::tuple_element< i, StepperTupleType >::type >::type( grid, name ) ... );
-    }
-
-    // create Tuple of contained sub algorithms
-    static StepperTupleType createStepper( GridType &grid, const std::string name = "" )
-    {
-      return createStepper( Std::index_sequence_for< ProblemTraits ... >(), grid, name );
     }
   };
 
@@ -175,7 +141,11 @@ namespace Fem
     //DATAWRITING
     virtual IOTupleType& dataTuple () { return ioTuple_; }
 
-    virtual DiscreteFunctionType& solution () { return *solution_; }
+    virtual DiscreteFunctionType& solution ()
+    {
+      assert( solution_ );
+      return *solution_;
+    }
 
     void checkCheckPointSolutionValid( TimeProviderType& tp )
     {
@@ -227,7 +197,7 @@ namespace Fem
       interpolate( adapter, solution() );
 
       // exchange data to ghost cells
-      solution().communicate();
+      //solution().communicate();
 
       // compute error for backup and restore (including ghost cells)
       error_ = computeError(tp, solution() );
@@ -252,28 +222,15 @@ namespace Fem
     // reset solution on ghost cells
     void resetNonInterior( DiscreteFunctionType& solution )
     {
-      typedef typename GridPartType :: template Codim< 0 > :: template
-          Partition< Dune::All_Partition > :: IteratorType  IteratorType;
-
-      typedef typename IteratorType :: Entity  EntityType ;
-
-      IteratorType it    = solution.space().gridPart().template begin< 0, Dune::All_Partition > ();
-      IteratorType endit = solution.space().gridPart().template end  < 0, Dune::All_Partition > ();
-
-      for( ; it != endit; ++ it )
-      {
-        const EntityType& entity = * it ;
-        if( entity.partitionType() != Dune::InteriorEntity )
-        {
-          solution.localFunction( entity ).clear();
-        }
-      }
+      //for( auto&& entity : entities(solution) )
+      //  if( entity.partitionType() != Dune::InteriorEntity )
+      //    solution.localFunction( entity ).clear();
     }
 
   protected:
     GridPartType                            gridPart_;
     DiscreteFunctionSpaceType               space_;
-    DiscreteFunctionType*                   solution_;
+    std::unique_ptr< DiscreteFunctionType > solution_;
 
     IOTupleType                             ioTuple_;
     double                                  error_;

@@ -3,6 +3,7 @@
 
 #include <tuple>
 #include <type_traits>
+#include <dune/common/std/utility.hh>
 
 /**
  * \brief concats tuples and flattens the result
@@ -69,5 +70,23 @@ struct is_tuple< std::tuple< TElem... > >
 {
   static const int value = true;
 };
+
+
+
+template< class FullTupleImp, class IndexSequenceImp >
+struct tuple_reducer;
+
+template< class FullTupleImp, std::size_t... i >
+struct tuple_reducer< FullTupleImp, Dune::Std::index_sequence< i... > >
+{
+  typedef std::tuple< typename std::tuple_element< i, FullTupleImp >::type... > type;
+
+  static type apply( const FullTupleImp& tuple )
+  {
+    return std::make_tuple( std::get< i >( tuple )... );
+  }
+
+};
+
 
 #endif

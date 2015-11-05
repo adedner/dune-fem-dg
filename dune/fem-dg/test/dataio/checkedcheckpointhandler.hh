@@ -13,16 +13,22 @@ namespace Dune
 namespace Fem
 {
 
-  template< class... StepperArg >
+  template< class AlgTupleImp,
+            class IndexSequenceImp=typename Std::make_index_sequence_impl< std::tuple_size< AlgTupleImp >::value >::type >
   class CheckedCheckPointHandler;
 
-  template< class StepperHead, class ... StepperArg >
-  class CheckedCheckPointHandler< StepperHead, StepperArg ... >
-    : public CheckPointHandler< StepperHead, StepperArg ... >
+
+  template< class AlgTupleImp, std::size_t... Ints >
+  class CheckedCheckPointHandler< AlgTupleImp, Std::index_sequence< Ints... > >
+    : public CheckPointHandler< AlgTupleImp, Std::index_sequence< Ints... > >
   {
-    typedef CheckPointHandler< StepperHead, StepperArg ... >  BaseType;
-    typedef typename BaseType::CheckPointerType               CheckPointerType;
-    typedef typename BaseType::StepperTupleType               StepperTupleType;
+    typedef CheckPointHandler< AlgTupleImp, Std::index_sequence< Ints... > > BaseType;
+    typedef typename BaseType::CheckPointerType                              CheckPointerType;
+    typedef typename BaseType::AlgTupleType                                  AlgTupleType;
+
+    typedef Std::index_sequence< Ints... >                                   IndexSequenceType;
+    static const int numAlgs = IndexSequenceType::size();
+
 
     template< int i >
     struct RestoreData
@@ -38,9 +44,12 @@ namespace Fem
     using BaseType::tuple_;
     using BaseType::keyPrefix_;
 
+    template< template<int> class Caller >
+    using ForLoopType = ForLoop< Caller, 0, numAlgs - 1 >;
+
   public:
 
-    CheckedCheckPointHandler( const StepperTupleType& tuple )
+    CheckedCheckPointHandler( const AlgTupleType& tuple )
       : BaseType( tuple )
     {}
 
@@ -54,7 +63,7 @@ namespace Fem
     {
       if( !BaseType::restoreData( tp ) )
       {
-        ForLoop< RestoreData, 0, sizeof ... ( StepperArg ) >::apply( tuple_, tp );
+        ForLoopType< RestoreData >::apply( tuple_, tp );
         return false;
       }
       return true;

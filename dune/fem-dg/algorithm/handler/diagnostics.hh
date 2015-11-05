@@ -3,23 +3,32 @@
 
 #include <dune/fem-dg/misc/diagnostics.hh>
 #include <dune/fem-dg/misc/optional.hh>
+#include <dune/fem-dg/misc/tupleutility.hh>
 
 namespace Dune
 {
 namespace Fem
 {
 
-  template< class... StepperArg >
+  template< class AlgTupleImp,
+            class IndexSequenceImp=typename Std::make_index_sequence_impl< std::tuple_size< AlgTupleImp >::value >::type >
   class DiagnosticsHandler;
 
 
-  template< class StepperHead, class ... StepperArg >
-  class DiagnosticsHandler< StepperHead, StepperArg ... >
+  template< class AlgTupleImp, std::size_t... Ints >
+  class DiagnosticsHandler< AlgTupleImp, Std::index_sequence< Ints... > >
   {
-    typedef std::tuple< typename std::add_pointer< StepperHead >::type,
-      typename std::add_pointer< StepperArg >::type... >                                StepperTupleType;
-    typedef typename StepperHead::GridType                                              GridType;
+    typedef AlgTupleImp                                                            AlgTupleType;
 
+    typedef Std::index_sequence< Ints... >                                         IndexSequenceType;
+    static const int numAlgs = IndexSequenceType::size();
+    typedef tuple_reducer<AlgTupleType, IndexSequenceType >                        TupleReducerType;
+    typedef typename TupleReducerType::type                                        TupleType;
+
+    static_assert( std::tuple_size< TupleType >::value>=1, "Empty Tuples not allowed..." );
+
+    typedef typename std::remove_pointer< typename std::tuple_element< 0, TupleType >::type >::type::GridType
+                                                                                    GridType;
 
     template< class Caller >
     class LoopCallee
@@ -55,29 +64,32 @@ namespace Fem
       { e->finalize( std::forward<Args>(a)... ); }
     };
 
+    template< class Caller >
+    using ForLoopType = ForLoop< LoopCallee<Caller>::template Apply, 0, numAlgs - 1 >;
+
   public:
 
-    DiagnosticsHandler( const StepperTupleType& tuple )
+    DiagnosticsHandler( const AlgTupleType& tuple )
       : tuple_( tuple )
     {}
 
     template< class TimeProviderImp >
     void step( TimeProviderImp& tp )
     {
-      ForLoop< LoopCallee<Write>::template Apply, 0, sizeof ... ( StepperArg ) >::apply( tuple_, tp );
+      ForLoopType< Write >::apply( tuple_, tp );
     }
 
     void finalize() const
     {
-      ForLoop< LoopCallee<Finalize>::template Apply, 0, sizeof ... ( StepperArg ) >::apply( tuple_ );
+      ForLoopType< Finalize >::apply( tuple_ );
     }
 
   private:
-    StepperTupleType tuple_;
+    TupleType tuple_;
   };
 
-  template<>
-  class DiagnosticsHandler<>
+  template< class TupleImp >
+  class DiagnosticsHandler< TupleImp, Std::index_sequence<> >
   {
   public:
     template< class ... Args >

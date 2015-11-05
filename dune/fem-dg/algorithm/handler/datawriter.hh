@@ -11,28 +11,41 @@
 #include <dune/fem/common/utility.hh>
 #include <dune/fem-dg/misc/parameterkey.hh>
 
-//#include <dune/common/classname.hh>
 namespace Dune
 {
 namespace Fem
 {
 
-  template< class... StepperArg >
+  template< class AlgTupleImp,
+            class IndexSequenceImp=typename Std::make_index_sequence_impl< std::tuple_size< AlgTupleImp >::value >::type >
   class DataWriterHandler;
 
-  template< class StepperHead, class ... StepperArg >
-  class DataWriterHandler< StepperHead, StepperArg ... >
+  template< class AlgTupleImp, std::size_t... Ints >
+  class DataWriterHandler< AlgTupleImp, Std::index_sequence< Ints... > >
   {
+    template< class TupleType > struct IOTupleExtractor;
+    template< class ... Args > struct IOTupleExtractor< std::tuple< Args... > >
+    { typedef typename tuple_concat< typename std::remove_pointer< Args >::type::IOTupleType::type... >::type type; };
+
+    typedef AlgTupleImp                                                            AlgTupleType;
+
+    typedef Std::index_sequence< Ints... >                                         IndexSequenceType;
+    static const int numAlgs = IndexSequenceType::size();
+    typedef tuple_reducer<AlgTupleType, IndexSequenceType >                        TupleReducerType;
+    typedef typename TupleReducerType::type                                        TupleType;
+
+    static_assert( std::tuple_size< TupleType >::value>=1, "Empty Tuples not allowed..." );
+
+    typedef typename std::remove_pointer< typename std::tuple_element< 0, TupleType >::type >::type::GridType
+                                                                                    GridType;
+
   public:
-    typedef std::tuple< typename std::add_pointer< StepperHead >::type, typename std::add_pointer< StepperArg >::type... > StepperTupleType;
-    typedef typename std::remove_pointer< typename std::tuple_element<0,StepperTupleType>::type >::type  FirstStepperType;
-    typedef typename StepperHead::GridType                                                               GridType;
-    typedef typename tuple_concat< typename StepperHead::IOTupleType::type, typename StepperArg::IOTupleType::type... >::type IOTupleType;
+    typedef typename IOTupleExtractor< TupleType >::type                            IOTupleType;
 
-    typedef DataWriter< GridType, IOTupleType >                                                          DataWriterType;
+    typedef DataWriter< GridType, IOTupleType >                                     DataWriterType;
 
-    static_assert( Std::are_all_same< GridType, typename StepperArg::GridType... >::value,
-                   "DataWriterHandler: GridType has to be equal for all steppers" );
+    //static_assert( Std::are_all_same< GridType, typename StepperArg::GridType... >::value,
+    //               "DataWriterHandler: GridType has to be equal for all steppers" );
 
   private:
     template< int i >
@@ -56,53 +69,16 @@ namespace Fem
       }
     };
 
-//    struct DataTupleElement
-//    {
-//      template< class Tuple, class ... Args >
-//      static void apply ( Tuple &tuple, Args && ... args )
-//      {
-//        auto data = std::get<i>( tuple );
-//        //std::cout << i << ":" << className( data ) << std::end;
-//        std::cout << data << ", ";
-//      }
-//    };
-//
-//    template< int i >
-//    struct DataTuple
-//    {
-//      template< class Tuple, class ... Args >
-//      static void apply ( Tuple &tuple, Args && ... args )
-//      {
-//        auto data = std::get<i>( tuple )->dataTuple();
-//        //std::cout << "IOTuple" << i << ":" << className( data ) << std::endl << std::endl;
-//        std::cout << "|";
-//        ForLoop< DataTupleElement, 0, std::tuple_size<decltype( data )>::value -1 >::apply( data );
-//      }
-//    };
-//
-//    template< int i >
-//    struct DataTupleConverted
-//    {
-//      template< class Tuple, class ... Args >
-//      static void apply ( Tuple &tuple, Args && ... args )
-//      {
-//        auto data = std::get<i>( tuple );
-//        std::cout << data << ", ";
-//      }
-//    };
-
+    template< template< int > class Caller >
+    using ForLoopType = ForLoop< Caller, 0, numAlgs - 1 >;
 
   public:
 
-
-    DataWriterHandler( const StepperTupleType& tuple )
-      : tuple_( tuple ),
+    DataWriterHandler( const AlgTupleType& tuple )
+      : tuple_( TupleReducerType::apply( tuple ) ),
         dataWriter_(),
-        dataTuple_( dataTuple( tuple, Std::index_sequence_for< StepperHead, StepperArg ... >() ) )
+        dataTuple_( dataTuple( tuple_, IndexSequenceType() ) )
     {
-      //std::cout << "============================" <<std::endl << "DataIOTuple";
-      //ForLoop< DataTupleConverted, 0, tuple_size< decltype( dataTuple_ ) >::value - 1 >::apply( dataTuple_ );
-      //std::cout << std::endl;
     }
 
     template< class TimeProviderImp, class ParameterType >
@@ -117,11 +93,8 @@ namespace Fem
       if( dataWriter_ && dataWriter_->willWrite( tp ) )
       {
         //update all additional Output
-        ForLoop< AdditionalOutput, 0, sizeof ... ( StepperArg ) >::apply( tuple_, tp );
+        ForLoopType< AdditionalOutput >::apply( tuple_, tp );
 
-        //std::cout << "============================" <<std::endl;
-        //ForLoop< DataTuple, 0, sizeof ... ( StepperArg ) >::apply( tuple_, tp );
-        //std::cout << std::endl;
         //writeData
         dataWriter_->write( tp );
       }
@@ -133,7 +106,7 @@ namespace Fem
       if( dataWriter_ && dataWriter_->willWrite( tp ) )
       {
         //update all additional Output
-        ForLoop< AdditionalOutput, 0, sizeof ... ( StepperArg ) >::apply( tuple_, tp );
+        ForLoopType< AdditionalOutput >::apply( tuple_, tp );
         //writeData
         dataWriter_->write( tp );
       }
@@ -146,19 +119,20 @@ namespace Fem
 
     private:
     template< std::size_t ... i >
-    IOTupleType dataTuple ( const StepperTupleType &tuple, Std::index_sequence< i ... > )
+    IOTupleType dataTuple ( const TupleType &tuple, Std::index_sequence< i ... > )
     {
       return std::tuple_cat( (*std::get< i >( tuple )->dataTuple() )... );
     }
 
 
-    const StepperTupleType&           tuple_;
+    TupleType                         tuple_;
     std::unique_ptr< DataWriterType > dataWriter_;
     IOTupleType                       dataTuple_;
   };
 
-  template<>
-  class DataWriterHandler<>
+
+  template< class AlgTupleImp >
+  class DataWriterHandler< AlgTupleImp, Std::index_sequence<> >
   {
     public:
 

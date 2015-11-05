@@ -9,10 +9,16 @@ fem.io.outputformat: vtk-cell
 fem.io.writedata: true
 
 
+# CHECKPOINTING
+#--------------
+# write checkpoint every 'checkpointstep' timestep 
+fem.io.checkpointstep: 1
+# write 'checkpointmax' number of different check points 
+fem.io.checkpointmax: 2 
+
 
 # DOMAIN
 #-------
-
 fem.io.macroGridFile_1d: ../grids/unitcube1.dgf
 fem.io.macroGridFile_2d: ../grids/unitcube2.dgf
 fem.io.macroGridFile_3d: ../grids/unitcube3.dgf
@@ -20,27 +26,22 @@ fem.io.macroGridFile_3d: ../grids/unitcube3.dgf
 
 # PROBLEM SETUP
 #--------------
-#fem.io.eheckpointrestartfile: ${CMAKE_CURRENT_SOURCE_DIR}/checkpoint
+#fem.io.checkpointrestartfile: ${CMAKE_CURRENT_SOURCE_DIR}/checkpoint
 
 # number of EOC steps (only 1 for checkpointing)
 fem.eoc.steps: 1
 
-femdg.stepper.endtime: 1.0
+femdg.stepper.starttime: 0
+femdg.stepper.endtime: 0.1
+
 femdg.stepper.diffusiontimestep: 1
 epsilon: 2.
 penalty: 1.
 fem.timeprovider.factor: 1.
-fem.io.savestep: 0.1
 
-# parameters from time dependent problems 
-femdg.stepper.starttime: 0
 femdg.stepper.maxtimestep: 0.1
 femdg.stepper.printcount: 1
 
-# write checkpoint every 'checkpointstep' timestep 
-fem.io.checkpointstep: 1
-# write 'checkpointmax' number of different check points 
-fem.io.checkpointmax: 2 
 
 # SION LIB
 #---------

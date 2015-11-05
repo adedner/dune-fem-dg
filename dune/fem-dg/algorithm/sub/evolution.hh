@@ -154,7 +154,7 @@ namespace Fem
 
     typename SolverType::type* solver()
     {
-      return solver_;
+      return solver_.get();
     }
 
     DiscreteFunctionType& solution ()
@@ -276,7 +276,7 @@ namespace Fem
       AnalyticalTraits::addEOCErrors( tp, solution(), model(), problem() );
 
       // delete ode solver
-      solver_.release();
+      solver_.reset( nullptr );
     }
 
   protected:

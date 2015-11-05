@@ -60,11 +60,13 @@ namespace Fem
   };
 
 
-  template< class... StepperArg >
+  template< class AlgTupleImp,
+            class IndexSequenceImp=typename Std::make_index_sequence_impl< std::tuple_size< AlgTupleImp >::value >::type >
   class CheckPointHandler;
 
-  template< class StepperHead, class ... StepperArg >
-  class CheckPointHandler< StepperHead, StepperArg ... >
+
+  template< class AlgTupleImp, std::size_t... Ints >
+  class CheckPointHandler< AlgTupleImp, Std::index_sequence< Ints... > >
   {
 
     template< int i >
@@ -79,19 +81,31 @@ namespace Fem
     };
 
   public:
-    typedef GridCheckPointHandler< typename StepperHead::GridType >                                 BaseType;
-    typedef typename BaseType::GridType                                                             GridType;
-    typedef typename BaseType::CheckPointerType                                                     CheckPointerType;
-    typedef typename BaseType::CheckPointerParametersType                                           CheckPointerParametersType;
-    typedef std::tuple< typename std::add_pointer< StepperHead >::type, typename std::add_pointer< StepperArg >::type... > StepperTupleType;
+    typedef AlgTupleImp                                                            AlgTupleType;
 
-    static_assert( Std::are_all_same< typename StepperHead::GridType, typename StepperArg::GridType... >::value,
-                   "CheckPointHandler: GridType has to be equal for all steppers" );
+    typedef Std::index_sequence< Ints... >                                         IndexSequenceType;
+    static const int numAlgs = IndexSequenceType::size();
+    typedef tuple_reducer<AlgTupleType, IndexSequenceType >                        TupleReducerType;
+    typedef typename TupleReducerType::type                                        TupleType;
+
+    static_assert( std::tuple_size< TupleType >::value>=1, "Empty Tuples not allowed..." );
+
+    typedef GridCheckPointHandler< typename std::remove_pointer< typename std::tuple_element< 0, TupleType >::type >::type::GridType >
+                                                                                BaseType;
+
+    typedef typename BaseType::GridType                                         GridType;
+    typedef typename BaseType::CheckPointerType                                 CheckPointerType;
+    typedef typename BaseType::CheckPointerParametersType                       CheckPointerParametersType;
+
+    template< template<int> class Caller >
+    using ForLoopType = ForLoop< Caller, 0, numAlgs - 1 >;
+    //static_assert( Std::are_all_same< typename StepperHead::GridType, typename StepperArg::GridType... >::value,
+    //               "CheckPointHandler: GridType has to be equal for all steppers" );
 
   public:
 
-    CheckPointHandler( const StepperTupleType& tuple )
-      : tuple_( tuple ),
+    CheckPointHandler( const AlgTupleType& tuple )
+      : tuple_( TupleReducerType::apply( tuple ) ),
         checkPointer_(),
         keyPrefix_( std::get<0>( tuple_ )->name() ),
         checkParam_( Dune::ParameterKey::generate( keyPrefix_, "fem.io." ) )
@@ -100,7 +114,7 @@ namespace Fem
     void registerData()
     {
       if( BaseType::checkPointExists(keyPrefix_) )
-        ForLoop< RegisterData, 0, sizeof ... ( StepperArg ) >::apply( tuple_ );
+        ForLoopType< RegisterData >::apply( tuple_ );
     }
 
     template< class TimeProviderImp >
@@ -131,15 +145,15 @@ namespace Fem
     }
 
   protected:
-    const StepperTupleType&           tuple_;
+    TupleType               tuple_;
     mutable std::unique_ptr< CheckPointerType > checkPointer_;
     const std::string keyPrefix_;
     CheckPointerParametersType checkParam_;
   };
 
 
-  template<>
-  class CheckPointHandler<>
+  template< class AlgTupleImp >
+  class CheckPointHandler< AlgTupleImp, Std::index_sequence<> >
   {
     public:
 

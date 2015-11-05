@@ -5,16 +5,19 @@
 #include <dune/fem/common/utility.hh>
 #include <dune/fem-dg/algorithm/monitor.hh>
 #include <dune/fem-dg/misc/optional.hh>
+#include <dune/fem-dg/misc/tupleutility.hh>
+
 namespace Dune
 {
 namespace Fem
 {
 
-  template< class... StepperArg >
+  template< class AlgTupleImp,
+            class IndexSequenceImp=typename Std::make_index_sequence_impl< std::tuple_size< AlgTupleImp >::value >::type >
   class SolverMonitorHandler;
 
-  template< >
-  class SolverMonitorHandler<>
+  template< class AlgTupleImp >
+  class SolverMonitorHandler< AlgTupleImp, Std::index_sequence<> >
   {
   public:
     template <class ... Args>
@@ -36,93 +39,55 @@ namespace Fem
 
   };
 
-
-  template< class StepperHead, class... StepperArg >
-  class SolverMonitorHandler< StepperHead, StepperArg... >
+  template< class AlgTupleImp, std::size_t... Ints >
+  class SolverMonitorHandler< AlgTupleImp, Std::index_sequence< Ints... > >
   {
-  public:
-    typedef std::tuple< typename std::add_pointer< StepperHead >::type,
-                        typename std::add_pointer< StepperArg >::type... >                     StepperTupleType;
+    typedef AlgTupleImp                                                            AlgTupleType;
+
+    typedef Std::index_sequence< Ints... >                                         IndexSequenceType;
+    static const int numAlgs = IndexSequenceType::size();
+    typedef tuple_reducer<AlgTupleType, IndexSequenceType >                        TupleReducerType;
+    typedef typename TupleReducerType::type                                        TupleType;
+
+    static_assert( std::tuple_size< TupleType >::value>=1, "Empty Tuples not allowed..." );
 
     enum CombinationType { max, min, sum, avg };
 
     template< class Caller >
     class LoopCallee
     {
-      template<class C, class T, class... Args >
+      template<class C, class T, class... A >
       static typename enable_if< std::is_void< typename std::remove_pointer<T>::type::SolverMonitorHandlerType >::value >::type
-      getMonitor( T, Args&& ... ){}
-      template<class C, class T, class... Args >
+      getMonitor( T, A&& ... ){}
+      template<class C, class T, class... A >
       static typename enable_if< !std::is_void< typename std::remove_pointer<T>::type::SolverMonitorHandlerType >::value >::type
-      getMonitor( T elem, Args &&... a )
+      getMonitor( T elem, A &&... a )
       {
         if( elem->monitor() )
-          C::applyImpl(elem->monitor(), std::forward<Args>(a)... );
+          C::applyImpl(elem->monitor(), std::forward<A>(a)... );
       }
     public:
       template< int i >
       struct Apply
       {
-        template< class Tuple, class ... Args >
-        static void apply ( Tuple &tuple, Args&& ... a )
-        {
-          getMonitor< Caller >( std::get<i>( tuple ), std::forward<Args>(a)... );
-        }
+        template< class Tuple, class ... A >
+        static void apply ( Tuple &tuple, A&& ... a )
+        { getMonitor< Caller >( std::get<i>( tuple ), std::forward<A>(a)... ); }
       };
-    };
-
-    //template <typename... T>
-    //class Action {
-    //public:
-
-    //  using bind_type = decltype(std::bind(std::declval<std::function<void(T...)> >(),std::ref(std::declval<T>())...));
-
-    //  template <typename... ConstrT>
-    //  Action(std::function<void(T...)> f, ConstrT&&... args)
-    //    : bind_(f,std::forward<ConstrT>(args)...)
-    //  { }
-
-    //  void operator()()
-    //  { bind_(); }
-
-    //private:
-    //  bind_type bind_;
-    //};
-
-
-    template< class T, class... A >
-    struct Signature
-    {
-      typedef decltype(std::bind(std::declval<std::function<void(A...)> >(),std::ref(std::declval<A>())...)) type;
     };
 
     struct Step {
       template<class T, class... A > static void applyImpl( T e, A&& ... a )
-      {
-        //typedef decltype(std::bind(std::declval<std::function<void(void)> >() ) ) BindType2;
-
-        //typename Signature< T, A... >::type ddf( [&e]( A&& ... a ){ e->step( std::forward<A>(a)...); }, std::forward<A>(a)... );
-        //ddf();
-
-        //BindType2 dddf( [&](){ e->step( std::forward<A>(a)...); } );
-        //dddf( std::forward<A>(a)... );
-
-
-        ////Action< A... > df( [&]( A&& ... a ){ e->step( std::forward<A>(a)...); } , std::forward<A>(a)... );
-        //Action< A... > df( [&]( A&& ... a ){ e->step( std::forward<A>(a)...); }, std::forward<A>(a)... );
-        //df();
-        //
-        e->step( std::forward<A>(a)... );
-      }
+      { e->step( std::forward<A>(a)... ); }
     };
 
     struct Finalize {
-      template<class T, class... Args > static void applyImpl( T e, Args&& ... a )
-      { e->finalize( std::forward<Args>(a)... ); }
+      template<class T, class... A > static void applyImpl( T e, A&& ... a )
+      { e->finalize( std::forward<A>(a)... ); }
     };
 
     struct GetData {
-      template<class T, class... Args > static void applyImpl( T e, double& res, const std::string name, CombinationType comb, Args&& ... a )
+      template<class T, class... A > static void applyImpl( T e, double& res, const std::string name, CombinationType comb, A&& ... a )
       {
         switch( comb )
         {
@@ -138,8 +103,13 @@ namespace Fem
       }
     };
 
-    SolverMonitorHandler( const StepperTupleType& tuple )
-      : tuple_( tuple )
+    template< class Caller >
+    using ForLoopType = ForLoop< LoopCallee<Caller>::template Apply, 0, numAlgs - 1 >;
+
+  public:
+
+    SolverMonitorHandler( const AlgTupleType& tuple )
+      : tuple_( TupleReducerType::apply( tuple ) )
     {}
 
     template< class... StringType >
@@ -154,24 +124,29 @@ namespace Fem
     const double getData( const std::string name, CombinationType comb = CombinationType::max ) const
     {
       double res = (comb == CombinationType::max) ? std::numeric_limits<double>::max() : 0.0;
-      ForLoop< LoopCallee<GetData>::template Apply, 0, sizeof ... ( StepperArg ) >::apply( tuple_, res, name, comb );
+      ForLoopType< GetData >::apply( tuple_, res, name, comb );
       return res;
     }
 
     template< class TimeProviderImp >
     void step( TimeProviderImp& tp )
     {
-      ForLoop< LoopCallee<Step>::template Apply, 0, sizeof ... ( StepperArg ) >::apply( tuple_, tp );
+      ForLoopType< Step >::apply( tuple_, tp );
     }
 
     void finalize( const double gridWidth, const double gridSize )
     {
-      ForLoop< LoopCallee<Finalize>::template Apply, 0, sizeof ... ( StepperArg ) >::apply( tuple_, gridWidth, gridSize );
+      ForLoopType< Finalize >::apply( tuple_, gridWidth, gridSize );
     }
 
   private:
-    StepperTupleType  tuple_;
+    TupleType  tuple_;
   };
+
+
+
+
+
 
   template< class... SolverMonitorImp >
   class SubSolverMonitorHandler;

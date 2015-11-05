@@ -19,7 +19,6 @@
 #include <dune/fem-dg/pass/threadpass.hh>
 #include <dune/common/timer.hh>
 
-
 #include <dune/fem-dg/algorithm/handler/diagnostics.hh>
 #include <dune/fem-dg/algorithm/handler/solvermonitor.hh>
 #include <dune/fem-dg/algorithm/handler/checkpoint.hh>
@@ -109,26 +108,30 @@ namespace Fem
     // wrap operator
     typedef GridTimeProvider< GridType >                                   TimeProviderType;
 
-    typedef Dune::Fem::DiagnosticsHandler    < typename ProblemTraits::template Stepper<polOrder>::Type...  > DiagnosticsHandlerType;
-    typedef Dune::Fem::SolverMonitorHandler  < typename ProblemTraits::template Stepper<polOrder>::Type...  > SolverMonitorHandlerType;
-    typedef Dune::Fem::CheckPointHandler     < typename ProblemTraits::template Stepper<polOrder>::Type...  > CheckPointHandlerType;
-    typedef Dune::Fem::DataWriterHandler     < typename ProblemTraits::template Stepper<polOrder>::Type...  > DataWriterHandlerType;
-    typedef Dune::Fem::SolutionLimiterHandler< typename ProblemTraits::template Stepper<polOrder>::Type...  > SolutionLimiterHandlerType;
-    typedef Dune::Fem::AdaptHandler          < typename ProblemTraits::template Stepper<polOrder>::Type...  > AdaptHandlerType;
+    //typedef ...
+    typedef std::tuple< typename std::add_pointer< typename ProblemTraits::template Stepper<polOrder>::Type >::type... > StepperTupleType;
+    typedef typename Std::make_index_sequence_impl< std::tuple_size< StepperTupleType >::value >::type                   IndexSequenceType;
+
+    typedef Dune::Fem::AdaptHandler< StepperTupleType >           AdaptHandlerType;
+    typedef Dune::Fem::CheckPointHandler< StepperTupleType >      CheckPointHandlerType;
+    typedef Dune::Fem::SolverMonitorHandler< StepperTupleType >   SolverMonitorHandlerType;
+    typedef Dune::Fem::DataWriterHandler< StepperTupleType >      DataWriterHandlerType;
+    typedef Dune::Fem::DiagnosticsHandler< StepperTupleType >     DiagnosticsHandlerType;
+    typedef Dune::Fem::SolutionLimiterHandler< StepperTupleType > SolutionLimiterHandlerType;
 
     typedef typename DataWriterHandlerType::IOTupleType                                                                      IOTupleType;
-    typedef std::tuple< typename std::add_pointer< typename ProblemTraits::template Stepper<polOrder>::Type >::type... > StepperTupleType;
 
     template< std::size_t ...i >
     static StepperTupleType createStepper ( Std::index_sequence< i... >, GridType &grid, const std::string name = "" )
     {
-      return std::make_tuple( new typename std::remove_pointer< typename std::tuple_element< i, StepperTupleType >::type >::type( grid, name ) ... );
+      static auto tuple = std::make_tuple( new typename std::remove_pointer< typename std::tuple_element< i, StepperTupleType >::type >::type( grid, name ) ... );
+      return tuple;
     }
 
     // create Tuple of contained sub algorithms
     static StepperTupleType createStepper( GridType &grid, const std::string name = "" )
     {
-      return createStepper( Std::index_sequence_for< ProblemTraits ... >(), grid, name );
+      return createStepper( IndexSequenceType(), grid, name );
     }
   };
 
@@ -150,7 +153,7 @@ namespace Fem
     {}
   };
 
-  
+
 
   // EvolutionAlgorithmBase
   // ----------------------
