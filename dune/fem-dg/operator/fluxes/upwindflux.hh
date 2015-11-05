@@ -1,6 +1,8 @@
 #ifndef FEMDG_UPWIND_FLUX_HH
 #define FEMDG_UPWIND_FLUX_HH
 
+#include <string>
+#include <cmath>
 
 namespace Dune
 {

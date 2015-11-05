@@ -1,15 +1,15 @@
 fem.verboserank: 0
 
 # macro grid file
-fem.io.macroGridFile: ../grids/unitcube2.dgf
+fem.io.macroGridFile: /home/robertk/work/Dune/cmake/dune-fem-dg/dune/fem-dg/test/dataio/../grids/unitcube2.dgf
 
 # macro grid file
-fem.io.macroGridFile_3d: ../grids/unitcube3.dgf
+fem.io.macroGridFile_3d: /home/robertk/work/Dune/cmake/dune-fem-dg/dune/fem-dg/test/dataio/../grids/unitcube3.dgf
 
 # if false no discrete function data is written (for debugging)
 fem.io.writedata: true
 
-#fem.io.checkpointrestartfile: ./checkpoint
+#fem.io.checkpointrestartfile: /home/robertk/work/Dune/cmake/dune-fem-dg/dune/fem-dg/test/dataio/checkpoint
 
 # number of EOC steps (only 1 for checkpointing)
 fem.eoc.steps: 1
@@ -43,7 +43,7 @@ fem.adaptation.coarsestLevel: 2
 fem.adaptation.finestLevel: 2
 
 # specify directory for data output (is created if not exists)
-fem.prefix: ./data
+fem.prefix:  /home/robertk/work/Dune/cmake/dune-fem-dg/dune/fem-dg/test/dataio/data
 # prefix data data files 
 fem.io.datafileprefix: solution
 # save data every time interval 

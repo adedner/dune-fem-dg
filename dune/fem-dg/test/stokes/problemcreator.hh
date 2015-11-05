@@ -2,10 +2,6 @@
 #define FEMDG_STOKESSTEPPER_HH
 #include <config.h>
 
-#ifndef DIMRANGE
-#define DIMRANGE GRIDDIM
-#endif
-
 #ifndef POLORDER
 #define POLORDER 1
 #endif
@@ -43,7 +39,7 @@ struct PoissonProblemCreator
   typedef HostGridPartType                                GridPartType;
 
   // define problem type here if interface should be avoided
-  typedef Dune::Fem::FunctionSpace< typename GridType::ctype, double, GridType::dimension, DIMRANGE >
+  typedef Dune::Fem::FunctionSpace< typename GridType::ctype, double, GridType::dimension, GridType::dimensionworld >
                                                                 FunctionSpaceType;
   typedef Dune::ProblemInterface< FunctionSpaceType >           ProblemInterfaceType;
 

@@ -1,5 +1,5 @@
-#ifndef CONS2PRIM_HH
-#define CONS2PRIM_HH
+#ifndef FEMDG_NOADDITIONALOUTPUT_HH
+#define FEMDG_NOADDITIONALOUTPUT_HH
 
 // system include
 #include <sstream>

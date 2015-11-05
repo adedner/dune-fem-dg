@@ -2,7 +2,7 @@
 #define FEMDG_H1EOCERROR_HH
 
 #include <dune/fem/misc/h1norm.hh>
-
+#include <dune/fem/misc/femeoc.hh>
 
 class H1EOCError
 {
