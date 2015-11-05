@@ -26,8 +26,8 @@
 // overload default stepper traits
 #include "navierstokes.hh"
 
-#include "problem.hh"
-#include "nsmodel.hh"
+#include "problems.hh"
+#include "models.hh"
 #include "stokesmodel.hh"
 
 template <class GridType>
