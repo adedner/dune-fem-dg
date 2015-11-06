@@ -23,7 +23,7 @@
 
 #include <dune/fem-dg/operator/adaptation/utility.hh>
 
-#if HAVE_DUNE_ALUGRID && HAVE_MPI && ! HAVE_ALUGRID
+#if HAVE_DUNE_ALUGRID && HAVE_MPI
 #define USE_ALUGRID_MPACCESS
 #include <dune/alugrid/3d/alugrid.hh>
 #endif
