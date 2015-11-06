@@ -1,16 +1,12 @@
 #ifndef DUNE_FEM_DG_SIMULATOR_HH
 #define DUNE_FEM_DG_SIMULATOR_HH
 
-#ifdef HEADERCHECK
-#define YASPGRID
-#define GRIDDIM 2
-#endif
-
 #if defined GRIDDIM
 #ifndef CODEDIM
 #define CODEDIM GRIDDIM
 #endif
 #endif
+
 
 // in dbug mode also enable FieldVector checking and dune devel mode
 #ifndef NDEBUG
@@ -169,7 +165,8 @@ namespace Dune
       Dune::Fem::ThreadHandle::run( startObj );
     }
 
-    typedef Dune::GridSelector :: GridType GridType;
+    // extract grid type from problem traits
+    typedef typename ProblemTraits :: GridType  GridType;
 
     // return type of initializeGrid is Dune::GridPtr, use release such that memory of GridPtr is released
     std::unique_ptr< GridType > gridptr( problem.initializeGrid().release() );
