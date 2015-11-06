@@ -7,7 +7,10 @@
 #include <cmath>
 
 #include <dune/grid/yaspgrid.hh>
-#include <dune/grid/alugrid.hh>
+
+#if HAVE_DUNE_ALUGRID
+#include <dune/alugrid/grid.hh>
+#endif
 
 //- Dune-fem includes
 #include <dune/fem/quadrature/caching/twistutility.hh>
