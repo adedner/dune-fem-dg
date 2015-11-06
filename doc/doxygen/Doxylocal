@@ -1,7 +1,8 @@
 # Where to search and which files to use
 INPUT                 += @srcdir@/modules \
-                         @srcdir@/pages/ \
-                         @top_srcdir@/dune/fem-dg  \
+                         @srcdir@/pages/mainpage.txt \
+                         @srcdir@/pages/docrules.txt \
+                         @top_srcdir@/dune/fem-dg 
 
 #EXCLUDE               += @top_srcdir@/dune/fem-dg/test 
 
