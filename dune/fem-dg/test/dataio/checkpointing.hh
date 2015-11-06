@@ -197,7 +197,7 @@ namespace Fem
       interpolate( adapter, solution() );
 
       // exchange data to ghost cells
-      //solution().communicate();
+      solution().communicate();
 
       // compute error for backup and restore (including ghost cells)
       error_ = computeError(tp, solution() );
@@ -222,9 +222,9 @@ namespace Fem
     // reset solution on ghost cells
     void resetNonInterior( DiscreteFunctionType& solution )
     {
-      //for( auto&& entity : entities(solution) )
-      //  if( entity.partitionType() != Dune::InteriorEntity )
-      //    solution.localFunction( entity ).clear();
+      for( auto&& entity : entities(solution) )
+        if( entity.partitionType() != Dune::InteriorEntity )
+          solution.localFunction( entity ).clear();
     }
 
   protected:
