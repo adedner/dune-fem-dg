@@ -36,6 +36,17 @@ Makefile.in
 *.tmp
 
 build-cmake
+
 headercheck
 language_tests
 CMakeFiles
+CPackConfig.cmake
+CPackSourceConfig.cmake
+FC.h
+DartConfiguration.tcl
+CTestTestfile.cmake
+cmake_install.cmake
+cmake/modules/petsc
+config_collected.h.cmake
+dune-fem-dg-config-version.cmake
+dune-fem-dg-config.cmake
