@@ -35,10 +35,17 @@ namespace Fem
     // type of Grid
     typedef typename std::tuple_element<0, std::tuple< ProblemTraits... > >::type::GridType  GridType;
 
-    typedef Dune::Fem::SolverMonitorHandler < typename ProblemTraits::template Stepper<polOrder>::Type... > SolverMonitorHandlerType;
-    typedef Dune::Fem::DataWriterHandler    < typename ProblemTraits::template Stepper<polOrder>::Type... > DataWriterHandlerType;
+    // wrap operator
+    typedef GridTimeProvider< GridType >                                   TimeProviderType;
 
-    typedef typename DataWriterHandlerType::IOTupleType                                                                    IOTupleType;
+    //typedef ...
+    typedef std::tuple< typename std::add_pointer< typename ProblemTraits::template Stepper<polOrder>::Type >::type... > StepperTupleType;
+    typedef typename Std::make_index_sequence_impl< std::tuple_size< StepperTupleType >::value >::type                   IndexSequenceType;
+
+    typedef Dune::Fem::SolverMonitorHandler< StepperTupleType >   SolverMonitorHandlerType;
+    typedef Dune::Fem::DataWriterHandler< StepperTupleType >      DataWriterHandlerType;
+
+    typedef typename DataWriterHandlerType::IOTupleType                                                                      IOTupleType;
   };
 
 

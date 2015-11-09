@@ -207,7 +207,7 @@ namespace Fem
 
     typename SolverType::type* solver()
     {
-      return solver_;
+      return solver_.get();
     }
 
     DiscreteFunctionType& solution ()
