@@ -36,3 +36,6 @@ Makefile.in
 *.tmp
 
 build-cmake
+headercheck
+language_tests
+CMakeFiles
