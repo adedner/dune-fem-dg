@@ -56,9 +56,10 @@ struct PoissonProblemCreator
     typedef HostGridPartType                                GridPartType;
 
     // define problem type here if interface should be avoided
-    typedef Dune::Fem::FunctionSpace< typename GridType::ctype, double, GridType::dimension, DIMRANGE >
-                                                                  FunctionSpaceType;
-    typedef Dune::ProblemInterface< FunctionSpaceType >           ProblemInterfaceType;
+    typedef Dune::ProblemInterface< Dune::Fem::FunctionSpace< typename GridType::ctype, double, GridType::dimension, DIMRANGE > >
+                                                                  ProblemInterfaceType;
+
+    typedef typename ProblemInterfaceType::FunctionSpaceType      FunctionSpaceType;
 
     struct AnalyticalTraits
     {

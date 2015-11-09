@@ -62,9 +62,10 @@ struct StokesProblemCreator
       typedef HostGridPartType                                GridPartType;
 
       // define problem type here if interface should be avoided
-      typedef Dune::Fem::FunctionSpace< typename GridType::ctype, double, GridType::dimension, DIMRANGE >
-                                                                    FunctionSpaceType;
-      typedef Dune::ProblemInterface< FunctionSpaceType >           ProblemInterfaceType;
+      typedef Dune::ProblemInterface< Dune::Fem::FunctionSpace< typename GridType::ctype, double, GridType::dimension, DIMRANGE > >
+                                                                    ProblemInterfaceType;
+
+      typedef typename ProblemInterfaceType::FunctionSpaceType      FunctionSpaceType;
 
       struct AnalyticalTraits
       {
@@ -142,15 +143,16 @@ struct StokesProblemCreator
       };
     };
 
-    typedef typename SubPoissonProblemCreator::GridType             GridType;
-    typedef typename SubPoissonProblemCreator::HostGridPartType     HostGridPartType;
-    typedef typename SubPoissonProblemCreator::GridPartType         GridPartType;
+    typedef typename SubPoissonProblemCreator::GridType              GridType;
+    typedef typename SubPoissonProblemCreator::HostGridPartType      HostGridPartType;
+    typedef typename SubPoissonProblemCreator::GridPartType          GridPartType;
 
-    typedef Dune::Fem::FunctionSpace< typename GridType::ctype, double, GridType::dimension, 1 >
-                                                                    FunctionSpaceType;
     // define problem type here if interface should be avoided
     typedef Dune::StokesProblemInterface< typename SubPoissonProblemCreator::FunctionSpaceType /*velocity*/,
-                                          FunctionSpaceType >       ProblemInterfaceType;
+                                          Dune::Fem::FunctionSpace< typename GridType::ctype, double, GridType::dimension, 1 > >
+                                                                     ProblemInterfaceType;
+
+    typedef typename ProblemInterfaceType::PressureFunctionSpaceType FunctionSpaceType;
 
     struct AnalyticalTraits
     {

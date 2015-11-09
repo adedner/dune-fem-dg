@@ -56,10 +56,10 @@ struct AdvectionDiffusionProblemCreator
     typedef Dune::Fem::DGAdaptiveLeafGridPart< GridType > HostGridPartType;
     typedef HostGridPartType                              GridPartType;
 
-    typedef Dune::Fem::FunctionSpace< typename GridType::ctype, double, GridType::dimension, DIMRANGE> FunctionSpaceType;
-
     // define problem type here if interface should be avoided
-    typedef Dune::EvolutionProblemInterface< FunctionSpaceType,false >      ProblemInterfaceType;
+    typedef Dune::EvolutionProblemInterface< FunctionSpaceType,false > ProblemInterfaceType;
+
+    typedef typename ProblemInterfaceType::FunctionSpaceType           FunctionSpaceType;
 
     struct AnalyticalTraits
     {

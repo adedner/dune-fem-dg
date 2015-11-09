@@ -17,11 +17,10 @@ namespace Dune
 			                        	    Dune::Fem::FunctionSpace< double, double, GridImp :: dimension, 1 >  >,
       public EvolutionProblemInterface< Dune::Fem::FunctionSpace< double, double,  GridImp :: dimension, GridImp :: dimension >, false >
   {
+  public:
     typedef Dune::Fem::FunctionSpace< double, double, GridImp :: dimension, GridImp :: dimension > FunctionSpaceType ;
     typedef Dune::Fem::FunctionSpace< double, double, GridImp :: dimension, 1 > PressureFunctionSpaceType ;
     typedef StokesProblemInterface<FunctionSpaceType,PressureFunctionSpaceType> BaseType;
-
-  public:
 
     static const int dimRange  = FunctionSpaceType::dimRange;
     static const int dimDomain = FunctionSpaceType::dimDomain;

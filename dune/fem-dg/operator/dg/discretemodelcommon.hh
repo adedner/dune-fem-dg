@@ -14,12 +14,6 @@
 
 namespace Dune {
 
-  /**
-   * \defgroup DiscreteModels
-   *
-   */
-
-
   template < int idx >
   struct PrintTupleValues
   {
@@ -291,7 +285,7 @@ namespace Dune {
         else
         {
           // returns advection wave speed
-          return model_.boundaryFlux( left, left.values()[uVar], gLeft );
+          return model_.boundaryFlux( left, left.values()[uVar], left.jacobians()[uVar], gLeft );
         }
       }
       else

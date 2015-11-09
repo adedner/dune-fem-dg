@@ -22,9 +22,9 @@ class StokesProblemInterface : public ProblemInterface < FunctionSpaceImp >
 {
 public:
   typedef FunctionSpaceImp                                           FunctionSpaceType;
-  typedef PressureSpaceImp                                           PressureSpaceType;
+  typedef PressureSpaceImp                                           PressureFunctionSpaceType;
 
-  typedef StokesProblemInterface< FunctionSpaceType, PressureSpaceType>  ThisType;
+  typedef StokesProblemInterface< FunctionSpaceType, PressureFunctionSpaceType>  ThisType;
 
   enum { dimDomain = FunctionSpaceType :: dimDomain };
 
@@ -34,8 +34,8 @@ public:
   typedef typename FunctionSpaceType :: DomainFieldType              DomainFieldType;
   typedef typename FunctionSpaceType :: RangeFieldType               RangeFieldType;
 
-  typedef typename PressureSpaceType :: RangeType                    PressureRangeType;
-  typedef typename PressureSpaceType :: JacobianRangeType            PressureJacobianRangeType;
+  typedef typename PressureFunctionSpaceType :: RangeType            PressureRangeType;
+  typedef typename PressureFunctionSpaceType :: JacobianRangeType    PressureJacobianRangeType;
 
   typedef FieldMatrix< RangeFieldType, dimDomain, dimDomain >        DiffusionMatrixType;
 
@@ -69,14 +69,14 @@ protected:
 
   //! the exact pressure to the problem for EOC calculation
   class ExactPressure
-    : public Fem::Function< PressureSpaceType, ExactPressure >
+    : public Fem::Function< PressureFunctionSpaceType, ExactPressure >
   {
   private:
-    typedef Fem::Function< PressureSpaceType, ExactPressure >      BaseType;
+    typedef Fem::Function< PressureFunctionSpaceType, ExactPressure >            BaseType;
 
-    typedef StokesProblemInterface< FunctionSpaceType,PressureSpaceType>   DataType;
+    typedef StokesProblemInterface< FunctionSpaceType,PressureFunctionSpaceType> DataType;
   protected:
-    PressureSpaceType  functionSpace_;
+    PressureFunctionSpaceType  functionSpace_;
     const DataType &data_;
 
   public:
