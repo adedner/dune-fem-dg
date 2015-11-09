@@ -1,5 +1,5 @@
 Module: dune-fem-dg
 Version: 0.1
 Maintainer: dune@mathematik.uni-freiburg.de
-Depends: dune-fem (>= 1.3.0)
+Depends: dune-fem 
 Sources: dune

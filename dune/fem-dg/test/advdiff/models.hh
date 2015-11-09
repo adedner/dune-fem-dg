@@ -294,18 +294,6 @@ public:
     return true;
   }
 
-  /**
-   * \brief neuman boundary values \f$g_N\f$ for pass2
-   */
-  template <class LocalEvaluation>
-  inline double boundaryFlux(const LocalEvaluation& local,
-                             const RangeType& uLeft,
-                             const GradientType& vLeft,
-                             RangeType& gLeft) const
-  {
-    gLeft = 0.;
-    return 0.;
-  }
 
   /**
    * \brief neuman boundary values \f$g_N\f$ for pass1

@@ -253,6 +253,7 @@ class NSModel : public DefaultModel < NSModelTraits< GridPartType, ProblemImp > 
   template <class LocalEvaluation>
   inline double boundaryFlux( const LocalEvaluation& local,
                               const RangeType& uLeft,
+                              const JacobianRangeType&,
                               RangeType& gLeft ) const
   {
     abort();

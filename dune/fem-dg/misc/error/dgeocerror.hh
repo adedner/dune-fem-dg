@@ -3,7 +3,7 @@
 
 #include <dune/fem/misc/femeoc.hh>
 #include <dune/fem-dg/misc/dgnorm.hh>
-
+#include <dune/fem/misc/femeoc.hh>
 
 class DGEOCError
 {

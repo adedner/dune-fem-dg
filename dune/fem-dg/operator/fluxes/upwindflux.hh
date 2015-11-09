@@ -40,6 +40,8 @@ namespace Dune
 
     static std::string name () { return "UpwindFlux"; }
 
+    const Model& model() const {return model_;}
+
     /**
      * \brief evaluates the flux \f$g(u,v)\f$
      *
