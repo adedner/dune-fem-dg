@@ -95,7 +95,7 @@ public:
     }
     if( problemNumber == 13 )
     {
-      data_ = new InSpringingCorner<dim,FieldType,FieldType> (shift,factor);
+      data_ = new ReentrantCorner<dim,FieldType,FieldType> (shift,factor);
     }
     if( problemNumber == 14 )
     {
