@@ -1,0 +1,42 @@
+/* 
+This file determines the order how things appear in the doxygen
+documentation within the Grid group. It works like this:
+
+\defgroup commands appear only in this file here which is
+parsed before the other files (because it is mentioned first 
+in the Doxyfile).
+
+Only \addtogroup is used in the code documentation.
+*/
+
+/**
+
+
+ \defgroup AnalyticalModels
+
+ Analytical Models
+\defgroup DiscreteModels
+ \defgroup SpaceOperators Space operator
+
+ These operators are used for the spatial discretization of a PDE.
+\defgroup DiffusionFluxes Diffusion Fluxes
+\ingroup Fluxes
+
+A flux class for diffusive numerical fluxes.
+\defgroup Fluxes Analytical and Numerical Fluxes
+
+A numerical flux is given by...
+
+A the moment fluxes can be separated into to categories:
+An advective flux or a diffusive flux.
+
+\defgroup AdvectionFluxes Advection Fluxes
+\ingroup Fluxes
+
+An advective numerical flux is given by...
+
+\defgroup AnalyticalFluxes Analytical Fluxes
+\ingroup Fluxes
+
+Defines analytical fluxes.
+*/

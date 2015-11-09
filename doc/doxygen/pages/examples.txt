@@ -1,0 +1,16 @@
+/**
+\page Examples Some Examples for Solving PDEs
+
+All examples fulfill a general problem structure which is described 
+in the following page:
+\li \subpage GeneralProblemStructure  "General Problem Structure"
+
+Some example implementations can be found here:
+\li \subpage Poisson "Poisson"
+\li \subpage Stokes "Stokes"
+\li \subpage AdvectionDiffusion "Advection Diffusion"
+\li \subpage Euler "Euler"
+\li \subpage Navierstokes "Navierstokes"
+\li \subpage IncompNavierstokes "Incompressible Navierstokes"
+
+*/

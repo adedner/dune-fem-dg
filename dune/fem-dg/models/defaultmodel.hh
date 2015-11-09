@@ -8,14 +8,6 @@
 #include <dune/fem/misc/fmatrixconverter.hh>
 
 /**
- *  \defgroup AnalyticalModels
- *
- *  Analytical Models
- */
-
-
-
-/**
  * \brief Analytical model interface
  *
  * \ingroup AnalyticalModels

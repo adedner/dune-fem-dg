@@ -2,15 +2,6 @@
 #define DUNE_FEM_DG_ANALYTICALFLUXES_HH
 
 /**
- * \defgroup AnalyticalFluxes Analytical Fluxes
- *
- * \ingroup Fluxes
- *
- * Defines analytical fluxes.
- */
-
-
-/**
  * \brief Defines an interface for analytical fluxes
  *
  * \todo Improve this class. At the moment it is only for documentation purposes

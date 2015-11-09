@@ -1,7 +1,14 @@
 # Where to search and which files to use
-INPUT                 += @srcdir@/modules \
+INPUT                 += @srcdir@/modules.txt \
                          @srcdir@/pages/mainpage.txt \
                          @srcdir@/pages/docrules.txt \
+                         @srcdir@/pages/examples.txt \
+                         @srcdir@/pages/poisson.txt \
+                         @srcdir@/pages/euler.txt \
+                         @srcdir@/pages/stokes.txt \
+                         @srcdir@/pages/navierstokes.txt \
+                         @srcdir@/pages/advectiondiffusion.txt \
+                         @srcdir@/pages/incompnavierstokes.txt \
                          @top_srcdir@/dune/fem-dg 
 
 #EXCLUDE               += @top_srcdir@/dune/fem-dg/test 

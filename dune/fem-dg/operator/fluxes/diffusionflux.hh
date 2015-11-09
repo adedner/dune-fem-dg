@@ -9,16 +9,6 @@
 
 namespace Dune {
 
-  /**
-   * \defgroup DiffusionFluxes Diffusion Fluxes
-   *
-   * \ingroup Fluxes
-   *
-   * A flux class for diffusive numerical fluxes.
-   *
-   */
-
-
 
   // DGFluxTupleToVectorConverter
   //-----------------------------

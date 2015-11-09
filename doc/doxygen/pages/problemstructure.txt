@@ -1,0 +1,4 @@
+/**
+\page GeneralProblemStructure
+The following page shows the rough structure of a framework.
+*/

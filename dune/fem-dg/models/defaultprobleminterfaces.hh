@@ -10,12 +10,6 @@
 namespace Dune {
 
 /**
- * \addtogroup Problems
- *
- * A Problem class defines all data.
- */
-
-/**
  * \brief describes the interface for
  * initial and exact solution of the advection-diffusion model
  *

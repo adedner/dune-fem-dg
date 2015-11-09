@@ -8,28 +8,6 @@ namespace Dune
 {
 
   /**
-   * \defgroup Fluxes Analytical and Numerical Fluxes
-   *
-   * A numerical flux is given by...
-   *
-   * A the moment fluxes can be separated into to categories:
-   * An advective flux or a diffusive flux.
-   *
-   */
-
-
-  /**
-   * \defgroup AdvectionFluxes Advection Fluxes
-   *
-   * \ingroup Fluxes
-   *
-   * An advective numerical flux is given by...
-   *
-   *
-   */
-
-
-  /**
    * \brief defines the advective flux using an upwind scheme
    *
    * \ingroup AdvectionFluxes

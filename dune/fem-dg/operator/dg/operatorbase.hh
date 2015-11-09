@@ -20,15 +20,6 @@
 
 namespace Dune {
 
-
-
-  /**
-   *  \defgroup SpaceOperators Space operator
-   *
-   *  These operators are used for the spatial discretization of a PDE.
-   */
-
-
   // DGAdvectionDiffusionOperatorBase
   //---------------------------------
 
