@@ -2,6 +2,10 @@
 #define FEMDG_NAVIERSTOKESSTEPPER_HH
 #include <config.h>
 
+#ifndef GRIDDIM
+#define GRIDDIM 2
+#endif
+
 #ifndef DIMRANGE
 #define DIMRANGE GRIDDIM + 2
 #endif

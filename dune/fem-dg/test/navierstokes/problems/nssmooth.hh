@@ -9,7 +9,7 @@
 #include <dune/fem/space/common/functionspace.hh>
 
 // local includes
-#include "thermodynamics.hh"
+#include "../thermodynamics.hh"
 #include <dune/fem-dg/models/defaultprobleminterfaces.hh>
 
 

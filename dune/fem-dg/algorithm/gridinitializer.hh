@@ -11,6 +11,7 @@
 #include <dune/fem-dg/misc/parameterkey.hh>
 
 #include <dune/fem-dg/algorithm/handler/checkpoint.hh>
+#include <dune/fem-dg/algorithm/handler/adapt.hh>
 
 namespace Dune
 {

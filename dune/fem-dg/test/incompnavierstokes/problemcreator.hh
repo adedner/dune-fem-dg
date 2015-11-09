@@ -2,6 +2,10 @@
 #define DUNE_FEM_DG_INCOMP_NAVIERSTOKES_HH
 #include <config.h>
 
+#ifndef GRIDDIM
+#define GRIDDIM 2
+#endif
+
 #ifndef DIMRANGE
 #define DIMRANGE GRIDDIM
 #endif

@@ -87,7 +87,7 @@ namespace Dune {
     {
     }
 
-    static_assert( (int)DiscreteFunctionType::DiscreteFunctionSpaceType::FunctionSpaceType::dimRange == DIMRANGE , "stokes assembler: velocity dimrange does not fit");
+    static_assert( (int)DiscreteFunctionType::DiscreteFunctionSpaceType::FunctionSpaceType::dimRange == DiscreteFunctionType::GridType::dimension, "stokes assembler: velocity dimrange does not fit");
     static_assert( (int)PressureDiscreteFunctionType::DiscreteFunctionSpaceType::FunctionSpaceType::dimRange == 1 , "stokes assembler: pressure dimrange does not fit");
 
 

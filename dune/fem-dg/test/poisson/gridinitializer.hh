@@ -4,6 +4,7 @@
 #include <dune/fem/io/parameter.hh>
 
 #include <dune/fem-dg/algorithm/handler/checkpoint.hh>
+#include <dune/fem-dg/algorithm/gridinitializer.hh>
 
 namespace Dune
 {
