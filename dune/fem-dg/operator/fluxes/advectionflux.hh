@@ -1,6 +1,8 @@
 #ifndef FEMDG_ADVECTION_FLUX_HH
 #define FEMDG_ADVECTION_FLUX_HH
 
+#include <string>
+#include <assert.h>
 
 namespace Dune
 {

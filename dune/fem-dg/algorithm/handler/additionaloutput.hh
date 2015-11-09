@@ -10,7 +10,7 @@
 
 #include <dune/fem/quadrature/cachingquadrature.hh>
 #include <dune/fem-dg/misc/optional.hh>
-
+#include <dune/fem/function/common/gridfunctionadapter.hh>
 
 
 namespace Dune

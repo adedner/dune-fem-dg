@@ -3,7 +3,7 @@
 
 #include <dune/fem-dg/solver/linearsolvers.hh>
 #include <dune/fem-dg/operator/dg/dgoperatorchoice.hh>
-
+#include <dune/fem/operator/projection/l2projection.hh>
 
 enum AdvectionDiffusionOperatorType
 {

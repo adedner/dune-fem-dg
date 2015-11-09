@@ -6,19 +6,11 @@
 #include <string>
 
 // dune-fem includes
-#include <dune/fem/gridpart/adaptiveleafgridpart.hh>
-#include <dune/fem/gridpart/common/gridpart.hh>
 #include <dune/fem/misc/gridwidth.hh>
-#include <dune/fem/solver/newtoninverseoperator.hh>
 
-#include <dune/fem-dg/misc/parameterkey.hh>
 #include <dune/fem-dg/misc/typedefcheck.hh>
-#include <dune/fem-dg/misc/optional.hh>
 #include <dune/fem-dg/misc/tupleutility.hh>
 #include <dune/fem-dg/misc/covarianttuple.hh>
-
-#include <dune/fem-dg/algorithm/base.hh>
-#include <dune/fem-dg/algorithm/sub/evolution.hh>
 
 #include <dune/fem-dg/algorithm/handler/solvermonitor.hh>
 #include <dune/fem-dg/algorithm/handler/diagnostics.hh>

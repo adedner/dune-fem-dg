@@ -23,21 +23,23 @@ class AnalyticalFluxBase
 {
   public:
 
-  typedef Model                 ModelType;
+  typedef Model                         ModelType;
+  typedef typename ModelType::FieldType FieldType;
+  typedef typename ModelType::RangeType RangeType;
 
   AnalyticalFluxBase( const ModelType& mod )
     : model_( mod )
   {}
 
 
-  template <class RangeType, class FluxRangeType>
+  template <class FluxRangeType>
   void analyticalFlux( const FieldType gamma,
                        const RangeType& u,
                        FluxRangeType& f) const
   {
   }
 
-  template <class RangeType, class FluxRangeType>
+  template <class FluxRangeType>
   void jacobian( const FieldType gamma,
                  const RangeType& u,
                  const FluxRangeType& du,

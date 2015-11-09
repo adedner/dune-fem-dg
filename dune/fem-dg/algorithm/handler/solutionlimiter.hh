@@ -1,8 +1,8 @@
 #ifndef FEMDG_ALGORITHM_SOLUTIONLIMITERHANDLER_HH
 #define FEMDG_ALGORITHM_SOLUTIONLIMITERHANDLER_HH
 
-#include <string>
 #include <dune/fem-dg/misc/tupleutility.hh>
+#include <dune/common/forloop.hh>
 
 namespace Dune
 {

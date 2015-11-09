@@ -5,6 +5,7 @@
 #include <tuple>
 #include <type_traits>
 
+#include <dune/common/forloop.hh>
 #include <dune/fem/misc/mpimanager.hh>
 #include <dune/fem/io/file/datawriter.hh>
 #include <dune/fem/io/parameter.hh>

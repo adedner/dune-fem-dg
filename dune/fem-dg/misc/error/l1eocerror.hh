@@ -1,6 +1,7 @@
 #ifndef FEMDG_L1EOCERROR_HH
 #define FEMDG_L1EOCERROR_HH
 
+#include <dune/fem/misc/femeoc.hh>
 #include <dune/fem/misc/l1norm.hh>
 
 

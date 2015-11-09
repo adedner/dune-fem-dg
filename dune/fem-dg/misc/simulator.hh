@@ -1,6 +1,13 @@
 #ifndef DUNE_FEM_DG_SIMULATOR_HH
 #define DUNE_FEM_DG_SIMULATOR_HH
 
+#include <config.h>
+
+#ifdef HEADERCHECK
+#define YASPGRID
+#define GRIDDIM 2
+#endif
+
 #if defined GRIDDIM
 #ifndef CODEDIM
 #define CODEDIM GRIDDIM

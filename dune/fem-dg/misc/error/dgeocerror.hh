@@ -1,6 +1,7 @@
 #ifndef FEMDG_DGEOCERROR_HH
 #define FEMDG_DGEOCERROR_HH
 
+#include <dune/fem/misc/femeoc.hh>
 #include <dune/fem-dg/misc/dgnorm.hh>
 
 

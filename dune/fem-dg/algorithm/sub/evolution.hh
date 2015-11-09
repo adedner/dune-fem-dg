@@ -5,7 +5,6 @@
 #include <string>
 #include <type_traits>
 
-#include <dune/fem-dg/pass/threadpass.hh>
 #include <dune/fem/misc/gridwidth.hh>
 
 #include <dune/fem-dg/misc/typedefcheck.hh>

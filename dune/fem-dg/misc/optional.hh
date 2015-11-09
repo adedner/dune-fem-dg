@@ -1,6 +1,8 @@
 #ifndef DUNE_OPTIONAL_HH
 #define DUNE_OPTIONAL_HH
 
+#include <utility>
+
   template< class Obj >
   class OptionalObject
     : public Obj

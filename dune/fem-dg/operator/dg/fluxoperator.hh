@@ -58,21 +58,24 @@ namespace Dune {
     {
       // overload discrete function space
       typedef typename Traits :: DiscreteFunctionSpaceType :: template
-        ToNewDimRange< ModelType::dimGradRange > :: Type                   DiscreteFunctionSpaceType;
+        ToNewDimRange< ModelType::dimGradRange > :: Type        DiscreteFunctionSpaceType;
 
-      template < template <class> DF >
-      struct ToNewSpace< DF< typename Traits :: DiscreteFunctionSpaceType > >
+      template < class DF >
+      struct ToNewSpace;
+
+      template < class Space, template <class> class DF >
+      struct ToNewSpace< DF< Space > >
       {
         typedef DF< DiscreteFunctionSpaceType > Type;
       };
 
-      template < class Arg, template <class, class> DF >
-      struct ToNewSpace< DF< typename Traits :: DiscreteFunctionSpaceType, Arg > >
+      template < class Space, typename... Args, template < class, typename... > class DF >
+      struct ToNewSpace< DF< Space, Args... > >
       {
-        typedef DF< DiscreteFunctionSpaceType, Arg > Type;
+        typedef DF< DiscreteFunctionSpaceType, Args... > Type;
       };
 
-      typedef typename ToNewSpace< DestinationType > :: Type       DestinationType;
+      typedef typename ToNewSpace< typename Traits::DestinationType > :: Type       DestinationType;
     };
 
     typedef GradientModel< GradientTraits, u >       DiscreteModel1Type;

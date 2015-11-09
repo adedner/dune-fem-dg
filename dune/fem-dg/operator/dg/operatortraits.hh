@@ -5,6 +5,7 @@
 #include <dune/fem-dg/operator/fluxes/diffusionflux.hh>
 #include <dune/fem-dg/operator/adaptation/adaptation.hh>
 #include <dune/fem/space/finitevolume/space.hh>
+#include <dune/fem/function/adaptivefunction/adaptivefunction.hh>
 
 namespace Dune {
 

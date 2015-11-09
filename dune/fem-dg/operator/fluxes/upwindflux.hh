@@ -1,6 +1,7 @@
 #ifndef FEMDG_UPWIND_FLUX_HH
 #define FEMDG_UPWIND_FLUX_HH
 
+#include <cmath>
 #include <dune/fem-dg/operator/fluxes/advectionflux.hh>
 
 namespace Dune
