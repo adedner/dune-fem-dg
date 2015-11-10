@@ -1,4 +1,36 @@
 /**
 \page Poisson
-This solves the poisson problem.
+
+This solves the poisson problem which is given by
+
+\subsection AnalyticalModelPoisson Analytical Model
+
+Let \f$ \Omega\subset \mathbb{R}^d\f$ be a domain and \f$T_h \f$ be a triangulation.
+
+This is an description class for the problem
+\f{eqnarray*}{ 
+               V + \nabla a(U)      & = & 0 \\
+\partial_t U + \nabla (F(U)+A(U,V)) & = & S(U) \\
+                         U          & = & g_D \\
+                  \nabla U \cdot n  & = & g_N 
+\f}
+
+
+
+| Method                     | formular                                  |
+| -------------------------- | ----------------------------------------- |
+| stiffSource()              | \f$ S_1 \f$ with \f$ S_1=S-S_2 \f$        |
+| nonStiffSource()           | \f$ S_2 \f$ with \f$ S_2=S-S_1 \f$        |
+| boundaryValue()            | \f$ g_D\f$                                |
+| hasBoundaryValue()         | true if \f$ x \in \Gamma_D \f$            |
+| diffusion()                | \f$ A \f$                                 |    
+| advection()                | \f$ F \f$                                 |
+| jacobian()                 | \f$ a \f$                                 |
+| boundaryFlux()             | \f$ g_N \f$                               |                               
+| diffusionBoundaryFlux()    | \f$ ??? \f$                               |                               
+| -------------------------- |  ---------------------------------------- |
+| hasFlux()                  | true if \f$ F\neq 0\f$, false otherwise   |
+| hasStiffSource()           | true if \f$ S_1\neq 0\f$, false otherwise |
+| hasNonStiffSource()        | true if \f$ S_2\neq 0\f$, false otherwise |
+| 
 */

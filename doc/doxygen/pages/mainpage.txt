@@ -8,14 +8,75 @@ Welcome to the %dune-fem-dg documentation pages. This documentation has been
 generated using Doxygen, a free source code documentation system for
 documenting C/C++ code.
 
-The best way to start is from the page \ref modules which gives
-you access to the documentation by category; a list
-of the central interface classes can be found
-\ref interfaceclass "here". 
+\subsection Overview What is dune-fem-dg?
 
-A summary of the
-main features and concepts can be found \ref Intro "here".
-Newly added implementations are linked on
-\ref newimplementation "this page".
+dune-fem-dg is a modular toolbox for solving partial differential equations. 
+
+A particular strength of dune-fem-dg is the possibility to test different numerical schemes with different parameters, i.e.:
+
+| Option                                   | Possible Values           | 
+| ---------------------------------------- | ------------------------- |
+| \ref DiffusionFluxes "DiffusionFlux"     | BR, CDG, CDG2...          |
+| \ref AdvectionFluxes "AdvectionFlux"     | LLF, HLLC...              |
+| GalerkinType                             | CG, DG                    |
+| Solver                                   | istl, fem...              |
+| polOrder                                 | 0, 1, 2...                |
+| GridDim                                  | 1,2,3...                  |
+| Adaptation                               | no, yes (Estimator...)    |
+| DimRange                                 | 1,2,3..                   |
+| Assembly                                 | matrix-free/matrix-based  |
+| Codegen                                  | yes/no                    |
+| Parallel                                 | yes/no                    |
+
+\note Depending on the implementation of the PDEs not all combination of parameters might work.
+
+\subsection PDEs Which PDEs can be solved by dune-fem-dg?
+
+- \ref Poisson "Poisson"
+- \ref Stokes "Stokes"
+- \ref AdvectionDiffusion "Advection-diffusion"
+- \ref Euler "Euler"
+- \ref Navierstokes "Navier-Stokes"
+- \ref IncompNavierstokes "incompressible Navier-Stokes"
+
+All PDEs fulfill a certain structure which can be found \ref GeneralProblemStructure "here".
+
+\subsection UserStart How should I start reading this documentation?
+
+The way of reading this documenation should strongly depend on your personal interests and needs.
+
+We mainly distinguish between five different scenarios:
+
+| Task                                                     | Starting point           | Expertise     |
+|--------------------------------------------------------- | ------------------------ | ------------- |
+| __analytical Modification__ of existing PDEs             | \ref Examples "Examples" | very low      | 
+| __numerical Modification__ of existing PDEs              | here                     | low to middle |            
+| writing __new PDE solvers__                              | here                     | high          |
+| __multi physics__, i.e. combination of existing modules  | here                     | high          |
+| __hardware optimization__                                | here                     | high          |
+
+\note dune-fem-dg depends on dune-fem which can be found under the following link <http://dune.mathematik.uni-freiburg.de/index.html>
+
+\subsection Contribution How can I contribute?
+
+We are always looking for external contribution to enlarge the power of this tool box.
+
+Some examples we are looking for, are
+
+- Navier-Stokes + Combustion
+- MHD
+- Biharmonic
+- Wave equations
+- Elasticity
+- PDEs on surfaces
+- Multi physics applications
+- ...
+
+
+\subsection Citation How to cite this tool box?
+
+Please cite the following article:
+
+> Dedner, Girke, Kloefkorn, Malkmus: ""
 
 */

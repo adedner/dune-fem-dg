@@ -9,6 +9,7 @@ INPUT                 += @srcdir@/modules.txt \
                          @srcdir@/pages/navierstokes.txt \
                          @srcdir@/pages/advectiondiffusion.txt \
                          @srcdir@/pages/incompnavierstokes.txt \
+                         @srcdir@/pages/problemstructure.txt \
                          @top_srcdir@/dune/fem-dg 
 
 #EXCLUDE               += @top_srcdir@/dune/fem-dg/test 
