@@ -18,6 +18,7 @@ namespace Dune
  *********************************************/
 /**
  * \brief Traits class for StokesModel
+ *
  */
 template <class GridPart,
           class ProblemImp>
@@ -173,16 +174,6 @@ public:
     for( int r=0; r<dimRange; ++r )
       for( int d=0; d<dimDomain; ++d )
         f[r][d] = v[ d ] * u[ r ];
-  }
-
-  bool hasDirichletBoundary () const
-  {
-    return true ;
-  }
-
-  bool isDirichletPoint( const DomainType& global ) const
-  {
-    return true ;
   }
 
 protected:

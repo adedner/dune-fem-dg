@@ -190,16 +190,6 @@ public:
     f = 0 ;
   }
 
-  bool hasDirichletBoundary () const
-  {
-    return true ;
-  }
-
-  bool isDirichletPoint( const DomainType& global ) const
-  {
-    return true ;
-  }
-
 protected:
 
   /**

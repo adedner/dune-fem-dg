@@ -167,16 +167,6 @@ public:
         f[r][d] = v[ d ] * u[ r ];
   }
 
-  bool hasDirichletBoundary () const
-  {
-    return true ;
-  }
-
-  bool isDirichletPoint( const DomainType& global ) const
-  {
-    return true ;
-  }
-
   template <class LocalEvaluation>
   DomainType velocity( const LocalEvaluation& local ) const
   {
