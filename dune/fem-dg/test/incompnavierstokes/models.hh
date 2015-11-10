@@ -17,20 +17,23 @@
  * Analytical model                           *
  *********************************************/
 
+namespace Dune
+{
+
 /**
  * \brief Traits class for NavierStokesModel
  */
 template <class GridPart>
 class NavierStokesModelTraits
-  : public Dune::Fem::FunctionSpace< typename GridPart::GridType::ctype,
-                                     double,
-                                     GridPart::GridType::dimensionworld,
-                                     GridPart::GridType::dimensionworld >
+  : public Fem::FunctionSpace< typename GridPart::GridType::ctype,
+                               double,
+                               GridPart::GridType::dimensionworld,
+                               GridPart::GridType::dimensionworld >
 {
-  typedef Dune::Fem::FunctionSpace< typename GridPart::GridType::ctype,
-                                    double,
-                                    GridPart::GridType::dimensionworld,
-                                    GridPart::GridType::dimensionworld >  BaseType;
+  typedef Fem::FunctionSpace< typename GridPart::GridType::ctype,
+                              double,
+                              GridPart::GridType::dimensionworld,
+                              GridPart::GridType::dimensionworld >  BaseType;
 public:
   typedef GridPart                                                      GridPartType;
   typedef typename GridPartType :: GridType                             GridType;
@@ -43,17 +46,17 @@ public:
   static const int dimGradRange = dimRange * dimDomain ;
 
   // Definition of domain and range types
-  typedef Dune::FieldVector< DomainFieldType, dimDomain-1 >             FaceDomainType;
-  typedef Dune::FieldVector< RangeFieldType, dimGradRange >             GradientType;
+  typedef FieldVector< DomainFieldType, dimDomain-1 >             FaceDomainType;
+  typedef FieldVector< RangeFieldType, dimGradRange >             GradientType;
   // ATTENTION: These are matrices (c.f. NavierStokesModel)
   typedef typename BaseType :: JacobianRangeType                        FluxRangeType;
-  typedef Dune::FieldMatrix< RangeFieldType, dimGradRange, dimDomain >  DiffusionRangeType;
-  typedef Dune::FieldMatrix< RangeFieldType, dimDomain, dimDomain >     DiffusionMatrixType;
+  typedef FieldMatrix< RangeFieldType, dimGradRange, dimDomain >  DiffusionRangeType;
+  typedef FieldMatrix< RangeFieldType, dimDomain, dimDomain >     DiffusionMatrixType;
   typedef typename GridType :: template Codim< 0 > :: Entity            EntityType;
   typedef typename GridPartType :: IntersectionIteratorType             IntersectionIterator;
   typedef typename IntersectionIterator :: Intersection                 IntersectionType;
 
-  //typedef Dune::Fem::MinModLimiter< FieldType > LimiterFunctionType ;
+  //typedef Fem::MinModLimiter< FieldType > LimiterFunctionType ;
   //typedef SuperBeeLimiter< FieldType > LimiterFunctionType ;
   //typedef VanLeerLimiter< FieldType > LimiterFunctionType ;
 };
@@ -105,9 +108,9 @@ public:
   typedef std::integral_constant< int, rhs       > rhsVar;
   typedef std::tuple < velocityVar, rhsVar > ModelParameter;
 
-  //typedef Dune::Fem::Selector< velo >  ModelParameterSelectorType;
+  //typedef Fem::Selector< velo >  ModelParameterSelectorType;
   //typedef std::tuple< VelocityType* >  ModelParameterTypes;
-  //typedef Dune::Fem::Selector< >  ModelParameterSelectorType;
+  //typedef Fem::Selector< >  ModelParameterSelectorType;
   //typedef std::tuple< >  ModelParameterTypes;
 
   // for heat equations advection is disabled
@@ -392,4 +395,5 @@ public:
   double theta_;
 };
 
+}
 #endif

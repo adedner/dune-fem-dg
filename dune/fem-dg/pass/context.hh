@@ -8,6 +8,14 @@
 
 namespace Dune
 {
+
+  /**
+   * \brief Container class describing (many) information which are related to
+   * the local evaluation of a discrete function.
+   *
+   * \note This class was introduced to allow more flexible interfaces for classes
+   * needing a local evaluation.
+   */
   template <class Entity,
             class Quadrature,
             class RangeTuple,
@@ -103,6 +111,45 @@ namespace Dune
       }
     };
 
+    /**
+     * \brief Returns the values for a local function regarding a static id or the evaluation of a functor
+     *
+     * The evaluation of the local function is dependent on the VarId which is
+     * given by the functor which is passed as an argument.
+     *
+     * There are two cases
+     * - Case Functor::VarId is found RangeTuple: return values()[Functor::VarId]
+     * - Case Functor::VarId is not found RangeTuple: return Functor( args )
+     *
+     * The idea of this class is to allow the combination of either
+     * - discrete data (Function::VarId is found) or
+     * - analytical data (Function::VarId is not found).
+     *
+     * The simplest functor should be a constant functor:
+     * \code{.cpp}
+     * struct ConstantData
+     * {
+     *   typedef varId VarId;
+     *   typedef double ReturnType;
+     *
+     *   const RangeType& operator() () const
+     *   {
+     *     return 42.0;
+     *   }
+     * };
+     * \endcode
+     *
+     * This structure is then called by
+     *
+     * \code{.cpp}
+     * this->evaluate( ConstantData() );
+     * \endcode
+     *
+     * An interesting usage of this functionality could be the Model classes.
+     *
+     * \param functor A functor which should be applied
+     * \param args arguments which should be applied to the functor
+     */
     template <class Functor, class ... Args>
     typename Evaluate< Functor, Contains< RangeTuple, typename Functor::VarId >::value >::ReturnType
     evaluate( const Functor& functor, const Args& ... args ) const
@@ -111,7 +158,12 @@ namespace Dune
     }
   };
 
-
+  /**
+   * \brief Container class describing (many) information which are related to
+   * the local evaluation of a discrete function.
+   *
+   * This class just adds an intersection() method to the class ElementQuadraturePointContext
+   */
   template <class Intersection,
             class Entity,
             class Quadrature,

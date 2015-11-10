@@ -45,6 +45,10 @@
 //--------- PROBLEMCREATORSELECTOR ----------
 #include <dune/fem-dg/misc/problemcreatorselector.hh>
 
+
+namespace Dune
+{
+
 template< class GridImp >
 struct NavierStokesProblemCreator
 {
@@ -54,11 +58,11 @@ struct NavierStokesProblemCreator
   {
 
     typedef GridImp                                         GridType;
-    typedef Dune::Fem::DGAdaptiveLeafGridPart< GridType >   HostGridPartType;
+    typedef Fem::DGAdaptiveLeafGridPart< GridType >         HostGridPartType;
     typedef HostGridPartType                                GridPartType;
 
     // define problem type here if interface should be avoided
-    typedef Dune::NSWaves< GridType >                             ProblemInterfaceType;
+    typedef NSWaves< GridType >                                   ProblemInterfaceType;
 
     typedef typename ProblemInterfaceType::FunctionSpaceType      FunctionSpaceType;
 
@@ -78,8 +82,8 @@ struct NavierStokesProblemCreator
 
     static inline std::string moduleName() { return ""; }
 
-    static inline Dune::GridPtr<GridType>
-    initializeGrid() { return Dune::Fem::DefaultGridInitializer< GridType >::initialize(); }
+    static inline GridPtr<GridType>
+    initializeGrid() { return Fem::DefaultGridInitializer< GridType >::initialize(); }
 
     static ProblemInterfaceType* problem() { return new ProblemInterfaceType(); }
 
@@ -103,15 +107,15 @@ struct NavierStokesProblemCreator
 
       typedef DuneODE::OdeSolverInterface< DiscreteFunctionType >                                 OdeSolverType;
       // type of linear solver for implicit ode
-      typedef Dune::Fem::ParDGGeneralizedMinResInverseOperator< DiscreteFunctionType >            BasicLinearSolverType;
+      typedef Fem::ParDGGeneralizedMinResInverseOperator< DiscreteFunctionType >                  BasicLinearSolverType;
 
       class Operator
       {
         friend DiscreteTraits;
         typedef LLFFlux< typename AnalyticalTraits::ModelType >                                    FluxType;
 
-        typedef Dune::DefaultOperatorTraits< GridPartType, polOrd, AnalyticalTraits,
-                                             DiscreteFunctionType, FluxType, ExtraParameterTuple > OperatorTraitsType;
+        typedef DefaultOperatorTraits< GridPartType, polOrd, AnalyticalTraits,
+                                       DiscreteFunctionType, FluxType, ExtraParameterTuple >       OperatorTraitsType;
 
         static const int hasAdvection = AnalyticalTraits::ModelType::hasAdvection;
         static const int hasDiffusion = AnalyticalTraits::ModelType::hasDiffusion;
@@ -125,28 +129,28 @@ struct NavierStokesProblemCreator
       struct Solver
       {
         // type of linear solver for implicit ode
-        typedef Dune::Fem::ParDGGeneralizedMinResInverseOperator< DiscreteFunctionType >            BasicLinearSolverType;
+        typedef Fem::ParDGGeneralizedMinResInverseOperator< DiscreteFunctionType >                  BasicLinearSolverType;
 
         typedef DuneODE::OdeSolverInterface< DiscreteFunctionType >                                 type;
       };
 
     private:
-      typedef Dune::DGAdaptationIndicatorOperator< typename Operator::OperatorTraitsType, Operator::hasAdvection, Operator::hasDiffusion >
+      typedef DGAdaptationIndicatorOperator< typename Operator::OperatorTraitsType, Operator::hasAdvection, Operator::hasDiffusion >
                                                                                                     IndicatorType;
       typedef Estimator< DiscreteFunctionType, typename AnalyticalTraits::ProblemType >             GradientIndicatorType ;
     public:
 
-      typedef Dune::Fem::AdaptIndicator< IndicatorType, GradientIndicatorType >                     AdaptIndicatorType;
-      typedef Dune::Fem::SubSolverMonitorHandler< Dune::Fem::SolverMonitor >                        SolverMonitorHandlerType;
-      typedef Dune::Fem::SubDiagnosticsHandler< Dune::Diagnostics >                                 DiagnosticsHandlerType;
-      typedef Dune::Fem::ExactSolutionOutputHandler< DiscreteFunctionType >                         AdditionalOutputHandlerType;
+      typedef Fem::AdaptIndicator< IndicatorType, GradientIndicatorType >                           AdaptIndicatorType;
+      typedef Fem::SubSolverMonitorHandler< Fem::SolverMonitor >                                    SolverMonitorHandlerType;
+      typedef Fem::SubDiagnosticsHandler< Diagnostics >                                             DiagnosticsHandlerType;
+      typedef Fem::ExactSolutionOutputHandler< DiscreteFunctionType >                               AdditionalOutputHandlerType;
     };
 
     template <int polOrd>
     struct Stepper
     {
       // this should be ok but could lead to a henn-egg problem
-      typedef Dune::Fem::AdvectionDiffusionAlgorithm< GridType, SubNavierStokesProblemCreator, polOrd > Type;
+      typedef Fem::AdvectionDiffusionAlgorithm< GridType, SubNavierStokesProblemCreator, polOrd > Type;
     };
 
 
@@ -155,17 +159,19 @@ struct NavierStokesProblemCreator
   template <int polOrd>
   struct Stepper
   {
-    typedef Dune::Fem::EvolutionAlgorithm< polOrd, SubNavierStokesProblemCreator > Type;
+    typedef Fem::EvolutionAlgorithm< polOrd, SubNavierStokesProblemCreator > Type;
   };
 
   typedef GridImp                                         GridType;
 
   static inline std::string moduleName() { return ""; }
 
-  static inline Dune::GridPtr<GridType>
-  initializeGrid() { return Dune::Fem::DefaultGridInitializer< GridType >::initialize(); }
+  static inline GridPtr<GridType>
+  initializeGrid() { return Fem::DefaultGridInitializer< GridType >::initialize(); }
 
 
 };
+
+}
 
 #endif // FEMHOWTO_HEATSTEPPER_HH

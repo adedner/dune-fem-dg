@@ -102,6 +102,11 @@ namespace Fem
   // AlgorithmInterface
   // -------------
 
+  /**
+   *  \brief interface class for all algorithms
+   *  \ingroup Algorithm
+   *
+   */
   template< class AlgorithmTraits >
   class AlgorithmInterface
   {

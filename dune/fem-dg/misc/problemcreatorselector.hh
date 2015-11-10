@@ -5,6 +5,9 @@
 #include <dune/fem-dg/operator/dg/dgoperatorchoice.hh>
 #include <dune/fem/operator/projection/l2projection.hh>
 
+namespace Dune
+{
+
 enum AdvectionDiffusionOperatorType
 {
   _unlimited = 0,
@@ -138,5 +141,5 @@ struct DiscreteFunctions< DiscreteFunctionSpaceImp, petsc >
 };
 #endif
 
-
+}
 #endif

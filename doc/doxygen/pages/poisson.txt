@@ -5,7 +5,7 @@ This solves the poisson problem which is given by
 
 \subsection AnalyticalModelPoisson Analytical Model
 
-Let \f$ \Omega\subset \mathbb{R}^d\f$ be a domain and \f$T_h \f$ be a triangulation.
+Let \f$ \Omega\subset \mathbb{R}^d\f$ be a domain and \f$\mathcal{T}_h \f$ be a triangulation.
 
 This is an description class for the problem
 \f{eqnarray*}{ 
@@ -32,5 +32,4 @@ This is an description class for the problem
 | hasFlux()                  | true if \f$ F\neq 0\f$, false otherwise   |
 | hasStiffSource()           | true if \f$ S_1\neq 0\f$, false otherwise |
 | hasNonStiffSource()        | true if \f$ S_2\neq 0\f$, false otherwise |
-| 
 */

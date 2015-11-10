@@ -3,6 +3,9 @@
 
 #include <utility>
 
+namespace Dune
+{
+
   template< class Obj >
   class OptionalObject
     : public Obj
@@ -60,5 +63,7 @@
     }
 
   };
+
+}
 
 #endif

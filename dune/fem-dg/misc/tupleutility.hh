@@ -5,6 +5,9 @@
 #include <type_traits>
 #include <dune/common/std/utility.hh>
 
+namespace Dune
+{
+
 /**
  * \brief concats tuples and flattens the result
  *
@@ -88,5 +91,6 @@ struct tuple_reducer< FullTupleImp, Dune::Std::index_sequence< i... > >
 
 };
 
+}
 
 #endif

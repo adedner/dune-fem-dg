@@ -3,6 +3,8 @@
 
 #include <dune/fem-dg/models/defaultmodel.hh>
 
+namespace Dune
+{
 
 template <class GridPart, class ProblemImp >
 class DefaultModelTraits
@@ -40,5 +42,8 @@ class NoModel
   {}
 
 };
+
+
+}
 
 #endif

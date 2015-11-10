@@ -38,6 +38,9 @@
 
 /*********************************************************/
 
+namespace Dune
+{
+
 enum SolverType
 {
   matrixFree,  // use the matrix free version of the dune-fem solvers
@@ -151,5 +154,7 @@ struct Solvers<DFSpace,petsc,symmetric>
   // use the parameter petsc.kspsolver.method
 };
 #endif
+
+}
 
 #endif // end #if DUNE_FEMDG_LINEARSOLVERS_HH

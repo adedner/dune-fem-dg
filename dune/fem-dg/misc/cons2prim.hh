@@ -10,6 +10,8 @@
 
 #include <dune/fem/quadrature/cachingquadrature.hh>
 
+namespace Dune
+{
 
 /** \brief converts a discrete function of conservative variables to
  *    a discrete function of primitive variables for a visualization purpose only
@@ -78,6 +80,8 @@ void setupAdditionalVariables( const TimeProvider& tp,
       primLF.axpy( quad[qP] , prim );
     }
   }
+}
+
 }
 
 #endif

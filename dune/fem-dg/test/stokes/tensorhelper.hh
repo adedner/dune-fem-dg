@@ -1,6 +1,8 @@
 #ifndef TENSORHELPER_HH
 #define TENSORHELPER_HH
 
+namespace Dune
+{
 
 static int dimRange=2;
 class TensorHelper
@@ -65,4 +67,6 @@ public:
     }
   */
 };
+
+}
 #endif

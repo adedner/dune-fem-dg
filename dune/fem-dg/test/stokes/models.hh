@@ -11,7 +11,6 @@ namespace Dune
 {
   template <class ModelType>
   class UpwindFlux;
-}
 
 /**********************************************
  * Analytical model                           *
@@ -154,21 +153,19 @@ public:
   /**
    * \brief advection term \f$F\f$
    *
-   * \param en entity on which to evaluate the advection term
-   * \param time current time of TimeProvider
-   * \param x coordinate local to entity
+   * \param local local evaluation
    * \param u \f$U\f$
+   * \param jacu \f$\nabla U\f$
    * \param f \f$f(U)\f$
    */
   template <class LocalEvaluation>
-  inline  void advection(const LocalEvaluation& local,
+  inline void advection( const LocalEvaluation& local,
                          const RangeType& u,
                          const JacobianRangeType& jacu,
-                         FluxRangeType & f) const
+                         FluxRangeType & f ) const
   {
     // evaluate velocity V
-    DomainType v;
-    velocity( local.entity(), local.time(), local.point(), v );
+    const DomainType v = velocity( local );
 
     //f = uV;
     for( int r=0; r<dimRange; ++r )
@@ -181,12 +178,12 @@ protected:
   /**
    * \brief velocity calculation, is called by advection()
    */
-  inline  void velocity(const EntityType& en,
-                        const double time,
-                        const DomainType& x,
-                        DomainType& v) const
+  template <class LocalEvaluation>
+  inline DomainType velocity ( const LocalEvaluation& local ) const
   {
-    problem_.velocity(en.geometry().global(x), v);
+    DomainType v;
+    problem_.velocity( local.entity().geometry().global( local.point() ), v );
+    return v;
   }
 public:
 
@@ -377,4 +374,5 @@ public:
   friend class Dune::UpwindFlux<StokesModel>;
 };
 
+}
 #endif

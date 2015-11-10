@@ -4,6 +4,9 @@
 #include <tuple>
 #include "tupleutility.hh"
 
+namespace Dune
+{
+
   /**
    *  \brief This class makes use of the "Covariant Return Types" feature in C++ for a std::tuple<>.
    *
@@ -166,5 +169,5 @@
 
   };
 
-
+}
 #endif

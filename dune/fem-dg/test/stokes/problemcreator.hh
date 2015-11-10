@@ -48,6 +48,9 @@
 //--------- PROBLEMCREATORSELECTOR ----------
 #include <dune/fem-dg/misc/problemcreatorselector.hh>
 
+namespace Dune
+{
+
 template< class GridImp >
 struct StokesProblemCreator
 {
@@ -58,11 +61,11 @@ struct StokesProblemCreator
     struct SubPoissonProblemCreator
     {
       typedef GridImp                                         GridType;
-      typedef Dune::Fem::DGAdaptiveLeafGridPart< GridType >   HostGridPartType;
+      typedef Fem::DGAdaptiveLeafGridPart< GridType >         HostGridPartType;
       typedef HostGridPartType                                GridPartType;
 
       // define problem type here if interface should be avoided
-      typedef Dune::ProblemInterface< Dune::Fem::FunctionSpace< typename GridType::ctype, double, GridType::dimension, DIMRANGE > >
+      typedef ProblemInterface< Fem::FunctionSpace< typename GridType::ctype, double, GridType::dimension, DIMRANGE > >
                                                                     ProblemInterfaceType;
 
       typedef typename ProblemInterfaceType::FunctionSpaceType      FunctionSpaceType;
@@ -71,7 +74,7 @@ struct StokesProblemCreator
       {
         typedef ProblemInterfaceType                                ProblemType;
         typedef ProblemInterfaceType                                InitialDataType;
-        typedef StokesModel< GridPartType, InitialDataType >           ModelType;
+        typedef StokesModel< GridPartType, InitialDataType >        ModelType;
 
         template< class Solution, class Model, class ExactFunction, class SigmaFunction>
         static void addEOCErrors ( Solution &u, Model &model, ExactFunction &f, SigmaFunction& sigma )
@@ -89,7 +92,7 @@ struct StokesProblemCreator
 
       static ProblemInterfaceType* problem()
       {
-        return new Dune::GeneralizedStokesProblem< GridType > ();
+        return new GeneralizedStokesProblem< GridType > ();
       }
 
 
@@ -112,15 +115,15 @@ struct StokesProblemCreator
         {
           friend DiscreteTraits;
           friend SolverType;
-          typedef Dune::NoFlux< typename AnalyticalTraits::ModelType >                                FluxType;
+          typedef NoFlux< typename AnalyticalTraits::ModelType >                                      FluxType;
 
-          typedef Dune::DefaultOperatorTraits< GridPartType, polOrd, AnalyticalTraits,
+          typedef DefaultOperatorTraits< GridPartType, polOrd, AnalyticalTraits,
                                                DiscreteFunctionType, FluxType, ExtraParameterTuple >  OperatorTraitsType;
 
-          typedef Dune::DGAdvectionDiffusionOperator< OperatorTraitsType >                            AssemblyOperatorType;
+          typedef DGAdvectionDiffusionOperator< OperatorTraitsType >                                  AssemblyOperatorType;
           typedef Solvers<DiscreteFunctionSpaceType, solverType, symmetricSolver>                     SolversType;
         public:
-          typedef Dune::DGPrimalMatrixAssembly< AssemblyOperatorType >                                AssemblerType;
+          typedef DGPrimalMatrixAssembly< AssemblyOperatorType >                                      AssemblerType;
           typedef typename SolversType::LinearOperatorType                                            type;
         };
 
@@ -130,8 +133,8 @@ struct StokesProblemCreator
         };
 
 
-        typedef Dune::Fem::SubSolverMonitorHandler< Dune::Fem::SolverMonitor >                    SolverMonitorHandlerType;
-        typedef Dune::Fem::SubDiagnosticsHandler< Dune::Diagnostics >                             DiagnosticsHandlerType;
+        typedef Fem::SubSolverMonitorHandler< Fem::SolverMonitor >                                SolverMonitorHandlerType;
+        typedef Fem::SubDiagnosticsHandler< Diagnostics >                                         DiagnosticsHandlerType;
 
       };
 
@@ -139,7 +142,7 @@ struct StokesProblemCreator
       struct Stepper
       {
         // this should be ok but could lead to a henn-egg problem
-        typedef Dune::Fem::EllipticAlgorithm< GridType, SubPoissonProblemCreator, polOrd > Type;
+        typedef Fem::EllipticAlgorithm< GridType, SubPoissonProblemCreator, polOrd > Type;
       };
     };
 
@@ -148,8 +151,8 @@ struct StokesProblemCreator
     typedef typename SubPoissonProblemCreator::GridPartType          GridPartType;
 
     // define problem type here if interface should be avoided
-    typedef Dune::StokesProblemInterface< typename SubPoissonProblemCreator::FunctionSpaceType /*velocity*/,
-                                          Dune::Fem::FunctionSpace< typename GridType::ctype, double, GridType::dimension, 1 > >
+    typedef StokesProblemInterface< typename SubPoissonProblemCreator::FunctionSpaceType /*velocity*/,
+                                    Fem::FunctionSpace< typename GridType::ctype, double, GridType::dimension, 1 > >
                                                                      ProblemInterfaceType;
 
     typedef typename ProblemInterfaceType::PressureFunctionSpaceType FunctionSpaceType;
@@ -170,7 +173,7 @@ struct StokesProblemCreator
 
     static inline std::string moduleName() { return "";}
 
-    static ProblemInterfaceType* problem() { return new Dune::GeneralizedStokesProblem< GridType > (); }
+    static ProblemInterfaceType* problem() { return new GeneralizedStokesProblem< GridType > (); }
 
     //Stepper Traits
     template< int polOrd >
@@ -193,35 +196,35 @@ struct StokesProblemCreator
       {
         friend DiscreteTraits;
         friend SolverType;
-        typedef Dune::NoFlux< typename AnalyticalTraits::ModelType >                                FluxType;
+        typedef NoFlux< typename AnalyticalTraits::ModelType >                                     FluxType;
 
-        typedef Dune::DefaultOperatorTraits< GridPartType, polOrd, AnalyticalTraits,
+        typedef DefaultOperatorTraits< GridPartType, polOrd, AnalyticalTraits,
                                       DiscreteFunctionType, FluxType, ExtraParameterTuple,
                                       typename SubPoissonProblemCreator::FunctionSpaceType >        OperatorTraitsType;
       public:
 
-        typedef typename Dune::StokesAssembler< typename PoissonDiscreteTraits::DiscreteFunctionType,
-                                                DiscreteFunctionType,
-                                                OperatorTraitsType>                                 AssemblerType;
+        typedef StokesAssembler< typename PoissonDiscreteTraits::DiscreteFunctionType,
+                                 DiscreteFunctionType,
+                                 OperatorTraitsType>                                                AssemblerType;
         typedef typename PoissonDiscreteTraits::Operator::type                                      type;
       };
 
       struct Solver
       {
-        typedef Dune::UzawaSolver< typename PoissonDiscreteTraits::DiscreteFunctionType, DiscreteFunctionType, typename Operator::AssemblerType,
-                                   typename PoissonDiscreteTraits::Solver::type >                   type;
+        typedef UzawaSolver< typename PoissonDiscreteTraits::DiscreteFunctionType, DiscreteFunctionType, typename Operator::AssemblerType,
+                             typename PoissonDiscreteTraits::Solver::type >                         type;
       };
 
       static_assert( (int)DiscreteFunctionSpaceType::FunctionSpaceType::dimRange == 1 , "pressure dimrange does not fit");
 
-      typedef Dune::Fem::SubSolverMonitorHandler< Dune::Fem::SolverMonitor >                    SolverMonitorHandlerType;
-      typedef Dune::Fem::SubDiagnosticsHandler< Dune::Diagnostics >                             DiagnosticsHandlerType;
+      typedef Fem::SubSolverMonitorHandler< Fem::SolverMonitor >                                SolverMonitorHandlerType;
+      typedef Fem::SubDiagnosticsHandler< Diagnostics >                                         DiagnosticsHandlerType;
     };
 
     template <int polOrd>
     struct Stepper
     {
-      typedef Dune::Fem::StokesAlgorithm< GridType, SubStokesProblemCreator, SubPoissonProblemCreator, polOrd > Type;
+      typedef Fem::StokesAlgorithm< GridType, SubStokesProblemCreator, SubPoissonProblemCreator, polOrd > Type;
     };
   };
 
@@ -229,18 +232,18 @@ struct StokesProblemCreator
   template <int polOrd>
   struct Stepper
   {
-    typedef Dune::Fem::SteadyStateAlgorithm< polOrd, SubStokesProblemCreator > Type;
+    typedef Fem::SteadyStateAlgorithm< polOrd, SubStokesProblemCreator > Type;
   };
 
   typedef GridImp                                         GridType;
 
   static inline std::string moduleName() { return ""; }
 
-  static inline Dune::GridPtr<GridType>
-  initializeGrid() { return Dune::Fem::PoissonGridInitializer< GridType >::initializeGrid(); }
-
+  static inline GridPtr<GridType>
+  initializeGrid() { return Fem::PoissonGridInitializer< GridType >::initializeGrid(); }
 
 
 };
 
+}
 #endif // FEMHOWTO_HEATSTEPPER_HH

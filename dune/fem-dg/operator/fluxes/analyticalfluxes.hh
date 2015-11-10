@@ -1,6 +1,9 @@
 #ifndef DUNE_FEM_DG_ANALYTICALFLUXES_HH
 #define DUNE_FEM_DG_ANALYTICALFLUXES_HH
 
+
+namespace Dune
+{
 /**
  * \brief Defines an interface for analytical fluxes
  *
@@ -41,5 +44,7 @@ class AnalyticalFluxBase
   protected:
   const ModelType& model_;
 };
+
+}
 
 #endif

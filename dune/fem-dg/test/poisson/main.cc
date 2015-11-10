@@ -21,7 +21,7 @@ int main(int argc, char ** argv)
     Dune::Fem::Parameter::write("parameter.log");
 
     typedef Dune::GridSelector :: GridType GridType;
-    PoissonProblemCreator< GridType > problem;
+    Dune::PoissonProblemCreator< GridType > problem;
 
     // run simulation
     Dune::Simulator::run( problem );

@@ -11,7 +11,6 @@ namespace Dune
 {
   template <class ModelType>
   class UpwindFlux;
-}
 
 /**********************************************
  * Analytical model                           *
@@ -34,14 +33,14 @@ public:
   typedef double RangeFieldType;
   typedef double DomainFieldType;
   // Definition of domain and range types
-  typedef Dune::FieldVector< double, dimDomain >                     DomainType;
-  typedef Dune::FieldVector< double, dimDomain-1 >                   FaceDomainType;
-  typedef Dune::FieldVector< double, dimRange >                      RangeType;
-  typedef Dune::FieldVector< double, dimGradRange >                  GradientType;
+  typedef FieldVector< double, dimDomain >                           DomainType;
+  typedef FieldVector< double, dimDomain-1 >                         FaceDomainType;
+  typedef FieldVector< double, dimRange >                            RangeType;
+  typedef FieldVector< double, dimGradRange >                        GradientType;
   // ATTENTION: These are matrices (c.f. StokesModel)
-  typedef Dune::FieldMatrix< double, dimRange, dimDomain >           FluxRangeType;
-  typedef Dune::FieldMatrix< double, dimRange, dimDomain >           JacobianRangeType;
-  typedef Dune::FieldMatrix< double, dimGradRange, dimDomain >       DiffusionRangeType;
+  typedef FieldMatrix< double, dimRange, dimDomain >                 FluxRangeType;
+  typedef FieldMatrix< double, dimRange, dimDomain >                 JacobianRangeType;
+  typedef FieldMatrix< double, dimGradRange, dimDomain >             DiffusionRangeType;
   typedef typename GridType :: template Codim< 0 > :: Entity         EntityType;
   typedef typename GridPartType :: IntersectionIteratorType          IntersectionIterator;
   typedef typename IntersectionIterator :: Intersection              IntersectionType;
@@ -240,7 +239,7 @@ public:
 
     DomainType values ;
     // calculate eigenvalues
-    Dune::FMatrixHelp :: eigenValues( K, values );
+    FMatrixHelp :: eigenValues( K, values );
 
     maxValue = SQR(values[ dimDomain -1 ]) /values[0];
     return ;
@@ -253,7 +252,7 @@ public:
   {
     DomainType values ;
     // calculate eigenvalues
-    Dune::FMatrixHelp :: eigenValues( K, values );
+    FMatrixHelp :: eigenValues( K, values );
 
     // value[ 0 ] is smallest ev
     return SQR(values[ dimDomain -1 ]) / values[ 0 ];
@@ -386,4 +385,5 @@ public:
   const double theta_;
 };
 
+}
 #endif

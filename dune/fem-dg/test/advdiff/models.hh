@@ -17,6 +17,9 @@
  * Analytical model                           *
  *********************************************/
 
+namespace Dune
+{
+
 /**
  * \brief Traits class for HeatEqnModel
  */
@@ -45,14 +48,14 @@ public:
   static const int dimGradRange = dimRange * dimDomain ;
 
   // Definition of domain and range types
-  typedef Dune::FieldVector< DomainFieldType, dimDomain-1 >             FaceDomainType;
-  typedef Dune::FieldVector< RangeFieldType, dimGradRange >             GradientType;
+  typedef FieldVector< DomainFieldType, dimDomain-1 >                   FaceDomainType;
+  typedef FieldVector< RangeFieldType, dimGradRange >                   GradientType;
   // ATTENTION: These are matrices (c.f. HeatEqnModel)
   typedef typename BaseType :: JacobianRangeType                        FluxRangeType;
-  typedef Dune::FieldMatrix< RangeFieldType, dimGradRange, dimDomain >  DiffusionRangeType;
-  typedef Dune::FieldMatrix< RangeFieldType, dimDomain, dimDomain >     DiffusionMatrixType;
+  typedef FieldMatrix< RangeFieldType, dimGradRange, dimDomain >        DiffusionRangeType;
+  typedef FieldMatrix< RangeFieldType, dimDomain, dimDomain >           DiffusionMatrixType;
 
-  //typedef Dune::Fem::MinModLimiter< FieldType > LimiterFunctionType ;
+  //typedef Fem::MinModLimiter< FieldType > LimiterFunctionType ;
   //typedef SuperBeeLimiter< FieldType > LimiterFunctionType ;
   //typedef VanLeerLimiter< FieldType > LimiterFunctionType ;
 };
@@ -98,9 +101,9 @@ public:
   typedef std::integral_constant< int, blabla > blablabla;
   typedef std::tuple < velocityVar, pressure, blablabla > ModelParameter;
 
-  //typedef Dune::Fem::Selector< velo >  ModelParameterSelectorType;
+  //typedef Fem::Selector< velo >  ModelParameterSelectorType;
   //typedef std::tuple< VelocityType* >  ModelParameterTypes;
-  //typedef Dune::Fem::Selector< >  ModelParameterSelectorType;
+  //typedef Fem::Selector< >  ModelParameterSelectorType;
   //typedef std::tuple< >  ModelParameterTypes;
 
   // for heat equations advection is disabled
@@ -189,10 +192,9 @@ public:
   /**
    * \brief advection term \f$F\f$
    *
-   * \param en entity on which to evaluate the advection term
-   * \param time current time of TimeProvider
-   * \param x coordinate local to entity
+   * \param local local evaluation
    * \param u \f$U\f$
+   * \param jacu \f$\nabla U\f$
    * \param f \f$f(U)\f$
    */
   template <class LocalEvaluation>
@@ -298,10 +300,11 @@ public:
   /**
    * \brief neuman boundary values \f$g_N\f$ for pass1
    */
-  template <class LocalEvaluation>
-  inline double boundaryFlux(const LocalEvaluation& local,
-                             const RangeType& uLeft,
-                             RangeType& gLeft) const
+  template <class LocalEvaluation, class JacobianRangeImp>
+  inline double boundaryFlux (const LocalEvaluation& local,
+                              const RangeType& uLeft,
+                              const JacobianRangeImp& jacLeft,
+                              RangeType& gLeft) const
   {
     gLeft = 0.;
     return 0.;
@@ -356,7 +359,7 @@ public:
     // deltaT in the timeprovider is updated according to the diffusion
     // parameter epsilon.
     bool diff_tstep;
-    Dune::Fem::Parameter::get("femdg.stepper.diffusiontimestep", diff_tstep);
+    Fem::Parameter::get("femdg.stepper.diffusiontimestep", diff_tstep);
     return diff_tstep ? epsilon_ : 0;
   }
 
@@ -365,5 +368,7 @@ public:
   const double epsilon_;
   const double tstepEps_;
 };
+
+}
 
 #endif
