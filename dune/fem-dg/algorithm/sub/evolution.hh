@@ -43,8 +43,6 @@ namespace Fem
     typedef typename ProblemTraits::AnalyticalTraits                    AnalyticalTraits;
     typedef typename ProblemTraits::template DiscreteTraits< polOrder > DiscreteTraits;
 
-    typedef typename DiscreteTraits::InitialProjectorType               InitialProjectorType;
-
     typedef typename DiscreteTraits::Operator                           OperatorType;
 
     typedef typename DiscreteTraits::ExtraParameterTuple                ExtraParameterTupleType;
@@ -113,7 +111,6 @@ namespace Fem
 
     typedef typename DiscreteFunctionType::DiscreteFunctionSpaceType DiscreteFunctionSpaceType;
 
-    typedef typename Traits::InitialProjectorType                    InitialProjectorType;
     typedef typename Traits::ExtraParameterTupleType                 ExtraParameterTupleType;
 
     // The DG space operator
@@ -215,16 +212,13 @@ namespace Fem
     virtual void doInitialize ( const int loop, TimeProviderType& tp ) override
     {
       // project initial data
-      const bool doCommunicate = ! NonBlockingCommParameter :: nonBlockingCommunication ();
-      InitialProjectorType projection( 2 * solution().space().order(), doCommunicate );
-      projection( problem().fixedTimeFunction( tp.time() ), solution() );
-      //TODO check whether this version would also work (goal: avoid InitialProjectorType typedef :D
-      //auto ftp = problem().fixedTimeFunction( tp.time() );
-      //GridFunctionAdapter< typename ProblemType::InstationaryFunctionType, GridPartType >
-      //  adapter( "-exact", ftp, gridPart() );
-      //interpolate( adapter, solution() );
-      //if( NonBlockingCommParameter::nonBlockingCommunication() )
-      //  solution().communicate();
+      //TODO check whether this version work
+      auto ftp = problem().fixedTimeFunction( tp.time() );
+      GridFunctionAdapter< typename ProblemType::InstationaryFunctionType, GridPartType >
+        adapter( "-exact", ftp, gridPart_ );
+      interpolate( adapter, solution() );
+      if( NonBlockingCommParameter::nonBlockingCommunication() )
+        solution().communicate();
 
       // setup ode solver
       solver_.reset( this->doCreateSolver( tp ) );

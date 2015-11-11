@@ -300,8 +300,6 @@ struct IncompressibleNavierStokesProblemCreator
       typedef typename DiscreteFunctions< DiscreteFunctionSpaceType, solverType >::type                                   DiscreteFunctionType;
       typedef typename DiscreteFunctions< DiscreteFunctionSpaceType, solverType >::jacobian                               JacobianOperatorType;
 
-      typedef typename InitialProjectors< typename AnalyticalTraits::ProblemType::TimeDependentFunctionType, DiscreteFunctionType, dg >::type   InitialProjectorType;
-
       typedef std::tuple<> ExtraParameterTuple;
 
       typedef std::tuple< DiscreteFunctionType*, DiscreteFunctionType* >                          IOTupleType;

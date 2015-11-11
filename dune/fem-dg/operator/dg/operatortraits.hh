@@ -29,15 +29,15 @@ namespace Dune {
     typedef typename AnalyticalTraitsType::ModelType                     ModelType ;
     typedef AdvectionFluxImp                                             FluxType;
 
-    static const Dune::DGDiffusionFluxIdentifier PrimalDiffusionFluxId = Dune::method_general;
+    static const DGDiffusionFluxIdentifier PrimalDiffusionFluxId = method_general;
 
     static const int polynomialOrder = polOrd == -1 ? 0 : polOrd;
 
     typedef DiscreteFunctionImp DestinationType ;
     typedef typename DestinationType::DiscreteFunctionSpaceType          DiscreteFunctionSpaceType;
 
-    typedef Dune::Fem::CachingQuadrature< GridPartType, 0 >              VolumeQuadratureType;
-    typedef Dune::Fem::CachingQuadrature< GridPartType, 1 >              FaceQuadratureType;
+    typedef Fem::CachingQuadrature< GridPartType, 0 >                    VolumeQuadratureType;
+    typedef Fem::CachingQuadrature< GridPartType, 1 >                    FaceQuadratureType;
 
     typedef LimiterIndicatorFunctionImp                                  LimiterIndicatorType;
 
@@ -66,23 +66,23 @@ namespace Dune {
     typedef typename AnalyticalTraitsType::ModelType                     ModelType ;
     typedef AdvectionFluxImp                                             FluxType;
 
-    static const Dune::DGDiffusionFluxIdentifier PrimalDiffusionFluxId = Dune::method_general;
+    static const DGDiffusionFluxIdentifier PrimalDiffusionFluxId = method_general;
 
     static const int polynomialOrder = polOrd == -1 ? 0 : polOrd;
 
     typedef DiscreteFunctionImp DestinationType ;
     typedef typename DestinationType::DiscreteFunctionSpaceType          DiscreteFunctionSpaceType;
 
-    typedef Dune::Fem::CachingQuadrature< GridPartType, 0 >              VolumeQuadratureType;
-    typedef Dune::Fem::CachingQuadrature< GridPartType, 1 >              FaceQuadratureType;
+    typedef Fem::CachingQuadrature< GridPartType, 0 >                    VolumeQuadratureType;
+    typedef Fem::CachingQuadrature< GridPartType, 1 >                    FaceQuadratureType;
 
   private:
-    typedef Dune::Fem::FunctionSpace< typename GridType::ctype, double, AnalyticalTraits::ModelType::dimDomain, 3> FVFunctionSpaceType;
-    typedef Dune::Fem::FiniteVolumeSpace<FVFunctionSpaceType,GridPartType, 0, Dune::Fem::SimpleStorage> IndicatorSpaceType;
+    typedef Fem::FunctionSpace< typename GridType::ctype, double, AnalyticalTraits::ModelType::dimDomain, 3> FVFunctionSpaceType;
+    typedef Fem::FiniteVolumeSpace<FVFunctionSpaceType,GridPartType, 0, Fem::SimpleStorage> IndicatorSpaceType;
   public:
-    typedef Dune::Fem::AdaptiveDiscreteFunction<IndicatorSpaceType>      LimiterIndicatorType;
+    typedef Fem::AdaptiveDiscreteFunction<IndicatorSpaceType>            LimiterIndicatorType;
 
-    typedef Dune::AdaptationHandler< GridType, AdaptationHandlerFunctionSpaceImp >
+    typedef AdaptationHandler< GridType, AdaptationHandlerFunctionSpaceImp >
                                                                          AdaptationHandlerType;
 
     static const int limiterPolynomialOrder = polOrd == -1 ? 1 : polOrd;

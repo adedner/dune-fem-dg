@@ -96,22 +96,6 @@ struct DiscreteFunctionSpaces< FunctionSpaceImp, GridPartImp, polOrder, _legendr
 
 
 
-template< class TimeDependentFunctionImp, class DiscreteFunctionImp, GalerkinType gt >
-struct InitialProjectors;
-
-template< class TimeDependentFunctionImp, class DiscreteFunctionImp >
-struct InitialProjectors< TimeDependentFunctionImp, DiscreteFunctionImp, cg >
-{
-  typedef Dune::Fem::LagrangeInterpolation< TimeDependentFunctionImp, DiscreteFunctionImp >                           type;
-};
-
-template< class TimeDependentFunctionImp, class DiscreteFunctionImp >
-struct InitialProjectors< TimeDependentFunctionImp, DiscreteFunctionImp, dg >
-{
-  typedef Dune::Fem::L2Projection< TimeDependentFunctionImp, DiscreteFunctionImp >                                    type;
-};
-
-
 template< class DiscreteFunctionSpaceImp, SolverType solverType >
 struct DiscreteFunctions;
 

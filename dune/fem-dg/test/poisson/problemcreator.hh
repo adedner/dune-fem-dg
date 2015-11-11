@@ -55,7 +55,7 @@ struct PoissonProblemCreator
   struct SubPoissonProblemCreator
   {
     typedef GridImp                                         GridType;
-    typedef Fem::DGAdaptiveLeafGridPart< GridType >   HostGridPartType;
+    typedef typename GridPartChooser<GridType,dg>::Type     HostGridPartType;
     typedef HostGridPartType                                GridPartType;
 
     // define problem type here if interface should be avoided
@@ -97,8 +97,8 @@ struct PoissonProblemCreator
     struct DiscreteTraits
     {
     private:
-      static const SolverType solverType = istl ;
-      static const bool symmetricSolver = true ;
+      static const SolverType solverType = istl;
+      static const bool symmetricSolver = true;
       typedef typename DiscreteFunctionSpaces< FunctionSpaceType, GridPartType, polOrd, _legendre, dg >::type    DiscreteFunctionSpaceType;
     public:
       typedef typename DiscreteFunctions< DiscreteFunctionSpaceType, solverType >::type                          DiscreteFunctionType;
@@ -115,7 +115,7 @@ struct PoissonProblemCreator
         typedef UpwindFlux< typename AnalyticalTraits::ModelType >                                 FluxType;
 
         typedef DefaultOperatorTraits< GridPartType, polOrd, AnalyticalTraits,
-                                       DiscreteFunctionType, FluxType, ExtraParameterTuple >  OperatorTraitsType;
+                                       DiscreteFunctionType, FluxType, ExtraParameterTuple >        OperatorTraitsType;
 
         typedef DGAdvectionDiffusionOperator< OperatorTraitsType >                                  AssemblyOperatorType;
         typedef Solvers<DiscreteFunctionSpaceType, solverType, symmetricSolver>                     SolversType;

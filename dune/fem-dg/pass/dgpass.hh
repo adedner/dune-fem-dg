@@ -20,7 +20,7 @@
 #include <dune/fem/misc/compatibility.hh>
 
 namespace Dune {
-/*! @addtogroup PassHyp
+/*! \ingroup Pass
  * Description: Solver for equations of the form
 ** \f{eqnarray*}
 **   v + div(f(x,u)) + A(x,u)\nabla u &=& S(x,u)  \quad\mbox{in}\quad \Omega    \\
