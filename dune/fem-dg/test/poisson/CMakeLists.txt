@@ -8,7 +8,6 @@ add_definitions( "-DGRIDDIM=2" )
 add_definitions( "-DDIMRANGE=1" )
 add_definitions( "-DFLUX=1" )
 add_definitions( "-DPRIMALDG" )
-add_definitions( "-DUSE_ASSERT_THROW" ) 
 
 dune_add_test( NAME poissonall 
                SOURCES main.cc

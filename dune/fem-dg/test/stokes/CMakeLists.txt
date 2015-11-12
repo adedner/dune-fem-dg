@@ -7,7 +7,6 @@ add_definitions( "-DALUGRID_CUBE" )
 add_definitions( "-DGRIDDIM=2" )
 add_definitions( "-DFLUX=1" )
 add_definitions( "-DPRIMALDG" )
-add_definitions( "-DUSE_ASSERT_THROW" ) 
 add_definitions( "-DDGSCHEME" )
 add_definitions( "-DONB" )
 
