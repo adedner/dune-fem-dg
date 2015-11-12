@@ -95,7 +95,7 @@ protected:
   const Model& model_;
   const typename MhdSolverType::Eosmode::meos_t eos;
   mutable MhdSolverType numFlux_;
-  Adi::FieldRotator<DomainType, RangeType> rot_;
+  EulerFluxes::FieldRotator<DomainType, RangeType> rot_;
   //mutable MhdSolverType::Vec9 ulmhd_, urmhd_, retmhd_;
 };
 

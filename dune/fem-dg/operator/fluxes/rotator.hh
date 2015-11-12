@@ -176,8 +176,4 @@ namespace EulerFluxes {
   }
 } // end namespace EulerFluxes
 
-// depreacted namespace
-namespace Adi {
-  using EulerFluxes :: FieldRotator ;
-}
 #endif
