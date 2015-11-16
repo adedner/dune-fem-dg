@@ -9,7 +9,9 @@ set(POLORDER  2)
 set(DIMRANGE 5)
 set(USE_SIONLIB 0)
 
-configure_file(parameter.in ${CMAKE_CURRENT_BINARY_DIR}/parameter)
+if(GENERATE_FEMDG_PARAMETER_FILE)
+  configure_file(parameter.in ${CMAKE_CURRENT_BINARY_DIR}/parameter)
+endif()
 
 add_definitions( "-D${GRIDTYPE}" )
 add_definitions( "-DGRIDDIM=${GRIDDIM}" )
