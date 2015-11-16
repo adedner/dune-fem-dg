@@ -17,7 +17,9 @@ set(MAININCLUDE_PATH  "${dune-fem-dg_SOURCE_DIR}/dune/fem-dg/main/")
 include_directories(${MAININCLUDE_PATH})
 include_directories("${CMAKE_SOURCE_DIR}/dune/fem-dg/test/combined/")
 
-configure_file(parameter.in ${CMAKE_CURRENT_BINARY_DIR}/parameter)
+if(GENERATE_FEMDG_PARAMETER_FILE)
+  configure_file(parameter.in ${CMAKE_CURRENT_BINARY_DIR}/parameter)
+endif()
 
 add_executable(combinedall "${MAININCLUDE_PATH}/main.cc" 
                             "${MAININCLUDE_PATH}/main_0.cc" 

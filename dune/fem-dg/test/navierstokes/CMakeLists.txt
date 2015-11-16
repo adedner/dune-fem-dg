@@ -1,7 +1,9 @@
 dune_install( ns_model.hh problemcreator.hh ns_model_spec.hh thermodynamics.hh passtraits.hh)
 
 include_directories("${CMAKE_SOURCE_DIR}/dune/fem-dg/test/navierstokes/")
-configure_file(parameter.in ${CMAKE_CURRENT_BINARY_DIR}/parameter )
+if(GENERATE_FEMDG_PARAMETER_FILE)
+  configure_file(parameter.in ${CMAKE_CURRENT_BINARY_DIR}/parameter )
+endif()
 
 # default settings for the test case
 set(POLORDER 2)
