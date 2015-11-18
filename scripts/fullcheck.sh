@@ -62,7 +62,7 @@ minimal_configure()
 {
   local check=`mktemp -p $WORKINGDIR check.XXXXXX`
   {
-    $DUNECONTROL --opts=$MINIMALOPTS --builddir=$BUILDDIR altl
+    $DUNECONTROL --opts=$MINIMALOPTS --builddir=$BUILDDIR all
     echo $? > $check
   } 2>&1 | dd conv=notrunc > $WORKINGDIR/minimal-conf.out 2>/dev/null
   local return_value=`cat $check`
