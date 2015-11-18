@@ -64,7 +64,7 @@ namespace Fem
       getMonitor( T elem, A &&... a )
       {
         if( elem->monitor() )
-          C::applyImpl(elem->monitor(), std::forward<A>(a)... );
+          C::apply(elem->monitor(), std::forward<A>(a)... );
       }
     public:
       template< int i >
@@ -77,17 +77,17 @@ namespace Fem
     };
 
     struct Step {
-      template<class T, class... A > static void applyImpl( T e, A&& ... a )
+      template<class T, class... A > static void apply( T e, A&& ... a )
       { e->step( std::forward<A>(a)... ); }
     };
 
     struct Finalize {
-      template<class T, class... A > static void applyImpl( T e, A&& ... a )
+      template<class T, class... A > static void apply( T e, A&& ... a )
       { e->finalize( std::forward<A>(a)... ); }
     };
 
     struct GetData {
-      template<class T, class... A > static void applyImpl( T e, double& res, const std::string name, CombinationType comb, A&& ... a )
+      template<class T, class... A > static void apply( T e, double& res, const std::string name, CombinationType comb, A&& ... a )
       {
         switch( comb )
         {

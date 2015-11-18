@@ -173,7 +173,7 @@ namespace Fem
   class AdaptIndicator<>
   {
   public:
-   typedef uint64_t                                                                           UInt64Type;
+   typedef uint64_t                          UInt64Type;
 
     template< class... Args >
     AdaptIndicator( Args&& ... args )
@@ -244,46 +244,46 @@ namespace Fem
 
 
     struct EstimateMark {
-      template<class T, class... Args > static void applyImpl( T e, Args&& ... a )
+      template<class T, class... Args > static void apply( T e, Args&& ... a )
       { e->estimateMark( std::forward<Args>(a)... ); }
     };
     struct SetAdaptation {
-      template<class T, class... Args > static void applyImpl( T e, Args&& ... a )
+      template<class T, class... Args > static void apply( T e, Args&& ... a )
       { e->setAdaptation( std::forward<Args>(a)... ); }
     };
     struct PreAdapt {
-      template<class T, class... Args > static void applyImpl( T e, Args&& ... a )
+      template<class T, class... Args > static void apply( T e, Args&& ... a )
       { e->preAdapt( std::forward<Args>(a)... ); }
     };
     struct PostAdapt {
-      template<class T, class... Args > static void applyImpl( T e, Args&& ... a )
+      template<class T, class... Args > static void apply( T e, Args&& ... a )
       { e->postAdapt( std::forward<Args>(a)... ); }
     };
     struct Finalize {
-      template<class T, class... Args > static void applyImpl( T e, Args&& ... a )
+      template<class T, class... Args > static void apply( T e, Args&& ... a )
       { e->finalize( std::forward<Args>(a)... ); }
     };
     struct MinMaxNumElements {
-      template<class T, class... Args > static void applyImpl( T e, int& min, int& max, Args&& ... a )
+      template<class T, class... Args > static void apply( T e, int& min, int& max, Args&& ... a )
       {
         min = std::min( min, e->minNumberOfElements( std::forward<Args>(a)... ) );
         max = std::max( max, e->maxNumberOfElements( std::forward<Args>(a)... ) );
       }
     };
     struct NumberOfElements {
-      template<class T, class... Args > static void applyImpl( T e, int& max, Args&& ... a )
+      template<class T, class... Args > static void apply( T e, int& max, Args&& ... a )
       { max = std::max( max, e->numberOfElements( std::forward<Args>(a)... ) ); }
     };
     struct GlobalNumberOfElements {
-      template<class T, class... Args > static void applyImpl( T e, int& max, Args&& ... a )
+      template<class T, class... Args > static void apply( T e, int& max, Args&& ... a )
       { max = std::max( max, e->globalNumberOfElements( std::forward<Args>(a)... ) ); }
     };
     struct FinestLevel {
-      template<class T, class... Args > static void applyImpl( T e, int& max, Args&& ... a )
+      template<class T, class... Args > static void apply( T e, int& max, Args&& ... a )
       { max = std::max( max, e->finestLevel( std::forward<Args>(a)... ) ); }
     };
     struct Adaptive {
-      template<class T, class... Args > static void applyImpl( T e, bool& adaptive, Args&& ... a )
+      template<class T, class... Args > static void apply( T e, bool& adaptive, Args&& ... a )
       { adaptive |= e->adaptive( std::forward<Args>(a)... ); }
     };
 
@@ -298,7 +298,7 @@ namespace Fem
       getAdaptIndicator( T elem, Args &&... a )
       {
         if( elem->adaptIndicator() )
-          C::applyImpl(elem->adaptIndicator(), std::forward<Args>(a)... );
+          C::apply(elem->adaptIndicator(), std::forward<Args>(a)... );
       }
     public:
       template< int i >

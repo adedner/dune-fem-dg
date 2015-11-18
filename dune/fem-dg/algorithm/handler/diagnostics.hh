@@ -41,7 +41,7 @@ namespace Fem
       getDiagnostics( T elem, Args &&... a )
       {
         if( elem->diagnostics() )
-          C::applyImpl(elem->diagnostics(), std::forward<Args>(a)... );
+          C::apply( elem->diagnostics(), std::forward<Args>(a)... );
       }
     public:
       template< int i >
@@ -56,11 +56,11 @@ namespace Fem
     };
 
     struct Write {
-      template<class T, class... Args > static void applyImpl( T e, Args&& ... a )
+      template<class T, class... Args > static void apply( T e, Args&& ... a )
       { e->step( std::forward<Args>(a)... ); }
     };
     struct Finalize {
-      template<class T, class... Args > static void applyImpl( T e, Args&& ... a )
+      template<class T, class... Args > static void apply( T e, Args&& ... a )
       { e->finalize( std::forward<Args>(a)... ); }
     };
 

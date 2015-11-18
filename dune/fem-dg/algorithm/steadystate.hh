@@ -32,23 +32,27 @@ namespace Fem
   struct SteadyStateTraits
   {
     // type of Grid
-    typedef typename std::tuple_element<0, std::tuple< ProblemTraits... > >::type::GridType  GridType;
+    typedef typename std::tuple_element<0, std::tuple< ProblemTraits... > >::type::GridType
+                                                                           GridType;
 
     // wrap operator
     typedef GridTimeProvider< GridType >                                   TimeProviderType;
 
     //typedef ...
-    typedef std::tuple< typename std::add_pointer< typename ProblemTraits::template Stepper<polOrder>::Type >::type... > StepperTupleType;
-    typedef typename Std::make_index_sequence_impl< std::tuple_size< StepperTupleType >::value >::type                   IndexSequenceType;
+    typedef std::tuple< typename std::add_pointer< typename ProblemTraits::template Stepper<polOrder>::Type >::type... >
+                                                                           StepperTupleType;
 
-    typedef Dune::Fem::SolverMonitorHandler< StepperTupleType >   SolverMonitorHandlerType;
-    typedef Dune::Fem::DataWriterHandler< StepperTupleType >      DataWriterHandlerType;
+    //typedef typename Std::make_index_sequence_impl< std::tuple_size< StepperTupleType >::value >::type
+    //                                                                     IndexSequenceType;
 
-    typedef typename DataWriterHandlerType::IOTupleType                                                                      IOTupleType;
+    typedef Dune::Fem::SolverMonitorHandler< StepperTupleType >            SolverMonitorHandlerType;
+    typedef Dune::Fem::DataWriterHandler< StepperTupleType >               DataWriterHandlerType;
+
+    typedef typename DataWriterHandlerType::IOTupleType                    IOTupleType;
   };
 
-  template< int polOrder, class... ProblemTraits >
-  class SteadyStateAlgorithm;
+  //template< int polOrder, class... ProblemTraits >
+  //class SteadyStateAlgorithm;
 
 
 
@@ -72,14 +76,6 @@ namespace Fem
                         typename std::add_pointer< typename ProblemTraits::template Stepper<polOrder>::Type >::type... > StepperTupleType;
 
 
-    struct Constructor {
-      template< class T, class ... Args >
-      static void apply ( T& e, Args && ... a )
-      {
-        typedef typename std::remove_pointer< T >::type Element;
-        e = new Element( std::forward< Args >( a ) ... );
-      }
-    };
     struct Initialize {
       template< class T, class ... Args > static void apply ( T& e, Args && ... a )
       { e->initialize( std::forward<Args>(a)... ); }
@@ -140,12 +136,17 @@ namespace Fem
       dataWriterHandler_( tuple_ )
     {}
 
-    // create Tuple of contained subspaces
+    template< std::size_t ...i >
+    static StepperTupleType createStepper ( Std::index_sequence< i... >, GridType &grid, const std::string name = "" )
+    {
+      static auto tuple = std::make_tuple( new typename std::remove_pointer< typename std::tuple_element< i, StepperTupleType >::type >::type( grid, name ) ... );
+      return tuple;
+    }
+
+    // create Tuple of contained sub algorithms
     static StepperTupleType createStepper( GridType &grid, const std::string name = "" )
     {
-      StepperTupleType tuple;
-      ForLoopType< Constructor >::apply( tuple, grid, name );
-      return tuple;
+      return createStepper( typename Std::make_index_sequence_impl< std::tuple_size< StepperTupleType >::value >::type(), grid, name );
     }
 
     virtual IOTupleType dataTuple ()

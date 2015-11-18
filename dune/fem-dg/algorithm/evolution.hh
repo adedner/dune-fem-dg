@@ -102,36 +102,28 @@ namespace Fem
   struct EvolutionAlgorithmTraits
   {
     // type of Grid
-    typedef typename std::tuple_element<0, std::tuple< ProblemTraits... > >::type::GridType  GridType;
+    typedef typename std::tuple_element<0, std::tuple< ProblemTraits... > >::type::GridType
+                                                                        GridType;
 
     // wrap operator
-    typedef GridTimeProvider< GridType >                                   TimeProviderType;
+    typedef GridTimeProvider< GridType >                                TimeProviderType;
 
     //typedef ...
-    typedef std::tuple< typename std::add_pointer< typename ProblemTraits::template Stepper<polOrder>::Type >::type... > StepperTupleType;
-    typedef typename Std::make_index_sequence_impl< std::tuple_size< StepperTupleType >::value >::type                   IndexSequenceType;
+    typedef std::tuple< typename std::add_pointer< typename ProblemTraits::template Stepper<polOrder>::Type >::type... >
+                                                                        StepperTupleType;
 
-    typedef Dune::Fem::AdaptHandler< StepperTupleType >           AdaptHandlerType;
-    typedef Dune::Fem::CheckPointHandler< StepperTupleType >      CheckPointHandlerType;
-    typedef Dune::Fem::SolverMonitorHandler< StepperTupleType >   SolverMonitorHandlerType;
-    typedef Dune::Fem::DataWriterHandler< StepperTupleType >      DataWriterHandlerType;
-    typedef Dune::Fem::DiagnosticsHandler< StepperTupleType >     DiagnosticsHandlerType;
-    typedef Dune::Fem::SolutionLimiterHandler< StepperTupleType > SolutionLimiterHandlerType;
+    //typedef typename Std::make_index_sequence_impl< std::tuple_size< StepperTupleType >::value >::type
+    //                                                                  IndexSequenceType;
 
-    typedef typename DataWriterHandlerType::IOTupleType                                                                      IOTupleType;
+    typedef Dune::Fem::AdaptHandler< StepperTupleType >                 AdaptHandlerType;
+    typedef Dune::Fem::CheckPointHandler< StepperTupleType >            CheckPointHandlerType;
+    typedef Dune::Fem::SolverMonitorHandler< StepperTupleType >         SolverMonitorHandlerType;
+    typedef Dune::Fem::DataWriterHandler< StepperTupleType >            DataWriterHandlerType;
+    typedef Dune::Fem::DiagnosticsHandler< StepperTupleType >           DiagnosticsHandlerType;
+    typedef Dune::Fem::SolutionLimiterHandler< StepperTupleType >       SolutionLimiterHandlerType;
 
-    template< std::size_t ...i >
-    static StepperTupleType createStepper ( Std::index_sequence< i... >, GridType &grid, const std::string name = "" )
-    {
-      static auto tuple = std::make_tuple( new typename std::remove_pointer< typename std::tuple_element< i, StepperTupleType >::type >::type( grid, name ) ... );
-      return tuple;
-    }
+    typedef typename DataWriterHandlerType::IOTupleType                 IOTupleType;
 
-    // create Tuple of contained sub algorithms
-    static StepperTupleType createStepper( GridType &grid, const std::string name = "" )
-    {
-      return createStepper( IndexSequenceType(), grid, name );
-    }
   };
 
 
@@ -161,7 +153,7 @@ namespace Fem
   class EvolutionAlgorithmBase
     : public AlgorithmInterface< Traits >
   {
-    typedef AlgorithmInterface< Traits >                                              BaseType;
+    typedef AlgorithmInterface< Traits >                         BaseType;
   public:
     typedef typename BaseType::GridType                          GridType;
     typedef typename BaseType::IOTupleType                       IOTupleType;
@@ -170,15 +162,15 @@ namespace Fem
     typedef typename Traits::StepperTupleType                    StepperTupleType;
     typedef typename Traits::TimeProviderType                    TimeProviderType;
 
-    typedef typename Traits::DiagnosticsHandlerType                     DiagnosticsHandlerType;
-    typedef typename Traits::CheckPointHandlerType                      CheckPointHandlerType;
-    typedef typename Traits::DataWriterHandlerType                      DataWriterHandlerType;
-    typedef typename Traits::SolutionLimiterHandlerType                 SolutionLimiterHandlerType;
-    typedef typename Traits::AdaptHandlerType                           AdaptHandlerType;
+    typedef typename Traits::DiagnosticsHandlerType              DiagnosticsHandlerType;
+    typedef typename Traits::CheckPointHandlerType               CheckPointHandlerType;
+    typedef typename Traits::DataWriterHandlerType               DataWriterHandlerType;
+    typedef typename Traits::SolutionLimiterHandlerType          SolutionLimiterHandlerType;
+    typedef typename Traits::AdaptHandlerType                    AdaptHandlerType;
 
-    typedef uint64_t                                                    UInt64Type ;
+    typedef uint64_t                                             UInt64Type ;
 
-    typedef StepperParameters                                           StepperParametersType;
+    typedef StepperParameters                                    StepperParametersType;
 
     using BaseType::eocParams;
     using BaseType::grid;
@@ -186,11 +178,25 @@ namespace Fem
     static const int numSteppers = std::tuple_size< StepperTupleType >::value;
 
     struct Initialize {
+    private:
+      template<class T, class AdaptHandler, class... Args >
+      static typename enable_if< std::is_void< typename std::remove_pointer<T>::type::DiagnosticsHandlerType >::value >::type
+      getDiagnostics( T, AdaptHandler&, Args&& ... ){}
+      template<class T, class AdaptHandler, class... Args >
+      static typename enable_if< !std::is_void< typename std::remove_pointer<T>::type::DiagnosticsHandlerType >::value >::type
+      getDiagnostics( T e, AdaptHandler& handler, Args &&... a )
+      {
+        if( e->diagnostics() )
+        {
+          e->diagnostics()->registerData( "AdaptationTime", &handler.adaptationTime() );
+          e->diagnostics()->registerData( "LoadBalanceTime", &handler.loadBalanceTime() );
+        }
+      }
+    public:
       template< class T, class AdaptHandler, class ... Args > static void apply ( T& e, AdaptHandler& handler, Args && ... a )
       {
         e->initialize( std::forward<Args>(a)... );
-        //e->diagnostics().registerData( "AdaptationTime", &handler.adaptationTime() );
-        //e->diagnostics().registerData( "LoadBalanceTime", &handler.loadBalanceTime() );
+        getDiagnostics( e, handler, std::forward<Args>(a)... );
       }
     };
     struct PreSolve {
@@ -241,7 +247,7 @@ namespace Fem
 
     EvolutionAlgorithmBase ( GridType &grid, const std::string name = "" )
     : BaseType( grid, name  ),
-      tuple_( Traits::createStepper( grid, name ) ),
+      tuple_( createStepper( grid, name ) ),
       param_( StepperParametersType( ParameterKey::generate( "", "femdg.stepper." ) ) ),
       checkPointHandler_( tuple_ ),
       dataWriterHandler_( tuple_ ),
@@ -251,6 +257,20 @@ namespace Fem
       adaptHandler_( tuple_ ),
       fixedTimeStep_( param_.fixedTimeStep() )
     {}
+
+
+    template< std::size_t ...i >
+    static StepperTupleType createStepper ( Std::index_sequence< i... >, GridType &grid, const std::string name = "" )
+    {
+      static auto tuple = std::make_tuple( new typename std::remove_pointer< typename std::tuple_element< i, StepperTupleType >::type >::type( grid, name ) ... );
+      return tuple;
+    }
+
+    // create Tuple of contained sub algorithms
+    static StepperTupleType createStepper( GridType &grid, const std::string name = "" )
+    {
+      return createStepper( typename Std::make_index_sequence_impl< std::tuple_size< StepperTupleType >::value >::type(), grid, name );
+    }
 
     // return grid width of grid (overload in derived classes)
     double gridWidth () const
