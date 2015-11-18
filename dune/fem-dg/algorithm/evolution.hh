@@ -183,85 +183,61 @@ namespace Fem
     using BaseType::eocParams;
     using BaseType::grid;
 
-    template< int i >
-    struct Initialize
-    {
-      template< class Tuple, class AdaptHandler, class ... Args >
-      static void apply ( Tuple &tuple, AdaptHandler& handler, Args&& ... a )
-      {
-        std::get< i >( tuple )->initialize( std::forward<Args>(a) ... );
-        /*
-        std::get< i >( tuple )->diagnostics().registerData( "AdaptationTime", &handler.adaptationTime() );
-        std::get< i >( tuple )->diagnostics().registerData( "LoadBalanceTime", &handler.loadBalanceTime() );
-        */
-      }
-    };
-    template< int i >
-    struct PreSolve
-    {
-      template< class Tuple, class ... Args >
-      static void apply ( Tuple &tuple, Args&& ... a )
-      {
-        std::get< i >( tuple )->preSolve( std::forward<Args>(a)... );
-      }
-    };
-    template< int i >
-    struct Solve
-    {
-      template< class Tuple, class ... Args >
-      static void apply ( Tuple &tuple, Args&& ... a )
-      {
-        std::get< i >( tuple )->solve( std::forward<Args>(a)... );
-      }
-    };
-    template< int i >
-    struct PostSolve
-    {
-      template< class Tuple, class ... Args >
-      static void apply ( Tuple &tuple, Args&& ... a )
-      {
-        std::get< i >( tuple )->postSolve( std::forward<Args>(a)... );
-      }
-    };
-
-    template< int i >
-    struct Finalize
-    {
-      template< class Tuple, class ... Args >
-      static void apply ( Tuple &tuple, Args&& ... a )
-      {
-        std::get< i >( tuple )->finalize( std::forward<Args>(a)... );
-      }
-    };
-    template< int i >
-    struct GridWidth
-    {
-      template< class Tuple, class ... Args >
-      static void apply ( Tuple &tuple, double& res, Args&& ... a )
-      {
-        res = std::max( res, std::get< i >( tuple )->gridWidth( std::forward<Args>(a)... ) );
-      }
-    };
-    template< int i >
-    struct GridSize
-    {
-      template< class Tuple, class ... Args >
-      static void apply ( Tuple &tuple, UInt64Type& res, Args&& ... a )
-      {
-        res = std::max( res, std::get< i >( tuple )->gridSize( std::forward<Args>(a)... ) );
-      }
-    };
-    template< int i >
-    struct CheckSolutionValid
-    {
-      template< class Tuple, class ... Args >
-      static void apply ( Tuple &tuple, bool& res, Args&& ... a )
-      {
-        res &= std::get< i >( tuple )->checkSolutionValid( std::forward<Args>(a)... );
-      }
-    };
-
     static const int numSteppers = std::tuple_size< StepperTupleType >::value;
+
+    struct Initialize {
+      template< class T, class AdaptHandler, class ... Args > static void apply ( T& e, AdaptHandler& handler, Args && ... a )
+      {
+        e->initialize( std::forward<Args>(a)... );
+        //e->diagnostics().registerData( "AdaptationTime", &handler.adaptationTime() );
+        //e->diagnostics().registerData( "LoadBalanceTime", &handler.loadBalanceTime() );
+      }
+    };
+    struct PreSolve {
+      template< class T, class ... Args > static void apply ( T& e, Args && ... a )
+      { e->preSolve( std::forward<Args>(a)... ); }
+    };
+    struct Solve {
+      template< class T, class ... Args > static void apply ( T& e, Args && ... a )
+      { e->solve( std::forward<Args>(a)... ); }
+    };
+    struct PostSolve {
+      template< class T, class ... Args > static void apply ( T& e, Args && ... a )
+      { e->postSolve( std::forward<Args>(a)... ); }
+    };
+    struct Finalize {
+      template< class T, class ... Args > static void apply ( T& e, Args && ... a )
+      { e->finalize( std::forward<Args>(a)... ); }
+    };
+    struct GridWidth {
+      template< class T, class ... Args > static void apply ( T& e, double& res, Args && ... a )
+      { res = std::max( res, e->gridWidth(std::forward<Args>(a)... ) ); }
+    };
+    struct GridSize {
+      template<class T, class... Args > static void apply ( T& e, UInt64Type& res, Args && ... a )
+      { res = std::max( res, e->gridSize(std::forward<Args>(a)... ) ); }
+    };
+    struct CheckSolutionValid {
+      template<class T, class... Args > static void apply( T e, bool& res, Args&& ... a )
+      { res &= e->checkSolutionValid( std::forward<Args>(a)... ); }
+    };
+    template< class Caller >
+    class LoopCallee
+    {
+    public:
+      template< int i >
+      struct Apply
+      {
+        template< class Tuple, class ... Args >
+        static void apply ( Tuple &tuple, Args&& ... a )
+        {
+          Caller::apply( std::get<i>( tuple ), std::forward<Args>(a)... );
+        }
+      };
+    };
+
+    template< class Caller >
+    using ForLoopType = ForLoop< LoopCallee<Caller>::template Apply, 0,  numSteppers-1 >;
 
     EvolutionAlgorithmBase ( GridType &grid, const std::string name = "" )
     : BaseType( grid, name  ),
@@ -280,7 +256,7 @@ namespace Fem
     double gridWidth () const
     {
       double res=0.0;
-      ForLoop< GridWidth, 0, numSteppers - 1 >::apply( tuple_, res );
+      ForLoopType< GridWidth >::apply( tuple_, res );
       return res;
     }
 
@@ -288,14 +264,14 @@ namespace Fem
     UInt64Type gridSize () const
     {
       UInt64Type res=0;
-      ForLoop< GridSize, 0, numSteppers - 1 >::apply( tuple_, res );
+      ForLoopType< GridSize >::apply( tuple_, res );
       return res;
     }
 
     bool checkSolutionValid( const int loop, TimeProviderType& tp ) const
     {
       bool res = true;
-      ForLoop< CheckSolutionValid, 0, numSteppers - 1 >::apply( tuple_, res, loop, &tp );
+      ForLoopType< CheckSolutionValid >::apply( tuple_, res, loop, &tp );
       return res;
     }
 
@@ -493,23 +469,23 @@ namespace Fem
     // before first step, do data initialization
     virtual void initialize ( int loop, TimeProviderType &tp )
     {
-      ForLoop< Initialize, 0, numSteppers - 1 >::apply( tuple_, adaptHandler_, loop, &tp );
+      ForLoopType< Initialize >::apply( tuple_, adaptHandler_, loop, &tp );
     }
 
     virtual void preStep ( int loop, TimeProviderType &tp )
     {
-      ForLoop< PreSolve, 0, numSteppers - 1 >::apply( tuple_, loop, &tp );
+      ForLoopType< PreSolve >::apply( tuple_, loop, &tp );
     }
 
     //Needs to be overridden to enable fancy steps
     virtual void step ( int loop, TimeProviderType &tp )
     {
-      ForLoop< Solve, 0, numSteppers - 1 >::apply( tuple_, loop, &tp );
+      ForLoopType< Solve >::apply( tuple_, loop, &tp );
     }
 
     virtual void postStep ( int loop, TimeProviderType &tp )
     {
-      ForLoop< PostSolve, 0, numSteppers - 1 >::apply( tuple_, loop, &tp );
+      ForLoopType< PostSolve >::apply( tuple_, loop, &tp );
     }
 
 
@@ -526,7 +502,7 @@ namespace Fem
 
       adaptHandler_.finalize();
 
-      ForLoop< Finalize, 0, numSteppers - 1 >::apply( tuple_, loop, &tp );
+      ForLoopType< Finalize >::apply( tuple_, loop, &tp );
     }
 
     StepperTupleType &stepperTuple () { return tuple_; }
