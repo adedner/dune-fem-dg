@@ -9,6 +9,8 @@
 
 namespace Dune
 {
+namespace Fem
+{
 
   struct PersistenceManagerTraits
   {
@@ -18,6 +20,7 @@ namespace Dune
   };
 
 #define FEM_PERSISTENCEMANAGERSTREAMTRAITS  PersistenceManagerTraits
+}
 } // namespace Dune
 
 #endif // #if USE_SIONLIB

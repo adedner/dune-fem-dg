@@ -19,9 +19,9 @@
 
 namespace Dune
 {
-
 namespace Fem
 {
+
   /**
    *  \addtogroup Algorithms
    *

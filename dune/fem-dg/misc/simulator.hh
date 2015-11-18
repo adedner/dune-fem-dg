@@ -122,6 +122,9 @@ void finalizeCodegen()
 
 namespace Dune
 {
+namespace Fem
+{
+
   struct FlopStartObject
   {
     FlopStartObject()
@@ -235,5 +238,6 @@ namespace Dune
     }
   };
 
+} // namespace Fem
 } // namespace Dune
 #endif // #ifndef DUNE_FEM_DG_SIMULATOR_HH

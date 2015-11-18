@@ -5,45 +5,46 @@
 
 namespace Dune
 {
-
-template <class GridPart, class ProblemImp >
-class DefaultModelTraits
-  : public ProblemImp::FunctionSpaceType
+namespace Fem
 {
-  typedef typename ProblemImp::FunctionSpaceType                        BaseType;
+  template <class GridPart, class ProblemImp >
+  class DefaultModelTraits
+    : public ProblemImp::FunctionSpaceType
+  {
+    typedef typename ProblemImp::FunctionSpaceType                        BaseType;
 
-  typedef GridPart                                                      GridPartType;
-  typedef typename GridPartType::GridType                               GridType;
-public:
-  typedef typename GridType::template Codim< 0 >::Entity                EntityType;
-  typedef typename GridPartType::IntersectionIteratorType::Intersection IntersectionType;
-
-  typedef typename BaseType::RangeFieldType                             RangeFieldType;
-  typedef typename BaseType::DomainFieldType                            DomainFieldType;
-  enum { dimRange  = BaseType::dimRange };
-  enum { dimDomain = BaseType::dimDomain };
-
-  typedef Dune::FieldVector< DomainFieldType, dimDomain-1 >             FaceDomainType;
-  typedef Dune::FieldVector< RangeFieldType, dimDomain * dimRange >     GradientType;
-  typedef typename BaseType::JacobianRangeType                          JacobianRangeType;
-  typedef typename BaseType::JacobianRangeType                          FluxRangeType;
-
-};
-
-
-template< class GridPartImp, class ProblemImp >
-class NoModel
-  : public DefaultModel< DefaultModelTraits< GridPartImp, ProblemImp > >
-{
-
+    typedef GridPart                                                      GridPartType;
+    typedef typename GridPartType::GridType                               GridType;
   public:
+    typedef typename GridType::template Codim< 0 >::Entity                EntityType;
+    typedef typename GridPartType::IntersectionIteratorType::Intersection IntersectionType;
 
-  NoModel( const ProblemImp& problem )
-  {}
+    typedef typename BaseType::RangeFieldType                             RangeFieldType;
+    typedef typename BaseType::DomainFieldType                            DomainFieldType;
+    enum { dimRange  = BaseType::dimRange };
+    enum { dimDomain = BaseType::dimDomain };
 
-};
+    typedef Dune::FieldVector< DomainFieldType, dimDomain-1 >             FaceDomainType;
+    typedef Dune::FieldVector< RangeFieldType, dimDomain * dimRange >     GradientType;
+    typedef typename BaseType::JacobianRangeType                          JacobianRangeType;
+    typedef typename BaseType::JacobianRangeType                          FluxRangeType;
+
+  };
 
 
+  template< class GridPartImp, class ProblemImp >
+  class NoModel
+    : public DefaultModel< DefaultModelTraits< GridPartImp, ProblemImp > >
+  {
+
+    public:
+
+    NoModel( const ProblemImp& problem )
+    {}
+
+  };
+
+}
 }
 
 #endif

@@ -7,8 +7,8 @@
 namespace Dune
 {
 
-  namespace Fem
-  {
+namespace Fem
+{
 
   template< class GridPart >
   class DGNorm
@@ -292,9 +292,9 @@ namespace Dune
     sum[0] += jumpTerm;
   }
 
-  }
+}
 
-  using Fem :: DGNorm ;
+using Fem :: DGNorm ;
 
 } // end namespace Dune
 

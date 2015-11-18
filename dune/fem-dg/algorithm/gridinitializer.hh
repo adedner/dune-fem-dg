@@ -54,7 +54,7 @@ namespace Fem
         gridptr->loadBalance();
 
         // and refine the grid globally
-        Dune::AdaptationParameters adaptParam( Dune::ParameterKey::generate( "", "fem.adaptation." ) );
+        AdaptationParameters adaptParam( ParameterKey::generate( "", "fem.adaptation." ) );
         const int startLevel = adaptParam.coarsestLevel();
         for(int level=0; level < startLevel ; ++level)
           Dune::Fem::GlobalRefine::apply(*gridptr, 1 );

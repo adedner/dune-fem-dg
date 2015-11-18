@@ -29,7 +29,7 @@
 #include <dune/fem/operator/linear/spoperator.hh>
 #include <dune/fem-dg/operator/dg/operatortraits.hh>
 //--------- FLUXES ---------------------------
-#include <dune/fem-dg/operator/fluxes/noflux.hh>
+#include <dune/fem-dg/operator/fluxes/advection/fluxes.hh>
 //--------- STEPPER -------------------------
 #include <dune/fem-dg/test/dataio/checkpointing.hh>
 #include <dune/fem-dg/algorithm/evolution.hh>
@@ -42,132 +42,139 @@
 //....
 #include <dune/fem/space/discontinuousgalerkin/space.hh>
 
-// EvolutionAlgorithmTraits
-// -------------------------
-template< int polOrder, class ... ProblemTraits >
-struct CheckPointEvolutionAlgorithmTraits
+
+namespace Dune
 {
-  // type of Grid
-  typedef typename std::tuple_element<0, std::tuple< ProblemTraits... > >::type::GridType  GridType;
-
-  // wrap operator
-  typedef Dune::Fem::GridTimeProvider< GridType >                                   TimeProviderType;
-
-  typedef std::tuple< typename std::add_pointer< typename ProblemTraits::template Stepper<polOrder>::Type >::type... > StepperTupleType;
-
-  typedef typename Dune::Std::make_index_sequence_impl< std::tuple_size< StepperTupleType >::value >::type  IndexSequenceType;
-  typedef Dune::Std::index_sequence<>                                                                       NoIndexSequenceType;
-
-  typedef Dune::Fem::AdaptHandler< StepperTupleType, NoIndexSequenceType >            AdaptHandlerType;
-  typedef Dune::Fem::DiagnosticsHandler < StepperTupleType, NoIndexSequenceType >     DiagnosticsHandlerType;
-  typedef Dune::Fem::SolverMonitorHandler < StepperTupleType, NoIndexSequenceType >   SolverMonitorHandlerType;
-  typedef Dune::Fem::CheckedCheckPointHandler < StepperTupleType >                    CheckPointHandlerType;
-  typedef Dune::Fem::DataWriterHandler < StepperTupleType >                           DataWriterHandlerType;
-  typedef Dune::Fem::SolutionLimiterHandler < StepperTupleType, NoIndexSequenceType > SolutionLimiterHandlerType;
-
-  typedef typename DataWriterHandlerType::IOTupleType                                                                      IOTupleType;
-
-  template< std::size_t ...i >
-  static StepperTupleType createStepper ( Dune::Std::index_sequence< i... >, GridType &grid, const std::string name = "" )
-  {
-    static auto tuple = std::make_tuple( new typename std::remove_pointer< typename std::tuple_element< i, StepperTupleType >::type >::type( grid, name ) ... );
-    return tuple;
-  }
-
-  // create Tuple of contained sub algorithms
-  static StepperTupleType createStepper( GridType &grid, const std::string name = "" )
-  {
-    return createStepper( Dune::Std::index_sequence_for< ProblemTraits ... >(), grid, name );
-  }
-};
-
-
-/**
- *  \brief problem creator for an advection diffusion problem
- */
-template< class GridImp >
-struct CheckPointingProblemCreator
+namespace Fem
 {
-
-  struct SubCheckPointingProblemCreator
+  // EvolutionAlgorithmTraits
+  // -------------------------
+  template< int polOrder, class ... ProblemTraits >
+  struct CheckPointEvolutionAlgorithmTraits
   {
+    // type of Grid
+    typedef typename std::tuple_element<0, std::tuple< ProblemTraits... > >::type::GridType  GridType;
 
-    typedef GridImp                                         GridType;
-    typedef Dune::Fem::DGAdaptiveLeafGridPart< GridType >   HostGridPartType;
-    //typedef Dune::Fem::LeafGridPart< GridType >           HostGridPartType;
-    //typedef AdaptiveLeafGridPart< GridType >              HostGridPartType;
-    //typedef IdBasedLeafGridPart< GridType >               HostGridPartType;
-    typedef HostGridPartType                                GridPartType;
+    // wrap operator
+    typedef Dune::Fem::GridTimeProvider< GridType >                                   TimeProviderType;
 
-    typedef Dune::Fem::FunctionSpace< typename GridType::ctype, double, GridType::dimension, DIMRANGE> FunctionSpaceType;
+    typedef std::tuple< typename std::add_pointer< typename ProblemTraits::template Stepper<polOrder>::Type >::type... > StepperTupleType;
 
-    // define problem type here if interface should be avoided
-    typedef Dune::U0< GridType >                                    ProblemInterfaceType;
+    typedef typename Dune::Std::make_index_sequence_impl< std::tuple_size< StepperTupleType >::value >::type  IndexSequenceType;
+    typedef Dune::Std::index_sequence<>                                                                       NoIndexSequenceType;
 
-    struct AnalyticalTraits
+    typedef Dune::Fem::AdaptHandler< StepperTupleType, NoIndexSequenceType >            AdaptHandlerType;
+    typedef Dune::Fem::DiagnosticsHandler < StepperTupleType, NoIndexSequenceType >     DiagnosticsHandlerType;
+    typedef Dune::Fem::SolverMonitorHandler < StepperTupleType, NoIndexSequenceType >   SolverMonitorHandlerType;
+    typedef Dune::Fem::CheckedCheckPointHandler < StepperTupleType >                    CheckPointHandlerType;
+    typedef Dune::Fem::DataWriterHandler < StepperTupleType >                           DataWriterHandlerType;
+    typedef Dune::Fem::SolutionLimiterHandler < StepperTupleType, NoIndexSequenceType > SolutionLimiterHandlerType;
+
+    typedef typename DataWriterHandlerType::IOTupleType                                                                      IOTupleType;
+
+    template< std::size_t ...i >
+    static StepperTupleType createStepper ( Dune::Std::index_sequence< i... >, GridType &grid, const std::string name = "" )
     {
-      typedef ProblemInterfaceType                                    ProblemType;
-      typedef ProblemInterfaceType                                    InitialDataType;
-      typedef NoModel< GridPartType, ProblemType >                    ModelType;
-
-      template< class Solution, class Model, class ExactFunction, class TimeProvider >
-      static void addEOCErrors ( TimeProvider& tp, Solution &u, Model &model, ExactFunction &f )
-      {
-        //static L2EOCError l2EocError( "$L^2$-Error");
-        //l2EocError.add( tp, u, model, f );
-      }
-    };
-
-    static inline std::string moduleName() { return ""; }
-
-    static ProblemInterfaceType* problem()
-    {
-      return new ProblemInterfaceType();
+      static auto tuple = std::make_tuple( new typename std::remove_pointer< typename std::tuple_element< i, StepperTupleType >::type >::type( grid, name ) ... );
+      return tuple;
     }
 
-
-    //Stepper Traits
-    template< int polOrd >
-    struct DiscreteTraits
+    // create Tuple of contained sub algorithms
+    static StepperTupleType createStepper( GridType &grid, const std::string name = "" )
     {
-    private:
-      typedef Dune::Fem::DiscontinuousGalerkinSpace < FunctionSpaceType, GridPartType, polOrd >     DiscreteFunctionSpaceType;
-    public:
-      typedef Dune::Fem::AdaptiveDiscreteFunction< DiscreteFunctionSpaceType >                      DiscreteFunctionType;
+      return createStepper( Dune::Std::index_sequence_for< ProblemTraits ... >(), grid, name );
+    }
+  };
 
-      typedef std::tuple< DiscreteFunctionType*, DiscreteFunctionType* >                            IOTupleType;
 
-      typedef void                                                                                  AdaptIndicatorType;
-      typedef void                                                                                  SolverMonitorHandlerType;
-      typedef void                                                                                  DiagnosticsHandlerType;
-      typedef void                                                                                  AdditionalOutputHandlerType;
+  /**
+   *  \brief problem creator for an advection diffusion problem
+   */
+  template< class GridImp >
+  struct CheckPointingProblemCreator
+  {
+
+    struct SubCheckPointingProblemCreator
+    {
+
+      typedef GridImp                                         GridType;
+      typedef Dune::Fem::DGAdaptiveLeafGridPart< GridType >   HostGridPartType;
+      //typedef Dune::Fem::LeafGridPart< GridType >           HostGridPartType;
+      //typedef AdaptiveLeafGridPart< GridType >              HostGridPartType;
+      //typedef IdBasedLeafGridPart< GridType >               HostGridPartType;
+      typedef HostGridPartType                                GridPartType;
+
+      typedef Dune::Fem::FunctionSpace< typename GridType::ctype, double, GridType::dimension, DIMRANGE> FunctionSpaceType;
+
+      // define problem type here if interface should be avoided
+      typedef U0< GridType >                                            ProblemInterfaceType;
+
+      struct AnalyticalTraits
+      {
+        typedef ProblemInterfaceType                                    ProblemType;
+        typedef ProblemInterfaceType                                    InitialDataType;
+        typedef NoModel< GridPartType, ProblemType >                    ModelType;
+
+        template< class Solution, class Model, class ExactFunction, class TimeProvider >
+        static void addEOCErrors ( TimeProvider& tp, Solution &u, Model &model, ExactFunction &f )
+        {
+          //static L2EOCError l2EocError( "$L^2$-Error");
+          //l2EocError.add( tp, u, model, f );
+        }
+      };
+
+      static inline std::string moduleName() { return ""; }
+
+      static ProblemInterfaceType* problem()
+      {
+        return new ProblemInterfaceType();
+      }
+
+
+      //Stepper Traits
+      template< int polOrd >
+      struct DiscreteTraits
+      {
+      private:
+        typedef Dune::Fem::DiscontinuousGalerkinSpace < FunctionSpaceType, GridPartType, polOrd >     DiscreteFunctionSpaceType;
+      public:
+        typedef Dune::Fem::AdaptiveDiscreteFunction< DiscreteFunctionSpaceType >                      DiscreteFunctionType;
+
+        typedef std::tuple< DiscreteFunctionType*, DiscreteFunctionType* >                            IOTupleType;
+
+        typedef void                                                                                  AdaptIndicatorType;
+        typedef void                                                                                  SolverMonitorHandlerType;
+        typedef void                                                                                  DiagnosticsHandlerType;
+        typedef void                                                                                  AdditionalOutputHandlerType;
+      };
+
+
+      template <int polOrd>
+      struct Stepper
+      {
+       // this should be ok but could lead to a henn-egg problem
+        typedef Dune::Fem::SubCheckPointingAlgorithm< GridType, SubCheckPointingProblemCreator, polOrd > Type;
+      };
+
     };
-
 
     template <int polOrd>
     struct Stepper
     {
-     // this should be ok but could lead to a henn-egg problem
-      typedef Dune::Fem::SubCheckPointingAlgorithm< GridType, SubCheckPointingProblemCreator, polOrd > Type;
+      typedef Dune::Fem::EvolutionAlgorithmBase< CheckPointEvolutionAlgorithmTraits< polOrd, SubCheckPointingProblemCreator > > Type;
     };
 
+    typedef GridImp                                         GridType;
+
+    static inline std::string moduleName() { return ""; }
+
+    static inline Dune::GridPtr<GridType>
+    initializeGrid() { return Dune::Fem::DefaultGridInitializer< GridType >::initialize(); }
+
+
   };
 
-  template <int polOrd>
-  struct Stepper
-  {
-    typedef Dune::Fem::EvolutionAlgorithmBase< CheckPointEvolutionAlgorithmTraits< polOrd, SubCheckPointingProblemCreator > > Type;
-  };
-
-  typedef GridImp                                         GridType;
-
-  static inline std::string moduleName() { return ""; }
-
-  static inline Dune::GridPtr<GridType>
-  initializeGrid() { return Dune::Fem::DefaultGridInitializer< GridType >::initialize(); }
-
-
-};
-
+}
+}
 #endif // FEMHOWTO_HEATSTEPPER_HH
 

@@ -22,7 +22,10 @@
 #include <dune/fem-dg/pass/dgpass.hh>
 
 
-namespace Dune {
+namespace Dune
+{
+namespace Fem
+{
 
   // DGAdvectionDiffusionOperator
   //-----------------------------
@@ -575,5 +578,6 @@ namespace Dune {
     using BaseType::numflux_;
   };
 
+}
 }
 #endif

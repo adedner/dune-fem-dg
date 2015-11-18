@@ -30,6 +30,9 @@
 
 namespace Dune
 {
+namespace Fem
+{
+
   // class for the organization of the adaptation prozess
   template< class GridImp, class ProblemFunctionSpace >
   class AdaptationHandler
@@ -266,6 +269,7 @@ namespace Dune
     const bool verbose_;
   };
 
+} // end namespace
 } // end namespace Dune
 
 #include "adaptation.cc"

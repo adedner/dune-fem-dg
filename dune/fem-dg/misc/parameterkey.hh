@@ -5,6 +5,9 @@
 
 namespace Dune
 {
+namespace Fem
+{
+
   /**
    * \brief helper class to generate parameter keys with an additional prefix.
    *
@@ -18,6 +21,8 @@ namespace Dune
       return prefix + (prefix!=""? "." : "" ) + key;
     }
   };
+
+}
 }
 
 #endif

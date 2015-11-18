@@ -14,7 +14,8 @@
 namespace Dune
 {
 
-  namespace Fem {
+namespace Fem
+{
 
 
   template<class K, int ROWS, int COLS>
@@ -186,7 +187,7 @@ namespace Dune
     }
   };
 
-  } // end namespace Fem
+} // end namespace Fem
 
 } // end namespace
 #endif

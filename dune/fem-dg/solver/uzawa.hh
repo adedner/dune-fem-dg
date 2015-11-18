@@ -10,7 +10,10 @@
 
 //#include "matrixoperator.hh"
 
-namespace Dune {
+namespace Dune
+{
+namespace Fem
+{
   //!CG Verfahren fuer Sattelpunkt Problem
   //!siehe NavSt Skript Siebert,Seite 36, Alg 3.34
   /** \brief Inversion operator using CG algorithm
@@ -18,7 +21,7 @@ namespace Dune {
 
 
   template <class DiscreteFunctionType,class PressureDiscreteFunctionType,class AssemblerType,class InverseOperatorType>
-  class UzawaSolver : public Operator<
+  class UzawaSolver : public Dune::Operator<
     typename PressureDiscreteFunctionType::DomainFieldType,
     typename PressureDiscreteFunctionType::RangeFieldType,
     PressureDiscreteFunctionType,PressureDiscreteFunctionType>
@@ -233,7 +236,7 @@ namespace Dune {
     mutable int linIter_;
   };
 
-
+} // end namespace
 } // end namespace Dune
 
 #endif

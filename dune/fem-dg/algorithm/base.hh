@@ -19,9 +19,9 @@
 
 namespace Dune
 {
-
 namespace Fem
 {
+
   struct EocDataOutputParameters :
          public Fem::LocalParameter<Fem::DataWriterParameters,EocDataOutputParameters>
   {
@@ -128,7 +128,7 @@ namespace Fem
     AlgorithmInterface ( GridType &grid, const std::string algorithmName = "" )
       : grid_( grid ),
         algorithmName_( algorithmName ),
-        eocParam_( Dune::ParameterKey::generate( "", "fem.eoc." ) )
+        eocParam_( ParameterKey::generate( "", "fem.eoc." ) )
     {}
 
     //! return reference to hierarchical grid
@@ -231,7 +231,6 @@ namespace Fem
 
 
 } // namespace Fem
-
 } // namespace Dune
 
 #endif // #ifndef DUNE_FEM_ALGORITHM_BASE_HH

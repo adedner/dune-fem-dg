@@ -8,6 +8,8 @@
 
 namespace Dune
 {
+namespace Fem
+{
 
   // Estimator
   // ---------
@@ -78,7 +80,7 @@ namespace Dune
                           const SigmaFunction &sigma,
                           const DGOperator &oper,
                           GridType &grid,
-                          const Dune::AdaptationParameters& param = Dune::AdaptationParameters() )
+                          const AdaptationParameters& param = AdaptationParameters() )
     : BaseType(uh,sigma,oper,grid,param),
       Rdiv_( this->indexSet_.size( 0 ))
     {
@@ -196,6 +198,7 @@ namespace Dune
 
   };
 
+}
 }
 
 #endif

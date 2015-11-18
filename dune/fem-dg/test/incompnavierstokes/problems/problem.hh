@@ -9,7 +9,8 @@
 
 namespace Dune
 {
-
+namespace Fem
+{
 
   template< class GridImp>
   class NavierStokesProblemDefault
@@ -119,5 +120,5 @@ namespace Dune
   };
 
 }
-
+}
 #endif // #ifndef PROBLEM_HH

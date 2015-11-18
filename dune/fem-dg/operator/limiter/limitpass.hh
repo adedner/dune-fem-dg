@@ -32,9 +32,10 @@
 #include <dune/fem-dg/pass/context.hh>
 
 //*************************************************************
-namespace Dune {
-/*! @addtogroup PassLimit
-*/
+namespace Dune
+{
+namespace Fem
+{
 
   inline std::ostream& operator << (std::ostream& out, const DGFEntityKey<int>& key )
   {
@@ -58,14 +59,14 @@ namespace Dune {
     {
       // default value
       double eps = 1e-8;
-      eps = Fem::Parameter::getValue("LimitEps", eps );
+      eps = Parameter::getValue("LimitEps", eps );
       return eps;
     }
 
   protected:
     void printInfo(const std::string& name ) const
     {
-      if( Fem::Parameter::verbose() )
+      if( Parameter::verbose() )
       {
         std::cout << "LimiterFunction: " << name << " with limitEps = " << limitEps_ << std::endl;
       }
@@ -505,7 +506,6 @@ namespace Dune {
     const DomainFieldType veloEps_;
   };
 
-  namespace Fem {
 
   // matrix assemblers for the reconstruction matrices
 
@@ -582,8 +582,6 @@ namespace Dune {
     }
   };
 
-  } // end namespace Fem
-
   /** \brief Concrete implementation of Pass for Limiting.
    *
    *  \note: A detailed description can be found in:
@@ -595,10 +593,10 @@ namespace Dune {
    */
   template <class DiscreteModelImp, class PreviousPassImp, int passId >
   class LimitDGPass
-  : public Fem::LocalPass<DiscreteModelImp, PreviousPassImp , passId >
+  : public LocalPass<DiscreteModelImp, PreviousPassImp , passId >
   {
     typedef LimitDGPass< DiscreteModelImp, PreviousPassImp, passId > ThisType;
-    typedef Fem::LocalPass< DiscreteModelImp, PreviousPassImp, passId > BaseType;
+    typedef LocalPass< DiscreteModelImp, PreviousPassImp, passId > BaseType;
 
   public:
     //- Typedefs and enums
@@ -658,7 +656,7 @@ namespace Dune {
     typedef LimiterDiscreteModelCaller< DiscreteModelType, ArgumentType, PassIds > DiscreteModelCallerType;
 
     // type of Communication Manager
-    typedef Fem::CommunicationManager< DiscreteFunctionSpaceType > CommunicationManagerType;
+    typedef CommunicationManager< DiscreteFunctionSpaceType > CommunicationManagerType;
 
     // Range of the destination
     enum { dimRange = DiscreteFunctionSpaceType::dimRange,
@@ -667,25 +665,24 @@ namespace Dune {
     typedef typename GridType :: ctype ctype;
     typedef FieldVector<ctype, dimGrid-1> FaceLocalDomainType;
 
-    typedef Fem::PointBasedDofConversionUtility< dimRange > DofConversionUtilityType;
+    typedef PointBasedDofConversionUtility< dimRange > DofConversionUtilityType;
 
-    static const bool StructuredGrid     = Fem::GridPartCapabilities::isCartesian< GridPartType >::v;
-    static const bool conformingGridPart = Fem::GridPartCapabilities::isConforming< GridPartType >::v;
+    static const bool StructuredGrid     = GridPartCapabilities::isCartesian< GridPartType >::v;
+    static const bool conformingGridPart = GridPartCapabilities::isConforming< GridPartType >::v;
 
     typedef FieldVector< DomainType , dimRange > DeoModType;
     typedef FieldMatrix< DomainFieldType, dimDomain , dimDomain > MatrixType;
 
     typedef typename GridPartType :: IndexSetType IndexSetType;
-    typedef Fem::AllGeomTypes< IndexSetType,
-                               GridType> GeometryInformationType;
+    typedef AllGeomTypes< IndexSetType, GridType> GeometryInformationType;
 
-    typedef Fem::GeometryInformation< GridType, 1 > FaceGeometryInformationType;
+    typedef GeometryInformation< GridType, 1 > FaceGeometryInformationType;
 
     // get LagrangePointSet of pol order 1
-    typedef Fem :: LagrangePointSet< GridPartType, 1 > LagrangePointSetType ;
+    typedef LagrangePointSet< GridPartType, 1 > LagrangePointSetType;
     // get lagrange point set of order 1
-    typedef Fem :: CompiledLocalKeyContainer< LagrangePointSetType, 1 , 1 >
-      LagrangePointSetContainerType ;
+    typedef CompiledLocalKeyContainer< LagrangePointSetType, 1 , 1 >
+      LagrangePointSetContainerType;
 
     typedef DGFEntityKey<int> KeyType;
     typedef std::vector<int> CheckType;
@@ -720,7 +717,7 @@ namespace Dune {
         {
           MatrixType matrix;
           // setup matrix
-          Fem :: MatrixAssemblerForLinearReconstruction<dimGrid,dimDomain, DomainFieldType>
+          MatrixAssemblerForLinearReconstruction<dimGrid,dimDomain, DomainFieldType>
             :: assembleMatrix(v, barys, matrix);
           // invert matrix
           RangeFieldType det = FMatrixHelp :: invertMatrix( matrix, inverse_ );
@@ -915,11 +912,11 @@ namespace Dune {
     typedef std::map< KeyType, MatrixCacheEntry > MatrixCacheType;
 
     //! type of local mass matrix
-    typedef Fem::LocalMassMatrix< DiscreteFunctionSpaceType,
+    typedef LocalMassMatrix< DiscreteFunctionSpaceType,
                   VolumeQuadratureType > LocalMassMatrixType;
 
     //! type of used adaptation method
-    typedef Fem::AdaptationMethod<GridType> AdaptationMethodType;
+    typedef AdaptationMethod<GridType> AdaptationMethodType;
 
     //! id for choosing admissible linear functions
     enum AdmissibleFunctions { DGFunctions = 0, ReconstructedFunctions = 1 , BothFunctions = 2 };
@@ -928,7 +925,7 @@ namespace Dune {
     using BaseType :: active ;
 
     //! type of cartesian grid checker
-    typedef Fem :: CheckCartesian< GridPartType >  CheckCartesian ;
+    typedef CheckCartesian< GridPartType >  CheckCartesianType;
 
   protected:
     template <class DiscreteSpace>
@@ -938,13 +935,13 @@ namespace Dune {
     };
 
     template < class FunctionSpace, class GridPart, int polOrder, template< class > class Storage >
-    struct HierarchicalBasis< Fem::DiscontinuousGalerkinSpace< FunctionSpace, GridPart, polOrder, Storage > >
+    struct HierarchicalBasis< DiscontinuousGalerkinSpace< FunctionSpace, GridPart, polOrder, Storage > >
     {
       static const bool v = true ;
     };
 
     template < class FunctionSpace, class GridPart, int polOrder, template< class > class Storage >
-    struct HierarchicalBasis< Fem::HierarchicLegendreDiscontinuousGalerkinSpace< FunctionSpace, GridPart, polOrder, Storage > >
+    struct HierarchicalBasis< HierarchicLegendreDiscontinuousGalerkinSpace< FunctionSpace, GridPart, polOrder, Storage > >
     {
       static const bool v = true ;
     };
@@ -991,14 +988,14 @@ namespace Dune {
       matrixCacheVec_( gridPart_.grid().maxLevel() + 1 ),
       localMassMatrix_( spc_ , volumeQuadOrd_ ),
       adaptive_((AdaptationMethodType(gridPart_.grid())).adaptive()),
-      cartesianGrid_( CheckCartesian::check( gridPart_ ) ),
+      cartesianGrid_( CheckCartesianType::check( gridPart_ ) ),
       stepTime_(3, 0.0),
       calcIndicator_(true),
       reconstruct_(false),
       admissibleFunctions_( getAdmissibleFunctions() ),
       usedAdmissibleFunctions_( admissibleFunctions_ )
     {
-      if( Fem :: Parameter :: verbose () )
+      if( Parameter :: verbose () )
       {
         std::cout << "LimitPass: Grid is ";
         if( cartesianGrid_ )
@@ -1033,7 +1030,7 @@ namespace Dune {
     double getTol() const
     {
       double tol = 1.0;
-      tol = Fem::Parameter::getValue("femdg.limiter.tolerance", tol );
+      tol = Parameter::getValue("femdg.limiter.tolerance", tol );
       return tol;
     }
 
@@ -1042,7 +1039,7 @@ namespace Dune {
     {
       // default value
       double eps = 1e-8;
-      eps = Fem::Parameter::getValue("femdg.limiter.limiteps", eps );
+      eps = Parameter::getValue("femdg.limiter.limiteps", eps );
       return eps;
     }
 
@@ -1051,7 +1048,7 @@ namespace Dune {
     {
       // default value
       int val = 1;
-      val = Fem::Parameter::getValue("femdg.limiter.admissiblefunctions", val);
+      val = Parameter::getValue("femdg.limiter.admissiblefunctions", val);
       assert( val >= DGFunctions || val <= BothFunctions );
       return (AdmissibleFunctions) val;
     }
@@ -1087,7 +1084,7 @@ namespace Dune {
     void compute(const ArgumentType& arg, DestinationType& dest) const
     {
       // get stopwatch
-      Timer timer;
+      Dune::Timer timer;
 
       // if polOrder of destination is > 0 then we have to do something
       if( spc_.order() > 0 && active() )
@@ -1100,7 +1097,7 @@ namespace Dune {
         IteratorType endit = spc_.end();
         for (IteratorType it = spc_.begin(); it != endit; ++it)
         {
-          Timer localTime;
+          Dune::Timer localTime;
           applyLocalImp(*it);
           stepTime_[2] += localTime.elapsed();
           ++elementCounter_;
@@ -1291,7 +1288,7 @@ namespace Dune {
     void applyLocalImp(const EntityType& en) const
     {
       // timer for shock detection
-      Timer indiTime;
+      Dune::Timer indiTime;
 
       // true if entity has boundary intersections
       bool boundary = false;
@@ -1404,7 +1401,7 @@ namespace Dune {
           if( !StructuredGrid && cartesian )
           {
             // check whether this element is really cartesian
-            cartesian &= ( ! CheckCartesian::checkIntersection(intersection) );
+            cartesian &= ( ! CheckCartesianType::checkIntersection(intersection) );
           }
 
           DomainType lambda( 1 );
@@ -1593,7 +1590,7 @@ namespace Dune {
       DeoModType D;
       FieldMatrix<double,dimDomain,dimDomain> A;
       RangeType b[dimDomain];
-      Fem::TemporaryLocalFunction< DiscreteFunctionSpaceType > uTmp(spc_,en);
+      TemporaryLocalFunction< DiscreteFunctionSpaceType > uTmp(spc_,en);
       uTmp.clear();
 
       // assume that basis functions are hierarchical
@@ -1937,7 +1934,7 @@ namespace Dune {
     template <class LocalFunctionImp, class FunctionSpaceImp, class
       GridPartImp, int polOrd, template <class> class StrorageImp >
     struct NumLinearBasis<LocalFunctionImp,
-              Fem::DiscontinuousGalerkinSpace<FunctionSpaceImp, GridPartImp, polOrd,
+              DiscontinuousGalerkinSpace<FunctionSpaceImp, GridPartImp, polOrd,
                                          StrorageImp> >
     {
       inline static int numBasis(const LocalFunctionImp& lf)
@@ -1949,10 +1946,10 @@ namespace Dune {
     /*
     template <class LocalFunctionImp, class FunctionSpaceImp, class
       GridPartImp, int polOrd, template <class> class StrorageImp,
-          int N , Fem::DofStoragePolicy policy >
+          int N , DofStoragePolicy policy >
     struct NumLinearBasis<LocalFunctionImp,
-              Fem::CombinedSpace<
-              Fem::DiscontinuousGalerkinSpace<FunctionSpaceImp, GridPartImp, polOrd,
+              CombinedSpace<
+              DiscontinuousGalerkinSpace<FunctionSpaceImp, GridPartImp, polOrd,
                                          StrorageImp> , N , policy > >
     {
       inline static int numBasis(const LocalFunctionImp& lf)
@@ -2266,7 +2263,7 @@ namespace Dune {
       assert( intersection.conforming() == conforming );
 
       // use IntersectionQuadrature to create appropriate face quadratures
-      typedef Fem::IntersectionQuadrature< FaceQuadratureType, conforming > IntersectionQuadratureType;
+      typedef IntersectionQuadrature< FaceQuadratureType, conforming > IntersectionQuadratureType;
       typedef typename IntersectionQuadratureType :: FaceQuadratureType QuadratureImp;
 
       // create intersection quadrature (no neighbor check here)
@@ -2674,6 +2671,7 @@ namespace Dune {
   template< class DiscreteModelImp, class PreviousPassImp, int passId >
   const double LimitDGPass< DiscreteModelImp, PreviousPassImp, passId >::MatrixIF::detEps_ = 1e-12;
 
+} // namespace
 } // namespace Dune
 
 #endif // #ifndef DUNE_LIMITERPASS_HH

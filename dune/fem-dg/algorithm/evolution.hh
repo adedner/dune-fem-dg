@@ -29,7 +29,6 @@
 
 namespace Dune
 {
-
 namespace Fem
 {
 
@@ -267,7 +266,7 @@ namespace Fem
     EvolutionAlgorithmBase ( GridType &grid, const std::string name = "" )
     : BaseType( grid, name  ),
       tuple_( Traits::createStepper( grid, name ) ),
-      param_( StepperParametersType( Dune::ParameterKey::generate( "", "femdg.stepper." ) ) ),
+      param_( StepperParametersType( ParameterKey::generate( "", "femdg.stepper." ) ) ),
       checkPointHandler_( tuple_ ),
       dataWriterHandler_( tuple_ ),
       diagnosticsHandler_( tuple_ ),

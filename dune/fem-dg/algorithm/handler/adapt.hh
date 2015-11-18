@@ -41,9 +41,9 @@ namespace Fem
     typedef typename DiscreteFunctionType::DiscreteFunctionSpaceType                           DiscreteFunctionSpaceType;
     typedef typename DiscreteFunctionSpaceType::GridPartType                                   GridPartType;
     typedef typename GridPartType::GridType                                                    GridType;
-    typedef Dune::AdaptationParameters                                                         AdaptationParametersType;
+    typedef AdaptationParameters                                                               AdaptationParametersType;
 
-    typedef Dune::AdaptationHandler< GridType, typename DiscreteFunctionSpaceType::FunctionSpaceType >
+    typedef AdaptationHandler< GridType, typename DiscreteFunctionSpaceType::FunctionSpaceType >
                                                                                                AdaptationHandlerType;
 
     template< class Problem, class ExtraTupleParameter >
@@ -51,7 +51,7 @@ namespace Fem
     : sol_( sol ),
       adaptationHandler_( nullptr ),
       keyPrefix_( keyPrefix ),
-      adaptParam_( AdaptationParametersType( Dune::ParameterKey::generate( keyPrefix, "fem.adaptation." ) ) ),
+      adaptParam_( AdaptationParametersType( ParameterKey::generate( keyPrefix, "fem.adaptation." ) ) ),
       indicator_( const_cast<GridPartType&>(sol_.gridPart()), problem, tuple, keyPrefix_ ),
       gradientIndicator_( sol_.space(), problem, adaptParam_ )
     {}
@@ -237,9 +237,9 @@ namespace Fem
 
     typedef typename RPDefaultTupleExtractor< TupleType >::type                                RestrictionProlongationType;
 
-    typedef Dune::Fem::AdaptationManager< GridType, RestrictionProlongationType >              AdaptationManagerType;
+    typedef AdaptationManager< GridType, RestrictionProlongationType >                         AdaptationManagerType;
 
-    typedef Dune::AdaptationParameters                                                         AdaptationParametersType;
+    typedef AdaptationParameters                                                               AdaptationParametersType;
 
 
 
@@ -327,7 +327,7 @@ namespace Fem
       rp_( nullptr ),
       adaptationManager_(),
       keyPrefix_( "" ),
-      adaptParam_( AdaptationParametersType( Dune::ParameterKey::generate( keyPrefix_, "fem.adaptation." ) ) )
+      adaptParam_( AdaptationParametersType( ParameterKey::generate( keyPrefix_, "fem.adaptation." ) ) )
     {
 
       setRestrProlong( IndexSequenceType() );

@@ -9,6 +9,8 @@
 
 namespace Dune
 {
+namespace Fem
+{
 
   /**
    * \brief Analytical model interface
@@ -291,5 +293,5 @@ namespace Dune
   };
 
 }
-
+}
 #endif

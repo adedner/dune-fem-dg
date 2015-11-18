@@ -6,7 +6,10 @@
 #include <dune/fem/misc/threads/threadmanager.hh>
 #include <dune/fem-dg/pass/threadpass.hh>
 
-namespace Dune {
+namespace Dune
+{
+namespace Fem
+{
 
   class Diagnostics : public Fem::AutoPersistentObject
   {
@@ -426,5 +429,6 @@ namespace Dune {
     }
   }; // end class diagnostics
 
+} // end namespace
 } // end namespace Dune
 #endif

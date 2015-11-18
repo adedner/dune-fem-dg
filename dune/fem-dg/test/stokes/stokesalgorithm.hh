@@ -203,7 +203,7 @@ namespace Fem
 
 
     typedef Dune::Fem::LocalFunctionAdapter< SigmaEval<DiscreteVelocityFunctionType,DiscretePressureFunctionType,AssemblerType> > StokesEstimateFunction;
-    typedef Dune::StokesErrorEstimator< DiscreteVelocityFunctionType, StokesEstimateFunction, StokesFlux > StokesEstimatorType;
+    typedef StokesErrorEstimator< DiscreteVelocityFunctionType, StokesEstimateFunction, StokesFlux > StokesEstimatorType;
     typedef Dune::Fem::LocalFunctionAdapter< StokesEstimatorType >          StokesEstimateDataType;
 
 

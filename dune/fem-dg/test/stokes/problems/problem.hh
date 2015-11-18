@@ -9,7 +9,8 @@
 
 namespace Dune
 {
-
+namespace Fem
+{
 
   template< class GridImp>
   class StokesProblemDefault
@@ -319,6 +320,7 @@ namespace Dune
     return 0;
   }
 
+}
 }
 
 #endif // #ifndef PROBLEM_HH

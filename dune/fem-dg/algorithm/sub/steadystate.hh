@@ -28,9 +28,9 @@
 
 namespace Dune
 {
-
 namespace Fem
 {
+
   class IDGenerator
   {
     public:

@@ -19,7 +19,10 @@
 #include <dune/fem-dg/pass/dgmodelcaller.hh>
 #include <dune/fem/misc/compatibility.hh>
 
-namespace Dune {
+namespace Dune
+{
+namespace Fem
+{
 /*! \ingroup Pass
  * Description: Solver for equations of the form
 ** \f{eqnarray*}
@@ -41,14 +44,14 @@ namespace Dune {
   //! LDG
   template< class DiscreteModelImp, class PreviousPassImp , int passIdImp = -1 >
   class LocalCDGPass :
-    public Fem::LocalPass< DiscreteModelImp , PreviousPassImp , passIdImp >
+    public LocalPass< DiscreteModelImp , PreviousPassImp , passIdImp >
   {
     typedef LocalCDGPass< DiscreteModelImp, PreviousPassImp, passIdImp > ThisType;
   public:
 
     //- Typedefs and enums
     //! Base class
-    typedef Fem::LocalPass< DiscreteModelImp , PreviousPassImp , passIdImp > BaseType;
+    typedef LocalPass< DiscreteModelImp , PreviousPassImp , passIdImp > BaseType;
     typedef typename BaseType::PassIds PassIds;
 
     //! Repetition of template arguments
@@ -205,7 +208,7 @@ namespace Dune {
     void compute(const ArgumentType& arg, DestinationType& dest) const
     {
       // get stopwatch
-      Timer timer;
+      Dune::Timer timer;
 
       prepare(arg, dest);
 
@@ -954,6 +957,8 @@ namespace Dune {
     mutable bool reallyCompute_;
   };
 //! @}
+
+} // end namespace
 } // end namespace Dune
 
 #endif

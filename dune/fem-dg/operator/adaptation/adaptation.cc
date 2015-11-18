@@ -6,6 +6,8 @@
 
 namespace Dune
 {
+namespace Fem
+{
 
   //! constructor
   template< class GridImp, class FunctionSpace >
@@ -446,5 +448,6 @@ namespace Dune
 #endif
   }
 
+} // end namespace
 } // end namespace Dune
 #endif

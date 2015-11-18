@@ -41,14 +41,14 @@ namespace Fem
       }
       Dune::GridPtr< GridType > gridptr ;
       gridptr = CheckPointerType::restoreGrid( checkPointFile( keyPrefix ), -1,
-                                               CheckPointerParametersType( Dune::ParameterKey::generate( keyPrefix, "fem.io." ) ) );
+                                               CheckPointerParametersType( ParameterKey::generate( keyPrefix, "fem.io." ) ) );
       return gridptr;
     }
 
     static inline std::string checkPointFile ( const std::string keyPrefix = "" )
     {
       static std::string checkFileName ;
-      const std::string key( Dune::ParameterKey::generate( keyPrefix, "fem.io.checkpointrestartfile" ) );
+      const std::string key( ParameterKey::generate( keyPrefix, "fem.io.checkpointrestartfile" ) );
       if( Fem::Parameter::exists( key ) )
         checkFileName = Fem::Parameter::getValue<std::string> ( key );
       else
@@ -108,7 +108,7 @@ namespace Fem
       : tuple_( TupleReducerType::apply( tuple ) ),
         checkPointer_(),
         keyPrefix_( std::get<0>( tuple_ )->name() ),
-        checkParam_( Dune::ParameterKey::generate( keyPrefix_, "fem.io." ) )
+        checkParam_( ParameterKey::generate( keyPrefix_, "fem.io." ) )
     {}
 
     void registerData()

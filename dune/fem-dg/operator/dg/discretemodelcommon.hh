@@ -10,7 +10,10 @@
 
 #include <dune/fem/gridpart/filter/threadfilter.hh>
 
-namespace Dune {
+namespace Dune
+{
+namespace Fem
+{
 
   template < int idx >
   struct PrintTupleValues
@@ -586,6 +589,7 @@ namespace Dune {
     double weight_ ;
   };
 
+} // end namespace
 } // end namespace Dune
 
 #endif

@@ -25,7 +25,6 @@
 
 namespace Dune
 {
-
 namespace Fem
 {
 

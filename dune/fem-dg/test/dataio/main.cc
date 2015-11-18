@@ -21,10 +21,10 @@ int main(int argc, char ** argv)
     Dune::Fem::Parameter::write("parameter.log");
 
     typedef Dune::GridSelector :: GridType GridType;
-    CheckPointingProblemCreator< GridType > problem;
+    Dune::Fem::CheckPointingProblemCreator< GridType > problem;
 
     // run simulation
-    Dune::Simulator::run( problem );
+    Dune::Fem::Simulator::run( problem );
   }
   catch (const Dune::Exception &e)
   {

@@ -50,7 +50,6 @@
 
 namespace Dune
 {
-
   namespace Fem
   {
 

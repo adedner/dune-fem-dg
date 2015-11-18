@@ -5,6 +5,8 @@
 
 namespace Dune
 {
+namespace Fem
+{
 
   template< class Obj >
   class OptionalObject
@@ -64,6 +66,7 @@ namespace Dune
 
   };
 
+}
 }
 
 #endif

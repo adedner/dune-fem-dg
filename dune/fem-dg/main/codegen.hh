@@ -15,8 +15,8 @@
 
 namespace Dune
 {
-
-namespace Fem {
+namespace Fem
+{
 
   /** \brief default code generator methods */
   template < int simdWidth = 2 >

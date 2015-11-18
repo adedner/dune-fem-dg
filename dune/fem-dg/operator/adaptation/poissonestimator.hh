@@ -27,6 +27,8 @@
 
 namespace Dune
 {
+namespace Fem
+{
 
   template <class OtherSpace>
   struct HierarchicSimplexDGSpace
@@ -177,7 +179,7 @@ namespace Dune
                     const SigmaFunction &sigma,
                     const DGOperator &oper,
                     GridType &grid,
-                    const Dune::AdaptationParameters& param = Dune::AdaptationParameters() )
+                    const AdaptationParameters& param = AdaptationParameters() )
      : oper_(oper),
        uh_( uh ),
        sigma_( sigma ),
@@ -929,6 +931,7 @@ namespace Dune
     mutable std::vector< typename SigmaLocalFunctionType::RangeType > sigmaValuesNb;
   };
 
+}
 }
 
 #endif

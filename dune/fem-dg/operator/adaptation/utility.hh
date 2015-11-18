@@ -8,6 +8,9 @@
 
 namespace Dune
 {
+namespace Fem
+{
+
   struct AdaptationParameters
     : public Fem::LocalParameter< AdaptationParameters, AdaptationParameters >
   {
@@ -227,5 +230,6 @@ namespace Dune
     double finestVolume() const { return volumes_.second; }
   };
 
+} // end namespace
 } // end namespace Dune
 #endif

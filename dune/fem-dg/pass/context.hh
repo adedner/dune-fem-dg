@@ -8,6 +8,8 @@
 
 namespace Dune
 {
+namespace Fem
+{
 
   /**
    * \brief Container class describing (many) information which are related to
@@ -195,7 +197,7 @@ namespace Dune
     const IntersectionType& intersection() const { return intersection_; }
   };
 
-
+} // namespace Fem
 } // namespace Dune
 
 #endif // #ifndef DUNE_FEM_DG_QUADRATURECONTEXT_HH

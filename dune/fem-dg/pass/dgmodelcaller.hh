@@ -11,6 +11,8 @@
 
 namespace Dune
 {
+namespace Fem
+{
 
   // CDGDiscreteModelCaller
   // ----------------------
@@ -235,6 +237,7 @@ namespace Dune
 #endif
   };
 
+} // namespace
 } // namespace Dune
 
 #endif // #ifndef DUNE_FEM_DG_DISCRETEMODELCALLER_HH

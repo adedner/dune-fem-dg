@@ -11,7 +11,10 @@
 #include <dune/fem-dg/operator/fluxes/ldgflux.hh>
 
 //*************************************************************
-namespace Dune {
+namespace Dune
+{
+namespace Fem
+{
 
 
   // GradientModel
@@ -503,5 +506,6 @@ namespace Dune {
     const double cflDiffinv_;
   };
 
+}
 }
 #endif

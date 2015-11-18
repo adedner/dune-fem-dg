@@ -12,7 +12,10 @@
 
 #include "threadhandle.hh"
 
-namespace Dune {
+namespace Dune
+{
+namespace Fem
+{
 
   struct NonBlockingCommParameter
   {
@@ -135,9 +138,9 @@ namespace Dune {
              class ThreadIterator,
              bool nonblockingcomm = true >
   class ThreadPass :
-    public Fem::LocalPass< typename InnerPass :: DiscreteModelType,
-                           typename InnerPass :: PreviousPassType,
-                           InnerPass :: passId >
+    public LocalPass< typename InnerPass :: DiscreteModelType,
+                      typename InnerPass :: PreviousPassType,
+                      InnerPass :: passId >
   {
     typedef ThreadPass< InnerPass, ThreadIterator, nonblockingcomm > ThisType;
   public:
@@ -147,7 +150,7 @@ namespace Dune {
 
     //- Typedefs and enums
     //! Base class
-    typedef Fem::LocalPass< DiscreteModelType, PreviousPassType, InnerPass :: passId>  BaseType;
+    typedef LocalPass< DiscreteModelType, PreviousPassType, InnerPass :: passId>  BaseType;
 
     // Types from the base class
     typedef typename BaseType::EntityType  EntityType;
@@ -404,7 +407,7 @@ namespace Dune {
         BaseType& myPass = pass( 0 );
 
         // stop time
-        Timer timer ;
+        Dune::Timer timer ;
 
         // for the first call we need to receive data already here,
         // since the flux calculation is done at once
@@ -548,7 +551,7 @@ namespace Dune {
       InnerPassType& myPass = pass( thread );
 
       // stop time
-      Timer timer ;
+      Dune::Timer timer ;
 
       const bool computeInteriorIntegrals = firstStage_;
 
@@ -676,6 +679,8 @@ namespace Dune {
     const bool sumComputeTime_;
   };
 //! @}
+
+} // end namespace
 } // end namespace Dune
 
 #endif

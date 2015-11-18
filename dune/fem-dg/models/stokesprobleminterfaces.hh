@@ -7,111 +7,115 @@
 
 #include <dune/fem-dg/models/defaultprobleminterfaces.hh>
 
-namespace Dune {
-
-/**
- * \brief describes the interface for a stokes problem
- *
- * \tparam FunctionSpaceImp type of the discrete function space describing the velocity
- * \tparam PressureSpaceImp type of the (scalar) discrete function space describing the pressure
- *
- * \ingroup Problems
- */
-template <class FunctionSpaceImp, class PressureSpaceImp>
-class StokesProblemInterface : public ProblemInterface < FunctionSpaceImp >
+namespace Dune
 {
-public:
-  typedef FunctionSpaceImp                                           FunctionSpaceType;
-  typedef PressureSpaceImp                                           PressureFunctionSpaceType;
+namespace Fem
+{
 
-  typedef StokesProblemInterface< FunctionSpaceType, PressureFunctionSpaceType>  ThisType;
-
-  enum { dimDomain = FunctionSpaceType :: dimDomain };
-
-  typedef typename FunctionSpaceType :: DomainType                   DomainType;
-  typedef typename FunctionSpaceType :: RangeType                    RangeType;
-  typedef typename FunctionSpaceType :: JacobianRangeType            JacobianRangeType;
-  typedef typename FunctionSpaceType :: DomainFieldType              DomainFieldType;
-  typedef typename FunctionSpaceType :: RangeFieldType               RangeFieldType;
-
-  typedef typename PressureFunctionSpaceType :: RangeType            PressureRangeType;
-  typedef typename PressureFunctionSpaceType :: JacobianRangeType    PressureJacobianRangeType;
-
-  typedef FieldMatrix< RangeFieldType, dimDomain, dimDomain >        DiffusionMatrixType;
-
-public:
-
-  //! destructor
-  virtual ~StokesProblemInterface() {}
-
-  //! the exact pressure
-  virtual void p(const DomainType& x, PressureRangeType& ret) const {}//= 0;
-
-  //! the pressure boundary data
-
-
-  virtual void gp(const DomainType& x, PressureRangeType& ret) const
+  /**
+   * \brief describes the interface for a stokes problem
+   *
+   * \tparam FunctionSpaceImp type of the discrete function space describing the velocity
+   * \tparam PressureSpaceImp type of the (scalar) discrete function space describing the pressure
+   *
+   * \ingroup Problems
+   */
+  template <class FunctionSpaceImp, class PressureSpaceImp>
+  class StokesProblemInterface : public ProblemInterface < FunctionSpaceImp >
   {
-    p(x, ret ); //ret = 0;
-  }
+  public:
+    typedef FunctionSpaceImp                                           FunctionSpaceType;
+    typedef PressureSpaceImp                                           PressureFunctionSpaceType;
 
-  //! mass factor gamma
-  virtual double gamma() const { return 0.0; }
+    typedef StokesProblemInterface< FunctionSpaceType, PressureFunctionSpaceType>  ThisType;
 
-  //! the gradient of the exact solution
-  //virtual void gradient(const DomainType& x,
-  //                      JacobianRangeType& grad) const = 0;
+    enum { dimDomain = FunctionSpaceType :: dimDomain };
 
-protected:
+    typedef typename FunctionSpaceType :: DomainType                   DomainType;
+    typedef typename FunctionSpaceType :: RangeType                    RangeType;
+    typedef typename FunctionSpaceType :: JacobianRangeType            JacobianRangeType;
+    typedef typename FunctionSpaceType :: DomainFieldType              DomainFieldType;
+    typedef typename FunctionSpaceType :: RangeFieldType               RangeFieldType;
 
-  StokesProblemInterface() : exactPressure_(*this){}
+    typedef typename PressureFunctionSpaceType :: RangeType            PressureRangeType;
+    typedef typename PressureFunctionSpaceType :: JacobianRangeType    PressureJacobianRangeType;
 
-
-  //! the exact pressure to the problem for EOC calculation
-  class ExactPressure
-    : public Fem::Function< PressureFunctionSpaceType, ExactPressure >
-  {
-  private:
-    typedef Fem::Function< PressureFunctionSpaceType, ExactPressure >            BaseType;
-
-    typedef StokesProblemInterface< FunctionSpaceType,PressureFunctionSpaceType> DataType;
-  protected:
-    PressureFunctionSpaceType  functionSpace_;
-    const DataType &data_;
+    typedef FieldMatrix< RangeFieldType, dimDomain, dimDomain >        DiffusionMatrixType;
 
   public:
-    inline ExactPressure (  const ThisType& data )
-      : BaseType( ),
-        functionSpace_(),
-        data_(data)
+
+    //! destructor
+    virtual ~StokesProblemInterface() {}
+
+    //! the exact pressure
+    virtual void p(const DomainType& x, PressureRangeType& ret) const {}//= 0;
+
+    //! the pressure boundary data
+
+
+    virtual void gp(const DomainType& x, PressureRangeType& ret) const
     {
+      p(x, ret ); //ret = 0;
     }
 
-    inline void evaluate ( const DomainType &x, PressureRangeType &ret ) const
+    //! mass factor gamma
+    virtual double gamma() const { return 0.0; }
+
+    //! the gradient of the exact solution
+    //virtual void gradient(const DomainType& x,
+    //                      JacobianRangeType& grad) const = 0;
+
+  protected:
+
+    StokesProblemInterface() : exactPressure_(*this){}
+
+
+    //! the exact pressure to the problem for EOC calculation
+    class ExactPressure
+      : public Fem::Function< PressureFunctionSpaceType, ExactPressure >
     {
-       data_.p( x, ret );
-    }
+    private:
+      typedef Fem::Function< PressureFunctionSpaceType, ExactPressure >            BaseType;
 
-    inline void jacobian ( const DomainType &x,PressureJacobianRangeType &ret ) const
-    {
-    //   data_.gradient( x, ret );
-    }
+      typedef StokesProblemInterface< FunctionSpaceType,PressureFunctionSpaceType> DataType;
+    protected:
+      PressureFunctionSpaceType  functionSpace_;
+      const DataType &data_;
 
-    inline void evaluate (const DomainType &x,
-                          const double time, PressureRangeType &phi ) const
-    {
-			evaluate( x, phi );
-    }
-  }; // end class ExactSolutionX
+    public:
+      inline ExactPressure (  const ThisType& data )
+        : BaseType( ),
+          functionSpace_(),
+          data_(data)
+      {
+      }
 
-public:
-  //! type of function converter for exact solution and gradient
-  typedef ExactPressure ExactPressureType;
-//protected:
-  ExactPressureType exactPressure_;
-public:
-  const ExactPressureType& exactPressure() const { return exactPressure_; }
+      inline void evaluate ( const DomainType &x, PressureRangeType &ret ) const
+      {
+         data_.p( x, ret );
+      }
 
-};
+      inline void jacobian ( const DomainType &x,PressureJacobianRangeType &ret ) const
+      {
+      //   data_.gradient( x, ret );
+      }
+
+      inline void evaluate (const DomainType &x,
+                            const double time, PressureRangeType &phi ) const
+      {
+  			evaluate( x, phi );
+      }
+    }; // end class ExactSolutionX
+
+  public:
+    //! type of function converter for exact solution and gradient
+    typedef ExactPressure ExactPressureType;
+  //protected:
+    ExactPressureType exactPressure_;
+  public:
+    const ExactPressureType& exactPressure() const { return exactPressure_; }
+
+  };
+}
 }
 #endif  /*DUNE_PROBLEMINTERFACE_HH*/

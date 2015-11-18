@@ -9,9 +9,10 @@
 #include <dune/fem-dg/operator/limiter/limiterdiscretemodel.hh>
 #include <dune/fem/function/adaptivefunction.hh>
 
-namespace Dune {
-
-namespace Fem {
+namespace Dune
+{
+namespace Fem
+{
 
   template <class Model, class DiscreteFunction>
   class LimitedReconstruction

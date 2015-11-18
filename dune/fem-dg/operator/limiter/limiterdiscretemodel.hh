@@ -6,9 +6,10 @@
 #include <dune/fem-dg/operator/limiter/limitpass.hh>
 #include <dune/fem-dg/operator/adaptation/adaptation.hh>
 
-namespace Dune {
-
-namespace Fem {
+namespace Dune
+{
+namespace Fem
+{
 
   ///////////////////////////////////////////////////////////////////
   //
