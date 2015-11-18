@@ -11,11 +11,13 @@
 #include <dune/fem/solver/timeprovider.hh>
 #include <dune/fem/space/common/arrays.hh>
 
-#include <dune/fem-dg/operator/fluxes/diffusionflux.hh>
 #include <dune/fem-dg/pass/dgmasspass.hh>
+#include "fluxbase.hh"
 
-namespace Dune {
-
+namespace Dune
+{
+namespace Fem
+{
 
   // DGPrimalDiffusionFluxImpl
   //----------------------
@@ -143,7 +145,7 @@ namespace Dune {
 
     bool initAreaSwitch() const
     {
-      if( method_ == method_cdg2 )
+      if( method_ == MethodType::cdg2 )
       {
         // when default value is used, then use areSwitch
         if( ( upwind_ - BaseType :: upwindDefault() ).two_norm2() < 1e-10 )
@@ -160,25 +162,25 @@ namespace Dune {
      */
     DGPrimalDiffusionFluxImpl( GridPartType& gridPart,
                                const Model& model,
-                               const MethodType method,
+                               const typename MethodType::id method,
                                const ParameterType& parameters ) :
       BaseType( model, true, parameters ),
       gridPart_( gridPart ),
       method_( method ),
       penalty_( parameter().penalty() ),
-      nipgFactor_( (method_ == method_nipg) ||
-                   (method_ == method_bo)
+      nipgFactor_( (method_ == MethodType::nipg) ||
+                   (method_ == MethodType::bo)
                    ? 0.5 : -0.5 ),
       liftFactor_( parameter().liftfactor() ),
       liftingMethod_( parameter().getLifting() ),
-      penaltyTerm_( method_ip || ((std::abs(  penalty_ ) > 0) &&
-                    method_ != method_br2 &&
-                    method_ != method_bo )),
+      penaltyTerm_( MethodType::ip || ((std::abs(  penalty_ ) > 0) &&
+                    method_ != MethodType::br2 &&
+                    method_ != MethodType::bo )),
       gradSpc_( gridPart_ ),
       LeMinusLifting_( hasLifting() ? new Lifting( gradSpc_ ) : 0 ),
-      LePlusLifting_( ( method_ == method_br2 ) ? new Lifting( gradSpc_ ) : 0 ),
+      LePlusLifting_( ( method_ == MethodType::br2 ) ? new Lifting( gradSpc_ ) : 0 ),
 #ifdef LOCALDEBUG
-      LeMinusLifting2_( ( method_ <= method_cdg ) ? new Lifting( gradSpc_ ) : 0 ),
+      LeMinusLifting2_( ( method_ <= MethodType::cdg ) ? new Lifting( gradSpc_ ) : 0 ),
 #endif
       insideIsInflow_ ( true ),
       areaSwitch_( initAreaSwitch() ),
@@ -233,21 +235,21 @@ namespace Dune {
         initialized_ = true;
         liftFactor_ = 0.0;
         penalty_ = 0.;
-        if (method_ == method_cdg2)
+        if (method_ == MethodType::cdg2)
         {
           liftFactor_ = theoryFactor * 0.25* ((double) maxNumFaces); // max number of faces here
           //if( ! areaSwitch_ )
           liftFactor_ *= (1.+maxNeighborsVolumeRatio_);
         }
-        else if (method_ == method_cdg)
+        else if (method_ == MethodType::cdg)
         {
           liftFactor_ = theoryFactor * maxNumOutflowFaces;
         }
-        else if (method_ == method_br2)
+        else if (method_ == MethodType::br2)
         {
           liftFactor_ = theoryFactor * maxNumFaces;
         }
-        else if( method_ == method_nipg )
+        else if( method_ == MethodType::nipg )
         {
           std::cerr << "ERROR: No theory parameters for NIPG" << std::endl;
           DUNE_THROW(InvalidStateException,"No theory parameters for NIPG");
@@ -260,7 +262,7 @@ namespace Dune {
         diffusionFluxName( std::cout );
 
         std::cout <<", penalty: ";
-        if ( useTheoryParams_ && (method_ == method_ip) )
+        if ( useTheoryParams_ && (method_ == MethodType::ip) )
         {
           std::cout <<"theory (";
           diffusionFluxPenalty( std::cout );
@@ -288,9 +290,9 @@ namespace Dune {
       penaltyTerm_( other.penaltyTerm_ ),
       gradSpc_( gridPart_ ),
       LeMinusLifting_( hasLifting() ? new Lifting( gradSpc_ ) : 0 ),
-      LePlusLifting_( ( method_ == method_br2 ) ? new Lifting( gradSpc_ ) : 0 ),
+      LePlusLifting_( ( method_ == MethodType::br2 ) ? new Lifting( gradSpc_ ) : 0 ),
 #ifdef LOCALDEBUG
-      LeMinusLifting2_( ( method_ <= method_cdg ) ? new Lifting( gradSpc_ ) : 0 ),
+      LeMinusLifting2_( ( method_ <= MethodType::cdg ) ? new Lifting( gradSpc_ ) : 0 ),
 #endif
       maxNeighborsVolumeRatio_( other.maxNeighborsVolumeRatio_ ),
       ainsworthFactor_( other.ainsworthFactor_ ),
@@ -330,7 +332,7 @@ namespace Dune {
     }
 
     //! returns true if lifting has to be calculated
-    bool hasLifting () const { return ( method_ <= method_br2 ); }
+    bool hasLifting () const { return ( method_ <= MethodType::br2 ); }
 
   protected:
     Lifting& LePlusLifting() const
@@ -368,7 +370,7 @@ namespace Dune {
         computeLiftings( left.intersection(), left.entity(), right.entity(), left.time(),
                          left.quadrature(), right.quadrature(),
                          uLeftVec, uRightVec,
-                         (method_ == method_br2 ) );
+                         (method_ == MethodType::br2 ) );
       }
     }
 
@@ -387,7 +389,7 @@ namespace Dune {
         computeLiftings( intersection, inside, outside, time,
                          quadInner, quadOuter,
                          uLeftVec, uRightVec,
-                         (method_ == method_br2 ) );
+                         (method_ == MethodType::br2 ) );
       }
     }
 
@@ -657,7 +659,7 @@ namespace Dune {
       }
 
       Fem::FieldMatrixConverter< GradientType, JacobianRangeType> func1( func );
-      if (liftingMethod_ == lifting_id_id)
+      if (liftingMethod_ == LiftingType::id_id)
         func1 = jumpUNormal;
       else
       {
@@ -679,7 +681,7 @@ namespace Dune {
       // convert sigma into JacobianRangeType
       Fem::FieldMatrixConverter< GradientType, JacobianRangeType> gradient( sigma );
 
-      if (liftingMethod_ != lifting_id_A)
+      if (liftingMethod_ != LiftingType::id_A)
       {
         JacobianRangeType mat;
         // set mat = G(u)L_e
@@ -725,15 +727,15 @@ namespace Dune {
     /**
      * \brief flux function on interfaces between cells
      *
-     * @param intersection intersection
-     * @param time current time given by TimeProvider
-     * @param x coordinate of required evaluation local to \c intersection
-     * @param uLeft DOF evaluation on this side of \c intersection
-     * @param uRight DOF evaluation on the other side of \c intersection
-     * @param gLeft result for this side of \c intersection
-     * @param gRight result for the other side of \c intersection
+     * \param intersection intersection
+     * \param time current time given by TimeProvider
+     * \param x coordinate of required evaluation local to \c intersection
+     * \param uLeft DOF evaluation on this side of \c intersection
+     * \param uRight DOF evaluation on the other side of \c intersection
+     * \param gLeft result for this side of \c intersection
+     * \param gRight result for the other side of \c intersection
      *
-     * @note The total numerical flux for multiplication with phi
+     * \note The total numerical flux for multiplication with phi
      *       is given with
      *        CDG2:
      *          gLeft = numflux(f(u)) - {G(u)grad(u)}*n
@@ -787,7 +789,7 @@ namespace Dune {
       RangeType diffflux ;
 
       // for all methods except CDG we need to evaluate {G(u)grad(u)}
-      if (method_ != method_cdg)
+      if (method_ != MethodType::cdg)
       {
         // G(u-)grad(u-) for multiplication with phi
         // call on inside
@@ -854,7 +856,7 @@ namespace Dune {
       {
         RangeType penaltyTerm ;
 
-        if( (method_ == method_ip) && useTheoryParams_ )
+        if( (method_ == MethodType::ip) && useTheoryParams_ )
         {
           // penaltyTerm
           // = ainsworthFactor * maxEigenValue(A(u)) * FaceEntityVolumeRatio * [u] * n
@@ -930,14 +932,14 @@ namespace Dune {
         applyLifting( local, normal, u, liftingEvalLeMinus_[ local.index() ], lift );
 
         // only for CDG-type methods
-        if (method_ != method_br2)
+        if (method_ != MethodType::br2)
         {
           lift   *= liftFactor_ ;
           gLeft  -= lift;
           gRight -= lift;
         }
 
-        if( method_ == method_cdg )
+        if( method_ == MethodType::cdg )
         {
           const RangeFieldType C_12 = ( insideIsInflow_ ) ? 0.5 : -0.5;
           JacobianRangeType resU;
@@ -959,7 +961,7 @@ namespace Dune {
           gDiffRight += resU;
         }
 
-        if (method_ == method_br2)
+        if (method_ == MethodType::br2)
         {
           // BR2 hasn't had penalty term until now
           // so we add it at this place.
@@ -1026,7 +1028,7 @@ namespace Dune {
                         const RangeType& uRight,
                         const JacobianRangeType& jacLeft,
                         RangeType& gLeft,
-                        JacobianRangeType& gDiffLeft )   /*@LST0E@*/
+                        JacobianRangeType& gDiffLeft )
     {
       // get local point
       const FaceDomainType& x = left.localPoint();
@@ -1051,7 +1053,7 @@ namespace Dune {
         // get value of G(u)L_e*n into lift
         applyLifting( left, normal, uRight, liftingEvalLeMinus_[ left.index() ], lift );
 
-        if( method_ == method_br2 )
+        if( method_ == MethodType::br2 )
         {
           // set liftTotal = G(u)r_e*n = 0.5*G(u_in)L_e_in*n
           lift *= (0.5*liftFactor_);
@@ -1093,7 +1095,7 @@ namespace Dune {
         RangeType penaltyTerm;
         const double enVolInv = 1./left.volume();
 
-        if( (method_ == method_ip) && useTheoryParams_ )
+        if( (method_ == MethodType::ip) && useTheoryParams_ )
         {
           // penaltyTerm
           // = ainsworthFactor * maxEigenValue(A(u)) * FaceEntityVolumeRatio * [u] * n
@@ -1147,13 +1149,13 @@ namespace Dune {
     }
 
   protected:
-    GridPartType&     gridPart_;
-    const MethodType  method_;
-    double            penalty_;
-    const double      nipgFactor_;
-    double            liftFactor_;
-    LiftingType       liftingMethod_;
-    const bool        penaltyTerm_;
+    GridPartType&                 gridPart_;
+    const typename MethodType::id method_;
+    double                        penalty_;
+    const double                  nipgFactor_;
+    double                        liftFactor_;
+    typename LiftingType::id      liftingMethod_;
+    const bool                    penaltyTerm_;
     DiscreteGradientSpaceType  gradSpc_;
     std::unique_ptr< Lifting > LeMinusLifting_;
     std::unique_ptr< Lifting > LePlusLifting_;
@@ -1171,205 +1173,6 @@ namespace Dune {
     bool              initialized_;
   }; // end DGPrimalDiffusionFluxImpl
 
-
-  //! DG primal diffusion flux
-  template <class DiscreteFunctionSpaceImp,
-            class Model,
-            DGDiffusionFluxIdentifier >
-  class DGPrimalDiffusionFlux;
-
-  //////////////////////////////////////////////////////////
-  //
-  //  general diffusion flux allows choice of method via Parameter
-  //
-  //////////////////////////////////////////////////////////
-  template <class DiscreteFunctionSpaceImp,
-            class Model>
-  class DGPrimalDiffusionFlux<  DiscreteFunctionSpaceImp, Model, method_general >
-    : public DGPrimalDiffusionFluxImpl< DiscreteFunctionSpaceImp, Model >
-  {
-    typedef DGPrimalDiffusionFluxImpl< DiscreteFunctionSpaceImp, Model >
-      BaseType;
-
-  public:
-    typedef DiscreteFunctionSpaceImp DiscreteFunctionSpaceType;
-    typedef typename DiscreteFunctionSpaceType :: GridPartType GridPartType;
-    typedef typename BaseType :: ParameterType ParameterType ;
-
-    /**
-      * \brief constructor reading parameters
-      */
-    DGPrimalDiffusionFlux( GridPartType& gridPart,
-                           const Model& model,
-                           const ParameterType& parameters = ParameterType() )
-      : BaseType( gridPart, model, parameters.getMethod(), parameters )
-    {
-    }
-  };
-
-  //////////////////////////////////////////////////////////
-  //
-  //  specialization for CDG2
-  //
-  //////////////////////////////////////////////////////////
-  template <class DiscreteFunctionSpaceImp,
-            class Model>
-  class DGPrimalDiffusionFlux<  DiscreteFunctionSpaceImp, Model, method_cdg2 >
-    : public DGPrimalDiffusionFluxImpl< DiscreteFunctionSpaceImp, Model >
-  {
-    typedef DGPrimalDiffusionFluxImpl< DiscreteFunctionSpaceImp, Model >
-      BaseType;
-
-  public:
-    typedef DiscreteFunctionSpaceImp DiscreteFunctionSpaceType;
-    typedef typename DiscreteFunctionSpaceType :: GridPartType GridPartType;
-    typedef typename BaseType :: ParameterType  ParameterType;
-
-    /**
-      * \brief constructor reading parameters
-      */
-    DGPrimalDiffusionFlux( GridPartType& gridPart,
-                           const Model& model,
-                           const ParameterType& parameters = ParameterType() )
-      : BaseType( gridPart, model, method_cdg2, parameters )
-    {
-    }
-  };
-
-
-  //////////////////////////////////////////////////////////
-  //
-  //  specialization for CDG
-  //
-  //////////////////////////////////////////////////////////
-  template <class DiscreteFunctionSpaceImp,
-            class Model>
-  class DGPrimalDiffusionFlux<  DiscreteFunctionSpaceImp, Model, method_cdg >
-    : public DGPrimalDiffusionFluxImpl< DiscreteFunctionSpaceImp, Model >
-  {
-    typedef DGPrimalDiffusionFluxImpl< DiscreteFunctionSpaceImp, Model >
-      BaseType;
-
-  public:
-    typedef DiscreteFunctionSpaceImp DiscreteFunctionSpaceType;
-    typedef typename DiscreteFunctionSpaceType :: GridPartType GridPartType;
-    typedef typename BaseType :: ParameterType  ParameterType;
-
-    /**
-      * \brief constructor reading parameters
-      */
-    DGPrimalDiffusionFlux( GridPartType& gridPart,
-                           const Model& model,
-                           const ParameterType& parameters = ParameterType() )
-      : BaseType( gridPart, model, method_cdg, parameters )
-    {
-    }
-  };
-
-
-  //////////////////////////////////////////////////////////
-  //
-  //  specialization for BR2
-  //
-  //////////////////////////////////////////////////////////
-  template <class DiscreteFunctionSpaceImp,
-            class Model>
-  class DGPrimalDiffusionFlux<  DiscreteFunctionSpaceImp, Model, method_br2 >
-    : public DGPrimalDiffusionFluxImpl< DiscreteFunctionSpaceImp, Model >
-  {
-    typedef DGPrimalDiffusionFluxImpl< DiscreteFunctionSpaceImp, Model >
-      BaseType;
-
-  public:
-    typedef DiscreteFunctionSpaceImp DiscreteFunctionSpaceType;
-    typedef typename DiscreteFunctionSpaceType :: GridPartType GridPartType;
-    typedef typename BaseType :: ParameterType  ParameterType;
-
-    /**
-      * \brief constructor reading parameters
-      */
-    DGPrimalDiffusionFlux( GridPartType& gridPart,
-                           const Model& model,
-                           const ParameterType& parameters = ParameterType() )
-      : BaseType( gridPart, model, method_br2, parameters )
-    {
-    }
-  };
-
-
-  //////////////////////////////////////////////////////////
-  //
-  //  specialization for IP
-  //
-  //////////////////////////////////////////////////////////
-  template <class DiscreteFunctionSpaceImp,
-            class Model>
-  class DGPrimalDiffusionFlux<  DiscreteFunctionSpaceImp, Model, method_ip >
-    : public DGPrimalDiffusionFluxImpl< DiscreteFunctionSpaceImp, Model >
-  {
-    typedef DGPrimalDiffusionFluxImpl< DiscreteFunctionSpaceImp, Model >
-      BaseType;
-
-  public:
-    typedef DiscreteFunctionSpaceImp DiscreteFunctionSpaceType;
-    typedef typename DiscreteFunctionSpaceType :: GridPartType GridPartType;
-    typedef typename BaseType :: ParameterType  ParameterType;
-
-    /**
-      * \brief constructor reading parameters
-      */
-    DGPrimalDiffusionFlux( GridPartType& gridPart,
-                           const Model& model,
-                           const ParameterType& parameters = ParameterType() )
-      : BaseType( gridPart, model, method_ip, parameters )
-    {
-    }
-  };
-
-  //////////////////////////////////////////////////////////
-  //
-  //  specialization for no-diffusion
-  //
-  //////////////////////////////////////////////////////////
-  template <class DiscreteFunctionSpaceImp,
-            class Model>
-  class DGPrimalDiffusionFlux<  DiscreteFunctionSpaceImp, Model, method_none >
-    : public DGDiffusionFluxBase< DiscreteFunctionSpaceImp, Model >
-  {
-    typedef DGDiffusionFluxBase< DiscreteFunctionSpaceImp, Model >
-      BaseType;
-
-  public:
-    typedef DiscreteFunctionSpaceImp DiscreteFunctionSpaceType;
-    typedef typename DiscreteFunctionSpaceType :: GridPartType GridPartType;
-    typedef typename BaseType :: ParameterType  ParameterType;
-
-  public:
-    /**
-      * \brief constructor reading parameters
-      */
-    DGPrimalDiffusionFlux( GridPartType& gridPart,
-                           const Model& model,
-                           const ParameterType& parameters = ParameterType() )
-      : BaseType( model, false, parameters )
-    {
-    }
-
-    void diffusionFluxName ( std::ostream& out ) const
-    {
-      out << "none";
-    }
-
-    void diffusionFluxLiftFactor ( std::ostream& out ) const {}
-    void diffusionFluxPenalty ( std::ostream& out ) const {}
-  };
-
-  //////////////////////////////////////////////////////////
-  //
-  //  specialization for NIPG and BO are missing since these methods are not so
-  //  interesting, use method_general for this
-  //
-  //////////////////////////////////////////////////////////
 
 
   //////////////////////////////////////////////////////////
@@ -1506,5 +1309,6 @@ namespace Dune {
     */
   }; // end ExtendedDGPrimalDiffusionFlux
 
+} // end namespace
 } // end namespace
 #endif

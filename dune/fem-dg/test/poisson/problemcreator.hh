@@ -27,9 +27,8 @@
 #include <dune/fem-dg/solver/linearsolvers.hh>
 #include <dune/fem-dg/operator/dg/operatortraits.hh>
 //--------- FLUXES ---------------------------
-#include <dune/fem-dg/operator/fluxes/upwindflux.hh>
-#include <dune/fem-dg/operator/fluxes/eulerfluxes.hh>
-#include <dune/fem-dg/operator/fluxes/noflux.hh>
+#include <dune/fem-dg/operator/fluxes/advection/fluxes.hh>
+#include <dune/fem-dg/operator/fluxes/euler/fluxes.hh>
 //--------- STEPPER -------------------------
 #include <dune/fem-dg/algorithm/sub/elliptic.hh>
 #include <dune/fem-dg/algorithm/steadystate.hh>
@@ -46,125 +45,130 @@
 
 namespace Dune
 {
-
-template< class GridImp >
-struct PoissonProblemCreator
+namespace Fem
 {
 
-
-  struct SubPoissonProblemCreator
+  template< class GridImp >
+  struct PoissonProblemCreator
   {
-    typedef GridImp                                         GridType;
-    typedef typename GridPartChooser<GridType,dg>::Type     HostGridPartType;
-    typedef HostGridPartType                                GridPartType;
 
-    // define problem type here if interface should be avoided
-    typedef ProblemInterface< Fem::FunctionSpace< typename GridType::ctype, double, GridType::dimension, DIMRANGE > >
-                                                                  ProblemInterfaceType;
-
-    typedef typename ProblemInterfaceType::FunctionSpaceType      FunctionSpaceType;
-
-    struct AnalyticalTraits
+    struct SubPoissonProblemCreator
     {
-      typedef ProblemInterfaceType                                ProblemType;
-      typedef ProblemInterfaceType                                InitialDataType;
-      typedef PoissonModel< GridPartType, InitialDataType >       ModelType;
+      typedef GridImp                                         GridType;
+      //typedef typename GridPartChooser<GridType,galerkinType>::Type     HostGridPartType;
+      typedef Fem::DGAdaptiveLeafGridPart< GridType >       HostGridPartType;
+      typedef HostGridPartType                                GridPartType;
 
-      template< class Solution, class Model, class ExactFunction, class SigmaFunction>
-      static void addEOCErrors ( Solution &u, Model &model, ExactFunction &f, SigmaFunction& sigma )
+      // define problem type here if interface should be avoided
+      typedef ProblemInterface< Fem::FunctionSpace< typename GridType::ctype, double, GridType::dimension, DIMRANGE > >
+                                                                    ProblemInterfaceType;
+
+      typedef typename ProblemInterfaceType::FunctionSpaceType      FunctionSpaceType;
+
+      struct AnalyticalTraits
       {
-        static L2EOCError l2EocError( "$L^2$-Error" );
-        l2EocError.add( u, f );
-        static DGEOCError dgEocError( "DG-Error" );
-        dgEocError.add( u, f );
-        static H1EOCError sigmaEocError( "sigma-norm" );
-        sigmaEocError.add( sigma, f );
+        typedef ProblemInterfaceType                                ProblemType;
+        typedef ProblemInterfaceType                                InitialDataType;
+        typedef PoissonModel< GridPartType, InitialDataType >       ModelType;
+
+        template< class Solution, class Model, class ExactFunction, class SigmaFunction>
+        static void addEOCErrors ( Solution &u, Model &model, ExactFunction &f, SigmaFunction& sigma )
+        {
+          static L2EOCError l2EocError( "$L^2$-Error" );
+          l2EocError.add( u, f );
+          static DGEOCError dgEocError( "DG-Error" );
+          dgEocError.add( u, f );
+          static H1EOCError sigmaEocError( "sigma-norm" );
+          sigmaEocError.add( sigma, f );
+        }
+
+      };
+
+      static inline std::string moduleName() { return ""; }
+
+      static ProblemInterfaceType* problem()
+      {
+        int probNr = Fem::Parameter::getValue< int > ( "problem" );
+        return new PoissonProblem< GridType, DIMRANGE > ( probNr );
       }
 
-    };
 
-    static inline std::string moduleName() { return ""; }
-
-    static ProblemInterfaceType* problem()
-    {
-      int probNr = Fem::Parameter::getValue< int > ( "problem" );
-      return new PoissonProblem< GridType, DIMRANGE > ( probNr );
-    }
-
-
-    //Stepper Traits
-    template< int polOrd >
-    struct DiscreteTraits
-    {
-    private:
-      static const SolverType solverType = istl;
-      static const bool symmetricSolver = true;
-      typedef typename DiscreteFunctionSpaces< FunctionSpaceType, GridPartType, polOrd, _legendre, dg >::type    DiscreteFunctionSpaceType;
-    public:
-      typedef typename DiscreteFunctions< DiscreteFunctionSpaceType, solverType >::type                          DiscreteFunctionType;
-      typedef typename DiscreteFunctions< DiscreteFunctionSpaceType, solverType >::jacobian                      JacobianOperatorType;
-
-      typedef std::tuple< DiscreteFunctionType*, DiscreteFunctionType* >                          IOTupleType;
-
-      typedef std::tuple<>                                                                        ExtraParameterTuple;
-
-      class Operator
+      //Stepper Traits
+      template< int polOrd >
+      struct DiscreteTraits
       {
-        friend DiscreteTraits;
-        friend SolverType;
-        typedef UpwindFlux< typename AnalyticalTraits::ModelType >                                 FluxType;
-
-        typedef DefaultOperatorTraits< GridPartType, polOrd, AnalyticalTraits,
-                                       DiscreteFunctionType, FluxType, ExtraParameterTuple >        OperatorTraitsType;
-
-        typedef DGAdvectionDiffusionOperator< OperatorTraitsType >                                  AssemblyOperatorType;
-        typedef Solvers<DiscreteFunctionSpaceType, solverType, symmetricSolver>                     SolversType;
+        static const SolverType solverType = istl;
+        static const DiscreteFunctionSpaceIdentifier::id spaceId = DiscreteFunctionSpaceIdentifier::legendre;
+        static const GalerkinIdentifier::id dgId = GalerkinIdentifier::dg;
+        static const bool symmetricSolver = true;
+        typedef typename DiscreteFunctionSpaces< FunctionSpaceType, GridPartType, polOrd, spaceId, dgId >::type             DiscreteFunctionSpaceType;
       public:
-        typedef DGPrimalMatrixAssembly< AssemblyOperatorType >                                      AssemblerType;
-        typedef typename SolversType::LinearOperatorType                                            type;
+        typedef typename DiscreteFunctionSelector< DiscreteFunctionSpaceType, solverType >::type                          DiscreteFunctionType;
+        typedef typename DiscreteFunctionSelector< DiscreteFunctionSpaceType, solverType >::jacobian                      JacobianOperatorType;
+
+        typedef std::tuple< DiscreteFunctionType*, DiscreteFunctionType* >                          IOTupleType;
+
+        typedef std::tuple<>                                                                        ExtraParameterTuple;
+
+        class Operator
+        {
+          friend DiscreteTraits;
+          friend SolverType;
+          typedef DGAdvectionFlux< typename AnalyticalTraits::ModelType, AdvectionFluxIdentifier::upwind > AdvectionFluxType;
+          typedef DGPrimalDiffusionFlux< DiscreteFunctionSpaceType, typename AnalyticalTraits::ModelType, DGDiffusionFluxIdentifier::general >    DiffusionFluxType;
+
+          typedef DefaultOperatorTraits< GridPartType, polOrd, AnalyticalTraits,
+                                         DiscreteFunctionType, AdvectionFluxType, DiffusionFluxType, ExtraParameterTuple > OperatorTraitsType;
+
+          typedef DGAdvectionDiffusionOperator< OperatorTraitsType >                                  AssemblyOperatorType;
+          typedef Solvers<DiscreteFunctionSpaceType, solverType, symmetricSolver>                     SolversType;
+        public:
+          typedef DGPrimalMatrixAssembly< AssemblyOperatorType >                                      AssemblerType;
+          typedef typename SolversType::LinearOperatorType                                            type;
+        };
+
+        struct Solver
+        {
+          typedef typename Operator::SolversType::LinearInverseOperatorType                           type;
+        };
+
+      private:
+        //typedef DGAdaptationIndicatorOperator< OperatorTraitsType, true, true >                       IndicatorType;
+        //typedef Estimator< DiscreteFunctionType, typename AnalyticalTraits::ProblemType >             GradientIndicatorType ;
+      public:
+
+        //typedef Fem::AdaptIndicator< IndicatorType, GradientIndicatorType >                     AdaptIndicatorType;
+        typedef Fem::SubSolverMonitorHandler< Fem::SolverMonitor >                                SolverMonitorHandlerType;
+        typedef Fem::SubDiagnosticsHandler< Diagnostics >                                         DiagnosticsHandlerType;
       };
 
-      struct Solver
+      template <int polOrd>
+      struct Stepper
       {
-        typedef typename Operator::SolversType::LinearInverseOperatorType                           type;
+        // this should be ok but could lead to a henn-egg problem
+        typedef Fem::EllipticAlgorithm< GridType, SubPoissonProblemCreator, polOrd > Type;
       };
 
-    private:
-      //typedef DGAdaptationIndicatorOperator< OperatorTraitsType, true, true >                       IndicatorType;
-      //typedef Estimator< DiscreteFunctionType, typename AnalyticalTraits::ProblemType >             GradientIndicatorType ;
-    public:
-
-      //typedef Fem::AdaptIndicator< IndicatorType, GradientIndicatorType >                     AdaptIndicatorType;
-      typedef Fem::SubSolverMonitorHandler< Fem::SolverMonitor >                                SolverMonitorHandlerType;
-      typedef Fem::SubDiagnosticsHandler< Diagnostics >                                         DiagnosticsHandlerType;
     };
 
     template <int polOrd>
     struct Stepper
     {
-      // this should be ok but could lead to a henn-egg problem
-      typedef Fem::EllipticAlgorithm< GridType, SubPoissonProblemCreator, polOrd > Type;
+      typedef Fem::SteadyStateAlgorithm< polOrd, SubPoissonProblemCreator > Type;
     };
 
+    typedef GridImp                                         GridType;
+
+    static inline std::string moduleName() { return ""; }
+
+    static inline GridPtr<GridType>
+    initializeGrid() { return Fem::DefaultGridInitializer< GridType >::initialize(); }
+
+
+
   };
 
-  template <int polOrd>
-  struct Stepper
-  {
-    typedef Fem::SteadyStateAlgorithm< polOrd, SubPoissonProblemCreator > Type;
-  };
-
-  typedef GridImp                                         GridType;
-
-  static inline std::string moduleName() { return ""; }
-
-  static inline GridPtr<GridType>
-  initializeGrid() { return Fem::DefaultGridInitializer< GridType >::initialize(); }
-
-
-
-};
-
+}
 }
 
 #endif // FEMHOWTO_HEATSTEPPER_HH

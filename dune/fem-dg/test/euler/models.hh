@@ -13,9 +13,10 @@
 #include "../navierstokes/thermodynamics.hh"
 
 #include <dune/fem-dg/models/defaultmodel.hh>
-#include <dune/fem-dg/operator/fluxes/eulerfluxes.hh>
+#include <dune/fem-dg/operator/fluxes/euler/fluxes.hh>
 #include <dune/fem-dg/operator/fluxes/rotator.hh>
 #include <dune/fem-dg/operator/limiter/limitpass.hh>
+#include <dune/fem-dg/operator/fluxes/analyticaleulerflux.hh>
 
 namespace Dune
 {
@@ -313,6 +314,21 @@ namespace Dune
 
       const double gamma_;
 
+      /**
+       * \brief velocity calculation
+       */
+      template <class LocalEvaluation>
+      inline DomainType velocity(const LocalEvaluation& local) const
+      {
+        integral_constant< int, 2 > uVar;
+        DomainType v;
+        for(int i=0; i<dimDomain; ++i)
+          v[i] = local.values()[ uVar ][i];
+        v *= EulerAnalyticalFlux<dimDomain>().rhoeps(local.values()[uVar]);
+        return v;
+      }
+
+
       /////////////////////////////////////////////////////////////////
       // Limiter section
       ////////////////////////////////////////////////////////////////
@@ -399,7 +415,7 @@ namespace Dune
      protected:
       const ThermodynamicsType thermodynamics_;
       const ProblemType& problem_;
-      EulerFluxes::FieldRotator< DomainType, RangeType > fieldRotator_;
+      Fem::FieldRotator< DomainType, RangeType > fieldRotator_;
     };
 
   }

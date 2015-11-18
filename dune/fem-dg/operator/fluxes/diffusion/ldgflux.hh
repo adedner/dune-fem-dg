@@ -2,10 +2,12 @@
 #define DUNE_FEM_DG_LDGFLUX_HH
 
 // local includes
-#include <dune/fem-dg/operator/fluxes/diffusionflux.hh>
+#include "fluxbase.hh"
 
-namespace Dune {
-
+namespace Dune
+{
+namespace Fem
+{
 
   /**
    * \brief diffusion flux
@@ -440,5 +442,6 @@ namespace Dune {
 
   }; // end LDGDiffusionFlux
 
+} // end namespace
 } // end namespace
 #endif

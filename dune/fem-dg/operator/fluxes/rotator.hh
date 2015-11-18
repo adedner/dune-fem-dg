@@ -4,7 +4,11 @@
 //- system includes
 #include <cmath>
 
-namespace EulerFluxes {
+
+namespace Dune
+{
+namespace Fem
+{
 
   template <class Domain, class Range>
   class FieldRotator
@@ -174,6 +178,8 @@ namespace EulerFluxes {
     }
 
   }
-} // end namespace EulerFluxes
+
+} // end namespace
+} // end namespace
 
 #endif

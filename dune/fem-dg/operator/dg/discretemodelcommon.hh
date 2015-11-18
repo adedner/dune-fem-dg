@@ -6,10 +6,8 @@
 #include <dune/fem/quadrature/cachingquadrature.hh>
 
 #include <dune/fem-dg/operator/adaptation/adaptation.hh>
-#include <dune/fem-dg/operator/fluxes/ldgflux.hh>
 #include <dune/fem-dg/operator/limiter/limiter.hh>
 
-#include <dune/fem-dg/operator/dg/passtraits.hh>
 #include <dune/fem/gridpart/filter/threadfilter.hh>
 
 namespace Dune {
@@ -121,8 +119,8 @@ namespace Dune {
   public:
     typedef AdvectionTraits< OpTraits, passUId, passGradId, returnAdvectionPart > Traits;
 
-    typedef typename Traits :: ModelType    ModelType ;
-    typedef typename Traits :: FluxType     AdvectionFluxType;
+    typedef typename Traits :: ModelType         ModelType ;
+    typedef typename Traits :: AdvectionFluxType AdvectionFluxType;
 
     typedef FemDGBaseDiscreteModel< Traits, passUId, passGradId >  BaseType;
 

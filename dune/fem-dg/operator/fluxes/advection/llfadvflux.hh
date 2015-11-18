@@ -2,9 +2,12 @@
 #define FEMDG_LLFADVFLUX_FLUX_HH
 
 #include <string>
-#include <dune/fem-dg/operator/fluxes/advectionflux.hh>
+#include "../staticparameter.hh"
+#include "fluxbase.hh"
 
 namespace Dune
+{
+namespace Fem
 {
 
   /**
@@ -12,31 +15,35 @@ namespace Dune
    *
    *  \ingroup AdvectionFluxes
    */
-  template <class Model>
+  template <class ModelImp>
   class LLFAdvFlux
-    : public DGAdvectionFluxBase< Model >
+    : public DGAdvectionFluxBase< ModelImp >
   {
-    typedef DGAdvectionFluxBase< Model >          BaseType;
+    typedef DGAdvectionFluxBase< ModelImp >       BaseType;
+
+    typedef typename ModelImp::Traits             Traits;
+    enum { dimRange = ModelImp::dimRange };
+    typedef typename ModelImp::DomainType         DomainType;
+    typedef typename ModelImp::RangeType          RangeType;
+    typedef typename ModelImp::JacobianRangeType  JacobianRangeType;
+    typedef typename ModelImp::FluxRangeType      FluxRangeType;
+    typedef typename ModelImp::FaceDomainType     FaceDomainType;
+    typedef typename ModelImp::EntityType         EntityType;
+    typedef typename ModelImp::IntersectionType   IntersectionType;
+
   public:
-    typedef Model                                 ModelType;
-    typedef typename ModelType::Traits            Traits;
-    enum { dimRange = ModelType::dimRange };
-    typedef typename ModelType::DomainType        DomainType;
-    typedef typename ModelType::RangeType         RangeType;
-    typedef typename ModelType::JacobianRangeType JacobianRangeType;
-    typedef typename ModelType::FluxRangeType     FluxRangeType;
-    typedef typename ModelType::FaceDomainType    FaceDomainType;
-    typedef typename ModelType::EntityType        EntityType;
-    typedef typename ModelType::IntersectionType  IntersectionType;
+    typedef typename BaseType::MethodType         MethodType;
+    static const typename MethodType::id method = MethodType::llf;
+    typedef typename BaseType::ModelType          ModelType;
+    typedef StaticParameter< typename BaseType::ParameterType, method >
+                                                  ParameterType;
+    using BaseType::model_;
 
-    /**
-     * \brief Constructor
-     */
-    LLFAdvFlux(const ModelType& mod) : model_(mod) {}
+    LLFAdvFlux( const ModelType& mod, const ParameterType& parameter = ParameterType() )
+      : BaseType( mod, method, parameter )
+    {}
 
-    static std::string name () { return "LaxFriedrichsFlux"; }
-
-    const ModelType& model() const {return model_;}
+    static std::string name () { return "Local Lax-Friedrichs"; }
 
     template <class LocalEvaluation>
     inline double numericalFlux( const LocalEvaluation& left,
@@ -83,9 +90,8 @@ namespace Dune
 
       return maxspeed;
     }
-  protected:
-    const ModelType& model_;
   };
 
+}
 }
 #endif

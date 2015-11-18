@@ -2,10 +2,12 @@
 #define DUNE_LDGFLUX_HH
 
 // Dune-Fem includes
-#include "diffusionflux.hh"
+#include "fluxbase.hh"
 
-//*************************************************************
-namespace Dune {
+namespace Dune
+{
+namespace Fem
+{
 
   /**
    * \brief A diffusion flux for the LDG scheme.
@@ -373,5 +375,6 @@ namespace Dune {
 
   }; // end LDGDiffusionFlux
 
+} // end namespace
 } // end namespace
 #endif

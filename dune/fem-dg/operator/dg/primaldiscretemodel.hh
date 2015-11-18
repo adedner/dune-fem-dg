@@ -10,9 +10,12 @@
 
 // local includes
 #include <dune/fem-dg/operator/dg/discretemodelcommon.hh>
-#include <dune/fem-dg/operator/fluxes/dgprimalfluxes.hh>
+#include <dune/fem-dg/operator/fluxes/diffusion/fluxes.hh>
 
-namespace Dune {
+namespace Dune
+{
+namespace Fem
+{
 
   // AdvectionDiffusionDGPrimalModelBase
   //------------------------------------
@@ -67,7 +70,7 @@ namespace Dune {
     typedef typename BaseType :: DiscreteFunctionSpaceType DiscreteFunctionSpaceType;
 
     // type of diffusion flux implementation
-    typedef DGPrimalDiffusionFlux< DiscreteFunctionSpaceType, ModelType, Traits :: diffFluxId > DiffusionFluxType;
+    typedef typename Traits::DiffusionFluxType                           DiffusionFluxType;
 
     enum { evaluateJacobian = DiffusionFluxType :: evaluateJacobian  }; // we need to evaluate jacobians here
   public:
@@ -376,7 +379,7 @@ namespace Dune {
   struct AdvectionDiffusionDGPrimalTraits
    : public AdvectionTraits< OpTraits, pUId, -1, returnAdvectionPart>
   {
-    static const DGDiffusionFluxIdentifier diffFluxId = OpTraits :: PrimalDiffusionFluxId;
+    typedef typename OpTraits::DiffusionFluxType               DiffusionFluxType;
 
     enum { advection = returnAdvectionPart };
     enum { diffusion = returnDiffusionPart };
@@ -611,6 +614,7 @@ namespace Dune {
     using BaseType :: weight_ ;
   };
 
-} // namespace Dune
+} // end of namespace
+} // end of namespace
 
 #endif

@@ -17,7 +17,10 @@
 #include <dune/fem-dg/pass/dgpass.hh>
 #include <dune/fem-dg/misc/parameterkey.hh>
 
-namespace Dune {
+namespace Dune
+{
+namespace Fem
+{
 
   // CDGAdvectionDiffusionTraits
   //----------------------------
@@ -554,5 +557,7 @@ namespace Dune {
       */
     }
   };
+
+}
 }
 #endif

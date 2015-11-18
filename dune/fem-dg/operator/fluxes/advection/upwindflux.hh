@@ -2,45 +2,51 @@
 #define FEMDG_UPWIND_FLUX_HH
 
 #include <cmath>
-#include <dune/fem-dg/operator/fluxes/advectionflux.hh>
+#include "../staticparameter.hh"
+#include "fluxbase.hh"
 
 namespace Dune
 {
+namespace Fem
+{
+
   /**
    * \brief defines the advective flux using an upwind scheme
    *
    * \ingroup AdvectionFluxes
    */
-  template <class Model>
+  template <class ModelImp>
   class UpwindFlux
-    : public DGAdvectionFluxBase< Model >
+    : public DGAdvectionFluxBase< ModelImp >
   {
-    typedef DGAdvectionFluxBase< Model >               BaseType;
-  public:
-    typedef Model                                  ModelType;
-    typedef typename ModelType::Traits             Traits;
-    enum { dimRange = ModelType::dimRange };
-    typedef typename ModelType::DomainType         DomainType;
-    typedef typename ModelType::RangeType          RangeType;
-    typedef typename ModelType::JacobianRangeType  JacobianRangeType;
-    typedef typename ModelType::FluxRangeType      FluxRangeType;
-    typedef typename ModelType::DiffusionRangeType DiffusionRangeType;
-    typedef typename ModelType::FaceDomainType     FaceDomainType;
-    typedef typename ModelType::EntityType         EntityType;
-    typedef typename ModelType::IntersectionType   IntersectionType;
+    typedef DGAdvectionFluxBase< ModelImp >       BaseType;
+
+    typedef typename ModelImp::Traits             Traits;
+    enum { dimRange = ModelImp::dimRange };
+    typedef typename ModelImp::DomainType         DomainType;
+    typedef typename ModelImp::RangeType          RangeType;
+    typedef typename ModelImp::JacobianRangeType  JacobianRangeType;
+    typedef typename ModelImp::FluxRangeType      FluxRangeType;
+    typedef typename ModelImp::FaceDomainType     FaceDomainType;
+    typedef typename ModelImp::EntityType         EntityType;
+    typedef typename ModelImp::IntersectionType   IntersectionType;
 
   public:
+    typedef typename BaseType::MethodType         MethodType;
+    static const typename MethodType::id method = MethodType::upwind;
+    typedef typename BaseType::ModelType          ModelType;
+    typedef StaticParameter< typename BaseType::ParameterType, method >
+                                                  ParameterType;
+
+    using BaseType::model_;
     /**
      * \brief Constructor
      */
-    UpwindFlux( const ModelType& mod )
-      : BaseType( mod ),
-        model_(mod)
+    UpwindFlux( const ModelType& mod, const ParameterType& parameter = ParameterType() )
+      : BaseType( mod, method, parameter )
     {}
 
-    static std::string name () { return "UpwindFlux"; }
-
-    const Model& model() const {return model_;}
+    static std::string name () { return "Upwind"; }
 
     /**
      * \brief evaluates the flux \f$g(u,v)\f$
@@ -74,8 +80,10 @@ namespace Dune
       gRight = gLeft;
       return std::abs(upwind);
     }
-  protected:
-    const Model& model_;
   };
+
+
+
+}
 }
 #endif

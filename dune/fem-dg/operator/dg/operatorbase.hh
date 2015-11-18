@@ -18,7 +18,10 @@
 #include <dune/fem-dg/pass/threadpass.hh>
 #endif
 
-namespace Dune {
+namespace Dune
+{
+namespace Fem
+{
 
   // DGAdvectionDiffusionOperatorBase
   //---------------------------------
@@ -70,14 +73,14 @@ namespace Dune {
   public:
     using BaseType :: operator () ;
 
-    typedef typename Traits :: FluxType           AdvectionFluxType;
     typedef typename Traits :: ModelType          ModelType;
     typedef typename ModelType :: ProblemType     ProblemType ;
 
     typedef typename Traits :: GridType GridType;
     typedef typename Traits :: DiscreteModelType DiscreteModelType;
 
-    typedef typename DiscreteModelType :: DiffusionFluxType DiffusionFluxType;
+    typedef typename DiscreteModelType::AdvectionFluxType AdvectionFluxType;
+    typedef typename DiscreteModelType::DiffusionFluxType DiffusionFluxType;
 
     typedef typename DiscreteModelType::Traits AdvTraits;
 
@@ -129,7 +132,7 @@ namespace Dune {
       , gridPart_( gridPart )
       , space_( gridPart_ )
       , discreteModel_( model_, numflux_,
-                        DiffusionFluxType( gridPart_, model_, DGPrimalFormulationParameters( ParameterKey::generate( name, "dgdiffusionflux." ) ) ) )
+                        DiffusionFluxType( gridPart_, model_, typename DiffusionFluxType::ParameterType( ParameterKey::generate( name, "dgdiffusionflux." ) ) ) )
       , previousPass_( InsertFunctionsType::createPass( tuple ) )
       , pass1_( discreteModel_, *previousPass_, space_ )
     {}
@@ -142,7 +145,7 @@ namespace Dune {
       , gridPart_( gridPart )
       , space_( gridPart_ )
       , discreteModel_( model_, numflux_,
-                        DiffusionFluxType( gridPart_, model_, DGPrimalFormulationParameters( ParameterKey::generate( name, "dgdiffusionflux." ) ) ) )
+                        DiffusionFluxType( gridPart_, model_, typename DiffusionFluxType::ParameterType( ParameterKey::generate( name, "dgdiffusionflux." ) ) ) )
       , previousPass_( InsertFunctionsType::createPass( tuple ) )
       , pass1_( discreteModel_, *previousPass_, space_ )
     {}
@@ -246,5 +249,6 @@ namespace Dune {
     Pass1Type pass1_;
   };
 
+}
 }
 #endif

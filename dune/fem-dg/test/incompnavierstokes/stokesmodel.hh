@@ -9,381 +9,382 @@
 
 namespace Dune
 {
-  template <class ModelType>
-  class UpwindFlux;
-
-/**********************************************
- * Analytical model                           *
- *********************************************/
-/**
- * \brief Traits class for StokesModel
- */
-template <class GridPart,
-          class ProblemImp>
-class StokesModelTraits
+namespace Fem
 {
-public:
-  typedef ProblemImp  ProblemType;
-  typedef GridPart                                                   GridPartType;
-  typedef typename GridPartType :: GridType                          GridType;
-  static const int dimDomain = GridType::dimensionworld;
-  static const int dimRange = ProblemType :: dimRange;
-  static const int dimGradRange = dimRange * dimDomain;
 
-  typedef double RangeFieldType;
-  typedef double DomainFieldType;
-  // Definition of domain and range types
-  typedef FieldVector< double, dimDomain >                           DomainType;
-  typedef FieldVector< double, dimDomain-1 >                         FaceDomainType;
-  typedef FieldVector< double, dimRange >                            RangeType;
-  typedef FieldVector< double, dimGradRange >                        GradientType;
-  // ATTENTION: These are matrices (c.f. StokesModel)
-  typedef FieldMatrix< double, dimRange, dimDomain >                 FluxRangeType;
-  typedef FieldMatrix< double, dimRange, dimDomain >                 JacobianRangeType;
-  typedef FieldMatrix< double, dimGradRange, dimDomain >             DiffusionRangeType;
-  typedef typename GridType :: template Codim< 0 > :: Entity         EntityType;
-  typedef typename GridPartType :: IntersectionIteratorType          IntersectionIterator;
-  typedef typename IntersectionIterator :: Intersection              IntersectionType;
-
-};
-
-/**
- * \brief describes the analytical model
- *
- * This is an description class for the problem
- * \f{eqnarray*}{ V + \nabla a(U)      & = & 0 \\
- * \partial_t U + \nabla (F(U)+A(U,V)) & = & 0 \\
- *                          U          & = & g_D \\
- *                   \nabla U \cdot n  & = & g_N \f}
- *
- * where each class methods describes an analytical function.
- * <ul>
- * <li> \f$F\f$:   advection() </li>
- * <li> \f$a\f$:   diffusion1() </li>
- * <li> \f$A\f$:   diffusion2() </li>
- * <li> \f$g_D\f$  boundaryValue() </li>
- * <li> \f$g_N\f$  boundaryFlux1(), boundaryFlux2() </li>
- * </ul>
- *
- * \attention \f$F(U)\f$ and \f$A(U,V)\f$ are matrix valued, and therefore the
- * divergence is defined as
- *
- * \f[ \Delta M = \nabla \cdot (\nabla \cdot (M_{i\cdot})^t)_{i\in 1\dots n} \f]
- *
- * for a matrix \f$M\in \mathbf{M}^{n\times m}\f$.
- *
- * \param GridPart GridPart for extraction of dimension
- * \param ProblemType Class describing the initial(t=0) and exact solution
- */
-
-
-////////////////////////////////////////////////////////
-//
-//  Analytical model for the Heat Equation
-//      dx(u) + div(uV) - epsilon*lap(u)) = 0
-//  where V is constant vector
-//
-////////////////////////////////////////////////////////
-template <class GridPartType, class ProblemImp, bool rightHandSideModel >
-class StokesModel : public DefaultModel< StokesModelTraits< GridPartType, ProblemImp > >
-{
-public:
-  enum { rhs = 0 };
-  typedef std::integral_constant< int, rhs       > rhsVar;
-  typedef std::tuple < rhsVar > ModelParameter;
-
-
-  typedef ProblemImp  ProblemType ;
-
-  typedef typename GridPartType :: GridType                          GridType;
-  static const int dimDomain = GridType::dimensionworld;
-  static const int dimRange = ProblemType :: dimRange;
-  typedef StokesModelTraits< GridPartType, ProblemType >             Traits;
-  typedef typename Traits :: DomainFieldType                         DomainFieldType;
-  typedef typename Traits :: RangeFieldType                          RangeFieldType;
-  typedef typename Traits :: DomainType                              DomainType;
-  typedef typename Traits :: RangeType                               RangeType;
-  typedef typename Traits :: GradientType                            GradientType;
-  typedef typename Traits :: FluxRangeType                           FluxRangeType;
-  typedef typename Traits :: DiffusionRangeType                      DiffusionRangeType;
-  typedef typename Traits :: FaceDomainType                          FaceDomainType;
-  typedef typename Traits :: JacobianRangeType                       JacobianRangeType;
-
-  typedef typename ProblemType :: DiffusionMatrixType   DiffusionMatrixType ;
-
-  typedef typename Traits :: EntityType                       EntityType;
-  typedef typename Traits :: IntersectionType                 IntersectionType;
-
-public:
+  /**********************************************
+   * Analytical model                           *
+   *********************************************/
   /**
-   * \brief Constructor
-   *
-   * initializes model parameter
-   *
-   * \param problem Class describing the initial(t=0) and exact solution
+   * \brief Traits class for StokesModel
    */
-  StokesModel(const ProblemType& problem)
-    : problem_(problem),
-      theta_( problem.theta() )
+  template <class GridPart,
+            class ProblemImp>
+  class StokesModelTraits
   {
-  }
+  public:
+    typedef ProblemImp  ProblemType;
+    typedef GridPart                                                   GridPartType;
+    typedef typename GridPartType :: GridType                          GridType;
+    static const int dimDomain = GridType::dimensionworld;
+    static const int dimRange = ProblemType :: dimRange;
+    static const int dimGradRange = dimRange * dimDomain;
 
-  inline bool hasFlux() const { return true ; }
+    typedef double RangeFieldType;
+    typedef double DomainFieldType;
+    // Definition of domain and range types
+    typedef FieldVector< double, dimDomain >                           DomainType;
+    typedef FieldVector< double, dimDomain-1 >                         FaceDomainType;
+    typedef FieldVector< double, dimRange >                            RangeType;
+    typedef FieldVector< double, dimGradRange >                        GradientType;
+    // ATTENTION: These are matrices (c.f. StokesModel)
+    typedef FieldMatrix< double, dimRange, dimDomain >                 FluxRangeType;
+    typedef FieldMatrix< double, dimRange, dimDomain >                 JacobianRangeType;
+    typedef FieldMatrix< double, dimGradRange, dimDomain >             DiffusionRangeType;
+    typedef typename GridType :: template Codim< 0 > :: Entity         EntityType;
+    typedef typename GridPartType :: IntersectionIteratorType          IntersectionIterator;
+    typedef typename IntersectionIterator :: Intersection              IntersectionType;
 
-  inline bool hasStiffSource() const { return true ; }
-  inline bool hasNonStiffSource() const { return false ; }
-
-  struct ComputeRHS
-  {
-    typedef rhsVar     VarId;
-    typedef RangeType  ReturnType;
-
-    template <class LocalEvaluation>
-    RangeType operator() (const LocalEvaluation& local) const
-    {
-      return RangeType( 0 );
-    }
   };
 
-
-  template <class LocalEvaluation>
-  inline double stiffSource( const LocalEvaluation& local,
-                             const RangeType& u,
-                             const JacobianRangeType& du,
-                             RangeType & s) const
-  {
-    if( ! rightHandSideModel )
-    {
-      s  = u ;
-      s /= theta_;
-    }
-    return 0; //step 2, RhsLaplace ()
-  }
-
-  template <class LocalEvaluation>
-  inline double nonStiffSource( const LocalEvaluation& local,
-                                const RangeType& u,
-                                const JacobianRangeType& du,
-                                RangeType & s) const
-  {
-    s = 0;
-    return 0;
-  }
-
-
   /**
-   * \brief advection term \f$F\f$
+   * \brief describes the analytical model
    *
-   * \param en entity on which to evaluate the advection term
-   * \param time current time of TimeProvider
-   * \param x coordinate local to entity
-   * \param u \f$U\f$
-   * \param f \f$f(U)\f$
+   * This is an description class for the problem
+   * \f{eqnarray*}{ V + \nabla a(U)      & = & 0 \\
+   * \partial_t U + \nabla (F(U)+A(U,V)) & = & 0 \\
+   *                          U          & = & g_D \\
+   *                   \nabla U \cdot n  & = & g_N \f}
+   *
+   * where each class methods describes an analytical function.
+   * <ul>
+   * <li> \f$F\f$:   advection() </li>
+   * <li> \f$a\f$:   diffusion1() </li>
+   * <li> \f$A\f$:   diffusion2() </li>
+   * <li> \f$g_D\f$  boundaryValue() </li>
+   * <li> \f$g_N\f$  boundaryFlux1(), boundaryFlux2() </li>
+   * </ul>
+   *
+   * \attention \f$F(U)\f$ and \f$A(U,V)\f$ are matrix valued, and therefore the
+   * divergence is defined as
+   *
+   * \f[ \Delta M = \nabla \cdot (\nabla \cdot (M_{i\cdot})^t)_{i\in 1\dots n} \f]
+   *
+   * for a matrix \f$M\in \mathbf{M}^{n\times m}\f$.
+   *
+   * \param GridPart GridPart for extraction of dimension
+   * \param ProblemType Class describing the initial(t=0) and exact solution
    */
-  template <class LocalEvaluation>
-  inline  void advection(const LocalEvaluation& local,
-                         const RangeType& u,
-                         const JacobianRangeType& jacu,
-                         FluxRangeType & f) const
+
+
+  ////////////////////////////////////////////////////////
+  //
+  //  Analytical model for the Heat Equation
+  //      dx(u) + div(uV) - epsilon*lap(u)) = 0
+  //  where V is constant vector
+  //
+  ////////////////////////////////////////////////////////
+  template <class GridPartType, class ProblemImp, bool rightHandSideModel >
+  class StokesModel : public DefaultModel< StokesModelTraits< GridPartType, ProblemImp > >
   {
-    f = 0 ;
-  }
+  public:
+    enum { rhs = 0 };
+    typedef std::integral_constant< int, rhs       > rhsVar;
+    typedef std::tuple < rhsVar > ModelParameter;
 
-protected:
 
-  /**
-   * \brief velocity calculation, is called by advection()
-   */
-  inline  void velocity(const EntityType& en,
-                        const double time,
-                        const DomainType& x,
-                        DomainType& v) const
-  {
-    problem_.velocity(en.geometry().global(x), v);
-  }
+    typedef ProblemImp  ProblemType ;
 
-public:
+    typedef typename GridPartType :: GridType                          GridType;
+    static const int dimDomain = GridType::dimensionworld;
+    static const int dimRange = ProblemType :: dimRange;
+    typedef StokesModelTraits< GridPartType, ProblemType >             Traits;
+    typedef typename Traits :: DomainFieldType                         DomainFieldType;
+    typedef typename Traits :: RangeFieldType                          RangeFieldType;
+    typedef typename Traits :: DomainType                              DomainType;
+    typedef typename Traits :: RangeType                               RangeType;
+    typedef typename Traits :: GradientType                            GradientType;
+    typedef typename Traits :: FluxRangeType                           FluxRangeType;
+    typedef typename Traits :: DiffusionRangeType                      DiffusionRangeType;
+    typedef typename Traits :: FaceDomainType                          FaceDomainType;
+    typedef typename Traits :: JacobianRangeType                       JacobianRangeType;
 
-  /**
-   * \brief diffusion term \f$a\f$
-   */
-  template <class LocalEvaluation>
-  inline void jacobian(const LocalEvaluation& local,
-                        const RangeType& u,
-                        DiffusionRangeType& a) const
-  {
-    a = 0;
+    typedef typename ProblemType :: DiffusionMatrixType   DiffusionMatrixType ;
 
-    assert( a.rows == dimRange * dimDomain );
-    assert( a.cols == dimDomain );
+    typedef typename Traits :: EntityType                       EntityType;
+    typedef typename Traits :: IntersectionType                 IntersectionType;
 
-    for (int r=0;r<dimRange;r++)
-      for (int d=0;d<dimDomain;d++)
-        a[dimDomain*r+d][d] = u[r];
-  }
+  public:
+    /**
+     * \brief Constructor
+     *
+     * initializes model parameter
+     *
+     * \param problem Class describing the initial(t=0) and exact solution
+     */
+    StokesModel(const ProblemType& problem)
+      : problem_(problem),
+        theta_( problem.theta() )
+    {
+    }
 
-  template <class T>
-  T SQR( const T& a ) const
-  {
-    return (a * a);
-  }
+    inline bool hasFlux() const { return true ; }
 
-  template <class LocalEvaluation>
-  inline void eigenValues(const LocalEvaluation& local,
+    inline bool hasStiffSource() const { return true ; }
+    inline bool hasNonStiffSource() const { return false ; }
+
+    struct ComputeRHS
+    {
+      typedef rhsVar     VarId;
+      typedef RangeType  ReturnType;
+
+      template <class LocalEvaluation>
+      RangeType operator() (const LocalEvaluation& local) const
+      {
+        return RangeType( 0 );
+      }
+    };
+
+
+    template <class LocalEvaluation>
+    inline double stiffSource( const LocalEvaluation& local,
+                               const RangeType& u,
+                               const JacobianRangeType& du,
+                               RangeType & s) const
+    {
+      if( ! rightHandSideModel )
+      {
+        s  = u ;
+        s /= theta_;
+      }
+      return 0; //step 2, RhsLaplace ()
+    }
+
+    template <class LocalEvaluation>
+    inline double nonStiffSource( const LocalEvaluation& local,
+                                  const RangeType& u,
+                                  const JacobianRangeType& du,
+                                  RangeType & s) const
+    {
+      s = 0;
+      return 0;
+    }
+
+
+    /**
+     * \brief advection term \f$F\f$
+     *
+     * \param en entity on which to evaluate the advection term
+     * \param time current time of TimeProvider
+     * \param x coordinate local to entity
+     * \param u \f$U\f$
+     * \param f \f$f(U)\f$
+     */
+    template <class LocalEvaluation>
+    inline  void advection(const LocalEvaluation& local,
+                           const RangeType& u,
+                           const JacobianRangeType& jacu,
+                           FluxRangeType & f) const
+    {
+      f = 0 ;
+    }
+
+  protected:
+
+    /**
+     * \brief velocity calculation, is called by advection()
+     */
+    inline  void velocity(const EntityType& en,
+                          const double time,
+                          const DomainType& x,
+                          DomainType& v) const
+    {
+      problem_.velocity(en.geometry().global(x), v);
+    }
+
+  public:
+
+    /**
+     * \brief diffusion term \f$a\f$
+     */
+    template <class LocalEvaluation>
+    inline void jacobian(const LocalEvaluation& local,
                           const RangeType& u,
-                          RangeType& maxValue) const
-  {
-    DiffusionMatrixType K ;
-    DomainType xgl = local.entity().geometry().global( local.point() );
-    problem_.K( xgl, K );
+                          DiffusionRangeType& a) const
+    {
+      a = 0;
 
-    DomainType values ;
-    // calculate eigenvalues
-    FMatrixHelp :: eigenValues( K, values );
+      assert( a.rows == dimRange * dimDomain );
+      assert( a.cols == dimDomain );
 
-    maxValue = SQR(values[ dimDomain -1 ]) /values[0];
-    return ;
+      for (int r=0;r<dimRange;r++)
+        for (int d=0;d<dimDomain;d++)
+          a[dimDomain*r+d][d] = u[r];
+    }
 
-    // take max eigenvalue
-    maxValue = values.infinity_norm();
-  }
+    template <class T>
+    T SQR( const T& a ) const
+    {
+      return (a * a);
+    }
 
-  inline double lambdaK( const DiffusionMatrixType& K ) const
-  {
-    DomainType values ;
-    // calculate eigenvalues
-    FMatrixHelp :: eigenValues( K, values );
+    template <class LocalEvaluation>
+    inline void eigenValues(const LocalEvaluation& local,
+                            const RangeType& u,
+                            RangeType& maxValue) const
+    {
+      DiffusionMatrixType K ;
+      DomainType xgl = local.entity().geometry().global( local.point() );
+      problem_.K( xgl, K );
 
-    // value[ 0 ] is smallest ev
-    return SQR(values[ dimDomain -1 ]) / values[ 0 ];
-  }
+      DomainType values ;
+      // calculate eigenvalues
+      FMatrixHelp :: eigenValues( K, values );
 
-  template <class LocalEvaluation>
-  inline double penaltyFactor( const LocalEvaluation& left,
-                               const LocalEvaluation& right,
+      maxValue = SQR(values[ dimDomain -1 ]) /values[0];
+      return ;
+
+      // take max eigenvalue
+      maxValue = values.infinity_norm();
+    }
+
+    inline double lambdaK( const DiffusionMatrixType& K ) const
+    {
+      DomainType values ;
+      // calculate eigenvalues
+      FMatrixHelp :: eigenValues( K, values );
+
+      // value[ 0 ] is smallest ev
+      return SQR(values[ dimDomain -1 ]) / values[ 0 ];
+    }
+
+    template <class LocalEvaluation>
+    inline double penaltyFactor( const LocalEvaluation& left,
+                                 const LocalEvaluation& right,
+                                 const RangeType& uLeft,
+                                 const RangeType& uRight ) const
+    {
+      DiffusionMatrixType K ;
+      double betaK, betaInside, betaOutside ;
+      if( problem_.constantK() )
+      {
+        DiffusionMatrixType Kinside ;
+        DiffusionMatrixType Koutside;
+
+        const DomainType xglIn = left.entity().geometry().center();
+        problem_.K( xglIn , Kinside );
+        const DomainType xglOut = right.entity().geometry().center();
+        problem_.K( xglOut , Koutside );
+
+        K = Kinside ;
+        K += Koutside ;
+        K *= 0.5 ;
+
+        betaInside  = lambdaK( Kinside );
+        betaOutside = lambdaK( Koutside );
+
+        betaK = lambdaK( K );
+      }
+      else
+      {
+        const DomainType xgl = left.entity().geometry().global( left.point() );
+        problem_.K( xgl , K );
+
+        betaK = lambdaK( K );
+        betaInside = betaOutside = betaK;
+      }
+
+      const double jump = std::tanh( std::abs( betaInside - betaOutside ) );
+
+      // only for small values of betS apply betS in smooth cases
+      const double betaN = std :: min( betaK , 1.0 );
+
+      // betS becomes 1 if the eigen values of both matrices are the same
+      betaK = betaK * jump + (1.0 - jump) * betaN;
+
+      return betaK ;
+    }
+
+    inline double penaltyBoundary( const EntityType& inside,
+                                   const double time,
+                                   const DomainType& xInside,
+                                   const RangeType& uLeft ) const
+    {
+      return penaltyFactor( inside, inside, time, xInside, uLeft, uLeft );
+    }
+
+    /**
+     * \brief diffusion term \f$A\f$
+     */
+    template <class LocalEvaluation>
+    inline void diffusion(const LocalEvaluation& local,
+                          const RangeType& u,
+                          const JacobianRangeType& jac,
+                          FluxRangeType& A) const
+    {
+      // for constant K evalute at center (see Problem 4)
+      const DomainType xgl = ( problem_.constantK() ) ?
+        local.entity().geometry().center () : local.entity().geometry().global(local.point())  ;
+
+      DiffusionMatrixType K ;
+
+      // fill diffusion matrix
+      problem_.K( xgl, K );
+
+      // apply diffusion
+      for( int r =0; r<dimRange; ++r )
+        K.mv( jac[ r ] , A[ r ] );
+    }
+
+    template <class LocalEvaluation>
+    inline double diffusionTimeStep( const LocalEvaluation& local,
+                                     const double circumEstimate,
+                                     const RangeType& u ) const
+    {
+      return 0;
+    }
+
+  public:
+    /**
+     * \brief checks for existence of dirichlet boundary values
+     */
+    template <class LocalEvaluation>
+    inline bool hasBoundaryValue(const LocalEvaluation& local ) const
+    {
+      return true;
+    }
+
+    /**
+     * \brief dirichlet boundary values
+     */
+    template <class LocalEvaluation>
+    inline  void boundaryValue(const LocalEvaluation& local,
                                const RangeType& uLeft,
-                               const RangeType& uRight ) const
-  {
-    DiffusionMatrixType K ;
-    double betaK, betaInside, betaOutside ;
-    if( problem_.constantK() )
+                               RangeType& uRight) const
     {
-      DiffusionMatrixType Kinside ;
-      DiffusionMatrixType Koutside;
-
-      const DomainType xglIn = left.entity().geometry().center();
-      problem_.K( xglIn , Kinside );
-      const DomainType xglOut = right.entity().geometry().center();
-      problem_.K( xglOut , Koutside );
-
-      K = Kinside ;
-      K += Koutside ;
-      K *= 0.5 ;
-
-      betaInside  = lambdaK( Kinside );
-      betaOutside = lambdaK( Koutside );
-
-      betaK = lambdaK( K );
-    }
-    else
-    {
-      const DomainType xgl = left.entity().geometry().global( left.point() );
-      problem_.K( xgl , K );
-
-      betaK = lambdaK( K );
-      betaInside = betaOutside = betaK;
+      DomainType xgl = local.entity().geometry().global( local.point() );
+      problem_.g(xgl, uRight);
     }
 
-    const double jump = std::tanh( std::abs( betaInside - betaOutside ) );
+    /**
+     * \brief diffusion boundary flux
+     */
+    template <class LocalEvaluation>
+    inline double diffusionBoundaryFlux( const LocalEvaluation& local,
+                                         const RangeType& uLeft,
+                                         const JacobianRangeType& gradLeft,
+                                         RangeType& gLeft ) const
+    {
+      return 0.0;
+    }
 
-    // only for small values of betS apply betS in smooth cases
-    const double betaN = std :: min( betaK , 1.0 );
+    const ProblemType& problem () const { return problem_; }
 
-    // betS becomes 1 if the eigen values of both matrices are the same
-    betaK = betaK * jump + (1.0 - jump) * betaN;
+   protected:
+    const ProblemType& problem_;
+    const double theta_;
+  };
 
-    return betaK ;
-  }
-
-  inline double penaltyBoundary( const EntityType& inside,
-                                 const double time,
-                                 const DomainType& xInside,
-                                 const RangeType& uLeft ) const
-  {
-    return penaltyFactor( inside, inside, time, xInside, uLeft, uLeft );
-  }
-
-  /**
-   * \brief diffusion term \f$A\f$
-   */
-  template <class LocalEvaluation>
-  inline void diffusion(const LocalEvaluation& local,
-                        const RangeType& u,
-                        const JacobianRangeType& jac,
-                        FluxRangeType& A) const
-  {
-    // for constant K evalute at center (see Problem 4)
-    const DomainType xgl = ( problem_.constantK() ) ?
-      local.entity().geometry().center () : local.entity().geometry().global(local.point())  ;
-
-    DiffusionMatrixType K ;
-
-    // fill diffusion matrix
-    problem_.K( xgl, K );
-
-    // apply diffusion
-    for( int r =0; r<dimRange; ++r )
-      K.mv( jac[ r ] , A[ r ] );
-  }
-
-  template <class LocalEvaluation>
-  inline double diffusionTimeStep( const LocalEvaluation& local,
-                                   const double circumEstimate,
-                                   const RangeType& u ) const
-  {
-    return 0;
-  }
-
-public:
-  /**
-   * \brief checks for existence of dirichlet boundary values
-   */
-  template <class LocalEvaluation>
-  inline bool hasBoundaryValue(const LocalEvaluation& local ) const
-  {
-    return true;
-  }
-
-  /**
-   * \brief dirichlet boundary values
-   */
-  template <class LocalEvaluation>
-  inline  void boundaryValue(const LocalEvaluation& local,
-                             const RangeType& uLeft,
-                             RangeType& uRight) const
-  {
-    DomainType xgl = local.entity().geometry().global( local.point() );
-    problem_.g(xgl, uRight);
-  }
-
-  /**
-   * \brief diffusion boundary flux
-   */
-  template <class LocalEvaluation>
-  inline double diffusionBoundaryFlux( const LocalEvaluation& local,
-                                       const RangeType& uLeft,
-                                       const JacobianRangeType& gradLeft,
-                                       RangeType& gLeft ) const
-  {
-    return 0.0;
-  }
-
-  const ProblemType& problem () const { return problem_; }
-
- protected:
-  const ProblemType& problem_;
-  const double theta_;
-};
-
+}
 }
 #endif

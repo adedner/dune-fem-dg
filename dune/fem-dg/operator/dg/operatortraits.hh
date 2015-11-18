@@ -2,12 +2,16 @@
 #define DUNE_FEM_DG_OPERATORTRAITS_HH
 
 #include <dune/fem/quadrature/cachingquadrature.hh>
-#include <dune/fem-dg/operator/fluxes/diffusionflux.hh>
+#include <dune/fem-dg/operator/fluxes/diffusion/fluxes.hh>
 #include <dune/fem-dg/operator/adaptation/adaptation.hh>
 #include <dune/fem/space/finitevolume/space.hh>
 #include <dune/fem/function/adaptivefunction/adaptivefunction.hh>
 
-namespace Dune {
+#include <dune/fem-dg/operator/fluxes/diffusion/parameters.hh>
+namespace Dune
+{
+namespace Fem
+{
 
   // traits for the operator passes
   template< class GridPart,
@@ -15,6 +19,7 @@ namespace Dune {
             class AnalyticalTraits,
             class DiscreteFunctionImp,
             class AdvectionFluxImp,
+            class DiffusionFluxImp,
             class LimiterIndicatorFunctionImp,
             class AdaptationHandlerImp,
             class ExtraParameterTupleImp = std::tuple<>
@@ -27,9 +32,10 @@ namespace Dune {
 
     typedef typename AnalyticalTraitsType::InitialDataType               InitialDataType;
     typedef typename AnalyticalTraitsType::ModelType                     ModelType ;
-    typedef AdvectionFluxImp                                             FluxType;
+    typedef AdvectionFluxImp                                             AdvectionFluxType;
+    typedef DiffusionFluxImp                                             DiffusionFluxType;
 
-    static const DGDiffusionFluxIdentifier PrimalDiffusionFluxId = method_general;
+    //static const DGDiffusionFluxIdentifier::id PrimalDiffusionFluxId = DGDiffusionFluxIdentifier::general;
 
     static const int polynomialOrder = polOrd == -1 ? 0 : polOrd;
 
@@ -53,6 +59,7 @@ namespace Dune {
             class AnalyticalTraits,
             class DiscreteFunctionImp,
             class AdvectionFluxImp,
+            class DiffusionFluxImp,
             class ExtraParameterTupleImp = std::tuple<>,
             class AdaptationHandlerFunctionSpaceImp = typename DiscreteFunctionImp::DiscreteFunctionSpaceType::FunctionSpaceType
           >
@@ -64,9 +71,10 @@ namespace Dune {
 
     typedef typename AnalyticalTraitsType::InitialDataType               InitialDataType;
     typedef typename AnalyticalTraitsType::ModelType                     ModelType ;
-    typedef AdvectionFluxImp                                             FluxType;
+    typedef AdvectionFluxImp                                             AdvectionFluxType;
+    typedef DiffusionFluxImp                                             DiffusionFluxType;
 
-    static const DGDiffusionFluxIdentifier PrimalDiffusionFluxId = method_general;
+    //static const DGDiffusionFluxIdentifier::id PrimalDiffusionFluxId = DGDiffusionFluxIdentifier::general;
 
     static const int polynomialOrder = polOrd == -1 ? 0 : polOrd;
 
@@ -88,5 +96,7 @@ namespace Dune {
     static const int limiterPolynomialOrder = polOrd == -1 ? 1 : polOrd;
     typedef ExtraParameterTupleImp                                       ExtraParameterTupleType;
   };
-} // end namespace Dune
+
+} // end namespace
+} // end namespace
 #endif

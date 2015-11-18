@@ -10,9 +10,12 @@
 #include <dune/fem/operator/common/stencil.hh>
 
 #include <dune/fem-dg/operator/adaptation/adaptation.hh>
-#include <dune/fem-dg/operator/fluxes/diffusionflux.hh>
+#include <dune/fem-dg/operator/fluxes/diffusion/parameters.hh>
 
-namespace Dune {
+namespace Dune
+{
+namespace Fem
+{
 
   //PassTraits
   //----------
@@ -21,10 +24,10 @@ namespace Dune {
   {
   public:
     // inherit types from Traits
-    typedef typename Traits::InitialDataType InitialDataType;
-    typedef typename Traits::ModelType  ModelType ;
-    typedef typename Traits::FluxType   FluxType;
-    static const Dune :: DGDiffusionFluxIdentifier PrimalDiffusionFluxId  = Traits :: PrimalDiffusionFluxId ;
+    typedef typename Traits::InitialDataType      InitialDataType;
+    typedef typename Traits::ModelType            ModelType ;
+    typedef typename Traits::AdvectionFluxType    AdvectionFluxType;
+    typedef typename Traits::DiffusionFluxType    DiffusionFluxType;
 
     typedef typename ModelType :: Traits ModelTraits;
 
@@ -72,5 +75,6 @@ namespace Dune {
     typedef AdaptationHandler< GridType, FunctionSpaceType >  AdaptationHandlerType ;
   };
 
+} // end namespace Dune
 } // end namespace Dune
 #endif

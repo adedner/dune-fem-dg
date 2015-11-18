@@ -11,7 +11,7 @@
 #include <dune/fem/storage/vector.hh>
 #include <dune/fem/io/parameter.hh>
 
-#include <dune/fem-dg/operator/fluxes/mhd_eqns.hh>
+#include <dune/fem-dg/operator/fluxes/mhd/mhd_eqns.hh>
 #include <dune/fem-dg/operator/fluxes/rotator.hh>
 
 // Dai-Woodward
@@ -88,14 +88,59 @@ public:
                  const RangeType& uLeft,
                  const RangeType& uRight,
                  RangeType& gLeft,
-                 RangeType& gRight) const;
+                 RangeType& gRight) const
+  {
+    DomainType normal = intersection.integrationOuterNormal( faceQuadInner.localPoint( quadPoint ) );
+    // double len = normal.two_norm();
+    const double len = normal.two_norm();
+    normal *= 1./len;
+
+    RangeType ul(uLeft);
+    RangeType ur(uRight);
+
+    rot_.rotateForth(ul, normal);
+    rot_.rotateForth(ur, normal);
+
+    enum { e = dimDomain + 1 };
+
+    value_t res;
+    const double dummy[ 3 ] = { 0, 0, 0 };
+
+    value_t entity = { 0,0,0,0,0,0,0,0 };
+    value_t neigh  = { 0,0,0,0,0,0,0,0 };
+    for(int i=0; i<e; ++i)
+    {
+      entity[ i ] = ul[ i ];
+      neigh [ i ] = ur[ i ];
+    }
+
+    entity[ 7 ] = ul[ e ];
+    neigh [ 7 ] = ur[ e ];
+
+    const double ldt = numFlux_(entity, neigh, dummy, res);
+
+    // copy first components
+    for(int i=0; i<e; ++i)
+      gLeft[ i ] = res[ i ];
+
+    // copy energy
+    gLeft[ e ] = res[ 7 ];
+
+    // rotate flux
+    rot_.rotateBack( gLeft, normal );
+
+    // conservation
+    gLeft *= len;
+    gRight = gLeft;
+    return ldt*len;
+  }
 
   const Model& model() const { return model_; }
 protected:
   const Model& model_;
   const typename MhdSolverType::Eosmode::meos_t eos;
   mutable MhdSolverType numFlux_;
-  EulerFluxes::FieldRotator<DomainType, RangeType> rot_;
+  Dune::Fem::FieldRotator<DomainType, RangeType> rot_;
   //mutable MhdSolverType::Vec9 ulmhd_, urmhd_, retmhd_;
 };
 
@@ -115,49 +160,7 @@ numericalFlux( const Intersection& intersection,
                RangeType& gLeft,
                RangeType& gRight) const
 {
-  DomainType normal = intersection.integrationOuterNormal( faceQuadInner.localPoint( quadPoint ) );
-  // double len = normal.two_norm();
-  const double len = normal.two_norm();
-  normal *= 1./len;
 
-  RangeType ul(uLeft);
-  RangeType ur(uRight);
-
-  rot_.rotateForth(ul, normal);
-  rot_.rotateForth(ur, normal);
-
-  enum { e = dimDomain + 1 };
-
-  value_t res;
-  const double dummy[ 3 ] = { 0, 0, 0 };
-
-  value_t entity = { 0,0,0,0,0,0,0,0 };
-  value_t neigh  = { 0,0,0,0,0,0,0,0 };
-  for(int i=0; i<e; ++i)
-  {
-    entity[ i ] = ul[ i ];
-    neigh [ i ] = ur[ i ];
-  }
-
-  entity[ 7 ] = ul[ e ];
-  neigh [ 7 ] = ur[ e ];
-
-  const double ldt = numFlux_(entity, neigh, dummy, res);
-
-  // copy first components
-  for(int i=0; i<e; ++i)
-    gLeft[ i ] = res[ i ];
-
-  // copy energy
-  gLeft[ e ] = res[ 7 ];
-
-  // rotate flux
-  rot_.rotateBack( gLeft, normal );
-
-  // conservation
-  gLeft *= len;
-  gRight = gLeft;
-  return ldt*len;
 }
 
 //////////////////////////////////////////////////////////

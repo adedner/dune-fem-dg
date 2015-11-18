@@ -47,6 +47,9 @@ femdg.stepper.maxtimestep: 0.1
 #--------------
 paramfile: ../parameter/paramPhysicalConstants
 
+# choises are: LLF, HLL, HLLC, LLF2
+dgadvectionflux.method: LLF
+
 g: 1. # gravity force [m/ss]
 hSpeed0: 1. # x-axis speed [m/s]
 vSpeed0: 1.25 # z-axis speed [m/s]

@@ -7,8 +7,12 @@
 #include <dune/fem/quadrature/cachingquadrature.hh>
 #include <dune/fem/solver/timeprovider.hh>
 
-namespace Dune {
+#include "parameters.hh"
 
+namespace Dune
+{
+namespace Fem
+{
 
   // DGFluxTupleToVectorConverter
   //-----------------------------
@@ -40,116 +44,23 @@ namespace Dune {
     }
   };
 
-  ///////////////////////////////////////////////////////////
-  //
-  //  Identifier for Diffusion Fluxes for Primal methods
-  //
-  //////////////////////////////////////////////////////////
-  enum DGDiffusionFluxIdentifier {
-    method_cdg2    = 0,  // CDG 2 (Compact Discontinuous Galerkin 2)
-    method_cdg     = 1,  // CDG (Compact Discontinuous Galerkin)
-    method_br2     = 2,  // BR2 (Bassi-Rebay 2)
-    method_ip      = 3,  // IP (Interior Penalty)
-    method_nipg    = 4,  // NIPG (Non-symmetric Interior  Penalty)
-    method_bo      = 5,  // BO (Baumann-Oden)
-    method_general = 6,   // general means all methods chosen via parameter file
-    method_none    = 7   // no diffusion (advection only)
-  };
-  enum DGLiftingFluxIdentifier {
-    lifting_id_id    = 0,  // int_Omega r([u]).tau  = -int_e [u].{tau}
-    lifting_id_A     = 1,  // int_Omega r([u]).tau  = -int_e [u].{Atau}
-    lifting_A_A      = 2   // int_Omega r([u]).Atau = -int_e [u].{Atau}
-  };
-
-  class DGPrimalFormulationParameters
-    : public Dune::Fem::LocalParameter< DGPrimalFormulationParameters, DGPrimalFormulationParameters >
-  {
-    const std::string keyPrefix_;
-  public:
-    typedef DGDiffusionFluxIdentifier MethodType;
-    typedef DGLiftingFluxIdentifier   LiftingType;
-
-    DGPrimalFormulationParameters( const std::string keyPrefix = "dgdiffusionflux." )
-      : keyPrefix_( keyPrefix )
-    {}
-
-    static std::string methodNames( const MethodType mthd )
-    {
-      const std::string method []
-        = { "CDG2", "CDG" , "BR2", "IP" , "NIPG", "BO" };
-      assert( mthd >= method_cdg2 && mthd < method_general );
-      return method[ mthd ];
-    }
-
-    virtual MethodType getMethod() const
-    {
-      const std::string method []
-        = { methodNames( method_cdg2 ),
-            methodNames( method_cdg ),
-            methodNames( method_br2 ),
-            methodNames( method_ip ),
-            methodNames( method_nipg ),
-            methodNames( method_bo )
-          };
-      return (MethodType) Fem::Parameter::getEnum( keyPrefix_ + "method", method );
-    }
-
-    static std::string liftingNames( const LiftingType mthd )
-    {
-      const std::string method []
-        = { "id_id", "id_A" , "A_A" };
-      return method[ mthd ];
-    }
-
-    virtual LiftingType getLifting() const
-    {
-      const std::string method []
-        = { liftingNames( lifting_id_id ),
-            liftingNames( lifting_id_A ),
-            liftingNames( lifting_A_A )
-          };
-      return (LiftingType) Fem::Parameter::getEnum( keyPrefix_ + "lifting", method, 0 );
-    }
-
-    virtual double penalty() const
-    {
-      return Fem::Parameter::getValue<double>( keyPrefix_ + "penalty" );
-    }
-
-    virtual double liftfactor() const
-    {
-      return Fem::Parameter::getValue<double>( keyPrefix_ + "liftfactor" );
-    }
-
-    virtual double theoryparameters() const
-    {
-      return Fem::Parameter::getValue<double>( keyPrefix_ + "theoryparameters", 0. );
-    }
-
-    template <class DomainType>
-    void upwind( DomainType& upwd ) const
-    {
-      Fem::Parameter::get(keyPrefix_ + "upwind", upwd, upwd);
-    }
-  };
-
-
   /**
    * \brief Base class for all diffusion fluxes.
    *
    * \ingroup DiffusionFluxes
    */
   template <class DiscreteFunctionSpaceImp,
-            class Model >
+            class Model,
+            class FluxParameterImp = DGPrimalFormulationParameters >
   class DGDiffusionFluxBase
   {
   public:
     enum { evaluateJacobian = false };
     typedef DiscreteFunctionSpaceImp DiscreteFunctionSpaceType;
 
-    typedef DGPrimalFormulationParameters ParameterType;
-    typedef typename ParameterType :: MethodType   MethodType;
-    typedef typename ParameterType :: LiftingType  LiftingType;
+    typedef FluxParameterImp                       ParameterType;
+    typedef typename ParameterType::MethodType     MethodType;
+    typedef typename ParameterType::LiftingType    LiftingType;
 
     enum { dimDomain = DiscreteFunctionSpaceType :: dimDomain };
     enum { dimRange  = DiscreteFunctionSpaceType :: dimRange };
@@ -282,18 +193,18 @@ namespace Dune {
     /**
      * \brief flux function on interfaces between cells for advection and diffusion
      *
-     * @param[in] it intersection
-     * @param[in] time current time given by TimeProvider
-     * @param[in] x coordinate of required evaluation local to \c it
-     * @param[in] uLeft DOF evaluation on this side of \c it
-     * @param[in] uRight DOF evaluation on the other side of \c it
-     * @param[out] gLeft num. flux projected on normal on this side
-     *             of \c it for multiplication with \f$ \phi \f$
-     * @param[out] gRight advection flux projected on normal for the other side
-     *             of \c it for multiplication with \f$ \phi \f$
-     * @param[out] gDiffLeft num. flux projected on normal on this side
-     *             of \c it for multiplication with \f$ \nabla\phi \f$
-     * @param[out] gDiffRight advection flux projected on normal for the other side
+     * \param[in] it intersection
+     * \param[in] time current time given by TimeProvider
+     * \param[in] x coordinate of required evaluation local to \c it
+     * \param[in] uLeft DOF evaluation on this side of \c it
+     * \param[in] uRight DOF evaluation on the other side of \c it
+     * \param[out] gLeft num. flux projected on normal on this side
+     * \           of \c it for multiplication with \f$ \phi \f$
+     * \param[out] gRight advection flux projected on normal for the other side
+     * \           of \c it for multiplication with \f$ \phi \f$
+     * \param[out] gDiffLeft num. flux projected on normal on this side
+     * \           of \c it for multiplication with \f$ \nabla\phi \f$
+     * \param[out] gDiffRight advection flux projected on normal for the other side
      *             of \c it for multiplication with \f$ \nabla\phi \f$
      *
      * \return wave speed estimate (multiplied with the integration element of the intersection),
@@ -334,7 +245,7 @@ namespace Dune {
                         const RangeType& uRight,
                         const JacobianRangeType& jacLeft,
                         RangeType& gLeft,
-                        JacobianRangeType& gDiffLeft )   /*@LST0E@*/
+                        JacobianRangeType& gDiffLeft )
     {
       assert( false );
       abort();
@@ -353,5 +264,6 @@ namespace Dune {
     const double nonconformingFactor_;
   }; // end DGPrimalDiffusionFlux
 
+} // end namespace
 } // end namespace
 #endif
