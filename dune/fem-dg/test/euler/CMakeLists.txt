@@ -1,7 +1,9 @@
 dune_install( models.hh  problemcreator.hh  problems.hh )
 
 include_directories("${CMAKE_SOURCE_DIR}/dune/fem-dg/test/euler/")
-configure_file(parameter.in ${CMAKE_CURRENT_BINARY_DIR}/parameter)
+if(GENERATE_FEMDG_PARAMETER_FILE)
+  configure_file(parameter.in ${CMAKE_CURRENT_BINARY_DIR}/parameter)
+endif()
 
 add_definitions( "-DYASPGRID" )
 add_definitions( "-DGRIDDIM=2" )

@@ -1,12 +1,12 @@
-#ifndef DUNE_FEM_DG_BENCHMARKPROBLEMS_HH
-#define DUNE_FEM_DG_BENCHMARKPROBLEMS_HH
+#ifndef FVCA6_BENCHMARKPROBLEMS_HH
+#define FVCA6_BENCHMARKPROBLEMS_HH
 
+#include <iostream>
+#include <cstdlib>
 #include <cmath>
 #include <set>
 #include <cassert>
 #include <complex>
-
-#include <dune/common/exceptions.hh>
 
 template<int dim, class DomainField, class Field>
 class DataFunctionIF
@@ -257,7 +257,7 @@ public:
     Field val = 1.0;
     for(int i=0; i<dim; ++i)
     {
-      val *= sin( pi * x[i] );
+      val *= std::sin( pi * x[i] );
     }
     return val;
   }
@@ -278,7 +278,7 @@ public:
       // add other components
       for(int i=0; i<dim; ++i)
       {
-        val *= sin( pi * x[ i ] );
+        val *= std::sin( pi * x[ i ] );
       }
 
       // minus because sin'' = -sin
@@ -288,13 +288,13 @@ public:
     {
       for( int i=0; i<dim-1; ++i)
       {
-        val *= cos( pi * x[ comp[i] ] );
+        val *= std::cos( pi * x[ comp[i] ] );
       }
 
       for(int i=0; i<dim; ++i)
       {
         if( comps.find( i ) == comps.end() )
-          val *= sin( pi * x[ i ] );
+          val *= std::sin( pi * x[ i ] );
       }
       return val;
     }
@@ -303,11 +303,11 @@ public:
   double gradient(const DomainField x[dim], const int comp) const
   {
     const Field pi = 2.0 * M_PI;
-    Field val = pi * cos( pi * x[ comp ] );
+    Field val = pi * std::cos( pi * x[ comp ] );
     // add other components
     for(int j=1; j<dim; ++j)
     {
-      val *= sin( pi * x[ (comp + j) % dim ] );
+      val *= std::sin( pi * x[ (comp + j) % dim ] );
     }
     return val;
   }
@@ -356,8 +356,8 @@ public:
 
   virtual Field rhs  (const DomainField x[dim]) const
   {
-    Field sin_x = sin(2.0*M_PI*x[0]);
-    Field sin_y = sin(2.0*M_PI*x[1]);
+    Field sin_x = std::sin(2.0*M_PI*x[0]);
+    Field sin_y = std::sin(2.0*M_PI*x[1]);
 
     Field val = 8.0 * M_PI * M_PI * sin_x * sin_y ;
     val *= factor_;
@@ -366,15 +366,15 @@ public:
 
   virtual Field exact(const DomainField x[dim]) const
   {
-    Field val = sin(2.0*M_PI*x[0]) * sin(2.0*M_PI*x[1]);
+    Field val = std::sin(2.0*M_PI*x[0]) * std::sin(2.0*M_PI*x[1]);
     val += globalShift_;
     return val;
   }
 
   virtual void gradExact(const DomainField x[dim], Field grad[dim] ) const
   {
-    grad[0] = 2.0*M_PI*cos(2.0*M_PI*x[0])*sin(2.0*M_PI*x[1]);
-    grad[1] = 2.0*M_PI*sin(2.0*M_PI*x[0])*cos(2.0*M_PI*x[1]);
+    grad[0] = 2.0*M_PI*std::cos(2.0*M_PI*x[0])*std::sin(2.0*M_PI*x[1]);
+    grad[1] = 2.0*M_PI*std::sin(2.0*M_PI*x[0])*std::cos(2.0*M_PI*x[1]);
 
     // initial grad with zero for 3d
     for( int i=2; i<dim; ++i) grad[i] = 0;
@@ -416,8 +416,8 @@ public:
 
   virtual Field rhs  (const DomainField x[dim]) const
   {
-    Field cos_x = cos(2.0*M_PI*x[0]);
-    Field cos_y = cos(2.0*M_PI*x[1]);
+    Field cos_x = std::cos(2.0*M_PI*x[0]);
+    Field cos_y = std::cos(2.0*M_PI*x[1]);
 
     Field val = 8.0 * M_PI*M_PI* cos_x * cos_y ;
     val *= factor_;
@@ -427,7 +427,7 @@ public:
 
   virtual Field exact(const DomainField x[dim]) const
   {
-    Field val = cos(2.0*M_PI*x[0]) * cos(2.0*M_PI*x[1]);
+    Field val = std::cos(2.0*M_PI*x[0]) * std::cos(2.0*M_PI*x[1]);
     val += globalShift_;
     return val;
     //return x[1];
@@ -435,8 +435,8 @@ public:
 
   virtual void gradExact(const DomainField x[dim], Field grad[dim] ) const
   {
-    grad[0] = 2.0*M_PI*-sin(2.0*M_PI*x[0])*cos(2.0*M_PI*x[1]);
-    grad[1] = 2.0*M_PI*cos(2.0*M_PI*x[0])*-sin(2.0*M_PI*x[1]);
+    grad[0] = 2.0*M_PI*-std::sin(2.0*M_PI*x[0])*std::cos(2.0*M_PI*x[1]);
+    grad[1] = 2.0*M_PI*std::cos(2.0*M_PI*x[0])*-std::sin(2.0*M_PI*x[1]);
     //grad[0] = 0.;
     //grad[1] = 1.;
 
@@ -511,17 +511,17 @@ public:
   }
 };
 
-//! problem Einstringende Ecke
+//! problem reentrant corner
 template <class DomainField, class Field>
-class InSpringingCorner2d : public DataFunctionIF<2,DomainField,Field>
+class ReentrantCorner2d : public DataFunctionIF<2,DomainField,Field>
 {
   enum { dim = 2 };
   const Field globalShift_;
   const Field factor_;
   const Field lambda_;
 public:
-  virtual ~InSpringingCorner2d() {}
-  InSpringingCorner2d(Field globalShift, Field factor)
+  virtual ~ReentrantCorner2d() {}
+  ReentrantCorner2d(Field globalShift, Field factor)
     : globalShift_(0.0)
     , factor_(1.0)
     , lambda_(180./270.)
@@ -548,7 +548,7 @@ public:
   {
     double r2 = radius(x[0],x[1]);
     double phi = argphi(x[0],x[1]);
-    return pow(r2,lambda_*0.5)*sin(lambda_*phi);
+    return pow(r2,lambda_*0.5)*std::sin(lambda_*phi);
   }
 
   virtual void gradExact(const DomainField x[dim], Field grad[dim] ) const
@@ -560,10 +560,10 @@ public:
     double phidx=-x[1]/r2;
     double phidy=x[0]/r2;
     double lambdaPow = (lambda_*0.5)*pow(r2,lambda_*0.5-1.);
-    grad[0]= lambdaPow * r2dx * sin(lambda_ * phi)
-             + lambda_ * cos( lambda_ * phi) * phidx * pow(r2,lambda_ * 0.5);
-    grad[1]= lambdaPow * r2dy * sin(lambda_ * phi)
-             + lambda_ * cos( lambda_ * phi) * phidy * pow(r2,lambda_*0.5);
+    grad[0]= lambdaPow * r2dx * std::sin(lambda_ * phi)
+             + lambda_ * std::cos( lambda_ * phi) * phidx * pow(r2,lambda_ * 0.5);
+    grad[1]= lambdaPow * r2dy * std::sin(lambda_ * phi)
+             + lambda_ * std::cos( lambda_ * phi) * phidy * pow(r2,lambda_*0.5);
     assert( grad[0] == grad[0] );
     assert( grad[1] == grad[1] );
   }
@@ -595,17 +595,17 @@ public:
   }
 };
 
-//! problem Einstringende Ecke 3d
+//! problem reentrant corner 3d
 template <int dim, class DomainField, class Field>
-class InSpringingCorner : public DataFunctionIF<dim,DomainField,Field>
+class ReentrantCorner : public DataFunctionIF<dim,DomainField,Field>
 {
-  typedef InSpringingCorner2d<DomainField, Field> Corner2dType ;
+  typedef ReentrantCorner2d<DomainField, Field> Corner2dType ;
   Corner2dType corner2d_;
   const Field factor_;
 
 public:
-  virtual ~InSpringingCorner() {}
-  InSpringingCorner(Field globalShift, Field factor)
+  virtual ~ReentrantCorner() {}
+  ReentrantCorner(Field globalShift, Field factor)
     : corner2d_(globalShift, factor),
       factor_( factor )
   {
@@ -671,7 +671,7 @@ public:
   }
 };
 
-//! problem Einstringende Ecke 3d
+//! problem fichera corner
 template <int dim, class DomainField, class Field>
 class FicheraCorner : public DataFunctionIF<dim,DomainField,Field>
 {
@@ -1232,9 +1232,9 @@ public:
     double x1 = 1.-arg[0];
     double y1 = 1.-arg[1];
 
-    double uxx = -y1*y1*sin(x1*y1) + 6.*x1* y1*y1;
-    double uxy = -x1*y1*sin(x1*y1) + cos(x1*y1) + 6.*y1* x1*x1;
-    double uyy = -x1*x1*sin(x1*y1) + 2.* x1*x1*x1;
+    double uxx = -y1*y1*std::sin(x1*y1) + 6.*x1* y1*y1;
+    double uxy = -x1*y1*std::sin(x1*y1) + std::cos(x1*y1) + 6.*y1* x1*x1;
+    double uyy = -x1*x1*std::sin(x1*y1) + 2.* x1*x1*x1;
     return -(factor_[0][0] * uxx + factor_[0][1]*uxy + factor_[1][0]* uxy + factor_[1][1]*uyy);
   }
 
@@ -1242,7 +1242,7 @@ public:
   {
     double x1 = 1.-arg[0];
     double y1 = 1.-arg[1];
-    return sin(x1*y1) + x1*x1*x1 * y1*y1;
+    return std::sin(x1*y1) + x1*x1*x1 * y1*y1;
   }
 
   virtual void gradExact(const DomainField arg[dim], Field grad[dim] ) const
@@ -1250,8 +1250,8 @@ public:
     double x1 = 1.-arg[0];
     double y1 = 1.-arg[1];
 
-    grad[0] = -y1*cos(x1*y1) - 3.* (x1*y1)* (x1*y1);
-    grad[1] = -x1*cos(x1*y1) - 2.*y1* x1*x1*x1;
+    grad[0] = -y1*std::cos(x1*y1) - 3.* (x1*y1)* (x1*y1);
+    grad[1] = -x1*std::cos(x1*y1) - 2.*y1* x1*x1*x1;
   }
 
   virtual bool boundaryDataFunction(const DomainField x[dim], Field & val) const
@@ -1302,12 +1302,12 @@ public:
 
   virtual Field exact(const DomainField x[dim]) const
   {
-    return sin(x1_* x[0])*exp(-x2_* x[1]);
+    return std::sin(x1_* x[0])*exp(-x2_* x[1]);
   }
 
   virtual void gradExact(const DomainField x[dim], Field grad[dim] ) const
   {
-    grad[0] = x1_ * cos(x1_* x[0])*exp(-x2_ * x[1]);
+    grad[0] = x1_ * std::cos(x1_* x[0])*exp(-x2_ * x[1]);
     grad[1] = -x2_ * exact(x);
   }
 
@@ -1337,7 +1337,7 @@ public:
     : globalShift_(0.0)
     , delta_(1e-3)
     , pi_ ( 4. * atan(1.) )
-    , cost_ ( cos( 40. * pi_ / 180. ) )
+    , cost_ ( std::cos( 40. * pi_ / 180. ) )
     , sint_ ( sqrt(1. - cost_*cost_) )
   {
     factor_[0][0] = cost_*cost_+delta_*sint_*sint_;
@@ -1554,13 +1554,13 @@ public:
     double y = arg[1];
     double rt = x*x+y*y;
 
-    double ux = pi * cos(pi*x)*sin(pi*y);
-    double uy = pi * cos(pi*y)*sin(pi*x);
+    double ux = pi * std::cos(pi*x)*std::sin(pi*y);
+    double uy = pi * std::cos(pi*y)*std::sin(pi*x);
 
-    double f0 = sin(pi*x)*sin(pi*y)*pi*pi*(1+delta_)*(x*x+y*y)
-              + cos(pi*x)*sin(pi*y)*pi*(1.-3.*delta_)*x
-              + cos(pi*y)*sin(pi*x)*pi*(1.-3.*delta_)*y
-              + cos(pi*y)*cos(pi*x)*2.*pi*pi*(1.-delta_)*x*y;
+    double f0 = std::sin(pi*x)*std::sin(pi*y)*pi*pi*(1+delta_)*(x*x+y*y)
+              + std::cos(pi*x)*std::sin(pi*y)*pi*(1.-3.*delta_)*x
+              + std::cos(pi*y)*std::sin(pi*x)*pi*(1.-3.*delta_)*y
+              + std::cos(pi*y)*std::cos(pi*x)*2.*pi*pi*(1.-delta_)*x*y;
     double kxx = k[0][0];
     double kyy = k[1][1];
     double kxy = k[0][1];
@@ -1569,13 +1569,13 @@ public:
 
   virtual Field exact(const DomainField x[dim]) const
   {
-    return sin(pi*x[0])*sin(pi*x[1]);
+    return std::sin(pi*x[0])*std::sin(pi*x[1]);
   }
 
   virtual void gradExact(const DomainField x[dim], Field grad[dim] ) const
   {
-    grad[0] = pi * cos(pi*x[0])*sin(pi*x[1]);
-    grad[1] = pi * cos(pi*x[1])*sin(pi*x[0]);
+    grad[0] = pi * std::cos(pi*x[0])*std::sin(pi*x[1]);
+    grad[1] = pi * std::cos(pi*x[1])*std::sin(pi*x[0]);
   }
 
   virtual bool boundaryDataFunction(const DomainField x[dim], Field & val) const
@@ -1902,7 +1902,8 @@ public:
   {
     if( dim != 3 )
     {
-      DUNE_THROW(Dune::NotImplemented,"Problem only implemented for dim=3");
+      std::cerr << "Problem only implemented for dim=3" << std::endl;
+      std::abort();
     }
 
     for(int i=0; i<dim; ++i)
@@ -1929,21 +1930,21 @@ public:
 
   virtual Field rhs  (const DomainField x[dim]) const
   {
-    return M_PI*M_PI*(3.0*sin(M_PI*x[0])*sin(M_PI*(x[1]+0.5))*sin(M_PI*(x[2]+(1.0/3.0)))
-          -cos(M_PI*x[0])*cos(M_PI*(x[1]+0.5))*sin(M_PI*(x[2]+(1.0/3.0)))
-          -sin(M_PI*x[0])*cos(M_PI*(x[1]+0.5))*cos(M_PI*(x[2]+(1.0/3.0))));
+    return M_PI*M_PI*(3.0*std::sin(M_PI*x[0])*std::sin(M_PI*(x[1]+0.5))*std::sin(M_PI*(x[2]+(1.0/3.0)))
+          -std::cos(M_PI*x[0])*std::cos(M_PI*(x[1]+0.5))*std::sin(M_PI*(x[2]+(1.0/3.0)))
+          -std::sin(M_PI*x[0])*std::cos(M_PI*(x[1]+0.5))*std::cos(M_PI*(x[2]+(1.0/3.0))));
   }
 
   virtual Field exact(const DomainField x[dim]) const
   {
-    return 1.0+sin(M_PI*x[0])*sin(M_PI*(x[1]+0.5))*sin(M_PI*(x[2]+(1.0/3.0)));
+    return 1.0+std::sin(M_PI*x[0])*std::sin(M_PI*(x[1]+0.5))*std::sin(M_PI*(x[2]+(1.0/3.0)));
   }
 
   virtual void gradExact(const DomainField x[dim], Field grad[dim] ) const
   {
-    grad[0] = M_PI*cos(M_PI*x[0])*sin(M_PI*(x[1]+0.5))*sin(M_PI*(x[2]+(1.0/3.0)));
-    grad[1] = M_PI*sin(M_PI*x[0])*cos(M_PI*(x[1]+0.5))*sin(M_PI*(x[2]+(1.0/3.0)));
-    grad[2] = M_PI*sin(M_PI*x[0])*sin(M_PI*(x[1]+0.5))*cos(M_PI*(x[2]+(1.0/3.0)));
+    grad[0] = M_PI*std::cos(M_PI*x[0])*std::sin(M_PI*(x[1]+0.5))*std::sin(M_PI*(x[2]+(1.0/3.0)));
+    grad[1] = M_PI*std::sin(M_PI*x[0])*std::cos(M_PI*(x[1]+0.5))*std::sin(M_PI*(x[2]+(1.0/3.0)));
+    grad[2] = M_PI*std::sin(M_PI*x[0])*std::sin(M_PI*(x[1]+0.5))*std::cos(M_PI*(x[2]+(1.0/3.0)));
   }
 
   virtual bool boundaryDataFunction(const DomainField x[dim], Field & val) const
@@ -1966,7 +1967,8 @@ public:
   {
     if( dim != 3 )
     {
-      DUNE_THROW(Dune::NotImplemented,"Problem only implemented for dim=3");
+      std::cerr << "Problem only implemented for dim=3" << std::endl;
+      std::abort();
     }
 
     for(int i=0; i<dim; ++i)
@@ -1992,20 +1994,20 @@ public:
 
   virtual Field rhs  (const DomainField x[dim]) const
   {
-    return 1002.0*4.0*M_PI*M_PI*sin(2.0*M_PI*x[0])*sin(2.0*M_PI*x[1])*sin(2.0*M_PI*x[2]);
+    return 1002.0*4.0*M_PI*M_PI*std::sin(2.0*M_PI*x[0])*std::sin(2.0*M_PI*x[1])*std::sin(2.0*M_PI*x[2]);
   }
 
   virtual Field exact(const DomainField x[dim]) const
   {
-    return sin(2.0*M_PI*x[0])*sin(2.0*M_PI*x[1])*sin(2.0*M_PI*x[2]);
+    return std::sin(2.0*M_PI*x[0])*std::sin(2.0*M_PI*x[1])*std::sin(2.0*M_PI*x[2]);
   }
 
   virtual void gradExact(const DomainField x[dim], Field grad[dim] ) const
   {
     const Field pi2 = 2.0*M_PI;
-    grad[0] = pi2 * cos( pi2 * x[0]) * sin( pi2 * x[1]) * sin( pi2 * x[2]);
-    grad[1] = pi2 * sin( pi2 * x[0]) * cos( pi2 * x[1]) * sin( pi2 * x[2]);
-    grad[2] = pi2 * sin( pi2 * x[0]) * sin( pi2 * x[1]) * cos( pi2 * x[2]);
+    grad[0] = pi2 * std::cos( pi2 * x[0]) * std::sin( pi2 * x[1]) * std::sin( pi2 * x[2]);
+    grad[1] = pi2 * std::sin( pi2 * x[0]) * std::cos( pi2 * x[1]) * std::sin( pi2 * x[2]);
+    grad[2] = pi2 * std::sin( pi2 * x[0]) * std::sin( pi2 * x[1]) * std::cos( pi2 * x[2]);
   }
 
   virtual bool boundaryDataFunction(const DomainField x[dim], Field & val) const
@@ -2028,7 +2030,8 @@ public:
   {
     if( dim != 3 )
     {
-      DUNE_THROW(Dune::NotImplemented,"Problem only implemented for dim=3");
+      std::cerr << "Problem only implemented for dim=3" << std::endl;
+      std::abort();
     }
   }
 
@@ -2168,7 +2171,8 @@ public:
   {
     if( dim != 3 )
     {
-      DUNE_THROW(Dune::NotImplemented,"Problem only implemented for dim=3");
+      std::cerr << "Problem only implemented for dim=3" << std::endl;
+      std::abort();
     }
 
     {
@@ -2240,7 +2244,7 @@ public:
   {
     const int domain = getDomain(x);
     assert( domain >= 0 && domain < numDomain );
-    Field result =  4.0*M_PI*M_PI*sin(pi2_*x[0])*sin(pi2_*x[1])*sin(pi2_*x[2]);
+    Field result =  4.0*M_PI*M_PI*std::sin(pi2_*x[0])*std::sin(pi2_*x[1])*std::sin(pi2_*x[2]);
     result *= alpha_[ domain ] * trace_[ domain ];
     return result;
   }
@@ -2249,7 +2253,7 @@ public:
   {
     const int domain = getDomain(x);
     assert( domain >= 0 && domain < numDomain );
-    Field val = sin(pi2_*x[0])*sin(pi2_*x[1])*sin(pi2_*x[2]);
+    Field val = std::sin(pi2_*x[0])*std::sin(pi2_*x[1])*std::sin(pi2_*x[2]);
     val *= alpha_[ domain ];
     return val ;
   }
@@ -2263,9 +2267,9 @@ public:
     const Field y_pi = pi2_*x[1] ;
     const Field z_pi = pi2_*x[2] ;
 
-    grad[0] = pi2_ * cos( x_pi ) * sin( y_pi ) * sin( z_pi );
-    grad[1] = pi2_ * sin( x_pi ) * cos( y_pi ) * sin( z_pi );
-    grad[2] = pi2_ * sin( x_pi ) * sin( y_pi ) * cos( z_pi );
+    grad[0] = pi2_ * std::cos( x_pi ) * std::sin( y_pi ) * std::sin( z_pi );
+    grad[1] = pi2_ * std::sin( x_pi ) * std::cos( y_pi ) * std::sin( z_pi );
+    grad[2] = pi2_ * std::sin( x_pi ) * std::sin( y_pi ) * std::cos( z_pi );
 
     for(int i=0; i<dim; ++i )
       grad[ i ] *= alpha_[ domain ];
