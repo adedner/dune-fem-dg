@@ -145,23 +145,6 @@ protected:
 };
 
 
-template < class Model, Mhd :: MhdFluxType fluxtype >
-template< class Intersection, class QuadratureImp >
-inline double MHDNumFluxBase< Model, fluxtype > ::
-numericalFlux( const Intersection& intersection,
-               const EntityType& inside,
-               const EntityType& outside,
-               const double time,
-               const QuadratureImp& faceQuadInner,
-               const QuadratureImp& faceQuadOuter,
-               const int quadPoint,
-               const RangeType& uLeft,
-               const RangeType& uRight,
-               RangeType& gLeft,
-               RangeType& gRight) const
-{
-
-}
 
 //////////////////////////////////////////////////////////
 //

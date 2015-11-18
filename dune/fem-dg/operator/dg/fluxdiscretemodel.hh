@@ -8,7 +8,7 @@
 
 // local includes
 #include <dune/fem-dg/operator/dg/discretemodelcommon.hh>
-#include <dune/fem-dg/operator/fluxes/ldgflux.hh>
+#include <dune/fem-dg/operator/fluxes/diffusion/ldgflux.hh>
 
 //*************************************************************
 namespace Dune

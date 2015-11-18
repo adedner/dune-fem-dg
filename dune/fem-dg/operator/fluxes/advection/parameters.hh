@@ -3,6 +3,7 @@
 
 #include <string>
 #include <assert.h>
+#include <dune/fem/io/parameter.hh>
 
 namespace Dune
 {

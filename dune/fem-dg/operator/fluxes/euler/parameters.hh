@@ -5,6 +5,7 @@
 #include <string>
 #include <cmath>
 
+#include <dune/fem/io/parameter.hh>
 #include "../advection/fluxbase.hh"
 
 // dune-grid includes
