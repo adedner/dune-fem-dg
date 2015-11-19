@@ -176,7 +176,7 @@ namespace Fem
         space_(gridPart),
         zero_(),
         advFlux_(model_),
-        diffusionFlux_(gridPart, model_, DGPrimalFormulationParameters( ParameterKey::generate( model_.problem().name(), "dgdiffusionflux." ) ) ),
+        diffusionFlux_(gridPart, model_, DGPrimalFormulationParameters( ParameterKey::generate( "", "dgdiffusionflux." ) ) ),
         calculateFluxes_( calculateFluxes ),
         useStrongBoundaryCondition_( strongBC )
     {
