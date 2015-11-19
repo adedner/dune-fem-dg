@@ -1,6 +1,8 @@
 #ifndef DUNE_STEPPERTRAITS_HH
 #define DUNE_STEPPERTRAITS_HH
 
+#ifndef HEADERCHECK
+
 #warning "Overloaded StepperTraits"
 
 #include <dune/fem/gridpart/adaptiveleafgridpart.hh>
@@ -25,7 +27,7 @@ struct StepperTraits
   typedef GridImp                                   GridType;
 
   typedef typename ProblemTraits :: StokesProblemTraits StokesProblemTraits;
-  typedef StokesAlgorithm< GridImp, StokesProblemTraits, polynomialOrder >  StokesAlgorithmType;
+  typedef Dune::Fem::StokesAlgorithm< GridImp, StokesProblemTraits, polynomialOrder >  StokesAlgorithmType;
   typedef typename StokesAlgorithmType :: DiscreteFunctionType    VelocityFunctionType;
 
   // Choose a suitable GridView
@@ -105,4 +107,5 @@ public:
   typedef Dune::Fem::ParDGGeneralizedMinResInverseOperator< DiscreteFunctionType >  LinearInverseImplicitOperatorType;
 };
 
+#endif
 #endif
