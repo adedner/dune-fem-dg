@@ -75,7 +75,7 @@ namespace Fem
     typedef std::tuple< /*typename std::add_pointer< typename ProblemTraitsHead::template Stepper<polOrder>::Type >::type,*/
                         typename std::add_pointer< typename ProblemTraits::template Stepper<polOrder>::Type >::type... > StepperTupleType;
 
-
+  private:
     struct Initialize {
       template< class T, class ... Args > static void apply ( T& e, Args && ... a )
       { e->initialize( std::forward<Args>(a)... ); }
@@ -127,27 +127,32 @@ namespace Fem
     template< class Caller >
     using ForLoopType = ForLoop< LoopCallee<Caller>::template Apply, 0,  sizeof ... ( ProblemTraits )-1 >;
 
-    using BaseType::grid;
-
-    SteadyStateAlgorithm ( GridType &grid, const std::string name = "" )
-    : BaseType( grid, name  ),
-      tuple_( createStepper( grid, name ) ),
-      solverMonitorHandler_( tuple_ ),
-      dataWriterHandler_( tuple_ )
-    {}
+    template< int i >
+    using ElementType=typename std::remove_pointer< typename std::tuple_element< i, StepperTupleType >::type >::type;
 
     template< std::size_t ...i >
-    static StepperTupleType createStepper ( Std::index_sequence< i... >, GridType &grid, const std::string name = "" )
+    static StepperTupleType createStepper ( Std::index_sequence< i... >, GridType &grid )
     {
-      static auto tuple = std::make_tuple( new typename std::remove_pointer< typename std::tuple_element< i, StepperTupleType >::type >::type( grid, name ) ... );
+      static auto tuple = std::make_tuple( new ElementType<i>( grid, ElementType<i>::name() ) ... );
       return tuple;
     }
 
     // create Tuple of contained sub algorithms
-    static StepperTupleType createStepper( GridType &grid, const std::string name = "" )
+    static StepperTupleType createStepper( GridType &grid )
     {
-      return createStepper( typename Std::make_index_sequence_impl< std::tuple_size< StepperTupleType >::value >::type(), grid, name );
+      return createStepper( typename Std::make_index_sequence_impl< std::tuple_size< StepperTupleType >::value >::type(), grid );
     }
+
+  public:
+    using BaseType::grid;
+
+    SteadyStateAlgorithm ( GridType &grid, const std::string name = "" )
+    : BaseType( grid, name  ),
+      tuple_( createStepper( grid ) ),
+      solverMonitorHandler_( tuple_ ),
+      dataWriterHandler_( tuple_ )
+    {}
+
 
     virtual IOTupleType dataTuple ()
     {

@@ -177,6 +177,7 @@ namespace Fem
 
     static const int numSteppers = std::tuple_size< StepperTupleType >::value;
 
+  private:
     struct Initialize {
     private:
       template<class T, class AdaptHandler, class... Args >
@@ -245,9 +246,27 @@ namespace Fem
     template< class Caller >
     using ForLoopType = ForLoop< LoopCallee<Caller>::template Apply, 0,  numSteppers-1 >;
 
+    template< int i >
+    using ElementType=typename std::remove_pointer< typename std::tuple_element< i, StepperTupleType >::type >::type;
+
+    template< std::size_t ...i >
+    static StepperTupleType createStepper ( Std::index_sequence< i... >, GridType &grid )
+    {
+      static auto tuple = std::make_tuple( new ElementType<i>( grid, ElementType<i>::name() ) ... );
+      return tuple;
+    }
+
+    // create Tuple of contained sub algorithms
+    static StepperTupleType createStepper( GridType &grid )
+    {
+      return createStepper( typename Std::make_index_sequence_impl< std::tuple_size< StepperTupleType >::value >::type(), grid );
+    }
+
+  public:
+
     EvolutionAlgorithmBase ( GridType &grid, const std::string name = "" )
     : BaseType( grid, name  ),
-      tuple_( createStepper( grid, name ) ),
+      tuple_( createStepper( grid ) ),
       param_( StepperParametersType( ParameterKey::generate( "", "femdg.stepper." ) ) ),
       checkPointHandler_( tuple_ ),
       dataWriterHandler_( tuple_ ),
@@ -257,20 +276,6 @@ namespace Fem
       adaptHandler_( tuple_ ),
       fixedTimeStep_( param_.fixedTimeStep() )
     {}
-
-
-    template< std::size_t ...i >
-    static StepperTupleType createStepper ( Std::index_sequence< i... >, GridType &grid, const std::string name = "" )
-    {
-      static auto tuple = std::make_tuple( new typename std::remove_pointer< typename std::tuple_element< i, StepperTupleType >::type >::type( grid, name ) ... );
-      return tuple;
-    }
-
-    // create Tuple of contained sub algorithms
-    static StepperTupleType createStepper( GridType &grid, const std::string name = "" )
-    {
-      return createStepper( typename Std::make_index_sequence_impl< std::tuple_size< StepperTupleType >::value >::type(), grid, name );
-    }
 
     // return grid width of grid (overload in derived classes)
     double gridWidth () const

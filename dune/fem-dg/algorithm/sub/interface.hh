@@ -162,7 +162,6 @@ namespace Fem
      */
     SubAlgorithmInterface ( GridType &grid, const std::string name = "" )
     : grid_( grid ),
-      algorithmName_( name ),
       problem_( ProblemTraits::problem() ),
       model_( problem() )
     {}
@@ -188,7 +187,7 @@ namespace Fem
      *
      * \return name of the algorithm.
      */
-    const std::string name () const { return algorithmName_; }
+    static std::string name () { return ProblemTraits::moduleName(); }
 
     /**
      * \brief returns the grid
@@ -336,7 +335,6 @@ namespace Fem
     virtual void doFinalize ( int loop ){}
 
     GridType&                      grid_;
-    std::string                    algorithmName_;
     std::unique_ptr< ProblemType > problem_;
     ModelType                      model_;
 

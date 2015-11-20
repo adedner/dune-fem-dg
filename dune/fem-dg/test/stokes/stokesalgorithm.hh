@@ -310,12 +310,12 @@ namespace Fem
 
   public:
 
-    explicit StokesAlgorithm(GridType& grid, std::string moduleName = "" ) :
-      BaseType( grid, moduleName ),
-      ellAlg_( grid, moduleName ),
+    explicit StokesAlgorithm(GridType& grid, std::string name = "" ) :
+      BaseType( grid, name ),
+      ellAlg_( grid, EllipticalAlgorithmType::name() ),
       gridPart_( grid ),
       space_( gridPart_ ),
-      stokesSigmaEstimator_( gridPart_, ellAlg_.solution(), solution(), ellAlg_.assembler(), moduleName ),
+      stokesSigmaEstimator_( gridPart_, ellAlg_.solution(), solution(), ellAlg_.assembler(), name ),
       assembler_( ellAlg_.solution().space() , space_, problem() ),
       ioTuple_( *BaseType::dataTuple(), *ellAlg_.dataTuple() )
     {}
