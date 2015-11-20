@@ -127,13 +127,10 @@ namespace Fem
     template< class Caller >
     using ForLoopType = ForLoop< LoopCallee<Caller>::template Apply, 0,  sizeof ... ( ProblemTraits )-1 >;
 
-    template< int i >
-    using ElementType=typename std::remove_pointer< typename std::tuple_element< i, StepperTupleType >::type >::type;
-
     template< std::size_t ...i >
     static StepperTupleType createStepper ( Std::index_sequence< i... >, GridType &grid )
     {
-      static auto tuple = std::make_tuple( new ElementType<i>( grid, ElementType<i>::name() ) ... );
+      static auto tuple = std::make_tuple( new typename std::remove_pointer< typename std::tuple_element< i, StepperTupleType >::type >::type( grid ) ... );
       return tuple;
     }
 
@@ -146,8 +143,8 @@ namespace Fem
   public:
     using BaseType::grid;
 
-    SteadyStateAlgorithm ( GridType &grid, const std::string name = "" )
-    : BaseType( grid, name  ),
+    SteadyStateAlgorithm ( GridType &grid )
+    : BaseType( grid ),
       tuple_( createStepper( grid ) ),
       solverMonitorHandler_( tuple_ ),
       dataWriterHandler_( tuple_ )
@@ -238,9 +235,9 @@ namespace Fem
 
     using BaseType::grid;
 
-    SteadyStateAlgorithm ( GridType &grid, const std::string name = "" )
-    : BaseType( grid, name  ),
-      alg_( grid, name ),
+    SteadyStateAlgorithm ( GridType &grid )
+    : BaseType( grid  ),
+      alg_( grid ),
       solverMonitorHandler_( std::make_tuple( &alg_ ) ),
       dataWriterHandler_( std::make_tuple( &alg_ ) )
     {}

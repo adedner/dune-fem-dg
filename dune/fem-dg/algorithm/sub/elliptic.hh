@@ -502,6 +502,7 @@ namespace Fem
 
     using BaseType::problem;
     using BaseType::model;
+    using BaseType::name;
     using BaseType::grid;
     using BaseType::gridWidth;
     using BaseType::gridSize;
@@ -512,14 +513,14 @@ namespace Fem
 
   public:
 
-    EllipticAlgorithm(GridType& grid, const std::string name = "" )
-    : BaseType( grid, name ),
+    EllipticAlgorithm(GridType& grid )
+    : BaseType( grid ),
       gridPart_( grid ),
       dgOperator_( gridPart_, problem() ),
       assembler_( gridPart_, dgOperator_ ),
       linOperator_(),
       space_( const_cast<DiscreteFunctionSpaceType &> (assembler_.space()) ),
-      poissonSigmaEstimator_( gridPart_, solution(), assembler_, name ),
+      poissonSigmaEstimator_( gridPart_, solution(), assembler_, name() ),
       pAdapt_(grid, space_),
       step_( 0 ),
       time_( 0 )

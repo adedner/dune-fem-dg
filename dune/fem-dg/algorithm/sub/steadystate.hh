@@ -186,18 +186,18 @@ namespace Fem
     using BaseType::gridSize;
 
   public:
-    SubSteadyStateAlgorithm ( GridType &grid, const std::string name = ""  )
-      : BaseType( grid, name ),
-        stringId_( name + IDGenerator::instance().nextId() ),
-        solverMonitorHandler_( name ),
-        diagnosticsHandler_( name ),
-        additionalOutputHandler_( name ),
+    SubSteadyStateAlgorithm ( GridType &grid  )
+      : BaseType( grid ),
+        stringId_( name() + IDGenerator::instance().nextId() ),
+        solverMonitorHandler_( name() ),
+        diagnosticsHandler_( name() ),
+        additionalOutputHandler_( name() ),
         gridPart_( grid ),
         space_( gridPart_ ),
         solution_( doCreateSolution() ),
         exactSolution_( doCreateExactSolution() ),
         rhs_( doCreateRhs() ),
-        rhsOperator_( gridPart_, problem(), std::tuple<>(), name ),
+        rhsOperator_( gridPart_, problem(), std::tuple<>(), name() ),
         ioTuple_( std::make_tuple( &solution(), &exactSolution() ) ),
         solver_( doCreateSolver() ),
         solverIterations_()

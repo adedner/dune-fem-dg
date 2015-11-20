@@ -246,13 +246,10 @@ namespace Fem
     template< class Caller >
     using ForLoopType = ForLoop< LoopCallee<Caller>::template Apply, 0,  numSteppers-1 >;
 
-    template< int i >
-    using ElementType=typename std::remove_pointer< typename std::tuple_element< i, StepperTupleType >::type >::type;
-
     template< std::size_t ...i >
     static StepperTupleType createStepper ( Std::index_sequence< i... >, GridType &grid )
     {
-      static auto tuple = std::make_tuple( new ElementType<i>( grid, ElementType<i>::name() ) ... );
+      static auto tuple = std::make_tuple( new typename std::remove_pointer< typename std::tuple_element< i, StepperTupleType >::type >::type( grid ) ... );
       return tuple;
     }
 

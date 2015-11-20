@@ -160,7 +160,7 @@ namespace Fem
      * \param grid A grid
      * \param name A unique name for the sub algorithm
      */
-    SubAlgorithmInterface ( GridType &grid, const std::string name = "" )
+    SubAlgorithmInterface ( GridType &grid )
     : grid_( grid ),
       problem_( ProblemTraits::problem() ),
       model_( problem() )

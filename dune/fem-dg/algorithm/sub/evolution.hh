@@ -62,8 +62,8 @@ namespace Fem
     typedef SubEvolutionAlgorithmTraits< Grid, ProblemTraits, polOrder >                    Traits;
     typedef SubEvolutionAlgorithmBase< Traits >                                             BaseType;
   public:
-    SubEvolutionAlgorithm( Grid &grid, const std::string name = "" )
-    : BaseType( grid, name  )
+    SubEvolutionAlgorithm( Grid &grid )
+    : BaseType( grid )
     {}
   };
 
@@ -131,14 +131,14 @@ namespace Fem
     using BaseType::model;
     using BaseType::gridSize;
 
-    SubEvolutionAlgorithmBase ( GridType &grid, const std::string name = "" )
-    : BaseType( grid, name ),
+    SubEvolutionAlgorithmBase ( GridType &grid )
+    : BaseType( grid ),
       gridPart_( grid ),
       space_( gridPart_ ),
       solution_( doCreateSolution() ),
       exactSolution_( doCreateExactSolution() ),
-      diagnosticsHandler_( name ),
-      solverMonitorHandler_(  name ),
+      diagnosticsHandler_( name() ),
+      solverMonitorHandler_(  name() ),
       additionalOutputHandler_( nullptr ),
       odeSolverMonitor_(),
       overallTimer_(),

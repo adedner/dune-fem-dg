@@ -301,6 +301,7 @@ namespace Fem
 
     using BaseType::problem;
     using BaseType::model;
+    using BaseType::name;
     using BaseType::grid;
     using BaseType::gridWidth;
     using BaseType::gridSize;
@@ -310,12 +311,12 @@ namespace Fem
 
   public:
 
-    explicit StokesAlgorithm(GridType& grid, std::string name = "" ) :
-      BaseType( grid, name ),
-      ellAlg_( grid, EllipticalAlgorithmType::name() ),
+    explicit StokesAlgorithm(GridType& grid ) :
+      BaseType( grid ),
+      ellAlg_( grid ),
       gridPart_( grid ),
       space_( gridPart_ ),
-      stokesSigmaEstimator_( gridPart_, ellAlg_.solution(), solution(), ellAlg_.assembler(), name ),
+      stokesSigmaEstimator_( gridPart_, ellAlg_.solution(), solution(), ellAlg_.assembler(), name() ),
       assembler_( ellAlg_.solution().space() , space_, problem() ),
       ioTuple_( *BaseType::dataTuple(), *ellAlg_.dataTuple() )
     {}

@@ -74,17 +74,16 @@ namespace Fem
     using BaseType::name;
 
     AdvectionDiffusionAlgorithm( GridType& grid,
-                                 const std::string name = "",
                                  ExtraParameterTupleType tuple = ExtraParameterTupleType() ) :
-      BaseType( grid, name ),
+      BaseType( grid ),
       //vSpace_( gridPart_ ),
       //velo_( "velocity", vSpace_ ),
       //tuple_( &velo_ ),
       tuple_( ),
-      operator_( gridPart_, problem(), tuple_, name ),
-      advectionOperator_( gridPart_, problem(), tuple_, name ),
-      diffusionOperator_( gridPart_, problem(), tuple_, name ),
-      adaptIndicator_( solution(), problem(), tuple_, name )
+      operator_( gridPart_, problem(), tuple_, name() ),
+      advectionOperator_( gridPart_, problem(), tuple_, name() ),
+      diffusionOperator_( gridPart_, problem(), tuple_, name() ),
+      adaptIndicator_( solution(), problem(), tuple_, name() )
     {}
 
     virtual AdaptIndicatorType* adaptIndicator ()

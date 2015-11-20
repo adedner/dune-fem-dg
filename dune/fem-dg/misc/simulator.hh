@@ -175,7 +175,7 @@ namespace Fem
     std::unique_ptr< GridType > gridptr( problem.initializeGrid().release() );
 
     typedef typename ProblemTraits :: template Stepper< polynomialOrder > :: Type StepperType;
-    std::unique_ptr< StepperType > stepper( new StepperType( *gridptr, problem.moduleName() ) );
+    std::unique_ptr< StepperType > stepper( new StepperType( *gridptr ) );
 
     // new method, the ProblemGenerator simply creates the stepper
     compute( *stepper );

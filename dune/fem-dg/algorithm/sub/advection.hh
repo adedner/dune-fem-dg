@@ -72,12 +72,12 @@ namespace Fem
     using BaseType::limitSolution;
 
     // constructor
-    AdvectionAlgorithm( GridType& grid, const std::string name = "",
+    AdvectionAlgorithm( GridType& grid,
                         ExtraParameterTupleType tuple = ExtraParameterTupleType() ) :
-      BaseType( grid, name ),
+      BaseType( grid ),
       tuple_( ),
-      advectionOperator_(gridPart_, problem(), tuple, name ),
-      adaptIndicator_( solution(), problem(), tuple_, name )
+      advectionOperator_(gridPart_, problem(), tuple, name() ),
+      adaptIndicator_( solution(), problem(), tuple_, name() )
     {}
 
     virtual AdaptIndicatorType* adaptIndicator ()
