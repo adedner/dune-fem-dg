@@ -435,10 +435,24 @@ namespace Dune
             }
             else
             {
-              std::cout << "a boundary? Bad reconstruction..." << std::endl;
+              const LocalGeometryType &geoIn  = intersection.geometryInInside();
+              for( ; fdit != fdend; ++fdit )
+              {
+                unsigned int pt = *fdit;
+                const LocalCoordinateType &xIn = lagrangePointSet.point( pt );
+                RangeType valEn;
+                lf.evaluate(  xIn, valEn );
+                for( unsigned int coordinate = 0; coordinate < dimRange; ++coordinate )
+                {
+                  assert(row<rhs.size());
+                  rhs[row] = valEn[ coordinate ];
+                  matrix[row][dimRange*pt+coordinate] = 1.;
+                  ++row;
+                }
+              }
             }
           }
-          assert(row==matrix.rows);
+          assert(row==matrix.rows());
           matrix.solve(sol,rhs);
 
           LocalDiscreteFunctionType lu = u.localFunction( entity );
@@ -578,10 +592,24 @@ namespace Dune
             }
             else
             {
-              std::cout << "a boundary? Bad reconstruction..." << std::endl;
+              // get neighbor
+              for( ; fdit != fdend; ++fdit )
+              {
+                unsigned int pt = *fdit;
+                const LocalCoordinateType &xIn = lagrangePointSet.point( pt );
+                RangeType dvalEn;
+                ldf.evaluate(  xIn, dvalEn );
+                for( unsigned int coordinate = 0; coordinate < dimRange; ++coordinate )
+                {
+                  assert(row<rhs.size());
+                  rhs[row] = dvalEn[ coordinate ];
+                  matrix[row][dimRange*pt+coordinate] = 1.;
+                  ++row;
+                }
+              }
             }
           }
-          assert(row==matrix.rows);
+          assert(row==matrix.rows());
           matrix.solve(sol,rhs);
 
           LocalDiscreteFunctionType lu = u.localFunction( entity );

@@ -2,7 +2,7 @@ DGF
 
 Interval
   0     % first corner
-  2     % 1600    % second corner
+  1     % 1600    % second corner
  25     % 1 cell in each direction (x, y)
 # 
 
@@ -12,10 +12,10 @@ default 1    % all boundaries have id 1
 
 GridParameter
 name 2d_Unit_Cube
-overlap 1
+overlap 0
 #
 
-PeriodicFaceTransformation
+# PeriodicFaceTransformation
 1 + 2
 #
 
