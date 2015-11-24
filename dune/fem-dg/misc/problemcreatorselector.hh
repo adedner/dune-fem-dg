@@ -18,6 +18,7 @@ enum DiscreteFunctionSpacesType
 {
   _lagrange = 0,
   _legendre = 1,
+  _onb = 2,
 };
 
 
@@ -91,9 +92,18 @@ struct DiscreteFunctionSpaces< FunctionSpaceImp, GridPartImp, polOrder, _lagrang
 template< class FunctionSpaceImp, class GridPartImp, int polOrder >
 struct DiscreteFunctionSpaces< FunctionSpaceImp, GridPartImp, polOrder, _legendre, dg >
 {
+  typedef Dune::Fem::HierarchicLegendreDiscontinuousGalerkinSpace< FunctionSpaceImp, GridPartImp, polOrder, Dune::Fem::CachingStorage > type;
+};
+template< class FunctionSpaceImp, class GridPartImp, int polOrder >
+struct DiscreteFunctionSpaces< FunctionSpaceImp, GridPartImp, polOrder, _lagrange, dg >
+{
+  typedef Dune::Fem::LagrangeDiscontinuousGalerkinSpace< FunctionSpaceImp, GridPartImp, polOrder, Dune::Fem::CachingStorage > type;
+};
+template< class FunctionSpaceImp, class GridPartImp, int polOrder >
+struct DiscreteFunctionSpaces< FunctionSpaceImp, GridPartImp, polOrder, _onb, dg >
+{
   typedef Dune::Fem::DiscontinuousGalerkinSpace< FunctionSpaceImp, GridPartImp, polOrder, Dune::Fem::CachingStorage > type;
 };
-
 
 
 template< class TimeDependentFunctionImp, class DiscreteFunctionImp, GalerkinType gt >
