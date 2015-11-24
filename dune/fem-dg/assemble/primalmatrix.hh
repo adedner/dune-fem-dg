@@ -775,6 +775,11 @@ class DGPrimalMatrixAssembly
                                     dvalueEn[ pt ], dvalueNb[ pt ],
                                     retEn[ pt ], retNb[ pt ],
                                     dretEn[ pt ], dretNb[ pt ]);
+#else
+      retEn[pt]  = RangeType(0);
+      retNb[pt]  = RangeType(0);
+      dretEn[pt] = JacobianRangeType(0);
+      dretNb[pt] = JacobianRangeType(0);
 #endif
       advFlux_.numericalFlux(left, right,
                              valueEn[ pt ],valueNb[ pt ],
@@ -818,10 +823,10 @@ class DGPrimalMatrixAssembly
   {
     VectorToTupleVector valEn( valueEn );
     VectorToTupleVector valNb( valueNb );
-#ifndef EULER
+ #ifndef EULER
     diffusionFlux_.initializeIntersection( intersection, entity, neighbor, time, faceQuadInside, faceQuadOutside, valEn, valNb, true );
     lifting += diffusionFlux_.getInsideLifting();
-#endif
+ #endif
   }
 
   template <class Quadrature,class RetType>
@@ -878,6 +883,9 @@ class DGPrimalMatrixAssembly
 #ifndef EULER
         diffusionFlux_.boundaryFlux( local, valueEn[ pt ], valueNb[ pt ],  dvalueEn[ pt ],
                                      retEn[ pt ], dretEn[ pt ]);
+#else
+        retEn[pt]  = RangeType(0);
+        dretEn[pt] = JacobianRangeType(0);
 #endif
         advFlux_.numericalFlux(local, local,
                                valueEn[ pt ],valueNb[ pt ],
