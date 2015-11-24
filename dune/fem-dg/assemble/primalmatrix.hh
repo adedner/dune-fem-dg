@@ -6,6 +6,7 @@
 #include <dune/fem/misc/fmatrixconverter.hh>
 #include <dune/fem/misc/compatibility.hh>
 
+#include <dune/fem-dg/misc/parameterkey.hh>
 #include <dune/fem-dg/operator/fluxes/dgprimalfluxes.hh>
 #include <dune/fem-dg/operator/dg/primaloperator.hh>
 
@@ -176,8 +177,7 @@ class DGPrimalMatrixAssembly
       space_(gridPart),
       zero_(),
       advFlux_(model_),
-      diffusionFlux_(gridPart, model_, DGPrimalFormulationParameters() ),
-      //ParameterKey::generate( model_.problem().name(), "dgdiffusionflux." ) ) ),
+      diffusionFlux_(gridPart, model_, DGPrimalFormulationParameters( ParameterKey::generate( "", "dgdiffusionflux." ) ) ),
       calculateFluxes_( calculateFluxes ),
       useStrongBoundaryCondition_( strongBC )
   {

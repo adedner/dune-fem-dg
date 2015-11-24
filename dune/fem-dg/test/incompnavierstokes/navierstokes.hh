@@ -1,6 +1,8 @@
 #ifndef DUNE_FEMDG_ADVECTIONDIFFUSION_STEPPER_HH
 #define DUNE_FEMDG_ADVECTIONDIFFUSION_STEPPER_HH
 
+#ifndef HEADERCHECK
+
 // dune-fem-dg includes
 #include <dune/fem-dg/operator/adaptation/estimator.hh>
 #include <dune/fem-dg/solver/rungekuttasolver.hh>
@@ -325,4 +327,5 @@ protected:
   RhsOperatorType         rhsOperator_;
   RhsStokesOperatorType   rhsStokesOperator_;
 };
+#endif
 #endif // FEMHOWTO_STEPPER_HH

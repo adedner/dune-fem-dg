@@ -1,5 +1,8 @@
 #ifndef COMBINED_DGSTEPPERBASE_HH
 #define COMBINED_DGSTEPPERBASE_HH
+
+#ifndef HEADERCHECK
+
 #include <config.h>
 
 #ifndef NDEBUG
@@ -295,4 +298,5 @@ protected:
   AdaptationManagerType*       adaptationManager_;
 };
 
+#endif
 #endif // FEMHOWTO_STEPPER_HH

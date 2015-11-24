@@ -1,5 +1,7 @@
 #ifndef DUNE_FEM_DG_INCOMP_NAVIERSTOKES_HH
 #define DUNE_FEM_DG_INCOMP_NAVIERSTOKES_HH
+
+#ifndef HEADERCHECK
 #include <config.h>
 
 #ifndef DIMRANGE
@@ -148,4 +150,6 @@ struct IncompressibleNavierStokesProblemCreator
 #endif
 
 #define NEW_STEPPER_SELECTOR_USED
+#endif
+
 #endif
