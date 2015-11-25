@@ -6,6 +6,7 @@
 #include <vector>
 
 // dune-common includes
+#include <dune/common/version.hh>
 #include <dune/common/typetraits.hh>
 
 // dune-fem includes
@@ -69,6 +70,16 @@ namespace Dune
         return shapeFunctionSet_.size();
       }
 
+      template< class Quadrature >
+      unsigned int qIndex( const QuadraturePointWrapper< Quadrature > &x ) const
+      {
+#if DUNE_VERSION_NEWER(DUNE_FEM,3,0)
+        return x.index();
+#else
+        return x.point();
+#endif
+      }
+
       template< class Point, class Functor >
       void evaluateEach ( const Point &x, Functor functor ) const
       {
@@ -79,7 +90,7 @@ namespace Dune
       void evaluateEach ( const QuadraturePointWrapper< Quadrature > &x, Functor functor ) const
       {
         const bool cacheable = Conversion< Quadrature, CachingInterface >::exists;
-        evaluateEach( x.quadrature(), x.point(), functor, integral_constant< bool, cacheable >() );
+        evaluateEach( x.quadrature(), qIndex( x ), functor, integral_constant< bool, cacheable >() );
       }
 
       template< class Point, class Functor >
@@ -92,7 +103,7 @@ namespace Dune
       void jacobianEach ( const QuadraturePointWrapper< Quadrature > &x, Functor functor ) const
       {
         const bool cacheable = Conversion< Quadrature, CachingInterface >::exists;
-        jacobianEach( x.quadrature(), x.point(), functor, integral_constant< bool, cacheable >() );
+        jacobianEach( x.quadrature(), qIndex( x ), functor, integral_constant< bool, cacheable >() );
       }
 
       template< class Point, class Functor >
