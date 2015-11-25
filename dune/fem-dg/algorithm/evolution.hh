@@ -275,7 +275,7 @@ namespace Fem
       adaptHandler_( gridPart_, solution(), solutionLimiterHandler_, name ),
       overallTimer_(),
       odeSolver_(),
-      timeStepTimer_( Dune::FemTimer::addTo("max time/timestep") ),
+      timeStepTimer_( Dune::FemTimer::addTo("sum time for timestep") ),
       fixedTimeStep_( param_.fixedTimeStep() )
     {
       if( problem().hasExactSolution() )
@@ -380,7 +380,7 @@ namespace Fem
         step( tp );
 
         // stop FemTimer for this time step
-        Dune::FemTimer::stop(timeStepTimer_,Dune::FemTimer::max);
+        Dune::FemTimer::stop(timeStepTimer_,Dune::FemTimer::sum);
 
         // Check that no NAN have been generated
         if( !checkDofsValid( tp, loop ) )
