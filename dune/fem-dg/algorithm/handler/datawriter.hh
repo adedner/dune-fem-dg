@@ -24,7 +24,6 @@ namespace Fem
     typedef DataWriter< GridImp, IOTupleImp >       DataWriterType;
 
 
-
     DefaultDataWriterHandler( const GridImp& grid, const std::string keyPrefix = "" )
       : dataTuple_(),
         dataWriter_(),
@@ -37,6 +36,13 @@ namespace Fem
     {
       dataTuple_ = dataTup;
       dataWriter_.reset( new DataWriterType( grid_, dataTuple_, tp, param ) );
+    }
+
+    template< class DataTupleImp, class ParameterType >
+    void init( DataTupleImp dataTup, ParameterType& param  )
+    {
+      dataTuple_ = dataTup;
+      dataWriter_.reset( new DataWriterType( grid_, dataTuple_, param ) );
     }
 
 
@@ -68,6 +74,14 @@ namespace Fem
       }
     }
 
+    void step( const int eocStep )
+    {
+      if( dataWriter_ )
+      {
+        dataWriter_->writeData( eocStep );
+      }
+    }
+
 
     private:
     IOTupleImp             dataTuple_;
@@ -90,7 +104,7 @@ namespace Fem
     void init( Args&& ...  ) {}
 
     template< class ... Args >
-    void writeStep( Args&& ...  ) {}
+    void step( Args&& ...  ) {}
 
     template< class ... Args >
     void finalize( Args&& ...  ) {}
