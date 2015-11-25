@@ -23,6 +23,12 @@ namespace Fem
   public:
     typedef DataWriter< GridImp, IOTupleImp >       DataWriterType;
 
+    template <class Grid, class DataTuple>
+    struct DataOutput
+    {
+      typedef Dune::Fem::DataWriter< Grid, DataTuple > Type;
+    };
+
 
     DefaultDataWriterHandler( const GridImp& grid, const std::string keyPrefix = "" )
       : dataTuple_(),
@@ -36,13 +42,6 @@ namespace Fem
     {
       dataTuple_ = dataTup;
       dataWriter_.reset( new DataWriterType( grid_, dataTuple_, tp, param ) );
-    }
-
-    template< class DataTupleImp, class ParameterType >
-    void init( DataTupleImp dataTup, ParameterType& param  )
-    {
-      dataTuple_ = dataTup;
-      dataWriter_.reset( new DataWriterType( grid_, dataTuple_, param ) );
     }
 
 
@@ -74,15 +73,6 @@ namespace Fem
       }
     }
 
-    void step( const int eocStep )
-    {
-      if( dataWriter_ )
-      {
-        dataWriter_->writeData( eocStep );
-      }
-    }
-
-
     private:
     IOTupleImp             dataTuple_;
     std::unique_ptr< DataWriterType > dataWriter_;
@@ -95,6 +85,11 @@ namespace Fem
   class NoDataWriterHandler
   {
     public:
+    template <class Grid, class DataTuple>
+    struct DataOutput
+    {
+      typedef Dune::Fem::DataOutput< Grid, DataTuple > Type;
+    };
 
     template< class ... Args >
     NoDataWriterHandler( Args&& ... )
