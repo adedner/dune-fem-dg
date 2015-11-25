@@ -6,7 +6,7 @@
 #include <dune/fem-dg/solver/linearsolvers.hh>
 #include <dune/fem-dg/operator/dg/primaloperator.hh>
 
-
+#include <dune/fem/space/discontinuousgalerkin.hh>
 
 enum AdvectionDiffusionOperatorType
 {
