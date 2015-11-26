@@ -254,6 +254,21 @@ namespace Dune {
 
     bool hasLifting() const { return false; }
 
+    template <class LocalEvaluation, class ArgumentTupleVector >
+    void initializeIntersection(const LocalEvaluation& left,
+                                const LocalEvaluation& right,
+                                const ArgumentTupleVector& uLeftVec,
+                                const ArgumentTupleVector& uRightVec)
+    {
+    }
+
+    template <class LocalEvaluation, class ArgumentTupleVector>
+    void initializeBoundary(const LocalEvaluation& local,
+                            const ArgumentTupleVector& uLeftVec,
+                            const std::vector< RangeType >& uRight)
+    {
+    }
+
     template <class QuadratureImp, class ArgumentTupleVector >
     void initializeIntersection(const Intersection& intersection,
                                 const EntityType& inside,
@@ -276,6 +291,7 @@ namespace Dune {
     {
     }
 
+
   public:
     /**
      * @brief flux function on interfaces between cells for advection and diffusion
@@ -297,13 +313,9 @@ namespace Dune {
      * @return wave speed estimate (multiplied with the integration element of the intersection),
      *              to estimate the time step |T|/wave.
      */
-    template <class DiscreteModelImp, class QuadratureImp>
-    double numericalFlux(const Intersection& intersection,
-                         const DiscreteModelImp& discreteModel,
-                         const double time,
-                         const QuadratureImp& faceQuadInner,
-                         const QuadratureImp& faceQuadOuter,
-                         const int quadPoint,
+    template <class LocalEvaluation>
+    double numericalFlux(const LocalEvaluation& left,
+                         const LocalEvaluation& right,
                          const RangeType& uLeft,
                          const RangeType& uRight,
                          const JacobianRangeType& jacLeft,
@@ -319,21 +331,15 @@ namespace Dune {
     }
 
 
-    /**
-     * @brief same as numericalFlux() but for fluxes over boundary interfaces
-     */
-    template <class DiscreteModelImp, class QuadratureImp>
-    double boundaryFlux(const Intersection& intersection,
-                        const DiscreteModelImp& discreteModel,
-                        const double time,
-                        const QuadratureImp& faceQuadInner,
-                        const int quadPoint,
+    template <class LocalEvaluation>
+    double boundaryFlux(const LocalEvaluation& left,
                         const RangeType& uLeft,
                         const RangeType& uRight,
                         const JacobianRangeType& jacLeft,
                         RangeType& gLeft,
                         JacobianRangeType& gDiffLeft )   /*@LST0E@*/
     {
+
       assert( false );
       abort();
       return 0.0;
