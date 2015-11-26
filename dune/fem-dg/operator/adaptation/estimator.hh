@@ -263,7 +263,7 @@ public:
       if( intersection.neighbor() )
       {
         // access neighbor
-        const ElementType neighbor = Dune::Fem::make_entity( intersection.outside() );
+        const ElementType neighbor = intersection.outside();
         const int nbIdx = indexSet_.index( neighbor );
 
         // handle face from one side only
