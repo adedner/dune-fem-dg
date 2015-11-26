@@ -12,6 +12,7 @@ namespace Dune {
             class AnalyticalTraits,
             class DiscreteFunctionImp,
             class AdvectionFluxImp,
+            Dune::DGDiffusionFluxIdentifier diffusionFluxId,
             class LimiterIndicatorFunctionImp,
             class AdaptationHandlerImp,
             class ExtraParameterTupleImp = std::tuple<>
@@ -26,7 +27,7 @@ namespace Dune {
     typedef typename AnalyticalTraitsType::ModelType                     ModelType ;
     typedef AdvectionFluxImp                                             FluxType;
 
-    static const Dune::DGDiffusionFluxIdentifier PrimalDiffusionFluxId = Dune::method_general;
+    static const Dune::DGDiffusionFluxIdentifier PrimalDiffusionFluxId = diffusionFluxId;
 
     static const int polynomialOrder = polOrd == -1 ? 0 : polOrd;
 

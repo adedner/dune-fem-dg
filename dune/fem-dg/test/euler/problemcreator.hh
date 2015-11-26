@@ -122,18 +122,21 @@ struct EulerProblemCreator
     class OperatorType
     {
       friend HandlerTraits;
-      typedef Dune::AdaptationHandler< GridType, FunctionSpaceType >                              AdaptationHandlerType;
+      typedef Dune::AdaptationHandler< GridType, FunctionSpaceType >                   AdaptationHandlerType;
 
-      typedef LLFFlux< typename AnalyticalTraitsType::ModelType >                                 FluxType;
-      //typedef HLLNumFlux< typename AnalyticalTraitsType::ModelType >                            FluxType;
-      //typedef HLLCNumFlux< typename AnalyticalTraitsType::ModelType >                           FluxType;
+      typedef LLFFlux< typename AnalyticalTraitsType::ModelType >                      FluxType;
+      //typedef HLLNumFlux< typename AnalyticalTraitsType::ModelType >                 FluxType;
+      //typedef HLLCNumFlux< typename AnalyticalTraitsType::ModelType >                FluxType;
+      static const Dune::DGDiffusionFluxIdentifier PrimalDiffusionFluxId =             Dune::method_none;
 
       typedef Dune::Fem::FunctionSpace< typename GridType::ctype, double, AnalyticalTraitsType::ModelType::dimDomain, 3> FVFunctionSpaceType;
       typedef Dune::Fem::FiniteVolumeSpace<FVFunctionSpaceType,GridPartType, 0, Dune::Fem::SimpleStorage> IndicatorSpaceType;
       typedef Dune::Fem::AdaptiveDiscreteFunction<IndicatorSpaceType>                             IndicatorType;
 
       typedef Dune::OperatorTraits< GridPartType, polynomialOrder, AnalyticalTraitsType,
-                                    DiscreteFunctionType, FluxType, IndicatorType,
+                                    DiscreteFunctionType, FluxType,
+                                    PrimalDiffusionFluxId,
+                                    IndicatorType,
                                     AdaptationHandlerType, ExtraParameterTuple >                  OperatorTraitsType;
 
       // TODO: advection/diffusion should not be precribed by model
