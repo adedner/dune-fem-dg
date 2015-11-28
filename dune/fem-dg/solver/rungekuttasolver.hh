@@ -2,16 +2,22 @@
 #define DUNE_FEM_DG_RUNGEKUTTA_HH
 
 #include <limits>
+#include <dune/fem-dg/solver/odesolver.hh>
 #include <dune/fem/misc/femtimer.hh>
+
+#include "basicrow.hh"
 #include <dune/fem/solver/rungekutta/explicit.hh>
 #include <dune/fem/solver/rungekutta/implicit.hh>
 #include <dune/fem/solver/rungekutta/semiimplicit.hh>
+#include <dune/fem/solver/rungekutta/row.hh>
 #include <dune/fem/solver/newtoninverseoperator.hh>
 #include <dune/fem/solver/pardginverseoperators.hh>
 
 #include <dune/fem/operator/dghelmholtz.hh>
 #include <dune/fem-dg/solver/smartodesolver.hh>
-#include <dune/fem-dg/misc/parameterkey.hh>
+
+#include <dune/fem-dg/solver/newtoninverseoperator.hh>
+#include <dune/fem-dg/solver/strangcarryover.hh>
 
 namespace Dune {
 
@@ -59,71 +65,72 @@ public:
 
   typedef std::pair< OdeSolverInterfaceType* ,  HelmHoltzOperatorType* > solverpair_t ;
 
-  typedef SmartOdeSolverParameters ParameterType;
-
   /////////////////////////////////////////////////////////////////////////
   //  ODE solvers from dune-fem/dune/fem/solver/rungekutta
   /////////////////////////////////////////////////////////////////////////
   template < class Op, class DF, bool pardgOdeSolver >
   struct OdeSolverSelection
   {
-    template < class OdeParameter >
     static solverpair_t
-    createExplicitSolver( Op& op, Fem::TimeProviderBase& tp, const int rkSteps, const OdeParameter& param, const std::string& name = ""  )
+    createExplicitSolver( Op& op, Fem::TimeProviderBase& tp, const int rkSteps )
     {
       typedef DuneODE :: ExplicitRungeKuttaSolver< DiscreteFunctionType >          ExplicitOdeSolverType;
       return solverpair_t( new ExplicitOdeSolverType( op, tp, rkSteps ), nullptr );
     }
 
-    template < class OdeParameter >
     static solverpair_t
-    createImplicitSolver( Op& op, Fem::TimeProviderBase& tp, const int rkSteps, const OdeParameter& param, const std::string& name = "" )
+    createImplicitSolver( Op& op, Fem::TimeProviderBase& tp, const int rkSteps )
     {
-#ifdef COUNT_FLOPS
-      return solverpair_t();
-#else
       typedef Dune::Fem::DGHelmholtzOperator< Op >  HelmholtzOperatorType;
       HelmholtzOperatorType* helmOp = new HelmholtzOperatorType( op );
 
-      typedef Dune::Fem::NewtonInverseOperator<
-                    typename HelmholtzOperatorType::JacobianOperatorType,
+      typedef Dune::Fem::NSNewtonInverseOperator<
+                    HelmholtzOperatorType,
                     LinearInverseOperator > NonlinearInverseOperatorType;
 
-      typedef DuneODE::ImplicitRungeKuttaSolver< HelmholtzOperatorType,
-                    NonlinearInverseOperatorType > ImplicitOdeSolverType;
-
-      typedef typename NonlinearInverseOperatorType::ParametersType NonlinParametersType;
-
-      return solverpair_t(new ImplicitOdeSolverType( *helmOp, tp, rkSteps, param, NonlinParametersType( ParameterKey::generate( name, "fem.solver.newton." ) ) ), helmOp );
-#endif
+      if (Dune::Fem::Parameter::getValue<bool>("fem.ode.use_row"))
+      {
+        typedef DuneODE::ROWRungeKuttaSolver< HelmholtzOperatorType,
+                      NonlinearInverseOperatorType, DuneODE::PIDTimeStepControl > ImplicitOdeSolverType;
+        return solverpair_t(new ImplicitOdeSolverType( *helmOp, tp, rkSteps ), helmOp );
+      }
+      else
+      {
+        typedef DuneODE::ImplicitRungeKuttaSolver< HelmholtzOperatorType,
+                     NonlinearInverseOperatorType, DuneODE::PIDTimeStepControl > ImplicitOdeSolverType;
+        return solverpair_t(new ImplicitOdeSolverType( *helmOp, tp, rkSteps ), helmOp );
+      }
     }
 
-    template < class ExplOp, class ImplOp, class OdeParameter >
+    template < class ExplOp, class ImplOp >
     static solverpair_t
-    createSemiImplicitSolver( ExplOp& explOp, ImplOp& implOp, Fem::TimeProviderBase& tp,
-                              const int rkSteps, const OdeParameter& param, const std::string& name = "" )
+    createSemiImplicitSolver( ExplOp& explOp, ImplOp& implOp, Fem::TimeProviderBase& tp, const int rkSteps )
     {
-#ifdef COUNT_FLOPS
-      return solverpair_t();
-#else
       typedef Dune::Fem::DGHelmholtzOperator< ImplOp >  HelmholtzOperatorType;
       HelmholtzOperatorType* helmOp = new HelmholtzOperatorType( implOp );
 
-      typedef Dune::Fem::NewtonInverseOperator<
-                    typename HelmholtzOperatorType::JacobianOperatorType,
+      typedef Dune::Fem::NSNewtonInverseOperator<
+                    HelmholtzOperatorType,
                     LinearInverseOperator > NonlinearInverseOperatorType;
 
       typedef DuneODE::SemiImplicitRungeKuttaSolver< ExplicitOperatorType,
                     HelmholtzOperatorType, NonlinearInverseOperatorType > SemiImplicitOdeSolverType ;
 
-
-      typedef typename NonlinearInverseOperatorType::ParametersType NonlinParametersType;
-
-
-      return solverpair_t(new SemiImplicitOdeSolverType( explOp, *helmOp, tp, rkSteps, param, NonlinParametersType( ParameterKey::generate( name, "fem.solver.newton." ) ) ), helmOp );
-#endif
+      return solverpair_t(new SemiImplicitOdeSolverType( explOp, *helmOp, tp, rkSteps ), helmOp );
     }
 
+    template < class ExplOp, class ImplOp >
+    static solverpair_t
+    createStrangCarryoverSolver( ExplOp& explOp, ImplOp& implOp, Fem::TimeProviderBase& tp, const int rkSteps )
+    {
+      typedef Dune::Fem::DGHelmholtzOperator< ImplOp >  HelmholtzOperatorType;
+      HelmholtzOperatorType* helmOp = new HelmholtzOperatorType( implOp );
+
+      typedef DuneODE::StrangCarryoverSolver< ExplicitOperatorType,
+                       HelmholtzOperatorType, LinearInverseOperator > SemiImplicitOdeSolverType ;
+
+      return solverpair_t(new SemiImplicitOdeSolverType( explOp, *helmOp, tp, rkSteps ), helmOp );
+    }
   };
 
   /////////////////////////////////////////////////////////////////////////
@@ -138,30 +145,28 @@ public:
     typedef DuneODE :: ExplicitOdeSolver< DiscreteFunctionType >       ExplicitOdeSolverType;
     typedef DuneODE :: SemiImplicitOdeSolver< DiscreteFunctionType >   SemiImplicitOdeSolverType;
 
-    template < class OdeParameter >
     static solverpair_t
-    createExplicitSolver( Op& op, Fem::TimeProviderBase& tp, const int rkSteps, const OdeParameter& param, const std::string& name = ""  )
+    createExplicitSolver( Op& op, Fem::TimeProviderBase& tp, const int rkSteps )
     {
       return solverpair_t(new ExplicitOdeSolverType( op, tp, rkSteps ), nullptr );
     }
 
-    template < class OdeParameter >
     static solverpair_t
-    createImplicitSolver( Op& op, Fem::TimeProviderBase& tp, const int rkSteps, const OdeParameter& param, const std::string& name = "" )
+    createImplicitSolver( Op& op, Fem::TimeProviderBase& tp, const int rkSteps )
     {
-      return solverpair_t(new ImplicitOdeSolverType( op, tp, rkSteps, param), nullptr );
+      return solverpair_t(new ImplicitOdeSolverType( op, tp, rkSteps ), nullptr );
     }
 
-    template <class ExplOp, class ImplOp, class OdeParameter >
+    template <class ExplOp, class ImplOp>
     static solverpair_t
-    createSemiImplicitSolver( ExplOp& explOp, ImplOp& implOp, Fem::TimeProviderBase& tp, const int rkSteps, const OdeParameter& param, const std::string& name = "" )
+    createSemiImplicitSolver( ExplOp& explOp, ImplOp& implOp, Fem::TimeProviderBase& tp, const int rkSteps )
     {
-      return solverpair_t(new SemiImplicitOdeSolverType( explOp, implOp, tp, rkSteps, param), nullptr );
+      return solverpair_t(new SemiImplicitOdeSolverType( explOp, implOp, tp, rkSteps ), nullptr );
     }
 
   };
 
-  static const bool useParDGSolvers = false ;
+  static const bool useParDGSolvers = false;
   typedef OdeSolverSelection< OperatorType, DestinationType, useParDGSolvers >  OdeSolversType ;
 
   using BaseType :: solve;
@@ -169,7 +174,6 @@ protected:
   OperatorType&           operator_;
   Fem::TimeProviderBase&  timeProvider_;
 
-  const std::string      name_;
   ExplicitOperatorType&  explicitOperator_;
   ImplicitOperatorType&  implicitOperator_;
   const SmartOdeSolverParameters* param_;
@@ -187,16 +191,15 @@ protected:
   bool useImex_ ;
 public:
   RungeKuttaSolver( Fem::TimeProviderBase& tp,
-                    OperatorType& op,
-                    ExplicitOperatorType& advOp,
-                    ImplicitOperatorType& diffOp,
-                    const std::string name = "" )
+                  OperatorType& op,
+                  ExplicitOperatorType& advOp,
+                  ImplicitOperatorType& diffOp,
+                  const SmartOdeSolverParameters &parameter = SmartOdeSolverParameters() )
    : operator_( op ),
      timeProvider_( tp ),
-     name_( name ),
      explicitOperator_( advOp ),
      implicitOperator_( diffOp ),
-     param_( new SmartOdeSolverParameters( ParameterKey::generate( name_, "fem.ode." ) ) ),
+     param_( parameter.clone() ),
      explicitSolver_( 0 ),
      odeSolver_( 0 ),
      helmholtzOperator_( 0 ),
@@ -213,11 +216,11 @@ public:
     // create implicit or explicit ode solver
     if( odeSolverType_ == 0 )
     {
-      solver = OdeSolversType :: createExplicitSolver( operator_, tp, rkSteps_, *param_, name_ );
+      solver = OdeSolversType :: createExplicitSolver( operator_, tp, rkSteps_);
     }
     else if (odeSolverType_ == 1)
     {
-      solver = OdeSolversType :: createImplicitSolver( operator_, tp, rkSteps_, *param_, name_ );
+      solver = OdeSolversType :: createImplicitSolver( operator_, tp, rkSteps_);
     }
     else if( odeSolverType_ > 1 )
     {
@@ -227,11 +230,18 @@ public:
         DUNE_THROW(Dune::InvalidStateException,"Advection and Diffusion operator are the same, therefore IMEX cannot work!");
       }
 
-      solver = OdeSolversType :: createSemiImplicitSolver( explicitOperator_, implicitOperator_, tp, rkSteps_, *param_, name_ );
-
-      // IMEX+
-      if( odeSolverType_ == 3 )
-        explicitSolver_ = OdeSolversType :: createExplicitSolver( operator_, tp, rkSteps_, *param_, name_ ).first;
+      if ( odeSolverType_ == 2 || odeSolverType_ == 3)
+      {
+        solver = OdeSolversType :: createSemiImplicitSolver( explicitOperator_, implicitOperator_, tp, rkSteps_);
+        // IMEX+
+        if( odeSolverType_ == 3 )
+          explicitSolver_ = OdeSolversType :: createExplicitSolver( operator_, tp, rkSteps_).first;
+      }
+      else if (odeSolverType_ == 4)
+      {
+        // solver = OdeSolversType :: createStrangCarryoverSolver( explicitOperator_, implicitOperator_, tp, rkSteps_);
+        solver = OdeSolversType :: createStrangCarryoverSolver( explicitOperator_, operator_, tp, rkSteps_);
+      }
     }
     else
     {
@@ -283,6 +293,9 @@ public:
     // take CPU time of solution process
     Timer timer ;
 
+    // reset operator call counter
+    // operator_.resetCalls();
+
     // switch upwind direction
     operator_.switchupwind();
     explicitOperator_.switchupwind();
@@ -303,6 +316,8 @@ public:
     {
       assert( odeSolver_ );
       odeSolver_->solve( U, monitor );
+      // store counter for operator calls used during solve
+      monitor.spaceOperatorCalls_ = 0;//operator_.calls();
 
       ++imexCounter_ ;
 
