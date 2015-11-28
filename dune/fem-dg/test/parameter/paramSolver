@@ -1,19 +1,32 @@
 # SOLVER CONFIGURATION
 #---------------------
 
-fem.ode.odesolver: EX # ode solvers: EX, IM, IMEX
-#fem.ode.order: 2
+fem.ode.odesolver: IM # ode solvers: EX, IM, IMEX
+fem.ode.order: 3
 fem.ode.verbose: none # ode output: none, cfl, full
-fem.ode.cflincrease: 1.25
-fem.ode.miniterations: 95
-fem.ode.maxiterations: 105
+fem.ode.cflincrease: 1.05
+fem.ode.miniterations: 5
+fem.ode.maxiterations: 20
 fem.ode.cflStart: 1.
-#fem.ode.cflMax: 5
+fem.ode.cflMax: 2
 fem.timeprovider.factor: 0.15
 fem.timeprovider.updatestep: 1
+femdg.stepper.fixedtimestep: 0.002
+
+#fem.ode.solver.errormeasure: residualreduction
+#fem.solver.errormeasure: residualreduction
+fem.solver.errormeasure: absolute
+fem.ode.solver.tolerance: 1e-2
+
+fem.solver.row.linabstol: 1e-8
+fem.solver.row.linreduction: 1e-3
+fem.solver.row.autotol: false
+fem.solver.row.verbose: false
+fem.ode.use_row: false
+
 
 # parameter for the implicit solvers 
-fem.solver.verbose: true
+fem.solver.verbose: false
 fem.solver.gmres.restart: 15
 fem.solver.newton.verbose: 0
 fem.solver.newton.maxlineariterations: 1000

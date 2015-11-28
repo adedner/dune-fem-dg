@@ -41,7 +41,7 @@ gridsol.usegridsolution: false
 
 # STEPPER
 #-----------------
-fem.eoc.steps: 5
+fem.eoc.steps: 3
 femdg.stepper.printcount: 10
 # maximal number of timesteps done (for debugging)
 # femdg.stepper.maximaltimesteps: 10
