@@ -79,7 +79,7 @@ namespace Fem
     void finalize( const double gridWidth, const double gridSize, const LinearSolverMonitorImp& solver )
     {
       *solverMonitor_.gridWidth = gridWidth;
-      *solverMonitor_.elements = gridSize;
+      *solverMonitor_.elements  = gridSize;
 
       //*solverMonitor_.ils_iterations = invDgOperator_->iterations();
       //*solverMonitor_.totalNewtonIterations_ = solver.iterations();

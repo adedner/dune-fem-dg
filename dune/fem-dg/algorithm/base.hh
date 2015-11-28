@@ -85,7 +85,7 @@ namespace Fem
   void writeFemEoc ( const Monitor &monitor, const double runTime, std::stringstream &out )
   {
     Fem::FemEoc::write( *monitor.gridWidth, *monitor.elements, runTime, *monitor.timeSteps,
-        monitor.doubleValues(), monitor.intValues(), out );
+                        monitor.doubleValues(), monitor.intValues(), out );
   }
 
 
