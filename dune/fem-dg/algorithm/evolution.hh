@@ -428,11 +428,12 @@ namespace Fem
           std::abort();
         }
 
-        if( (printCount > 0) && (((tp.timeStep()) % printCount) == 0))
+        const int timeStep = tp.timeStep() + 1 ;
+        if( (printCount > 0) && (timeStep % printCount) == 0)
         {
           if( grid.comm().rank() == 0 )
           {
-            std::cout << "step: " << tp.timeStep() << "  time = " << tp.time()+tp.deltaT() << ", dt = " << deltaT
+            std::cout << "step: " << timeStep << "  time = " << tp.time()+tp.deltaT() << ", dt = " << deltaT
                       <<",  grid size: " << gridSize() << ", elapsed time: ";
             Dune::FemTimer::print(std::cout,timeStepTimer_);
             solverMonitorHandler_.print( "Newton", "ILS", "OC" );
@@ -451,7 +452,7 @@ namespace Fem
           tp.next();
 
         // for debugging and codegen only
-        if( tp.timeStep() >= maximalTimeSteps )
+        if( timeStep >= maximalTimeSteps )
         {
           if( Fem::Parameter::verbose() )
             std::cerr << "ABORT: time step count reached max limit of " << maximalTimeSteps << std::endl;
