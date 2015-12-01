@@ -33,6 +33,11 @@ namespace Fem
       ss << name << loop;
       loop_ = ss.str();
     }
+    explicit EocDataOutputParameters(const std::string& name) {
+      std::stringstream ss;
+      ss << name;
+      loop_ = ss.str();
+    }
     EocDataOutputParameters(const EocDataOutputParameters& other)
     : loop_(other.loop_) {}
 
@@ -174,8 +179,15 @@ namespace Fem
     typedef typename Algorithm::IOTupleType          IOTupleType;
 
     GridType& grid = algorithm.grid();
-    IOTupleType dataTup = algorithm.dataTuple() ;
-    Fem::DataOutput<GridType, IOTupleType > dataOutput( grid, dataTup );
+    auto dataTup = algorithm.dataTuple() ;
+
+    typedef typename Algorithm::DataWriterHandlerType DataWriterHandlerType;
+    DataWriterHandlerType dataWriter( grid, "" );
+    // initialize data writer with output path and data tuple
+    {
+      EocDataOutputParameters param( algorithm.problem().dataPrefix() );
+      dataWriter.init( dataTup, param );
+    }
 
     // initialize FemEoc if eocSteps > 1
     EocParametersType& eocParam( algorithm.eocParams() );
@@ -214,7 +226,7 @@ namespace Fem
       }
 
       // write eoc step
-      dataOutput.writeData( eocloop );
+      dataWriter.step( eocloop );
 
       // Refine the grid for the next EOC Step. If the scheme uses adaptation,
       // the refinement level needs to be set in the algorithms' initialize method.

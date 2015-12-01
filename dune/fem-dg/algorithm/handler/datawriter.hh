@@ -87,6 +87,13 @@ namespace Fem
       dataWriter_.reset( new DataWriterType( std::get<0>(tuple_)->solution().space().grid(), dataTuple_, tp, param ) );
     }
 
+    template< class DataTupleImp, class ParameterType >
+    void init( DataTupleImp dataTup, ParameterType& param  )
+    {
+      dataTuple_ = dataTup;
+      dataWriter_.reset( new DataWriterType( grid_, dataTuple_, param ) );
+    }
+
     template< class TimeProviderImp >
     void step( TimeProviderImp& tp )
     {
@@ -97,6 +104,14 @@ namespace Fem
 
         //writeData
         dataWriter_->write( tp );
+      }
+    }
+
+    void step( const int eocStep )
+    {
+      if( dataWriter_ )
+      {
+        dataWriter_->writeData( eocStep );
       }
     }
 
