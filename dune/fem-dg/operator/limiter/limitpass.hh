@@ -197,7 +197,7 @@ namespace Fem
       // BaseType :: evaluateQuad( quadrature, qp, localFunctionsInside_, values_ );
 
       // call problem checkDirection
-      const typename BaseType::EntityType &entity = Dune::Fem::make_entity( intersection.inside() );
+      const typename BaseType::EntityType &entity = intersection.inside();
       return discreteModel().checkPhysical( entity, entity.geometry().local( intersection.geometry().global( quadrature.localPoint( qp ) ) ), ranges_ );
     }
 
@@ -1413,7 +1413,7 @@ namespace Fem
           if ( hasNeighbor )
           {
             // check all neighbors
-            const EntityType& nb = Dune::Fem::make_entity( intersection.outside() );
+            const EntityType& nb = intersection.outside();
 
             // get U on entity
             const LocalFunctionType uNb = U.localFunction(nb);
@@ -2427,7 +2427,7 @@ namespace Fem
         if (intersection.neighbor() && ! inflowIntersection )
         {
           // get neighbor entity
-          const EntityType& nb = Dune::Fem::make_entity( intersection.outside() );
+          const EntityType& nb = intersection.outside();
 
           // set neighbor to caller
           caller().setNeighbor( nb );
@@ -2470,7 +2470,7 @@ namespace Fem
           if (intersection.neighbor())
           {
             // get neighbor entity
-            const EntityType& nb = Dune::Fem::make_entity( intersection.outside() );
+            const EntityType& nb = intersection.outside();
 
             // conforming case
             if( ! conformingGridPart && ! intersection.conforming() )

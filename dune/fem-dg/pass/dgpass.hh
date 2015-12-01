@@ -549,7 +549,7 @@ namespace Fem
           if( intersection.neighbor() )
           {
             // get neighbor
-            const EntityType nb = Fem::make_entity( intersection.outside() );
+            const EntityType& nb = intersection.outside();
 
             // check whether we have to skip this intersection
             if( nbChecker.skipIntersection( nb ) )
@@ -595,7 +595,7 @@ namespace Fem
                                              FaceQuadratureType::INSIDE);
 
             // initialize intersection
-            caller().initializeBoundary( intersection, faceQuadInner );
+            caller().initializeBoundary( entity, intersection, faceQuadInner );
 
             const unsigned int faceQuadInner_nop = faceQuadInner.nop();
 

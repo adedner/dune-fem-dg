@@ -112,12 +112,13 @@ namespace Fem
     }
 
     template <class QuadratureImp>
-    void initializeBoundary ( const IntersectionType &intersection,
+    void initializeBoundary ( const EntityType& inside,
+                              const IntersectionType &intersection,
                               const QuadratureImp &quadrature )
     {
       assert( intersection.boundary() );
 
-      BaseType::setBoundary( Fem::make_entity( intersection.inside() ), quadrature );
+      BaseType::setBoundary( inside, quadrature );
       if( evaluateJacobian )
       {
         jacobiansInside_.resize( quadrature.nop() );
@@ -131,6 +132,13 @@ namespace Fem
       discreteModel().initializeBoundary( intersection, time(), quadrature, valuesInside_ );
     }
 
+    template <class QuadratureImp>
+    void initializeBoundary ( const IntersectionType &intersection,
+                              const QuadratureImp &quadrature )
+    {
+      initializeBoundary( intersection.inside(), intersection, quadrature );
+    }
+
     void analyticalFlux ( const EntityType &entity,
                           const VolumeQuadratureType &quadrature,
                           const int qp,
@@ -139,31 +147,32 @@ namespace Fem
       assert( quadId_ == quadrature.id() );
       assert( (int) values_.size() > qp );
 
-      ElementQuadratureContextType context( entity, quadrature, values_[ qp ], jacobianValue( jacobians_, qp ), qp, time(), discreteModel().enVolume() );
-      discreteModel().analyticalFlux( context, flux );
+      discreteModel().analyticalFlux(
+          ElementQuadratureContextType( entity, quadrature, values_[ qp ], jacobianValue( jacobians_, qp ), qp, time(), discreteModel().enVolume() ),
+          flux );
     }
 
     double source ( const EntityType &entity,
                     const VolumeQuadratureType &quadrature,
                     const int qp,
-                    RangeType &source )
+                    RangeType &src )
     {
       assert( quadId_ == quadrature.id() );
       assert( (int) values_.size() > qp );
 
-      ElementQuadratureContextType context( entity, quadrature, values_[ qp ], jacobianValue( jacobians_, qp ), qp, time(), discreteModel().enVolume() );
-      return discreteModel().source( context, source );
+      return discreteModel().source(
+          ElementQuadratureContextType( entity, quadrature, values_[ qp ], jacobianValue( jacobians_, qp ), qp, time(), discreteModel().enVolume() ),
+          src );
     }
 
     double analyticalFluxAndSource( const EntityType &entity,
                                     const VolumeQuadratureType &quadrature,
                                     const int qp,
                                     JacobianRangeType &flux,
-                                    RangeType &source )
+                                    RangeType &src )
     {
-      ElementQuadratureContextType context( entity, quadrature, values_[ qp ], jacobianValue( jacobians_, qp ), qp, time(), discreteModel().enVolume() );
-      discreteModel().analyticalFlux( context, flux );
-      return discreteModel().source( context, source );
+      analyticalFlux( entity, quadrature, qp, flux );
+      return source( entity, quadrature, qp, src );
     }
 
 
@@ -186,11 +195,10 @@ namespace Fem
                      Dune::TypeIndexedTuple< RangeTupleType, Selector >,
                      Dune::TypeIndexedTuple< JacobianRangeTupleType, Selector > > QuadratureContextType ;
 
-      QuadratureContextType ctxLeft ( intersection, localFunctionsInside_.entity(),  inside,  valuesInside_[ qp ],  jacobianValue( jacobiansInside_, qp ),  qp, time(), discreteModel().enVolume() );
-      QuadratureContextType ctxRight( intersection, localFunctionsOutside_.entity(), outside, valuesOutside_[ qp ], jacobianValue( jacobiansOutside_, qp ), qp, time(), discreteModel().nbVolume() );
-
-      return discreteModel().numericalFlux( ctxLeft, ctxRight,
-                                            gLeft, gRight, hLeft, hRight );
+      return discreteModel().numericalFlux(
+                  QuadratureContextType( intersection, localFunctionsInside_.entity(),  inside,  valuesInside_[ qp ],  jacobianValue( jacobiansInside_, qp ),  qp, time(), discreteModel().enVolume() ),
+                  QuadratureContextType( intersection, localFunctionsOutside_.entity(), outside, valuesOutside_[ qp ], jacobianValue( jacobiansOutside_, qp ), qp, time(), discreteModel().nbVolume() ),
+                  gLeft, gRight, hLeft, hRight );
     }
 
     double boundaryFlux ( const IntersectionType &intersection,
@@ -206,9 +214,10 @@ namespace Fem
                      Dune::TypeIndexedTuple< RangeTupleType, Selector >,
                      Dune::TypeIndexedTuple< JacobianRangeTupleType, Selector > > QuadratureContextType ;
 
-      QuadratureContextType ctxLeft ( intersection, localFunctionsInside_.entity(), quadrature, valuesInside_[ qp ],  jacobianValue( jacobiansInside_, qp ),  qp, time(), discreteModel().enVolume() );
 
-      return discreteModel().boundaryFlux( ctxLeft, gLeft, hLeft );
+      return discreteModel().boundaryFlux(
+                  QuadratureContextType( intersection, localFunctionsInside_.entity(), quadrature, valuesInside_[ qp ],  jacobianValue( jacobiansInside_, qp ),  qp, time(), discreteModel().enVolume() ),
+                  gLeft, hLeft );
     }
 
   protected:

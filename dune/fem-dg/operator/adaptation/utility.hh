@@ -146,7 +146,7 @@ namespace Fem
       // otherwise write min and max volume on backup/restore
       if( hasGridHierarchy && entity.level() > 0 )
       {
-        return findCoarsestVolume( Fem::make_entity( entity.father() ), hasGridHierarchy );
+        return findCoarsestVolume( entity.father(), hasGridHierarchy );
       }
       else  // return entity's volume
         return entity.geometry().volume();
