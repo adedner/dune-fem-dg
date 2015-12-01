@@ -271,6 +271,7 @@ namespace Fem
       solverMonitorHandler_( tuple_ ),
       solutionLimiterHandler_( tuple_ ),
       adaptHandler_( tuple_ ),
+      timeStepTimer_( Dune::FemTimer::addTo("sum time for timestep") ),
       fixedTimeStep_( param_.fixedTimeStep() )
     {}
 
@@ -418,7 +419,7 @@ namespace Fem
 
 
         // stop FemTimer for this time step
-        Dune::FemTimer::stop(timeStepTimer_,Dune::FemTimer::max);
+        Dune::FemTimer::stop(timeStepTimer_,Dune::FemTimer::sum);
 
         // Check that no NAN have been generated
         if( !checkSolutionValid( loop, tp ) )
