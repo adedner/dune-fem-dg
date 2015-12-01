@@ -33,6 +33,7 @@ namespace Fem
 
     typedef typename Traits::ModelType                            ModelType;
     typedef typename Traits::DomainDiscreteFunctionType           DestinationType;
+    static const bool hasDiffusion = ModelType::hasDiffusion;
 
     typedef typename DestinationType::DiscreteFunctionSpaceType   DiscreteFunctionSpaceType;
     typedef typename DiscreteFunctionSpaceType::IteratorType      IteratorType;
@@ -437,9 +438,10 @@ namespace Fem
 
       const size_t maxNumBasisFunctions = maxNumScalarBasisFunctions( space_ );
 
-#ifndef EULER
-      diffusionFlux_.initialize(space_);
-#endif
+      if( hasDiffusion )
+      {
+        diffusionFlux_.initialize(space_);
+      }
 
       const RangeType uZero(0);
       const JacobianRangeType uJacZero(0);
@@ -730,8 +732,7 @@ namespace Fem
               const bool initializeIntersection = true ) const
     {
       RangeType gLeft,gRight;
-#ifndef EULER
-      if( initializeIntersection )
+      if( hasDiffusion & initializeIntersection )
       {
         diffusionFlux_.initializeIntersection( intersectionStorage.intersection(),
                                                intersectionStorage.inside(),
@@ -739,7 +740,7 @@ namespace Fem
                                                faceQuadInside, faceQuadOutside,
                                                valueEn, valueNb);
       }
-#endif
+
       const size_t numFaceQuadPoints = faceQuadInside.nop();
       for( size_t pt = 0; pt < numFaceQuadPoints; ++pt )
       {
@@ -751,18 +752,22 @@ namespace Fem
         IntersectionLocalEvaluationType right( intersectionStorage.intersection(), intersectionStorage.outside(),
                                               faceQuadInside, valueNb[ pt ], dvalueNb[ pt ], pt, time, intersectionStorage.nbVolume() );
 
-#ifndef EULER
-        diffusionFlux_.numericalFlux( left, right,
-                                      valueEn[ pt ], valueNb[ pt ],
-                                      dvalueEn[ pt ], dvalueNb[ pt ],
-                                      retEn[ pt ], retNb[ pt ],
-                                      dretEn[ pt ], dretNb[ pt ]);
-#else
-        retEn[pt]  = RangeType(0);
-        retNb[pt]  = RangeType(0);
-        dretEn[pt] = JacobianRangeType(0);
-        dretNb[pt] = JacobianRangeType(0);
-#endif
+        if( hasDiffusion )
+        {
+          diffusionFlux_.numericalFlux( left, right,
+                                        valueEn[ pt ], valueNb[ pt ],
+                                        dvalueEn[ pt ], dvalueNb[ pt ],
+                                        retEn[ pt ], retNb[ pt ],
+                                        dretEn[ pt ], dretNb[ pt ]);
+        }
+        else
+        {
+          retEn[pt]  = RangeType(0);
+          retNb[pt]  = RangeType(0);
+          dretEn[pt] = JacobianRangeType(0);
+          dretNb[pt] = JacobianRangeType(0);
+        }
+
         advFlux_.numericalFlux(left, right,
                                valueEn[ pt ],valueNb[ pt ],
                                dvalueEn[ pt ], dvalueNb[ pt ],
@@ -784,14 +789,15 @@ namespace Fem
       flux(left, right, valueEn,dvalueEn,valueNb,dvalueNb,
            retEn,dretEn,retNb,dretNb);
 
-#ifndef EULER
-     const size_t numFaceQuadPoints = left.quadrature().nop();
-     for( size_t pt = 0; pt < numFaceQuadPoints; ++pt )
+     if( hasDiffusion )
      {
-        diffusionFlux_.evaluateLifting(left, right, valueEn[pt],valueNb[pt],
-                                       liftEn[pt],liftNb[pt]);
-     }
-#endif
+       const size_t numFaceQuadPoints = left.quadrature().nop();
+       for( size_t pt = 0; pt < numFaceQuadPoints; ++pt )
+       {
+          diffusionFlux_.evaluateLifting(left, right, valueEn[pt],valueNb[pt],
+                                         liftEn[pt],liftNb[pt]);
+       }
+      }
     }
 
     template <class FaceQuadrature,class Value,class LiftingFunction>
@@ -805,10 +811,11 @@ namespace Fem
     {
       VectorToTupleVector valEn( valueEn );
       VectorToTupleVector valNb( valueNb );
-#ifndef EULER
-      diffusionFlux_.initializeIntersection( intersection, entity, neighbor, time, faceQuadInside, faceQuadOutside, valEn, valNb, true );
-      lifting += diffusionFlux_.getInsideLifting();
-#endif
+      if( hasDiffusion )
+      {
+        diffusionFlux_.initializeIntersection( intersection, entity, neighbor, time, faceQuadInside, faceQuadOutside, valEn, valNb, true );
+        lifting += diffusionFlux_.getInsideLifting();
+      }
     }
 
     template <class Quadrature,class RetType>
@@ -847,9 +854,10 @@ namespace Fem
                        DRetType &dretEn) const
     {
       RangeType gLeft,gRight;
-#ifndef EULER
-      diffusionFlux_.initializeBoundary( intersection, entity, time, faceQuadInside, valueEn, valueNb );
-#endif
+      if( hasDiffusion )
+      {
+        diffusionFlux_.initializeBoundary( intersection, entity, time, faceQuadInside, valueEn, valueNb );
+      }
 
 
       const size_t numFaceQuadPoints = faceQuadInside.nop();
@@ -862,13 +870,16 @@ namespace Fem
 
         if ( model_.hasBoundaryValue( local ) )
         {
-#ifndef EULER
-          diffusionFlux_.boundaryFlux( local, valueEn[ pt ], valueNb[ pt ],  dvalueEn[ pt ],
-                                       retEn[ pt ], dretEn[ pt ]);
-#else
-          retEn[pt]  = RangeType(0);
-          dretEn[pt] = JacobianRangeType(0);
-#endif
+          if( hasDiffusion )
+          {
+            diffusionFlux_.boundaryFlux( local, valueEn[ pt ], valueNb[ pt ],  dvalueEn[ pt ],
+                                         retEn[ pt ], dretEn[ pt ]);
+          }
+          else
+          {
+            retEn[pt]  = RangeType(0);
+            dretEn[pt] = JacobianRangeType(0);
+          }
           advFlux_.numericalFlux(local, local,
                                  valueEn[ pt ],valueNb[ pt ],
                                  dvalueEn[ pt ], dvalueEn[ pt ],
