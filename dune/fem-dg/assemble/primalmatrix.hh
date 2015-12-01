@@ -527,7 +527,7 @@ namespace Fem
       // make sure we got the right conforming statement
       assert( intersection.conforming() == conforming );
 
-      const EntityType& neighbor = Fem::make_entity( intersection.outside() );
+      const EntityType& neighbor = intersection.outside();
 
       const int entityOrder   = dfSpace.order( entity );
       const int neighborOrder = dfSpace.order( neighbor );
