@@ -41,48 +41,6 @@ namespace Fem
 
  //     typedef DefaultOperatorTraits< GridPartType, polOrd, RhsAnalyticalTraits,
 
-
-
-  template< class GridImp,
-            Galerkin::Enum dgId,
-            DiscreteFunctionSpaces::Enum spaceId,
-            Solver::Enum solverId,
-            AdvectionLimiter::Enum advLimitId >
-  class GlobalAlgorithmConfigurator
-  {
-    typedef GridImp GridType;
-
-    using GridParts = typename GridPartSelector< GridType, dgId >::type;
-
-    template< class ProblemImp >
-    using FunctionSpaces = typename ProblemImp::FunctionSpaceType;
-
-    template< class ProblemImp, int polOrd, class FunctionSpaceImp = typename ProblemImp::FunctionSpaceType >
-    using DiscreteFunctionSpaces = typename DiscreteFunctionSpaceSelector< FunctionSpaceImp, GridParts, polOrd, spaceId, dgId >::type;
-
-    template< class DFSpace >
-    using DiscreteFunctions = typename SolverSelector< solverId, false, DFSpace >::DiscreteFunctionType;
-
-    template< class DFSpace >
-    using LinearOperators = typename SolverSelector< solverId, false, DFSpace >::LinearOperatorType;
-
-    template< class DFSpace, bool symmetric = false >
-    using LinearSolvers = typename SolverSelector< solverId, symmetric, DFSpace >::LinearInverseOperatorType;
-
-    template< class Model, class AdvectionFluxIdentifierImp >
-    using AdvectionFluxes = typename AdvectionFluxSelector< AdvectionFluxIdentifierImp >::template type<Model>;
-
-    template< class Model, class DFSpace, class DiffusionFluxIdentifierImp >
-    using DiffusionFluxes = typename DiffusionFluxSelector< DiffusionFluxIdentifierImp >::template type< DFSpace, Model>;
-
-
-    //Operators
-    template< class AssemblerTraitsImp >
-    using Assemblers = DGPrimalMatrixAssembly< AssemblerTraitsImp >;
-
-  };
-
-
   template< class GridImp,
             Galerkin::Enum dgId,
             DiscreteFunctionSpaces::Enum spaceId,

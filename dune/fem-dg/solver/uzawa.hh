@@ -28,11 +28,6 @@ namespace Fem
     PressureDiscreteFunctionType,PressureDiscreteFunctionType>
   {
 
-    //typedef AssemblerType::DiscreteFunctionType  DiscreteFunctionType;
-    //typedef AssemblerType::DiscretePressureFunctionType  PressureDiscreteFunctionType;
-
-    // typedef Dune::SparseRowMatrixExtra< double > MatrixType ;
-
     typedef typename PressureDiscreteFunctionType::DiscreteFunctionSpaceType PressureSpaceType;
     typedef typename DiscreteFunctionType::DiscreteFunctionSpaceType VeloSpaceType;
 

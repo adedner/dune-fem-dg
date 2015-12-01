@@ -257,19 +257,6 @@ namespace Fem
     typedef Dune::Fem::CGInverseOperator< DiscreteFunctionType >                                                    LinearInverseOperatorType;
   };
 
-//  template <class DomainDFSpace, class RangeDFSpace, bool symmetric>
-//  struct SolverSelector<Solver::Enum::matrixFree,symmetric,DomainDFSpace,RangeDFSpace>
-//  {
-//    static const bool solverConfigured = true;
-//    typedef Dune::Fem::AdaptiveDiscreteFunction< DomainDFSpace >                                        DomainDiscreteFunctionType;
-//    typedef Dune::Fem::AdaptiveDiscreteFunction< RangeDFSpace >                                         RangeDiscreteFunctionType;
-//    typedef DomainDiscreteFunctionType                                                                  DiscreteFunctionType;
-//    typedef Dune::Fem::SparseRowLinearOperator< DomainDiscreteFunctionType, RangeDiscreteFunctionType > LinearOperatorType;
-//    typedef typename Dune::conditional<symmetric,
-//            Dune::Fem::CGInverseOperator< DiscreteFunctionType >,
-//            Dune::Fem::ParDGGeneralizedMinResInverseOperator< DiscreteFunctionType > > :: type          LinearInverseOperatorType;
-//  };
-
   template <class DomainDFSpace, class RangeDFSpace, bool symmetric>
   struct SolverSelector<Solver::Enum::fem,symmetric,DomainDFSpace,RangeDFSpace>
   {
