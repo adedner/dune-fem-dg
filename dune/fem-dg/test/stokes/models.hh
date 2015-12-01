@@ -104,7 +104,7 @@ namespace Fem
 
     typedef typename Traits :: EntityType                       EntityType;
     typedef typename Traits :: IntersectionType                 IntersectionType;
-
+    static const bool hasDiffusion = true;
   public:
     static const int ConstantVelocity = false;
     /**
