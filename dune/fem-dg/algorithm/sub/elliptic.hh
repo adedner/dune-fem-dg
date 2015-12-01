@@ -164,7 +164,7 @@ namespace Fem
         typedef Dune::Fem::IntersectionQuadrature< FaceQuadratureType, conforming > IntersectionQuadratureType;
         typedef typename IntersectionQuadratureType::FaceQuadratureType QuadratureImp;
 
-        const EntityType &outside = Dune::Fem::make_entity( intersection.outside() );
+        const EntityType &outside = intersection.outside();
 
         typename DF::LocalFunctionType uOutside = df_.localFunction(outside);
 
