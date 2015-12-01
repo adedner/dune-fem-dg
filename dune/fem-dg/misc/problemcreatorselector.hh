@@ -40,6 +40,7 @@
 #include <dune/fem-dg/operator/dg/primaloperator.hh>
 
 #include <dune/fem-dg/assemble/primalmatrix.hh>
+#include <dune/fem/space/discontinuousgalerkin.hh>
 
 namespace Dune
 {
