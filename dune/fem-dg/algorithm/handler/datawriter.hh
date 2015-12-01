@@ -44,6 +44,13 @@ namespace Fem
 
     typedef DataWriter< GridType, IOTupleType >                                     DataWriterType;
 
+    template <class Grid, class DataTuple>
+    struct DataOutput
+    {
+      typedef Dune::Fem::DataWriter< Grid, DataTuple > Type;
+    };
+
+
     //static_assert( Std::are_all_same< GridType, typename StepperArg::GridType... >::value,
     //               "DataWriterHandler: GridType has to be equal for all steppers" );
 
@@ -87,12 +94,6 @@ namespace Fem
       dataWriter_.reset( new DataWriterType( std::get<0>(tuple_)->solution().space().grid(), dataTuple_, tp, param ) );
     }
 
-    template< class DataTupleImp, class ParameterType >
-    void init( DataTupleImp dataTup, ParameterType& param  )
-    {
-      dataTuple_ = dataTup;
-      dataWriter_.reset( new DataWriterType( grid_, dataTuple_, param ) );
-    }
 
     template< class TimeProviderImp >
     void step( TimeProviderImp& tp )
@@ -104,14 +105,6 @@ namespace Fem
 
         //writeData
         dataWriter_->write( tp );
-      }
-    }
-
-    void step( const int eocStep )
-    {
-      if( dataWriter_ )
-      {
-        dataWriter_->writeData( eocStep );
       }
     }
 
@@ -150,6 +143,11 @@ namespace Fem
   class DataWriterHandler< AlgTupleImp, Std::index_sequence<> >
   {
     public:
+    template <class Grid, class DataTuple>
+    struct DataOutput
+    {
+      typedef Dune::Fem::DataOutput< Grid, DataTuple > Type;
+    };
 
     template< class ... Args >
     DataWriterHandler( Args&& ... ) {}
