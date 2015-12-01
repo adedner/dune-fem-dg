@@ -93,6 +93,7 @@ namespace Fem
       values.push_back( IntPairType("ILS", total_ils_iterations ) );
       values.push_back( IntPairType("max{Newton/linS}", max_newton_iterations ) );
       values.push_back( IntPairType("max{ILS/linS}", max_ils_iterations ) );
+      values.push_back( IntPairType("OCs:", total_operator_calls_[ monitorNumber_ ] ) );
       return std::move( values );
     }
 
