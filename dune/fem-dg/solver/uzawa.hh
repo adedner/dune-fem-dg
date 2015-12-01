@@ -5,6 +5,7 @@
 #include <dune/fem/function/common/discretefunction.hh>
 #include <dune/fem/operator/common/operator.hh>
 
+
 //#include "../common/mymatrix.hh"
 //#include "../common/spmatextra.hh"
 
@@ -26,6 +27,9 @@ namespace Fem
     typename PressureDiscreteFunctionType::RangeFieldType,
     PressureDiscreteFunctionType,PressureDiscreteFunctionType>
   {
+
+    //typedef AssemblerType::DiscreteFunctionType  DiscreteFunctionType;
+    //typedef AssemblerType::DiscretePressureFunctionType  PressureDiscreteFunctionType;
 
     // typedef Dune::SparseRowMatrixExtra< double > MatrixType ;
 

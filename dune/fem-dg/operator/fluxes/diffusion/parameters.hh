@@ -13,79 +13,103 @@ namespace Fem
   //  Identifier for Diffusion Fluxes for Primal methods
   //
   //////////////////////////////////////////////////////////
-  struct DGDiffusionFluxIdentifier
-  {
-    typedef enum
-    {
-      cdg2    = 0,  // CDG 2 (Compact Discontinuous Galerkin 2)
-      cdg     = 1,  // CDG (Compact Discontinuous Galerkin)
-      br2     = 2,  // BR2 (Bassi-Rebay 2)
-      ip      = 3,  // IP (Interior Penalty)
-      nipg    = 4,  // NIPG (Non-symmetric Interior  Penalty)
-      bo      = 5,  // BO (Baumann-Oden)
-      general = 6,  // general means all methods chosen via parameter file
-      none    = 7   // no diffusion (advection only)
-    } id;
-  };
 
-  struct DGLiftingFluxIdentifier
+  namespace PrimalDiffusionFlux
   {
-    typedef enum
+    enum class Enum
     {
-      id_id    = 0,  // int_Omega r([u]).tau  = -int_e [u].{tau}
-      id_A     = 1,  // int_Omega r([u]).tau  = -int_e [u].{Atau}
-      A_A      = 2   // int_Omega r([u]).Atau = -int_e [u].{Atau}
-    } id;
-  };
+      cdg2,      // CDG 2 (Compact Discontinuous Galerkin 2)
+      cdg,       // CDG (Compact Discontinuous Galerkin)
+      br2,       // BR2 (Bassi-Rebay 2)
+      ip,        // IP (Interior Penalty)
+      nipg,      // NIPG (Non-symmetric Interior  Penalty)
+      bo,        // BO (Baumann-Oden)
+      general,   // general means all methods chosen via parameter file
+      none       // no diffusion (advection only)
+    };
 
-  class DGPrimalFormulationParameters
-    : public Fem::LocalParameter< DGPrimalFormulationParameters, DGPrimalFormulationParameters >
+    //parameters which can be chosen in parameter file
+    const Enum        _enums[] = { Enum::cdg2, Enum::cdg, Enum::br2, Enum::ip, Enum::nipg, Enum::bo };
+    const std::string _strings[] = { "CDG2", "CDG" , "BR2", "IP" , "NIPG", "BO" };
+    static const int  _size = 6;
+
+    //helper class for static parameter selection
+    template< Enum id = Enum::general >
+    struct Identifier
+    {
+      typedef Enum type;
+      static const type value = id;
+    };
+  }
+
+  namespace PrimalDiffusionLifting
   {
-    const std::string keyPrefix_;
+    enum class Enum
+    {
+      id_id,  // int_Omega r([u]).tau  = -int_e [u].{tau}
+      id_A,   // int_Omega r([u]).tau  = -int_e [u].{Atau}
+      A_A     // int_Omega r([u]).Atau = -int_e [u].{Atau}
+    };
+
+    //parameters which can be chosen in parameter file
+    const Enum        _enums[] = { Enum::id_id, Enum::id_A, Enum::A_A };
+    const std::string _strings[] = { "id_id", "id_A" , "A_A" };
+    static const int  _size = 3;
+
+    //helper class for static parameter selection
+    struct Identifier
+    {
+      typedef Enum type;
+    };
+  }
+
+
+
+
+  template< PrimalDiffusionFlux::Enum id = PrimalDiffusionFlux::Enum::general >
+  class DGPrimalDiffusionFluxParameters
+    : public Fem::LocalParameter< DGPrimalDiffusionFluxParameters<id>, DGPrimalDiffusionFluxParameters<id> >
+  {
   public:
-    typedef DGDiffusionFluxIdentifier MethodType;
-    typedef DGLiftingFluxIdentifier   LiftingType;
+    typedef typename PrimalDiffusionFlux::Identifier<id> IdType;
+    typedef typename PrimalDiffusionLifting::Identifier  LiftingType;
+  private:
+    typedef typename IdType::type                        IdEnum;
+    typedef typename LiftingType::type                   LiftingEnum;
+  public:
 
-    DGPrimalFormulationParameters( const std::string keyPrefix = "dgdiffusionflux." )
+    DGPrimalDiffusionFluxParameters( const std::string keyPrefix = "dgdiffusionflux." )
       : keyPrefix_( keyPrefix )
     {}
 
-    static std::string methodNames( const MethodType::id mthd )
+    static std::string methodNames( const IdEnum& mthd )
     {
-      const std::string method []
-        = { "CDG2", "CDG" , "BR2", "IP" , "NIPG", "BO" };
-      assert( mthd >= MethodType::cdg2 && mthd < MethodType::general );
-      return method[ mthd ];
+      for( int i = 0; i < PrimalDiffusionFlux::_size; i++)
+        if( PrimalDiffusionFlux::_enums[i] == mthd )
+          return PrimalDiffusionFlux::_strings[i];
+      assert( false );
+      return "invalid diffusion flux";
     }
 
-    virtual MethodType::id getMethod() const
+    virtual IdEnum getMethod() const
     {
-      const std::string method []
-        = { methodNames( MethodType::cdg2 ),
-            methodNames( MethodType::cdg ),
-            methodNames( MethodType::br2 ),
-            methodNames( MethodType::ip ),
-            methodNames( MethodType::nipg ),
-            methodNames( MethodType::bo )
-          };
-      return (MethodType::id) Fem::Parameter::getEnum( keyPrefix_ + "method", method );
+      const int i = Fem::Parameter::getEnum( keyPrefix_ + "method", PrimalDiffusionFlux::_strings );
+      return PrimalDiffusionFlux::_enums[i];
     }
 
-    static std::string liftingNames( const LiftingType::id mthd )
+    static std::string liftingNames( const LiftingEnum mthd )
     {
-      const std::string method []
-        = { "id_id", "id_A" , "A_A" };
-      return method[ mthd ];
+      for( int i = 0; i < PrimalDiffusionLifting::_size; i++)
+        if( PrimalDiffusionLifting::_enums[i] == mthd )
+          return PrimalDiffusionLifting::_strings[i];
+      assert( false );
+      return "invalid identifier";
     }
 
-    virtual LiftingType::id getLifting() const
+    virtual LiftingEnum getLifting() const
     {
-      const std::string method []
-        = { liftingNames( LiftingType::id_id ),
-            liftingNames( LiftingType::id_A ),
-            liftingNames( LiftingType::A_A )
-          };
-      return (LiftingType::id) Fem::Parameter::getEnum( keyPrefix_ + "lifting", method, 0 );
+      const int i = Fem::Parameter::getEnum( keyPrefix_ + "lifting", PrimalDiffusionLifting::_strings, 0 );
+      return PrimalDiffusionLifting::_enums[i];
     }
 
     virtual double penalty() const
@@ -108,6 +132,10 @@ namespace Fem
     {
       Fem::Parameter::get(keyPrefix_ + "upwind", upwd, upwd);
     }
+  private:
+
+    const std::string keyPrefix_;
+
   };
 
 

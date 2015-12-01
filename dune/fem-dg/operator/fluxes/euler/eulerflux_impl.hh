@@ -525,9 +525,9 @@ namespace Euler
   template <class ModelImp,
             class FluxImp>
   class EulerFluxImpl
-    : public DGAdvectionFluxBase< ModelImp, EulerFluxParameters >
+    : public DGAdvectionFluxBase< ModelImp, AdvectionFluxParameters<AdvectionFlux::Enum::general> >
   {
-    typedef DGAdvectionFluxBase< ModelImp, EulerFluxParameters > BaseType;
+    typedef DGAdvectionFluxBase< ModelImp, AdvectionFluxParameters<AdvectionFlux::Enum::general> > BaseType;
 
     typedef typename ModelImp::Traits             Traits;
     typedef typename ModelImp::Traits::GridType   GridType;
@@ -544,15 +544,14 @@ namespace Euler
     typedef FluxImp                                     FluxType;
 
   public:
-    typedef typename BaseType::MethodType         MethodType;
+    typedef typename BaseType::IdType             IdType;
     typedef typename BaseType::ModelType          ModelType;
     typedef typename BaseType::ParameterType      ParameterType;
 
     // constructor
     EulerFluxImpl (const ModelImp& mod,
-                   const typename MethodType::id mthd,
                    const ParameterType& parameters )
-      : BaseType( mod, mthd, parameters ),
+      : BaseType( mod, parameters ),
         numFlux_( mod )
     {}
 

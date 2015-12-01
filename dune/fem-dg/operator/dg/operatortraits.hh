@@ -35,11 +35,9 @@ namespace Fem
     typedef AdvectionFluxImp                                             AdvectionFluxType;
     typedef DiffusionFluxImp                                             DiffusionFluxType;
 
-    //static const DGDiffusionFluxIdentifier::id PrimalDiffusionFluxId = DGDiffusionFluxIdentifier::general;
-
     static const int polynomialOrder = polOrd == -1 ? 0 : polOrd;
 
-    typedef DiscreteFunctionImp DestinationType ;
+    typedef DiscreteFunctionImp                                          DestinationType ;
     typedef typename DestinationType::DiscreteFunctionSpaceType          DiscreteFunctionSpaceType;
 
     typedef Fem::CachingQuadrature< GridPartType, 0 >                    VolumeQuadratureType;
@@ -54,8 +52,7 @@ namespace Fem
   };
 
   // traits for the operator passes
-  template< class GridPart,
-            int polOrd,
+  template< int polOrd,
             class AnalyticalTraits,
             class DiscreteFunctionImp,
             class AdvectionFluxImp,
@@ -65,7 +62,7 @@ namespace Fem
           >
   struct DefaultOperatorTraits
   {
-    typedef GridPart                                                     GridPartType;
+    typedef typename DiscreteFunctionImp::GridPartType                   GridPartType;
     typedef typename GridPartType::GridType                              GridType;
     typedef AnalyticalTraits                                             AnalyticalTraitsType;
 
@@ -74,11 +71,9 @@ namespace Fem
     typedef AdvectionFluxImp                                             AdvectionFluxType;
     typedef DiffusionFluxImp                                             DiffusionFluxType;
 
-    //static const DGDiffusionFluxIdentifier::id PrimalDiffusionFluxId = DGDiffusionFluxIdentifier::general;
-
     static const int polynomialOrder = polOrd == -1 ? 0 : polOrd;
 
-    typedef DiscreteFunctionImp DestinationType ;
+    typedef DiscreteFunctionImp                                          DestinationType ;
     typedef typename DestinationType::DiscreteFunctionSpaceType          DiscreteFunctionSpaceType;
 
     typedef Fem::CachingQuadrature< GridPartType, 0 >                    VolumeQuadratureType;

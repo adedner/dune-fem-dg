@@ -121,10 +121,7 @@ namespace Fem
       // create ODE solver
       typedef RungeKuttaSolver< OperatorType, ExplicitOperatorType, ImplicitOperatorType,
                                 BasicLinearSolverType > SolverImpl;
-      return new SolverImpl( tp, operator_,
-                             advectionOperator_,
-                             diffusionOperator_,
-                             name() );
+      return new SolverImpl( tp, operator_, advectionOperator_, diffusionOperator_, name() );
     }
 
     const ModelType& model () const { return operator_.model(); }

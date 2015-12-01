@@ -17,7 +17,14 @@
 #include <dune/fem/io/parameter.hh>
 #include <dune/grid/io/file/dgfparser/dgfparser.hh>
 #include <dune/fem/misc/l2norm.hh>
-
+//--------- HANDLER -------------------------
+#include <dune/fem-dg/algorithm/handler/diagnostics.hh>
+#include <dune/fem-dg/algorithm/handler/solvermonitor.hh>
+#include <dune/fem-dg/algorithm/handler/checkpoint.hh>
+#include <dune/fem-dg/algorithm/handler/datawriter.hh>
+#include <dune/fem-dg/algorithm/handler/additionaloutput.hh>
+#include <dune/fem-dg/algorithm/handler/solutionlimiter.hh>
+#include <dune/fem-dg/algorithm/handler/adapt.hh>
 //--------- GRID HELPER ---------------------
 #include <dune/fem-dg/algorithm/gridinitializer.hh>
 //--------- OPERATOR/SOLVER -----------------
@@ -43,15 +50,8 @@
 #include "stokesmodel.hh"
 #include "models.hh"
 //--------- PROBLEMCREATORSELECTOR ----------
-#include <dune/fem-dg/misc/problemcreatorselector.hh>
-//--------- HANDLER -------------------------
-#include <dune/fem-dg/algorithm/handler/diagnostics.hh>
-#include <dune/fem-dg/algorithm/handler/solvermonitor.hh>
-#include <dune/fem-dg/algorithm/handler/checkpoint.hh>
-#include <dune/fem-dg/algorithm/handler/datawriter.hh>
-#include <dune/fem-dg/algorithm/handler/additionaloutput.hh>
-#include <dune/fem-dg/algorithm/handler/solutionlimiter.hh>
-#include <dune/fem-dg/algorithm/handler/adapt.hh>
+#include <dune/fem-dg/misc/configurator.hh>
+
 
 namespace Dune
 {
@@ -68,12 +68,22 @@ namespace Fem
 
     struct SubStokesProblemCreator
     {
+      typedef AlgorithmConfigurator< GridImp,
+                                     Galerkin::Enum::dg,
+                                     DiscreteFunctionSpaces::Enum::legendre,
+                                     Solver::Enum::istl,
+                                     AdvectionLimiter::Enum::unlimited,
+                                     Matrix::Enum::assembled,
+                                     AdvectionFlux::Identifier<AdvectionFlux::Enum::none>,
+                                     PrimalDiffusionFlux::Identifier< PrimalDiffusionFlux::Enum::general > > AC;
+
 
       struct SubPoissonProblemCreator
       {
-        typedef GridImp                                         GridType;
-        typedef Fem::DGAdaptiveLeafGridPart< GridType >         HostGridPartType;
-        typedef HostGridPartType                                GridPartType;
+
+        typedef typename AC::GridType                         GridType;
+        typedef typename AC::GridParts                        HostGridPartType;
+        typedef HostGridPartType                              GridPartType;
 
         // define problem type here if interface should be avoided
         typedef NavierStokesProblemDefault< GridType >                 ProblemInterfaceType;
@@ -82,9 +92,9 @@ namespace Fem
 
         struct AnalyticalTraits
         {
-          typedef ProblemInterfaceType                                   ProblemType;
-          typedef ProblemInterfaceType                                   InitialDataType;
-          typedef StokesModel< GridPartType, InitialDataType, false >    ModelType;
+          typedef ProblemInterfaceType                                 ProblemType;
+          typedef ProblemInterfaceType                                 InitialDataType;
+          typedef StokesModel< GridPartType, InitialDataType, false >  ModelType;
 
           template< class Solution, class Model, class ExactFunction, class SigmaFunction>
           static void addEOCErrors ( Solution &u, Model &model, ExactFunction &f, SigmaFunction& sigma )
@@ -98,67 +108,51 @@ namespace Fem
           return new NavierStokesProblemDefault< GridType > ();
         }
 
-
-        //Stepper Traits
         template< int polOrd >
         struct DiscreteTraits
         {
-          static const SolverType solverType = istl;
-        private:
-          static const DiscreteFunctionSpaceIdentifier::id spaceId = DiscreteFunctionSpaceIdentifier::legendre;
-          static const GalerkinIdentifier::id dgId = GalerkinIdentifier::dg;
-          static const bool symmetricSolver = true;
+          typedef typename AC::template DiscreteFunctionSpaces< GridPartType, polOrd, FunctionSpaceType>
+                                                                                  DFSpaceType;
         public:
-          typedef typename DiscreteFunctionSpaces< FunctionSpaceType, GridPartType, polOrd, spaceId, dgId >::type    DiscreteFunctionSpaceType;
-          typedef typename DiscreteFunctions< DiscreteFunctionSpaceType, solverType >::type                          DiscreteFunctionType;
-          typedef typename DiscreteFunctions< DiscreteFunctionSpaceType, solverType >::jacobian                      JacobianOperatorType;
+          typedef typename AC::template DiscreteFunctions< DFSpaceType >          DiscreteFunctionType;
 
-          typedef std::tuple<>                                                                        ExtraParameterTuple;
-
-          typedef std::tuple< DiscreteFunctionType*, DiscreteFunctionType* >                          IOTupleType;
+          typedef std::tuple< DiscreteFunctionType*, DiscreteFunctionType* >      IOTupleType;
+          typedef std::tuple<>                                                    ExtraParameterTuple;
 
           class Operator
           {
-            friend DiscreteTraits;
-            friend SolverType;
-            typedef DGAdvectionFlux< typename AnalyticalTraits::ModelType, AdvectionFluxIdentifier::none > AdvectionFluxType;
-            typedef DGPrimalDiffusionFlux< DiscreteFunctionSpaceType, typename AnalyticalTraits::ModelType, DGDiffusionFluxIdentifier::general >    DiffusionFluxType;
-
-            typedef DefaultOperatorTraits< GridPartType, polOrd, AnalyticalTraits,
-                                           DiscreteFunctionType, AdvectionFluxType, DiffusionFluxType, ExtraParameterTuple >  OperatorTraitsType;
-
-            typedef DGAdvectionDiffusionOperator< OperatorTraitsType >                            AssemblyOperatorType;
-            typedef Solvers<DiscreteFunctionSpaceType, solverType, symmetricSolver>               SolversType;
-
-
-
-            struct RhsAnalyticalTraits
-            {
-              typedef ProblemInterfaceType                                   ProblemType;
-              typedef ProblemInterfaceType                                   InitialDataType;
-              typedef StokesModel< GridPartType, InitialDataType, true >     ModelType;
-            };
-
-            typedef DGAdvectionFlux< typename RhsAnalyticalTraits::ModelType, AdvectionFluxIdentifier::none > RhsAdvectionFluxType;
-            typedef DGPrimalDiffusionFlux< DiscreteFunctionSpaceType, typename RhsAnalyticalTraits::ModelType, DGDiffusionFluxIdentifier::general >    RhsDiffusionFluxType;
-            typedef DefaultOperatorTraits< GridPartType, polOrd, RhsAnalyticalTraits,
-                                           DiscreteFunctionType, RhsAdvectionFluxType, RhsDiffusionFluxType, ExtraParameterTuple,
-                                           FunctionSpaceType >                                       RhsOperatorTraitsType;
-
-
+            typedef typename AC::template DefaultAssembTraits< DFSpaceType, DFSpaceType, polOrd, AnalyticalTraits >
+                                                                                  OpTraits;
           public:
-            typedef DGPrimalMatrixAssembly< AssemblyOperatorType >                                AssemblerType;
-            typedef typename SolversType::LinearOperatorType                                      type;
-            typedef DGAdvectionDiffusionOperator< RhsOperatorTraitsType >                         RhsType;
+            typedef typename AC::template Operators< OpTraits >                   AssemblerType;
+            typedef typename AssemblerType::MatrixType                            type;
+            //class Rhs
+            //{
+            //  struct RhsAnalyticalTraits
+            //  {
+            //    typedef ProblemInterfaceType                                   ProblemType;
+            //    typedef ProblemInterfaceType                                   InitialDataType;
+            //    typedef StokesModel< GridPartType, InitialDataType, true >     ModelType;
+            //  };
+
+            //  typedef DGAdvectionFlux< typename RhsAnalyticalTraits::ModelType, AdvectionFluxIdentifier::none > RhsAdvectionFluxType;
+            //  typedef DGPrimalDiffusionFlux< DiscreteFunctionSpaceType, typename RhsAnalyticalTraits::ModelType, DGDiffusionFluxIdentifier::general >    RhsDiffusionFluxType;
+            //  typedef DefaultOperatorTraits< GridPartType, polOrd, RhsAnalyticalTraits,
+            //                                 DiscreteFunctionType, RhsAdvectionFluxType, RhsDiffusionFluxType, ExtraParameterTuple,
+            //                                 FunctionSpaceType >                                       RhsOperatorTraitsType;
+            //public:
+            //  typedef DGAdvectionDiffusionOperator< RhsOperatorTraitsType >                   type;
+            //};
+
           };
 
           struct Solver
           {
-            typedef typename Operator::SolversType::LinearInverseOperatorType                           type;
+            typedef typename AC::template LinearSolvers< DFSpaceType, true > type;
           };
 
-          typedef Fem::SubSolverMonitorHandler< Fem::SolverMonitor >                                SolverMonitorHandlerType;
-          typedef Fem::SubDiagnosticsHandler< Diagnostics >                                         DiagnosticsHandlerType;
+          typedef Fem::SubSolverMonitorHandler< Fem::SolverMonitor >               SolverMonitorHandlerType;
+          typedef Fem::SubDiagnosticsHandler< Diagnostics >                        DiagnosticsHandlerType;
         };
 
         template <int polOrd>
@@ -169,11 +163,11 @@ namespace Fem
         };
       };
 
-      typedef typename SubPoissonProblemCreator::GridType             GridType;
-      typedef typename SubPoissonProblemCreator::HostGridPartType     HostGridPartType;
-      typedef typename SubPoissonProblemCreator::GridPartType         GridPartType;
+      typedef typename AC::GridType                                    GridType;
+      typedef typename AC::GridParts                                   HostGridPartType;
+      typedef HostGridPartType                                         GridPartType;
 
-      typedef NavierStokesProblemDefault< GridType >                  ProblemInterfaceType;
+      typedef NavierStokesProblemDefault< GridType >                   ProblemInterfaceType;
 
       typedef typename ProblemInterfaceType::PressureFunctionSpaceType FunctionSpaceType;
 
@@ -197,60 +191,53 @@ namespace Fem
       struct DiscreteTraits
       {
       private:
-        typedef typename SubPoissonProblemCreator::template DiscreteTraits< polOrd >          PoissonDiscreteTraits;
-        static const SolverType solverType = PoissonDiscreteTraits::solverType;
-        static const DiscreteFunctionSpaceIdentifier::id spaceId = DiscreteFunctionSpaceIdentifier::legendre;
-        static const GalerkinIdentifier::id dgId = GalerkinIdentifier::dg;
-        static const bool symmetricSolver = true;
-        typedef typename DiscreteFunctionSpaces< FunctionSpaceType, GridPartType, polOrd, spaceId, dgId >::type             DiscreteFunctionSpaceType;
+        typedef typename SubPoissonProblemCreator::template DiscreteTraits< polOrd > PoissonDiscreteTraits;
+        typedef typename PoissonDiscreteTraits::DiscreteFunctionType                 VelDiscreteFunctionType;
+        typedef typename AC::template DiscreteFunctionSpaces< GridPartType, polOrd, FunctionSpaceType>
+                                                                                     DFSpaceType;
       public:
-        typedef typename DiscreteFunctions< DiscreteFunctionSpaceType, solverType >::type                                   DiscreteFunctionType;
-        typedef typename DiscreteFunctions< DiscreteFunctionSpaceType, solverType >::jacobian                               JacobianOperatorType;
+        typedef typename AC::template DiscreteFunctions< DFSpaceType >               DiscreteFunctionType;
 
-        typedef std::tuple<>                                                                        ExtraParameterTuple;
-
-        typedef std::tuple< DiscreteFunctionType*, DiscreteFunctionType* >                          IOTupleType;
+        typedef std::tuple< DiscreteFunctionType*, DiscreteFunctionType* >           IOTupleType;
+        typedef std::tuple<>                                                         ExtraParameterTuple;
 
         class Operator
         {
-          friend DiscreteTraits;
-          friend SolverType;
-          typedef DGAdvectionFlux< typename AnalyticalTraits::ModelType, AdvectionFluxIdentifier::none > AdvectionFluxType;
-          typedef DGPrimalDiffusionFlux< DiscreteFunctionSpaceType, typename AnalyticalTraits::ModelType, DGDiffusionFluxIdentifier::general >    DiffusionFluxType;
+          typedef typename AC::template DefaultAssembTraits< DFSpaceType, DFSpaceType, polOrd, AnalyticalTraits >
+                                                                                     OpTraits;
 
-          typedef DefaultOperatorTraits< GridPartType, polOrd, AnalyticalTraits,
-                                         DiscreteFunctionType, AdvectionFluxType, DiffusionFluxType, ExtraParameterTuple,
-                                         typename SubPoissonProblemCreator::FunctionSpaceType >       OperatorTraitsType;
-
-          struct RhsAnalyticalTraits
-          {
-            typedef ProblemInterfaceType                                   ProblemType;
-            typedef ProblemInterfaceType                                   InitialDataType;
-            typedef StokesModel< GridPartType, InitialDataType, true >     ModelType;
-          };
-
-          typedef DGAdvectionFlux< typename RhsAnalyticalTraits::ModelType, AdvectionFluxIdentifier::none > RhsAdvectionFluxType;
-          typedef DefaultOperatorTraits< GridPartType, polOrd, RhsAnalyticalTraits,
-                                         DiscreteFunctionType, RhsAdvectionFluxType, ExtraParameterTuple,
-                                         typename SubPoissonProblemCreator::FunctionSpaceType >        RhsOperatorTraitsType;
-
+          typedef AssemblerTraitsList< std::tuple< VelDiscreteFunctionType, DiscreteFunctionType >, AC::template Containers > AssTraits;
         public:
+          typedef StokesAssembler< AssTraits, OpTraits >                             AssemblerType;
+          //the following typedef is not needed by stokes algorithm atm
+          //typedef typename AssemblerType::MatrixType                               type;
 
-          typedef StokesAssembler< typename PoissonDiscreteTraits::DiscreteFunctionType,
-                                   DiscreteFunctionType,
-                                   OperatorTraitsType>                                                AssemblerType;
-          typedef typename PoissonDiscreteTraits::Operator::type                                      type;
-          //typedef DGAdvectionDiffusionOperator< RhsOperatorTraitsType >                             RhsType;
-          typedef void                         RhsType;
+          //class Rhs
+          //{
+          //  struct RhsAnalyticalTraits
+          //  {
+          //    typedef ProblemInterfaceType                                   ProblemType;
+          //    typedef ProblemInterfaceType                                   InitialDataType;
+          //    typedef StokesModel< GridPartType, InitialDataType, true >     ModelType;
+          //  };
+
+          //  typedef DGAdvectionFlux< typename RhsAnalyticalTraits::ModelType, AdvectionFluxIdentifier::none > RhsAdvectionFluxType;
+          //  typedef DefaultOperatorTraits< GridPartType, polOrd, RhsAnalyticalTraits,
+          //                                 DiscreteFunctionType, RhsAdvectionFluxType, ExtraParameterTuple,
+          //                                 typename SubPoissonProblemCreator::FunctionSpaceType >      RhsOperatorTraitsType;
+          //public:
+          //  typedef typename PoissonDiscreteTraits::Operator::type                                     type;
+          //};
+
         };
 
         struct Solver
         {
-          typedef UzawaSolver< typename PoissonDiscreteTraits::DiscreteFunctionType, DiscreteFunctionType, typename Operator::AssemblerType,
-                               typename PoissonDiscreteTraits::Solver::type >                   type;
+          typedef UzawaSolver< VelDiscreteFunctionType, DiscreteFunctionType, typename Operator::AssemblerType,
+                               typename PoissonDiscreteTraits::Solver::type >        type;
         };
 
-        static_assert( (int)DiscreteFunctionSpaceType::FunctionSpaceType::dimRange == 1 , "pressure dimrange does not fit");
+        static_assert( (int)DFSpaceType::FunctionSpaceType::dimRange == 1 , "pressure dimrange does not fit");
 
         typedef Fem::SubSolverMonitorHandler< Fem::SolverMonitor >                    SolverMonitorHandlerType;
         typedef Fem::SubDiagnosticsHandler< Diagnostics >                             DiagnosticsHandlerType;
@@ -270,10 +257,18 @@ namespace Fem
 
     struct SubNavierStokesProblemCreator
     {
+      typedef AlgorithmConfigurator< GridImp,
+                                     Galerkin::Enum::dg,
+                                     DiscreteFunctionSpaces::Enum::legendre,
+                                     Solver::Enum::fem,
+                                     AdvectionLimiter::Enum::unlimited,
+                                     Matrix::Enum::matrixfree,
+                                     AdvectionFlux::Identifier<AdvectionFlux::Enum::llf>,
+                                     PrimalDiffusionFlux::Identifier< PrimalDiffusionFlux::Enum::general > > AC;
 
-      typedef GridImp                                         GridType;
-      typedef Fem::DGAdaptiveLeafGridPart< GridType >         HostGridPartType;
-      typedef HostGridPartType                                GridPartType;
+      typedef typename AC::GridType                         GridType;
+      typedef typename AC::GridParts                        HostGridPartType;
+      typedef HostGridPartType                              GridPartType;
 
       // define problem type here if interface should be avoided
       typedef NavierStokesProblemDefault< GridType >                       ProblemInterfaceType;
@@ -302,72 +297,58 @@ namespace Fem
       template< int polOrd >
       struct DiscreteTraits
       {
-      private:
-        static const SolverType solverType = fem ;
-        static const DiscreteFunctionSpaceIdentifier::id spaceId = DiscreteFunctionSpaceIdentifier::legendre;
-        static const GalerkinIdentifier::id dgId = GalerkinIdentifier::dg;
-        static const AdvectionLimiterIdentifier::id advLimitId = AdvectionLimiterIdentifier::unlimited;
-        typedef typename DiscreteFunctionSpaces< FunctionSpaceType, GridPartType, polOrd, spaceId, dgId >::type             DiscreteFunctionSpaceType;
+        typedef typename AC::template DiscreteFunctionSpaces< GridPartType, polOrd, FunctionSpaceType>
+                                                                                           DFSpaceType;
       public:
-        typedef typename DiscreteFunctions< DiscreteFunctionSpaceType, solverType >::type                                   DiscreteFunctionType;
-        typedef typename DiscreteFunctions< DiscreteFunctionSpaceType, solverType >::jacobian                               JacobianOperatorType;
+        typedef typename AC::template DiscreteFunctions< DFSpaceType >                     DiscreteFunctionType;
 
-        typedef std::tuple<> ExtraParameterTuple;
-
-        typedef std::tuple< DiscreteFunctionType*, DiscreteFunctionType* >                          IOTupleType;
+        typedef std::tuple< DiscreteFunctionType*, DiscreteFunctionType* >                 IOTupleType;
+        typedef std::tuple<>                                                               ExtraParameterTuple;
 
         class Operator
         {
-          friend DiscreteTraits;
-          typedef DGAdvectionFlux< typename AnalyticalTraits::ModelType, AdvectionFluxIdentifier::llf > AdvectionFluxType;
-          typedef DGPrimalDiffusionFlux< DiscreteFunctionSpaceType, typename AnalyticalTraits::ModelType, DGDiffusionFluxIdentifier::general >    DiffusionFluxType;
-
-          typedef DefaultOperatorTraits< GridPartType, polOrd, AnalyticalTraits, DiscreteFunctionType, AdvectionFluxType, DiffusionFluxType, ExtraParameterTuple >
-                                                                                                      OperatorTraitsType;
-
-          static const int hasAdvection = AnalyticalTraits::ModelType::hasAdvection;
-          static const int hasDiffusion = AnalyticalTraits::ModelType::hasDiffusion;
-          typedef AdvectionDiffusionOperators< OperatorTraitsType, hasAdvection, hasDiffusion, advLimitId > AdvectionDiffusionOperatorType;
-
-          struct RhsAnalyticalTraits
-          {
-            typedef ProblemInterfaceType                                       ProblemType;
-            typedef ProblemInterfaceType                                       InitialDataType;
-            typedef NavierStokesModel< GridPartType, InitialDataType, true >   ModelType;
-          };
-
-          typedef DGAdvectionFlux< typename AnalyticalTraits::ModelType, AdvectionFluxIdentifier::llf > RhsAdvectionFluxType;
-          typedef DGPrimalDiffusionFlux< DiscreteFunctionSpaceType, typename AnalyticalTraits::ModelType, DGDiffusionFluxIdentifier::general >    RhsDiffusionFluxType;
-
-          typedef DefaultOperatorTraits< GridPartType, polOrd, RhsAnalyticalTraits,
-                                         DiscreteFunctionType, RhsAdvectionFluxType, RhsDiffusionFluxType, ExtraParameterTuple >     RhsOperatorTraitsType;
-
-
+          typedef typename AC::template DefaultOpTraits< DFSpaceType, polOrd, AnalyticalTraits, ExtraParameterTuple >
+                                                                                           OpTraits;
         public:
-          typedef typename AdvectionDiffusionOperatorType::FullOperatorType                           type;
-          typedef typename AdvectionDiffusionOperatorType::ExplicitOperatorType                       ExplicitType;
-          typedef typename AdvectionDiffusionOperatorType::ImplicitOperatorType                       ImplicitType;
-          typedef DGDiffusionOperator< RhsOperatorTraitsType >                                        RhsType;
+          typedef typename AC::template Operators< OpTraits,OperatorSplit::Enum::full >    type;
+          typedef typename AC::template Operators< OpTraits,OperatorSplit::Enum::expl >    ExplicitType;
+          typedef typename AC::template Operators< OpTraits,OperatorSplit::Enum::impl >    ImplicitType;
+          //class Rhs
+          //{
+          //  struct RhsAnalyticalTraits
+          //  {
+          //    typedef ProblemInterfaceType                                       ProblemType;
+          //    typedef ProblemInterfaceType                                       InitialDataType;
+          //    typedef NavierStokesModel< GridPartType, InitialDataType, true >   ModelType;
+          //  };
+
+          //  typedef DGAdvectionFlux< typename AnalyticalTraits::ModelType, AdvectionFluxIdentifier::llf > RhsAdvectionFluxType;
+          //  typedef DGPrimalDiffusionFlux< DiscreteFunctionSpaceType, typename AnalyticalTraits::ModelType, DGDiffusionFluxIdentifier::general >    RhsDiffusionFluxType;
+
+          //  typedef DefaultOperatorTraits< GridPartType, polOrd, RhsAnalyticalTraits,
+          //                               DiscreteFunctionType, RhsAdvectionFluxType, RhsDiffusionFluxType, ExtraParameterTuple >     RhsOperatorTraitsType;
+          //public:
+          //  typedef DGDiffusionOperator< RhsOperatorTraitsType >                              type;
+          //};
         };
 
         struct Solver
         {
-          // type of linear solver for implicit ode
-          typedef Fem::ParDGGeneralizedMinResInverseOperator< DiscreteFunctionType >                  BasicLinearSolverType;
-
-          typedef DuneODE::OdeSolverInterface< DiscreteFunctionType >                                 type;
+          typedef typename AC::template LinearSolvers< DFSpaceType >                       BasicLinearSolverType;
+          typedef DuneODE::OdeSolverInterface< DiscreteFunctionType >                      type;
         };
 
       private:
-        typedef DGAdaptationIndicatorOperator< typename Operator::OperatorTraitsType, Operator::hasAdvection, Operator::hasDiffusion >
-                                                                                                      IndicatorType;
-        typedef Estimator< DiscreteFunctionType, typename AnalyticalTraits::ProblemType >             GradientIndicatorType ;
+        typedef typename AC::template DefaultOpTraits< DFSpaceType, polOrd, AnalyticalTraits, ExtraParameterTuple >
+                                                                                           OpTraits;
+        typedef DGAdaptationIndicatorOperator< OpTraits >                                  IndicatorType;
+        typedef Estimator< DiscreteFunctionType, typename AnalyticalTraits::ProblemType >  GradientIndicatorType ;
       public:
 
-        typedef Fem::AdaptIndicator< IndicatorType, GradientIndicatorType >                     AdaptIndicatorType;
-        typedef Fem::SubSolverMonitorHandler< Fem::SolverMonitor >                              SolverMonitorHandlerType;
-        typedef Fem::SubDiagnosticsHandler< Diagnostics >                                       DiagnosticsHandlerType;
-       // typedef Fem::ExactSolutionOutputHandler< DiscreteFunctionType >                         AdditionalOutputHandlerType;
+        typedef Fem::AdaptIndicator< IndicatorType, GradientIndicatorType >                AdaptIndicatorType;
+        typedef Fem::SubSolverMonitorHandler< Fem::SolverMonitor >                         SolverMonitorHandlerType;
+        typedef Fem::SubDiagnosticsHandler< Diagnostics >                                  DiagnosticsHandlerType;
+        typedef Fem::ExactSolutionOutputHandler< DiscreteFunctionType >                    AdditionalOutputHandlerType;
       };
 
       template <int polOrd>

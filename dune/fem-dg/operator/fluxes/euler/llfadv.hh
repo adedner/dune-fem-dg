@@ -6,7 +6,6 @@
 #include <cmath>
 
 #include "parameters.hh"
-#include "../staticparameter.hh"
 #include "../advection/fluxbase.hh"
 
 // dune-grid includes
@@ -30,9 +29,9 @@ namespace Euler
     */
   template< class ModelImp >
   class LLFFlux
-   : public DGAdvectionFluxBase< ModelImp, EulerFluxParameters >
+   : public DGAdvectionFluxBase< ModelImp, AdvectionFluxParameters<AdvectionFlux::Enum::llf> >
   {
-    typedef DGAdvectionFluxBase< ModelImp, EulerFluxParameters >   BaseType;
+    typedef DGAdvectionFluxBase< ModelImp, AdvectionFluxParameters<AdvectionFlux::Enum::llf> >   BaseType;
 
     typedef typename ModelImp::Traits             Traits;
     enum { dimRange = ModelImp::dimRange };
@@ -45,15 +44,13 @@ namespace Euler
     typedef typename ModelImp::IntersectionType   IntersectionType;
 
   public:
-    typedef typename BaseType::MethodType         MethodType;
-    static const typename MethodType::id method = MethodType::llf2;
+    typedef typename BaseType::IdType             IdType;
     typedef typename BaseType::ModelType          ModelType;
-    typedef StaticParameter< typename BaseType::ParameterType, method >
-                                                  ParameterType;
+    typedef typename BaseType::ParameterType      ParameterType;
     using BaseType::model_;
 
     LLFFlux(const ModelType& mod, const ParameterType& param = ParameterType() )
-      : BaseType( mod, MethodType::llf2, param )
+      : BaseType( mod, param )
     {}
 
     static std::string name () { return "LLF"; }

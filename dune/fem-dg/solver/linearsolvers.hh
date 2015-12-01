@@ -71,7 +71,7 @@ namespace Fem
     typedef Dune::Fem::LeafGridPart< Grid > Type;
   };
 
-  template <class DFSpace, SolverType solver, bool symmetric>
+  template <class DFSpace, int solver, bool symmetric>
   struct Solvers
   {
     static const bool solverConfigured = false; // this implementation is used for not installed packages

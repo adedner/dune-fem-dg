@@ -14,20 +14,20 @@ dune-fem-dg is a modular toolbox for solving partial differential equations.
 
 A particular strength of dune-fem-dg is the possibility to test different numerical schemes with different parameters, i.e.:
 
-| Option                                   | enum/typedef                                                                        | parameter file
-| ---------------------------------------- | -----------------------------------------------------------------------             | --------------------------------------------------------------------
-| \ref DiffusionFluxes "DiffusionFlux"     | method_general                                                                      | dgdiffusionflux.method : "CDG2", "CDG" , "BR2", "IP" , "NIPG", "BO" 
-|                                          | method_cdg2, method_cdg, method_br2, method_ip, method_nipg, method_bo, method_none | <ignored>
-| \ref AdvectionFluxes "AdvectionFlux"     | LLFAdvFlux, NoFlux, UpwindFlux                                                      |
-| GalerkinType                             | CG, DG                    |
-| Solver                                   | istl, fem...              |
-| polOrder                                 | 0, 1, 2...                |
-| GridDim                                  | 1,2,3...                  |
-| Adaptation                               | no, yes (Estimator...)    |
-| DimRange                                 | 1,2,3..                   |
-| Assembly                                 | matrix-free/matrix-based  |
-| Codegen                                  | <ignored>                 |
-| Parallel                                 | <ignored>                 |
+| Option                                   | enum/typedef                       | parameter file                                                       |
+| ---------------------------------------- | ---------------------------------- | -------------------------------------------------------------------- |
+| \ref DiffusionFluxes "DiffusionFlux"     | general                            | dgdiffusionflux.method : "CDG2", "CDG" , "BR2", "IP" , "NIPG", "BO"  |
+|                                          | cdg2, cdg, br2, ip, nipg, bo, none | <ignored>                                                            |
+| \ref AdvectionFluxes "AdvectionFlux"     | LLFAdvFlux, NoFlux, UpwindFlux     |                                                                      | 
+| GalerkinType                             | CG, DG                             |                                                                      | 
+| Solver                                   | istl, fem...                       |                                                                      | 
+| polOrder                                 | 0, 1, 2...                         |                                                                      | 
+| GridDim                                  | 1,2,3...                           |                                                                      | 
+| Adaptation                               | no, yes (Estimator...)             |                                                                      | 
+| DimRange                                 | 1,2,3..                            |                                                                      | 
+| Assembly                                 | matrix-free/matrix-based           |                                                                      | 
+| Codegen                                  | <ignored>                          |                                                                      | 
+| Parallel                                 | <ignored>                          |                                                                      | 
 
 \note Depending on the implementation of the PDEs not all combination of parameters might work.
 

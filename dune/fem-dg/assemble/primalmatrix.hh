@@ -8,6 +8,7 @@
 
 #include <dune/fem-dg/operator/fluxes/diffusion/dgprimalfluxes.hh>
 #include <dune/fem-dg/operator/dg/primaloperator.hh>
+#include "assemblertraits.hh"
 
 namespace Dune
 {
@@ -22,54 +23,48 @@ namespace Fem
    *         matrix similar to DgPass::operator2Matrix
    ************************/
 
-  template <class OperatorImp>
+  template <class Traits>
   class DGPrimalMatrixAssembly
   {
     public:
-    typedef OperatorImp OperatorType;
-    typedef typename OperatorType::Traits::ModelType ModelType;
-    typedef typename OperatorType::Traits::DestinationType DestinationType;
-    //typedef typename OperatorType::Traits::DiscreteModelType DiscreteModelType;
-    //typedef typename DiscreteModelType::Selector   SelectorType;
-    //static const Dune::DGDiffusionFluxIdentifier DGDiffusionFluxIdentifier = OperatorType::Traits::PrimalDiffusionFluxId;
-    typedef typename DestinationType::DiscreteFunctionSpaceType DiscreteFunctionSpaceType;
-    typedef typename DiscreteFunctionSpaceType::IteratorType IteratorType;
-    typedef typename IteratorType::Entity EntityType;
-    typedef typename EntityType::Geometry GeometryType;
+    typedef typename Traits::DomainDiscreteFunctionType           DomainDiscreteFunctionType;
+    typedef typename Traits::RangeDiscreteFunctionType            RangeDiscreteFunctionType;
+    typedef typename Traits::MatrixContainerType                  MatrixType;
 
-    typedef typename DiscreteFunctionSpaceType::GridPartType GridPartType;
-    typedef typename DiscreteFunctionSpaceType :: DomainType DomainType;
-    typedef typename DiscreteFunctionSpaceType :: RangeType RangeType;
-    typedef typename DiscreteFunctionSpaceType :: JacobianRangeType JacobianRangeType;
-    typedef typename DiscreteFunctionSpaceType :: DomainFieldType DomainFieldType;
-    typedef typename DiscreteFunctionSpaceType :: RangeFieldType RangeFieldType;
+    typedef typename Traits::ModelType                            ModelType;
+    typedef typename Traits::DomainDiscreteFunctionType           DestinationType;
+
+    typedef typename DestinationType::DiscreteFunctionSpaceType   DiscreteFunctionSpaceType;
+    typedef typename DiscreteFunctionSpaceType::IteratorType      IteratorType;
+    typedef typename IteratorType::Entity                         EntityType;
+    typedef typename EntityType::Geometry                         GeometryType;
+
+    typedef typename DiscreteFunctionSpaceType::GridPartType      GridPartType;
+    typedef typename DiscreteFunctionSpaceType::DomainType        DomainType;
+    typedef typename DiscreteFunctionSpaceType::RangeType         RangeType;
+    typedef typename DiscreteFunctionSpaceType::JacobianRangeType JacobianRangeType;
+    typedef typename DiscreteFunctionSpaceType::DomainFieldType   DomainFieldType;
+    typedef typename DiscreteFunctionSpaceType::RangeFieldType    RangeFieldType;
 
     typedef typename DiscreteFunctionSpaceType::BasisFunctionSetType BasisFunctionSetType;
-    typedef typename DestinationType::LocalFunctionType LocalFunctionType;
+    typedef typename DestinationType::LocalFunctionType           LocalFunctionType;
 
-    typedef typename GridPartType::IntersectionIteratorType IntersectionIteratorType;
-    typedef typename IntersectionIteratorType::Intersection IntersectionType;
-    typedef typename IntersectionType::Geometry IntersectionGeometryType;
+    typedef typename GridPartType::IntersectionIteratorType       IntersectionIteratorType;
+    typedef typename IntersectionIteratorType::Intersection       IntersectionType;
+    typedef typename IntersectionType::Geometry                   IntersectionGeometryType;
 
-    //typedef DiscreteModelType::ExtraParameterType   ExtraParameterType;
-    //typedef DiscreteModelType::ModelParameter   MoelParameterType;
-    //typedef CDGDiscreteModelCaller< DiscreteModelType, ExtraParameterType, PassIds > DiscreteModelCallerType;
-
-    //typedef typename OperatorType::DiscreteModelCallerType DiscreteModelCallerType;
-
-    typedef Fem :: Parameter ParameterType ;
+    typedef Fem::Parameter                                        ParameterType;
 
     // need treatment of non conforming grids
-    // CACHING
-    // typedef Dune::Fem::CachingQuadrature< GridPartType, 1 > FaceQuadratureType;
-    typedef Dune::Fem::ElementQuadrature< GridPartType, 1 > FaceQuadratureType;
-    typedef Dune::Fem::CachingQuadrature< GridPartType, 0 > VolumeQuadratureType;
+    typedef typename Traits::FaceQuadratureType                   FaceQuadratureType;
+    typedef typename Traits::VolumeQuadratureType                 VolumeQuadratureType;
 
-    typedef ExtendedDGPrimalDiffusionFlux<DiscreteFunctionSpaceType,ModelType> DiffusionFluxType;
-    // deprecated FluxType
-    typedef DiffusionFluxType  FluxType;
 
-    typedef typename OperatorType :: AdvectionFluxType AdvectionFluxType;
+    typedef typename Traits::AdvectionFluxType                    AdvectionFluxType;
+    typedef ExtendedDGPrimalDiffusionFlux<DiscreteFunctionSpaceType, ModelType,
+                                          typename Traits::DiffusionFluxType::ParameterType >
+                                                                  DiffusionFluxType;
+
 
     struct ZeroFunction
     {
@@ -168,15 +163,14 @@ namespace Fem
 
     //! constructor for DG matrix assembly
     DGPrimalMatrixAssembly( GridPartType& gridPart,
-                            const OperatorType& op,
+                            const ModelType& model,
                             const bool calculateFluxes = true,
                             const bool strongBC = false )
-      : op_(op),
-        model_(op_.model()),
+      : model_(model),
         space_(gridPart),
         zero_(),
         advFlux_(model_),
-        diffusionFlux_(gridPart, model_, DGPrimalFormulationParameters( ParameterKey::generate( "", "dgdiffusionflux." ) ) ),
+        diffusionFlux_(gridPart, model_, DGPrimalDiffusionFluxParameters<>( ParameterKey::generate( "", "dgdiffusionflux." ) ) ),
         calculateFluxes_( calculateFluxes ),
         useStrongBoundaryCondition_( strongBC )
     {
@@ -192,11 +186,6 @@ namespace Fem
       return diffusionFlux_.gradientSpace();
     }
 
-    const void operator()(const DestinationType &arg, DestinationType &dest) const
-    {
-      op_( arg, dest );
-    }
-
     size_t maxNumScalarBasisFunctions( const DiscreteFunctionSpaceType& space ) const
     {
       return space.blockMapper().maxNumDofs() * DiscreteFunctionSpaceType :: localBlockSize ;
@@ -206,16 +195,14 @@ namespace Fem
      * Assemble Matrix for Elliptic Problem using the DGPrimalDIffusionFlux
      * implementation.
      */
-    template <class Matrix>
     void assemble( const double time,
-                   Matrix& matrix, DestinationType& rhs ) const
+                   MatrixType& matrix, DestinationType& rhs ) const
     {
       doAssemble( time, matrix, &rhs );
     }
 
-    template <class Matrix>
     void assemble( const double time,
-                   Matrix& matrix ) const
+                   MatrixType& matrix ) const
     {
       doAssemble( time, matrix, (DestinationType * ) 0 );
     }
@@ -225,9 +212,8 @@ namespace Fem
      * Assemble Matrix for Elliptic Problem using the DGPrimalDIffusionFlux
      * implementation.
      */
-    template <class Matrix>
     void doAssemble( const double time,
-                     Matrix& matrix, DestinationType* rhs ) const
+                     MatrixType& matrix, DestinationType* rhs ) const
     {
       Dune::Timer timer ;
 
@@ -235,28 +221,27 @@ namespace Fem
       typedef JacobianRangeType   JacobianTuple;
       typedef ElementQuadraturePointContext< EntityType, VolumeQuadratureType, RangeTuple, JacobianTuple >      LocalEvaluationType;
 
-      typedef typename Matrix::LocalMatrixType LocalMatrixType;
+      typedef typename MatrixType::LocalMatrixType LocalMatrixType;
       matrix.clear();
       if( rhs )
       {
         rhs->clear();
       }
 
-      const DiscreteFunctionSpaceType &dfSpace = op_.space();
-      const size_t maxNumBasisFunctions = maxNumScalarBasisFunctions( dfSpace );
+      const size_t maxNumBasisFunctions = maxNumScalarBasisFunctions( space_ );
 
       std::vector< RangeType > phi( maxNumBasisFunctions );
       std::vector< JacobianRangeType > dphi( maxNumBasisFunctions );
 
-      diffusionFlux_.initialize( dfSpace );
+      diffusionFlux_.initialize( space_ );
 
       const RangeType uZero(0);
       const JacobianRangeType uJacZero(0);
 
-      Dune::Fem::TemporaryLocalFunction< DiscreteFunctionSpaceType > rhsLocal( dfSpace );
+      Dune::Fem::TemporaryLocalFunction< DiscreteFunctionSpaceType > rhsLocal( space_ );
 
-      const IteratorType end = dfSpace.end();
-      for( IteratorType it = dfSpace.begin(); it != end; ++it )
+      const IteratorType end = space_.end();
+      for( IteratorType it = space_.begin(); it != end; ++it )
       {
         const EntityType &entity = *it;
         const GeometryType &geometry = entity.geometry();
@@ -273,7 +258,7 @@ namespace Fem
         const BasisFunctionSetType &baseSet = localOpEn.domainBasisFunctionSet();
         const unsigned int numBasisFunctionsEn = baseSet.size();
 
-        VolumeQuadratureType quadrature( entity, elementQuadOrder( dfSpace.order( entity ) ) );
+        VolumeQuadratureType quadrature( entity, elementQuadOrder( space_.order( entity ) ) );
         const size_t numQuadraturePoints = quadrature.nop();
         for( size_t pt = 0; pt < numQuadraturePoints; ++pt )
         {
@@ -348,28 +333,28 @@ namespace Fem
           }
         }
 
-        const IntersectionIteratorType endiit = dfSpace.gridPart().iend( entity );
-        for ( IntersectionIteratorType iit = dfSpace.gridPart().ibegin( entity );
+        const IntersectionIteratorType endiit = space_.gridPart().iend( entity );
+        for ( IntersectionIteratorType iit = space_.gridPart().ibegin( entity );
               iit != endiit ; ++ iit )
         {
           const IntersectionType& intersection = *iit ;
 
           if( intersection.neighbor() && calculateFluxes_ )
           {
-            if ( dfSpace.continuous(intersection) ) continue;
+            if ( space_.continuous(intersection) ) continue;
             if( intersection.conforming() )
             {
-              assembleIntersection< true > ( time, entity, geometry, intersection, dfSpace, baseSet, matrix, localOpEn, rhsLocal, rhs != 0 );
+              assembleIntersection< true > ( time, entity, geometry, intersection, space_, baseSet, matrix, localOpEn, rhsLocal, rhs != 0 );
             }
             else
             {
-              assembleIntersection< false > ( time, entity, geometry, intersection, dfSpace, baseSet, matrix, localOpEn, rhsLocal, rhs != 0 );
+              assembleIntersection< false > ( time, entity, geometry, intersection, space_, baseSet, matrix, localOpEn, rhsLocal, rhs != 0 );
             }
           }
           else if ( intersection.boundary() && ! useStrongBoundaryCondition_ )
           {
-            FaceQuadratureType faceQuadInside(dfSpace.gridPart(), intersection,
-                                              faceQuadOrder( dfSpace.order( entity ) ),
+            FaceQuadratureType faceQuadInside(space_.gridPart(), intersection,
+                                              faceQuadOrder( space_.order( entity ) ),
                                               FaceQuadratureType::INSIDE);
 
             const size_t numFaceQuadPoints = faceQuadInside.nop();
@@ -441,7 +426,7 @@ namespace Fem
       //
       if( Dune::Fem::Parameter::verbose() )
       {
-        std::cout << "DG( " << dfSpace.grid().size( 0 ) << " ) matrix assemble took " << timer.elapsed() << " sec." << std::endl;
+        std::cout << "DG( " << space_.grid().size( 0 ) << " ) matrix assemble took " << timer.elapsed() << " sec." << std::endl;
       }
     }
     // assemble vector containing boundary fluxes for right hand side
@@ -450,18 +435,17 @@ namespace Fem
     {
       rhs.clear();
 
-      const DiscreteFunctionSpaceType &dfSpace = rhs.space();
-      const size_t maxNumBasisFunctions = maxNumScalarBasisFunctions( dfSpace );
+      const size_t maxNumBasisFunctions = maxNumScalarBasisFunctions( space_ );
 
 #ifndef EULER
-      diffusionFlux_.initialize(dfSpace);
+      diffusionFlux_.initialize(space_);
 #endif
 
       const RangeType uZero(0);
       const JacobianRangeType uJacZero(0);
 
-      const IteratorType end = dfSpace.end();
-      for( IteratorType it = dfSpace.begin(); it != end; ++it )
+      const IteratorType end = space_.end();
+      for( IteratorType it = space_.begin(); it != end; ++it )
       {
         const EntityType &entity = *it;
         const GeometryType &geometry = entity.geometry();
@@ -472,8 +456,8 @@ namespace Fem
         const BasisFunctionSetType &baseSet = rhsLocal.baseFunctionSet();
         const unsigned int numBasisFunctionsEn = baseSet.size();
 
-        const IntersectionIteratorType endiit = dfSpace.gridPart().iend( entity );
-        for ( IntersectionIteratorType iit = dfSpace.gridPart().ibegin( entity );
+        const IntersectionIteratorType endiit = space_.gridPart().iend( entity );
+        for ( IntersectionIteratorType iit = space_.gridPart().ibegin( entity );
               iit != endiit ; ++ iit )
         {
           const IntersectionType& intersection = *iit ;
@@ -483,8 +467,8 @@ namespace Fem
           }
           else if ( intersection.boundary() && ! useStrongBoundaryCondition_ )
           {
-            FaceQuadratureType faceQuadInside(dfSpace.gridPart(), intersection,
-                                              faceQuadOrder( dfSpace.order( entity ) ),
+            FaceQuadratureType faceQuadInside(space_.gridPart(), intersection,
+                                              faceQuadOrder( space_.order( entity ) ),
                                               FaceQuadratureType::INSIDE);
 
             const size_t numFaceQuadPoints = faceQuadInside.nop();
@@ -503,7 +487,7 @@ namespace Fem
             boundaryValues(intersection, entity, time, faceQuadInside, volume, bndValues);
 
             // first compute affine part of boundary flux
-            boundaryFlux(dfSpace.gridPart(),intersection,entity,time,faceQuadInside,
+            boundaryFlux(space_.gridPart(),intersection,entity,time,faceQuadInside,
                          RangeValues(-1,phiFaceEn), JacobianRangeValues(-1,dphiFaceEn),
                          bndValues,
                          valueNb,dvalueNb);
@@ -524,20 +508,20 @@ namespace Fem
       }
     }
 
-    template <bool conforming, class Matrix, class LocalFunction>
+    template <bool conforming, class LocalFunction>
     void assembleIntersection( const double time,
                                const EntityType& entity,
                                const GeometryType& geometry,
                                const IntersectionType& intersection,
                                const DiscreteFunctionSpaceType& dfSpace,
                                const BasisFunctionSetType& baseSet,
-                               Matrix& matrix,
-                               typename Matrix::LocalMatrixType& localOpEn,
+                               MatrixType& matrix,
+                               typename MatrixType::LocalMatrixType& localOpEn,
                                LocalFunction& rhsLocal,
                                const bool assembleRHS ) const
     {
       const size_t maxNumBasisFunctions = maxNumScalarBasisFunctions( dfSpace );
-      typedef typename Matrix::LocalMatrixType LocalMatrixType;
+      typedef typename MatrixType::LocalMatrixType LocalMatrixType;
       // make sure we got the right conforming statement
       assert( intersection.conforming() == conforming );
 
@@ -674,15 +658,14 @@ namespace Fem
       }
     }
 
-    template <class Matrix>
-    void testSymmetrie(const Matrix &matrix) const
+    void testSymmetrie(const MatrixType &matrix) const
     {
       // NOTE: this is bad coding style
       // not check at the moment
       return;
   //
   //
-  //    typedef typename Matrix::LocalMatrixType LocalMatrixType;
+  //    typedef typename MatrixType::LocalMatrixType LocalMatrixType;
   //    double maxSymError_diagonal = 0;
   //    double maxSymError_offdiagonal = 0;
   //    const IteratorType end = space().end();
@@ -932,7 +915,6 @@ namespace Fem
       bndValues.resize( numFaceQuadPoints );
     }
 
-    const OperatorType& op_;
     const ModelType &model_;
     DiscreteFunctionSpaceType space_;
     ZeroFunction zero_;

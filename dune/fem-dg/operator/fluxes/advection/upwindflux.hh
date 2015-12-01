@@ -2,7 +2,6 @@
 #define FEMDG_UPWIND_FLUX_HH
 
 #include <cmath>
-#include "../staticparameter.hh"
 #include "fluxbase.hh"
 
 namespace Dune
@@ -17,9 +16,10 @@ namespace Fem
    */
   template <class ModelImp>
   class UpwindFlux
-    : public DGAdvectionFluxBase< ModelImp >
+    : public DGAdvectionFluxBase< ModelImp, AdvectionFluxParameters< AdvectionFlux::Enum::upwind > >
   {
-    typedef DGAdvectionFluxBase< ModelImp >       BaseType;
+    typedef DGAdvectionFluxBase< ModelImp, AdvectionFluxParameters< AdvectionFlux::Enum::upwind > >
+                                                  BaseType;
 
     typedef typename ModelImp::Traits             Traits;
     enum { dimRange = ModelImp::dimRange };
@@ -32,18 +32,16 @@ namespace Fem
     typedef typename ModelImp::IntersectionType   IntersectionType;
 
   public:
-    typedef typename BaseType::MethodType         MethodType;
-    static const typename MethodType::id method = MethodType::upwind;
+    typedef typename BaseType::IdType             IdType;
     typedef typename BaseType::ModelType          ModelType;
-    typedef StaticParameter< typename BaseType::ParameterType, method >
-                                                  ParameterType;
+    typedef typename BaseType::ParameterType      ParameterType;
 
     using BaseType::model_;
     /**
      * \brief Constructor
      */
     UpwindFlux( const ModelType& mod, const ParameterType& parameter = ParameterType() )
-      : BaseType( mod, method, parameter )
+      : BaseType( mod, parameter )
     {}
 
     static std::string name () { return "Upwind"; }

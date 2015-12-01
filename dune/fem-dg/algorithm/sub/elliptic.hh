@@ -110,7 +110,7 @@ namespace Fem
       typedef typename GridPartType::IntersectionIteratorType IntersectionIteratorType;
       typedef typename GridPartType::IntersectionType IntersectionType;
 
-      typedef typename Operator::FluxType::LiftingFunctionType LiftingFunctionType;
+      typedef typename Operator::DiffusionFluxType::LiftingFunctionType LiftingFunctionType;
       typedef typename LiftingFunctionType::RangeType RangeType;
       typedef typename LiftingFunctionType::DiscreteFunctionSpaceType DiscreteFunctionSpaceType;
       typedef typename DiscreteFunctionSpaceType::FunctionSpaceType FunctionSpaceType;
@@ -474,7 +474,6 @@ namespace Fem
 
     // The DG space operator
     typedef typename BaseType::OperatorType::AssemblerType AssemblerType;
-    typedef typename AssemblerType::OperatorType           AssemblyOperatorType;
 
     // The discrete function for the unknown solution is defined in the DgOperator
     typedef typename BaseType::DiscreteFunctionType        DiscreteFunctionType;
@@ -516,8 +515,7 @@ namespace Fem
     EllipticAlgorithm(GridType& grid )
     : BaseType( grid ),
       gridPart_( grid ),
-      dgOperator_( gridPart_, problem() ),
-      assembler_( gridPart_, dgOperator_ ),
+      assembler_( gridPart_, model() ),
       linOperator_(),
       space_( const_cast<DiscreteFunctionSpaceType &> (assembler_.space()) ),
       poissonSigmaEstimator_( gridPart_, solution(), assembler_, name() ),
@@ -613,7 +611,6 @@ namespace Fem
 
     GridPartType                            gridPart_;       // reference to grid part, i.e. the leaf grid
 
-    AssemblyOperatorType                    dgOperator_;
     AssemblerType                           assembler_;
 
     std::unique_ptr< OperatorType >         linOperator_;

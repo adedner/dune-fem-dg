@@ -22,49 +22,64 @@ namespace Fem
 namespace Euler
 {
 
-  struct FluxIdentifier
+  namespace AdvectionFlux
   {
-    typedef enum
+    enum Enum
     {
       llf = 0,
       hll = 1,
       hllc = 2,
       llf2 = 3,
       general = 4
-    } id;
-  };
+    };
 
-  class EulerFluxParameters
-    : public Dune::Fem::LocalParameter< EulerFluxParameters, EulerFluxParameters >
+    //parameters which can be chosen in parameter file
+    const Enum        _enums[] = { Enum::llf, Enum::hll, Enum::hllc, Enum::llf2 };
+    const std::string _strings[] = { "LLF", "HLL" , "HLLC", "LLF2" };
+    static const int  _size = 4;
+
+    //helper class for static parameter selection
+    template< Enum id = Enum::general >
+    struct Identifier
+    {
+      static const Enum value = id;
+      typedef Enum type;
+    };
+  }
+
+  template< Euler::AdvectionFlux::Enum id = Euler::AdvectionFlux::Enum::general >
+  class AdvectionFluxParameters
+    : public Dune::Fem::LocalParameter< AdvectionFluxParameters<id>, AdvectionFluxParameters<id> >
   {
-    const std::string keyPrefix_;
   public:
-    typedef FluxIdentifier MethodType;
+    typedef typename Euler::AdvectionFlux::Identifier<id> IdType;
+  private:
+    typedef typename IdType::type                  IdEnum;
+  public:
 
-    EulerFluxParameters( const std::string keyPrefix = "dgadvectionflux." )
+    template< IdEnum ident >
+    using GeneralIdType = Euler::AdvectionFlux::Identifier< ident >;
+
+    AdvectionFluxParameters( const std::string keyPrefix = "dgadvectionflux." )
       : keyPrefix_( keyPrefix )
     {}
 
-    static std::string methodNames( const MethodType::id mthd )
+    static std::string methodNames( const IdEnum mthd )
     {
-      const std::string method []
-        = { "LLF", "HLL" , "HLLC", "LLF2" };
-      assert( mthd >= MethodType::llf && mthd < MethodType::general );
-      std::cout << mthd << std::endl;
-      return method[ mthd ];
+      for( int i = 0; i < Euler::AdvectionFlux::_size; i++)
+        if( Euler::AdvectionFlux::_enums[i] == mthd )
+          return Euler::AdvectionFlux::_strings[i];
+      assert( false );
+      return "invalid advection flux";
     }
 
-    virtual MethodType::id getMethod() const
+    virtual IdEnum getMethod() const
     {
-      const std::string method []
-        = { methodNames( MethodType::llf ),
-            methodNames( MethodType::hll ),
-            methodNames( MethodType::hllc ),
-            methodNames( MethodType::llf2 )
-          };
-      return (MethodType::id) Fem::Parameter::getEnum( keyPrefix_ + "method", method );
+      const int i = Fem::Parameter::getEnum( keyPrefix_ + "method", Euler::AdvectionFlux::_strings );
+      return Euler::AdvectionFlux::_enums[i];
     }
-
+  private:
+    const std::string keyPrefix_;
   };
 
 

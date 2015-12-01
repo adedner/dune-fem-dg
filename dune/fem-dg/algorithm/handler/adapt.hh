@@ -29,14 +29,14 @@ namespace Fem
   template< class... IndicatorArgs >
   class AdaptIndicator;
 
-  template< class IndicatorImp, class GradientIndicatorImp >
-  class AdaptIndicator< IndicatorImp, GradientIndicatorImp >
+  template< class IndicatorImp, class EstimatorImp >
+  class AdaptIndicator< IndicatorImp, EstimatorImp >
   {
   public:
     typedef uint64_t                                                                           UInt64Type;
 
-    typedef IndicatorImp                                                                       IndicatorType;
-    typedef GradientIndicatorImp                                                               GradientIndicatorType;
+    typedef IndicatorImp                                                                       IndicatorType; //using adaptationhandler
+    typedef EstimatorImp                                                                       EstimatorType; //estimator interface
     typedef typename IndicatorType::DestinationType                                            DiscreteFunctionType;
     typedef typename DiscreteFunctionType::DiscreteFunctionSpaceType                           DiscreteFunctionSpaceType;
     typedef typename DiscreteFunctionSpaceType::GridPartType                                   GridPartType;
@@ -53,7 +53,7 @@ namespace Fem
       keyPrefix_( keyPrefix ),
       adaptParam_( AdaptationParametersType( ParameterKey::generate( keyPrefix, "fem.adaptation." ) ) ),
       indicator_( const_cast<GridPartType&>(sol_.gridPart()), problem, tuple, keyPrefix_ ),
-      gradientIndicator_( sol_.space(), problem, adaptParam_ )
+      estimator_( sol_.space(), problem, adaptParam_ )
     {}
 
     bool adaptive() const
@@ -63,7 +63,7 @@ namespace Fem
 
     size_t numberOfElements() const
     {
-      return gradientIndicator_.numberOfElements();
+      return estimator_.numberOfElements();
     }
 
     UInt64Type globalNumberOfElements() const
@@ -110,7 +110,7 @@ namespace Fem
         }
         else if( useGradientIndicator() )
         {
-          gradientIndicator_.estimateAndMark( sol_ );
+          estimator_.estimateAndMark( sol_ );
         }
       }
     }
@@ -165,7 +165,7 @@ namespace Fem
     const std::string                             keyPrefix_;
     const AdaptationParametersType                adaptParam_;
     IndicatorType                                 indicator_;
-    GradientIndicatorType                         gradientIndicator_;
+    EstimatorType                                 estimator_;
   };
 
 

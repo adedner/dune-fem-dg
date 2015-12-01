@@ -24,7 +24,6 @@
 #include "gridinitializer.hh"
 //--------- OPERATOR/SOLVER -----------------
 #include <dune/fem-dg/assemble/primalmatrix.hh>
-#include <dune/fem-dg/solver/linearsolvers.hh>
 #include <dune/fem-dg/operator/dg/operatortraits.hh>
 //--------- FLUXES ---------------------------
 #include <dune/fem-dg/operator/fluxes/advection/fluxes.hh>
@@ -41,7 +40,7 @@
 //--------- MODELS --------------------------
 #include "models.hh"
 //--------- PROBLEMCREATORSELECTOR ----------
-#include <dune/fem-dg/misc/problemcreatorselector.hh>
+#include <dune/fem-dg/misc/configurator.hh>
 
 namespace Dune
 {
@@ -54,13 +53,21 @@ namespace Fem
 
     struct SubPoissonProblemCreator
     {
-      typedef GridImp                                         GridType;
-      //typedef typename GridPartChooser<GridType,galerkinType>::Type     HostGridPartType;
-      typedef Fem::DGAdaptiveLeafGridPart< GridType >       HostGridPartType;
-      typedef HostGridPartType                                GridPartType;
+      typedef AlgorithmConfigurator< GridImp,
+                                     Galerkin::Enum::dg,
+                                     DiscreteFunctionSpaces::Enum::legendre,
+                                     Solver::Enum::fem,
+                                     AdvectionLimiter::Enum::unlimited,
+                                     Matrix::Enum::assembled,
+                                     AdvectionFlux::Identifier<AdvectionFlux::Enum::upwind>,
+                                     PrimalDiffusionFlux::Identifier< PrimalDiffusionFlux::Enum::general > > AC;
+
+      typedef typename AC::GridType                         GridType;
+      typedef typename AC::GridParts                        HostGridPartType;
+      typedef HostGridPartType                              GridPartType;
 
       // define problem type here if interface should be avoided
-      typedef ProblemInterface< Fem::FunctionSpace< typename GridType::ctype, double, GridType::dimension, DIMRANGE > >
+      typedef ProblemInterface< typename AC::template FunctionSpaces<DIMRANGE> >
                                                                     ProblemInterfaceType;
 
       typedef typename ProblemInterfaceType::FunctionSpaceType      FunctionSpaceType;
@@ -81,7 +88,6 @@ namespace Fem
           static H1EOCError sigmaEocError( "sigma-norm" );
           sigmaEocError.add( sigma, f );
         }
-
       };
 
       static inline std::string moduleName() { return ""; }
@@ -92,54 +98,34 @@ namespace Fem
         return new PoissonProblem< GridType, DIMRANGE > ( probNr );
       }
 
-
       //Stepper Traits
       template< int polOrd >
       struct DiscreteTraits
       {
-        static const SolverType solverType = istl;
-        static const DiscreteFunctionSpaceIdentifier::id spaceId = DiscreteFunctionSpaceIdentifier::legendre;
-        static const GalerkinIdentifier::id dgId = GalerkinIdentifier::dg;
-        static const bool symmetricSolver = true;
-        typedef typename DiscreteFunctionSpaces< FunctionSpaceType, GridPartType, polOrd, spaceId, dgId >::type             DiscreteFunctionSpaceType;
+        typedef typename AC::template DiscreteFunctionSpaces< GridPartType, polOrd, FunctionSpaceType>
+                                                                                   DFSpaceType;
       public:
-        typedef typename DiscreteFunctionSelector< DiscreteFunctionSpaceType, solverType >::type                          DiscreteFunctionType;
-        typedef typename DiscreteFunctionSelector< DiscreteFunctionSpaceType, solverType >::jacobian                      JacobianOperatorType;
+        typedef typename AC::template DiscreteFunctions< DFSpaceType >             DiscreteFunctionType;
 
-        typedef std::tuple< DiscreteFunctionType*, DiscreteFunctionType* >                          IOTupleType;
-
-        typedef std::tuple<>                                                                        ExtraParameterTuple;
+        typedef std::tuple< DiscreteFunctionType*, DiscreteFunctionType* >         IOTupleType;
+        typedef std::tuple<>                                                       ExtraParameterTuple;
 
         class Operator
         {
-          friend DiscreteTraits;
-          friend SolverType;
-          typedef DGAdvectionFlux< typename AnalyticalTraits::ModelType, AdvectionFluxIdentifier::upwind > AdvectionFluxType;
-          typedef DGPrimalDiffusionFlux< DiscreteFunctionSpaceType, typename AnalyticalTraits::ModelType, DGDiffusionFluxIdentifier::general >    DiffusionFluxType;
-
-          typedef DefaultOperatorTraits< GridPartType, polOrd, AnalyticalTraits,
-                                         DiscreteFunctionType, AdvectionFluxType, DiffusionFluxType, ExtraParameterTuple > OperatorTraitsType;
-
-          typedef DGAdvectionDiffusionOperator< OperatorTraitsType >                                  AssemblyOperatorType;
-          typedef Solvers<DiscreteFunctionSpaceType, solverType, symmetricSolver>                     SolversType;
+          typedef typename AC::template DefaultAssembTraits< DFSpaceType, DFSpaceType, polOrd, AnalyticalTraits >
+                                                                                   OpTraits;
         public:
-          typedef DGPrimalMatrixAssembly< AssemblyOperatorType >                                      AssemblerType;
-          typedef typename SolversType::LinearOperatorType                                            type;
+          typedef typename AC::template Operators< OpTraits >                      AssemblerType;
+          typedef typename AssemblerType::MatrixType                               type;
         };
 
         struct Solver
         {
-          typedef typename Operator::SolversType::LinearInverseOperatorType                           type;
+          typedef typename AC::template LinearSolvers< DFSpaceType, false/*true*/> type;
         };
 
-      private:
-        //typedef DGAdaptationIndicatorOperator< OperatorTraitsType, true, true >                       IndicatorType;
-        //typedef Estimator< DiscreteFunctionType, typename AnalyticalTraits::ProblemType >             GradientIndicatorType ;
-      public:
-
-        //typedef Fem::AdaptIndicator< IndicatorType, GradientIndicatorType >                     AdaptIndicatorType;
-        typedef Fem::SubSolverMonitorHandler< Fem::SolverMonitor >                                SolverMonitorHandlerType;
-        typedef Fem::SubDiagnosticsHandler< Diagnostics >                                         DiagnosticsHandlerType;
+        typedef Fem::SubSolverMonitorHandler< Fem::SolverMonitor >                 SolverMonitorHandlerType;
+        typedef Fem::SubDiagnosticsHandler< Diagnostics >                          DiagnosticsHandlerType;
       };
 
       template <int polOrd>

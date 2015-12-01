@@ -12,7 +12,7 @@ namespace Fem
   //! DG primal diffusion flux
   template <class DiscreteFunctionSpaceImp,
             class Model,
-            DGDiffusionFluxIdentifier::id >
+            class DiffusionFluxIdentifierImp >
   class DGPrimalDiffusionFlux;
 
   //////////////////////////////////////////////////////////
@@ -22,10 +22,10 @@ namespace Fem
   //////////////////////////////////////////////////////////
   template <class DiscreteFunctionSpaceImp,
             class Model>
-  class DGPrimalDiffusionFlux<  DiscreteFunctionSpaceImp, Model, DGDiffusionFluxIdentifier::general >
-    : public DGPrimalDiffusionFluxImpl< DiscreteFunctionSpaceImp, Model >
+  class DGPrimalDiffusionFlux<  DiscreteFunctionSpaceImp, Model, PrimalDiffusionFlux::Identifier< PrimalDiffusionFlux::Enum::general > >
+    : public DGPrimalDiffusionFluxImpl< DiscreteFunctionSpaceImp, Model, DGPrimalDiffusionFluxParameters< PrimalDiffusionFlux::Enum::general >  >
   {
-    typedef DGPrimalDiffusionFluxImpl< DiscreteFunctionSpaceImp, Model >
+    typedef DGPrimalDiffusionFluxImpl< DiscreteFunctionSpaceImp, Model, DGPrimalDiffusionFluxParameters< PrimalDiffusionFlux::Enum::general >  >
       BaseType;
 
   public:
@@ -39,7 +39,7 @@ namespace Fem
     DGPrimalDiffusionFlux( GridPartType& gridPart,
                            const Model& model,
                            const ParameterType& parameters = ParameterType() )
-      : BaseType( gridPart, model, parameters.getMethod(), parameters )
+      : BaseType( gridPart, model, parameters )
     {
     }
   };
@@ -51,10 +51,10 @@ namespace Fem
   //////////////////////////////////////////////////////////
   template <class DiscreteFunctionSpaceImp,
             class Model>
-  class DGPrimalDiffusionFlux<  DiscreteFunctionSpaceImp, Model, DGDiffusionFluxIdentifier::cdg2 >
-    : public DGPrimalDiffusionFluxImpl< DiscreteFunctionSpaceImp, Model >
+  class DGPrimalDiffusionFlux<  DiscreteFunctionSpaceImp, Model, PrimalDiffusionFlux::Identifier< PrimalDiffusionFlux::Enum::cdg2 > >
+    : public DGPrimalDiffusionFluxImpl< DiscreteFunctionSpaceImp, Model, DGPrimalDiffusionFluxParameters< PrimalDiffusionFlux::Enum::cdg2 > >
   {
-    typedef DGPrimalDiffusionFluxImpl< DiscreteFunctionSpaceImp, Model >
+    typedef DGPrimalDiffusionFluxImpl< DiscreteFunctionSpaceImp, Model, DGPrimalDiffusionFluxParameters< PrimalDiffusionFlux::Enum::cdg2 > >
       BaseType;
 
   public:
@@ -68,7 +68,7 @@ namespace Fem
     DGPrimalDiffusionFlux( GridPartType& gridPart,
                            const Model& model,
                            const ParameterType& parameters = ParameterType() )
-      : BaseType( gridPart, model, DGDiffusionFluxIdentifier::cdg2, parameters )
+      : BaseType( gridPart, model, parameters )
     {
     }
   };
@@ -81,10 +81,10 @@ namespace Fem
   //////////////////////////////////////////////////////////
   template <class DiscreteFunctionSpaceImp,
             class Model>
-  class DGPrimalDiffusionFlux<  DiscreteFunctionSpaceImp, Model, DGDiffusionFluxIdentifier::cdg >
-    : public DGPrimalDiffusionFluxImpl< DiscreteFunctionSpaceImp, Model >
+  class DGPrimalDiffusionFlux<  DiscreteFunctionSpaceImp, Model, PrimalDiffusionFlux::Identifier< PrimalDiffusionFlux::Enum::cdg > >
+    : public DGPrimalDiffusionFluxImpl< DiscreteFunctionSpaceImp, Model, DGPrimalDiffusionFluxParameters< PrimalDiffusionFlux::Enum::cdg > >
   {
-    typedef DGPrimalDiffusionFluxImpl< DiscreteFunctionSpaceImp, Model >
+    typedef DGPrimalDiffusionFluxImpl< DiscreteFunctionSpaceImp, Model, DGPrimalDiffusionFluxParameters< PrimalDiffusionFlux::Enum::cdg > >
       BaseType;
 
   public:
@@ -98,7 +98,7 @@ namespace Fem
     DGPrimalDiffusionFlux( GridPartType& gridPart,
                            const Model& model,
                            const ParameterType& parameters = ParameterType() )
-      : BaseType( gridPart, model, DGDiffusionFluxIdentifier::cdg, parameters )
+      : BaseType( gridPart, model, parameters )
     {
     }
   };
@@ -111,10 +111,10 @@ namespace Fem
   //////////////////////////////////////////////////////////
   template <class DiscreteFunctionSpaceImp,
             class Model>
-  class DGPrimalDiffusionFlux<  DiscreteFunctionSpaceImp, Model, DGDiffusionFluxIdentifier::br2 >
-    : public DGPrimalDiffusionFluxImpl< DiscreteFunctionSpaceImp, Model >
+  class DGPrimalDiffusionFlux<  DiscreteFunctionSpaceImp, Model, PrimalDiffusionFlux::Identifier< PrimalDiffusionFlux::Enum::br2 > >
+    : public DGPrimalDiffusionFluxImpl< DiscreteFunctionSpaceImp, Model, DGPrimalDiffusionFluxParameters< PrimalDiffusionFlux::Enum::br2 > >
   {
-    typedef DGPrimalDiffusionFluxImpl< DiscreteFunctionSpaceImp, Model >
+    typedef DGPrimalDiffusionFluxImpl< DiscreteFunctionSpaceImp, Model, DGPrimalDiffusionFluxParameters< PrimalDiffusionFlux::Enum::br2 > >
       BaseType;
 
   public:
@@ -128,7 +128,7 @@ namespace Fem
     DGPrimalDiffusionFlux( GridPartType& gridPart,
                            const Model& model,
                            const ParameterType& parameters = ParameterType() )
-      : BaseType( gridPart, model, DGDiffusionFluxIdentifier::br2, parameters )
+      : BaseType( gridPart, model, parameters )
     {
     }
   };
@@ -141,10 +141,10 @@ namespace Fem
   //////////////////////////////////////////////////////////
   template <class DiscreteFunctionSpaceImp,
             class Model>
-  class DGPrimalDiffusionFlux<  DiscreteFunctionSpaceImp, Model, DGDiffusionFluxIdentifier::ip >
-    : public DGPrimalDiffusionFluxImpl< DiscreteFunctionSpaceImp, Model >
+  class DGPrimalDiffusionFlux<  DiscreteFunctionSpaceImp, Model, PrimalDiffusionFlux::Identifier< PrimalDiffusionFlux::Enum::ip > >
+    : public DGPrimalDiffusionFluxImpl< DiscreteFunctionSpaceImp, Model, DGPrimalDiffusionFluxParameters< PrimalDiffusionFlux::Enum::ip > >
   {
-    typedef DGPrimalDiffusionFluxImpl< DiscreteFunctionSpaceImp, Model >
+    typedef DGPrimalDiffusionFluxImpl< DiscreteFunctionSpaceImp, Model, DGPrimalDiffusionFluxParameters< PrimalDiffusionFlux::Enum::ip > >
       BaseType;
 
   public:
@@ -158,7 +158,7 @@ namespace Fem
     DGPrimalDiffusionFlux( GridPartType& gridPart,
                            const Model& model,
                            const ParameterType& parameters = ParameterType() )
-      : BaseType( gridPart, model, DGDiffusionFluxIdentifier::ip, parameters )
+      : BaseType( gridPart, model, parameters )
     {
     }
   };
@@ -170,10 +170,10 @@ namespace Fem
   //////////////////////////////////////////////////////////
   template <class DiscreteFunctionSpaceImp,
             class Model>
-  class DGPrimalDiffusionFlux<  DiscreteFunctionSpaceImp, Model, DGDiffusionFluxIdentifier::none >
-    : public DGDiffusionFluxBase< DiscreteFunctionSpaceImp, Model >
+  class DGPrimalDiffusionFlux<  DiscreteFunctionSpaceImp, Model, PrimalDiffusionFlux::Identifier< PrimalDiffusionFlux::Enum::none > >
+    : public DGDiffusionFluxBase< DiscreteFunctionSpaceImp, Model, DGPrimalDiffusionFluxParameters< PrimalDiffusionFlux::Enum::none > >
   {
-    typedef DGDiffusionFluxBase< DiscreteFunctionSpaceImp, Model >
+    typedef DGDiffusionFluxBase< DiscreteFunctionSpaceImp, Model, DGPrimalDiffusionFluxParameters< PrimalDiffusionFlux::Enum::none > >
       BaseType;
 
   public:

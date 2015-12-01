@@ -28,11 +28,12 @@ namespace Fem
    * \ingroup DiffusionFluxes
    */
   template <class DiscreteFunctionSpaceImp,
-            class Model>
+            class Model,
+            class FluxParameterImp >
   class DGPrimalDiffusionFluxImpl
-   : public DGDiffusionFluxBase< DiscreteFunctionSpaceImp, Model >
+   : public DGDiffusionFluxBase< DiscreteFunctionSpaceImp, Model, FluxParameterImp >
   {
-    typedef DGDiffusionFluxBase< DiscreteFunctionSpaceImp, Model >      BaseType;
+    typedef DGDiffusionFluxBase< DiscreteFunctionSpaceImp, Model, FluxParameterImp >      BaseType;
 
   public:
     typedef DiscreteFunctionSpaceImp DiscreteFunctionSpaceType;
@@ -137,15 +138,19 @@ namespace Fem
     using BaseType :: upwind_ ;
 
   public:
-    typedef typename BaseType :: MethodType     MethodType;
-    typedef typename BaseType :: LiftingType    LiftingType;
-    typedef typename BaseType :: ParameterType  ParameterType;
+    typedef typename BaseType::ParameterType  ParameterType;
+    typedef typename BaseType::IdType         IdType;
+    typedef typename BaseType::LiftingType    LiftingType;
+  private:
+    typedef typename IdType::type             EnumType;
+    typedef typename LiftingType::type        LiftingEnum;
+  public:
 
     using BaseType :: parameter ;
 
     bool initAreaSwitch() const
     {
-      if( method_ == MethodType::cdg2 )
+      if( method_ == EnumType::cdg2 )
       {
         // when default value is used, then use areSwitch
         if( ( upwind_ - BaseType :: upwindDefault() ).two_norm2() < 1e-10 )
@@ -162,25 +167,24 @@ namespace Fem
      */
     DGPrimalDiffusionFluxImpl( GridPartType& gridPart,
                                const Model& model,
-                               const typename MethodType::id method,
                                const ParameterType& parameters ) :
       BaseType( model, true, parameters ),
       gridPart_( gridPart ),
-      method_( method ),
+      method_( IdType::value == EnumType::general ? parameters.getMethod() : IdType::value ),
       penalty_( parameter().penalty() ),
-      nipgFactor_( (method_ == MethodType::nipg) ||
-                   (method_ == MethodType::bo)
+      nipgFactor_( (method_ == EnumType::nipg) ||
+                   (method_ == EnumType::bo)
                    ? 0.5 : -0.5 ),
       liftFactor_( parameter().liftfactor() ),
       liftingMethod_( parameter().getLifting() ),
-      penaltyTerm_( MethodType::ip || ((std::abs(  penalty_ ) > 0) &&
-                    method_ != MethodType::br2 &&
-                    method_ != MethodType::bo )),
+      penaltyTerm_( method_ == EnumType::ip || ((std::abs(  penalty_ ) > 0) &&
+                    method_ != EnumType::br2 &&
+                    method_ != EnumType::bo )),
       gradSpc_( gridPart_ ),
       LeMinusLifting_( hasLifting() ? new Lifting( gradSpc_ ) : 0 ),
-      LePlusLifting_( ( method_ == MethodType::br2 ) ? new Lifting( gradSpc_ ) : 0 ),
+      LePlusLifting_( ( method_ == EnumType::br2 ) ? new Lifting( gradSpc_ ) : 0 ),
 #ifdef LOCALDEBUG
-      LeMinusLifting2_( ( method_ <= MethodType::cdg ) ? new Lifting( gradSpc_ ) : 0 ),
+      LeMinusLifting2_( ( method_ <= EnumType::cdg ) ? new Lifting( gradSpc_ ) : 0 ),
 #endif
       insideIsInflow_ ( true ),
       areaSwitch_( initAreaSwitch() ),
@@ -235,21 +239,21 @@ namespace Fem
         initialized_ = true;
         liftFactor_ = 0.0;
         penalty_ = 0.;
-        if (method_ == MethodType::cdg2)
+        if (method_ == EnumType::cdg2)
         {
           liftFactor_ = theoryFactor * 0.25* ((double) maxNumFaces); // max number of faces here
           //if( ! areaSwitch_ )
           liftFactor_ *= (1.+maxNeighborsVolumeRatio_);
         }
-        else if (method_ == MethodType::cdg)
+        else if (method_ == EnumType::cdg)
         {
           liftFactor_ = theoryFactor * maxNumOutflowFaces;
         }
-        else if (method_ == MethodType::br2)
+        else if (method_ == EnumType::br2)
         {
           liftFactor_ = theoryFactor * maxNumFaces;
         }
-        else if( method_ == MethodType::nipg )
+        else if( method_ == EnumType::nipg )
         {
           std::cerr << "ERROR: No theory parameters for NIPG" << std::endl;
           DUNE_THROW(InvalidStateException,"No theory parameters for NIPG");
@@ -262,7 +266,7 @@ namespace Fem
         diffusionFluxName( std::cout );
 
         std::cout <<", penalty: ";
-        if ( useTheoryParams_ && (method_ == MethodType::ip) )
+        if ( useTheoryParams_ && (method_ == EnumType::ip) )
         {
           std::cout <<"theory (";
           diffusionFluxPenalty( std::cout );
@@ -290,9 +294,9 @@ namespace Fem
       penaltyTerm_( other.penaltyTerm_ ),
       gradSpc_( gridPart_ ),
       LeMinusLifting_( hasLifting() ? new Lifting( gradSpc_ ) : 0 ),
-      LePlusLifting_( ( method_ == MethodType::br2 ) ? new Lifting( gradSpc_ ) : 0 ),
+      LePlusLifting_( ( method_ == EnumType::br2 ) ? new Lifting( gradSpc_ ) : 0 ),
 #ifdef LOCALDEBUG
-      LeMinusLifting2_( ( method_ <= MethodType::cdg ) ? new Lifting( gradSpc_ ) : 0 ),
+      LeMinusLifting2_( ( method_ <= EnumType::cdg ) ? new Lifting( gradSpc_ ) : 0 ),
 #endif
       maxNeighborsVolumeRatio_( other.maxNeighborsVolumeRatio_ ),
       ainsworthFactor_( other.ainsworthFactor_ ),
@@ -332,7 +336,7 @@ namespace Fem
     }
 
     //! returns true if lifting has to be calculated
-    bool hasLifting () const { return ( method_ <= MethodType::br2 ); }
+    bool hasLifting () const { return ( method_ <= EnumType::br2 ); }
 
   protected:
     Lifting& LePlusLifting() const
@@ -370,7 +374,7 @@ namespace Fem
         computeLiftings( left.intersection(), left.entity(), right.entity(), left.time(),
                          left.quadrature(), right.quadrature(),
                          uLeftVec, uRightVec,
-                         (method_ == MethodType::br2 ) );
+                         (method_ == EnumType::br2 ) );
       }
     }
 
@@ -389,7 +393,7 @@ namespace Fem
         computeLiftings( intersection, inside, outside, time,
                          quadInner, quadOuter,
                          uLeftVec, uRightVec,
-                         (method_ == MethodType::br2 ) );
+                         (method_ == EnumType::br2 ) );
       }
     }
 
@@ -659,7 +663,7 @@ namespace Fem
       }
 
       Fem::FieldMatrixConverter< GradientType, JacobianRangeType> func1( func );
-      if (liftingMethod_ == LiftingType::id_id)
+      if (liftingMethod_ == LiftingEnum::id_id)
         func1 = jumpUNormal;
       else
       {
@@ -681,7 +685,7 @@ namespace Fem
       // convert sigma into JacobianRangeType
       Fem::FieldMatrixConverter< GradientType, JacobianRangeType> gradient( sigma );
 
-      if (liftingMethod_ != LiftingType::id_A)
+      if (liftingMethod_ != LiftingEnum::id_A)
       {
         JacobianRangeType mat;
         // set mat = G(u)L_e
@@ -789,7 +793,7 @@ namespace Fem
       RangeType diffflux ;
 
       // for all methods except CDG we need to evaluate {G(u)grad(u)}
-      if (method_ != MethodType::cdg)
+      if (method_ != EnumType::cdg)
       {
         // G(u-)grad(u-) for multiplication with phi
         // call on inside
@@ -856,7 +860,7 @@ namespace Fem
       {
         RangeType penaltyTerm ;
 
-        if( (method_ == MethodType::ip) && useTheoryParams_ )
+        if( (method_ == EnumType::ip) && useTheoryParams_ )
         {
           // penaltyTerm
           // = ainsworthFactor * maxEigenValue(A(u)) * FaceEntityVolumeRatio * [u] * n
@@ -932,14 +936,14 @@ namespace Fem
         applyLifting( local, normal, u, liftingEvalLeMinus_[ local.index() ], lift );
 
         // only for CDG-type methods
-        if (method_ != MethodType::br2)
+        if (method_ != EnumType::br2)
         {
           lift   *= liftFactor_ ;
           gLeft  -= lift;
           gRight -= lift;
         }
 
-        if( method_ == MethodType::cdg )
+        if( method_ == EnumType::cdg )
         {
           const RangeFieldType C_12 = ( insideIsInflow_ ) ? 0.5 : -0.5;
           JacobianRangeType resU;
@@ -961,7 +965,7 @@ namespace Fem
           gDiffRight += resU;
         }
 
-        if (method_ == MethodType::br2)
+        if (method_ == EnumType::br2)
         {
           // BR2 hasn't had penalty term until now
           // so we add it at this place.
@@ -1053,7 +1057,7 @@ namespace Fem
         // get value of G(u)L_e*n into lift
         applyLifting( left, normal, uRight, liftingEvalLeMinus_[ left.index() ], lift );
 
-        if( method_ == MethodType::br2 )
+        if( method_ == EnumType::br2 )
         {
           // set liftTotal = G(u)r_e*n = 0.5*G(u_in)L_e_in*n
           lift *= (0.5*liftFactor_);
@@ -1095,7 +1099,7 @@ namespace Fem
         RangeType penaltyTerm;
         const double enVolInv = 1./left.volume();
 
-        if( (method_ == MethodType::ip) && useTheoryParams_ )
+        if( (method_ == EnumType::ip) && useTheoryParams_ )
         {
           // penaltyTerm
           // = ainsworthFactor * maxEigenValue(A(u)) * FaceEntityVolumeRatio * [u] * n
@@ -1150,11 +1154,11 @@ namespace Fem
 
   protected:
     GridPartType&                 gridPart_;
-    const typename MethodType::id method_;
+    const EnumType                method_;
     double                        penalty_;
     const double                  nipgFactor_;
     double                        liftFactor_;
-    typename LiftingType::id      liftingMethod_;
+    LiftingEnum                   liftingMethod_;
     const bool                    penaltyTerm_;
     DiscreteGradientSpaceType  gradSpc_;
     std::unique_ptr< Lifting > LeMinusLifting_;
@@ -1181,11 +1185,12 @@ namespace Fem
   //
   //////////////////////////////////////////////////////////
   template <class DiscreteFunctionSpaceImp,
-            class Model>
+            class Model,
+            class FluxParametersImp = DGPrimalDiffusionFluxParameters<> >
   class ExtendedDGPrimalDiffusionFlux
-   : public DGPrimalDiffusionFluxImpl< DiscreteFunctionSpaceImp, Model >
+   : public DGPrimalDiffusionFluxImpl< DiscreteFunctionSpaceImp, Model, FluxParametersImp >
   {
-    typedef DGPrimalDiffusionFluxImpl< DiscreteFunctionSpaceImp, Model >      BaseType;
+    typedef DGPrimalDiffusionFluxImpl< DiscreteFunctionSpaceImp, Model, FluxParametersImp >      BaseType;
 
   public:
     typedef typename BaseType::GridPartType        GridPartType;
@@ -1201,7 +1206,7 @@ namespace Fem
     ExtendedDGPrimalDiffusionFlux( GridPartType& gridPart,
                                    const Model& model,
                                    const ParameterType& parameters = ParameterType() )
-      : BaseType( gridPart, model, parameters.getMethod(), parameters )
+      : BaseType( gridPart, model, parameters )
     { }
 
     //! copy constructor (needed for thread parallel programs)

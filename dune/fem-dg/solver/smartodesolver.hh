@@ -37,13 +37,7 @@ namespace Fem
       // methods
       static const std::string odeSolver[]  = { "EX", "IM" ,"IMEX", "IMEX+"  };
       std::string key( keyPrefix_ + "odesolver" );
-      if( Fem :: Parameter :: exists( key ) )
-        return Fem::Parameter::getEnum( key, odeSolver, 0 );
-      else
-      {
-        std::cerr << "WARNING: deprecated key, use `fem.ode.odesolver' instead!" << std::endl;
-        return Fem::Parameter::getEnum( "femhowto.odesolver", odeSolver, 0 );
-      }
+      return Fem::Parameter::getEnum( key, odeSolver, 0 );
     }
 
     virtual int obtainRungeKuttaSteps( const int defaultRKOrder ) const

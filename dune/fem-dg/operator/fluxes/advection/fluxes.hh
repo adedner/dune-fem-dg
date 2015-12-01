@@ -14,19 +14,18 @@ namespace Dune
 namespace Fem
 {
 
-  //template< class ModelImp, int >
-  template< class ModelImp, AdvectionFluxIdentifier::id >
+  template< class ModelImp, class AdvectionFluxIdentifierImp >
   class DGAdvectionFlux;
 
 
   template< class ModelImp >
-  class DGAdvectionFlux< ModelImp, AdvectionFluxIdentifier::llf >
+  class DGAdvectionFlux< ModelImp, AdvectionFlux::Identifier< AdvectionFlux::Enum::llf > >
     : public LLFAdvFlux< ModelImp >
   {
     typedef LLFAdvFlux< ModelImp > BaseType;
   public:
     typedef typename BaseType::ParameterType      ParameterType;
-    typedef typename ParameterType::MethodType    MethodType;
+    typedef typename BaseType::IdType::type       IdEnum;
     typedef typename BaseType::ModelType          ModelType;
 
     DGAdvectionFlux( const ModelType& mod,
@@ -37,13 +36,13 @@ namespace Fem
 
 
   template< class ModelImp >
-  class DGAdvectionFlux< ModelImp, AdvectionFluxIdentifier::none >
+  class DGAdvectionFlux< ModelImp, AdvectionFlux::Identifier< AdvectionFlux::Enum::none > >
     : public NoFlux< ModelImp >
   {
     typedef NoFlux< ModelImp > BaseType;
   public:
     typedef typename BaseType::ParameterType      ParameterType;
-    typedef typename ParameterType::MethodType    MethodType;
+    typedef typename BaseType::IdType::type       IdEnum;
     typedef typename BaseType::ModelType          ModelType;
 
     DGAdvectionFlux( const ModelType& mod,
@@ -54,13 +53,13 @@ namespace Fem
 
 
   template< class ModelImp >
-  class DGAdvectionFlux< ModelImp, AdvectionFluxIdentifier::upwind >
+  class DGAdvectionFlux< ModelImp, AdvectionFlux::Identifier< AdvectionFlux::Enum::upwind > >
     : public UpwindFlux< ModelImp >
   {
     typedef UpwindFlux< ModelImp > BaseType;
   public:
     typedef typename BaseType::ParameterType      ParameterType;
-    typedef typename ParameterType::MethodType    MethodType;
+    typedef typename BaseType::IdType::type       IdEnum;
     typedef typename BaseType::ModelType          ModelType;
 
     DGAdvectionFlux( const ModelType& mod,
@@ -75,9 +74,11 @@ namespace Fem
    * \ingroup AdvectionFluxes
    */
   template< class ModelImp >
-  class DGAdvectionFlux< ModelImp, AdvectionFluxIdentifier::general >
+  class DGAdvectionFlux< ModelImp, AdvectionFlux::Identifier< AdvectionFlux::Enum::general > >
+   : public DGAdvectionFluxBase< ModelImp, AdvectionFluxParameters< AdvectionFlux::Enum::general > >
   {
-    typedef DGAdvectionFluxBase< ModelImp >       BaseType;
+    typedef DGAdvectionFluxBase< ModelImp, AdvectionFluxParameters< AdvectionFlux::Enum::general >  >
+                                                  BaseType;
 
     typedef typename ModelImp::Traits             Traits;
     enum { dimRange = ModelImp::dimRange };
@@ -90,26 +91,26 @@ namespace Fem
     typedef typename ModelImp::IntersectionType   IntersectionType;
 
   public:
-    typedef typename BaseType::MethodType         MethodType;
-    static const typename MethodType::id method = MethodType::general;
+    typedef typename BaseType::IdType             IdType;
+    typedef typename IdType::type                 IdEnum;
     typedef typename BaseType::ModelType          ModelType;
     typedef typename BaseType::ParameterType      ParameterType;
+
+    template< IdEnum ident >
+    using GeneralIdType = typename ParameterType::template GeneralIdType< ident >;
 
     /**
      * \brief Constructor
      */
     DGAdvectionFlux (const ModelType& mod,
                      const ParameterType& parameters = ParameterType())
-      : model_( mod ),
-        param_( parameters ),
-        method_( param_.getMethod() ),
+      : BaseType( mod, parameters ),
+        method_( parameters.getMethod() ),
         flux_none_( mod ),
         flux_llf_( mod ),
         flux_upwind_( mod )
     {}
     static std::string name () { return "AdvectionFlux (via parameter file)"; }
-
-    const ModelType& model() const { return model_; }
 
     // Return value: maximum wavespeed*length of integrationOuterNormal
     // gLeft,gRight are fluxed * length of integrationOuterNormal
@@ -126,26 +127,38 @@ namespace Fem
     {
       switch (method_)
       {
-        case MethodType::none:
+        case IdEnum::none:
           return flux_none_.numericalFlux( left, right, uLeft, uRight, jacLeft, jacRight, gLeft, gRight );
-        case MethodType::llf:
+        case IdEnum::llf:
           return flux_llf_.numericalFlux( left, right, uLeft, uRight, jacLeft, jacRight, gLeft, gRight );
-        case MethodType::upwind_:
+        case IdEnum::upwind:
           return flux_upwind_.numericalFlux( left, right, uLeft, uRight, jacLeft, jacRight, gLeft, gRight );
       }
+      std::cerr << "Error: Advection flux not chosen via parameter file" << std::endl;
       assert( false );
       return 0.0;
     }
 
   private:
-    const ModelType&                                 model_;
-    const ParameterType&                             param_;
-    typename MethodType::id                          method_;
-    DGAdvectionFlux< ModelType, MethodType::none >   flux_none_;
-    DGAdvectionFlux< ModelType, MethodType::llf >    flux_llf_;
-    DGAdvectionFlux< ModelType, MethodType::upwind > flux_upwind_;
+    const IdEnum&                                    method_;
+    DGAdvectionFlux< ModelType, GeneralIdType< IdEnum::none > >   flux_none_;
+    DGAdvectionFlux< ModelType, GeneralIdType< IdEnum::llf > >    flux_llf_;
+    DGAdvectionFlux< ModelType, GeneralIdType< IdEnum::upwind > > flux_upwind_;
 
   };
+
+
+ // template< class FluxIdentifierImp >
+ // struct Fluxes;
+
+ // template< AdvectionFluxIdentifier::value id >
+ // struct Fluxes< AdvectionFluxIdentifier< id > >
+ // {
+ //   template< class ModelImp >
+ //   using Advection=DGAdvectionFlux< ModelImp, id>;
+ // };
+
+
 
 
 }

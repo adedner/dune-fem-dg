@@ -16,7 +16,7 @@ namespace Fem
    *
    * \ingroup AdvectionFluxes
    */
-  template <class ModelImp, class FluxParameterImp = AdvectionFluxParameters >
+  template <class ModelImp, class FluxParameterImp >
   class DGAdvectionFluxBase
   {
     typedef typename ModelImp::Traits            Traits;
@@ -31,18 +31,18 @@ namespace Fem
     typedef typename ModelImp::IntersectionType  IntersectionType;
 
   public:
-    typedef ModelImp                              ModelType;
-    typedef FluxParameterImp                      ParameterType;
-    typedef typename ParameterType::MethodType    MethodType;
+    typedef ModelImp                               ModelType;
+    typedef FluxParameterImp                       ParameterType;
+    typedef typename ParameterType::IdType         IdType;
+    typedef typename IdType::type                  IdEnum;
+
 
     /**
      * \brief Constructor
      */
     DGAdvectionFluxBase (const ModelType& mod,
-                         const typename MethodType::id method,
                          const ParameterType& parameters = ParameterType() )
       : model_(mod),
-        method_( method ),
         param_( parameters )
     {}
 
@@ -74,7 +74,6 @@ namespace Fem
     }
   protected:
     const ModelType& model_;
-    const typename MethodType::id method_;
     const ParameterType& param_;
   };
 

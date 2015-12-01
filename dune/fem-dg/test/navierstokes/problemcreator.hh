@@ -43,7 +43,7 @@
 //--------- MODELS --------------------------
 #include "models.hh"
 //--------- PROBLEMCREATORSELECTOR ----------
-#include <dune/fem-dg/misc/problemcreatorselector.hh>
+#include <dune/fem-dg/misc/configurator.hh>
 
 
 namespace Dune
@@ -58,10 +58,18 @@ namespace Fem
 
     struct SubNavierStokesProblemCreator
     {
+      typedef AlgorithmConfigurator< GridImp,
+                                     Galerkin::Enum::dg,
+                                     DiscreteFunctionSpaces::Enum::legendre,
+                                     Solver::Enum::fem,
+                                     AdvectionLimiter::Enum::unlimited,
+                                     Matrix::Enum::matrixfree,
+                                     Euler::AdvectionFlux::Identifier<Euler::AdvectionFlux::Enum::llf2>,
+                                     PrimalDiffusionFlux::Identifier< PrimalDiffusionFlux::Enum::general > > AC;
 
-      typedef GridImp                                         GridType;
-      typedef Fem::DGAdaptiveLeafGridPart< GridType >         HostGridPartType;
-      typedef HostGridPartType                                GridPartType;
+      typedef typename AC::GridType                                 GridType;
+      typedef typename AC::GridParts                                HostGridPartType;
+      typedef HostGridPartType                                      GridPartType;
 
       // define problem type here if interface should be avoided
       typedef NSWaves< GridType >                                   ProblemInterfaceType;
@@ -94,60 +102,41 @@ namespace Fem
       template< int polOrd >
       struct DiscreteTraits
       {
-      private:
-        static const SolverType solverType = fem ;
-        static const DiscreteFunctionSpaceIdentifier::id spaceId = DiscreteFunctionSpaceIdentifier::legendre;
-        static const GalerkinIdentifier::id dgId = GalerkinIdentifier::dg;
-        static const AdvectionLimiterIdentifier::id advLimitId = AdvectionLimiterIdentifier::unlimited;
-        typedef typename DiscreteFunctionSpaces< FunctionSpaceType, GridPartType, polOrd, spaceId, dgId >::type             DiscreteFunctionSpaceType;
+        typedef typename AC::template DiscreteFunctionSpaces< GridPartType, polOrd, FunctionSpaceType>
+                                                                                           DFSpaceType;
       public:
-        typedef typename DiscreteFunctions< DiscreteFunctionSpaceType, solverType >::type                                   DiscreteFunctionType;
-        typedef typename DiscreteFunctions< DiscreteFunctionSpaceType, solverType >::jacobian                               JacobianOperatorType;
+        typedef typename AC::template DiscreteFunctions< DFSpaceType >                     DiscreteFunctionType;
 
-        typedef std::tuple<> ExtraParameterTuple;
-
-        typedef std::tuple< DiscreteFunctionType*, DiscreteFunctionType* >                          IOTupleType;
-
-        typedef DuneODE::OdeSolverInterface< DiscreteFunctionType >                                 OdeSolverType;
-        // type of linear solver for implicit ode
-        typedef Fem::ParDGGeneralizedMinResInverseOperator< DiscreteFunctionType >                  BasicLinearSolverType;
+        typedef std::tuple< DiscreteFunctionType*, DiscreteFunctionType* >                 IOTupleType;
+        typedef std::tuple<>                                                               ExtraParameterTuple;
 
         class Operator
         {
-          friend DiscreteTraits;
-          typedef Euler::EulerFlux< typename AnalyticalTraits::ModelType, Euler::FluxIdentifier::llf2 > AdvectionFluxType;
-          typedef DGPrimalDiffusionFlux< DiscreteFunctionSpaceType, typename AnalyticalTraits::ModelType, DGDiffusionFluxIdentifier::general >    DiffusionFluxType;
-
-          typedef DefaultOperatorTraits< GridPartType, polOrd, AnalyticalTraits,
-                                         DiscreteFunctionType, AdvectionFluxType, DiffusionFluxType, ExtraParameterTuple > OperatorTraitsType;
-
-          static const int hasAdvection = AnalyticalTraits::ModelType::hasAdvection;
-          static const int hasDiffusion = AnalyticalTraits::ModelType::hasDiffusion;
-          typedef AdvectionDiffusionOperators< OperatorTraitsType, hasAdvection, hasDiffusion, advLimitId > AdvectionDiffusionOperatorType;
+          typedef typename AC::template DefaultOpTraits< DFSpaceType, polOrd, AnalyticalTraits, ExtraParameterTuple >
+                                                                                           OpTraits;
         public:
-          typedef typename AdvectionDiffusionOperatorType::FullOperatorType                           type;
-          typedef typename AdvectionDiffusionOperatorType::ImplicitOperatorType                       ImplicitType;
-          typedef typename AdvectionDiffusionOperatorType::ExplicitOperatorType                       ExplicitType;
+          typedef typename AC::template Operators< OpTraits,OperatorSplit::Enum::full >    type;
+          typedef typename AC::template Operators< OpTraits,OperatorSplit::Enum::expl >    ExplicitType;
+          typedef typename AC::template Operators< OpTraits,OperatorSplit::Enum::impl >    ImplicitType;
         };
 
         struct Solver
         {
-          // type of linear solver for implicit ode
-          typedef Fem::ParDGGeneralizedMinResInverseOperator< DiscreteFunctionType >                  BasicLinearSolverType;
-
-          typedef DuneODE::OdeSolverInterface< DiscreteFunctionType >                                 type;
+          typedef typename AC::template LinearSolvers< DFSpaceType >                       BasicLinearSolverType;
+          typedef DuneODE::OdeSolverInterface< DiscreteFunctionType >                      type;
         };
 
       private:
-        typedef DGAdaptationIndicatorOperator< typename Operator::OperatorTraitsType, Operator::hasAdvection, Operator::hasDiffusion >
-                                                                                                      IndicatorType;
-        typedef Estimator< DiscreteFunctionType, typename AnalyticalTraits::ProblemType >             GradientIndicatorType ;
+        typedef typename AC::template DefaultOpTraits< DFSpaceType, polOrd, AnalyticalTraits, ExtraParameterTuple >
+                                                                                           OpTraits;
+        typedef DGAdaptationIndicatorOperator< OpTraits >                                  IndicatorType;
+        typedef Estimator< DiscreteFunctionType, typename AnalyticalTraits::ProblemType >  GradientIndicatorType ;
       public:
 
-        typedef Fem::AdaptIndicator< IndicatorType, GradientIndicatorType >                           AdaptIndicatorType;
-        typedef Fem::SubSolverMonitorHandler< Fem::SolverMonitor >                                    SolverMonitorHandlerType;
-        typedef Fem::SubDiagnosticsHandler< Diagnostics >                                             DiagnosticsHandlerType;
-        typedef Fem::ExactSolutionOutputHandler< DiscreteFunctionType >                               AdditionalOutputHandlerType;
+        typedef Fem::AdaptIndicator< IndicatorType, GradientIndicatorType >                AdaptIndicatorType;
+        typedef Fem::SubSolverMonitorHandler< Fem::SolverMonitor >                         SolverMonitorHandlerType;
+        typedef Fem::SubDiagnosticsHandler< Diagnostics >                                  DiagnosticsHandlerType;
+        typedef Fem::ExactSolutionOutputHandler< DiscreteFunctionType >                    AdditionalOutputHandlerType;
       };
 
       template <int polOrd>

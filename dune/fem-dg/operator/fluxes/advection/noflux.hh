@@ -2,7 +2,6 @@
 #define DUNE_FEMDG_NOFLUX_HH
 
 #include <string>
-#include "../staticparameter.hh"
 #include "fluxbase.hh"
 
 namespace Dune
@@ -16,9 +15,10 @@ namespace Fem
    */
   template <class ModelImp>
   class NoFlux
-    : public DGAdvectionFluxBase< ModelImp >
+    : public DGAdvectionFluxBase< ModelImp, AdvectionFluxParameters< AdvectionFlux::Enum::none > >
   {
-    typedef DGAdvectionFluxBase< ModelImp >       BaseType;
+    typedef DGAdvectionFluxBase< ModelImp, AdvectionFluxParameters< AdvectionFlux::Enum::none > >
+                                                  BaseType;
 
     typedef typename ModelImp::Traits             Traits;
     enum { dimRange = ModelImp::dimRange };
@@ -31,18 +31,16 @@ namespace Fem
     typedef typename ModelImp::IntersectionType   IntersectionType;
 
   public:
-    typedef typename BaseType::MethodType         MethodType;
-    static const typename MethodType::id method = MethodType::none;
+    typedef typename BaseType::IdType             IdType;
     typedef typename BaseType::ModelType          ModelType;
-    typedef StaticParameter< typename BaseType::ParameterType, method >
-                                                  ParameterType;
+    typedef typename BaseType::ParameterType      ParameterType;
     using BaseType::model_;
 
     /**
      * \brief constructor
      */
     NoFlux( const ModelType& mod, const ParameterType& parameter = ParameterType() )
-      : BaseType( mod, method, parameter )
+      : BaseType( mod, parameter )
     {}
 
     static std::string name () { return "NoFlux"; }

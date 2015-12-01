@@ -10,133 +10,97 @@
 #include <dune/grid/common/grid.hh>
 #include <dune/fem/quadrature/caching/twistutility.hh>
 #include <dune/fem-dg/operator/dg/passtraits.hh>
+#include <dune/fem-dg/assemble/assemblertraits.hh>
 
 namespace Dune {
 #define MATRIXBUG 1
 
   //! implementation of the operator
-  template <class DiscreteFunction,class DiscretePressureFunction, class Traits>
+  template <class CombAssTraits, class OpTraits >
   class StokesAssembler
   {
   public:
-    typedef typename Traits :: InitialDataType  ProblemType;
-    //! type of discrete functions
-    typedef DiscreteFunction DiscreteFunctionType;
-    typedef DiscretePressureFunction DiscretePressureFunctionType;
+    // ( ------------- )
+    // | (0,0) | (0,1) |
+    // | ------------- |
+    // | (1,0) | (1,1) |
+    // ( ------------- )
+    //
+    typedef typename CombAssTraits::template DomainDiscreteFunction<0,0> DiscreteFunctionType;
+    typedef typename CombAssTraits::template RangeDiscreteFunction<1,1>  DiscretePressureFunctionType;
+
+    // some basic tests...
+    static_assert( std::is_same< typename CombAssTraits::template RangeDiscreteFunction<1,0>, typename CombAssTraits::template DomainDiscreteFunction<0,1> >::value, "discrete function spaces does not fit." );
+    static_assert( std::is_same< typename CombAssTraits::template RangeDiscreteFunction<0,1>, typename CombAssTraits::template DomainDiscreteFunction<1,0> >::value, "discrete function spaces does not fit." );
+
+    typedef OpTraits                                                     OperatorTraits;
+    typedef typename OperatorTraits::ModelType::ProblemType              ProblemType;
 
     //! type of discrete function spaceS
-    typedef typename DiscreteFunctionType :: DiscreteFunctionSpaceType
-    DiscreteFunctionSpaceType;
+    typedef typename DiscreteFunctionType::DiscreteFunctionSpaceType     DiscreteFunctionSpaceType;
 
-    typedef typename DiscreteFunctionType :: DiscreteFunctionSpaceType
-    DiscreteSpaceType;
-
-    typedef typename DiscretePressureFunction :: DiscreteFunctionSpaceType
-    DiscretePressureSpaceType;
+    typedef typename DiscretePressureFunctionType::DiscreteFunctionSpaceType DiscretePressureSpaceType;
     //! type of problem
-    //  typedef StokesProblemInterface< typename DiscreteFunctionSpaceType :: FunctionSpaceType,
-    //            typename DiscretePressureSpaceType :: FunctionSpaceType >
 
-    typedef typename DiscreteFunctionSpaceType :: RangeFieldType
-    RangeFieldType;
+    typedef typename DiscreteFunctionSpaceType::RangeFieldType           RangeFieldType;
 
   protected:
 
     //! type of the base function sets
-    typedef typename DiscreteFunctionSpaceType :: BasisFunctionSetType
-    BaseFunctionSetType;
-    typedef typename DiscretePressureSpaceType:: BasisFunctionSetType
-    PressureBaseFunctionSetType;
+    typedef typename DiscreteFunctionSpaceType::BasisFunctionSetType     BaseFunctionSetType;
+    typedef typename DiscretePressureSpaceType::BasisFunctionSetType     PressureBaseFunctionSetType;
 
     //! type of grid partition
-    typedef typename DiscreteFunctionSpaceType :: GridPartType GridPartType;
+    typedef typename DiscreteFunctionSpaceType::GridPartType             GridPartType;
     //! type of grid
-    typedef typename DiscreteFunctionSpaceType :: GridType GridType;
+    typedef typename DiscreteFunctionSpaceType::GridType                 GridType;
 
     //! polynomial order of base functions
-    enum { polynomialOrder = DiscreteFunctionSpaceType :: polynomialOrder };
+    enum { polynomialOrder = DiscreteFunctionSpaceType::polynomialOrder };
 
     //! The grid's dimension
-    enum { dimension = GridType :: dimension };
+    enum { dimension = GridType::dimension };
 
     // Types extracted from the discrete function space type
-    typedef typename DiscreteFunctionSpaceType::DomainType DomainType;
-    typedef typename DiscreteFunctionSpaceType::RangeType RangeType;
-    typedef typename DiscreteFunctionSpaceType::JacobianRangeType JacobianRangeType;
-    typedef typename DiscreteFunctionSpaceType::IteratorType IteratorType;
+    typedef typename DiscreteFunctionSpaceType::DomainType                DomainType;
+    typedef typename DiscreteFunctionSpaceType::RangeType                 RangeType;
+    typedef typename DiscreteFunctionSpaceType::JacobianRangeType         JacobianRangeType;
+    typedef typename DiscreteFunctionSpaceType::IteratorType              IteratorType;
 
-    typedef typename DiscretePressureSpaceType::RangeType PressureRangeType;
-    typedef typename DiscretePressureSpaceType::JacobianRangeType PressureJacobianRangeType;
+    typedef typename DiscretePressureSpaceType::RangeType                 PressureRangeType;
+    typedef typename DiscretePressureSpaceType::JacobianRangeType         PressureJacobianRangeType;
 
 
-    typedef typename DiscreteFunctionType::LocalFunctionType LocalFuncType;
-    typedef typename DiscretePressureFunctionType::LocalFunctionType LocalPressureType;
+    typedef typename DiscreteFunctionType::LocalFunctionType              LocalFuncType;
+    typedef typename DiscretePressureFunctionType::LocalFunctionType      LocalPressureType;
 
     // Types extracted from the underlying grid
-    typedef typename GridType::Traits::LeafIntersectionIterator IntersectionIterator;
+    typedef typename GridType::Traits::LeafIntersectionIterator           IntersectionIterator;
 
-    typedef typename GridPartType::Traits::IndexSetType IndexSetType;
-    typedef typename IntersectionIterator::Intersection IntersectionType;
-    typedef typename GridType::template Codim<0>::Entity   EntityType ;
-    typedef typename GridType::template Codim<0>::Geometry GeometryType;
+    typedef typename GridPartType::Traits::IndexSetType                   IndexSetType;
+    typedef typename IntersectionIterator::Intersection                   IntersectionType;
+    typedef typename GridType::template Codim<0>::Entity                  EntityType ;
+    typedef typename GridType::template Codim<0>::Geometry                GeometryType;
     //! type of quadrature to be used
 
-    typedef typename Traits::VolumeQuadratureType VolumeQuadratureType;
-    typedef typename Traits::FaceQuadratureType FaceQuadratureType;
-#if 0
-#warning USING ISTL
-#if DGSCHEME // for all dg schemes including pdg (later not working)
-  typedef Dune::Fem::DGMatrixTraits< DiscreteFunctionSpaceType > MyMatrixTraits;
-#else
-  typedef Dune::Fem::LagrangeMatrixTraits< DiscreteFunctionSpaceType, DiscreteFunctionSpaceType, true > MyMatrixTraits;
-#endif
-//#else
-    struct MyMatrixTraits
-      : public MatrixTraits,
-        public Fem :: OverloadedSparseRowMatrix
-    {
-      // define new type of SparseRowMatrix to be used in SparseRowMatrixObject
-      typedef Dune::SparseRowMatrixExtra< double > MatrixType ;
-    };
-#endif
+    typedef typename OperatorTraits::VolumeQuadratureType                 VolumeQuadratureType;
+    typedef typename OperatorTraits::FaceQuadratureType                   FaceQuadratureType;
 
   public:
-#if 0
-    typedef Dune::Fem::ISTLMatrixOperator< DiscretePressurteFunctionType, DiscreteFunctionType, MyMatrixTraits >PressureGradMatType;
-    typedef Dune::Fem::ISTLMatrixOperator< DiscreteFunctionType, DiscretePressureFunctionType,MyMatrixTraits > PressureDivMatType;
-    typedef Dune::Fem::SparseRowMatrixOperator< DiscretePressureFunctionType,  DiscretePressureFunctionType, MyMatrixTraits >PressureStabMatType;
-#else
-    typedef Dune::Fem::SparseRowLinearOperator< DiscretePressureFunctionType, DiscreteFunctionType >PressureGradMatType;
-    typedef Dune::Fem::SparseRowLinearOperator<DiscreteFunctionType, DiscretePressureFunctionType > PressureDivMatType;
-    typedef Dune::Fem::SparseRowLinearOperator< DiscretePressureFunctionType,  DiscretePressureFunctionType >PressureStabMatType;
-#endif
-    typedef typename PressureGradMatType::LocalMatrixType LocalPressureGradMatType;
-    typedef typename PressureDivMatType::LocalMatrixType LocalPressureDivMatType;
-    typedef typename PressureStabMatType::LocalMatrixType LocalPressureStabMatType;
-    //typedef typename PressureGradMatType::MatrixType  PGMType;
-    //typedef typename PressureDivMatType::MatrixType  PDMType;:
-    //typedef typename PressureStabMatType::MatrixType PSMType;
-    typedef PressureGradMatType PGMType;
-    typedef PressureDivMatType PDMType;
-    typedef PressureStabMatType PSMType;
+    typedef typename CombAssTraits::template Matrix<0,1>                  PressureGradMatType;
+    typedef typename CombAssTraits::template Matrix<1,0>                  PressureDivMatType;
+    typedef typename CombAssTraits::template Matrix<1,1>                  PressureStabMatType;
 
-    typedef FieldMatrix<double,dimension,dimension> JacobianInverseType;
-  private:
-    //Class Members
-    const DiscreteFunctionSpaceType& spc_;
-    const ProblemType& problem_;
-    const DiscretePressureSpaceType& pressurespc_;
-    mutable DiscreteFunctionType veloRhs_;
-    mutable DiscretePressureFunctionType pressureRhs_;
-    int volumeQuadOrd_,faceQuadOrd_;
+    typedef typename PressureGradMatType::LocalMatrixType                 LocalPressureGradMatType;
+    typedef typename PressureDivMatType::LocalMatrixType                  LocalPressureDivMatType;
+    typedef typename PressureStabMatType::LocalMatrixType                 LocalPressureStabMatType;
 
-    PressureGradMatType pressureGradMatrix_;
-    PressureDivMatType  pressureDivMatrix_;
-    PressureStabMatType pressureStabMatrix_;
+    typedef PressureGradMatType                                           PGMType;
+    typedef PressureDivMatType                                            PDMType;
+    typedef PressureStabMatType                                           PSMType;
 
-    double d11_;
-    double d12_;
-    DomainType direction_;
+    typedef FieldMatrix<double,dimension,dimension>                       JacobianInverseType;
+
   public:
 
     //Constructor
@@ -178,7 +142,7 @@ namespace Dune {
         divu+=du[i][i];
     }
 
-    void assemble(const ProblemType& prob )
+    void assemble(const ProblemType& problem )
     {
 
       typedef Dune::Fem::DiagonalAndNeighborStencil<DiscretePressureSpaceType,DiscreteFunctionSpaceType> PgStencilType;
@@ -203,7 +167,7 @@ namespace Dune {
       IteratorType end = spc_.end();
       for(IteratorType it = spc_.begin(); it != end; ++it)
       {
-        assembleLocal( *it,prob );
+        assembleLocal( *it,problem );
       }
 
 #define SYMMCHECK 0
@@ -558,6 +522,24 @@ namespace Dune {
         }
       }
     }
+
+
+  private:
+    //Class Members
+    const DiscreteFunctionSpaceType& spc_;
+    const ProblemType& problem_;
+    const DiscretePressureSpaceType& pressurespc_;
+    mutable DiscreteFunctionType veloRhs_;
+    mutable DiscretePressureFunctionType pressureRhs_;
+    int volumeQuadOrd_,faceQuadOrd_;
+
+    PressureGradMatType pressureGradMatrix_;
+    PressureDivMatType  pressureDivMatrix_;
+    PressureStabMatType pressureStabMatrix_;
+
+    double d11_;
+    double d12_;
+    DomainType direction_;
   };
 }
 #endif

@@ -200,10 +200,10 @@ namespace Fem
    * \ingroup SpaceOperators
    */
   template< class OpTraits,
-            bool advection, bool diffusion = false >
+            bool advection = OpTraits::ModelType::hasAdvection,
+            bool diffusion = OpTraits::ModelType::hasDiffusion >
   struct DGAdaptationIndicatorOperator : public
-    DGAdvectionDiffusionOperatorBase<
-       CDGAdaptationIndicatorTraits< OpTraits, advection, diffusion > >
+    DGAdvectionDiffusionOperatorBase< CDGAdaptationIndicatorTraits< OpTraits, advection, diffusion > >
   {
     typedef CDGAdaptationIndicatorTraits< OpTraits, advection, diffusion > Traits ;
     typedef DGAdvectionDiffusionOperatorBase< Traits >  BaseType;
@@ -357,7 +357,7 @@ namespace Fem
       , uTmp_( 0 )
       , fvSpc_( 0 )
       , indicator_( 0 )
-      , diffFlux_( gridPart_, model_, DGPrimalFormulationParameters( ParameterKey::generate( name, "dgdiffusionflux." ) ) )
+      , diffFlux_( gridPart_, model_, DGPrimalDiffusionFluxParameters<>( ParameterKey::generate( name, "dgdiffusionflux." ) ) )
       , problem1_( model_, advflux_, diffFlux_ )
       , limitProblem_( model_ , space_.order() )
       , pass0_()

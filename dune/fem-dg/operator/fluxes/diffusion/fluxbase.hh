@@ -51,7 +51,7 @@ namespace Fem
    */
   template <class DiscreteFunctionSpaceImp,
             class Model,
-            class FluxParameterImp = DGPrimalFormulationParameters >
+            class FluxParameterImp >
   class DGDiffusionFluxBase
   {
   public:
@@ -59,8 +59,10 @@ namespace Fem
     typedef DiscreteFunctionSpaceImp DiscreteFunctionSpaceType;
 
     typedef FluxParameterImp                       ParameterType;
-    typedef typename ParameterType::MethodType     MethodType;
+    typedef typename ParameterType::IdType         IdType;
     typedef typename ParameterType::LiftingType    LiftingType;
+    typedef typename IdType::type                  IdEnum;
+    typedef typename LiftingType::type             LiftingEnum;
 
     enum { dimDomain = DiscreteFunctionSpaceType :: dimDomain };
     enum { dimRange  = DiscreteFunctionSpaceType :: dimRange };
