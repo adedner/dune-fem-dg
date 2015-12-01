@@ -757,6 +757,11 @@ namespace Fem
                                       dvalueEn[ pt ], dvalueNb[ pt ],
                                       retEn[ pt ], retNb[ pt ],
                                       dretEn[ pt ], dretNb[ pt ]);
+#else
+        retEn[pt]  = RangeType(0);
+        retNb[pt]  = RangeType(0);
+        dretEn[pt] = JacobianRangeType(0);
+        dretNb[pt] = JacobianRangeType(0);
 #endif
         advFlux_.numericalFlux(left, right,
                                valueEn[ pt ],valueNb[ pt ],
@@ -860,6 +865,9 @@ namespace Fem
 #ifndef EULER
           diffusionFlux_.boundaryFlux( local, valueEn[ pt ], valueNb[ pt ],  dvalueEn[ pt ],
                                        retEn[ pt ], dretEn[ pt ]);
+#else
+          retEn[pt]  = RangeType(0);
+          dretEn[pt] = JacobianRangeType(0);
 #endif
           advFlux_.numericalFlux(local, local,
                                  valueEn[ pt ],valueNb[ pt ],
