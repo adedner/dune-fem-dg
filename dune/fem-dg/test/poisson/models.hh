@@ -113,12 +113,6 @@ namespace Fem
     inline bool hasStiffSource () const { return true ; }
     inline bool hasNonStiffSource () const { return false ; }
 
-    template< class LocalEvaluation, int i>
-    virtual inline double stiffSource (const LocalEvaluation& local,
-                                       const RangeType& u,
-                                       const JacobianRangeType& du,
-                                       typename FunctionSpaceType::SubFunctionSpaceType<i>::RangeType& res) const
-
     template <class LocalEvaluation>
     inline double stiffSource (const LocalEvaluation& local,
                                const RangeType& u,
