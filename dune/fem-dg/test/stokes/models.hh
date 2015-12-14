@@ -19,33 +19,16 @@ namespace Fem
    * \brief Traits class for StokesModel
    *
    */
-  template <class GridPart,
-            class ProblemImp>
+  template <class GridPartImp, class ProblemImp>
   class StokesModelTraits
+    : public DefaultModelTraits< GridPartImp, ProblemImp >
   {
+    typedef DefaultModelTraits< GridPartImp, ProblemImp >              BaseType;
   public:
-    typedef ProblemImp  ProblemType;
-    typedef GridPart                                                   GridPartType;
-    typedef typename GridPartType :: GridType                          GridType;
-    static const int dimDomain = GridType::dimensionworld;
-    static const int dimRange = ProblemType :: dimRange;
-    static const int dimGradRange = dimRange * dimDomain;
+    typedef Dune::FieldVector< typename BaseType::DomainFieldType, BaseType::dimGradRange >
+                                                                       GradientType;
 
-    typedef double RangeFieldType;
-    typedef double DomainFieldType;
-    // Definition of domain and range types
-    typedef Dune::FieldVector< double, dimDomain >                     DomainType;
-    typedef Dune::FieldVector< double, dimDomain-1 >                   FaceDomainType;
-    typedef Dune::FieldVector< double, dimRange >                      RangeType;
-    typedef Dune::FieldVector< double, dimGradRange >                  GradientType;
-    // ATTENTION: These are matrices (c.f. StokesModel)
-    typedef Dune::FieldMatrix< double, dimRange, dimDomain >           FluxRangeType;
-    typedef Dune::FieldMatrix< double, dimRange, dimDomain >           JacobianRangeType;
-    typedef Dune::FieldMatrix< double, dimGradRange, dimDomain >       DiffusionRangeType;
-    typedef typename GridType :: template Codim< 0 > :: Entity         EntityType;
-    typedef typename GridPartType :: IntersectionIteratorType          IntersectionIterator;
-    typedef typename IntersectionIterator :: Intersection              IntersectionType;
-
+    typedef std::tuple <>                                              ModelParameter;
   };
 
   /**
@@ -64,10 +47,10 @@ namespace Fem
    * where each class methods describes an analytical function.
    * <ul>
    * <li> \f$F\f$:   advection() </li>
-   * <li> \f$a\f$:   diffusion1() </li>
-   * <li> \f$A\f$:   diffusion2() </li>
+   * <li> \f$a\f$:   jacobian() </li>
+   * <li> \f$A\f$:   diffusion() </li>
    * <li> \f$g_D\f$  boundaryValue() </li>
-   * <li> \f$g_N\f$  boundaryFlux1(), boundaryFlux2() </li>
+   * <li> \f$g_N\f$  boundaryFlux() </li>
    * </ul>
    *
    * \attention \f$F(U)\f$ and \f$A(U,V)\f$ are matrix valued, and therefore the
@@ -77,36 +60,37 @@ namespace Fem
    *
    * for a matrix \f$M\in \mathbf{M}^{n\times m}\f$.
    *
-   * \param GridPart GridPart for extraction of dimension
-   * \param ProblemType Class describing the initial(t=0) and exact solution
+   * \param GridPartImp GridPart for extraction of dimension
+   * \param ProblemImp Class describing the initial(t=0) and exact solution
    */
-  template <class GridPartType, class ProblemImp>
-  class StokesModel : public DefaultModel< StokesModelTraits< GridPartType, ProblemImp > >
+  template <class GridPartImp, class ProblemImp>
+  class StokesModel : public DefaultModel< StokesModelTraits< GridPartImp, ProblemImp > >
   {
   public:
-    typedef ProblemImp  ProblemType ;
+    typedef StokesModelTraits< GridPartImp, ProblemImp >    Traits;
+    typedef typename Traits::ProblemType                    ProblemType;
 
-    typedef typename GridPartType :: GridType                          GridType;
+    typedef typename Traits::GridType                       GridType;
     static const int dimDomain = GridType::dimensionworld;
-    static const int dimRange  = ProblemType :: dimRange;
-    typedef StokesModelTraits< GridPartType, ProblemType >             Traits;
-    typedef typename Traits :: DomainFieldType                         DomainFieldType;
-    typedef typename Traits :: RangeFieldType                          RangeFieldType;
-    typedef typename Traits :: DomainType                              DomainType;
-    typedef typename Traits :: RangeType                               RangeType;
-    typedef typename Traits :: GradientType                            GradientType;
-    typedef typename Traits :: FluxRangeType                           FluxRangeType;
-    typedef typename Traits :: DiffusionRangeType                      DiffusionRangeType;
-    typedef typename Traits :: FaceDomainType                          FaceDomainType;
-    typedef typename Traits :: JacobianRangeType                       JacobianRangeType;
+    static const int dimRange  = ProblemType::dimRange;
+    typedef typename Traits::DomainFieldType                DomainFieldType;
+    typedef typename Traits::RangeFieldType                 RangeFieldType;
+    typedef typename Traits::DomainType                     DomainType;
+    typedef typename Traits::RangeType                      RangeType;
+    typedef typename Traits::GradientType                   GradientType;
+    typedef typename Traits::FluxRangeType                  FluxRangeType;
+    typedef typename Traits::DiffusionRangeType             DiffusionRangeType;
+    typedef typename Traits::FaceDomainType                 FaceDomainType;
+    typedef typename Traits::JacobianRangeType              JacobianRangeType;
 
-    typedef typename ProblemType :: DiffusionMatrixType   DiffusionMatrixType ;
+    typedef typename Traits::DiffusionMatrixType            DiffusionMatrixType ;
 
-    typedef typename Traits :: EntityType                       EntityType;
-    typedef typename Traits :: IntersectionType                 IntersectionType;
+    typedef typename Traits::EntityType                     EntityType;
+    typedef typename Traits::IntersectionType               IntersectionType;
+
     static const bool hasDiffusion = true;
-  public:
     static const int ConstantVelocity = false;
+
     /**
      * \brief Constructor
      *
@@ -114,9 +98,9 @@ namespace Fem
      *
      * \param problem Class describing the initial(t=0) and exact solution
      */
-    StokesModel(const ProblemType& problem) : problem_(problem)
-    {
-    }
+    StokesModel(const ProblemType& problem)
+      : problem_(problem)
+    {}
 
     inline bool hasFlux() const { return true ; }
 
@@ -124,10 +108,10 @@ namespace Fem
     inline bool hasNonStiffSource() const { return false ; }
 
     template <class LocalEvaluation>
-    inline double stiffSource( const LocalEvaluation& local,
-                          const RangeType& u,
-                          const JacobianRangeType& du,
-                          RangeType & s) const
+    inline double stiffSource (const LocalEvaluation& local,
+                               const RangeType& u,
+                               const JacobianRangeType& du,
+                               RangeType & s) const
     {
       const DomainType x = local.entity().geometry().global( local.point() );
       // right hand side
@@ -140,10 +124,10 @@ namespace Fem
     }
 
     template <class LocalEvaluation>
-    inline double nonStiffSource( const LocalEvaluation& local,
-                          const RangeType& u,
-                          const JacobianRangeType& du,
-                          RangeType & s) const
+    inline double nonStiffSource (const LocalEvaluation& local,
+                                  const RangeType& u,
+                                  const JacobianRangeType& du,
+                                  RangeType & s) const
     {
       s = 0;
       return 0.0;
@@ -159,10 +143,10 @@ namespace Fem
      * \param f \f$f(U)\f$
      */
     template <class LocalEvaluation>
-    inline void advection( const LocalEvaluation& local,
+    inline void advection (const LocalEvaluation& local,
                            const RangeType& u,
                            const JacobianRangeType& jacu,
-                           FluxRangeType & f ) const
+                           FluxRangeType & f) const
     {
       // evaluate velocity V
       const DomainType v = velocity( local );
@@ -191,7 +175,7 @@ namespace Fem
      * \brief diffusion term \f$a\f$
      */
     template <class LocalEvaluation>
-    inline void jacobian(const LocalEvaluation& local,
+    inline void jacobian (const LocalEvaluation& local,
                           const RangeType& u,
                           DiffusionRangeType& a) const
     {
@@ -203,12 +187,6 @@ namespace Fem
       for (int r=0;r<dimRange;r++)
         for (int d=0;d<dimDomain;d++)
           a[dimDomain*r+d][d] = u[r];
-    }
-
-    template <class T>
-    T SQR( const T& a ) const
-    {
-      return (a * a);
     }
 
     template <class LocalEvaluation>
@@ -231,15 +209,6 @@ namespace Fem
       maxValue = values.infinity_norm();
     }
 
-    inline double lambdaK( const DiffusionMatrixType& K ) const
-    {
-      DomainType values ;
-      // calculate eigenvalues
-      Dune::FMatrixHelp :: eigenValues( K, values );
-
-      // value[ 0 ] is smallest ev
-      return SQR(values[ dimDomain -1 ]) / values[ 0 ];
-    }
 
     template <class LocalEvaluation>
     inline double penaltyFactor( const LocalEvaluation& left,
@@ -340,7 +309,7 @@ namespace Fem
      * \brief dirichlet boundary values
      */
     template <class LocalEvaluation>
-    inline  void boundaryValue(const LocalEvaluation& local,
+    inline void boundaryValue (const LocalEvaluation& local,
                                const RangeType& uLeft,
                                RangeType& uRight) const
     {
@@ -368,6 +337,23 @@ namespace Fem
     }
 
     const ProblemType& problem () const { return problem_; }
+  private:
+
+    template <class T>
+    T SQR( const T& a ) const
+    {
+      return (a * a);
+    }
+
+    inline double lambdaK( const DiffusionMatrixType& K ) const
+    {
+      DomainType values ;
+      // calculate eigenvalues
+      Dune::FMatrixHelp :: eigenValues( K, values );
+
+      // value[ 0 ] is smallest ev
+      return SQR(values[ dimDomain -1 ]) / values[ 0 ];
+    }
 
    protected:
     const ProblemType& problem_;

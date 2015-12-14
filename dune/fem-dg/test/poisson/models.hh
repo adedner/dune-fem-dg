@@ -18,33 +18,17 @@ namespace Fem
   /**
    * \brief Traits class for PoissonModel
    */
-  template <class GridPart,
+  template <class GridPartImp,
             class ProblemImp>
   class PoissonModelTraits
+    : public DefaultModelTraits< GridPartImp, ProblemImp >
   {
+    typedef DefaultModelTraits< GridPartImp, ProblemImp >              BaseType;
   public:
-    typedef ProblemImp  ProblemType;
-    typedef GridPart                                                   GridPartType;
-    typedef typename GridPartType :: GridType                          GridType;
-    static const int dimDomain = GridType::dimensionworld;
-    static const int dimRange = ProblemType :: dimRange;
-    static const int dimGradRange = dimRange * dimDomain;
+    typedef Dune::FieldVector< typename BaseType::DomainFieldType, BaseType::dimGradRange >
+                                                                       GradientType;
 
-    typedef double RangeFieldType;
-    typedef double DomainFieldType;
-    // Definition of domain and range types
-    typedef Dune::FieldVector< double, dimDomain >                     DomainType;
-    typedef Dune::FieldVector< double, dimDomain-1 >                   FaceDomainType;
-    typedef Dune::FieldVector< double, dimRange >                      RangeType;
-    typedef Dune::FieldVector< double, dimGradRange >                  GradientType;
-    // ATTENTION: These are matrices (c.f. PoissonModel)
-    typedef Dune::FieldMatrix< double, dimRange, dimDomain >           FluxRangeType;
-    typedef Dune::FieldMatrix< double, dimRange, dimDomain >           JacobianRangeType;
-    typedef Dune::FieldMatrix< double, dimGradRange, dimDomain >       DiffusionRangeType;
-    typedef typename GridType :: template Codim< 0 > :: Entity         EntityType;
-    typedef typename GridPartType :: IntersectionIteratorType          IntersectionIterator;
-    typedef typename IntersectionIterator :: Intersection              IntersectionType;
-
+    typedef std::tuple <>                                              ModelParameter;
   };
 
   /**
@@ -53,18 +37,19 @@ namespace Fem
    * \ingroup AnalyticalModels
    *
    * This is an description class for the problem
-   * \f{eqnarray*}{ V + \nabla a(U)      & = & 0 \\
-   * \partial_t U + \nabla (F(U)+A(U,V)) & = & 0 \\
-   *                          U          & = & g_D \\
-   *                   \nabla U \cdot n  & = & g_N \f}
+   * \f{eqnarray*}{ V + \nabla a(U)                 & = & 0 \\
+   * \partial_t U + \nabla \cdot (F(U)+A(U,V)) +S(U) & = & 0 \\
+   *                                U                & = & g_D \\
+   *                               \nabla U \cdot n  & = & g_N \f}
    *
    * where each class methods describes an analytical function.
    * <ul>
    * <li> \f$F\f$:   advection() </li>
-   * <li> \f$a\f$:   diffusion1() </li>
-   * <li> \f$A\f$:   diffusion2() </li>
+   * <li> \f$a\f$:   jacobian() </li>
+   * <li> \f$A\f$:   diffusion() </li>
+   * <li> \f$S\f$:   stiffSource()/nonStiffSource() </li>
    * <li> \f$g_D\f$  boundaryValue() </li>
-   * <li> \f$g_N\f$  boundaryFlux1(), boundaryFlux2() </li>
+   * <li> \f$g_N\f$  boundaryFlux() </li>
    * </ul>
    *
    * \attention \f$F(U)\f$ and \f$A(U,V)\f$ are matrix valued, and therefore the
@@ -77,30 +62,32 @@ namespace Fem
    * \param GridPart GridPart for extraction of dimension
    * \param ProblemType Class describing the initial(t=0) and exact solution
    */
-  template <class GridPartType, class ProblemImp>
-  class PoissonModel : public DefaultModel< PoissonModelTraits< GridPartType, ProblemImp > >
+  template <class GridPartImp, class ProblemImp>
+  class PoissonModel : public DefaultModel< PoissonModelTraits< GridPartImp, ProblemImp > >
   {
   public:
-    typedef ProblemImp  ProblemType ;
+    typedef PoissonModelTraits< GridPartImp, ProblemImp >     Traits;
+    typedef typename Traits::ProblemType                      ProblemType;
 
-    typedef typename GridPartType :: GridType                          GridType;
-    static const int dimDomain = GridType::dimensionworld;
-    static const int dimRange = ProblemType :: dimRange;
-    typedef PoissonModelTraits< GridPartType, ProblemType >             Traits;
-    typedef typename Traits :: DomainFieldType                         DomainFieldType;
-    typedef typename Traits :: RangeFieldType                          RangeFieldType;
-    typedef typename Traits :: DomainType                              DomainType;
-    typedef typename Traits :: RangeType                               RangeType;
-    typedef typename Traits :: GradientType                            GradientType;
-    typedef typename Traits :: FluxRangeType                           FluxRangeType;
-    typedef typename Traits :: DiffusionRangeType                      DiffusionRangeType;
-    typedef typename Traits :: FaceDomainType                          FaceDomainType;
-    typedef typename Traits :: JacobianRangeType                       JacobianRangeType;
+    typedef typename Traits::GridPartType                     GridPartType;
+    typedef typename Traits::GridType                         GridType;
+    static const int dimDomain = Traits::dimDomain;
+    static const int dimRange = Traits::dimRange;
 
-    typedef typename ProblemType :: DiffusionMatrixType   DiffusionMatrixType ;
+    typedef typename Traits::DomainFieldType                  DomainFieldType;
+    typedef typename Traits::RangeFieldType                   RangeFieldType;
+    typedef typename Traits::DomainType                       DomainType;
+    typedef typename Traits::RangeType                        RangeType;
+    typedef typename Traits::GradientType                     GradientType;
+    typedef typename Traits::FluxRangeType                    FluxRangeType;
+    typedef typename Traits::DiffusionRangeType               DiffusionRangeType;
+    typedef typename Traits::FaceDomainType                   FaceDomainType;
+    typedef typename Traits::JacobianRangeType                JacobianRangeType;
 
-    typedef typename Traits :: EntityType                       EntityType;
-    typedef typename Traits :: IntersectionType                 IntersectionType;
+    typedef typename ProblemType::DiffusionMatrixType         DiffusionMatrixType ;
+
+    typedef typename Traits::EntityType                       EntityType;
+    typedef typename Traits::IntersectionType                 IntersectionType;
 
     static const bool hasDiffusion = true;
     static const int ConstantVelocity = false;
@@ -126,11 +113,17 @@ namespace Fem
     inline bool hasStiffSource () const { return true ; }
     inline bool hasNonStiffSource () const { return false ; }
 
+    template< class LocalEvaluation, int i>
+    virtual inline double stiffSource (const LocalEvaluation& local,
+                                       const RangeType& u,
+                                       const JacobianRangeType& du,
+                                       typename FunctionSpaceType::SubFunctionSpaceType<i>::RangeType& res) const
+
     template <class LocalEvaluation>
     inline double stiffSource (const LocalEvaluation& local,
-                                const RangeType& u,
-                                const JacobianRangeType& du,
-                                RangeType & s) const
+                               const RangeType& u,
+                               const JacobianRangeType& du,
+                               RangeType & s) const
     {
       DomainType xgl = local.entity().geometry().global( local.point() );
       problem_.f( xgl, s );
@@ -154,7 +147,7 @@ namespace Fem
      *
      * \param local local evaluation
      * \param u \f$U\f$
-     * \param u \f$\nabla U\f$
+     * \param jac \f$\nabla U\f$
      * \param f \f$F(U)\f$
      */
     template <class LocalEvaluation>
@@ -164,7 +157,6 @@ namespace Fem
                            FluxRangeType & f) const
     {
       const DomainType v = velocity( local );
-
       //f = uV;
       for( int r=0; r<dimRange; ++r )
         for( int d=0; d<dimDomain; ++d )
@@ -175,9 +167,9 @@ namespace Fem
      * \brief diffusion term \f$a\f$
      */
     template <class LocalEvaluation>
-    inline void jacobian(const LocalEvaluation& local,
-                         const RangeType& u,
-                         DiffusionRangeType& a) const
+    inline void jacobian (const LocalEvaluation& local,
+                          const RangeType& u,
+                          DiffusionRangeType& a) const
     {
       a = 0;
 
@@ -189,18 +181,12 @@ namespace Fem
           a[dimDomain*r+d][d] = u[r];
     }
 
-    template <class T>
-    T SQR( const T& a ) const
-    {
-      return (a * a);
-    }
-
     template <class LocalEvaluation>
     inline void eigenValues (const LocalEvaluation& local,
                              const RangeType& u,
                              RangeType& maxValue) const
     {
-      DiffusionMatrixType K ;
+      DiffusionMatrixType K;
       DomainType xgl = local.entity().geometry().global( local.point() );
       problem_.K( xgl, K );
 
@@ -215,15 +201,6 @@ namespace Fem
       maxValue = values.infinity_norm();
     }
 
-    inline double lambdaK( const DiffusionMatrixType& K ) const
-    {
-      DomainType values ;
-      // calculate eigenvalues
-      Dune::FMatrixHelp :: eigenValues( K, values );
-
-      // value[ 0 ] is smallest ev
-      return SQR(values[ dimDomain -1 ]) / values[ 0 ];
-    }
 
     template <class LocalEvaluation>
     inline double penaltyFactor (const LocalEvaluation& left,
@@ -367,6 +344,23 @@ namespace Fem
     DomainType velocity (const LocalEvaluation& local) const
     {
       return DomainType( problem().constantAdvection() );
+    }
+
+  private:
+    template <class T>
+    T SQR( const T& a ) const
+    {
+      return (a * a);
+    }
+
+    inline double lambdaK( const DiffusionMatrixType& K ) const
+    {
+      DomainType values ;
+      // calculate eigenvalues
+      Dune::FMatrixHelp :: eigenValues( K, values );
+
+      // value[ 0 ] is smallest ev
+      return SQR(values[ dimDomain -1 ]) / values[ 0 ];
     }
 
   protected:

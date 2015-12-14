@@ -21,41 +21,14 @@ namespace Dune
 {
 namespace Fem
 {
-
-  /**
-   * \brief Traits class for HeatEqnModel
-   */
-  template <class GridPart, class ProblemImp >
+  template <class GridPartImp, class ProblemImp >
   class HeatEqnModelTraits
-    : public ProblemImp::FunctionSpaceType
+    : public DefaultModelTraits< GridPartImp, ProblemImp >
   {
-    typedef typename ProblemImp::FunctionSpaceType  BaseType;
+    typedef DefaultModelTraits< GridPartImp, ProblemImp >              BaseType;
   public:
-    enum { velo = 0, press = 1, blabla = 2 };
-    typedef std::integral_constant< int, velo   > velocityVar;
-    typedef std::integral_constant< int, press  > pressure;
-    typedef std::integral_constant< int, blabla > blablabla;
-    typedef std::tuple < velocityVar, pressure, blablabla > ModelParameter;
-
-    typedef GridPart                                                      GridPartType;
-    typedef typename GridPartType :: GridType                             GridType;
-    typedef typename GridType :: template Codim< 0 > :: Entity            EntityType;
-    typedef typename GridPartType :: IntersectionIteratorType             IntersectionIterator;
-    typedef typename IntersectionIterator :: Intersection                 IntersectionType;
-
-    typedef typename BaseType::RangeFieldType                             RangeFieldType;
-    typedef typename BaseType::DomainFieldType                            DomainFieldType;
-    enum { dimRange  = BaseType :: dimRange };
-    enum { dimDomain = BaseType :: dimDomain };
-    static const int dimGradRange = dimRange * dimDomain ;
-
-    // Definition of domain and range types
-    typedef FieldVector< DomainFieldType, dimDomain-1 >                   FaceDomainType;
-    typedef FieldVector< RangeFieldType, dimGradRange >                   GradientType;
-    // ATTENTION: These are matrices (c.f. HeatEqnModel)
-    typedef typename BaseType :: JacobianRangeType                        FluxRangeType;
-    typedef FieldMatrix< RangeFieldType, dimGradRange, dimDomain >        DiffusionRangeType;
-    typedef FieldMatrix< RangeFieldType, dimDomain, dimDomain >           DiffusionMatrixType;
+    typedef Dune::FieldVector< typename BaseType::DomainFieldType, BaseType::dimGradRange >
+                                                                       GradientType;
 
     //typedef Fem::MinModLimiter< FieldType > LimiterFunctionType ;
     //typedef SuperBeeLimiter< FieldType > LimiterFunctionType ;
@@ -76,10 +49,10 @@ namespace Fem
    * where each class methods describes an analytical function.
    * <ul>
    * <li> \f$F\f$:   advection() </li>
-   * <li> \f$a\f$:   diffusion1() </li>
-   * <li> \f$A\f$:   diffusion2() </li>
+   * <li> \f$a\f$:   jacobian() </li>
+   * <li> \f$A\f$:   diffusion() </li>
    * <li> \f$g_D\f$  boundaryValue() </li>
-   * <li> \f$g_N\f$  boundaryFlux1(), boundaryFlux2() </li>
+   * <li> \f$g_N\f$  boundaryFlux() </li>
    * </ul>
    *
    * \attention \f$F(U)\f$ and \f$A(U,V)\f$ are matrix valued, and therefore the
@@ -97,39 +70,40 @@ namespace Fem
     public DefaultModel < HeatEqnModelTraits< GridPartType, ProblemImp > >
   {
   public:
+    typedef HeatEqnModelTraits< GridPartType, ProblemImp >    Traits;
+
     enum { velo = 0, press = 1, blabla = 2 };
     typedef std::integral_constant< int, velo   > velocityVar;
     typedef std::integral_constant< int, press  > pressure;
     typedef std::integral_constant< int, blabla > blablabla;
-    typedef std::tuple < velocityVar, pressure, blablabla > ModelParameter;
+    typedef std::tuple < velocityVar, pressure, blablabla >   ModelParameter;
 
     //typedef Fem::Selector< velo >  ModelParameterSelectorType;
     //typedef std::tuple< VelocityType* >  ModelParameterTypes;
     //typedef Fem::Selector< >  ModelParameterSelectorType;
     //typedef std::tuple< >  ModelParameterTypes;
 
+    typedef typename Traits::ProblemType                      ProblemType ;
+
+    static const int ConstantVelocity = ProblemType::ConstantVelocity;
+    typedef typename Traits::GridType                         GridType;
+    static const int dimDomain = Traits::dimDomain;
+    static const int dimRange  = Traits::dimRange;
+    typedef typename Traits::DomainType                       DomainType;
+    typedef typename Traits::RangeType                        RangeType;
+    typedef typename Traits::GradientType                     GradientType;
+    typedef typename Traits::FluxRangeType                    FluxRangeType;
+    typedef typename Traits::DiffusionRangeType               DiffusionRangeType;
+    typedef typename Traits::DiffusionMatrixType              DiffusionMatrixType;
+    typedef typename Traits::FaceDomainType                   FaceDomainType;
+    typedef typename Traits::JacobianRangeType                JacobianRangeType;
+
+    typedef typename Traits::EntityType                       EntityType;
+    typedef typename Traits::IntersectionType                 IntersectionType;
+
     // for heat equations advection is disabled
-    static const bool hasAdvection = true ;
-    static const bool hasDiffusion = true ;
-
-    typedef ProblemImp ProblemType ;
-
-    static const int ConstantVelocity = ProblemType :: ConstantVelocity;
-    typedef typename GridPartType :: GridType                      GridType;
-    typedef HeatEqnModelTraits< GridPartType, ProblemImp >         Traits;
-    static const int dimDomain = Traits :: dimDomain ;
-    static const int dimRange  = Traits :: dimRange ;
-    typedef typename Traits :: DomainType                          DomainType;
-    typedef typename Traits :: RangeType                           RangeType;
-    typedef typename Traits :: GradientType                        GradientType;
-    typedef typename Traits :: FluxRangeType                       FluxRangeType;
-    typedef typename Traits :: DiffusionRangeType                  DiffusionRangeType;
-    typedef typename Traits :: DiffusionMatrixType                 DiffusionMatrixType;
-    typedef typename Traits :: FaceDomainType                      FaceDomainType;
-    typedef typename Traits :: JacobianRangeType                   JacobianRangeType;
-
-    typedef typename Traits :: EntityType                          EntityType;
-    typedef typename Traits :: IntersectionType                    IntersectionType;
+    static const bool hasAdvection = true;
+    static const bool hasDiffusion = true;
 
     HeatEqnModel(const HeatEqnModel& otehr);
     const HeatEqnModel &operator=(const HeatEqnModel &other);

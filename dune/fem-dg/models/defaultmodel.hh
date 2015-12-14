@@ -11,6 +11,32 @@ namespace Dune
 {
 namespace Fem
 {
+  template <class GridPartImp, class ProblemImp>
+  struct DefaultModelTraits
+  {
+    typedef ProblemImp                                                     ProblemType;
+    typedef GridPartImp                                                    GridPartType;
+    typedef typename GridPartType::GridType                                GridType;
+    static const int dimDomain = GridType::dimensionworld;
+    static const int dimRange = ProblemType::dimRange;
+    static const int dimGradRange = dimRange * dimDomain;
+
+    typedef typename GridType::ctype                                       RangeFieldType;
+    typedef typename GridType::ctype                                       DomainFieldType;
+
+    typedef Dune::FieldVector< DomainFieldType, dimDomain >                DomainType;
+    typedef Dune::FieldVector< DomainFieldType, dimDomain-1 >              FaceDomainType;
+    typedef Dune::FieldVector< RangeFieldType, dimRange >                  RangeType;
+
+    typedef Dune::FieldMatrix< RangeFieldType, dimRange, dimDomain >       FluxRangeType;
+    typedef Dune::FieldMatrix< RangeFieldType, dimRange, dimDomain >       JacobianRangeType;
+    typedef Dune::FieldMatrix< RangeFieldType, dimDomain, dimDomain >      DiffusionMatrixType;
+    typedef Dune::FieldMatrix< RangeFieldType, dimGradRange, dimDomain >   DiffusionRangeType;
+
+    typedef typename GridType::template Codim< 0 >::Entity                 EntityType;
+    typedef typename GridPartType::IntersectionIteratorType                IntersectionIterator;
+    typedef typename IntersectionIterator::Intersection                    IntersectionType;
+  };
 
   /**
    * \brief Analytical model interface
@@ -23,18 +49,18 @@ namespace Fem
   public:
     typedef std::tuple <>  ModelParameter;
 
-    static const int dimDomain = Traits :: dimDomain ;
-    static const int dimRange  = Traits :: dimRange ;
+    static const int dimDomain = Traits::dimDomain;
+    static const int dimRange  = Traits::dimRange;
 
-    typedef typename Traits :: DomainType                              DomainType;
-    typedef typename Traits :: RangeType                               RangeType;
-    typedef typename Traits :: GradientType                            GradientType;
-    typedef typename Traits :: FluxRangeType                           FluxRangeType;
-    typedef typename Traits :: FaceDomainType                          FaceDomainType;
-    typedef typename Traits :: JacobianRangeType                       JacobianRangeType;
+    typedef typename Traits::DomainType                  DomainType;
+    typedef typename Traits::RangeType                   RangeType;
+    typedef typename Traits::GradientType                GradientType;
+    typedef typename Traits::FluxRangeType               FluxRangeType;
+    typedef typename Traits::FaceDomainType              FaceDomainType;
+    typedef typename Traits::JacobianRangeType           JacobianRangeType;
 
-    typedef typename Traits :: EntityType                       EntityType;
-    typedef typename Traits :: IntersectionType                 IntersectionType;
+    typedef typename Traits::EntityType                  EntityType;
+    typedef typename Traits::IntersectionType            IntersectionType;
 
     void setTime (double time) {}
 
@@ -105,7 +131,7 @@ namespace Fem
      *
      * \param local local evaluation
      * \param u \f$U\f$
-     * \param f \f$f(U)\f$
+     * \param f \f$F(U)\f$
      */
     template <class LocalEvaluation>
     inline void advection (const LocalEvaluation& local,
@@ -279,14 +305,11 @@ namespace Fem
 
     /** \brief check with the problem setup whether or not a cell is allowed to be refined
      *
-     *  \param[in] it Intersection
-     *  \param[in] time Current model time
-     *  \param[in] x Point w.r.t. intersection \a it
+     *  \param[in] local local evaluation
      *  \return true if the cell can be refined
      */
-    inline bool allowsRefinement( const IntersectionType& it,
-                                  const double time,
-                                  const FaceDomainType& x ) const
+    template <class LocalEvaluation >
+    inline bool allowsRefinement( const LocalEvaluation& local ) const
     {
       return true;
     }

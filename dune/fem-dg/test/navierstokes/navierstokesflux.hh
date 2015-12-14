@@ -22,18 +22,20 @@ namespace Fem
     enum { dimGradRange = dimRange * dimDomain };
 
   public:
-    typedef typename Traits::ProblemType ProblemType;
-    typedef typename Traits::DomainType  DomainType;
-    typedef typename Traits::DomainFieldType  DomainFieldType;
-    typedef typename Traits::RangeFieldType   RangeFieldType;
-    typedef typename Traits::RangeType   RangeType;
+    typedef typename Traits::ProblemType                      ProblemType;
+    typedef typename Traits::DomainType                       DomainType;
+    typedef typename Traits::DomainFieldType                  DomainFieldType;
+    typedef typename Traits::RangeFieldType                   RangeFieldType;
+    typedef typename Traits::RangeType                        RangeType;
     typedef Dune::FieldVector< RangeFieldType, dimGradRange > GradientRangeType;
-    typedef typename Traits::JacobianRangeType  JacobianRangeType;
+    typedef typename Traits::JacobianRangeType                JacobianRangeType;
 
-    typedef Dune::FieldMatrix< RangeFieldType, dimGradRange, dimDomain > JacobianFluxRangeType;
+    typedef Dune::FieldMatrix< RangeFieldType, dimGradRange, dimDomain >
+                                                              DiffusionRangeType;
     typedef Dune::Fem::FieldMatrixConverter< GradientRangeType, JacobianRangeType >
-      ConvertedJacobianRangeType;
-    typedef Dune::FieldMatrix< RangeFieldType, dimDomain, dimDomain > VelocityGradientType;
+                                                              ConvertedJacobianRangeType;
+    typedef Dune::FieldMatrix< RangeFieldType, dimDomain, dimDomain >
+                                                              VelocityGradientType;
 
     NSFlux( const ProblemType& problem )
       : eulerFlux_()
@@ -50,7 +52,7 @@ namespace Fem
       eulerFlux_.analyticalFlux( gamma_ , u , f );
     }
 
-    inline void jacobian( const RangeType& u, JacobianFluxRangeType& du ) const
+    inline void jacobian( const RangeType& u, DiffusionRangeType& du ) const
     {
       du = 0;
 

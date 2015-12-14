@@ -38,6 +38,7 @@ namespace Fem
     static const int polynomialOrder = polOrd == -1 ? 0 : polOrd;
 
     typedef DiscreteFunctionImp                                          DestinationType ;
+    //static_assert( std::is_same<typename  ModelType::RangeType, typename DiscreteFunctionType::RangeType>::value, "range type does not fit.");
     typedef typename DestinationType::DiscreteFunctionSpaceType          DiscreteFunctionSpaceType;
 
     typedef Fem::CachingQuadrature< GridPartType, 0 >                    VolumeQuadratureType;
@@ -75,6 +76,8 @@ namespace Fem
 
     typedef DiscreteFunctionImp                                          DestinationType ;
     typedef typename DestinationType::DiscreteFunctionSpaceType          DiscreteFunctionSpaceType;
+
+    static_assert( std::is_same<typename ModelType::RangeType, typename DestinationType::RangeType>::value, "range type does not fit.");
 
     typedef Fem::CachingQuadrature< GridPartType, 0 >                    VolumeQuadratureType;
     typedef Fem::CachingQuadrature< GridPartType, 1 >                    FaceQuadratureType;

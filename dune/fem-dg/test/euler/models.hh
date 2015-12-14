@@ -22,45 +22,22 @@ namespace Dune
 {
 namespace Fem
 {
-
-  template< class GridPart >
+  template< class GridPartImp, class ProblemImp >
   class EulerModelTraits
-    : public FunctionSpace< double, double,
-                            GridPart::GridType::dimensionworld,
-                            GridPart::GridType::dimensionworld + 2 >
+    : public DefaultModelTraits< GridPartImp, ProblemImp >
   {
-    typedef FunctionSpace< double, double,
-                           GridPart::GridType::dimensionworld,
-                           GridPart::GridType::dimensionworld + 2 >  BaseType;
+    typedef DefaultModelTraits< GridPartImp, ProblemImp >           BaseType;
   public:
+    typedef Dune::FieldVector< typename BaseType::DomainFieldType, BaseType::dimGradRange >
+                                                                    GradientType;
 
-    typedef GridPart GridPartType;
-    typedef typename GridPart::GridType     GridType;
+    typedef std::tuple<>                                            ModelParameter;
 
-    enum{ dimDomain = GridType::dimensionworld };
-    enum{ dimRange  = dimDomain + 2 }; // the Euler equations
-    enum{ dimGradRange = dimRange * dimDomain };
+    typedef MinModLimiter< typename BaseType::DomainFieldType >     LimiterFunctionType ;
+    //typedef SuperBeeLimiter< typename BaseType::DomainFieldType > LimiterFunctionType ;
+    //typedef VanLeerLimiter< typename BaseType::DomainFieldType >  LimiterFunctionType ;
 
-    typedef BaseType FunctionSpaceType ;
-    typedef typename ToNewDimRangeFunctionSpace< FunctionSpaceType, dimGradRange > :: Type  GradientFunctionSpaceType;
-
-    typedef typename FunctionSpaceType :: JacobianRangeType    FluxRangeType ;
-    typedef typename ToNewDimDomainFunctionSpace<
-      FunctionSpaceType, dimDomain-1 > :: Type :: DomainType   FaceDomainType ;
-
-    typedef typename GradientFunctionSpaceType :: RangeType    GradientType;
-    typedef GradientType                                       DiffusionType;
-    typedef typename GradientFunctionSpaceType :: JacobianRangeType  JacobianFluxRangeType ;
-
-    typedef typename GridPart::IntersectionIteratorType           IntersectionIteratorType;
-    typedef typename IntersectionIteratorType::Intersection       IntersectionType;
-    typedef typename GridType::template Codim<0>::Entity          EntityType;
-
-    typedef Thermodynamics< dimDomain >                           ThermodynamicsType;
-
-    typedef MinModLimiter< typename FunctionSpaceType :: RangeFieldType > LimiterFunctionType ;
-    //typedef SuperBeeLimiter< FieldType > LimiterFunctionType ;
-    //typedef VanLeerLimiter< FieldType > LimiterFunctionType ;
+    typedef Thermodynamics< BaseType::dimDomain >                   ThermodynamicsType;
   };
 
 
@@ -69,34 +46,31 @@ namespace Fem
    *
    * \ingroup AnalyticalModels
    */
-  template< class GridPartType , class ProblemImp >
+  template< class GridPartType, class ProblemImp >
   class EulerModel :
-    public DefaultModel< EulerModelTraits< GridPartType > >
+    public DefaultModel< EulerModelTraits< GridPartType, ProblemImp > >
   {
-    typedef EulerModel< GridPartType, ProblemImp >            ThisType;
-    typedef DefaultModel< EulerModelTraits< GridPartType > >  BaseType;
-   public:
-    typedef EulerModelTraits< GridPartType >                  Traits;
-    typedef ProblemImp                                        ProblemType;
+  public:
+    typedef EulerModelTraits< GridPartType, ProblemImp > Traits;
+    typedef typename Traits::ProblemType                 ProblemType;
 
-    enum { dimDomain = Traits :: dimDomain };
-    enum { dimRange = Traits :: dimRange };
+    enum { dimDomain = Traits::dimDomain };
+    enum { dimRange = Traits::dimRange };
 
-    typedef typename Traits :: GridType                       GridType;
-    typedef typename Traits :: EntityType                     EntityType;
-    typedef typename Traits :: IntersectionIteratorType       IntersectionIteratorType;
-    typedef typename Traits :: IntersectionType               IntersectionType;
-    typedef typename Traits :: FaceDomainType                 FaceDomainType;
+    typedef typename Traits::GridType                    GridType;
+    typedef typename Traits::EntityType                  EntityType;
+    typedef typename Traits::IntersectionType            IntersectionType;
+    typedef typename Traits::FaceDomainType              FaceDomainType;
 
-    typedef typename Traits :: RangeType                      RangeType;
-    typedef typename RangeType :: field_type                  FieldType ;
-    typedef typename Traits :: DomainType                     DomainType;
-    typedef typename Traits :: FluxRangeType                  FluxRangeType;
-    typedef typename Traits :: GradientType              GradientType;
-    typedef typename Traits :: JacobianRangeType              JacobianRangeType;
-    typedef typename Traits :: JacobianFluxRangeType          JacobianFluxRangeType;
+    typedef typename Traits::RangeType                   RangeType;
+    typedef typename Traits::RangeFieldType              RangeFieldType ;
+    typedef typename Traits::DomainType                  DomainType;
+    typedef typename Traits::FluxRangeType               FluxRangeType;
+    typedef typename Traits::GradientType                GradientType;
+    typedef typename Traits::JacobianRangeType           JacobianRangeType;
+    typedef typename Traits::DiffusionRangeType          DiffusionRangeType;
 
-    typedef typename Traits::ThermodynamicsType               ThermodynamicsType;
+    typedef typename Traits::ThermodynamicsType          ThermodynamicsType;
 
     // for Euler equations diffusion is disabled
     static const bool hasAdvection = true ;
@@ -331,12 +305,11 @@ namespace Fem
     /////////////////////////////////////////////////////////////////
     // Limiter section
     ////////////////////////////////////////////////////////////////
-    inline void velocity(
-               const EntityType& en,
-               const double time,
-               const DomainType& x,
-               const RangeType& u,
-               DomainType& velocity) const
+    inline void velocity (const EntityType& en,
+                          const double time,
+                          const DomainType& x,
+                          const RangeType& u,
+                          DomainType& velocity) const
     {
       for(int i=0; i<dimDomain; ++i)
       {
@@ -384,19 +357,18 @@ namespace Fem
                      RangeType& jump) const
     {
       // take pressure as shock detection values
-      const FieldType pl = pressure( uLeft );
-      const FieldType pr = pressure( uRight );
+      const RangeFieldType pl = pressure( uLeft );
+      const RangeFieldType pr = pressure( uRight );
       jump  = (pl-pr)/(0.5*(pl+pr));
     }
 
     // calculate jump between left and right value
-    inline void adaptationIndicator(
-                     const IntersectionType& it,
-                     const double time,
-                     const FaceDomainType& x,
-                     const RangeType& uLeft,
-                     const RangeType& uRight,
-                     RangeType& indicator) const
+    inline void adaptationIndicator (const IntersectionType& it,
+                                     const double time,
+                                     const FaceDomainType& x,
+                                     const RangeType& uLeft,
+                                     const RangeType& uRight,
+                                     RangeType& indicator) const
     {
       // take density as shock detection values
       indicator = (uLeft[0] - uRight[0])/(0.5 * (uLeft[0]+uRight[0]));

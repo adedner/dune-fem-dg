@@ -25,38 +25,14 @@ namespace Fem
   /**
    * \brief Traits class for NavierStokesModel
    */
-  template <class GridPart>
+  template <class GridPartImp, class ProblemImp >
   class NavierStokesModelTraits
-    : public Fem::FunctionSpace< typename GridPart::GridType::ctype,
-                                 double,
-                                 GridPart::GridType::dimensionworld,
-                                 GridPart::GridType::dimensionworld >
+    : public DefaultModelTraits< GridPartImp, ProblemImp >
   {
-    typedef Fem::FunctionSpace< typename GridPart::GridType::ctype,
-                                double,
-                                GridPart::GridType::dimensionworld,
-                                GridPart::GridType::dimensionworld >  BaseType;
+    typedef DefaultModelTraits< GridPartImp, ProblemImp >              BaseType;
   public:
-    typedef GridPart                                                      GridPartType;
-    typedef typename GridPartType :: GridType                             GridType;
-
-    typedef typename BaseType::RangeFieldType                             RangeFieldType;
-    typedef typename BaseType::DomainFieldType                            DomainFieldType;
-
-    enum { dimRange  = BaseType :: dimRange };
-    enum { dimDomain = BaseType :: dimDomain };
-    static const int dimGradRange = dimRange * dimDomain ;
-
-    // Definition of domain and range types
-    typedef FieldVector< DomainFieldType, dimDomain-1 >             FaceDomainType;
-    typedef FieldVector< RangeFieldType, dimGradRange >             GradientType;
-    // ATTENTION: These are matrices (c.f. NavierStokesModel)
-    typedef typename BaseType :: JacobianRangeType                        FluxRangeType;
-    typedef FieldMatrix< RangeFieldType, dimGradRange, dimDomain >  DiffusionRangeType;
-    typedef FieldMatrix< RangeFieldType, dimDomain, dimDomain >     DiffusionMatrixType;
-    typedef typename GridType :: template Codim< 0 > :: Entity            EntityType;
-    typedef typename GridPartType :: IntersectionIteratorType             IntersectionIterator;
-    typedef typename IntersectionIterator :: Intersection                 IntersectionType;
+    typedef Dune::FieldVector< typename BaseType::DomainFieldType, BaseType::dimGradRange >
+                                                                       GradientType;
 
     //typedef Fem::MinModLimiter< FieldType > LimiterFunctionType ;
     //typedef SuperBeeLimiter< FieldType > LimiterFunctionType ;
@@ -75,10 +51,10 @@ namespace Fem
    * where each class methods describes an analytical function.
    * <ul>
    * <li> \f$F\f$:   advection() </li>
-   * <li> \f$a\f$:   diffusion1() </li>
-   * <li> \f$A\f$:   diffusion2() </li>
+   * <li> \f$a\f$:   jacobian() </li>
+   * <li> \f$A\f$:   diffusion() </li>
    * <li> \f$g_D\f$  boundaryValue() </li>
-   * <li> \f$g_N\f$  boundaryFlux1(), boundaryFlux2() </li>
+   * <li> \f$g_N\f$  boundaryFlux() </li>
    * </ul>
    *
    * \attention \f$F(U)\f$ and \f$A(U,V)\f$ are matrix valued, and therefore the
@@ -100,45 +76,46 @@ namespace Fem
   //  where V is constant vector
   //
   ////////////////////////////////////////////////////////
-  template <class GridPartType, class ProblemImp, bool rightHandSideModel >
+  template <class GridPartImp, class ProblemImp, bool rightHandSideModel >
   class NavierStokesModel :
-    public DefaultModel < NavierStokesModelTraits< GridPartType > >
+    public DefaultModel < NavierStokesModelTraits< GridPartImp, ProblemImp > >
   {
   public:
+    typedef NavierStokesModelTraits< GridPartImp, ProblemImp > Traits;
+
     enum { velo = 0, rhs = 1 };
-    typedef std::integral_constant< int, velo      > velocityVar;
-    typedef std::integral_constant< int, rhs       > rhsVar;
-    typedef std::tuple < velocityVar, rhsVar > ModelParameter;
+    typedef std::integral_constant< int, velo >           velocityVar;
+    typedef std::integral_constant< int, rhs  >           rhsVar;
+    typedef std::tuple < velocityVar, rhsVar >            ModelParameter;
 
     //typedef Fem::Selector< velo >  ModelParameterSelectorType;
     //typedef std::tuple< VelocityType* >  ModelParameterTypes;
     //typedef Fem::Selector< >  ModelParameterSelectorType;
     //typedef std::tuple< >  ModelParameterTypes;
 
-    // for heat equations advection is disabled
-    static const bool hasAdvection = true ;
-    static const bool hasDiffusion = true ;
+    typedef typename Traits::ProblemType                  ProblemType;
+    static_assert( ProblemType::dimRange == Traits::dimRange, "dimRange of Problem and Model does not fit.");
 
-    typedef ProblemImp ProblemType ;
+    static const int ConstantVelocity = ProblemType::ConstantVelocity;
+    typedef typename Traits::GridType                     GridType;
+    static const int dimDomain = Traits::dimDomain;
+    static const int dimRange  = Traits::dimRange;
+    typedef typename Traits::DomainType                   DomainType;
+    typedef typename Traits::RangeType                    RangeType;
+    typedef typename Traits::GradientType                 GradientType;
+    typedef typename Traits::FluxRangeType                FluxRangeType;
+    typedef typename Traits::DiffusionRangeType           DiffusionRangeType;
+    typedef typename Traits::DiffusionMatrixType          DiffusionMatrixType;
+    typedef typename Traits::FaceDomainType               FaceDomainType;
+    typedef typename Traits::JacobianRangeType            JacobianRangeType;
 
-    static const int ConstantVelocity = ProblemType :: ConstantVelocity;
-    typedef typename GridPartType :: GridType                        GridType;
-    typedef NavierStokesModelTraits< GridPartType >  Traits;
-    static const int dimDomain = Traits :: dimDomain ;
-    static const int dimRange  = Traits :: dimRange ;
-    typedef typename Traits :: DomainType                          DomainType;
-    typedef typename Traits :: RangeType                           RangeType;
-    typedef typename Traits :: GradientType                        GradientType;
-    typedef typename Traits :: FluxRangeType                       FluxRangeType;
-    typedef typename Traits :: DiffusionRangeType                  DiffusionRangeType;
-    typedef typename Traits :: DiffusionMatrixType                 DiffusionMatrixType;
-    typedef typename Traits :: FaceDomainType                      FaceDomainType;
-    typedef typename Traits :: JacobianRangeType                   JacobianRangeType;
+    typedef typename Traits::EntityType                   EntityType;
+    typedef typename Traits::IntersectionType             IntersectionType;
 
-    typedef typename Traits :: EntityType                          EntityType;
-    typedef typename Traits :: IntersectionType                    IntersectionType;
+    static const bool hasAdvection = true;
+    static const bool hasDiffusion = true;
 
-    NavierStokesModel(const NavierStokesModel& otehr);
+    NavierStokesModel(const NavierStokesModel& other);
     const NavierStokesModel &operator=(const NavierStokesModel &other);
   public:
     /**
@@ -189,6 +166,18 @@ namespace Fem
       }
     };
 
+    struct ComputeVelocity
+    {
+      typedef velocityVar VarId;
+      typedef DomainType  ReturnType;
+
+      template <class LocalEvaluation>
+      const RangeType& operator() (const LocalEvaluation& local, const RangeType& u ) const
+      {
+        return u;
+      }
+    };
+
     template <class LocalEvaluation>
     inline double stiffSource( const LocalEvaluation& local,
                                const RangeType& u,
@@ -217,26 +206,13 @@ namespace Fem
       return 0;
     }
 
-    struct ComputeVelocity
-    {
-      typedef velocityVar VarId;
-      typedef DomainType  ReturnType;
-
-      template <class LocalEvaluation>
-      const RangeType& operator() (const LocalEvaluation& local, const RangeType& u ) const
-      {
-        return u;
-      }
-    };
-
     /**
      * \brief advection term \f$F\f$
      *
-     * \param en entity on which to evaluate the advection term
-     * \param time current time of TimeProvider
-     * \param x coordinate local to entity
+     * \param local local evaluation
      * \param u \f$U\f$
-     * \param f \f$f(U)\f$
+     * \param jacu \f$\nabla U\f$
+     * \param f \f$F(U)\f$
      */
     template <class LocalEvaluation>
     inline void advection(const LocalEvaluation& local,

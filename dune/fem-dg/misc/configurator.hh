@@ -52,11 +52,11 @@ namespace Fem
   class AlgorithmConfigurator
   {
     template< class AnalyticalTraitsImp, class NewModelImp >
-    struct RhsAnalyticalTraits
+    struct NewRhsAnalyticalTraits
     {
-      typedef typename AnalyticalTraitsImp::ProblemInterfaceType    ProblemType;
-      typedef typename AnalyticalTraitsImp::InitialDataType         InitialDataType;
-      typedef typename AnalyticalTraitsImp::NewModelImp             ModelType;
+      typedef typename AnalyticalTraitsImp::ProblemType     ProblemType;
+      typedef typename AnalyticalTraitsImp::InitialDataType InitialDataType;
+      typedef NewModelImp                                   ModelType;
     };
 
   public:
@@ -106,6 +106,9 @@ namespace Fem
                                                    DiffusionFluxes< typename AnalyticalTraitsImp::ModelType, DomainDFSpace, DiffusionFluxIdentifier >,
                                                    ExtraParameterTupleImp,
                                                    AdaptationIndicatorFunctionSpaceImp >;
+
+    template< class AnalyticalTraitsImp, class NewModelImp >
+    using RhsAnalyticalTraits = NewRhsAnalyticalTraits< AnalyticalTraitsImp, NewModelImp >;
 
     //Operator/Assembler
     template< class OpTraits, OperatorSplit::Enum opSplit = OperatorSplit::Enum::full, Matrix::Enum matrix = matrixId >

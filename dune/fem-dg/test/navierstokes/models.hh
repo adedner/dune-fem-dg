@@ -16,50 +16,22 @@ namespace Dune
 namespace Fem
 {
 
-  //////////////////////////////////////////////////////
-  //
-  //                 NAVIER-STOKES EQNS
-  //
-  //////////////////////////////////////////////////////
-  template< class GridPart, class Problem >
+
+  template <class GridPartImp, class ProblemImp >
   class NSModelTraits
-    : public Problem :: FunctionSpaceType
+    : public DefaultModelTraits< GridPartImp, ProblemImp >
   {
-    typedef typename Problem :: FunctionSpaceType BaseType;
-
+    typedef DefaultModelTraits< GridPartImp, ProblemImp >           BaseType;
   public:
-    typedef Problem  ProblemType;
-    typedef GridPart GridPartType;
-    typedef typename GridPart :: GridType                     GridType;
+    typedef Dune::FieldVector< typename BaseType::RangeFieldType, BaseType::dimGradRange >
+                                                                    GradientType;
 
-    enum { dimDomain = GridType :: dimensionworld };
-    enum { dimRange = dimDomain + 2 };
-    enum { dimGradRange = dimRange * dimDomain };
-    enum { dimGradient = dimDomain + 1 };
+    typedef MinModLimiter< typename BaseType::DomainFieldType >     LimiterFunctionType;
+    //typedef Fem::MinModLimiter< FieldType > LimiterFunctionType ;
+    //typedef SuperBeeLimiter< FieldType > LimiterFunctionType ;
+    //typedef VanLeerLimiter< FieldType > LimiterFunctionType ;
 
-    typedef BaseType FunctionSpaceType ;
-
-    typedef typename FunctionSpaceType :: DomainFieldType    DomainFieldType ;
-    typedef typename FunctionSpaceType :: RangeFieldType     RangeFieldType ;
-    typedef FieldVector< DomainFieldType, FunctionSpaceType::dimDomain - 1 >    FaceDomainType;
-
-    typedef FieldVector< RangeFieldType, dimGradRange >      GradientType;
-    typedef typename FunctionSpaceType :: JacobianRangeType  FluxRangeType;
-
-    typedef typename FunctionSpaceType :: DomainType DomainType;
-    typedef typename FunctionSpaceType :: RangeType  RangeType;
-
-    typedef FieldVector< RangeFieldType, dimGradRange >             GradientRangeType;
-    typedef FieldMatrix< RangeFieldType, dimGradRange, dimDomain >  JacobianFluxRangeType;
-
-    typedef typename GridPart :: IntersectionIteratorType     IntersectionIterator;
-    typedef typename IntersectionIterator::Intersection       Intersection;
-    typedef Intersection       IntersectionType;
-    typedef typename GridPartType :: template Codim<0> :: EntityType  EntityType;
-
-    typedef typename ProblemType :: ThermodynamicsType                ThermodynamicsType;
-
-    typedef MinModLimiter< DomainFieldType > LimiterFunctionType;
+    typedef Thermodynamics< BaseType::dimDomain >                   ThermodynamicsType;
   };
 
 
@@ -68,36 +40,37 @@ namespace Fem
    *
    *  \ingroup AnalyticalModels
    */
-  template< class GridPartType , class ProblemImp >
+  template< class GridPartType, class ProblemImp >
   class NSModel : public DefaultModel < NSModelTraits< GridPartType, ProblemImp > >
   {
     public:
-    typedef ProblemImp                                        ProblemType;
-    typedef typename GridPartType::GridType                   GridType;
-    typedef NSModelTraits< GridPartType, ProblemType >        Traits;
+    typedef NSModelTraits< GridPartType, ProblemImp >  Traits;
 
-    typedef NSFlux< Traits >  FluxType ;
+    typedef typename Traits::ProblemType               ProblemType;
+    typedef typename GridPartType::GridType            GridType;
 
-    enum { dimDomain = Traits :: dimDomain };
-    enum { dimRange  = Traits :: dimRange  };
-    enum { dimGradRange = Traits::dimGradRange } ;
+    typedef NSFlux< Traits >                           FluxType;
 
-    typedef typename Traits :: EntityType                     EntityType;
-    typedef typename Traits :: IntersectionIterator           IntersectionIterator;
-    typedef typename Traits :: Intersection                   IntersectionType;
-    typedef typename Traits :: FaceDomainType                 FaceDomainType;
+    enum { dimDomain = Traits::dimDomain };
+    enum { dimRange  = Traits::dimRange  };
+    enum { dimGradRange = Traits::dimGradRange };
 
-    typedef typename Traits :: DomainType                     DomainType;
-    typedef typename Traits :: RangeType                      RangeType;
-    typedef typename Traits :: RangeFieldType                 RangeFieldType;
-    typedef typename Traits :: GradientRangeType              GradientRangeType;
-    typedef typename Traits :: JacobianRangeType              JacobianRangeType;
-    typedef typename Traits :: JacobianFluxRangeType          JacobianFluxRangeType;
-    typedef typename Traits :: ThermodynamicsType             ThermodynamicsType;
+    typedef typename Traits::EntityType                EntityType;
+    typedef typename Traits::IntersectionType          IntersectionType;
+
+    typedef typename Traits::DomainType                DomainType;
+    typedef typename Traits::FaceDomainType            FaceDomainType;
+    typedef typename Traits::RangeType                 RangeType;
+    typedef typename Traits::RangeFieldType            RangeFieldType;
+    typedef typename Traits::GradientType              GradientType;
+    typedef typename Traits::JacobianRangeType         JacobianRangeType;
+    typedef typename Traits::DiffusionRangeType        DiffusionRangeType;
+
+    typedef typename Traits::ThermodynamicsType        ThermodynamicsType;
 
     // for heat equations advection is disabled
-    static const bool hasAdvection = true ;
-    static const bool hasDiffusion = true ;
+    static const bool hasAdvection = true;
+    static const bool hasDiffusion = true;
 
    public:
     NSModel( const ProblemType& problem )
@@ -240,7 +213,7 @@ namespace Fem
     template <class LocalEvaluation>
     inline void jacobian( const LocalEvaluation& local,
                           const RangeType& u,
-                          JacobianFluxRangeType& a ) const
+                          DiffusionRangeType& a ) const
     {
       nsFlux_.jacobian( u, a );
     }
@@ -267,7 +240,7 @@ namespace Fem
     template <class LocalEvaluation>
     inline double boundaryFlux( const LocalEvaluation& local,
                                 const RangeType& uLeft,
-                                const GradientRangeType& duLeft,
+                                const GradientType& duLeft,
                                 RangeType& gLeft ) const
     {
       abort();
