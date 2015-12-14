@@ -31,16 +31,14 @@ namespace Fem
   class NSWaves : public EvolutionProblemInterface<
                     Dune::Fem::FunctionSpace< typename GridType::ctype,
                                               typename GridType::ctype,
-                                              //double,
                                               GridType::dimension, GridType::dimension + 2 >,
                     true >,
                   public Thermodynamics< GridType::dimensionworld, typename GridType::ctype >
   {
     NSWaves( const NSWaves& );
-    public:
+  public:
     typedef Fem::FunctionSpace<typename GridType::ctype,
                                typename GridType::ctype,
-                               // double,
                                GridType::dimensionworld,
                                GridType::dimensionworld + 2 > FunctionSpaceType ;
 

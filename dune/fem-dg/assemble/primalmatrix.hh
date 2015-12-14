@@ -274,7 +274,7 @@ namespace Fem
           RangeType arhs(0);
           // first assemble rhs (evaluate source with u=0)
           if ( model_.hasStiffSource() )
-          model_.stiffSource( local, uZero, uJacZero, arhs );
+            model_.stiffSource( local, uZero, uJacZero, arhs );
           if ( model_.hasNonStiffSource() )
           {
             RangeType sNonStiff (0);

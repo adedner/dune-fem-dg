@@ -117,11 +117,11 @@ namespace Fem
       space1_( gridPart_ ),
       space2_( gridPart_ ),
       diffFlux_( gridPart_, model_ ),
-      problem1_(model_, diffFlux_ ),
-      problem2_(model_, numflux_, diffFlux_),
+      discModel1_(model_, diffFlux_ ),
+      discModel2_(model_, numflux_, diffFlux_),
       pass0_ (),
-      pass1_(problem1_, pass0_, space1_),
-      pass2_(problem2_, pass1_, space2_)
+      pass1_(discModel1_, pass0_, space1_),
+      pass2_(discModel2_, pass1_, space2_)
     {}
 
     void setTime(const double time) {
@@ -147,11 +147,11 @@ namespace Fem
 
     inline double maxAdvectionTimeStep() const
     {
-      return problem2_.maxAdvectionTimeStep();
+      return discModel2_.maxAdvectionTimeStep();
     }
     inline double maxDiffusionTimeStep() const
     {
-      return problem2_.maxDiffusionTimeStep();
+      return discModel2_.maxDiffusionTimeStep();
     }
 
     inline void limit(const DestinationType& arg,DestinationType& dest) const
@@ -203,8 +203,8 @@ namespace Fem
     DiffusionFluxType   diffFlux_;
 
   private:
-    DiscreteModel1Type  problem1_;
-    DiscreteModel2Type  problem2_;
+    DiscreteModel1Type  discModel1_;
+    DiscreteModel2Type  discModel2_;
     Pass0Type           pass0_;
     Pass1Type           pass1_;
     Pass2Type           pass2_;

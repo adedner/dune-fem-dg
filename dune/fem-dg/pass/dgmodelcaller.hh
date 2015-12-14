@@ -49,7 +49,7 @@ namespace Fem
     typedef typename BaseType::RangeTupleType RangeTupleType;
     typedef typename BaseType::JacobianRangeTupleType JacobianRangeTupleType;
 
-      typedef  ElementQuadraturePointContext< EntityType, VolumeQuadratureType,
+    typedef ElementQuadraturePointContext< EntityType, VolumeQuadratureType,
                      Dune::TypeIndexedTuple< RangeTupleType, Selector >,
                      Dune::TypeIndexedTuple< JacobianRangeTupleType, Selector > > ElementQuadratureContextType ;
 
