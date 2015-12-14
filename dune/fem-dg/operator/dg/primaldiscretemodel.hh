@@ -544,7 +544,7 @@ namespace Fem
 #if 0
       // do not take into account part of the domain which is not
       // of computation significance (i.e. a damping layer)
-      if( ! model_.allowsRefinement( it, time, faceQuadInner.localPoint( quadPoint ) ) )
+      if( ! model_.allowsRefinement( left ) )
         return 0.;
 
       // call numerical flux of base type

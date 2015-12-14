@@ -511,7 +511,7 @@ namespace Fem
                          JacobianRangeType& gDiffLeft,
                          JacobianRangeType& gDiffRight ) const
     {
-      if( ! model_.allowsRefinement( left.intersection(), left.time(), left.localPoint() ) )
+      if( ! model_.allowsRefinement( left ) )
         return 0.;
 
       double ldt = BaseType :: numericalFlux( left, gLeft, gRight, gDiffLeft, gDiffRight );
