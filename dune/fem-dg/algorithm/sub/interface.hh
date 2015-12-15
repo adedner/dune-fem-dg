@@ -158,7 +158,6 @@ namespace Fem
      * \brief Constructor
      *
      * \param grid A grid
-     * \param name A unique name for the sub algorithm
      */
     SubAlgorithmInterface ( GridType &grid )
     : grid_( grid ),

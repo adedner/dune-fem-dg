@@ -20,101 +20,28 @@ namespace Fem
    *
    * \ingroup Problems
    */
-  template <class FunctionSpaceImp, class PressureSpaceImp>
-  class StokesProblemInterface : public ProblemInterface < FunctionSpaceImp >
+  template <class PoissonProblemImp, class StokesProblemImp>
+  class StokesProblemInterface
   {
   public:
-    typedef FunctionSpaceImp                                           FunctionSpaceType;
-    typedef PressureSpaceImp                                           PressureFunctionSpaceType;
+    typedef PoissonProblemImp                            PoissonProblemType;
+    typedef StokesProblemImp                             StokesProblemType;
 
-    typedef StokesProblemInterface< FunctionSpaceType, PressureFunctionSpaceType>  ThisType;
+    typedef std::tuple< PoissonProblemType, StokesProblemType >         ProblemTupleType;
 
-    enum { dimDomain = FunctionSpaceType :: dimDomain };
+    template< class ProblemTupleImp >
+    StokesProblemInterface( ProblemTupleImp problems )
+      : problems_( problems )
+    {}
 
-    typedef typename FunctionSpaceType :: DomainType                   DomainType;
-    typedef typename FunctionSpaceType :: RangeType                    RangeType;
-    typedef typename FunctionSpaceType :: JacobianRangeType            JacobianRangeType;
-    typedef typename FunctionSpaceType :: DomainFieldType              DomainFieldType;
-    typedef typename FunctionSpaceType :: RangeFieldType               RangeFieldType;
-
-    typedef typename PressureFunctionSpaceType :: RangeType            PressureRangeType;
-    typedef typename PressureFunctionSpaceType :: JacobianRangeType    PressureJacobianRangeType;
-
-    typedef FieldMatrix< RangeFieldType, dimDomain, dimDomain >        DiffusionMatrixType;
-
-  public:
-
-    //! destructor
-    virtual ~StokesProblemInterface() {}
-
-    //! the exact pressure
-    virtual void p(const DomainType& x, PressureRangeType& ret) const {}//= 0;
-
-    //! the pressure boundary data
-
-
-    virtual void gp(const DomainType& x, PressureRangeType& ret) const
+    template< int i >
+    const typename std::tuple_element<i,ProblemTupleType>::type& get() const
     {
-      p(x, ret ); //ret = 0;
+      return std::get<i>( problems_);
     }
 
-    //! mass factor gamma
-    virtual double gamma() const { return 0.0; }
-
-    //! the gradient of the exact solution
-    //virtual void gradient(const DomainType& x,
-    //                      JacobianRangeType& grad) const = 0;
-
-  protected:
-
-    StokesProblemInterface() : exactPressure_(*this){}
-
-
-    //! the exact pressure to the problem for EOC calculation
-    class ExactPressure
-      : public Fem::Function< PressureFunctionSpaceType, ExactPressure >
-    {
-    private:
-      typedef Fem::Function< PressureFunctionSpaceType, ExactPressure >            BaseType;
-
-      typedef StokesProblemInterface< FunctionSpaceType,PressureFunctionSpaceType> DataType;
-    protected:
-      PressureFunctionSpaceType  functionSpace_;
-      const DataType &data_;
-
-    public:
-      inline ExactPressure (  const ThisType& data )
-        : BaseType( ),
-          functionSpace_(),
-          data_(data)
-      {
-      }
-
-      inline void evaluate ( const DomainType &x, PressureRangeType &ret ) const
-      {
-         data_.p( x, ret );
-      }
-
-      inline void jacobian ( const DomainType &x,PressureJacobianRangeType &ret ) const
-      {
-      //   data_.gradient( x, ret );
-      }
-
-      inline void evaluate (const DomainType &x,
-                            const double time, PressureRangeType &phi ) const
-      {
-  			evaluate( x, phi );
-      }
-    }; // end class ExactSolutionX
-
-  public:
-    //! type of function converter for exact solution and gradient
-    typedef ExactPressure ExactPressureType;
-  //protected:
-    ExactPressureType exactPressure_;
-  public:
-    const ExactPressureType& exactPressure() const { return exactPressure_; }
-
+  private:
+    ProblemTupleType   problems_;
   };
 }
 }

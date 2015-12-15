@@ -492,7 +492,7 @@ namespace Dune {
         double intWeight=faceQuadInner.weight(l);
         DomainType quadInEn=edge.geometry().global(faceQuadInner.localPoint(l));
 
-        problem_.g(quadInEn,dirichletValue);
+        problem_.get<0>().g(quadInEn,dirichletValue);
         double pressureDirichlet;
 
         for(unsigned int n = 0; n <(unsigned int)localPressure.numDofs() ; ++n)

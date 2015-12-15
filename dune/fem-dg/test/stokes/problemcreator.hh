@@ -76,8 +76,7 @@ namespace Fem
         typedef HostGridPartType                              GridPartType;
 
         // define problem type here if interface should be avoided
-        typedef ProblemInterface< typename AC::template FunctionSpaces<DIMRANGE> >
-                                                                      ProblemInterfaceType;
+        typedef ProblemInterface< typename AC::template FunctionSpaces<DIMRANGE> >  ProblemInterfaceType;
 
         typedef typename ProblemInterfaceType::FunctionSpaceType      FunctionSpaceType;
 
@@ -85,7 +84,7 @@ namespace Fem
         {
           typedef ProblemInterfaceType                                ProblemType;
           typedef ProblemInterfaceType                                InitialDataType;
-          typedef StokesModel< GridPartType, InitialDataType >        ModelType;
+          typedef PoissonModel< GridPartType, InitialDataType >       ModelType;
 
           template< class Solution, class Model, class ExactFunction, class SigmaFunction>
           static void addEOCErrors ( Solution &u, Model &model, ExactFunction &f, SigmaFunction& sigma )
@@ -103,7 +102,7 @@ namespace Fem
 
         static ProblemInterfaceType* problem()
         {
-          return new GeneralizedStokesProblem< GridType > ();
+          return new typename GeneralizedStokesProblem< GridType >::PoissonProblemType();
         }
 
 
@@ -149,11 +148,11 @@ namespace Fem
       typedef HostGridPartType                              GridPartType;
 
       // define problem type here if interface should be avoided
-      typedef StokesProblemInterface< typename SubPoissonProblemCreator::FunctionSpaceType /*velocity*/,
-                                      typename AC::template FunctionSpaces<1> >
+      typedef StokesProblemInterface< SubPoissonProblemCreator::ProblemInterfaceType > /*velocity*/,
+                                      ProblemInterface< typename AC::template FunctionSpaces<1> > >
                                                                           ProblemInterfaceType;
 
-      typedef typename ProblemInterfaceType::PressureFunctionSpaceType    FunctionSpaceType;
+      typedef typename ProblemInterfaceType::StokesProblemType::FunctionSpaceType FunctionSpaceType;
 
       struct AnalyticalTraits
       {

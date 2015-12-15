@@ -287,10 +287,13 @@ namespace Fem
     enum { dimension = GridType::dimension  };
 
     typedef typename DiscreteVelocityFunctionSpaceType ::
-      template ToNewDimRange< dimension * ModelType::dimRange >::NewFunctionSpaceType SigmaFunctionSpaceType;
+      template ToNewDimRange< dimension * ElliptProblemTraits::AnalyticalTraits::ModelType::dimRange >::NewFunctionSpaceType
+                                                                    SigmaFunctionSpaceType;
 
     typedef StokesSigmaEstimator< GridPartType, DiscreteVelocityFunctionType, DiscreteFunctionType,
-                                  SigmaFunctionSpaceType, typename EllipticalAlgorithmType::AssemblerType, ModelType, polOrd > StokesSigmaEstimatorType;
+                                  SigmaFunctionSpaceType, typename EllipticalAlgorithmType::AssemblerType,
+                                  typename ElliptProblemTraits::AnalyticalTraits::ModelType, polOrd >
+                                                                    StokesSigmaEstimatorType;
 
     typedef CovariantTuple< typename BaseType::IOTupleType::type, typename EllipticalAlgorithmType::IOTupleType::type >
                                                                     IOTupleType;
@@ -408,7 +411,7 @@ namespace Fem
     virtual void doFinalize( const int loop ) override
     {
       ellAlg_.finalize( loop );
-      AnalyticalTraits::addEOCErrors( solution(), ellAlg_.model(), problem().exactPressure() );
+      AnalyticalTraits::addEOCErrors( solution(), ellAlg_.model(), problem().get<1>().exactSolution() );
     }
 
   protected:

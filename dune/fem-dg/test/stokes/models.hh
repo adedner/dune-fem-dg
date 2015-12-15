@@ -20,10 +20,10 @@ namespace Fem
    *
    */
   template <class GridPartImp, class ProblemImp>
-  class StokesModelTraits
+  class StokesPoissonModelTraits
     : public DefaultModelTraits< GridPartImp, ProblemImp >
   {
-    typedef DefaultModelTraits< GridPartImp, ProblemImp >              BaseType;
+    typedef DefaultModelTraits< GridPartImp, ProblemImp >       BaseType;
   public:
     typedef Dune::FieldVector< typename BaseType::DomainFieldType, BaseType::dimGradRange >
                                                                        GradientType;
@@ -31,48 +31,17 @@ namespace Fem
     typedef std::tuple <>                                              ModelParameter;
   };
 
-  /**
-   * \brief describes the analytical model
-   *
-   * \ingroup AnalyticalModels
-   *
-   * Analytical Model for the stokes problem.
-   *
-   * This is an description class for the problem
-   * \f{eqnarray*}{ V + \nabla a(U)      & = & 0 \\
-   * \partial_t U + \nabla (F(U)+A(U,V)) & = & 0 \\
-   *                          U          & = & g_D \\
-   *                   \nabla U \cdot n  & = & g_N \f}
-   *
-   * where each class methods describes an analytical function.
-   * <ul>
-   * <li> \f$F\f$:   advection() </li>
-   * <li> \f$a\f$:   jacobian() </li>
-   * <li> \f$A\f$:   diffusion() </li>
-   * <li> \f$g_D\f$  boundaryValue() </li>
-   * <li> \f$g_N\f$  boundaryFlux() </li>
-   * </ul>
-   *
-   * \attention \f$F(U)\f$ and \f$A(U,V)\f$ are matrix valued, and therefore the
-   * divergence is defined as
-   *
-   * \f[ \Delta M = \nabla \cdot (\nabla \cdot (M_{i\cdot})^t)_{i\in 1\dots n} \f]
-   *
-   * for a matrix \f$M\in \mathbf{M}^{n\times m}\f$.
-   *
-   * \param GridPartImp GridPart for extraction of dimension
-   * \param ProblemImp Class describing the initial(t=0) and exact solution
-   */
   template <class GridPartImp, class ProblemImp>
-  class StokesModel : public DefaultModel< StokesModelTraits< GridPartImp, ProblemImp > >
+  class PoissonModel : public DefaultModel< StokesPoissonModelTraits< GridPartImp, ProblemImp > >
   {
   public:
-    typedef StokesModelTraits< GridPartImp, ProblemImp >    Traits;
-    typedef typename Traits::ProblemType                    ProblemType;
+    typedef ProblemImp                                      ProblemType;
+    typedef StokesPoissonModelTraits< GridPartImp, ProblemType >
+                                                            Traits;
 
     typedef typename Traits::GridType                       GridType;
-    static const int dimDomain = GridType::dimensionworld;
-    static const int dimRange  = ProblemType::dimRange;
+    static const int dimDomain = Traits::dimDomain;
+    static const int dimRange  = Traits::dimRange;
     typedef typename Traits::DomainFieldType                DomainFieldType;
     typedef typename Traits::RangeFieldType                 RangeFieldType;
     typedef typename Traits::DomainType                     DomainType;
@@ -98,7 +67,7 @@ namespace Fem
      *
      * \param problem Class describing the initial(t=0) and exact solution
      */
-    StokesModel(const ProblemType& problem)
+    PoissonModel(const ProblemType& problem)
       : problem_(problem)
     {}
 
@@ -354,6 +323,89 @@ namespace Fem
       // value[ 0 ] is smallest ev
       return SQR(values[ dimDomain -1 ]) / values[ 0 ];
     }
+
+   protected:
+    const ProblemType& problem_;
+  };
+
+
+
+  /**
+   * \brief describes the analytical model
+   *
+   * \ingroup AnalyticalModels
+   *
+   * Analytical Model for the stokes problem.
+   *
+   * This is an description class for the problem
+   * \f{eqnarray*}{ V + \nabla a(U)      & = & 0 \\
+   * \partial_t U + \nabla (F(U)+A(U,V)) & = & 0 \\
+   *                          U          & = & g_D \\
+   *                   \nabla U \cdot n  & = & g_N \f}
+   *
+   * where each class methods describes an analytical function.
+   * <ul>
+   * <li> \f$F\f$:   advection() </li>
+   * <li> \f$a\f$:   jacobian() </li>
+   * <li> \f$A\f$:   diffusion() </li>
+   * <li> \f$g_D\f$  boundaryValue() </li>
+   * <li> \f$g_N\f$  boundaryFlux() </li>
+   * </ul>
+   *
+   * \attention \f$F(U)\f$ and \f$A(U,V)\f$ are matrix valued, and therefore the
+   * divergence is defined as
+   *
+   * \f[ \Delta M = \nabla \cdot (\nabla \cdot (M_{i\cdot})^t)_{i\in 1\dots n} \f]
+   *
+   * for a matrix \f$M\in \mathbf{M}^{n\times m}\f$.
+   *
+   * \param GridPartImp GridPart for extraction of dimension
+   * \param ProblemImp Class describing the initial(t=0) and exact solution
+   */
+  template <class GridPartImp, class ProblemImp>
+  class StokesModel : public PoissonModel< GridPartImp, typename ProblemImp::PoissonProblemType >
+  {
+    typedef PoissonModel< GridPartImp, typename ProblemImp::PoissonProblemType > BaseType;
+  public:
+    typedef ProblemImp                                      ProblemType;
+    typedef StokesPoissonModelTraits< GridPartImp, typename ProblemType::PoissonProblemType >
+                                                            Traits;
+
+    typedef typename Traits::GridType                       GridType;
+    static const int dimDomain = Traits::dimDomain;
+    static const int dimRange  = Traits::dimRange;
+    typedef typename Traits::DomainFieldType                DomainFieldType;
+    typedef typename Traits::RangeFieldType                 RangeFieldType;
+    typedef typename Traits::DomainType                     DomainType;
+    typedef typename Traits::RangeType                      RangeType;
+    typedef typename Traits::GradientType                   GradientType;
+    typedef typename Traits::FluxRangeType                  FluxRangeType;
+    typedef typename Traits::DiffusionRangeType             DiffusionRangeType;
+    typedef typename Traits::FaceDomainType                 FaceDomainType;
+    typedef typename Traits::JacobianRangeType              JacobianRangeType;
+
+    typedef typename Traits::DiffusionMatrixType            DiffusionMatrixType ;
+
+    typedef typename Traits::EntityType                     EntityType;
+    typedef typename Traits::IntersectionType               IntersectionType;
+
+    static const bool hasDiffusion = true;
+    static const int ConstantVelocity = false;
+
+    /**
+     * \brief Constructor
+     *
+     * initializes model parameter
+     *
+     * \param problem Class describing the initial(t=0) and exact solution
+     */
+    StokesModel(const ProblemType& problem)
+      : BaseType( problem_.get<0>() ),
+        problem_(problem)
+    {}
+
+
+    const ProblemType& problem () const { return problem_; }
 
    protected:
     const ProblemType& problem_;

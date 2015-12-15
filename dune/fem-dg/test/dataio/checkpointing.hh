@@ -127,7 +127,7 @@ namespace Fem
     using BaseType::gridSize;
 
     SubCheckPointingAlgorithm ( GridType &grid, const std::string name = "" )
-    : BaseType( grid, name ),
+    : BaseType( grid ),
       gridPart_( grid ),
       space_( gridPart_ ),
       solution_( doCreateSolution() ),

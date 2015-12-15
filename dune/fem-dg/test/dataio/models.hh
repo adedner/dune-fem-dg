@@ -8,7 +8,7 @@ namespace Dune
 namespace Fem
 {
   template <class GridPart, class ProblemImp >
-  class DefaultModelTraits
+  class DefaultNoModelTraits
     : public ProblemImp::FunctionSpaceType
   {
     typedef typename ProblemImp::FunctionSpaceType                        BaseType;
@@ -34,7 +34,7 @@ namespace Fem
 
   template< class GridPartImp, class ProblemImp >
   class NoModel
-    : public DefaultModel< DefaultModelTraits< GridPartImp, ProblemImp > >
+    : public DefaultModel< DefaultNoModelTraits< GridPartImp, ProblemImp > >
   {
 
     public:
