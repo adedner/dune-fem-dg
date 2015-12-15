@@ -138,11 +138,6 @@ namespace Fem
     inline bool hasStiffSource() const { return true; }
     inline bool hasNonStiffSource() const { return false; }
 
-    void setTime( const double time )
-    {
-      problem_.setTime( time );
-    }
-
     template <class LocalEvaluation>
     inline double nonStiffSource( const LocalEvaluation& local,
                                   const RangeType& u,
@@ -186,8 +181,7 @@ namespace Fem
     {
       DomainType xgl = local.entity().geometry().global( local.point() );
       // right hand side f
-      problem_.setTime( local.time() );
-      problem_.f( xgl, s );
+      problem_.stiffSource( local.point(), local.time(), u, s );
 
       if( rightHandSideModel )
       {

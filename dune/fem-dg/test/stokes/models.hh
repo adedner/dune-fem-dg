@@ -17,7 +17,6 @@ namespace Fem
    *********************************************/
   /**
    * \brief Traits class for StokesModel
-   *
    */
   template <class GridPartImp, class ProblemImp>
   class StokesPoissonModelTraits

@@ -86,7 +86,7 @@ namespace Fem
         typedef HostGridPartType                              GridPartType;
 
         // define problem type here if interface should be avoided
-        typedef NavierStokesProblemDefault< GridType >                 ProblemInterfaceType;
+        typedef ThetaProblemInterface< typename AC::template FunctionSpaces<DIMRANGE> >  ProblemInterfaceType;
 
         typedef typename ProblemInterfaceType::FunctionSpaceType       FunctionSpaceType;
 
@@ -94,7 +94,7 @@ namespace Fem
         {
           typedef ProblemInterfaceType                                 ProblemType;
           typedef ProblemInterfaceType                                 InitialDataType;
-          typedef StokesModel< GridPartType, InitialDataType, false >  ModelType;
+          typedef PoissonModel< GridPartType, InitialDataType, false > ModelType;
 
           template< class Solution, class Model, class ExactFunction, class SigmaFunction>
           static void addEOCErrors ( Solution &u, Model &model, ExactFunction &f, SigmaFunction& sigma )
@@ -105,7 +105,7 @@ namespace Fem
 
         static ProblemInterfaceType* problem()
         {
-          return new NavierStokesProblemDefault< GridType > ();
+          return new typename NavierStokesProblemDefault< GridType >::PoissonProblemType ();
         }
 
         template< int polOrd >
@@ -132,7 +132,7 @@ namespace Fem
             //  {
             //    typedef ProblemInterfaceType                                   ProblemType;
             //    typedef ProblemInterfaceType                                   InitialDataType;
-            //    typedef StokesModel< GridPartType, InitialDataType, true >     ModelType;
+            //    typedef PoissonModel< GridPartType, InitialDataType, true >     ModelType;
             //  };
 
             //  typedef DGAdvectionFlux< typename RhsAnalyticalTraits::ModelType, AdvectionFluxIdentifier::none > RhsAdvectionFluxType;
@@ -167,9 +167,12 @@ namespace Fem
       typedef typename AC::GridParts                                   HostGridPartType;
       typedef HostGridPartType                                         GridPartType;
 
-      typedef NavierStokesProblemDefault< GridType >                   ProblemInterfaceType;
+      typedef StokesProblemInterface< typename SubPoissonProblemCreator::ProblemInterfaceType /*velocity*/,
+                                      ThetaProblemInterface< typename AC::template FunctionSpaces<1> > >
+                                                                          ProblemInterfaceType;
 
-      typedef typename ProblemInterfaceType::PressureFunctionSpaceType FunctionSpaceType;
+      typedef typename ProblemInterfaceType::StokesProblemType::FunctionSpaceType
+                                                                          FunctionSpaceType;
 
       struct AnalyticalTraits
       {

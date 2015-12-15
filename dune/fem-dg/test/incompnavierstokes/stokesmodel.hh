@@ -19,7 +19,7 @@ namespace Fem
    * \brief Traits class for StokesModel
    */
   template <class GridPartImp, class ProblemImp>
-  class StokesModelTraits
+  class StokesPoissonModelTraits
     : public DefaultModelTraits< GridPartImp, ProblemImp >
   {
     typedef DefaultModelTraits< GridPartImp, ProblemImp >              BaseType;
@@ -30,79 +30,38 @@ namespace Fem
     typedef std::tuple <>                                              ModelParameter;
   };
 
-  /**
-   * \brief describes the analytical model
-   *
-   * This is an description class for the problem
-   * \f{eqnarray*}{      V + \nabla a(U)             & = & 0 \\
-   * \partial_t U + \nabla\cdot (F(U)+A(U,V)) + S(U) & = & 0 \\
-   *                               U                 & = & g_D \\
-   *                        \nabla U \cdot n         & = & g_N \f}
-   *
-   * where each class methods describes an analytical function.
-   * <ul>
-   * <li> \f$F\f$:   advection() </li>
-   * <li> \f$a\f$:   jacobian() </li>
-   * <li> \f$A\f$:   diffusion() </li>
-   * <li> \f$g_D\f$: boundaryValue() </li>
-   * <li> \f$g_N\f$: boundaryFlux() </li>
-   * <li> \f$S\f$:   stiffSource()/nonStiffSource() </li>
-   * </ul>
-   *
-   * \attention \f$F(U)\f$ and \f$A(U,V)\f$ are matrix valued, and therefore the
-   * divergence is defined as
-   *
-   * \f[ \Delta M = \nabla \cdot (\nabla \cdot (M_{i\cdot})^t)_{i\in 1\dots n} \f]
-   *
-   * for a matrix \f$M\in \mathbf{M}^{n\times m}\f$.
-   *
-   * \param GridPartImp GridPart for extraction of dimension
-   * \param ProblemImp Class describing the initial(t=0) and exact solution
-   */
 
-
-  ////////////////////////////////////////////////////////
-  //
-  //  Analytical model for the Heat Equation
-  //      dx(u) + div(uV) - epsilon*lap(u)) = 0
-  //  where V is constant vector
-  //
-  ////////////////////////////////////////////////////////
   template <class GridPartImp, class ProblemImp, bool rightHandSideModel = false >
-  class StokesModel : public DefaultModel< StokesModelTraits< GridPartImp, ProblemImp > >
+  class PoissonModel : public DefaultModel< StokesPoissonModelTraits< GridPartImp, ProblemImp > >
   {
   public:
-    typedef StokesModelTraits< GridPartImp, ProblemImp> Traits;
-
+    typedef ProblemImp                                      ProblemType;
+    typedef StokesPoissonModelTraits< GridPartImp, ProblemType >
+                                                            Traits;
     enum { rhs = 0 };
     typedef std::integral_constant< int, rhs > rhsVar;
     typedef std::tuple < rhsVar > ModelParameter;
 
-
-    typedef typename Traits::ProblemType                ProblemType;
-    typedef typename Traits::GridPartType               GridPartType;
-    typedef typename Traits::GridType                   GridType;
-
+    typedef typename Traits::GridType                       GridType;
     static const int dimDomain = Traits::dimDomain;
-    static const int dimRange = Traits::dimRange;
-    typedef typename Traits::DomainFieldType            DomainFieldType;
-    typedef typename Traits::RangeFieldType             RangeFieldType;
-    typedef typename Traits::DomainType                 DomainType;
-    typedef typename Traits::RangeType                  RangeType;
-    typedef typename Traits::GradientType               GradientType;
-    typedef typename Traits::FluxRangeType              FluxRangeType;
-    typedef typename Traits::DiffusionRangeType         DiffusionRangeType;
-    typedef typename Traits::FaceDomainType             FaceDomainType;
-    typedef typename Traits::JacobianRangeType          JacobianRangeType;
+    static const int dimRange  = Traits::dimRange;
+    typedef typename Traits::DomainFieldType                DomainFieldType;
+    typedef typename Traits::RangeFieldType                 RangeFieldType;
+    typedef typename Traits::DomainType                     DomainType;
+    typedef typename Traits::RangeType                      RangeType;
+    typedef typename Traits::GradientType                   GradientType;
+    typedef typename Traits::FluxRangeType                  FluxRangeType;
+    typedef typename Traits::DiffusionRangeType             DiffusionRangeType;
+    typedef typename Traits::FaceDomainType                 FaceDomainType;
+    typedef typename Traits::JacobianRangeType              JacobianRangeType;
 
-    typedef typename Traits::DiffusionMatrixType        DiffusionMatrixType ;
+    typedef typename Traits::DiffusionMatrixType            DiffusionMatrixType ;
 
-    typedef typename Traits::EntityType                 EntityType;
-    typedef typename Traits::IntersectionType           IntersectionType;
+    typedef typename Traits::EntityType                     EntityType;
+    typedef typename Traits::IntersectionType               IntersectionType;
 
-    static const bool hasAdvection = true;
     static const bool hasDiffusion = true;
-
+    static const int ConstantVelocity = false;
   public:
     /**
      * \brief Constructor
@@ -111,7 +70,7 @@ namespace Fem
      *
      * \param problem Class describing the initial(t=0) and exact solution
      */
-    StokesModel(const ProblemType& problem)
+    PoissonModel(const ProblemType& problem)
       : problem_(problem),
         theta_( problem.theta() )
     {}
@@ -366,10 +325,99 @@ namespace Fem
     {
       return (a * a);
     }
-   protected:
+  protected:
     const ProblemType& problem_;
     const double theta_;
   };
+
+
+  /**
+   * \brief describes the analytical model
+   *
+   * This is an description class for the problem
+   * \f{eqnarray*}{      V + \nabla a(U)             & = & 0 \\
+   * \partial_t U + \nabla\cdot (F(U)+A(U,V)) + S(U) & = & 0 \\
+   *                               U                 & = & g_D \\
+   *                        \nabla U \cdot n         & = & g_N \f}
+   *
+   * where each class methods describes an analytical function.
+   * <ul>
+   * <li> \f$F\f$:   advection() </li>
+   * <li> \f$a\f$:   jacobian() </li>
+   * <li> \f$A\f$:   diffusion() </li>
+   * <li> \f$g_D\f$: boundaryValue() </li>
+   * <li> \f$g_N\f$: boundaryFlux() </li>
+   * <li> \f$S\f$:   stiffSource()/nonStiffSource() </li>
+   * </ul>
+   *
+   * \attention \f$F(U)\f$ and \f$A(U,V)\f$ are matrix valued, and therefore the
+   * divergence is defined as
+   *
+   * \f[ \Delta M = \nabla \cdot (\nabla \cdot (M_{i\cdot})^t)_{i\in 1\dots n} \f]
+   *
+   * for a matrix \f$M\in \mathbf{M}^{n\times m}\f$.
+   *
+   * \param GridPartImp GridPart for extraction of dimension
+   * \param ProblemImp Class describing the initial(t=0) and exact solution
+   */
+
+
+  ////////////////////////////////////////////////////////
+  //
+  //  Analytical model for the Heat Equation
+  //      dx(u) + div(uV) - epsilon*lap(u)) = 0
+  //  where V is constant vector
+  //
+  ////////////////////////////////////////////////////////
+  template <class GridPartImp, class ProblemImp, bool rightHandSideModel = false >
+  class StokesModel : public PoissonModel< GridPartImp, typename ProblemImp::PoissonProblemType, rightHandSideModel >
+  {
+    typedef PoissonModel< GridPartImp, typename ProblemImp::PoissonProblemType > BaseType;
+  public:
+    typedef ProblemImp                                      ProblemType;
+    typedef StokesPoissonModelTraits< GridPartImp, typename ProblemType::PoissonProblemType >
+                                                            Traits;
+
+    typedef typename Traits::GridType                       GridType;
+    static const int dimDomain = Traits::dimDomain;
+    static const int dimRange  = Traits::dimRange;
+    typedef typename Traits::DomainFieldType                DomainFieldType;
+    typedef typename Traits::RangeFieldType                 RangeFieldType;
+    typedef typename Traits::DomainType                     DomainType;
+    typedef typename Traits::RangeType                      RangeType;
+    typedef typename Traits::GradientType                   GradientType;
+    typedef typename Traits::FluxRangeType                  FluxRangeType;
+    typedef typename Traits::DiffusionRangeType             DiffusionRangeType;
+    typedef typename Traits::FaceDomainType                 FaceDomainType;
+    typedef typename Traits::JacobianRangeType              JacobianRangeType;
+
+    typedef typename Traits::DiffusionMatrixType            DiffusionMatrixType ;
+
+    typedef typename Traits::EntityType                     EntityType;
+    typedef typename Traits::IntersectionType               IntersectionType;
+
+    static const bool hasDiffusion = true;
+    static const int ConstantVelocity = false;
+
+    /**
+     * \brief Constructor
+     *
+     * initializes model parameter
+     *
+     * \param problem Class describing the initial(t=0) and exact solution
+     */
+    StokesModel(const ProblemType& problem)
+      : BaseType( problem_.get<0>() ),
+        problem_(problem)
+    {}
+
+
+    const ProblemType& problem () const { return problem_; }
+
+   protected:
+    const ProblemType& problem_;
+  };
+
 
 }
 }

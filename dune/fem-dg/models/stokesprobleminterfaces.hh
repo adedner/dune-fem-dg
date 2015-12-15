@@ -40,6 +40,12 @@ namespace Fem
       return std::get<i>( problems_);
     }
 
+    // return prefix for data loops
+    virtual std::string dataPrefix() const
+    {
+      return get<0>().dataPrefix();
+    }
+
   private:
     ProblemTupleType   problems_;
   };
