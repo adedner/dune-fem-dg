@@ -148,7 +148,7 @@ namespace Fem
       typedef HostGridPartType                              GridPartType;
 
       // define problem type here if interface should be avoided
-      typedef StokesProblemInterface< SubPoissonProblemCreator::ProblemInterfaceType > /*velocity*/,
+      typedef StokesProblemInterface< typename SubPoissonProblemCreator::ProblemInterfaceType /*velocity*/,
                                       ProblemInterface< typename AC::template FunctionSpaces<1> > >
                                                                           ProblemInterfaceType;
 

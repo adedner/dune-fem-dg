@@ -134,100 +134,132 @@ namespace Fem
 
   };
 
-
-
-
   template< class GridImp>
   class StokesProblemPeriodic
-    : public StokesProblemInterface<Dune::Fem::FunctionSpace< double, double, GridImp :: dimension, GridImp :: dimension > ,
-				    Dune::Fem::FunctionSpace< double, double, GridImp :: dimension, 1 >  >
+    : public StokesProblemInterface< ProblemInterface< Dune::Fem::FunctionSpace< double, double, GridImp::dimension, GridImp::dimension > > ,
+			                        	     ProblemInterface< Dune::Fem::FunctionSpace< double, double, GridImp::dimension, 1 > > >
   {
-    typedef Dune::Fem::FunctionSpace< double, double, GridImp :: dimension, GridImp :: dimension > FunctionSpaceType ;
-    typedef Dune::Fem::FunctionSpace< double, double, GridImp :: dimension, 1 > PressureFunctionSpaceType ;
-    typedef StokesProblemInterface<FunctionSpaceType,PressureFunctionSpaceType> BaseType;
+    typedef Dune::Fem::FunctionSpace< double, double, GridImp::dimension, GridImp::dimension > FunctionSpaceType;
+    typedef Dune::Fem::FunctionSpace< double, double, GridImp::dimension, 1 > PressureFunctionSpaceType;
 
+    typedef ProblemInterface< FunctionSpaceType >         PoissonProblemBaseType;
+    typedef ProblemInterface< PressureFunctionSpaceType > StokesProblemBaseType;
+
+    typedef StokesProblemInterface< PoissonProblemBaseType, StokesProblemBaseType > BaseType;
   public:
 
-    static const int dimRange = FunctionSpaceType::dimRange;
-    static const int dimDomain = FunctionSpaceType::dimDomain;
 
-    typedef typename BaseType::DomainType DomainType;
-    typedef typename BaseType::RangeType  RangeType;
-    typedef typename BaseType::PressureRangeType  PressureRangeType;
-    typedef typename BaseType::JacobianRangeType JacobianRangeType;
-    typedef typename BaseType::DomainFieldType DomainFieldType;
-    typedef typename BaseType::RangeFieldType  RangeFieldType;
-
-    typedef typename FunctionSpaceType::HessianRangeType HessianRangeType;
-
-    typedef typename BaseType::DiffusionMatrixType DiffusionMatrixType;
-
-   //  explicit StokesProblemDefault (  )
-
-
-    //! the right hand side (i.e., the Laplace of u)
-     void f ( const DomainType &p, RangeType &ret ) const
+    class PoissonProblem
+      : public PoissonProblemBaseType
     {
+    public:
+      static const int dimRange  = PoissonProblemBaseType::dimRange;
+      static const int dimDomain = PoissonProblemBaseType::dimDomain;
 
-      double x=p[0];
-      double y=p[1];
+      typedef typename PoissonProblemBaseType::DomainType          DomainType;
+      typedef typename PoissonProblemBaseType::RangeType           RangeType;
+      typedef typename PoissonProblemBaseType::JacobianRangeType   JacobianRangeType;
+      typedef typename PoissonProblemBaseType::DomainFieldType     DomainFieldType;
+      typedef typename PoissonProblemBaseType::RangeFieldType      RangeFieldType;
 
-      ret[0]=(12-24*y)*x*x*x*x;
-      ret[0]+=(-24+48*y)*x*x*x;
-      ret[0]+=(-48*y+72*y*y-48*y*y*y+12)*x*x;
-      ret[0]+=(-2+24*y-72*y*y+48*y*y*y)*x+1-4*y+12*y*y-8*y*y*y;
+      typedef typename PoissonProblemBaseType::DiffusionMatrixType DiffusionMatrixType;
 
-      ret[1]=(8-48*y+48*y*y)*x*x*x;
-      ret[1]+=(-12+72*y-72*y*y)*x*x;
-      ret[1]+=(4-24*y+48*y*y-48*y*y*y+24*y*y*y*y)*x-12*y*y+24*y*y*y-12*y*y*y*y;
+      PoissonProblem()
+        : mu_(Dune::Fem:: Parameter::getValue<double>( "mu", 1.0 ) ),
+          alpha_(Dune::Fem:: Parameter::getValue<double>( "alpha", 1.0 ) )
+      {}
 
-    }
-    //! the exact solution
-    void u ( const DomainType &p, RangeType &ret ) const
+      //! the right hand side (i.e., the Laplace of u)
+      void f ( const DomainType &p, RangeType &ret ) const
+      {
+        double x=p[0];
+        double y=p[1];
+
+        ret[0]=(12-24*y)*x*x*x*x;
+        ret[0]+=(-24+48*y)*x*x*x;
+        ret[0]+=(-48*y+72*y*y-48*y*y*y+12)*x*x;
+        ret[0]+=(-2+24*y-72*y*y+48*y*y*y)*x+1-4*y+12*y*y-8*y*y*y;
+
+        ret[1]=(8-48*y+48*y*y)*x*x*x;
+        ret[1]+=(-12+72*y-72*y*y)*x*x;
+        ret[1]+=(4-24*y+48*y*y-48*y*y*y+24*y*y*y*y)*x-12*y*y+24*y*y*y-12*y*y*y*y;
+      }
+
+
+      //! the exact solution
+      void u ( const DomainType &p, RangeType &ret ) const
+      {
+        double x=p[0];
+        double y=p[1];
+
+        //u1
+        ret[0]=x*x;
+        ret[0]*=(1-x)*(1-x);
+        ret[0]*=2*y-6*y*y+4*y*y*y;
+  			ret[0]+=1;
+        //u2
+        ret[1]=y*y;
+        ret[1]*=-1.;
+        ret[1]*=(1-y)*(1-y);
+        ret[1]*=2*x-6*x*x+4*x*x*x;
+  			ret[1]+=1.;
+      }
+
+      //! the diffusion matrix
+      void K( const DomainType &x, DiffusionMatrixType &m ) const
+      {
+        m = 0;
+        for( int i = 0; i < dimDomain; ++i )
+          m[ i ][ i ] = mu_;
+      }
+
+      bool constantK () const
+      {
+        return true;
+      }
+
+      //! the gradient of the exact solution
+      void gradient ( const DomainType &p, JacobianRangeType &grad ) const
+      {
+        grad=0.0;
+      }
+
+      virtual double gamma() const { return alpha_; }
+
+    private:
+      double mu_;
+      double alpha_;
+    };
+
+    class StokesProblem
+      : public StokesProblemBaseType
     {
-      double x=p[0];
-      double y=p[1];
+    public:
+      static const int dimRange  = StokesProblemBaseType::dimRange;
+      static const int dimDomain = StokesProblemBaseType::dimDomain;
 
-      //u1
-      ret[0]=x*x;
-      ret[0]*=(1-x)*(1-x);
-      ret[0]*=2*y-6*y*y+4*y*y*y;
-			ret[0]+=1;
-      //u2
-      ret[1]=y*y;
-      ret[1]*=-1.;
-      ret[1]*=(1-y)*(1-y);
-      ret[1]*=2*x-6*x*x+4*x*x*x;
-			ret[1]+=1.;
-    }
+      typedef typename StokesProblemBaseType::DomainType        DomainType;
+      typedef typename StokesProblemBaseType::RangeType         RangeType;
+      typedef typename StokesProblemBaseType::JacobianRangeType JacobianRangeType;
+      typedef typename StokesProblemBaseType::DomainFieldType   DomainFieldType;
+      typedef typename StokesProblemBaseType::RangeFieldType    RangeFieldType;
 
-    //! the exact solution
-    void p (const DomainType& x, PressureRangeType& ret) const
-    {
-      ret[0]=x[0]*(1-x[0]);
-    }
+      typedef typename StokesProblemBaseType::DiffusionMatrixType DiffusionMatrixType;
 
+      //! the exact solution
+      void u(const DomainType& x, RangeType& ret) const
+      {
+        ret[0]=x[0]*(1-x[0]);
+      }
 
-    //! the diffusion matrix
-    void K ( const DomainType &x, DiffusionMatrixType &m ) const
-    {
-      m = 0;
-      for( int i = 0; i < dimDomain; ++i )
-        m[ i ][ i ] = 1;
-    }
+    };
 
-    bool constantK () const
-    {
-      return true;
-    }
+    typedef PoissonProblem PoissonProblemType;
+    typedef StokesProblem StokesProblemType;
 
-    //! the gradient of the exact solution
-     void gradient ( const DomainType &x, JacobianRangeType &grad ) const
-    {
-      grad=0.0;
-    }
-
-  private:
+    StokesProblemPeriodic()
+      : BaseType( std::make_tuple( PoissonProblem(), StokesProblem() ) )
+    {}
 
   };
 
@@ -364,8 +396,8 @@ namespace Fem
     switch( 0 )
       {
       case 0: return new StokesProblemDefault< GridImp >();
-      case 1: return new StokesProblemPeriodic<GridImp> ( );
-      case 2: return new GeneralizedStokesProblem<GridImp> ( );
+      case 1: return new StokesProblemPeriodic<GridImp> ();
+      case 2: return new GeneralizedStokesProblem<GridImp> ();
       default: std::cerr << "Wrong problem value, bye, bye!" << std::endl;
 	abort();
       }
