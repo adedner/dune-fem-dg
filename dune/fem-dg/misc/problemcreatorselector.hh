@@ -131,7 +131,7 @@ namespace Fem
   struct GridPartSelector<Grid, Galerkin::Enum::dg>
   {
     // typedef Dune::Fem::LeafGridPart< Grid, Dune::All_Partition > Type;
-    typedef Dune::Fem::LeafGridPart< Grid > type;
+    typedef Dune::Fem::AdaptiveLeafGridPart< Grid > type;
   };
 
 
