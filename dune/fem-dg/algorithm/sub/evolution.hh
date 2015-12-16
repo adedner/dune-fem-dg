@@ -214,7 +214,7 @@ namespace Fem
       //TODO check whether this version work
       auto ftp = problem().fixedTimeFunction( tp.time() );
       GridFunctionAdapter< typename ProblemType::InstationaryFunctionType, GridPartType >
-        adapter( "-exact", ftp, gridPart_ );
+        adapter( "-exact", ftp, gridPart_, space_.order() + 2 );
       interpolate( adapter, solution() );
       if( NonBlockingCommParameter::nonBlockingCommunication() )
         solution().communicate();
