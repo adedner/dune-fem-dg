@@ -15,11 +15,12 @@ namespace Fem
    * \ingroup DiffusionFluxes
    */
   template <class DiscreteFunctionSpaceImp,
-            class Model>
+            class ModelImp,
+            class FluxParameterImp >
   class LDGDiffusionFlux :
-    public DGDiffusionFluxBase< DiscreteFunctionSpaceImp, Model>
+    public DGDiffusionFluxBase< DiscreteFunctionSpaceImp, ModelImp, FluxParameterImp >
   {
-    typedef DGDiffusionFluxBase< DiscreteFunctionSpaceImp, Model> BaseType;
+    typedef DGDiffusionFluxBase< DiscreteFunctionSpaceImp, ModelImp, FluxParameterImp > BaseType;
   public:
     typedef DiscreteFunctionSpaceImp DiscreteFunctionSpaceType;
 
@@ -75,7 +76,7 @@ namespace Fem
      * \brief constructor
      */
     LDGDiffusionFlux(GridPartType& gridPart,
-                     const Model& mod,
+                     const ModelImp& mod,
                      const ParameterType& param ) :
       BaseType( mod, true, param ),
       penalty_( parameter().penalty() ),

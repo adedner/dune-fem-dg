@@ -262,25 +262,25 @@ namespace Fem
 
     typedef AdvectionModel< OpTraits, passUId, passGradId, advectionPartExists>    BaseType;
 
-    using BaseType :: inside ;
-    using BaseType :: outside ;
-    using BaseType :: model_;
-    using BaseType :: uBnd_;
+    using BaseType::inside ;
+    using BaseType::outside ;
+    using BaseType::model_;
+    using BaseType::uBnd_;
 
     // These type definitions allow a convenient access to arguments of pass.
-    using BaseType :: uVar;
+    using BaseType::uVar;
 
     integral_constant< int, passGradId> sigmaVar;
 
   public:
-    enum { dimDomain = Traits :: dimDomain };
-    enum { dimRange  = Traits :: dimRange };
+    enum { dimDomain = Traits::dimDomain };
+    enum { dimRange  = Traits::dimRange };
 
     enum { advection = advectionPartExists };
     enum { diffusion = diffusionPartExists };
 
-    typedef typename Traits :: DomainType         DomainType;
-    typedef typename Traits :: FaceDomainType     FaceDomainType;
+    typedef typename Traits::DomainType         DomainType;
+    typedef typename Traits::FaceDomainType     FaceDomainType;
 
 #if defined TESTOPERATOR
     enum { ApplyInverseMassOperator = false };
@@ -288,21 +288,21 @@ namespace Fem
     enum { ApplyInverseMassOperator = true };
 #endif
 
-    typedef typename Traits :: GridPartType                            GridPartType;
-    typedef typename Traits :: GridType                                GridType;
-    typedef typename GridPartType :: IntersectionIteratorType          IntersectionIterator;
-    typedef typename IntersectionIterator :: Intersection              Intersection;
-    typedef typename BaseType :: EntityType                            EntityType;
-    typedef typename Traits :: RangeFieldType                          RangeFieldType;
-    typedef typename Traits :: DomainFieldType                         DomainFieldType;
-    typedef typename Traits :: RangeType                               RangeType;
-    typedef typename Traits :: JacobianRangeType                       JacobianRangeType;
+    typedef typename Traits::GridPartType                     GridPartType;
+    typedef typename Traits::GridType                         GridType;
+    typedef typename GridPartType::IntersectionIteratorType   IntersectionIterator;
+    typedef typename IntersectionIterator::Intersection       Intersection;
+    typedef typename BaseType::EntityType                     EntityType;
+    typedef typename Traits::RangeFieldType                   RangeFieldType;
+    typedef typename Traits::DomainFieldType                  DomainFieldType;
+    typedef typename Traits::RangeType                        RangeType;
+    typedef typename Traits::JacobianRangeType                JacobianRangeType;
 
-    typedef typename Traits :: DiscreteFunctionSpaceType DiscreteFunctionSpaceType;
+    typedef typename Traits::DiscreteFunctionSpaceType        DiscreteFunctionSpaceType;
 
-    typedef typename Traits :: ModelType ModelType;
-    typedef typename Traits :: FluxType  AdvectionFluxType;
-    typedef LDGDiffusionFlux< DiscreteFunctionSpaceType, ModelType > DiffusionFluxType;
+    typedef typename Traits::ModelType                        ModelType;
+    typedef typename Traits::AdvectionFluxType                AdvectionFluxType;
+    typedef typename Traits::DiffusionFluxType                DiffusionFluxType;
     enum { evaluateJacobian = false };
   public:
     /**
@@ -462,7 +462,7 @@ namespace Fem
       {
         RangeType diffBndFlux ( 0 );
 
-        typedef typename DiffusionFluxType :: GradientRangeType GradientRangeType;
+        typedef typename DiffusionFluxType::GradientRangeType GradientRangeType;
         Dune::Fem::FieldMatrixConverter< GradientRangeType, JacobianRangeType > uJac( left.values()[ sigmaVar ] );
 
         model_.diffusionBoundaryFlux( left.intersection(), left.time(), left.localPoint(),
@@ -492,7 +492,7 @@ namespace Fem
       {
         JacobianRangeType diffmatrix;
 
-        typedef typename DiffusionFluxType :: GradientRangeType GradientRangeType;
+        typedef typename DiffusionFluxType::GradientRangeType GradientRangeType;
         Dune::Fem::FieldMatrixConverter< GradientRangeType, JacobianRangeType > uJac( local.values()[ sigmaVar ] );
 
         model_.diffusion( local.entity(), local.time(), local.point(), local.values()[ uVar ], uJac, diffmatrix);

@@ -42,6 +42,12 @@
 #include <dune/fem-dg/assemble/primalmatrix.hh>
 #include <dune/fem/space/discontinuousgalerkin.hh>
 
+#include <dune/fem-dg/operator/dg/operatortraits.hh>
+
+#include <dune/fem-dg/operator/fluxes/advection/fluxes.hh>
+#include <dune/fem-dg/operator/fluxes/euler/fluxes.hh>
+#include <dune/fem-dg/operator/fluxes/diffusion/fluxes.hh>
+
 namespace Dune
 {
 namespace Fem
