@@ -60,8 +60,9 @@ namespace Fem
     {
       typedef AlgorithmConfigurator< GridImp,
                                      Galerkin::Enum::dg,
+                                     Adaptivity::Enum::yes,
                                      DiscreteFunctionSpaces::Enum::legendre,
-                                     Solver::Enum::istl,
+                                     Solver::Enum::fem,
                                      AdvectionLimiter::Enum::unlimited,
                                      Matrix::Enum::assembled,
                                      AdvectionFlux::Identifier<AdvectionFlux::Enum::none>,

@@ -43,6 +43,7 @@ namespace Fem
 
   template< class GridImp,
             Galerkin::Enum dgId,
+            Adaptivity::Enum adap,
             DiscreteFunctionSpaces::Enum spaceId,
             Solver::Enum solverId,
             AdvectionLimiter::Enum advLimitId,
@@ -62,7 +63,7 @@ namespace Fem
   public:
     typedef GridImp                                           GridType;
 
-    using GridParts = typename GridPartSelector< GridType, dgId >::type;
+    using GridParts = typename GridPartSelector< GridType, dgId, adap >::type;
 
     template< int dimRange >
     using FunctionSpaces = Fem::FunctionSpace< typename GridType::ctype, double, GridType::dimension, dimRange >;

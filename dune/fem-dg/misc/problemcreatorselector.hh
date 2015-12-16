@@ -82,6 +82,15 @@ namespace Fem
     };
   }
 
+  namespace Adaptivity
+  {
+    enum class Enum
+    {
+      no = 0,
+      yes = 1
+    };
+  }
+
   namespace Solver
   {
     enum class Enum
@@ -118,22 +127,32 @@ namespace Fem
 // GridPartSelector
 ///////////////////////////////////////////////////////////////////////////
 
-  template <class Grid, Galerkin::Enum op>
+  template <class Grid, Galerkin::Enum op, Adaptivity::Enum adap >
   struct GridPartSelector;
 
   template <class Grid>
-  struct GridPartSelector<Grid, Galerkin::Enum::cg>
+  struct GridPartSelector<Grid, Galerkin::Enum::cg, Adaptivity::Enum::no >
+  {
+    typedef Dune::Fem::LeafGridPart< Grid > type;
+  };
+
+  template <class Grid>
+  struct GridPartSelector<Grid, Galerkin::Enum::dg, Adaptivity::Enum::no>
+  {
+    typedef Dune::Fem::LeafGridPart< Grid > type;
+  };
+
+  template <class Grid>
+  struct GridPartSelector<Grid, Galerkin::Enum::cg, Adaptivity::Enum::yes >
   {
     typedef Dune::Fem::AdaptiveLeafGridPart< Grid, Dune::InteriorBorder_Partition > type;
   };
 
   template <class Grid>
-  struct GridPartSelector<Grid, Galerkin::Enum::dg>
+  struct GridPartSelector<Grid, Galerkin::Enum::dg, Adaptivity::Enum::yes>
   {
-    // typedef Dune::Fem::LeafGridPart< Grid, Dune::All_Partition > Type;
-    typedef Dune::Fem::AdaptiveLeafGridPart< Grid > type;
+    typedef Dune::Fem::DGAdaptiveLeafGridPart< Grid > type;
   };
-
 
 ///////////////////////////////////////////////////////////////////////////
 // ImplExplOperatorSelector
