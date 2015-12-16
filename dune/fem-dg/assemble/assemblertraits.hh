@@ -1,6 +1,8 @@
 #ifndef ASSEMBLER_TRAITS_HH
 #define ASSEMBLER_TRAITS_HH
 
+#include <dune/fem/quadrature/cachingquadrature.hh>
+
 namespace Dune
 {
 namespace Fem

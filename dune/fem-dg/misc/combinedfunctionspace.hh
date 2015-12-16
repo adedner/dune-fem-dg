@@ -1,7 +1,7 @@
 #ifndef DUNE_FEMDG_COMBINEDFUNCTIONSPACE_HH
 #define DUNE_FEMDG_COMBINEDFUNCTIONSPACE_HH
 
-#include <dune/fem/space/common/functionspaceinterface.hh>
+#include <dune/fem/space/common/functionspace.hh>
 #include <dune/common/fmatrix.hh>
 #include <dune/fem/common/utility.hh>
 
@@ -70,7 +70,7 @@ namespace Fem
       static const int dimRange = std::tuple_element< i, FunctionSpaceTupleType >::type::dimRange;
       typedef typename std::tuple_element< i, FunctionSpaceTupleType >::type::DomainType              DomainType;
       typedef typename std::tuple_element< i, FunctionSpaceTupleType >::type::RangeType               RangeType;
-      typedef typename std::tuple_element< i, FunctionSpaceTupleType >::type::JacobianRangeType       JacobianRangeType
+      typedef typename std::tuple_element< i, FunctionSpaceTupleType >::type::JacobianRangeType       JacobianRangeType;
       typedef typename std::tuple_element< i, FunctionSpaceTupleType >::type::ScalarFunctionSpaceType ScalarFunctionSpaceType;
       typedef typename std::tuple_element< i, FunctionSpaceTupleType >::type::HessianRangeType        HessianRangeType;
     };
