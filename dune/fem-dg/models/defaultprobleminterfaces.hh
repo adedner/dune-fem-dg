@@ -273,7 +273,7 @@ namespace Fem
     //! destructor
     virtual ~ProblemInterface() {}
 
-    virtual std::string name () const { return ""; }
+    virtual std::string name () const { return "ProblemInterface"; }
 
     //! evaluates the right hand side (Function like bahavior)
     inline void evaluate(const DomainType& x, RangeType& ret) const
@@ -350,7 +350,7 @@ namespace Fem
       return std::string("");
     }
 
-  protected:
+ // protected:
     ProblemInterface() : exactSolution_( *this ) {}
 
     //! the exact solution to the problem for EOC calculation

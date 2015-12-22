@@ -77,9 +77,10 @@ namespace Fem
         typedef HostGridPartType                              GridPartType;
 
         // define problem type here if interface should be avoided
-        typedef ProblemInterface< typename AC::template FunctionSpaces<DIMRANGE> >  ProblemInterfaceType;
+        typedef typename StokesProblemInterface< GridType >::PoissonProblemType  ProblemInterfaceType;
 
         typedef typename ProblemInterfaceType::FunctionSpaceType      FunctionSpaceType;
+
 
         struct AnalyticalTraits
         {
@@ -103,6 +104,7 @@ namespace Fem
 
         static ProblemInterfaceType* problem()
         {
+          //return new typename StokesProblem< GridType, GeneralizedStokesProblem >::PoissonProblemType();
           return new typename GeneralizedStokesProblem< GridType >::PoissonProblemType();
         }
 
@@ -149,9 +151,7 @@ namespace Fem
       typedef HostGridPartType                              GridPartType;
 
       // define problem type here if interface should be avoided
-      typedef StokesProblemInterface< typename SubPoissonProblemCreator::ProblemInterfaceType /*velocity*/,
-                                      ProblemInterface< typename AC::template FunctionSpaces<1> > >
-                                                                          ProblemInterfaceType;
+      typedef StokesProblemInterface< GridType >             ProblemInterfaceType;
 
       typedef typename ProblemInterfaceType::StokesProblemType::FunctionSpaceType FunctionSpaceType;
 
@@ -171,7 +171,7 @@ namespace Fem
 
       static inline std::string moduleName() { return "";}
 
-      static ProblemInterfaceType* problem() { return new GeneralizedStokesProblem< GridType > (); }
+      static ProblemInterfaceType* problem() { return new StokesProblem< GridType, GeneralizedStokesProblem > (); }
 
       //Stepper Traits
       template< int polOrd >

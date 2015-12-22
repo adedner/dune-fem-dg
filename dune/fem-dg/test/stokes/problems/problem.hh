@@ -14,22 +14,24 @@ namespace Fem
 
   template< class GridImp>
   class StokesProblemDefault
-    : public StokesProblemInterface< ProblemInterface< Dune::Fem::FunctionSpace< double, double, GridImp::dimension, GridImp::dimension > > ,
-			                        	     ProblemInterface< Dune::Fem::FunctionSpace< double, double, GridImp::dimension, 1 > > >
+    : public StokesProblemInterfaceBase< GridImp >
   {
-    typedef Dune::Fem::FunctionSpace< double, double, GridImp::dimension, GridImp::dimension > FunctionSpaceType;
-    typedef Dune::Fem::FunctionSpace< double, double, GridImp::dimension, 1 > PressureFunctionSpaceType;
+    typedef StokesProblemInterfaceBase< GridImp >        BaseType;
 
-    typedef ProblemInterface< FunctionSpaceType >         PoissonProblemBaseType;
-    typedef ProblemInterface< PressureFunctionSpaceType > StokesProblemBaseType;
+    typedef typename BaseType::FunctionSpaceType         FunctionSpaceType;
+    typedef typename BaseType::PressureFunctionSpaceType PressureFunctionSpaceType;
 
-    typedef StokesProblemInterface< PoissonProblemBaseType, StokesProblemBaseType > BaseType;
+    typedef typename BaseType::PoissonProblemType        PoissonProblemBaseType;
+    typedef typename BaseType::StokesProblemType         StokesProblemBaseType;
+
   public:
 
     class PoissonProblem
       : public PoissonProblemBaseType
     {
     public:
+      typedef PoissonProblemBaseType BaseType;
+
       static const int dimRange  = PoissonProblemBaseType::dimRange;
       static const int dimDomain = PoissonProblemBaseType::dimDomain;
 
@@ -107,6 +109,8 @@ namespace Fem
       : public StokesProblemBaseType
     {
     public:
+      typedef StokesProblemBaseType BaseType;
+
       static const int dimRange  = StokesProblemBaseType::dimRange;
       static const int dimDomain = StokesProblemBaseType::dimDomain;
 
@@ -128,31 +132,34 @@ namespace Fem
       }
     };
 
+    typedef PoissonProblem PoissonProblemType;
+    typedef StokesProblem StokesProblemType;
+
     StokesProblemDefault()
-      : BaseType( std::make_tuple( PoissonProblem(), StokesProblem() ) )
     {}
 
   };
 
   template< class GridImp>
   class StokesProblemPeriodic
-    : public StokesProblemInterface< ProblemInterface< Dune::Fem::FunctionSpace< double, double, GridImp::dimension, GridImp::dimension > > ,
-			                        	     ProblemInterface< Dune::Fem::FunctionSpace< double, double, GridImp::dimension, 1 > > >
+    : public StokesProblemInterfaceBase< GridImp >
   {
-    typedef Dune::Fem::FunctionSpace< double, double, GridImp::dimension, GridImp::dimension > FunctionSpaceType;
-    typedef Dune::Fem::FunctionSpace< double, double, GridImp::dimension, 1 > PressureFunctionSpaceType;
+    typedef StokesProblemInterfaceBase< GridImp >        BaseType;
 
-    typedef ProblemInterface< FunctionSpaceType >         PoissonProblemBaseType;
-    typedef ProblemInterface< PressureFunctionSpaceType > StokesProblemBaseType;
+    typedef typename BaseType::FunctionSpaceType         FunctionSpaceType;
+    typedef typename BaseType::PressureFunctionSpaceType PressureFunctionSpaceType;
 
-    typedef StokesProblemInterface< PoissonProblemBaseType, StokesProblemBaseType > BaseType;
+    typedef typename BaseType::PoissonProblemType        PoissonProblemBaseType;
+    typedef typename BaseType::StokesProblemType         StokesProblemBaseType;
+
   public:
-
 
     class PoissonProblem
       : public PoissonProblemBaseType
     {
-    public:
+      public:
+      typedef PoissonProblemBaseType BaseType;
+
       static const int dimRange  = PoissonProblemBaseType::dimRange;
       static const int dimDomain = PoissonProblemBaseType::dimDomain;
 
@@ -235,6 +242,8 @@ namespace Fem
       : public StokesProblemBaseType
     {
     public:
+      typedef StokesProblemBaseType BaseType;
+
       static const int dimRange  = StokesProblemBaseType::dimRange;
       static const int dimDomain = StokesProblemBaseType::dimDomain;
 
@@ -258,32 +267,30 @@ namespace Fem
     typedef StokesProblem StokesProblemType;
 
     StokesProblemPeriodic()
-      : BaseType( std::make_tuple( PoissonProblem(), StokesProblem() ) )
     {}
 
   };
 
 
-
   template< class GridImp>
   class GeneralizedStokesProblem
-    : public StokesProblemInterface< ProblemInterface< Dune::Fem::FunctionSpace< double, double, GridImp::dimension, GridImp::dimension > > ,
-			                        	     ProblemInterface< Dune::Fem::FunctionSpace< double, double, GridImp::dimension, 1 > > >
+    : public StokesProblemInterfaceBase< GridImp >
   {
-    typedef Dune::Fem::FunctionSpace< double, double, GridImp::dimension, GridImp::dimension > FunctionSpaceType;
-    typedef Dune::Fem::FunctionSpace< double, double, GridImp::dimension, 1 > PressureFunctionSpaceType;
+    typedef StokesProblemInterfaceBase< GridImp >        BaseType;
 
-    typedef ProblemInterface< FunctionSpaceType >         PoissonProblemBaseType;
-    typedef ProblemInterface< PressureFunctionSpaceType > StokesProblemBaseType;
+    typedef typename BaseType::FunctionSpaceType         FunctionSpaceType;
+    typedef typename BaseType::PressureFunctionSpaceType PressureFunctionSpaceType;
 
-    typedef StokesProblemInterface< PoissonProblemBaseType, StokesProblemBaseType > BaseType;
+    typedef typename BaseType::PoissonProblemType        PoissonProblemBaseType;
+    typedef typename BaseType::StokesProblemType         StokesProblemBaseType;
   public:
-
 
     class PoissonProblem
       : public PoissonProblemBaseType
     {
     public:
+      typedef PoissonProblemBaseType BaseType;
+
       static const int dimRange  = PoissonProblemBaseType::dimRange;
       static const int dimDomain = PoissonProblemBaseType::dimDomain;
 
@@ -344,6 +351,16 @@ namespace Fem
         grad[1][1]=exp(x)*(cos(y)*y+sin(y));
       }
 
+      //! the Dirichlet boundary data function
+      virtual void g(const DomainType& x, RangeType& ret) const
+      {
+        u( x, ret );
+      }
+
+      virtual std::string name() const
+      {
+        return "General Poisson";
+      }
       virtual double gamma() const { return alpha_; }
 
     private:
@@ -355,6 +372,8 @@ namespace Fem
       : public StokesProblemBaseType
     {
     public:
+      typedef StokesProblemBaseType BaseType;
+
       static const int dimRange  = StokesProblemBaseType::dimRange;
       static const int dimDomain = StokesProblemBaseType::dimDomain;
 
@@ -372,37 +391,65 @@ namespace Fem
         ret[0] = sin(0.5*M_PI*(x[0]-x[1]));
       }
 
+      //! the Dirichlet boundary data function
+      virtual void g(const DomainType& x, RangeType& ret) const
+      {
+        u( x, ret );
+      }
+
+      virtual std::string name() const
+      {
+        return "General Stokes";
+      }
+
     };
 
     typedef PoissonProblem PoissonProblemType;
     typedef StokesProblem StokesProblemType;
 
-    GeneralizedStokesProblem()
-      : BaseType( std::make_tuple( PoissonProblem(), StokesProblem() ) )
+  };
+
+
+  template< class GridImp, template<class> class StokesProblemImp >
+  class StokesProblem
+    : public VirtualStokesProblemCreator< GridImp, StokesProblemImp >
+  {
+  public:
+    typedef typename StokesProblemImp<GridImp>::PoissonProblemType PoissonProblemType;
+    typedef typename StokesProblemImp<GridImp>::StokesProblemType  StokesProblemType;
+
+    typedef typename PoissonProblemType::BaseType                  PoissonProblemBaseType;
+    typedef typename StokesProblemType::BaseType                   StokesProblemBaseType;
+
+    typedef VirtualStokesProblemCreator< GridImp, StokesProblemImp > BaseType;
+
+
+    StokesProblem()
+      :  BaseType()
     {}
 
   };
 
 
 
-  template< class GridImp >
-  static StokesProblemInterface<Dune::Fem::FunctionSpace< double, double, GridImp::dimensionworld,GridImp::dimensionworld  >,
-    Dune::Fem::FunctionSpace< double, double, GridImp::dimensionworld, 1 > > *
-  createProblem()
-  {
-    std::cout<<"CREATEPROBLEM\n";
-    int problemFunction = 2; // default value
+ // template< class GridImp >
+ // static StokesProblemInterface<Dune::Fem::FunctionSpace< double, double, GridImp::dimensionworld,GridImp::dimensionworld  >,
+ //   Dune::Fem::FunctionSpace< double, double, GridImp::dimensionworld, 1 > > *
+ // createProblem()
+ // {
+ //   std::cout<<"CREATEPROBLEM\n";
+ //   int problemFunction = 2; // default value
 
-    switch( 0 )
-      {
-      case 0: return new StokesProblemDefault< GridImp >();
-      case 1: return new StokesProblemPeriodic<GridImp> ();
-      case 2: return new GeneralizedStokesProblem<GridImp> ();
-      default: std::cerr << "Wrong problem value, bye, bye!" << std::endl;
-	abort();
-      }
-    return 0;
-  }
+ //   switch( 0 )
+ //     {
+ //     case 0: return new StokesProblemDefault< GridImp >();
+ //     case 1: return new StokesProblemPeriodic<GridImp> ();
+ //     case 2: return new GeneralizedStokesProblem<GridImp> ();
+ //     default: std::cerr << "Wrong problem value, bye, bye!" << std::endl;
+ // abort();
+ //     }
+ //   return 0;
+ // }
 
 }
 }

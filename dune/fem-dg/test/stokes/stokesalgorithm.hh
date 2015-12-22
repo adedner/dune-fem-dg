@@ -324,7 +324,6 @@ namespace Fem
       ioTuple_( *BaseType::dataTuple(), *ellAlg_.dataTuple() )
     {}
 
-
     virtual IOTupleType& dataTuple ()
     {
       return ioTuple_;
