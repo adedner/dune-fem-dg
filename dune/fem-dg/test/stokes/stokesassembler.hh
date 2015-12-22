@@ -13,7 +13,7 @@
 #include <dune/fem-dg/assemble/assemblertraits.hh>
 
 namespace Dune {
-#define MATRIXBUG 1
+#define PRESSURESTABILIZATION 1
 
   //! implementation of the operator
   template <class CombAssTraits, class OpTraits >
@@ -221,7 +221,9 @@ namespace Dune {
 
       LocalPressureGradMatType enPGrad = pressureGradMatrix_.localMatrix(en,en);
       LocalPressureDivMatType  enPDiv  = pressureDivMatrix_.localMatrix(en,en);
+#if PRESSURESTABILIZATION
       LocalPressureStabMatType enPStab = pressureStabMatrix_.localMatrix(en,en);
+#endif
       JacobianInverseType inv;
 
       const size_t quadNop = volQuad.nop();
