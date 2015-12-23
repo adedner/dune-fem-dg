@@ -170,6 +170,11 @@ namespace Dune {
         assembleLocal( *it,problem );
       }
 
+      //important: finish build process!
+      pressureGradMatrix_.communicate();
+      pressureDivMatrix_.communicate();
+      pressureStabMatrix_.communicate();
+
 #define SYMMCHECK 0
 #if SYMMCHECK
       int size=spc_.size();
