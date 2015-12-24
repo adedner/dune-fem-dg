@@ -96,10 +96,10 @@ namespace Fem
     DiagnosticsHandler ( Args && ... ) {}
 
     template <class ... Args>
-    void step( Args&& ... ) const {};
+    void step( Args&& ... ) const {}
 
     template <class ... Args>
-    void finalize( Args&& ... ) const {};
+    void finalize( Args&& ... ) const {}
   };
 
 
@@ -176,10 +176,10 @@ namespace Fem
     struct NoDiagnosticsType
     {
       template <class ... Args>
-      void step( Args&& ... ) const {};
+      void step( Args&& ... ) const {}
 
       template <class ... Args>
-      void finalize( Args&& ... ) const {};
+      void finalize( Args&& ... ) const {}
     };
 
   public:

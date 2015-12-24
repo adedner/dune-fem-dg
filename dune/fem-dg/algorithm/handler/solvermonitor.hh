@@ -25,13 +25,13 @@ namespace Fem
     {}
 
     template <class ... Args>
-    void print(Args&& ... ) const {};
+    void print(Args&& ... ) const {}
 
     template <class ... Args>
-    void step(Args&& ... ) const {};
+    void step(Args&& ... ) const {}
 
     template <class ... Args>
-    void finalize(Args&& ... ) const {};
+    void finalize(Args&& ... ) const {}
 
     template <class ... Args>
     const double getData( Args&& ... ) const
