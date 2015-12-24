@@ -171,7 +171,6 @@ namespace Fem
   {
     typedef typename Algorithm::GridType             GridType;
     typedef typename Algorithm::EocParametersType    EocParametersType;
-    typedef typename Algorithm::IOTupleType          IOTupleType;
 
     GridType& grid = algorithm.grid();
     auto dataTup = algorithm.dataTuple() ;
