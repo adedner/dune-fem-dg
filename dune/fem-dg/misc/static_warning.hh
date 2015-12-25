@@ -1,17 +1,13 @@
 #ifndef DUNE_FEM_STATIC_WARNING_HH
 #define DUNE_FEM_STATIC_WARNING_HH
 
-//solution taken from stackoverflow.com by "Managu"
+//solution taken and modified from stackoverflow.com by "Managu"
 //uses deprecation warning attribute
 
 #if defined(__GNUC__)
 #define DEPRECATE(foo, msg) foo __attribute__((deprecated(msg)))
-#warning "gnu"
 #elif defined(_MSC_VER)
 #define DEPRECATE(foo, msg) __declspec(deprecated(msg)) foo
-#warning "msc"
-#else
-#error This compiler is not supported
 #endif
 
 #define PP_CAT(x,y) PP_CAT1(x,y)
@@ -25,46 +21,56 @@ namespace detailed
     template <> struct converter<0> : public false_type {};
 }
 
-#define STATIC_WARNING(cond, msg) \
-struct PP_CAT(static_warning,__LINE__) { \
+#define STATIC_WARNING_IMPL(cond, msg, id) \
+struct PP_CAT(static_warning,id) { \
   DEPRECATE(void _(::detailed::false_type const& ),msg) {}; \
   void _(::detailed::true_type const& ) {}; \
-  PP_CAT(static_warning,__LINE__)() {_(::detailed::converter<(cond)>());} \
+  PP_CAT(static_warning,id)() {_(::detailed::converter<(cond)>());} \
 }
 
-// Note: using STATIC_WARNING_TEMPLATE changes the meaning of a program in a small way.
-// It introduces a member/variable declaration.  This means at least one byte of space
-// in each structure/class instantiation.  STATIC_WARNING should be preferred in any
-// non-template situation.
-//  'token' must be a program-wide unique identifier.
-#define STATIC_WARNING_TEMPLATE(token, cond, msg) \
-    STATIC_WARNING(cond, msg) PP_CAT(PP_CAT(_localvar_, token),__LINE__)
+#define STATIC_WARNING(cond, msg, id) \
+    STATIC_WARNING_IMPL(cond, msg,id) PP_CAT(_localvar_,id)
 
-//Example usage:
-//
-//#line 1
-//STATIC_WARNING(1==2, "Failed with 1 and 2");
-//STATIC_WARNING(1<2, "Succeeded with 1 and 2");
-//
-//struct Foo
-//{
-//  STATIC_WARNING(2==3, "2 and 3: oops");
-//  STATIC_WARNING(2<3, "2 and 3 worked");
-//};
-//
-//void func()
-//{
-//  STATIC_WARNING(3==4, "Not so good on 3 and 4");
-//  STATIC_WARNING(3<4, "3 and 4, check");
-//}
-//
-//template <typename T> struct wrap
-//{
-//  typedef T type;
-//  STATIC_WARNING(4==5, "Bad with 4 and 5");
-//  STATIC_WARNING(4<5, "Good on 4 and 5");
-//  STATIC_WARNING_TEMPLATE(WRAP_WARNING1, 4==5, "A template warning");
-//};
+
+/**
+ * \def static_warning(cond,msg)
+ * Same as static_assert(), but generates a warning instead of an error.
+ *
+ * \note This macro uses the deprecated attribute to generate warnings.
+ * Thus the -Wno-deprecated-declaration compiler option has to be turned off.
+ *
+ * Example usage:
+ * \code{.cpp}
+ * #line 1
+ * static_warning(1==2, "Failed with 1 and 2");
+ * static_warning(1<2, "Succeeded with 1 and 2");
+ *
+ * struct Foo
+ * {
+ *   static_warning(2==3, "2 and 3: oops");
+ *   static_warning(2<3, "2 and 3 worked");
+ * };
+ *
+ * void func()
+ * {
+ *   static_warning(3==4, "Not so good on 3 and 4");
+ *   static_warning(3<4, "3 and 4, check");
+ * }
+ *
+ * template <typename T> struct wrap
+ * {
+ *   typedef T type;
+ *   static_warning(4==5, "Bad with 4 and 5");
+ *   static_warning(4<5, "Good on 4 and 5");
+ * };
+ *
+ * template struct wrap<int>;
+ * \endcode
+ *
+ * \note Only supported for gcc...
+ */
+#define static_warning(cond, msg) \
+    STATIC_WARNING(cond, msg, __COUNTER__)
 
 
 #endif
