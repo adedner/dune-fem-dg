@@ -10,6 +10,8 @@
 #define DEPRECATE(foo, msg) __declspec(deprecated(msg)) foo
 #endif
 
+#if defined(__GNUC__) || defined(_MSC_VER)
+
 #define PP_CAT(x,y) PP_CAT1(x,y)
 #define PP_CAT1(x,y) x##y
 
@@ -31,6 +33,9 @@ struct PP_CAT(static_warning,id) { \
 #define STATIC_WARNING(cond, msg, id) \
     STATIC_WARNING_IMPL(cond, msg,id) PP_CAT(_localvar_,id)
 
+#else
+#define STATIC_WARNING(cond, msg, id)
+#endif
 
 /**
  * \def static_warning(cond,msg)
