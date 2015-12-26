@@ -4,14 +4,6 @@
 //solution taken and modified from stackoverflow.com by "Managu"
 //uses deprecation warning attribute
 
-#if defined(__GNUC__)
-#define DEPRECATE(foo, msg) foo __attribute__((deprecated(msg)))
-#elif defined(_MSC_VER)
-#define DEPRECATE(foo, msg) __declspec(deprecated(msg)) foo
-#endif
-
-#if defined(__GNUC__) || defined(_MSC_VER)
-
 #define PP_CAT(x,y) PP_CAT1(x,y)
 #define PP_CAT1(x,y) x##y
 
@@ -23,16 +15,20 @@ namespace detailed
     template <> struct converter<0> : public false_type {};
 }
 
-#define STATIC_WARNING_IMPL(cond, msg, id) \
-struct PP_CAT(static_warning,id) { \
-  DEPRECATE(void _(::detailed::false_type const& ),msg) {}; \
-  void _(::detailed::true_type const& ) {}; \
-  PP_CAT(static_warning,id)() {_(::detailed::converter<(cond)>());} \
-}
-
+#if defined(__GNUC__)
 #define STATIC_WARNING(cond, msg, id) \
-    STATIC_WARNING_IMPL(cond, msg,id) PP_CAT(_localvar_,id)
-
+struct PP_CAT(static_warning_,id) { \
+  void _(::detailed::false_type const& ) __attribute__((deprecated(msg))) {}; \
+  void _(::detailed::true_type const& ) {}; \
+  PP_CAT(static_warning_,id)() {_(::detailed::converter<(cond)>());} \
+} PP_CAT(_localvar_,id)
+#elif defined(_MSC_VER)
+#define STATIC_WARNING(cond, msg, id) \
+struct PP_CAT(static_warning_,id) { \
+  __declspec(deprecated(msg)) void _(::detailed::false_type const& ) {}; \
+  void _(::detailed::true_type const& ) {}; \
+  PP_CAT(static_warning_,id)() {_(::detailed::converter<(cond)>());} \
+} PP_CAT(_localvar_,id)
 #else
 #define STATIC_WARNING(cond, msg, id)
 #endif
@@ -46,7 +42,6 @@ struct PP_CAT(static_warning,id) { \
  *
  * Example usage:
  * \code{.cpp}
- * #line 1
  * static_warning(1==2, "Failed with 1 and 2");
  * static_warning(1<2, "Succeeded with 1 and 2");
  *

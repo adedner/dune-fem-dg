@@ -4,6 +4,8 @@
 // iostream includes
 #include <iostream>
 
+#include <dune/fem-dg/misc/static_warning.hh>
+
 // include gridpart
 #include <dune/fem/gridpart/leafgridpart.hh>
 #include <dune/fem/gridpart/adaptiveleafgridpart.hh>
@@ -47,6 +49,9 @@
 #include <dune/fem-dg/operator/fluxes/advection/fluxes.hh>
 #include <dune/fem-dg/operator/fluxes/euler/fluxes.hh>
 #include <dune/fem-dg/operator/fluxes/diffusion/fluxes.hh>
+
+
+
 
 namespace Dune
 {
@@ -268,6 +273,10 @@ namespace Fem
 // SolverSelector
 ///////////////////////////////////////////////////////////////////////////
 
+  template< Solver::Enum solver, bool dummy = false >
+  struct AvailableSolvers
+  {};
+
   template <Solver::Enum solver, bool symmetric, class DomainDFSpace, class RangeDFSpace = DomainDFSpace>
   struct SolverSelector
   {
@@ -325,7 +334,14 @@ namespace Fem
             Dune::Fem::ISTLCGOp< DiscreteFunctionType, LinearOperatorType >,
             Dune::Fem::ISTLBICGSTABOp< DiscreteFunctionType, LinearOperatorType > > :: type        LinearInverseOperatorType;
   };
+#else
+  template< bool dummy >
+  struct AvailableSolvers< Solver::Enum::istl, dummy >
+  {
+    static_warning(false, "You have chosen the istl solver backend which is currently not installed. Falling back to standard solver!");
+  };
 #endif // HAVE_ISTL
+
 #if HAVE_UMFPACK
   template <class DomainDFSpace, class RangeDFSpace, bool symmetric>
   struct SolverSelector<Solver::Enum::umfpack,symmetric,DomainDFSpace,RangeDFSpace>
@@ -338,7 +354,14 @@ namespace Fem
     typedef Dune::Fem::SparseRowLinearOperator< DomainDiscreteFunctionType, RangeDiscreteFunctionType > LinearOperatorType;
     typedef Dune::Fem::UMFPACKOp< DiscreteFunctionType, LinearOperatorType, symmetric >                 LinearInverseOperatorType;
   };
+#else
+  template< bool dummy >
+  struct AvailableSolvers< Solver::Enum::umfpack, dummy >
+  {
+    static_warning(false, "You have chosen the UMFPACK solver backend which is currently not installed. Falling back to standard solver!");
+  };
 #endif
+
 #if HAVE_PETSC
   template <class DomainDFSpace, class RangeDFSpace,bool symmetric>
   struct SolverSelector<Solver::Enum::petsc,symmetric,DomainDFSpace,RangeDFSpace>
@@ -352,6 +375,12 @@ namespace Fem
     typedef Dune::Fem::PetscInverseOperator< DiscreteFunctionType, LinearOperatorType >             LinearInverseOperatorType;
     // to switch between solvers for symmetric and non symmetric operators
     // use the parameter petsc.kspsolver.method
+  };
+#else
+  template< bool dummy >
+  struct AvailableSolvers< Solver::Enum::petsc, dummy >
+  {
+    static_warning(false, "You have chosen the PetSc solver backend which is currently not installed. Falling back to standard solver!");
   };
 #endif
 

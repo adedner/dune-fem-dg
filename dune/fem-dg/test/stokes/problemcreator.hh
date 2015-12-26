@@ -2,6 +2,9 @@
 #define FEMDG_STOKESSTEPPER_HH
 #include <config.h>
 
+#include <dune/fem-dg/misc/static_warning.hh>
+
+
 #ifndef GRIDDIM
 #define GRIDDIM 2
 #endif
@@ -47,10 +50,24 @@
 //--------- PROBLEMCREATORSELECTOR ----------
 #include <dune/fem-dg/misc/configurator.hh>
 
+
+
 namespace Dune
 {
 namespace Fem
 {
+
+  static const Galerkin::Enum               galerkinEnum   = Galerkin::Enum::dg;
+  static const Adaptivity::Enum             adaptivityEnum = Adaptivity::Enum::yes;
+  static const DiscreteFunctionSpaces::Enum dfSpaceEnum    = DiscreteFunctionSpaces::Enum::legendre;
+  static const Solver::Enum                 solverEnum     = Solver::Enum::istl;
+  static const AdvectionLimiter::Enum       advLimiterEnum = AdvectionLimiter::Enum::unlimited;
+  static const Matrix::Enum                 matrixEnum     = Matrix::Enum::assembled;
+  static const AdvectionFlux::Enum          advFluxEnum    = AdvectionFlux::Enum::none;
+  static const PrimalDiffusionFlux::Enum    diffFluxEnum   = PrimalDiffusionFlux::Enum::general;
+
+  //produce some static compiler warnings in case we are using an uninstalled solver
+  static const AvailableSolvers< solverEnum > checkSolverInstalled;
 
   template< class GridImp >
   struct StokesProblemCreator
@@ -58,16 +75,9 @@ namespace Fem
 
     struct SubStokesProblemCreator
     {
-      typedef AlgorithmConfigurator< GridImp,
-                                     Galerkin::Enum::dg,
-                                     Adaptivity::Enum::yes,
-                                     DiscreteFunctionSpaces::Enum::legendre,
-                                     Solver::Enum::fem,
-                                     AdvectionLimiter::Enum::unlimited,
-                                     Matrix::Enum::assembled,
-                                     AdvectionFlux::Identifier<AdvectionFlux::Enum::none>,
-                                     PrimalDiffusionFlux::Identifier< PrimalDiffusionFlux::Enum::general > > AC;
-
+      typedef AlgorithmConfigurator< GridImp, galerkinEnum, adaptivityEnum, dfSpaceEnum, solverEnum, advLimiterEnum, matrixEnum,
+                                     AdvectionFlux::Identifier<advFluxEnum>,
+                                     PrimalDiffusionFlux::Identifier<diffFluxEnum> > AC;
 
       struct SubPoissonProblemCreator
       {
@@ -171,7 +181,10 @@ namespace Fem
 
       static inline std::string moduleName() { return "";}
 
-      static ProblemInterfaceType* problem() { return new StokesProblem< GridType, GeneralizedStokesProblem > (); }
+      static ProblemInterfaceType* problem()
+      {
+        return new StokesProblem< GridType, GeneralizedStokesProblem > ();
+      }
 
       //Stepper Traits
       template< int polOrd >
