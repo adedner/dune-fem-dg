@@ -15,6 +15,48 @@
 namespace Dune {
 #define PRESSURESTABILIZATION 1
 
+
+  struct MatrixParameterNoPreconditioner
+      : public Dune::Fem::MatrixParameter
+    {
+      typedef Dune::Fem::MatrixParameter BaseType;
+
+      MatrixParameterNoPreconditioner( const std::string keyPrefix = "istl." )
+        : keyPrefix_( keyPrefix )
+      {}
+
+      virtual double overflowFraction () const
+      {
+        return Fem::Parameter::getValue< double >( keyPrefix_ + "matrix.overflowfraction", 1.0 );
+      }
+
+      virtual int numIterations () const
+      {
+        return Fem::Parameter::getValue< int >( keyPrefix_ + "preconditioning.iterations", 5 );
+      }
+
+      virtual double relaxation () const
+      {
+        return Fem::Parameter::getValue< int >( keyPrefix_ + "preconditioning.relaxation", 1.1 );
+      }
+
+      virtual int method () const
+      {
+        return 0;
+      }
+
+      virtual std::string preconditionName() const
+      {
+        return "None";
+      }
+
+     private:
+      std::string keyPrefix_;
+
+    };
+
+
+
   //! implementation of the operator
   template <class CombAssTraits, class OpTraits >
   class StokesAssembler
@@ -101,6 +143,7 @@ namespace Dune {
 
     typedef FieldMatrix<double,dimension,dimension>                       JacobianInverseType;
 
+    typedef MatrixParameterNoPreconditioner                               MatrixParameterType;
   public:
 
     //Constructor
@@ -116,9 +159,9 @@ namespace Dune {
       pressureRhs_("PressureRhs",pressurespc_),
       volumeQuadOrd_( 2*spc_.order()+1),
       faceQuadOrd_( 2*spc_.order()+1 ),
-      pressureGradMatrix_("pgm",pressurespc_,spc_),//PGM
-      pressureDivMatrix_("pdm",spc_,pressurespc_),//PDM
-      pressureStabMatrix_("psm",pressurespc_,pressurespc_),//PSM
+      pressureGradMatrix_("pgm",pressurespc_,spc_,MatrixParameterType()),//PGM
+      pressureDivMatrix_("pdm",spc_,pressurespc_,MatrixParameterType()),//PDM
+      pressureStabMatrix_("psm",pressurespc_,pressurespc_,MatrixParameterType()),//PSM
       d11_(d11),
       d12_(d12)
     {}
