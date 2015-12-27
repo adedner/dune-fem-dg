@@ -28,7 +28,7 @@
 #include <dune/fem/solver/istlsolver.hh>
 #endif
 
-#if HAVE_UMFPACK
+#if HAVE_UMFPACK || HAVE_SUITESPARSE_UMFPACK
 #include <dune/fem/solver/umfpacksolver.hh>
 #endif
 
@@ -36,6 +36,12 @@
 #include <dune/fem/function/petscdiscretefunction/petscdiscretefunction.hh>
 #include <dune/fem/operator/linear/petscoperator.hh>
 #include <dune/fem/solver/petscsolver.hh>
+#endif
+
+#if HAVE_EIGEN
+#include <dune/fem/storage/eigenvector.hh>
+#include <dune/fem/operator/linear/eigenoperator.hh>
+#include <dune/fem/solver/eigen.hh>
 #endif
 
 //include operators
@@ -104,7 +110,8 @@ namespace Fem
       femoem,      // use the matrix based version of the dune-fem solvers with blas
       istl,        // use the dune-istl solvers
       umfpack,     // use the direct solver umfpack
-      petsc        // use the petsc package
+      petsc,       // use the petsc package
+      eigen        // use the eigen package
     };
   }
 
@@ -342,7 +349,7 @@ namespace Fem
   };
 #endif // HAVE_ISTL
 
-#if HAVE_UMFPACK
+#if HAVE_UMFPACK || HAVE_SUITESPARSE_UMFPACK
   template <class DomainDFSpace, class RangeDFSpace, bool symmetric>
   struct SolverSelector<Solver::Enum::umfpack,symmetric,DomainDFSpace,RangeDFSpace>
   {
@@ -384,6 +391,27 @@ namespace Fem
   };
 #endif
 
+#if HAVE_EIGEN
+#warning "Eigen solver is not working at the moment.!"
+  template <class DomainDFSpace, class RangeDFSpace,bool symmetric>
+  struct SolverSelector<Solver::Enum::eigen,symmetric,DomainDFSpace,RangeDFSpace>
+  {
+    static const bool solverConfigured = true;
+    // choose type of discrete function, Matrix implementation and solver implementation
+    typedef Dune::Fem::EigenVector<double>                                                                          DofVectorType;
+    typedef Dune::Fem::ManagedDiscreteFunction< Dune::Fem::VectorDiscreteFunction< DomainDFSpace, DofVectorType > > DomainDiscreteFunctionType;
+    typedef Dune::Fem::ManagedDiscreteFunction< Dune::Fem::VectorDiscreteFunction< RangeDFSpace, DofVectorType > >  RangeDiscreteFunctionType;
+    typedef DomainDiscreteFunctionType                                                              DiscreteFunctionType;
+    typedef Dune::Fem::EigenLinearOperator< DomainDiscreteFunctionType, RangeDiscreteFunctionType > LinearOperatorType;
+    typedef Dune::Fem::EigenCGInverseOperator< DiscreteFunctionType >                               LinearInverseOperatorType;
+  };
+#else
+  template< bool dummy >
+  struct AvailableSolvers< Solver::Enum::eigen, dummy >
+  {
+    static_warning(false, "You have chosen the Eigen solver backend which is currently not installed. Falling back to standard solver!");
+  };
+#endif
 
 ///////////////////////////////////////////////////////////////////////////
 // DiscreteFunctionSpaceSelector

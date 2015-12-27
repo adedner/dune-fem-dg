@@ -26,7 +26,7 @@
 #include <dune/fem/solver/istlsolver.hh>
 #endif
 
-#if HAVE_UMFPACK
+#if HAVE_UMFPACK || HAVE_SUITESPARSE_UMFPACK
 #include <dune/fem/solver/umfpacksolver.hh>
 #endif
 
@@ -129,7 +129,7 @@ namespace Fem
             LinearInverseOperatorType;
   };
 #endif // HAVE_ISTL
-#if HAVE_UMFPACK
+#if HAVE_UMFPACK || HAVE_SUITESPARSE_UMFPACK
   template <class DFSpace, bool symmetric>
   struct Solvers<DFSpace,umfpack,symmetric>
   {
