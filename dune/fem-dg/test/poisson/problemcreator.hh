@@ -107,7 +107,6 @@ struct PoissonProblemCreator
 
     static const Dune::DGDiffusionFluxIdentifier PrimalDiffusionFluxId =                 Dune::method_general;
 
-
     typedef Dune::Fem::FunctionSpace< typename GridType::ctype, double, AnalyticalTraitsType::ModelType::dimDomain, 3> FVFunctionSpaceType;
     typedef Dune::Fem::FiniteVolumeSpace<FVFunctionSpaceType,GridPartType, 0, Dune::Fem::SimpleStorage> IndicatorSpaceType;
     typedef Dune::Fem::AdaptiveDiscreteFunction<IndicatorSpaceType>                             IndicatorType;
@@ -122,7 +121,7 @@ struct PoissonProblemCreator
   public:
     typedef Dune::Fem::GridFunctionAdapter< ExactSolutionType, GridPartType >                   GridExactSolutionType;
 
-    typedef std::tuple< DiscreteFunctionType*, GridExactSolutionType* >                         IOTupleType;
+    typedef std::tuple< DiscreteFunctionType* >                                                 IOTupleType;
 
     static const bool symmetricSolver = true ;
     typedef Solvers<DiscreteFunctionSpaceType, solverType, symmetricSolver>                     SolversType;
@@ -140,6 +139,7 @@ struct PoissonProblemCreator
       typedef Dune::Fem::RestrictProlongDefault< DiscreteFunctionType >                         RestrictionProlongationType;
     public:
       typedef Dune::Fem::DefaultSteadyStateSolverMonitorHandler                                 SolverMonitorHandlerType;
+      typedef Dune::Fem::DefaultDataWriterHandler< GridType, IOTupleType >                      DataWriterHandlerType;
     };
 
   };

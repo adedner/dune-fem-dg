@@ -590,7 +590,7 @@ namespace Fem
 
     IOTupleType dataTuple()
     {
-      return std::make_tuple( &solution(), &exact_ );
+      return std::make_tuple( &solution() );
     }
 
     //! finalize computation by calculating errors and EOCs

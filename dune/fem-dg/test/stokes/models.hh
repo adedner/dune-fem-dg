@@ -110,6 +110,8 @@ public:
   typedef typename Traits :: EntityType                       EntityType;
   typedef typename Traits :: IntersectionType                 IntersectionType;
 
+  static const int hasDiffusion = true;
+
 public:
   static const int ConstantVelocity = false;
   /**

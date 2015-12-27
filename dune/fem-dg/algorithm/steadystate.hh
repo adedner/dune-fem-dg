@@ -14,6 +14,7 @@
 #include <dune/fem-dg/algorithm/base.hh>
 
 #include <dune/fem-dg/algorithm/handler/solvermonitor.hh>
+#include <dune/fem-dg/algorithm/handler/datawriter.hh>
 
 
 namespace Dune
@@ -25,7 +26,7 @@ namespace Fem
   template< class GridImp,
             class ProblemTraits,
             int polOrd,
-            class SolverMonitorHandlerImp >
+            class HandlerTraits >
   struct SteadyStateTraits
   {
     enum { polynomialOrder = polOrd };
@@ -65,17 +66,17 @@ namespace Fem
     // type of IOTuple
     typedef typename DiscreteTraits::IOTupleType                   IOTupleType;
 
-    typedef SolverMonitorHandlerImp                                SolverMonitorHandlerType;
+    typedef typename HandlerTraits::SolverMonitorHandlerType       SolverMonitorHandlerType;
+    typedef typename HandlerTraits::DataWriterHandlerType          DataWriterHandlerType;
+
   };
 
 
   template< class Grid, class ProblemTraits, int polOrder, class HandlerTraits = typename ProblemTraits::template DiscreteTraits< Grid, polOrder >::HandlerTraits >
   class SteadyStateAlgorithm
-    : public AlgorithmBase< SteadyStateTraits< Grid, ProblemTraits, polOrder,
-                            typename HandlerTraits::SolverMonitorHandlerType > >
+    : public AlgorithmBase< SteadyStateTraits< Grid, ProblemTraits, polOrder, HandlerTraits > >
   {
-    typedef SteadyStateTraits< Grid, ProblemTraits, polOrder,
-                               typename HandlerTraits::SolverMonitorHandlerType > Traits;
+    typedef SteadyStateTraits< Grid, ProblemTraits, polOrder, HandlerTraits > Traits;
     typedef AlgorithmBase< Traits > BaseType;
 
   public:
@@ -110,6 +111,7 @@ namespace Fem
     typedef typename Traits::AssemblerType                        AssemblerType;
 
     typedef typename Traits::SolverMonitorHandlerType             SolverMonitorHandlerType;
+    typedef typename Traits::DataWriterHandlerType                DataWriterHandlerType;
 
     typedef uint64_t                                              UInt64Type ;
 

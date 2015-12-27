@@ -116,7 +116,7 @@ struct PoissonProblemCreator
   public:
     typedef Dune::Fem::GridFunctionAdapter< ExactSolutionType, GridPartType >                   GridExactSolutionType;
 
-    typedef std::tuple< DiscreteFunctionType*, GridExactSolutionType* >                         IOTupleType;
+    typedef std::tuple< DiscreteFunctionType* >                                                 IOTupleType;
 
     static const bool symmetricSolver = true ;
     typedef Solvers<DiscreteFunctionSpaceType, solverType, symmetricSolver>                     SolversType;
@@ -130,6 +130,7 @@ struct PoissonProblemCreator
     struct HandlerTraits
     {
       typedef Dune::Fem::DefaultSteadyStateSolverMonitorHandler                                 SolverMonitorHandlerType;
+      typedef Dune::Fem::DefaultDataWriterHandler< GridType, IOTupleType >                      DataWriterHandlerType;
     };
 
   };
@@ -222,15 +223,17 @@ public:
     typedef Dune::Fem::FiniteVolumeSpace<FVFunctionSpaceType,GridPartType, 0, Dune::Fem::SimpleStorage> IndicatorSpaceType;
     typedef Dune::Fem::AdaptiveDiscreteFunction<IndicatorSpaceType>                             IndicatorType;
 
+    static const Dune::DGDiffusionFluxIdentifier PrimalDiffusionFluxId =                        Dune::method_general;
+
     typedef Dune::OperatorTraits< GridPartType, polynomialOrder, AnalyticalTraitsType,
-                                  DiscreteFunctionType, FluxType, IndicatorType,
+                                  DiscreteFunctionType, FluxType, PrimalDiffusionFluxId, IndicatorType,
                                   AdaptationHandlerType, ExtraParameterTuple >                  OperatorTraitsType;
 
 
   public:
     typedef Dune::Fem::GridFunctionAdapter< ExactSolutionType, GridPartType >                   GridExactSolutionType;
-    typedef std::tuple< typename std::tuple_element<0,typename PoissonDiscreteTraits::IOTupleType>::type, typename std::tuple_element<1,typename PoissonDiscreteTraits::IOTupleType>::type,
-                        GridExactSolutionType*, DiscreteFunctionType* >                         IOTupleType;
+    typedef std::tuple< typename std::tuple_element<0,typename PoissonDiscreteTraits::IOTupleType>::type, DiscreteFunctionType* >
+                                                                                                IOTupleType;
     static const bool symmetricSolver = true ;
 
     typedef typename Dune::StokesAssembler< typename PoissonDiscreteTraits::DiscreteFunctionType,
@@ -245,6 +248,7 @@ public:
     struct HandlerTraits
     {
       typedef Dune::Fem::DefaultSteadyStateSolverMonitorHandler                                 SolverMonitorHandlerType;
+      typedef Dune::Fem::DefaultDataWriterHandler< GridType, IOTupleType >                      DataWriterHandlerType;
     };
 
   };
