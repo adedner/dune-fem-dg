@@ -15,9 +15,10 @@
 #include <dune/fem/space/common/interpolate.hh>
 
 #include <dune/fem-dg/algorithm/sub/interface.hh>
-#include <dune/fem-dg/algorithm/handler/solvermonitor.hh>
-#include <dune/fem-dg/algorithm/handler/diagnostics.hh>
-#include <dune/fem-dg/algorithm/handler/additionaloutput.hh>
+#include <dune/fem-dg/algorithm/handler/sub/diagnostics.hh>
+#include <dune/fem-dg/algorithm/handler/sub/solvermonitor.hh>
+#include <dune/fem-dg/algorithm/handler/sub/additionaloutput.hh>
+#include <dune/fem-dg/algorithm/handler/sub/adapt.hh>
 
 namespace Dune
 {
@@ -133,18 +134,18 @@ namespace Fem
 
     SubEvolutionAlgorithmBase ( GridType &grid )
     : BaseType( grid ),
+      overallTime_( 0 ),
+      overallTimer_(),
       gridPart_( grid ),
       space_( gridPart_ ),
       solution_( doCreateSolution() ),
       exactSolution_( doCreateExactSolution() ),
-      diagnosticsHandler_( name() ),
-      solverMonitorHandler_(  name() ),
-      additionalOutputHandler_( nullptr ),
-      odeSolverMonitor_(),
-      overallTimer_(),
       solver_( nullptr ),
-      overallTime_( 0 ),
-      ioTuple_( std::make_tuple( &solution(), &exactSolution() ) )
+      ioTuple_( std::make_tuple( &solution(), &exactSolution() ) ),
+      diagnosticsHandler_( name() ),
+      solverMonitorHandler_( name() ),
+      additionalOutputHandler_( nullptr ),
+      odeSolverMonitor_()
     {}
 
     typename SolverType::type* solver()
@@ -191,19 +192,19 @@ namespace Fem
     virtual IOTupleType& dataTuple () { return ioTuple_; }
 
   private:
-    virtual typename SolverType::type* doCreateSolver( TimeProviderType& tp )
+    virtual std::shared_ptr< typename SolverType::type > doCreateSolver( TimeProviderType& tp )
     {
       return nullptr;
     }
 
-    virtual DiscreteFunctionType* doCreateSolution()
+    virtual std::shared_ptr< DiscreteFunctionType > doCreateSolution()
     {
-      return new DiscreteFunctionType( "U_"+name(), space_ );
+      return std::make_shared< DiscreteFunctionType >( "U_"+name(), space_ );
     }
 
-    virtual DiscreteFunctionType* doCreateExactSolution()
+    virtual std::shared_ptr< DiscreteFunctionType > doCreateExactSolution()
     {
-      return new DiscreteFunctionType( "U_exact" + name(), space_ );
+      return std::make_shared< DiscreteFunctionType >( "U_exact" + name(), space_ );
     }
 
     virtual bool doCheckSolutionValid ( const int loop, TimeProviderType& tp ) const override { return solution_->dofsValid(); }
@@ -220,7 +221,7 @@ namespace Fem
         solution().communicate();
 
       // setup ode solver
-      solver_.reset( this->doCreateSolver( tp ) );
+      solver_ = this->doCreateSolver( tp );
 
       // initialize ode solver
       solver()->initialize( solution() );
@@ -268,26 +269,26 @@ namespace Fem
       AnalyticalTraits::addEOCErrors( tp, solution(), model(), problem() );
 
       // delete ode solver
-      solver_.reset( nullptr );
+      solver_ = nullptr;
     }
 
   protected:
+    double                                  overallTime_;
+    Dune::Timer                             overallTimer_;
     GridPartType                            gridPart_;
     DiscreteFunctionSpaceType               space_;
 
     // the solution
-    std::unique_ptr< DiscreteFunctionType > solution_;
-    std::unique_ptr< DiscreteFunctionType > exactSolution_;
+    std::shared_ptr< DiscreteFunctionType > solution_;
+    std::shared_ptr< DiscreteFunctionType > exactSolution_;
+
+    std::shared_ptr< typename SolverType::type > solver_;
+    IOTupleType                                  ioTuple_;
 
     DiagnosticsHandlerOptional< DiagnosticsHandlerType >           diagnosticsHandler_;
     SolverMonitorHandlerOptional< SolverMonitorHandlerType >       solverMonitorHandler_;
     AdditionalOutputHandlerOptional< AdditionalOutputHandlerType > additionalOutputHandler_;
     typename SolverType::type::MonitorType                         odeSolverMonitor_;
-
-    Dune::Timer                                  overallTimer_;
-    std::unique_ptr< typename SolverType::type > solver_;
-    double                                       overallTime_;
-    IOTupleType                                  ioTuple_;
   };
 
 

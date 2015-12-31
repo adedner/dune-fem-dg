@@ -19,7 +19,6 @@
 #include <dune/fem-dg/algorithm/handler/solvermonitor.hh>
 #include <dune/fem-dg/algorithm/handler/checkpoint.hh>
 #include <dune/fem-dg/algorithm/handler/datawriter.hh>
-#include <dune/fem-dg/algorithm/handler/additionaloutput.hh>
 #include <dune/fem-dg/algorithm/handler/solutionlimiter.hh>
 #include <dune/fem-dg/algorithm/handler/adapt.hh>
 
@@ -108,7 +107,10 @@ namespace Fem
       template<class T, class... Args > static void apply( T e, bool& res, Args&& ... a )
       { res &= e->checkSolutionValid( std::forward<Args>(a)... ); }
     };
-
+    struct Init {
+      template<class T, class... Args > static void apply( T e, Args&& ... a )
+      { e->init(); }
+    };
     template< class Caller >
     class LoopCallee
     {
@@ -131,6 +133,7 @@ namespace Fem
     static StepperTupleType createStepper ( Std::index_sequence< i... >, GridType &grid )
     {
       static auto tuple = std::make_tuple( new typename std::remove_pointer< typename std::tuple_element< i, StepperTupleType >::type >::type( grid ) ... );
+      ForLoopType< Init >::apply( tuple );
       return tuple;
     }
 

@@ -171,7 +171,7 @@ namespace Fem
         space_(gridPart),
         zero_(),
         advFlux_(model_),
-        diffusionFlux_(gridPart, model_, DGPrimalDiffusionFluxParameters<>( ParameterKey::generate( "", "dgdiffusionflux." ) ) ),
+        diffusionFlux_(gridPart, model_, typename Traits::DiffusionFluxType::ParameterType( ParameterKey::generate( "", "dgdiffusionflux." ) ) ),
         calculateFluxes_( calculateFluxes ),
         useStrongBoundaryCondition_( strongBC )
     {
@@ -421,10 +421,51 @@ namespace Fem
 
       // finish matrix build process
       matrix.communicate();
-      //matrix.systemMatrix().matrix().print( std::cout );
-      //rhs.print( std::cout );
-      //abort();
-      //
+
+     // matrix.systemMatrix().matrix().print();
+     // //rhs->print( std::cout );
+     // //abort();
+     // //
+
+     // const int sep = 8;
+     // int i;
+     // int j;
+
+     // std::cout << "###########" << std::endl;
+     // for(i=0; i<space_.size(); ++i)
+     // {
+     //   if( i % sep == 0 )
+     //   {
+     //     for( int j=0; j<space_.size(); j++)
+     //       std::cout << "------";
+     //     std::cout << std::endl;
+     //   }
+     //   for(j=0;j<space_.size(); ++j)
+     //   {
+     //     if( j % sep == 0 )
+     //       std::cout << "|";
+
+     //     std::cout.width(5);
+     //     if( std::abs(  matrix.matrix()(j,i) ) < 1e-14 )
+     //       std::cout << std::setprecision(2) << "0" << " ";
+     //     else
+     //       std::cout << std::setprecision(2) << matrix.matrix()(j,i) << " ";
+     //   }
+     //   if( j % sep == 0 )
+     //     std::cout << "|";
+
+     //   std::cout << std::endl;
+     // }
+     // if( i % sep == 0 )
+     // {
+     //   for( int j=0; j<space_.size(); j++)
+     //     std::cout << "------";
+     //   std::cout << std::endl;
+     // }
+     // std::cout << std::endl;
+     // std::cout << "###########" << std::endl;
+
+
       if( Dune::Fem::Parameter::verbose() )
       {
         std::cout << "DG( " << space_.grid().size( 0 ) << " ) matrix assemble took " << timer.elapsed() << " sec." << std::endl;

@@ -8,7 +8,7 @@
 // local includes
 #include <dune/fem-dg/algorithm/sub/evolution.hh>
 
-#include <dune/fem-dg/algorithm/handler/adapt.hh>
+#include <dune/fem-dg/algorithm/handler/sub/adapt.hh>
 
 namespace Dune
 {
@@ -105,17 +105,17 @@ namespace Fem
       return grid_.comm().sum( grSize );
     }
 
-    virtual SolverType* doCreateSolver ( TimeProviderType& tp ) override
+    virtual std::shared_ptr< SolverType > doCreateSolver ( TimeProviderType& tp ) override
     {
       if( adaptIndicator_ )
         adaptIndicator_.setAdaptation( tp );
 
       typedef RungeKuttaSolver< ExplicitOperatorType, ExplicitOperatorType, ExplicitOperatorType,
                                 BasicLinearSolverType > SolverImpl;
-      return new SolverImpl( tp, advectionOperator_,
-                             advectionOperator_,
-                             advectionOperator_,
-                             name() );
+      return std::make_shared< SolverImpl >( tp, advectionOperator_,
+                                             advectionOperator_,
+                                             advectionOperator_,
+                                             name() );
     }
 
    const ModelType& model () const { return advectionOperator_.model(); }

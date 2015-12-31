@@ -21,9 +21,9 @@
 #include <dune/fem-dg/algorithm/sub/evolution.hh>
 #include <dune/fem-dg/algorithm/sub/interface.hh>
 
-#include <dune/fem-dg/algorithm/handler/solvermonitor.hh>
-#include <dune/fem-dg/algorithm/handler/diagnostics.hh>
-#include <dune/fem-dg/algorithm/handler/additionaloutput.hh>
+#include <dune/fem-dg/algorithm/handler/sub/solvermonitor.hh>
+#include <dune/fem-dg/algorithm/handler/sub/diagnostics.hh>
+#include <dune/fem-dg/algorithm/handler/sub/additionaloutput.hh>
 
 
 namespace Dune
@@ -189,21 +189,30 @@ namespace Fem
     SubSteadyStateAlgorithm ( GridType &grid  )
       : BaseType( grid ),
         stringId_( name() + IDGenerator::instance().nextId() ),
-        solverMonitorHandler_( name() ),
-        diagnosticsHandler_( name() ),
-        additionalOutputHandler_( name() ),
         gridPart_( grid ),
         space_( gridPart_ ),
-        solution_( doCreateSolution() ),
-        exactSolution_( doCreateExactSolution() ),
-        rhs_( doCreateRhs() ),
-        rhsOperator_( gridPart_, problem(), std::tuple<>(), name() ),
-        ioTuple_( std::make_tuple( &solution(), &exactSolution() ) ),
-        solver_( doCreateSolver() ),
-        solverIterations_()
+        solverIterations_( 0 ),
+        solution_( nullptr ),
+        exactSolution_( nullptr ),
+        rhs_( nullptr ),
+        rhsOperator_( gridPart_, problem(), std::tuple<>(), name() ), //doCreateRhsOperator
+        solver_( nullptr ),
+        ioTuple_( nullptr ),
+        solverMonitorHandler_( name() ),
+        diagnosticsHandler_( name() ),
+        additionalOutputHandler_( name() )
+    {}
+
+    void init()
     {
-      solution().clear();
+      solution_ = doCreateSolution();
+      exactSolution_ = doCreateExactSolution();
+      rhs_ = doCreateRhs();
+
+      ioTuple_.reset( new IOTupleType( std::make_tuple( &solution(), &exactSolution() ) ) );
+      //rhsOperator_.reset( doCreateRhsOperator() );
     }
+
 
     typename SolverType::type* solver()
     {
@@ -243,7 +252,7 @@ namespace Fem
     virtual AdditionalOutputHandlerType* additionalOutput() { return additionalOutputHandler_.value(); }
 
     //DATAWRITING
-    IOTupleType& dataTuple () { return ioTuple_; }
+    IOTupleType& dataTuple () { return *ioTuple_; }
 
     //DIAGNOSTICS
     virtual DiagnosticsHandlerType* diagnostics()
@@ -252,24 +261,26 @@ namespace Fem
     }
 
   protected:
-    virtual typename SolverType::type* doCreateSolver()
+    virtual std::shared_ptr< typename SolverType::type > doCreateSolver()
     {
       return nullptr;
     }
 
-    virtual DiscreteFunctionType* doCreateSolution()
+    virtual std::shared_ptr< DiscreteFunctionType > doCreateSolution()
     {
-      return new DiscreteFunctionType( "solution-" + stringId_, space_ );
+      return std::make_shared< DiscreteFunctionType >( "solution-" + stringId_, space_ );
     }
 
-    virtual DiscreteFunctionType* doCreateRhs()
+    virtual std::shared_ptr< DiscreteFunctionType > doCreateRhs()
     {
-      return new DiscreteFunctionType( "rhs-" + stringId_, space_ );
+      if( rhsOperator_ ) //rhs by external rhs operator
+        rhsOperator_( solution(), rhs() );
+      return std::make_shared< DiscreteFunctionType >( "rhs-" + stringId_, space_ );
     }
 
-    virtual DiscreteFunctionType* doCreateExactSolution()
+    virtual std::shared_ptr< DiscreteFunctionType > doCreateExactSolution()
     {
-      return new DiscreteFunctionType( "exactSolution-" + stringId_, space_ );
+      return std::make_shared< DiscreteFunctionType >( "exactSolution-" + stringId_, space_ );
     }
 
     virtual bool doCheckSolutionValid ( const int loop ) const override
@@ -289,16 +300,21 @@ namespace Fem
 
     virtual void doPreSolve ( const int loop )
     {
-      if( rhsOperator_ )
+      if( rhsOperator_ ) //rhs by external rhs operator
         rhsOperator_( solution(), rhs() );
       solution().clear();
-      solver_.reset( this->doCreateSolver() );
+      solver_ = this->doCreateSolver();
     }
 
     virtual void doSolve ( const int loop )
     {
+      Dune::Timer timer;
+      double time = 0;
+      timer.reset();
       (*solver_)( rhs(), solution() );
       solverIterations_ = solver_->iterations();
+      time = timer.stop();
+      std::cout << "Solve time: " << time << std::endl;
     }
 
     virtual void doPostSolve( const int loop )
@@ -311,28 +327,30 @@ namespace Fem
       // add eoc errors
       //AnalyticalTraits::addEOCErrors( solution(), model(), problem() );
 
-      solver_.reset();
+      solver_ = nullptr;
     }
   protected:
 
     const std::string          stringId_;
 
+    GridPartType                                 gridPart_; // reference to grid part, i.e. the leaf grid
+    DiscreteFunctionSpaceType                    space_;    // the discrete function space
+    int                                          solverIterations_;
+
+    std::shared_ptr< DiscreteFunctionType >      solution_;
+    std::shared_ptr< DiscreteFunctionType >      exactSolution_;
+
+    std::shared_ptr< DiscreteFunctionType >      rhs_;
+    //std::unique_ptr< OperatorType >              rhsOperator_;
+    RhsOptional<RhsType >                        rhsOperator_;
+
+    std::unique_ptr< IOTupleType >               ioTuple_;
+
+    std::shared_ptr< typename SolverType::type > solver_;
+
     SolverMonitorHandlerOptional< SolverMonitorHandlerType >       solverMonitorHandler_;
     DiagnosticsHandlerOptional< DiagnosticsHandlerType >           diagnosticsHandler_;
     AdditionalOutputHandlerOptional< AdditionalOutputHandlerType > additionalOutputHandler_;
-
-    GridPartType                                 gridPart_; // reference to grid part, i.e. the leaf grid
-    DiscreteFunctionSpaceType                    space_;    // the discrete function space
-    std::unique_ptr< DiscreteFunctionType >      solution_;
-    std::unique_ptr< DiscreteFunctionType >      exactSolution_;
-
-    std::unique_ptr< DiscreteFunctionType >      rhs_;
-    RhsOptional<RhsType >                        rhsOperator_;
-
-    IOTupleType                                  ioTuple_;
-
-    std::unique_ptr< typename SolverType::type > solver_;
-    int                                          solverIterations_;
   };
 
 

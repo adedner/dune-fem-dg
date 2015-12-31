@@ -19,7 +19,6 @@
 #include <dune/fem/operator/common/stencil.hh>
 
 // dune-fem-dg includes
-#include <dune/fem-dg/operator/dg/dgoperatorchoice.hh>
 #include <dune/fem-dg/operator/adaptation/stokesestimator.hh>
 #include <dune/fem-dg/algorithm/sub/elliptic.hh>
 #include <dune/fem-dg/solver/uzawa.hh>
@@ -306,6 +305,8 @@ namespace Fem
     using BaseType::model;
     using BaseType::name;
     using BaseType::grid;
+    using BaseType::rhs;
+    using BaseType::rhs_;
     using BaseType::gridWidth;
     using BaseType::gridSize;
     using BaseType::solution;
@@ -316,17 +317,26 @@ namespace Fem
 
     explicit StokesAlgorithm(GridType& grid ) :
       BaseType( grid ),
-      ellAlg_( grid ),
       gridPart_( grid ),
       space_( gridPart_ ),
-      stokesSigmaEstimator_( gridPart_, ellAlg_.solution(), solution(), ellAlg_.assembler(), name() ),
-      assembler_( ellAlg_.solution().space() , space_, problem() ),
-      ioTuple_( *BaseType::dataTuple(), *ellAlg_.dataTuple() )
+      ellAlg_( grid ),
+      assembler_( gridPart_, model() ),
+      ioTuple_( nullptr ),
+      stokesSigmaEstimator_( nullptr )
     {}
+
+    void init()
+    {
+      ellAlg_.init();
+      BaseType::init();
+
+      ioTuple_.reset( new IOTupleType( *BaseType::dataTuple(), *ellAlg_.dataTuple() ) );
+      stokesSigmaEstimator_.reset( new StokesSigmaEstimatorType( gridPart_, ellAlg_.solution(), solution(), ellAlg_.assembler(), name() ) );
+    }
 
     virtual IOTupleType& dataTuple ()
     {
-      return ioTuple_;
+      return *ioTuple_;
     }
 
     bool adaptation(const double tolerance)
@@ -347,13 +357,22 @@ namespace Fem
       }
 #endif
 #endif
-      return (error < std::abs(tolerance) ? false : stokesSigmaEstimator_.estimator().mark( 0.98 * tolerance));
+      return (error < std::abs(tolerance) ? false : stokesSigmaEstimator_->estimator().mark( 0.98 * tolerance));
     }
 
   private:
-   virtual BasicLinearSolverType* doCreateSolver() override
+    virtual std::shared_ptr< BasicLinearSolverType > doCreateSolver() override
     {
-      assembler_.assemble( problem() );
+      Dune::Timer timer;
+      timer.start();
+
+      //if( rhsOperator_ ) //rhs by external rhs operator
+      //  rhsOperator_( solution(), rhs() );
+      rhs().clear();
+      assembler_.assemble();
+
+      std::cout << "Solver (Stokes) assemble time: " << timer.elapsed() << std::endl;
+
       double absLimit = Dune::Fem::Parameter::getValue<double>("istl.absLimit",1.e-10);
 #if 0
 #ifdef PADAPTSPACE
@@ -367,12 +386,12 @@ namespace Fem
       space_.adapt( polOrderVecPressure);
 #endif
 #endif
-      return new BasicLinearSolverType( assembler_, *ellAlg_.solver(), ellAlg_.rhs(), absLimit, 3*ellAlg_.solution().space().size() );
+      return std::make_shared< BasicLinearSolverType >( assembler_, *ellAlg_.solver(), ellAlg_.rhs(), absLimit, 3*ellAlg_.solution().space().size() );
     }
 
-    virtual DiscreteFunctionType* doCreateRhs() override
+    virtual std::shared_ptr< DiscreteFunctionType > doCreateRhs() override
     {
-      return &assembler_.pressureRhs();
+      return assembler_.pressureRhs();
     }
 
     virtual void doInitialize ( const int loop ) override
@@ -397,7 +416,7 @@ namespace Fem
       ellAlg_.solution().assign( solver_->velocity() );
 
       // TODO check wheather we need the following line
-      stokesSigmaEstimator_.update();
+      stokesSigmaEstimator_->update();
     }
 
     virtual void doPostSolve( const int loop ) override
@@ -414,14 +433,13 @@ namespace Fem
     }
 
   protected:
-    EllipticalAlgorithmType           ellAlg_;
-    GridPartType                      gridPart_;
-    DiscreteFunctionSpaceType         space_;
+    GridPartType                                gridPart_;
+    DiscreteFunctionSpaceType                   space_;
+    AssemblerType                               assembler_;
 
-    StokesSigmaEstimatorType          stokesSigmaEstimator_;
-    AssemblerType                     assembler_;
-    IOTupleType                       ioTuple_;
-
+    EllipticalAlgorithmType                     ellAlg_;
+    std::unique_ptr< IOTupleType >              ioTuple_;
+    std::unique_ptr< StokesSigmaEstimatorType > stokesSigmaEstimator_;
   };
 
 

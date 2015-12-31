@@ -52,8 +52,8 @@ namespace Fem
       if( Fem::Parameter::exists( key ) )
         checkFileName = Fem::Parameter::getValue<std::string> ( key );
       else
-        checkFileName = "" ;
-      return checkFileName ;
+        checkFileName = "";
+      return checkFileName;
     }
 
 

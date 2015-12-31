@@ -23,7 +23,6 @@
 #include <dune/fem-dg/algorithm/handler/solvermonitor.hh>
 #include <dune/fem-dg/algorithm/handler/checkpoint.hh>
 #include <dune/fem-dg/algorithm/handler/datawriter.hh>
-#include <dune/fem-dg/algorithm/handler/additionaloutput.hh>
 #include <dune/fem-dg/algorithm/handler/solutionlimiter.hh>
 #include <dune/fem-dg/algorithm/handler/adapt.hh>
 
@@ -263,16 +262,17 @@ namespace Fem
 
     EvolutionAlgorithmBase ( GridType &grid, const std::string name = "" )
     : BaseType( grid, name  ),
-      tuple_( createStepper( grid ) ),
       param_( StepperParametersType( ParameterKey::generate( "", "femdg.stepper." ) ) ),
+      overallTimer_(),
+      timeStepTimer_( Dune::FemTimer::addTo("sum time for timestep") ),
+      fixedTimeStep_( param_.fixedTimeStep() ),
+      tuple_( createStepper( grid ) ),
       checkPointHandler_( tuple_ ),
       dataWriterHandler_( tuple_ ),
       diagnosticsHandler_( tuple_ ),
       solverMonitorHandler_( tuple_ ),
       solutionLimiterHandler_( tuple_ ),
-      adaptHandler_( tuple_ ),
-      timeStepTimer_( Dune::FemTimer::addTo("sum time for timestep") ),
-      fixedTimeStep_( param_.fixedTimeStep() )
+      adaptHandler_( tuple_ )
     {}
 
     // return grid width of grid (overload in derived classes)
@@ -533,8 +533,12 @@ namespace Fem
     const StepperTupleType &stepperTuple () const { return tuple_; }
 
   protected:
-    StepperTupleType               tuple_;
     StepperParametersType          param_;
+    Dune::Timer                    overallTimer_;
+    unsigned int                   timeStepTimer_;
+    double                         fixedTimeStep_;
+
+    StepperTupleType               tuple_;
 
     CheckPointHandlerType          checkPointHandler_;
     DataWriterHandlerType          dataWriterHandler_;
@@ -543,9 +547,6 @@ namespace Fem
     SolutionLimiterHandlerType     solutionLimiterHandler_;
     AdaptHandlerType               adaptHandler_;
 
-    Dune::Timer                    overallTimer_;
-    unsigned int                   timeStepTimer_;
-    double                         fixedTimeStep_;
   };
 
 

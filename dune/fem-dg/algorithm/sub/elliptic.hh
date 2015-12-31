@@ -17,7 +17,6 @@
 #include <dune/fem/function/common/localfunctionadapter.hh>
 
 // dune-fem-dg includes
-#include <dune/fem-dg/operator/dg/dgoperatorchoice.hh>
 #include <dune/fem-dg/assemble/primalmatrix.hh>
 #include <dune/fem/operator/projection/dgl2projection.hh>
 
@@ -518,10 +517,10 @@ namespace Fem
       assembler_( gridPart_, model() ),
       linOperator_(),
       space_( const_cast<DiscreteFunctionSpaceType &> (assembler_.space()) ),
-      poissonSigmaEstimator_( gridPart_, solution(), assembler_, name() ),
       pAdapt_(grid, space_),
       step_( 0 ),
-      time_( 0 )
+      time_( 0 ),
+      poissonSigmaEstimator_( nullptr )
     {
       std::string gridName = Fem::gridName( grid );
       if( gridName == "ALUGrid" || gridName == "ALUConformGrid" || gridName == "ALUSimplexGrid" )
@@ -534,6 +533,12 @@ namespace Fem
           }
         }
       }
+    }
+
+    void init()
+    {
+      BaseType::init();
+      poissonSigmaEstimator_.reset( new PoissonSigmaEstimatorType( gridPart_, solution(), assembler_, name() ) );
     }
 
     void virtual setTime ( const double time ) override
@@ -556,8 +561,11 @@ namespace Fem
     }
 
   protected:
-    virtual BasicLinearSolverType* doCreateSolver() override
+    virtual std::shared_ptr< BasicLinearSolverType > doCreateSolver() override
     {
+      Dune::Timer timer;
+      timer.start();
+
       linOperator_.reset( new OperatorType("dg operator", space_, space_ ) );
 
       if( space_.continuous() ) // Lagrange case
@@ -578,12 +586,14 @@ namespace Fem
       //else
         assembler_.assemble(0, *linOperator_, rhs() );
 
+      std::cout << "Solver (Poisson) assemble time: " << timer.elapsed() << std::endl;
+
       assembler_.testSymmetrie(*linOperator_);
 
       double absLimit   = Dune::Fem:: Parameter::getValue<double>("istl.absLimit",1.e-10);
       double reduction  = Dune::Fem:: Parameter::getValue<double>("istl.reduction",1.e-6);
 
-      return new BasicLinearSolverType(*linOperator_, reduction, absLimit );
+      return std::make_shared< BasicLinearSolverType >(*linOperator_, reduction, absLimit );
     }
 
     //! default time loop implementation, overload for changes
@@ -594,13 +604,13 @@ namespace Fem
       BaseType::doPreSolve( loop );
 
       // calculate new sigma
-      poissonSigmaEstimator_.update();
+      poissonSigmaEstimator_->update();
     }
 
     //! finalize computation by calculating errors and EOCs
     virtual void doFinalize ( const int loop ) override
     {
-      AnalyticalTraits::addEOCErrors( solution(), model(), problem().exactSolution(), poissonSigmaEstimator_.sigma() );
+      AnalyticalTraits::addEOCErrors( solution(), model(), problem().exactSolution(), poissonSigmaEstimator_->sigma() );
 
       // delete solver and linear operator for next step
       linOperator_.reset();
@@ -609,16 +619,16 @@ namespace Fem
 
   protected:
 
-    GridPartType                            gridPart_;       // reference to grid part, i.e. the leaf grid
+    GridPartType                                 gridPart_;       // reference to grid part, i.e. the leaf grid
 
-    AssemblerType                           assembler_;
+    AssemblerType                                assembler_;
 
-    std::unique_ptr< OperatorType >         linOperator_;
-    DiscreteFunctionSpaceType&              space_;
-    PoissonSigmaEstimatorType               poissonSigmaEstimator_;
-    PAdaptivityType                         pAdapt_;
-    int                                     step_;
-    double                                  time_;
+    std::unique_ptr< OperatorType >              linOperator_;
+    DiscreteFunctionSpaceType&                   space_;
+    PAdaptivityType                              pAdapt_;
+    int                                          step_;
+    double                                       time_;
+    std::unique_ptr< PoissonSigmaEstimatorType > poissonSigmaEstimator_;
 
   };
 

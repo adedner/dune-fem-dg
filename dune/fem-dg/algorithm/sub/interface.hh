@@ -12,10 +12,10 @@
 #include <dune/fem-dg/misc/tupleutility.hh>
 #include <dune/fem-dg/misc/covarianttuple.hh>
 
-#include <dune/fem-dg/algorithm/handler/solvermonitor.hh>
-#include <dune/fem-dg/algorithm/handler/diagnostics.hh>
-#include <dune/fem-dg/algorithm/handler/additionaloutput.hh>
-
+#include <dune/fem-dg/algorithm/handler/sub/diagnostics.hh>
+#include <dune/fem-dg/algorithm/handler/sub/solvermonitor.hh>
+#include <dune/fem-dg/algorithm/handler/sub/additionaloutput.hh>
+#include <dune/fem-dg/algorithm/handler/sub/adapt.hh>
 
 namespace Dune
 {

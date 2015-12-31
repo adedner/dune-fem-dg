@@ -11,13 +11,10 @@
 #endif
 
 //--------- HANDLER --------------------------------
-#include <dune/fem-dg/algorithm/handler/diagnostics.hh>
-#include <dune/fem-dg/algorithm/handler/solvermonitor.hh>
-#include <dune/fem-dg/algorithm/handler/checkpoint.hh>
-#include <dune/fem-dg/algorithm/handler/datawriter.hh>
-#include <dune/fem-dg/algorithm/handler/additionaloutput.hh>
-#include <dune/fem-dg/algorithm/handler/solutionlimiter.hh>
-#include <dune/fem-dg/algorithm/handler/adapt.hh>
+#include <dune/fem-dg/algorithm/handler/sub/diagnostics.hh>
+#include <dune/fem-dg/algorithm/handler/sub/solvermonitor.hh>
+#include <dune/fem-dg/algorithm/handler/sub/additionaloutput.hh>
+#include <dune/fem-dg/algorithm/handler/sub/adapt.hh>
 #include <dune/fem-dg/algorithm/monitor.hh>
 
 //--------- GRID HELPER ---------------------

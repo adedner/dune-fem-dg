@@ -18,13 +18,10 @@
 #endif
 
 //--------- HANDLER --------------------------------
-#include <dune/fem-dg/algorithm/handler/diagnostics.hh>
-#include <dune/fem-dg/algorithm/handler/solvermonitor.hh>
-#include <dune/fem-dg/algorithm/handler/checkpoint.hh>
-#include <dune/fem-dg/algorithm/handler/datawriter.hh>
-#include <dune/fem-dg/algorithm/handler/additionaloutput.hh>
-#include <dune/fem-dg/algorithm/handler/solutionlimiter.hh>
-#include <dune/fem-dg/algorithm/handler/adapt.hh>
+#include <dune/fem-dg/algorithm/handler/sub/diagnostics.hh>
+#include <dune/fem-dg/algorithm/handler/sub/solvermonitor.hh>
+#include <dune/fem-dg/algorithm/handler/sub/additionaloutput.hh>
+#include <dune/fem-dg/algorithm/handler/sub/adapt.hh>
 
 //--------- GRID HELPER ---------------------
 #include <dune/fem-dg/algorithm/gridinitializer.hh>
@@ -59,7 +56,7 @@ namespace Fem
 
   static const Galerkin::Enum               galerkinEnum   = Galerkin::Enum::dg;
   static const Adaptivity::Enum             adaptivityEnum = Adaptivity::Enum::yes;
-  static const DiscreteFunctionSpaces::Enum dfSpaceEnum    = DiscreteFunctionSpaces::Enum::legendre;
+  static const DiscreteFunctionSpaces::Enum dfSpaceEnum    = DiscreteFunctionSpaces::Enum::hierarchic_legendre;
   static const Solver::Enum                 solverEnum     = Solver::Enum::istl;
   static const AdvectionLimiter::Enum       advLimiterEnum = AdvectionLimiter::Enum::unlimited;
   static const Matrix::Enum                 matrixEnum     = Matrix::Enum::assembled;
@@ -77,7 +74,7 @@ namespace Fem
     {
       typedef AlgorithmConfigurator< GridImp, galerkinEnum, adaptivityEnum, dfSpaceEnum, solverEnum, advLimiterEnum, matrixEnum,
                                      AdvectionFlux::Identifier<advFluxEnum>,
-                                     PrimalDiffusionFlux::Identifier<diffFluxEnum> > AC;
+                                     PrimalDiffusionFlux::Identifier< PrimalDiffusionFlux::Enum::general > > AC;
 
       struct SubPoissonProblemCreator
       {
@@ -141,7 +138,7 @@ namespace Fem
 
           struct Solver
           {
-            typedef typename AC::template LinearSolvers< DFSpaceType, false/*true*/> type;
+            typedef typename AC::template LinearSolvers< DFSpaceType, true> type;
           };
 
           typedef Fem::SubSolverMonitorHandler< Fem::SolverMonitor >                 SolverMonitorHandlerType;

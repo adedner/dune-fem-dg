@@ -58,7 +58,7 @@ namespace Fem
         btop_(op_.getBTOP()),
         cop_(op_.getCOP()),
         rhs1_(aufSolver_.affineShift()),
-        rhs2_(op_.pressureRhs()),
+        rhs2_(*op_.pressureRhs()),
         pressurespc_(op_.pressurespc()),
         spc_(op.spc()),
         velocity_("VELO",spc_),
@@ -80,7 +80,7 @@ namespace Fem
         btop_(op_.getBTOP()),
         cop_(op_.getCOP()),
         rhs1_(rhs),
-        rhs2_(op_.pressureRhs()),
+        rhs2_(*op_.pressureRhs()),
         pressurespc_(op_.pressurespc()),
         spc_(op.spc()),
         velocity_("VELO",spc_),
@@ -97,10 +97,17 @@ namespace Fem
     virtual void operator()(const PressureDiscreteFunctionType& arg,
                             PressureDiscreteFunctionType& pressure ) const
     {
+      Dune::Timer timer;
+      Dune::Timer timer2;
+      timer2.start();
+
+
       typedef typename DiscreteFunctionType::DiscreteFunctionSpaceType FunctionSpaceType;
       typedef typename FunctionSpaceType::RangeFieldType Field;
        Field gamma=0, delta, rho;
 
+      //std::cout << "arg------------------" << std::endl;
+      //arg.print( std::cout );
 
       DiscreteFunctionType f("f",spc_);
       // f := rhs1
@@ -124,6 +131,7 @@ namespace Fem
       g.clear();
       PressureDiscreteFunctionType residuum("residuum",pressurespc_);
 
+
       // residuum = arg
       residuum.assign(arg);
       // B * pressure = tmp1
@@ -131,8 +139,12 @@ namespace Fem
       // f -= tmp1
       f-=tmp1;
 
+      timer2.stop();
+      timer.start();
       // A^-1 * f = velocity
       aufSolver_(f,velocity);
+      timer.stop();
+      timer2.start();
       // B^T * velocity = tmp2
       btop_.apply(velocity,tmp2);
       //=> tmp2 = B^T * A^-1 * ( F - B * d )
@@ -161,8 +173,12 @@ namespace Fem
         // B * d = tmp1
         bop_.apply(d,tmp1);
 
+        timer2.stop();
+        timer.start();
         // A^-1 * tmp1 = xi
         aufSolver_(tmp1,xi);
+        timer.stop();
+        timer2.start();
         // B^T * xi = h
         btop_.apply(xi,h);
         // => h = B^T * A^-1 * B * d
@@ -192,8 +208,8 @@ namespace Fem
 
         d *= delta / oldDelta;
         d += residuum;
-
       }
+      std::cout << "solving time (Poisson solves/total time SPcg): " << timer.elapsed() << " / " << timer2.elapsed() << std::endl;
       if( verbose_ > 0)
         std::cout << std::endl;
       velocity_.assign(velocity);

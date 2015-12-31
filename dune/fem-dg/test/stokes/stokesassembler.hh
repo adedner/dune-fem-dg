@@ -12,8 +12,10 @@
 #include <dune/fem-dg/operator/dg/passtraits.hh>
 #include <dune/fem-dg/assemble/assemblertraits.hh>
 
+#include <dune/fem/operator/linear/spoperator.hh>
+
 namespace Dune {
-#define PRESSURESTABILIZATION 1
+#define PRESSURESTABILIZATION 0
 
 
   struct MatrixParameterNoPreconditioner
@@ -76,7 +78,8 @@ namespace Dune {
     static_assert( std::is_same< typename CombAssTraits::template RangeDiscreteFunction<0,1>, typename CombAssTraits::template DomainDiscreteFunction<1,0> >::value, "discrete function spaces does not fit." );
 
     typedef OpTraits                                                     OperatorTraits;
-    typedef typename OperatorTraits::ModelType::ProblemType              ProblemType;
+    typedef typename OperatorTraits::ModelType                           ModelType;
+    typedef typename ModelType::ProblemType                              ProblemType;
 
     //! type of discrete function spaceS
     typedef typename DiscreteFunctionType::DiscreteFunctionSpaceType     DiscreteFunctionSpaceType;
@@ -129,9 +132,13 @@ namespace Dune {
     typedef typename OperatorTraits::FaceQuadratureType                   FaceQuadratureType;
 
   public:
-    typedef typename CombAssTraits::template Matrix<0,1>                  PressureGradMatType;
-    typedef typename CombAssTraits::template Matrix<1,0>                  PressureDivMatType;
-    typedef typename CombAssTraits::template Matrix<1,1>                  PressureStabMatType;
+    typedef Fem::SparseRowLinearOperator< DiscreteFunctionType, DiscretePressureFunctionType > PressureDivMatType;
+    typedef Fem::SparseRowLinearOperator< DiscretePressureFunctionType, DiscreteFunctionType > PressureGradMatType;
+    typedef Fem::SparseRowLinearOperator< DiscretePressureFunctionType, DiscretePressureFunctionType > PressureStabMatType;
+
+    //typedef typename CombAssTraits::template Matrix<0,1>                  PressureGradMatType;
+    //typedef typename CombAssTraits::template Matrix<1,0>                  PressureDivMatType;
+    //typedef typename CombAssTraits::template Matrix<1,1>                  PressureStabMatType;
 
     typedef typename PressureGradMatType::LocalMatrixType                 LocalPressureGradMatType;
     typedef typename PressureDivMatType::LocalMatrixType                  LocalPressureDivMatType;
@@ -147,16 +154,15 @@ namespace Dune {
   public:
 
     //Constructor
-    StokesAssembler( const DiscreteFunctionSpaceType& spc,
-                     const DiscretePressureSpaceType& pressurespc,
-                     const ProblemType& problem,
+    StokesAssembler( GridPartType& gridPart,
+                     const ModelType& model,
                      double d11=1.,
                      double d12=1.) :
-      spc_(spc),
-      problem_(problem),
-      pressurespc_( pressurespc ),
-      veloRhs_("VelocityRhs",spc_),
-      pressureRhs_("PressureRhs",pressurespc_),
+      spc_( gridPart ),
+      pressurespc_( gridPart ),
+      problem_(model.problem()),
+      /*veloRhs_("VelocityRhs",spc_),*/
+      pressureRhs_( new DiscretePressureFunctionType( "PressureRhs",pressurespc_ ) ),
       volumeQuadOrd_( 2*spc_.order()+1),
       faceQuadOrd_( 2*spc_.order()+1 ),
       pressureGradMatrix_("pgm",pressurespc_,spc_,MatrixParameterType()),//PGM
@@ -175,8 +181,8 @@ namespace Dune {
     const PressureDivMatType&  getBTOP() const { return pressureDivMatrix_; }
     const PressureStabMatType& getCOP() const  { return pressureStabMatrix_; }
 
-    DiscreteFunctionType& veloRhs() const { return veloRhs_; }
-    DiscretePressureFunctionType& pressureRhs() const { return pressureRhs_; }
+//    DiscreteFunctionType& veloRhs() const { return veloRhs_; }
+    std::shared_ptr< DiscretePressureFunctionType > pressureRhs() const { return pressureRhs_; }
 
     void divergence(const JacobianRangeType& du, PressureRangeType& divu) const
     {
@@ -185,7 +191,7 @@ namespace Dune {
         divu+=du[i][i];
     }
 
-    void assemble(const ProblemType& problem )
+    void assemble()
     {
 
       typedef Dune::Fem::DiagonalAndNeighborStencil<DiscretePressureSpaceType,DiscreteFunctionSpaceType> PgStencilType;
@@ -200,26 +206,24 @@ namespace Dune {
       pressureGradMatrix_.clear();
       pressureDivMatrix_.reserve( pdstencil );
       pressureDivMatrix_.clear();
-#if PRESSURESTABILIZATION
       pressureStabMatrix_.reserve( psstencil );
       pressureStabMatrix_.clear();
-#endif
-      pressureRhs_.clear();
+      pressureRhs_->clear();
 
       typedef typename DiscreteFunctionSpaceType :: IteratorType IteratorType;
       IteratorType end = spc_.end();
       for(IteratorType it = spc_.begin(); it != end; ++it)
       {
-        assembleLocal( *it,problem );
+        assembleLocal( *it );
       }
 
       //important: finish build process!
       pressureGradMatrix_.communicate();
       pressureDivMatrix_.communicate();
       pressureStabMatrix_.communicate();
-
 #define SYMMCHECK 0
 #if SYMMCHECK
+      std::cout << "symcheck" << std::endl;
       int size=spc_.size();
       int pressuresize=pressurespc_.size();
 
@@ -232,19 +236,46 @@ namespace Dune {
           if(error > 1e-10)
           {
             std::cout<<"Wrong at:"<<i<<" , "<< j<<"error="<<error<<"\n";
-            abort();
+            //abort();
           }
         }
       }
-      //      pressureDivMatrix_.matrix().print(std::cout);
-      //      std::cout<<"&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&\n\n";
-      //      pressureGradMatrix_.matrix().print(std::cout);
+      std::cout << std::endl;
+
+      //for(int i=0; i<size; ++i)
+      //{
+      //  for(int j=0;j<pressuresize; ++j)
+      //  {
+      //    std::cout.width(5);
+      //    std::cout << std::setprecision(2) << pressureDivMatrix_.matrix()(j,i) << " ";
+      //  }
+      //  std::cout << std::endl;
+      //}
+      //std::cout << std::endl;
+      //std::cout << std::endl;
+
+      //for(int i=0; i<size; ++i)
+      //{
+      //  for(int j=0;j<pressuresize; ++j)
+      //  {
+      //    std::cout.width(5);
+      //    std::cout << std::setprecision(2) << pressureGradMatrix_.matrix()(i,j) << " ";
+      //  }
+      //  std::cout << std::endl;
+      //}
+
 #endif
+      //pressureDivMatrix_.matrix().print(std::cout);
+      //std::cout<<"&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&\n\n";
+      //pressureGradMatrix_.matrix().print(std::cout);
+      //std::cout<<"&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&\n\n";
+      //pressureStabMatrix_.matrix().print(std::cout);
+
     }
 
 
     template<class EntityType>
-    void assembleLocal(const EntityType& en/*,DiscreteFunctionType& rhs*/,const ProblemType& problem) const
+    void assembleLocal(const EntityType& en/*,DiscreteFunctionType& rhs*/) const
     {
 
       GridPartType& gridPart = spc_.gridPart();
@@ -330,13 +361,21 @@ namespace Dune {
           {
             FaceQuadratureType faceQuadInner(gridPart,edge, faceQuadOrd_, FaceQuadratureType::INSIDE);
             FaceQuadratureType faceQuadOuter(gridPart,edge, faceQuadOrd_, FaceQuadratureType::OUTSIDE);
-            applyNeighbor(edge, en, nb, faceQuadInner, faceQuadOuter, enPGrad, enPDiv, enPStab);
+            applyNeighbor(edge, en, nb, faceQuadInner, faceQuadOuter, enPGrad, enPDiv
+#if PRESSURESTABILIZATION
+                , enPStab
+#endif
+                );
           }
           else
           {
             NonConformingFaceQuadratureType  faceQuadOuter(gridPart, edge, faceQuadOrd_, NonConformingFaceQuadratureType::OUTSIDE);
             NonConformingFaceQuadratureType  faceQuadInner(gridPart, edge, faceQuadOrd_, NonConformingFaceQuadratureType::INSIDE);
-            applyNeighbor(edge, en, nb, faceQuadInner, faceQuadOuter, enPGrad, enPDiv, enPStab);
+            applyNeighbor(edge, en, nb, faceQuadInner, faceQuadOuter, enPGrad, enPDiv
+#if PRESSURESTABILIZATION
+                , enPStab
+#endif
+                );
           }
         }
         else if(edge.boundary())
@@ -344,12 +383,20 @@ namespace Dune {
           if(edge.conforming() )
           {
             FaceQuadratureType faceQuadInner(gridPart,edge, faceQuadOrd_, FaceQuadratureType::INSIDE);
-            applyBoundary(edge, en, faceQuadInner, enPGrad, enPDiv, enPStab);
+            applyBoundary(edge, en, faceQuadInner, enPGrad, enPDiv
+#if PRESSURESTABILIZATION
+                , enPStab
+#endif
+                );
           }
           else
           {
             NonConformingFaceQuadratureType   faceQuadInner(gridPart, edge, faceQuadOrd_, NonConformingFaceQuadratureType::INSIDE);
-            applyBoundary(edge, en, faceQuadInner, enPGrad, enPDiv, enPStab);
+            applyBoundary(edge, en, faceQuadInner, enPGrad, enPDiv
+#if PRESSURESTABILIZATION
+                , enPStab
+#endif
+                );
 
           }
         }
@@ -363,8 +410,10 @@ namespace Dune {
                        const Quad &faceQuadInner,
                        const Quad &faceQuadOuter,
                        LocalPressureGradMatType&  enPGrad,
-                       LocalPressureDivMatType&   enPDiv,
-                       LocalPressureStabMatType&  enPStab
+                       LocalPressureDivMatType&   enPDiv
+#if PRESSURESTABILIZATION
+                       , LocalPressureStabMatType&  enPStab
+#endif
                        ) const
     {
       const BaseFunctionSetType& bsetEn = spc_.basisFunctionSet(en);
@@ -511,8 +560,10 @@ namespace Dune {
                        const Entity &en,
                        const Quad &faceQuadInner,
                        LocalPressureGradMatType&  enPGrad,
-                       LocalPressureDivMatType&   enPDiv,
-                       LocalPressureStabMatType&  enPStab
+                       LocalPressureDivMatType&   enPDiv
+#if PRESSURESTABILIZATION
+                       , LocalPressureStabMatType&  enPStab
+#endif
                        ) const
     {
       const BaseFunctionSetType& bsetEn = spc_.basisFunctionSet(en);
@@ -526,7 +577,7 @@ namespace Dune {
       std::vector<PressureJacobianRangeType> dpEn(numPBaseFunctions);
 
 
-      LocalPressureType localPressure=pressureRhs_.localFunction(en);
+      LocalPressureType localPressure=pressureRhs_->localFunction(en);
       RangeType dirichletValue(0.0);
       RangeType pNormal(0.0);
 
@@ -576,11 +627,11 @@ namespace Dune {
 
   private:
     //Class Members
-    const DiscreteFunctionSpaceType& spc_;
+    DiscreteFunctionSpaceType spc_;
+    DiscretePressureSpaceType pressurespc_;
     const ProblemType& problem_;
-    const DiscretePressureSpaceType& pressurespc_;
-    mutable DiscreteFunctionType veloRhs_;
-    mutable DiscretePressureFunctionType pressureRhs_;
+//    mutable DiscreteFunctionType veloRhs_;
+    mutable std::shared_ptr< DiscretePressureFunctionType >  pressureRhs_;
     int volumeQuadOrd_,faceQuadOrd_;
 
     PressureGradMatType pressureGradMatrix_;

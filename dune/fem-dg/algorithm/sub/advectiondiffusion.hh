@@ -113,7 +113,7 @@ namespace Fem
       return grid().comm().sum( grSize );
     }
 
-    virtual SolverType* doCreateSolver ( TimeProviderType& tp ) override
+    virtual std::shared_ptr< SolverType > doCreateSolver ( TimeProviderType& tp ) override
     {
       if( adaptIndicator_ )
         adaptIndicator_.setAdaptation( tp );
@@ -121,7 +121,7 @@ namespace Fem
       // create ODE solver
       typedef RungeKuttaSolver< OperatorType, ExplicitOperatorType, ImplicitOperatorType,
                                 BasicLinearSolverType > SolverImpl;
-      return new SolverImpl( tp, operator_, advectionOperator_, diffusionOperator_, name() );
+      return std::make_shared< SolverImpl >( tp, operator_, advectionOperator_, diffusionOperator_, name() );
     }
 
     const ModelType& model () const { return operator_.model(); }
