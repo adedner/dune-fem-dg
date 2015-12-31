@@ -27,8 +27,8 @@ namespace Fem
   template< class GridImp >
   class StokesProblemInterface
   {
-  public:
     typedef StokesProblemInterfaceBase< GridImp >        BaseType;
+  public:
 
     typedef typename BaseType::FunctionSpaceType         FunctionSpaceType;
     typedef typename BaseType::PressureFunctionSpaceType PressureFunctionSpaceType;
@@ -38,17 +38,15 @@ namespace Fem
 
     typedef std::tuple< PoissonProblemType*, StokesProblemType* >         ProblemTupleType;
 
+    /**
+     *  \brief constructor constructing a combined problem of the interface sub problems,
+     *  i.e. the poisson and the stokes problem.
+     *
+     *  \note Use the StokesProblem class to create derived objects.
+     */
     StokesProblemInterface()
       : problems_( std::make_tuple( new PoissonProblemType(), new StokesProblemType() ) )
     {}
-
-    template< class PoissonProblemImp, class StokesProblemImp >
-    void create( const PoissonProblemImp& poisson, const StokesProblemImp& stokes )
-    {
-      std::get<0>( problems_ ) = poisson;
-      std::get<1>( problems_ ) = stokes;
-    }
-
 
     template< int i >
     const typename std::remove_pointer< typename std::tuple_element<i,ProblemTupleType>::type >::type& get() const
@@ -68,6 +66,14 @@ namespace Fem
       return get<0>().dataPrefix();
     }
 
+  protected:
+    template< class PoissonProblemPtrImp, class StokesProblemPtrImp >
+    void create( const PoissonProblemPtrImp& poisson, const StokesProblemPtrImp& stokes )
+    {
+      std::get<0>( problems_ ) = poisson;
+      std::get<1>( problems_ ) = stokes;
+    }
+
   private:
     mutable ProblemTupleType   problems_;
   };
@@ -85,29 +91,29 @@ namespace Fem
    */
   template< class GridImp,
             template<class> class StokesProblemImp >
-  class VirtualStokesProblemCreator
+  class StokesProblem
     : public StokesProblemInterface< GridImp >
   {
     typedef StokesProblemInterface< GridImp > BaseType;
+
+    typedef typename BaseType::PoissonProblemType                            PoissonProblemBaseType;
+    typedef typename BaseType::StokesProblemType                             StokesProblemBaseType;
+
   public:
-    typedef ProblemInterface< Dune::Fem::FunctionSpace< double, double, GridImp::dimension, GridImp::dimension > > PoissonProblemBaseType;
-    typedef ProblemInterface< Dune::Fem::FunctionSpace< double, double, GridImp::dimension, 1  > >                 StokesProblemBaseType;
+    typedef typename StokesProblemImp<GridImp>::PoissonProblemType           PoissonProblemType;
+    typedef typename StokesProblemImp<GridImp>::StokesProblemType            StokesProblemType;
 
-    typedef typename StokesProblemImp<GridImp>::PoissonProblemType                PoissonProblemType;
-    typedef typename StokesProblemImp<GridImp>::StokesProblemType                 StokesProblemType;
-
-
-    typedef std::tuple< PoissonProblemBaseType*, StokesProblemBaseType* >         ProblemTupleType;
-
-    VirtualStokesProblemCreator()
+    StokesProblem()
       : BaseType(),
-        problems_( std::make_tuple( new PoissonProblemType(), new StokesProblemType() ) )
+        poisson_( new PoissonProblemType() ),
+        stokes_( new StokesProblemType() )
     {
-      BaseType::create( std::get<0>(problems_), std::get<1>(problems_) );
+      BaseType::create( poisson_, stokes_ );
     }
 
   private:
-    mutable ProblemTupleType   problems_;
+    mutable PoissonProblemBaseType* poisson_;
+    mutable StokesProblemBaseType*  stokes_;
 
   };
 

@@ -111,8 +111,8 @@ namespace Fem
 
         static ProblemInterfaceType* problem()
         {
-          //return new typename StokesProblem< GridType, GeneralizedStokesProblem >::PoissonProblemType();
-          return new typename GeneralizedStokesProblem< GridType >::PoissonProblemType();
+          return new typename StokesProblem< GridType, GeneralizedStokesProblem >::PoissonProblemType();
+          //return new typename GeneralizedStokesProblem< GridType >::PoissonProblemType();
         }
 
 

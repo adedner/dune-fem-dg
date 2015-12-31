@@ -410,27 +410,6 @@ namespace Fem
   };
 
 
-  template< class GridImp, template<class> class StokesProblemImp >
-  class StokesProblem
-    : public VirtualStokesProblemCreator< GridImp, StokesProblemImp >
-  {
-  public:
-    typedef typename StokesProblemImp<GridImp>::PoissonProblemType PoissonProblemType;
-    typedef typename StokesProblemImp<GridImp>::StokesProblemType  StokesProblemType;
-
-    typedef typename PoissonProblemType::BaseType                  PoissonProblemBaseType;
-    typedef typename StokesProblemType::BaseType                   StokesProblemBaseType;
-
-    typedef VirtualStokesProblemCreator< GridImp, StokesProblemImp > BaseType;
-
-
-    StokesProblem()
-      :  BaseType()
-    {}
-
-  };
-
-
 
  // template< class GridImp >
  // static StokesProblemInterface<Dune::Fem::FunctionSpace< double, double, GridImp::dimensionworld,GridImp::dimensionworld  >,
