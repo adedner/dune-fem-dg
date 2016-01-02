@@ -318,19 +318,19 @@ namespace Fem
      */
     virtual bool doCheckSolutionValid ( const int loop ) const { return true; }
 
-    virtual void doInitialize ( int loop, TimeProviderType& tp ){}
+    virtual void doInitialize ( int loop, TimeProviderType& tp ){ doInitialize(loop); }
     virtual void doInitialize ( int loop ){}
 
-    virtual void doPreSolve( int loop, TimeProviderType& tp ){}
+    virtual void doPreSolve( int loop, TimeProviderType& tp ){ doPreSolve(loop); }
     virtual void doPreSolve( int loop ){}
 
-    virtual void doSolve ( int loop, TimeProviderType& tp ){}
+    virtual void doSolve ( int loop, TimeProviderType& tp ){ doSolve(loop); }
     virtual void doSolve ( int loop ){}
 
-    virtual void doPostSolve( int loop, TimeProviderType& tp ){}
+    virtual void doPostSolve( int loop, TimeProviderType& tp ){ doPostSolve(loop); }
     virtual void doPostSolve( int loop ){}
 
-    virtual void doFinalize ( int loop, TimeProviderType& tp ){}
+    virtual void doFinalize ( int loop, TimeProviderType& tp ){ doFinalize(loop); }
     virtual void doFinalize ( int loop ){}
 
     GridType&                      grid_;
