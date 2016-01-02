@@ -80,7 +80,6 @@ namespace Fem
                                        const RangeType& u,
                                        RangeType& res) const
     {
-      abort();
       res = 0;
       return 0.0;
     }
@@ -91,7 +90,6 @@ namespace Fem
                                           const RangeType& u,
                                           RangeType& res) const
     {
-      abort();
       res = 0;
       return 0.0;
     }
