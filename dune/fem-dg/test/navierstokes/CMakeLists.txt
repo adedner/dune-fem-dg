@@ -6,16 +6,15 @@ if(GENERATE_FEMDG_PARAMETER_FILE)
 endif()
 
 # default settings for the test case
-add_definitions( "-DYASPGRID" )
+add_definitions( "-DALUGRID_SIMPLEX" )
 add_definitions( "-DGRIDDIM=2" )
-add_definitions( "-DFLUX=1" )
-add_definitions( "-DPRIMALDG" )
-add_definitions( "-DPROBLEM=2" )
 
 dune_add_test( NAME navierstokes
                SOURCES main.cc
                COMPILE_DEFINITIONS POLORDER=2 )
 dune_add_test( NAME navierstokesall 
                SOURCES main.cc )
+
+             #set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O0" )
 
 add_code_generate_targets( navierstokes navierstokesall )
