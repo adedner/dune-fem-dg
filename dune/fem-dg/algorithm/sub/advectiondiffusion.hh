@@ -80,29 +80,44 @@ namespace Fem
       //velo_( "velocity", vSpace_ ),
       //tuple_( &velo_ ),
       tuple_( ),
-      operator_( gridPart_, problem(), tuple_, name() ),
-      advectionOperator_( gridPart_, problem(), tuple_, name() ),
-      diffusionOperator_( gridPart_, problem(), tuple_, name() ),
-      adaptIndicator_( solution(), problem(), tuple_, name() )
+      operator_( nullptr ),
+      advectionOperator_( nullptr ),
+      diffusionOperator_( nullptr ),
+      adaptIndicator_( nullptr )
     {}
+
+    void init()
+    {
+      BaseType::init();
+      operator_ = std::make_unique< OperatorType >( gridPart_, problem(), tuple_, name() );
+      advectionOperator_ = std::make_unique< ExplicitOperatorType >( gridPart_, problem(), tuple_, name() );
+      diffusionOperator_ = std::make_unique< ImplicitOperatorType >( gridPart_, problem(), tuple_, name() );
+      adaptIndicator_ = std::make_unique< AdaptIndicatorOptional<AdaptIndicatorType> >( solution(), problem(), tuple_, name() );
+    }
 
     virtual AdaptIndicatorType* adaptIndicator ()
     {
-      return adaptIndicator_.value();
+      assert( adaptIndicator_ );
+      return adaptIndicator_->value();
     }
 
     //! return overal number of grid elements
     virtual UInt64Type gridSize () const
     {
-      int globalElements = adaptIndicator_ ? adaptIndicator_.globalNumberOfElements() : 0;
+      assert( operator_ );
+      assert( advectionOperator_ );
+      assert( diffusionOperator_ );
+      assert( adaptIndicator_ );
+
+      int globalElements = *adaptIndicator_ ? adaptIndicator_->globalNumberOfElements() : 0;
       if( globalElements > 0 )
         return globalElements;
 
       // one of them is not zero,
-      size_t advSize     = advectionOperator_.numberOfElements();
-      size_t diffSize    = diffusionOperator_.numberOfElements();
-      size_t dgIndSize   = adaptIndicator_ ? adaptIndicator_.numberOfElements() : diffSize;
-      size_t dgSize      = operator_.numberOfElements();
+      size_t advSize     = advectionOperator_->numberOfElements();
+      size_t diffSize    = diffusionOperator_->numberOfElements();
+      size_t dgIndSize   = *adaptIndicator_ ? adaptIndicator_->numberOfElements() : diffSize;
+      size_t dgSize      = operator_->numberOfElements();
       UInt64Type grSize  = std::max( std::max(advSize, dgSize ), std::max( diffSize, dgIndSize ) );
       double minMax[ 2 ] = { double(grSize), 1.0/double(grSize) } ;
       grid().comm().max( &minMax[ 0 ], 2 );
@@ -115,26 +130,31 @@ namespace Fem
 
     virtual std::shared_ptr< SolverType > doCreateSolver ( TimeProviderType& tp ) override
     {
+      assert( operator_ );
+      assert( advectionOperator_ );
+      assert( diffusionOperator_ );
+      assert( adaptIndicator_ );
+
       if( adaptIndicator_ )
-        adaptIndicator_.setAdaptation( tp );
+        adaptIndicator_->setAdaptation( tp );
 
       // create ODE solver
       typedef RungeKuttaSolver< OperatorType, ExplicitOperatorType, ImplicitOperatorType,
                                 BasicLinearSolverType > SolverImpl;
-      return std::make_shared< SolverImpl >( tp, operator_, advectionOperator_, diffusionOperator_, name() );
+      return std::make_shared< SolverImpl >( tp, *operator_, *advectionOperator_, *diffusionOperator_, name() );
     }
 
-    const ModelType& model () const { return operator_.model(); }
+    const ModelType& model () const { assert( operator_ ); return operator_->model(); }
 
   protected:
     //typename OperatorTraits::SpaceType vSpace_;
     //typename OperatorTraits::VeloType  velo_;
     ExtraParameterTupleType tuple_;
 
-    OperatorType                         operator_;
-    ExplicitOperatorType                 advectionOperator_;
-    ImplicitOperatorType                 diffusionOperator_;
-    mutable AdaptIndicatorOptional<AdaptIndicatorType> adaptIndicator_;
+    std::unique_ptr< OperatorType >         operator_;
+    std::unique_ptr< ExplicitOperatorType > advectionOperator_;
+    std::unique_ptr< ImplicitOperatorType > diffusionOperator_;
+    mutable std::unique_ptr< AdaptIndicatorOptional<AdaptIndicatorType> > adaptIndicator_;
   };
 }
 }

@@ -17,14 +17,11 @@
 #include <dune/fem/io/parameter.hh>
 #include <dune/grid/io/file/dgfparser/dgfparser.hh>
 #include <dune/fem/misc/l2norm.hh>
-//--------- HANDLER -------------------------
-#include <dune/fem-dg/algorithm/handler/diagnostics.hh>
-#include <dune/fem-dg/algorithm/handler/solvermonitor.hh>
-#include <dune/fem-dg/algorithm/handler/checkpoint.hh>
-#include <dune/fem-dg/algorithm/handler/datawriter.hh>
-#include <dune/fem-dg/algorithm/handler/additionaloutput.hh>
-#include <dune/fem-dg/algorithm/handler/solutionlimiter.hh>
-#include <dune/fem-dg/algorithm/handler/adapt.hh>
+//--------- HANDLER --------------------------------
+#include <dune/fem-dg/algorithm/handler/sub/diagnostics.hh>
+#include <dune/fem-dg/algorithm/handler/sub/solvermonitor.hh>
+#include <dune/fem-dg/algorithm/handler/sub/additionaloutput.hh>
+#include <dune/fem-dg/algorithm/handler/sub/adapt.hh>
 //--------- GRID HELPER ---------------------
 #include <dune/fem-dg/algorithm/gridinitializer.hh>
 //--------- OPERATOR/SOLVER -----------------
@@ -45,7 +42,7 @@
 #include <dune/fem-dg/misc/error/dgeocerror.hh>
 //--------- PROBLEMS ------------------------
 #include "problems.hh"
-#include "../stokes/problems.hh"
+//#include "../stokes/problems.hh"
 //--------- MODELS --------------------------
 #include "stokesmodel.hh"
 #include "models.hh"
@@ -87,7 +84,8 @@ namespace Fem
         typedef HostGridPartType                              GridPartType;
 
         // define problem type here if interface should be avoided
-        typedef ThetaProblemInterface< typename AC::template FunctionSpaces<DIMRANGE> >  ProblemInterfaceType;
+        //typedef ThetaProblemInterface< typename AC::template FunctionSpaces<DIMRANGE> >  ProblemInterfaceType;
+        typedef typename NavierStokesProblemInterface< GridType >::PoissonProblemType  ProblemInterfaceType;
 
         typedef typename ProblemInterfaceType::FunctionSpaceType       FunctionSpaceType;
 
@@ -106,7 +104,7 @@ namespace Fem
 
         static ProblemInterfaceType* problem()
         {
-          return new typename NavierStokesProblemDefault< GridType >::PoissonProblemType ();
+          return new typename NavierStokesProblem< GridType, NavierStokesProblemDefault >::PoissonProblemType();
         }
 
         template< int polOrd >
@@ -168,9 +166,10 @@ namespace Fem
       typedef typename AC::GridParts                                   HostGridPartType;
       typedef HostGridPartType                                         GridPartType;
 
-      typedef StokesProblemInterface< typename SubPoissonProblemCreator::ProblemInterfaceType /*velocity*/,
-                                      ThetaProblemInterface< typename AC::template FunctionSpaces<1> > >
-                                                                          ProblemInterfaceType;
+      typedef NavierStokesProblemInterface< GridType >                 ProblemInterfaceType;
+      //typedef StokesProblemInterface< typename SubPoissonProblemCreator::ProblemInterfaceType /*velocity*/,
+      //                                ThetaProblemInterface< typename AC::template FunctionSpaces<1> > >
+      //                                                                    ProblemInterfaceType;
 
       typedef typename ProblemInterfaceType::StokesProblemType::FunctionSpaceType
                                                                           FunctionSpaceType;
@@ -188,7 +187,11 @@ namespace Fem
 
       static inline std::string moduleName() { return "";}
 
-      static ProblemInterfaceType* problem() { return new NavierStokesProblemDefault< GridType > (); }
+      static ProblemInterfaceType* problem()
+      {
+        return new NavierStokesProblem< GridType, NavierStokesProblemDefault > ();
+        //return new NavierStokesProblemDefault< GridType > ();
+      }
 
       //Stepper Traits
       template< int polOrd >
@@ -276,7 +279,8 @@ namespace Fem
       typedef HostGridPartType                              GridPartType;
 
       // define problem type here if interface should be avoided
-      typedef NavierStokesProblemDefault< GridType >                       ProblemInterfaceType;
+      //typedef NavierStokesProblemDefault< GridType >                       ProblemInterfaceType;
+      typedef typename NavierStokesProblemInterface< GridType >::NavierStokesProblemType ProblemInterfaceType;
 
       typedef typename ProblemInterfaceType::FunctionSpaceType             FunctionSpaceType;
 
@@ -296,7 +300,11 @@ namespace Fem
 
       static inline std::string moduleName() { return ""; }
 
-      static ProblemInterfaceType* problem() { return new ProblemInterfaceType(); }
+      static ProblemInterfaceType* problem()
+      {
+        return new typename NavierStokesProblem< GridType, NavierStokesProblemDefault >::NavierStokesProblemType();
+        //return new ProblemInterfaceType();
+      }
 
       //Stepper Traits
       template< int polOrd >

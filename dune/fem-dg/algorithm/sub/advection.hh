@@ -76,56 +76,72 @@ namespace Fem
                         ExtraParameterTupleType tuple = ExtraParameterTupleType() ) :
       BaseType( grid ),
       tuple_( ),
-      advectionOperator_(gridPart_, problem(), tuple, name() ),
-      adaptIndicator_( solution(), problem(), tuple_, name() )
+      advectionOperator_( nullptr ),
+      adaptIndicator_( nullptr )
     {}
+
+
+    void init()
+    {
+      BaseType::init();
+      advectionOperator_ = std::make_unique< ExplicitOperatorType >( gridPart_, problem(), tuple_, name() );
+      adaptIndicator_ = std::make_unique< AdaptIndicatorOptional<AdaptIndicatorType> >( solution(), problem(), tuple_, name() );
+    }
+
 
     virtual AdaptIndicatorType* adaptIndicator ()
     {
-      return adaptIndicator_.value();
+      assert( adaptIndicator_ );
+      return adaptIndicator_->value();
     }
 
     virtual void limit ()
     {
       if( limitSolution() )
-        advectionOperator_.limit( *limitSolution() );
+        advectionOperator_->limit( *limitSolution() );
     }
 
     //! return overal number of grid elements
     virtual UInt64Type gridSize () const
     {
-      int globalElements = adaptIndicator_ ? adaptIndicator_.globalNumberOfElements() : 0;
+      assert( advectionOperator_ );
+      assert( adaptIndicator_ );
+
+      int globalElements = adaptIndicator_ ? adaptIndicator_->globalNumberOfElements() : 0;
       if( globalElements > 0 )
         return globalElements;
 
       // one of them is not zero,
-      size_t  advSize   = advectionOperator_.numberOfElements();
-      size_t  dgIndSize = adaptIndicator_ ? adaptIndicator_.numberOfElements() : advSize;
+      size_t  advSize   = advectionOperator_->numberOfElements();
+      size_t  dgIndSize = *adaptIndicator_ ? adaptIndicator_->numberOfElements() : advSize;
       UInt64Type grSize   = std::max( advSize, dgIndSize );
       return grid_.comm().sum( grSize );
     }
 
     virtual std::shared_ptr< SolverType > doCreateSolver ( TimeProviderType& tp ) override
     {
+      assert( advectionOperator_ );
+      assert( adaptIndicator_ );
+
       if( adaptIndicator_ )
-        adaptIndicator_.setAdaptation( tp );
+        adaptIndicator_->setAdaptation( tp );
 
       typedef RungeKuttaSolver< ExplicitOperatorType, ExplicitOperatorType, ExplicitOperatorType,
                                 BasicLinearSolverType > SolverImpl;
-      return std::make_shared< SolverImpl >( tp, advectionOperator_,
-                                             advectionOperator_,
-                                             advectionOperator_,
+      return std::make_shared< SolverImpl >( tp, *advectionOperator_,
+                                             *advectionOperator_,
+                                             *advectionOperator_,
                                              name() );
     }
 
-   const ModelType& model () const { return advectionOperator_.model(); }
+   const ModelType& model () const { assert( advectionOperator_ ); return advectionOperator_->model(); }
 
   protected:
     ExtraParameterTupleType tuple_;
 
 
-    ExplicitOperatorType    advectionOperator_;
-    mutable AdaptIndicatorOptional<AdaptIndicatorType> adaptIndicator_;
+    std::unique_ptr< ExplicitOperatorType >    advectionOperator_;
+    mutable std::unique_ptr< AdaptIndicatorOptional<AdaptIndicatorType> > adaptIndicator_;
   };
 }
 }

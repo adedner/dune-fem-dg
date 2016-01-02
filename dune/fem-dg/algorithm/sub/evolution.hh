@@ -138,15 +138,23 @@ namespace Fem
       overallTimer_(),
       gridPart_( grid ),
       space_( gridPart_ ),
-      solution_( doCreateSolution() ),
-      exactSolution_( doCreateExactSolution() ),
+      solution_( nullptr ),
+      exactSolution_( nullptr ),
       solver_( nullptr ),
-      ioTuple_( std::make_tuple( &solution(), &exactSolution() ) ),
+      ioTuple_( nullptr ),
       diagnosticsHandler_( name() ),
       solverMonitorHandler_( name() ),
       additionalOutputHandler_( nullptr ),
       odeSolverMonitor_()
     {}
+
+    void init()
+    {
+      solution_ = doCreateSolution();
+      exactSolution_ = doCreateExactSolution();
+
+      ioTuple_.reset( new IOTupleType( std::make_tuple( &solution(), &exactSolution() ) ) );
+    }
 
     typename SolverType::type* solver()
     {
@@ -189,7 +197,7 @@ namespace Fem
     virtual CheckPointDiscreteFunctionType* checkPointSolution () { return solution_.get(); }
 
     //DATAWRITING
-    virtual IOTupleType& dataTuple () { return ioTuple_; }
+    virtual IOTupleType& dataTuple () { assert( ioTuple_ ); return *ioTuple_; }
 
   private:
     virtual std::shared_ptr< typename SolverType::type > doCreateSolver( TimeProviderType& tp )
@@ -283,7 +291,7 @@ namespace Fem
     std::shared_ptr< DiscreteFunctionType > exactSolution_;
 
     std::shared_ptr< typename SolverType::type > solver_;
-    IOTupleType                                  ioTuple_;
+    std::unique_ptr< IOTupleType >               ioTuple_;
 
     DiagnosticsHandlerOptional< DiagnosticsHandlerType >           diagnosticsHandler_;
     SolverMonitorHandlerOptional< SolverMonitorHandlerType >       solverMonitorHandler_;

@@ -12,6 +12,14 @@ namespace Dune
 namespace Fem
 {
 
+  struct OperatorSplittingScheme
+  {
+    static constexpr double theta_ = 1.0 - 1.0/M_SQRT2 ;
+    static constexpr double alpha_ = (1.0 - 2.0 * theta_ )/(1.0 - theta_);
+    static constexpr double beta_  = theta_/ ( 1.0 - theta_ );
+
+  };
+
   // ProblemInterface
   //-----------------
   /**
@@ -40,9 +48,9 @@ namespace Fem
     typedef FieldMatrix< RangeFieldType, dimDomain, dimDomain >   DiffusionMatrixType;
 
   public:
-    static constexpr double theta_ = 1.0 - 1.0/M_SQRT2 ;
-    static constexpr double alpha_ = (1.0 - 2.0 * theta_ )/(1.0 - theta_);
-    static constexpr double beta_  = theta_/ ( 1.0 - theta_ );
+    static constexpr double theta_ = OperatorSplittingScheme::theta_;
+    static constexpr double alpha_ = OperatorSplittingScheme::alpha_;
+    static constexpr double beta_  = OperatorSplittingScheme::beta_;
 
     ThetaProblemInterface()
       : time_( 0 ),
@@ -70,26 +78,172 @@ namespace Fem
     const double mu_;
   };
 
+  template< class FunctionSpaceImp, bool constVel = false >
+  class ThetaNavierStokesProblemInterface
+    : public EvolutionProblemInterface< FunctionSpaceImp, constVel >
+  {
+    typedef EvolutionProblemInterface< FunctionSpaceImp, constVel > BaseType;
+  public:
+
+    static constexpr double theta_ = OperatorSplittingScheme::theta_;
+    static constexpr double alpha_ = OperatorSplittingScheme::alpha_;
+    static constexpr double beta_  = OperatorSplittingScheme::beta_;
+
+
+    static const int dimRange  = BaseType::dimRange;
+    static const int dimDomain = BaseType::dimDomain;
+
+    typedef typename BaseType::DomainType        DomainType;
+    typedef typename BaseType::RangeType         RangeType;
+    typedef typename BaseType::JacobianRangeType JacobianRangeType;
+    typedef typename BaseType::DomainFieldType   DomainFieldType;
+    typedef typename BaseType::RangeFieldType    RangeFieldType;
+
+    ThetaNavierStokesProblemInterface()
+      : BaseType(),
+        mu_( 1 )
+    {}
+
+    virtual void evaluate( const DomainType& x,
+                           const double t, RangeType& res) const
+    {}
+
+    double theta () const { return theta_; }
+    double betaMu() const { return beta_ * mu_; }
+    double alphaMu() const { return alpha_ * mu_; }
+
+  private:
+    const double mu_;
+
+  };
 
   template< class GridImp>
-  class NavierStokesProblemDefault
-    : public StokesProblemInterface< ThetaProblemInterface< Dune::Fem::FunctionSpace< double, double, GridImp::dimension, GridImp::dimension > > ,
-			                        	     ThetaProblemInterface< Dune::Fem::FunctionSpace< double, double, GridImp::dimension, 1 > > >,
-      public EvolutionProblemInterface< Dune::Fem::FunctionSpace< double, double, GridImp::dimension, GridImp::dimension >, false >
+  class NavierStokesProblemInterfaceBase
   {
   public:
     typedef Dune::Fem::FunctionSpace< double, double, GridImp::dimension, GridImp::dimension > FunctionSpaceType;
-  private:
     typedef Dune::Fem::FunctionSpace< double, double, GridImp::dimension, 1 > PressureFunctionSpaceType;
 
-    typedef ThetaProblemInterface< FunctionSpaceType >         PoissonProblemBaseType;
-    typedef ThetaProblemInterface< PressureFunctionSpaceType > StokesProblemBaseType;
+    typedef ThetaProblemInterface< FunctionSpaceType >            PoissonProblemType;
+    typedef ThetaProblemInterface< PressureFunctionSpaceType >    StokesProblemType;
+    typedef ThetaNavierStokesProblemInterface< FunctionSpaceType, false > NavierStokesProblemType;
 
-    typedef StokesProblemInterface< PoissonProblemBaseType, StokesProblemBaseType > BaseType;
-    typedef EvolutionProblemInterface< FunctionSpaceType, false >                   EvolBaseType;
+  };
 
+
+  template< class GridImp >
+  class NavierStokesProblemInterface
+  {
+    typedef NavierStokesProblemInterfaceBase< GridImp >        BaseType;
+  public:
+
+    typedef typename BaseType::FunctionSpaceType         FunctionSpaceType;
+    typedef typename BaseType::PressureFunctionSpaceType PressureFunctionSpaceType;
+
+    typedef typename BaseType::PoissonProblemType        PoissonProblemType;
+    typedef typename BaseType::StokesProblemType         StokesProblemType;
+    typedef typename BaseType::NavierStokesProblemType   NavierStokesProblemType;
+
+    typedef std::tuple< PoissonProblemType*, StokesProblemType*, NavierStokesProblemType* >         ProblemTupleType;
+
+    /**
+     *  \brief constructor constructing a combined problem of the interface sub problems,
+     *  i.e. the poisson and the stokes problem.
+     *
+     *  \note Use the StokesProblem class to create derived objects.
+     */
+    NavierStokesProblemInterface()
+      : problems_( std::make_tuple( new PoissonProblemType(), new StokesProblemType(), new NavierStokesProblemType() ) )
+    {}
+
+    template< int i >
+    const typename std::remove_pointer< typename std::tuple_element<i,ProblemTupleType>::type >::type& get() const
+    {
+      return *(std::get<i>( problems_) );
+    }
+
+    template< int i >
+    typename std::remove_pointer< typename std::tuple_element<i,ProblemTupleType>::type >::type& get()
+    {
+      return *(std::get<i>( problems_) );
+    }
+
+    // return prefix for data loops
+    virtual std::string dataPrefix() const
+    {
+      return get<0>().dataPrefix();
+    }
+
+  protected:
+    template< class PoissonProblemPtrImp, class StokesProblemPtrImp, class NavierStokesProblemPtrImp >
+    void create( const PoissonProblemPtrImp& poisson, const StokesProblemPtrImp& stokes,
+                 const NavierStokesProblemPtrImp& navier )
+    {
+      std::get<0>( problems_ ) = poisson;
+      std::get<1>( problems_ ) = stokes;
+      std::get<2>( problems_ ) = navier;
+    }
+
+  private:
+    mutable ProblemTupleType   problems_;
+  };
+
+
+
+  /**
+   * \brief helper class which helps for the correct (virtual) construction
+   * of the problem tuple.
+   *
+   * \tparam GridImp type of the unterlying grid
+   * \tparam StokesProblemImp type of the stokes problem
+   *
+   * \ingroup Problems
+   */
+  template< class GridImp,
+            template<class> class NavierStokesProblemImp >
+  class NavierStokesProblem
+    : public NavierStokesProblemInterface< GridImp >
+  {
+    typedef NavierStokesProblemInterface< GridImp > BaseType;
+
+    typedef typename BaseType::PoissonProblemType                             PoissonProblemBaseType;
+    typedef typename BaseType::StokesProblemType                              StokesProblemBaseType;
+    typedef typename BaseType::NavierStokesProblemType                        NavierStokesProblemBaseType;
 
   public:
+    typedef typename NavierStokesProblemImp<GridImp>::PoissonProblemType      PoissonProblemType;
+    typedef typename NavierStokesProblemImp<GridImp>::StokesProblemType       StokesProblemType;
+    typedef typename NavierStokesProblemImp<GridImp>::NavierStokesProblemType NavierStokesProblemType;
+
+    NavierStokesProblem()
+      : BaseType(),
+        poisson_( new PoissonProblemType() ),
+        stokes_( new StokesProblemType() ),
+        navier_( new NavierStokesProblemType() )
+    {
+      BaseType::create( poisson_, stokes_, navier_ );
+    }
+
+  private:
+    mutable PoissonProblemBaseType* poisson_;
+    mutable StokesProblemBaseType*  stokes_;
+    mutable NavierStokesProblemBaseType* navier_;
+
+  };
+
+
+  template< class GridImp>
+  class NavierStokesProblemDefault
+    : public NavierStokesProblemInterfaceBase< GridImp >
+  {
+    typedef NavierStokesProblemInterfaceBase< GridImp >    BaseType;
+
+    typedef typename BaseType::FunctionSpaceType           FunctionSpaceType;
+    typedef typename BaseType::PressureFunctionSpaceType   PressureFunctionSpaceType;
+
+    typedef typename BaseType::PoissonProblemType          PoissonProblemBaseType;
+    typedef typename BaseType::StokesProblemType           StokesProblemBaseType;
+    typedef typename BaseType::NavierStokesProblemType     NavierStokesProblemBaseType;
 
     class PoissonProblem
       : public PoissonProblemBaseType
@@ -177,41 +331,33 @@ namespace Fem
       }
     };
 
-    using EvolBaseType::evaluate;
-
-    static const int dimRange  = FunctionSpaceType::dimRange;
-    static const int dimDomain = FunctionSpaceType::dimDomain;
-
-    typedef typename FunctionSpaceType::DomainType          DomainType;
-    typedef typename FunctionSpaceType::RangeType           RangeType;
-    typedef typename FunctionSpaceType::JacobianRangeType   JacobianRangeType;
-    typedef typename FunctionSpaceType::DomainFieldType     DomainFieldType;
-    typedef typename FunctionSpaceType::RangeFieldType      RangeFieldType;
-
-
-    NavierStokesProblemDefault()
-      : BaseType( std::make_tuple( PoissonProblem(), StokesProblem() ) ),
-        mu_( 1 )
-    {}
-
-    virtual void evaluate(const DomainType& x,
-                          const double t, RangeType& res) const
+    class NavierStokesProblem
+      : public NavierStokesProblemBaseType
     {
-      //todo: same as poisson problem -> improve...
-      res[ 0 ] = t*t*t * x[1]*x[1];
-      res[ 1 ] = t*t* x[0];
-    }
+    public:
 
+      static const int dimRange  = StokesProblemBaseType::dimRange;
+      static const int dimDomain = StokesProblemBaseType::dimDomain;
 
-    double theta () const { return PoissonProblemBaseType::theta_; }
-    double betaMu() const { return PoissonProblemBaseType::beta_ * mu_; }
-    double alphaMu() const { return PoissonProblemBaseType::alpha_ * mu_; }
+      typedef typename NavierStokesProblemBaseType::DomainType        DomainType;
+      typedef typename NavierStokesProblemBaseType::RangeType         RangeType;
+      typedef typename NavierStokesProblemBaseType::JacobianRangeType JacobianRangeType;
+      typedef typename NavierStokesProblemBaseType::DomainFieldType   DomainFieldType;
+      typedef typename NavierStokesProblemBaseType::RangeFieldType    RangeFieldType;
 
-    using EvolBaseType::dataPrefix;
+      virtual void evaluate(const DomainType& x,
+                            const double t, RangeType& res) const
+      {
+        //todo: same as poisson problem -> improve...
+        res[ 0 ] = t*t*t * x[1]*x[1];
+        res[ 1 ] = t*t* x[0];
+      }
+    };
 
-  protected:
-    const double mu_;
-
+ public:
+    typedef PoissonProblem       PoissonProblemType;
+    typedef StokesProblem        StokesProblemType;
+    typedef NavierStokesProblem  NavierStokesProblemType;
   };
 
 }
