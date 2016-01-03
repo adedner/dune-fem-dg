@@ -273,8 +273,8 @@ namespace Fem
 
     virtual std::shared_ptr< DiscreteFunctionType > doCreateRhs()
     {
-      if( rhsOperator_ ) //rhs by external rhs operator
-        rhsOperator_( solution(), rhs() );
+      //if( rhsOperator_ ) //rhs by external rhs operator
+      //  rhsOperator_( solution(), rhs() );
       return std::make_shared< DiscreteFunctionType >( "rhs-" + stringId_, space_ );
     }
 

@@ -122,27 +122,16 @@ namespace Fem
           {
             typedef typename AC::template DefaultAssembTraits< DFSpaceType, DFSpaceType, polOrd, AnalyticalTraits >
                                                                                   OpTraits;
+            typedef typename AC::template RhsAnalyticalTraits< AnalyticalTraits, PoissonModel< GridPartType, typename AnalyticalTraits::InitialDataType, true > >
+                                                                                  RhsAnalyticalTraitsType;
+
+            typedef typename AC::template DefaultOpTraits< DFSpaceType, polOrd, RhsAnalyticalTraitsType, ExtraParameterTuple >
+                                                                                  RhsOpTraits;
           public:
             typedef typename AC::template Operators< OpTraits >                   AssemblerType;
             typedef typename AssemblerType::MatrixType                            type;
-            //class Rhs
-            //{
-            //  struct RhsAnalyticalTraits
-            //  {
-            //    typedef ProblemInterfaceType                                   ProblemType;
-            //    typedef ProblemInterfaceType                                   InitialDataType;
-            //    typedef PoissonModel< GridPartType, InitialDataType, true >     ModelType;
-            //  };
 
-            //  typedef DGAdvectionFlux< typename RhsAnalyticalTraits::ModelType, AdvectionFluxIdentifier::none > RhsAdvectionFluxType;
-            //  typedef DGPrimalDiffusionFlux< DiscreteFunctionSpaceType, typename RhsAnalyticalTraits::ModelType, DGDiffusionFluxIdentifier::general >    RhsDiffusionFluxType;
-            //  typedef DefaultOperatorTraits< GridPartType, polOrd, RhsAnalyticalTraits,
-            //                                 DiscreteFunctionType, RhsAdvectionFluxType, RhsDiffusionFluxType, ExtraParameterTuple,
-            //                                 FunctionSpaceType >                                       RhsOperatorTraitsType;
-            //public:
-            //  typedef DGAdvectionDiffusionOperator< RhsOperatorTraitsType >                   type;
-            //};
-
+            typedef DGAdvectionDiffusionOperator< RhsOpTraits >                   RhsType;
           };
 
           struct Solver
@@ -200,8 +189,11 @@ namespace Fem
       private:
         typedef typename SubPoissonProblemCreator::template DiscreteTraits< polOrd > PoissonDiscreteTraits;
         typedef typename PoissonDiscreteTraits::DiscreteFunctionType                 VelDiscreteFunctionType;
+        typedef typename SubPoissonProblemCreator::FunctionSpaceType                 VelFunctionSpaceType;
         typedef typename AC::template DiscreteFunctionSpaces< GridPartType, polOrd, FunctionSpaceType>
                                                                                      DFSpaceType;
+        typedef typename AC::template DiscreteFunctionSpaces< GridPartType, polOrd, VelFunctionSpaceType>
+                                                                                     VelDFSpaceType;
       public:
         typedef typename AC::template DiscreteFunctions< DFSpaceType >               DiscreteFunctionType;
 
@@ -214,28 +206,17 @@ namespace Fem
                                                                                      OpTraits;
 
           typedef AssemblerTraitsList< std::tuple< VelDiscreteFunctionType, DiscreteFunctionType >, AC::template Containers > AssTraits;
+
+          typedef typename AC::template RhsAnalyticalTraits< AnalyticalTraits, StokesModel< GridPartType, typename AnalyticalTraits::InitialDataType, true > >
+                                                                                RhsAnalyticalTraitsType;
+          typedef typename AC::template DefaultOpTraits< VelDFSpaceType, polOrd, RhsAnalyticalTraitsType, ExtraParameterTuple >
+                                                                                RhsOpTraits;
         public:
           typedef StokesAssembler< AssTraits, OpTraits >                             AssemblerType;
           //the following typedef is not needed by stokes algorithm atm
           //typedef typename AssemblerType::MatrixType                               type;
 
-          //class Rhs
-          //{
-          //  struct RhsAnalyticalTraits
-          //  {
-          //    typedef ProblemInterfaceType                                   ProblemType;
-          //    typedef ProblemInterfaceType                                   InitialDataType;
-          //    typedef StokesModel< GridPartType, InitialDataType, true >     ModelType;
-          //  };
-
-          //  typedef DGAdvectionFlux< typename RhsAnalyticalTraits::ModelType, AdvectionFluxIdentifier::none > RhsAdvectionFluxType;
-          //  typedef DefaultOperatorTraits< GridPartType, polOrd, RhsAnalyticalTraits,
-          //                                 DiscreteFunctionType, RhsAdvectionFluxType, ExtraParameterTuple,
-          //                                 typename SubPoissonProblemCreator::FunctionSpaceType >      RhsOperatorTraitsType;
-          //public:
-          //  typedef typename PoissonDiscreteTraits::Operator::type                                     type;
-          //};
-
+          //typedef DGAdvectionDiffusionOperator< RhsOpTraits >                        RhsType;
         };
 
         struct Solver
@@ -322,27 +303,18 @@ namespace Fem
         {
           typedef typename AC::template DefaultOpTraits< DFSpaceType, polOrd, AnalyticalTraits, ExtraParameterTuple >
                                                                                            OpTraits;
+
+          typedef typename AC::template RhsAnalyticalTraits< AnalyticalTraits, NavierStokesModel< GridPartType, typename AnalyticalTraits::InitialDataType, true > >
+                                                                                           RhsAnalyticalTraitsType;
+          typedef typename AC::template DefaultOpTraits< DFSpaceType, polOrd, RhsAnalyticalTraitsType, ExtraParameterTuple >
+                                                                                           RhsOpTraits;
+
         public:
           typedef typename AC::template Operators< OpTraits,OperatorSplit::Enum::full >    type;
           typedef typename AC::template Operators< OpTraits,OperatorSplit::Enum::expl >    ExplicitType;
           typedef typename AC::template Operators< OpTraits,OperatorSplit::Enum::impl >    ImplicitType;
-          //class Rhs
-          //{
-          //  struct RhsAnalyticalTraits
-          //  {
-          //    typedef ProblemInterfaceType                                       ProblemType;
-          //    typedef ProblemInterfaceType                                       InitialDataType;
-          //    typedef NavierStokesModel< GridPartType, InitialDataType, true >   ModelType;
-          //  };
 
-          //  typedef DGAdvectionFlux< typename AnalyticalTraits::ModelType, AdvectionFluxIdentifier::llf > RhsAdvectionFluxType;
-          //  typedef DGPrimalDiffusionFlux< DiscreteFunctionSpaceType, typename AnalyticalTraits::ModelType, DGDiffusionFluxIdentifier::general >    RhsDiffusionFluxType;
-
-          //  typedef DefaultOperatorTraits< GridPartType, polOrd, RhsAnalyticalTraits,
-          //                               DiscreteFunctionType, RhsAdvectionFluxType, RhsDiffusionFluxType, ExtraParameterTuple >     RhsOperatorTraitsType;
-          //public:
-          //  typedef DGDiffusionOperator< RhsOperatorTraitsType >                              type;
-          //};
+          typedef DGAdvectionDiffusionOperator< RhsOpTraits >                              RhsType;
         };
 
         struct Solver
