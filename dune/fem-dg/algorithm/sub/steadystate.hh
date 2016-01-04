@@ -263,14 +263,14 @@ namespace Fem
     }
 
   protected:
-    virtual std::shared_ptr< typename SolverType::type > doCreateSolver()
-    {
-      return nullptr;
-    }
-
     virtual std::shared_ptr< DiscreteFunctionType > doCreateSolution()
     {
       return std::make_shared< DiscreteFunctionType >( "solution-" + stringId_, space_ );
+    }
+
+    virtual std::shared_ptr< DiscreteFunctionType > doCreateExactSolution()
+    {
+      return std::make_shared< DiscreteFunctionType >( "exactSolution-" + stringId_, space_ );
     }
 
     virtual std::shared_ptr< DiscreteFunctionType > doCreateRhs()
@@ -280,18 +280,19 @@ namespace Fem
       return std::make_shared< DiscreteFunctionType >( "rhs-" + stringId_, space_ );
     }
 
-    virtual std::shared_ptr< DiscreteFunctionType > doCreateExactSolution()
-    {
-      return std::make_shared< DiscreteFunctionType >( "exactSolution-" + stringId_, space_ );
-    }
-
     virtual std::shared_ptr< RhsOptional< RhsType > > doCreateRhsOperator()
     {
       return std::make_shared< RhsOptional< RhsType > >(gridPart_, problem(), std::tuple<>(), name() );
     }
 
+    virtual std::shared_ptr< typename SolverType::type > doCreateSolver()
+    {
+      return nullptr;
+    }
+
     virtual bool doCheckSolutionValid ( const int loop ) const override
     {
+      assert( solution_ );
       return solution_->dofsValid();
     }
 

@@ -198,11 +198,6 @@ namespace Fem
     virtual IOTupleType& dataTuple () { assert( ioTuple_ ); return *ioTuple_; }
 
   private:
-    virtual std::shared_ptr< typename SolverType::type > doCreateSolver( TimeProviderType& tp )
-    {
-      return nullptr;
-    }
-
     virtual std::shared_ptr< DiscreteFunctionType > doCreateSolution()
     {
       return std::make_shared< DiscreteFunctionType >( "U_"+name(), space_ );
@@ -213,7 +208,16 @@ namespace Fem
       return std::make_shared< DiscreteFunctionType >( "U_exact" + name(), space_ );
     }
 
-    virtual bool doCheckSolutionValid ( const int loop, TimeProviderType& tp ) const override { return solution_->dofsValid(); }
+    virtual std::shared_ptr< typename SolverType::type > doCreateSolver( TimeProviderType& tp )
+    {
+      return nullptr;
+    }
+
+    virtual bool doCheckSolutionValid ( const int loop, TimeProviderType& tp ) const override
+    {
+      assert( solution_ );
+      return solution_->dofsValid();
+    }
 
     virtual void doInitialize ( const int loop, TimeProviderType& tp ) override
     {
