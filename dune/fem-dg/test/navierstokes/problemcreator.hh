@@ -102,11 +102,11 @@ namespace Fem
       {
         typedef typename AC::template DiscreteFunctionSpaces< GridPartType, polOrd, FunctionSpaceType>
                                                                                            DFSpaceType;
+        typedef std::tuple<>                                                               ExtraParameterTuple;
       public:
         typedef typename AC::template DiscreteFunctions< DFSpaceType >                     DiscreteFunctionType;
 
         typedef std::tuple< DiscreteFunctionType*, DiscreteFunctionType* >                 IOTupleType;
-        typedef std::tuple<>                                                               ExtraParameterTuple;
 
         class Operator
         {

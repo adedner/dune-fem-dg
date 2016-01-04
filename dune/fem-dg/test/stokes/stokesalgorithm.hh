@@ -327,9 +327,11 @@ namespace Fem
 
     void init()
     {
+      //init base
       ellAlg_.init();
       BaseType::init();
 
+      //step III: init other stuff
       ioTuple_.reset( new IOTupleType( *BaseType::dataTuple(), *ellAlg_.dataTuple() ) );
       stokesSigmaEstimator_.reset( new StokesSigmaEstimatorType( gridPart_, ellAlg_.solution(), solution(), ellAlg_.assembler(), name() ) );
     }

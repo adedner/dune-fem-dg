@@ -73,21 +73,21 @@ namespace Fem
   public:
     using BaseType :: operator () ;
 
-    typedef typename Traits :: ModelType          ModelType;
-    typedef typename ModelType :: ProblemType     ProblemType ;
+    typedef typename Traits::ModelType                    ModelType;
+    typedef typename ModelType::ProblemType               ProblemType ;
 
-    typedef typename Traits :: GridType GridType;
-    typedef typename Traits :: DiscreteModelType DiscreteModelType;
+    typedef typename Traits::GridType                     GridType;
+    typedef typename Traits::DiscreteModelType            DiscreteModelType;
 
     typedef typename DiscreteModelType::AdvectionFluxType AdvectionFluxType;
     typedef typename DiscreteModelType::DiffusionFluxType DiffusionFluxType;
 
-    typedef typename DiscreteModelType::Traits AdvTraits;
+    typedef typename DiscreteModelType::Traits            AdvTraits;
 
-    typedef typename AdvTraits::DestinationType        AdvDFunctionType;
+    typedef typename AdvTraits::DestinationType           AdvDFunctionType;
     // for convenience (not used here)
-    typedef AdvDFunctionType                           IndicatorType;
-    typedef typename AdvTraits::GridPartType GridPartType;
+    typedef AdvDFunctionType                              IndicatorType;
+    typedef typename AdvTraits::GridPartType              GridPartType;
 
     typedef Fem::StartPass< AdvDFunctionType, u
 #ifdef USE_SMP_PARALLEL
@@ -95,12 +95,13 @@ namespace Fem
 #endif
       > Pass0Type;
 
-    typedef typename ModelType :: ModelParameter ModelParameter;
-    typedef typename Traits :: ExtraParameterTupleType ExtraParameterTupleType;
+    typedef typename ModelType::ModelParameter            ModelParameter;
+    typedef typename Traits::ExtraParameterTupleType      ExtraParameterTupleType;
 
     typedef InsertFunctions< ExtraParameterTupleType, Pass0Type, ModelParameter,
-                             std::tuple_size< ExtraParameterTupleType >::value > InsertFunctionsType;
-    typedef typename InsertFunctionsType :: PassType InsertFunctionPassType;
+                             std::tuple_size< ExtraParameterTupleType >::value >
+                                                          InsertFunctionsType;
+    typedef typename InsertFunctionsType::PassType        InsertFunctionPassType;
 
     typedef
 #ifdef USE_SMP_PARALLEL

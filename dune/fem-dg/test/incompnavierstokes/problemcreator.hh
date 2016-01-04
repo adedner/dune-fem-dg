@@ -84,7 +84,6 @@ namespace Fem
         typedef HostGridPartType                              GridPartType;
 
         // define problem type here if interface should be avoided
-        //typedef ThetaProblemInterface< typename AC::template FunctionSpaces<DIMRANGE> >  ProblemInterfaceType;
         typedef typename NavierStokesProblemInterface< GridType >::PoissonProblemType  ProblemInterfaceType;
 
         typedef typename ProblemInterfaceType::FunctionSpaceType       FunctionSpaceType;
@@ -112,11 +111,11 @@ namespace Fem
         {
           typedef typename AC::template DiscreteFunctionSpaces< GridPartType, polOrd, FunctionSpaceType>
                                                                                   DFSpaceType;
+          typedef std::tuple<>                                                    ExtraParameterTuple;
         public:
           typedef typename AC::template DiscreteFunctions< DFSpaceType >          DiscreteFunctionType;
 
           typedef std::tuple< DiscreteFunctionType*, DiscreteFunctionType* >      IOTupleType;
-          typedef std::tuple<>                                                    ExtraParameterTuple;
 
           class Operator
           {
@@ -156,9 +155,6 @@ namespace Fem
       typedef HostGridPartType                                         GridPartType;
 
       typedef NavierStokesProblemInterface< GridType >                 ProblemInterfaceType;
-      //typedef StokesProblemInterface< typename SubPoissonProblemCreator::ProblemInterfaceType /*velocity*/,
-      //                                ThetaProblemInterface< typename AC::template FunctionSpaces<1> > >
-      //                                                                    ProblemInterfaceType;
 
       typedef typename ProblemInterfaceType::StokesProblemType::FunctionSpaceType
                                                                           FunctionSpaceType;
@@ -179,7 +175,6 @@ namespace Fem
       static ProblemInterfaceType* problem()
       {
         return new NavierStokesProblem< GridType, NavierStokesProblemDefault > ();
-        //return new NavierStokesProblemDefault< GridType > ();
       }
 
       //Stepper Traits
@@ -194,11 +189,11 @@ namespace Fem
                                                                                      DFSpaceType;
         typedef typename AC::template DiscreteFunctionSpaces< GridPartType, polOrd, VelFunctionSpaceType>
                                                                                      VelDFSpaceType;
+        typedef std::tuple<>                                                         ExtraParameterTuple;
       public:
         typedef typename AC::template DiscreteFunctions< DFSpaceType >               DiscreteFunctionType;
 
         typedef std::tuple< DiscreteFunctionType*, DiscreteFunctionType* >           IOTupleType;
-        typedef std::tuple<>                                                         ExtraParameterTuple;
 
         class Operator
         {
@@ -260,7 +255,6 @@ namespace Fem
       typedef HostGridPartType                              GridPartType;
 
       // define problem type here if interface should be avoided
-      //typedef NavierStokesProblemDefault< GridType >                       ProblemInterfaceType;
       typedef typename NavierStokesProblemInterface< GridType >::NavierStokesProblemType ProblemInterfaceType;
 
       typedef typename ProblemInterfaceType::FunctionSpaceType             FunctionSpaceType;
@@ -284,7 +278,6 @@ namespace Fem
       static ProblemInterfaceType* problem()
       {
         return new typename NavierStokesProblem< GridType, NavierStokesProblemDefault >::NavierStokesProblemType();
-        //return new ProblemInterfaceType();
       }
 
       //Stepper Traits
@@ -293,11 +286,11 @@ namespace Fem
       {
         typedef typename AC::template DiscreteFunctionSpaces< GridPartType, polOrd, FunctionSpaceType>
                                                                                            DFSpaceType;
+        typedef std::tuple<>                                                               ExtraParameterTuple;
       public:
         typedef typename AC::template DiscreteFunctions< DFSpaceType >                     DiscreteFunctionType;
 
         typedef std::tuple< DiscreteFunctionType*, DiscreteFunctionType* >                 IOTupleType;
-        typedef std::tuple<>                                                               ExtraParameterTuple;
 
         class Operator
         {

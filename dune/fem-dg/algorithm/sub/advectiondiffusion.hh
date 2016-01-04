@@ -88,10 +88,15 @@ namespace Fem
 
     void init()
     {
+      //init base type
       BaseType::init();
+
+      //step II: init operators
       operator_ = std::make_unique< OperatorType >( gridPart_, problem(), tuple_, name() );
       advectionOperator_ = std::make_unique< ExplicitOperatorType >( gridPart_, problem(), tuple_, name() );
       diffusionOperator_ = std::make_unique< ImplicitOperatorType >( gridPart_, problem(), tuple_, name() );
+
+      //step III: init other stuff
       adaptIndicator_ = std::make_unique< AdaptIndicatorOptional<AdaptIndicatorType> >( solution(), problem(), tuple_, name() );
     }
 

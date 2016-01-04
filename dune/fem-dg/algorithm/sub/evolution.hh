@@ -45,7 +45,7 @@ namespace Fem
 
     typedef typename DiscreteTraits::Operator                           OperatorType;
 
-    typedef typename DiscreteTraits::ExtraParameterTuple                ExtraParameterTupleType;
+    typedef typename OperatorType::type::ExtraParameterTupleType        ExtraParameterTupleType;
 
     typedef typename DiscreteTraits::Solver                             SolverType;
 
@@ -150,9 +150,11 @@ namespace Fem
 
     void init()
     {
+      //step I: init discrete functions
       solution_ = doCreateSolution();
       exactSolution_ = doCreateExactSolution();
 
+      //step III: init handler and other stuff
       ioTuple_.reset( new IOTupleType( std::make_tuple( &solution(), &exactSolution() ) ) );
     }
 

@@ -537,7 +537,10 @@ namespace Fem
 
     void init()
     {
+      //init base
       BaseType::init();
+
+      //step III: init other stuff
       poissonSigmaEstimator_.reset( new PoissonSigmaEstimatorType( gridPart_, solution(), assembler_, name() ) );
     }
 

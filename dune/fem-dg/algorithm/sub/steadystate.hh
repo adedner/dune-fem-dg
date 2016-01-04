@@ -115,8 +115,6 @@ namespace Fem
     typedef typename ProblemTraits::AnalyticalTraits                   AnalyticalTraits;
     typedef typename ProblemTraits::template DiscreteTraits< polOrd >  DiscreteTraits;
 
-    typedef typename DiscreteTraits::ExtraParameterTuple               ExtraParameterTuple;
-
     typedef typename DiscreteTraits::Solver                            SolverType;
 
     typedef typename DiscreteTraits::Operator                          OperatorType;
@@ -195,7 +193,7 @@ namespace Fem
         solution_( nullptr ),
         exactSolution_( nullptr ),
         rhs_( nullptr ),
-        rhsOperator_( gridPart_, problem(), std::tuple<>(), name() ), //doCreateRhsOperator
+        rhsOperator_( nullptr ),
         solver_( nullptr ),
         ioTuple_( nullptr ),
         solverMonitorHandler_( name() ),
@@ -205,12 +203,16 @@ namespace Fem
 
     void init()
     {
+      //step I: init discrete functions
       solution_ = doCreateSolution();
       exactSolution_ = doCreateExactSolution();
       rhs_ = doCreateRhs();
 
+      //step II: init operators
+      rhsOperator_ = doCreateRhsOperator();
+
+      //step III: init handler and other stuff
       ioTuple_.reset( new IOTupleType( std::make_tuple( &solution(), &exactSolution() ) ) );
-      //rhsOperator_.reset( doCreateRhsOperator() );
     }
 
 
@@ -273,14 +275,19 @@ namespace Fem
 
     virtual std::shared_ptr< DiscreteFunctionType > doCreateRhs()
     {
-      //if( rhsOperator_ ) //rhs by external rhs operator
-      //  rhsOperator_( solution(), rhs() );
+      //if( *rhsOperator_ ) //rhs by external rhs operator
+      //  (*rhsOperator_)( solution(), rhs() );
       return std::make_shared< DiscreteFunctionType >( "rhs-" + stringId_, space_ );
     }
 
     virtual std::shared_ptr< DiscreteFunctionType > doCreateExactSolution()
     {
       return std::make_shared< DiscreteFunctionType >( "exactSolution-" + stringId_, space_ );
+    }
+
+    virtual std::shared_ptr< RhsOptional< RhsType > > doCreateRhsOperator()
+    {
+      return std::make_shared< RhsOptional< RhsType > >(gridPart_, problem(), std::tuple<>(), name() );
     }
 
     virtual bool doCheckSolutionValid ( const int loop ) const override
@@ -300,8 +307,8 @@ namespace Fem
 
     virtual void doPreSolve ( const int loop )
     {
-      if( rhsOperator_ ) //rhs by external rhs operator
-        rhsOperator_( solution(), rhs() );
+      if( *rhsOperator_ ) //rhs by external rhs operator
+        (*rhsOperator_)( solution(), rhs() );
       solution().clear();
       solver_ = this->doCreateSolver();
     }
@@ -341,8 +348,7 @@ namespace Fem
     std::shared_ptr< DiscreteFunctionType >      exactSolution_;
 
     std::shared_ptr< DiscreteFunctionType >      rhs_;
-    //std::unique_ptr< OperatorType >              rhsOperator_;
-    RhsOptional<RhsType >                        rhsOperator_;
+    std::shared_ptr< RhsOptional< RhsType > >    rhsOperator_;
 
     std::unique_ptr< IOTupleType >               ioTuple_;
 

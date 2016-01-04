@@ -125,7 +125,6 @@ namespace Fem
           typedef typename AC::template DiscreteFunctions< DFSpaceType >             DiscreteFunctionType;
 
           typedef std::tuple< DiscreteFunctionType*, DiscreteFunctionType* >         IOTupleType;
-          typedef std::tuple<>                                                       ExtraParameterTuple;
 
           class Operator
           {
