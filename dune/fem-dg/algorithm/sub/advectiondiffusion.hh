@@ -92,12 +92,12 @@ namespace Fem
       BaseType::init();
 
       //step II: init operators
-      operator_ = std::make_unique< OperatorType >( gridPart_, problem(), tuple_, name() );
-      advectionOperator_ = std::make_unique< ExplicitOperatorType >( gridPart_, problem(), tuple_, name() );
-      diffusionOperator_ = std::make_unique< ImplicitOperatorType >( gridPart_, problem(), tuple_, name() );
+      operator_ = std::make_unique< OperatorType >( gridPart_, problem(), typename OperatorType::ExtraParameterTupleType(), name() );
+      advectionOperator_ = std::make_unique< ExplicitOperatorType >( gridPart_, problem(), typename ExplicitOperatorType::ExtraParameterTupleType(), name() );
+      diffusionOperator_ = std::make_unique< ImplicitOperatorType >( gridPart_, problem(), typename ImplicitOperatorType::ExtraParameterTupleType(), name() );
 
       //step III: init other stuff
-      adaptIndicator_ = std::make_unique< AdaptIndicatorOptional<AdaptIndicatorType> >( solution(), problem(), tuple_, name() );
+      adaptIndicator_ = std::make_unique< AdaptIndicatorOptional<AdaptIndicatorType> >( solution(), problem(),  typename AdaptIndicatorType::ExtraParameterTupleType(), name() );
     }
 
     virtual AdaptIndicatorType* adaptIndicator ()

@@ -45,9 +45,10 @@ namespace Fem
 
     typedef AdaptationHandler< GridType, typename DiscreteFunctionSpaceType::FunctionSpaceType >
                                                                                                AdaptationHandlerType;
+    typedef typename IndicatorType::ExtraParameterTupleType                                    ExtraParameterTupleType;
 
-    template< class Problem, class ExtraTupleParameter >
-    AdaptIndicator( DiscreteFunctionType& sol, Problem& problem, const ExtraTupleParameter& tuple, const std::string keyPrefix = "" )
+    template< class Problem >
+    AdaptIndicator( DiscreteFunctionType& sol, Problem& problem, const ExtraParameterTupleType& tuple, const std::string keyPrefix = "" )
     : sol_( sol ),
       adaptationHandler_( nullptr ),
       keyPrefix_( keyPrefix ),
