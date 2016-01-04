@@ -60,7 +60,7 @@ namespace Fem
      // type of 64bit unsigned integer
     typedef typename BaseType::UInt64Type                      UInt64Type;
 
-    typedef typename BaseType::ExtraParameterTupleType         ExtraParameterTupleType;
+    typedef typename FullOperatorType::ExtraParameterTupleType ExtraParameterTupleType;
 
     typedef typename BaseType::AdaptIndicatorType              AdaptIndicatorType;
 

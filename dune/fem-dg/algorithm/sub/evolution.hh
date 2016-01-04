@@ -45,8 +45,6 @@ namespace Fem
 
     typedef typename DiscreteTraits::Operator                           OperatorType;
 
-    typedef typename OperatorType::type::ExtraParameterTupleType        ExtraParameterTupleType;
-
     typedef typename DiscreteTraits::Solver                             SolverType;
 
   };
@@ -110,8 +108,6 @@ namespace Fem
     typedef typename BaseType::AdditionalOutputHandlerType           AdditionalOutputHandlerType;
 
     typedef typename DiscreteFunctionType::DiscreteFunctionSpaceType DiscreteFunctionSpaceType;
-
-    typedef typename Traits::ExtraParameterTupleType                 ExtraParameterTupleType;
 
     // The DG space operator
     typedef typename Traits::OperatorType                            OperatorType;
