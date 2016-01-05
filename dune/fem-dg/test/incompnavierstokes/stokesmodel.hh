@@ -35,12 +35,15 @@ namespace Fem
   class PoissonModel : public DefaultModel< StokesPoissonModelTraits< GridPartImp, ProblemImp > >
   {
   public:
+    typedef FractionalStepThetaScheme<0,rightHandSideModel> SplitType;
+
     typedef ProblemImp                                      ProblemType;
     typedef StokesPoissonModelTraits< GridPartImp, ProblemType >
                                                             Traits;
-    enum { rhs = 0 };
-    typedef std::integral_constant< int, rhs > rhsVar;
-    typedef std::tuple < rhsVar > ModelParameter;
+    enum { velo = 0, rhs = 1 };
+    typedef std::integral_constant< int, velo >             velocityVar;
+    typedef std::integral_constant< int, rhs  >             rhsVar;
+    typedef std::tuple < velocityVar, rhsVar >              ModelParameter;
 
     typedef typename Traits::GridType                       GridType;
     static const int dimDomain = Traits::dimDomain;
@@ -60,7 +63,8 @@ namespace Fem
     typedef typename Traits::EntityType                     EntityType;
     typedef typename Traits::IntersectionType               IntersectionType;
 
-    static const bool hasDiffusion = true;
+    static const bool hasDiffusion = SplitType::hasDiffusion;
+    static const bool hasAdvection = SplitType::hasAdvection;
     static const int ConstantVelocity = false;
   public:
     /**
@@ -72,7 +76,7 @@ namespace Fem
      */
     PoissonModel(const ProblemType& problem)
       : problem_(problem),
-        theta_( problem.theta() )
+        deltaT_( problem.deltaT() )
     {}
 
     inline bool hasFlux() const { return true ; }
@@ -80,18 +84,17 @@ namespace Fem
     inline bool hasStiffSource() const { return true ; }
     inline bool hasNonStiffSource() const { return false ; }
 
-    struct ComputeRHS
+    struct ComputeVelocity
     {
-      typedef rhsVar     VarId;
-      typedef RangeType  ReturnType;
+      typedef velocityVar VarId;
+      typedef DomainType  ReturnType;
 
       template <class LocalEvaluation>
-      RangeType operator() (const LocalEvaluation& local) const
+      const RangeType& operator() (const LocalEvaluation& local, const RangeType& u ) const
       {
-        return RangeType( 0 );
+        return u;
       }
     };
-
 
     template <class LocalEvaluation>
     inline double stiffSource( const LocalEvaluation& local,
@@ -99,11 +102,21 @@ namespace Fem
                                const JacobianRangeType& du,
                                RangeType & s) const
     {
-      if( ! rightHandSideModel )
+      // mass part
+      RangeType mass( u );
+      mass /= (deltaT_ * SplitType::mass());
+      s = mass;
+
+      if( SplitType::hasSource )
       {
-        s  = u ;
-        s /= theta_;
+        // right hand side
+        const DomainType x = local.entity().geometry().global( local.point() );
+        problem_.f( x, s );
+        s *= SplitType::source();
+        //s  = u ;
+        //s /= theta_;
       }
+
       return 0; //step 2, RhsLaplace ()
     }
 
@@ -127,15 +140,24 @@ namespace Fem
      * \param f \f$F(U)\f$
      */
     template <class LocalEvaluation>
-    inline void advection (const LocalEvaluation& local,
-                           const RangeType& u,
-                           const JacobianRangeType& jacu,
-                           FluxRangeType & f) const
+    inline void advection(const LocalEvaluation& local,
+                          const RangeType& u,
+                          const JacobianRangeType& jacu,
+                          FluxRangeType & f) const
     {
-      f = 0 ;
-    }
+      if( SplitType::hasAdvection )
+      {
+        DomainType v = velocity( local, u );
+        v *= SplitType::advection();
 
-  protected:
+        // f = uV;
+        for( int r=0; r<dimRange; ++r )
+          for( int d=0; d<dimDomain; ++d )
+            f[r][d] = v[ d ] * u[ r ];
+      }
+      else
+        f = 0;
+    }
 
     /**
      * \brief velocity calculation, is called by advection()
@@ -143,10 +165,8 @@ namespace Fem
     template <class LocalEvaluation>
     inline DomainType velocity(const LocalEvaluation& local, const RangeType& u ) const
     {
-      return local.evaluate( ComputeRHS(), local, u);
+      return local.evaluate( ComputeVelocity(), local, u);
     }
-
-  public:
 
     /**
      * \brief diffusion term \f$a\f$
@@ -156,6 +176,7 @@ namespace Fem
                           const RangeType& u,
                           DiffusionRangeType& a) const
     {
+      abort();
       a = 0;
 
       assert( a.rows == dimRange * dimDomain );
@@ -186,6 +207,91 @@ namespace Fem
       // take max eigenvalue
       maxValue = values.infinity_norm();
     }
+    inline double penaltyBoundary( const EntityType& inside,
+                                   const double time,
+                                   const DomainType& xInside,
+                                   const RangeType& uLeft ) const
+    {
+      return penaltyFactor( inside, inside, time, xInside, uLeft, uLeft );
+    }
+
+    /**
+     * \brief diffusion term \f$A\f$
+     */
+    template <class LocalEvaluation>
+    inline void diffusion(const LocalEvaluation& local,
+                          const RangeType& u,
+                          const JacobianRangeType& jac,
+                          FluxRangeType& A) const
+    {
+      if( SplitType::hasDiffusion )
+      {
+        // for constant K evalute at center (see Problem 4)
+        const DomainType xgl = ( problem_.constantK() ) ?
+          local.entity().geometry().center () : local.entity().geometry().global(local.point())  ;
+
+        DiffusionMatrixType K ;
+
+        // fill diffusion matrix
+        problem_.K( xgl, K );
+
+        // scale with mu
+        K *= SplitType::diffusion();
+
+        // apply diffusion
+        for( int r =0; r<dimRange; ++r )
+        {
+          K.mv( jac[ r ] , A[ r ] );
+        }
+      }
+      else
+        A = 0.0;
+    }
+
+    template <class LocalEvaluation>
+    inline double diffusionTimeStep (const LocalEvaluation& local,
+                                     const double circumEstimate,
+                                     const RangeType& u) const
+    {
+      return 0;
+    }
+
+    /**
+     * \brief checks for existence of dirichlet boundary values
+     */
+    template <class LocalEvaluation>
+    inline bool hasBoundaryValue (const LocalEvaluation& local) const
+    {
+      return true;
+    }
+
+    /**
+     * \brief dirichlet boundary values
+     */
+    template <class LocalEvaluation>
+    inline void boundaryValue (const LocalEvaluation& local,
+                               const RangeType& uLeft,
+                               RangeType& uRight) const
+    {
+      DomainType xgl = local.entity().geometry().global( local.point() );
+      problem_.g(xgl, uRight);
+    }
+
+    /**
+     * \brief diffusion boundary flux
+     */
+    template <class LocalEvaluation>
+    inline double diffusionBoundaryFlux (const LocalEvaluation& local,
+                                         const RangeType& uLeft,
+                                         const JacobianRangeType& gradLeft,
+                                         RangeType& gLeft) const
+    {
+      return 0.0;
+    }
+
+    const ProblemType& problem () const { return problem_; }
+
+  private:
 
     inline double lambdaK( const DiffusionMatrixType& K ) const
     {
@@ -244,82 +350,6 @@ namespace Fem
       return betaK ;
     }
 
-    inline double penaltyBoundary( const EntityType& inside,
-                                   const double time,
-                                   const DomainType& xInside,
-                                   const RangeType& uLeft ) const
-    {
-      return penaltyFactor( inside, inside, time, xInside, uLeft, uLeft );
-    }
-
-    /**
-     * \brief diffusion term \f$A\f$
-     */
-    template <class LocalEvaluation>
-    inline void diffusion(const LocalEvaluation& local,
-                          const RangeType& u,
-                          const JacobianRangeType& jac,
-                          FluxRangeType& A) const
-    {
-      // for constant K evalute at center (see Problem 4)
-      const DomainType xgl = ( problem_.constantK() ) ?
-        local.entity().geometry().center () : local.entity().geometry().global(local.point())  ;
-
-      DiffusionMatrixType K ;
-
-      // fill diffusion matrix
-      problem_.K( xgl, K );
-
-      // apply diffusion
-      for( int r =0; r<dimRange; ++r )
-        K.mv( jac[ r ] , A[ r ] );
-    }
-
-    template <class LocalEvaluation>
-    inline double diffusionTimeStep (const LocalEvaluation& local,
-                                     const double circumEstimate,
-                                     const RangeType& u) const
-    {
-      return 0;
-    }
-
-  public:
-    /**
-     * \brief checks for existence of dirichlet boundary values
-     */
-    template <class LocalEvaluation>
-    inline bool hasBoundaryValue (const LocalEvaluation& local) const
-    {
-      return true;
-    }
-
-    /**
-     * \brief dirichlet boundary values
-     */
-    template <class LocalEvaluation>
-    inline void boundaryValue (const LocalEvaluation& local,
-                               const RangeType& uLeft,
-                               RangeType& uRight) const
-    {
-      DomainType xgl = local.entity().geometry().global( local.point() );
-      problem_.g(xgl, uRight);
-    }
-
-    /**
-     * \brief diffusion boundary flux
-     */
-    template <class LocalEvaluation>
-    inline double diffusionBoundaryFlux (const LocalEvaluation& local,
-                                         const RangeType& uLeft,
-                                         const JacobianRangeType& gradLeft,
-                                         RangeType& gLeft) const
-    {
-      return 0.0;
-    }
-
-    const ProblemType& problem () const { return problem_; }
-
-  private:
     template <class T>
     T SQR( const T& a ) const
     {
@@ -327,7 +357,7 @@ namespace Fem
     }
   protected:
     const ProblemType& problem_;
-    const double theta_;
+    const double& deltaT_;
   };
 
 
@@ -397,6 +427,7 @@ namespace Fem
     typedef typename Traits::IntersectionType               IntersectionType;
 
     static const bool hasDiffusion = true;
+    static const bool hasAdvection = true;
     static const int ConstantVelocity = false;
 
     /**

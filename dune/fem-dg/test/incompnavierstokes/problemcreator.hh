@@ -36,6 +36,7 @@
 #include <dune/fem-dg/algorithm/sub/advection.hh>
 #include <dune/fem-dg/test/stokes/stokesalgorithm.hh>
 #include <dune/fem-dg/algorithm/evolution.hh>
+#include "incompnavierstokesalgorithm.hh"
 //--------- EOCERROR ------------------------
 #include <dune/fem-dg/misc/error/l2eocerror.hh>
 #include <dune/fem-dg/misc/error/h1eocerror.hh>
@@ -341,7 +342,7 @@ namespace Fem
     template <int polOrd>
     struct Stepper
     {
-      typedef Fem::EvolutionAlgorithm< polOrd, SubStokesProblemCreator, SubNavierStokesProblemCreator, SubStokesProblemCreator > Type;
+      typedef IncompNavierStokesAlgorithm< polOrd, SubStokesProblemCreator, SubNavierStokesProblemCreator, SubStokesProblemCreator > Type;
     };
 
     typedef GridImp                                         GridType;

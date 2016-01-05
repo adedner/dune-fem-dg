@@ -262,6 +262,12 @@ namespace Fem
       return diagnosticsHandler_.value();
     }
 
+    //todo: improve
+    virtual void setSolution( std::shared_ptr< DiscreteFunctionType > ptr )
+    {
+      solution_ = ptr;
+    }
+
   protected:
     virtual std::shared_ptr< DiscreteFunctionType > doCreateSolution()
     {

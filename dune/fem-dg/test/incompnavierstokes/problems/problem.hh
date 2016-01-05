@@ -18,7 +18,109 @@ namespace Fem
     static constexpr double alpha_ = (1.0 - 2.0 * theta_ )/(1.0 - theta_);
     static constexpr double beta_  = theta_/ ( 1.0 - theta_ );
 
+    static const bool hasAdvection = true;
+    static const bool hasDiffusion = true;
+    static const bool hasSource    = true;
+    static const bool hasGrad      = true;
   };
+
+  template< int Step, bool RightHandSide >
+  class FractionalStepThetaScheme;
+
+  //step 0
+  template<>
+  class FractionalStepThetaScheme<0,false> //new timestep
+    : public OperatorSplittingScheme
+  {
+    using Split = OperatorSplittingScheme;
+  public:
+    static constexpr double source(){ return 1.0; }
+    static constexpr double diffusion(){ return Split::alpha_; }
+    static constexpr double advection(){ return 0.0; }
+    static constexpr double grad(){ return 1.0; }
+    static constexpr double mass(){ return Split::theta_;}
+
+    static const bool hasAdvection = false;
+
+    template< class DF >
+    static void velocity( const DF& un, DF& velocity  ){ /*no velocity needed*/ }
+  };
+  template<>
+  class FractionalStepThetaScheme<0,true> //old timestep
+    : public OperatorSplittingScheme
+  {
+    using Split = OperatorSplittingScheme;
+  public:
+    static constexpr double source(){ return 0.0;}
+    static constexpr double diffusion(){ return Split::beta_;}
+    static constexpr double advection(){ return 1.0;}
+    static constexpr double grad(){ return 0.0;}
+    static constexpr double mass(){ return Split::theta_;}
+
+    static const bool hasSource    = false;
+    static const bool hasGrad      = false;
+
+    template< class DF >
+    static void velocity( const DF& un, DF& velocity  )
+    {
+      velocity.assign( un );
+    }
+  };
+
+
+  //step 1
+  template<>
+  class FractionalStepThetaScheme<1,false> //new timestep
+    : public OperatorSplittingScheme
+  {
+    using Split = OperatorSplittingScheme;
+  public:
+    static constexpr double source(){ return 1.0;}
+    static constexpr double diffusion(){ return Split::beta_;}
+    static constexpr double advection(){ return 1.0;}
+    static constexpr double grad(){ return 0.0;}
+    static constexpr double mass(){ return 1.0 - 2.0 * Split::theta_;}
+
+    static const bool hasGrad      = false;
+
+    template< class DF >
+    static void velocity( const DF& un, const DF& untheta, DF& velocity )
+    {
+      velocity.assign( un );
+      velocity *= ( 2.0*theta_ - 1.0 ) / theta_ ;
+      velocity.axpy( (1.0-theta_)/theta_, untheta );
+    }
+  };
+  template<>
+  class FractionalStepThetaScheme<1,true> //old timestep
+    : public OperatorSplittingScheme
+  {
+    using Split = OperatorSplittingScheme;
+  public:
+    static constexpr double source(){ return  0.0;}
+    static constexpr double diffusion(){ return  Split::alpha_;}
+    static constexpr double advection(){ return  0.0;}
+    static constexpr double grad(){ return  1.0;}
+    static constexpr double mass(){ return 1.0 - 2.0 * Split::theta_;}
+
+    static const bool hasAdvection = false;
+    static const bool hasSource    = false;
+
+    template< class DF >
+    static void velocity( const DF& un, const DF& untheta, DF& velocity ){ /*no velocity needed*/ }
+  };
+
+  //step 2
+  template<>
+  class FractionalStepThetaScheme<2,false> //new timestep
+    : public FractionalStepThetaScheme<0,0>
+  {};
+  template<>
+  class FractionalStepThetaScheme<2,true> //old timestep
+    : public FractionalStepThetaScheme<0,1>
+  {};
+
+
 
   // ProblemInterface
   //-----------------
@@ -54,13 +156,27 @@ namespace Fem
 
     ThetaProblemInterface()
       : time_( 0 ),
-        mu_( 1 )
+        mu_( 1 ),
+        deltaT_( 0 )
     {}
 
+    //set time for stationary problems to fake time provider
     virtual void setTime( const double time ) const
     {
       time_ = time;
     };
+
+    //set time step size for mass matrix scaling
+    virtual void setDeltaT( const double deltaT ) const
+    {
+      deltaT_ = deltaT;
+    };
+
+    //! mass factor gamma
+    virtual double gamma() const
+    {
+      return 1.0/deltaT_;
+    }
 
     virtual void evaluate(const DomainType& arg,
                           const double t, RangeType& res) const
@@ -69,12 +185,15 @@ namespace Fem
       BaseType::u( arg, res );
     }
 
-    virtual double theta () const { return theta_; }
-    virtual double betaMu() const { return beta_ * mu_; }
-    virtual double alphaMu() const { return alpha_ * mu_; }
+    double theta () const { return theta_; }
+    double beta() const { return beta_; }
+    double alpha() const { return alpha_; }
+    double mu() const { return mu_; }
+    double deltaT() const { return deltaT_; }
 
   protected:
     mutable double time_;
+    mutable double deltaT_;
     const double mu_;
   };
 
@@ -109,8 +228,9 @@ namespace Fem
     {}
 
     double theta () const { return theta_; }
-    double betaMu() const { return beta_ * mu_; }
-    double alphaMu() const { return alpha_ * mu_; }
+    double beta() const { return beta_; }
+    double alpha() const { return alpha_; }
+    double mu() const { return mu_; }
 
   private:
     const double mu_;
@@ -291,7 +411,7 @@ namespace Fem
       {
         m = 0;
         for( int i = 0; i < dimDomain; ++i )
-          m[ i ][ i ] = 1.;
+          m[ i ][ i ] = mu_;
       }
 
       bool constantK () const

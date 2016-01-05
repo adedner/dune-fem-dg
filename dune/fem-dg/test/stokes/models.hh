@@ -101,7 +101,6 @@ namespace Fem
       return 0.0;
     }
 
-
     /**
      * \brief advection term \f$F\f$
      *
@@ -125,8 +124,6 @@ namespace Fem
           f[r][d] = v[ d ] * u[ r ];
     }
 
-  protected:
-
     /**
      * \brief velocity calculation, is called by advection()
      */
@@ -137,7 +134,6 @@ namespace Fem
       problem_.velocity( local.entity().geometry().global( local.point() ), v );
       return v;
     }
-  public:
 
     /**
      * \brief diffusion term \f$a\f$
@@ -177,6 +173,86 @@ namespace Fem
       maxValue = values.infinity_norm();
     }
 
+    inline double penaltyBoundary( const EntityType& inside,
+                                   const double time,
+                                   const DomainType& xInside,
+                                   const RangeType& uLeft ) const
+    {
+      return penaltyFactor( inside, inside, time, xInside, uLeft, uLeft );
+    }
+
+    /**
+     * \brief diffusion term \f$A\f$
+     */
+    template <class LocalEvaluation>
+    inline void diffusion(const LocalEvaluation& local,
+                          const RangeType& u,
+                          const JacobianRangeType& jac,
+                          FluxRangeType& A) const
+    {
+      // for constant K evalute at center (see Problem 4)
+      const DomainType xgl = ( problem_.constantK() ) ?
+        local.entity().geometry().center () : local.entity().geometry().global(local.point())  ;
+
+      DiffusionMatrixType K ;
+
+      // fill diffusion matrix
+      problem_.K( xgl, K );
+      // apply diffusion
+      for( int r =0; r<dimRange; ++r )
+        K.mv( jac[ r ] , A[ r ] );
+    }
+
+    template <class LocalEvaluation>
+    inline double diffusionTimeStep( const LocalEvaluation& local,
+                                     const double circumEstimate,
+                                     const RangeType& u ) const
+    {
+      return 0;
+    }
+
+    /**
+     * \brief checks for existence of dirichlet boundary values
+     */
+    template <class LocalEvaluation>
+    inline bool hasBoundaryValue(const LocalEvaluation& local ) const
+    {
+      return true;
+    }
+
+    /**
+     * \brief dirichlet boundary values
+     */
+    template <class LocalEvaluation>
+    inline void boundaryValue (const LocalEvaluation& local,
+                               const RangeType& uLeft,
+                               RangeType& uRight) const
+    {
+      if ( local.intersection().boundaryId() == 99) // Dirichlet zero boundary conditions
+      {
+        uRight = 0;
+      }
+      else
+      {
+        DomainType xgl = local.entity().geometry().global( local.point() );
+        problem_.g(xgl, uRight);
+      }
+    }
+
+    /**
+     * \brief diffusion boundary flux
+     */
+    template <class LocalEvaluation>
+    inline double diffusionBoundaryFlux( const LocalEvaluation& local,
+                                         const RangeType& uLeft,
+                                         const JacobianRangeType& gradLeft,
+                                         RangeType& gLeft ) const
+    {
+      return 0.0;
+    }
+
+    const ProblemType& problem () const { return problem_; }
+  private:
 
     template <class LocalEvaluation>
     inline double penaltyFactor( const LocalEvaluation& left,
@@ -224,88 +300,6 @@ namespace Fem
 
       return betaK ;
     }
-
-    inline double penaltyBoundary( const EntityType& inside,
-                                   const double time,
-                                   const DomainType& xInside,
-                                   const RangeType& uLeft ) const
-    {
-      return penaltyFactor( inside, inside, time, xInside, uLeft, uLeft );
-    }
-
-    /**
-     * \brief diffusion term \f$A\f$
-     */
-    template <class LocalEvaluation>
-    inline void diffusion(const LocalEvaluation& local,
-                          const RangeType& u,
-                          const JacobianRangeType& jac,
-                          FluxRangeType& A) const
-    {
-      // for constant K evalute at center (see Problem 4)
-      const DomainType xgl = ( problem_.constantK() ) ?
-        local.entity().geometry().center () : local.entity().geometry().global(local.point())  ;
-
-      DiffusionMatrixType K ;
-
-      // fill diffusion matrix
-      problem_.K( xgl, K );
-      // apply diffusion
-      for( int r =0; r<dimRange; ++r )
-        K.mv( jac[ r ] , A[ r ] );
-    }
-
-    template <class LocalEvaluation>
-    inline double diffusionTimeStep( const LocalEvaluation& local,
-                                     const double circumEstimate,
-                                     const RangeType& u ) const
-    {
-      return 0;
-    }
-
-  public:
-    /**
-     * \brief checks for existence of dirichlet boundary values
-     */
-    template <class LocalEvaluation>
-    inline bool hasBoundaryValue(const LocalEvaluation& local ) const
-    {
-      return true;
-    }
-
-    /**
-     * \brief dirichlet boundary values
-     */
-    template <class LocalEvaluation>
-    inline void boundaryValue (const LocalEvaluation& local,
-                               const RangeType& uLeft,
-                               RangeType& uRight) const
-    {
-      if ( local.intersection().boundaryId() == 99) // Dirichlet zero boundary conditions
-      {
-        uRight = 0;
-      }
-      else
-      {
-        DomainType xgl = local.entity().geometry().global( local.point() );
-        problem_.g(xgl, uRight);
-      }
-    }
-
-    /**
-     * \brief diffusion boundary flux
-     */
-    template <class LocalEvaluation>
-    inline double diffusionBoundaryFlux( const LocalEvaluation& local,
-                                         const RangeType& uLeft,
-                                         const JacobianRangeType& gradLeft,
-                                         RangeType& gLeft ) const
-    {
-      return 0.0;
-    }
-
-    const ProblemType& problem () const { return problem_; }
-  private:
 
     template <class T>
     T SQR( const T& a ) const

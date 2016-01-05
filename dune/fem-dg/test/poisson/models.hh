@@ -195,54 +195,6 @@ namespace Fem
       maxValue = values.infinity_norm();
     }
 
-
-    template <class LocalEvaluation>
-    inline double penaltyFactor (const LocalEvaluation& left,
-                                 const LocalEvaluation& right,
-                                 const RangeType& uLeft,
-                                 const RangeType& uRight) const
-    {
-      DiffusionMatrixType K ;
-      double betaK, betaInside, betaOutside ;
-      if( problem_.constantK() )
-      {
-        DiffusionMatrixType Kinside ;
-        DiffusionMatrixType Koutside;
-
-        const DomainType xglIn = left.entity().geometry().center();
-        problem_.K( xglIn , Kinside );
-        const DomainType xglOut = right.entity().geometry().center();
-        problem_.K( xglOut , Koutside );
-
-        K = Kinside ;
-        K += Koutside ;
-        K *= 0.5 ;
-
-        betaInside  = lambdaK( Kinside );
-        betaOutside = lambdaK( Koutside );
-
-        betaK = lambdaK( K );
-      }
-      else
-      {
-        const DomainType xgl = left.entity().geometry().global( left.point() );
-        problem_.K( xgl , K );
-
-        betaK = lambdaK( K );
-        betaInside = betaOutside = betaK;
-      }
-
-      const double jump = std::tanh( std::abs( betaInside - betaOutside ) );
-
-      // only for small values of betS apply betS in smooth cases
-      const double betaN = std :: min( betaK , 1.0 );
-
-      // betS becomes 1 if the eigen values of both matrices are the same
-      betaK = betaK * jump + (1.0 - jump) * betaN;
-
-      return betaK ;
-    }
-
     inline double penaltyBoundary (const EntityType& inside,
                                    const double time,
                                    const DomainType& xInside,
@@ -341,6 +293,53 @@ namespace Fem
     }
 
   private:
+    template <class LocalEvaluation>
+    inline double penaltyFactor (const LocalEvaluation& left,
+                                 const LocalEvaluation& right,
+                                 const RangeType& uLeft,
+                                 const RangeType& uRight) const
+    {
+      DiffusionMatrixType K ;
+      double betaK, betaInside, betaOutside ;
+      if( problem_.constantK() )
+      {
+        DiffusionMatrixType Kinside ;
+        DiffusionMatrixType Koutside;
+
+        const DomainType xglIn = left.entity().geometry().center();
+        problem_.K( xglIn , Kinside );
+        const DomainType xglOut = right.entity().geometry().center();
+        problem_.K( xglOut , Koutside );
+
+        K = Kinside ;
+        K += Koutside ;
+        K *= 0.5 ;
+
+        betaInside  = lambdaK( Kinside );
+        betaOutside = lambdaK( Koutside );
+
+        betaK = lambdaK( K );
+      }
+      else
+      {
+        const DomainType xgl = left.entity().geometry().global( left.point() );
+        problem_.K( xgl , K );
+
+        betaK = lambdaK( K );
+        betaInside = betaOutside = betaK;
+      }
+
+      const double jump = std::tanh( std::abs( betaInside - betaOutside ) );
+
+      // only for small values of betS apply betS in smooth cases
+      const double betaN = std :: min( betaK , 1.0 );
+
+      // betS becomes 1 if the eigen values of both matrices are the same
+      betaK = betaK * jump + (1.0 - jump) * betaN;
+
+      return betaK ;
+    }
+
     template <class T>
     T SQR( const T& a ) const
     {

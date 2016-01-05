@@ -81,6 +81,8 @@ namespace Fem
     public DefaultModel < NavierStokesModelTraits< GridPartImp, ProblemImp > >
   {
   public:
+    typedef FractionalStepThetaScheme<0,rightHandSideModel> SplitType;
+
     typedef NavierStokesModelTraits< GridPartImp, ProblemImp > Traits;
 
     enum { velo = 0, rhs = 1 };
@@ -112,8 +114,8 @@ namespace Fem
     typedef typename Traits::EntityType                   EntityType;
     typedef typename Traits::IntersectionType             IntersectionType;
 
-    static const bool hasAdvection = true;
-    static const bool hasDiffusion = true;
+    static const bool hasDiffusion = SplitType::hasDiffusion;
+    static const bool hasAdvection = SplitType::hasAdvection;
 
     NavierStokesModel(const NavierStokesModel& other);
     const NavierStokesModel &operator=(const NavierStokesModel &other);
@@ -128,13 +130,13 @@ namespace Fem
     NavierStokesModel(const ProblemType& problem) :
       problem_(problem),
       epsilon_(problem.epsilon()),
-      tstepEps_( problem.betaMu() ),
+      tstepEps_( problem.beta()*problem.mu() ),
       theta_( problem.theta() )
     {}
 
     inline const ProblemType& problem() const { return problem_; }
 
-    inline bool hasFlux() const { return true ; }
+    inline bool hasFlux() const { return true; }
     inline bool hasStiffSource() const { return true; }
     inline bool hasNonStiffSource() const { return false; }
 
@@ -179,21 +181,19 @@ namespace Fem
                                const JacobianRangeType& jac,
                                RangeType & s) const
     {
-      DomainType xgl = local.entity().geometry().global( local.point() );
-      // right hand side f
-      problem_.stiffSource( local.point(), local.time(), u, s );
+      // no mass part
 
-      if( rightHandSideModel )
+      if( SplitType::hasSource )
       {
-        // + u^n * \theta \Delta t
-        RangeType uS ( u );
-        uS /= theta_;
-        s += uS;
+        // right hand side
+        problem_.stiffSource( local.point(), local.time(), u, s );
+        s *= SplitType::source();
       }
-      else
+
+      // right hand side f
+      if( !rightHandSideModel )
       {
         // + \alpha \mu \Delta u^n+\theta - \nabla p
-        //step 1,3: rhsOperator(u*)      -> 0
         //step 2: dgOperator (u*,rhs)  -> rhs_
         s += local.evaluate( ComputeRHS(), local ) ;
       }
@@ -214,12 +214,18 @@ namespace Fem
                           const JacobianRangeType& jacu,
                           FluxRangeType & f) const
     {
-      const DomainType& v = velocity( local, u );
+      if( SplitType::hasAdvection )
+      {
+        DomainType v = velocity( local, u );
+        v *= SplitType::advection();
 
-      // f = uV;
-      for( int r=0; r<dimRange; ++r )
-        for( int d=0; d<dimDomain; ++d )
-          f[r][d] = v[ d ] * u[ r ];
+        // f = uV;
+        for( int r=0; r<dimRange; ++r )
+          for( int d=0; d<dimDomain; ++d )
+            f[r][d] = v[ d ] * u[ r ];
+      }
+      else
+        f = 0;
     }
 
     /**
@@ -268,11 +274,17 @@ namespace Fem
                           const JacobianRangeType& jac,
                           FluxRangeType& A) const
     {
-      // copy v to A
-      A = jac;
+      if( SplitType::hasDiffusion )
+      {
+        // copy v to A
+        A = jac;
 
-      // apply diffusion coefficient
-      A *= problem_.betaMu();// diffusion( u, A );//*(1.+d);
+        // apply diffusion coefficient
+        A *= SplitType::diffusion() * problem_.mu();// diffusion( u, A );//*(1.+d);
+      }
+      else
+        A = 0.0;
+
     }
 
     template <class LocalEvaluation>
