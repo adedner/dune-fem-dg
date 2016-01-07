@@ -40,10 +40,9 @@ namespace Fem
     typedef ProblemImp                                      ProblemType;
     typedef StokesPoissonModelTraits< GridPartImp, ProblemType >
                                                             Traits;
-    enum { velo = 0, rhs = 1 };
+    enum { velo = 0 };
     typedef std::integral_constant< int, velo >             velocityVar;
-    typedef std::integral_constant< int, rhs  >             rhsVar;
-    typedef std::tuple < velocityVar, rhsVar >              ModelParameter;
+    typedef std::tuple < velocityVar >                      ModelParameter;
 
     typedef typename Traits::GridType                       GridType;
     static const int dimDomain = Traits::dimDomain;
