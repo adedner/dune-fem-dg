@@ -50,18 +50,44 @@ namespace Fem
     typedef typename DataWriterHandlerType::IOTupleType                    IOTupleType;
   };
 
-  //template< int polOrder, class... ProblemTraits >
-  //class SteadyStateAlgorithm;
 
-
-
-
-  template< int polOrder/*, class ProblemTraitsHead*/, class... ProblemTraits >
-  class SteadyStateAlgorithm/*< polOrder, ProblemTraitsHead, ProblemTraits... >*/
-    : public AlgorithmInterface< SteadyStateTraits< polOrder/*, ProblemTraitsHead*/, ProblemTraits... > >
+  template< class StepperTupleType, class GridType >
+  struct DefaultSteadyStateCreator
   {
 
-    typedef SteadyStateTraits< polOrder/*, ProblemTraitsHead*/, ProblemTraits... > Traits;
+    template< int i >
+    using Element = typename std::remove_pointer< typename std::tuple_element< i, StepperTupleType >::type >::type;
+
+
+    template< std::size_t i >
+    static Element<i>* createSingleStepper( GridType& grid )
+    {
+      static typename Element<i>::ContainerType container( grid );
+      static auto element = new Element<i>( grid, container );
+      return element;
+    }
+
+    template< std::size_t ...i >
+    static StepperTupleType apply ( Std::index_sequence< i... >, GridType &grid )
+    {
+      static auto tuple = std::make_tuple( createSingleStepper<i>( grid )... );
+      return tuple;
+    }
+
+    // create Tuple of contained sub algorithms
+    static StepperTupleType apply ( GridType &grid )
+    {
+      return apply( typename Std::make_index_sequence_impl< std::tuple_size< StepperTupleType >::value >::type(), grid );
+    }
+  };
+
+
+  template< int polOrder, template<class, class > class SteadyStateCreatorType, class... ProblemTraits>
+  class SteadyStateAlgorithm
+    : public AlgorithmInterface< SteadyStateTraits< polOrder, ProblemTraits... > >
+  {
+
+    typedef SteadyStateTraits< polOrder, ProblemTraits... > Traits;
     typedef AlgorithmInterface< Traits >                                BaseType;
   public:
     typedef typename BaseType::GridType                                 GridType;
@@ -71,8 +97,7 @@ namespace Fem
 
     typedef uint64_t                                                    UInt64Type ;
 
-    typedef std::tuple< /*typename std::add_pointer< typename ProblemTraitsHead::template Stepper<polOrder>::Type >::type,*/
-                        typename std::add_pointer< typename ProblemTraits::template Stepper<polOrder>::Type >::type... > StepperTupleType;
+    typedef std::tuple< typename std::add_pointer< typename ProblemTraits::template Stepper<polOrder>::Type >::type... > StepperTupleType;
 
   private:
     struct Initialize {
@@ -107,11 +132,7 @@ namespace Fem
       template<class T, class... Args > static void apply( T e, bool& res, Args&& ... a )
       { res &= e->checkSolutionValid( std::forward<Args>(a)... ); }
     };
-    struct Init {
-      template<class T, class... Args > static void apply( T e, Args&& ... a )
-      { e->init(); }
-    };
-    template< class Caller >
+      template< class Caller >
     class LoopCallee
     {
     public:
@@ -129,30 +150,15 @@ namespace Fem
     template< class Caller >
     using ForLoopType = ForLoop< LoopCallee<Caller>::template Apply, 0,  sizeof ... ( ProblemTraits )-1 >;
 
-    template< std::size_t ...i >
-    static StepperTupleType createStepper ( Std::index_sequence< i... >, GridType &grid )
-    {
-      static auto tuple = std::make_tuple( new typename std::remove_pointer< typename std::tuple_element< i, StepperTupleType >::type >::type( grid ) ... );
-      ForLoopType< Init >::apply( tuple );
-      return tuple;
-    }
-
-    // create Tuple of contained sub algorithms
-    static StepperTupleType createStepper( GridType &grid )
-    {
-      return createStepper( typename Std::make_index_sequence_impl< std::tuple_size< StepperTupleType >::value >::type(), grid );
-    }
-
   public:
     using BaseType::grid;
 
     SteadyStateAlgorithm ( GridType &grid )
     : BaseType( grid ),
-      tuple_( createStepper( grid ) ),
+      tuple_( SteadyStateCreatorType< StepperTupleType, GridType >::apply( grid ) ),
       solverMonitorHandler_( tuple_ ),
       dataWriterHandler_( tuple_ )
     {}
-
 
     virtual IOTupleType dataTuple ()
     {
@@ -215,95 +221,6 @@ namespace Fem
     SolverMonitorHandlerType       solverMonitorHandler_;
     DataWriterHandlerType          dataWriterHandler_;
   };
-
-
-#if 0
-  //specialization
-  template< int polOrder, class ProblemTraits >
-  class SteadyStateAlgorithm< polOrder, ProblemTraits >
-    : public AlgorithmInterface< SteadyStateTraits< polOrder, ProblemTraits > >
-  {
-
-    typedef SteadyStateTraits< polOrder, ProblemTraits >                Traits;
-    typedef AlgorithmInterface< Traits >                                BaseType;
-  public:
-    typedef typename BaseType::GridType                                 GridType;
-    typedef typename BaseType::IOTupleType                              IOTupleType;
-    typedef typename BaseType::SolverMonitorHandlerType                 SolverMonitorHandlerType;
-    typedef typename Traits::DataWriterHandlerType                      DataWriterHandlerType;
-
-    typedef uint64_t                                                    UInt64Type ;
-
-    typedef typename ProblemTraits::template Stepper<polOrder>::Type    AlgType;
-
-    using BaseType::grid;
-
-    SteadyStateAlgorithm ( GridType &grid )
-    : BaseType( grid  ),
-      alg_( grid ),
-      solverMonitorHandler_( std::make_tuple( &alg_ ) ),
-      dataWriterHandler_( std::make_tuple( &alg_ ) )
-    {}
-
-    virtual IOTupleType dataTuple ()
-    {
-      return dataWriterHandler_.dataTuple();
-    }
-
-    virtual SolverMonitorHandlerType& monitor()
-    {
-      return solverMonitorHandler_;
-    }
-
-    // return grid width of grid (overload in derived classes)
-    virtual double gridWidth () const
-    {
-      return alg_.gridWidth();
-    }
-
-    // return size of grid
-    virtual UInt64Type gridSize () const
-    {
-      UInt64Type res = alg_.gridSize();
-      return res;
-    }
-
-    virtual void initialize ( const int loop )
-    {
-      alg_.initialize( loop );
-    }
-
-    virtual void preSolve( const int loop )
-    {
-      alg_.preSolve( loop );
-    }
-
-    virtual void solve ( const int loop )
-    {
-      initialize( loop );
-      preSolve( loop );
-      alg_.solve( loop );
-      postSolve( loop );
-      finalize( loop );
-    }
-
-    virtual void postSolve( const int loop )
-    {
-      alg_.solve( loop );
-    }
-
-    void finalize ( const int loop )
-    {
-      alg_.finalize( loop );
-    }
-
-  protected:
-
-    AlgType                        alg_;
-    SolverMonitorHandlerType       solverMonitorHandler_;
-    DataWriterHandlerType          dataWriterHandler_;
-  };
-#endif
 
 }  // namespace Fem
 

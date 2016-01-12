@@ -71,23 +71,16 @@ namespace Fem
     using BaseType::name ;
     using BaseType::limitSolution;
 
+    typedef typename BaseType::ContainerType                   ContainerType;
+
     // constructor
-    AdvectionAlgorithm( GridType& grid,
+    AdvectionAlgorithm( GridType& grid, ContainerType& container,
                         ExtraParameterTupleType tuple = ExtraParameterTupleType() ) :
-      BaseType( grid ),
+      BaseType( grid, container ),
       tuple_( ),
-      advectionOperator_( nullptr ),
-      adaptIndicator_( nullptr )
+      advectionOperator_( std::make_unique< ExplicitOperatorType >( gridPart_, problem(), tuple_, name() ) ),
+      adaptIndicator_( std::make_unique< AdaptIndicatorOptional<AdaptIndicatorType> >( solution(), problem(), tuple_, name() ) )
     {}
-
-
-    void init()
-    {
-      BaseType::init();
-      advectionOperator_ = std::make_unique< ExplicitOperatorType >( gridPart_, problem(), tuple_, name() );
-      adaptIndicator_ = std::make_unique< AdaptIndicatorOptional<AdaptIndicatorType> >( solution(), problem(), tuple_, name() );
-    }
-
 
     virtual AdaptIndicatorType* adaptIndicator ()
     {

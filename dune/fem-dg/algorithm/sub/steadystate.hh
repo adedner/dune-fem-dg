@@ -10,12 +10,14 @@
 #include <dune/fem/gridpart/common/gridpart.hh>
 #include <dune/fem/misc/gridwidth.hh>
 #include <dune/fem/solver/newtoninverseoperator.hh>
+#include <dune/fem/operator/linear/spoperator.hh>
 
 #include <dune/fem-dg/misc/parameterkey.hh>
 #include <dune/fem-dg/misc/typedefcheck.hh>
 #include <dune/fem-dg/misc/optional.hh>
 #include <dune/fem-dg/misc/tupleutility.hh>
 #include <dune/fem-dg/misc/covarianttuple.hh>
+#include <dune/fem-dg/misc/uniquefunctionname.hh>
 
 #include <dune/fem-dg/algorithm/base.hh>
 #include <dune/fem-dg/algorithm/sub/evolution.hh>
@@ -31,36 +33,101 @@ namespace Dune
 namespace Fem
 {
 
-  class IDGenerator
+  template <class DiscreteFunctionImp >
+  struct SubSteadyStateContainer
   {
-    public:
-      static IDGenerator& instance ()
-      {
-        static IDGenerator generator;
-        return generator;
-      }
 
-      std::string nextId()
-      {
-        id_++;
-        if( id_ == 0 )
-          return "";
-        std::stringstream s;
-        s << "[" << id_ << "]";
-        return s.str();
-      }
-      std::string id()
-      {
-        if( id_ == 0 )
-          return "";
-        std::stringstream s;
-        s << "[" << id_ << "]";
-        return s.str();
-      }
-    private:
-      IDGenerator () : id_(-1) {}
+    typedef DiscreteFunctionImp                                           DiscreteFunctionType;
 
-      int id_;
+    typedef typename DiscreteFunctionType::DiscreteFunctionSpaceType      DiscreteFunctionSpaceType;
+
+    typedef typename DiscreteFunctionSpaceType::GridType                  GridType;
+    typedef typename DiscreteFunctionSpaceType::GridPartType              GridPartType;
+
+    using DiscreteFunction = DiscreteFunctionType;
+    using DiscreteFunctionSpace = DiscreteFunctionSpaceType;
+
+  public:
+
+    SubSteadyStateContainer( GridType& grid, const std::string name = "" )
+    : stringId_( FunctionIDGenerator::instance().nextId() ),
+      grid_( grid ),
+      gridPart_( grid_ ),
+      space_( gridPart_ ),
+      solution_( new DiscreteFunctionType( name + "u" + stringId_, space() ) ),
+      exactSolution_( new DiscreteFunctionType( name + "u-exact" + stringId_, space() ) ),
+      rhs_( new DiscreteFunctionType( name + "rhs-u" + stringId_, space() ) )
+    {}
+
+    //grid
+    const GridType& grid() const
+    {
+      return grid_;
+    }
+    GridType& grid()
+    {
+      return grid_;
+    }
+
+    //grid part
+    const GridPartType& gridPart() const
+    {
+      return gridPart_;
+    }
+    GridPartType& gridPart()
+    {
+      return gridPart_;
+    }
+
+    //spaces
+    const DiscreteFunctionSpaceType& space() const
+    {
+      return space_;
+    }
+    DiscreteFunctionSpaceType& space()
+    {
+      return space_;
+    }
+
+    //solution
+    std::shared_ptr< DiscreteFunction > solution() const
+    {
+      return solution_;
+    }
+    void setSolution( std::shared_ptr< DiscreteFunction > solution )
+    {
+      solution_ = solution;
+    }
+
+    //exact solution
+    std::shared_ptr< DiscreteFunction > exactSolution() const
+    {
+      return exactSolution_;
+    }
+    void setExactSolution( std::shared_ptr< DiscreteFunction > exactSolution )
+    {
+      exactSolution_ = exactSolution;
+    }
+
+    //rhs
+    std::shared_ptr< DiscreteFunction > rhs() const
+    {
+      return rhs_;
+    }
+    void setRhs( std::shared_ptr< DiscreteFunction > rhs )
+    {
+      rhs_ = rhs;
+    }
+
+  private:
+    const std::string                   stringId_;
+    GridType&                           grid_;
+    GridPartType                        gridPart_;
+    DiscreteFunctionSpaceType           space_;
+
+    std::shared_ptr< DiscreteFunction > solution_;
+    std::shared_ptr< DiscreteFunction > exactSolution_;
+    std::shared_ptr< DiscreteFunction > rhs_;
   };
 
 
@@ -184,37 +251,25 @@ namespace Fem
     using BaseType::gridSize;
 
   public:
-    SubSteadyStateAlgorithm ( GridType &grid  )
+
+    typedef SubSteadyStateContainer< DiscreteFunctionType >          ContainerType;
+
+    SubSteadyStateAlgorithm ( GridType &grid, ContainerType& container  )
       : BaseType( grid ),
-        stringId_( name() + IDGenerator::instance().nextId() ),
-        gridPart_( grid ),
-        space_( gridPart_ ),
+        container_( container ),
+        gridPart_( container_.gridPart() ),
+        space_( container_.space() ),
         solverIterations_( 0 ),
-        solution_( nullptr ),
-        exactSolution_( nullptr ),
-        rhs_( nullptr ),
-        rhsOperator_( nullptr ),
+        solution_( container_.solution() ),
+        exactSolution_( container_.exactSolution() ),
+        rhs_( container_.rhs() ),
+        rhsOperator_( doCreateRhsOperator() ),
         solver_( nullptr ),
-        ioTuple_( nullptr ),
+        ioTuple_( new IOTupleType( std::make_tuple( solution_.get(), exactSolution_.get() ) ) ),
         solverMonitorHandler_( name() ),
         diagnosticsHandler_( name() ),
         additionalOutputHandler_( name() )
     {}
-
-    void init()
-    {
-      //step I: init discrete functions
-      solution_ = doCreateSolution();
-      exactSolution_ = doCreateExactSolution();
-      rhs_ = doCreateRhs();
-
-      //step II: init operators
-      rhsOperator_ = doCreateRhsOperator();
-
-      //step III: init handler and other stuff
-      ioTuple_.reset( new IOTupleType( std::make_tuple( &solution(), &exactSolution() ) ) );
-    }
-
 
     typename SolverType::type* solver()
     {
@@ -222,6 +277,11 @@ namespace Fem
     }
 
     DiscreteFunctionType& solution ()
+    {
+      assert( solution_ );
+      return *solution_;
+    }
+    const DiscreteFunctionType& solution () const
     {
       assert( solution_ );
       return *solution_;
@@ -262,29 +322,7 @@ namespace Fem
       return diagnosticsHandler_.value();
     }
 
-    //todo: improve
-    virtual void setSolution( std::shared_ptr< DiscreteFunctionType > ptr )
-    {
-      solution_ = ptr;
-    }
-
   protected:
-    virtual std::shared_ptr< DiscreteFunctionType > doCreateSolution()
-    {
-      return std::make_shared< DiscreteFunctionType >( "solution-" + stringId_, space_ );
-    }
-
-    virtual std::shared_ptr< DiscreteFunctionType > doCreateExactSolution()
-    {
-      return std::make_shared< DiscreteFunctionType >( "exactSolution-" + stringId_, space_ );
-    }
-
-    virtual std::shared_ptr< DiscreteFunctionType > doCreateRhs()
-    {
-      //if( *rhsOperator_ ) //rhs by external rhs operator
-      //  (*rhsOperator_)( solution(), rhs() );
-      return std::make_shared< DiscreteFunctionType >( "rhs-" + stringId_, space_ );
-    }
 
     virtual std::shared_ptr< RhsOptional< RhsType > > doCreateRhsOperator()
     {
@@ -345,10 +383,10 @@ namespace Fem
     }
   protected:
 
-    const std::string          stringId_;
+    ContainerType&             container_;
 
-    GridPartType                                 gridPart_; // reference to grid part, i.e. the leaf grid
-    DiscreteFunctionSpaceType                    space_;    // the discrete function space
+    GridPartType&                                gridPart_; // reference to grid part, i.e. the leaf grid
+    const DiscreteFunctionSpaceType&             space_;    // the discrete function space
     int                                          solverIterations_;
 
     std::shared_ptr< DiscreteFunctionType >      solution_;

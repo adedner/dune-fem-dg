@@ -50,7 +50,6 @@
 //--------- PROBLEMCREATORSELECTOR ----------
 #include <dune/fem-dg/misc/configurator.hh>
 
-
 namespace Dune
 {
 namespace Fem
@@ -217,8 +216,8 @@ namespace Fem
 
         struct Solver
         {
-          typedef UzawaSolver< VelDiscreteFunctionType, DiscreteFunctionType, typename Operator::AssemblerType,
-                               typename PoissonDiscreteTraits::Solver::type >        type;
+          typedef UzawaSolver< typename Operator::AssemblerType, typename PoissonDiscreteTraits::Solver::type >
+                                                                                      type;
         };
 
         static_assert( (int)DFSpaceType::FunctionSpaceType::dimRange == 1 , "pressure dimrange does not fit");
@@ -342,7 +341,7 @@ namespace Fem
     template <int polOrd>
     struct Stepper
     {
-      typedef IncompNavierStokesAlgorithm< polOrd, SubStokesProblemCreator, SubNavierStokesProblemCreator, SubStokesProblemCreator > Type;
+      typedef IncompNavierStokesAlgorithm< polOrd, DefaultEvolutionCreator, SubStokesProblemCreator, SubNavierStokesProblemCreator, SubStokesProblemCreator > Type;
     };
 
     typedef GridImp                                         GridType;
@@ -356,4 +355,7 @@ namespace Fem
 
 }
 }
+
+
+
 #endif

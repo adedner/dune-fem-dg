@@ -13,13 +13,14 @@
 #include <dune/fem/misc/femeoc.hh>
 #include <dune/fem-dg/misc/dgnorm.hh>
 #include <dune/fem/space/padaptivespace.hh>
+#include <dune/fem/space/discontinuousgalerkin/legendre.hh>
+#include <dune/fem/space/discontinuousgalerkin/space.hh>
 #include <dune/fem/operator/projection/l2projection.hh>
 #include <dune/fem/function/common/localfunctionadapter.hh>
 
 // dune-fem-dg includes
-#include <dune/fem-dg/assemble/primalmatrix.hh>
 #include <dune/fem/operator/projection/dgl2projection.hh>
-
+#include <dune/fem/misc/fmatrixconverter.hh>
 #include <dune/fem/operator/common/stencil.hh>
 
 #include <dune/fem/misc/gridname.hh>
@@ -34,6 +35,121 @@ namespace Dune
 {
 namespace Fem
 {
+  template <class SteadyStateContainerImp, class MatrixContainerImp >
+  struct SubEllipticContainer
+  {
+
+    typedef typename SteadyStateContainerImp::DiscreteFunctionType        DiscreteFunctionType;
+
+    typedef typename DiscreteFunctionType::DiscreteFunctionSpaceType      DiscreteFunctionSpaceType;
+
+    typedef typename DiscreteFunctionSpaceType::GridType                  GridType;
+    typedef typename DiscreteFunctionSpaceType::GridPartType              GridPartType;
+
+    typedef MatrixContainerImp                                            MatrixType;
+
+    using DiscreteFunction = DiscreteFunctionType;
+    using DiscreteFunctionSpace = DiscreteFunctionSpaceType;
+    using Matrix = MatrixType;
+
+    typedef Fem::SubSteadyStateContainer< DiscreteFunctionType >          ContainerType;
+
+  public:
+
+    SubEllipticContainer( GridType& grid, const std::string name = "" )
+    : stringId_( FunctionIDGenerator::instance().nextId() ),
+      container_( grid, name ),
+      matrix_( new MatrixType( name + "matrix",space(), space() ) )
+    {}
+
+    //container list
+    const ContainerType& adapter() const
+    {
+      return container_;
+    }
+    ContainerType& adapter()
+    {
+      return container_;
+    }
+
+    //grid
+    const GridType& grid() const
+    {
+      return adapter().grid();
+    }
+    GridType& grid()
+    {
+      return adapter().grid();
+    }
+
+    //grid part
+    const GridPartType& gridPart() const
+    {
+      return adapter().gridPart();
+    }
+    GridPartType& gridPart()
+    {
+      return adapter().gridPart();
+    }
+
+    //spaces
+    const DiscreteFunctionSpaceType& space() const
+    {
+      return adapter().space();
+    }
+    DiscreteFunctionSpaceType& space()
+    {
+      return adapter().space();
+    }
+
+    //solution
+    std::shared_ptr< DiscreteFunction > solution() const
+    {
+      return adapter().solution();
+    }
+    void setSolution( std::shared_ptr< DiscreteFunction > solution )
+    {
+      adapter().solution() = solution;
+    }
+
+    //exact solution
+    std::shared_ptr< DiscreteFunction > exactSolution() const
+    {
+      return adapter().exactSolution();
+    }
+    void setExactSolution( std::shared_ptr< DiscreteFunction > exactSolution )
+    {
+      adapter().exactSolution() = exactSolution;
+    }
+
+    //rhs
+    std::shared_ptr< DiscreteFunction > rhs() const
+    {
+      return adapter().rhs();
+    }
+    void setRhs( std::shared_ptr< DiscreteFunction > rhs )
+    {
+      adapter().rhs() = rhs;
+    }
+
+    //matrix for assembly
+    std::shared_ptr< MatrixType > matrix() const
+    {
+      assert( matrix_ );
+      return matrix_;
+    }
+    void setMatrix( std::shared_ptr< MatrixType > matrix )
+    {
+      matrix_ = matrix;
+    }
+
+
+  private:
+    const std::string                   stringId_;
+    ContainerType                       container_;
+    std::shared_ptr< Matrix >           matrix_;
+  };
+
 
 
   template< class GridPartImp, class DiscreteFunctionImp, class SigmaFunctionSpaceImp, class AssemblerImp, int polOrder>
@@ -75,14 +191,14 @@ namespace Fem
     template <class Grid>
     struct SigmaSpaceChooser< Grid, 1 >
     {
-      typedef Dune::Fem:: LegendreDiscontinuousGalerkinSpace< SigmaFunctionSpaceType, GridPartType, polOrder > Type ;
+      typedef Dune::Fem::LegendreDiscontinuousGalerkinSpace< SigmaFunctionSpaceType, GridPartType, polOrder > Type ;
     };
 
     //- cubes use OrthonormalDGSpace
     template <class Grid>
     struct SigmaSpaceChooser< Grid, 0 >
     {
-      typedef Dune::Fem:: DiscontinuousGalerkinSpace< SigmaFunctionSpaceType, GridPartType, polOrder > Type ;
+      typedef Dune::Fem::DiscontinuousGalerkinSpace< SigmaFunctionSpaceType, GridPartType, polOrder > Type ;
     };
 
     // work arround internal compiler error
@@ -340,7 +456,7 @@ namespace Fem
     typedef PersistentContainer<GridType,PolOrderStructure> PolOrderContainer;
 
 
-    PAdaptivity( GridType& grid, DiscreteFunctionSpaceType& space )
+    PAdaptivity( GridType& grid, const DiscreteFunctionSpaceType& space )
       : polOrderContainer_( grid, 0 ),
         space_( space ),
         estimator_()
@@ -439,9 +555,6 @@ namespace Fem
 
 
 
-
-
-
   /**
    *  \brief Algorithm for solving an elliptic PDE.
    *
@@ -473,6 +586,9 @@ namespace Fem
 
     // The DG space operator
     typedef typename BaseType::OperatorType::AssemblerType AssemblerType;
+
+
+    typedef typename AssemblerType::ContainerType          ContainerType;
 
     // The discrete function for the unknown solution is defined in the DgOperator
     typedef typename BaseType::DiscreteFunctionType        DiscreteFunctionType;
@@ -509,18 +625,18 @@ namespace Fem
     using BaseType::exactSolution;
     using BaseType::solver;
 
-  public:
-
-    EllipticAlgorithm(GridType& grid )
-    : BaseType( grid ),
-      gridPart_( grid ),
-      assembler_( gridPart_, model() ),
-      linOperator_(),
-      space_( const_cast<DiscreteFunctionSpaceType &> (assembler_.space()) ),
-      pAdapt_(grid, space_),
+  public: /* ISTLLinearOperator */
+    EllipticAlgorithm( GridType& grid, ContainerType& container )
+    : BaseType( grid, container.adapter() ),
+      container_( container ),
+      gridPart_( container_.gridPart() ),
+      space_( container_.space() ),
+      assembler_( container_, model() ),
+      matrix_( container_.matrix() ),
+      pAdapt_( grid, container_.space() ),
       step_( 0 ),
       time_( 0 ),
-      poissonSigmaEstimator_( nullptr )
+      poissonSigmaEstimator_( new PoissonSigmaEstimatorType( container_.gridPart(), solution(), assembler_, name() ) )
     {
       std::string gridName = Fem::gridName( grid );
       if( gridName == "ALUGrid" || gridName == "ALUConformGrid" || gridName == "ALUSimplexGrid" )
@@ -533,15 +649,6 @@ namespace Fem
           }
         }
       }
-    }
-
-    void init()
-    {
-      //init base
-      BaseType::init();
-
-      //step III: init other stuff
-      poissonSigmaEstimator_.reset( new PoissonSigmaEstimatorType( gridPart_, solution(), assembler_, name() ) );
     }
 
     void virtual setTime ( const double time ) override
@@ -569,34 +676,28 @@ namespace Fem
       Dune::Timer timer;
       timer.start();
 
-      linOperator_.reset( new OperatorType("dg operator", space_, space_ ) );
-
       if( space_.continuous() ) // Lagrange case
       {
         typedef Dune::Fem::DiagonalStencil<DiscreteFunctionSpaceType,DiscreteFunctionSpaceType> StencilType ;
         StencilType stencil( space_, space_ );
-        linOperator_->reserve( stencil );
+        matrix_->reserve( stencil );
       }
       else // DG case
       {
         typedef Dune::Fem::DiagonalAndNeighborStencil<DiscreteFunctionSpaceType,DiscreteFunctionSpaceType> StencilType ;
         StencilType stencil( space_, space_ );
-        linOperator_->reserve( stencil );
+        matrix_->reserve( stencil );
       }
 
-      //if( &rhs() == nullptr )
-      //  assembler_.assemble(0, *linOperator_ );
-      //else
-        assembler_.assemble(0, *linOperator_, rhs() );
-
+      assembler_.assemble( time_ );
       std::cout << "Solver (Poisson) assemble time: " << timer.elapsed() << std::endl;
 
-      assembler_.testSymmetrie(*linOperator_);
+      assembler_.testSymmetrie();
 
       double absLimit   = Dune::Fem:: Parameter::getValue<double>("istl.absLimit",1.e-10);
       double reduction  = Dune::Fem:: Parameter::getValue<double>("istl.reduction",1.e-6);
 
-      return std::make_shared< BasicLinearSolverType >(*linOperator_, reduction, absLimit );
+      return std::make_shared< BasicLinearSolverType >(*matrix_, reduction, absLimit );
     }
 
     //! default time loop implementation, overload for changes
@@ -614,20 +715,18 @@ namespace Fem
     virtual void doFinalize ( const int loop ) override
     {
       AnalyticalTraits::addEOCErrors( solution(), model(), problem().exactSolution(), poissonSigmaEstimator_->sigma() );
-
-      // delete solver and linear operator for next step
-      linOperator_.reset();
     }
 
 
   protected:
 
-    GridPartType                                 gridPart_;       // reference to grid part, i.e. the leaf grid
+    ContainerType&                               container_;
+    GridPartType&                                gridPart_;       // reference to grid part, i.e. the leaf grid
+    const DiscreteFunctionSpaceType&             space_;
 
     AssemblerType                                assembler_;
 
-    std::unique_ptr< OperatorType >              linOperator_;
-    DiscreteFunctionSpaceType&                   space_;
+    std::shared_ptr< OperatorType >              matrix_;
     PAdaptivityType                              pAdapt_;
     int                                          step_;
     double                                       time_;

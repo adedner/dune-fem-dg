@@ -5,6 +5,7 @@
 #include <dune/fem/misc/fmatrixconverter.hh>
 #include <dune/fem/io/parameter.hh>
 
+#include "problems/operatorsplitting.hh"
 #include <dune/fem-dg/models/defaultmodel.hh>
 
 namespace Dune

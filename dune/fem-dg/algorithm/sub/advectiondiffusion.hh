@@ -73,32 +73,20 @@ namespace Fem
     using BaseType::problem;
     using BaseType::name;
 
-    AdvectionDiffusionAlgorithm( GridType& grid,
+    typedef typename BaseType::ContainerType                  ContainerType;
+
+    AdvectionDiffusionAlgorithm( GridType& grid, ContainerType& container,
                                  ExtraParameterTupleType tuple = ExtraParameterTupleType() ) :
-      BaseType( grid ),
+      BaseType( grid, container ),
       //vSpace_( gridPart_ ),
       //velo_( "velocity", vSpace_ ),
       //tuple_( &velo_ ),
       tuple_( ),
-      operator_( nullptr ),
-      advectionOperator_( nullptr ),
-      diffusionOperator_( nullptr ),
-      adaptIndicator_( nullptr )
+      operator_( std::make_unique< OperatorType >( gridPart_, problem(), typename OperatorType::ExtraParameterTupleType(), name() ) ),
+      advectionOperator_( std::make_unique< ExplicitOperatorType >( gridPart_, problem(), typename ExplicitOperatorType::ExtraParameterTupleType(), name() ) ),
+      diffusionOperator_( std::make_unique< ImplicitOperatorType >( gridPart_, problem(), typename ImplicitOperatorType::ExtraParameterTupleType(), name() ) ),
+      adaptIndicator_( std::make_unique< AdaptIndicatorOptional<AdaptIndicatorType> >( solution(), problem(),  typename AdaptIndicatorType::ExtraParameterTupleType(), name() ) )
     {}
-
-    void init()
-    {
-      //init base type
-      BaseType::init();
-
-      //step II: init operators
-      operator_ = std::make_unique< OperatorType >( gridPart_, problem(), typename OperatorType::ExtraParameterTupleType(), name() );
-      advectionOperator_ = std::make_unique< ExplicitOperatorType >( gridPart_, problem(), typename ExplicitOperatorType::ExtraParameterTupleType(), name() );
-      diffusionOperator_ = std::make_unique< ImplicitOperatorType >( gridPart_, problem(), typename ImplicitOperatorType::ExtraParameterTupleType(), name() );
-
-      //step III: init other stuff
-      adaptIndicator_ = std::make_unique< AdaptIndicatorOptional<AdaptIndicatorType> >( solution(), problem(),  typename AdaptIndicatorType::ExtraParameterTupleType(), name() );
-    }
 
     virtual AdaptIndicatorType* adaptIndicator ()
     {

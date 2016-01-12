@@ -6,6 +6,9 @@
 #include <dune/fem/misc/fmatrixconverter.hh>
 #include <dune/fem/misc/compatibility.hh>
 
+#include <dune/fem-dg/algorithm/sub/steadystate.hh>
+#include <dune/fem-dg/algorithm/sub/elliptic.hh>
+#include <dune/fem-dg/misc/uniquefunctionname.hh>
 #include <dune/fem-dg/operator/fluxes/diffusion/dgprimalfluxes.hh>
 #include <dune/fem-dg/operator/dg/primaloperator.hh>
 #include "assemblertraits.hh"
@@ -14,7 +17,6 @@ namespace Dune
 {
 namespace Fem
 {
-
 
   /*************************
    * Assemble system matrix using DGPrimalDiffusionFlux implementation
@@ -30,9 +32,11 @@ namespace Fem
     typedef typename Traits::DomainDiscreteFunctionType           DomainDiscreteFunctionType;
     typedef typename Traits::RangeDiscreteFunctionType            RangeDiscreteFunctionType;
     typedef typename Traits::MatrixContainerType                  MatrixType;
+    typedef typename Traits::DomainDiscreteFunctionType           DestinationType;
+
+    typedef Dune::Fem::SubEllipticContainer< DestinationType,MatrixType >    ContainerType;
 
     typedef typename Traits::ModelType                            ModelType;
-    typedef typename Traits::DomainDiscreteFunctionType           DestinationType;
     static const bool hasDiffusion = ModelType::hasDiffusion;
 
     typedef typename DestinationType::DiscreteFunctionSpaceType   DiscreteFunctionSpaceType;
@@ -161,17 +165,19 @@ namespace Fem
     };
 
 
-
     //! constructor for DG matrix assembly
-    DGPrimalMatrixAssembly( GridPartType& gridPart,
+    DGPrimalMatrixAssembly( ContainerType& container,
                             const ModelType& model,
                             const bool calculateFluxes = true,
                             const bool strongBC = false )
-      : model_(model),
-        space_(gridPart),
+      : container_( container ),
+        model_( model ),
+        space_( container_.space() ),
+        rhs_( container_.rhs() ),
+        matrix_( container_.matrix() ),
         zero_(),
-        advFlux_(model_),
-        diffusionFlux_(gridPart, model_, typename Traits::DiffusionFluxType::ParameterType( ParameterKey::generate( "", "dgdiffusionflux." ) ) ),
+        advFlux_( model_ ),
+        diffusionFlux_( space_.gridPart(), model_, typename Traits::DiffusionFluxType::ParameterType( ParameterKey::generate( "", "dgdiffusionflux." ) ) ),
         calculateFluxes_( calculateFluxes ),
         useStrongBoundaryCondition_( strongBC )
     {
@@ -196,25 +202,7 @@ namespace Fem
      * Assemble Matrix for Elliptic Problem using the DGPrimalDIffusionFlux
      * implementation.
      */
-    void assemble( const double time,
-                   MatrixType& matrix, DestinationType& rhs ) const
-    {
-      doAssemble( time, matrix, &rhs );
-    }
-
-    void assemble( const double time,
-                   MatrixType& matrix ) const
-    {
-      doAssemble( time, matrix, (DestinationType * ) 0 );
-    }
-
-
-    /*
-     * Assemble Matrix for Elliptic Problem using the DGPrimalDIffusionFlux
-     * implementation.
-     */
-    void doAssemble( const double time,
-                     MatrixType& matrix, DestinationType* rhs ) const
+    void assemble( const double time ) const
     {
       Dune::Timer timer ;
 
@@ -223,10 +211,10 @@ namespace Fem
       typedef ElementQuadraturePointContext< EntityType, VolumeQuadratureType, RangeTuple, JacobianTuple >      LocalEvaluationType;
 
       typedef typename MatrixType::LocalMatrixType LocalMatrixType;
-      matrix.clear();
-      if( rhs )
+      matrix_->clear();
+      if( rhs_ )
       {
-        rhs->clear();
+        rhs_->clear();
       }
 
       const size_t maxNumBasisFunctions = maxNumScalarBasisFunctions( space_ );
@@ -248,9 +236,9 @@ namespace Fem
         const GeometryType &geometry = entity.geometry();
         const double volume = geometry.volume();
 
-        LocalMatrixType localOpEn = matrix.localMatrix( entity, entity );
+        LocalMatrixType localOpEn = matrix_->localMatrix( entity, entity );
 
-        if( rhs )
+        if( rhs_ )
         {
           rhsLocal.init( entity );
           rhsLocal.clear();
@@ -325,7 +313,7 @@ namespace Fem
             localOpEn.column( localCol ).axpy( phi, dphi, aphi, adphi, weight );
           }
 
-          if( rhs )
+          if( rhs_ )
           {
             // assemble rhs
             arhs     *=  weight;
@@ -345,11 +333,11 @@ namespace Fem
             if ( space_.continuous(intersection) ) continue;
             if( intersection.conforming() )
             {
-              assembleIntersection< true > ( time, entity, geometry, intersection, space_, baseSet, matrix, localOpEn, rhsLocal, rhs != 0 );
+              assembleIntersection< true > ( time, entity, geometry, intersection, space_, baseSet, localOpEn, rhsLocal, rhs_ != 0 );
             }
             else
             {
-              assembleIntersection< false > ( time, entity, geometry, intersection, space_, baseSet, matrix, localOpEn, rhsLocal, rhs != 0 );
+              assembleIntersection< false > ( time, entity, geometry, intersection, space_, baseSet, localOpEn, rhsLocal, rhs_ != 0 );
             }
           }
           else if ( intersection.boundary() && ! useStrongBoundaryCondition_ )
@@ -404,7 +392,7 @@ namespace Fem
               drhsFlux *= -weight;
             }
 
-            if( rhs )
+            if( rhs_ )
             {
               rhsLocal.axpyQuadrature( faceQuadInside, valueNb, dvalueNb );
             }
@@ -412,15 +400,15 @@ namespace Fem
         }
 
         // accumulate right hand side
-        if( rhs )
+        if( rhs_ )
         {
-          rhs->localFunction( entity ) += rhsLocal ;
+          rhs_->localFunction( entity ) += rhsLocal ;
         }
 
       } // end grid iteration
 
       // finish matrix build process
-      matrix.communicate();
+      matrix_->communicate();
 
      // matrix.systemMatrix().matrix().print();
      // //rhs->print( std::cout );
@@ -472,10 +460,9 @@ namespace Fem
       }
     }
     // assemble vector containing boundary fluxes for right hand side
-    void assemble( const double time,
-                   DestinationType& rhs ) const
+    void assembleRhs( const double time ) const
     {
-      rhs.clear();
+      rhs_->clear();
 
       const size_t maxNumBasisFunctions = maxNumScalarBasisFunctions( space_ );
 
@@ -494,7 +481,7 @@ namespace Fem
         const GeometryType &geometry = entity.geometry();
         const double volume = geometry.volume();
 
-        LocalFunctionType rhsLocal = rhs.localFunction( entity );
+        LocalFunctionType rhsLocal = rhs_->localFunction( entity );
 
         const BasisFunctionSetType &baseSet = rhsLocal.baseFunctionSet();
         const unsigned int numBasisFunctionsEn = baseSet.size();
@@ -558,7 +545,6 @@ namespace Fem
                                const IntersectionType& intersection,
                                const DiscreteFunctionSpaceType& dfSpace,
                                const BasisFunctionSetType& baseSet,
-                               MatrixType& matrix,
                                typename MatrixType::LocalMatrixType& localOpEn,
                                LocalFunction& rhsLocal,
                                const bool assembleRHS ) const
@@ -574,7 +560,7 @@ namespace Fem
       const int neighborOrder = dfSpace.order( neighbor );
 
       // get local matrix for face entries
-      LocalMatrixType localOpNb = matrix.localMatrix( entity, neighbor );
+      LocalMatrixType localOpNb = matrix_->localMatrix( entity, neighbor );
       const BasisFunctionSetType &baseSetNb = localOpNb.rangeBasisFunctionSet();
 
       // get neighbor's base function set
@@ -660,8 +646,8 @@ namespace Fem
       // assemble part from neighboring row
       if( oneSidedEvaluation )
       {
-        LocalMatrixType localOpNbNb = matrix.localMatrix( neighbor, neighbor );
-        LocalMatrixType localOpNbEn = matrix.localMatrix( neighbor, entity );
+        LocalMatrixType localOpNbNb = matrix_->localMatrix( neighbor, neighbor );
+        LocalMatrixType localOpNbEn = matrix_->localMatrix( neighbor, entity );
         for( unsigned int localCol = 0; localCol < numBasisFunctionsEn; ++localCol )
         {
           // compute flux for one base function, i.e.,
@@ -701,7 +687,7 @@ namespace Fem
       }
     }
 
-    void testSymmetrie(const MatrixType &matrix) const
+    void testSymmetrie() const
     {
       // NOTE: this is bad coding style
       // not check at the moment
@@ -715,7 +701,7 @@ namespace Fem
   //    for( IteratorType it = space().begin(); it != end; ++it )
   //    {
   //      const EntityType& entity = *it;
-  //      LocalMatrixType localOpEn = matrix.localMatrix( entity, entity  );
+  //      LocalMatrixType localOpEn = matrix_->localMatrix( entity, entity  );
   //      const BasisFunctionSetType &baseSet = localOpEn.domainBasisFunctionSet();
   //      const unsigned int numBasisFunctions = baseSet.size();
   //
@@ -740,8 +726,8 @@ namespace Fem
   //        EntityPointerType ep = intersection.outside();
   //        const EntityType& neighbor = *ep ;
   //
-  //        LocalMatrixType localOpNb1 = matrix.localMatrix( entity, neighbor );
-  //        LocalMatrixType localOpNb2 = matrix.localMatrix( neighbor, entity );
+  //        LocalMatrixType localOpNb1 = matrix_->localMatrix( entity, neighbor );
+  //        LocalMatrixType localOpNb2 = matrix_->localMatrix( neighbor, entity );
   //        for( unsigned int r = 0; r < numBasisFunctions; ++r )
   //        {
   //          for( unsigned int c = 0; c < numBasisFunctions; ++c )
@@ -975,30 +961,33 @@ namespace Fem
       bndValues.resize( numFaceQuadPoints );
     }
 
-    const ModelType &model_;
-    DiscreteFunctionSpaceType space_;
-    ZeroFunction zero_;
+    ContainerType&                     container_;
+    const ModelType&                   model_;
+    const DiscreteFunctionSpaceType&   space_;
+    std::shared_ptr< DestinationType > rhs_;
+    std::shared_ptr< MatrixType >      matrix_;
+    ZeroFunction                       zero_;
 
-    AdvectionFluxType advFlux_;
-    mutable DiffusionFluxType diffusionFlux_;
-    const bool calculateFluxes_ ;
-    const bool useStrongBoundaryCondition_ ;
+    AdvectionFluxType                  advFlux_;
+    mutable DiffusionFluxType          diffusionFlux_;
+    const bool                         calculateFluxes_;
+    const bool                         useStrongBoundaryCondition_ ;
 
     // storage for all flux values
-    mutable std::vector< RangeType > valueEn;
+    mutable std::vector< RangeType >         valueEn;
     mutable std::vector< JacobianRangeType > dvalueEn;
-    mutable std::vector< RangeType > valueNb;
+    mutable std::vector< RangeType >         valueNb;
     mutable std::vector< JacobianRangeType > dvalueNb;
-    mutable std::vector< RangeType > rhsValueEn;
+    mutable std::vector< RangeType >         rhsValueEn;
     mutable std::vector< JacobianRangeType > rhsDValueEn;
-    mutable std::vector< RangeType > rhsValueNb;
+    mutable std::vector< RangeType >         rhsValueNb;
     mutable std::vector< JacobianRangeType > rhsDValueNb;
-    mutable std::vector< RangeType > bndValues;
+    mutable std::vector< RangeType >         bndValues;
 
     // store all basis functions
-    mutable std::vector< std::vector< RangeType > > phiFaceEn;
+    mutable std::vector< std::vector< RangeType > >         phiFaceEn;
     mutable std::vector< std::vector< JacobianRangeType > > dphiFaceEn;
-    mutable std::vector< std::vector< RangeType > > phiFaceNb;
+    mutable std::vector< std::vector< RangeType > >         phiFaceNb;
     mutable std::vector< std::vector< JacobianRangeType > > dphiFaceNb;
   };
 

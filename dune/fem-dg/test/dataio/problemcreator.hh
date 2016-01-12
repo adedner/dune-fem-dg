@@ -14,13 +14,10 @@
 #include <dune/common/std/utility.hh>
 
 //--------- HANDLER --------------------------------
-#include <dune/fem-dg/algorithm/handler/diagnostics.hh>
-#include <dune/fem-dg/algorithm/handler/solvermonitor.hh>
-#include <dune/fem-dg/algorithm/handler/checkpoint.hh>
-#include <dune/fem-dg/algorithm/handler/datawriter.hh>
-#include <dune/fem-dg/algorithm/handler/additionaloutput.hh>
-#include <dune/fem-dg/algorithm/handler/solutionlimiter.hh>
-#include <dune/fem-dg/algorithm/handler/adapt.hh>
+#include <dune/fem-dg/algorithm/handler/sub/diagnostics.hh>
+#include <dune/fem-dg/algorithm/handler/sub/solvermonitor.hh>
+#include <dune/fem-dg/algorithm/handler/sub/additionaloutput.hh>
+#include <dune/fem-dg/algorithm/handler/sub/adapt.hh>
 #include <dune/fem-dg/algorithm/monitor.hh>
 
 //--------- GRID HELPER ---------------------
@@ -33,6 +30,7 @@
 //--------- STEPPER -------------------------
 #include <dune/fem-dg/test/dataio/checkpointing.hh>
 #include <dune/fem-dg/algorithm/evolution.hh>
+#include <dune/fem-dg/algorithm/steadystate.hh>
 //--------- EOCERROR ------------------------
 #include <dune/fem-dg/misc/error/l2eocerror.hh>
 //--------- PROBLEMS ------------------------
@@ -161,7 +159,7 @@ namespace Fem
     template <int polOrd>
     struct Stepper
     {
-      typedef Dune::Fem::EvolutionAlgorithmBase< CheckPointEvolutionAlgorithmTraits< polOrd, SubCheckPointingProblemCreator > > Type;
+      typedef Dune::Fem::EvolutionAlgorithmBase< CheckPointEvolutionAlgorithmTraits< polOrd, SubCheckPointingProblemCreator >, DefaultSteadyStateCreator  > Type;
     };
 
     typedef GridImp                                         GridType;

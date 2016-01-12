@@ -116,8 +116,9 @@ namespace Fem
     typedef typename BaseType::CheckPointDiscreteFunctionType CheckPointDiscreteFunctionType;
     typedef typename BaseType::AdaptationDiscreteFunctionType AdaptationDiscreteFunctionType;
 
+    typedef SubSteadyStateContainer< DiscreteFunctionType >   ContainerType;
 
-    typedef typename ProblemTraits::AnalyticalTraits               AnalyticalTraits;
+    typedef typename ProblemTraits::AnalyticalTraits          AnalyticalTraits;
 
     using BaseType::grid;
     using BaseType::name;

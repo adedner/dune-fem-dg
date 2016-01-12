@@ -150,7 +150,7 @@ namespace Fem
     template <int polOrd>
     struct Stepper
     {
-      typedef Fem::EvolutionAlgorithm< polOrd, SubNavierStokesProblemCreator > Type;
+      typedef Fem::EvolutionAlgorithm< polOrd, DefaultEvolutionCreator, SubNavierStokesProblemCreator > Type;
     };
 
     typedef GridImp                                         GridType;

@@ -12,6 +12,7 @@
 #include <dune/fem-dg/models/defaultmodel.hh>
 #include <dune/fem-dg/pass/dgpass.hh>
 
+#include "problems/operatorsplitting.hh"
 
 /**********************************************
  * Analytical model                           *

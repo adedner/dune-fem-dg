@@ -38,7 +38,7 @@ namespace Fem
   };
 
   //TODO more general structure for use with multitypeblockmatrix
-  template< class DiscreteFunctionTupleImp, template<class,class > class MatrixImp >
+  template< class DiscreteFunctionTupleImp, template<class,class > class MatrixContainerImp >
   struct AssemblerTraitsList
   {
     static const int size = std::tuple_size< DiscreteFunctionTupleImp >::value;
@@ -50,8 +50,11 @@ namespace Fem
     using RangeDiscreteFunction = typename std::tuple_element< i, DiscreteFunctionTupleImp >::type;
 
     template< std::size_t i, std::size_t j >
-    using Matrix = MatrixImp< typename DomainDiscreteFunction<i,j>::DiscreteFunctionSpaceType,
-                              typename RangeDiscreteFunction<i,j>::DiscreteFunctionSpaceType >;
+    using Matrix = MatrixContainerImp< typename DomainDiscreteFunction<i,j>::DiscreteFunctionSpaceType,
+                                       typename RangeDiscreteFunction<i,j>::DiscreteFunctionSpaceType >;
+
+    template< class DomainDF, class RangeDF >
+    using MatrixContainer = MatrixContainerImp< typename DomainDF::DiscreteFunctionSpaceType, typename RangeDF::DiscreteFunctionSpaceType >;
 
     ////todo improve
     //template< std::size_t i, std::size_t j >

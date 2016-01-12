@@ -20,70 +20,50 @@ namespace Fem
   /** \brief Inversion operator using CG algorithm
    */
 
-
-  template <class DiscreteFunctionType,class PressureDiscreteFunctionType,class AssemblerType,class InverseOperatorType>
-  class UzawaSolver : public Dune::Operator<
-    typename PressureDiscreteFunctionType::DomainFieldType,
-    typename PressureDiscreteFunctionType::RangeFieldType,
-    PressureDiscreteFunctionType,PressureDiscreteFunctionType>
+  template < class AssemblerType, class InverseOperatorType>
+  class UzawaSolver : public Dune::Operator< typename AssemblerType::ContainerType::template DiscreteFunction<1>::DomainFieldType,
+                                             typename AssemblerType::ContainerType::template DiscreteFunction<1>::RangeFieldType,
+                                             typename AssemblerType::ContainerType::template DiscreteFunction<1>,
+                                             typename AssemblerType::ContainerType::template DiscreteFunction<1> >
   {
 
+
+    typedef typename AssemblerType::ContainerType                            ContainerType;
+
+    typedef typename ContainerType::template DiscreteFunction<0>             DiscreteFunctionType;
+    typedef typename ContainerType::template DiscreteFunction<1>             PressureDiscreteFunctionType;
+
+    typedef typename DiscreteFunctionType::DiscreteFunctionSpaceType         VeloSpaceType;
     typedef typename PressureDiscreteFunctionType::DiscreteFunctionSpaceType PressureSpaceType;
-    typedef typename DiscreteFunctionType::DiscreteFunctionSpaceType VeloSpaceType;
 
-    typedef AssemblerType MappingType;
+    // for non istl version
+    typedef typename ContainerType::template Matrix<0,1>                     BOPType;
+    typedef typename ContainerType::template Matrix<1,0>                     BTOPType;
+    typedef typename ContainerType::template Matrix<1,1>                     COPType;
 
-    /**************** for non istl version*/
-    typedef typename MappingType::PressureGradMatType BOPType;
-    typedef typename MappingType::PressureDivMatType BTOPType;
-    typedef typename MappingType::PressureStabMatType COPType;
-    /*****************************************/
-
-    // typedef typename OperatorType::BOPType BOPType;
-    //     typedef typename OperatorType::BTOPType BTOPType;
-    //     typedef typename OperatorType::COPType COPType;
   public:
     /** \todo Please doc me! */
     //!Constructor:
     //!aufSolver is the InverseOperator for Solving the elliptic Problem A^-1
-    //!rhs1 is  stored as member,no better idea
-    UzawaSolver(const MappingType& op,
-                const InverseOperatorType& aufSolver,
-                double absLimit,
-                int maxIter,
-                int verbose=1
+    UzawaSolver( ContainerType& container,
+                 const InverseOperatorType& aufSolver,
+                 double absLimit,
+                 int maxIter,
+                 int verbose=1
                )
-      : op_(op), outer_absLimit_ ( absLimit ) ,
-        maxIter_ (maxIter ) , verbose_( verbose ),aufSolver_(aufSolver), bop_(op_.getBOP()),
-        btop_(op_.getBTOP()),
-        cop_(op_.getCOP()),
-        rhs1_(aufSolver_.affineShift()),
-        rhs2_(*op_.pressureRhs()),
-        pressurespc_(op_.pressurespc()),
-        spc_(op.spc()),
-        velocity_("VELO",spc_),
-        iter_(0),
-        linIter_(0)
-    {
-    }
-
-
-    UzawaSolver(const MappingType& op,
-                const InverseOperatorType& aufSolver,
-                const DiscreteFunctionType& rhs,
-                double absLimit,
-                int maxIter,
-                int verbose=1
-                )
-      : op_(op), outer_absLimit_ ( absLimit ) ,
-        maxIter_ (maxIter ) , verbose_( verbose ),aufSolver_(aufSolver), bop_(op_.getBOP()),
-        btop_(op_.getBTOP()),
-        cop_(op_.getCOP()),
-        rhs1_(rhs),
-        rhs2_(*op_.pressureRhs()),
-        pressurespc_(op_.pressurespc()),
-        spc_(op.spc()),
-        velocity_("VELO",spc_),
+      : container_( container ),
+        aufSolver_( aufSolver ),
+        bop_( container_.template matrix<0,1>() ),
+        btop_( container_.template matrix<1,0>() ),
+        cop_( container_.template matrix<1,1>() ),
+        rhs1_( container_.template rhs<0>() ),
+        rhs2_( container_.template rhs<1>() ),
+        spc_( container_.template space<0>() ),
+        pressurespc_( container_.template space<1>() ),
+        velocity_( container_.template solution<0>() ),
+        outer_absLimit_( absLimit ) ,
+        maxIter_( maxIter ),
+        verbose_( verbose ),
         iter_(0),
         linIter_(0)
     {
@@ -106,14 +86,11 @@ namespace Fem
       typedef typename FunctionSpaceType::RangeFieldType Field;
        Field gamma=0, delta, rho;
 
-      //std::cout << "arg------------------" << std::endl;
-      //arg.print( std::cout );
-
       DiscreteFunctionType f("f",spc_);
       // f := rhs1
-      f.assign(rhs1_);
-      DiscreteFunctionType velocity("velocity",spc_);
-      velocity.clear();
+      f.assign(*rhs1_);
+      //DiscreteFunctionType velocity("velocity",spc_);
+      velocity_->clear();
       DiscreteFunctionType tmp1("tmp1",spc_);
 
       tmp1.clear();
@@ -135,18 +112,18 @@ namespace Fem
       // residuum = arg
       residuum.assign(arg);
       // B * pressure = tmp1
-      bop_.apply(pressure,tmp1);
+      bop_->apply(pressure,tmp1);
       // f -= tmp1
       f-=tmp1;
 
       timer2.stop();
       timer.start();
       // A^-1 * f = velocity
-      aufSolver_(f,velocity);
+      aufSolver_(f,*velocity_);
       timer.stop();
       timer2.start();
       // B^T * velocity = tmp2
-      btop_.apply(velocity,tmp2);
+      btop_->apply(*velocity_,tmp2);
       //=> tmp2 = B^T * A^-1 * ( F - B * d )
 
       // residuum -= tmp2
@@ -155,7 +132,7 @@ namespace Fem
       tmp2.clear();
 
       // C * pressure = tmp2
-      cop_.apply(pressure, tmp2);
+      cop_->apply(pressure, tmp2);
       // residuum += tmp2
       residuum += tmp2;
 
@@ -171,7 +148,7 @@ namespace Fem
       {
         tmp1.clear();
         // B * d = tmp1
-        bop_.apply(d,tmp1);
+        bop_->apply(d,tmp1);
 
         timer2.stop();
         timer.start();
@@ -180,10 +157,10 @@ namespace Fem
         timer.stop();
         timer2.start();
         // B^T * xi = h
-        btop_.apply(xi,h);
+        btop_->apply(xi,h);
         // => h = B^T * A^-1 * B * d
         tmp2.clear();
-        cop_.apply( d, tmp2 );
+        cop_->apply( d, tmp2 );
         h += tmp2;
 
         // rho = delta / d.scalarProductDofs( h );
@@ -191,7 +168,7 @@ namespace Fem
         // pressure -= rho * d
         pressure.axpy( -rho, d );
         // velocity += rho * xi
-        velocity.axpy(rho,xi);
+        velocity_->axpy(rho,xi);
         // residuum -= rho * h
         residuum.axpy( -rho,h );
 
@@ -212,11 +189,7 @@ namespace Fem
       std::cout << "solving time (Poisson solves/total time SPcg): " << timer.elapsed() << " / " << timer2.elapsed() << std::endl;
       if( verbose_ > 0)
         std::cout << std::endl;
-      velocity_.assign(velocity);
-    }
-
-    DiscreteFunctionType& velocity()     {
-      return velocity_;
+      //velocity_.assign(velocity);
     }
 
     int iterations() const {return iter_;}
@@ -224,7 +197,21 @@ namespace Fem
 
   private:
     // reference to operator which should be inverted
-    const AssemblerType & op_;
+    ContainerType&                                  container_;
+
+    //the CGSolver for A^-1
+    const InverseOperatorType&                      aufSolver_;
+
+    std::shared_ptr< BOPType >                      bop_;
+    std::shared_ptr< BTOPType >                     btop_;
+    std::shared_ptr< COPType >                      cop_;
+
+    std::shared_ptr< DiscreteFunctionType >         rhs1_;
+    std::shared_ptr< PressureDiscreteFunctionType > rhs2_;
+
+    const VeloSpaceType&                            spc_;
+    const PressureSpaceType&                        pressurespc_;
+    std::shared_ptr< DiscreteFunctionType >         velocity_;
 
     // minial error to reach
     typename DiscreteFunctionType::RangeFieldType outer_absLimit_;
@@ -235,18 +222,6 @@ namespace Fem
     // level of output
     int verbose_;
 
-    //the CGSolver for A^-1
-    const InverseOperatorType& aufSolver_;
-
-    const BOPType& bop_;
-    const BTOPType& btop_;
-    const COPType& cop_;
-
-    const DiscreteFunctionType& rhs1_;
-    const PressureDiscreteFunctionType& rhs2_;
-    const PressureSpaceType& pressurespc_;
-    const VeloSpaceType& spc_;
-    mutable DiscreteFunctionType velocity_;
     mutable int iter_;
     mutable int linIter_;
   };

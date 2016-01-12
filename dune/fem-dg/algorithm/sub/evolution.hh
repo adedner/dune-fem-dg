@@ -49,6 +49,89 @@ namespace Fem
 
   };
 
+  template <class DiscreteFunctionImp >
+  struct SubEvolutionContainer
+  {
+    typedef DiscreteFunctionImp                                          DiscreteFunctionType;
+
+    typedef typename DiscreteFunctionType::DiscreteFunctionSpaceType     DiscreteFunctionSpaceType;
+
+    typedef typename DiscreteFunctionSpaceType::GridType                 GridType;
+    typedef typename DiscreteFunctionSpaceType::GridPartType             GridPartType;
+
+    using DiscreteFunction = DiscreteFunctionType;
+    using DiscreteFunctionSpace = DiscreteFunctionSpaceType;
+
+  public:
+
+    SubEvolutionContainer( GridType& grid, const std::string name = "" )
+    : grid_( grid ),
+      gridPart_( grid_ ),
+      space_( gridPart_ ),
+      solution_( new DiscreteFunctionType( name + "u", space() ) ),
+      exactSolution_( new DiscreteFunctionType( name + "u-exact", space() ) )
+    {}
+
+    //grid
+    const GridType& grid() const
+    {
+      return grid_;
+    }
+    GridType& grid()
+    {
+      return grid_;
+    }
+
+    //grid part
+    const GridPartType& gridPart() const
+    {
+      return gridPart_;
+    }
+    GridPartType& gridPart()
+    {
+      return gridPart_;
+    }
+
+    //spaces
+    const DiscreteFunctionSpaceType& space() const
+    {
+      return space_;
+    }
+    DiscreteFunctionSpaceType& space()
+    {
+      return space_;
+    }
+
+    //solution
+    std::shared_ptr< DiscreteFunction > solution() const
+    {
+      return solution_;
+    }
+    void setSolution( std::shared_ptr< DiscreteFunction > solution )
+    {
+      solution_ = solution;
+    }
+
+    //exact solution
+    std::shared_ptr< DiscreteFunction > exactSolution() const
+    {
+      return solution_;
+    }
+    void setExactSolution( std::shared_ptr< DiscreteFunction > exactSolution )
+    {
+      exactSolution_ = exactSolution;
+    }
+
+  private:
+    GridType&                 grid_;
+    GridPartType              gridPart_;
+    DiscreteFunctionSpace     space_;
+
+    std::shared_ptr< DiscreteFunction > solution_;
+    std::shared_ptr< DiscreteFunction > exactSolution_;
+    std::shared_ptr< DiscreteFunction > rhs_;
+  };
+
 
 
   template< class SubEvolutionAlgorithmTraits >
@@ -58,11 +141,12 @@ namespace Fem
   class SubEvolutionAlgorithm
     : public SubEvolutionAlgorithmBase< SubEvolutionAlgorithmTraits< Grid, ProblemTraits, polOrder > >
   {
-    typedef SubEvolutionAlgorithmTraits< Grid, ProblemTraits, polOrder >                    Traits;
-    typedef SubEvolutionAlgorithmBase< Traits >                                             BaseType;
+    typedef SubEvolutionAlgorithmTraits< Grid, ProblemTraits, polOrder > Traits;
+    typedef SubEvolutionAlgorithmBase< Traits >                          BaseType;
   public:
-    SubEvolutionAlgorithm( Grid &grid )
-    : BaseType( grid )
+    typedef typename BaseType::ContainerType                             ContainerType;
+    SubEvolutionAlgorithm( Grid &grid, ContainerType& container )
+    : BaseType( grid, container )
     {}
   };
 
@@ -121,38 +205,30 @@ namespace Fem
     // type of discrete traits
     typedef typename Traits::DiscreteTraits                          DiscreteTraits;
 
-
     using BaseType::grid;
     using BaseType::name;
     using BaseType::problem;
     using BaseType::model;
     using BaseType::gridSize;
 
-    SubEvolutionAlgorithmBase ( GridType &grid )
+    typedef SubEvolutionContainer< DiscreteFunctionType >               ContainerType;
+
+    SubEvolutionAlgorithmBase ( GridType &grid, const ContainerType& container )
     : BaseType( grid ),
+      container_( container ),
       overallTime_( 0 ),
       overallTimer_(),
       gridPart_( grid ),
       space_( gridPart_ ),
-      solution_( nullptr ),
-      exactSolution_( nullptr ),
+      solution_( container_.solution() ),
+      exactSolution_( container_.exactSolution() ),
       solver_( nullptr ),
-      ioTuple_( nullptr ),
+      ioTuple_( new IOTupleType( std::make_tuple( solution_.get(), exactSolution_.get() ) ) ),
       diagnosticsHandler_( name() ),
       solverMonitorHandler_( name() ),
       additionalOutputHandler_( nullptr ),
       odeSolverMonitor_()
     {}
-
-    void init()
-    {
-      //step I: init discrete functions
-      solution_ = doCreateSolution();
-      exactSolution_ = doCreateExactSolution();
-
-      //step III: init handler and other stuff
-      ioTuple_.reset( new IOTupleType( std::make_tuple( &solution(), &exactSolution() ) ) );
-    }
 
     typename SolverType::type* solver()
     {
@@ -198,16 +274,6 @@ namespace Fem
     virtual IOTupleType& dataTuple () { assert( ioTuple_ ); return *ioTuple_; }
 
   private:
-    virtual std::shared_ptr< DiscreteFunctionType > doCreateSolution()
-    {
-      return std::make_shared< DiscreteFunctionType >( "U_"+name(), space_ );
-    }
-
-    virtual std::shared_ptr< DiscreteFunctionType > doCreateExactSolution()
-    {
-      return std::make_shared< DiscreteFunctionType >( "U_exact" + name(), space_ );
-    }
-
     virtual std::shared_ptr< typename SolverType::type > doCreateSolver( TimeProviderType& tp )
     {
       return nullptr;
@@ -283,6 +349,7 @@ namespace Fem
     }
 
   protected:
+    const ContainerType&                    container_;
     double                                  overallTime_;
     Dune::Timer                             overallTimer_;
     GridPartType                            gridPart_;

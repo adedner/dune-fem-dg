@@ -211,8 +211,8 @@ namespace Fem
 
         struct Solver
         {
-          typedef UzawaSolver< VelDiscreteFunctionType, DiscreteFunctionType, typename Operator::AssemblerType,
-                               typename PoissonDiscreteTraits::Solver::type >        type;
+          typedef UzawaSolver< typename Operator::AssemblerType, typename PoissonDiscreteTraits::Solver::type >
+                                                                                     type;
         };
 
         static_assert( (int)DFSpaceType::FunctionSpaceType::dimRange == 1 , "pressure dimrange does not fit");
@@ -232,7 +232,7 @@ namespace Fem
     template <int polOrd>
     struct Stepper
     {
-      typedef Fem::SteadyStateAlgorithm< polOrd, SubStokesProblemCreator > Type;
+      typedef Fem::SteadyStateAlgorithm< polOrd, DefaultSteadyStateCreator, SubStokesProblemCreator > Type;
     };
 
     typedef GridImp                                         GridType;

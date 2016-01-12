@@ -34,7 +34,7 @@ namespace Fem
   // internal forward declarations
   // -----------------------------
 
-  template< class Traits >
+  template< class Traits, template<class, class > class EvolutionCreatorType >
   class EvolutionAlgorithmBase;
 
 
@@ -125,16 +125,45 @@ namespace Fem
 
   };
 
+  template< class StepperTupleType, class GridType >
+  struct DefaultEvolutionCreator
+  {
+
+    template< int i >
+    using Element = typename std::remove_pointer< typename std::tuple_element< i, StepperTupleType >::type >::type;
+
+
+    template< std::size_t i >
+    static Element<i>* createSingleStepper( GridType& grid )
+    {
+      static typename Element<i>::ContainerType container( grid );
+      static auto element = new Element<i>( grid, container );
+      return element;
+    }
+
+    template< std::size_t ...i >
+    static StepperTupleType apply ( Std::index_sequence< i... >, GridType &grid )
+    {
+      static auto tuple = std::make_tuple( createSingleStepper<i>( grid )... );
+      return tuple;
+    }
+
+    // create Tuple of contained sub algorithms
+    static StepperTupleType apply ( GridType &grid )
+    {
+      return apply( typename Std::make_index_sequence_impl< std::tuple_size< StepperTupleType >::value >::type(), grid );
+    }
+  };
 
   // EvolutionAlgorithm
   // ------------------
 
-  template< int polOrder, class ... ProblemTraits >
+  template< int polOrder, template<class, class > class EvolutionCreatorType, class ... ProblemTraits >
   class EvolutionAlgorithm
-  : public EvolutionAlgorithmBase< EvolutionAlgorithmTraits< polOrder, ProblemTraits ... > >
+  : public EvolutionAlgorithmBase< EvolutionAlgorithmTraits< polOrder, ProblemTraits ... >, EvolutionCreatorType >
   {
     typedef EvolutionAlgorithmTraits< polOrder, ProblemTraits... > Traits;
-    typedef EvolutionAlgorithmBase< Traits > BaseType;
+    typedef EvolutionAlgorithmBase< Traits, EvolutionCreatorType > BaseType;
   public:
     typedef typename BaseType::GridType GridType;
 
@@ -143,12 +172,10 @@ namespace Fem
     {}
   };
 
-
-
   // EvolutionAlgorithmBase
   // ----------------------
 
-  template< class Traits >
+  template< class Traits, template<class, class > class EvolutionCreatorType >
   class EvolutionAlgorithmBase
     : public AlgorithmInterface< Traits >
   {
@@ -227,10 +254,6 @@ namespace Fem
       template<class T, class... Args > static void apply( T e, bool& res, Args&& ... a )
       { res &= e->checkSolutionValid( std::forward<Args>(a)... ); }
     };
-    struct Init {
-      template<class T, class... Args > static void apply( T e, Args&& ... a )
-      { e->init(); }
-    };
     template< class Caller >
     class LoopCallee
     {
@@ -249,11 +272,21 @@ namespace Fem
     template< class Caller >
     using ForLoopType = ForLoop< LoopCallee<Caller>::template Apply, 0,  numSteppers-1 >;
 
+    template< int I >
+    using Element = typename std::remove_pointer< typename std::tuple_element< I, StepperTupleType >::type >::type;
+
+    template< std::size_t i >
+    static Element<i>* createSingleStepper( GridType& grid )
+    {
+      static typename Element<i>::ContainerType container( grid );
+      static auto element = new Element<i>( grid, container );
+      return element;
+    }
+
     template< std::size_t ...i >
     static StepperTupleType createStepper ( Std::index_sequence< i... >, GridType &grid )
     {
-      static auto tuple = std::make_tuple( new typename std::remove_pointer< typename std::tuple_element< i, StepperTupleType >::type >::type( grid ) ... );
-      ForLoopType< Init >::apply( tuple );
+      static auto tuple = std::make_tuple( createSingleStepper<i>( grid )... );
       return tuple;
     }
 
@@ -267,17 +300,17 @@ namespace Fem
 
     EvolutionAlgorithmBase ( GridType &grid, const std::string name = "" )
     : BaseType( grid, name  ),
-      param_( StepperParametersType( ParameterKey::generate( "", "femdg.stepper." ) ) ),
-      overallTimer_(),
-      timeStepTimer_( Dune::FemTimer::addTo("sum time for timestep") ),
-      fixedTimeStep_( param_.fixedTimeStep() ),
-      tuple_( createStepper( grid ) ),
+      tuple_( EvolutionCreatorType< StepperTupleType, GridType >::apply( grid ) ),
       checkPointHandler_( tuple_ ),
       dataWriterHandler_( tuple_ ),
       diagnosticsHandler_( tuple_ ),
       solverMonitorHandler_( tuple_ ),
       solutionLimiterHandler_( tuple_ ),
-      adaptHandler_( tuple_ )
+      adaptHandler_( tuple_ ),
+      param_( StepperParametersType( ParameterKey::generate( "", "femdg.stepper." ) ) ),
+      overallTimer_(),
+      timeStepTimer_( Dune::FemTimer::addTo("sum time for timestep") ),
+      fixedTimeStep_( param_.fixedTimeStep() )
     {}
 
     // return grid width of grid (overload in derived classes)
@@ -538,11 +571,6 @@ namespace Fem
     const StepperTupleType &stepperTuple () const { return tuple_; }
 
   protected:
-    StepperParametersType          param_;
-    Dune::Timer                    overallTimer_;
-    unsigned int                   timeStepTimer_;
-    double                         fixedTimeStep_;
-
     StepperTupleType               tuple_;
 
     CheckPointHandlerType          checkPointHandler_;
@@ -552,6 +580,10 @@ namespace Fem
     SolutionLimiterHandlerType     solutionLimiterHandler_;
     AdaptHandlerType               adaptHandler_;
 
+    StepperParametersType          param_;
+    Dune::Timer                    overallTimer_;
+    unsigned int                   timeStepTimer_;
+    double                         fixedTimeStep_;
   };
 
 

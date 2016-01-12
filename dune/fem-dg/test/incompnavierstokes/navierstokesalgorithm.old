@@ -1,20 +1,3 @@
-#ifndef DUNE_FEMDG_ADVECTIONDIFFUSION_STEPPER_HH
-#define DUNE_FEMDG_ADVECTIONDIFFUSION_STEPPER_HH
-
-// dune-fem-dg includes
-#include <dune/fem-dg/operator/adaptation/estimator.hh>
-#include <dune/fem-dg/solver/rungekuttasolver.hh>
-
-// local includes
-#include <dune/fem-dg/algorithm/evolution.hh>
-
-#include <dune/fem-dg/operator/dg/primaloperator.hh>
-
-namespace Dune
-{
-namespace Fem
-{
-
 template <class GridImp,
           class ProblemTraits,
             int polynomialOrder >
@@ -22,62 +5,6 @@ template <class GridImp,
     : public EvolutionAlgorithm< GridImp, ProblemTraits, polynomialOrder >
 {
   typedef EvolutionAlgorithm< GridImp, ProblemTraits, polynomialOrder > BaseType;
-
-  typedef typename BaseType::Traits::StokesAlgorithmType    StokesAlgorithmType;
-
-  // type of Grid
-  typedef typename BaseType::GridType                       GridType;
-
-  // Choose a suitable GridView
-  typedef typename BaseType::GridPartType                   GridPartType;
-
-  // initial data type
-  typedef typename BaseType::ProblemType                    ProblemType;
-
-  // An analytical version of our model
-  typedef typename BaseType::ModelType                      ModelType;
-
-  // The DG space operator
-  // The first operator is sum of the other two
-  // The other two are needed for semi-implicit time discretization
-  typedef typename BaseType::OperatorType::FullType         FullOperatorType;
-  typedef typename BaseType::OperatorType::RhsOperator      RhsOperatorType;
-
-  typedef typename Traits::VelocityFunctionType             VelocityFunctionType;
-
-  typedef typename Traits::RhsOperatorType                  RhsOperatorType;
-  typedef typename Traits::RhsLaplaceOperatorType           RhsLaplaceOperatorType;
-
-  typedef typename BaseType::BasicLinearSolverType          BasicLinearSolverType;
-
-  // The discrete function for the unknown solution is defined in the DgOperator
-  typedef typename BaseType::DiscreteFunctionType           DiscreteFunctionType;
-
-  // ... as well as the Space type
-  typedef typename BaseType::DiscreteFunctionSpaceType      DiscreteFunctionSpaceType;
-
-  // The ODE Solvers
-  typedef typename BaseType::OdeSolverType                  OdeSolverType;
-
-  typedef typename BaseType::TimeProviderType               TimeProviderType;
-
-  //typedef typename BaseType::SolverMonitorType            SolverMonitorType;
-
-  // type of 64bit unsigned integer
-  typedef typename BaseType::UInt64Type                     UInt64Type;
-
-  typedef typename BaseType::ExtraParameterTupleType        ExtraParameterTupleType;
-
-  using BaseType::grid_;
-  using BaseType::gridPart_;
-  using BaseType::space;
-  using BaseType::problem;
-  using BaseType::name;
-  using BaseType::adaptHandler_
-  using BaseType::solution;
-  using BaseType::overallTimer_;
-  using BaseType::odeSolver_;
-  //using BaseType::odeSolverMonitor_;
 
   NavierStokesStepper( GridType& grid,
                        const std::string name = "",
@@ -95,25 +22,6 @@ template <class GridImp,
     rhsLaplaceOperator_( gridPart_, problem(), std::tuple<>(), name )
   {
     adaptHandler_.setIndicator( problem(), tuple );
-  }
-
-  //! return overal number of grid elements
-  virtual UInt64Type gridSize() const
-  {
-    int globalElements = adaptHandler_.globalNumberOfElements();
-    if( globalElements > 0 )
-      return globalElements;
-
-    // one of them is not zero,
-    size_t dgSize      = dgOperator_.numberOfElements();
-    UInt64Type grSize  = dgSize;
-    double minMax[ 2 ] = { double(grSize), 1.0/double(grSize) } ;
-    grid_.comm().max( &minMax[ 0 ], 2 );
-    if( Dune::Fem::Parameter::verbose () )
-    {
-      std::cout << "grid size (min,max) = ( " << size_t(1.0/minMax[ 1 ]) << " , " << size_t(minMax[ 0 ]) << ")" << std::endl;
-    }
-    return grid_.comm().sum( grSize );
   }
 
   virtual OdeSolverType* createOdeSolver(TimeProviderType& tp)
@@ -263,6 +171,3 @@ protected:
   RhsLaplaceOperatorType   rhsLaplaceOperator_;
 };
 
-}
-}
-#endif // FEMHOWTO_STEPPER_HH

@@ -313,27 +313,21 @@ namespace Fem
     using BaseType::solver_;
     using BaseType::exactSolution_;
 
+    typedef typename EllipticalAlgorithmType::ContainerType         EllipticContainerType;
+
+    typedef typename AssemblerType::ContainerType                   ContainerType;
+
   public:
 
-    explicit StokesAlgorithm(GridType& grid ) :
-      BaseType( grid ),
-      gridPart_( grid ),
-      space_( gridPart_ ),
-      ellAlg_( grid ),
-      assembler_( gridPart_, model() ),
-      ioTuple_( nullptr ),
-      stokesSigmaEstimator_( nullptr )
-    {}
-
-    void init()
+    explicit StokesAlgorithm( GridType& grid, ContainerType& container ) :
+      BaseType( grid, container.template adapter<1>() ),
+      container_( container ),
+      space_( container_.template adapter<1>().space() ),
+      ellAlg_( grid, container_.template adapter<0>() ),
+      assembler_( container_, model() ),
+      ioTuple_( new IOTupleType( *BaseType::dataTuple(), *ellAlg_.dataTuple() ) ),
+      stokesSigmaEstimator_( new StokesSigmaEstimatorType( container_.template adapter<1>().gridPart(), ellAlg_.solution(), solution(), ellAlg_.assembler(), name() ) )
     {
-      //init base
-      ellAlg_.init();
-      BaseType::init();
-
-      //step III: init other stuff
-      ioTuple_.reset( new IOTupleType( *BaseType::dataTuple(), *ellAlg_.dataTuple() ) );
-      stokesSigmaEstimator_.reset( new StokesSigmaEstimatorType( gridPart_, ellAlg_.solution(), solution(), ellAlg_.assembler(), name() ) );
     }
 
     virtual IOTupleType& dataTuple ()
@@ -388,12 +382,7 @@ namespace Fem
       space_.adapt( polOrderVecPressure);
 #endif
 #endif
-      return std::make_shared< BasicLinearSolverType >( assembler_, *ellAlg_.solver(), ellAlg_.rhs(), absLimit, 3*ellAlg_.solution().space().size() );
-    }
-
-    virtual std::shared_ptr< DiscreteFunctionType > doCreateRhs() override
-    {
-      return assembler_.pressureRhs();
+      return std::make_shared< BasicLinearSolverType >( container_, *ellAlg_.solver(), absLimit, 3*ellAlg_.solution().space().size() );
     }
 
     virtual void doInitialize ( const int loop ) override
@@ -411,11 +400,6 @@ namespace Fem
     virtual void doSolve( const int loop ) override
     {
       BaseType::doSolve( loop );
-
-      // velocity solution of elliptical algorithm is computed by stokes solver,
-      // i.e.: solve() method of elliptical algorithm is never called here
-      // -> workaround by copying the dofs...
-      ellAlg_.solution().assign( solver_->velocity() );
 
       // TODO check wheather we need the following line
       stokesSigmaEstimator_->update();
@@ -435,8 +419,8 @@ namespace Fem
     }
 
   protected:
-    GridPartType                                gridPart_;
-    DiscreteFunctionSpaceType                   space_;
+    ContainerType&                              container_;
+    const DiscreteFunctionSpaceType&            space_;
     AssemblerType                               assembler_;
 
     EllipticalAlgorithmType                     ellAlg_;
