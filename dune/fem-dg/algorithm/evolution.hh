@@ -463,6 +463,7 @@ namespace Fem
         if( !checkSolutionValid( loop, tp ) )
         {
           dataWriterHandler_.finalize( tp );
+          std::cerr << "Solution is not valid. Aborting." << std::endl;
           std::abort();
         }
 
