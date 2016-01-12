@@ -1,4 +1,6 @@
 /**
 \page Navierstokes
 This solves the Navier-Stokes problem.
+
+![ProblemCreator structure](navierstokes.png)
 */

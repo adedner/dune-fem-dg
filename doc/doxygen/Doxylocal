@@ -15,6 +15,8 @@ INPUT                 += @srcdir@/modules.txt \
 
 #EXCLUDE               += @top_srcdir@/dune/fem-dg/test 
 
+IMAGE_PATH              = @srcdir@/../pics
+ 
 EXCLUDE_PATTERNS       = 
 
 ALIASES              += notcleardoc="\xrefitem notcleardoc \"documentation will be extended\" \"Needs extended documentation\"" \

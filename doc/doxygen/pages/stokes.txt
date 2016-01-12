@@ -1,4 +1,6 @@
 /**
 \page Stokes
 This solves the stokes problem.
+
+![ProblemCreator structure](stokes.png)
 */

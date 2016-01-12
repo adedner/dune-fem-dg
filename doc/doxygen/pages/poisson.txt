@@ -15,6 +15,7 @@ This is an description class for the problem
                   \nabla U \cdot n  & = & g_N 
 \f}
 
+![ProblemCreator structure for poisson problem](poisson.png)
 
 
 | Method                     | formular                                  |

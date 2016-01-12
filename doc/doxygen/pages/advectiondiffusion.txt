@@ -1,4 +1,7 @@
 /**
 \page AdvectionDiffusion
 This solves the advection diffusion problem.
+
+![ProblemCreator structure](advectiondiffusion.png)
+
 */

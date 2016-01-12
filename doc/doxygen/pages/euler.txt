@@ -1,4 +1,6 @@
 /**
 \page Euler
 This solves the Euler problem.
+
+![ProblemCreator structure](euler.png)
 */

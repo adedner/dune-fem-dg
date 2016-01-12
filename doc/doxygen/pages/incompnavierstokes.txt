@@ -1,4 +1,6 @@
 /**
 \page IncompNavierstokes
 This solves the incompressible Navier-Stokes problem.
+
+![ProblemCreator structure](incompnavierstokes.png)
 */
