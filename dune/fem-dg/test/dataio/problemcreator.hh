@@ -61,12 +61,12 @@ namespace Fem
     typedef typename Dune::Std::make_index_sequence_impl< std::tuple_size< SubAlgorithmTupleType >::value >::type  IndexSequenceType;
     typedef Dune::Std::index_sequence<>                                                                       NoIndexSequenceType;
 
-    typedef Dune::Fem::AdaptHandler< SubAlgorithmTupleType, NoIndexSequenceType >            AdaptHandlerType;
-    typedef Dune::Fem::DiagnosticsHandler < SubAlgorithmTupleType, NoIndexSequenceType >     DiagnosticsHandlerType;
-    typedef Dune::Fem::SolverMonitorHandler < SubAlgorithmTupleType, NoIndexSequenceType >   SolverMonitorHandlerType;
-    typedef Dune::Fem::CheckedCheckPointHandler < SubAlgorithmTupleType >                    CheckPointHandlerType;
-    typedef Dune::Fem::DataWriterHandler < SubAlgorithmTupleType >                           DataWriterHandlerType;
-    typedef Dune::Fem::SolutionLimiterHandler < SubAlgorithmTupleType, NoIndexSequenceType > SolutionLimiterHandlerType;
+    typedef Dune::Fem::AdaptHandler< SubAlgorithmTupleType, NoIndexSequenceType >           AdaptHandlerType;
+    typedef Dune::Fem::DiagnosticsHandler < SubAlgorithmTupleType, NoIndexSequenceType >    DiagnosticsHandlerType;
+    typedef Dune::Fem::SolverMonitorHandler < SubAlgorithmTupleType, NoIndexSequenceType >  SolverMonitorHandlerType;
+    typedef Dune::Fem::CheckedCheckPointHandler < SubAlgorithmTupleType >                   CheckPointHandlerType;
+    typedef Dune::Fem::DataWriterHandler < SubAlgorithmTupleType >                          DataWriterHandlerType;
+    typedef Dune::Fem::PostProcessingHandler < SubAlgorithmTupleType, NoIndexSequenceType > PostProcessingHandlerType;
 
     typedef typename DataWriterHandlerType::IOTupleType                                                                IOTupleType;
 

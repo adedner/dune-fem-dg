@@ -27,7 +27,7 @@ namespace Fem
     typedef typename BaseType::DiagnosticsHandlerType            DiagnosticsHandlerType;
     typedef typename BaseType::CheckPointHandlerType             CheckPointHandlerType;
     typedef typename BaseType::DataWriterHandlerType             DataWriterHandlerType;
-    typedef typename BaseType::SolutionLimiterHandlerType        SolutionLimiterHandlerType;
+    typedef typename BaseType::PostProcessingHandlerType         PostProcessingHandlerType;
     typedef typename BaseType::AdaptHandlerType                  AdaptHandlerType;
 
     typedef typename BaseType::UInt64Type                        UInt64Type ;

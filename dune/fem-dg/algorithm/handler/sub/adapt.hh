@@ -11,7 +11,6 @@
 #include <dune/fem/io/parameter.hh>
 
 #include <dune/fem-dg/misc/parameterkey.hh>
-#include <dune/fem-dg/algorithm/handler/solutionlimiter.hh>
 #include <dune/fem/space/common/restrictprolonginterface.hh>
 #include <dune/fem/space/common/restrictprolongtuple.hh>
 

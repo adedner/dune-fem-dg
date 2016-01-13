@@ -23,7 +23,7 @@
 #include <dune/fem-dg/algorithm/handler/solvermonitor.hh>
 #include <dune/fem-dg/algorithm/handler/checkpoint.hh>
 #include <dune/fem-dg/algorithm/handler/datawriter.hh>
-#include <dune/fem-dg/algorithm/handler/solutionlimiter.hh>
+#include <dune/fem-dg/algorithm/handler/postprocessing.hh>
 #include <dune/fem-dg/algorithm/handler/adapt.hh>
 
 namespace Dune
@@ -38,9 +38,9 @@ namespace Fem
   class EvolutionAlgorithmBase;
 
 
-  // TimeSteppingParametersType
-  // ---------------------
-
+  /**
+   *  \brief Parameters for time stepping
+   */
   class TimeSteppingParameters
   : public Dune::Fem::LocalParameter< TimeSteppingParameters, TimeSteppingParameters >
   {
@@ -95,8 +95,9 @@ namespace Fem
   };
 
 
-  // EvolutionAlgorithmTraits
-  // -------------------------
+  /**
+   *  \brief Traits class
+   */
   template< int polOrder, class ... ProblemTraits >
   struct EvolutionAlgorithmTraits
   {
@@ -119,7 +120,7 @@ namespace Fem
     typedef Dune::Fem::SolverMonitorHandler< SubAlgorithmTupleType >    SolverMonitorHandlerType;
     typedef Dune::Fem::DataWriterHandler< SubAlgorithmTupleType >       DataWriterHandlerType;
     typedef Dune::Fem::DiagnosticsHandler< SubAlgorithmTupleType >      DiagnosticsHandlerType;
-    typedef Dune::Fem::SolutionLimiterHandler< SubAlgorithmTupleType >  SolutionLimiterHandlerType;
+    typedef Dune::Fem::PostProcessingHandler< SubAlgorithmTupleType >   PostProcessingHandlerType;
 
     typedef typename DataWriterHandlerType::IOTupleType                 IOTupleType;
 
@@ -166,9 +167,12 @@ namespace Fem
     }
   };
 
-  // EvolutionAlgorithm
-  // ------------------
 
+  /**
+   *  \brief A global algorithm class
+   *
+   * \ingroup Algorithms
+   */
   template< int polOrder, template<class, class > class EvolutionCreatorType, class ... ProblemTraits >
   class EvolutionAlgorithm
   : public EvolutionAlgorithmBase< EvolutionAlgorithmTraits< polOrder, ProblemTraits ... >, EvolutionCreatorType >
@@ -183,9 +187,11 @@ namespace Fem
     {}
   };
 
-  // EvolutionAlgorithmBase
-  // ----------------------
-
+  /**
+   *  \brief A global algorithm class
+   *
+   * \ingroup Algorithms
+   */
   template< class Traits, template<class, class > class EvolutionCreatorType >
   class EvolutionAlgorithmBase
     : public AlgorithmInterface< Traits >
@@ -202,7 +208,7 @@ namespace Fem
     typedef typename Traits::DiagnosticsHandlerType              DiagnosticsHandlerType;
     typedef typename Traits::CheckPointHandlerType               CheckPointHandlerType;
     typedef typename Traits::DataWriterHandlerType               DataWriterHandlerType;
-    typedef typename Traits::SolutionLimiterHandlerType          SolutionLimiterHandlerType;
+    typedef typename Traits::PostProcessingHandlerType           PostProcessingHandlerType;
     typedef typename Traits::AdaptHandlerType                    AdaptHandlerType;
 
     typedef uint64_t                                             UInt64Type ;
@@ -283,6 +289,12 @@ namespace Fem
 
   public:
 
+    /**
+     * \brief Constructor
+     *
+     * \param grid
+     * \param name the name of the algorithm
+     */
     EvolutionAlgorithmBase ( GridType &grid, const std::string name = "" )
     : BaseType( grid, name  ),
       tuple_( EvolutionCreatorType< SubAlgorithmTupleType, GridType >::apply( grid ) ),
@@ -290,7 +302,7 @@ namespace Fem
       dataWriterHandler_( tuple_ ),
       diagnosticsHandler_( tuple_ ),
       solverMonitorHandler_( tuple_ ),
-      solutionLimiterHandler_( tuple_ ),
+      postProcessingHandler_( tuple_ ),
       adaptHandler_( tuple_ ),
       param_( TimeSteppingParametersType( ParameterKey::generate( "", "femdg.stepper." ) ) ),
       overallTimer_(),
@@ -314,6 +326,9 @@ namespace Fem
       return res;
     }
 
+    /**
+     *  \brief checks whether the computed solution is physically valid, i.e. contains NaNs.
+     */
     bool checkSolutionValid( const int loop, TimeProviderType& tp ) const
     {
       bool res = true;
@@ -321,7 +336,11 @@ namespace Fem
       return res;
     }
 
-    //! default time loop implementation, overload for changes in derived classes !!!
+    /**
+     *  \brief Solves the whole problem
+     *
+     *  \param loop the number of the eoc loop
+     */
     void solve ( const int loop )
     {
       // get start and end time from parameter file
@@ -335,7 +354,15 @@ namespace Fem
       solve( loop, tp, endTime );
     }
 
-    //! default time loop implementation, overload for changes in derived classes !!!
+    /**
+     *  \brief Solves the whole problem
+     *
+     *
+     *
+     *  \param loop the number of the eoc loop
+     *  \param tp time provider
+     *  \param endTime end Time of the simulation
+     */
     void solve ( const int loop, TimeProviderType& tp, const double endTime )
     {
       // get grid reference
@@ -355,34 +382,17 @@ namespace Fem
 #endif
 
       // restoreData if checkpointing is enabled (default is disabled)
-      bool newStart = ( eocParams().steps() == 1) ? checkPointHandler_.restoreData( tp ) : false;
+      bool newStart = ( eocParams().steps() == 1) ? checkPointHandler_.initialize_pre( this, loop, tp ) : false;
 
       initialize( loop, tp );
 
-      if( adaptHandler_.adaptive() && newStart )
-      {
-        // adapt the grid to the initial data
-        for( int startCount = 0; startCount < adaptHandler_.finestLevel(); ++ startCount )
-        {
-          // call initial adaptation
-          adaptHandler_.init();
+      if( newStart )
+        adaptHandler_.initialize_post( this, loop, tp );
+      dataWriterHandler_.initialize_post( this, loop, tp );
+      checkPointHandler_.initialize_post( this, loop, tp );
 
-           // setup problem again
-           initialize( loop, tp );
-
-           // some info in verbose mode
-           if( Fem::Parameter::verbose() )
-           {
-             std::cout << "Start adaptation: step " << startCount << ",  dt = " << tp.deltaT() << ",  grid size: " << gridSize()
-                       << std::endl;
-          }
-        }
-      }
-
-      dataWriterHandler_.init( tp, eocParams().dataOutputParameters( loop, dataPrefix() ) );
-
-      // register data functions to check pointer
-      checkPointHandler_.registerData();
+      //HandlerCaller handler_( this, loop, tp );
+      //handler_.initialize_post( adaptHandler_, dataWriterHandler_, checkPointHandler_ )
 
       // start first time step with prescribed fixed time step
       // if it is not 0 otherwise use the internal estimate
@@ -403,11 +413,8 @@ namespace Fem
       //******************************
       for( ; tp.time() < endTime; )
       {
-        // write data for current time
-        dataWriterHandler_.step( tp );
-
-        // possibly write check point (default is disabled)
-        checkPointHandler_.step( tp );
+        dataWriterHandler_.preSolve_pre( this, loop, tp );
+        checkPointHandler_.preSolve_pre( this, loop, tp );
 
         // reset time step estimate
         tp.provideTimeStepEstimate( maxTimeStep );
@@ -424,22 +431,18 @@ namespace Fem
         preStep( loop, tp );
 
         // estimate, mark, adapt
-        adaptHandler_.step( tp );
+        adaptHandler_.solve_pre( this, loop, tp );
 
         // perform the solve for one time step, i.e. solve ODE
         step( loop, tp );
 
-        // limit solution if necessary
-        solutionLimiterHandler_.step();
+        // do post processing, i.e. limit solution if necessary
+        postProcessingHandler_.solve_post( this, loop, tp );
 
         postStep( loop, tp );
 
-        // update time step information
-        solverMonitorHandler_.step( tp );
-
-        //write diagnostics
-        diagnosticsHandler_.step( tp );
-
+        solverMonitorHandler_.postSolve_post( this, loop, tp );
+        diagnosticsHandler_.postSolve_post( this, loop, tp );
 
         // stop FemTimer for this time step
         Dune::FemTimer::stop(timeStepTimer_,Dune::FemTimer::sum);
@@ -447,7 +450,7 @@ namespace Fem
         // Check that no NAN have been generated
         if( !checkSolutionValid( loop, tp ) )
         {
-          dataWriterHandler_.finalize( tp );
+          dataWriterHandler_.finalize_pre( this, loop, tp );
           std::cerr << "Solution is not valid. Aborting." << std::endl;
           std::abort();
         }
@@ -540,15 +543,15 @@ namespace Fem
     void finalize ( int loop, TimeProviderType &tp )
     {
       // flush diagnostics data
-      diagnosticsHandler_.finalize();
+      diagnosticsHandler_.finalize_pre( this, loop, tp );
 
       // write last time step
-      dataWriterHandler_.finalize( tp );
+      dataWriterHandler_.finalize_pre( this, loop, tp );
 
       // adjust average time step size
-      solverMonitorHandler_.finalize( gridWidth(), gridSize() );
+      solverMonitorHandler_.finalize_pre( this, loop, tp );
 
-      adaptHandler_.finalize();
+      adaptHandler_.finalize_pre( this, loop, tp );
 
       ForLoopType< Finalize >::apply( tuple_, loop, &tp );
     }
@@ -563,7 +566,7 @@ namespace Fem
     DataWriterHandlerType          dataWriterHandler_;
     DiagnosticsHandlerType         diagnosticsHandler_;
     SolverMonitorHandlerType       solverMonitorHandler_;
-    SolutionLimiterHandlerType     solutionLimiterHandler_;
+    PostProcessingHandlerType      postProcessingHandler_;
     AdaptHandlerType               adaptHandler_;
 
     TimeSteppingParametersType     param_;

@@ -4,6 +4,7 @@
 #include <dune/fem-dg/misc/diagnostics.hh>
 #include <dune/fem-dg/misc/optional.hh>
 #include <dune/fem-dg/misc/tupleutility.hh>
+#include "interface.hh"
 
 namespace Dune
 {
@@ -17,6 +18,7 @@ namespace Fem
 
   template< class AlgTupleImp, std::size_t... Ints >
   class DiagnosticsHandler< AlgTupleImp, Std::index_sequence< Ints... > >
+    : public HandlerInterface
   {
     typedef AlgTupleImp                                                            AlgTupleType;
 
@@ -73,13 +75,14 @@ namespace Fem
       : tuple_( tuple )
     {}
 
-    template< class TimeProviderImp >
-    void step( TimeProviderImp& tp )
+    template< class SubAlgImp, class TimeProviderImp >
+    void postSolve_post( SubAlgImp* alg, int loop, TimeProviderImp& tp )
     {
       ForLoopType< Write >::apply( tuple_, tp );
     }
 
-    void finalize() const
+    template< class SubAlgImp, class TimeProviderImp >
+    void finalize_pre( SubAlgImp* alg, int loop, TimeProviderImp& tp )
     {
       ForLoopType< Finalize >::apply( tuple_ );
     }
@@ -90,16 +93,12 @@ namespace Fem
 
   template< class TupleImp >
   class DiagnosticsHandler< TupleImp, Std::index_sequence<> >
+    : public HandlerInterface
   {
   public:
     template< class ... Args >
     DiagnosticsHandler ( Args && ... ) {}
 
-    template <class ... Args>
-    void step( Args&& ... ) const {}
-
-    template <class ... Args>
-    void finalize( Args&& ... ) const {}
   };
 
 }

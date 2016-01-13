@@ -10,6 +10,7 @@
 #include <dune/fem-dg/misc/tupleutility.hh>
 #include <dune/fem/common/utility.hh>
 #include <dune/fem-dg/misc/parameterkey.hh>
+#include "interface.hh"
 
 namespace Dune
 {
@@ -22,6 +23,7 @@ namespace Fem
 
   template< class AlgTupleImp, std::size_t... Ints >
   class DataWriterHandler< AlgTupleImp, Std::index_sequence< Ints... > >
+    : public HandlerInterface
   {
     template< class TupleType > struct IOTupleExtractor;
     template< class ... Args > struct IOTupleExtractor< std::tuple< Args... > >
@@ -85,15 +87,15 @@ namespace Fem
     {
     }
 
-    template< class TimeProviderImp, class ParameterType >
-    void init( TimeProviderImp& tp, ParameterType& param  )
+    template< class SubAlgImp, class TimeProviderImp >
+    void initialize_post( SubAlgImp* alg, int loop, TimeProviderImp& tp )
     {
-      dataWriter_.reset( new DataWriterType( std::get<0>(tuple_)->solution().space().grid(), dataTuple_, tp, param ) );
+      dataWriter_.reset( new DataWriterType( std::get<0>(tuple_)->solution().space().grid(), dataTuple_, tp,
+                                             alg->eocParams().dataOutputParameters( loop, alg->dataPrefix() ) ) );
     }
 
-
-    template< class TimeProviderImp >
-    void step( TimeProviderImp& tp )
+    template< class SubAlgImp, class TimeProviderImp >
+    void preSolve_pre( SubAlgImp* alg, int loop, TimeProviderImp& tp )
     {
       if( dataWriter_ && dataWriter_->willWrite( tp ) )
       {
@@ -105,8 +107,8 @@ namespace Fem
       }
     }
 
-    template< class TimeProviderImp >
-    void finalize( TimeProviderImp& tp )
+    template< class SubAlgImp, class TimeProviderImp >
+    void finalize_pre( SubAlgImp* alg, int loop, TimeProviderImp& tp )
     {
       if( dataWriter_ && dataWriter_->willWrite( tp ) )
       {
@@ -122,13 +124,12 @@ namespace Fem
       return dataTuple_;
     }
 
-    private:
+  private:
     template< std::size_t ... i >
     IOTupleType dataTuple ( const TupleType &tuple, Std::index_sequence< i ... > )
     {
       return std::tuple_cat( (*std::get< i >( tuple )->dataTuple() )... );
     }
-
 
     TupleType                         tuple_;
     std::unique_ptr< DataWriterType > dataWriter_;
@@ -138,8 +139,9 @@ namespace Fem
 
   template< class AlgTupleImp >
   class DataWriterHandler< AlgTupleImp, Std::index_sequence<> >
+    : public HandlerInterface
   {
-    public:
+  public:
     template <class Grid, class DataTuple>
     struct DataOutput
     {
@@ -149,14 +151,6 @@ namespace Fem
     template< class ... Args >
     DataWriterHandler( Args&& ... ) {}
 
-    template< class ... Args >
-    void init( Args&& ...  ) {}
-
-    template< class ... Args >
-    void step( Args&& ...  ) {}
-
-    template< class ... Args >
-    void finalize( Args&& ...  ) {}
   };
 
 }

@@ -10,6 +10,7 @@
 #include <dune/fem/common/utility.hh>
 #include <dune/fem-dg/misc/parameterkey.hh>
 #include <dune/fem-dg/misc/tupleutility.hh>
+#include "interface.hh"
 
 namespace Dune
 {
@@ -67,6 +68,7 @@ namespace Fem
 
   template< class AlgTupleImp, std::size_t... Ints >
   class CheckPointHandler< AlgTupleImp, Std::index_sequence< Ints... > >
+    : public HandlerInterface
   {
 
     template< int i >
@@ -109,14 +111,8 @@ namespace Fem
         checkParam_( ParameterKey::generate( keyPrefix_, "fem.io." ) )
     {}
 
-    void registerData()
-    {
-      if( BaseType::checkPointExists(keyPrefix_) )
-        ForLoopType< RegisterData >::apply( tuple_ );
-    }
-
-    template< class TimeProviderImp >
-    bool restoreData( TimeProviderImp& tp ) const
+    template< class SubAlgImp, class TimeProviderImp >
+    bool initialize_pre( SubAlgImp* alg, int loop, TimeProviderImp& tp )
     {
       if( BaseType::checkPointExists(keyPrefix_) )
       {
@@ -127,8 +123,15 @@ namespace Fem
       return true;
     }
 
-    template< class TimeProviderImp >
-    void step( TimeProviderImp& tp ) const
+    template< class SubAlgImp, class TimeProviderImp >
+    void initialize_post( SubAlgImp* alg, int loop, TimeProviderImp& tp )
+    {
+      if( BaseType::checkPointExists(keyPrefix_) )
+        ForLoopType< RegisterData >::apply( tuple_ );
+    }
+
+    template< class SubAlgImp, class TimeProviderImp >
+    void preSolve_pre( SubAlgImp* alg, int loop, TimeProviderImp& tp )
     {
       checkPointer( tp ).write( tp );
     }
@@ -152,6 +155,7 @@ namespace Fem
 
   template< class AlgTupleImp >
   class CheckPointHandler< AlgTupleImp, Std::index_sequence<> >
+    : public HandlerInterface
   {
     public:
 
@@ -168,14 +172,6 @@ namespace Fem
       return gridptr;
     }
 
-    template< class ... Args>
-    void registerData( Args&& ... ) const {}
-
-    template< class ... Args>
-    bool restoreData( Args&& ... ) const { return false;}
-
-    template< class ... Args>
-    void step( Args&& ... ) const {}
   };
 
 }

@@ -131,7 +131,7 @@ namespace Fem
     : BaseType( grid ),
       gridPart_( grid ),
       space_( gridPart_ ),
-      solution_( new DiscreteFunctionType( "U_"+name(), space_ ) ),
+      solution_( new DiscreteFunctionType( "U_"+name, space_ ) ),
       ioTuple_( std::make_tuple( &solution(), nullptr ) ),
       error_( 0.0 )
     {}

@@ -11,7 +11,7 @@
 #include <dune/fem/io/parameter.hh>
 
 #include <dune/fem-dg/misc/parameterkey.hh>
-#include <dune/fem-dg/algorithm/handler/solutionlimiter.hh>
+#include <dune/fem-dg/algorithm/handler/postprocessing.hh>
 #include <dune/fem/space/common/restrictprolonginterface.hh>
 #include <dune/fem/space/common/restrictprolongtuple.hh>
 
@@ -20,6 +20,7 @@
 #include <dune/fem/space/common/adaptmanager.hh>
 #include <dune/fem-dg/misc/optional.hh>
 #include <dune/fem-dg/misc/tupleutility.hh>
+#include "interface.hh"
 
 namespace Dune
 {
@@ -33,6 +34,7 @@ namespace Fem
 
   template< class AlgTupleImp, std::size_t... Ints >
   class AdaptHandler< AlgTupleImp, Std::index_sequence< Ints... > >
+    : public HandlerInterface
   {
     template< class TupleType > struct RPDefaultTupleExtractor;
     template< class ... Args > struct RPDefaultTupleExtractor< std::tuple< Args... > >
@@ -130,13 +132,8 @@ namespace Fem
       };
     };
 
-
-
-
     template< class Caller >
     using ForLoopType = ForLoop< LoopCallee<Caller>::template Apply, 0, numAlgs - 1 >;
-
-
 
   public:
 
@@ -147,10 +144,51 @@ namespace Fem
       keyPrefix_( "" ),
       adaptParam_( AdaptationParametersType( ParameterKey::generate( keyPrefix_, "fem.adaptation." ) ) )
     {
-
       setRestrProlong( IndexSequenceType() );
       if( adaptive() )
         rp_->setFatherChildWeight( Dune::DGFGridInfo<GridType> :: refineWeight() );
+    }
+
+
+    template< class SubAlgImp, class TimeProviderImp >
+    void initialize_post( SubAlgImp* alg, int loop, TimeProviderImp& tp)
+    {
+      if( adaptive() )
+      {
+        // adapt the grid to the initial data
+        for( int startCount = 0; startCount < finestLevel(); ++ startCount )
+        {
+          // call initial adaptation
+          estimateMark( true );
+          adapt();
+
+          // setup problem again
+          alg->initialize( loop, tp );
+
+          // some info in verbose mode
+          if( Fem::Parameter::verbose() )
+          {
+            std::cout << "Start adaptation: step " << startCount << ",  dt = " << tp.deltaT() << ",  grid size: " << alg->gridSize()
+                      << std::endl;
+          }
+        }
+      }
+    }
+
+    template< class SubAlgImp, class TimeProviderImp >
+    void solve_pre( SubAlgImp* alg, int loop, TimeProviderImp& tp )
+    {
+      if( tp.timeStep() % adaptParam_.adaptCount() == 0 )
+      {
+        estimateMark( false );
+        adapt();
+      }
+    }
+
+    template< class SubAlgImp, class TimeProviderImp >
+    void finalize_pre( SubAlgImp* alg, int loop, TimeProviderImp& tp)
+    {
+      ForLoopType< Finalize >::apply( tuple_ );
     }
 
     template< std::size_t ... i >
@@ -164,22 +202,6 @@ namespace Fem
       bool adaptive = false;
       ForLoopType< Adaptive >::apply( tuple_, adaptive );
       return adaptive;
-    }
-
-    template< class TimeProviderImp >
-    void step( TimeProviderImp& tp )
-    {
-      if( tp.timeStep() % adaptParam_.adaptCount() == 0 )
-      {
-        estimateMark( false );
-        adapt();
-      }
-    }
-
-    void init()
-    {
-      estimateMark( true );
-      adapt();
     }
 
     size_t numberOfElements() const
@@ -214,11 +236,6 @@ namespace Fem
       ForLoopType< SetAdaptation >::apply( tuple_, tp );
     }
 
-    void finalize()
-    {
-      ForLoopType< Finalize >::apply( tuple_ );
-    }
-
     double& adaptationTime()
     {
       adaptationTime_ = adaptive() ? adaptationManager().adaptationTime() : 0.0;
@@ -231,6 +248,7 @@ namespace Fem
       return loadBalanceTime_;
     }
 
+  protected:
     const int finestLevel() const
     {
       int finestLevel = 0;
@@ -238,7 +256,6 @@ namespace Fem
       return finestLevel;
     }
 
-  protected:
     GridType &grid () { return std::get< 0 >( tuple_ )->grid(); }
 
     AdaptationManagerType& adaptationManager()
@@ -283,8 +300,9 @@ namespace Fem
 
   template< class TupleImp >
   class AdaptHandler< TupleImp, Std::index_sequence<> >
+    : public HandlerInterface
   {
-    typedef uint64_t                                                                           UInt64Type;
+    typedef uint64_t                          UInt64Type;
   public:
 
     template< class ... Args >
@@ -292,15 +310,6 @@ namespace Fem
 
     template< class ... Args >
     bool adaptive( Args&& ... ) const { return false; }
-
-    template< class ... Args >
-    void setIndicator( Args&& ... ) {}
-
-    template< class ... Args >
-    void step( Args&& ... ) {}
-
-    template< class ... Args >
-    void init( Args&& ... ) {}
 
     template< class ... Args >
     size_t numberOfElements( Args&& ... ) const { return 0; }
@@ -312,16 +321,10 @@ namespace Fem
     void setAdaptation( Args&& ... ){}
 
     template< class ... Args >
-    void finalize( Args&& ... ) {}
-
-    template< class ... Args >
     const double adaptationTime( Args&& ... ) const { return 0.0; }
 
     template< class ... Args >
     const double loadBalanceTime( Args&& ... ) const { return 0.0; }
-
-    template< class ... Args >
-    const double finestLevel( Args&& ... ) const { return 0.0; }
   };
 
 }

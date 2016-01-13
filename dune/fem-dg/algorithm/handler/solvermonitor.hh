@@ -6,6 +6,7 @@
 #include <dune/fem-dg/algorithm/monitor.hh>
 #include <dune/fem-dg/misc/optional.hh>
 #include <dune/fem-dg/misc/tupleutility.hh>
+#include "interface.hh"
 
 namespace Dune
 {
@@ -16,31 +17,15 @@ namespace Fem
             class IndexSequenceImp=typename Std::make_index_sequence_impl< std::tuple_size< AlgTupleImp >::value >::type >
   class SolverMonitorHandler;
 
-  template< class AlgTupleImp >
-  class SolverMonitorHandler< AlgTupleImp, Std::index_sequence<> >
-  {
-  public:
-    template <class ... Args>
-    SolverMonitorHandler(Args&& ... )
-    {}
 
-    template <class ... Args>
-    void print(Args&& ... ) const {}
-
-    template <class ... Args>
-    void step(Args&& ... ) const {}
-
-    template <class ... Args>
-    void finalize(Args&& ... ) const {}
-
-    template <class ... Args>
-    const double getData( Args&& ... ) const
-    { return 0.0; }
-
-  };
-
+  /**
+   * \brief Handler class to collect all data from solver monitor from sub algorithms.
+   *
+   * \ingroup Handler
+   */
   template< class AlgTupleImp, std::size_t... Ints >
   class SolverMonitorHandler< AlgTupleImp, Std::index_sequence< Ints... > >
+    : public HandlerInterface
   {
     typedef AlgTupleImp                                                            AlgTupleType;
 
@@ -112,14 +97,25 @@ namespace Fem
       : tuple_( TupleReducerType::apply( tuple ) )
     {}
 
+    template< class SubAlgImp, class TimeProviderImp >
+    void postSolve_post( SubAlgImp* alg, int loop, TimeProviderImp& tp )
+    {
+      ForLoopType< Step >::apply( tuple_, tp );
+    }
+
+    template< class SubAlgImp, class TimeProviderImp >
+    void finalize_pre( SubAlgImp* alg, int loop, TimeProviderImp& tp )
+    {
+      ForLoopType< Finalize >::apply( tuple_, alg->gridWidth(), alg->gridSize() );
+    }
+
     template< class... StringType >
     void print( std::string str, StringType& ...tail )
     {
       std::cout << str << ":  " << getData( str ) << ", ";
       print( tail... );
     }
-
-    void print() {};
+    void print() {}
 
     const double getData( const std::string name, CombinationType comb = CombinationType::max ) const
     {
@@ -128,21 +124,27 @@ namespace Fem
       return res;
     }
 
-    template< class TimeProviderImp >
-    void step( TimeProviderImp& tp )
-    {
-      ForLoopType< Step >::apply( tuple_, tp );
-    }
-
-    void finalize( const double gridWidth, const double gridSize )
-    {
-      ForLoopType< Finalize >::apply( tuple_, gridWidth, gridSize );
-    }
-
   private:
     TupleType  tuple_;
   };
 
+  template< class AlgTupleImp >
+  class SolverMonitorHandler< AlgTupleImp, Std::index_sequence<> >
+    : public HandlerInterface
+  {
+  public:
+    template <class ... Args>
+    SolverMonitorHandler(Args&& ... )
+    {}
+
+    template <class ... Args>
+    void print(Args&& ... ) const {}
+
+    template <class ... Args>
+    const double getData( Args&& ... ) const
+    { return 0.0; }
+
+  };
 }
 }
 

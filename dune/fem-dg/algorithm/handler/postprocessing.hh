@@ -3,6 +3,7 @@
 
 #include <dune/fem-dg/misc/tupleutility.hh>
 #include <dune/common/forloop.hh>
+#include "interface.hh"
 
 namespace Dune
 {
@@ -11,11 +12,12 @@ namespace Fem
 
   template< class AlgTupleImp,
             class IndexSequenceImp=typename Std::make_index_sequence_impl< std::tuple_size< AlgTupleImp >::value >::type >
-  class SolutionLimiterHandler;
+  class PostProcessingHandler;
 
 
   template< class AlgTupleImp, std::size_t... Ints >
-  class SolutionLimiterHandler< AlgTupleImp, Std::index_sequence< Ints... > >
+  class PostProcessingHandler< AlgTupleImp, Std::index_sequence< Ints... > >
+    : public HandlerInterface
   {
   public:
     typedef AlgTupleImp                                                            AlgTupleType;
@@ -45,11 +47,12 @@ namespace Fem
       }
     };
 
-    SolutionLimiterHandler( const AlgTupleType& tuple )
+    PostProcessingHandler( const AlgTupleType& tuple )
       : tuple_( tuple )
     {}
 
-    void step()
+    template< class SubAlgImp, class TimeProviderImp >
+    void solve_post( SubAlgImp* alg, int loop, TimeProviderImp& tp )
     {
       ForLoopType< LimitSolution >::apply( tuple_ );
     }
@@ -60,13 +63,13 @@ namespace Fem
 
 
   template< class TupleImp >
-  class SolutionLimiterHandler< TupleImp, Std::index_sequence<> >
+  class PostProcessingHandler< TupleImp, Std::index_sequence<> >
+    : public HandlerInterface
   {
   public:
     template< class ... Args >
-    SolutionLimiterHandler ( Args && ... ) {}
+    PostProcessingHandler ( Args && ... ) {}
 
-    void step () {}
   };
 
 }

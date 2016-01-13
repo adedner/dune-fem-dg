@@ -19,7 +19,7 @@
 #include <dune/fem-dg/algorithm/handler/solvermonitor.hh>
 #include <dune/fem-dg/algorithm/handler/checkpoint.hh>
 #include <dune/fem-dg/algorithm/handler/datawriter.hh>
-#include <dune/fem-dg/algorithm/handler/solutionlimiter.hh>
+#include <dune/fem-dg/algorithm/handler/postprocessing.hh>
 #include <dune/fem-dg/algorithm/handler/adapt.hh>
 
 namespace Dune
