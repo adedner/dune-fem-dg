@@ -9,38 +9,31 @@ namespace Fem
 {
 
 
-  ////DiffusionFlux 	BR, CDG, CDG2...
-////AdvectionFlux 	LLF, HLLC...
-////GalerkinType 	CG, DG
-////Solver 	istl, fem...
-////polOrder 	0, 1, 2...
-////GridDim 	1,2,3...
-////Adaptation 	no, yes (Estimator...)
-////DimRange 	1,2,3..
-////Assembly 	matrix-free/matrix-based
-////Codegen 	yes/no
-////Parallel 	yes/no
+//DiffusionFlux 	BR, CDG, CDG2...
+//AdvectionFlux 	LLF, HLLC...
+//GalerkinType 	CG, DG
+//Solver 	istl, fem...
+//polOrder 	0, 1, 2...
+//GridDim 	1,2,3...
+//Adaptation 	no, yes (Estimator...)
+//DimRange 	1,2,3..
+//Assembly 	matrix-free/matrix-based
+//Codegen 	yes/no
+//Parallel 	yes/no
 
 
- //     template< class AnalyticalTraitsImp, class NewModelImp >
- //     struct RhsAnalyticalTraits
- //     {
- //       typedef typename AnalyticalTraitsImp::ProblemInterfaceType    ProblemType;
- //       typedef typename AnalyticalTraitsImp::InitialDataType         InitialDataType;
- //       typedef typename AnalyticalTraitsImp::NewModelImp             ModelType;
- //     };
- //   public:
-
- //     template< class AnalyticalTraitsImp, class AdvectionFluxIdentifierImp, class DiffusionFluxIdentifierImp >
- //     using Traits = DefaultOperatorTraits< polOrd, AnalyticalTraits, DiscreteFunctionImp,
- //                                           AdvectionFluxes< AnalyticalTraitsImp, AdvectionFluxIdentifierImp >,
- //                                           DiffusionFluxes< AnalyticaltraitsImp, typename DiscreteFunctionImp::DiscreteFunctionSpaceType, DiffusionFluxIdentifierImp >,
- //                                           typename Config::template DiffusionFluxes< DFSpaceType >,
- //                                           ExtraParameterTuple >;
-
-
- //     typedef DefaultOperatorTraits< GridPartType, polOrd, RhsAnalyticalTraits,
-
+  /**
+   * \brief Convenience class for ProblemCreator classes.
+   *
+   * The module dune-fem-dg needs a lot of templates and typedefs which might confuse some users.
+   * Furthermore, redundancy of templates expressions which are not updated correctly
+   * may lead to nasty compiler errors.
+   *
+   * This class protects the user from this situation and enables all available implementations.
+   *
+   *
+   *
+   */
   template< class GridImp,
             Galerkin::Enum dgId,
             Adaptivity::Enum adap,

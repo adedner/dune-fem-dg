@@ -64,17 +64,33 @@ namespace Dune
 namespace Fem
 {
 
+  /**
+   *  \brief Namespace containing an Enum class to describe the limiting
+   *  of advection operators.
+   */
   namespace AdvectionLimiter
   {
+    /**
+     * \ingroup FemDGParameter
+     */
     enum class Enum
     {
+      /** \brief unlimited */
       unlimited = 0,
+      /** \brief limited */
       limited = 1,
     };
   }
 
+  /**
+   *  \brief Namespace containing an Enum class to describe the discrete function
+   *  and the local finite element.
+   */
   namespace DiscreteFunctionSpaces
   {
+    /**
+     * \ingroup FemDGParameter
+     */
     enum class Enum
     {
       lagrange = 0,
@@ -84,8 +100,15 @@ namespace Fem
   }
 
 
+  /**
+   *  \brief Namespace containing an Enum class to describe the Galerkin type
+   *  of the discretization scheme.
+   */
   namespace Galerkin
   {
+    /**
+     * \ingroup FemDGParameter
+     */
     enum class Enum
     {
       cg = 0,
@@ -93,8 +116,15 @@ namespace Fem
     };
   }
 
+  /**
+   *  \brief Namespace containing an Enum class to describe whether adaptiv
+   *  calculations should be possible or not.
+   */
   namespace Adaptivity
   {
+    /**
+     * \ingroup FemDGParameter
+     */
     enum class Enum
     {
       no = 0,
@@ -102,8 +132,14 @@ namespace Fem
     };
   }
 
+  /**
+   *  \brief Namespace containing an Enum class to describe the solver backends.
+   */
   namespace Solver
   {
+    /**
+     * \ingroup FemDGParameter
+     */
     enum class Enum
     {
       fem,         // use the matrix based version of the dune-fem solvers
@@ -115,8 +151,15 @@ namespace Fem
     };
   }
 
+  /**
+   *  \brief Namespace containing an Enum class to describe whether we want to
+   *  assemble a matrix or not.
+   */
   namespace Matrix
   {
+    /**
+     * \ingroup FemDGParameter
+     */
     enum class Enum
     {
       matrixfree,
@@ -124,8 +167,15 @@ namespace Fem
     };
   }
 
+  /**
+   *  \brief Namespace containing an Enum class to describe the explicit/implicit
+   *  operator splitting.
+   */
   namespace OperatorSplit
   {
+    /**
+     * \ingroup FemDGParameter
+     */
     enum class Enum
     {
       full,
