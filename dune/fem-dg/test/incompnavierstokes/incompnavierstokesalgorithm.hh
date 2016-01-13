@@ -21,7 +21,7 @@ namespace Fem
     typedef typename BaseType::IOTupleType                       IOTupleType;
     typedef typename BaseType::SolverMonitorHandlerType          SolverMonitorHandlerType;
 
-    typedef typename BaseType::StepperTupleType                  StepperTupleType;
+    typedef typename BaseType::SubAlgorithmTupleType             SubAlgorithmTupleType;
     typedef typename BaseType::TimeProviderType                  TimeProviderType;
 
     typedef typename BaseType::DiagnosticsHandlerType            DiagnosticsHandlerType;
@@ -32,17 +32,16 @@ namespace Fem
 
     typedef typename BaseType::UInt64Type                        UInt64Type ;
 
-    typedef typename BaseType::StepperParametersType             StepperParametersType;
+    typedef typename BaseType::TimeSteppingParametersType        TimeSteppingParametersType;
 
     using BaseType::eocParams;
     using BaseType::grid;
 
-    static const int numSteppers = std::tuple_size< StepperTupleType >::value;
-
-    static_assert( numSteppers == 3, "This InCompNavierStokesAlgorithm needs three sub algorithms: 1. Stokes, 2. Oseen, 3. Stokes" );
+    static_assert( std::tuple_size< SubAlgorithmTupleType >::value == 3,
+                   "This InCompNavierStokesAlgorithm needs three sub algorithms: 1. Stokes, 2. Oseen, 3. Stokes" );
 
   public:
-    typedef EvolutionCreatorType< StepperTupleType, GridType >           CreatorType;
+    typedef EvolutionCreatorType< SubAlgorithmTupleType, GridType > CreatorType;
 
     IncompNavierStokesAlgorithm ( GridType &grid, const std::string name = "" )
     : BaseType( grid, name  )
@@ -50,9 +49,9 @@ namespace Fem
 
     virtual void initialize ( int loop, TimeProviderType &tp )
     {
-      auto step1 = std::get<0>( BaseType::stepperTuple() );
-      auto step2 = std::get<1>( BaseType::stepperTuple() );
-      auto step3 = std::get<2>( BaseType::stepperTuple() );
+      auto step1 = std::get<0>( BaseType::subAlgorithmTuple() );
+      auto step2 = std::get<1>( BaseType::subAlgorithmTuple() );
+      auto step3 = std::get<2>( BaseType::subAlgorithmTuple() );
 
 
       //concate solutions()
@@ -63,9 +62,9 @@ namespace Fem
 
     virtual void preStep ( int loop, TimeProviderType &tp )
     {
-      auto step1 = std::get<0>( BaseType::stepperTuple() );
-      auto step2 = std::get<1>( BaseType::stepperTuple() );
-      auto step3 = std::get<2>( BaseType::stepperTuple() );
+      auto step1 = std::get<0>( BaseType::subAlgorithmTuple() );
+      auto step2 = std::get<1>( BaseType::subAlgorithmTuple() );
+      auto step3 = std::get<2>( BaseType::subAlgorithmTuple() );
 
       const double theta = step1->problem().get<0>().theta();
       const double time  = tp.time();
@@ -96,9 +95,9 @@ namespace Fem
     //define your own time step
     virtual void step ( int loop, TimeProviderType &tp )
     {
-      auto step1 = std::get<0>( BaseType::stepperTuple() );
-      auto step2 = std::get<1>( BaseType::stepperTuple() );
-      auto step3 = std::get<2>( BaseType::stepperTuple() );
+      auto step1 = std::get<0>( BaseType::subAlgorithmTuple() );
+      auto step2 = std::get<1>( BaseType::subAlgorithmTuple() );
+      auto step3 = std::get<2>( BaseType::subAlgorithmTuple() );
 
       const double theta = step1->problem().get<0>().theta();
       const double time  = tp.time();

@@ -51,9 +51,6 @@ namespace Fem
     };
 
 
-    //static_assert( Std::are_all_same< GridType, typename StepperArg::GridType... >::value,
-    //               "DataWriterHandler: GridType has to be equal for all steppers" );
-
   private:
     template< int i >
     struct AdditionalOutput

@@ -38,17 +38,17 @@ namespace Fem
   class EvolutionAlgorithmBase;
 
 
-  // StepperParametersType
+  // TimeSteppingParametersType
   // ---------------------
 
-  class StepperParameters
-  : public Dune::Fem::LocalParameter< StepperParameters, StepperParameters >
+  class TimeSteppingParameters
+  : public Dune::Fem::LocalParameter< TimeSteppingParameters, TimeSteppingParameters >
   {
     protected:
     const std::string keyPrefix_;
 
     public:
-    StepperParameters( const std::string keyPrefix = "femdg.stepper." )
+    TimeSteppingParameters( const std::string keyPrefix = "femdg.stepper." )
       : keyPrefix_( keyPrefix )
     {}
 
@@ -109,49 +109,60 @@ namespace Fem
 
     //typedef ...
     typedef std::tuple< typename std::add_pointer< typename ProblemTraits::template Stepper<polOrder>::Type >::type... >
-                                                                        StepperTupleType;
+                                                                        SubAlgorithmTupleType;
 
-    //typedef typename Std::make_index_sequence_impl< std::tuple_size< StepperTupleType >::value >::type
+    //typedef typename Std::make_index_sequence_impl< std::tuple_size< SubAlgorithmTupleType >::value >::type
     //                                                                  IndexSequenceType;
 
-    typedef Dune::Fem::AdaptHandler< StepperTupleType >                 AdaptHandlerType;
-    typedef Dune::Fem::CheckPointHandler< StepperTupleType >            CheckPointHandlerType;
-    typedef Dune::Fem::SolverMonitorHandler< StepperTupleType >         SolverMonitorHandlerType;
-    typedef Dune::Fem::DataWriterHandler< StepperTupleType >            DataWriterHandlerType;
-    typedef Dune::Fem::DiagnosticsHandler< StepperTupleType >           DiagnosticsHandlerType;
-    typedef Dune::Fem::SolutionLimiterHandler< StepperTupleType >       SolutionLimiterHandlerType;
+    typedef Dune::Fem::AdaptHandler< SubAlgorithmTupleType >            AdaptHandlerType;
+    typedef Dune::Fem::CheckPointHandler< SubAlgorithmTupleType >       CheckPointHandlerType;
+    typedef Dune::Fem::SolverMonitorHandler< SubAlgorithmTupleType >    SolverMonitorHandlerType;
+    typedef Dune::Fem::DataWriterHandler< SubAlgorithmTupleType >       DataWriterHandlerType;
+    typedef Dune::Fem::DiagnosticsHandler< SubAlgorithmTupleType >      DiagnosticsHandlerType;
+    typedef Dune::Fem::SolutionLimiterHandler< SubAlgorithmTupleType >  SolutionLimiterHandlerType;
 
     typedef typename DataWriterHandlerType::IOTupleType                 IOTupleType;
 
   };
 
-  template< class StepperTupleType, class GridType >
-  struct DefaultEvolutionCreator
+  /**
+   *  \brief Creates a tuple of sub algorithms
+   *
+   *  \note This is the default implementation which should be used
+   *  for uncoupled algorithms.
+   *
+   *  \tparam SubAlgorithmTupleImp
+   *  \tparam GridImp
+   */
+  template< class SubAlgorithmTupleImp, class GridImp >
+  class DefaultEvolutionCreator
   {
+    typedef SubAlgorithmTupleImp  SubAlgorithmTupleType;
+    typedef GridImp               GridType;
+
 
     template< int i >
-    using Element = typename std::remove_pointer< typename std::tuple_element< i, StepperTupleType >::type >::type;
+    using Element = typename std::remove_pointer< typename std::tuple_element< i, SubAlgorithmTupleType >::type >::type;
 
 
     template< std::size_t i >
-    static Element<i>* createSingleStepper( GridType& grid )
+    static Element<i>* createSubAlgorithm( GridType& grid )
     {
       static typename Element<i>::ContainerType container( grid );
-      static auto element = new Element<i>( grid, container );
-      return element;
+      return new Element<i>( grid, container );
     }
 
     template< std::size_t ...i >
-    static StepperTupleType apply ( Std::index_sequence< i... >, GridType &grid )
+    static SubAlgorithmTupleType apply ( Std::index_sequence< i... >, GridType &grid )
     {
-      static auto tuple = std::make_tuple( createSingleStepper<i>( grid )... );
-      return tuple;
+      return std::make_tuple( createSubAlgorithm<i>( grid )... );
     }
 
+  public:
     // create Tuple of contained sub algorithms
-    static StepperTupleType apply ( GridType &grid )
+    static SubAlgorithmTupleType apply ( GridType &grid )
     {
-      return apply( typename Std::make_index_sequence_impl< std::tuple_size< StepperTupleType >::value >::type(), grid );
+      return apply( typename Std::make_index_sequence_impl< std::tuple_size< SubAlgorithmTupleType >::value >::type(), grid );
     }
   };
 
@@ -185,7 +196,7 @@ namespace Fem
     typedef typename BaseType::IOTupleType                       IOTupleType;
     typedef typename BaseType::SolverMonitorHandlerType          SolverMonitorHandlerType;
 
-    typedef typename Traits::StepperTupleType                    StepperTupleType;
+    typedef typename Traits::SubAlgorithmTupleType               SubAlgorithmTupleType;
     typedef typename Traits::TimeProviderType                    TimeProviderType;
 
     typedef typename Traits::DiagnosticsHandlerType              DiagnosticsHandlerType;
@@ -196,12 +207,10 @@ namespace Fem
 
     typedef uint64_t                                             UInt64Type ;
 
-    typedef StepperParameters                                    StepperParametersType;
+    typedef TimeSteppingParameters                               TimeSteppingParametersType;
 
     using BaseType::eocParams;
     using BaseType::grid;
-
-    static const int numSteppers = std::tuple_size< StepperTupleType >::value;
 
   private:
     struct Initialize {
@@ -270,44 +279,20 @@ namespace Fem
     };
 
     template< class Caller >
-    using ForLoopType = ForLoop< LoopCallee<Caller>::template Apply, 0,  numSteppers-1 >;
-
-    template< int I >
-    using Element = typename std::remove_pointer< typename std::tuple_element< I, StepperTupleType >::type >::type;
-
-    template< std::size_t i >
-    static Element<i>* createSingleStepper( GridType& grid )
-    {
-      static typename Element<i>::ContainerType container( grid );
-      static auto element = new Element<i>( grid, container );
-      return element;
-    }
-
-    template< std::size_t ...i >
-    static StepperTupleType createStepper ( Std::index_sequence< i... >, GridType &grid )
-    {
-      static auto tuple = std::make_tuple( createSingleStepper<i>( grid )... );
-      return tuple;
-    }
-
-    // create Tuple of contained sub algorithms
-    static StepperTupleType createStepper( GridType &grid )
-    {
-      return createStepper( typename Std::make_index_sequence_impl< std::tuple_size< StepperTupleType >::value >::type(), grid );
-    }
+    using ForLoopType = ForLoop< LoopCallee<Caller>::template Apply, 0, std::tuple_size< SubAlgorithmTupleType >::value-1 >;
 
   public:
 
     EvolutionAlgorithmBase ( GridType &grid, const std::string name = "" )
     : BaseType( grid, name  ),
-      tuple_( EvolutionCreatorType< StepperTupleType, GridType >::apply( grid ) ),
+      tuple_( EvolutionCreatorType< SubAlgorithmTupleType, GridType >::apply( grid ) ),
       checkPointHandler_( tuple_ ),
       dataWriterHandler_( tuple_ ),
       diagnosticsHandler_( tuple_ ),
       solverMonitorHandler_( tuple_ ),
       solutionLimiterHandler_( tuple_ ),
       adaptHandler_( tuple_ ),
-      param_( StepperParametersType( ParameterKey::generate( "", "femdg.stepper." ) ) ),
+      param_( TimeSteppingParametersType( ParameterKey::generate( "", "femdg.stepper." ) ) ),
       overallTimer_(),
       timeStepTimer_( Dune::FemTimer::addTo("sum time for timestep") ),
       fixedTimeStep_( param_.fixedTimeStep() )
@@ -568,11 +553,11 @@ namespace Fem
       ForLoopType< Finalize >::apply( tuple_, loop, &tp );
     }
 
-    StepperTupleType &stepperTuple () { return tuple_; }
-    const StepperTupleType &stepperTuple () const { return tuple_; }
+    SubAlgorithmTupleType &subAlgorithmTuple () { return tuple_; }
+    const SubAlgorithmTupleType &subAlgorithmTuple () const { return tuple_; }
 
   protected:
-    StepperTupleType               tuple_;
+    SubAlgorithmTupleType          tuple_;
 
     CheckPointHandlerType          checkPointHandler_;
     DataWriterHandlerType          dataWriterHandler_;
@@ -581,7 +566,7 @@ namespace Fem
     SolutionLimiterHandlerType     solutionLimiterHandler_;
     AdaptHandlerType               adaptHandler_;
 
-    StepperParametersType          param_;
+    TimeSteppingParametersType     param_;
     Dune::Timer                    overallTimer_;
     unsigned int                   timeStepTimer_;
     double                         fixedTimeStep_;

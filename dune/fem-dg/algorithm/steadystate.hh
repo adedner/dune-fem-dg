@@ -27,6 +27,8 @@ namespace Dune
 namespace Fem
 {
 
+
+  //
   template< int polOrder, class ... ProblemTraits >
   struct SteadyStateTraits
   {
@@ -39,45 +41,62 @@ namespace Fem
 
     //typedef ...
     typedef std::tuple< typename std::add_pointer< typename ProblemTraits::template Stepper<polOrder>::Type >::type... >
-                                                                           StepperTupleType;
+                                                                           SubAlgorithmTupleType;
 
-    //typedef typename Std::make_index_sequence_impl< std::tuple_size< StepperTupleType >::value >::type
+    //typedef typename Std::make_index_sequence_impl< std::tuple_size< SubAlgorithmTupleType >::value >::type
     //                                                                     IndexSequenceType;
 
-    typedef Dune::Fem::SolverMonitorHandler< StepperTupleType >            SolverMonitorHandlerType;
-    typedef Dune::Fem::DataWriterHandler< StepperTupleType >               DataWriterHandlerType;
+    typedef Dune::Fem::SolverMonitorHandler< SubAlgorithmTupleType >       SolverMonitorHandlerType;
+    typedef Dune::Fem::DataWriterHandler< SubAlgorithmTupleType >          DataWriterHandlerType;
 
     typedef typename DataWriterHandlerType::IOTupleType                    IOTupleType;
   };
 
 
-  template< class StepperTupleType, class GridType >
-  struct DefaultSteadyStateCreator
+  /**
+   *  \brief Creates a tuple of sub algorithms
+   *
+   *  \note This is the default implementation which should be used
+   *  for uncoupled algorithms.
+   *
+   *  \tparam SubAlgorithmTupleImp
+   *  \tparam GridImp
+   */
+  template< class SubAlgorithmTupleImp, class GridImp >
+  class DefaultSteadyStateCreator
   {
+    typedef SubAlgorithmTupleImp  SubAlgorithmTupleType;
+    typedef GridImp               GridType;
 
     template< int i >
-    using Element = typename std::remove_pointer< typename std::tuple_element< i, StepperTupleType >::type >::type;
+    using Element = typename std::remove_pointer< typename std::tuple_element< i, SubAlgorithmTupleType >::type >::type;
 
 
     template< std::size_t i >
-    static Element<i>* createSingleStepper( GridType& grid )
+    static Element<i>* createSubAlgorithm( GridType& grid )
     {
       static typename Element<i>::ContainerType container( grid );
-      static auto element = new Element<i>( grid, container );
-      return element;
+      return new Element<i>( grid, container );
     }
 
     template< std::size_t ...i >
-    static StepperTupleType apply ( Std::index_sequence< i... >, GridType &grid )
+    static SubAlgorithmTupleType apply ( Std::index_sequence< i... >, GridType &grid )
     {
-      static auto tuple = std::make_tuple( createSingleStepper<i>( grid )... );
-      return tuple;
+      return std::make_tuple( createSubAlgorithm<i>( grid )... );
     }
 
-    // create Tuple of contained sub algorithms
-    static StepperTupleType apply ( GridType &grid )
+  public:
+    /**
+     * \brief Creates a tuple of sub algorithms
+     *
+     *
+     *
+     * \param grid the grid which is needed to construct the algorithms
+     * \return The constructed tuple of algorithms
+     */
+    static SubAlgorithmTupleType apply ( GridType &grid )
     {
-      return apply( typename Std::make_index_sequence_impl< std::tuple_size< StepperTupleType >::value >::type(), grid );
+      return apply( typename Std::make_index_sequence_impl< std::tuple_size< SubAlgorithmTupleType >::value >::type(), grid );
     }
   };
 
@@ -97,7 +116,7 @@ namespace Fem
 
     typedef uint64_t                                                    UInt64Type ;
 
-    typedef std::tuple< typename std::add_pointer< typename ProblemTraits::template Stepper<polOrder>::Type >::type... > StepperTupleType;
+    typedef std::tuple< typename std::add_pointer< typename ProblemTraits::template Stepper<polOrder>::Type >::type... > SubAlgorithmTupleType;
 
   private:
     struct Initialize {
@@ -155,7 +174,7 @@ namespace Fem
 
     SteadyStateAlgorithm ( GridType &grid )
     : BaseType( grid ),
-      tuple_( SteadyStateCreatorType< StepperTupleType, GridType >::apply( grid ) ),
+      tuple_( SteadyStateCreatorType< SubAlgorithmTupleType, GridType >::apply( grid ) ),
       solverMonitorHandler_( tuple_ ),
       dataWriterHandler_( tuple_ )
     {}
@@ -217,7 +236,7 @@ namespace Fem
 
   protected:
 
-    StepperTupleType               tuple_;
+    SubAlgorithmTupleType          tuple_;
     SolverMonitorHandlerType       solverMonitorHandler_;
     DataWriterHandlerType          dataWriterHandler_;
   };

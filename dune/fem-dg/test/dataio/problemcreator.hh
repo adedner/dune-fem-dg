@@ -56,31 +56,30 @@ namespace Fem
     // wrap operator
     typedef Dune::Fem::GridTimeProvider< GridType >                                   TimeProviderType;
 
-    typedef std::tuple< typename std::add_pointer< typename ProblemTraits::template Stepper<polOrder>::Type >::type... > StepperTupleType;
+    typedef std::tuple< typename std::add_pointer< typename ProblemTraits::template Stepper<polOrder>::Type >::type... > SubAlgorithmTupleType;
 
-    typedef typename Dune::Std::make_index_sequence_impl< std::tuple_size< StepperTupleType >::value >::type  IndexSequenceType;
+    typedef typename Dune::Std::make_index_sequence_impl< std::tuple_size< SubAlgorithmTupleType >::value >::type  IndexSequenceType;
     typedef Dune::Std::index_sequence<>                                                                       NoIndexSequenceType;
 
-    typedef Dune::Fem::AdaptHandler< StepperTupleType, NoIndexSequenceType >            AdaptHandlerType;
-    typedef Dune::Fem::DiagnosticsHandler < StepperTupleType, NoIndexSequenceType >     DiagnosticsHandlerType;
-    typedef Dune::Fem::SolverMonitorHandler < StepperTupleType, NoIndexSequenceType >   SolverMonitorHandlerType;
-    typedef Dune::Fem::CheckedCheckPointHandler < StepperTupleType >                    CheckPointHandlerType;
-    typedef Dune::Fem::DataWriterHandler < StepperTupleType >                           DataWriterHandlerType;
-    typedef Dune::Fem::SolutionLimiterHandler < StepperTupleType, NoIndexSequenceType > SolutionLimiterHandlerType;
+    typedef Dune::Fem::AdaptHandler< SubAlgorithmTupleType, NoIndexSequenceType >            AdaptHandlerType;
+    typedef Dune::Fem::DiagnosticsHandler < SubAlgorithmTupleType, NoIndexSequenceType >     DiagnosticsHandlerType;
+    typedef Dune::Fem::SolverMonitorHandler < SubAlgorithmTupleType, NoIndexSequenceType >   SolverMonitorHandlerType;
+    typedef Dune::Fem::CheckedCheckPointHandler < SubAlgorithmTupleType >                    CheckPointHandlerType;
+    typedef Dune::Fem::DataWriterHandler < SubAlgorithmTupleType >                           DataWriterHandlerType;
+    typedef Dune::Fem::SolutionLimiterHandler < SubAlgorithmTupleType, NoIndexSequenceType > SolutionLimiterHandlerType;
 
-    typedef typename DataWriterHandlerType::IOTupleType                                                                      IOTupleType;
+    typedef typename DataWriterHandlerType::IOTupleType                                                                IOTupleType;
 
     template< std::size_t ...i >
-    static StepperTupleType createStepper ( Dune::Std::index_sequence< i... >, GridType &grid, const std::string name = "" )
+    static SubAlgorithmTupleType createSubAlgorithm ( Dune::Std::index_sequence< i... >, GridType &grid, const std::string name = "" )
     {
-      static auto tuple = std::make_tuple( new typename std::remove_pointer< typename std::tuple_element< i, StepperTupleType >::type >::type( grid, name ) ... );
-      return tuple;
+      return std::make_tuple( new typename std::remove_pointer< typename std::tuple_element< i, SubAlgorithmTupleType >::type >::type( grid, name ) ... );
     }
 
     // create Tuple of contained sub algorithms
-    static StepperTupleType createStepper( GridType &grid, const std::string name = "" )
+    static SubAlgorithmTupleType createSubAlgorithm( GridType &grid, const std::string name = "" )
     {
-      return createStepper( Dune::Std::index_sequence_for< ProblemTraits ... >(), grid, name );
+      return createSubAlgorithm( Dune::Std::index_sequence_for< ProblemTraits ... >(), grid, name );
     }
   };
 

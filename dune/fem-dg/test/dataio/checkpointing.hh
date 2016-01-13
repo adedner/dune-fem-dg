@@ -116,7 +116,7 @@ namespace Fem
     typedef typename BaseType::CheckPointDiscreteFunctionType CheckPointDiscreteFunctionType;
     typedef typename BaseType::AdaptationDiscreteFunctionType AdaptationDiscreteFunctionType;
 
-    typedef SubSteadyStateContainer< DiscreteFunctionType >   ContainerType;
+    typedef SubEvolutionContainer< DiscreteFunctionType >     ContainerType;
 
     typedef typename ProblemTraits::AnalyticalTraits          AnalyticalTraits;
 
@@ -131,7 +131,7 @@ namespace Fem
     : BaseType( grid ),
       gridPart_( grid ),
       space_( gridPart_ ),
-      solution_( doCreateSolution() ),
+      solution_( new DiscreteFunctionType( "U_"+name(), space_ ) ),
       ioTuple_( std::make_tuple( &solution(), nullptr ) ),
       error_( 0.0 )
     {}
@@ -169,11 +169,6 @@ namespace Fem
     }
 
   private:
-    virtual DiscreteFunctionType* doCreateSolution()
-    {
-      return new DiscreteFunctionType( "U_"+name(), space_ );
-    }
-
     virtual void doInitialize ( const int loop, TimeProviderType& tp ) override
     {
       auto ftp = problem().fixedTimeFunction( tp.time() );

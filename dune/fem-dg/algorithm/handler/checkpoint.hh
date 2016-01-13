@@ -99,8 +99,6 @@ namespace Fem
 
     template< template<int> class Caller >
     using ForLoopType = ForLoop< Caller, 0, numAlgs - 1 >;
-    //static_assert( Std::are_all_same< typename StepperHead::GridType, typename StepperArg::GridType... >::value,
-    //               "CheckPointHandler: GridType has to be equal for all steppers" );
 
   public:
 

@@ -30,10 +30,10 @@ namespace Fem
     /** \brief converts a discrete function of conservative variables to
      *    a discrete function of primitive variables for a visualization purpose only
      */
-    template< class TimeProviderImp, class SubStepperImp >
-    void step( const TimeProviderImp& tp, const SubStepperImp& stepper )
+    template< class TimeProviderImp, class SubAlgorithmImp >
+    void step( const TimeProviderImp& tp, const SubAlgorithmImp& stepper )
     {
-      typedef typename SubStepperImp::DiscreteFunctionType                  InDiscreteFunctionType;
+      typedef typename SubAlgorithmImp::DiscreteFunctionType                InDiscreteFunctionType;
       typedef typename InDiscreteFunctionType::DiscreteFunctionSpaceType    InDiscreteFunctionSpaceType;
       typedef DiscreteFunctionImp                                           OutDiscreteFunctionType;
       typedef typename OutDiscreteFunctionType::DiscreteFunctionSpaceType   OutDiscreteFunctionSpaceType;
@@ -106,12 +106,12 @@ namespace Fem
       : solution_( nullptr )
     {}
 
-    template< class TimeProviderImp, class SubStepperImp >
-    void step( TimeProviderImp& tp, SubStepperImp& stepper )
+    template< class TimeProviderImp, class SubAlgorithmImp >
+    void step( TimeProviderImp& tp, SubAlgorithmImp& stepper )
     {
       if( solution_ )
       {
-        typedef typename SubStepperImp::ProblemType::InstationaryFunctionType      ExactSolutionType;
+        typedef typename SubAlgorithmImp::ProblemType::InstationaryFunctionType      ExactSolutionType;
         typedef Dune::Fem::GridFunctionAdapter< ExactSolutionType, GridPartType >  GridFunctionAdapterType;
         auto ftf = stepper.problem().fixedTimeFunction( tp.time() );
         GridFunctionAdapterType adapter( "temporary adapter", ftf , solution_->space().gridPart(), solution_->space().order()+2 );
