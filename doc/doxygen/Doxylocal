@@ -17,6 +17,10 @@ INPUT                 += @srcdir@/modules.txt \
 
 IMAGE_PATH              = @srcdir@/../pics
  
+SHOW_NAMESPACES        = NO
+
+SEARCHENGINE           = YES
+
 EXCLUDE_PATTERNS       = 
 
 ALIASES              += notcleardoc="\xrefitem notcleardoc \"documentation will be extended\" \"Needs extended documentation\"" \
