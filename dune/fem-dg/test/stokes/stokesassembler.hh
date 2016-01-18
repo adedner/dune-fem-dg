@@ -16,7 +16,10 @@
 #include <dune/fem-dg/algorithm/sub/elliptic.hh>
 
 
-namespace Dune {
+namespace Dune
+{
+namespace Fem
+{
 #define PRESSURESTABILIZATION 0
 
 
@@ -782,5 +785,6 @@ namespace Dune {
     double                                       d12_;
     DomainType                                   direction_;
   };
+}
 }
 #endif
