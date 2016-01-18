@@ -94,7 +94,7 @@ namespace Fem
                                RangeType& s ) const
     {
       // some special RHS for testcases/NSWaves
-      const DomainType& xgl = local.entity().geometry().global( local.point() );
+      const DomainType& xgl = local.entity().geometry().global( local.position() );
       return problem_.stiffSource( local.time(), xgl, u, s );
     }
 
@@ -105,7 +105,7 @@ namespace Fem
                                   RangeType& s ) const
     {
       // some special RHS for testcases/NSWaves
-      const DomainType& xgl = local.entity().geometry().global( local.point() );
+      const DomainType& xgl = local.entity().geometry().global( local.position() );
       return problem_.nonStiffSource( local.time(), xgl, u, s );
     }
 
@@ -244,8 +244,8 @@ namespace Fem
                                 RangeType& gLeft ) const
     {
       abort();
-      DomainType xgl= local.intersection().intersectionGlobal().global( local.localPoint() );
-      const DomainType normal = local.intersection().integrationOuterNormal( local.localPoint() );
+      DomainType xgl= local.intersection().intersectionGlobal().global( local.localPosition() );
+      const DomainType normal = local.intersection().integrationOuterNormal( local.localPosition() );
       RangeFieldType p;
       RangeFieldType T;
       pressAndTemp( uLeft, p, T );
@@ -276,7 +276,7 @@ namespace Fem
                                const RangeType& uLeft,
                                RangeType& uRight ) const
     {
-      const DomainType xgl = local.intersection().geometry().global( local.localPoint() );
+      const DomainType xgl = local.intersection().geometry().global( local.localPosition() );
       problem_.evaluate( local.time(), xgl, uRight );
     }
 

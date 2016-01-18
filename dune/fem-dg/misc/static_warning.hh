@@ -4,6 +4,8 @@
 //solution taken and modified from stackoverflow.com by "Managu"
 //uses deprecation warning attribute
 
+#ifndef DOXYGEN
+
 #define PP_CAT(x,y) PP_CAT1(x,y)
 #define PP_CAT1(x,y) x##y
 
@@ -31,6 +33,9 @@ struct PP_CAT(static_warning_,id) { \
 } PP_CAT(_localvar_,id)
 #else
 #define STATIC_WARNING(cond, msg, id)
+#endif
+
+
 #endif
 
 /**

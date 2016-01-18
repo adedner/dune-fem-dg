@@ -61,7 +61,7 @@ namespace Fem
                                  RangeType& gLeft,
                                  RangeType& gRight ) const
     {
-      const FaceDomainType& x = left.localPoint();
+      const FaceDomainType& x = left.localPosition();
 
       // get normal from intersection
       const DomainType normal = left.intersection().integrationOuterNormal(x);

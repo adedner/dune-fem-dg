@@ -81,7 +81,7 @@ namespace Fem
                                const JacobianRangeType& du,
                                RangeType & s) const
     {
-      const DomainType x = local.entity().geometry().global( local.point() );
+      const DomainType x = local.entity().geometry().global( local.position() );
       // right hand side
       problem_.f( x, s );
 
@@ -131,7 +131,7 @@ namespace Fem
     inline DomainType velocity ( const LocalEvaluation& local ) const
     {
       DomainType v;
-      problem_.velocity( local.entity().geometry().global( local.point() ), v );
+      problem_.velocity( local.entity().geometry().global( local.position() ), v );
       return v;
     }
 
@@ -159,7 +159,7 @@ namespace Fem
                             RangeType& maxValue) const
     {
       DiffusionMatrixType K ;
-      DomainType xgl = local.entity().geometry().global( local.point() );
+      DomainType xgl = local.entity().geometry().global( local.position() );
       problem_.K( xgl, K );
 
       DomainType values ;
@@ -192,7 +192,7 @@ namespace Fem
     {
       // for constant K evalute at center (see Problem 4)
       const DomainType xgl = ( problem_.constantK() ) ?
-        local.entity().geometry().center () : local.entity().geometry().global(local.point())  ;
+        local.entity().geometry().center () : local.entity().geometry().global(local.position())  ;
 
       DiffusionMatrixType K ;
 
@@ -234,7 +234,7 @@ namespace Fem
       }
       else
       {
-        DomainType xgl = local.entity().geometry().global( local.point() );
+        DomainType xgl = local.entity().geometry().global( local.position() );
         problem_.g(xgl, uRight);
       }
     }
@@ -283,7 +283,7 @@ namespace Fem
       }
       else
       {
-        const DomainType xgl = left.entity().geometry().global( left.point() );
+        const DomainType xgl = left.entity().geometry().global( left.position() );
         problem_.K( xgl , K );
 
         betaK = lambdaK( K );

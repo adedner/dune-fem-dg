@@ -784,7 +784,7 @@ namespace Fem
       gLeft  = 0;
       gRight = 0;
 
-      const FaceDomainType& x = left.localPoint();
+      const FaceDomainType& x = left.localPosition();
       const DomainType normal = left.intersection().integrationOuterNormal( x );
 
       const double faceLengthSqr = normal.two_norm2();
@@ -1035,7 +1035,7 @@ namespace Fem
                         JacobianRangeType& gDiffLeft )
     {
       // get local point
-      const FaceDomainType& x = left.localPoint();
+      const FaceDomainType& x = left.localPosition();
       const DomainType normal = left.intersection().integrationOuterNormal( x );
 
       const double faceLengthSqr = normal.two_norm2();

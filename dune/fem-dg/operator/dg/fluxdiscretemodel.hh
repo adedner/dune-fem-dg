@@ -165,7 +165,7 @@ namespace Fem
     void analyticalFlux(const LocalEvaluation& local,
                         JacobianRangeType& f)
     {
-      model_.jacobian( local.entity(), local.time(), local.point(), local.values()[ uVar ], f);
+      model_.jacobian( local.entity(), local.time(), local.position(), local.values()[ uVar ], f);
     }
 
     /**
@@ -192,7 +192,7 @@ namespace Fem
                         RangeType& gLeft,
                         JacobianRangeType& gDiffLeft ) const
     {
-      const FaceDomainType& x = faceQuadInner.localPoint( quadPoint );
+      const FaceDomainType& x = faceQuadInner.localPosition( quadPoint );
 
       UType uRight;
 
@@ -341,7 +341,7 @@ namespace Fem
       if (diffusion)
       {
         const double dtStiff =
-          model_.stiffSource( local.entity(), local.time(), local.point(), local.values()[uVar], uJac, s );
+          model_.stiffSource( local.entity(), local.time(), local.position(), local.values()[uVar], uJac, s );
         dtEst = ( dtStiff > 0 ) ? dtStiff : dtEst;
       }
 
@@ -349,7 +349,7 @@ namespace Fem
       {
         RangeType sNonStiff(0);
         const double dtNon =
-          model_.nonStiffSource( local.entity(), local.time(), local.point(), local.values()[uVar], uJac, sNonStiff );
+          model_.nonStiffSource( local.entity(), local.time(), local.position(), local.values()[uVar], uJac, sNonStiff );
 
         s += sNonStiff;
 
@@ -443,7 +443,7 @@ namespace Fem
       double diffTimeStep = 0.0;
 
       bool hasBoundaryValue =
-        model_.hasBoundaryValue( left.intersection(), left.time(), left.localPoint() );
+        model_.hasBoundaryValue( left.intersection(), left.time(), left.localPosition() );
 
       if( diffusion && hasBoundaryValue )
       {
@@ -465,7 +465,7 @@ namespace Fem
         typedef typename DiffusionFluxType::GradientRangeType GradientRangeType;
         Dune::Fem::FieldMatrixConverter< GradientRangeType, JacobianRangeType > uJac( left.values()[ sigmaVar ] );
 
-        model_.diffusionBoundaryFlux( left.intersection(), left.time(), left.localPoint(),
+        model_.diffusionBoundaryFlux( left.intersection(), left.time(), left.localPosition(),
                                       left.values()[uVar], uJac, diffBndFlux );
         gLeft += diffBndFlux;
       }
@@ -495,7 +495,7 @@ namespace Fem
         typedef typename DiffusionFluxType::GradientRangeType GradientRangeType;
         Dune::Fem::FieldMatrixConverter< GradientRangeType, JacobianRangeType > uJac( local.values()[ sigmaVar ] );
 
-        model_.diffusion( local.entity(), local.time(), local.point(), local.values()[ uVar ], uJac, diffmatrix);
+        model_.diffusion( local.entity(), local.time(), local.position(), local.values()[ uVar ], uJac, diffmatrix);
         // ldg case
         f += diffmatrix;
       }

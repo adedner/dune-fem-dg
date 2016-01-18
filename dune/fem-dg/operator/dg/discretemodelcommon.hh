@@ -549,7 +549,7 @@ namespace Fem
         }
 
         // get face volume
-        const double faceVol = left.intersection().geometry().integrationElement( left.localPoint() );
+        const double faceVol = left.intersection().geometry().integrationElement( left.localPosition() );
 
         // calculate grid width
         double weight = weight_ *

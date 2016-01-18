@@ -253,7 +253,7 @@ namespace Fem
         {
           LocalEvaluationType local( entity, quadrature, uZero, uJacZero, pt, time, volume );
 
-          const double weight = quadrature.weight( pt ) * geometry.integrationElement( local.point() );
+          const double weight = quadrature.weight( pt ) * geometry.integrationElement( local.position() );
 
           // resize of phi and dphi is done in evaluate methods
           baseSet.evaluateAll( quadrature[ pt ], phi );

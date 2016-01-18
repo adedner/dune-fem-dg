@@ -348,9 +348,9 @@ namespace Fem
       return std::string("");
     }
 
- // protected:
     ProblemInterface() : exactSolution_( *this ) {}
 
+  protected:
     //! the exact solution to the problem for EOC calculation
     class ExactSolution
     : public Fem:: Function< FunctionSpaceType, ExactSolution >

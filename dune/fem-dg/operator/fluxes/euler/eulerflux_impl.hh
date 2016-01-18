@@ -567,7 +567,7 @@ namespace Euler
                           RangeType& gLeft,
                           RangeType& gRight) const
     {
-      DomainType normal = left.intersection().integrationOuterNormal( left.localPoint() );
+      DomainType normal = left.intersection().integrationOuterNormal( left.localPosition() );
       const double len = normal.two_norm();
       normal *= 1./len;
 

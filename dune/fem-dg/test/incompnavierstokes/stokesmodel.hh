@@ -110,7 +110,7 @@ namespace Fem
       if( SplitType::hasSource )
       {
         // right hand side
-        const DomainType x = local.entity().geometry().global( local.point() );
+        const DomainType x = local.entity().geometry().global( local.position() );
         problem_.f( x, s );
         s *= SplitType::source();
         //s  = u ;
@@ -194,7 +194,7 @@ namespace Fem
                             RangeType& maxValue) const
     {
       DiffusionMatrixType K ;
-      DomainType xgl = local.entity().geometry().global( local.point() );
+      DomainType xgl = local.entity().geometry().global( local.position() );
       problem_.K( xgl, K );
 
       DomainType values ;
@@ -228,7 +228,7 @@ namespace Fem
       {
         // for constant K evalute at center (see Problem 4)
         const DomainType xgl = ( problem_.constantK() ) ?
-          local.entity().geometry().center () : local.entity().geometry().global(local.point())  ;
+          local.entity().geometry().center () : local.entity().geometry().global(local.position())  ;
 
         DiffusionMatrixType K ;
 
@@ -273,7 +273,7 @@ namespace Fem
                                const RangeType& uLeft,
                                RangeType& uRight) const
     {
-      DomainType xgl = local.entity().geometry().global( local.point() );
+      DomainType xgl = local.entity().geometry().global( local.position() );
       problem_.g(xgl, uRight);
     }
 
@@ -332,7 +332,7 @@ namespace Fem
       }
       else
       {
-        const DomainType xgl = left.entity().geometry().global( left.point() );
+        const DomainType xgl = left.entity().geometry().global( left.position() );
         problem_.K( xgl , K );
 
         betaK = lambdaK( K );

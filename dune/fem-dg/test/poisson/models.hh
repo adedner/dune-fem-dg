@@ -36,9 +36,12 @@ namespace Fem
    *
    * \ingroup AnalyticalModels
    *
+   * The main goal of this class is provide all the analytical data of
+   * the partial differential equation.
+   *
    * This is an description class for the problem
    * \f{eqnarray*}{ V + \nabla a(U)                 & = & 0 \\
-   * \partial_t U + \nabla \cdot (F(U)+A(U,V)) +S(U) & = & 0 \\
+   * \partial_t U + \nabla \cdot (F(U)+A(U,V)) +S_1(U) + S_2(U) & = & 0 \\
    *                                U                & = & g_D \\
    *                               \nabla U \cdot n  & = & g_N \f}
    *
@@ -58,6 +61,22 @@ namespace Fem
    * \f[ \Delta M = \nabla \cdot (\nabla \cdot (M_{i\cdot})^t)_{i\in 1\dots n} \f]
    *
    * for a matrix \f$M\in \mathbf{M}^{n\times m}\f$.
+   *
+   * | Method                     | formular                                  |
+   * | -------------------------- | ----------------------------------------- |
+   * | stiffSource()              | \f$ S_1 \f$                               |
+   * | nonStiffSource()           | \f$ S_2 \f$                               |
+   * | boundaryValue()            | \f$ g_D\f$                                |
+   * | hasBoundaryValue()         | true if \f$ x \in \Gamma_D \f$            |
+   * | diffusion()                | \f$ A \f$                                 |
+   * | advection()                | \f$ F \f$                                 |
+   * | jacobian()                 | \f$ a \f$                                 |
+   * | boundaryFlux()             | \f$ g_N \f$                               |
+   * | diffusionBoundaryFlux()    | \f$ ??? \f$                               |
+   * | -------------------------- |  ---------------------------------------- |
+   * | hasFlux()                  | true if \f$ F\neq 0\f$, false otherwise   |
+   * | hasStiffSource()           | true if \f$ S_1\neq 0\f$, false otherwise |
+   * | hasNonStiffSource()        | true if \f$ S_2\neq 0\f$, false otherwise |
    *
    * \param GridPart GridPart for extraction of dimension
    * \param ProblemType Class describing the initial(t=0) and exact solution
@@ -91,6 +110,8 @@ namespace Fem
 
     static const bool hasDiffusion = true;
     static const int ConstantVelocity = false;
+
+
     /**
      * \brief Constructor
      *
@@ -108,29 +129,61 @@ namespace Fem
       }
     }
 
+    /**
+     * \brief returns whether \f$ F\neq 0 \f$
+     */
     inline bool hasFlux () const { return true ; }
 
+    /**
+     *  \brief returns whether \f$ S_1\neq 0 \f$
+     */
     inline bool hasStiffSource () const { return true ; }
+
+    /**
+     *  \brief returns whether \f$ S_2\neq 0 \f$
+     */
     inline bool hasNonStiffSource () const { return false ; }
 
+    /**
+     *  \brief returns the stiff source term \f$ S_1 \f$
+     *
+     *  \param[in]  local local evaluation
+     *  \param[in]  u \f$ U \f$
+     *  \param[in]  du \f$ \nabla U\f$
+     *  \param[out] s the result \f$ S_1(U) \f$
+     *
+     *  \returns The time step restriction which is given
+     *  by the stiff source.
+     */
     template <class LocalEvaluation>
     inline double stiffSource (const LocalEvaluation& local,
                                const RangeType& u,
                                const JacobianRangeType& du,
-                               RangeType & s) const
+                               RangeType& s) const
     {
-      DomainType xgl = local.entity().geometry().global( local.point() );
+      DomainType xgl = local.entity().geometry().global( local.position() );
       problem_.f( xgl, s );
       return 0.0;
     }
 
+    /**
+     *  \brief returns the non stiff source term \f$ S_2 \f$
+     *
+     *  \param[in]  local local evaluation
+     *  \param[in]  u \f$ U \f$
+     *  \param[in]  du \f$ \nabla U\f$
+     *  \param[out] s the result \f$ S_2(U) \f$
+     *
+     *  \returns The time step restriction which is given
+     *  by the non stiff source.
+     */
     template <class LocalEvaluation>
     inline double nonStiffSource (const LocalEvaluation& local,
                                   const RangeType& u,
                                   const JacobianRangeType& du,
                                   RangeType & s) const
     {
-      DomainType xgl = local.entity().geometry().global( local.point() );
+      DomainType xgl = local.entity().geometry().global( local.position() );
       problem_.f( xgl, s );
       return 0.0;
     }
@@ -139,16 +192,16 @@ namespace Fem
     /**
      * \brief advection term \f$F\f$
      *
-     * \param local local evaluation
-     * \param u \f$U\f$
-     * \param jac \f$\nabla U\f$
-     * \param f \f$F(U)\f$
+     * \param[in]  local local evaluation
+     * \param[in]  u \f$U\f$
+     * \param[in]  jac \f$\nabla U\f$
+     * \param[out] f the result \f$F(U)\f$
      */
     template <class LocalEvaluation>
     inline void advection (const LocalEvaluation& local,
                            const RangeType& u,
                            const JacobianRangeType& jac,
-                           FluxRangeType & f) const
+                           FluxRangeType& f) const
     {
       const DomainType v = velocity( local );
       //f = uV;
@@ -159,6 +212,10 @@ namespace Fem
 
     /**
      * \brief diffusion term \f$a\f$
+     *
+     * \param[in]  local local evaluation
+     * \param[in]  u \f$ U \f$
+     * \param[out] a the result \f$ a \f$
      */
     template <class LocalEvaluation>
     inline void jacobian (const LocalEvaluation& local,
@@ -175,13 +232,20 @@ namespace Fem
           a[dimDomain*r+d][d] = u[r];
     }
 
+    /**
+     *  \brief returns the maximum eigen value of \f$ K \f$.
+     *
+     *  \param[in]  local local evaluation
+     *  \param[in]  u \f$ U \f$
+     *  \param[out] the maximal eigen value
+     */
     template <class LocalEvaluation>
     inline void eigenValues (const LocalEvaluation& local,
                              const RangeType& u,
                              RangeType& maxValue) const
     {
       DiffusionMatrixType K;
-      DomainType xgl = local.entity().geometry().global( local.point() );
+      DomainType xgl = local.entity().geometry().global( local.position() );
       problem_.K( xgl, K );
 
       DomainType values ;
@@ -205,6 +269,11 @@ namespace Fem
 
     /**
      * \brief diffusion term \f$A\f$
+     *
+     * \param[in]  local local evaluation
+     * \param[in]  u \f$ U \f$
+     * \param[in]  jac \f$ \nabla U\f$
+     * \param[out] A The result f$ A(U) \f$
      */
     template <class LocalEvaluation>
     inline void diffusion (const LocalEvaluation& local,
@@ -221,7 +290,7 @@ namespace Fem
       else
       {
         // for constant K evalute at center (see Problem 4)
-        const DomainType xgl = local.entity().geometry().global(local.point());
+        const DomainType xgl = local.entity().geometry().global(local.position());
 
         DiffusionMatrixType K ;
 
@@ -233,6 +302,14 @@ namespace Fem
       }
     }
 
+    /**
+     *  \brief returns the maximal time step size which is given through
+     *  the diffusion term.
+     *
+     *  \param[in]  local local evaluation
+     *  \param[in]  circumEstimate estimation of the circum
+     *  \param[in]  \f$ U \f$
+     */
     template <class LocalEvaluation>
     inline double diffusionTimeStep (const LocalEvaluation& local,
                                      const double circumEstimate,
@@ -243,6 +320,8 @@ namespace Fem
 
     /**
      * \brief checks for existence of dirichlet boundary values
+     *
+     * \param[in] local local evaluation
      */
     template <class LocalEvaluation>
     inline bool hasBoundaryValue (const LocalEvaluation& local ) const
@@ -251,7 +330,11 @@ namespace Fem
     }
 
     /**
-     * \brief dirichlet boundary values
+     * \brief returns the Dirichlet boundary values
+     *
+     * \param[in]  local local evaluation
+     * \param[in]  uLeft
+     * \param[out] uRight
      */
     template <class LocalEvaluation>
     inline void boundaryValue (const LocalEvaluation& local,
@@ -264,13 +347,18 @@ namespace Fem
       }
       else
       {
-        DomainType xgl = local.entity().geometry().global( local.point() );
+        DomainType xgl = local.entity().geometry().global( local.position() );
         problem_.g(xgl, uRight);
       }
     }
 
     /**
-     * \brief diffusion boundary flux
+     * \brief returns the Diffusion boundary flux
+     *
+     * \param[in]  local local evaluation
+     * \param[in]  uLeft
+     * \param[in]  gradLeft
+     * \param[out] gLeft
      */
     template <class LocalEvaluation>
     inline double diffusionBoundaryFlux (const LocalEvaluation& local,
@@ -281,10 +369,18 @@ namespace Fem
       return 0.0;
     }
 
+    /**
+     * \brief returns the problem.
+     */
     const ProblemType& problem () const { return problem_; }
 
     /**
-     * \brief velocity calculation, is called by advection()
+     * \brief velocity calculation
+     *
+     * \note This method is internally called by by advection() and
+     * externally called by some numerical fluxes (i.e. UpwindFlux etc.).
+     *
+     * \param[in] local local evaluation
      */
     template <class LocalEvaluation>
     DomainType velocity (const LocalEvaluation& local) const
@@ -322,7 +418,7 @@ namespace Fem
       }
       else
       {
-        const DomainType xgl = left.entity().geometry().global( left.point() );
+        const DomainType xgl = left.entity().geometry().global( left.position() );
         problem_.K( xgl , K );
 
         betaK = lambdaK( K );

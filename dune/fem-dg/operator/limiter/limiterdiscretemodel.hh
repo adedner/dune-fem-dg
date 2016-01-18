@@ -175,10 +175,10 @@ namespace Fem
                          JacobianRangeType&,
                          JacobianRangeType& ) const
     {
-      const FaceLocalDomainType& x = left.localPoint();
+      const FaceLocalDomainType& x = left.localPosition();
 
-      if (! physical(left.entity(),  left.point(),  left.values()[ uVar ] ) ||
-          ! physical(right.entity(), right.point(), right.values()[ uVar ] ) )
+      if (! physical(left.entity(),  left.position(),  left.values()[ uVar ] ) ||
+          ! physical(right.entity(), right.position(), right.values()[ uVar ] ) )
       {
         adaptIndicator = shockIndicator = 1e10;
         return -1.;
@@ -204,15 +204,15 @@ namespace Fem
                         RangeType& adaptIndicator,
                         JacobianRangeType& gDiffLeft ) const
     {
-      const FaceLocalDomainType& x = left.localPoint();
+      const FaceLocalDomainType& x = left.localPosition();
 
       RangeType uRight;
 
       // evaluate boundary value
       model_.boundaryValue( left, left.values()[ uVar ], uRight );
 
-      if (! physical(left.entity(), left.point(), left.values()[ uVar ] ) ||
-          ! physical(left.entity(), left.point(), uRight ) )
+      if (! physical(left.entity(), left.position(), left.values()[ uVar ] ) ||
+          ! physical(left.entity(), left.position(), uRight ) )
       {
         adaptIndicator = 1e10;
         return -1.;

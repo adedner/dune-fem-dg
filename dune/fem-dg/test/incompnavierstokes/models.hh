@@ -187,7 +187,7 @@ namespace Fem
       if( SplitType::hasSource )
       {
         // right hand side
-        problem_.stiffSource( local.point(), local.time(), u, s );
+        problem_.stiffSource( local.position(), local.time(), u, s );
         s *= SplitType::source();
       }
 
@@ -355,7 +355,7 @@ namespace Fem
     uRight = 0;
     return;
   #endif
-      DomainType xgl = local.intersection().geometry().global( local.localPoint() );
+      DomainType xgl = local.intersection().geometry().global( local.localPosition() );
       problem_.evaluate(xgl, local.time(), uRight);
     }
 

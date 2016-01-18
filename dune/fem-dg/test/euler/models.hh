@@ -188,7 +188,7 @@ namespace Fem
       assert( bndId > 0 );
       if( bndId == Inflow )
       {
-        const DomainType xgl = local.intersection().geometry().global( local.localPoint() );
+        const DomainType xgl = local.intersection().geometry().global( local.localPosition() );
         problem_.evaluate(xgl, local.time(), uRight);
         return ;
       }
@@ -200,7 +200,7 @@ namespace Fem
       else if ( bndId == Reflection )
       {
         uRight = uLeft;
-        const DomainType unitNormal = local.intersection().unitOuterNormal( local.localPoint() );
+        const DomainType unitNormal = local.intersection().unitOuterNormal( local.localPosition() );
         fieldRotator_.rotateForth( uRight , unitNormal );
         // Specific for euler: opposite sign for first component of momentum
         uRight[1] = -uRight[1];
@@ -239,7 +239,7 @@ namespace Fem
                                 RangeType& gLeft ) const
     {
       // Slip boundary condition
-      const DomainType normal = local.intersection().integrationOuterNormal( local.localPoint() );
+      const DomainType normal = local.intersection().integrationOuterNormal( local.localPosition() );
 
       const double p = EulerAnalyticalFlux< dimDomain >().pressure( gamma_ , uLeft );
       gLeft = 0;

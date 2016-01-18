@@ -68,7 +68,7 @@ namespace Euler
                    RangeType& gLeft,
                    RangeType& gRight) const
     {
-      const FaceDomainType& x = left.localPoint();
+      const FaceDomainType& x = left.localPosition();
       DomainType normal = left.intersection().integrationOuterNormal(x);
       const double len = normal.two_norm();
       normal *= 1./len;

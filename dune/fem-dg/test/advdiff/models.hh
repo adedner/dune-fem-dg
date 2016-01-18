@@ -133,7 +133,7 @@ namespace Fem
                                   const JacobianRangeType& du,
                                   RangeType & s) const
     {
-      DomainType xgl = local.entity().geometry().global( local.point() );
+      DomainType xgl = local.entity().geometry().global( local.position() );
       return problem_.nonStiffSource( xgl, local.time(), u, s );
     }
 
@@ -144,7 +144,7 @@ namespace Fem
                                const JacobianRangeType& jac,
                                RangeType & s) const
     {
-      DomainType xgl = local.entity().geometry().global( local.point() );
+      DomainType xgl = local.entity().geometry().global( local.position() );
       return problem_.stiffSource( xgl, local.time(), u, s );
     }
 
@@ -159,7 +159,7 @@ namespace Fem
       DomainType operator() (const LocalEvaluation& local, const ProblemType& problem ) const
       {
         DomainType v;
-        problem.velocity( local.entity().geometry().global( local.point() ), local.time(), v);
+        problem.velocity( local.entity().geometry().global( local.position() ), local.time(), v);
         return v;
       }
     };
@@ -310,7 +310,7 @@ namespace Fem
     uRight = 0;
     return;
   #endif
-      DomainType xgl = local.intersection().geometry().global( local.localPoint() );
+      DomainType xgl = local.intersection().geometry().global( local.localPosition() );
       problem_.evaluate(xgl, local.time(), uRight);
     }
 
