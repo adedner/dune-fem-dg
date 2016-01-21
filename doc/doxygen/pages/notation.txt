@@ -1,0 +1,228 @@
+/**
+
+\page Notation
+
+Notation
+========
+
+On this page we want to summarize some common notations and terms which are used through the whole documenation.
+
+The notation is based on the following two papers 
+>  Peter Bastian, Markus Blatt, Andreas Dedner, Christian Engwer, Robert Klöfkorn, Mario Ohlberger, Oliver Sander: "A generic grid interface for parallel and adaptive scientific computing. Part I: abstract framework", Computing, 2008
+
+>  Andreas Dedner, Robert Klöfkorn, Martin Nolte, Mario Ohlberger: "A generic interface for parallel and adaptive scientific computing: Abstraction principles and the Dune-Fem module", Computing, 2008 
+
+Nevertheless, we have slightly changed some notations.
+
+Grids
+-----
+
+First of all we give a short overview of all symbols which are used in this section.
+
+| Symbol                        | Description                      | Implementation                                         |
+| ----------------------------- | -------------------------------- | ------------------------------------------------------ |
+| \f$ \mathcal{R} \f$           | finite set of reference elements | ReferenceElement (_dune-geometry_)                     |
+| \f$ \hat{E}\in\mathcal{R} \f$ | reference element                |                                                        |
+| \f$ x \in \hat{E} \f$         | local coordinates                |                                                        |
+| \f$ E \f$                     | entity                           | Entity (_dune-grid_)                                   |
+| \f$ x \in E \f$               | global coordinates               |                                                        |
+| \f$ E^c \f$                   | entity of codimension \f$ c \f$  |                                                        |
+| \f$ F_E \f$                   | reference mapping                | AffineGeometry::local()/global() (_dune-geometry_)     |
+| \f$ \mathcal{G} \f$           | grid (set of entities)           | Grid [YaspGrid, OneDGrid, AlbertaGrid (_dune-grid_), ALUGrid (_dune-alugrid_)...] |
+| \f$ d \f$                     | dimension of the grid            |                                                        |
+| \f$ \mathcal{G}^c \f$         | grid of codim \f$c\f$            |                                                        |
+| \f$ \Omega_{\mathcal{G}}\f$   | domain covered by grid           |                                                        |
+| \f$ P_{\hat{E}} \f$           | quadrature points                |                                                        |
+| \f$ \hat{x}_p \in P_{\hat{E}} \f$ | a quadrature point           |                                                        |
+| \f$ \omega_p \in P_{\hat{E}} \f$ | quadrature weight             |                                                        |
+| \f$ Q_{\hat{E}} \f$           | quadrature                       |                                                        |
+
+
+### Reference element ###
+
+On all convex polytopes there exists an equivalence relation respect to combinatorial isomorphism 
+\f$ \simeq \f$. From each equivalence class we can pick one representative and call it reference element.
+
+Typical examples for numerical algorithms are 
+- the unit interval \f$ [0,1] \f$ (\f$d=1\f$),
+- the unit square or the unit simplex (\f$d=2\f$),
+- the unit cube or the unit simplex (\f$d=3\f$),
+- the unit hypercube or the unit simplex (for general dimensions).
+
+We will denote the set of all reference elements by \f$ \mathcal{R} \f$. 
+Each polytope \f$ E \f$ which is equivalent through combinatorial isomorphism to an element
+of \f$ \mathcal{R} \f$ will be denoted by \f$\hat{E}\f$.
+
+### Entity ###
+
+We call a polytope (which is defined by a set of vertices) an entity and denote is by \f$ E\f$.
+This entity is combinatorial isomorph to the reference element \f$ \hat{E} \in \mathcal{R}\f$.
+
+For a given dimension \f$ d\in \mathbb{N}\f$ we denote by \f$ E^c\f$ an entity of codimension
+\f$c\f$. 
+
+Furthermore, entities of codimension \f$ 0 \f$ are also referred as elements and entities of codimension 
+\f$ d \f$ also as vertices.
+
+\note We only concentrate on the geometric realization, here. Usually, an entity also 
+contains information about the sub entities, i.e. entities of codimension greater zero 
+(edges, faces...). For the exact definition 
+of an entity and an entity complex (topological intepretation/construction) we refer to the 
+both papers given in the beginning of this page.
+
+
+### Reference Mapping ####
+
+A reference mapping \f$ F_E:\hat{E}\rightarrow E\f$ is a bijective mapping which maps 
+each reference element \f$ \hat{E} \f$ to an entity \f$ E \f$.
+
+
+### Grid ###
+
+Let \f$ d\in\mathbb{N} \f$ be the dimension of a domain \f$\Omega\f$. A grid is a set of entities of all codimension, 
+i.e. \f$ \mathcal{G} = \{ E_i^c \mid 0\leq c\leq d, 0\leq i < \mathrm{\#Entities}(c)\} \f$.
+We will denote by \f$ \mathcal{G}^c = \{ E\in \mathcal{G} \mid \mathrm{codim} E = c\}\f$ 
+all entities of codimension \f$c\f$.
+By \f$ \Omega_{\mathcal{G}} = \bigcup_\limits{E\in\mathcal{G}}E\f$ we define the domain covered 
+by the entities of the grid \f$\mathcal{G} \f$.
+
+
+### Quadrature ###
+
+Given a reference element \f$ \hat{E}\in\mathcal{R}\f$ we call a finite set of points 
+\f$ P_{\hat{E}} = \{\hat{x}_p \mid \hat{x}_p\in \hat{E}, p=0,1,\ldots,n-1 \} \f$ a set 
+of integration points and a set \f$ 
+Q_{\hat{E}} = \{ (\hat{x}_p,\omega_p) \in P_{\hat{E}}\times \mathbb{R} \mid \sum_{p=0,1,\ldots,n-1} \omega_p=|\hat{E}| \} \f$ 
+a quadrature on \f$ \hat{E}\f$.
+
+A quadrature \f$ Q_{\hat{E}} \f$ is called a quadrature of order \f$k\f$ if for any polynomial function
+\f$ f\in \mathbb{P}_k(\hat{E}) \f$ the following holds:
+\f[ \int_{\hat{E}} f(x)\mathrm{d}x = \sum_\limits{(\hat{x}_p,\omega_p)\in Q_{\hat{E}}} \omega_p f(\hat{x}_p) \f]
+
+
+Discrete Functions and basis functions
+--------------------------------------
+
+Again a small overview.
+
+| Symbol                        | Description                      | Implementation                                         |
+| ----------------------------- | -------------------------------- | ------------------------------------------------------ |
+| \f$ V^{\Omega,U}\f$           | function space                   |                                                        |
+
+
+### Function Space ###
+
+By \f$ V^{\Omega,U} = \{v : \Omega\rightarrow U\}\f$ we denote an arbitrary function space
+with domain \f$ \Omega \subset \mathbb{R}^d \f$ and range \f$ U\f$, \f$ \dim U = r\in \mathbb{N} \f$.
+
+
+### Grid Function 
+
+We say that \f$ u\in V^{\Omega_\mathcal{G},U} \f$ is a grid function and for \f$ E\in\mathcal{G}\f$ we call 
+\f$ u_E:E\rightarrow U, u|_E\}\f$  the local function of \f$ u \f$ on \f$ E\f$.
+
+
+### Discrete Function Space ###
+
+Let \f$ V_\mathcal{G} \subset V^{\Omega_\mathcal{G},U} \f$ be a finite dimensional subspace of a function 
+space \f$ V^{\Omega_\mathcal{G},U} \f$. For each element \f$ E\in \Omega_\mathcal{G} \f$, let 
+\f$\mathcal{B}_E = (\varphi_i^E)_{i\in I_E}\subset V^{E,U}\f$ with \f$ I_E\subset \mathbb{N}_0 \f$ 
+and let \f$ \mu_E:I_E\rightarrow V_\mathcal{G}\f$. then, we call 
+\f$ \mathcal{D}_{\mathcal{G}} = \left(V_\mathcal{G}, (\mathcal{B}_E)_{E\in\mathcal{G}}, (\mu_E)_{E\in\mathcal{G}})\right) \f$
+a discrete function space, if the following condition hold:
+
+1. \f$ \mathcal{B}_{\mathcal{G}} = \bigcup_{E\in\mathcal{G}} \mu_E(I_E)\f$ is a basis of \f$ V_\mathcal{G} \f$. 
+We call \f$ \mathcal{B}_\mathcal{G}\f$ the global basis function set of \f$ \mathcal{D}_\mathcal{G} \f$.
+2. For all elements \f$ E\in\mathcal{G} \f$ and all \f$ i\in I_E\f$, \f$ \mu_E(i)\f$ is a continuation
+of \f$ \varphi_i^E \f$, i.e. \f$ \mu_E(i)|_E = \varphi_i^E \f$.
+3. For all \f$ \psi \in \mathcal{B}_{\mathcal{G}}\f$ and all elements \f$ E\in\mathcal{G}\f$, we have 
+\f$ \psi|_E\in \mathcal{B}_E\cup\{0\}\f$.
+
+In this case, we call \f$ \mathcal{B}_E \f$ a local basis function set and \f$ \mu_E\f$ a local DoF mapper.
+
+
+### Discrete Function ###
+
+Let \f$ \mathcal{D}_{\mathcal{G}} = \left(V_\mathcal{G}, (\mathcal{B}_E)_{E\in\mathcal{G}}, (\mu_E)_{E\in\mathcal{G}})\right) \f$
+be a discrete function space. A function \f$ u \in V_\mathcal{G} \f$ is called a discrete function.
+Using the basis function set of \f$\mathcal{D}_{\mathcal{G}}\f$ we have the representation
+\f[ u = \sum_\limits{\psi\in\mathcal{B}_\mathcal{G}} u_\mathcal{\psi}\psi. \f]
+The vector \f$ (u_\psi)_{\psi\in\mathcal{B}_{\mathcal{G}}}\f$ is called the global DoF vector of \f$ u \f$. 
+In the following we will also write \f$ u\in\mathcal{D}_{\mathcal{G}} \f$ to denote discrete functions and to
+fix the corresponding global DoF vector.
+
+
+### Local Discrete Function ###
+
+For a discrete function 
+\f$ \mathcal{D}_{\mathcal{G}} = \left(V_\mathcal{G}, (\mathcal{B}_E)_{E\in\mathcal{G}}, (\mu_E)_{E\in\mathcal{G}})\right) \f$
+and an element \f$ E\in\mathcal{G} \f$, we define the local discrete function
+\f[ u|_E(x) = \sum_\limits{\psi\in\mathcal{B}_{\mathcal{G}}} u_{\psi} \psi|_E = 
+\sum_\limits{i\in I_E}u_i^E\varphi_i^E. \f]
+Using the local DoF mapper we have the realtion \f$ u_i^E = u_{\mu_E(i)}\f$. The vector \f$ (u_i^E)_{i\in I_E} \f$ is 
+called the local DoF vector of \f$ u \f$ on \f$ E \f$.
+
+
+### Shape Function ###
+
+A function \f$ \hat{\varphi}_{\hat{E}}\in V^{\hat{E},U}, \hat{E}\in \mathcal{R}\f$ is called a shape function.
+
+
+### Localized Discrete Function Space ###
+
+A basis function set \f$ (\mathcal{B}_E)_{E\in\mathcal{G}} \f$ is called localized if there exists
+a set of shape functions \f$ (\mathcal{B}_R)_{R\in\mathcal{R}}\f$ and a transformation 
+\f$ (\Psi_E)_{E\in\mathcal{G}}\f$ such that \f$ \mathcal{B}_E =\Psi_E \circ \mathcal{B}_\hat{E} \circ F_E^{-1} \f$. 
+In this case we call 
+\f$\hat{\mathcal{D}}_{\mathcal{G}} = \left(V_\mathcal{G},(\mathcal{B}_R)_{R\in\mathcal{R}},
+ (\mu_E)_{E\in \mathcal{G}}, (\Psi_E)_{E\in\mathcal{G}}\right)\f$
+a localized discrete function space with the corresponding discrete function space
+\f$ \mathcal{D}_{\mathcal{G}} = \left(V_\mathcal{G}, (\mathcal{B}_E)_{E\in\mathcal{G}}, (\mu_E)_{E\in\mathcal{G}})\right) \f$.
+
+
+### Localized local discrete function ###
+
+Let us assume that a localized discrete function space 
+\f$\hat{\mathcal{D}}_{\mathcal{G}} = \left(V_\mathcal{G},(\mathcal{B}_R)_{R\in\mathcal{R}},
+ (\mu_E)_{E\in \mathcal{G}}, (\Psi_E)_{E\in\mathcal{G}}\right)\f$
+is given.
+
+We can then define the localized local discrete function \f$ u_E \f$
+via the following equation
+
+\f{eqnarray*}{
+   u|_E(x) &=& \sum_i u_i^E \varphi_i^E(x) \\
+           &=& \sum_i u_i^E (\Psi_E\circ\hat{\varphi}_i^E)( F_E^{-1}(x) ) \\
+           &=& \sum_i u_i^E (\Psi_E\circ\hat{\varphi}_i^E)( \hat{x} ) \\
+           &=& u_E(\hat{x})
+\f}
+
+\note Once again: Notice the difference between the notation \f$ u|_E \f$ and \f$ u_E \f$: 
+The domain of the first term is \f$ E \f$, while the second term is defined on a reference element
+\f$ \hat{E} \f$ doing appropriate transformations internally, such that \f$ u|_E(x) = u_E(\hat{x}) \f$
+for all \f$ x \in E \f$.
+
+
+\note Usually we leave out the term "localized" since we are only considering localized basis functions, here.
+Additionally, note that the reference mapping is not needed because quadrature rules are given 
+regarding the reference element.
+
+
+Operators
+---------
+
+### Operator ###
+
+Let \f$ V, W \f$ denote arbitrary vector spaces. 
+Then an operator \f$ \mathcal{L}:V\rightarrow W\f$ is a mapping from \f$ V \f$ to \f$ W\f$.
+
+### Discrete Operator ###
+
+A discrete operator \f$ \mathcal{L}_{\mathcal{G}} \f$ is an operator that maps one 
+discrete function space int antother, i.e.
+\f[ \mathcal{L}_{\mathcal{G}}:\mathcal{D}_{\mathcal{G}} \rightarrow \tilde{\mathcal{D}}_{\mathcal{G}}. \f]
+
+
+
+
+*/

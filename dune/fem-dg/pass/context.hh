@@ -12,34 +12,36 @@ namespace Fem
 {
 
   /**
-   * \brief Container class describing (many) information which are related to
-   * the local evaluation of a discrete function.
+   * \brief This class collects several information which are relevant for the approximation of
+   * integrals of discrete functions via quadrature schemes.
    *
-   * This class collects several information which are relevant for the approximation
-   * \f$ \int_E U(x,t) + \nabla U(x,t) \mathrm{d}x\f$.
-   * It is common practice to approximate the last term with a quadrature rule of
-   * a given order \f$ k \f$. Furthermore, we suppose that each discrete function
-   * \f$ U|_E \f$ is localizable, i.e. can be evaluated by evaluation of shape functions
-   * with support on the corresponding reference element \f$ \hat{E} \f$.
+   * \ingroup Pass
    *
-   * \f[ U|_E(x,t) = \sum_{i\in I_E} U_i^E(t) (\varphi_i^E \circ F_E )(\hat{x}) U_i^E(t) \hat{varphi}_i^E(\hat{x}), \f]
-   * where
-   * - \f$ F_E:\hat{E}\rightarrow E \f$ is the reference mapping.
-   * - \f$ \varphi_i^E \circ F_E \f$ are basis functions with support on the entity \f$ E \f$,
-   * - \f$ \hat{varphi}_i^{\hat{E}} \f$ are shape functions with support on the reference element \f$ \hat{E} \f$,
-   * - \f$ I_E \f$ is an index set, enumerating the set of basis and shape functions with support on \f$ E \f$ and \f$ \hat{E} \f$, respectively,
-   * - \f$ \hat{x} \f$ is the local coordinate regarding the reference element \f$ \hat{E} \f$
+   * We are following the \ref Notation "general notation":
    *
-   * In detail, we want
+   * Let \f$ u^t,v^t:\mathcal{\Omega}_\mathcal{G} \rightarrow \mathbb{R}^d\f$ be discrete functions for a fixed time
+   * \f$ t\in [t_{\text{start}},t_{\text{end}}] \f$. Now, we want to be able to approximate the integral over an
+   * entity \f$ E \in \mathcal{G} \f$
+   *
+   * \f[ \int_E u^t(x) + \nabla v^t(x) \mathrm{d}x \f]
+   *
+   * via a quadrature rule. This can be done in the following way
+   *
    * \f{eqnarray*}{
-   * \f$ \int_E U(x,t) + \nabla U(x,t) \mathrm{d}x &=& \int_E U|_E(x,t) + \nabla U|_E(x,t) \mathrm{d}x\\
-   *      &\approx & \sum_{i\in I_E} \hat{w}_i U_i(t) \varphi(x_i) + \nabla U_i(t) \varphi(x_i) \\
-   *      & = &      \sum_{i\in I_E} \hat{w}_i ( U(\hat{x}_i) + \nabla U(\hat{x}_i) )
-   * }
+   *    \int_E u^t(x) + \nabla v^t(x) \mathrm{d}x &=& \int_E u^t|_E(x) + \nabla v^t|_E(x) \mathrm{d}x\\
+   *      &=&        \int_{E} u^t_E(F_E^{-1}(x)) + \nabla v^t_E(F_E^{-1}(x)) \mathrm{d}x\\
+   *      &=&        \int_{\hat{E}} \left|\det DF_E(\hat{x})\right|\left( u^t_E(\hat{x}) + \nabla v^t_E(\hat{x}) \right)\mathrm{d}\hat{x} \\
+   *      &\approx & \sum_{p\in X_p} \left|\det DF_E(\hat{x})\right| \omega_i \left(u^t_E(\hat{x}_p) + \nabla v^t_E(\hat{x}_p) \right)
+   * \f}
    *
+   * To archieve this goal, we collect some of the information above in this class.
    *
-   * \note This class was introduced to allow more flexible interfaces for classes
+   * This class was introduced to allow more flexible interfaces for classes
    * needing a local evaluation of a discrete function.
+   *
+   * \note This class is following the pass concept and the above description is simplified in
+   * the sense that we are not only interested in the approximation of one discrete function \f$ u^t \f$
+   * but in a tuple of functions \f$ (u^{a,t}, {u^b,t} \ldots\f$ yielding from a pass.
    */
   template <class Entity,
             class Quadrature,
@@ -104,13 +106,14 @@ namespace Fem
      *  \brief constructor
      *
      *  \param[in] entity the entity \f$ E \f$ where the local evaluation should be done
-     *  \param[in] quadrature the quadrature rule for the entity \f$ E \f$
-     *             (to be more precise: the quadrature rule for the corresponding reference element \f$ \hat{E} \f$)
-     *  \param[in] values \f$ U_i \hat{\varphi}(\hat{x}_i) \f$
-     *  \param[in] jacobians \f$ U_i \nabla \hat{\varphi}(\hat{x}_i) \f$
-     *  \param[in] qp the number of the quadrature point, i.e. \f$ i \f$
+     *  \param[in] quadrature the quadrature rule for the entity \f$ \hat{E} \f$
+     *  \param[in] values tuple of a evaluation of local functions,
+     *             i.e. \f$ ( u^{a,t}_E( \hat{x}_p ), u^{b,t}_E( \hat{x}_p )\ldots ) \f$
+     *  \param[in] jacobians tuple of a evaluation of the gradient of local functions,
+     *             i.e. \f$ ( \nabla u^{a,t}_E( \hat{x}_p ), \nabla u^{b,t}_E( \hat{x}_p )\ldots ) \f$
+     *  \param[in] qp the number of the quadrature point, i.e. \f$ p \f$
      *  \param[in] time the current time \f$ t \f$
-     *  \param[in] volume the volume of the entity \f$ vol(E) \f$
+     *  \param[in] volume the volume of the entity \f$ \mathrm{vol}(E) \f$
      */
     ElementQuadraturePointContext( const Entity& entity,
                                    const Quadrature& quadrature,
@@ -139,12 +142,14 @@ namespace Fem
     const Quadrature& quadrature() const { return quad_; }
 
     /**
-     *  \brief returns the value \f$ U_i \hat{\varphi}(\hat{x}_i) \f$
+     *  \brief returns tuple of a evaluation of local functions,
+     *         i.e. \f$ ( u^{a,t}_E( \hat{x}_p ), u^{b,t}_E( \hat{x}_p )\ldots ) \f$
      */
     const RangeTuple& values() const { return values_; }
 
     /**
-     *  \brief returns the value \f$ U_i \nabla \hat{\varphi}(\hat{x}_i) \f$
+     *  \brief returns tuple of a evaluation of the gradient of local functions,
+     *         i.e. \f$ ( \nabla u^{a,t}_E( \hat{x}_p ), \nabla u^{b,t}_E( \hat{x}_p )\ldots ) \f$
      */
     const JacobianTuple& jacobians() const { return jacobians_; }
 
@@ -159,22 +164,22 @@ namespace Fem
     const double volume() const { return volume_; }
 
     /**
-     *  \brief returns a quadrature point object containing the following information \f$ \hat{x}_i, w_i, i, x_i \f$
+     *  \brief returns a quadrature point object containing the following information \f$ \hat{x}_p, x_p, \omega_p, p \f$
      */
     const QuadraturePointWrapperType quadraturePoint() const { return quadrature()[ index() ]; }
 
     /**
-     *  \brief returns the global quadrature point \f$ x_i \f$
+     *  \brief returns the global quadrature point \f$ x_p \f$
      */
     const CoordinateType& position() const { return quadrature().point( index() ); }
 
     /**
-     *  \brief returns the local point \f$ \hat{x}_i \f$
+     *  \brief returns the local point \f$ \hat{x}_p \f$
      */
     const LocalCoordinateType& localPosition() const { return quadrature().localPoint( index() ); }
 
     /**
-     *  \brief returns the number of the quadrature point \f$ i \f$
+     *  \brief returns the number of the quadrature point \f$ p \f$
      */
     const int index() const { return qp_; }
 
@@ -238,8 +243,8 @@ namespace Fem
   };
 
   /**
-   * \brief Container class describing (many) information which are related to
-   * the local evaluation of a discrete function.
+   * \brief This class collects several information which are relevant for the approximation of
+   * integrals of discrete functions via quadrature schemes.
    *
    * This class just adds an intersection() method to the class ElementQuadraturePointContext.
    * This additional information is needed for evaluations on intersections, i.e. numerical fluxes etc.

@@ -11,6 +11,10 @@ namespace Dune
 {
 namespace Fem
 {
+
+  /**
+   *  \brief Default traits class for models
+   */
   template <class GridPartImp, class ProblemImp>
   struct DefaultModelTraits
   {
@@ -64,9 +68,22 @@ namespace Fem
 
     void setTime (double time) {}
 
+    /**
+     * \brief returns whether the advection term is zero
+     * or not, i.e. \f$ F\neq 0 \f$
+     */
     inline bool hasFlux () const { return false ; }
 
+    /**
+     *  \brief returns whether the stiff source term is zero
+     *  or not, i.e.\ returns whether \f$ S_1\neq 0 \f$
+     */
     inline bool hasStiffSource () const { return false ; }
+
+    /**
+     *  \brief returns whether the non stiff source term is zero
+     *  or not, i.e.\f$ S_2\neq 0 \f$
+     */
     inline bool hasNonStiffSource () const { return false ; }
 
     template <class LocalEvaluation>

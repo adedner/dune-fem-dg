@@ -40,6 +40,8 @@ A particular strength of dune-fem-dg is the possibility to test different numeri
 - \ref Navierstokes "Navier-Stokes"
 - \ref IncompNavierstokes "incompressible Navier-Stokes"
 
+Some basic notation can be found \ref Notation "here".
+
 All PDEs fulfill a certain structure which can be found \ref GeneralProblemStructure "here".
 
 \subsection UserStart How should I start reading this documentation?

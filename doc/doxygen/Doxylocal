@@ -7,6 +7,7 @@ INPUT                 += @srcdir@/modules.txt \
                          @srcdir@/pages/euler.txt \
                          @srcdir@/pages/stokes.txt \
                          @srcdir@/pages/navierstokes.txt \
+                         @srcdir@/pages/notation.txt \
                          @srcdir@/pages/parameters.txt \
                          @srcdir@/pages/advectiondiffusion.txt \
                          @srcdir@/pages/incompnavierstokes.txt \
@@ -35,3 +36,7 @@ FILE_PATTERNS       += *.hh *.dist *.dev *.page
 EXAMPLE_PATH        +=  @top_srcdir@/dune/fem-dg/test
 
 EXTRA_PACKAGES = amsmath xr amsfonts
+
+USE_MATHJAX = YES
+#MATHJAX_RELPATH = ./mathjax
+

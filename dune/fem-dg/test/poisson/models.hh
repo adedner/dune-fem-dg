@@ -40,10 +40,10 @@ namespace Fem
    * the partial differential equation.
    *
    * This is an description class for the problem
-   * \f{eqnarray*}{ V + \nabla a(U)                 & = & 0 \\
-   * \partial_t U + \nabla \cdot (F(U)+A(U,V)) +S_1(U) + S_2(U) & = & 0 \\
-   *                                U                & = & g_D \\
-   *                               \nabla U \cdot n  & = & g_N \f}
+   * \f{eqnarray*}{ v + \nabla a(u)                 & = & 0 \\
+   * \partial_t u + \nabla \cdot (F(u)+A(u,v)) +S_1(u) + S_2(u) & = & 0 \\
+   *                                u                & = & g_D \\
+   *                               \nabla u \cdot n  & = & g_N \f}
    *
    * where each class methods describes an analytical function.
    * <ul>
@@ -55,7 +55,7 @@ namespace Fem
    * <li> \f$g_N\f$  boundaryFlux() </li>
    * </ul>
    *
-   * \attention \f$F(U)\f$ and \f$A(U,V)\f$ are matrix valued, and therefore the
+   * \attention \f$F(u)\f$ and \f$A(u,v)\f$ are matrix valued, and therefore the
    * divergence is defined as
    *
    * \f[ \Delta M = \nabla \cdot (\nabla \cdot (M_{i\cdot})^t)_{i\in 1\dots n} \f]
@@ -130,30 +130,30 @@ namespace Fem
     }
 
     /**
-     * \brief returns whether \f$ F\neq 0 \f$
+     * @copydoc PoissonModel::hasFlux()
      */
     inline bool hasFlux () const { return true ; }
 
     /**
-     *  \brief returns whether \f$ S_1\neq 0 \f$
+     * @copydoc PoissonModel::hasStiffSource()
      */
     inline bool hasStiffSource () const { return true ; }
 
     /**
-     *  \brief returns whether \f$ S_2\neq 0 \f$
+     * @copydoc PoissonModel::hasNonStiffSource()
      */
     inline bool hasNonStiffSource () const { return false ; }
 
     /**
-     *  \brief returns the stiff source term \f$ S_1 \f$
+     * \brief returns the stiff source term \f$ S_1 \f$
      *
-     *  \param[in]  local local evaluation
-     *  \param[in]  u \f$ U \f$
-     *  \param[in]  du \f$ \nabla U\f$
-     *  \param[out] s the result \f$ S_1(U) \f$
+     * \param[in]  local local evaluation
+     * \param[in]  u evaluation of the local function, i.e. \f$ u_E( \hat{x} ) \f$
+     * \param[in]  du evaluation of the gradient of the local function, i.e. \f$\nabla u_E( \hat{x} )\f$
+     * \param[out] s the result \f$ S_1(u) \f$
      *
-     *  \returns The time step restriction which is given
-     *  by the stiff source.
+     * \returns The time step restriction which is given
+     * by the stiff source.
      */
     template <class LocalEvaluation>
     inline double stiffSource (const LocalEvaluation& local,
@@ -167,15 +167,15 @@ namespace Fem
     }
 
     /**
-     *  \brief returns the non stiff source term \f$ S_2 \f$
+     * \brief returns the non stiff source term \f$ S_2 \f$
      *
-     *  \param[in]  local local evaluation
-     *  \param[in]  u \f$ U \f$
-     *  \param[in]  du \f$ \nabla U\f$
-     *  \param[out] s the result \f$ S_2(U) \f$
+     * \param[in]  local local evaluation
+     * \param[in]  u evaluation of local function, i.e. \f$ u_E( \hat{x} ) \f$
+     * \param[in]  du evaluation of the gradient of the local function, i.e. \f$\nabla u_E( \hat{x} )\f$
+     * \param[out] s the result \f$ S_2(u) \f$
      *
-     *  \returns The time step restriction which is given
-     *  by the non stiff source.
+     * \returns The time step restriction which is given
+     * by the non stiff source.
      */
     template <class LocalEvaluation>
     inline double nonStiffSource (const LocalEvaluation& local,
@@ -193,9 +193,9 @@ namespace Fem
      * \brief advection term \f$F\f$
      *
      * \param[in]  local local evaluation
-     * \param[in]  u \f$U\f$
-     * \param[in]  jac \f$\nabla U\f$
-     * \param[out] f the result \f$F(U)\f$
+     * \param[in]  u evaluation of the local function, i.e. \f$ u_E( \hat{x} ) \f$
+     * \param[in]  jac evaluation of the gradient of the local function, i.e. \f$\nabla u_E( \hat{x} )\f$
+     * \param[out] f the result \f$F(u)\f$
      */
     template <class LocalEvaluation>
     inline void advection (const LocalEvaluation& local,
@@ -204,7 +204,7 @@ namespace Fem
                            FluxRangeType& f) const
     {
       const DomainType v = velocity( local );
-      //f = uV;
+      //f = uv;
       for( int r=0; r<dimRange; ++r )
         for( int d=0; d<dimDomain; ++d )
           f[r][d] = v[ d ] * u[ r ];
@@ -214,7 +214,7 @@ namespace Fem
      * \brief diffusion term \f$a\f$
      *
      * \param[in]  local local evaluation
-     * \param[in]  u \f$ U \f$
+     * \param[in]  u evaluation of the local function, i.e. \f$ u_E( \hat{x} ) \f$
      * \param[out] a the result \f$ a \f$
      */
     template <class LocalEvaluation>
@@ -233,11 +233,11 @@ namespace Fem
     }
 
     /**
-     *  \brief returns the maximum eigen value of \f$ K \f$.
+     * \brief returns the maximum eigen value of \f$ K \f$.
      *
-     *  \param[in]  local local evaluation
-     *  \param[in]  u \f$ U \f$
-     *  \param[out] the maximal eigen value
+     * \param[in]  local local evaluation
+     * \param[in]  u evaluation of the local function, i.e. \f$ u_E( \hat{x} ) \f$
+     * \param[out] the maximal eigen value
      */
     template <class LocalEvaluation>
     inline void eigenValues (const LocalEvaluation& local,
@@ -271,9 +271,9 @@ namespace Fem
      * \brief diffusion term \f$A\f$
      *
      * \param[in]  local local evaluation
-     * \param[in]  u \f$ U \f$
-     * \param[in]  jac \f$ \nabla U\f$
-     * \param[out] A The result f$ A(U) \f$
+     * \param[in]  u evaluation of the local function, i.e. \f$ u_E( \hat{x} ) \f$
+     * \param[in]  jac evaluation of the gradient of the local function, i.e. \f$\nabla u_E( \hat{x} )\f$
+     * \param[out] A The result f$ A(u) \f$
      */
     template <class LocalEvaluation>
     inline void diffusion (const LocalEvaluation& local,
@@ -303,12 +303,12 @@ namespace Fem
     }
 
     /**
-     *  \brief returns the maximal time step size which is given through
-     *  the diffusion term.
+     * \brief returns the maximal time step size which is given through
+     * the diffusion term.
      *
-     *  \param[in]  local local evaluation
-     *  \param[in]  circumEstimate estimation of the circum
-     *  \param[in]  \f$ U \f$
+     * \param[in]  local local evaluation
+     * \param[in]  circumEstimate estimation of the circum
+     * \param[in]  u evaluation of the local function, i.e. \f$ u_E( \hat{x} ) \f$
      */
     template <class LocalEvaluation>
     inline double diffusionTimeStep (const LocalEvaluation& local,
@@ -333,8 +333,8 @@ namespace Fem
      * \brief returns the Dirichlet boundary values
      *
      * \param[in]  local local evaluation
-     * \param[in]  uLeft
-     * \param[out] uRight
+     * \param[in]  uLeft evaluation of the local function, i.e. \f$ u_{E^+}( \hat{x} ) \f$
+     * \param[out] uRight the Dirichlet boundary value
      */
     template <class LocalEvaluation>
     inline void boundaryValue (const LocalEvaluation& local,
@@ -356,9 +356,9 @@ namespace Fem
      * \brief returns the Diffusion boundary flux
      *
      * \param[in]  local local evaluation
-     * \param[in]  uLeft
-     * \param[in]  gradLeft
-     * \param[out] gLeft
+     * \param[in]  uLeft evaluation of the local function, i.e. \f$ u_{E^+}( \hat{x} ) \f$
+     * \param[in]  gradLeft evaluation of the gradient of the local function, i.e. \f$\nabla u_{E^+}( \hat{x} )\f$
+     * \param[out] gLeft the Dirichlet boundary value for the diffusion part
      */
     template <class LocalEvaluation>
     inline double diffusionBoundaryFlux (const LocalEvaluation& local,

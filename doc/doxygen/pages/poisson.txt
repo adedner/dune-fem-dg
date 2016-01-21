@@ -1,9 +1,17 @@
+
+namespace Dune{
+namespace Fem{
+
 /**
 \page Poisson
 
-This solves the poisson problem which is given by
+Poisson problem 
+===============
 
-\subsection AnalyticalModelPoisson Analytical Model
+This page shows how to solve the poisson problem.
+
+Analytical Model
+----------------
 
 Let \f$ \Omega\subset \mathbb{R}^d\f$ be a domain and \f$\mathcal{T}_h \f$ be a triangulation.
 
@@ -15,22 +23,36 @@ This is an description class for the problem
                   \nabla U \cdot n  & = & g_N 
 \f}
 
+| interface                  | implementation                     |
+| -------------------------- | ---------------------------------- |
+| algorithm                  | EllipticAlgorithm                  |
+| model                      | PoissonModel                       |
+| problem                    | PoissonProblem                     |
+
+
+Test cases
+----------
+
+The following classes are derived from PoissonProblem and yield to 
+different test cases.
+
+| available problem implementations |
+| --------------------------------- |
+| AlbertaProblem                    |
+| SinSinSin                         |
+| SinSin                            |
+| CosCos                            |
+| CastilloProblem                   |
+
+
+Global problem structure
+------------------------
+
+This poisson problem is a simple and uncoupled algorithm.
+
 ![ProblemCreator structure for poisson problem](poisson.png)
 
-
-| Method                     | formular                                  |
-| -------------------------- | ----------------------------------------- |
-| stiffSource()              | \f$ S_1 \f$ with \f$ S_1=S-S_2 \f$        |
-| nonStiffSource()           | \f$ S_2 \f$ with \f$ S_2=S-S_1 \f$        |
-| boundaryValue()            | \f$ g_D\f$                                |
-| hasBoundaryValue()         | true if \f$ x \in \Gamma_D \f$            |
-| diffusion()                | \f$ A \f$                                 |    
-| advection()                | \f$ F \f$                                 |
-| jacobian()                 | \f$ a \f$                                 |
-| boundaryFlux()             | \f$ g_N \f$                               |                               
-| diffusionBoundaryFlux()    | \f$ ??? \f$                               |                               
-| -------------------------- |  ---------------------------------------- |
-| hasFlux()                  | true if \f$ F\neq 0\f$, false otherwise   |
-| hasStiffSource()           | true if \f$ S_1\neq 0\f$, false otherwise |
-| hasNonStiffSource()        | true if \f$ S_2\neq 0\f$, false otherwise |
 */
+
+}
+}
