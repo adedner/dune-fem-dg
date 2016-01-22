@@ -115,7 +115,7 @@ namespace Fem
     //exact solution
     std::shared_ptr< DiscreteFunction > exactSolution() const
     {
-      return solution_;
+      return exactSolution_;
     }
     void setExactSolution( std::shared_ptr< DiscreteFunction > exactSolution )
     {
