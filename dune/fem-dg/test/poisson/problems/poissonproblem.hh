@@ -12,9 +12,11 @@ namespace Dune
 {
 namespace Fem
 {
+namespace Poisson
+{
 
   template <class GridType, int dimRange>
-  struct PoissonProblem : public ProblemInterface<
+  struct Problem : public ProblemInterface<
        Dune :: Fem :: FunctionSpace< double, double, GridType::dimension, dimRange> >
   {
   public:
@@ -36,7 +38,7 @@ namespace Fem
     /**
      * \brief define problem parameters
      */
-    PoissonProblem(const int problemNumber) :
+    Problem(const int problemNumber) :
       BaseType (),
       data_(0)
     {
@@ -264,6 +266,7 @@ namespace Fem
     std::string myName;
   };
 
+}
 }
 }
 #endif  /*DUNE_PROBLEM_HH__*/

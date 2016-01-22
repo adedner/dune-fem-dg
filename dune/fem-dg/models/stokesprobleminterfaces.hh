@@ -11,9 +11,11 @@ namespace Dune
 {
 namespace Fem
 {
+namespace Stokes
+{
 
   template< class GridImp>
-  class StokesProblemInterfaceBase
+  class ProblemInterfaceBase
   {
   public:
     typedef Dune::Fem::FunctionSpace< double, double, GridImp::dimension, GridImp::dimension > FunctionSpaceType;
@@ -25,9 +27,9 @@ namespace Fem
 
 
   template< class GridImp >
-  class StokesProblemInterface
+  class ProblemInterface
   {
-    typedef StokesProblemInterfaceBase< GridImp >        BaseType;
+    typedef ProblemInterfaceBase< GridImp >        BaseType;
   public:
 
     typedef typename BaseType::FunctionSpaceType         FunctionSpaceType;
@@ -44,7 +46,7 @@ namespace Fem
      *
      *  \note Use the StokesProblem class to create derived objects.
      */
-    StokesProblemInterface()
+    ProblemInterface()
       : problems_( std::make_tuple( new PoissonProblemType(), new StokesProblemType() ) )
     {}
 
@@ -91,10 +93,10 @@ namespace Fem
    */
   template< class GridImp,
             template<class> class StokesProblemImp >
-  class StokesProblem
-    : public StokesProblemInterface< GridImp >
+  class Problem
+    : public ProblemInterface< GridImp >
   {
-    typedef StokesProblemInterface< GridImp > BaseType;
+    typedef ProblemInterface< GridImp >                                      BaseType;
 
     typedef typename BaseType::PoissonProblemType                            PoissonProblemBaseType;
     typedef typename BaseType::StokesProblemType                             StokesProblemBaseType;
@@ -103,7 +105,7 @@ namespace Fem
     typedef typename StokesProblemImp<GridImp>::PoissonProblemType           PoissonProblemType;
     typedef typename StokesProblemImp<GridImp>::StokesProblemType            StokesProblemType;
 
-    StokesProblem()
+    Problem()
       : BaseType(),
         poisson_( new PoissonProblemType() ),
         stokes_( new StokesProblemType() )
@@ -118,7 +120,7 @@ namespace Fem
   };
 
 
-
+}
 }
 }
 #endif  /*DUNE_PROBLEMINTERFACE_HH*/

@@ -84,16 +84,16 @@ namespace Fem
         typedef HostGridPartType                              GridPartType;
 
         // define problem type here if interface should be avoided
-        typedef typename StokesProblemInterface< GridType >::PoissonProblemType  ProblemInterfaceType;
+        typedef typename Stokes::ProblemInterface< GridType >::PoissonProblemType  ProblemInterfaceType;
 
         typedef typename ProblemInterfaceType::FunctionSpaceType      FunctionSpaceType;
 
 
         struct AnalyticalTraits
         {
-          typedef ProblemInterfaceType                                ProblemType;
-          typedef ProblemInterfaceType                                InitialDataType;
-          typedef PoissonModel< GridPartType, InitialDataType >       ModelType;
+          typedef ProblemInterfaceType                                  ProblemType;
+          typedef ProblemInterfaceType                                  InitialDataType;
+          typedef Stokes::PoissonModel< GridPartType, InitialDataType > ModelType;
 
           template< class Solution, class Model, class ExactFunction, class SigmaFunction>
           static void addEOCErrors ( Solution &u, Model &model, ExactFunction &f, SigmaFunction& sigma )
@@ -111,8 +111,8 @@ namespace Fem
 
         static ProblemInterfaceType* problem()
         {
-          return new typename StokesProblem< GridType, GeneralizedStokesProblem >::PoissonProblemType();
-          //return new typename GeneralizedStokesProblem< GridType >::PoissonProblemType();
+          return new typename Stokes::Problem< GridType, Stokes::GeneralizedProblem >::PoissonProblemType();
+          //return new typename Stokes::GeneralizedProblem< GridType >::PoissonProblemType();
         }
 
 
@@ -157,7 +157,7 @@ namespace Fem
       typedef HostGridPartType                              GridPartType;
 
       // define problem type here if interface should be avoided
-      typedef StokesProblemInterface< GridType >             ProblemInterfaceType;
+      typedef Stokes::ProblemInterface< GridType >             ProblemInterfaceType;
 
       typedef typename ProblemInterfaceType::StokesProblemType::FunctionSpaceType FunctionSpaceType;
 
@@ -165,7 +165,7 @@ namespace Fem
       {
         typedef ProblemInterfaceType                                      ProblemType;
         typedef ProblemInterfaceType                                      InitialDataType;
-        typedef StokesModel< GridPartType, InitialDataType >              ModelType;
+        typedef Stokes::StokesModel< GridPartType, InitialDataType >      ModelType;
 
         template< class Solution, class Model, class ExactFunction >
         static void addEOCErrors ( Solution &u, Model &model, ExactFunction &f )
@@ -179,7 +179,7 @@ namespace Fem
 
       static ProblemInterfaceType* problem()
       {
-        return new StokesProblem< GridType, GeneralizedStokesProblem > ();
+        return new Stokes::Problem< GridType, Stokes::GeneralizedProblem > ();
       }
 
       //Stepper Traits

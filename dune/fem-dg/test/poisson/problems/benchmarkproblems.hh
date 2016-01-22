@@ -12,6 +12,8 @@ namespace Dune
 {
 namespace Fem
 {
+namespace Poisson
+{
 
   template<int dim, class DomainField, class Field>
   class DataFunctionIF
@@ -2287,6 +2289,7 @@ namespace Fem
     }
   };
 
+}
 }
 }
 #endif

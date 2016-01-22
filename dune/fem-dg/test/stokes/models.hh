@@ -11,6 +11,8 @@ namespace Dune
 {
 namespace Fem
 {
+namespace Stokes
+{
 
   /**********************************************
    * Analytical model                           *
@@ -404,6 +406,7 @@ namespace Fem
     const ProblemType& problem_;
   };
 
+}
 }
 }
 #endif

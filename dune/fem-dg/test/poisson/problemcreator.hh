@@ -74,7 +74,7 @@ namespace Fem
       {
         typedef ProblemInterfaceType                                ProblemType;
         typedef ProblemInterfaceType                                InitialDataType;
-        typedef PoissonModel< GridPartType, InitialDataType >       ModelType;
+        typedef Poisson::Model< GridPartType, InitialDataType >     ModelType;
 
         template< class Solution, class Model, class ExactFunction, class SigmaFunction>
         static void addEOCErrors ( Solution &u, Model &model, ExactFunction &f, SigmaFunction& sigma )
@@ -93,7 +93,7 @@ namespace Fem
       static ProblemInterfaceType* problem()
       {
         int probNr = Fem::Parameter::getValue< int > ( "problem" );
-        return new PoissonProblem< GridType, DIMRANGE > ( probNr );
+        return new Poisson::Problem< GridType, DIMRANGE > ( probNr );
       }
 
       //Stepper Traits

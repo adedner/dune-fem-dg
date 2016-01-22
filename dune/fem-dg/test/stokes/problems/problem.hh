@@ -11,12 +11,14 @@ namespace Dune
 {
 namespace Fem
 {
+namespace Stokes
+{
 
   template< class GridImp>
-  class StokesProblemDefault
-    : public StokesProblemInterfaceBase< GridImp >
+  class ProblemDefault
+    : public ProblemInterfaceBase< GridImp >
   {
-    typedef StokesProblemInterfaceBase< GridImp >        BaseType;
+    typedef ProblemInterfaceBase< GridImp >        BaseType;
 
     typedef typename BaseType::FunctionSpaceType         FunctionSpaceType;
     typedef typename BaseType::PressureFunctionSpaceType PressureFunctionSpaceType;
@@ -135,16 +137,16 @@ namespace Fem
     typedef PoissonProblem PoissonProblemType;
     typedef StokesProblem StokesProblemType;
 
-    StokesProblemDefault()
+    ProblemDefault()
     {}
 
   };
 
   template< class GridImp>
-  class StokesProblemPeriodic
-    : public StokesProblemInterfaceBase< GridImp >
+  class ProblemPeriodic
+    : public ProblemInterfaceBase< GridImp >
   {
-    typedef StokesProblemInterfaceBase< GridImp >        BaseType;
+    typedef ProblemInterfaceBase< GridImp >        BaseType;
 
     typedef typename BaseType::FunctionSpaceType         FunctionSpaceType;
     typedef typename BaseType::PressureFunctionSpaceType PressureFunctionSpaceType;
@@ -266,17 +268,17 @@ namespace Fem
     typedef PoissonProblem PoissonProblemType;
     typedef StokesProblem StokesProblemType;
 
-    StokesProblemPeriodic()
+    ProblemPeriodic()
     {}
 
   };
 
 
   template< class GridImp>
-  class GeneralizedStokesProblem
-    : public StokesProblemInterfaceBase< GridImp >
+  class GeneralizedProblem
+    : public ProblemInterfaceBase< GridImp >
   {
-    typedef StokesProblemInterfaceBase< GridImp >        BaseType;
+    typedef ProblemInterfaceBase< GridImp >        BaseType;
 
     typedef typename BaseType::FunctionSpaceType         FunctionSpaceType;
     typedef typename BaseType::PressureFunctionSpaceType PressureFunctionSpaceType;
@@ -429,7 +431,7 @@ namespace Fem
  //     }
  //   return 0;
  // }
-
+}
 }
 }
 

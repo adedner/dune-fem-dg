@@ -12,12 +12,14 @@ namespace Dune
 {
 namespace Fem
 {
+namespace Stokes
+{
 
   template< class GridImp>
-  class StokesProblemCorner
-    : public StokesProblemInterfaceBase< GridImp >
+  class ProblemCorner
+    : public ProblemInterfaceBase< GridImp >
   {
-		typedef StokesProblemInterfaceBase< GridImp >        BaseType;
+		typedef ProblemInterfaceBase< GridImp >        BaseType;
 
     typedef typename BaseType::FunctionSpaceType         FunctionSpaceType;
     typedef typename BaseType::PressureFunctionSpaceType PressureFunctionSpaceType;
@@ -229,5 +231,5 @@ namespace Fem
 
 }
 }
-
+}
 #endif // #ifndef PROBLEM_HH

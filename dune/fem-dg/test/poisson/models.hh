@@ -11,6 +11,8 @@ namespace Dune
 {
 namespace Fem
 {
+namespace Poisson
+{
 
   /**********************************************
    * Analytical model                           *
@@ -32,7 +34,7 @@ namespace Fem
   };
 
   /**
-   * \brief describes the analytical model
+   * \brief Describes the analytical model.
    *
    * \ingroup AnalyticalModels
    *
@@ -46,21 +48,6 @@ namespace Fem
    *                               \nabla u \cdot n  & = & g_N \f}
    *
    * where each class methods describes an analytical function.
-   * <ul>
-   * <li> \f$F\f$:   advection() </li>
-   * <li> \f$a\f$:   jacobian() </li>
-   * <li> \f$A\f$:   diffusion() </li>
-   * <li> \f$S\f$:   stiffSource()/nonStiffSource() </li>
-   * <li> \f$g_D\f$  boundaryValue() </li>
-   * <li> \f$g_N\f$  boundaryFlux() </li>
-   * </ul>
-   *
-   * \attention \f$F(u)\f$ and \f$A(u,v)\f$ are matrix valued, and therefore the
-   * divergence is defined as
-   *
-   * \f[ \Delta M = \nabla \cdot (\nabla \cdot (M_{i\cdot})^t)_{i\in 1\dots n} \f]
-   *
-   * for a matrix \f$M\in \mathbf{M}^{n\times m}\f$.
    *
    * | Method                     | formular                                  |
    * | -------------------------- | ----------------------------------------- |
@@ -73,17 +60,22 @@ namespace Fem
    * | jacobian()                 | \f$ a \f$                                 |
    * | boundaryFlux()             | \f$ g_N \f$                               |
    * | diffusionBoundaryFlux()    | \f$ ??? \f$                               |
-   * | -------------------------- |  ---------------------------------------- |
    * | hasFlux()                  | true if \f$ F\neq 0\f$, false otherwise   |
    * | hasStiffSource()           | true if \f$ S_1\neq 0\f$, false otherwise |
    * | hasNonStiffSource()        | true if \f$ S_2\neq 0\f$, false otherwise |
+   *
+   * \attention \f$F(u)\f$ and \f$A(u,v)\f$ are matrix valued, and therefore the
+   * divergence is defined as
+   * \f[ \Delta M = \nabla \cdot (\nabla \cdot (M_{i\cdot})^t)_{i\in 1\dots n} \f]
+   * for a matrix \f$M\in \mathbf{M}^{n\times m}\f$.
    *
    * \param GridPart GridPart for extraction of dimension
    * \param ProblemType Class describing the initial(t=0) and exact solution
    */
   template <class GridPartImp, class ProblemImp>
-  class PoissonModel : public DefaultModel< PoissonModelTraits< GridPartImp, ProblemImp > >
+  class Model : public DefaultModel< PoissonModelTraits< GridPartImp, ProblemImp > >
   {
+    typedef DefaultModel< PoissonModelTraits< GridPartImp, ProblemImp > > BaseType;
   public:
     typedef PoissonModelTraits< GridPartImp, ProblemImp >     Traits;
     typedef typename Traits::ProblemType                      ProblemType;
@@ -111,6 +103,8 @@ namespace Fem
     static const bool hasDiffusion = true;
     static const int ConstantVelocity = false;
 
+    using BaseType::stiffSource;
+    using BaseType::nonStiffSource;
 
     /**
      * \brief Constructor
@@ -119,7 +113,7 @@ namespace Fem
      *
      * \param problem Class describing the initial(t=0) and exact solution
      */
-    PoissonModel (const ProblemType& problem)
+    Model (const ProblemType& problem)
       : problem_(problem), K_( 0 )
     {
       if( problem_.constantK() )
@@ -130,30 +124,22 @@ namespace Fem
     }
 
     /**
-     * @copydoc PoissonModel::hasFlux()
+     * @copydoc DefaultModel::hasFlux()
      */
     inline bool hasFlux () const { return true ; }
 
     /**
-     * @copydoc PoissonModel::hasStiffSource()
+     * @copydoc DefaultModel::hasStiffSource()
      */
     inline bool hasStiffSource () const { return true ; }
 
     /**
-     * @copydoc PoissonModel::hasNonStiffSource()
+     * @copydoc DefaultModel::hasNonStiffSource()
      */
     inline bool hasNonStiffSource () const { return false ; }
 
     /**
-     * \brief returns the stiff source term \f$ S_1 \f$
-     *
-     * \param[in]  local local evaluation
-     * \param[in]  u evaluation of the local function, i.e. \f$ u_E( \hat{x} ) \f$
-     * \param[in]  du evaluation of the gradient of the local function, i.e. \f$\nabla u_E( \hat{x} )\f$
-     * \param[out] s the result \f$ S_1(u) \f$
-     *
-     * \returns The time step restriction which is given
-     * by the stiff source.
+     * @copydoc DefaultModel::stiffSource(LocalEvaluation,RangeType,JacobianRangeType,RangeType)
      */
     template <class LocalEvaluation>
     inline double stiffSource (const LocalEvaluation& local,
@@ -167,15 +153,7 @@ namespace Fem
     }
 
     /**
-     * \brief returns the non stiff source term \f$ S_2 \f$
-     *
-     * \param[in]  local local evaluation
-     * \param[in]  u evaluation of local function, i.e. \f$ u_E( \hat{x} ) \f$
-     * \param[in]  du evaluation of the gradient of the local function, i.e. \f$\nabla u_E( \hat{x} )\f$
-     * \param[out] s the result \f$ S_2(u) \f$
-     *
-     * \returns The time step restriction which is given
-     * by the non stiff source.
+     * @copydoc DefaultModel::nonStiffSource(const LocalEvaluation& local,const RangeType& u,const JacobianRangeType& jac,RangeType & s))
      */
     template <class LocalEvaluation>
     inline double nonStiffSource (const LocalEvaluation& local,
@@ -457,6 +435,7 @@ namespace Fem
     DiffusionMatrixType K_ ;
   };
 
+}
 }
 }
 #endif
