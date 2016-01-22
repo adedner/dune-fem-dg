@@ -26,8 +26,8 @@ This is an description class for the problem
 | interface                  | implementation                     |
 | -------------------------- | ---------------------------------- |
 | algorithm                  | EllipticAlgorithm                  |
-| model                      | PoissonModel                       |
-| problem                    | PoissonProblem                     |
+| model                      | Poisson::Model                     |
+| problem                    | Poisson::Problem                   |
 
 
 Test cases

@@ -108,7 +108,17 @@ Again a small overview.
 | Symbol                        | Description                      | Implementation                                         |
 | ----------------------------- | -------------------------------- | ------------------------------------------------------ |
 | \f$ V^{\Omega,U}\f$           | function space                   |                                                        |
-
+| \f$ u\in V^{\Omega_\mathcal{G},U} \f$ | grid function            |                                                        |
+| \f$ u|_E\f$                   | local function                   |                                                        |
+| \f$ V_\mathcal{G} \subset V^{\Omega_\mathcal{G},U} \f$ | finite dimensional subspace |                                    |
+| \f$\mathcal{B}_E \f$          | local basis function set         |                                                        |
+| \f$ \mathcal{B}_\mathcal{G}\f$| global basis function set        |                                                        | 
+| \f$ \mathcal{D}_{\mathcal{G}}\f$ | discrete function space       |                                                        |
+| \f$ \mu_E \f$                 | local DoF mapper                 |                                                        |
+| \f$ \psi \in \mathcal{B}_{\mathcal{G}}\f$ | global basis function |                                                       |
+| \f$ \phi\in\mathcal{B}_E \f$  | local basis function             |                                                        |
+| \f$ u\in \mathcal{D}_{\mathcal{G}}\f$ | discrete function        |                                                        |
+| \f$ \hat{\varphi}_{\hat{E}}\in V^{\hat{E},U}\f$ | shape function     |                                                    |
 
 ### Function Space ###
 
@@ -119,13 +129,13 @@ with domain \f$ \Omega \subset \mathbb{R}^d \f$ and range \f$ U\f$, \f$ \dim U =
 ### Grid Function 
 
 We say that \f$ u\in V^{\Omega_\mathcal{G},U} \f$ is a grid function and for \f$ E\in\mathcal{G}\f$ we call 
-\f$ u_E:E\rightarrow U, u|_E\}\f$  the local function of \f$ u \f$ on \f$ E\f$.
+\f$ u|_E\f$  the local function of \f$ u \f$ on \f$ E\f$.
 
 
 ### Discrete Function Space ###
 
 Let \f$ V_\mathcal{G} \subset V^{\Omega_\mathcal{G},U} \f$ be a finite dimensional subspace of a function 
-space \f$ V^{\Omega_\mathcal{G},U} \f$. For each element \f$ E\in \Omega_\mathcal{G} \f$, let 
+space \f$ V^{\Omega_\mathcal{G},U} \f$. For each element \f$ E\in \mathcal{G} \f$, let 
 \f$\mathcal{B}_E = (\varphi_i^E)_{i\in I_E}\subset V^{E,U}\f$ with \f$ I_E\subset \mathbb{N}_0 \f$ 
 and let \f$ \mu_E:I_E\rightarrow V_\mathcal{G}\f$. then, we call 
 \f$ \mathcal{D}_{\mathcal{G}} = \left(V_\mathcal{G}, (\mathcal{B}_E)_{E\in\mathcal{G}}, (\mu_E)_{E\in\mathcal{G}})\right) \f$
@@ -210,6 +220,11 @@ regarding the reference element.
 
 Operators
 ---------
+
+| Symbol                        | Description                      | Implementation                                         |
+| ----------------------------- | -------------------------------- | ------------------------------------------------------ |
+| \f$ \mathcal{L} \f$           | operator                         |                                                        |
+| \f$ \mathcal{L}_{\mathcal{G}}\f$ | discrete operator             |                                                        |
 
 ### Operator ###
 

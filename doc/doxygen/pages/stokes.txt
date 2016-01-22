@@ -1,6 +1,15 @@
+namespace Dune{
+namespace Fem{
+namespace Poisson{
+
 /**
 \page Stokes
 This solves the stokes problem.
 
 ![ProblemCreator structure](stokes.png)
 */
+
+
+}
+}
+}
