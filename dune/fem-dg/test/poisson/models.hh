@@ -124,22 +124,22 @@ namespace Poisson
     }
 
     /**
-     * @copydoc DefaultModel::hasFlux()
+     * \copydoc DefaultModel::hasFlux()
      */
     inline bool hasFlux () const { return true ; }
 
     /**
-     * @copydoc DefaultModel::hasStiffSource()
+     * \copydoc DefaultModel::hasStiffSource()
      */
     inline bool hasStiffSource () const { return true ; }
 
     /**
-     * @copydoc DefaultModel::hasNonStiffSource()
+     * \copydoc DefaultModel::hasNonStiffSource()
      */
     inline bool hasNonStiffSource () const { return false ; }
 
     /**
-     * @copydoc DefaultModel::stiffSource(LocalEvaluation,RangeType,JacobianRangeType,RangeType)
+     * \copydoc DefaultModel::stiffSource(LocalEvaluation,RangeType,JacobianRangeType,RangeType)
      */
     template <class LocalEvaluation>
     inline double stiffSource (const LocalEvaluation& local,
@@ -153,7 +153,7 @@ namespace Poisson
     }
 
     /**
-     * @copydoc DefaultModel::nonStiffSource(const LocalEvaluation& local,const RangeType& u,const JacobianRangeType& jac,RangeType & s))
+     * \copydoc DefaultModel::nonStiffSource(const LocalEvaluation& local,const RangeType& u,const JacobianRangeType& jac,RangeType & s))
      */
     template <class LocalEvaluation>
     inline double nonStiffSource (const LocalEvaluation& local,
@@ -189,11 +189,7 @@ namespace Poisson
     }
 
     /**
-     * \brief diffusion term \f$a\f$
-     *
-     * \param[in]  local local evaluation
-     * \param[in]  u evaluation of the local function, i.e. \f$ u_E( \hat{x} ) \f$
-     * \param[out] a the result \f$ a \f$
+     * \copydoc DefaultModel::jacobian()
      */
     template <class LocalEvaluation>
     inline void jacobian (const LocalEvaluation& local,

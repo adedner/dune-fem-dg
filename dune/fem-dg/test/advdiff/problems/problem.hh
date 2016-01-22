@@ -12,7 +12,8 @@ namespace Dune
 {
 namespace Fem
 {
-
+namespace Stokes
+{
 
   /**
    * \brief describes the initial and exact solution of the advection-diffusion model
@@ -254,6 +255,7 @@ namespace Fem
     std::string myName;
   };
 
+}
 }
 }
 #endif  /*DUNE_PROBLEM_HH__*/

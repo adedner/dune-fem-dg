@@ -10,9 +10,14 @@ namespace Fem
 {
 
   /**
-   * \brief defines the advective flux using an upwind scheme
+   * \brief Defines an advective flux using an upwind scheme.
    *
    * \ingroup AdvectionFluxes
+   *
+   * The numerical upwind flux \f$ g \f$ is defined by
+   * \f[ g(u^+,u^-) = \begin{cases} F(u^+)\cdot n & F(u^+)\cdot n >0 \\ F(u^-)\cdot n & \text{otherwise} \end{cases}. \f]
+   *
+   * The function \f$ F \f$ is given by the analytical model.
    */
   template <class ModelImp>
   class UpwindFlux
@@ -44,12 +49,16 @@ namespace Fem
       : BaseType( mod, parameter )
     {}
 
+    /**
+     * \copydoc DGAdvectionFluxBase::name()
+     */
     static std::string name () { return "Upwind"; }
 
     /**
-     * \brief evaluates the flux \f$g(u,v)\f$
+     * The numerical upwind flux \f$ g \f$ is defined by
+     * \f[ g(u^+,u^-) = \begin{cases} F(u^+)\cdot n & F(u^+)\cdot n >0 \\ F(u^-)\cdot n & \text{otherwise} \end{cases}. \f]
      *
-     * \return maximum wavespeed * normal
+     * \copydoc DGAdvectionFluxBase::numericalFlux()
      */
     template <class LocalEvaluation>
     inline double numericalFlux( const LocalEvaluation& left,
