@@ -377,7 +377,19 @@ namespace Fem
       diffusion( local, u, jac, A );
     }
 
-    //! maximal wave speed due to advection part
+    /**
+     * \brief return the maximal wave speed due to the advection part
+     *
+     * \todo Add example for advspeed != totalspeed or explain the difference.
+     *
+     * \param[in]  local local evaluation
+     * \param[in]  normal the normal of the intersection
+     * \param[in]  u evaluation of the local function, i.e. \f$ u_E( \hat{x} ) \f$
+     * \param[out] advspeed the maximal wave speed, i.e. the largest eigenvalue of the flux jacobian.
+     *                      Needed for viscosity terms, for example local Lax-Friedrich flux.
+     * \param[out] totalspeed the maximal wave speed, i.e. the largest eigenvalue of the flux jacobian.
+     *                        Needed for the time step estimation.
+     */
     template <class LocalEvaluation>
     inline void maxSpeed (const LocalEvaluation&,
                           const DomainType& normal,

@@ -11,6 +11,11 @@ namespace Dune
 namespace Fem
 {
 
+  /**
+   * \brief Parameter class describing adaptation strategies.
+   *
+   * \ingroup ParameterClass
+   */
   struct AdaptationParameters
     : public Fem::LocalParameter< AdaptationParameters, AdaptationParameters >
   {

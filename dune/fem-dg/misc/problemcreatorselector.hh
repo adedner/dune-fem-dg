@@ -75,9 +75,9 @@ namespace Fem
      */
     enum class Enum
     {
-      /** \brief unlimited */
+      //! limitation of advection term
       unlimited = 0,
-      /** \brief limited */
+      //! no limitation of advection term
       limited = 1,
     };
   }
@@ -93,8 +93,11 @@ namespace Fem
      */
     enum class Enum
     {
+      //! Discrete function space with Lagrange Finite Elements
       lagrange = 0,
+      //! Discrete function space with Legendre Finite Elements
       legendre = 1,
+      //! Discrete function space with hierarchic Legendre Finite Elements
       hierarchic_legendre = 2
     };
   }
@@ -111,7 +114,9 @@ namespace Fem
      */
     enum class Enum
     {
+      //! Continuous Galerkin
       cg = 0,
+      //! Discontinuous Galerkin
       dg = 1
     };
   }
@@ -127,7 +132,9 @@ namespace Fem
      */
     enum class Enum
     {
+      //! no Adaptivity
       no = 0,
+      //! Allow Adaptivity
       yes = 1
     };
   }
@@ -142,12 +149,18 @@ namespace Fem
      */
     enum class Enum
     {
-      fem,         // use the matrix based version of the dune-fem solvers
-      femoem,      // use the matrix based version of the dune-fem solvers with blas
-      istl,        // use the dune-istl solvers
-      umfpack,     // use the direct solver umfpack
-      petsc,       // use the petsc package
-      eigen        // use the eigen package
+      //! use the matrix based version of the dune-fem solvers
+      fem = 0,
+      //! use the matrix based version of the dune-fem solvers with blas
+      femoem = 1,
+      //! use the dune-istl solvers
+      istl = 2,
+      //! use the direct solver umfpack
+      umfpack = 3,
+      //! use the petsc package
+      petsc = 4,
+      //! use the eigen package
+      eigen = 5
     };
   }
 
@@ -162,7 +175,9 @@ namespace Fem
      */
     enum class Enum
     {
+      //! use matrix free operator
       matrixfree,
+      //! use matrix based operator
       assembled
     };
   }

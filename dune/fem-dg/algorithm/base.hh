@@ -22,6 +22,11 @@ namespace Dune
 namespace Fem
 {
 
+  /**
+   * \brief Parameter class describing where to write eoc data.
+   *
+   * \ingroup ParameterClass
+   */
   struct EocDataOutputParameters :
          public Fem::LocalParameter<Fem::DataWriterParameters,EocDataOutputParameters>
   {
@@ -41,6 +46,11 @@ namespace Fem
     }
   };
 
+  /**
+   * \brief Parameter class describing information about eoc steps.
+   *
+   * \ingroup ParameterClass
+   */
   struct EocParameters :
          public Fem::LocalParameter<EocParameters,EocParameters>
   {
@@ -52,26 +62,46 @@ namespace Fem
       : keyPrefix_( keyPrefix )
     {}
 
+    /**
+     * \brief returns the EocDataOutputParameters
+     *
+     * \param[in] loop the current number of the eoc loop
+     * \param[in] name an additional name
+     */
     const EocDataOutputParameters dataOutputParameters( int loop, const std::string& name ) const
     {
       return EocDataOutputParameters( loop, name );
     }
 
+    /**
+     * \brief returns the number of eoc steps
+     */
     virtual int steps() const
     {
       return Fem::Parameter::getValue<int>( keyPrefix_ + "steps", 1);
     }
 
+    /**
+     * \brief returns the output path where eoc data should be written to
+     */
     virtual std::string outputPath() const
     {
       return Fem::Parameter::getValue<std::string>( keyPrefix_ + "outputpath", "./");
     }
 
+    /**
+     * \brief returns the name of the file for the eoc data.
+     */
     virtual std::string fileName() const
     {
       return Fem::Parameter::getValue<std::string>( keyPrefix_ + "filename", "eoc" );
     }
 
+    /**
+     * \brief returns the quadrature order
+     *
+     * \deprecated{This method is not needed here}
+     */
     virtual int quadOrder() const
     {
       return Fem::Parameter::getValue< int >( keyPrefix_ + "quadorder", -1 );

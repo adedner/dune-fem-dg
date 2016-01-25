@@ -9,19 +9,6 @@ namespace Fem
 {
 
 
-//DiffusionFlux 	BR, CDG, CDG2...
-//AdvectionFlux 	LLF, HLLC...
-//GalerkinType 	CG, DG
-//Solver 	istl, fem...
-//polOrder 	0, 1, 2...
-//GridDim 	1,2,3...
-//Adaptation 	no, yes (Estimator...)
-//DimRange 	1,2,3..
-//Assembly 	matrix-free/matrix-based
-//Codegen 	yes/no
-//Parallel 	yes/no
-
-
   /**
    * \brief Convenience class for ProblemCreator classes.
    *
@@ -31,8 +18,15 @@ namespace Fem
    *
    * This class protects the user from this situation and enables all available implementations.
    *
-   *
-   *
+   * \tparam GridImp type of the grid
+   * \tparam Galerkin::Enum enum of the galerkin type
+   * \tparam Adaptivity::Enum enum indicating whether we have adaptivity or not
+   * \tparam DiscreteFunctionSpaces::Enum enum defining a discrete function space
+   * \tparam Solver::Enum enum defining a solver
+   * \tparam AdvectionLimiter::Enum enum defining the limiting of the advection operator
+   * \tparam Matrix::Enum enum describing whether to assemble or not
+   * \tparam AdvectionFluxIdentifierImp Identifier for the advection fluxes.
+   * \tparam DiffuionFluxIdentifierImp Identifier for the diffusion fluxes.
    */
   template< class GridImp,
             Galerkin::Enum dgId,

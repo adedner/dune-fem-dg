@@ -11,91 +11,73 @@ Only \addtogroup is used in the code documentation.
 
 /**
 
-\defgroup ProblemCreator (Global) ProblemCreator
-
-  \defgroup Grids Grid Manager
-  \ingroup ProblemCreator
+\defgroup Algorithm Algorithm
   
-  \defgroup GridInitializer Grid Initializer
-  \ingroup ProblemCreator
+  \defgroup EvolutionAlgorithm EvolutionAlgorithm
+  \ingroup Algorithm
 
-  \defgroup SubProblemCreator  SubProblemCreator
-  \ingroup ProblemCreator
+  \defgroup SteadyStateAlgorithm SteadyStateAlgorithm
+  \ingroup Algorithm
 
-    \defgroup GridPart GridPart
-    \ingroup SubProblemCreator
+\defgroup SubAlgorithms Sub-Algorithms
 
-    \defgroup SubAlgorithms Sub-Algorithms
-    \ingroup SubProblemCreator
 
-    \defgroup ProblemInterface ProblemInterfaces
-    \ingroup SubProblemCreator
-    
-    \defgroup FunctionSpace FunctionSpace
-    \ingroup SubProblemCreator
-    
-    \defgroup AnalyticalTraits AnalyticalTraits
-    \ingroup SubProblemCreator
-    
-      \defgroup Problem Problem
-      \ingroup AnalyticalTraits
-      
-      \defgroup Model Model
-      \ingroup AnalyticalTraits
+\defgroup Analytical Analytical
 
-      \defgroup Error Error calculation
-      \ingroup AnalyticalTraits
-
-    \defgroup DiscreteTraits DiscreteTraits
-    \ingroup SubProblemCreator
-
-      \defgroup DiscreteFunction DiscreteFunction
-      \ingroup DiscreteTraits 
-
-      \defgroup IOTuple IOTuple
-      \ingroup DiscreteTraits
-
-      \defgroup Operator Operator
-      \ingroup DiscreteTraits
-      \ingroup Discretization
-
-        \defgroup PassOperator Pass-based Operator
-        \ingroup Operator
-
-        \defgroup AssemblyOperator Assembly-based Operator
-        \ingroup Operator
-        
-        \defgroup MatrixFreeOperator Matrix-free Operator
-        \ingroup Operator
-
-      \defgroup Solver Solver
-      \ingroup DiscreteTraits
-      
-      \defgroup Handler Handler
-      \ingroup DiscreteTraits
-
-  \defgroup Algorithm Algorithm
-  \ingroup ProblemCreator
-    
-    \defgroup EvolutionAlgorithm EvolutionAlgorithm
-    \ingroup Algorithm
-
-    \defgroup SteadyStateAlgorithm SteadyStateAlgorithm
-    \ingroup Algorithm
+  \defgroup Problem Problem
+  \ingroup Analytical
   
-  \defgroup ModuleParameters algorithmName()
-  \ingroup ProblemCreator
+  \defgroup Model Model
+  \ingroup Analytical
+
+\defgroup DiscreteTraits DiscreteTraits
+
+  \defgroup DiscreteFunction DiscreteFunction
+  \ingroup DiscreteTraits 
+
+  \defgroup Operator Operator
+  \ingroup DiscreteTraits
+  \ingroup Discretization
+
+    \defgroup PassOperator Pass-based Operator
+    \ingroup Operator
+
+    \defgroup AssemblyOperator Assembly-based Operator
+    \ingroup Operator
+    
+    \defgroup MatrixFreeOperator Matrix-free Operator
+    \ingroup Operator
+
+  \defgroup Solver Solver
+  \ingroup DiscreteTraits
+  
+  \defgroup Handler Handler
+  \ingroup DiscreteTraits
 
 
 \defgroup Discretization
 
 \defgroup FemDGParameter
 
- \defgroup AnalyticalModels
+\defgroup AnalyticalModels
 
- Analytical Models
+\defgroup ParameterClass Parameter classes
+
+Parameter classes collect information (usually) from parameter files.
+
+Parameter classes are usually closely linked to a class where the
+parameters may change the state of an object of this class.
+
+Main goal of parameter classes are
+1. _encapsulation_ of parameter information for the usage in another class,
+2. easy _modification_ of the state of an object,
+3. allow _key prefixes_ to read local parameters from a parameter files,
+4. allow _user-defined implementation_ to change the state of an object in a user-defined way.   
+
+
 \defgroup DiscreteModels
- \defgroup SpaceOperators Space operator
+ 
+\defgroup SpaceOperators Space operator
 
  These operators are used for the spatial discretization of a PDE.
 \defgroup DiffusionFluxes Diffusion Fluxes

@@ -541,22 +541,25 @@ namespace Euler
     typedef typename ModelImp::EntityType         EntityType;
     typedef typename ModelImp::IntersectionType   IntersectionType;
 
-    typedef FluxImp                                     FluxType;
+    typedef FluxImp                               FluxType;
 
   public:
     typedef typename BaseType::IdType             IdType;
     typedef typename BaseType::ModelType          ModelType;
     typedef typename BaseType::ParameterType      ParameterType;
 
-    // constructor
+    /**
+     * \copydoc DGAdvectionFluxBase::DGAdvectionFluxBase()
+     */
     EulerFluxImpl (const ModelImp& mod,
                    const ParameterType& parameters )
       : BaseType( mod, parameters ),
         numFlux_( mod )
     {}
 
-    // Return value: maximum wavespeed*length of integrationOuterNormal
-    // gLeft,gRight are fluxed * length of integrationOuterNormal
+    /**
+     * \copydoc DGAdvectionFluxBase::numericalFlux()
+     */
     template< class LocalEvaluation >
     double numericalFlux( const LocalEvaluation& left,
                           const LocalEvaluation& right,

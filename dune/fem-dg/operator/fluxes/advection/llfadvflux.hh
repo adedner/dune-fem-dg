@@ -37,12 +37,27 @@ namespace Fem
     typedef typename BaseType::ParameterType      ParameterType;
     using BaseType::model_;
 
+    /**
+     * \copydoc DGAdvectionFluxBase::DGAdvectionFluxBase()
+     */
     LLFAdvFlux( const ModelType& mod, const ParameterType& parameter = ParameterType() )
       : BaseType( mod, parameter )
     {}
 
+    /**
+     * \copydoc DGAdvectionFluxBase::name()
+     */
     static std::string name () { return "Local Lax-Friedrichs"; }
 
+    /**
+     * The numerical upwind flux \f$ g \f$ is defined by
+     * \f[ g(u^+,u^-) =  \frac{1}{2}( F(u^+) + F(u^-) )\cdot n -
+     * \frac{1}{2} \max(\lambda_\max(F'(u^+)\cdot n),\lambda_\max(F'(u^-))) (u^- - u^+). \f]
+     *
+     * where \f$ \lambda_\max \f$ denotes the largest eigenvalue
+     *
+     * \copydoc DGAdvectionFluxBase::numericalFlux()
+     */
     template <class LocalEvaluation>
     inline double numericalFlux( const LocalEvaluation& left,
                                  const LocalEvaluation& right,

@@ -16,11 +16,19 @@ namespace Fem
 namespace Euler
 {
 
-
-  //template< class Model, int >
+  /**
+   * \brief The purpose of this class is to allow the selection of an Euler flux
+   * via an enum given in Euler::AdvectionFlux::Enum.
+   */
   template< class Model, class AdvectionFluxIdentifierImp >
   class EulerFlux;
 
+  /**
+   * \brief class specialization for the local Lax-Friedrichs flux.
+   *
+   * The purpose of this class is to allow the selection of an Euler flux
+   * via an enum given in Euler::AdvectionFlux::Enum.
+   */
   template< class Model >
   class EulerFlux< Model, Euler::AdvectionFlux::Identifier< Euler::AdvectionFlux::Enum::llf > >
     : public EulerFluxImpl< Model, EulerNumFlux::EulerFlux<Model,EulerNumFlux::EulerFluxType::LLF > >
@@ -38,6 +46,12 @@ namespace Euler
     static std::string name () { return "LLF (Dennis)"; }
   };
 
+  /**
+   * \brief class specialization for the HLL flux.
+   *
+   * The purpose of this class is to allow the selection of an Euler flux
+   * via an enum given in Euler::AdvectionFlux::Enum.
+   */
   template< class Model >
   class EulerFlux< Model, Euler::AdvectionFlux::Identifier< Euler::AdvectionFlux::Enum::hll > >
     : public EulerFluxImpl< Model, EulerNumFlux::EulerFlux<Model,EulerNumFlux::EulerFluxType::HLL > >
@@ -55,6 +69,12 @@ namespace Euler
     static std::string name () { return "HLL (Dennis)"; }
   };
 
+  /**
+   * \brief class specialization for the HLLC flux.
+   *
+   * The purpose of this class is to allow the selection of an Euler flux
+   * via an enum given in Euler::AdvectionFlux::Enum.
+   */
   template< class Model >
   class EulerFlux< Model, Euler::AdvectionFlux::Identifier< Euler::AdvectionFlux::Enum::hllc > >
     : public EulerFluxImpl< Model, EulerNumFlux::EulerFlux<Model,EulerNumFlux::EulerFluxType::HLLC > >
@@ -72,6 +92,12 @@ namespace Euler
     static std::string name () { return "HLLC (Dennis)"; }
   };
 
+  /**
+   * \brief class specialization for the local Lax-Friedrichs flux.
+   *
+   * The purpose of this class is to allow the selection of an Euler flux
+   * via an enum given in Euler::AdvectionFlux::Enum.
+   */
   template< class Model >
   class EulerFlux< Model, Euler::AdvectionFlux::Identifier< Euler::AdvectionFlux::Enum::llf2 > >
     : public LLFFlux< Model >
@@ -88,6 +114,12 @@ namespace Euler
     static std::string name () { return "LLF"; }
   };
 
+  /**
+   * \brief class specialization for a general flux chosen by a parameter file.
+   *
+   * The purpose of this class is to allow the selection of an Euler flux
+   * via an enum given in Euler::AdvectionFlux::Enum.
+   */
   template< class ModelImp >
   class EulerFlux< ModelImp, Euler::AdvectionFlux::Identifier< Euler::AdvectionFlux::Enum::general > >
     : public DGAdvectionFluxBase< ModelImp, AdvectionFluxParameters< Euler::AdvectionFlux::Enum::general > >
@@ -113,6 +145,9 @@ namespace Euler
     template< IdEnum ident >
     using GeneralIdType = typename ParameterType::template GeneralIdType< ident >;
 
+    /**
+     * \copydoc DGAdvectionFluxBase::DGAdvectionFluxBase()
+     */
     EulerFlux( const ModelType& mod,
                const ParameterType& parameters = ParameterType() )
       : BaseType( mod, parameters ),
@@ -123,10 +158,14 @@ namespace Euler
         flux_llf2_( mod )
     {}
 
+    /**
+     * \copydoc DGAdvectionFluxBase::name()
+     */
     static std::string name () { return "EulerFlux (via parameter file)"; }
 
-    // Return value: maximum wavespeed*length of integrationOuterNormal
-    // gLeft,gRight are fluxed * length of integrationOuterNormal
+    /**
+     * \copydoc DGAdvectionFluxBase::numericalFlux()
+     */
     template< class LocalEvaluation >
     inline double
     numericalFlux( const LocalEvaluation& left,

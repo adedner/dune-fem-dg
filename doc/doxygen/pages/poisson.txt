@@ -42,7 +42,7 @@ different test cases.
 | SinSinSin                         |
 | SinSin                            |
 | CosCos                            |
-| CastilloProblem                   |
+| CastilloProblem...                |
 
 
 Global problem structure

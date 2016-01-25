@@ -9,17 +9,24 @@ namespace Dune
 namespace Fem
 {
 
-  //! DG primal diffusion flux
+  /**
+   * \brief The purpose of this class is to allow the selection of a primal diffusion flux
+   * via an enum given in DiffusionFlux::Enum.
+   *
+   * \warning NIPG and BO are not implemented since these methods are not so
+   * interesting, use PrimalDiffusionFlux::Enum::general for this
+   */
   template <class DiscreteFunctionSpaceImp,
             class Model,
             class DiffusionFluxIdentifierImp >
   class DGPrimalDiffusionFlux;
 
-  //////////////////////////////////////////////////////////
-  //
-  //  general diffusion flux allows choice of method via Parameter
-  //
-  //////////////////////////////////////////////////////////
+  /**
+   * \brief class specialization for a general primal diffusion flux chosen by a parameter file.
+   *
+   * The purpose of this class is to allow the selection of an Euler flux
+   * via an enum given in DiffusionFlux::Enum.
+   */
   template <class DiscreteFunctionSpaceImp,
             class Model>
   class DGPrimalDiffusionFlux<  DiscreteFunctionSpaceImp, Model, PrimalDiffusionFlux::Identifier< PrimalDiffusionFlux::Enum::general > >
@@ -44,11 +51,12 @@ namespace Fem
     }
   };
 
-  //////////////////////////////////////////////////////////
-  //
-  //  specialization for CDG2
-  //
-  //////////////////////////////////////////////////////////
+  /**
+   * \brief class specialization for the CDG2 diffusion flux.
+   *
+   * The purpose of this class is to allow the selection of a primal diffusion flux
+   * via an enum given in DiffusionFlux::Enum.
+   */
   template <class DiscreteFunctionSpaceImp,
             class Model>
   class DGPrimalDiffusionFlux<  DiscreteFunctionSpaceImp, Model, PrimalDiffusionFlux::Identifier< PrimalDiffusionFlux::Enum::cdg2 > >
@@ -74,11 +82,12 @@ namespace Fem
   };
 
 
-  //////////////////////////////////////////////////////////
-  //
-  //  specialization for CDG
-  //
-  //////////////////////////////////////////////////////////
+  /**
+   * \brief class specialization for the CDG diffusion flux.
+   *
+   * The purpose of this class is to allow the selection of a primal diffusion flux
+   * via an enum given in DiffusionFlux::Enum.
+   */
   template <class DiscreteFunctionSpaceImp,
             class Model>
   class DGPrimalDiffusionFlux<  DiscreteFunctionSpaceImp, Model, PrimalDiffusionFlux::Identifier< PrimalDiffusionFlux::Enum::cdg > >
@@ -104,11 +113,12 @@ namespace Fem
   };
 
 
-  //////////////////////////////////////////////////////////
-  //
-  //  specialization for BR2
-  //
-  //////////////////////////////////////////////////////////
+  /**
+   * \brief class specialization for the BR2 diffusion flux.
+   *
+   * The purpose of this class is to allow the selection of a primal diffusion flux
+   * via an enum given in DiffusionFlux::Enum.
+   */
   template <class DiscreteFunctionSpaceImp,
             class Model>
   class DGPrimalDiffusionFlux<  DiscreteFunctionSpaceImp, Model, PrimalDiffusionFlux::Identifier< PrimalDiffusionFlux::Enum::br2 > >
@@ -134,11 +144,12 @@ namespace Fem
   };
 
 
-  //////////////////////////////////////////////////////////
-  //
-  //  specialization for IP
-  //
-  //////////////////////////////////////////////////////////
+  /**
+   * \brief class specialization for the IP diffusion flux.
+   *
+   * The purpose of this class is to allow the selection of a primal diffusion flux
+   * via an enum given in DiffusionFlux::Enum.
+   */
   template <class DiscreteFunctionSpaceImp,
             class Model>
   class DGPrimalDiffusionFlux<  DiscreteFunctionSpaceImp, Model, PrimalDiffusionFlux::Identifier< PrimalDiffusionFlux::Enum::ip > >
@@ -163,11 +174,12 @@ namespace Fem
     }
   };
 
-  //////////////////////////////////////////////////////////
-  //
-  //  specialization for no-diffusion
-  //
-  //////////////////////////////////////////////////////////
+  /**
+   * \brief class specialization for no diffusion flux.
+   *
+   * The purpose of this class is to allow the selection of a primal diffusion flux
+   * via an enum given in DiffusionFlux::Enum.
+   */
   template <class DiscreteFunctionSpaceImp,
             class Model>
   class DGPrimalDiffusionFlux<  DiscreteFunctionSpaceImp, Model, PrimalDiffusionFlux::Identifier< PrimalDiffusionFlux::Enum::none > >
@@ -200,14 +212,6 @@ namespace Fem
     void diffusionFluxLiftFactor ( std::ostream& out ) const {}
     void diffusionFluxPenalty ( std::ostream& out ) const {}
   };
-
-  //////////////////////////////////////////////////////////
-  //
-  //  specialization for NIPG and BO are missing since these methods are not so
-  //  interesting, use DGDiffusionFluxIdentifier::general for this
-  //
-  //////////////////////////////////////////////////////////
-
 
 
 } // end namespace

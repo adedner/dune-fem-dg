@@ -12,24 +12,65 @@ namespace Fem
 {
 
 
-  struct SmartOdeSolverParameters : public DuneODE :: ODEParameters
+  /**
+   * \brief Parameter class for selection of ode solver.
+   *
+   * \ingroup ParameterClass
+   */
+  struct SmartOdeSolverParameters
+    : public DuneODE::ODEParameters
   {
+    /**
+     * \brief Constructor
+     *
+     * \param[in] keyPrefix key prefix for parameter file.
+     */
     SmartOdeSolverParameters( const std::string keyPrefix = "fem.ode." )
-      : DuneODE :: ODEParameters( keyPrefix )
+      : DuneODE::ODEParameters( keyPrefix )
     {}
 
-    using DuneODE :: ODEParameters :: keyPrefix_;
+    using DuneODE::ODEParameters::keyPrefix_;
 
+    /**
+     * \brief returns a factor for the decision whether to use IMEX Runge-Kutta
+     * oder Explicit Runge-Kutta scheme.
+     *
+     * This parameter is needed for the "IMEX+" scheme where for each time step
+     * a solver is chosen regarding the following rule
+     * - Implicit/Explicit Runge-Kutta, if \f$ c_\text{diff} < c_\text{factor} c_\text{adv} \f$
+     * - Explicit Runge-Kutts, otherwise
+     *
+     * where \f$ c_\text{diff} \f$ is the maximal time step estimate of the diffusion term,
+     * \f$ c_\text{adv} \f$ is the maximal time step estimate of the advection term
+     * and \f$ c_\text{factor} \f$ is the factor returned by this function.
+     */
     virtual double explicitFactor() const
     {
       return Fem::Parameter::getValue< double >( keyPrefix_ + "explicitfactor" , 1.0 );
     }
 
+    /**
+     * \brief Clones the object.
+     */
     SmartOdeSolverParameters* clone() const
     {
       return new SmartOdeSolverParameters( *this );
     }
 
+    /**
+     * \brief Chooses the type of the Runge-Kutta scheme.
+     *
+     * Possible values are
+     * | Scheme                           | Description       | Integer value |
+     * | -------------------------------- | ----------------- | ------------- |
+     * | Explicit RK                      | "EX"              | 0             |
+     * | Implicit RK                      | "IM"              | 1             |
+     * | Implicit/Explicit RK             | "EX"              | 2             |
+     * | IMEX/EX RK                       | "IMEX+"           | 3             |
+     *
+     *
+     * \returns An integer describing the selected Runge-Kutta scheme.
+     */
     virtual int obtainOdeSolverType () const
     {
       // we need this choice of explicit or implicit ode solver
@@ -40,6 +81,12 @@ namespace Fem
       return Fem::Parameter::getEnum( key, odeSolver, 0 );
     }
 
+    /**
+     * \brief returns the number of Runge-Kutta steps
+     *
+     * \param[in] defaultRKOrder The default value if not specified in parameter file.
+     * \returns The number of Runge-Kutta steps.
+     */
     virtual int obtainRungeKuttaSteps( const int defaultRKOrder ) const
     {
       std::string key( keyPrefix_ + "order");
@@ -118,10 +165,10 @@ namespace Fem
     template < class Op >
     struct OdeSolverSelection< Op, Fem :: AdaptiveDiscreteFunction< typename Op::SpaceType > >
     {
-      typedef Fem :: AdaptiveDiscreteFunction< typename Operator::SpaceType >  DiscreteFunctionType ;
-      typedef DuneODE :: ImplicitOdeSolver< DiscreteFunctionType >       ImplicitOdeSolverType;
-      typedef DuneODE :: ExplicitOdeSolver< DiscreteFunctionType >       ExplicitOdeSolverType;
-      typedef DuneODE :: SemiImplicitOdeSolver< DiscreteFunctionType >   SemiImplicitOdeSolverType;
+      typedef Fem :: AdaptiveDiscreteFunction< typename Operator::SpaceType > DiscreteFunctionType ;
+      typedef DuneODE :: ImplicitOdeSolver< DiscreteFunctionType >            ImplicitOdeSolverType;
+      typedef DuneODE :: ExplicitOdeSolver< DiscreteFunctionType >            ExplicitOdeSolverType;
+      typedef DuneODE :: SemiImplicitOdeSolver< DiscreteFunctionType >        SemiImplicitOdeSolverType;
 
       static ExplicitOdeSolverType*
       createExplicitSolver( Op& op, Fem::TimeProviderBase& tp, const int rkSteps )
@@ -146,10 +193,10 @@ namespace Fem
 
     // The ODE Solvers
     typedef DuneODE :: OdeSolverInterface< DestinationType >           OdeSolverInterfaceType;
-    typedef OdeSolverSelection< OperatorType, DestinationType >  OdeSolversType ;
-    typedef typename OdeSolversType :: ImplicitOdeSolverType  ImplicitOdeSolverType ;
-    typedef typename OdeSolversType :: ExplicitOdeSolverType  ExplicitOdeSolverType ;
-    typedef typename OdeSolversType :: SemiImplicitOdeSolverType  SemiImplicitOdeSolverType ;
+    typedef OdeSolverSelection< OperatorType, DestinationType >        OdeSolversType;
+    typedef typename OdeSolversType :: ImplicitOdeSolverType           ImplicitOdeSolverType;
+    typedef typename OdeSolversType :: ExplicitOdeSolverType           ExplicitOdeSolverType;
+    typedef typename OdeSolversType :: SemiImplicitOdeSolverType       SemiImplicitOdeSolverType;
 
     typedef typename OdeSolverInterfaceType :: MonitorType MonitorType;
 

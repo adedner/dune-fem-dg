@@ -9,7 +9,7 @@ namespace Dune
 namespace Fem
 {
   /**
-   * \brief advective flux returning zero
+   * \brief Advective flux returning zero flux.
    *
    * \ingroup AdvectionFluxes
    */
@@ -37,7 +37,7 @@ namespace Fem
     using BaseType::model_;
 
     /**
-     * \brief constructor
+     * \copydoc DGAdvectionFluxBase::DGAdvectionFluxBase()
      */
     NoFlux( const ModelType& mod, const ParameterType& parameter = ParameterType() )
       : BaseType( mod, parameter )
@@ -45,6 +45,14 @@ namespace Fem
 
     static std::string name () { return "NoFlux"; }
 
+    /**
+     * The numerical upwind flux \f$ g \f$ is defined by
+     * \f[ g(u^+,u^-) =  0. \f]
+     *
+     * This means, we do not have any flux through intersections.
+     *
+     * \copydoc DGAdvectionFluxBase::numericalFlux()
+     */
     template< class LocalEvaluation >
     inline double
     numericalFlux( const LocalEvaluation& left,

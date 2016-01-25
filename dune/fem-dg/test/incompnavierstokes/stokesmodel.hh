@@ -8,6 +8,8 @@
 #include "problems/operatorsplitting.hh"
 #include <dune/fem-dg/models/defaultmodel.hh>
 
+#ifndef DOXYGEN
+
 namespace Dune
 {
 namespace Fem
@@ -448,7 +450,7 @@ namespace Fem
    protected:
     const ProblemType& problem_;
   };
-
+#endif
 
 }
 }

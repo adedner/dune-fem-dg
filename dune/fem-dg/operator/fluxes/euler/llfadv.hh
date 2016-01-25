@@ -25,6 +25,9 @@ namespace Euler
   /**
     *  \brief Local Lax-Friedrichs flux for the euler problem.
     *
+    *  \note It is possible to enable a well-belanced scheme via the
+    *  preprocessor define `WELLBALANCE`
+    *
     *  \ingroups AdvectionFluxes
     */
   template< class ModelImp >
@@ -49,14 +52,27 @@ namespace Euler
     typedef typename BaseType::ParameterType      ParameterType;
     using BaseType::model_;
 
+    /**
+     * \copydoc DGAdvectionFluxBase::DGAdvectionFluxBase()
+     */
     LLFFlux(const ModelType& mod, const ParameterType& param = ParameterType() )
       : BaseType( mod, param )
     {}
 
+    /**
+     * \copydoc DGAdvectionFluxBase::name()
+     */
     static std::string name () { return "LLF"; }
 
-    // Return value: maximum wavespeed*length of integrationOuterNormal
-    // gLeft,gRight are fluxed * length of integrationOuterNormal
+   /**
+     * The numerical upwind flux \f$ g \f$ is defined by
+     * \f[ g(u^+,u^-) =  \frac{1}{2}( F(u^+) + F(u^-) )\cdot n -
+     * \frac{1}{2} \max(\lambda_\max(F'(u^+)\cdot n),\lambda_\max(F'(u^-))) (u^- - u^+). \f]
+     *
+     * where \f$ \lambda_\max \f$ denotes the largest eigenvalue
+     *
+     * \copydoc DGAdvectionFluxBase::numericalFlux()
+     */
     template< class LocalEvaluation >
     inline double
     numericalFlux( const LocalEvaluation& left,

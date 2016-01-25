@@ -14,10 +14,20 @@ namespace Dune
 namespace Fem
 {
 
+  /**
+   * \brief The purpose of this class is to allow the selection of an advection flux
+   * via an enum given in AdvectionFlux::Enum.
+   */
   template< class ModelImp, class AdvectionFluxIdentifierImp >
   class DGAdvectionFlux;
 
 
+  /**
+   * \brief class specialization for the local Lax-Friedrichs flux.
+   *
+   * The purpose of this class is to allow the selection of an advection flux
+   * via an enum given in AdvectionFlux::Enum.
+   */
   template< class ModelImp >
   class DGAdvectionFlux< ModelImp, AdvectionFlux::Identifier< AdvectionFlux::Enum::llf > >
     : public LLFAdvFlux< ModelImp >
@@ -35,6 +45,12 @@ namespace Fem
   };
 
 
+  /**
+   * \brief class specialization for no advection flux.
+   *
+   * The purpose of this class is to allow the selection of an advection flux
+   * via an enum given in AdvectionFlux::Enum.
+   */
   template< class ModelImp >
   class DGAdvectionFlux< ModelImp, AdvectionFlux::Identifier< AdvectionFlux::Enum::none > >
     : public NoFlux< ModelImp >
@@ -52,6 +68,12 @@ namespace Fem
   };
 
 
+  /**
+   * \brief class specialization for upwind flux.
+   *
+   * The purpose of this class is to allow the selection of an advection flux
+   * via an enum given in AdvectionFlux::Enum.
+   */
   template< class ModelImp >
   class DGAdvectionFlux< ModelImp, AdvectionFlux::Identifier< AdvectionFlux::Enum::upwind > >
     : public UpwindFlux< ModelImp >
@@ -68,10 +90,12 @@ namespace Fem
     {}
   };
 
+
   /**
-   * \brief defines the advective flux using an upwind scheme
+   * \brief class specialization for a general flux chosen by a parameter file.
    *
-   * \ingroup AdvectionFluxes
+   * The purpose of this class is to allow the selection of an advection flux
+   * via an enum given in AdvectionFlux::Enum.
    */
   template< class ModelImp >
   class DGAdvectionFlux< ModelImp, AdvectionFlux::Identifier< AdvectionFlux::Enum::general > >
@@ -110,10 +134,15 @@ namespace Fem
         flux_llf_( mod ),
         flux_upwind_( mod )
     {}
+
+    /**
+     * \copydoc DGAdvectionFluxBase::name()
+     */
     static std::string name () { return "AdvectionFlux (via parameter file)"; }
 
-    // Return value: maximum wavespeed*length of integrationOuterNormal
-    // gLeft,gRight are fluxed * length of integrationOuterNormal
+    /**
+     * \copydoc DGAdvectionFluxBase::numericalFlux()
+     */
     template< class LocalEvaluation >
     inline double
     numericalFlux( const LocalEvaluation& left,
