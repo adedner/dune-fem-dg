@@ -5,4 +5,4 @@ all:
 	pdflatex $(TARGET)
 
 clean:
-	rm -f $(TARGET).bbl  $(TARGET).log  $(TARGET).pdf $(TARGET).aux  $(TARGET).blg  $(TARGET).out
+	rm -f $(TARGET).bbl  $(TARGET).log  $(TARGET).pdf *.aux  $(TARGET).blg  $(TARGET).out
