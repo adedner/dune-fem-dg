@@ -1,14 +1,16 @@
 \documentclass{ansarticle}
 
-\title{Preparing articles for submission to the \\
-       Archive of Numerical Software}
-\author[1]{Editor O. Archive\thanks{Additional thanks to my neighbor's dog
-  for waking me up on time to work on this style file}}
-\author[2]{Author O. Software}
-\affil[1]{The Archive of Numerical Software}
-\affil[2]{The Worlds Best Place for Numerical Software}
-\runningtitle{Preparing articles for ANS}
-\runningauthor{Archive Editors}
+\title{The \dunefemdg module}
+\author[1]{Andreas Dedner}
+\author[2]{Stefan Girke}
+\author[3]{Robert Kl{\"o}fkorn}
+\author[4]{Tobias Malkmus}
+\affil[1]{University of Warwick, UK}
+\affil[2]{University of iM\"unster, Germany}
+\affil[3]{International Research Institute of Stavanger, Norway}
+\affil[4]{University of Freiburg, Germany}
+\runningtitle{The \dunefemdg module}
+\runningauthor{Dedner, Girke, Kl{\"o}fkorn, Malkmus}
 
 \input{macros}
 
@@ -37,10 +39,8 @@ floating point performance of the code.
 %------------------------------------------------------------------------------
 \section{Governing Equations}
 \label{sec:equations}
-The system we investigate is governed by the
-viscous compressible flow equations in $\theta$-form,
-for example, described in \cite{GR08}.
-For $\Omega \subset \RRR^d$, $d=1,2,3$, these equations can be written in the form
+In this paper we consider a general class of advection-diffusion problems 
+described by the following partial differential equation in $\Omega \subset \RRR^d$, $d=1,2,3$
 \begin{eqnarray}
 \label{eqn:general}
 \label{eqn:ns}
@@ -50,42 +50,6 @@ For $\Omega \subset \RRR^d$, $d=1,2,3$, these equations can be written in the fo
 with $$\oper{L}(\vecU) := - \nabla \cdot\big( \mathcal{F}(\vecU) -
 \mathcal{A}(\vecU,\nabla\vecU) \big) + \mathcal{S}(\vecU)$$
 and suitable boundary conditions.
-
-\todo{Here U should not be specified yet.}
-The vector of conservative variables is $\vecU=(\rho, \rho\vecv, \rho\theta)^\trans$.
-$\rho$ is the density, $\theta$ the potential temperature, and
-$\vecv=(v_1,...,v_d)^T$ the velocity field.
-$\mathcal{F}(\vecU) = (\mathcal{F}_i(\vecU))$ and
-$\mathcal{A}(\vecU)\nabla\vecU = ((\mathcal{A}(\vecU)\nabla \vecU)_i )$ for $i=1,...,d$, are
-given as follows:
-\begin{equation}
-   \mathcal{F}_i(\vecU)=\left(\begin{array}{c}
-    \rho v_i \\
-    \rho v_1 v_i  + \delta_{1i}p \\
-    \vdots \\
-    \rho v_d v_i + \delta_{di} p \\
-    v_i \rho\theta  \\
-  \end{array}\right),\qquad 
-  \big (\mathcal{A}(\vecU)\nabla\vecU \big )_i =\mu\rho\left(\begin{array}{c}
-    0                \\
-    \partial_i v_1   \\ 
-    \vdots           \\ 
-    \partial_i v_d   \\
-    \partial_i\theta \\
-  \end{array}\right).
-\end{equation}
-with $\mu$ being the kinematic viscosity.
-The source term $\mathcal{S}$ is only acting on the last component of the velocity field, i.e.
-$\mathcal{S}(\vecU) = (0,...,0,-\rho g,0)^T$ with
-$g$ being the constant of the gravitation force.
-To close the system we define the pressure $p$ in accordance with the
-ideal gas law $p = p_0\left(\frac{\rho\gasconst\theta}{p_0}\right)^\gamma$,
-where $\gamma=c_p/c_v$ is the heat capacity ratio and $c_p$ and $c_v$ are specific
-heat capacities under constant pressure and volume, respectively.
-The individual gas constant is defined as $\gasconst=c_p-c_v$.
-%In equation (\ref{eqn:eos}) 
-%$p_0$ is the standard reference pressure,
-For the standard reference pressure $p_0$ we choose $p_0=10^5$~Pa.
 
 
 %------------------------------------------------------------------------------
@@ -105,6 +69,7 @@ For the standard reference pressure $p_0$ we choose $p_0=10^5$~Pa.
 
 \subsection{Adaptivity}
 \subsection{Parallelization}
+\subsection{Codegen}
 \subsection{I/O}
 
 %------------------------------------------------------------------------------

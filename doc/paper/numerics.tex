@@ -12,6 +12,41 @@
 \todo{Define U}
 
 \subsection{Compressible Navier-Stokes}
+The vector of conservative variables is $\vecU=(\rho, \rho\vecv, \rho\theta)^\trans$.
+$\rho$ is the density, $\theta$ the potential temperature, and
+$\vecv=(v_1,...,v_d)^T$ the velocity field.
+$\mathcal{F}(\vecU) = (\mathcal{F}_i(\vecU))$ and
+$\mathcal{A}(\vecU)\nabla\vecU = ((\mathcal{A}(\vecU)\nabla \vecU)_i )$ for $i=1,...,d$, are
+given as follows:
+\begin{equation}
+   \mathcal{F}_i(\vecU)=\left(\begin{array}{c}
+    \rho v_i \\
+    \rho v_1 v_i  + \delta_{1i}p \\
+    \vdots \\
+    \rho v_d v_i + \delta_{di} p \\
+    v_i \rho\theta  \\
+  \end{array}\right),\qquad 
+  \big (\mathcal{A}(\vecU)\nabla\vecU \big )_i =\mu\rho\left(\begin{array}{c}
+    0                \\
+    \partial_i v_1   \\ 
+    \vdots           \\ 
+    \partial_i v_d   \\
+    \partial_i\theta \\
+  \end{array}\right).
+\end{equation}
+with $\mu$ being the kinematic viscosity.
+The source term $\mathcal{S}$ is only acting on the last component of the velocity field, i.e.
+$\mathcal{S}(\vecU) = (0,...,0,-\rho g,0)^T$ with
+$g$ being the constant of the gravitation force.
+To close the system we define the pressure $p$ in accordance with the
+ideal gas law $p = p_0\left(\frac{\rho\gasconst\theta}{p_0}\right)^\gamma$,
+where $\gamma=c_p/c_v$ is the heat capacity ratio and $c_p$ and $c_v$ are specific
+heat capacities under constant pressure and volume, respectively.
+The individual gas constant is defined as $\gasconst=c_p-c_v$.
+%In equation (\ref{eqn:eos}) 
+%$p_0$ is the standard reference pressure,
+For the standard reference pressure $p_0$ we choose $p_0=10^5$~Pa.
+
 \todo{Define U}
 
 \subsection{Poisson equation}
