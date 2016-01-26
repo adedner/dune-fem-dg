@@ -1,0 +1,133 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Discretization}
+\label{sec:dune}
+\label{seq:discretization}
+
+The considered discretization is based on the Discontinuous Galerkin (DG) approach and 
+implemented in \dunefem (\cite{dunefempaper}) a module of the
+\dune framework (\cite{dunepaperII:08,dunepaperI:08}).
+The current state of development allows for simulation of convection dominated 
+(cf.~\cite{limiter:11}) as well as viscous flow (cf.~\cite{cdg2:10}).
+We consider the CDG2 method from 
+(\cite{cdg2:10}) of up to 5th order in space and 3rd order in time for the numerical
+investigations carried out in this paper.
+
+\subsection{Spatial Discretization}
+
+The spatial discretization is derived in the following way. 
+Given a tessellation $\grid$ of the domain $\Omega$ with 
+$\cup_{K \in \grid} K = \Omega$ the 
+discrete solution $\df$ is sought in the piecewise polynomial space 
+\begin{equation}
+\label{eqn:vspace}
+    \phispace = \{\vecv\in L^2(\Omega,\RRR^{d+2}) \; \colon
+    \vecv|_{K}\in[\mathcal{P}_k(K)]^{d+2}, \ K\in\grid\}
+      \quad\textrm{for some}\;k \in \NNN, \nonumber
+\end{equation}
+where $\mathcal{P}_k(K)$ is a space containing polynomials up to degree
+$k$. On quadrilateral or hexahedral 
+elements we replace $\mathcal{P}_k$ with $\mathcal{Q}_k$ build by products of Legendre polynomials
+of up to degree $k$ in each coordinate.
+
+\newcommand{\dual}[1]{\langle \basefct, #1 \rangle}% 
+We denote with $\Gamma_i$ the set of all intersections between two 
+elements of the grid $\grid$ and accordingly with $\Gamma$ the set of all
+intersections, also with the boundary of the domain $\Omega$. 
+The following discrete form is not the most general but still
+covers a wide range of well established DG methods. 
+For all basis functions $\basefct \in \phispace$ we 
+define 
+\begin{equation}
+\label{convDiscr}
+\dual { \spcoper(\df) } := \dual{ \oper{K}_h(\df) } + \dual{ \oper{I}_h(\df) }
+\end{equation}
+with the element integrals  
+\begin{eqnarray}
+\label{eqn:elementint}
+   % \int_\Omega\partial_{t}\df\cdot\basefct \,dx &=&
+   \dual{ \oper{K}_h(\df) } &:=&
+      %\int_{\Omega} 
+      \sum_{\elem \in \grid} \int_{\elem}
+      \big( ( \mathcal{F}(\df) - \mathcal{A}(\vecU_h) \nabla \df ) : \nabla\basefct + \su
+      \cdot \basefct \big),
+\end{eqnarray}
+and the surface integrals (by introducing appropriate numerical fluxes 
+$\fluxF$, $\fluxA$ for the convection and diffusion terms, respectively) 
+\begin{eqnarray}
+\label{eqn:surfaceint}
+   % \int_\Omega\partial_{t}\df\cdot\basefct \,dx &=&
+   \dual{ \oper{I}_h(\df) } &:=&
+      \sum_{e \in \Gamma_i} \int_e \big(
+      \vaver{\mathcal{A}(\vecU_h)^T\nabla\basefct} : \vjump{\df} +
+      \vaver{\mathcal{A}(\vecU_h)\nabla\df} : \vjump{\basefct} \big) \\
+    &-& \sum_{e \in \Gamma} \int_e \big( \fluxF(\df) - \fluxA(\df)\big) :
+      \vjump{\basefct},
+      \nonumber 
+\end{eqnarray}
+where $\vaver{ \vecV } = \frac{1}{2}( \vecV^+ + \vecV^- )$ denotes the average and 
+$\vjump{ \vecV } = (\nbold^+ \otimes \vecV^+  + \nbold^-\otimes \vecV^-) $ the jump of the
+discontinuous function $\vecV\in V_h$ over element boundaries.
+For matrices $\sigma,\tau\in\RRR^{m\times n}$ we use standard notation
+$\sigma : \tau = \sum_{j=1}^m\sum_{l=1}^n\sigma_{jl}\tau_{jl}$. Additionally, for vectors
+$\vecv \in \RRR^m,\vecw\in\RRR^n$, we define $\vecv\otimes\vecw\in\RRR^{m\times n}$
+according to $(\vecv\otimes\vecw)_{jl}=\vecv_j \vecw_l$ for $1\leq j\leq m$, $1\leq l\leq n$.
+
+The convective numerical flux $\fluxF$ can be any appropriate numerical flux known for
+standard finite volume methods. 
+For the results presented in this paper we choose $\fluxF$ to be the 
+HLL numerical flux function described in~(\cite{ChefBuch}).
+
+A wide range of diffusion fluxes $\fluxA$ can be found in the
+literature, for a summary see (\cite{uni:02}).
+We choose the CDG2 flux
+\begin{eqnarray}
+\fluxA(\vecV) := 2\liftfactor_e \big(\mathcal{A}(\vecV)\liftre(\vjump{\vecV})\big)|_{\Kminus}
+\quad\mbox{for } \vecV\in V_h,
+\end{eqnarray}
+which was shown to be highly efficient for the Navier-Stokes equations (cf. \cite{cdg2:10}). 
+Based on stability results, we choose $\Kminus$ to be the element adjacent to the edge $e$ with the smaller
+volume. $\liftre(\vjump{\vecV})\in [\phispace]^d$ is the lifting of the jump of $\vecV$ defined by
+\begin{eqnarray}
+    \int_\Omega \liftre(\vjump{\vecV}) : \taubold = -\int_e
+    \vjump{\vecV} : \vaver{\taubold} \quad
+    \mbox{for all}\;\taubold\in [\phispace]^d.
+\end{eqnarray}
+For the numerical experiments done in this paper we use $\liftfactor_e= \frac{1}{2}\maxnuminterface$,
+where $\maxnuminterface$ is the maximal number of intersections one element in the grid
+can  have (cf. \cite{cdg2:10}). For most of the 
+numerical results in this paper we use
+conforming hexahedral elements and thus $\liftfactor_e=3$ for all $\isec \in \Gamma$.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Temporal discretization}
+\label{TimeDisc}
+
+The discrete solution $\df(t) \in \phispace$ 
+has the form $\df(t,x) = \sum_i \vecU_i(t)\basefct_i(x)$.
+We get a system of ODEs for the coefficients of $\vecU(t)$ which reads 
+\begin{eqnarray}
+  \label{eqn:ode}
+  \vecU'(t) &=& f(\vecU(t),t)  \mbox{ in } (0,T]
+\end{eqnarray}
+with $f(\vecU(t),t) = M^{-1}\spcoper(\df(t),t)$, $M$ being the mass matrix which is in
+our case block diagonal or even the identity, depending on the choice of basis
+functions. $\vecU(0)$ is given by the projection of $\vecU_0$ onto $\phispace$.
+
+Disregarding the order of the spatial discretization
+we use an explicit \textit{Strong Stability
+Preserving} Runge-Kutta method (SSP-RK) of third order (\cite{shu:01}). 
+Implicit or semi-implicit Runge-Kutta solvers based on a Jacobian-free Newton-Krylov
+method (see \cite{knoll:04}) are also available for the proposed DG method 
+and implemented in the \dunefem framework.
+The results and implementation techniques 
+presented in this paper can be applied to explicit, 
+implicit, or semi-implicit methods, as long as a 
+\textbf{matrix-free} implementation of the discrete operator 
+$\spcoper$ is used.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+

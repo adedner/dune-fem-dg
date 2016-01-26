@@ -1,0 +1,102 @@
+\usepackage{xspace}
+\usepackage{bbm}
+
+% definitions used by included articles, reproduced here for 
+% educational benefit, and to minimize alterations needed to be made
+% in developing this sample file.
+
+\newcommand{\pe}{\psi}
+\def\d{\delta} 
+\def\ds{\displaystyle} 
+\def\e{{\epsilon}} 
+\def\eb{\bar{\eta}}  
+\def\enorm#1{\|#1\|_2} 
+\def\Fp{F^\prime}  
+\def\fishpack{{FISHPACK}} 
+\def\fortran{{FORTRAN}} 
+\def\gmres{{GMRES}} 
+\def\gmresm{{\rm GMRES($m$)}} 
+\def\Kc{{\cal K}} 
+\def\norm#1{\|#1\|} 
+\def\wb{{\bar w}} 
+\def\zb{{\bar z}} 
+
+\newcommand{\phispace}{V_h}
+\newcommand{\comment}[1]{}
+
+% grid notation
+\newcommand{\grid}{{\mathcal{T}_h}}
+\newcommand{\entity}{K}
+\newcommand{\elem}{\entity}
+\newcommand{\isec}{e}
+\newcommand{\maxnuminterfaces}{N_\grid}
+\newcommand{\numinterfacesinflow}{N^{in}}
+\newcommand{\numinterfacesoutflow}{N^{out}}
+\newcommand{\maxnuminterfacesinflow}{N^{in}_\grid}
+\newcommand{\maxnuminterfacesoutflow}{N^{out}_\grid}
+%\newcommand{\RRR}{\mathbb{R}}
+\newcommand{\RRR}{{\mathbbm R}}
+\newcommand{\NNN}{{\mathbbm N}}
+
+
+\newcommand{\maxnuminterface}{\mathcal{N}_\grid}
+
+
+% flux function
+\newcommand{\flux}[1]{\widehat{#1}}
+\newcommand{\bndflux}[1]{\widehat{#1}}
+\newcommand{\fluxF}{\flux{\mathcal{F}}_{\isec}}
+\newcommand{\fluxu}{\flux{\mathcal{U}}_{\isec}}
+\newcommand{\fluxA}{\flux{\mathcal{A}}_{\isec}}
+\newcommand{\bndfluxf}{\bndflux{f}}
+\newcommand{\bndfluxu}{\bndflux{u}}
+\newcommand{\bndfluxA}{\bndflux{A}}
+
+%\newcommand{\boldsymbol}[1]{\mathbf{#1}}
+
+\newcommand{\vect}[1]{\boldsymbol{#1}}
+\newcommand{\vecU}{\vect{U}}
+\newcommand{\vecV}{\vect{V}}
+\newcommand{\vecK}{\vect{K}}
+\newcommand{\vecI}{\vect{I}}
+\newcommand{\vecW}{\vect{W}}
+\newcommand{\vecv}{\vect{v}}
+\newcommand{\vecw}{\vect{w}}
+\newcommand{\basefct}{\vect{\varphi}}
+\newcommand{\vbold}{\boldsymbol{v}}
+\newcommand{\nbold}{\boldsymbol{n}}
+\newcommand{\taubold}{\boldsymbol{\tau}}
+\newcommand{\df}{\vecU_h}
+
+\newcommand{\ics}{\vect{x}}
+
+
+% operators
+\newcommand{\oper}[1]{\mathcal{#1}}
+\newcommand{\spcoper}{\oper{L}_h}
+\newcommand{\jump}[1]{[ {#1} ]_{\isec}  }
+\newcommand{\vjump}[1]{[ \! [ {#1} ] \! ]_{\isec} }
+\newcommand{\aver}[1]{\{ {#1} \}_{\isec} }
+\newcommand{\vaver}[1]{\{ \! \! \{ {#1} \} \! \! \}_{\isec} }
+\newcommand{\vswitchaver}[1]{\{ \! \! \{ {#1} \} \! \! \}_{\switch} }
+\newcommand{\Au}{A(\df)}
+\newcommand{\su}{S(\df)}
+
+\newcommand{\dif}[1]{\partial_{#1}}
+
+\newcommand{\liftr}{{\boldsymbol{r}}}
+\newcommand{\liftre}{{\liftr_e}}
+\newcommand{\liftfactor}{\chi}
+\newcommand{\Kminus}{{K^-_e}}
+\newcommand{\dune}{\textsc{Dune}\xspace}
+\newcommand{\dunefem}{\textsc{Dune-Fem}\xspace}
+\newcommand{\alugrid}{\code{ALUGrid}\xspace}
+\newcommand{\spgrid}{\code{SPGrid}\xspace}
+\newcommand{\likwid}{\code{likwid}\xspace}
+\newcommand{\code}[1]{\texttt{#1}}
+
+% \newcommand{}{}
+\newcommand{\trans}{\mathrm{T}}
+\newcommand{\gasconst}{R_d}
+\newcommand{\poldeg}{\text{k}}
+
