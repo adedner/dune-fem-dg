@@ -17,10 +17,39 @@ namespace Dune
 namespace Fem
 {
   /**
-   *  \brief Analytical flux for the euler problem.
+   * \brief Analytical flux for the Euler problem.
    *
-   *  \ingroups AnalyticalFluxes
+   * \ingroups AnalyticalFluxes
+   *
+   * The Euler problem we want to solve, is given in conservative form by
+   * \f{eqnarray*}{
+   *    \partial_t u + \nabla\cdot F(u) & = & 0   & \text{in } \Omega\times[t_\text{start},t_\text{end}], \\
+   *                        u( 0,\cdot) & = & u_0 & \text{in } \Omega,
+   * \f}
+   * where the vector of conservative variables has the form
+   *
+   * \f[ u = \begin{pmatrix} \rho \\ \rho\mathbf{v} \\ \varepsilon \end{pmatrix}, \quad
+   *     \rho\mathbf{v} = (\rho v_1,\ldots,\rho v_d)^\top,\quad
+   *     \varepsilon = \rho \mathcal{E},\f]
+   *
+   * plus suitable boundary conditions.
+   *
+   * The analytical flux function is given (here: 3D case) by
+   *
+   * \f[ \begin{pmatrix}
+   *     \rho v_1             & \rho v_2             & \rho v_3               \\
+   *     \rho v_1^2 + p       & \rho v_2 v_1         & \rho v_3 v_1           \\
+   *     \rho v_1 v_2         & \rho v_2^2 + p       & \rho v_3 v_2           \\
+   *     \rho v_1 v_3         & \rho v_2 v_3         & \rho v_3^2 + p         \\
+   *     (\varepsilon + p)v_1 & (\varepsilon + p)v_2 & (\varepsilon + p)v_3
+   * \end{pmatrix} \f]
+   *
+   * Here, \f$ \rho \f$ denotes the density of the fluid,
+   * \f$ \mathbf{v} \f$ the velocity of the fluid,
+   * \f$ \varepsilon \f$ the internal energy and
+   * \f$ \mathcal{E} \f$ the total energy.
    */
+
   template < int dimDomain >
   class EulerAnalyticalFlux
   {
@@ -33,20 +62,54 @@ namespace Fem
 #endif
     typedef Dune :: FieldVector< FieldType, dimDomain> DomainType;
 
+    /**
+     * \brief Returns the analytical flux \f$ F \f$ of the Euler equations.
+     *
+     * \param[in] gamma the adiabatic constant \f$ \gamma \f$ from the Euler equations
+     * \param[in] u evaluation of the solution vector \f$ u \f$
+     * \param[out] f the analytical flux \f$ F(u) \f$.
+     */
     template <class RangeType, class FluxRangeType>
     inline void analyticalFlux(const FieldType gamma,
                                const RangeType& u,
                                FluxRangeType& f) const;
 
+    /**
+     * \brief Returns the analytical flux \f$ F \f$ of the Euler equations.
+     *
+     * \param[in] gamma the adiabatic constant \f$ \gamma \f$ from the Euler equations
+     * \param[in] u evaluation of the solution vector \f$ u \f$
+     * \param[in] du evaluation of jacobian of the solution vector \f$ \nabla u \f$
+     * \param[out] f the analytical flux \f$ F(u) \f$.
+     */
     template <class RangeType, class FluxRangeType>
     inline  void jacobian(const FieldType gamma,
                           const RangeType& u,
                           const FluxRangeType& du,
                           RangeType& A) const;
 
+    /**
+     * \brief Return the total energy of the Euler equations.
+     *
+     * The pressure (for an ideal gas) is given by the equation
+     *
+     * \f[ \mathcal{E} = \varepsilon - \frac{\rho}{2} |\mathbf{v}|^2. \f]
+     *
+     * \param[in] u evaluation of the solution vector \f$ u \f$
+     */
     template <class RangeType>
     inline FieldType rhoeps(const RangeType& u) const;
 
+    /**
+     * \brief Returns the pressure \f$ p \f$ of the Euler equations.
+     *
+     * The pressure (for an ideal gas) is given by the equation
+     *
+     * \f[ p(u) = (\gamma - 1)\left( \varepsilon - \frac{\rho}{2}|\mathbf{v}|^2\right) = (\gamma - 1)\mathcal{E}. \f]
+     *
+     * \param[in] gamma the adiabatic constant \f$ \gamma \f$ from the Euler equations
+     * \param[in] u evaluation of the solution vector \f$ u \f$
+     */
     template <class RangeType>
     inline FieldType pressure(const FieldType gamma,const RangeType& u) const
     {
@@ -56,11 +119,22 @@ namespace Fem
       return (gamma-1.0)*rhoe;
     }
 
+    /**
+     * \brief Returns the maximal speed of the Euler equation, i.e. the maximal eigenvalue
+     * of the flux jacobian (multiplied with the length of the normal of the intersection).
+     *
+     * For the Euler equations the maximal eigenvalue is given by the speed of sound, i.e.
+     *
+     * \f[ c_s (\rho,p) = \sqrt{\gamma\frac{p}{\rho}}. \f]
+     */
     template <class RangeType>
     inline FieldType maxSpeed(const FieldType gamma, const DomainType& n, const RangeType& u) const;
   };
 
-  // ***********************
+
+  /**
+   * \copydoc EulerAnalyticalFlux::rhoeps()
+   */
   template <>
   template <class RangeType>
   inline
@@ -69,6 +143,10 @@ namespace Fem
     assert( u[0] >= 1e-10 );
     return u[e]-0.5*(u[1]*u[1])/u[0];
   }
+
+  /**
+   * \copydoc EulerAnalyticalFlux::pressure()
+   */
   template <>
   template <class RangeType>
   inline
@@ -77,6 +155,17 @@ namespace Fem
     assert(rhoe>1e-10);
     return (gamma-1.0)*rhoe;
   }
+
+  /**
+   * \copydoc EulerAnalyticalFlux::analyticalFlux()
+   *
+   * The analytical flux is given by
+   * \f[ \begin{pmatrix}
+   *     \rho v_1               \\
+   *     \rho v_1^2 + p         \\
+   *     (\varepsilon + p)v_1
+   * \end{pmatrix} \f]
+   */
   template <>
   template <class RangeType, class FluxRangeType>
   inline
@@ -90,6 +179,9 @@ namespace Fem
     f[e][0] = u[1]/u[0]*(u[e]+p);
   }
 
+  /**
+   * \copydoc EulerAnalyticalFlux::rhoeps()
+   */
   template <>
   template <class RangeType>
   inline
@@ -99,6 +191,9 @@ namespace Fem
     return u[e]-0.5*(u[1]*u[1]+u[2]*u[2])/u[0];
   }
 
+  /**
+   * \copydoc EulerAnalyticalFlux::pressure()
+   */
   template <>
   template <class RangeType>
   inline
@@ -109,6 +204,18 @@ namespace Fem
     return (gamma-1.0)*re;
   }
 
+  /**
+   * \copydoc EulerAnalyticalFlux::analyticalFlux()
+   *
+   * The analytical flux is given by
+   *
+   * \f[ \begin{pmatrix}
+   *     \rho v_1             & \rho v_2               \\
+   *     \rho v_1^2 + p       & \rho v_2 v_1           \\
+   *     \rho v_1 v_2         & \rho v_2^2 + p         \\
+   *     (\varepsilon + p)v_1 & (\varepsilon + p)v_2
+   * \end{pmatrix} \f]
+   */
   template <>
   template <class RangeType, class FluxRangeType>
   inline
@@ -127,6 +234,9 @@ namespace Fem
     f[e][0] = v[0]*ue_p;       f[e][1] = v[1]*ue_p;
   }
 
+  /**
+   * \copydoc EulerAnalyticalFlux::rhoeps()
+   */
   template <>
   template <class RangeType>
   inline
@@ -136,6 +246,9 @@ namespace Fem
     return u[e]-0.5*(u[1]*u[1]+u[2]*u[2]+u[3]*u[3])/u[0];
   }
 
+  /**
+   * \copydoc EulerAnalyticalFlux::pressure()
+   */
   template <>
   template <class RangeType>
   inline
@@ -148,6 +261,19 @@ namespace Fem
     return (gamma-1)*rhoe;
   }
 
+  /**
+   * \copydoc EulerAnalyticalFlux::analyticalFlux()
+   *
+   * The analytical flux is given by
+   *
+   * \f[ \begin{pmatrix}
+   *     \rho v_1             & \rho v_2             & \rho v_3               \\
+   *     \rho v_1^2 + p       & \rho v_2 v_1         & \rho v_3 v_1           \\
+   *     \rho v_1 v_2         & \rho v_2^2 + p       & \rho v_3 v_2           \\
+   *     \rho v_1 v_3         & \rho v_2 v_3         & \rho v_3^2 + p         \\
+   *     (\varepsilon + p)v_1 & (\varepsilon + p)v_2 & (\varepsilon + p)v_3
+   * \end{pmatrix} \f]
+   */
   template <>
   template <class RangeType, class FluxRangeType>
   inline
@@ -199,6 +325,9 @@ namespace Fem
     A[3] += du[3][0]*gamma*v[0] + du[3][1]*gamma*v[1];
   }
 
+  /**
+   * \copydoc EulerAnalyticalFlux::maxSpeed()
+   */
   template <>
   template <class RangeType>
   inline
@@ -215,6 +344,9 @@ namespace Fem
     return std::abs(u_normal) + std::sqrt(c2);
   }
 
+  /**
+   * \copydoc EulerAnalyticalFlux::maxSpeed()
+   */
   template <>
   template <class RangeType>
   inline
@@ -232,6 +364,9 @@ namespace Fem
     return maxspd;
   }
 
+  /**
+   * \copydoc EulerAnalyticalFlux::maxSpeed()
+   */
   template <>
   template <class RangeType>
   inline
