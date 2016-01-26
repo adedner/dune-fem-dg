@@ -36,8 +36,7 @@ namespace Fem
   public:
     typedef ModelImp                               ModelType;
     typedef FluxParameterImp                       ParameterType;
-    typedef typename ParameterType::IdType         IdType;
-    typedef typename IdType::type                  IdEnum;
+    typedef typename ParameterType::IdEnum         IdEnum;
 
 
     /**

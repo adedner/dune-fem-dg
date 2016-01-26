@@ -59,8 +59,8 @@ namespace Fem
                                      Solver::Enum::fem,
                                      AdvectionLimiter::Enum::unlimited,
                                      Matrix::Enum::matrixfree,
-                                     AdvectionFlux::Identifier<AdvectionFlux::Enum::upwind>,
-                                     PrimalDiffusionFlux::Identifier< PrimalDiffusionFlux::Enum::general > > AC;
+                                     AdvectionFlux::Enum::upwind,
+                                     PrimalDiffusionFlux::Enum::general > AC;
 
       typedef typename AC::GridType                         GridType;
       typedef typename AC::GridParts                        HostGridPartType;

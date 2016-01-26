@@ -511,50 +511,6 @@ namespace Fem
   };
 
 
-///////////////////////////////////////////////////////////////////////////
-// AdvectionFluxSelector
-///////////////////////////////////////////////////////////////////////////
-
-  template< class AdvectionFluxIdentifierImp >
-  struct AdvectionFluxSelector;
-
-  template< AdvectionFlux::Enum id >
-  struct AdvectionFluxSelector< AdvectionFlux::Identifier< id > >
-  {
-    template< class ModelImp >
-    using type = DGAdvectionFlux< ModelImp, AdvectionFlux::Identifier< id > >;
-  };
-
-  template< Euler::AdvectionFlux::Enum id >
-  struct AdvectionFluxSelector< Euler::AdvectionFlux::Identifier< id > >
-  {
-    template< class ModelImp >
-    using type = Euler::EulerFlux< ModelImp, Euler::AdvectionFlux::Identifier< id > >;
-  };
-
-
-///////////////////////////////////////////////////////////////////////////
-// DiffusionFluxSelector
-///////////////////////////////////////////////////////////////////////////
-
-  template< class DiffusionFluxIdentifierImp >
-  struct DiffusionFluxSelector;
-
-  template< PrimalDiffusionFlux::Enum id >
-  struct DiffusionFluxSelector< PrimalDiffusionFlux::Identifier< id > >
-  {
-    template< class DFSpace, class ModelImp >
-    using type = DGPrimalDiffusionFlux< DFSpace, ModelImp, PrimalDiffusionFlux::Identifier< id > >;
-  };
-
-  //template< Euler::AdvectionFluxEnum id >
-  //struct DiffusionFluxSelector< DiffusionFluxIdentifier< id > >
-  //{
-  //  template< class DFSpace, class ModelImp >
-  //  using type = DGPrimalDiffusionFlux< DFSpace, ModelImp, id >;
-  //};
-
-
 }
 }
 #endif

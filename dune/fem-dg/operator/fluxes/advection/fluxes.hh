@@ -18,7 +18,7 @@ namespace Fem
    * \brief The purpose of this class is to allow the selection of an advection flux
    * via an enum given in AdvectionFlux::Enum.
    */
-  template< class ModelImp, class AdvectionFluxIdentifierImp >
+  template< class ModelImp, AdvectionFlux::Enum id >
   class DGAdvectionFlux;
 
 
@@ -29,13 +29,13 @@ namespace Fem
    * via an enum given in AdvectionFlux::Enum.
    */
   template< class ModelImp >
-  class DGAdvectionFlux< ModelImp, AdvectionFlux::Identifier< AdvectionFlux::Enum::llf > >
+  class DGAdvectionFlux< ModelImp, AdvectionFlux::Enum::llf >
     : public LLFAdvFlux< ModelImp >
   {
     typedef LLFAdvFlux< ModelImp > BaseType;
   public:
     typedef typename BaseType::ParameterType      ParameterType;
-    typedef typename BaseType::IdType::type       IdEnum;
+    typedef typename BaseType::IdEnum             IdEnum;
     typedef typename BaseType::ModelType          ModelType;
 
     DGAdvectionFlux( const ModelType& mod,
@@ -52,13 +52,13 @@ namespace Fem
    * via an enum given in AdvectionFlux::Enum.
    */
   template< class ModelImp >
-  class DGAdvectionFlux< ModelImp, AdvectionFlux::Identifier< AdvectionFlux::Enum::none > >
+  class DGAdvectionFlux< ModelImp, AdvectionFlux::Enum::none >
     : public NoFlux< ModelImp >
   {
     typedef NoFlux< ModelImp > BaseType;
   public:
     typedef typename BaseType::ParameterType      ParameterType;
-    typedef typename BaseType::IdType::type       IdEnum;
+    typedef typename BaseType::IdEnum             IdEnum;
     typedef typename BaseType::ModelType          ModelType;
 
     DGAdvectionFlux( const ModelType& mod,
@@ -75,13 +75,13 @@ namespace Fem
    * via an enum given in AdvectionFlux::Enum.
    */
   template< class ModelImp >
-  class DGAdvectionFlux< ModelImp, AdvectionFlux::Identifier< AdvectionFlux::Enum::upwind > >
+  class DGAdvectionFlux< ModelImp, AdvectionFlux::Enum::upwind >
     : public UpwindFlux< ModelImp >
   {
     typedef UpwindFlux< ModelImp > BaseType;
   public:
     typedef typename BaseType::ParameterType      ParameterType;
-    typedef typename BaseType::IdType::type       IdEnum;
+    typedef typename BaseType::IdEnum             IdEnum;
     typedef typename BaseType::ModelType          ModelType;
 
     DGAdvectionFlux( const ModelType& mod,
@@ -98,7 +98,7 @@ namespace Fem
    * via an enum given in AdvectionFlux::Enum.
    */
   template< class ModelImp >
-  class DGAdvectionFlux< ModelImp, AdvectionFlux::Identifier< AdvectionFlux::Enum::general > >
+  class DGAdvectionFlux< ModelImp, AdvectionFlux::Enum::general >
    : public DGAdvectionFluxBase< ModelImp, AdvectionFluxParameters< AdvectionFlux::Enum::general > >
   {
     typedef DGAdvectionFluxBase< ModelImp, AdvectionFluxParameters< AdvectionFlux::Enum::general >  >
@@ -115,13 +115,9 @@ namespace Fem
     typedef typename ModelImp::IntersectionType   IntersectionType;
 
   public:
-    typedef typename BaseType::IdType             IdType;
-    typedef typename IdType::type                 IdEnum;
+    typedef typename BaseType::IdEnum             IdEnum;
     typedef typename BaseType::ModelType          ModelType;
     typedef typename BaseType::ParameterType      ParameterType;
-
-    template< IdEnum ident >
-    using GeneralIdType = typename ParameterType::template GeneralIdType< ident >;
 
     /**
      * \brief Constructor
@@ -169,24 +165,12 @@ namespace Fem
     }
 
   private:
-    const IdEnum&                                    method_;
-    DGAdvectionFlux< ModelType, GeneralIdType< IdEnum::none > >   flux_none_;
-    DGAdvectionFlux< ModelType, GeneralIdType< IdEnum::llf > >    flux_llf_;
-    DGAdvectionFlux< ModelType, GeneralIdType< IdEnum::upwind > > flux_upwind_;
+    const IdEnum&                                method_;
+    DGAdvectionFlux< ModelType, IdEnum::none >   flux_none_;
+    DGAdvectionFlux< ModelType, IdEnum::llf >    flux_llf_;
+    DGAdvectionFlux< ModelType, IdEnum::upwind > flux_upwind_;
 
   };
-
-
- // template< class FluxIdentifierImp >
- // struct Fluxes;
-
- // template< AdvectionFluxIdentifier::value id >
- // struct Fluxes< AdvectionFluxIdentifier< id > >
- // {
- //   template< class ModelImp >
- //   using Advection=DGAdvectionFlux< ModelImp, id>;
- // };
-
 
 
 

@@ -508,8 +508,6 @@ namespace Dune
 {
 namespace Fem
 {
-namespace Euler
-{
 
   ////////////////////////////////////////////////////////
   //
@@ -544,7 +542,6 @@ namespace Euler
     typedef FluxImp                               FluxType;
 
   public:
-    typedef typename BaseType::IdType             IdType;
     typedef typename BaseType::ModelType          ModelType;
     typedef typename BaseType::ParameterType      ParameterType;
 
@@ -596,7 +593,6 @@ namespace Euler
 
 
 
-}
 }
 }
 

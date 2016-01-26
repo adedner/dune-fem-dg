@@ -72,8 +72,8 @@ namespace Fem
                                      Solver::Enum::istl,
                                      AdvectionLimiter::Enum::unlimited,
                                      Matrix::Enum::assembled,
-                                     AdvectionFlux::Identifier<AdvectionFlux::Enum::none>,
-                                     PrimalDiffusionFlux::Identifier< PrimalDiffusionFlux::Enum::general > > AC;
+                                     AdvectionFlux::Enum::none,
+                                     PrimalDiffusionFlux::Enum::general > AC;
 
 
       struct SubPoissonProblemCreator
@@ -247,8 +247,8 @@ namespace Fem
                                      Solver::Enum::fem,
                                      AdvectionLimiter::Enum::unlimited,
                                      Matrix::Enum::matrixfree,
-                                     AdvectionFlux::Identifier<AdvectionFlux::Enum::llf>,
-                                     PrimalDiffusionFlux::Identifier< PrimalDiffusionFlux::Enum::general > > AC;
+                                     AdvectionFlux::Enum::llf,
+                                     PrimalDiffusionFlux::Enum::general > AC;
 
       typedef typename AC::GridType                         GridType;
       typedef typename AC::GridParts                        HostGridPartType;

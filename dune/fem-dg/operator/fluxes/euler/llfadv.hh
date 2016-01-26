@@ -19,8 +19,6 @@ namespace Dune
 {
 namespace Fem
 {
-namespace Euler
-{
 
   /**
     *  \brief Local Lax-Friedrichs flux for the euler problem.
@@ -31,7 +29,7 @@ namespace Euler
     *  \ingroups AdvectionFluxes
     */
   template< class ModelImp >
-  class LLFFlux
+  class EulerLLFFlux
    : public DGAdvectionFluxBase< ModelImp, AdvectionFluxParameters<AdvectionFlux::Enum::llf> >
   {
     typedef DGAdvectionFluxBase< ModelImp, AdvectionFluxParameters<AdvectionFlux::Enum::llf> >   BaseType;
@@ -47,7 +45,6 @@ namespace Euler
     typedef typename ModelImp::IntersectionType   IntersectionType;
 
   public:
-    typedef typename BaseType::IdType             IdType;
     typedef typename BaseType::ModelType          ModelType;
     typedef typename BaseType::ParameterType      ParameterType;
     using BaseType::model_;
@@ -55,7 +52,7 @@ namespace Euler
     /**
      * \copydoc DGAdvectionFluxBase::DGAdvectionFluxBase()
      */
-    LLFFlux(const ModelType& mod, const ParameterType& param = ParameterType() )
+    EulerLLFFlux(const ModelType& mod, const ParameterType& param = ParameterType() )
       : BaseType( mod, param )
     {}
 
@@ -147,7 +144,6 @@ namespace Euler
 
 
 
-}
 }
 }
 

@@ -31,7 +31,6 @@ namespace Fem
     typedef typename ModelImp::IntersectionType   IntersectionType;
 
   public:
-    typedef typename BaseType::IdType             IdType;
     typedef typename BaseType::ModelType          ModelType;
     typedef typename BaseType::ParameterType      ParameterType;
     using BaseType::model_;

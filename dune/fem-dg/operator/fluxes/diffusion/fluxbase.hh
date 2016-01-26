@@ -59,10 +59,8 @@ namespace Fem
     typedef DiscreteFunctionSpaceImp DiscreteFunctionSpaceType;
 
     typedef FluxParameterImp                       ParameterType;
-    typedef typename ParameterType::IdType         IdType;
-    typedef typename ParameterType::LiftingType    LiftingType;
-    typedef typename IdType::type                  IdEnum;
-    typedef typename LiftingType::type             LiftingEnum;
+    typedef typename ParameterType::IdEnum         IdEnum;
+    typedef typename ParameterType::LiftingEnum    LiftingEnum;
 
     enum { dimDomain = DiscreteFunctionSpaceType :: dimDomain };
     enum { dimRange  = DiscreteFunctionSpaceType :: dimRange };

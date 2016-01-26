@@ -25,8 +25,8 @@ namespace Fem
    * \tparam Solver::Enum enum defining a solver
    * \tparam AdvectionLimiter::Enum enum defining the limiting of the advection operator
    * \tparam Matrix::Enum enum describing whether to assemble or not
-   * \tparam AdvectionFluxIdentifierImp Identifier for the advection fluxes.
-   * \tparam DiffuionFluxIdentifierImp Identifier for the diffusion fluxes.
+   * \tparam AdvectionFlux::Enum enum describing the chosen numerical advection flux,
+     \tparam PrimalDiffusionFlux::Enum enum describing the chosen primal numerical diffusion flux
    */
   template< class GridImp,
             Galerkin::Enum dgId,
@@ -35,8 +35,8 @@ namespace Fem
             Solver::Enum solverId,
             AdvectionLimiter::Enum advLimitId,
             Matrix::Enum matrixId,
-            class AdvectionFluxIdentifierImp,
-            class DiffusionFluxIdentifierImp >
+            AdvectionFlux::Enum advFluxId,
+            PrimalDiffusionFlux::Enum diffFluxId >
   class AlgorithmConfigurator
   {
     template< class AnalyticalTraitsImp, class NewModelImp >
@@ -61,23 +61,33 @@ namespace Fem
     template< class DFSpace >
     using DiscreteFunctions = typename SolverSelector< solverId, false, DFSpace >::DiscreteFunctionType;
 
-    template< class ModelImp, class AdvectionFluxIdentifier = AdvectionFluxIdentifierImp >
-    using AdvectionFluxes = typename AdvectionFluxSelector< AdvectionFluxIdentifier >::template type<ModelImp>;
+    template< class ModelImp, AdvectionFlux::Enum id = advFluxId >
+    using AdvectionFluxes = DGAdvectionFlux< ModelImp, id >;
 
-    template< class ModelImp, class DFSpace, class DiffusionFluxIdentifier = DiffusionFluxIdentifierImp >
-    using DiffusionFluxes = typename DiffusionFluxSelector< DiffusionFluxIdentifier >::template type< DFSpace, ModelImp>;
+    template< class ModelImp, class DFSpace, PrimalDiffusionFlux::Enum id = diffFluxId >
+    using DiffusionFluxes = DGPrimalDiffusionFlux< DFSpace, ModelImp, id >;
+    //template< class ModelImp, class AdvectionFluxIdentifier = AdvectionFluxIdentifierImp >
+    //using AdvectionFluxes = DGAdvectionFlux< ModelImp, AdvectionFluxIdentifier >;
+
+    //template< class ModelImp, class DFSpace, class DiffusionFluxIdentifier = DiffusionFluxIdentifierImp >
+    //using DiffusionFluxes = DGPrimalDiffusionFlux< DFSpace, ModelImp, DiffusionFluxIdentifier >;
+    //template< class ModelImp, class AdvectionFluxIdentifier = AdvectionFluxIdentifierImp >
+    //using AdvectionFluxes = typename AdvectionFluxSelector< AdvectionFluxIdentifier >::template type<ModelImp>;
+
+    //template< class ModelImp, class DFSpace, class DiffusionFluxIdentifier = DiffusionFluxIdentifierImp >
+    //using DiffusionFluxes = typename DiffusionFluxSelector< DiffusionFluxIdentifier >::template type< DFSpace, ModelImp>;
 
     template< class DomainDFSpace,
               class RangeDFSpace,
               int polOrd,
               class AnalyticalTraitsImp,
-              class AdvectionFluxIdentifier = AdvectionFluxIdentifierImp,
-              class DiffusionFluxIdentifier = DiffusionFluxIdentifierImp >
+              AdvectionFlux::Enum advId = advFluxId,
+              PrimalDiffusionFlux::Enum diffId = diffFluxId >
     using DefaultAssembTraits = DefaultAssemblerTraits< polOrd,
                                                         AnalyticalTraitsImp,
                                                         typename SolverSelector< solverId, false, DomainDFSpace, RangeDFSpace >::LinearOperatorType,
-                                                        AdvectionFluxes< typename AnalyticalTraitsImp::ModelType, AdvectionFluxIdentifier >,
-                                                        DiffusionFluxes< typename AnalyticalTraitsImp::ModelType, DomainDFSpace, DiffusionFluxIdentifier >,
+                                                        AdvectionFluxes< typename AnalyticalTraitsImp::ModelType, advId >,
+                                                        DiffusionFluxes< typename AnalyticalTraitsImp::ModelType, DomainDFSpace, diffId >,
                                                         DiscreteFunctions< DomainDFSpace >,
                                                         DiscreteFunctions< RangeDFSpace > >;
     template< class DomainDFSpace,
@@ -85,13 +95,13 @@ namespace Fem
               class AnalyticalTraitsImp,
               class ExtraParameterTupleImp = std::tuple<>,
               class AdaptationIndicatorFunctionSpaceImp = typename DomainDFSpace::FunctionSpaceType,
-              class AdvectionFluxIdentifier = AdvectionFluxIdentifierImp,
-              class DiffusionFluxIdentifier = DiffusionFluxIdentifierImp >
+              AdvectionFlux::Enum advId = advFluxId,
+              PrimalDiffusionFlux::Enum diffId = diffFluxId >
     using DefaultOpTraits = DefaultOperatorTraits< polOrd,
                                                    AnalyticalTraitsImp,
                                                    DiscreteFunctions< DomainDFSpace >,
-                                                   AdvectionFluxes< typename AnalyticalTraitsImp::ModelType, AdvectionFluxIdentifier >,
-                                                   DiffusionFluxes< typename AnalyticalTraitsImp::ModelType, DomainDFSpace, DiffusionFluxIdentifier >,
+                                                   AdvectionFluxes< typename AnalyticalTraitsImp::ModelType, advId >,
+                                                   DiffusionFluxes< typename AnalyticalTraitsImp::ModelType, DomainDFSpace, diffId >,
                                                    ExtraParameterTupleImp,
                                                    AdaptationIndicatorFunctionSpaceImp >;
 

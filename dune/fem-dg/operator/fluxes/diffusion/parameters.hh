@@ -45,13 +45,6 @@ namespace Fem
     //! Number of known primal diffusion fluxes which can be chosen via parameter file.
     static const int  _size = 6;
 
-    //! Helper class for static parameter selection
-    template< Enum id = Enum::general >
-    struct Identifier
-    {
-      typedef Enum type;
-      static const type value = id;
-    };
   }
 
   /**
@@ -81,11 +74,6 @@ namespace Fem
     //! Number of known liftings for primal diffusion fluxes which can be chosen via parameter file.
     static const int  _size = 3;
 
-    //! Helper class for static parameter selection
-    struct Identifier
-    {
-      typedef Enum type;
-    };
   }
 
 
@@ -100,12 +88,10 @@ namespace Fem
     : public Fem::LocalParameter< DGPrimalDiffusionFluxParameters<id>, DGPrimalDiffusionFluxParameters<id> >
   {
   public:
-    typedef typename PrimalDiffusionFlux::Identifier<id> IdType;
-    typedef typename PrimalDiffusionLifting::Identifier  LiftingType;
-  private:
-    typedef typename IdType::type                        IdEnum;
-    typedef typename LiftingType::type                   LiftingEnum;
-  public:
+    typedef PrimalDiffusionFlux::Enum           IdEnum;
+    typedef PrimalDiffusionLifting::Enum        LiftingEnum;
+
+    static const IdEnum id_ = id;
 
     /**
      * \brief Constructor

@@ -139,11 +139,9 @@ namespace Fem
 
   public:
     typedef typename BaseType::ParameterType  ParameterType;
-    typedef typename BaseType::IdType         IdType;
-    typedef typename BaseType::LiftingType    LiftingType;
   private:
-    typedef typename IdType::type             EnumType;
-    typedef typename LiftingType::type        LiftingEnum;
+    typedef typename BaseType::IdEnum         EnumType;
+    typedef typename BaseType::LiftingEnum    LiftingEnum;
   public:
 
     using BaseType :: parameter ;
@@ -170,7 +168,7 @@ namespace Fem
                                const ParameterType& parameters ) :
       BaseType( model, true, parameters ),
       gridPart_( gridPart ),
-      method_( IdType::value == EnumType::general ? parameters.getMethod() : IdType::value ),
+      method_( BaseType::ParameterType::id_ == EnumType::general ? parameters.getMethod() : BaseType::ParameterType::id_ ),
       penalty_( parameter().penalty() ),
       nipgFactor_( (method_ == EnumType::nipg) ||
                    (method_ == EnumType::bo)

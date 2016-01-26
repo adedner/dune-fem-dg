@@ -60,8 +60,8 @@ namespace Fem
                                      Solver::Enum::fem,
                                      AdvectionLimiter::Enum::limited,
                                      Matrix::Enum::matrixfree,
-                                     AdvectionFlux::Identifier<AdvectionFlux::Enum::upwind>,
-                                     PrimalDiffusionFlux::Identifier< PrimalDiffusionFlux::Enum::general > > AC;
+                                     AdvectionFlux::Enum::upwind,
+                                     PrimalDiffusionFlux::Enum::general > AC;
 
       // define problem type here if interface should be avoided
 

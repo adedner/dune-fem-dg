@@ -22,6 +22,7 @@ namespace Fem
      */
     enum Enum
     {
+      /////////////// standard fluxes ////////////////////////
       //! no flux
       none = 0,
       //! upwind flux
@@ -29,23 +30,28 @@ namespace Fem
       //! local Lax-Friedrichs flux
       llf = 2,
       //! general flux: parameter selection is done via parameter file!
-      general = 3
+      general = 3,
+
+      /////////////// euler fluxes //////////////////////////////
+      //! the local Lax-Friedrichs flux (with wellbalance option)
+      euler_llf = 4,
+      //! the Harten, Lax and van Leer (HLL) flux
+      euler_hll = 5,
+      //! the HLLC flux
+      euler_hllc = 6,
+      //! the local Lax-Friedrichs flux
+      euler_llf2 = 7,
+      //! general flux: Parameter selection is done via parameter file!
+      euler_general = 8
+
     };
 
     //! Contains all known enums for advection fluxes which can be chosen via parameter file.
-    const Enum        _enums[] = { Enum::none, Enum::upwind, Enum::llf };
+    const Enum        _enums[] = { Enum::none, Enum::upwind, Enum::llf, Enum::euler_llf, Enum::euler_hll, Enum::euler_hllc, Enum::euler_llf2 };
     //! Contains all known names of advection fluxes which can be chosen via parameter file.
-    const std::string _strings[] = { "NONE", "UPWIND" , "LLF" };
+    const std::string _strings[] = { "NONE", "UPWIND" , "LLF", "LLF", "HLL" , "HLLC", "LLF2" };
     //! Number of known advection fluxes which can be chosen via parameter file.
-    static const int  _size = 3;
-
-    //! Helper class for static parameter selection
-    template< Enum id = Enum::general >
-    struct Identifier
-    {
-      static const Enum value = id;
-      typedef Enum type;
-    };
+    static const int  _size = 7;
 
   }
 
@@ -59,13 +65,7 @@ namespace Fem
     : public Dune::Fem::LocalParameter< AdvectionFluxParameters<id>, AdvectionFluxParameters<id> >
   {
   public:
-    typedef typename AdvectionFlux::Identifier<id> IdType;
-  private:
-    typedef typename IdType::type                  IdEnum;
-  public:
-
-    template< IdEnum ident >
-    using GeneralIdType = AdvectionFlux::Identifier< ident >;
+    typedef AdvectionFlux::Enum                  IdEnum;
 
     /**
      * \brief Constructor

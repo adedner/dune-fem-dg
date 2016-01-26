@@ -6,6 +6,7 @@
 #include <cmath>
 
 #include "../advection/fluxbase.hh"
+#include "../advection/fluxes.hh"
 #include "eulerflux_impl.hh"
 #include "llfadv.hh"
 
@@ -13,33 +14,24 @@ namespace Dune
 {
 namespace Fem
 {
-namespace Euler
-{
-
-  /**
-   * \brief The purpose of this class is to allow the selection of an Euler flux
-   * via an enum given in Euler::AdvectionFlux::Enum.
-   */
-  template< class Model, class AdvectionFluxIdentifierImp >
-  class EulerFlux;
 
   /**
    * \brief class specialization for the local Lax-Friedrichs flux.
    *
    * The purpose of this class is to allow the selection of an Euler flux
-   * via an enum given in Euler::AdvectionFlux::Enum.
+   * via an enum given in AdvectionFlux::Enum.
    */
   template< class Model >
-  class EulerFlux< Model, Euler::AdvectionFlux::Identifier< Euler::AdvectionFlux::Enum::llf > >
+  class DGAdvectionFlux< Model, AdvectionFlux::Enum::euler_llf >
     : public EulerFluxImpl< Model, EulerNumFlux::EulerFlux<Model,EulerNumFlux::EulerFluxType::LLF > >
   {
     typedef EulerFluxImpl< Model, EulerNumFlux::EulerFlux<Model,EulerNumFlux::EulerFluxType::LLF > > BaseType ;
   public:
     typedef typename BaseType::ParameterType          ParameterType;
-    typedef typename BaseType::IdType::type           IdEnum;
+    typedef typename BaseType::IdEnum                 IdEnum;
     typedef typename BaseType::ModelType              ModelType;
 
-    EulerFlux( const Model& mod,
+    DGAdvectionFlux( const Model& mod,
                const ParameterType& parameters = ParameterType() )
       : BaseType( mod, parameters )
     {}
@@ -50,19 +42,19 @@ namespace Euler
    * \brief class specialization for the HLL flux.
    *
    * The purpose of this class is to allow the selection of an Euler flux
-   * via an enum given in Euler::AdvectionFlux::Enum.
+   * via an enum given in AdvectionFlux::Enum.
    */
   template< class Model >
-  class EulerFlux< Model, Euler::AdvectionFlux::Identifier< Euler::AdvectionFlux::Enum::hll > >
+  class DGAdvectionFlux< Model, AdvectionFlux::Enum::euler_hll >
     : public EulerFluxImpl< Model, EulerNumFlux::EulerFlux<Model,EulerNumFlux::EulerFluxType::HLL > >
   {
     typedef EulerFluxImpl< Model, EulerNumFlux::EulerFlux<Model,EulerNumFlux::EulerFluxType::HLL > > BaseType ;
   public:
     typedef typename BaseType::ParameterType          ParameterType;
-    typedef typename BaseType::IdType::type           IdEnum;
+    typedef typename BaseType::IdEnum                 IdEnum;
     typedef typename BaseType::ModelType              ModelType;
 
-    EulerFlux( const Model& mod,
+    DGAdvectionFlux( const Model& mod,
                const ParameterType& parameters = ParameterType() )
       : BaseType( mod, parameters )
     {}
@@ -73,19 +65,19 @@ namespace Euler
    * \brief class specialization for the HLLC flux.
    *
    * The purpose of this class is to allow the selection of an Euler flux
-   * via an enum given in Euler::AdvectionFlux::Enum.
+   * via an enum given in AdvectionFlux::Enum.
    */
   template< class Model >
-  class EulerFlux< Model, Euler::AdvectionFlux::Identifier< Euler::AdvectionFlux::Enum::hllc > >
+  class DGAdvectionFlux< Model, AdvectionFlux::Enum::euler_hllc >
     : public EulerFluxImpl< Model, EulerNumFlux::EulerFlux<Model,EulerNumFlux::EulerFluxType::HLLC > >
   {
     typedef EulerFluxImpl< Model, EulerNumFlux::EulerFlux<Model,EulerNumFlux::EulerFluxType::HLLC > > BaseType ;
   public:
     typedef typename BaseType::ParameterType          ParameterType;
-    typedef typename BaseType::IdType::type           IdEnum;
+    typedef typename BaseType::IdEnum                 IdEnum;
     typedef typename BaseType::ModelType              ModelType;
 
-    EulerFlux( const Model& mod,
+    DGAdvectionFlux( const Model& mod,
                const ParameterType& parameters = ParameterType() )
       : BaseType( mod, parameters )
     {}
@@ -96,19 +88,19 @@ namespace Euler
    * \brief class specialization for the local Lax-Friedrichs flux.
    *
    * The purpose of this class is to allow the selection of an Euler flux
-   * via an enum given in Euler::AdvectionFlux::Enum.
+   * via an enum given in AdvectionFlux::Enum.
    */
   template< class Model >
-  class EulerFlux< Model, Euler::AdvectionFlux::Identifier< Euler::AdvectionFlux::Enum::llf2 > >
-    : public LLFFlux< Model >
+  class DGAdvectionFlux< Model, AdvectionFlux::Enum::euler_llf2 >
+    : public EulerLLFFlux< Model >
   {
-    typedef LLFFlux< Model >  BaseType;
+    typedef EulerLLFFlux< Model >  BaseType;
   public:
     typedef typename BaseType::ParameterType          ParameterType;
-    typedef typename BaseType::IdType::type           IdEnum;
+    typedef typename BaseType::IdEnum                 IdEnum;
     typedef typename BaseType::ModelType              ModelType;
 
-    EulerFlux( const Model& mod, const ParameterType& param = ParameterType() )
+    DGAdvectionFlux( const Model& mod, const ParameterType& param = ParameterType() )
       : BaseType( mod, param )
     {}
     static std::string name () { return "LLF"; }
@@ -118,13 +110,13 @@ namespace Euler
    * \brief class specialization for a general flux chosen by a parameter file.
    *
    * The purpose of this class is to allow the selection of an Euler flux
-   * via an enum given in Euler::AdvectionFlux::Enum.
+   * via an enum given in AdvectionFlux::Enum.
    */
   template< class ModelImp >
-  class EulerFlux< ModelImp, Euler::AdvectionFlux::Identifier< Euler::AdvectionFlux::Enum::general > >
-    : public DGAdvectionFluxBase< ModelImp, AdvectionFluxParameters< Euler::AdvectionFlux::Enum::general > >
+  class DGAdvectionFlux< ModelImp, AdvectionFlux::Enum::euler_general >
+    : public DGAdvectionFluxBase< ModelImp, AdvectionFluxParameters< AdvectionFlux::Enum::euler_general > >
   {
-    typedef DGAdvectionFluxBase< ModelImp, AdvectionFluxParameters< Euler::AdvectionFlux::Enum::general > >   BaseType;
+    typedef DGAdvectionFluxBase< ModelImp, AdvectionFluxParameters< AdvectionFlux::Enum::euler_general > >   BaseType;
 
     typedef typename ModelImp::Traits             Traits;
     enum { dimRange = ModelImp::dimRange };
@@ -137,18 +129,14 @@ namespace Euler
     typedef typename ModelImp::IntersectionType   IntersectionType;
 
   public:
-    typedef typename BaseType::IdType             IdType;
-    typedef typename IdType::type                 IdEnum;
+    typedef typename BaseType::IdEnum             IdEnum;
     typedef typename BaseType::ModelType          ModelType;
     typedef typename BaseType::ParameterType      ParameterType;
-
-    template< IdEnum ident >
-    using GeneralIdType = typename ParameterType::template GeneralIdType< ident >;
 
     /**
      * \copydoc DGAdvectionFluxBase::DGAdvectionFluxBase()
      */
-    EulerFlux( const ModelType& mod,
+    DGAdvectionFlux( const ModelType& mod,
                const ParameterType& parameters = ParameterType() )
       : BaseType( mod, parameters ),
         method_( parameters.getMethod() ),
@@ -161,7 +149,7 @@ namespace Euler
     /**
      * \copydoc DGAdvectionFluxBase::name()
      */
-    static std::string name () { return "EulerFlux (via parameter file)"; }
+    static std::string name () { return "AdvectionFlux - Euler (via parameter file)"; }
 
     /**
      * \copydoc DGAdvectionFluxBase::numericalFlux()
@@ -179,13 +167,13 @@ namespace Euler
     {
       switch (method_)
       {
-        case IdEnum::llf:
+        case IdEnum::euler_llf:
           return flux_llf_.numericalFlux( left, right, uLeft, uRight, jacLeft, jacRight, gLeft, gRight );
-        case IdEnum::hll:
+        case IdEnum::euler_hll:
           return flux_hll_.numericalFlux( left, right, uLeft, uRight, jacLeft, jacRight, gLeft, gRight );
-        case IdEnum::hllc:
+        case IdEnum::euler_hllc:
           return flux_hllc_.numericalFlux( left, right, uLeft, uRight, jacLeft, jacRight, gLeft, gRight );
-        case IdEnum::llf2:
+        case IdEnum::euler_llf2:
           return flux_llf2_.numericalFlux( left, right, uLeft, uRight, jacLeft, jacRight, gLeft, gRight );
       }
       assert( false );
@@ -195,22 +183,12 @@ namespace Euler
 
   private:
     const IdEnum&                                    method_;
-    EulerFlux< ModelImp, GeneralIdType< IdEnum::llf > >  flux_llf_;
-    EulerFlux< ModelImp, GeneralIdType< IdEnum::hll > > flux_hll_;
-    EulerFlux< ModelImp, GeneralIdType< IdEnum::hllc > > flux_hllc_;
-    EulerFlux< ModelImp, GeneralIdType< IdEnum::llf2 > > flux_llf2_;
+    DGAdvectionFlux< ModelImp, IdEnum::euler_llf >  flux_llf_;
+    DGAdvectionFlux< ModelImp, IdEnum::euler_hll >  flux_hll_;
+    DGAdvectionFlux< ModelImp, IdEnum::euler_hllc > flux_hllc_;
+    DGAdvectionFlux< ModelImp, IdEnum::euler_llf2 > flux_llf2_;
 
   };
-
-}
-  //template< Euler::FluxIdentifier::value id >
-  //struct Fluxes< Euler::FluxIdentifier< id > >
-  //{
-  //  template< class ModelImp >
-  //  using Advection=Euler::EulerFlux< ModelImp, id>;
-  //};
-
-
 
 }
 }

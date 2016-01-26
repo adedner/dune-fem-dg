@@ -72,9 +72,8 @@ namespace Fem
 
     struct SubStokesProblemCreator
     {
-      typedef AlgorithmConfigurator< GridImp, galerkinEnum, adaptivityEnum, dfSpaceEnum, solverEnum, advLimiterEnum, matrixEnum,
-                                     AdvectionFlux::Identifier<advFluxEnum>,
-                                     PrimalDiffusionFlux::Identifier< PrimalDiffusionFlux::Enum::general > > AC;
+      typedef AlgorithmConfigurator< GridImp, galerkinEnum, adaptivityEnum, dfSpaceEnum, solverEnum, advLimiterEnum,
+                                     matrixEnum, advFluxEnum, diffFluxEnum > AC;
 
       struct SubPoissonProblemCreator
       {

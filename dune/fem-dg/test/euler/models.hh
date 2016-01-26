@@ -73,8 +73,8 @@ namespace Fem
     typedef typename Traits::ThermodynamicsType          ThermodynamicsType;
 
     // for Euler equations diffusion is disabled
-    static const bool hasAdvection = true ;
-    static const bool hasDiffusion = false ;
+    static const bool hasAdvection = true;
+    static const bool hasDiffusion = false;
 
    public:
     EulerModel( const ProblemType& problem )
