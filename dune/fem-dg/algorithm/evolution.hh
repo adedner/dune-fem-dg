@@ -7,6 +7,7 @@
 #include <dune/fem/misc/gridwidth.hh>
 
 #include <dune/fem-dg/algorithm/base.hh>
+#include <dune/fem-dg/algorithm/coupling.hh>
 #include <dune/fem/misc/femtimer.hh>
 
 // include std libs
@@ -174,47 +175,6 @@ namespace Fem
 
     typedef typename DataWriterHandlerType::IOTupleType                 IOTupleType;
 
-  };
-
-  /**
-   *  \brief Creates a tuple of sub algorithms
-   *
-   *  \note This is the default implementation which should be used
-   *  for uncoupled algorithms.
-   *
-   *  \tparam SubAlgorithmTupleImp
-   *  \tparam GridImp
-   */
-  template< class SubAlgorithmTupleImp, class GridImp >
-  class DefaultEvolutionCreator
-  {
-    typedef SubAlgorithmTupleImp  SubAlgorithmTupleType;
-    typedef GridImp               GridType;
-
-
-    template< int i >
-    using Element = typename std::remove_pointer< typename std::tuple_element< i, SubAlgorithmTupleType >::type >::type;
-
-
-    template< std::size_t i >
-    static Element<i>* createSubAlgorithm( GridType& grid )
-    {
-      static typename Element<i>::ContainerType container( grid );
-      return new Element<i>( grid, container );
-    }
-
-    template< std::size_t ...i >
-    static SubAlgorithmTupleType apply ( Std::index_sequence< i... >, GridType &grid )
-    {
-      return std::make_tuple( createSubAlgorithm<i>( grid )... );
-    }
-
-  public:
-    // create Tuple of contained sub algorithms
-    static SubAlgorithmTupleType apply ( GridType &grid )
-    {
-      return apply( typename Std::make_index_sequence_impl< std::tuple_size< SubAlgorithmTupleType >::value >::type(), grid );
-    }
   };
 
 

@@ -231,7 +231,7 @@ namespace Fem
     template <int polOrd>
     struct Stepper
     {
-      typedef Fem::SteadyStateAlgorithm< polOrd, DefaultSteadyStateCreator, SubStokesProblemCreator > Type;
+      typedef Fem::SteadyStateAlgorithm< polOrd, UncoupledSubAlgorithms, SubStokesProblemCreator > Type;
     };
 
     typedef GridImp                                         GridType;

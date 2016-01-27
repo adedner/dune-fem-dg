@@ -341,7 +341,7 @@ namespace Fem
     template <int polOrd>
     struct Stepper
     {
-      typedef IncompNavierStokesAlgorithm< polOrd, DefaultEvolutionCreator, SubStokesProblemCreator, SubNavierStokesProblemCreator, SubStokesProblemCreator > Type;
+      typedef IncompNavierStokesAlgorithm< polOrd, UncoupledSubAlgorithms, SubStokesProblemCreator, SubNavierStokesProblemCreator, SubStokesProblemCreator > Type;
     };
 
     typedef GridImp                                         GridType;
