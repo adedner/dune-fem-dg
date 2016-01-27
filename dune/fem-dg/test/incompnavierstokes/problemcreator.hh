@@ -143,7 +143,7 @@ namespace Fem
         };
 
         template <int polOrd>
-        struct Stepper
+        struct Algorithm
         {
           // this should be ok but could lead to a henn-egg problem
           typedef Fem::SubEllipticAlgorithm< GridType, SubPoissonProblemCreator, polOrd > Type;
@@ -177,7 +177,6 @@ namespace Fem
         return new NavierStokesProblem< GridType, NavierStokesProblemDefault > ();
       }
 
-      //Stepper Traits
       template< int polOrd >
       struct DiscreteTraits
       {
@@ -227,7 +226,7 @@ namespace Fem
       };
 
       template <int polOrd>
-      struct Stepper
+      struct Algorithm
       {
         typedef Fem::SubStokesAlgorithm< GridType, SubStokesProblemCreator, SubPoissonProblemCreator, polOrd > Type;
       };
@@ -280,7 +279,6 @@ namespace Fem
         return new typename NavierStokesProblem< GridType, NavierStokesProblemDefault >::NavierStokesProblemType();
       }
 
-      //Stepper Traits
       template< int polOrd >
       struct DiscreteTraits
       {
@@ -330,7 +328,7 @@ namespace Fem
       };
 
       template <int polOrd>
-      struct Stepper
+      struct Algorithm
       {
         typedef Fem::SubAdvectionDiffusionAlgorithm< GridType, SubNavierStokesProblemCreator, polOrd > Type;
       };
@@ -339,7 +337,7 @@ namespace Fem
 
 
     template <int polOrd>
-    struct Stepper
+    struct Algorithm
     {
       typedef IncompNavierStokesAlgorithm< polOrd, UncoupledSubAlgorithms, SubStokesProblemCreator, SubNavierStokesProblemCreator, SubStokesProblemCreator > Type;
     };

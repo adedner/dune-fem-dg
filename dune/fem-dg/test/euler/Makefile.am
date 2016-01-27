@@ -12,7 +12,7 @@ SOURCES = main.cc problems/chorjo.cc
 #  set FLUX to 2 for HLL (not tested!)
 # INFO TRACK LIFTING:
 #  define LOCALDEBUG to calculate \sum_e\int_Omega(r_e*l_e) and 
-#   \sum_e\int_Omega(r_e*l_e). They will be output to std::cout from the Stepper
+#   \sum_e\int_Omega(r_e*l_e). They will be output to std::cout from the Algorithm
 # INFO LIMITER
 #  define LIMITER to apply limiting of the numerical solution (not tested!)
 # INFO WELL-BALANCING

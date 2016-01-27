@@ -98,7 +98,6 @@ namespace Fem
         return AnalyticalEulerProblemCreator<GridType>::apply();
       }
 
-      //Stepper Traits
       template< int polOrd >
       struct DiscreteTraits
       {
@@ -143,7 +142,7 @@ namespace Fem
       };
 
       template <int polOrd>
-      struct Stepper
+      struct Algorithm
       {
        // this should be ok but could lead to a henn-egg problem
         typedef Fem::SubAdvectionAlgorithm< GridType, SubEulerProblemCreator, polOrd > Type;
@@ -152,7 +151,7 @@ namespace Fem
     };
 
     template <int polOrd>
-    struct Stepper
+    struct Algorithm
     {
       typedef Fem::EvolutionAlgorithm< polOrd, UncoupledSubAlgorithms, SubEulerProblemCreator > Type;
     };

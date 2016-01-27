@@ -254,7 +254,7 @@ namespace Fem
     typedef SubSteadyStateAlgorithm<GridImp,ProblemTraits,polOrd> BaseType;
 
   public:
-    typedef typename ElliptProblemTraits::template Stepper<polOrd>::Type  EllipticalAlgorithmType;
+    typedef typename ElliptProblemTraits::template Algorithm<polOrd>::Type  EllipticalAlgorithmType;
 
     // type of Grid
     typedef typename BaseType::GridType                             GridType;

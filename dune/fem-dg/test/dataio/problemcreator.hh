@@ -58,7 +58,7 @@ namespace Fem
     // wrap operator
     typedef Dune::Fem::GridTimeProvider< GridType >                                   TimeProviderType;
 
-    typedef std::tuple< typename std::add_pointer< typename ProblemTraits::template Stepper<polOrder>::Type >::type... > SubAlgorithmTupleType;
+    typedef std::tuple< typename std::add_pointer< typename ProblemTraits::template Algorithm<polOrder>::Type >::type... > SubAlgorithmTupleType;
 
     typedef typename Dune::Std::make_index_sequence_impl< std::tuple_size< SubAlgorithmTupleType >::value >::type  IndexSequenceType;
     typedef Dune::Std::index_sequence<>                                                                       NoIndexSequenceType;
@@ -130,7 +130,6 @@ namespace Fem
       }
 
 
-      //Stepper Traits
       template< int polOrd >
       struct DiscreteTraits
       {
@@ -149,7 +148,7 @@ namespace Fem
 
 
       template <int polOrd>
-      struct Stepper
+      struct Algorithm
       {
        // this should be ok but could lead to a henn-egg problem
         typedef Dune::Fem::SubCheckPointingAlgorithm< GridType, SubCheckPointingProblemCreator, polOrd > Type;
@@ -158,7 +157,7 @@ namespace Fem
     };
 
     template <int polOrd>
-    struct Stepper
+    struct Algorithm
     {
       typedef Dune::Fem::EvolutionAlgorithmBase< CheckPointEvolutionAlgorithmTraits< polOrd, SubCheckPointingProblemCreator >, UncoupledSubAlgorithms  > Type;
     };

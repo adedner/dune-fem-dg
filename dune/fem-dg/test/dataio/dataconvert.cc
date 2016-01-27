@@ -41,11 +41,11 @@ void appendUserParameter()
 typedef Dune::GridSelector :: GridType GridType;
 typedef ProblemCreator< GridType > ProblemTraits;
 
-typedef CheckPointingStepper<GridType,
+typedef CheckPointingAlgorithm<GridType,
                              ProblemTraits,
-                             POLORDER> StepperType ;
+                             POLORDER> AlgorithmType ;
 
-typedef StepperType :: IOTupleType InTupleType ;
+typedef AlgorithmType :: IOTupleType InTupleType ;
 
 // type of discrete function tuple to restore
 typedef InTupleType GR_InputType;
@@ -73,9 +73,9 @@ struct AdditionalVariables< dimRange, dimRange >
       /*
       std::cout << "Setup additional variables" << std::endl;
       additionalVariables = new DestinationType("add", Uh.space() );
-      typedef typename StepperType :: InitialDataType InitialDataType;
+      typedef typename AlgorithmType :: InitialDataType InitialDataType;
       InitialDataType* problem = ProblemTraits :: problem() ;
-      typedef typename StepperType :: ModelType  ModelType;
+      typedef typename AlgorithmType :: ModelType  ModelType;
       ModelType model( *problem );
 
       // create TimeProvider provider with given time
@@ -114,7 +114,7 @@ template <class GR_GridType,
   {
     typedef typename DestinationType :: DiscreteFunctionSpaceType DiscreteFunctionSpaceType;
     typedef typename DiscreteFunctionSpaceType :: GridPartType GridPartType;
-    typedef typename StepperType :: InitialDataType InitialDataType;
+    typedef typename AlgorithmType :: InitialDataType InitialDataType;
 
     DestinationType* additionalVariables =
       AdditionalVariables< DiscreteFunctionSpaceType::dimRange,

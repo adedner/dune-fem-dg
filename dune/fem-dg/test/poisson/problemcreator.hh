@@ -96,7 +96,6 @@ namespace Fem
         return new Poisson::Problem< GridType, DIMRANGE > ( probNr );
       }
 
-      //Stepper Traits
       template< int polOrd >
       struct DiscreteTraits
       {
@@ -126,7 +125,7 @@ namespace Fem
       };
 
       template <int polOrd>
-      struct Stepper
+      struct Algorithm
       {
         // this should be ok but could lead to a henn-egg problem
         typedef Fem::SubEllipticAlgorithm< GridType, SubPoissonProblemCreator, polOrd > Type;
@@ -135,7 +134,7 @@ namespace Fem
     };
 
     template <int polOrd>
-    struct Stepper
+    struct Algorithm
     {
       typedef Fem::SteadyStateAlgorithm< polOrd, UncoupledSubAlgorithms, SubPoissonProblemCreator > Type;
     };

@@ -32,7 +32,7 @@ DIFFFLUX=PRIMALDG
 #     2. define DUALDG for the LDG space operator in dual formulation
 # INFO TRACK LIFTING:
 #     1. define LOCALDEBUG to calculate \sum_e\int_Omega(r_e*l_e) and 
-#        \sum_e\int_Omega(r_e*l_e). They will be output to std::cout from the Stepper
+#        \sum_e\int_Omega(r_e*l_e). They will be output to std::cout from the Algorithm
 # INFO LIMITER
 #     1. define LIMITER to limit the advection part of the solution (not checked)
 AM_CPPFLAGS = $(USE_OMP) -I../../problems/nseq  $(ALL_PKG_CPPFLAGS) -DGRIDDIM=$(GRIDDIM) \

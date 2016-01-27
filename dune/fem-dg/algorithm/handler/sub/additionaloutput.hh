@@ -31,7 +31,7 @@ namespace Fem
      *    a discrete function of primitive variables for a visualization purpose only
      */
     template< class TimeProviderImp, class SubAlgorithmImp >
-    void step( const TimeProviderImp& tp, const SubAlgorithmImp& stepper )
+    void step( const TimeProviderImp& tp, const SubAlgorithmImp& alg )
     {
       typedef typename SubAlgorithmImp::DiscreteFunctionType                InDiscreteFunctionType;
       typedef typename InDiscreteFunctionType::DiscreteFunctionSpaceType    InDiscreteFunctionSpaceType;
@@ -49,7 +49,7 @@ namespace Fem
       typedef typename InDiscreteFunctionType::LocalFunctionType  InLocalFuncType;
       typedef typename OutDiscreteFunctionType::LocalFunctionType OutLocalFuncType;
 
-      const InDiscreteFunctionSpaceType& space =  stepper.solution().space();
+      const InDiscreteFunctionSpaceType& space =  alg.solution().space();
       solution_.clear();
 
       InRangeType cons(0.0);
@@ -67,7 +67,7 @@ namespace Fem
         // get quadrature rule for L2 projection
         Dune::Fem::CachingQuadrature< GridPartType, 0 > quad( entity, 2*space.order()+1 );
 
-        InLocalFuncType consLF = stepper.solution().localFunction( entity );
+        InLocalFuncType consLF = alg.solution().localFunction( entity );
         OutLocalFuncType primLF = solution_.localFunction( entity );
 
         const int quadNop = quad.nop();
@@ -78,7 +78,7 @@ namespace Fem
 
           // it is useful to visualize better suited quantities
           bool forVisual = true;
-          stepper.model().conservativeToPrimitive( tp.time(), xgl, cons, prim, forVisual );
+          alg.model().conservativeToPrimitive( tp.time(), xgl, cons, prim, forVisual );
 
           prim *=  quad.weight(qP);
           primLF.axpy( quad[qP] , prim );
@@ -107,13 +107,13 @@ namespace Fem
     {}
 
     template< class TimeProviderImp, class SubAlgorithmImp >
-    void step( TimeProviderImp& tp, SubAlgorithmImp& stepper )
+    void step( TimeProviderImp& tp, SubAlgorithmImp& alg )
     {
       if( solution_ )
       {
         typedef typename SubAlgorithmImp::ProblemType::InstationaryFunctionType      ExactSolutionType;
         typedef Dune::Fem::GridFunctionAdapter< ExactSolutionType, GridPartType >  GridFunctionAdapterType;
-        auto ftf = stepper.problem().fixedTimeFunction( tp.time() );
+        auto ftf = alg.problem().fixedTimeFunction( tp.time() );
         GridFunctionAdapterType adapter( "temporary adapter", ftf , solution_->space().gridPart(), solution_->space().order()+2 );
         interpolate( adapter, *solution_ );
       }

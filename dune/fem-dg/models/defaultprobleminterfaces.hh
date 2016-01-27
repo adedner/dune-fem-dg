@@ -199,7 +199,7 @@ namespace Fem
     bool calculateEOC( TimeProviderType& tp, DiscreteFunctionType& u,
                        const unsigned int eocId ) const
     {
-      // return true means that EOC is calculated in Stepper
+      // return true means that EOC is calculated in algorithm
       return true ;
     }
 

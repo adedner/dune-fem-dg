@@ -87,7 +87,6 @@ namespace Fem
       };
 
 
-
       static inline std::string moduleName() { return ""; }
 
       static ProblemInterfaceType* problem()
@@ -96,7 +95,6 @@ namespace Fem
       }
 
 
-      //Stepper Traits
       template< int polOrd >
       struct DiscreteTraits
       {
@@ -139,7 +137,7 @@ namespace Fem
 
 
       template <int polOrd>
-      struct Stepper
+      struct Algorithm
       {
        // this should be ok but could lead to a henn-egg problem
         typedef Fem::SubAdvectionDiffusionAlgorithm< GridType, SubAdvectionDiffusionProblemCreator, polOrd > Type;
@@ -148,7 +146,7 @@ namespace Fem
     };
 
     template <int polOrd>
-    struct Stepper
+    struct Algorithm
     {
       typedef Fem::EvolutionAlgorithm< polOrd, UncoupledSubAlgorithms, SubAdvectionDiffusionProblemCreator > Type;
     };

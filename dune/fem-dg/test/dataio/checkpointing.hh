@@ -158,7 +158,7 @@ namespace Fem
       // Compute L2 error of discretized solution ...
       double error = computeError( tp, solution() );
 
-      std::cout << "Stepper::consistencyCheck: L2-error after restore: " << error
+      std::cout << "Algorithm::consistencyCheck: L2-error after restore: " << error
                 << "  stored value: " << error_ << std::endl;
       if( std::abs( error - error_ ) > 1e-14 )
       {

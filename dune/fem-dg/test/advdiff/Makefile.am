@@ -21,7 +21,7 @@ FLUX = 1    # LLF 1, HLL 2
 #     2. define DUALDG for LDG
 # INFO TRACK LIFTING:
 #     1. define LOCALDEBUG to calculate \sum_e\int_Omega(r_e*l_e) and 
-#        \sum_e\int_Omega(r_e*l_e). They will be output to std::cout from the Stepper
+#        \sum_e\int_Omega(r_e*l_e). They will be output to std::cout from the Algorithm
 # INFO TESTOPERATOR:
 #     1. define TESTOPERATOR for linear advdiff equation to output various
 #        information on space operator

@@ -96,7 +96,6 @@ namespace Fem
       static ProblemInterfaceType* problem() { return new ProblemInterfaceType(); }
 
 
-      //Stepper Traits
       template< int polOrd >
       struct DiscreteTraits
       {
@@ -138,7 +137,7 @@ namespace Fem
       };
 
       template <int polOrd>
-      struct Stepper
+      struct Algorithm
       {
         // this should be ok but could lead to a henn-egg problem
         typedef Fem::SubAdvectionDiffusionAlgorithm< GridType, SubNavierStokesProblemCreator, polOrd > Type;
@@ -148,7 +147,7 @@ namespace Fem
     };
 
     template <int polOrd>
-    struct Stepper
+    struct Algorithm
     {
       typedef Fem::EvolutionAlgorithm< polOrd, UncoupledSubAlgorithms, SubNavierStokesProblemCreator > Type;
     };
