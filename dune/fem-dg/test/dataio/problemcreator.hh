@@ -13,6 +13,8 @@
 #include <dune/fem/solver/timeprovider.hh>
 #include <dune/common/std/utility.hh>
 
+#include <dune/fem-dg/algorithm/coupling.hh>
+
 //--------- HANDLER --------------------------------
 #include <dune/fem-dg/algorithm/handler/sub/diagnostics.hh>
 #include <dune/fem-dg/algorithm/handler/sub/solvermonitor.hh>
@@ -158,7 +160,7 @@ namespace Fem
     template <int polOrd>
     struct Stepper
     {
-      typedef Dune::Fem::EvolutionAlgorithmBase< CheckPointEvolutionAlgorithmTraits< polOrd, SubCheckPointingProblemCreator >, DefaultSteadyStateCreator  > Type;
+      typedef Dune::Fem::EvolutionAlgorithmBase< CheckPointEvolutionAlgorithmTraits< polOrd, SubCheckPointingProblemCreator >, UncoupledSubAlgorithms  > Type;
     };
 
     typedef GridImp                                         GridType;

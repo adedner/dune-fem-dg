@@ -127,11 +127,10 @@ namespace Fem
     using BaseType::solution;
     using BaseType::gridSize;
 
-    SubCheckPointingAlgorithm ( GridType &grid, const std::string name = "" )
+    SubCheckPointingAlgorithm ( GridType &grid, const ContainerType& container )
     : BaseType( grid ),
-      gridPart_( grid ),
-      space_( gridPart_ ),
-      solution_( new DiscreteFunctionType( "U_"+name, space_ ) ),
+      container_( container ),
+      solution_( container_.solution() ),
       ioTuple_( std::make_tuple( &solution(), nullptr ) ),
       error_( 0.0 )
     {}
@@ -224,9 +223,8 @@ namespace Fem
     }
 
   protected:
-    GridPartType                            gridPart_;
-    DiscreteFunctionSpaceType               space_;
-    std::unique_ptr< DiscreteFunctionType > solution_;
+    const ContainerType&                    container_;
+    std::shared_ptr< DiscreteFunctionType > solution_;
 
     IOTupleType                             ioTuple_;
     double                                  error_;
