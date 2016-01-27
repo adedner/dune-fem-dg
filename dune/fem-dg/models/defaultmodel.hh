@@ -253,28 +253,13 @@ public:
   /**
    * @brief diffusion boundary flux
    */
-  inline double diffusionBoundaryFlux( const IntersectionType& it,
-                                       const double time,
-                                       const FaceDomainType& x,
-                                       const RangeType& uLeft,
-                                       const GradientType& gradLeft,
-                                       RangeType& gLeft ) const
+  template <class LocalEvalution>
+  inline double diffusionBoundaryFlux( const LocalEvalution&,
+                                       const RangeType&,
+                                       const JacobianRangeType&,
+                                       RangeType& ) const
   {
-    Dune::Fem::FieldMatrixConverter< GradientType, JacobianRangeType> jacLeft( gradLeft );
-    return diffusionBoundaryFlux( it, time, x, uLeft, jacLeft, gLeft );
-  }
-
-  /** \brief boundary flux for the diffusion part
-   */
-  template <class JacobianRangeImp>
-  inline double diffusionBoundaryFlux( const IntersectionType& it,
-                                       const double time,
-                                       const FaceDomainType& x,
-                                       const RangeType& uLeft,
-                                       const JacobianRangeImp& jacLeft,
-                                       RangeType& gLeft ) const
-  {
-    std::cerr <<"diffusionBoundaryFlux shouldn't be used in this model" <<std::endl;
+    std::cerr <<"Method DefaultModel::diffusionBoundaryFlux not implemented." <<std::endl;
     abort();
   }
 
@@ -283,11 +268,10 @@ public:
   /**
    * @brief dirichlet boundary values
    */
-  inline  void boundaryValue(const IntersectionType& it,
-                             const double time,
-                             const FaceDomainType& x,
-                             const RangeType& uLeft,
-                             RangeType& uRight) const
+  template <class LocalEvalution>
+  inline void boundaryValue(const LocalEvalution&,
+                             const RangeType&,
+                             RangeType& ) const
   {
     std::cerr << "Method DefaultModel::boundaryValue not implemented." << std::endl;
     abort();
