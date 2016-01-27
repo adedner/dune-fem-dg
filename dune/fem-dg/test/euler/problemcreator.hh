@@ -146,7 +146,7 @@ namespace Fem
       struct Stepper
       {
        // this should be ok but could lead to a henn-egg problem
-        typedef Fem::AdvectionAlgorithm< GridType, SubEulerProblemCreator, polOrd > Type;
+        typedef Fem::SubAdvectionAlgorithm< GridType, SubEulerProblemCreator, polOrd > Type;
       };
 
     };

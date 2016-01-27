@@ -146,7 +146,7 @@ namespace Fem
         struct Stepper
         {
           // this should be ok but could lead to a henn-egg problem
-          typedef Fem::EllipticAlgorithm< GridType, SubPoissonProblemCreator, polOrd > Type;
+          typedef Fem::SubEllipticAlgorithm< GridType, SubPoissonProblemCreator, polOrd > Type;
         };
       };
 
@@ -229,7 +229,7 @@ namespace Fem
       template <int polOrd>
       struct Stepper
       {
-        typedef Fem::StokesAlgorithm< GridType, SubStokesProblemCreator, SubPoissonProblemCreator, polOrd > Type;
+        typedef Fem::SubStokesAlgorithm< GridType, SubStokesProblemCreator, SubPoissonProblemCreator, polOrd > Type;
       };
     };
 
@@ -332,7 +332,7 @@ namespace Fem
       template <int polOrd>
       struct Stepper
       {
-        typedef Fem::AdvectionDiffusionAlgorithm< GridType, SubNavierStokesProblemCreator, polOrd > Type;
+        typedef Fem::SubAdvectionDiffusionAlgorithm< GridType, SubNavierStokesProblemCreator, polOrd > Type;
       };
 
     };

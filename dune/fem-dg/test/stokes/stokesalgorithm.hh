@@ -248,7 +248,7 @@ namespace Fem
    *  \ingroup Algorithms
    */
   template <class GridImp, class ProblemTraits, class ElliptProblemTraits, int polOrd >
-  class StokesAlgorithm : public SubSteadyStateAlgorithm<GridImp,ProblemTraits,polOrd>
+  class SubStokesAlgorithm : public SubSteadyStateAlgorithm<GridImp,ProblemTraits,polOrd>
   {
 
     typedef SubSteadyStateAlgorithm<GridImp,ProblemTraits,polOrd> BaseType;
@@ -319,7 +319,7 @@ namespace Fem
 
   public:
 
-    explicit StokesAlgorithm( GridType& grid, ContainerType& container ) :
+    explicit SubStokesAlgorithm( GridType& grid, ContainerType& container ) :
       BaseType( grid, container.template adapter<1>() ),
       container_( container ),
       space_( container_.template adapter<1>().space() ),

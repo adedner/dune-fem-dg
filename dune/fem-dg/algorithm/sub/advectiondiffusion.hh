@@ -20,7 +20,7 @@ namespace Fem
   template <class GridImp,
             class ProblemTraits,
             int polynomialOrder >
-  struct AdvectionDiffusionAlgorithm
+  struct SubAdvectionDiffusionAlgorithm
     : public SubEvolutionAlgorithm< GridImp, ProblemTraits, polynomialOrder >
   {
 
@@ -75,8 +75,8 @@ namespace Fem
 
     typedef typename BaseType::ContainerType                  ContainerType;
 
-    AdvectionDiffusionAlgorithm( GridType& grid, ContainerType& container,
-                                 ExtraParameterTupleType tuple = ExtraParameterTupleType() ) :
+    SubAdvectionDiffusionAlgorithm( GridType& grid, ContainerType& container,
+                                    ExtraParameterTupleType tuple = ExtraParameterTupleType() ) :
       BaseType( grid, container ),
       //vSpace_( gridPart_ ),
       //velo_( "velocity", vSpace_ ),

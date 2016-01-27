@@ -129,7 +129,7 @@ namespace Fem
       struct Stepper
       {
         // this should be ok but could lead to a henn-egg problem
-        typedef Fem::EllipticAlgorithm< GridType, SubPoissonProblemCreator, polOrd > Type;
+        typedef Fem::SubEllipticAlgorithm< GridType, SubPoissonProblemCreator, polOrd > Type;
       };
 
     };

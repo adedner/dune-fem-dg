@@ -18,7 +18,7 @@ namespace Fem
   template <class GridImp,
             class ProblemTraits,
             int polynomialOrder >
-  struct AdvectionAlgorithm
+  struct SubAdvectionAlgorithm
     : public SubEvolutionAlgorithm< GridImp, ProblemTraits, polynomialOrder >
   {
     typedef SubEvolutionAlgorithm< GridImp, ProblemTraits, polynomialOrder > BaseType ;
@@ -74,8 +74,8 @@ namespace Fem
     typedef typename BaseType::ContainerType                   ContainerType;
 
     // constructor
-    AdvectionAlgorithm( GridType& grid, ContainerType& container,
-                        ExtraParameterTupleType tuple = ExtraParameterTupleType() ) :
+    SubAdvectionAlgorithm( GridType& grid, ContainerType& container,
+                           ExtraParameterTupleType tuple = ExtraParameterTupleType() ) :
       BaseType( grid, container ),
       tuple_( ),
       advectionOperator_( std::make_unique< ExplicitOperatorType >( gridPart_, problem(), tuple_, name() ) ),

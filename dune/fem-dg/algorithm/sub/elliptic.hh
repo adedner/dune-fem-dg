@@ -563,7 +563,7 @@ namespace Fem
   template <class GridImp,
             class ProblemTraits,
             int polOrder>
-  class EllipticAlgorithm
+  class SubEllipticAlgorithm
     : public SubSteadyStateAlgorithm< GridImp, ProblemTraits, polOrder >
   {
   public:
@@ -626,7 +626,7 @@ namespace Fem
     using BaseType::solver;
 
   public: /* ISTLLinearOperator */
-    EllipticAlgorithm( GridType& grid, ContainerType& container )
+    SubEllipticAlgorithm( GridType& grid, ContainerType& container )
     : BaseType( grid, container.adapter() ),
       container_( container ),
       gridPart_( container_.gridPart() ),
