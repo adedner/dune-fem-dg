@@ -3,6 +3,7 @@
 
 // iostream includes
 #include <iostream>
+#include <type_traits>
 
 #include <dune/fem-dg/misc/static_warning.hh>
 
@@ -371,7 +372,7 @@ namespace Fem
     typedef Dune::Fem::AdaptiveDiscreteFunction< RangeDFSpace >                                         RangeDiscreteFunctionType;
     typedef DomainDiscreteFunctionType                                                                  DiscreteFunctionType;
     typedef Dune::Fem::SparseRowLinearOperator< DomainDiscreteFunctionType, RangeDiscreteFunctionType > LinearOperatorType;
-    typedef typename Dune::conditional<symmetric,
+    typedef typename std::conditional<symmetric,
             Dune::Fem::CGInverseOperator< DiscreteFunctionType >,
             Dune::Fem::ParDGGeneralizedMinResInverseOperator< DiscreteFunctionType > > :: type          LinearInverseOperatorType;
   };
@@ -386,7 +387,7 @@ namespace Fem
     typedef Dune::Fem::AdaptiveDiscreteFunction< RangeDFSpace >                                         RangeDiscreteFunctionType;
     typedef DomainDiscreteFunctionType                                                                  DiscreteFunctionType;
     typedef Dune::Fem::SparseRowLinearOperator< DomainDiscreteFunctionType, RangeDiscreteFunctionType > LinearOperatorType;
-    typedef typename Dune::conditional<symmetric,
+    typedef typename std::conditional<symmetric,
             Dune::Fem::OEMCGOp< DiscreteFunctionType, LinearOperatorType >,
             Dune::Fem::OEMBICGSTABOp< DiscreteFunctionType, LinearOperatorType > > :: type              LinearInverseOperatorType;
   };
@@ -402,7 +403,7 @@ namespace Fem
     typedef Dune::Fem::ISTLBlockVectorDiscreteFunction< RangeDFSpace >                             RangeDiscreteFunctionType;
     typedef DomainDiscreteFunctionType                                                             DiscreteFunctionType;
     typedef Dune::Fem::ISTLLinearOperator< DomainDiscreteFunctionType, RangeDiscreteFunctionType > LinearOperatorType;
-    typedef typename Dune::conditional<symmetric,
+    typedef typename std::conditional<symmetric,
             Dune::Fem::ISTLCGOp< DiscreteFunctionType, LinearOperatorType >,
             Dune::Fem::ISTLBICGSTABOp< DiscreteFunctionType, LinearOperatorType > > :: type        LinearInverseOperatorType;
   };

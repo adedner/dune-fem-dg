@@ -1,6 +1,8 @@
 #ifndef DUNE_FEM_DG_DISCRETEMODELCOMMON_HH
 #define DUNE_FEM_DG_DISCRETEMODELCOMMON_HH
 
+#include <type_traits>
+
 #include <dune/fem/misc/fmatrixconverter.hh>
 #include <dune/fem/pass/localdg/discretemodel.hh>
 #include <dune/fem/quadrature/cachingquadrature.hh>
@@ -128,7 +130,7 @@ namespace Fem
     typedef FemDGBaseDiscreteModel< Traits, passUId, passGradId >  BaseType;
 
     // These type definitions allow a convenient access to arguments of pass.
-    integral_constant< int, passUId > uVar;
+    std::integral_constant< int, passUId > uVar;
 
   public:
     enum { advection = returnAdvectionPart  };
@@ -373,7 +375,7 @@ namespace Fem
     typedef AdvectionModel< OpTraits, passUId,  passGradId, returnAdvectionPart > BaseType ;
 
     // These type definitions allow a convenient access to arguments of pass.
-    integral_constant< int, passUId > uVar;
+    std::integral_constant< int, passUId > uVar;
 
   public:
     typedef typename BaseType :: ModelType          ModelType;

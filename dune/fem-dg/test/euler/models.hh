@@ -4,6 +4,7 @@
 // system includes
 #include <config.h>
 #include <cmath>
+#include <type_traits>
 
 // DUNE includes
 #include <dune/common/version.hh>
@@ -293,7 +294,7 @@ namespace Fem
     template <class LocalEvaluation>
     inline DomainType velocity(const LocalEvaluation& local) const
     {
-      integral_constant< int, 2 > uVar;
+      std::integral_constant< int, 2 > uVar;
       DomainType v;
       for(int i=0; i<dimDomain; ++i)
         v[i] = local.values()[ uVar ][i];

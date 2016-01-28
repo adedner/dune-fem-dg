@@ -1,6 +1,8 @@
 #ifndef DUNE_FEM_DG_FLUXDISCRETEMODEL_HH
 #define DUNE_FEM_DG_FLUXDISCRETEMODEL_HH
 
+#include <type_traits>
+
 // Dune-Fem includes
 #include <dune/fem/pass/localdg/discretemodel.hh>
 #include <dune/fem/quadrature/cachingquadrature.hh>
@@ -49,7 +51,7 @@ namespace Fem
     using BaseType :: outside;
 
     // This type definition allows a convenient access to arguments of passes.
-    integral_constant< int, passUId > uVar;
+    std::integral_constant< int, passUId > uVar;
 
   public:
     typedef GradientTraits< OpTraits, passUId >        Traits;
@@ -270,7 +272,7 @@ namespace Fem
     // These type definitions allow a convenient access to arguments of pass.
     using BaseType::uVar;
 
-    integral_constant< int, passGradId> sigmaVar;
+    std::integral_constant< int, passGradId> sigmaVar;
 
   public:
     enum { dimDomain = Traits::dimDomain };

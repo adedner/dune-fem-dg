@@ -2,6 +2,7 @@
 #define DUNE_LIMITERPASS_HH
 
 #include <vector>
+#include <type_traits>
 
 #include <dune/common/fvector.hh>
 #include <dune/common/timer.hh>
@@ -289,7 +290,7 @@ namespace Fem
   class LimiterDefaultDiscreteModel :
     public Fem::DGDiscreteModelDefaultWithInsideOutside< LimiterDefaultTraits<GlobalTraitsImp,Model,passId >, passId >
   {
-    integral_constant< int, passId > uVar;
+    std::integral_constant< int, passId > uVar;
 
   public:
     typedef LimiterDefaultTraits<GlobalTraitsImp,Model,passId> Traits;

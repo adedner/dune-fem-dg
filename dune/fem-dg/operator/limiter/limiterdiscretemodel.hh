@@ -1,6 +1,7 @@
 #ifndef DUNE_FEM_LIMITERDISCRETEMODEL_HH
 #define DUNE_FEM_LIMITERDISCRETEMODEL_HH
 
+#include <type_traits>
 #include <dune/fem/io/parameter.hh>
 
 #include <dune/fem-dg/operator/limiter/limitpass.hh>
@@ -37,7 +38,7 @@ namespace Fem
     typedef LimiterDefaultDiscreteModel<GlobalPassTraitsImp, Model, passId > BaseType;
 
     // These type definitions allow a convenient access to arguments of pass.
-    integral_constant< int, passId > uVar;
+    std::integral_constant< int, passId > uVar;
   public:
     typedef LimiterTraits<GlobalPassTraitsImp,Model, passId > Traits;
 

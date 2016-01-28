@@ -1,6 +1,7 @@
 #ifndef DUNE_FEM_DG_DIFFUSIONFLUXES_HH
 #define DUNE_FEM_DG_DIFFUSIONFLUXES_HH
 
+#include <type_traits>
 #include <dune/fem/function/localfunction/temporary.hh>
 #include <dune/fem/misc/fmatrixconverter.hh>
 #include <dune/fem/pass/localdg/discretemodel.hh>
@@ -20,13 +21,13 @@ namespace Fem
   template <class ArgumentVectorTuple, int passUId >
   class DGFluxTupleToVectorConverter
   {
-    integral_constant< int, passUId > uVar;
+    std::integral_constant< int, passUId > uVar;
     const ArgumentVectorTuple& vec_;
 
     //DGFluxTupleToVectorConverter(const DGFluxTupleToVectorConverter&);
   public:
     typedef typename ArgumentVectorTuple :: value_type TupleType;
-    typedef typename TupleType::template Value< integral_constant< int, passUId > >::Type ValueType;
+    typedef typename TupleType::template Value< std::integral_constant< int, passUId > >::Type ValueType;
 
     DGFluxTupleToVectorConverter(const ArgumentVectorTuple& vec)
       : vec_( vec )

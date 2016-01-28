@@ -3,6 +3,7 @@
 
 // iostream includes
 #include <iostream>
+#include <type_traits>
 
 // include gridpart
 #include <dune/fem/gridpart/leafgridpart.hh>
@@ -92,7 +93,7 @@ namespace Fem
     typedef DFSpace DiscreteFunctionSpaceType;
     typedef Dune::Fem::AdaptiveDiscreteFunction< DiscreteFunctionSpaceType > DiscreteFunctionType;
     typedef Dune::Fem::SparseRowLinearOperator< DiscreteFunctionType, DiscreteFunctionType > LinearOperatorType;
-    typedef typename Dune::conditional<symmetric,
+    typedef typename std::conditional<symmetric,
             Dune::Fem::CGInverseOperator< DiscreteFunctionType >,
             Dune::Fem::ParDGGeneralizedMinResInverseOperator< DiscreteFunctionType > > :: type
             LinearInverseOperatorType;
@@ -107,7 +108,7 @@ namespace Fem
     // this work with a discrete function implementation based on a double* dof storage
     typedef Dune::Fem::AdaptiveDiscreteFunction< DiscreteFunctionSpaceType > DiscreteFunctionType;
     typedef Dune::Fem::SparseRowLinearOperator< DiscreteFunctionType, DiscreteFunctionType > LinearOperatorType;
-    typedef typename Dune::conditional<symmetric,
+    typedef typename std::conditional<symmetric,
             Dune::Fem::OEMCGOp< DiscreteFunctionType, LinearOperatorType >,
             Dune::Fem::OEMBICGSTABOp< DiscreteFunctionType, LinearOperatorType > > :: type
             LinearInverseOperatorType;
@@ -123,7 +124,7 @@ namespace Fem
     // here we need the special ISTLBlockVectorDiscreteFunction
     typedef Dune::Fem::ISTLBlockVectorDiscreteFunction< DiscreteFunctionSpaceType > DiscreteFunctionType;
     typedef Dune::Fem::ISTLLinearOperator< DiscreteFunctionType, DiscreteFunctionType > LinearOperatorType;
-    typedef typename Dune::conditional<symmetric,
+    typedef typename std::conditional<symmetric,
             Dune::Fem::ISTLCGOp< DiscreteFunctionType, LinearOperatorType >,
             Dune::Fem::ISTLBICGSTABOp< DiscreteFunctionType, LinearOperatorType > > :: type
             LinearInverseOperatorType;
