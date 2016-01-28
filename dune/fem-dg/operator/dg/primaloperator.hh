@@ -266,7 +266,7 @@ namespace Fem
     typedef typename Traits::ExtraParameterTupleType                              ExtraParameterTupleType;
 
     typedef typename Traits::ModelType                                            ModelType;
-    typedef typename Traits::FluxType                                             AdvectionFluxType;
+    typedef typename Traits::AdvectionFluxType                                    AdvectionFluxType;
     enum { dimRange  = ModelType::dimRange };
     enum { dimDomain = ModelType::Traits::dimDomain };
 
@@ -285,7 +285,7 @@ namespace Fem
     typedef typename ModelType::ProblemType                                       ProblemType;
     typedef typename ModelType::Traits::GridType                                  GridType;
 
-    typedef typename Traits::DomainType                                           DomainType;
+    typedef typename ModelType::DomainType                                        DomainType;
 
     typedef typename Traits::DiscreteFunctionSpaceType                            SpaceType;
     typedef typename Traits::DestinationType                                      DestinationType;
@@ -307,7 +307,7 @@ namespace Fem
     typedef LocalCDGPass   < DiscreteModel1Type, Pass1Type, advectPassId >        Pass2Type;
 #endif
 
-    typedef typename LimiterDiscreteModelType::LimiterIndicatorType               LimiterIndicatorType;
+    typedef typename LimiterDiscreteModelType::IndicatorType                      LimiterIndicatorType;
     typedef typename LimiterIndicatorType::DiscreteFunctionSpaceType              LimiterIndicatorSpaceType;
 
     template< class Limiter, int pO >

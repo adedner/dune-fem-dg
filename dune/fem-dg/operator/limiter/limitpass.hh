@@ -610,7 +610,7 @@ namespace Fem
     typedef typename BaseType::PassIds PassIds;
 
     // Types from the base class
-    typedef typename BaseType::Entity EntityType;
+    typedef typename BaseType::EntityType EntityType;
 
     typedef typename BaseType::ArgumentType ArgumentType;
 

@@ -55,6 +55,8 @@ namespace Fem
     typedef EulerModelTraits< GridPartType, ProblemImp > Traits;
     typedef typename Traits::ProblemType                 ProblemType;
 
+    typedef std::integral_constant< int, 0 > uVar;
+
     enum { dimDomain = Traits::dimDomain };
     enum { dimRange = Traits::dimRange };
 
@@ -294,11 +296,11 @@ namespace Fem
     template <class LocalEvaluation>
     inline DomainType velocity(const LocalEvaluation& local) const
     {
-      std::integral_constant< int, 2 > uVar;
+      //TODO CHECK THIS!!!
       DomainType v;
       for(int i=0; i<dimDomain; ++i)
-        v[i] = local.values()[ uVar ][i];
-      v *= EulerAnalyticalFlux<dimDomain>().rhoeps(local.values()[uVar]);
+        v[i] *= std::get<0>(local.values().template at< uVar>())[i];
+      v *= EulerAnalyticalFlux<dimDomain>().rhoeps( std::get<0>(local.values().template at< uVar>() ) );
       return v;
     }
 
