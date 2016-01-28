@@ -222,9 +222,9 @@ namespace Fem
 
     typedef typename BaseType::IOTupleType                           IOTupleType;
     typedef typename BaseType::AdaptIndicatorType                    AdaptIndicatorType;
-    typedef typename BaseType::DiagnosticsHandlerType                DiagnosticsHandlerType;
-    typedef typename BaseType::SolverMonitorHandlerType              SolverMonitorHandlerType;
-    typedef typename BaseType::AdditionalOutputHandlerType           AdditionalOutputHandlerType;
+    typedef typename BaseType::DiagnosticsType                       DiagnosticsType;
+    typedef typename BaseType::SolverMonitorType                     SolverMonitorType;
+    typedef typename BaseType::AdditionalOutputType                  AdditionalOutputType;
 
 
     typedef typename DiscreteFunctionType::DiscreteFunctionSpaceType DiscreteFunctionSpaceType;
@@ -266,9 +266,9 @@ namespace Fem
         rhsOperator_( doCreateRhsOperator() ),
         solver_( nullptr ),
         ioTuple_( new IOTupleType( std::make_tuple( solution_.get(), exactSolution_.get() ) ) ),
-        solverMonitorHandler_( name() ),
-        diagnosticsHandler_( name() ),
-        additionalOutputHandler_( name() )
+        solverMonitor_( name() ),
+        diagnostics_( name() ),
+        additionalOutput_( name() )
     {}
 
     typename SolverType::type* solver()
@@ -308,18 +308,18 @@ namespace Fem
     virtual AdaptationDiscreteFunctionType* adaptationSolution () { return solution_.get(); }
 
     //SOLVERMONITOR
-    virtual SolverMonitorHandlerType* monitor() { return solverMonitorHandler_.value(); }
+    virtual SolverMonitorType* monitor() { return solverMonitor_.value(); }
 
     //ADDITIONALOUTPUT
-    virtual AdditionalOutputHandlerType* additionalOutput() { return additionalOutputHandler_.value(); }
+    virtual AdditionalOutputType* additionalOutput() { return additionalOutput_.value(); }
 
     //DATAWRITING
     IOTupleType& dataTuple () { return *ioTuple_; }
 
     //DIAGNOSTICS
-    virtual DiagnosticsHandlerType* diagnostics()
+    virtual DiagnosticsType* diagnostics()
     {
-      return diagnosticsHandler_.value();
+      return diagnostics_.value();
     }
 
   protected:
@@ -343,11 +343,11 @@ namespace Fem
     virtual void doInitialize ( const int loop )
     {
       //initialize solverMonitor
-      solverMonitorHandler_.registerData( "GridWidth", &solverMonitorHandler_.monitor().gridWidth, nullptr, true );
-      solverMonitorHandler_.registerData( "Elements", &solverMonitorHandler_.monitor().elements, nullptr, true );
-      solverMonitorHandler_.registerData( "TimeSteps", &solverMonitorHandler_.monitor().timeSteps, nullptr, true );
-      solverMonitorHandler_.registerData( "ILS", &solverMonitorHandler_.monitor().ils_iterations, &solverIterations_ );
-      solverMonitorHandler_.registerData( "MaxILS", &solverMonitorHandler_.monitor().max_ils_iterations );
+      solverMonitor_.registerData( "GridWidth", &solverMonitor_.monitor().gridWidth, nullptr, true );
+      solverMonitor_.registerData( "Elements", &solverMonitor_.monitor().elements, nullptr, true );
+      solverMonitor_.registerData( "TimeSteps", &solverMonitor_.monitor().timeSteps, nullptr, true );
+      solverMonitor_.registerData( "ILS", &solverMonitor_.monitor().ils_iterations, &solverIterations_ );
+      solverMonitor_.registerData( "MaxILS", &solverMonitor_.monitor().max_ils_iterations );
     }
 
     virtual void doPreSolve ( const int loop )
@@ -399,9 +399,9 @@ namespace Fem
 
     std::shared_ptr< typename SolverType::type > solver_;
 
-    SolverMonitorHandlerOptional< SolverMonitorHandlerType >       solverMonitorHandler_;
-    DiagnosticsHandlerOptional< DiagnosticsHandlerType >           diagnosticsHandler_;
-    AdditionalOutputHandlerOptional< AdditionalOutputHandlerType > additionalOutputHandler_;
+    SolverMonitorOptional< SolverMonitorType >       solverMonitor_;
+    DiagnosticsOptional< DiagnosticsType >           diagnostics_;
+    AdditionalOutputOptional< AdditionalOutputType > additionalOutput_;
   };
 
 

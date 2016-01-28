@@ -78,7 +78,7 @@ namespace Fem
       {
         typedef ProblemInterfaceType                               ProblemType;
         typedef ProblemInterfaceType                               InitialDataType;
-        typedef Fem::EulerModel< GridPartType, InitialDataType >   ModelType;
+        typedef EulerModel< GridPartType, InitialDataType >        ModelType;
 
         template< class Solution, class Model, class ExactFunction, class TimeProvider >
         static void addEOCErrors ( TimeProvider& tp, Solution &u, Model &model, ExactFunction &f )
@@ -135,17 +135,17 @@ namespace Fem
         typedef Estimator< DiscreteFunctionType, typename AnalyticalTraits::ProblemType >   GradientIndicatorType ;
       public:
 
-        typedef Fem::AdaptIndicator< IndicatorType, GradientIndicatorType >                 AdaptIndicatorType;
-        typedef Fem::SubSolverMonitorHandler< Fem::SolverMonitor >                          SolverMonitorHandlerType;
-        typedef Fem::SubDiagnosticsHandler< Diagnostics >                                   DiagnosticsHandlerType;
-        typedef Fem::ExactSolutionOutputHandler< DiscreteFunctionType >                     AdditionalOutputHandlerType;
+        typedef AdaptIndicator< IndicatorType, GradientIndicatorType >                 AdaptIndicatorType;
+        typedef SubSolverMonitor< SolverMonitor >                          SolverMonitorType;
+        typedef SubDiagnostics< Diagnostics >                                   DiagnosticsType;
+        typedef ExactSolutionOutput< DiscreteFunctionType >                     AdditionalOutputType;
       };
 
       template <int polOrd>
       struct Algorithm
       {
        // this should be ok but could lead to a henn-egg problem
-        typedef Fem::SubAdvectionAlgorithm< GridType, SubEulerProblemCreator, polOrd > Type;
+        typedef SubAdvectionAlgorithm< GridType, SubEulerProblemCreator, polOrd > Type;
       };
 
     };
@@ -153,7 +153,7 @@ namespace Fem
     template <int polOrd>
     struct Algorithm
     {
-      typedef Fem::EvolutionAlgorithm< polOrd, UncoupledSubAlgorithms, SubEulerProblemCreator > Type;
+      typedef EvolutionAlgorithm< polOrd, UncoupledSubAlgorithms, SubEulerProblemCreator > Type;
     };
 
     typedef GridImp                                         GridType;
@@ -161,7 +161,7 @@ namespace Fem
     static inline std::string moduleName() { return ""; }
 
     static inline GridPtr<GridType>
-    initializeGrid() { return Fem::DefaultGridInitializer< GridType >::initialize(); }
+    initializeGrid() { return DefaultGridInitializer< GridType >::initialize(); }
 
 
   };

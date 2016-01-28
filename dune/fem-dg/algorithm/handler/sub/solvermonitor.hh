@@ -13,11 +13,62 @@ namespace Fem
 {
 
   template< class... SolverMonitorImp >
-  class SubSolverMonitorHandler;
+  class SubSolverMonitor;
+
+
+  template<>
+  class SubSolverMonitor<>
+  {
+    //simple no solver monitor handler
+    //capturing most famous issues
+    struct NoSolverMonitorType
+    {
+      double gridWidth;
+      unsigned long int elements;
+      int timeSteps;
+      int newton_iterations;
+      int ils_iterations;
+      int operator_calls;
+      int max_newton_iterations;
+      int max_ils_iterations;
+      double avgTimeStep;
+      double minTimeStep;
+      double maxTimeStep;
+    };
+  public:
+
+    typedef NoSolverMonitorType    SolverMonitorType;
+
+    SubSolverMonitor( const std::string keyPrefix = "" )
+      : monitor_()
+    {}
+
+    template <class ... Args>
+    void registerData(Args&& ... ) const {}
+
+    template <class ... Args>
+    double getData(Args&& ... ) const { return 0.0; }
+
+    template <class ... Args>
+    void print(Args&& ... ) const {}
+
+    template <class ... Args>
+    void step(Args&& ... ) const {}
+
+    template <class ... Args>
+    void finalize(Args&& ... ) const {}
+
+    template <class ... Args>
+    SolverMonitorType& monitor(Args&& ... ) { return monitor_; }
+
+  private:
+    SolverMonitorType monitor_;
+
+  };
 
 
   template< class SolverMonitorImp >
-  class SubSolverMonitorHandler< SolverMonitorImp >
+  class SubSolverMonitor< SolverMonitorImp >
   {
   public:
     typedef SolverMonitorImp               SolverMonitorType;
@@ -25,7 +76,7 @@ namespace Fem
     typedef std::map< std::string, std::tuple< double*, double*, bool > > DataDoubleType;
     typedef std::map< std::string, std::tuple< long unsigned int*, long unsigned int*, bool > >       DataIntType;
 
-    SubSolverMonitorHandler( const std::string keyPrefix = "" )
+    SubSolverMonitor( const std::string keyPrefix = "" )
       : solverMonitor_()
     {}
 
@@ -103,77 +154,26 @@ namespace Fem
   };
 
 
-  template<>
-  class SubSolverMonitorHandler<>
-  {
-    //simple no solver monitor handler
-    //capturing most famous issues
-    struct NoSolverMonitorType
-    {
-      double gridWidth;
-      unsigned long int elements;
-      int timeSteps;
-      int newton_iterations;
-      int ils_iterations;
-      int operator_calls;
-      int max_newton_iterations;
-      int max_ils_iterations;
-      double avgTimeStep;
-      double minTimeStep;
-      double maxTimeStep;
-    };
-  public:
-
-    typedef NoSolverMonitorType    SolverMonitorType;
-
-    SubSolverMonitorHandler( const std::string keyPrefix = "" )
-      : monitor_()
-    {}
-
-    template <class ... Args>
-    void registerData(Args&& ... ) const {}
-
-    template <class ... Args>
-    double getData(Args&& ... ) const { return 0.0; }
-
-    template <class ... Args>
-    void print(Args&& ... ) const {}
-
-    template <class ... Args>
-    void step(Args&& ... ) const {}
-
-    template <class ... Args>
-    void finalize(Args&& ... ) const {}
-
-    template <class ... Args>
-    SolverMonitorType& monitor(Args&& ... ) { return monitor_; }
-
-  private:
-    SolverMonitorType monitor_;
-
-  };
-
-
   template< class Obj >
-  class SolverMonitorHandlerOptional
+  class SolverMonitorOptional
     : public OptionalObject< Obj >
   {
     typedef OptionalObject< Obj >    BaseType;
   public:
     template< class... Args >
-    SolverMonitorHandlerOptional( Args&&... args )
+    SolverMonitorOptional( Args&&... args )
       : BaseType( std::forward<Args>(args)... )
     {}
   };
 
   template<>
-  class SolverMonitorHandlerOptional< void >
-    : public OptionalNullPtr< SubSolverMonitorHandler<> >
+  class SolverMonitorOptional< void >
+    : public OptionalNullPtr< SubSolverMonitor<> >
   {
-    typedef OptionalNullPtr< SubSolverMonitorHandler<> >    BaseType;
+    typedef OptionalNullPtr< SubSolverMonitor<> >    BaseType;
   public:
     template< class... Args >
-    SolverMonitorHandlerOptional( Args&&... args )
+    SolverMonitorOptional( Args&&... args )
       : BaseType( std::forward<Args>(args)... )
     {}
   };

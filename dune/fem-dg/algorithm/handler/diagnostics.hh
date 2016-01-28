@@ -36,10 +36,10 @@ namespace Fem
     class LoopCallee
     {
       template<class C, class T, class... Args >
-      static typename enable_if< std::is_void< typename std::remove_pointer<T>::type::DiagnosticsHandlerType >::value >::type
+      static typename enable_if< std::is_void< typename std::remove_pointer<T>::type::DiagnosticsType >::value >::type
       getDiagnostics( T, Args&& ... ){}
       template<class C, class T, class... Args >
-      static typename enable_if< !std::is_void< typename std::remove_pointer<T>::type::DiagnosticsHandlerType >::value >::type
+      static typename enable_if< !std::is_void< typename std::remove_pointer<T>::type::DiagnosticsType >::value >::type
       getDiagnostics( T elem, Args &&... a )
       {
         if( elem->diagnostics() )

@@ -18,12 +18,24 @@ namespace Dune
 namespace Fem
 {
 
+  class NoOutput
+  {
+  public:
+    template< class... Args >
+    NoOutput( Args&& ...){}
+
+    template< class... Args >
+    void step( Args&& ...  ){}
+  };
+
+
+
   template< class DiscreteFunctionImp >
-  class Cons2PrimOutputHandler
+  class Cons2PrimOutput
   {
     public:
 
-    Cons2PrimOutputHandler( const DiscreteFunctionImp& df )
+    Cons2PrimOutput( const DiscreteFunctionImp& df )
       : solution_( df )
     {}
 
@@ -91,18 +103,18 @@ namespace Fem
 
 
   template< class DiscreteFunctionImp >
-  class ExactSolutionOutputHandler
+  class ExactSolutionOutput
   {
     public:
     typedef DiscreteFunctionImp                                                      DiscreteFunctionType;
     typedef typename DiscreteFunctionType::DiscreteFunctionSpaceType::GridPartType   GridPartType;
 
-    ExactSolutionOutputHandler( DiscreteFunctionType& df, const std::string keyPrefix = "" )
+    ExactSolutionOutput( DiscreteFunctionType& df, const std::string keyPrefix = "" )
       : solution_( &df )
     {}
 
     template< class... Args >
-    ExactSolutionOutputHandler( Args&&... )
+    ExactSolutionOutput( Args&&... )
       : solution_( nullptr )
     {}
 
@@ -123,36 +135,28 @@ namespace Fem
     DiscreteFunctionType* solution_;
   };
 
-  class NoOutputHandler
-  {
-  public:
-    template< class... Args >
-    NoOutputHandler( Args&& ...){}
 
-    template< class... Args >
-    void step( Args&& ...  ){}
-  };
 
   template< class Obj >
-  class AdditionalOutputHandlerOptional
+  class AdditionalOutputOptional
     : public OptionalObject< Obj >
   {
     typedef OptionalObject< Obj >    BaseType;
   public:
     template< class... Args >
-    AdditionalOutputHandlerOptional( Args&&... args )
+    AdditionalOutputOptional( Args&&... args )
       : BaseType( std::forward<Args>(args)... )
     {}
   };
 
   template<>
-  class AdditionalOutputHandlerOptional< void >
-    : public OptionalNullPtr< NoOutputHandler >
+  class AdditionalOutputOptional< void >
+    : public OptionalNullPtr< NoOutput >
   {
-    typedef OptionalNullPtr< NoOutputHandler >    BaseType;
+    typedef OptionalNullPtr< NoOutput >    BaseType;
   public:
     template< class... Args >
-    AdditionalOutputHandlerOptional( Args&&... args )
+    AdditionalOutputOptional( Args&&... args )
       : BaseType( std::forward<Args>(args)... )
     {}
   };

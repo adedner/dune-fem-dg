@@ -38,24 +38,15 @@ namespace Fem
    *
    *  Structure of SubAlgorithms
    */
-
-  /**
-   *  \addtogroup Algorithm Handlers
-   *
-   *  \ingroup Algorithms
-   *
-   *  Handlers...
-   */
-
   template< class Grid, class ProblemTraits, int polOrder >
   struct SubAlgorithmInterfaceTraits
   {
 
   private:
     CHECK_TYPEDEF_EXISTS( AdaptIndicatorType )
-    CHECK_TYPEDEF_EXISTS( AdditionalOutputHandlerType )
-    CHECK_TYPEDEF_EXISTS( SolverMonitorHandlerType )
-    CHECK_TYPEDEF_EXISTS( DiagnosticsHandlerType )
+    CHECK_TYPEDEF_EXISTS( AdditionalOutputType )
+    CHECK_TYPEDEF_EXISTS( SolverMonitorType )
+    CHECK_TYPEDEF_EXISTS( DiagnosticsType )
 
     typedef ProblemTraits                                         Traits;
 
@@ -89,11 +80,11 @@ namespace Fem
     typedef DiscreteFunctionType                                  LimitDiscreteFunctionType;
     typedef DiscreteFunctionType                                  AdaptationDiscreteFunctionType;
 
-    typedef CovariantTuple< typename DiscreteTraits::IOTupleType >          IOTupleType;
-    typedef typename AdaptIndicatorTypes< DiscreteTraits >::type            AdaptIndicatorType;
-    typedef typename AdditionalOutputHandlerTypes< DiscreteTraits >::type   AdditionalOutputHandlerType;
-    typedef typename SolverMonitorHandlerTypes< DiscreteTraits >::type      SolverMonitorHandlerType;
-    typedef typename DiagnosticsHandlerTypes< DiscreteTraits >::type        DiagnosticsHandlerType;
+    typedef CovariantTuple< typename DiscreteTraits::IOTupleType > IOTupleType;
+    typedef typename AdaptIndicatorTypes< DiscreteTraits >::type   AdaptIndicatorType;
+    typedef typename AdditionalOutputTypes< DiscreteTraits >::type AdditionalOutputType;
+    typedef typename SolverMonitorTypes< DiscreteTraits >::type    SolverMonitorType;
+    typedef typename DiagnosticsTypes< DiscreteTraits >::type      DiagnosticsType;
   };
 
 
@@ -149,9 +140,9 @@ namespace Fem
 
     typedef typename Traits::IOTupleType                          IOTupleType;
     typedef typename Traits::AdaptIndicatorType                   AdaptIndicatorType;
-    typedef typename Traits::DiagnosticsHandlerType               DiagnosticsHandlerType;
-    typedef typename Traits::SolverMonitorHandlerType             SolverMonitorHandlerType;
-    typedef typename Traits::AdditionalOutputHandlerType          AdditionalOutputHandlerType;
+    typedef typename Traits::DiagnosticsType                      DiagnosticsType;
+    typedef typename Traits::SolverMonitorType                    SolverMonitorType;
+    typedef typename Traits::AdditionalOutputType                 AdditionalOutputType;
 
 
     /**
@@ -231,13 +222,13 @@ namespace Fem
     virtual IOTupleType& dataTuple () = 0;
 
     //SOLVERMONITOR
-    virtual SolverMonitorHandlerType* monitor() { return nullptr; }
+    virtual SolverMonitorType* monitor() { return nullptr; }
 
     //DIAGNOSTICS
-    virtual DiagnosticsHandlerType* diagnostics() { return nullptr; }
+    virtual DiagnosticsType* diagnostics() { return nullptr; }
 
     //ADDITIONALOUTPUT
-    virtual AdditionalOutputHandlerType* additionalOutput() { return nullptr; }
+    virtual AdditionalOutputType* additionalOutput() { return nullptr; }
 
     //LIMITING
     virtual void limit(){}

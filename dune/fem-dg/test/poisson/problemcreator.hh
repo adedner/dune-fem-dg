@@ -92,7 +92,7 @@ namespace Fem
 
       static ProblemInterfaceType* problem()
       {
-        int probNr = Fem::Parameter::getValue< int > ( "problem" );
+        int probNr = Parameter::getValue< int > ( "problem" );
         return new Poisson::Problem< GridType, DIMRANGE > ( probNr );
       }
 
@@ -120,15 +120,15 @@ namespace Fem
           typedef typename AC::template LinearSolvers< DFSpaceType, false/*true*/> type;
         };
 
-        typedef Fem::SubSolverMonitorHandler< Fem::SolverMonitor >                 SolverMonitorHandlerType;
-        typedef Fem::SubDiagnosticsHandler< Diagnostics >                          DiagnosticsHandlerType;
+        typedef SubSolverMonitor< SolverMonitor >                                  SolverMonitorType;
+        typedef SubDiagnostics< Diagnostics >                                      DiagnosticsType;
       };
 
       template <int polOrd>
       struct Algorithm
       {
         // this should be ok but could lead to a henn-egg problem
-        typedef Fem::SubEllipticAlgorithm< GridType, SubPoissonProblemCreator, polOrd > Type;
+        typedef SubEllipticAlgorithm< GridType, SubPoissonProblemCreator, polOrd > Type;
       };
 
     };
@@ -136,7 +136,7 @@ namespace Fem
     template <int polOrd>
     struct Algorithm
     {
-      typedef Fem::SteadyStateAlgorithm< polOrd, UncoupledSubAlgorithms, SubPoissonProblemCreator > Type;
+      typedef SteadyStateAlgorithm< polOrd, UncoupledSubAlgorithms, SubPoissonProblemCreator > Type;
     };
 
     typedef GridImp                                         GridType;
@@ -144,7 +144,7 @@ namespace Fem
     static inline std::string moduleName() { return ""; }
 
     static inline GridPtr<GridType>
-    initializeGrid() { return Fem::DefaultGridInitializer< GridType >::initialize(); }
+    initializeGrid() { return DefaultGridInitializer< GridType >::initialize(); }
 
 
 

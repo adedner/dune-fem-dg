@@ -139,15 +139,15 @@ namespace Fem
             typedef typename AC::template LinearSolvers< DFSpaceType, true> type;
           };
 
-          typedef Fem::SubSolverMonitorHandler< Fem::SolverMonitor >                 SolverMonitorHandlerType;
-          typedef Fem::SubDiagnosticsHandler< Diagnostics >                          DiagnosticsHandlerType;
+          typedef SubSolverMonitor< SolverMonitor >                                  SolverMonitorType;
+          typedef SubDiagnostics< Diagnostics >                                      DiagnosticsType;
         };
 
         template <int polOrd>
         struct Algorithm
         {
           // this should be ok but could lead to a henn-egg problem
-          typedef Fem::SubEllipticAlgorithm< GridType, SubPoissonProblemCreator, polOrd > Type;
+          typedef SubEllipticAlgorithm< GridType, SubPoissonProblemCreator, polOrd > Type;
         };
       };
 
@@ -216,14 +216,14 @@ namespace Fem
 
         static_assert( (int)DFSpaceType::FunctionSpaceType::dimRange == 1 , "pressure dimrange does not fit");
 
-        typedef Fem::SubSolverMonitorHandler< Fem::SolverMonitor >                   SolverMonitorHandlerType;
-        typedef Fem::SubDiagnosticsHandler< Diagnostics >                            DiagnosticsHandlerType;
+        typedef SubSolverMonitor< SolverMonitor >                                    SolverMonitorType;
+        typedef SubDiagnostics< Diagnostics >                                        DiagnosticsType;
       };
 
       template <int polOrd>
       struct Algorithm
       {
-        typedef Fem::SubStokesAlgorithm< GridType, SubStokesProblemCreator, SubPoissonProblemCreator, polOrd > Type;
+        typedef SubStokesAlgorithm< GridType, SubStokesProblemCreator, SubPoissonProblemCreator, polOrd > Type;
       };
     };
 
@@ -231,7 +231,7 @@ namespace Fem
     template <int polOrd>
     struct Algorithm
     {
-      typedef Fem::SteadyStateAlgorithm< polOrd, UncoupledSubAlgorithms, SubStokesProblemCreator > Type;
+      typedef SteadyStateAlgorithm< polOrd, UncoupledSubAlgorithms, SubStokesProblemCreator > Type;
     };
 
     typedef GridImp                                         GridType;
@@ -239,7 +239,7 @@ namespace Fem
     static inline std::string moduleName() { return ""; }
 
     static inline GridPtr<GridType>
-    initializeGrid() { return Fem::PoissonGridInitializer< GridType >::initializeGrid(); }
+    initializeGrid() { return PoissonGridInitializer< GridType >::initializeGrid(); }
 
 
   };

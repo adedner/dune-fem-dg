@@ -187,9 +187,9 @@ namespace Fem
 
     typedef typename BaseType::IOTupleType                           IOTupleType;
     typedef typename BaseType::AdaptIndicatorType                    AdaptIndicatorType;
-    typedef typename BaseType::DiagnosticsHandlerType                DiagnosticsHandlerType;
-    typedef typename BaseType::SolverMonitorHandlerType              SolverMonitorHandlerType;
-    typedef typename BaseType::AdditionalOutputHandlerType           AdditionalOutputHandlerType;
+    typedef typename BaseType::DiagnosticsType                DiagnosticsType;
+    typedef typename BaseType::SolverMonitorType              SolverMonitorType;
+    typedef typename BaseType::AdditionalOutputType           AdditionalOutputType;
 
     typedef typename DiscreteFunctionType::DiscreteFunctionSpaceType DiscreteFunctionSpaceType;
 
@@ -224,9 +224,9 @@ namespace Fem
       exactSolution_( container_.exactSolution() ),
       solver_( nullptr ),
       ioTuple_( new IOTupleType( std::make_tuple( solution_.get(), exactSolution_.get() ) ) ),
-      diagnosticsHandler_( name() ),
-      solverMonitorHandler_( name() ),
-      additionalOutputHandler_( nullptr ),
+      diagnostics_( name() ),
+      solverMonitor_( name() ),
+      additionalOutput_( nullptr ),
       odeSolverMonitor_()
     {}
 
@@ -251,13 +251,13 @@ namespace Fem
     virtual double gridWidth () const { return GridWidth::calcGridWidth( gridPart_ ); }
 
     //SOLVERMONITOR
-    virtual SolverMonitorHandlerType* monitor() { return solverMonitorHandler_.value(); }
+    virtual SolverMonitorType* monitor() { return solverMonitor_.value(); }
 
     //DIAGNOSTICS
-    virtual DiagnosticsHandlerType* diagnostics() { return diagnosticsHandler_.value(); }
+    virtual DiagnosticsType* diagnostics() { return diagnostics_.value(); }
 
     //ADDITIONALOUTPUT
-    virtual AdditionalOutputHandlerType* additionalOutput() { return additionalOutputHandler_.value(); }
+    virtual AdditionalOutputType* additionalOutput() { return additionalOutput_.value(); }
 
     //LIMITING
     virtual void limit(){}
@@ -303,28 +303,28 @@ namespace Fem
       solver()->initialize( solution() );
 
       //initialize solverMonitor
-      if( solverMonitorHandler_ )
+      if( solverMonitor_ )
       {
-        solverMonitorHandler_.registerData( "GridWidth", &solverMonitorHandler_.monitor().gridWidth, nullptr, true );
-        solverMonitorHandler_.registerData( "Elements", &solverMonitorHandler_.monitor().elements, nullptr, true );
-        solverMonitorHandler_.registerData( "TimeSteps", &solverMonitorHandler_.monitor().timeSteps, nullptr, true );
-        solverMonitorHandler_.registerData( "AvgTimeStep", &solverMonitorHandler_.monitor().avgTimeStep );
-        solverMonitorHandler_.registerData( "MinTimeStep", &solverMonitorHandler_.monitor().minTimeStep );
-        solverMonitorHandler_.registerData( "MaxTimeStep", &solverMonitorHandler_.monitor().maxTimeStep );
-        solverMonitorHandler_.registerData( "Newton", &solverMonitorHandler_.monitor().newton_iterations,       &odeSolverMonitor_.newtonIterations_);
-        solverMonitorHandler_.registerData( "ILS", &solverMonitorHandler_.monitor().ils_iterations,             &odeSolverMonitor_.linearSolverIterations_);
-        //solverMonitorHandler_.registerData( "OC", &solverMonitorHandler_.monitor().operator_calls,              &odeSolverMonitor_.spaceOperatorCalls_);
-        solverMonitorHandler_.registerData( "MaxNewton",&solverMonitorHandler_.monitor().max_newton_iterations, &odeSolverMonitor_.maxNewtonIterations_ );
-        solverMonitorHandler_.registerData( "MaxILS",&solverMonitorHandler_.monitor().max_ils_iterations,    &odeSolverMonitor_.maxLinearSolverIterations_ );
+        solverMonitor_.registerData( "GridWidth", &solverMonitor_.monitor().gridWidth, nullptr, true );
+        solverMonitor_.registerData( "Elements", &solverMonitor_.monitor().elements, nullptr, true );
+        solverMonitor_.registerData( "TimeSteps", &solverMonitor_.monitor().timeSteps, nullptr, true );
+        solverMonitor_.registerData( "AvgTimeStep", &solverMonitor_.monitor().avgTimeStep );
+        solverMonitor_.registerData( "MinTimeStep", &solverMonitor_.monitor().minTimeStep );
+        solverMonitor_.registerData( "MaxTimeStep", &solverMonitor_.monitor().maxTimeStep );
+        solverMonitor_.registerData( "Newton", &solverMonitor_.monitor().newton_iterations,       &odeSolverMonitor_.newtonIterations_);
+        solverMonitor_.registerData( "ILS", &solverMonitor_.monitor().ils_iterations,             &odeSolverMonitor_.linearSolverIterations_);
+        //solverMonitor_.registerData( "OC", &solverMonitor_.monitor().operator_calls,              &odeSolverMonitor_.spaceOperatorCalls_);
+        solverMonitor_.registerData( "MaxNewton",&solverMonitor_.monitor().max_newton_iterations, &odeSolverMonitor_.maxNewtonIterations_ );
+        solverMonitor_.registerData( "MaxILS",&solverMonitor_.monitor().max_ils_iterations,    &odeSolverMonitor_.maxLinearSolverIterations_ );
       }
 
-      //initialize diagnosticsHandler
-      if( diagnosticsHandler_ )
+      //initialize diagnostics
+      if( diagnostics_ )
       {
-        diagnosticsHandler_.registerData( "OperatorTime", &odeSolverMonitor_.operatorTime_ );
-        diagnosticsHandler_.registerData( "OdeSolveTime", &odeSolverMonitor_.odeSolveTime_ );
-        diagnosticsHandler_.registerData( "OverallTimer", &overallTime_ );
-        diagnosticsHandler_.registerData( "NumberOfElements", &odeSolverMonitor_.numberOfElements_ );
+        diagnostics_.registerData( "OperatorTime", &odeSolverMonitor_.operatorTime_ );
+        diagnostics_.registerData( "OdeSolveTime", &odeSolverMonitor_.odeSolveTime_ );
+        diagnostics_.registerData( "OverallTimer", &overallTime_ );
+        diagnostics_.registerData( "NumberOfElements", &odeSolverMonitor_.numberOfElements_ );
       }
     }
 
@@ -362,10 +362,10 @@ namespace Fem
     std::shared_ptr< typename SolverType::type > solver_;
     std::unique_ptr< IOTupleType >               ioTuple_;
 
-    DiagnosticsHandlerOptional< DiagnosticsHandlerType >           diagnosticsHandler_;
-    SolverMonitorHandlerOptional< SolverMonitorHandlerType >       solverMonitorHandler_;
-    AdditionalOutputHandlerOptional< AdditionalOutputHandlerType > additionalOutputHandler_;
-    typename SolverType::type::MonitorType                         odeSolverMonitor_;
+    DiagnosticsOptional< DiagnosticsType >           diagnostics_;
+    SolverMonitorOptional< SolverMonitorType >       solverMonitor_;
+    AdditionalOutputOptional< AdditionalOutputType > additionalOutput_;
+    typename SolverType::type::MonitorType           odeSolverMonitor_;
   };
 
 

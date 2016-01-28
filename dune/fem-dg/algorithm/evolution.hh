@@ -232,10 +232,10 @@ namespace Fem
     struct Initialize {
     private:
       template<class T, class AdaptHandler, class... Args >
-      static typename enable_if< std::is_void< typename std::remove_pointer<T>::type::DiagnosticsHandlerType >::value >::type
+      static typename enable_if< std::is_void< typename std::remove_pointer<T>::type::DiagnosticsType >::value >::type
       getDiagnostics( T, AdaptHandler&, Args&& ... ){}
       template<class T, class AdaptHandler, class... Args >
-      static typename enable_if< !std::is_void< typename std::remove_pointer<T>::type::DiagnosticsHandlerType >::value >::type
+      static typename enable_if< !std::is_void< typename std::remove_pointer<T>::type::DiagnosticsType >::value >::type
       getDiagnostics( T e, AdaptHandler& handler, Args &&... a )
       {
         if( e->diagnostics() )

@@ -11,10 +11,44 @@ namespace Fem
 {
 
   template< class... DiagnosticsImp >
-  class SubDiagnosticsHandler;
+  class SubDiagnostics;
+
+
+  template<>
+  class SubDiagnostics<>
+  {
+    struct NoDiagnosticsType
+    {
+      template <class ... Args>
+      void step( Args&& ... ) const {}
+
+      template <class ... Args>
+      void finalize( Args&& ... ) const {}
+    };
+
+  public:
+    template <class ... Args>
+    SubDiagnostics( Args&& ... )
+    {}
+
+    typedef NoDiagnosticsType     DiagnosticsType;
+
+    template <class ... Args>
+    double getData( Args&& ... ) const { return 0.0; }
+
+    template <class ... Args>
+    void registerData( Args&& ... ) const {}
+
+    template <class ... Args>
+    void step( Args&& ... ) const {}
+
+    template <class ... Args>
+    void finalize( Args&& ... ) const {}
+  };
+
 
   template< class DiagnosticsImp >
-  class SubDiagnosticsHandler< DiagnosticsImp >
+  class SubDiagnostics< DiagnosticsImp >
   {
   public:
     typedef DiagnosticsImp DiagnosticsType;
@@ -22,7 +56,7 @@ namespace Fem
     typedef std::map< std::string, double* > DataDoubleType;
 
 
-    SubDiagnosticsHandler( const std::string keyPrefix = "" )
+    SubDiagnostics( const std::string keyPrefix = "" )
       : keyPrefix_( keyPrefix ),
         diagnostics_( true, keyPrefix ),
         dataInt_(),
@@ -76,58 +110,26 @@ namespace Fem
   };
 
 
-  template<>
-  class SubDiagnosticsHandler<>
-  {
-    struct NoDiagnosticsType
-    {
-      template <class ... Args>
-      void step( Args&& ... ) const {}
-
-      template <class ... Args>
-      void finalize( Args&& ... ) const {}
-    };
-
-  public:
-    template <class ... Args>
-    SubDiagnosticsHandler( Args&& ... )
-    {}
-
-    typedef NoDiagnosticsType     DiagnosticsType;
-
-    template <class ... Args>
-    double getData( Args&& ... ) const { return 0.0; }
-
-    template <class ... Args>
-    void registerData( Args&& ... ) const {}
-
-    template <class ... Args>
-    void step( Args&& ... ) const {}
-
-    template <class ... Args>
-    void finalize( Args&& ... ) const {}
-  };
-
   template< class Obj >
-  class DiagnosticsHandlerOptional
+  class DiagnosticsOptional
     : public OptionalObject< Obj >
   {
     typedef OptionalObject< Obj >    BaseType;
   public:
     template< class... Args >
-    DiagnosticsHandlerOptional( Args&&... args )
+    DiagnosticsOptional( Args&&... args )
       : BaseType( std::forward<Args>(args)... )
     {}
   };
 
   template<>
-  class DiagnosticsHandlerOptional< void >
-    : public OptionalNullPtr< SubDiagnosticsHandler<> >
+  class DiagnosticsOptional< void >
+    : public OptionalNullPtr< SubDiagnostics<> >
   {
-    typedef OptionalNullPtr< SubDiagnosticsHandler<> >    BaseType;
+    typedef OptionalNullPtr< SubDiagnostics<> >    BaseType;
   public:
     template< class... Args >
-    DiagnosticsHandlerOptional( Args&&... args )
+    DiagnosticsOptional( Args&&... args )
       : BaseType( std::forward<Args>(args)... )
     {}
   };

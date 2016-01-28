@@ -129,10 +129,10 @@ namespace Fem
         typedef Estimator< DiscreteFunctionType, typename AnalyticalTraits::ProblemType >  GradientIndicatorType ;
       public:
 
-        typedef Fem::AdaptIndicator< IndicatorType, GradientIndicatorType >                AdaptIndicatorType;
-        typedef Fem::SubSolverMonitorHandler< Fem::SolverMonitor >                         SolverMonitorHandlerType;
-        typedef Fem::SubDiagnosticsHandler< Diagnostics >                                  DiagnosticsHandlerType;
-        typedef Fem::ExactSolutionOutputHandler< DiscreteFunctionType >                    AdditionalOutputHandlerType;
+        typedef AdaptIndicator< IndicatorType, GradientIndicatorType >                     AdaptIndicatorType;
+        typedef SubSolverMonitor< SolverMonitor >                                          SolverMonitorType;
+        typedef SubDiagnostics< Diagnostics >                                              DiagnosticsType;
+        typedef ExactSolutionOutput< DiscreteFunctionType >                                AdditionalOutputType;
       };
 
 
@@ -140,7 +140,7 @@ namespace Fem
       struct Algorithm
       {
        // this should be ok but could lead to a henn-egg problem
-        typedef Fem::SubAdvectionDiffusionAlgorithm< GridType, SubAdvectionDiffusionProblemCreator, polOrd > Type;
+        typedef SubAdvectionDiffusionAlgorithm< GridType, SubAdvectionDiffusionProblemCreator, polOrd > Type;
       };
 
     };
@@ -148,7 +148,7 @@ namespace Fem
     template <int polOrd>
     struct Algorithm
     {
-      typedef Fem::EvolutionAlgorithm< polOrd, UncoupledSubAlgorithms, SubAdvectionDiffusionProblemCreator > Type;
+      typedef EvolutionAlgorithm< polOrd, UncoupledSubAlgorithms, SubAdvectionDiffusionProblemCreator > Type;
     };
 
     typedef GridImp                                         GridType;
@@ -156,7 +156,7 @@ namespace Fem
     static inline std::string moduleName() { return ""; }
 
     static inline GridPtr<GridType>
-    initializeGrid() { return Fem::DefaultGridInitializer< GridType >::initialize(); }
+    initializeGrid() { return DefaultGridInitializer< GridType >::initialize(); }
 
 
   };

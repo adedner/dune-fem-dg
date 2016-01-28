@@ -278,7 +278,7 @@ namespace Fem
                                                                     DiscreteVelocityFunctionSpaceType;
     typedef typename BaseType::DiscreteFunctionSpaceType            DiscreteFunctionSpaceType;
 
-    typedef typename BaseType::SolverMonitorHandlerType             SolverMonitorHandlerType;
+    typedef typename BaseType::SolverMonitorType                    SolverMonitorType;
 
     // type of inverse operator (i.e. linear solver implementation)
     typedef typename BaseType::SolverType::type                     BasicLinearSolverType;

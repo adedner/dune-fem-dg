@@ -91,7 +91,7 @@ namespace Fem
       static inline std::string moduleName() { return ""; }
 
       static inline GridPtr<GridType>
-      initializeGrid() { return Fem::DefaultGridInitializer< GridType >::initialize(); }
+      initializeGrid() { return DefaultGridInitializer< GridType >::initialize(); }
 
       static ProblemInterfaceType* problem() { return new ProblemInterfaceType(); }
 
@@ -130,17 +130,17 @@ namespace Fem
         typedef Estimator< DiscreteFunctionType, typename AnalyticalTraits::ProblemType >  GradientIndicatorType ;
       public:
 
-        typedef Fem::AdaptIndicator< IndicatorType, GradientIndicatorType >                AdaptIndicatorType;
-        typedef Fem::SubSolverMonitorHandler< Fem::SolverMonitor >                         SolverMonitorHandlerType;
-        typedef Fem::SubDiagnosticsHandler< Diagnostics >                                  DiagnosticsHandlerType;
-        typedef Fem::ExactSolutionOutputHandler< DiscreteFunctionType >                    AdditionalOutputHandlerType;
+        typedef AdaptIndicator< IndicatorType, GradientIndicatorType >                     AdaptIndicatorType;
+        typedef SubSolverMonitor< SolverMonitor >                                          SolverMonitorType;
+        typedef SubDiagnostics< Diagnostics >                                              DiagnosticsType;
+        typedef ExactSolutionOutput< DiscreteFunctionType >                                AdditionalOutputType;
       };
 
       template <int polOrd>
       struct Algorithm
       {
         // this should be ok but could lead to a henn-egg problem
-        typedef Fem::SubAdvectionDiffusionAlgorithm< GridType, SubNavierStokesProblemCreator, polOrd > Type;
+        typedef SubAdvectionDiffusionAlgorithm< GridType, SubNavierStokesProblemCreator, polOrd > Type;
       };
 
 
@@ -149,7 +149,7 @@ namespace Fem
     template <int polOrd>
     struct Algorithm
     {
-      typedef Fem::EvolutionAlgorithm< polOrd, UncoupledSubAlgorithms, SubNavierStokesProblemCreator > Type;
+      typedef EvolutionAlgorithm< polOrd, UncoupledSubAlgorithms, SubNavierStokesProblemCreator > Type;
     };
 
     typedef GridImp                                         GridType;
@@ -157,7 +157,7 @@ namespace Fem
     static inline std::string moduleName() { return ""; }
 
     static inline GridPtr<GridType>
-    initializeGrid() { return Fem::DefaultGridInitializer< GridType >::initialize(); }
+    initializeGrid() { return DefaultGridInitializer< GridType >::initialize(); }
 
 
   };

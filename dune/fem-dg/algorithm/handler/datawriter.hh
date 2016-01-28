@@ -58,10 +58,10 @@ namespace Fem
     struct AdditionalOutput
     {
       template<class T, class... Args >
-      static typename enable_if< std::is_void< typename std::remove_pointer<T>::type::AdditionalOutputHandlerType >::value >::type
+      static typename enable_if< std::is_void< typename std::remove_pointer<T>::type::AdditionalOutputType >::value >::type
       additionalOutput( T, Args&& ... ){}
       template<class T, class TimeProviderImp, class... Args >
-      static typename enable_if< !std::is_void< typename std::remove_pointer<T>::type::AdditionalOutputHandlerType >::value >::type
+      static typename enable_if< !std::is_void< typename std::remove_pointer<T>::type::AdditionalOutputType >::value >::type
       additionalOutput( T elem, TimeProviderImp& tp, Args && ... args )
       {
         if( elem->additionalOutput() )

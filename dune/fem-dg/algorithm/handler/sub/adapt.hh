@@ -28,6 +28,44 @@ namespace Fem
   template< class... IndicatorArgs >
   class AdaptIndicator;
 
+
+
+  template<>
+  class AdaptIndicator<>
+  {
+  public:
+   typedef uint64_t                          UInt64Type;
+
+    template< class... Args >
+    AdaptIndicator( Args&& ... args )
+    {}
+
+    bool adaptive() const { return false; }
+
+    size_t numberOfElements() const { return 0; }
+
+    UInt64Type globalNumberOfElements() const { return 0; }
+
+    template< class TimeProviderImp >
+    void setAdaptation( TimeProviderImp& tp ){}
+
+    void finalize() {}
+
+    void estimateMark( const bool initialAdapt = false ) {}
+
+    void postAdapt() {}
+
+    void preAdapt() {}
+
+    int minNumberOfElements() const { return 0; }
+
+    int maxNumberOfElements() const { return 0; }
+
+    const int finestLevel() const { return 0; }
+
+  };
+
+
   template< class IndicatorImp, class EstimatorImp >
   class AdaptIndicator< IndicatorImp, EstimatorImp >
   {
@@ -166,42 +204,6 @@ namespace Fem
     const AdaptationParametersType                adaptParam_;
     IndicatorType                                 indicator_;
     EstimatorType                                 estimator_;
-  };
-
-
-  template<>
-  class AdaptIndicator<>
-  {
-  public:
-   typedef uint64_t                          UInt64Type;
-
-    template< class... Args >
-    AdaptIndicator( Args&& ... args )
-    {}
-
-    bool adaptive() const { return false; }
-
-    size_t numberOfElements() const { return 0; }
-
-    UInt64Type globalNumberOfElements() const { return 0; }
-
-    template< class TimeProviderImp >
-    void setAdaptation( TimeProviderImp& tp ){}
-
-    void finalize() {}
-
-    void estimateMark( const bool initialAdapt = false ) {}
-
-    void postAdapt() {}
-
-    void preAdapt() {}
-
-    int minNumberOfElements() const { return 0; }
-
-    int maxNumberOfElements() const { return 0; }
-
-    const int finestLevel() const { return 0; }
-
   };
 
 
