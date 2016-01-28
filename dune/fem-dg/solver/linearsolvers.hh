@@ -88,7 +88,7 @@ struct Solvers<DFSpace,fem,symmetric>
   typedef DFSpace DiscreteFunctionSpaceType;
   typedef Dune::Fem::AdaptiveDiscreteFunction< DiscreteFunctionSpaceType > DiscreteFunctionType;
   typedef Dune::Fem::SparseRowLinearOperator< DiscreteFunctionType, DiscreteFunctionType > LinearOperatorType;
-  typedef typename Dune::conditional<symmetric,
+  typedef typename std::conditional<symmetric,
           Dune::Fem::CGInverseOperator< DiscreteFunctionType >,
           Dune::Fem::ParDGGeneralizedMinResInverseOperator< DiscreteFunctionType > > :: type
           LinearInverseOperatorType;
@@ -103,7 +103,7 @@ struct Solvers<DFSpace,femoem,symmetric>
   // this work with a discrete function implementation based on a double* dof storage
   typedef Dune::Fem::AdaptiveDiscreteFunction< DiscreteFunctionSpaceType > DiscreteFunctionType;
   typedef Dune::Fem::SparseRowLinearOperator< DiscreteFunctionType, DiscreteFunctionType > LinearOperatorType;
-  typedef typename Dune::conditional<symmetric,
+  typedef typename std::conditional<symmetric,
           Dune::Fem::OEMCGOp< DiscreteFunctionType, LinearOperatorType >,
           Dune::Fem::OEMBICGSTABOp< DiscreteFunctionType, LinearOperatorType > > :: type
           LinearInverseOperatorType;
@@ -119,7 +119,7 @@ struct Solvers<DFSpace,istl,symmetric>
   // here we need the special ISTLBlockVectorDiscreteFunction
   typedef Dune::Fem::ISTLBlockVectorDiscreteFunction< DiscreteFunctionSpaceType > DiscreteFunctionType;
   typedef Dune::Fem::ISTLLinearOperator< DiscreteFunctionType, DiscreteFunctionType > LinearOperatorType;
-  typedef typename Dune::conditional<symmetric,
+  typedef typename std::conditional<symmetric,
           Dune::Fem::ISTLCGOp< DiscreteFunctionType, LinearOperatorType >,
           Dune::Fem::ISTLBICGSTABOp< DiscreteFunctionType, LinearOperatorType > > :: type
           LinearInverseOperatorType;

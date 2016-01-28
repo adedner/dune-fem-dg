@@ -36,7 +36,7 @@ namespace Fem {
     typedef LimiterDefaultDiscreteModel<GlobalPassTraitsImp, Model, passId > BaseType;
 
     // These type definitions allow a convenient access to arguments of pass.
-    integral_constant< int, passId > uVar;
+    std::integral_constant< int, passId > uVar;
   public:
     typedef LimiterTraits<GlobalPassTraitsImp,Model, passId > Traits;
 

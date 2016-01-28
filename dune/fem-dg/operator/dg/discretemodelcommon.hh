@@ -125,7 +125,7 @@ namespace Dune {
     //    < Traits, passUId, passGradId >                    BaseType;
 
     // These type definitions allow a convenient access to arguments of pass.
-    integral_constant< int, passUId > uVar;
+    std::integral_constant< int, passUId > uVar;
 
   public:
     enum { advection = returnAdvectionPart  };
@@ -373,7 +373,7 @@ namespace Dune {
     typedef AdvectionModel< OpTraits, passUId,  passGradId, returnAdvectionPart > BaseType ;
 
     // These type definitions allow a convenient access to arguments of pass.
-    integral_constant< int, passUId > uVar;
+    std::integral_constant< int, passUId > uVar;
 
   public:
     typedef typename BaseType :: ModelType          ModelType;

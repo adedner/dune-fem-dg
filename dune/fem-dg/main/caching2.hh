@@ -70,7 +70,7 @@ namespace Dune
       void evaluateEach ( const QuadraturePointWrapper< Quadrature > &x, Functor functor ) const
       {
         const bool cacheable = Conversion< Quadrature, CachingInterface >::exists;
-        evaluateEach( x.quadrature(), x.point(), functor, integral_constant< bool, cacheable >() );
+        evaluateEach( x.quadrature(), x.point(), functor, std::integral_constant< bool, cacheable >() );
       }
 
       template< class Point, class Functor >
@@ -83,7 +83,7 @@ namespace Dune
       void jacobianEach ( const QuadraturePointWrapper< Quadrature > &x, Functor functor ) const
       {
         const bool cacheable = Conversion< Quadrature, CachingInterface >::exists;
-        jacobianEach( x.quadrature(), x.point(), functor, integral_constant< bool, cacheable >() );
+        jacobianEach( x.quadrature(), x.point(), functor, std::integral_constant< bool, cacheable >() );
       }
 
       template< class Point, class Functor >
@@ -185,25 +185,25 @@ namespace Dune
 
       template< class Quadrature, class Functor >
       void evaluateEach ( const Quadrature &quadrature, std::size_t pt, Functor functor,
-                          integral_constant< bool, false > ) const
+                          std::integral_constant< bool, false > ) const
       {
         evaluateEach( quadrature.point( pt ), functor );
       }
 
       template< class Quadrature, class Functor >
       void evaluateEach ( const Quadrature &quadrature, std::size_t pt, Functor functor,
-                          integral_constant< bool, true > ) const;
+                          std::integral_constant< bool, true > ) const;
 
       template< class Quadrature, class Functor >
       void jacobianEach ( const Quadrature &quadrature, std::size_t pt, Functor functor,
-                          integral_constant< bool, false > ) const
+                          std::integral_constant< bool, false > ) const
       {
         jacobianEach( quadrature.point( pt ), functor );
       }
 
       template< class Quadrature, class Functor >
       void jacobianEach ( const Quadrature &quadrature, std::size_t pt, Functor functor,
-                          integral_constant< bool, true > ) const;
+                          std::integral_constant< bool, true > ) const;
 
 
       void cacheQuadrature( std::size_t id, std::size_t codim, std::size_t size );
@@ -245,7 +245,7 @@ namespace Dune
     template< class Quadrature, class Functor >
     inline void CachingShapeFunctionSet< ShapeFunctionSet >
       ::evaluateEach ( const Quadrature &quadrature, std::size_t pt, Functor functor,
-                       integral_constant< bool, true > ) const
+                       std::integral_constant< bool, true > ) const
     {
       assert( (quadrature.id() < valueCaches_.size()) && valueCaches_[ quadrature.id() ].size() );
       const RangeVectorType& cache = valueCaches_[ quadrature.id() ];
@@ -261,7 +261,7 @@ namespace Dune
     template< class Quadrature, class Functor >
     inline void CachingShapeFunctionSet< ShapeFunctionSet >
       ::jacobianEach ( const Quadrature &quadrature, std::size_t pt, Functor functor,
-                       integral_constant< bool, true > ) const
+                       std::integral_constant< bool, true > ) const
     {
       assert( (quadrature.id() < jacobianCaches_.size()) && jacobianCaches_[ quadrature.id() ].size() );
       const JacobianRangeVectorType& cache = jacobianCaches_[ quadrature.id() ];

@@ -46,7 +46,7 @@ namespace Dune {
     using BaseType :: outside;
 
     // This type definition allows a convenient access to arguments of passes.
-    integral_constant< int, passUId > uVar;
+    std::integral_constant< int, passUId > uVar;
 
   public:
     typedef GradientTraits< OpTraits, passUId >        Traits;
@@ -267,7 +267,7 @@ namespace Dune {
     // These type definitions allow a convenient access to arguments of pass.
     using BaseType :: uVar;
 
-    integral_constant< int, passGradId> sigmaVar;
+    std::integral_constant< int, passGradId> sigmaVar;
 
   public:
     enum { dimDomain = Traits :: dimDomain };

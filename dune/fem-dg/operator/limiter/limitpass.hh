@@ -288,7 +288,7 @@ namespace Dune {
   class LimiterDefaultDiscreteModel :
     public Fem::DGDiscreteModelDefaultWithInsideOutside< LimiterDefaultTraits<GlobalTraitsImp,Model,passId >, passId >
   {
-    integral_constant< int, passId > uVar;
+    std::integral_constant< int, passId > uVar;
 
   public:
     typedef LimiterDefaultTraits<GlobalTraitsImp,Model,passId> Traits;
