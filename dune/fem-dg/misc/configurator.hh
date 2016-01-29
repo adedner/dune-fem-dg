@@ -66,16 +66,6 @@ namespace Fem
 
     template< class ModelImp, class DFSpace, PrimalDiffusionFlux::Enum id = diffFluxId >
     using DiffusionFluxes = DGPrimalDiffusionFlux< DFSpace, ModelImp, id >;
-    //template< class ModelImp, class AdvectionFluxIdentifier = AdvectionFluxIdentifierImp >
-    //using AdvectionFluxes = DGAdvectionFlux< ModelImp, AdvectionFluxIdentifier >;
-
-    //template< class ModelImp, class DFSpace, class DiffusionFluxIdentifier = DiffusionFluxIdentifierImp >
-    //using DiffusionFluxes = DGPrimalDiffusionFlux< DFSpace, ModelImp, DiffusionFluxIdentifier >;
-    //template< class ModelImp, class AdvectionFluxIdentifier = AdvectionFluxIdentifierImp >
-    //using AdvectionFluxes = typename AdvectionFluxSelector< AdvectionFluxIdentifier >::template type<ModelImp>;
-
-    //template< class ModelImp, class DFSpace, class DiffusionFluxIdentifier = DiffusionFluxIdentifierImp >
-    //using DiffusionFluxes = typename DiffusionFluxSelector< DiffusionFluxIdentifier >::template type< DFSpace, ModelImp>;
 
     template< class DomainDFSpace,
               class RangeDFSpace,
