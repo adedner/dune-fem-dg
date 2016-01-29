@@ -547,7 +547,7 @@ namespace Fem
           for( int r = 0; r < dimRange; ++r)
           {
             out << "result" << r << d;
-            if( r * d == (dim-1)*(dimRange-1) ) out << std::endl;
+            if( (d == dim-1) && (r == dimRange-1) ) out << std::endl;
             else out << ", ";
           }
         }
@@ -603,7 +603,7 @@ namespace Fem
         for( int r=0; r<dimRange; ++ r )
         {
           out << "                        " << doubletype() << "*  "<< restrictKey() << " result" << r << d;
-          if( d * r == (dim-1)*(dimRange-1) ) out << " )" << std::endl;
+          if( (d == dim-1) && (r == dimRange-1) ) out << " )" << std::endl;
           else out << "," << std::endl;
         }
       }
