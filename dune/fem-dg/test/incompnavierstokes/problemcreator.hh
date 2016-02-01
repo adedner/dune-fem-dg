@@ -143,11 +143,7 @@ namespace Fem
         };
 
         template <int polOrd>
-        struct Algorithm
-        {
-          // this should be ok but could lead to a henn-egg problem
-          typedef SubEllipticAlgorithm< GridType, SubPoissonProblemCreator, polOrd > Type;
-        };
+        using Algorithm = SubEllipticAlgorithm< GridType, SubPoissonProblemCreator, polOrd >;
       };
 
       typedef typename AC::GridType                                       GridType;
@@ -226,10 +222,7 @@ namespace Fem
       };
 
       template <int polOrd>
-      struct Algorithm
-      {
-        typedef SubStokesAlgorithm< GridType, SubStokesProblemCreator, SubPoissonProblemCreator, polOrd > Type;
-      };
+      using Algorithm = SubStokesAlgorithm< GridType, SubStokesProblemCreator, SubPoissonProblemCreator, polOrd >;
     };
 
 
@@ -328,19 +321,14 @@ namespace Fem
       };
 
       template <int polOrd>
-      struct Algorithm
-      {
-        typedef SubAdvectionDiffusionAlgorithm< GridType, SubNavierStokesProblemCreator, polOrd > Type;
-      };
+      using Algorithm = SubAdvectionDiffusionAlgorithm< GridType, SubNavierStokesProblemCreator, polOrd >;
 
     };
 
 
+    // \todo implement coupling and exchange "UncoupledSubAlgorithms"
     template <int polOrd>
-    struct Algorithm
-    {
-      typedef IncompNavierStokesAlgorithm< polOrd, UncoupledSubAlgorithms, SubStokesProblemCreator, SubNavierStokesProblemCreator, SubStokesProblemCreator > Type;
-    };
+    using Algorithm = IncompNavierStokesAlgorithm< polOrd, UncoupledSubAlgorithms, SubStokesProblemCreator, SubNavierStokesProblemCreator, SubStokesProblemCreator >;
 
     typedef GridImp                                         GridType;
 

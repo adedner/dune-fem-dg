@@ -58,7 +58,7 @@ namespace Fem
     // wrap operator
     typedef Dune::Fem::GridTimeProvider< GridType >                                   TimeProviderType;
 
-    typedef std::tuple< typename std::add_pointer< typename ProblemTraits::template Algorithm<polOrder>::Type >::type... > SubAlgorithmTupleType;
+    typedef std::tuple< typename std::add_pointer< typename ProblemTraits::template Algorithm<polOrder> >::type... > SubAlgorithmTupleType;
 
     typedef typename Dune::Std::make_index_sequence_impl< std::tuple_size< SubAlgorithmTupleType >::value >::type  IndexSequenceType;
     typedef Dune::Std::index_sequence<>                                                                       NoIndexSequenceType;
@@ -117,8 +117,6 @@ namespace Fem
         template< class Solution, class Model, class ExactFunction, class TimeProvider >
         static void addEOCErrors ( TimeProvider& tp, Solution &u, Model &model, ExactFunction &f )
         {
-          //static L2EOCError l2EocError( "$L^2$-Error");
-          //l2EocError.add( tp, u, model, f );
         }
       };
 
@@ -129,38 +127,29 @@ namespace Fem
         return new ProblemInterfaceType();
       }
 
-
       template< int polOrd >
       struct DiscreteTraits
       {
       private:
-        typedef Dune::Fem::DiscontinuousGalerkinSpace < FunctionSpaceType, GridPartType, polOrd >     DiscreteFunctionSpaceType;
+        typedef Dune::Fem::DiscontinuousGalerkinSpace< FunctionSpaceType, GridPartType, polOrd > DiscreteFunctionSpaceType;
       public:
-        typedef Dune::Fem::AdaptiveDiscreteFunction< DiscreteFunctionSpaceType >                      DiscreteFunctionType;
+        typedef Dune::Fem::AdaptiveDiscreteFunction< DiscreteFunctionSpaceType >                 DiscreteFunctionType;
 
-        typedef std::tuple< DiscreteFunctionType*, DiscreteFunctionType* >                            IOTupleType;
+        typedef std::tuple< DiscreteFunctionType*, DiscreteFunctionType* >                       IOTupleType;
 
-        typedef void                                                                                  AdaptIndicatorType;
-        typedef void                                                                                  SolverMonitorHandlerType;
-        typedef void                                                                                  DiagnosticsHandlerType;
-        typedef void                                                                                  AdditionalOutputHandlerType;
+        typedef void                                                                             AdaptIndicatorType;
+        typedef void                                                                             SolverMonitorHandlerType;
+        typedef void                                                                             DiagnosticsHandlerType;
+        typedef void                                                                             AdditionalOutputHandlerType;
       };
-
 
       template <int polOrd>
-      struct Algorithm
-      {
-       // this should be ok but could lead to a henn-egg problem
-        typedef Dune::Fem::SubCheckPointingAlgorithm< GridType, SubCheckPointingProblemCreator, polOrd > Type;
-      };
+      using Algorithm = Dune::Fem::SubCheckPointingAlgorithm< GridType, SubCheckPointingProblemCreator, polOrd >;
 
     };
 
     template <int polOrd>
-    struct Algorithm
-    {
-      typedef Dune::Fem::EvolutionAlgorithmBase< CheckPointEvolutionAlgorithmTraits< polOrd, SubCheckPointingProblemCreator >, UncoupledSubAlgorithms  > Type;
-    };
+    using Algorithm = Dune::Fem::EvolutionAlgorithmBase< CheckPointEvolutionAlgorithmTraits< polOrd, SubCheckPointingProblemCreator >, UncoupledSubAlgorithms  >;
 
     typedef GridImp                                         GridType;
 
@@ -168,7 +157,6 @@ namespace Fem
 
     static inline Dune::GridPtr<GridType>
     initializeGrid() { return Dune::Fem::DefaultGridInitializer< GridType >::initialize(); }
-
 
   };
 

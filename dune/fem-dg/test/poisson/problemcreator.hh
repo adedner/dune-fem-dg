@@ -125,19 +125,12 @@ namespace Fem
       };
 
       template <int polOrd>
-      struct Algorithm
-      {
-        // this should be ok but could lead to a henn-egg problem
-        typedef SubEllipticAlgorithm< GridType, SubPoissonProblemCreator, polOrd > Type;
-      };
+      using Algorithm = SubEllipticAlgorithm< GridType, SubPoissonProblemCreator, polOrd >;
 
     };
 
     template <int polOrd>
-    struct Algorithm
-    {
-      typedef SteadyStateAlgorithm< polOrd, UncoupledSubAlgorithms, SubPoissonProblemCreator > Type;
-    };
+    using Algorithm = SteadyStateAlgorithm< polOrd, UncoupledSubAlgorithms, SubPoissonProblemCreator >;
 
     typedef GridImp                                         GridType;
 

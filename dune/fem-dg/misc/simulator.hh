@@ -174,7 +174,7 @@ namespace Fem
     // return type of initializeGrid is Dune::GridPtr, use release such that memory of GridPtr is released
     std::unique_ptr< GridType > gridptr( problem.initializeGrid().release() );
 
-    typedef typename ProblemTraits::template Algorithm< polynomialOrder >::Type AlgorithmType;
+    typedef typename ProblemTraits::template Algorithm< polynomialOrder > AlgorithmType;
     std::unique_ptr< AlgorithmType > algorithm( new AlgorithmType( *gridptr ) );
 
     // new method, the ProblemGenerator simply creates the algorithm

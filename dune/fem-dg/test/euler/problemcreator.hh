@@ -142,19 +142,11 @@ namespace Fem
       };
 
       template <int polOrd>
-      struct Algorithm
-      {
-       // this should be ok but could lead to a henn-egg problem
-        typedef SubAdvectionAlgorithm< GridType, SubEulerProblemCreator, polOrd > Type;
-      };
-
+      using Algorithm = SubAdvectionAlgorithm< GridType, SubEulerProblemCreator, polOrd >;
     };
 
     template <int polOrd>
-    struct Algorithm
-    {
-      typedef EvolutionAlgorithm< polOrd, UncoupledSubAlgorithms, SubEulerProblemCreator > Type;
-    };
+    using Algorithm = EvolutionAlgorithm< polOrd, UncoupledSubAlgorithms, SubEulerProblemCreator >;
 
     typedef GridImp                                         GridType;
 
@@ -162,7 +154,6 @@ namespace Fem
 
     static inline GridPtr<GridType>
     initializeGrid() { return DefaultGridInitializer< GridType >::initialize(); }
-
 
   };
 

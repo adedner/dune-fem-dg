@@ -144,11 +144,7 @@ namespace Fem
         };
 
         template <int polOrd>
-        struct Algorithm
-        {
-          // this should be ok but could lead to a henn-egg problem
-          typedef SubEllipticAlgorithm< GridType, SubPoissonProblemCreator, polOrd > Type;
-        };
+        using Algorithm = SubEllipticAlgorithm< GridType, SubPoissonProblemCreator, polOrd >;
       };
 
       typedef typename AC::GridType                         GridType;
@@ -181,7 +177,6 @@ namespace Fem
         return new Stokes::Problem< GridType, Stokes::GeneralizedProblem > ();
       }
 
-      //Algorithm Traits
       template< int polOrd >
       struct DiscreteTraits
       {
@@ -221,18 +216,12 @@ namespace Fem
       };
 
       template <int polOrd>
-      struct Algorithm
-      {
-        typedef SubStokesAlgorithm< GridType, SubStokesProblemCreator, SubPoissonProblemCreator, polOrd > Type;
-      };
+      using Algorithm = SubStokesAlgorithm< GridType, SubStokesProblemCreator, SubPoissonProblemCreator, polOrd >;
     };
 
 
     template <int polOrd>
-    struct Algorithm
-    {
-      typedef SteadyStateAlgorithm< polOrd, UncoupledSubAlgorithms, SubStokesProblemCreator > Type;
-    };
+    using Algorithm = SteadyStateAlgorithm< polOrd, UncoupledSubAlgorithms, SubStokesProblemCreator >;
 
     typedef GridImp                                         GridType;
 

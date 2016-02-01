@@ -160,7 +160,7 @@ namespace Fem
     typedef GridTimeProvider< GridType >                                TimeProviderType;
 
     //typedef ...
-    typedef std::tuple< typename std::add_pointer< typename ProblemTraits::template Algorithm<polOrder>::Type >::type... >
+    typedef std::tuple< typename std::add_pointer< typename ProblemTraits::template Algorithm<polOrder> >::type... >
                                                                         SubAlgorithmTupleType;
 
     //typedef typename Std::make_index_sequence_impl< std::tuple_size< SubAlgorithmTupleType >::value >::type

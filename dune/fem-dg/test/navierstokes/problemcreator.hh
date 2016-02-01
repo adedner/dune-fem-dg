@@ -137,20 +137,12 @@ namespace Fem
       };
 
       template <int polOrd>
-      struct Algorithm
-      {
-        // this should be ok but could lead to a henn-egg problem
-        typedef SubAdvectionDiffusionAlgorithm< GridType, SubNavierStokesProblemCreator, polOrd > Type;
-      };
-
+      using Algorithm = SubAdvectionDiffusionAlgorithm< GridType, SubNavierStokesProblemCreator, polOrd >;
 
     };
 
     template <int polOrd>
-    struct Algorithm
-    {
-      typedef EvolutionAlgorithm< polOrd, UncoupledSubAlgorithms, SubNavierStokesProblemCreator > Type;
-    };
+    using Algorithm = EvolutionAlgorithm< polOrd, UncoupledSubAlgorithms, SubNavierStokesProblemCreator >;
 
     typedef GridImp                                         GridType;
 

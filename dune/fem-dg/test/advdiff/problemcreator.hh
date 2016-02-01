@@ -135,21 +135,13 @@ namespace Fem
         typedef ExactSolutionOutput< DiscreteFunctionType >                                AdditionalOutputType;
       };
 
-
-      template <int polOrd>
-      struct Algorithm
-      {
-       // this should be ok but could lead to a henn-egg problem
-        typedef SubAdvectionDiffusionAlgorithm< GridType, SubAdvectionDiffusionProblemCreator, polOrd > Type;
-      };
+      template< int polOrd >
+      using Algorithm = SubAdvectionDiffusionAlgorithm< GridType, SubAdvectionDiffusionProblemCreator, polOrd >;
 
     };
 
-    template <int polOrd>
-    struct Algorithm
-    {
-      typedef EvolutionAlgorithm< polOrd, UncoupledSubAlgorithms, SubAdvectionDiffusionProblemCreator > Type;
-    };
+    template< int polOrd >
+    using Algorithm = EvolutionAlgorithm< polOrd, UncoupledSubAlgorithms, SubAdvectionDiffusionProblemCreator >;
 
     typedef GridImp                                         GridType;
 

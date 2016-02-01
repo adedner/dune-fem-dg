@@ -109,9 +109,9 @@ namespace Fem
     typedef typename BaseType::UInt64Type                     UInt64Type;
 
     typedef typename BaseType::AdaptIndicatorType             AdaptIndicatorType;
-    typedef typename BaseType::DiagnosticsHandlerType         DiagnosticsHandlerType;
-    typedef typename BaseType::SolverMonitorHandlerType       SolverMonitorHandlerType;
-    typedef typename BaseType::AdditionalOutputHandlerType    AdditionalOutputHandlerType;
+    typedef typename BaseType::DiagnosticsType                DiagnosticsType;
+    typedef typename BaseType::SolverMonitorType              SolverMonitorType;
+    typedef typename BaseType::AdditionalOutputType           AdditionalOutputType;
     typedef typename BaseType::LimitDiscreteFunctionType      LimitDiscreteFunctionType;
     typedef typename BaseType::CheckPointDiscreteFunctionType CheckPointDiscreteFunctionType;
     typedef typename BaseType::AdaptationDiscreteFunctionType AdaptationDiscreteFunctionType;
