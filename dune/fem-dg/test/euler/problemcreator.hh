@@ -115,8 +115,6 @@ namespace Fem
                                                                                            OpTraits;
         public:
           typedef typename AC::template Operators< OpTraits,OperatorSplit::Enum::full >    type;
-          typedef typename AC::template Operators< OpTraits,OperatorSplit::Enum::expl >    ExplicitType;
-          typedef typename AC::template Operators< OpTraits,OperatorSplit::Enum::impl >    ImplicitType;
         };
 
         struct Solver

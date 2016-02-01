@@ -39,8 +39,6 @@ namespace Fem
     // The first operator is sum of the other two
     // The other two are needed for semi-implicit time discretization
     typedef typename BaseType::OperatorType::type              FullOperatorType;
-    typedef typename BaseType::OperatorType::ExplicitType      ExplicitOperatorType;
-    typedef typename BaseType::OperatorType::ImplicitType      ImplicitOperatorType;
 
     typedef typename BaseType::SolverType::BasicLinearSolverType BasicLinearSolverType;
 
@@ -78,7 +76,7 @@ namespace Fem
                            ExtraParameterTupleType tuple = ExtraParameterTupleType() ) :
       BaseType( grid, container ),
       tuple_( ),
-      advectionOperator_( std::make_unique< ExplicitOperatorType >( gridPart_, problem(), tuple_, name() ) ),
+      advectionOperator_( std::make_unique< FullOperatorType >( gridPart_, problem(), tuple_, name() ) ),
       adaptIndicator_( std::make_unique< AdaptIndicatorOptional<AdaptIndicatorType> >( solution(), problem(), tuple_, name() ) )
     {}
 
@@ -119,7 +117,7 @@ namespace Fem
       if( adaptIndicator_ )
         adaptIndicator_->setAdaptation( tp );
 
-      typedef RungeKuttaSolver< ExplicitOperatorType, ExplicitOperatorType, ExplicitOperatorType,
+      typedef RungeKuttaSolver< FullOperatorType, FullOperatorType, FullOperatorType,
                                 BasicLinearSolverType > SolverImpl;
       return std::make_shared< SolverImpl >( tp, *advectionOperator_,
                                              *advectionOperator_,
@@ -133,7 +131,7 @@ namespace Fem
     ExtraParameterTupleType tuple_;
 
 
-    std::unique_ptr< ExplicitOperatorType >    advectionOperator_;
+    std::unique_ptr< FullOperatorType >    advectionOperator_;
     mutable std::unique_ptr< AdaptIndicatorOptional<AdaptIndicatorType> > adaptIndicator_;
   };
 }
