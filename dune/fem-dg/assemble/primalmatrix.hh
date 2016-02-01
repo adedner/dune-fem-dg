@@ -31,7 +31,8 @@ namespace Fem
     public:
     typedef typename Traits::DomainDiscreteFunctionType           DomainDiscreteFunctionType;
     typedef typename Traits::RangeDiscreteFunctionType            RangeDiscreteFunctionType;
-    typedef typename Traits::MatrixContainerType                  MatrixType;
+    typedef typename Traits::MatrixContainerType                  LinearOperatorType;
+    typedef LinearOperatorType                                    MatrixType;
     typedef typename Traits::DomainDiscreteFunctionType           DestinationType;
 
     typedef Dune::Fem::SubEllipticContainer< DestinationType,MatrixType >    ContainerType;

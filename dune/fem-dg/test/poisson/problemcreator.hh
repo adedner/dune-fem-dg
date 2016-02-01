@@ -112,7 +112,7 @@ namespace Fem
                                                                                    OpTraits;
         public:
           typedef typename AC::template Operators< OpTraits >                      AssemblerType;
-          typedef typename AssemblerType::MatrixType                               type;
+          typedef typename AssemblerType::LinearOperatorType                       type;
         };
 
         struct Solver
