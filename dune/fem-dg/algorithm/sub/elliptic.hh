@@ -597,7 +597,7 @@ namespace Fem
     typedef typename BaseType::DiscreteFunctionSpaceType   DiscreteFunctionSpaceType;
 
     // type of inverse operator (i.e. linear solver implementation)
-    typedef typename BaseType::SolverType::type            BasicLinearSolverType;
+    typedef typename BaseType::SolverType::type            SolverType;
 
     enum { dimension = GridType::dimension  };
 
@@ -671,7 +671,7 @@ namespace Fem
     }
 
   protected:
-    virtual std::shared_ptr< BasicLinearSolverType > doCreateSolver() override
+    virtual std::shared_ptr< SolverType > doCreateSolver() override
     {
       Dune::Timer timer;
       timer.start();
@@ -697,7 +697,7 @@ namespace Fem
       double absLimit   = Dune::Fem:: Parameter::getValue<double>("istl.absLimit",1.e-10);
       double reduction  = Dune::Fem:: Parameter::getValue<double>("istl.reduction",1.e-6);
 
-      return std::make_shared< BasicLinearSolverType >(*matrix_, reduction, absLimit );
+      return std::make_shared< SolverType >(*matrix_, reduction, absLimit );
     }
 
     //! default time loop implementation, overload for changes

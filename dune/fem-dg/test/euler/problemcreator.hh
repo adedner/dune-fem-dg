@@ -120,10 +120,10 @@ namespace Fem
         struct Solver
         {
           // type of linear solver for implicit ode
-          typedef typename AC::template LinearSolvers< DFSpaceType >                        BasicLinearSolverType;
+          typedef typename AC::template LinearSolvers< DFSpaceType >                        LinearSolverType;
           typedef DuneODE::OdeSolverInterface< DiscreteFunctionType >                       type;
           //typedef RungeKuttaSolver< typename Operator::type, typename Operator::ExplicitType, typename Operator::ImplicitType,
-          //                          BasicLinearSolverType >                                 type;
+          //                          LinearSolverType >                                    type;
         };
 
       private:

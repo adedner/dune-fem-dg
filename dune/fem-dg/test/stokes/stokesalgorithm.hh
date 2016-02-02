@@ -281,7 +281,7 @@ namespace Fem
     typedef typename BaseType::SolverMonitorType                    SolverMonitorType;
 
     // type of inverse operator (i.e. linear solver implementation)
-    typedef typename BaseType::SolverType::type                     BasicLinearSolverType;
+    typedef typename BaseType::SolverType::type                     SolverType;
 
     enum { dimension = GridType::dimension  };
 
@@ -357,7 +357,7 @@ namespace Fem
     }
 
   private:
-    virtual std::shared_ptr< BasicLinearSolverType > doCreateSolver() override
+    virtual std::shared_ptr< SolverType > doCreateSolver() override
     {
       Dune::Timer timer;
       timer.start();
@@ -382,7 +382,7 @@ namespace Fem
       space_.adapt( polOrderVecPressure);
 #endif
 #endif
-      return std::make_shared< BasicLinearSolverType >( container_, *ellAlg_.solver(), absLimit, 3*ellAlg_.solution().space().size() );
+      return std::make_shared< SolverType >( container_, *ellAlg_.solver(), absLimit, 3*ellAlg_.solution().space().size() );
     }
 
     virtual void doInitialize ( const int loop ) override

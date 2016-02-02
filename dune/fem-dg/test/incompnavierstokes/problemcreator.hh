@@ -135,7 +135,7 @@ namespace Fem
 
           struct Solver
           {
-            typedef typename AC::template LinearSolvers< DFSpaceType, true > type;
+            typedef typename AC::template LinearSolvers< DFSpaceType, true >      type;
           };
 
           typedef SubSolverMonitor< SolverMonitor >                               SolverMonitorType;
@@ -303,7 +303,7 @@ namespace Fem
 
         struct Solver
         {
-          typedef typename AC::template LinearSolvers< DFSpaceType >                       BasicLinearSolverType;
+          typedef typename AC::template LinearSolvers< DFSpaceType >                       LinearSolverType;
           typedef DuneODE::OdeSolverInterface< DiscreteFunctionType >                      type;
         };
 
