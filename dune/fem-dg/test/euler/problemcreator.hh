@@ -133,10 +133,10 @@ namespace Fem
         typedef Estimator< DiscreteFunctionType, typename AnalyticalTraits::ProblemType >   GradientIndicatorType ;
       public:
 
-        typedef AdaptIndicator< IndicatorType, GradientIndicatorType >                 AdaptIndicatorType;
-        typedef SubSolverMonitor< SolverMonitor >                          SolverMonitorType;
-        typedef SubDiagnostics< Diagnostics >                                   DiagnosticsType;
-        typedef ExactSolutionOutput< DiscreteFunctionType >                     AdditionalOutputType;
+        typedef AdaptIndicator< IndicatorType, GradientIndicatorType >           AdaptIndicatorType;
+        typedef SubSolverMonitor< SolverMonitor >                                SolverMonitorType;
+        typedef SubDiagnostics< Diagnostics >                                    DiagnosticsType;
+        typedef ExactSolutionOutput< DiscreteFunctionType >                      AdditionalOutputType;
       };
 
       template <int polOrd>

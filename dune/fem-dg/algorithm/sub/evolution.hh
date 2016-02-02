@@ -187,9 +187,9 @@ namespace Fem
 
     typedef typename BaseType::IOTupleType                           IOTupleType;
     typedef typename BaseType::AdaptIndicatorType                    AdaptIndicatorType;
-    typedef typename BaseType::DiagnosticsType                DiagnosticsType;
-    typedef typename BaseType::SolverMonitorType              SolverMonitorType;
-    typedef typename BaseType::AdditionalOutputType           AdditionalOutputType;
+    typedef typename BaseType::DiagnosticsType                       DiagnosticsType;
+    typedef typename BaseType::SolverMonitorType                     SolverMonitorType;
+    typedef typename BaseType::AdditionalOutputType                  AdditionalOutputType;
 
     typedef typename DiscreteFunctionType::DiscreteFunctionSpaceType DiscreteFunctionSpaceType;
 
