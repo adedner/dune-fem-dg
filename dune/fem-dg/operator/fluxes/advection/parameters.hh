@@ -49,7 +49,7 @@ namespace Fem
     //! Contains all known enums for advection fluxes which can be chosen via parameter file.
     const Enum        _enums[] = { Enum::none, Enum::upwind, Enum::llf, Enum::euler_llf, Enum::euler_hll, Enum::euler_hllc, Enum::euler_llf2 };
     //! Contains all known names of advection fluxes which can be chosen via parameter file.
-    const std::string _strings[] = { "NONE", "UPWIND" , "LLF", "LLF", "HLL" , "HLLC", "LLF2" };
+    const std::string _strings[] = { "NONE", "UPWIND" , "LLF", "EULER-LLF", "EULER-HLL" , "EULER-HLLC", "EULER-LLF2" };
     //! Number of known advection fluxes which can be chosen via parameter file.
     static const int  _size = 7;
 
