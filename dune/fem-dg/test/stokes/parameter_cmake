@@ -59,10 +59,8 @@ fem.adaptation.maximumstrategy: true
 
 # DATAWRITER
 # ----------
-# output format: grape | vtk-cell | vtk-vertex (projected in DG case),  sub-vtk-cell
+# output format: vtk-cell | vtk-vertex (projected in DG case),  sub-vtk-cell
 fem.io.outputformat: vtk-cell
-# toggle grape display (0 = off | 1 = on)
-fem.io.grapedisplay: 0
 fem.io.subsamplinglevel: 0
 
 poisson.nonConformOrigin: false

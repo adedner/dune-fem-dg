@@ -24,7 +24,6 @@ fem.threads.partitioningmethod: sfc
 fem.prefix: ./data
 fem.io.outputformat: vtk-cell # binary, vtk-cell, vtk-vertex, gnuplot, sub-vtk-cell
 fem.io.subsamplinglevel: 0
-fem.io.grapedisplay: 0
 # checkpointing step 
 fem.io.checkpointstep: 25000000
 # add time stamp to eoc file name
