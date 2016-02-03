@@ -51,7 +51,7 @@ Only \addtogroup is used in the code documentation.
   \defgroup Solver Solver
   \ingroup DiscreteTraits
   
-  \defgroup Handler Handler
+  \defgroup Handlers Handler
   \ingroup DiscreteTraits
 
 
