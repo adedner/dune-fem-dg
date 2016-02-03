@@ -25,6 +25,8 @@ namespace Dune
 
     /** \brief Pass applying the local inverse mass matrix on each element
      *
+     *  \ingroup Pass
+     *
      *  \tparam  functionalId   pass id of functional to convert
      *  \tparam  PreviousPass   type of previous pass
      *  \tparam  id             pass id

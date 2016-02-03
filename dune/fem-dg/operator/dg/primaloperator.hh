@@ -41,6 +41,7 @@ namespace Fem
    * \note This operator is based on the Pass-Concept
    *
    * \ingroup SpaceOperators
+   * \ingroup Pass
    */
   template< class OpTraits >
   struct DGAdvectionDiffusionOperator : public
@@ -87,6 +88,7 @@ namespace Fem
    * \note This operator is based on the Pass-Concept
    *
    * \ingroup SpaceOperators
+   * \ingroup Pass
    */
   template< class OpTraits >
   struct DGAdvectionOperator : public
@@ -133,6 +135,7 @@ namespace Fem
    * \note This operator is based on the Pass-Concept
    *
    * \ingroup SpaceOperators
+   * \ingroup Pass
    */
   template< class OpTraits >
   class DGDiffusionOperator : public
@@ -174,8 +177,6 @@ namespace Fem
 
   ////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////
 
   template <class Traits,
             bool advection, bool diffusion >
@@ -198,6 +199,7 @@ namespace Fem
    * \note This operator is based on the Pass-Concept
    *
    * \ingroup SpaceOperators
+   * \ingroup Pass
    */
   template< class OpTraits,
             bool advection = OpTraits::ModelType::hasAdvection,
@@ -238,8 +240,6 @@ namespace Fem
 
   //////////////////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////////////////
-  //////////////////////////////////////////////////////////////////////////////////
-  //////////////////////////////////////////////////////////////////////////////////
 
 
   // DGLimitedAdvectionOperator
@@ -248,6 +248,9 @@ namespace Fem
   /**
    * \brief Advection operator for CDG with a limiting
    *         of the numerical solution
+   *
+   * \ingroup SpaceOperators
+   * \ingroup Pass
    *
    * \tparam Traits
    * \tparam advection Advection
@@ -512,6 +515,9 @@ namespace Fem
   /**
    * \brief Advection diffusion operator for CDG with a limiting
    *         of the numerical solution
+   *
+   * \ingroup SpaceOperators
+   * \ingroup Pass
    *
    * \tparam Traits
    * \tparam advection Advection

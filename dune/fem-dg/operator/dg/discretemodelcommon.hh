@@ -48,6 +48,7 @@ namespace Fem
    * This discrete model allows us to "insert" additional model parameters.
    *
    * \ingroups DiscreteModels
+   * \ingroups Pass
    */
   template< class Traits,
             int passUId, int passGradId >
@@ -107,6 +108,7 @@ namespace Fem
   /*  \brief Discrete model for advection terms
    *
    *  \ingroup DiscreteModels
+   *  \ingroup Pass
    *
    *  \tparam OpTraits Operator traits describing the operator
    *  \tparam passUId The id of a pass whose value is used here
@@ -357,6 +359,7 @@ namespace Fem
   /*  \brief discrete model for adaptive operator
    *
    *  \ingroup DiscreteModels
+   *  \ingroup Pass
    *
    *  \tparam OpTraits Operator traits describing the operator
    *  \tparam passUId The id of a pass whose value is used here

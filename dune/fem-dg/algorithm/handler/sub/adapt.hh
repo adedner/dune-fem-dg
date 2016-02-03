@@ -66,7 +66,6 @@ namespace Fem
     int maxNumberOfElements() const { return 0; }
 
     const int finestLevel() const { return 0; }
-
   };
 
 

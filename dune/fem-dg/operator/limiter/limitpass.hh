@@ -283,9 +283,12 @@ namespace Fem
   };
 
 
-  // **********************************************
-  // **********************************************
-  // **********************************************
+  /**
+   * \brief Default discrete model for limiter
+   *
+   * \ingroup Pass
+   * \ingroup DiscreteModel
+   */
   template <class GlobalTraitsImp, class Model, int passId >
   class LimiterDefaultDiscreteModel :
     public Fem::DGDiscreteModelDefaultWithInsideOutside< LimiterDefaultTraits<GlobalTraitsImp,Model,passId >, passId >
@@ -584,6 +587,8 @@ namespace Fem
   };
 
   /** \brief Concrete implementation of Pass for Limiting.
+   *
+   *  \ingroup Pass
    *
    *  \note: A detailed description can be found in:
    *

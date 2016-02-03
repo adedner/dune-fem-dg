@@ -12,15 +12,6 @@ namespace Dune
 namespace Fem
 {
 
-  ///////////////////////////////////////////////////////////////////
-  //
-  //  --StandardLimiterDiscreteModel
-  //
-  ///////////////////////////////////////////////////////////////////
-
-  // **********************************************
-  // **********************************************
-  // **********************************************
   template <class GlobalPassTraitsImp, class Model, int passId = -1 >
   class StandardLimiterDiscreteModel;
 
@@ -31,6 +22,12 @@ namespace Fem
     typedef StandardLimiterDiscreteModel<GlobalPassTraitsImp,Model,passId> DGDiscreteModelType;
   };
 
+  /**
+   * \brief Standard implementation of limiter discret model.
+   *
+   * \ingroup Pass
+   * \ingroup DiscreteModel
+   */
   template <class GlobalPassTraitsImp, class Model, int passId >
   class StandardLimiterDiscreteModel :
     public LimiterDefaultDiscreteModel<GlobalPassTraitsImp, Model , passId >

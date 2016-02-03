@@ -19,6 +19,8 @@ namespace Fem
 
   /**
    * \brief Model caller for CDG pass.
+   *
+   * \ingroup Pass
    */
   template< class DiscreteModel, class Argument, class PassIds >
   class CDGDiscreteModelCaller
