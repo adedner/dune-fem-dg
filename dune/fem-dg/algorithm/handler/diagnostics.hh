@@ -10,12 +10,34 @@ namespace Dune
 {
 namespace Fem
 {
-
+  /**
+   * \brief Handler class managing the data writing of diagnostic data.
+   *
+   * \ingroup Handlers
+   */
   template< class AlgTupleImp,
             class IndexSequenceImp=typename Std::make_index_sequence_impl< std::tuple_size< AlgTupleImp >::value >::type >
   class DiagnosticsHandler;
 
-
+ /**
+   * \brief Specialization of a handler class managing the writing of diagnostic data.
+   *
+   * \ingroup Handlers
+   *
+   * This class manages the writing of diagnostic data for a tuple of sub-algorithms.
+   * For each sub-algorithm diagnostic writing can be disabled using an `index_sequence`.
+   *
+   * Example:
+   * \code
+   * typedef DataWriterHandler< std::tuple< Alg1, Alg2, Alg3, Alg4 >,
+   *                            Std::index_sequence< 0, 2 > >
+   *                                           MyHandler;
+   * \endcode
+   * This would enable data writing for `Alg1` and `Alg3`;
+   *
+   * \tparam AlgTupleImp A tuple of all known sub-algorithms.
+   * \tparam Std::index_sequence< Ints... > Index sequence for enabling the data writing feature.
+   */
   template< class AlgTupleImp, std::size_t... Ints >
   class DiagnosticsHandler< AlgTupleImp, Std::index_sequence< Ints... > >
     : public HandlerInterface
@@ -71,26 +93,50 @@ namespace Fem
 
   public:
 
+    /**
+     * \brief Constructor.
+     *
+     * \param[in] tuple Tuple of all sub-algorithms.
+     */
     DiagnosticsHandler( const AlgTupleType& tuple )
       : tuple_( tuple )
     {}
 
-    template< class SubAlgImp, class TimeProviderImp >
-    void postSolve_post( SubAlgImp* alg, int loop, TimeProviderImp& tp )
-    {
-      ForLoopType< Write >::apply( tuple_, tp );
-    }
-
+    /**
+     * \brief Finalizes the writing of diagnostic data.
+     *
+     * \param[in] alg pointer to the calling sub-algorithm
+     * \param[in] loop number of eoc loop
+     * \param[in] tp the time provider
+     */
     template< class SubAlgImp, class TimeProviderImp >
     void finalize_pre( SubAlgImp* alg, int loop, TimeProviderImp& tp )
     {
       ForLoopType< Finalize >::apply( tuple_ );
     }
 
+    /**
+     * \brief Writes diagnostic data.
+     *
+     * \param[in] alg pointer to the calling sub-algorithm
+     * \param[in] loop number of eoc loop
+     * \param[in] tp the time provider
+     */
+    template< class SubAlgImp, class TimeProviderImp >
+    void postSolve_post( SubAlgImp* alg, int loop, TimeProviderImp& tp )
+    {
+      ForLoopType< Write >::apply( tuple_, tp );
+    }
+
   private:
     TupleType tuple_;
   };
 
+  /**
+   * \brief Specialization of a handler class doing no diagnostic writing.
+   *
+   * \ingroup Handlers
+   */
   template< class TupleImp >
   class DiagnosticsHandler< TupleImp, Std::index_sequence<> >
     : public HandlerInterface
@@ -98,7 +144,6 @@ namespace Fem
   public:
     template< class ... Args >
     DiagnosticsHandler ( Args && ... ) {}
-
   };
 
 }

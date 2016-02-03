@@ -27,11 +27,40 @@ namespace Dune
 namespace Fem
 {
 
+  /**
+   * \brief Handler class managing the adaptation process.
+   *
+   * \ingroup Handlers
+   */
   template< class AlgTupleImp,
             class IndexSequenceImp=typename Std::make_index_sequence_impl< std::tuple_size< AlgTupleImp >::value >::type >
   class AdaptHandler;
 
 
+  /**
+   * \brief Specialization of a handler class managing the adaptation process.
+   *
+   * \ingroup Handlers
+   *
+   * This class manages the adaptation process for a tuple of sub-algorithms.
+   * For each sub-algorithm adaptation can be disabled using an `index_sequence`.
+   *
+   * Example:
+   * \code
+   * typedef AdaptHandler< std::tuple< Alg1, Alg2, Alg3, Alg4 >,
+   *                       Std::index_sequence< 0, 2 > >
+   *                                           MyHandler;
+   * \endcode
+   * This would enable adaptation for `Alg1` and `Alg3`.
+   *
+   * \warning Since all sub-algorithms depends on the same (refined) grid, a
+   * partial selection of adaptive algorithms would not work.
+   *
+   * \todo Improve the situation for partially selected adaptive algorithm tuples.
+   *
+   * \tparam AlgTupleImp A tuple of all known sub-algorithms.
+   * \tparam Std::index_sequence< Ints... > Index sequence for enabling the checkpointing feature.
+   */
   template< class AlgTupleImp, std::size_t... Ints >
   class AdaptHandler< AlgTupleImp, Std::index_sequence< Ints... > >
     : public HandlerInterface
@@ -137,6 +166,11 @@ namespace Fem
 
   public:
 
+    /**
+     * \brief Constructor.
+     *
+     * \param tuple Tuple of all sub-algorithms.
+     */
     AdaptHandler( AlgTupleType& tuple )
     : tuple_( TupleReducerType::apply( tuple ) ),
       rp_( nullptr ),
@@ -150,6 +184,13 @@ namespace Fem
     }
 
 
+    /**
+     * \brief Prepare an initial refined grid.
+     *
+     * \param[in] alg pointer to the calling sub-algorithm
+     * \param[in] loop number of eoc loop
+     * \param[in] tp the time provider
+     */
     template< class SubAlgImp, class TimeProviderImp >
     void initialize_post( SubAlgImp* alg, int loop, TimeProviderImp& tp)
     {
@@ -175,6 +216,13 @@ namespace Fem
       }
     }
 
+    /**
+     * \brief Calls the estimate, mark and adaptation routines to refine the grid.
+     *
+     * \param[in] alg pointer to the calling sub-algorithm
+     * \param[in] loop number of eoc loop
+     * \param[in] tp the time provider
+     */
     template< class SubAlgImp, class TimeProviderImp >
     void solve_pre( SubAlgImp* alg, int loop, TimeProviderImp& tp )
     {
@@ -185,6 +233,13 @@ namespace Fem
       }
     }
 
+    /**
+     * \brief finalize all indicators
+     *
+     * \param[in] alg pointer to the calling sub-algorithm
+     * \param[in] loop number of eoc loop
+     * \param[in] tp the time provider
+     */
     template< class SubAlgImp, class TimeProviderImp >
     void finalize_pre( SubAlgImp* alg, int loop, TimeProviderImp& tp)
     {
@@ -197,6 +252,9 @@ namespace Fem
       rp_.reset( new RestrictionProlongationType( *std::get< i >( tuple_ )->adaptationSolution()... ) );
     }
 
+    /**
+     * \brief Returns true, if all sub-algorithms are adaptive.
+     */
     bool adaptive () const
     {
       bool adaptive = false;
@@ -204,6 +262,9 @@ namespace Fem
       return adaptive;
     }
 
+    /**
+     * \brief Returns the number of elements.
+     */
     size_t numberOfElements() const
     {
       int numElements = 0;
@@ -211,6 +272,9 @@ namespace Fem
       return numElements;
     }
 
+    /**
+     * \brief Returns the number of elements.
+     */
     UInt64Type globalNumberOfElements() const
     {
       if( adaptive() )
@@ -230,18 +294,29 @@ namespace Fem
       return 0;
     }
 
+    /**
+     * \brief Set adaptation manager of sub-algorithms.
+     *
+     * \param[in] tp time provider
+     */
     template< class TimeProviderImp >
     void setAdaptation( TimeProviderImp& tp )
     {
       ForLoopType< SetAdaptation >::apply( tuple_, tp );
     }
 
+    /**
+     * \brief Returns the adaptation time used by adaptation manager.
+     */
     double& adaptationTime()
     {
       adaptationTime_ = adaptive() ? adaptationManager().adaptationTime() : 0.0;
       return adaptationTime_;
     }
 
+    /**
+     * \brief Returns the load balancing time.
+     */
     double& loadBalanceTime()
     {
       loadBalanceTime_ = adaptive() ? adaptationManager().loadBalanceTime() : 0.0;
@@ -298,6 +373,11 @@ namespace Fem
   };
 
 
+  /**
+   * \brief Specialization of a handler class without adaptation.
+   *
+   * \ingroup Handlers
+   */
   template< class TupleImp >
   class AdaptHandler< TupleImp, Std::index_sequence<> >
     : public HandlerInterface

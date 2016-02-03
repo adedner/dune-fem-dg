@@ -10,6 +10,11 @@ namespace Dune
 namespace Fem
 {
 
+  /**
+   * \brief Handler class managing the post processing of data.
+   *
+   * \ingroup Handlers
+   */
   template< class AlgTupleImp,
             class IndexSequenceImp=typename Std::make_index_sequence_impl< std::tuple_size< AlgTupleImp >::value >::type >
   class PostProcessingHandler;
@@ -32,10 +37,9 @@ namespace Fem
     typedef typename std::remove_pointer< typename std::tuple_element< 0, TupleType >::type >::type::GridType
                                                                                     GridType;
 
+  private:
     template< template<int> class Caller >
     using ForLoopType = ForLoop< Caller, 0, numAlgs - 1 >;
-
-
 
     template< int i >
     struct LimitSolution
@@ -47,10 +51,24 @@ namespace Fem
       }
     };
 
+  public:
+
+    /**
+     * \brief Constructor
+     *
+     * \param[in] tuple Tuple of pointer to sub-algorithm.
+     */
     PostProcessingHandler( const AlgTupleType& tuple )
       : tuple_( tuple )
     {}
 
+    /**
+     * \brief Apply post processing to the solution.
+     *
+     * \param[in] alg pointer to the calling sub-algorithm
+     * \param[in] loop number of eoc loop
+     * \param[in] tp the time provider
+     */
     template< class SubAlgImp, class TimeProviderImp >
     void solve_post( SubAlgImp* alg, int loop, TimeProviderImp& tp )
     {
@@ -61,7 +79,11 @@ namespace Fem
     TupleType tuple_;
   };
 
-
+ /**
+   * \brief Handler class doing no post processing.
+   *
+   * \ingroup Handlers
+   */
   template< class TupleImp >
   class PostProcessingHandler< TupleImp, Std::index_sequence<> >
     : public HandlerInterface

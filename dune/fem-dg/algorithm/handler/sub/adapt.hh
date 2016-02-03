@@ -24,12 +24,16 @@ namespace Dune
 {
 namespace Fem
 {
-
+  /**
+   * \brief Adaptation indicator for the estimation and marking of the entities.
+   */
   template< class... IndicatorArgs >
   class AdaptIndicator;
 
 
-
+  /**
+   * \brief Adaptation indicator doing no indication and marking of the entities.
+   */
   template<>
   class AdaptIndicator<>
   {
@@ -49,13 +53,13 @@ namespace Fem
     template< class TimeProviderImp >
     void setAdaptation( TimeProviderImp& tp ){}
 
-    void finalize() {}
+    void preAdapt() {}
 
     void estimateMark( const bool initialAdapt = false ) {}
 
     void postAdapt() {}
 
-    void preAdapt() {}
+    void finalize() {}
 
     int minNumberOfElements() const { return 0; }
 
@@ -66,6 +70,12 @@ namespace Fem
   };
 
 
+  /**
+   * \brief Specialization doing estimation and marking of the entities for adaptation.
+   *
+   * \tparam IndicatorImp an adaptation handler
+   * \tparam EstimatorImp an indicator using the Estimator interface
+   */
   template< class IndicatorImp, class EstimatorImp >
   class AdaptIndicator< IndicatorImp, EstimatorImp >
   {
@@ -94,16 +104,25 @@ namespace Fem
       estimator_( sol_.space(), problem, adaptParam_ )
     {}
 
+    /**
+     * \brief Returns true if adaptive.
+     */
     bool adaptive() const
     {
       return adaptParam_.adaptive();
     }
 
+    /**
+     * \brief Returns the number of elements.
+     */
     size_t numberOfElements() const
     {
       return estimator_.numberOfElements();
     }
 
+    /**
+     * \brief Returns global number of elements.
+     */
     UInt64Type globalNumberOfElements() const
     {
       if( adaptive() && adaptationHandler_ )
@@ -114,6 +133,11 @@ namespace Fem
       return 0;
     }
 
+    /**
+     * \brief Set adaptation handler.
+     *
+     * \param[in] tp time provider
+     */
     template< class TimeProviderImp >
     void setAdaptation( TimeProviderImp& tp )
     {
@@ -128,11 +152,19 @@ namespace Fem
       }
     }
 
+    /**
+     * \brief Clean up indicator.
+     */
     void finalize()
     {
       adaptationHandler_.reset( nullptr );
     }
 
+    /**
+     * \brief estimate the local error and mark all entities
+     *
+     * \param[in] initialAdapt true if this is the initial adaptation (needed for adaptation handler)
+     */
     void estimateMark( const bool initialAdapt = false )
     {
       if( adaptive() )
@@ -153,6 +185,9 @@ namespace Fem
       }
     }
 
+    /**
+     * \brief Reset all indicators.
+     */
     void postAdapt()
     {
       if( adaptive() )
@@ -161,21 +196,35 @@ namespace Fem
 
     }
 
+    /**
+     * \brief Prepare estimator.
+     *
+     * Not used.
+     */
     void preAdapt()
     {}
 
+    /**
+     * \brief Returns the minmal number of element.
+     */
     int minNumberOfElements() const
     {
       assert( adaptationHandler_ );
       return adaptationHandler_->minNumberOfElements();
     }
 
+    /**
+     * \brief Returns the maximal number of element.
+     */
     int maxNumberOfElements() const
     {
       assert( adaptationHandler_ );
       return adaptationHandler_->maxNumberOfElements();
     }
 
+    /**
+     * \brief Returns the maximum finest level of the grid.
+     */
     const int finestLevel() const
     {
       return adaptParam_.finestLevel();

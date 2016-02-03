@@ -13,15 +13,34 @@ namespace Dune
 namespace Fem
 {
 
+  /**
+   * \brief Handler class to collect all data from solver monitor from sub-algorithms.
+   *
+   * \ingroup Handler
+   */
   template< class AlgTupleImp,
             class IndexSequenceImp=typename Std::make_index_sequence_impl< std::tuple_size< AlgTupleImp >::value >::type >
   class SolverMonitorHandler;
 
 
   /**
-   * \brief Handler class to collect all data from solver monitor from sub algorithms.
+   * \brief Specialization of a handler class collecting all data from solver monitor from sub-algorithms.
    *
-   * \ingroup Handler
+   * \ingroup Handlers
+   *
+   * This class manages data collecting from solver monigor for a tuple of sub-algorithms.
+   * For each sub-algorithm data collecting can be disabled using an `index_sequence`.
+   *
+   * Example:
+   * \code
+   * typedef DataWriterHandler< std::tuple< Alg1, Alg2, Alg3, Alg4 >,
+   *                            Std::index_sequence< 0, 2 > >
+   *                                           MyHandler;
+   * \endcode
+   * This would enable data collecting for `Alg1` and `Alg3`;
+   *
+   * \tparam AlgTupleImp A tuple of all known sub-algorithms.
+   * \tparam Std::index_sequence< Ints... > Index sequence for enabling the data collecting feature.
    */
   template< class AlgTupleImp, std::size_t... Ints >
   class SolverMonitorHandler< AlgTupleImp, Std::index_sequence< Ints... > >
@@ -93,16 +112,35 @@ namespace Fem
 
   public:
 
+    /**
+     * \brief Constructor.
+     *
+     * \param[in] tuple Tuple of all sub-algorithms.
+     */
     SolverMonitorHandler( const AlgTupleType& tuple )
       : tuple_( TupleReducerType::apply( tuple ) )
     {}
 
+    /**
+     * \brief Collects solver monitor information.
+     *
+     * \param[in] alg pointer to the calling sub-algorithm
+     * \param[in] loop number of eoc loop
+     * \param[in] tp the time provider
+     */
     template< class SubAlgImp, class TimeProviderImp >
     void postSolve_post( SubAlgImp* alg, int loop, TimeProviderImp& tp )
     {
       ForLoopType< Step >::apply( tuple_, tp );
     }
 
+    /**
+     * \brief Finalizes the collection of solver monitor information.
+     *
+     * \param[in] alg pointer to the calling sub-algorithm
+     * \param[in] loop number of eoc loop
+     * \param[in] tp the time provider
+     */
     template< class SubAlgImp, class TimeProviderImp >
     void finalize_pre( SubAlgImp* alg, int loop, TimeProviderImp& tp )
     {
@@ -128,6 +166,9 @@ namespace Fem
     TupleType  tuple_;
   };
 
+  /**
+   * \brief Specizalization of hander class doing no solver monitor handling.
+   */
   template< class AlgTupleImp >
   class SolverMonitorHandler< AlgTupleImp, Std::index_sequence<> >
     : public HandlerInterface

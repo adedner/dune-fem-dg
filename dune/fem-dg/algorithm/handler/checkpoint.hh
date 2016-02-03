@@ -17,6 +17,13 @@ namespace Dune
 namespace Fem
 {
 
+  /**
+   * \brief Helper class for the CheckPointHandler containing some static methods.
+   *
+   * This class is needed by the CheckPointHandler. All methods in this class
+   * have to be static because the grid is constructed from the checkpoint, here
+   * which (obviuously) has to be done before the construction of algorithms.
+   */
   template< class GridImp >
   class GridCheckPointHandler
   {
@@ -25,14 +32,20 @@ namespace Fem
     typedef Dune::Fem::CheckPointer< GridType, std::tuple<> >  CheckPointerType;
     typedef Dune::Fem::CheckPointerParameters                  CheckPointerParametersType;
 
+    /**
+     * \brief Returns true if checkpoint file exists.
+     */
     static bool checkPointExists( const std::string keyPrefix = "" )
     {
       return (checkPointFile(keyPrefix).size() > 0 );
     }
 
+    /**
+     * \brief Restores the grid.
+     */
     static Dune::GridPtr< GridType > restoreGrid( const std::string keyPrefix = "" )
     {
-      if( 0 == Dune::Fem::MPIManager :: rank () )
+      if( 0 == Dune::Fem::MPIManager::rank () )
       {
         std::cout << std::endl;
         std::cout << "********************************************************" << std::endl;
@@ -46,6 +59,11 @@ namespace Fem
       return gridptr;
     }
 
+    /**
+     * \brief Returns the name of the checkpoint file.
+     *
+     * \param[in] keyPrefix an additional key prefix
+     */
     static inline std::string checkPointFile ( const std::string keyPrefix = "" )
     {
       static std::string checkFileName ;
@@ -61,11 +79,34 @@ namespace Fem
   };
 
 
+  /**
+   * \brief Handler class managing the checkpointing.
+   *
+   * \ingroup Handlers
+   */
   template< class AlgTupleImp,
             class IndexSequenceImp=typename Std::make_index_sequence_impl< std::tuple_size< AlgTupleImp >::value >::type >
   class CheckPointHandler;
 
-
+  /**
+   * \brief Specialization of a handler class managing the checkpointing.
+   *
+   * \ingroup Handlers
+   *
+   * This class manages checkpointing for a tuple of sub-algorithms.
+   * For each sub-algorithm checkpointing can be disabled using an `index_sequence`.
+   *
+   * Example:
+   * \code
+   * typedef CheckPointHandler< std::tuple< Alg1, Alg2, Alg3, Alg4 >,
+   *                            Std::index_sequence< 0, 2 > >
+   *                                           MyHandler;
+   * \endcode
+   * This would enable checkpointing for `Alg1` and `Alg3`;
+   *
+   * \tparam AlgTupleImp A tuple of all known sub-algorithms.
+   * \tparam Std::index_sequence< Ints... > Index sequence for enabling the checkpointing feature.
+   */
   template< class AlgTupleImp, std::size_t... Ints >
   class CheckPointHandler< AlgTupleImp, Std::index_sequence< Ints... > >
     : public HandlerInterface
@@ -104,6 +145,11 @@ namespace Fem
 
   public:
 
+    /**
+     * \brief Constructor.
+     *
+     * \param[in] tuple The whole tuple of all sub-algorithms
+     */
     CheckPointHandler( const AlgTupleType& tuple )
       : tuple_( TupleReducerType::apply( tuple ) ),
         checkPointer_(),
@@ -111,6 +157,13 @@ namespace Fem
         checkParam_( ParameterKey::generate( keyPrefix_, "fem.io." ) )
     {}
 
+    /**
+     * \brief Restore data from a checkpoint file.
+     *
+     * \param[in] alg pointer to the calling sub-algorithm
+     * \param[in] loop number of eoc loop
+     * \param[in] tp the time provider
+     */
     template< class SubAlgImp, class TimeProviderImp >
     bool initialize_pre( SubAlgImp* alg, int loop, TimeProviderImp& tp )
     {
@@ -123,6 +176,13 @@ namespace Fem
       return true;
     }
 
+    /**
+     * \brief Register data.
+     *
+     * \param[in] alg pointer to the calling sub-algorithm
+     * \param[in] loop number of eoc loop
+     * \param[in] tp the time provider
+     */
     template< class SubAlgImp, class TimeProviderImp >
     void initialize_post( SubAlgImp* alg, int loop, TimeProviderImp& tp )
     {
@@ -130,12 +190,24 @@ namespace Fem
         ForLoopType< RegisterData >::apply( tuple_ );
     }
 
+    /**
+     * \brief Write checkpoint data to disk
+     *
+     * \param[in] alg pointer to the calling sub-algorithm
+     * \param[in] loop number of eoc loop
+     * \param[in] tp the time provider
+     */
     template< class SubAlgImp, class TimeProviderImp >
     void preSolve_pre( SubAlgImp* alg, int loop, TimeProviderImp& tp )
     {
       checkPointer( tp ).write( tp );
     }
 
+    /**
+     * \brief Returns the checkpointer.
+     *
+     * \param[in] tp the time provider
+     */
     template< class TimeProviderImp >
     CheckPointerType& checkPointer( const TimeProviderImp& tp  ) const
     {
@@ -153,6 +225,11 @@ namespace Fem
   };
 
 
+  /**
+   * \brief Specialization of a handler class without checkpointing.
+   *
+   * \ingroup Handlers
+   */
   template< class AlgTupleImp >
   class CheckPointHandler< AlgTupleImp, Std::index_sequence<> >
     : public HandlerInterface

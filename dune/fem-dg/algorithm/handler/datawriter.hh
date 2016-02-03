@@ -16,11 +16,34 @@ namespace Dune
 {
 namespace Fem
 {
-
+  /**
+   * \brief Handler class managing the data writing.
+   *
+   * \ingroup Handlers
+   */
   template< class AlgTupleImp,
             class IndexSequenceImp=typename Std::make_index_sequence_impl< std::tuple_size< AlgTupleImp >::value >::type >
   class DataWriterHandler;
 
+  /**
+   * \brief Specialization of a handler class managing the data writing.
+   *
+   * \ingroup Handlers
+   *
+   * This class manages data writing for a tuple of sub-algorithms.
+   * For each sub-algorithm data writing can be disabled using an `index_sequence`.
+   *
+   * Example:
+   * \code
+   * typedef DataWriterHandler< std::tuple< Alg1, Alg2, Alg3, Alg4 >,
+   *                            Std::index_sequence< 0, 2 > >
+   *                                           MyHandler;
+   * \endcode
+   * This would enable data writing for `Alg1` and `Alg3`;
+   *
+   * \tparam AlgTupleImp A tuple of all known sub-algorithms.
+   * \tparam Std::index_sequence< Ints... > Index sequence for enabling the data writing feature.
+   */
   template< class AlgTupleImp, std::size_t... Ints >
   class DataWriterHandler< AlgTupleImp, Std::index_sequence< Ints... > >
     : public HandlerInterface
@@ -80,6 +103,11 @@ namespace Fem
 
   public:
 
+    /**
+     * \brief Constructor.
+     *
+     * \param[in] tuple Tuple of all sub-algorithms.
+     */
     DataWriterHandler( const AlgTupleType& tuple )
       : tuple_( TupleReducerType::apply( tuple ) ),
         dataWriter_(),
@@ -87,6 +115,13 @@ namespace Fem
     {
     }
 
+    /**
+     * \brief Creates the data writer.
+     *
+     * \param[in] alg pointer to the calling sub-algorithm
+     * \param[in] loop number of eoc loop
+     * \param[in] tp the time provider
+     */
     template< class SubAlgImp, class TimeProviderImp >
     void initialize_post( SubAlgImp* alg, int loop, TimeProviderImp& tp )
     {
@@ -94,6 +129,13 @@ namespace Fem
                                              alg->eocParams().dataOutputParameters( loop, alg->dataPrefix() ) ) );
     }
 
+    /**
+     * \brief Write current solution and additional output data to disk.
+     *
+     * \param[in] alg pointer to the calling sub-algorithm
+     * \param[in] loop number of eoc loop
+     * \param[in] tp the time provider
+     */
     template< class SubAlgImp, class TimeProviderImp >
     void preSolve_pre( SubAlgImp* alg, int loop, TimeProviderImp& tp )
     {
@@ -107,6 +149,13 @@ namespace Fem
       }
     }
 
+    /**
+     * \brief Write current, final solution and additional output data to disk.
+     *
+     * \param[in] alg pointer to the calling sub-algorithm
+     * \param[in] loop number of eoc loop
+     * \param[in] tp the time provider
+     */
     template< class SubAlgImp, class TimeProviderImp >
     void finalize_pre( SubAlgImp* alg, int loop, TimeProviderImp& tp )
     {
@@ -119,6 +168,10 @@ namespace Fem
       }
     }
 
+    /**
+     * \brief Returns a tuple of pointer to all discrete functions that should be
+     * written to disk.
+     */
     IOTupleType dataTuple()
     {
       return dataTuple_;
@@ -137,6 +190,11 @@ namespace Fem
   };
 
 
+  /**
+   * \brief Handler class doing no the data writing.
+   *
+   * \ingroup Handlers
+   */
   template< class AlgTupleImp >
   class DataWriterHandler< AlgTupleImp, Std::index_sequence<> >
     : public HandlerInterface
