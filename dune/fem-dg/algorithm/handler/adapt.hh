@@ -201,7 +201,7 @@ namespace Fem
         {
           // call initial adaptation
           estimateMark( true );
-          adapt();
+          adapt( alg, loop, tp );
 
           // setup problem again
           alg->initialize( loop, tp );
@@ -229,7 +229,7 @@ namespace Fem
       if( tp.timeStep() % adaptParam_.adaptCount() == 0 )
       {
         estimateMark( false );
-        adapt();
+        adapt( alg, loop, tp );
       }
     }
 
@@ -347,20 +347,32 @@ namespace Fem
         ForLoopType< EstimateMark >::apply( tuple_, initialAdaptation );
     }
 
-    void adapt()
+    template< class SubAlgImp, class TimeProviderImp >
+    void adapt( SubAlgImp* alg, int loop, TimeProviderImp& tp)
     {
       if( adaptive() )
       {
-        //int sequence = getSequence( get<0>( tuple_ ) );
+        int sequence = getSequence( get<0>( tuple_ ) );
 
         ForLoopType< PreAdapt >::apply( tuple_ );
         adaptationManager().adapt();
         ForLoopType< PostAdapt >::apply( tuple_ );
 
-        //TODO include limiterHandler
-        //if( sequence !=  getSequence( get<0>( tuple_ ) ) )
-          //limiterHandler_.step( get<0>( tuple_ )->adaptationSolution() );
+        if( sequence !=  getSequence( get<0>( tuple_ ) ) )
+          alg->postProcessing().solve_post( alg, loop, tp );
       }
+    }
+
+    template< class T >
+    static typename enable_if< std::is_void< typename std::remove_pointer<T>::type::AdaptIndicatorType >::value, int >::type
+    getSequence( T ){}
+    template< class T >
+    static typename enable_if< !std::is_void< typename std::remove_pointer<T>::type::AdaptIndicatorType >::value, int >::type
+    getSequence( T elem )
+    {
+      if( elem->adaptationSolution() )
+        return elem->adaptationSolution()->space().sequence();
+      return 0;
     }
 
   private:
