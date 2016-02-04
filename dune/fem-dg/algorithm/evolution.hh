@@ -377,9 +377,6 @@ namespace Fem
      */
     void solve ( const int loop, TimeProviderType& tp, const double endTime )
     {
-      // get grid reference
-      GridType& grid = this->grid();
-
       // print info on each printCount step
       const int printCount = param_.printCount();
 
@@ -460,20 +457,9 @@ namespace Fem
         // stop FemTimer for this time step
         Dune::FemTimer::stop(timeStepTimer_,Dune::FemTimer::sum);
 
-        const int timeStep = tp.timeStep() + 1 ;
-        if( (printCount > 0) && (timeStep % printCount) == 0)
-        {
-          if( grid.comm().rank() == 0 )
-          {
-            std::cout << "step: " << timeStep << "  time = " << tp.time()+tp.deltaT() << ", dt = " << deltaT
-                      <<",  grid size: " << gridSize() << ", elapsed time: ";
-            Dune::FemTimer::print(std::cout,timeStepTimer_);
-            std::cout << "Newton:  " << solverMonitorHandler_.getData( "Newton" ) << ", ";
-            std::cout << "ILS:  " << solverMonitorHandler_.getData( "ILS" ) << ", ";
-            std::cout << "OC:  " << solverMonitorHandler_.getData( "OC" ) << ", ";
-            std::cout << std::endl;
-          }
-        }
+        const int timeStep = tp.timeStep() + 1;
+
+        printTimeStepInformation( timeStep, tp );
 
         // next advance should not exceed endtime
         if( stopAtEndTime )
@@ -510,6 +496,14 @@ namespace Fem
 
       // prepare the fixed time step for the next eoc loop
       fixedTimeStep_ /= param_.fixedTimeStepEocLoopFactor();
+    }
+
+    /**
+     * \brief Returns type of post processing handler
+     */
+    virtual PostProcessingHandlerType& postProcessing()
+    {
+      return postProcessingHandler_;
     }
 
     /**
@@ -636,6 +630,26 @@ namespace Fem
 
     SubAlgorithmTupleType &subAlgorithmTuple () { return tuple_; }
     const SubAlgorithmTupleType &subAlgorithmTuple () const { return tuple_; }
+
+  private:
+
+    void printTimeStepInformation( int timeStep, TimeProviderType& tp )
+    {
+      const int printCount = param_.printCount();
+      if( (printCount > 0) && (timeStep % printCount) == 0)
+      {
+        if( grid().comm().rank() == 0 )
+        {
+          std::cout << "step: " << timeStep << "  time = " << tp.time()+tp.deltaT() << ", dt = " << tp.deltaT()
+                    <<",  grid size: " << gridSize() << ", elapsed time: ";
+          Dune::FemTimer::print(std::cout,timeStepTimer_);
+          std::cout << "Newton:  " << solverMonitorHandler_.getData( "Newton" ) << ", ";
+          std::cout << "ILS:  " << solverMonitorHandler_.getData( "ILS" ) << ", ";
+          std::cout << "OC:  " << solverMonitorHandler_.getData( "OC" ) << ", ";
+          std::cout << std::endl;
+        }
+      }
+    }
 
   protected:
     SubAlgorithmTupleType          tuple_;
