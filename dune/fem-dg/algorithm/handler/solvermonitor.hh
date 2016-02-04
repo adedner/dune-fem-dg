@@ -28,7 +28,7 @@ namespace Fem
    *
    * \ingroup Handlers
    *
-   * This class manages data collecting from solver monigor for a tuple of sub-algorithms.
+   * This class manages data collecting from solver monitor for a tuple of sub-algorithms.
    * For each sub-algorithm data collecting can be disabled using an `index_sequence`.
    *
    * Example:
@@ -147,14 +147,6 @@ namespace Fem
       ForLoopType< Finalize >::apply( tuple_, alg->gridWidth(), alg->gridSize() );
     }
 
-    template< class... StringType >
-    void print( std::string str, StringType& ...tail )
-    {
-      std::cout << str << ":  " << getData( str ) << ", ";
-      print( tail... );
-    }
-    void print() {}
-
     const double getData( const std::string name, CombinationType comb = CombinationType::max ) const
     {
       double res = (comb == CombinationType::max) ? std::numeric_limits<double>::max() : 0.0;
@@ -177,9 +169,6 @@ namespace Fem
     template <class ... Args>
     SolverMonitorHandler(Args&& ... )
     {}
-
-    template <class ... Args>
-    void print(Args&& ... ) const {}
 
     template <class ... Args>
     const double getData( Args&& ... ) const

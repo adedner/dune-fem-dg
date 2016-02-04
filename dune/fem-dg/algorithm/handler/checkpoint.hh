@@ -153,6 +153,7 @@ namespace Fem
     CheckPointHandler( const AlgTupleType& tuple )
       : tuple_( TupleReducerType::apply( tuple ) ),
         checkPointer_(),
+        checkPointRestored_( false ),
         keyPrefix_( std::get<0>( tuple_ )->name() ),
         checkParam_( ParameterKey::generate( keyPrefix_, "fem.io." ) )
     {}
@@ -165,15 +166,15 @@ namespace Fem
      * \param[in] tp the time provider
      */
     template< class SubAlgImp, class TimeProviderImp >
-    bool initialize_pre( SubAlgImp* alg, int loop, TimeProviderImp& tp )
+    void initialize_pre( SubAlgImp* alg, int loop, TimeProviderImp& tp )
     {
-      if( BaseType::checkPointExists(keyPrefix_) )
+      if( alg->eocParams().steps() == 1 && BaseType::checkPointExists(keyPrefix_) )
       {
         // restore data
         checkPointer( tp ).restoreData( std::get<0>(tuple_)->solution().space().grid(), BaseType::checkPointFile( keyPrefix_ ) );
-        return false;
+        checkPointRestored_ = true;
       }
-      return true;
+      checkPointRestored_ = false;
     }
 
     /**
@@ -217,9 +218,15 @@ namespace Fem
       return *checkPointer_;
     }
 
+    bool checkPointRestored()
+    {
+      return checkPointRestored_;
+    }
+
   protected:
     TupleType               tuple_;
     mutable std::unique_ptr< CheckPointerType > checkPointer_;
+    bool checkPointRestored_;
     const std::string keyPrefix_;
     CheckPointerParametersType checkParam_;
   };
@@ -240,7 +247,7 @@ namespace Fem
     CheckPointHandler( Args&& ... ) {}
 
     template< class ... Args>
-    static bool checkPointExists( Args&& ... ) {return false;}
+    static bool checkPointRestored( Args&& ... ) {return false;}
 
     template< class GridImp, class ... Args>
     static Dune::GridPtr< GridImp > restoreGrid( Args&& ... )

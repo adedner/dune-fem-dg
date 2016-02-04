@@ -139,13 +139,25 @@ namespace Fem
     template< class SubAlgImp, class TimeProviderImp >
     void preSolve_pre( SubAlgImp* alg, int loop, TimeProviderImp& tp )
     {
-      if( dataWriter_ && dataWriter_->willWrite( tp ) )
-      {
-        //update all additional Output
-        ForLoopType< AdditionalOutput >::apply( tuple_, tp );
+      finalize_pre( alg, loop, tp );
+    }
 
-        //writeData
-        dataWriter_->write( tp );
+    /**
+     * \brief Write current solution and additional output data to disk.
+     *
+     * \param[in] alg pointer to the calling sub-algorithm
+     * \param[in] loop number of eoc loop
+     * \param[in] tp the time provider
+     */
+    template< class SubAlgImp, class TimeProviderImp >
+    void postSolve_post( SubAlgImp* alg, int loop, TimeProviderImp& tp )
+    {
+      // Check that no NAN have been generated
+      if( !alg->checkSolutionValid( loop, tp ) )
+      {
+        finalize_pre( alg, loop, tp );
+        std::cerr << "Solution is not valid. Aborting." << std::endl;
+        std::abort();
       }
     }
 

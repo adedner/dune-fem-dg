@@ -246,11 +246,6 @@ namespace Fem
       ForLoopType< Finalize >::apply( tuple_ );
     }
 
-    template< std::size_t ... i >
-    void setRestrProlong( Std::index_sequence< i ... > )
-    {
-      rp_.reset( new RestrictionProlongationType( *std::get< i >( tuple_ )->adaptationSolution()... ) );
-    }
 
     /**
      * \brief Returns true, if all sub-algorithms are adaptive.
@@ -324,6 +319,12 @@ namespace Fem
     }
 
   protected:
+    template< std::size_t ... i >
+    void setRestrProlong( Std::index_sequence< i ... > )
+    {
+      rp_.reset( new RestrictionProlongationType( *std::get< i >( tuple_ )->adaptationSolution()... ) );
+    }
+
     const int finestLevel() const
     {
       int finestLevel = 0;

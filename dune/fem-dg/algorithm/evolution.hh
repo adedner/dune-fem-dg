@@ -302,7 +302,7 @@ namespace Fem
     /**
      * \brief Constructor
      *
-     * \param grid
+     * \param grid the grid
      * \param name the name of the algorithm
      */
     EvolutionAlgorithmBase ( GridType &grid, const std::string name = "" )
@@ -320,7 +320,9 @@ namespace Fem
       fixedTimeStep_( param_.fixedTimeStep() )
     {}
 
-    // return grid width of grid (overload in derived classes)
+    /**
+     * \brief Returns grid width of grid (overload in derived classes)
+     */
     double gridWidth () const
     {
       double res=0.0;
@@ -328,7 +330,9 @@ namespace Fem
       return res;
     }
 
-    // return size of grid
+    /**
+     * \brief Returns size of grid.
+     */
     UInt64Type gridSize () const
     {
       UInt64Type res=0;
@@ -337,7 +341,7 @@ namespace Fem
     }
 
     /**
-     *  \brief checks whether the computed solution is physically valid, i.e. contains NaNs.
+     * \brief checks whether the computed solution is physically valid, i.e. contains NaNs.
      */
     bool checkSolutionValid( const int loop, TimeProviderType& tp ) const
     {
@@ -367,8 +371,6 @@ namespace Fem
     /**
      *  \brief Solves the whole problem
      *
-     *
-     *
      *  \param loop the number of the eoc loop
      *  \param tp time provider
      *  \param endTime end Time of the simulation
@@ -391,18 +393,16 @@ namespace Fem
       const int maximalTimeSteps = param_.maximalTimeSteps();
 #endif
 
-      // restoreData if checkpointing is enabled (default is disabled)
-      bool newStart = ( eocParams().steps() == 1) ? checkPointHandler_.initialize_pre( this, loop, tp ) : false;
+      // HANDLER
+      checkPointHandler_.initialize_pre( this, loop, tp );
 
       initialize( loop, tp );
 
-      if( newStart )
+      // HANDLER
+      if( !checkPointHandler_.checkPointRestored() )
         adaptHandler_.initialize_post( this, loop, tp );
       dataWriterHandler_.initialize_post( this, loop, tp );
       checkPointHandler_.initialize_post( this, loop, tp );
-
-      //HandlerCaller handler_( this, loop, tp );
-      //handler_.initialize_post( adaptHandler_, dataWriterHandler_, checkPointHandler_ )
 
       // start first time step with prescribed fixed time step
       // if it is not 0 otherwise use the internal estimate
@@ -423,6 +423,7 @@ namespace Fem
       //******************************
       for( ; tp.time() < endTime; )
       {
+        // HANDLER
         dataWriterHandler_.preSolve_pre( this, loop, tp );
         checkPointHandler_.preSolve_pre( this, loop, tp );
 
@@ -440,30 +441,24 @@ namespace Fem
 
         preStep( loop, tp );
 
-        // estimate, mark, adapt
+        // HANDLER
         adaptHandler_.solve_pre( this, loop, tp );
 
         // perform the solve for one time step, i.e. solve ODE
         step( loop, tp );
 
-        // do post processing, i.e. limit solution if necessary
+        // HANDLER
         postProcessingHandler_.solve_post( this, loop, tp );
 
         postStep( loop, tp );
 
+        // HANDLER
         solverMonitorHandler_.postSolve_post( this, loop, tp );
         diagnosticsHandler_.postSolve_post( this, loop, tp );
+        dataWriterHandler_.postSolve_post( this, loop, tp );
 
         // stop FemTimer for this time step
         Dune::FemTimer::stop(timeStepTimer_,Dune::FemTimer::sum);
-
-        // Check that no NAN have been generated
-        if( !checkSolutionValid( loop, tp ) )
-        {
-          dataWriterHandler_.finalize_pre( this, loop, tp );
-          std::cerr << "Solution is not valid. Aborting." << std::endl;
-          std::abort();
-        }
 
         const int timeStep = tp.timeStep() + 1 ;
         if( (printCount > 0) && (timeStep % printCount) == 0)
@@ -473,7 +468,9 @@ namespace Fem
             std::cout << "step: " << timeStep << "  time = " << tp.time()+tp.deltaT() << ", dt = " << deltaT
                       <<",  grid size: " << gridSize() << ", elapsed time: ";
             Dune::FemTimer::print(std::cout,timeStepTimer_);
-            solverMonitorHandler_.print( "Newton", "ILS", "OC" );
+            std::cout << "Newton:  " << solverMonitorHandler_.getData( "Newton" ) << ", ";
+            std::cout << "ILS:  " << solverMonitorHandler_.getData( "ILS" ) << ", ";
+            std::cout << "OC:  " << solverMonitorHandler_.getData( "OC" ) << ", ";
             std::cout << std::endl;
           }
         }
@@ -503,66 +500,137 @@ namespace Fem
         }
       } /****** END of time loop *****/
 
-      // finalize eoc step
+      // HANDLER
+      diagnosticsHandler_.finalize_pre( this, loop, tp );
+      dataWriterHandler_.finalize_pre( this, loop, tp );
+      solverMonitorHandler_.finalize_pre( this, loop, tp );
+      adaptHandler_.finalize_pre( this, loop, tp );
+
       finalize( loop, tp );
 
       // prepare the fixed time step for the next eoc loop
       fixedTimeStep_ /= param_.fixedTimeStepEocLoopFactor();
     }
 
+    /**
+     * \brief Returns solver monitor handler.
+     */
     virtual SolverMonitorHandlerType& monitor()
     {
       return solverMonitorHandler_;
     }
 
+    /**
+     * \brief Returns data tuple for data writing.
+     */
     virtual IOTupleType dataTuple ()
     {
       return dataWriterHandler_.dataTuple();
     }
 
-    //! returns data prefix for EOC loops ( default is loop )
+    /**
+     * \brief Returns data prefix for EOC loops (default is loop).
+     */
     virtual std::string dataPrefix () const
     {
       //only dataPrefix from first tuple element
       return std::get<0>( tuple_ )->problem().dataPrefix();
     }
 
-    // before first step, do data initialization
+    /**
+     * \brief Initializes all sub-algorithms.
+     *
+     * This method calls consecutively `initialize()` for all sub-algorithms.
+     * \code
+     * alg1_.initialize( loop, tp );
+     * alg2_.initialize( loop, tp );
+     * alg3_.initialize( loop, tp );
+     * // and so on.
+     * \endcode
+     *
+     * \param[in] loop number of eoc loop
+     * \param[in] tp the time provider
+     */
     virtual void initialize ( int loop, TimeProviderType &tp )
     {
       ForLoopType< Initialize >::apply( tuple_, adaptHandler_, loop, &tp );
     }
 
+    /**
+     * \brief Prepare solve of all sub-algorithms.
+     *
+     * This method calls consecutively `preSolve()` for all sub-algorithms.
+     * \code
+     * alg1_.preSolve( loop, tp );
+     * alg2_.preSolve( loop, tp );
+     * alg3_.preSolve( loop, tp );
+     * // and so on.
+     * \endcode
+     *
+     * \param[in] loop number of eoc loop
+     * \param[in] tp the time provider
+     */
     virtual void preStep ( int loop, TimeProviderType &tp )
     {
       ForLoopType< PreSolve >::apply( tuple_, loop, &tp );
     }
 
-    //Needs to be overridden to enable fancy steps
+    /**
+     * \brief Solves all sub-algorithms.
+     *
+     * This method calls consecutively `solve()` for all sub-algorithms.
+     * \code
+     * alg1_.solve( loop, tp );
+     * alg2_.solve( loop, tp );
+     * alg3_.solve( loop, tp );
+     * // and so on.
+     * \endcode
+     *
+     * \note For coupled algorithms, this method has to be overloaded.
+     *
+     * \param[in] loop number of eoc loop
+     * \param[in] tp the time provider
+     */
     virtual void step ( int loop, TimeProviderType &tp )
     {
       ForLoopType< Solve >::apply( tuple_, loop, &tp );
     }
 
+    /**
+     * \brief Finish solves of all sub-algorithms.
+     *
+     * This method calls consecutively `postSolve()` for all sub-algorithms.
+     * \code
+     * alg1_.postSolve( loop, tp );
+     * alg2_.postsolve( loop, tp );
+     * alg3_.postsolve( loop, tp );
+     * // and so on.
+     * \endcode
+     *
+     * \param[in] loop number of eoc loop
+     * \param[in] tp the time provider
+     */
     virtual void postStep ( int loop, TimeProviderType &tp )
     {
       ForLoopType< PostSolve >::apply( tuple_, loop, &tp );
     }
 
-
+    /**
+     * \brief Finish solves of all sub-algorithms.
+     *
+     * This method calls consecutively `finalize()` for all sub-algorithms.
+     * \code
+     * alg1_.finalize( loop, tp );
+     * alg2_.finalize( loop, tp );
+     * alg3_.finalize( loop, tp );
+     * // and so on.
+     * \endcode
+     *
+     * \param[in] loop number of eoc loop
+     * \param[in] tp the time provider
+     */
     void finalize ( int loop, TimeProviderType &tp )
     {
-      // flush diagnostics data
-      diagnosticsHandler_.finalize_pre( this, loop, tp );
-
-      // write last time step
-      dataWriterHandler_.finalize_pre( this, loop, tp );
-
-      // adjust average time step size
-      solverMonitorHandler_.finalize_pre( this, loop, tp );
-
-      adaptHandler_.finalize_pre( this, loop, tp );
-
       ForLoopType< Finalize >::apply( tuple_, loop, &tp );
     }
 
