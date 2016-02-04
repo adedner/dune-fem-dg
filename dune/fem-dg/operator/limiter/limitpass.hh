@@ -254,7 +254,7 @@ namespace Fem
     enum { dimGrid = GridType::dimension };
 
     typedef GlobalTraitsImp Traits;
-    typedef typename Traits::FunctionSpaceType FunctionSpaceType;
+    typedef typename Traits::ModelType::ProblemType::FunctionSpaceType FunctionSpaceType;
 
     typedef typename Traits::VolumeQuadratureType VolumeQuadratureType;
     typedef typename Traits::FaceQuadratureType FaceQuadratureType;
