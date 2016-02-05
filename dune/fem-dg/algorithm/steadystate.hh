@@ -54,6 +54,11 @@ namespace Fem
   };
 
 
+  /**
+   * \brief An algorithm modelling a stationary partial differential equation.
+   *
+   * \ingroup Algorithms
+   */
   template< int polOrder, template<class, class > class SteadyStateCreatorType, class... ProblemTraits>
   class SteadyStateAlgorithm
     : public AlgorithmInterface< SteadyStateTraits< polOrder, ProblemTraits... > >
@@ -125,8 +130,8 @@ namespace Fem
   public:
     using BaseType::grid;
 
-    SteadyStateAlgorithm ( GridType &grid )
-    : BaseType( grid ),
+    SteadyStateAlgorithm ( GridType &grid, const std::string name  = "" )
+    : BaseType( grid, name ),
       tuple_( SteadyStateCreatorType< SubAlgorithmTupleType, GridType >::apply( grid ) ),
       solverMonitorHandler_( tuple_ ),
       dataWriterHandler_( tuple_ )

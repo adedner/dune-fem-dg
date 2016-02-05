@@ -22,22 +22,6 @@ namespace Dune
 namespace Fem
 {
 
-  /**
-   *  \addtogroup Algorithms
-   *
-   *  Algorithms are mainly partial differential equations solvers.
-   *  They provide all important information for an efficient solve of the PDE.
-   *
-   *
-   */
-
-  /**
-   *  \addtogroup SubAlgorithms
-   *
-   *  \ingroup Algorithms
-   *
-   *  Structure of SubAlgorithms
-   */
   template< class Grid, class ProblemTraits, int polOrder >
   struct SubAlgorithmInterfaceTraits
   {
@@ -91,7 +75,7 @@ namespace Fem
   /**
    *  \brief This is the interface all sub algorithms (stationary and instationary) depends on.
    *
-   *  \ingroup Algorithms
+   *  \ingroup SubAlgorithms
    *
    *  The class SubAlgorithmInterface is the base class for all sub algorithms. We suggest to derive
    *  your own Algorithm from this interface.

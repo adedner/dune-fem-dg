@@ -23,25 +23,31 @@ namespace Dune
 {
 namespace Fem
 {
-/*! \ingroup Pass
- * Description: Solver for equations of the form
-** \f{eqnarray*}
-**   v + div(f(x,u)) + A(x,u)\nabla u &=& S(x,u)  \quad\mbox{in}\quad \Omega    \\
-** \f}
-** where \f$ u \f$ is the argument and \f$ v \f$ is computed.
-** Weak formulation on a cell T:
-** \f[
-** \int_T v \phi = -\int_{\partial T} g \phi + \int_T f \cdot \nabla \phi + \int_T Q \phi
-** \f]
-** with \f$ g \approx f \cdot n + \tilde{A}[u] \cdot n \f$ and \f$ Q \approx S - A \nabla u \f$
-** where \f$ \tilde{A} \f$ denotes the arithmetic average and \f$ [u] \f$ the jump of
-** \f$ u \f$ over the cell interface.\\
-** The discrete model provides the \b analyticalFlux f, the \b source Q and the \b numericalFlux g.
-** @{
-**************************************************************************/
-
-  //! Concrete implementation of Pass for first hyperbolic systems using
-  //! LDG
+ /**
+  * \brief Concrete implementation of Pass for first hyperbolic systems
+  *
+  * \ingroup Pass
+  * Description: Solver for equations of the form
+  * \f{eqnarray*}
+  *   v + \nabla\cdot(F(x,u) + A(x,u)\nabla u) &=& S(x,u)  \quad\mbox{in}\quad \Omega    \\
+  * \f}
+  * where \f$ u \f$ is the argument and \f$ v \f$ is computed.
+  * Weak formulation on a cell T:
+  * \f[
+  * \int_T v \varphi = -\int_{\partial T} g \varphi + \int_T F \cdot \nabla \varphi + \int_T Q \varphi
+  * \f]
+  * with
+  * \f[ g \approx F \cdot n + \tilde{A}[u] \cdot n \f]
+  * and
+  * \f[ Q \approx S - A \nabla u \f]
+  * where \f$ \tilde{A} \f$ denotes the arithmetic average and \f$ [u] \f$ the jump of
+  * \f$ u \f$ over the cell interface.
+  *
+  * The discrete model provides:
+  * * \f$F\f$: `analyticalFlux()`,
+  * * \f$Q\f$: `source()`,
+  * * \f$g\f$: `numericalFlux()`.
+  */
   template< class DiscreteModelImp, class PreviousPassImp , int passIdImp = -1 >
   class LocalCDGPass :
     public LocalPass< DiscreteModelImp , PreviousPassImp , passIdImp >
@@ -956,7 +962,6 @@ namespace Fem
     LocalMassMatrixStorageType localMassMatrix_;
     mutable bool reallyCompute_;
   };
-//! @}
 
 } // end namespace
 } // end namespace Dune

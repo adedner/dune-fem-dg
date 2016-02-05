@@ -17,6 +17,11 @@ namespace Dune
 namespace Fem
 {
 
+  /**
+   * \brief Sub-Algorithm modeling an advection-diffusion equation
+   *
+   * \ingroup SubAlgorithms
+   */
   template <class GridImp,
             class ProblemTraits,
             int polynomialOrder >

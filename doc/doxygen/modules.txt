@@ -11,16 +11,9 @@ Only \addtogroup is used in the code documentation.
 
 /**
 
-\defgroup Algorithm Algorithm
+\defgroup Algorithms Algorithm
   
-  \defgroup EvolutionAlgorithm EvolutionAlgorithm
-  \ingroup Algorithm
-
-  \defgroup SteadyStateAlgorithm SteadyStateAlgorithm
-  \ingroup Algorithm
-
-\defgroup SubAlgorithms Sub-Algorithms
-
+\defgroup SubAlgorithms Sub-Algorithm
 
 \defgroup Analytical Analytical
 
@@ -30,15 +23,17 @@ Only \addtogroup is used in the code documentation.
   \defgroup Model Model
   \ingroup Analytical
 
-\defgroup DiscreteTraits DiscreteTraits
+\defgroup Discretization Discretization
 
   \defgroup DiscreteFunction DiscreteFunction
-  \ingroup DiscreteTraits 
+  \ingroup Discretization 
 
   \defgroup Operator Operator
-  \ingroup DiscreteTraits
   \ingroup Discretization
 
+    \defgroup Pass General Pass Issues
+    \ingroup Operator
+    
     \defgroup PassOperator Pass-based Operator
     \ingroup Operator
 
@@ -49,13 +44,11 @@ Only \addtogroup is used in the code documentation.
     \ingroup Operator
 
   \defgroup Solver Solver
-  \ingroup DiscreteTraits
+  \ingroup Discretization
   
   \defgroup Handlers Handler
-  \ingroup DiscreteTraits
+  \ingroup Discretization
 
-
-\defgroup Discretization
 
 \defgroup FemDGParameter
 

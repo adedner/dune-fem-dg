@@ -151,7 +151,6 @@ namespace Fem
   };
 
 
-
   template< class GridPartImp, class DiscreteFunctionImp, class SigmaFunctionSpaceImp, class AssemblerImp, int polOrder>
   class PoissonSigmaEstimator
   {
@@ -558,7 +557,7 @@ namespace Fem
   /**
    *  \brief Algorithm for solving an elliptic PDE.
    *
-   *  \ingroup Algorithms
+   *  \ingroup SubAlgorithms
    */
   template <class GridImp,
             class ProblemTraits,

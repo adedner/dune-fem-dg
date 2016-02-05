@@ -245,7 +245,7 @@ namespace Fem
   /**
    *  \brief Algorithm for solving the Stokes equation.
    *
-   *  \ingroup Algorithms
+   *  \ingroup SubAlgorithms
    */
   template <class GridImp, class ProblemTraits, class ElliptProblemTraits, int polOrd >
   class SubStokesAlgorithm : public SubSteadyStateAlgorithm<GridImp,ProblemTraits,polOrd>

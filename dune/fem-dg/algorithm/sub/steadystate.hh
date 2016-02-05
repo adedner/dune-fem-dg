@@ -192,7 +192,7 @@ namespace Fem
   /**
    *  \brief Algorithm for solving a stationary PDE.
    *
-   *  \ingroup Algorithms
+   *  \ingroup SubAlgorithms
    */
   template< class Grid, class ProblemTraits, int polOrder >
   class SubSteadyStateAlgorithm
