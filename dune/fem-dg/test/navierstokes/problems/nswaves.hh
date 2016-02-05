@@ -26,7 +26,11 @@ namespace Dune
 {
 namespace Fem
 {
-
+  /**
+   * \brief Compressible Navier-Stokes problem.
+   *
+   * \ingroup NavierStokesProblems
+   */
   template <class GridType>
   class NSWaves : public EvolutionProblemInterface<
                     Dune::Fem::FunctionSpace< typename GridType::ctype,

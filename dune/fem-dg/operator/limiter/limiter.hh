@@ -17,7 +17,7 @@ namespace Fem
   /**
    * \brief Limited reconstruction.
    *
-   * \ingroup Pass
+   * \ingroup PassBased
    */
   template <class Model, class DiscreteFunction>
   class LimitedReconstruction

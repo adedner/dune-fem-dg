@@ -98,6 +98,11 @@ namespace Fem
 
   };
 
+  /**
+   * \brief Improved Ode Solver using the Runge-Kutta-Scheme
+   *
+   * \ingroup Solvers
+   */
   template <class Operator,
             class AdvectionOperator,
             class DiffusionOperator>

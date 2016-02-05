@@ -15,6 +15,11 @@ namespace Fem
 namespace Poisson
 {
 
+  /**
+   * \brief Data function interface for the Poisson problem.
+   *
+   * \ingroup PoissonDataFunctions
+   */
   template<int dim, class DomainField, class Field>
   class DataFunctionIF
   {
@@ -120,6 +125,11 @@ namespace Poisson
     }
   };
 
+  /**
+   * \brief Data functions for the Poisson problem.
+   *
+   * \ingroup PoissonDataFunctions
+   */
   template <int dim, class DomainField, class Field>
   class AlbertaProblem : public DataFunctionIF<dim,DomainField,Field>
   {
@@ -178,7 +188,11 @@ namespace Poisson
     }
   };
 
-
+  /**
+   * \brief Data functions for the Poisson problem.
+   *
+   * \ingroup PoissonDataFunctions
+   */
   template <int dim, class DomainField, class Field>
   class SinSinSin : public DataFunctionIF<dim,DomainField,Field>
   {
@@ -336,7 +350,11 @@ namespace Poisson
     }
   };
 
-
+  /**
+   * \brief Data functions for the Poisson problem.
+   *
+   * \ingroup PoissonDataFunctions
+   */
   template <int dim, class DomainField, class Field>
   class SinSin : public DataFunctionIF<dim,DomainField,Field>
   {
@@ -396,6 +414,11 @@ namespace Poisson
     }
   };
 
+  /**
+   * \brief Data functions for the Poisson problem.
+   *
+   * \ingroup PoissonDataFunctions
+   */
   template <int dim, class DomainField, class Field>
   class CosCos : public DataFunctionIF<dim,DomainField,Field>
   {
@@ -459,7 +482,13 @@ namespace Poisson
     }
   };
 
-  //! problem from Castillo paper
+  /**
+   * \brief Data functions for the Poisson problem.
+   *
+   * Problem from Castillo paper.
+   *
+   * \ingroup PoissonDataFunctions
+   */
   template <int dim, class DomainField, class Field>
   class CastilloProblem : public DataFunctionIF<dim,DomainField,Field>
   {
@@ -518,7 +547,11 @@ namespace Poisson
     }
   };
 
-  //! problem reentrant corner
+  /**
+   * \brief Data functions "Reentrant corner" for the Poisson problem.
+   *
+   * \ingroup PoissonDataFunctions
+   */
   template <class DomainField, class Field>
   class ReentrantCorner2d : public DataFunctionIF<2,DomainField,Field>
   {
@@ -602,7 +635,11 @@ namespace Poisson
     }
   };
 
-  //! problem reentrant corner 3d
+  /**
+   * \brief Data functions "Reentrant corner 3D" for the Poisson problem.
+   *
+   * \ingroup PoissonDataFunctions
+   */
   template <int dim, class DomainField, class Field>
   class ReentrantCorner : public DataFunctionIF<dim,DomainField,Field>
   {
@@ -678,7 +715,11 @@ namespace Poisson
     }
   };
 
-  //! problem fichera corner
+  /**
+   * \brief Data functions "Fichera corner" for the Poisson problem.
+   *
+   * \ingroup PoissonDataFunctions
+   */
   template <int dim, class DomainField, class Field>
   class FicheraCorner : public DataFunctionIF<dim,DomainField,Field>
   {
@@ -731,7 +772,11 @@ namespace Poisson
     }
   };
 
-  //! problem single Hump
+  /**
+   * \brief Data functions "Single Hump" for the Poisson problem.
+   *
+   * \ingroup PoissonDataFunctions
+   */
   template <int dim, class DomainField, class Field>
   class Hump : public DataFunctionIF<dim,DomainField,Field>
   {
@@ -803,7 +848,11 @@ namespace Poisson
   };
 
 
-  //! problem Riviere-Bastian
+  /**
+   * \brief Data functions "Rivere-Bastian" for the Poisson problem.
+   *
+   * \ingroup PoissonDataFunctions
+   */
   template <int dim, class DomainField, class Field>
   class RiviereProblem : public DataFunctionIF<dim,DomainField,Field>
   {
@@ -858,7 +907,11 @@ namespace Poisson
   };
 
 
-  //! problem Riviere-Bastian
+  /**
+   * \brief Data functions "Rivere-Bastian" for the Poisson problem.
+   *
+   * \ingroup PoissonDataFunctions
+   */
   template <int dim, class DomainField, class Field>
   class HeatProblem : public DataFunctionIF<dim,DomainField,Field>
   {
@@ -936,6 +989,11 @@ namespace Poisson
     }
   };
 
+  /**
+   * \brief Data functions for the Poisson problem.
+   *
+   * \ingroup PoissonDataFunctions
+   */
   template <int dim, class DomainField, class Field>
   class BoundaryLayerProblem : public DataFunctionIF<dim,DomainField,Field>
   {
@@ -1003,7 +1061,11 @@ namespace Poisson
   };
 
 
-  //! problem CurvedRidges (deal.II step-14)
+  /**
+   * \brief Data functions "CurvedRidges (deal.II step-14)" for the Poisson problem.
+   *
+   * \ingroup PoissonDataFunctions
+   */
   template <int dim, class DomainField, class Field>
   class CurvedRidges : public DataFunctionIF<dim,DomainField,Field>
   {
@@ -1083,7 +1145,11 @@ namespace Poisson
   };
 
 
-  //! problem CurvedRidges (deal.II step-14)
+  /**
+   * \brief Data functions "CurvedRidges (deal.II step-14)" for the Poisson problem.
+   *
+   * \ingroup PoissonDataFunctions
+   */
   template <int dim, class DomainField, class Field>
   class Excercise2_3 : public DataFunctionIF<dim,DomainField,Field>
   {
@@ -1134,6 +1200,12 @@ namespace Poisson
     }
   };
 
+
+  /**
+   * \brief Data functions for the Poisson problem.
+   *
+   * \ingroup PoissonDataFunctions
+   */
   template <int dim, class DomainField, class Field>
   class BenchMark_1 : public DataFunctionIF<dim,DomainField,Field>
   {
@@ -1202,7 +1274,11 @@ namespace Poisson
     }
   };
 
-
+  /**
+   * \brief Data functions for the Poisson problem.
+   *
+   * \ingroup PoissonDataFunctions
+   */
   template <int dim, class DomainField, class Field>
   class BenchMark_1_2 : public DataFunctionIF<dim,DomainField,Field>
   {
@@ -1268,7 +1344,11 @@ namespace Poisson
     }
   };
 
-
+  /**
+   * \brief Data functions for the Poisson problem.
+   *
+   * \ingroup PoissonDataFunctions
+   */
   template <int dim, class DomainField, class Field>
   class BenchMark_2 : public DataFunctionIF<dim,DomainField,Field>
   {
@@ -1328,7 +1408,11 @@ namespace Poisson
   };
 
 
-
+  /**
+   * \brief Data functions for the Poisson problem.
+   *
+   * \ingroup PoissonDataFunctions
+   */
   template <int dim, class DomainField, class Field>
   class BenchMark_3 : public DataFunctionIF<dim,DomainField,Field>
   {
@@ -1418,7 +1502,11 @@ namespace Poisson
     }
   };
 
-
+  /**
+   * \brief Data functions for the Poisson problem.
+   *
+   * \ingroup PoissonDataFunctions
+   */
   template <int dim, class DomainField, class Field>
   class BenchMark_4 : public DataFunctionIF<dim,DomainField,Field>
   {
@@ -1525,7 +1613,11 @@ namespace Poisson
     }
   };
 
-
+  /**
+   * \brief Data functions for the Poisson problem.
+   *
+   * \ingroup PoissonDataFunctions
+   */
   template <int dim, class DomainField, class Field>
   class BenchMark_5 : public DataFunctionIF<dim,DomainField,Field>
   {
@@ -1592,7 +1684,11 @@ namespace Poisson
     }
   };
 
-
+  /**
+   * \brief Data functions for the Poisson problem.
+   *
+   * \ingroup PoissonDataFunctions
+   */
   template <int dim, class DomainField, class Field>
   class BenchMark_6 : public DataFunctionIF<dim,DomainField,Field>
   {
@@ -1657,7 +1753,11 @@ namespace Poisson
     }
   };
 
-
+  /**
+   * \brief Data functions for the Poisson problem.
+   *
+   * \ingroup PoissonDataFunctions
+   */
   template <int dim, class DomainField, class Field>
   class BenchMark_7 : public DataFunctionIF<dim,DomainField,Field>
   {
@@ -1769,7 +1869,11 @@ namespace Poisson
           ParamDiscreteFunctionType;
   ParamDiscreteFunctionType* paramDiscreteFunction;
 
-
+  /**
+   * \brief Data functions for the Poisson problem.
+   *
+   * \ingroup PoissonDataFunctions
+   */
   template <int dim, class DomainField, class Field>
   class BenchMark_8 : public DataFunctionIF<dim,DomainField,Field>
   {
@@ -1844,7 +1948,11 @@ namespace Poisson
     }
   };
 #endif
-
+  /**
+   * \brief Data functions for the Poisson problem.
+   *
+   * \ingroup PoissonDataFunctions
+   */
   template <int dim, class DomainField, class Field>
   class BenchMark_9 : public DataFunctionIF<dim,DomainField,Field>
   {
@@ -1898,6 +2006,11 @@ namespace Poisson
   //  3D Benchmark Problems
   //
   /////////////////////////////////////////////////////////////////////
+  /**
+   * \brief Data functions for the Poisson problem.
+   *
+   * \ingroup PoissonDataFunctions
+   */
   template <int dim, class DomainField, class Field>
   class BenchMark3d_1 : public DataFunctionIF<dim,DomainField,Field>
   {
@@ -1962,7 +2075,11 @@ namespace Poisson
 
   };
 
-
+  /**
+   * \brief Data functions for the Poisson problem.
+   *
+   * \ingroup PoissonDataFunctions
+   */
   template <int dim, class DomainField, class Field>
   class BenchMark3d_3 : public DataFunctionIF<dim,DomainField,Field>
   {
@@ -2025,7 +2142,11 @@ namespace Poisson
 
   };
 
-
+  /**
+   * \brief Data functions for the Poisson problem.
+   *
+   * \ingroup PoissonDataFunctions
+   */
   template <int dim, class DomainField, class Field>
   class BenchMark3d_4 : public DataFunctionIF<dim,DomainField,Field>
   {
@@ -2162,7 +2283,11 @@ namespace Poisson
 
   };
 
-
+  /**
+   * \brief Data functions for the Poisson problem.
+   *
+   * \ingroup PoissonDataFunctions
+   */
   template <int dim, class DomainField, class Field>
   class BenchMark3d_5 : public DataFunctionIF<dim,DomainField,Field>
   {

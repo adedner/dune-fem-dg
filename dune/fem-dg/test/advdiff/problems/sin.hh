@@ -13,6 +13,11 @@ namespace Dune
 namespace Fem
 {
 
+  /**
+   * \brief Describes a Sin problem of the advection-diffusion equation.
+   *
+   * \ingroup AdvDiffProblems
+   */
   template <class GridType, int dimRange>
   class U0Sin : public EvolutionProblemInterface<
                   Fem::FunctionSpace< double, double, GridType::dimension, dimRange>,

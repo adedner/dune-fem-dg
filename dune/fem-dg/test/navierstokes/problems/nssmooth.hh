@@ -18,6 +18,11 @@ namespace Dune
 namespace Fem
 {
 
+  /**
+   * \brief Compressible Navier-Stokes problem.
+   *
+   * \ingroup NavierStokesProblems
+   */
   template <class GridType>
   class NSSmoothSolution : public EvolutionProblemInterface<
                               Dune::Fem::FunctionSpace< double, double, GridType::dimension, GridType::dimension + 2 >,

@@ -203,7 +203,11 @@ namespace Fem
   };
 
 
-  //! implementation of the operator
+  /**
+   * \brief Assembles the Stokes problem.
+   *
+   * \ingroup AssemblyOperator
+   */
   template <class CombAssTraits, class OpTraits >
   class StokesAssembler
   {

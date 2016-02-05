@@ -286,7 +286,7 @@ namespace Fem
   /**
    * \brief Default discrete model for limiter
    *
-   * \ingroup Pass
+   * \ingroup PassBased
    * \ingroup DiscreteModel
    */
   template <class GlobalTraitsImp, class Model, int passId >

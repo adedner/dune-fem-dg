@@ -22,7 +22,6 @@
 #include <dune/fem-dg/operator/adaptation/stokesestimator.hh>
 #include <dune/fem-dg/algorithm/sub/elliptic.hh>
 #include <dune/fem-dg/solver/uzawa.hh>
-#include <dune/fem-dg/solver/linearsolvers.hh>
 #include <dune/fem-dg/misc/tupleutility.hh>
 
 // include local header files

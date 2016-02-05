@@ -15,11 +15,11 @@ namespace Dune
 {
 namespace Fem
 {
-  //!CG Verfahren fuer Sattelpunkt Problem
-  //!siehe NavSt Skript Siebert,Seite 36, Alg 3.34
-  /** \brief Inversion operator using CG algorithm
+  /**
+   * \brief Solves the Stokes equations with an UZAWA iteration
+   *
+   * \ingroup Solvers
    */
-
   template < class AssemblerType, class InverseOperatorType>
   class UzawaSolver : public Dune::Operator< typename AssemblerType::ContainerType::template DiscreteFunction<1>::DomainFieldType,
                                              typename AssemblerType::ContainerType::template DiscreteFunction<1>::RangeFieldType,

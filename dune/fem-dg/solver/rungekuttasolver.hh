@@ -19,6 +19,11 @@ namespace Fem
 {
 
 
+  /**
+   * \brief Runge-Kutta solver.
+   *
+   * \ingroup Solvers
+   */
   template <class Operator,
             class ExplicitOperator,
             class ImplicitOperator,

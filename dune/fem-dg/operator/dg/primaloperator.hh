@@ -40,8 +40,8 @@ namespace Fem
    *
    * \note This operator is based on the Pass-Concept
    *
-   * \ingroup SpaceOperators
-   * \ingroup Pass
+   * \ingroup PassBased
+   * \ingroup PassOperator
    */
   template< class OpTraits >
   struct DGAdvectionDiffusionOperator : public
@@ -87,8 +87,8 @@ namespace Fem
    *
    * \note This operator is based on the Pass-Concept
    *
-   * \ingroup SpaceOperators
-   * \ingroup Pass
+   * \ingroup PassBased
+   * \ingroup PassOperator
    */
   template< class OpTraits >
   struct DGAdvectionOperator : public
@@ -134,8 +134,8 @@ namespace Fem
    *
    * \note This operator is based on the Pass-Concept
    *
-   * \ingroup SpaceOperators
-   * \ingroup Pass
+   * \ingroup PassBased
+   * \ingroup PassOperator
    */
   template< class OpTraits >
   class DGDiffusionOperator : public
@@ -198,8 +198,8 @@ namespace Fem
    *
    * \note This operator is based on the Pass-Concept
    *
-   * \ingroup SpaceOperators
-   * \ingroup Pass
+   * \ingroup PassBased
+   * \ingroup PassOperator
    */
   template< class OpTraits,
             bool advection = OpTraits::ModelType::hasAdvection,
@@ -249,8 +249,8 @@ namespace Fem
    * \brief Advection operator for CDG with a limiting
    *         of the numerical solution
    *
-   * \ingroup SpaceOperators
-   * \ingroup Pass
+   * \ingroup PassBased
+   * \ingroup PassOperator
    *
    * \tparam Traits
    * \tparam advection Advection
@@ -275,6 +275,7 @@ namespace Fem
 
     typedef Traits                                                                PassTraitsType;
     typedef PassTraits< Traits, limiterPolOrd, dimRange >                         LimiterTraitsType;
+    //typedef PassTraitsType                                                        LimiterTraitsType;
 
     // The model of the advection pass (advectPassId)
     typedef AdvectionDiffusionDGPrimalModel< Traits, limitPassId, advection, diffusion > DiscreteModel1Type;
@@ -516,8 +517,8 @@ namespace Fem
    * \brief Advection diffusion operator for CDG with a limiting
    *         of the numerical solution
    *
-   * \ingroup SpaceOperators
-   * \ingroup Pass
+   * \ingroup PassBased
+   * \ingroup PassOperator
    *
    * \tparam Traits
    * \tparam advection Advection

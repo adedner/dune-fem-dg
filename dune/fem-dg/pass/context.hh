@@ -15,7 +15,7 @@ namespace Fem
    * \brief This class collects several information which are relevant for the approximation of
    * integrals of discrete functions via quadrature schemes.
    *
-   * \ingroup Pass
+   * \ingroup PassBased
    *
    * We are following the \ref Notation "general notation":
    *

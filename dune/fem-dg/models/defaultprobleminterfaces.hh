@@ -13,7 +13,7 @@ namespace Fem
 {
 
   /**
-   * \brief describes the interface for
+   * \brief Interface class for
    * initial and exact solution of the advection-diffusion model
    *
    * \ingroup Problems
@@ -39,10 +39,10 @@ namespace Fem
 
     typedef Fem :: Parameter ParameterType ;
 
+  protected:
     /**
      * \brief define problem parameters
      */
-  protected:
     EvolutionProblemInterface()
     : writeGridSolution_( ParameterType::getValue<bool>("gridsol.writesolution", false) ),
       saveStep_( ParameterType :: getValue< double >("gridsol.firstwrite", 0.0 ) ),
@@ -244,7 +244,7 @@ namespace Fem
   // ProblemInterface
   //-----------------
   /**
-   * \brief problem interface for a poisson problem
+   * \brief Interface class for a Poisson problem
    *
    * \ingroup Problems
    */

@@ -18,13 +18,11 @@ namespace Dune
 namespace Fem
 {
 
-  /*************************
-   * Assemble system matrix using DGPrimalDiffusionFlux implementation
+  /**
+   * \brief Assembles the primal DG matrix.
    *
-   * Remark: at the moment this class sets up the transposed of the system
-   *         matrix similar to DgPass::operator2Matrix
-   ************************/
-
+   * \ingroup AssemblyOperator
+   */
   template <class Traits>
   class DGPrimalMatrixAssembly
   {

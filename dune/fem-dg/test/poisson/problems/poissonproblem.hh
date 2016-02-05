@@ -15,6 +15,11 @@ namespace Fem
 namespace Poisson
 {
 
+  /**
+   * \brief Interface class for the Poisson problem.
+   *
+   * \ingroup PoissonProblems.
+   */
   template <class GridType, int dimRange>
   struct Problem : public ProblemInterface<
        Dune :: Fem :: FunctionSpace< double, double, GridType::dimension, dimRange> >

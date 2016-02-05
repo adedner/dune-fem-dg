@@ -28,7 +28,6 @@
 #include <dune/fem-dg/test/poisson/gridinitializer.hh>
 //--------- OPERATOR/SOLVER -----------------
 #include <dune/fem-dg/assemble/primalmatrix.hh>
-#include <dune/fem-dg/solver/linearsolvers.hh>
 #include <dune/fem-dg/operator/dg/operatortraits.hh>
 //--------- FLUXES ---------------------------
 #include <dune/fem-dg/operator/fluxes/euler/fluxes.hh>

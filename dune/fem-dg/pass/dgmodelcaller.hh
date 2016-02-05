@@ -20,7 +20,7 @@ namespace Fem
   /**
    * \brief Model caller for CDG pass.
    *
-   * \ingroup Pass
+   * \ingroup PassBased
    */
   template< class DiscreteModel, class Argument, class PassIds >
   class CDGDiscreteModelCaller

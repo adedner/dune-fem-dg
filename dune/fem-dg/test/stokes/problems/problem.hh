@@ -14,6 +14,11 @@ namespace Fem
 namespace Stokes
 {
 
+  /**
+   * \brief Interface class for Stokes problem.
+   *
+   * \ingroup StokesProblems
+   */
   template< class GridImp>
   class ProblemDefault
     : public ProblemInterfaceBase< GridImp >
@@ -142,6 +147,11 @@ namespace Stokes
 
   };
 
+  /**
+   * \brief Stokes problem.
+   *
+   * \ingroup StokesProblems
+   */
   template< class GridImp>
   class ProblemPeriodic
     : public ProblemInterfaceBase< GridImp >
@@ -274,6 +284,11 @@ namespace Stokes
   };
 
 
+  /**
+   * \brief Stokes problem.
+   *
+   * \ingroup StokesProblems
+   */
   template< class GridImp>
   class GeneralizedProblem
     : public ProblemInterfaceBase< GridImp >

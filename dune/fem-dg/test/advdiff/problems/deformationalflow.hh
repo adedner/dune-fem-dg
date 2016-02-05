@@ -17,6 +17,8 @@ namespace Fem
    * \brief describes the initial and exact solution of the advection-diffusion model
    * for given constant velocity vector v=(v1,v2)
    *
+   * \ingroup AdvDiffProblems
+   *
    * \f[u(x,y,z,t):=\displaystyle{\sum_{i=0}^{1}} T_i(t) \cdot X_i(x) \cdot
    * Y_i(y) \cdot Z_i(z)\f]
    *

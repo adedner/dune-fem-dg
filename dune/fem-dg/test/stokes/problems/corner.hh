@@ -15,6 +15,11 @@ namespace Fem
 namespace Stokes
 {
 
+  /**
+   * \brief Interface class for Stokes problem.
+   *
+   * \ingroup StokesProblems
+   */
   template< class GridImp>
   class ProblemCorner
     : public ProblemInterfaceBase< GridImp >

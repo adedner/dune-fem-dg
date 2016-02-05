@@ -26,7 +26,6 @@
 #include <dune/fem-dg/algorithm/gridinitializer.hh>
 //--------- OPERATOR/SOLVER -----------------
 #include <dune/fem-dg/assemble/primalmatrix.hh>
-#include <dune/fem-dg/solver/linearsolvers.hh>
 #include <dune/fem-dg/operator/dg/operatortraits.hh>
 //--------- FLUXES ---------------------------
 #include <dune/fem-dg/operator/fluxes/advection/fluxes.hh>

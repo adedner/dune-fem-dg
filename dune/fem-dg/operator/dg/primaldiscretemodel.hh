@@ -24,7 +24,7 @@ namespace Fem
    *  \brief discrete model for advection diffusion operator
    *
    *  \ingroup DiscreteModels
-   *  \ingroup Pass
+   *  \ingroup PassBased
    */
   template< class TraitsImp >
   class AdvectionDiffusionDGPrimalModelBase :
@@ -400,7 +400,7 @@ namespace Fem
    *  \brief discrete model for advection diffusion operator
    *
    *  \ingroup DiscreteModels
-   *  \ingroup Pass
+   *  \ingroup PassBased
    */
   template< class OpTraits,
             int passUId,
@@ -449,7 +449,7 @@ namespace Fem
    *  \brief discrete model for advection diffusion operator
    *
    *  \ingroup DiscreteModels
-   *  \ingroup Pass
+   *  \ingroup PassBased
    */
   template <class OpTraits,
             int passUId,
@@ -473,7 +473,7 @@ namespace Fem
    *  \brief discrete model for advection diffusion operator
    *
    *  \ingroup DiscreteModels
-   *  \ingroup Pass
+   *  \ingroup PassBased
    */
   template< class OpTraits,
             int passUId,

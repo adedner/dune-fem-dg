@@ -11,48 +11,7 @@ Only \addtogroup is used in the code documentation.
 
 /**
 
-\defgroup Algorithms Algorithm
-  
-\defgroup SubAlgorithms Sub-Algorithm
-
-\defgroup Analytical Analytical
-
-  \defgroup Problem Problem
-  \ingroup Analytical
-  
-  \defgroup Model Model
-  \ingroup Analytical
-
-\defgroup Discretization Discretization
-
-  \defgroup DiscreteFunction DiscreteFunction
-  \ingroup Discretization 
-
-  \defgroup Operator Operator
-  \ingroup Discretization
-
-    \defgroup Pass General Pass Issues
-    \ingroup Operator
-    
-    \defgroup PassOperator Pass-based Operator
-    \ingroup Operator
-
-    \defgroup AssemblyOperator Assembly-based Operator
-    \ingroup Operator
-    
-    \defgroup MatrixFreeOperator Matrix-free Operator
-    \ingroup Operator
-
-  \defgroup Solver Solver
-  \ingroup Discretization
-  
-  \defgroup Handlers Handler
-  \ingroup Discretization
-
-
-\defgroup FemDGParameter
-
-\defgroup AnalyticalModels
+\defgroup FemDGParameter Dune-Fem-DG parameters
 
 \defgroup ParameterClass Parameter classes
 
@@ -68,29 +27,80 @@ Main goal of parameter classes are
 4. allow _user-defined implementation_ to change the state of an object in a user-defined way.   
 
 
-\defgroup DiscreteModels
- 
-\defgroup SpaceOperators Space operator
+\defgroup Algorithms Algorithm
 
- These operators are used for the spatial discretization of a PDE.
-\defgroup DiffusionFluxes Diffusion Fluxes
-\ingroup Fluxes
+  \defgroup Handlers Handler
+  \ingroup Algorithms
+  
+\defgroup SubAlgorithms Sub-Algorithm
 
-A flux class for diffusive numerical fluxes.
-\defgroup Fluxes Analytical and Numerical Fluxes
+\defgroup Analytical Analytical Description of Patial Differential Equations
 
-A numerical flux is given by...
+  \defgroup Problems Problem
+  \ingroup Analytical
 
-A the moment fluxes can be separated into to categories:
-An advective flux or a diffusive flux.
+    \defgroup AdvDiffProblems Advection-Diffusion Problem
+    \ingroup Problems
 
-\defgroup AdvectionFluxes Advection Fluxes
-\ingroup Fluxes
+    \defgroup EulerProblems Euler Problem
+    \ingroup Problems
 
-An advective numerical flux is given by...
+    \defgroup NavierStokesProblems Navier-Stokes Problem
+    \ingroup Problems
 
-\defgroup AnalyticalFluxes Analytical Fluxes
-\ingroup Fluxes
+    \defgroup PoissonProblems Poisson Problem
+    \ingroup Problems
+    
+      \defgroup PoissonDataFunctions Data Functions for Poisson Problem
+      \ingroup PoissonProblems
+    
+    \defgroup StokesProblems Stokes Problem
+    \ingroup Problems
+  
+  \defgroup AnalyticalModels Model
+  \ingroup Analytical
 
-Defines analytical fluxes.
+    \defgroup AnalyticalFluxes Analytical Fluxes
+    \ingroup AnalyticalModels
+    
+    Defines analytical fluxes.
+
+\defgroup Discretization Discretization
+
+  \defgroup DiscreteFunction Discrete Function and Discrete Function Space
+  \ingroup Discretization 
+
+  \defgroup Operator Spatial Operator
+  \ingroup Discretization
+
+    \defgroup PassOperator Matrix-free Operator (using Passes)
+    \ingroup Operator
+    
+      \defgroup PassBased Classes using Passes
+      \ingroup PassOperator    
+
+    \defgroup AssemblyOperator Assembled Operator (no Passes)
+    \ingroup Operator
+    
+  \defgroup Solvers Solver
+  \ingroup Discretization
+
+  \defgroup Fluxes Numerical Fluxes for Discontinuous Galerkin Schemes
+  \ingroup Discretization
+  
+    A numerical flux is given by...
+    
+    A the moment fluxes can be separated into to categories:
+    An advective flux or a diffusive flux.
+    
+    \defgroup AdvectionFluxes Advection Fluxes
+    \ingroup Fluxes
+    
+    An advective numerical flux is given by...
+   
+    \defgroup DiffusionFluxes Diffusion Fluxes
+    \ingroup Fluxes 
+    A flux class for diffusive numerical fluxes.
+  
+  
 */

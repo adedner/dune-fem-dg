@@ -25,6 +25,11 @@ namespace Dune
 namespace Fem
 {
 
+  /**
+   * \brief Interface class for Euler problems
+   *
+   * \ingroup EulerProblems
+   */
   template <class GridType>
   class ProblemBase :
     public EvolutionProblemInterface<
@@ -100,8 +105,12 @@ namespace Fem
     }
   };
 
-  /*****************************************************************/
-  // Initial Data
+
+  /**
+   * \brief Euler problem.
+   *
+   * \ingroup EulerProblems
+   */
   template <class GridType>
   class U0Smooth1D : public ProblemBase < GridType >
   {
@@ -166,8 +175,12 @@ namespace Fem
     std::string dataPrefix() const { return "smooth1d"; }
   };
 
-  /*****************************************************************/
-  // Initial Data
+
+  /**
+   * \brief Euler problem.
+   *
+   * \ingroup EulerProblems
+   */
   template <class GridType>
   class U0FFS : public ProblemBase< GridType > {
   public:
@@ -237,6 +250,11 @@ namespace Fem
     std::string dataPrefix() const { return "ffs"; }
   };
 
+  /**
+   * \brief Euler problem.
+   *
+   * \ingroup EulerProblems
+   */
   template <class GridType>
   class U0Sod : public ProblemBase< GridType > {
     double T,startTime;
@@ -403,6 +421,11 @@ namespace Fem
     int flag;
   };
 
+  /**
+   * \brief Euler problem.
+   *
+   * \ingroup EulerProblems
+   */
   template< class Grid >
   class U0P123
   : public ProblemBase< Grid >

@@ -19,6 +19,8 @@ namespace Fem
 
   /**
    * \brief describes the initial and exact solution of the advection-diffusion model
+   *
+   * \ingroup AdvDiffProblems
    */
   template <class GridType, int dimRange >
   struct QuasiHeatEqnSolution : public EvolutionProblemInterface<

@@ -31,8 +31,8 @@ namespace Fem
    *
    * \note This operator is based on the Pass-Concept
    *
-   * \ingroup SpaceOperators
-   * \ingroup Pass
+   * \ingroup PassBased
+   * \ingroup PassOperator
    */
   template< class Traits >
   class DGAdvectionDiffusionOperatorBase :
