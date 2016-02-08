@@ -10,12 +10,21 @@ add_definitions( "-DGRIDDIM=2" )
 add_definitions( "-DFLUX=1" )
 add_definitions( "-DPRIMALDG" )
 
-dune_add_test( NAME eulerall
-               SOURCES main.cc problems/chorjo.cc
-               COMPILE_DEFINITIONS LIMITER )
+if( DUNE_FEM_DG_VERSION VERSION_LESS "2.4.1" )
+  message( STATUS "Using old test build system (2.4 compability mode) " )
+  add_executable( euler main.cc )
+  add_executable( eulerall main.cc )
+  set_property(TARGET eulerall APPEND PROPERTY 
+               COMPILE_DEFINITIONS "POLORDER=2" )
+  dune_add_test( euler eulerall )
+else()
+  dune_add_test( NAME eulerall
+                 SOURCES main.cc problems/chorjo.cc
+                 COMPILE_DEFINITIONS LIMITER )
 
-dune_add_test( NAME euler
-               SOURCES main.cc problems/chorjo.cc
-               COMPILE_DEFINITIONS POLORDER=2 )
+  dune_add_test( NAME euler
+                 SOURCES main.cc problems/chorjo.cc
+                 COMPILE_DEFINITIONS POLORDER=2 )
+endif()
 
 add_code_generate_targets( euler eulerall )

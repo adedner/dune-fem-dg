@@ -11,10 +11,20 @@ add_definitions( "-DDIMRANGE=1" )
 add_definitions( "-DFLUX=1" )
 add_definitions( "-DPRIMALDG" )
 
-dune_add_test( NAME advdiff 
-               SOURCES main.cc
-               COMPILE_DEFINITIONS POLORDER=2 )
-dune_add_test( NAME advdiffall 
-               SOURCES main.cc )
+if( DUNE_FEM_DG_VERSION VERSION_LESS "2.4.1" )
+
+  message( STATUS "Using old test build system (${DUNE_FEM_DG_VERSION} 2.4 compability mode) " )
+  add_executable( advdiff main.cc )
+  add_executable( advdiffall main.cc )
+  set_property(TARGET advdiffall APPEND PROPERTY 
+               COMPILE_DEFINITIONS "POLORDER=2" )
+  dune_add_test( advdiff advdiffall )
+else()
+  dune_add_test( NAME advdiff 
+                 SOURCES main.cc
+                 COMPILE_DEFINITIONS POLORDER=2 )
+  dune_add_test( NAME advdiffall 
+                 SOURCES main.cc )
+endif()
 
 add_code_generate_targets( advdiff advdiffall )

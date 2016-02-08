@@ -13,10 +13,16 @@ add_definitions( "-DPOLORDER=2" )
 add_definitions( "-DDIMRANGE=5" )
 add_definitions( "-DENABLE_ADAPTIVELEAFINDEXSET_FOR_YASPGRID" ) 
 
-dune_add_test( NAME dataconvert
-               SOURCES dataconvert.cc )
 
-dune_add_test( NAME checkpointing
-               SOURCES main.cc )
+if( DUNE_FEM_DG_VERSION VERSION_LESS "2.4.1" )
+  message( STATUS "Using old test build system (2.4 compability mode) " )
+  add_executable( dataconvert dataconvert.cc )
+  add_executable( checkpointing main.cc )
+  dune_add_test( dataconvert checkpointing )
+else()
+  dune_add_test( NAME dataconvert
+                 SOURCES dataconvert.cc )
 
-
+  dune_add_test( NAME checkpointing
+                 SOURCES main.cc )
+endif()
