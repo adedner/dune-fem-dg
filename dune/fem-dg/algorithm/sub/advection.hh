@@ -1,6 +1,8 @@
 #ifndef DUNE_FEMDG_ALGORITHM_ADVECTION_STEPPER_HH
 #define DUNE_FEMDG_ALGORITHM_ADVECTION_STEPPER_HH
 
+#include <dune/fem-dg/misc/memory.hh>
+
 // dune-fem-dg includes
 #include <dune/fem-dg/operator/adaptation/estimator.hh>
 #include <dune/fem-dg/solver/rungekuttasolver.hh>
@@ -81,8 +83,8 @@ namespace Fem
                            ExtraParameterTupleType tuple = ExtraParameterTupleType() ) :
       BaseType( grid, container ),
       tuple_( ),
-      advectionOperator_( std::make_unique< FullOperatorType >( gridPart_, problem(), tuple_, name() ) ),
-      adaptIndicator_( std::make_unique< AdaptIndicatorOptional<AdaptIndicatorType> >( solution(), problem(), tuple_, name() ) )
+      advectionOperator_( Std::make_unique< FullOperatorType >( gridPart_, problem(), tuple_, name() ) ),
+      adaptIndicator_( Std::make_unique< AdaptIndicatorOptional<AdaptIndicatorType> >( solution(), problem(), tuple_, name() ) )
     {}
 
     virtual AdaptIndicatorType* adaptIndicator ()

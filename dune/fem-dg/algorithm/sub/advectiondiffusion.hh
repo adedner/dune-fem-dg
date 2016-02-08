@@ -1,6 +1,8 @@
 #ifndef DUNE_FEMDG_ALGORITHM_ADVECTIONDIFFUSION_STEPPER_HH
 #define DUNE_FEMDG_ALGORITHM_ADVECTIONDIFFUSION_STEPPER_HH
 
+#include <dune/fem-dg/misc/memory.hh>
+
 // dune-fem-dg includes
 #include <dune/fem-dg/operator/adaptation/estimator.hh>
 #include <dune/fem-dg/solver/rungekuttasolver.hh>
@@ -87,10 +89,10 @@ namespace Fem
       //velo_( "velocity", vSpace_ ),
       //tuple_( &velo_ ),
       tuple_( ),
-      operator_( std::make_unique< OperatorType >( gridPart_, problem(), typename OperatorType::ExtraParameterTupleType(), name() ) ),
-      advectionOperator_( std::make_unique< ExplicitOperatorType >( gridPart_, problem(), typename ExplicitOperatorType::ExtraParameterTupleType(), name() ) ),
-      diffusionOperator_( std::make_unique< ImplicitOperatorType >( gridPart_, problem(), typename ImplicitOperatorType::ExtraParameterTupleType(), name() ) ),
-      adaptIndicator_( std::make_unique< AdaptIndicatorOptional<AdaptIndicatorType> >( solution(), problem(),  typename AdaptIndicatorType::ExtraParameterTupleType(), name() ) )
+      operator_( Std::make_unique< OperatorType >( gridPart_, problem(), typename OperatorType::ExtraParameterTupleType(), name() ) ),
+      advectionOperator_( Std::make_unique< ExplicitOperatorType >( gridPart_, problem(), typename ExplicitOperatorType::ExtraParameterTupleType(), name() ) ),
+      diffusionOperator_( Std::make_unique< ImplicitOperatorType >( gridPart_, problem(), typename ImplicitOperatorType::ExtraParameterTupleType(), name() ) ),
+      adaptIndicator_( Std::make_unique< AdaptIndicatorOptional<AdaptIndicatorType> >( solution(), problem(),  typename AdaptIndicatorType::ExtraParameterTupleType(), name() ) )
     {}
 
     virtual AdaptIndicatorType* adaptIndicator ()
