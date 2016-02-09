@@ -19,11 +19,7 @@ fi
 # NOTE: Zoltan has to be downloaded separately from
 
 #change appropriately, i.e. 2.3 or empty (which refers to master)
-DUNEVERSION=2.3
-
-# use of cmake is not recommended, since it might not work
-# and it won't make it easy to reproduce the paper results
-USE_CMAKE=no
+DUNEVERSION=2.4
 
 # your favorite compiler optimization flags
 FLAGS="-O3 -DNDEBUG"
@@ -61,7 +57,7 @@ DUNEMODULES="dune-common dune-geometry dune-grid dune-istl dune-alugrid dune-fem
 CACHEFILE=$WORKDIR/cache.config
 # if ! test -f config.opts ; then
 echo "MAKE_FLAGS=\"$MAKE_FLAGS\"
-USE_CMAKE=$USE_CMAKE
+USE_CMAKE=yes
 CONFIGURE_FLAGS=\"CXXFLAGS=\\\"$FLAGS\\\" \\
   --cache-file=$CACHEFILE \\
   --disable-documentation \\
@@ -100,8 +96,6 @@ fi
 
 cd dune-fem-dg
 TARGET=check
-if [ "$USE_CMAKE" == "yes" ]; then
-  cd build-cmake
-  TARGET=test
-fi
+cd build-cmake
+TARGET=test
 make $MAKE_FLAGS $TARGET
