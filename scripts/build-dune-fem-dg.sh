@@ -102,6 +102,6 @@ fi
 # build all DUNE modules in the correct order
 ./dune-common/bin/dunecontrol --opts=config.opts all
 
-cd build-cmake
+cd dune-fem-dg/build-cmake
 TARGET=test
 make $MAKE_FLAGS $TARGET
