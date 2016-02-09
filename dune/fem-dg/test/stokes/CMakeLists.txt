@@ -14,6 +14,7 @@ if( DUNE_FEM_DG_VERSION VERSION_LESS "2.4.1" )
   add_executable( stokesall main.cc )
   set_property(TARGET stokesall APPEND PROPERTY 
                COMPILE_DEFINITIONS "POLORDER=2" )
+  dune_target_enable_all_packages( stokes stokesall )
   dune_add_test( stokes stokesall )
 else() 
   dune_add_test( NAME stokes

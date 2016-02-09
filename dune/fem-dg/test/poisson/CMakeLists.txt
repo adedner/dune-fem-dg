@@ -15,6 +15,7 @@ if( DUNE_FEM_DG_VERSION VERSION_LESS "2.4.1" )
   add_executable( poissonall main.cc )
   set_property(TARGET poissonall APPEND PROPERTY 
                COMPILE_DEFINITIONS "POLORDER=2" )
+  dune_target_enable_all_packages( poisson poissonall )
   dune_add_test( poisson poissonall )
 else()
   dune_add_test( NAME poissonall 

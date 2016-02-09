@@ -17,6 +17,7 @@ if( DUNE_FEM_DG_VERSION VERSION_LESS "2.4.1" )
   add_executable( advdiffall main.cc )
   set_property(TARGET advdiffall APPEND PROPERTY 
                COMPILE_DEFINITIONS "POLORDER=2" )
+  dune_target_enable_all_packages( advdiff advdiffall )
   dune_add_test( advdiff advdiffall )
 else()
   dune_add_test( NAME advdiff 

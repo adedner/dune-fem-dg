@@ -12,10 +12,11 @@ add_definitions( "-DPRIMALDG" )
 
 if( DUNE_FEM_DG_VERSION VERSION_LESS "2.4.1" )
   message( STATUS "Using old test build system (2.4 compability mode) " )
-  add_executable( euler main.cc )
-  add_executable( eulerall main.cc )
+  add_executable( euler main.cc problems/chorjo.cc )
+  add_executable( eulerall main.cc problems/chorjo.cc )
   set_property(TARGET eulerall APPEND PROPERTY 
                COMPILE_DEFINITIONS "POLORDER=2" )
+  dune_target_enable_all_packages( euler eulerall )
   dune_add_test( euler eulerall )
 else()
   dune_add_test( NAME eulerall

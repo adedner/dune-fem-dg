@@ -15,6 +15,7 @@ if( DUNE_FEM_DG_VERSION VERSION_LESS "2.4.1" )
   add_executable( navierstokesall main.cc )
   set_property(TARGET navierstokesall APPEND PROPERTY 
                COMPILE_DEFINITIONS "POLORDER=2" )
+  dune_target_enable_all_packages( navierstokes navierstokesall )
   dune_add_test( navierstokes navierstokesall )
 else()
   dune_add_test( NAME navierstokes
