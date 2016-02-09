@@ -50,7 +50,7 @@ WITH_ZOLTAN=
 WITH_SIONLIB=
 
 # dune modules needed to build dune-fem-dg
-DUNEMODULES="dune-common dune-geometry dune-grid dune-istl dune-alugrid dune-fem-dg"
+DUNEMODULES="dune-common dune-geometry dune-grid dune-istl dune-alugrid dune-fem dune-fem-dg"
 
 # build flags for all DUNE modules
 # change according to your needs
@@ -75,14 +75,22 @@ if [ "$DUNEVERSION" != "" ] ; then
   DUNEBRANCH="-b releases/$DUNEVERSION"
 fi
 
-FEMDGBRANCH="-b papers/main"
+ALUGRIDBRANCH="-b releases/2.4"
+FEMBRANCH="-b releases/2.4"
+FEMDGBRANCH="-b releases/2.4"
 # get all dune modules necessary
 for MOD in $DUNEMODULES ; do
-  if [ "$MOD" == "dune-fem-dg" ] ; then
-    # use the special branch papers/main for dune-fem-dg
+  if [ "$MOD" == "dune-alugrid" ] ; then
+    # use the special branch for dune-alugrid
+    git clone $DUNEALUGRIDBRANCH https://gitlab.dune-project.org/extensions/dune-alugrid.git
+  elif [ "$MOD" == "dune-fem" ] ; then
+    # use the special branch for dune-fem
+    git clone $FEMBRANCH https://gitlab.dune-project.org/dune-fem/dune-fem.git
+  elif [ "$MOD" == "dune-fem-dg" ] ; then
+    # use the special branch for dune-fem-dg
     git clone $FEMDGBRANCH http://users.dune-project.org/repositories/projects/dune-fem-dg.git
   else
-    git clone $DUNEBRANCH http://git.dune-project.org/repositories/$MOD
+    git clone $DUNEBRANCH https://gitlab.dune-project.org/core/$MOD.git
   fi
 done
 
@@ -94,8 +102,6 @@ fi
 # build all DUNE modules in the correct order
 ./dune-common/bin/dunecontrol --opts=config.opts all
 
-cd dune-fem-dg
-TARGET=check
 cd build-cmake
 TARGET=test
 make $MAKE_FLAGS $TARGET
