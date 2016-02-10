@@ -12,7 +12,7 @@ cd $1
 FEMDIR=`pwd`
 
 CHECKLOG=$WORKINGDIR/check-tests.out
-make -i test $MAKE_CHECK_FLAGS  &> $CHECKLOG
+make build_tests $MAKE_CHECK_FLAGS -i && make -i test $MAKE_CHECK_FLAGS  &> $CHECKLOG
 
 retvalue=0
 warnings=`grep warning: $CHECKLOG | grep -v "default CommunicationManager is used" | grep -v "GRIDDIM not defined" | grep -v "No GRIDTYPE defined" | grep -v "Hdiv-Projection only working for polOrd = 1" | grep -v "YaspGrid does not provide a HierarchicIndexSet" | wc -l`
