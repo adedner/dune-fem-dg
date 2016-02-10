@@ -35,6 +35,8 @@ Makefile.in
 *.la
 *.tmp
 
+data
+
 build-cmake
 
 headercheck
