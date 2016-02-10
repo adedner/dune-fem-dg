@@ -14,13 +14,15 @@ add_definitions( "-DENABLE_ADAPTIVELEAFINDEXSET_FOR_YASPGRID" )
 
 if( DUNE_FEM_DG_VERSION VERSION_LESS "2.4.1" )
   message( STATUS "Using old test build system (2.4 compability mode) " )
-  add_executable( dataconvert ../dataconvert.cc )
+  #add_executable( dataconvert ../dataconvert.cc )
   add_executable( checkpointing ../main.cc )
-  dune_target_enable_all_packages( dataconvert checkpointing )
-  dune_add_test( dataconvert checkpointing )
+  #dune_target_enable_all_packages( dataconvert )
+  dune_target_enable_all_packages( checkpointing )
+  #dune_add_test( dataconvert )
+  dune_add_test( checkpointing )
 else()
-  dune_add_test( NAME dataconvert
-                 SOURCES ../dataconvert.cc )
+  #dune_add_test( NAME dataconvert
+  #               SOURCES ../dataconvert.cc )
 
   dune_add_test( NAME checkpointing
                  SOURCES ../main.cc )
