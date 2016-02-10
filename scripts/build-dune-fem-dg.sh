@@ -19,7 +19,7 @@ fi
 # NOTE: Zoltan has to be downloaded separately from
 
 #change appropriately, i.e. 2.3 or empty (which refers to master)
-DUNEVERSION=2.4
+DUNEVERSION=
 
 # your favorite compiler optimization flags
 FLAGS="-O3 -DNDEBUG"
@@ -72,13 +72,16 @@ CONFIGURE_FLAGS=\"CXXFLAGS=\\\"$FLAGS\\\" \\
 # fi
 
 DUNEBRANCH=
+ALUGRIDBRANCH=
+FEMBRANCH=
+FEMDGBRANCH=
 if [ "$DUNEVERSION" != "" ] ; then
   DUNEBRANCH="-b releases/$DUNEVERSION"
+  ALUGRIDBRANCH="-b releases/2.4"
+  FEMBRANCH="-b releases/2.4-dune-fem-dg"
+  FEMDGBRANCH="-b releases/2.4"
 fi
 
-ALUGRIDBRANCH="-b releases/2.4"
-FEMBRANCH="-b releases/2.4-dune-fem-dg"
-FEMDGBRANCH="-b releases/2.4"
 # get all dune modules necessary
 for MOD in $DUNEMODULES ; do
   if [ "$MOD" == "dune-alugrid" ] ; then
@@ -105,4 +108,9 @@ fi
 
 cd dune-fem-dg/build-cmake
 TARGET=test
+BUILD_TARGET=build_tests
+
+# first build tests (compiling...)...
+make $MAKE_FLAGS $BUILD_TARGET
+# ... then run tests
 make $MAKE_FLAGS $TARGET
