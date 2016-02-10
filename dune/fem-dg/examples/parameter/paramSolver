@@ -1,7 +1,7 @@
 # SOLVER CONFIGURATION
 #---------------------
 
-fem.ode.odesolver: EX # ode solvers: EX, IM, IMEX
+fem.ode.odesolver: IM # ode solvers: EX, IM, IMEX
 #fem.ode.order: 2
 fem.ode.verbose: none # ode output: none, cfl, full
 fem.ode.cflincrease: 1.25
