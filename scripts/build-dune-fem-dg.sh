@@ -61,6 +61,7 @@ USE_CMAKE=yes
 CONFIGURE_FLAGS=\"CXXFLAGS=\\\"$FLAGS\\\" \\
   --cache-file=$CACHEFILE \\
   --disable-documentation \\
+  --Wno-deprecated-declarations \\
   --enable-experimental-grid-extensions \\
   --enable-parallel \\
   --enable-fieldvector-size-is-method \\
@@ -76,7 +77,7 @@ if [ "$DUNEVERSION" != "" ] ; then
 fi
 
 ALUGRIDBRANCH="-b releases/2.4"
-FEMBRANCH="-b releases/2.4"
+FEMBRANCH="-b releases/2.4-dune-fem-dg"
 FEMDGBRANCH="-b releases/2.4"
 # get all dune modules necessary
 for MOD in $DUNEMODULES ; do
