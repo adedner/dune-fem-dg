@@ -22,5 +22,9 @@ include(DuneMPI)
 #add sub directories
 dune_add_subdirs( dune m4 lib doc cmake/modules )
 
+#add fem-dg test, i.e. tests which are not included in a directory called "test"
+#set( _dirnew dune/fem-dg/examples/advdiff_test )
+#set_property(DIRECTORY ${_dirnew} PROPERTY TEST_INCLUDE_FILE ${CMAKE_BINARY_DIR}/${_dirnew}/BuildTests.cmake)
+
 # finalize the dune project, e.g., generate config.h etc.
 finalize_dune_project(GENERATE_CONFIG_H_CMAKE)

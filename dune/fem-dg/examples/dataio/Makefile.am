@@ -1,0 +1,30 @@
+#GRIDTYPE = ALUGRID_SIMPLEX
+#GRIDTYPE = CARTESIANGRID_ALUGRID_CUBE
+#GRIDTYPE = ALUGRID_CUBE
+#GRIDTYPE = SPGRID
+GRIDTYPE = YASPGRID
+GRIDDIM = 3
+POLORDER = 2
+DIMRANGE=5
+USE_SIONLIB=0
+
+AM_CPPFLAGS = $(ALL_PKG_CPPFLAGS) -DUSE_SIONLIB=$(USE_SIONLIB) \
+              -DPOLORDER=$(POLORDER) -DONLY_ONE_P \
+              -DDIMRANGE=$(DIMRANGE) -DENABLE_ADAPTIVELEAFINDEXSET_FOR_YASPGRID
+LDADD = $(ALL_PKG_LDFLAGS) $(ALL_PKG_LIBS)
+
+EXTRA_DIST = parameter
+CLEANFILES = *.*vtu
+
+BASEDIR = ../../main/
+SOURCES = $(BASEDIR)/main.cc $(BASEDIR)/main_pol.cc
+
+# install these headers 
+dataiodir = $(includedir)/dune/fem-dg/examples/dataio
+dataio_HEADERS = checkpointing.hh problemcreator.hh  problem.hh
+
+check_PROGRAMS = checkpointing dataconvert 
+nodist_checkpointing_SOURCES = $(SOURCES)
+dataconvert_SOURCES = dataconvert.cc
+
+include $(top_srcdir)/am/global-rules

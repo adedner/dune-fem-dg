@@ -1,9 +1,0 @@
-fem.verboserank: 0
-
-# DATA WRITER
-#------------
-fem.prefix: /home/stefan/dune-super-fem-blood/dune-fem-dg/dune/fem-dg/test/incompnavierstokes/data
-fem.prefix.input: /home/stefan/dune-super-fem-blood/dune-fem-dg/dune/fem-dg/test/incompnavierstokes
-
-paramfile: parameter_cmake
-

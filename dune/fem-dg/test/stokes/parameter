@@ -1,8 +1,0 @@
-# toggle verbosity of on process 
-# (-1: off, p: process p is verbose, in general 0 is a good choice)
-fem.verboserank: 0
-
-fem.prefix: /home/stefan/dune-super-fem-blood/dune-fem-dg/dune/fem-dg/test/stokes/data # specify directory for data output (is created if not exists)
-fem.prefix.input: /home/stefan/dune-super-fem-blood/dune-fem-dg/dune/fem-dg/test/stokes
-
-paramfile: parameter_cmake

@@ -1,0 +1,60 @@
+# DATA WRITER
+#------------
+fem.io.datafileprefix: solution 
+fem.io.savestep: .1 # save data every time interval 
+fem.io.savecount: 1 # save every i-th step
+# output format: binary | vtk-cell | vtk-vertex (projected in DG case) | none 
+fem.io.outputformat: vtk-cell
+# if false no discrete function data is written (for debugging)
+fem.io.writedata: true
+
+
+# CHECKPOINTING
+#--------------
+# write checkpoint every 'checkpointstep' timestep 
+fem.io.checkpointstep: 1
+# write 'checkpointmax' number of different check points 
+fem.io.checkpointmax: 2 
+
+
+# DOMAIN
+#-------
+fem.io.macroGridFile_1d: ../../grids/unitcube1.dgf
+fem.io.macroGridFile_2d: ../../grids/unitcube2.dgf
+fem.io.macroGridFile_3d: ../../grids/unitcube3.dgf
+
+
+# PROBLEM SETUP
+#--------------
+#fem.io.checkpointrestartfile: ${CMAKE_CURRENT_SOURCE_DIR}/checkpoint
+
+# number of EOC steps (only 1 for checkpointing)
+fem.eoc.steps: 1
+
+femdg.stepper.starttime: 0
+femdg.stepper.endtime: 0.1
+
+femdg.stepper.diffusiontimestep: 1
+epsilon: 2.
+penalty: 1.
+fem.timeprovider.factor: 1.
+
+femdg.stepper.maxtimestep: 0.1
+femdg.stepper.printcount: 1
+
+
+# SION LIB
+#---------
+fem.io.sionlib.numfiles: 1
+fem.io.sionlib.blocksize: 128
+
+# SOLVER
+#-------
+fem.ode.odesolver: EX
+
+# ADAPTATION
+#-----------
+#number of global refinements before start of simulation 
+fem.adaptation.coarsestLevel: 2
+fem.adaptation.finestLevel: 2
+
