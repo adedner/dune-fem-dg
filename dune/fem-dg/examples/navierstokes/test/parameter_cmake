@@ -41,7 +41,7 @@ Re: 1. #(Reynold's number)
 Pr: 0.72 # 0.72 #(Prandtl's number)
 femdg.stepper.starttime: 0. # s
 femdg.stepper.endtime: 0.1
-fem.eoc.steps: 5
+fem.eoc.steps: 3
 
 gammaGNS: 0.5
 omegaGNS: 1.
