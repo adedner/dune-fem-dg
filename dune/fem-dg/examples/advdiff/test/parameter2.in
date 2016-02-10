@@ -1,8 +1,0 @@
-# toggle verbosity of on process 
-# (-1: off, p: process p is verbose, in general 0 is a good choice)
-fem.verboserank: 0 
-
-fem.prefix: ${CMAKE_CURRENT_SOURCE_DIR}/data_nonlinear # specify directory for data output (is created if not exists)
-fem.prefix.input: ${CMAKE_CURRENT_SOURCE_DIR}/parameter_nonlinear
-
-paramfile: parameter_cmake
