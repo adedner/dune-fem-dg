@@ -1,5 +1,3 @@
-dune_install( models.hh  problemcreator.hh  problems.hh )
-
 include_directories("${CMAKE_SOURCE_DIR}/dune/fem-dg/examples/poisson/")
 if(GENERATE_FEMDG_PARAMETER_FILE)
   configure_file(parameter.in ${CMAKE_CURRENT_BINARY_DIR}/parameter)
@@ -9,22 +7,27 @@ add_definitions( "-DALUGRID_CUBE" )
 add_definitions( "-DGRIDDIM=2" )
 add_definitions( "-DDIMRANGE=1" )
 
-if( DUNE_FEM_DG_VERSION VERSION_LESS "2.4.1" )
-  message( STATUS "Using old test build system (2.4 compability mode) " )
-  add_executable( poisson ../main.cc )
-  add_executable( poissonall ../main.cc )
-  set_property(TARGET poisson APPEND PROPERTY 
-               COMPILE_DEFINITIONS "POLORDER=2" )
-  dune_target_enable_all_packages( poisson poissonall )
-  dune_add_test( poisson poissonall )
-else()
-  dune_add_test( NAME poissonall 
-                 SOURCES ../main.cc )
-  dune_add_test( NAME poisson 
-                 SOURCES ../main.cc 
-                 COMPILE_DEFINITIONS POLORDER=2)
+if( NOT FEMDG_FAST_TESTBUILD )
+  if( DUNE_FEM_DG_VERSION VERSION_LESS "2.4.1" )
+    add_executable( poissonall ../main.cc )
+    dune_target_enable_all_packages( poissonall )
+    dune_add_test( poissonall )
+  else()
+    dune_add_test( NAME poissonall 
+                   SOURCES ../main.cc )
+  endif()
+  add_code_generate_targets( poissonall )
 endif()
 
-             #set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O0" )             
-
-add_code_generate_targets( poisson poissonall )
+if( DUNE_FEM_DG_VERSION VERSION_LESS "2.4.1" )
+  add_executable( poisson ../main.cc )
+  set_property(TARGET poisson APPEND PROPERTY 
+               COMPILE_DEFINITIONS "POLORDER=2" )
+  dune_target_enable_all_packages( poisson )
+  dune_add_test( poisson )
+else()
+  dune_add_test( NAME poisson 
+                 SOURCES ../main.cc 
+                 COMPILE_DEFINITIONS POLORDER=2 )
+endif()
+add_code_generate_targets( poisson )
