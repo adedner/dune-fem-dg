@@ -20,7 +20,7 @@ dune_project()
 include(DuneMPI)
 
 #add sub directories
-dune_add_subdirs( dune m4 lib doc cmake/modules )
+dune_add_subdirs( dune lib doc cmake/modules )
 
 #add fem-dg test, i.e. tests which are not included in a directory called "test"
 #set( _dirnew dune/fem-dg/examples/advdiff_test )
