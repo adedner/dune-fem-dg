@@ -1,2 +1,0 @@
-SUBDIRS = fem-dg
-include $(top_srcdir)/am/global-rules
