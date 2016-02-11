@@ -264,8 +264,8 @@ namespace Fem
         exactSolution_( container_.exactSolution() ),
         rhs_( container_.rhs() ),
         rhsOperator_( doCreateRhsOperator() ),
-        solver_( nullptr ),
         ioTuple_( new IOTupleType( std::make_tuple( solution_.get(), exactSolution_.get() ) ) ),
+        solver_( nullptr ),
         solverMonitor_( name() ),
         diagnostics_( name() ),
         additionalOutput_( name() )

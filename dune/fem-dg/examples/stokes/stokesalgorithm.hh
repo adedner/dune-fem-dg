@@ -322,8 +322,8 @@ namespace Fem
       BaseType( grid, container.template adapter<1>() ),
       container_( container ),
       space_( container_.template adapter<1>().space() ),
-      ellAlg_( grid, container_.template adapter<0>() ),
       assembler_( container_, model() ),
+      ellAlg_( grid, container_.template adapter<0>() ),
       ioTuple_( new IOTupleType( *BaseType::dataTuple(), *ellAlg_.dataTuple() ) ),
       stokesSigmaEstimator_( new StokesSigmaEstimatorType( container_.template adapter<1>().gridPart(), ellAlg_.solution(), solution(), ellAlg_.assembler(), name() ) )
     {
