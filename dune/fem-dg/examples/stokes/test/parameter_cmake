@@ -9,11 +9,12 @@ fem.eoc.steps: 4
 femdg.polynomialOrder: 1
 
 
-
 # PROBLEM
 # ----------
-# problem number 
-problem: 16 # 5 6 13 16
+# problem numbers:
+# 0 problem general 
+# 1 driven cavity
+problem: 0 
 globalshift: 0
 factor: 1
 epsilon: 0.1

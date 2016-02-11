@@ -109,8 +109,14 @@ namespace Fem
 
         static ProblemInterfaceType* problem()
         {
-          return new typename Stokes::Problem< GridType, Stokes::GeneralizedProblem >::PoissonProblemType();
-          //return new typename Stokes::GeneralizedProblem< GridType >::PoissonProblemType();
+          int problemNr = Parameter::getValue< int > ( "problem" );
+          switch( problemNr )
+          {
+            case 1:
+              return new typename Stokes::Problem< GridType, Stokes::DrivenCavityProblem >::PoissonProblemType ();
+            default:
+              return new typename Stokes::Problem< GridType, Stokes::GeneralizedProblem >::PoissonProblemType ();
+          }
         }
 
 
@@ -173,7 +179,14 @@ namespace Fem
 
       static ProblemInterfaceType* problem()
       {
-        return new Stokes::Problem< GridType, Stokes::GeneralizedProblem > ();
+        int problemNr = Parameter::getValue< int > ( "problem" );
+        switch( problemNr )
+        {
+          case 1:
+            return new Stokes::Problem< GridType, Stokes::DrivenCavityProblem > ();
+          default:
+            return new Stokes::Problem< GridType, Stokes::GeneralizedProblem > ();
+        }
       }
 
       template< int polOrd >

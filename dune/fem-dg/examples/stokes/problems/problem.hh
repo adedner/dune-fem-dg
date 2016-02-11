@@ -329,7 +329,7 @@ namespace Stokes
       {
         double x=p[0];
         double y=p[1];
-        ret[0] = cos(0.5*M_PI*(x+y)) * (-alpha_+0.5*mu_*M_PI*M_PI) + 0.5*M_PI*cos(0.5*M_PI*(x-y) );
+        ret[0] = cos(2.0*M_PI*(x+y)) * (-alpha_ + 4.0 * 2.0*mu_*M_PI*M_PI) + 2.0*M_PI*cos(2.0*M_PI*(x-y) );
         ret[1] = - ret[0];
       }
 
@@ -340,7 +340,7 @@ namespace Stokes
         double x=p[0];
         double y=p[1];
         //u1
-        ret[0] = cos(0.5*M_PI*(x+y));
+        ret[0] = cos(2.0*M_PI*(x+y));
         ret[1] = -ret[0];
       }
 
@@ -362,10 +362,9 @@ namespace Stokes
       {
         double x=p[0];
         double y=p[1];
-        grad[0][0]=-exp(x)*(cos(y)*y+sin(y));
-        grad[0][1]=-exp(x)*(2*cos(y)-sin(y)*y);
-        grad[1][0]=sin(y)*y*exp(x);
-        grad[1][1]=exp(x)*(cos(y)*y+sin(y));
+        grad[0] = 1.0;
+        grad[1] = -1.0;
+        grad *= -2.0 * M_PI * sin( 2.0 * M_PI * ( x+y ) );
       }
 
       //! the Dirichlet boundary data function
@@ -405,7 +404,7 @@ namespace Stokes
       //! the exact solution
       void u(const DomainType& x, RangeType& ret) const
       {
-        ret[0] = sin(0.5*M_PI*(x[0]-x[1]));
+        ret[0] = sin(2.0*M_PI*(x[0]-x[1]));
       }
 
       //! the Dirichlet boundary data function
@@ -427,6 +426,137 @@ namespace Stokes
   };
 
 
+  /**
+   * \brief Stokes problem.
+   *
+   * \ingroup StokesProblems
+   */
+  template< class GridImp>
+  class DrivenCavityProblem
+    : public ProblemInterfaceBase< GridImp >
+  {
+    typedef ProblemInterfaceBase< GridImp >        BaseType;
+
+    typedef typename BaseType::FunctionSpaceType         FunctionSpaceType;
+    typedef typename BaseType::PressureFunctionSpaceType PressureFunctionSpaceType;
+
+    typedef typename BaseType::PoissonProblemType        PoissonProblemBaseType;
+    typedef typename BaseType::StokesProblemType         StokesProblemBaseType;
+  public:
+
+    class PoissonProblem
+      : public PoissonProblemBaseType
+    {
+    public:
+      typedef PoissonProblemBaseType BaseType;
+
+      static const int dimRange  = PoissonProblemBaseType::dimRange;
+      static const int dimDomain = PoissonProblemBaseType::dimDomain;
+
+      typedef typename PoissonProblemBaseType::DomainType          DomainType;
+      typedef typename PoissonProblemBaseType::RangeType           RangeType;
+      typedef typename PoissonProblemBaseType::JacobianRangeType   JacobianRangeType;
+      typedef typename PoissonProblemBaseType::DomainFieldType     DomainFieldType;
+      typedef typename PoissonProblemBaseType::RangeFieldType      RangeFieldType;
+
+      typedef typename PoissonProblemBaseType::DiffusionMatrixType DiffusionMatrixType;
+
+      PoissonProblem()
+        : mu_(Dune::Fem:: Parameter::getValue<double>( "mu", 1.0 ) ),
+          alpha_(Dune::Fem:: Parameter::getValue<double>( "alpha", 1.0 ) )
+      {}
+
+      //! the right hand side (i.e., the Laplace of u)
+      void f ( const DomainType &p, RangeType &ret ) const
+      {
+        ret = 0;
+      }
+
+
+      //! the exact solution
+      void u ( const DomainType &p, RangeType &ret ) const
+      {
+        ret = 0;
+      }
+
+      //! the diffusion matrix
+      void K( const DomainType &x, DiffusionMatrixType &m ) const
+      {
+        m = 0;
+        for( int i = 0; i < dimDomain; ++i )
+          m[ i ][ i ] = mu_;
+      }
+
+      bool constantK () const
+      {
+        return true;
+      }
+
+      //! the gradient of the exact solution
+      void gradient ( const DomainType &p, JacobianRangeType &grad ) const
+      {
+        grad = 0;
+      }
+
+      //! the Dirichlet boundary data function
+      virtual void g(const DomainType& x, RangeType& ret) const
+      {
+        ret = 0;
+        ret[ 0 ] = ( x[ 1 ] == 1.0 ) * 2.0;
+      }
+
+      virtual std::string name() const
+      {
+        return "Driven Cavity Problem";
+      }
+
+      virtual double gamma() const { return alpha_; }
+
+    private:
+      double mu_;
+      double alpha_;
+    };
+
+    class StokesProblem
+      : public StokesProblemBaseType
+    {
+    public:
+      typedef StokesProblemBaseType BaseType;
+
+      static const int dimRange  = StokesProblemBaseType::dimRange;
+      static const int dimDomain = StokesProblemBaseType::dimDomain;
+
+      typedef typename StokesProblemBaseType::DomainType        DomainType;
+      typedef typename StokesProblemBaseType::RangeType         RangeType;
+      typedef typename StokesProblemBaseType::JacobianRangeType JacobianRangeType;
+      typedef typename StokesProblemBaseType::DomainFieldType   DomainFieldType;
+      typedef typename StokesProblemBaseType::RangeFieldType    RangeFieldType;
+
+      typedef typename StokesProblemBaseType::DiffusionMatrixType DiffusionMatrixType;
+
+      //! the exact solution
+      void u(const DomainType& x, RangeType& ret) const
+      {
+        ret = 0;
+      }
+
+      //! the Dirichlet boundary data function
+      virtual void g(const DomainType& x, RangeType& ret) const
+      {
+        ret = 0.;
+      }
+
+      virtual std::string name() const
+      {
+        return "General Stokes";
+      }
+
+    };
+
+    typedef PoissonProblem PoissonProblemType;
+    typedef StokesProblem StokesProblemType;
+
+  };
 
  // template< class GridImp >
  // static StokesProblemInterface<Dune::Fem::FunctionSpace< double, double, GridImp::dimensionworld,GridImp::dimensionworld  >,
