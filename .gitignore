@@ -39,6 +39,8 @@ data
 
 build-cmake
 
+CMakeCache.txt
+
 headercheck
 language_tests
 CMakeFiles
