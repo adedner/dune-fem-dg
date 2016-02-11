@@ -6,6 +6,7 @@ endif()
 add_definitions( "-DYASPGRID" )
 add_definitions( "-DGRIDDIM=2" )
 
+
 if( NOT FEMDG_FAST_TESTBUILD )
   if( DUNE_FEM_DG_VERSION VERSION_LESS "2.4.1" )
     add_executable( stokesall ../main.cc )
@@ -23,6 +24,7 @@ if( DUNE_FEM_DG_VERSION VERSION_LESS "2.4.1" )
   set_property(TARGET stokes APPEND PROPERTY 
                COMPILE_DEFINITIONS "POLORDER=2" )
   dune_target_enable_all_packages( stokes )
+  dune_add_test( stokes )
 else() 
   dune_add_test( NAME stokes
                  SOURCES ../main.cc
