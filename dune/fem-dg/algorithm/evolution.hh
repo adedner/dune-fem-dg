@@ -377,9 +377,6 @@ namespace Fem
      */
     void solve ( const int loop, TimeProviderType& tp, const double endTime )
     {
-      // print info on each printCount step
-      const int printCount = param_.printCount();
-
       double maxTimeStep = param_.maxTimeStep();
 
 #ifdef BASEFUNCTIONSET_CODEGEN_GENERATE
@@ -426,9 +423,6 @@ namespace Fem
 
         // reset time step estimate
         tp.provideTimeStepEstimate( maxTimeStep );
-
-        // current time step size
-        const double deltaT = tp.deltaT();
 
         //************************************************
         //* Compute an ODE timestep                      *
