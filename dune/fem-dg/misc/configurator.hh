@@ -1,7 +1,7 @@
 #ifndef FEMDG_PROBLEMCREATOR_CONFIGURATOR_HH
 #define FEMDG_PROBLEMCREATOR_CONFIGURATOR_HH
 
-#include "problemcreatorselector.hh"
+#include "algorithmcreatorselector.hh"
 
 namespace Dune
 {
