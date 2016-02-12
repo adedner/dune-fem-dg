@@ -129,7 +129,7 @@ namespace Fem
      * \param[in] tp the time provider
      */
     template< class SubAlgImp, class TimeProviderImp >
-    void postSolve_post( SubAlgImp* alg, int loop, TimeProviderImp& tp )
+    void postSolveEnd( SubAlgImp* alg, int loop, TimeProviderImp& tp )
     {
       ForLoopType< Step >::apply( tuple_, tp );
     }
@@ -142,7 +142,7 @@ namespace Fem
      * \param[in] tp the time provider
      */
     template< class SubAlgImp, class TimeProviderImp >
-    void finalize_pre( SubAlgImp* alg, int loop, TimeProviderImp& tp )
+    void finalizeStart( SubAlgImp* alg, int loop, TimeProviderImp& tp )
     {
       ForLoopType< Finalize >::apply( tuple_, alg->gridWidth(), alg->gridSize() );
     }

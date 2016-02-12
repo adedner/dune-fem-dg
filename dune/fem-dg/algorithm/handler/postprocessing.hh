@@ -70,7 +70,7 @@ namespace Fem
      * \param[in] tp the time provider
      */
     template< class SubAlgImp, class TimeProviderImp >
-    void solve_post( SubAlgImp* alg, int loop, TimeProviderImp& tp )
+    void solveEnd( SubAlgImp* alg, int loop, TimeProviderImp& tp )
     {
       ForLoopType< LimitSolution >::apply( tuple_ );
     }

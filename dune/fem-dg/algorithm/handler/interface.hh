@@ -30,47 +30,47 @@ namespace Fem
     /**
      * \brief Handler interface method which is called shortly _before_ `algorithm.initialize()`
      */
-    template< class... A > void initialize_pre( A&&... ) {}
+    template< class... A > void initializeStart( A&&... ) {}
     /**
      * \brief Handler interface method which is called shortly _after_ `algorithm.initialize()`
      */
-    template< class... A > void initialize_post( A&&... ) {}
+    template< class... A > void initializeEnd( A&&... ) {}
 
     /**
      * \brief Handler interface method which is called shortly _before_ `algorithm.preSolve()`
      */
-    template< class... A > void preSolve_pre( A&&... ) {}
+    template< class... A > void preSolveStart( A&&... ) {}
     /**
      * \brief Handler interface method which is called shortly _after_ `algorithm.preSolve()`
      */
-    template< class... A > void preSolve_post( A&&... ) {}
+    template< class... A > void preSolveEnd( A&&... ) {}
 
     /**
      * \brief Handler interface method which is called shortly _before_ `algorithm.solve()`
      */
-    template< class... A > void solve_pre( A&&... ) {}
+    template< class... A > void solveStart( A&&... ) {}
     /**
      * \brief Handler interface method which is called shortly _after_ `algorithm.solve()`
      */
-    template< class... A > void solve_post( A&&... ) {}
+    template< class... A > void solveEnd( A&&... ) {}
 
     /**
      * \brief Handler interface method which is called shortly _before_ `algorithm.postSolve()`
      */
-    template< class... A > void postSolve_pre( A&&... ) {}
+    template< class... A > void postSolveStart( A&&... ) {}
     /**
      * \brief Handler interface method which is called shortly _after_ `algorithm.postSolve()`
      */
-    template< class... A > void postSolve_post( A&&... ) {}
+    template< class... A > void postSolveEnd( A&&... ) {}
 
     /**
      * \brief Handler interface method which is called shortly _before_ `algorithm.finalize()`
      */
-    template< class... A > void finalize_pre( A&&... ) {}
+    template< class... A > void finalizeStart( A&&... ) {}
     /**
      * \brief Handler interface method which is called shortly _after_ `algorithm.finalize()`
      */
-    template< class... A > void finalize_post( A&&... ) {}
+    template< class... A > void finalizeEnd( A&&... ) {}
   };
 
 }

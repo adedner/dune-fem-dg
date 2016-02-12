@@ -166,7 +166,7 @@ namespace Fem
      * \param[in] tp the time provider
      */
     template< class SubAlgImp, class TimeProviderImp >
-    void initialize_pre( SubAlgImp* alg, int loop, TimeProviderImp& tp )
+    void initializeStart( SubAlgImp* alg, int loop, TimeProviderImp& tp )
     {
       if( alg->eocParams().steps() == 1 && BaseType::checkPointExists(keyPrefix_) )
       {
@@ -185,7 +185,7 @@ namespace Fem
      * \param[in] tp the time provider
      */
     template< class SubAlgImp, class TimeProviderImp >
-    void initialize_post( SubAlgImp* alg, int loop, TimeProviderImp& tp )
+    void initializeEnd( SubAlgImp* alg, int loop, TimeProviderImp& tp )
     {
       if( BaseType::checkPointExists(keyPrefix_) )
         ForLoopType< RegisterData >::apply( tuple_ );
@@ -199,7 +199,7 @@ namespace Fem
      * \param[in] tp the time provider
      */
     template< class SubAlgImp, class TimeProviderImp >
-    void preSolve_pre( SubAlgImp* alg, int loop, TimeProviderImp& tp )
+    void preSolveStart( SubAlgImp* alg, int loop, TimeProviderImp& tp )
     {
       checkPointer( tp ).write( tp );
     }

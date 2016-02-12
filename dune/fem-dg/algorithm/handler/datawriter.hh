@@ -123,7 +123,7 @@ namespace Fem
      * \param[in] tp the time provider
      */
     template< class SubAlgImp, class TimeProviderImp >
-    void initialize_post( SubAlgImp* alg, int loop, TimeProviderImp& tp )
+    void initializeEnd( SubAlgImp* alg, int loop, TimeProviderImp& tp )
     {
       dataWriter_.reset( new DataWriterType( std::get<0>(tuple_)->solution().space().grid(), dataTuple_, tp,
                                              alg->eocParams().dataOutputParameters( loop, alg->dataPrefix() ) ) );
@@ -137,9 +137,9 @@ namespace Fem
      * \param[in] tp the time provider
      */
     template< class SubAlgImp, class TimeProviderImp >
-    void preSolve_pre( SubAlgImp* alg, int loop, TimeProviderImp& tp )
+    void preSolveStart( SubAlgImp* alg, int loop, TimeProviderImp& tp )
     {
-      finalize_pre( alg, loop, tp );
+      finalizeStart( alg, loop, tp );
     }
 
     /**
@@ -150,12 +150,12 @@ namespace Fem
      * \param[in] tp the time provider
      */
     template< class SubAlgImp, class TimeProviderImp >
-    void postSolve_post( SubAlgImp* alg, int loop, TimeProviderImp& tp )
+    void postSolveEnd( SubAlgImp* alg, int loop, TimeProviderImp& tp )
     {
       // Check that no NAN have been generated
       if( !alg->checkSolutionValid( loop, tp ) )
       {
-        finalize_pre( alg, loop, tp );
+        finalizeStart( alg, loop, tp );
         std::cerr << "Solution is not valid. Aborting." << std::endl;
         std::abort();
       }
@@ -169,7 +169,7 @@ namespace Fem
      * \param[in] tp the time provider
      */
     template< class SubAlgImp, class TimeProviderImp >
-    void finalize_pre( SubAlgImp* alg, int loop, TimeProviderImp& tp )
+    void finalizeStart( SubAlgImp* alg, int loop, TimeProviderImp& tp )
     {
       if( dataWriter_ && dataWriter_->willWrite( tp ) )
       {

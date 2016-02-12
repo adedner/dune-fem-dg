@@ -388,15 +388,15 @@ namespace Fem
 #endif
 
       // HANDLER
-      checkPointHandler_.initialize_pre( this, loop, tp );
+      checkPointHandler_.initializeStart( this, loop, tp );
 
       initialize( loop, tp );
 
       // HANDLER
       if( !checkPointHandler_.checkPointRestored() )
-        adaptHandler_.initialize_post( this, loop, tp );
-      dataWriterHandler_.initialize_post( this, loop, tp );
-      checkPointHandler_.initialize_post( this, loop, tp );
+        adaptHandler_.initializeEnd( this, loop, tp );
+      dataWriterHandler_.initializeEnd( this, loop, tp );
+      checkPointHandler_.initializeEnd( this, loop, tp );
 
       // start first time step with prescribed fixed time step
       // if it is not 0 otherwise use the internal estimate
@@ -418,8 +418,8 @@ namespace Fem
       for( ; tp.time() < endTime; )
       {
         // HANDLER
-        dataWriterHandler_.preSolve_pre( this, loop, tp );
-        checkPointHandler_.preSolve_pre( this, loop, tp );
+        dataWriterHandler_.preSolveStart( this, loop, tp );
+        checkPointHandler_.preSolveStart( this, loop, tp );
 
         // reset time step estimate
         tp.provideTimeStepEstimate( maxTimeStep );
@@ -433,20 +433,20 @@ namespace Fem
         preStep( loop, tp );
 
         // HANDLER
-        adaptHandler_.solve_pre( this, loop, tp );
+        adaptHandler_.solveStart( this, loop, tp );
 
         // perform the solve for one time step, i.e. solve ODE
         step( loop, tp );
 
         // HANDLER
-        postProcessingHandler_.solve_post( this, loop, tp );
+        postProcessingHandler_.solveEnd( this, loop, tp );
 
         postStep( loop, tp );
 
         // HANDLER
-        solverMonitorHandler_.postSolve_post( this, loop, tp );
-        diagnosticsHandler_.postSolve_post( this, loop, tp );
-        dataWriterHandler_.postSolve_post( this, loop, tp );
+        solverMonitorHandler_.postSolveEnd( this, loop, tp );
+        diagnosticsHandler_.postSolveEnd( this, loop, tp );
+        dataWriterHandler_.postSolveEnd( this, loop, tp );
 
         // stop FemTimer for this time step
         Dune::FemTimer::stop(timeStepTimer_,Dune::FemTimer::sum);
@@ -481,10 +481,10 @@ namespace Fem
       } /****** END of time loop *****/
 
       // HANDLER
-      diagnosticsHandler_.finalize_pre( this, loop, tp );
-      dataWriterHandler_.finalize_pre( this, loop, tp );
-      solverMonitorHandler_.finalize_pre( this, loop, tp );
-      adaptHandler_.finalize_pre( this, loop, tp );
+      diagnosticsHandler_.finalizeStart( this, loop, tp );
+      dataWriterHandler_.finalizeStart( this, loop, tp );
+      solverMonitorHandler_.finalizeStart( this, loop, tp );
+      adaptHandler_.finalizeStart( this, loop, tp );
 
       finalize( loop, tp );
 

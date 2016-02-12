@@ -192,7 +192,7 @@ namespace Fem
      * \param[in] tp the time provider
      */
     template< class SubAlgImp, class TimeProviderImp >
-    void initialize_post( SubAlgImp* alg, int loop, TimeProviderImp& tp)
+    void initializeEnd( SubAlgImp* alg, int loop, TimeProviderImp& tp)
     {
       if( adaptive() )
       {
@@ -224,7 +224,7 @@ namespace Fem
      * \param[in] tp the time provider
      */
     template< class SubAlgImp, class TimeProviderImp >
-    void solve_pre( SubAlgImp* alg, int loop, TimeProviderImp& tp )
+    void solveStart( SubAlgImp* alg, int loop, TimeProviderImp& tp )
     {
       if( tp.timeStep() % adaptParam_.adaptCount() == 0 )
       {
@@ -241,7 +241,7 @@ namespace Fem
      * \param[in] tp the time provider
      */
     template< class SubAlgImp, class TimeProviderImp >
-    void finalize_pre( SubAlgImp* alg, int loop, TimeProviderImp& tp)
+    void finalizeStart( SubAlgImp* alg, int loop, TimeProviderImp& tp)
     {
       ForLoopType< Finalize >::apply( tuple_ );
     }
@@ -359,7 +359,7 @@ namespace Fem
         ForLoopType< PostAdapt >::apply( tuple_ );
 
         if( sequence !=  getSequence( get<0>( tuple_ ) ) )
-          alg->postProcessing().solve_post( alg, loop, tp );
+          alg->postProcessing().solveEnd( alg, loop, tp );
       }
     }
 
