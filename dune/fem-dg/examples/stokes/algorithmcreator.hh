@@ -61,6 +61,8 @@ namespace Fem
   static const Matrix::Enum                 matrixEnum     = Matrix::Enum::assembled;
   static const AdvectionFlux::Enum          advFluxEnum    = AdvectionFlux::Enum::none;
   static const PrimalDiffusionFlux::Enum    diffFluxEnum   = PrimalDiffusionFlux::Enum::general;
+  // for Taylorhood (P2,P1) equal one
+  static const int pressureOrderReduction = 1;
 
   //produce some static compiler warnings in case we are using an uninstalled solver
   static const AvailableSolvers< solverEnum > checkSolverInstalled;
@@ -195,7 +197,7 @@ namespace Fem
       private:
         typedef typename SubPoissonAlgorithmCreator::template DiscreteTraits< polOrd > PoissonDiscreteTraits;
         typedef typename PoissonDiscreteTraits::DiscreteFunctionType                 VelDiscreteFunctionType;
-        typedef typename AC::template DiscreteFunctionSpaces< GridPartType, polOrd, FunctionSpaceType>
+        typedef typename AC::template DiscreteFunctionSpaces< GridPartType, polOrd-pressureOrderReduction, FunctionSpaceType>
                                                                                      DFSpaceType;
       public:
         typedef typename AC::template DiscreteFunctions< DFSpaceType >               DiscreteFunctionType;
@@ -205,7 +207,7 @@ namespace Fem
 
         class Operator
         {
-          typedef typename AC::template DefaultAssembTraits< DFSpaceType, DFSpaceType, polOrd, AnalyticalTraits >
+          typedef typename AC::template DefaultAssembTraits< DFSpaceType, DFSpaceType, polOrd-pressureOrderReduction, AnalyticalTraits >
                                                                                      OpTraits;
 
           typedef AssemblerTraitsList< std::tuple< VelDiscreteFunctionType, DiscreteFunctionType >, AC::template Containers > AssTraits;
