@@ -10,7 +10,7 @@ namespace Fem
 
 
   /**
-   * \brief Convenience class for ProblemCreator classes.
+   * \brief Convenience class for AlgorithmCreator classes.
    *
    * The module dune-fem-dg needs a lot of templates and typedefs which might confuse some users.
    * Furthermore, redundancy of templates expressions which are not updated correctly

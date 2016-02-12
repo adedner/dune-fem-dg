@@ -55,14 +55,14 @@ namespace Fem
 {
 
   template< class GridImp >
-  struct IncompressibleNavierStokesProblemCreator
+  struct IncompressibleNavierStokesAlgorithmCreator
   {
 
   //=======================================
   //     STOKES PROBLEM CREATOR
   //=======================================
 
-    struct SubStokesProblemCreator
+    struct SubStokesAlgorithmCreator
     {
       typedef AlgorithmConfigurator< GridImp,
                                      Galerkin::Enum::dg,
@@ -75,7 +75,7 @@ namespace Fem
                                      PrimalDiffusionFlux::Enum::general > AC;
 
 
-      struct SubPoissonProblemCreator
+      struct SubPoissonAlgorithmCreator
       {
 
         typedef typename AC::GridType                         GridType;
@@ -142,7 +142,7 @@ namespace Fem
         };
 
         template <int polOrd>
-        using Algorithm = SubEllipticAlgorithm< GridType, SubPoissonProblemCreator, polOrd >;
+        using Algorithm = SubEllipticAlgorithm< GridType, SubPoissonAlgorithmCreator, polOrd >;
       };
 
       typedef typename AC::GridType                                       GridType;
@@ -176,9 +176,9 @@ namespace Fem
       struct DiscreteTraits
       {
       private:
-        typedef typename SubPoissonProblemCreator::template DiscreteTraits< polOrd > PoissonDiscreteTraits;
+        typedef typename SubPoissonAlgorithmCreator::template DiscreteTraits< polOrd > PoissonDiscreteTraits;
         typedef typename PoissonDiscreteTraits::DiscreteFunctionType                 VelDiscreteFunctionType;
-        typedef typename SubPoissonProblemCreator::FunctionSpaceType                 VelFunctionSpaceType;
+        typedef typename SubPoissonAlgorithmCreator::FunctionSpaceType                 VelFunctionSpaceType;
         typedef typename AC::template DiscreteFunctionSpaces< GridPartType, polOrd, FunctionSpaceType>
                                                                                      DFSpaceType;
         typedef typename AC::template DiscreteFunctionSpaces< GridPartType, polOrd, VelFunctionSpaceType>
@@ -221,7 +221,7 @@ namespace Fem
       };
 
       template <int polOrd>
-      using Algorithm = SubStokesAlgorithm< GridType, SubStokesProblemCreator, SubPoissonProblemCreator, polOrd >;
+      using Algorithm = SubStokesAlgorithm< GridType, SubStokesAlgorithmCreator, SubPoissonAlgorithmCreator, polOrd >;
     };
 
 
@@ -229,7 +229,7 @@ namespace Fem
   //     NAVIER-STOKES PROBLEM CREATOR
   //=======================================
 
-    struct SubNavierStokesProblemCreator
+    struct SubNavierStokesAlgorithmCreator
     {
       typedef AlgorithmConfigurator< GridImp,
                                      Galerkin::Enum::dg,
@@ -320,14 +320,14 @@ namespace Fem
       };
 
       template <int polOrd>
-      using Algorithm = SubAdvectionDiffusionAlgorithm< GridType, SubNavierStokesProblemCreator, polOrd >;
+      using Algorithm = SubAdvectionDiffusionAlgorithm< GridType, SubNavierStokesAlgorithmCreator, polOrd >;
 
     };
 
 
     // \todo implement coupling and exchange "UncoupledSubAlgorithms"
     template <int polOrd>
-    using Algorithm = IncompNavierStokesAlgorithm< polOrd, UncoupledSubAlgorithms, SubStokesProblemCreator, SubNavierStokesProblemCreator, SubStokesProblemCreator >;
+    using Algorithm = IncompNavierStokesAlgorithm< polOrd, UncoupledSubAlgorithms, SubStokesAlgorithmCreator, SubNavierStokesAlgorithmCreator, SubStokesAlgorithmCreator >;
 
     typedef GridImp                                         GridType;
 

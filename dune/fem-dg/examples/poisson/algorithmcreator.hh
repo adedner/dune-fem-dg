@@ -45,10 +45,10 @@ namespace Fem
 {
 
   template< class GridImp >
-  struct PoissonProblemCreator
+  struct PoissonAlgorithmCreator
   {
 
-    struct SubPoissonProblemCreator
+    struct SubPoissonAlgorithmCreator
     {
       typedef AlgorithmConfigurator< GridImp,
                                      Galerkin::Enum::dg,
@@ -125,12 +125,12 @@ namespace Fem
       };
 
       template <int polOrd>
-      using Algorithm = SubEllipticAlgorithm< GridType, SubPoissonProblemCreator, polOrd >;
+      using Algorithm = SubEllipticAlgorithm< GridType, SubPoissonAlgorithmCreator, polOrd >;
 
     };
 
     template <int polOrd>
-    using Algorithm = SteadyStateAlgorithm< polOrd, UncoupledSubAlgorithms, SubPoissonProblemCreator >;
+    using Algorithm = SteadyStateAlgorithm< polOrd, UncoupledSubAlgorithms, SubPoissonAlgorithmCreator >;
 
     typedef GridImp                                         GridType;
 

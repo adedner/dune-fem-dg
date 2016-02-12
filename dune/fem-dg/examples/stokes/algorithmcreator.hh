@@ -66,15 +66,15 @@ namespace Fem
   static const AvailableSolvers< solverEnum > checkSolverInstalled;
 
   template< class GridImp >
-  struct StokesProblemCreator
+  struct StokesAlgorithmCreator
   {
 
-    struct SubStokesProblemCreator
+    struct SubStokesAlgorithmCreator
     {
       typedef AlgorithmConfigurator< GridImp, galerkinEnum, adaptivityEnum, dfSpaceEnum, solverEnum, advLimiterEnum,
                                      matrixEnum, advFluxEnum, diffFluxEnum > AC;
 
-      struct SubPoissonProblemCreator
+      struct SubPoissonAlgorithmCreator
       {
 
         typedef typename AC::GridType                         GridType;
@@ -149,7 +149,7 @@ namespace Fem
         };
 
         template <int polOrd>
-        using Algorithm = SubEllipticAlgorithm< GridType, SubPoissonProblemCreator, polOrd >;
+        using Algorithm = SubEllipticAlgorithm< GridType, SubPoissonAlgorithmCreator, polOrd >;
       };
 
       typedef typename AC::GridType                         GridType;
@@ -193,7 +193,7 @@ namespace Fem
       struct DiscreteTraits
       {
       private:
-        typedef typename SubPoissonProblemCreator::template DiscreteTraits< polOrd > PoissonDiscreteTraits;
+        typedef typename SubPoissonAlgorithmCreator::template DiscreteTraits< polOrd > PoissonDiscreteTraits;
         typedef typename PoissonDiscreteTraits::DiscreteFunctionType                 VelDiscreteFunctionType;
         typedef typename AC::template DiscreteFunctionSpaces< GridPartType, polOrd, FunctionSpaceType>
                                                                                      DFSpaceType;
@@ -228,12 +228,12 @@ namespace Fem
       };
 
       template <int polOrd>
-      using Algorithm = SubStokesAlgorithm< GridType, SubStokesProblemCreator, SubPoissonProblemCreator, polOrd >;
+      using Algorithm = SubStokesAlgorithm< GridType, SubStokesAlgorithmCreator, SubPoissonAlgorithmCreator, polOrd >;
     };
 
 
     template <int polOrd>
-    using Algorithm = SteadyStateAlgorithm< polOrd, UncoupledSubAlgorithms, SubStokesProblemCreator >;
+    using Algorithm = SteadyStateAlgorithm< polOrd, UncoupledSubAlgorithms, SubStokesAlgorithmCreator >;
 
     typedef GridImp                                         GridType;
 

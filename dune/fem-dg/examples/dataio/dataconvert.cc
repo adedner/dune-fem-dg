@@ -39,7 +39,7 @@ void appendUserParameter()
 #define PARAMETER_APPEND_FUNCTION appendUserParameter
 
 typedef Dune::GridSelector :: GridType GridType;
-typedef ProblemCreator< GridType > ProblemTraits;
+typedef AlgorithmCreator< GridType > ProblemTraits;
 
 typedef CheckPointingAlgorithm<GridType,
                              ProblemTraits,

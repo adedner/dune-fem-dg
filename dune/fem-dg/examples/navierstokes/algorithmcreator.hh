@@ -49,11 +49,11 @@ namespace Fem
 {
 
   template< class GridImp >
-  struct NavierStokesProblemCreator
+  struct NavierStokesAlgorithmCreator
   {
 
 
-    struct SubNavierStokesProblemCreator
+    struct SubNavierStokesAlgorithmCreator
     {
       typedef AlgorithmConfigurator< GridImp,
                                      Galerkin::Enum::dg,
@@ -137,12 +137,12 @@ namespace Fem
       };
 
       template <int polOrd>
-      using Algorithm = SubAdvectionDiffusionAlgorithm< GridType, SubNavierStokesProblemCreator, polOrd >;
+      using Algorithm = SubAdvectionDiffusionAlgorithm< GridType, SubNavierStokesAlgorithmCreator, polOrd >;
 
     };
 
     template <int polOrd>
-    using Algorithm = EvolutionAlgorithm< polOrd, UncoupledSubAlgorithms, SubNavierStokesProblemCreator >;
+    using Algorithm = EvolutionAlgorithm< polOrd, UncoupledSubAlgorithms, SubNavierStokesAlgorithmCreator >;
 
     typedef GridImp                                         GridType;
 

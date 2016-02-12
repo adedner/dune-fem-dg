@@ -1,13 +1,9 @@
-#ifndef FEMDG_EULERPROBLEMCREATOR_HH
-#define FEMDG_EULERPROBLEMCREATOR_HH
+#ifndef FEMHOWTO_HEATSTEPPER_HH
+#define FEMHOWTO_HEATSTEPPER_HH
 #include <config.h>
 
-#ifndef GRIDDIM
-#define GRIDDIM 2
-#endif
-
 #ifndef DIMRANGE
-#define DIMRANGE GRIDDIM + 2
+#define DIMRANGE 1
 #endif
 
 #ifndef POLORDER
@@ -19,6 +15,7 @@
 #include <dune/fem-dg/algorithm/handler/sub/solvermonitor.hh>
 #include <dune/fem-dg/algorithm/handler/sub/additionaloutput.hh>
 #include <dune/fem-dg/algorithm/handler/sub/adapt.hh>
+#include <dune/fem-dg/algorithm/monitor.hh>
 
 //--------- GRID HELPER ---------------------
 #include <dune/fem-dg/algorithm/gridinitializer.hh>
@@ -29,11 +26,11 @@
 #include <dune/fem-dg/operator/fluxes/advection/fluxes.hh>
 #include <dune/fem-dg/operator/fluxes/euler/fluxes.hh>
 //--------- STEPPER -------------------------
+#include <dune/fem-dg/algorithm/sub/advectiondiffusion.hh>
 #include <dune/fem-dg/algorithm/sub/advection.hh>
 #include <dune/fem-dg/algorithm/evolution.hh>
 //--------- EOCERROR ------------------------
 #include <dune/fem-dg/misc/error/l2eocerror.hh>
-#include <dune/fem-dg/misc/error/l1eocerror.hh>
 //--------- PROBLEMS ------------------------
 #include "problems.hh"
 //--------- MODELS --------------------------
@@ -46,46 +43,46 @@ namespace Dune
 namespace Fem
 {
 
+  /**
+   *  \brief problem creator for an advection diffusion problem
+   */
   template< class GridImp >
-  struct EulerProblemCreator
+  struct AdvectionDiffusionAlgorithmCreator
   {
 
-    struct SubEulerProblemCreator
+    struct SubAdvectionDiffusionAlgorithmCreator
     {
       typedef AlgorithmConfigurator< GridImp,
                                      Galerkin::Enum::dg,
                                      Adaptivity::Enum::yes,
                                      DiscreteFunctionSpaces::Enum::legendre,
                                      Solver::Enum::fem,
-                                     AdvectionLimiter::Enum::limited,
+                                     AdvectionLimiter::Enum::unlimited,
                                      Matrix::Enum::matrixfree,
                                      AdvectionFlux::Enum::upwind,
                                      PrimalDiffusionFlux::Enum::general > AC;
 
+      typedef typename AC::GridType                         GridType;
+      typedef typename AC::GridParts                        HostGridPartType;
+      typedef HostGridPartType                              GridPartType;
+
       // define problem type here if interface should be avoided
+      typedef EvolutionProblemInterface< typename AC::template FunctionSpaces<DIMRANGE> >
+                                                                        ProblemInterfaceType;
 
-      typedef typename AC::GridType                                GridType;
-      typedef typename AC::GridParts                               HostGridPartType;
-      typedef typename AC::GridParts                               GridPartType;
-
-      typedef ProblemBase< GridType >                              ProblemInterfaceType;
-
-      typedef typename ProblemInterfaceType::FunctionSpaceType     FunctionSpaceType;
-
+      typedef typename ProblemInterfaceType::FunctionSpaceType          FunctionSpaceType;
 
       struct AnalyticalTraits
       {
-        typedef ProblemInterfaceType                               ProblemType;
-        typedef ProblemInterfaceType                               InitialDataType;
-        typedef EulerModel< GridPartType, InitialDataType >        ModelType;
+        typedef ProblemInterfaceType                                    ProblemType;
+        typedef ProblemInterfaceType                                    InitialDataType;
+        typedef HeatEqnModel< GridPartType, InitialDataType >           ModelType;
 
         template< class Solution, class Model, class ExactFunction, class TimeProvider >
         static void addEOCErrors ( TimeProvider& tp, Solution &u, Model &model, ExactFunction &f )
         {
           static L2EOCError l2EocError( "$L^2$-Error");
           l2EocError.add( tp, u, model, f );
-          static L1EOCError l1EocError( "$L^1$-Error");
-          l1EocError.add( tp, u, model, f );
         }
       };
 
@@ -94,13 +91,14 @@ namespace Fem
 
       static ProblemInterfaceType* problem()
       {
-        return AnalyticalEulerProblemCreator<GridType>::apply();
+        return AnalyticalAdvDiffAlgorithmCreator<FunctionSpaceType,GridType>::apply();
       }
+
 
       template< int polOrd >
       struct DiscreteTraits
       {
-        typedef typename AC::template DiscreteFunctionSpaces< GridPartType, polOrd, FunctionSpaceType >
+        typedef typename AC::template DiscreteFunctionSpaces< GridPartType, polOrd, FunctionSpaceType>
                                                                                            DFSpaceType;
         typedef std::tuple<>                                                               ExtraParameterTuple;
       public:
@@ -114,36 +112,36 @@ namespace Fem
                                                                                            OpTraits;
         public:
           typedef typename AC::template Operators< OpTraits,OperatorSplit::Enum::full >    type;
+          typedef typename AC::template Operators< OpTraits,OperatorSplit::Enum::expl >    ExplicitType;
+          typedef typename AC::template Operators< OpTraits,OperatorSplit::Enum::impl >    ImplicitType;
         };
 
         struct Solver
         {
-          // type of linear solver for implicit ode
-          typedef typename AC::template LinearSolvers< DFSpaceType >                        LinearSolverType;
-          typedef DuneODE::OdeSolverInterface< DiscreteFunctionType >                       type;
-          //typedef RungeKuttaSolver< typename Operator::type, typename Operator::ExplicitType, typename Operator::ImplicitType,
-          //                          LinearSolverType >                                    type;
+          typedef typename AC::template LinearSolvers< DFSpaceType >                       LinearSolverType;
+          typedef DuneODE::OdeSolverInterface< DiscreteFunctionType >                      type;
         };
 
       private:
         typedef typename AC::template DefaultOpTraits< DFSpaceType, polOrd, AnalyticalTraits, ExtraParameterTuple >
-                                                                                            OpTraits;
-        typedef DGAdaptationIndicatorOperator< OpTraits >                                   IndicatorType;
-        typedef Estimator< DiscreteFunctionType, typename AnalyticalTraits::ProblemType >   GradientIndicatorType ;
+                                                                                           OpTraits;
+        typedef DGAdaptationIndicatorOperator< OpTraits >                                  IndicatorType;
+        typedef Estimator< DiscreteFunctionType, typename AnalyticalTraits::ProblemType >  GradientIndicatorType ;
       public:
 
-        typedef AdaptIndicator< IndicatorType, GradientIndicatorType >           AdaptIndicatorType;
-        typedef SubSolverMonitor< SolverMonitor >                                SolverMonitorType;
-        typedef SubDiagnostics< Diagnostics >                                    DiagnosticsType;
-        typedef ExactSolutionOutput< DiscreteFunctionType >                      AdditionalOutputType;
+        typedef AdaptIndicator< IndicatorType, GradientIndicatorType >                     AdaptIndicatorType;
+        typedef SubSolverMonitor< SolverMonitor >                                          SolverMonitorType;
+        typedef SubDiagnostics< Diagnostics >                                              DiagnosticsType;
+        typedef ExactSolutionOutput< DiscreteFunctionType >                                AdditionalOutputType;
       };
 
-      template <int polOrd>
-      using Algorithm = SubAdvectionAlgorithm< GridType, SubEulerProblemCreator, polOrd >;
+      template< int polOrd >
+      using Algorithm = SubAdvectionDiffusionAlgorithm< GridType, SubAdvectionDiffusionAlgorithmCreator, polOrd >;
+
     };
 
-    template <int polOrd>
-    using Algorithm = EvolutionAlgorithm< polOrd, UncoupledSubAlgorithms, SubEulerProblemCreator >;
+    template< int polOrd >
+    using Algorithm = EvolutionAlgorithm< polOrd, UncoupledSubAlgorithms, SubAdvectionDiffusionAlgorithmCreator >;
 
     typedef GridImp                                         GridType;
 
@@ -152,8 +150,10 @@ namespace Fem
     static inline GridPtr<GridType>
     initializeGrid() { return DefaultGridInitializer< GridType >::initialize(); }
 
+
   };
 
 }
 }
-#endif
+
+#endif // FEMHOWTO_HEATSTEPPER_HH

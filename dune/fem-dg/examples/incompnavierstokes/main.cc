@@ -2,7 +2,7 @@
 #include <config.h>
 
 #include <dune/fem-dg/misc/simulator.hh>
-#include "problemcreator.hh"
+#include "algorithmcreator.hh"
 
 
 int main(int argc, char ** argv)
@@ -21,10 +21,10 @@ int main(int argc, char ** argv)
     Dune::Fem::Parameter::write("parameter.log");
 
     typedef Dune::GridSelector :: GridType GridType;
-    Dune::Fem::IncompressibleNavierStokesProblemCreator< GridType > problem;
+    Dune::Fem::IncompressibleNavierStokesAlgorithmCreator< GridType > algorithmCreator;
 
     // run simulation
-    Dune::Fem::Simulator::run( problem );
+    Dune::Fem::Simulator::run( algorithmCreator );
   }
   catch (const Dune::Exception &e)
   {
