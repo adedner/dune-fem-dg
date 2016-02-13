@@ -3,7 +3,7 @@ include_directories("${CMAKE_SOURCE_DIR}/dune/fem-dg/examples/navierstokes/")
 configure_parameter_file()
 
 # default settings for the test case
-add_definitions( "-DALUGRID_SIMPLEX" )
+add_definitions( "-DYASPGRID" )
 add_definitions( "-DGRIDDIM=2" )
 
 if( NOT FEMDG_FAST_TESTBUILD )
