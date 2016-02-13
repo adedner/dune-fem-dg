@@ -76,4 +76,5 @@ fem.io.macroGridFile_3d:  ../../grids/unitcube3.dgf
 
 # SOLVER CONFIGURATION
 #---------------------
+fem.ode.odesolver: EX
 paramfile: ../../parameter/paramSolver
