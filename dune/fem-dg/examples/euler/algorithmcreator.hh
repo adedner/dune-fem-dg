@@ -94,7 +94,7 @@ namespace Fem
 
       static ProblemInterfaceType* problem()
       {
-        return AnalyticalEulerAlgorithmCreator<GridType>::apply();
+        return AnalyticalEulerProblemCreator<GridType>::apply();
       }
 
       template< int polOrd >
