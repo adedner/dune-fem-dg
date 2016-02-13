@@ -39,19 +39,17 @@ namespace Fem
       euler_hll = 5,
       //! the HLLC flux
       euler_hllc = 6,
-      //! the local Lax-Friedrichs flux
-      euler_llf2 = 7,
       //! general flux: Parameter selection is done via parameter file!
-      euler_general = 8
+      euler_general = 7
 
     };
 
     //! Contains all known enums for advection fluxes which can be chosen via parameter file.
-    const Enum        _enums[] = { Enum::none, Enum::upwind, Enum::llf, Enum::euler_llf, Enum::euler_hll, Enum::euler_hllc, Enum::euler_llf2 };
+    const Enum        _enums[] = { Enum::none, Enum::upwind, Enum::llf, Enum::euler_llf, Enum::euler_hll, Enum::euler_hllc };
     //! Contains all known names of advection fluxes which can be chosen via parameter file.
-    const std::string _strings[] = { "NONE", "UPWIND" , "LLF", "EULER-LLF", "EULER-HLL" , "EULER-HLLC", "EULER-LLF2" };
+    const std::string _strings[] = { "NONE", "UPWIND" , "LLF", "EULER-LLF", "EULER-HLL" , "EULER-HLLC" };
     //! Number of known advection fluxes which can be chosen via parameter file.
-    static const int  _size = 7;
+    static const int  _size = 6;
 
   }
 

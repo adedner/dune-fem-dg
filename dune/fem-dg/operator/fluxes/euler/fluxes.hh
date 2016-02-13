@@ -85,28 +85,6 @@ namespace Fem
   };
 
   /**
-   * \brief class specialization for the local Lax-Friedrichs flux.
-   *
-   * The purpose of this class is to allow the selection of an Euler flux
-   * via an enum given in AdvectionFlux::Enum.
-   */
-  template< class Model >
-  class DGAdvectionFlux< Model, AdvectionFlux::Enum::euler_llf2 >
-    : public EulerLLFFlux< Model >
-  {
-    typedef EulerLLFFlux< Model >  BaseType;
-  public:
-    typedef typename BaseType::ParameterType          ParameterType;
-    typedef typename BaseType::IdEnum                 IdEnum;
-    typedef typename BaseType::ModelType              ModelType;
-
-    DGAdvectionFlux( const Model& mod, const ParameterType& param = ParameterType() )
-      : BaseType( mod, param )
-    {}
-    static std::string name () { return "LLF"; }
-  };
-
-  /**
    * \brief class specialization for a general flux chosen by a parameter file.
    *
    * The purpose of this class is to allow the selection of an Euler flux
@@ -142,8 +120,7 @@ namespace Fem
         method_( parameters.getMethod() ),
         flux_llf_( mod ),
         flux_hll_( mod ),
-        flux_hllc_( mod ),
-        flux_llf2_( mod )
+        flux_hllc_( mod )
     {}
 
     /**
@@ -173,8 +150,6 @@ namespace Fem
           return flux_hll_.numericalFlux( left, right, uLeft, uRight, jacLeft, jacRight, gLeft, gRight );
         case IdEnum::euler_hllc:
           return flux_hllc_.numericalFlux( left, right, uLeft, uRight, jacLeft, jacRight, gLeft, gRight );
-        case IdEnum::euler_llf2:
-          return flux_llf2_.numericalFlux( left, right, uLeft, uRight, jacLeft, jacRight, gLeft, gRight );
       }
       assert( false );
       std::cerr << "Error: Advection flux not chosen via parameter file" << std::endl;
@@ -186,7 +161,6 @@ namespace Fem
     DGAdvectionFlux< ModelImp, IdEnum::euler_llf >  flux_llf_;
     DGAdvectionFlux< ModelImp, IdEnum::euler_hll >  flux_hll_;
     DGAdvectionFlux< ModelImp, IdEnum::euler_hllc > flux_hllc_;
-    DGAdvectionFlux< ModelImp, IdEnum::euler_llf2 > flux_llf2_;
 
   };
 
