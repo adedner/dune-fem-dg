@@ -59,7 +59,7 @@ namespace Fem
                                      Solver::Enum::fem,
                                      AdvectionLimiter::Enum::limited,
                                      Matrix::Enum::matrixfree,
-                                     AdvectionFlux::Enum::euler_hll,
+                                     AdvectionFlux::Enum::euler_hllc,
                                      PrimalDiffusionFlux::Enum::general > AC;
 
       // define problem type here if interface should be avoided
@@ -82,10 +82,10 @@ namespace Fem
         template< class Solution, class Model, class ExactFunction, class TimeProvider >
         static void addEOCErrors ( TimeProvider& tp, Solution &u, Model &model, ExactFunction &f )
         {
-          static L2EOCError l2EocError( "$L^2$-Error");
-          l2EocError.add( tp, u, model, f );
           static L1EOCError l1EocError( "$L^1$-Error");
           l1EocError.add( tp, u, model, f );
+          static L2EOCError l2EocError( "$L^2$-Error");
+          l2EocError.add( tp, u, model, f );
         }
       };
 
