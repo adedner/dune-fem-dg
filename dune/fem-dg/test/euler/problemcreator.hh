@@ -35,7 +35,7 @@ struct ProblemCreator
 
     // choice of diffusion flux (see diffusionflux.hh for methods)
     static const Dune :: DGDiffusionFluxIdentifier PrimalDiffusionFluxId
-         = Dune :: method_general ;
+         = Dune :: method_none ;
 
 // for header check
 #ifndef FLUX
@@ -79,7 +79,7 @@ struct ProblemCreator
 
   static inline std::string moduleName()
   {
-    return "euler";
+    return "";
   }
 
   static inline Dune::GridPtr<GridType>
