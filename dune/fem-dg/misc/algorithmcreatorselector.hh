@@ -238,6 +238,7 @@ namespace Fem
 // ImplExplOperatorSelector
 ///////////////////////////////////////////////////////////////////////////
 
+  // advection and diffusion or none
   template< class Op, class AdvectionOp, class DiffusionOp, bool advection, bool diffusion >
   struct ImplExplOperatorSelector
   {
@@ -245,15 +246,17 @@ namespace Fem
     typedef DiffusionOp          ImplicitOperatorType;
     typedef AdvectionOp          ExplicitOperatorType;
   };
-  template< class Op, class AdvectionOp, class DiffusionOp,  bool advection >
-  struct ImplExplOperatorSelector< Op, AdvectionOp, DiffusionOp, advection, false >
+  // advection only
+  template< class Op, class AdvectionOp, class DiffusionOp >
+  struct ImplExplOperatorSelector< Op, AdvectionOp, DiffusionOp, true, false >
   {
     typedef AdvectionOp          FullOperatorType;
     typedef FullOperatorType     ImplicitOperatorType;
     typedef FullOperatorType     ExplicitOperatorType;
   };
-  template<class Op, class AdvectionOp, class DiffusionOp, bool diffusion >
-  struct ImplExplOperatorSelector< Op, AdvectionOp, DiffusionOp, false, diffusion >
+  // diffusion only
+  template<class Op, class AdvectionOp, class DiffusionOp>
+  struct ImplExplOperatorSelector< Op, AdvectionOp, DiffusionOp, false, true >
   {
     typedef DiffusionOp          FullOperatorType;
     typedef FullOperatorType     ImplicitOperatorType;
