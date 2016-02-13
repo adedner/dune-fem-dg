@@ -99,7 +99,9 @@ namespace Fem
       //! Discrete function space with Legendre Finite Elements
       legendre = 1,
       //! Discrete function space with hierarchic Legendre Finite Elements
-      hierarchic_legendre = 2
+      hierarchic_legendre = 2,
+      //! Discrete function space with hierarchic orthonormal monomial basis functions
+      orthonormal = 3
     };
   }
 
@@ -494,6 +496,12 @@ namespace Fem
 
   template< class FunctionSpaceImp, class GridPartImp, int polOrder >
   struct DiscreteFunctionSpaceSelector< FunctionSpaceImp, GridPartImp, polOrder, DiscreteFunctionSpaces::Enum::legendre, Galerkin::Enum::dg >
+  {
+    typedef LegendreDiscontinuousGalerkinSpace< FunctionSpaceImp, GridPartImp, polOrder, CachingStorage > type;
+  };
+
+  template< class FunctionSpaceImp, class GridPartImp, int polOrder >
+  struct DiscreteFunctionSpaceSelector< FunctionSpaceImp, GridPartImp, polOrder, DiscreteFunctionSpaces::Enum::orthonormal, Galerkin::Enum::dg >
   {
     typedef DiscontinuousGalerkinSpace< FunctionSpaceImp, GridPartImp, polOrder, CachingStorage > type;
   };
