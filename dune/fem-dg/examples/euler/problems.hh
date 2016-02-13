@@ -20,7 +20,9 @@ namespace Fem
       const int problemNumber = Fem :: Parameter :: getEnum ( "problem" , problemNames );
 
       if( problemNames[ problemNumber ] == "sod" )
-        return new U0Sod< GridImp > ( );
+      {
+        return new U0Sod< GridImp >();
+      }
       else if( problemNames[ problemNumber ] == "smooth1d" )
         return new U0Smooth1D< GridImp > ();
       else if( problemNames[ problemNumber ] == "ffs" )

@@ -290,21 +290,6 @@ namespace Fem
 
     const double gamma_;
 
-    /**
-     * \brief velocity calculation
-     */
-    template <class LocalEvaluation>
-    inline DomainType velocity(const LocalEvaluation& local) const
-    {
-      //TODO CHECK THIS!!!
-      DomainType v;
-      for(int i=0; i<dimDomain; ++i)
-        v[i] *= std::get<0>(local.values().template at< uVar>())[i];
-      v *= EulerAnalyticalFlux<dimDomain>().rhoeps( std::get<0>(local.values().template at< uVar>() ) );
-      return v;
-    }
-
-
     /////////////////////////////////////////////////////////////////
     // Limiter section
     ////////////////////////////////////////////////////////////////
@@ -316,6 +301,7 @@ namespace Fem
     {
       for(int i=0; i<dimDomain; ++i)
       {
+        // U = (rho, rho v_0,...,rho v_(d-1), e )
         // we store \rho u but do not need to divide by \rho here since only
         // sign is needed.
         velocity[i] = u[i+1];

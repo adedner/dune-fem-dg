@@ -55,11 +55,11 @@ namespace Fem
       typedef AlgorithmConfigurator< GridImp,
                                      Galerkin::Enum::dg,
                                      Adaptivity::Enum::yes,
-                                     DiscreteFunctionSpaces::Enum::legendre,
+                                     DiscreteFunctionSpaces::Enum::orthonormal,
                                      Solver::Enum::fem,
                                      AdvectionLimiter::Enum::limited,
                                      Matrix::Enum::matrixfree,
-                                     AdvectionFlux::Enum::upwind,
+                                     AdvectionFlux::Enum::euler_hll,
                                      PrimalDiffusionFlux::Enum::general > AC;
 
       // define problem type here if interface should be avoided
