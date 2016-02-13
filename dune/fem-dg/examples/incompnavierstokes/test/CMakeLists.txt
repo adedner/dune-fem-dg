@@ -1,5 +1,6 @@
 include_directories("${CMAKE_SOURCE_DIR}/dune/fem-dg/examples/incompnavierstokes/")
-configure_file(parameter.in ${CMAKE_CURRENT_BINARY_DIR}/parameter )
+# configure parameter file from parameter.in
+configure_parameter_file()
 
 # default settings for the test case
 add_definitions( "-DYASPGRID" )

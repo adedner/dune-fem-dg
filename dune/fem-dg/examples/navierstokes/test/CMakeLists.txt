@@ -1,7 +1,6 @@
 include_directories("${CMAKE_SOURCE_DIR}/dune/fem-dg/examples/navierstokes/")
-if(GENERATE_FEMDG_PARAMETER_FILE)
-  configure_file(parameter.in ${CMAKE_CURRENT_BINARY_DIR}/parameter )
-endif()
+# configure parameter file from parameter.in
+configure_parameter_file()
 
 # default settings for the test case
 add_definitions( "-DALUGRID_SIMPLEX" )

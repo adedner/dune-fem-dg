@@ -1,8 +1,6 @@
 include_directories("${CMAKE_SOURCE_DIR}/dune/fem-dg/examples/dataio/")
-
-if(GENERATE_FEMDG_PARAMETER_FILE)
-  configure_file(parameter.in ${CMAKE_CURRENT_BINARY_DIR}/parameter)
-endif()
+# configure parameter file from parameter.in
+configure_parameter_file()
 
 add_definitions( "-DALUGRID_SIMPLEX" )
 add_definitions( "-DGRIDDIM=3" )

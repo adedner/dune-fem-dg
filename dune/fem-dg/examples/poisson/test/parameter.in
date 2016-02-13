@@ -3,7 +3,7 @@
 fem.verboserank: 0
 
 # specify directory for data output (is created if not exists)
-fem.prefix: ${CMAKE_CURRENT_SOURCE_DIR}/data
-fem.prefix.input: ${CMAKE_CURRENT_SOURCE_DIR}
+fem.prefix: ${CURRENT_PARAMETER_PATH}/data
+fem.prefix.input: ${CURRENT_PARAMETER_PATH}
 
 paramfile: parameter_cmake
