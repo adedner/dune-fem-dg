@@ -14,29 +14,12 @@ namespace Fem
 {
 
   /**
-   * \brief describes the initial and exact solution of the advection-diffusion model
-   * for given constant velocity vector v=(v1,v2)
+   * \brief Describes the initial and exact solution of the advection-diffusion model
+   * described in:
    *
-   * \ingroup AdvDiffProblems
-   *
-   * \f[u(x,y,z,t):=\displaystyle{\sum_{i=0}^{1}} T_i(t) \cdot X_i(x) \cdot
-   * Y_i(y) \cdot Z_i(z)\f]
-   *
-   * with
-   *
-   * \f{eqnarray*}{
-   * T_0(t) &:=&  e^{-\varepsilon t \pi^2 (2^2 + 1^2 + 1.3^2 )} \\
-   * X_0(x) &:=&  0.6\cdot \cos(2\pi (x-v_1t)) + 0.8\cdot \sin(2\pi (x-v_1t)) \\
-   * Y_0(y) &:=&  1.2\cdot \cos(1\pi (y-v_2t)) + 0.4\cdot \sin(1\pi (y-v_2t)) \\
-   * Z_0(z) &:=&  0.1\cdot \cos(1.3\pi (z-v_3t)) - 0.4\cdot \sin(1.3\pi (z-v_3t)) \\
-   * T_1(t) &:=&  e^{-\varepsilon t \pi^2 (0.7^2 + 0.5^2 + 0.1^2 )} \\
-   * X_1(x) &:=&  0.9\cdot \cos(0.7\pi (x-v_1t)) + 0.2\cdot \sin(0.7\pi (x-v_1t)) \\
-   * Y_1(y) &:=&  0.3\cdot \cos(0.5\pi (y-v_2t)) + 0.1\cdot \sin(0.5\pi (y-v_2t)) \\
-   * Z_1(z) &:=&  -0.3\cdot \cos(0.1\pi (z-v_3t)) + 0.2\cdot \sin(0.1\pi (z-v_3t))
-   * \f}
-   *
-   * This is a solution of the AdvectionDiffusionModel for \f$g_D = u|_{\partial
-   * \Omega}\f$.
+   * P. Bastian. Higher Order Discontinuous Galerkin Methods for Flow and Transport in Porous Media
+   * Challenges in Scientific Computing - CISC 2002, Volume 35 of the series
+   * Lecture Notes in Computational Science and Engineering pp 1-22
    *
    */
   template <class GridType, int dimRange>
