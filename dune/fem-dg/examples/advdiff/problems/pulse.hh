@@ -48,11 +48,11 @@ namespace Fem
       startTime_( ParameterType::getValue<double>("femdg.stepper.starttime",0.0) ),
       epsilon_( ParameterType::getValue<double>("epsilon",0.1) ),
       spotmid_( 0 ),
-      myName_("AdvDiff")
+      center_( 0.5 ), // assume unit square
+      myName_("pulse")
     {
       spotmid_[0] = -0.25;
       std::cout <<"Problem: "<<myName_<< ", epsilon " << epsilon_ << "\n";
-      //std::cout <<"Problem: HeatEqnWithAdvection, epsilon_" <<  epsilon_ << "\n";
     }
 
     //! this problem has no source term
@@ -92,8 +92,8 @@ namespace Fem
     void velocity(const DomainType& x, DomainType& v) const
     {
       // rotation in 2d
-      v[0] = -4.0*x[1];
-      v[1] =  4.0*x[0];
+      v[0] = -4.0*(x[1] - center_[ 1 ]);
+      v[1] =  4.0*(x[0] - center_[ 0 ]);
       for(int i=2; i<DomainType :: dimension; ++i) v[i] = 0;
     }
 
@@ -110,8 +110,8 @@ namespace Fem
      */
     void evaluate(const DomainType& arg, const double t, RangeType& res) const
     {
-      const double x = arg[0];// - center_[ 0 ];
-      const double y = arg[1];// - center_[ 1 ];
+      const double x = arg[0] - center_[ 0 ];
+      const double y = arg[1] - center_[ 1 ];
 
       const double sig2 = 0.004; /* Siehe Paper P.Bastian Gl. 30 */
       const double sig2PlusDt4 = sig2+(4.0*epsilon_*t);
@@ -136,6 +136,13 @@ namespace Fem
       return ofs.str();
     }
 
+    // return prefix for data loops
+    virtual std::string dataPrefix() const
+    {
+      return myName_;
+    }
+
+
     /*  \brief finalize the simulation using the calculated numerical
      *  solution u for this problem
      *
@@ -151,6 +158,7 @@ namespace Fem
     const double  startTime_;
     const double  epsilon_;
     DomainType spotmid_;
+    DomainType center_;
     std::string myName_;
   };
 
