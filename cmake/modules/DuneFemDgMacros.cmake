@@ -1,15 +1,15 @@
 # the main files for all the tests are in the same dir
 set(FEMDG_MAIN_DIR "${CMAKE_SOURCE_DIR}/dune/fem-dg/main")
 
-set(INSOURCE_FEMDG_PARAMETER_FILE TRUE)
+set(OUT_OF_SOURCE_FEMDG_PARAMETER_FILE TRUE)
 if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
-  set(INSOURCE_FEMDG_PARAMETER_FILE FALSE)
+  set(OUT_OF_SOURCE_FEMDG_PARAMETER_FILE FALSE)
 endif()
 
 # macro for configuring the parameter files from parameter.in
 macro(configure_parameter_file)
   set(CURRENT_PARAMETER_PATH .)
-  if(INSOURCE_FEMDG_PARAMETER_FILE)
+  if(OUT_OF_SOURCE_FEMDG_PARAMETER_FILE)
     set(CURRENT_PARAMETER_PATH ${CMAKE_CURRENT_SOURCE_DIR})
   endif()
   configure_file(parameter.in ${CMAKE_CURRENT_BINARY_DIR}/parameter)
