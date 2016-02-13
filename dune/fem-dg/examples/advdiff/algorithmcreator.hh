@@ -91,7 +91,7 @@ namespace Fem
 
       static ProblemInterfaceType* problem()
       {
-        return AnalyticalAdvDiffAlgorithmCreator<FunctionSpaceType,GridType>::apply();
+        return AnalyticalAdvDiffProblemCreator<FunctionSpaceType,GridType>::apply();
       }
 
 
