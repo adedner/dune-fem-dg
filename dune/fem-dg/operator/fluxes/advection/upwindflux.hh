@@ -21,9 +21,9 @@ namespace Fem
    */
   template <class ModelImp>
   class UpwindFlux
-    : public DGAdvectionFluxBase< ModelImp, AdvectionFluxParameters< AdvectionFlux::Enum::upwind > >
+    : public DGAdvectionFluxBase< ModelImp, AdvectionFluxParameters >
   {
-    typedef DGAdvectionFluxBase< ModelImp, AdvectionFluxParameters< AdvectionFlux::Enum::upwind > >
+    typedef DGAdvectionFluxBase< ModelImp, AdvectionFluxParameters >
                                                   BaseType;
 
     typedef typename ModelImp::Traits             Traits;

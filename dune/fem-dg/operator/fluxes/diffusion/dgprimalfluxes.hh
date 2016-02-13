@@ -1184,7 +1184,7 @@ namespace Fem
   //////////////////////////////////////////////////////////
   template <class DiscreteFunctionSpaceImp,
             class Model,
-            class FluxParametersImp = DGPrimalDiffusionFluxParameters<> >
+            class FluxParametersImp = DGPrimalDiffusionFluxParameters >
   class ExtendedDGPrimalDiffusionFlux
    : public DGPrimalDiffusionFluxImpl< DiscreteFunctionSpaceImp, Model, FluxParametersImp >
   {

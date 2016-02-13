@@ -361,7 +361,7 @@ namespace Fem
       , uTmp_( 0 )
       , fvSpc_( 0 )
       , indicator_( 0 )
-      , diffFlux_( gridPart_, model_, DGPrimalDiffusionFluxParameters<>( ParameterKey::generate( name, "dgdiffusionflux." ) ) )
+      , diffFlux_( gridPart_, model_, DGPrimalDiffusionFluxParameters( ParameterKey::generate( name, "dgdiffusionflux." ) ) )
       , problem1_( model_, advflux_, diffFlux_ )
       , limitProblem_( model_ , space_.order() )
       , pass0_()

@@ -30,9 +30,9 @@ namespace Fem
     */
   template< class ModelImp >
   class EulerLLFFlux
-   : public DGAdvectionFluxBase< ModelImp, AdvectionFluxParameters<AdvectionFlux::Enum::llf> >
+   : public DGAdvectionFluxBase< ModelImp, AdvectionFluxParameters >
   {
-    typedef DGAdvectionFluxBase< ModelImp, AdvectionFluxParameters<AdvectionFlux::Enum::llf> >   BaseType;
+    typedef DGAdvectionFluxBase< ModelImp, AdvectionFluxParameters >   BaseType;
 
     typedef typename ModelImp::Traits             Traits;
     enum { dimRange = ModelImp::dimRange };

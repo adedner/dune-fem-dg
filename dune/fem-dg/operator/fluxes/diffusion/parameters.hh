@@ -83,15 +83,12 @@ namespace Fem
    *
    * \ingroup ParameterClass
    */
-  template< PrimalDiffusionFlux::Enum id = PrimalDiffusionFlux::Enum::general >
   class DGPrimalDiffusionFluxParameters
-    : public Fem::LocalParameter< DGPrimalDiffusionFluxParameters<id>, DGPrimalDiffusionFluxParameters<id> >
+    : public Fem::LocalParameter< DGPrimalDiffusionFluxParameters, DGPrimalDiffusionFluxParameters >
   {
   public:
     typedef PrimalDiffusionFlux::Enum           IdEnum;
     typedef PrimalDiffusionLifting::Enum        LiftingEnum;
-
-    static const IdEnum id_ = id;
 
     /**
      * \brief Constructor

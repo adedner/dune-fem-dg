@@ -30,9 +30,9 @@ namespace Fem
   template <class DiscreteFunctionSpaceImp,
             class Model>
   class DGPrimalDiffusionFlux<  DiscreteFunctionSpaceImp, Model, PrimalDiffusionFlux::Enum::general >
-    : public DGPrimalDiffusionFluxImpl< DiscreteFunctionSpaceImp, Model, DGPrimalDiffusionFluxParameters< PrimalDiffusionFlux::Enum::general >  >
+    : public DGPrimalDiffusionFluxImpl< DiscreteFunctionSpaceImp, Model, DGPrimalDiffusionFluxParameters >
   {
-    typedef DGPrimalDiffusionFluxImpl< DiscreteFunctionSpaceImp, Model, DGPrimalDiffusionFluxParameters< PrimalDiffusionFlux::Enum::general >  >
+    typedef DGPrimalDiffusionFluxImpl< DiscreteFunctionSpaceImp, Model, DGPrimalDiffusionFluxParameters >
       BaseType;
 
   public:
@@ -60,9 +60,9 @@ namespace Fem
   template <class DiscreteFunctionSpaceImp,
             class Model>
   class DGPrimalDiffusionFlux<  DiscreteFunctionSpaceImp, Model, PrimalDiffusionFlux::Enum::cdg2 >
-    : public DGPrimalDiffusionFluxImpl< DiscreteFunctionSpaceImp, Model, DGPrimalDiffusionFluxParameters< PrimalDiffusionFlux::Enum::cdg2 > >
+    : public DGPrimalDiffusionFluxImpl< DiscreteFunctionSpaceImp, Model, DGPrimalDiffusionFluxParameters >
   {
-    typedef DGPrimalDiffusionFluxImpl< DiscreteFunctionSpaceImp, Model, DGPrimalDiffusionFluxParameters< PrimalDiffusionFlux::Enum::cdg2 > >
+    typedef DGPrimalDiffusionFluxImpl< DiscreteFunctionSpaceImp, Model, DGPrimalDiffusionFluxParameters >
       BaseType;
 
   public:
@@ -91,9 +91,9 @@ namespace Fem
   template <class DiscreteFunctionSpaceImp,
             class Model>
   class DGPrimalDiffusionFlux<  DiscreteFunctionSpaceImp, Model, PrimalDiffusionFlux::Enum::cdg >
-    : public DGPrimalDiffusionFluxImpl< DiscreteFunctionSpaceImp, Model, DGPrimalDiffusionFluxParameters< PrimalDiffusionFlux::Enum::cdg > >
+    : public DGPrimalDiffusionFluxImpl< DiscreteFunctionSpaceImp, Model, DGPrimalDiffusionFluxParameters >
   {
-    typedef DGPrimalDiffusionFluxImpl< DiscreteFunctionSpaceImp, Model, DGPrimalDiffusionFluxParameters< PrimalDiffusionFlux::Enum::cdg > >
+    typedef DGPrimalDiffusionFluxImpl< DiscreteFunctionSpaceImp, Model, DGPrimalDiffusionFluxParameters >
       BaseType;
 
   public:
@@ -122,9 +122,9 @@ namespace Fem
   template <class DiscreteFunctionSpaceImp,
             class Model>
   class DGPrimalDiffusionFlux<  DiscreteFunctionSpaceImp, Model, PrimalDiffusionFlux::Enum::br2 >
-    : public DGPrimalDiffusionFluxImpl< DiscreteFunctionSpaceImp, Model, DGPrimalDiffusionFluxParameters< PrimalDiffusionFlux::Enum::br2 > >
+    : public DGPrimalDiffusionFluxImpl< DiscreteFunctionSpaceImp, Model, DGPrimalDiffusionFluxParameters >
   {
-    typedef DGPrimalDiffusionFluxImpl< DiscreteFunctionSpaceImp, Model, DGPrimalDiffusionFluxParameters< PrimalDiffusionFlux::Enum::br2 > >
+    typedef DGPrimalDiffusionFluxImpl< DiscreteFunctionSpaceImp, Model, DGPrimalDiffusionFluxParameters >
       BaseType;
 
   public:
@@ -153,9 +153,9 @@ namespace Fem
   template <class DiscreteFunctionSpaceImp,
             class Model>
   class DGPrimalDiffusionFlux<  DiscreteFunctionSpaceImp, Model, PrimalDiffusionFlux::Enum::ip >
-    : public DGPrimalDiffusionFluxImpl< DiscreteFunctionSpaceImp, Model, DGPrimalDiffusionFluxParameters< PrimalDiffusionFlux::Enum::ip > >
+    : public DGPrimalDiffusionFluxImpl< DiscreteFunctionSpaceImp, Model, DGPrimalDiffusionFluxParameters >
   {
-    typedef DGPrimalDiffusionFluxImpl< DiscreteFunctionSpaceImp, Model, DGPrimalDiffusionFluxParameters< PrimalDiffusionFlux::Enum::ip > >
+    typedef DGPrimalDiffusionFluxImpl< DiscreteFunctionSpaceImp, Model, DGPrimalDiffusionFluxParameters >
       BaseType;
 
   public:
@@ -183,9 +183,9 @@ namespace Fem
   template <class DiscreteFunctionSpaceImp,
             class Model>
   class DGPrimalDiffusionFlux<  DiscreteFunctionSpaceImp, Model, PrimalDiffusionFlux::Enum::none >
-  : public DGDiffusionFluxBase< DiscreteFunctionSpaceImp, Model, DGPrimalDiffusionFluxParameters< PrimalDiffusionFlux::Enum::none > >
+  : public DGDiffusionFluxBase< DiscreteFunctionSpaceImp, Model, DGPrimalDiffusionFluxParameters >
   {
-    typedef DGDiffusionFluxBase< DiscreteFunctionSpaceImp, Model, DGPrimalDiffusionFluxParameters< PrimalDiffusionFlux::Enum::none > >
+    typedef DGDiffusionFluxBase< DiscreteFunctionSpaceImp, Model, DGPrimalDiffusionFluxParameters >
       BaseType;
 
   public:

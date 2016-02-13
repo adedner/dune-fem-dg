@@ -15,9 +15,9 @@ namespace Fem
    */
   template <class ModelImp>
   class NoFlux
-    : public DGAdvectionFluxBase< ModelImp, AdvectionFluxParameters< AdvectionFlux::Enum::none > >
+    : public DGAdvectionFluxBase< ModelImp, AdvectionFluxParameters >
   {
-    typedef DGAdvectionFluxBase< ModelImp, AdvectionFluxParameters< AdvectionFlux::Enum::none > >
+    typedef DGAdvectionFluxBase< ModelImp, AdvectionFluxParameters >
                                                   BaseType;
 
     typedef typename ModelImp::Traits             Traits;

@@ -523,9 +523,9 @@ namespace Fem
   template <class ModelImp,
             class FluxImp>
   class EulerFluxImpl
-    : public DGAdvectionFluxBase< ModelImp, AdvectionFluxParameters<AdvectionFlux::Enum::general> >
+    : public DGAdvectionFluxBase< ModelImp, AdvectionFluxParameters >
   {
-    typedef DGAdvectionFluxBase< ModelImp, AdvectionFluxParameters<AdvectionFlux::Enum::general> > BaseType;
+    typedef DGAdvectionFluxBase< ModelImp, AdvectionFluxParameters > BaseType;
 
     typedef typename ModelImp::Traits             Traits;
     typedef typename ModelImp::Traits::GridType   GridType;

@@ -60,7 +60,7 @@ namespace Fem
                                      AdvectionLimiter::Enum::limited,
                                      Matrix::Enum::matrixfree,
                                      AdvectionFlux::Enum::euler_hllc,
-                                     PrimalDiffusionFlux::Enum::general > AC;
+                                     PrimalDiffusionFlux::Enum::none > AC;
 
       // define problem type here if interface should be avoided
 

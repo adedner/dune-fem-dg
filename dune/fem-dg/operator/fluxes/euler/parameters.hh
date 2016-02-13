@@ -27,10 +27,10 @@ namespace Euler
    *
    * \ingroup ParameterClass
    */
-  template< AdvectionFlux::Enum id = AdvectionFlux::Enum::general >
   class AdvectionFluxParameters
-    : public Dune::Fem::LocalParameter< AdvectionFluxParameters<id>, AdvectionFluxParameters<id> >
+    : public Dune::Fem::LocalParameter< AdvectionFluxParameters, AdvectionFluxParameters >
   {
+  public:
     typedef AdvectionFlux::Enum                  IdEnum;
 
     /**
