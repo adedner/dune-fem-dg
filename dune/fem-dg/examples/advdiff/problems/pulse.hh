@@ -14,29 +14,12 @@ namespace Fem
 {
 
   /**
-   * \brief describes the initial and exact solution of the advection-diffusion model
-   * for given constant velocity vector v=(v1,v2)
+   * \brief Describes the initial and exact solution of the advection-diffusion model
+   * described in:
    *
-   * \ingroup AdvDiffProblems
-   *
-   * \f[u(x,y,z,t):=\displaystyle{\sum_{i=0}^{1}} T_i(t) \cdot X_i(x) \cdot
-   * Y_i(y) \cdot Z_i(z)\f]
-   *
-   * with
-   *
-   * \f{eqnarray*}{
-   * T_0(t) &:=&  e^{-\varepsilon t \pi^2 (2^2 + 1^2 + 1.3^2 )} \\
-   * X_0(x) &:=&  0.6\cdot \cos(2\pi (x-v_1t)) + 0.8\cdot \sin(2\pi (x-v_1t)) \\
-   * Y_0(y) &:=&  1.2\cdot \cos(1\pi (y-v_2t)) + 0.4\cdot \sin(1\pi (y-v_2t)) \\
-   * Z_0(z) &:=&  0.1\cdot \cos(1.3\pi (z-v_3t)) - 0.4\cdot \sin(1.3\pi (z-v_3t)) \\
-   * T_1(t) &:=&  e^{-\varepsilon t \pi^2 (0.7^2 + 0.5^2 + 0.1^2 )} \\
-   * X_1(x) &:=&  0.9\cdot \cos(0.7\pi (x-v_1t)) + 0.2\cdot \sin(0.7\pi (x-v_1t)) \\
-   * Y_1(y) &:=&  0.3\cdot \cos(0.5\pi (y-v_2t)) + 0.1\cdot \sin(0.5\pi (y-v_2t)) \\
-   * Z_1(z) &:=&  -0.3\cdot \cos(0.1\pi (z-v_3t)) + 0.2\cdot \sin(0.1\pi (z-v_3t))
-   * \f}
-   *
-   * This is a solution of the AdvectionDiffusionModel for \f$g_D = u|_{\partial
-   * \Omega}\f$.
+   * P. Bastian. Higher Order Discontinuous Galerkin Methods for Flow and Transport in Porous Media
+   * Challenges in Scientific Computing - CISC 2002, Volume 35 of the series
+   * Lecture Notes in Computational Science and Engineering pp 1-22
    *
    */
   template <class GridType, int dimRange>
@@ -65,11 +48,11 @@ namespace Fem
       startTime_( ParameterType::getValue<double>("femdg.stepper.starttime",0.0) ),
       epsilon_( ParameterType::getValue<double>("epsilon",0.1) ),
       spotmid_( 0 ),
-      myName_("AdvDiff")
+      center_( 0.5 ), // assume unit square
+      myName_("pulse")
     {
       spotmid_[0] = -0.25;
       std::cout <<"Problem: "<<myName_<< ", epsilon " << epsilon_ << "\n";
-      //std::cout <<"Problem: HeatEqnWithAdvection, epsilon_" <<  epsilon_ << "\n";
     }
 
     //! this problem has no source term
@@ -109,8 +92,8 @@ namespace Fem
     void velocity(const DomainType& x, DomainType& v) const
     {
       // rotation in 2d
-      v[0] = -4.0*x[1];
-      v[1] =  4.0*x[0];
+      v[0] = -4.0*(x[1] - center_[ 1 ]);
+      v[1] =  4.0*(x[0] - center_[ 0 ]);
       for(int i=2; i<DomainType :: dimension; ++i) v[i] = 0;
     }
 
@@ -127,8 +110,8 @@ namespace Fem
      */
     void evaluate(const DomainType& arg, const double t, RangeType& res) const
     {
-      const double x = arg[0];// - center_[ 0 ];
-      const double y = arg[1];// - center_[ 1 ];
+      const double x = arg[0] - center_[ 0 ];
+      const double y = arg[1] - center_[ 1 ];
 
       const double sig2 = 0.004; /* Siehe Paper P.Bastian Gl. 30 */
       const double sig2PlusDt4 = sig2+(4.0*epsilon_*t);
@@ -153,6 +136,13 @@ namespace Fem
       return ofs.str();
     }
 
+    // return prefix for data loops
+    virtual std::string dataPrefix() const
+    {
+      return myName_;
+    }
+
+
     /*  \brief finalize the simulation using the calculated numerical
      *  solution u for this problem
      *
@@ -168,6 +158,7 @@ namespace Fem
     const double  startTime_;
     const double  epsilon_;
     DomainType spotmid_;
+    DomainType center_;
     std::string myName_;
   };
 
