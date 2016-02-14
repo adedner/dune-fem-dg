@@ -11,18 +11,18 @@ namespace Fem
 {
 
   /**
-   * \brief Handler class managing the post processing of data.
+   * \brief Caller class managing the post processing of data.
    *
-   * \ingroup Handlers
+   * \ingroup Callers
    */
   template< class AlgTupleImp,
             class IndexSequenceImp=typename Std::make_index_sequence_impl< std::tuple_size< AlgTupleImp >::value >::type >
-  class PostProcessingHandler;
+  class PostProcessingCaller;
 
 
   template< class AlgTupleImp, std::size_t... Ints >
-  class PostProcessingHandler< AlgTupleImp, Std::index_sequence< Ints... > >
-    : public HandlerInterface
+  class PostProcessingCaller< AlgTupleImp, Std::index_sequence< Ints... > >
+    : public CallerInterface
   {
   public:
     typedef AlgTupleImp                                                            AlgTupleType;
@@ -58,7 +58,7 @@ namespace Fem
      *
      * \param[in] tuple Tuple of pointer to sub-algorithm.
      */
-    PostProcessingHandler( const AlgTupleType& tuple )
+    PostProcessingCaller( const AlgTupleType& tuple )
       : tuple_( tuple )
     {}
 
@@ -80,17 +80,17 @@ namespace Fem
   };
 
  /**
-   * \brief Handler class doing no post processing.
+   * \brief Caller class doing no post processing.
    *
-   * \ingroup Handlers
+   * \ingroup Callers
    */
   template< class TupleImp >
-  class PostProcessingHandler< TupleImp, Std::index_sequence<> >
-    : public HandlerInterface
+  class PostProcessingCaller< TupleImp, Std::index_sequence<> >
+    : public CallerInterface
   {
   public:
     template< class ... Args >
-    PostProcessingHandler ( Args && ... ) {}
+    PostProcessingCaller ( Args && ... ) {}
 
   };
 

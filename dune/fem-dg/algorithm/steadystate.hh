@@ -14,14 +14,14 @@
 #include <dune/fem-dg/algorithm/base.hh>
 #include <dune/fem-dg/algorithm/coupling.hh>
 
-#include <dune/fem-dg/algorithm/handler/solvermonitor.hh>
+#include <dune/fem-dg/algorithm/caller/solvermonitor.hh>
 
-#include <dune/fem-dg/algorithm/handler/diagnostics.hh>
-#include <dune/fem-dg/algorithm/handler/solvermonitor.hh>
-#include <dune/fem-dg/algorithm/handler/checkpoint.hh>
-#include <dune/fem-dg/algorithm/handler/datawriter.hh>
-#include <dune/fem-dg/algorithm/handler/postprocessing.hh>
-#include <dune/fem-dg/algorithm/handler/adapt.hh>
+#include <dune/fem-dg/algorithm/caller/diagnostics.hh>
+#include <dune/fem-dg/algorithm/caller/solvermonitor.hh>
+#include <dune/fem-dg/algorithm/caller/checkpoint.hh>
+#include <dune/fem-dg/algorithm/caller/datawriter.hh>
+#include <dune/fem-dg/algorithm/caller/postprocessing.hh>
+#include <dune/fem-dg/algorithm/caller/adapt.hh>
 
 namespace Dune
 {
@@ -47,10 +47,10 @@ namespace Fem
     //typedef typename Std::make_index_sequence_impl< std::tuple_size< SubAlgorithmTupleType >::value >::type
     //                                                                     IndexSequenceType;
 
-    typedef Dune::Fem::SolverMonitorHandler< SubAlgorithmTupleType >       SolverMonitorHandlerType;
-    typedef Dune::Fem::DataWriterHandler< SubAlgorithmTupleType >          DataWriterHandlerType;
+    typedef Dune::Fem::SolverMonitorCaller< SubAlgorithmTupleType >        SolverMonitorCallerType;
+    typedef Dune::Fem::DataWriterCaller< SubAlgorithmTupleType >           DataWriterCallerType;
 
-    typedef typename DataWriterHandlerType::IOTupleType                    IOTupleType;
+    typedef typename DataWriterCallerType::IOTupleType                     IOTupleType;
   };
 
 
@@ -69,8 +69,8 @@ namespace Fem
   public:
     typedef typename BaseType::GridType                                 GridType;
     typedef typename BaseType::IOTupleType                              IOTupleType;
-    typedef typename BaseType::SolverMonitorHandlerType                 SolverMonitorHandlerType;
-    typedef typename Traits::DataWriterHandlerType                      DataWriterHandlerType;
+    typedef typename BaseType::SolverMonitorCallerType                  SolverMonitorCallerType;
+    typedef typename Traits::DataWriterCallerType                       DataWriterCallerType;
 
     typedef uint64_t                                                    UInt64Type ;
 
@@ -133,18 +133,18 @@ namespace Fem
     SteadyStateAlgorithm ( GridType &grid, const std::string name  = "" )
     : BaseType( grid, name ),
       tuple_( SteadyStateCreatorType< SubAlgorithmTupleType, GridType >::apply( grid ) ),
-      solverMonitorHandler_( tuple_ ),
-      dataWriterHandler_( tuple_ )
+      solverMonitorCaller_( tuple_ ),
+      dataWriterCaller_( tuple_ )
     {}
 
     virtual IOTupleType dataTuple ()
     {
-      return dataWriterHandler_.dataTuple();
+      return dataWriterCaller_.dataTuple();
     }
 
-    virtual SolverMonitorHandlerType& monitor()
+    virtual SolverMonitorCallerType& monitor()
     {
-      return solverMonitorHandler_;
+      return solverMonitorCaller_;
     }
 
     // return grid width of grid (overload in derived classes)
@@ -195,8 +195,8 @@ namespace Fem
   protected:
 
     SubAlgorithmTupleType          tuple_;
-    SolverMonitorHandlerType       solverMonitorHandler_;
-    DataWriterHandlerType          dataWriterHandler_;
+    SolverMonitorCallerType        solverMonitorCaller_;
+    DataWriterCallerType           dataWriterCaller_;
   };
 
 }  // namespace Fem

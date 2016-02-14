@@ -14,11 +14,11 @@
 #define POLORDER 1
 #endif
 
-//--------- HANDLER --------------------------------
-#include <dune/fem-dg/algorithm/handler/sub/diagnostics.hh>
-#include <dune/fem-dg/algorithm/handler/sub/solvermonitor.hh>
-#include <dune/fem-dg/algorithm/handler/sub/additionaloutput.hh>
-#include <dune/fem-dg/algorithm/handler/sub/adapt.hh>
+//--------- CALLER --------------------------------
+#include <dune/fem-dg/algorithm/caller/sub/diagnostics.hh>
+#include <dune/fem-dg/algorithm/caller/sub/solvermonitor.hh>
+#include <dune/fem-dg/algorithm/caller/sub/additionaloutput.hh>
+#include <dune/fem-dg/algorithm/caller/sub/adapt.hh>
 
 //--------- GRID HELPER ---------------------
 #include <dune/fem-dg/algorithm/gridinitializer.hh>

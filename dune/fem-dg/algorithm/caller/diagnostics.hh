@@ -1,5 +1,5 @@
-#ifndef FEMDG_ALGORITHM_DIAGNOSTICSHANDLER_HH
-#define FEMDG_ALGORITHM_DIAGNOSTICSHANDLER_HH
+#ifndef FEMDG_ALGORITHM_DIAGNOSTICSCALLER_HH
+#define FEMDG_ALGORITHM_DIAGNOSTICSCALLER_HH
 
 #include <dune/fem-dg/misc/diagnostics.hh>
 #include <dune/fem-dg/misc/optional.hh>
@@ -11,27 +11,27 @@ namespace Dune
 namespace Fem
 {
   /**
-   * \brief Handler class managing the data writing of diagnostic data.
+   * \brief Caller class managing the data writing of diagnostic data.
    *
-   * \ingroup Handlers
+   * \ingroup Callers
    */
   template< class AlgTupleImp,
             class IndexSequenceImp=typename Std::make_index_sequence_impl< std::tuple_size< AlgTupleImp >::value >::type >
-  class DiagnosticsHandler;
+  class DiagnosticsCaller;
 
  /**
-   * \brief Specialization of a handler class managing the writing of diagnostic data.
+   * \brief Specialization of a caller class managing the writing of diagnostic data.
    *
-   * \ingroup Handlers
+   * \ingroup Callers
    *
    * This class manages the writing of diagnostic data for a tuple of sub-algorithms.
    * For each sub-algorithm diagnostic writing can be disabled using an `index_sequence`.
    *
    * Example:
    * \code
-   * typedef DataWriterHandler< std::tuple< Alg1, Alg2, Alg3, Alg4 >,
+   * typedef DataWriterCaller< std::tuple< Alg1, Alg2, Alg3, Alg4 >,
    *                            Std::index_sequence< 0, 2 > >
-   *                                           MyHandler;
+   *                                           MyCaller;
    * \endcode
    * This would enable data writing for `Alg1` and `Alg3`;
    *
@@ -39,8 +39,8 @@ namespace Fem
    * \tparam Std::index_sequence< Ints... > Index sequence for enabling the data writing feature.
    */
   template< class AlgTupleImp, std::size_t... Ints >
-  class DiagnosticsHandler< AlgTupleImp, Std::index_sequence< Ints... > >
-    : public HandlerInterface
+  class DiagnosticsCaller< AlgTupleImp, Std::index_sequence< Ints... > >
+    : public CallerInterface
   {
     typedef AlgTupleImp                                                            AlgTupleType;
 
@@ -98,7 +98,7 @@ namespace Fem
      *
      * \param[in] tuple Tuple of all sub-algorithms.
      */
-    DiagnosticsHandler( const AlgTupleType& tuple )
+    DiagnosticsCaller( const AlgTupleType& tuple )
       : tuple_( tuple )
     {}
 
@@ -133,17 +133,17 @@ namespace Fem
   };
 
   /**
-   * \brief Specialization of a handler class doing no diagnostic writing.
+   * \brief Specialization of a caller class doing no diagnostic writing.
    *
-   * \ingroup Handlers
+   * \ingroup Callers
    */
   template< class TupleImp >
-  class DiagnosticsHandler< TupleImp, Std::index_sequence<> >
-    : public HandlerInterface
+  class DiagnosticsCaller< TupleImp, Std::index_sequence<> >
+    : public CallerInterface
   {
   public:
     template< class ... Args >
-    DiagnosticsHandler ( Args && ... ) {}
+    DiagnosticsCaller ( Args && ... ) {}
   };
 
 }

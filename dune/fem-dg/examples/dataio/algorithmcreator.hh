@@ -15,11 +15,11 @@
 
 #include <dune/fem-dg/algorithm/coupling.hh>
 
-//--------- HANDLER --------------------------------
-#include <dune/fem-dg/algorithm/handler/sub/diagnostics.hh>
-#include <dune/fem-dg/algorithm/handler/sub/solvermonitor.hh>
-#include <dune/fem-dg/algorithm/handler/sub/additionaloutput.hh>
-#include <dune/fem-dg/algorithm/handler/sub/adapt.hh>
+//--------- CALLER --------------------------------
+#include <dune/fem-dg/algorithm/caller/sub/diagnostics.hh>
+#include <dune/fem-dg/algorithm/caller/sub/solvermonitor.hh>
+#include <dune/fem-dg/algorithm/caller/sub/additionaloutput.hh>
+#include <dune/fem-dg/algorithm/caller/sub/adapt.hh>
 #include <dune/fem-dg/algorithm/monitor.hh>
 
 //--------- GRID HELPER ---------------------
@@ -63,14 +63,14 @@ namespace Fem
     typedef typename Dune::Std::make_index_sequence_impl< std::tuple_size< SubAlgorithmTupleType >::value >::type  IndexSequenceType;
     typedef Dune::Std::index_sequence<>                                                                       NoIndexSequenceType;
 
-    typedef Dune::Fem::AdaptHandler< SubAlgorithmTupleType, NoIndexSequenceType >           AdaptHandlerType;
-    typedef Dune::Fem::DiagnosticsHandler < SubAlgorithmTupleType, NoIndexSequenceType >    DiagnosticsHandlerType;
-    typedef Dune::Fem::SolverMonitorHandler < SubAlgorithmTupleType, NoIndexSequenceType >  SolverMonitorHandlerType;
-    typedef Dune::Fem::CheckedCheckPointHandler < SubAlgorithmTupleType >                   CheckPointHandlerType;
-    typedef Dune::Fem::DataWriterHandler < SubAlgorithmTupleType >                          DataWriterHandlerType;
-    typedef Dune::Fem::PostProcessingHandler < SubAlgorithmTupleType, NoIndexSequenceType > PostProcessingHandlerType;
+    typedef Dune::Fem::AdaptCaller< SubAlgorithmTupleType, NoIndexSequenceType >           AdaptCallerType;
+    typedef Dune::Fem::DiagnosticsCaller < SubAlgorithmTupleType, NoIndexSequenceType >    DiagnosticsCallerType;
+    typedef Dune::Fem::SolverMonitorCaller < SubAlgorithmTupleType, NoIndexSequenceType >  SolverMonitorCallerType;
+    typedef Dune::Fem::CheckedCheckPointCaller < SubAlgorithmTupleType >                   CheckPointCallerType;
+    typedef Dune::Fem::DataWriterCaller < SubAlgorithmTupleType >                          DataWriterCallerType;
+    typedef Dune::Fem::PostProcessingCaller < SubAlgorithmTupleType, NoIndexSequenceType > PostProcessingCallerType;
 
-    typedef typename DataWriterHandlerType::IOTupleType                                                                IOTupleType;
+    typedef typename DataWriterCallerType::IOTupleType                                                                IOTupleType;
 
     template< std::size_t ...i >
     static SubAlgorithmTupleType createSubAlgorithm ( Dune::Std::index_sequence< i... >, GridType &grid, const std::string name = "" )
@@ -138,9 +138,9 @@ namespace Fem
         typedef std::tuple< DiscreteFunctionType*, DiscreteFunctionType* >                       IOTupleType;
 
         typedef void                                                                             AdaptIndicatorType;
-        typedef void                                                                             SolverMonitorHandlerType;
-        typedef void                                                                             DiagnosticsHandlerType;
-        typedef void                                                                             AdditionalOutputHandlerType;
+        typedef void                                                                             SolverMonitorType;
+        typedef void                                                                             DiagnosticsType;
+        typedef void                                                                             AdditionalOutputType;
       };
 
       template <int polOrd>

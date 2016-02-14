@@ -29,7 +29,7 @@ Main goal of parameter classes are
 
 \defgroup Algorithms Algorithm
 
-  \defgroup Handlers Handler
+  \defgroup Callers Caller
   \ingroup Algorithms
   
 \defgroup SubAlgorithms Sub-Algorithm

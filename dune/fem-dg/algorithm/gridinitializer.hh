@@ -12,8 +12,8 @@
 #include <dune/fem-dg/misc/parameterkey.hh>
 
 #include <dune/fem-dg/operator/adaptation/utility.hh>
-#include <dune/fem-dg/algorithm/handler/checkpoint.hh>
-#include <dune/fem-dg/algorithm/handler/adapt.hh>
+#include <dune/fem-dg/algorithm/caller/checkpoint.hh>
+#include <dune/fem-dg/algorithm/caller/adapt.hh>
 
 namespace Dune
 {
@@ -21,10 +21,10 @@ namespace Fem
 {
 
   template< class GridImp,
-            class CheckPointHandlerImp = GridCheckPointHandler< GridImp > >
+            class CheckPointCallerImp = GridCheckPointCaller< GridImp > >
   class DefaultGridInitializer
   {
-    typedef CheckPointHandlerImp  CheckPointHandlerType;
+    typedef CheckPointCallerImp  CheckPointCallerType;
     public:
 
     static Dune::GridPtr< GridImp > initialize( const std::string name = "" )
@@ -38,8 +38,8 @@ namespace Fem
       // grid pointer object
       Dune::GridPtr< GridImp > gridptr;
 
-      if( CheckPointHandlerType::checkPointExists("") )
-        gridptr = CheckPointHandlerType::restoreGrid("");
+      if( CheckPointCallerType::checkPointExists("") )
+        gridptr = CheckPointCallerType::restoreGrid("");
       else  // normal new start
       {
         // ----- read in runtime parameters ------

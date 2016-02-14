@@ -15,10 +15,10 @@
 #include <dune/fem/space/common/interpolate.hh>
 
 #include <dune/fem-dg/algorithm/sub/interface.hh>
-#include <dune/fem-dg/algorithm/handler/sub/diagnostics.hh>
-#include <dune/fem-dg/algorithm/handler/sub/solvermonitor.hh>
-#include <dune/fem-dg/algorithm/handler/sub/additionaloutput.hh>
-#include <dune/fem-dg/algorithm/handler/sub/adapt.hh>
+#include <dune/fem-dg/algorithm/caller/sub/diagnostics.hh>
+#include <dune/fem-dg/algorithm/caller/sub/solvermonitor.hh>
+#include <dune/fem-dg/algorithm/caller/sub/additionaloutput.hh>
+#include <dune/fem-dg/algorithm/caller/sub/adapt.hh>
 
 namespace Dune
 {

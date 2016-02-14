@@ -20,12 +20,12 @@
 #include <dune/fem-dg/pass/threadpass.hh>
 #include <dune/common/timer.hh>
 
-#include <dune/fem-dg/algorithm/handler/diagnostics.hh>
-#include <dune/fem-dg/algorithm/handler/solvermonitor.hh>
-#include <dune/fem-dg/algorithm/handler/checkpoint.hh>
-#include <dune/fem-dg/algorithm/handler/datawriter.hh>
-#include <dune/fem-dg/algorithm/handler/postprocessing.hh>
-#include <dune/fem-dg/algorithm/handler/adapt.hh>
+#include <dune/fem-dg/algorithm/caller/diagnostics.hh>
+#include <dune/fem-dg/algorithm/caller/solvermonitor.hh>
+#include <dune/fem-dg/algorithm/caller/checkpoint.hh>
+#include <dune/fem-dg/algorithm/caller/datawriter.hh>
+#include <dune/fem-dg/algorithm/caller/postprocessing.hh>
+#include <dune/fem-dg/algorithm/caller/adapt.hh>
 
 namespace Dune
 {
@@ -166,14 +166,14 @@ namespace Fem
     //typedef typename Std::make_index_sequence_impl< std::tuple_size< SubAlgorithmTupleType >::value >::type
     //                                                                  IndexSequenceType;
 
-    typedef Dune::Fem::AdaptHandler< SubAlgorithmTupleType >            AdaptHandlerType;
-    typedef Dune::Fem::CheckPointHandler< SubAlgorithmTupleType >       CheckPointHandlerType;
-    typedef Dune::Fem::SolverMonitorHandler< SubAlgorithmTupleType >    SolverMonitorHandlerType;
-    typedef Dune::Fem::DataWriterHandler< SubAlgorithmTupleType >       DataWriterHandlerType;
-    typedef Dune::Fem::DiagnosticsHandler< SubAlgorithmTupleType >      DiagnosticsHandlerType;
-    typedef Dune::Fem::PostProcessingHandler< SubAlgorithmTupleType >   PostProcessingHandlerType;
+    typedef Dune::Fem::AdaptCaller< SubAlgorithmTupleType >             AdaptCallerType;
+    typedef Dune::Fem::CheckPointCaller< SubAlgorithmTupleType >        CheckPointCallerType;
+    typedef Dune::Fem::SolverMonitorCaller< SubAlgorithmTupleType >     SolverMonitorCallerType;
+    typedef Dune::Fem::DataWriterCaller< SubAlgorithmTupleType >        DataWriterCallerType;
+    typedef Dune::Fem::DiagnosticsCaller< SubAlgorithmTupleType >       DiagnosticsCallerType;
+    typedef Dune::Fem::PostProcessingCaller< SubAlgorithmTupleType >    PostProcessingCallerType;
 
-    typedef typename DataWriterHandlerType::IOTupleType                 IOTupleType;
+    typedef typename DataWriterCallerType::IOTupleType                  IOTupleType;
 
   };
 
@@ -210,16 +210,16 @@ namespace Fem
   public:
     typedef typename BaseType::GridType                          GridType;
     typedef typename BaseType::IOTupleType                       IOTupleType;
-    typedef typename BaseType::SolverMonitorHandlerType          SolverMonitorHandlerType;
+    typedef typename BaseType::SolverMonitorCallerType           SolverMonitorCallerType;
 
     typedef typename Traits::SubAlgorithmTupleType               SubAlgorithmTupleType;
     typedef typename Traits::TimeProviderType                    TimeProviderType;
 
-    typedef typename Traits::DiagnosticsHandlerType              DiagnosticsHandlerType;
-    typedef typename Traits::CheckPointHandlerType               CheckPointHandlerType;
-    typedef typename Traits::DataWriterHandlerType               DataWriterHandlerType;
-    typedef typename Traits::PostProcessingHandlerType           PostProcessingHandlerType;
-    typedef typename Traits::AdaptHandlerType                    AdaptHandlerType;
+    typedef typename Traits::DiagnosticsCallerType               DiagnosticsCallerType;
+    typedef typename Traits::CheckPointCallerType                CheckPointCallerType;
+    typedef typename Traits::DataWriterCallerType                DataWriterCallerType;
+    typedef typename Traits::PostProcessingCallerType            PostProcessingCallerType;
+    typedef typename Traits::AdaptCallerType                     AdaptCallerType;
 
     typedef uint64_t                                             UInt64Type ;
 
@@ -231,24 +231,24 @@ namespace Fem
   private:
     struct Initialize {
     private:
-      template<class T, class AdaptHandler, class... Args >
+      template<class T, class AdaptCaller, class... Args >
       static typename enable_if< std::is_void< typename std::remove_pointer<T>::type::DiagnosticsType >::value >::type
-      getDiagnostics( T, AdaptHandler&, Args&& ... ){}
-      template<class T, class AdaptHandler, class... Args >
+      getDiagnostics( T, AdaptCaller&, Args&& ... ){}
+      template<class T, class AdaptCaller, class... Args >
       static typename enable_if< !std::is_void< typename std::remove_pointer<T>::type::DiagnosticsType >::value >::type
-      getDiagnostics( T e, AdaptHandler& handler, Args &&... a )
+      getDiagnostics( T e, AdaptCaller& caller, Args &&... a )
       {
         if( e->diagnostics() )
         {
-          e->diagnostics()->registerData( "AdaptationTime", &handler.adaptationTime() );
-          e->diagnostics()->registerData( "LoadBalanceTime", &handler.loadBalanceTime() );
+          e->diagnostics()->registerData( "AdaptationTime", &caller.adaptationTime() );
+          e->diagnostics()->registerData( "LoadBalanceTime", &caller.loadBalanceTime() );
         }
       }
     public:
-      template< class T, class AdaptHandler, class ... Args > static void apply ( T& e, AdaptHandler& handler, Args && ... a )
+      template< class T, class AdaptCaller, class ... Args > static void apply ( T& e, AdaptCaller& caller, Args && ... a )
       {
         e->initialize( std::forward<Args>(a)... );
-        getDiagnostics( e, handler, std::forward<Args>(a)... );
+        getDiagnostics( e, caller, std::forward<Args>(a)... );
       }
     };
     struct PreSolve {
@@ -308,12 +308,12 @@ namespace Fem
     EvolutionAlgorithmBase ( GridType &grid, const std::string name = "" )
     : BaseType( grid, name  ),
       tuple_( EvolutionCreatorType< SubAlgorithmTupleType, GridType >::apply( grid ) ),
-      checkPointHandler_( tuple_ ),
-      dataWriterHandler_( tuple_ ),
-      diagnosticsHandler_( tuple_ ),
-      solverMonitorHandler_( tuple_ ),
-      postProcessingHandler_( tuple_ ),
-      adaptHandler_( tuple_ ),
+      checkPointCaller_( tuple_ ),
+      dataWriterCaller_( tuple_ ),
+      diagnosticsCaller_( tuple_ ),
+      solverMonitorCaller_( tuple_ ),
+      postProcessingCaller_( tuple_ ),
+      adaptCaller_( tuple_ ),
       param_( TimeSteppingParametersType( ParameterKey::generate( "", "femdg.stepper." ) ) ),
       overallTimer_(),
       timeStepTimer_( Dune::FemTimer::addTo("sum time for timestep") ),
@@ -387,16 +387,16 @@ namespace Fem
       const int maximalTimeSteps = param_.maximalTimeSteps();
 #endif
 
-      // HANDLER
-      checkPointHandler_.initializeStart( this, loop, tp );
+      // CALLER
+      checkPointCaller_.initializeStart( this, loop, tp );
 
       initialize( loop, tp );
 
-      // HANDLER
-      if( !checkPointHandler_.checkPointRestored() )
-        adaptHandler_.initializeEnd( this, loop, tp );
-      dataWriterHandler_.initializeEnd( this, loop, tp );
-      checkPointHandler_.initializeEnd( this, loop, tp );
+      // CALLER
+      if( !checkPointCaller_.checkPointRestored() )
+        adaptCaller_.initializeEnd( this, loop, tp );
+      dataWriterCaller_.initializeEnd( this, loop, tp );
+      checkPointCaller_.initializeEnd( this, loop, tp );
 
       // start first time step with prescribed fixed time step
       // if it is not 0 otherwise use the internal estimate
@@ -417,9 +417,9 @@ namespace Fem
       //******************************
       for( ; tp.time() < endTime; )
       {
-        // HANDLER
-        dataWriterHandler_.preSolveStart( this, loop, tp );
-        checkPointHandler_.preSolveStart( this, loop, tp );
+        // CALLER
+        dataWriterCaller_.preSolveStart( this, loop, tp );
+        checkPointCaller_.preSolveStart( this, loop, tp );
 
         // reset time step estimate
         tp.provideTimeStepEstimate( maxTimeStep );
@@ -432,21 +432,21 @@ namespace Fem
 
         preStep( loop, tp );
 
-        // HANDLER
-        adaptHandler_.solveStart( this, loop, tp );
+        // CALLER
+        adaptCaller_.solveStart( this, loop, tp );
 
         // perform the solve for one time step, i.e. solve ODE
         step( loop, tp );
 
-        // HANDLER
-        postProcessingHandler_.solveEnd( this, loop, tp );
+        // CALLER
+        postProcessingCaller_.solveEnd( this, loop, tp );
 
         postStep( loop, tp );
 
-        // HANDLER
-        solverMonitorHandler_.postSolveEnd( this, loop, tp );
-        diagnosticsHandler_.postSolveEnd( this, loop, tp );
-        dataWriterHandler_.postSolveEnd( this, loop, tp );
+        // CALLER
+        solverMonitorCaller_.postSolveEnd( this, loop, tp );
+        diagnosticsCaller_.postSolveEnd( this, loop, tp );
+        dataWriterCaller_.postSolveEnd( this, loop, tp );
 
         // stop FemTimer for this time step
         Dune::FemTimer::stop(timeStepTimer_,Dune::FemTimer::sum);
@@ -480,11 +480,11 @@ namespace Fem
         }
       } /****** END of time loop *****/
 
-      // HANDLER
-      diagnosticsHandler_.finalizeStart( this, loop, tp );
-      dataWriterHandler_.finalizeStart( this, loop, tp );
-      solverMonitorHandler_.finalizeStart( this, loop, tp );
-      adaptHandler_.finalizeStart( this, loop, tp );
+      // CALLER
+      diagnosticsCaller_.finalizeStart( this, loop, tp );
+      dataWriterCaller_.finalizeStart( this, loop, tp );
+      solverMonitorCaller_.finalizeStart( this, loop, tp );
+      adaptCaller_.finalizeStart( this, loop, tp );
 
       finalize( loop, tp );
 
@@ -493,19 +493,19 @@ namespace Fem
     }
 
     /**
-     * \brief Returns type of post processing handler
+     * \brief Returns type of post processing caller
      */
-    virtual PostProcessingHandlerType& postProcessing()
+    virtual PostProcessingCallerType& postProcessing()
     {
-      return postProcessingHandler_;
+      return postProcessingCaller_;
     }
 
     /**
-     * \brief Returns solver monitor handler.
+     * \brief Returns solver monitor caller.
      */
-    virtual SolverMonitorHandlerType& monitor()
+    virtual SolverMonitorCallerType& monitor()
     {
-      return solverMonitorHandler_;
+      return solverMonitorCaller_;
     }
 
     /**
@@ -513,7 +513,7 @@ namespace Fem
      */
     virtual IOTupleType dataTuple ()
     {
-      return dataWriterHandler_.dataTuple();
+      return dataWriterCaller_.dataTuple();
     }
 
     /**
@@ -541,7 +541,7 @@ namespace Fem
      */
     virtual void initialize ( int loop, TimeProviderType &tp )
     {
-      ForLoopType< Initialize >::apply( tuple_, adaptHandler_, loop, &tp );
+      ForLoopType< Initialize >::apply( tuple_, adaptCaller_, loop, &tp );
     }
 
     /**
@@ -637,9 +637,9 @@ namespace Fem
           std::cout << "step: " << timeStep << "  time = " << tp.time()+tp.deltaT() << ", dt = " << tp.deltaT()
                     <<",  grid size: " << gridSize() << ", elapsed time: ";
           Dune::FemTimer::print(std::cout,timeStepTimer_);
-          std::cout << "Newton:  " << solverMonitorHandler_.getData( "Newton" ) << ", ";
-          std::cout << "ILS:  " << solverMonitorHandler_.getData( "ILS" ) << ", ";
-          std::cout << "OC:  " << solverMonitorHandler_.getData( "OC" ) << ", ";
+          std::cout << "Newton:  " << solverMonitorCaller_.getData( "Newton" ) << ", ";
+          std::cout << "ILS:  " << solverMonitorCaller_.getData( "ILS" ) << ", ";
+          std::cout << "OC:  " << solverMonitorCaller_.getData( "OC" ) << ", ";
           std::cout << std::endl;
         }
       }
@@ -648,12 +648,12 @@ namespace Fem
   protected:
     SubAlgorithmTupleType          tuple_;
 
-    CheckPointHandlerType          checkPointHandler_;
-    DataWriterHandlerType          dataWriterHandler_;
-    DiagnosticsHandlerType         diagnosticsHandler_;
-    SolverMonitorHandlerType       solverMonitorHandler_;
-    PostProcessingHandlerType      postProcessingHandler_;
-    AdaptHandlerType               adaptHandler_;
+    CheckPointCallerType           checkPointCaller_;
+    DataWriterCallerType           dataWriterCaller_;
+    DiagnosticsCallerType          diagnosticsCaller_;
+    SolverMonitorCallerType        solverMonitorCaller_;
+    PostProcessingCallerType       postProcessingCaller_;
+    AdaptCallerType                adaptCaller_;
 
     TimeSteppingParametersType     param_;
     Dune::Timer                    overallTimer_;

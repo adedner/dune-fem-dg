@@ -19,16 +19,16 @@ namespace Fem
   public:
     typedef typename BaseType::GridType                          GridType;
     typedef typename BaseType::IOTupleType                       IOTupleType;
-    typedef typename BaseType::SolverMonitorHandlerType          SolverMonitorHandlerType;
 
     typedef typename BaseType::SubAlgorithmTupleType             SubAlgorithmTupleType;
     typedef typename BaseType::TimeProviderType                  TimeProviderType;
 
-    typedef typename BaseType::DiagnosticsHandlerType            DiagnosticsHandlerType;
-    typedef typename BaseType::CheckPointHandlerType             CheckPointHandlerType;
-    typedef typename BaseType::DataWriterHandlerType             DataWriterHandlerType;
-    typedef typename BaseType::PostProcessingHandlerType         PostProcessingHandlerType;
-    typedef typename BaseType::AdaptHandlerType                  AdaptHandlerType;
+    typedef typename BaseType::SolverMonitorCallerType           SolverMonitorCallerType;
+    typedef typename BaseType::DiagnosticsCallerType             DiagnosticsCallerType;
+    typedef typename BaseType::CheckPointCallerType              CheckPointCallerType;
+    typedef typename BaseType::DataWriterCallerType              DataWriterCallerType;
+    typedef typename BaseType::PostProcessingCallerType          PostProcessingCallerType;
+    typedef typename BaseType::AdaptCallerType                   AdaptCallerType;
 
     typedef typename BaseType::UInt64Type                        UInt64Type ;
 

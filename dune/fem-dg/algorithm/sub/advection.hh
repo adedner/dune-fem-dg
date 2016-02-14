@@ -10,7 +10,7 @@
 // local includes
 #include <dune/fem-dg/algorithm/sub/evolution.hh>
 
-#include <dune/fem-dg/algorithm/handler/sub/adapt.hh>
+#include <dune/fem-dg/algorithm/caller/sub/adapt.hh>
 
 namespace Dune
 {

@@ -6,7 +6,7 @@
 #include <dune/fem-dg/algorithm/sub/evolution.hh>
 #include <dune/fem/function/common/instationary.hh>
 #include <dune/fem/space/common/interpolate.hh>
-#include <dune/fem-dg/algorithm/handler/checkpoint.hh>
+#include <dune/fem-dg/algorithm/caller/checkpoint.hh>
 
 namespace Dune
 {
@@ -15,14 +15,14 @@ namespace Fem
 
   template< class AlgTupleImp,
             class IndexSequenceImp=typename Std::make_index_sequence_impl< std::tuple_size< AlgTupleImp >::value >::type >
-  class CheckedCheckPointHandler;
+  class CheckedCheckPointCaller;
 
 
   template< class AlgTupleImp, std::size_t... Ints >
-  class CheckedCheckPointHandler< AlgTupleImp, Std::index_sequence< Ints... > >
-    : public CheckPointHandler< AlgTupleImp, Std::index_sequence< Ints... > >
+  class CheckedCheckPointCaller< AlgTupleImp, Std::index_sequence< Ints... > >
+    : public CheckPointCaller< AlgTupleImp, Std::index_sequence< Ints... > >
   {
-    typedef CheckPointHandler< AlgTupleImp, Std::index_sequence< Ints... > > BaseType;
+    typedef CheckPointCaller< AlgTupleImp, Std::index_sequence< Ints... > >  BaseType;
     typedef typename BaseType::CheckPointerType                              CheckPointerType;
     typedef typename BaseType::AlgTupleType                                  AlgTupleType;
 
@@ -49,7 +49,7 @@ namespace Fem
 
   public:
 
-    CheckedCheckPointHandler( const AlgTupleType& tuple )
+    CheckedCheckPointCaller( const AlgTupleType& tuple )
       : BaseType( tuple )
     {}
 

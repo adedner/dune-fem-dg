@@ -1,5 +1,5 @@
-#ifndef FEMDG_SUBALGORITHM_SOLVERMONITORHANDLER_HH
-#define FEMDG_SUBALGORITHM_SOLVERMONITORHANDLER_HH
+#ifndef FEMDG_SUBALGORITHM_SOLVERMONITORCALLER_HH
+#define FEMDG_SUBALGORITHM_SOLVERMONITORCALLER_HH
 
 #include <string>
 #include <dune/fem/common/utility.hh>
@@ -19,7 +19,7 @@ namespace Fem
   template<>
   class SubSolverMonitor<>
   {
-    //simple no solver monitor handler
+    //simple no solver monitor caller
     //capturing most famous issues
     struct NoSolverMonitorType
     {

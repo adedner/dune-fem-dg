@@ -3,7 +3,7 @@
 
 #include <dune/fem/io/parameter.hh>
 
-#include <dune/fem-dg/algorithm/handler/checkpoint.hh>
+#include <dune/fem-dg/algorithm/caller/checkpoint.hh>
 #include <dune/fem-dg/algorithm/gridinitializer.hh>
 
 namespace Dune
@@ -12,7 +12,7 @@ namespace Fem
 {
 
   template< class GridImp,
-            class CheckPointHandlerImp = GridCheckPointHandler< GridImp > >
+            class CheckPointCallerImp = GridCheckPointCaller< GridImp > >
   class PoissonGridInitializer
   {
     typedef GridImp                    GridType;

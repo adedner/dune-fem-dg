@@ -1,5 +1,5 @@
-#ifndef FEMDG_DATAWRITERHANDLER_HH
-#define FEMDG_DATAWRITERHANDLER_HH
+#ifndef FEMDG_DATAWRITERCALLER_HH
+#define FEMDG_DATAWRITERCALLER_HH
 
 #include <memory>
 #include <tuple>
@@ -17,27 +17,27 @@ namespace Dune
 namespace Fem
 {
   /**
-   * \brief Handler class managing the data writing.
+   * \brief Caller class managing the data writing.
    *
-   * \ingroup Handlers
+   * \ingroup Callers
    */
   template< class AlgTupleImp,
             class IndexSequenceImp=typename Std::make_index_sequence_impl< std::tuple_size< AlgTupleImp >::value >::type >
-  class DataWriterHandler;
+  class DataWriterCaller;
 
   /**
-   * \brief Specialization of a handler class managing the data writing.
+   * \brief Specialization of a caller class managing the data writing.
    *
-   * \ingroup Handlers
+   * \ingroup Callers
    *
    * This class manages data writing for a tuple of sub-algorithms.
    * For each sub-algorithm data writing can be disabled using an `index_sequence`.
    *
    * Example:
    * \code
-   * typedef DataWriterHandler< std::tuple< Alg1, Alg2, Alg3, Alg4 >,
+   * typedef DataWriterCaller< std::tuple< Alg1, Alg2, Alg3, Alg4 >,
    *                            Std::index_sequence< 0, 2 > >
-   *                                           MyHandler;
+   *                                           MyCaller;
    * \endcode
    * This would enable data writing for `Alg1` and `Alg3`;
    *
@@ -45,8 +45,8 @@ namespace Fem
    * \tparam Std::index_sequence< Ints... > Index sequence for enabling the data writing feature.
    */
   template< class AlgTupleImp, std::size_t... Ints >
-  class DataWriterHandler< AlgTupleImp, Std::index_sequence< Ints... > >
-    : public HandlerInterface
+  class DataWriterCaller< AlgTupleImp, Std::index_sequence< Ints... > >
+    : public CallerInterface
   {
     template< class TupleType > struct IOTupleExtractor;
     template< class ... Args > struct IOTupleExtractor< std::tuple< Args... > >
@@ -108,7 +108,7 @@ namespace Fem
      *
      * \param[in] tuple Tuple of all sub-algorithms.
      */
-    DataWriterHandler( const AlgTupleType& tuple )
+    DataWriterCaller( const AlgTupleType& tuple )
       : tuple_( TupleReducerType::apply( tuple ) ),
         dataWriter_(),
         dataTuple_( dataTuple( tuple_, IndexSequenceType() ) )
@@ -203,13 +203,13 @@ namespace Fem
 
 
   /**
-   * \brief Handler class doing no the data writing.
+   * \brief Caller class doing no the data writing.
    *
-   * \ingroup Handlers
+   * \ingroup Callers
    */
   template< class AlgTupleImp >
-  class DataWriterHandler< AlgTupleImp, Std::index_sequence<> >
-    : public HandlerInterface
+  class DataWriterCaller< AlgTupleImp, Std::index_sequence<> >
+    : public CallerInterface
   {
   public:
     template <class Grid, class DataTuple>
@@ -219,7 +219,7 @@ namespace Fem
     };
 
     template< class ... Args >
-    DataWriterHandler( Args&& ... ) {}
+    DataWriterCaller( Args&& ... ) {}
 
   };
 

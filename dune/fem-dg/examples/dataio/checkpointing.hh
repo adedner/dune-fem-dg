@@ -7,8 +7,8 @@
 #include <dune/fem/function/common/instationary.hh>
 #include <dune/fem/function/common/rangegenerators.hh>
 #include <dune/fem/space/common/interpolate.hh>
-#include <dune/fem-dg/algorithm/handler/checkpoint.hh>
-#include <dune/fem-dg/examples/dataio/checkedcheckpointhandler.hh>
+#include <dune/fem-dg/algorithm/caller/checkpoint.hh>
+#include <dune/fem-dg/examples/dataio/checkedcheckpointcaller.hh>
 
 namespace Dune
 {

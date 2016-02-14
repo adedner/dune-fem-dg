@@ -1,5 +1,5 @@
-#ifndef FEMDG_ALGORITHM_SOLVERMONITORHANDLER_HH
-#define FEMDG_ALGORITHM_SOLVERMONITORHANDLER_HH
+#ifndef FEMDG_ALGORITHM_SOLVERMONITORCALLER_HH
+#define FEMDG_ALGORITHM_SOLVERMONITORCALLER_HH
 
 #include <string>
 #include <dune/fem/common/utility.hh>
@@ -14,28 +14,28 @@ namespace Fem
 {
 
   /**
-   * \brief Handler class to collect all data from solver monitor from sub-algorithms.
+   * \brief Caller class to collect all data from solver monitor from sub-algorithms.
    *
-   * \ingroup Handler
+   * \ingroup Caller
    */
   template< class AlgTupleImp,
             class IndexSequenceImp=typename Std::make_index_sequence_impl< std::tuple_size< AlgTupleImp >::value >::type >
-  class SolverMonitorHandler;
+  class SolverMonitorCaller;
 
 
   /**
-   * \brief Specialization of a handler class collecting all data from solver monitor from sub-algorithms.
+   * \brief Specialization of a caller class collecting all data from solver monitor from sub-algorithms.
    *
-   * \ingroup Handlers
+   * \ingroup Callers
    *
    * This class manages data collecting from solver monitor for a tuple of sub-algorithms.
    * For each sub-algorithm data collecting can be disabled using an `index_sequence`.
    *
    * Example:
    * \code
-   * typedef DataWriterHandler< std::tuple< Alg1, Alg2, Alg3, Alg4 >,
+   * typedef DataWriterCaller< std::tuple< Alg1, Alg2, Alg3, Alg4 >,
    *                            Std::index_sequence< 0, 2 > >
-   *                                           MyHandler;
+   *                                           MyCaller;
    * \endcode
    * This would enable data collecting for `Alg1` and `Alg3`;
    *
@@ -43,8 +43,8 @@ namespace Fem
    * \tparam Std::index_sequence< Ints... > Index sequence for enabling the data collecting feature.
    */
   template< class AlgTupleImp, std::size_t... Ints >
-  class SolverMonitorHandler< AlgTupleImp, Std::index_sequence< Ints... > >
-    : public HandlerInterface
+  class SolverMonitorCaller< AlgTupleImp, Std::index_sequence< Ints... > >
+    : public CallerInterface
   {
     typedef AlgTupleImp                                                            AlgTupleType;
 
@@ -117,7 +117,7 @@ namespace Fem
      *
      * \param[in] tuple Tuple of all sub-algorithms.
      */
-    SolverMonitorHandler( const AlgTupleType& tuple )
+    SolverMonitorCaller( const AlgTupleType& tuple )
       : tuple_( TupleReducerType::apply( tuple ) )
     {}
 
@@ -162,12 +162,12 @@ namespace Fem
    * \brief Specizalization of hander class doing no solver monitor handling.
    */
   template< class AlgTupleImp >
-  class SolverMonitorHandler< AlgTupleImp, Std::index_sequence<> >
-    : public HandlerInterface
+  class SolverMonitorCaller< AlgTupleImp, Std::index_sequence<> >
+    : public CallerInterface
   {
   public:
     template <class ... Args>
-    SolverMonitorHandler(Args&& ... )
+    SolverMonitorCaller(Args&& ... )
     {}
 
     template <class ... Args>

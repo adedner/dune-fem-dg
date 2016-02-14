@@ -1,5 +1,5 @@
-#ifndef FEMDG_CHECKPOINTHANDLER_HH
-#define FEMDG_CHECKPOINTHANDLER_HH
+#ifndef FEMDG_CHECKPOINTCALLER_HH
+#define FEMDG_CHECKPOINTCALLER_HH
 
 #include <memory>
 #include <tuple>
@@ -18,14 +18,14 @@ namespace Fem
 {
 
   /**
-   * \brief Helper class for the CheckPointHandler containing some static methods.
+   * \brief Helper class for the CheckPointCaller containing some static methods.
    *
-   * This class is needed by the CheckPointHandler. All methods in this class
+   * This class is needed by the CheckPointCaller. All methods in this class
    * have to be static because the grid is constructed from the checkpoint, here
    * which (obviuously) has to be done before the construction of algorithms.
    */
   template< class GridImp >
-  class GridCheckPointHandler
+  class GridCheckPointCaller
   {
   public:
     typedef GridImp                                            GridType;
@@ -80,27 +80,27 @@ namespace Fem
 
 
   /**
-   * \brief Handler class managing the checkpointing.
+   * \brief Caller class managing the checkpointing.
    *
-   * \ingroup Handlers
+   * \ingroup Callers
    */
   template< class AlgTupleImp,
             class IndexSequenceImp=typename Std::make_index_sequence_impl< std::tuple_size< AlgTupleImp >::value >::type >
-  class CheckPointHandler;
+  class CheckPointCaller;
 
   /**
-   * \brief Specialization of a handler class managing the checkpointing.
+   * \brief Specialization of a caller class managing the checkpointing.
    *
-   * \ingroup Handlers
+   * \ingroup Callers
    *
    * This class manages checkpointing for a tuple of sub-algorithms.
    * For each sub-algorithm checkpointing can be disabled using an `index_sequence`.
    *
    * Example:
    * \code
-   * typedef CheckPointHandler< std::tuple< Alg1, Alg2, Alg3, Alg4 >,
+   * typedef CheckPointCaller< std::tuple< Alg1, Alg2, Alg3, Alg4 >,
    *                            Std::index_sequence< 0, 2 > >
-   *                                           MyHandler;
+   *                                           MyCaller;
    * \endcode
    * This would enable checkpointing for `Alg1` and `Alg3`;
    *
@@ -108,8 +108,8 @@ namespace Fem
    * \tparam Std::index_sequence< Ints... > Index sequence for enabling the checkpointing feature.
    */
   template< class AlgTupleImp, std::size_t... Ints >
-  class CheckPointHandler< AlgTupleImp, Std::index_sequence< Ints... > >
-    : public HandlerInterface
+  class CheckPointCaller< AlgTupleImp, Std::index_sequence< Ints... > >
+    : public CallerInterface
   {
 
     template< int i >
@@ -133,7 +133,7 @@ namespace Fem
 
     static_assert( std::tuple_size< TupleType >::value>=1, "Empty Tuples not allowed..." );
 
-    typedef GridCheckPointHandler< typename std::remove_pointer< typename std::tuple_element< 0, TupleType >::type >::type::GridType >
+    typedef GridCheckPointCaller< typename std::remove_pointer< typename std::tuple_element< 0, TupleType >::type >::type::GridType >
                                                                                 BaseType;
 
     typedef typename BaseType::GridType                                         GridType;
@@ -150,7 +150,7 @@ namespace Fem
      *
      * \param[in] tuple The whole tuple of all sub-algorithms
      */
-    CheckPointHandler( const AlgTupleType& tuple )
+    CheckPointCaller( const AlgTupleType& tuple )
       : tuple_( TupleReducerType::apply( tuple ) ),
         checkPointer_(),
         checkPointRestored_( false ),
@@ -233,18 +233,18 @@ namespace Fem
 
 
   /**
-   * \brief Specialization of a handler class without checkpointing.
+   * \brief Specialization of a caller class without checkpointing.
    *
-   * \ingroup Handlers
+   * \ingroup Callers
    */
   template< class AlgTupleImp >
-  class CheckPointHandler< AlgTupleImp, Std::index_sequence<> >
-    : public HandlerInterface
+  class CheckPointCaller< AlgTupleImp, Std::index_sequence<> >
+    : public CallerInterface
   {
     public:
 
     template< class ... Args >
-    CheckPointHandler( Args&& ... ) {}
+    CheckPointCaller( Args&& ... ) {}
 
     template< class ... Args>
     static bool checkPointRestored( Args&& ... ) {return false;}

@@ -12,7 +12,7 @@
 
 #include <dune/fem-dg/operator/dg/primaloperator.hh>
 
-#include <dune/fem-dg/algorithm/handler/adapt.hh>
+#include <dune/fem-dg/algorithm/caller/adapt.hh>
 
 namespace Dune
 {

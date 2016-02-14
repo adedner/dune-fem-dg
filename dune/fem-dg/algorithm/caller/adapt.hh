@@ -1,5 +1,5 @@
-#ifndef FEMDG_DEFAULTADAPTHANDLER_HH
-#define FEMDG_DEFAULTADAPTHANDLER_HH
+#ifndef FEMDG_DEFAULTADAPTCALLER_HH
+#define FEMDG_DEFAULTADAPTCALLER_HH
 
 #include <memory>
 #include <tuple>
@@ -11,7 +11,7 @@
 #include <dune/fem/io/parameter.hh>
 
 #include <dune/fem-dg/misc/parameterkey.hh>
-#include <dune/fem-dg/algorithm/handler/postprocessing.hh>
+#include <dune/fem-dg/algorithm/caller/postprocessing.hh>
 #include <dune/fem/space/common/restrictprolonginterface.hh>
 #include <dune/fem/space/common/restrictprolongtuple.hh>
 
@@ -28,28 +28,28 @@ namespace Fem
 {
 
   /**
-   * \brief Handler class managing the adaptation process.
+   * \brief Caller class managing the adaptation process.
    *
-   * \ingroup Handlers
+   * \ingroup Callers
    */
   template< class AlgTupleImp,
             class IndexSequenceImp=typename Std::make_index_sequence_impl< std::tuple_size< AlgTupleImp >::value >::type >
-  class AdaptHandler;
+  class AdaptCaller;
 
 
   /**
-   * \brief Specialization of a handler class managing the adaptation process.
+   * \brief Specialization of a caller class managing the adaptation process.
    *
-   * \ingroup Handlers
+   * \ingroup Callers
    *
    * This class manages the adaptation process for a tuple of sub-algorithms.
    * For each sub-algorithm adaptation can be disabled using an `index_sequence`.
    *
    * Example:
    * \code
-   * typedef AdaptHandler< std::tuple< Alg1, Alg2, Alg3, Alg4 >,
+   * typedef AdaptCaller< std::tuple< Alg1, Alg2, Alg3, Alg4 >,
    *                       Std::index_sequence< 0, 2 > >
-   *                                           MyHandler;
+   *                                           MyCaller;
    * \endcode
    * This would enable adaptation for `Alg1` and `Alg3`.
    *
@@ -62,8 +62,8 @@ namespace Fem
    * \tparam Std::index_sequence< Ints... > Index sequence for enabling the checkpointing feature.
    */
   template< class AlgTupleImp, std::size_t... Ints >
-  class AdaptHandler< AlgTupleImp, Std::index_sequence< Ints... > >
-    : public HandlerInterface
+  class AdaptCaller< AlgTupleImp, Std::index_sequence< Ints... > >
+    : public CallerInterface
   {
     template< class TupleType > struct RPDefaultTupleExtractor;
     template< class ... Args > struct RPDefaultTupleExtractor< std::tuple< Args... > >
@@ -171,7 +171,7 @@ namespace Fem
      *
      * \param tuple Tuple of all sub-algorithms.
      */
-    AdaptHandler( AlgTupleType& tuple )
+    AdaptCaller( AlgTupleType& tuple )
     : tuple_( TupleReducerType::apply( tuple ) ),
       rp_( nullptr ),
       adaptationManager_(),
@@ -387,19 +387,19 @@ namespace Fem
 
 
   /**
-   * \brief Specialization of a handler class without adaptation.
+   * \brief Specialization of a caller class without adaptation.
    *
-   * \ingroup Handlers
+   * \ingroup Callers
    */
   template< class TupleImp >
-  class AdaptHandler< TupleImp, Std::index_sequence<> >
-    : public HandlerInterface
+  class AdaptCaller< TupleImp, Std::index_sequence<> >
+    : public CallerInterface
   {
     typedef uint64_t                          UInt64Type;
   public:
 
     template< class ... Args >
-    AdaptHandler ( Args && ... ) {}
+    AdaptCaller ( Args && ... ) {}
 
     template< class ... Args >
     bool adaptive( Args&& ... ) const { return false; }
