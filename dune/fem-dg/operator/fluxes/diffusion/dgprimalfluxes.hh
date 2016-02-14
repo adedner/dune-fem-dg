@@ -139,7 +139,7 @@ namespace Fem
 
   public:
     typedef typename BaseType::ParameterType  ParameterType;
-  private:
+  protected:
     typedef typename BaseType::IdEnum         EnumType;
     typedef typename BaseType::LiftingEnum    LiftingEnum;
   public:
@@ -1205,7 +1205,7 @@ namespace Fem
     ExtendedDGPrimalDiffusionFlux( GridPartType& gridPart,
                                    const Model& model,
                                    const ParameterType& parameters = ParameterType() )
-      : BaseType( gridPart, model, parameters )
+      : BaseType( gridPart, model, parameters, BaseType::EnumType::general )
     { }
 
     //! copy constructor (needed for thread parallel programs)
