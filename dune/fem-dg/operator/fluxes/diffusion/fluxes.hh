@@ -46,7 +46,7 @@ namespace Fem
     DGPrimalDiffusionFlux( GridPartType& gridPart,
                            const Model& model,
                            const ParameterType& parameters = ParameterType() )
-      : BaseType( gridPart, model, parameters )
+      : BaseType( gridPart, model, parameters, PrimalDiffusionFlux::Enum::general )
     {
     }
   };
@@ -76,7 +76,7 @@ namespace Fem
     DGPrimalDiffusionFlux( GridPartType& gridPart,
                            const Model& model,
                            const ParameterType& parameters = ParameterType() )
-      : BaseType( gridPart, model, parameters )
+      : BaseType( gridPart, model, parameters, PrimalDiffusionFlux::Enum::cdg2 )
     {
     }
   };
@@ -107,7 +107,7 @@ namespace Fem
     DGPrimalDiffusionFlux( GridPartType& gridPart,
                            const Model& model,
                            const ParameterType& parameters = ParameterType() )
-      : BaseType( gridPart, model, parameters )
+      : BaseType( gridPart, model, parameters, PrimalDiffusionFlux::Enum::cdg )
     {
     }
   };
@@ -138,7 +138,7 @@ namespace Fem
     DGPrimalDiffusionFlux( GridPartType& gridPart,
                            const Model& model,
                            const ParameterType& parameters = ParameterType() )
-      : BaseType( gridPart, model, parameters )
+      : BaseType( gridPart, model, parameters, PrimalDiffusionFlux::Enum::br2  )
     {
     }
   };
@@ -169,7 +169,7 @@ namespace Fem
     DGPrimalDiffusionFlux( GridPartType& gridPart,
                            const Model& model,
                            const ParameterType& parameters = ParameterType() )
-      : BaseType( gridPart, model, parameters )
+      : BaseType( gridPart, model, parameters, PrimalDiffusionFlux::Enum::ip  )
     {
     }
   };

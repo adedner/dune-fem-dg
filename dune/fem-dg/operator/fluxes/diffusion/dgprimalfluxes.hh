@@ -165,10 +165,11 @@ namespace Fem
      */
     DGPrimalDiffusionFluxImpl( GridPartType& gridPart,
                                const Model& model,
-                               const ParameterType& parameters ) :
+                               const ParameterType& parameters,
+                               const EnumType staticMethod ) :
       BaseType( model, true, parameters ),
       gridPart_( gridPart ),
-      method_( BaseType::ParameterType::id_ == EnumType::general ? parameters.getMethod() : BaseType::ParameterType::id_ ),
+      method_( staticMethod == EnumType::general ? parameters.getMethod() : staticMethod ),
       penalty_( parameter().penalty() ),
       nipgFactor_( (method_ == EnumType::nipg) ||
                    (method_ == EnumType::bo)
