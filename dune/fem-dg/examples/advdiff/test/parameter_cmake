@@ -1,3 +1,5 @@
+fem.resolvevariables: 1
+
 # DATA WRITER
 #------------
 fem.io.datafileprefix: advdiff # prefix data data files 

@@ -1,3 +1,5 @@
+fem.resolvevariables: 1
+
 # prefix data data files 
 fem.io.datafileprefix: solution
 # if you want to add time stemp to eoc file name

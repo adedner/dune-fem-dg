@@ -1,3 +1,5 @@
+fem.resolvevariables: 1
+
 # PROBLEM SELECTION 
 #------------------
 # possible: "sod" , "withman", "withmansmooth", "smooth1d" , "ffs" , "diffraction" , "shockbubble"
