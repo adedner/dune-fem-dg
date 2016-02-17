@@ -50,14 +50,14 @@ kGNS: 3.1415926535897932385
 
 # DOMAIN CONFIGURATION
 #---------------------
-fem.io.macroGridFile_1d:  ../grids/nswaves_1d.dgf
-fem.io.macroGridFile_2d:  ../grids/nswaves_2d.dgf
-#fem.io.macroGridFile_2d: ../grids/mesh4_1_2.typ1.dgf
-#fem.io.macroGridFile_2d: ../grids/mesh4_1_1.typ1.dgf
-#fem.io.macroGridFile_2d: ../grids/nswaves_2d_unstr.dgf
-fem.io.macroGridFile_3d:  ../grids/nswaves_3d.dgf
-#fem.io.macroGridFile_3d: ../grids/dkershaw08.msh.dgf
-#fem.io.macroGridFile_3d: ../grids/RandMesh4.msh.dgf
+fem.io.macroGridFile_1d:  ../../grids/nswaves_1d.dgf
+fem.io.macroGridFile_2d:  ../../grids/nswaves_2d.dgf
+#fem.io.macroGridFile_2d: ../../grids/mesh4_1_2.typ1.dgf
+#fem.io.macroGridFile_2d: ../../grids/mesh4_1_1.typ1.dgf
+#fem.io.macroGridFile_2d: ../../grids/nswaves_2d_unstr.dgf
+fem.io.macroGridFile_3d:  ../../grids/nswaves_3d.dgf
+#fem.io.macroGridFile_3d: ../../grids/dkershaw08.msh.dgf
+#fem.io.macroGridFile_3d: ../../grids/RandMesh4.msh.dgf
 
 
 # SOLVER CONFIGURATION
