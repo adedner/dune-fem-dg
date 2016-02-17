@@ -1,8 +1,3 @@
-# This file precribes parameters for the testcase found in   
-#
-# Gregor Gassner,
-# PhD thesis
-#
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ 
 # DATA WRITER
 #------------
@@ -10,10 +5,8 @@ fem.io.datafileprefix: NS
 fem.io.savestep: 0.01 # SaveStep (write data every `saveStep' time period, <=0 deactivates)
 fem.io.savecount: -1 # SaveCount (write data every saveCount time steps, <=0 deactivates)
 
-
 femdg.stepper.printcount: 1
 femdg.additionalvariables: false
-
 
 # GENERAL
 #--------
@@ -35,12 +28,14 @@ paramfile: ../../parameter/paramPhysicalConstants
 # g: 0.7 # m/(ss)
 # p0: 10. # surface pressure Pa=kg/(mss)
 # diffusion coefficients
-mu: 0.0001 #00001 #  kg/(ms)
+mu: 0.0001 #  kg/(ms)
 g: 9.81 # m/ss
 Re: 1. #(Reynold's number)
 Pr: 0.72 # 0.72 #(Prandtl's number)
 femdg.stepper.starttime: 0. # s
-femdg.stepper.endtime: 0.001
+
+femdg.stepper.endtime: 0.01
+
 fem.eoc.steps: 4
 
 gammaGNS: 0.5
@@ -57,6 +52,9 @@ fem.io.macroGridFile_3d:  ../../grids/nswaves_3d.dgf
 
 # SOLVER CONFIGURATION
 #---------------------
-fem.ode.odesolver: EX
+#femdg.stepper.maxtimestep: 0.0001 
+fem.solver.newton.tolerance: 1e-6
+
+#fem.ode.odesolver: EX
 paramfile: ../../parameter/paramSolver
 
