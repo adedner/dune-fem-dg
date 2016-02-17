@@ -96,13 +96,13 @@ namespace Fem
         switch( comb )
         {
           case CombinationType::max:
-            res = std::max( res, e->getData( name ) );
+            res = std::max( res, e->getData( name ) ); break;
           case CombinationType::min:
-            res = std::min( res, e->getData( name ) );
+            res = std::min( res, e->getData( name ) ); break;
           case CombinationType::sum:
-            res += e->getData( name );
+            res += e->getData( name ); break;
           case CombinationType::avg:
-            res += e->getData( name );
+            res += e->getData( name ); break;
         }
       }
     };
@@ -149,7 +149,7 @@ namespace Fem
 
     const double getData( const std::string name, CombinationType comb = CombinationType::max ) const
     {
-      double res = (comb == CombinationType::max) ? std::numeric_limits<double>::max() : 0.0;
+      double res = (comb == CombinationType::min) ? std::numeric_limits<double>::max() : 0.0;
       ForLoopType< GetData >::apply( tuple_, res, name, comb );
       return res;
     }
