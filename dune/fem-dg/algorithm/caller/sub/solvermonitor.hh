@@ -74,7 +74,8 @@ namespace Fem
     typedef SolverMonitorImp               SolverMonitorType;
 
     typedef std::map< std::string, std::tuple< double*, double*, bool > > DataDoubleType;
-    typedef std::map< std::string, std::tuple< long unsigned int*, long unsigned int*, bool > >       DataIntType;
+    typedef std::map< std::string, std::tuple< int*, int*, bool > >       DataIntType;
+    typedef std::map< std::string, std::tuple< long unsigned int*, long unsigned int*, bool > > DataLongIntType;
 
     SubSolverMonitor( const std::string keyPrefix = "" )
       : solverMonitor_()
@@ -87,13 +88,13 @@ namespace Fem
     {
       assert( monitorData );
       //dangerous cast
-      dataInt_.insert( std::make_pair(name, std::make_tuple( reinterpret_cast<long unsigned int*>(monitorData), reinterpret_cast<long unsigned int*>(externalMonitorData), internal ) ) );
+      dataInt_.insert( std::make_pair(name, std::make_tuple( monitorData, externalMonitorData, internal ) ) );
     }
 
     void registerData( const std::string name, long unsigned int* monitorData, long unsigned int* externalMonitorData = nullptr, bool internal = false )
     {
       assert( monitorData );
-      dataInt_.insert( std::make_pair(name, std::make_tuple( monitorData, externalMonitorData, internal ) ) );
+      dataLongInt_.insert( std::make_pair(name, std::make_tuple( monitorData, externalMonitorData, internal ) ) );
     }
 
     void registerData( const std::string name, double* monitorData, double* externalMonitorData = nullptr, bool internal = false )
@@ -109,6 +110,12 @@ namespace Fem
         assert( std::get<0>(dataInt_[ name ]) );
         return (double)*std::get<0>(dataInt_[ name ]);
       }
+      if( dataLongInt_.find(name) != dataLongInt_.end() )
+      {
+        assert( std::get<0>(dataLongInt_[ name ]) );
+        return (double)*std::get<0>(dataLongInt_[ name ]);
+      }
+
       if( dataDouble_.find(name) != dataDouble_.end() )
       {
         assert( std::get<0>(dataDouble_[ name ]) );
@@ -134,6 +141,9 @@ namespace Fem
       for (auto it = std::begin(dataInt_); it!=std::end(dataInt_); ++it)
         if( std::get<1>(it->second) )
           *std::get<0>(it->second) = *std::get<1>(it->second);
+      for (auto it = std::begin(dataLongInt_); it!=std::end(dataLongInt_); ++it)
+        if( std::get<1>(it->second) )
+          *std::get<0>(it->second) = *std::get<1>(it->second);
       solverMonitor_.setTimeStepInfo( tp );
     }
 
@@ -151,6 +161,7 @@ namespace Fem
     SolverMonitorType solverMonitor_;
     DataDoubleType            dataDouble_;
     DataIntType               dataInt_;
+    DataLongIntType           dataLongInt_;
   };
 
 
