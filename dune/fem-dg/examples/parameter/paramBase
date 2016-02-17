@@ -2,7 +2,6 @@
 # (-1: off, p: process p is verbose, in general 0 is a good choice)
 fem.verboserank: 0 
 
-
 # OMP THREADS 
 #------------
 # number of threads used in OMP program
