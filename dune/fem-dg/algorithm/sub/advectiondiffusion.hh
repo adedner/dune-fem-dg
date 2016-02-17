@@ -123,7 +123,7 @@ namespace Fem
       grid().comm().max( &minMax[ 0 ], 2 );
       if( Dune::Fem::Parameter::verbose () )
       {
-        std::cout << "grid size (min,max) = ( " << size_t(1.0/minMax[ 1 ]) << " , " << size_t(minMax[ 0 ]) << ")" << std::endl;
+        std::cout << "grid size per core (min,max) = ( " << size_t(1.0/minMax[ 1 ]) << " , " << size_t(minMax[ 0 ]) << ")" << std::endl;
       }
       return grid().comm().sum( grSize );
     }
