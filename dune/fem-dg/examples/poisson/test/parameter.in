@@ -5,5 +5,6 @@ fem.verboserank: 0
 # specify directory for data output (is created if not exists)
 fem.prefix: ${CURRENT_PARAMETER_PATH}/data
 fem.prefix.input: ${CURRENT_PARAMETER_PATH}
+fem.eoc.outputpath: ${CURRENT_PARAMETER_PATH}/data
 
 paramfile: parameter_cmake

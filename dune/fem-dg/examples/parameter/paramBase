@@ -29,7 +29,7 @@ fem.io.checkpointstep: 25000000
 # add time stamp to eoc file name
 # to avoid overwriting the eoc files
 fem.io.eocFileTimeStamp: 0
-fem.eoc.outputpath: $(fem.prefix)
+fem.eoc.outputpath: ./data
 
 
 # GRID SOLUTION 
