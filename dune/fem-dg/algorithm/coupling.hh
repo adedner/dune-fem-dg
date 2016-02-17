@@ -1,6 +1,11 @@
 #ifndef DUNE_FEMDG_COUPLEDALGORITHMS_HH
 #define DUNE_FEMDG_COUPLEDALGORITHMS_HH
 
+#include <tuple>
+#include <type_traits>
+#include <dune/common/std/utility.hh>
+
+
 namespace Dune
 {
 namespace Fem
