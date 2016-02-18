@@ -144,6 +144,7 @@ namespace Fem
 
       if( thetaLeft > 0 )
       {
+        //TODO use diffusionTimeStep
         diffTimeStep =
           /* central differences (might be suboptimal) */
           model_.diffusion(left, uLeft, diffmatrix );
@@ -204,6 +205,7 @@ namespace Fem
       if( thetaRight > 0 )
         uVal.axpy( thetaRight, uBnd );
 
+      //TODO use diffusionTimeStep
       const double diffTimeStep =
             model_.diffusion(left, uVal, diffmatrix );
 
@@ -234,8 +236,6 @@ namespace Fem
                          const LocalEvaluation& right,
                          const RangeType& uLeft,
                          const RangeType& uRight,
-                         const JacobianRangeType& jacLeft,
-                         const JacobianRangeType& jacRight,
                          const GradientRangeType& sigmaLeft,
                          const GradientRangeType& sigmaRight,
                          RangeType& gLeft,
@@ -309,8 +309,10 @@ namespace Fem
       /* Diffusion (Pass 2)       */
       /****************************/
       JacobianRangeType diffmatrix;
+      //TODO use diffusionTimeStep
       double diffTimeStep =
         model_.diffusion(left, uLeft, sigmaLeft, diffmatrix);
+
       diffmatrix.mv(normal, gLeft);
 
       // add penalty term

@@ -167,7 +167,7 @@ namespace Fem
     void analyticalFlux(const LocalEvaluation& local,
                         JacobianRangeType& f)
     {
-      model_.jacobian( local.entity(), local.time(), local.position(), local.values()[ uVar ], f);
+      model_.jacobian( local, local.values()[ uVar ], f);
     }
 
     /**
@@ -178,41 +178,27 @@ namespace Fem
                         RangeType& gLeft,
                         JacobianRangeType& gDiffLeft ) const
     {
-      return boundaryFluxImpl( left.intersection(), left.time(),
-                               left.quadrature(), left.index(),
-                               left.values()[ uVar ], gLeft, gDiffLeft );
+      return boundaryFluxImpl( left, left.values()[ uVar ], gLeft, gDiffLeft );
     }
 
   protected:
-    template <class QuadratureImp,
-              class UType>
-    double boundaryFluxImpl(const Intersection& it,
-                        double time,
-                        const QuadratureImp& faceQuadInner,
-                        const int quadPoint,
-                        const UType& uLeft,
-                        RangeType& gLeft,
-                        JacobianRangeType& gDiffLeft ) const
+    template <class LocalEvaluation, class UType >
+    double boundaryFluxImpl( const LocalEvaluation& left,
+                             const UType& uLeft,
+                             RangeType& gLeft,
+                             JacobianRangeType& gDiffLeft ) const
     {
-      const FaceDomainType& x = faceQuadInner.localPosition( quadPoint );
+      const FaceDomainType& x = left.localPosition();
+      const DomainType normal = left.intersection().integrationOuterNormal( x );
 
       UType uRight;
 
-      if( model_.hasBoundaryValue(it,time,x) )
-      {
-        model_.boundaryValue(it, time, x, uLeft, uRight);
-      }
+      if( model_.hasBoundaryValue( left ) )
+        model_.boundaryValue( left, uLeft, uRight);
       else
-      {
         uRight = uLeft;
-      }
 
-      return gradientFlux_.gradientBoundaryFlux(it, inside(),
-                             time, faceQuadInner, quadPoint,
-                             uLeft,
-                             uRight,
-                             gLeft,
-                             gDiffLeft );
+      return gradientFlux_.gradientBoundaryFlux( left, uLeft, uRight, gLeft, gDiffLeft );
     }
 
   private:
@@ -344,7 +330,7 @@ namespace Fem
       if (diffusion)
       {
         const double dtStiff =
-          model_.stiffSource( local.entity(), local.time(), local.position(), local.values()[uVar], uJac, s );
+          model_.stiffSource( local, local.values()[uVar], uJac, s );
         dtEst = ( dtStiff > 0 ) ? dtStiff : dtEst;
       }
 
@@ -352,7 +338,7 @@ namespace Fem
       {
         RangeType sNonStiff(0);
         const double dtNon =
-          model_.nonStiffSource( local.entity(), local.time(), local.position(), local.values()[uVar], uJac, sNonStiff );
+          model_.nonStiffSource( local, local.values()[uVar], uJac, sNonStiff );
 
         s += sNonStiff;
 
@@ -410,8 +396,7 @@ namespace Fem
       {
         RangeType dLeft, dRight;
         diffTimeStep =
-          diffFlux_.numericalFlux(left.intersection(), *this,
-                                  left.time(), left.quadrature(), right.quadrature(), left.index(),
+          diffFlux_.numericalFlux(left,
                                   left.values()[ uVar ], right.values()[ uVar ],
                                   left.values() [ sigmaVar ], right.values()[ sigmaVar ],
                                   dLeft, dRight,
@@ -445,20 +430,18 @@ namespace Fem
 
       double diffTimeStep = 0.0;
 
-      bool hasBoundaryValue =
-        model_.hasBoundaryValue( left );
+      bool hasBoundaryValue = model_.hasBoundaryValue( left );
 
       if( diffusion && hasBoundaryValue )
       {
         // diffusion boundary flux for Dirichlet boundaries
         RangeType dLeft ( 0 );
-        diffTimeStep = diffFlux_.boundaryFlux( left.intersection(),
-                               *this,
-                               left.time(), left.quadrature(), left.index(),
-                               left.values()[ uVar ], uBnd_, // is set during call of  BaseType::boundaryFlux
-                               left.values()[ sigmaVar ],
-                               dLeft,
-                               gDiffLeft);
+        diffTimeStep = diffFlux_.boundaryFlux( left,
+                                               left.values()[ uVar ],
+                                               uBnd_, // is set during call of  BaseType::boundaryFlux
+                                               left.values()[ sigmaVar ],
+                                               dLeft,
+                                               gDiffLeft);
         gLeft += dLeft;
       }
       else if ( diffusion )
@@ -468,8 +451,7 @@ namespace Fem
         typedef typename DiffusionFluxType::GradientRangeType GradientRangeType;
         Dune::Fem::FieldMatrixConverter< GradientRangeType, JacobianRangeType > uJac( left.values()[ sigmaVar ] );
 
-        model_.diffusionBoundaryFlux( left.intersection(), left.time(), left.localPosition(),
-                                      left.values()[uVar], uJac, diffBndFlux );
+        model_.diffusionBoundaryFlux( left, left.values()[uVar], uJac, diffBndFlux );
         gLeft += diffBndFlux;
       }
       else
@@ -498,7 +480,7 @@ namespace Fem
         typedef typename DiffusionFluxType::GradientRangeType GradientRangeType;
         Dune::Fem::FieldMatrixConverter< GradientRangeType, JacobianRangeType > uJac( local.values()[ sigmaVar ] );
 
-        model_.diffusion( local.entity(), local.time(), local.position(), local.values()[ uVar ], uJac, diffmatrix);
+        model_.diffusion( local, local.values()[ uVar ], uJac, diffmatrix);
         // ldg case
         f += diffmatrix;
       }
