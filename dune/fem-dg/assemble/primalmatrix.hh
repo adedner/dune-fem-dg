@@ -10,7 +10,6 @@
 #include <dune/fem-dg/algorithm/sub/elliptic.hh>
 #include <dune/fem-dg/misc/uniquefunctionname.hh>
 #include <dune/fem-dg/operator/fluxes/diffusion/dgprimalfluxes.hh>
-#include <dune/fem-dg/operator/dg/primaloperator.hh>
 #include "assemblertraits.hh"
 
 namespace Dune
