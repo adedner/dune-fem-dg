@@ -19,7 +19,7 @@ fi
 # NOTE: Zoltan has to be downloaded separately from
 
 #change appropriately, i.e. 2.3 or empty (which refers to master)
-DUNEVERSION=
+DUNEVERSION=2.4
 
 # your favorite compiler optimization flags
 FLAGS="-O3 -DNDEBUG"
