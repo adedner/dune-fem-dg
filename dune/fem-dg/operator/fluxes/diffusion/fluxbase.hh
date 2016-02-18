@@ -61,7 +61,6 @@ namespace Fem
 
     typedef FluxParameterImp                                         ParameterType;
     typedef typename ParameterType::IdEnum                           IdEnum;
-    typedef typename ParameterType::LiftingEnum                      LiftingEnum;
 
     enum { dimDomain = DiscreteFunctionSpaceType::dimDomain };
     enum { dimRange  = DiscreteFunctionSpaceType::dimRange };
@@ -167,6 +166,21 @@ namespace Fem
     }
 
     bool hasLifting() const { return false; }
+
+    void diffusionFluxName( std::ostream& out ) const
+    {
+      out << ParameterType::methodNames( param_.getMethod() );
+    }
+
+    void diffusionFluxPenalty( std::ostream& out ) const
+    {
+      out << param_.penalty();
+    }
+
+    void diffusionFluxLiftFactor( std::ostream& out ) const
+    {
+    }
+
 
     template <class LocalEvaluation, class ArgumentTupleVector >
     void initializeIntersection(const LocalEvaluation& left,
@@ -297,7 +311,7 @@ namespace Fem
     typedef typename BaseType::FaceDomainType           FaceDomainType;
 
     typedef typename BaseType::GridPartType             GridPartType;
-    typedef typename BaseType::IntersectionIteratorType IntersectionIterator;
+    typedef typename BaseType::IntersectionIterator     IntersectionIterator;
     typedef typename BaseType::Intersection             Intersection;
     typedef typename BaseType::GridType                 GridType;
     typedef typename BaseType::EntityType               EntityType;
@@ -316,9 +330,6 @@ namespace Fem
     // jacobians of the functions do not have to be evaluated for this flux
     enum { evaluateJacobian = false };
 
-  private:
-    // no copying
-    LDGDiffusionFluxBase(const LDGDiffusionFluxBase& other);
   protected:
     using BaseType::determineDirection;
     using BaseType::model_;
@@ -335,6 +346,11 @@ namespace Fem
                           const ModelImp& mod,
                           const ParameterType& param ) :
       BaseType( mod, true, param )
+    {}
+
+    //! copy constructor
+    LDGDiffusionFluxBase( const LDGDiffusionFluxBase& other )
+    : BaseType( other )
     {}
 
     //! returns true if lifting has to be calculated

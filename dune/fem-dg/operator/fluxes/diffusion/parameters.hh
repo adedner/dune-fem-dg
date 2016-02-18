@@ -249,6 +249,19 @@ namespace Fem
       return DualDiffusionFlux::_enums[i];
     }
 
+    //! todo please doc me
+    virtual double penalty() const
+    {
+      return Fem::Parameter::getValue<double>( keyPrefix_ + "penalty" );
+    }
+
+    //! todo please doc me
+    template <class DomainType>
+    void upwind( DomainType& upwd ) const
+    {
+      Fem::Parameter::get(keyPrefix_ + "upwind", upwd, upwd);
+    }
+
   private:
     const std::string keyPrefix_;
 

@@ -55,9 +55,6 @@ namespace Fem
     // jacobians of the functions do not have to be evaluated for this flux
     enum { evaluateJacobian = false };
 
-  private:
-    // no copying
-    LDGAverageDiffusionFlux(const LDGAverageDiffusionFlux& other);
   protected:
     using BaseType::determineDirection;
     using BaseType::model_;
@@ -73,7 +70,7 @@ namespace Fem
     LDGAverageDiffusionFlux(GridPartType& gridPart,
                             const ModelImp& mod,
                             const ParameterType& param ) :
-      BaseType( mod, true, param ),
+      BaseType( gridPart, mod, param ),
       penalty_( parameter().penalty() ),
       // Set CFL number for penalty term (compare diffusion in first pass)
       penaltyTerm_( std::abs(  penalty_ ) > 0 )
@@ -83,6 +80,12 @@ namespace Fem
         std::cout << "LDGAverageDiffusionFlux: penalty = " << penalty_ << std::endl;
       }
     }
+
+    LDGAverageDiffusionFlux(const LDGAverageDiffusionFlux& other)
+      : BaseType( other ),
+        penalty_( other.penalty_ ),
+        penaltyTerm_( other.penaltyTerm_ )
+    {}
 
     //! returns true if lifting has to be calculated
     const bool hasLifting () const { return false; }
@@ -128,11 +131,11 @@ namespace Fem
                                  GradientJacobianType& gDiffLeft,
                                  GradientJacobianType& gDiffRight) const
     {
-      const FaceDomainType& x = faceQuadInner.localPoint( quadPoint );
-      const DomainType normal = intersection.integrationOuterNormal( x );
+      const FaceDomainType& x = left.localPosition();
+      const DomainType normal = left.intersection().integrationOuterNormal( x );
 
       // get factor for each side
-      const double thetaLeft  = getTheta( intersection );
+      const double thetaLeft  = getTheta( left.intersection() );
       const double thetaRight = 1.0 - thetaLeft;
 
       GradientJacobianType diffmatrix;
@@ -154,7 +157,7 @@ namespace Fem
       if( thetaRight > 0 )
       {
         const double diffStepRight =
-          model_.diffusion( right, uRight, diffmatrix )
+          model_.diffusion( right, uRight, diffmatrix );
 
         diffmatrix.mv(normal, gRight);
 
@@ -188,7 +191,7 @@ namespace Fem
       const DomainType normal = left.intersection().integrationOuterNormal( x );
 
       // get factor for each side
-      const double thetaLeft  = getTheta( intersection );
+      const double thetaLeft  = getTheta( left.intersection() );
       const double thetaRight = 1.0 - thetaLeft;
 
       GradientJacobianType diffmatrix;

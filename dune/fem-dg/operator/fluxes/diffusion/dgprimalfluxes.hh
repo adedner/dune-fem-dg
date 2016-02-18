@@ -141,7 +141,7 @@ namespace Fem
     typedef typename BaseType::ParameterType  ParameterType;
   protected:
     typedef typename BaseType::IdEnum         EnumType;
-    typedef typename BaseType::LiftingEnum    LiftingEnum;
+    typedef typename ParameterType::LiftingEnum    LiftingEnum;
   public:
 
     using BaseType :: parameter ;
