@@ -47,6 +47,7 @@
 
 //include operators
 #include <dune/fem-dg/operator/dg/primaloperator.hh>
+#include <dune/fem-dg/operator/dg/fluxoperator.hh>
 
 #include <dune/fem-dg/assemble/primalmatrix.hh>
 #include <dune/fem/space/discontinuousgalerkin.hh>
@@ -203,6 +204,21 @@ namespace Fem
     };
   }
 
+  /**
+   *  \brief Namespace containing an Enum class to describe the formulation
+   */
+  namespace Formulation
+  {
+    /**
+     * \ingroup FemDGParameter
+     */
+    enum class Enum
+    {
+      primal,
+      dual
+    };
+  }
+
 ///////////////////////////////////////////////////////////////////////////
 // GridPartSelector
 ///////////////////////////////////////////////////////////////////////////
@@ -268,11 +284,11 @@ namespace Fem
 // AdvectionDiffusionOperatorSelector
 ///////////////////////////////////////////////////////////////////////////
 
-  template< class OperatorTraits, AdvectionLimiter::Enum op >
+  template< class OperatorTraits, Formulation::Enum form, AdvectionLimiter::Enum op >
   class AdvectionDiffusionOperatorSelector;
 
   template< class OperatorTraits >
-  class AdvectionDiffusionOperatorSelector< OperatorTraits, AdvectionLimiter::Enum::unlimited >
+  class AdvectionDiffusionOperatorSelector< OperatorTraits, Formulation::Enum::primal, AdvectionLimiter::Enum::unlimited >
   {
     static const int advection = OperatorTraits::ModelType::hasAdvection;
     static const int diffusion = OperatorTraits::ModelType::hasDiffusion;
@@ -289,7 +305,7 @@ namespace Fem
   };
 
   template< class OperatorTraits >
-  class AdvectionDiffusionOperatorSelector< OperatorTraits, AdvectionLimiter::Enum::limited >
+  class AdvectionDiffusionOperatorSelector< OperatorTraits, Formulation::Enum::primal, AdvectionLimiter::Enum::limited >
   {
     static const int advection = OperatorTraits::ModelType::hasAdvection;
     static const int diffusion = OperatorTraits::ModelType::hasDiffusion;
@@ -304,44 +320,78 @@ namespace Fem
     typedef typename ImplExplOperatorSelectorType::ExplicitOperatorType      ExplicitOperatorType;
   };
 
-  template< class OperatorTraits, AdvectionLimiter::Enum op, OperatorSplit::Enum split, Matrix::Enum ass >
+  template< class OperatorTraits >
+  class AdvectionDiffusionOperatorSelector< OperatorTraits, Formulation::Enum::dual, AdvectionLimiter::Enum::unlimited >
+  {
+    static const int advection = OperatorTraits::ModelType::hasAdvection;
+    static const int diffusion = OperatorTraits::ModelType::hasDiffusion;
+    typedef LDGAdvectionDiffusionOperator< OperatorTraits >                  DgType;
+    typedef LDGAdvectionDiffusionOperator< OperatorTraits >                  DgAdvectionType;
+    typedef LDGAdvectionDiffusionOperator< OperatorTraits >                  DgDiffusionType;
+    typedef ImplExplOperatorSelector< DgType, DgAdvectionType, DgDiffusionType, advection, diffusion >
+                                                                             ImplExplOperatorSelectorType;
+  public:
+    typedef typename ImplExplOperatorSelectorType::FullOperatorType          FullOperatorType;
+    typedef typename ImplExplOperatorSelectorType::ImplicitOperatorType      ImplicitOperatorType;
+    typedef typename ImplExplOperatorSelectorType::ExplicitOperatorType      ExplicitOperatorType;
+
+  };
+
+  template< class OperatorTraits >
+  class AdvectionDiffusionOperatorSelector< OperatorTraits, Formulation::Enum::dual, AdvectionLimiter::Enum::limited >
+  {
+    static const int advection = OperatorTraits::ModelType::hasAdvection;
+    static const int diffusion = OperatorTraits::ModelType::hasDiffusion;
+    typedef LDGLimitedAdvectionDiffusionOperator< OperatorTraits >           DgType;
+    typedef LDGLimitedAdvectionDiffusionOperator< OperatorTraits >           DgAdvectionType;
+    typedef LDGLimitedAdvectionDiffusionOperator< OperatorTraits >           DgDiffusionType;
+    typedef ImplExplOperatorSelector< DgType, DgAdvectionType, DgDiffusionType, advection, diffusion >
+                                                                             ImplExplOperatorSelectorType;
+  public:
+    typedef typename ImplExplOperatorSelectorType::FullOperatorType          FullOperatorType;
+    typedef typename ImplExplOperatorSelectorType::ImplicitOperatorType      ImplicitOperatorType;
+    typedef typename ImplExplOperatorSelectorType::ExplicitOperatorType      ExplicitOperatorType;
+  };
+
+
+  template< class OperatorTraits, Formulation::Enum form, AdvectionLimiter::Enum op, OperatorSplit::Enum split, Matrix::Enum ass >
   class OperatorSelector;
 
   //matrixfree
-  template< class OperatorTraits, AdvectionLimiter::Enum op >
-  struct OperatorSelector< OperatorTraits, op, OperatorSplit::Enum::expl, Matrix::Enum::matrixfree >
+  template< class OperatorTraits, Formulation::Enum form, AdvectionLimiter::Enum op >
+  struct OperatorSelector< OperatorTraits, form, op, OperatorSplit::Enum::expl, Matrix::Enum::matrixfree >
   {
-    typedef typename AdvectionDiffusionOperatorSelector< OperatorTraits, op >::ExplicitOperatorType type;
+    typedef typename AdvectionDiffusionOperatorSelector< OperatorTraits, form, op >::ExplicitOperatorType type;
   };
 
-  template< class OperatorTraits, AdvectionLimiter::Enum op >
-  struct OperatorSelector< OperatorTraits, op, OperatorSplit::Enum::impl, Matrix::Enum::matrixfree >
+  template< class OperatorTraits, Formulation::Enum form, AdvectionLimiter::Enum op >
+  struct OperatorSelector< OperatorTraits, form, op, OperatorSplit::Enum::impl, Matrix::Enum::matrixfree >
   {
-    typedef typename AdvectionDiffusionOperatorSelector< OperatorTraits, op >::ImplicitOperatorType type;
+    typedef typename AdvectionDiffusionOperatorSelector< OperatorTraits, form, op >::ImplicitOperatorType type;
   };
 
-  template< class OperatorTraits, AdvectionLimiter::Enum op >
-  struct OperatorSelector< OperatorTraits, op, OperatorSplit::Enum::full, Matrix::Enum::matrixfree >
+  template< class OperatorTraits, Formulation::Enum form, AdvectionLimiter::Enum op >
+  struct OperatorSelector< OperatorTraits, form, op, OperatorSplit::Enum::full, Matrix::Enum::matrixfree >
   {
-    typedef typename AdvectionDiffusionOperatorSelector< OperatorTraits, op >::FullOperatorType type;
+    typedef typename AdvectionDiffusionOperatorSelector< OperatorTraits, form, op >::FullOperatorType type;
   };
 
-  template< class OperatorTraits, AdvectionLimiter::Enum op >
-  struct OperatorSelector< OperatorTraits, op, OperatorSplit::Enum::rhs, Matrix::Enum::matrixfree >
+  template< class OperatorTraits, Formulation::Enum form, AdvectionLimiter::Enum op >
+  struct OperatorSelector< OperatorTraits, form, op, OperatorSplit::Enum::rhs, Matrix::Enum::matrixfree >
   {
-    typedef typename AdvectionDiffusionOperatorSelector< OperatorTraits, op >::FullOperatorType type;
+    typedef typename AdvectionDiffusionOperatorSelector< OperatorTraits, form, op >::FullOperatorType type;
   };
 
   //assembled
   //TODO improve DGPrimalMatrixAssembly for correct splitting
   template< class AssemblerTraitsImp, AdvectionLimiter::Enum op >
-  struct OperatorSelector< AssemblerTraitsImp, op, OperatorSplit::Enum::full, Matrix::Enum::assembled >
+  struct OperatorSelector< AssemblerTraitsImp, Formulation::Enum::primal, op, OperatorSplit::Enum::full, Matrix::Enum::assembled >
   {
     typedef DGPrimalMatrixAssembly< AssemblerTraitsImp > type;
   };
 
   template< class AssemblerTraitsImp, AdvectionLimiter::Enum op >
-  struct OperatorSelector< AssemblerTraitsImp, op, OperatorSplit::Enum::rhs, Matrix::Enum::assembled >
+  struct OperatorSelector< AssemblerTraitsImp, Formulation::Enum::primal, op, OperatorSplit::Enum::rhs, Matrix::Enum::assembled >
   {
     typedef DGPrimalMatrixAssembly< AssemblerTraitsImp > type;
   };

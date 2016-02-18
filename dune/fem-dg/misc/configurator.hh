@@ -36,7 +36,8 @@ namespace Fem
             AdvectionLimiter::Enum advLimitId,
             Matrix::Enum matrixId,
             AdvectionFlux::Enum advFluxId,
-            PrimalDiffusionFlux::Enum diffFluxId >
+            PrimalDiffusionFlux::Enum diffFluxId,
+            Formulation::Enum formId = Formulation::Enum::primal >
   class AlgorithmConfigurator
   {
     template< class AnalyticalTraitsImp, class NewModelImp >
@@ -100,7 +101,7 @@ namespace Fem
 
     //Operator/Assembler
     template< class OpTraits, OperatorSplit::Enum opSplit = OperatorSplit::Enum::full, Matrix::Enum matrix = matrixId >
-    using Operators = typename OperatorSelector< OpTraits, advLimitId, opSplit, matrix >::type;
+    using Operators = typename OperatorSelector< OpTraits, formId, advLimitId, opSplit, matrix >::type;
 
     //Matrix Containers
     template< class DomainDFSpace, class RangeDFSpace  >

@@ -1,5 +1,5 @@
-#ifndef DUNE_LDGFLUX_HH
-#define DUNE_LDGFLUX_HH
+#ifndef DUNE_FEM_DG_LDGAVERAGEFLUX_HH
+#define DUNE_FEM_DG_LDGAVERAGEFLUX_HH
 
 // Dune-Fem includes
 #include "fluxbase.hh"
@@ -17,7 +17,7 @@ namespace Fem
   template <class DiscreteFunctionSpaceImp,
             class ModelImp,
             class FluxParameterImp >
-  class LDGDiffusionFlux :
+  class LDGAverageDiffusionFlux :
     public DGDiffusionFluxBase< DiscreteFunctionSpaceImp, ModelImp, FluxParameterImp >
   {
     typedef DGDiffusionFluxBase< DiscreteFunctionSpaceImp, ModelImp, FluxParameterImp > BaseType;
@@ -45,14 +45,9 @@ namespace Fem
 
     typedef typename BaseType :: ParameterType  ParameterType;
 
-#if DUNE_VERSION_NEWER_REV(DUNE_FEM,1,1,0)
     // type of gradient space
     typedef typename DiscreteFunctionSpaceType ::
         template ToNewDimRange< dimGradRange > :: Type   DiscreteGradientSpaceType;
-#else
-    // type of gradient space
-    typedef CombinedSpace< DiscreteFunctionSpaceType, dimGradRange>  DiscreteGradientSpaceType;
-#endif
 
     typedef typename DiscreteGradientSpaceType :: RangeType GradientRangeType;
     typedef typename DiscreteGradientSpaceType :: JacobianRangeType GradientJacobianType;
@@ -62,7 +57,7 @@ namespace Fem
 
   private:
     // no copying
-    LDGDiffusionFlux(const LDGDiffusionFlux& other);
+    LDGAverageDiffusionFlux(const LDGAverageDiffusionFlux& other);
   protected:
     using BaseType :: determineDirection;
     using BaseType :: model_;
@@ -75,9 +70,9 @@ namespace Fem
     /**
      * \brief constructor
      */
-    LDGDiffusionFlux(GridPartType& gridPart,
-                     const ModelImp& mod,
-                     const ParameterType& param ) :
+    LDGAverageDiffusionFlux(GridPartType& gridPart,
+                            const ModelImp& mod,
+                            const ParameterType& param ) :
       BaseType( mod, true, param ),
       penalty_( parameter().penalty() ),
       // Set CFL number for penalty term (compare diffusion in first pass)
@@ -85,7 +80,7 @@ namespace Fem
     {
       if( Fem::Parameter::verbose () )
       {
-        std::cout << "LDGDiffusionFlux: penalty = " << penalty_ << std::endl;
+        std::cout << "LDGAverageDiffusionFlux: penalty = " << penalty_ << std::endl;
       }
     }
 
@@ -374,7 +369,7 @@ namespace Fem
     const double penalty_;
     const bool penaltyTerm_;
 
-  }; // end LDGDiffusionFlux
+  }; // end LDGAverageDiffusionFlux
 
 } // end namespace
 } // end namespace

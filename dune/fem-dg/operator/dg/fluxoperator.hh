@@ -1,9 +1,5 @@
-#ifndef DUNE_FEM_DG_FLUXOPERATOR_HH
-#define DUNE_FEM_DG_FLUXOPERATOR_HH
-
-#ifdef HEADERCHECK
-#define FLUX 1
-#endif
+#ifndef DUNE_FEM_LDG_FLUXOPERATOR_HH
+#define DUNE_FEM_LDG_FLUXOPERATOR_HH
 
 #include <string>
 
@@ -27,11 +23,11 @@ namespace Dune
 namespace Fem
 {
 
-  // DGAdvectionDiffusionOperator
+  // LDGAdvectionDiffusionOperator
   //-----------------------------
 
   template< class Traits, bool advection = true , bool diffusion = true >
-  class DGAdvectionDiffusionOperator :
+  class LDGAdvectionDiffusionOperator :
     public Fem::SpaceOperatorInterface
       < typename Traits :: DestinationType >
   {
@@ -107,7 +103,7 @@ namespace Fem
     typedef typename Traits :: ExtraParameterTupleType ExtraParameterTupleType;
 
   public:
-    DGAdvectionDiffusionOperator( GridPartType& gridPart,
+    LDGAdvectionDiffusionOperator( GridPartType& gridPart,
                                   ProblemType& problem,
                                   ExtraParameterTupleType tuple =  ExtraParameterTupleType(),
                                   const std::string keyPrefix = "" ) :
@@ -182,10 +178,7 @@ namespace Fem
              <<", $\\eta = ";
       diffFlux_.diffusionFluxPenalty( stream );
       stream <<"$, {\\bf Adv. Flux:} ";
-      if (FLUX==1)
-        stream <<"LLF";
-      else if (FLUX==2)
-        stream <<"HLL";
+      //TODO has to be implemented
       stream <<",\\\\\n";
       return stream.str();
     }
@@ -230,7 +223,7 @@ namespace Fem
   //--------------------
 
   template< class OpTraits >
-  class DGAdvectionOperator : public
+  class LDGAdvectionOperator : public
     DGAdvectionDiffusionOperatorBase< LDGAdvectionTraits< OpTraits, true > >
   {
     typedef LDGAdvectionTraits< OpTraits, true> Traits;
@@ -240,7 +233,7 @@ namespace Fem
     typedef typename BaseType :: ProblemType   ProblemType;
     typedef typename BaseType :: ExtraParameterTupleType ExtraParameterTupleType;
 
-    DGAdvectionOperator( GridPartType& gridPart, ProblemType& problem,
+    LDGAdvectionOperator( GridPartType& gridPart, ProblemType& problem,
                          ExtraParameterTupleType  tuple =  ExtraParameterTupleType(),
                          const std::string keyPrefix = "" )
       : BaseType( gridPart, problem, tuple, keyPrefix )
@@ -251,33 +244,33 @@ namespace Fem
       std::stringstream stream;
       stream <<"{\\bf Adv. Op.}, flux formulation, order: " << Traits::polynomialOrder+1
              <<", {\\bf Adv. Flux:} ";
-      if (FLUX==1)
+      /*if (FLUX==1)
         stream <<"LLF";
       else if (FLUX==2)
-        stream <<"HLL";
+        stream <<"HLL";*/
       stream <<",\\\\\n";
       return stream.str();
     }
   };
 
 
-  // DGDiffusionOperator
+  // LDGDiffusionOperator
   //--------------------
 
   template< class Traits >
-  class DGDiffusionOperator : public
-    DGAdvectionDiffusionOperator< Traits, false >
+  class LDGDiffusionOperator : public
+    LDGAdvectionDiffusionOperator< Traits, false >
   {
-    typedef DGAdvectionDiffusionOperator< Traits, false >  BaseType;
+    typedef LDGAdvectionDiffusionOperator< Traits, false >  BaseType;
 
   public:
     typedef typename BaseType :: GridPartType  GridPartType;
     typedef typename BaseType :: ProblemType   ProblemType;
     typedef typename BaseType :: ExtraParameterTupleType ExtraParameterTupleType;
 
-    DGDiffusionOperator( GridPartType& gridPart, ProblemType& problem,
-                         ExtraParameterTupleType  tuple =  ExtraParameterTupleType(),
-                         const std::string keyPrefix = "" )
+    LDGDiffusionOperator( GridPartType& gridPart, ProblemType& problem,
+                          ExtraParameterTupleType  tuple =  ExtraParameterTupleType(),
+                          const std::string keyPrefix = "" )
       : BaseType( gridPart, problem, tuple, keyPrefix )
     {}
 
@@ -298,7 +291,7 @@ namespace Fem
   };
 
 
-  // DGLimitedAdvectionDiffusionOperator
+  // LDGLimitedAdvectionDiffusionOperator
   //------------------------------------
 
   /** \class DGLimitedAdvectionDiffusionOperator
@@ -312,7 +305,7 @@ namespace Fem
    */
   template< class Traits,
             bool advection = true >
-  class DGLimitedAdvectionDiffusionOperator :
+  class LDGLimitedAdvectionDiffusionOperator :
     public Fem::SpaceOperatorInterface
       < typename Traits :: DestinationType >
   {
@@ -403,9 +396,9 @@ namespace Fem
     };
 
   public:
-    DGLimitedAdvectionDiffusionOperator( GridPartType& gridPart, ProblemType& problem,
-                                         ExtraParameterTupleType  tuple =  ExtraParameterTupleType(),
-                                         const std::string keyPrefix = "" )
+    LDGLimitedAdvectionDiffusionOperator( GridPartType& gridPart, ProblemType& problem,
+                                          ExtraParameterTupleType  tuple =  ExtraParameterTupleType(),
+                                          const std::string keyPrefix = "" )
       : model_( problem )
       , numflux_( model_ )
       , gridPart_( gridPart )
@@ -427,7 +420,7 @@ namespace Fem
       problem1_.setIndicator( &indicator_ );
     }
 
-    ~DGLimitedAdvectionDiffusionOperator() { delete uTmp_; }
+    ~LDGLimitedAdvectionDiffusionOperator() { delete uTmp_; }
 
     void setTime(const double time) {
 	    pass3_.setTime( time );
@@ -484,10 +477,10 @@ namespace Fem
              <<", penalty: ";
       diffFlux_.diffusionFluxPenalty( stream );
       stream <<", {\\bf Adv. Flux:} ";
-      if (FLUX==1)
+      /*if (FLUX==1)
         stream <<"LLF";
       else if (FLUX==2)
-        stream <<"HLL";
+        stream <<"HLL";*/
       stream <<",\\\\\n";
       return stream.str();
     }
@@ -533,12 +526,12 @@ namespace Fem
       < Traits, u, advection, diffusion> DiscreteModelType;
   };
 
-  // DGAdaptationIndicatorOperator
+  // LDGAdaptationIndicatorOperator
   //------------------------------
 
   template< class OpTraits,
             bool advection, bool diffusion = false >
-  struct DGAdaptationIndicatorOperator : public
+  struct LDGAdaptationIndicatorOperator : public
     DGAdvectionDiffusionOperatorBase<
        AdaptationIndicatorTraits< OpTraits, advection, diffusion > >
   {
@@ -548,9 +541,9 @@ namespace Fem
     typedef typename BaseType :: ProblemType   ProblemType ;
     typedef typename BaseType :: ExtraParameterTupleType ExtraParameterTupleType;
 
-    DGAdaptationIndicatorOperator( GridPartType& gridPart, ProblemType& problem,
-                                   ExtraParameterTupleType  tuple =  ExtraParameterTupleType(),
-                                   const std::string keyPrefix = "" )
+    LDGAdaptationIndicatorOperator( GridPartType& gridPart, ProblemType& problem,
+                                    ExtraParameterTupleType  tuple =  ExtraParameterTupleType(),
+                                    const std::string keyPrefix = "" )
       : BaseType( gridPart, problem, tuple, keyPrefix )
     {
       if ( Fem::Parameter::verbose() )
