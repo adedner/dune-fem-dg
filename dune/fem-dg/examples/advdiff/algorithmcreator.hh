@@ -60,7 +60,9 @@ namespace Fem
                                      AdvectionLimiter::Enum::unlimited,
                                      Matrix::Enum::matrixfree,
                                      AdvectionFlux::Enum::upwind,
-                                     PrimalDiffusionFlux::Enum::cdg2 > AC;
+                                     PrimalDiffusionFlux::Enum::cdg2,
+                                     DualDiffusionFlux::Enum::average,
+                                     Formulation::Enum::dual > AC;
 
       typedef typename AC::GridType                         GridType;
       typedef typename AC::GridParts                        HostGridPartType;

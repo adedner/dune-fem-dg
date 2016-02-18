@@ -28,36 +28,17 @@ namespace Fem
 
   template< class Traits, bool advection = true , bool diffusion = true >
   class LDGAdvectionDiffusionOperator :
-    public Fem::SpaceOperatorInterface
-      < typename Traits :: DestinationType >
+    public Fem::SpaceOperatorInterface< typename Traits::DestinationType >
   {
     // Id's for the three Passes (including StartPass)
     enum PassIdType { u, gradPass, advectPass };
 
-  public:
-    typedef typename Traits :: FluxType  AdvectionFluxType;
-    typedef typename Traits :: ModelType ModelType;
-    typedef typename ModelType :: ProblemType  ProblemType;
-
-    enum { dimRange  = ModelType::dimRange };
-    enum { dimDomain = ModelType::Traits::dimDomain };
-
-    typedef typename Traits::LimiterIndicatorType                       LimiterIndicatorType;
-    typedef typename LimiterIndicatorType::DiscreteFunctionSpaceType    LimiterIndicatorSpaceType;
-
-    // Pass 2 Model (advection)
-    typedef AdvectionDiffusionLDGModel< Traits, u, gradPass, advection, diffusion >     DiscreteModel2Type;
-
-    typedef ModelType Model;
-
-    // Pass 1 Model (gradient)
-    typedef typename DiscreteModel2Type :: DiffusionFluxType  DiffusionFluxType;
-
-    struct GradientTraits : public Traits
+    struct GradientTraits
+      : public Traits
     {
       // overload discrete function space
-      typedef typename Traits :: DiscreteFunctionSpaceType :: template
-        ToNewDimRange< ModelType::dimGradRange > :: Type        DiscreteFunctionSpaceType;
+      typedef typename Traits::DiscreteFunctionSpaceType::template
+        ToNewDimRange< Traits::ModelType::Traits::dimGradRange >::Type DiscreteFunctionSpaceType;
 
       template < class DF >
       struct ToNewSpace;
@@ -74,33 +55,52 @@ namespace Fem
         typedef DF< DiscreteFunctionSpaceType, Args... > Type;
       };
 
-      typedef typename ToNewSpace< typename Traits::DestinationType > :: Type       DestinationType;
+      typedef typename ToNewSpace< typename Traits::DestinationType >::Type DestinationType;
     };
 
-    typedef GradientModel< GradientTraits, u >       DiscreteModel1Type;
+  public:
+    typedef typename Traits::AdvectionFluxType                        AdvectionFluxType;
+    typedef typename Traits::ModelType                                ModelType;
+    typedef typename ModelType::ProblemType                           ProblemType;
 
-    typedef typename DiscreteModel1Type :: Traits                      Traits1;
-    typedef typename DiscreteModel2Type :: Traits                      Traits2;
+    enum { dimRange  = ModelType::dimRange };
+    enum { dimDomain = ModelType::Traits::dimDomain };
+    enum { dimGradRange = ModelType::Traits::dimGradRange };
 
-    typedef typename Traits  :: GridType                       GridType;
+    typedef typename Traits::LimiterIndicatorType                     LimiterIndicatorType;
+    typedef typename LimiterIndicatorType::DiscreteFunctionSpaceType  LimiterIndicatorSpaceType;
 
-    typedef typename Traits2 :: DomainType                             DomainType;
-    typedef typename Traits2 :: DestinationType                        DiscreteFunction2Type;
+    // Pass 2 Model (advection)
+    typedef AdvectionDiffusionLDGModel< Traits, u, gradPass, advection, diffusion >
+                                                                      DiscreteModel2Type;
 
-    typedef typename Traits1 :: DiscreteFunctionSpaceType              Space1Type;
-    typedef typename Traits2 :: DiscreteFunctionSpaceType              Space2Type;
-    typedef typename Traits1 :: DestinationType                        Destination1Type;
-    typedef typename Traits2 :: DestinationType                        Destination2Type;
-    typedef Destination2Type                                           DestinationType;
-    typedef Space2Type                                                 SpaceType;
+    typedef typename DiscreteModel2Type::DiffusionFluxType            DiffusionFluxType;
 
-    typedef typename Traits1 :: GridPartType                           GridPartType;
+    // Pass 1 Model (gradient)
+    typedef GradientModel< GradientTraits, u >                        DiscreteModel1Type;
 
-    typedef Fem::StartPass< DiscreteFunction2Type, u >                 Pass0Type;
-    typedef LocalCDGPass< DiscreteModel1Type, Pass0Type, gradPass >    Pass1Type;
-    typedef LocalCDGPass< DiscreteModel2Type, Pass1Type, advectPass >  Pass2Type;
+    typedef typename DiscreteModel1Type::Traits                       Traits1;
+    typedef typename DiscreteModel2Type::Traits                       Traits2;
 
-    typedef typename Traits :: ExtraParameterTupleType ExtraParameterTupleType;
+    typedef typename Traits::GridType                                 GridType;
+
+    //typedef typename Traits2::Traits::DomainType                              DomainType;
+    typedef typename Traits2::DestinationType                         DiscreteFunction2Type;
+
+    typedef typename Traits1::DiscreteFunctionSpaceType               Space1Type;
+    typedef typename Traits2::DiscreteFunctionSpaceType               Space2Type;
+    typedef typename Traits1::DestinationType                         Destination1Type;
+    typedef typename Traits2::DestinationType                         Destination2Type;
+    typedef Destination2Type                                          DestinationType;
+    typedef Space2Type                                                SpaceType;
+
+    typedef typename Traits1::GridPartType                            GridPartType;
+
+    typedef Fem::StartPass< DiscreteFunction2Type, u >                Pass0Type;
+    typedef LocalCDGPass< DiscreteModel1Type, Pass0Type, gradPass >   Pass1Type;
+    typedef LocalCDGPass< DiscreteModel2Type, Pass1Type, advectPass > Pass2Type;
+
+    typedef typename Traits::ExtraParameterTupleType                  ExtraParameterTupleType;
 
   public:
     LDGAdvectionDiffusionOperator( GridPartType& gridPart,
@@ -298,7 +298,7 @@ namespace Fem
    *  \brief Dual operator for NS equtions with a limiting
    *         of the numerical solution
    *
-   *  \tparam Model Analytical model
+   *  \tparam ModelType Analytical model
    *  \tparam NumFlux Numerical flux
    *  \tparam polOrd Polynomial degree
    *  \tparam advection Advection
@@ -311,62 +311,62 @@ namespace Fem
   {
     enum PassIdType { u, limitPassId, gradPassId, advectPassId };
 
+    struct GradientTraits
+      : public PassTraits< Traits, Traits::polynomialOrder, Traits::ModelType::Traits::dimGradRange >
+    {
+      typedef typename Traits::ModelType         ModelType;
+      typedef typename Traits::DiffusionFluxType FluxType;
+    };
   public:
-    typedef typename Traits :: ModelType   ModelType;
-    typedef typename Traits :: FluxType    AdvectionFluxType;
-    typedef typename ModelType :: ProblemType  ProblemType;
+    typedef typename Traits::ModelType                                  ModelType;
+    typedef typename Traits::AvectionFluxType                           AdvectionFluxType;
+    typedef typename ModelType::ProblemType                             ProblemType;
 
     enum { dimRange  = ModelType::dimRange };
     enum { dimDomain = ModelType::Traits::dimDomain };
-
-    typedef ModelType Model;
+    enum { dimGradRange = ModelType::Traits::dimGradRange };
 
     // Pass 2 Model (advectPassId)
-    typedef AdvectionDiffusionLDGModel
-      < Traits, limitPassId, gradPassId, advection, true > DiscreteModel3Type;
+    typedef AdvectionDiffusionLDGModel < Traits, limitPassId, gradPassId, advection, true >
+                                                                        DiscreteModel3Type;
 
     // Pass 1 Model (gradPassId)
-    typedef typename DiscreteModel3Type :: DiffusionFluxType  DiffusionFluxType;
-    struct GradientTraits : public PassTraits< Traits, Traits::polynomialOrder, ModelType::dimGradRange >
-    {
-      typedef Model ModelType;
-      typedef DiffusionFluxType  FluxType;
-    };
-    typedef GradientModel< GradientTraits, limitPassId >     DiscreteModel2Type;
+    typedef typename DiscreteModel3Type::DiffusionFluxType              DiffusionFluxType;
+    typedef GradientModel< GradientTraits, limitPassId >                DiscreteModel2Type;
     // The model of the limiter pass (limitPassId)
-    typedef Fem :: StandardLimiterDiscreteModel< Traits, ModelType, u > LimiterDiscreteModelType;
+    typedef Fem::StandardLimiterDiscreteModel< Traits, ModelType, u >   LimiterDiscreteModelType;
 
     // Pass 0 Model (limitPassId)
-    typedef LimiterDiscreteModelType                                   DiscreteModel1Type;
+    typedef LimiterDiscreteModelType                                    DiscreteModel1Type;
 
 
-    typedef typename DiscreteModel1Type :: Traits                      Traits1;
-    typedef typename DiscreteModel2Type :: Traits                      Traits2;
-    typedef typename DiscreteModel3Type :: Traits                      Traits3;
+    typedef typename DiscreteModel1Type::Traits                         Traits1;
+    typedef typename DiscreteModel2Type::Traits                         Traits2;
+    typedef typename DiscreteModel3Type::Traits                         Traits3;
 
-    typedef typename Traits :: GridType                                GridType;
+    typedef typename Traits::GridType                                   GridType;
 
-    typedef typename Traits3 :: DomainType                             DomainType;
-    typedef typename Traits3 :: DiscreteFunctionType                   DiscreteFunction3Type;
+    //typedef typename Traits3::DomainType                                DomainType;
+    typedef typename Traits3::DiscreteFunctionType                      DiscreteFunction3Type;
 
-    typedef typename Traits1 :: DiscreteFunctionSpaceType              Space1Type;
-    typedef typename Traits2 :: DiscreteFunctionSpaceType              Space2Type;
-    typedef typename Traits3 :: DiscreteFunctionSpaceType              Space3Type;
-    typedef typename Traits2 :: DestinationType                        Destination2Type;
-    typedef typename Traits3 :: DestinationType                        Destination3Type;
-    typedef Destination3Type                                           DestinationType;
-    typedef Space3Type                                                 SpaceType;
+    typedef typename Traits1::DiscreteFunctionSpaceType                 Space1Type;
+    typedef typename Traits2::DiscreteFunctionSpaceType                 Space2Type;
+    typedef typename Traits3::DiscreteFunctionSpaceType                 Space3Type;
+    typedef typename Traits2::DestinationType                           Destination2Type;
+    typedef typename Traits3::DestinationType                           Destination3Type;
+    typedef Destination3Type                                            DestinationType;
+    typedef Space3Type                                                  SpaceType;
 
-    typedef typename Traits2 :: GridPartType                           GridPartType;
+    typedef typename Traits2::GridPartType                              GridPartType;
 
-    typedef Fem::StartPass< DiscreteFunction3Type, u >                   Pass0Type;
-    typedef LimitDGPass< DiscreteModel1Type, Pass0Type, limitPassId >    Pass1Type;
-    typedef LocalCDGPass< DiscreteModel2Type, Pass1Type, gradPassId >    Pass2Type;
-    typedef LocalCDGPass< DiscreteModel3Type, Pass2Type, advectPassId >  Pass3Type;
+    typedef Fem::StartPass< DiscreteFunction3Type, u >                  Pass0Type;
+    typedef LimitDGPass< DiscreteModel1Type, Pass0Type, limitPassId >   Pass1Type;
+    typedef LocalCDGPass< DiscreteModel2Type, Pass1Type, gradPassId >   Pass2Type;
+    typedef LocalCDGPass< DiscreteModel3Type, Pass2Type, advectPassId > Pass3Type;
 
-    typedef typename Traits::LimiterIndicatorType                      LimiterIndicatorType;
-    typedef typename LimiterIndicatorType::DiscreteFunctionSpaceType   LimiterIndicatorSpaceType;
-    typedef typename Traits :: ExtraParameterTupleType                 ExtraParameterTupleType;
+    typedef typename Traits::LimiterIndicatorType                       LimiterIndicatorType;
+    typedef typename LimiterIndicatorType::DiscreteFunctionSpaceType    LimiterIndicatorSpaceType;
+    typedef typename Traits::ExtraParameterTupleType                    ExtraParameterTupleType;
 
     template <class Limiter, int pOrd>
     struct LimiterCall

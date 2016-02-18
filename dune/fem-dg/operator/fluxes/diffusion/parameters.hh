@@ -47,6 +47,32 @@ namespace Fem
 
   }
 
+  namespace DualDiffusionFlux
+  {
+    /**
+     * \brief Enum of all known primal diffusion flux implementations.
+     *
+     * \ingroup FemDGParameter
+     */
+    enum class Enum
+    {
+      //! average theta flux.
+      average,
+      //! ldg flux.
+      ldg,
+      //! general flux: Parameter selection is done via parameter file!
+      general,
+    };
+
+    //! Contains all known enums for dual diffusion fluxes which can be chosen via parameter file.
+    const Enum        _enums[] = { Enum::average, Enum::ldg };
+    //! Contains all known names of dual diffusion fluxes which can be chosen via parameter file.
+    const std::string _strings[] = { "AVERAGE", "LDG" };
+    //! Number of known primal diffusion fluxes which can be chosen via parameter file.
+    static const int  _size = 2;
+
+  }
+
   /**
    * \brief Namespace containing all parameters to select a lifting for primal diffusion fluxes.
    */
@@ -179,6 +205,54 @@ namespace Fem
 
   };
 
+  /**
+   * \brief Parameter class for primal diffusion flux parameters.
+   *
+   * \ingroup ParameterClass
+   */
+  class DGDualDiffusionFluxParameters
+    : public Fem::LocalParameter< DGDualDiffusionFluxParameters, DGDualDiffusionFluxParameters >
+  {
+  public:
+    typedef DualDiffusionFlux::Enum           IdEnum;
+
+    /**
+     * \brief Constructor
+     *
+     * \param[in] keyPrefix key prefix for parameter file.
+     */
+    DGDualDiffusionFluxParameters( const std::string keyPrefix = "dgdualdiffusionflux." )
+      : keyPrefix_( keyPrefix )
+    {}
+
+    /**
+     * \brief returns name of the flux
+     *
+     * \param[in] mthd enum of primal diffusion flux
+     * \returns string which could be used for the selection of a flux in a parameter file.
+     */
+    static std::string methodNames( const IdEnum& mthd )
+    {
+      for( int i = 0; i < DualDiffusionFlux::_size; i++)
+        if( DualDiffusionFlux::_enums[i] == mthd )
+          return DualDiffusionFlux::_strings[i];
+      assert( false );
+      return "invalid diffusion flux";
+    }
+
+    /**
+     * \brief returns enum of the flux
+     */
+    virtual IdEnum getMethod() const
+    {
+      const int i = Fem::Parameter::getEnum( keyPrefix_ + "method", DualDiffusionFlux::_strings );
+      return DualDiffusionFlux::_enums[i];
+    }
+
+  private:
+    const std::string keyPrefix_;
+
+  };
 
 } // end namespace
 } // end namespace

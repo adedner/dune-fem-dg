@@ -3,6 +3,8 @@
 
 #include "fluxbase.hh"
 #include "dgprimalfluxes.hh"
+#include "ldgflux.hh"
+#include "averageflux.hh"
 
 namespace Dune
 {
@@ -212,6 +214,69 @@ namespace Fem
     void diffusionFluxLiftFactor ( std::ostream& out ) const {}
     void diffusionFluxPenalty ( std::ostream& out ) const {}
   };
+
+
+ //======================= DUAL FLUXES ========================
+
+
+  template <class DiscreteFunctionSpaceImp,
+            class Model,
+            DualDiffusionFlux::Enum id >
+  class DGDualDiffusionFlux;
+
+  template <class DiscreteFunctionSpaceImp,
+            class Model>
+  class DGDualDiffusionFlux<  DiscreteFunctionSpaceImp, Model, DualDiffusionFlux::Enum::average >
+    : public LDGAverageDiffusionFlux< DiscreteFunctionSpaceImp, Model, DGDualDiffusionFluxParameters >
+  {
+    typedef LDGAverageDiffusionFlux< DiscreteFunctionSpaceImp, Model, DGDualDiffusionFluxParameters >
+      BaseType;
+
+  public:
+    typedef DiscreteFunctionSpaceImp                         DiscreteFunctionSpaceType;
+    typedef typename DiscreteFunctionSpaceType::GridPartType GridPartType;
+    typedef typename BaseType::ParameterType                 ParameterType;
+
+    /**
+      * \brief constructor reading parameters
+      */
+    DGDualDiffusionFlux( GridPartType& gridPart,
+                           const Model& model,
+                           const ParameterType& parameters = ParameterType() )
+      : BaseType( gridPart, model, parameters  )
+    {
+    }
+  };
+
+  template <class DiscreteFunctionSpaceImp,
+            class Model>
+  class DGDualDiffusionFlux<  DiscreteFunctionSpaceImp, Model, DualDiffusionFlux::Enum::ldg >
+    : public LDGDiffusionFlux< DiscreteFunctionSpaceImp, Model, DGDualDiffusionFluxParameters >
+  {
+    typedef LDGDiffusionFlux< DiscreteFunctionSpaceImp, Model, DGDualDiffusionFluxParameters >
+      BaseType;
+
+  public:
+    typedef DiscreteFunctionSpaceImp                         DiscreteFunctionSpaceType;
+    typedef typename DiscreteFunctionSpaceType::GridPartType GridPartType;
+    typedef typename BaseType::ParameterType                 ParameterType;
+
+    /**
+      * \brief constructor reading parameters
+      */
+    DGDualDiffusionFlux( GridPartType& gridPart,
+                         const Model& model,
+                         const ParameterType& parameters = ParameterType() )
+      : BaseType( gridPart, model, parameters  )
+    {
+    }
+  };
+
+  //TODO implement general case...
+  template <class DiscreteFunctionSpaceImp,
+            class Model>
+  class DGDualDiffusionFlux<  DiscreteFunctionSpaceImp, Model, DualDiffusionFlux::Enum::general >
+  {};
 
 
 } // end namespace

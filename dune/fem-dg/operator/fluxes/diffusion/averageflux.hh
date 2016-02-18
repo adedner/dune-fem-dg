@@ -18,9 +18,9 @@ namespace Fem
             class ModelImp,
             class FluxParameterImp >
   class LDGAverageDiffusionFlux :
-    public DGDiffusionFluxBase< DiscreteFunctionSpaceImp, ModelImp, FluxParameterImp >
+    public LDGDiffusionFluxBase< DiscreteFunctionSpaceImp, ModelImp, FluxParameterImp >
   {
-    typedef DGDiffusionFluxBase< DiscreteFunctionSpaceImp, ModelImp, FluxParameterImp > BaseType;
+    typedef LDGDiffusionFluxBase< DiscreteFunctionSpaceImp, ModelImp, FluxParameterImp > BaseType;
   public:
     typedef DiscreteFunctionSpaceImp DiscreteFunctionSpaceType;
 
@@ -59,11 +59,11 @@ namespace Fem
     // no copying
     LDGAverageDiffusionFlux(const LDGAverageDiffusionFlux& other);
   protected:
-    using BaseType :: determineDirection;
-    using BaseType :: model_;
-    using BaseType :: cflDiffinv_;
-    using BaseType :: numericalFlux ;
-    using BaseType :: parameter ;
+    using BaseType::determineDirection;
+    using BaseType::model_;
+    using BaseType::cflDiffinv_;
+    using BaseType::numericalFlux ;
+    using BaseType::parameter ;
 
 
   public:
@@ -108,31 +108,25 @@ namespace Fem
     /**
      * \brief flux function on interfaces between cells
      *
-     * @param intersection intersection
-     * @param time current time given by TimeProvider
-     * @param x coordinate of required evaluation local to \c intersection
-     * @param uLeft DOF evaluation on this side of \c intersection
-     * @param uRight DOF evaluation on the other side of \c intersection
-     * @param gLeft result for this side of \c intersection
-     * @param gRight result for the other side of \c intersection
+     * \param intersection intersection
+     * \param time current time given by TimeProvider
+     * \param x coordinate of required evaluation local to \c intersection
+     * \param uLeft DOF evaluation on this side of \c intersection
+     * \param uRight DOF evaluation on the other side of \c intersection
+     * \param gLeft result for this side of \c intersection
+     * \param gRight result for the other side of \c intersection
      * \return wave speed estimate (multiplied with the integration element of the intersection).
      *         To estimate the time step |T|/wave is used
      */
-    template <class QuadratureImp>
-    double gradientNumericalFlux(
-                        const Intersection& intersection,
-                        const EntityType& inside,
-                        const EntityType& outside,
-                        const double time,
-                        const QuadratureImp& faceQuadInner,
-                        const QuadratureImp& faceQuadOuter,
-                        const int quadPoint,
-                        const RangeType& uLeft,
-                        const RangeType& uRight,
-                        GradientRangeType& gLeft,
-                        GradientRangeType& gRight,
-                        GradientJacobianType& gDiffLeft,
-                        GradientJacobianType& gDiffRight) const
+    template <class LocalEvaluation>
+    double gradientNumericalFlux(const LocalEvaluation& left,
+                                 const LocalEvaluation& right,
+                                 const RangeType& uLeft,
+                                 const RangeType& uRight,
+                                 GradientRangeType& gLeft,
+                                 GradientRangeType& gRight,
+                                 GradientJacobianType& gDiffLeft,
+                                 GradientJacobianType& gDiffRight) const
     {
       const FaceDomainType& x = faceQuadInner.localPoint( quadPoint );
       const DomainType normal = intersection.integrationOuterNormal( x );
@@ -149,12 +143,7 @@ namespace Fem
       {
         diffTimeStep =
           /* central differences (might be suboptimal) */
-          model_.diffusion(inside,         /* inside entity */
-                           time,           /* for time dependent diffusion */
-                           faceQuadInner.point( quadPoint ),      /* inside point on intersection */
-                           uLeft,          /* { u_(x^-) } */
-                           diffmatrix      /* return diffusion tensor */
-                          );
+          model_.diffusion(left, uLeft, diffmatrix );
 
         diffmatrix.mv(normal, gLeft );
         gLeft *= thetaLeft ;
@@ -165,12 +154,7 @@ namespace Fem
       if( thetaRight > 0 )
       {
         const double diffStepRight =
-          model_.diffusion(outside,       /* outside entity */
-                           time,          /* for time dependent diffusion */
-                           faceQuadOuter.point( quadPoint ),  /* outside point on intersection */
-                           uRight,        /* { u_(x^+) } */
-                           diffmatrix     /* return diffusion tensor */
-                          );
+          model_.diffusion( right, uRight, diffmatrix )
 
         diffmatrix.mv(normal, gRight);
 
@@ -192,21 +176,16 @@ namespace Fem
       return diffTimeStep * cflDiffinv_;
     }
 
-    template <class QuadratureImp>
-    double gradientBoundaryFlux(const Intersection& intersection,
-                                const EntityType& inside,
-                                const double time,
-                                const QuadratureImp& faceQuadInner,
-                                const int quadPoint,
+
+    template <class LocalEvaluation>
+    double gradientBoundaryFlux(const LocalEvaluation& left,
                                 const RangeType& uLeft,
                                 const RangeType& uBnd,
                                 GradientRangeType& gLeft,
                                 GradientJacobianType& gDiffLeft) const
     {
-      const FaceDomainType& x = faceQuadInner.localPoint( quadPoint );
-      const DomainType normal = intersection.integrationOuterNormal(x);
-
-      const DomainType& xglInside  = faceQuadInner.point( quadPoint );
+      const FaceDomainType& x = left.localPosition();
+      const DomainType normal = left.intersection().integrationOuterNormal( x );
 
       // get factor for each side
       const double thetaLeft  = getTheta( intersection );
@@ -223,12 +202,7 @@ namespace Fem
         uVal.axpy( thetaRight, uBnd );
 
       const double diffTimeStep =
-            model_.diffusion(inside,
-                             time,
-                             xglInside,
-                             uVal, // is either uLeft or uBnd
-                             diffmatrix
-                            );
+            model_.diffusion(left, uVal, diffmatrix );
 
       diffmatrix.mv(normal, gLeft);
 
@@ -243,35 +217,31 @@ namespace Fem
     /**
      * \brief flux function on interfaces between cells
      *
-     * @param intersection intersection
-     * @param time current time given by TimeProvider
-     * @param x coordinate of required evaluation local to \c intersection
-     * @param uLeft DOF evaluation on this side of \c intersection
-     * @param uRight DOF evaluation on the other side of \c intersection
-     * @param gLeft result for this side of \c intersection
-     * @param gRight result for the other side of \c intersection
+     * \param left local evaluation
+     * \param right local evaluation
+     * \param uLeft DOF evaluation on this side of \c intersection
+     * \param uRight DOF evaluation on the other side of \c intersection
+     * \param gLeft result for this side of \c intersection
+     * \param gRight result for the other side of \c intersection
      * \return wave speed estimate (multiplied with the integration element of the intersection).
      *         To estimate the time step |T|/wave is used
      */
-    template <class QuadratureImp>
-    double numericalFlux(const Intersection& intersection,
-                         const EntityType& inside,
-                         const EntityType& outside,
-                         const double time,
-                         const QuadratureImp& faceQuadInner,
-                         const QuadratureImp& faceQuadOuter,
-                         const int quadPoint,
+    template <class LocalEvaluation>
+    double numericalFlux(const LocalEvaluation& left,
+                         const LocalEvaluation& right,
                          const RangeType& uLeft,
                          const RangeType& uRight,
+                         const JacobianRangeType& jacLeft,
+                         const JacobianRangeType& jacRight,
                          const GradientRangeType& sigmaLeft,
                          const GradientRangeType& sigmaRight,
                          RangeType& gLeft,
                          RangeType& gRight,
                          JacobianRangeType& gDiffLeft, // not used here (only for primal passes)
-                         JacobianRangeType& gDiffRight ) const
+                         JacobianRangeType& gDiffRight )
     {
-      const FaceDomainType& x = faceQuadInner.localPoint( quadPoint );
-      const DomainType normal = intersection.integrationOuterNormal(x);
+      const FaceDomainType& x = left.localPosition();
+      const DomainType normal = left.intersection().integrationOuterNormal( x );
 
      /**********************************
       * Diffusion sigma Flux (Pass 2)  *
@@ -282,17 +252,13 @@ namespace Fem
 
       /* Central differences */
       const double diffTimeLeft =
-        model_.diffusion( inside, time,
-                          faceQuadInner.point( quadPoint ),
-                          uLeft, sigmaLeft, diffmatrix);
+        model_.diffusion( left, uLeft, sigmaLeft, diffmatrix);
 
       RangeType diffflux;
       diffmatrix.mv(normal, diffflux);
 
       const double diffTimeRight =
-        model_.diffusion( outside, time,
-                          faceQuadOuter.point( quadPoint ),
-                          uRight, sigmaRight, diffmatrix);
+        model_.diffusion( right, uRight, sigmaRight, diffmatrix);
       diffmatrix.umv(normal, diffflux);
       diffflux *= 0.5;
 
@@ -324,31 +290,24 @@ namespace Fem
     /**
      * \brief same as numericalFlux() but for fluxes over boundary interfaces
      */
-    template <class QuadratureImp>
-    double boundaryFlux(const Intersection& intersection,
-                        const EntityType& inside,
-                        const double time,
-                        const QuadratureImp& faceQuadInner,
-                        const int quadPoint,
+    template <class LocalEvaluation>
+    double boundaryFlux(const LocalEvaluation& left,
                         const RangeType& uLeft,
                         const RangeType& uRight,
                         const GradientRangeType& sigmaLeft,
                         RangeType& gLeft,
-                        JacobianRangeType& gDiffLeft) const   /*@LST0E@*/
+                        JacobianRangeType& gDiffLeft )
     {
       // get local point
-      const FaceDomainType& x = faceQuadInner.localPoint( quadPoint );
-      const DomainType normal = intersection.integrationOuterNormal(x);
-      const DomainType& xglInside = faceQuadInner.point( quadPoint );
+      const FaceDomainType& x = left.localPosition();
+      const DomainType normal = left.intersection().integrationOuterNormal( x );
 
       /****************************/
       /* Diffusion (Pass 2)       */
       /****************************/
       JacobianRangeType diffmatrix;
       double diffTimeStep =
-        model_.diffusion(inside, time,
-                         xglInside,
-                         uLeft, sigmaLeft, diffmatrix);
+        model_.diffusion(left, uLeft, sigmaLeft, diffmatrix);
       diffmatrix.mv(normal, gLeft);
 
       // add penalty term

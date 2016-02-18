@@ -59,38 +59,38 @@ namespace Fem
     enum { evaluateJacobian = false };
     typedef DiscreteFunctionSpaceImp DiscreteFunctionSpaceType;
 
-    typedef FluxParameterImp                       ParameterType;
-    typedef typename ParameterType::IdEnum         IdEnum;
-    typedef typename ParameterType::LiftingEnum    LiftingEnum;
+    typedef FluxParameterImp                                         ParameterType;
+    typedef typename ParameterType::IdEnum                           IdEnum;
+    typedef typename ParameterType::LiftingEnum                      LiftingEnum;
 
-    enum { dimDomain = DiscreteFunctionSpaceType :: dimDomain };
-    enum { dimRange  = DiscreteFunctionSpaceType :: dimRange };
+    enum { dimDomain = DiscreteFunctionSpaceType::dimDomain };
+    enum { dimRange  = DiscreteFunctionSpaceType::dimRange };
 
-    typedef typename DiscreteFunctionSpaceType :: DomainType           DomainType;
-    typedef typename DiscreteFunctionSpaceType :: RangeFieldType       RangeFieldType;
-    typedef typename DiscreteFunctionSpaceType :: DomainFieldType      DomainFieldType;
-    typedef typename DiscreteFunctionSpaceType :: RangeType            RangeType;
-    typedef typename DiscreteFunctionSpaceType :: JacobianRangeType    JacobianRangeType;
+    typedef typename DiscreteFunctionSpaceType::DomainType           DomainType;
+    typedef typename DiscreteFunctionSpaceType::RangeFieldType       RangeFieldType;
+    typedef typename DiscreteFunctionSpaceType::DomainFieldType      DomainFieldType;
+    typedef typename DiscreteFunctionSpaceType::RangeType            RangeType;
+    typedef typename DiscreteFunctionSpaceType::JacobianRangeType    JacobianRangeType;
 
-    typedef FieldVector< DomainFieldType, dimDomain-1 > FaceDomainType;
+    typedef FieldVector< DomainFieldType, dimDomain-1 >              FaceDomainType;
 
-    typedef typename DiscreteFunctionSpaceType :: GridPartType         GridPartType;
-    typedef typename GridPartType :: IntersectionIteratorType          IntersectionIterator;
-    typedef typename IntersectionIterator :: Intersection              Intersection;
-    typedef typename GridPartType :: GridType                          GridType;
-    typedef typename DiscreteFunctionSpaceType :: EntityType           EntityType;
+    typedef typename DiscreteFunctionSpaceType::GridPartType         GridPartType;
+    typedef typename GridPartType::IntersectionIteratorType          IntersectionIterator;
+    typedef typename IntersectionIterator::Intersection              Intersection;
+    typedef typename GridPartType::GridType                          GridType;
+    typedef typename DiscreteFunctionSpaceType::EntityType           EntityType;
     enum { dimGradRange = dimDomain * dimRange };
-    enum { polOrd = DiscreteFunctionSpaceType :: polynomialOrder };
+    enum { polOrd = DiscreteFunctionSpaceType::polynomialOrder };
 
     // type of gradient space
-    typedef typename DiscreteFunctionSpaceType ::
-        template ToNewDimRange< dimGradRange > :: Type   DiscreteGradientSpaceType;
+    typedef typename DiscreteFunctionSpaceType::
+        template ToNewDimRange< dimGradRange >::Type                 DiscreteGradientSpaceType;
 
-    typedef typename DiscreteGradientSpaceType :: RangeType GradientType;
+    typedef typename DiscreteGradientSpaceType::RangeType            GradientType;
 
     typedef Fem::TemporaryLocalFunction< DiscreteGradientSpaceType > LiftingFunctionType;
 
-    typedef Fem::CachingQuadrature< GridPartType, 0> VolumeQuadratureType ;
+    typedef Fem::CachingQuadrature< GridPartType, 0>                 VolumeQuadratureType ;
 
     DomainType upwindDefault() const
     {
@@ -268,6 +268,169 @@ namespace Fem
     const double dimensionFactor_;
     const double nonconformingFactor_;
   }; // end DGPrimalDiffusionFlux
+
+
+  /**
+   * \brief A diffusion flux for the LDG scheme.
+   *
+   * \ingroup DiffusionFluxes
+   */
+  template <class DiscreteFunctionSpaceImp,
+            class ModelImp,
+            class FluxParameterImp >
+  class LDGDiffusionFluxBase :
+    public DGDiffusionFluxBase< DiscreteFunctionSpaceImp, ModelImp, FluxParameterImp >
+  {
+    typedef DGDiffusionFluxBase< DiscreteFunctionSpaceImp, ModelImp, FluxParameterImp > BaseType;
+  public:
+    typedef DiscreteFunctionSpaceImp                DiscreteFunctionSpaceType;
+
+    enum { dimDomain = DiscreteFunctionSpaceType::dimDomain };
+    enum { dimRange  = DiscreteFunctionSpaceType::dimRange };
+
+    typedef typename BaseType::DomainType               DomainType;
+    typedef typename BaseType::RangeFieldType           RangeFieldType;
+    typedef typename BaseType::DomainFieldType          DomainFieldType;
+    typedef typename BaseType::RangeType                RangeType;
+    typedef typename BaseType::JacobianRangeType        JacobianRangeType;
+
+    typedef typename BaseType::FaceDomainType           FaceDomainType;
+
+    typedef typename BaseType::GridPartType             GridPartType;
+    typedef typename BaseType::IntersectionIteratorType IntersectionIterator;
+    typedef typename BaseType::Intersection             Intersection;
+    typedef typename BaseType::GridType                 GridType;
+    typedef typename BaseType::EntityType               EntityType;
+    enum { dimGradRange = dimDomain * dimRange };
+    enum { polOrd = DiscreteFunctionSpaceType::polynomialOrder };
+
+    typedef typename BaseType::ParameterType             ParameterType;
+
+    // type of gradient space
+    typedef typename DiscreteFunctionSpaceType::
+      template ToNewDimRange< dimGradRange >::Type       DiscreteGradientSpaceType;
+
+    typedef typename DiscreteGradientSpaceType::RangeType GradientRangeType;
+    typedef typename DiscreteGradientSpaceType::JacobianRangeType GradientJacobianType;
+
+    // jacobians of the functions do not have to be evaluated for this flux
+    enum { evaluateJacobian = false };
+
+  private:
+    // no copying
+    LDGDiffusionFluxBase(const LDGDiffusionFluxBase& other);
+  protected:
+    using BaseType::determineDirection;
+    using BaseType::model_;
+    using BaseType::cflDiffinv_;
+    using BaseType::numericalFlux ;
+    using BaseType::parameter ;
+
+
+  public:
+    /**
+     * \brief constructor
+     */
+     LDGDiffusionFluxBase(GridPartType& gridPart,
+                          const ModelImp& mod,
+                          const ParameterType& param ) :
+      BaseType( mod, true, param )
+    {}
+
+    //! returns true if lifting has to be calculated
+    const bool hasLifting () const { return false; }
+
+    /**
+     * \brief flux function on interfaces between cells
+     *
+     * \param intersection intersection
+     * \param time current time given by TimeProvider
+     * \param x coordinate of required evaluation local to \c intersection
+     * \param uLeft DOF evaluation on this side of \c intersection
+     * \param uRight DOF evaluation on the other side of \c intersection
+     * \param gLeft result for this side of \c intersection
+     * \param gRight result for the other side of \c intersection
+     * \return wave speed estimate (multiplied with the integration element of the intersection).
+     *         To estimate the time step |T|/wave is used
+     */
+    template <class LocalEvaluation>
+    double gradientNumericalFlux(const LocalEvaluation& left,
+                                 const LocalEvaluation& right,
+                                 const RangeType& uLeft,
+                                 const RangeType& uRight,
+                                 GradientRangeType& gLeft,
+                                 GradientRangeType& gRight,
+                                 GradientJacobianType& gDiffLeft,
+                                 GradientJacobianType& gDiffRight) const
+    {
+      assert( false );
+      abort();
+      return 0.0;
+    }
+
+
+    template <class LocalEvaluation>
+    double gradientBoundaryFlux(const LocalEvaluation& left,
+                                const RangeType& uLeft,
+                                const RangeType& uBnd,
+                                GradientRangeType& gLeft,
+                                GradientJacobianType& gDiffLeft) const
+    {
+      assert( false );
+      abort();
+      return 0.0;
+    }
+
+
+    /**
+     * \brief flux function on interfaces between cells
+     *
+     * \param left local evaluation
+     * \param right local evaluation
+     * \param uLeft DOF evaluation on this side of \c intersection
+     * \param uRight DOF evaluation on the other side of \c intersection
+     * \param gLeft result for this side of \c intersection
+     * \param gRight result for the other side of \c intersection
+     * \return wave speed estimate (multiplied with the integration element of the intersection).
+     *         To estimate the time step |T|/wave is used
+     */
+    template <class LocalEvaluation>
+    double numericalFlux(const LocalEvaluation& left,
+                         const LocalEvaluation& right,
+                         const RangeType& uLeft,
+                         const RangeType& uRight,
+                         const JacobianRangeType& jacLeft,
+                         const JacobianRangeType& jacRight,
+                         const GradientRangeType& sigmaLeft,
+                         const GradientRangeType& sigmaRight,
+                         RangeType& gLeft,
+                         RangeType& gRight,
+                         JacobianRangeType& gDiffLeft, // not used here (only for primal passes)
+                         JacobianRangeType& gDiffRight )
+    {
+      assert( false );
+      abort();
+      return 0.0;
+    }
+
+
+    /**
+     * \brief same as numericalFlux() but for fluxes over boundary interfaces
+     */
+    template <class LocalEvaluation>
+    double boundaryFlux(const LocalEvaluation& left,
+                        const RangeType& uLeft,
+                        const RangeType& uRight,
+                        const GradientRangeType& sigmaLeft,
+                        RangeType& gLeft,
+                        JacobianRangeType& gDiffLeft )
+    {
+      assert( false );
+      abort();
+      return 0.0;
+    }
+  }; // end LDGAverageDiffusionFlux
+
 
 } // end namespace
 } // end namespace

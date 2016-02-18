@@ -572,6 +572,21 @@ namespace Fem
     typedef HierarchicLegendreDiscontinuousGalerkinSpace< FunctionSpaceImp, GridPartImp, polOrder, CachingStorage > type;
   };
 
+  template< class ModelImp, class DiscreteFunctionSpaceImp,
+            PrimalDiffusionFlux::Enum diffFluxId, DualDiffusionFlux::Enum dualDiffFluxId, Formulation::Enum form >
+  struct DiffusionFluxSelector;
+
+  template< class ModelImp, class DiscreteFunctionSpaceImp, PrimalDiffusionFlux::Enum diffFluxId, DualDiffusionFlux::Enum dualDiffFluxId >
+  struct DiffusionFluxSelector< ModelImp, DiscreteFunctionSpaceImp, diffFluxId, dualDiffFluxId, Formulation::Enum::primal >
+  {
+    typedef DGPrimalDiffusionFlux< DiscreteFunctionSpaceImp, ModelImp, diffFluxId > type;
+  };
+
+  template< class ModelImp, class DiscreteFunctionSpaceImp, PrimalDiffusionFlux::Enum diffFluxId, DualDiffusionFlux::Enum dualDiffFluxId >
+  struct DiffusionFluxSelector< ModelImp, DiscreteFunctionSpaceImp, diffFluxId, dualDiffFluxId, Formulation::Enum::dual >
+  {
+    typedef DGDualDiffusionFlux< DiscreteFunctionSpaceImp, ModelImp, dualDiffFluxId > type;
+  };
 
 }
 }

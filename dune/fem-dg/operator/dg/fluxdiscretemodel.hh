@@ -47,28 +47,28 @@ namespace Fem
     typedef Fem::DGDiscreteModelDefaultWithInsideOutside
               < GradientTraits< OpTraits, passUId >,  passUId > BaseType;
 
-    using BaseType :: inside;
-    using BaseType :: outside;
+    using BaseType::inside;
+    using BaseType::outside;
 
     // This type definition allows a convenient access to arguments of passes.
     std::integral_constant< int, passUId > uVar;
 
   public:
-    typedef GradientTraits< OpTraits, passUId >        Traits;
-    typedef typename Traits :: ModelType                             ModelType;
-    typedef typename Traits :: FluxType                              NumFluxType;
+    typedef GradientTraits< OpTraits, passUId >                    Traits;
+    typedef typename Traits::ModelType                             ModelType;
+    typedef typename Traits::DiffusionFluxType                     DiffusionFluxType;
 
-    typedef typename Traits :: DomainType                            DomainType;
-    typedef typename Traits :: FaceDomainType                        FaceDomainType;
-    typedef typename Traits :: RangeType                             RangeType;
-    typedef typename Traits :: GridType                              GridType;
-    typedef typename Traits :: JacobianRangeType                     JacobianRangeType;
-    typedef typename Traits :: GridPartType
-              :: IntersectionIteratorType                            IntersectionIterator;
-    typedef typename IntersectionIterator :: Intersection            Intersection;
-    typedef typename BaseType :: EntityType                          EntityType;
+    typedef typename ModelType::DomainType                         DomainType;
+    typedef typename ModelType::FaceDomainType                     FaceDomainType;
+    typedef typename ModelType::RangeType                          RangeType;
+    typedef typename ModelType::JacobianRangeType                  JacobianRangeType;
+    typedef typename Traits::GridType                              GridType;
+    typedef typename Traits::GridPartType
+              ::IntersectionIteratorType                           IntersectionIterator;
+    typedef typename IntersectionIterator::Intersection            Intersection;
+    typedef typename BaseType::EntityType                          EntityType;
 
-    enum { evaluateJacobian = NumFluxType :: evaluateJacobian };
+    enum { evaluateJacobian = DiffusionFluxType::evaluateJacobian };
 
     // necessary for TESTOPERATOR
     // not sure how it works for dual operators!
@@ -79,7 +79,7 @@ namespace Fem
      * \brief constructor
      */
     GradientModel(const ModelType& mod,
-                  const NumFluxType& numf) :
+                  const DiffusionFluxType& numf) :
       model_( mod ),
       gradientFlux_( numf ),
       cflDiffinv_( 2.0 * ( Traits::polynomialOrder + 1) )
@@ -217,7 +217,7 @@ namespace Fem
 
   private:
     const ModelType&   model_;
-    const NumFluxType& gradientFlux_;
+    const DiffusionFluxType& gradientFlux_;
     const double cflDiffinv_;
   };
 
@@ -275,14 +275,21 @@ namespace Fem
     std::integral_constant< int, passGradId> sigmaVar;
 
   public:
-    enum { dimDomain = Traits::dimDomain };
-    enum { dimRange  = Traits::dimRange };
+
+    typedef typename Traits::ModelType                       ModelType;
+
+    enum { dimRange  = ModelType::dimRange };
+    enum { dimDomain = ModelType::Traits::dimDomain };
 
     enum { advection = advectionPartExists };
     enum { diffusion = diffusionPartExists };
 
-    typedef typename Traits::DomainType         DomainType;
-    typedef typename Traits::FaceDomainType     FaceDomainType;
+    typedef typename BaseType::DomainType                    DomainType;
+    typedef typename ModelType::FaceDomainType               FaceDomainType;
+    typedef typename BaseType::RangeFieldType                RangeFieldType;
+    typedef typename BaseType::DomainFieldType               DomainFieldType;
+    typedef typename BaseType::RangeType                     RangeType;
+    typedef typename BaseType::JacobianRangeType             JacobianRangeType;
 
 #if defined TESTOPERATOR
     enum { ApplyInverseMassOperator = false };
@@ -295,14 +302,8 @@ namespace Fem
     typedef typename GridPartType::IntersectionIteratorType   IntersectionIterator;
     typedef typename IntersectionIterator::Intersection       Intersection;
     typedef typename BaseType::EntityType                     EntityType;
-    typedef typename Traits::RangeFieldType                   RangeFieldType;
-    typedef typename Traits::DomainFieldType                  DomainFieldType;
-    typedef typename Traits::RangeType                        RangeType;
-    typedef typename Traits::JacobianRangeType                JacobianRangeType;
-
     typedef typename Traits::DiscreteFunctionSpaceType        DiscreteFunctionSpaceType;
 
-    typedef typename Traits::ModelType                        ModelType;
     typedef typename Traits::AdvectionFluxType                AdvectionFluxType;
     typedef typename Traits::DiffusionFluxType                DiffusionFluxType;
     enum { evaluateJacobian = false };
@@ -445,7 +446,7 @@ namespace Fem
       double diffTimeStep = 0.0;
 
       bool hasBoundaryValue =
-        model_.hasBoundaryValue( left.intersection(), left.time(), left.localPosition() );
+        model_.hasBoundaryValue( left );
 
       if( diffusion && hasBoundaryValue )
       {
