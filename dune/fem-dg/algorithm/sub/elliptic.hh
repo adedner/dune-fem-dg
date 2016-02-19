@@ -151,17 +151,20 @@ namespace Fem
   };
 
 
-  template< class GridPartImp, class DiscreteFunctionImp, class SigmaFunctionSpaceImp, class AssemblerImp, int polOrder>
+  template< class DiscreteFunctionImp, class AssemblerImp, int polOrder>
   class PoissonSigmaEstimator
   {
   public:
 
-    typedef DiscreteFunctionImp             DiscreteFunctionType;
-    typedef SigmaFunctionSpaceImp           SigmaFunctionSpaceType;
-    typedef GridPartImp                     GridPartType;
-    typedef typename GridPartType::GridType GridType;
-    typedef AssemblerImp                    AssemblerType;
+    typedef DiscreteFunctionImp                                      DiscreteFunctionType;
+    typedef typename DiscreteFunctionType::DiscreteFunctionSpaceType DiscreteFunctionSpaceType;
+    typedef DiscreteFunctionType::GridPartType                       GridPartType;
+    typedef typename GridPartType::GridType                          GridType;
+    typedef AssemblerImp                                             AssemblerType;
+    static const int polynomialOrder = polOrder;
 
+    typedef typename DiscreteFunctionSpaceType ::
+      template ToNewDimRange< dimension * ModelType::dimRange >::NewFunctionSpaceType     SigmaFunctionSpaceType;
 
     PoissonSigmaEstimator( GridPartType& gridPart,
                            const DiscreteFunctionType& solution,
@@ -428,15 +431,14 @@ namespace Fem
   };
 
 
-
-  template< class GridImp, int polOrder, class DiscreteFunctionSpaceImp, class EstimatorImp = NoEstimator<polOrder> >
+  template< int polOrder, class DiscreteFunctionSpaceImp, class EstimatorImp = NoEstimator<polOrder> >
   class PAdaptivity
   {
 
   public:
-    typedef GridImp                         GridType;
+    typedef DiscreteFunctionSpaceImp                     DiscreteFunctionSpaceType;
+    typedef typename DiscreteFunctionSpaceType::GridType GridType;
     typedef EstimatorImp                    EstimatorType;
-    typedef DiscreteFunctionSpaceImp        DiscreteFunctionSpaceType;
 
 
     struct PolOrderStructure
@@ -515,7 +517,7 @@ namespace Fem
 
 
     template< class ProblemImp >
-    bool adaptation( const ProblemImp& problem, const double tolerance)
+    bool estimateMark( const ProblemImp& problem, const double tolerance)
     {
 #ifdef PADAPTSPACE
       // resize container
@@ -549,6 +551,90 @@ namespace Fem
     const DiscreteFunctionSpaceType& space_;
     EstimatorType              estimator_;
 
+  };
+
+
+  /**
+   * \brief Adaptation indicator doing no indication and marking of the entities.
+   */
+  template< class EstimatorImp, class SigmaEstimatorImp >
+  class PAdaptIndicator
+  {
+    typedef SigmaEstimatorImp                                            SigmaEstimatorType;
+    typedef typename SigmaEstimatorType::DiscreteFunctionType            DiscreteFunctionType;
+    typedef typename SigmaEstimatorType::AssemblerType                   AssemblerType;
+    typedef typename SigmaEstimatorType::SigmaFunctionSpaceType          SigmaFunctionSpaceType;
+    typedef typename DiscreteFunctionType::DiscreteFunctionSpaceType     DiscreteFunctionType;
+    typedef typename DiscreteFunctionType::GridPartType                  GridPartType;
+    typedef typename GridPartType::GridType                              GridType;
+    static const int polOrder = SigmaEstimatorType::polynomialOrder;
+
+    typedef PAdaptivity< polOrder, DiscreteFunctionSpaceType, EstimatorImp > PAdaptivityType;
+
+    enum { dimension = GridType::dimension  };
+
+  public:
+   typedef uint64_t                          UInt64Type;
+
+    PAdaptivity( GridType& grid, const DiscreteFunctionType& solution )
+      : pAdapt_( grid, solution.space() ),
+        sigmaEstimator_( solution.gridPart(), solution, assembler_, name() )
+    {}
+
+    bool adaptive() const { return false; }
+
+    size_t numberOfElements() const { return 0; }
+
+    UInt64Type globalNumberOfElements() const { return 0; }
+
+    template< class TimeProviderImp >
+    void setAdaptation( TimeProviderImp& tp )
+    {
+    }
+
+    void preAdapt()
+    {
+      pAdapt_.prepare();
+    }
+
+    void estimateMark( const bool initialAdapt = false )
+    {
+      // calculate new sigma
+      sigmaEstimator_.update();
+
+      pAdapt_.estimateMark( problem(), tolerance );
+    }
+
+    void postAdapt()
+    {
+    }
+
+    void finalize()
+    {
+    }
+
+    int minNumberOfElements() const { return 0; }
+
+    int maxNumberOfElements() const { return 0; }
+
+    const int finestLevel() const { return 0; }
+
+    // return some info
+    const SigmaFunctionType& sigma()
+    {
+      return sigmaEstimator_.sigma()
+    }
+
+  private:
+
+    //TODO use this method!
+    void closure()
+    {
+      pAdapt_.closure();
+    }
+
+    PAdaptivityType   pAdapt_;
+    SigmaEstimatorType sigmaEstimator_;
   };
 
 
@@ -600,18 +686,12 @@ namespace Fem
 
     enum { dimension = GridType::dimension  };
 
-    typedef typename DiscreteFunctionSpaceType ::
-      template ToNewDimRange< dimension * ModelType::dimRange >::NewFunctionSpaceType SigmaFunctionSpaceType;
-
-    typedef PoissonSigmaEstimator< GridPartType, DiscreteFunctionType, SigmaFunctionSpaceType, AssemblerType, polOrder > PoissonSigmaEstimatorType;
-
     typedef typename  BaseType::AnalyticalTraits           AnalyticalTraits;
 
     typedef typename BaseType::IOTupleType                 IOTupleType;
 
     typedef typename BaseType::TimeProviderType            TimeProviderType;
 
-    typedef PAdaptivity< GridType, polOrder, DiscreteFunctionSpaceType >        PAdaptivityType;
 
     using BaseType::problem;
     using BaseType::model;
@@ -632,10 +712,9 @@ namespace Fem
       space_( container_.space() ),
       assembler_( container_, model() ),
       matrix_( container_.matrix() ),
-      pAdapt_( grid, container_.space() ),
+      adaptIndicator_( grid, container_.solution() /* TODO add arguments*/ ),
       step_( 0 ),
-      time_( 0 ),
-      poissonSigmaEstimator_( new PoissonSigmaEstimatorType( container_.gridPart(), solution(), assembler_, name() ) )
+      time_( 0 )
     {
       std::string gridName = Fem::gridName( grid );
       if( gridName == "ALUGrid" || gridName == "ALUConformGrid" || gridName == "ALUSimplexGrid" )
@@ -653,15 +732,6 @@ namespace Fem
     void virtual setTime ( const double time ) override
     {
       time_ = time;
-    }
-
-    bool adaptation ( const double tolerance)
-    {
-      return pAdapt_.adaptation( problem(), tolerance );
-    }
-    void closure()
-    {
-      pAdapt_.closure();
     }
 
     const AssemblerType& assembler () const
@@ -699,21 +769,26 @@ namespace Fem
       return std::make_shared< SolverType >(*matrix_, reduction, absLimit );
     }
 
+    //ADAPTATION
+    virtual AdaptIndicatorType* adaptIndicator()
+    {
+      return adaptIndicator.get();
+    }
+    virtual AdaptationDiscreteFunctionType* adaptationSolution ()
+    {
+      return solution();
+    }
+
     //! default time loop implementation, overload for changes
     virtual void doPreSolve ( const int loop ) override
     {
-      pAdapt_.prepare();
-
       BaseType::doPreSolve( loop );
-
-      // calculate new sigma
-      poissonSigmaEstimator_->update();
     }
 
     //! finalize computation by calculating errors and EOCs
     virtual void doFinalize ( const int loop ) override
     {
-      AnalyticalTraits::addEOCErrors( solution(), model(), problem().exactSolution(), poissonSigmaEstimator_->sigma() );
+      AnalyticalTraits::addEOCErrors( solution(), model(), problem().exactSolution(), adaptIndicator()->sigma() );
     }
 
 
@@ -726,10 +801,9 @@ namespace Fem
     AssemblerType                                assembler_;
 
     std::shared_ptr< OperatorType >              matrix_;
-    PAdaptivityType                              pAdapt_;
+    std::unique_ptr< AdaptIndicatorType >        adaptIndicator_;
     int                                          step_;
     double                                       time_;
-    std::unique_ptr< PoissonSigmaEstimatorType > poissonSigmaEstimator_;
 
   };
 
