@@ -49,6 +49,7 @@ namespace Fem
 
     typedef Dune::Fem::SolverMonitorCaller< SubAlgorithmTupleType >        SolverMonitorCallerType;
     typedef Dune::Fem::DataWriterCaller< SubAlgorithmTupleType >           DataWriterCallerType;
+    typedef Dune::Fem::AdaptCaller< SubAlgorithmTupleType >                AdaptCallerType;
 
     typedef typename DataWriterCallerType::IOTupleType                     IOTupleType;
   };
@@ -71,6 +72,7 @@ namespace Fem
     typedef typename BaseType::IOTupleType                              IOTupleType;
     typedef typename BaseType::SolverMonitorCallerType                  SolverMonitorCallerType;
     typedef typename Traits::DataWriterCallerType                       DataWriterCallerType;
+    typedef typename Traits::AdaptCallerType                            AdaptCallerType;
 
     typedef uint64_t                                                    UInt64Type ;
 
@@ -134,7 +136,8 @@ namespace Fem
     : BaseType( grid, name ),
       tuple_( SteadyStateCreatorType< SubAlgorithmTupleType, GridType >::apply( grid ) ),
       solverMonitorCaller_( tuple_ ),
-      dataWriterCaller_( tuple_ )
+      dataWriterCaller_( tuple_ ),
+      adaptCaller_( tuple_ )
     {}
 
     virtual IOTupleType dataTuple ()
@@ -166,6 +169,7 @@ namespace Fem
     virtual void initialize ( const int loop )
     {
       ForLoopType< Initialize >::apply( tuple_, loop );
+      adaptCaller_.initializeEnd( this, loop /*, tp */ );
     }
 
     virtual void preSolve( const int loop )
@@ -177,6 +181,7 @@ namespace Fem
     {
       initialize( loop );
       preSolve( loop );
+      adaptCaller_.solveStart( this, loop /*, tp*/ );
       ForLoopType< Solve >::apply( tuple_, loop );
       postSolve( loop );
       finalize( loop );
@@ -189,6 +194,7 @@ namespace Fem
 
     void finalize ( const int loop )
     {
+      adaptCaller_.finalizeStart( this, loop /*, tp*/ );
       ForLoopType< Finalize >::apply( tuple_, loop );
     }
 
@@ -197,6 +203,8 @@ namespace Fem
     SubAlgorithmTupleType          tuple_;
     SolverMonitorCallerType        solverMonitorCaller_;
     DataWriterCallerType           dataWriterCaller_;
+    AdaptCallerType                adaptCaller_;
+
   };
 
 }  // namespace Fem
