@@ -124,7 +124,7 @@ namespace Fem
       private:
         //TODO improve
         typedef DiscreteFunctionType SigmaFunctionType;
-        typedef ErrorEstimator< DiscreteFunctionType, SigmaFunctionType, typename Operator::type >
+        typedef ErrorEstimator< DiscreteFunctionType, SigmaFunctionType, typename Operator::AssemblerType >
                                                                                    EstimatorType;
         typedef PoissonSigmaEstimator< DiscreteFunctionType, typename Operator::AssemblerType, polOrd >
                                                                                    SigmaEstimatorType;

@@ -749,6 +749,16 @@ namespace Fem
       return assembler_;
     }
 
+    //ADAPTATION
+    virtual AdaptIndicatorType* adaptIndicator()
+    {
+      return adaptIndicator.get();
+    }
+    virtual AdaptationDiscreteFunctionType* adaptationSolution ()
+    {
+      return &solution();
+    }
+
   protected:
     virtual std::shared_ptr< SolverType > doCreateSolver() override
     {
@@ -777,16 +787,6 @@ namespace Fem
       double reduction  = Dune::Fem:: Parameter::getValue<double>("istl.reduction",1.e-6);
 
       return std::make_shared< SolverType >(*matrix_, reduction, absLimit );
-    }
-
-    //ADAPTATION
-    virtual AdaptIndicatorType* adaptIndicator()
-    {
-      return adaptIndicator.get();
-    }
-    virtual AdaptationDiscreteFunctionType* adaptationSolution ()
-    {
-      return solution();
     }
 
     //! default time loop implementation, overload for changes

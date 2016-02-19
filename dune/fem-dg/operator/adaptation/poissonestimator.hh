@@ -136,8 +136,8 @@ namespace Fem
     static const int dimension = GridType :: dimension;
 
     // CACHING
-    typedef typename DGOperator :: FaceQuadratureType     FaceQuadratureType ;
-    typedef typename DGOperator :: VolumeQuadratureType   VolumeQuadratureType ;
+    typedef typename DGOperator::FaceQuadratureType     FaceQuadratureType ;
+    typedef typename DGOperator::VolumeQuadratureType   VolumeQuadratureType ;
 
     typedef std :: vector< double > ErrorIndicatorType;
   protected:
