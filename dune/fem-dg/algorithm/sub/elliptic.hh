@@ -603,6 +603,9 @@ namespace Fem
       // calculate new sigma
       sigmaEstimator_.update();
 
+
+      //TODO extract from parameter file
+      double tolerance = 1.0;
       pAdapt_.estimateMark( problem(), tolerance );
     }
 
@@ -623,7 +626,7 @@ namespace Fem
     // return some info
     const typename SigmaEstimatorType::SigmaLocalFunctionAdapterType& sigma()
     {
-      return sigmaEstimator_.sigma()
+      return sigmaEstimator_.sigma();
     }
 
   private:
@@ -693,6 +696,9 @@ namespace Fem
 
     typedef typename BaseType::TimeProviderType            TimeProviderType;
 
+    typedef typename BaseType::AdaptIndicatorType          AdaptIndicatorType;
+
+    typedef typename BaseType::AdaptationDiscreteFunctionType AdaptationDiscreteFunctionType;
 
     using BaseType::problem;
     using BaseType::model;
