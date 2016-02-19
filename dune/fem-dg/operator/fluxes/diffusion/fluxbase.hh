@@ -223,9 +223,8 @@ namespace Fem
     /**
      * \brief flux function on interfaces between cells for advection and diffusion
      *
-     * \param[in] it intersection
-     * \param[in] time current time given by TimeProvider
-     * \param[in] x coordinate of required evaluation local to \c it
+     * \param[in] right local evaluation
+     * \param[in] left local evaluation
      * \param[in] uLeft DOF evaluation on this side of \c it
      * \param[in] uRight DOF evaluation on the other side of \c it
      * \param[out] gLeft num. flux projected on normal on this side
@@ -359,9 +358,8 @@ namespace Fem
     /**
      * \brief flux function on interfaces between cells
      *
-     * \param intersection intersection
-     * \param time current time given by TimeProvider
-     * \param x coordinate of required evaluation local to \c intersection
+     * \param left local evaluation
+     * \param right local evaluation
      * \param uLeft DOF evaluation on this side of \c intersection
      * \param uRight DOF evaluation on the other side of \c intersection
      * \param gLeft result for this side of \c intersection
@@ -415,8 +413,6 @@ namespace Fem
                          const LocalEvaluation& right,
                          const RangeType& uLeft,
                          const RangeType& uRight,
-                         const JacobianRangeType& jacLeft,
-                         const JacobianRangeType& jacRight,
                          const GradientRangeType& sigmaLeft,
                          const GradientRangeType& sigmaRight,
                          RangeType& gLeft,

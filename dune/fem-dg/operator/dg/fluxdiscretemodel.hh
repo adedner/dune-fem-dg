@@ -58,10 +58,9 @@ namespace Fem
     typedef typename Traits::ModelType                             ModelType;
     typedef typename Traits::DiffusionFluxType                     DiffusionFluxType;
 
-    typedef typename ModelType::DomainType                         DomainType;
-    typedef typename ModelType::FaceDomainType                     FaceDomainType;
-    typedef typename ModelType::RangeType                          RangeType;
-    typedef typename ModelType::JacobianRangeType                  JacobianRangeType;
+    typedef typename Traits::DiscreteFunctionSpaceType::FunctionSpaceType::DomainType                         DomainType;
+    typedef typename Traits::DiscreteFunctionSpaceType::FunctionSpaceType::RangeType                          RangeType;
+    typedef typename Traits::DiscreteFunctionSpaceType::FunctionSpaceType::JacobianRangeType                  JacobianRangeType;
     typedef typename Traits::GridType                              GridType;
     typedef typename Traits::GridPartType
               ::IntersectionIteratorType                           IntersectionIterator;
@@ -79,9 +78,9 @@ namespace Fem
      * \brief constructor
      */
     GradientModel(const ModelType& mod,
-                  const DiffusionFluxType& numf) :
+                  const DiffusionFluxType& diffFlux) :
       model_( mod ),
-      gradientFlux_( numf ),
+      gradientFlux_( diffFlux ),
       cflDiffinv_( 2.0 * ( Traits::polynomialOrder + 1) )
     {
       #if defined TESTOPERATOR
@@ -126,21 +125,18 @@ namespace Fem
     /**
      * \brief flux function on interfaces between cells for advection and diffusion
      *
-     * @param[in] it intersection
-     * @param[in] time current time given by TimeProvider
-     * @param[in] x coordinate of required evaluation local to \c it
-     * @param[in] uLeft DOF evaluation on this side of \c it
-     * @param[in] uRight DOF evaluation on the other side of \c it
-     * @param[out] gLeft num. flux projected on normal on this side
+     * \param[in] left local evaluation
+     * \param[in] right local evaluation
+     * \param[out] gLeft num. flux projected on normal on this side
      *             of \c it for multiplication with \f$ \phi \f$
-     * @param[out] gRight advection flux projected on normal for the other side
+     * \param[out] gRight advection flux projected on normal for the other side
      *             of \c it for multiplication with \f$ \phi \f$
-     * @param[out] gDiffLeft num. flux projected on normal on this side
+     * \param[out] gDiffLeft num. flux projected on normal on this side
      *             of \c it for multiplication with \f$ \nabla\phi \f$
-     * @param[out] gDiffRight advection flux projected on normal for the other side
+     * \param[out] gDiffRight advection flux projected on normal for the other side
      *             of \c it for multiplication with \f$ \nabla\phi \f$
      *
-     * @note For dual operators we have \c gDiffLeft = 0 and \c gDiffRight = 0.
+     * \note For dual operators we have \c gDiffLeft = 0 and \c gDiffRight = 0.
      *
      * \return wave speed estimate (multiplied with the integration element of the intersection),
      *              to estimate the time step |T|/wave.
@@ -153,11 +149,9 @@ namespace Fem
                          JacobianRangeType& gDiffLeft,
                          JacobianRangeType& gDiffRight ) const
     {
-      return gradientFlux_.gradientNumericalFlux(
-                left.intersection(), left.entity(), right.entity(), left.time(),
-                left.quadrature(), right.quadrature(), left.index(),
-                left.values()[ uVar ], right.values()[ uVar ],
-                gLeft, gRight, gDiffLeft, gDiffRight);
+      return gradientFlux_.gradientNumericalFlux( left, right,
+                                                  left.values()[ uVar ], right.values()[ uVar ],
+                                                  gLeft, gRight, gDiffLeft, gDiffRight);
     }
 
     /**
@@ -188,8 +182,7 @@ namespace Fem
                              RangeType& gLeft,
                              JacobianRangeType& gDiffLeft ) const
     {
-      const FaceDomainType& x = left.localPosition();
-      const DomainType normal = left.intersection().integrationOuterNormal( x );
+      const DomainType normal = left.intersection().integrationOuterNormal( left.localPosition() );
 
       UType uRight;
 
@@ -271,7 +264,6 @@ namespace Fem
     enum { diffusion = diffusionPartExists };
 
     typedef typename BaseType::DomainType                    DomainType;
-    typedef typename ModelType::FaceDomainType               FaceDomainType;
     typedef typename BaseType::RangeFieldType                RangeFieldType;
     typedef typename BaseType::DomainFieldType               DomainFieldType;
     typedef typename BaseType::RangeType                     RangeType;
@@ -396,7 +388,7 @@ namespace Fem
       {
         RangeType dLeft, dRight;
         diffTimeStep =
-          diffFlux_.numericalFlux(left,
+          diffFlux_.numericalFlux(left, right,
                                   left.values()[ uVar ], right.values()[ uVar ],
                                   left.values() [ sigmaVar ], right.values()[ sigmaVar ],
                                   dLeft, dRight,

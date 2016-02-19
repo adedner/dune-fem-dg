@@ -111,9 +111,8 @@ namespace Fem
     /**
      * \brief flux function on interfaces between cells
      *
-     * \param intersection intersection
-     * \param time current time given by TimeProvider
-     * \param x coordinate of required evaluation local to \c intersection
+     * \param left local evaluation
+     * \param right local evaluation
      * \param uLeft DOF evaluation on this side of \c intersection
      * \param uRight DOF evaluation on the other side of \c intersection
      * \param gLeft result for this side of \c intersection
@@ -131,11 +130,10 @@ namespace Fem
                                  GradientJacobianType& gDiffLeft,
                                  GradientJacobianType& gDiffRight) const
     {
-      const FaceDomainType& x = left.localPosition();
-      const DomainType normal = left.intersection().integrationOuterNormal( x );
+      const DomainType normal = left.intersection().integrationOuterNormal( left.localPosition() );
 
       // get factor for each side
-      const double thetaLeft  = getTheta( left.intersection() );
+      const double thetaLeft  = theta( left.intersection() );
       const double thetaRight = 1.0 - thetaLeft;
 
       GradientJacobianType diffmatrix;
@@ -188,11 +186,10 @@ namespace Fem
                                 GradientRangeType& gLeft,
                                 GradientJacobianType& gDiffLeft) const
     {
-      const FaceDomainType& x = left.localPosition();
-      const DomainType normal = left.intersection().integrationOuterNormal( x );
+      const DomainType normal = left.intersection().integrationOuterNormal( left.localPosition() );
 
       // get factor for each side
-      const double thetaLeft  = getTheta( left.intersection() );
+      const double thetaLeft  = theta( left.intersection() );
       const double thetaRight = 1.0 - thetaLeft;
 
       GradientJacobianType diffmatrix;
@@ -243,8 +240,7 @@ namespace Fem
                          JacobianRangeType& gDiffLeft, // not used here (only for primal passes)
                          JacobianRangeType& gDiffRight )
     {
-      const FaceDomainType& x = left.localPosition();
-      const DomainType normal = left.intersection().integrationOuterNormal( x );
+      const DomainType normal = left.intersection().integrationOuterNormal( left.localPosition() );
 
      /**********************************
       * Diffusion sigma Flux (Pass 2)  *
@@ -302,8 +298,7 @@ namespace Fem
                         JacobianRangeType& gDiffLeft )
     {
       // get local point
-      const FaceDomainType& x = left.localPosition();
-      const DomainType normal = left.intersection().integrationOuterNormal( x );
+      const DomainType normal = left.intersection().integrationOuterNormal( left.localPosition() );
 
       /****************************/
       /* Diffusion (Pass 2)       */
