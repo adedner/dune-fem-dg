@@ -558,9 +558,10 @@ namespace Fem
   /**
    * \brief Adaptation indicator doing no indication and marking of the entities.
    */
-  template< class EstimatorImp, class SigmaEstimatorImp >
+  template< class EstimatorImp, class SigmaEstimatorImp, class ProblemImp >
   class PAdaptIndicator
   {
+    typedef ProblemImp                                                   ProblemType;
     typedef SigmaEstimatorImp                                            SigmaEstimatorType;
     typedef typename SigmaEstimatorType::DiscreteFunctionType            DiscreteFunctionType;
     typedef typename SigmaEstimatorType::AssemblerType                   AssemblerType;
@@ -577,9 +578,10 @@ namespace Fem
   public:
    typedef uint64_t                          UInt64Type;
 
-    PAdaptIndicator( GridType& grid, const DiscreteFunctionType& solution, AssemblerType& assembler, const std::string name = "" )
+    PAdaptIndicator( GridType& grid, const DiscreteFunctionType& solution, const ProblemType& problem, AssemblerType& assembler, const std::string name = "" )
       : pAdapt_( grid, solution.space() ),
-        sigmaEstimator_( solution.gridPart(), solution, assembler, name )
+        sigmaEstimator_( solution.gridPart(), solution, assembler, name ),
+        problem_( problem )
     {}
 
     bool adaptive() const { return false; }
@@ -604,9 +606,9 @@ namespace Fem
       sigmaEstimator_.update();
 
 
-      //TODO extract from parameter file
+      //TODO extract tolerance from parameter file
       double tolerance = 1.0;
-      pAdapt_.estimateMark( problem(), tolerance );
+      pAdapt_.estimateMark( problem_, tolerance );
     }
 
     void postAdapt()
@@ -639,6 +641,7 @@ namespace Fem
 
     PAdaptivityType   pAdapt_;
     SigmaEstimatorType sigmaEstimator_;
+    const ProblemType&  problem_;
   };
 
 
@@ -719,7 +722,7 @@ namespace Fem
       space_( container_.space() ),
       assembler_( container_, model() ),
       matrix_( container_.matrix() ),
-      adaptIndicator_( grid, container_.solution(), assembler_, name() ),
+      adaptIndicator_( grid, container_.solution(), problem(), assembler_, name() ),
       step_( 0 ),
       time_( 0 )
     {

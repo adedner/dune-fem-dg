@@ -132,7 +132,7 @@ namespace Fem
 
         typedef SubSolverMonitor< SolverMonitor >                                  SolverMonitorType;
         typedef SubDiagnostics< Diagnostics >                                      DiagnosticsType;
-        typedef PAdaptIndicator< EstimatorType, SigmaEstimatorType >               AdaptIndicatorType;
+        typedef PAdaptIndicator< EstimatorType, SigmaEstimatorType, ProblemInterfaceType > AdaptIndicatorType;
       };
 
       template <int polOrd>
