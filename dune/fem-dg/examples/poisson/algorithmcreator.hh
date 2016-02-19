@@ -22,6 +22,7 @@
 //--------- OPERATOR/SOLVER -----------------
 #include <dune/fem-dg/assemble/primalmatrix.hh>
 #include <dune/fem-dg/operator/dg/operatortraits.hh>
+#include <dune/fem-dg/operator/adaptation/poissonestimator.hh>
 //--------- FLUXES ---------------------------
 #include <dune/fem-dg/operator/fluxes/advection/fluxes.hh>
 #include <dune/fem-dg/operator/fluxes/euler/fluxes.hh>
@@ -120,9 +121,18 @@ namespace Fem
           typedef typename AC::template LinearSolvers< DFSpaceType, false/*true*/> type;
         };
 
+      private:
+        //TODO improve
+        typedef DiscreteFunctionType SigmaFunctionType;
+        typedef ErrorEstimator< DiscreteFunctionType, SigmaFunctionType, typename Operator::type >
+                                                                                   EstimatorType;
+        typedef PoissonSigmaEstimator< DiscreteFunctionType, typename Operator::AssemblerType, polOrd >
+                                                                                   SigmaEstimatorType;
+      public:
+
         typedef SubSolverMonitor< SolverMonitor >                                  SolverMonitorType;
         typedef SubDiagnostics< Diagnostics >                                      DiagnosticsType;
-        typedef PAdaptIndicator< PoissonEstimatorType, PoissonSigmaEstimatorType > AdaptIndicatorType;
+        typedef PAdaptIndicator< EstimatorType, SigmaEstimatorType >               AdaptIndicatorType;
       };
 
       template <int polOrd>
