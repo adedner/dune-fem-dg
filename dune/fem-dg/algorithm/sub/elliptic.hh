@@ -576,9 +576,9 @@ namespace Fem
   public:
    typedef uint64_t                          UInt64Type;
 
-    PAdaptivity( GridType& grid, const DiscreteFunctionType& solution )
+    PAdaptivity( GridType& grid, const DiscreteFunctionType& solution, AssemblerType& assembler, const std::string name = "" )
       : pAdapt_( grid, solution.space() ),
-        sigmaEstimator_( solution.gridPart(), solution, assembler_, name() )
+        sigmaEstimator_( solution.gridPart(), solution, assembler, name )
     {}
 
     bool adaptive() const { return false; }
@@ -712,7 +712,7 @@ namespace Fem
       space_( container_.space() ),
       assembler_( container_, model() ),
       matrix_( container_.matrix() ),
-      adaptIndicator_( grid, container_.solution() /* TODO add arguments*/ ),
+      adaptIndicator_( grid, container_.solution(), assembler_, name() ),
       step_( 0 ),
       time_( 0 )
     {
