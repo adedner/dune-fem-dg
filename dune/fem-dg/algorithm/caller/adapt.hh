@@ -237,7 +237,7 @@ namespace Fem
         // some info in verbose mode
         if( Fem::Parameter::verbose() )
         {
-          std::cout << "Start adaptation: step " << startCount << ",  grid size: " << alg->gridSize()
+          std::cout << "Start adaptation: grid size: " << alg->gridSize()
                     << std::endl;
         }
       }

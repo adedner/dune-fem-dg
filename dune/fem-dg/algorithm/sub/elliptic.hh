@@ -158,13 +158,14 @@ namespace Fem
 
     typedef DiscreteFunctionImp                                      DiscreteFunctionType;
     typedef typename DiscreteFunctionType::DiscreteFunctionSpaceType DiscreteFunctionSpaceType;
-    typedef DiscreteFunctionType::GridPartType                       GridPartType;
+    typedef typename DiscreteFunctionType::GridPartType              GridPartType;
     typedef typename GridPartType::GridType                          GridType;
     typedef AssemblerImp                                             AssemblerType;
     static const int polynomialOrder = polOrder;
 
     typedef typename DiscreteFunctionSpaceType ::
-      template ToNewDimRange< dimension * ModelType::dimRange >::NewFunctionSpaceType     SigmaFunctionSpaceType;
+      template ToNewDimRange< GridType::dimension * DiscreteFunctionSpaceType::FunctionSpaceType::dimRange >::NewFunctionSpaceType
+                                                                     SigmaFunctionSpaceType;
 
     PoissonSigmaEstimator( GridPartType& gridPart,
                            const DiscreteFunctionType& solution,
@@ -564,7 +565,7 @@ namespace Fem
     typedef typename SigmaEstimatorType::DiscreteFunctionType            DiscreteFunctionType;
     typedef typename SigmaEstimatorType::AssemblerType                   AssemblerType;
     typedef typename SigmaEstimatorType::SigmaFunctionSpaceType          SigmaFunctionSpaceType;
-    typedef typename DiscreteFunctionType::DiscreteFunctionSpaceType     DiscreteFunctionType;
+    typedef typename DiscreteFunctionType::DiscreteFunctionSpaceType     DiscreteFunctionSpaceType;
     typedef typename DiscreteFunctionType::GridPartType                  GridPartType;
     typedef typename GridPartType::GridType                              GridType;
     static const int polOrder = SigmaEstimatorType::polynomialOrder;
@@ -576,7 +577,7 @@ namespace Fem
   public:
    typedef uint64_t                          UInt64Type;
 
-    PAdaptivity( GridType& grid, const DiscreteFunctionType& solution, AssemblerType& assembler, const std::string name = "" )
+    PAdaptIndicator( GridType& grid, const DiscreteFunctionType& solution, AssemblerType& assembler, const std::string name = "" )
       : pAdapt_( grid, solution.space() ),
         sigmaEstimator_( solution.gridPart(), solution, assembler, name )
     {}
@@ -620,7 +621,7 @@ namespace Fem
     const int finestLevel() const { return 0; }
 
     // return some info
-    const SigmaFunctionType& sigma()
+    const typename SigmaEstimatorType::SigmaLocalFunctionAdapterType& sigma()
     {
       return sigmaEstimator_.sigma()
     }
