@@ -169,7 +169,7 @@ namespace Fem
     virtual void initialize ( const int loop )
     {
       ForLoopType< Initialize >::apply( tuple_, loop );
-      adaptCaller_.initializeEnd( this, loop /*, tp */ );
+      adaptCaller_.initializeEnd( this, loop );
     }
 
     virtual void preSolve( const int loop )
@@ -181,7 +181,7 @@ namespace Fem
     {
       initialize( loop );
       preSolve( loop );
-      adaptCaller_.solveStart( this, loop /*, tp*/ );
+      adaptCaller_.solveStart( this, loop );
       ForLoopType< Solve >::apply( tuple_, loop );
       postSolve( loop );
       finalize( loop );
@@ -194,7 +194,7 @@ namespace Fem
 
     void finalize ( const int loop )
     {
-      adaptCaller_.finalizeStart( this, loop /*, tp*/ );
+      adaptCaller_.finalizeStart( this, loop );
       ForLoopType< Finalize >::apply( tuple_, loop );
     }
 
