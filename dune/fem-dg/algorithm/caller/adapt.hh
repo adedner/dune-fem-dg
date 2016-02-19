@@ -217,6 +217,33 @@ namespace Fem
     }
 
     /**
+     * \brief Prepare an initial refined grid.
+     *
+     * \param[in] alg pointer to the calling sub-algorithm
+     * \param[in] loop number of eoc loop
+     */
+    template< class SubAlgImp >
+    void initializeEnd( SubAlgImp* alg, int loop )
+    {
+      if( adaptive() )
+      {
+        // call initial adaptation
+        estimateMark( true );
+        adapt( alg, loop );
+
+        // setup problem again
+        alg->initialize( loop );
+
+        // some info in verbose mode
+        if( Fem::Parameter::verbose() )
+        {
+          std::cout << "Start adaptation: step " << startCount << ",  grid size: " << alg->gridSize()
+                    << std::endl;
+        }
+      }
+    }
+
+    /**
      * \brief Calls the estimate, mark and adaptation routines to refine the grid.
      *
      * \param[in] alg pointer to the calling sub-algorithm
@@ -234,6 +261,19 @@ namespace Fem
     }
 
     /**
+     * \brief Calls the estimate, mark and adaptation routines to refine the grid.
+     *
+     * \param[in] alg pointer to the calling sub-algorithm
+     * \param[in] loop number of eoc loop
+     */
+    template< class SubAlgImp >
+    void solveStart( SubAlgImp* alg, int loop )
+    {
+      estimateMark( false );
+      adapt( alg, loop );
+    }
+
+    /**
      * \brief finalize all indicators
      *
      * \param[in] alg pointer to the calling sub-algorithm
@@ -246,6 +286,17 @@ namespace Fem
       ForLoopType< Finalize >::apply( tuple_ );
     }
 
+    /**
+     * \brief finalize all indicators
+     *
+     * \param[in] alg pointer to the calling sub-algorithm
+     * \param[in] loop number of eoc loop
+     */
+    template< class SubAlgImp >
+    void finalizeStart( SubAlgImp* alg, int loop )
+    {
+      ForLoopType< Finalize >::apply( tuple_ );
+    }
 
     /**
      * \brief Returns true, if all sub-algorithms are adaptive.
@@ -298,6 +349,14 @@ namespace Fem
     void setAdaptation( TimeProviderImp& tp )
     {
       ForLoopType< SetAdaptation >::apply( tuple_, tp );
+    }
+
+    /**
+     * \brief Set adaptation manager of sub-algorithms.
+     */
+    void setAdaptation()
+    {
+      ForLoopType< SetAdaptation >::apply( tuple_ );
     }
 
     /**
@@ -360,6 +419,23 @@ namespace Fem
 
         if( sequence !=  getSequence( get<0>( tuple_ ) ) )
           alg->postProcessing().solveEnd( alg, loop, tp );
+      }
+    }
+
+    template< class SubAlgImp >
+    void adapt( SubAlgImp* alg, int loop )
+    {
+      if( adaptive() )
+      {
+        //int sequence = getSequence( get<0>( tuple_ ) );
+
+        ForLoopType< PreAdapt >::apply( tuple_ );
+        adaptationManager().adapt();
+        ForLoopType< PostAdapt >::apply( tuple_ );
+
+        //TODO think about it
+        //if( sequence !=  getSequence( get<0>( tuple_ ) ) )
+        //  alg->postProcessing().solveEnd( alg, loop );
       }
     }
 
