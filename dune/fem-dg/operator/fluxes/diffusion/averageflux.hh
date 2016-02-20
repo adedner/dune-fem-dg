@@ -1,7 +1,7 @@
 #ifndef DUNE_FEM_DG_LDGAVERAGEFLUX_HH
 #define DUNE_FEM_DG_LDGAVERAGEFLUX_HH
 
-// Dune-Fem includes
+// local includes
 #include "fluxbase.hh"
 
 namespace Dune
@@ -61,7 +61,8 @@ namespace Fem
     using BaseType::cflDiffinv_;
     using BaseType::numericalFlux ;
     using BaseType::parameter ;
-
+    using BaseType::nonconformingFactor_;
+    using BaseType::dimensionFactor_;
 
   public:
     /**
@@ -92,12 +93,12 @@ namespace Fem
 
   protected:
     enum { realLDG = true };
-    double theta( const Intersection& intersection ) const
+    double theta( const DomainType& normal ) const
     {
       if( realLDG )
       {
         // LDG thete is 1 or 0
-        if( determineDirection( intersection ) )
+        if( determineDirection( normal ) )
           return 1.0;
         else
           return 0.0;
@@ -133,19 +134,21 @@ namespace Fem
       const DomainType normal = left.intersection().integrationOuterNormal( left.localPosition() );
 
       // get factor for each side
-      const double thetaLeft  = theta( left.intersection() );
+      const double thetaLeft  = theta( normal );
       const double thetaRight = 1.0 - thetaLeft;
 
       GradientJacobianType diffmatrix;
 
       double diffTimeStep = 0.0;
 
+      // select left or right or average
       if( thetaLeft > 0 )
       {
         //TODO use diffusionTimeStep
-        diffTimeStep =
-          /* central differences (might be suboptimal) */
-          model_.diffusion(left, uLeft, diffmatrix );
+        diffTimeStep = 0;
+
+        /* central differences (might be suboptimal) */
+        model_.jacobian(left, uLeft, diffmatrix );
 
         diffmatrix.mv(normal, gLeft );
         gLeft *= thetaLeft ;
@@ -155,15 +158,17 @@ namespace Fem
 
       if( thetaRight > 0 )
       {
-        const double diffStepRight =
-          model_.diffusion( right, uRight, diffmatrix );
+        //const double diffStepRight = 0;
+
+        // right jacobian
+        model_.jacobian( right, uRight, diffmatrix );
 
         diffmatrix.mv(normal, gRight);
 
         // add to flux
         gLeft.axpy( thetaRight, gRight );
 
-        diffTimeStep = std::max( diffTimeStep, diffStepRight );
+        // diffTimeStep = std::max( diffTimeStep, diffStepRight );
       }
 
       // copy flux
@@ -175,7 +180,7 @@ namespace Fem
 #endif
 
       // upper bound for the next time step length
-      return diffTimeStep * cflDiffinv_;
+      return diffTimeStep; // * cflDiffinv_;
     }
 
 
@@ -189,7 +194,7 @@ namespace Fem
       const DomainType normal = left.intersection().integrationOuterNormal( left.localPosition() );
 
       // get factor for each side
-      const double thetaLeft  = theta( left.intersection() );
+      const double thetaLeft  = theta( normal );
       const double thetaRight = 1.0 - thetaLeft;
 
       GradientJacobianType diffmatrix;
@@ -197,14 +202,14 @@ namespace Fem
       // calculate uVal
       RangeType uVal( 0 );
 
+      // select u from uLeft and uRight
       if( thetaLeft > 0 )
         uVal.axpy( thetaLeft , uLeft );
       if( thetaRight > 0 )
         uVal.axpy( thetaRight, uBnd );
 
-      //TODO use diffusionTimeStep
-      const double diffTimeStep =
-            model_.diffusion(left, uVal, diffmatrix );
+      // compute jacobian of u
+      model_.jacobian(left, uVal, diffmatrix );
 
       diffmatrix.mv(normal, gLeft);
 
@@ -212,7 +217,9 @@ namespace Fem
       gDiffLeft = 0;
 #endif
 
-      return diffTimeStep * cflDiffinv_;
+      //TODO use diffusionTimeStep
+      const double diffTimeStep = 0; // * cflDiffinv_;
+      return diffTimeStep;
     }
 
 
@@ -233,38 +240,46 @@ namespace Fem
                          const LocalEvaluation& right,
                          const RangeType& uLeft,
                          const RangeType& uRight,
-                         const GradientRangeType& sigmaLeft,
-                         const GradientRangeType& sigmaRight,
+                         const JacobianRangeType& sigmaLeft,
+                         const JacobianRangeType& sigmaRight,
                          RangeType& gLeft,
                          RangeType& gRight,
                          JacobianRangeType& gDiffLeft, // not used here (only for primal passes)
                          JacobianRangeType& gDiffRight )
     {
       const DomainType normal = left.intersection().integrationOuterNormal( left.localPosition() );
+      const double faceLengthSqr = normal.two_norm2();
 
-     /**********************************
-      * Diffusion sigma Flux (Pass 2)  *
-      **********************************/
+      /**********************************
+       * Diffusion sigma Flux (Pass 2)  *
+       **********************************/
       JacobianRangeType diffmatrix;
 
-      //std::cout << "uleft = " << uLeft << "  sigLeft " << sigmaLeft << std::endl;
-
-      /* Central differences */
-      const double diffTimeLeft =
-        model_.diffusion( left, uLeft, sigmaLeft, diffmatrix);
+      // diffusion for uLeft
+      model_.diffusion( left, uLeft, sigmaLeft, diffmatrix);
 
       RangeType diffflux;
       diffmatrix.mv(normal, diffflux);
 
-      const double diffTimeRight =
-        model_.diffusion( right, uRight, sigmaRight, diffmatrix);
+      // diffusion for uRight
+      model_.diffusion( right, uRight, sigmaRight, diffmatrix);
+      // add to diffflux
       diffmatrix.umv(normal, diffflux);
       diffflux *= 0.5;
 
+      const double faceVolumeEstimate = dimensionFactor_ *
+        (left.intersection().conforming() ? faceLengthSqr
+          : (nonconformingFactor_ * faceLengthSqr));
+
+      const double diffTimeLeft =
+        model_.diffusionTimeStep( left, faceVolumeEstimate, uLeft );
+
+      const double diffTimeRight =
+        model_.diffusionTimeStep( right, faceVolumeEstimate, uRight );
+
       double diffTimeStep = std::max( diffTimeLeft, diffTimeRight );
 
-      // add penalty term ( enVolume() is available since we derive from
-      //    DiscreteModelDefaultWithInsideOutside)
+      // add penalty factor
       const double factor = penalty_ * diffTimeStep ;
 
       RangeType jump( uLeft );
@@ -293,22 +308,27 @@ namespace Fem
     double boundaryFlux(const LocalEvaluation& left,
                         const RangeType& uLeft,
                         const RangeType& uRight,
-                        const GradientRangeType& sigmaLeft,
+                        const JacobianRangeType& sigmaLeft,
                         RangeType& gLeft,
                         JacobianRangeType& gDiffLeft )
     {
       // get local point
       const DomainType normal = left.intersection().integrationOuterNormal( left.localPosition() );
+      const double faceLengthSqr = normal.two_norm2();
 
       /****************************/
       /* Diffusion (Pass 2)       */
       /****************************/
       JacobianRangeType diffmatrix;
-      //TODO use diffusionTimeStep
-      double diffTimeStep =
-        model_.diffusion(left, uLeft, sigmaLeft, diffmatrix);
+
+      model_.diffusion(left, uLeft, sigmaLeft, diffmatrix);
 
       diffmatrix.mv(normal, gLeft);
+
+      const double faceVolumeEstimate = dimensionFactor_ * faceLengthSqr;
+
+      double diffTimeStep =
+        model_.diffusionTimeStep( left, faceVolumeEstimate, uLeft );
 
       // add penalty term
       const double factor = penalty_ * diffTimeStep;

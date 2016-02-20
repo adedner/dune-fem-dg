@@ -387,10 +387,14 @@ namespace Fem
       if( diffusion )
       {
         RangeType dLeft, dRight;
+        typedef typename DiffusionFluxType::GradientRangeType GradientRangeType;
+        Dune::Fem::FieldMatrixConverter< GradientRangeType, JacobianRangeType > jacLeft ( left.values()[ sigmaVar ] );
+        Dune::Fem::FieldMatrixConverter< GradientRangeType, JacobianRangeType > jacRight( right.values()[ sigmaVar ] );
+
         diffTimeStep =
           diffFlux_.numericalFlux(left, right,
                                   left.values()[ uVar ], right.values()[ uVar ],
-                                  left.values() [ sigmaVar ], right.values()[ sigmaVar ],
+                                  jacLeft, jacRight,
                                   dLeft, dRight,
                                   gDiffLeft, gDiffRight);
 
@@ -428,10 +432,13 @@ namespace Fem
       {
         // diffusion boundary flux for Dirichlet boundaries
         RangeType dLeft ( 0 );
+        typedef typename DiffusionFluxType::GradientRangeType GradientRangeType;
+        Dune::Fem::FieldMatrixConverter< GradientRangeType, JacobianRangeType > uJac( left.values()[ sigmaVar ] );
+
         diffTimeStep = diffFlux_.boundaryFlux( left,
                                                left.values()[ uVar ],
                                                uBnd_, // is set during call of  BaseType::boundaryFlux
-                                               left.values()[ sigmaVar ],
+                                               uJac,
                                                dLeft,
                                                gDiffLeft);
         gLeft += dLeft;

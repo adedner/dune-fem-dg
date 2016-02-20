@@ -67,7 +67,7 @@ namespace Fem
     //! Contains all known enums for dual diffusion fluxes which can be chosen via parameter file.
     const Enum        _enums[] = { Enum::average, Enum::ldg };
     //! Contains all known names of dual diffusion fluxes which can be chosen via parameter file.
-    const std::string _strings[] = { "AVERAGE", "LDG" };
+    const std::string _strings[] = { "BR1", "LDG" };
     //! Number of known primal diffusion fluxes which can be chosen via parameter file.
     static const int  _size = 2;
 
@@ -221,7 +221,7 @@ namespace Fem
      *
      * \param[in] keyPrefix key prefix for parameter file.
      */
-    DGDualDiffusionFluxParameters( const std::string keyPrefix = "dgdualdiffusionflux." )
+    DGDualDiffusionFluxParameters( const std::string keyPrefix = "dgdiffusionflux." )
       : keyPrefix_( keyPrefix )
     {}
 
