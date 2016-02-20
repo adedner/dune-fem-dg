@@ -47,7 +47,7 @@ namespace Fem
 
   }
 
-  namespace DualDiffusionFlux
+  namespace LocalDiffusionFlux
   {
     /**
      * \brief Enum of all known local DG diffusion flux implementations.
@@ -57,15 +57,15 @@ namespace Fem
     enum class Enum
     {
       //! Bassi-Rebay flux.
-      average,
+      br1,
       //! Local DG flux.
       ldg,
       //! general flux: Parameter selection is done via parameter file!
-      general,
+      general
     };
 
     //! Contains all known enums for dual diffusion fluxes which can be chosen via parameter file.
-    const Enum        _enums[] = { Enum::average, Enum::ldg };
+    const Enum        _enums[] = { Enum::br1, Enum::ldg };
     //! Contains all known names of dual diffusion fluxes which can be chosen via parameter file.
     const std::string _strings[] = { "BR1", "LDG" };
     //! Number of known primal diffusion fluxes which can be chosen via parameter file.
@@ -210,18 +210,18 @@ namespace Fem
    *
    * \ingroup ParameterClass
    */
-  class DGDualDiffusionFluxParameters
-    : public Fem::LocalParameter< DGDualDiffusionFluxParameters, DGDualDiffusionFluxParameters >
+  class DGLocalDiffusionFluxParameters
+    : public Fem::LocalParameter< DGLocalDiffusionFluxParameters, DGLocalDiffusionFluxParameters >
   {
   public:
-    typedef DualDiffusionFlux::Enum           IdEnum;
+    typedef LocalDiffusionFlux::Enum           IdEnum;
 
     /**
      * \brief Constructor
      *
      * \param[in] keyPrefix key prefix for parameter file.
      */
-    DGDualDiffusionFluxParameters( const std::string keyPrefix = "dgdiffusionflux." )
+    DGLocalDiffusionFluxParameters( const std::string keyPrefix = "dgdiffusionflux." )
       : keyPrefix_( keyPrefix )
     {}
 
@@ -233,9 +233,9 @@ namespace Fem
      */
     static std::string methodNames( const IdEnum& mthd )
     {
-      for( int i = 0; i < DualDiffusionFlux::_size; i++)
-        if( DualDiffusionFlux::_enums[i] == mthd )
-          return DualDiffusionFlux::_strings[i];
+      for( int i = 0; i < LocalDiffusionFlux::_size; i++)
+        if( LocalDiffusionFlux::_enums[i] == mthd )
+          return LocalDiffusionFlux::_strings[i];
       assert( false );
       return "invalid diffusion flux";
     }
@@ -245,8 +245,8 @@ namespace Fem
      */
     virtual IdEnum getMethod() const
     {
-      const int i = Fem::Parameter::getEnum( keyPrefix_ + "method", DualDiffusionFlux::_strings );
-      return DualDiffusionFlux::_enums[i];
+      const int i = Fem::Parameter::getEnum( keyPrefix_ + "method", LocalDiffusionFlux::_strings );
+      return LocalDiffusionFlux::_enums[i];
     }
 
     //! todo please doc me

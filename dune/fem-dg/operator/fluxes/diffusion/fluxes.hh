@@ -220,15 +220,15 @@ namespace Fem
 
   template <class DiscreteFunctionSpaceImp,
             class Model,
-            DualDiffusionFlux::Enum id >
-  class DGDualDiffusionFlux;
+            LocalDiffusionFlux::Enum id >
+  class DGLocalDiffusionFlux;
 
   template <class DiscreteFunctionSpaceImp,
             class Model>
-  class DGDualDiffusionFlux<  DiscreteFunctionSpaceImp, Model, DualDiffusionFlux::Enum::average >
-    : public LDGDiffusionFluxImpl< DiscreteFunctionSpaceImp, Model, DGDualDiffusionFluxParameters >
+  class DGLocalDiffusionFlux<  DiscreteFunctionSpaceImp, Model, LocalDiffusionFlux::Enum::br1 >
+    : public LDGDiffusionFluxImpl< DiscreteFunctionSpaceImp, Model, DGLocalDiffusionFluxParameters >
   {
-    typedef LDGDiffusionFluxImpl< DiscreteFunctionSpaceImp, Model, DGDualDiffusionFluxParameters >
+    typedef LDGDiffusionFluxImpl< DiscreteFunctionSpaceImp, Model, DGLocalDiffusionFluxParameters >
       BaseType;
 
   public:
@@ -239,20 +239,20 @@ namespace Fem
     /**
       * \brief constructor reading parameters
       */
-    DGDualDiffusionFlux( GridPartType& gridPart,
+    DGLocalDiffusionFlux( GridPartType& gridPart,
                            const Model& model,
                            const ParameterType& parameters = ParameterType() )
-      : BaseType( gridPart, model, parameters, DualDiffusionFlux::Enum::average )
+      : BaseType( gridPart, model, parameters, LocalDiffusionFlux::Enum::br1 )
     {
     }
   };
 
   template <class DiscreteFunctionSpaceImp,
             class Model>
-  class DGDualDiffusionFlux<  DiscreteFunctionSpaceImp, Model, DualDiffusionFlux::Enum::ldg >
-    : public LDGDiffusionFluxImpl< DiscreteFunctionSpaceImp, Model, DGDualDiffusionFluxParameters >
+  class DGLocalDiffusionFlux<  DiscreteFunctionSpaceImp, Model, LocalDiffusionFlux::Enum::ldg >
+    : public LDGDiffusionFluxImpl< DiscreteFunctionSpaceImp, Model, DGLocalDiffusionFluxParameters >
   {
-    typedef LDGDiffusionFluxImpl< DiscreteFunctionSpaceImp, Model, DGDualDiffusionFluxParameters >
+    typedef LDGDiffusionFluxImpl< DiscreteFunctionSpaceImp, Model, DGLocalDiffusionFluxParameters >
       BaseType;
 
   public:
@@ -263,20 +263,20 @@ namespace Fem
     /**
       * \brief constructor reading parameters
       */
-    DGDualDiffusionFlux( GridPartType& gridPart,
+    DGLocalDiffusionFlux( GridPartType& gridPart,
                          const Model& model,
                          const ParameterType& parameters = ParameterType() )
-      : BaseType( gridPart, model, parameters, DualDiffusionFlux::Enum::ldg )
+      : BaseType( gridPart, model, parameters, LocalDiffusionFlux::Enum::ldg )
     {
     }
   };
 
   template <class DiscreteFunctionSpaceImp,
             class Model>
-  class DGDualDiffusionFlux<  DiscreteFunctionSpaceImp, Model, DualDiffusionFlux::Enum::general >
-    : public LDGDiffusionFluxImpl< DiscreteFunctionSpaceImp, Model, DGDualDiffusionFluxParameters >
+  class DGLocalDiffusionFlux<  DiscreteFunctionSpaceImp, Model, LocalDiffusionFlux::Enum::general >
+    : public LDGDiffusionFluxImpl< DiscreteFunctionSpaceImp, Model, DGLocalDiffusionFluxParameters >
   {
-    typedef LDGDiffusionFluxImpl< DiscreteFunctionSpaceImp, Model, DGDualDiffusionFluxParameters >
+    typedef LDGDiffusionFluxImpl< DiscreteFunctionSpaceImp, Model, DGLocalDiffusionFluxParameters >
       BaseType;
 
   public:
@@ -287,10 +287,10 @@ namespace Fem
     /**
       * \brief constructor reading parameters
       */
-    DGDualDiffusionFlux( GridPartType& gridPart,
+    DGLocalDiffusionFlux( GridPartType& gridPart,
                          const Model& model,
                          const ParameterType& parameters = ParameterType() )
-      : BaseType( gridPart, model, parameters, DualDiffusionFlux::Enum::general )
+      : BaseType( gridPart, model, parameters, LocalDiffusionFlux::Enum::general )
     {
     }
   };

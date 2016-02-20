@@ -215,7 +215,7 @@ namespace Fem
     enum class Enum
     {
       primal,
-      dual
+      local
     };
   }
 
@@ -321,7 +321,7 @@ namespace Fem
   };
 
   template< class OperatorTraits >
-  class AdvectionDiffusionOperatorSelector< OperatorTraits, Formulation::Enum::dual, AdvectionLimiter::Enum::unlimited >
+  class AdvectionDiffusionOperatorSelector< OperatorTraits, Formulation::Enum::local, AdvectionLimiter::Enum::unlimited >
   {
     static const int advection = OperatorTraits::ModelType::hasAdvection;
     static const int diffusion = OperatorTraits::ModelType::hasDiffusion;
@@ -338,7 +338,7 @@ namespace Fem
   };
 
   template< class OperatorTraits >
-  class AdvectionDiffusionOperatorSelector< OperatorTraits, Formulation::Enum::dual, AdvectionLimiter::Enum::limited >
+  class AdvectionDiffusionOperatorSelector< OperatorTraits, Formulation::Enum::local, AdvectionLimiter::Enum::limited >
   {
     static const int advection = OperatorTraits::ModelType::hasAdvection;
     static const int diffusion = OperatorTraits::ModelType::hasDiffusion;
@@ -573,19 +573,19 @@ namespace Fem
   };
 
   template< class ModelImp, class DiscreteFunctionSpaceImp,
-            PrimalDiffusionFlux::Enum diffFluxId, DualDiffusionFlux::Enum dualDiffFluxId, Formulation::Enum form >
+            PrimalDiffusionFlux::Enum diffFluxId, LocalDiffusionFlux::Enum localDiffFluxId, Formulation::Enum form >
   struct DiffusionFluxSelector;
 
-  template< class ModelImp, class DiscreteFunctionSpaceImp, PrimalDiffusionFlux::Enum diffFluxId, DualDiffusionFlux::Enum dualDiffFluxId >
-  struct DiffusionFluxSelector< ModelImp, DiscreteFunctionSpaceImp, diffFluxId, dualDiffFluxId, Formulation::Enum::primal >
+  template< class ModelImp, class DiscreteFunctionSpaceImp, PrimalDiffusionFlux::Enum diffFluxId, LocalDiffusionFlux::Enum localDiffFluxId >
+  struct DiffusionFluxSelector< ModelImp, DiscreteFunctionSpaceImp, diffFluxId, localDiffFluxId, Formulation::Enum::primal >
   {
     typedef DGPrimalDiffusionFlux< DiscreteFunctionSpaceImp, ModelImp, diffFluxId > type;
   };
 
-  template< class ModelImp, class DiscreteFunctionSpaceImp, PrimalDiffusionFlux::Enum diffFluxId, DualDiffusionFlux::Enum dualDiffFluxId >
-  struct DiffusionFluxSelector< ModelImp, DiscreteFunctionSpaceImp, diffFluxId, dualDiffFluxId, Formulation::Enum::dual >
+  template< class ModelImp, class DiscreteFunctionSpaceImp, PrimalDiffusionFlux::Enum diffFluxId, LocalDiffusionFlux::Enum localDiffFluxId >
+  struct DiffusionFluxSelector< ModelImp, DiscreteFunctionSpaceImp, diffFluxId, localDiffFluxId, Formulation::Enum::local >
   {
-    typedef DGDualDiffusionFlux< DiscreteFunctionSpaceImp, ModelImp, dualDiffFluxId > type;
+    typedef DGLocalDiffusionFlux< DiscreteFunctionSpaceImp, ModelImp, localDiffFluxId > type;
   };
 
 }
