@@ -40,7 +40,7 @@ namespace Fem
 
     //! Contains all known enums for primal diffusion fluxes which can be chosen via parameter file.
     const Enum        _enums[] = { Enum::cdg2, Enum::cdg, Enum::br2, Enum::ip, Enum::nipg, Enum::bo };
-    //! Contains all known names of primal diffusion fluxes which can be chosen via parameter file.
+    //! Contains all known names of primal DG diffusion fluxes which can be chosen via parameter file.
     const std::string _strings[] = { "CDG2", "CDG" , "BR2", "IP" , "NIPG", "BO" };
     //! Number of known primal diffusion fluxes which can be chosen via parameter file.
     static const int  _size = 6;
@@ -50,15 +50,15 @@ namespace Fem
   namespace DualDiffusionFlux
   {
     /**
-     * \brief Enum of all known primal diffusion flux implementations.
+     * \brief Enum of all known local DG diffusion flux implementations.
      *
      * \ingroup FemDGParameter
      */
     enum class Enum
     {
-      //! average theta flux.
+      //! Bassi-Rebay flux.
       average,
-      //! ldg flux.
+      //! Local DG flux.
       ldg,
       //! general flux: Parameter selection is done via parameter file!
       general,
