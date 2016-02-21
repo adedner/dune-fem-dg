@@ -5,6 +5,7 @@ configure_parameter_file()
 add_definitions( "-DALUGRID_CUBE" )
 add_definitions( "-DGRIDDIM=2" )
 add_definitions( "-DDIMRANGE=1" )
+add_definitions( "-DPADAPTSPACE" )
 
 if( NOT FEMDG_FAST_TESTBUILD )
   if( DUNE_FEM_DG_VERSION VERSION_LESS "2.4.1" )

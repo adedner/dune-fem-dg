@@ -84,8 +84,10 @@ namespace Fem
           l2EocError.add( u, f );
           static DGEOCError dgEocError( "DG-Error" );
           dgEocError.add( u, f );
-          static H1EOCError sigmaEocError( "sigma-norm" );
-          sigmaEocError.add( sigma, f );
+
+          //TODO what dimRange is sigma? This does not fit, yet
+          //static H1EOCError sigmaEocError( "sigma-norm" );
+          //sigmaEocError.add( sigma, f );
         }
       };
 
@@ -122,9 +124,13 @@ namespace Fem
         };
 
       private:
-        //TODO improve
-        typedef DiscreteFunctionType SigmaFunctionType;
-        typedef ErrorEstimator< DiscreteFunctionType, SigmaFunctionType, typename Operator::AssemblerType >
+        //TODO: Can we do this in a shorter way?
+        typedef typename DFSpaceType::template ToNewDimRange< GridType::dimension * FunctionSpaceType::dimRange >::NewFunctionSpaceType
+                                                                                   SigmaFunctionSpaceType;
+        typedef typename AC::template DiscreteFunctionSpaces< GridPartType, polOrd, SigmaFunctionSpaceType>
+                                                                                   SigmaDFSpaceType;
+        typedef typename AC::template DiscreteFunctions< SigmaDFSpaceType >        SigmaDiscreteFunctionType;
+        typedef ErrorEstimator< DiscreteFunctionType, SigmaDiscreteFunctionType, typename Operator::AssemblerType >
                                                                                    EstimatorType;
         typedef PoissonSigmaEstimator< DiscreteFunctionType, typename Operator::AssemblerType, polOrd >
                                                                                    SigmaEstimatorType;

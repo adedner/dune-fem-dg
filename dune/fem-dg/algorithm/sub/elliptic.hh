@@ -215,26 +215,29 @@ namespace Fem
 
     typedef typename SigmaSpaceChooser< GridType, topoId >::Type  SigmaDiscreteFunctionSpaceType ;
 
-    typedef Dune::Fem::AdaptiveDiscreteFunction< SigmaDiscreteFunctionSpaceType >
-      SigmaDiscreteFunctionType;
+    //typedef Dune::Fem::AdaptiveDiscreteFunction< SigmaDiscreteFunctionSpaceType >
+    typedef Dune::Fem::ISTLBlockVectorDiscreteFunction< SigmaDiscreteFunctionSpaceType >
+                                                                  SigmaDiscreteFunctionType;
+
+
 
     // compute the function sigma = grad u + sum_e r_e
     template <class DF, class Operator>
     struct SigmaLocal : public Fem::LocalFunctionAdapterHasInitialize
     {
-      typedef typename DF::DiscreteFunctionSpaceType UDFS;
-      typedef typename UDFS::GridPartType GridPartType;
+      typedef typename DF::DiscreteFunctionSpaceType                     UDFS;
+      typedef typename UDFS::GridPartType                                GridPartType;
       typedef typename GridPartType::GridType::template Codim<0>::Entity EntityType;
-      typedef typename GridPartType::IntersectionIteratorType IntersectionIteratorType;
-      typedef typename GridPartType::IntersectionType IntersectionType;
+      typedef typename GridPartType::IntersectionIteratorType            IntersectionIteratorType;
+      typedef typename GridPartType::IntersectionType                    IntersectionType;
 
-      typedef typename Operator::DiffusionFluxType::LiftingFunctionType LiftingFunctionType;
-      typedef typename LiftingFunctionType::RangeType RangeType;
-      typedef typename LiftingFunctionType::DiscreteFunctionSpaceType DiscreteFunctionSpaceType;
-      typedef typename DiscreteFunctionSpaceType::FunctionSpaceType FunctionSpaceType;
+      typedef typename Operator::DiffusionFluxType::LiftingFunctionType  LiftingFunctionType;
+      typedef typename LiftingFunctionType::RangeType                    RangeType;
+      typedef typename LiftingFunctionType::DiscreteFunctionSpaceType    DiscreteFunctionSpaceType;
+      typedef typename DiscreteFunctionSpaceType::FunctionSpaceType      FunctionSpaceType;
 
-      typedef typename DF::RangeType URangeType;
-      typedef typename DF::JacobianRangeType UJacobianRangeType;
+      typedef typename DF::RangeType                                     URangeType;
+      typedef typename DF::JacobianRangeType                             UJacobianRangeType;
 
       SigmaLocal( const DF &df, const Operator &oper )
       : df_(df), oper_(oper), localdf_(df_), reSpace_( oper.gradientSpace() ), localre_( reSpace_ )
@@ -278,9 +281,9 @@ namespace Fem
       void getLifting( const IntersectionType &intersection, const EntityType &entity)
       {
         // CACHING
-        typedef typename Operator::FaceQuadratureType  FaceQuadratureType ;
+        typedef typename Operator::FaceQuadratureType                               FaceQuadratureType ;
         typedef Dune::Fem::IntersectionQuadrature< FaceQuadratureType, conforming > IntersectionQuadratureType;
-        typedef typename IntersectionQuadratureType::FaceQuadratureType QuadratureImp;
+        typedef typename IntersectionQuadratureType::FaceQuadratureType             QuadratureImp;
 
         const EntityType &outside = intersection.outside();
 
@@ -307,23 +310,22 @@ namespace Fem
                       localre_
                      );
       }
-      const DF &df_;
-      const Operator &oper_;
-      typename DF::LocalFunctionType localdf_;
-      const DiscreteFunctionSpaceType &reSpace_;
-      LiftingFunctionType localre_;
+      const DF&                        df_;
+      const Operator&                  oper_;
+      typename DF::LocalFunctionType   localdf_;
+      const DiscreteFunctionSpaceType& reSpace_;
+      LiftingFunctionType              localre_;
     };
 
     template <class SigmaLocalType>
     struct SigmaLocalFunction : public Fem::LocalFunctionAdapterHasInitialize
     {
-      typedef typename DiscreteFunctionType::DiscreteFunctionSpaceType
-                       DiscreteFunctionSpaceType;
-      typedef typename DiscreteFunctionType::RangeType RangeType;
-      typedef typename DiscreteFunctionType::JacobianRangeType JacobianRangeType;
-      typedef typename DiscreteFunctionType::EntityType EntityType;
-      typedef typename DiscreteFunctionSpaceType::FunctionSpaceType FunctionSpaceType;
-      typedef typename DiscreteFunctionSpaceType::GridPartType GridPartType;
+      typedef typename DiscreteFunctionType::DiscreteFunctionSpaceType DiscreteFunctionSpaceType;
+      typedef typename DiscreteFunctionType::RangeType                 RangeType;
+      typedef typename DiscreteFunctionType::JacobianRangeType         JacobianRangeType;
+      typedef typename DiscreteFunctionType::EntityType                EntityType;
+      typedef typename DiscreteFunctionSpaceType::FunctionSpaceType    FunctionSpaceType;
+      typedef typename DiscreteFunctionSpaceType::GridPartType         GridPartType;
 
       SigmaLocalFunction( const DiscreteFunctionType &u,
                           const SigmaDiscreteFunctionType &q,
@@ -358,14 +360,15 @@ namespace Fem
         sigmaLocal_.init(entity);
       }
       private:
-      const DiscreteFunctionType &u_;
-      typename DiscreteFunctionType::LocalFunctionType uLocal_;
-      const SigmaDiscreteFunctionType &q_;
+      const DiscreteFunctionType&                           u_;
+      typename DiscreteFunctionType::LocalFunctionType      uLocal_;
+      const SigmaDiscreteFunctionType&                      q_;
       typename SigmaDiscreteFunctionType::LocalFunctionType qLocal_;
-      SigmaLocalType sigmaLocal_;
+      SigmaLocalType                                        sigmaLocal_;
     };
 
-    typedef Dune::Fem::LocalFunctionAdapter< SigmaLocal<DiscreteFunctionType, AssemblerType> > SigmaEstimateFunctionType;
+    typedef Dune::Fem::LocalFunctionAdapter< SigmaLocal<DiscreteFunctionType, AssemblerType> >
+                                                                    SigmaEstimateFunctionType;
     typedef SigmaLocal<DiscreteFunctionType, AssemblerType>         SigmaLocalType;
     typedef SigmaLocalFunction<SigmaLocalType >                     SigmaLocalFunctionType;
     typedef Dune::Fem::LocalFunctionAdapter<SigmaLocalFunctionType> SigmaLocalFunctionAdapterType;
@@ -375,24 +378,30 @@ namespace Fem
       Dune::Fem::DGL2ProjectionImpl::project( sigmaEstimateFunction_, sigmaDiscreteFunction_ );
     }
 
-    const SigmaLocalFunctionAdapterType& sigma () const
+    //const SigmaLocalFunctionAdapterType& sigma () const
+    //{
+    //  return sigma_;
+    //}
+
+    const SigmaDiscreteFunctionType& sigma () const
     {
-      return sigma_;
+      return sigmaDiscreteFunction_;
     }
 
 
   public:
 
-    GridPartType& gridPart_;
-    const DiscreteFunctionType& solution_;
-    const AssemblerType& assembler_;
-    SigmaDiscreteFunctionSpaceType sigmaSpace_;
-    SigmaDiscreteFunctionType sigmaDiscreteFunction_;
+    GridPartType&                   gridPart_;
+    const DiscreteFunctionType&     solution_;
+    const AssemblerType&            assembler_;
+    SigmaDiscreteFunctionSpaceType  sigmaSpace_;
+    SigmaDiscreteFunctionType       sigmaDiscreteFunction_;
 
-    SigmaLocal<DiscreteFunctionType, AssemblerType> sigmaLocalEstimate_;
-    SigmaLocalFunctionType sigmaLocalFunction_;
-    SigmaLocalFunctionAdapterType sigma_;
-    SigmaEstimateFunctionType sigmaEstimateFunction_;
+    SigmaLocal<DiscreteFunctionType, AssemblerType>
+                                    sigmaLocalEstimate_;
+    SigmaLocalFunctionType          sigmaLocalFunction_;
+    SigmaLocalFunctionAdapterType   sigma_;
+    SigmaEstimateFunctionType       sigmaEstimateFunction_;
 
   };
 
@@ -435,13 +444,6 @@ namespace Fem
   template< int polOrder, class DiscreteFunctionSpaceImp, class EstimatorImp = NoEstimator<polOrder> >
   class PAdaptivity
   {
-
-  public:
-    typedef DiscreteFunctionSpaceImp                     DiscreteFunctionSpaceType;
-    typedef typename DiscreteFunctionSpaceType::GridType GridType;
-    typedef EstimatorImp                    EstimatorType;
-
-
     struct PolOrderStructure
     {
       // set polynomial order to 2 by default
@@ -455,13 +457,18 @@ namespace Fem
       int &value() { return val_; }
       int val_;
     };
+
+  public:
+    typedef DiscreteFunctionSpaceImp                        DiscreteFunctionSpaceType;
+    typedef typename DiscreteFunctionSpaceType::GridType    GridType;
+    typedef EstimatorImp                                    EstimatorType;
+
     typedef PersistentContainer<GridType,PolOrderStructure> PolOrderContainer;
 
-
-    PAdaptivity( GridType& grid, const DiscreteFunctionSpaceType& space )
+    PAdaptivity( GridType& grid, const DiscreteFunctionSpaceType& space, EstimatorType& estimator  )
       : polOrderContainer_( grid, 0 ),
         space_( space ),
-        estimator_()
+        estimator_( estimator )
     {
 #ifdef PADAPTSPACE
       // we start with max order
@@ -484,8 +491,7 @@ namespace Fem
       std::vector<int> polOrderVec( space_.gridPart().indexSet().size(0) );
       std::fill( polOrderVec.begin(), polOrderVec.end(), polOrder );
 
-      //todo: correct following line
-      //polOrderContainer_.update();
+      polOrderContainer_.resize();
       if ( estimator_.isPadaptive() )
       {
         typedef typename DiscreteFunctionSpaceType::IteratorType IteratorType;
@@ -495,17 +501,14 @@ namespace Fem
         {
           const EntityType& entity = *it;
           int order = polOrderContainer_[ entity ].value();
-          // use constrcutor here, operator = is deprecated
-          typename EntityType::EntityPointer hit ( it );
           while (order == -1) // is a new element
           {
             if ( entity.level() == 0)
               order = minimalOrder;
             else
             {
-              hit = hit->father();
               // don't call father twice
-              order = polOrderContainer_[ *hit ].value();
+              order = polOrderContainer_[ entity.father() ].value();
               assert(order > 0);
             }
           }
@@ -548,9 +551,9 @@ namespace Fem
 
     private:
 
-    PolOrderContainer          polOrderContainer_;
+    PolOrderContainer                polOrderContainer_;
     const DiscreteFunctionSpaceType& space_;
-    EstimatorType              estimator_;
+    EstimatorType&                   estimator_;
 
   };
 
@@ -563,6 +566,7 @@ namespace Fem
   {
     typedef ProblemImp                                                   ProblemType;
     typedef SigmaEstimatorImp                                            SigmaEstimatorType;
+    typedef EstimatorImp                                                 EstimatorType;
     typedef typename SigmaEstimatorType::DiscreteFunctionType            DiscreteFunctionType;
     typedef typename SigmaEstimatorType::AssemblerType                   AssemblerType;
     typedef typename SigmaEstimatorType::SigmaFunctionSpaceType          SigmaFunctionSpaceType;
@@ -578,9 +582,14 @@ namespace Fem
   public:
    typedef uint64_t                          UInt64Type;
 
-    PAdaptIndicator( GridType& grid, const DiscreteFunctionType& solution, const ProblemType& problem, AssemblerType& assembler, const std::string name = "" )
-      : pAdapt_( grid, solution.space() ),
-        sigmaEstimator_( solution.gridPart(), solution, assembler, name ),
+    PAdaptIndicator( GridPartType& gridPart,
+                     DiscreteFunctionType& solution,
+                     const ProblemType& problem,
+                     AssemblerType& assembler,
+                     const std::string name = "" )
+      : sigmaEstimator_( gridPart, solution, assembler, name ),
+        estimator_( solution, sigmaEstimator_.sigma(), assembler, gridPart.grid() /*, AdaptationParameters( param ) */),
+        pAdapt_( gridPart.grid(), solution.space(), estimator_ ),
         problem_( problem )
     {}
 
@@ -626,7 +635,7 @@ namespace Fem
     const int finestLevel() const { return 0; }
 
     // return some info
-    const typename SigmaEstimatorType::SigmaLocalFunctionAdapterType& sigma()
+    const typename SigmaEstimatorType::SigmaDiscreteFunctionType& sigma()
     {
       return sigmaEstimator_.sigma();
     }
@@ -639,9 +648,10 @@ namespace Fem
       pAdapt_.closure();
     }
 
-    PAdaptivityType   pAdapt_;
     SigmaEstimatorType sigmaEstimator_;
-    const ProblemType&  problem_;
+    EstimatorType      estimator_;
+    PAdaptivityType    pAdapt_;
+    const ProblemType& problem_;
   };
 
 
@@ -714,7 +724,7 @@ namespace Fem
     using BaseType::exactSolution;
     using BaseType::solver;
 
-  public: /* ISTLLinearOperator */
+  public:
     SubEllipticAlgorithm( GridType& grid, ContainerType& container )
     : BaseType( grid, container.adapter() ),
       container_( container ),
@@ -722,7 +732,7 @@ namespace Fem
       space_( container_.space() ),
       assembler_( container_, model() ),
       matrix_( container_.matrix() ),
-      adaptIndicator_( grid, container_.solution(), problem(), assembler_, name() ),
+      adaptIndicator_( std::make_unique<AdaptIndicatorType>( gridPart_, *container_.solution().get(), problem(), assembler_, name() ) ),
       step_( 0 ),
       time_( 0 )
     {
@@ -752,7 +762,7 @@ namespace Fem
     //ADAPTATION
     virtual AdaptIndicatorType* adaptIndicator()
     {
-      return adaptIndicator.get();
+      return adaptIndicator_.get();
     }
     virtual AdaptationDiscreteFunctionType* adaptationSolution ()
     {
