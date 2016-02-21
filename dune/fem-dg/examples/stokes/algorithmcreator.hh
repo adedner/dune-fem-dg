@@ -102,8 +102,8 @@ namespace Fem
             l2EocError.add( u, f );
             static DGEOCError dgEocError( "DG-Error" );
             dgEocError.add( u, f );
-            static H1EOCError sigmaEocError( "sigma-norm" );
-            sigmaEocError.add( sigma, f );
+            //static H1EOCError sigmaEocError( "sigma-norm" );
+            //sigmaEocError.add( sigma, f );
           }
         };
 
