@@ -60,7 +60,7 @@ namespace Fem
   static const AdvectionLimiter::Enum       advLimiterEnum = AdvectionLimiter::Enum::unlimited;
   static const Matrix::Enum                 matrixEnum     = Matrix::Enum::assembled;
   static const AdvectionFlux::Enum          advFluxEnum    = AdvectionFlux::Enum::none;
-  static const PrimalDiffusionFlux::Enum    diffFluxEnum   = PrimalDiffusionFlux::Enum::general;
+  static const PrimalDiffusionFlux::Enum    diffFluxEnum   = DiffusionFlux::Enum::primal;
   // for Taylorhood (P2,P1) equal one
   static const int pressureOrderReduction = 1;
 

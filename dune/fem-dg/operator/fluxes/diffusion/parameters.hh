@@ -9,34 +9,64 @@ namespace Fem
 {
 
   /**
-   * \brief Namespace containing all parameters to select a primal diffusion flux.
+   *  \brief Namespace containing an Enum class to describe the formulation
+   *  \note Selection of operators reflecting the formulation see FormulationSelector
    */
-  namespace PrimalDiffusionFlux
+  namespace Formulation
   {
     /**
-     * \brief Enum of all known primal diffusion flux implementations.
+     * \ingroup FemDGParameter
+     */
+    enum class Enum
+    {
+      primal,
+      local
+    };
+  }
+
+  /**
+   * \brief Namespace containing all parameters to select a DG method available in primal formulation
+   */
+  namespace DiffusionFlux
+  {
+    /**
+     * \brief Enum of all available diffusion flux implementations (priaml and local formulation).
      *
      * \ingroup FemDGParameter
      */
     enum class Enum
     {
-      //! CDG 2 (Compact Discontinuous Galerkin 2) flux.
+      //! BR2 (Bassi-Rebay 2) flux (local formulation).
+      br1,
+      //! LDG (Local Discontinuous Galerkin) flux (local formulation).
+      ldg,
+      //! CDG 2 (Compact Discontinuous Galerkin 2) flux (primal formulation).
       cdg2,
-      //! CDG (Compact Discontinuous Galerkin) flux.
+      //! CDG (Compact Discontinuous Galerkin) flux (primal formulation).
       cdg,
-      //! BR2 (Bassi-Rebay 2) flux.
+      //! BR2 (Bassi-Rebay 2) flux (primal formulation).
       br2,
-      //! IP (Interior Penalty) flux.
+      //! IP (Interior Penalty) flux (primal formulation).
       ip,
-      //! NIPG (Non-symmetric Interior  Penalty) flux.
+      //! NIPG (Non-symmetric Interior  Penalty) flux (primal formulation).
       nipg,
-      //! BO (Baumann-Oden) flux.
+      //! BO (Baumann-Oden) flux (primal formulation).
       bo,
-      //! general flux: Parameter selection is done via parameter file!
-      general,
+      //! general flux primal formulation: Parameter selection is done via parameter file!
+      primal,
+      //! general flux local formulation: Parameter selection is done via parameter file!
+      local,
       //! no diffusion (advection only) flux.
       none
     };
+  }
+
+  /**
+   * \brief Namespace containing all parameters to select a DG method available in primal formulation
+   */
+  namespace PrimalDiffusionFlux
+  {
+    using namespace DiffusionFlux;
 
     //! Contains all known enums for primal diffusion fluxes which can be chosen via parameter file.
     const Enum        _enums[] = { Enum::cdg2, Enum::cdg, Enum::br2, Enum::ip, Enum::nipg, Enum::bo };
@@ -49,20 +79,7 @@ namespace Fem
 
   namespace LocalDiffusionFlux
   {
-    /**
-     * \brief Enum of all known local DG diffusion flux implementations.
-     *
-     * \ingroup FemDGParameter
-     */
-    enum class Enum
-    {
-      //! Bassi-Rebay flux.
-      br1,
-      //! Local DG flux.
-      ldg,
-      //! general flux: Parameter selection is done via parameter file!
-      general
-    };
+    using namespace DiffusionFlux;
 
     //! Contains all known enums for dual diffusion fluxes which can be chosen via parameter file.
     const Enum        _enums[] = { Enum::br1, Enum::ldg };
@@ -266,6 +283,32 @@ namespace Fem
     const std::string keyPrefix_;
 
   };
+
+  //! formulation selector, either primal or local depending on the flux implementation
+  template <DiffusionFlux::Enum flux>
+  struct FormulationSelector
+  {
+    static const Formulation::Enum formId = Formulation::Enum::primal;
+  };
+
+  template <>
+  struct FormulationSelector< DiffusionFlux::Enum::local >
+  {
+    static const Formulation::Enum formId = Formulation::Enum::local;
+  };
+
+  template <>
+  struct FormulationSelector< DiffusionFlux::Enum::ldg >
+  {
+    static const Formulation::Enum formId = Formulation::Enum::local;
+  };
+
+  template <>
+  struct FormulationSelector< DiffusionFlux::Enum::br1 >
+  {
+    static const Formulation::Enum formId = Formulation::Enum::local;
+  };
+
 
 } // end namespace
 } // end namespace

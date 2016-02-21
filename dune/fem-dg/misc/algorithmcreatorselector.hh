@@ -204,21 +204,6 @@ namespace Fem
     };
   }
 
-  /**
-   *  \brief Namespace containing an Enum class to describe the formulation
-   */
-  namespace Formulation
-  {
-    /**
-     * \ingroup FemDGParameter
-     */
-    enum class Enum
-    {
-      primal,
-      local
-    };
-  }
-
 ///////////////////////////////////////////////////////////////////////////
 // GridPartSelector
 ///////////////////////////////////////////////////////////////////////////
@@ -573,21 +558,21 @@ namespace Fem
   };
 
   template< class ModelImp, class DiscreteFunctionSpaceImp,
-            PrimalDiffusionFlux::Enum diffFluxId, LocalDiffusionFlux::Enum localDiffFluxId, Formulation::Enum form >
+            DiffusionFlux::Enum diffFluxId, Formulation::Enum form >
   struct DiffusionFluxSelector;
 
-  template< class ModelImp, class DiscreteFunctionSpaceImp, PrimalDiffusionFlux::Enum diffFluxId, LocalDiffusionFlux::Enum localDiffFluxId >
-  struct DiffusionFluxSelector< ModelImp, DiscreteFunctionSpaceImp, diffFluxId, localDiffFluxId, Formulation::Enum::primal >
+  template< class ModelImp, class DiscreteFunctionSpaceImp, DiffusionFlux::Enum diffFluxId >
+  struct DiffusionFluxSelector< ModelImp, DiscreteFunctionSpaceImp, diffFluxId, Formulation::Enum::local >
+  {
+    typedef DGLocalDiffusionFlux< DiscreteFunctionSpaceImp, ModelImp, diffFluxId > type;
+  };
+
+  template< class ModelImp, class DiscreteFunctionSpaceImp, DiffusionFlux::Enum diffFluxId >
+  struct DiffusionFluxSelector< ModelImp, DiscreteFunctionSpaceImp, diffFluxId, Formulation::Enum::primal >
   {
     typedef DGPrimalDiffusionFlux< DiscreteFunctionSpaceImp, ModelImp, diffFluxId > type;
   };
 
-  template< class ModelImp, class DiscreteFunctionSpaceImp, PrimalDiffusionFlux::Enum diffFluxId, LocalDiffusionFlux::Enum localDiffFluxId >
-  struct DiffusionFluxSelector< ModelImp, DiscreteFunctionSpaceImp, diffFluxId, localDiffFluxId, Formulation::Enum::local >
-  {
-    typedef DGLocalDiffusionFlux< DiscreteFunctionSpaceImp, ModelImp, localDiffFluxId > type;
-  };
-
-}
-}
+} // end namespace Fem
+} // end namespace Dune
 #endif

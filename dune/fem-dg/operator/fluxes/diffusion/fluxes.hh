@@ -15,7 +15,7 @@ namespace Fem
    * via an enum given in DiffusionFlux::Enum.
    *
    * \warning NIPG and BO are not implemented since these methods are not so
-   * interesting, use PrimalDiffusionFlux::Enum::general for this
+   * interesting, use PrimalDiffusionFlux::Enum::primal for this
    */
   template <class DiscreteFunctionSpaceImp,
             class Model,
@@ -30,7 +30,7 @@ namespace Fem
    */
   template <class DiscreteFunctionSpaceImp,
             class Model>
-  class DGPrimalDiffusionFlux<  DiscreteFunctionSpaceImp, Model, PrimalDiffusionFlux::Enum::general >
+  class DGPrimalDiffusionFlux<  DiscreteFunctionSpaceImp, Model, PrimalDiffusionFlux::Enum::primal >
     : public DGPrimalDiffusionFluxImpl< DiscreteFunctionSpaceImp, Model, DGPrimalDiffusionFluxParameters >
   {
     typedef DGPrimalDiffusionFluxImpl< DiscreteFunctionSpaceImp, Model, DGPrimalDiffusionFluxParameters >
@@ -47,7 +47,7 @@ namespace Fem
     DGPrimalDiffusionFlux( GridPartType& gridPart,
                            const Model& model,
                            const ParameterType& parameters = ParameterType() )
-      : BaseType( gridPart, model, parameters, PrimalDiffusionFlux::Enum::general )
+      : BaseType( gridPart, model, parameters, PrimalDiffusionFlux::Enum::primal )
     {
     }
   };
@@ -264,8 +264,8 @@ namespace Fem
       * \brief constructor reading parameters
       */
     DGLocalDiffusionFlux( GridPartType& gridPart,
-                         const Model& model,
-                         const ParameterType& parameters = ParameterType() )
+                          const Model& model,
+                          const ParameterType& parameters = ParameterType() )
       : BaseType( gridPart, model, parameters, LocalDiffusionFlux::Enum::ldg )
     {
     }
@@ -273,7 +273,7 @@ namespace Fem
 
   template <class DiscreteFunctionSpaceImp,
             class Model>
-  class DGLocalDiffusionFlux<  DiscreteFunctionSpaceImp, Model, LocalDiffusionFlux::Enum::general >
+  class DGLocalDiffusionFlux<  DiscreteFunctionSpaceImp, Model, LocalDiffusionFlux::Enum::local >
     : public LDGDiffusionFluxImpl< DiscreteFunctionSpaceImp, Model, DGLocalDiffusionFluxParameters >
   {
     typedef LDGDiffusionFluxImpl< DiscreteFunctionSpaceImp, Model, DGLocalDiffusionFluxParameters >
@@ -290,7 +290,7 @@ namespace Fem
     DGLocalDiffusionFlux( GridPartType& gridPart,
                          const Model& model,
                          const ParameterType& parameters = ParameterType() )
-      : BaseType( gridPart, model, parameters, LocalDiffusionFlux::Enum::general )
+      : BaseType( gridPart, model, parameters, LocalDiffusionFlux::Enum::local )
     {
     }
   };

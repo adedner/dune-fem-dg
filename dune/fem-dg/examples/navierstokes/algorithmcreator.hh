@@ -63,10 +63,7 @@ namespace Fem
                                      AdvectionLimiter::Enum::unlimited,
                                      Matrix::Enum::matrixfree,
                                      AdvectionFlux::Enum::llf,
-                                     PrimalDiffusionFlux::Enum::general> AC;
-      // Local DG approach
-      //                               LocalDiffusionFlux::Enum::ldg,
-      //                               Formulation::Enum::local > AC;
+                                     DiffusionFlux::Enum::primal > AC;
 
       typedef typename AC::GridType                                 GridType;
       typedef typename AC::GridParts                                HostGridPartType;

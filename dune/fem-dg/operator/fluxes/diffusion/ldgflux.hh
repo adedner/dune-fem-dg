@@ -75,7 +75,7 @@ namespace Fem
                          const ParameterType& param,
                          const EnumType staticMethod ) :
       BaseType( gridPart, mod, param ),
-      method_( staticMethod == EnumType::general ? param.getMethod() : staticMethod ),
+      method_( staticMethod == EnumType::local ? param.getMethod() : staticMethod ),
       penalty_( parameter().penalty() ),
       // Set CFL number for penalty term (compare diffusion in first pass)
       penaltyTerm_( std::abs(  penalty_ ) > 0 )
