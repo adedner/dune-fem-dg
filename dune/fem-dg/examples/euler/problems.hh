@@ -14,8 +14,10 @@ namespace Fem
 
     static ProblemInterfaceType* apply()
     {
+      //const std::string problemNames []
+      //    = { "sod" , "smooth1d" , "ffs" , "diffraction" , "shockbubble", "p123" };
       const std::string problemNames []
-          = { "sod" , "withman", "withmansmooth", "smooth1d" , "ffs" , "diffraction" , "shockbubble", "p123" };
+          = { "sod" , "smooth1d" , "ffs" , "diffraction" , "shockbubble", "riemann" };
 
       const int problemNumber = Fem :: Parameter :: getEnum ( "problem" , problemNames );
 
@@ -27,8 +29,9 @@ namespace Fem
         return new U0Smooth1D< GridImp > ();
       else if( problemNames[ problemNumber ] == "ffs" )
         return new U0FFS< GridImp > ();
-      else if( problemNames[ problemNumber ] == "p123" )
-        return new U0P123< GridImp >();
+      else if( problemNames[ problemNumber ] == "riemann" )
+        return new RiemannProblem< GridImp >();
+
       std::cerr << "Error: Problem " << problemNames[ problemNumber ]
                 << " not implemented." << std::endl;
 

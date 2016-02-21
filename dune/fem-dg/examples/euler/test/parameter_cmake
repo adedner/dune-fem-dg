@@ -1,9 +1,9 @@
 # PROBLEM SELECTION 
 #------------------
 # possible: "sod" , "withman", "withmansmooth", "smooth1d" , "ffs" , "diffraction" , "shockbubble"
-problem: sod 
+problem: riemann
 # problemflag: 0
-# riemanndata: [1., -1., 1.,    1., 1., 1.]
+# riemanndata: [1., -2., 0.4,  1., 2., 0.4]
 
 # LIMITER SETTINGS
 #-----------------
