@@ -81,6 +81,7 @@ fi
 
 # run headercheck
 # ---------------
+errors=0
 
 if $HEADERCHECK; then
   cd $WORKINGDIR
