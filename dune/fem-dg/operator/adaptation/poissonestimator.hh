@@ -618,7 +618,7 @@ namespace Fem
           typedef typename H1NormType :: template FunctionJacobianSquare< DGLFType >  FctJacType;
 
           FctJacType udg2( udg );
-          RangeType eta1(0),eta2(0);
+          typename FctJacType::RangeType eta1(0),eta2(0);
           for (int i=0 ; i<HDGSpaceType::size(polOrder-2); ++i)
             udg[i] = 0;
           integrator.integrate( entity, udg2, eta2 ); // square of H1 norm
