@@ -463,7 +463,7 @@ namespace Fem
         {
           if (inter->neighbor())
           {
-            if (inter->outside()->level() > lev)
+            if (inter->outside().level() > lev)
               ++nconf;
             else
               ++conf;

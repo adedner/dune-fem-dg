@@ -465,10 +465,11 @@ namespace Fem
 
     typedef PersistentContainer<GridType,PolOrderStructure> PolOrderContainer;
 
-    PAdaptivity( GridType& grid, const DiscreteFunctionSpaceType& space, EstimatorType& estimator  )
+    PAdaptivity( GridType& grid, const DiscreteFunctionSpaceType& space, EstimatorType& estimator, const std::string name = ""  )
       : polOrderContainer_( grid, 0 ),
         space_( space ),
-        estimator_( estimator )
+        estimator_( estimator ),
+        param_( AdaptationParameters() )
     {
 #ifdef PADAPTSPACE
       // we start with max order
@@ -525,8 +526,9 @@ namespace Fem
 
 
     template< class ProblemImp >
-    bool estimateMark( const ProblemImp& problem, const double tolerance)
+    bool estimateMark( const ProblemImp& problem )
     {
+      double tolerance = param_.refinementTolerance();
 #ifdef PADAPTSPACE
       // resize container
       polOrderContainer_.resize();
@@ -558,6 +560,7 @@ namespace Fem
     PolOrderContainer                polOrderContainer_;
     const DiscreteFunctionSpaceType& space_;
     EstimatorType&                   estimator_;
+    AdaptationParameters             param_;
 
   };
 
@@ -592,7 +595,7 @@ namespace Fem
                      AssemblerType& assembler,
                      const std::string name = "" )
       : sigmaEstimator_( gridPart, solution, assembler, name ),
-        estimator_( solution, sigmaEstimator_.sigma(), assembler, gridPart.grid() /*, AdaptationParameters( param ) */),
+        estimator_( solution, sigmaEstimator_.sigma(), assembler, gridPart.grid(), name /*, AdaptationParameters( param ) */),
         pAdapt_( gridPart.grid(), solution.space(), estimator_ ),
         problem_( problem )
     {}
@@ -624,10 +627,9 @@ namespace Fem
       // calculate new sigma
       sigmaEstimator_.update();
 
-
-      //TODO extract tolerance from parameter file
-      double tolerance = 1.0;
-      pAdapt_.estimateMark( problem_, tolerance );
+      const bool marked = pAdapt_.estimateMark( problem_ );
+      if( marked )
+        pAdapt_.closure();
     }
 
     void postAdapt()
@@ -651,12 +653,6 @@ namespace Fem
     }
 
   private:
-
-    //TODO use this method!
-    void closure()
-    {
-      pAdapt_.closure();
-    }
 
     SigmaEstimatorType sigmaEstimator_;
     EstimatorType      estimator_;

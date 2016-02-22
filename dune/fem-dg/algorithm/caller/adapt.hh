@@ -227,13 +227,6 @@ namespace Fem
     {
       if( adaptive() )
       {
-        //// call initial adaptation
-        //estimateMark( true );
-        //adapt( alg, loop );
-
-        //// setup problem again
-        //alg->initialize( loop );
-
         // some info in verbose mode
         if( Fem::Parameter::verbose() )
         {
@@ -255,8 +248,10 @@ namespace Fem
     {
       if( needsAdaptation( alg, loop, tp ) )
       {
+        ForLoopType< PreAdapt >::apply( tuple_ );
         estimateMark( false );
         adapt( alg, loop, tp );
+        ForLoopType< PostAdapt >::apply( tuple_ );
       }
     }
 
@@ -269,8 +264,13 @@ namespace Fem
     template< class SubAlgImp >
     void solveStart( SubAlgImp* alg, int loop )
     {
-      estimateMark( false );
-      adapt( alg, loop );
+      if( adaptive() )
+      {
+        ForLoopType< PreAdapt >::apply( tuple_ );
+        estimateMark();
+        adaptationManager().adapt();
+        ForLoopType< PostAdapt >::apply( tuple_ );
+      }
     }
 
     /**
@@ -429,31 +429,13 @@ namespace Fem
       {
         int sequence = getSequence( get<0>( tuple_ ) );
 
-        ForLoopType< PreAdapt >::apply( tuple_ );
         adaptationManager().adapt();
-        ForLoopType< PostAdapt >::apply( tuple_ );
 
         if( sequence !=  getSequence( get<0>( tuple_ ) ) )
           alg->postProcessing().solveEnd( alg, loop, tp );
       }
     }
 
-    template< class SubAlgImp >
-    void adapt( SubAlgImp* alg, int loop )
-    {
-      if( adaptive() )
-      {
-        //int sequence = getSequence( get<0>( tuple_ ) );
-
-        ForLoopType< PreAdapt >::apply( tuple_ );
-        adaptationManager().adapt();
-        ForLoopType< PostAdapt >::apply( tuple_ );
-
-        //TODO think about it
-        //if( sequence !=  getSequence( get<0>( tuple_ ) ) )
-        //  alg->postProcessing().solveEnd( alg, loop );
-      }
-    }
 
     template< class T >
     static typename enable_if< std::is_void< typename std::remove_pointer<T>::type::AdaptIndicatorType >::value, int >::type
