@@ -482,6 +482,10 @@ namespace Fem
 #endif
     }
 
+    bool adaptive() const
+    {
+      return estimator_.isPadaptive();
+    }
 
     void prepare()
     {
@@ -593,9 +597,15 @@ namespace Fem
         problem_( problem )
     {}
 
-    bool adaptive() const { return false; }
+    bool adaptive() const
+    {
+      return pAdapt_.adaptive();
+    }
 
-    size_t numberOfElements() const { return 0; }
+    size_t numberOfElements() const
+    {
+      return 0;
+    }
 
     UInt64Type globalNumberOfElements() const { return 0; }
 
