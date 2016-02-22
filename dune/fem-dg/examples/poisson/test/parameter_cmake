@@ -44,7 +44,9 @@ dgdiffusionflux.liftfactor: 0
 # ----------
 fem.adaptation.method: generic 
 # possible values none, coeffroot, prior2p
-padaptive.method: coeffroot
+fem.adaptation.padaptive.method: coeffroot
+# dummy for padaptation
+fem.adaptation.coarsestLevel: 2
 
 # DATAWRITER
 # ----------

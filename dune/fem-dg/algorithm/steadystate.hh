@@ -181,7 +181,12 @@ namespace Fem
     {
       initialize( loop );
       preSolve( loop );
-      adaptCaller_.solveStart( this, loop );
+      //refine until grid is fine enough...
+      //TODO improve?
+      while( adaptCaller_.needsAdaptation( this, loop ) )
+      {
+        adaptCaller_.solveStart( this, loop );
+      }
       ForLoopType< Solve >::apply( tuple_, loop );
       postSolve( loop );
       finalize( loop );

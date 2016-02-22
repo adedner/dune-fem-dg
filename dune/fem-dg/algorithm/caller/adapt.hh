@@ -227,12 +227,12 @@ namespace Fem
     {
       if( adaptive() )
       {
-        // call initial adaptation
-        estimateMark( true );
-        adapt( alg, loop );
+        //// call initial adaptation
+        //estimateMark( true );
+        //adapt( alg, loop );
 
-        // setup problem again
-        alg->initialize( loop );
+        //// setup problem again
+        //alg->initialize( loop );
 
         // some info in verbose mode
         if( Fem::Parameter::verbose() )
@@ -253,7 +253,7 @@ namespace Fem
     template< class SubAlgImp, class TimeProviderImp >
     void solveStart( SubAlgImp* alg, int loop, TimeProviderImp& tp )
     {
-      if( tp.timeStep() % adaptParam_.adaptCount() == 0 )
+      if( needsAdaptation( alg, loop, tp ) )
       {
         estimateMark( false );
         adapt( alg, loop, tp );
@@ -306,6 +306,22 @@ namespace Fem
       bool adaptive = false;
       ForLoopType< Adaptive >::apply( tuple_, adaptive );
       return adaptive;
+    }
+
+
+    template< class SubAlgImp, class TimeProviderImp >
+    bool needsAdaptation( SubAlgImp* alg, int loop, TimeProviderImp& tp )
+    {
+      return( tp.timeStep() % adaptParam_.adaptCount() == 0 );
+    }
+
+    template< class SubAlgImp >
+    bool needsAdaptation( SubAlgImp* alg, int loop )
+    {
+      //TODO set a better condition, here (from padaptindicator?)...
+      static int maxIteration = 0;
+      maxIteration++;
+      return( maxIteration < adaptParam_.coarsestLevel() );
     }
 
     /**
