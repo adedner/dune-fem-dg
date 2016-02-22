@@ -527,7 +527,7 @@ namespace Fem
         // calculate real lifting
         for(size_t qp = 0; qp < quadNoInp; ++qp )
         {
-          addLifting(intersection, entity, u.tuple( qp ), u[ qp ], time, faceQuad,  qp,
+          addLifting(intersection, entity, u.at( qp ), u[ qp ], time, faceQuad,  qp,
                      uLeftVec[ qp ], uRightVec[ qp ],
                      liftingEvalLeMinus_[ qp ] );
         }
@@ -560,7 +560,7 @@ namespace Fem
           {
             // get value of 2*r_e in quadrature point
             // use correct order on interface quadratures!
-            addLifting(intersection, entity2, u2.tuple( qp ), u2[ qp ], time, faceQuad2,  qp,
+            addLifting(intersection, entity2, u2.at( qp ), u2[ qp ], time, faceQuad2,  qp,
                        uLeftVec[ qp ], uRightVec[ qp ], liftingEvalLePlus_[ qp ] );
           }
 
@@ -623,7 +623,7 @@ namespace Fem
         liftingEvalLeMinus_.resize( quadNop );
         for(size_t qp = 0; qp < quadNop; ++qp )
         {
-          addLifting(intersection, entity, uLeftVec.tuple( qp ), uLeftVec[ qp ], time, quadInner, qp,
+          addLifting(intersection, entity, uLeftVec.at( qp ), uLeftVec[ qp ], time, quadInner, qp,
                      uLeftVec[ qp ], uRight[ qp ] , liftingEvalLeMinus_[ qp ] );
         }
         // add to local function

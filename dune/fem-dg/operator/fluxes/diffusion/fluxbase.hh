@@ -33,15 +33,17 @@ namespace Fem
       : vec_( vec )
     {}
 
-    const TupleType& tuple( const size_t i ) const
+    // return element of vector at position i
+    const TupleType& at( const size_t i ) const
     {
       assert( i < vec_.size() );
       return vec_[ i ];
     }
 
+    // return tuple element according to passUId at position i
     const ValueType& operator [] ( const size_t i ) const
     {
-      return tuple( i )[ uVar ];
+      return at( i )[ uVar ];
     }
   };
 

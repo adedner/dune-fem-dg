@@ -90,7 +90,7 @@ namespace Fem
       RangeValues(int col, const VectorType &vec) : col_(col), vec_(vec), zero_(0)
       {}
 
-      const RangeType& tuple( int i ) const { return this->operator[] ( i ); }
+      const RangeType& at( int i ) const { return this->operator[] ( i ); }
       const RangeType &operator[](int row) const
       {
         if (col_==-1)
@@ -110,7 +110,7 @@ namespace Fem
       VectorToTupleVector(const VectorType &vec) : vec_(vec)
       {}
 
-      const RangeType& tuple( int i ) const { return this->operator[] ( i ); }
+      const RangeType& at( int i ) const { return this->operator[] ( i ); }
       const RangeType &operator[](int i) const
       {
         return vec_[ i ];
@@ -123,7 +123,7 @@ namespace Fem
       typedef std::vector< std::vector< JacobianRangeType > > VectorType;
       JacobianRangeValues(int col, const VectorType &vec) : col_(col), vec_(vec), zero_(0)
       {}
-      const JacobianRangeType& tuple( int i ) const { return this->operator[] ( i ); }
+      const JacobianRangeType& at( int i ) const { return this->operator[] ( i ); }
       const JacobianRangeType &operator[](int row) const
       {
         if (col_==-1)
@@ -883,7 +883,6 @@ namespace Fem
       {
         diffusionFlux_.initializeBoundary( intersection, entity, time, faceQuadInside, valueEn, valueNb );
       }
-
 
       const size_t numFaceQuadPoints = faceQuadInside.nop();
       for( size_t pt = 0; pt < numFaceQuadPoints; ++pt )
