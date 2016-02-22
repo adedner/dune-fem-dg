@@ -22,6 +22,7 @@
 #include <dune/fem/misc/h1norm.hh>
 #include <dune/fem/misc/nonconformitylevel.hh>
 #include <dune/fem/misc/femeoc.hh>
+#include <dune/fem/misc/fmatrixconverter.hh>
 
 #include <dune/fem-dg/pass/context.hh>
 #include <dune/fem-dg/operator/adaptation/utility.hh>
@@ -115,6 +116,7 @@ namespace Fem
     typedef typename DiscreteFunctionType::DiscreteFunctionSpaceType DiscreteFunctionSpaceType;
     typedef typename DiscreteFunctionType::LocalFunctionType         LocalFunctionType;
     typedef typename SigmaFunction::LocalFunctionType                SigmaLocalFunctionType;
+    typedef typename SigmaLocalFunctionType::RangeType               GradientRangeType;
 
     typedef typename DiscreteFunctionSpaceType::DomainFieldType      DomainFieldType;
     typedef typename DiscreteFunctionSpaceType::RangeFieldType       RangeFieldType;
@@ -123,6 +125,9 @@ namespace Fem
     typedef typename DiscreteFunctionSpaceType::JacobianRangeType    JacobianRangeType;
     typedef typename DiscreteFunctionSpaceType::GridPartType         GridPartType;
     typedef typename DiscreteFunctionSpaceType::IteratorType         IteratorType;
+
+    typedef Dune::Fem::FieldMatrixConverter< GradientRangeType, JacobianRangeType >
+      SigmaConverterType;
 
     typedef typename GridPartType::GridType                          GridType;
     typedef typename GridPartType::IndexSetType                      IndexSetType;
@@ -682,7 +687,7 @@ namespace Fem
       volume/=3*faceVol;
 
       typedef RangeType           RangeTuple;
-      typedef JacobianRangeType   JacobianTuple;
+      typedef SigmaConverterType JacobianTuple;
       typedef IntersectionQuadraturePointContext< IntersectionType, ElementType, FaceQuadratureType, RangeTuple, JacobianTuple > IntersectionLocalEvaluationType;
 
       for( int qp = 0; qp < numQuadraturePoints; ++qp )
@@ -697,10 +702,11 @@ namespace Fem
         JacobianRangeType AJacEn;
         fluxEn[qp] /= integrationElement;
 
-        IntersectionLocalEvaluationType local( intersection, inside, quadInside, uValuesEn[qp], sigmaValuesEn[qp], qp, 0, volume );
+        const SigmaConverterType sigmaValueEn( sigmaValuesEn[qp] );
+        IntersectionLocalEvaluationType local( intersection, inside, quadInside, uValuesEn[qp], sigmaValueEn, qp, 0, volume );
 
         oper_.model().diffusion(local,
-                                uValuesEn[qp],sigmaValuesEn[qp], AJacEn);
+                                uValuesEn[qp], sigmaValueEn, AJacEn);
         // note that flux=-hatA therefore we compute -hatA+Agrad u
         AJacEn.umv( unitNormal, fluxEn[qp]);
 
@@ -827,7 +833,7 @@ namespace Fem
       volume/=3*faceVol;
 
       typedef RangeType           RangeTuple;
-      typedef JacobianRangeType   JacobianTuple;
+      typedef SigmaConverterType  JacobianTuple;
       typedef IntersectionQuadraturePointContext< IntersectionType, ElementType, QuadratureImp, RangeTuple, JacobianTuple > IntersectionLocalEvaluationType;
 
       for( int qp = 0; qp < numQuadraturePoints; ++qp )
@@ -843,13 +849,15 @@ namespace Fem
         fluxEn[qp] /= integrationElement;
         fluxNb[qp] /= integrationElement;
 
-        IntersectionLocalEvaluationType left( intersection, inside, quadInside, uValuesEn[qp], sigmaValuesEn[qp], qp, 0, volume );
-        IntersectionLocalEvaluationType right( intersection, outside, quadInside, uValuesNb[qp], sigmaValuesNb[qp], qp, 0, volume );
+        const SigmaConverterType sigmaValueEn( sigmaValuesEn[qp] );
+        const IntersectionLocalEvaluationType left( intersection, inside, quadInside, uValuesEn[qp], sigmaValueEn, qp, 0, volume );
+        const SigmaConverterType sigmaValueNb( sigmaValuesNb[qp] );
+        const IntersectionLocalEvaluationType right( intersection, outside, quadInside, uValuesNb[qp], sigmaValueNb, qp, 0, volume );
 
         oper_.model().diffusion(left,
-                                uValuesEn[qp],sigmaValuesEn[qp], AJacEn);
+                                uValuesEn[qp], sigmaValueEn, AJacEn);
         oper_.model().diffusion(right,
-                                uValuesNb[qp],sigmaValuesNb[qp], AJacNb);
+                                uValuesNb[qp], sigmaValueNb, AJacNb);
 
         // note that flux=-hatA therefore we compute -hatA+Agrad u
         AJacEn.umv( unitNormal, fluxEn[qp]);
@@ -911,9 +919,11 @@ namespace Fem
       const double volume = geo.volume();
       {
         // finite difference approximation
-        typename LocalFunctionType::RangeType ux0,ux1;
-        typename SigmaLocalFunctionType::RangeType sigmax0,sigmax1;
-        typename LocalFunctionType::JacobianRangeType Asigmax0,Asigmax1;
+        RangeType ux0,ux1;
+
+        GradientRangeType sigmax0,sigmax1;
+        JacobianRangeType Asigmax0,Asigmax1;
+
         DomainType xGlobal = geo.global( quad.point(qp ) );
         double hen = std::max(1e-12,h2*h2);
         result = 0;
@@ -932,12 +942,14 @@ namespace Fem
           sigma_h.evaluate(x1,sigmax1);
 
           {
-            EntityStorage entityStorage( entity, volume, xgl0, x0 );
-            oper_.model().diffusion(entityStorage, ux0, sigmax0, Asigmax0);
+            const EntityStorage entityStorage( entity, volume, xgl0, x0 );
+            const SigmaConverterType jac0( sigmax0 );
+            oper_.model().diffusion(entityStorage, ux0, jac0, Asigmax0);
           }
           {
-            EntityStorage entityStorage( entity, volume, xgl1, x1 );
-            oper_.model().diffusion(entityStorage, ux1, sigmax1, Asigmax1);
+            const EntityStorage entityStorage( entity, volume, xgl1, x1 );
+            const SigmaConverterType jac1( sigmax1 );
+            oper_.model().diffusion(entityStorage, ux1, jac1, Asigmax1);
           }
           for( int r = 0; r < RangeType::dimension; ++r )
           {
@@ -955,8 +967,8 @@ namespace Fem
     mutable std::vector< JacobianRangeType > dfluxEn;
     mutable std::vector< RangeType > fluxNb;
     mutable std::vector< JacobianRangeType > dfluxNb;
-    mutable std::vector< typename SigmaLocalFunctionType::RangeType > sigmaValuesEn;
-    mutable std::vector< typename SigmaLocalFunctionType::RangeType > sigmaValuesNb;
+    mutable std::vector< GradientRangeType > sigmaValuesEn;
+    mutable std::vector< GradientRangeType > sigmaValuesNb;
   };
 
 }
