@@ -806,15 +806,13 @@ namespace Fem
       fluxNb.resize( numQuadraturePoints );
       dfluxNb.resize( numQuadraturePoints );
 
-
-      //TODO: check this
-      //typedef typename DGOperator::IntersectionStorage IntersectionStorage;
-      //IntersectionStorage itersecStorage( intersection, inside, inside, volume, volume);
-      //oper_.flux(dfSpace_.gridPart(),
-      //           intersection, inside, outside, 0, quadInside, quadOutside,
-      //           uValuesEn, duValuesEn, uValuesNb, duValuesNb,
-      //           fluxEn, dfluxEn, fluxNb, dfluxNb
-      //           );
+      typedef typename DGOperator::IntersectionStorage IntersectionStorage;
+      IntersectionStorage intersectionStorage( intersection, inside, inside, volume, volume);
+      oper_.flux(dfSpace_.gridPart(), intersectionStorage, 0.0, /* time */
+                 quadInside, quadOutside,
+                 uValuesEn, duValuesEn, uValuesNb, duValuesNb,
+                 fluxEn, dfluxEn, fluxNb, dfluxNb
+                );
 
       sigmaValuesEn.resize( numQuadraturePoints );
       sigmaValuesNb.resize( numQuadraturePoints );
@@ -909,6 +907,8 @@ namespace Fem
       }
       else
 #endif
+      typedef typename DGOperator::EntityStorage EntityStorage;
+      const double volume = geo.volume();
       {
         // finite difference approximation
         typename LocalFunctionType::RangeType ux0,ux1;
@@ -930,9 +930,15 @@ namespace Fem
           u_h.evaluate(x1,ux1);
           sigma_h.evaluate(x0,sigmax0);
           sigma_h.evaluate(x1,sigmax1);
-          //TODO: check this
-          //oper_.model().diffusion(entity,0,x0,ux0,sigmax0, Asigmax0);
-          //oper_.model().diffusion(entity,0,x1,ux1,sigmax1, Asigmax1);
+
+          {
+            EntityStorage entityStorage( entity, volume, xgl0, x0 );
+            oper_.model().diffusion(entityStorage, ux0, sigmax0, Asigmax0);
+          }
+          {
+            EntityStorage entityStorage( entity, volume, xgl1, x1 );
+            oper_.model().diffusion(entityStorage, ux1, sigmax1, Asigmax1);
+          }
           for( int r = 0; r < RangeType::dimension; ++r )
           {
             result[r] += (Asigmax1[r][i] - Asigmax0[r][i])/ (2.*hen);

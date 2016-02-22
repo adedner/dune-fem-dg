@@ -162,6 +162,30 @@ namespace Fem
       const double areaEn_, areaNb_;
     };
 
+    struct EntityStorage
+    {
+      typedef typename EntityType :: Geometry :: LocalCoordinate LocalDomainType;
+
+      EntityStorage( const EntityType& entity, const double volume,
+                     const DomainType& position, const LocalDomainType& local )
+        : en_(entity),
+          volume_(volume),
+          position_( position ),
+          localPosition_( local )
+      {}
+
+      const EntityType &entity() const { return en_; }
+      const double volume() const { return volume_; }
+      const LocalDomainType& localPosition() const { return localPosition_; }
+      const DomainType& position() const { return position_; }
+
+    private:
+      const EntityType &en_;
+      const double volume_;
+      const DomainType& position_;
+      const LocalDomainType& localPosition_;
+    };
+
 
     //! constructor for DG matrix assembly
     DGPrimalMatrixAssembly( ContainerType& container,
