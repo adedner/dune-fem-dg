@@ -151,7 +151,7 @@ namespace Fem
   };
 
 
-  template< class DiscreteFunctionImp, class AssemblerImp, int polOrder>
+  template< class DiscreteFunctionImp, template<class> class SigmaDiscreteFunctionChooserImp, class AssemblerImp, int polOrder>
   class PoissonSigmaEstimator
   {
   public:
@@ -161,6 +161,7 @@ namespace Fem
     typedef typename DiscreteFunctionType::GridPartType              GridPartType;
     typedef typename GridPartType::GridType                          GridType;
     typedef AssemblerImp                                             AssemblerType;
+    typedef AssemblerImp                                             DGOperatorType;
     static const int polynomialOrder = polOrder;
 
     typedef typename DiscreteFunctionSpaceType ::
@@ -187,21 +188,21 @@ namespace Fem
     template <class Grid, int topoId>
     struct SigmaSpaceChooser
     {
-      typedef Fem::PAdaptiveDGSpace< SigmaFunctionSpaceType, GridPartType, polOrder > Type ;
+      typedef Fem::PAdaptiveDGSpace< SigmaFunctionSpaceType, GridPartType, polOrder > Type;
     };
 
     //- cubes use LegendreDGSpace
     template <class Grid>
     struct SigmaSpaceChooser< Grid, 1 >
     {
-      typedef Dune::Fem::LegendreDiscontinuousGalerkinSpace< SigmaFunctionSpaceType, GridPartType, polOrder > Type ;
+      typedef Dune::Fem::LegendreDiscontinuousGalerkinSpace< SigmaFunctionSpaceType, GridPartType, polOrder > Type;
     };
 
     //- cubes use OrthonormalDGSpace
     template <class Grid>
     struct SigmaSpaceChooser< Grid, 0 >
     {
-      typedef Dune::Fem::DiscontinuousGalerkinSpace< SigmaFunctionSpaceType, GridPartType, polOrder > Type ;
+      typedef Dune::Fem::DiscontinuousGalerkinSpace< SigmaFunctionSpaceType, GridPartType, polOrder > Type;
     };
 
     // work arround internal compiler error
@@ -213,11 +214,10 @@ namespace Fem
     enum { topoId = (simplexTopoId == myTopo) ? 0 :  // 0 = simplex, 1 = cube, -1 = hybrid
                       (myTopo == cubeTopoId) ? 1 : -1 };
 
-    typedef typename SigmaSpaceChooser< GridType, topoId >::Type  SigmaDiscreteFunctionSpaceType ;
+    typedef typename SigmaSpaceChooser< GridType, topoId >::Type         SigmaDiscreteFunctionSpaceType;
 
-    //typedef Dune::Fem::AdaptiveDiscreteFunction< SigmaDiscreteFunctionSpaceType >
-    typedef Dune::Fem::ISTLBlockVectorDiscreteFunction< SigmaDiscreteFunctionSpaceType >
-                                                                  SigmaDiscreteFunctionType;
+    typedef typename SigmaDiscreteFunctionChooserImp<SigmaDiscreteFunctionSpaceType>::type
+                                                                         SigmaDiscreteFunctionType;
 
 
 

@@ -124,16 +124,13 @@ namespace Fem
         };
 
       private:
-        //TODO: Can we do this in a shorter way?
-        typedef typename DFSpaceType::template ToNewDimRange< GridType::dimension * FunctionSpaceType::dimRange >::NewFunctionSpaceType
-                                                                                   SigmaFunctionSpaceType;
-        typedef typename AC::template DiscreteFunctionSpaces< GridPartType, polOrd, SigmaFunctionSpaceType>
-                                                                                   SigmaDFSpaceType;
-        typedef typename AC::template DiscreteFunctions< SigmaDFSpaceType >        SigmaDiscreteFunctionType;
-        typedef ErrorEstimator< DiscreteFunctionType, SigmaDiscreteFunctionType, typename Operator::AssemblerType >
-                                                                                   EstimatorType;
-        typedef PoissonSigmaEstimator< DiscreteFunctionType, typename Operator::AssemblerType, polOrd >
+        //small helper class
+        template< class SigmaDFSpaceType > struct SigmaFunctionChooser
+        { typedef typename AC::template DiscreteFunctions< SigmaDFSpaceType > type; };
+
+        typedef PoissonSigmaEstimator< DiscreteFunctionType, SigmaFunctionChooser, typename Operator::AssemblerType, polOrd >
                                                                                    SigmaEstimatorType;
+        typedef ErrorEstimator< SigmaEstimatorType >                               EstimatorType;
       public:
 
         typedef SubSolverMonitor< SolverMonitor >                                  SolverMonitorType;

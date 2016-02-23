@@ -105,17 +105,20 @@ namespace Fem
   //                  fluxEn, dfluxEn, fluxNb, dfluxNb):
   //              method to compute -hatK, only fluxEn and fluxNb is used
 
-  template<class UFunction, class SigmaFunction, class DGOperator>
+  template<class SigmaEstimatorImp>
   class ErrorEstimator
   {
-    typedef ErrorEstimator< UFunction, SigmaFunction, DGOperator> ThisType;
+    typedef ErrorEstimator< SigmaEstimatorImp> ThisType;
 
   public:
-    typedef UFunction                                                DiscreteFunctionType;
+    typedef SigmaEstimatorImp                                        SigmaEstimatorType;
+    typedef typename SigmaEstimatorType::DiscreteFunctionType        DiscreteFunctionType;
+    typedef typename SigmaEstimatorType::SigmaDiscreteFunctionType   SigmaDiscreteFunctionType;
+    typedef typename SigmaEstimatorType::DGOperatorType              DGOperatorType;
 
     typedef typename DiscreteFunctionType::DiscreteFunctionSpaceType DiscreteFunctionSpaceType;
     typedef typename DiscreteFunctionType::LocalFunctionType         LocalFunctionType;
-    typedef typename SigmaFunction::LocalFunctionType                SigmaLocalFunctionType;
+    typedef typename SigmaDiscreteFunctionType::LocalFunctionType    SigmaLocalFunctionType;
     typedef typename SigmaLocalFunctionType::RangeType               GradientRangeType;
 
     typedef typename DiscreteFunctionSpaceType::DomainFieldType      DomainFieldType;
@@ -127,7 +130,7 @@ namespace Fem
     typedef typename DiscreteFunctionSpaceType::IteratorType         IteratorType;
 
     typedef Dune::Fem::FieldMatrixConverter< GradientRangeType, JacobianRangeType >
-      SigmaConverterType;
+                                                                     SigmaConverterType;
 
     typedef typename GridPartType::GridType                          GridType;
     typedef typename GridPartType::IndexSetType                      IndexSetType;
@@ -141,8 +144,8 @@ namespace Fem
     static const int dimension = GridType::dimension;
 
     // CACHING
-    typedef typename DGOperator::FaceQuadratureType                  FaceQuadratureType ;
-    typedef typename DGOperator::VolumeQuadratureType                VolumeQuadratureType ;
+    typedef typename DGOperatorType::FaceQuadratureType              FaceQuadratureType ;
+    typedef typename DGOperatorType::VolumeQuadratureType            VolumeQuadratureType ;
 
     typedef std::vector< double >                                    ErrorIndicatorType;
   protected:
@@ -159,9 +162,9 @@ namespace Fem
     };
 
 
-    const DGOperator&                oper_;
+    const DGOperatorType&            oper_;
     const DiscreteFunctionType&      uh_;
-    const SigmaFunction&             sigma_;
+    const SigmaDiscreteFunctionType& sigma_;
     const double&                    beta_;
     const DiscreteFunctionSpaceType& dfSpace_;
     GridPartType&                    gridPart_;
@@ -183,8 +186,8 @@ namespace Fem
 
   public:
     ErrorEstimator (const DiscreteFunctionType &uh,
-                    const SigmaFunction &sigma,
-                    const DGOperator &oper,
+                    const SigmaDiscreteFunctionType &sigma,
+                    const DGOperatorType &oper,
                     GridType &grid,
                     const AdaptationParameters& param = AdaptationParameters() )
      : oper_(oper),
@@ -812,7 +815,7 @@ namespace Fem
       fluxNb.resize( numQuadraturePoints );
       dfluxNb.resize( numQuadraturePoints );
 
-      typedef typename DGOperator::IntersectionStorage IntersectionStorage;
+      typedef typename DGOperatorType::IntersectionStorage IntersectionStorage;
       IntersectionStorage intersectionStorage( intersection, inside, inside, volume, volume);
       oper_.flux(dfSpace_.gridPart(), intersectionStorage, 0.0, /* time */
                  quadInside, quadOutside,
@@ -915,7 +918,7 @@ namespace Fem
       }
       else
 #endif
-      typedef typename DGOperator::EntityStorage EntityStorage;
+      typedef typename DGOperatorType::EntityStorage EntityStorage;
       const double volume = geo.volume();
       {
         // finite difference approximation
