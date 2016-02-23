@@ -235,7 +235,7 @@ namespace Fem
       return solver_.get();
     }
 
-    DiscreteFunctionType& solution ()
+    DiscreteFunctionType& solution () override
     {
       assert( solution_ );
       return *solution_;
@@ -248,30 +248,30 @@ namespace Fem
     }
 
     // return grid width of grid (overload in derived classes)
-    virtual double gridWidth () const { return GridWidth::calcGridWidth( gridPart_ ); }
+    virtual double gridWidth () const override { return GridWidth::calcGridWidth( gridPart_ ); }
 
     //SOLVERMONITOR
-    virtual SolverMonitorType* monitor() { return solverMonitor_.value(); }
+    virtual SolverMonitorType* monitor() override { return solverMonitor_.value(); }
 
     //DIAGNOSTICS
-    virtual DiagnosticsType* diagnostics() { return diagnostics_.value(); }
+    virtual DiagnosticsType* diagnostics() override { return diagnostics_.value(); }
 
     //ADDITIONALOUTPUT
-    virtual AdditionalOutputType* additionalOutput() { return additionalOutput_.value(); }
+    virtual AdditionalOutputType* additionalOutput() override { return additionalOutput_.value(); }
 
     //LIMITING
-    virtual void limit(){}
-    virtual LimitDiscreteFunctionType* limitSolution () { return solution_.get(); }
+    virtual void limit() override {}
+    virtual LimitDiscreteFunctionType* limitSolution () override { return solution_.get(); }
 
     //ADAPTATION
-    virtual AdaptIndicatorType* adaptIndicator() { return nullptr; }
-    virtual AdaptationDiscreteFunctionType* adaptationSolution () { return solution_.get(); }
+    virtual AdaptIndicatorType* adaptIndicator() override { return nullptr; }
+    virtual AdaptationDiscreteFunctionType* adaptationSolution () override { return solution_.get(); }
 
     //CHECKPOINTING
-    virtual CheckPointDiscreteFunctionType* checkPointSolution () { return solution_.get(); }
+    virtual CheckPointDiscreteFunctionType* checkPointSolution () override { return solution_.get(); }
 
     //DATAWRITING
-    virtual IOTupleType& dataTuple () { assert( ioTuple_ ); return *ioTuple_; }
+    virtual IOTupleType& dataTuple () override { assert( ioTuple_ ); return *ioTuple_; }
 
   private:
     virtual std::shared_ptr< typename SolverType::type > doCreateSolver( TimeProviderType& tp )

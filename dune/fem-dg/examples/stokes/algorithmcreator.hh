@@ -65,7 +65,7 @@ namespace Fem
   static const int pressureOrderReduction = 1;
 
   //produce some static compiler warnings in case we are using an uninstalled solver
-  static const AvailableSolvers< solverEnum > checkSolverInstalled;
+  //static const AvailableSolvers< solverEnum > checkSolverInstalled;
 
   template< class GridImp >
   struct StokesAlgorithmCreator

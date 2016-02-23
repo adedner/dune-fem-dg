@@ -329,7 +329,7 @@ namespace Fem
     {
     }
 
-    virtual IOTupleType& dataTuple ()
+    virtual IOTupleType& dataTuple () override
     {
       return *ioTuple_;
     }
@@ -414,7 +414,7 @@ namespace Fem
     virtual void doFinalize( const int loop ) override
     {
       ellAlg_.finalize( loop );
-      AnalyticalTraits::addEOCErrors( solution(), ellAlg_.model(), problem().get<1>().exactSolution() );
+      AnalyticalTraits::addEOCErrors( solution(), ellAlg_.model(), problem().template get<1>().exactSolution() );
     }
 
   protected:

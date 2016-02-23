@@ -44,7 +44,7 @@ namespace Fem
 
     virtual double relaxation () const
     {
-      return Fem::Parameter::getValue< int >( keyPrefix_ + "preconditioning.relaxation", 1.1 );
+      return Fem::Parameter::getValue< double >( keyPrefix_ + "preconditioning.relaxation", 1.1 );
     }
 
     virtual int method () const
@@ -738,7 +738,7 @@ namespace Fem
         double intWeight=faceQuadInner.weight(l);
         DomainType quadInEn=edge.geometry().global(faceQuadInner.localPoint(l));
 
-        problem_.get<0>().g(quadInEn,dirichletValue);
+        problem_.template get<0>().g(quadInEn,dirichletValue);
         double pressureDirichlet;
 
         for(unsigned int n = 0; n <(unsigned int)localPressure.numDofs() ; ++n)
