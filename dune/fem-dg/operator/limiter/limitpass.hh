@@ -1259,8 +1259,7 @@ namespace Fem
           if( intersection.neighbor() )
           {
             // get neighbor
-            typename EntityType::EntityPointer outside = intersection.outside();
-            const EntityType & nb = * outside;
+            const EntityType& nb = intersection.outside();
 
             // check whether we have to skip this intersection
             if( nbChecker.skipIntersection( nb ) )

@@ -5,6 +5,7 @@ configure_parameter_file()
 # default settings for the test case
 add_definitions( "-DALUGRID_CUBE" )
 add_definitions( "-DGRIDDIM=2" )
+#add_definitions( "-DUSE_PTHREADS" )
 
 if( NOT FEMDG_FAST_TESTBUILD )
   if( DUNE_FEM_DG_VERSION VERSION_LESS "2.4.1" )

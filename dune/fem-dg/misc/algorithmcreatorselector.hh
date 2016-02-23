@@ -103,6 +103,8 @@ namespace Fem
       hierarchic_legendre = 2,
       //! Discrete function space with hierarchic orthonormal monomial basis functions
       orthonormal = 3
+      //! p-adaptive space from dune-fem, implementing dg and lagrange
+      // padaptive = 4
     };
   }
 

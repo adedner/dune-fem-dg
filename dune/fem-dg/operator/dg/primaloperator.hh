@@ -304,7 +304,10 @@ namespace Fem
     typedef LimitDGPass    < LimiterDiscreteModelType, Pass0Type, limitPassId >             InnerPass1Type;
     typedef ThreadPass     < InnerPass1Type, Fem::ThreadIterator< GridPartType >, true >    Pass1Type;
     typedef LocalCDGPass   < DiscreteModel1Type, Pass1Type, advectPassId >                  InnerPass2Type;
-    typedef ThreadPass     < InnerPass2Type, Fem::DomainDecomposedIteratorStorage<GridPartType >, true > Pass2Type;
+    typedef ThreadPass     < InnerPass2Type,
+              //Fem::DomainDecomposedIteratorStorage<GridPartType >,
+              Fem::ThreadIterator< GridPartType >,
+              true > Pass2Type;
 #else
     typedef Fem::StartPass < DestinationType, u >                                 Pass0Type;
     typedef LimitDGPass    < LimiterDiscreteModelType, Pass0Type, limitPassId >   Pass1Type;
