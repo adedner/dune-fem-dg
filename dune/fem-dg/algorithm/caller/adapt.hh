@@ -4,6 +4,7 @@
 #include <memory>
 #include <tuple>
 #include <type_traits>
+#include <limits>
 
 #include <dune/common/forloop.hh>
 #include <dune/fem/misc/mpimanager.hh>
@@ -278,7 +279,7 @@ namespace Fem
         ForLoopType< GlobalNumberOfElements >::apply( tuple_, globalElements );
         if( Dune::Fem::Parameter::verbose () )
         {
-          double min = std::numeric_limits< double >::max;
+          double min = std::numeric_limits< double >::max();
           double max = 0.0;
           ForLoopType< MinMaxNumElements >::apply( tuple_, min, max );
            std::cout << "grid size (sum,min,max) = ( "
