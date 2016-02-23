@@ -138,8 +138,6 @@ namespace Fem
     /**
      * \brief returns the stiff source term \f$ S_1 \f$
      *
-     * \deprecated{GradientType is not used anymore}
-     *
      * \param[in]  local local evaluation
      * \param[in]  u evaluation of the local function, i.e. \f$ u_E( \hat{x} ) \f$
      * \param[in]  du evaluation of the gradient of the local function, i.e. \f$\nabla u_E( \hat{x} )\f$
@@ -159,8 +157,6 @@ namespace Fem
 
     /**
      * \brief returns the stiff source term \f$ S_1 \f$
-     *
-     * \deprecated{GradientType is not used anymore}
      *
      * \param[in]  local local evaluation
      * \param[in]  u evaluation of the local function, i.e. \f$ u_E( \hat{x} ) \f$
@@ -182,8 +178,6 @@ namespace Fem
     /**
      * \brief returns the stiff source term \f$ S_1 \f$
      *
-     * \deprecated{GradientType is not used anymore}
-     *
      * \param[in]  local local evaluation
      * \param[in]  u evaluation of the local function, i.e. \f$ u_E( \hat{x} ) \f$
      * \param[out] s the result \f$ S_1(u) \f$
@@ -202,8 +196,6 @@ namespace Fem
 
     /**
      * \brief returns the non stiff source term \f$ S_2 \f$
-     *
-     * \deprecated{GradientType is not used anymore}
      *
      * \param[in]  local local evaluation
      * \param[in]  u evaluation of the local function, i.e. \f$ u_E( \hat{x} ) \f$
@@ -226,8 +218,6 @@ namespace Fem
     /**
      * \brief returns the non stiff source term \f$ S_2 \f$
      *
-     * \deprecated{GradientType is not used anymore}
-     *
      * \param[in]  local local evaluation
      * \param[in]  u evaluation of the local function, i.e. \f$ u_E( \hat{x} ) \f$
      * \param[in]  du evaluation of the gradient of the local function, i.e. \f$\nabla u_E( \hat{x} )\f$
@@ -248,8 +238,6 @@ namespace Fem
 
     /**
      * \brief returns the non stiff source term \f$ S_2 \f$
-     *
-     * \deprecated{GradientType is not used anymore}
      *
      * \param[in]  local local evaluation
      * \param[in]  u evaluation of the local function, i.e. \f$ u_E( \hat{x} ) \f$
@@ -360,8 +348,6 @@ namespace Fem
     /**
      * \brief diffusion term \f$A\f$
      *
-     * \deprecated{GradientType is not used anymore}
-     *
      * \param[in]  local local evaluation
      * \param[in]  u evaluation of the local function, i.e. \f$ u_E( \hat{x} ) \f$
      * \param[in]  vecJac evaluation of the gradient of the local function, i.e. \f$\nabla u_E( \hat{x} )\f$
@@ -466,8 +452,6 @@ namespace Fem
 
     /**
      * \brief returns the diffusion boundary flux \f$g_{N,2}\f$
-     *
-     * \deprecated{GradientType is not used anymore}
      *
      * \param[in]  local local evaluation
      * \param[in]  uLeft evaluation of the local function, i.e. \f$ u_{E^+}( \hat{x} ) \f$

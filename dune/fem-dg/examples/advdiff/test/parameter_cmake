@@ -21,7 +21,7 @@ paramfile: ../../parameter/paramBase
 #--------------
 
 # problem: heat, quasi, plaplace
-problem: pulse
+problem: heat
 
 fem.eoc.steps: 3
 femdg.stepper.endtime: 1.0
@@ -45,5 +45,6 @@ fem.io.macroGridFile_3d: ../../grids/unitcube3.dgf
 # SOLVER
 #-------
 dgdiffusionflux.upwind: -1 -0.001
+#dgdiffusionflux.method: LDG
 femdg.stepper.maxtimestep: 0.5
 paramfile: ../../parameter/paramSolver

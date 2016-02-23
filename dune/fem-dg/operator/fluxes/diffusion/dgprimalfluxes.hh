@@ -141,7 +141,7 @@ namespace Fem
     typedef typename BaseType::ParameterType  ParameterType;
   protected:
     typedef typename BaseType::IdEnum         EnumType;
-    typedef typename BaseType::LiftingEnum    LiftingEnum;
+    typedef typename ParameterType::LiftingEnum    LiftingEnum;
   public:
 
     using BaseType :: parameter ;
@@ -169,7 +169,7 @@ namespace Fem
                                const EnumType staticMethod ) :
       BaseType( model, true, parameters ),
       gridPart_( gridPart ),
-      method_( staticMethod == EnumType::general ? parameters.getMethod() : staticMethod ),
+      method_( staticMethod == EnumType::primal ? parameters.getMethod() : staticMethod ),
       penalty_( parameter().penalty() ),
       nipgFactor_( (method_ == EnumType::nipg) ||
                    (method_ == EnumType::bo)
@@ -1205,7 +1205,7 @@ namespace Fem
     ExtendedDGPrimalDiffusionFlux( GridPartType& gridPart,
                                    const Model& model,
                                    const ParameterType& parameters = ParameterType() )
-      : BaseType( gridPart, model, parameters, BaseType::EnumType::general )
+      : BaseType( gridPart, model, parameters, BaseType::EnumType::primal )
     { }
 
     //! copy constructor (needed for thread parallel programs)

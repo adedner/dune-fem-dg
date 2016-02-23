@@ -47,28 +47,27 @@ namespace Fem
     typedef Fem::DGDiscreteModelDefaultWithInsideOutside
               < GradientTraits< OpTraits, passUId >,  passUId > BaseType;
 
-    using BaseType :: inside;
-    using BaseType :: outside;
+    using BaseType::inside;
+    using BaseType::outside;
 
     // This type definition allows a convenient access to arguments of passes.
     std::integral_constant< int, passUId > uVar;
 
   public:
-    typedef GradientTraits< OpTraits, passUId >        Traits;
-    typedef typename Traits :: ModelType                             ModelType;
-    typedef typename Traits :: FluxType                              NumFluxType;
+    typedef GradientTraits< OpTraits, passUId >                    Traits;
+    typedef typename Traits::ModelType                             ModelType;
+    typedef typename Traits::DiffusionFluxType                     DiffusionFluxType;
 
-    typedef typename Traits :: DomainType                            DomainType;
-    typedef typename Traits :: FaceDomainType                        FaceDomainType;
-    typedef typename Traits :: RangeType                             RangeType;
-    typedef typename Traits :: GridType                              GridType;
-    typedef typename Traits :: JacobianRangeType                     JacobianRangeType;
-    typedef typename Traits :: GridPartType
-              :: IntersectionIteratorType                            IntersectionIterator;
-    typedef typename IntersectionIterator :: Intersection            Intersection;
-    typedef typename BaseType :: EntityType                          EntityType;
+    typedef typename Traits::DiscreteFunctionSpaceType::FunctionSpaceType::DomainType                         DomainType;
+    typedef typename Traits::DiscreteFunctionSpaceType::FunctionSpaceType::RangeType                          RangeType;
+    typedef typename Traits::DiscreteFunctionSpaceType::FunctionSpaceType::JacobianRangeType                  JacobianRangeType;
+    typedef typename Traits::GridType                              GridType;
+    typedef typename Traits::GridPartType
+              ::IntersectionIteratorType                           IntersectionIterator;
+    typedef typename IntersectionIterator::Intersection            Intersection;
+    typedef typename BaseType::EntityType                          EntityType;
 
-    enum { evaluateJacobian = NumFluxType :: evaluateJacobian };
+    enum { evaluateJacobian = DiffusionFluxType::evaluateJacobian };
 
     // necessary for TESTOPERATOR
     // not sure how it works for dual operators!
@@ -79,9 +78,9 @@ namespace Fem
      * \brief constructor
      */
     GradientModel(const ModelType& mod,
-                  const NumFluxType& numf) :
+                  const DiffusionFluxType& diffFlux) :
       model_( mod ),
-      gradientFlux_( numf ),
+      gradientFlux_( diffFlux ),
       cflDiffinv_( 2.0 * ( Traits::polynomialOrder + 1) )
     {
       #if defined TESTOPERATOR
@@ -126,21 +125,18 @@ namespace Fem
     /**
      * \brief flux function on interfaces between cells for advection and diffusion
      *
-     * @param[in] it intersection
-     * @param[in] time current time given by TimeProvider
-     * @param[in] x coordinate of required evaluation local to \c it
-     * @param[in] uLeft DOF evaluation on this side of \c it
-     * @param[in] uRight DOF evaluation on the other side of \c it
-     * @param[out] gLeft num. flux projected on normal on this side
+     * \param[in] left local evaluation
+     * \param[in] right local evaluation
+     * \param[out] gLeft num. flux projected on normal on this side
      *             of \c it for multiplication with \f$ \phi \f$
-     * @param[out] gRight advection flux projected on normal for the other side
+     * \param[out] gRight advection flux projected on normal for the other side
      *             of \c it for multiplication with \f$ \phi \f$
-     * @param[out] gDiffLeft num. flux projected on normal on this side
+     * \param[out] gDiffLeft num. flux projected on normal on this side
      *             of \c it for multiplication with \f$ \nabla\phi \f$
-     * @param[out] gDiffRight advection flux projected on normal for the other side
+     * \param[out] gDiffRight advection flux projected on normal for the other side
      *             of \c it for multiplication with \f$ \nabla\phi \f$
      *
-     * @note For dual operators we have \c gDiffLeft = 0 and \c gDiffRight = 0.
+     * \note For dual operators we have \c gDiffLeft = 0 and \c gDiffRight = 0.
      *
      * \return wave speed estimate (multiplied with the integration element of the intersection),
      *              to estimate the time step |T|/wave.
@@ -153,11 +149,9 @@ namespace Fem
                          JacobianRangeType& gDiffLeft,
                          JacobianRangeType& gDiffRight ) const
     {
-      return gradientFlux_.gradientNumericalFlux(
-                left.intersection(), left.entity(), right.entity(), left.time(),
-                left.quadrature(), right.quadrature(), left.index(),
-                left.values()[ uVar ], right.values()[ uVar ],
-                gLeft, gRight, gDiffLeft, gDiffRight);
+      return gradientFlux_.gradientNumericalFlux( left, right,
+                                                  left.values()[ uVar ], right.values()[ uVar ],
+                                                  gLeft, gRight, gDiffLeft, gDiffRight);
     }
 
     /**
@@ -167,7 +161,7 @@ namespace Fem
     void analyticalFlux(const LocalEvaluation& local,
                         JacobianRangeType& f)
     {
-      model_.jacobian( local.entity(), local.time(), local.position(), local.values()[ uVar ], f);
+      model_.jacobian( local, local.values()[ uVar ], f);
     }
 
     /**
@@ -178,46 +172,31 @@ namespace Fem
                         RangeType& gLeft,
                         JacobianRangeType& gDiffLeft ) const
     {
-      return boundaryFluxImpl( left.intersection(), left.time(),
-                               left.quadrature(), left.index(),
-                               left.values()[ uVar ], gLeft, gDiffLeft );
+      return boundaryFluxImpl( left, left.values()[ uVar ], gLeft, gDiffLeft );
     }
 
   protected:
-    template <class QuadratureImp,
-              class UType>
-    double boundaryFluxImpl(const Intersection& it,
-                        double time,
-                        const QuadratureImp& faceQuadInner,
-                        const int quadPoint,
-                        const UType& uLeft,
-                        RangeType& gLeft,
-                        JacobianRangeType& gDiffLeft ) const
+    template <class LocalEvaluation, class UType >
+    double boundaryFluxImpl( const LocalEvaluation& left,
+                             const UType& uLeft,
+                             RangeType& gLeft,
+                             JacobianRangeType& gDiffLeft ) const
     {
-      const FaceDomainType& x = faceQuadInner.localPosition( quadPoint );
+      const DomainType normal = left.intersection().integrationOuterNormal( left.localPosition() );
 
       UType uRight;
 
-      if( model_.hasBoundaryValue(it,time,x) )
-      {
-        model_.boundaryValue(it, time, x, uLeft, uRight);
-      }
+      if( model_.hasBoundaryValue( left ) )
+        model_.boundaryValue( left, uLeft, uRight);
       else
-      {
         uRight = uLeft;
-      }
 
-      return gradientFlux_.gradientBoundaryFlux(it, inside(),
-                             time, faceQuadInner, quadPoint,
-                             uLeft,
-                             uRight,
-                             gLeft,
-                             gDiffLeft );
+      return gradientFlux_.gradientBoundaryFlux( left, uLeft, uRight, gLeft, gDiffLeft );
     }
 
   private:
     const ModelType&   model_;
-    const NumFluxType& gradientFlux_;
+    const DiffusionFluxType& gradientFlux_;
     const double cflDiffinv_;
   };
 
@@ -275,14 +254,20 @@ namespace Fem
     std::integral_constant< int, passGradId> sigmaVar;
 
   public:
-    enum { dimDomain = Traits::dimDomain };
-    enum { dimRange  = Traits::dimRange };
+
+    typedef typename Traits::ModelType                       ModelType;
+
+    enum { dimRange  = ModelType::dimRange };
+    enum { dimDomain = ModelType::Traits::dimDomain };
 
     enum { advection = advectionPartExists };
     enum { diffusion = diffusionPartExists };
 
-    typedef typename Traits::DomainType         DomainType;
-    typedef typename Traits::FaceDomainType     FaceDomainType;
+    typedef typename BaseType::DomainType                    DomainType;
+    typedef typename BaseType::RangeFieldType                RangeFieldType;
+    typedef typename BaseType::DomainFieldType               DomainFieldType;
+    typedef typename BaseType::RangeType                     RangeType;
+    typedef typename BaseType::JacobianRangeType             JacobianRangeType;
 
 #if defined TESTOPERATOR
     enum { ApplyInverseMassOperator = false };
@@ -295,14 +280,8 @@ namespace Fem
     typedef typename GridPartType::IntersectionIteratorType   IntersectionIterator;
     typedef typename IntersectionIterator::Intersection       Intersection;
     typedef typename BaseType::EntityType                     EntityType;
-    typedef typename Traits::RangeFieldType                   RangeFieldType;
-    typedef typename Traits::DomainFieldType                  DomainFieldType;
-    typedef typename Traits::RangeType                        RangeType;
-    typedef typename Traits::JacobianRangeType                JacobianRangeType;
-
     typedef typename Traits::DiscreteFunctionSpaceType        DiscreteFunctionSpaceType;
 
-    typedef typename Traits::ModelType                        ModelType;
     typedef typename Traits::AdvectionFluxType                AdvectionFluxType;
     typedef typename Traits::DiffusionFluxType                DiffusionFluxType;
     enum { evaluateJacobian = false };
@@ -343,7 +322,7 @@ namespace Fem
       if (diffusion)
       {
         const double dtStiff =
-          model_.stiffSource( local.entity(), local.time(), local.position(), local.values()[uVar], uJac, s );
+          model_.stiffSource( local, local.values()[uVar], uJac, s );
         dtEst = ( dtStiff > 0 ) ? dtStiff : dtEst;
       }
 
@@ -351,7 +330,7 @@ namespace Fem
       {
         RangeType sNonStiff(0);
         const double dtNon =
-          model_.nonStiffSource( local.entity(), local.time(), local.position(), local.values()[uVar], uJac, sNonStiff );
+          model_.nonStiffSource( local, local.values()[uVar], uJac, sNonStiff );
 
         s += sNonStiff;
 
@@ -408,11 +387,14 @@ namespace Fem
       if( diffusion )
       {
         RangeType dLeft, dRight;
+        typedef typename DiffusionFluxType::GradientRangeType GradientRangeType;
+        Dune::Fem::FieldMatrixConverter< GradientRangeType, JacobianRangeType > jacLeft ( left.values()[ sigmaVar ] );
+        Dune::Fem::FieldMatrixConverter< GradientRangeType, JacobianRangeType > jacRight( right.values()[ sigmaVar ] );
+
         diffTimeStep =
-          diffFlux_.numericalFlux(left.intersection(), *this,
-                                  left.time(), left.quadrature(), right.quadrature(), left.index(),
+          diffFlux_.numericalFlux(left, right,
                                   left.values()[ uVar ], right.values()[ uVar ],
-                                  left.values() [ sigmaVar ], right.values()[ sigmaVar ],
+                                  jacLeft, jacRight,
                                   dLeft, dRight,
                                   gDiffLeft, gDiffRight);
 
@@ -444,20 +426,21 @@ namespace Fem
 
       double diffTimeStep = 0.0;
 
-      bool hasBoundaryValue =
-        model_.hasBoundaryValue( left.intersection(), left.time(), left.localPosition() );
+      bool hasBoundaryValue = model_.hasBoundaryValue( left );
 
       if( diffusion && hasBoundaryValue )
       {
         // diffusion boundary flux for Dirichlet boundaries
         RangeType dLeft ( 0 );
-        diffTimeStep = diffFlux_.boundaryFlux( left.intersection(),
-                               *this,
-                               left.time(), left.quadrature(), left.index(),
-                               left.values()[ uVar ], uBnd_, // is set during call of  BaseType::boundaryFlux
-                               left.values()[ sigmaVar ],
-                               dLeft,
-                               gDiffLeft);
+        typedef typename DiffusionFluxType::GradientRangeType GradientRangeType;
+        Dune::Fem::FieldMatrixConverter< GradientRangeType, JacobianRangeType > uJac( left.values()[ sigmaVar ] );
+
+        diffTimeStep = diffFlux_.boundaryFlux( left,
+                                               left.values()[ uVar ],
+                                               uBnd_, // is set during call of  BaseType::boundaryFlux
+                                               uJac,
+                                               dLeft,
+                                               gDiffLeft);
         gLeft += dLeft;
       }
       else if ( diffusion )
@@ -467,8 +450,7 @@ namespace Fem
         typedef typename DiffusionFluxType::GradientRangeType GradientRangeType;
         Dune::Fem::FieldMatrixConverter< GradientRangeType, JacobianRangeType > uJac( left.values()[ sigmaVar ] );
 
-        model_.diffusionBoundaryFlux( left.intersection(), left.time(), left.localPosition(),
-                                      left.values()[uVar], uJac, diffBndFlux );
+        model_.diffusionBoundaryFlux( left, left.values()[uVar], uJac, diffBndFlux );
         gLeft += diffBndFlux;
       }
       else
@@ -497,7 +479,7 @@ namespace Fem
         typedef typename DiffusionFluxType::GradientRangeType GradientRangeType;
         Dune::Fem::FieldMatrixConverter< GradientRangeType, JacobianRangeType > uJac( local.values()[ sigmaVar ] );
 
-        model_.diffusion( local.entity(), local.time(), local.position(), local.values()[ uVar ], uJac, diffmatrix);
+        model_.diffusion( local, local.values()[ uVar ], uJac, diffmatrix);
         // ldg case
         f += diffmatrix;
       }
