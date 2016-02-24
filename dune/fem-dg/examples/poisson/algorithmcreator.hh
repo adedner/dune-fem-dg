@@ -22,6 +22,7 @@
 //--------- OPERATOR/SOLVER -----------------
 #include <dune/fem-dg/assemble/primalmatrix.hh>
 #include <dune/fem-dg/operator/dg/operatortraits.hh>
+#include <dune/fem-dg/operator/adaptation/poissonestimator.hh>
 //--------- FLUXES ---------------------------
 #include <dune/fem-dg/operator/fluxes/advection/fluxes.hh>
 #include <dune/fem-dg/operator/fluxes/euler/fluxes.hh>
@@ -54,11 +55,11 @@ namespace Fem
                                      Galerkin::Enum::dg,
                                      Adaptivity::Enum::yes,
                                      DiscreteFunctionSpaces::Enum::legendre,
-                                     Solver::Enum::istl,
+                                     Solver::Enum::femoem,
                                      AdvectionLimiter::Enum::unlimited,
                                      Matrix::Enum::assembled,
                                      AdvectionFlux::Enum::upwind,
-                                     PrimalDiffusionFlux::Enum::general > AC;
+                                     DiffusionFlux::Enum::primal > AC;
 
       typedef typename AC::GridType                         GridType;
       typedef typename AC::GridParts                        HostGridPartType;
@@ -83,8 +84,10 @@ namespace Fem
           l2EocError.add( u, f );
           static DGEOCError dgEocError( "DG-Error" );
           dgEocError.add( u, f );
-          static H1EOCError sigmaEocError( "sigma-norm" );
-          sigmaEocError.add( sigma, f );
+
+          //TODO what dimRange is sigma? This does not fit, yet
+          //static H1EOCError sigmaEocError( "sigma-norm" );
+          //sigmaEocError.add( sigma, f );
         }
       };
 
@@ -120,8 +123,19 @@ namespace Fem
           typedef typename AC::template LinearSolvers< DFSpaceType, false/*true*/> type;
         };
 
+      private:
+        //small helper class
+        template< class SigmaDFSpaceType > struct SigmaFunctionChooser
+        { typedef typename AC::template DiscreteFunctions< SigmaDFSpaceType > type; };
+
+        typedef PoissonSigmaEstimator< DiscreteFunctionType, SigmaFunctionChooser, typename Operator::AssemblerType, polOrd >
+                                                                                   SigmaEstimatorType;
+        typedef ErrorEstimator< SigmaEstimatorType >                               EstimatorType;
+      public:
+
         typedef SubSolverMonitor< SolverMonitor >                                  SolverMonitorType;
         typedef SubDiagnostics< Diagnostics >                                      DiagnosticsType;
+        typedef PAdaptIndicator< EstimatorType, SigmaEstimatorType, ProblemInterfaceType > AdaptIndicatorType;
       };
 
       template <int polOrd>

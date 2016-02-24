@@ -4,7 +4,6 @@
 #include <memory>
 #include <tuple>
 #include <type_traits>
-#include <limits>
 
 #include <dune/common/forloop.hh>
 #include <dune/fem/misc/mpimanager.hh>
@@ -218,6 +217,26 @@ namespace Fem
     }
 
     /**
+     * \brief Prepare an initial refined grid.
+     *
+     * \param[in] alg pointer to the calling sub-algorithm
+     * \param[in] loop number of eoc loop
+     */
+    template< class SubAlgImp >
+    void initializeEnd( SubAlgImp* alg, int loop )
+    {
+      if( adaptive() )
+      {
+        // some info in verbose mode
+        if( Fem::Parameter::verbose() )
+        {
+          std::cout << "Start adaptation: grid size: " << alg->gridSize()
+                    << std::endl;
+        }
+      }
+    }
+
+    /**
      * \brief Calls the estimate, mark and adaptation routines to refine the grid.
      *
      * \param[in] alg pointer to the calling sub-algorithm
@@ -227,10 +246,30 @@ namespace Fem
     template< class SubAlgImp, class TimeProviderImp >
     void solveStart( SubAlgImp* alg, int loop, TimeProviderImp& tp )
     {
-      if( tp.timeStep() % adaptParam_.adaptCount() == 0 )
+      if( needsAdaptation( alg, loop, tp ) )
       {
+        ForLoopType< PreAdapt >::apply( tuple_ );
         estimateMark( false );
         adapt( alg, loop, tp );
+        ForLoopType< PostAdapt >::apply( tuple_ );
+      }
+    }
+
+    /**
+     * \brief Calls the estimate, mark and adaptation routines to refine the grid.
+     *
+     * \param[in] alg pointer to the calling sub-algorithm
+     * \param[in] loop number of eoc loop
+     */
+    template< class SubAlgImp >
+    void solveStart( SubAlgImp* alg, int loop )
+    {
+      if( adaptive() )
+      {
+        ForLoopType< PreAdapt >::apply( tuple_ );
+        estimateMark();
+        adaptationManager().adapt();
+        ForLoopType< PostAdapt >::apply( tuple_ );
       }
     }
 
@@ -247,6 +286,17 @@ namespace Fem
       ForLoopType< Finalize >::apply( tuple_ );
     }
 
+    /**
+     * \brief finalize all indicators
+     *
+     * \param[in] alg pointer to the calling sub-algorithm
+     * \param[in] loop number of eoc loop
+     */
+    template< class SubAlgImp >
+    void finalizeStart( SubAlgImp* alg, int loop )
+    {
+      ForLoopType< Finalize >::apply( tuple_ );
+    }
 
     /**
      * \brief Returns true, if all sub-algorithms are adaptive.
@@ -256,6 +306,22 @@ namespace Fem
       bool adaptive = false;
       ForLoopType< Adaptive >::apply( tuple_, adaptive );
       return adaptive;
+    }
+
+
+    template< class SubAlgImp, class TimeProviderImp >
+    bool needsAdaptation( SubAlgImp* alg, int loop, TimeProviderImp& tp )
+    {
+      return( tp.timeStep() % adaptParam_.adaptCount() == 0 );
+    }
+
+    template< class SubAlgImp >
+    bool needsAdaptation( SubAlgImp* alg, int loop )
+    {
+      //TODO set a better condition, here (from padaptindicator?)...
+      static int maxIteration = 0;
+      maxIteration++;
+      return( maxIteration < adaptParam_.coarsestLevel() );
     }
 
     /**
@@ -279,7 +345,7 @@ namespace Fem
         ForLoopType< GlobalNumberOfElements >::apply( tuple_, globalElements );
         if( Dune::Fem::Parameter::verbose () )
         {
-          double min = std::numeric_limits< double >::max();
+          double min = std::numeric_limits< double >::max;
           double max = 0.0;
           ForLoopType< MinMaxNumElements >::apply( tuple_, min, max );
            std::cout << "grid size (sum,min,max) = ( "
@@ -299,6 +365,14 @@ namespace Fem
     void setAdaptation( TimeProviderImp& tp )
     {
       ForLoopType< SetAdaptation >::apply( tuple_, tp );
+    }
+
+    /**
+     * \brief Set adaptation manager of sub-algorithms.
+     */
+    void setAdaptation()
+    {
+      ForLoopType< SetAdaptation >::apply( tuple_ );
     }
 
     /**
@@ -355,14 +429,13 @@ namespace Fem
       {
         int sequence = getSequence( get<0>( tuple_ ) );
 
-        ForLoopType< PreAdapt >::apply( tuple_ );
         adaptationManager().adapt();
-        ForLoopType< PostAdapt >::apply( tuple_ );
 
         if( sequence !=  getSequence( get<0>( tuple_ ) ) )
           alg->postProcessing().solveEnd( alg, loop, tp );
       }
     }
+
 
     template< class T >
     static typename enable_if< std::is_void< typename std::remove_pointer<T>::type::AdaptIndicatorType >::value, int >::type

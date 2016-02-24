@@ -90,7 +90,7 @@ namespace Fem
       RangeValues(int col, const VectorType &vec) : col_(col), vec_(vec), zero_(0)
       {}
 
-      const RangeType& tuple( int i ) const { return this->operator[] ( i ); }
+      const RangeType& at( int i ) const { return this->operator[] ( i ); }
       const RangeType &operator[](int row) const
       {
         if (col_==-1)
@@ -110,7 +110,7 @@ namespace Fem
       VectorToTupleVector(const VectorType &vec) : vec_(vec)
       {}
 
-      const RangeType& tuple( int i ) const { return this->operator[] ( i ); }
+      const RangeType& at( int i ) const { return this->operator[] ( i ); }
       const RangeType &operator[](int i) const
       {
         return vec_[ i ];
@@ -123,7 +123,7 @@ namespace Fem
       typedef std::vector< std::vector< JacobianRangeType > > VectorType;
       JacobianRangeValues(int col, const VectorType &vec) : col_(col), vec_(vec), zero_(0)
       {}
-      const JacobianRangeType& tuple( int i ) const { return this->operator[] ( i ); }
+      const JacobianRangeType& at( int i ) const { return this->operator[] ( i ); }
       const JacobianRangeType &operator[](int row) const
       {
         if (col_==-1)
@@ -160,6 +160,30 @@ namespace Fem
       const IntersectionType& intersection_;
       const EntityType &en_,&nb_;
       const double areaEn_, areaNb_;
+    };
+
+    struct EntityStorage
+    {
+      typedef typename EntityType :: Geometry :: LocalCoordinate LocalDomainType;
+
+      EntityStorage( const EntityType& entity, const double volume,
+                     const DomainType& position, const LocalDomainType& local )
+        : en_(entity),
+          volume_(volume),
+          position_( position ),
+          localPosition_( local )
+      {}
+
+      const EntityType &entity() const { return en_; }
+      const double volume() const { return volume_; }
+      const LocalDomainType& localPosition() const { return localPosition_; }
+      const DomainType& position() const { return position_; }
+
+    private:
+      const EntityType &en_;
+      const double volume_;
+      const DomainType& position_;
+      const LocalDomainType& localPosition_;
     };
 
 
@@ -883,7 +907,6 @@ namespace Fem
       {
         diffusionFlux_.initializeBoundary( intersection, entity, time, faceQuadInside, valueEn, valueNb );
       }
-
 
       const size_t numFaceQuadPoints = faceQuadInside.nop();
       for( size_t pt = 0; pt < numFaceQuadPoints; ++pt )

@@ -60,12 +60,12 @@ namespace Fem
   static const AdvectionLimiter::Enum       advLimiterEnum = AdvectionLimiter::Enum::unlimited;
   static const Matrix::Enum                 matrixEnum     = Matrix::Enum::assembled;
   static const AdvectionFlux::Enum          advFluxEnum    = AdvectionFlux::Enum::none;
-  static const PrimalDiffusionFlux::Enum    diffFluxEnum   = PrimalDiffusionFlux::Enum::general;
+  static const PrimalDiffusionFlux::Enum    diffFluxEnum   = DiffusionFlux::Enum::primal;
   // for Taylorhood (P2,P1) equal one
   static const int pressureOrderReduction = 1;
 
   //produce some static compiler warnings in case we are using an uninstalled solver
-  //static const AvailableSolvers< solverEnum > checkSolverInstalled;
+  static const AvailableSolvers< solverEnum > checkSolverInstalled;
 
   template< class GridImp >
   struct StokesAlgorithmCreator
@@ -102,8 +102,8 @@ namespace Fem
             l2EocError.add( u, f );
             static DGEOCError dgEocError( "DG-Error" );
             dgEocError.add( u, f );
-            static H1EOCError sigmaEocError( "sigma-norm" );
-            sigmaEocError.add( sigma, f );
+            //static H1EOCError sigmaEocError( "sigma-norm" );
+            //sigmaEocError.add( sigma, f );
           }
         };
 

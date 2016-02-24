@@ -26,14 +26,15 @@ namespace Fem
   //                  fluxEn, dfluxEn, fluxNb, dfluxNb):
   //              method to compute -hatK, only fluxEn and fluxNb is used
 
-  template<class UFunction, class SigmaFunction, class DGOperator>
-  class StokesErrorEstimator : public ErrorEstimator<UFunction,SigmaFunction,DGOperator>
+  template< class SigmaFunction >
+  class StokesErrorEstimator : public ErrorEstimator< SigmaFunction >
   {
-    typedef ErrorEstimator< UFunction, SigmaFunction, DGOperator> BaseType;
-    typedef StokesErrorEstimator< UFunction, SigmaFunction, DGOperator> ThisType;
+    typedef ErrorEstimator< SigmaFunction > BaseType;
+    typedef StokesErrorEstimator< SigmaFunction > ThisType;
 
   public:
-    typedef UFunction DiscreteFunctionType;
+    typedef typename BaseType :: DGOperatorType DGOperatorType;
+    typedef typename BaseType :: DiscreteFunctionType DiscreteFunctionType;
 
     typedef typename DiscreteFunctionType :: DiscreteFunctionSpaceType DiscreteFunctionSpaceType;
     typedef typename DiscreteFunctionType :: LocalFunctionType LocalFunctionType;
@@ -78,7 +79,7 @@ namespace Fem
   public:
     StokesErrorEstimator (const DiscreteFunctionType &uh,
                           const SigmaFunction &sigma,
-                          const DGOperator &oper,
+                          const DGOperatorType &oper,
                           GridType &grid,
                           const AdaptationParameters& param = AdaptationParameters() )
     : BaseType(uh,sigma,oper,grid,param),

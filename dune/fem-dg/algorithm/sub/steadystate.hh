@@ -276,7 +276,7 @@ namespace Fem
       return solver_.get();
     }
 
-    DiscreteFunctionType& solution () override
+    DiscreteFunctionType& solution ()
     {
       assert( solution_ );
       return *solution_;
@@ -302,22 +302,22 @@ namespace Fem
     virtual void setTime( const double time ){}
 
     // return grid width of grid (overload in derived classes)
-    virtual double gridWidth () const override { return GridWidth::calcGridWidth( gridPart_ ); }
+    virtual double gridWidth () const { return GridWidth::calcGridWidth( gridPart_ ); }
 
     //ADAPTATION
-    virtual AdaptationDiscreteFunctionType* adaptationSolution () override { return solution_.get(); }
+    virtual AdaptationDiscreteFunctionType* adaptationSolution () { return solution_.get(); }
 
     //SOLVERMONITOR
-    virtual SolverMonitorType* monitor() override { return solverMonitor_.value(); }
+    virtual SolverMonitorType* monitor() { return solverMonitor_.value(); }
 
     //ADDITIONALOUTPUT
-    virtual AdditionalOutputType* additionalOutput() override { return additionalOutput_.value(); }
+    virtual AdditionalOutputType* additionalOutput() { return additionalOutput_.value(); }
 
     //DATAWRITING
-    IOTupleType& dataTuple () override { return *ioTuple_; }
+    IOTupleType& dataTuple () { return *ioTuple_; }
 
     //DIAGNOSTICS
-    virtual DiagnosticsType* diagnostics() override
+    virtual DiagnosticsType* diagnostics()
     {
       return diagnostics_.value();
     }
@@ -340,7 +340,7 @@ namespace Fem
       return solution_->dofsValid();
     }
 
-    virtual void doInitialize ( const int loop ) override
+    virtual void doInitialize ( const int loop )
     {
       //initialize solverMonitor
       solverMonitor_.registerData( "GridWidth", &solverMonitor_.monitor().gridWidth, nullptr, true );
@@ -350,7 +350,7 @@ namespace Fem
       solverMonitor_.registerData( "MaxILS", &solverMonitor_.monitor().max_ils_iterations );
     }
 
-    virtual void doPreSolve ( const int loop ) override
+    virtual void doPreSolve ( const int loop )
     {
       if( *rhsOperator_ ) //rhs by external rhs operator
         (*rhsOperator_)( solution(), rhs() );
@@ -358,7 +358,7 @@ namespace Fem
       solver_ = this->doCreateSolver();
     }
 
-    virtual void doSolve ( const int loop ) override
+    virtual void doSolve ( const int loop )
     {
       Dune::Timer timer;
       double time = 0;
@@ -369,12 +369,12 @@ namespace Fem
       std::cout << "Solve time: " << time << std::endl;
     }
 
-    virtual void doPostSolve( const int loop ) override
+    virtual void doPostSolve( const int loop )
     {
       monitor()->finalize( gridWidth(), gridSize() );
     }
 
-    virtual void doFinalize ( const int loop ) override
+    virtual void doFinalize ( const int loop )
     {
       // add eoc errors
       //AnalyticalTraits::addEOCErrors( solution(), model(), problem() );

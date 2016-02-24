@@ -26,7 +26,7 @@ namespace Fem
    * \tparam AdvectionLimiter::Enum enum defining the limiting of the advection operator
    * \tparam Matrix::Enum enum describing whether to assemble or not
    * \tparam AdvectionFlux::Enum enum describing the chosen numerical advection flux,
-     \tparam PrimalDiffusionFlux::Enum enum describing the chosen primal numerical diffusion flux
+     \tparam DiffusionFlux::Enum enum describing the chosen primal numerical diffusion flux
    */
   template< class GridImp,
             Galerkin::Enum dgId,
@@ -36,7 +36,7 @@ namespace Fem
             AdvectionLimiter::Enum advLimitId,
             Matrix::Enum matrixId,
             AdvectionFlux::Enum advFluxId,
-            PrimalDiffusionFlux::Enum diffFluxId >
+            DiffusionFlux::Enum diffFluxId>
   class AlgorithmConfigurator
   {
     template< class AnalyticalTraitsImp, class NewModelImp >
@@ -49,6 +49,9 @@ namespace Fem
 
   public:
     typedef GridImp                                           GridType;
+
+    // select formulation depending on chosen diffusion flux
+    static const Formulation::Enum formId = FormulationSelector< diffFluxId > :: formId ;
 
     using GridParts = typename GridPartSelector< GridType, dgId, adap >::type;
 
@@ -64,15 +67,15 @@ namespace Fem
     template< class ModelImp, AdvectionFlux::Enum id = advFluxId >
     using AdvectionFluxes = DGAdvectionFlux< ModelImp, id >;
 
-    template< class ModelImp, class DFSpace, PrimalDiffusionFlux::Enum id = diffFluxId >
-    using DiffusionFluxes = DGPrimalDiffusionFlux< DFSpace, ModelImp, id >;
+    template< class ModelImp, class DFSpace, DiffusionFlux::Enum id = diffFluxId >
+    using DiffusionFluxes = typename DiffusionFluxSelector< ModelImp, DFSpace, id, formId >::type;
 
     template< class DomainDFSpace,
               class RangeDFSpace,
               int polOrd,
               class AnalyticalTraitsImp,
               AdvectionFlux::Enum advId = advFluxId,
-              PrimalDiffusionFlux::Enum diffId = diffFluxId >
+              DiffusionFlux::Enum diffId = diffFluxId >
     using DefaultAssembTraits = DefaultAssemblerTraits< polOrd,
                                                         AnalyticalTraitsImp,
                                                         typename SolverSelector< solverId, false, DomainDFSpace, RangeDFSpace >::LinearOperatorType,
@@ -86,7 +89,7 @@ namespace Fem
               class ExtraParameterTupleImp = std::tuple<>,
               class AdaptationIndicatorFunctionSpaceImp = typename DomainDFSpace::FunctionSpaceType,
               AdvectionFlux::Enum advId = advFluxId,
-              PrimalDiffusionFlux::Enum diffId = diffFluxId >
+              DiffusionFlux::Enum diffId = diffFluxId>
     using DefaultOpTraits = DefaultOperatorTraits< polOrd,
                                                    AnalyticalTraitsImp,
                                                    DiscreteFunctions< DomainDFSpace >,
@@ -100,7 +103,7 @@ namespace Fem
 
     //Operator/Assembler
     template< class OpTraits, OperatorSplit::Enum opSplit = OperatorSplit::Enum::full, Matrix::Enum matrix = matrixId >
-    using Operators = typename OperatorSelector< OpTraits, advLimitId, opSplit, matrix >::type;
+    using Operators = typename OperatorSelector< OpTraits, formId, advLimitId, opSplit, matrix >::type;
 
     //Matrix Containers
     template< class DomainDFSpace, class RangeDFSpace  >

@@ -151,17 +151,22 @@ namespace Fem
   };
 
 
-  template< class GridPartImp, class DiscreteFunctionImp, class SigmaFunctionSpaceImp, class AssemblerImp, int polOrder>
+  template< class DiscreteFunctionImp, template<class> class SigmaDiscreteFunctionChooserImp, class AssemblerImp, int polOrder>
   class PoissonSigmaEstimator
   {
   public:
 
-    typedef DiscreteFunctionImp             DiscreteFunctionType;
-    typedef SigmaFunctionSpaceImp           SigmaFunctionSpaceType;
-    typedef GridPartImp                     GridPartType;
-    typedef typename GridPartType::GridType GridType;
-    typedef AssemblerImp                    AssemblerType;
+    typedef DiscreteFunctionImp                                      DiscreteFunctionType;
+    typedef typename DiscreteFunctionType::DiscreteFunctionSpaceType DiscreteFunctionSpaceType;
+    typedef typename DiscreteFunctionType::GridPartType              GridPartType;
+    typedef typename GridPartType::GridType                          GridType;
+    typedef AssemblerImp                                             AssemblerType;
+    typedef AssemblerImp                                             DGOperatorType;
+    static const int polynomialOrder = polOrder;
 
+    typedef typename DiscreteFunctionSpaceType ::
+      template ToNewDimRange< GridType::dimension * DiscreteFunctionSpaceType::FunctionSpaceType::dimRange >::NewFunctionSpaceType
+                                                                     SigmaFunctionSpaceType;
 
     PoissonSigmaEstimator( GridPartType& gridPart,
                            const DiscreteFunctionType& solution,
@@ -183,21 +188,21 @@ namespace Fem
     template <class Grid, int topoId>
     struct SigmaSpaceChooser
     {
-      typedef Fem::PAdaptiveDGSpace< SigmaFunctionSpaceType, GridPartType, polOrder > Type ;
+      typedef Fem::PAdaptiveDGSpace< SigmaFunctionSpaceType, GridPartType, polOrder > Type;
     };
 
     //- cubes use LegendreDGSpace
     template <class Grid>
     struct SigmaSpaceChooser< Grid, 1 >
     {
-      typedef Dune::Fem::LegendreDiscontinuousGalerkinSpace< SigmaFunctionSpaceType, GridPartType, polOrder > Type ;
+      typedef Dune::Fem::LegendreDiscontinuousGalerkinSpace< SigmaFunctionSpaceType, GridPartType, polOrder > Type;
     };
 
     //- cubes use OrthonormalDGSpace
     template <class Grid>
     struct SigmaSpaceChooser< Grid, 0 >
     {
-      typedef Dune::Fem::DiscontinuousGalerkinSpace< SigmaFunctionSpaceType, GridPartType, polOrder > Type ;
+      typedef Dune::Fem::DiscontinuousGalerkinSpace< SigmaFunctionSpaceType, GridPartType, polOrder > Type;
     };
 
     // work arround internal compiler error
@@ -209,28 +214,30 @@ namespace Fem
     enum { topoId = (simplexTopoId == myTopo) ? 0 :  // 0 = simplex, 1 = cube, -1 = hybrid
                       (myTopo == cubeTopoId) ? 1 : -1 };
 
-    typedef typename SigmaSpaceChooser< GridType, topoId >::Type  SigmaDiscreteFunctionSpaceType ;
+    typedef typename SigmaSpaceChooser< GridType, topoId >::Type         SigmaDiscreteFunctionSpaceType;
 
-    typedef Dune::Fem::AdaptiveDiscreteFunction< SigmaDiscreteFunctionSpaceType >
-      SigmaDiscreteFunctionType;
+    typedef typename SigmaDiscreteFunctionChooserImp<SigmaDiscreteFunctionSpaceType>::type
+                                                                         SigmaDiscreteFunctionType;
+
+
 
     // compute the function sigma = grad u + sum_e r_e
     template <class DF, class Operator>
     struct SigmaLocal : public Fem::LocalFunctionAdapterHasInitialize
     {
-      typedef typename DF::DiscreteFunctionSpaceType UDFS;
-      typedef typename UDFS::GridPartType GridPartType;
+      typedef typename DF::DiscreteFunctionSpaceType                     UDFS;
+      typedef typename UDFS::GridPartType                                GridPartType;
       typedef typename GridPartType::GridType::template Codim<0>::Entity EntityType;
-      typedef typename GridPartType::IntersectionIteratorType IntersectionIteratorType;
-      typedef typename GridPartType::IntersectionType IntersectionType;
+      typedef typename GridPartType::IntersectionIteratorType            IntersectionIteratorType;
+      typedef typename GridPartType::IntersectionType                    IntersectionType;
 
-      typedef typename Operator::DiffusionFluxType::LiftingFunctionType LiftingFunctionType;
-      typedef typename LiftingFunctionType::RangeType RangeType;
-      typedef typename LiftingFunctionType::DiscreteFunctionSpaceType DiscreteFunctionSpaceType;
-      typedef typename DiscreteFunctionSpaceType::FunctionSpaceType FunctionSpaceType;
+      typedef typename Operator::DiffusionFluxType::LiftingFunctionType  LiftingFunctionType;
+      typedef typename LiftingFunctionType::RangeType                    RangeType;
+      typedef typename LiftingFunctionType::DiscreteFunctionSpaceType    DiscreteFunctionSpaceType;
+      typedef typename DiscreteFunctionSpaceType::FunctionSpaceType      FunctionSpaceType;
 
-      typedef typename DF::RangeType URangeType;
-      typedef typename DF::JacobianRangeType UJacobianRangeType;
+      typedef typename DF::RangeType                                     URangeType;
+      typedef typename DF::JacobianRangeType                             UJacobianRangeType;
 
       SigmaLocal( const DF &df, const Operator &oper )
       : df_(df), oper_(oper), localdf_(df_), reSpace_( oper.gradientSpace() ), localre_( reSpace_ )
@@ -274,9 +281,9 @@ namespace Fem
       void getLifting( const IntersectionType &intersection, const EntityType &entity)
       {
         // CACHING
-        typedef typename Operator::FaceQuadratureType  FaceQuadratureType ;
+        typedef typename Operator::FaceQuadratureType                               FaceQuadratureType ;
         typedef Dune::Fem::IntersectionQuadrature< FaceQuadratureType, conforming > IntersectionQuadratureType;
-        typedef typename IntersectionQuadratureType::FaceQuadratureType QuadratureImp;
+        typedef typename IntersectionQuadratureType::FaceQuadratureType             QuadratureImp;
 
         const EntityType &outside = intersection.outside();
 
@@ -303,23 +310,22 @@ namespace Fem
                       localre_
                      );
       }
-      const DF &df_;
-      const Operator &oper_;
-      typename DF::LocalFunctionType localdf_;
-      const DiscreteFunctionSpaceType &reSpace_;
-      LiftingFunctionType localre_;
+      const DF&                        df_;
+      const Operator&                  oper_;
+      typename DF::LocalFunctionType   localdf_;
+      const DiscreteFunctionSpaceType& reSpace_;
+      LiftingFunctionType              localre_;
     };
 
     template <class SigmaLocalType>
     struct SigmaLocalFunction : public Fem::LocalFunctionAdapterHasInitialize
     {
-      typedef typename DiscreteFunctionType::DiscreteFunctionSpaceType
-                       DiscreteFunctionSpaceType;
-      typedef typename DiscreteFunctionType::RangeType RangeType;
-      typedef typename DiscreteFunctionType::JacobianRangeType JacobianRangeType;
-      typedef typename DiscreteFunctionType::EntityType EntityType;
-      typedef typename DiscreteFunctionSpaceType::FunctionSpaceType FunctionSpaceType;
-      typedef typename DiscreteFunctionSpaceType::GridPartType GridPartType;
+      typedef typename DiscreteFunctionType::DiscreteFunctionSpaceType DiscreteFunctionSpaceType;
+      typedef typename DiscreteFunctionType::RangeType                 RangeType;
+      typedef typename DiscreteFunctionType::JacobianRangeType         JacobianRangeType;
+      typedef typename DiscreteFunctionType::EntityType                EntityType;
+      typedef typename DiscreteFunctionSpaceType::FunctionSpaceType    FunctionSpaceType;
+      typedef typename DiscreteFunctionSpaceType::GridPartType         GridPartType;
 
       SigmaLocalFunction( const DiscreteFunctionType &u,
                           const SigmaDiscreteFunctionType &q,
@@ -354,14 +360,15 @@ namespace Fem
         sigmaLocal_.init(entity);
       }
       private:
-      const DiscreteFunctionType &u_;
-      typename DiscreteFunctionType::LocalFunctionType uLocal_;
-      const SigmaDiscreteFunctionType &q_;
+      const DiscreteFunctionType&                           u_;
+      typename DiscreteFunctionType::LocalFunctionType      uLocal_;
+      const SigmaDiscreteFunctionType&                      q_;
       typename SigmaDiscreteFunctionType::LocalFunctionType qLocal_;
-      SigmaLocalType sigmaLocal_;
+      SigmaLocalType                                        sigmaLocal_;
     };
 
-    typedef Dune::Fem::LocalFunctionAdapter< SigmaLocal<DiscreteFunctionType, AssemblerType> > SigmaEstimateFunctionType;
+    typedef Dune::Fem::LocalFunctionAdapter< SigmaLocal<DiscreteFunctionType, AssemblerType> >
+                                                                    SigmaEstimateFunctionType;
     typedef SigmaLocal<DiscreteFunctionType, AssemblerType>         SigmaLocalType;
     typedef SigmaLocalFunction<SigmaLocalType >                     SigmaLocalFunctionType;
     typedef Dune::Fem::LocalFunctionAdapter<SigmaLocalFunctionType> SigmaLocalFunctionAdapterType;
@@ -371,24 +378,30 @@ namespace Fem
       Dune::Fem::DGL2ProjectionImpl::project( sigmaEstimateFunction_, sigmaDiscreteFunction_ );
     }
 
-    const SigmaLocalFunctionAdapterType& sigma () const
+    //const SigmaLocalFunctionAdapterType& sigma () const
+    //{
+    //  return sigma_;
+    //}
+
+    const SigmaDiscreteFunctionType& sigma () const
     {
-      return sigma_;
+      return sigmaDiscreteFunction_;
     }
 
 
   public:
 
-    GridPartType& gridPart_;
-    const DiscreteFunctionType& solution_;
-    const AssemblerType& assembler_;
-    SigmaDiscreteFunctionSpaceType sigmaSpace_;
-    SigmaDiscreteFunctionType sigmaDiscreteFunction_;
+    GridPartType&                   gridPart_;
+    const DiscreteFunctionType&     solution_;
+    const AssemblerType&            assembler_;
+    SigmaDiscreteFunctionSpaceType  sigmaSpace_;
+    SigmaDiscreteFunctionType       sigmaDiscreteFunction_;
 
-    SigmaLocal<DiscreteFunctionType, AssemblerType> sigmaLocalEstimate_;
-    SigmaLocalFunctionType sigmaLocalFunction_;
-    SigmaLocalFunctionAdapterType sigma_;
-    SigmaEstimateFunctionType sigmaEstimateFunction_;
+    SigmaLocal<DiscreteFunctionType, AssemblerType>
+                                    sigmaLocalEstimate_;
+    SigmaLocalFunctionType          sigmaLocalFunction_;
+    SigmaLocalFunctionAdapterType   sigma_;
+    SigmaEstimateFunctionType       sigmaEstimateFunction_;
 
   };
 
@@ -428,17 +441,9 @@ namespace Fem
   };
 
 
-
-  template< class GridImp, int polOrder, class DiscreteFunctionSpaceImp, class EstimatorImp = NoEstimator<polOrder> >
+  template< int polOrder, class DiscreteFunctionSpaceImp, class EstimatorImp = NoEstimator<polOrder> >
   class PAdaptivity
   {
-
-  public:
-    typedef GridImp                         GridType;
-    typedef EstimatorImp                    EstimatorType;
-    typedef DiscreteFunctionSpaceImp        DiscreteFunctionSpaceType;
-
-
     struct PolOrderStructure
     {
       // set polynomial order to 2 by default
@@ -452,13 +457,19 @@ namespace Fem
       int &value() { return val_; }
       int val_;
     };
+
+  public:
+    typedef DiscreteFunctionSpaceImp                        DiscreteFunctionSpaceType;
+    typedef typename DiscreteFunctionSpaceType::GridType    GridType;
+    typedef EstimatorImp                                    EstimatorType;
+
     typedef PersistentContainer<GridType,PolOrderStructure> PolOrderContainer;
 
-
-    PAdaptivity( GridType& grid, const DiscreteFunctionSpaceType& space )
+    PAdaptivity( GridType& grid, const DiscreteFunctionSpaceType& space, EstimatorType& estimator, const std::string name = ""  )
       : polOrderContainer_( grid, 0 ),
         space_( space ),
-        estimator_()
+        estimator_( estimator ),
+        param_( AdaptationParameters() )
     {
 #ifdef PADAPTSPACE
       // we start with max order
@@ -472,6 +483,10 @@ namespace Fem
 #endif
     }
 
+    bool adaptive() const
+    {
+      return estimator_.isPadaptive();
+    }
 
     void prepare()
     {
@@ -481,8 +496,7 @@ namespace Fem
       std::vector<int> polOrderVec( space_.gridPart().indexSet().size(0) );
       std::fill( polOrderVec.begin(), polOrderVec.end(), polOrder );
 
-      //todo: correct following line
-      //polOrderContainer_.update();
+      polOrderContainer_.resize();
       if ( estimator_.isPadaptive() )
       {
         typedef typename DiscreteFunctionSpaceType::IteratorType IteratorType;
@@ -492,17 +506,14 @@ namespace Fem
         {
           const EntityType& entity = *it;
           int order = polOrderContainer_[ entity ].value();
-          // use constrcutor here, operator = is deprecated
-          typename EntityType::EntityPointer hit ( it );
           while (order == -1) // is a new element
           {
             if ( entity.level() == 0)
               order = minimalOrder;
             else
             {
-              hit = hit->father();
               // don't call father twice
-              order = polOrderContainer_[ *hit ].value();
+              order = polOrderContainer_[ entity.father() ].value();
               assert(order > 0);
             }
           }
@@ -515,8 +526,9 @@ namespace Fem
 
 
     template< class ProblemImp >
-    bool adaptation( const ProblemImp& problem, const double tolerance)
+    bool estimateMark( const ProblemImp& problem )
     {
+      double tolerance = param_.refinementTolerance();
 #ifdef PADAPTSPACE
       // resize container
       polOrderContainer_.resize();
@@ -545,10 +557,107 @@ namespace Fem
 
     private:
 
-    PolOrderContainer          polOrderContainer_;
+    PolOrderContainer                polOrderContainer_;
     const DiscreteFunctionSpaceType& space_;
-    EstimatorType              estimator_;
+    EstimatorType&                   estimator_;
+    AdaptationParameters             param_;
 
+  };
+
+
+  /**
+   * \brief Adaptation indicator doing no indication and marking of the entities.
+   */
+  template< class EstimatorImp, class SigmaEstimatorImp, class ProblemImp >
+  class PAdaptIndicator
+  {
+    typedef ProblemImp                                                   ProblemType;
+    typedef SigmaEstimatorImp                                            SigmaEstimatorType;
+    typedef EstimatorImp                                                 EstimatorType;
+    typedef typename SigmaEstimatorType::DiscreteFunctionType            DiscreteFunctionType;
+    typedef typename SigmaEstimatorType::AssemblerType                   AssemblerType;
+    typedef typename SigmaEstimatorType::SigmaFunctionSpaceType          SigmaFunctionSpaceType;
+    typedef typename DiscreteFunctionType::DiscreteFunctionSpaceType     DiscreteFunctionSpaceType;
+    typedef typename DiscreteFunctionType::GridPartType                  GridPartType;
+    typedef typename GridPartType::GridType                              GridType;
+    static const int polOrder = SigmaEstimatorType::polynomialOrder;
+
+    typedef PAdaptivity< polOrder, DiscreteFunctionSpaceType, EstimatorImp > PAdaptivityType;
+
+    enum { dimension = GridType::dimension  };
+
+  public:
+   typedef uint64_t                          UInt64Type;
+
+    PAdaptIndicator( GridPartType& gridPart,
+                     DiscreteFunctionType& solution,
+                     const ProblemType& problem,
+                     AssemblerType& assembler,
+                     const std::string name = "" )
+      : sigmaEstimator_( gridPart, solution, assembler, name ),
+        estimator_( solution, sigmaEstimator_.sigma(), assembler, gridPart.grid(), name /*, AdaptationParameters( param ) */),
+        pAdapt_( gridPart.grid(), solution.space(), estimator_ ),
+        problem_( problem )
+    {}
+
+    bool adaptive() const
+    {
+      return pAdapt_.adaptive();
+    }
+
+    size_t numberOfElements() const
+    {
+      return 0;
+    }
+
+    UInt64Type globalNumberOfElements() const { return 0; }
+
+    template< class TimeProviderImp >
+    void setAdaptation( TimeProviderImp& tp )
+    {
+    }
+
+    void preAdapt()
+    {
+      pAdapt_.prepare();
+    }
+
+    void estimateMark( const bool initialAdapt = false )
+    {
+      // calculate new sigma
+      sigmaEstimator_.update();
+
+      const bool marked = pAdapt_.estimateMark( problem_ );
+      if( marked )
+        pAdapt_.closure();
+    }
+
+    void postAdapt()
+    {
+    }
+
+    void finalize()
+    {
+    }
+
+    int minNumberOfElements() const { return 0; }
+
+    int maxNumberOfElements() const { return 0; }
+
+    const int finestLevel() const { return 0; }
+
+    // return some info
+    const typename SigmaEstimatorType::SigmaDiscreteFunctionType& sigma()
+    {
+      return sigmaEstimator_.sigma();
+    }
+
+  private:
+
+    SigmaEstimatorType sigmaEstimator_;
+    EstimatorType      estimator_;
+    PAdaptivityType    pAdapt_;
+    const ProblemType& problem_;
   };
 
 
@@ -600,18 +709,15 @@ namespace Fem
 
     enum { dimension = GridType::dimension  };
 
-    typedef typename DiscreteFunctionSpaceType ::
-      template ToNewDimRange< dimension * ModelType::dimRange >::NewFunctionSpaceType SigmaFunctionSpaceType;
-
-    typedef PoissonSigmaEstimator< GridPartType, DiscreteFunctionType, SigmaFunctionSpaceType, AssemblerType, polOrder > PoissonSigmaEstimatorType;
-
     typedef typename  BaseType::AnalyticalTraits           AnalyticalTraits;
 
     typedef typename BaseType::IOTupleType                 IOTupleType;
 
     typedef typename BaseType::TimeProviderType            TimeProviderType;
 
-    typedef PAdaptivity< GridType, polOrder, DiscreteFunctionSpaceType >        PAdaptivityType;
+    typedef typename BaseType::AdaptIndicatorType          AdaptIndicatorType;
+
+    typedef typename BaseType::AdaptationDiscreteFunctionType AdaptationDiscreteFunctionType;
 
     using BaseType::problem;
     using BaseType::model;
@@ -624,7 +730,7 @@ namespace Fem
     using BaseType::exactSolution;
     using BaseType::solver;
 
-  public: /* ISTLLinearOperator */
+  public:
     SubEllipticAlgorithm( GridType& grid, ContainerType& container )
     : BaseType( grid, container.adapter() ),
       container_( container ),
@@ -632,10 +738,9 @@ namespace Fem
       space_( container_.space() ),
       assembler_( container_, model() ),
       matrix_( container_.matrix() ),
-      pAdapt_( grid, container_.space() ),
+      adaptIndicator_( std::make_unique<AdaptIndicatorType>( gridPart_, *container_.solution().get(), problem(), assembler_, name() ) ),
       step_( 0 ),
-      time_( 0 ),
-      poissonSigmaEstimator_( new PoissonSigmaEstimatorType( container_.gridPart(), solution(), assembler_, name() ) )
+      time_( 0 )
     {
       std::string gridName = Fem::gridName( grid );
       if( gridName == "ALUGrid" || gridName == "ALUConformGrid" || gridName == "ALUSimplexGrid" )
@@ -655,18 +760,19 @@ namespace Fem
       time_ = time;
     }
 
-    bool adaptation ( const double tolerance)
-    {
-      return pAdapt_.adaptation( problem(), tolerance );
-    }
-    void closure()
-    {
-      pAdapt_.closure();
-    }
-
     const AssemblerType& assembler () const
     {
       return assembler_;
+    }
+
+    //ADAPTATION
+    virtual AdaptIndicatorType* adaptIndicator()
+    {
+      return adaptIndicator_.get();
+    }
+    virtual AdaptationDiscreteFunctionType* adaptationSolution ()
+    {
+      return &solution();
     }
 
   protected:
@@ -702,18 +808,13 @@ namespace Fem
     //! default time loop implementation, overload for changes
     virtual void doPreSolve ( const int loop ) override
     {
-      pAdapt_.prepare();
-
       BaseType::doPreSolve( loop );
-
-      // calculate new sigma
-      poissonSigmaEstimator_->update();
     }
 
     //! finalize computation by calculating errors and EOCs
     virtual void doFinalize ( const int loop ) override
     {
-      AnalyticalTraits::addEOCErrors( solution(), model(), problem().exactSolution(), poissonSigmaEstimator_->sigma() );
+      AnalyticalTraits::addEOCErrors( solution(), model(), problem().exactSolution(), adaptIndicator()->sigma() );
     }
 
 
@@ -726,10 +827,9 @@ namespace Fem
     AssemblerType                                assembler_;
 
     std::shared_ptr< OperatorType >              matrix_;
-    PAdaptivityType                              pAdapt_;
+    std::unique_ptr< AdaptIndicatorType >        adaptIndicator_;
     int                                          step_;
     double                                       time_;
-    std::unique_ptr< PoissonSigmaEstimatorType > poissonSigmaEstimator_;
 
   };
 

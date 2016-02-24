@@ -136,7 +136,7 @@ namespace Fem
     {}
 
     //CHECKPOINTING
-    virtual CheckPointDiscreteFunctionType* checkPointSolution () override { return &solution(); }
+    virtual CheckPointDiscreteFunctionType* checkPointSolution () { return &solution(); }
 
     //DATAWRITING
     virtual IOTupleType& dataTuple () { return ioTuple_; }

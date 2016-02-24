@@ -22,7 +22,9 @@
 #include <dune/fem/misc/h1norm.hh>
 #include <dune/fem/misc/nonconformitylevel.hh>
 #include <dune/fem/misc/femeoc.hh>
+#include <dune/fem/misc/fmatrixconverter.hh>
 
+#include <dune/fem-dg/pass/context.hh>
 #include <dune/fem-dg/operator/adaptation/utility.hh>
 
 namespace Dune
@@ -103,81 +105,89 @@ namespace Fem
   //                  fluxEn, dfluxEn, fluxNb, dfluxNb):
   //              method to compute -hatK, only fluxEn and fluxNb is used
 
-  template<class UFunction, class SigmaFunction, class DGOperator>
+  template<class SigmaEstimatorImp>
   class ErrorEstimator
   {
-    typedef ErrorEstimator< UFunction, SigmaFunction, DGOperator> ThisType;
+    typedef ErrorEstimator< SigmaEstimatorImp> ThisType;
 
   public:
-    typedef UFunction DiscreteFunctionType;
+    typedef SigmaEstimatorImp                                        SigmaEstimatorType;
+    typedef typename SigmaEstimatorType::DiscreteFunctionType        DiscreteFunctionType;
+    typedef typename SigmaEstimatorType::SigmaDiscreteFunctionType   SigmaDiscreteFunctionType;
+    typedef typename SigmaEstimatorType::DGOperatorType              DGOperatorType;
 
-    typedef typename DiscreteFunctionType :: DiscreteFunctionSpaceType DiscreteFunctionSpaceType;
-    typedef typename DiscreteFunctionType :: LocalFunctionType LocalFunctionType;
-    typedef typename SigmaFunction :: LocalFunctionType SigmaLocalFunctionType;
+    typedef typename DiscreteFunctionType::DiscreteFunctionSpaceType DiscreteFunctionSpaceType;
+    typedef typename DiscreteFunctionType::LocalFunctionType         LocalFunctionType;
+    typedef typename SigmaDiscreteFunctionType::LocalFunctionType    SigmaLocalFunctionType;
+    typedef typename SigmaLocalFunctionType::RangeType               GradientRangeType;
 
-    typedef typename DiscreteFunctionSpaceType :: DomainFieldType DomainFieldType;
-    typedef typename DiscreteFunctionSpaceType :: RangeFieldType RangeFieldType;
-    typedef typename DiscreteFunctionSpaceType :: DomainType DomainType;
-    typedef typename DiscreteFunctionSpaceType :: RangeType RangeType;
-    typedef typename DiscreteFunctionSpaceType :: JacobianRangeType JacobianRangeType;
-    typedef typename DiscreteFunctionSpaceType :: GridPartType GridPartType;
-    typedef typename DiscreteFunctionSpaceType :: IteratorType IteratorType;
+    typedef typename DiscreteFunctionSpaceType::DomainFieldType      DomainFieldType;
+    typedef typename DiscreteFunctionSpaceType::RangeFieldType       RangeFieldType;
+    typedef typename DiscreteFunctionSpaceType::DomainType           DomainType;
+    typedef typename DiscreteFunctionSpaceType::RangeType            RangeType;
+    typedef typename DiscreteFunctionSpaceType::JacobianRangeType    JacobianRangeType;
+    typedef typename DiscreteFunctionSpaceType::GridPartType         GridPartType;
+    typedef typename DiscreteFunctionSpaceType::IteratorType         IteratorType;
 
-    typedef typename GridPartType :: GridType GridType;
-    typedef typename GridPartType :: IndexSetType IndexSetType;
-    typedef typename GridPartType :: IntersectionIteratorType IntersectionIteratorType;
+    typedef Dune::Fem::FieldMatrixConverter< GradientRangeType, JacobianRangeType >
+                                                                     SigmaConverterType;
 
-    typedef typename IntersectionIteratorType :: Intersection IntersectionType;
+    typedef typename GridPartType::GridType                          GridType;
+    typedef typename GridPartType::IndexSetType                      IndexSetType;
+    typedef typename GridPartType::IntersectionIteratorType          IntersectionIteratorType;
 
-    typedef typename GridType :: template Codim< 0 > :: Entity ElementType;
-    typedef typename GridType :: template Codim< 0 > :: EntityPointer ElementPointerType;
-    typedef typename ElementType::Geometry GeometryType;
+    typedef typename IntersectionIteratorType::Intersection          IntersectionType;
 
-    static const int dimension = GridType :: dimension;
+    typedef typename GridType::template Codim< 0 >::Entity           ElementType;
+    typedef typename ElementType::Geometry                           GeometryType;
+
+    static const int dimension = GridType::dimension;
 
     // CACHING
-    typedef typename DGOperator :: FaceQuadratureType     FaceQuadratureType ;
-    typedef typename DGOperator :: VolumeQuadratureType   VolumeQuadratureType ;
+    typedef typename DGOperatorType::FaceQuadratureType              FaceQuadratureType ;
+    typedef typename DGOperatorType::VolumeQuadratureType            VolumeQuadratureType ;
 
-    typedef std :: vector< double > ErrorIndicatorType;
+    typedef std::vector< double >                                    ErrorIndicatorType;
   protected:
-    const DGOperator &oper_;
-    const DiscreteFunctionType &uh_;
-    const SigmaFunction &sigma_;
-    const double beta_;
-    const DiscreteFunctionSpaceType &dfSpace_;
-    GridPartType &gridPart_;
-    const IndexSetType &indexSet_;
-    GridType &grid_;
+    typedef HierarchicSimplexDGSpace<DiscreteFunctionSpaceType>      HierarchicSimplexDGSpaceType;
+    typedef HierarchicCubeDGSpace<DiscreteFunctionSpaceType>         HierarchicCubeDGSpaceType;
 
-    typedef HierarchicSimplexDGSpace<DiscreteFunctionSpaceType> HierarchicSimplexDGSpaceType;
-    typedef HierarchicCubeDGSpace<DiscreteFunctionSpaceType> HierarchicCubeDGSpaceType;
+    typedef typename HierarchicSimplexDGSpaceType::Type              SimplexDGSpaceType;
+    typedef typename HierarchicCubeDGSpaceType::Type                 CubeDGSpaceType ;
 
-    typedef typename HierarchicSimplexDGSpaceType::Type  SimplexDGSpaceType;
-    typedef typename HierarchicCubeDGSpaceType::Type     CubeDGSpaceType ;
+    enum PAdaptiveMethodIdentifier {
+      none = 0,
+      coeffroot = 1,
+      prior2p = 2
+    };
+
+
+    const DGOperatorType&            oper_;
+    const DiscreteFunctionType&      uh_;
+    const SigmaDiscreteFunctionType& sigma_;
+    const double&                    beta_;
+    const DiscreteFunctionSpaceType& dfSpace_;
+    GridPartType&                    gridPart_;
+    const IndexSetType&              indexSet_;
+    GridType&                        grid_;
 
     std::unique_ptr< SimplexDGSpaceType > dgSimplexSpace_;
     std::unique_ptr< CubeDGSpaceType    > dgCubeSpace_;
 
     ErrorIndicatorType indicator_;
     ErrorIndicatorType R2_,R1_,Rorth_,smoothness_;
-    double totalIndicator2_,maxIndicator_;
-    const double theta_;
-    const bool maximumStrategy_;
-    const int nonConformityDifference_;
-    int eocId_;
-    enum PAdaptiveMethodIdentifier {
-      none = 0,
-      coeffroot = 1,
-      prior2p = 2
-    };
+    double             totalIndicator2_,maxIndicator_;
+    const double       theta_;
+    const bool         maximumStrategy_;
+    const int          nonConformityDifference_;
+    int                eocId_;
     PAdaptiveMethodIdentifier padaptiveMethod_;
 
 
   public:
     ErrorEstimator (const DiscreteFunctionType &uh,
-                    const SigmaFunction &sigma,
-                    const DGOperator &oper,
+                    const SigmaDiscreteFunctionType &sigma,
+                    const DGOperatorType &oper,
                     GridType &grid,
                     const AdaptationParameters& param = AdaptationParameters() )
      : oper_(oper),
@@ -456,7 +466,7 @@ namespace Fem
         {
           if (inter->neighbor())
           {
-            if (inter->outside()->level() > lev)
+            if (inter->outside().level() > lev)
               ++nconf;
             else
               ++conf;
@@ -616,7 +626,7 @@ namespace Fem
           typedef typename H1NormType :: template FunctionJacobianSquare< DGLFType >  FctJacType;
 
           FctJacType udg2( udg );
-          RangeType eta1(0),eta2(0);
+          typename FctJacType::RangeType eta1(0),eta2(0);
           for (int i=0 ; i<HDGSpaceType::size(polOrder-2); ++i)
             udg[i] = 0;
           integrator.integrate( entity, udg2, eta2 ); // square of H1 norm
@@ -641,9 +651,9 @@ namespace Fem
       }
     }
 
-    void estimateBoundary ( const IntersectionType &intersection,
-          const ElementType &inside,
-          const LocalFunctionType &uInside, const SigmaLocalFunctionType &sigmaInside )
+    void estimateBoundary( const IntersectionType &intersection,
+                           const ElementType &inside,
+                           const LocalFunctionType &uInside, const SigmaLocalFunctionType &sigmaInside )
     {
       double volume = inside.geometry().volume() ;
       const double h = ( (dimension == 1 ? volume : std::pow(0.5* volume, 1.0 / (double)dimension )) ) /
@@ -657,15 +667,15 @@ namespace Fem
       uValuesEn.resize( numQuadraturePoints );
       uValuesNb.resize( numQuadraturePoints );
       uInside.evaluateQuadrature( quadInside, uValuesEn );
-      oper_.boundaryValues(dfSpace_.gridPart(),
-                           intersection, inside, 0, quadInside,
+      oper_.boundaryValues(intersection, inside, 0, quadInside, volume,
                            uValuesNb);
       duValuesEn.resize( numQuadraturePoints );
       uInside.evaluateQuadrature( quadInside, duValuesEn );
       fluxEn.resize( numQuadraturePoints );
       dfluxEn.resize( numQuadraturePoints );
-      oper_.boundaryFlux(dfSpace_.gridPart(),
-                         intersection, inside, 0, quadInside,
+
+      oper_.boundaryFlux(intersection, inside, 0.0 /* time */,
+                         volume, quadInside,
                          uValuesEn, duValuesEn, uValuesNb,
                          fluxEn, dfluxEn
                          );
@@ -679,6 +689,10 @@ namespace Fem
 
       volume/=3*faceVol;
 
+      typedef RangeType           RangeTuple;
+      typedef SigmaConverterType JacobianTuple;
+      typedef IntersectionQuadraturePointContext< IntersectionType, ElementType, FaceQuadratureType, RangeTuple, JacobianTuple > IntersectionLocalEvaluationType;
+
       for( int qp = 0; qp < numQuadraturePoints; ++qp )
       {
         DomainType unitNormal
@@ -690,8 +704,12 @@ namespace Fem
         // R_1 = h| (d u_l * n_l) + (d u_r * n_r) |^2 = h| (d u_l - d u_r) * n_l |^2
         JacobianRangeType AJacEn;
         fluxEn[qp] /= integrationElement;
-        oper_.model().diffusion(inside,0,quadInside.point(qp),
-                                uValuesEn[qp],sigmaValuesEn[qp], AJacEn);
+
+        const SigmaConverterType sigmaValueEn( sigmaValuesEn[qp] );
+        IntersectionLocalEvaluationType local( intersection, inside, quadInside, uValuesEn[qp], sigmaValueEn, qp, 0, volume );
+
+        oper_.model().diffusion(local,
+                                uValuesEn[qp], sigmaValueEn, AJacEn);
         // note that flux=-hatA therefore we compute -hatA+Agrad u
         AJacEn.umv( unitNormal, fluxEn[qp]);
 
@@ -714,8 +732,7 @@ namespace Fem
                                 const ElementType &inside,
                                 const LocalFunctionType &uInside, const SigmaLocalFunctionType &sigmaInside )
     {
-      const ElementPointerType pOutside = intersection.outside();
-      const ElementType &outside = *pOutside;
+      const ElementType& outside = intersection.outside();
 
       const int quadOrder = 2*(dfSpace_.order()+1);
 
@@ -798,11 +815,13 @@ namespace Fem
       fluxNb.resize( numQuadraturePoints );
       dfluxNb.resize( numQuadraturePoints );
 
-      oper_.flux(dfSpace_.gridPart(),
-                 intersection, inside, outside, 0, quadInside, quadOutside,
+      typedef typename DGOperatorType::IntersectionStorage IntersectionStorage;
+      IntersectionStorage intersectionStorage( intersection, inside, inside, volume, volume);
+      oper_.flux(dfSpace_.gridPart(), intersectionStorage, 0.0, /* time */
+                 quadInside, quadOutside,
                  uValuesEn, duValuesEn, uValuesNb, duValuesNb,
                  fluxEn, dfluxEn, fluxNb, dfluxNb
-                 );
+                );
 
       sigmaValuesEn.resize( numQuadraturePoints );
       sigmaValuesNb.resize( numQuadraturePoints );
@@ -816,6 +835,10 @@ namespace Fem
 
       volume/=3*faceVol;
 
+      typedef RangeType           RangeTuple;
+      typedef SigmaConverterType  JacobianTuple;
+      typedef IntersectionQuadraturePointContext< IntersectionType, ElementType, QuadratureImp, RangeTuple, JacobianTuple > IntersectionLocalEvaluationType;
+
       for( int qp = 0; qp < numQuadraturePoints; ++qp )
       {
         DomainType unitNormal
@@ -828,10 +851,17 @@ namespace Fem
         JacobianRangeType AJacEn,AJacNb;
         fluxEn[qp] /= integrationElement;
         fluxNb[qp] /= integrationElement;
-        oper_.model().diffusion(inside,0,quadInside.point(qp),
-                                uValuesEn[qp],sigmaValuesEn[qp], AJacEn);
-        oper_.model().diffusion(outside,0,quadOutside.point(qp),
-                                uValuesNb[qp],sigmaValuesNb[qp], AJacNb);
+
+        const SigmaConverterType sigmaValueEn( sigmaValuesEn[qp] );
+        const IntersectionLocalEvaluationType left( intersection, inside, quadInside, uValuesEn[qp], sigmaValueEn, qp, 0, volume );
+        const SigmaConverterType sigmaValueNb( sigmaValuesNb[qp] );
+        const IntersectionLocalEvaluationType right( intersection, outside, quadInside, uValuesNb[qp], sigmaValueNb, qp, 0, volume );
+
+        oper_.model().diffusion(left,
+                                uValuesEn[qp], sigmaValueEn, AJacEn);
+        oper_.model().diffusion(right,
+                                uValuesNb[qp], sigmaValueNb, AJacNb);
+
         // note that flux=-hatA therefore we compute -hatA+Agrad u
         AJacEn.umv( unitNormal, fluxEn[qp]);
         AJacNb.umv( unitNormal, fluxNb[qp]);
@@ -888,11 +918,15 @@ namespace Fem
       }
       else
 #endif
+      typedef typename DGOperatorType::EntityStorage EntityStorage;
+      const double volume = geo.volume();
       {
         // finite difference approximation
-        typename LocalFunctionType::RangeType ux0,ux1;
-        typename SigmaLocalFunctionType::RangeType sigmax0,sigmax1;
-        typename LocalFunctionType::JacobianRangeType Asigmax0,Asigmax1;
+        RangeType ux0,ux1;
+
+        GradientRangeType sigmax0,sigmax1;
+        JacobianRangeType Asigmax0,Asigmax1;
+
         DomainType xGlobal = geo.global( quad.point(qp ) );
         double hen = std::max(1e-12,h2*h2);
         result = 0;
@@ -909,8 +943,17 @@ namespace Fem
           u_h.evaluate(x1,ux1);
           sigma_h.evaluate(x0,sigmax0);
           sigma_h.evaluate(x1,sigmax1);
-          oper_.model().diffusion(entity,0,x0,ux0,sigmax0, Asigmax0);
-          oper_.model().diffusion(entity,0,x1,ux1,sigmax1, Asigmax1);
+
+          {
+            const EntityStorage entityStorage( entity, volume, xgl0, x0 );
+            const SigmaConverterType jac0( sigmax0 );
+            oper_.model().diffusion(entityStorage, ux0, jac0, Asigmax0);
+          }
+          {
+            const EntityStorage entityStorage( entity, volume, xgl1, x1 );
+            const SigmaConverterType jac1( sigmax1 );
+            oper_.model().diffusion(entityStorage, ux1, jac1, Asigmax1);
+          }
           for( int r = 0; r < RangeType::dimension; ++r )
           {
             result[r] += (Asigmax1[r][i] - Asigmax0[r][i])/ (2.*hen);
@@ -927,8 +970,8 @@ namespace Fem
     mutable std::vector< JacobianRangeType > dfluxEn;
     mutable std::vector< RangeType > fluxNb;
     mutable std::vector< JacobianRangeType > dfluxNb;
-    mutable std::vector< typename SigmaLocalFunctionType::RangeType > sigmaValuesEn;
-    mutable std::vector< typename SigmaLocalFunctionType::RangeType > sigmaValuesNb;
+    mutable std::vector< GradientRangeType > sigmaValuesEn;
+    mutable std::vector< GradientRangeType > sigmaValuesNb;
   };
 
 }

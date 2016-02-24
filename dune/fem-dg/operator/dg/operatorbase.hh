@@ -110,8 +110,8 @@ namespace Fem
 #endif
       LocalCDGPass< DiscreteModelType, InsertFunctionPassType, cdgpass >
 #ifdef USE_SMP_PARALLEL
-      , Fem::DomainDecomposedIteratorStorage< GridPartType >
-    //, Fem::ThreadIterator< GridPartType >
+      //, Fem::DomainDecomposedIteratorStorage< GridPartType >
+      , Fem::ThreadIterator< GridPartType >
       , true // non-blocking communication
         >
 #endif

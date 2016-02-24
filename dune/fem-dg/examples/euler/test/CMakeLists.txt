@@ -12,7 +12,7 @@ add_definitions( "-D${GRIDTYPE}" )
 add_definitions( "-DGRIDDIM=${GRIDDIM}" )
 
 set( MAIN ${CMAKE_CURRENT_SOURCE_DIR}/../main.cc )
-set( CHORIN ${CMAKE_CURRENT_SOURCE_DIR}/../problems/chorjo.cc )
+set( CHORJO ${CMAKE_CURRENT_SOURCE_DIR}/../problems/chorjo.cc )
 
 
 if( NOT FEMDG_FAST_TESTBUILD )

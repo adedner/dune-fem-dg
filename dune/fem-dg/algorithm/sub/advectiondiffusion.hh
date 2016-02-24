@@ -93,14 +93,14 @@ namespace Fem
       adaptIndicator_( Std::make_unique< AdaptIndicatorOptional<AdaptIndicatorType> >( solution(), problem(),  typename AdaptIndicatorType::ExtraParameterTupleType(), name() ) )
     {}
 
-    virtual AdaptIndicatorType* adaptIndicator () override
+    virtual AdaptIndicatorType* adaptIndicator ()
     {
       assert( adaptIndicator_ );
       return adaptIndicator_->value();
     }
 
     //! return overal number of grid elements
-    virtual UInt64Type gridSize () const override
+    virtual UInt64Type gridSize () const
     {
       assert( operator_ );
       assert( advectionOperator_ );
@@ -142,7 +142,7 @@ namespace Fem
       return std::make_shared< SolverImpl >( tp, *operator_, *advectionOperator_, *diffusionOperator_, name() );
     }
 
-    const ModelType& model () const override { assert( operator_ ); return operator_->model(); }
+    const ModelType& model () const { assert( operator_ ); return operator_->model(); }
 
   protected:
     //typename OperatorTraits::SpaceType vSpace_;

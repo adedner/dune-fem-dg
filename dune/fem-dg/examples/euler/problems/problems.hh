@@ -427,7 +427,7 @@ namespace Fem
    * \ingroup EulerProblems
    */
   template< class Grid >
-  class U0P123
+  class RiemannProblem
   : public ProblemBase< Grid >
   {
     typedef ProblemBase< Grid > BaseType;
@@ -435,7 +435,9 @@ namespace Fem
     static const int dimension = Grid::dimension;
 
     double T, startTime;
-    Dune::Fem::FieldVectorAdapter< FieldVector< double, 6 > > Ulr;
+
+    typedef Dune::Fem::FieldVectorAdapter< FieldVector< double, 6 > > RiemannDataType;
+    RiemannDataType Ulr;
 
   public:
     typedef typename BaseType::RangeType RangeType;
@@ -450,21 +452,23 @@ namespace Fem
     static const int dimRange = dimDomain + 2;
     static const int energ = dimRange - 1;
 
-    U0P123 ()
-    : T( 0.4 ),
-      startTime( 0 )
+    RiemannProblem ()
+      : T( 0.15 ), startTime( 0 )
     {
-      myName = "RP-123";
+      myName = "RP";
 
-      Ulr[0] = 1.0;
-      Ulr[3] = 1.0;
-      Ulr[1] = -2.0;
-      Ulr[4] = 2.0;
-      Ulr[2] = 0.4;
-      Ulr[5] = 0.4;
+      FieldVector<double,6> data;
+      data[ 0 ] =  1.0;
+      data[ 3 ] =  1.0;
+      data[ 1 ] = -2.0;
+      data[ 4 ] =  2.0;
+      data[ 2 ] =  0.4;
+      data[ 5 ] =  0.4;
 
       T = ParameterType::template getValue<double>( "femdg.stepper.endtime"/*, T*/ );
       ParameterType::get( "femdg.stepper.starttime", startTime, startTime );
+      data = ParameterType::getValue("riemanndata", data );
+      for(int i=0; i<6; ++i ) Ulr[ i ] = data[ i ];
     }
 
     int boundaryId ( const int id ) const
@@ -534,7 +538,6 @@ namespace Fem
 
     std::string myName;
   };
-
 
 
   #if 0

@@ -141,7 +141,7 @@ namespace Fem
     typedef typename BaseType::ParameterType  ParameterType;
   protected:
     typedef typename BaseType::IdEnum         EnumType;
-    typedef typename BaseType::LiftingEnum    LiftingEnum;
+    typedef typename ParameterType::LiftingEnum    LiftingEnum;
   public:
 
     using BaseType :: parameter ;
@@ -169,7 +169,7 @@ namespace Fem
                                const EnumType staticMethod ) :
       BaseType( model, true, parameters ),
       gridPart_( gridPart ),
-      method_( staticMethod == EnumType::general ? parameters.getMethod() : staticMethod ),
+      method_( staticMethod == EnumType::primal ? parameters.getMethod() : staticMethod ),
       penalty_( parameter().penalty() ),
       nipgFactor_( (method_ == EnumType::nipg) ||
                    (method_ == EnumType::bo)
@@ -527,7 +527,7 @@ namespace Fem
         // calculate real lifting
         for(size_t qp = 0; qp < quadNoInp; ++qp )
         {
-          addLifting(intersection, entity, u.tuple( qp ), u[ qp ], time, faceQuad,  qp,
+          addLifting(intersection, entity, u.at( qp ), u[ qp ], time, faceQuad,  qp,
                      uLeftVec[ qp ], uRightVec[ qp ],
                      liftingEvalLeMinus_[ qp ] );
         }
@@ -560,7 +560,7 @@ namespace Fem
           {
             // get value of 2*r_e in quadrature point
             // use correct order on interface quadratures!
-            addLifting(intersection, entity2, u2.tuple( qp ), u2[ qp ], time, faceQuad2,  qp,
+            addLifting(intersection, entity2, u2.at( qp ), u2[ qp ], time, faceQuad2,  qp,
                        uLeftVec[ qp ], uRightVec[ qp ], liftingEvalLePlus_[ qp ] );
           }
 
@@ -623,7 +623,7 @@ namespace Fem
         liftingEvalLeMinus_.resize( quadNop );
         for(size_t qp = 0; qp < quadNop; ++qp )
         {
-          addLifting(intersection, entity, uLeftVec.tuple( qp ), uLeftVec[ qp ], time, quadInner, qp,
+          addLifting(intersection, entity, uLeftVec.at( qp ), uLeftVec[ qp ], time, quadInner, qp,
                      uLeftVec[ qp ], uRight[ qp ] , liftingEvalLeMinus_[ qp ] );
         }
         // add to local function
@@ -1205,7 +1205,7 @@ namespace Fem
     ExtendedDGPrimalDiffusionFlux( GridPartType& gridPart,
                                    const Model& model,
                                    const ParameterType& parameters = ParameterType() )
-      : BaseType( gridPart, model, parameters, BaseType::EnumType::general )
+      : BaseType( gridPart, model, parameters, BaseType::EnumType::primal )
     { }
 
     //! copy constructor (needed for thread parallel programs)
