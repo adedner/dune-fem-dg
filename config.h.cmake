@@ -12,8 +12,4 @@
 /* Define to the revision of dune-fem-dg */
 #define DUNE_FEM_DG_VERSION_REVISION ${DUNE_FEM_DG_VERSION_REVISION}
 
-
-/* Define if BGQ_L!PREFETCH found */
-#cmakedefine HAVE_BGQ_L1PREFETCH 1
-
 /* end dune-fem-dg */
