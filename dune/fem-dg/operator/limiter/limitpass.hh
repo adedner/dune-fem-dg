@@ -246,7 +246,8 @@ namespace Fem
   template <class GlobalTraitsImp, class Model, int passId >
   struct LimiterDefaultTraits
   {
-    typedef typename Model::Traits ModelTraits;
+    typedef Model ModelType;
+    typedef typename ModelType::Traits ModelTraits;
     typedef typename ModelTraits::GridType GridType;
 
     enum { dimRange = ModelTraits::dimRange };
@@ -254,7 +255,7 @@ namespace Fem
     enum { dimGrid = GridType::dimension };
 
     typedef GlobalTraitsImp Traits;
-    typedef typename Traits::ModelType::ProblemType::FunctionSpaceType FunctionSpaceType;
+    typedef typename ModelType::ProblemType::FunctionSpaceType FunctionSpaceType;
 
     typedef typename Traits::VolumeQuadratureType VolumeQuadratureType;
     typedef typename Traits::FaceQuadratureType FaceQuadratureType;
