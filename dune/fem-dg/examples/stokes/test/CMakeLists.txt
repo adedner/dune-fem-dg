@@ -3,7 +3,7 @@ include_directories("${CMAKE_SOURCE_DIR}/dune/fem-dg/examples/stokes/")
 configure_parameter_file()
 
 # specify type of grid implemention, dimension and polynmomial order
-set( GRIDTYPE YASPGRID )
+set( GRIDTYPE ALUGRID_CUBE )
 set( GRIDDIM 2 )
 set( POLORDER 2 )
 
