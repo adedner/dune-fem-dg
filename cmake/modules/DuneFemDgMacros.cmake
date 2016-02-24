@@ -15,6 +15,16 @@ macro(configure_parameter_file)
   configure_file(parameter.in ${CMAKE_CURRENT_BINARY_DIR}/parameter)
 endmacro(configure_parameter_file)
 
+set(USE_OPENMP OFF CACHE BOOL "whether we are using OpenMP.")
+# if open mp should be used perform cmake check
+if(USE_OPENMP)
+  include(FindOpenMP)
+  if(OPENMP_FOUND)
+    # add flags to compiler flags
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+  endif(OPENMP_FOUND)
+endif(USE_OPENMP)
+
 # do a fast test build by default,
 # i.e. only build the most important tests
 # when calling 'make test' and 'make build_tests', respectively
