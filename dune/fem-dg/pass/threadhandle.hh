@@ -1,7 +1,7 @@
 #ifndef DUNE_FEM_PTHREADCLASS_HH
 #define DUNE_FEM_PTHREADCLASS_HH
 
-#if defined USE_PTHREADS && ! HAVE_PTHREAD
+#if USE_PTHREADS && ! HAVE_PTHREAD
 #error "pthreads not found, reconfigure!"
 #endif
 
@@ -16,7 +16,7 @@ namespace Fem
 
   class ThreadHandle
   {
-#ifdef USE_PTHREADS
+#if USE_PTHREADS
     class ObjectIF
     {
     protected:
@@ -295,7 +295,7 @@ namespace Fem
       if( ! ThreadManager :: singleThreadMode() )
         DUNE_THROW(InvalidStateException,"ThreadHandle :: run called from thread  parallel region!");
 
-#ifdef USE_PTHREADS
+#if USE_PTHREADS
       {
 
         // pthread version
