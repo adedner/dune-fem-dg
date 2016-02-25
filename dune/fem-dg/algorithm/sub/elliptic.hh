@@ -738,7 +738,7 @@ namespace Fem
       space_( container_.space() ),
       assembler_( container_, model() ),
       matrix_( container_.matrix() ),
-      adaptIndicator_( std::make_unique<AdaptIndicatorType>( gridPart_, *container_.solution().get(), problem(), assembler_, name() ) ),
+      adaptIndicator_( Std::make_unique<AdaptIndicatorType>( gridPart_, *container_.solution().get(), problem(), assembler_, name() ) ),
       step_( 0 ),
       time_( 0 )
     {
