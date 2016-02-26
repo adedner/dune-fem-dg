@@ -291,8 +291,10 @@ namespace Fem
     typedef typename GridType::template Codim<0>::Geometry                GeometryType;
     //! type of quadrature to be used
 
+  public:
     typedef typename OperatorTraits::VolumeQuadratureType                 VolumeQuadratureType;
     typedef typename OperatorTraits::FaceQuadratureType                   FaceQuadratureType;
+  protected:
 
     typedef typename ContainerType::template Matrix<0,1>                  PressureGradMatType;
     typedef typename ContainerType::template Matrix<1,0>                  PressureDivMatType;

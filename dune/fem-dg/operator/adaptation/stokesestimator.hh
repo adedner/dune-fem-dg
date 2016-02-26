@@ -26,43 +26,45 @@ namespace Fem
   //                  fluxEn, dfluxEn, fluxNb, dfluxNb):
   //              method to compute -hatK, only fluxEn and fluxNb is used
 
-  template< class SigmaFunction >
-  class StokesErrorEstimator : public ErrorEstimator< SigmaFunction >
+  template< class DiscreteFunctionImp, class SigmaDiscreteFunctionImp, class DGOperatorImp >
+  class StokesErrorEstimator
+    : public ErrorEstimator< DiscreteFunctionImp, SigmaDiscreteFunctionImp, DGOperatorImp >
   {
-    typedef ErrorEstimator< SigmaFunction > BaseType;
-    typedef StokesErrorEstimator< SigmaFunction > ThisType;
+    typedef ErrorEstimator< DiscreteFunctionImp, SigmaDiscreteFunctionImp, DGOperatorImp >
+                                                                     BaseType;
 
   public:
-    typedef typename BaseType :: DGOperatorType DGOperatorType;
-    typedef typename BaseType :: DiscreteFunctionType DiscreteFunctionType;
+    typedef typename BaseType::DGOperatorType                        DGOperatorType;
+    typedef typename BaseType::DiscreteFunctionType                  DiscreteFunctionType;
 
-    typedef typename DiscreteFunctionType :: DiscreteFunctionSpaceType DiscreteFunctionSpaceType;
-    typedef typename DiscreteFunctionType :: LocalFunctionType LocalFunctionType;
-    typedef typename SigmaFunction :: LocalFunctionType SigmaLocalFunctionType;
+    typedef typename DiscreteFunctionType::DiscreteFunctionSpaceType DiscreteFunctionSpaceType;
+    typedef typename DiscreteFunctionType::LocalFunctionType         LocalFunctionType;
+    typedef typename BaseType::SigmaDiscreteFunctionType             SigmaDiscreteFunctionType;
+    typedef typename BaseType::LocalFunctionType                     SigmaLocalFunctionType;
 
-    typedef typename DiscreteFunctionSpaceType :: DomainFieldType DomainFieldType;
-    typedef typename DiscreteFunctionSpaceType :: RangeFieldType RangeFieldType;
-    typedef typename DiscreteFunctionSpaceType :: DomainType DomainType;
-    typedef typename DiscreteFunctionSpaceType :: RangeType RangeType;
-    typedef typename DiscreteFunctionSpaceType :: JacobianRangeType JacobianRangeType;
-    typedef typename DiscreteFunctionSpaceType :: GridPartType GridPartType;
-    typedef typename DiscreteFunctionSpaceType :: IteratorType IteratorType;
+    typedef typename DiscreteFunctionSpaceType::DomainFieldType      DomainFieldType;
+    typedef typename DiscreteFunctionSpaceType::RangeFieldType       RangeFieldType;
+    typedef typename DiscreteFunctionSpaceType::DomainType           DomainType;
+    typedef typename DiscreteFunctionSpaceType::RangeType            RangeType;
+    typedef typename DiscreteFunctionSpaceType::JacobianRangeType    JacobianRangeType;
+    typedef typename DiscreteFunctionSpaceType::GridPartType         GridPartType;
+    typedef typename DiscreteFunctionSpaceType::IteratorType         IteratorType;
 
-    typedef typename GridPartType :: GridType GridType;
-    typedef typename GridPartType :: IndexSetType IndexSetType;
-    typedef typename GridPartType :: IntersectionIteratorType IntersectionIteratorType;
+    typedef typename GridPartType::GridType                          GridType;
+    typedef typename GridPartType::IndexSetType                      IndexSetType;
+    typedef typename GridPartType::IntersectionIteratorType          IntersectionIteratorType;
 
-    typedef typename IntersectionIteratorType :: Intersection IntersectionType;
+    typedef typename IntersectionIteratorType::Intersection          IntersectionType;
 
-    typedef typename GridType :: template Codim< 0 > :: Entity ElementType;
-    typedef typename GridType :: template Codim< 0 > :: EntityPointer ElementPointerType;
-    typedef typename ElementType::Geometry GeometryType;
+    typedef typename GridType::template Codim< 0 >::Entity           ElementType;
+    typedef typename GridType::template Codim< 0 >::EntityPointer    ElementPointerType;
+    typedef typename ElementType::Geometry                           GeometryType;
 
-    static const int dimension = GridType :: dimension;
-    typedef FieldMatrix<double,dimension,dimension> JacobianInverseType;
-    typedef Dune::Fem::CachingQuadrature< GridPartType, 0 > ElementQuadratureType;
-    typedef Dune::Fem::CachingQuadrature< GridPartType, 1 > FaceQuadratureType;
-    typedef std :: vector< double > ErrorIndicatorType;
+    static const int dimension = GridType::dimension;
+    typedef FieldMatrix<double,dimension,dimension>                  JacobianInverseType;
+    typedef Dune::Fem::CachingQuadrature< GridPartType, 0 >          ElementQuadratureType;
+    typedef Dune::Fem::CachingQuadrature< GridPartType, 1 >          FaceQuadratureType;
+    typedef std::vector< double >                                    ErrorIndicatorType;
 
   private:
     using BaseType::uh_;
@@ -77,12 +79,11 @@ namespace Fem
     using BaseType::theta_;
     typename BaseType::ErrorIndicatorType Rdiv_;
   public:
-    StokesErrorEstimator (const DiscreteFunctionType &uh,
-                          const SigmaFunction &sigma,
+    StokesErrorEstimator (DiscreteFunctionType& df,
                           const DGOperatorType &oper,
-                          GridType &grid,
+                          const SigmaDiscreteFunctionType &sigma,
                           const AdaptationParameters& param = AdaptationParameters() )
-    : BaseType(uh,sigma,oper,grid,param),
+    : BaseType(df,oper,sigma,param),
       Rdiv_( this->indexSet_.size( 0 ))
     {
     }

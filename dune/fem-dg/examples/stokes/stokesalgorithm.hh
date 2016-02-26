@@ -33,19 +33,27 @@ namespace Dune
 namespace Fem
 {
 
-  template< class GridPartImp, class DiscreteVelocityFunctionImp, class DiscretePressureFunctionImp, class SigmaFunctionSpaceImp, class AssemblerImp, class ModelImp, int polOrder>
-  class StokesSigmaEstimator: public PoissonSigmaEstimator<GridPartImp, DiscreteVelocityFunctionImp, SigmaFunctionSpaceImp, AssemblerImp, polOrder >
+
+  template< class PoissonErrorEstimatorImp, class AssemblerImp >
+  class StokesSigmaEstimator
+    : public PoissonSigmaEstimator< PoissonErrorEstimatorImp >
   {
-    typedef PoissonSigmaEstimator<GridPartImp, DiscreteVelocityFunctionImp, SigmaFunctionSpaceImp, AssemblerImp, polOrder > BaseType;
+    typedef PoissonSigmaEstimator< PoissonErrorEstimatorImp >        BaseType;
 
   public:
-    typedef DiscreteVelocityFunctionImp     DiscreteVelocityFunctionType;
-    typedef DiscretePressureFunctionImp     DiscretePressureFunctionType;
-    typedef SigmaFunctionSpaceImp           SigmaFunctionSpaceType;
-    typedef GridPartImp                     GridPartType;
-    typedef typename GridPartType::GridType GridType;
-    typedef AssemblerImp                    AssemblerType;
-    typedef ModelImp                        ModelType;
+    typedef typename BaseType::DiscreteFunctionType                  DiscreteVelocityFunctionType;
+    typedef typename BaseType::DGOperatorType                        BaseAssemblerType;
+    typedef AssemblerImp                                             AssemblerType;
+    typedef typename AssemblerType::DiscretePressureFunctionType     DiscretePressureFunctionType;
+    typedef typename BaseType::DiscreteFunctionSpaceType             DiscreteFunctionSpaceType;
+    typedef typename BaseType::GridPartType                          GridPartType;
+    typedef typename BaseType::GridType                              GridType;
+    typedef typename BaseType::DGOperatorType                        DGOperatorType;
+    //typedef typename BaseType::AssemblerType                         AssemblerType;
+    static const int polynomialOrder = BaseType::polynomialOrder;
+
+
+    typedef typename AssemblerType::ModelType                        ModelType;
 
     using BaseType::sigmaSpace_;
     using BaseType::sigmaDiscreteFunction_;
@@ -95,16 +103,20 @@ namespace Fem
       }
     };
 
+
     struct StokesFlux
     {
       typedef typename GridPartType::GridType::template Codim<0>::Entity EntityType;
-      typedef typename GridPartType::IntersectionIteratorType IntersectionIteratorType;
-      typedef typename GridPartType::IntersectionType IntersectionType;
+      typedef typename GridPartType::IntersectionIteratorType            IntersectionIteratorType;
+      typedef typename GridPartType::IntersectionType                    IntersectionType;
 
-      typedef typename AssemblerType::FaceQuadratureType   FaceQuadratureType;
-      typedef typename AssemblerType::VolumeQuadratureType VolumeQuadratureType;
+      typedef typename AssemblerType::FaceQuadratureType                 FaceQuadratureType;
+      typedef typename AssemblerType::VolumeQuadratureType               VolumeQuadratureType;
 
-      StokesFlux(const DiscretePressureFunctionType &p, const AssemblerType &oper)
+      typedef typename AssemblerType::ContainerType                    ContainerType;
+
+
+      StokesFlux(const DiscretePressureFunctionType &p, const BaseAssemblerType &oper)
       : p_(p),
         oper_(oper)
         {}
@@ -195,31 +207,33 @@ namespace Fem
       }
       private:
       const DiscretePressureFunctionType &p_;
-      const AssemblerType &oper_;
+      const BaseAssemblerType &oper_;
     };
 
+    typedef StokesFlux                                                    StokesFluxType;
 
+    typedef Dune::Fem::LocalFunctionAdapter< SigmaEval<DiscreteVelocityFunctionType,DiscretePressureFunctionType,BaseAssemblerType> > StokesEstimateFunction;
+    typedef StokesErrorEstimator< DiscreteVelocityFunctionType, StokesEstimateFunction, StokesFluxType > StokesErrorEstimatorType;
 
-    typedef Dune::Fem::LocalFunctionAdapter< SigmaEval<DiscreteVelocityFunctionType,DiscretePressureFunctionType,AssemblerType> > StokesEstimateFunction;
-    typedef StokesErrorEstimator< DiscreteVelocityFunctionType, StokesEstimateFunction, StokesFlux > StokesEstimatorType;
-    typedef Dune::Fem::LocalFunctionAdapter< StokesEstimatorType >          StokesEstimateDataType;
+    typedef Dune::Fem::LocalFunctionAdapter< StokesErrorEstimatorType >                                  StokesEstimateDataType;
 
+    typedef typename AssemblerType::ContainerType                    ContainerType;
 
-    StokesSigmaEstimator( GridPartType& gridPart,
-                          const DiscreteVelocityFunctionType& solution,
-                          const DiscretePressureFunctionType& pressureSolution,
+    StokesSigmaEstimator( ContainerType& container,
+                          const BaseAssemblerType& ass,
                           const AssemblerType& assembler,
                           const std::string keyPrefix = "" )
-    : BaseType( gridPart, solution, assembler, keyPrefix ),
-      stkFlux_( pressureSolution, assembler_),
-      stkLocalEstimate_( solution_, pressureSolution, assembler_ ),
-      stkEstimateFunction_("stokes estimate", stkLocalEstimate_, gridPart_, solution_.space().order() ),
-      stkEstimator_( solution_, stkEstimateFunction_, stkFlux_, gridPart_.grid() ),
-      stkEstimateData_("stokesEstimator", stkEstimator_, gridPart_, solution_.space().order() )
+    : BaseType( container.template adapter<0>(), ass, keyPrefix ),
+      container_( container ),
+      stkFlux_( *container_.template solution<1>(), ass ),
+      stkLocalEstimate_( *container_.template solution<0>(), *container_.template solution<1>(), ass ),
+      stkEstimateFunction_("stokes estimate", stkLocalEstimate_, container_.template solution<0>()->gridPart(), container_.template space<0>().order() ),
+      stkEstimator_( *container_.template solution<0>(), stkFlux_, stkEstimateFunction_ ),
+      stkEstimateData_("stokesEstimator", stkEstimator_, container_.template solution<0>()->gridPart(), container_.template space<0>().order() )
     {}
 
 
-    StokesEstimatorType& estimator() const
+    StokesErrorEstimatorType& estimator() const
     {
       return stkEstimator_;
     };
@@ -231,15 +245,227 @@ namespace Fem
 
 
   private:
-    StokesFlux stkFlux_;
-    SigmaEval<DiscreteVelocityFunctionType,DiscretePressureFunctionType,AssemblerType> stkLocalEstimate_;
+    ContainerType& container_;
+    StokesFluxType stkFlux_;
+    SigmaEval<DiscreteVelocityFunctionType,DiscretePressureFunctionType,BaseAssemblerType> stkLocalEstimate_;
 
     StokesEstimateFunction stkEstimateFunction_;
-    StokesEstimatorType  stkEstimator_;
+    StokesErrorEstimatorType  stkEstimator_;
     StokesEstimateDataType  stkEstimateData_;
 
 
   };
+
+
+  template< class PAdaptivityImp, class DiscreteFunctionSpaceImp, int polOrder, class SigmaEstimatorImp >
+  class StokesPAdaptivity
+  {
+  public:
+    typedef PAdaptivityImp                                      PAdaptivityType;
+
+    typedef DiscreteFunctionSpaceImp                            DiscreteFunctionSpaceType;
+    typedef SigmaEstimatorImp                                   SigmaEstimatorType;
+    typedef typename SigmaEstimatorType::ErrorEstimatorType     ErrorEstimatorType;
+
+    typedef typename DiscreteFunctionSpaceType::GridType        GridType;
+
+    typedef typename SigmaEstimatorType::DGOperatorType         DGOperatorType;
+
+    typedef typename SigmaEstimatorType::AssemblerType          AssemblerType;
+    typedef typename SigmaEstimatorType::BaseAssemblerType      BaseAssemblerType;
+
+    typedef typename SigmaEstimatorType::ContainerType          ContainerType;
+
+    typedef typename PAdaptivityType::PolOrderContainer         PolOrderContainer;
+
+    StokesPAdaptivity( ContainerType& container, BaseAssemblerType& ass, AssemblerType& assembler, const std::string name = ""  )
+      : pAdapt_( container.template adapter<0>(), ass, name ),
+        polOrderContainer_( container.template solution<0>()->gridPart().grid(), 0 ),
+        space_( container.template space<1>() ),
+        sigmaEstimator_( container, ass, assembler, name ),
+        errorEstimator_( *container.template solution<0>(), ass, sigmaEstimator_.sigma() ),
+        param_( AdaptationParameters() )
+    {
+#ifdef PADAPTSPACE
+      // we start with max order
+      typedef typename PolOrderContainer::Iterator Iterator ;
+      const Iterator end = polOrderContainer_.end();
+      const int minimalOrder = errorEstimator_.minimalOrder() ;
+      for( Iterator it = polOrderContainer_.begin(); it != end; ++it )
+      {
+        (*it).value() = minimalOrder ;
+      }
+#endif
+    }
+
+    bool adaptive() const
+    {
+      return errorEstimator_.isPadaptive() && pAdapt_.adaptive();
+    }
+
+    void prepare()
+    {
+      pAdapt_.prepare();
+#ifdef PADAPTSPACE
+      const int minimalOrder = errorEstimator_.minimalOrder();
+      // only implemented for PAdaptiveSpace
+      std::vector<int> polOrderVec( space_.gridPart().indexSet().size(0) );
+      std::fill( polOrderVec.begin(), polOrderVec.end(), polOrder );
+
+      polOrderContainer_.resize();
+      if ( errorEstimator_.isPadaptive() )
+      {
+        typedef typename DiscreteFunctionSpaceType::IteratorType IteratorType;
+        typedef typename IteratorType::Entity EntityType ;
+        const IteratorType end = space_.end();
+        for( IteratorType it = space_.begin(); it != end; ++it )
+        {
+          const EntityType& entity = *it;
+          int order = polOrderContainer_[ entity ].value();
+          while (order == -1) // is a new element
+          {
+            if ( entity.level() == 0)
+              order = minimalOrder;
+            else
+            {
+              // don't call father twice
+              order = polOrderContainer_[ entity.father() ].value();
+              assert(order > 0);
+            }
+          }
+          polOrderVec[space_.gridPart().indexSet().index(entity)] = order;
+        }
+      }
+      space_.adapt( polOrderVec );
+#endif
+    }
+
+
+    template< class ProblemImp >
+    bool estimateMark( const ProblemImp& problem )
+    {
+      pAdapt_.estimateMark( problem );
+      //note: no h-Adaptation regarding pressure space!?
+    }
+    void closure()
+    {
+      pAdapt_.closure();
+      //note: no closure regarding pressure space!?
+    }
+
+    ErrorEstimatorType& errorEstimator()
+    {
+      return errorEstimator_;
+    }
+
+    SigmaEstimatorType& sigmaEstimator()
+    {
+      return sigmaEstimator_;
+    }
+    private:
+
+    PAdaptivityType                  pAdapt_;
+    PolOrderContainer                polOrderContainer_;
+    const DiscreteFunctionSpaceType& space_;
+    ErrorEstimatorType               errorEstimator_;
+    SigmaEstimatorType               sigmaEstimator_;
+    AdaptationParameters             param_;
+
+  };
+
+
+
+  /**
+   * \brief Adaptation indicator doing no indication and marking of the entities.
+   */
+  template< class PAdaptivityImp, class ProblemImp >
+  class StokesPAdaptIndicator
+  {
+
+  protected:
+    typedef PAdaptivityImp                                               PAdaptivityType;
+    typedef ProblemImp                                                   ProblemType;
+    typedef typename PAdaptivityType::SigmaEstimatorType                 SigmaEstimatorType;
+    typedef typename PAdaptivityType::ErrorEstimatorType                 ErrorEstimatorType;
+    typedef typename SigmaEstimatorType::DiscreteFunctionType            DiscreteFunctionType;
+    typedef typename SigmaEstimatorType::AssemblerType                   AssemblerType;
+    typedef typename SigmaEstimatorType::BaseAssemblerType               BaseAssemblerType;
+    typedef typename SigmaEstimatorType::DGOperatorType                  DGOperatorType;
+    typedef typename AssemblerType::ContainerType                        ContainerType;
+    typedef typename DiscreteFunctionType::DiscreteFunctionSpaceType     DiscreteFunctionSpaceType;
+    typedef typename DiscreteFunctionType::GridPartType                  GridPartType;
+    typedef typename GridPartType::GridType                              GridType;
+    static const int polOrder = SigmaEstimatorType::polynomialOrder;
+
+    enum { dimension = GridType::dimension  };
+
+  public:
+   typedef uint64_t                          UInt64Type;
+
+    StokesPAdaptIndicator( ContainerType& container,
+                           BaseAssemblerType& ass,
+                           AssemblerType& assembler,
+                           const ProblemType& problem,
+                           const std::string name = "" )
+      : pAdapt_( container, ass, assembler, name ),
+        problem_( problem )
+    {}
+
+    bool adaptive() const
+    {
+      return pAdapt_.adaptive();
+    }
+
+    size_t numberOfElements() const
+    {
+      return 0;
+    }
+
+    UInt64Type globalNumberOfElements() const { return 0; }
+
+    template< class TimeProviderImp >
+    void setAdaptation( TimeProviderImp& tp )
+    {
+    }
+
+    void preAdapt()
+    {
+      pAdapt_.prepare();
+    }
+
+    void estimateMark( const bool initialAdapt = false )
+    {
+      // calculate new sigma
+      pAdapt_.sigmaEstimator().update();
+
+      const bool marked = pAdapt_.estimateMark( problem_ );
+      if( marked )
+        pAdapt_.closure();
+    }
+
+    void postAdapt(){}
+
+    void finalize(){}
+
+    int minNumberOfElements() const { return 0; }
+
+    int maxNumberOfElements() const { return 0; }
+
+    const int finestLevel() const { return 0; }
+
+    // return some info
+    const typename SigmaEstimatorType::SigmaDiscreteFunctionType& sigma()
+    {
+      return pAdapt_.sigmaEstimator().sigma();
+    }
+
+  private:
+
+    PAdaptivityType    pAdapt_;
+    const ProblemType& problem_;
+  };
+
+
 
   /**
    *  \brief Algorithm for solving the Stokes equation.
@@ -284,14 +510,9 @@ namespace Fem
 
     enum { dimension = GridType::dimension  };
 
-    typedef typename DiscreteVelocityFunctionSpaceType ::
-      template ToNewDimRange< dimension * ElliptProblemTraits::AnalyticalTraits::ModelType::dimRange >::NewFunctionSpaceType
-                                                                    SigmaFunctionSpaceType;
+    typedef typename BaseType::AdaptIndicatorType                   AdaptIndicatorType;
 
-    typedef StokesSigmaEstimator< GridPartType, DiscreteVelocityFunctionType, DiscreteFunctionType,
-                                  SigmaFunctionSpaceType, typename EllipticalAlgorithmType::AssemblerType,
-                                  typename ElliptProblemTraits::AnalyticalTraits::ModelType, polOrd >
-                                                                    StokesSigmaEstimatorType;
+    typedef typename BaseType::AdaptationDiscreteFunctionType       AdaptationDiscreteFunctionType;
 
     typedef CovariantTuple< typename BaseType::IOTupleType::type, typename EllipticalAlgorithmType::IOTupleType::type >
                                                                     IOTupleType;
@@ -321,38 +542,17 @@ namespace Fem
     explicit SubStokesAlgorithm( GridType& grid, ContainerType& container ) :
       BaseType( grid, container.template adapter<1>() ),
       container_( container ),
-      space_( container_.template adapter<1>().space() ),
+      space_( container_.template space<1>() ),
       assembler_( container_, model() ),
       ellAlg_( grid, container_.template adapter<0>() ),
-      ioTuple_( new IOTupleType( *BaseType::dataTuple(), *ellAlg_.dataTuple() ) ),
-      stokesSigmaEstimator_( new StokesSigmaEstimatorType( container_.template adapter<1>().gridPart(), ellAlg_.solution(), solution(), ellAlg_.assembler(), name() ) )
+      adaptIndicator_( Std::make_unique<AdaptIndicatorType>( container_, ellAlg_.assembler(), assembler_, problem(), name() ) ),
+      ioTuple_( new IOTupleType( *BaseType::dataTuple(), *ellAlg_.dataTuple() ) )
     {
     }
 
     virtual IOTupleType& dataTuple () override
     {
       return *ioTuple_;
-    }
-
-    bool adaptation(const double tolerance)
-    {
-#if 0
-#if PADAPTSPACE
-      // update to current
-      polOrderContainer_.resize();
-
-      const double error = stokesSigmaEstimator_.estimator().estimate( problem() );
-      typedef typename DiscreteVelocityFunctionSpaceType::IteratorType IteratorType;
-      const IteratorType end = ellAlg_.space().end();
-      for( IteratorType it = ellAlg_.space().begin(); it != end; ++it )
-      {
-        const typename IteratorType::Entity &entity = *it;
-        polOrderContainer_[entity].value() =
-          stokesSigmaEstimator_.estimator().newOrder( 0.98*tolerance, entity );
-      }
-#endif
-#endif
-      return (error < std::abs(tolerance) ? false : stokesSigmaEstimator_->estimator().mark( 0.98 * tolerance));
     }
 
   private:
@@ -369,18 +569,6 @@ namespace Fem
       std::cout << "Solver (Stokes) assemble time: " << timer.elapsed() << std::endl;
 
       double absLimit = Dune::Fem::Parameter::getValue<double>("istl.absLimit",1.e-10);
-#if 0
-#ifdef PADAPTSPACE
-      int polOrder = Dune::Fem::Parameter::getValue<double>("femdg.polOrd",1);
-      // only implemented for PAdaptiveSpace
-      std::vector<int> polOrderVec( ellAlg_.space().gridPart().indexSet().size(0) );
-      std::vector<int> polOrderVecPressure( space_.gridPart().indexSet().size(0) );
-      std::fill( polOrderVec.begin(), polOrderVec.end(), polOrder );
-      std::fill( polOrderVecPressure.begin(), polOrderVecPressure.end(), polOrder-1 );
-      ellAlg_.space().adapt( polOrderVec );
-      space_.adapt( polOrderVecPressure);
-#endif
-#endif
       return std::make_shared< SolverType >( container_, *ellAlg_.solver(), absLimit, 3*ellAlg_.solution().space().size() );
     }
 
@@ -399,9 +587,6 @@ namespace Fem
     virtual void doSolve( const int loop ) override
     {
       BaseType::doSolve( loop );
-
-      // TODO check wheather we need the following line
-      stokesSigmaEstimator_->update();
     }
 
     virtual void doPostSolve( const int loop ) override
@@ -423,8 +608,8 @@ namespace Fem
     AssemblerType                               assembler_;
 
     EllipticalAlgorithmType                     ellAlg_;
+    std::unique_ptr< AdaptIndicatorType >       adaptIndicator_;
     std::unique_ptr< IOTupleType >              ioTuple_;
-    std::unique_ptr< StokesSigmaEstimatorType > stokesSigmaEstimator_;
   };
 
 
