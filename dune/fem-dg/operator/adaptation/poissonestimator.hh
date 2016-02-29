@@ -23,6 +23,7 @@
 #include <dune/fem/misc/nonconformitylevel.hh>
 #include <dune/fem/misc/femeoc.hh>
 #include <dune/fem/misc/fmatrixconverter.hh>
+#include <dune/fem/space/padaptivespace.hh>
 
 #include <dune/fem-dg/pass/context.hh>
 #include <dune/fem-dg/operator/adaptation/utility.hh>
