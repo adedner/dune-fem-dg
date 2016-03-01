@@ -91,6 +91,59 @@ namespace Fem
     }
   };
 
+
+  template< class DiscreteFunctionImp, template<class> class SigmaDiscreteFunctionChooserImp >
+  class SigmaDiscreteFunctionSelector
+  {
+    typedef DiscreteFunctionImp                                      DiscreteFunctionType;
+    typedef typename DiscreteFunctionType::DiscreteFunctionSpaceType DiscreteFunctionSpaceType;
+    typedef typename DiscreteFunctionType::GridPartType              GridPartType;
+    typedef typename GridPartType::GridType                          GridType;
+    static const int polOrder = DiscreteFunctionSpaceType::polynomialOrder;
+
+
+    typedef typename DiscreteFunctionSpaceType::
+      template ToNewDimRange< GridType::dimension * DiscreteFunctionSpaceType::FunctionSpaceType::dimRange >::NewFunctionSpaceType
+                                                                     SigmaFunctionSpaceType;
+
+    //- hybrid spaces use PAdaptiveDGSpace
+    template <class Grid, int topoId>
+    struct SigmaSpaceChooser
+    {
+      typedef Fem::PAdaptiveDGSpace< SigmaFunctionSpaceType, GridPartType, polOrder > type;
+    };
+
+    //- cubes use LegendreDGSpace
+    template <class Grid>
+    struct SigmaSpaceChooser< Grid, 1 >
+    {
+      typedef Dune::Fem::LegendreDiscontinuousGalerkinSpace< SigmaFunctionSpaceType, GridPartType, polOrder > type;
+    };
+
+    //- cubes use OrthonormalDGSpace
+    template <class Grid>
+    struct SigmaSpaceChooser< Grid, 0 >
+    {
+      typedef Dune::Fem::DiscontinuousGalerkinSpace< SigmaFunctionSpaceType, GridPartType, polOrder > type;
+    };
+
+    // work arround internal compiler error
+    enum { simplexTopoId =  GenericGeometry::SimplexTopology< GridType::dimension >::type::id,
+           cubeTopoId    =  GenericGeometry::CubeTopology< GridType::dimension >::type::id,
+           myTopo        =  Dune::Capabilities::hasSingleGeometryType< GridType >::topologyId
+         };
+
+    enum { topoId = (simplexTopoId == myTopo) ? 0 :  // 0 = simplex, 1 = cube, -1 = hybrid
+                      (myTopo == cubeTopoId) ? 1 : -1 };
+
+    typedef typename SigmaSpaceChooser< GridType, topoId >::type         SigmaDiscreteFunctionSpaceType;
+
+  public:
+    typedef typename SigmaDiscreteFunctionChooserImp<SigmaDiscreteFunctionSpaceType>::type
+                                                                         type;
+
+  };
+
   // Estimator
   // ---------
   // Template Arguments:
@@ -106,18 +159,21 @@ namespace Fem
   //                  fluxEn, dfluxEn, fluxNb, dfluxNb):
   //              method to compute -hatK, only fluxEn and fluxNb is used
 
-  template<class SigmaEstimatorImp>
+  template< class DiscreteFunctionImp, class SigmaDiscreteFunctionImp, class DGOperatorImp >
   class ErrorEstimator
   {
-    typedef ErrorEstimator< SigmaEstimatorImp> ThisType;
+    typedef ErrorEstimator< DiscreteFunctionImp, SigmaDiscreteFunctionImp, DGOperatorImp > ThisType;
 
   public:
-    typedef SigmaEstimatorImp                                        SigmaEstimatorType;
-    typedef typename SigmaEstimatorType::DiscreteFunctionType        DiscreteFunctionType;
-    typedef typename SigmaEstimatorType::SigmaDiscreteFunctionType   SigmaDiscreteFunctionType;
-    typedef typename SigmaEstimatorType::DGOperatorType              DGOperatorType;
-
+    typedef DiscreteFunctionImp                                      DiscreteFunctionType;
     typedef typename DiscreteFunctionType::DiscreteFunctionSpaceType DiscreteFunctionSpaceType;
+    typedef typename DiscreteFunctionType::GridPartType              GridPartType;
+    typedef typename GridPartType::GridType                          GridType;
+    typedef DGOperatorImp                                            DGOperatorType;
+
+    typedef SigmaDiscreteFunctionImp                                 SigmaDiscreteFunctionType;
+    typedef typename SigmaDiscreteFunctionType::DiscreteFunctionSpaceType SigmaDiscreteFunctionSpaceType;
+
     typedef typename DiscreteFunctionType::LocalFunctionType         LocalFunctionType;
     typedef typename SigmaDiscreteFunctionType::LocalFunctionType    SigmaLocalFunctionType;
     typedef typename SigmaLocalFunctionType::RangeType               GradientRangeType;
@@ -127,13 +183,11 @@ namespace Fem
     typedef typename DiscreteFunctionSpaceType::DomainType           DomainType;
     typedef typename DiscreteFunctionSpaceType::RangeType            RangeType;
     typedef typename DiscreteFunctionSpaceType::JacobianRangeType    JacobianRangeType;
-    typedef typename DiscreteFunctionSpaceType::GridPartType         GridPartType;
     typedef typename DiscreteFunctionSpaceType::IteratorType         IteratorType;
 
     typedef Dune::Fem::FieldMatrixConverter< GradientRangeType, JacobianRangeType >
                                                                      SigmaConverterType;
 
-    typedef typename GridPartType::GridType                          GridType;
     typedef typename GridPartType::IndexSetType                      IndexSetType;
     typedef typename GridPartType::IntersectionIteratorType          IntersectionIteratorType;
 
@@ -186,19 +240,18 @@ namespace Fem
 
 
   public:
-    ErrorEstimator (const DiscreteFunctionType &uh,
-                    const SigmaDiscreteFunctionType &sigma,
+    ErrorEstimator (DiscreteFunctionType& uh,
                     const DGOperatorType &oper,
-                    GridType &grid,
+                    const SigmaDiscreteFunctionType &sigma,
                     const AdaptationParameters& param = AdaptationParameters() )
      : oper_(oper),
        uh_( uh ),
        sigma_( sigma ),
        beta_(1.),
-       dfSpace_( uh.space() ),
+       dfSpace_( uh_.space() ),
        gridPart_( dfSpace_.gridPart() ),
        indexSet_( gridPart_.indexSet() ),
-       grid_( grid ),
+       grid_( gridPart_.grid() ),
        dgSimplexSpace_(),
        dgCubeSpace_(),
        indicator_( indexSet_.size( 0 )),
@@ -548,18 +601,18 @@ namespace Fem
 
     }
 
-    void calcSmoothness( int polOrder, const ElementType &entity,
+    void calcSmoothness( int pOrder, const ElementType &entity,
                          const typename ElementType::Geometry &geometry,
                          const LocalFunctionType &uLocal, double &smoothness )
     {
       if (geometry.type().isSimplex())
-        calcSmoothness<HierarchicSimplexDGSpaceType>(dgSimplexSpace(),polOrder,entity,geometry,uLocal,smoothness);
+        calcSmoothness<HierarchicSimplexDGSpaceType>(dgSimplexSpace(),pOrder,entity,geometry,uLocal,smoothness);
       else
-        calcSmoothness<HierarchicCubeDGSpaceType>(dgCubeSpace(),polOrder,entity,geometry,uLocal,smoothness);
+        calcSmoothness<HierarchicCubeDGSpaceType>(dgCubeSpace(),pOrder,entity,geometry,uLocal,smoothness);
     }
     template <class HDGSpaceType>
     void calcSmoothness( const typename HDGSpaceType::Type &dgSpace,
-                         int polOrder, const ElementType &entity,
+                         int pOrder, const ElementType &entity,
                          const typename ElementType::Geometry &geometry,
                          const LocalFunctionType &uLocal, double &smoothness )
     {
@@ -585,14 +638,14 @@ namespace Fem
       localMassMatrix.applyInverse( udg );
 
       assert(RangeType::dimension == 1);
-      // only dofs up to bstart[polOrder] should be used
+      // only dofs up to bstart[pOrder] should be used
       // bool correctProjection = true;
-      for (int i=HDGSpaceType::size(polOrder); i<udg.numDofs(); ++i)
+      for (int i=HDGSpaceType::size(pOrder); i<udg.numDofs(); ++i)
       {
         if ( std::abs(udg[i]) > 1e-10 )
         {
-          std::cout << "for i=" << HDGSpaceType::size(polOrder) << " to " << udg.numDofs() ;
-          std::cout << " projection wrong for polorder = " << polOrder
+          std::cout << "for i=" << HDGSpaceType::size(pOrder) << " to " << udg.numDofs() ;
+          std::cout << " projection wrong for polorder = " << pOrder
                     << " dof[" << i << "] = " << udg[i] << std::endl;
           //correctProjection = false;
         }
@@ -603,35 +656,35 @@ namespace Fem
       {
         double a = 0;
         double vol = geometry.volume();
-        for (int i=HDGSpaceType::size(polOrder-1) ; i<udg.numDofs(); ++i)
+        for (int i=HDGSpaceType::size(pOrder-1) ; i<udg.numDofs(); ++i)
         {
           assert( udg.numDofs() > i );
           a += std::abs(udg[i]);
         }
         a *= sqrt(vol);
-        if (std::abs(a)<1e-8 || polOrder==1)
-          smoothness = -1; // polOrder+1;
+        if (std::abs(a)<1e-8 || pOrder==1)
+          smoothness = -1; // pOrder+1;
         else
-          smoothness = log( (2.*polOrder+1)/(2.*a*a) ) / (2.*log(polOrder))-1;
+          smoothness = log( (2.*pOrder+1)/(2.*a*a) ) / (2.*log(pOrder))-1;
       }
       else if (padaptiveMethod_ == prior2p)
       {
-        if (polOrder<3)
-          smoothness = polOrder+1;
+        if (pOrder<3)
+          smoothness = pOrder+1;
         else
         {
           typedef Dune::Fem::H1Norm<GridPartType> H1NormType ;
           typedef typename H1NormType :: IntegratorType  IntegratorType ;
 
-          IntegratorType integrator(2*polOrder);
+          IntegratorType integrator(2*pOrder);
           typedef typename H1NormType :: template FunctionJacobianSquare< DGLFType >  FctJacType;
 
           FctJacType udg2( udg );
           typename FctJacType::RangeType eta1(0),eta2(0);
-          for (int i=0 ; i<HDGSpaceType::size(polOrder-2); ++i)
+          for (int i=0 ; i<HDGSpaceType::size(pOrder-2); ++i)
             udg[i] = 0;
           integrator.integrate( entity, udg2, eta2 ); // square of H1 norm
-          for (int i=HDGSpaceType::size(polOrder-2) ; i<HDGSpaceType::size(polOrder-1); ++i)
+          for (int i=HDGSpaceType::size(pOrder-2) ; i<HDGSpaceType::size(pOrder-1); ++i)
             udg[i] = 0;
           integrator.integrate( entity, udg2, eta1 ); // square of H1 norm
           if (std::abs(eta1) < 1e-12 || std::abs(eta2) < 1e-12)
@@ -641,11 +694,11 @@ namespace Fem
                                 // approximated with a much lower polynomial (2 order
                                 // are small) - so coarsen
             else
-              smoothness = polOrder+1;
+              smoothness = pOrder+1;
           }
           else
           {
-            smoothness = -0.5*std::log(eta1[0]/eta2[0]) / std::log( double(polOrder-1)/double(polOrder-2) );
+            smoothness = -0.5*std::log(eta1[0]/eta2[0]) / std::log( double(pOrder-1)/double(pOrder-2) );
             assert( smoothness == smoothness && smoothness < 100.);
           }
         }

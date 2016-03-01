@@ -44,7 +44,7 @@ namespace Fem
 
     virtual double relaxation () const
     {
-      return Fem::Parameter::getValue< int >( keyPrefix_ + "preconditioning.relaxation", 1.1 );
+      return Fem::Parameter::getValue< double >( keyPrefix_ + "preconditioning.relaxation", 1.1 );
     }
 
     virtual int method () const
@@ -291,8 +291,10 @@ namespace Fem
     typedef typename GridType::template Codim<0>::Geometry                GeometryType;
     //! type of quadrature to be used
 
+  public:
     typedef typename OperatorTraits::VolumeQuadratureType                 VolumeQuadratureType;
     typedef typename OperatorTraits::FaceQuadratureType                   FaceQuadratureType;
+  protected:
 
     typedef typename ContainerType::template Matrix<0,1>                  PressureGradMatType;
     typedef typename ContainerType::template Matrix<1,0>                  PressureDivMatType;
@@ -738,7 +740,7 @@ namespace Fem
         double intWeight=faceQuadInner.weight(l);
         DomainType quadInEn=edge.geometry().global(faceQuadInner.localPoint(l));
 
-        problem_.get<0>().g(quadInEn,dirichletValue);
+        problem_.template get<0>().g(quadInEn,dirichletValue);
         double pressureDirichlet;
 
         for(unsigned int n = 0; n <(unsigned int)localPressure.numDofs() ; ++n)

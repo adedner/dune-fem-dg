@@ -146,6 +146,21 @@ namespace Fem
             typedef typename AC::template LinearSolvers< DFSpaceType, true> type;
           };
 
+        private:
+          //small helper class
+          template< class SigmaDFSpaceType > struct SigmaFunctionChooser
+          { typedef typename AC::template DiscreteFunctions< SigmaDFSpaceType > type; };
+        public:
+          typedef typename SigmaDiscreteFunctionSelector< DiscreteFunctionType, SigmaFunctionChooser >::type SigmaDiscreteFunctionType;
+
+          typedef ErrorEstimator< DiscreteFunctionType, SigmaDiscreteFunctionType, typename Operator::AssemblerType >
+                                                                                     ErrorEstimatorType;
+          typedef PoissonSigmaEstimator< ErrorEstimatorType >                        SigmaEstimatorType;
+
+          typedef PAdaptivity<DFSpaceType, polOrd, SigmaEstimatorType >              PAdaptivityType;
+
+         typedef NoPAdaptIndicator                                                           AdaptIndicatorType;
+
           typedef SubSolverMonitor< SolverMonitor >                                  SolverMonitorType;
           typedef SubDiagnostics< Diagnostics >                                      DiagnosticsType;
         };
@@ -225,8 +240,21 @@ namespace Fem
 
         static_assert( (int)DFSpaceType::FunctionSpaceType::dimRange == 1 , "pressure dimrange does not fit");
 
-        typedef SubSolverMonitor< SolverMonitor >                                    SolverMonitorType;
-        typedef SubDiagnostics< Diagnostics >                                        DiagnosticsType;
+      private:
+        typedef typename SubPoissonAlgorithmCreator::template DiscreteTraits<polOrd>::ErrorEstimatorType  PoissonErrorEstimatorType;
+        typedef typename SubPoissonAlgorithmCreator::template DiscreteTraits<polOrd>::SigmaEstimatorType  PoissonSigmaEstimatorType;
+        typedef typename SubPoissonAlgorithmCreator::template DiscreteTraits<polOrd>::PAdaptivityType     PoissonPAdaptivityType;
+
+        typedef StokesSigmaEstimator< PoissonErrorEstimatorType, typename Operator::AssemblerType > StokesSigmaEstimatorType;
+        typedef typename StokesSigmaEstimatorType::StokesErrorEstimatorType             StokesErrorEstimatorType;
+
+        typedef StokesPAdaptivity< PoissonPAdaptivityType,
+                                   DFSpaceType, polOrd, StokesSigmaEstimatorType >       StokesPAdaptivityType;
+
+      public:
+        typedef SubSolverMonitor< SolverMonitor >                                       SolverMonitorType;
+        typedef SubDiagnostics< Diagnostics >                                           DiagnosticsType;
+        typedef StokesPAdaptIndicator< StokesPAdaptivityType, ProblemInterfaceType >    AdaptIndicatorType;
       };
 
       template <int polOrd>

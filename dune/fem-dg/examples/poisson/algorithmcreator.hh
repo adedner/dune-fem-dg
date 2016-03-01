@@ -128,14 +128,21 @@ namespace Fem
         template< class SigmaDFSpaceType > struct SigmaFunctionChooser
         { typedef typename AC::template DiscreteFunctions< SigmaDFSpaceType > type; };
 
-        typedef PoissonSigmaEstimator< DiscreteFunctionType, SigmaFunctionChooser, typename Operator::AssemblerType, polOrd >
-                                                                                   SigmaEstimatorType;
-        typedef ErrorEstimator< SigmaEstimatorType >                               EstimatorType;
+        //TODO improve -> algorithm configurator
+
+
+        typedef typename SigmaDiscreteFunctionSelector< DiscreteFunctionType, SigmaFunctionChooser >::type SigmaDiscreteFunctionType;
+
+        typedef ErrorEstimator< DiscreteFunctionType, SigmaDiscreteFunctionType, typename Operator::AssemblerType >
+                                                                                   ErrorEstimatorType;
+        typedef PoissonSigmaEstimator< ErrorEstimatorType >                        SigmaEstimatorType;
+
+        typedef PAdaptivity<DFSpaceType, polOrd, SigmaEstimatorType >              PAdaptivityType;
       public:
 
         typedef SubSolverMonitor< SolverMonitor >                                  SolverMonitorType;
         typedef SubDiagnostics< Diagnostics >                                      DiagnosticsType;
-        typedef PAdaptIndicator< EstimatorType, SigmaEstimatorType, ProblemInterfaceType > AdaptIndicatorType;
+        typedef PAdaptIndicator< PAdaptivityType, ProblemInterfaceType >           AdaptIndicatorType;
       };
 
       template <int polOrd>
