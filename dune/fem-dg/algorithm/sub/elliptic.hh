@@ -463,8 +463,8 @@ namespace Fem
     template< class ProblemImp >
     bool estimateMark( const ProblemImp& problem )
     {
-      double tolerance = param_.refinementTolerance();
 #ifdef PADAPTSPACE
+      double tolerance = param_.refinementTolerance();
       // resize container
       polOrderContainer_.resize();
 
@@ -504,8 +504,8 @@ namespace Fem
 
     PolOrderContainer                polOrderContainer_;
     const DiscreteFunctionSpaceType& space_;
-    ErrorEstimatorType               errorEstimator_;
     SigmaEstimatorType               sigmaEstimator_;
+    ErrorEstimatorType               errorEstimator_;
     AdaptationParameters             param_;
 
   };

@@ -344,7 +344,7 @@ namespace Fem
     template< class ProblemImp >
     bool estimateMark( const ProblemImp& problem )
     {
-      pAdapt_.estimateMark( problem );
+      return pAdapt_.estimateMark( problem );
       //note: no h-Adaptation regarding pressure space!?
     }
     void closure()
@@ -367,8 +367,8 @@ namespace Fem
     PAdaptivityType                  pAdapt_;
     PolOrderContainer                polOrderContainer_;
     const DiscreteFunctionSpaceType& space_;
-    ErrorEstimatorType               errorEstimator_;
     SigmaEstimatorType               sigmaEstimator_;
+    ErrorEstimatorType               errorEstimator_;
     AdaptationParameters             param_;
 
   };
