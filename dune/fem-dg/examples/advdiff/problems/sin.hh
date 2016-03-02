@@ -88,7 +88,7 @@ namespace Fem
     /**
      * \brief getter for the velocity
      */
-    void velocity(const DomainType& x, DomainType& v) const
+    void velocity(const DomainType& x, const double time, DomainType& v) const
     {
       v = velocity_;
     }
