@@ -110,7 +110,7 @@ namespace Fem
       sin_coef_z_[1]    = 0.2;
       cos_coef_z_[1]    = -0.3;
 
-      myName = "LinHeatEqn";
+      myName = "heat";
     }
 
     //! this problem has no source term
@@ -224,6 +224,12 @@ namespace Fem
       ofs << ", End time: " << ParameterType::template getValue<double>("femdg.stepper.endtime");
 
       return ofs.str();
+    }
+
+    // return prefix for data loops
+    virtual std::string dataPrefix() const
+    {
+      return myName;
     }
 
     /*  \brief finalize the simulation using the calculated numerical

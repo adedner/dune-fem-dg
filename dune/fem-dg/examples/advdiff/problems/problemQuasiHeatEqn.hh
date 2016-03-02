@@ -56,7 +56,7 @@ namespace Fem
       }
       std::cout <<"Problem: QuasiHeatEqn" <<epsilon_ << " epsilon \n";
 
-      myName = "QuasiHeatEqn";
+      myName = "quasi";
     }
 
     double diffusion( const RangeType& u, const JacobianRangeType& gradU ) const
@@ -160,6 +160,13 @@ namespace Fem
     void finalizeSimulation( DiscreteFunctionType& variablesToOutput,
                              const int eocloop) const
     {}
+
+    // return prefix for data loops
+    virtual std::string dataPrefix() const
+    {
+      return myName;
+    }
+
 
   private:
     DomainType velocity_;
