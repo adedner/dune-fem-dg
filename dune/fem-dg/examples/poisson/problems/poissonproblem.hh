@@ -84,7 +84,6 @@ namespace Poisson
       }
       if( problemNumber == 8 )
       {
-        //DUNE_THROW(InvalidStateException,"Problem 8 not available");
         data_ = new CurvedRidges< dim, FieldType,FieldType> (shift,factor);
       }
       if( problemNumber == 9 )
