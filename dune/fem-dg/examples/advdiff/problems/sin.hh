@@ -45,7 +45,7 @@ namespace Fem
       startTime_( ParameterType::getValue<double>("femdg.stepper.starttime",0.0) ),
       epsilon_( ParameterType::getValue<double>("epsilon",0.1) ),
       rhsFactor_( epsilon_ * 2.0 * std:: pow( 2.0, (double) dimDomain) * M_PI * M_PI ),
-      myName_("U0Sin")
+      myName_("sin")
     {
       std::cout <<"Problem: "<<myName_<< ", epsilon " << epsilon_ << "\n";
     }
@@ -139,6 +139,12 @@ namespace Fem
     void finalizeSimulation( DiscreteFunctionType& variablesToOutput,
                              const int eocloop) const
     {}
+
+    // return prefix for data loops
+    virtual std::string dataPrefix() const
+    {
+      return myName_;
+    }
 
   protected:
     const DomainType velocity_;

@@ -44,7 +44,7 @@ dgdiffusionflux.liftfactor: 0
 
 # ADAPTATION
 # ----------
-fem.adaptation.method: generic 
+fem.adaptation.method: none
 
 
 # DATAWRITER

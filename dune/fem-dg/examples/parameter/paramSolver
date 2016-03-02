@@ -19,7 +19,7 @@ fem.solver.newton.verbose: 0
 fem.solver.newton.maxlineariterations: 1000
 fem.solver.newton.tolerance: 1e-10
 
-femdg.polynomialOrder: 1
+femdg.polynomialOrder: 2
 dgdiffusionflux.method: CDG2 # diffusion flux: CDG2, CDG, BR2, IP, NIPG, BO
 dgdiffusionflux.theoryparameters: 1 # scaling with theory parameters
 dgdiffusionflux.penalty: 0.
