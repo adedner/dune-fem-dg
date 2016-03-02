@@ -87,9 +87,9 @@ namespace Fem
     double epsilon() const { return epsilon_; }
 
     /**
-     * \brief getter for the velocity
+     * \brief problem velocity
      */
-    void velocity(const DomainType& x, DomainType& v) const
+    void velocity(const DomainType& x, const double time, DomainType& v) const
     {
       // rotation in 2d
       v[0] = -4.0*(x[1] - center_[ 1 ]);

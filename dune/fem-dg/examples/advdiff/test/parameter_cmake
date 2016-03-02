@@ -1,8 +1,12 @@
+fem.resolvevariables: 1
+
 # DATA WRITER
 #------------
 fem.io.datafileprefix: advdiff # prefix data data files 
 fem.io.savestep: 0.1 # save data every time interval 
 fem.io.savecount: -1 # save every i-th step
+
+#femdg.stepper.printcount: 1
 
 
 # GRID SOLUTION
@@ -21,7 +25,7 @@ paramfile: ../../parameter/paramBase
 #--------------
 
 # problem: heat, quasi, plaplace
-problem: heat
+problem: pulse
 
 fem.eoc.steps: 3
 femdg.stepper.endtime: 1.0
@@ -38,13 +42,9 @@ epsilon: 0.001
 
 fem.io.macroGridFile_1d: ../../grids/unitcube1.dgf
 fem.io.macroGridFile_2d: ../../grids/unitcube2.dgf
-#fem.io.macroGridFile_2d: ../../grids/square2d.dgf
 fem.io.macroGridFile_3d: ../../grids/unitcube3.dgf
 
 
 # SOLVER
 #-------
-dgdiffusionflux.upwind: -1 -0.001
-#dgdiffusionflux.method: LDG
-femdg.stepper.maxtimestep: 0.5
 paramfile: ../../parameter/paramSolver
