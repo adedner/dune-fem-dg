@@ -216,13 +216,15 @@ namespace Fem
   template <class Grid>
   struct GridPartSelector<Grid, Galerkin::Enum::cg, Adaptivity::Enum::no >
   {
-    typedef Dune::Fem::LeafGridPart< Grid > type;
+    //typedef Dune::Fem::LeafGridPart< Grid > type;
+    typedef Dune::Fem::AdaptiveLeafGridPart< Grid, Dune::InteriorBorder_Partition > type;
   };
 
   template <class Grid>
   struct GridPartSelector<Grid, Galerkin::Enum::dg, Adaptivity::Enum::no>
   {
-    typedef Dune::Fem::LeafGridPart< Grid > type;
+    //typedef Dune::Fem::LeafGridPart< Grid > type;
+    typedef Dune::Fem::DGAdaptiveLeafGridPart< Grid > type;
   };
 
   template <class Grid>
