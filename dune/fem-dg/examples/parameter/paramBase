@@ -56,7 +56,7 @@ fem.adaptation.coarsenPercent: 0.05
 # coarsest level that should be present 
 fem.adaptation.coarsestLevel: 0
 # finest level that should be present
-fem.adaptation.finestLevel: 0
+fem.adaptation.finestLevel: 6
 # marking strategy 
 # shockind = shock indicator, 
 # apost    = aposteriori based indicator, 

@@ -159,7 +159,8 @@ namespace Fem
 
           typedef PAdaptivity<DFSpaceType, polOrd, SigmaEstimatorType >              PAdaptivityType;
 
-         typedef NoPAdaptIndicator                                                           AdaptIndicatorType;
+          typedef PAdaptIndicator< PAdaptivityType, ProblemInterfaceType >           AdaptIndicatorType;
+          // typedef NoPAdaptIndicator                                               AdaptIndicatorType;
 
           typedef SubSolverMonitor< SolverMonitor >                                  SolverMonitorType;
           typedef SubDiagnostics< Diagnostics >                                      DiagnosticsType;

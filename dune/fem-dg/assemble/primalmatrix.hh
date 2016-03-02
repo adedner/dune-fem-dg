@@ -709,7 +709,7 @@ namespace Fem
       }
     }
 
-    void testSymmetrie() const
+    void testSymmetry() const
     {
       // NOTE: this is bad coding style
       // not check at the moment
