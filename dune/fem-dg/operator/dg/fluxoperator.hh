@@ -30,8 +30,8 @@ namespace Fem
   class LDGAdvectionDiffusionOperator :
     public Fem::SpaceOperatorInterface< typename Traits::DestinationType >
   {
-    // Id's for the three Passes (including StartPass)
-    enum PassIdType { u, gradPass, advectPass };
+    // choose ids for the three passes (including start pass) different to the tuple entries
+    enum PassIdType { u = std::tuple_size< typename Traits::ExtraParameterTupleType >::value + 2 , gradPass = u+1, advectPass = u + 2 };
 
     struct GradientTraits
       : public Traits
@@ -211,7 +211,8 @@ namespace Fem
             bool advection>
   struct LDGAdvectionTraits : public Traits
   {
-    enum PassIdType { u, cdgpass };
+    // choose ids for the two passes (including start pass) different to the tuple entries
+    enum PassIdType { u = std::tuple_size< typename Traits::ExtraParameterTupleType >::value + 2 , cdgpass = u + 1 };
 
     typedef AdvectionDiffusionDGPrimalModel
       // put a method_none here to avoid diffusion
@@ -309,7 +310,11 @@ namespace Fem
     public Fem::SpaceOperatorInterface
       < typename Traits :: DestinationType >
   {
-    enum PassIdType { u, limitPassId, gradPassId, advectPassId };
+    // choose ids for the three passes (including start pass) different to the tuple entries
+    enum PassIdType { u = std::tuple_size< typename Traits::ExtraParameterTupleType >::value + 2 ,
+                      limitPassId  = u + 1,
+                      gradPassId   = u + 2,
+                      advectPassId = u + 3 };
 
     struct GradientTraits
       : public PassTraits< Traits, Traits::polynomialOrder, Traits::ModelType::Traits::dimGradRange >
@@ -520,7 +525,8 @@ namespace Fem
             bool advection, bool diffusion >
   struct AdaptationIndicatorTraits : public Traits
   {
-    enum { u, cdgpass };
+    // choose ids for the two passes (including start pass) different to the tuple entries
+    enum PassIdType { u = std::tuple_size< typename Traits::ExtraParameterTupleType >::value + 2 , cdgpass = u + 1 };
 
     typedef AdaptiveAdvectionDiffusionDGPrimalModel
       < Traits, u, advection, diffusion> DiscreteModelType;
