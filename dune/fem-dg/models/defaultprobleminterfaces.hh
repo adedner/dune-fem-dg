@@ -150,14 +150,10 @@ namespace Fem
     /** \brief diffusion coefficient of problem */
     virtual double epsilon() const { return 0.0; }
 
-    /**
-     * \brief getter for the velocity
-     */
-    virtual void velocity(const DomainType& x, DomainType& v) const {}
-
+    /** \brief problem velocity (for advection-diffusion) */
     virtual void velocity(const DomainType& x, const double, DomainType& v) const
     {
-      velocity( x, v );
+      v = 0;
     }
 
     /**
