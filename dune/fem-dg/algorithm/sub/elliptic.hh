@@ -551,7 +551,7 @@ namespace Fem
 
     const int finestLevel() const { return 0; }
 
-   // // return some info
+    // return some info
    // const typename SigmaEstimatorType::SigmaDiscreteFunctionType& sigma()
    // {
    //   return pAdapt_.sigmaEstimator().sigma();
@@ -788,7 +788,7 @@ namespace Fem
       assembler_.assemble( time_ );
       std::cout << "Solver (Poisson) assemble time: " << timer.elapsed() << std::endl;
 
-      assembler_.testSymmetrie();
+      assembler_.testSymmetry();
 
       double absLimit   = Dune::Fem:: Parameter::getValue<double>("istl.absLimit",1.e-10);
       double reduction  = Dune::Fem:: Parameter::getValue<double>("istl.reduction",1.e-6);
@@ -805,7 +805,7 @@ namespace Fem
     //! finalize computation by calculating errors and EOCs
     virtual void doFinalize ( const int loop ) override
     {
-      //AnalyticalTraits::addEOCErrors( solution(), model(), problem().exactSolution(), adaptIndicator()->sigma() );
+      AnalyticalTraits::addEOCErrors( solution(), model(), problem().exactSolution(), adaptIndicator()->sigma() );
     }
 
 
