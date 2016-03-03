@@ -7,9 +7,6 @@ fem.io.datafileprefix: solution
 fem.io.eocFileTimeStamp: 0
 fem.eoc.steps: 4
 
-# polynomial order = 0,1,2,3,4
-femdg.polynomialOrder: 1
-
 
 # PROBLEM
 # ----------
