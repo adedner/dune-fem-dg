@@ -226,7 +226,7 @@ namespace Fem
       ioTuple_( new IOTupleType( std::make_tuple( solution_.get(), exactSolution_.get() ) ) ),
       diagnostics_( name() ),
       solverMonitor_( name() ),
-      additionalOutput_( nullptr ),
+      additionalOutput_( exactSolution() ),
       odeSolverMonitor_()
     {}
 
