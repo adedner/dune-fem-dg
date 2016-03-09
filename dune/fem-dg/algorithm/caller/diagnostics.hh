@@ -51,18 +51,18 @@ namespace Fem
 
     static_assert( std::tuple_size< TupleType >::value>=1, "Empty Tuples not allowed..." );
 
-    typedef typename std::remove_pointer< typename std::tuple_element< 0, TupleType >::type >::type::GridType
+    typedef typename std::tuple_element< 0, TupleType >::type::element_type::GridType
                                                                                     GridType;
 
     template< class Caller >
     class LoopCallee
     {
       template<class C, class T, class... Args >
-      static typename enable_if< std::is_void< typename std::remove_pointer<T>::type::DiagnosticsType >::value >::type
-      getDiagnostics( T, Args&& ... ){}
+      static typename enable_if< std::is_void< typename T::element_type::DiagnosticsType >::value >::type
+      getDiagnostics( T&, Args&& ... ){}
       template<class C, class T, class... Args >
-      static typename enable_if< !std::is_void< typename std::remove_pointer<T>::type::DiagnosticsType >::value >::type
-      getDiagnostics( T elem, Args &&... a )
+      static typename enable_if< !std::is_void< typename T::element_type::DiagnosticsType >::value >::type
+      getDiagnostics( T& elem, Args &&... a )
       {
         if( elem->diagnostics() )
           C::apply( elem->diagnostics(), std::forward<Args>(a)... );
@@ -98,8 +98,8 @@ namespace Fem
      *
      * \param[in] tuple Tuple of all sub-algorithms.
      */
-    DiagnosticsCaller( const AlgTupleType& tuple )
-      : tuple_( tuple )
+    explicit DiagnosticsCaller( const AlgTupleType& tuple )
+      : tuple_( TupleReducerType::apply( tuple ) )
     {}
 
     /**

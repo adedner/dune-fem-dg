@@ -61,11 +61,11 @@ namespace Fem
     class LoopCallee
     {
       template<class C, class T, class... A >
-      static typename enable_if< std::is_void< typename std::remove_pointer<T>::type::SolverMonitorType >::value >::type
-      getMonitor( T, A&& ... ){}
+      static typename enable_if< std::is_void< typename T::element_type::SolverMonitorType >::value >::type
+      getMonitor( T&, A&& ... ){}
       template<class C, class T, class... A >
-      static typename enable_if< !std::is_void< typename std::remove_pointer<T>::type::SolverMonitorType >::value >::type
-      getMonitor( T elem, A &&... a )
+      static typename enable_if< !std::is_void< typename T::element_type::SolverMonitorType >::value >::type
+      getMonitor( T& elem, A &&... a )
       {
         if( elem->monitor() )
           C::apply(elem->monitor(), std::forward<A>(a)... );
