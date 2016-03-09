@@ -50,7 +50,7 @@ namespace Fem
   {
     template< class TupleType > struct IOTupleExtractor;
     template< class ... Args > struct IOTupleExtractor< std::tuple< Args... > >
-    { typedef typename tuple_concat< typename std::remove_pointer< Args >::type::IOTupleType::type... >::type type; };
+    { typedef typename tuple_concat< typename Args::element_type::IOTupleType::type... >::type type; };
 
     typedef AlgTupleImp                                                            AlgTupleType;
 
@@ -61,7 +61,7 @@ namespace Fem
 
     static_assert( std::tuple_size< TupleType >::value>=1, "Empty Tuples not allowed..." );
 
-    typedef typename std::remove_pointer< typename std::tuple_element< 0, TupleType >::type >::type::GridType
+    typedef typename std::tuple_element< 0, TupleType >::type::element_type::GridType
                                                                                     GridType;
 
   public:
@@ -81,11 +81,11 @@ namespace Fem
     struct AdditionalOutput
     {
       template<class T, class... Args >
-      static typename enable_if< std::is_void< typename std::remove_pointer<T>::type::AdditionalOutputType >::value >::type
-      additionalOutput( T, Args&& ... ){}
+      static typename enable_if< std::is_void< typename T::element_type::AdditionalOutputType >::value >::type
+      additionalOutput( T&, Args&& ... ){}
       template<class T, class TimeProviderImp, class... Args >
-      static typename enable_if< !std::is_void< typename std::remove_pointer<T>::type::AdditionalOutputType >::value >::type
-      additionalOutput( T elem, TimeProviderImp& tp, Args && ... args )
+      static typename enable_if< !std::is_void< typename T::element_type::AdditionalOutputType >::value >::type
+      additionalOutput( T& elem, TimeProviderImp& tp, Args && ... args )
       {
         if( elem->additionalOutput() )
           elem->additionalOutput()->step( tp, *elem, args... );

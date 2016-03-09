@@ -133,7 +133,7 @@ namespace Fem
 
     static_assert( std::tuple_size< TupleType >::value>=1, "Empty Tuples not allowed..." );
 
-    typedef GridCheckPointCaller< typename std::remove_pointer< typename std::tuple_element< 0, TupleType >::type >::type::GridType >
+    typedef GridCheckPointCaller< typename std::tuple_element< 0, TupleType >::type::element_type::GridType >
                                                                                 BaseType;
 
     typedef typename BaseType::GridType                                         GridType;

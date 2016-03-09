@@ -35,7 +35,7 @@ namespace Fem
   // internal forward declarations
   // -----------------------------
 
-  template< class Traits, template<class, class > class EvolutionCreatorType >
+  template< class Traits, template<class, class... > class CouplingImp >
   class EvolutionAlgorithmBase;
 
 
@@ -149,7 +149,7 @@ namespace Fem
   /**
    *  \brief Traits class
    */
-  template< int polOrder, class ... ProblemTraits >
+  template< int polOrder, template<class, class... > class CouplingImp, class ... ProblemTraits >
   struct EvolutionAlgorithmTraits
   {
     // type of Grid
@@ -159,9 +159,10 @@ namespace Fem
     // wrap operator
     typedef GridTimeProvider< GridType >                                TimeProviderType;
 
-    //typedef ...
-    typedef std::tuple< typename std::add_pointer< typename ProblemTraits::template Algorithm<polOrder> >::type... >
-                                                                        SubAlgorithmTupleType;
+    typedef CouplingImp< GridType, typename ProblemTraits::template Algorithm<polOrder>...  >
+                                                                        CouplingType;
+
+    typedef typename CouplingType::SubAlgorithmTupleType                SubAlgorithmTupleType;
 
     //typedef typename Std::make_index_sequence_impl< std::tuple_size< SubAlgorithmTupleType >::value >::type
     //                                                                  IndexSequenceType;
@@ -183,12 +184,12 @@ namespace Fem
    *
    * \ingroup Algorithms
    */
-  template< int polOrder, template<class, class > class EvolutionCreatorType, class ... ProblemTraits >
+  template< int polOrder, template<class, class... > class CouplingImp, class ... ProblemTraits >
   class EvolutionAlgorithm
-  : public EvolutionAlgorithmBase< EvolutionAlgorithmTraits< polOrder, ProblemTraits ... >, EvolutionCreatorType >
+  : public EvolutionAlgorithmBase< EvolutionAlgorithmTraits< polOrder, CouplingImp, ProblemTraits ... >, CouplingImp >
   {
-    typedef EvolutionAlgorithmTraits< polOrder, ProblemTraits... > Traits;
-    typedef EvolutionAlgorithmBase< Traits, EvolutionCreatorType > BaseType;
+    typedef EvolutionAlgorithmTraits< polOrder, CouplingImp, ProblemTraits... > Traits;
+    typedef EvolutionAlgorithmBase< Traits, CouplingImp > BaseType;
   public:
     typedef typename BaseType::GridType GridType;
 
@@ -202,7 +203,7 @@ namespace Fem
    *
    * \ingroup Algorithms
    */
-  template< class Traits, template<class, class > class EvolutionCreatorType >
+  template< class Traits, template<class, class... > class CouplingImp >
   class EvolutionAlgorithmBase
     : public AlgorithmInterface< Traits >
   {
@@ -221,6 +222,8 @@ namespace Fem
     typedef typename Traits::PostProcessingCallerType            PostProcessingCallerType;
     typedef typename Traits::AdaptCallerType                     AdaptCallerType;
 
+    typedef typename Traits::CouplingType                        CouplingType;
+
     typedef uint64_t                                             UInt64Type ;
 
     typedef TimeSteppingParameters                               TimeSteppingParametersType;
@@ -232,11 +235,11 @@ namespace Fem
     struct Initialize {
     private:
       template<class T, class AdaptCaller, class... Args >
-      static typename enable_if< std::is_void< typename std::remove_pointer<T>::type::DiagnosticsType >::value >::type
-      getDiagnostics( T, AdaptCaller&, Args&& ... ){}
+      static typename enable_if< std::is_void< typename T::element_type::DiagnosticsType >::value >::type
+      getDiagnostics( T&, AdaptCaller&, Args&& ... ){}
       template<class T, class AdaptCaller, class... Args >
-      static typename enable_if< !std::is_void< typename std::remove_pointer<T>::type::DiagnosticsType >::value >::type
-      getDiagnostics( T e, AdaptCaller& caller, Args &&... a )
+      static typename enable_if< !std::is_void< typename T::element_type::DiagnosticsType >::value >::type
+      getDiagnostics( T& e, AdaptCaller& caller, Args &&... a )
       {
         if( e->diagnostics() )
         {
@@ -276,7 +279,7 @@ namespace Fem
       { res = std::max( res, e->gridSize(std::forward<Args>(a)... ) ); }
     };
     struct CheckSolutionValid {
-      template<class T, class... Args > static void apply( T e, bool& res, Args&& ... a )
+      template<class T, class... Args > static void apply( T& e, bool& res, Args&& ... a )
       { res &= e->checkSolutionValid( std::forward<Args>(a)... ); }
     };
     template< class Caller >
@@ -307,7 +310,7 @@ namespace Fem
      */
     EvolutionAlgorithmBase ( GridType &grid, const std::string name = "" )
     : BaseType( grid, name  ),
-      tuple_( EvolutionCreatorType< SubAlgorithmTupleType, GridType >::apply( grid ) ),
+      tuple_( CouplingType::apply( grid ) ),
       checkPointCaller_( tuple_ ),
       dataWriterCaller_( tuple_ ),
       diagnosticsCaller_( tuple_ ),
