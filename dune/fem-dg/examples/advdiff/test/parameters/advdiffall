@@ -1,0 +1,49 @@
+# DATA WRITER
+#------------
+fem.io.datafileprefix: advdiff # prefix data data files 
+fem.io.savestep: 0.1 # save data every time interval 
+fem.io.savecount: -1 # save every i-th step
+
+
+# GRID SOLUTION
+#--------------
+
+gridsol.savestep: 0.01
+gridsol.firstwrite: 0.1
+gridsol.filename: heat-checkpoint
+
+
+# GENERAL
+#--------
+paramfile: ../../parameter/paramBase
+
+# PROBLEM SETUP
+#--------------
+
+# problem: heat, quasi, plaplace
+problem: pulse
+
+fem.eoc.steps: 1
+femdg.stepper.endtime: 1.0
+femdg.stepper.diffusiontimestep: 1
+epsilon: 0.001
+#plaplace: 3.0 
+#xvelocity: 1.    # the only advection part for the linear heat eqn
+#yvelocity: 3.    # the only advection part for the linear heat eqn
+#zvelocity: 0.    # the only advection part for the linear heat eqn
+
+
+# DOMAIN
+#-------
+
+fem.io.macroGridFile_1d: ../../grids/unitcube1.dgf
+fem.io.macroGridFile_2d: ../../grids/unitcube2.dgf
+#fem.io.macroGridFile_2d: ../../grids/square2d.dgf
+fem.io.macroGridFile_3d: ../../grids/unitcube3.dgf
+
+
+# SOLVER
+#-------
+dgdiffusionflux.upwind: -1 -0.001
+femdg.stepper.maxtimestep: 0.5
+paramfile: ../../parameter/paramSolver

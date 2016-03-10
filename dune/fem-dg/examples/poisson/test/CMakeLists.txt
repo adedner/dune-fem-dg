@@ -1,6 +1,4 @@
 include_directories("${CMAKE_SOURCE_DIR}/dune/fem-dg/examples/poisson/")
-# configure parameter file from parameter.in
-configure_parameter_file()
 
 
 # specify type of grid implemention, dimension and polynmomial order
@@ -13,28 +11,19 @@ add_definitions( "-DGRIDDIM=${GRIDDIM}" )
 add_definitions( "-DDIMRANGE=1" )
 add_definitions( "-DPADAPTSPACE" )
 
+configure_parameter_file( poisson )
+dune_add_test( NAME poisson 
+               SOURCES ../main.cc 
+               COMPILE_DEFINITIONS "POLORDER=${POLORDER}" 
+               CMD_ARGS parameters/poisson )
+add_code_generate_targets( poisson )
 
 if( NOT FEMDG_FAST_TESTBUILD )
-  if( DUNE_FEM_DG_VERSION VERSION_LESS "2.4.1" )
-    add_executable( poissonall ../main.cc )
-    dune_target_enable_all_packages( poissonall )
-    dune_add_test( poissonall )
-  else()
-    dune_add_test( NAME poissonall 
-                   SOURCES ../main.cc )
-  endif()
+  configure_parameter_file( poissonall )
+  dune_add_test( NAME poissonall 
+                 SOURCES ../main.cc
+                 CMD_ARGS parameters/poissonall )
+  
   add_code_generate_targets( poissonall )
 endif()
 
-if( DUNE_FEM_DG_VERSION VERSION_LESS "2.4.1" )
-  add_executable( poisson ../main.cc )
-  set_property(TARGET poisson APPEND PROPERTY 
-               COMPILE_DEFINITIONS "POLORDER=${POLORDER}" )
-  dune_target_enable_all_packages( poisson )
-  dune_add_test( poisson )
-else()
-  dune_add_test( NAME poisson 
-                 SOURCES ../main.cc 
-                 COMPILE_DEFINITIONS "POLORDER=${POLORDER}" )
-endif()
-add_code_generate_targets( poisson )

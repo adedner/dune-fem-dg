@@ -1,0 +1,66 @@
+# prefix data data files 
+fem.io.datafileprefix: solution
+# if you want to add time stemp to eoc file name
+# # to avoid overwriting the eoc files
+fem.io.eocFileTimeStamp: 0
+fem.eoc.steps: 4
+
+# PROBLEM
+# ----------
+# problem number (see ../problems/poissonproblem for a list of valid numbers)
+problem: 1
+globalshift: 0
+factor: 1
+epsilon: 0.1
+xvelocity: 0.    # the only advection part for the linear heat eqn
+yvelocity: 0.    # the only advection part for the linear heat eqn
+zvelocity: 0.    # the only advection part for the linear heat eqn
+
+fem.solver.verbose: 1
+fem.solver.newton.verbose: 1
+fem.ode.verbose: full
+ 
+# macro grid file
+fem.io.macroGridFile_2d: ../../grids/unitcube2.dgf
+#fem.io.macroGridFile_2d:../../grids/square2d.dgf
+#fem.io.macroGridFile_2d:../../grids/nonaffine.dgf
+#fem.io.macroGridFile_2d:../../grids/corner_cube.dgf
+#fem.io.macroGridFile_2d:../../grids/corner.dgf
+#fem.io.macroGridFile_2d:../../grids/corner_green.dgf
+#fem.io.macroGridFile_2d:../../grids/corner_red.dgf
+nonConformOrigin: false
+
+# choises are: CDG2, CDG, IP, NIPG, BO, BR2
+dgdiffusionflux.method: CDG2 
+dgdiffusionflux.theoryparameters: 1
+dgdiffusionflux.lifting: id_id
+#dgdiffusionflux.upwind: -1 -0.001
+#dgdiffusionflux.upwind: 0 0 
+dgdiffusionflux.penalty: 0    # for CDG, CDG2, LDG
+dgdiffusionflux.liftfactor: 0
+
+# ADAPTATION
+# ----------
+fem.adaptation.method: none
+
+
+# DATAWRITER
+# ----------
+# output format: vtk-cell | vtk-vertex (projected in DG case),  sub-vtk-cell
+fem.io.outputformat: vtk-cell
+fem.io.subsamplinglevel: 0
+
+
+# SOLVER
+# ------
+paramfile: ../../parameter/paramSolver
+istl.preconditioning.method: amg-ilu-0
+istl.preconditioning.iterations: 1
+istl.preconditioning.relaxation: 1
+
+#cg, bicg, bicgstab, gmres
+petsc.kspsolver.method: cg
+#none, asm, sor, jacobi, hypre, ml, ilu-n, lu, icc, mumps, superlu
+petsc.preconditioning.method: none
+petsc.preconditioning.iterations: 5
+

@@ -1,0 +1,60 @@
+# ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ 
+# DATA WRITER
+#------------
+fem.io.datafileprefix: NS
+fem.io.savestep: 0.01 # SaveStep (write data every `saveStep' time period, <=0 deactivates)
+fem.io.savecount: -1 # SaveCount (write data every saveCount time steps, <=0 deactivates)
+
+femdg.stepper.printcount: 1
+femdg.additionalvariables: false
+
+# GENERAL
+#--------
+paramfile: ../../parameter/paramBase
+
+
+# GRID SOLUTION 
+#--------------
+gridsol.savestep: 0.5
+gridsol.firstwrite: 0.5
+gridsol.filename: nseq-checkpoint
+
+
+# PROBLEM SETUP
+#--------------
+paramfile: ../../parameter/paramPhysicalConstants
+
+# WBPROBLEM
+# g: 0.7 # m/(ss)
+# p0: 10. # surface pressure Pa=kg/(mss)
+# diffusion coefficients
+mu: 0.0001 #  kg/(ms)
+g: 9.81 # m/ss
+Re: 1. #(Reynold's number)
+Pr: 0.72 # 0.72 #(Prandtl's number)
+femdg.stepper.starttime: 0. # s
+
+femdg.stepper.endtime: 0.01
+
+fem.eoc.steps: 4
+
+gammaGNS: 0.5
+omegaGNS: 1.
+kGNS: 3.1415926535897932385
+
+
+# DOMAIN CONFIGURATION
+#---------------------
+fem.io.macroGridFile_1d:  ../../grids/unitcube1.dgf
+fem.io.macroGridFile_2d:  ../../grids/unitcube2.dgf
+fem.io.macroGridFile_3d:  ../../grids/unitcube3.dgf
+
+
+# SOLVER CONFIGURATION
+#---------------------
+#femdg.stepper.maxtimestep: 0.0001 
+fem.solver.newton.tolerance: 1e-6
+
+#fem.ode.odesolver: EX
+paramfile: ../../parameter/paramSolver
+

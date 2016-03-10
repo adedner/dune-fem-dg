@@ -1,9 +1,6 @@
 include_directories("${CMAKE_SOURCE_DIR}/dune/fem-dg/examples/advdiff/")
 
-# configure parameter file from parameter.in
-configure_parameter_file()
-
-# specify type of grid implemention, dimension and polynmomial order
+# specify type of grid implemention, dimension and polynomial order
 set( GRIDTYPE ALUGRID_CUBE )
 set( GRIDDIM 2 )
 set( POLORDER 2 )
@@ -12,31 +9,34 @@ add_definitions( "-D${GRIDTYPE}" )
 add_definitions( "-DGRIDDIM=${GRIDDIM}" )
 add_definitions( "-DDIMRANGE=1" )
 
+configure_parameter_file( advdiff )
+dune_add_test( NAME advdiff 
+               SOURCES ../main.cc
+               COMPILE_DEFINITIONS "POLORDER=${POLORDER}"
+               TIMEOUT 3000
+               CMD_ARGS parameters/advdiff )
+
+add_code_generate_targets( advdiff )
+
+
 if( NOT FEMDG_FAST_TESTBUILD )
-  if( DUNE_FEM_DG_VERSION VERSION_LESS "2.4.1" )
-    add_executable( advdiffall ../main.cc )
-    dune_target_enable_all_packages( advdiffall )
-    dune_add_test( advdiffall )
-    set_tests_properties( advdiffall PROPERTIES TIMEOUT 3000 )
-  else()
-    dune_add_test( NAME advdiffall 
-                   SOURCES ../main.cc
-                   TIMEOUT 3000 ) 
-  endif()
+  configure_parameter_file( advdiffall )
+  dune_add_test( NAME advdiffall 
+                 SOURCES ../main.cc
+                 TIMEOUT 3000 
+                 CMD_ARGS parameters/advdiffall )
+
+  dune_add_test_case( advdiffall polorder1 )
+  dune_add_test_case( advdiffall polorder2 )
+  dune_add_test_case( advdiffall polorder3 )
+  dune_add_test_case( advdiffall polorder4 )
+
+  dune_add_test_case( advdiff pulse )
+  dune_add_test_case( advdiff sin )
+  dune_add_test_case( advdiff heat )
+  dune_add_test_case( advdiff quasi )
+  
   add_code_generate_targets( advdiffall )
 endif()
 
-if( DUNE_FEM_DG_VERSION VERSION_LESS "2.4.1" )
-  add_executable( advdiff ../main.cc )
-  set_property(TARGET advdiff APPEND PROPERTY 
-    COMPILE_DEFINITIONS "POLORDER=${POLORDER}" )
-  dune_target_enable_all_packages( advdiff )
-  dune_add_test( advdiff )
-  set_tests_properties( advdiff PROPERTIES TIMEOUT 3000 )
-else()
-  dune_add_test( NAME advdiff 
-                 SOURCES ../main.cc
-                 COMPILE_DEFINITIONS "POLORDER=${POLORDER}"
-                 TIMEOUT 3000 )
-endif()
-add_code_generate_targets( advdiff )
+

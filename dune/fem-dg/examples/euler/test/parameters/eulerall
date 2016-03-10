@@ -1,0 +1,80 @@
+# PROBLEM SELECTION 
+#------------------
+# possible: "sod" , "withman", "withmansmooth", "smooth1d" , "ffs" , "diffraction" , "shockbubble"
+problem: sod 
+# problemflag: 0
+# riemanndata: [1., -1., 1.,    1., 1., 1.]
+
+# LIMITER SETTINGS
+#-----------------
+# 0 = only dg solution | 1 = only reconstruction | 2 = both 
+femdg.limiter.admissiblefunctions: 1 
+# tolerance for shock indicator 
+femdg.limiter.tolerance: 1
+# threshold for avoiding over-excessive limitation 
+femdg.limiter.limiteps: 1e-8
+# add indicator to outputvariables 
+femdg.limiter.indicatoroutput: true
+
+# DATA WRITER
+#------------
+fem.io.datafileprefix: RC
+fem.io.savestep: 0.01 # SaveStep (write data every `saveStep' time period, <=0 deactivates)
+fem.io.savecount: -1 # SaveCount (write data every saveCount time steps, <=0 deactivates)
+
+
+# GRID SOLUTION 
+#--------------
+gridsol.savestep: 0.5
+gridsol.firstwrite: 0.5
+gridsol.filename: straka-checkpoint
+
+
+# GENERAL
+#--------
+paramfile: ../../parameter/paramBase
+
+
+# STEPPER
+#--------
+fem.eoc.steps: 4
+femdg.stepper.starttime: 0.
+femdg.stepper.endtime: 0.15
+femdg.stepper.maxtimestep: 0.1
+
+
+# PROBLEM SETUP
+#--------------
+paramfile: ../../parameter/paramPhysicalConstants
+
+# choises are: LLF, HLL, HLLC, LLF2
+dgadvectionflux.method: LLF
+
+g: 1. # gravity force [m/ss]
+hSpeed0: 1. # x-axis speed [m/s]
+vSpeed0: 1.25 # z-axis speed [m/s]
+p0: 1. # surface pressure [Pa]
+N: 0.01 # Brunt-Vaisala frequency
+Re: 1. # Reynold's number
+Pr: 1. # Prandtl's number
+rho_a: 1.
+rho_b: 0.05
+
+delta_T: -15 # temperature perturbation peak [K]
+x_c: 0.25 # x-center of perturbation ball
+y_c: 0.25 # y-center of perturbation ball
+z_c: 0.25 # z-center of perturbation ball
+r: 0.25 # radius of perturbation ball
+
+
+# DOMAIN SETUP
+#-------------
+fem.io.macroGridFile_1d:  ../../grids/unitcube1.dgf
+fem.io.macroGridFile_2d:  ../../grids/grid2d_str1d.dgf
+fem.io.macroGridFile_3d:  ../../grids/unitcube3.dgf
+
+
+# SOLVER CONFIGURATION
+#---------------------
+fem.ode.odesolver: EX
+paramfile: ../../parameter/paramSolver

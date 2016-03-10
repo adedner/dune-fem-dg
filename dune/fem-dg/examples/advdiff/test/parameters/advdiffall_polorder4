@@ -1,0 +1,5 @@
+femdg.polynomialOrder: 4
+## note default would use order 5, which is not implemented...
+fem.ode.order: 4
+
+paramfile: parameters/advdiffall
