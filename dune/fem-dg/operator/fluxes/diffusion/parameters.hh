@@ -36,6 +36,7 @@ namespace Fem
      */
     enum class Enum
     {
+      default_,
       //! BR2 (Bassi-Rebay 2) flux (local formulation).
       br1,
       //! LDG (Local Discontinuous Galerkin) flux (local formulation).

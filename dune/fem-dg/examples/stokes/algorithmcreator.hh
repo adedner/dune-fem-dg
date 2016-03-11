@@ -53,19 +53,11 @@ namespace Dune
 namespace Fem
 {
 
-  static const Galerkin::Enum               galerkinEnum   = Galerkin::Enum::dg;
-  static const Adaptivity::Enum             adaptivityEnum = Adaptivity::Enum::yes;
-  static const DiscreteFunctionSpaces::Enum dfSpaceEnum    = DiscreteFunctionSpaces::Enum::hierarchic_legendre;
-  static const Solver::Enum                 solverEnum     = Solver::Enum::istl;
-  static const AdvectionLimiter::Enum       advLimiterEnum = AdvectionLimiter::Enum::unlimited;
-  static const Matrix::Enum                 matrixEnum     = Matrix::Enum::assembled;
-  static const AdvectionFlux::Enum          advFluxEnum    = AdvectionFlux::Enum::none;
-  static const PrimalDiffusionFlux::Enum    diffFluxEnum   = DiffusionFlux::Enum::primal;
   // for Taylorhood (P2,P1) equal one
   static const int pressureOrderReduction = 1;
 
-  //produce some static compiler warnings in case we are using an uninstalled solver
-  static const AvailableSolvers< solverEnum > checkSolverInstalled;
+  ////produce some static compiler warnings in case we are using an uninstalled solver
+  //static const AvailableSolvers< solverEnum > checkSolverInstalled;
 
   template< class GridImp >
   struct StokesAlgorithmCreator
@@ -73,8 +65,15 @@ namespace Fem
 
     struct SubStokesAlgorithmCreator
     {
-      typedef AlgorithmConfigurator< GridImp, galerkinEnum, adaptivityEnum, dfSpaceEnum, solverEnum, advLimiterEnum,
-                                     matrixEnum, advFluxEnum, diffFluxEnum > AC;
+      typedef AlgorithmConfigurator< GridImp,
+                                     Galerkin::Enum::dg,
+                                     Adaptivity::Enum::yes,
+                                     DiscreteFunctionSpaces::Enum::hierarchic_legendre,
+                                     Solver::Enum::istl,
+                                     AdvectionLimiter::Enum::unlimited,
+                                     Matrix::Enum::assembled,
+                                     AdvectionFlux::Enum::none,
+                                     DiffusionFlux::Enum::primal > AC;
 
       struct SubPoissonAlgorithmCreator
       {
