@@ -1,5 +1,6 @@
 include_directories("${CMAKE_SOURCE_DIR}/dune/fem-dg/examples/poisson/")
 
+configure_parameter_file()
 
 # specify type of grid implemention, dimension and polynmomial order
 set( GRIDTYPE ALUGRID_CUBE )

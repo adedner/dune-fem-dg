@@ -1,5 +1,7 @@
 include_directories("${CMAKE_SOURCE_DIR}/dune/fem-dg/examples/euler/")
 
+configure_parameter_file()
+
 # specify type of grid implemention, dimension and polynomial order
 set( GRIDTYPE ALUGRID_CUBE )
 set( GRIDDIM 2 )

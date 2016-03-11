@@ -1,0 +1,75 @@
+# prefix data data files 
+fem.io.datafileprefix: solution
+# if you want to add time stemp to eoc file name
+# # to avoid overwriting the eoc files
+fem.io.eocFileTimeStamp: 0
+fem.eoc.steps: 4
+
+
+# PROBLEM
+# ----------
+# problem numbers:
+# 0 problem general 
+# 1 driven cavity
+problem: 0 
+globalshift: 0
+factor: 1
+epsilon: 0.1
+xvelocity: 0.    # the only advection part for the linear heat eqn
+yvelocity: 0.    # the only advection part for the linear heat eqn
+zvelocity: 0.    # the only advection part for the linear heat eqn
+alpha: 0.0
+mu: 1.0
+d11: 100.0
+d12: 1.0
+istl.absLimit: 1e-10
+istl.reduction: 1e-10
+fem.solver.verbose: 0
+
+# macro grid file
+fem.io.macroGridFile_2d: ../../grids/unitcube2.dgf
+#fem.io.macroGridFile_2d:../../grids/square2d.dgf
+#fem.io.macroGridFile_2d:../../grids/nonaffine.dgf
+#fem.io.macroGridFile_2d:../../grids/corner_cube.dgf
+#fem.io.macroGridFile_2d:../../grids/corner.dgf
+#fem.io.macroGridFile_2d:../../grids/corner_green.dgf
+#fem.io.macroGridFile_2d:../../grids/corner_red.dgf
+nonConformOrigin: false
+
+# choises are: CDG2, CDG, IP, NIPG, BO, BR2
+dgdiffusionflux.method: CDG2 
+dgdiffusionflux.theoryparameters: 1
+dgdiffusionflux.lifting: id_id
+#dgdiffusionflux.upwind: -1 -0.001
+#dgdiffusionflux.upwind: 0 0 
+dgdiffusionflux.penalty: 0    # for CDG, CDG2, LDG
+dgdiffusionflux.liftfactor: 0
+
+# ADAPTATION
+# ----------
+fem.adaptation.method: generic 
+# coeffroot or prior2p
+fem.adaptation.padaptive.method: coeffroot
+fem.adaptation.refineTolerance: -1  # global adapt with tolerance=0 
+fem.adaptation.theta: 0.5 # equal distribution with theta=0, tolerance>0
+# true = maximum (theta defines the percentage) | false = Doerfler 
+fem.adaptation.maximumstrategy: true
+
+# DATAWRITER
+# ----------
+# output format: vtk-cell | vtk-vertex (projected in DG case),  sub-vtk-cell
+fem.io.outputformat: vtk-cell
+fem.io.subsamplinglevel: 0
+
+poisson.nonConformOrigin: false
+edges: 1
+use_dgstabilization: true
+# use_oldassemble: false
+
+
+# SOLVER
+# ------
+paramfile: ../../parameter/paramSolver
+istl.preconditioning.method: amg-ilu-0
+istl.preconditioning.iterations: 1
+istl.preconditioning.relaxation: 1

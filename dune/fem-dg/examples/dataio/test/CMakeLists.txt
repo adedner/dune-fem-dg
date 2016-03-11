@@ -1,5 +1,7 @@
 include_directories("${CMAKE_SOURCE_DIR}/dune/fem-dg/examples/dataio/")
 
+configure_parameter_file()
+
 add_definitions( "-DALUGRID_SIMPLEX" )
 add_definitions( "-DGRIDDIM=3" )
 add_definitions( "-DUSE_SIONLIB=0" )
