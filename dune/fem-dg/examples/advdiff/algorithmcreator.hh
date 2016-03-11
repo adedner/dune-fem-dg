@@ -53,12 +53,12 @@ namespace Fem
     struct SubAdvectionDiffusionAlgorithmCreator
     {
       typedef AlgorithmConfigurator< GridImp,
-                                     Galerkin::Enum::dg,
-                                     Adaptivity::Enum::yes,
-                                     DiscreteFunctionSpaces::Enum::legendre,
-                                     Solver::Enum::fem,
-                                     AdvectionLimiter::Enum::unlimited,
-                                     Matrix::Enum::matrixfree,
+                                     Galerkin::Enum::default_,
+                                     Adaptivity::Enum::default_,
+                                     DiscreteFunctionSpaces::Enum::default_, //legendre
+                                     Solver::Enum::default_,
+                                     AdvectionLimiter::Enum::default_,
+                                     Matrix::Enum::default_,
                                      AdvectionFlux::Enum::upwind,
                                      DiffusionFlux::Enum::primal > AC;
                                      // DiffusionFlux::Enum::local > AC;

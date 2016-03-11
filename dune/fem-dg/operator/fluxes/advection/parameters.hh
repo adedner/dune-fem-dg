@@ -22,25 +22,26 @@ namespace Fem
      */
     enum Enum
     {
+      default_,
       /////////////// standard fluxes ////////////////////////
       //! no flux
-      none = 0,
+      none,
       //! upwind flux
-      upwind = 1,
+      upwind,
       //! local Lax-Friedrichs flux
-      llf = 2,
+      llf,
       //! general flux: parameter selection is done via parameter file!
-      general = 3,
+      general,
 
       /////////////// euler fluxes //////////////////////////////
       //! the local Lax-Friedrichs flux (with wellbalance option)
-      euler_llf = 4,
+      euler_llf,
       //! the Harten, Lax and van Leer (HLL) flux
-      euler_hll = 5,
+      euler_hll,
       //! the HLLC flux
-      euler_hllc = 6,
+      euler_hllc,
       //! general flux: Parameter selection is done via parameter file!
-      euler_general = 7
+      euler_general
 
     };
 

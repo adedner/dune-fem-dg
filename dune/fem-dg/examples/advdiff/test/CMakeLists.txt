@@ -26,7 +26,28 @@ if( NOT FEMDG_FAST_TESTBUILD )
   dune_add_test( NAME advdiffall 
                  SOURCES ../main.cc
                  TIMEOUT 3000 
-                 CMD_ARGS parameters/advdiffall )
+                 CMD_ARGS parameters/advdiffall )  
+               
+  configure_parameter_file( advdiff_legendre )
+  dune_add_test( NAME advdiff_legendre
+                 SOURCES ../main.cc
+                 COMPILE_DEFINITIONS "POLORDER=${POLORDER};DISCRETEFUNCTIONSPACESENUM=2"
+                 TIMEOUT 3000 
+                 CMD_ARGS parameters/advdiff_legendre )
+ 
+  configure_parameter_file( advdiff_hierarchic_legendre )
+  dune_add_test( NAME advdiff_hierarchic_legendre
+                 SOURCES ../main.cc
+                 COMPILE_DEFINITIONS "POLORDER=${POLORDER};DISCRETEFUNCTIONSPACESENUM=3"
+                 TIMEOUT 3000 
+                 CMD_ARGS parameters/advdiff_hierarchic_legendre )
+
+  configure_parameter_file( advdiff_orthonormal )
+  dune_add_test( NAME advdiff_orthonormal
+                 SOURCES ../main.cc
+                 COMPILE_DEFINITIONS "POLORDER=${POLORDER};DISCRETEFUNCTIONSPACESENUM=4"
+                 TIMEOUT 3000 
+                 CMD_ARGS parameters/advdiff_orthonormal )
 
   dune_add_test_case( advdiffall polorder1 )
   dune_add_test_case( advdiffall polorder2 )

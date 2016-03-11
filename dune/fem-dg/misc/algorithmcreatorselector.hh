@@ -77,10 +77,12 @@ namespace Fem
      */
     enum class Enum
     {
+      //! use default value
+      default_,
       //! limitation of advection term
-      unlimited = 0,
+      unlimited,
       //! no limitation of advection term
-      limited = 1,
+      limited,
     };
   }
 
@@ -95,16 +97,18 @@ namespace Fem
      */
     enum class Enum
     {
+      //! use default value
+      default_,
       //! Discrete function space with Lagrange Finite Elements
-      lagrange = 0,
+      lagrange,
       //! Discrete function space with Legendre Finite Elements
-      legendre = 1,
+      legendre,
       //! Discrete function space with hierarchic Legendre Finite Elements
-      hierarchic_legendre = 2,
+      hierarchic_legendre,
       //! Discrete function space with hierarchic orthonormal monomial basis functions
-      orthonormal = 3
+      orthonormal
       //! p-adaptive space from dune-fem, implementing dg and lagrange
-      // padaptive = 4
+      // padaptive
     };
   }
 
@@ -120,10 +124,12 @@ namespace Fem
      */
     enum class Enum
     {
+      //! use default value
+      default_,
       //! Continuous Galerkin
-      cg = 0,
+      cg,
       //! Discontinuous Galerkin
-      dg = 1
+      dg
     };
   }
 
@@ -138,10 +144,12 @@ namespace Fem
      */
     enum class Enum
     {
+      //! use default value
+      default_,
       //! no Adaptivity
-      no = 0,
+      no,
       //! Allow Adaptivity
-      yes = 1
+      yes
     };
   }
 
@@ -155,18 +163,20 @@ namespace Fem
      */
     enum class Enum
     {
+      //! use default value
+      default_,
       //! use the matrix based version of the dune-fem solvers
-      fem = 0,
+      fem,
       //! use the matrix based version of the dune-fem solvers with blas
-      femoem = 1,
+      femoem,
       //! use the dune-istl solvers
-      istl = 2,
+      istl,
       //! use the direct solver umfpack
-      umfpack = 3,
+      umfpack,
       //! use the petsc package
-      petsc = 4,
+      petsc,
       //! use the eigen package
-      eigen = 5
+      eigen
     };
   }
 
@@ -181,6 +191,8 @@ namespace Fem
      */
     enum class Enum
     {
+      //! use default value
+      default_,
       //! use matrix free operator
       matrixfree,
       //! use matrix based operator
@@ -199,6 +211,8 @@ namespace Fem
      */
     enum class Enum
     {
+      //! use default value
+      default_,
       full,
       expl,
       impl,
