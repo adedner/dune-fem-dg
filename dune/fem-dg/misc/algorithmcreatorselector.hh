@@ -401,7 +401,7 @@ namespace Fem
 
 
 ///////////////////////////////////////////////////////////////////////////
-// SolverSelector
+// MatrixSolverSelector
 ///////////////////////////////////////////////////////////////////////////
 
   template< Solver::Enum solver, bool dummy = false >
@@ -409,7 +409,7 @@ namespace Fem
   {};
 
   template <Solver::Enum solver, bool symmetric, class DomainDFSpace, class RangeDFSpace = DomainDFSpace>
-  struct SolverSelector
+  struct MatrixSolverSelector
   {
     static const bool solverConfigured = false; // this implementation is used for not installed packages
     // choose type of discrete function, Matrix implementation and solver implementation
@@ -423,7 +423,7 @@ namespace Fem
   };
 
   template <class DomainDFSpace, class RangeDFSpace, bool symmetric>
-  struct SolverSelector<Solver::Enum::fem,symmetric,DomainDFSpace,RangeDFSpace>
+  struct MatrixSolverSelector<Solver::Enum::fem,symmetric,DomainDFSpace,RangeDFSpace>
   {
     static const bool solverConfigured = true;
     typedef Dune::Fem::AdaptiveDiscreteFunction< DomainDFSpace >                                        DomainDiscreteFunctionType;
@@ -436,7 +436,7 @@ namespace Fem
   };
 
   template <class DomainDFSpace, class RangeDFSpace, bool symmetric>
-  struct SolverSelector<Solver::Enum::femoem,symmetric,DomainDFSpace,RangeDFSpace>
+  struct MatrixSolverSelector<Solver::Enum::femoem,symmetric,DomainDFSpace,RangeDFSpace>
   {
     static const bool solverConfigured = true;
     // choose type of discrete function, Matrix implementation and solver implementation
@@ -452,7 +452,7 @@ namespace Fem
 
 #if HAVE_DUNE_ISTL
   template <class DomainDFSpace, class RangeDFSpace, bool symmetric>
-  struct SolverSelector<Solver::Enum::istl,symmetric,DomainDFSpace,RangeDFSpace>
+  struct MatrixSolverSelector<Solver::Enum::istl,symmetric,DomainDFSpace,RangeDFSpace>
   {
     static const bool solverConfigured = true;
     // choose type of discrete function, Matrix implementation and solver implementation
@@ -475,7 +475,7 @@ namespace Fem
 
 #if HAVE_UMFPACK || HAVE_SUITESPARSE_UMFPACK
   template <class DomainDFSpace, class RangeDFSpace, bool symmetric>
-  struct SolverSelector<Solver::Enum::umfpack,symmetric,DomainDFSpace,RangeDFSpace>
+  struct MatrixSolverSelector<Solver::Enum::umfpack,symmetric,DomainDFSpace,RangeDFSpace>
   {
     static const bool solverConfigured = true;
     // choose type of discrete function, Matrix implementation and solver implementation
@@ -495,7 +495,7 @@ namespace Fem
 
 #if HAVE_PETSC
   template <class DomainDFSpace, class RangeDFSpace,bool symmetric>
-  struct SolverSelector<Solver::Enum::petsc,symmetric,DomainDFSpace,RangeDFSpace>
+  struct MatrixSolverSelector<Solver::Enum::petsc,symmetric,DomainDFSpace,RangeDFSpace>
   {
     static const bool solverConfigured = true;
     // choose type of discrete function, Matrix implementation and solver implementation
@@ -518,7 +518,7 @@ namespace Fem
 #if HAVE_EIGEN
 #warning "Eigen solver is not working at the moment.!"
   template <class DomainDFSpace, class RangeDFSpace,bool symmetric>
-  struct SolverSelector<Solver::Enum::eigen,symmetric,DomainDFSpace,RangeDFSpace>
+  struct MatrixSolverSelector<Solver::Enum::eigen,symmetric,DomainDFSpace,RangeDFSpace>
   {
     static const bool solverConfigured = true;
     // choose type of discrete function, Matrix implementation and solver implementation
@@ -536,6 +536,71 @@ namespace Fem
     static_warning(false, "You have chosen the Eigen solver backend which is currently not installed. Falling back to standard solver!");
   };
 #endif
+
+
+///////////////////////////////////////////////////////////////////////////
+// MatrixFreeSolverSelector
+///////////////////////////////////////////////////////////////////////////
+
+  //template <Solver::Enum solver, bool symmetric, class DomainDFSpace, class RangeDFSpace = DomainDFSpace>
+  //struct MatrixFreeSolverSelector
+  //{
+  //  static const bool solverConfigured = false; // this implementation is used for not installed packages
+  //  // choose type of discrete function, Matrix implementation and solver implementation
+  //  // this should work with any discrete function implementation
+  //  typedef Dune::Fem::DynamicVector<double>                                                                        DofVectorType;
+  //  typedef Dune::Fem::ManagedDiscreteFunction< Dune::Fem::VectorDiscreteFunction< DomainDFSpace, DofVectorType > > DomainDiscreteFunctionType;
+  //  typedef Dune::Fem::ManagedDiscreteFunction< Dune::Fem::VectorDiscreteFunction< RangeDFSpace, DofVectorType > >  RangeDiscreteFunctionType;
+  //  typedef DomainDiscreteFunctionType                                                                              DiscreteFunctionType;
+  //  typedef Dune::Fem::SparseRowLinearOperator< DomainDiscreteFunctionType, RangeDiscreteFunctionType >             LinearOperatorType;
+  //  typedef Dune::Fem::CGInverseOperator< DiscreteFunctionType >                                                    LinearInverseOperatorType;
+  //};
+
+  template <Solver::Enum solver, bool symmetric, class DomainDFSpace, class RangeDFSpace = DomainDFSpace>
+  struct MatrixFreeSolverSelector
+  {
+    static const bool solverConfigured = false;
+    typedef Dune::Fem::AdaptiveDiscreteFunction< DomainDFSpace >                                        DomainDiscreteFunctionType;
+    typedef Dune::Fem::AdaptiveDiscreteFunction< RangeDFSpace >                                         RangeDiscreteFunctionType;
+    typedef DomainDiscreteFunctionType                                                                  DiscreteFunctionType;
+    typedef Dune::Fem::SparseRowLinearOperator< DomainDiscreteFunctionType, RangeDiscreteFunctionType > LinearOperatorType;
+    typedef typename std::conditional<symmetric,
+            Dune::Fem::CGInverseOperator< DiscreteFunctionType >,
+            Dune::Fem::ParDGGeneralizedMinResInverseOperator< DiscreteFunctionType > > :: type          LinearInverseOperatorType;
+  };
+
+  template <class DomainDFSpace, class RangeDFSpace, bool symmetric>
+  struct MatrixFreeSolverSelector<Solver::Enum::fem,symmetric,DomainDFSpace,RangeDFSpace>
+  {
+    static const bool solverConfigured = true;
+    typedef Dune::Fem::AdaptiveDiscreteFunction< DomainDFSpace >                                        DomainDiscreteFunctionType;
+    typedef Dune::Fem::AdaptiveDiscreteFunction< RangeDFSpace >                                         RangeDiscreteFunctionType;
+    typedef DomainDiscreteFunctionType                                                                  DiscreteFunctionType;
+    typedef Dune::Fem::SparseRowLinearOperator< DomainDiscreteFunctionType, RangeDiscreteFunctionType > LinearOperatorType;
+    typedef typename std::conditional<symmetric,
+            Dune::Fem::CGInverseOperator< DiscreteFunctionType >,
+            Dune::Fem::ParDGGeneralizedMinResInverseOperator< DiscreteFunctionType > > :: type          LinearInverseOperatorType;
+  };
+
+///////////////////////////////////////////////////////////////////////////
+// SolverSelector
+///////////////////////////////////////////////////////////////////////////
+
+  template <Solver::Enum solver, bool symmetric, bool matrixfree, class DomainDFSpace, class RangeDFSpace = DomainDFSpace>
+  struct SolverSelector;
+
+  template <Solver::Enum solver, bool symmetric, class DomainDFSpace, class RangeDFSpace >
+  struct SolverSelector< solver, symmetric, true, DomainDFSpace, RangeDFSpace >
+  {
+    typedef MatrixFreeSolverSelector< solver, symmetric, DomainDFSpace, RangeDFSpace > type;
+  };
+
+  template <Solver::Enum solver, bool symmetric, class DomainDFSpace, class RangeDFSpace >
+  struct SolverSelector< solver, symmetric, false, DomainDFSpace, RangeDFSpace >
+  {
+    typedef MatrixSolverSelector< solver, symmetric, DomainDFSpace, RangeDFSpace > type;
+  };
+
 
 ///////////////////////////////////////////////////////////////////////////
 // DiscreteFunctionSpaceSelector

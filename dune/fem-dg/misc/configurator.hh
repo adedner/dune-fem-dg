@@ -162,6 +162,8 @@ namespace Fem
     static const DiffusionFlux::Enum diffFluxId      =(diffFluxEnumId == DiffusionFlux::Enum::default_)?        diffFluxEnum   : diffFluxEnumId;
 
 
+    template< bool symmetric, class DomainDFSpace, class RangeDFSpace = DomainDFSpace>
+    using SolverSelect = typename SolverSelector< solverId, symmetric, Matrix::Enum::matrixfree == matrixId ? true : false, DomainDFSpace, RangeDFSpace >::type;
 
   public:
     typedef GridImp                                           GridType;
@@ -178,7 +180,7 @@ namespace Fem
     using DiscreteFunctionSpaces = typename DiscreteFunctionSpaceSelector< FunctionSpaceImp, GridPartImp, polOrd, spaceId, dgId >::type;
 
     template< class DFSpace >
-    using DiscreteFunctions = typename SolverSelector< solverId, false, DFSpace >::DiscreteFunctionType;
+    using DiscreteFunctions = typename SolverSelect< false, DFSpace >::DiscreteFunctionType;
 
     template< class ModelImp, AdvectionFlux::Enum id = advFluxId >
     using AdvectionFluxes = DGAdvectionFlux< ModelImp, id >;
@@ -194,7 +196,7 @@ namespace Fem
               DiffusionFlux::Enum diffId = diffFluxId >
     using DefaultAssembTraits = DefaultAssemblerTraits< polOrd,
                                                         AnalyticalTraitsImp,
-                                                        typename SolverSelector< solverId, false, DomainDFSpace, RangeDFSpace >::LinearOperatorType,
+                                                        typename SolverSelect< false, DomainDFSpace, RangeDFSpace >::LinearOperatorType,
                                                         AdvectionFluxes< typename AnalyticalTraitsImp::ModelType, advId >,
                                                         DiffusionFluxes< typename AnalyticalTraitsImp::ModelType, DomainDFSpace, diffId >,
                                                         DiscreteFunctions< DomainDFSpace >,
@@ -223,11 +225,11 @@ namespace Fem
 
     //Matrix Containers
     template< class DomainDFSpace, class RangeDFSpace  >
-    using Containers = typename SolverSelector< solverId, false, DomainDFSpace, RangeDFSpace >::LinearOperatorType;
+    using Containers = typename SolverSelect< false, DomainDFSpace, RangeDFSpace >::LinearOperatorType;
 
     //Solver
     template< class DFSpace, bool symmetric = false >
-    using LinearSolvers = typename SolverSelector< solverId, symmetric, DFSpace >::LinearInverseOperatorType;
+    using LinearSolvers = typename SolverSelect< symmetric, DFSpace >::LinearInverseOperatorType;
 
 
     ////Real Jacobian for Runge-Kutta
