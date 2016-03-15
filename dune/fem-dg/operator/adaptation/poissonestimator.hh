@@ -721,14 +721,14 @@ namespace Fem
       uValuesEn.resize( numQuadraturePoints );
       uValuesNb.resize( numQuadraturePoints );
       uInside.evaluateQuadrature( quadInside, uValuesEn );
-      oper_.boundaryValues(intersection, inside, 0, quadInside, volume,
+      oper_.boundaryValues(intersection, inside,quadInside, volume,
                            uValuesNb);
       duValuesEn.resize( numQuadraturePoints );
       uInside.evaluateQuadrature( quadInside, duValuesEn );
       fluxEn.resize( numQuadraturePoints );
       dfluxEn.resize( numQuadraturePoints );
 
-      oper_.boundaryFlux(intersection, inside, 0.0 /* time */,
+      oper_.boundaryFlux(intersection, inside,
                          volume, quadInside,
                          uValuesEn, duValuesEn, uValuesNb,
                          fluxEn, dfluxEn
@@ -871,7 +871,7 @@ namespace Fem
 
       typedef typename DGOperatorType::IntersectionStorage IntersectionStorage;
       IntersectionStorage intersectionStorage( intersection, inside, inside, volume, volume);
-      oper_.flux(dfSpace_.gridPart(), intersectionStorage, 0.0, /* time */
+      oper_.flux(dfSpace_.gridPart(), intersectionStorage,
                  quadInside, quadOutside,
                  uValuesEn, duValuesEn, uValuesNb, duValuesNb,
                  fluxEn, dfluxEn, fluxNb, dfluxNb

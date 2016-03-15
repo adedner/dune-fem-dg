@@ -267,7 +267,7 @@ namespace Fem
         localdf_.evaluateQuadrature( quadInside, uValuesEn );
         uOutside.evaluateQuadrature( quadOutside, uValuesNb );
         oper_.lifting(df_.space().gridPart(),
-                      intersection, entity, outside, 0, quadInside, quadOutside,
+                      intersection, entity, outside, quadInside, quadOutside,
                       uValuesEn, uValuesNb,
                       localre_
                      );
@@ -744,6 +744,7 @@ namespace Fem
     void virtual setTime ( const double time ) override
     {
       time_ = time;
+      assembler_.setTime( time_ );
     }
 
     const AssemblerType& assembler () const
@@ -785,7 +786,7 @@ namespace Fem
         matrix_->reserve( stencil );
       }
 
-      assembler_.assemble( time_ );
+      assembler_.assemble();
       std::cout << "Solver (Poisson) assemble time: " << timer.elapsed() << std::endl;
 
       assembler_.testSymmetry();
