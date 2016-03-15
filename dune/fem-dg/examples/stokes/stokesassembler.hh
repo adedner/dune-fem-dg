@@ -329,7 +329,8 @@ namespace Fem
       pressureDivMatrix_( container_.template matrix<1,0>() ),//PDM
       pressureStabMatrix_( container_.template matrix<1,1>() ),//PSM
       d11_(d11),
-      d12_(d12)
+      d12_(d12),
+      time_(0)
     {}
 
     void divergence(const JacobianRangeType& du, PressureRangeType& divu) const
@@ -337,6 +338,11 @@ namespace Fem
       divu=0.;
       for( int i=0;i<dimension;++i)
         divu+=du[i][i];
+    }
+
+    void setTime ( double time )
+    {
+      time_ = time;
     }
 
     void assemble()
@@ -789,6 +795,7 @@ namespace Fem
 
     double                                       d11_;
     double                                       d12_;
+    double                                       time_;
     DomainType                                   direction_;
   };
 }

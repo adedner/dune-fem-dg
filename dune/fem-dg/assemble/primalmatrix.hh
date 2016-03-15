@@ -198,6 +198,7 @@ namespace Fem
         rhs_( container_.rhs() ),
         matrix_( container_.matrix() ),
         zero_(),
+        time_( 0 ),
         advFlux_( model_ ),
         diffusionFlux_( space_.gridPart(), model_, typename Traits::DiffusionFluxType::ParameterType( ParameterKey::generate( "", "dgdiffusionflux." ) ) ),
         calculateFluxes_( calculateFluxes ),
@@ -220,11 +221,17 @@ namespace Fem
       return space.blockMapper().maxNumDofs() * DiscreteFunctionSpaceType :: localBlockSize ;
     }
 
+    void setTime ( double time )
+    {
+      time_ = time;
+    }
+
+
     /*
      * Assemble Matrix for Elliptic Problem using the DGPrimalDIffusionFlux
      * implementation.
      */
-    void assemble( const double time ) const
+    void assemble() const
     {
       Dune::Timer timer ;
 
@@ -273,7 +280,7 @@ namespace Fem
         const size_t numQuadraturePoints = quadrature.nop();
         for( size_t pt = 0; pt < numQuadraturePoints; ++pt )
         {
-          LocalEvaluationType local( entity, quadrature, uZero, uJacZero, pt, time, volume );
+          LocalEvaluationType local( entity, quadrature, uZero, uJacZero, pt, time_, volume );
 
           const double weight = quadrature.weight( pt ) * geometry.integrationElement( local.position() );
 
@@ -355,11 +362,11 @@ namespace Fem
             if ( space_.continuous(intersection) ) continue;
             if( intersection.conforming() )
             {
-              assembleIntersection< true > ( time, entity, geometry, intersection, space_, baseSet, localOpEn, rhsLocal, rhs_ != 0 );
+              assembleIntersection< true > ( entity, geometry, intersection, space_, baseSet, localOpEn, rhsLocal, rhs_ != 0 );
             }
             else
             {
-              assembleIntersection< false > ( time, entity, geometry, intersection, space_, baseSet, localOpEn, rhsLocal, rhs_ != 0 );
+              assembleIntersection< false > ( entity, geometry, intersection, space_, baseSet, localOpEn, rhsLocal, rhs_ != 0 );
             }
           }
           else if ( intersection.boundary() && ! useStrongBoundaryCondition_ )
@@ -379,10 +386,10 @@ namespace Fem
             }
 
             // storage for all flux values
-            boundaryValues(intersection, entity, time, faceQuadInside, volume, bndValues);
+            boundaryValues(intersection, entity, faceQuadInside, volume, bndValues);
 
             // first compute affine part of boundary flux
-            boundaryFlux(intersection, entity, time, volume, faceQuadInside,
+            boundaryFlux(intersection, entity, volume, faceQuadInside,
                          RangeValues(-1,phiFaceEn), JacobianRangeValues(-1,dphiFaceEn),
                          bndValues, valueNb,dvalueNb);
 
@@ -391,7 +398,7 @@ namespace Fem
             // compute boundary fluxes depending on u
             for( unsigned int localCol = 0; localCol < numBasisFunctionsEn; ++localCol )
             {
-              boundaryFlux(intersection, entity, time, volume, faceQuadInside,
+              boundaryFlux(intersection, entity, volume, faceQuadInside,
                            RangeValues(localCol,phiFaceEn), JacobianRangeValues(localCol,dphiFaceEn),bndValues,
                            valueEn,dvalueEn);
               for( size_t pt = 0; pt < numFaceQuadPoints; ++pt )
@@ -482,7 +489,7 @@ namespace Fem
       }
     }
     // assemble vector containing boundary fluxes for right hand side
-    void assembleRhs( const double time ) const
+    void assembleRhs() const
     {
       rhs_->clear();
 
@@ -536,10 +543,10 @@ namespace Fem
             }
 
             // store for all flux values
-            boundaryValues(intersection, entity, time, faceQuadInside, volume, bndValues);
+            boundaryValues(intersection, entity, faceQuadInside, volume, bndValues);
 
             // first compute affine part of boundary flux
-            boundaryFlux(space_.gridPart(),intersection,entity,time,faceQuadInside,
+            boundaryFlux(space_.gridPart(),intersection,entity,faceQuadInside,
                          RangeValues(-1,phiFaceEn), JacobianRangeValues(-1,dphiFaceEn),
                          bndValues,
                          valueNb,dvalueNb);
@@ -561,8 +568,7 @@ namespace Fem
     }
 
     template <bool conforming, class LocalFunction>
-    void assembleIntersection( const double time,
-                               const EntityType& entity,
+    void assembleIntersection( const EntityType& entity,
                                const GeometryType& geometry,
                                const IntersectionType& intersection,
                                const DiscreteFunctionSpaceType& dfSpace,
@@ -633,7 +639,7 @@ namespace Fem
         baseSetNb.jacobianAll( faceQuadOutside[ pt ], dphiFaceNb[pt] );
       }
 
-      flux(dfSpace.gridPart(), intersectionStorage, time,
+      flux(dfSpace.gridPart(), intersectionStorage,
            faceQuadInside, faceQuadOutside,
            RangeValues(-1,phiFaceEn), JacobianRangeValues(-1,dphiFaceEn),
            RangeValues(-1,phiFaceEn), JacobianRangeValues(-1,dphiFaceEn),
@@ -645,7 +651,7 @@ namespace Fem
         // compute flux for one base function, i.e.,
         // - uLeft=phiFaceEn[.][localCol]
         // - uRight=0
-        flux(dfSpace.gridPart(), intersectionStorage, time,
+        flux(dfSpace.gridPart(), intersectionStorage,
              faceQuadInside, faceQuadOutside,
              RangeValues(localCol,phiFaceEn), JacobianRangeValues(localCol,dphiFaceEn),
              RangeValues(-1,phiFaceEn), JacobianRangeValues(-1,dphiFaceEn),
@@ -675,7 +681,7 @@ namespace Fem
           // compute flux for one base function, i.e.,
           // - uLeft=phiFaceEn[.][localCol]
           // - uRight=0
-          flux(dfSpace.gridPart(), intersectionStorage, time,
+          flux(dfSpace.gridPart(), intersectionStorage,
                faceQuadInside, faceQuadOutside,
                RangeValues(-1,phiFaceNb), JacobianRangeValues(-1,dphiFaceNb),
                RangeValues(localCol,phiFaceNb), JacobianRangeValues(localCol,dphiFaceNb),
@@ -772,7 +778,6 @@ namespace Fem
     template <class Quadrature,class Value,class DValue,class RetType, class DRetType>
     void flux(const GridPartType &gridPart,
               const IntersectionStorage& intersectionStorage,
-              const double time,
               const Quadrature &faceQuadInside, const Quadrature &faceQuadOutside,
               const Value &valueEn, const DValue &dvalueEn,
               const Value &valueNb, const DValue &dvalueNb,
@@ -785,7 +790,7 @@ namespace Fem
       {
         diffusionFlux_.initializeIntersection( intersectionStorage.intersection(),
                                                intersectionStorage.inside(),
-                                               intersectionStorage.outside(), time,
+                                               intersectionStorage.outside(), time_,
                                                faceQuadInside, faceQuadOutside,
                                                valueEn, valueNb);
       }
@@ -797,9 +802,9 @@ namespace Fem
         typedef JacobianRangeType   JacobianTuple;
         typedef IntersectionQuadraturePointContext< IntersectionType, EntityType, Quadrature, RangeTuple, JacobianTuple > IntersectionLocalEvaluationType;
         IntersectionLocalEvaluationType left( intersectionStorage.intersection(), intersectionStorage.inside(),
-                                              faceQuadInside, valueEn[ pt ], dvalueEn[ pt ], pt, time, intersectionStorage.enVolume() );
+                                              faceQuadInside, valueEn[ pt ], dvalueEn[ pt ], pt, time_, intersectionStorage.enVolume() );
         IntersectionLocalEvaluationType right( intersectionStorage.intersection(), intersectionStorage.outside(),
-                                              faceQuadInside, valueNb[ pt ], dvalueNb[ pt ], pt, time, intersectionStorage.nbVolume() );
+                                              faceQuadInside, valueNb[ pt ], dvalueNb[ pt ], pt, time_, intersectionStorage.nbVolume() );
 
         if( hasDiffusion )
         {
@@ -853,7 +858,6 @@ namespace Fem
     void lifting(const GridPartType &gridPart,
                  const IntersectionType &intersection,
                  const EntityType &entity, const EntityType &neighbor,
-                 const double time,
                  const FaceQuadrature &faceQuadInside, const FaceQuadrature &faceQuadOutside,
                  const Value &valueEn, const Value &valueNb,
                  LiftingFunction &lifting) const
@@ -862,7 +866,7 @@ namespace Fem
       VectorToTupleVector valNb( valueNb );
       if( hasDiffusion )
       {
-        diffusionFlux_.initializeIntersection( intersection, entity, neighbor, time, faceQuadInside, faceQuadOutside, valEn, valNb, true );
+        diffusionFlux_.initializeIntersection( intersection, entity, neighbor, time_, faceQuadInside, faceQuadOutside, valEn, valNb, true );
         lifting += diffusionFlux_.getInsideLifting();
       }
     }
@@ -870,7 +874,6 @@ namespace Fem
     template <class Quadrature,class RetType>
     void boundaryValues(const IntersectionType &intersection,
                         const EntityType &entity,
-                        const double time,
                         const Quadrature &faceQuadInside,
                         const double volume,
                         RetType &bndValues) const
@@ -885,7 +888,7 @@ namespace Fem
       const size_t numFaceQuadPoints = faceQuadInside.nop();
       for( size_t pt = 0; pt < numFaceQuadPoints; ++pt )
       {
-        IntersectionLocalEvaluationType local( intersection, entity, faceQuadInside, uZero, uJacZero, pt, time, volume );
+        IntersectionLocalEvaluationType local( intersection, entity, faceQuadInside, uZero, uJacZero, pt, time_, volume );
         model_.boundaryValue(local, uZero, bndValues[ pt ]);
       }
     }
@@ -893,7 +896,6 @@ namespace Fem
     template <class QuadratureImp, class Value,class DValue,class GValue,class RetType, class DRetType>
     void boundaryFlux( const IntersectionType& intersection,
                        const EntityType& entity,
-                       const double time,
                        const double volume,
                        const QuadratureImp& faceQuadInside,
                        const Value &valueEn,
@@ -905,7 +907,7 @@ namespace Fem
       RangeType gLeft,gRight;
       if( hasDiffusion )
       {
-        diffusionFlux_.initializeBoundary( intersection, entity, time, faceQuadInside, valueEn, valueNb );
+        diffusionFlux_.initializeBoundary( intersection, entity, time_, faceQuadInside, valueEn, valueNb );
       }
 
       const size_t numFaceQuadPoints = faceQuadInside.nop();
@@ -914,7 +916,7 @@ namespace Fem
         typedef RangeType           RangeTuple;
         typedef JacobianRangeType   JacobianTuple;
         typedef IntersectionQuadraturePointContext< IntersectionType, EntityType, QuadratureImp, RangeTuple, JacobianTuple > IntersectionLocalEvaluationType;
-        IntersectionLocalEvaluationType local( intersection, entity, faceQuadInside, valueEn[ pt ], dvalueEn[ pt ], pt, time, volume );
+        IntersectionLocalEvaluationType local( intersection, entity, faceQuadInside, valueEn[ pt ], dvalueEn[ pt ], pt, time_, volume );
 
         if ( model_.hasBoundaryValue( local ) )
         {
@@ -988,6 +990,7 @@ namespace Fem
     std::shared_ptr< DestinationType > rhs_;
     std::shared_ptr< MatrixType >      matrix_;
     ZeroFunction                       zero_;
+    double                             time_;
 
     AdvectionFluxType                  advFlux_;
     mutable DiffusionFluxType          diffusionFlux_;

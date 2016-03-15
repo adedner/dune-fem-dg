@@ -546,7 +546,8 @@ namespace Fem
       assembler_( container_, model() ),
       ellAlg_( grid, container_.template adapter<0>() ),
       adaptIndicator_( Std::make_unique<AdaptIndicatorType>( container_, ellAlg_.assembler(), assembler_, problem(), name() ) ),
-      ioTuple_( new IOTupleType( *BaseType::dataTuple(), *ellAlg_.dataTuple() ) )
+      ioTuple_( new IOTupleType( *BaseType::dataTuple(), *ellAlg_.dataTuple() ) ),
+      time_(0)
     {
     }
 
@@ -554,6 +555,14 @@ namespace Fem
     {
       return *ioTuple_;
     }
+
+    void virtual setTime ( const double time ) override
+    {
+      time_ = time;
+      assembler_.setTime( time_ );
+      ellAlg_.setTime( time_ );
+    }
+
 
   private:
     virtual std::shared_ptr< SolverType > doCreateSolver() override
@@ -603,13 +612,14 @@ namespace Fem
     }
 
   protected:
-    ContainerType&                              container_;
-    const DiscreteFunctionSpaceType&            space_;
-    AssemblerType                               assembler_;
+    ContainerType&                         container_;
+    const DiscreteFunctionSpaceType&       space_;
+    AssemblerType                          assembler_;
 
-    EllipticalAlgorithmType                     ellAlg_;
-    std::unique_ptr< AdaptIndicatorType >       adaptIndicator_;
-    std::unique_ptr< IOTupleType >              ioTuple_;
+    EllipticalAlgorithmType                ellAlg_;
+    std::unique_ptr< AdaptIndicatorType >  adaptIndicator_;
+    std::unique_ptr< IOTupleType >         ioTuple_;
+    double                                 time_;
   };
 
 
