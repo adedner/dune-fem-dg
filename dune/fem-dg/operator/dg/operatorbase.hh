@@ -203,12 +203,6 @@ namespace Fem
       pass1_.switchUpwind();
     }
 
-    template <class Matrix>
-    inline void operator2Matrix( Matrix& matrix, DestinationType& rhs ) const
-    {
-      pass1_.operator2Matrix( matrix , rhs );
-    }
-
     template <class Entity, class Intersection, class Quadrature>
     inline void flux(const DestinationType &u,
                      const Entity &entity, const Entity &nb,
