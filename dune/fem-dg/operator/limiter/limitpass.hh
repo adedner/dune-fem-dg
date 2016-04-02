@@ -37,6 +37,168 @@ namespace Dune
 {
 namespace Fem
 {
+  template< int dimGrid >
+  struct LimiterUtility
+  {
+    //! limit all functions
+    template <class LimiterFunction, class CheckSet, class Domain, class Range, class DeoMod >
+    static void limitFunctions(const LimiterFunction& limiterFunction,
+                               const std::vector< CheckSet >& comboVec,
+                               const std::vector< Domain>& barys,
+                               const std::vector< Range >& nbVals,
+                               std::vector< DeoMod >& deoMods)
+    {
+      typedef typename Domain :: field_type DomainField;
+      typedef typename Range  :: field_type RangeField;
+
+      // get accuracy threshold
+      const double limitEps = limiterFunction.epsilon();
+
+      const size_t numFunctions = deoMods.size();
+      // for all functions check with all values
+      for(size_t j=0; j<numFunctions; ++j)
+      {
+        const std::vector<int> & v = comboVec[j];
+
+        // loop over dimRange
+        for(int r=0; r<Range::dimension; ++r)
+        {
+          RangeField minimalFactor = 1;
+          Domain& D = deoMods[j][r];
+
+          const auto endit = v.end();
+          for(auto it = v.begin(); it != endit ; ++it )
+          {
+            // get current number of entry
+            const size_t k = *it;
+
+            // evaluate values for limiter function
+            const DomainField d = nbVals[k][r];
+            const DomainField g = D * barys[k];
+
+            const DomainField length2 =  barys[ k ].two_norm2();
+
+            // if length is to small then the grid is corrupted
+            assert( length2 > 1e-14 );
+
+            // if the gradient in direction of the line
+            // connecting the barycenters is very small
+            // then neglect this direction since it does not give
+            // valuable contribution to the linear function
+            // call limiter function
+            // g = grad L ( w_E,i - w_E ) ,  d = u_E,i - u_E
+            DomainField localFactor = limiterFunction( g, d );
+
+            const DomainField factor = (g*g) / length2 ;
+            if( localFactor < 1.0 &&  factor  < limitEps )
+            {
+              localFactor = 1.0 - std::tanh( factor / limitEps );
+            }
+
+            // take minimum
+            minimalFactor = std::min( localFactor , minimalFactor );
+          }
+
+          // scale linear function
+          D *= minimalFactor;
+        }
+      }
+    }
+
+    // fill combination vector recursive
+    template< class SetType, int i >
+    struct FillVector
+    {
+      static void fill(const int neighbors,
+                       const int start,
+                       SetType& comboSet,
+                       std::vector<int>& v)
+      {
+        assert( (int) v.size() > dimGrid-i );
+        for(int n = start; n<neighbors; ++n)
+        {
+          v[ dimGrid - i ] = n;
+          FillVector< SetType, i-1 >::fill( neighbors, n + 1, comboSet, v);
+        }
+      }
+    };
+
+    // termination of fill combination vector
+    template< class SetType >
+    struct FillVector< SetType, 1 >
+    {
+      static void fill(const int neighbors,
+                       const int start,
+                       SetType& comboSet,
+                       std::vector<int>& v)
+      {
+        typedef typename SetType :: value_type VectorCompType;
+        assert( (int) v.size() == dimGrid );
+        for(int n = start; n<neighbors; ++n)
+        {
+          v[ dimGrid-1 ] = n;
+          comboSet.insert( VectorCompType( v, std::vector<int> () ) );
+        }
+      }
+    };
+
+    // build combo set (CombinationSet is std::set)
+    template <class Key, class Value>
+    static void buildComboSet(const int neighbors,
+                              std::set< std::pair< Key, Value > >& comboSet)
+    {
+      // clear set
+      comboSet.clear();
+
+      typedef Key   KeyType;
+      typedef Value CheckType;
+
+      typedef std::pair< KeyType, CheckType > VectorCompType;
+      typedef std::set< VectorCompType > CombinationSetType;
+
+      // maximal number of neighbors
+      std::vector<int> v(dimGrid,0);
+      FillVector< CombinationSetType, dimGrid >::fill( neighbors, 0, comboSet, v );
+
+      // create set containing all numbers
+      std::set<int> constNumbers;
+      typedef typename std::set<int> :: iterator el_iterator;
+      for(int i = 0; i<neighbors; ++i)
+      {
+        constNumbers.insert(i);
+      }
+
+      const int checkSize = neighbors - dimGrid ;
+      typedef typename CombinationSetType :: iterator iterator;
+      const iterator endit = comboSet.end();
+      for(iterator it = comboSet.begin(); it != endit; ++it)
+      {
+        const KeyType& v = (*it).first;
+        CheckType& check = const_cast<CheckType&> ((*it).second);
+
+        // reserve memory
+        check.reserve ( checkSize );
+
+        // get set containing all numbers
+        std::set<int> numbers (constNumbers);
+
+        // remove the key values
+        for(int i=0; i<dimGrid; ++i)
+        {
+          el_iterator el = numbers.find( v[i] );
+          numbers.erase( el );
+        }
+
+        // generate check vector
+        el_iterator endel = numbers.end();
+        for(el_iterator elit = numbers.begin();
+            elit != endel; ++ elit)
+        {
+          check.push_back( *elit );
+        }
+      }
+    }
+  };
 
   inline std::ostream& operator << (std::ostream& out, const DGFEntityKey<int>& key )
   {
@@ -1573,7 +1735,8 @@ namespace Fem
       }
 
       // Limiting
-      limitFunctions(discreteModel_.limiterFunction(), comboVec_, barys_, nbVals_, deoMods_);
+      LimiterUtility< dimGrid >::limitFunctions(
+          discreteModel_.limiterFunction(), comboVec_, barys_, nbVals_, deoMods_);
 
       // take maximum of limited functions
       getMaxFunction(deoMods_, deoMod_);
@@ -1768,71 +1931,6 @@ namespace Fem
           }
         }
       } // end solving
-    }
-
-    //! limit all functions
-    template <class LimiterFunction, class CheckSet, class Domain, class Range, class DeoMod >
-    void limitFunctions(const LimiterFunction& limiterFunction,
-                        const std::vector< CheckSet >& comboVec,
-                        const std::vector< Domain>& barys,
-                        const std::vector< Range >& nbVals,
-                        std::vector< DeoMod >& deoMods) const
-    {
-      typedef typename Domain :: field_type DomainField;
-      typedef typename Range  :: field_type RangeField;
-
-      // get accuracy threshold
-      const double limitEps = limiterFunction.epsilon();
-
-      const size_t numFunctions = deoMods.size();
-      // for all functions check with all values
-      for(size_t j=0; j<numFunctions; ++j)
-      {
-        const std::vector<int> & v = comboVec[j];
-
-        // loop over dimRange
-        for(int r=0; r<dimRange; ++r)
-        {
-          RangeField minimalFactor = 1;
-          Domain& D = deoMods[j][r];
-
-          const auto endit = v.end();
-          for(auto it = v.begin(); it != endit ; ++it )
-          {
-            // get current number of entry
-            const size_t k = *it;
-
-            // evaluate values for limiter function
-            const DomainField d = nbVals[k][r];
-            const DomainField g = D * barys[k];
-
-            const DomainField length2 =  barys[ k ].two_norm2();
-
-            // if length is to small then the grid is corrupted
-            assert( length2 > 1e-14 );
-
-            // if the gradient in direction of the line
-            // connecting the barycenters is very small
-            // then neglect this direction since it does not give
-            // valuable contribution to the linear function
-            // call limiter function
-            // g = grad L ( w_E,i - w_E ) ,  d = u_E,i - u_E
-            DomainField localFactor = limiterFunction( g, d );
-
-            const DomainField factor = (g*g) / length2 ;
-            if( localFactor < 1.0 &&  factor  < limitEps )
-            {
-              localFactor = 1.0 - std::tanh( factor / limitEps );
-            }
-
-            // take minimum
-            minimalFactor = std::min( localFactor , minimalFactor );
-          }
-
-          // scale linear function
-          D *= minimalFactor;
-        }
-      }
     }
 
     // chose function with maximal gradient
@@ -2158,49 +2256,13 @@ namespace Fem
       return notphysical;
     }
 
-    // fill combination vector recursive
-    template< class SetType, int i >
-    struct FillVector
-    {
-      static void fill(const int neighbors,
-                       const int start,
-                       SetType& comboSet,
-                       std::vector<int>& v)
-      {
-        assert( (int) v.size() > dimGrid-i );
-        for(int n = start; n<neighbors; ++n)
-        {
-          v[ dimGrid - i ] = n;
-          FillVector< SetType, i-1 >::fill( neighbors, n + 1, comboSet, v);
-        }
-      }
-    };
-
-    // termination of fill combination vector
-    template< class SetType >
-    struct FillVector< SetType, 1 >
-    {
-      static void fill(const int neighbors,
-                       const int start,
-                       SetType& comboSet,
-                       std::vector<int>& v)
-      {
-        assert( (int) v.size() == dimGrid );
-        for(int n = start; n<neighbors; ++n)
-        {
-          v[ dimGrid-1 ] = n;
-          comboSet.insert( VectorCompType( v, std::vector<int> () ) );
-        }
-      }
-    };
-
     // setup set storing combinations of linear functions
     const ComboSetType& setupComboSet(const int neighbors, const bool nonConforming ) const
     {
       // check for new build (this set is constant)
       if( conformingComboSet_.size() == 0 )
       {
-        buildComboSet(neighbors, conformingComboSet_);
+        LimiterUtility< dimGrid >::buildComboSet(neighbors, conformingComboSet_);
       }
 
       // in case of non-conforming grid or grid with more than one
@@ -2208,62 +2270,12 @@ namespace Fem
       if( nonConforming ||
           spc_.multipleGeometryTypes() )
       {
-        buildComboSet(neighbors, comboSet_);
+        LimiterUtility< dimGrid >::buildComboSet(neighbors, comboSet_);
         return comboSet_;
       }
       else
       {
         return conformingComboSet_;
-      }
-    }
-
-    // build combo set
-    void buildComboSet(const int neighbors,
-                       ComboSetType& comboSet) const
-    {
-      // clear set
-      comboSet.clear();
-
-      // maximal number of neighbors
-      std::vector<int> v(dimGrid,0);
-      FillVector< ComboSetType, dimGrid >::fill( neighbors, 0, comboSet, v );
-
-      // create set containing all numbers
-      std::set<int> constNumbers;
-      typedef typename std::set<int> :: iterator el_iterator;
-      for(int i = 0; i<neighbors; ++i)
-      {
-        constNumbers.insert(i);
-      }
-
-      const int checkSize = neighbors - dimGrid ;
-      typedef typename ComboSetType :: iterator iterator;
-      const iterator endit = comboSet.end();
-      for(iterator it = comboSet.begin(); it != endit; ++it)
-      {
-        const KeyType& v = (*it).first;
-        CheckType& check = const_cast<CheckType&> ((*it).second);
-
-        // reserve memory
-        check.reserve ( checkSize );
-
-        // get set containing all numbers
-        std::set<int> numbers (constNumbers);
-
-        // remove the key values
-        for(int i=0; i<dimGrid; ++i)
-        {
-          el_iterator el = numbers.find( v[i] );
-          numbers.erase( el );
-        }
-
-        // generate check vector
-        el_iterator endel = numbers.end();
-        for(el_iterator elit = numbers.begin();
-            elit != endel; ++ elit)
-        {
-          check.push_back( *elit );
-        }
       }
     }
 
