@@ -64,6 +64,9 @@ namespace Fem
       return eps;
     }
 
+    //! return epsilon for limiting
+    double epsilon () const { return limitEps_; }
+
   protected:
     void printInfo(const std::string& name ) const
     {
@@ -485,9 +488,9 @@ namespace Fem
 
     // g = grad L ( w_E,i - w_E ) ,  d = u_E,i - u_E
     // default limiter function is minmod
-    DomainFieldType limiterFunction( const DomainFieldType& g, const DomainFieldType& d ) const
+    const LimiterFunctionType& limiterFunction() const
     {
-      return limiterFunction_( g, d );
+      return limiterFunction_;
     }
 
   protected:
@@ -980,7 +983,6 @@ namespace Fem
       localIdSet_( gridPart_.grid().localIdSet()),
       lagrangePointSetContainer_(gridPart_),
       orderPower_( -((spc_.order()+1.0) * 0.25)),
-      limitEps_( LimiterFunctionBase :: getEpsilon() ),
       dofConversion_(dimRange),
       faceQuadOrd_( (fQ < 0) ? (2 * spc_.order() + 1) : fQ ),
       volumeQuadOrd_( (vQ < 0) ? (2 * spc_.order()) : vQ ),
@@ -1544,7 +1546,7 @@ namespace Fem
       DestLocalFunctionType limitEn = dest_->localFunction(en);
 
       // create combination set
-      const ComboSetType& comboSet = setupComboSet( nbVals_.size() , geomType , nonConforming );
+      const ComboSetType& comboSet = setupComboSet( nbVals_.size(), nonConforming );
 
       // initialize combo vecs
       const size_t comboSize = comboSet.size();
@@ -1571,7 +1573,7 @@ namespace Fem
       }
 
       // Limiting
-      limitFunctions(comboVec_,barys_,nbVals_,geomType,deoMods_);
+      limitFunctions(discreteModel_.limiterFunction(), comboVec_, barys_, nbVals_, deoMods_);
 
       // take maximum of limited functions
       getMaxFunction(deoMods_, deoMod_);
@@ -1769,12 +1771,19 @@ namespace Fem
     }
 
     //! limit all functions
-    void limitFunctions(const std::vector< CheckType >& comboVec,
-                        const std::vector< DomainType>& barys,
-                        const std::vector< RangeType >& nbVals,
-                        const GeometryType& geomType,
-                        std::vector< DeoModType >& deoMods) const
+    template <class LimiterFunction, class CheckSet, class Domain, class Range, class DeoMod >
+    void limitFunctions(const LimiterFunction& limiterFunction,
+                        const std::vector< CheckSet >& comboVec,
+                        const std::vector< Domain>& barys,
+                        const std::vector< Range >& nbVals,
+                        std::vector< DeoMod >& deoMods) const
     {
+      typedef typename Domain :: field_type DomainField;
+      typedef typename Range  :: field_type RangeField;
+
+      // get accuracy threshold
+      const double limitEps = limiterFunction.epsilon();
+
       const size_t numFunctions = deoMods.size();
       // for all functions check with all values
       for(size_t j=0; j<numFunctions; ++j)
@@ -1784,21 +1793,20 @@ namespace Fem
         // loop over dimRange
         for(int r=0; r<dimRange; ++r)
         {
-          RangeFieldType minimalFactor = 1;
-          DomainType& D = deoMods[j][r];
+          RangeField minimalFactor = 1;
+          Domain& D = deoMods[j][r];
 
-          typedef typename std::vector<int> :: const_iterator const_iterator ;
-          const const_iterator endit = v.end();
-          for(const_iterator it = v.begin(); it != endit ; ++it )
+          const auto endit = v.end();
+          for(auto it = v.begin(); it != endit ; ++it )
           {
             // get current number of entry
             const size_t k = *it;
 
             // evaluate values for limiter function
-            const DomainFieldType d = nbVals[k][r];
-            const DomainFieldType g = D * barys[k];
+            const DomainField d = nbVals[k][r];
+            const DomainField g = D * barys[k];
 
-            const DomainFieldType length2 =  barys[ k ].two_norm2();
+            const DomainField length2 =  barys[ k ].two_norm2();
 
             // if length is to small then the grid is corrupted
             assert( length2 > 1e-14 );
@@ -1808,12 +1816,13 @@ namespace Fem
             // then neglect this direction since it does not give
             // valuable contribution to the linear function
             // call limiter function
-            DomainFieldType localFactor = discreteModel_.limiterFunction( g, d );
+            // g = grad L ( w_E,i - w_E ) ,  d = u_E,i - u_E
+            DomainField localFactor = limiterFunction( g, d );
 
-            const DomainFieldType factor = (g*g) / length2 ;
-            if( localFactor < 1.0 &&  factor  < limitEps_ )
+            const DomainField factor = (g*g) / length2 ;
+            if( localFactor < 1.0 &&  factor  < limitEps )
             {
-              localFactor = 1.0 - std::tanh( factor / limitEps_ );
+              localFactor = 1.0 - std::tanh( factor / limitEps );
             }
 
             // take minimum
@@ -1841,7 +1850,6 @@ namespace Fem
       }
 
       for(size_t l=1; l<numFunctions; ++l)
-      //for(int l= startFunc-1 ; l>=0; --l)
       {
         for(int r=0; r<dimRange; ++r)
         {
@@ -2187,12 +2195,12 @@ namespace Fem
     };
 
     // setup set storing combinations of linear functions
-    const ComboSetType& setupComboSet(const int neighbors, const GeometryType& geomType, const bool nonConforming ) const
+    const ComboSetType& setupComboSet(const int neighbors, const bool nonConforming ) const
     {
       // check for new build (this set is constant)
       if( conformingComboSet_.size() == 0 )
       {
-        buildComboSet(neighbors, geomType, conformingComboSet_);
+        buildComboSet(neighbors, conformingComboSet_);
       }
 
       // in case of non-conforming grid or grid with more than one
@@ -2200,7 +2208,7 @@ namespace Fem
       if( nonConforming ||
           spc_.multipleGeometryTypes() )
       {
-        buildComboSet(neighbors, geomType, comboSet_);
+        buildComboSet(neighbors, comboSet_);
         return comboSet_;
       }
       else
@@ -2211,7 +2219,6 @@ namespace Fem
 
     // build combo set
     void buildComboSet(const int neighbors,
-                       const GeometryType& geomType,
                        ComboSetType& comboSet) const
     {
       // clear set
@@ -2623,7 +2630,6 @@ namespace Fem
     LagrangePointSetContainerType lagrangePointSetContainer_;
 
     const double orderPower_;
-    const double limitEps_;
     const DofConversionUtilityType dofConversion_;
     mutable int faceQuadOrd_;
     mutable int volumeQuadOrd_;
