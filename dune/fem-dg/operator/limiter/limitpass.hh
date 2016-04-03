@@ -136,6 +136,16 @@ namespace Fem
     typedef std::pair< KeyType, CheckType > VectorCompType;
     typedef std::set< VectorCompType > ComboSetType;
 
+    struct Flags
+    {
+      bool boundary;
+      bool nonconforming;
+      bool cartesian;
+      bool limiter;
+      Flags( bool cart, bool lim )
+        : boundary( false ), nonconforming( false ), cartesian( cart ), limiter( lim ) {}
+    };
+
     //! limit all functions
     template <class LimiterFunction, class CheckSet, class DeoMod >
     static void limitFunctions(const LimiterFunction& limiterFunction,
@@ -326,25 +336,43 @@ namespace Fem
       }
     }
 
-    struct Flags
+    // setup set storing combinations of linear functions
+    static const ComboSetType& setupComboSet(const int neighbors,
+                                             const bool nonconforming,
+                                             const bool multipleGeomTypes,
+                                             ComboSetType& conformingComboSet,
+                                             ComboSetType& comboSet )
     {
-      bool boundary;
-      bool nonconforming;
-      bool cartesian;
-      bool limiter;
-      Flags( bool b, bool nc, bool cart, bool l )
-        : boundary( b ), nonconforming( nc ), cartesian( cart ), limiter( l ) {}
-    };
+      // check for new build (this set is constant)
+      if( conformingComboSet.size() == 0 )
+      {
+        buildComboSet(neighbors, conformingComboSet);
+      }
+
+      // in case of non-conforming grid or grid with more than one
+      // element type this has to be re-build on every element
+      if( nonconforming ||
+          multipleGeomTypes )
+      {
+        buildComboSet(neighbors, comboSet);
+        return comboSet;
+      }
+      else
+      {
+        return conformingComboSet;
+      }
+    }
+
 
     template <class GridPart, class Entity, class EvalAverage>
-    static Flags
+    static void
     setupNeighborValues( const GridPart& gridPart,
                          const Entity& entity,
                          const EvalAverage& average,
                          const DomainType& entityCenter,
                          const RangeType&  entityValue,
                          const bool StructuredGrid,
-                         const bool cartesianGrid,
+                         Flags& flags,
                          std::vector< DomainType >& baryCenters,
                          std::vector< RangeType  >& neighborValues )
     {
@@ -365,15 +393,12 @@ namespace Fem
       barys.clear();
       nbVals.clear();
 
-      // boundary is true if boundary segment was found
-      // nonconforming is true if entity has at least one non-conforming intersections
-      // cartesian is true if the grid is cartesian and no nonconforming refinement present
-      Flags flags( false, false, cartesianGrid, true );
-
       typedef typename GridPart :: IntersectionIteratorType IntersectionIteratorType;
       typedef typename IntersectionIteratorType :: Intersection  IntersectionType;
 
       const auto endit = gridPart.iend( entity );
+
+      const bool cartesianGrid = flags.cartesian;
 
       // loop over all neighbors
       for (auto it = gridPart.ibegin( entity ); it != endit; ++it )
@@ -475,9 +500,6 @@ namespace Fem
         barys.push_back(lambda);
 
       } // end intersection iterator
-
-      // return flags
-      return flags;
     }
 
     struct MatrixIF
@@ -702,29 +724,26 @@ namespace Fem
     template <class MatrixCacheType>
     static void calculateLinearFunctions(const ComboSetType& comboSet,
                                          const GeometryType& geomType,
-                                         const bool hasBoundaryIntersection,
-                                         const bool nonconforming,
-                                         const bool cartesian,
+                                         const Flags& flags,
                                          const std::vector< DomainType >& baryCenters,
                                          const std::vector< RangeType  >& neighborValues,
                                          MatrixCacheType& matrixCache,
                                          std::vector< DeoModType >& deoMods,
                                          std::vector< CheckType >&  comboVec )
     {
+      // initialize combo vecs
+      const size_t comboSize = comboSet.size();
+      deoMods.reserve( comboSize );
+      comboVec.reserve( comboSize );
+
       deoMods.clear();
       comboVec.clear();
 
-      /*
-      const bool hasBoundaryIntersection = flags.boundary;
-      const bool nonconforming = flags.nonconforming;
-      const bool cartesian = flags.cartesian;
-      */
-
       // assert( !StructuredGrid || cartesian );
       // use matrix cache in case of structured grid
-      const bool useCache = cartesian
-                            && ! nonconforming
-                            && ! hasBoundaryIntersection;
+      const bool useCache = flags.cartesian
+                            && ! flags.nonconforming
+                            && ! flags.boundary;
 
       static const int dim = dimGrid;
 
@@ -1847,15 +1866,6 @@ namespace Fem
       // timer for shock detection
       Dune::Timer indiTime;
 
-      // true if entity has boundary intersections
-      bool boundary = false;
-
-      // true if entity has at least one non-conforming intersections
-      bool nonconforming = false ;
-
-      // true if current element is a cartesian element
-      bool cartesian = cartesianGrid_;
-
       // extract types
       enum { dim = EntityType :: dimension };
 
@@ -1937,20 +1947,19 @@ namespace Fem
       stepTime_[0] += indiTime.elapsed();
       indiTime.reset();
 
+      // boundary is true if boundary segment was found
+      // nonconforming is true if entity has at least one non-conforming intersections
+      // cartesian is true if the grid is cartesian and no nonconforming refinement present
+      typename LimiterUtilityType::Flags flags( cartesianGrid_, limiter );
+
       // evaluate function
       if( limiter )
       {
         // helper class for evaluation of average value of discrete function
         EvalAverage average( *this, U, discreteModel_, geo.volume() );
 
-        const auto flags = LimiterUtilityType::
-          setupNeighborValues( gridPart_, en, average, enBary, enVal, StructuredGrid, cartesianGrid_,
-                               barys_, nbVals_ );
-
-        boundary      = flags.boundary;
-        nonconforming = flags.nonconforming;
-        cartesian     = flags.cartesian;
-        limiter       = flags.limiter;
+        LimiterUtilityType::setupNeighborValues( gridPart_, en, average, enBary, enVal, StructuredGrid,
+                                                 flags, barys_, nbVals_ );
       }
 
       // if limit, then limit all components
@@ -1983,16 +1992,10 @@ namespace Fem
       // increase number of limited elements
       ++limitedElements_;
 
-      // get local funnction for limited values
-      DestLocalFunctionType limitEn = dest_->localFunction(en);
-
       // create combination set
-      const ComboSetType& comboSet = setupComboSet( nbVals_.size(), nonconforming );
-
-      // initialize combo vecs
-      const size_t comboSize = comboSet.size();
-      deoMods_.reserve( comboSize );
-      comboVec_.reserve( comboSize );
+      const ComboSetType& comboSet = LimiterUtilityType::
+        setupComboSet( nbVals_.size(), nonconforming, spc_.multipleGeometryTypes(),
+                       conformingComboSet_, comboSet_ );
 
       // reset values
       deoMods_.clear();
@@ -2001,13 +2004,12 @@ namespace Fem
       if( usedAdmissibleFunctions_ >= ReconstructedFunctions )
       {
         // level is only needed for Cartesian grids to access the matrix caches
-        const int matrixCacheLevel = ( cartesian ) ? en.level() : 0 ;
+        const int matrixCacheLevel = ( flags.cartesian ) ? en.level() : 0 ;
         assert( matrixCacheLevel < (int) matrixCacheVec_.size() );
         MatrixCacheType& matrixCache = matrixCacheVec_[ matrixCacheLevel ];
 
         // calculate linear functions
-        LimiterUtilityType::calculateLinearFunctions( comboSet, geomType,
-                                  boundary, nonconforming , cartesian,
+        LimiterUtilityType::calculateLinearFunctions( comboSet, geomType, flags,
                                   barys_, nbVals_,
                                   matrixCache,
                                   deoMods_,
@@ -2026,6 +2028,9 @@ namespace Fem
 
       // take maximum of limited functions
       LimiterUtilityType::getMaxFunction(deoMods_, deoMod_);
+
+      // get local funnction for limited values
+      DestLocalFunctionType limitEn = dest_->localFunction(en);
 
       // project deoMod_ to limitEn
       L2project(en, geo, enBary, enVal, limit, deoMod_, limitEn);
@@ -2382,29 +2387,6 @@ namespace Fem
       }
 
       return notphysical;
-    }
-
-    // setup set storing combinations of linear functions
-    const ComboSetType& setupComboSet(const int neighbors, const bool nonconforming ) const
-    {
-      // check for new build (this set is constant)
-      if( conformingComboSet_.size() == 0 )
-      {
-        LimiterUtilityType::buildComboSet(neighbors, conformingComboSet_);
-      }
-
-      // in case of non-conforming grid or grid with more than one
-      // element type this has to be re-build on every element
-      if( nonconforming ||
-          spc_.multipleGeometryTypes() )
-      {
-        LimiterUtilityType::buildComboSet(neighbors, comboSet_);
-        return comboSet_;
-      }
-      else
-      {
-        return conformingComboSet_;
-      }
     }
 
     template <bool conforming>
