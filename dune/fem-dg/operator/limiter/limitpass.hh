@@ -37,20 +37,109 @@ namespace Dune
 {
 namespace Fem
 {
-  template< int dimGrid >
+
+  // matrix assemblers for the reconstruction matrices
+
+  template<int dimension,int dimensionworld = dimension, class DomainFieldType = double>
+  struct MatrixAssemblerForLinearReconstruction
+  {
+    typedef DGFEntityKey<int> KeyType;
+    typedef FieldMatrix< DomainFieldType, dimensionworld , dimensionworld > MatrixType;
+    typedef FieldVector< DomainFieldType , dimensionworld > DomainType;
+
+    static inline
+    void assembleMatrix(const KeyType& v,
+                        const std::vector< DomainType >& barys,
+                        MatrixType& matrix)
+    {
+      assert(dimension == dimensionworld);
+      const int size = v.size();
+      for(int i=0; i<size; ++i)
+      {
+        matrix[ i ] = barys[ v[ i ] ];
+      }
+    }
+  };
+
+
+  template<class DomainFieldType>
+  struct MatrixAssemblerForLinearReconstruction<1, 2, DomainFieldType>
+  {
+    typedef DGFEntityKey<int> KeyType;
+    typedef FieldMatrix< DomainFieldType, 2 , 2 > MatrixType;
+    typedef FieldVector< DomainFieldType , 2 > DomainType;
+
+    static inline
+    void assembleMatrix(const KeyType& v,
+                        const std::vector< DomainType >& barys,
+                        MatrixType& matrix)
+    {
+      const int size = v.size();
+      assert( size==1 );
+
+      for(int i=0; i<size; ++i)
+      {
+        matrix[ i ] = barys[ v[ i ] ];
+      }
+      //take a vector that is orthogonal to the first one
+      matrix[ 1 ] [ 0 ]  = (-1.) * barys[ v[ 0 ] ] [ 1 ];
+      matrix[ 1 ] [ 1 ]  = barys[ v[ 0 ] ] [ 0 ];
+    }
+  };
+
+  template<class DomainFieldType>
+  struct MatrixAssemblerForLinearReconstruction<2, 3, DomainFieldType>
+  {
+    typedef DGFEntityKey<int> KeyType;
+    typedef FieldMatrix< DomainFieldType, 3 , 3 > MatrixType;
+    typedef FieldVector< DomainFieldType , 3 > DomainType;
+
+    static inline
+    void assembleMatrix(const KeyType& v,
+                        const std::vector< DomainType >& barys,
+                        MatrixType& matrix)
+    {
+      const int size = v.size();
+      assert( size==2 );
+
+      for(int i=0; i<size; ++i)
+      {
+        matrix[ i ] = barys[ v[ i ] ];
+      }
+      //take the cross product of first and second vector as the third vector
+      matrix[ 2 ] [ 0 ]  = barys[ v[ 0 ] ] [ 1 ] *  barys[ v[ 1 ] ] [ 2 ] - barys[ v[ 0 ] ] [ 2 ] *  barys[ v[ 1 ] ] [ 1 ];
+      matrix[ 2 ] [ 1 ]  = barys[ v[ 0 ] ] [ 2 ] *  barys[ v[ 1 ] ] [ 0 ] - barys[ v[ 0 ] ] [ 0 ] *  barys[ v[ 1 ] ] [ 2 ];
+      matrix[ 2 ] [ 2 ]  = barys[ v[ 0 ] ] [ 0 ] *  barys[ v[ 1 ] ] [ 1 ] - barys[ v[ 0 ] ] [ 1 ] *  barys[ v[ 1 ] ] [ 0 ];
+    }
+  };
+
+  template< class DiscreteFunctionSpace >
   struct LimiterUtility
   {
+    typedef DiscreteFunctionSpace DiscreteFunctionSpaceType ;
+    typedef typename DiscreteFunctionSpaceType :: FunctionSpaceType FunctionSpaceType;
+    typedef typename FunctionSpaceType :: DomainType      DomainType;
+    typedef typename FunctionSpaceType :: DomainFieldType DomainFieldType;
+    typedef typename FunctionSpaceType :: RangeType       RangeType;
+    typedef typename FunctionSpaceType :: RangeFieldType  RangeFieldType;
+
+    static const int dimRange  = FunctionSpaceType :: dimRange;
+    static const int dimDomain = FunctionSpaceType :: dimDomain;
+
+    typedef DGFEntityKey<int> KeyType;
+    typedef FieldVector< DomainType , dimRange > DeoModType;
+    typedef FieldMatrix< DomainFieldType, dimDomain , dimDomain > MatrixType;
+
+    static const int dimGrid = DiscreteFunctionSpaceType::GridType::dimension;
+
     //! limit all functions
-    template <class LimiterFunction, class CheckSet, class Domain, class Range, class DeoMod >
+    template <class LimiterFunction, class CheckSet, class DeoMod >
     static void limitFunctions(const LimiterFunction& limiterFunction,
                                const std::vector< CheckSet >& comboVec,
-                               const std::vector< Domain>& barys,
-                               const std::vector< Range >& nbVals,
+                               const std::vector< DomainType >& barys,
+                               const std::vector< RangeType  >& nbVals,
                                std::vector< DeoMod >& deoMods)
     {
-      typedef typename Domain :: field_type DomainField;
-      typedef typename Range  :: field_type RangeField;
-
       // get accuracy threshold
       const double limitEps = limiterFunction.epsilon();
 
@@ -61,10 +150,10 @@ namespace Fem
         const std::vector<int> & v = comboVec[j];
 
         // loop over dimRange
-        for(int r=0; r<Range::dimension; ++r)
+        for(int r=0; r<RangeType::dimension; ++r)
         {
-          RangeField minimalFactor = 1;
-          Domain& D = deoMods[j][r];
+          RangeFieldType minimalFactor = 1;
+          DomainType& D = deoMods[j][r];
 
           const auto endit = v.end();
           for(auto it = v.begin(); it != endit ; ++it )
@@ -73,10 +162,10 @@ namespace Fem
             const size_t k = *it;
 
             // evaluate values for limiter function
-            const DomainField d = nbVals[k][r];
-            const DomainField g = D * barys[k];
+            const DomainFieldType d = nbVals[k][r];
+            const DomainFieldType g = D * barys[k];
 
-            const DomainField length2 =  barys[ k ].two_norm2();
+            const DomainFieldType length2 =  barys[ k ].two_norm2();
 
             // if length is to small then the grid is corrupted
             assert( length2 > 1e-14 );
@@ -87,9 +176,9 @@ namespace Fem
             // valuable contribution to the linear function
             // call limiter function
             // g = grad L ( w_E,i - w_E ) ,  d = u_E,i - u_E
-            DomainField localFactor = limiterFunction( g, d );
+            DomainFieldType localFactor = limiterFunction( g, d );
 
-            const DomainField factor = (g*g) / length2 ;
+            const DomainFieldType factor = (g*g) / length2 ;
             if( localFactor < 1.0 &&  factor  < limitEps )
             {
               localFactor = 1.0 - std::tanh( factor / limitEps );
@@ -110,9 +199,7 @@ namespace Fem
     static void getMaxFunction(const std::vector< DeoModType >& deoMods,
                                DeoModType& deoMod)
     {
-      static const int dimRange = DeoModType::dimension ;
-      typedef typename DeoModType::value_type::field_type RangeFieldType;
-      typedef Dune::FieldVector< RangeFieldType, dimRange> RangeType;
+      static const int dimRange = FunctionSpaceType :: dimRange ;
       RangeType max (0);
       const size_t numFunctions = deoMods.size();
       const int startFunc = 0;
@@ -180,14 +267,13 @@ namespace Fem
     };
 
     // build combo set (CombinationSet is std::set)
-    template <class Key, class Value>
+    template <class Value>
     static void buildComboSet(const int neighbors,
-                              std::set< std::pair< Key, Value > >& comboSet)
+                              std::set< std::pair< KeyType, Value > >& comboSet)
     {
       // clear set
       comboSet.clear();
 
-      typedef Key   KeyType;
       typedef Value CheckType;
 
       typedef std::pair< KeyType, CheckType > VectorCompType;
@@ -246,21 +332,18 @@ namespace Fem
         : boundary( b ), nonconforming( nc ), cartesian( cart ), limiter( l ) {}
     };
 
-    template <class GridPart, class Entity, class EvalAverage,
-              class Domain, class Range>
+    template <class GridPart, class Entity, class EvalAverage>
     static Flags
     setupNeighborValues( const GridPart& gridPart,
                          const Entity& entity,
                          const EvalAverage& average,
-                         const Domain& entityCenter,
-                         const Range&  entityValue,
+                         const DomainType& entityCenter,
+                         const RangeType&  entityValue,
                          const bool StructuredGrid,
                          const bool cartesianGrid,
-                         std::vector< Domain >& baryCenters,
-                         std::vector< Range  >& neighborValues )
+                         std::vector< DomainType >& baryCenters,
+                         std::vector< RangeType  >& neighborValues )
     {
-      typedef Domain DomainType;
-      typedef Range  RangeType;
       typedef Entity EntityType;
       typedef typename EntityType :: Geometry Geometry;
 
@@ -393,6 +476,350 @@ namespace Fem
       return flags;
     }
 
+    struct MatrixIF
+    {
+      virtual bool apply( const KeyType& v,
+                          const std::vector< DomainType >& barys,
+                          const std::vector< RangeType >& nbVals,
+                          DeoModType& dM ) = 0;
+      virtual MatrixIF* clone() const = 0;
+
+      virtual ~MatrixIF () {}
+
+      static const double detEps_;
+    };
+
+    struct RegularMatrix : public MatrixIF
+    {
+      MatrixType inverse_ ;
+      bool inverseCalculated_ ;
+
+      RegularMatrix() : inverseCalculated_( false ) {}
+
+      MatrixIF* clone() const { return new RegularMatrix( *this ); }
+
+      bool inverse(const KeyType& v, const std::vector< DomainType >& barys )
+      {
+        if( ! inverseCalculated_ )
+        {
+          MatrixType matrix;
+          // setup matrix
+          MatrixAssemblerForLinearReconstruction<dimGrid,dimDomain, DomainFieldType>
+            :: assembleMatrix(v, barys, matrix);
+          // invert matrix
+          RangeFieldType det = FMatrixHelp :: invertMatrix( matrix, inverse_ );
+          if( std::abs( det ) > MatrixIF :: detEps_ )
+          {
+            inverseCalculated_ = true ;
+          }
+        }
+        return inverseCalculated_ ;
+      }
+
+      bool apply( const KeyType& v,
+                  const std::vector< DomainType >& barys,
+                  const std::vector< RangeType >& nbVals,
+                  DeoModType& dM )
+      {
+        // if matrix is regular
+        if( inverse( v, barys ) )
+        {
+          DomainType rhs ;
+          const int vSize = v.size();
+          // calculate D
+          for(int r=0; r<dimRange; ++r)
+          {
+            for(int i=0; i<vSize; ++i)
+            {
+              rhs[ i ] = nbVals[ v[ i ] ][ r ];
+            }
+
+            //if we have surface grid, then we need additional row to make the matrix quadratic. Claim that
+            //derivative in normal (to entity) direction is zero
+            // whats with 1,2 ???
+            if( (dimGrid == 2) && (dimDomain == 3) )
+            {
+              rhs[vSize] = 0;
+            }
+
+            // get solution
+            inverse_.mv( rhs, dM[r] );
+          }
+          return true;
+        }
+        return false;
+      }
+    };
+
+    struct LeastSquaresMatrix : public MatrixIF
+    {
+      // dimension
+      enum { dim = dimGrid };
+      // new dimension is dim + 1
+      enum { newDim = dim + 1 };
+
+      // apply least square by adding another point
+      // this should make the linear system solvable
+
+      // need new matrix type containing one row more
+      typedef FieldMatrix<DomainFieldType, newDim , dimDomain> NewMatrixType;
+      typedef FieldVector<DomainFieldType, newDim > NewVectorType;
+
+      MatrixType inverse_ ;
+      // new matrix
+      NewMatrixType A_ ;
+
+      bool inverseCalculated_ ;
+
+      LeastSquaresMatrix() : inverseCalculated_( false ) {}
+
+      MatrixIF* clone() const { return new LeastSquaresMatrix( *this ); }
+
+      bool inverse(const KeyType& nV, const std::vector< DomainType >& barys )
+      {
+        if( ! inverseCalculated_ )
+        {
+          assert( (int) nV.size() == newDim );
+
+          // create matrix
+          for(int k=0; k<newDim; ++k)
+          {
+            A_[k] = barys[ nV[k] ];
+          }
+
+          MatrixType matrix ;
+
+          // matrix = A^T * A
+          multiply_AT_A(A_, matrix);
+
+            // invert matrix
+          RangeFieldType det = FMatrixHelp :: invertMatrix(matrix, inverse_ );
+
+          if( std::abs( det ) > MatrixIF :: detEps_ )
+          {
+            inverseCalculated_ = true ;
+          }
+        }
+        return inverseCalculated_ ;
+      }
+
+      bool apply( const KeyType& nV,
+                  const std::vector< DomainType >& barys,
+                  const std::vector< RangeType >& nbVals,
+                  DeoModType& dM )
+      {
+        if( inverse( nV, barys ) )
+        {
+          // need new right hand side
+          NewVectorType newRhs;
+          DomainType rhs ;
+
+          // calculate D
+          for(int r=0; r<dimRange; ++r)
+          {
+            // get right hand side
+            for(int i=0; i<newDim; ++i)
+            {
+              newRhs[i] = nbVals[ nV[i] ][r];
+            }
+
+            // convert newRhs to matrix
+            A_.mtv(newRhs, rhs);
+
+            // get solution
+            inverse_.mv( rhs, dM[r] );
+          }
+          return true ;
+        }
+        return false ;
+      }
+
+      // matrix = A^T * A
+      template <class NewMatrixType, class MatrixType>
+      void multiply_AT_A(const NewMatrixType& A, MatrixType& matrix) const
+      {
+        assert( (int) MatrixType :: rows == (int) NewMatrixType :: cols );
+
+        for(int row=0; row< MatrixType :: rows; ++row)
+        {
+          for(int col=0; col< MatrixType :: cols; ++col)
+          {
+            matrix[row][col] = 0;
+            for(int k=0; k<NewMatrixType :: rows;  ++k)
+            {
+              matrix[row][col] += A[k][row] * A[k][col];
+            }
+          }
+        }
+      }
+
+    };
+
+    class MatrixStorage
+    {
+    protected:
+      MatrixIF* matrix_;
+    public:
+      MatrixStorage() : matrix_( 0 ) {}
+      explicit MatrixStorage( const MatrixIF& matrix )
+       :  matrix_( matrix.clone() )
+      {}
+
+      MatrixStorage( const MatrixStorage& other ) : matrix_( 0 )
+      {
+        assign( other );
+      }
+
+      MatrixStorage& operator = ( const MatrixStorage& other )
+      {
+        removeObj();
+        assign( other );
+        return *this;
+      }
+
+      ~MatrixStorage() { removeObj(); }
+
+      MatrixIF* matrix() { assert( matrix_ ); return matrix_ ; }
+
+    protected:
+      void removeObj()
+      {
+        delete matrix_; matrix_ = 0;
+      }
+
+      void assign( const MatrixStorage& other )
+      {
+        matrix_ = ( other.matrix_ ) ? (other.matrix_->clone() ) : 0 ;
+      }
+    };
+
+
+    /*
+    // get linear function from reconstruction of the average values
+    void calculateLinearFunctions(const int level,
+                                  const ComboSetType& comboSet,
+                                  const GeometryType& geomType,
+                                  const bool hasBoundaryIntersection,
+                                  const bool nonconforming,
+                                  const bool cartesian ) const
+    {
+      assert( !StructuredGrid || cartesian );
+      // use matrix cache in case of structured grid
+      const bool useCache = cartesian
+                            && ! nonconforming
+                            && ! hasBoundaryIntersection;
+
+      assert( level < (int) matrixCacheVec_.size() );
+      MatrixCacheType& matrixCache = matrixCacheVec_[ level ];
+
+      enum { dim = dimGrid };
+
+      typedef typename ComboSetType :: iterator iterator;
+
+      // calculate linear functions
+      // D(x) = U_i + D_i * (x - w_i)
+      const iterator endit = comboSet.end();
+      for(iterator it = comboSet.begin(); it != endit; ++it)
+      {
+        // get tuple of numbers
+        const KeyType& v = (*it).first;
+
+        RegularMatrix regInverse ;
+
+        MatrixIF* inverse = & regInverse ;
+
+        if( useCache )
+        {
+          typedef typename MatrixCacheType :: iterator iterator ;
+          iterator matrixEntry = matrixCache.find( v );
+          if( matrixEntry != matrixCache.end() )
+          {
+            inverse = matrixEntry->second.matrix();
+          }
+          else
+          {
+            if( regInverse.inverse( v, barys_ ) )
+            {
+              matrixCache[ v ] = MatrixStorage( regInverse );
+            }
+          }
+        }
+
+        // create new instance of limiter coefficients
+        DeoModType& dM = deoMod_;
+
+        // if applied is not true the inverse is singular
+        const bool applied = inverse->apply( v, barys_, nbVals_, dM );
+
+        if( applied )
+        {
+          // store linear function
+          deoMods_.push_back( dM );
+          comboVec_.push_back( (*it).second );
+        }
+        else
+        {
+          // apply least square by adding another point
+          // this should make the linear system solvable
+
+          // creare vector with size = dim+1
+          // the first dim components are equal to v
+          CheckType nV( dim+1 );
+          for(int i=0; i<dim; ++i) nV[i] = v[i];
+
+          // take first point of list of points to check
+          CheckType check ( (*it).second );
+          assert( check.size() > 0 );
+
+          // get check iterator
+          typedef typename CheckType :: iterator CheckIteratorType;
+          const CheckIteratorType checkEnd = check.end();
+
+          // take first entry as start value
+          CheckIteratorType checkIt = check.begin();
+
+          // matrix should be regular now
+          if( checkIt == checkEnd )
+          {
+            // should work for 1 or 2 otherwise error
+            DUNE_THROW(InvalidStateException,"Check vector has no entries!");
+          }
+
+          CheckType checkNums ( check );
+          checkNums.reserve( checkNums.size() + dim );
+          for(int i=0; i<dim; ++i)
+          {
+            checkNums.push_back( v[i] );
+          }
+
+          for( ; checkIt != checkEnd; ++ checkIt )
+          {
+            ////////////////////////////////////////////
+            // apply least squares approach here
+            ////////////////////////////////////////////
+            LeastSquaresMatrix lsInverse ;
+
+            // assign last element
+            nV[dim] = *checkIt ;
+
+            KeyType newV ( nV );
+
+            bool matrixNotSingular = lsInverse.apply( newV, barys_, nbVals_, dM ) ;
+
+            // if matrix was valid add to functions
+            if( matrixNotSingular )
+            {
+              // store linear function
+              deoMods_.push_back( dM );
+
+              // store vector with points to check
+              comboVec_.push_back( checkNums );
+            }
+          }
+        }
+      } // end solving
+    }
+*/
   };
 
   inline std::ostream& operator << (std::ostream& out, const DGFEntityKey<int>& key )
@@ -869,82 +1296,6 @@ namespace Fem
     const DomainFieldType veloEps_;
   };
 
-
-  // matrix assemblers for the reconstruction matrices
-
-  template<int dimension,int dimensionworld = dimension, class DomainFieldType = double>
-  struct MatrixAssemblerForLinearReconstruction
-  {
-    typedef DGFEntityKey<int> KeyType;
-    typedef FieldMatrix< DomainFieldType, dimensionworld , dimensionworld > MatrixType;
-    typedef FieldVector< DomainFieldType , dimensionworld > DomainType;
-
-    static inline
-    void assembleMatrix(const KeyType& v,
-                        const std::vector< DomainType >& barys,
-                        MatrixType& matrix)
-    {
-      assert(dimension == dimensionworld);
-      const int size = v.size();
-      for(int i=0; i<size; ++i)
-      {
-        matrix[ i ] = barys[ v[ i ] ];
-      }
-    }
-  };
-
-
-  template<class DomainFieldType>
-  struct MatrixAssemblerForLinearReconstruction<1, 2, DomainFieldType>
-  {
-    typedef DGFEntityKey<int> KeyType;
-    typedef FieldMatrix< DomainFieldType, 2 , 2 > MatrixType;
-    typedef FieldVector< DomainFieldType , 2 > DomainType;
-
-    static inline
-    void assembleMatrix(const KeyType& v,
-                        const std::vector< DomainType >& barys,
-                        MatrixType& matrix)
-    {
-      const int size = v.size();
-      assert( size==1 );
-
-      for(int i=0; i<size; ++i)
-      {
-        matrix[ i ] = barys[ v[ i ] ];
-      }
-      //take a vector that is orthogonal to the first one
-      matrix[ 1 ] [ 0 ]  = (-1.) * barys[ v[ 0 ] ] [ 1 ];
-      matrix[ 1 ] [ 1 ]  = barys[ v[ 0 ] ] [ 0 ];
-    }
-  };
-
-  template<class DomainFieldType>
-  struct MatrixAssemblerForLinearReconstruction<2, 3, DomainFieldType>
-  {
-    typedef DGFEntityKey<int> KeyType;
-    typedef FieldMatrix< DomainFieldType, 3 , 3 > MatrixType;
-    typedef FieldVector< DomainFieldType , 3 > DomainType;
-
-    static inline
-    void assembleMatrix(const KeyType& v,
-                        const std::vector< DomainType >& barys,
-                        MatrixType& matrix)
-    {
-      const int size = v.size();
-      assert( size==2 );
-
-      for(int i=0; i<size; ++i)
-      {
-        matrix[ i ] = barys[ v[ i ] ];
-      }
-      //take the cross product of first and second vector as the third vector
-      matrix[ 2 ] [ 0 ]  = barys[ v[ 0 ] ] [ 1 ] *  barys[ v[ 1 ] ] [ 2 ] - barys[ v[ 0 ] ] [ 2 ] *  barys[ v[ 1 ] ] [ 1 ];
-      matrix[ 2 ] [ 1 ]  = barys[ v[ 0 ] ] [ 2 ] *  barys[ v[ 1 ] ] [ 0 ] - barys[ v[ 0 ] ] [ 0 ] *  barys[ v[ 1 ] ] [ 2 ];
-      matrix[ 2 ] [ 2 ]  = barys[ v[ 0 ] ] [ 0 ] *  barys[ v[ 1 ] ] [ 1 ] - barys[ v[ 0 ] ] [ 1 ] *  barys[ v[ 1 ] ] [ 0 ];
-    }
-  };
-
   /** \brief Concrete implementation of Pass for Limiting.
    *
    *  \ingroup Pass
@@ -1014,6 +1365,8 @@ namespace Fem
     typedef typename IntersectionIteratorType :: Intersection IntersectionType;
     typedef typename GridPartType::template Codim<0>::GeometryType       Geometry;
     typedef typename Geometry::LocalCoordinate LocalDomainType;
+
+    typedef LimiterUtility< DiscreteFunctionSpaceType > LimiterUtilityType;
 
     // Various other types
     typedef typename DestinationType::LocalFunctionType DestLocalFunctionType;
@@ -1793,7 +2146,7 @@ namespace Fem
       {
         EvalAverage average( *this, U, discreteModel_, geo.volume() );
 
-        const auto flags = LimiterUtility< dimGrid >::
+        const auto flags = LimiterUtilityType::
           setupNeighborValues( gridPart_, en, average, enBary, enVal, StructuredGrid, cartesianGrid_,
                                barys_, nbVals_ );
 
@@ -1864,11 +2217,11 @@ namespace Fem
       }
 
       // Limiting
-      LimiterUtility< dimGrid >::limitFunctions(
+      LimiterUtilityType::limitFunctions(
           discreteModel_.limiterFunction(), comboVec_, barys_, nbVals_, deoMods_);
 
       // take maximum of limited functions
-      LimiterUtility< dimGrid >::getMaxFunction(deoMods_, deoMod_);
+      LimiterUtilityType::getMaxFunction(deoMods_, deoMod_);
 
       // project deoMod_ to limitEn
       L2project(en, geo, enBary, enVal, limit, deoMod_, limitEn);
@@ -2358,7 +2711,7 @@ namespace Fem
       // check for new build (this set is constant)
       if( conformingComboSet_.size() == 0 )
       {
-        LimiterUtility< dimGrid >::buildComboSet(neighbors, conformingComboSet_);
+        LimiterUtilityType::buildComboSet(neighbors, conformingComboSet_);
       }
 
       // in case of non-conforming grid or grid with more than one
@@ -2366,7 +2719,7 @@ namespace Fem
       if( nonconforming ||
           spc_.multipleGeometryTypes() )
       {
-        LimiterUtility< dimGrid >::buildComboSet(neighbors, comboSet_);
+        LimiterUtilityType::buildComboSet(neighbors, comboSet_);
         return comboSet_;
       }
       else
