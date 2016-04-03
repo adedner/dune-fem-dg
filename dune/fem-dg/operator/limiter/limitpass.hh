@@ -1565,15 +1565,6 @@ namespace Fem
     }
 
     //! get tolerance for shock detector
-    double getEpsilon() const
-    {
-      // default value
-      double eps = 1e-8;
-      eps = Parameter::getValue("femdg.limiter.limiteps", eps );
-      return eps;
-    }
-
-    //! get tolerance for shock detector
     AdmissibleFunctions getAdmissibleFunctions() const
     {
       // default value
