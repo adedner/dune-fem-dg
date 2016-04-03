@@ -1949,6 +1949,7 @@ namespace Fem
         // helper class for evaluation of average value of discrete function
         EvalAverage average( *this, U, discreteModel_, geo.volume() );
 
+        // setup neighbors barycenter and mean value for all neighbors
         LimiterUtilityType::setupNeighborValues( gridPart_, en, average, enBary, enVal, StructuredGrid,
                                                  flags, barys_, nbVals_ );
       }
@@ -1999,7 +2000,7 @@ namespace Fem
         assert( matrixCacheLevel < (int) matrixCacheVec_.size() );
         MatrixCacheType& matrixCache = matrixCacheVec_[ matrixCacheLevel ];
 
-        // calculate linear functions
+        // calculate linear functions, stored in deoMods_ and comboVec_
         LimiterUtilityType::calculateLinearFunctions( comboSet, geomType, flags,
                                   barys_, nbVals_,
                                   matrixCache,
