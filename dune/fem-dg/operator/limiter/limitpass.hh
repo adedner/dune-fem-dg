@@ -105,6 +105,43 @@ namespace Fem
       }
     }
 
+    // chose function with maximal gradient
+    template <class DeoModType>
+    static void getMaxFunction(const std::vector< DeoModType >& deoMods,
+                               DeoModType& deoMod)
+    {
+      static const int dimRange = DeoModType::dimension ;
+      typedef typename DeoModType::value_type::field_type RangeFieldType;
+      typedef Dune::FieldVector< RangeFieldType, dimRange> RangeType;
+      RangeType max (0);
+      const size_t numFunctions = deoMods.size();
+      const int startFunc = 0;
+      std::vector< size_t > number(dimRange, startFunc);
+      for(int r=0; r<dimRange; ++r)
+      {
+        max[r] = deoMods[ startFunc ][r].two_norm2();
+      }
+
+      for(size_t l=1; l<numFunctions; ++l)
+      {
+        for(int r=0; r<dimRange; ++r)
+        {
+          RangeFieldType D_abs = deoMods[l][r].two_norm2();
+          if( D_abs > max[r] )
+          {
+            number[r] = l;
+            max[r] = D_abs;
+          }
+        }
+      }
+
+      for(int r=0; r<dimRange; ++r)
+      {
+        deoMod[r] = deoMods[ number[r] ][r];
+      }
+    }
+
+
     // fill combination vector recursive
     template< class SetType, int i >
     struct FillVector
@@ -1784,128 +1821,6 @@ namespace Fem
         nonconforming = flags.nonconforming;
         cartesian     = flags.cartesian;
         limiter       = flags.limiter;
-
-#if 0
-        // get local references
-        std::vector< DomainType >& barys = barys_;
-        std::vector< RangeType >&  nbVals = nbVals_;
-        barys.reserve( dim * dim );
-        nbVals.reserve( dim * dim );
-        // set to size zero since values are determined new
-        barys.resize( 0 );
-        nbVals.resize( 0 );
-
-        // loop over all neighbors
-        for ( ; niter != endnit; ++niter )
-        {
-          const IntersectionType& intersection = *niter;
-          const bool hasBoundary = intersection.boundary();
-          const bool hasNeighbor = intersection.neighbor();
-
-          // check cartesian
-          if( !StructuredGrid && cartesian )
-          {
-            // check whether this element is really cartesian
-            cartesian &= ( ! CheckCartesianType::checkIntersection(intersection) );
-          }
-
-          DomainType lambda( 1 );
-          RangeType nbVal( 0 );
-
-          /////////////////////////////////////
-          //  if we have a neighbor
-          /////////////////////////////////////
-          if ( hasNeighbor )
-          {
-            // check all neighbors
-            const EntityType& nb = intersection.outside();
-
-            // get U on entity
-            const LocalFunctionType uNb = U.localFunction(nb);
-
-            // non-conforming case
-            nonconforming |= (! intersection.conforming() );
-
-            // get geometry of neighbor
-            const Geometry& nbGeo = nb.geometry();
-
-            // this is true in the periodic case
-            if( ! hasBoundary )
-            {
-              lambda = ( nbGeo.type().isNone() ) ? nbGeo.center() : nbGeo.global( geoInfo_.localCenter( nbGeo.type() ) );
-              // calculate difference
-              lambda -= enBary;
-            }
-
-            // evaluate function
-            limiter |= evalAverage(nb, uNb, nbVal );
-
-            // calculate difference
-            nbVal -= enVal;
-
-          } // end neighbor
-
-          ////////////////////////////
-          // --boundary
-          ////////////////////////////
-          // use ghost cell approach for limiting,
-          if( intersection.boundary() )
-          {
-            // we have entity with boundary intersections
-            boundary = true ;
-
-            typedef typename IntersectionType :: Geometry LocalGeometryType;
-            const LocalGeometryType& interGeo = intersection.geometry();
-
-            /////////////////////////////////////////
-            // construct bary center of ghost cell
-            /////////////////////////////////////////
-
-            // get unit normal
-            lambda = intersection.centerUnitOuterNormal();
-
-            // get one point of intersection
-            DomainType point ( interGeo.corner( 0 ) );
-            point -= enBary;
-
-            const double length = (point * lambda);
-            const double factorLength = (cartesianGrid_) ? 2.0 * length : length ;
-            lambda *= factorLength;
-
-            assert( lambda.two_norm () > 0 );
-
-            /////////////////////////////////////////////////
-            /////////////////////////////////////////////////
-            // only when we don't have a neighbor
-            // this can be true in periodic case
-            if( ! hasNeighbor )
-            {
-              // check for boundary Value
-              const FaceLocalDomainType localPoint
-                    ( interGeo.local( lambda + enBary ) );
-
-              if( discreteModel_.hasBoundaryValue( intersection, currentTime_, localPoint ) )
-              {
-                FaceQuadratureType faceQuadInner(gridPart_,intersection, 0, FaceQuadratureType::INSIDE);
-                IntersectionQuadraturePointContext< IntersectionType, EntityType,
-                  FaceQuadratureType, RangeType, RangeType > local( intersection, en, faceQuadInner, enVal, enVal, 0, currentTime_, geo.volume() );
-                discreteModel_.boundaryValue( local,
-                                              enVal, nbVal);
-                // calculate difference
-                nbVal -= enVal;
-              }
-            }
-
-          } //end boundary
-
-          // store difference of mean values
-          nbVals.push_back(nbVal);
-
-          // store difference between bary centers
-          barys.push_back(lambda);
-
-        } // end intersection iterator
-#endif
       }
 
       // if limit, then limit all components
@@ -1973,7 +1888,7 @@ namespace Fem
           discreteModel_.limiterFunction(), comboVec_, barys_, nbVals_, deoMods_);
 
       // take maximum of limited functions
-      getMaxFunction(deoMods_, deoMod_);
+      LimiterUtility< dimGrid >::getMaxFunction(deoMods_, deoMod_);
 
       // project deoMod_ to limitEn
       L2project(en, geo, enBary, enVal, limit, deoMod_, limitEn);
@@ -2165,39 +2080,6 @@ namespace Fem
           }
         }
       } // end solving
-    }
-
-    // chose function with maximal gradient
-    void getMaxFunction(const std::vector< DeoModType >& deoMods,
-                        DeoModType& deoMod) const
-    {
-      RangeType max (0);
-      const size_t numFunctions = deoMods.size();
-      //const int startFunc = numFunctions-1;
-      const int startFunc = 0;
-      std::vector< size_t > number(dimRange, startFunc);
-      for(int r=0; r<dimRange; ++r)
-      {
-        max[r] = deoMods[ startFunc ][r].two_norm2();
-      }
-
-      for(size_t l=1; l<numFunctions; ++l)
-      {
-        for(int r=0; r<dimRange; ++r)
-        {
-          RangeFieldType D_abs = deoMods[l][r].two_norm2();
-          if( D_abs > max[r] )
-          {
-            number[r] = l;
-            max[r] = D_abs;
-          }
-        }
-      }
-
-      for(int r=0; r<dimRange; ++r)
-      {
-        deoMod[r] = deoMods[ number[r] ][r];
-      }
     }
 
     // check physicality on given quadrature
