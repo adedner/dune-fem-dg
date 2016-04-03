@@ -198,6 +198,182 @@ namespace Fem
         }
       }
     }
+
+    struct Flags
+    {
+      bool boundary;
+      bool nonconforming;
+      bool cartesian;
+      bool limiter;
+      Flags( bool b, bool nc, bool cart, bool l )
+        : boundary( b ), nonconforming( nc ), cartesian( cart ), limiter( l ) {}
+    };
+
+    template <class GridPart, class Entity, class EvalAverage,
+              class Domain, class Range>
+    static Flags
+    setupNeighborValues( const GridPart& gridPart,
+                         const Entity& entity,
+                         const EvalAverage& average,
+                         const Domain& entityCenter,
+                         const Range&  entityValue,
+                         const bool StructuredGrid,
+                         const bool cartesianGrid,
+                         std::vector< Domain >& baryCenters,
+                         std::vector< Range  >& neighborValues )
+    {
+      typedef Domain DomainType;
+      typedef Range  RangeType;
+      typedef Entity EntityType;
+      typedef typename EntityType :: Geometry Geometry;
+
+      //! type of cartesian grid checker
+      typedef CheckCartesian< GridPart >  CheckCartesianType;
+
+      // get local references
+      std::vector< DomainType >& barys  = baryCenters;
+      std::vector< RangeType >&  nbVals = neighborValues;
+      barys.reserve( dimGrid * dimGrid );
+      nbVals.reserve( dimGrid * dimGrid );
+      // set to size zero since values are determined new
+      barys.resize( 0 );
+      nbVals.resize( 0 );
+
+      // boundary is true if boundary segment was found
+      // nonconforming is true if entity has at least one non-conforming intersections
+      // cartesian is true if the grid is cartesian and no nonconforming refinement present
+      Flags flags( false, false, cartesianGrid, true );
+
+      typedef typename GridPart :: IntersectionIteratorType IntersectionIteratorType;
+      typedef typename IntersectionIteratorType :: Intersection  IntersectionType;
+
+      const auto endit = gridPart.iend( entity );
+
+      // loop over all neighbors
+      for (auto it = gridPart.ibegin( entity ); it != endit; ++it )
+      {
+        const IntersectionType& intersection = *it;
+
+        const bool hasBoundary = intersection.boundary();
+        const bool hasNeighbor = intersection.neighbor();
+
+        // check cartesian
+        if( !StructuredGrid && flags.cartesian )
+        {
+          // check whether this element is really cartesian
+          flags.cartesian &= ( ! CheckCartesianType::checkIntersection(intersection) );
+        }
+
+        DomainType lambda( 1 );
+        RangeType neighborValue( 0 );
+
+        /////////////////////////////////////
+        //  if we have a neighbor
+        /////////////////////////////////////
+        if ( hasNeighbor )
+        {
+          // check all neighbors
+          const EntityType& neighbor = intersection.outside();
+
+          // nonconforming case
+          flags.nonconforming |= (! intersection.conforming() );
+
+          // get geometry of neighbor
+          const Geometry& nbGeo = neighbor.geometry();
+
+          // this is true in the periodic case
+          if( ! hasBoundary )
+          {
+            lambda = nbGeo.center();
+            //lambda = ( nbGeo.type().isNone() ) ? nbGeo.center() : nbGeo.global( geoInfo_.localCenter( nbGeo.type() ) );
+            // calculate difference
+            lambda -= entityCenter;
+          }
+
+          // evaluate average value on neighbor
+          flags.limiter |= average.evaluate( neighbor, neighborValue );
+
+          // calculate difference
+          neighborValue -= entityValue;
+
+        } // end neighbor
+
+        ////////////////////////////
+        // --boundary
+        ////////////////////////////
+        // use ghost cell approach for limiting,
+        if( intersection.boundary() )
+        {
+          // we have entity with boundary intersections
+          flags.boundary = true ;
+
+          typedef typename IntersectionType :: Geometry LocalGeometryType;
+          const LocalGeometryType& interGeo = intersection.geometry();
+
+          /////////////////////////////////////////
+          // construct bary center of ghost cell
+          /////////////////////////////////////////
+
+          // get unit normal
+          lambda = intersection.centerUnitOuterNormal();
+
+          // get one point of intersection
+          DomainType point ( interGeo.corner( 0 ) );
+          point -= entityCenter;
+
+          const double length = (point * lambda);
+          const double factorLength = (cartesianGrid) ? 2.0 * length : length ;
+          lambda *= factorLength;
+
+          assert( lambda.two_norm () > 0 );
+
+          /////////////////////////////////////////////////
+          /////////////////////////////////////////////////
+          // only when we don't have a neighbor
+          // this can be true in periodic case
+          if( ! hasNeighbor )
+          {
+            // check for boundary Value
+            const DomainType pointOnBoundary( lambda + entityCenter );
+
+            // evaluate data on boundary
+            if( average.boundaryValue( entity, intersection, interGeo, pointOnBoundary, entityValue, neighborValue ) )
+            {
+              neighborValue -= entityValue;
+            }
+
+            //const FaceLocalDomainType localPoint
+            //      ( interGeo.local( lambda + enBary ) );
+
+            // get value of U at boundary
+            /*/
+            if( discreteModel_.hasBoundaryValue( intersection, currentTime_, localPoint ) )
+            {
+              FaceQuadratureType faceQuadInner(gridPart_,intersection, 0, FaceQuadratureType::INSIDE);
+              IntersectionQuadraturePointContext< IntersectionType, EntityType,
+                FaceQuadratureType, RangeType, RangeType > local( intersection, en, faceQuadInner, enVal, enVal, 0, currentTime_, geo.volume() );
+              discreteModel_.boundaryValue( local,
+                                            enVal, nbVal);
+              // calculate difference
+              nbVal -= enVal;
+            }
+            */
+          }
+
+        } //end boundary
+
+        // store difference of mean values
+        nbVals.push_back(neighborValue);
+
+        // store difference between bary centers
+        barys.push_back(lambda);
+
+      } // end intersection iterator
+
+      // return flags
+      return flags;
+    }
+
   };
 
   inline std::ostream& operator << (std::ostream& out, const DGFEntityKey<int>& key )
@@ -222,7 +398,7 @@ namespace Fem
     {
       // default value
       double eps = 1e-8;
-      eps = Parameter::getValue("LimitEps", eps );
+      eps = Parameter::getValue("fem-dg.limiter.epsilon", eps );
       return eps;
     }
 
@@ -768,7 +944,7 @@ namespace Fem
   : public LocalPass<DiscreteModelImp, PreviousPassImp , passId >
   {
     typedef LimitDGPass< DiscreteModelImp, PreviousPassImp, passId > ThisType;
-    typedef LocalPass< DiscreteModelImp, PreviousPassImp, passId > BaseType;
+    typedef LocalPass< DiscreteModelImp, PreviousPassImp, passId >   BaseType;
 
   public:
     //- Typedefs and enums
@@ -1454,6 +1630,52 @@ namespace Fem
       applyLocalImp( entity );
     }
 
+    struct EvalAverage
+    {
+      const ThisType& op_;
+      const GridPartType& gridPart_;
+      const ArgumentFunctionType &U_;
+      const DiscreteModelType& discreteModel_;
+      const double volume_;
+
+      typedef typename IntersectionType::Geometry IntersectionGeometry;
+
+      EvalAverage( const ThisType& op, const ArgumentFunctionType& U, const DiscreteModelType& model, const double volume )
+        : op_( op ), gridPart_( U.space().gridPart() ), U_( U ), discreteModel_( model ), volume_( volume )
+      {}
+
+      // return true is average value is non-physical
+      bool evaluate( const EntityType& entity, RangeType& value ) const
+      {
+        // get U on entity
+        const LocalFunctionType uEn = U_.localFunction(entity);
+        return op_.evalAverage( entity, uEn, value );
+      }
+
+      bool boundaryValue( const EntityType& entity,
+                          const IntersectionType& intersection,
+                          const IntersectionGeometry& interGeo,
+                          const DomainType& globalPoint,
+                          const RangeType& entityValue,
+                          RangeType& neighborValue ) const
+      {
+        const typename IntersectionGeometry::LocalCoordinate localPoint = interGeo.local( globalPoint );
+        const double currentTime = op_.time();
+
+        // check for boundary Value
+        if( discreteModel_.hasBoundaryValue( intersection, currentTime, localPoint ) )
+        {
+          FaceQuadratureType faceQuadInner( gridPart_, intersection, 0, FaceQuadratureType::INSIDE);
+          IntersectionQuadraturePointContext< IntersectionType, EntityType,
+            FaceQuadratureType, RangeType, RangeType > local( intersection, entity, faceQuadInner, entityValue, entityValue,
+                                                              0, currentTime, volume_);
+          discreteModel_.boundaryValue( local, entityValue, neighborValue );
+          return true ;
+        }
+        return false ;
+      }
+    };
+
   protected:
     //! Perform the limitation on all elements.
     void applyLocalImp(const EntityType& en) const
@@ -1465,7 +1687,7 @@ namespace Fem
       bool boundary = false;
 
       // true if entity has at least one non-conforming intersections
-      bool nonConforming = false ;
+      bool nonconforming = false ;
 
       // true if current element is a cartesian element
       bool cartesian = cartesianGrid_;
@@ -1552,6 +1774,18 @@ namespace Fem
       // evaluate function
       if( limiter )
       {
+        EvalAverage average( *this, U, discreteModel_, geo.volume() );
+
+        const auto flags = LimiterUtility< dimGrid >::
+          setupNeighborValues( gridPart_, en, average, entityBary, enVal, StructuredGrid, cartesianGrid_,
+                               barys_, nbVals_ );
+
+        boundary      = flags.boundary;
+        nonconforming = flags.nonconforming;
+        cartesian     = flags.cartesian;
+        limiter       = flags.limiter;
+
+#if 0
         // get local references
         std::vector< DomainType >& barys = barys_;
         std::vector< RangeType >&  nbVals = nbVals_;
@@ -1590,7 +1824,7 @@ namespace Fem
             const LocalFunctionType uNb = U.localFunction(nb);
 
             // non-conforming case
-            nonConforming |= (! intersection.conforming() );
+            nonconforming |= (! intersection.conforming() );
 
             // get geometry of neighbor
             const Geometry& nbGeo = nb.geometry();
@@ -1598,7 +1832,7 @@ namespace Fem
             // this is true in the periodic case
             if( ! hasBoundary )
             {
-              lambda = nbGeo.global( geoInfo_.localCenter( nbGeo.type() ) );
+              lambda = ( nbGeo.type().isNone() ) ? nbGeo.center() : nbGeo.global( geoInfo_.localCenter( nbGeo.type() ) );
               // calculate difference
               lambda -= enBary;
             }
@@ -1626,10 +1860,9 @@ namespace Fem
             /////////////////////////////////////////
             // construct bary center of ghost cell
             /////////////////////////////////////////
-            const FaceLocalDomainType& faceMid = faceGeoInfo_.localCenter( interGeo.type() );
 
             // get unit normal
-            lambda = intersection.unitOuterNormal(faceMid);
+            lambda = intersection.centerUnitOuterNormal();
 
             // get one point of intersection
             DomainType point ( interGeo.corner( 0 ) );
@@ -1672,6 +1905,7 @@ namespace Fem
           barys.push_back(lambda);
 
         } // end intersection iterator
+#endif
       }
 
       // if limit, then limit all components
@@ -1708,7 +1942,7 @@ namespace Fem
       DestLocalFunctionType limitEn = dest_->localFunction(en);
 
       // create combination set
-      const ComboSetType& comboSet = setupComboSet( nbVals_.size(), nonConforming );
+      const ComboSetType& comboSet = setupComboSet( nbVals_.size(), nonconforming );
 
       // initialize combo vecs
       const size_t comboSize = comboSet.size();
@@ -1725,7 +1959,7 @@ namespace Fem
         const int matrixCacheLevel = ( cartesian ) ? en.level() : 0 ;
         // calculate linear functions
         calculateLinearFunctions( matrixCacheLevel, comboSet, geomType,
-                                  boundary, nonConforming , cartesian );
+                                  boundary, nonconforming , cartesian );
       }
 
       // add DG Function
@@ -1813,13 +2047,13 @@ namespace Fem
                                   const ComboSetType& comboSet,
                                   const GeometryType& geomType,
                                   const bool hasBoundaryIntersection,
-                                  const bool nonConforming,
+                                  const bool nonconforming,
                                   const bool cartesian ) const
     {
       assert( !StructuredGrid || cartesian );
       // use matrix cache in case of structured grid
       const bool useCache = cartesian
-                            && ! nonConforming
+                            && ! nonconforming
                             && ! hasBoundaryIntersection;
 
       assert( level < (int) matrixCacheVec_.size() );
@@ -2257,7 +2491,7 @@ namespace Fem
     }
 
     // setup set storing combinations of linear functions
-    const ComboSetType& setupComboSet(const int neighbors, const bool nonConforming ) const
+    const ComboSetType& setupComboSet(const int neighbors, const bool nonconforming ) const
     {
       // check for new build (this set is constant)
       if( conformingComboSet_.size() == 0 )
@@ -2267,7 +2501,7 @@ namespace Fem
 
       // in case of non-conforming grid or grid with more than one
       // element type this has to be re-build on every element
-      if( nonConforming ||
+      if( nonconforming ||
           spc_.multipleGeometryTypes() )
       {
         LimiterUtility< dimGrid >::buildComboSet(neighbors, comboSet_);
