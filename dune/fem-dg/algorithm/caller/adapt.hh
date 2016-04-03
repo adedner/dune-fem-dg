@@ -67,7 +67,7 @@ namespace Fem
   {
     template< class TupleType > struct RPDefaultTupleExtractor;
     template< class ... Args > struct RPDefaultTupleExtractor< std::tuple< Args... > >
-    { typedef Dune::Fem::RestrictProlongDefaultTuple< typename std::remove_pointer< Args >::type::DiscreteFunctionType... > type; };
+    { typedef Dune::Fem::RestrictProlongDefaultTuple< typename Args::element_type::DiscreteFunctionType... > type; };
 
     typedef AlgTupleImp                                                                        AlgTupleType;
 
@@ -80,8 +80,7 @@ namespace Fem
 
     typedef uint64_t                                                                           UInt64Type;
 
-    typedef typename std::remove_pointer< typename std::tuple_element< 0, TupleType >::type >::type::GridType
-                                                                                               GridType;
+    typedef typename std::tuple_element< 0, TupleType >::type::element_type::GridType          GridType;
 
 
     typedef typename RPDefaultTupleExtractor< TupleType >::type                                RestrictionProlongationType;
@@ -140,11 +139,11 @@ namespace Fem
     class LoopCallee
     {
       template<class C, class T, class... Args >
-      static typename enable_if< std::is_void< typename std::remove_pointer<T>::type::AdaptIndicatorType >::value >::type
-      getAdaptIndicator( T, Args&& ... ){}
+      static typename enable_if< std::is_void< typename T::element_type::AdaptIndicatorType >::value >::type
+      getAdaptIndicator( T&, Args&& ... ){}
       template<class C, class T, class... Args >
-      static typename enable_if< !std::is_void< typename std::remove_pointer<T>::type::AdaptIndicatorType >::value >::type
-      getAdaptIndicator( T elem, Args &&... a )
+      static typename enable_if< !std::is_void< typename T::element_type::AdaptIndicatorType >::value >::type
+      getAdaptIndicator( T& elem, Args &&... a )
       {
         if( elem->adaptIndicator() )
           C::apply(elem->adaptIndicator(), std::forward<Args>(a)... );
@@ -438,11 +437,11 @@ namespace Fem
 
 
     template< class T >
-    static typename enable_if< std::is_void< typename std::remove_pointer<T>::type::AdaptIndicatorType >::value, int >::type
-    getSequence( T ){}
+    static typename enable_if< std::is_void< typename T::element_type::AdaptIndicatorType >::value, int >::type
+    getSequence( T& ){}
     template< class T >
-    static typename enable_if< !std::is_void< typename std::remove_pointer<T>::type::AdaptIndicatorType >::value, int >::type
-    getSequence( T elem )
+    static typename enable_if< !std::is_void< typename T::element_type::AdaptIndicatorType >::value, int >::type
+    getSequence( T& elem )
     {
       if( elem->adaptationSolution() )
         return elem->adaptationSolution()->space().sequence();

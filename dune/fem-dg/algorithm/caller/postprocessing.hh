@@ -34,7 +34,7 @@ namespace Fem
 
     static_assert( std::tuple_size< TupleType >::value>=1, "Empty Tuples not allowed..." );
 
-    typedef typename std::remove_pointer< typename std::tuple_element< 0, TupleType >::type >::type::GridType
+    typedef typename std::tuple_element< 0, TupleType >::type::element_type::GridType
                                                                                     GridType;
 
   private:
@@ -59,7 +59,7 @@ namespace Fem
      * \param[in] tuple Tuple of pointer to sub-algorithm.
      */
     PostProcessingCaller( const AlgTupleType& tuple )
-      : tuple_( tuple )
+      : tuple_( TupleReducerType::apply( tuple ) )
     {}
 
     /**

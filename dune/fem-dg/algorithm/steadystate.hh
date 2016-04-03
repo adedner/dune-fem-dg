@@ -30,7 +30,7 @@ namespace Fem
 
 
   //
-  template< int polOrder, class ... ProblemTraits >
+  template< int polOrder, template<class, class... > class CouplingImp, class ... ProblemTraits >
   struct SteadyStateTraits
   {
     // type of Grid
@@ -40,9 +40,10 @@ namespace Fem
     // wrap operator
     typedef GridTimeProvider< GridType >                                   TimeProviderType;
 
-    //typedef ...
-    typedef std::tuple< typename std::add_pointer< typename ProblemTraits::template Algorithm<polOrder> >::type... >
-                                                                           SubAlgorithmTupleType;
+    typedef CouplingImp< GridType, typename ProblemTraits::template Algorithm<polOrder>...  >
+                                                                           CouplingType;
+
+    typedef typename CouplingType::SubAlgorithmTupleType                   SubAlgorithmTupleType;
 
     //typedef typename Std::make_index_sequence_impl< std::tuple_size< SubAlgorithmTupleType >::value >::type
     //                                                                     IndexSequenceType;
@@ -60,12 +61,12 @@ namespace Fem
    *
    * \ingroup Algorithms
    */
-  template< int polOrder, template<class, class > class SteadyStateCreatorType, class... ProblemTraits>
+  template< int polOrder, template<class, class... > class CouplingImp, class... ProblemTraits>
   class SteadyStateAlgorithm
-    : public AlgorithmInterface< SteadyStateTraits< polOrder, ProblemTraits... > >
+    : public AlgorithmInterface< SteadyStateTraits< polOrder, CouplingImp, ProblemTraits... > >
   {
 
-    typedef SteadyStateTraits< polOrder, ProblemTraits... > Traits;
+    typedef SteadyStateTraits< polOrder, CouplingImp, ProblemTraits... > Traits;
     typedef AlgorithmInterface< Traits >                                BaseType;
   public:
     typedef typename BaseType::GridType                                 GridType;
@@ -73,10 +74,11 @@ namespace Fem
     typedef typename BaseType::SolverMonitorCallerType                  SolverMonitorCallerType;
     typedef typename Traits::DataWriterCallerType                       DataWriterCallerType;
     typedef typename Traits::AdaptCallerType                            AdaptCallerType;
+    typedef typename Traits::SubAlgorithmTupleType                      SubAlgorithmTupleType;
+
+    typedef typename Traits::CouplingType                               CouplingType;
 
     typedef uint64_t                                                    UInt64Type ;
-
-    typedef std::tuple< typename std::add_pointer< typename ProblemTraits::template Algorithm<polOrder> >::type... > SubAlgorithmTupleType;
 
   private:
     struct Initialize {
@@ -134,7 +136,7 @@ namespace Fem
 
     SteadyStateAlgorithm ( GridType &grid, const std::string name  = "" )
     : BaseType( grid, name ),
-      tuple_( SteadyStateCreatorType< SubAlgorithmTupleType, GridType >::apply( grid ) ),
+      tuple_( CouplingType::apply( grid ) ),
       solverMonitorCaller_( tuple_ ),
       dataWriterCaller_( tuple_ ),
       adaptCaller_( tuple_ )

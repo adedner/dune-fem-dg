@@ -67,7 +67,7 @@ namespace Fem
       endTime_( ParameterType::template getValue<double>("femdg.stepper.endtime") ),
       epsilon_( ParameterType::getValue<double>("epsilon", 0.0 ) )
     {
-      myName = "DeformationalFlow";
+      myName = "deform";
     }
 
     //! this problem has no source term
@@ -173,6 +173,13 @@ namespace Fem
     void finalizeSimulation( DiscreteFunctionType& variablesToOutput,
                              const int eocloop) const
     {}
+
+    // return prefix for data loops
+    virtual std::string dataPrefix() const
+    {
+      return myName;
+    }
+
 
   private:
     DomainType center_;

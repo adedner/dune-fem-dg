@@ -49,40 +49,32 @@ namespace Fem
 {
   // EvolutionAlgorithmTraits
   // -------------------------
-  template< int polOrder, class ... ProblemTraits >
+  template< int polOrder, template<class, class... > class CouplingImp, class ... ProblemTraits >
   struct CheckPointEvolutionAlgorithmTraits
   {
     // type of Grid
     typedef typename std::tuple_element<0, std::tuple< ProblemTraits... > >::type::GridType  GridType;
 
     // wrap operator
-    typedef Dune::Fem::GridTimeProvider< GridType >                                   TimeProviderType;
+    typedef Dune::Fem::GridTimeProvider< GridType >                                          TimeProviderType;
 
-    typedef std::tuple< typename std::add_pointer< typename ProblemTraits::template Algorithm<polOrder> >::type... > SubAlgorithmTupleType;
+    typedef CouplingImp< GridType, typename ProblemTraits::template Algorithm<polOrder>... > CouplingType;
 
-    typedef typename Dune::Std::make_index_sequence_impl< std::tuple_size< SubAlgorithmTupleType >::value >::type  IndexSequenceType;
-    typedef Dune::Std::index_sequence<>                                                                       NoIndexSequenceType;
+    typedef typename CouplingType::SubAlgorithmTupleType                                     SubAlgorithmTupleType;
 
-    typedef Dune::Fem::AdaptCaller< SubAlgorithmTupleType, NoIndexSequenceType >           AdaptCallerType;
-    typedef Dune::Fem::DiagnosticsCaller < SubAlgorithmTupleType, NoIndexSequenceType >    DiagnosticsCallerType;
-    typedef Dune::Fem::SolverMonitorCaller < SubAlgorithmTupleType, NoIndexSequenceType >  SolverMonitorCallerType;
-    typedef Dune::Fem::CheckedCheckPointCaller < SubAlgorithmTupleType >                   CheckPointCallerType;
-    typedef Dune::Fem::DataWriterCaller < SubAlgorithmTupleType >                          DataWriterCallerType;
-    typedef Dune::Fem::PostProcessingCaller < SubAlgorithmTupleType, NoIndexSequenceType > PostProcessingCallerType;
+    typedef typename Dune::Std::make_index_sequence_impl< std::tuple_size< SubAlgorithmTupleType >::value >::type
+                                                                                             IndexSequenceType;
+    typedef Dune::Std::index_sequence<>                                                      NoIndexSequenceType;
 
-    typedef typename DataWriterCallerType::IOTupleType                                                                IOTupleType;
+    typedef Dune::Fem::AdaptCaller< SubAlgorithmTupleType, NoIndexSequenceType >             AdaptCallerType;
+    typedef Dune::Fem::DiagnosticsCaller < SubAlgorithmTupleType, NoIndexSequenceType >      DiagnosticsCallerType;
+    typedef Dune::Fem::SolverMonitorCaller < SubAlgorithmTupleType, NoIndexSequenceType >    SolverMonitorCallerType;
+    typedef Dune::Fem::CheckedCheckPointCaller < SubAlgorithmTupleType >                     CheckPointCallerType;
+    typedef Dune::Fem::DataWriterCaller < SubAlgorithmTupleType >                            DataWriterCallerType;
+    typedef Dune::Fem::PostProcessingCaller < SubAlgorithmTupleType, NoIndexSequenceType >   PostProcessingCallerType;
 
-    template< std::size_t ...i >
-    static SubAlgorithmTupleType createSubAlgorithm ( Dune::Std::index_sequence< i... >, GridType &grid, const std::string name = "" )
-    {
-      return std::make_tuple( new typename std::remove_pointer< typename std::tuple_element< i, SubAlgorithmTupleType >::type >::type( grid, name ) ... );
-    }
+    typedef typename DataWriterCallerType::IOTupleType                                       IOTupleType;
 
-    // create Tuple of contained sub algorithms
-    static SubAlgorithmTupleType createSubAlgorithm( GridType &grid, const std::string name = "" )
-    {
-      return createSubAlgorithm( Dune::Std::index_sequence_for< ProblemTraits ... >(), grid, name );
-    }
   };
 
 
@@ -149,7 +141,7 @@ namespace Fem
     };
 
     template <int polOrd>
-    using Algorithm = Dune::Fem::EvolutionAlgorithmBase< CheckPointEvolutionAlgorithmTraits< polOrd, SubCheckPointingAlgorithmCreator >, UncoupledSubAlgorithms  >;
+    using Algorithm = Dune::Fem::EvolutionAlgorithmBase< CheckPointEvolutionAlgorithmTraits< polOrd, UncoupledSubAlgorithms, SubCheckPointingAlgorithmCreator >, UncoupledSubAlgorithms  >;
 
     typedef GridImp                                         GridType;
 

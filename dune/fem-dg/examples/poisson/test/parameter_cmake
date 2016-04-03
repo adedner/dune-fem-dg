@@ -5,15 +5,12 @@ fem.io.datafileprefix: solution
 # if you want to add time stemp to eoc file name
 # # to avoid overwriting the eoc files
 fem.io.eocFileTimeStamp: 0
-fem.eoc.steps: 5
-
-# polynomial order = 0,1,2,3,4
-femdg.polynomialOrder: 2
+fem.eoc.steps: 4
 
 # PROBLEM
 # ----------
-# problem number 
-problem: 8 # 5 6 13 16
+# problem number (see ../problems/poissonproblem for a list of valid numbers)
+problem: 1
 globalshift: 0
 factor: 1
 epsilon: 0.1
@@ -44,7 +41,7 @@ dgdiffusionflux.liftfactor: 0
 
 # ADAPTATION
 # ----------
-fem.adaptation.method: generic 
+fem.adaptation.method: none
 
 
 # DATAWRITER

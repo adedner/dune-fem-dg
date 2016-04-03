@@ -11,7 +11,7 @@ namespace Fem
 
   // ----------------------
 
-  template< int polOrder, template<class, class > class EvolutionCreatorType, class ... ProblemTraits >
+  template< int polOrder, template<class, class... > class EvolutionCreatorType, class ... ProblemTraits >
   class IncompNavierStokesAlgorithm
     : public EvolutionAlgorithm< polOrder, EvolutionCreatorType, ProblemTraits... >
   {

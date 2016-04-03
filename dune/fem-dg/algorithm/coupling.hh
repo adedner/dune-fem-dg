@@ -3,6 +3,7 @@
 
 #include <tuple>
 #include <type_traits>
+#include <memory>
 #include <dune/common/std/utility.hh>
 
 
@@ -11,31 +12,68 @@ namespace Dune
 namespace Fem
 {
 
-
   /**
    *  \brief Creates a tuple of uncoupled sub algorithms
    *
    *  \note This is the default implementation which should be used
    *  for uncoupled algorithms.
    *
-   *  \tparam SubAlgorithmTupleImp
    *  \tparam GridImp
+   *  \tparam SubAlgorithmImp
    */
-  template< class SubAlgorithmTupleImp, class GridImp >
+  template< class GridImp, class... SubAlgorithmsImp >
   class UncoupledSubAlgorithms
   {
-    typedef SubAlgorithmTupleImp  SubAlgorithmTupleType;
     typedef GridImp               GridType;
 
-    template< int i >
-    using Element = typename std::remove_pointer< typename std::tuple_element< i, SubAlgorithmTupleType >::type >::type;
+    template <class Object>
+    class AlgDeleter
+    {
+    public:
+      typedef Object ObjectType;
 
+      //! \brief empty constructor.
+      AlgDeleter() : obj_( nullptr )
+      {}
+
+      //! \brief Constructor taking the object that needs to deleted.
+      explicit AlgDeleter( Object* obj )
+        : obj_( obj )
+      {}
+
+      //! \brief Delete an object and the additional one.
+      template<class Ptr>
+      void operator()(Ptr* ptr)
+      {
+          delete ptr;
+          delete obj_;
+      }
+    protected:
+      Object* obj_;
+    };
+  public:
+    typedef std::tuple< std::shared_ptr< SubAlgorithmsImp > ... >    SubAlgorithmTupleType;
+
+    template< int i >
+    using ElementPtr = typename std::tuple_element< i, SubAlgorithmTupleType >::type;
+
+    template< int i >
+    using Element = typename ElementPtr<i>::element_type;
+
+    template< int i >
+    using Deleter = AlgDeleter< typename Element<i>::ContainerType >;
+
+    template< int i >
+    using Container = typename Deleter<i>::ObjectType;
+
+  private:
 
     template< std::size_t i >
-    static Element<i>* createSubAlgorithm( GridType& grid )
+    static ElementPtr<i> createSubAlgorithm( GridType& grid )
     {
-      static typename Element<i>::ContainerType container( grid );
-      return new Element<i>( grid, container );
+      Container<i>* container = new Container<i>( grid );
+      ElementPtr<i> ptr( new Element<i>( grid, *container ), Deleter<i>( container ) );
+      return ptr;
     }
 
     template< std::size_t ...i >
