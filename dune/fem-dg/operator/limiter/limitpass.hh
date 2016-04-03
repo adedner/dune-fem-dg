@@ -322,7 +322,6 @@ namespace Fem
           {
             // get barycenter of neighbor
             lambda = neighbor.geometry().center();
-            //lambda = ( nbGeo.type().isNone() ) ? nbGeo.center() : nbGeo.global( geoInfo_.localCenter( nbGeo.type() ) );
             // calculate difference
             lambda -= entityCenter;
           }
@@ -416,10 +415,8 @@ namespace Fem
     //! get tolerance for shock detector
     static double getEpsilon()
     {
-      // default value
-      double eps = 1e-8;
-      eps = Parameter::getValue("femdg.limiter.limiteps", eps );
-      return eps;
+      // default value is 1e-8
+      return Parameter::getValue("femdg.limiter.limiteps", double(1e-8) );
     }
 
     //! return epsilon for limiting
