@@ -435,7 +435,7 @@ namespace Fem
     {
       // default value
       double eps = 1e-8;
-      eps = Parameter::getValue("fem-dg.limiter.epsilon", eps );
+      eps = Parameter::getValue("femdg.limiter.limiteps", eps );
       return eps;
     }
 
