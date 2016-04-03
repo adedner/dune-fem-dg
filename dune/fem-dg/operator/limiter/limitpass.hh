@@ -270,11 +270,13 @@ namespace Fem
       // get local references
       std::vector< DomainType >& barys  = baryCenters;
       std::vector< RangeType >&  nbVals = neighborValues;
+
       barys.reserve( dimGrid * dimGrid );
       nbVals.reserve( dimGrid * dimGrid );
-      // set to size zero since values are determined new
-      barys.resize( 0 );
-      nbVals.resize( 0 );
+
+      // clear old values
+      barys.clear();
+      nbVals.clear();
 
       // boundary is true if boundary segment was found
       // nonconforming is true if entity has at least one non-conforming intersections
@@ -315,13 +317,11 @@ namespace Fem
           // nonconforming case
           flags.nonconforming |= (! intersection.conforming() );
 
-          // get geometry of neighbor
-          const Geometry& nbGeo = neighbor.geometry();
-
           // this is true in the periodic case
           if( ! hasBoundary )
           {
-            lambda = nbGeo.center();
+            // get barycenter of neighbor
+            lambda = neighbor.geometry().center();
             //lambda = ( nbGeo.type().isNone() ) ? nbGeo.center() : nbGeo.global( geoInfo_.localCenter( nbGeo.type() ) );
             // calculate difference
             lambda -= entityCenter;
@@ -371,30 +371,13 @@ namespace Fem
           if( ! hasNeighbor )
           {
             // check for boundary Value
-            const DomainType pointOnBoundary( lambda + entityCenter );
+            const DomainType pointOnBoundary = lambda + entityCenter;
 
             // evaluate data on boundary
             if( average.boundaryValue( entity, intersection, interGeo, pointOnBoundary, entityValue, neighborValue ) )
             {
               neighborValue -= entityValue;
             }
-
-            //const FaceLocalDomainType localPoint
-            //      ( interGeo.local( lambda + enBary ) );
-
-            // get value of U at boundary
-            /*/
-            if( discreteModel_.hasBoundaryValue( intersection, currentTime_, localPoint ) )
-            {
-              FaceQuadratureType faceQuadInner(gridPart_,intersection, 0, FaceQuadratureType::INSIDE);
-              IntersectionQuadraturePointContext< IntersectionType, EntityType,
-                FaceQuadratureType, RangeType, RangeType > local( intersection, en, faceQuadInner, enVal, enVal, 0, currentTime_, geo.volume() );
-              discreteModel_.boundaryValue( local,
-                                            enVal, nbVal);
-              // calculate difference
-              nbVal -= enVal;
-            }
-            */
           }
 
         } //end boundary
@@ -1788,12 +1771,12 @@ namespace Fem
       }
 
       // get barycenter of entity
-      const DomainType& entityBary = (int(dimGrid) == int(dimDomain)) ?
+      const DomainType& enBaryLocal = (int(dimGrid) == int(dimDomain)) ?
         geoInfo_.localCenter( geomType ) :
         geo.local( enBary ) ;
 
       // check average value
-      if( discreteModel_.hasPhysical() && !discreteModel_.physical( en, entityBary, enVal ) )
+      if( discreteModel_.hasPhysical() && !discreteModel_.physical( en, enBaryLocal, enVal ) )
       {
         std::cerr << "Average Value "
                   << enVal
@@ -1814,7 +1797,7 @@ namespace Fem
         EvalAverage average( *this, U, discreteModel_, geo.volume() );
 
         const auto flags = LimiterUtility< dimGrid >::
-          setupNeighborValues( gridPart_, en, average, entityBary, enVal, StructuredGrid, cartesianGrid_,
+          setupNeighborValues( gridPart_, en, average, enBary, enVal, StructuredGrid, cartesianGrid_,
                                barys_, nbVals_ );
 
         boundary      = flags.boundary;
