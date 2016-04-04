@@ -77,12 +77,12 @@ namespace Fem
                                const std::vector< CheckSet >& comboVec,
                                const std::vector< DomainType >& barys,
                                const std::vector< RangeType  >& nbVals,
-                               std::vector< GradientType >& deoMods)
+                               std::vector< GradientType >& gradients)
     {
       // get accuracy threshold
       const double limitEps = limiterFunction.epsilon();
 
-      const size_t numFunctions = deoMods.size();
+      const size_t numFunctions = gradients.size();
       // for all functions check with all values
       for(size_t j=0; j<numFunctions; ++j)
       {
@@ -92,7 +92,7 @@ namespace Fem
         for(int r=0; r<RangeType::dimension; ++r)
         {
           RangeFieldType minimalFactor = 1;
-          DomainType& D = deoMods[j][r];
+          DomainType& D = gradients[j][r];
 
           const auto endit = v.end();
           for(auto it = v.begin(); it != endit ; ++it )
@@ -134,24 +134,27 @@ namespace Fem
     }
 
     // chose function with maximal gradient
-    static void getMaxFunction(const std::vector< GradientType >& deoMods,
-                               GradientType& deoMod)
+    static void getMaxFunction(const std::vector< GradientType >& gradients,
+                               GradientType& maxGradient)
     {
       static const int dimRange = FunctionSpaceType :: dimRange ;
-      RangeType max (0);
-      const size_t numFunctions = deoMods.size();
+
+      const size_t numFunctions = gradients.size();
+
       const int startFunc = 0;
       std::vector< size_t > number(dimRange, startFunc);
+
+      RangeType max (0);
       for(int r=0; r<dimRange; ++r)
       {
-        max[r] = deoMods[ startFunc ][r].two_norm2();
+        max[r] = gradients[ startFunc ][ r ].two_norm2();
       }
 
       for(size_t l=1; l<numFunctions; ++l)
       {
         for(int r=0; r<dimRange; ++r)
         {
-          RangeFieldType D_abs = deoMods[l][r].two_norm2();
+          RangeFieldType D_abs = gradients[ l ][ r ].two_norm2();
           if( D_abs > max[r] )
           {
             number[r] = l;
@@ -162,7 +165,7 @@ namespace Fem
 
       for(int r=0; r<dimRange; ++r)
       {
-        deoMod[r] = deoMods[ number[r] ][r];
+        maxGradient[r] = gradients[ number[r] ][r];
       }
     }
 
