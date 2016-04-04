@@ -64,11 +64,11 @@ namespace Fem
     struct Flags
     {
       bool boundary;
-      bool nonconforming;
+      bool nonConforming;
       bool cartesian;
       bool limiter;
       Flags( bool cart, bool lim )
-        : boundary( false ), nonconforming( false ), cartesian( cart ), limiter( lim ) {}
+        : boundary( false ), nonConforming( false ), cartesian( cart ), limiter( lim ) {}
     };
 
     //! limit all functions
@@ -259,7 +259,7 @@ namespace Fem
 
     // setup set storing combinations of linear functions
     static const ComboSetType& setupComboSet(const int neighbors,
-                                             const bool nonconforming,
+                                             const bool nonConforming,
                                              const bool multipleGeomTypes,
                                              ComboSetType& conformingComboSet,
                                              ComboSetType& comboSet )
@@ -272,7 +272,7 @@ namespace Fem
 
       // in case of non-conforming grid or grid with more than one
       // element type this has to be re-build on every element
-      if( nonconforming || multipleGeomTypes )
+      if( nonConforming || multipleGeomTypes )
       {
         buildComboSet(neighbors, comboSet);
         return comboSet;
@@ -345,8 +345,8 @@ namespace Fem
           // check all neighbors
           const EntityType& neighbor = intersection.outside();
 
-          // nonconforming case
-          flags.nonconforming |= (! intersection.conforming() );
+          // nonConforming case
+          flags.nonConforming |= (! intersection.conforming() );
 
           // this is true in the periodic case
           if( ! hasBoundary )
@@ -735,7 +735,7 @@ namespace Fem
       // assert( !StructuredGrid || cartesian );
       // use matrix cache in case of structured grid
       const bool useCache = flags.cartesian
-                            && ! flags.nonconforming
+                            && ! flags.nonConforming
                             && ! flags.boundary;
 
       static const int dim = dimGrid;
