@@ -1051,7 +1051,7 @@ namespace Fem
 
       // create combination set
       const ComboSetType& comboSet = LimiterUtilityType::
-        setupComboSet( nbVals_.size(), nonconforming, spc_.multipleGeometryTypes(),
+        setupComboSet( nbVals_.size(), flags.nonconforming, spc_.multipleGeometryTypes(),
                        conformingComboSet_, comboSet_ );
 
       // reset values

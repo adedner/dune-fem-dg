@@ -92,7 +92,7 @@ namespace Fem
         for(int r=0; r<RangeType::dimension; ++r)
         {
           RangeFieldType minimalFactor = 1;
-          DomainType& D = gradients[j][r];
+          DomainType& D = gradients[ j ][ r ];
 
           const auto endit = v.end();
           for(auto it = v.begin(); it != endit ; ++it )
@@ -101,8 +101,8 @@ namespace Fem
             const size_t k = *it;
 
             // evaluate values for limiter function
-            const DomainFieldType d = nbVals[k][r];
-            const DomainFieldType g = D * barys[k];
+            const DomainFieldType d = nbVals[ k ][ r ];
+            const DomainFieldType g = D * barys[ k ];
 
             const DomainFieldType length2 =  barys[ k ].two_norm2();
 
@@ -272,8 +272,7 @@ namespace Fem
 
       // in case of non-conforming grid or grid with more than one
       // element type this has to be re-build on every element
-      if( nonconforming ||
-          multipleGeomTypes )
+      if( nonconforming || multipleGeomTypes )
       {
         buildComboSet(neighbors, comboSet);
         return comboSet;
