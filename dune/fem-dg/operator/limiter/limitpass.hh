@@ -485,8 +485,8 @@ namespace Fem
     static const bool StructuredGrid     = GridPartCapabilities::isCartesian< GridPartType >::v;
     static const bool conformingGridPart = GridPartCapabilities::isConforming< GridPartType >::v;
 
-    typedef typename LimiterUtilityType::DeoModType  DeoModType;
-    typedef typename LimiterUtilityType::MatrixType  MatrixType;
+    typedef typename LimiterUtilityType::GradientType  GradientType;
+    typedef typename LimiterUtilityType::MatrixType    MatrixType;
 
     typedef typename GridPartType :: IndexSetType IndexSetType;
     typedef AllGeomTypes< IndexSetType, GridType> GeometryInformationType;
@@ -1107,7 +1107,7 @@ namespace Fem
                        const RangeType& enVal,
                        const DomainType& enBary) const
     {
-      DeoModType D;
+      GradientType D;
       FieldMatrix<double,dimDomain,dimDomain> A;
       RangeType b[dimDomain];
       TemporaryLocalFunction< DiscreteFunctionSpaceType > uTmp(spc_,en);
@@ -1285,7 +1285,7 @@ namespace Fem
        const DomainType& enBary,
        const RangeType& enVal,
        const FieldVector<bool,dimRange>& limit,
-       const DeoModType& deoMod,
+       const GradientType& deoMod,
        LocalFunctionImp& limitEn,
        const bool constantValue = false ) const
     {
@@ -1825,11 +1825,11 @@ namespace Fem
     const GeometryInformationType geoInfo_;
     const FaceGeometryInformationType faceGeoInfo_;
 
-    mutable DeoModType deoMod_;
-    mutable RangeType  phi0_ ;
+    mutable GradientType deoMod_;
+    mutable RangeType    phi0_ ;
 
-    mutable std::vector< DeoModType > deoMods_;
-    mutable std::vector< CheckType >  comboVec_;
+    mutable std::vector< GradientType > deoMods_;
+    mutable std::vector< CheckType >    comboVec_;
 
     mutable std::vector< RangeType >  aver_ ;
     mutable std::vector< DomainType > barys_;

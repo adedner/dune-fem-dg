@@ -51,7 +51,7 @@ namespace Fem
     static const int dimRange  = FunctionSpaceType :: dimRange;
     static const int dimDomain = FunctionSpaceType :: dimDomain;
 
-    typedef FieldVector< DomainType , dimRange > DeoModType;
+    typedef FieldVector< DomainType , dimRange > GradientType;
     typedef FieldMatrix< DomainFieldType, dimDomain , dimDomain > MatrixType;
 
     static const int dimGrid = DiscreteFunctionSpaceType::GridType::dimension;
@@ -72,12 +72,12 @@ namespace Fem
     };
 
     //! limit all functions
-    template <class LimiterFunction, class CheckSet, class DeoMod >
+    template <class LimiterFunction, class CheckSet >
     static void limitFunctions(const LimiterFunction& limiterFunction,
                                const std::vector< CheckSet >& comboVec,
                                const std::vector< DomainType >& barys,
                                const std::vector< RangeType  >& nbVals,
-                               std::vector< DeoMod >& deoMods)
+                               std::vector< GradientType >& deoMods)
     {
       // get accuracy threshold
       const double limitEps = limiterFunction.epsilon();
@@ -134,9 +134,8 @@ namespace Fem
     }
 
     // chose function with maximal gradient
-    template <class DeoModType>
-    static void getMaxFunction(const std::vector< DeoModType >& deoMods,
-                               DeoModType& deoMod)
+    static void getMaxFunction(const std::vector< GradientType >& deoMods,
+                               GradientType& deoMod)
     {
       static const int dimRange = FunctionSpaceType :: dimRange ;
       RangeType max (0);
@@ -205,22 +204,16 @@ namespace Fem
       }
     };
 
-    // build combo set (CombinationSet is std::set)
-    template <class Value>
+    // build combo set
     static void buildComboSet(const int neighbors,
-                              std::set< std::pair< KeyType, Value > >& comboSet)
+                              ComboSetType& comboSet)
     {
       // clear set
       comboSet.clear();
 
-      typedef Value CheckType;
-
-      typedef std::pair< KeyType, CheckType > VectorCompType;
-      typedef std::set< VectorCompType > CombinationSetType;
-
       // maximal number of neighbors
       std::vector<int> v(dimGrid,0);
-      FillVector< CombinationSetType, dimGrid >::fill( neighbors, 0, comboSet, v );
+      FillVector< ComboSetType, dimGrid >::fill( neighbors, 0, comboSet, v );
 
       // create set containing all numbers
       std::set<int> constNumbers;
@@ -231,7 +224,7 @@ namespace Fem
       }
 
       const int checkSize = neighbors - dimGrid ;
-      typedef typename CombinationSetType :: iterator iterator;
+      typedef typename ComboSetType :: iterator iterator;
       const iterator endit = comboSet.end();
       for(iterator it = comboSet.begin(); it != endit; ++it)
       {
@@ -505,7 +498,7 @@ namespace Fem
       virtual bool apply( const KeyType& v,
                           const std::vector< DomainType >& barys,
                           const std::vector< RangeType >& nbVals,
-                          DeoModType& dM ) = 0;
+                          GradientType& dM ) = 0;
       virtual MatrixIF* clone() const = 0;
 
       virtual ~MatrixIF () {}
@@ -543,7 +536,7 @@ namespace Fem
       bool apply( const KeyType& v,
                   const std::vector< DomainType >& barys,
                   const std::vector< RangeType >& nbVals,
-                  DeoModType& dM )
+                  GradientType& dM )
       {
         // if matrix is regular
         if( inverse( v, barys ) )
@@ -630,7 +623,7 @@ namespace Fem
       bool apply( const KeyType& nV,
                   const std::vector< DomainType >& barys,
                   const std::vector< RangeType >& nbVals,
-                  DeoModType& dM )
+                  GradientType& dM )
       {
         if( inverse( nV, barys ) )
         {
@@ -726,7 +719,7 @@ namespace Fem
                                          const std::vector< DomainType >& baryCenters,
                                          const std::vector< RangeType  >& neighborValues,
                                          MatrixCacheType& matrixCache,
-                                         std::vector< DeoModType >& deoMods,
+                                         std::vector< GradientType >& deoMods,
                                          std::vector< CheckType >&  comboVec )
     {
       // initialize combo vecs
@@ -777,7 +770,7 @@ namespace Fem
         }
 
         // create new instance of limiter coefficients
-        DeoModType dM;
+        GradientType dM;
 
         // if applied is not true the inverse is singular
         const bool applied = inverse->apply( v, baryCenters, neighborValues, dM );
