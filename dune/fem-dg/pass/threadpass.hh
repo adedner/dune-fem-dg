@@ -74,16 +74,16 @@ namespace Fem
     typedef typename DestinationType :: DiscreteFunctionSpaceType :: CommunicationManagerType
           :: NonBlockingCommunicationType  NonBlockingCommunicationType;
 
-    mutable NonBlockingCommunicationType* nonBlockingComm_;
+    mutable std::unique_ptr< NonBlockingCommunicationType > nonBlockingComm_;
     const bool useNonBlockingComm_ ;
   public:
     NonBlockingCommHandle()
-      : nonBlockingComm_( 0 ),
+      : nonBlockingComm_(),
         useNonBlockingComm_( NonBlockingCommParameter :: nonBlockingCommunication() )
       {}
 
     NonBlockingCommHandle( const NonBlockingCommHandle& other )
-      : nonBlockingComm_( 0 ),
+      : nonBlockingComm_(),
         useNonBlockingComm_( other.useNonBlockingComm_ )
     {}
 
@@ -92,16 +92,16 @@ namespace Fem
     ~NonBlockingCommHandle()
     {
       // make sure all communications have been finished
-      assert( nonBlockingComm_ == 0 );
+      assert( ! nonBlockingComm_ );
     }
 
     // send data
     void initComm( const DestinationType& dest ) const
     {
-      if( nonBlockingCommunication() && nonBlockingComm_ == 0 )
+      if( nonBlockingCommunication() && ! nonBlockingComm_ )
       {
-        nonBlockingComm_ = new NonBlockingCommunicationType(
-            dest.space().communicator().nonBlockingCommunication() );
+        nonBlockingComm_.reset( new NonBlockingCommunicationType(
+            dest.space().communicator().nonBlockingCommunication() ) );
 
         // perform send operation
         nonBlockingComm_->send( dest );
@@ -115,8 +115,7 @@ namespace Fem
       {
         DestinationType& dest = const_cast< DestinationType& > ( destination );
         nonBlockingComm_->receive( dest );
-        delete nonBlockingComm_;
-        nonBlockingComm_ = 0;
+        nonBlockingComm_.reset();
       }
     }
 
@@ -127,7 +126,7 @@ namespace Fem
       if( nonBlockingCommunication() )
       {
         // make sure communication has been finished
-        assert( nonBlockingComm_ == 0 );
+        assert( ! nonBlockingComm_ );
         DeleteCommunicatedDofs< DestinationType > delDofs( dest.space() );
         delDofs.deleteCommunicatedDofs( const_cast< DestinationType& > ( dest ) );
       }
