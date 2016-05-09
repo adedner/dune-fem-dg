@@ -258,7 +258,7 @@ namespace Fem
   template <class GridType>
   class U0Sod : public ProblemBase< GridType > {
     double T,startTime;
-    Dune::Fem::FieldVectorAdapter<FieldVector<double,6> > Ulr;
+    Dune::FieldVector<double,6> Ulr;
     enum { dim = GridType :: dimension };
   public:
     typedef ProblemBase< GridType > BaseType ;
@@ -436,7 +436,7 @@ namespace Fem
 
     double T, startTime;
 
-    typedef Dune::Fem::FieldVectorAdapter< FieldVector< double, 6 > > RiemannDataType;
+    typedef Dune::FieldVector< double, 6 > RiemannDataType;
     RiemannDataType Ulr;
 
   public:
