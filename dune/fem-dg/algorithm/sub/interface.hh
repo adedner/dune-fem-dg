@@ -140,6 +140,9 @@ namespace Fem
       model_( problem() )
     {}
 
+    /** virtual destructor since this class has virtual methods */
+    virtual ~SubAlgorithmInterface() {}
+
     /**
      * \brief return the name of the algorithm.
      *
