@@ -9,7 +9,6 @@
 #include <dune/fem/misc/l1norm.hh>
 #include <dune/fem/misc/l2norm.hh>
 #include <dune/fem/space/common/functionspace.hh>
-#include <dune/fem/storage/vector.hh>
 
 #include <dune/fem-dg/operator/fluxes/euler/fluxes.hh>
 #include <dune/fem-dg/operator/fluxes/analyticaleulerflux.hh>

@@ -5,6 +5,8 @@
 #include <iostream>
 #include <type_traits>
 
+#include <dune/common/dynvector.hh>
+
 #include <dune/fem-dg/misc/static_warning.hh>
 
 // include gridpart
@@ -13,7 +15,6 @@
 
 // include discrete function
 #include <dune/fem/function/adaptivefunction.hh>
-#include <dune/fem/storage/vector.hh>
 #include <dune/fem/function/vectorfunction/managedvectorfunction.hh>
 
 // include linear operators
@@ -414,7 +415,7 @@ namespace Fem
     static const bool solverConfigured = false; // this implementation is used for not installed packages
     // choose type of discrete function, Matrix implementation and solver implementation
     // this should work with any discrete function implementation
-    typedef Dune::Fem::DynamicVector<double>                                                                        DofVectorType;
+    typedef Dune::DynamicVector<double>                                                                        DofVectorType;
     typedef Dune::Fem::ManagedDiscreteFunction< Dune::Fem::VectorDiscreteFunction< DomainDFSpace, DofVectorType > > DomainDiscreteFunctionType;
     typedef Dune::Fem::ManagedDiscreteFunction< Dune::Fem::VectorDiscreteFunction< RangeDFSpace, DofVectorType > >  RangeDiscreteFunctionType;
     typedef DomainDiscreteFunctionType                                                                              DiscreteFunctionType;

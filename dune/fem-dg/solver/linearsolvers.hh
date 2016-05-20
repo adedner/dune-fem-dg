@@ -5,13 +5,14 @@
 #include <iostream>
 #include <type_traits>
 
+#include <dune/common/dynvector.hh>
+
 // include gridpart
 #include <dune/fem/gridpart/leafgridpart.hh>
 #include <dune/fem/gridpart/adaptiveleafgridpart.hh>
 
 // include discrete function
 #include <dune/fem/function/adaptivefunction.hh>
-#include <dune/fem/storage/vector.hh>
 #include <dune/fem/function/vectorfunction/managedvectorfunction.hh>
 
 // include linear operators
@@ -79,7 +80,7 @@ namespace Fem
     typedef DFSpace DiscreteFunctionSpaceType;
     // choose type of discrete function, Matrix implementation and solver implementation
     // this should work with any discrete function implementation
-    typedef Dune::Fem::DynamicVector<double> DofVectorType;
+    typedef Dune::DynamicVector<double> DofVectorType;
     typedef Dune::Fem::ManagedDiscreteFunction< Dune::Fem::VectorDiscreteFunction< DiscreteFunctionSpaceType, DofVectorType > > DiscreteFunctionType;
     typedef Dune::Fem::SparseRowLinearOperator< DiscreteFunctionType, DiscreteFunctionType > LinearOperatorType;
     typedef Dune::Fem::CGInverseOperator< DiscreteFunctionType > LinearInverseOperatorType;

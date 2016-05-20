@@ -8,7 +8,8 @@
 #include <double.h>
 #endif
 
-#include <dune/fem/storage/vector.hh>
+#include <dune/common/dynvector.hh>
+
 #include <dune/fem/io/parameter.hh>
 
 #include <dune/fem-dg/operator/fluxes/mhd/mhd_eqns.hh>
