@@ -24,9 +24,8 @@ namespace Fem
     struct FunctionJacobianSquare;
 
   protected:
-    typedef typename BaseType::GridIteratorType GridIteratorType;
 
-    typedef typename GridIteratorType::Entity EntityType;
+    typedef typename BaseType::EntityType EntityType;
     typedef typename EntityType::Geometry Geometry;
 
     typedef typename GridPartType :: IntersectionIteratorType IntersectionIteratorType;
@@ -46,29 +45,42 @@ namespace Fem
     explicit DGNorm ( const GridPartType &gridPart );
     DGNorm ( const ThisType &other );
 
+    template< class DiscreteFunctionType, class PartitionSet >
+    typename DiscreteFunctionType::RangeFieldType
+    norm ( const DiscreteFunctionType &u, const PartitionSet &partition ) const;
+
     template< class DiscreteFunctionType >
     typename DiscreteFunctionType::RangeFieldType
-    norm ( const DiscreteFunctionType &u ) const;
+    norm ( const DiscreteFunctionType &u ) const
+    {
+      return norm( u, Partitions::interior );
+    };
+
+    template< class UDiscreteFunctionType, class VDiscreteFunctionType, class PartitionSet >
+    typename UDiscreteFunctionType::RangeFieldType
+    distance ( const UDiscreteFunctionType &u, const VDiscreteFunctionType &v, const PartitionSet &partition ) const;
 
     template< class UDiscreteFunctionType, class VDiscreteFunctionType >
     typename UDiscreteFunctionType::RangeFieldType
-    distance ( const UDiscreteFunctionType &u, const VDiscreteFunctionType &v ) const;
+    distance ( const UDiscreteFunctionType &u, const VDiscreteFunctionType &v ) const
+    {
+      return distance( u, v, Partitions::interior );
+    }
 
-    template< class UDiscreteFunctionType,
-              class VDiscreteFunctionType,
+    template< class ULocalFunction,
+              class VLocalFunction,
               class ReturnType >
     inline void
     distanceLocal ( const EntityType& entity, const unsigned int order,
-                    const UDiscreteFunctionType &u,
-                    const VDiscreteFunctionType &v,
+                    const ULocalFunction &u,
+                    const VLocalFunction &v,
                     ReturnType& sum ) const ;
 
-    template< class UDiscreteFunctionType,
+    template< class ULocalFunction,
               class ReturnType >
     inline void
     normLocal ( const EntityType& entity, const unsigned int order,
-                    const UDiscreteFunctionType &u,
-                    ReturnType& sum ) const ;
+                const ULocalFunction &u, ReturnType& sum ) const ;
 
   private:
     // prohibit assignment
@@ -132,50 +144,46 @@ namespace Fem
 
 
   template< class GridPart >
-  template< class DiscreteFunctionType >
+  template< class DiscreteFunctionType, class PartitionSet >
   inline typename DiscreteFunctionType::RangeFieldType
-  DGNorm< GridPart >::norm ( const DiscreteFunctionType &u ) const
+  DGNorm< GridPart >::norm ( const DiscreteFunctionType &u, const PartitionSet &partition ) const
   {
     typedef typename DiscreteFunctionType::RangeFieldType RangeFieldType;
     typedef FieldVector< RangeFieldType, 1 > ReturnType ;
 
-    ReturnType sum = BaseType :: forEach( u, ReturnType( 0 ) );
+    ReturnType sum = BaseType :: forEach( u, ReturnType( 0 ), partition );
 
     // return result, e.g. sqrt of calculated sum
     return sqrt( comm().sum( sum[ 0 ] ) );
   }
 
   template< class GridPart >
-  template< class UDiscreteFunctionType, class VDiscreteFunctionType >
+  template< class UDiscreteFunctionType, class VDiscreteFunctionType, class PartitionSet >
   inline typename UDiscreteFunctionType::RangeFieldType
   DGNorm< GridPart >::distance ( const UDiscreteFunctionType &u,
-                                 const VDiscreteFunctionType &v ) const
+                                 const VDiscreteFunctionType &v,
+                                 const PartitionSet &partition ) const
   {
     typedef typename UDiscreteFunctionType::RangeFieldType RangeFieldType;
     typedef FieldVector< RangeFieldType, 1 > ReturnType ;
 
-    ReturnType sum = BaseType :: forEach( u, v, ReturnType( 0 ) );
+    ReturnType sum = BaseType :: forEach( u, v, ReturnType( 0 ), partition );
 
     // return result, e.g. sqrt of calculated sum
     return sqrt( comm().sum( sum[ 0 ] ) );
   }
 
   template< class GridPart >
-  template< class UDiscreteFunctionType,
-            class VDiscreteFunctionType,
+  template< class ULocalFunction,
+            class VLocalFunction,
             class ReturnType >
   inline void
   DGNorm< GridPart >::distanceLocal ( const EntityType& entity, const unsigned int order,
-                                      const UDiscreteFunctionType &u,
-                                      const VDiscreteFunctionType &v,
+                                      const ULocalFunction &ulocal,
+                                      const VLocalFunction &vlocal,
                                       ReturnType& sum ) const
   {
-    typedef typename UDiscreteFunctionType::LocalFunctionType ULocalFunctionType;
-    typedef typename VDiscreteFunctionType::LocalFunctionType VLocalFunctionType;
-    ULocalFunctionType ulocal = u.localFunction( entity );
-    VLocalFunctionType vlocal = v.localFunction( entity );
-
-    typedef typename L2Norm< GridPart >::template FunctionDistance< ULocalFunctionType, VLocalFunctionType >
+    typedef typename L2Norm< GridPart >::template FunctionDistance< ULocalFunction, VLocalFunction >
       LocalDistanceType;
 
     IntegratorType integrator( order );
@@ -188,6 +196,9 @@ namespace Fem
     unsigned int enIdx = gridPart().indexSet().index(entity);
     const Geometry& geometry = entity.geometry();
 
+    ULocalFunction ulocalNb( ulocal );
+    VLocalFunction vlocalNb( vlocal );
+
     double jumpTerm = 0;
     {
       const IntersectionIteratorType endiit = gridPart().iend( entity );
@@ -199,9 +210,7 @@ namespace Fem
           const EntityType& neighbor = intersection.outside();
           const Geometry& geometryNb = neighbor.geometry();
 
-
           unsigned int nbIdx = gridPart().indexSet().index(neighbor);
-          unsigned int nbOrder = std::max( uint(2 * u.space().order( neighbor )) , order );
           if( (enIdx < nbIdx) || (neighbor.partitionType() != Dune::InteriorEntity) )
           {
             typedef typename IntersectionType :: Geometry IntersectionGeometry;
@@ -209,10 +218,11 @@ namespace Fem
 
             const double intersectionArea = intersectionGeometry.volume();
             const double heInverse = intersectionArea / std::min( geometry.volume(), geometryNb.volume() );
-            ULocalFunctionType ulocalNb = u.localFunction( neighbor ); // local u on neighbor element
-            VLocalFunctionType vlocalNb = v.localFunction( neighbor ); // local u on neighbor element
+            vlocalNb.init( neighbor );
+            ulocalNb.init( neighbor );
             LocalDistanceType distNb( ulocalNb, vlocalNb );
 
+            unsigned int nbOrder = std::max( uint(2 * ulocalNb.order()) , order );
             FaceQuadratureType quadInside ( gridPart(), intersection, nbOrder, FaceQuadratureType::INSIDE  );
             FaceQuadratureType quadOutside( gridPart(), intersection, nbOrder, FaceQuadratureType::OUTSIDE );
             const size_t numQuadraturePoints = quadInside.nop();
@@ -235,24 +245,23 @@ namespace Fem
 
 
   template< class GridPart >
-  template< class DiscreteFunctionType, class ReturnType >
+  template< class LocalFunction, class ReturnType >
   inline void
   DGNorm< GridPart >::normLocal ( const EntityType& entity, const unsigned int order,
-                                  const DiscreteFunctionType &u,
+                                  const LocalFunction &ulocal,
                                   ReturnType& sum ) const
   {
-    typedef typename DiscreteFunctionType::LocalFunctionType LocalFunctionType;
     // evaluate norm locally
-
     IntegratorType integrator( order );
 
-    LocalFunctionType ulocal = u.localFunction( entity );
-    FunctionJacobianSquare< LocalFunctionType > ulocal2( ulocal );
-
+    FunctionJacobianSquare< LocalFunction > ulocal2( ulocal );
     integrator.integrateAdd( entity, ulocal2, sum );
 
     unsigned int enIdx = gridPart().indexSet().index(entity);
     const Geometry& geometry = entity.geometry();
+
+    // this should work as long as LocalFunction is either ConstLocalFunction< ... > or MutableLocalFunction< ... >
+    LocalFunction ulocalNb( ulocal );
 
     double jumpTerm = 0;
     {
@@ -265,20 +274,20 @@ namespace Fem
           const EntityType& neighbor = intersection.outside();
           const Geometry& geometryNb = neighbor.geometry();
           unsigned int nbIdx = gridPart().indexSet().index(neighbor);
-          unsigned int nbOrder = std::max( uint(2 * u.space().order( neighbor )) , order );
           if( (enIdx < nbIdx) || (neighbor.partitionType() != Dune::InteriorEntity) )
           {
             const double intersectionArea = intersection.geometry().volume();
             const double heInverse = intersectionArea / std::min( geometry.volume(), geometryNb.volume() );
-            LocalFunctionType ulocalNb = u.localFunction( neighbor ); // local u on neighbor element
+            ulocalNb.init( neighbor ); // local u on neighbor element
 
+            unsigned int nbOrder = std::max( uint(2 * ulocalNb.order()) , order );
             FaceQuadratureType quadInside( gridPart(), intersection, nbOrder, FaceQuadratureType::INSIDE );
             FaceQuadratureType quadOutside( gridPart(), intersection, nbOrder, FaceQuadratureType::OUTSIDE );
             const size_t numQuadraturePoints = quadInside.nop();
             for( size_t pt = 0; pt < numQuadraturePoints; ++pt )
             {
               const typename FaceQuadratureType::LocalCoordinateType &x = quadInside.localPoint( pt );
-              typename LocalFunctionType::RangeType  distIn(0),distOut(0),jump(0);
+              typename LocalFunction::RangeType  distIn(0),distOut(0),jump(0);
               ulocal.evaluate( quadInside[ pt ], distIn );
               ulocalNb.evaluate( quadOutside[ pt ], distOut );
               jump = distIn - distOut;
