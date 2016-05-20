@@ -42,13 +42,20 @@ namespace Fem
     using BaseType::comm;
 
   public:
-    explicit DGNorm ( const GridPartType &gridPart );
+
+    /** \brief constructor
+     *    \param gridPart     specific gridPart for selection of entities
+     *    \param communicate  if true global (over all ranks) norm is computed (default = true)
+     */
+    explicit DGNorm ( const GridPartType &gridPart, const bool communicate = true );
     DGNorm ( const ThisType &other );
 
+    //! || [ u ] ||_L2(\Gamma_I) on given set of entities (partition set)
     template< class DiscreteFunctionType, class PartitionSet >
     typename DiscreteFunctionType::RangeFieldType
     norm ( const DiscreteFunctionType &u, const PartitionSet &partition ) const;
 
+    //! || [ u ] ||_L2(\Gamma_I) on interior partition entities
     template< class DiscreteFunctionType >
     typename DiscreteFunctionType::RangeFieldType
     norm ( const DiscreteFunctionType &u ) const
@@ -56,10 +63,12 @@ namespace Fem
       return norm( u, Partitions::interior );
     };
 
+    //! || [ u - v ] ||_L2(\Gamma) on given set of entities (partition set)
     template< class UDiscreteFunctionType, class VDiscreteFunctionType, class PartitionSet >
     typename UDiscreteFunctionType::RangeFieldType
     distance ( const UDiscreteFunctionType &u, const VDiscreteFunctionType &v, const PartitionSet &partition ) const;
 
+    //! || [ u - v ] ||_L2(\Gamma) on interior partition entities
     template< class UDiscreteFunctionType, class VDiscreteFunctionType >
     typename UDiscreteFunctionType::RangeFieldType
     distance ( const UDiscreteFunctionType &u, const VDiscreteFunctionType &v ) const
@@ -85,6 +94,7 @@ namespace Fem
   private:
     // prohibit assignment
     ThisType operator= ( const ThisType &other );
+    const bool communicate_;
   };
 
 
@@ -132,14 +142,16 @@ namespace Fem
 
   template< class GridPart >
   inline DGNorm< GridPart >::DGNorm ( const GridPartType &gridPart )
-  : BaseType( gridPart )
+  : BaseType( gridPart ),
+    communicate_( BaseType::checkCommunicateFlag( communicate ) )
   {}
 
 
 
   template< class GridPart >
   inline DGNorm< GridPart >::DGNorm ( const ThisType &other )
-  : BaseType( other )
+  : BaseType( other ),
+    communicate_( other.communicate_ )
   {}
 
 
@@ -153,8 +165,12 @@ namespace Fem
 
     ReturnType sum = BaseType :: forEach( u, ReturnType( 0 ), partition );
 
+    // communicate_ indicates global norm
+    if( communicate_ )
+      comm().sum( sum[ 0 ] );
+
     // return result, e.g. sqrt of calculated sum
-    return sqrt( comm().sum( sum[ 0 ] ) );
+    return sqrt( sum[ 0 ] );
   }
 
   template< class GridPart >
@@ -169,8 +185,12 @@ namespace Fem
 
     ReturnType sum = BaseType :: forEach( u, v, ReturnType( 0 ), partition );
 
+    // communicate_ indicates global norm
+    if( communicate_ )
+      comm().sum( sum[ 0 ] );
+
     // return result, e.g. sqrt of calculated sum
-    return sqrt( comm().sum( sum[ 0 ] ) );
+    return sqrt( sum[ 0 ] );
   }
 
   template< class GridPart >
