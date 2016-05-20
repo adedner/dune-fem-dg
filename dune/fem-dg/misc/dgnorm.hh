@@ -47,7 +47,7 @@ namespace Fem
      *    \param gridPart     specific gridPart for selection of entities
      *    \param communicate  if true global (over all ranks) norm is computed (default = true)
      */
-    explicit DGNorm ( const GridPartType &gridPart, const bool communicate = true );
+    explicit DGNorm ( const GridPartType &gridPart, const unsigned int order = 0, const bool communicate = true );
     DGNorm ( const ThisType &other );
 
     //! || [ u ] ||_L2(\Gamma_I) on given set of entities (partition set)
@@ -94,6 +94,7 @@ namespace Fem
   private:
     // prohibit assignment
     ThisType operator= ( const ThisType &other );
+    const unsigned int order_;
     const bool communicate_;
   };
 
@@ -141,8 +142,9 @@ namespace Fem
   // -------------------------
 
   template< class GridPart >
-  inline DGNorm< GridPart >::DGNorm ( const GridPartType &gridPart )
+  inline DGNorm< GridPart >::DGNorm ( const GridPartType &gridPart, unsigned int order, const bool communicate )
   : BaseType( gridPart ),
+    order_( order ),
     communicate_( BaseType::checkCommunicateFlag( communicate ) )
   {}
 
@@ -151,6 +153,7 @@ namespace Fem
   template< class GridPart >
   inline DGNorm< GridPart >::DGNorm ( const ThisType &other )
   : BaseType( other ),
+    order_( other.order_ ),
     communicate_( other.communicate_ )
   {}
 
@@ -163,7 +166,7 @@ namespace Fem
     typedef typename DiscreteFunctionType::RangeFieldType RangeFieldType;
     typedef FieldVector< RangeFieldType, 1 > ReturnType ;
 
-    ReturnType sum = BaseType :: forEach( u, ReturnType( 0 ), partition );
+    ReturnType sum = BaseType :: forEach( u, ReturnType( 0 ), partition, order_ );
 
     // communicate_ indicates global norm
     if( communicate_ )
@@ -183,7 +186,7 @@ namespace Fem
     typedef typename UDiscreteFunctionType::RangeFieldType RangeFieldType;
     typedef FieldVector< RangeFieldType, 1 > ReturnType ;
 
-    ReturnType sum = BaseType :: forEach( u, v, ReturnType( 0 ), partition );
+    ReturnType sum = BaseType :: forEach( u, v, ReturnType( 0 ), partition, order_ );
 
     // communicate_ indicates global norm
     if( communicate_ )
