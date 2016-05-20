@@ -57,7 +57,9 @@ namespace Fem
     typedef typename IntersectionIteratorType::Intersection          IntersectionType;
 
     typedef typename GridType::template Codim< 0 >::Entity           ElementType;
+#if not DUNE_VERSION_NEWER(DUNE_GRID,2,4)
     typedef typename GridType::template Codim< 0 >::EntityPointer    ElementPointerType;
+#endif
     typedef typename ElementType::Geometry                           GeometryType;
 
     static const int dimension = GridType::dimension;
