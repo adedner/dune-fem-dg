@@ -45,17 +45,18 @@ namespace Fem
 
     /** \brief constructor
      *    \param gridPart     specific gridPart for selection of entities
+     *    \param order        order of integration quadrature (default = 2*space.order())
      *    \param communicate  if true global (over all ranks) norm is computed (default = true)
      */
     explicit DGNorm ( const GridPartType &gridPart, const unsigned int order = 0, const bool communicate = true );
     DGNorm ( const ThisType &other );
 
-    //! || [ u ] ||_L2(\Gamma_I) on given set of entities (partition set)
+    //! || u ||_H1 + || [ u ] ||_L2(\Gamma) on given set of entities (partition set)
     template< class DiscreteFunctionType, class PartitionSet >
     typename DiscreteFunctionType::RangeFieldType
     norm ( const DiscreteFunctionType &u, const PartitionSet &partition ) const;
 
-    //! || [ u ] ||_L2(\Gamma_I) on interior partition entities
+    //! || u ||_H1 + || [ u ] ||_L2(\Gamma_I) on interior partition entities (partition set)
     template< class DiscreteFunctionType >
     typename DiscreteFunctionType::RangeFieldType
     norm ( const DiscreteFunctionType &u ) const
@@ -63,12 +64,12 @@ namespace Fem
       return norm( u, Partitions::interior );
     };
 
-    //! || [ u - v ] ||_L2(\Gamma) on given set of entities (partition set)
+    //! || u - v ||_H1 + || [ u - v ] ||_L2(\Gamma) on given set of entities (partition set)
     template< class UDiscreteFunctionType, class VDiscreteFunctionType, class PartitionSet >
     typename UDiscreteFunctionType::RangeFieldType
     distance ( const UDiscreteFunctionType &u, const VDiscreteFunctionType &v, const PartitionSet &partition ) const;
 
-    //! || [ u - v ] ||_L2(\Gamma) on interior partition entities
+    //! || u - v ||_H1 + || [ u - v ] ||_L2(\Gamma_I) on interior partition entities
     template< class UDiscreteFunctionType, class VDiscreteFunctionType >
     typename UDiscreteFunctionType::RangeFieldType
     distance ( const UDiscreteFunctionType &u, const VDiscreteFunctionType &v ) const
@@ -170,7 +171,7 @@ namespace Fem
 
     // communicate_ indicates global norm
     if( communicate_ )
-      comm().sum( sum[ 0 ] );
+      sum[ 0 ] = comm().sum( sum[ 0 ] );
 
     // return result, e.g. sqrt of calculated sum
     return sqrt( sum[ 0 ] );
@@ -190,7 +191,7 @@ namespace Fem
 
     // communicate_ indicates global norm
     if( communicate_ )
-      comm().sum( sum[ 0 ] );
+      sum[ 0 ] = comm().sum( sum[ 0 ] );
 
     // return result, e.g. sqrt of calculated sum
     return sqrt( sum[ 0 ] );
