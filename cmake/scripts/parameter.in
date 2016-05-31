@@ -2,8 +2,8 @@
 # (-1: off, p: process p is verbose, in general 0 is a good choice)
 fem.verboserank: 0 
 
-fem.prefix: ${CURRENT_PARAMETER_PATH}/${TESTCASE_OUTPUT} # specify directory for data output (is created if not exists)
-fem.prefix.input: ${CURRENT_PARAMETER_PATH}
-fem.eoc.outputpath: ${CURRENT_PARAMETER_PATH}/${TESTCASE_OUTPUT}
+fem.prefix: ${CURRENT_PARAMETER_PATH}/data/${TESTCASE_OUTPUT} # specify directory for data output (is created if not exists)
+fem.prefix.input: ${CURRENT_PARAMETER_PATH}/
+fem.eoc.outputpath: ${CURRENT_PARAMETER_PATH}/data/${TESTCASE_OUTPUT}
 
-paramfile: ${TESTCASE_INPUT}
+paramfile: parameters/${TESTCASE_INPUT} #real parameter file
