@@ -414,15 +414,15 @@ namespace Fem
       , fvSpc_( gridPart_ )
       , indicator_( "Indicator", fvSpc_ )
       , diffFlux_( gridPart_, model_ )
-      , problem1_( model_ )
-      , problem2_( model_, diffFlux_ )
-      , problem3_( model_, numflux_, diffFlux_ )
+      , discModel1_( model_ )
+      , discModel2_( model_, diffFlux_ )
+      , discModel3_( model_, numflux_, diffFlux_ )
       , pass0_()
-      , pass1_(problem1_, pass0_, space1_)
-      , pass2_(problem2_, pass1_, space2_)
-      , pass3_(problem3_, pass2_, space3_)
+      , pass1_(discModel1_, pass0_, space1_)
+      , pass2_(discModel2_, pass1_, space2_)
+      , pass3_(discModel3_, pass2_, space3_)
     {
-      problem1_.setIndicator( &indicator_ );
+      discModel1_.setIndicator( &indicator_ );
     }
 
     ~LDGLimitedAdvectionDiffusionOperator() { delete uTmp_; }
@@ -507,9 +507,9 @@ namespace Fem
     DiffusionFluxType   diffFlux_;
 
   private:
-    DiscreteModel1Type  problem1_;
-    DiscreteModel2Type  problem2_;
-    DiscreteModel3Type  problem3_;
+    DiscreteModel1Type  discModel1_;
+    DiscreteModel2Type  discModel2_;
+    DiscreteModel3Type  discModel3_;
     Pass0Type           pass0_;
     Pass1Type           pass1_;
     Pass2Type           pass2_;

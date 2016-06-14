@@ -153,7 +153,7 @@ namespace Fem
   //            must implement evaluate
   // DGOperator: Operator providing the flux, needs method
   //             model() to access the diffusion method
-  //             flux(dfSpace_.gridPart(),
+  //             numericalFlux(dfSpace_.gridPart(),
   //                  intersection, inside, outside, 0, quadInside, quadOutside,
   //                  uValuesEn, duValuesEn, uValuesNb, duValuesNb,
   //                  fluxEn, dfluxEn, fluxNb, dfluxNb):
@@ -217,7 +217,7 @@ namespace Fem
     };
 
 
-    const DGOperatorType&            oper_;
+    const DGOperatorType&            discModel_;
     const DiscreteFunctionType&      uh_;
     const SigmaDiscreteFunctionType& sigma_;
     const double&                    beta_;
@@ -241,10 +241,10 @@ namespace Fem
 
   public:
     ErrorEstimator (DiscreteFunctionType& uh,
-                    const DGOperatorType &oper,
+                    const DGOperatorType &discModel,
                     const SigmaDiscreteFunctionType &sigma,
                     const AdaptationParameters& param = AdaptationParameters() )
-     : oper_(oper),
+     : discModel_(discModel),
        uh_( uh ),
        sigma_( sigma ),
        beta_(1.),
@@ -721,18 +721,19 @@ namespace Fem
       uValuesEn.resize( numQuadraturePoints );
       uValuesNb.resize( numQuadraturePoints );
       uInside.evaluateQuadrature( quadInside, uValuesEn );
-      oper_.boundaryValues(intersection, inside,quadInside, volume,
-                           uValuesNb);
+
+      IntersectionStorage intersectionStorage( intersection, inside, inside, volume, volume);
+
+      discModel_.boundaryValues(intersectionStorage, quadInside, uValuesNb);
       duValuesEn.resize( numQuadraturePoints );
       uInside.evaluateQuadrature( quadInside, duValuesEn );
       fluxEn.resize( numQuadraturePoints );
       dfluxEn.resize( numQuadraturePoints );
 
-      oper_.boundaryFlux(intersection, inside,
-                         volume, quadInside,
-                         uValuesEn, duValuesEn, uValuesNb,
-                         fluxEn, dfluxEn
-                         );
+      discModel_.boundaryFlux(intersectionStorage, quadInside,
+                              uValuesEn, duValuesEn, uValuesNb,
+                              fluxEn, dfluxEn
+                              );
 
       sigmaValuesEn.resize( numQuadraturePoints );
       sigmaInside.evaluateQuadrature( quadInside, sigmaValuesEn );
@@ -762,8 +763,7 @@ namespace Fem
         const SigmaConverterType sigmaValueEn( sigmaValuesEn[qp] );
         IntersectionLocalEvaluationType local( intersection, inside, quadInside, uValuesEn[qp], sigmaValueEn, qp, 0, volume );
 
-        oper_.model().diffusion(local,
-                                uValuesEn[qp], sigmaValueEn, AJacEn);
+        discModel_.model().diffusion(local, uValuesEn[qp],sigmaValueEn, AJacEn);
         // note that flux=-hatA therefore we compute -hatA+Agrad u
         AJacEn.umv( unitNormal, fluxEn[qp]);
 
@@ -869,13 +869,13 @@ namespace Fem
       fluxNb.resize( numQuadraturePoints );
       dfluxNb.resize( numQuadraturePoints );
 
-      typedef typename DGOperatorType::IntersectionStorage IntersectionStorage;
+      typedef typename DGOperatorType::IntersectionStorageType IntersectionStorage;
       IntersectionStorage intersectionStorage( intersection, inside, inside, volume, volume);
-      oper_.flux(dfSpace_.gridPart(), intersectionStorage,
-                 quadInside, quadOutside,
-                 uValuesEn, duValuesEn, uValuesNb, duValuesNb,
-                 fluxEn, dfluxEn, fluxNb, dfluxNb
-                );
+      discModel_.numericalFlux(intersectionStorage,
+                               quadInside, quadOutside,
+                               uValuesEn, uValuesNb, duValuesEn, duValuesNb,
+                               fluxEn, fluxNb, dfluxEn, dfluxNb
+                               );
 
       sigmaValuesEn.resize( numQuadraturePoints );
       sigmaValuesNb.resize( numQuadraturePoints );
@@ -911,10 +911,10 @@ namespace Fem
         const SigmaConverterType sigmaValueNb( sigmaValuesNb[qp] );
         const IntersectionLocalEvaluationType right( intersection, outside, quadInside, uValuesNb[qp], sigmaValueNb, qp, 0, volume );
 
-        oper_.model().diffusion(left,
-                                uValuesEn[qp], sigmaValueEn, AJacEn);
-        oper_.model().diffusion(right,
-                                uValuesNb[qp], sigmaValueNb, AJacNb);
+        discModel_.model().diffusion(left,
+                                     uValuesEn[qp], sigmaValueEn, AJacEn);
+        discModel_.model().diffusion(right,
+                                     uValuesNb[qp], sigmaValueNb, AJacNb);
 
         // note that flux=-hatA therefore we compute -hatA+Agrad u
         AJacEn.umv( unitNormal, fluxEn[qp]);
@@ -972,7 +972,7 @@ namespace Fem
       }
       else
 #endif
-      typedef typename DGOperatorType::EntityStorage EntityStorage;
+      typedef typename DGOperatorType::EntityStorageType EntityStorage;
       const double volume = geo.volume();
       {
         // finite difference approximation
@@ -1001,12 +1001,12 @@ namespace Fem
           {
             const EntityStorage entityStorage( entity, volume, xgl0, x0 );
             const SigmaConverterType jac0( sigmax0 );
-            oper_.model().diffusion(entityStorage, ux0, jac0, Asigmax0);
+            discModel_.model().diffusion(entityStorage, ux0, jac0, Asigmax0);
           }
           {
             const EntityStorage entityStorage( entity, volume, xgl1, x1 );
             const SigmaConverterType jac1( sigmax1 );
-            oper_.model().diffusion(entityStorage, ux1, jac1, Asigmax1);
+            discModel_.model().diffusion(entityStorage, ux1, jac1, Asigmax1);
           }
           for( int r = 0; r < RangeType::dimension; ++r )
           {

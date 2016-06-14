@@ -80,10 +80,10 @@ namespace Fem
     typename BaseType::ErrorIndicatorType Rdiv_;
   public:
     StokesErrorEstimator (DiscreteFunctionType& df,
-                          const DGOperatorType &oper,
+                          const DGOperatorType &discModel,
                           const SigmaDiscreteFunctionType &sigma,
                           const AdaptationParameters& param = AdaptationParameters() )
-    : BaseType(df,oper,sigma,param),
+    : BaseType(df,discModel,sigma,param),
       Rdiv_( this->indexSet_.size( 0 ))
     {
     }

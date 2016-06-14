@@ -231,6 +231,36 @@ namespace Fem
       return Evaluate< Functor, Contains< RangeTuple, typename Functor::VarId >::value>::eval( values(), functor, args ... );
     }
 
+    //template< int id >
+    //struct DefaultEvaluateFunctor
+    //{
+    //  typedef std::integral_constant< int, id > VarId;
+    //  typedef DomainType  ReturnType;
+
+    //  template <class LocalEvaluation>
+    //  DomainType operator() (const LocalEvaluation& local ) const
+    //  {
+    //    DUNE_THROW(Dune::NotImplemented,"id not found");
+    //    DomainType v;
+    //    return v;
+    //  }
+    //};
+
+    //template <int id>
+    //typename Evaluate< DefaultEvaluateFunctor<id>, Contains< RangeTuple, typename DefaultEvaluateFunctor<id>::VarId >::value >::ReturnType
+    //evaluate() const
+    //{
+    //  DefaultEvaluateFunctor<id> functor;
+    //  return Evaluate< Functor, Contains< RangeTuple, typename DefaultEvaluateFunctor<id>::VarId >::value>::eval( values(), functor );
+    //}
+
+    //template <class Functor, class ... Args>
+    //typename Evaluate< Functor, Contains< JacobianRangeTuple, typename Functor::VarId >::value >::ReturnType
+    //evaluateJacobians( const Functor& functor, const Args& ... args ) const
+    //{
+    //  return Evaluate< Functor, Contains< JacobianRangeTuple, typename Functor::VarId >::value>::eval( jacobians(), functor, args ... );
+    //}
+
   protected:
     const Entity& entity_;
     const Quadrature& quad_;

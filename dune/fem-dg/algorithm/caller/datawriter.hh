@@ -171,12 +171,15 @@ namespace Fem
     template< class SubAlgImp, class TimeProviderImp >
     void finalizeStart( SubAlgImp* alg, int loop, TimeProviderImp& tp )
     {
-      if( dataWriter_ && dataWriter_->willWrite( tp ) )
+      if( tp.timeStepValid() )
       {
-        //update all additional Output
-        ForLoopType< AdditionalOutput >::apply( tuple_, tp );
-        //writeData
-        dataWriter_->write( tp );
+        if( dataWriter_ && dataWriter_->willWrite( tp ) )
+        {
+          //update all additional Output
+          ForLoopType< AdditionalOutput >::apply( tuple_, tp );
+          //writeData
+          dataWriter_->write( tp );
+        }
       }
     }
 

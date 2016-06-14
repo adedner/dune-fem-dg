@@ -137,6 +137,15 @@ namespace Fem
       return problem_.nonStiffSource( xgl, local.time(), u, s );
     }
 
+    //template <class LocalEvaluation>
+    //inline double stiffSource( const LocalEvaluation& local,
+    //                           RangeType & s) const
+    //{
+    //  RangeType u = local.values()[pressure];
+    //  JacobianRangeType jac = local.jacobians()[pressure];
+    //  return stiffSource( local, u, jac, s );
+    //}
+
 
     template <class LocalEvaluation>
     inline double stiffSource( const LocalEvaluation& local,
@@ -241,6 +250,23 @@ namespace Fem
       //                //(1.-en.geometry().global(x)[1])*en.geometry().global(x)[1];
       A *= problem_.diffusion( u, A );//*(1.+d);
     }
+
+    //template <class LocalEvaluation>
+    //inline void linearDiffusion(const LocalEvaluation& local,
+    //                            const RangeType& uphi,
+    //                            const JacobianRangeType& jacPhi,
+    //                            FluxRangeType& A) const
+    //{
+
+    //  // copy v to A
+    //  DomainType u = local.evaluate( GetPressure< press >(), local );
+    //  FluxRangeType jacU = local.evaluateJacobians( GetPressure< press >(), local );
+    //  A = jacU;
+    //  // example derivative:
+    //  // diffusion: u^3
+    //  // -> linearDiffusion: 3 * u^2 * uPhi
+    //  A *= problem_.linearDiffusion( u, uphi, A );
+    //}
 
     template <class LocalEvaluation>
     inline double diffusionTimeStep(const LocalEvaluation& local,

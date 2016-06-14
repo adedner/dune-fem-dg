@@ -121,19 +121,19 @@ namespace Fem
         oper_(oper)
         {}
       template <class Quadrature,class Value,class DValue,class RetType, class DRetType>
-      void flux(const GridPartType &gridPart,
-                const IntersectionType &intersection,
-                const EntityType &entity, const EntityType &neighbor,
-                const double time,
-                const Quadrature &faceQuadInside, const Quadrature &faceQuadOutside,
-                const Value &valueEn, const DValue &dvalueEn,
-                const Value &valueNb, const DValue &dvalueNb,
-                RetType &retEn, DRetType &dretEn,
-                RetType &retNb, DRetType &dretNb) const
+      void numericalFlux(const GridPartType &gridPart,
+                         const IntersectionType &intersection,
+                         const EntityType &entity, const EntityType &neighbor,
+                         const double time,
+                         const Quadrature &faceQuadInside, const Quadrature &faceQuadOutside,
+                         const Value &valueEn, const DValue &dvalueEn,
+                         const Value &valueNb, const DValue &dvalueNb,
+                         RetType &retEn, DRetType &dretEn,
+                         RetType &retNb, DRetType &dretNb) const
       {
         //\hat{K}
-        oper_.flux(gridPart,intersection,entity,neighbor,time,faceQuadInside,faceQuadOutside,
-                   valueEn,dvalueEn,valueNb,dvalueNb,retEn,dretEn,retNb,dretNb);
+        oper_.numericalFlux(gridPart,intersection,entity,neighbor,time,faceQuadInside,faceQuadOutside,
+                            valueEn,dvalueEn,valueNb,dvalueNb,retEn,dretEn,retNb,dretNb);
         typename DiscretePressureFunctionType::LocalFunctionType pEn = p_.localFunction(entity);
         typename DiscretePressureFunctionType::LocalFunctionType pNb = p_.localFunction(neighbor);
         std::vector< typename DiscretePressureFunctionType::RangeType > pValuesEn( faceQuadInside.nop() );

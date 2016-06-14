@@ -93,8 +93,11 @@ namespace Fem
     template< class TimeProviderImp >
     void step( TimeProviderImp& tp )
     {
-      const double ldt = tp.deltaT();
-      diagnostics_.write( tp.time() + ldt, ldt, getData( "Elements" ), std::vector<double>() );
+      if( tp.timeStepValid() )
+      {
+        const double ldt = tp.deltaT();
+        diagnostics_.write( tp.time() + ldt, ldt, getData( "Elements" ), std::vector<double>() );
+      }
     }
 
     void finalize() const

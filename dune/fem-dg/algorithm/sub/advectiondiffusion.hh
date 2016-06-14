@@ -50,7 +50,7 @@ namespace Fem
     typedef typename BaseType::OperatorType::ExplicitType     ExplicitOperatorType;
     typedef typename BaseType::OperatorType::ImplicitType     ImplicitOperatorType;
 
-    typedef typename BaseType::SolverType::LinearSolverType   LinearSolverType;
+    //typedef typename BaseType::SolverType::LinearSolverType   LinearSolverType;
 
     // The discrete function for the unknown solution is defined in the DgOperator
     typedef typename BaseType::DiscreteFunctionType           DiscreteFunctionType;
@@ -137,9 +137,9 @@ namespace Fem
         adaptIndicator_->setAdaptation( tp );
 
       // create ODE solver
-      typedef RungeKuttaSolver< OperatorType, ExplicitOperatorType, ImplicitOperatorType,
-                                LinearSolverType > SolverImpl;
-      return std::make_shared< SolverImpl >( tp, *operator_, *advectionOperator_, *diffusionOperator_, name() );
+      //typedef RungeKuttaSolver< OperatorType, ExplicitOperatorType, ImplicitOperatorType,
+      //                          LinearSolverType > SolverImpl;
+      return std::make_shared< SolverType >( tp, *operator_, *advectionOperator_, *diffusionOperator_, name() );
     }
 
     const ModelType& model () const { assert( operator_ ); return operator_->model(); }

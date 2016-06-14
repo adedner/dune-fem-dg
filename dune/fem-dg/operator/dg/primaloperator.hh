@@ -347,7 +347,7 @@ namespace Fem
       {
         fvSpc_     = new LimiterIndicatorSpaceType( gridPart_ );
         indicator_ = new LimiterIndicatorType( "SE", *fvSpc_ );
-        limitProblem_.setIndicator( indicator_ );
+        limitDiscreteModel_.setIndicator( indicator_ );
       }
     }
 
@@ -365,11 +365,11 @@ namespace Fem
       , fvSpc_( 0 )
       , indicator_( 0 )
       , diffFlux_( gridPart_, model_, DGPrimalDiffusionFluxParameters( ParameterKey::generate( name, "dgdiffusionflux." ) ) )
-      , problem1_( model_, advflux_, diffFlux_ )
-      , limitProblem_( model_ , space_.order() )
+      , discreteModel_( model_, advflux_, diffFlux_ )
+      , limitDiscreteModel_( model_ , space_.order() )
       , pass0_()
-      , pass1_( limitProblem_, pass0_, limiterSpace_ )
-      , pass2_( problem1_, pass1_, space_ )
+      , pass1_( limitDiscreteModel_, pass0_, limiterSpace_ )
+      , pass2_( discreteModel_, pass1_, space_ )
     {
       // create indicator if enabled
       createIndicator();
@@ -390,7 +390,7 @@ namespace Fem
 #ifdef USE_SMP_PARALLEL
       pass2_.setAdaptation( adHandle, weight );
 #else
-      problem1_.setAdaptation( adHandle, weight );
+      discreteModel_.setAdaptation( adHandle, weight );
 #endif
     }
 
@@ -508,8 +508,8 @@ namespace Fem
     DiffusionFluxType   diffFlux_;
 
   private:
-    DiscreteModel1Type  problem1_;
-    LimiterDiscreteModelType  limitProblem_;
+    DiscreteModel1Type  discreteModel_;
+    LimiterDiscreteModelType  limitDiscreteModel_;
     Pass0Type           pass0_;
     Pass1Type           pass1_;
     Pass2Type           pass2_;

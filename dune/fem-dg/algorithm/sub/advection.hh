@@ -47,7 +47,7 @@ namespace Fem
     // The other two are needed for semi-implicit time discretization
     typedef typename BaseType::OperatorType::type              FullOperatorType;
 
-    typedef typename BaseType::SolverType::LinearSolverType    LinearSolverType;
+    //typedef typename BaseType::SolverType::LinearSolverType    LinearSolverType;
 
     // The discrete function for the unknown solution is defined in the DgOperator
     typedef typename BaseType::DiscreteFunctionType            DiscreteFunctionType;
@@ -124,9 +124,9 @@ namespace Fem
       if( adaptIndicator_ )
         adaptIndicator_->setAdaptation( tp );
 
-      typedef RungeKuttaSolver< FullOperatorType, FullOperatorType, FullOperatorType,
-                                LinearSolverType > SolverImpl;
-      return std::make_shared< SolverImpl >( tp, *advectionOperator_,
+      //typedef RungeKuttaSolver< FullOperatorType, FullOperatorType, FullOperatorType,
+      //                          LinearSolverType > SolverImpl;
+      return std::make_shared< SolverType >( tp, *advectionOperator_,
                                              *advectionOperator_,
                                              *advectionOperator_,
                                              name() );

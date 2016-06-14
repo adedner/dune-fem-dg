@@ -42,6 +42,45 @@ namespace Dune
 {
 namespace Fem
 {
+  template< class DomainFunction, class RangeFunction, template< class, class > class MatrixObjectImp >
+  struct LinearOperatorInterface
+  : public MatrixObjectImp< typename DomainFunction::DiscreteFunctionSpaceType, typename RangeFunction::DiscreteFunctionSpaceType >,
+    public Fem::AssembledOperator< DomainFunction, RangeFunction >
+  {
+    typedef typename DomainFunction::DiscreteFunctionSpaceType DomainSpaceType;
+    typedef typename RangeFunction::DiscreteFunctionSpaceType RangeSpaceType;
+    typedef MatrixObjectImp< typename DomainFunction::DiscreteFunctionSpaceType, typename RangeFunction::DiscreteFunctionSpaceType > BaseType;
+
+    static constexpr bool assembled = true;
+
+    using BaseType::apply;
+
+    LinearOperatorInterface( const std::string & ,
+                             const DomainSpaceType &domainSpace,
+                             const RangeSpaceType &rangeSpace ) :
+      BaseType( domainSpace, rangeSpace )
+    {}
+
+    virtual void operator()( const DomainFunction &arg, RangeFunction &dest ) const
+    {
+      BaseType()( arg, dest );
+    }
+
+    const BaseType &systemMatrix() const
+    {
+      return *this;
+    }
+
+    BaseType &systemMatrix()
+    {
+      return *this;
+    }
+
+    void communicate()
+    {}
+  };
+
+
 
   /**
    *  \brief problem creator for an advection diffusion problem
@@ -56,7 +95,7 @@ namespace Fem
                                      Galerkin::Enum::default_,
                                      Adaptivity::Enum::default_,
                                      DiscreteFunctionSpaces::Enum::default_, //legendre
-                                     Solver::Enum::default_,
+                                     Solver::Enum::fem,
                                      AdvectionLimiter::Enum::default_,
                                      Matrix::Enum::default_,
                                      AdvectionFlux::Enum::upwind,
@@ -107,20 +146,77 @@ namespace Fem
 
         typedef std::tuple< DiscreteFunctionType*, DiscreteFunctionType* >                 IOTupleType;
 
+        //class Operator
+        //{
+        //  typedef typename AC::template DefaultOpTraits< DFSpaceType, polOrd, AnalyticalTraits, ExtraParameterTuple >
+        //                                                                                   OpTraits;
+        //public:
+        //  typedef typename AC::template Operators< OpTraits,OperatorSplit::Enum::full >    type;
+        //  typedef typename AC::template Operators< OpTraits,OperatorSplit::Enum::expl >    ExplicitType;
+        //  typedef typename AC::template Operators< OpTraits,OperatorSplit::Enum::impl >    ImplicitType;
+        //};
+
         class Operator
         {
-          typedef typename AC::template DefaultOpTraits< DFSpaceType, polOrd, AnalyticalTraits, ExtraParameterTuple >
-                                                                                           OpTraits;
-        public:
-          typedef typename AC::template Operators< OpTraits,OperatorSplit::Enum::full >    type;
-          typedef typename AC::template Operators< OpTraits,OperatorSplit::Enum::expl >    ExplicitType;
-          typedef typename AC::template Operators< OpTraits,OperatorSplit::Enum::impl >    ImplicitType;
+          public:
+          typedef typename AC::template DefaultAssembTraits< DFSpaceType, DFSpaceType, polOrd, AnalyticalTraits >
+                                                                                   OpTraits;
+          typedef typename AC::template Operators< OpTraits >                      AssemblerType;
+
+          typedef AssembledPoissonSpaceOperator< typename Operator::OpTraits /*OP*/ >  type;
+          typedef type                                                                 ExplicitType;
+          typedef type                                                                 ImplicitType;
         };
 
         struct Solver
         {
+
+          typedef typename AC::template Containers< DFSpaceType, DFSpaceType >             LinearContainerType;
           typedef typename AC::template LinearSolvers< DFSpaceType >                       LinearSolverType;
-          typedef DuneODE::OdeSolverInterface< DiscreteFunctionType >                      type;
+
+          //typedef DGHelmholtzJacobianOperator< LinearContainerType >                       RealLinearContainerType;
+          typedef typename Operator::type::JacobianOperatorType                            RealLinearContainerType;
+
+          typedef NewtonInverseOperator< RealLinearContainerType, LinearSolverType >           NonLinearSolverType;
+          //NewtonInverseOperator< ISTLLinearOperator< DiscreteFunctionType, DiscreteFunctionType >,
+          //                       ISTLGMResOp< DiscreteFunctionType, JacobianOperatorType > >
+
+          typedef RungeKuttaSolver< typename Operator::type,
+                                    typename Operator::type,
+                                    typename Operator::type,
+                                    NonLinearSolverType,
+                                    DuneODE::RungeKuttaOperatorAlgorithm<typename Operator::type> >   type;
+
+
+#if 0
+
+
+          //typedef typename AC::template LinearSolvers< DFSpaceType >                       LinearSolverType;
+          //typedef DuneODE::OdeSolverInterface< DiscreteFunctionType >                      type;
+
+          typedef typename AC::template Containers< DFSpaceType, DFSpaceType >               LinearContainerType;
+
+          template< class LinOpType >
+          using LinearSolverType = Dune::Fem::OEMBICGSTABOp< DiscreteFunctionType, LinOpType >;
+
+
+
+          //typedef Dune::Fem::SparseRowLinearOperator< DiscreteFunctionType, DiscreteFunctionType > LinOpType;
+          //typedef Dune::Fem::Operator< DiscreteFunctionType >                          LinOpType;
+          //typedef LinearOperatorInterface< DiscreteFunctionType, DiscreteFunctionType, Dune::Fem::SparseRowLinearOperator >
+          //                                                                                   LinOpType;
+
+          typedef RungeKuttaSolver< typename Operator::type,
+                                    typename Operator::type,
+                                    typename Operator::type,
+                                    LinearSolverType<LinearContainerType > >          type;
+                                    //LinearSolverType<typename Operator::type::JacobianOperatorType > >          type;
+          //typedef RungeKuttaSolver< typename Operator::type,
+          //                          typename Operator::ExplicitType,
+          //                          typename Operator::ImplicitType,
+          //                          LinearSolverType<LinOpType> >                      type;
+//                                    LinearSolverType<LinearContainerType> >            type;
+#endif
         };
 
       private:
@@ -130,7 +226,8 @@ namespace Fem
         typedef Estimator< DiscreteFunctionType, typename AnalyticalTraits::ProblemType >  GradientIndicatorType ;
       public:
 
-        typedef AdaptIndicator< IndicatorType, GradientIndicatorType >                     AdaptIndicatorType;
+        //typedef AdaptIndicator< IndicatorType, GradientIndicatorType >                     AdaptIndicatorType;
+        typedef AdaptIndicator<>                                                           AdaptIndicatorType;
         typedef SubSolverMonitor< SolverMonitor >                                          SolverMonitorType;
         typedef SubDiagnostics< Diagnostics >                                              DiagnosticsType;
         typedef ExactSolutionOutput< DiscreteFunctionType >                                AdditionalOutputType;

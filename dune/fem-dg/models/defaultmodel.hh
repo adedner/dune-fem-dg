@@ -108,6 +108,12 @@ namespace Fem
     typedef typename Traits::EntityType                  EntityType;
     typedef typename Traits::IntersectionType            IntersectionType;
 
+
+    DefaultModel()
+      : time_( 0.0 )
+    {}
+
+
     /**
      * \brief Sets the current time
      *
@@ -115,7 +121,15 @@ namespace Fem
      *
      * \param[in] time the current time \f$ t \f$
      */
-    void setTime (double time) {}
+    void setTime (double time)
+    {
+      time_ = time;
+    }
+
+    const double time () const
+    {
+      return time_;
+    }
 
     /**
      * \brief returns whether the advection term is zero
@@ -515,6 +529,8 @@ namespace Fem
     {
       return true;
     }
+  private:
+    double time_;
   };
 
 }

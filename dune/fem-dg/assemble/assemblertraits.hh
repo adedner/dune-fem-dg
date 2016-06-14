@@ -35,6 +35,10 @@ namespace Fem
     typedef Fem::CachingQuadrature< GridPartType, 0 >                    VolumeQuadratureType;
     typedef Fem::CachingQuadrature< GridPartType, 1 >                    FaceQuadratureType;
 
+    //dummy, to be removed
+    typedef std::tuple<>                                                 ExtraParameterTupleType;
+    typedef DomainDiscreteFunctionType                                   DestinationType;
+    typedef typename DestinationType::DiscreteFunctionSpaceType          DiscreteFunctionSpaceType;
   };
 
   //TODO more general structure for use with multitypeblockmatrix

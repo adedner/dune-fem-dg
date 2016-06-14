@@ -144,7 +144,8 @@ namespace Fem
       for (auto it = std::begin(dataLongInt_); it!=std::end(dataLongInt_); ++it)
         if( std::get<1>(it->second) )
           *std::get<0>(it->second) = *std::get<1>(it->second);
-      solverMonitor_.setTimeStepInfo( tp );
+      if( tp.timeStepValid() )
+        solverMonitor_.setTimeStepInfo( tp );
     }
 
     void finalize( const double gridWidth, const double gridSize )

@@ -59,7 +59,7 @@ namespace Fem
                                      Galerkin::Enum::dg,
                                      Adaptivity::Enum::yes,
                                      DiscreteFunctionSpaces::Enum::legendre,
-                                     Solver::Enum::fem,
+                                     Solver::Enum::femoem,
                                      AdvectionLimiter::Enum::unlimited,
                                      Matrix::Enum::matrixfree,
                                      AdvectionFlux::Enum::llf,
@@ -120,7 +120,11 @@ namespace Fem
         struct Solver
         {
           typedef typename AC::template LinearSolvers< DFSpaceType >                       LinearSolverType;
-          typedef DuneODE::OdeSolverInterface< DiscreteFunctionType >                      type;
+          //typedef DuneODE::OdeSolverInterface< DiscreteFunctionType >                      type;
+          typedef RungeKuttaSolver< typename Operator::type,
+                                    typename Operator::ExplicitType,
+                                    typename Operator::ImplicitType,
+                                    LinearSolverType >                                     type;
         };
 
       private:

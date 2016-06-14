@@ -201,7 +201,8 @@ namespace Fem
     template< class SubAlgImp, class TimeProviderImp >
     void preSolveStart( SubAlgImp* alg, int loop, TimeProviderImp& tp )
     {
-      checkPointer( tp ).write( tp );
+      if( tp.timeStepValid() )
+        checkPointer( tp ).write( tp );
     }
 
     /**

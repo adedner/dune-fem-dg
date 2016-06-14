@@ -49,6 +49,13 @@ if( NOT FEMDG_FAST_TESTBUILD )
                  TIMEOUT 3000 
                  CMD_ARGS parameters/advdiff_orthonormal )
 
+  configure_parameter_file( advdiff_solver )
+  dune_add_test( NAME advdiff_solver
+                 SOURCES ../main.cc
+                 COMPILE_DEFINITIONS "POLORDER=${POLORDER};SOLVERENUM=2"
+                 TIMEOUT 3000 
+                 CMD_ARGS parameters/advdiff_solver )
+
   dune_add_test_case( advdiffall polorder1 )
   dune_add_test_case( advdiffall polorder2 )
   dune_add_test_case( advdiffall polorder3 )

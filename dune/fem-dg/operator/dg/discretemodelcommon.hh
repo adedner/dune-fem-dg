@@ -263,6 +263,16 @@ namespace Fem
       }
     }
 
+    template <class LocalEvaluation>
+    double linearNumericalFlux(const LocalEvaluation& left,
+                               const LocalEvaluation& right,
+                               RangeType& gLeft,
+                               RangeType& gRight,
+                               JacobianRangeType& gDiffLeft,
+                               JacobianRangeType& gDiffRight ) const
+    {
+    }
+
     /**
      * \brief same as numericalFlux() but for fluxes over boundary interfaces
      */
@@ -299,6 +309,14 @@ namespace Fem
         return 0.;
       }
     }
+
+    template <class LocalEvaluation>
+    double linearBoundaryFlux(const LocalEvaluation& left,
+                              RangeType& gLeft,
+                              JacobianRangeType& gDiffLeft ) const
+    {
+    }
+
                                                   /*@LST0S@*/
     /**
      * \brief analytical flux function for advection only
@@ -311,6 +329,12 @@ namespace Fem
         model_.advection( local, local.values()[ uVar ],local.jacobians()[uVar], f);
       else
         f = 0;
+    }
+
+    template <class LocalEvaluation>
+    void linearAnalyticalFlux( const LocalEvaluation& local,
+                               JacobianRangeType& f ) const
+    {
     }
 
 

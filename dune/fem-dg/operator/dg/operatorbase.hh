@@ -204,15 +204,15 @@ namespace Fem
     }
 
     template <class Entity, class Intersection, class Quadrature>
-    inline void flux(const DestinationType &u,
-                     const Entity &entity, const Entity &nb,
-                     const Intersection &intersection,
-                     const Quadrature &faceQuadInner, const Quadrature &faceQuadOuter,
-                     const int l,
-                     typename DestinationType::RangeType &fluxEn,
-                     typename DestinationType::RangeType &fluxNb) const
+    inline void numericalFlux(const DestinationType &u,
+                              const Entity &entity, const Entity &nb,
+                              const Intersection &intersection,
+                              const Quadrature &faceQuadInner, const Quadrature &faceQuadOuter,
+                              const int l,
+                              typename DestinationType::RangeType &fluxEn,
+                              typename DestinationType::RangeType &fluxNb) const
     {
-      pass1_.flux(u,entity,nb,intersection,faceQuadInner,faceQuadOuter,l,fluxEn,fluxNb);
+      pass1_.numericalFlux(u,entity,nb,intersection,faceQuadInner,faceQuadOuter,l,fluxEn,fluxNb);
     }
 
     inline void limit( DestinationType& U ) const {}

@@ -38,7 +38,9 @@ namespace Fem
   class AdaptIndicator<>
   {
   public:
-   typedef uint64_t                          UInt64Type;
+    typedef uint64_t                          UInt64Type;
+
+    typedef std::tuple<>                      ExtraParameterTupleType;
 
     template< class... Args >
     AdaptIndicator( Args&& ... args )
@@ -93,14 +95,14 @@ namespace Fem
                                                                                                AdaptationHandlerType;
     typedef typename IndicatorType::ExtraParameterTupleType                                    ExtraParameterTupleType;
 
-    template< class Problem >
-    AdaptIndicator( DiscreteFunctionType& sol, Problem& problem, const ExtraParameterTupleType& tuple, const std::string keyPrefix = "" )
+    template< class Model >
+    AdaptIndicator( DiscreteFunctionType& sol, Model& model, const ExtraParameterTupleType& tuple, const std::string keyPrefix = "" )
     : sol_( sol ),
       adaptationHandler_( nullptr ),
       keyPrefix_( keyPrefix ),
       adaptParam_( AdaptationParametersType( ParameterKey::generate( keyPrefix, "fem.adaptation." ) ) ),
-      indicator_( const_cast<GridPartType&>(sol_.gridPart()), problem, tuple, keyPrefix_ ),
-      estimator_( sol_.space(), problem, adaptParam_ )
+      indicator_( const_cast<GridPartType&>(sol_.gridPart()), model, tuple, keyPrefix_ ),
+      estimator_( sol_.space(), model, adaptParam_ )
     {}
 
     /**

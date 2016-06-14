@@ -427,6 +427,12 @@ namespace Fem
         // reset time step estimate
         tp.provideTimeStepEstimate( maxTimeStep );
 
+        //store time step no.
+        const int timeStep = tp.timeStep() + 1;
+
+        //is it a reasonable time step size?
+        assert( tp.deltaT() > 1e-320 );
+
         //************************************************
         //* Compute an ODE timestep                      *
         //************************************************
@@ -454,8 +460,6 @@ namespace Fem
         // stop FemTimer for this time step
         Dune::FemTimer::stop(timeStepTimer_,Dune::FemTimer::sum);
 
-        const int timeStep = tp.timeStep() + 1;
-
         printTimeStepInformation( timeStep, tp );
 
         // next advance should not exceed endtime
@@ -476,7 +480,7 @@ namespace Fem
           break ;
         }
 
-        if (tp.timeStep()<2)
+        if (timeStep<1)
         {
           // write parameters used (before simulation starts)
           Fem::Parameter::write("parameter.log");
@@ -632,20 +636,23 @@ namespace Fem
 
     void printTimeStepInformation( int timeStep, TimeProviderType& tp )
     {
-      const int printCount = param_.printCount();
-      if( (printCount > 0) && (timeStep % printCount) == 0)
+      if( tp.timeStepValid() )
       {
-        // obtain grid size (requires all reduce)
-        const UInt64Type grdsize = gridSize();
-        if( grid().comm().rank() == 0 )
+        const int printCount = param_.printCount();
+        if( (printCount > 0) && (timeStep % printCount) == 0)
         {
-          std::cout << "step: " << timeStep << "  time = " << tp.time()+tp.deltaT() << ", dt = " << tp.deltaT()
-                    <<",  grid size: " << grdsize << ", elapsed time: ";
-          Dune::FemTimer::print(std::cout,timeStepTimer_);
-          std::cout << "Newton:  " << solverMonitorCaller_.getData( "Newton" ) << ", ";
-          std::cout << "ILS:  " << solverMonitorCaller_.getData( "ILS" ) << ", ";
-          std::cout << "OC:  " << solverMonitorCaller_.getData( "OC" ) << ", ";
-          std::cout << std::endl;
+          // obtain grid size (requires all reduce)
+          const UInt64Type grdsize = gridSize();
+          if( grid().comm().rank() == 0 )
+          {
+            std::cout << "step: " << timeStep << "  time = " << tp.time()+tp.deltaT() << ", dt = " << tp.deltaT()
+                      <<",  grid size: " << grdsize << ", elapsed time: ";
+            Dune::FemTimer::print(std::cout,timeStepTimer_);
+            std::cout << "Newton:  " << solverMonitorCaller_.getData( "Newton" ) << ", ";
+            std::cout << "ILS:  " << solverMonitorCaller_.getData( "ILS" ) << ", ";
+            std::cout << "OC:  " << solverMonitorCaller_.getData( "OC" ) << ", ";
+            std::cout << std::endl;
+          }
         }
       }
     }

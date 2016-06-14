@@ -169,22 +169,22 @@ namespace Fem
     typedef typename GridPartType::GridType                             GridType;
 
     PoissonSigmaEstimator( ContainerType& container,
-                           const DGOperatorType& assembler,
+                           const DGOperatorType& discModel,
                            const std::string name = "" )
     : container_( container ),
       gridPart_( container_.gridPart() ),
       solution_( *container_.solution() ),
-      assembler_( assembler ),
+      discModel_( discModel ),
       sigmaSpace_( gridPart_ ),
       sigmaDiscreteFunction_( "sigma-"+name, sigmaSpace_ ),
-      sigmaLocalEstimate_( solution_, assembler_ ),
+      sigmaLocalEstimate_( solution_, discModel_ ),
       sigmaLocalFunction_( solution_, sigmaDiscreteFunction_, sigmaLocalEstimate_ ),
       sigma_( "sigma function", sigmaLocalFunction_, gridPart_, solution_.space().order() ),
       sigmaEstimateFunction_( "function 4 estimate-"+name, sigmaLocalEstimate_, gridPart_, solution_.space().order() )
     {}
 
     // compute the function sigma = grad u + sum_e r_e
-    template <class DF, class Operator>
+    template <class DF, class Operator /*LiftingType*/>
     struct SigmaLocal : public Fem::LocalFunctionAdapterHasInitialize
     {
       typedef typename DF::DiscreteFunctionSpaceType                     UDFS;
@@ -266,8 +266,7 @@ namespace Fem
         std::vector< URangeType > uValuesNb( numQuadraturePoints );
         localdf_.evaluateQuadrature( quadInside, uValuesEn );
         uOutside.evaluateQuadrature( quadOutside, uValuesNb );
-        oper_.lifting(df_.space().gridPart(),
-                      intersection, entity, outside, quadInside, quadOutside,
+        oper_.lifting(intersection, entity, outside, quadInside, quadOutside,
                       uValuesEn, uValuesNb,
                       localre_
                      );
@@ -356,7 +355,7 @@ namespace Fem
     ContainerType&                  container_;
     GridPartType&                   gridPart_;
     const DiscreteFunctionType&     solution_;
-    const DGOperatorType&           assembler_;
+    const DGOperatorType&           discModel_;
     SigmaDiscreteFunctionSpaceType  sigmaSpace_;
     SigmaDiscreteFunctionType       sigmaDiscreteFunction_;
 
@@ -370,40 +369,40 @@ namespace Fem
 
 
 
-  template< class DiscreteFunctionSpaceImp, int polOrder, class SigmaEstimatorImp >
-  class PAdaptivity
-  {
-    struct PolOrderStructure
+    template< class DiscreteFunctionSpaceImp, int polOrder, class SigmaEstimatorImp >
+    class PAdaptivity
     {
-      // set polynomial order to 2 by default
-      PolOrderStructure() : val_( -1 ) {}
-      explicit PolOrderStructure(int init) : val_( init ) {}
-      const int value() const
+      struct PolOrderStructure
       {
-        assert( val_ > 0 );
-        return val_;
-      }
-      int &value() { return val_; }
-      int val_;
-    };
+        // set polynomial order to 2 by default
+        PolOrderStructure() : val_( -1 ) {}
+        explicit PolOrderStructure(int init) : val_( init ) {}
+        const int value() const
+        {
+          assert( val_ > 0 );
+          return val_;
+        }
+        int &value() { return val_; }
+        int val_;
+      };
 
-  public:
-    typedef DiscreteFunctionSpaceImp                        DiscreteFunctionSpaceType;
-    typedef typename DiscreteFunctionSpaceType::GridType    GridType;
-    typedef SigmaEstimatorImp                               SigmaEstimatorType;
-    typedef typename SigmaEstimatorType::ErrorEstimatorType ErrorEstimatorType;
+    public:
+      typedef DiscreteFunctionSpaceImp                        DiscreteFunctionSpaceType;
+      typedef typename DiscreteFunctionSpaceType::GridType    GridType;
+      typedef SigmaEstimatorImp                               SigmaEstimatorType;
+      typedef typename SigmaEstimatorType::ErrorEstimatorType ErrorEstimatorType;
 
-    typedef typename ErrorEstimatorType::DGOperatorType     DGOperatorType;
+      typedef typename ErrorEstimatorType::DGOperatorType     DGOperatorType;
 
-    typedef typename SigmaEstimatorType::ContainerType      ContainerType;
+      typedef typename SigmaEstimatorType::ContainerType      ContainerType;
 
-    typedef PersistentContainer<GridType,PolOrderStructure> PolOrderContainer;
+      typedef PersistentContainer<GridType,PolOrderStructure> PolOrderContainer;
 
-    PAdaptivity( ContainerType& container, DGOperatorType& assembler, const std::string name = ""  )
+      PAdaptivity( ContainerType& container, DGOperatorType& discModel, const std::string name = ""  )
       : polOrderContainer_( container.grid(), 0 ),
         space_( container.space() ),
-        sigmaEstimator_( container, assembler, name ),
-        errorEstimator_( *container.solution(), assembler, sigmaEstimator_.sigma() ),
+        sigmaEstimator_( container, discModel, name ),
+        errorEstimator_( *container.solution(), discModel, sigmaEstimator_.sigma() ),
         param_( AdaptationParameters() )
     {
 #ifdef PADAPTSPACE
@@ -585,10 +584,10 @@ namespace Fem
    typedef uint64_t                          UInt64Type;
 
     PAdaptIndicator( ContainerType& container,
-                     DGOperatorType& assembler,
+                     DGOperatorType& discModel,
                      const ProblemType& problem,
                      const std::string name = "" )
-      : pAdapt_( container, assembler, name ),
+      : pAdapt_( container, discModel, name ),
         problem_( problem )
     {}
 
@@ -786,6 +785,7 @@ namespace Fem
         matrix_->reserve( stencil );
       }
 
+      //set up matrix and assemble right hand side
       assembler_.assemble();
       std::cout << "Solver (Poisson) assemble time: " << timer.elapsed() << std::endl;
 
@@ -795,6 +795,20 @@ namespace Fem
       double reduction  = Dune::Fem:: Parameter::getValue<double>("istl.reduction",1.e-6);
 
       return std::make_shared< SolverType >(*matrix_, reduction, absLimit );
+
+
+#if 0
+      // on-the-fly version (does not work with ISTL solvers)
+      operator_.assembleRHS( container_.rhs() );
+      // operator_'s methods: operator(u,w), assembleRHS(rhs) -> no jacobian( u, jac ) for linear solver!
+      SolverType solver( operator_, solverEps_, solverEps_ );
+
+
+      //NONLINEAR SOLVER: operator_'s methods: operator(u,w), assembleRHS(rhs), jacobian( u, jac ) [AD or matrix]
+      SolverType solver( operator_, solverEps_, solverEps_ );
+
+
+#endif
     }
 
     //! default time loop implementation, overload for changes
