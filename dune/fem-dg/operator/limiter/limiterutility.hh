@@ -299,32 +299,6 @@ namespace Fem
       }
     }
 
-    // setup set storing combinations of linear functions
-    static const ComboSetType& setupComboSet(const int neighbors,
-                                             const bool nonConforming,
-                                             const bool multipleGeomTypes,
-                                             ComboSetType& conformingComboSet,
-                                             ComboSetType& comboSet )
-    {
-      // check for new build (this set is constant)
-      if( conformingComboSet.size() == 0 )
-      {
-        buildComboSet(neighbors, conformingComboSet);
-      }
-
-      // in case of non-conforming grid or grid with more than one
-      // element type this has to be re-build on every element
-      if( nonConforming || multipleGeomTypes )
-      {
-        buildComboSet(neighbors, comboSet);
-        return comboSet;
-      }
-      else
-      {
-        return conformingComboSet;
-      }
-    }
-
 
     template <class GridPart, class Entity, class EvalAverage>
     static void

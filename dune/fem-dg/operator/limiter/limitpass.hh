@@ -576,8 +576,6 @@ namespace Fem
       faceQuadOrd_( (fQ < 0) ? (2 * spc_.order() + 1) : fQ ),
       volumeQuadOrd_( (vQ < 0) ? (2 * spc_.order()) : vQ ),
       argOrder_( spc_.order() ),
-      conformingComboSet_(),
-      comboSet_(),
       storedComboSets_(),
       tolFactor_( getTolFactor() ),
       tol_1_( 1.0/getTol() ),
@@ -1065,15 +1063,8 @@ namespace Fem
       if( comboSet.empty() )
       {
         // create combination set
-        comboSet = LimiterUtilityType::
-          setupComboSet( nbVals_.size(), flags.nonConforming, spc_.multipleGeometryTypes(),
-                         conformingComboSet_, comboSet_ );
+        LimiterUtilityType::buildComboSet( nbVals_.size(), comboSet );
       }
-
-      // create combination set
-      //const ComboSetType& comboSet = LimiterUtilityType::
-      //  setupComboSet( nbVals_.size(), flags.nonConforming, spc_.multipleGeometryTypes(),
-      //                conformingComboSet_, comboSet_ );
 
       // reset values
       deoMods_.clear();
@@ -1836,9 +1827,6 @@ namespace Fem
     mutable int faceQuadOrd_;
     mutable int volumeQuadOrd_;
     mutable int argOrder_;
-
-    mutable ComboSetType conformingComboSet_;
-    mutable ComboSetType comboSet_;
 
     mutable ComboSetMapType storedComboSets_;
 
