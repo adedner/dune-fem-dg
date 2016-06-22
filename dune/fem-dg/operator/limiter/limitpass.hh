@@ -463,7 +463,8 @@ namespace Fem
     typedef typename GridPartType::template Codim<0>::GeometryType       Geometry;
     typedef typename Geometry::LocalCoordinate LocalDomainType;
 
-    typedef LimiterUtility< DiscreteFunctionSpaceType > LimiterUtilityType;
+    // define limiter utility class
+    typedef LimiterUtility< typename DiscreteFunctionSpaceType::FunctionSpaceType, GridType::dimension > LimiterUtilityType;
 
     // Various other types
     typedef typename DestinationType::LocalFunctionType DestLocalFunctionType;
@@ -503,6 +504,8 @@ namespace Fem
     typedef typename LimiterUtilityType::CheckType       CheckType;
     typedef typename LimiterUtilityType::VectorCompType  VectorCompType;
     typedef typename LimiterUtilityType::ComboSetType    ComboSetType;
+
+    typedef std::map< int, ComboSetType > ComboSetMapType ;
 
     typedef typename LimiterUtilityType::MatrixStorage MatrixCacheEntry;
     typedef std::map< KeyType, MatrixCacheEntry > MatrixCacheType;
@@ -575,12 +578,15 @@ namespace Fem
       argOrder_( spc_.order() ),
       conformingComboSet_(),
       comboSet_(),
+      storedComboSets_(),
       tolFactor_( getTolFactor() ),
       tol_1_( 1.0/getTol() ),
       geoInfo_( gridPart_.indexSet() ),
       faceGeoInfo_( geoInfo_.geomTypes(1) ),
       phi0_( 0 ),
       matrixCacheVec_( gridPart_.grid().maxLevel() + 1 ),
+      factors_(),
+      numbers_(),
       localMassMatrix_( spc_ , volumeQuadOrd_ ),
       adaptive_((AdaptationMethodType(gridPart_.grid())).adaptive()),
       cartesianGrid_( CheckCartesianType::check( gridPart_ ) ),
@@ -763,9 +769,14 @@ namespace Fem
       // calculate maximal indicator (if necessary)
       discreteModel_.indicatorMax();
 
+      const size_t size = indexSet_.size( 0 ) ;
       // reset visited vector
-      visited_.resize( indexSet_.size( 0 ) );
+      visited_.resize( size );
       std::fill( visited_.begin(), visited_.end(), false );
+
+      factors_.resize( size );
+      numbers_.clear();
+      numbers_.resize( size );
 
       const int numLevels = gridPart_.grid().maxLevel() + 1;
       // check size of matrix cache vec
@@ -1015,8 +1026,8 @@ namespace Fem
         EvalAverage average( *this, U, discreteModel_, geo.volume() );
 
         // setup neighbors barycenter and mean value for all neighbors
-        LimiterUtilityType::setupNeighborValues( gridPart_, en, average, enBary, enVal, StructuredGrid,
-                                                 flags, barys_, nbVals_ );
+        LimiterUtilityType::setupNeighborValues( gridPart_, en, average, enBary, enVal,
+                                                 StructuredGrid, flags, barys_, nbVals_ );
       }
 
       // if limit, then limit all components
@@ -1049,10 +1060,20 @@ namespace Fem
       // increase number of limited elements
       ++limitedElements_;
 
+      // obtain combination set
+      ComboSetType& comboSet = storedComboSets_[ nbVals_.size() ];
+      if( comboSet.empty() )
+      {
+        // create combination set
+        comboSet = LimiterUtilityType::
+          setupComboSet( nbVals_.size(), flags.nonConforming, spc_.multipleGeometryTypes(),
+                         conformingComboSet_, comboSet_ );
+      }
+
       // create combination set
-      const ComboSetType& comboSet = LimiterUtilityType::
-        setupComboSet( nbVals_.size(), flags.nonConforming, spc_.multipleGeometryTypes(),
-                       conformingComboSet_, comboSet_ );
+      //const ComboSetType& comboSet = LimiterUtilityType::
+      //  setupComboSet( nbVals_.size(), flags.nonConforming, spc_.multipleGeometryTypes(),
+      //                conformingComboSet_, comboSet_ );
 
       // reset values
       deoMods_.clear();
@@ -1080,11 +1101,13 @@ namespace Fem
       }
 
       // Limiting
+      std::vector< RangeType > factors;
       LimiterUtilityType::limitFunctions(
-          discreteModel_.limiterFunction(), comboVec_, barys_, nbVals_, deoMods_);
+          discreteModel_.limiterFunction(), comboVec_, barys_, nbVals_, deoMods_, factors );
 
+      const unsigned int enIndex = indexSet_.index( en );
       // take maximum of limited functions
-      LimiterUtilityType::getMaxFunction(deoMods_, deoMod_);
+      LimiterUtilityType::getMaxFunction(deoMods_, deoMod_, factors_[ enIndex ], numbers_[ enIndex ], factors );
 
       // get local funnction for limited values
       DestLocalFunctionType limitEn = dest_->localFunction(en);
@@ -1817,6 +1840,8 @@ namespace Fem
     mutable ComboSetType conformingComboSet_;
     mutable ComboSetType comboSet_;
 
+    mutable ComboSetMapType storedComboSets_;
+
     // tolerance to scale shock indicator
     const double tolFactor_;
     const double tol_1_;
@@ -1835,6 +1860,9 @@ namespace Fem
     mutable std::vector< DomainType > barys_;
     mutable std::vector< RangeType >  nbVals_;
     mutable std::vector< MatrixCacheType > matrixCacheVec_;
+
+    mutable std::vector< RangeType  > factors_;
+    mutable std::vector< std::vector< int > > numbers_;
 
     // vector for stroing the information which elements have been computed already
     mutable std::vector< bool > visited_;

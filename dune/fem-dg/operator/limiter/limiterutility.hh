@@ -27,10 +27,7 @@
 
 #include <dune/fem/function/adaptivefunction.hh>
 
-#include <dune/fem-dg/pass/dgmodelcaller.hh>
 #include <dune/fem/misc/compatibility.hh>
-
-#include <dune/fem-dg/pass/context.hh>
 
 //*************************************************************
 namespace Dune
@@ -38,11 +35,10 @@ namespace Dune
 namespace Fem
 {
 
-  template< class DiscreteFunctionSpace >
+  template< class FunctionSpace, int dimGrd = FunctionSpace::dimDomain >
   struct LimiterUtility
   {
-    typedef DiscreteFunctionSpace DiscreteFunctionSpaceType ;
-    typedef typename DiscreteFunctionSpaceType :: FunctionSpaceType FunctionSpaceType;
+    typedef FunctionSpace  FunctionSpaceType;
     typedef typename FunctionSpaceType :: DomainType      DomainType;
     typedef typename FunctionSpaceType :: DomainFieldType DomainFieldType;
     typedef typename FunctionSpaceType :: RangeType       RangeType;
@@ -50,11 +46,10 @@ namespace Fem
 
     static const int dimRange  = FunctionSpaceType :: dimRange;
     static const int dimDomain = FunctionSpaceType :: dimDomain;
+    static const int dimGrid   = dimGrd;
 
-    typedef FieldVector< DomainType , dimRange > GradientType;
-    typedef FieldMatrix< DomainFieldType, dimDomain , dimDomain > MatrixType;
-
-    static const int dimGrid = DiscreteFunctionSpaceType::GridType::dimension;
+    typedef FieldMatrix< DomainFieldType, dimRange,  dimDomain > GradientType;
+    typedef FieldMatrix< DomainFieldType, dimDomain, dimDomain > MatrixType;
 
     typedef DGFEntityKey<int> KeyType;
     typedef std::vector<int> CheckType;
@@ -71,18 +66,36 @@ namespace Fem
         : boundary( false ), nonConforming( false ), cartesian( cart ), limiter( lim ) {}
     };
 
+    static bool functionIsPhysical( const DomainType& xGlobal,
+                                    const RangeType& value,
+                                    const GradientType& gradient )
+    {
+      RangeType res = value ;
+      for ( int i=0; i<dimRange; ++ i )
+      {
+        res[ i ] += xGlobal * gradient[ i ];
+        if( res[ i ] < 0.0 || res[ i ] > 1.0 )
+          return false ;
+      }
+      return true;
+    }
+
     //! limit all functions
     template <class LimiterFunction, class CheckSet >
     static void limitFunctions(const LimiterFunction& limiterFunction,
+                               //const CheckPhysical& checkPhysical,
                                const std::vector< CheckSet >& comboVec,
                                const std::vector< DomainType >& barys,
                                const std::vector< RangeType  >& nbVals,
-                               std::vector< GradientType >& gradients)
+                               std::vector< GradientType >& gradients,
+                               std::vector< RangeType >& factors )
     {
       // get accuracy threshold
       const double limitEps = limiterFunction.epsilon();
 
       const size_t numFunctions = gradients.size();
+      factors.resize( numFunctions );
+
       // for all functions check with all values
       for(size_t j=0; j<numFunctions; ++j)
       {
@@ -98,16 +111,11 @@ namespace Fem
           for(auto it = v.begin(); it != endit ; ++it )
           {
             // get current number of entry
-            const size_t k = *it;
+            const unsigned int k = *it;
 
             // evaluate values for limiter function
             const DomainFieldType d = nbVals[ k ][ r ];
             const DomainFieldType g = D * barys[ k ];
-
-            const DomainFieldType length2 =  barys[ k ].two_norm2();
-
-            // if length is to small then the grid is corrupted
-            assert( length2 > 1e-14 );
 
             // if the gradient in direction of the line
             // connecting the barycenters is very small
@@ -117,55 +125,89 @@ namespace Fem
             // g = grad L ( w_E,i - w_E ) ,  d = u_E,i - u_E
             DomainFieldType localFactor = limiterFunction( g, d );
 
-            const DomainFieldType factor = (g*g) / length2 ;
-            if( localFactor < 1.0 &&  factor  < limitEps )
+            if( localFactor < 1.0 )
             {
-              localFactor = 1.0 - std::tanh( factor / limitEps );
+              const DomainFieldType length2 = barys[ k ].two_norm2();
+
+              // if length is to small then the grid is corrupted
+              assert( length2 > 1e-14 );
+
+              const DomainFieldType factor = (g*g) / length2 ;
+              if( factor < limitEps )
+              {
+                //std::cout << "Using tanh" << std::endl;
+                //localFactor = 1.0 - std::tanh( factor / limitEps );
+                localFactor = 1.0 - ( factor / limitEps );
+              }
             }
 
             // take minimum
             minimalFactor = std::min( localFactor , minimalFactor );
+            // if minimum is already zero stop computation here
+            if( minimalFactor < 1e-12 )
+              break ;
           }
 
           // scale linear function
           D *= minimalFactor;
+          // store factor
+          factors[ j ][ r ] = minimalFactor;
+
+          /*
+          // if non-physical then set gradient to zero
+          if( minimalFactor > 0.0 )
+          {
+            if( ! checkPhysical( r, D ) )
+            {
+              D = 0;
+            }
+          }
+          */
         }
       }
     }
 
     // chose function with maximal gradient
     static void getMaxFunction(const std::vector< GradientType >& gradients,
-                               GradientType& maxGradient)
+                               GradientType& maxGradient,
+                               RangeType& maxFactor,
+                               std::vector< int >& numbers,
+                               std::vector< RangeType >& factors )
     {
       static const int dimRange = FunctionSpaceType :: dimRange ;
-
-      const size_t numFunctions = gradients.size();
-
-      const int startFunc = 0;
-      std::vector< size_t > number(dimRange, startFunc);
-
-      RangeType max (0);
-      for(int r=0; r<dimRange; ++r)
+      if( numbers.empty() )
       {
-        max[r] = gradients[ startFunc ][ r ].two_norm2();
-      }
+        maxFactor = 0 ;
+        const size_t numFunctions = gradients.size();
+        assert( factors.size() == numFunctions );
 
-      for(size_t l=1; l<numFunctions; ++l)
-      {
+        const int startFunc = 0;
+        numbers.resize( dimRange, startFunc);
+
+        RangeType max (0);
         for(int r=0; r<dimRange; ++r)
         {
-          RangeFieldType D_abs = gradients[ l ][ r ].two_norm2();
-          if( D_abs > max[r] )
+          max[r] = gradients[ startFunc ][ r ].two_norm2();
+        }
+
+        for(size_t l=1; l<numFunctions; ++l)
+        {
+          for(int r=0; r<dimRange; ++r)
           {
-            number[r] = l;
-            max[r] = D_abs;
+            RangeFieldType D_abs = gradients[ l ][ r ].two_norm2();
+            if( D_abs > max[r] )
+            {
+              numbers[r] = l;
+              max[r] = D_abs;
+              maxFactor[ r ] = factors[ l ][ r ];
+            }
           }
         }
       }
 
       for(int r=0; r<dimRange; ++r)
       {
-        maxGradient[r] = gradients[ number[r] ][r];
+        maxGradient[r] = gradients[ numbers[r] ][r];
       }
     }
 
@@ -344,6 +386,7 @@ namespace Fem
         {
           // check all neighbors
           const EntityType& neighbor = intersection.outside();
+          //const int nbIndex = gridPart.indexSet().index( neighbor );
 
           // nonConforming case
           flags.nonConforming |= (! intersection.conforming() );
@@ -352,6 +395,7 @@ namespace Fem
           if( ! hasBoundary )
           {
             // get barycenter of neighbor
+            //lambda = centers[ nbIndex ];
             lambda = neighbor.geometry().center();
             // calculate difference
             lambda -= entityCenter;
@@ -419,6 +463,26 @@ namespace Fem
         barys.push_back(lambda);
 
       } // end intersection iterator
+
+      int i = 0;
+      for( auto it = nbVals.begin(), bit = barys.begin(); it != nbVals.end(); ++it, ++i, ++bit )
+      {
+        if( nbVals.size() <= dimGrid+1 )
+          return ;
+
+        for( int j=i-1; j>=0; --j )
+        {
+          assert( j < int(nbVals.size()) );
+          assert( i < int(nbVals.size()) );
+          if( (nbVals[ i ] - nbVals[ j ]).two_norm() < 1e-12 )
+          {
+            nbVals.erase( it );
+            barys.erase( bit );
+            --i;
+            break ;
+          }
+        }
+      }
     }
 
     // matrix assemblers for the reconstruction matrices
@@ -879,7 +943,7 @@ namespace Fem
   protected:
     void printInfo(const std::string& name ) const
     {
-      if( Parameter::verbose() )
+      //if( Parameter::verbose() )
       {
         std::cout << "LimiterFunction: " << name << " with limitEps = " << limitEps_ << std::endl;
       }
