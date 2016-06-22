@@ -438,6 +438,7 @@ namespace Fem
 
       } // end intersection iterator
 
+      /*
       int i = 0;
       for( auto it = nbVals.begin(), bit = barys.begin(); it != nbVals.end(); ++it, ++i, ++bit )
       {
@@ -448,7 +449,7 @@ namespace Fem
         {
           assert( j < int(nbVals.size()) );
           assert( i < int(nbVals.size()) );
-          if( (nbVals[ i ] - nbVals[ j ]).two_norm() < 1e-12 )
+          if( (nbVals[ i ] - nbVals[ j ]).two_norm2() < 1e-4 )
           {
             nbVals.erase( it );
             barys.erase( bit );
@@ -457,6 +458,7 @@ namespace Fem
           }
         }
       }
+      */
     }
 
     // matrix assemblers for the reconstruction matrices
