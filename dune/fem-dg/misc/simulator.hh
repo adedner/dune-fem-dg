@@ -223,7 +223,6 @@ namespace Fem
         polOrder = Dune::Fem::Parameter :: getValue("femdg.polynomialOrder", polOrder );
 
         // run through all available polynomial order and check with dynamic polOrder
-        // when -DONLY_ONE_P was passed only POLORDER is used
         Dune::ForLoop< SimulatePolOrd, MIN_POLORD, MAX_POLORD > :: apply( problem, polOrder, bool(MIN_POLORD == MAX_POLORD) );
 #ifdef BASEFUNCTIONSET_CODEGEN_GENERATE
       }

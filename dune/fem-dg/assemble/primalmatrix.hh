@@ -1394,6 +1394,9 @@ namespace Fem
           baseSet.evaluateAll( faceQuadInside[ pt ], phiEn_ );
           baseSet.jacobianAll( faceQuadInside[ pt ], dphiEn_ );
 
+          //TODO initialize boundary
+          //TODO discreteModel().initializeBoundary( intersection, model_.time(), faceQuadInside, phiEn_ );
+
           for( unsigned int i = 0; i < numBasisFunctionsEn; ++i )
           {
             IntersectionLocalEvaluationType left( intersection, entity, faceQuadInside, phiEn_[i], dphiEn_[i], pt, model_.time(), entityVolume );
@@ -1734,8 +1737,8 @@ namespace Fem
     template <class IntersectionStorageImp,class Value,class LiftingFunction>
     void lifting(const IntersectionStorageImp& left,
                  const IntersectionStorageImp& right,
-                 const Value &valueEn,
-                 const Value &valueNb,
+                 const Value &valueEn,   /* or: localfunction */
+                 const Value &valueNb,  /* or: localfunction */
                  LiftingFunction &lifting) const
     {
       VectorToTupleVector valEn( valueEn );

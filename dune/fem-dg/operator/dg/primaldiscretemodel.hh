@@ -190,7 +190,8 @@ namespace Fem
           ConverterType uLeft ( uLeftVec ) ;
 
           const size_t quadNop = quadInner.nop();
-          if( uBndVec_.size() < quadNop ) uBndVec_.resize( quadNop );
+          if( uBndVec_.size() < quadNop )
+            uBndVec_.resize( quadNop );
 
           for(size_t qp = 0; qp < quadNop; ++qp)
           {

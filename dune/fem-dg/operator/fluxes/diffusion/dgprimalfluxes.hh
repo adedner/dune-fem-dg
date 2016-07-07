@@ -404,7 +404,7 @@ namespace Fem
                          const QuadratureImp& quadInner,
                          const QuadratureImp& quadOuter,
                          const ArgumentTupleVector& uLeftVec,
-                         const ArgumentTupleVector& uRightVec,
+                         const ArgumentTupleVector& uRightVec, /* quadpoints  */
                          const bool computeBoth )
     {
       if( hasLifting() || computeBoth )
@@ -535,11 +535,24 @@ namespace Fem
         // add to local function
         LeMinusLifting().function().axpyQuadrature( faceQuad, liftingEvalLeMinus_ );
 
+        std::cout << LeMinusLifting().function().localDofVector() << std::endl;
+        for( int i = 0; i < liftingEvalLeMinus_.size(); ++i )
+          std::cout << liftingEvalLeMinus_[i] << " " ;
+        std::cout << std::endl;
+
         // LeMinusLifting_ has L_e=2*r_e on Ke-
         LeMinusLifting().finalize( );
 
         // already evaluate for all quadrature points
         LeMinusLifting().function().evaluateQuadrature( faceQuad, liftingEvalLeMinus_ );
+
+        std::cout << LeMinusLifting().function().localDofVector() << std::endl;
+        for( int i = 0; i < liftingEvalLeMinus_.size(); ++i )
+          std::cout << liftingEvalLeMinus_[i] << " " ;
+        std::cout << std::endl;
+
+        std::cout << "-------------------------------" << std::endl;
+        std::cout << "-------------------------------" << std::endl;
 
         if ( computeBoth )
         {
