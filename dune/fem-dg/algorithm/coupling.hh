@@ -4,7 +4,7 @@
 #include <tuple>
 #include <type_traits>
 #include <memory>
-#include <dune/common/std/utility.hh>
+#include <utility>
 
 
 namespace Dune
@@ -77,7 +77,7 @@ namespace Fem
     }
 
     template< std::size_t ...i >
-    static SubAlgorithmTupleType apply ( Std::index_sequence< i... >, GridType &grid )
+    static SubAlgorithmTupleType apply ( std::index_sequence< i... >, GridType &grid )
     {
       return std::make_tuple( createSubAlgorithm<i>( grid )... );
     }
@@ -91,7 +91,7 @@ namespace Fem
      */
     static SubAlgorithmTupleType apply ( GridType &grid )
     {
-      return apply( typename Std::make_index_sequence_impl< std::tuple_size< SubAlgorithmTupleType >::value >::type(), grid );
+      return apply( typename std::make_index_sequence< std::tuple_size< SubAlgorithmTupleType >::value >(), grid );
     }
   };
 

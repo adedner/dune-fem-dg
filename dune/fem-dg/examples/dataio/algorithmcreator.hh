@@ -62,9 +62,9 @@ namespace Fem
 
     typedef typename CouplingType::SubAlgorithmTupleType                                     SubAlgorithmTupleType;
 
-    typedef typename Dune::Std::make_index_sequence_impl< std::tuple_size< SubAlgorithmTupleType >::value >::type
+    typedef typename std::make_index_sequence< std::tuple_size< SubAlgorithmTupleType >::value >
                                                                                              IndexSequenceType;
-    typedef Dune::Std::index_sequence<>                                                      NoIndexSequenceType;
+    typedef std::index_sequence<>                                                            NoIndexSequenceType;
 
     typedef Dune::Fem::AdaptCaller< SubAlgorithmTupleType, NoIndexSequenceType >             AdaptCallerType;
     typedef Dune::Fem::DiagnosticsCaller < SubAlgorithmTupleType, NoIndexSequenceType >      DiagnosticsCallerType;

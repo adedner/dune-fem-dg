@@ -19,7 +19,7 @@ namespace Fem
    * \ingroup Caller
    */
   template< class AlgTupleImp,
-            class IndexSequenceImp=typename Std::make_index_sequence_impl< std::tuple_size< AlgTupleImp >::value >::type >
+            class IndexSequenceImp=typename std::make_index_sequence< std::tuple_size< AlgTupleImp >::value > >
   class SolverMonitorCaller;
 
 
@@ -43,7 +43,7 @@ namespace Fem
    * \tparam Std::index_sequence< Ints... > Index sequence for enabling the data collecting feature.
    */
   template< class AlgTupleImp, std::size_t... Ints >
-  class SolverMonitorCaller< AlgTupleImp, Std::index_sequence< Ints... > >
+  class SolverMonitorCaller< AlgTupleImp, std::index_sequence< Ints... > >
     : public CallerInterface
   {
     typedef AlgTupleImp                                                            AlgTupleType;
@@ -162,7 +162,7 @@ namespace Fem
    * \brief Specizalization of hander class doing no solver monitor handling.
    */
   template< class AlgTupleImp >
-  class SolverMonitorCaller< AlgTupleImp, Std::index_sequence<> >
+  class SolverMonitorCaller< AlgTupleImp, std::index_sequence<> >
     : public CallerInterface
   {
   public:
