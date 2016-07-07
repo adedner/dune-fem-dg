@@ -23,11 +23,11 @@ namespace Dune
 {
 namespace Fem
 {
-  template< class GridPartImp, class ProblemImp >
+  template< class GridImp, class ProblemImp >
   class EulerModelTraits
-    : public DefaultModelTraits< GridPartImp, ProblemImp >
+    : public DefaultModelTraits< GridImp, ProblemImp >
   {
-    typedef DefaultModelTraits< GridPartImp, ProblemImp >           BaseType;
+    typedef DefaultModelTraits< GridImp, ProblemImp >           BaseType;
   public:
     typedef Dune::FieldVector< typename BaseType::DomainFieldType, BaseType::dimGradRange >
                                                                     GradientType;
@@ -47,12 +47,12 @@ namespace Fem
    *
    * \ingroup AnalyticalModels
    */
-  template< class GridPartType, class ProblemImp >
+  template< class GridImp, class ProblemImp >
   class EulerModel :
-    public DefaultModel< EulerModelTraits< GridPartType, ProblemImp > >
+    public DefaultModel< EulerModelTraits< GridImp, ProblemImp > >
   {
   public:
-    typedef EulerModelTraits< GridPartType, ProblemImp > Traits;
+    typedef EulerModelTraits< GridImp, ProblemImp > Traits;
     typedef typename Traits::ProblemType                 ProblemType;
 
     typedef std::integral_constant< int, 0 > uVar;
@@ -61,8 +61,6 @@ namespace Fem
     enum { dimRange = Traits::dimRange };
 
     typedef typename Traits::GridType                    GridType;
-    typedef typename Traits::EntityType                  EntityType;
-    typedef typename Traits::IntersectionType            IntersectionType;
     typedef typename Traits::FaceDomainType              FaceDomainType;
 
     typedef typename Traits::RangeType                   RangeType;
@@ -293,7 +291,8 @@ namespace Fem
     /////////////////////////////////////////////////////////////////
     // Limiter section
     ////////////////////////////////////////////////////////////////
-    inline void velocity (const EntityType& en,
+    template< class Entity >
+    inline void velocity (const Entity& en,
                           const double time,
                           const DomainType& x,
                           const RangeType& u,
@@ -315,7 +314,8 @@ namespace Fem
     }
 
     // calculate jump between left and right value
-    inline bool physical(const EntityType& entity,
+    template< class Entity >
+    inline bool physical(const Entity& entity,
                          const DomainType& xGlobal,
                          const RangeType& u) const
     {
@@ -330,7 +330,8 @@ namespace Fem
 
     // adjust average value if necessary
     // (e.g. transform from conservative to primitive variables )
-    void adjustAverageValue( const EntityType& entity,
+    template< class Entity >
+    void adjustAverageValue( const Entity& entity,
                              const DomainType& xLocal,
                              RangeType& u ) const
     {
@@ -338,7 +339,8 @@ namespace Fem
     }
 
     // calculate jump between left and right value
-    inline void jump(const IntersectionType& it,
+    template< class Intersection >
+    inline void jump(const Intersection& it,
                      const double time,
                      const FaceDomainType& x,
                      const RangeType& uLeft,
@@ -352,7 +354,8 @@ namespace Fem
     }
 
     // calculate jump between left and right value
-    inline void adaptationIndicator (const IntersectionType& it,
+    template< class Intersection >
+    inline void adaptationIndicator (const Intersection& it,
                                      const double time,
                                      const FaceDomainType& x,
                                      const RangeType& uLeft,

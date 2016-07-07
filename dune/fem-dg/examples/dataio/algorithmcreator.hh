@@ -103,7 +103,7 @@ namespace Fem
       {
         typedef ProblemInterfaceType                                    ProblemType;
         typedef ProblemInterfaceType                                    InitialDataType;
-        typedef NoModel< GridPartType, ProblemType >                    ModelType;
+        typedef NoModel< GridType, ProblemType >                        ModelType;
 
         template< class Solution, class Model, class ExactFunction, class TimeProvider >
         static void addEOCErrors ( TimeProvider& tp, Solution &u, Model &model, ExactFunction &f )

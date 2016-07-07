@@ -21,11 +21,11 @@ namespace Dune
 {
 namespace Fem
 {
-  template <class GridPartImp, class ProblemImp >
+  template <class GridImp, class ProblemImp >
   class HeatEqnModelTraits
-    : public DefaultModelTraits< GridPartImp, ProblemImp >
+    : public DefaultModelTraits< GridImp, ProblemImp >
   {
-    typedef DefaultModelTraits< GridPartImp, ProblemImp >              BaseType;
+    typedef DefaultModelTraits< GridImp, ProblemImp >              BaseType;
   public:
     typedef Dune::FieldVector< typename BaseType::DomainFieldType, BaseType::dimGradRange >
                                                                        GradientType;
@@ -62,15 +62,15 @@ namespace Fem
    *
    * for a matrix \f$M\in \mathbf{M}^{n\times m}\f$.
    *
-   * \param GridPart GridPart for extraction of dimension
+   * \param Grid Grid for extraction of dimension
    * \param ProblemType Class describing the initial(t=0) and exact solution
    */
-  template <class GridPartType, class ProblemImp>
+  template <class GridImp, class ProblemImp>
   class HeatEqnModel :
-    public DefaultModel < HeatEqnModelTraits< GridPartType, ProblemImp > >
+    public DefaultModel < HeatEqnModelTraits< GridImp, ProblemImp > >
   {
   public:
-    typedef HeatEqnModelTraits< GridPartType, ProblemImp >    Traits;
+    typedef HeatEqnModelTraits< GridImp, ProblemImp >    Traits;
 
     enum { velo = 0, press = 1, blabla = 2 };
     typedef std::integral_constant< int, velo   > velocityVar;
@@ -97,9 +97,6 @@ namespace Fem
     typedef typename Traits::DiffusionMatrixType              DiffusionMatrixType;
     typedef typename Traits::FaceDomainType                   FaceDomainType;
     typedef typename Traits::JacobianRangeType                JacobianRangeType;
-
-    typedef typename Traits::EntityType                       EntityType;
-    typedef typename Traits::IntersectionType                 IntersectionType;
 
     // for heat equations advection is disabled
     static const bool hasAdvection = true;

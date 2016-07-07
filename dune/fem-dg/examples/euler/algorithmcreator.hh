@@ -77,7 +77,7 @@ namespace Fem
       {
         typedef ProblemInterfaceType                               ProblemType;
         typedef ProblemInterfaceType                               InitialDataType;
-        typedef EulerModel< GridPartType, InitialDataType >        ModelType;
+        typedef EulerModel< GridType, InitialDataType >            ModelType;
 
         template< class Solution, class Model, class ExactFunction, class TimeProvider >
         static void addEOCErrors ( TimeProvider& tp, Solution &u, Model &model, ExactFunction &f )

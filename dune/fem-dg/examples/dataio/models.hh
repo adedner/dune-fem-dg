@@ -7,18 +7,14 @@ namespace Dune
 {
 namespace Fem
 {
-  template <class GridPart, class ProblemImp >
+  template <class GridImp, class ProblemImp >
   class DefaultNoModelTraits
     : public ProblemImp::FunctionSpaceType
   {
     typedef typename ProblemImp::FunctionSpaceType                        BaseType;
 
-    typedef GridPart                                                      GridPartType;
-    typedef typename GridPartType::GridType                               GridType;
+    typedef GridImp                                                       GridType;
   public:
-    typedef typename GridType::template Codim< 0 >::Entity                EntityType;
-    typedef typename GridPartType::IntersectionIteratorType::Intersection IntersectionType;
-
     typedef typename BaseType::RangeFieldType                             RangeFieldType;
     typedef typename BaseType::DomainFieldType                            DomainFieldType;
     enum { dimRange  = BaseType::dimRange };
@@ -32,9 +28,9 @@ namespace Fem
   };
 
 
-  template< class GridPartImp, class ProblemImp >
+  template< class GridImp, class ProblemImp >
   class NoModel
-    : public DefaultModel< DefaultNoModelTraits< GridPartImp, ProblemImp > >
+    : public DefaultModel< DefaultNoModelTraits< GridImp, ProblemImp > >
   {
 
     public:

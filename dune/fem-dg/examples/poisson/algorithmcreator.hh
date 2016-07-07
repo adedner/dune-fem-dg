@@ -75,7 +75,7 @@ namespace Fem
       {
         typedef ProblemInterfaceType                                ProblemType;
         typedef ProblemInterfaceType                                InitialDataType;
-        typedef Poisson::Model< GridPartType, InitialDataType >     ModelType;
+        typedef Poisson::Model< GridType, InitialDataType >         ModelType;
 
         template< class Solution, class Model, class ExactFunction, class SigmaFunction>
         static void addEOCErrors ( Solution &u, Model &model, ExactFunction &f, SigmaFunction& sigma )

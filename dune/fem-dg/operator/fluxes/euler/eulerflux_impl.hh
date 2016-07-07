@@ -536,8 +536,6 @@ namespace Fem
     typedef typename ModelImp::JacobianRangeType  JacobianRangeType;
     typedef typename ModelImp::FluxRangeType      FluxRangeType;
     typedef typename ModelImp::FaceDomainType     FaceDomainType;
-    typedef typename ModelImp::EntityType         EntityType;
-    typedef typename ModelImp::IntersectionType   IntersectionType;
 
     typedef FluxImp                               FluxType;
 

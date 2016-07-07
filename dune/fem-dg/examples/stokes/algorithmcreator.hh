@@ -92,7 +92,7 @@ namespace Fem
         {
           typedef ProblemInterfaceType                                  ProblemType;
           typedef ProblemInterfaceType                                  InitialDataType;
-          typedef Stokes::PoissonModel< GridPartType, InitialDataType > ModelType;
+          typedef Stokes::PoissonModel< GridType, InitialDataType >     ModelType;
 
           template< class Solution, class Model, class ExactFunction, class SigmaFunction>
           static void addEOCErrors ( Solution &u, Model &model, ExactFunction &f, SigmaFunction& sigma )
@@ -182,7 +182,7 @@ namespace Fem
       {
         typedef ProblemInterfaceType                                      ProblemType;
         typedef ProblemInterfaceType                                      InitialDataType;
-        typedef Stokes::StokesModel< GridPartType, InitialDataType >      ModelType;
+        typedef Stokes::StokesModel< GridType, InitialDataType >          ModelType;
 
         template< class Solution, class Model, class ExactFunction >
         static void addEOCErrors ( Solution &u, Model &model, ExactFunction &f )

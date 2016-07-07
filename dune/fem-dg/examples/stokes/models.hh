@@ -20,11 +20,11 @@ namespace Stokes
   /**
    * \brief Traits class for StokesModel
    */
-  template <class GridPartImp, class ProblemImp>
+  template <class GridImp, class ProblemImp>
   class StokesPoissonModelTraits
-    : public DefaultModelTraits< GridPartImp, ProblemImp >
+    : public DefaultModelTraits< GridImp, ProblemImp >
   {
-    typedef DefaultModelTraits< GridPartImp, ProblemImp >       BaseType;
+    typedef DefaultModelTraits< GridImp, ProblemImp >       BaseType;
   public:
     typedef Dune::FieldVector< typename BaseType::DomainFieldType, BaseType::dimGradRange >
                                                                        GradientType;
@@ -32,12 +32,13 @@ namespace Stokes
     typedef std::tuple <>                                              ModelParameter;
   };
 
-  template <class GridPartImp, class ProblemImp>
-  class PoissonModel : public DefaultModel< StokesPoissonModelTraits< GridPartImp, ProblemImp > >
+  template <class GridImp, class ProblemImp>
+  class PoissonModel
+    : public DefaultModel< StokesPoissonModelTraits< GridImp, ProblemImp > >
   {
   public:
     typedef ProblemImp                                      ProblemType;
-    typedef StokesPoissonModelTraits< GridPartImp, ProblemType >
+    typedef StokesPoissonModelTraits< GridImp, ProblemType >
                                                             Traits;
 
     typedef typename Traits::GridType                       GridType;
@@ -54,9 +55,6 @@ namespace Stokes
     typedef typename Traits::JacobianRangeType              JacobianRangeType;
 
     typedef typename Traits::DiffusionMatrixType            DiffusionMatrixType ;
-
-    typedef typename Traits::EntityType                     EntityType;
-    typedef typename Traits::IntersectionType               IntersectionType;
 
     static const bool hasDiffusion = true;
     static const int ConstantVelocity = false;
@@ -175,7 +173,8 @@ namespace Stokes
       maxValue = values.infinity_norm();
     }
 
-    inline double penaltyBoundary( const EntityType& inside,
+    template< class Entity >
+    inline double penaltyBoundary( const Entity& inside,
                                    const double time,
                                    const DomainType& xInside,
                                    const RangeType& uLeft ) const
@@ -354,16 +353,17 @@ namespace Stokes
    *
    * for a matrix \f$M\in \mathbf{M}^{n\times m}\f$.
    *
-   * \param GridPartImp GridPart for extraction of dimension
+   * \param GridImp Grid for extraction of dimension
    * \param ProblemImp Class describing the initial(t=0) and exact solution
    */
-  template <class GridPartImp, class ProblemImp>
-  class StokesModel : public PoissonModel< GridPartImp, typename ProblemImp::PoissonProblemType >
+  template <class GridImp, class ProblemImp>
+  class StokesModel
+  : public PoissonModel< GridImp, typename ProblemImp::PoissonProblemType >
   {
-    typedef PoissonModel< GridPartImp, typename ProblemImp::PoissonProblemType > BaseType;
+    typedef PoissonModel< GridImp, typename ProblemImp::PoissonProblemType > BaseType;
   public:
     typedef ProblemImp                                      ProblemType;
-    typedef StokesPoissonModelTraits< GridPartImp, typename ProblemType::PoissonProblemType >
+    typedef StokesPoissonModelTraits< GridImp, typename ProblemType::PoissonProblemType >
                                                             Traits;
 
     typedef typename Traits::GridType                       GridType;
@@ -380,9 +380,6 @@ namespace Stokes
     typedef typename Traits::JacobianRangeType              JacobianRangeType;
 
     typedef typename Traits::DiffusionMatrixType            DiffusionMatrixType ;
-
-    typedef typename Traits::EntityType                     EntityType;
-    typedef typename Traits::IntersectionType               IntersectionType;
 
     static const bool hasDiffusion = true;
     static const int ConstantVelocity = false;

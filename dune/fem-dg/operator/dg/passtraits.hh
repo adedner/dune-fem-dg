@@ -19,7 +19,7 @@ namespace Fem
 
   //PassTraits
   //----------
-  template <class Traits, int polOrd, int dimR>
+  template <class Traits, int polOrd, int dimR, class GridPartImp = typename Traits::ModelType::GridPartType >
   class PassTraits
   {
   public:
@@ -31,7 +31,7 @@ namespace Fem
 
     typedef typename ModelType :: Traits ModelTraits;
 
-    typedef typename ModelTraits  :: GridPartType        GridPartType;
+    typedef GridPartImp                                  GridPartType;
     typedef typename ModelTraits  :: GridType            GridType;
     typedef typename GridType     :: ctype               ctype;
 

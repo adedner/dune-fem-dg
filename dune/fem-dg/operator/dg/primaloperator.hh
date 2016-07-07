@@ -273,9 +273,6 @@ namespace Fem
     enum { dimRange  = ModelType::dimRange };
     enum { dimDomain = ModelType::Traits::dimDomain };
 
-    typedef Traits                                                                PassTraitsType;
-    typedef PassTraits< Traits, limiterPolOrd, dimRange >                         LimiterTraitsType;
-    //typedef PassTraitsType                                                        LimiterTraitsType;
 
     // The model of the advection pass (advectPassId)
     typedef AdvectionDiffusionDGPrimalModel< Traits, limitPassId, advection, diffusion > DiscreteModel1Type;
@@ -283,8 +280,6 @@ namespace Fem
     typedef typename DiscreteModel1Type::DiffusionFluxType                        DiffusionFluxType;
     typedef typename DiscreteModel1Type::AdaptationType                           AdaptationType;
 
-    // The model of the limiter pass (limitPassId)
-    typedef Fem::StandardLimiterDiscreteModel< LimiterTraitsType, ModelType, u >  LimiterDiscreteModelType;
 
     typedef typename ModelType::ProblemType                                       ProblemType;
     typedef typename ModelType::Traits::GridType                                  GridType;
@@ -293,8 +288,13 @@ namespace Fem
 
     typedef typename Traits::DiscreteFunctionSpaceType                            SpaceType;
     typedef typename Traits::DestinationType                                      DestinationType;
+    typedef typename DestinationType::GridPartType                                GridPartType;
 
-    typedef typename Traits::GridPartType                                         GridPartType;
+
+    //typedef Traits                                                              PassTraitsType;
+    typedef PassTraits< Traits, limiterPolOrd, dimRange, GridPartType  >          LimiterTraitsType;
+    // The model of the limiter pass (limitPassId)
+    typedef Fem::StandardLimiterDiscreteModel< LimiterTraitsType, ModelType, u >  LimiterDiscreteModelType;
 
     typedef typename LimiterTraitsType::DestinationType                           LimiterDestinationType ;
     typedef typename LimiterDestinationType::DiscreteFunctionSpaceType            LimiterSpaceType;

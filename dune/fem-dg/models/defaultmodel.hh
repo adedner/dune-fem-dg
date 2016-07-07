@@ -15,12 +15,11 @@ namespace Fem
   /**
    *  \brief Default traits class for models
    */
-  template <class GridPartImp, class ProblemImp>
+  template <class GridImp, class ProblemImp>
   struct DefaultModelTraits
   {
     typedef ProblemImp                                                     ProblemType;
-    typedef GridPartImp                                                    GridPartType;
-    typedef typename GridPartType::GridType                                GridType;
+    typedef GridImp                                                        GridType;
     static const int dimDomain = GridType::dimensionworld;
     static const int dimRange = ProblemType::dimRange;
     static const int dimGradRange = dimRange * dimDomain;
@@ -36,10 +35,6 @@ namespace Fem
     typedef Dune::FieldMatrix< RangeFieldType, dimRange, dimDomain >       JacobianRangeType;
     typedef Dune::FieldMatrix< RangeFieldType, dimDomain, dimDomain >      DiffusionMatrixType;
     typedef Dune::FieldMatrix< RangeFieldType, dimGradRange, dimDomain >   DiffusionRangeType;
-
-    typedef typename GridType::template Codim< 0 >::Entity                 EntityType;
-    typedef typename GridPartType::IntersectionIteratorType                IntersectionIterator;
-    typedef typename IntersectionIterator::Intersection                    IntersectionType;
   };
 
   /**
@@ -104,9 +99,6 @@ namespace Fem
     typedef typename Traits::FluxRangeType               FluxRangeType;
     typedef typename Traits::FaceDomainType              FaceDomainType;
     typedef typename Traits::JacobianRangeType           JacobianRangeType;
-
-    typedef typename Traits::EntityType                  EntityType;
-    typedef typename Traits::IntersectionType            IntersectionType;
 
     /**
      * \brief Sets the current time
@@ -321,9 +313,10 @@ namespace Fem
       DUNE_THROW(Dune::NotImplemented,"DefaultModel::eigenValues is not implemented");
     }
 
+    template< class Entity >
     inline double penaltyFactor( const double time,
                                  const DomainType& xInside,
-                                 const EntityType& inside,
+                                 const Entity& inside,
                                  const RangeType& uLeft ) const
     {
       DUNE_THROW(Dune::NotImplemented,"DefaultModel::penaltyValues is not implemented");
@@ -394,7 +387,8 @@ namespace Fem
      * \param[in]  circumEstimate estimation of the circum
      * \param[in]  u evaluation of the local function, i.e. \f$ u_E( \hat{x} ) \f$
      */
-    inline double diffusionTimeStep( const IntersectionType &it,
+    template< class Intersection >
+    inline double diffusionTimeStep( const Intersection &it,
                                      const double enVolume,
                                      const double circumEstimate,
                                      const double time,
@@ -409,7 +403,8 @@ namespace Fem
      *
      * \param[in] local local evaluation
      */
-    inline bool hasBoundaryValue(const IntersectionType& it,
+    template< class Intersection >
+    inline bool hasBoundaryValue(const Intersection& it,
                                  const double time,
                                  const FaceDomainType& x) const
     {
@@ -495,7 +490,8 @@ namespace Fem
      * \param[in]  uLeft evaluation of the local function, i.e. \f$ u_{E^+}( \hat{x} ) \f$
      * \param[out] uRight the Dirichlet boundary value
      */
-    inline void boundaryValue (const IntersectionType& it,
+    template< class Intersection >
+    inline void boundaryValue (const Intersection& it,
                                const double time,
                                const FaceDomainType& x,
                                const RangeType& uLeft,

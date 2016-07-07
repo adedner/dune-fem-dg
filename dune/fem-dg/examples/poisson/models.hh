@@ -20,12 +20,12 @@ namespace Poisson
   /**
    * \brief Traits class for PoissonModel
    */
-  template <class GridPartImp,
+  template <class GridImp,
             class ProblemImp>
   class PoissonModelTraits
-    : public DefaultModelTraits< GridPartImp, ProblemImp >
+    : public DefaultModelTraits< GridImp, ProblemImp >
   {
-    typedef DefaultModelTraits< GridPartImp, ProblemImp >              BaseType;
+    typedef DefaultModelTraits< GridImp, ProblemImp >              BaseType;
   public:
     typedef Dune::FieldVector< typename BaseType::DomainFieldType, BaseType::dimGradRange >
                                                                        GradientType;
@@ -69,19 +69,18 @@ namespace Poisson
    * \f[ \Delta M = \nabla \cdot (\nabla \cdot (M_{i\cdot})^t)_{i\in 1\dots n} \f]
    * for a matrix \f$M\in \mathbf{M}^{n\times m}\f$.
    *
-   * \param GridPart GridPart for extraction of dimension
+   * \param Grid Grid for extraction of dimension
    * \param ProblemType Class describing the initial(t=0) and exact solution
    */
-  template <class GridPartImp, class ProblemImp>
-  class Model : public DefaultModel< PoissonModelTraits< GridPartImp, ProblemImp > >
+  template <class GridImp, class ProblemImp>
+  class Model : public DefaultModel< PoissonModelTraits< GridImp, ProblemImp > >
   {
-    typedef DefaultModel< PoissonModelTraits< GridPartImp, ProblemImp > > BaseType;
+    typedef DefaultModel< PoissonModelTraits< GridImp, ProblemImp > > BaseType;
   public:
-    typedef PoissonModelTraits< GridPartImp, ProblemImp >     Traits;
+    typedef GridImp                                           GridType;
+    typedef PoissonModelTraits< GridImp, ProblemImp >         Traits;
     typedef typename Traits::ProblemType                      ProblemType;
 
-    typedef typename Traits::GridPartType                     GridPartType;
-    typedef typename Traits::GridType                         GridType;
     static const int dimDomain = Traits::dimDomain;
     static const int dimRange = Traits::dimRange;
 
@@ -96,9 +95,6 @@ namespace Poisson
     typedef typename Traits::JacobianRangeType                JacobianRangeType;
 
     typedef typename ProblemType::DiffusionMatrixType         DiffusionMatrixType ;
-
-    typedef typename Traits::EntityType                       EntityType;
-    typedef typename Traits::IntersectionType                 IntersectionType;
 
     static const bool hasDiffusion = true;
     static const int ConstantVelocity = false;
@@ -233,7 +229,8 @@ namespace Poisson
       maxValue = values.infinity_norm();
     }
 
-    inline double penaltyBoundary (const EntityType& inside,
+    template< class Entity >
+    inline double penaltyBoundary (const Entity& inside,
                                    const double time,
                                    const DomainType& xInside,
                                    const RangeType& uLeft) const
