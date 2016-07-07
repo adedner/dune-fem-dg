@@ -16,18 +16,18 @@ namespace Fem
    * \ingroup Callers
    */
   template< class AlgTupleImp,
-            class IndexSequenceImp=typename Std::make_index_sequence_impl< std::tuple_size< AlgTupleImp >::value >::type >
+            class IndexSequenceImp=typename std::make_index_sequence< std::tuple_size< AlgTupleImp >::value > >
   class PostProcessingCaller;
 
 
   template< class AlgTupleImp, std::size_t... Ints >
-  class PostProcessingCaller< AlgTupleImp, Std::index_sequence< Ints... > >
+  class PostProcessingCaller< AlgTupleImp, std::index_sequence< Ints... > >
     : public CallerInterface
   {
   public:
     typedef AlgTupleImp                                                            AlgTupleType;
 
-    typedef Std::index_sequence< Ints... >                                         IndexSequenceType;
+    typedef std::index_sequence< Ints... >                                         IndexSequenceType;
     static const int numAlgs = IndexSequenceType::size();
     typedef tuple_reducer<AlgTupleType, IndexSequenceType >                        TupleReducerType;
     typedef typename TupleReducerType::type                                        TupleType;
@@ -85,7 +85,7 @@ namespace Fem
    * \ingroup Callers
    */
   template< class TupleImp >
-  class PostProcessingCaller< TupleImp, Std::index_sequence<> >
+  class PostProcessingCaller< TupleImp, std::index_sequence<> >
     : public CallerInterface
   {
   public:

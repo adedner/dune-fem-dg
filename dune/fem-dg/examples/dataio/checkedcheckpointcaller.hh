@@ -14,19 +14,19 @@ namespace Fem
 {
 
   template< class AlgTupleImp,
-            class IndexSequenceImp=typename Std::make_index_sequence_impl< std::tuple_size< AlgTupleImp >::value >::type >
+            class IndexSequenceImp=typename std::make_index_sequence< std::tuple_size< AlgTupleImp >::value > >
   class CheckedCheckPointCaller;
 
 
   template< class AlgTupleImp, std::size_t... Ints >
-  class CheckedCheckPointCaller< AlgTupleImp, Std::index_sequence< Ints... > >
-    : public CheckPointCaller< AlgTupleImp, Std::index_sequence< Ints... > >
+  class CheckedCheckPointCaller< AlgTupleImp, std::index_sequence< Ints... > >
+    : public CheckPointCaller< AlgTupleImp, std::index_sequence< Ints... > >
   {
-    typedef CheckPointCaller< AlgTupleImp, Std::index_sequence< Ints... > >  BaseType;
+    typedef CheckPointCaller< AlgTupleImp, std::index_sequence< Ints... > >  BaseType;
     typedef typename BaseType::CheckPointerType                              CheckPointerType;
     typedef typename BaseType::AlgTupleType                                  AlgTupleType;
 
-    typedef Std::index_sequence< Ints... >                                   IndexSequenceType;
+    typedef std::index_sequence< Ints... >                                   IndexSequenceType;
     static const int numAlgs = IndexSequenceType::size();
 
 

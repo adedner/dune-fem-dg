@@ -33,7 +33,7 @@ namespace Fem
    * \ingroup Callers
    */
   template< class AlgTupleImp,
-            class IndexSequenceImp=typename Std::make_index_sequence_impl< std::tuple_size< AlgTupleImp >::value >::type >
+            class IndexSequenceImp=typename std::make_index_sequence< std::tuple_size< AlgTupleImp >::value > >
   class AdaptCaller;
 
 
@@ -48,7 +48,7 @@ namespace Fem
    * Example:
    * \code
    * typedef AdaptCaller< std::tuple< Alg1, Alg2, Alg3, Alg4 >,
-   *                       Std::index_sequence< 0, 2 > >
+   *                       std::index_sequence< 0, 2 > >
    *                                           MyCaller;
    * \endcode
    * This would enable adaptation for `Alg1` and `Alg3`.
@@ -59,10 +59,10 @@ namespace Fem
    * \todo Improve the situation for partially selected adaptive algorithm tuples.
    *
    * \tparam AlgTupleImp A tuple of all known sub-algorithms.
-   * \tparam Std::index_sequence< Ints... > Index sequence for enabling the checkpointing feature.
+   * \tparam std::index_sequence< Ints... > Index sequence for enabling the checkpointing feature.
    */
   template< class AlgTupleImp, std::size_t... Ints >
-  class AdaptCaller< AlgTupleImp, Std::index_sequence< Ints... > >
+  class AdaptCaller< AlgTupleImp, std::index_sequence< Ints... > >
     : public CallerInterface
   {
     template< class TupleType > struct RPDefaultTupleExtractor;
@@ -394,7 +394,7 @@ namespace Fem
 
   protected:
     template< std::size_t ... i >
-    void setRestrProlong( Std::index_sequence< i ... > )
+    void setRestrProlong( std::index_sequence< i ... > )
     {
       rp_.reset( new RestrictionProlongationType( *std::get< i >( tuple_ )->adaptationSolution()... ) );
     }
@@ -465,7 +465,7 @@ namespace Fem
    * \ingroup Callers
    */
   template< class TupleImp >
-  class AdaptCaller< TupleImp, Std::index_sequence<> >
+  class AdaptCaller< TupleImp, std::index_sequence<> >
     : public CallerInterface
   {
     typedef uint64_t                          UInt64Type;

@@ -22,7 +22,7 @@ namespace Fem
    * \ingroup Callers
    */
   template< class AlgTupleImp,
-            class IndexSequenceImp=typename Std::make_index_sequence_impl< std::tuple_size< AlgTupleImp >::value >::type >
+            class IndexSequenceImp=typename std::make_index_sequence< std::tuple_size< AlgTupleImp >::value > >
   class DataWriterCaller;
 
   /**
@@ -36,16 +36,16 @@ namespace Fem
    * Example:
    * \code
    * typedef DataWriterCaller< std::tuple< Alg1, Alg2, Alg3, Alg4 >,
-   *                            Std::index_sequence< 0, 2 > >
+   *                            std::index_sequence< 0, 2 > >
    *                                           MyCaller;
    * \endcode
    * This would enable data writing for `Alg1` and `Alg3`;
    *
    * \tparam AlgTupleImp A tuple of all known sub-algorithms.
-   * \tparam Std::index_sequence< Ints... > Index sequence for enabling the data writing feature.
+   * \tparam std::index_sequence< Ints... > Index sequence for enabling the data writing feature.
    */
   template< class AlgTupleImp, std::size_t... Ints >
-  class DataWriterCaller< AlgTupleImp, Std::index_sequence< Ints... > >
+  class DataWriterCaller< AlgTupleImp, std::index_sequence< Ints... > >
     : public CallerInterface
   {
     template< class TupleType > struct IOTupleExtractor;
@@ -54,7 +54,7 @@ namespace Fem
 
     typedef AlgTupleImp                                                            AlgTupleType;
 
-    typedef Std::index_sequence< Ints... >                                         IndexSequenceType;
+    typedef std::index_sequence< Ints... >                                         IndexSequenceType;
     static const int numAlgs = IndexSequenceType::size();
     typedef tuple_reducer<AlgTupleType, IndexSequenceType >                        TupleReducerType;
     typedef typename TupleReducerType::type                                        TupleType;
@@ -191,7 +191,7 @@ namespace Fem
 
   private:
     template< std::size_t ... i >
-    IOTupleType dataTuple ( const TupleType &tuple, Std::index_sequence< i ... > )
+    IOTupleType dataTuple ( const TupleType &tuple, std::index_sequence< i ... > )
     {
       return std::tuple_cat( (*std::get< i >( tuple )->dataTuple() )... );
     }
@@ -208,7 +208,7 @@ namespace Fem
    * \ingroup Callers
    */
   template< class AlgTupleImp >
-  class DataWriterCaller< AlgTupleImp, Std::index_sequence<> >
+  class DataWriterCaller< AlgTupleImp, std::index_sequence<> >
     : public CallerInterface
   {
   public:

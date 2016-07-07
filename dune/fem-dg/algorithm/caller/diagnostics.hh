@@ -16,7 +16,7 @@ namespace Fem
    * \ingroup Callers
    */
   template< class AlgTupleImp,
-            class IndexSequenceImp=typename Std::make_index_sequence_impl< std::tuple_size< AlgTupleImp >::value >::type >
+            class IndexSequenceImp=typename std::make_index_sequence< std::tuple_size< AlgTupleImp >::value > >
   class DiagnosticsCaller;
 
  /**
@@ -30,21 +30,21 @@ namespace Fem
    * Example:
    * \code
    * typedef DataWriterCaller< std::tuple< Alg1, Alg2, Alg3, Alg4 >,
-   *                            Std::index_sequence< 0, 2 > >
+   *                            std::index_sequence< 0, 2 > >
    *                                           MyCaller;
    * \endcode
    * This would enable data writing for `Alg1` and `Alg3`;
    *
    * \tparam AlgTupleImp A tuple of all known sub-algorithms.
-   * \tparam Std::index_sequence< Ints... > Index sequence for enabling the data writing feature.
+   * \tparam std::index_sequence< Ints... > Index sequence for enabling the data writing feature.
    */
   template< class AlgTupleImp, std::size_t... Ints >
-  class DiagnosticsCaller< AlgTupleImp, Std::index_sequence< Ints... > >
+  class DiagnosticsCaller< AlgTupleImp, std::index_sequence< Ints... > >
     : public CallerInterface
   {
     typedef AlgTupleImp                                                            AlgTupleType;
 
-    typedef Std::index_sequence< Ints... >                                         IndexSequenceType;
+    typedef std::index_sequence< Ints... >                                         IndexSequenceType;
     static const int numAlgs = IndexSequenceType::size();
     typedef tuple_reducer<AlgTupleType, IndexSequenceType >                        TupleReducerType;
     typedef typename TupleReducerType::type                                        TupleType;
@@ -138,7 +138,7 @@ namespace Fem
    * \ingroup Callers
    */
   template< class TupleImp >
-  class DiagnosticsCaller< TupleImp, Std::index_sequence<> >
+  class DiagnosticsCaller< TupleImp, std::index_sequence<> >
     : public CallerInterface
   {
   public:
