@@ -3,7 +3,7 @@
 
 #include <tuple>
 #include <type_traits>
-#include <dune/common/std/utility.hh>
+#include <utility>
 
 namespace Dune
 {
