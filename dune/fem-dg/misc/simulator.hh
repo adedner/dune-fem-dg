@@ -146,8 +146,8 @@ namespace Fem
     }
   };
 
-  template <int polynomialOrder, class ProblemTraits>
-  inline void simulate(const ProblemTraits& problem)
+  template <int polynomialOrder, class AlgorithmCreator >
+  inline void simulate(const AlgorithmCreator& algCreator)
   {
 #ifdef BASEFUNCTIONSET_CODEGEN_GENERATE
     //only one thread for codegen
@@ -168,16 +168,16 @@ namespace Fem
       Dune::Fem::ThreadHandle::run( startObj );
     }
 
-    // extract grid type from problem traits
-    typedef typename ProblemTraits :: GridType  GridType;
+    // extract grid type from algorithm creator
+    typedef typename AlgorithmCreator::GridType  GridType;
 
     // return type of initializeGrid is Dune::GridPtr, use release such that memory of GridPtr is released
-    std::unique_ptr< GridType > gridptr( problem.initializeGrid().release() );
+    std::unique_ptr< GridType > gridptr( algCreator.initializeGrid().release() );
 
-    typedef typename ProblemTraits::template Algorithm< polynomialOrder > AlgorithmType;
+    typedef typename AlgorithmCreator::template Algorithm< polynomialOrder > AlgorithmType;
     std::unique_ptr< AlgorithmType > algorithm( new AlgorithmType( *gridptr ) );
 
-    // new method, the ProblemGenerator simply creates the algorithm
+    // run the algorithm
     compute( *algorithm );
 
     // stop flop counters for all threads
@@ -193,8 +193,8 @@ namespace Fem
   template <int polOrd>
   struct SimulatePolOrd
   {
-    template <class ProblemTraits>
-    static void apply( const ProblemTraits& problem, const int polynomialOrder, const bool computeAnyway )
+    template< class AlgorithmCreator >
+    static void apply( const AlgorithmCreator& algCreator, const int polynomialOrder, const bool computeAnyway )
     {
 #ifdef BASEFUNCTIONSET_CODEGEN_GENERATE
       Dune::Fem::CodegenInfo :: instance().setFileName( autoFilename( CODEDIM, polOrd ) );
@@ -204,15 +204,15 @@ namespace Fem
         if( Dune::Fem::Parameter::verbose() )
           std::cout << "Simulator: run for polynomialOrder = " << polOrd << std::endl;
 
-        simulate< polOrd > ( problem );
+        simulate< polOrd > ( algCreator );
       }
     }
   };
 
   struct Simulator
   {
-    template <class ProblemTraits>
-    static void run( const ProblemTraits& problem )
+    template <class AlgorithmCreator>
+    static void run( const AlgorithmCreator& algCreator )
     {
 #ifdef BASEFUNCTIONSET_CODEGEN_GENERATE
       std::cout << "Generating Code \n";
@@ -224,7 +224,7 @@ namespace Fem
 
         // run through all available polynomial order and check with dynamic polOrder
         // when -DONLY_ONE_P was passed only POLORDER is used
-        Dune::ForLoop< SimulatePolOrd, MIN_POLORD, MAX_POLORD > :: apply( problem, polOrder, bool(MIN_POLORD == MAX_POLORD) );
+        Dune::ForLoop< SimulatePolOrd, MIN_POLORD, MAX_POLORD > :: apply( algCreator, polOrder, bool(MIN_POLORD == MAX_POLORD) );
 #ifdef BASEFUNCTIONSET_CODEGEN_GENERATE
       }
       catch (Dune::Fem::CodegenInfoFinished) {}
