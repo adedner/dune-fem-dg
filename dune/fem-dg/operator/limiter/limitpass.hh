@@ -1932,7 +1932,7 @@ namespace Fem
     {
       inline static int numBasis(const LocalFunctionImp& lf)
       {
-        return lf.numScalarDofs();
+        return lf.numDofs() / dimRange;
       }
     };
 
@@ -2038,7 +2038,7 @@ namespace Fem
         // for affine mapping we only need to set higher moments to zero
         if( affineMapping )
         {
-          const int numBasis = limitEn.numScalarDofs();
+          const int numBasis = limitEn.numDofs() / dimRange;
           for(int i=1; i<numBasis; ++i)
           {
             for(int r=0; r<dimRange; ++r)
