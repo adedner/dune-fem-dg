@@ -15,7 +15,7 @@
 #include <dune/fem/quadrature/caching/registry.hh>
 #include <dune/fem/quadrature/cachingpointlist.hh>
 #include <dune/fem/quadrature/quadrature.hh>
-#include <dune/fem/space/common/arrays.hh>
+#include <dune/fem/storage/dynamicarray.hh>
 #include <dune/fem/misc/threads/threadsafevalue.hh>
 
 namespace Dune
@@ -40,8 +40,8 @@ namespace Dune
       typedef typename ShapeFunctionSet::JacobianRangeType JacobianRangeType;
       typedef typename ShapeFunctionSet::HessianRangeType HessianRangeType;
 
-      typedef MutableArray< MutableArray<RangeType> >         RangeVectorType;
-      typedef MutableArray< MutableArray<JacobianRangeType> > JacobianRangeVectorType;
+      typedef DynamicArray< DynamicArray<RangeType> >         RangeVectorType;
+      typedef DynamicArray< DynamicArray<JacobianRangeType> > JacobianRangeVectorType;
 
       typedef std::vector< RangeVectorType >          ValueCacheVectorType ;
       typedef std::vector< JacobianRangeVectorType >  JacobianCacheVectorType;
@@ -147,7 +147,7 @@ namespace Dune
           // make sure cache has the appropriate size
           storage.resize( nop );
 
-          typedef MutableArray<RangeType>         RangeVector;
+          typedef DynamicArray<RangeType>         RangeVector;
           for( unsigned int qp = 0 ; qp < nop; ++ qp )
           {
             const int cacheQp = quad.cachingPoint( qp );
@@ -174,7 +174,7 @@ namespace Dune
           // make sure cache has the appropriate size
           storage.resize( nop );
 
-          typedef MutableArray<JacobianRangeType> JacobianRangeVector;
+          typedef DynamicArray<JacobianRangeType> JacobianRangeVector;
           for( unsigned int qp = 0 ; qp < nop; ++ qp )
           {
             const int cacheQp = quad.cachingPoint( qp );
@@ -282,7 +282,7 @@ namespace Dune
       ::evaluateEach ( const Quadrature &quadrature, std::size_t pt, Functor functor,
                        std::integral_constant< bool, true > ) const
     {
-      typedef MutableArray<RangeType>         RangeVector;
+      typedef DynamicArray<RangeType>         RangeVector;
       const RangeVector& cache = valueCaches_[ quadrature.id() ][ quadrature.cachingPoint( pt ) ];
       const std::size_t numShapeFunctions = size();
       for( std::size_t i = 0; i < numShapeFunctions; ++i )
@@ -296,7 +296,7 @@ namespace Dune
       ::jacobianEach ( const Quadrature &quadrature, std::size_t pt, Functor functor,
                        std::integral_constant< bool, true > ) const
     {
-      typedef MutableArray<JacobianRangeType>       JacobianRangeVector;
+      typedef DynamicArray<JacobianRangeType>       JacobianRangeVector;
       const JacobianRangeVector& cache = jacobianCaches_[ quadrature.id() ][ quadrature.cachingPoint( pt ) ];
 
       const std::size_t numShapeFunctions = size();
@@ -353,8 +353,8 @@ namespace Dune
         jacobianCaches_[ id ][ pt ].resize( numShapeFunctions );
       }
 
-      typedef MutableArray<RangeType>         RangeVector;
-      typedef MutableArray<JacobianRangeType> JacobianRangeVector;
+      typedef DynamicArray<RangeType>         RangeVector;
+      typedef DynamicArray<JacobianRangeType> JacobianRangeVector;
       for( std::size_t pt = 0; pt < numPoints; ++pt )
       {
         evaluateEach( points[ pt ], AssignFunctor< RangeVector >( valueCaches_[ id ][ pt ] ) );

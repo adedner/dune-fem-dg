@@ -14,7 +14,8 @@
 #include <dune/fem/quadrature/intersectionquadrature.hh>
 #include <dune/fem/solver/timeprovider.hh>
 #include <dune/fem/space/common/allgeomtypes.hh>
-#include <dune/fem/space/common/arrays.hh>
+#include <dune/fem/storage/dynamicarray.hh>
+
 
 #include <dune/fem-dg/pass/dgmodelcaller.hh>
 #include <dune/fem/misc/compatibility.hh>
@@ -942,17 +943,17 @@ namespace Fem
     const IndexSetType& indexSet_;
 
     // indicator for grid walk
-    mutable Fem::MutableArray<bool> visited_;
+    mutable Fem::DynamicArray<bool> visited_;
 
     mutable TemporaryLocalFunctionType updEn_;
     mutable TemporaryLocalFunctionType updNeigh_;
 
     //! Some helper variables
-    mutable Fem::MutableArray< RangeType > valEnVec_;
-    mutable Fem::MutableArray< RangeType > valNbVec_;
+    mutable Fem::DynamicArray< RangeType > valEnVec_;
+    mutable Fem::DynamicArray< RangeType > valNbVec_;
 
-    mutable Fem::MutableArray< JacobianRangeType > valJacEn_;
-    mutable Fem::MutableArray< JacobianRangeType > valJacNb_;
+    mutable Fem::DynamicArray< JacobianRangeType > valJacEn_;
+    mutable Fem::DynamicArray< JacobianRangeType > valJacNb_;
 
     mutable double dtMin_;
     const double minLimit_;

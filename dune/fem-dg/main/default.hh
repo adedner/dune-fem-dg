@@ -16,7 +16,8 @@
 #include <dune/geometry/referenceelements.hh>
 #include <dune/geometry/type.hh>
 
-#include <dune/fem/space/common/arrays.hh>
+#include <dune/fem/storage/dynamicarray.hh>
+
 
 //#define NEWBASEFCT_CACHING
 
@@ -119,8 +120,8 @@ namespace Dune
       typedef std::vector< ScalarRangeType >          RangeVectorType;
       typedef std::vector< ScalarJacobianRangeType >  JacobianRangeVectorType;
 #else
-      typedef MutableArray< MutableArray< ScalarRangeType > >         RangeVectorType;
-      typedef MutableArray< MutableArray< ScalarJacobianRangeType > > JacobianRangeVectorType;
+      typedef DynamicArray< DynamicArray< ScalarRangeType > >         RangeVectorType;
+      typedef DynamicArray< DynamicArray< ScalarJacobianRangeType > > JacobianRangeVectorType;
 #endif
       //! \brief constructor
       DefaultBasisFunctionSet ()

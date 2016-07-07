@@ -8,7 +8,6 @@
 #include <dune/fem/quadrature/intersectionquadrature.hh>
 #include <dune/fem/solver/timeprovider.hh>
 #include <dune/fem/space/common/allgeomtypes.hh>
-#include <dune/fem/space/common/arrays.hh>
 
 #include "threadhandle.hh"
 

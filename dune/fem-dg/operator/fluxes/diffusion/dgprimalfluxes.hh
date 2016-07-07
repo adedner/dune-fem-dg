@@ -9,7 +9,7 @@
 #include <dune/fem-dg/pass/context.hh>
 #include <dune/fem/quadrature/cachingquadrature.hh>
 #include <dune/fem/solver/timeprovider.hh>
-#include <dune/fem/space/common/arrays.hh>
+#include <dune/fem/storage/dynamicarray.hh>
 
 #include <dune/fem-dg/pass/dgmasspass.hh>
 #include "fluxbase.hh"
@@ -1165,8 +1165,8 @@ namespace Fem
 #ifdef LOCALDEBUG
     std::unique_ptr< Lifting > LeMinusLifting2_;
 #endif
-    mutable Fem::MutableArray< GradientType > liftingEvalLeMinus_ ;
-    mutable Fem::MutableArray< GradientType > liftingEvalLePlus_ ;
+    mutable Fem::DynamicArray< GradientType > liftingEvalLeMinus_ ;
+    mutable Fem::DynamicArray< GradientType > liftingEvalLePlus_ ;
 
     double            maxNeighborsVolumeRatio_; // for CDG2 only
     double            ainsworthFactor_;
