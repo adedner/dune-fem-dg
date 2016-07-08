@@ -82,7 +82,7 @@ namespace Fem
   struct tuple_reducer;
 
   template< class FullTupleImp, std::size_t... i >
-  struct tuple_reducer< FullTupleImp, Dune::Std::index_sequence< i... > >
+  struct tuple_reducer< FullTupleImp, std::index_sequence< i... > >
   {
     typedef std::tuple< typename std::tuple_element< i, FullTupleImp >::type... > type;
 
