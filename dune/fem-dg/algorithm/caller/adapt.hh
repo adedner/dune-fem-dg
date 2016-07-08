@@ -71,7 +71,7 @@ namespace Fem
 
     typedef AlgTupleImp                                                                        AlgTupleType;
 
-    typedef Std::index_sequence< Ints... >                                                     IndexSequenceType;
+    typedef std::index_sequence< Ints... >                                                     IndexSequenceType;
     static const int numAlgs = IndexSequenceType::size();
     typedef tuple_reducer<AlgTupleType, IndexSequenceType >                                    TupleReducerType;
     typedef typename TupleReducerType::type                                                    TupleType;

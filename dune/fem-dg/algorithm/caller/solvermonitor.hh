@@ -34,13 +34,13 @@ namespace Fem
    * Example:
    * \code
    * typedef DataWriterCaller< std::tuple< Alg1, Alg2, Alg3, Alg4 >,
-   *                            Std::index_sequence< 0, 2 > >
+   *                            std::index_sequence< 0, 2 > >
    *                                           MyCaller;
    * \endcode
    * This would enable data collecting for `Alg1` and `Alg3`;
    *
    * \tparam AlgTupleImp A tuple of all known sub-algorithms.
-   * \tparam Std::index_sequence< Ints... > Index sequence for enabling the data collecting feature.
+   * \tparam std::index_sequence< Ints... > Index sequence for enabling the data collecting feature.
    */
   template< class AlgTupleImp, std::size_t... Ints >
   class SolverMonitorCaller< AlgTupleImp, std::index_sequence< Ints... > >
@@ -48,7 +48,7 @@ namespace Fem
   {
     typedef AlgTupleImp                                                            AlgTupleType;
 
-    typedef Std::index_sequence< Ints... >                                         IndexSequenceType;
+    typedef std::index_sequence< Ints... >                                         IndexSequenceType;
     static const int numAlgs = IndexSequenceType::size();
     typedef tuple_reducer<AlgTupleType, IndexSequenceType >                        TupleReducerType;
     typedef typename TupleReducerType::type                                        TupleType;
