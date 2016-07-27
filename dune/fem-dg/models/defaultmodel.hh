@@ -18,23 +18,24 @@ namespace Fem
   template <class GridImp, class ProblemImp>
   struct DefaultModelTraits
   {
-    typedef ProblemImp                                                     ProblemType;
-    typedef GridImp                                                        GridType;
-    static const int dimDomain = GridType::dimensionworld;
-    static const int dimRange = ProblemType::dimRange;
-    static const int dimGradRange = dimRange * dimDomain;
+    typedef ProblemImp                                                    ProblemType;
+    typedef typename ProblemType :: FunctionSpaceType                     FunctionSpaceType;
+    typedef GridImp                                                       GridType;
+    static constexpr int dimDomain = FunctionSpaceType::dimDomain;
+    static constexpr int dimRange  = FunctionSpaceType::dimRange;
+    static constexpr int dimGradRange = dimRange * dimDomain;
 
-    typedef typename GridType::ctype                                       RangeFieldType;
-    typedef typename GridType::ctype                                       DomainFieldType;
+    typedef typename FunctionSpaceType :: DomainFieldType                 DomainFieldType;
+    typedef typename FunctionSpaceType :: RangeFieldType                  RangeFieldType;
 
-    typedef Dune::FieldVector< DomainFieldType, dimDomain >                DomainType;
-    typedef Dune::FieldVector< DomainFieldType, dimDomain-1 >              FaceDomainType;
-    typedef Dune::FieldVector< RangeFieldType, dimRange >                  RangeType;
+    typedef typename FunctionSpaceType :: DomainType                      DomainType;
+    typedef typename FunctionSpaceType :: RangeType                       RangeType;
+    typedef Dune::FieldVector< DomainFieldType, dimDomain-1 >             FaceDomainType;
 
-    typedef Dune::FieldMatrix< RangeFieldType, dimRange, dimDomain >       FluxRangeType;
-    typedef Dune::FieldMatrix< RangeFieldType, dimRange, dimDomain >       JacobianRangeType;
-    typedef Dune::FieldMatrix< RangeFieldType, dimDomain, dimDomain >      DiffusionMatrixType;
-    typedef Dune::FieldMatrix< RangeFieldType, dimGradRange, dimDomain >   DiffusionRangeType;
+    typedef typename FunctionSpaceType :: JacobianRangeType               JacobianRangeType;
+    typedef JacobianRangeType                                             FluxRangeType;
+    typedef Dune::FieldMatrix< RangeFieldType, dimDomain, dimDomain >     DiffusionMatrixType;
+    typedef Dune::FieldMatrix< RangeFieldType, dimGradRange, dimDomain >  DiffusionRangeType;
   };
 
   /**
