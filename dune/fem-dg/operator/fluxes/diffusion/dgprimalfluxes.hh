@@ -866,7 +866,7 @@ namespace Fem
           RangeType maxLeft, maxRight;
           model_.eigenValues( left,  uLeft, maxLeft );
           model_.eigenValues( right, uRight, maxRight );
-          double maxEigenValue = 0.;
+          RangeFieldType maxEigenValue = 0;
           for( int r = 0; r<dimRange; ++r )
           {
             maxEigenValue = std::max( maxEigenValue, maxLeft[r] );
@@ -1104,7 +1104,7 @@ namespace Fem
           // = ainsworthFactor * maxEigenValue(A(u)) * FaceEntityVolumeRatio * [u] * n
           RangeType maxInside;
           model_.eigenValues( left, uLeft, maxInside );
-          double maxEigenValue = 0.;
+          RangeFieldType maxEigenValue = 0;
           for( int r = 0; r<dimRange; ++r )
             maxEigenValue = std::max( maxEigenValue, maxInside[r] );
 
