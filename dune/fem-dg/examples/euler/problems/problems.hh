@@ -29,17 +29,22 @@ namespace Fem
    *
    * \ingroup EulerProblems
    */
+
+  //typedef double NsRangeField ;
+  //typedef float NsRangeField ;
+  typedef Double EulerRangeField ;
+
   template <class GridType>
   class ProblemBase :
     public EvolutionProblemInterface<
                 Dune::Fem::FunctionSpace< typename GridType::ctype,
-                                          typename GridType::ctype,
+                                          EulerRangeField,
                                           GridType::dimensionworld, GridType::dimensionworld+2>,
                 false >
   {
     typedef EvolutionProblemInterface<
                 Dune::Fem::FunctionSpace< typename GridType::ctype,
-                                          typename GridType::ctype,
+                                          EulerRangeField,
                                           GridType::dimensionworld, GridType::dimensionworld+2>,
                 false > BaseType ;
 
@@ -393,14 +398,31 @@ namespace Fem
       kinEnerg *= 0.5*res[0];
       res[energ]  = res[energ]/(gamma()-1.0)+kinEnerg;
     }
+
     void chorin(double t,double x,
-          double& q_erg,double& u_erg,double& p_erg) const
+                double& q_erg,double& u_erg,double& p_erg) const
     {
       EULERCHORIN::
         lsg(x,t,&q_erg,&u_erg,&p_erg,
-      Ulr[0],Ulr[3],Ulr[1],Ulr[4],Ulr[2],Ulr[5],
-      gamma());
+            Ulr[0],Ulr[3],Ulr[1],Ulr[4],Ulr[2],Ulr[5],
+            double(gamma()));
     }
+
+    template <class Field>
+    void chorin(double t, double x,
+                Field& pq_erg, Field& pu_erg, Field& pp_erg) const
+    {
+      double q_erg = double(pq_erg);
+      double u_erg = double(pu_erg);
+      double p_erg = double(pp_erg);
+
+      chorin( t, x, q_erg, u_erg, p_erg );
+
+      pq_erg = q_erg;
+      pu_erg = u_erg;
+      pp_erg = p_erg;
+    }
+
     void printmyInfo(std::string filename)
     {
       std::ostringstream filestream;
@@ -517,6 +539,21 @@ namespace Fem
     void chorin ( double t, double x, double &q_erg, double &u_erg, double &p_erg ) const
     {
       EULERCHORIN::lsg( x, t, &q_erg, &u_erg, &p_erg, Ulr[ 0 ], Ulr[ 3 ], Ulr[ 1 ], Ulr[ 4 ], Ulr[ 2 ], Ulr[ 5 ], gamma() );
+    }
+
+    template <class Field>
+    void chorin(double t, double x,
+                Field& pq_erg, Field& pu_erg, Field& pp_erg) const
+    {
+      double q_erg = double(pq_erg);
+      double u_erg = double(pu_erg);
+      double p_erg = double(pp_erg);
+
+      chorin( t, x, q_erg, u_erg, p_erg );
+
+      pq_erg = q_erg;
+      pu_erg = u_erg;
+      pp_erg = p_erg;
     }
 
     void printmyInfo( const std::string &filename )
