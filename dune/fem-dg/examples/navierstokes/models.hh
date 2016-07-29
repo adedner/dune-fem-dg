@@ -26,12 +26,12 @@ namespace Fem
     typedef Dune::FieldVector< typename BaseType::RangeFieldType, BaseType::dimGradRange >
                                                                     GradientType;
 
-    typedef MinModLimiter< typename BaseType::DomainFieldType >     LimiterFunctionType;
+    typedef MinModLimiter< typename BaseType::RangeFieldType >     LimiterFunctionType;
     //typedef Fem::MinModLimiter< FieldType > LimiterFunctionType ;
     //typedef SuperBeeLimiter< FieldType > LimiterFunctionType ;
     //typedef VanLeerLimiter< FieldType > LimiterFunctionType ;
 
-    typedef Thermodynamics< BaseType::dimDomain >                   ThermodynamicsType;
+    typedef Thermodynamics< BaseType::dimDomain, typename BaseType::RangeFieldType >  ThermodynamicsType;
   };
 
 
