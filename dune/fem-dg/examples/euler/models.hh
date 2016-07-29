@@ -82,6 +82,7 @@ namespace Fem
    public:
     EulerModel( const ProblemType& problem )
       : gamma_( problem.gamma() )
+      , eulerFlux_()
       , problem_( problem )
       , fieldRotator_( 1 ) // insert number of fist velocity component
     {}
@@ -115,7 +116,7 @@ namespace Fem
 
     inline double pressure( const RangeType& u ) const
     {
-      return EulerAnalyticalFlux< dimDomain >().pressure( gamma_ , u );
+      return eulerFlux_.pressure( gamma_ , u );
     }
 
     inline void conservativeToPrimitive( const double time,
@@ -134,7 +135,7 @@ namespace Fem
                            const FluxRangeType& jacu,
                            FluxRangeType& f ) const
     {
-      EulerAnalyticalFlux<dimDomain>().analyticalFlux( gamma_ , u , f );
+      eulerFlux_.analyticalFlux( gamma_ , u , f );
     }
 
     template <class LocalEvaluation>
@@ -161,7 +162,7 @@ namespace Fem
                            const FluxRangeType& du,
                            RangeType& A ) const
     {
-      EulerAnalyticalFlux<dimDomain>().jacobian( gamma_ , u , du , A );
+      eulerFlux_.jacobian( gamma_ , u , du , A );
     }
 
 
@@ -244,7 +245,7 @@ namespace Fem
       // Slip boundary condition
       const DomainType normal = local.intersection().integrationOuterNormal( local.localPosition() );
 
-      const double p = EulerAnalyticalFlux< dimDomain >().pressure( gamma_ , uLeft );
+      const double p = eulerFlux_.pressure( gamma_ , uLeft );
       gLeft = 0;
       for ( int i = 0 ; i < dimDomain ; ++i )
         gLeft[i+1] = normal[i] * p;
@@ -279,7 +280,7 @@ namespace Fem
                           double& advspeed,
                           double& totalspeed ) const
     {
-      advspeed = EulerAnalyticalFlux< dimDomain >().maxSpeed( gamma_ , normal , u );
+      advspeed = eulerFlux_.maxSpeed( gamma_ , normal , u );
       totalspeed = advspeed;
     }
 
@@ -323,8 +324,8 @@ namespace Fem
         return false;
       else
       {
-        //std::cout << EulerAnalyticalFlux<dimDomain>().rhoeps(u) << std::endl;
-        return (EulerAnalyticalFlux<dimDomain>().rhoeps(u) > 1e-8);
+        //std::cout << eulerFlux_.rhoeps(u) << std::endl;
+        return (eulerFlux_.rhoeps(u) > 1e-8);
       }
     }
 
@@ -373,6 +374,7 @@ namespace Fem
     }
 
    protected:
+    const EulerAnalyticalFlux<dimDomain, RangeFieldType > eulerFlux_;
     const ThermodynamicsType thermodynamics_;
     const ProblemType& problem_;
     FieldRotator< DomainType, RangeType > fieldRotator_;
