@@ -39,6 +39,7 @@
 
 #include <memory>
 #include <dune/common/version.hh>
+#include <dune/fem/misc/double.hh>
 
 // streams for backup
 #include <dune/fem-dg/misc/streams.hh>
