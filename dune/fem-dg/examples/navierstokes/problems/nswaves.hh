@@ -8,6 +8,7 @@
 #include <dune/fem/io/parameter.hh>
 #include <dune/fem/space/common/functionspace.hh>
 
+
 // local includes
 #include <dune/fem-dg/examples/navierstokes/thermodynamics.hh>
 #include <dune/fem-dg/models/defaultprobleminterfaces.hh>
@@ -31,18 +32,27 @@ namespace Fem
    *
    * \ingroup NavierStokesProblems
    */
+
+  //typedef double NsRangeField ;
+  //typedef float NsRangeField ;
+  typedef Double NsRangeField ;
+
   template <class GridType>
   class NSWaves : public EvolutionProblemInterface<
                     Dune::Fem::FunctionSpace< typename GridType::ctype,
-                                              typename GridType::ctype,
+                                              //typename GridType::ctype,
+                                              // Dune::Fem::Double,
+                                              NsRangeField,
                                               GridType::dimension, GridType::dimension + 2 >,
                     true >,
-                  public Thermodynamics< GridType::dimensionworld, typename GridType::ctype >
+                  public Thermodynamics< GridType::dimensionworld, NsRangeField>
   {
     NSWaves( const NSWaves& );
   public:
     typedef Fem::FunctionSpace<typename GridType::ctype,
-                               typename GridType::ctype,
+                               NsRangeField,
+                               //Dune::Fem::Double,
+                               //typename GridType::ctype,
                                GridType::dimensionworld,
                                GridType::dimensionworld + 2 > FunctionSpaceType ;
 
@@ -150,14 +160,14 @@ namespace Fem
 
   protected:
     const std::string myName_;
-    const DomainFieldType omegaGNS_;
-    const DomainFieldType kGNS_;
-    const DomainFieldType gammaGNS_;
+    const RangeFieldType omegaGNS_;
+    const RangeFieldType kGNS_;
+    const RangeFieldType gammaGNS_;
     const double endTime_;
-    const DomainFieldType mu_;
-    const DomainFieldType k_;
-    const DomainFieldType A_;
-    const DomainFieldType B_;
+    const RangeFieldType mu_;
+    const RangeFieldType k_;
+    const RangeFieldType A_;
+    const RangeFieldType B_;
   };
 
 
