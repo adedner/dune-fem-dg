@@ -30,9 +30,11 @@ namespace Fem
    * \ingroup EulerProblems
    */
 
-  //typedef double NsRangeField ;
-  //typedef float NsRangeField ;
+#ifdef COUNT_FLOPS
   typedef Double EulerRangeField ;
+#else
+  typedef double EulerRangeField ;
+#endif
 
   template <class GridType>
   class ProblemBase :

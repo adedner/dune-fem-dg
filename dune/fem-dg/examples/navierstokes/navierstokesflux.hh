@@ -83,7 +83,7 @@ namespace Fem
     inline double k( const double T ) const { return problem_.k(T); }
 
   protected:
-    const EulerAnalyticalFlux<dimDomain> eulerFlux_;
+    const EulerAnalyticalFlux<dimDomain, RangeFieldType > eulerFlux_;
     const ProblemType& problem_;
     const double gamma_;
     const double R_d_inv_;
