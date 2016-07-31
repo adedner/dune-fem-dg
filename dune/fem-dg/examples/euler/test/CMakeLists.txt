@@ -5,11 +5,15 @@ configure_parameter_file()
 
 # specify type of grid implemention, dimension and polynmomial order
 set( GRIDTYPE ALUGRID_CUBE )
+#set( GRIDTYPE SPGRID_COUNT_FLOPS )
+#set( GRIDTYPE SPGRID )
 set( GRIDDIM 2 )
 set( POLORDER 2 )
 
 add_definitions( "-D${GRIDTYPE}" )
 add_definitions( "-DGRIDDIM=${GRIDDIM}" )
+#add_definitions( "-DCOUNT_FLOPS" )
+#add_definitions( "-DCODEGEN_SIMD_WIDTH=4" )
 
 set( MAIN ${CMAKE_CURRENT_SOURCE_DIR}/../main.cc )
 set( CHORJO ${CMAKE_CURRENT_SOURCE_DIR}/../problems/chorjo.cc )
