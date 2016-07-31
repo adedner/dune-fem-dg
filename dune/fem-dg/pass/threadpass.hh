@@ -51,7 +51,7 @@ namespace Fem
     {
 #if HAVE_MPI
       typedef typename BaseType :: SlaveDofsType  SlaveDofsType;
-      SlaveDofsType &slaves = this->slaveDofs();
+      const SlaveDofsType& slaves = this->slaveDofs();
 
       // don't delete the last since this is the overall Size
       const int slaveSize = slaves.size() - 1;
