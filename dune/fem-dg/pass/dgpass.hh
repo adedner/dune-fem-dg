@@ -444,7 +444,7 @@ namespace Fem
       // init local function
       initLocalFunction( entity , updEn_ );
 
-      // calcuate element integral
+      // calculate element integral
       elementIntegral(entity, updEn_);
 
       // calculate surface integral for interior and boundary intersections
@@ -476,7 +476,7 @@ namespace Fem
                     TemporaryLocalFunctionType& updEn,
                     const NeighborChecker& nbChecker ) const
     {
-      // calcuate element integral
+      // calculate element integral
       elementIntegral( entity, updEn, true );
 
       // calculate surface integral
@@ -494,20 +494,22 @@ namespace Fem
       // only call geometry once, who know what is done in this function
       const Geometry & geo = entity.geometry();
 
+      const bool hasSource = discreteModel_.hasSource();
+      const bool hasMass   = discreteModel_.hasMass();
       // only apply volumetric integral if order > 0
       // otherwise this contribution is zero
-      if( (spc_.order() > 0) || discreteModel_.hasSource() )
+      if( (spc_.order() > 0) || hasSource || hasMass )
       {
         assert( volumeQuadratureOrder( entity ) >=0 );
         VolumeQuadratureType volQuad(entity, volumeQuadratureOrder( entity ) );
         caller().setEntity(entity, volQuad);
 
         // if only flux, evaluate only flux
-        if ( discreteModel_.hasFlux() && ! discreteModel_.hasSource() )
+        if ( discreteModel_.hasFlux() && ! hasSource )
         {
           evalVolumetricPartFlux(entity, geo, volQuad, updEn);
         }
-        else
+        else if( hasSource )
         {
           // evaluate flux and source
           evalVolumetricPartBoth(entity, geo, volQuad, updEn);
@@ -535,8 +537,18 @@ namespace Fem
       {
         if( setEntity )
         {
-          // set entity for caller
-          caller().setEntity( entity );
+          if( caller().hasMass() )
+          {
+            // if mass term is present then we need to evaluate the
+            // volume quadrature here for later mass term evaluation
+            VolumeQuadratureType volQuad(entity, volumeQuadratureOrder( entity ) );
+            caller().setEntity(entity, volQuad);
+          }
+          else
+          {
+            // set entity for caller, no quadrature needed
+            caller().setEntity( entity );
+          }
         }
 
         /////////////////////////////
@@ -697,7 +709,9 @@ namespace Fem
 
         // apply local inverse mass matrix
         if (DiscreteModelImp::ApplyInverseMassOperator)
+        {
           localMassMatrix_.applyInverse( caller(), entity, function );
+        }
       }
     }
 
