@@ -45,7 +45,30 @@ namespace Fem
     typedef typename BaseType::VolumeQuadratureType VolumeQuadratureType;
     typedef typename BaseType::FaceQuadratureType FaceQuadratureType;
 
-    typedef typename BaseType::MassFactorType MassFactorType;
+    typedef typename BaseType::MassFactorType MatrixMassFactorType;
+    struct ScalarMassFactor : public RangeType
+    {
+      typedef RangeType  BaseType;
+      ScalarMassFactor() : BaseType() {}
+      template <class T>
+      ScalarMassFactor( const T& other ) : BaseType( other ) {}
+      ScalarMassFactor( const ScalarMassFactor& other ) : BaseType( other ) {}
+
+      //! multiply method needed in LocalMassMatrix
+      void mv( const RangeType& arg, RangeType& dest ) const
+      {
+        for( int i=0; i<RangeType::dimension; ++i )
+        {
+          dest[ i ] = arg[ i ] * this->operator[]( i );
+        }
+      }
+    };
+
+    //typedef std::conditional< DiscreteModelType::scalarMassFactor,
+    //          ScalarMassFactor,
+    //          MatrixMassFactorType > :: type MassFactorType;
+
+    typedef ScalarMassFactor MassFactorType;
 
   protected:
     typedef typename BaseType::RangeTupleType RangeTupleType;
@@ -222,6 +245,15 @@ namespace Fem
                   gLeft, hLeft );
     }
 
+    void mass ( const EntityType &entity,
+                const VolumeQuadratureType &quadrature,
+                const int qp,
+                MassFactorType &m )
+    {
+      discreteModel().mass(
+          ElementQuadratureContextType( entity, quadrature, values_[ qp ], jacobianValue( jacobians_, qp ), qp, time(), discreteModel().enVolume() ),
+          m );
+    }
   protected:
     template< class JacobianRangeTupleVectorType >
     const typename JacobianRangeTupleVectorType::value_type &jacobianValue ( const JacobianRangeTupleVectorType &jacobians, const int qp ) const

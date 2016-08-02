@@ -180,12 +180,17 @@ namespace Fem
     //! dummy method
     void switchUpwind() const {}
 
+    //! return true if source term is present
     inline bool hasSource() const
     {
       return model_.hasNonStiffSource();
-    }  /*@\label{dm:hasSource}@*/
+    }
 
+    //! return true if flux term is present
     inline bool hasFlux() const { return advection; }
+
+    //! return true if the mass term is not the identity
+    inline bool hasMass() const { return model_.hasMass(); }
 
     /**
      * \brief Stiff source associated with advection
@@ -313,6 +318,13 @@ namespace Fem
         f = 0;
     }
 
+    template <class LocalEvaluation>
+    void mass (const LocalEvaluation& local,
+               RangeType& m ) const
+    {
+      assert( hasMass() );
+      model_.mass( local, local.values()[ uVar ], m );
+    }
 
   protected:
     template <class LocalEvaluation>
