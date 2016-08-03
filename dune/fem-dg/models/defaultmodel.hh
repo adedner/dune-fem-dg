@@ -70,6 +70,7 @@ namespace Fem
    *
    * | Method                     | formular                                  |
    * | -------------------------- | ----------------------------------------- |
+   * | mass()                     | \f$ R   \f$                               |
    * | stiffSource()              | \f$ S_1 \f$                               |
    * | nonStiffSource()           | \f$ S_2 \f$                               |
    * | boundaryValue()            | \f$ g_D\f$                                |
@@ -119,6 +120,11 @@ namespace Fem
     void setTime (double time) {}
 
     /**
+     * \brief returns whether the mass term is not the identity
+     */
+    inline bool hasMass () const { return false ; }
+
+    /**
      * \brief returns whether the advection term is zero
      * or not, i.e. \f$ F\neq 0 \f$
      */
@@ -135,6 +141,22 @@ namespace Fem
      *  or not, i.e.\f$ S_2\neq 0 \f$
      */
     inline bool hasNonStiffSource () const { return false ; }
+
+    /**
+     * \brief returns the mass factor term \f$ R \f$
+     *
+     * \param[in]  local local evaluation
+     * \param[in]  u evaluation of the local function, i.e. \f$ u_E( \hat{x} ) \f$
+     * \param[out] diagonal of the mass term, i.e. the result \f$ R(u) \f$
+     *
+     */
+    template <class LocalEvaluation>
+    inline void mass (const LocalEvaluation& local,
+                      const RangeType& u,
+                      RangeType& diag) const
+    {
+      diag = 1 ;
+    }
 
     /**
      * \brief returns the stiff source term \f$ S_1 \f$
