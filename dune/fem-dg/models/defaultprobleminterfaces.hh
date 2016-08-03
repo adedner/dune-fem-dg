@@ -74,6 +74,9 @@ namespace Fem
     virtual inline bool hasStiffSource() const { return true ; }
     virtual inline bool hasNonStiffSource() const { return false; }
 
+    //! return true if mass term is not the identity
+    virtual inline bool hasMass() const { return false; }
+
     //! stiff source term
     virtual inline double stiffSource (const DomainType& arg,
                                        const double time,
@@ -92,6 +95,16 @@ namespace Fem
     {
       res = 0;
       return 0.0;
+    }
+
+    //! diagonal of the mass term
+    virtual inline void mass (const DomainType& arg,
+                              const double time,
+                              const RangeType& u,
+                              RangeType& diag ) const
+    {
+      assert( hasMass() );
+      diag = 1;
     }
 
     /** \brief decide if the refinement/coarsening should be allowed in certain regions of the
@@ -173,6 +186,18 @@ namespace Fem
      */
     virtual void evaluate(const DomainType& arg,
                           const double t, RangeType& res) const = 0 ;
+
+
+    /**
+     * \brief evaluate exact solution, to be implemented in derived classes
+     */
+    virtual double boundaryFlux(const DomainType& arg,
+                                const double t,
+                                const RangeType& u, RangeType& flux) const
+    {
+      flux = 0;
+      return 0.0;
+    }
 
 
     /**
