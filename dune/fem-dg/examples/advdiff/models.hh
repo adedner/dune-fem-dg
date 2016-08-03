@@ -149,9 +149,9 @@ namespace Fem
     template <class LocalEvaluation>
     inline void mass( const LocalEvaluation& local,
                       const RangeType& u,
-                      RangeType& m ) const
+                      RangeType& diag ) const
     {
-      problem_.mass( local.entity().geometry().global( local.position() ), local.time(), u, m );
+      problem_.mass( local.entity().geometry().global( local.position() ), local.time(), u, diag );
     }
 
   private:
