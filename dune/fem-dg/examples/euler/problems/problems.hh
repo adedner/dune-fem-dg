@@ -30,23 +30,17 @@ namespace Fem
    * \ingroup EulerProblems
    */
 
-#ifdef COUNT_FLOPS
-  typedef Double EulerRangeField ;
-#else
-  typedef double EulerRangeField ;
-#endif
-
   template <class GridType>
   class ProblemBase :
     public EvolutionProblemInterface<
                 Dune::Fem::FunctionSpace< typename GridType::ctype,
-                                          EulerRangeField,
+                                          typename GridType::ctype,
                                           GridType::dimensionworld, GridType::dimensionworld+2>,
                 false >
   {
     typedef EvolutionProblemInterface<
                 Dune::Fem::FunctionSpace< typename GridType::ctype,
-                                          EulerRangeField,
+                                          typename GridType::ctype,
                                           GridType::dimensionworld, GridType::dimensionworld+2>,
                 false > BaseType ;
 
