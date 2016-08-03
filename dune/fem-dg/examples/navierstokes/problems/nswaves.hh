@@ -33,32 +33,24 @@ namespace Fem
    * \ingroup NavierStokesProblems
    */
 
-  //typedef double NsRangeField ;
-  //typedef float NsRangeField ;
-  typedef Double NsRangeField ;
-
   template <class GridType>
   class NSWaves : public EvolutionProblemInterface<
                     Dune::Fem::FunctionSpace< typename GridType::ctype,
-                                              //typename GridType::ctype,
-                                              // Dune::Fem::Double,
-                                              NsRangeField,
+                                              typename GridType::ctype,
                                               GridType::dimension, GridType::dimension + 2 >,
                     true >,
-                  public Thermodynamics< GridType::dimensionworld, NsRangeField>
+                  public Thermodynamics< GridType::dimensionworld, typename GridType::ctype>
   {
     NSWaves( const NSWaves& );
   public:
     typedef Fem::FunctionSpace<typename GridType::ctype,
-                               NsRangeField,
-                               //Dune::Fem::Double,
-                               //typename GridType::ctype,
+                               typename GridType::ctype,
                                GridType::dimensionworld,
                                GridType::dimensionworld + 2 > FunctionSpaceType ;
 
     typedef Fem::Parameter  ParameterType ;
 
-    enum{ dimension = GridType::dimensionworld };
+    enum { dimension = GridType::dimensionworld };
     enum { energyId = dimension + 1 };
     typedef typename FunctionSpaceType :: DomainFieldType   DomainFieldType;
     typedef typename FunctionSpaceType :: DomainType        DomainType;
