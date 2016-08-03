@@ -46,13 +46,13 @@ namespace Fem
     typedef typename BaseType::FaceQuadratureType FaceQuadratureType;
 
     typedef typename BaseType::MassFactorType MatrixMassFactorType;
-    struct ScalarMassFactor : public RangeType
+    struct DiagonalMassFactor : public RangeType
     {
       typedef RangeType  BaseType;
-      ScalarMassFactor() : BaseType() {}
+      DiagonalMassFactor() : BaseType() {}
       template <class T>
-      ScalarMassFactor( const T& other ) : BaseType( other ) {}
-      ScalarMassFactor( const ScalarMassFactor& other ) : BaseType( other ) {}
+      DiagonalMassFactor( const T& other ) : BaseType( other ) {}
+      DiagonalMassFactor( const DiagonalMassFactor& other ) : BaseType( other ) {}
 
       //! multiply method needed in LocalMassMatrix
       void mv( const RangeType& arg, RangeType& dest ) const
@@ -65,10 +65,10 @@ namespace Fem
     };
 
     //typedef std::conditional< DiscreteModelType::scalarMassFactor,
-    //          ScalarMassFactor,
+    //          DiagonalMassFactor,
     //          MatrixMassFactorType > :: type MassFactorType;
 
-    typedef ScalarMassFactor MassFactorType;
+    typedef DiagonalMassFactor MassFactorType;
 
   protected:
     typedef typename BaseType::RangeTupleType RangeTupleType;
