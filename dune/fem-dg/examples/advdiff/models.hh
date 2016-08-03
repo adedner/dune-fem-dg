@@ -120,6 +120,7 @@ namespace Fem
 
     inline const ProblemType& problem() const { return problem_; }
 
+    inline bool hasMass() const { return true ; }
     inline bool hasFlux() const { return true ; }
     inline bool hasStiffSource() const { return problem_.hasStiffSource(); }
     inline bool hasNonStiffSource() const { return problem_.hasNonStiffSource(); }
@@ -143,6 +144,14 @@ namespace Fem
     {
       DomainType xgl = local.entity().geometry().global( local.position() );
       return problem_.stiffSource( xgl, local.time(), u, s );
+    }
+
+    template <class LocalEvaluation>
+    inline void mass( const LocalEvaluation& local,
+                      const RangeType& u,
+                      RangeType& m ) const
+    {
+      problem_.mass( local.entity().geometry().global( local.position() ), local.time(), u, m );
     }
 
   private:
@@ -279,7 +288,7 @@ namespace Fem
                                 const JacobianRangeImp& jacLeft,
                                 RangeType& gLeft) const
     {
-      gLeft = 0.;
+      gLeft = 0;
       return 0.;
     }
 
