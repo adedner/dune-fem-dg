@@ -45,6 +45,7 @@ namespace Fem
       startTime_( ParameterType::getValue<double>("femdg.stepper.starttime",0.0) ),
       epsilon_( ParameterType::getValue<double>("epsilon",0.1) ),
       rhsFactor_( epsilon_ * 2.0 * std:: pow( 2.0, (double) dimDomain) * M_PI * M_PI ),
+      massFactor_( 0.5 ),
       myName_("sin")
     {
       std::cout <<"Problem: "<<myName_<< ", epsilon " << epsilon_ << "\n";
@@ -53,6 +54,7 @@ namespace Fem
     //! this problem has no source term
     bool hasStiffSource() const { return false; }
     bool hasNonStiffSource() const { return true; }
+    bool hasMass() const { return true; }
 
     double stiffSource(const DomainType& arg,
                        const double t,
@@ -70,13 +72,23 @@ namespace Fem
       // eval solution
       evaluate( arg, t, res );
       // apply factor
-      res *= rhsFactor_;
+      res *= rhsFactor_ * massFactor_;
       return 0.0;
     }
 
+    //! diagonal of the mass term
+    virtual inline void mass (const DomainType& arg,
+                              const double time,
+                              const RangeType& u,
+                              RangeType& diag ) const
+    {
+      diag = massFactor_;
+    }
+
+
     double diffusion( const RangeType& u, const JacobianRangeType& gradU ) const
     {
-      return epsilon();
+      return epsilon() * massFactor_;
     }
 
     //! return start time
@@ -151,6 +163,7 @@ namespace Fem
     const double  startTime_;
     const double  epsilon_;
     const double  rhsFactor_;
+    const double  massFactor_;
     std::string myName_;
   };
 
