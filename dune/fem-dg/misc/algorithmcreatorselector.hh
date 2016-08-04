@@ -595,8 +595,8 @@ namespace Fem
     typedef DomainDiscreteFunctionType                                                             DiscreteFunctionType;
     typedef Dune::Fem::Operator< DomainDiscreteFunctionType, RangeDiscreteFunctionType >           LinearOperatorType;
     typedef typename std::conditional<symmetric,
-            Dune::Fem::ISTLCGOp< DiscreteFunctionType >,
-            Dune::Fem::ISTLGMResOp< DiscreteFunctionType > > :: type           LinearInverseOperatorType;
+            Dune::Fem::ISTLCGOp< DiscreteFunctionType, LinearOperatorType >,
+            Dune::Fem::ISTLGMResOp< DiscreteFunctionType, LinearOperatorType > > :: type           LinearInverseOperatorType;
   };
 #endif
 
