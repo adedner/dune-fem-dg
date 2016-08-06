@@ -50,4 +50,4 @@ Installation
 ------------
 
 For a full explanation of the DUNE installation process please read
-the [installation notes][https://www.dune-project.org/doc/installation/].
+the installation notes https://www.dune-project.org/doc/installation/.
