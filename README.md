@@ -43,7 +43,10 @@ By using the code you agree to cite one or both of the first two papers in any p
 Eye-candy
 ---------
 
-Figure: Solving the compressible Euler equations in 3D using the parallel-adaptive DUNE-ALUGrid and the DG discretization implemented in DUNE-FEM-DG.
+The avatar of the project shows the solution of
+the compressible Euler equations in 3D using
+the parallel-adaptive DUNE-ALUGrid and the DG
+discretization implemented in DUNE-FEM-DG.
 
 
 Installation
