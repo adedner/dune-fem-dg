@@ -13,3 +13,7 @@ any later version.
 A detailed description of the schemes can be found
 in the first two papers and an overview on performance of
 the code is given in the third paper.
+
+S. Brdar, A. Dedner, and R. Klöfkorn.
+Compact and stable Discontinuous Galerkin methods for convection-diffusion problems.
+SIAM J. Sci. Comput., 34(1):263-282, 2012. http://dx.doi.org/10.1137/100817528
