@@ -9,12 +9,14 @@ The operators can be used efficiently both in a
 explicit/matrix free implementation or used to
 setup a system matrix for use with the linear solvers available in DUNE-FEM.
 
+
 License
 -------
 
 The DUNE-FEM-DG module is available under
 the GNU General Public License version 2, or (at your option),
 any later version.
+
 
 References
 ----------
@@ -37,7 +39,15 @@ Proceedings of the ALGORITMY 2012. http://www.iam.fmph.uniba.sk/algoritmy2012/zb
 
 By using the code you agree to cite one or both of the first two papers in any publication using this code.
 
+
 Eye-candy
 ---------
 
 Figure: Solving the compressible Euler equations in 3D using the parallel-adaptive DUNE-ALUGrid and the DG discretization implemented in DUNE-FEM-DG.
+
+
+Installation
+------------
+
+For a full explanation of the DUNE installation process please read
+the [installation notes][https://www.dune-project.org/doc/installation/].
