@@ -1,5 +1,6 @@
 Module: dune-fem-dg
 Version: 3.0
 Maintainer: dune@mathematik.uni-freiburg.de
+Whitespace-Hook: Yes
 Depends: dune-fem (>=3.0 )
 Sources: dune
