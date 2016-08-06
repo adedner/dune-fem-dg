@@ -23,15 +23,16 @@ A detailed description of the schemes can be found
 in the first two papers and an overview on performance of
 the code is given in the third paper.
 
-S. Brdar, A. Dedner, and R. Klöfkorn.
+* S. Brdar, A. Dedner, and R. Klöfkorn.
 Compact and stable Discontinuous Galerkin methods for convection-diffusion problems.
 SIAM J. Sci. Comput., 34(1):263-282, 2012. http://dx.doi.org/10.1137/100817528
 
-A. Dedner and R. Klöfkorn. A Generic Stabilization Approach for Higher Order Discontinuous Galerkin Methods for Convection Dominated Problems.
+* A. Dedner and R. Klöfkorn. A Generic Stabilization Approach for Higher Order Discontinuous Galerkin Methods for Convection Dominated Problems.
 J. Sci. Comput., 47(3):365-388, 2011. http://dx.doi.org/10.1007/s10915-010-9448-0
 
 An overview on performance of the code is given in
-R. Klöfkorn. Efficient Matrix-Free Implementation of Discontinuous Galerkin Methods for Compressible Flow Problems.
+
+* R. Klöfkorn. Efficient Matrix-Free Implementation of Discontinuous Galerkin Methods for Compressible Flow Problems.
 Proceedings of the ALGORITMY 2012. http://www.iam.fmph.uniba.sk/algoritmy2012/zbornik/2Kloefkornf.pdf
 
 By using the code you agree to cite one or both of the first two papers in any publication using this code.
