@@ -1,3 +1,6 @@
+DUNE-FEM-DG
+===========
+
 DUNE-FEM-DG is the implementation of Discontinuous Galerkin schemes
 using the DUNE-FEM framework. Stabilized DG schemes for hyperbolic
 as well as a wide range of different primal formulations
@@ -6,9 +9,15 @@ The operators can be used efficiently both in a
 explicit/matrix free implementation or used to
 setup a system matrix for use with the linear solvers available in DUNE-FEM.
 
+License
+-------
+
 The DUNE-FEM-DG module is available under
 the GNU General Public License version 2, or (at your option),
 any later version.
+
+References
+----------
 
 A detailed description of the schemes can be found
 in the first two papers and an overview on performance of
@@ -26,4 +35,8 @@ R. Klöfkorn. Efficient Matrix-Free Implementation of Discontinuous Galerkin Met
 Proceedings of the ALGORITMY 2012. http://www.iam.fmph.uniba.sk/algoritmy2012/zbornik/2Kloefkornf.pdf
 
 By using the code you agree to cite one or both of the first two papers in any publication using this code.
+
+Eye-candy
+---------
+
 Figure: Solving the compressible Euler equations in 3D using the parallel-adaptive DUNE-ALUGrid and the DG discretization implemented in DUNE-FEM-DG.
