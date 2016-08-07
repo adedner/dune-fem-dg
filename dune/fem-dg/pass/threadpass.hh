@@ -200,6 +200,7 @@ namespace Fem
   protected:
     using BaseType :: spc_;
     using BaseType :: pass ;
+    using BaseType :: previousPass_ ;
 
   public:
     /** \brief Constructor
@@ -218,26 +219,44 @@ namespace Fem
       delDofs_( spc ),
       iterators_( spc.gridPart() ),
       singleProblem_( problem ),
-      problems_( Fem::ThreadManager::maxThreads() ),
-      passes_( Fem::ThreadManager::maxThreads() ),
+      problems_( Fem::ThreadManager::maxThreads(), nullptr ),
+      passes_( Fem::ThreadManager::maxThreads(), nullptr ),
       passComputeTime_( Fem::ThreadManager::maxThreads(), 0.0 ),
       firstStage_( false ),
       arg_(0), dest_(0),
       nonBlockingComm_(),
       numberOfElements_( 0 ),
+      volumeQuadOrd_( volumeQuadOrd ),
+      faceQuadOrd_( faceQuadOrd ),
       firstCall_( true ),
       requireCommunication_( true ),
       sumComputeTime_( Fem :: Parameter :: getValue<bool>("fem.parallel.sumcomputetime", false ) )
     {
+      // initialize each thread pass by the thread itself to avoid NUMA effects
+      {
+        // see threadhandle.hh
+        Fem :: ThreadHandle :: run( *this );
+      }
+      /*
       const int maxThreads = Fem::ThreadManager::maxThreads();
       for(int i=0; i<maxThreads; ++i)
       {
-        // use serparate discrete problem for each thread
+        // use separate discrete problem for each thread
         problems_[ i ] = new DiscreteModelType( problem );
         // create dg passes, the last bool disables communication in the pass itself
         passes_[ i ]   = new InnerPassType( *problems_[ i ], pass, spc, volumeQuadOrd, faceQuadOrd );
       }
+      */
+
 #ifndef NDEBUG
+      // check that all objects have been created
+      const int maxThreads = Fem::ThreadManager::maxThreads();
+      for(int i=0; i<maxThreads; ++i)
+      {
+        assert( problems_[ i ] );
+        assert( passes_[ i ] );
+      }
+
       if( Fem :: Parameter :: verbose() )
         std::cout << "Thread Pass initialized\n";
 #endif
@@ -554,6 +573,17 @@ namespace Fem
       // make sure thread 0 is master thread
       assert( (thread == 0) == Fem::ThreadManager::isMaster() );
 
+      // initialization (called from constructor of this class)
+      if( ! passes_[ thread ] )
+      {
+        // use separate discrete problem for each thread
+        problems_[ thread ] = new DiscreteModelType( singleProblem_ );
+        // create dg passes, the last bool disables communication in the pass itself
+        passes_[ thread ]   = new InnerPassType( *problems_[ thread ], previousPass_, spc_, volumeQuadOrd_, faceQuadOrd_ );
+
+        return ;
+      }
+
       //! get pass for my thread
       InnerPassType& myPass = pass( thread );
 
@@ -668,8 +698,8 @@ namespace Fem
 
     mutable ThreadIteratorType iterators_;
     const DiscreteModelType& singleProblem_;
-    std::vector< DiscreteModelType* > problems_;
-    std::vector< InnerPassType* > passes_;
+    mutable std::vector< DiscreteModelType* > problems_;
+    mutable std::vector< InnerPassType* > passes_;
     mutable std::vector< double > passComputeTime_;
     mutable bool firstStage_;
 
@@ -681,6 +711,8 @@ namespace Fem
     NonBlockingCommHandleType nonBlockingComm_;
 
     mutable size_t numberOfElements_;
+    const int volumeQuadOrd_;
+    const int faceQuadOrd_;
     mutable bool firstCall_;
     bool requireCommunication_;
     const bool sumComputeTime_;
