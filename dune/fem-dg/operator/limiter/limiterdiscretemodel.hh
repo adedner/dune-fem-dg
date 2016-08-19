@@ -37,28 +37,28 @@ namespace Fem
     // These type definitions allow a convenient access to arguments of pass.
     std::integral_constant< int, passId > uVar;
   public:
-    typedef LimiterTraits<GlobalPassTraitsImp,Model, passId > Traits;
+    typedef LimiterTraits<GlobalPassTraitsImp,Model, passId >           Traits;
 
-    typedef typename Traits::RangeType RangeType;
-    typedef typename Traits:: DomainType DomainType;
-    typedef typename Traits:: LocalDomainType LocalDomainType;
-    typedef typename Traits:: DomainFieldType DomainFieldType;
-    typedef typename Traits::GridType GridType;
-    typedef typename Traits::GridPartType GridPartType;
-    typedef typename Traits::JacobianRangeType JacobianRangeType;
-    typedef typename GridPartType::IntersectionIteratorType :: Intersection IntersectionType;
+    typedef typename Traits::RangeType                                  RangeType;
+    typedef typename Traits::DomainType                                 DomainType;
+    typedef typename Traits::LocalDomainType                            LocalDomainType;
+    typedef typename Traits::DomainFieldType                            DomainFieldType;
+    typedef typename Traits::GridType                                   GridType;
+    typedef typename Traits::GridPartType                               GridPartType;
+    typedef typename Traits::JacobianRangeType                          JacobianRangeType;
+    typedef typename GridPartType::IntersectionType                     IntersectionType;
     typedef typename GridPartType::template Codim<0>::EntityType        EntityType;
     typedef typename GridType::template Codim<0>::Entity                GridEntityType;
 
     enum { dimGrid = GridType :: dimension };
 
     // type of surface domain type
-    typedef FieldVector< DomainFieldType, dimGrid - 1 > FaceLocalDomainType;
+    typedef FieldVector< DomainFieldType, dimGrid - 1 >                 FaceLocalDomainType;
 
-    typedef typename Traits::DestinationType DestinationType;
+    typedef typename Traits::DestinationType                            DestinationType;
 
     // Indicator for Limiter
-    typedef typename Traits::IndicatorType   IndicatorType ;
+    typedef typename Traits::IndicatorType                              IndicatorType ;
 
     enum { dimRange = Traits :: dimRange };
     enum { evaluateJacobian = false };

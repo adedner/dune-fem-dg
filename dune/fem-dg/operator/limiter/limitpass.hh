@@ -298,21 +298,21 @@ namespace Fem
   public:
     typedef LimiterDefaultTraits<GlobalTraitsImp,Model,passId> Traits;
 
-    typedef typename Traits::DomainType DomainType;
-    typedef typename Traits::LocalDomainType LocalDomainType;
-    typedef typename Traits::FaceLocalDomainType FaceLocalDomainType;
-    typedef typename Traits::RangeType RangeType;
-    typedef typename Traits::GridType GridType;
-    typedef typename Traits::GridPartType GridPartType;
-    typedef typename Traits::JacobianRangeType JacobianRangeType;
+    typedef typename Traits::DomainType                     DomainType;
+    typedef typename Traits::LocalDomainType                LocalDomainType;
+    typedef typename Traits::FaceLocalDomainType            FaceLocalDomainType;
+    typedef typename Traits::RangeType                      RangeType;
+    typedef typename Traits::GridType                       GridType;
+    typedef typename Traits::GridPartType                   GridPartType;
+    typedef typename Traits::JacobianRangeType              JacobianRangeType;
     typedef typename GridPartType::IntersectionIteratorType IntersectionIteratorType;
-    typedef typename IntersectionIteratorType :: Intersection IntersectionType;
-    typedef typename GridPartType::template Codim<0>::EntityType        EntityType;
-    typedef typename DomainType :: field_type DomainFieldType;
+    typedef typename GridPartType::IntersectionType         IntersectionType;
+    typedef typename GridPartType::template Codim<0>::EntityType EntityType;
+    typedef typename DomainType::field_type                 DomainFieldType;
 
-    typedef typename Traits :: LimiterFunctionType  LimiterFunctionType;
+    typedef typename Traits::LimiterFunctionType            LimiterFunctionType;
 
-    enum { dimRange = RangeType :: dimension };
+    enum { dimRange = RangeType::dimension };
 
   public:
     /** \brief default limiter discrete model */
@@ -608,92 +608,90 @@ namespace Fem
     //- Typedefs and enums
 
     //! Repetition of template arguments
-    typedef DiscreteModelImp DiscreteModelType;
+    typedef DiscreteModelImp                                             DiscreteModelType;
     //! Repetition of template arguments
-    typedef PreviousPassImp PreviousPassType;
+    typedef PreviousPassImp                                              PreviousPassType;
 
-    typedef typename BaseType::PassIds PassIds;
+    typedef typename BaseType::PassIds                                   PassIds;
 
     // Types from the base class
-    typedef typename BaseType::EntityType EntityType;
+    typedef typename BaseType::EntityType                                EntityType;
 
-    typedef typename BaseType::ArgumentType ArgumentType;
+    typedef typename BaseType::ArgumentType                              ArgumentType;
 
   private:
-   typedef typename DiscreteModelType::Selector Selector;
-   typedef typename Dune::tuple_element< 0, Selector >::type ArgumentIdType;
+   typedef typename DiscreteModelType::Selector                          Selector;
+   typedef typename Dune::tuple_element< 0, Selector >::type             ArgumentIdType;
    static const std::size_t argumentPosition
      = Dune::FirstTypeIndex< PassIds, ArgumentIdType >::type::value;
    typedef typename Dune::tuple_element< argumentPosition, ArgumentType >::type ArgumentFunctionPtrType;
 
   public:
-    typedef typename PreviousPassType::GlobalArgumentType ArgumentFunctionType;
-    typedef typename ArgumentFunctionType :: LocalFunctionType LocalFunctionType;
+    typedef typename PreviousPassType::GlobalArgumentType                 ArgumentFunctionType;
+    typedef typename ArgumentFunctionType::LocalFunctionType              LocalFunctionType;
 
     // Types from the traits
-    typedef typename DiscreteModelType::Traits::DestinationType DestinationType;
-    typedef typename DiscreteModelType::Traits::VolumeQuadratureType VolumeQuadratureType;
-    typedef typename DiscreteModelType::Traits::FaceQuadratureType FaceQuadratureType;
-    typedef typename DiscreteModelType::Traits::DiscreteFunctionSpaceType
-    DiscreteFunctionSpaceType;
-    typedef typename DiscreteFunctionSpaceType :: IteratorType IteratorType;
+    typedef typename DiscreteModelType::Traits::DestinationType           DestinationType;
+    typedef typename DiscreteModelType::Traits::VolumeQuadratureType      VolumeQuadratureType;
+    typedef typename DiscreteModelType::Traits::FaceQuadratureType        FaceQuadratureType;
+    typedef typename DiscreteModelType::Traits::DiscreteFunctionSpaceType DiscreteFunctionSpaceType;
+    typedef typename DiscreteFunctionSpaceType::IteratorType              IteratorType;
 
     // Types extracted from the discrete function space type
-    typedef typename DiscreteFunctionSpaceType::GridType GridType;
-    typedef typename DiscreteFunctionSpaceType::GridPartType GridPartType;
-    typedef typename DiscreteFunctionSpaceType::DomainType DomainType;
-    typedef typename DiscreteFunctionSpaceType::DomainFieldType DomainFieldType;
+    typedef typename DiscreteFunctionSpaceType::GridType                  GridType;
+    typedef typename DiscreteFunctionSpaceType::GridPartType              GridPartType;
+    typedef typename DiscreteFunctionSpaceType::DomainType                DomainType;
+    typedef typename DiscreteFunctionSpaceType::DomainFieldType           DomainFieldType;
     typedef typename DiscreteFunctionSpaceType::RangeType RangeType;
-    typedef typename DiscreteFunctionSpaceType::RangeFieldType RangeFieldType;
-    typedef typename DiscreteFunctionSpaceType::JacobianRangeType JacobianRangeType;
+    typedef typename DiscreteFunctionSpaceType::RangeFieldType            RangeFieldType;
+    typedef typename DiscreteFunctionSpaceType::JacobianRangeType         JacobianRangeType;
 
-    typedef typename GridType :: Traits :: LocalIdSet LocalIdSetType;
-    typedef typename LocalIdSetType :: IdType IdType;
+    typedef typename GridType::Traits::LocalIdSet                         LocalIdSetType;
+    typedef typename LocalIdSetType::IdType                               IdType;
 
     // Types extracted from the underlying grids
-    typedef typename GridPartType :: IntersectionIteratorType IntersectionIteratorType;
-    typedef typename IntersectionIteratorType :: Intersection IntersectionType;
-    typedef typename GridPartType::template Codim<0>::GeometryType       Geometry;
-    typedef typename Geometry::LocalCoordinate LocalDomainType;
+    typedef typename GridPartType::IntersectionIteratorType               IntersectionIteratorType;
+    typedef typename GridPartType::IntersectionType                       IntersectionType;
+    typedef typename GridPartType::template Codim<0>::GeometryType        Geometry;
+    typedef typename Geometry::LocalCoordinate                            LocalDomainType;
 
     // Various other types
-    typedef typename DestinationType::LocalFunctionType DestLocalFunctionType;
+    typedef typename DestinationType::LocalFunctionType                   DestLocalFunctionType;
 
     typedef LimiterDiscreteModelCaller< DiscreteModelType, ArgumentType, PassIds > DiscreteModelCallerType;
 
     // type of Communication Manager
-    typedef CommunicationManager< DiscreteFunctionSpaceType > CommunicationManagerType;
+    typedef CommunicationManager< DiscreteFunctionSpaceType >             CommunicationManagerType;
 
     // Range of the destination
     enum { dimRange = DiscreteFunctionSpaceType::dimRange,
-     dimDomain = DiscreteFunctionSpaceType::dimDomain};
+           dimDomain = DiscreteFunctionSpaceType::dimDomain};
     enum { dimGrid = GridType :: dimension };
-    typedef typename GridType :: ctype ctype;
-    typedef FieldVector<ctype, dimGrid-1> FaceLocalDomainType;
+    typedef typename GridType::ctype                                       ctype;
+    typedef FieldVector<ctype, dimGrid-1>                                  FaceLocalDomainType;
 
-    typedef PointBasedDofConversionUtility< dimRange > DofConversionUtilityType;
+    typedef PointBasedDofConversionUtility< dimRange >                     DofConversionUtilityType;
 
     static const bool StructuredGrid     = GridPartCapabilities::isCartesian< GridPartType >::v;
     static const bool conformingGridPart = GridPartCapabilities::isConforming< GridPartType >::v;
 
-    typedef FieldVector< DomainType , dimRange > DeoModType;
-    typedef FieldMatrix< DomainFieldType, dimDomain , dimDomain > MatrixType;
+    typedef FieldVector< DomainType , dimRange >                           DeoModType;
+    typedef FieldMatrix< DomainFieldType, dimDomain , dimDomain >          MatrixType;
 
-    typedef typename GridPartType :: IndexSetType IndexSetType;
-    typedef AllGeomTypes< IndexSetType, GridType> GeometryInformationType;
+    typedef typename GridPartType :: IndexSetType                          IndexSetType;
+    typedef AllGeomTypes< IndexSetType, GridType>                          GeometryInformationType;
 
-    typedef GeometryInformation< GridType, 1 > FaceGeometryInformationType;
+    typedef GeometryInformation< GridType, 1 >                             FaceGeometryInformationType;
 
     // get LagrangePointSet of pol order 1
-    typedef LagrangePointSet< GridPartType, 1 > LagrangePointSetType;
+    typedef LagrangePointSet< GridPartType, 1 >                            LagrangePointSetType;
     // get lagrange point set of order 1
-    typedef CompiledLocalKeyContainer< LagrangePointSetType, 1 , 1 >
-      LagrangePointSetContainerType;
+    typedef CompiledLocalKeyContainer< LagrangePointSetType, 1 , 1 >       LagrangePointSetContainerType;
 
-    typedef DGFEntityKey<int> KeyType;
-    typedef std::vector<int> CheckType;
-    typedef std::pair< KeyType, CheckType > VectorCompType;
-    typedef std::set< VectorCompType > ComboSetType;
+    typedef DGFEntityKey<int>                                              KeyType;
+    typedef std::vector<int>                                               CheckType;
+    typedef std::pair< KeyType, CheckType >                                VectorCompType;
+    typedef std::set< VectorCompType >                                     ComboSetType;
 
     struct MatrixIF
     {
@@ -1100,11 +1098,10 @@ namespace Fem
 
         elementCounter_ = 0;
         // dod limitation
-        IteratorType endit = spc_.end();
-        for (IteratorType it = spc_.begin(); it != endit; ++it)
+        for( const auto& en : elements( spc_.gridPart() ) )
         {
           Dune::Timer localTime;
-          applyLocalImp(*it);
+          applyLocalImp(en);
           stepTime_[2] += localTime.elapsed();
           ++elementCounter_;
         }
@@ -1252,10 +1249,8 @@ namespace Fem
       {
         // check whether on of the intersections is with ghost element
         // and if so, skip the computation of the limited solution for now
-        const IntersectionIteratorType endnit = gridPart_.iend(entity);
-        for (IntersectionIteratorType nit = gridPart_.ibegin(entity); nit != endnit; ++nit)
+        for (const auto& intersection : intersections(gridPart_, entity) )
         {
-          const IntersectionType& intersection = *nit;
           if( intersection.neighbor() )
           {
             // get neighbor
@@ -1904,11 +1899,8 @@ namespace Fem
           if( ! checkPhysicalQuad(volQuad, uEn) ) return false;
         }
 
-        const IntersectionIteratorType endnit = gridPart_.iend(en);
-        for (IntersectionIteratorType nit = gridPart_.ibegin(en);
-             nit != endnit; ++nit)
+        for (const auto& intersection : intersections(gridPart_, en) )
         {
-          const IntersectionType& intersection = *nit;
           if( intersection.neighbor() && ! intersection.conforming() )
           {
             typedef typename FaceQuadratureType :: NonConformingQuadratureType NonConformingQuadratureType;
@@ -2374,12 +2366,8 @@ namespace Fem
       shockIndicator = 0;
       adaptIndicator = 0;
 
-      const IntersectionIteratorType endnit = gridPart_.iend(en);
-      for (IntersectionIteratorType niter = gridPart_.ibegin(en);
-           niter != endnit; ++niter)
+      for (const auto& intersection : intersections(gridPart_, en) )
       {
-        const IntersectionType& intersection = *niter ;
-
         typedef typename IntersectionType :: Geometry LocalGeometryType;
         const LocalGeometryType& interGeo = intersection.geometry();
 

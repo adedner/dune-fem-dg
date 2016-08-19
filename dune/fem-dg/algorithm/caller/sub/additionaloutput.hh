@@ -51,17 +51,11 @@ namespace Fem
       typedef typename OutDiscreteFunctionType::DiscreteFunctionSpaceType   OutDiscreteFunctionSpaceType;
 
       typedef typename InDiscreteFunctionSpaceType::GridPartType  GridPartType;
-      typedef typename InDiscreteFunctionSpaceType::IteratorType  Iterator;
-      typedef typename Iterator::Entity                           Entity;
-      typedef typename Entity::Geometry                           Geometry;
       typedef typename InDiscreteFunctionSpaceType::DomainType    DomainType;
       typedef typename InDiscreteFunctionSpaceType::RangeType     InRangeType;
       typedef typename OutDiscreteFunctionSpaceType::RangeType    OutRangeType;
 
-      typedef typename InDiscreteFunctionType::LocalFunctionType  InLocalFuncType;
-      typedef typename OutDiscreteFunctionType::LocalFunctionType OutLocalFuncType;
-
-      const InDiscreteFunctionSpaceType& space =  alg.solution().space();
+      const auto& space =  alg.solution().space();
       solution_.clear();
 
       InRangeType cons(0.0);
@@ -69,31 +63,27 @@ namespace Fem
       OutRangeType prim(0.0);
       OutRangeType prim_bg(0.0);
 
-      const Iterator endit = space.end();
-      for( Iterator it = space.begin(); it != endit ; ++it)
+      for( const auto& entity : elements( space.gridPart() ) )
       {
-        // get entity
-        const Entity& entity = *it ;
-        const Geometry& geo = entity.geometry();
+        const auto& geo = entity.geometry();
 
         // get quadrature rule for L2 projection
         Dune::Fem::CachingQuadrature< GridPartType, 0 > quad( entity, 2*space.order()+1 );
 
-        InLocalFuncType consLF = alg.solution().localFunction( entity );
-        OutLocalFuncType primLF = solution_.localFunction( entity );
+        const auto& consLF = alg.solution().localFunction( entity );
+        const auto& primLF = solution_.localFunction( entity );
 
-        const int quadNop = quad.nop();
-        for(int qP = 0; qP < quadNop; ++qP)
+        for( const auto qp : quad )
         {
-          const DomainType& xgl = geo.global( quad.point(qP) );
-          consLF.evaluate( quad[qP], cons );
+          const auto& xgl = geo.global( qp.position() );
+          consLF.evaluate( qp, cons );
 
           // it is useful to visualize better suited quantities
           bool forVisual = true;
           alg.model().conservativeToPrimitive( tp.time(), xgl, cons, prim, forVisual );
 
-          prim *=  quad.weight(qP);
-          primLF.axpy( quad[qP] , prim );
+          prim *=  qp.weight();
+          primLF.axpy( qp, prim );
         }
       }
     }

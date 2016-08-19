@@ -62,9 +62,9 @@ namespace Fem
     typedef typename Traits::DiscreteFunctionSpaceType::FunctionSpaceType::RangeType                          RangeType;
     typedef typename Traits::DiscreteFunctionSpaceType::FunctionSpaceType::JacobianRangeType                  JacobianRangeType;
     typedef typename Traits::GridType                              GridType;
-    typedef typename Traits::GridPartType
-              ::IntersectionIteratorType                           IntersectionIterator;
-    typedef typename IntersectionIterator::Intersection            Intersection;
+    typedef typename Traits::GridPartType                          GridPartType;
+    typedef typename GridPartType::IntersectionIteratorType        IntersectionIterator;
+    typedef typename GridPartType::IntersectionType                Intersection;
     typedef typename BaseType::EntityType                          EntityType;
 
     enum { evaluateJacobian = DiffusionFluxType::evaluateJacobian };
@@ -278,7 +278,7 @@ namespace Fem
     typedef typename Traits::GridPartType                     GridPartType;
     typedef typename Traits::GridType                         GridType;
     typedef typename GridPartType::IntersectionIteratorType   IntersectionIterator;
-    typedef typename IntersectionIterator::Intersection       Intersection;
+    typedef typename GridPartType::IntersectionType           Intersection;
     typedef typename BaseType::EntityType                     EntityType;
     typedef typename Traits::DiscreteFunctionSpaceType        DiscreteFunctionSpaceType;
 

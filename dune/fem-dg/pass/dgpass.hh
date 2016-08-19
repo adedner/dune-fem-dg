@@ -59,64 +59,63 @@ namespace Fem
     //- Typedefs and enums
     //! Base class
     typedef LocalPass< DiscreteModelImp , PreviousPassImp , passIdImp > BaseType;
-    typedef typename BaseType::PassIds PassIds;
+    typedef typename BaseType::PassIds                                  PassIds;
 
     //! Repetition of template arguments
-    typedef DiscreteModelImp DiscreteModelType;
-    typedef PreviousPassImp PreviousPassType;
+    typedef DiscreteModelImp                                            DiscreteModelType;
+    typedef PreviousPassImp                                             PreviousPassType;
 
     // Types from the base class
-    typedef typename BaseType::EntityType  EntityType;
-    typedef typename BaseType::ArgumentType ArgumentType;
+    typedef typename BaseType::EntityType                               EntityType;
+    typedef typename BaseType::ArgumentType                             ArgumentType;
 
     // Types from the traits
-    typedef typename DiscreteModelType::Traits::DestinationType DestinationType;
-    typedef typename DiscreteModelType::Traits::VolumeQuadratureType VolumeQuadratureType;
-    typedef typename DiscreteModelType::Traits::FaceQuadratureType FaceQuadratureType;
+    typedef typename DiscreteModelType::Traits::DestinationType         DestinationType;
+    typedef typename DiscreteModelType::Traits::VolumeQuadratureType    VolumeQuadratureType;
+    typedef typename DiscreteModelType::Traits::FaceQuadratureType      FaceQuadratureType;
     typedef typename DiscreteModelType::Traits::DiscreteFunctionSpaceType DiscreteFunctionSpaceType;
     //! Iterator over the space
-    typedef typename DiscreteFunctionSpaceType::IteratorType IteratorType;
+    typedef typename DiscreteFunctionSpaceType::IteratorType            IteratorType;
 
     // Types extracted from the discrete function space type
-    typedef typename DiscreteFunctionSpaceType::GridType GridType;
-    typedef typename DiscreteFunctionSpaceType::GridPartType GridPartType;
-    typedef typename DiscreteFunctionSpaceType::DomainType DomainType;
-    typedef typename DiscreteFunctionSpaceType::RangeType RangeType;
-    typedef typename DiscreteFunctionSpaceType::DomainFieldType DomainFieldType;
-    typedef typename DiscreteFunctionSpaceType::RangeFieldType  RangeFieldType;
-    typedef typename DiscreteFunctionSpaceType::JacobianRangeType JacobianRangeType;
-    typedef typename DiscreteFunctionSpaceType:: BasisFunctionSetType
-      BasisFunctionSetType;
+    typedef typename DiscreteFunctionSpaceType::GridType                GridType;
+    typedef typename DiscreteFunctionSpaceType::GridPartType            GridPartType;
+    typedef typename DiscreteFunctionSpaceType::DomainType              DomainType;
+    typedef typename DiscreteFunctionSpaceType::RangeType               RangeType;
+    typedef typename DiscreteFunctionSpaceType::DomainFieldType         DomainFieldType;
+    typedef typename DiscreteFunctionSpaceType::RangeFieldType          RangeFieldType;
+    typedef typename DiscreteFunctionSpaceType::JacobianRangeType       JacobianRangeType;
+    typedef typename DiscreteFunctionSpaceType::BasisFunctionSetType    BasisFunctionSetType;
 
     // Types extracted from the underlying grid part types
-    typedef typename GridPartType::IntersectionIteratorType IntersectionIteratorType;
-    typedef typename IntersectionIteratorType::Intersection IntersectionType;
-    typedef typename GridPartType :: template Codim<0>:: GeometryType  Geometry;
+    typedef typename GridPartType::IntersectionIteratorType             IntersectionIteratorType;
+    typedef typename GridPartType::IntersectionType                     IntersectionType;
+    typedef typename GridPartType::template Codim<0>::GeometryType      Geometry;
 
 
     // Various other types
-    typedef typename DestinationType::LocalFunctionType LocalFunctionType;
+    typedef typename DestinationType::LocalFunctionType                 LocalFunctionType;
 
     typedef CDGDiscreteModelCaller< DiscreteModelType, ArgumentType, PassIds > DiscreteModelCallerType;
 
-    typedef typename DestinationType :: DofBlockPtrType DofBlockPtrType;
+    typedef typename DestinationType::DofBlockPtrType                   DofBlockPtrType;
 
     // type of local id set
-    typedef typename GridPartType::IndexSetType IndexSetType;
-    typedef Fem::TemporaryLocalFunction< DiscreteFunctionSpaceType > TemporaryLocalFunctionType;
+    typedef typename GridPartType::IndexSetType                         IndexSetType;
+    typedef Fem::TemporaryLocalFunction< DiscreteFunctionSpaceType >    TemporaryLocalFunctionType;
 
 #ifdef USE_CACHED_INVERSE_MASSMATRIX
     // type of communication manager object which does communication
     typedef typename DiscreteFunctionSpaceType::template ToNewDimRange< 1 >::Type ScalarDiscreteFunctionSpaceType;
     typedef Fem::DGMassInverseMassImplementation< ScalarDiscreteFunctionSpaceType, true > MassInverseMassType ;
-    typedef typename MassInverseMassType :: KeyType MassKeyType;
-    typedef Fem::SingletonList< MassKeyType, MassInverseMassType >  InverseMassProviderType;
+    typedef typename MassInverseMassType::KeyType                        MassKeyType;
+    typedef Fem::SingletonList< MassKeyType, MassInverseMassType >       InverseMassProviderType;
     // store a reference to the mass matrix implementation
-    typedef MassInverseMassType&  LocalMassMatrixStorageType ;
+    typedef MassInverseMassType&                                         LocalMassMatrixStorageType;
 #else
     //! type of local mass matrix
     typedef Fem::LocalMassMatrix< DiscreteFunctionSpaceType, VolumeQuadratureType > LocalMassMatrixType;
-    typedef LocalMassMatrixType  LocalMassMatrixStorageType;
+    typedef LocalMassMatrixType                                          LocalMassMatrixStorageType;
 #endif
 
     // true if all intersections between element in this grid part are conforming
@@ -221,10 +220,9 @@ namespace Fem
 
       if( reallyCompute_ )
       {
-        const IteratorType endit = spc_.end();
-        for (IteratorType it = spc_.begin(); it != endit; ++it)
+        for( const auto& en : elements( spc_.gridPart() ) )
         {
-          applyLocal(*it);
+          applyLocal(en);
         }
 
         finalize(arg, dest);
@@ -557,11 +555,8 @@ namespace Fem
         // get volume of element divided by the DG polynomial factor
         const double envol = entity.geometry().volume() / ( 2.0 * spc_.order( entity ) + 1.0 ) ;
 
-        const IntersectionIteratorType endnit = gridPart_.iend(entity);
-        for (IntersectionIteratorType nit = gridPart_.ibegin(entity); nit != endnit; ++nit)
+        for (const auto& intersection : intersections(gridPart_, entity) )
         {
-          const IntersectionType& intersection = *nit;
-
           double nbvol = envol;
           double wspeedS = 0.0;
 

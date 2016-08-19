@@ -143,7 +143,7 @@ namespace Fem
     typedef typename Traits :: DiscreteFunctionSpaceType               DiscreteFunctionSpaceType;
 
     typedef typename GridPartType :: IntersectionIteratorType          IntersectionIteratorType;
-    typedef typename IntersectionIteratorType :: Intersection          IntersectionType;
+    typedef typename GridPartType :: IntersectionType                  IntersectionType;
     typedef typename BaseType :: EntityType                            EntityType;
     typedef typename DiscreteFunctionSpaceType :: FunctionSpaceType    FunctionSpaceType;
     typedef typename FunctionSpaceType :: RangeFieldType               RangeFieldType;

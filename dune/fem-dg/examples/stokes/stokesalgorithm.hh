@@ -315,12 +315,8 @@ namespace Fem
       polOrderContainer_.resize();
       if ( errorEstimator_.isPadaptive() )
       {
-        typedef typename DiscreteFunctionSpaceType::IteratorType IteratorType;
-        typedef typename IteratorType::Entity EntityType ;
-        const IteratorType end = space_.end();
-        for( IteratorType it = space_.begin(); it != end; ++it )
+        for( const auto& entity : elements( space_.gridPart() ) )
         {
-          const EntityType& entity = *it;
           int order = polOrderContainer_[ entity ].value();
           while (order == -1) // is a new element
           {

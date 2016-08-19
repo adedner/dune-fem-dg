@@ -31,9 +31,6 @@ namespace Fem
       typedef typename DiscreteFunctionSpaceType::GridPartType GridPartType;
       typedef typename DiscreteFunctionSpaceType::RangeType RangeType;
 
-      typedef typename GridPartType :: template Codim< 0 > ::
-        template Partition< Dune::All_Partition > :: IteratorType IteratorType ;
-
       typedef typename DiscreteFunctionType::LocalFunctionType LocalFuncType;
 
       if( polOrd < 0 ) polOrd = 2*space.order() + 4 ;
@@ -43,20 +40,19 @@ namespace Fem
 
       double sum = 0.0;
 
-      IteratorType it    = space.gridPart().template begin< 0, Dune::All_Partition > ();
-      IteratorType endit = space.gridPart().template end< 0, Dune::All_Partition > ();
-
-      for(; it != endit ; ++it)
+      for( const auto& en : elements( space.gridPart(), Dune::Partitions::all ) )
       {
-        Dune::Fem::CachingQuadrature<GridPartType,0> quad(*it, polOrd);
-        LocalFuncType lf = discFunc.localFunction(*it);
-        for( size_t qP = 0; qP < quad.nop(); ++qP )
+        Dune::Fem::CachingQuadrature<GridPartType,0> quad( en, polOrd );
+        LocalFuncType lf = discFunc.localFunction( en );
+
+        for( const auto qp : quad )
         {
-          double det = (*it).geometry().integrationElement(quad.point(qP));
-          f.evaluate((*it).geometry().global(quad.point(qP)), ret);
-          lf.evaluate(quad[qP],phi);
+          const auto& x = qp.position();
+          double det = en.geometry().integrationElement( x );
+          f.evaluate( en.geometry().global( x ), ret);
+          lf.evaluate( qp, phi );
           RangeType diff = ret - phi ;
-          sum += det * quad.weight(qP) * ( diff * diff );
+          sum += det * qp.weight() * ( diff * diff );
         }
       }
       return std::sqrt( Dune::Fem::MPIManager::comm().sum( sum ) );

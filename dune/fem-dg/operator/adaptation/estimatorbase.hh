@@ -50,7 +50,7 @@ namespace Fem
     typedef typename GridPartType :: IndexSetType                     IndexSetType;
     typedef typename GridPartType :: IntersectionIteratorType         IntersectionIteratorType;
 
-    typedef typename IntersectionIteratorType :: Intersection         IntersectionType;
+    typedef typename GridPartType :: IntersectionType                 IntersectionType;
 
     typedef typename GridPartType :: template Codim< 0 > :: EntityType        ElementType;
     typedef typename GridType :: template Codim< 0 > :: Entity                GridElementType;
@@ -102,9 +102,8 @@ namespace Fem
     virtual void estimate()
     {
       clear( indicator_ );
-      const IteratorType end = dfSpace_.end();
-      for( IteratorType it = dfSpace_.begin(); it != end; ++it )
-        estimateLocal( *it );
+      for( const auto& en : elements( dfSpace_.gridPart() ) )
+        estimateLocal( en );
     }
 
 
@@ -122,12 +121,8 @@ namespace Fem
     void mark()
     {
       // loop over all elements
-      const IteratorType end = dfSpace_.end();
-      for( IteratorType it = dfSpace_.begin(); it != end; ++it )
-      {
-        const ElementType &entity = *it;
-        markLocal( entity );
-      }
+      for( const auto& en : elements( dfSpace_.gridPart() ) )
+        markLocal( en );
     }
 
   };

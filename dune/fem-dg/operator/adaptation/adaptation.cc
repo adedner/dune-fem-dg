@@ -81,15 +81,9 @@ namespace Fem
   {
     double volume = 0;
     // type of iterator, i.e. leaf iterator
-    typedef typename GridPartType::template Codim< 0 >::IteratorType IteratorType;
 
-    const IteratorType endit = gridPart_.template end< 0 >();
-    for( IteratorType it = gridPart_.template begin< 0 >();
-         it != endit; ++it )
+    for( const auto& entity : elements( gridPart_ ) )
     {
-      // entity
-      const GridEntityType &entity = *it;
-
       // sum up the volume
       volume += entity.geometry().volume();
     }
@@ -337,16 +331,8 @@ namespace Fem
     // get local coarsen tolerance
     const double coarsenTol = refineTol * coarsenTheta_;
 
-    // type of iterator, i.e. leaf iterator
-    typedef typename GridPartType::template Codim< 0 >::IteratorType IteratorType;
-
-    const IteratorType endit = gridPart_.template end< 0 >();
-    for( IteratorType it = gridPart_.template begin< 0 >();
-         it != endit; ++it )
+    for( const auto& entity : elements( gridPart_ ) )
     {
-      // entity
-      const GridEntityType &entity = *it;
-
       // get local error indicator
       const double localIndicator = getLocalIndicator( entity );
       // get entity level
@@ -420,12 +406,8 @@ namespace Fem
 
     // count elements
     size_t count = 0;
-    // type of iterator, i.e. leaf iterator
-    typedef typename GridPartType::template Codim< 0 >::IteratorType IteratorType;
 
-    const IteratorType endit = gridPart_.template end< 0 >();
-    for( IteratorType it = gridPart_.template begin< 0 >();
-         it != endit; ++it )
+    for( const auto& entity : elements( gridPart_ ) )
     {
       ++count;
     }

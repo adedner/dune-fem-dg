@@ -77,7 +77,7 @@ namespace Fem
 
     typedef typename DiscreteFunctionSpaceType::GridPartType         GridPartType;
     typedef typename GridPartType::IntersectionIteratorType          IntersectionIterator;
-    typedef typename IntersectionIterator::Intersection              Intersection;
+    typedef typename GridPartType::IntersectionType                  IntersectionType;
     typedef typename GridPartType::GridType                          GridType;
     typedef typename DiscreteFunctionSpaceType::EntityType           EntityType;
     enum { dimGradRange = dimDomain * dimRange };
@@ -140,7 +140,7 @@ namespace Fem
 
   protected:
     bool determineDirection( const bool areaSwitch, const double enVolume, const double nbVolume,
-                             const Intersection& intersection ) const
+                             const IntersectionType& intersection ) const
     {
       if (areaSwitch && std::abs( enVolume - nbVolume ) > 1e-8)
       {
@@ -200,7 +200,7 @@ namespace Fem
     }
 
     template <class QuadratureImp, class ArgumentTupleVector >
-    void initializeIntersection(const Intersection& intersection,
+    void initializeIntersection(const IntersectionType& intersection,
                                 const EntityType& inside,
                                 const EntityType& outside,
                                 const double time,
@@ -212,7 +212,7 @@ namespace Fem
     }
 
     template <class QuadratureImp, class ArgumentTupleVector>
-    void initializeBoundary(const Intersection& intersection,
+    void initializeBoundary(const IntersectionType& intersection,
                             const EntityType& entity,
                             const double time,
                             const QuadratureImp& quadInner,
@@ -313,7 +313,7 @@ namespace Fem
 
     typedef typename BaseType::GridPartType             GridPartType;
     typedef typename BaseType::IntersectionIterator     IntersectionIterator;
-    typedef typename BaseType::Intersection             Intersection;
+    typedef typename BaseType::IntersectionType         IntersectionType;
     typedef typename BaseType::GridType                 GridType;
     typedef typename BaseType::EntityType               EntityType;
     enum { dimGradRange = dimDomain * dimRange };
