@@ -102,7 +102,6 @@ namespace Fem
 #endif
         , isInitialized_( 0 )
       {
-        assert( Fem::ThreadManager::singleThreadMode() );
       }
 
       bool isInitialized() const { return isInitialized_ == 2 ; }
