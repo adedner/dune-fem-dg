@@ -236,7 +236,7 @@ namespace Fem
       // initialize each thread pass by the thread itself to avoid NUMA effects
       {
         // see threadhandle.hh
-        Fem :: ThreadHandle :: run( *this );
+        Fem :: ThreadHandle :: runLocked( *this );
       }
       /*
       const int maxThreads = Fem::ThreadManager::maxThreads();
@@ -671,20 +671,20 @@ namespace Fem
     virtual void prepare(const ArgumentType& arg, DestinationType& dest) const
     {
       // we use prepare of internal operator
-      abort();
+      std::abort();
     }
 
     //! Some timestep size management.
     virtual void finalize(const ArgumentType& arg, DestinationType& dest) const
     {
       // we use finalize of internal operator
-      abort();
+      std::abort();
     }
 
     void applyLocal( const EntityType& en) const
     {
       // we use applyLocal of internal operator
-      abort();
+      std::abort();
     }
 
   private:

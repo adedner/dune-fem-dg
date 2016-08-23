@@ -6,6 +6,8 @@
 #endif
 
 #include <cassert>
+#include <mutex>
+
 #include <dune/common/exceptions.hh>
 #include <dune/fem/misc/threads/threadmanager.hh>
 
@@ -31,8 +33,34 @@ namespace Fem
     {
       Object& obj_;
     public:
-      ObjectWrapper( Object& obj ) : obj_( obj ) {}
-      void run () { obj_.runThread(); }
+      ObjectWrapper( Object& obj )
+        : obj_( obj ) {}
+
+      void run ()
+      {
+        obj_.runThread();
+      }
+    };
+
+    template <class Object>
+    class ObjectWrapperLocked : public ObjectIF
+    {
+      Object& obj_;
+      std::mutex& mutex_;
+    public:
+      ObjectWrapperLocked( Object& obj, std::mutex& mtx )
+        : obj_( obj ), mutex_( mtx ) {}
+
+      void run ()
+      {
+        // lock mutex to make sure there is no data race
+        mutex_.lock();
+
+        obj_.runThread();
+
+        // unlock mutex to signal ok
+        mutex_.unlock();
+      }
     };
 
     ////////////////////////////////////////////
@@ -258,6 +286,17 @@ namespace Fem
       startThreads( & objPtr ) ;
     }
 
+    //! run all threads
+    template <class Object>
+    void runThreadsLocked( Object& obj, std::mutex& mtx )
+    {
+      // create object wrapper
+      ObjectWrapperLocked< Object > objPtr( obj, mtx );
+
+      // start parallel execution
+      startThreads( & objPtr ) ;
+    }
+
     // return instance of ThreadHandle
     static ThreadHandle& instance()
     {
@@ -293,11 +332,10 @@ namespace Fem
       // this routine should not be called in multiThreadMode, since
       // this routine is actually starting the multiThreadMode
       if( ! ThreadManager :: singleThreadMode() )
-        DUNE_THROW(InvalidStateException,"ThreadHandle :: run called from thread  parallel region!");
+        DUNE_THROW(InvalidStateException,"ThreadHandle :: run called from thread parallel region!");
 
 #if USE_PTHREADS
       {
-
         // pthread version
         instance().runThreads( obj );
       }
@@ -308,6 +346,38 @@ namespace Fem
 #endif
       {
         obj.runThread();
+      }
+#endif
+    }
+
+    template <class Object>
+    static void runLocked ( Object& obj )
+    {
+      // this routine should not be called in multiThreadMode, since
+      // this routine is actually starting the multiThreadMode
+      if( ! ThreadManager :: singleThreadMode() )
+        DUNE_THROW(InvalidStateException,"ThreadHandle :: run called from thread parallel region!");
+
+#if USE_PTHREADS
+      {
+        // run threads in blocking mode
+        std::mutex mtx;
+
+        // pthread version
+        instance().runThreadsLocked( obj, mtx );
+      }
+#else
+      // OpenMP parallel region
+#ifdef _OPENMP
+#pragma omp parallel
+#endif
+      {
+#ifdef _OPENMP
+#pragma omp critical
+#endif
+        {
+          obj.runThread();
+        }
       }
 #endif
     }
