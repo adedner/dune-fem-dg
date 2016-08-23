@@ -151,51 +151,51 @@ namespace Fem
   {
     typedef ThreadPass< InnerPass, ThreadIterator, nonblockingcomm > ThisType;
   public:
-    typedef InnerPass InnerPassType;
-    typedef typename InnerPass :: DiscreteModelType  DiscreteModelType;
-    typedef typename InnerPass :: PreviousPassType   PreviousPassType;
+    typedef InnerPass                                                     InnerPassType;
+    typedef typename InnerPass::DiscreteModelType                         DiscreteModelType;
+    typedef typename InnerPass::PreviousPassType                          PreviousPassType;
 
     //- Typedefs and enums
     //! Base class
     typedef LocalPass< DiscreteModelType, PreviousPassType, InnerPass :: passId>  BaseType;
 
     // Types from the base class
-    typedef typename BaseType::EntityType  EntityType;
-    typedef typename BaseType::ArgumentType ArgumentType;
+    typedef typename BaseType::EntityType                                 EntityType;
+    typedef typename BaseType::ArgumentType                               ArgumentType;
 
     // Types from the traits
-    typedef typename DiscreteModelType::Traits::DestinationType DestinationType;
-    typedef typename DiscreteModelType::Traits::VolumeQuadratureType VolumeQuadratureType;
-    typedef typename DiscreteModelType::Traits::FaceQuadratureType FaceQuadratureType;
+    typedef typename DiscreteModelType::Traits::DestinationType           DestinationType;
+    typedef typename DiscreteModelType::Traits::VolumeQuadratureType      VolumeQuadratureType;
+    typedef typename DiscreteModelType::Traits::FaceQuadratureType        FaceQuadratureType;
     typedef typename DiscreteModelType::Traits::DiscreteFunctionSpaceType DiscreteFunctionSpaceType;
     //! Iterator over the space
-    typedef typename DiscreteFunctionSpaceType::IteratorType IteratorType;
+    typedef typename DiscreteFunctionSpaceType::IteratorType              IteratorType;
 
     // Types extracted from the discrete function space type
-    typedef typename DiscreteFunctionSpaceType::GridType GridType;
-    typedef typename DiscreteFunctionSpaceType::GridPartType GridPartType;
-    typedef typename DiscreteFunctionSpaceType::DomainType DomainType;
-    typedef typename DiscreteFunctionSpaceType::RangeType RangeType;
-    typedef typename DiscreteFunctionSpaceType::JacobianRangeType JacobianRangeType;
+    typedef typename DiscreteFunctionSpaceType::GridType                  GridType;
+    typedef typename DiscreteFunctionSpaceType::GridPartType              GridPartType;
+    typedef typename DiscreteFunctionSpaceType::DomainType                DomainType;
+    typedef typename DiscreteFunctionSpaceType::RangeType                 RangeType;
+    typedef typename DiscreteFunctionSpaceType::JacobianRangeType         JacobianRangeType;
 
     // Types extracted from the underlying grids
-    typedef typename GridPartType::IntersectionIteratorType IntersectionIteratorType;
-    typedef typename IntersectionIteratorType::Intersection IntersectionType;
-    typedef typename GridType::template Codim<0>::Geometry Geometry;
+    typedef typename GridPartType::IntersectionIteratorType               IntersectionIteratorType;
+    typedef typename GridPartType::IntersectionType                       IntersectionType;
+    typedef typename GridType::template Codim<0>::Geometry                Geometry;
 
     // Various other types
-    typedef typename DestinationType::LocalFunctionType LocalFunctionType;
+    typedef typename DestinationType::LocalFunctionType                   LocalFunctionType;
 
-    typedef NonBlockingCommHandle< DestinationType > NonBlockingCommHandleType ;
+    typedef NonBlockingCommHandle< DestinationType >                      NonBlockingCommHandleType ;
 
     // Range of the destination
     enum { dimRange = DiscreteFunctionSpaceType::dimRange };
 
     // type of local id set
-    typedef typename GridPartType::IndexSetType IndexSetType;
+    typedef typename GridPartType::IndexSetType                           IndexSetType;
 
     // type of thread iterators (e.g. Fem::DomainDecomposedIteratorStorage or Fem::ThreadIterator)
-    typedef ThreadIterator  ThreadIteratorType;
+    typedef ThreadIterator                                                ThreadIteratorType;
 
   protected:
     using BaseType :: spc_;

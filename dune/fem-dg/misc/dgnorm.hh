@@ -25,17 +25,17 @@ namespace Fem
 
   protected:
 
-    typedef typename BaseType::EntityType EntityType;
-    typedef typename EntityType::Geometry Geometry;
+    typedef typename BaseType::EntityType                   EntityType;
+    typedef typename EntityType::Geometry                   Geometry;
 
-    typedef typename GridPartType :: IntersectionIteratorType IntersectionIteratorType;
-    typedef typename IntersectionIteratorType :: Intersection IntersectionType ;
-    typedef typename IntersectionType::Geometry IntersectionGeometryType;
+    typedef typename GridPartType::IntersectionIteratorType IntersectionIteratorType;
+    typedef typename GridPartType::IntersectionType         IntersectionType;
+    typedef typename IntersectionType::Geometry             IntersectionGeometryType;
 
-    typedef CachingQuadrature< GridPartType, 0 > QuadratureType;
-    typedef ElementQuadrature< GridPartType, 1 > FaceQuadratureType;
+    typedef CachingQuadrature< GridPartType, 0 >            QuadratureType;
+    typedef ElementQuadrature< GridPartType, 1 >            FaceQuadratureType;
   public:
-    typedef Integrator< QuadratureType > IntegratorType;
+    typedef Integrator< QuadratureType >                    IntegratorType;
 
 
     using BaseType::gridPart;
@@ -225,10 +225,8 @@ namespace Fem
 
     double jumpTerm = 0;
     {
-      const IntersectionIteratorType endiit = gridPart().iend( entity );
-      for ( IntersectionIteratorType iit = gridPart().ibegin( entity ); iit != endiit ; ++ iit )
+      for (const auto& intersection : intersections(gridPart(), entity) )
       {
-        const IntersectionType& intersection = *iit ;
         if( intersection.neighbor() )
         {
           const EntityType& neighbor = intersection.outside();
@@ -237,8 +235,7 @@ namespace Fem
           unsigned int nbIdx = gridPart().indexSet().index(neighbor);
           if( (enIdx < nbIdx) || (neighbor.partitionType() != Dune::InteriorEntity) )
           {
-            typedef typename IntersectionType :: Geometry IntersectionGeometry;
-            const IntersectionGeometry intersectionGeometry = intersection.geometry();
+            const auto intersectionGeometry = intersection.geometry();
 
             const double intersectionArea = intersectionGeometry.volume();
             const double heInverse = intersectionArea / std::min( geometry.volume(), geometryNb.volume() );
@@ -289,10 +286,8 @@ namespace Fem
 
     double jumpTerm = 0;
     {
-      const IntersectionIteratorType endiit = gridPart().iend( entity );
-      for ( IntersectionIteratorType iit = gridPart().ibegin( entity ); iit != endiit ; ++ iit )
+      for (const auto& intersection : intersections(gridPart(), entity) )
       {
-        const IntersectionType& intersection = *iit ;
         if( intersection.neighbor() )
         {
           const EntityType& neighbor = intersection.outside();

@@ -53,7 +53,7 @@ namespace Fem
     typedef typename DestinationType::LocalFunctionType           LocalFunctionType;
 
     typedef typename GridPartType::IntersectionIteratorType       IntersectionIteratorType;
-    typedef typename IntersectionIteratorType::Intersection       IntersectionType;
+    typedef typename GridPartType::IntersectionType               IntersectionType;
     typedef typename IntersectionType::Geometry                   IntersectionGeometryType;
 
     typedef Fem::Parameter                                        ParameterType;
@@ -258,10 +258,8 @@ namespace Fem
 
       Dune::Fem::TemporaryLocalFunction< DiscreteFunctionSpaceType > rhsLocal( space_ );
 
-      const IteratorType end = space_.end();
-      for( IteratorType it = space_.begin(); it != end; ++it )
+      for( const auto& entity : elements( space_.gridPart() ) )
       {
-        const EntityType &entity = *it;
         const GeometryType &geometry = entity.geometry();
         const double volume = geometry.volume();
 
@@ -277,16 +275,16 @@ namespace Fem
         const unsigned int numBasisFunctionsEn = baseSet.size();
 
         VolumeQuadratureType quadrature( entity, elementQuadOrder( space_.order( entity ) ) );
-        const size_t numQuadraturePoints = quadrature.nop();
-        for( size_t pt = 0; pt < numQuadraturePoints; ++pt )
-        {
-          LocalEvaluationType local( entity, quadrature, uZero, uJacZero, pt, time_, volume );
 
-          const double weight = quadrature.weight( pt ) * geometry.integrationElement( local.position() );
+        for( const auto qp : quadrature )
+        {
+          LocalEvaluationType local( entity, quadrature, uZero, uJacZero, qp.index(), time_, volume );
+
+          const double weight = qp.weight() * geometry.integrationElement( local.position() );
 
           // resize of phi and dphi is done in evaluate methods
-          baseSet.evaluateAll( quadrature[ pt ], phi );
-          baseSet.jacobianAll( quadrature[ pt ], dphi );
+          baseSet.evaluateAll( qp, phi );
+          baseSet.jacobianAll( qp, dphi );
 
           RangeType arhs(0);
           // first assemble rhs (evaluate source with u=0)
@@ -347,16 +345,12 @@ namespace Fem
             // assemble rhs
             arhs     *=  weight;
             arhsdphi *= -weight;
-            rhsLocal.axpy( quadrature[ pt ], arhs, arhsdphi );
+            rhsLocal.axpy( qp, arhs, arhsdphi );
           }
         }
 
-        const IntersectionIteratorType endiit = space_.gridPart().iend( entity );
-        for ( IntersectionIteratorType iit = space_.gridPart().ibegin( entity );
-              iit != endiit ; ++ iit )
+        for (const auto& intersection : intersections(space_.gridPart(), entity) )
         {
-          const IntersectionType& intersection = *iit ;
-
           if( intersection.neighbor() && calculateFluxes_ )
           {
             if ( space_.continuous(intersection) ) continue;
@@ -378,11 +372,11 @@ namespace Fem
             const size_t numFaceQuadPoints = faceQuadInside.nop();
             resize( numFaceQuadPoints, maxNumBasisFunctions );
 
-            // evalute base functions
-            for( size_t pt = 0; pt < numFaceQuadPoints; ++pt )
+            // evaluate base functions
+            for( const auto qp : faceQuadInside )
             {
-              baseSet.evaluateAll( faceQuadInside[ pt ], phiFaceEn[pt] );
-              baseSet.jacobianAll( faceQuadInside[ pt ], dphiFaceEn[pt] );
+              baseSet.evaluateAll( qp, phiFaceEn[qp.index()] );
+              baseSet.jacobianAll( qp, dphiFaceEn[qp.index()] );
             }
 
             // storage for all flux values
@@ -503,10 +497,8 @@ namespace Fem
       const RangeType uZero(0);
       const JacobianRangeType uJacZero(0);
 
-      const IteratorType end = space_.end();
-      for( IteratorType it = space_.begin(); it != end; ++it )
+      for( const auto& entity : elements( space_.gridPart() ) )
       {
-        const EntityType &entity = *it;
         const GeometryType &geometry = entity.geometry();
         const double volume = geometry.volume();
 
@@ -515,11 +507,8 @@ namespace Fem
         const BasisFunctionSetType &baseSet = rhsLocal.baseFunctionSet();
         const unsigned int numBasisFunctionsEn = baseSet.size();
 
-        const IntersectionIteratorType endiit = space_.gridPart().iend( entity );
-        for ( IntersectionIteratorType iit = space_.gridPart().ibegin( entity );
-              iit != endiit ; ++ iit )
+        for (const auto& intersection : intersections(space_.gridPart(), entity) )
         {
-          const IntersectionType& intersection = *iit ;
 
           if( intersection.neighbor() && calculateFluxes_ )
           {
@@ -619,7 +608,6 @@ namespace Fem
       const QuadratureImp &faceQuadInside  = interQuad.inside();
       const QuadratureImp &faceQuadOutside = interQuad.outside();
 
-
       IntersectionStorage intersectionStorage( intersection,
                                                entity, neighbor,
                                                entity.geometry().volume(),
@@ -630,13 +618,14 @@ namespace Fem
       resize( numFaceQuadPoints, maxNumBasisFunctions );
 
       // evalute base functions
-      for( size_t pt = 0; pt < numFaceQuadPoints; ++pt )
+      for( const auto qp : faceQuadInside )
       {
         // resize is done in evaluateAll and jacobianAll
-        baseSet.evaluateAll( faceQuadInside[ pt ], phiFaceEn[pt] );
-        baseSet.jacobianAll( faceQuadInside[ pt ], dphiFaceEn[pt] );
-        baseSetNb.evaluateAll( faceQuadOutside[ pt ], phiFaceNb[pt] );
-        baseSetNb.jacobianAll( faceQuadOutside[ pt ], dphiFaceNb[pt] );
+        const auto idx = qp.index();
+        baseSet.evaluateAll( qp, phiFaceEn[idx] );
+        baseSet.jacobianAll( qp, dphiFaceEn[idx] );
+        baseSetNb.evaluateAll( faceQuadOutside[idx], phiFaceNb[idx] );
+        baseSetNb.jacobianAll( faceQuadOutside[idx], dphiFaceNb[idx] );
       }
 
       flux(dfSpace.gridPart(), intersectionStorage,
@@ -725,10 +714,8 @@ namespace Fem
   //    typedef typename MatrixType::LocalMatrixType LocalMatrixType;
   //    double maxSymError_diagonal = 0;
   //    double maxSymError_offdiagonal = 0;
-  //    const IteratorType end = space().end();
-  //    for( IteratorType it = space().begin(); it != end; ++it )
+  //    for( const auto& entity : elements( space().gridPart() ) )
   //    {
-  //      const EntityType& entity = *it;
   //      LocalMatrixType localOpEn = matrix_->localMatrix( entity, entity  );
   //      const BasisFunctionSetType &baseSet = localOpEn.domainBasisFunctionSet();
   //      const unsigned int numBasisFunctions = baseSet.size();
@@ -744,11 +731,8 @@ namespace Fem
   //          maxSymError_diagonal = std::max(maxSymError_diagonal,std::abs(v1-v2));
   //        }
   //      }
-  //      const IntersectionIteratorType endiit = space().gridPart().iend( entity );
-  //      for ( IntersectionIteratorType iit = space().gridPart().ibegin( entity );
-  //            iit != endiit ; ++ iit )
+  //      for (const auto& intersection : intersections(space().gridPart(), entity) )
   //      {
-  //        const IntersectionType& intersection = *iit ;
   //        if ( !intersection.neighbor() )
   //          continue;
   //        EntityPointerType ep = intersection.outside();

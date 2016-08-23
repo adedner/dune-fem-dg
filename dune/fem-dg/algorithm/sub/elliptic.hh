@@ -225,10 +225,8 @@ namespace Fem
 
         localre_.init(entity);
         localre_.clear();
-        IntersectionIteratorType end = df_.space().gridPart().iend( entity );
-        for( IntersectionIteratorType it = df_.space().gridPart().ibegin( entity ); it != end; ++it )
+        for (const auto& intersection : intersections( df_.space().gridPart(), entity ) )
         {
-          const IntersectionType &intersection = *it;
           if ( intersection.neighbor() && df_.space().continuous(intersection) )
           {
             if( ! intersection.conforming() )
@@ -245,7 +243,6 @@ namespace Fem
         // CACHING
         typedef typename Operator::FaceQuadratureType                               FaceQuadratureType ;
         typedef Dune::Fem::IntersectionQuadrature< FaceQuadratureType, conforming > IntersectionQuadratureType;
-        typedef typename IntersectionQuadratureType::FaceQuadratureType             QuadratureImp;
 
         const EntityType &outside = intersection.outside();
 
@@ -257,8 +254,8 @@ namespace Fem
         const int quadOrder = 2 * std::max( enOrder, nbOrder ) + 1;
 
         IntersectionQuadratureType interQuad( df_.space().gridPart(), intersection, quadOrder );
-        const QuadratureImp &quadInside  = interQuad.inside();
-        const QuadratureImp &quadOutside = interQuad.outside();
+        const auto& quadInside  = interQuad.inside();
+        const auto& quadOutside = interQuad.outside();
         const int numQuadraturePoints = quadInside.nop();
 
         // obtain all required function values on intersection
@@ -434,12 +431,8 @@ namespace Fem
       polOrderContainer_.resize();
       if ( errorEstimator_.isPadaptive() )
       {
-        typedef typename DiscreteFunctionSpaceType::IteratorType IteratorType;
-        typedef typename IteratorType::Entity EntityType ;
-        const IteratorType end = space_.end();
-        for( IteratorType it = space_.begin(); it != end; ++it )
+        for( const auto& entity : elements( space_.gridPart() ) )
         {
-          const EntityType& entity = *it;
           int order = polOrderContainer_[ entity ].value();
           while (order == -1) // is a new element
           {
@@ -470,14 +463,10 @@ namespace Fem
 
       const double error = errorEstimator_.estimate( problem );
       std::cout << "ESTIMATE: " << error << std::endl;
-      typedef typename DiscreteFunctionSpaceType::IteratorType IteratorType;
-      const IteratorType end = space_.end();
-      for( IteratorType it = space_.begin(); it != end; ++it )
-      {
-        const typename IteratorType::Entity &entity = *it;
-        polOrderContainer_[entity].value() =
-          errorEstimator_.newOrder( 0.98*tolerance, entity );
-      }
+
+      for( const auto& entity : elements( space_.gridPart() ) )
+        polOrderContainer_[entity].value() = errorEstimator_.newOrder( 0.98*tolerance, entity );
+
       return (error < std::abs(tolerance) ? false : errorEstimator_.mark( 0.98 * tolerance));
 #else
       return false;

@@ -163,7 +163,6 @@ namespace Fem
                                         const int finestLevel )
     {
       typedef typename GridPart :: GridType GridType ;
-      typedef typename GridPart :: template Codim< 0 > :: IteratorType IteratorType;
 
       const bool hasGridHierarchy = Fem :: GridPartCapabilities :: hasGrid< GridPart > :: v;
 
@@ -176,10 +175,10 @@ namespace Fem
       double maxVolume[ 1 ] = { std::numeric_limits< double > ::min() };
 
       // if grid is not empty compute smallest and biggest volume
-      const IteratorType end = gridPart.template end< 0 >();
-      for( IteratorType it = gridPart.template begin< 0 >(); it != end; ++it )
+
+      for( const auto& en : elements( gridPart ) )
       {
-        const double volume = findCoarsestVolume( *it, hasGridHierarchy );
+        const double volume = findCoarsestVolume( en, hasGridHierarchy );
         minVolume[ 0 ] = std::min( minVolume[ 0 ], volume );
         maxVolume[ 0 ] = std::max( maxVolume[ 0 ], volume );
       }

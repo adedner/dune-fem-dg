@@ -191,7 +191,7 @@ namespace Fem
     typedef typename GridPartType::IndexSetType                      IndexSetType;
     typedef typename GridPartType::IntersectionIteratorType          IntersectionIteratorType;
 
-    typedef typename IntersectionIteratorType::Intersection          IntersectionType;
+    typedef typename GridPartType::IntersectionType                  IntersectionType;
 
     typedef typename GridType::template Codim< 0 >::Entity           ElementType;
     typedef typename ElementType::Geometry                           GeometryType;
@@ -338,20 +338,16 @@ namespace Fem
       }
       clear();
       henMin = 1e10;
-      const IteratorType end = dfSpace_.end();
-      for( IteratorType it = dfSpace_.begin(); it != end; ++it )
-      {
-        const ElementType &entity = *it;
 
+      for( const auto& entity : elements( dfSpace_.gridPart() ) )
+      {
         const LocalFunctionType uLocal = uh_.localFunction( entity );
         const SigmaLocalFunctionType sigmaLocal = sigma_.localFunction( entity );
 
         estimateLocal( rhs, entity, uLocal, sigmaLocal );
 
-        IntersectionIteratorType end = gridPart_.iend( entity );
-        for( IntersectionIteratorType inter = gridPart_.ibegin( entity ); inter != end; ++inter )
+        for (const auto& intersection : intersections(gridPart_, entity) )
         {
-          const IntersectionType &intersection = *inter;
           if( intersection.neighbor() )
             estimateIntersection( intersection, entity, uLocal, sigmaLocal );
           else
@@ -464,10 +460,8 @@ namespace Fem
 
       if (tolerance < 0)
       {
-        const IteratorType end = dfSpace_.end();
-        for( IteratorType it = dfSpace_.begin(); it != end; ++it )
+        for( const auto& entity : elements( dfSpace_.gridPart() ) )
         {
-          const ElementType &entity = *it;
           grid_.mark( 1, entity );
           ++marked;
         }
@@ -480,10 +474,8 @@ namespace Fem
                 tolerance*tolerance / (double)indexSet_.size( 0 );
 
         // loop over all elements
-        const IteratorType end = dfSpace_.end();
-        for( IteratorType it = dfSpace_.begin(); it != end; ++it )
+        for( const auto& entity : elements( dfSpace_.gridPart() ) )
         {
-          const ElementType &entity = *it;
           // check local error indicator
           if( (maximumStrategy_ && indicator_[ indexSet_.index( entity ) ] > localTol2)
               ||
@@ -509,18 +501,15 @@ namespace Fem
     }
     void closure()
     {
-      const IteratorType end = dfSpace_.end();
-      for( IteratorType it = dfSpace_.begin(); it != end; ++it )
+      for( const auto& entity : elements( dfSpace_.gridPart() ) )
       {
-        const ElementType &entity = *it;
         int conf = 0, nconf = 0;
         int lev = entity.level();
-        IntersectionIteratorType end = gridPart_.iend( entity );
-        for( IntersectionIteratorType inter = gridPart_.ibegin( entity ); inter != end; ++inter )
+        for (const auto& intersection : intersections(gridPart_, entity) )
         {
-          if (inter->neighbor())
+          if (intersection.neighbor())
           {
-            if (inter->outside().level() > lev)
+            if (intersection.outside().level() > lev)
               ++nconf;
             else
               ++conf;
@@ -577,23 +566,24 @@ namespace Fem
                         ( uLocal.order()*uLocal.order() );
       const int index = indexSet_.index( entity );
 
-      const int quadOrder = 2*(dfSpace_.order( entity ) )+2.;
+      const int quadOrder = 2*(dfSpace_.order( entity ) )+2;
       VolumeQuadratureType quad( entity, quadOrder );
-      const int numQuadraturePoints = quad.nop();
-      for( int qp = 0; qp < numQuadraturePoints; ++qp )
+
+      for( const auto qp : quad )
       {
+        const auto x = qp.position();
         // R_2 = h^2 |f+laplace u|^2
 
         RangeType y(0.),tmp(0.);
 
-        const DomainType global = geometry.global(quad.point(qp));
+        const DomainType global = geometry.global( x );
         rhs.f(global,y);
 
-        divergence( entity, geometry, quad, qp, h2, uLocal, sigmaLocal, tmp);
+        divergence( entity, geometry, quad, qp.index(), h2, uLocal, sigmaLocal, tmp);
 
         y+=tmp;
 
-        const double weight = quad.weight( qp ) * geometry.integrationElement( quad.point( qp ) );
+        const double weight = qp.weight() * geometry.integrationElement( x );
         indicator_[ index ] +=h2*weight * (y * y);
 
         R2_[ index ] += h2*weight * (y * y);
@@ -623,16 +613,17 @@ namespace Fem
       LocalMassMatrixType localMassMatrix( dgSpace, 2*dgSpace.order(entity) ) ;
       DGLFType udg( dgSpace );
       VolumeQuadratureType quad( entity, 2*(dgSpace.order(entity) )+1 );
-      const int numQuadraturePoints = quad.nop();
 
       udg.init( entity );
       udg.clear();
-      for( int qp = 0; qp < numQuadraturePoints; ++qp )
+
+      for( const auto qp : quad )
       {
+        const auto x = qp.position();
         RangeType uh;
-        uLocal.evaluate( quad[ qp ], uh );
-        uh *= quad.weight( qp ) * geometry.integrationElement( quad.point(qp) );
-        udg.axpy( quad[ qp ], uh );
+        uLocal.evaluate( qp, uh );
+        uh *= qp.weight() * geometry.integrationElement( x );
+        udg.axpy( qp, uh );
       }
 
       localMassMatrix.applyInverse( udg );
@@ -747,36 +738,40 @@ namespace Fem
       typedef SigmaConverterType JacobianTuple;
       typedef IntersectionQuadraturePointContext< IntersectionType, ElementType, FaceQuadratureType, RangeTuple, JacobianTuple > IntersectionLocalEvaluationType;
 
-      for( int qp = 0; qp < numQuadraturePoints; ++qp )
+      for( const auto qp : quadInside )
       {
-        DomainType unitNormal
-               = intersection.integrationOuterNormal( quadInside.localPoint( qp ) );
+        const auto idx = qp.index();
+        const auto& x = qp.localPosition();
+
+        DomainType unitNormal = intersection.integrationOuterNormal( x );
         const double integrationElement = unitNormal.two_norm();
 
         unitNormal/=integrationElement;
 
         // R_1 = h| (d u_l * n_l) + (d u_r * n_r) |^2 = h| (d u_l - d u_r) * n_l |^2
         JacobianRangeType AJacEn;
-        fluxEn[qp] /= integrationElement;
+        fluxEn[idx] /= integrationElement;
 
-        const SigmaConverterType sigmaValueEn( sigmaValuesEn[qp] );
-        IntersectionLocalEvaluationType local( intersection, inside, quadInside, uValuesEn[qp], sigmaValueEn, qp, 0, volume );
+        const SigmaConverterType sigmaValueEn( sigmaValuesEn[idx] );
+        IntersectionLocalEvaluationType local( intersection, inside, quadInside, uValuesEn[idx], sigmaValueEn, idx, 0, volume );
 
         oper_.model().diffusion(local,
-                                uValuesEn[qp], sigmaValueEn, AJacEn);
+                                uValuesEn[idx], sigmaValueEn, AJacEn);
         // note that flux=-hatA therefore we compute -hatA+Agrad u
-        AJacEn.umv( unitNormal, fluxEn[qp]);
+        AJacEn.umv( unitNormal, fluxEn[idx]);
 
         // R_orth = h^{-1} |u_l-u_r|
         RangeType jump;
-        jump=uValuesEn[qp];
-        jump-=uValuesNb[qp];
+        jump=uValuesEn[idx];
+        jump-=uValuesNb[idx];
 
-        errorInside  += quadInside.weight( qp ) *h* (fluxEn[qp] * fluxEn[qp]) *integrationElement;
-        errorInside  += quadInside.weight( qp ) *1./h* (jump * jump) *integrationElement;
+        const auto& weight = qp.weight();
 
-        R1_[ insideIndex ] += quadInside.weight( qp ) *h* (fluxEn[qp]*fluxEn[qp]) *integrationElement;
-        Rorth_[ insideIndex ] += quadInside.weight( qp ) *1./h* (jump * jump) *integrationElement;
+        errorInside  += weight *h* (fluxEn[idx] * fluxEn[idx]) *integrationElement;
+        errorInside  += weight *1./h* (jump * jump) *integrationElement;
+
+        R1_[ insideIndex ] += weight *h* (fluxEn[idx]*fluxEn[idx]) *integrationElement;
+        Rorth_[ insideIndex ] += weight *1./h* (jump * jump) *integrationElement;
       }
       if( errorInside > 0.0 )
         indicator_[ insideIndex ] +=  errorInside;
@@ -893,47 +888,52 @@ namespace Fem
       typedef SigmaConverterType  JacobianTuple;
       typedef IntersectionQuadraturePointContext< IntersectionType, ElementType, QuadratureImp, RangeTuple, JacobianTuple > IntersectionLocalEvaluationType;
 
-      for( int qp = 0; qp < numQuadraturePoints; ++qp )
+      for( const auto qp : quadInside )
       {
-        DomainType unitNormal
-               = intersection.integrationOuterNormal( quadInside.localPoint( qp ) );
+        const auto idx = qp.index();
+        const auto& x = qp.localPosition();
+
+        DomainType unitNormal = intersection.integrationOuterNormal( x );
         const double integrationElement = unitNormal.two_norm();
 
         unitNormal/=integrationElement;
 
         // R_1 = h| (d u_l * n_l) + (d u_r * n_r) |^2 = h| (d u_l - d u_r) * n_l |^2
         JacobianRangeType AJacEn,AJacNb;
-        fluxEn[qp] /= integrationElement;
-        fluxNb[qp] /= integrationElement;
+        fluxEn[idx] /= integrationElement;
+        fluxNb[idx] /= integrationElement;
 
-        const SigmaConverterType sigmaValueEn( sigmaValuesEn[qp] );
-        const IntersectionLocalEvaluationType left( intersection, inside, quadInside, uValuesEn[qp], sigmaValueEn, qp, 0, volume );
-        const SigmaConverterType sigmaValueNb( sigmaValuesNb[qp] );
-        const IntersectionLocalEvaluationType right( intersection, outside, quadInside, uValuesNb[qp], sigmaValueNb, qp, 0, volume );
+        const SigmaConverterType sigmaValueEn( sigmaValuesEn[idx] );
+        const IntersectionLocalEvaluationType left( intersection, inside, quadInside, uValuesEn[idx], sigmaValueEn, idx, 0, volume );
+        const SigmaConverterType sigmaValueNb( sigmaValuesNb[idx] );
+        const IntersectionLocalEvaluationType right( intersection, outside, quadInside, uValuesNb[idx], sigmaValueNb, idx, 0, volume );
 
         oper_.model().diffusion(left,
-                                uValuesEn[qp], sigmaValueEn, AJacEn);
+                                uValuesEn[idx], sigmaValueEn, AJacEn);
         oper_.model().diffusion(right,
-                                uValuesNb[qp], sigmaValueNb, AJacNb);
+                                uValuesNb[idx], sigmaValueNb, AJacNb);
 
         // note that flux=-hatA therefore we compute -hatA+Agrad u
-        AJacEn.umv( unitNormal, fluxEn[qp]);
-        AJacNb.umv( unitNormal, fluxNb[qp]);
+        AJacEn.umv( unitNormal, fluxEn[idx]);
+        AJacNb.umv( unitNormal, fluxNb[idx]);
 
         // R_orth = h^{-1} |u_l-u_r|
         RangeType jump;
-        jump=uValuesEn[qp];
-        jump-=uValuesNb[qp];
+        jump=uValuesEn[idx];
+        jump-=uValuesNb[idx];
 
-        errorInside  += quadInside.weight( qp ) *h* (fluxEn[qp] * fluxEn[qp]) *integrationElement;
-        errorInside  += quadInside.weight( qp ) *1./h* (jump * jump) *integrationElement;
-        errorOutside += quadOutside.weight( qp ) *h* (fluxNb[qp] * fluxNb[qp]) *integrationElement;
-        errorOutside += quadOutside.weight( qp ) *1./h* (jump * jump) *integrationElement;
+        const auto& weightIn = qp.weight();
+        const auto& weightOut = quadOutside.weight( idx );
 
-        R1_[ insideIndex ] += quadInside.weight( qp ) *h* (fluxEn[qp]*fluxEn[qp]) *integrationElement;
-        Rorth_[ insideIndex ] += quadInside.weight( qp ) *1./h* (jump * jump) *integrationElement;
-        R1_[ outsideIndex ] += quadOutside.weight( qp ) *h* (fluxNb[qp]*fluxNb[qp]) *integrationElement;
-        Rorth_[ outsideIndex ] += quadOutside.weight( qp ) *1./h* (jump * jump) *integrationElement;
+        errorInside  += weightIn *h* (fluxEn[idx] * fluxEn[idx]) *integrationElement;
+        errorInside  += weightIn *1./h* (jump * jump) *integrationElement;
+        errorOutside += weightOut *h* (fluxNb[idx] * fluxNb[idx]) *integrationElement;
+        errorOutside += weightOut *1./h* (jump * jump) *integrationElement;
+
+        R1_[ insideIndex ] += weightIn *h* (fluxEn[idx]*fluxEn[idx]) *integrationElement;
+        Rorth_[ insideIndex ] += weightIn *1./h* (jump * jump) *integrationElement;
+        R1_[ outsideIndex ] += weightOut *h* (fluxNb[idx]*fluxNb[idx]) *integrationElement;
+        Rorth_[ outsideIndex ] += weightOut *1./h* (jump * jump) *integrationElement;
       }
     }
 

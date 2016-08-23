@@ -213,12 +213,9 @@ namespace Dune
         // set pointer
         prepare( argument, destination, true );
 
-        typedef typename GridPartType::template Codim< 0 >::template Partition< All_Partition >::IteratorType IteratorType;
-        const GridPartType &gridPart = scalarSpace_.gridPart();
-        const IteratorType end = gridPart.template end< 0, All_Partition >();
-        for( IteratorType it = gridPart.template begin< 0, All_Partition >(); it != end; ++it )
+        for( const auto& en : elements( scalarSpace_.gridPart(), Dune::Partitions::all ) )
         {
-          applyLocal( *it, argument, destination );
+          applyLocal( en, argument, destination );
         }
 
         // remove pointer

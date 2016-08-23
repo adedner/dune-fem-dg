@@ -54,7 +54,7 @@ namespace Fem
     typedef typename GridPartType::IndexSetType                      IndexSetType;
     typedef typename GridPartType::IntersectionIteratorType          IntersectionIteratorType;
 
-    typedef typename IntersectionIteratorType::Intersection          IntersectionType;
+    typedef typename GridPartType::IntersectionType                  IntersectionType;
 
     typedef typename GridType::template Codim< 0 >::Entity           ElementType;
 #if not DUNE_VERSION_NEWER(DUNE_GRID,2,4)
@@ -103,20 +103,16 @@ namespace Fem
       Rdiv_.resize( this->indexSet_.size( 0 ));
       std::fill( Rdiv_.begin(), Rdiv_.end(), 0);
 
-      const IteratorType end = dfSpace_.end();
-      for( IteratorType it = dfSpace_.begin(); it != end; ++it )
+      for( const auto& entity : elements( dfSpace_.gridPart() ) )
       {
-        const ElementType &entity = *it;
         const LocalFunctionType uLocal = uh_.localFunction( entity );
         const SigmaLocalFunctionType sigmaLocal = sigma_.localFunction( entity );
 
         BaseType::estimateLocal( rhs, entity, uLocal, sigmaLocal );
         estimateLocal( rhs, entity, uLocal, sigmaLocal );
 
-        IntersectionIteratorType end = gridPart_.iend( entity );
-        for( IntersectionIteratorType inter = gridPart_.ibegin( entity ); inter != end; ++inter )
+        for (const auto& intersection : intersections(gridPart_, entity) )
         {
-          const IntersectionType &intersection = *inter;
           if( intersection.neighbor() )
             BaseType::estimateIntersection( intersection, entity, uLocal, sigmaLocal );
            else
@@ -179,20 +175,19 @@ namespace Fem
       ElementQuadratureType quad( entity, 2*(dfSpace_.order() + 2) );
       JacobianInverseType inv;
 
-      const int numQuadraturePoints = quad.nop();
-      for( int qp = 0; qp < numQuadraturePoints; ++qp )
+      for( const auto qp : quad )
       {
-        const typename  ElementQuadratureType::CoordinateType &x=quad.point(qp);
+        const auto& x = qp.position();
         inv = geometry.jacobianInverseTransposed(x);
         JacobianRangeType uJac(0.);
-        uLocal.jacobian(quad[qp],uJac);
+        uLocal.jacobian( qp,uJac );
 
         double divergence = 0;
         for (int i=0;i<uJac.rows;++i)
         {
           divergence += uJac[i][i];
         }
-        const double weight = quad.weight( qp ) * geometry.integrationElement( quad.point( qp ) );
+        const double weight = qp.weight() * geometry.integrationElement( x );
         indicator_[ index ] += h2*weight * (divergence * divergence);
 
         Rdiv_[ index ] += h2*weight * (divergence * divergence);

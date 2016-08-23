@@ -135,11 +135,8 @@ namespace Fem
         return;
 
       // also mark all neighbors of the actual entity for refinement
-      const IntersectionIteratorType nbend = gridPart_.iend( entity );
-      for (IntersectionIteratorType nb = gridPart_.ibegin( entity );
-           nb != nbend; ++nb)
+      for (const auto& intersection : intersections(gridPart_, entity) )
       {
-        const IntersectionType& intersection = *nb ;
         if( intersection.neighbor() )
         {
 #if DUNE_VERSION_NEWER(DUNE_GRID,2,4)
@@ -231,16 +228,15 @@ namespace Fem
       LocalFunctionType lf = uh.localFunction( entity );
       const int quadOrder = ( lf.order()==0 ? 1 : lf.order() );
       ElementQuadratureType quad( entity, quadOrder );
-      const int numQuad = quad.nop();
 
       // get max and min of the indicator quantity
       double ind1LocMax = -1E100;
       double ind1LocMin =  1E100;
       double ind2LocMax = -1E100;
       double ind2LocMin =  1E100;
-      for( int qp=0; qp<numQuad; ++qp )
+      for( const auto qp : quad )
       {
-        DomainType xEn = quad.point( qp );
+        DomainType xEn = qp.position();
         lf.evaluate( xEn, val );
         const double ind1 = indicator1( entity, xEn, val );
         ind1LocMax = std::max( ind1LocMax, ind1 );
@@ -263,11 +259,8 @@ namespace Fem
       }
 
       // iterate over neighbors
-      const IntersectionIteratorType nbend = gridPart_.iend( entity );
-      for (IntersectionIteratorType nb = gridPart_.ibegin( entity );
-           nb != nbend; ++nb)
+      for (const auto& intersection : intersections(gridPart_, entity) )
       {
-        const IntersectionType& intersection = *nb ;
         if( intersection.neighbor() )
         {
           // access neighbor
@@ -282,16 +275,16 @@ namespace Fem
             // get local function on the neighbor element
             LocalFunctionType lfnb = uh.localFunction( neighbor );
             ElementQuadratureType quadNeigh( entity, quadOrder );
-            const int numQuadNe = quad.nop();
 
             // get max and min of the indicator quantity in the neighbor
             double ind1nbLocMax = -1E100;
             double ind1nbLocMin =  1E100;
             double ind2nbLocMax = -1E100;
             double ind2nbLocMin =  1E100;
-            for( int qpNe=0; qpNe<numQuadNe; ++qpNe )
+
+            for( const auto qp : quadNeigh )
             {
-              DomainType xNe = quadNeigh.point( qpNe );
+              DomainType xNe = qp.position();
               lfnb.evaluate( xNe, valnb );
               const double ind1nb = indicator1( neighbor, xNe, valnb );
               ind1nbLocMax = std::max( ind1nbLocMax, ind1nb );
@@ -336,11 +329,10 @@ namespace Fem
       ind2MaxDiff_   = 0;
 
       numberOfElements_ = 0 ;
-      const IteratorType end = dfSpace_.end();
-      for( IteratorType it = dfSpace_.begin(); it != end; ++it )
+      for( const auto& en : elements( dfSpace_.gridPart() ) )
       {
         // do local estimation
-        estimateLocal( uh, *it, indMin[ 0 ], indMax[ 0 ], indMin[ 1 ], indMax[ 1 ] );
+        estimateLocal( uh, en, indMin[ 0 ], indMax[ 0 ], indMin[ 1 ], indMax[ 1 ] );
         // count number of elements
         ++ numberOfElements_ ;
       }

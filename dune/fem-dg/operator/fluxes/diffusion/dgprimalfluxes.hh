@@ -38,36 +38,35 @@ namespace Fem
   public:
     typedef DiscreteFunctionSpaceImp DiscreteFunctionSpaceType;
 
-    enum { dimDomain = DiscreteFunctionSpaceType :: dimDomain };
-    enum { dimRange  = DiscreteFunctionSpaceType :: dimRange };
+    enum { dimDomain = DiscreteFunctionSpaceType::dimDomain };
+    enum { dimRange  = DiscreteFunctionSpaceType::dimRange };
     enum { dimGradRange = dimDomain * dimRange };
-    enum { polOrd = DiscreteFunctionSpaceType :: polynomialOrder };
+    enum { polOrd = DiscreteFunctionSpaceType::polynomialOrder };
 
-    typedef typename DiscreteFunctionSpaceType :: RangeFieldType        RangeFieldType;
-    typedef typename DiscreteFunctionSpaceType :: DomainFieldType       DomainFieldType;
-    typedef FieldVector< DomainFieldType, dimDomain-1 >                 FaceDomainType;
-    typedef typename DiscreteFunctionSpaceType :: DomainType            DomainType;
-    typedef typename DiscreteFunctionSpaceType :: RangeType             RangeType;
-    typedef typename DiscreteFunctionSpaceType :: JacobianRangeType     JacobianRangeType;
+    typedef typename DiscreteFunctionSpaceType::RangeFieldType        RangeFieldType;
+    typedef typename DiscreteFunctionSpaceType::DomainFieldType       DomainFieldType;
+    typedef FieldVector< DomainFieldType, dimDomain-1 >               FaceDomainType;
+    typedef typename DiscreteFunctionSpaceType::DomainType            DomainType;
+    typedef typename DiscreteFunctionSpaceType::RangeType             RangeType;
+    typedef typename DiscreteFunctionSpaceType::JacobianRangeType     JacobianRangeType;
 
 
-    typedef typename DiscreteFunctionSpaceType :: GridPartType          GridPartType;
-    typedef typename GridPartType :: IntersectionIteratorType           IntersectionIterator;
-    typedef typename IntersectionIterator :: Intersection               Intersection;
-    typedef typename GridPartType :: GridType                           GridType;
-    typedef typename DiscreteFunctionSpaceType :: EntityType            EntityType;
-    typedef typename GridPartType::template Codim< 0 >::IteratorType    IteratorType;
-    typedef typename GridPartType::IntersectionIteratorType
-                                                                        IntersectionIteratorType;
+    typedef typename DiscreteFunctionSpaceType::GridPartType          GridPartType;
+    typedef typename GridPartType::IntersectionIteratorType           IntersectionIterator;
+    typedef typename GridPartType::IntersectionType                   IntersectionType;
+    typedef typename GridPartType::GridType                           GridType;
+    typedef typename DiscreteFunctionSpaceType::EntityType            EntityType;
+    typedef typename GridPartType::template Codim< 0 >::IteratorType  IteratorType;
+    typedef typename GridPartType::IntersectionIteratorType           IntersectionIteratorType;
 
-    typedef typename BaseType :: DiscreteGradientSpaceType              DiscreteGradientSpaceType;
-    typedef typename DiscreteGradientSpaceType :: RangeType             GradientType;
-    typedef Fem::TemporaryLocalFunction< DiscreteGradientSpaceType >    LiftingFunctionType;
+    typedef typename BaseType::DiscreteGradientSpaceType              DiscreteGradientSpaceType;
+    typedef typename DiscreteGradientSpaceType::RangeType             GradientType;
+    typedef Fem::TemporaryLocalFunction< DiscreteGradientSpaceType >  LiftingFunctionType;
 
-    typedef Fem::CachingQuadrature< GridPartType, 0>                    VolumeQuadratureType ;
+    typedef Fem::CachingQuadrature< GridPartType, 0>                  VolumeQuadratureType ;
 
     typedef Fem::LocalMassMatrix
-      < DiscreteGradientSpaceType, VolumeQuadratureType >               LocalMassMatrixType;
+      < DiscreteGradientSpaceType, VolumeQuadratureType >             LocalMassMatrixType;
 
     class Lifting
     {
@@ -202,19 +201,14 @@ namespace Fem
       int maxNumOutflowFaces = 0;
       if ( useTheoryParams_ )
       {
-        const IteratorType itend = gridPart.template end<0>();
-        for( IteratorType it = gridPart.template begin<0>(); it != itend; ++it )
+        for( const auto& entity : elements( gridPart ) )
         {
-          const EntityType& entity = * it ;
           const double insideVol = entity.geometry().volume();
           int numFaces = 0;
           int numOutflowFaces = 0;
-          const IntersectionIteratorType intitend = gridPart.iend( entity );
-          for(IntersectionIteratorType intit = gridPart.ibegin( entity );
-              intit != intitend; ++intit )
-          {
-            const Intersection& intersection = * intit ;
 
+          for (const auto& intersection : intersections(gridPart, entity) )
+          {
             ++numFaces ;
             if ( intersection.neighbor() )
             {
@@ -377,7 +371,7 @@ namespace Fem
     }
 
     template <class QuadratureImp, class ArgumentTupleVector >
-    void initializeIntersection(const Intersection& intersection,
+    void initializeIntersection(const IntersectionType& intersection,
                                 const EntityType& inside,
                                 const EntityType& outside,
                                 const double time,
@@ -396,7 +390,7 @@ namespace Fem
     }
 
     template <class QuadratureImp, class ArgumentTupleVector >
-    void computeLiftings(const Intersection& intersection,
+    void computeLiftings(const IntersectionType& intersection,
                          const EntityType& inside,
                          const EntityType& outside,
                          const double time,
@@ -605,7 +599,7 @@ namespace Fem
 
 
     template <class QuadratureImp, class ArgumentTupleVector>
-    void initializeBoundary(const Intersection& intersection,
+    void initializeBoundary(const IntersectionType& intersection,
                             const EntityType& entity,
                             const double time,
                             const QuadratureImp& quadInner,
@@ -636,7 +630,7 @@ namespace Fem
 
   protected:
     template <class QuadratureImp, class ArgumentTuple, class LiftingFunction >
-    void addLifting(const Intersection& intersection,
+    void addLifting(const IntersectionType& intersection,
                     const EntityType &entity,
                     const ArgumentTuple &uTuple,
                     const RangeType& u,
@@ -647,7 +641,7 @@ namespace Fem
                     const RangeType& uRight,
                     LiftingFunction& func ) const
     {
-      IntersectionQuadraturePointContext< Intersection, EntityType, QuadratureImp, ArgumentTuple, ArgumentTuple >
+      IntersectionQuadraturePointContext< IntersectionType, EntityType, QuadratureImp, ArgumentTuple, ArgumentTuple >
         local( intersection, entity, faceQuad, uTuple, uTuple, quadPoint, time, entity.geometry().volume() );
 
       const FaceDomainType& x = faceQuad.localPoint( quadPoint );
@@ -707,11 +701,8 @@ namespace Fem
     {
       double sumFaceVolSqr  = 0.0;
 
-      const IntersectionIteratorType intitend = gridPart_.iend( entity );
-      for(IntersectionIteratorType intit = gridPart_.ibegin( entity );
-          intit != intitend; ++intit )
+      for (const auto& intersection : intersections(gridPart_, entity) )
       {
-        const Intersection& intersection = * intit ;
         const double faceVol = intersection.geometry().volume();
 
         // !!!!! forget about Neumann for now
@@ -1192,7 +1183,7 @@ namespace Fem
 
   public:
     typedef typename BaseType::GridPartType        GridPartType;
-    typedef typename BaseType::Intersection        Intersection;
+    typedef typename BaseType::IntersectionType    IntersectionType;
     typedef typename BaseType::EntityType          EntityType;
     typedef typename BaseType::RangeType           RangeType;
     typedef typename BaseType::JacobianRangeType   JacobianRangeType;
@@ -1228,7 +1219,7 @@ namespace Fem
     }
 
     template <class QuadratureImp, class ArgumentTupleVector >
-    void initializeIntersection(const Intersection& intersection,
+    void initializeIntersection(const IntersectionType& intersection,
                                 const EntityType& inside,
                                 const EntityType& outside,
                                 const double time,

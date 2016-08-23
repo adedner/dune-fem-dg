@@ -37,7 +37,7 @@ namespace Fem
 
     typedef typename DiscreteFunctionSpaceType :: GridPartType         GridPartType;
     typedef typename GridPartType :: IntersectionIteratorType          IntersectionIterator;
-    typedef typename IntersectionIterator :: Intersection              Intersection;
+    typedef typename GridPartType :: IntersectionType                  Intersection;
     typedef typename GridPartType :: GridType                          GridType;
     typedef typename DiscreteFunctionSpaceType :: EntityType           EntityType;
     enum { dimGradRange = dimDomain * dimRange };
