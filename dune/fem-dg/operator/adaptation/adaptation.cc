@@ -407,8 +407,11 @@ namespace Fem
     // count elements
     size_t count = 0;
 
-    for( const auto& entity : elements( gridPart_ ) )
+    // count interior elements, sum will yield global number of elements after
+    // communication
+    for( const auto& entity : elements( gridPart_, Dune::Partitions::interior ) )
     {
+      DUNE_UNUSED_PARAMETER( entity );
       ++count;
     }
 
