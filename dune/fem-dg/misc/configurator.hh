@@ -174,7 +174,7 @@ namespace Fem
     using GridParts = typename GridPartSelector< GridType, dgId, adapId >::type;
 
     template< int dimRange >
-    using FunctionSpaces = Fem::FunctionSpace< typename GridType::ctype, double, GridType::dimension, dimRange >;
+    using FunctionSpaces = Fem::FunctionSpace< typename GridType::ctype, typename GridType::ctype, GridType::dimension, dimRange >;
 
     template< class GridPartImp, int polOrd, class FunctionSpaceImp >
     using DiscreteFunctionSpaces = typename DiscreteFunctionSpaceSelector< FunctionSpaceImp, GridPartImp, polOrd, spaceId, dgId >::type;
