@@ -82,7 +82,7 @@ namespace Fem
     double volume = 0;
     // type of iterator, i.e. leaf iterator
 
-    for( const auto& entity : elements( gridPart_ ) )
+    for( const auto& entity : elements( gridPart_, Dune::Partitions::interior ) )
     {
       // sum up the volume
       volume += entity.geometry().volume();
