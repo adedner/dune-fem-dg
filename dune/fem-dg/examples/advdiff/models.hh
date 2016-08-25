@@ -123,7 +123,7 @@ namespace Fem
 
     inline const ProblemType& problem() const { return problem_; }
 
-    inline bool hasMass() const { return true ; }
+    inline bool hasMass() const { return problem_.hasMass(); }
     inline bool hasFlux() const { return true ; }
     inline bool hasStiffSource() const { return problem_.hasStiffSource(); }
     inline bool hasNonStiffSource() const { return problem_.hasNonStiffSource(); }
