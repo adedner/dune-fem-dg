@@ -24,12 +24,13 @@ namespace Fem
    */
   template <class GridType, int dimRange >
   struct QuasiHeatEqnSolution : public EvolutionProblemInterface<
-                    Dune::Fem::FunctionSpace< double, double, GridType::dimension, dimRange>,
+                    Dune::Fem::FunctionSpace< typename GridType :: ctype, typename GridType::ctype,
+                                              GridType::dimension, dimRange>,
                     false >
   {
   public:
     typedef EvolutionProblemInterface<
-                   Dune::Fem::FunctionSpace< double, double,
+                   Dune::Fem::FunctionSpace< typename GridType :: ctype, typename GridType::ctype,
                                              GridType::dimension, dimRange >,
                    false >                                              BaseType;
 
