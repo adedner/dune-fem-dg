@@ -3,14 +3,17 @@ include_directories("${CMAKE_SOURCE_DIR}/dune/fem-dg/examples/advdiff/")
 # configure parameter file from parameter.in
 configure_parameter_file()
 
-# specify type of grid implemention, dimension and polynmomial order
+# specify type of grid implementation, dimension and polynomial order
 set( GRIDTYPE ALUGRID_CUBE )
+#set( GRIDTYPE SPGRID_COUNT_FLOPS )
+#set( GRIDTYPE SPGRID )
 set( GRIDDIM 2 )
-set( POLORDER 2 )
+set( POLORDER 4 )
 
 add_definitions( "-D${GRIDTYPE}" )
 add_definitions( "-DGRIDDIM=${GRIDDIM}" )
-add_definitions( "-DDIMRANGE=1" )
+add_definitions( "-DDIMRANGE=5" )
+#add_definitions( "-DCOUNT_FLOPS" )
 
 if( NOT FEMDG_FAST_TESTBUILD )
   if( DUNE_FEM_DG_VERSION VERSION_LESS "2.4.1" )

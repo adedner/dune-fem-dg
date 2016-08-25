@@ -41,12 +41,13 @@ namespace Fem
    */
   template <class GridType, int dimRange>
   struct U0 : public EvolutionProblemInterface<
-                    Fem::FunctionSpace< double, double, GridType::dimension, dimRange>,
+                    Fem::FunctionSpace< typename GridType :: ctype, typename GridType::ctype,
+                                        GridType::dimension, dimRange>,
                     false >
   {
   public:
     typedef EvolutionProblemInterface<
-                   Fem::FunctionSpace< double, double,
+                   Fem::FunctionSpace< typename GridType :: ctype, typename GridType::ctype,
                                        GridType::dimension, dimRange >,
                    false >                                              BaseType;
 
