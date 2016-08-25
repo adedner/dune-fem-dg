@@ -18,7 +18,6 @@ namespace Fem
 
   class ThreadHandle
   {
-#if USE_PTHREADS
     class ObjectIF
     {
     protected:
@@ -32,37 +31,26 @@ namespace Fem
     class ObjectWrapper : public ObjectIF
     {
       Object& obj_;
+      std::mutex* mutex_;
     public:
-      ObjectWrapper( Object& obj )
-        : obj_( obj ) {}
-
-      void run ()
-      {
-        obj_.runThread();
-      }
-    };
-
-    template <class Object>
-    class ObjectWrapperLocked : public ObjectIF
-    {
-      Object& obj_;
-      std::mutex& mutex_;
-    public:
-      ObjectWrapperLocked( Object& obj, std::mutex& mtx )
+      ObjectWrapper( Object& obj, std::mutex* mtx = nullptr )
         : obj_( obj ), mutex_( mtx ) {}
 
       void run ()
       {
-        // lock mutex to make sure there is no data race
-        mutex_.lock();
+        // if mutex available run in locked mode
+        if( mutex_ )
+          mutex_->lock();
 
         obj_.runThread();
 
-        // unlock mutex to signal ok
-        mutex_.unlock();
+        // unlock if locked before
+        if( mutex_ )
+          mutex_->unlock();
       }
     };
 
+#if USE_PTHREADS
     ////////////////////////////////////////////
     // class ThreadHandleObject
     ////////////////////////////////////////////
@@ -277,21 +265,10 @@ namespace Fem
 
     //! run all threads
     template <class Object>
-    void runThreads( Object& obj )
+    void runThreads( Object& obj, std::mutex* mtx = nullptr )
     {
       // create object wrapper
-      ObjectWrapper< Object > objPtr( obj );
-
-      // start parallel execution
-      startThreads( & objPtr ) ;
-    }
-
-    //! run all threads
-    template <class Object>
-    void runThreadsLocked( Object& obj, std::mutex& mtx )
-    {
-      // create object wrapper
-      ObjectWrapperLocked< Object > objPtr( obj, mtx );
+      ObjectWrapper< Object > objPtr( obj, mtx );
 
       // start parallel execution
       startThreads( & objPtr ) ;
@@ -300,7 +277,7 @@ namespace Fem
     // return instance of ThreadHandle
     static ThreadHandle& instance()
     {
-      static std::auto_ptr< ThreadHandle > handle( new ThreadHandle() );
+      static std::unique_ptr< ThreadHandle > handle( new ThreadHandle() );
       return *handle;
     }
 
@@ -358,26 +335,24 @@ namespace Fem
       if( ! ThreadManager :: singleThreadMode() )
         DUNE_THROW(InvalidStateException,"ThreadHandle :: run called from thread parallel region!");
 
+      // run threads in blocking mode
+      std::mutex mtx;
+
 #if USE_PTHREADS
       {
-        // run threads in blocking mode
-        std::mutex mtx;
-
         // pthread version
-        instance().runThreadsLocked( obj, mtx );
+        instance().runThreads( obj, &mtx );
       }
 #else
+      // use mutex to lock call
+      typename ThreadHandle::template ObjectWrapper< Object > objCaller( obj, &mtx );
+
       // OpenMP parallel region
 #ifdef _OPENMP
 #pragma omp parallel
 #endif
       {
-#ifdef _OPENMP
-#pragma omp critical
-#endif
-        {
-          obj.runThread();
-        }
+        objCaller.run();
       }
 #endif
     }
