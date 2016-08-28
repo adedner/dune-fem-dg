@@ -29,6 +29,15 @@ namespace Fem
       return "__restrict__";
     }
 
+    static const char* doubletype()
+    {
+#ifdef COUNT_FLOPS
+      return "Dune::Fem::Double";
+#else
+      return "double";
+#endif
+    }
+
     static void writePreCompHeader(std::ostream& out, const int stage )
     {
       const char* codegenPreCompVar = "CODEGEN_COMPILE_INNERLOOPS";
@@ -74,12 +83,12 @@ namespace Fem
       out << "      {" << std::endl;
       if( simdW == 1 )
       {
-          out << "        const double phi0 = rangeStorage[ rowMap[ row ] * " << numCols << " + col ][ 0 ];" << std::endl;
+          out << "        const " << doubletype() << " phi0 = rangeStorage[ rowMap[ row ] * " << numCols << " + col ][ 0 ];" << std::endl;
       }
       else
       {
         for( int i = 0 ; i< simdW ; ++ i )
-          out << "        const double phi" << i << " = base" << i << "[ row ];" << std::endl;
+          out << "        const " << doubletype() << " phi" << i << " = base" << i << "[ row ];" << std::endl;
       }
       for(int r = 0; r < dimRange; ++ r )
       {
@@ -175,7 +184,7 @@ namespace Fem
         out << "    for( int col = " << simdCols << ", dof = " << simdCols * dimRange << " ; col < " << numCols << " ; ++col )" << std::endl;
         out << "    {" << std::endl;
         for( int r=0; r<dimRange; ++r )
-          out << "      const double dof0" << r << " = dofs[ dof++ ];" << std::endl;
+          out << "      const " << doubletype() << " dof0" << r << " = dofs[ dof++ ];" << std::endl;
         writeInnerLoopEval( out, 1, dimRange, numRows, numCols );
         out << "    }" << std::endl;
         out << std::endl;
@@ -199,14 +208,14 @@ namespace Fem
       {
         out << "        ";
         for( int r=0; r<dimRange; ++ r )
-          out << "const double dof"<< i << r << ", ";
+          out << "const " << doubletype() << " dof"<< i << r << ", ";
         out << std::endl;
       }
       for( int i=0; i<simdWidth; ++ i )
-        out << "        const double* " << restrictKey() << " base" << i << "," << std::endl;
+        out << "        const " << doubletype() << "* " << restrictKey() << " base" << i << "," << std::endl;
       for( int r=0; r<dimRange; ++ r )
       {
-        out << "        double* "<< restrictKey() << " result" << r;
+        out << "        " << doubletype() << "* "<< restrictKey() << " result" << r;
         if( r == dimRange-1 ) out << " )" << std::endl;
         else out << "," << std::endl;
       }
@@ -224,7 +233,7 @@ namespace Fem
       {
         for( int r=0; r< dimRange; ++r )
         {
-          out << "      const double fac" << i << r << " = rangeFactor" << i << "[ " << r << " ];" << std::endl;
+          out << "      const " << doubletype() << " fac" << i << r << " = rangeFactor" << i << "[ " << r << " ];" << std::endl;
         }
       }
       if( simdW == 1 )
@@ -237,9 +246,9 @@ namespace Fem
       for( int i = 0 ; i< simdW ; ++ i )
       {
         if( simdW == 1 )
-          out << "        const double phi" << i << " = rangeStorage[ rowCol ][ 0 ];" << std::endl;
+          out << "        const " << doubletype() << " phi" << i << " = rangeStorage[ rowCol ][ 0 ];" << std::endl;
         else
-          out << "        const double phi" << i << " = base" << i  << " [ col ];" << std::endl;
+          out << "        const " << doubletype() << " phi" << i << " = base" << i  << " [ col ];" << std::endl;
       }
       for(int r = 0; r < dimRange; ++ r )
       {
@@ -284,7 +293,7 @@ namespace Fem
       //out << "    typedef typename ScalarRangeType :: field_type field_type;" << std::endl;
       out << std::endl;
 
-      out << "    double dofResult[ " << numCols * dimRange << " ] = { 0 };" << std::endl << std::endl;
+      out << "    " << doubletype() << " dofResult[ " << numCols * dimRange << " ] = { 0 };" << std::endl << std::endl;
       const size_t simdRows  = simdWidth * (numRows / simdWidth) ;
 
       if( simdRows > 0 )
@@ -292,7 +301,7 @@ namespace Fem
         out << "    for( int row = 0; row < "<< simdRows << " ; row += " << int(simdWidth) << " )" << std::endl;
         out << "    {" << std::endl;
         for( int i=0; i<simdWidth; ++ i )
-          out << "      const double* rangeFactor" << i << " = &rangeFactors[ row + " << i << " ][ 0 ];" << std::endl;
+          out << "      const " << doubletype() << "* rangeFactor" << i << " = &rangeFactors[ row + " << i << " ][ 0 ];" << std::endl;
         out << "      " << funcName << "(";
         for( int i = 0; i < simdWidth; ++i )
           out << " &rangeStorage[ quad.cachingPoint( row + " << i << " ) * " << numCols << " ][ 0 ],";
@@ -315,9 +324,9 @@ namespace Fem
         out << std::endl;
       }
 
-      out << "    double* dofs0 = dofResult;" << std::endl;
+      out << "    " << doubletype() << "* dofs0 = dofResult;" << std::endl;
       for( int r = 1; r < dimRange; ++ r )
-        out << "    double* dofs" << r << " = dofResult + " << r * numCols << ";" << std::endl;
+        out << "    " << doubletype() << "* dofs" << r << " = dofResult + " << r * numCols << ";" << std::endl;
       out << std::endl;
 
       if( numRows > simdRows )
@@ -325,7 +334,7 @@ namespace Fem
         out << "    // remainder iteration" << std::endl;
         out << "    for( int row = " << simdRows << " ; row < " << numRows << " ; ++row )" << std::endl;
         out << "    {" << std::endl;
-        out << "      const double* rangeFactor0 = &rangeFactors[ row ][ 0 ];" << std::endl;
+        out << "      const " << doubletype() << "* rangeFactor0 = &rangeFactors[ row ][ 0 ];" << std::endl;
         writeInnerLoop( out, 1, dimRange, numCols );
         out << "    }" << std::endl;
         out << std::endl;
@@ -346,14 +355,14 @@ namespace Fem
       ///////////////////////////////////
       writePreCompHeader( out, 0 );
       out << "  void " << funcName << "(" << std::endl;
-      out << "       const double* " << restrictKey() << " base0," << std::endl;
+      out << "       const " << doubletype() << "* " << restrictKey() << " base0," << std::endl;
       for( int i=1; i<simdWidth; ++ i )
-        out << "       const double* " << restrictKey() << " base" << i << "," << std::endl;
+        out << "       const " << doubletype() << "* " << restrictKey() << " base" << i << "," << std::endl;
       for( int i=0; i<simdWidth; ++ i )
-        out << "       const double* " << restrictKey() << " rangeFactor" << i << "," << std::endl;
+        out << "       const " << doubletype() << "* " << restrictKey() << " rangeFactor" << i << "," << std::endl;
       for( int r = 0; r < dimRange; ++r )
       {
-        out << "       double* " << restrictKey() << " dofs" << r;
+        out << "       " << doubletype() << "* " << restrictKey() << " dofs" << r;
         if( r == dimRange-1 )
           out << " )" << std::endl;
         else
@@ -380,7 +389,7 @@ namespace Fem
           const char* plusplus = (i == simdW-1) ? "  " : "++";
           out << "        gjit.mv( jacStorage[ idx" << plusplus << " ][ 0 ], gradPhi" << i << " );" << std::endl;
           for( int d = 0 ; d < dim; ++ d )
-            out << "        const double phi" << i << d << " = gradPhi" << i << "[ " << d << " ];" << std::endl;
+            out << "        const " << doubletype() << " phi" << i << d << " = gradPhi" << i << "[ " << d << " ];" << std::endl;
         }
         out << std::endl;
       }
@@ -389,7 +398,7 @@ namespace Fem
         for( int d = 0; d < dim ; ++ d )
         {
           for( int i = 0 ; i< simdW ; ++ i )
-            out << "        const double phi" << i << d << " = base" << i << d << "[ row ];" << std::endl;
+            out << "        const " << doubletype() << " phi" << i << d << " = base" << i << d << "[ row ];" << std::endl;
         }
       }
       for( int d = 0; d < dim ; ++ d )
@@ -553,7 +562,7 @@ namespace Fem
         out << "    for( int col = " << simdNumCols << ", dof = " << simdNumCols * dimRange << " ; col < " << numCols << " ; ++col )" << std::endl;
         out << "    {" << std::endl;
         for( int r=0; r<dimRange; ++r )
-          out << "      const double dof0" << r << " = dofs[ dof++ ];" << std::endl;
+          out << "      const " << doubletype() << " dof0" << r << " = dofs[ dof++ ];" << std::endl;
         writeInnerJacEvalLoop( out, 1, dim, dimRange, numRows, numCols );
         out << "    }" << std::endl;
         out << std::endl;
@@ -580,19 +589,19 @@ namespace Fem
       {
         out << "                        ";
         for( int r=0; r<dimRange; ++ r )
-          out << " const double dof"<< i << r << ",";
+          out << " const " << doubletype() << " dof"<< i << r << ",";
         out << std::endl;
       }
       for( int d=0; d<dim; ++ d )
       {
         for( int i=0; i<simdWidth; ++ i )
-          out << "                         const double* " << restrictKey() << " base" << i << d << "," << std::endl;
+          out << "                         const " << doubletype() << "* " << restrictKey() << " base" << i << d << "," << std::endl;
       }
       for( int d=0; d<dim; ++ d )
       {
         for( int r=0; r<dimRange; ++ r )
         {
-          out << "                         double* "<< restrictKey() << " result" << r << d;
+          out << "                         " << doubletype() << "* "<< restrictKey() << " result" << r << d;
           if( (r == dimRange - 1) && (d == dim-1 ) ) out << " )" << std::endl;
           else out << "," << std::endl;
         }
@@ -610,7 +619,7 @@ namespace Fem
       out << "      for( int col = 0; col < " << numCols << " ; ++col )" << std::endl;
       out << "      {" << std::endl;
       for( int d =0; d < dim; ++d )
-        out << "        const double phi" << d << " = base" << d << "[ col ];" << std::endl;
+        out << "        const " << doubletype() << " phi" << d << " = base" << d << "[ col ];" << std::endl;
 
       for( int r = 0; r < dimRange; ++r )
       {
@@ -732,19 +741,19 @@ namespace Fem
       writePreCompHeader( out, 0 );
 
       out << "  void " << funcName << "(" << std::endl;
-      out << "        const double* " << restrictKey() << " base0," << std::endl;
+      out << "        const " << doubletype() << "* " << restrictKey() << " base0," << std::endl;
       for( int i=1; i<dim; ++ i )
-        out << "        const double* " << restrictKey() << " base" << i << "," << std::endl;
+        out << "        const " << doubletype() << "* " << restrictKey() << " base" << i << "," << std::endl;
       for( int i=0; i<dim; ++i )
       {
         out << "        ";
         for( int r=0; r<dimRange; ++ r )
-          out << "const double jacFactorInv"<< i << r << ", ";
+          out << "const " << doubletype() << " jacFactorInv"<< i << r << ", ";
         out << std::endl;
       }
       for( int r = 0; r < dimRange; ++r )
       {
-        out << "        double* " << restrictKey() << " result" << r;
+        out << "        " << doubletype() << "* " << restrictKey() << " result" << r;
         if( r == dimRange-1 )
           out << " )" << std::endl;
         else
