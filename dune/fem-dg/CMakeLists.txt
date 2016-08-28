@@ -1,1 +1,1 @@
-dune_add_subdirs( algorithm assemble main misc models operator pass solver examples)
+dune_add_subdirs( algorithm assemble misc models operator pass solver examples)
