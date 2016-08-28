@@ -92,7 +92,7 @@ for MOD in $DUNEMODULES ; do
     git clone $FEMBRANCH https://gitlab.dune-project.org/dune-fem/dune-fem.git
   elif [ "$MOD" == "dune-fem-dg" ] ; then
     # use the special branch for dune-fem-dg
-    git clone $FEMDGBRANCH http://users.dune-project.org/repositories/projects/dune-fem-dg.git
+    git clone $FEMDGBRANCH https://gitlab.dune-project.org/dune-fem/dune-fem-dg.git
   else
     git clone $DUNEBRANCH https://gitlab.dune-project.org/core/$MOD.git
   fi
