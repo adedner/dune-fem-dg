@@ -152,7 +152,7 @@ struct AxpyJacobians
   {
     std::cerr << "ERROR: wrong code generated for VectorialBaseFunctionSet::axpyJacobian <"
               << dimRange << " , " << numRows << " , " << numCols << " >!" << std::endl;
-    abort();
+    std::abort();
   }
 };
 
@@ -171,7 +171,7 @@ struct AxpyJacobians< BaseFunctionSet, Fem :: EmptyGeometry, dimRange, numRows, 
                     LocalDofVectorType&)
   {
     std::cerr << "ERROR: wrong code generated for VectorialBaseFunctionSet::axpyJacobians" << std::endl;
-    abort();
+    std::abort();
   }
 };
 
