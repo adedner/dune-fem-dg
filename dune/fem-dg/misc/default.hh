@@ -16,16 +16,8 @@
 #include <dune/geometry/referenceelements.hh>
 #include <dune/geometry/type.hh>
 
-#include <dune/fem/space/common/arrays.hh>
 
-//#define NEWBASEFCT_CACHING
-
-#ifdef NEWBASEFCT_CACHING
-//#include <dune/fem/space/shapefunctionset/caching.hh>
-#include "caching2.hh"
-#else
-#include "caching.hh"
-#endif
+#include <dune/fem/space/shapefunctionset/caching.hh>
 
 // dune-fem includes
 #include <dune/fem/space/basisfunctionset/functor.hh>
@@ -36,13 +28,8 @@
 #include <dune/fem/version.hh>
 
 #ifdef BASEFUNCTIONSET_CODEGEN_GENERATE
-#ifdef NEWBASEFCT_CACHING
-#include "codegen2.hh"
-#else
 #include "codegen.hh"
 #endif
-#endif
-
 
 #ifdef USE_BASEFUNCTIONSET_OPTIMIZED
 #include <dune/fem/space/basisfunctionset/evaluatecaller.hh>
@@ -106,7 +93,7 @@ namespace Dune
 
       typedef typename FunctionSpaceType::ScalarFunctionSpaceType ScalarFunctionSpaceType;
 
-      typedef typename ScalarFunctionSpaceType::RangeType ScalarRangeType;
+      typedef typename ScalarFunctionSpaceType::RangeType         ScalarRangeType;
       typedef typename ScalarFunctionSpaceType::JacobianRangeType ScalarJacobianRangeType;
 
       //! \brief type of reference element
@@ -115,13 +102,9 @@ namespace Dune
       enum { dimDomain = FunctionSpaceType::dimDomain };
       enum { dimRange  = FunctionSpaceType::dimRange  };
 
-#ifdef NEWBASEFCT_CACHING
       typedef std::vector< ScalarRangeType >          RangeVectorType;
       typedef std::vector< ScalarJacobianRangeType >  JacobianRangeVectorType;
-#else
-      typedef MutableArray< MutableArray< ScalarRangeType > >         RangeVectorType;
-      typedef MutableArray< MutableArray< ScalarJacobianRangeType > > JacobianRangeVectorType;
-#endif
+
       //! \brief constructor
       DefaultBasisFunctionSet ()
       : entity_( nullptr )
@@ -146,7 +129,7 @@ namespace Dune
       }
 
 #ifdef USE_BASEFUNCTIONSET_OPTIMIZED
-#include "vectorialbasefunctionset.hh"
+#include "evaluatecaller.hh"
 #endif
 
       // Basis Function Set Interface Methods

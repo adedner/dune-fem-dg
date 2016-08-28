@@ -1,1 +1,7 @@
-dune_install( diagnostics.hh cons2prim.hh crs.hh streams.hh)
+dune_install(
+algorithmcreatorselector.hh  covarianttuple.hh  evaluatecaller.hh  static_warning.hh
+codegen.hh                   crs.hh             memory.hh          streams.hh
+combinedfunctionspace.hh     default.hh         optional.hh        tupleutility.hh
+configurator.hh              dgnorm.hh          parameterkey.hh    typedefcheck.hh
+cons2prim.hh                 diagnostics.hh     simulator.hh       uniquefunctionname.hh
+)

@@ -116,7 +116,7 @@ namespace Fem
       out << "  {" << std::endl;
       out << "    typedef typename ScalarRangeType :: field_type field_type;" << std::endl;
       //out << "    typedef typename RangeVectorType :: value_type value_type;" << std::endl;
-      out << "    typedef RangeType value_type;" << std::endl;
+      //out << "    typedef RangeType value_type;" << std::endl;
 
       out << "    // only evaluate cachingPoint once" << std::endl;
       out << "    int rowMap[ " << numRows << " ] ;" << std::endl;
@@ -280,9 +280,8 @@ namespace Fem
       // axpy
       ////////////////////////////////////////////////////
 
-      //out << "    typedef typename RangeVectorType :: value_type value_type;" << std::endl;
-      out << "    typedef RangeType value_type;" << std::endl;
-      out << "    typedef typename ScalarRangeType :: field_type field_type;" << std::endl;
+      //out << "    typedef RangeType value_type;" << std::endl;
+      //out << "    typedef typename ScalarRangeType :: field_type field_type;" << std::endl;
       out << std::endl;
 
       out << "    double dofResult[ " << numCols * dimRange << " ] = { 0 };" << std::endl << std::endl;
@@ -460,9 +459,9 @@ namespace Fem
       out << "                       const GlobalJacobianRangeType& )" << std::endl;
       out << "  {" << std::endl;
       //out << "    typedef typename JacobianRangeVectorType :: value_type  value_type;" << std::endl;
-      out << "    typedef JacobianRangeType value_type;" << std::endl;
+      //out << "    typedef JacobianRangeType value_type;" << std::endl;
       out << "    typedef typename JacobianRangeType :: field_type field_type;" << std::endl;
-      out << "    typedef typename Geometry::Jacobian GeometryJacobianType;" << std::endl;
+      out << "    typedef typename Geometry::JacobianInverseTransposed GeometryJacobianType;" << std::endl;
       out << "    // only evaluate cachingPoint once" << std::endl;
       out << "    int rowMap[ " << numRows << " ] ;" << std::endl;
       out << "    for( int row = 0; row < " << numRows << "; ++ row )" << std::endl;
@@ -662,7 +661,6 @@ namespace Fem
       out << "                    const JacobianRangeFactorType& jacFactors," << std::endl;
       out << "                    LocalDofVectorType& dofs)" << std::endl;
       out << "  {" << std::endl;
-      out << "    typedef JacobianRangeType value_type;" << std::endl;
       out << "    typedef typename JacobianRangeType :: field_type field_type;" << std::endl;
       const size_t dofs = dimRange * numCols ;
       out << "    field_type result [ " << dofs << " ] = {";
@@ -679,7 +677,7 @@ namespace Fem
 
       out << "    for( int row = 0; row < " << numRows << " ; ++ row )" << std::endl;
       out << "    {" << std::endl;
-      out << "      typedef typename Geometry::Jacobian GeometryJacobianType;" << std::endl;
+      out << "      typedef typename Geometry::JacobianInverseTransposed GeometryJacobianType;" << std::endl;
       out << "      // use reference to GeometryJacobianType to make code compile with SPGrid Geometry" << std::endl;
       out << "      const GeometryJacobianType& gjit = geometry.jacobianInverseTransposed( quad.point( row ) );" << std::endl << std::endl;
       out << "      JacobianRangeType jacFactorTmp;" << std::endl;
