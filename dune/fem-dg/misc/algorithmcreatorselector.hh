@@ -30,9 +30,10 @@
 #include <dune/fem/solver/istlsolver.hh>
 #endif
 
-//#if HAVE_UMFPACK || HAVE_SUITESPARSE_UMFPACK
-//#include <dune/fem/solver/umfpacksolver.hh>
-//#endif
+#if HAVE_UMFPACK || HAVE_SUITESPARSE_UMFPACK
+//#define USE_UMFPACKSOLVER 1
+#include <dune/fem/solver/umfpacksolver.hh>
+#endif
 
 #if HAVE_PETSC
 #include <dune/fem/function/petscdiscretefunction/petscdiscretefunction.hh>
@@ -474,8 +475,7 @@ namespace Fem
   };
 #endif // HAVE_ISTL
 
-#if 0
-  // HAVE_UMFPACK || HAVE_SUITESPARSE_UMFPACK
+#if USE_UMFPACKSOLVER
   template <class DomainDFSpace, class RangeDFSpace, bool symmetric>
   struct MatrixSolverSelector<Solver::Enum::umfpack,symmetric,DomainDFSpace,RangeDFSpace>
   {
@@ -494,6 +494,7 @@ namespace Fem
     static_warning(false, "You have chosen the UMFPACK solver backend which is currently not installed. Falling back to standard solver!");
   };
 #endif
+#undef USE_UMFPACKSOLVER
 
 #if HAVE_PETSC
   template <class DomainDFSpace, class RangeDFSpace,bool symmetric>
