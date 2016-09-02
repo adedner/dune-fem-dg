@@ -29,9 +29,9 @@
 #include <dune/fem/solver/istlsolver.hh>
 #endif
 
-#if HAVE_UMFPACK || HAVE_SUITESPARSE_UMFPACK
-#include <dune/fem/solver/umfpacksolver.hh>
-#endif
+//#if HAVE_UMFPACK || HAVE_SUITESPARSE_UMFPACK
+//#include <dune/fem/solver/umfpacksolver.hh>
+//#endif
 
 #if HAVE_PETSC
 #include <dune/fem/function/petscdiscretefunction/petscdiscretefunction.hh>
@@ -473,7 +473,8 @@ namespace Fem
   };
 #endif // HAVE_ISTL
 
-#if HAVE_UMFPACK || HAVE_SUITESPARSE_UMFPACK
+#if 0
+  // HAVE_UMFPACK || HAVE_SUITESPARSE_UMFPACK
   template <class DomainDFSpace, class RangeDFSpace, bool symmetric>
   struct MatrixSolverSelector<Solver::Enum::umfpack,symmetric,DomainDFSpace,RangeDFSpace>
   {
