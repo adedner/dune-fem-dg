@@ -1,7 +1,7 @@
 # SOLVER CONFIGURATION
 #---------------------
 
-fem.ode.odesolver: EX # ode solvers: EX, IM, IMEX
+fem.ode.odesolver: IM # ode solvers: EX, IM, IMEX
 #fem.ode.order: 2
 fem.ode.verbose: none # ode output: none, cfl, full
 fem.ode.cflincrease: 1.25
@@ -13,10 +13,10 @@ fem.timeprovider.factor: 0.45
 fem.timeprovider.updatestep: 1
 
 # parameter for the implicit solvers 
-fem.solver.verbose: true
+fem.solver.verbose: 0 
 fem.solver.gmres.restart: 15
-fem.solver.newton.verbose: true
-fem.solver.newton.linear.verbose: true
+fem.solver.newton.verbose: 0 
+fem.solver.newton.linear.verbose: 0 
 fem.solver.newton.maxlineariterations: 1000
 fem.solver.newton.tolerance: 1e-10
 
