@@ -30,14 +30,14 @@ namespace Fem
   namespace DiffusionFlux
   {
     /**
-     * \brief Enum of all available diffusion flux implementations (priaml and local formulation).
+     * \brief Enum of all available diffusion flux implementations (primal and local formulation).
      *
      * \ingroup FemDGParameter
      */
     enum class Enum
     {
       default_,
-      //! BR2 (Bassi-Rebay 2) flux (local formulation).
+      //! BR1 (Bassi-Rebay 1) flux (local formulation).
       br1,
       //! LDG (Local Discontinuous Galerkin) flux (local formulation).
       ldg,

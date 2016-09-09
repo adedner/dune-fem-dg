@@ -680,9 +680,9 @@ namespace Fem
       if (liftingMethod_ != LiftingEnum::id_A)
       {
         JacobianRangeType mat;
-        // set mat = G(u)L_e
+        // set mat = A(u)L_e
         model_.diffusion( local, u, gradient, mat );
-        // set lift = G(u)L_e*n
+        // set lift = A(u)L_e*n
         mat.mv( normal, lift );
       }
       else
@@ -728,31 +728,33 @@ namespace Fem
      * \param gLeft result for this side of \c intersection
      * \param gRight result for the other side of \c intersection
      *
-     * \note The total numerical flux for multiplication with phi
+     * \note The total numerical (diffusive) flux for multiplication with phi
      *       is given with
+     *        NIPG, BO:
+     *          gLeft = - {A(u)grad(u)}*n
      *        CDG2:
-     *          gLeft = numflux(f(u)) - {G(u)grad(u)}*n
-     *            + C_cdg2/h {G(u)}[u]*n
-     *            + liftFactor*(G(u)L_e)|Ke-
+     *          gLeft = - {A(u)grad(u)}*n
+     *                  + C_cdg2/h {A(u)}[u]*n
+     *                  + liftFactor*(A(u)L_e)|Ke-
      *        CDG:
-     *          gLeft = numflux(f(u)) - {G(u)grad(u)}*n
-     *            - beta*n[G(u)grad(u)] + C_cdg/h {G(u)}[u]*n
-     *            + liftFactor*(G(u)L_e)|Ke-
+     *          gLeft = - {A(u)grad(u)}*n
+     *                  - beta*n[A(u)grad(u)] + C_cdg/h {A(u)}[u]*n
+     *                  + liftFactor*(a(u)L_e)|Ke-
      *        BR2:
-     *          gLeft = numflux(f(u)) - {G(u)grad(u)}*n + C_br2 {G(u)r_e([u])}*n
+     *          gLeft = - {A(u)grad(u)}*n + C_br2 {A(u)r_e([u])}*n
      *        IP:
-     *          gLeft = numflux(f(u)) - {G(u)grad(u)}*n + C_ip/h {G(u)}[u]*n
+     *          gLeft = - {A(u)grad(u)}*n + C_ip/h {A(u)}[u]*n
      *
      *       The total numerical flux for multiplication with grad(phi) is
      *        NIPG, BO:
-     *          gDiffLeft = 0.5*G(u-)[u]
+     *          gDiffLeft = 0.5*A(u-)[u]
      *        IP, BR2, CDG2:
-     *          gDiffLeft = -0.5*G(u-)[u]
+     *          gDiffLeft = -0.5*A(u-)[u]
      *        CDG:
-     *          gDiffLeft = -0.5*G(u-)[u] - beta*G(u)[u]
+     *          gDiffLeft = -0.5*A(u-)[u] - beta*A(u)[u]
      *       where h = min(|entity+|,|entity-|) / |intersection|.
      *       In this method we need to return
-     *          in gLeft:      same like above, but without numflux(f(u))
+     *          in gLeft:      same like above
      *          in gDiffLeft:  same like above
      *
      * \return wave speed estimate (multiplied with the integration element of the intersection).
@@ -781,42 +783,44 @@ namespace Fem
       JacobianRangeType diffmatrix ;
       RangeType diffflux ;
 
-      // for all methods except CDG we need to evaluate {G(u)grad(u)}
+      // for all methods except CDG we need to evaluate {A(u)grad(u)}
       if (method_ != EnumType::cdg)
       {
-        // G(u-)grad(u-) for multiplication with phi
+        // A(u-)grad(u-) for multiplication with phi
         // call on inside
         model_.diffusion( left, uLeft, jacLeft, diffmatrix );
 
-        // diffflux=G(u-)grad(u-)*n
+        // diffflux=A(u-)grad(u-)*n
         diffmatrix.mv( normal, diffflux );
 
-        // G(u+)grad(u+) for multiplication with phi
+        // A(u+)grad(u+) for multiplication with phi
         // call on outside
         model_.diffusion( right, uRight, jacRight, diffmatrix );
 
-        // diffflux = 2{G(u)grad(u)}*n
+        // diffflux = 2{A(u)grad(u)}*n
         diffmatrix.umv( normal, diffflux );
 
-        // gLeft = gRight = -{G(u)grad(u)}*n
+        // ===== CDG2, BR2, IP, NIPG, BO =====
+        // gLeft = gRight = -{A(u)grad(u)}*n
         gLeft.axpy ( -0.5, diffflux );
         gRight.axpy( -0.5, diffflux );
       }
       else
-      // for CDG we need G(u)grad(u) on Ke-
+      // for CDG we need A(u)grad(u) on Ke-
       {
         ////////////////////////////////
-        // [ phi ] * [ G(u)grad(u) ] ...
+        // [ phi ] * [ A(u)grad(u) ] ...
         ///////////////////////////////
         if ( ! insideIsInflow_ )
           model_.diffusion( left, uLeft, jacLeft, diffmatrix );
         else
           model_.diffusion( right, uRight, jacRight, diffmatrix );
 
-        // diffflux=(G(u)grad(u)*n)|Ke-
+        // diffflux=(A(u)grad(u)*n)|Ke-
         diffmatrix.mv( normal, diffflux );
 
-        // gLeft = gRight = -(G(u)grad(u)*n)|Ke-
+        // ===== CDG =====
+        // gLeft = gRight = -(A(u)grad(u)*n)|Ke-
         gLeft.axpy ( -1., diffflux );
         gRight.axpy( -1., diffflux );
       }
@@ -833,10 +837,10 @@ namespace Fem
         jumpU[ r ] *= jumpUNormal[ r ];
       }
 
-      // get G(u-)[u] in gDiffLeft
-      // get G(u+)[u] in gDiffRight
+      // get A(u-)[u] in gDiffLeft
+      // get A(u+)[u] in gDiffRight
       // this is not the final value for gDiffLeft, gDiffRight
-      // G(u-)[u], G(u+)[u] are needed in the penalty term
+      // A(u-)[u], A(u+)[u] are needed in the penalty term
       model_.diffusion( left,  uLeft,  jumpU, gDiffLeft );
       model_.diffusion( right, uRight, jumpU, gDiffRight );
 
@@ -873,9 +877,9 @@ namespace Fem
         }
         else
         {
-          // \int C_IP {G(u)}[u][phi] dx
-          //    = \int C_IP (G(u_L)[u]*n + G(u_R)[u]*n)/2 phi
-          // so penaltyTerm = C_IP (G(u_L)[u]*n + G(u_R)[u]*n)/2
+          // \int C_IP {A(u)}[u][phi] dx
+          //    = \int C_IP (A(u_L)[u]*n + A(u_R)[u]*n)/2 phi
+          // so penaltyTerm = C_IP (A(u_L)[u]*n + A(u_R)[u]*n)/2
 
           // apply with normal
           gDiffLeft.mv( normal, penaltyTerm );
@@ -888,6 +892,7 @@ namespace Fem
           std::min( left.volume(), right.volume() );
         penaltyTerm /= minvol;
 
+        // ===== IP, CDG2+, CDG+, NIPG+ =====
         // add to fluxes
         gLeft.axpy( penalty_, penaltyTerm );
         gRight.axpy( penalty_, penaltyTerm );
@@ -897,17 +902,17 @@ namespace Fem
       ///////////////////////////////////////////////
 
 
-      // gDiffLeft = -0.5 G(u-)[u] (IP,BR2)
-      // gDiffLeft = 0.5 G(u-)[u] (NIPG,BO)
+      // gDiffLeft = -0.5 A(u-)[u] (IP,BR2)
+      // gDiffLeft = 0.5 A(u-)[u] (NIPG,BO)
       gDiffLeft *= nipgFactor_;
 
       // current entity gets (i.e. for IP)
-      //    (numflux(f(u))*n+{G(u)grad(u)}*n-C11[u]*n)phi
-      //    + 0.5G(u-)[u]*grad(phi)
+      //    (numflux(f(u))*n+{A(u)grad(u)}*n-C11[u]*n)phi
+      //    + 0.5A(u-)[u]*grad(phi)
       // and neighbor gets
-      //    (numflux(f(u))*(-n)+{G(u)grad(u)}*(-n)-C11[u]*(-n))phi
-      //    + 0.5G(u-)[u]*grad(phi)
-      // so term 0.5G(u-)[u]*grad(phi) stays the same therefore:
+      //    (numflux(f(u))*(-n)+{A(u)grad(u)}*(-n)-C11[u]*(-n))phi
+      //    + 0.5A(u-)[u]*grad(phi)
+      // so term 0.5A(u-)[u]*grad(phi) stays the same therefore:
       gDiffRight *= (-nipgFactor_);
 
       ////////////////////////////////////////////////
@@ -921,13 +926,15 @@ namespace Fem
 
         RangeType lift;
         // LiftingFunctionType& LeMinus = LeMinusLifting().function();
-        // get value of G(u-)L_e-*n into liftTotal
+        // get value of A(u-)L_e-*n into liftTotal
         applyLifting( local, normal, u, liftingEvalLeMinus_[ local.index() ], lift );
 
         // only for CDG-type methods
         if (method_ != EnumType::br2)
         {
           lift   *= liftFactor_ ;
+
+          // ===== CDG2, CDG =====
           gLeft  -= lift;
           gRight -= lift;
         }
@@ -938,7 +945,7 @@ namespace Fem
           JacobianRangeType resU;
 
           ////////////////////////////////
-          // [ u ] * [ G(u)grad(phi) ] ...
+          // [ u ] * [ A(u)grad(phi) ] ...
           ///////////////////////////////
 
           resU = gDiffLeft;
@@ -958,9 +965,9 @@ namespace Fem
         {
           // BR2 hasn't had penalty term until now
           // so we add it at this place.
-          // \int C_BR2 {G(u)r_e([u])}[phi] dx
-          //    = \int C_BR2 (G(u_L)r_e([u])*n + G(u_R)r_e([u])*n)/2 phi
-          // so penaltyTerm = C_BR2 (G(u_L)r_e([u])*n + G(u_R)r_e([u])*n)/2
+          // \int C_BR2 {A(u)r_e([u])}[phi] dx
+          //    = \int C_BR2 (A(u_L)r_e([u])*n + A(u_R)r_e([u])*n)/2 phi
+          // so penaltyTerm = C_BR2 (A(u_L)r_e([u])*n + A(u_R)r_e([u])*n)/2
 
           // get correct quadrature, the one from Ke+
           //const QuadratureImp& faceQuadPlus =
@@ -972,14 +979,15 @@ namespace Fem
           RangeType liftTotal;
           // LiftingFunctionType& LePlus = LePlusLifting().function();
 
-          // get value of G(u+)L_e+*n into liftTotal
+          // get value of A(u+)L_e+*n into liftTotal
           applyLifting( local, normal, uPlus, liftingEvalLePlus_[ local.index() ], liftTotal );
 
-          // set liftTotal = {G(u)r_e}*n = 0.25*(G(u+)L_e+*n + G(u-)L_e-*n)
+          // set liftTotal = {A(u)r_e}*n = 0.25*(A(u+)L_e+*n + A(u-)L_e-*n)
           liftTotal += lift;
           // add penalty coefficient
           liftTotal *= 0.25 * liftFactor_;
 
+          // ===== BR2 =====
           gLeft -= liftTotal;
           gRight -= liftTotal;
         }
@@ -1031,10 +1039,10 @@ namespace Fem
 
       JacobianRangeType diffmatrix;
 
-      // diffmatrix = G(u-)grad(u-)
+      // diffmatrix = A(u-)grad(u-)
       model_.diffusion( left, uLeft, jacLeft, diffmatrix);
 
-      // gLeft = -G(u-)grad(u-)*n
+      // gLeft = -A(u-)grad(u-)*n
       diffmatrix.mv( normal, gLeft );
       gLeft *= -1.0;
 
@@ -1043,12 +1051,12 @@ namespace Fem
         // LiftingFunctionType& LeMinus = LeMinusLifting().function();
 
         RangeType lift;
-        // get value of G(u)L_e*n into lift
+        // get value of A(u)L_e*n into lift
         applyLifting( left, normal, uRight, liftingEvalLeMinus_[ left.index() ], lift );
 
         if( method_ == EnumType::br2 )
         {
-          // set liftTotal = G(u)r_e*n = 0.5*G(u_in)L_e_in*n
+          // set liftTotal = A(u)r_e*n = 0.5*A(u_in)L_e_in*n
           lift *= (0.5*liftFactor_);
         }
         else
@@ -1065,8 +1073,8 @@ namespace Fem
        ****************************/
       const double bndNipgFactor = 2.0 * nipgFactor_ ;
 
-      // G(u)[u] = G(u)(u-g_D)*n (SIPG)
-      // -G(u)[u] = -G(u)(u-g_D)*n (NIPG)
+      // A(u)[u] = A(u)(u-g_D)*n (SIPG)
+      // -A(u)[u] = -A(u)(u-g_D)*n (NIPG)
       // for multiplication with grad(phi)
       JacobianRangeType bndJumpU ;
       for( int r = 0; r < dimRange; ++r )
@@ -1076,7 +1084,7 @@ namespace Fem
       }
 
 
-      // get G(u-)[u] in gDiffLeft
+      // get A(u-)[u] in gDiffLeft
       // this is not hte final value for gDiffLeft
       // but it's used in the penalty term
       model_.diffusion( left, uLeft, bndJumpU, gDiffLeft );
@@ -1112,9 +1120,9 @@ namespace Fem
           bndJumpU.mv( normal, penaltyTerm );
           penaltyTerm *= penFac ;
           */
-          // \int C_IP {G(u)}[u][phi] dx
-          //    = \int C_IP G(u_L)[u]*n phi
-          // so penaltyTerm = C_IP G(u_L)[u]*n
+          // \int C_IP {A(u)}[u][phi] dx
+          //    = \int C_IP A(u_L)[u]*n phi
+          // so penaltyTerm = C_IP A(u_L)[u]*n
 
           // apply with normal
           gDiffLeft.mv( normal, penaltyTerm );
@@ -1126,8 +1134,8 @@ namespace Fem
         gLeft.axpy( penalty_, penaltyTerm );
       }
 
-      // gDiffLeft = G(u-)[u]  (SIPG)
-      // gDiffLeft = -G(u-)[u] (NIPG)
+      // gDiffLeft = A(u-)[u]  (SIPG)
+      // gDiffLeft = -A(u-)[u] (NIPG)
       gDiffLeft *= bndNipgFactor;
 
       ////////////////////////////////////////////////////
@@ -1297,7 +1305,7 @@ namespace Fem
     {
       ElementQuadraturePointContext< EntityType, QuadratureImp, RangeType,
       Fem::FieldMatrixConverter< GradientType, JacobianRangeType> gradient( sigma );
-      // set mat = G(u)L_e
+      // set mat = A(u)L_e
       this->model_.diffusion( entity, time, x, u, gradient, mat );
     }
     */
