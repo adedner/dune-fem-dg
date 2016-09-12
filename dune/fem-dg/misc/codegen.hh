@@ -136,7 +136,8 @@ namespace Fem
       out << std::endl;
 
       // make length simd conform
-      out << "    field_type resultTmp[ " << numRows * dimRange << " ] = { 0 };" << std::endl << std::endl;
+      out << "    field_type resultTmp[ " << numRows * dimRange << " ];" << std::endl;
+      out << "    for( int i=0; i < " << numRows * dimRange << "; ++ i ) resultTmp[ i ] = 0;" << std::endl <<std::endl;
 
       for(int r=0; r<dimRange ; ++r )
       {
@@ -293,7 +294,8 @@ namespace Fem
       //out << "    typedef typename ScalarRangeType :: field_type field_type;" << std::endl;
       out << std::endl;
 
-      out << "    " << doubletype() << " dofResult[ " << numCols * dimRange << " ] = { 0 };" << std::endl << std::endl;
+      out << "    " << doubletype() << " dofResult[ " << numCols * dimRange << " ];" << std::endl;
+      out << "    for( int i=0; i < " << numCols * dimRange << "; ++i ) dofResult[ i ] = 0;" << std::endl << std::endl;
       const size_t simdRows  = simdWidth * (numRows / simdWidth) ;
 
       if( simdRows > 0 )
@@ -482,9 +484,13 @@ namespace Fem
       for( int d = 0; d < dim ; ++ d )
       {
         // make length simd conform
-        out << "    field_type resultTmp" << d << "[ " << numRows * dimRange << " ] = { 0 };" << std::endl;
+        out << "    field_type resultTmp" << d << "[ " << numRows * dimRange << " ];" << std::endl;
       }
-      out << std::endl;
+      out << "    for( int i=0; i<" << numRows * dimRange << "; ++i ) " << std::endl;
+      out << "    {" << std::endl;
+      for( int d = 0; d < dim ; ++ d )
+        out << "      resultTmp" << d << "[ i ] = 0;" << std::endl;
+      out << "    }" << std::endl << std::endl;
 
       for( int d = 0; d < dim ; ++ d )
       {
@@ -670,11 +676,11 @@ namespace Fem
       out << "                    const JacobianRangeFactorType& jacFactors," << std::endl;
       out << "                    LocalDofVectorType& dofs)" << std::endl;
       out << "  {" << std::endl;
-      out << "    typedef typename JacobianRangeType :: field_type field_type;" << std::endl;
+      out << "    typedef typename JacobianRangeType :: field_type field_type;" << std::endl << std::endl;
       const size_t dofs = dimRange * numCols ;
-      out << "    field_type result [ " << dofs << " ] = {";
-      for( size_t dof = 0 ; dof < dofs-1 ; ++ dof ) out << " 0,";
-      out << " 0 };" << std::endl << std::endl;
+      out << "    field_type result[ " << dofs << " ];" << std::endl;
+      out << "    for( int i = 0 ; i < " << dofs << "; ++i ) result[ i ] = 0;" << std::endl << std::endl;
+
       for( int r=0; r<dimRange; ++r )
         out << "    field_type* result" << r << " = result + " << r * numCols << ";" << std::endl;
       out << std::endl;
