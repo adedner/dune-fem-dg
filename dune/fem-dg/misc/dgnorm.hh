@@ -12,10 +12,10 @@ namespace Fem
 
   template< class GridPart >
   class DGNorm
-  : public LPNormBase< GridPart, DGNorm< GridPart> >
+  : public IntegralBase< GridPart, DGNorm< GridPart> >
   {
     typedef DGNorm< GridPart > ThisType;
-    typedef LPNormBase< GridPart, DGNorm< GridPart> > BaseType;
+    typedef IntegralBase< GridPart, DGNorm< GridPart> > BaseType;
 
   public:
     typedef GridPart GridPartType;
