@@ -53,7 +53,7 @@ namespace Fem
 
     /**
      * The numerical upwind flux \f$ g \f$ is defined by
-     * \f[ g(u^+,u^-) = \begin{cases} F'(u^+)\cdot n & F'(u^+)\cdot n >0 \\ F'(u^-)\cdot n & \text{otherwise} \end{cases}. \f]
+     * \f[ g(u^+,u^-) = \begin{cases} F(u^+)\cdot n & F'(u^+)\cdot n >0 \\ F(u^-)\cdot n & \text{otherwise} \end{cases}. \f]
      *
      * \copydoc DGAdvectionFluxBase::numericalFlux()
      */

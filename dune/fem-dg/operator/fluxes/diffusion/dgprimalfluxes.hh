@@ -730,8 +730,11 @@ namespace Fem
      *
      * \note The total numerical (diffusive) flux for multiplication with phi
      *       is given with
-     *        NIPG, BO:
+     *        BO:
      *          gLeft = - {A(u)grad(u)}*n
+     *        NIPG
+     *          gLeft = - {A(u)grad(u)}*n
+     *                  + C_nipg/h {A(u)}[u]*n
      *        CDG2:
      *          gLeft = - {A(u)grad(u)}*n
      *                  + C_cdg2/h {A(u)}[u]*n
@@ -739,7 +742,7 @@ namespace Fem
      *        CDG:
      *          gLeft = - {A(u)grad(u)}*n
      *                  - beta*n[A(u)grad(u)] + C_cdg/h {A(u)}[u]*n
-     *                  + liftFactor*(a(u)L_e)|Ke-
+     *                  + liftFactor*(A(u)L_e)|Ke-
      *        BR2:
      *          gLeft = - {A(u)grad(u)}*n + C_br2 {A(u)r_e([u])}*n
      *        IP:
@@ -907,10 +910,10 @@ namespace Fem
       gDiffLeft *= nipgFactor_;
 
       // current entity gets (i.e. for IP)
-      //    (numflux(f(u))*n+{A(u)grad(u)}*n-C11[u]*n)phi
+      //    {A(u)grad(u)}*n-C11[u]*n)phi
       //    + 0.5A(u-)[u]*grad(phi)
       // and neighbor gets
-      //    (numflux(f(u))*(-n)+{A(u)grad(u)}*(-n)-C11[u]*(-n))phi
+      //    {A(u)grad(u)}*(-n)-C11[u]*(-n))phi
       //    + 0.5A(u-)[u]*grad(phi)
       // so term 0.5A(u-)[u]*grad(phi) stays the same therefore:
       gDiffRight *= (-nipgFactor_);
@@ -965,8 +968,8 @@ namespace Fem
         {
           // BR2 hasn't had penalty term until now
           // so we add it at this place.
-          // \int C_BR2 {A(u)r_e([u])}[phi] dx
-          //    = \int C_BR2 (A(u_L)r_e([u])*n + A(u_R)r_e([u])*n)/2 phi
+          //             \int C_BR2 {A(u)r_e([u])}[phi] dx
+          //           = \int C_BR2 (A(u_L)r_e([u])*n + A(u_R)r_e([u])*n)/2 phi
           // so penaltyTerm = C_BR2 (A(u_L)r_e([u])*n + A(u_R)r_e([u])*n)/2
 
           // get correct quadrature, the one from Ke+
