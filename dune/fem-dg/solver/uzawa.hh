@@ -49,7 +49,7 @@ namespace Fem
                  const InverseOperatorType& aufSolver,
                  double absLimit,
                  int maxIter,
-                 int verbose=1
+                 const ParameterReader &parameter = Parameter::container()
                )
       : container_( container ),
         aufSolver_( aufSolver ),
@@ -63,7 +63,7 @@ namespace Fem
         velocity_( container_.template solution<0>() ),
         outer_absLimit_( absLimit ) ,
         maxIter_( maxIter ),
-        verbose_( verbose ),
+        verbose_( parameter.getValue< bool >( "fem.solver.verbose", false ) ),
         iter_(0),
         linIter_(0)
     {
@@ -186,7 +186,9 @@ namespace Fem
         d *= delta / oldDelta;
         d += residuum;
       }
-      std::cout << "solving time (Poisson solves/total time SPcg): " << timer.elapsed() << " / " << timer2.elapsed() << std::endl;
+      std::cout << "SPcg-Iterationen " << iter_ << "   Residuum:"
+                << delta << "   lin. iter:" << aufSolver_.iterations() <<std::endl;
+      std::cout << "Solving time (Poisson solves/total time SPcg): " << timer.elapsed() << " / " << timer2.elapsed() << std::endl;
       if( verbose_ > 0)
         std::cout << std::endl;
       //velocity_.assign(velocity);
