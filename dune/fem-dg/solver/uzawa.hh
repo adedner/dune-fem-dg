@@ -186,9 +186,9 @@ namespace Fem
         d *= delta / oldDelta;
         d += residuum;
       }
-      std::cout << "SPcg-Iterationen " << iter_ << "   Residuum:"
+      std::cout << "UZAWA: SPcg-Iterationen " << iter_ << "   Residuum:"
                 << delta << "   lin. iter:" << aufSolver_.iterations() <<std::endl;
-      std::cout << "Solving time (Poisson solves/total time SPcg): " << timer.elapsed() << " / " << timer2.elapsed() << std::endl;
+      std::cout << "UZAWA: Solving time (Poisson solves/total time SPcg): " << timer.elapsed() << " / " << timer2.elapsed() << std::endl;
       if( verbose_ > 0)
         std::cout << std::endl;
       //velocity_.assign(velocity);
