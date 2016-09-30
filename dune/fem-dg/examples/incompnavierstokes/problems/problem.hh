@@ -27,6 +27,12 @@ namespace Fem
       time_ = time;
     };
 
+    //set time for stationary problems to fake time provider
+    virtual double time() const
+    {
+      return time_;
+    };
+
     //set time step size for mass matrix scaling
     virtual void setDeltaT( const double deltaT ) const
     {
