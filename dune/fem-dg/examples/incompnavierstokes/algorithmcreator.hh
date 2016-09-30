@@ -110,11 +110,11 @@ namespace Fem
         {
           typedef typename AC::template DiscreteFunctionSpaces< GridPartType, polOrd, FunctionSpaceType>
                                                                                   DFSpaceType;
-          typedef std::tuple<>                                                    ExtraParameterTuple;
         public:
           typedef typename AC::template DiscreteFunctions< DFSpaceType >          DiscreteFunctionType;
 
           typedef std::tuple< DiscreteFunctionType*, DiscreteFunctionType* >      IOTupleType;
+          typedef std::tuple<>                                                    ExtraParameterTuple;
 
           class Operator
           {
@@ -136,6 +136,22 @@ namespace Fem
           {
             typedef typename AC::template LinearSolvers< DFSpaceType, true >      type;
           };
+
+        private:
+          //small helper class
+          template< class SigmaDFSpaceType > struct SigmaFunctionChooser
+          { typedef typename AC::template DiscreteFunctions< SigmaDFSpaceType > type; };
+        public:
+          typedef typename SigmaDiscreteFunctionSelector< DiscreteFunctionType, SigmaFunctionChooser >::type SigmaDiscreteFunctionType;
+
+          typedef ErrorEstimator< DiscreteFunctionType, SigmaDiscreteFunctionType, typename Operator::AssemblerType >
+                                                                                  ErrorEstimatorType;
+          typedef PoissonSigmaEstimator< ErrorEstimatorType >                     SigmaEstimatorType;
+
+          typedef PAdaptivity<DFSpaceType, polOrd, SigmaEstimatorType >           PAdaptivityType;
+
+          typedef PAdaptIndicator< PAdaptivityType, ProblemInterfaceType >        AdaptIndicatorType;
+          // typedef NoPAdaptIndicator                                               AdaptIndicatorType;
 
           typedef SubSolverMonitor< SolverMonitor >                               SolverMonitorType;
           typedef SubDiagnostics< Diagnostics >                                   DiagnosticsType;
@@ -183,11 +199,11 @@ namespace Fem
                                                                                      DFSpaceType;
         typedef typename AC::template DiscreteFunctionSpaces< GridPartType, polOrd, VelFunctionSpaceType>
                                                                                      VelDFSpaceType;
-        typedef std::tuple<>                                                         ExtraParameterTuple;
       public:
         typedef typename AC::template DiscreteFunctions< DFSpaceType >               DiscreteFunctionType;
 
         typedef std::tuple< DiscreteFunctionType*, DiscreteFunctionType* >           IOTupleType;
+        typedef std::tuple<>                                                         ExtraParameterTuple;
 
         class Operator
         {
@@ -216,8 +232,21 @@ namespace Fem
 
         static_assert( (int)DFSpaceType::FunctionSpaceType::dimRange == 1 , "pressure dimrange does not fit");
 
+      private:
+        typedef typename SubPoissonAlgorithmCreator::template DiscreteTraits<polOrd>::ErrorEstimatorType  PoissonErrorEstimatorType;
+        typedef typename SubPoissonAlgorithmCreator::template DiscreteTraits<polOrd>::SigmaEstimatorType  PoissonSigmaEstimatorType;
+        typedef typename SubPoissonAlgorithmCreator::template DiscreteTraits<polOrd>::PAdaptivityType     PoissonPAdaptivityType;
+
+        typedef StokesSigmaEstimator< PoissonErrorEstimatorType, typename Operator::AssemblerType > StokesSigmaEstimatorType;
+        typedef typename StokesSigmaEstimatorType::StokesErrorEstimatorType             StokesErrorEstimatorType;
+
+        typedef StokesPAdaptivity< PoissonPAdaptivityType,
+                                   DFSpaceType, polOrd, StokesSigmaEstimatorType >       StokesPAdaptivityType;
+      public:
+
         typedef SubSolverMonitor< SolverMonitor >                                     SolverMonitorType;
         typedef SubDiagnostics< Diagnostics >                                         DiagnosticsType;
+        typedef StokesPAdaptIndicator< StokesPAdaptivityType, ProblemInterfaceType >    AdaptIndicatorType;
       };
 
       template <int polOrd>
