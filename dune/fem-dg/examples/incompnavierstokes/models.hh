@@ -112,9 +112,6 @@ namespace Fem
     typedef typename Traits::FaceDomainType               FaceDomainType;
     typedef typename Traits::JacobianRangeType            JacobianRangeType;
 
-    typedef typename Traits::EntityType                   EntityType;
-    typedef typename Traits::IntersectionType             IntersectionType;
-
     static const bool hasDiffusion = SplitType::hasDiffusion;
     static const bool hasAdvection = SplitType::hasAdvection;
 

@@ -62,8 +62,6 @@ namespace Fem
 
     typedef typename Traits::DiffusionMatrixType            DiffusionMatrixType ;
 
-    typedef typename Traits::EntityType                     EntityType;
-    typedef typename Traits::IntersectionType               IntersectionType;
 
     static const bool hasDiffusion = SplitType::hasDiffusion;
     static const bool hasAdvection = SplitType::hasAdvection;
@@ -209,7 +207,8 @@ namespace Fem
       // take max eigenvalue
       maxValue = values.infinity_norm();
     }
-    inline double penaltyBoundary( const EntityType& inside,
+    template< class Entity >
+    inline double penaltyBoundary( const Entity& inside,
                                    const double time,
                                    const DomainType& xInside,
                                    const RangeType& uLeft ) const
@@ -424,9 +423,6 @@ namespace Fem
     typedef typename Traits::JacobianRangeType              JacobianRangeType;
 
     typedef typename Traits::DiffusionMatrixType            DiffusionMatrixType ;
-
-    typedef typename Traits::EntityType                     EntityType;
-    typedef typename Traits::IntersectionType               IntersectionType;
 
     static const bool hasDiffusion = true;
     static const bool hasAdvection = true;
