@@ -21,7 +21,7 @@ namespace Fem
 {
 
   /** \brief default code generator methods */
-  template < int simdWidth = 2 >
+  template < int simdWidth = 4 >
   struct VectorCodeGenerator
   {
     static const char* restrictKey()
@@ -776,7 +776,7 @@ namespace Fem
   // if this pre processor variable is defined then
   // we assume that CODEGENERATOR_REPLACEMENT is CodeGenerator of choice
 #ifndef CODEGEN_SIMD_WIDTH
-#define CODEGEN_SIMD_WIDTH 2
+#define CODEGEN_SIMD_WIDTH 4
 #endif
 #define FEM_CODEGENERATOR_REPLACEMENT  VectorCodeGenerator< CODEGEN_SIMD_WIDTH >
 } // end namespace Fem
