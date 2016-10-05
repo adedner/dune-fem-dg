@@ -60,6 +60,7 @@ namespace Fem
       pthread_barrier_t* barrierBegin_ ;
       pthread_barrier_t* barrierEnd_ ;
       pthread_t threadId_ ;
+      int maxThreads_ ;
       int threadNumber_ ;
 
       bool isSlave () const { return threadNumber_ > 0; }
@@ -68,11 +69,13 @@ namespace Fem
       // constructor creating thread with given thread number
       ThreadHandleObject(pthread_barrier_t* barrierBegin,
                          pthread_barrier_t* barrierEnd,
+                         const int maxThreads,
                          const int threadNumber )
         : objPtr_( 0 ),
           barrierBegin_ ( barrierBegin ),
           barrierEnd_ ( barrierEnd ),
           threadId_( 0 ),
+          maxThreads_( maxThreads ),
           threadNumber_( threadNumber )
       {
         assert( threadNumber > 0 );
@@ -80,11 +83,13 @@ namespace Fem
 
       // constructor creating master thread
       explicit ThreadHandleObject(pthread_barrier_t* barrierBegin,
-                                  pthread_barrier_t* barrierEnd)
+                                  pthread_barrier_t* barrierEnd,
+                                  const int maxThreads)
         : objPtr_( 0 ),
           barrierBegin_ ( barrierBegin ),
           barrierEnd_ ( barrierEnd ),
           threadId_( pthread_self() ),
+          maxThreads_( maxThreads ),
           threadNumber_( 0 )
       {
       }
@@ -95,6 +100,7 @@ namespace Fem
           barrierBegin_( other.barrierBegin_ ),
           barrierEnd_( other.barrierEnd_ ),
           threadId_( other.threadId_ ),
+          maxThreads_( other.maxThreads_ ),
           threadNumber_( other.threadNumber_ )
       {}
 
@@ -105,6 +111,7 @@ namespace Fem
         barrierBegin_ = other.barrierBegin_ ;
         barrierEnd_   = other.barrierEnd_ ;
         threadId_     = other.threadId_;
+        maxThreads_   = other.maxThreads_;
         threadNumber_ = other.threadNumber_;
         return *this;
       }
@@ -122,11 +129,6 @@ namespace Fem
           {
             // create a joinable thread
             pthread_create(&threadId_, 0, &ThreadHandleObject::startThread, (void *) this);
-#if ! HAVE_PTHREAD_TLS
-            // the master thread is adding the threadnumber for the given ids
-            // if no thread local storage is available
-            ThreadManager :: setThreadNumber( threadId_, threadNumber_ );
-#endif
           }
         }
         else
@@ -188,10 +190,9 @@ namespace Fem
       // C style function pointer for the pthread_create call
       static void* startThread(void *obj)
       {
-#if HAVE_PTHREAD_TLS
-        // when thread local storage is available then each thread adds it's thread number and not the master
-        ThreadManager :: setThreadNumber( pthread_self(), ((ThreadHandleObject *) obj)->threadNumber_ );
-#endif
+        // set maxThreads and threadNumber for slave thread
+        ThreadManager :: initThread( ((ThreadHandleObject *) obj)->maxThreads_, ((ThreadHandleObject *) obj)->threadNumber_ );
+
         // do the work
         ((ThreadHandleObject *) obj)->run();
 
@@ -227,12 +228,12 @@ namespace Fem
       for(int i=1; i<maxThreads_; ++i)
       {
         // create thread handles for pthreads
-        threads_.push_back( ThreadHandleObject( &waitBegin_, &waitEnd_, i ) );
+        threads_.push_back( ThreadHandleObject( &waitBegin_, &waitEnd_, maxThreads_, i ) );
       }
 
       // insert master thread at last because this thread creates
       // all other threads before it start its calculations
-      threads_.push_back( ThreadHandleObject( &waitBegin_, &waitEnd_ ) );
+      threads_.push_back( ThreadHandleObject( &waitBegin_, &waitEnd_, maxThreads_ ) );
     } // end constructor
 
     //! start all threads to do the job
