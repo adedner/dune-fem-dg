@@ -40,7 +40,7 @@ WITH_ZOLTAN=
 WITH_SIONLIB=
 
 # dune modules needed to build dune-fem-dg
-DUNEMODULES="dune-common dune-geometry dune-grid dune-istl dune-alugrid dune-fem dune-fem-dg"
+DUNEMODULES="dune-common dune-geometry dune-grid dune-istl dune-spgrid dune-alugrid dune-fem dune-fem-dg"
 
 # build dir for cmake (. for in-source build or empty then this will default to build-cmake)
 BUILDDIR=.
@@ -73,6 +73,9 @@ for MOD in $DUNEMODULES ; do
   if [ "$MOD" == "dune-alugrid" ] ; then
     # use the special branch for dune-alugrid
     git clone $DUNEALUGRIDBRANCH https://gitlab.dune-project.org/extensions/dune-alugrid.git
+  if [ "$MOD" == "dune-spgrid" ] ; then
+    # use the special branch for dune-alugrid
+    git clone $DUNEBRANCH https://gitlab.dune-project.org/extensions/dune-spgrid.git
   elif [ "$MOD" == "dune-fem" ] ; then
     # use the special branch for dune-fem
     git clone $FEMBRANCH https://gitlab.dune-project.org/dune-fem/dune-fem.git
