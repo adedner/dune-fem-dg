@@ -12,6 +12,7 @@
 #include <dune/fem/solver/newtoninverseoperator.hh>
 #include <dune/fem/operator/linear/spoperator.hh>
 
+#include <dune/fem-dg/misc/integral_constant.hh>
 #include <dune/fem-dg/misc/parameterkey.hh>
 #include <dune/fem-dg/misc/typedefcheck.hh>
 #include <dune/fem-dg/misc/optional.hh>
@@ -27,6 +28,7 @@
 #include <dune/fem-dg/algorithm/caller/sub/diagnostics.hh>
 #include <dune/fem-dg/algorithm/caller/sub/additionaloutput.hh>
 
+#include "container.hh"
 
 namespace Dune
 {
@@ -34,102 +36,181 @@ namespace Fem
 {
 
   template <class DiscreteFunctionImp >
-  struct SubSteadyStateContainer
+  struct SubSteadyStateContainerItem
   {
-
-    typedef DiscreteFunctionImp                                           DiscreteFunctionType;
-
-    typedef typename DiscreteFunctionType::DiscreteFunctionSpaceType      DiscreteFunctionSpaceType;
-
-    typedef typename DiscreteFunctionSpaceType::GridType                  GridType;
-    typedef typename DiscreteFunctionSpaceType::GridPartType              GridPartType;
-
-    using DiscreteFunction = DiscreteFunctionType;
-    using DiscreteFunctionSpace = DiscreteFunctionSpaceType;
-
   public:
+    using DiscreteFunction = DiscreteFunctionImp;
+    using Object = DiscreteFunction;
+    using Item = ContainerItem< DiscreteFunction >;
 
-    SubSteadyStateContainer( GridType& grid, const std::string name = "" )
+    // owning container
+    template< class SameObject >
+    SubSteadyStateContainerItem( SameObject& obj, const std::string name = "" )
     : stringId_( FunctionIDGenerator::instance().nextId() ),
-      grid_( grid ),
-      gridPart_( grid_ ),
-      space_( gridPart_ ),
-      solution_( new DiscreteFunctionType( name + "u" + stringId_, space() ) ),
-      exactSolution_( new DiscreteFunctionType( name + "u-exact" + stringId_, space() ) ),
-      rhs_( new DiscreteFunctionType( name + "rhs-u" + stringId_, space() ) )
+      solution_(      std::make_shared< Item >( name + "u" + stringId_, obj ) ),
+      exactSolution_( std::make_shared< Item >( name + "u-exact" + stringId_, *solution_ ) ),
+      rhs_(           std::make_shared< Item >( name + "u-rhs" + stringId_, *solution_ ) )
     {}
 
-    //grid
-    const GridType& grid() const
-    {
-      return grid_;
-    }
-    GridType& grid()
-    {
-      return grid_;
-    }
-
-    //grid part
-    const GridPartType& gridPart() const
-    {
-      return gridPart_;
-    }
-    GridPartType& gridPart()
-    {
-      return gridPart_;
-    }
-
-    //spaces
-    const DiscreteFunctionSpaceType& space() const
-    {
-      return space_;
-    }
-    DiscreteFunctionSpaceType& space()
-    {
-      return space_;
-    }
+    // non owning container, for coupling
+    SubSteadyStateContainerItem( const std::string name = "" )
+    : stringId_( FunctionIDGenerator::instance().nextId() ),
+      solution_(      std::make_shared< Item >( name + "u" + stringId_ ) ),
+      exactSolution_( std::make_shared< Item >( name + "u-exact" + stringId_ ) ),
+      rhs_(           std::make_shared< Item >( name + "u-rhs" + stringId_ ) )
+    {}
 
     //solution
-    std::shared_ptr< DiscreteFunction > solution() const
+    shared_ptr< DiscreteFunctionImp > solution() const
     {
-      return solution_;
-    }
-    void setSolution( std::shared_ptr< DiscreteFunction > solution )
-    {
-      solution_ = solution;
+      return solution_->shared();
     }
 
     //exact solution
-    std::shared_ptr< DiscreteFunction > exactSolution() const
+    shared_ptr< DiscreteFunctionImp > exactSolution() const
     {
-      return exactSolution_;
-    }
-    void setExactSolution( std::shared_ptr< DiscreteFunction > exactSolution )
-    {
-      exactSolution_ = exactSolution;
+      return exactSolution_->shared();
     }
 
     //rhs
-    std::shared_ptr< DiscreteFunction > rhs() const
+    shared_ptr< DiscreteFunctionImp > rhs() const
     {
-      return rhs_;
+      return rhs_->shared();
     }
-    void setRhs( std::shared_ptr< DiscreteFunction > rhs )
-    {
-      rhs_ = rhs;
-    }
-
   private:
-    const std::string                   stringId_;
-    GridType&                           grid_;
-    GridPartType                        gridPart_;
-    DiscreteFunctionSpaceType           space_;
+    const std::string          stringId_;
 
-    std::shared_ptr< DiscreteFunction > solution_;
-    std::shared_ptr< DiscreteFunction > exactSolution_;
-    std::shared_ptr< DiscreteFunction > rhs_;
+    std::shared_ptr< Item > solution_;
+    std::shared_ptr< Item > exactSolution_;
+    std::shared_ptr< Item > rhs_;
   };
 
+
+  template <class... DiscreteFunctions >
+  struct SubSteadyStateContainer
+  : public OneArgContainer< std::tuple< SubSteadyStateContainerItem< DiscreteFunctions >... > >
+  {
+    typedef OneArgContainer< std::tuple< SubSteadyStateContainerItem< DiscreteFunctions > ...> > BaseType;
+
+    typedef std::tuple< DiscreteFunctions... >                                      DiscreteFunctionTupleType;
+    template< long unsigned int i >
+    using DiscreteFunction = typename std::tuple_element< i, DiscreteFunctionTupleType >::type;
+
+    template< unsigned long int... i >
+    using SubContainer = SubSteadyStateContainerItem< DiscreteFunction<i>... >;
+
+  public:
+    using BaseType::operator();
+
+    // constructor: do not touch/delegate everything
+    template< class ... Args>
+    SubSteadyStateContainer( Args&&... args )
+    : BaseType( args... )
+    {}
+
+    //TODO do we need this?
+    //// sub container, wrap base class version
+    //template< unsigned long int... i >
+    //std::shared_ptr< SubContainer< i... > >
+    //operator() ( std::tuple< std::integral_constant< unsigned long int, i>... > index )
+    //{
+    //  return std::make_shared< SubContainer< i... > >( BaseType::copyContainer( index ) );
+    //}
+#if 0
+    //for global to local container extraction
+    static std::integer_sequence< unsigned long int, 0, 1, 4 > sub0;
+    static std::integer_sequence< unsigned long int, 3, 1, 2 > sub1;
+    static std::integer_sequence< unsigned long int, 5, 1, 2 > sub2;
+#endif
+  };
+
+
+//  template <class... DiscreteFunctions >
+//  struct SubSteadyStateContainer
+//  //: public OneArgContainer< SubSteadyStateContainerItem< DiscreteFunctions > >... >
+//  {
+//    typedef std::tuple< DiscreteFunctions... >                                DiscreteFunctionTupleType;
+//    typedef std::tuple< std::shared_ptr< SubSteadyStateContainerItem< DiscreteFunctions > >... > Item1TupleType;
+//
+//  public:
+//
+//    template< unsigned long int i >
+//    using DiscreteFunction = typename std::tuple_element< i, DiscreteFunctionTupleType>::type;
+//
+//    template< unsigned long int i >
+//    using Item1 = typename std::tuple_element< i, Item1TupleType>::type::element_type;
+//
+//  protected:
+//    static const int size = std::tuple_size< Item1TupleType >::value;
+//    static std::make_integer_sequence< unsigned long int, size > sequence;
+//
+//    ////// Creation
+//    template< unsigned long int i, class SameObject >
+//    static std::shared_ptr< Item1<i> > createItem1( SameObject& obj, const std::string name )
+//    {
+//      return std::make_shared<Item1<i> >( obj, name );
+//    }
+//    template< unsigned long int i >
+//    static std::shared_ptr< Item1<i> > createItem1( const std::string name )
+//    {
+//      return std::make_shared< Item1<i> >( name );
+//    }
+//    template< unsigned long int ...i, class SameObject>
+//    static Item1TupleType createContainer( std::integer_sequence< unsigned long int, i... >, SameObject& obj, const std::string name )
+//    {
+//      return std::make_tuple( createItem1<i>( obj, name )... );
+//    }
+//    template< unsigned long int ...i >
+//    static Item1TupleType createContainer( std::integer_sequence< unsigned long int, i... >, const std::string name )
+//    {
+//      return std::make_tuple( createItem1<i>( name )... );
+//    }
+//
+//
+//    ////// Copy
+//    //....
+//    template< unsigned long int ...i >
+//    Item1TupleType copyContainer( std::integer_sequence< unsigned long int, i... > )
+//    {
+//      return std::make_tuple( std::get<i>( item1_ )... );
+//    }
+//  public:
+//
+//    // owning container
+//    template< class SameObject >
+//    SubSteadyStateContainer( SameObject& obj, const std::string name = "" )
+//    : item1_( createContainer( sequence, obj, name ) )
+//    {}
+//
+//    // non owning container, for coupling
+//    SubSteadyStateContainer( const std::string name = "" )
+//    : item1_( createContainer( sequence, name ) )
+//    {}
+//
+//    // copy, for internal use only
+//    SubSteadyStateContainer( const Item1TupleType& item )
+//    : item1_( item )
+//    {}
+//
+//    // item access
+//    template< unsigned long int i >
+//    std::shared_ptr< Item1<i> > operator() ( std::integral_constant<unsigned long int, i> index )
+//    {
+//      return std::get<i>( item1_ );
+//    }
+//
+//    // sub Container
+//    template< unsigned long int... i >
+//    std::shared_ptr< SubSteadyStateContainer< DiscreteFunction<i>... > >
+//    operator() ( std::tuple< std::integral_constant<unsigned long int, i>... > index )
+//    {
+//      typedef SubSteadyStateContainer< DiscreteFunction<i>... > SubContainerType;
+//      return std::make_shared< SubContainerType >( copyContainer( index ) );
+//    }
+//  protected:
+//    Item1TupleType item1_;
+//  };
+//
 
 
   template< class Obj >
@@ -252,23 +333,28 @@ namespace Fem
 
   public:
 
+    //type for a standalone container
     typedef SubSteadyStateContainer< DiscreteFunctionType >          ContainerType;
 
-    SubSteadyStateAlgorithm ( GridType &grid, ContainerType& container  )
+    template< class ContainerImp >
+    SubSteadyStateAlgorithm ( GridType &grid, std::shared_ptr< ContainerImp > cont  )
       : BaseType( grid ),
-        container_( container ),
-        gridPart_( container_.gridPart() ),
-        space_( container_.space() ),
         solverIterations_( 0 ),
-        solution_( container_.solution() ),
-        exactSolution_( container_.exactSolution() ),
-        rhs_( container_.rhs() ),
+        //newContainer_(  cont ? nullptr : std::make_shared< ContainerType >( grid, "name" ) )
+        //solution_( cont ? : (*cont)(_0)->solution() : (*newContainer_)(_0)->solution() ),
+        solution_( (*cont)(_0)->solution() ),
+        exactSolution_( (*cont)(_0)->exactSolution() ),
+        rhs_( (*cont)(_0)->rhs() ),
         rhsOperator_( doCreateRhsOperator() ),
-        ioTuple_( new IOTupleType( std::make_tuple( solution_.get(), exactSolution_.get() ) ) ),
+        ioTuple_( std::make_unique<IOTupleType>( std::make_tuple( solution_.get(), exactSolution_.get() ) ) ),
         solver_( nullptr ),
         solverMonitor_( name() ),
         diagnostics_( name() ),
         additionalOutput_( name() )
+    {}
+
+    SubSteadyStateAlgorithm ( GridType &grid  )
+      : SubSteadyStateAlgorithm( grid, std::make_shared< ContainerType >( grid, "name" ) )
     {}
 
     typename SolverType::type* solver()
@@ -279,6 +365,7 @@ namespace Fem
     DiscreteFunctionType& solution ()
     {
       assert( solution_ );
+      std::cout << "num solution shares: " << solution_.use_count() << std::endl;
       return *solution_;
     }
     const DiscreteFunctionType& solution () const
@@ -302,7 +389,7 @@ namespace Fem
     virtual void setTime( const double time ){}
 
     // return grid width of grid (overload in derived classes)
-    virtual double gridWidth () const { return GridWidth::calcGridWidth( gridPart_ ); }
+    virtual double gridWidth () const { return GridWidth::calcGridWidth( solution().space().gridPart() ); }
 
     //ADAPTATION
     virtual AdaptationDiscreteFunctionType* adaptationSolution () { return solution_.get(); }
@@ -326,7 +413,7 @@ namespace Fem
 
     virtual std::shared_ptr< RhsOptional< RhsType > > doCreateRhsOperator()
     {
-      return std::make_shared< RhsOptional< RhsType > >(gridPart_, problem(), std::tuple<>(), name() );
+      return std::make_shared< RhsOptional< RhsType > >( solution().space().gridPart(), problem(), std::tuple<>(), name() );
     }
 
     virtual std::shared_ptr< typename SolverType::type > doCreateSolver()
@@ -336,8 +423,7 @@ namespace Fem
 
     virtual bool doCheckSolutionValid ( const int loop ) const override
     {
-      assert( solution_ );
-      return solution_->dofsValid();
+      return solution().dofsValid();
     }
 
     virtual void doInitialize ( const int loop )
@@ -383,10 +469,6 @@ namespace Fem
     }
   protected:
 
-    ContainerType&             container_;
-
-    GridPartType&                                gridPart_; // reference to grid part, i.e. the leaf grid
-    const DiscreteFunctionSpaceType&             space_;    // the discrete function space
     int                                          solverIterations_;
 
     std::shared_ptr< DiscreteFunctionType >      solution_;

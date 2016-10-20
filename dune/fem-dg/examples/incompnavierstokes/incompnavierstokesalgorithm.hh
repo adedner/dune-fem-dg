@@ -45,7 +45,9 @@ namespace Fem
 
     IncompNavierStokesAlgorithm ( GridType &grid, const std::string name = "" )
     : BaseType( grid, name  )
-    {}
+    {
+      auto test = CreatorType::GlobalContainerType::template init<polOrder>( grid );
+    }
 
     virtual void initialize ( int loop, TimeProviderType &tp )
     {
@@ -103,19 +105,26 @@ namespace Fem
       const double time  = tp.time();
       const double dt    = tp.deltaT();
 
+
       //stokes
+      std::cout << "###### STOKES I ###### time: " << step1->problem().get<0>().time() << " dt: " << step1->problem().get<0>().deltaT() << std::endl;
       step1->solve( loop, &tp );
 
       //oseen
-      TimeProviderType subTimeProvider( 0.0, 1.0, grid() );
-      subTimeProvider.init();
-      subTimeProvider.provideTimeStepEstimate( time + dt * theta );
-      subTimeProvider.next();
+      TimeProviderType subTimeProvider( time, 1.0, grid() );
+      subTimeProvider.init( time + dt * theta );
       subTimeProvider.next( (1.0 - 2.0 *theta) * dt );
+      //subTimeProvider.init();
+      //subTimeProvider.provideTimeStepEstimate( time + dt * theta );
+      //subTimeProvider.next();
+      //subTimeProvider.next( (1.0 - 2.0 *theta) * dt );
 
+      std::cout << "###### OSEEN I ###### time: " << subTimeProvider.time() << " dt: " << dt << std::endl;
       step2->solve( loop, &subTimeProvider );
 
+
       //stokes
+      std::cout << "###### STOKES II ###### time: " << step3->problem().get<0>().time() << " dt: " << step3->problem().get<0>().deltaT() << std::endl;
       step3->solve( loop, &tp );
 
 

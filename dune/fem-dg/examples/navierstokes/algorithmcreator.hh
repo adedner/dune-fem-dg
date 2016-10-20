@@ -48,14 +48,13 @@ namespace Dune
 namespace Fem
 {
 
-  template< class GridImp >
   struct NavierStokesAlgorithmCreator
   {
 
 
     struct SubNavierStokesAlgorithmCreator
     {
-      typedef AlgorithmConfigurator< GridImp,
+      typedef AlgorithmConfigurator< Dune::GridSelector::GridType,
                                      Galerkin::Enum::dg,
                                      Adaptivity::Enum::yes,
                                      DiscreteFunctionSpaces::Enum::legendre,
@@ -145,7 +144,7 @@ namespace Fem
     template <int polOrd>
     using Algorithm = EvolutionAlgorithm< polOrd, UncoupledSubAlgorithms, SubNavierStokesAlgorithmCreator >;
 
-    typedef GridImp                                         GridType;
+    typedef typename SubNavierStokesAlgorithmCreator::GridType        GridType;
 
     static inline std::string moduleName() { return ""; }
 

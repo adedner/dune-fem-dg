@@ -33,15 +33,18 @@ namespace Fem
     protected:
     std::string loop_;
     public:
-    EocDataOutputParameters(int loop, const std::string& name) {
+    EocDataOutputParameters(int loop, const std::string& name)
+    {
       std::stringstream ss;
       ss << name << loop;
       loop_ = ss.str();
     }
     EocDataOutputParameters(const EocDataOutputParameters& other)
-    : loop_(other.loop_) {}
+    : loop_(other.loop_)
+    {}
 
-    std::string path() const {
+    std::string path() const
+    {
       return loop_;
     }
   };
@@ -159,6 +162,10 @@ namespace Fem
       : grid_( grid ),
         algorithmName_( algorithmName ),
         eocParam_( ParameterKey::generate( "", "fem.eoc." ) )
+    {}
+
+    //! destructor
+    virtual~ AlgorithmInterface()
     {}
 
     //! return reference to hierarchical grid

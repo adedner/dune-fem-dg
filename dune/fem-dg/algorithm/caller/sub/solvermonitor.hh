@@ -78,7 +78,10 @@ namespace Fem
     typedef std::map< std::string, std::tuple< long unsigned int*, long unsigned int*, bool > > DataLongIntType;
 
     SubSolverMonitor( const std::string keyPrefix = "" )
-      : solverMonitor_()
+      : solverMonitor_(),
+        dataDouble_(),
+        dataInt_(),
+        dataLongInt_()
     {}
 
     // call inside stepper something like this:

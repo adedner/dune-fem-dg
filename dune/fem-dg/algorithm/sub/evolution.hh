@@ -20,6 +20,8 @@
 #include <dune/fem-dg/algorithm/caller/sub/additionaloutput.hh>
 #include <dune/fem-dg/algorithm/caller/sub/adapt.hh>
 
+#include "container.hh"
+
 namespace Dune
 {
 namespace Fem
@@ -54,82 +56,80 @@ namespace Fem
   {
     typedef DiscreteFunctionImp                                          DiscreteFunctionType;
 
-    typedef typename DiscreteFunctionType::DiscreteFunctionSpaceType     DiscreteFunctionSpaceType;
-
-    typedef typename DiscreteFunctionSpaceType::GridType                 GridType;
-    typedef typename DiscreteFunctionSpaceType::GridPartType             GridPartType;
-
-    using DiscreteFunction = DiscreteFunctionType;
-    using DiscreteFunctionSpace = DiscreteFunctionSpaceType;
-
+    //short cut for tuple containing shared_ptr
+    template< class... Args >
+    using shared_tuple = std::tuple< std::shared_ptr<Args>... >;
   public:
+    template< int i >
+    using DiscreteFunction = DiscreteFunctionType;
+    template< int i >
+    using DiscreteFunctionSpace = typename DiscreteFunction<i>::DiscreteFunctionSpaceType;
+    template< int i >
+    using GridPart = typename DiscreteFunctionSpace<i>::GridPartType;
+    template< int i >
+    using Grid = typename GridPart<i>::GridType;
 
-    SubEvolutionContainer( GridType& grid, const std::string name = "" )
-    : grid_( grid ),
-      gridPart_( grid_ ),
-      space_( gridPart_ ),
-      solution_( new DiscreteFunctionType( name + "u", space() ) ),
-      exactSolution_( new DiscreteFunctionType( name + "u-exact", space() ) )
+    // owning container
+    SubEvolutionContainer( Grid<0>& grid, const std::string name = "" )
+    : stringId_( "123" ),
+      grid_( &grid ),
+      gridPart_( std::make_tuple( std::make_shared< GridPart<0> >( *grid_ ) ) ),
+      space_( std::make_tuple( std::make_shared<DiscreteFunctionSpace<0> >( *std::get<0>(gridPart_) ) ) ),
+      solution_( std::make_tuple( std::make_shared<DiscreteFunction<0> >( name + "u" + stringId_, *space<0>() ) ) ),
+      exactSolution_( std::make_tuple( std::make_shared<DiscreteFunction<0> >( name + "u-exact" + stringId_, *space<0>() ) ) )
     {}
 
-    //grid
-    const GridType& grid() const
-    {
-      return grid_;
-    }
-    GridType& grid()
-    {
-      return grid_;
-    }
-
-    //grid part
-    const GridPartType& gridPart() const
-    {
-      return gridPart_;
-    }
-    GridPartType& gridPart()
-    {
-      return gridPart_;
-    }
+    // non owning container, for coupling
+    SubEvolutionContainer( const std::string name = "" )
+    : stringId_( "123" ),
+      grid_( nullptr ),
+      gridPart_( std::make_tuple( nullptr ) ),
+      space_( std::make_tuple( nullptr ) ),
+      solution_( std::make_tuple( nullptr ) ),
+      exactSolution_( std::make_tuple( nullptr ) )
+    {}
 
     //spaces
-    const DiscreteFunctionSpaceType& space() const
+    template< int i >
+    std::shared_ptr< DiscreteFunctionSpace<i> > space() const
     {
-      return space_;
-    }
-    DiscreteFunctionSpaceType& space()
-    {
-      return space_;
+      assert( std::get<i>(space_) );
+      return std::get<i>(space_);
     }
 
     //solution
-    std::shared_ptr< DiscreteFunction > solution() const
+    template< int i >
+    std::shared_ptr< DiscreteFunction<i> > solution() const
     {
-      return solution_;
+      return std::get<i>(solution_);
     }
-    void setSolution( std::shared_ptr< DiscreteFunction > solution )
+    template< int i >
+    void setSolution( std::shared_ptr< DiscreteFunction<i> > solution )
     {
-      solution_ = solution;
+      std::get<i>(solution_) = solution;
     }
 
     //exact solution
-    std::shared_ptr< DiscreteFunction > exactSolution() const
+    template< int i >
+    std::shared_ptr< DiscreteFunction<i> > exactSolution() const
     {
-      return exactSolution_;
+      return std::get<i>( exactSolution_);
     }
-    void setExactSolution( std::shared_ptr< DiscreteFunction > exactSolution )
+    template< int i >
+    void setExactSolution( std::shared_ptr< DiscreteFunction<i> > exactSolution )
     {
-      exactSolution_ = exactSolution;
+     std::get<i>( exactSolution_ )= exactSolution;
     }
 
   private:
-    GridType&                 grid_;
-    GridPartType              gridPart_;
-    DiscreteFunctionSpace     space_;
+    const std::string                         stringId_;
+    Grid<0>*                                 grid_;
+    shared_tuple< GridPart<0> >              gridPart_;
+    shared_tuple< DiscreteFunctionSpace<0> > space_;
 
-    std::shared_ptr< DiscreteFunction > solution_;
-    std::shared_ptr< DiscreteFunction > exactSolution_;
-    std::shared_ptr< DiscreteFunction > rhs_;
+    shared_tuple< DiscreteFunction<0> >      solution_;
+    shared_tuple< DiscreteFunction<0> >      exactSolution_;
+    //shared_tuple< DiscreteFunction<0> >      rhs_;
   };
 
 
@@ -217,11 +217,8 @@ namespace Fem
     : BaseType( grid ),
       container_( container ),
       overallTime_( 0 ),
-      overallTimer_(),
-      gridPart_( grid ),
-      space_( gridPart_ ),
-      solution_( container_.solution() ),
-      exactSolution_( container_.exactSolution() ),
+      solution_( container_.template solution<0>() ),
+      exactSolution_( container_.template exactSolution<0>() ),
       solver_( nullptr ),
       ioTuple_( new IOTupleType( std::make_tuple( solution_.get(), exactSolution_.get() ) ) ),
       diagnostics_( name() ),
@@ -248,7 +245,7 @@ namespace Fem
     }
 
     // return grid width of grid (overload in derived classes)
-    virtual double gridWidth () const { return GridWidth::calcGridWidth( gridPart_ ); }
+    virtual double gridWidth () const { return GridWidth::calcGridWidth( solution_->space().gridPart() ); }
 
     //SOLVERMONITOR
     virtual SolverMonitorType* monitor() { return solverMonitor_.value(); }
@@ -291,7 +288,7 @@ namespace Fem
       //TODO check whether this version work
       auto ftp = problem().fixedTimeFunction( tp.time() );
       GridFunctionAdapter< typename ProblemType::InstationaryFunctionType, GridPartType >
-        adapter( "-exact", ftp, gridPart_, space_.order() + 2 );
+        adapter( "-exact", ftp, solution_->space().gridPart(), solution_->space().order() + 2 );
       interpolate( adapter, solution() );
       if( NonBlockingCommParameter::nonBlockingCommunication() )
         solution().communicate();
@@ -352,8 +349,6 @@ namespace Fem
     const ContainerType&                    container_;
     double                                  overallTime_;
     Dune::Timer                             overallTimer_;
-    GridPartType                            gridPart_;
-    DiscreteFunctionSpaceType               space_;
 
     // the solution
     std::shared_ptr< DiscreteFunctionType > solution_;

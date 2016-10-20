@@ -59,13 +59,12 @@ namespace Fem
   ////produce some static compiler warnings in case we are using an uninstalled solver
   //static const AvailableSolvers< solverEnum > checkSolverInstalled;
 
-  template< class GridImp >
   struct StokesAlgorithmCreator
   {
 
     struct SubStokesAlgorithmCreator
     {
-      typedef AlgorithmConfigurator< GridImp,
+      typedef AlgorithmConfigurator< Dune::GridSelector::GridType,
                                      Galerkin::Enum::dg,
                                      Adaptivity::Enum::yes,
                                      DiscreteFunctionSpaces::Enum::hierarchic_legendre,
@@ -217,6 +216,8 @@ namespace Fem
       public:
         typedef typename AC::template DiscreteFunctions< DFSpaceType >               DiscreteFunctionType;
 
+        typedef std::tuple< VelDiscreteFunctionType, DiscreteFunctionType >          DiscreteFunctionsType;
+
         typedef std::tuple< DiscreteFunctionType*, DiscreteFunctionType* >           IOTupleType;
         typedef std::tuple<>                                                         ExtraParameterTuple;
 
@@ -225,7 +226,9 @@ namespace Fem
           typedef typename AC::template DefaultAssembTraits< DFSpaceType, DFSpaceType, polOrd-pressureOrderReduction, AnalyticalTraits >
                                                                                      OpTraits;
 
-          typedef AssemblerTraitsList< std::tuple< VelDiscreteFunctionType, DiscreteFunctionType >, AC::template Containers > AssTraits;
+          typedef AssemblerTraitsList< std::tuple< typename std::tuple_element< 0, DiscreteFunctionsType>::type,
+                                                   typename std::tuple_element< 1, DiscreteFunctionsType>::type >,
+                                                   AC::template Containers >         AssTraits;
         public:
           typedef StokesAssembler< AssTraits, OpTraits >                             AssemblerType;
           //the following typedef is not needed by stokes algorithm atm
@@ -265,7 +268,7 @@ namespace Fem
     template <int polOrd>
     using Algorithm = SteadyStateAlgorithm< polOrd, UncoupledSubAlgorithms, SubStokesAlgorithmCreator >;
 
-    typedef GridImp                                         GridType;
+    typedef typename SubStokesAlgorithmCreator::GridType       GridType;
 
     static inline std::string moduleName() { return ""; }
 

@@ -37,30 +37,31 @@ namespace Fem
     typedef typename PressureDiscreteFunctionType::DiscreteFunctionSpaceType PressureSpaceType;
 
     // for non istl version
-    typedef typename ContainerType::template Matrix<0,1>                     BOPType;
-    typedef typename ContainerType::template Matrix<1,0>                     BTOPType;
-    typedef typename ContainerType::template Matrix<1,1>                     COPType;
+    typedef typename ContainerType::template Item2<0,1>::MatrixType          BOPType;
+    typedef typename ContainerType::template Item2<1,0>::MatrixType          BTOPType;
+    typedef typename ContainerType::template Item2<1,1>::MatrixType          COPType;
 
   public:
     /** \todo Please doc me! */
     //!Constructor:
     //!aufSolver is the InverseOperator for Solving the elliptic Problem A^-1
-    UzawaSolver( ContainerType& container,
+    template< class ContainerImp >
+    UzawaSolver( ContainerImp& cont,
                  const InverseOperatorType& aufSolver,
                  double absLimit,
                  int maxIter,
                  const ParameterReader &parameter = Parameter::container()
                )
-      : container_( container ),
-        aufSolver_( aufSolver ),
-        bop_( container_.template matrix<0,1>() ),
-        btop_( container_.template matrix<1,0>() ),
-        cop_( container_.template matrix<1,1>() ),
-        rhs1_( container_.template rhs<0>() ),
-        rhs2_( container_.template rhs<1>() ),
-        spc_( container_.template space<0>() ),
-        pressurespc_( container_.template space<1>() ),
-        velocity_( container_.template solution<0>() ),
+      //: container_( container ),
+      :  aufSolver_( aufSolver ),
+        bop_( cont(_0,_1)->matrix() ),
+        btop_( cont(_1,_0)->matrix() ),
+        cop_( cont(_1,_1)->matrix() ),
+        rhs1_( cont(_0)->rhs() ),
+        rhs2_( cont(_1)->rhs() ),
+        spc_( cont(_0)->solution()->space() ),
+        pressurespc_( cont(_1)->solution()->space() ),
+        velocity_( cont(_0)->solution() ),
         outer_absLimit_( absLimit ) ,
         maxIter_( maxIter ),
         verbose_( parameter.getValue< bool >( "fem.solver.verbose", false ) ),
@@ -199,7 +200,6 @@ namespace Fem
 
   private:
     // reference to operator which should be inverted
-    ContainerType&                                  container_;
 
     //the CGSolver for A^-1
     const InverseOperatorType&                      aufSolver_;

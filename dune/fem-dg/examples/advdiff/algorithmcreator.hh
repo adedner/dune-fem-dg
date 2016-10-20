@@ -46,13 +46,12 @@ namespace Fem
   /**
    *  \brief problem creator for an advection diffusion problem
    */
-  template< class GridImp >
   struct AdvectionDiffusionAlgorithmCreator
   {
 
     struct SubAdvectionDiffusionAlgorithmCreator
     {
-      typedef AlgorithmConfigurator< GridImp,
+      typedef AlgorithmConfigurator< Dune::GridSelector::GridType,
                                      Galerkin::Enum::default_,
                                      Adaptivity::Enum::default_,
                                      DiscreteFunctionSpaces::Enum::default_, //legendre
@@ -144,7 +143,7 @@ namespace Fem
     template< int polOrd >
     using Algorithm = EvolutionAlgorithm< polOrd, UncoupledSubAlgorithms, SubAdvectionDiffusionAlgorithmCreator >;
 
-    typedef GridImp                                         GridType;
+    typedef SubAdvectionDiffusionAlgorithmCreator::GridType           GridType;
 
     static inline std::string moduleName() { return ""; }
 

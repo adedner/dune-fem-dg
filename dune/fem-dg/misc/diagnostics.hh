@@ -11,7 +11,8 @@ namespace Dune
 namespace Fem
 {
 
-  class Diagnostics : public Fem::AutoPersistentObject
+  class Diagnostics
+    : public Fem::AutoPersistentObject
   {
     typedef Fem :: MPIManager :: CollectiveCommunication CommunicatorType;
     const CommunicatorType& comm_;
@@ -86,6 +87,10 @@ namespace Fem
       }
     }
   public:
+    // no copy and assignment
+    Diagnostics( const Diagnostics& ) = delete;
+    Diagnostics& operator=( const Diagnostics& ) = delete;
+
     explicit Diagnostics( const bool newStart, const std::string keyPrefix = "" )
       : comm_( Fem :: MPIManager :: comm() )
       , runFileName_( runFileName( comm_.rank(), keyPrefix ) )

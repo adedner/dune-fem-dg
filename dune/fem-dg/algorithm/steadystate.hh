@@ -134,13 +134,22 @@ namespace Fem
   public:
     using BaseType::grid;
 
-    SteadyStateAlgorithm ( GridType &grid, const std::string name  = "" )
+    SteadyStateAlgorithm ( GridType &grid, const std::string name = "" )
     : BaseType( grid, name ),
       tuple_( CouplingType::apply( grid ) ),
       solverMonitorCaller_( tuple_ ),
       dataWriterCaller_( tuple_ ),
       adaptCaller_( tuple_ )
     {}
+
+    //template< class GlobalContainerImp >
+    //SteadyStateAlgorithm ( std::shared_ptr< GlobalContainerImp > cont, const std::string name )
+    //: BaseType( (*cont)(_0)->grid(), name ),
+    //  tuple_( CouplingType::apply( cont ) ),
+    //  solverMonitorCaller_( tuple_ ),
+    //  dataWriterCaller_( tuple_ ),
+    //  adaptCaller_( tuple_ )
+    //{}
 
     virtual IOTupleType dataTuple ()
     {

@@ -69,8 +69,6 @@ namespace Fem
 
     typedef typename BaseType::AdaptIndicatorType              AdaptIndicatorType;
 
-    using BaseType::grid_;
-    using BaseType::gridPart_;
     using BaseType::solution ;
     using BaseType::problem;
     using BaseType::name ;
@@ -83,7 +81,7 @@ namespace Fem
                            ExtraParameterTupleType tuple = ExtraParameterTupleType() ) :
       BaseType( grid, container ),
       tuple_( ),
-      advectionOperator_( Std::make_unique< FullOperatorType >( gridPart_, problem(), tuple_, name() ) ),
+      advectionOperator_( Std::make_unique< FullOperatorType >( solution().space().gridPart(), problem(), tuple_, name() ) ),
       adaptIndicator_( Std::make_unique< AdaptIndicatorOptional<AdaptIndicatorType> >( solution(), problem(), tuple_, name() ) )
     {}
 
@@ -113,7 +111,7 @@ namespace Fem
       size_t  advSize   = advectionOperator_->numberOfElements();
       size_t  dgIndSize = *adaptIndicator_ ? adaptIndicator_->numberOfElements() : advSize;
       UInt64Type grSize   = std::max( advSize, dgIndSize );
-      return grid_.comm().sum( grSize );
+      return solution().space().gridPart().grid().comm().sum( grSize );
     }
 
     virtual std::shared_ptr< SolverType > doCreateSolver ( TimeProviderType& tp ) override

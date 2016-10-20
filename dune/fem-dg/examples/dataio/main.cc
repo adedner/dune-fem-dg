@@ -20,8 +20,7 @@ int main(int argc, char ** argv)
     // write parameters used (before simulation starts)
     Dune::Fem::Parameter::write("parameter.log");
 
-    typedef Dune::GridSelector :: GridType GridType;
-    Dune::Fem::CheckPointingAlgorithmCreator< GridType > algorithmCreator;
+    Dune::Fem::CheckPointingAlgorithmCreator algorithmCreator;
 
     // run simulation
     Dune::Fem::Simulator::run( algorithmCreator );

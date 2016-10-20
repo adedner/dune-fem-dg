@@ -54,7 +54,6 @@ namespace Dune
 namespace Fem
 {
 
-  template< class GridImp >
   struct IncompressibleNavierStokesAlgorithmCreator
   {
 
@@ -64,7 +63,7 @@ namespace Fem
 
     struct SubStokesAlgorithmCreator
     {
-      typedef AlgorithmConfigurator< GridImp,
+      typedef AlgorithmConfigurator< Dune::GridSelector::GridType,
                                      Galerkin::Enum::dg,
                                      Adaptivity::Enum::yes,
                                      DiscreteFunctionSpaces::Enum::legendre,
@@ -260,7 +259,7 @@ namespace Fem
 
     struct SubNavierStokesAlgorithmCreator
     {
-      typedef AlgorithmConfigurator< GridImp,
+      typedef AlgorithmConfigurator< Dune::GridSelector::GridType,
                                      Galerkin::Enum::dg,
                                      Adaptivity::Enum::yes,
                                      DiscreteFunctionSpaces::Enum::legendre,
@@ -353,12 +352,68 @@ namespace Fem
 
     };
 
+    template< int polOrd >
+    using GlobalDiscreteFunction = std::tuple< typename SubStokesAlgorithmCreator::SubPoissonAlgorithmCreator::template DiscreteTraits< polOrd >::DiscreteFunctionType,
+                                               typename SubStokesAlgorithmCreator::template DiscreteTraits< polOrd >::DiscreteFunctionType >;
 
-    // \todo implement coupling and exchange "UncoupledSubAlgorithms"
+    struct GlobalContainer
+    {
+
+      template< int polOrd, class Grid >
+      static GlobalContainer& init( Grid& grid )
+      {
+        static const int numObjects = 2;
+
+
+        typedef typename std::tuple_element< 0, GlobalDiscreteFunction< polOrd > >::type DFType1;
+        typedef typename std::tuple_element< 1, GlobalDiscreteFunction< polOrd > >::type DFType2;
+
+
+        typedef ContainerItem< DFType1 > ContainerItemType1;
+        typedef ContainerItem< DFType2 > ContainerItemType2;
+
+        typedef typename DFType1::DiscreteFunctionSpaceType SpaceType1;
+        typedef typename DFType2::DiscreteFunctionSpaceType SpaceType2;
+
+        typedef typename SpaceType1::GridPartType GPType1;
+        typedef typename SpaceType2::GridPartType GPType2;
+
+        typedef typename GPType1::GridType GType1;
+        typedef typename GPType2::GridType GType2;
+
+        static_assert( std::is_same< GType1, GridType >::value, "type of grids does not match" );
+        static_assert( std::is_same< GType2, GridType >::value, "type of grids does not match" );
+
+        GPType1 gridPart1( grid );
+        GPType2 gridPart2( grid );
+
+        SpaceType1 space1( gridPart1 );
+        SpaceType2 space2( gridPart2 );
+
+        DFType1 df1( "space1", space1 );
+        DFType2 df2( "space2", space2 );
+
+
+        ContainerItemType1 c1( "c", grid );
+
+        ContainerItemType2 c7( "c7" ); c7 = c1.gridPart();
+
+        ContainerItemType2 sol2( "sol2", c7 );
+        ContainerItemType2 exactSol2( "exact", c7 );
+        ContainerItemType2 rhs2( "rhs", c7 );
+      }
+
+    };
+
+
+    template< class Grid, class... Args >
+    using MyThetaSchemeCoupling=ThetaSchemeCoupling< Grid, GlobalContainer, Args... >;
+
+
     template <int polOrd>
-    using Algorithm = IncompNavierStokesAlgorithm< polOrd, UncoupledSubAlgorithms, SubStokesAlgorithmCreator, SubNavierStokesAlgorithmCreator, SubStokesAlgorithmCreator >;
+    using Algorithm = IncompNavierStokesAlgorithm< polOrd, MyThetaSchemeCoupling, SubStokesAlgorithmCreator, SubNavierStokesAlgorithmCreator, SubStokesAlgorithmCreator >;
 
-    typedef GridImp                                         GridType;
+    typedef typename SubStokesAlgorithmCreator::GridType                  GridType;
 
     static inline std::string moduleName() { return ""; }
 

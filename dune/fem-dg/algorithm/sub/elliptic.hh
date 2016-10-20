@@ -27,7 +27,7 @@
 
 // include local header files
 #include "steadystate.hh"
-
+#include "container.hh"
 
 
 
@@ -35,119 +35,291 @@ namespace Dune
 {
 namespace Fem
 {
-  template <class SteadyStateContainerImp, class MatrixContainerImp >
+
+  template< class MatrixContainerImp >
+  struct SubEllipticContainerItem
+  {
+  public:
+    typedef MatrixContainerImp                   MatrixType;
+
+    template< class ContainerItem1, class ContainerItem2 >
+    SubEllipticContainerItem ( const ContainerItem1& row, const ContainerItem2& col, const std::string name = "" )
+    : matrix_( std::make_shared< MatrixType >( name + "matrix", col->solution()->space(), row->solution()->space() ) )
+    {}
+
+    //matrix for assembly
+    std::shared_ptr< MatrixType > matrix()
+    {
+      return matrix_;
+    }
+
+  private:
+    std::shared_ptr< MatrixType >            matrix_;
+  };
+
+  template< class, class >
+  struct TwoArgContainer;
+
+  template< class... Args, class... RowArgs >
+  TwoArgContainer< std::tuple< Args... >, std::tuple< RowArgs... > >
+  {
+    //static_assert( is_tuple< RowArgs... >::value, "no tuple" );
+
+  };
+
+
+  template< template<class,class> class... Args, std::tuple< DiscreteFunction... > >
+  {
+    std::tuple< Args< DF0, DF0 >... >
+
+  };
+
+  template< template<class > class Arg, template<class> class... Args, std::tuple< DiscreteFunction, DiscreteFunctions... > >
+
+    typedef std::tuple< Arg< DiscreteFunction >, MainClass< Args..., std::tuple< DiscreteFunctions... > >
+    std::tuple< Args >
+
+    template< class... Operators >
+
+
+  std::tuple< SpLinearOperatorType, ISTLLinearOperatorType >
+
+//  template< template<class> class OneArgImp, template<class Row,class Col> class TwoArgImp, class... DiscreteFunctions >
+//  template< template<class> class OneArgImp, template<class Row,class Col> class TwoArgImp, class... DiscreteFunctions >
+//  struct TwoArgContainer
+//    : public OneArgImp< DiscreteFunctions... >
+//    //: public Fem::SubSteadyStateContainer< DiscreteFunctions... >
+//  {
+//
+//    typedef Fem::SubSteadyStateContainer< DiscreteFunctions... >            BaseType;
+//
+//    typedef std::tuple< DiscreteFunctions... > DFTuple;
+//    typedef typename MatrixPack< TwoArgImp, DFTuple, DFTuple >::type Item2TupleType;
+//
+//  public:
+//
+//    template< unsigned long int i, unsigned long int j >
+//    using Item2 = typename std::tuple_element< j, typename std::tuple_element< i, Item2TupleType>::type >::type::element_type;
+//
+//    using BaseType::operator();
+//
+//  protected:
+//
+//    //template< unsigned long int... i, unsigned long int... j >
+//    //using SubContainer = SubEllipticContainer< MatrixContainerImp, typename BaseType::template DiscreteFunction<i>... >
+//
+//    static const int size = BaseType::size;
+//    using BaseType::sequence;
+//
+//
+//    ///// Creation
+//    template< unsigned long int i, unsigned long int j >
+//    std::shared_ptr< Item2<i,j> > createItem2( const std::string name )
+//    {
+//      return std::make_shared<Item2<i,j> >( BaseType::operator()( std::integral_constant< unsigned long int, i>() ),
+//                                            BaseType::operator()( std::integral_constant< unsigned long int, j>() ),
+//                                            name );
+//    }
+//    template< unsigned long int i, unsigned long int ...j >
+//    std::tuple< std::shared_ptr< Item2<i,j> > ... >
+//    createContainerRow( std::integer_sequence< unsigned long int, j... >,
+//                        const std::string name )
+//    {
+//      return std::make_tuple( createItem2<i,j>( name )... );
+//    }
+//    template< unsigned long int ...i, unsigned long int ...j >
+//    auto createContainer( std::integer_sequence< unsigned long int, i... > row,
+//                          std::integer_sequence< unsigned long int, j... > col,
+//                          const std::string name )
+//      -> decltype( std::make_tuple( createContainerRow<i>( col, name )... ) )
+//
+//    {
+//      return std::make_tuple( createContainerRow<i>( col, name )... );
+//    }
+//
+//
+//    ///// Copy
+//    template< unsigned long int i, unsigned long int ...j >
+//    std::tuple< std::shared_ptr< Item2<i,j> > ... >
+//    copyContainerRow( std::tuple< std::integral_constant< unsigned long int, j... > > )
+//    {
+//      return std::make_tuple( std::get<j>( std::get<i>( item2_ ) )... );
+//    }
+//    template< unsigned long int ...i, unsigned long int ...j >
+//    auto copyContainer( std::tuple< std::integral_constant< unsigned long int, i... > > row,
+//                        std::tuple< std::integral_constant< unsigned long int, j... > > col )
+//      -> decltype( std::make_tuple( copyContainerRow<i>( col )... ) )
+//    {
+//      return std::make_tuple( copyContainerRow<i>( col )... );
+//    }
+//
+//  public:
+//    template< class SameObject >
+//    TwoArgContainer( SameObject& obj, const std::string name = "" )
+//    : BaseType( obj, name ),
+//      item2_( createContainer( sequence, sequence, name + "matrix" ) )
+//    {}
+//
+//    TwoArgContainer( const std::string name = "" )
+//    : BaseType( name ),
+//      item2_( createContainer( sequence, sequence, name + "matrix" ) )
+//    {}
+//
+//    // copy, for internal use only
+//    TwoArgContainer( const typename BaseType::Item1TupleType& item1,
+//                          const Item2TupleType& item2 )
+//    : BaseType( item1 ),
+//      item2_( item2 )
+//    {}
+//
+//    // item acess
+//    template< unsigned long int i, unsigned long int j >
+//    std::shared_ptr< Item2< i, j > > operator() ( std::integral_constant<unsigned long int, i> row,
+//                                                  std::integral_constant<unsigned long int, j> col  )
+//    {
+//      return std::get<j>( std::get<i>( item2_ ) );
+//    }
+//
+//    // sub Container
+//    template< unsigned long int... i, unsigned long int... j >
+//    std::shared_ptr< SubEllipticContainer< MatrixContainerImp, typename BaseType::template DiscreteFunction<i>... > >
+//    operator() ( std::tuple< std::integral_constant<unsigned long int, i>... > row,
+//                 std::tuple< std::integral_constant<unsigned long int, j>... > col )
+//    {
+//      //typedef SubEllipticContainer< MatrixContainerImp, std::tuple< typename BaseType::template DiscreteFunction<i>... >,
+//      //                                                  std::tuple< typename BaseType::template DiscreteFunction<j>... >
+//      //                                                                                                     > SubContainerType;
+//
+//      typedef SubEllipticContainer< MatrixContainerImp, typename BaseType::template DiscreteFunction<i>... > SubContainerType;
+//      typedef SubEllipticContainer< MatrixContainerImp, typename BaseType::template DiscreteFunction<j>... > SubContainerType2;
+//
+//      //TODO
+//      static_assert( std::is_same< SubContainerType, SubContainerType2 >::value, "non quadratic version will fail!" );
+//
+//      return std::make_shared< SubContainerType >( std::make_tuple( std::get<i>( BaseType::item1_ )... ),
+//                                                   copyContainer( row, col ) );
+//    }
+//  protected:
+//    Item2TupleType          item2_;
+//  };
+
+
+  template< template< class Row, class Col > class MatrixContainerImp, class... DiscreteFunctions >
   struct SubEllipticContainer
+    : public Fem::SubSteadyStateContainer< DiscreteFunctions... >
+   // : public TwoArgContainer< SubSteadyStateContainerItem< DiscreteFunctions >...,
+   //                           SubEllipticContainerItem< MatrixContainerImp >,
+   //                           std::tuple< DiscreteFunctions...>, std::tuple< DiscreteFunctions...> >
+   // OneArgContainer< SubSteadyStateContainerItem< DiscreteFunctions >... >
+
   {
 
-    typedef typename SteadyStateContainerImp::DiscreteFunctionType        DiscreteFunctionType;
+    typedef Fem::SubSteadyStateContainer< DiscreteFunctions... >            BaseType;
 
-    typedef typename DiscreteFunctionType::DiscreteFunctionSpaceType      DiscreteFunctionSpaceType;
+    template< class RowArg, class ColArg >
+    using Mat = SubEllipticContainerItem< MatrixContainerImp< ColArg, RowArg > >;
 
-    typedef typename DiscreteFunctionSpaceType::GridType                  GridType;
-    typedef typename DiscreteFunctionSpaceType::GridPartType              GridPartType;
-
-    typedef MatrixContainerImp                                            MatrixType;
-
-    using DiscreteFunction = DiscreteFunctionType;
-    using DiscreteFunctionSpace = DiscreteFunctionSpaceType;
-    using Matrix = MatrixType;
-
-    typedef Fem::SubSteadyStateContainer< DiscreteFunctionType >          ContainerType;
+    typedef std::tuple< DiscreteFunctions... > DFTuple;
+    typedef typename MatrixPack< Mat, DFTuple, DFTuple >::type Item2TupleType;
 
   public:
 
-    SubEllipticContainer( GridType& grid, const std::string name = "" )
-    : stringId_( FunctionIDGenerator::instance().nextId() ),
-      container_( grid, name ),
-      matrix_( new MatrixType( name + "matrix",space(), space() ) )
+    template< unsigned long int i, unsigned long int j >
+    using Item2 = typename std::tuple_element< j, typename std::tuple_element< i, Item2TupleType>::type >::type::element_type;
+
+    using BaseType::operator();
+
+  protected:
+
+    static const int size = BaseType::size;
+    using BaseType::sequence;
+
+
+    ///// Creation
+    template< unsigned long int i, unsigned long int j >
+    std::shared_ptr< Item2<i,j> > createItem2( const std::string name )
+    {
+      return std::make_shared<Item2<i,j> >( BaseType::operator()( std::integral_constant< unsigned long int, i>() ),
+                                            BaseType::operator()( std::integral_constant< unsigned long int, j>() ),
+                                            name );
+    }
+    template< unsigned long int i, unsigned long int ...j >
+    std::tuple< std::shared_ptr< Item2<i,j> > ... >
+    createContainerRow( std::integer_sequence< unsigned long int, j... >,
+                        const std::string name )
+    {
+      return std::make_tuple( createItem2<i,j>( name )... );
+    }
+    template< unsigned long int ...i, unsigned long int ...j >
+    auto createContainer( std::integer_sequence< unsigned long int, i... > row,
+                          std::integer_sequence< unsigned long int, j... > col,
+                          const std::string name )
+      -> decltype( std::make_tuple( createContainerRow<i>( col, name )... ) )
+
+    {
+      return std::make_tuple( createContainerRow<i>( col, name )... );
+    }
+
+
+    ///// Copy
+    template< unsigned long int i, unsigned long int ...j >
+    std::tuple< std::shared_ptr< Item2<i,j> > ... >
+    copyContainerRow( std::tuple< std::integral_constant< unsigned long int, j... > > )
+    {
+      return std::make_tuple( std::get<j>( std::get<i>( item2_ ) )... );
+    }
+    template< unsigned long int ...i, unsigned long int ...j >
+    auto copyContainer( std::tuple< std::integral_constant< unsigned long int, i... > > row,
+                        std::tuple< std::integral_constant< unsigned long int, j... > > col )
+      -> decltype( std::make_tuple( copyContainerRow<i>( col )... ) )
+    {
+      return std::make_tuple( copyContainerRow<i>( col )... );
+    }
+
+  public:
+    template< class SameObject >
+    SubEllipticContainer( SameObject& obj, const std::string name = "" )
+    : BaseType( obj, name ),
+      item2_( createContainer( sequence, sequence, name + "matrix" ) )
     {}
 
-    //container list
-    const ContainerType& adapter() const
+    SubEllipticContainer( const std::string name = "" )
+    : BaseType( name ),
+      item2_( createContainer( sequence, sequence, name + "matrix" ) )
+    {}
+
+    // copy, for internal use only
+    SubEllipticContainer( const typename BaseType::Item1TupleType& item1,
+                          const Item2TupleType& item2 )
+    : BaseType( item1 ),
+      item2_( item2 )
+    {}
+
+    // item acess
+    template< unsigned long int i, unsigned long int j >
+    std::shared_ptr< Item2< i, j > > operator() ( std::integral_constant<unsigned long int, i> row,
+                                                  std::integral_constant<unsigned long int, j> col  )
     {
-      return container_;
-    }
-    ContainerType& adapter()
-    {
-      return container_;
+      return std::get<j>( std::get<i>( item2_ ) );
     }
 
-    //grid
-    const GridType& grid() const
+    // sub Container
+    template< unsigned long int... i, unsigned long int... j >
+    std::shared_ptr< SubEllipticContainer< MatrixContainerImp, typename BaseType::template DiscreteFunction<i>... > >
+    operator() ( std::tuple< std::integral_constant<unsigned long int, i>... > row,
+                 std::tuple< std::integral_constant<unsigned long int, j>... > col )
     {
-      return adapter().grid();
-    }
-    GridType& grid()
-    {
-      return adapter().grid();
-    }
+      typedef SubEllipticContainer< MatrixContainerImp, typename BaseType::template DiscreteFunction<i>... > SubContainerType;
+      typedef SubEllipticContainer< MatrixContainerImp, typename BaseType::template DiscreteFunction<j>... > SubContainerType2;
 
-    //grid part
-    const GridPartType& gridPart() const
-    {
-      return adapter().gridPart();
-    }
-    GridPartType& gridPart()
-    {
-      return adapter().gridPart();
-    }
+      //TODO
+      static_assert( std::is_same< SubContainerType, SubContainerType2 >::value, "non quadratic version will fail!" );
 
-    //spaces
-    const DiscreteFunctionSpaceType& space() const
-    {
-      return adapter().space();
+      return std::make_shared< SubContainerType >( std::make_tuple( std::get<i>( BaseType::item1_ )... ),
+                                                   copyContainer( row, col ) );
     }
-    DiscreteFunctionSpaceType& space()
-    {
-      return adapter().space();
-    }
-
-    //solution
-    std::shared_ptr< DiscreteFunction > solution() const
-    {
-      return adapter().solution();
-    }
-    void setSolution( std::shared_ptr< DiscreteFunction > solution )
-    {
-      adapter().solution() = solution;
-    }
-
-    //exact solution
-    std::shared_ptr< DiscreteFunction > exactSolution() const
-    {
-      return adapter().exactSolution();
-    }
-    void setExactSolution( std::shared_ptr< DiscreteFunction > exactSolution )
-    {
-      adapter().exactSolution() = exactSolution;
-    }
-
-    //rhs
-    std::shared_ptr< DiscreteFunction > rhs() const
-    {
-      return adapter().rhs();
-    }
-    void setRhs( std::shared_ptr< DiscreteFunction > rhs )
-    {
-      adapter().rhs() = rhs;
-    }
-
-    //matrix for assembly
-    std::shared_ptr< MatrixType > matrix() const
-    {
-      assert( matrix_ );
-      return matrix_;
-    }
-    void setMatrix( std::shared_ptr< MatrixType > matrix )
-    {
-      matrix_ = matrix;
-    }
-
-
-  private:
-    const std::string                   stringId_;
-    ContainerType                       container_;
-    std::shared_ptr< Matrix >           matrix_;
+  protected:
+    Item2TupleType          item2_;
   };
 
   template< class ErrorEstimatorImp >
@@ -168,12 +340,12 @@ namespace Fem
     typedef typename DiscreteFunctionType::GridPartType                 GridPartType;
     typedef typename GridPartType::GridType                             GridType;
 
-    PoissonSigmaEstimator( ContainerType& container,
+    template< class ContainerImp >
+    PoissonSigmaEstimator( std::shared_ptr< ContainerImp > cont,
                            const DGOperatorType& assembler,
                            const std::string name = "" )
-    : container_( container ),
-      gridPart_( container_.gridPart() ),
-      solution_( *container_.solution() ),
+    : gridPart_( (*cont)(_0)->solution()->space().gridPart() ),
+      solution_( *(*cont)(_0)->solution() ),
       assembler_( assembler ),
       sigmaSpace_( gridPart_ ),
       sigmaDiscreteFunction_( "sigma-"+name, sigmaSpace_ ),
@@ -350,19 +522,17 @@ namespace Fem
 
   public:
 
-    ContainerType&                  container_;
-    GridPartType&                   gridPart_;
-    const DiscreteFunctionType&     solution_;
-    const DGOperatorType&           assembler_;
-    SigmaDiscreteFunctionSpaceType  sigmaSpace_;
-    SigmaDiscreteFunctionType       sigmaDiscreteFunction_;
+    GridPartType&                    gridPart_;
+    const DiscreteFunctionType&      solution_;
+    const DGOperatorType&            assembler_;
+    SigmaDiscreteFunctionSpaceType   sigmaSpace_;
+    SigmaDiscreteFunctionType        sigmaDiscreteFunction_;
 
     SigmaLocal<DiscreteFunctionType, DGOperatorType>
-                                    sigmaLocalEstimate_;
-    SigmaLocalFunctionType          sigmaLocalFunction_;
-    SigmaLocalFunctionAdapterType   sigma_;
-    SigmaEstimateFunctionType       sigmaEstimateFunction_;
-
+                                     sigmaLocalEstimate_;
+    SigmaLocalFunctionType           sigmaLocalFunction_;
+    SigmaLocalFunctionAdapterType    sigma_;
+    SigmaEstimateFunctionType        sigmaEstimateFunction_;
   };
 
 
@@ -396,11 +566,12 @@ namespace Fem
 
     typedef PersistentContainer<GridType,PolOrderStructure> PolOrderContainer;
 
-    PAdaptivity( ContainerType& container, DGOperatorType& assembler, const std::string name = ""  )
-      : polOrderContainer_( container.grid(), 0 ),
-        space_( container.space() ),
-        sigmaEstimator_( container, assembler, name ),
-        errorEstimator_( *container.solution(), assembler, sigmaEstimator_.sigma() ),
+    template< class ContainerImp >
+    PAdaptivity( std::shared_ptr< ContainerImp > cont, DGOperatorType& assembler, const std::string name = ""  )
+      : polOrderContainer_( (*cont)(_0)->solution()->space().gridPart().grid(), 0 ),
+        space_( (*cont)(_0)->solution()->space() ),
+        sigmaEstimator_( cont, assembler, name ),
+        errorEstimator_( *(*cont)(_0)->solution(), assembler, sigmaEstimator_.sigma() ),
         param_( AdaptationParameters() )
     {
 #ifdef PADAPTSPACE
@@ -489,14 +660,13 @@ namespace Fem
       return sigmaEstimator_;
     }
 
-    private:
+  private:
 
     PolOrderContainer                polOrderContainer_;
     const DiscreteFunctionSpaceType& space_;
     SigmaEstimatorType               sigmaEstimator_;
     ErrorEstimatorType               errorEstimator_;
     AdaptationParameters             param_;
-
   };
 
   /**
@@ -573,11 +743,12 @@ namespace Fem
   public:
    typedef uint64_t                          UInt64Type;
 
-    PAdaptIndicator( ContainerType& container,
+    template< class ContainerImp >
+    PAdaptIndicator( std::shared_ptr< ContainerImp > cont,
                      DGOperatorType& assembler,
                      const ProblemType& problem,
                      const std::string name = "" )
-      : pAdapt_( container, assembler, name ),
+      : pAdapt_( cont, assembler, name ),
         problem_( problem )
     {}
 
@@ -670,7 +841,7 @@ namespace Fem
     // The DG space operator
     typedef typename BaseType::OperatorType::AssemblerType AssemblerType;
 
-
+    //type for a standalone container
     typedef typename AssemblerType::ContainerType          ContainerType;
 
     // The discrete function for the unknown solution is defined in the DgOperator
@@ -705,24 +876,23 @@ namespace Fem
     using BaseType::exactSolution;
     using BaseType::solver;
 
+
   public:
-    SubEllipticAlgorithm( GridType& grid, ContainerType& container )
-    : BaseType( grid, container.adapter() ),
-      container_( container ),
-      gridPart_( container_.gridPart() ),
-      space_( container_.space() ),
-      assembler_( container_, model() ),
-      matrix_( container_.matrix() ),
-      adaptIndicator_( Std::make_unique<AdaptIndicatorType>( container_, assembler_, problem(), name() ) ),
+    template< class ContainerImp >
+    SubEllipticAlgorithm( GridType& grid, std::shared_ptr< ContainerImp > cont )
+    : BaseType( grid, cont ),
+      assembler_( cont, model() ),
+      matrix_( (*cont)(_0,_0)->matrix() ),
+      adaptIndicator_( std::make_unique<AdaptIndicatorType>( cont, assembler_, problem(), name() ) ),
       step_( 0 ),
       time_( 0 )
     {
       std::string gridName = Fem::gridName( grid );
       if( gridName == "ALUGrid" || gridName == "ALUConformGrid" || gridName == "ALUSimplexGrid" )
       {
-        if( space_.begin() != space_.end() )
+        if( solution().space().begin() != solution().space().end() )
         {
-          if( space_.begin()->type().isSimplex() && space_.order() > 2 && space_.continuous() && GridType::dimension > 2 )
+          if( solution().space().begin()->type().isSimplex() && solution().space().order() > 2 && solution().space().continuous() && GridType::dimension > 2 )
           {
             std::cerr << std::endl<< "ERROR: Lagrange spaces for p>2 do not work on simplex grids due to the twist problem !!!" << std::endl << std::endl;
           }
@@ -762,17 +932,17 @@ namespace Fem
       Dune::Timer timer;
       timer.start();
 
-      if( space_.continuous() ) // Lagrange case
+      if( solution().space().continuous() ) // Lagrange case
       {
         typedef Dune::Fem::DiagonalStencil<DiscreteFunctionSpaceType,DiscreteFunctionSpaceType> StencilType ;
-        StencilType stencil( space_, space_ );
-        matrix_->reserve( stencil );
+        StencilType stencil( solution().space(), solution().space() );
+        matrix().reserve( stencil );
       }
       else // DG case
       {
         typedef Dune::Fem::DiagonalAndNeighborStencil<DiscreteFunctionSpaceType,DiscreteFunctionSpaceType> StencilType ;
-        StencilType stencil( space_, space_ );
-        matrix_->reserve( stencil );
+        StencilType stencil( solution().space(), solution().space() );
+        matrix().reserve( stencil );
       }
 
       assembler_.assemble();
@@ -783,7 +953,7 @@ namespace Fem
       double absLimit   = Dune::Fem:: Parameter::getValue<double>("istl.absLimit",1.e-10);
       double reduction  = Dune::Fem:: Parameter::getValue<double>("istl.reduction",1.e-6);
 
-      return std::make_shared< SolverType >(*matrix_, reduction, absLimit );
+      return std::make_shared< SolverType >( matrix(), reduction, absLimit );
     }
 
     //! default time loop implementation, overload for changes
@@ -800,10 +970,17 @@ namespace Fem
 
 
   protected:
+    const OperatorType& matrix () const
+    {
+      assert( matrix_ );
+      return *matrix_;
+    }
 
-    ContainerType&                               container_;
-    GridPartType&                                gridPart_;       // reference to grid part, i.e. the leaf grid
-    const DiscreteFunctionSpaceType&             space_;
+    OperatorType& matrix ()
+    {
+      assert( matrix_ );
+      return *matrix_;
+    }
 
     AssemblerType                                assembler_;
 
@@ -811,7 +988,6 @@ namespace Fem
     std::unique_ptr< AdaptIndicatorType >        adaptIndicator_;
     int                                          step_;
     double                                       time_;
-
   };
 
 }

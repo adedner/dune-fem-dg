@@ -20,7 +20,9 @@
 #include <dune/fem/space/common/adaptmanager.hh>
 #include <dune/fem-dg/misc/optional.hh>
 #include <dune/fem-dg/misc/tupleutility.hh>
+#include <dune/fem-dg/misc/integral_constant.hh>
 #include "interface.hh"
+
 
 namespace Dune
 {
@@ -175,8 +177,16 @@ namespace Fem
       rp_( nullptr ),
       adaptationManager_(),
       keyPrefix_( "" ),
-      adaptParam_( AdaptationParametersType( ParameterKey::generate( keyPrefix_, "fem.adaptation." ) ) )
+      adaptParam_( AdaptationParametersType( ParameterKey::generate( keyPrefix_, "fem.adaptation." ) ) ),
+      adaptationTime_(0),
+      loadBalanceTime_(0)
     {
+      const auto& elem = std::get<0>( tuple_ );
+      std::cout << elem.use_count() << std::endl;
+      const auto& elemRay = *elem;
+      const auto& sol = elem->solution();
+      std::cout << "new container: name: " << sol.name() << ", size: " << sol.size() << std::endl;
+
       setRestrProlong( IndexSequenceType() );
       if( adaptive() )
         rp_->setFatherChildWeight( Dune::DGFGridInfo<GridType> :: refineWeight() );
@@ -396,7 +406,13 @@ namespace Fem
     template< std::size_t ... i >
     void setRestrProlong( std::index_sequence< i ... > )
     {
-      rp_.reset( new RestrictionProlongationType( *std::get< i >( tuple_ )->adaptationSolution()... ) );
+      const auto& elem = std::get<0>( tuple_ );
+      std::cout << elem.use_count() << std::endl;
+      auto& elemRay = *elem;
+      const auto& sol = elemRay.solution();
+      std::cout << "new container: name: " << sol.name() << ", size: " << sol.size() << std::endl;
+      std::cout << "new container: name: " << elemRay.adaptationSolution()->name() << ", size: " << elemRay.adaptationSolution()->size() << std::endl;
+      rp_.reset( new RestrictionProlongationType( *(std::get< i >( tuple_ )->adaptationSolution() )... ) );
     }
 
     const int finestLevel() const

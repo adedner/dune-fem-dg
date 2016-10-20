@@ -26,9 +26,11 @@
 // include local header files
 #include <dune/fem-dg/examples/stokes/stokesassembler.hh>
 
+#include <dune/fem-dg/algorithm/sub/container.hh>
+
+
 namespace Dune
 {
-
 namespace Fem
 {
 
@@ -218,17 +220,17 @@ namespace Fem
 
     typedef typename AssemblerType::ContainerType                    ContainerType;
 
-    StokesSigmaEstimator( ContainerType& container,
+    template< class ContainerImp >
+    StokesSigmaEstimator( shared_ptr< ContainerImp > cont,
                           const BaseAssemblerType& ass,
                           const AssemblerType& assembler,
                           const std::string keyPrefix = "" )
-    : BaseType( container.template adapter<0>(), ass, keyPrefix ),
-      container_( container ),
-      stkFlux_( *container_.template solution<1>(), ass ),
-      stkLocalEstimate_( *container_.template solution<0>(), *container_.template solution<1>(), ass ),
-      stkEstimateFunction_("stokes estimate", stkLocalEstimate_, container_.template solution<0>()->gridPart(), container_.template space<0>().order() ),
-      stkEstimator_( *container_.template solution<0>(), stkFlux_, stkEstimateFunction_ ),
-      stkEstimateData_("stokesEstimator", stkEstimator_, container_.template solution<0>()->gridPart(), container_.template space<0>().order() )
+    : BaseType( (*cont)( std::make_tuple(_0), std::make_tuple(_0) ), ass, keyPrefix ),
+      stkFlux_( *(*cont)(_1)->solution(), ass ),
+      stkLocalEstimate_( *(*cont)(_0)->solution(), *(*cont)(_1)->solution(), ass ),
+      stkEstimateFunction_("stokes estimate", stkLocalEstimate_, (*cont)(_0)->solution()->gridPart(), (*cont)(_0)->solution()->space().order() ),
+      stkEstimator_( *(*cont)(_0)->solution(), stkFlux_, stkEstimateFunction_ ),
+      stkEstimateData_("stokesEstimator", stkEstimator_, (*cont)(_0)->solution()->gridPart(), (*cont)(_0)->solution()->space().order() )
     {}
 
 
@@ -244,7 +246,6 @@ namespace Fem
 
 
   private:
-    ContainerType& container_;
     StokesFluxType stkFlux_;
     SigmaEval<DiscreteVelocityFunctionType,DiscretePressureFunctionType,BaseAssemblerType> stkLocalEstimate_;
 
@@ -277,12 +278,13 @@ namespace Fem
 
     typedef typename PAdaptivityType::PolOrderContainer         PolOrderContainer;
 
-    StokesPAdaptivity( ContainerType& container, BaseAssemblerType& ass, AssemblerType& assembler, const std::string name = ""  )
-      : pAdapt_( container.template adapter<0>(), ass, name ),
-        polOrderContainer_( container.template solution<0>()->gridPart().grid(), 0 ),
-        space_( container.template space<1>() ),
-        sigmaEstimator_( container, ass, assembler, name ),
-        errorEstimator_( *container.template solution<0>(), ass, sigmaEstimator_.sigma() ),
+    template< class ContainerImp >
+    StokesPAdaptivity( shared_ptr< ContainerImp > cont, BaseAssemblerType& ass, AssemblerType& assembler, const std::string name = ""  )
+      : pAdapt_( (*cont)( std::make_tuple(_0), std::make_tuple(_0) ), ass, name ),
+        polOrderContainer_( (*cont)(_0)->solution()->gridPart().grid(), 0 ),
+        space_( (*cont)(_1)->solution()->space() ),
+        sigmaEstimator_( cont, ass, assembler, name ),
+        errorEstimator_( *(*cont)(_0)->solution(), ass, sigmaEstimator_.sigma() ),
         param_( AdaptationParameters() )
     {
 #ifdef PADAPTSPACE
@@ -397,12 +399,12 @@ namespace Fem
   public:
    typedef uint64_t                          UInt64Type;
 
-    StokesPAdaptIndicator( ContainerType& container,
+    StokesPAdaptIndicator( std::shared_ptr< ContainerType > cont,
                            BaseAssemblerType& ass,
                            AssemblerType& assembler,
                            const ProblemType& problem,
                            const std::string name = "" )
-      : pAdapt_( container, ass, assembler, name ),
+      : pAdapt_( cont, ass, assembler, name ),
         problem_( problem )
     {}
 
@@ -534,13 +536,14 @@ namespace Fem
 
   public:
 
-    explicit SubStokesAlgorithm( GridType& grid, ContainerType& container ) :
-      BaseType( grid, container.template adapter<1>() ),
-      container_( container ),
-      space_( container_.template space<1>() ),
-      assembler_( container_, model() ),
-      ellAlg_( grid, container_.template adapter<0>() ),
-      adaptIndicator_( Std::make_unique<AdaptIndicatorType>( container_, ellAlg_.assembler(), assembler_, problem(), name() ) ),
+    template< class ContainerImp >
+    explicit SubStokesAlgorithm( GridType& grid, std::shared_ptr< ContainerImp > cont )
+    : BaseType( grid, (*cont)(std::make_tuple(_1), std::make_tuple(_1) ) ),
+      container_( cont ),
+      space_( (*cont)(_1)->solution()->space() ),
+      assembler_( cont, model() ),
+      ellAlg_( grid, (*cont)( std::make_tuple(_0), std::make_tuple(_0)  ) ),
+      adaptIndicator_( Std::make_unique<AdaptIndicatorType>( cont, ellAlg_.assembler(), assembler_, problem(), name() ) ),
       ioTuple_( new IOTupleType( *BaseType::dataTuple(), *ellAlg_.dataTuple() ) ),
       time_(0)
     {
@@ -573,7 +576,7 @@ namespace Fem
       std::cout << "Solver (Stokes) assemble time: " << timer.elapsed() << std::endl;
 
       double absLimit = Dune::Fem::Parameter::getValue<double>("istl.absLimit",1.e-10);
-      return std::make_shared< SolverType >( container_, *ellAlg_.solver(), absLimit, 3*ellAlg_.solution().space().size() );
+      return std::make_shared< SolverType >( *container_, *ellAlg_.solver(), absLimit, 3*ellAlg_.solution().space().size() );
     }
 
     virtual void doInitialize ( const int loop ) override
@@ -607,7 +610,7 @@ namespace Fem
     }
 
   protected:
-    ContainerType&                         container_;
+    std::shared_ptr< ContainerType >       container_;
     const DiscreteFunctionSpaceType&       space_;
     AssemblerType                          assembler_;
 

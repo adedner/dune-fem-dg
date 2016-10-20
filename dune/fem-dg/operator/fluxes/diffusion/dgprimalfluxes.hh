@@ -740,11 +740,12 @@ namespace Fem
      *                  + C_cdg2/h {A(u)}[u]*n
      *                  + liftFactor*(A(u)L_e)|Ke-
      *        CDG:
-     *          gLeft = - {A(u)grad(u)}*n
-     *                  - beta*n[A(u)grad(u)] + C_cdg/h {A(u)}[u]*n
+     *          gLeft = - (A(u)grad(u)*n)|Ke-
+     *                  + C_cdg/h {A(u)}[u]*n - beta*n[A(u)grad(u)]
      *                  + liftFactor*(A(u)L_e)|Ke-
      *        BR2:
      *          gLeft = - {A(u)grad(u)}*n + C_br2 {A(u)r_e([u])}*n
+     *                = - {A(u)grad(u)}*n + C_br2 0.5*{A(u)L_e}
      *        IP:
      *          gLeft = - {A(u)grad(u)}*n + C_ip/h {A(u)}[u]*n
      *
@@ -754,11 +755,13 @@ namespace Fem
      *        IP, BR2, CDG2:
      *          gDiffLeft = -0.5*A(u-)[u]
      *        CDG:
-     *          gDiffLeft = -0.5*A(u-)[u] - beta*A(u)[u]
+     *          gDiffLeft = -0.5*A(u-)[u] - beta*[A(u)][u]
      *       where h = min(|entity+|,|entity-|) / |intersection|.
      *       In this method we need to return
-     *          in gLeft:      same like above
-     *          in gDiffLeft:  same like above
+     *          in gLeft:      = gRight
+     *          in gDiffLeft:  = gDiffRight
+     *                           0.5*A(u+)[u]
+
      *
      * \return wave speed estimate (multiplied with the integration element of the intersection).
      *         To estimate the time step |T|/wave is used
@@ -812,7 +815,7 @@ namespace Fem
       // for CDG we need A(u)grad(u) on Ke-
       {
         ////////////////////////////////
-        // [ phi ] * [ A(u)grad(u) ] ...
+        // [ phi ] * [ A(u^out)grad(u^out) ] ...
         ///////////////////////////////
         if ( ! insideIsInflow_ )
           model_.diffusion( left, uLeft, jacLeft, diffmatrix );
@@ -881,8 +884,8 @@ namespace Fem
         else
         {
           // \int C_IP {A(u)}[u][phi] dx
-          //    = \int C_IP (A(u_L)[u]*n + A(u_R)[u]*n)/2 phi
-          // so penaltyTerm = C_IP (A(u_L)[u]*n + A(u_R)[u]*n)/2
+          //    = \int C_IP (A(u-)[u]*n + A(u+)[u]*n)/2 phi
+          // so penaltyTerm = C_IP (A(u-)[u]*n + A(u+)[u]*n)/2
 
           // apply with normal
           gDiffLeft.mv( normal, penaltyTerm );
@@ -910,12 +913,13 @@ namespace Fem
       gDiffLeft *= nipgFactor_;
 
       // current entity gets (i.e. for IP)
-      //    {A(u)grad(u)}*n-C11[u]*n)phi
-      //    + 0.5A(u-)[u]*grad(phi)
+      // {A(u)grad(u)}* n  -C11[u]*n)phi    + 0.5A(u-)[u]*grad(phi)
       // and neighbor gets
-      //    {A(u)grad(u)}*(-n)-C11[u]*(-n))phi
-      //    + 0.5A(u-)[u]*grad(phi)
+      // {A(u)grad(u)}*(-n)-C11[u]*(-n))phi + 0.5A(u-)[u]*grad(phi)
       // so term 0.5A(u-)[u]*grad(phi) stays the same therefore:
+
+      // gDiffRight = 0.5 A(u-)[u] (IP,BR2)
+      // gDiffRight = -0.5 A(u-)[u] (NIPG,BO)
       gDiffRight *= (-nipgFactor_);
 
       ////////////////////////////////////////////////
@@ -929,7 +933,7 @@ namespace Fem
 
         RangeType lift;
         // LiftingFunctionType& LeMinus = LeMinusLifting().function();
-        // get value of A(u-)L_e-*n into liftTotal
+        // get value of A(u^out)L_e^out*n into liftTotal
         applyLifting( local, normal, u, liftingEvalLeMinus_[ local.index() ], lift );
 
         // only for CDG-type methods
@@ -948,8 +952,9 @@ namespace Fem
           JacobianRangeType resU;
 
           ////////////////////////////////
-          // [ u ] * [ A(u)grad(phi) ] ...
+          // [ u ] * [ A(u)grad(phi) ]
           ///////////////////////////////
+
 
           resU = gDiffLeft;
           resU *= C_12/nipgFactor_;
@@ -957,6 +962,7 @@ namespace Fem
           // save gDiffLeft
           gDiffLeft += resU;
 
+          // MINUS MINUS MINUS MINUS
           resU  = gDiffRight;
           resU *= C_12/(-nipgFactor_);
 
@@ -969,8 +975,8 @@ namespace Fem
           // BR2 hasn't had penalty term until now
           // so we add it at this place.
           //             \int C_BR2 {A(u)r_e([u])}[phi] dx
-          //           = \int C_BR2 (A(u_L)r_e([u])*n + A(u_R)r_e([u])*n)/2 phi
-          // so penaltyTerm = C_BR2 (A(u_L)r_e([u])*n + A(u_R)r_e([u])*n)/2
+          //           = \int C_BR2 (A(u_out)r_e([u])*n + A(u_in)r_e([u])*n)/2 phi
+          // so penaltyTerm = C_BR2 (A(u_out)r_e([u])*n + A(u_in)r_e([u])*n)/2
 
           // get correct quadrature, the one from Ke+
           //const QuadratureImp& faceQuadPlus =
@@ -982,10 +988,10 @@ namespace Fem
           RangeType liftTotal;
           // LiftingFunctionType& LePlus = LePlusLifting().function();
 
-          // get value of A(u+)L_e+*n into liftTotal
+          // get value of A(u^in)L_e^in*n into liftTotal
           applyLifting( local, normal, uPlus, liftingEvalLePlus_[ local.index() ], liftTotal );
 
-          // set liftTotal = {A(u)r_e}*n = 0.25*(A(u+)L_e+*n + A(u-)L_e-*n)
+          // set liftTotal = {A(u)r_e}*n = 0.25*(A(u^in)L_e^in*n + A(u^out)L_e^out*n)
           liftTotal += lift;
           // add penalty coefficient
           liftTotal *= 0.25 * liftFactor_;

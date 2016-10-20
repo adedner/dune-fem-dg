@@ -62,7 +62,7 @@ namespace Fem
     norm ( const DiscreteFunctionType &u ) const
     {
       return norm( u, Partitions::interior );
-    };
+    }
 
     //! || u - v ||_H1 + || [ u - v ] ||_L2(\Gamma) on given set of entities (partition set)
     template< class UDiscreteFunctionType, class VDiscreteFunctionType, class PartitionSet >

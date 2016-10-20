@@ -40,12 +40,17 @@ namespace Poisson
 
     typedef DataFunctionIF< dimDomain, FieldType, FieldType > DataFunctionType;
 
+    // not copy or assignment
+    Problem( const Problem& ) = delete;
+    Problem& operator= ( const Problem& ) = delete;
+
     /**
      * \brief define problem parameters
      */
     Problem(const int problemNumber) :
       BaseType (),
-      data_(0)
+      data_(0),
+      myName_("")
     {
       FieldType shift = Dune :: Fem::Parameter :: getValue< double > ("globalshift", 0);
       FieldType factor = Dune :: Fem::Parameter :: getValue< double > ("factor", 1);
@@ -165,7 +170,7 @@ namespace Poisson
         abort();
       }
 
-      myName = "Poisson Eqn.";
+      myName_ = "Poisson Eqn.";
     }
 
     const DataFunctionType& data() const { assert( data_ ); return *data_; }
@@ -261,13 +266,13 @@ namespace Poisson
     {
       std::ostringstream ofs;
 
-      ofs << "Problem: " << myName ;
+      ofs << "Problem: " << myName_ ;
       return ofs.str();
     }
 
   protected:
     DataFunctionType* data_;
-    std::string myName;
+    std::string myName_;
   };
 
 }

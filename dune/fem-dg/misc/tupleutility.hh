@@ -93,6 +93,14 @@ namespace Fem
 
   };
 
+  template< class TupleImp >
+  struct drop_tuple;
+
+  template< class... TupleArg >
+  struct drop_tuple< std::tuple< std::tuple< TupleArg... > > >
+  {
+    typedef std::tuple< TupleArg... > type;
+  };
 }
 }
 

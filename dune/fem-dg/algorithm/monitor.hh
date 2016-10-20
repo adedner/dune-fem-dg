@@ -35,22 +35,21 @@ namespace Fem
     unsigned long elements ;
 
     SolverMonitor()
-    {
-      gridWidth = 0;
-      avgTimeStep = 0;
-      minTimeStep = std::numeric_limits<double>::max();
-      maxTimeStep = 0;
-      timeSteps = 0;
-      newton_iterations = 0;
-      ils_iterations = 0;
-      total_newton_iterations = 0;
-      total_ils_iterations = 0;
-      max_newton_iterations = 0;
-      max_ils_iterations = 0;
-      elements = 0;
-      operator_calls = 0;
-      total_operator_calls = 0;
-    }
+    : gridWidth( 0 ),
+      avgTimeStep( 0 ),
+      minTimeStep( std::numeric_limits<double>::max() ),
+      maxTimeStep( 0 ),
+      timeSteps( 0 ),
+      newton_iterations( 0 ),
+      ils_iterations( 0 ),
+      total_newton_iterations( 0 ),
+      total_ils_iterations( 0 ),
+      max_newton_iterations( 0 ),
+      max_ils_iterations( 0 ),
+      elements( 0 ),
+      operator_calls( 0 ),
+      total_operator_calls( 0 )
+    {}
 
     void setTimeStepInfo( const Dune::Fem::TimeProviderBase& tp )
     {

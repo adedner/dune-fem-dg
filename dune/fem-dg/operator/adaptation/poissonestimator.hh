@@ -240,6 +240,11 @@ namespace Fem
 
 
   public:
+    // no copy or assignment
+    ErrorEstimator( const ErrorEstimator& ) = delete;
+    ErrorEstimator& operator= ( const ErrorEstimator& ) = delete;
+
+
     ErrorEstimator (DiscreteFunctionType& uh,
                     const DGOperatorType &oper,
                     const SigmaDiscreteFunctionType &sigma,
@@ -523,7 +528,7 @@ namespace Fem
     }
     int newOrder( double tolerance, const ElementType &entity)
     {
-      assert( indexSet_.index( entity ) < indicator_.size() );
+      assert( indexSet_.index( entity ) < (int)indicator_.size() );
 
       const double localTol2 = ( maximumStrategy_ ) ?
               ( theta_*theta_ * maxIndicator_ ) :

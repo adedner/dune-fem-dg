@@ -80,14 +80,13 @@ namespace Fem
   /**
    *  \brief problem creator for an advection diffusion problem
    */
-  template< class GridImp >
   struct CheckPointingAlgorithmCreator
   {
 
     struct SubCheckPointingAlgorithmCreator
     {
 
-      typedef GridImp                                         GridType;
+      typedef Dune::GridSelector::GridType                    GridType;
       typedef Dune::Fem::DGAdaptiveLeafGridPart< GridType >   HostGridPartType;
       //typedef Dune::Fem::LeafGridPart< GridType >           HostGridPartType;
       //typedef AdaptiveLeafGridPart< GridType >              HostGridPartType;
@@ -142,7 +141,7 @@ namespace Fem
     template <int polOrd>
     using Algorithm = Dune::Fem::EvolutionAlgorithmBase< CheckPointEvolutionAlgorithmTraits< polOrd, UncoupledSubAlgorithms, SubCheckPointingAlgorithmCreator >, UncoupledSubAlgorithms  >;
 
-    typedef GridImp                                         GridType;
+    typedef typename SubCheckPointingAlgorithmCreator::GridType                          GridType;
 
     static inline std::string moduleName() { return ""; }
 

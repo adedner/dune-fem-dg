@@ -73,7 +73,6 @@ namespace Fem
     typedef typename BaseType::AdaptIndicatorType             AdaptIndicatorType;
 
     using BaseType::grid;
-    using BaseType::gridPart_;
     using BaseType::solution;
     using BaseType::problem;
     using BaseType::name;
@@ -87,9 +86,9 @@ namespace Fem
       //velo_( "velocity", vSpace_ ),
       //tuple_( &velo_ ),
       tuple_( ),
-      operator_( Std::make_unique< OperatorType >( gridPart_, problem(), typename OperatorType::ExtraParameterTupleType(), name() ) ),
-      advectionOperator_( Std::make_unique< ExplicitOperatorType >( gridPart_, problem(), typename ExplicitOperatorType::ExtraParameterTupleType(), name() ) ),
-      diffusionOperator_( Std::make_unique< ImplicitOperatorType >( gridPart_, problem(), typename ImplicitOperatorType::ExtraParameterTupleType(), name() ) ),
+      operator_( Std::make_unique< OperatorType >( solution().space().gridPart(), problem(), typename OperatorType::ExtraParameterTupleType(), name() ) ),
+      advectionOperator_( Std::make_unique< ExplicitOperatorType >( solution().space().gridPart(), problem(), typename ExplicitOperatorType::ExtraParameterTupleType(), name() ) ),
+      diffusionOperator_( Std::make_unique< ImplicitOperatorType >( solution().space().gridPart(), problem(), typename ImplicitOperatorType::ExtraParameterTupleType(), name() ) ),
       adaptIndicator_( Std::make_unique< AdaptIndicatorOptional<AdaptIndicatorType> >( solution(), problem(),  typename AdaptIndicatorType::ExtraParameterTupleType(), name() ) )
     {}
 

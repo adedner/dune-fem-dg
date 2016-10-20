@@ -46,13 +46,12 @@ namespace Dune
 namespace Fem
 {
 
-  template< class GridImp >
   struct EulerAlgorithmCreator
   {
 
     struct SubEulerAlgorithmCreator
     {
-      typedef AlgorithmConfigurator< GridImp,
+      typedef AlgorithmConfigurator< Dune::GridSelector::GridType,
                                      Galerkin::Enum::dg,
                                      Adaptivity::Enum::yes,
                                      DiscreteFunctionSpaces::Enum::orthonormal,
@@ -145,7 +144,7 @@ namespace Fem
     template <int polOrd>
     using Algorithm = EvolutionAlgorithm< polOrd, UncoupledSubAlgorithms, SubEulerAlgorithmCreator >;
 
-    typedef GridImp                                         GridType;
+    typedef typename SubEulerAlgorithmCreator::GridType             GridType;
 
     static inline std::string moduleName() { return ""; }
 

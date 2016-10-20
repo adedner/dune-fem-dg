@@ -45,13 +45,39 @@ namespace Dune
 namespace Fem
 {
 
-  template< class GridImp >
+  // only to ensure unique types in sub algorithm creators
+  //namespace Global
+  //{
+  //  typedef std::tuple< Dune::GridSelector::GridType > GridTypes;
+
+  //  typedef AlgorithmConfigurator< typename std::tuple_element< 0, GridTypes >::type,
+  //                                 Galerkin::Enum::dg,
+  //                                 Adaptivity::Enum::yes,
+  //                                 DiscreteFunctionSpaces::Enum::legendre,
+  //                                 Solver::Enum::istl,
+  //                                 AdvectionLimiter::Enum::unlimited,
+  //                                 Matrix::Enum::assembled,
+  //                                 AdvectionFlux::Enum::upwind,
+  //                                 DiffusionFlux::Enum::primal > AC;
+
+  //  typedef std::tuple< AC >       AlgorithmConfiguratorTypes;
+
+  //  typedef std::tuple< typename AC::GridParts >                  GridPartTypes;
+
+  //  //typedef std::tuple< AC::template DiscreteFunctionSpaces< GridPartType, polOrd, FunctionSpaceType> > DiscreteFunctionSpaceTypes;
+
+  //  typedef std::tuple< AC::template DiscreteFunctionSpaceTemplates< GridPartType > > DiscreteFunctionSpaceTypes;
+
+  //  typedef typename AC::template DiscreteFunctions< DiscreteFunctionSpaceTypes >             DiscreteFunctionType;
+
+
+  //}
+
   struct PoissonAlgorithmCreator
   {
-
     struct SubPoissonAlgorithmCreator
     {
-      typedef AlgorithmConfigurator< GridImp,
+      typedef AlgorithmConfigurator< Dune::GridSelector::GridType,
                                      Galerkin::Enum::dg,
                                      Adaptivity::Enum::yes,
                                      DiscreteFunctionSpaces::Enum::legendre,
@@ -150,17 +176,40 @@ namespace Fem
 
     };
 
+    //template< class ... AlgCreators >
+    //struct GlobalContainerCollector
+    //{
+    //  typedef std::tuple< typename AlgCreators::GridType... > GridTypes;
+
+    //  typedef std::tuple< typename AlgCreators::GridPartType... > GridPartTypes;
+
+    //  typedef std::tuple< typename AlgCreators::FunctionSpaceType... > FunctionSpaceTypes;
+
+    //  template< int ord >
+    //  using DiscreteFunctionSpaceTypes = std::tuple< typename AlgCreators::DiscreteTraits<ord>::DiscreteFunctionSpaceType... >;
+
+    //};
+
     template <int polOrd>
     using Algorithm = SteadyStateAlgorithm< polOrd, UncoupledSubAlgorithms, SubPoissonAlgorithmCreator >;
 
-    typedef GridImp                                         GridType;
+    typedef typename SubPoissonAlgorithmCreator::GridType         GridType;
 
     static inline std::string moduleName() { return ""; }
 
     static inline GridPtr<GridType>
     initializeGrid() { return DefaultGridInitializer< GridType >::initialize(); }
 
+    //typedef SubSteadyStateContainer< typename SubPoissonAlgorithmCreator::template DiscreteTraits< polOrd >::DiscreteFunctionType > GlobalContainerType;
 
+    //template< int polOrd >
+    //static std::shared_ptr< GlobalContainerType > initializeGlobalContainer()
+    //{
+    //  // return type of initializeGrid is Dune::GridPtr, use release such that memory of GridPtr is released
+    //  std::unique_ptr< GridType > gridptr( DefaultGridInitializer< GridType >::initialize() );
+
+    //  return std::make_shared< GlobalContainerType >( *gridptr );
+    //}
 
   };
 
