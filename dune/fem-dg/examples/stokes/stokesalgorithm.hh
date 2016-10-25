@@ -496,7 +496,7 @@ namespace Fem
                                                                     DiscreteVelocityFunctionType;
     typedef typename BaseType::DiscreteFunctionType                 DiscreteFunctionType;
     // ... as well as the Space type
-    typedef typename EllipticalAlgorithmType::DiscreteTraits::DiscreteFunctionType::DiscreteFunctionSpaceType
+    typedef typename DiscreteVelocityFunctionType::DiscreteFunctionSpaceType
                                                                     DiscreteVelocityFunctionSpaceType;
     typedef typename BaseType::DiscreteFunctionSpaceType            DiscreteFunctionSpaceType;
 
@@ -529,8 +529,6 @@ namespace Fem
     using BaseType::solution;
     using BaseType::solver_;
     using BaseType::exactSolution_;
-
-    typedef typename EllipticalAlgorithmType::ContainerType         EllipticContainerType;
 
     typedef typename AssemblerType::ContainerType                   ContainerType;
 

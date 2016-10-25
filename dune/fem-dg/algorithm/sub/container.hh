@@ -60,7 +60,8 @@ namespace Fem
     template< template<class,class,int...> class PairImp, class Rows, class Cols, int row, int col >
     struct MatrixPack;
 
-    //Normal
+    ////Normal
+    //generate one row
     template<template<class,class> class PairImp, class RowHead, class... Cols, int row, int col >
     struct MatrixPack< PairImp, std::tuple< RowHead >, std::tuple< Cols... >, row, col >
     {
@@ -69,6 +70,7 @@ namespace Fem
       typedef std::tuple< std::tuple< std::shared_ptr< typename PairImp< RowHead, Cols >::type >... > > shared_type;
     };
 
+    //generate whole matrix
     template<template<class,class> class PairImp, class RowHead, class RowHead2, class... Rows, class... Cols, int row, int col>
     struct MatrixPack< PairImp, std::tuple< RowHead, RowHead2, Rows... >, std::tuple< Cols... >, row, col >
     {
@@ -85,7 +87,8 @@ namespace Fem
       typedef std::tuple< SharedTupleHead, SharedTupleEnd > shared_type;
     };
 
-    //Generic, i.e. each entry can be indivually choosen via <int,int> argument
+    ////Generic, i.e. each entry can be indivually choosen via <int,int> argument
+    //generate last col element of a row
     template<template<class,class,int,int> class PairImp, class RowHead, class ColHead, int row, int col >
     struct MatrixPack< PairImp, std::tuple< RowHead >, std::tuple< ColHead >, row, col >
     {
@@ -93,19 +96,21 @@ namespace Fem
       typedef std::tuple< std::tuple< std::shared_ptr< typename PairImp< RowHead, ColHead, row, col >::type > > >  shared_type;
     };
 
+    //generate one row
     template<template<class,class,int,int> class PairImp, class RowHead, class ColHead, class... Cols, int row, int col >
     struct MatrixPack< PairImp, std::tuple< RowHead >, std::tuple< ColHead, Cols... >, row, col >
     {
     private:
-      typedef                  typename PairImp< RowHead, ColHead, row, col >::type   TupleHead;
-      typedef std::shared_ptr< typename PairImp< RowHead, ColHead, row, col >::type > SharedTupleHead;
+      typedef std::tuple<                  typename PairImp< RowHead, ColHead, row, col >::type   > TupleHead;
+      typedef std::tuple< std::shared_ptr< typename PairImp< RowHead, ColHead, row, col >::type > > SharedTupleHead;
       typedef typename drop_tuple< typename MatrixPack< PairImp, std::tuple< RowHead>, std::tuple< Cols...>, row, col+1 >::type        >::type       TupleEnd;
       typedef typename drop_tuple< typename MatrixPack< PairImp, std::tuple< RowHead>, std::tuple< Cols...>, row, col+1 >::shared_type >::type SharedTupleEnd;
     public:
-      typedef std::tuple< std::tuple< TupleHead,       TupleEnd       > >         type;
-      typedef std::tuple< std::tuple< SharedTupleHead, SharedTupleEnd > >  shared_type;
+      typedef std::tuple< typename tuple_concat< TupleHead,       TupleEnd       >::type >        type;
+      typedef std::tuple< typename tuple_concat< SharedTupleHead, SharedTupleEnd >::type > shared_type;
     };
 
+    //generate whole matrix
     template<template<class,class,int,int> class PairImp, class RowHead, class RowHead2, class... Rows, class... Cols, int row, int col >
     struct MatrixPack< PairImp, std::tuple< RowHead, RowHead2, Rows... >, std::tuple< Cols... >, row, col >
     {
@@ -118,8 +123,8 @@ namespace Fem
       typedef typename drop_tuple< typename MatrixPack< PairImp, RowTuple, ColTuple, row+1, 0 >::type        >::type       TupleEnd;
       typedef typename drop_tuple< typename MatrixPack< PairImp, RowTuple, ColTuple, row+1, 0 >::shared_type >::type SharedTupleEnd;
     public:
-      typedef std::tuple< std::tuple< TupleHead,       TupleEnd       > >         type;
-      typedef std::tuple< std::tuple< SharedTupleHead, SharedTupleEnd > >  shared_type;
+      typedef std::tuple< TupleHead,       TupleEnd       >         type;
+      typedef std::tuple< SharedTupleHead, SharedTupleEnd >  shared_type;
     };
 
     template< template<class,class,int...> class TwoArgImp, class Rows, class Cols >
@@ -311,14 +316,9 @@ namespace Fem
   struct OneArgContainer< OneArgImp, std::tuple< Args... > >
   {
     typedef std::tuple< Args... >                ArgTupleType;
-
     typedef typename VectorPacker< OneArgImp, ArgTupleType >::shared_type Item1TupleType;
 
   public:
-
-    template< unsigned long int i >
-    using DiscreteFunction = typename std::tuple_element< i, ArgTupleType>::type;
-
     template< unsigned long int i >
     using Item1 = typename std::tuple_element< i, Item1TupleType>::type::element_type;
 
@@ -353,7 +353,7 @@ namespace Fem
 
     ////// Copy
     template< class Item1Tuple, unsigned long int ...i >
-    static Item1TupleType copyContainer( const Item1Tuple& item1, std::tuple< std::integral_constant< unsigned long int, i... > > )//std::integer_sequence< unsigned long int, i... > )
+    static Item1TupleType copyContainer( const Item1Tuple& item1, std::tuple< std::integral_constant< unsigned long int, i... > > )
     {
       return std::make_tuple( std::get<i>( item1 )... );
     }
@@ -407,16 +407,13 @@ namespace Fem
     : public OneArgContainer< OneArgImp, std::tuple< RowArgs... > >
   {
     typedef OneArgContainer< OneArgImp, std::tuple< RowArgs... > > BaseType;
-
     typedef OneArgContainer< OneArgImp, std::tuple< ColArgs... > > FakeColBaseType;
-
 
     typedef std::tuple< RowArgs... >        RowArgTupleType;
     typedef std::tuple< ColArgs... >        ColArgTupleType;
 
     typedef typename MatrixPacker< TwoArgImp, RowArgTupleType, ColArgTupleType >::shared_type  Item2TupleType;
     typedef typename VectorPacker< OneArgImp, RowArgTupleType >::shared_type                   Item1TupleType;
-
 
     typedef Item1TupleType                                                                     RowItem1TupleType;
     typedef typename VectorPacker< OneArgImp, ColArgTupleType >::shared_type                   ColItem1TupleType;
@@ -427,9 +424,9 @@ namespace Fem
 
     using BaseType::operator();
 
+  protected:
     using BaseType::item1_;
 
-  protected:
     static const int size = BaseType::size;
     using BaseType::sequence;
 
@@ -556,6 +553,18 @@ namespace Fem
     struct Object
     {
       typedef Obj< typename InnerObj< r, c >::template type<R,C> > type;
+    };
+  };
+
+  template< template<class> class Obj,
+            template< template<class,class>class,int,int> class InnerObj,
+            template<class,class> class Default >
+  struct MoreGeneralTemplateContainer
+  {
+    template< class R, class C, int r, int c >
+    struct Object
+    {
+      typedef Obj< typename InnerObj< Default, r, c >::template type<R,C> > type;
     };
   };
 

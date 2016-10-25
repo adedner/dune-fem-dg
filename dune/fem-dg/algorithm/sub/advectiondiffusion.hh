@@ -79,9 +79,10 @@ namespace Fem
 
     typedef typename BaseType::ContainerType                  ContainerType;
 
-    SubAdvectionDiffusionAlgorithm( GridType& grid, ContainerType& container,
+    template< class ContainerImp >
+    SubAdvectionDiffusionAlgorithm( GridType& grid, std::shared_ptr< ContainerImp > cont,
                                     ExtraParameterTupleType tuple = ExtraParameterTupleType() ) :
-      BaseType( grid, container ),
+      BaseType( grid, cont ),
       //vSpace_( gridPart_ ),
       //velo_( "velocity", vSpace_ ),
       //tuple_( &velo_ ),

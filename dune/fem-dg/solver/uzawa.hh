@@ -21,25 +21,25 @@ namespace Fem
    * \ingroup Solvers
    */
   template < class AssemblerType, class InverseOperatorType>
-  class UzawaSolver : public Dune::Operator< typename AssemblerType::ContainerType::template DiscreteFunction<1>::DomainFieldType,
-                                             typename AssemblerType::ContainerType::template DiscreteFunction<1>::RangeFieldType,
-                                             typename AssemblerType::ContainerType::template DiscreteFunction<1>,
-                                             typename AssemblerType::ContainerType::template DiscreteFunction<1> >
+  class UzawaSolver : public Dune::Operator< typename AssemblerType::ContainerType::template Item1<1>::DiscreteFunction::DomainFieldType,
+                                             typename AssemblerType::ContainerType::template Item1<1>::DiscreteFunction::RangeFieldType,
+                                             typename AssemblerType::ContainerType::template Item1<1>::DiscreteFunction,
+                                             typename AssemblerType::ContainerType::template Item1<1>::DiscreteFunction >
   {
 
 
     typedef typename AssemblerType::ContainerType                            ContainerType;
 
-    typedef typename ContainerType::template DiscreteFunction<0>             DiscreteFunctionType;
-    typedef typename ContainerType::template DiscreteFunction<1>             PressureDiscreteFunctionType;
+    typedef typename ContainerType::template Item1<0>::DiscreteFunction      DiscreteFunctionType;
+    typedef typename ContainerType::template Item1<1>::DiscreteFunction      PressureDiscreteFunctionType;
 
     typedef typename DiscreteFunctionType::DiscreteFunctionSpaceType         VeloSpaceType;
     typedef typename PressureDiscreteFunctionType::DiscreteFunctionSpaceType PressureSpaceType;
 
     // for non istl version
-    typedef typename ContainerType::template Item2<0,1>::MatrixType          BOPType;
-    typedef typename ContainerType::template Item2<1,0>::MatrixType          BTOPType;
-    typedef typename ContainerType::template Item2<1,1>::MatrixType          COPType;
+    typedef typename ContainerType::template Item2<0,1>::Matrix              BOPType;
+    typedef typename ContainerType::template Item2<1,0>::Matrix              BTOPType;
+    typedef typename ContainerType::template Item2<1,1>::Matrix              COPType;
 
   public:
     /** \todo Please doc me! */

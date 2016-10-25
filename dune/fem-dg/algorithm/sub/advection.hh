@@ -77,9 +77,10 @@ namespace Fem
     typedef typename BaseType::ContainerType                   ContainerType;
 
     // constructor
-    SubAdvectionAlgorithm( GridType& grid, ContainerType& container,
+    template< class ContainerImp >
+    SubAdvectionAlgorithm( GridType& grid, std::shared_ptr< ContainerImp > cont,
                            ExtraParameterTupleType tuple = ExtraParameterTupleType() ) :
-      BaseType( grid, container ),
+      BaseType( grid, cont ),
       tuple_( ),
       advectionOperator_( Std::make_unique< FullOperatorType >( solution().space().gridPart(), problem(), tuple_, name() ) ),
       adaptIndicator_( Std::make_unique< AdaptIndicatorOptional<AdaptIndicatorType> >( solution(), problem(), tuple_, name() ) )

@@ -40,23 +40,21 @@ namespace Fem
   struct SubEllipticContainerItem
   {
   public:
-    typedef MatrixContainerImp           MatrixType;
-
-    using Object = MatrixType;
+    using Matrix = MatrixContainerImp;
 
     template< class ContainerItem1, class ContainerItem2 >
     SubEllipticContainerItem ( const ContainerItem1& row, const ContainerItem2& col, const std::string name = "" )
-    : matrix_( std::make_shared< MatrixType >( name + "matrix", row->solution()->space(), col->solution()->space() ) )
+    : matrix_( std::make_shared< Matrix >( name + "matrix", row->solution()->space(), col->solution()->space() ) )
     {}
 
     //matrix for assembly
-    std::shared_ptr< MatrixType > matrix()
+    std::shared_ptr< Matrix > matrix()
     {
       return matrix_;
     }
 
   private:
-    std::shared_ptr< MatrixType >            matrix_;
+    std::shared_ptr< Matrix >            matrix_;
   };
 
 
@@ -112,7 +110,7 @@ namespace Fem
     typedef typename ErrorEstimatorType::DGOperatorType                 DGOperatorType;
     static const int polynomialOrder = ErrorEstimatorType::polynomialOrder;
 
-    typedef typename DGOperatorType::ContainerType                      ContainerType;
+    //typedef typename DGOperatorType::ContainerType                      ContainerType;
 
     typedef typename DiscreteFunctionType::DiscreteFunctionSpaceType    DiscreteFunctionSpaceType;
     typedef typename DiscreteFunctionType::GridPartType                 GridPartType;
@@ -340,7 +338,7 @@ namespace Fem
 
     typedef typename ErrorEstimatorType::DGOperatorType     DGOperatorType;
 
-    typedef typename SigmaEstimatorType::ContainerType      ContainerType;
+    //typedef typename SigmaEstimatorType::ContainerType      ContainerType;
 
     typedef PersistentContainer<GridType,PolOrderStructure> PolOrderContainer;
 
@@ -510,7 +508,7 @@ namespace Fem
     typedef typename PAdaptivityType::ErrorEstimatorType                 ErrorEstimatorType;
     typedef typename SigmaEstimatorType::DiscreteFunctionType            DiscreteFunctionType;
     typedef typename SigmaEstimatorType::DGOperatorType                  DGOperatorType;
-    typedef typename DGOperatorType::ContainerType                       ContainerType;
+    //typedef typename DGOperatorType::ContainerType                       ContainerType;
     typedef typename DiscreteFunctionType::DiscreteFunctionSpaceType     DiscreteFunctionSpaceType;
     typedef typename DiscreteFunctionType::GridPartType                  GridPartType;
     typedef typename GridPartType::GridType                              GridType;

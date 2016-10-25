@@ -226,11 +226,17 @@ namespace Fem
           typedef typename AC::template DefaultAssembTraits< DFSpaceType, DFSpaceType, polOrd-pressureOrderReduction, AnalyticalTraits >
                                                                                      OpTraits;
 
-          typedef AssemblerTraitsList< std::tuple< typename std::tuple_element< 0, DiscreteFunctionsType>::type,
-                                                   typename std::tuple_element< 1, DiscreteFunctionsType>::type >,
-                                                   AC::template Containers >         AssTraits;
+          //typedef AssemblerTraitsList< std::tuple< typename std::tuple_element< 0, DiscreteFunctionsType>::type,
+          //                                         typename std::tuple_element< 1, DiscreteFunctionsType>::type >,
+          //                                         AC::template Containers >         AssTraits;
         public:
-          typedef StokesAssembler< AssTraits, OpTraits >                             AssemblerType;
+          typedef StokesAssembler< OpTraits, AC::template Containers,
+                                   typename std::tuple_element< 0, DiscreteFunctionsType>::type,
+                                   typename std::tuple_element< 1, DiscreteFunctionsType>::type>
+                                                                                     AssemblerType;
+
+          //template< template<class,class>class MatrixImp >
+          //using AssemblerType = StokesAssembler< OpTraits, OpTraits, MatrixImp >
           //the following typedef is not needed by stokes algorithm atm
           //typedef typename AssemblerType::MatrixType                               type;
         };

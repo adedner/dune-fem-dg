@@ -30,7 +30,7 @@ namespace Fem
     typedef typename Traits::RangeDiscreteFunctionType            RangeDiscreteFunctionType;
     typedef typename Traits::MatrixContainerType                  LinearOperatorType;
     typedef LinearOperatorType                                    MatrixType;
-    typedef typename Traits::DomainDiscreteFunctionType           DestinationType;
+    typedef DomainDiscreteFunctionType                            DestinationType;
 
     template< class Row, class Col >
     using FakeMatrixAdapter = MatrixType;
@@ -971,7 +971,6 @@ namespace Fem
       bndValues.resize( numFaceQuadPoints );
     }
 
-    //std::shared_ptr< ContainerType >   container_;
     const ModelType&                   model_;
     const DiscreteFunctionSpaceType&   space_;
     std::shared_ptr< DestinationType > rhs_;
@@ -1000,23 +999,6 @@ namespace Fem
     mutable std::vector< std::vector< JacobianRangeType > > dphiFaceEn;
     mutable std::vector< std::vector< RangeType > >         phiFaceNb;
     mutable std::vector< std::vector< JacobianRangeType > > dphiFaceNb;
-
-
-
-    //template< unsigned long int i >
-    //auto container( std::integral_constant< unsigned long int, i> index ) -> decltype( *(*container_)(index) )
-    //{
-    //  assert( container_ );
-    //  return *(*container_)(index);
-    //}
-
-    //template< unsigned long int i, unsigned long int j >
-    //auto container( std::integral_constant< unsigned long int, i> row,
-    //                std::integral_constant< unsigned long int, j> col ) -> decltype( *(*container_)(row,col) )
-    //{
-    //  assert( container_ );
-    //  return *(*container_)(row,col);
-    //}
   };
 
 }

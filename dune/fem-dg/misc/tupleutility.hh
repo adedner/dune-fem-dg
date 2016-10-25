@@ -96,6 +96,13 @@ namespace Fem
   template< class TupleImp >
   struct drop_tuple;
 
+  template< class Tuple >
+  struct drop_tuple< std::tuple< Tuple > >
+  {
+    static_assert( std::is_same<std::tuple< Tuple >,std::tuple< Tuple > >::value ,
+                   "We do not unwrap a simple tuple to avoid unexpected behaviour!" );
+  };
+
   template< class... TupleArg >
   struct drop_tuple< std::tuple< std::tuple< TupleArg... > > >
   {

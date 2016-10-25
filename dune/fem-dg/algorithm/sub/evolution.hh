@@ -13,6 +13,7 @@
 #include <dune/fem/misc/femtimer.hh>
 #include <dune/common/timer.hh>
 #include <dune/fem/space/common/interpolate.hh>
+#include <dune/fem-dg/misc/uniquefunctionname.hh>
 
 #include <dune/fem-dg/algorithm/sub/interface.hh>
 #include <dune/fem-dg/algorithm/caller/sub/diagnostics.hh>
@@ -52,87 +53,59 @@ namespace Fem
   };
 
   template <class DiscreteFunctionImp >
-  struct SubEvolutionContainer
+  struct SubEvolutionContainerItem
   {
-    typedef DiscreteFunctionImp                                          DiscreteFunctionType;
-
-    //short cut for tuple containing shared_ptr
-    template< class... Args >
-    using shared_tuple = std::tuple< std::shared_ptr<Args>... >;
+    using CItem = ContainerItem< DiscreteFunctionImp >;
   public:
-    template< int i >
-    using DiscreteFunction = DiscreteFunctionType;
-    template< int i >
-    using DiscreteFunctionSpace = typename DiscreteFunction<i>::DiscreteFunctionSpaceType;
-    template< int i >
-    using GridPart = typename DiscreteFunctionSpace<i>::GridPartType;
-    template< int i >
-    using Grid = typename GridPart<i>::GridType;
+    using DiscreteFunction = DiscreteFunctionImp;
 
     // owning container
-    SubEvolutionContainer( Grid<0>& grid, const std::string name = "" )
-    : stringId_( "123" ),
-      grid_( &grid ),
-      gridPart_( std::make_tuple( std::make_shared< GridPart<0> >( *grid_ ) ) ),
-      space_( std::make_tuple( std::make_shared<DiscreteFunctionSpace<0> >( *std::get<0>(gridPart_) ) ) ),
-      solution_( std::make_tuple( std::make_shared<DiscreteFunction<0> >( name + "u" + stringId_, *space<0>() ) ) ),
-      exactSolution_( std::make_tuple( std::make_shared<DiscreteFunction<0> >( name + "u-exact" + stringId_, *space<0>() ) ) )
+    template< class SameObject >
+    SubEvolutionContainerItem( SameObject& obj, const std::string name = "" )
+    : stringId_( FunctionIDGenerator::instance().nextId() ),
+      solution_(      std::make_shared< CItem >( name + "u" + stringId_, obj ) ),
+      exactSolution_( std::make_shared< CItem >( name + "u-exact" + stringId_, *solution_ ) )
     {}
 
     // non owning container, for coupling
-    SubEvolutionContainer( const std::string name = "" )
-    : stringId_( "123" ),
-      grid_( nullptr ),
-      gridPart_( std::make_tuple( nullptr ) ),
-      space_( std::make_tuple( nullptr ) ),
-      solution_( std::make_tuple( nullptr ) ),
-      exactSolution_( std::make_tuple( nullptr ) )
+    SubEvolutionContainerItem( const std::string name = "" )
+    : stringId_( FunctionIDGenerator::instance().nextId() ),
+      solution_(      std::make_shared< CItem >( name + "u" + stringId_ ) ),
+      exactSolution_( std::make_shared< CItem >( name + "u-exact" + stringId_ ) )
     {}
 
-    //spaces
-    template< int i >
-    std::shared_ptr< DiscreteFunctionSpace<i> > space() const
-    {
-      assert( std::get<i>(space_) );
-      return std::get<i>(space_);
-    }
-
     //solution
-    template< int i >
-    std::shared_ptr< DiscreteFunction<i> > solution() const
+    shared_ptr< DiscreteFunction > solution() const
     {
-      return std::get<i>(solution_);
-    }
-    template< int i >
-    void setSolution( std::shared_ptr< DiscreteFunction<i> > solution )
-    {
-      std::get<i>(solution_) = solution;
+      return solution_->shared();
     }
 
     //exact solution
-    template< int i >
-    std::shared_ptr< DiscreteFunction<i> > exactSolution() const
+    shared_ptr< DiscreteFunction > exactSolution() const
     {
-      return std::get<i>( exactSolution_);
+      return exactSolution_->shared();
     }
-    template< int i >
-    void setExactSolution( std::shared_ptr< DiscreteFunction<i> > exactSolution )
-    {
-     std::get<i>( exactSolution_ )= exactSolution;
-    }
-
   private:
-    const std::string                         stringId_;
-    Grid<0>*                                 grid_;
-    shared_tuple< GridPart<0> >              gridPart_;
-    shared_tuple< DiscreteFunctionSpace<0> > space_;
+    const std::string          stringId_;
 
-    shared_tuple< DiscreteFunction<0> >      solution_;
-    shared_tuple< DiscreteFunction<0> >      exactSolution_;
-    //shared_tuple< DiscreteFunction<0> >      rhs_;
+    std::shared_ptr< CItem > solution_;
+    std::shared_ptr< CItem > exactSolution_;
   };
 
+  template <class... DiscreteFunctions >
+  struct SubEvolutionContainer
+  : public OneArgContainer< SubEvolutionContainerItem, std::tuple< DiscreteFunctions... > >
+  {
+    typedef OneArgContainer< SubEvolutionContainerItem, std::tuple< DiscreteFunctions...> > BaseType;
+  public:
+    using BaseType::operator();
 
+    // constructor: do not touch/delegate everything
+    template< class ... Args>
+    SubEvolutionContainer( Args&&... args )
+    : BaseType( args... )
+    {}
+  };
 
   template< class SubEvolutionAlgorithmTraits >
   class SubEvolutionAlgorithmBase;
@@ -145,8 +118,10 @@ namespace Fem
     typedef SubEvolutionAlgorithmBase< Traits >                          BaseType;
   public:
     typedef typename BaseType::ContainerType                             ContainerType;
-    SubEvolutionAlgorithm( Grid &grid, ContainerType& container )
-    : BaseType( grid, container )
+
+    template< class ContainerImp >
+    SubEvolutionAlgorithm( Grid &grid, std::shared_ptr< ContainerImp > cont )
+    : BaseType( grid, cont )
     {}
   };
 
@@ -213,12 +188,12 @@ namespace Fem
 
     typedef SubEvolutionContainer< DiscreteFunctionType >               ContainerType;
 
-    SubEvolutionAlgorithmBase ( GridType &grid, const ContainerType& container )
+    template< class ContainerImp >
+    SubEvolutionAlgorithmBase ( GridType &grid, std::shared_ptr< ContainerImp > cont )
     : BaseType( grid ),
-      container_( container ),
       overallTime_( 0 ),
-      solution_( container_.template solution<0>() ),
-      exactSolution_( container_.template exactSolution<0>() ),
+      solution_( (*cont)(_0)->solution() ),
+      exactSolution_( (*cont)(_0)->exactSolution() ),
       solver_( nullptr ),
       ioTuple_( new IOTupleType( std::make_tuple( solution_.get(), exactSolution_.get() ) ) ),
       diagnostics_( name() ),
@@ -346,7 +321,6 @@ namespace Fem
     }
 
   protected:
-    const ContainerType&                    container_;
     double                                  overallTime_;
     Dune::Timer                             overallTimer_;
 

@@ -38,51 +38,50 @@ namespace Fem
   template <class DiscreteFunctionImp >
   struct SubSteadyStateContainerItem
   {
+    using CItem = ContainerItem< DiscreteFunctionImp >;
   public:
     using DiscreteFunction = DiscreteFunctionImp;
-    using Object = DiscreteFunction;
-    using Item = ContainerItem< DiscreteFunction >;
 
     // owning container
     template< class SameObject >
     SubSteadyStateContainerItem( SameObject& obj, const std::string name = "" )
     : stringId_( FunctionIDGenerator::instance().nextId() ),
-      solution_(      std::make_shared< Item >( name + "u" + stringId_, obj ) ),
-      exactSolution_( std::make_shared< Item >( name + "u-exact" + stringId_, *solution_ ) ),
-      rhs_(           std::make_shared< Item >( name + "u-rhs" + stringId_, *solution_ ) )
+      solution_(      std::make_shared< CItem >( name + "u" + stringId_, obj ) ),
+      exactSolution_( std::make_shared< CItem >( name + "u-exact" + stringId_, *solution_ ) ),
+      rhs_(           std::make_shared< CItem >( name + "u-rhs" + stringId_, *solution_ ) )
     {}
 
     // non owning container, for coupling
     SubSteadyStateContainerItem( const std::string name = "" )
     : stringId_( FunctionIDGenerator::instance().nextId() ),
-      solution_(      std::make_shared< Item >( name + "u" + stringId_ ) ),
-      exactSolution_( std::make_shared< Item >( name + "u-exact" + stringId_ ) ),
-      rhs_(           std::make_shared< Item >( name + "u-rhs" + stringId_ ) )
+      solution_(      std::make_shared< CItem >( name + "u" + stringId_ ) ),
+      exactSolution_( std::make_shared< CItem >( name + "u-exact" + stringId_ ) ),
+      rhs_(           std::make_shared< CItem >( name + "u-rhs" + stringId_ ) )
     {}
 
     //solution
-    shared_ptr< DiscreteFunctionImp > solution() const
+    shared_ptr< DiscreteFunction > solution() const
     {
       return solution_->shared();
     }
 
     //exact solution
-    shared_ptr< DiscreteFunctionImp > exactSolution() const
+    shared_ptr< DiscreteFunction > exactSolution() const
     {
       return exactSolution_->shared();
     }
 
     //rhs
-    shared_ptr< DiscreteFunctionImp > rhs() const
+    shared_ptr< DiscreteFunction > rhs() const
     {
       return rhs_->shared();
     }
   private:
     const std::string          stringId_;
 
-    std::shared_ptr< Item > solution_;
-    std::shared_ptr< Item > exactSolution_;
-    std::shared_ptr< Item > rhs_;
+    std::shared_ptr< CItem > solution_;
+    std::shared_ptr< CItem > exactSolution_;
+    std::shared_ptr< CItem > rhs_;
   };
 
 
@@ -100,109 +99,13 @@ namespace Fem
     : BaseType( args... )
     {}
 
-    //TODO do we need this?
-    //// sub container, wrap base class version
-    //template< unsigned long int... i >
-    //std::shared_ptr< SubContainer< i... > >
-    //operator() ( std::tuple< std::integral_constant< unsigned long int, i>... > index )
-    //{
-    //  return std::make_shared< SubContainer< i... > >( BaseType::copyContainer( index ) );
-    //}
 #if 0
-    //for global to local container extraction
+    //for global to local container extraction ???
     static std::integer_sequence< unsigned long int, 0, 1, 4 > sub0;
     static std::integer_sequence< unsigned long int, 3, 1, 2 > sub1;
     static std::integer_sequence< unsigned long int, 5, 1, 2 > sub2;
 #endif
   };
-
-
-//  template <class... DiscreteFunctions >
-//  struct SubSteadyStateContainer
-//  //: public OneArgContainer< SubSteadyStateContainerItem< DiscreteFunctions > >... >
-//  {
-//    typedef std::tuple< DiscreteFunctions... >                                DiscreteFunctionTupleType;
-//    typedef std::tuple< std::shared_ptr< SubSteadyStateContainerItem< DiscreteFunctions > >... > Item1TupleType;
-//
-//  public:
-//
-//    template< unsigned long int i >
-//    using DiscreteFunction = typename std::tuple_element< i, DiscreteFunctionTupleType>::type;
-//
-//    template< unsigned long int i >
-//    using Item1 = typename std::tuple_element< i, Item1TupleType>::type::element_type;
-//
-//  protected:
-//    static const int size = std::tuple_size< Item1TupleType >::value;
-//    static std::make_integer_sequence< unsigned long int, size > sequence;
-//
-//    ////// Creation
-//    template< unsigned long int i, class SameObject >
-//    static std::shared_ptr< Item1<i> > createItem1( SameObject& obj, const std::string name )
-//    {
-//      return std::make_shared<Item1<i> >( obj, name );
-//    }
-//    template< unsigned long int i >
-//    static std::shared_ptr< Item1<i> > createItem1( const std::string name )
-//    {
-//      return std::make_shared< Item1<i> >( name );
-//    }
-//    template< unsigned long int ...i, class SameObject>
-//    static Item1TupleType createContainer( std::integer_sequence< unsigned long int, i... >, SameObject& obj, const std::string name )
-//    {
-//      return std::make_tuple( createItem1<i>( obj, name )... );
-//    }
-//    template< unsigned long int ...i >
-//    static Item1TupleType createContainer( std::integer_sequence< unsigned long int, i... >, const std::string name )
-//    {
-//      return std::make_tuple( createItem1<i>( name )... );
-//    }
-//
-//
-//    ////// Copy
-//    //....
-//    template< unsigned long int ...i >
-//    Item1TupleType copyContainer( std::integer_sequence< unsigned long int, i... > )
-//    {
-//      return std::make_tuple( std::get<i>( item1_ )... );
-//    }
-//  public:
-//
-//    // owning container
-//    template< class SameObject >
-//    SubSteadyStateContainer( SameObject& obj, const std::string name = "" )
-//    : item1_( createContainer( sequence, obj, name ) )
-//    {}
-//
-//    // non owning container, for coupling
-//    SubSteadyStateContainer( const std::string name = "" )
-//    : item1_( createContainer( sequence, name ) )
-//    {}
-//
-//    // copy, for internal use only
-//    SubSteadyStateContainer( const Item1TupleType& item )
-//    : item1_( item )
-//    {}
-//
-//    // item access
-//    template< unsigned long int i >
-//    std::shared_ptr< Item1<i> > operator() ( std::integral_constant<unsigned long int, i> index )
-//    {
-//      return std::get<i>( item1_ );
-//    }
-//
-//    // sub Container
-//    template< unsigned long int... i >
-//    std::shared_ptr< SubSteadyStateContainer< DiscreteFunction<i>... > >
-//    operator() ( std::tuple< std::integral_constant<unsigned long int, i>... > index )
-//    {
-//      typedef SubSteadyStateContainer< DiscreteFunction<i>... > SubContainerType;
-//      return std::make_shared< SubContainerType >( copyContainer( index ) );
-//    }
-//  protected:
-//    Item1TupleType item1_;
-//  };
-//
 
 
   template< class Obj >

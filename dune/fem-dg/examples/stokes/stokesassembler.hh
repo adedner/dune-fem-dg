@@ -61,68 +61,52 @@ namespace Fem
 
    private:
     std::string keyPrefix_;
-
   };
 
-  template< int row, int col >
-  struct OperatorPart;
 
-  template<>
-  struct OperatorPart<0,0>
+
+  template< template<class,class> class, int row, int col >
+  struct StokesOperatorPattern;
+
+  template<template<class,class> class DefaultMatrixImp >
+  struct StokesOperatorPattern<DefaultMatrixImp,0,0>
   {
     template< class R, class C >
-    using type = SparseRowLinearOperator<R,C>;
+    //using type = SparseRowLinearOperator<R,C>;
+    using type = DefaultMatrixImp<R,C>;
   };
-  template<>
-  struct OperatorPart<0,1>
+  template<template<class,class> class DefaultMatrixImp >
+  struct StokesOperatorPattern<DefaultMatrixImp,0,1>
   {
     template< class R, class C >
-    using type = SparseRowLinearOperator<R,C>;
+    using type = DefaultMatrixImp<R,C>;
   };
-  template<>
-  struct OperatorPart<1,0>
+  template<template<class,class> class DefaultMatrixImp >
+  struct StokesOperatorPattern<DefaultMatrixImp,1,0>
   {
     template< class R, class C >
-    using type = SparseRowLinearOperator<R,C>;
+    using type = DefaultMatrixImp<R,C>;
   };
-  template<>
-  struct OperatorPart<1,1>
+  template<template<class,class> class DefaultMatrixImp >
+  struct StokesOperatorPattern<DefaultMatrixImp,1,1>
   {
     template< class R, class C >
-    using type = SparseRowLinearOperator<R,C>;
+    using type = DefaultMatrixImp<R,C>;
   };
 
-
-
-  //template< template<class,class> class MatrixImp, class... DiscreteFunctions >
-  //struct SubEllipticContainer
-  //  : public TwoArgContainer< LinOperatorSelect< SubEllipticContainerItem, MatrixImp >::template Object,
-  //                            SubSteadyStateContainerItem, std::tuple< DiscreteFunctions... >, std::tuple< DiscreteFunctions... > >
-  //{
-  //  typedef TwoArgContainer< LinOperatorSelect< SubEllipticContainerItem, MatrixImp >::template Object,
-  //                           SubSteadyStateContainerItem, std::tuple< DiscreteFunctions... >, std::tuple< DiscreteFunctions... > > BaseType;
-
-  //public:
-  //  using BaseType::operator();
-
-  //  // constructor: do not touch/delegate everything
-  //  template< class ... Args>
-  //  SubEllipticContainer( Args&&... args )
-  //  : BaseType( args... )
-  //  {}
-
-  //};
-
-
-  //template< template<class,class> class MatrixImp, class UDiscreteFunctionImp, class PDiscreteFunctionImp >
+  //TODO: knock out preconditioning
+  //with MatrixParameterNoPreconditioner
   template< template<class,class> class MatrixImp, class UDiscreteFunctionImp,class PDiscreteFunctionImp >
   class UzawaContainer
-    //: public TwoArgContainer< LinOperatorSelect< SubEllipticContainerItem, MatrixImp >::template Object,
-    //                          SubSteadyStateContainerItem, std::tuple< DiscreteFunctions... >, std::tuple< DiscreteFunctions... > >
-    : public SubEllipticContainer< MatrixImp, UDiscreteFunctionImp, PDiscreteFunctionImp >
+    : public TwoArgContainer< MoreGeneralTemplateContainer< SubEllipticContainerItem, StokesOperatorPattern, MatrixImp >::template Object,
+                              SubSteadyStateContainerItem,
+                              std::tuple< UDiscreteFunctionImp, PDiscreteFunctionImp >,
+                              std::tuple< UDiscreteFunctionImp, PDiscreteFunctionImp > >
   {
-
-    typedef SubEllipticContainer< MatrixImp, UDiscreteFunctionImp, PDiscreteFunctionImp > BaseType;
+    typedef TwoArgContainer< MoreGeneralTemplateContainer< SubEllipticContainerItem, StokesOperatorPattern, MatrixImp >::template Object,
+                             SubSteadyStateContainerItem,
+                             std::tuple< UDiscreteFunctionImp, PDiscreteFunctionImp >,
+                             std::tuple< UDiscreteFunctionImp, PDiscreteFunctionImp > >                   BaseType;
   public:
 
     using BaseType::operator();
@@ -135,153 +119,12 @@ namespace Fem
 
   };
 
-  //template <template< class, class > class MatrixContainerImp, class UDiscreteFunctionImp,class PDiscreteFunctionImp >
-  //class UzawaContainer
-  //  : public SubEllipticContainer< MatrixContainerImp, UDiscreteFunctionImp, PDiscreteFunctionImp >
-  //{
-
-  //  typedef SubEllipticContainer< MatrixContainerImp, UDiscreteFunctionImp, PDiscreteFunctionImp > BaseType;
-  //public:
-
-  //  using BaseType::operator();
-
-  //  template< class SameObject >
-  //  UzawaContainer( SameObject& obj, const std::string name = "" )
-  //  : BaseType( obj, name )
-  //  {}
-
-  //  UzawaContainer( const std::string name = "" )
-  //  : BaseType( name )
-  //  {}
-
-  //};
-
-  //template <class UDiscreteFunctionImp,class PDiscreteFunctionImp/*, class EllipticContainerImp*/  >
-  //class UzawaContainer
-  //{
-  //  typedef UDiscreteFunctionImp                                            UDiscreteFunctionType;
-  //  typedef PDiscreteFunctionImp                                            PDiscreteFunctionType;
-
-  //  typedef typename UDiscreteFunctionType::DiscreteFunctionSpaceType       UDiscreteFunctionSpaceType;
-  //  typedef typename PDiscreteFunctionType::DiscreteFunctionSpaceType       PDiscreteFunctionSpaceType;
-
-  //  template< class DomainDF, class RangeDF >
-  //  using StokesMatrixContainer = Dune::Fem::SparseRowLinearOperator< DomainDF, RangeDF >;
-
-  //  typedef StokesMatrixContainer<UDiscreteFunctionType,UDiscreteFunctionType> UUMatrixType;
-  //  typedef StokesMatrixContainer<UDiscreteFunctionType,PDiscreteFunctionType> UPMatrixType;
-  //  typedef StokesMatrixContainer<PDiscreteFunctionType,UDiscreteFunctionType> PUMatrixType;
-  //  typedef StokesMatrixContainer<PDiscreteFunctionType,PDiscreteFunctionType> PPMatrixType;
-
-  //  //short cut for tuple containing shared_ptr
-  //  template< class... Args >
-  //  using shared_tuple = std::tuple< std::shared_ptr<Args>... >;
-
-  //  typedef MatrixParameterNoPreconditioner                                 MatrixParameterType;
-  //  //typedef std::tuple< shared_tuple< UUMatrixType, UPMatrixType >,
-  //  //                    shared_tuple< PUMatrixType, PPMatrixType > >        MatrixTupleType;
-
-
-  //  //static_assert( std::is_same< typename UDiscreteFunctionSpaceType::GridType,
-  //  //                             typename PDiscreteFunctionSpaceType::GridType >::value,
-  //  //               "GridTypes must coincide for both discrete functions!" );
-
-  //  //static_assert( std::is_same< typename UDiscreteFunctionSpaceType::GridPartType,
-  //  //                             typename PDiscreteFunctionSpaceType::GridPartType >::value,
-  //  //               "GridPartTypes must coincide for both discrete functions!" );
-
-  //  //typedef shared_tuple< UDiscreteFunctionType, PDiscreteFunctionType >    DiscreteFunctionTupleType;
-
-  //  //typedef EllipticContainerImp                                            UContainerType;
-  //  //typedef SubSteadyStateContainerItem< UDiscreteFunctionType >       UContainerType;
-  //  //typedef SubSteadyStateContainerItem< PDiscreteFunctionType >       PContainerType;
-
-  //  template< class Arg >
-  //  using Mat = SubEllipticContainerItem< Arg >;
-
-  //  typedef SubEllipticContainer< UDiscreteFunctionType, Mat<UUMatrixType> >       UContainerType;
-  //  typedef SubEllipticContainer< PDiscreteFunctionType, Mat<PPMatrixType> >       PContainerType;
-
-  //  typedef std::tuple< shared_tuple< Mat< UUMatrixType >, Mat< UPMatrixType > >,
-  //                      shared_tuple< Mat< PUMatrixType >, Mat< PPMatrixType > > > MatrixContainerType;
-
-  //  typedef shared_tuple< UContainerType, PContainerType >                  ContainerList;
-
-
-  //public:
-  //  template< int i, int j >
-  //  using Matrix = typename std::tuple_element< i, typename std::tuple_element< j, MatrixContainerType >::type >::type::element_type;
-  //  template< int i >
-  //  using ContainerItem = typename std::tuple_element< i, ContainerList >::type::element_type;
-
-  //  template< class GridImp >
-  //  UzawaContainer( GridImp& grid, const std::string name = "" )
-  //  : item_( std::make_shared< UContainerType >( grid ), std::make_shared< PContainerType >( grid ) ),
-  //    matrix_( std::make_tuple( std::make_shared< Matrix<0,0> >( (*this)(_0), (*this)(_0), name + "uu" ),
-  //                              std::make_shared< Matrix<1,0> >( (*this)(_0), (*this)(_1), name + "up"/*, MatrixParameterType()*/ ) ),
-  //             std::make_tuple( std::make_shared< Matrix<0,1> >( (*this)(_1), (*this)(_0), name + "pu"/*, MatrixParameterType()*/ ),
-  //                              std::make_shared< Matrix<1,1> >( (*this)(_1), (*this)(_1), name + "pp"/*, MatrixParameterType()*/ ) ) )
-  //  {}
-
-  //  template< unsigned long int i >
-  //  std::shared_ptr< ContainerItem<i> > operator() ( std::integral_constant<unsigned long int, i> index )
-  //  {
-  //    return (*std::get<i>( item_ ))(index);
-  //  }
-
-  //  template< unsigned long int i, unsigned long int j >
-  //  std::shared_ptr< Matrix<i,j> > operator() ( std::integral_constant<unsigned long int, i> row,
-  //                                              std::integral_constant<unsigned long int, j> col  )
-  //  {
-  //    return (*std::get<i>( std::get<j>( matrix_ ) ))(row,col);
-  //  }
-
-  //  template< unsigned long int i >
-  //  std::shared_ptr< ContainerItem<i> > operator[] ( std::integral_constant<unsigned long int, i> index )
-  //  {
-  //    return std::get<i>( item_ );
-  //  }
-
-
-  //  // sub Container
-  //  template< unsigned long int i... >
-  //  std::shared_ptr< ContainerItem<i>... > operator() ( std::tuple< std::integral_constant<unsigned long int, i>... > index )
-  //  {
-  //    return (*std::get<i>( item_ ))(index);
-  //  }
-
-  //  //// sub Container
-  //  //template< unsigned long int i..., unsigned long int j... >
-  //  //std::shared_ptr< Matrix<i,j>... > operator() ( std::tuple< std::integral_constant<unsigned long int, i>... > row,
-  //  //                                               std::tuple< std::integral_constant<unsigned long int, j>... > col  )
-  //  //{
-  //  //  return (*std::get<i>( std::get<j>( matrix_ ) ))(row,col);
-  //  //}
-
-
-
-  //  //template< unsigned long int i, unsigned long int j >
-  //  //std::shared_ptr< Matrix<i,j> > sub() ( std::integral_constant<unsigned long int, i> row,
-  //  //                                       std::integral_constant<unsigned long int, j> col  )
-  //  //{
-  //  //  return std::get<i>( std::get<j>( matrix_ ) );
-  //  //}
-
-  //private:
-  //  ContainerList             item_;
-  //  MatrixContainerType       matrix_;
-
-  //};
-
-
-
-
   /**
    * \brief Assembles the Stokes problem.
    *
    * \ingroup AssemblyOperator
    */
-  template <class CombAssTraits, class OpTraits >
+  template< class OpTraits, template<class,class> class MatrixImp, class UDiscreteFunctionImp, class PDiscreteFunctionImp >
   class StokesAssembler
   {
   public:
@@ -290,23 +133,13 @@ namespace Fem
     // | ------------- |
     // | (1,0) | (1,1) |
     // ( ------------- )
-    //
-    typedef typename CombAssTraits::template DomainDiscreteFunction<0,0> DiscreteFunctionType;
-    typedef typename CombAssTraits::template RangeDiscreteFunction<1,1>  DiscretePressureFunctionType;
 
-    // some basic tests...
-    static_assert( std::is_same< typename CombAssTraits::template RangeDiscreteFunction<1,0>,
-                                 typename CombAssTraits::template DomainDiscreteFunction<0,1> >::value,
-                   "discrete function spaces does not fit." );
-    static_assert( std::is_same< typename CombAssTraits::template RangeDiscreteFunction<0,1>,
-                                 typename CombAssTraits::template DomainDiscreteFunction<1,0> >::value,
-                   "discrete function spaces does not fit." );
+    typedef UDiscreteFunctionImp                                         DiscreteFunctionType;
+    typedef PDiscreteFunctionImp                                         DiscretePressureFunctionType;
 
-
-    typedef typename CombAssTraits::template MatrixContainer< DiscreteFunctionType, DiscreteFunctionType >  EllMatrixContainerType;
 
     template< class DomainDF, class RangeDF >
-    using Mat = typename CombAssTraits::template MatrixContainer< DomainDF, RangeDF >;
+    using Mat = MatrixImp< typename DomainDF::DiscreteFunctionSpaceType, typename RangeDF::DiscreteFunctionSpaceType >;
 
     typedef UzawaContainer< Mat, DiscreteFunctionType, DiscretePressureFunctionType >
                                                                          ContainerType;
@@ -359,9 +192,9 @@ namespace Fem
     typedef typename OperatorTraits::FaceQuadratureType                   FaceQuadratureType;
   protected:
 
-    typedef typename ContainerType::template Item2<0,1>::MatrixType                  PressureGradMatType;
-    typedef typename ContainerType::template Item2<1,0>::MatrixType                  PressureDivMatType;
-    typedef typename ContainerType::template Item2<1,1>::MatrixType                  PressureStabMatType;
+    typedef typename ContainerType::template Item2<0,1>::Matrix           PressureGradMatType;
+    typedef typename ContainerType::template Item2<1,0>::Matrix           PressureDivMatType;
+    typedef typename ContainerType::template Item2<1,1>::Matrix           PressureStabMatType;
 
     typedef typename PressureGradMatType::LocalMatrixType                 LocalPressureGradMatType;
     typedef typename PressureDivMatType::LocalMatrixType                  LocalPressureDivMatType;
@@ -376,9 +209,8 @@ namespace Fem
     StokesAssembler( std::shared_ptr< ContainerImp > cont,
                      const ModelType& model,
                      double d11=1.,
-                     double d12=1.) :
-      //container_( cont ),
-      spc_( (*cont)(_0)->solution()->space() ),
+                     double d12=1.)
+    : spc_( (*cont)(_0)->solution()->space() ),
       pressurespc_( (*cont)(_1)->solution()->space() ),
       problem_( model.problem() ),
       veloRhs_(  (*cont)(_0)->rhs() ),
@@ -830,7 +662,6 @@ namespace Fem
 
 
   private:
-    //std::shared_ptr< ContainerType >             container_;
     const DiscreteFunctionSpaceType&             spc_;
     const DiscretePressureSpaceType&             pressurespc_;
     const ProblemType&                           problem_;
