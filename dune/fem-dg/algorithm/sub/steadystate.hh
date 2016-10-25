@@ -88,17 +88,9 @@ namespace Fem
 
   template <class... DiscreteFunctions >
   struct SubSteadyStateContainer
-  : public OneArgContainer< std::tuple< SubSteadyStateContainerItem< DiscreteFunctions >... > >
+  : public OneArgContainer< SubSteadyStateContainerItem, std::tuple< DiscreteFunctions... > >
   {
-    typedef OneArgContainer< std::tuple< SubSteadyStateContainerItem< DiscreteFunctions > ...> > BaseType;
-
-    typedef std::tuple< DiscreteFunctions... >                                      DiscreteFunctionTupleType;
-    template< long unsigned int i >
-    using DiscreteFunction = typename std::tuple_element< i, DiscreteFunctionTupleType >::type;
-
-    template< unsigned long int... i >
-    using SubContainer = SubSteadyStateContainerItem< DiscreteFunction<i>... >;
-
+    typedef OneArgContainer< SubSteadyStateContainerItem, std::tuple< DiscreteFunctions...> > BaseType;
   public:
     using BaseType::operator();
 

@@ -40,11 +40,13 @@ namespace Fem
   struct SubEllipticContainerItem
   {
   public:
-    typedef MatrixContainerImp                   MatrixType;
+    typedef MatrixContainerImp           MatrixType;
+
+    using Object = MatrixType;
 
     template< class ContainerItem1, class ContainerItem2 >
     SubEllipticContainerItem ( const ContainerItem1& row, const ContainerItem2& col, const std::string name = "" )
-    : matrix_( std::make_shared< MatrixType >( name + "matrix", col->solution()->space(), row->solution()->space() ) )
+    : matrix_( std::make_shared< MatrixType >( name + "matrix", row->solution()->space(), col->solution()->space() ) )
     {}
 
     //matrix for assembly
@@ -57,270 +59,46 @@ namespace Fem
     std::shared_ptr< MatrixType >            matrix_;
   };
 
-  template< class, class >
-  struct TwoArgContainer;
 
-  template< class... Args, class... RowArgs >
-  TwoArgContainer< std::tuple< Args... >, std::tuple< RowArgs... > >
-  {
-    //static_assert( is_tuple< RowArgs... >::value, "no tuple" );
-
-  };
-
-
-  template< template<class,class> class... Args, std::tuple< DiscreteFunction... > >
-  {
-    std::tuple< Args< DF0, DF0 >... >
-
-  };
-
-  template< template<class > class Arg, template<class> class... Args, std::tuple< DiscreteFunction, DiscreteFunctions... > >
-
-    typedef std::tuple< Arg< DiscreteFunction >, MainClass< Args..., std::tuple< DiscreteFunctions... > >
-    std::tuple< Args >
-
-    template< class... Operators >
-
-
-  std::tuple< SpLinearOperatorType, ISTLLinearOperatorType >
-
-//  template< template<class> class OneArgImp, template<class Row,class Col> class TwoArgImp, class... DiscreteFunctions >
-//  template< template<class> class OneArgImp, template<class Row,class Col> class TwoArgImp, class... DiscreteFunctions >
-//  struct TwoArgContainer
-//    : public OneArgImp< DiscreteFunctions... >
-//    //: public Fem::SubSteadyStateContainer< DiscreteFunctions... >
-//  {
-//
-//    typedef Fem::SubSteadyStateContainer< DiscreteFunctions... >            BaseType;
-//
-//    typedef std::tuple< DiscreteFunctions... > DFTuple;
-//    typedef typename MatrixPack< TwoArgImp, DFTuple, DFTuple >::type Item2TupleType;
-//
-//  public:
-//
-//    template< unsigned long int i, unsigned long int j >
-//    using Item2 = typename std::tuple_element< j, typename std::tuple_element< i, Item2TupleType>::type >::type::element_type;
-//
-//    using BaseType::operator();
-//
-//  protected:
-//
-//    //template< unsigned long int... i, unsigned long int... j >
-//    //using SubContainer = SubEllipticContainer< MatrixContainerImp, typename BaseType::template DiscreteFunction<i>... >
-//
-//    static const int size = BaseType::size;
-//    using BaseType::sequence;
-//
-//
-//    ///// Creation
-//    template< unsigned long int i, unsigned long int j >
-//    std::shared_ptr< Item2<i,j> > createItem2( const std::string name )
-//    {
-//      return std::make_shared<Item2<i,j> >( BaseType::operator()( std::integral_constant< unsigned long int, i>() ),
-//                                            BaseType::operator()( std::integral_constant< unsigned long int, j>() ),
-//                                            name );
-//    }
-//    template< unsigned long int i, unsigned long int ...j >
-//    std::tuple< std::shared_ptr< Item2<i,j> > ... >
-//    createContainerRow( std::integer_sequence< unsigned long int, j... >,
-//                        const std::string name )
-//    {
-//      return std::make_tuple( createItem2<i,j>( name )... );
-//    }
-//    template< unsigned long int ...i, unsigned long int ...j >
-//    auto createContainer( std::integer_sequence< unsigned long int, i... > row,
-//                          std::integer_sequence< unsigned long int, j... > col,
-//                          const std::string name )
-//      -> decltype( std::make_tuple( createContainerRow<i>( col, name )... ) )
-//
-//    {
-//      return std::make_tuple( createContainerRow<i>( col, name )... );
-//    }
-//
-//
-//    ///// Copy
-//    template< unsigned long int i, unsigned long int ...j >
-//    std::tuple< std::shared_ptr< Item2<i,j> > ... >
-//    copyContainerRow( std::tuple< std::integral_constant< unsigned long int, j... > > )
-//    {
-//      return std::make_tuple( std::get<j>( std::get<i>( item2_ ) )... );
-//    }
-//    template< unsigned long int ...i, unsigned long int ...j >
-//    auto copyContainer( std::tuple< std::integral_constant< unsigned long int, i... > > row,
-//                        std::tuple< std::integral_constant< unsigned long int, j... > > col )
-//      -> decltype( std::make_tuple( copyContainerRow<i>( col )... ) )
-//    {
-//      return std::make_tuple( copyContainerRow<i>( col )... );
-//    }
-//
-//  public:
-//    template< class SameObject >
-//    TwoArgContainer( SameObject& obj, const std::string name = "" )
-//    : BaseType( obj, name ),
-//      item2_( createContainer( sequence, sequence, name + "matrix" ) )
-//    {}
-//
-//    TwoArgContainer( const std::string name = "" )
-//    : BaseType( name ),
-//      item2_( createContainer( sequence, sequence, name + "matrix" ) )
-//    {}
-//
-//    // copy, for internal use only
-//    TwoArgContainer( const typename BaseType::Item1TupleType& item1,
-//                          const Item2TupleType& item2 )
-//    : BaseType( item1 ),
-//      item2_( item2 )
-//    {}
-//
-//    // item acess
-//    template< unsigned long int i, unsigned long int j >
-//    std::shared_ptr< Item2< i, j > > operator() ( std::integral_constant<unsigned long int, i> row,
-//                                                  std::integral_constant<unsigned long int, j> col  )
-//    {
-//      return std::get<j>( std::get<i>( item2_ ) );
-//    }
-//
-//    // sub Container
-//    template< unsigned long int... i, unsigned long int... j >
-//    std::shared_ptr< SubEllipticContainer< MatrixContainerImp, typename BaseType::template DiscreteFunction<i>... > >
-//    operator() ( std::tuple< std::integral_constant<unsigned long int, i>... > row,
-//                 std::tuple< std::integral_constant<unsigned long int, j>... > col )
-//    {
-//      //typedef SubEllipticContainer< MatrixContainerImp, std::tuple< typename BaseType::template DiscreteFunction<i>... >,
-//      //                                                  std::tuple< typename BaseType::template DiscreteFunction<j>... >
-//      //                                                                                                     > SubContainerType;
-//
-//      typedef SubEllipticContainer< MatrixContainerImp, typename BaseType::template DiscreteFunction<i>... > SubContainerType;
-//      typedef SubEllipticContainer< MatrixContainerImp, typename BaseType::template DiscreteFunction<j>... > SubContainerType2;
-//
-//      //TODO
-//      static_assert( std::is_same< SubContainerType, SubContainerType2 >::value, "non quadratic version will fail!" );
-//
-//      return std::make_shared< SubContainerType >( std::make_tuple( std::get<i>( BaseType::item1_ )... ),
-//                                                   copyContainer( row, col ) );
-//    }
-//  protected:
-//    Item2TupleType          item2_;
-//  };
-
-
-  template< template< class Row, class Col > class MatrixContainerImp, class... DiscreteFunctions >
+  template< template<class,class> class MatrixImp, class... DiscreteFunctions >
   struct SubEllipticContainer
-    : public Fem::SubSteadyStateContainer< DiscreteFunctions... >
-   // : public TwoArgContainer< SubSteadyStateContainerItem< DiscreteFunctions >...,
-   //                           SubEllipticContainerItem< MatrixContainerImp >,
-   //                           std::tuple< DiscreteFunctions...>, std::tuple< DiscreteFunctions...> >
-   // OneArgContainer< SubSteadyStateContainerItem< DiscreteFunctions >... >
-
+    : public TwoArgContainer< TemplateContainer< SubEllipticContainerItem, MatrixImp >::template Object,
+                              SubSteadyStateContainerItem, std::tuple< DiscreteFunctions... >, std::tuple< DiscreteFunctions... > >
   {
-
-    typedef Fem::SubSteadyStateContainer< DiscreteFunctions... >            BaseType;
-
-    template< class RowArg, class ColArg >
-    using Mat = SubEllipticContainerItem< MatrixContainerImp< ColArg, RowArg > >;
-
-    typedef std::tuple< DiscreteFunctions... > DFTuple;
-    typedef typename MatrixPack< Mat, DFTuple, DFTuple >::type Item2TupleType;
+    typedef TwoArgContainer< TemplateContainer< SubEllipticContainerItem, MatrixImp >::template Object,
+                             SubSteadyStateContainerItem, std::tuple< DiscreteFunctions... >, std::tuple< DiscreteFunctions... > > BaseType;
 
   public:
-
-    template< unsigned long int i, unsigned long int j >
-    using Item2 = typename std::tuple_element< j, typename std::tuple_element< i, Item2TupleType>::type >::type::element_type;
-
     using BaseType::operator();
 
-  protected:
+    // constructor: do not touch/delegate everything
+    template< class ... Args>
+    SubEllipticContainer( Args&&... args )
+    : BaseType( args... )
+    {}
 
-    static const int size = BaseType::size;
-    using BaseType::sequence;
+  };
 
-
-    ///// Creation
-    template< unsigned long int i, unsigned long int j >
-    std::shared_ptr< Item2<i,j> > createItem2( const std::string name )
-    {
-      return std::make_shared<Item2<i,j> >( BaseType::operator()( std::integral_constant< unsigned long int, i>() ),
-                                            BaseType::operator()( std::integral_constant< unsigned long int, j>() ),
-                                            name );
-    }
-    template< unsigned long int i, unsigned long int ...j >
-    std::tuple< std::shared_ptr< Item2<i,j> > ... >
-    createContainerRow( std::integer_sequence< unsigned long int, j... >,
-                        const std::string name )
-    {
-      return std::make_tuple( createItem2<i,j>( name )... );
-    }
-    template< unsigned long int ...i, unsigned long int ...j >
-    auto createContainer( std::integer_sequence< unsigned long int, i... > row,
-                          std::integer_sequence< unsigned long int, j... > col,
-                          const std::string name )
-      -> decltype( std::make_tuple( createContainerRow<i>( col, name )... ) )
-
-    {
-      return std::make_tuple( createContainerRow<i>( col, name )... );
-    }
-
-
-    ///// Copy
-    template< unsigned long int i, unsigned long int ...j >
-    std::tuple< std::shared_ptr< Item2<i,j> > ... >
-    copyContainerRow( std::tuple< std::integral_constant< unsigned long int, j... > > )
-    {
-      return std::make_tuple( std::get<j>( std::get<i>( item2_ ) )... );
-    }
-    template< unsigned long int ...i, unsigned long int ...j >
-    auto copyContainer( std::tuple< std::integral_constant< unsigned long int, i... > > row,
-                        std::tuple< std::integral_constant< unsigned long int, j... > > col )
-      -> decltype( std::make_tuple( copyContainerRow<i>( col )... ) )
-    {
-      return std::make_tuple( copyContainerRow<i>( col )... );
-    }
+  template< template<int,int> class MatrixImp, class... DiscreteFunctions >
+  struct GeneralSubEllipticContainer
+    : public TwoArgContainer< GeneralTemplateContainer< SubEllipticContainerItem, MatrixImp >::template Object,
+                              SubSteadyStateContainerItem, std::tuple< DiscreteFunctions... >, std::tuple< DiscreteFunctions... > >
+  {
+    typedef TwoArgContainer< GeneralTemplateContainer< SubEllipticContainerItem, MatrixImp >::template Object,
+                             SubSteadyStateContainerItem, std::tuple< DiscreteFunctions... >, std::tuple< DiscreteFunctions... > > BaseType;
 
   public:
-    template< class SameObject >
-    SubEllipticContainer( SameObject& obj, const std::string name = "" )
-    : BaseType( obj, name ),
-      item2_( createContainer( sequence, sequence, name + "matrix" ) )
+    using BaseType::operator();
+
+    // constructor: do not touch/delegate everything
+    template< class ... Args>
+    GeneralSubEllipticContainer( Args&&... args )
+    : BaseType( args... )
     {}
 
-    SubEllipticContainer( const std::string name = "" )
-    : BaseType( name ),
-      item2_( createContainer( sequence, sequence, name + "matrix" ) )
-    {}
-
-    // copy, for internal use only
-    SubEllipticContainer( const typename BaseType::Item1TupleType& item1,
-                          const Item2TupleType& item2 )
-    : BaseType( item1 ),
-      item2_( item2 )
-    {}
-
-    // item acess
-    template< unsigned long int i, unsigned long int j >
-    std::shared_ptr< Item2< i, j > > operator() ( std::integral_constant<unsigned long int, i> row,
-                                                  std::integral_constant<unsigned long int, j> col  )
-    {
-      return std::get<j>( std::get<i>( item2_ ) );
-    }
-
-    // sub Container
-    template< unsigned long int... i, unsigned long int... j >
-    std::shared_ptr< SubEllipticContainer< MatrixContainerImp, typename BaseType::template DiscreteFunction<i>... > >
-    operator() ( std::tuple< std::integral_constant<unsigned long int, i>... > row,
-                 std::tuple< std::integral_constant<unsigned long int, j>... > col )
-    {
-      typedef SubEllipticContainer< MatrixContainerImp, typename BaseType::template DiscreteFunction<i>... > SubContainerType;
-      typedef SubEllipticContainer< MatrixContainerImp, typename BaseType::template DiscreteFunction<j>... > SubContainerType2;
-
-      //TODO
-      static_assert( std::is_same< SubContainerType, SubContainerType2 >::value, "non quadratic version will fail!" );
-
-      return std::make_shared< SubContainerType >( std::make_tuple( std::get<i>( BaseType::item1_ )... ),
-                                                   copyContainer( row, col ) );
-    }
-  protected:
-    Item2TupleType          item2_;
   };
+
+
 
   template< class ErrorEstimatorImp >
   class PoissonSigmaEstimator

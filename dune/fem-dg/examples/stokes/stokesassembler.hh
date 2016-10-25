@@ -64,26 +64,97 @@ namespace Fem
 
   };
 
-  template <template< class, class > class MatrixContainerImp, class UDiscreteFunctionImp,class PDiscreteFunctionImp >
+  template< int row, int col >
+  struct OperatorPart;
+
+  template<>
+  struct OperatorPart<0,0>
+  {
+    template< class R, class C >
+    using type = SparseRowLinearOperator<R,C>;
+  };
+  template<>
+  struct OperatorPart<0,1>
+  {
+    template< class R, class C >
+    using type = SparseRowLinearOperator<R,C>;
+  };
+  template<>
+  struct OperatorPart<1,0>
+  {
+    template< class R, class C >
+    using type = SparseRowLinearOperator<R,C>;
+  };
+  template<>
+  struct OperatorPart<1,1>
+  {
+    template< class R, class C >
+    using type = SparseRowLinearOperator<R,C>;
+  };
+
+
+
+  //template< template<class,class> class MatrixImp, class... DiscreteFunctions >
+  //struct SubEllipticContainer
+  //  : public TwoArgContainer< LinOperatorSelect< SubEllipticContainerItem, MatrixImp >::template Object,
+  //                            SubSteadyStateContainerItem, std::tuple< DiscreteFunctions... >, std::tuple< DiscreteFunctions... > >
+  //{
+  //  typedef TwoArgContainer< LinOperatorSelect< SubEllipticContainerItem, MatrixImp >::template Object,
+  //                           SubSteadyStateContainerItem, std::tuple< DiscreteFunctions... >, std::tuple< DiscreteFunctions... > > BaseType;
+
+  //public:
+  //  using BaseType::operator();
+
+  //  // constructor: do not touch/delegate everything
+  //  template< class ... Args>
+  //  SubEllipticContainer( Args&&... args )
+  //  : BaseType( args... )
+  //  {}
+
+  //};
+
+
+  //template< template<class,class> class MatrixImp, class UDiscreteFunctionImp, class PDiscreteFunctionImp >
+  template< template<class,class> class MatrixImp, class UDiscreteFunctionImp,class PDiscreteFunctionImp >
   class UzawaContainer
-    : public SubEllipticContainer< MatrixContainerImp, UDiscreteFunctionImp, PDiscreteFunctionImp >
+    //: public TwoArgContainer< LinOperatorSelect< SubEllipticContainerItem, MatrixImp >::template Object,
+    //                          SubSteadyStateContainerItem, std::tuple< DiscreteFunctions... >, std::tuple< DiscreteFunctions... > >
+    : public SubEllipticContainer< MatrixImp, UDiscreteFunctionImp, PDiscreteFunctionImp >
   {
 
-    typedef SubEllipticContainer< MatrixContainerImp, UDiscreteFunctionImp, PDiscreteFunctionImp > BaseType;
+    typedef SubEllipticContainer< MatrixImp, UDiscreteFunctionImp, PDiscreteFunctionImp > BaseType;
   public:
 
     using BaseType::operator();
 
-    template< class SameObject >
-    UzawaContainer( SameObject& obj, const std::string name = "" )
-    : BaseType( obj, name )
-    {}
-
-    UzawaContainer( const std::string name = "" )
-    : BaseType( name )
+    // constructor: do not touch/delegate everything
+    template< class ... Args>
+    UzawaContainer( Args&&... args )
+    : BaseType( args... )
     {}
 
   };
+
+  //template <template< class, class > class MatrixContainerImp, class UDiscreteFunctionImp,class PDiscreteFunctionImp >
+  //class UzawaContainer
+  //  : public SubEllipticContainer< MatrixContainerImp, UDiscreteFunctionImp, PDiscreteFunctionImp >
+  //{
+
+  //  typedef SubEllipticContainer< MatrixContainerImp, UDiscreteFunctionImp, PDiscreteFunctionImp > BaseType;
+  //public:
+
+  //  using BaseType::operator();
+
+  //  template< class SameObject >
+  //  UzawaContainer( SameObject& obj, const std::string name = "" )
+  //  : BaseType( obj, name )
+  //  {}
+
+  //  UzawaContainer( const std::string name = "" )
+  //  : BaseType( name )
+  //  {}
+
+  //};
 
   //template <class UDiscreteFunctionImp,class PDiscreteFunctionImp/*, class EllipticContainerImp*/  >
   //class UzawaContainer
@@ -301,21 +372,22 @@ namespace Fem
   public:
 
     //Constructor
-    StokesAssembler( std::shared_ptr< ContainerType > cont,
+    template< class ContainerImp >
+    StokesAssembler( std::shared_ptr< ContainerImp > cont,
                      const ModelType& model,
                      double d11=1.,
                      double d12=1.) :
-      container_( cont ),
-      spc_( container(_0).solution()->space() ),
-      pressurespc_( container(_1).solution()->space() ),
+      //container_( cont ),
+      spc_( (*cont)(_0)->solution()->space() ),
+      pressurespc_( (*cont)(_1)->solution()->space() ),
       problem_( model.problem() ),
-      veloRhs_(  container(_0).rhs() ),
-      pressureRhs_(  container(_1).rhs() ),
+      veloRhs_(  (*cont)(_0)->rhs() ),
+      pressureRhs_( (*cont)(_1)->rhs() ),
       volumeQuadOrd_( 2*spc_.order()+1),
       faceQuadOrd_( 2*spc_.order()+1 ),
-      pressureGradMatrix_( container(_0,_1).matrix() ),//PGM
-      pressureDivMatrix_( container(_1,_0).matrix() ),//PDM
-      pressureStabMatrix_( container(_1,_1).matrix() ),//PSM
+      pressureGradMatrix_( (*cont)(_0,_1)->matrix() ),//PGM
+      pressureDivMatrix_( (*cont)(_1,_0)->matrix() ),//PDM
+      pressureStabMatrix_( (*cont)(_1,_1)->matrix() ),//PSM
       d11_(d11),
       d12_(d12),
       time_(0)
@@ -758,7 +830,7 @@ namespace Fem
 
 
   private:
-    std::shared_ptr< ContainerType >             container_;
+    //std::shared_ptr< ContainerType >             container_;
     const DiscreteFunctionSpaceType&             spc_;
     const DiscretePressureSpaceType&             pressurespc_;
     const ProblemType&                           problem_;

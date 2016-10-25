@@ -35,7 +35,7 @@ namespace Fem
     template< class Row, class Col >
     using FakeMatrixAdapter = MatrixType;
 
-    typedef Dune::Fem::SubEllipticContainer< FakeMatrixAdapter, DestinationType > ContainerType;
+    typedef Dune::Fem::SubEllipticContainer< FakeMatrixAdapter, DestinationType, DestinationType > ContainerType;
 
     typedef typename Traits::ModelType                            ModelType;
     static const bool hasDiffusion = ModelType::hasDiffusion;

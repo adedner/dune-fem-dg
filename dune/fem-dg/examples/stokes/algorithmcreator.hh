@@ -68,7 +68,7 @@ namespace Fem
                                      Galerkin::Enum::dg,
                                      Adaptivity::Enum::yes,
                                      DiscreteFunctionSpaces::Enum::hierarchic_legendre,
-                                     Solver::Enum::istl,
+                                     Solver::Enum::fem,
                                      AdvectionLimiter::Enum::unlimited,
                                      Matrix::Enum::assembled,
                                      AdvectionFlux::Enum::none,
