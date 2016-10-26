@@ -189,6 +189,12 @@ namespace Fem
       useTheoryParams_( false ),
       initialized_ ( false )
     {
+      if( model.hasMass() && (liftingMethod_ != LiftingEnum::A_A ) )
+      {
+        DUNE_THROW(Dune::InvalidStateException,
+          "DGPrimalDiffusionFluxImpl:: if model has mass term enabled, lifting needs to be A_A, otherwise wrong scaling of lifting terms!");
+      }
+
       // calculate maxNeighborVolumeRatio_
       maxNeighborsVolumeRatio_ = 1.;
 
