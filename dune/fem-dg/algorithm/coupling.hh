@@ -70,7 +70,7 @@ namespace Fem
     template< std::size_t i >
     static ElementPtr<i> createSubAlgorithm( GridType& grid )
     {
-      Container<i>* container = new Container<i>( grid );
+      //Container<i>* container = new Container<i>( grid );
 
       //std::tuple<int,double,std::string> t{1,-0.5,"tuple"};
       //Dune::Fem::for_each(container,
