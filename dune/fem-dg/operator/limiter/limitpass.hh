@@ -11,6 +11,7 @@
 #include <dune/grid/io/file/dgfparser/entitykey.hh>
 
 #include <dune/fem/gridpart/common/capabilities.hh>
+#include <dune/fem/quadrature/cornerpointset.hh>
 #include <dune/fem/io/parameter.hh>
 
 #include <dune/fem/operator/1order/localmassmatrix.hh>
@@ -684,9 +685,9 @@ namespace Fem
     typedef GeometryInformation< GridType, 1 >                             FaceGeometryInformationType;
 
     // get LagrangePointSet of pol order 1
-    typedef LagrangePointSet< GridPartType, 1 >                            LagrangePointSetType;
+    typedef CornerPointSet< GridPartType >                                 CornerPointSetType;
     // get lagrange point set of order 1
-    typedef CompiledLocalKeyContainer< LagrangePointSetType, 1 , 1 >       LagrangePointSetContainerType;
+    typedef std::map< Dune::GeometryType, CornerPointSetType >             CornerPointSetContainerType;
 
     typedef DGFEntityKey<int>                                              KeyType;
     typedef std::vector<int>                                               CheckType;
@@ -975,7 +976,7 @@ namespace Fem
       gridPart_(spc_.gridPart()),
       indexSet_( gridPart_.indexSet() ),
       localIdSet_( gridPart_.grid().localIdSet()),
-      lagrangePointSetContainer_(gridPart_),
+      cornerPointSetContainer_(),
       orderPower_( -((spc_.order()+1.0) * 0.25)),
       limitEps_( LimiterFunctionBase :: getEpsilon() ),
       dofConversion_(dimRange),
@@ -1607,7 +1608,7 @@ namespace Fem
 
       // use LagrangePointSet to evaluate on cornners of the
       // geometry and also use caching
-      const LagrangePointSetType& quad = lagrangePointSet( geo.type() );
+      const CornerPointSetType quad( en );
       for(int i=0; i<dimDomain; ++i)
       {
         uTmp.evaluate( quad[ i ], b[ i ]);
@@ -1892,7 +1893,7 @@ namespace Fem
 #if 1
         // use LagrangePointSet to evaluate on corners of the
         // geometry and also use caching
-        return checkPhysicalQuad( lagrangePointSet( geo.type() ), uEn );
+        return checkPhysicalQuad( CornerPointSetType( en ), uEn );
 #else
         {
           VolumeQuadratureType volQuad(en, volumeQuadOrd_ );
@@ -2581,9 +2582,9 @@ namespace Fem
     LimitDGPass(const LimitDGPass&);
     LimitDGPass& operator=(const LimitDGPass&);
 
-    const LagrangePointSetType& lagrangePointSet( const GeometryType& geomType ) const
+    const CornerPointSetType& cornerPointSet( const GeometryType& geomType ) const
     {
-      return lagrangePointSetContainer_.compiledLocalKey( geomType, 1 );
+      return cornerPointSetContainer_[ geomType ];
     }
 
   protected:
@@ -2606,7 +2607,7 @@ namespace Fem
     const IndexSetType& indexSet_;
     const LocalIdSetType& localIdSet_;
 
-    LagrangePointSetContainerType lagrangePointSetContainer_;
+    CornerPointSetContainerType cornerPointSetContainer_;
 
     const double orderPower_;
     const double limitEps_;
