@@ -1,7 +1,7 @@
 # SOLVER CONFIGURATION
 #---------------------
 
-fem.ode.odesolver: IM # ode solvers: EX, IM, IMEX
+fem.ode.odesolver: EX # ode solvers: EX, IM, IMEX
 #fem.ode.order: 2
 fem.ode.verbose: none # ode output: none, cfl, full
 fem.ode.cflincrease: 1.25
@@ -9,7 +9,7 @@ fem.ode.miniterations: 95
 fem.ode.maxiterations: 105
 fem.ode.cflStart: 1.
 #fem.ode.cflMax: 5
-fem.timeprovider.factor: 0.45
+fem.timeprovider.factor: 0.15
 fem.timeprovider.updatestep: 1
 
 # parameter for the implicit solvers 
