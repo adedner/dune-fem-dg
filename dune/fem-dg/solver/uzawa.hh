@@ -6,11 +6,6 @@
 #include <dune/fem/operator/common/operator.hh>
 
 
-//#include "../common/mymatrix.hh"
-//#include "../common/spmatextra.hh"
-
-//#include "matrixoperator.hh"
-
 namespace Dune
 {
 namespace Fem
@@ -52,8 +47,7 @@ namespace Fem
                  int maxIter,
                  const ParameterReader &parameter = Parameter::container()
                )
-      //: container_( container ),
-      :  aufSolver_( aufSolver ),
+      : aufSolver_( aufSolver ),
         bop_( cont(_0,_1)->matrix() ),
         btop_( cont(_1,_0)->matrix() ),
         cop_( cont(_1,_1)->matrix() ),

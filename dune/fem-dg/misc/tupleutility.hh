@@ -108,6 +108,246 @@ namespace Fem
   {
     typedef std::tuple< TupleArg... > type;
   };
+
+ //helper class to generic pack a matrix and vector
+  namespace
+  {
+
+    template< template<class,int...> class, class, int >
+    struct VectorPack;
+
+    //Normal
+    template<template<class> class OneArgImp, class... Rows, int row >
+    struct VectorPack< OneArgImp, std::tuple< Rows... >, row >
+    {
+      typedef std::tuple< std::shared_ptr< OneArgImp< Rows > >...  > shared_type;
+      typedef std::tuple<                  OneArgImp< Rows >  ...  >        type;
+    };
+
+    //Generic, i.e. each entry can be indivually choosen via <int> argument
+    template<template<class,int> class OneArgImp, class RowHead, int row >
+    struct VectorPack< OneArgImp, std::tuple< RowHead >, row >
+    {
+      typedef std::tuple< std::shared_ptr< typename OneArgImp< RowHead, row >::type > > shared_type;
+      typedef std::tuple<                  typename OneArgImp< RowHead, row >::type   >        type;
+    };
+
+    template<template<class,int> class OneArgImp, class RowHead, class... Rows, int row >
+    struct VectorPack< OneArgImp, std::tuple< RowHead, Rows... >, row >
+    {
+    private:
+      typedef std::tuple< std::shared_ptr< typename OneArgImp< RowHead, row >::type > >                                SharedTupleHead;
+      typedef std::tuple<                  typename OneArgImp< RowHead, row >::type   >                                      TupleHead;
+      typedef typename drop_tuple< typename VectorPack< OneArgImp, std::tuple< Rows >..., row+1 >::shared_type >::type SharedTupleEnd;
+      typedef typename drop_tuple< typename VectorPack< OneArgImp, std::tuple< Rows >..., row+1 >::type        >::type       TupleEnd;
+    public:
+      typedef std::tuple< SharedTupleHead, SharedTupleEnd > shared_type;
+      typedef std::tuple< TupleHead,       TupleEnd       >        type;
+
+    };
+
+    template< template<class,int...> class OneArgImp, class Rows >
+    struct VectorPacker
+    {
+      typedef typename VectorPack< OneArgImp, Rows, 0 >::type               type;
+      typedef typename VectorPack< OneArgImp, Rows, 0 >::shared_type shared_type;
+    };
+
+
+
+
+    template< template<class,class,int...> class PairImp, class Rows, class Cols, int row, int col >
+    struct MatrixPack;
+
+    ////Normal
+    //generate one row
+    template<template<class,class> class PairImp, class RowHead, class... Cols, int row, int col >
+    struct MatrixPack< PairImp, std::tuple< RowHead >, std::tuple< Cols... >, row, col >
+    {
+      //typedef std::tuple< std::tuple<                  typename PairImp::template type< RowHead, Cols > ... > >        type;
+      typedef std::tuple< std::tuple<                  typename PairImp< RowHead, Cols >::type  ... > >        type;
+      typedef std::tuple< std::tuple< std::shared_ptr< typename PairImp< RowHead, Cols >::type >... > > shared_type;
+    };
+
+    //generate whole matrix
+    template<template<class,class> class PairImp, class RowHead, class RowHead2, class... Rows, class... Cols, int row, int col>
+    struct MatrixPack< PairImp, std::tuple< RowHead, RowHead2, Rows... >, std::tuple< Cols... >, row, col >
+    {
+    private:
+      typedef std::tuple< RowHead2, Rows... > RowTuple;
+      typedef std::tuple< Cols... > ColTuple;
+
+      typedef std::tuple<                  typename PairImp< RowHead, Cols >::type  ... >       TupleHead;
+      typedef std::tuple< std::shared_ptr< typename PairImp< RowHead, Cols >::type >... > SharedTupleHead;
+      typedef typename drop_tuple< typename MatrixPack< PairImp, RowTuple, ColTuple, row, col >::type        >::type       TupleEnd;
+      typedef typename drop_tuple< typename MatrixPack< PairImp, RowTuple, ColTuple, row, col >::shared_type >::type SharedTupleEnd;
+    public:
+      typedef std::tuple< TupleHead,       TupleEnd       > type;
+      typedef std::tuple< SharedTupleHead, SharedTupleEnd > shared_type;
+    };
+
+    ////Generic, i.e. each entry can be indivually choosen via <int,int> argument
+    //generate last col element of a row
+    template<template<class,class,int,int> class PairImp, class RowHead, class ColHead, int row, int col >
+    struct MatrixPack< PairImp, std::tuple< RowHead >, std::tuple< ColHead >, row, col >
+    {
+      typedef std::tuple< std::tuple<                  typename PairImp< RowHead, ColHead, row, col >::type >   >  type;
+      typedef std::tuple< std::tuple< std::shared_ptr< typename PairImp< RowHead, ColHead, row, col >::type > > >  shared_type;
+    };
+
+    //generate one row
+    template<template<class,class,int,int> class PairImp, class RowHead, class ColHead, class... Cols, int row, int col >
+    struct MatrixPack< PairImp, std::tuple< RowHead >, std::tuple< ColHead, Cols... >, row, col >
+    {
+    private:
+      typedef std::tuple<                  typename PairImp< RowHead, ColHead, row, col >::type   > TupleHead;
+      typedef std::tuple< std::shared_ptr< typename PairImp< RowHead, ColHead, row, col >::type > > SharedTupleHead;
+      typedef typename drop_tuple< typename MatrixPack< PairImp, std::tuple< RowHead>, std::tuple< Cols...>, row, col+1 >::type        >::type       TupleEnd;
+      typedef typename drop_tuple< typename MatrixPack< PairImp, std::tuple< RowHead>, std::tuple< Cols...>, row, col+1 >::shared_type >::type SharedTupleEnd;
+    public:
+      typedef std::tuple< typename tuple_concat< TupleHead,       TupleEnd       >::type >        type;
+      typedef std::tuple< typename tuple_concat< SharedTupleHead, SharedTupleEnd >::type > shared_type;
+    };
+
+    //generate whole matrix
+    template<template<class,class,int,int> class PairImp, class RowHead, class RowHead2, class... Rows, class... Cols, int row, int col >
+    struct MatrixPack< PairImp, std::tuple< RowHead, RowHead2, Rows... >, std::tuple< Cols... >, row, col >
+    {
+    private:
+      typedef std::tuple< RowHead2, Rows... > RowTuple;
+      typedef std::tuple< Cols... > ColTuple;
+
+      typedef std::tuple<                  typename PairImp< RowHead, Cols, row, col >::type  ... >                        TupleHead;
+      typedef std::tuple< std::shared_ptr< typename PairImp< RowHead, Cols, row, col >::type >... >                  SharedTupleHead;
+      typedef typename drop_tuple< typename MatrixPack< PairImp, RowTuple, ColTuple, row+1, 0 >::type        >::type       TupleEnd;
+      typedef typename drop_tuple< typename MatrixPack< PairImp, RowTuple, ColTuple, row+1, 0 >::shared_type >::type SharedTupleEnd;
+    public:
+      typedef std::tuple< TupleHead,       TupleEnd       >         type;
+      typedef std::tuple< SharedTupleHead, SharedTupleEnd >  shared_type;
+    };
+
+    template< template<class,class,int...> class TwoArgImp, class Rows, class Cols >
+    struct MatrixPacker
+    {
+      typedef typename MatrixPack< TwoArgImp, Rows, Cols, 0, 0 >::type               type;
+      typedef typename MatrixPack< TwoArgImp, Rows, Cols, 0, 0 >::shared_type shared_type;
+    };
+
+  }
+
+
+  //helper class to store a variadic couple template parameters
+  namespace{
+
+    //forward declarations
+    template<template<class,class>class...>
+    struct TemplateTupleRow;
+
+    //forward declarations
+    template<class...>
+    struct TemplateTuple;
+
+    //Row, last element
+    template<template<class,class>class ArgHead >
+    struct TemplateTupleRow<ArgHead>
+    {
+      template<class Row,class Col>
+      struct Template
+      {
+        typedef std::tuple<ArgHead<Row,Col> > Tuple;
+
+        template< int i >
+        using type = typename std::tuple_element<i,Tuple>::type;
+      };
+    };
+
+    //Row, general
+    template< template<class,class>class ArgHead,
+              template<class,class>class ArgHead2,
+              template<class,class>class... ArgEnd >
+    struct TemplateTupleRow< ArgHead, ArgHead2, ArgEnd... >
+    {
+      template<class Row,class Col>
+      struct Template
+      {
+        typedef typename tuple_concat< std::tuple< ArgHead<Row,Col> >,
+                                       typename TemplateTupleRow< ArgHead2,ArgEnd... >::template Template<Row,Col>::Tuple
+                                      >::type                                                                 Tuple;
+
+        template< int i >
+        using type = typename std::tuple_element<i,Tuple>::type;
+      };
+    };
+
+    //[Row x] Cols, last element
+    template< template<class,class>class... ArgRowHead >
+    struct TemplateTuple< TemplateTupleRow< ArgRowHead...> >
+    {
+      template<class Row,class Col>
+      struct Template
+      {
+        typedef std::tuple< typename TemplateTupleRow< ArgRowHead...>::template Template< Row, Col>::Tuple > Tuple;
+
+        template< int r, int c >
+        using type = typename std::tuple_element<r,typename std::tuple_element<c,Tuple>::type>::type;
+      };
+    };
+
+    //[Row x] Cols, general
+    template< template<class,class>class... ArgRowHead,
+              class TemplateArgRowHead,
+              class... TemplateArgRowEnd >
+    struct TemplateTuple< TemplateTupleRow< ArgRowHead...>, TemplateArgRowHead, TemplateArgRowEnd... >
+    {
+      template<class Row,class Col>
+      struct Template
+      {
+        typedef std::tuple< typename TemplateTupleRow< ArgRowHead...>::template Template< Row, Col>::Tuple,
+                            typename drop_tuple< typename TemplateTuple< TemplateArgRowHead, TemplateArgRowEnd... >::template Template<Row,Col>::Tuple >::type >
+                                                                                                                Tuple;
+
+        template< int r, int c >
+        using type = typename std::tuple_element<r,typename std::tuple_element<c,Tuple>::type>::type;
+      };
+    };
+
+  }
+
+
+  template< template<class> class Obj, template<class,class> class InnerObj >
+  struct TemplateContainer
+  {
+    template<class R,class C>
+    struct Template
+    {
+      typedef Obj< InnerObj<R,C> > type;
+    };
+  };
+
+  template< template<class> class Obj,
+            template<int,int> class InnerObj >
+  struct GeneralTemplateContainer
+  {
+    template<class R,class C,int r,int c>
+    struct Template
+    {
+      typedef Obj< typename InnerObj<r,c>::template type<R,C> > type;
+    };
+  };
+
+  template< template<class> class Obj,
+            template<class, class> class InnerObj >
+  struct MoreGeneralTemplateContainer
+  {
+    template<class R,class C,int r,int c>
+    struct Template
+    {
+      typedef Obj< typename InnerObj<R,C>::template type<r,c> > type;
+    };
+  };
+
+
+
 }
 }
 

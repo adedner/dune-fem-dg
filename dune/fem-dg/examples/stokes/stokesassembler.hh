@@ -65,45 +65,26 @@ namespace Fem
 
 
 
-  template< template<class,class> class, int row, int col >
-  struct StokesOperatorPattern;
 
-  template<template<class,class> class DefaultMatrixImp >
-  struct StokesOperatorPattern<DefaultMatrixImp,0,0>
+  //I am sorry for this and all underlying classes... :'( But it is short... :D
+  template< template<class,class> class Default >
+  struct TemplateMonster
   {
-    template< class R, class C >
-    //using type = SparseRowLinearOperator<R,C>;
-    using type = DefaultMatrixImp<R,C>;
+    typedef TemplateTuple< TemplateTupleRow< Default, SparseRowLinearOperator >,
+                           TemplateTupleRow< SparseRowLinearOperator, SparseRowLinearOperator > > type;
   };
-  template<template<class,class> class DefaultMatrixImp >
-  struct StokesOperatorPattern<DefaultMatrixImp,0,1>
-  {
-    template< class R, class C >
-    using type = DefaultMatrixImp<R,C>;
-  };
-  template<template<class,class> class DefaultMatrixImp >
-  struct StokesOperatorPattern<DefaultMatrixImp,1,0>
-  {
-    template< class R, class C >
-    using type = DefaultMatrixImp<R,C>;
-  };
-  template<template<class,class> class DefaultMatrixImp >
-  struct StokesOperatorPattern<DefaultMatrixImp,1,1>
-  {
-    template< class R, class C >
-    using type = DefaultMatrixImp<R,C>;
-  };
+
 
   //TODO: knock out preconditioning
   //with MatrixParameterNoPreconditioner
   template< template<class,class> class MatrixImp, class UDiscreteFunctionImp,class PDiscreteFunctionImp >
   class UzawaContainer
-    : public TwoArgContainer< MoreGeneralTemplateContainer< SubEllipticContainerItem, StokesOperatorPattern, MatrixImp >::template Object,
+    : public TwoArgContainer< MoreGeneralTemplateContainer< SubEllipticContainerItem, TemplateMonster< MatrixImp >::type::template Template >::template Template,
                               SubSteadyStateContainerItem,
                               std::tuple< UDiscreteFunctionImp, PDiscreteFunctionImp >,
                               std::tuple< UDiscreteFunctionImp, PDiscreteFunctionImp > >
   {
-    typedef TwoArgContainer< MoreGeneralTemplateContainer< SubEllipticContainerItem, StokesOperatorPattern, MatrixImp >::template Object,
+    typedef TwoArgContainer< MoreGeneralTemplateContainer< SubEllipticContainerItem, TemplateMonster< MatrixImp >::type::template Template >::template Template,
                              SubSteadyStateContainerItem,
                              std::tuple< UDiscreteFunctionImp, PDiscreteFunctionImp >,
                              std::tuple< UDiscreteFunctionImp, PDiscreteFunctionImp > >                   BaseType;

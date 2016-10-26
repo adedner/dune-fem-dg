@@ -60,10 +60,10 @@ namespace Fem
 
   template< template<class,class> class MatrixImp, class... DiscreteFunctions >
   struct SubEllipticContainer
-    : public TwoArgContainer< TemplateContainer< SubEllipticContainerItem, MatrixImp >::template Object,
+    : public TwoArgContainer< TemplateContainer< SubEllipticContainerItem, MatrixImp >::template Template,
                               SubSteadyStateContainerItem, std::tuple< DiscreteFunctions... >, std::tuple< DiscreteFunctions... > >
   {
-    typedef TwoArgContainer< TemplateContainer< SubEllipticContainerItem, MatrixImp >::template Object,
+    typedef TwoArgContainer< TemplateContainer< SubEllipticContainerItem, MatrixImp >::template Template,
                              SubSteadyStateContainerItem, std::tuple< DiscreteFunctions... >, std::tuple< DiscreteFunctions... > > BaseType;
 
   public:
@@ -79,10 +79,10 @@ namespace Fem
 
   template< template<int,int> class MatrixImp, class... DiscreteFunctions >
   struct GeneralSubEllipticContainer
-    : public TwoArgContainer< GeneralTemplateContainer< SubEllipticContainerItem, MatrixImp >::template Object,
+    : public TwoArgContainer< GeneralTemplateContainer< SubEllipticContainerItem, MatrixImp >::template Template,
                               SubSteadyStateContainerItem, std::tuple< DiscreteFunctions... >, std::tuple< DiscreteFunctions... > >
   {
-    typedef TwoArgContainer< GeneralTemplateContainer< SubEllipticContainerItem, MatrixImp >::template Object,
+    typedef TwoArgContainer< GeneralTemplateContainer< SubEllipticContainerItem, MatrixImp >::template Template,
                              SubSteadyStateContainerItem, std::tuple< DiscreteFunctions... >, std::tuple< DiscreteFunctions... > > BaseType;
 
   public:
