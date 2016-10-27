@@ -109,7 +109,8 @@ namespace Fem
     typedef std::tuple< TupleArg... > type;
   };
 
- //helper class to generic pack a matrix and vector
+
+  //helper class to generic pack a matrix and vector
   namespace
   {
 
@@ -240,7 +241,7 @@ namespace Fem
   namespace{
 
     //forward declarations
-    template<template<class,class>class...>
+    template<template<class...>class...>
     struct TemplateTupleRow;
 
     //forward declarations
@@ -248,13 +249,13 @@ namespace Fem
     struct TemplateTuple;
 
     //Row, last element
-    template<template<class,class>class ArgHead >
+    template<template<class...>class ArgHead >
     struct TemplateTupleRow<ArgHead>
     {
-      template<class Row,class Col>
-      struct Template
+      template<class... I>
+      struct _t
       {
-        typedef std::tuple<ArgHead<Row,Col> > Tuple;
+        typedef std::tuple<ArgHead<I...> > Tuple;
 
         template< int i >
         using type = typename std::tuple_element<i,Tuple>::type;
@@ -262,17 +263,17 @@ namespace Fem
     };
 
     //Row, general
-    template< template<class,class>class ArgHead,
-              template<class,class>class ArgHead2,
-              template<class,class>class... ArgEnd >
+    template< template<class...>class ArgHead,
+              template<class...>class ArgHead2,
+              template<class...>class... ArgEnd >
     struct TemplateTupleRow< ArgHead, ArgHead2, ArgEnd... >
     {
-      template<class Row,class Col>
-      struct Template
+      template<class... I>
+      struct _t
       {
-        typedef typename tuple_concat< std::tuple< ArgHead<Row,Col> >,
-                                       typename TemplateTupleRow< ArgHead2,ArgEnd... >::template Template<Row,Col>::Tuple
-                                      >::type                                                                 Tuple;
+        typedef typename tuple_concat< std::tuple< ArgHead<I...> >,
+                                       typename TemplateTupleRow< ArgHead2,ArgEnd... >::template _t<I...>::Tuple
+                                      >::type                                                              Tuple;
 
         template< int i >
         using type = typename std::tuple_element<i,Tuple>::type;
@@ -284,9 +285,9 @@ namespace Fem
     struct TemplateTuple< TemplateTupleRow< ArgRowHead...> >
     {
       template<class Row,class Col>
-      struct Template
+      struct _t
       {
-        typedef std::tuple< typename TemplateTupleRow< ArgRowHead...>::template Template< Row, Col>::Tuple > Tuple;
+        typedef std::tuple< typename TemplateTupleRow< ArgRowHead...>::template _t< Row, Col>::Tuple > Tuple;
 
         template< int r, int c >
         using type = typename std::tuple_element<r,typename std::tuple_element<c,Tuple>::type>::type;
@@ -300,10 +301,10 @@ namespace Fem
     struct TemplateTuple< TemplateTupleRow< ArgRowHead...>, TemplateArgRowHead, TemplateArgRowEnd... >
     {
       template<class Row,class Col>
-      struct Template
+      struct _t
       {
-        typedef std::tuple< typename TemplateTupleRow< ArgRowHead...>::template Template< Row, Col>::Tuple,
-                            typename drop_tuple< typename TemplateTuple< TemplateArgRowHead, TemplateArgRowEnd... >::template Template<Row,Col>::Tuple >::type >
+        typedef std::tuple< typename TemplateTupleRow< ArgRowHead...>::template _t< Row, Col>::Tuple,
+                            typename drop_tuple< typename TemplateTuple< TemplateArgRowHead, TemplateArgRowEnd... >::template _t<Row,Col>::Tuple >::type >
                                                                                                                 Tuple;
 
         template< int r, int c >
@@ -313,38 +314,121 @@ namespace Fem
 
   }
 
+  //No (to much) advanced variadic template template magic here
+  //because it would not allow an easy usable template structure...
 
-  template< template<class> class Obj, template<class,class> class InnerObj >
-  struct TemplateContainer
+  //forward declaration
+  template< template<class...> class... >
+  struct template_unique;
+
+  template< template<class...> class... >
+  struct template_general;
+
+
+  ////
+  //matrix and vector (1/2 arg type)
+  template< template<class...> class InnerObj >
+  struct template_unique< InnerObj >
   {
-    template<class R,class C>
-    struct Template
+    template<class... I>
+    struct _t
     {
-      typedef Obj< InnerObj<R,C> > type;
+      typedef InnerObj<I...>  type;
     };
   };
 
-  template< template<class> class Obj,
-            template<int,int> class InnerObj >
-  struct GeneralTemplateContainer
+  template< template<class> class OuterObj,
+            template<class...> class InnerObj >
+  struct template_unique< OuterObj, InnerObj >
   {
-    template<class R,class C,int r,int c>
-    struct Template
+    template<class... I>
+    struct _t
     {
-      typedef Obj< typename InnerObj<r,c>::template type<R,C> > type;
+      typedef OuterObj< InnerObj<I...> > type;
     };
   };
 
-  template< template<class> class Obj,
-            template<class, class> class InnerObj >
-  struct MoreGeneralTemplateContainer
+  template< template<class> class OutestObj,
+            template<class> class OuterObj,
+            template<class...> class InnerObj >
+  struct template_unique< OutestObj, OuterObj, InnerObj >
+  {
+    template<class... I>
+    struct _t
+    {
+      typedef OutestObj< OuterObj< InnerObj<I...> > > type;
+    };
+  };
+
+
+  ////
+  //matrix (2 arg type)
+  template< template<class,class> class InnerObj >
+  struct template_general< InnerObj >
+
   {
     template<class R,class C,int r,int c>
-    struct Template
+    struct _t
+    {
+      typedef typename InnerObj<R,C>::template type<r,c> type;
+    };
+  };
+  template< template<class> class Obj,
+            template<class,class> class InnerObj >
+  struct template_general< Obj, InnerObj >
+  {
+    template<class R,class C,int r,int c>
+    struct _t
     {
       typedef Obj< typename InnerObj<R,C>::template type<r,c> > type;
     };
   };
+  template< template<class> class OuterObj,
+            template<class> class Obj,
+            template<class,class> class InnerObj >
+  struct template_general< OuterObj, Obj, InnerObj >
+  {
+    template<class R,class C,int r,int c>
+    struct _t
+    {
+      typedef OuterObj< Obj< typename InnerObj<R,C>::template type<r,c> > > type;
+    };
+  };
+
+  //vector (1 arg type)
+  template< template<class> class InnerObj >
+  struct template_general< InnerObj >
+
+  {
+    template<class R,int r>
+    struct _t
+    {
+      typedef typename InnerObj<R>::template type<r> type;
+    };
+  };
+  template< template<class> class Obj,
+            template<class> class InnerObj >
+  struct template_general< Obj, InnerObj >
+  {
+    template<class R,int r>
+    struct _t
+    {
+      typedef Obj< typename InnerObj<R>::template type<r> > type;
+    };
+  };
+  template< template<class> class OuterObj,
+            template<class> class Obj,
+            template<class> class InnerObj >
+  struct template_general< OuterObj, Obj, InnerObj >
+  {
+    template<class R,int r>
+    struct _t
+    {
+      typedef Obj< typename InnerObj<R>::template type<r> > type;
+    };
+  };
+
+
 
 
 
