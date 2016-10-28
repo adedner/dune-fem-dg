@@ -46,7 +46,7 @@ namespace Fem
     IncompNavierStokesAlgorithm ( GridType &grid, const std::string name = "" )
     : BaseType( grid, name  )
     {
-      auto test = CreatorType::GlobalContainerType::template init<polOrder>( grid );
+      //auto test = CreatorType::GlobalContainerType::template init<polOrder>( grid );
     }
 
     virtual void initialize ( int loop, TimeProviderType &tp )

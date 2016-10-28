@@ -176,6 +176,36 @@ namespace Fem
 
     };
 
+    //typedef TemplateTupleRow< SubSteadyStateContainerItem, SubSteadyStateContainerItem >              Item1TupleType;
+
+    //typedef TemplateTuple< TemplateTupleRow< SubEllipticContainerItem, SubEllipticContainerItem >
+    //                       TemplateTupleRow< SubEllipticContainerItem, SubEllipticContainerItem > >   Item2TupleType;
+
+    //typedef TemplateTuple< TemplateTupleRow< Default, SparseRowLinearOperator >,
+    //                       TemplateTupleRow< SparseRowLinearOperator, SparseRowLinearOperator > >     Item2ContainerType;
+
+
+    //template< class Item2TupleImp, class Item2ContainerImp, class Item1TupleImp, class... DiscreteFunctions >
+    //class GlobalContainer
+    //  : public TwoArgContainer< template_general< Item2TupleImp::template _t, Item2ContainerImp::template _t >::template _t,
+    //                            template_general< Item1TupleImp::template _t >::template _t,
+    //                            std::tuple< DiscreteFunctions... >,
+    //                            std::tuple< DiscreteFunctions... > >
+    //{
+    //  typedef TwoArgContainer< template_general< Item2TupleImp::template _t, Item2ContainerImp::template _t >::template _t,
+    //                           template_general< Item1TupleImp::template _t >::template _t,
+    //                           std::tuple< DiscreteFunctions... >,
+    //                           std::tuple< DiscreteFunctions... > > BaseType;
+    //public:
+    //  using BaseType::operator();
+
+    //  // constructor: do not touch/delegate everything
+    //  template< class ... Args>
+    //  GlobalContainer( Args&&... args )
+    //  : BaseType( args... )
+    //  {}
+    //};
+
     //template< class ... AlgCreators >
     //struct GlobalContainerCollector
     //{

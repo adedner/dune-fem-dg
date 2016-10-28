@@ -19,4 +19,39 @@
       typedef typename tname##_Helper< T, decltype( apply( std::declval<T>() ) )::value >::type type;   \
     };                                                                                                  \
 
+
+
+
+//// SFINAE test
+//template<class T>
+//class has_type_type
+//{
+//    typedef char one;
+//    typedef long two;
+//
+//    template <class C> static one test( decltype(T::type*) ) ;
+//    template <typename C> static two test(...);
+//
+//public:
+//    enum { value = sizeof(test<T>(0)) == sizeof(char) };
+//};
+//
+//
+//
+//template< typename T, typename Check = void > struct HasXYZ
+//{ static const bool value = false; };
+//
+//template< typename T > struct HasXYZ< T, typename T::XYZ >
+//{ static const bool value = true; };
+//
+//
+//template <typename T, typename Check = void>
+//struct A
+//{ static const bool value = false; };
+//
+//template <typename T>
+//struct A<T,void>
+//{ static const bool value = true; };
+
+
 #endif

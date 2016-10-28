@@ -67,7 +67,7 @@ namespace Fem
                                      Galerkin::Enum::dg,
                                      Adaptivity::Enum::yes,
                                      DiscreteFunctionSpaces::Enum::legendre,
-                                     Solver::Enum::istl,
+                                     Solver::Enum::fem,
                                      AdvectionLimiter::Enum::unlimited,
                                      Matrix::Enum::assembled,
                                      AdvectionFlux::Enum::none,
@@ -216,7 +216,9 @@ namespace Fem
           typedef typename AC::template DefaultOpTraits< VelDFSpaceType, polOrd, RhsAnalyticalTraitsType, ExtraParameterTuple >
                                                                                 RhsOpTraits;
         public:
-          typedef StokesAssembler< AssTraits, OpTraits >                             AssemblerType;
+          typedef StokesAssembler< OpTraits, AC::template Containers,VelDiscreteFunctionType,DiscreteFunctionType >
+                                                                                     AssemblerType;
+          //typedef StokesAssembler< AssTraits, OpTraits >                             AssemblerType;
           //the following typedef is not needed by stokes algorithm atm
           //typedef typename AssemblerType::MatrixType                               type;
 

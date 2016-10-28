@@ -77,7 +77,7 @@ namespace Fem
 
   };
 
-  // Note: MatrixImp has to/should be extracted by a TemplateTuple struct!!!
+  // TemplateTupleTemplate has to contain a template struct called 'type'
   template< template<class,class> class TemplateTupleTemplate, class... DiscreteFunctions >
   struct GeneralSubEllipticContainer
     : public TwoArgContainer< template_general< SubEllipticContainerItem, TemplateTupleTemplate >::template _t,
