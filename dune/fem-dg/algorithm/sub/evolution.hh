@@ -212,8 +212,18 @@ namespace Fem
       assert( solution_ );
       return *solution_;
     }
+    const DiscreteFunctionType& solution () const
+    {
+      assert( solution_ );
+      return *solution_;
+    }
 
     DiscreteFunctionType& exactSolution ()
+    {
+      assert( exactSolution_ );
+      return *exactSolution_;
+    }
+    const DiscreteFunctionType& exactSolution () const
     {
       assert( exactSolution_ );
       return *exactSolution_;
