@@ -326,40 +326,74 @@ namespace Fem
 
 
   ////
-  //matrix and vector (1/2 arg type)
-  template< template<class...> class InnerObj >
+  //matrix (2 arg type)
+  template< template<class> class InnerObj >
   struct template_unique< InnerObj >
   {
-    template<class... I>
+    template<class R, int r>
     struct _t
     {
-      typedef InnerObj<I...>  type;
+      typedef InnerObj<R>  type;
     };
   };
 
   template< template<class> class OuterObj,
-            template<class...> class InnerObj >
+            template<class> class InnerObj >
   struct template_unique< OuterObj, InnerObj >
   {
-    template<class... I>
+    template<class R, int r>
     struct _t
     {
-      typedef OuterObj< InnerObj<I...> > type;
+      typedef OuterObj< InnerObj<R> > type;
     };
   };
 
   template< template<class> class OutestObj,
             template<class> class OuterObj,
-            template<class...> class InnerObj >
+            template<class> class InnerObj >
   struct template_unique< OutestObj, OuterObj, InnerObj >
   {
-    template<class... I>
+    template<class R, int r>
     struct _t
     {
-      typedef OutestObj< OuterObj< InnerObj<I...> > > type;
+      typedef OutestObj< OuterObj< InnerObj<R> > > type;
     };
   };
 
+
+  //vector (1 arg type)
+  template< template<class,class> class InnerObj >
+  struct template_unique< InnerObj >
+  {
+    template<class R, class C, int r, int c>
+    struct _t
+    {
+      typedef InnerObj<R,C>  type;
+    };
+  };
+
+  template< template<class> class OuterObj,
+            template<class,class> class InnerObj >
+  struct template_unique< OuterObj, InnerObj >
+  {
+    template<class R, class C, int r, int c>
+    struct _t
+    {
+      typedef OuterObj< InnerObj<R,C> > type;
+    };
+  };
+
+  template< template<class> class OutestObj,
+            template<class> class OuterObj,
+            template<class,class> class InnerObj >
+  struct template_unique< OutestObj, OuterObj, InnerObj >
+  {
+    template<class R, class C, int r, int c>
+    struct _t
+    {
+      typedef OutestObj< OuterObj< InnerObj<R,C> > > type;
+    };
+  };
 
   ////
   //matrix (2 arg type)
