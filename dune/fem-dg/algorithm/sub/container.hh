@@ -216,19 +216,19 @@ namespace Fem
       return std::make_shared< Item1<i> >( name );
     }
     template< unsigned long int ...i, class SameObject>
-    static Item1TupleType createContainer( std::integer_sequence< unsigned long int, i... >, SameObject& obj, const std::string name )
+    static Item1TupleType createContainer( _indices<i...>, SameObject& obj, const std::string name )
     {
       return std::make_tuple( createItem1<i>( obj, name )... );
     }
     template< unsigned long int ...i >
-    static Item1TupleType createContainer( std::integer_sequence< unsigned long int, i... >, const std::string name )
+    static Item1TupleType createContainer( _indices<i...>, const std::string name )
     {
       return std::make_tuple( createItem1<i>( name )... );
     }
 
     ////// Copy
     template< class Item1Tuple, unsigned long int ...i >
-    static Item1TupleType copyContainer( const Item1Tuple& item1, std::tuple< std::integral_constant< unsigned long int, i... > > )
+    static Item1TupleType copyContainer( const Item1Tuple& item1, std::tuple< _index<i>...  > )
     {
       return std::make_tuple( std::get<i>( item1 )... );
     }
@@ -259,7 +259,7 @@ namespace Fem
 
     // item access
     template< unsigned long int i >
-    std::shared_ptr< Item1<i> > operator() ( std::integral_constant<unsigned long int, i> index )
+    std::shared_ptr< Item1<i> > operator() ( _index<i> index )
     {
       return std::get<i>( item1_ );
     }
@@ -267,7 +267,7 @@ namespace Fem
     // sub container
     template< unsigned long int... i >
     std::shared_ptr< SubContainer< i...> >
-    operator() ( std::tuple< std::integral_constant<unsigned long int, i>... > index )
+    operator() ( std::tuple< _index<i>... > index )
     {
       return std::make_shared< SubContainer< i...> >( copyContainer(item1_, index ) );
     }
@@ -309,21 +309,18 @@ namespace Fem
     template< unsigned long int i, unsigned long int j >
     std::shared_ptr< Item2<i,j> > createItem2( const std::string name )
     {
-      return std::make_shared<Item2<i,j> >( BaseType::operator()( std::integral_constant< unsigned long int, i>() ),
-                                            BaseType::operator()( std::integral_constant< unsigned long int, j>() ),
+      return std::make_shared<Item2<i,j> >( BaseType::operator()( _index<i>() ),
+                                            BaseType::operator()( _index<j>() ),
                                             name );
     }
     template< unsigned long int i, unsigned long int ...j >
     std::tuple< std::shared_ptr< Item2<i,j> > ... >
-    createContainerRow( std::integer_sequence< unsigned long int, j... >,
-                        const std::string name )
+    createContainerRow( _indices<j...>, const std::string name )
     {
       return std::make_tuple( createItem2<i,j>( name )... );
     }
     template< unsigned long int ...i, unsigned long int ...j >
-    auto createContainer( std::integer_sequence< unsigned long int, i... > row,
-                          std::integer_sequence< unsigned long int, j... > col,
-                          const std::string name )
+    auto createContainer( _indices<i...> row, _indices<j...> col, const std::string name )
       -> decltype( std::make_tuple( createContainerRow<i>( col, name )... ) )
 
     {
@@ -334,13 +331,12 @@ namespace Fem
     ///// Copy
     template< unsigned long int i, unsigned long int ...j >
     std::tuple< std::shared_ptr< Item2<i,j> > ... >
-    copyContainerRow( std::tuple< std::integral_constant< unsigned long int, j... > > )
+    copyContainerRow( std::tuple< _index<j>... > )
     {
       return std::make_tuple( std::get<j>( std::get<i>( item2_ ) )... );
     }
     template< unsigned long int ...i, unsigned long int ...j >
-    auto copyContainer( std::tuple< std::integral_constant< unsigned long int, i... > > row,
-                        std::tuple< std::integral_constant< unsigned long int, j... > > col )
+    auto copyContainer( std::tuple< _index<i>... > row, std::tuple< _index<j>... > col )
       -> decltype( std::make_tuple( copyContainerRow<i>( col )... ) )
     {
       return std::make_tuple( copyContainerRow<i>( col )... );
@@ -381,8 +377,8 @@ namespace Fem
 
     // item acess
     template< unsigned long int i, unsigned long int j >
-    std::shared_ptr< Item2< i, j > > operator() ( std::integral_constant<unsigned long int, i> row,
-                                                  std::integral_constant<unsigned long int, j> col  )
+    std::shared_ptr< Item2< i, j > > operator() ( _index<i> row,
+                                                  _index<j> col  )
     {
       return std::get<j>( std::get<i>( item2_ ) );
     }
@@ -391,8 +387,8 @@ namespace Fem
     template< unsigned long int... i, unsigned long int... j >
     std::shared_ptr< TwoArgContainer< TwoArgImp, OneArgImp, std::tuple< typename std::tuple_element<i,RowArgTupleType>::type...>,
                                                      std::tuple< typename std::tuple_element<j,ColArgTupleType>::type...> > >
-    operator() ( std::tuple< std::integral_constant<unsigned long int, i>... > row,
-                 std::tuple< std::integral_constant<unsigned long int, j>... > col )
+    operator() ( std::tuple< _index<i>... > row,
+                 std::tuple< _index<j>... > col )
     {
       typedef std::tuple< typename std::tuple_element<i,RowArgTupleType>::type...> NewRowArgTupleType;
       typedef std::tuple< typename std::tuple_element<j,ColArgTupleType>::type...> NewColArgTupleType;
