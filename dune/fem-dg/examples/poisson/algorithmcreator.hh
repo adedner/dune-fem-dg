@@ -176,49 +176,31 @@ namespace Fem
 
     };
 
-    //typedef TemplateTupleRow< SubSteadyStateContainerItem, SubSteadyStateContainerItem >              Item1TupleType;
+    template< class Item2TupleImp, class Item1TupleImp, class... DiscreteFunctions >
+    class GlobalContainer
+      : public TwoArgContainer< _template< Item2TupleImp >::template _t2, _template< Item1TupleImp >::template _t1,
+                                std::tuple< DiscreteFunctions... >, std::tuple< DiscreteFunctions... > >
+    {
+      typedef TwoArgContainer< _template< Item2TupleImp >::template _t2, _template< Item1TupleImp >::template _t1,
+                               std::tuple< DiscreteFunctions... >, std::tuple< DiscreteFunctions... > > BaseType;
 
-    //typedef TemplateTuple< TemplateTupleRow< SubEllipticContainerItem, SubEllipticContainerItem >
-    //                       TemplateTupleRow< SubEllipticContainerItem, SubEllipticContainerItem > >   Item2TupleType;
+    public:
+      using BaseType::operator();
 
-    //typedef TemplateTuple< TemplateTupleRow< Default, SparseRowLinearOperator >,
-    //                       TemplateTupleRow< SparseRowLinearOperator, SparseRowLinearOperator > >     Item2ContainerType;
+      // constructor: do not touch, delegate everything
+      template< class ... Args>
+      GlobalContainer( Args&&... args )
+      : BaseType( args... )
+      {}
 
-
-    //template< class Item2TupleImp, class Item2ContainerImp, class Item1TupleImp, class... DiscreteFunctions >
-    //class GlobalContainer
-    //  : public TwoArgContainer< template_general< Item2TupleImp::template _t, Item2ContainerImp::template _t >::template _t,
-    //                            template_general< Item1TupleImp::template _t >::template _t,
-    //                            std::tuple< DiscreteFunctions... >,
-    //                            std::tuple< DiscreteFunctions... > >
-    //{
-    //  typedef TwoArgContainer< template_general< Item2TupleImp::template _t, Item2ContainerImp::template _t >::template _t,
-    //                           template_general< Item1TupleImp::template _t >::template _t,
-    //                           std::tuple< DiscreteFunctions... >,
-    //                           std::tuple< DiscreteFunctions... > > BaseType;
-    //public:
-    //  using BaseType::operator();
-
-    //  // constructor: do not touch/delegate everything
-    //  template< class ... Args>
-    //  GlobalContainer( Args&&... args )
-    //  : BaseType( args... )
-    //  {}
-    //};
-
-    //template< class ... AlgCreators >
-    //struct GlobalContainerCollector
-    //{
-    //  typedef std::tuple< typename AlgCreators::GridType... > GridTypes;
-
-    //  typedef std::tuple< typename AlgCreators::GridPartType... > GridPartTypes;
-
-    //  typedef std::tuple< typename AlgCreators::FunctionSpaceType... > FunctionSpaceTypes;
-
-    //  template< int ord >
-    //  using DiscreteFunctionSpaceTypes = std::tuple< typename AlgCreators::DiscreteTraits<ord>::DiscreteFunctionSpaceType... >;
-
-    //};
+      // sub container
+      template< unsigned long int i >
+      decltype(auto) sub( _index<i> index )
+      {
+        static const decltype( std::make_tuple( std::make_tuple(_0), std::make_tuple(_1), std::make_tuple(_2) ) ) order;
+        return BaseType::operator()( std::get<i>( order ), std::get<i>( order ) );
+      }
+    };
 
     template <int polOrd>
     using Algorithm = SteadyStateAlgorithm< polOrd, UncoupledSubAlgorithms, SubPoissonAlgorithmCreator >;
@@ -230,16 +212,23 @@ namespace Fem
     static inline GridPtr<GridType>
     initializeGrid() { return DefaultGridInitializer< GridType >::initialize(); }
 
-    //typedef SubSteadyStateContainer< typename SubPoissonAlgorithmCreator::template DiscreteTraits< polOrd >::DiscreteFunctionType > GlobalContainerType;
+    template< int polOrd >
+    static decltype(auto) initContainer()
+    {
 
-    //template< int polOrd >
-    //static std::shared_ptr< GlobalContainerType > initializeGlobalContainer()
-    //{
-    //  // return type of initializeGrid is Dune::GridPtr, use release such that memory of GridPtr is released
-    //  std::unique_ptr< GridType > gridptr( DefaultGridInitializer< GridType >::initialize() );
 
-    //  return std::make_shared< GlobalContainerType >( *gridptr );
-    //}
+      typedef std::tuple< _t< SubSteadyStateContainerItem > >                               Item1TupleType;
+      typedef std::tuple< std::tuple< _t<SubEllipticContainerItem, ISTLLinearOperator > > > Item2TupleType;
+      typedef typename SubPoissonAlgorithmCreator::template DiscreteTraits<polOrd>::DiscreteFunctionType DFType;
+
+      typedef GlobalContainer< Item2TupleType, Item1TupleType, DFType > GlobalContainerType;
+
+      //create grid
+      std::unique_ptr< GridType > gridptr( DefaultGridInitializer< GridType >::initialize().release() );
+
+      //create container
+      return std::make_shared< GlobalContainerType >( *gridptr );
+    }
 
   };
 

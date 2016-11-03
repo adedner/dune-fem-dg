@@ -165,7 +165,7 @@ namespace Fem
       Dune::Fem::ThreadHandle::run( startObj );
     }
 
-#if 1
+#if 0
     // extract grid type from algorithm creator
     typedef typename AlgorithmCreator::GridType  GridType;
 
@@ -175,8 +175,9 @@ namespace Fem
     typedef typename AlgorithmCreator::template Algorithm< polynomialOrder > AlgorithmType;
     std::unique_ptr< AlgorithmType > algorithm( std::make_unique< AlgorithmType >( *gridptr ) );
 #else
-    const auto& globalContainer = algCreator.initializeContainer();
-    std::unique_ptr< AlgorithmType > algorithm( globalContainer );
+    const auto& globalContainer = algCreator.template initContainer<polynomialOrder>();
+    typedef typename AlgorithmCreator::template Algorithm< polynomialOrder > AlgorithmType;
+    auto algorithm = std::make_unique< AlgorithmType >( globalContainer );
 #endif
     // run the algorithm
     compute( *algorithm );

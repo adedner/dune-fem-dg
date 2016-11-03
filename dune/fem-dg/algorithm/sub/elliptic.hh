@@ -60,11 +60,13 @@ namespace Fem
 
   template< template<class,class> class MatrixImp, class... DiscreteFunctions >
   struct SubEllipticContainer
-    : public TwoArgContainer< template_unique< SubEllipticContainerItem, MatrixImp >::template _t,
-                              SubSteadyStateContainerItem, std::tuple< DiscreteFunctions... >, std::tuple< DiscreteFunctions... > >
+    : public TwoArgContainer< _template2< SubEllipticContainerItem, MatrixImp >::template _t2,
+                              _template2< SubSteadyStateContainerItem >::template _t1,
+                              std::tuple< DiscreteFunctions... >, std::tuple< DiscreteFunctions... > >
   {
-    typedef TwoArgContainer< template_unique< SubEllipticContainerItem, MatrixImp >::template _t,
-                             SubSteadyStateContainerItem, std::tuple< DiscreteFunctions... >, std::tuple< DiscreteFunctions... > > BaseType;
+    typedef TwoArgContainer< _template2< SubEllipticContainerItem, MatrixImp >::template _t2,
+                             _template2< SubSteadyStateContainerItem >::template _t1,
+                             std::tuple< DiscreteFunctions... >, std::tuple< DiscreteFunctions... > > BaseType;
 
   public:
     using BaseType::operator();
@@ -76,27 +78,6 @@ namespace Fem
     {}
 
   };
-
-  // TemplateTupleTemplate has to contain a template struct called 'type'
-  template< template<class,class> class TemplateTupleTemplate, class... DiscreteFunctions >
-  struct GeneralSubEllipticContainer
-    : public TwoArgContainer< template_general< SubEllipticContainerItem, TemplateTupleTemplate >::template _t,
-                              SubSteadyStateContainerItem, std::tuple< DiscreteFunctions... >, std::tuple< DiscreteFunctions... > >
-  {
-    typedef TwoArgContainer< template_general< SubEllipticContainerItem, TemplateTupleTemplate >::template _t,
-                             SubSteadyStateContainerItem, std::tuple< DiscreteFunctions... >, std::tuple< DiscreteFunctions... > > BaseType;
-
-  public:
-    using BaseType::operator();
-
-    // constructor: do not touch/delegate everything
-    template< class ... Args>
-    GeneralSubEllipticContainer( Args&&... args )
-    : BaseType( args... )
-    {}
-
-  };
-
 
 
   template< class ErrorEstimatorImp >
@@ -656,15 +637,15 @@ namespace Fem
 
   public:
     template< class ContainerImp >
-    SubEllipticAlgorithm( GridType& grid, std::shared_ptr< ContainerImp > cont )
-    : BaseType( grid, cont ),
+    SubEllipticAlgorithm( std::shared_ptr< ContainerImp > cont )
+    : BaseType( cont ),
       assembler_( cont, model() ),
       matrix_( (*cont)(_0,_0)->matrix() ),
       adaptIndicator_( std::make_unique<AdaptIndicatorType>( cont, assembler_, problem(), name() ) ),
       step_( 0 ),
       time_( 0 )
     {
-      std::string gridName = Fem::gridName( grid );
+      std::string gridName = Fem::gridName( grid() );
       if( gridName == "ALUGrid" || gridName == "ALUConformGrid" || gridName == "ALUSimplexGrid" )
       {
         if( solution().space().begin() != solution().space().end() )
@@ -727,8 +708,8 @@ namespace Fem
 
       assembler_.testSymmetry();
 
-      double absLimit   = Dune::Fem:: Parameter::getValue<double>("istl.absLimit",1.e-10);
-      double reduction  = Dune::Fem:: Parameter::getValue<double>("istl.reduction",1.e-6);
+      double absLimit   = Dune::Fem::Parameter::getValue<double>("istl.absLimit",1.e-10);
+      double reduction  = Dune::Fem::Parameter::getValue<double>("istl.reduction",1.e-6);
 
       return std::make_shared< SolverType >( matrix(), reduction, absLimit );
     }

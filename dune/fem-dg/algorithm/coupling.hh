@@ -5,6 +5,7 @@
 #include <type_traits>
 #include <memory>
 #include <utility>
+#include <dune/fem-dg/misc/integral_constant.hh>
 
 namespace Dune
 {
@@ -68,27 +69,8 @@ namespace Fem
   private:
 
     template< std::size_t i >
-    static ElementPtr<i> createSubAlgorithm( GridType& grid )
-    {
-      //Container<i>* container = new Container<i>( grid );
-
-      //std::tuple<int,double,std::string> t{1,-0.5,"tuple"};
-      //Dune::Fem::for_each(container,
-      //                    [](const auto& entry, auto I)
-      //                    {
-      //                      std::cout << "new container: name: " << entry->template solution<I>()->name() << ", size: " << entry->template solution<I>()->size() << std::endl;
-      //                    });
-      //std::cout << "new container: name: " << sol.name() << ", size: " << sol.size() << std::endl;
-
-      //ElementPtr<i> ptr( new Element<i>( grid, *container ), Deleter<i>( container ) );
-
-      //grids = ElementPtr<i>::initializeGrid();
-      //gridParts = ElementPtr<i>::initializeGridParts();
-      //spaces = ElementPtr<i>::initializeSpaces();
-
       std::shared_ptr< Container<i> > container = std::make_shared< Container<i> >( grid );
       ElementPtr<i> ptr = std::make_shared<Element<i> >( grid, container );
-
 
       auto sol = (*container)(_0)->solution();
       std::cout << "new container: name: " << sol->name() << ", size: " << sol->size() << std::endl;
@@ -96,12 +78,27 @@ namespace Fem
       return ptr;
     }
 
+
+    template< unsigned long int i, class GlobalContainerImp  >
+    static decltype(auto) createSubAlgorithm( std::shared_ptr< GlobalContainerImp > cont )
+    {
+      static _index<i> idx;
+      Element<i> dummy( cont->sub( idx ) );
+      return std::make_shared<Element<i> >( cont->sub( idx ) );
+    }
+
+
     template< std::size_t ...i >
     static SubAlgorithmTupleType apply ( std::index_sequence< i... >, GridType &grid )
     {
       return std::make_tuple( createSubAlgorithm<i>( grid )... );
     }
 
+    template< unsigned long int ...i, class GlobalContainerImp  >
+    static SubAlgorithmTupleType apply ( std::index_sequence< i... >, std::shared_ptr< GlobalContainerImp > cont )
+    {
+      return std::make_tuple( createSubAlgorithm<i>( cont )... );
+    }
   public:
     /**
      * \brief Creates a tuple of sub algorithms
@@ -115,9 +112,9 @@ namespace Fem
     }
 
     template< class GlobalContainerImp >
-    static SubAlgorithmTupleType apply ( GridType &grid, std::shared_ptr< GlobalContainerImp > cont  )
+    static SubAlgorithmTupleType apply ( std::shared_ptr< GlobalContainerImp > cont  )
     {
-      return apply( typename std::make_index_sequence< std::tuple_size< SubAlgorithmTupleType >::value >(), grid, cont );
+      return apply( typename std::make_index_sequence< std::tuple_size< SubAlgorithmTupleType >::value >(), cont );
     }
   };
 

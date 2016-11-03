@@ -43,8 +43,6 @@ namespace Fem
     template< class ContainerImp >
     UzawaSolver( ContainerImp& cont,
                  const InverseOperatorType& aufSolver,
-                 double absLimit,
-                 int maxIter,
                  const ParameterReader &parameter = Parameter::container()
                )
       : aufSolver_( aufSolver ),
@@ -56,8 +54,8 @@ namespace Fem
         spc_( cont(_0)->solution()->space() ),
         pressurespc_( cont(_1)->solution()->space() ),
         velocity_( cont(_0)->solution() ),
-        outer_absLimit_( absLimit ) ,
-        maxIter_( maxIter ),
+        outer_absLimit_( parameter.getValue<double>("istl.absLimit",1.e-10) ),
+        maxIter_( 3 * spc_.size() ),
         verbose_( parameter.getValue< bool >( "fem.solver.verbose", false ) ),
         iter_(0),
         linIter_(0)
@@ -67,6 +65,10 @@ namespace Fem
     static_assert( (int)DiscreteFunctionType::DiscreteFunctionSpaceType::FunctionSpaceType::dimRange == DiscreteFunctionType::GridType::dimension, "stokes assembler: velocity dimrange does not fit");
     static_assert( (int)PressureDiscreteFunctionType::DiscreteFunctionSpaceType::FunctionSpaceType::dimRange == 1 , "stokes assembler: pressure dimrange does not fit");
 
+    void maxIterations( int maxIter )
+    {
+      maxIter_ = maxIter;
+    }
 
     /** \todo Please doc me! */
     virtual void operator()(const PressureDiscreteFunctionType& arg,

@@ -142,14 +142,14 @@ namespace Fem
       adaptCaller_( tuple_ )
     {}
 
-    //template< class GlobalContainerImp >
-    //SteadyStateAlgorithm ( std::shared_ptr< GlobalContainerImp > cont, const std::string name )
-    //: BaseType( (*cont)(_0)->grid(), name ),
-    //  tuple_( CouplingType::apply( cont ) ),
-    //  solverMonitorCaller_( tuple_ ),
-    //  dataWriterCaller_( tuple_ ),
-    //  adaptCaller_( tuple_ )
-    //{}
+    template< class GlobalContainerImp >
+    SteadyStateAlgorithm ( std::shared_ptr< GlobalContainerImp > cont, const std::string name = "" )
+    : BaseType( const_cast< GridType& >((*cont)(_0)->solution()->gridPart().grid()), name ),
+      tuple_( CouplingType::apply( cont ) ),
+      solverMonitorCaller_( tuple_ ),
+      dataWriterCaller_( tuple_ ),
+      adaptCaller_( tuple_ )
+    {}
 
     virtual IOTupleType dataTuple ()
     {

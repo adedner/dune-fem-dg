@@ -232,8 +232,8 @@ namespace Fem
     typedef SubSteadyStateContainer< DiscreteFunctionType >          ContainerType;
 
     template< class ContainerImp >
-    SubSteadyStateAlgorithm ( GridType &grid, std::shared_ptr< ContainerImp > cont  )
-      : BaseType( grid ),
+    SubSteadyStateAlgorithm ( std::shared_ptr< ContainerImp > cont  )
+      : BaseType( const_cast< GridType& >( (*cont)(_0)->solution()->gridPart().grid() ) ),
         solverIterations_( 0 ),
         //newContainer_(  cont ? nullptr : std::make_shared< ContainerType >( grid, "name" ) )
         //solution_( cont ? : (*cont)(_0)->solution() : (*newContainer_)(_0)->solution() ),

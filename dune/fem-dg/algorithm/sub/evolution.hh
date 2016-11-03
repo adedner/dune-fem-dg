@@ -189,8 +189,8 @@ namespace Fem
     typedef SubEvolutionContainer< DiscreteFunctionType >               ContainerType;
 
     template< class ContainerImp >
-    SubEvolutionAlgorithmBase ( GridType &grid, std::shared_ptr< ContainerImp > cont )
-    : BaseType( grid ),
+    SubEvolutionAlgorithmBase ( std::shared_ptr< ContainerImp > cont )
+    : BaseType( const_cast< GridType& >( (*cont)(_0)->solution()->gridPart().grid() ) ),
       overallTime_( 0 ),
       solution_( (*cont)(_0)->solution() ),
       exactSolution_( (*cont)(_0)->exactSolution() ),

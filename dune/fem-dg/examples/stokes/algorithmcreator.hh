@@ -270,6 +270,33 @@ namespace Fem
       using Algorithm = SubStokesAlgorithm< GridType, SubStokesAlgorithmCreator, SubPoissonAlgorithmCreator, polOrd >;
     };
 
+    template< class Item2TupleImp, class Item1TupleImp, class... DiscreteFunctions >
+    class GlobalContainer
+      : public TwoArgContainer< _template< Item2TupleImp >::template _t2, _template< Item1TupleImp >::template _t1,
+                                std::tuple< DiscreteFunctions... >, std::tuple< DiscreteFunctions... > >
+    {
+      typedef TwoArgContainer< _template< Item2TupleImp >::template _t2, _template< Item1TupleImp >::template _t1,
+                               std::tuple< DiscreteFunctions... >, std::tuple< DiscreteFunctions... > > BaseType;
+
+    public:
+      using BaseType::operator();
+
+      // constructor: do not touch, delegate everything
+      template< class ... Args>
+      GlobalContainer( Args&&... args )
+      : BaseType( args... )
+      {}
+
+      // sub container
+      template< unsigned long int i >
+      decltype(auto) sub( _index<i> index )
+      {
+        static const decltype( std::make_tuple( std::make_tuple(_0,_1), std::make_tuple(_1), std::make_tuple(_2) ) ) order;
+        return BaseType::operator()( std::get<i>( order ), std::get<i>( order ) );
+      }
+    };
+
+
 
     template <int polOrd>
     using Algorithm = SteadyStateAlgorithm< polOrd, UncoupledSubAlgorithms, SubStokesAlgorithmCreator >;
@@ -280,6 +307,33 @@ namespace Fem
 
     static inline GridPtr<GridType>
     initializeGrid() { return PoissonGridInitializer< GridType >::initializeGrid(); }
+
+    //TODO to be implemented
+    template< int polOrd >
+    static decltype(auto) initContainer()
+    {
+      typedef typename SubStokesAlgorithmCreator::SubPoissonAlgorithmCreator::template DiscreteTraits<polOrd>::DiscreteFunctionType DFType1;
+      typedef typename SubStokesAlgorithmCreator::template DiscreteTraits<polOrd>::DiscreteFunctionType DFType2;
+
+      typedef _t< SubSteadyStateContainerItem >                         Steady1Type;
+      typedef std::tuple< Steady1Type, Steady1Type >                    Item1TupleType;
+
+      typedef _t< SubEllipticContainerItem, ISTLLinearOperator >        Istl;
+      typedef _t< SubEllipticContainerItem, SparseRowLinearOperator >   Sp;
+
+      typedef std::tuple< std::tuple< Sp, Sp >,
+                          std::tuple< Sp, Sp > >                       Item2TupleType;
+
+      //Global container
+      typedef GlobalContainer< Item2TupleType, Item1TupleType, DFType1, DFType2 > GlobalContainerType;
+
+      //create grid
+      std::unique_ptr< GridType > gridptr( DefaultGridInitializer< GridType >::initialize().release() );
+
+      //create container
+      return std::make_shared< GlobalContainerType >( *gridptr );
+
+    }
 
 
   };

@@ -399,7 +399,8 @@ namespace Fem
   public:
    typedef uint64_t                          UInt64Type;
 
-    StokesPAdaptIndicator( std::shared_ptr< ContainerType > cont,
+    template< class ContainerImp >
+    StokesPAdaptIndicator( std::shared_ptr< ContainerImp > cont,
                            BaseAssemblerType& ass,
                            AssemblerType& assembler,
                            const ProblemType& problem,
@@ -535,13 +536,14 @@ namespace Fem
   public:
 
     template< class ContainerImp >
-    explicit SubStokesAlgorithm( GridType& grid, std::shared_ptr< ContainerImp > cont )
-    : BaseType( grid, (*cont)(std::make_tuple(_1), std::make_tuple(_1) ) ),
-      container_( cont ),
+    explicit SubStokesAlgorithm( std::shared_ptr< ContainerImp > cont )
+    : BaseType( (*cont)(std::make_tuple(_1), std::make_tuple(_1) ) ),
+      //container_( cont ),
       space_( (*cont)(_1)->solution()->space() ),
       assembler_( cont, model() ),
-      ellAlg_( grid, (*cont)( std::make_tuple(_0), std::make_tuple(_0)  ) ),
-      adaptIndicator_( Std::make_unique<AdaptIndicatorType>( cont, ellAlg_.assembler(), assembler_, problem(), name() ) ),
+      ellAlg_( (*cont)( std::make_tuple(_0), std::make_tuple(_0)  ) ),
+      stokesSolver_( std::make_shared< SolverType >( *cont, *ellAlg_.solver() ) ),
+      adaptIndicator_( std::make_unique<AdaptIndicatorType>( cont, ellAlg_.assembler(), assembler_, problem(), name() ) ),
       ioTuple_( new IOTupleType( *BaseType::dataTuple(), *ellAlg_.dataTuple() ) ),
       time_(0)
     {
@@ -573,8 +575,9 @@ namespace Fem
 
       std::cout << "Solver (Stokes) assemble time: " << timer.elapsed() << std::endl;
 
-      double absLimit = Dune::Fem::Parameter::getValue<double>("istl.absLimit",1.e-10);
-      return std::make_shared< SolverType >( *container_, *ellAlg_.solver(), absLimit, 3*ellAlg_.solution().space().size() );
+      stokesSolver_->maxIterations( 3*ellAlg_.solution().space().size() );
+      return stokesSolver_;
+      //return std::make_shared< SolverType >( *container_, *ellAlg_.solver(), absLimit, );
     }
 
     virtual void doInitialize ( const int loop ) override
@@ -608,11 +611,12 @@ namespace Fem
     }
 
   protected:
-    std::shared_ptr< ContainerType >       container_;
+    //std::shared_ptr< ContainerType >       container_;
     const DiscreteFunctionSpaceType&       space_;
     AssemblerType                          assembler_;
 
     EllipticalAlgorithmType                ellAlg_;
+    std::shared_ptr< SolverType >          stokesSolver_;
     std::unique_ptr< AdaptIndicatorType >  adaptIndicator_;
     std::unique_ptr< IOTupleType >         ioTuple_;
     double                                 time_;

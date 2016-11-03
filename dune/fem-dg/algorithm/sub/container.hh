@@ -174,20 +174,25 @@ namespace Fem
     std::unique_ptr< GridPartType >              gridPart_;
     std::unique_ptr< DiscreteFunctionSpaceType > space_;
     std::shared_ptr< DiscreteFunctionType >      df_;
-
   };
 
   //forward declaration
-  template< template<class,int...> class, class >
-  struct OneArgContainer;
+  template< template<class,int...> class, class Arg>
+  struct OneArgContainer
+  {
+    static_assert( static_fail< Arg >::value, "second argument has to be a tuple" );
+  };
 
   //forward declaration
-  template< template<class,class,int...> class, template<class,int...> class, class, class >
-  class TwoArgContainer;
+  template< template<class,class,int...> class, template<class,int...> class, class Arg, class >
+  class TwoArgContainer
+  {
+    static_assert( static_fail< Arg >::value, "third/fourth argument has to be a tuple" );
+  };
 
 
   //only for tuples
-  template< template< class > class OneArgImp, class... Args >
+  template< template< class, int... > class OneArgImp, class... Args >
   struct OneArgContainer< OneArgImp, std::tuple< Args... > >
   {
     typedef std::tuple< Args... >                ArgTupleType;
@@ -198,9 +203,6 @@ namespace Fem
     using Item1 = typename std::tuple_element< i, Item1TupleType>::type::element_type;
 
   protected:
-    template< unsigned long int... i >
-    using SubContainer = OneArgContainer< OneArgImp, Item1<i>... >;
-
     static const int size = std::tuple_size< Item1TupleType >::value;
     static std::make_integer_sequence< unsigned long int, size > sequence;
 
@@ -240,11 +242,11 @@ namespace Fem
     template< template<class,class,int...> class, template<class,int...> class, class, class >
     friend class TwoArgContainer;
 
+  public:
     // copy, for internal use only
     OneArgContainer( const Item1TupleType& item )
     : item1_( item )
     {}
-  public:
 
     // owning container
     template< class SameObject >
@@ -266,10 +268,13 @@ namespace Fem
 
     // sub container
     template< unsigned long int... i >
-    std::shared_ptr< SubContainer< i...> >
+    std::shared_ptr< OneArgContainer< OneArgImp, std::tuple< typename std::tuple_element<i,ArgTupleType>::type...> > >
     operator() ( std::tuple< _index<i>... > index )
     {
-      return std::make_shared< SubContainer< i...> >( copyContainer(item1_, index ) );
+      typedef std::tuple< typename std::tuple_element<i,ArgTupleType>::type...> NewArgTupleType;
+      typedef OneArgContainer< OneArgImp, NewArgTupleType > SubContainerType;
+
+      return std::make_shared< SubContainerType >( copyContainer(item1_, index ) );
     }
   protected:
     Item1TupleType item1_;
@@ -377,8 +382,7 @@ namespace Fem
 
     // item acess
     template< unsigned long int i, unsigned long int j >
-    std::shared_ptr< Item2< i, j > > operator() ( _index<i> row,
-                                                  _index<j> col  )
+    std::shared_ptr< Item2< i, j > > operator() ( _index<i> row, _index<j> col  )
     {
       return std::get<j>( std::get<i>( item2_ ) );
     }
@@ -386,9 +390,8 @@ namespace Fem
     // sub Container
     template< unsigned long int... i, unsigned long int... j >
     std::shared_ptr< TwoArgContainer< TwoArgImp, OneArgImp, std::tuple< typename std::tuple_element<i,RowArgTupleType>::type...>,
-                                                     std::tuple< typename std::tuple_element<j,ColArgTupleType>::type...> > >
-    operator() ( std::tuple< _index<i>... > row,
-                 std::tuple< _index<j>... > col )
+                                                            std::tuple< typename std::tuple_element<j,ColArgTupleType>::type...> > >
+    operator() ( std::tuple< _index<i>... > row, std::tuple< _index<j>... > col )
     {
       typedef std::tuple< typename std::tuple_element<i,RowArgTupleType>::type...> NewRowArgTupleType;
       typedef std::tuple< typename std::tuple_element<j,ColArgTupleType>::type...> NewColArgTupleType;

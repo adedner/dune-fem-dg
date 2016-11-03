@@ -64,43 +64,14 @@ namespace Fem
   };
 
 
-  //typedef TemplateTupleRow< SubSteadyStateContainerItem, SubSteadyStateContainerItem >              Item1TupleType;
-
-  //typedef TemplateTuple< TemplateTupleRow< SubEllipticContainerItem, SubEllipticContainerItem >
-  //                       TemplateTupleRow< SubEllipticContainerItem, SubEllipticContainerItem > >   Item2TupleType;
-
-  //typedef TemplateTuple< TemplateTupleRow< SparseRowLinearOperator, SparseRowLinearOperator >
-  //                       TemplateTupleRow< SparseRowLinearOperator, SparseRowLinearOperator > >     Item2ContainerType;
-
-
-  template< class Item2TupleImp, class Item2ContainerImp, class Item1TupleImp, class... DiscreteFunctions >
-  class GlobalContainer
-    : public TwoArgContainer< template_general< Item2TupleImp::template _t, Item2ContainerImp::template _t >::template _t,
-                              template_general< Item1TupleImp::template _t >::template _t,
-                              std::tuple< DiscreteFunctions... >,
-                              std::tuple< DiscreteFunctions... > >
-  {
-    typedef TwoArgContainer< template_general< Item2TupleImp::template _t, Item2ContainerImp::template _t >::template _t,
-                             template_general< Item1TupleImp::template _t >::template _t,
-                             std::tuple< DiscreteFunctions... >,
-                             std::tuple< DiscreteFunctions... > > BaseType;
-  public:
-    using BaseType::operator();
-
-    // constructor: do not touch/delegate everything
-    template< class ... Args>
-    GlobalContainer( Args&&... args )
-    : BaseType( args... )
-    {}
-  };
-
-
-  //I am sorry for this and all underlying classes... :'( But it is short... :D
   template< template<class,class> class Default >
-  struct TemplateMonster
+  struct UzawaItem2
   {
-    typedef TemplateTuple< TemplateTupleRow< Default, SparseRowLinearOperator >,
-                           TemplateTupleRow< SparseRowLinearOperator, SparseRowLinearOperator > > type;
+    typedef _t< SubEllipticContainerItem, Default >                 Def;
+    typedef _t< SubEllipticContainerItem, SparseRowLinearOperator > Sp;
+
+    typedef std::tuple< std::tuple< Def, Sp >,
+                        std::tuple< Sp,  Sp > >                       type;
   };
 
 
@@ -108,13 +79,13 @@ namespace Fem
   //with MatrixParameterNoPreconditioner
   template< template<class,class> class MatrixImp, class UDiscreteFunctionImp,class PDiscreteFunctionImp >
   class UzawaContainer
-    : public TwoArgContainer< template_general< SubEllipticContainerItem, TemplateMonster< MatrixImp >::type::template _t >::template _t,
-                              SubSteadyStateContainerItem,
+    : public TwoArgContainer< _template< typename UzawaItem2< MatrixImp >::type >::template _t2,
+                              _template2< SubSteadyStateContainerItem >::template _t1,
                               std::tuple< UDiscreteFunctionImp, PDiscreteFunctionImp >,
                               std::tuple< UDiscreteFunctionImp, PDiscreteFunctionImp > >
   {
-    typedef TwoArgContainer< template_general< SubEllipticContainerItem, TemplateMonster< MatrixImp >::type::template _t >::template _t,
-                             SubSteadyStateContainerItem,
+    typedef TwoArgContainer< _template< typename UzawaItem2< MatrixImp >::type >::template _t2,
+                             _template2< SubSteadyStateContainerItem >::template _t1,
                              std::tuple< UDiscreteFunctionImp, PDiscreteFunctionImp >,
                              std::tuple< UDiscreteFunctionImp, PDiscreteFunctionImp > >                   BaseType;
   public:
