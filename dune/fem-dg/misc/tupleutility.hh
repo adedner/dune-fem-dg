@@ -151,13 +151,26 @@ namespace Fem
   template<template<template<class...>class...>class> constexpr int template_level(){ return 2; }
 
 
+  // is_same for templates...
+  template< template<class... > class, template<class...> class >
+  struct is_same_template : std::false_type{};
+
+  template< template<class... > class A >
+  struct is_same_template<A,A> : std::true_type{};
+
+
 
   //helper class to generic pack a matrix and vector
   namespace
   {
 
+    //forward declaration
     template< template<class,int...> class, class, int >
     struct VectorPack;
+    //forward declaration
+    template< template<class,class,int...> class PairImp, class Rows, class Cols, int row, int col >
+    struct MatrixPack;
+
 
     //Normal
     template<template<class> class OneArgImp, class... Rows, int row >
@@ -189,18 +202,6 @@ namespace Fem
 
     };
 
-    template< template<class,int...> class OneArgImp, class Rows >
-    struct VectorPacker
-    {
-      typedef typename VectorPack< OneArgImp, Rows, 0 >::type               type;
-      typedef typename VectorPack< OneArgImp, Rows, 0 >::shared_type shared_type;
-    };
-
-
-
-
-    template< template<class,class,int...> class PairImp, class Rows, class Cols, int row, int col >
-    struct MatrixPack;
 
     ////Normal
     //generate one row
@@ -268,15 +269,22 @@ namespace Fem
       typedef std::tuple< TupleHead,       TupleEnd       >         type;
       typedef std::tuple< SharedTupleHead, SharedTupleEnd >  shared_type;
     };
-
-    template< template<class,class,int...> class TwoArgImp, class Rows, class Cols >
-    struct MatrixPacker
-    {
-      typedef typename MatrixPack< TwoArgImp, Rows, Cols, 0, 0 >::type               type;
-      typedef typename MatrixPack< TwoArgImp, Rows, Cols, 0, 0 >::shared_type shared_type;
-    };
-
   }
+
+
+  template< template<class,int...> class OneArgImp, class Rows >
+  struct VectorPacker
+  {
+    typedef typename VectorPack< OneArgImp, Rows, 0 >::type               type;
+    typedef typename VectorPack< OneArgImp, Rows, 0 >::shared_type shared_type;
+  };
+
+  template< template<class,class,int...> class TwoArgImp, class Rows, class Cols >
+  struct MatrixPacker
+  {
+    typedef typename MatrixPack< TwoArgImp, Rows, Cols, 0, 0 >::type               type;
+    typedef typename MatrixPack< TwoArgImp, Rows, Cols, 0, 0 >::shared_type shared_type;
+  };
 
 
   //simple struct to produce nested TupleRows
