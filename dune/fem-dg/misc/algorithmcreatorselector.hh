@@ -401,7 +401,6 @@ namespace Fem
     typedef DGPrimalMatrixAssembly< AssemblerTraitsImp > type;
   };
 
-
 ///////////////////////////////////////////////////////////////////////////
 // MatrixSolverSelector
 ///////////////////////////////////////////////////////////////////////////
@@ -410,62 +409,69 @@ namespace Fem
   struct AvailableSolvers
   {};
 
-  template <Solver::Enum solver, bool symmetric, class DomainDFSpace, class RangeDFSpace = DomainDFSpace>
+  template <Solver::Enum solver, bool symmetric>
   struct MatrixSolverSelector
   {
     static const bool solverConfigured = false; // this implementation is used for not installed packages
     // choose type of discrete function, Matrix implementation and solver implementation
     // this should work with any discrete function implementation
-    typedef Dune::DynamicVector<double>                                                                        DofVectorType;
-    typedef Dune::Fem::ManagedDiscreteFunction< Dune::Fem::VectorDiscreteFunction< DomainDFSpace, DofVectorType > > DomainDiscreteFunctionType;
-    typedef Dune::Fem::ManagedDiscreteFunction< Dune::Fem::VectorDiscreteFunction< RangeDFSpace, DofVectorType > >  RangeDiscreteFunctionType;
-    typedef DomainDiscreteFunctionType                                                                              DiscreteFunctionType;
-    typedef Dune::Fem::SparseRowLinearOperator< DomainDiscreteFunctionType, RangeDiscreteFunctionType >             LinearOperatorType;
-    typedef Dune::Fem::CGInverseOperator< DiscreteFunctionType >                                                    LinearInverseOperatorType;
+    typedef Dune::DynamicVector<double>                              DofVectorType;
+    template<class Space>
+    using DiscreteFunctionType = Dune::Fem::ManagedDiscreteFunction< Dune::Fem::VectorDiscreteFunction<Space,DofVectorType> >;
+    template<class DSpace, class RSpace = DSpace>
+    using LinearOperatorType = Dune::Fem::SparseRowLinearOperator< DiscreteFunctionType<DSpace>, DiscreteFunctionType<RSpace> >;
+    template<class DSpace, class RSpace = DSpace>
+    using LinearInverseOperatorType = Dune::Fem::CGInverseOperator< DiscreteFunctionType<DSpace > >;
   };
 
-  template <class DomainDFSpace, class RangeDFSpace, bool symmetric>
-  struct MatrixSolverSelector<Solver::Enum::fem,symmetric,DomainDFSpace,RangeDFSpace>
+  template <bool symmetric>
+  struct MatrixSolverSelector<Solver::Enum::fem,symmetric>
   {
     static const bool solverConfigured = true;
-    typedef Dune::Fem::AdaptiveDiscreteFunction< DomainDFSpace >                                        DomainDiscreteFunctionType;
-    typedef Dune::Fem::AdaptiveDiscreteFunction< RangeDFSpace >                                         RangeDiscreteFunctionType;
-    typedef DomainDiscreteFunctionType                                                                  DiscreteFunctionType;
-    typedef Dune::Fem::SparseRowLinearOperator< DomainDiscreteFunctionType, RangeDiscreteFunctionType > LinearOperatorType;
-    typedef typename std::conditional<symmetric,
-            Dune::Fem::CGInverseOperator< DiscreteFunctionType >,
-            Dune::Fem::ParDGGeneralizedMinResInverseOperator< DiscreteFunctionType > > :: type          LinearInverseOperatorType;
+    template<class Space>
+    using DiscreteFunctionType = Dune::Fem::AdaptiveDiscreteFunction<Space>;
+    template<class DSpace, class RSpace = DSpace>
+    using LinearOperatorType = Dune::Fem::SparseRowLinearOperator< DiscreteFunctionType<DSpace>, DiscreteFunctionType<RSpace> >;
+    template<class DSpace, class RSpace = DSpace>
+    using LinearInverseOperatorType
+      = typename std::conditional<symmetric,
+                                  Dune::Fem::CGInverseOperator< DiscreteFunctionType<DSpace> >,
+                                  Dune::Fem::ParDGGeneralizedMinResInverseOperator< DiscreteFunctionType<DSpace> > >::type;
   };
 
-  template <class DomainDFSpace, class RangeDFSpace, bool symmetric>
-  struct MatrixSolverSelector<Solver::Enum::femoem,symmetric,DomainDFSpace,RangeDFSpace>
+  template <bool symmetric>
+  struct MatrixSolverSelector<Solver::Enum::femoem,symmetric>
   {
     static const bool solverConfigured = true;
     // choose type of discrete function, Matrix implementation and solver implementation
     // this work with a discrete function implementation based on a double* dof storage
-    typedef Dune::Fem::AdaptiveDiscreteFunction< DomainDFSpace >                                        DomainDiscreteFunctionType;
-    typedef Dune::Fem::AdaptiveDiscreteFunction< RangeDFSpace >                                         RangeDiscreteFunctionType;
-    typedef DomainDiscreteFunctionType                                                                  DiscreteFunctionType;
-    typedef Dune::Fem::SparseRowLinearOperator< DomainDiscreteFunctionType, RangeDiscreteFunctionType > LinearOperatorType;
-    typedef typename std::conditional<symmetric,
-            Dune::Fem::OEMCGOp< DiscreteFunctionType, LinearOperatorType >,
-            Dune::Fem::OEMBICGSTABOp< DiscreteFunctionType, LinearOperatorType > > :: type              LinearInverseOperatorType;
+    template<class Space>
+    using DiscreteFunctionType = Dune::Fem::AdaptiveDiscreteFunction<Space>;
+    template<class DSpace, class RSpace = DSpace>
+    using LinearOperatorType = Dune::Fem::SparseRowLinearOperator< DiscreteFunctionType<DSpace>, DiscreteFunctionType<RSpace> >;
+    template<class DSpace, class RSpace = DSpace>
+    using LinearInverseOperatorType
+      = typename std::conditional<symmetric,
+                                  Dune::Fem::OEMCGOp< DiscreteFunctionType<DSpace>, LinearOperatorType<DSpace,RSpace> >,
+                                  Dune::Fem::OEMBICGSTABOp< DiscreteFunctionType<DSpace>, LinearOperatorType<DSpace,RSpace> > >::type;
   };
 
 #if HAVE_DUNE_ISTL
-  template <class DomainDFSpace, class RangeDFSpace, bool symmetric>
-  struct MatrixSolverSelector<Solver::Enum::istl,symmetric,DomainDFSpace,RangeDFSpace>
+  template <bool symmetric>
+  struct MatrixSolverSelector<Solver::Enum::istl,symmetric>
   {
     static const bool solverConfigured = true;
     // choose type of discrete function, Matrix implementation and solver implementation
     // here we need the special ISTLBlockVectorDiscreteFunction
-    typedef Dune::Fem::ISTLBlockVectorDiscreteFunction< DomainDFSpace >                            DomainDiscreteFunctionType;
-    typedef Dune::Fem::ISTLBlockVectorDiscreteFunction< RangeDFSpace >                             RangeDiscreteFunctionType;
-    typedef DomainDiscreteFunctionType                                                             DiscreteFunctionType;
-    typedef Dune::Fem::ISTLLinearOperator< DomainDiscreteFunctionType, RangeDiscreteFunctionType > LinearOperatorType;
-    typedef typename std::conditional<symmetric,
-            Dune::Fem::ISTLCGOp< DiscreteFunctionType, LinearOperatorType >,
-            Dune::Fem::ISTLBICGSTABOp< DiscreteFunctionType, LinearOperatorType > > :: type        LinearInverseOperatorType;
+    template<class Space>
+    using DiscreteFunctionType = Dune::Fem::ISTLBlockVectorDiscreteFunction<Space>;
+    template<class DSpace, class RSpace = DSpace>
+    using LinearOperatorType = Dune::Fem::ISTLLinearOperator< DiscreteFunctionType<DSpace>, DiscreteFunctionType<RSpace> >;
+    template<class DSpace, class RSpace = DSpace>
+    using LinearInverseOperatorType =
+    typename std::conditional<symmetric,
+                              Dune::Fem::ISTLCGOp< DiscreteFunctionType<DSpace>, LinearOperatorType<DSpace,RSpace> >,
+                              Dune::Fem::ISTLBICGSTABOp< DiscreteFunctionType<DSpace>, LinearOperatorType<DSpace,RSpace> > >::type;
   };
 #else
   template< bool dummy >
@@ -476,46 +482,48 @@ namespace Fem
 #endif // HAVE_ISTL
 
 #if USE_UMFPACKSOLVER
-  template <class DomainDFSpace, class RangeDFSpace, bool symmetric>
-  struct MatrixSolverSelector<Solver::Enum::umfpack,symmetric,DomainDFSpace,RangeDFSpace>
+  template <bool symmetric>
+  struct MatrixSolverSelector<Solver::Enum::umfpack,symmetric>
   {
     static const bool solverConfigured = true;
     // choose type of discrete function, Matrix implementation and solver implementation
-    typedef Dune::Fem::AdaptiveDiscreteFunction< DomainDFSpace >                                        DomainDiscreteFunctionType;
-    typedef Dune::Fem::AdaptiveDiscreteFunction< RangeDFSpace >                                         RangeDiscreteFunctionType;
-    typedef DomainDiscreteFunctionType                                                                  DiscreteFunctionType;
-    typedef Dune::Fem::SparseRowLinearOperator< DomainDiscreteFunctionType, RangeDiscreteFunctionType > LinearOperatorType;
-    typedef Dune::Fem::UMFPACKOp< DiscreteFunctionType, LinearOperatorType, symmetric >                 LinearInverseOperatorType;
+    template<class Space>
+    using DiscreteFunctionType = Dune::Fem::AdaptiveDiscreteFunction<Space>;
+    template<class DSpace, class RSpace = DSpace>
+    using LinearOperatorType = Dune::Fem::SparseRowLinearOperator< DiscreteFunctionType<DSpace>, DiscreteFunctionType<RSpace> >;
+    template<class DSpace, class RSpace = DSpace>
+    using LinearInverseOperatorType = Dune::Fem::UMFPACKOp< DiscreteFunctionType<DSpace>, LinearOperatorType<DFSpace,RSpace>, symmetric >;
   };
 #else
-  template< bool dummy >
-  struct AvailableSolvers< Solver::Enum::umfpack, dummy >
-  {
-    static_warning(false, "You have chosen the UMFPACK solver backend which is currently not installed. Falling back to standard solver!");
-  };
+  //template< bool dummy >
+  //struct AvailableSolvers< Solver::Enum::umfpack, dummy >
+  //{
+  //  static_warning(false, "You have chosen the UMFPACK solver backend which is currently not installed. Falling back to standard solver!");
+  //};
 #endif
 #undef USE_UMFPACKSOLVER
 
 #if HAVE_PETSC
-  template <class DomainDFSpace, class RangeDFSpace,bool symmetric>
-  struct MatrixSolverSelector<Solver::Enum::petsc,symmetric,DomainDFSpace,RangeDFSpace>
+  template <bool symmetric>
+  struct MatrixSolverSelector<Solver::Enum::petsc,symmetric>
   {
     static const bool solverConfigured = true;
     // choose type of discrete function, Matrix implementation and solver implementation
-    typedef Dune::Fem::PetscDiscreteFunction< DomainDFSpace >                                       DomainDiscreteFunctionType;
-    typedef Dune::Fem::PetscDiscreteFunction< RangeDFSpace >                                        RangeDiscreteFunctionType;
-    typedef DomainDiscreteFunctionType                                                              DiscreteFunctionType;
-    typedef Dune::Fem::PetscLinearOperator< DomainDiscreteFunctionType, RangeDiscreteFunctionType > LinearOperatorType;
-    typedef Dune::Fem::PetscInverseOperator< DiscreteFunctionType, LinearOperatorType >             LinearInverseOperatorType;
+    template<class Space>
+    using DiscreteFunctionType = Dune::Fem::PetscDiscreteFunction<Space>;
+    template<class DSpace, class RSpace = DSpace>
+    using LinearOperatorType = Dune::Fem::PetscLinearOperator< DiscreteFunctionType<DSpace>, DiscreteFunctionType<RSpace> >;
+    template<class DSpace, class RSpace = DSpace>
+    using LinearInverseOperatorType = Dune::Fem::PetscInverseOperator< DiscreteFunctionType<DSpace>, LinearOperatorType<DFSpace,RSpace> >;
     // to switch between solvers for symmetric and non symmetric operators
     // use the parameter petsc.kspsolver.method
   };
 #else
-  template< bool dummy >
-  struct AvailableSolvers< Solver::Enum::petsc, dummy >
-  {
-    static_warning(false, "You have chosen the PetSc solver backend which is currently not installed. Falling back to standard solver!");
-  };
+  //template< bool dummy >
+  //struct AvailableSolvers< Solver::Enum::petsc, dummy >
+  //{
+  //  static_warning(false, "You have chosen the PetSc solver backend which is currently not installed. Falling back to standard solver!");
+  //};
 #endif
 
 #if HAVE_EIGEN
@@ -526,79 +534,85 @@ namespace Fem
     static const bool solverConfigured = true;
     // choose type of discrete function, Matrix implementation and solver implementation
     typedef Dune::Fem::EigenVector<double>                                                                          DofVectorType;
-    typedef Dune::Fem::ManagedDiscreteFunction< Dune::Fem::VectorDiscreteFunction< DomainDFSpace, DofVectorType > > DomainDiscreteFunctionType;
-    typedef Dune::Fem::ManagedDiscreteFunction< Dune::Fem::VectorDiscreteFunction< RangeDFSpace, DofVectorType > >  RangeDiscreteFunctionType;
-    typedef DomainDiscreteFunctionType                                                              DiscreteFunctionType;
-    typedef Dune::Fem::EigenLinearOperator< DomainDiscreteFunctionType, RangeDiscreteFunctionType > LinearOperatorType;
-    typedef Dune::Fem::EigenCGInverseOperator< DiscreteFunctionType >                               LinearInverseOperatorType;
+    template<class Space>
+    using DiscreteFunctionType = Dune::Fem::ManagedDiscreteFunction< Dune::Fem::VectorDiscreteFunction<Space,DofVectorType> >;
+    template<class DSpace, class RSpace = DSpace>
+    using LinearOperatorType = Dune::Fem::EigenLinearOperator< DiscreteFunctionType<DSpace>, DiscreteFunctionType<RSpace> >;
+    template<class DSpace, class RSpace = DSpace>
+    using LinearInverseOperatorType = EigenCGInverseOperator< DiscreteFunctionType<DSpace > >
   };
 #else
-  template< bool dummy >
-  struct AvailableSolvers< Solver::Enum::eigen, dummy >
-  {
-    static_warning(false, "You have chosen the Eigen solver backend which is currently not installed. Falling back to standard solver!");
-  };
+  //template< bool dummy >
+  //struct AvailableSolvers< Solver::Enum::eigen, dummy >
+  //{
+  //  static_warning(false, "You have chosen the Eigen solver backend which is currently not installed. Falling back to standard solver!");
+  //};
 #endif
 
 
-///////////////////////////////////////////////////////////////////////////
+  ///////////////////////////////////////////////////////////////////////////
 // MatrixFreeSolverSelector
 ///////////////////////////////////////////////////////////////////////////
 
-  //template <Solver::Enum solver, bool symmetric, class DomainDFSpace, class RangeDFSpace = DomainDFSpace>
+  //template <Solver::Enum solver, bool symmetric>
   //struct MatrixFreeSolverSelector
   //{
   //  static const bool solverConfigured = false; // this implementation is used for not installed packages
   //  // choose type of discrete function, Matrix implementation and solver implementation
   //  // this should work with any discrete function implementation
   //  typedef Dune::Fem::DynamicVector<double>                                                                        DofVectorType;
-  //  typedef Dune::Fem::ManagedDiscreteFunction< Dune::Fem::VectorDiscreteFunction< DomainDFSpace, DofVectorType > > DomainDiscreteFunctionType;
-  //  typedef Dune::Fem::ManagedDiscreteFunction< Dune::Fem::VectorDiscreteFunction< RangeDFSpace, DofVectorType > >  RangeDiscreteFunctionType;
-  //  typedef DomainDiscreteFunctionType                                                                              DiscreteFunctionType;
-  //  typedef Dune::Fem::SparseRowLinearOperator< DomainDiscreteFunctionType, RangeDiscreteFunctionType >             LinearOperatorType;
-  //  typedef Dune::Fem::CGInverseOperator< DiscreteFunctionType >                                                    LinearInverseOperatorType;
+  //  template<class Space>
+  //  using DiscreteFunctionType = Dune::Fem::ManagedDiscreteFunction< Dune::Fem::VectorDiscreteFunction<DSpace,DofVectorType > >;
+  //  template<class DSpace, class RSpace = DSpace>
+  //  using LinearOperatorType = Dune::Fem::SparseRowLinearOperator< DiscreteFunctionType<DSpace>, DiscreteFunctionType<RSpace> >;
+  //  template<class DSpace, class RSpace = DSpace>
+  //  using LinearInverseOperatorType = Dune::Fem::CGInverseOperator< DiscreteFunctionType<DSpace> >;
   //};
 
-  template <Solver::Enum solver, bool symmetric, class DomainDFSpace, class RangeDFSpace = DomainDFSpace>
+  template <Solver::Enum solver, bool symmetric >
   struct MatrixFreeSolverSelector
   {
-    //static_assert( std::is_same< typename RangeDFSpace::RangeFieldType, double >::value, "not double" );
     static const bool solverConfigured = false;
-    typedef Dune::Fem::AdaptiveDiscreteFunction< DomainDFSpace >                                        DomainDiscreteFunctionType;
-    typedef Dune::Fem::AdaptiveDiscreteFunction< RangeDFSpace >                                         RangeDiscreteFunctionType;
-    typedef DomainDiscreteFunctionType                                                                  DiscreteFunctionType;
-    typedef Dune::Fem::Operator< DomainDiscreteFunctionType, RangeDiscreteFunctionType >                LinearOperatorType;
-    typedef typename std::conditional<symmetric,
-            Dune::Fem::CGInverseOperator< DiscreteFunctionType >,
-            Dune::Fem::ParDGGeneralizedMinResInverseOperator< DiscreteFunctionType > > :: type          LinearInverseOperatorType;
+    template<class Space>
+    using DiscreteFunctionType = Dune::Fem::AdaptiveDiscreteFunction<Space>;
+    template<class DSpace, class RSpace = DSpace>
+    using LinearOperatorType = Dune::Fem::Operator< DiscreteFunctionType<DSpace>, DiscreteFunctionType<RSpace> >;
+    template<class DSpace, class RSpace = DSpace>
+    using LinearInverseOperatorType
+      = typename std::conditional<symmetric,
+                                  Dune::Fem::CGInverseOperator< DiscreteFunctionType<DSpace> >,
+                                  Dune::Fem::ParDGGeneralizedMinResInverseOperator< DiscreteFunctionType<DSpace> > >::type;
   };
 
-  template <class DomainDFSpace, class RangeDFSpace, bool symmetric>
-  struct MatrixFreeSolverSelector<Solver::Enum::fem,symmetric,DomainDFSpace,RangeDFSpace>
+  template <bool symmetric>
+  struct MatrixFreeSolverSelector<Solver::Enum::fem,symmetric>
   {
-    //static_assert( std::is_same< typename RangeDFSpace::RangeFieldType, double >::value, "not double" );
     static const bool solverConfigured = true;
-    typedef Dune::Fem::AdaptiveDiscreteFunction< DomainDFSpace >                                        DomainDiscreteFunctionType;
-    typedef Dune::Fem::AdaptiveDiscreteFunction< RangeDFSpace >                                         RangeDiscreteFunctionType;
-    typedef DomainDiscreteFunctionType                                                                  DiscreteFunctionType;
-    typedef Dune::Fem::Operator< DomainDiscreteFunctionType, RangeDiscreteFunctionType >                LinearOperatorType;
-    typedef typename std::conditional<symmetric,
-            Dune::Fem::CGInverseOperator< DiscreteFunctionType >,
-            Dune::Fem::ParDGGeneralizedMinResInverseOperator< DiscreteFunctionType > > :: type          LinearInverseOperatorType;
+    template<class Space>
+    using DiscreteFunctionType = Dune::Fem::AdaptiveDiscreteFunction< Space >;
+    template<class DSpace, class RSpace = DSpace>
+    using LinearOperatorType = Dune::Fem::Operator< DiscreteFunctionType<DSpace>, DiscreteFunctionType<RSpace> >;
+    template<class DSpace, class RSpace = DSpace>
+    using LinearInverseOperatorType
+      = typename std::conditional<symmetric,
+                                  Dune::Fem::CGInverseOperator< DiscreteFunctionType<DSpace> >,
+                                  Dune::Fem::ParDGGeneralizedMinResInverseOperator< DiscreteFunctionType<DSpace> > >::type;
   };
 
 #if HAVE_DUNE_ISTL
-  template <class DomainDFSpace, class RangeDFSpace, bool symmetric>
-  struct MatrixFreeSolverSelector<Solver::Enum::istl,symmetric,DomainDFSpace,RangeDFSpace>
+  template <bool symmetric>
+  struct MatrixFreeSolverSelector<Solver::Enum::istl,symmetric>
   {
     static const bool solverConfigured = true;
-    typedef Dune::Fem::ISTLBlockVectorDiscreteFunction< DomainDFSpace >                            DomainDiscreteFunctionType;
-    typedef Dune::Fem::ISTLBlockVectorDiscreteFunction< RangeDFSpace >                             RangeDiscreteFunctionType;
-    typedef DomainDiscreteFunctionType                                                             DiscreteFunctionType;
-    typedef Dune::Fem::Operator< DomainDiscreteFunctionType, RangeDiscreteFunctionType >           LinearOperatorType;
-    typedef typename std::conditional<symmetric,
-            Dune::Fem::ISTLCGOp< DiscreteFunctionType, LinearOperatorType >,
-            Dune::Fem::ISTLGMResOp< DiscreteFunctionType, LinearOperatorType > > :: type           LinearInverseOperatorType;
+    template<class Space>
+    using DiscreteFunctionType = Dune::Fem::ISTLBlockVectorDiscreteFunction<Space>;
+    template<class DSpace, class RSpace = DSpace>
+    using LinearOperatorType = Dune::Fem::Operator< DiscreteFunctionType<DSpace>, DiscreteFunctionType<RSpace> >;
+    template<class DSpace, class RSpace = DSpace>
+    using LinearInverseOperatorType
+      = typename std::conditional<symmetric,
+                                  Dune::Fem::ISTLCGOp< DiscreteFunctionType<DSpace>, LinearOperatorType<DSpace,RSpace> >,
+                                  Dune::Fem::ISTLGMResOp< DiscreteFunctionType<DSpace>, LinearOperatorType<DSpace,RSpace> > >::type;
   };
 #endif
 
@@ -606,19 +620,19 @@ namespace Fem
 // SolverSelector
 ///////////////////////////////////////////////////////////////////////////
 
-  template <Solver::Enum solver, bool symmetric, bool matrixfree, class DomainDFSpace, class RangeDFSpace = DomainDFSpace>
+  template <Solver::Enum solver, bool symmetric, bool matrixfree>
   struct SolverSelector;
 
-  template <Solver::Enum solver, bool symmetric, class DomainDFSpace, class RangeDFSpace >
-  struct SolverSelector< solver, symmetric, true, DomainDFSpace, RangeDFSpace >
+  template <Solver::Enum solver, bool symmetric >
+  struct SolverSelector< solver, symmetric, true >
   {
-    typedef MatrixFreeSolverSelector< solver, symmetric, DomainDFSpace, RangeDFSpace > type;
+    typedef MatrixFreeSolverSelector< solver, symmetric > type;
   };
 
-  template <Solver::Enum solver, bool symmetric, class DomainDFSpace, class RangeDFSpace >
-  struct SolverSelector< solver, symmetric, false, DomainDFSpace, RangeDFSpace >
+  template <Solver::Enum solver, bool symmetric >
+  struct SolverSelector< solver, symmetric, false >
   {
-    typedef MatrixSolverSelector< solver, symmetric, DomainDFSpace, RangeDFSpace > type;
+    typedef MatrixSolverSelector< solver, symmetric > type;
   };
 
 
