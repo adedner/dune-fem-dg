@@ -462,7 +462,8 @@ namespace Fem
     decltype(auto) sub( _index<i> index )
     {
       static_assert( std::tuple_size< SubOrderImp >::value > i,
-                     "SubOrderImp does not contain the necessary sub structure information." );
+                     "SubOrderImp does not contain the necessary sub structure information.\
+                      SubOrderImp has to be a std::tuple containing i std::tuple's!" );
       //default implementation:
       //static const typename index_tuple< DiscreteFunctions... >::type order;
       static const SubOrderImp order;

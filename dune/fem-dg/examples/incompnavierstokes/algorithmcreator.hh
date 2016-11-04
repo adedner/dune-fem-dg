@@ -422,6 +422,34 @@ namespace Fem
     static inline GridPtr<GridType>
     initializeGrid() { return DefaultGridInitializer< GridType >::initialize(); }
 
+    template< int polOrd >
+    static decltype(auto) initContainer()
+    {
+      typedef std::tuple<_index<0>,_index<1> >                   SubType;
+      typedef std::tuple< SubType, SubType, SubType >            SubOrderType;
+
+      typedef typename SubStokesAlgorithmCreator::SubPoissonAlgorithmCreator::template DiscreteTraits<polOrd>::DiscreteFunctionType DFType1;
+      typedef typename SubStokesAlgorithmCreator::template DiscreteTraits<polOrd>::DiscreteFunctionType DFType2;
+
+      typedef _t< SubSteadyStateContainerItem >                         Steady1Type;
+      typedef std::tuple< Steady1Type, Steady1Type >                    Item1TupleType;
+
+      typedef _t< SubEllipticContainerItem, ISTLLinearOperator >        Istl;
+      typedef _t< SubEllipticContainerItem, SparseRowLinearOperator >   Sp;
+
+      typedef std::tuple< std::tuple< Sp, Sp >,
+                          std::tuple< Sp, Sp > >                       Item2TupleType;
+
+      //Global container
+      typedef GlobalContainer< Item2TupleType, Item1TupleType, SubOrderType, DFType1, DFType2 > GlobalContainerType;
+
+      //create grid
+      std::unique_ptr< GridType > gridptr( DefaultGridInitializer< GridType >::initialize().release() );
+
+      //create container
+      return std::make_shared< GlobalContainerType >( *gridptr );
+
+    }
   };
 
 }

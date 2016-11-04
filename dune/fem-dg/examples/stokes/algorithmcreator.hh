@@ -68,7 +68,7 @@ namespace Fem
                                      Galerkin::Enum::dg,
                                      Adaptivity::Enum::yes,
                                      DiscreteFunctionSpaces::Enum::hierarchic_legendre,
-                                     Solver::Enum::fem,
+                                     Solver::Enum::istl,
                                      AdvectionLimiter::Enum::unlimited,
                                      Matrix::Enum::assembled,
                                      AdvectionFlux::Enum::none,
@@ -282,7 +282,6 @@ namespace Fem
     static inline GridPtr<GridType>
     initializeGrid() { return PoissonGridInitializer< GridType >::initializeGrid(); }
 
-    //TODO to be implemented
     template< int polOrd >
     static decltype(auto) initContainer()
     {
@@ -294,10 +293,11 @@ namespace Fem
       typedef _t< SubSteadyStateContainerItem >                         Steady1Type;
       typedef std::tuple< Steady1Type, Steady1Type >                    Item1TupleType;
 
-      typedef _t< SubEllipticContainerItem, ISTLLinearOperator >        Istl;
+      //typedef _t< SubEllipticContainerItem, SparseRowLinearOperator >   Def;
+      typedef _t< SubEllipticContainerItem, ISTLLinearOperator >        Def;
       typedef _t< SubEllipticContainerItem, SparseRowLinearOperator >   Sp;
 
-      typedef std::tuple< std::tuple< Sp, Sp >,
+      typedef std::tuple< std::tuple< Def, Sp >,
                           std::tuple< Sp, Sp > >                       Item2TupleType;
 
       //Global container
