@@ -69,6 +69,8 @@ namespace Fem
   private:
 
     template< std::size_t i >
+    static ElementPtr<i> createSubAlgorithm( GridType& grid )
+    {
       std::shared_ptr< Container<i> > container = std::make_shared< Container<i> >( grid );
       ElementPtr<i> ptr = std::make_shared<Element<i> >( grid, container );
 
