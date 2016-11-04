@@ -161,7 +161,7 @@ namespace Fem
 
 
   //helper class to generic pack a matrix and vector
-  namespace
+  namespace details
   {
 
     //forward declaration
@@ -275,15 +275,15 @@ namespace Fem
   template< template<class,int...> class OneArgImp, class Rows >
   struct VectorPacker
   {
-    typedef typename VectorPack< OneArgImp, Rows, 0 >::type               type;
-    typedef typename VectorPack< OneArgImp, Rows, 0 >::shared_type shared_type;
+    typedef typename details::VectorPack< OneArgImp, Rows, 0 >::type               type;
+    typedef typename details::VectorPack< OneArgImp, Rows, 0 >::shared_type shared_type;
   };
 
   template< template<class,class,int...> class TwoArgImp, class Rows, class Cols >
   struct MatrixPacker
   {
-    typedef typename MatrixPack< TwoArgImp, Rows, Cols, 0, 0 >::type               type;
-    typedef typename MatrixPack< TwoArgImp, Rows, Cols, 0, 0 >::shared_type shared_type;
+    typedef typename details::MatrixPack< TwoArgImp, Rows, Cols, 0, 0 >::type               type;
+    typedef typename details::MatrixPack< TwoArgImp, Rows, Cols, 0, 0 >::shared_type shared_type;
   };
 
 
