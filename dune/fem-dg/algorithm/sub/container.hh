@@ -411,6 +411,64 @@ namespace Fem
   };
 
 
+  namespace details
+  {
+    template< unsigned long int, class... >
+    struct int_const_tuple;
+
+    template< unsigned long int id, class Arg >
+    struct int_const_tuple< id, Arg >
+    {
+      typedef std::tuple< _index<id> > type;
+    };
+
+    template< unsigned long int id, class Arg, class... Args >
+    struct int_const_tuple< id, Arg, Args... >
+    {
+      typedef typename tuple_concat< std::tuple< _index<id> >, typename int_const_tuple<id+1,Args...>::type >::type type;
+    };
+  }
+
+  //generate tuple containing a consecutive number on integral_constant<>
+  template< class Arg, class... Args >
+  struct index_tuple
+  {
+    typedef typename details::int_const_tuple< 0, Arg, Args... >::type type;
+  };
+
+
+  //TODO this is not a sub-container, it is a global container...
+  //Put this class to another header...
+  template< class Item2TupleImp, class Item1TupleImp, class SubOrderImp, class... DiscreteFunctions >
+  class GlobalContainer
+    : public TwoArgContainer< _template< Item2TupleImp >::template _t2, _template< Item1TupleImp >::template _t1,
+                              std::tuple< DiscreteFunctions... >, std::tuple< DiscreteFunctions... > >
+  {
+    typedef TwoArgContainer< _template< Item2TupleImp >::template _t2, _template< Item1TupleImp >::template _t1,
+                             std::tuple< DiscreteFunctions... >, std::tuple< DiscreteFunctions... > > BaseType;
+
+    static_assert( is_tuple< SubOrderImp >::value, "SubOrderImp has to be a std::tuple<std::tuple<>...>" );
+  public:
+    using BaseType::operator();
+
+    // constructor: do not touch, delegate everything
+    template< class ... Args>
+    GlobalContainer( Args&&... args )
+    : BaseType( args... )
+    {}
+
+    // sub container
+    template< unsigned long int i >
+    decltype(auto) sub( _index<i> index )
+    {
+      static_assert( std::tuple_size< SubOrderImp >::value > i,
+                     "SubOrderImp does not contain the necessary sub structure information." );
+      //default implementation:
+      //static const typename index_tuple< DiscreteFunctions... >::type order;
+      static const SubOrderImp order;
+      return BaseType::operator()( std::get<i>(order), std::get<i>(order) );
+    }
+  };
 
 }
 }

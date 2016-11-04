@@ -176,31 +176,7 @@ namespace Fem
 
     };
 
-    template< class Item2TupleImp, class Item1TupleImp, class... DiscreteFunctions >
-    class GlobalContainer
-      : public TwoArgContainer< _template< Item2TupleImp >::template _t2, _template< Item1TupleImp >::template _t1,
-                                std::tuple< DiscreteFunctions... >, std::tuple< DiscreteFunctions... > >
-    {
-      typedef TwoArgContainer< _template< Item2TupleImp >::template _t2, _template< Item1TupleImp >::template _t1,
-                               std::tuple< DiscreteFunctions... >, std::tuple< DiscreteFunctions... > > BaseType;
-
-    public:
-      using BaseType::operator();
-
-      // constructor: do not touch, delegate everything
-      template< class ... Args>
-      GlobalContainer( Args&&... args )
-      : BaseType( args... )
-      {}
-
-      // sub container
-      template< unsigned long int i >
-      decltype(auto) sub( _index<i> index )
-      {
-        static const decltype( std::make_tuple( std::make_tuple(_0), std::make_tuple(_1), std::make_tuple(_2) ) ) order;
-        return BaseType::operator()( std::get<i>( order ), std::get<i>( order ) );
-      }
-    };
+    // structure of sub containers
 
     template <int polOrd>
     using Algorithm = SteadyStateAlgorithm< polOrd, UncoupledSubAlgorithms, SubPoissonAlgorithmCreator >;
@@ -212,16 +188,18 @@ namespace Fem
     static inline GridPtr<GridType>
     initializeGrid() { return DefaultGridInitializer< GridType >::initialize(); }
 
+
+
     template< int polOrd >
     static decltype(auto) initContainer()
     {
-
+      typedef std::tuple< std::tuple<_index<0> > >                                          SubOrderType;
 
       typedef std::tuple< _t< SubSteadyStateContainerItem > >                               Item1TupleType;
       typedef std::tuple< std::tuple< _t<SubEllipticContainerItem, ISTLLinearOperator > > > Item2TupleType;
       typedef typename SubPoissonAlgorithmCreator::template DiscreteTraits<polOrd>::DiscreteFunctionType DFType;
 
-      typedef GlobalContainer< Item2TupleType, Item1TupleType, DFType > GlobalContainerType;
+      typedef GlobalContainer< Item2TupleType, Item1TupleType, SubOrderType, DFType > GlobalContainerType;
 
       //create grid
       std::unique_ptr< GridType > gridptr( DefaultGridInitializer< GridType >::initialize().release() );
