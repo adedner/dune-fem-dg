@@ -26,7 +26,7 @@
 // include local header files
 #include <dune/fem-dg/examples/stokes/stokesassembler.hh>
 
-#include <dune/fem-dg/algorithm/sub/container.hh>
+#include <dune/fem-dg/algorithm/sub/containers.hh>
 
 
 namespace Dune
@@ -221,7 +221,7 @@ namespace Fem
     typedef typename AssemblerType::ContainerType                    ContainerType;
 
     template< class ContainerImp >
-    StokesSigmaEstimator( shared_ptr< ContainerImp > cont,
+    StokesSigmaEstimator( const shared_ptr< ContainerImp >& cont,
                           const BaseAssemblerType& ass,
                           const AssemblerType& assembler,
                           const std::string keyPrefix = "" )
@@ -279,7 +279,7 @@ namespace Fem
     typedef typename PAdaptivityType::PolOrderContainer         PolOrderContainer;
 
     template< class ContainerImp >
-    StokesPAdaptivity( shared_ptr< ContainerImp > cont, BaseAssemblerType& ass, AssemblerType& assembler, const std::string name = ""  )
+    StokesPAdaptivity( const shared_ptr< ContainerImp >& cont, BaseAssemblerType& ass, AssemblerType& assembler, const std::string name = ""  )
       : pAdapt_( (*cont)( std::make_tuple(_0), std::make_tuple(_0) ), ass, name ),
         polOrderContainer_( (*cont)(_0)->solution()->gridPart().grid(), 0 ),
         space_( (*cont)(_1)->solution()->space() ),
@@ -400,7 +400,7 @@ namespace Fem
    typedef uint64_t                          UInt64Type;
 
     template< class ContainerImp >
-    StokesPAdaptIndicator( std::shared_ptr< ContainerImp > cont,
+    StokesPAdaptIndicator( const std::shared_ptr< ContainerImp >& cont,
                            BaseAssemblerType& ass,
                            AssemblerType& assembler,
                            const ProblemType& problem,
@@ -536,13 +536,13 @@ namespace Fem
   public:
 
     template< class ContainerImp >
-    explicit SubStokesAlgorithm( std::shared_ptr< ContainerImp > cont )
+    explicit SubStokesAlgorithm( const std::shared_ptr< ContainerImp >& cont )
     : BaseType( (*cont)(std::make_tuple(_1), std::make_tuple(_1) ) ),
       //container_( cont ),
       space_( (*cont)(_1)->solution()->space() ),
       assembler_( cont, model() ),
       ellAlg_( (*cont)( std::make_tuple(_0), std::make_tuple(_0)  ) ),
-      stokesSolver_( std::make_shared< SolverType >( *cont, *ellAlg_.solver() ) ),
+      stokesSolver_( std::make_shared< SolverType >( *cont, ellAlg_ ) ),
       adaptIndicator_( std::make_unique<AdaptIndicatorType>( cont, ellAlg_.assembler(), assembler_, problem(), name() ) ),
       ioTuple_( new IOTupleType( *BaseType::dataTuple(), *ellAlg_.dataTuple() ) ),
       time_(0)

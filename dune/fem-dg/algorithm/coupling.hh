@@ -85,7 +85,6 @@ namespace Fem
     static decltype(auto) createSubAlgorithm( std::shared_ptr< GlobalContainerImp > cont )
     {
       static _index<i> idx;
-      Element<i> dummy( cont->sub( idx ) );
       return std::make_shared<Element<i> >( cont->sub( idx ) );
     }
 

@@ -68,7 +68,7 @@ namespace Fem
                                      Galerkin::Enum::dg,
                                      Adaptivity::Enum::yes,
                                      DiscreteFunctionSpaces::Enum::hierarchic_legendre,
-                                     Solver::Enum::istl,
+                                     Solver::Enum::fem,
                                      AdvectionLimiter::Enum::unlimited,
                                      Matrix::Enum::assembled,
                                      AdvectionFlux::Enum::none,
@@ -243,7 +243,8 @@ namespace Fem
 
         struct Solver
         {
-          typedef UzawaSolver< typename Operator::AssemblerType, typename PoissonDiscreteTraits::Solver::type >
+          typedef UzawaSolver< typename Operator::AssemblerType,SubPoissonAlgorithmCreator::template Algorithm<polOrd> >
+          //typedef UzawaSolver< typename Operator::AssemblerType, typename PoissonDiscreteTraits::Solver::type >
                                                                                      type;
         };
 
@@ -293,8 +294,8 @@ namespace Fem
       typedef _t< SubSteadyStateContainerItem >                         Steady1Type;
       typedef std::tuple< Steady1Type, Steady1Type >                    Item1TupleType;
 
-      //typedef _t< SubEllipticContainerItem, SparseRowLinearOperator >   Def;
-      typedef _t< SubEllipticContainerItem, ISTLLinearOperator >        Def;
+      typedef _t< SubEllipticContainerItem, SparseRowLinearOperator >   Def;
+      //typedef _t< SubEllipticContainerItem, ISTLLinearOperator >        Def;
       typedef _t< SubEllipticContainerItem, SparseRowLinearOperator >   Sp;
 
       typedef std::tuple< std::tuple< Def, Sp >,
@@ -304,10 +305,10 @@ namespace Fem
       typedef GlobalContainer< Item2TupleType, Item1TupleType, SubOrderType, DFType1, DFType2 > GlobalContainerType;
 
       //create grid
-      std::unique_ptr< GridType > gridptr( DefaultGridInitializer< GridType >::initialize().release() );
+      std::shared_ptr< GridType > gridptr( DefaultGridInitializer< GridType >::initialize().release() );
 
       //create container
-      return std::make_shared< GlobalContainerType >( *gridptr );
+      return std::make_shared< GlobalContainerType >( gridptr );
 
     }
 

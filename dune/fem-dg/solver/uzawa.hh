@@ -15,7 +15,7 @@ namespace Fem
    *
    * \ingroup Solvers
    */
-  template < class AssemblerType, class InverseOperatorType>
+  template < class AssemblerType, class EllipticAlgorithmImp >
   class UzawaSolver : public Dune::Operator< typename AssemblerType::ContainerType::template Item1<1>::DiscreteFunction::DomainFieldType,
                                              typename AssemblerType::ContainerType::template Item1<1>::DiscreteFunction::RangeFieldType,
                                              typename AssemblerType::ContainerType::template Item1<1>::DiscreteFunction,
@@ -42,10 +42,10 @@ namespace Fem
     //!aufSolver is the InverseOperator for Solving the elliptic Problem A^-1
     template< class ContainerImp >
     UzawaSolver( ContainerImp& cont,
-                 const InverseOperatorType& aufSolver,
+                 const EllipticAlgorithmImp& ellAlg,
                  const ParameterReader &parameter = Parameter::container()
                )
-      : aufSolver_( aufSolver ),
+      : ellAlg_( ellAlg ),
         bop_( cont(_0,_1)->matrix() ),
         btop_( cont(_1,_0)->matrix() ),
         cop_( cont(_1,_1)->matrix() ),
@@ -59,8 +59,7 @@ namespace Fem
         verbose_( parameter.getValue< bool >( "fem.solver.verbose", false ) ),
         iter_(0),
         linIter_(0)
-    {
-    }
+    {}
 
     static_assert( (int)DiscreteFunctionType::DiscreteFunctionSpaceType::FunctionSpaceType::dimRange == DiscreteFunctionType::GridType::dimension, "stokes assembler: velocity dimrange does not fit");
     static_assert( (int)PressureDiscreteFunctionType::DiscreteFunctionSpaceType::FunctionSpaceType::dimRange == 1 , "stokes assembler: pressure dimrange does not fit");
@@ -74,6 +73,10 @@ namespace Fem
     virtual void operator()(const PressureDiscreteFunctionType& arg,
                             PressureDiscreteFunctionType& pressure ) const
     {
+      //get solver
+      assert( ellAlg_.solver() );
+      const auto& aufSolver = *ellAlg_.solver();
+
       Dune::Timer timer;
       Dune::Timer timer2;
       timer2.start();
@@ -116,7 +119,7 @@ namespace Fem
       timer2.stop();
       timer.start();
       // A^-1 * f = velocity
-      aufSolver_(f,*velocity_);
+      aufSolver(f,*velocity_);
       timer.stop();
       timer2.start();
       // B^T * velocity = tmp2
@@ -137,7 +140,7 @@ namespace Fem
       d.assign(residuum);
 
       // save iteration number
-      linIter_+=aufSolver_.iterations();
+      linIter_+=aufSolver.iterations();
 
       // delta = (residuum,residuum)
       delta = residuum.scalarProductDofs( residuum );
@@ -150,7 +153,7 @@ namespace Fem
         timer2.stop();
         timer.start();
         // A^-1 * tmp1 = xi
-        aufSolver_(tmp1,xi);
+        aufSolver(tmp1,xi);
         timer.stop();
         timer2.start();
         // B^T * xi = h
@@ -175,16 +178,16 @@ namespace Fem
         delta = residuum.scalarProductDofs( residuum );
 
         // save iteration number
-        linIter_+=aufSolver_.iterations();
+        linIter_+=aufSolver.iterations();
         if( verbose_ > 0)
           std::cout << "SPcg-Iterationen " << iter_ << "   Residuum:"
-                    << delta << "   lin. iter:" << aufSolver_.iterations() <<std::endl;
+                    << delta << "   lin. iter:" << aufSolver.iterations() <<std::endl;
 
         d *= delta / oldDelta;
         d += residuum;
       }
       std::cout << "UZAWA: SPcg-Iterationen " << iter_ << "   Residuum:"
-                << delta << "   lin. iter:" << aufSolver_.iterations() <<std::endl;
+                << delta << "   lin. iter:" << aufSolver.iterations() <<std::endl;
       std::cout << "UZAWA: Solving time (Poisson solves/total time SPcg): " << timer.elapsed() << " / " << timer2.elapsed() << std::endl;
       if( verbose_ > 0)
         std::cout << std::endl;
@@ -198,7 +201,7 @@ namespace Fem
     // reference to operator which should be inverted
 
     //the CGSolver for A^-1
-    const InverseOperatorType&                      aufSolver_;
+    const EllipticAlgorithmImp&                     ellAlg_;
 
     std::shared_ptr< BOPType >                      bop_;
     std::shared_ptr< BTOPType >                     btop_;

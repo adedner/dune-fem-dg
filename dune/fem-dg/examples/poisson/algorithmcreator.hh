@@ -208,10 +208,10 @@ namespace Fem
       typedef GlobalContainer< Item2TupleType, Item1TupleType, SubOrderType, DFType > GlobalContainerType;
 
       //create grid
-      std::unique_ptr< GridType > gridptr( DefaultGridInitializer< GridType >::initialize().release() );
+      std::shared_ptr< GridType > gridptr( DefaultGridInitializer< GridType >::initialize().release() );
 
       //create container
-      return std::make_shared< GlobalContainerType >( *gridptr );
+      return std::make_shared< GlobalContainerType >( gridptr );
     }
 
   };

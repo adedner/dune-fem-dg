@@ -27,7 +27,7 @@
 
 // include local header files
 #include "steadystate.hh"
-#include "container.hh"
+#include "containers.hh"
 
 
 
@@ -44,7 +44,7 @@ namespace Fem
 
     template< class ContainerItem1, class ContainerItem2 >
     SubEllipticContainerItem ( const ContainerItem1& row, const ContainerItem2& col, const std::string name = "" )
-    : matrix_( std::make_shared< Matrix >( name + "matrix", row->solution()->space(), col->solution()->space() ) )
+    : matrix_( std::make_shared< Matrix >( name + "matrix", col->solution()->space(), row->solution()->space() ) )
     {}
 
     //matrix for assembly
@@ -60,11 +60,11 @@ namespace Fem
 
   template< template<class,class> class MatrixImp, class... DiscreteFunctions >
   struct SubEllipticContainer
-    : public TwoArgContainer< _template2< SubEllipticContainerItem, MatrixImp >::template _t2,
+    : public TwoArgContainer< _template2< SubEllipticContainerItem, MatrixImp >::template _t2Inv,
                               _template2< SubSteadyStateContainerItem >::template _t1,
                               std::tuple< DiscreteFunctions... >, std::tuple< DiscreteFunctions... > >
   {
-    typedef TwoArgContainer< _template2< SubEllipticContainerItem, MatrixImp >::template _t2,
+    typedef TwoArgContainer< _template2< SubEllipticContainerItem, MatrixImp >::template _t2Inv,
                              _template2< SubSteadyStateContainerItem >::template _t1,
                              std::tuple< DiscreteFunctions... >, std::tuple< DiscreteFunctions... > > BaseType;
 
@@ -74,7 +74,7 @@ namespace Fem
     // constructor: do not touch/delegate everything
     template< class ... Args>
     SubEllipticContainer( Args&&... args )
-    : BaseType( args... )
+    : BaseType( std::forward<Args>(args)... )
     {}
 
   };
@@ -99,7 +99,7 @@ namespace Fem
     typedef typename GridPartType::GridType                             GridType;
 
     template< class ContainerImp >
-    PoissonSigmaEstimator( std::shared_ptr< ContainerImp > cont,
+    PoissonSigmaEstimator( const std::shared_ptr< ContainerImp >& cont,
                            const DGOperatorType& assembler,
                            const std::string name = "" )
     : gridPart_( (*cont)(_0)->solution()->space().gridPart() ),
@@ -325,7 +325,7 @@ namespace Fem
     typedef PersistentContainer<GridType,PolOrderStructure> PolOrderContainer;
 
     template< class ContainerImp >
-    PAdaptivity( std::shared_ptr< ContainerImp > cont, DGOperatorType& assembler, const std::string name = ""  )
+    PAdaptivity( const std::shared_ptr< ContainerImp >& cont, DGOperatorType& assembler, const std::string name = ""  )
       : polOrderContainer_( (*cont)(_0)->solution()->space().gridPart().grid(), 0 ),
         space_( (*cont)(_0)->solution()->space() ),
         sigmaEstimator_( cont, assembler, name ),
@@ -502,7 +502,7 @@ namespace Fem
    typedef uint64_t                          UInt64Type;
 
     template< class ContainerImp >
-    PAdaptIndicator( std::shared_ptr< ContainerImp > cont,
+    PAdaptIndicator( const std::shared_ptr< ContainerImp >& cont,
                      DGOperatorType& assembler,
                      const ProblemType& problem,
                      const std::string name = "" )
@@ -637,7 +637,7 @@ namespace Fem
 
   public:
     template< class ContainerImp >
-    SubEllipticAlgorithm( std::shared_ptr< ContainerImp > cont )
+    SubEllipticAlgorithm( const std::shared_ptr< ContainerImp >& cont )
     : BaseType( cont ),
       assembler_( cont, model() ),
       matrix_( (*cont)(_0,_0)->matrix() ),

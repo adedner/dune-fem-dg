@@ -2,7 +2,7 @@
 #define DUNE_FEMDG_CONTAINER_HH
 
 #include <memory>
-
+#include <dune/common/shared_ptr.hh>
 
 
 namespace Dune
@@ -20,159 +20,58 @@ namespace Fem
     typedef typename DiscreteFunctionSpaceType::GridPartType         GridPartType;
     typedef typename GridPartType::GridType                          GridType;
 
-    ContainerItem( const std::string& name )
-    : name_( name ),
-      gridPart_( nullptr ),
-      space_( nullptr ),
-      df_( nullptr )
-    {}
+    //ContainerItem( const std::string& name )
+    //: name_( name ),
+    //  gridPart_( nullptr ),
+    //  space_( nullptr ),
+    //  df_( nullptr )
+    //{}
 
-    ContainerItem( const std::string& name, GridType& grid)
+    ContainerItem( const std::string& name, const std::shared_ptr<GridType >& grid )
     : name_( name ),
-      gridPart_( std::make_unique< GridPartType >( grid ) ),
-      space_( std::make_unique< DiscreteFunctionSpaceType >( *gridPart_ ) ),
+      grid_( grid ),
+      gridPart_( std::make_shared< GridPartType >( *grid_ ) ),
+      space_( std::make_shared< DiscreteFunctionSpaceType >( *gridPart_ ) ),
       df_( std::make_shared< DiscreteFunctionType >( name, *space_ ) )
     {}
 
-    ContainerItem( const std::string& name, const GridPartType& gridPart )
+    //be carefull
+    ContainerItem( const std::string& name, const std::shared_ptr<GridPartType>& gridPart )
     : name_( name ),
-      gridPart_( nullptr ),
-      space_( std::make_unique< DiscreteFunctionSpaceType >( *gridPart_ ) ),
+      grid_( nullptr ),
+      gridPart_( gridPart ),
+      space_( std::make_shared< DiscreteFunctionSpaceType >( *gridPart_ ) ),
       df_( std::make_shared< DiscreteFunctionType >( name, *space_ ) )
     {}
 
-    ContainerItem( const std::string& name, const DiscreteFunctionSpaceType& space )
+    //be carefull
+    ContainerItem( const std::string& name, const std::shared_ptr<DiscreteFunctionSpaceType>& space )
     : name_( name ),
+      grid_( nullptr ),
       gridPart_( nullptr ),
-      space_( nullptr ),
+      space_( space ),
       df_( std::make_shared< DiscreteFunctionType >( name, space ) )
     {}
 
     ContainerItem( const std::string& name, const ContainerItem& cont )
     : name_( name ),
-      gridPart_( nullptr ),
-      space_( nullptr ),
-      df_( std::make_shared< DiscreteFunctionType >( name, cont.space() ) )
-    {}
-
-    const GridType& grid() const
+      grid_( cont.grid_ ),
+      gridPart_( cont.gridPart_ ),
+      space_( cont.space_ ),
+      df_( std::make_shared< DiscreteFunctionType >( name, *space_ ) )
     {
-      assert( df_ );
-      return df_->space().gridPart().grid();
-    }
-    GridType& grid()
-    {
-      assert( df_ );
-      return df_->space().gridPart().grid();
     }
 
-    const GridPartType& gridPart() const
-    {
-      assert( df_ );
-      return df_->space().gridPart();
-    }
-    GridPartType& gridPart()
-    {
-      assert( df_ );
-      return df_->space().gridPart();
-    }
-
-    const DiscreteFunctionSpaceType& space() const
-    {
-      assert( df_ );
-      return df_->space();
-    }
-    DiscreteFunctionSpaceType& space()
-    {
-      assert( df_ );
-      return const_cast< DiscreteFunctionSpaceType& >( df_->space() );
-    }
-
-    const DiscreteFunctionType& operator()()
-    {
-      assert( df_ );
-      return *df_;
-    }
-
-    std::shared_ptr< DiscreteFunctionType > shared()
+    std::shared_ptr< DiscreteFunctionType > shared() const
     {
       return df_;
     }
 
-
-    template< class WrongArg >
-    ContainerItem& operator=( WrongArg& arg )
-    {
-      static_assert( std::is_same< WrongArg, void >::value, "types does not match" );
-      return *this;
-    }
-
-    ContainerItem& operator=( const GridType& grid)
-    {
-      gridPart_ = std::make_unique< GridPartType >( grid );
-      space_ = std::make_unique< DiscreteFunctionSpaceType >( *gridPart_ );
-      df_ = std::make_shared< DiscreteFunctionType >( name_, *space_ );
-      return *this;
-    }
-
-    ContainerItem& operator=( GridType& grid)
-    {
-      gridPart_ = std::make_unique< GridPartType >( grid );
-      space_ = std::make_unique< DiscreteFunctionSpaceType >( *gridPart_ );
-      df_ = std::make_shared< DiscreteFunctionType >( name_, *space_ );
-      return *this;
-    }
-
-    ContainerItem& operator=( const GridPartType& gridPart )
-    {
-      space_ = std::make_unique< DiscreteFunctionSpaceType >( gridPart );
-      df_ = std::make_shared< DiscreteFunctionType >( name_, *space_ );
-      return *this;
-    }
-    ContainerItem& operator=( GridPartType& gridPart )
-    {
-      space_ = std::make_unique< DiscreteFunctionSpaceType >( gridPart );
-      df_ = std::make_shared< DiscreteFunctionType >( name_, *space_ );
-      return *this;
-    }
-
-    ContainerItem& operator=( const DiscreteFunctionSpaceType& space )
-    {
-      df_ = std::make_shared< DiscreteFunctionType >( name_, space );
-      return *this;
-    }
-    ContainerItem& operator=( DiscreteFunctionSpaceType& space )
-    {
-      df_ = std::make_shared< DiscreteFunctionType >( name_, space );
-      return *this;
-    }
-
-    ContainerItem& operator=( DiscreteFunctionType& df )
-    {
-      df_ = std::make_shared< DiscreteFunctionType >( name_, df.space() );
-      return *this;
-    }
-    ContainerItem& operator=( const DiscreteFunctionType& df )
-    {
-      df_ = std::make_shared< DiscreteFunctionType >( name_, df.space() );
-      return *this;
-    }
-
-    ContainerItem& operator=( ContainerItem& cont )
-    {
-      df_ = cont.shared();
-      return *this;
-    }
-    ContainerItem& operator=( const ContainerItem& cont )
-    {
-      df_ = cont.shared();
-      return *this;
-    }
-
-  private:
+  protected:
     const std::string                            name_;
-    std::unique_ptr< GridPartType >              gridPart_;
-    std::unique_ptr< DiscreteFunctionSpaceType > space_;
+    std::shared_ptr< GridType >                  grid_;
+    std::shared_ptr< GridPartType >              gridPart_;
+    std::shared_ptr< DiscreteFunctionSpaceType > space_;
     std::shared_ptr< DiscreteFunctionType >      df_;
   };
 
@@ -208,7 +107,7 @@ namespace Fem
 
     ////// Creation
     template< unsigned long int i, class SameObject >
-    static std::shared_ptr< Item1<i> > createItem1( SameObject& obj, const std::string name )
+    static std::shared_ptr< Item1<i> > createItem1( std::shared_ptr< SameObject > obj, const std::string name )
     {
       return std::make_shared<Item1<i> >( obj, name );
     }
@@ -218,7 +117,7 @@ namespace Fem
       return std::make_shared< Item1<i> >( name );
     }
     template< unsigned long int ...i, class SameObject>
-    static Item1TupleType createContainer( _indices<i...>, SameObject& obj, const std::string name )
+    static Item1TupleType createContainer( _indices<i...>, std::shared_ptr< SameObject > obj, const std::string name )
     {
       return std::make_tuple( createItem1<i>( obj, name )... );
     }
@@ -250,7 +149,7 @@ namespace Fem
 
     // owning container
     template< class SameObject >
-    OneArgContainer( SameObject& obj, const std::string name = "" )
+    OneArgContainer( std::shared_ptr< SameObject > obj, const std::string name = "" )
     : item1_( createContainer( sequence, obj, name ) )
     {}
 
@@ -367,7 +266,7 @@ namespace Fem
     {}
   public:
     template< class SameObject >
-    TwoArgContainer( SameObject& obj, const std::string name = "" )
+    TwoArgContainer( std::shared_ptr< SameObject > obj, const std::string name = "" )
     : BaseType( obj, name ),
       item2_( createContainer( sequence, sequence, name + "matrix" ) ),
       colItem1_( FakeColBaseType::createContainer( sequence, obj, name ) )
@@ -410,6 +309,28 @@ namespace Fem
     ColItem1TupleType       colItem1_;
   };
 
+  template<class DiscreteFunctionImp >
+  struct NoOneArgContainerItem
+  {
+    using DiscreteFunction = DiscreteFunctionImp;
+
+    // constructor
+    template< class ... Args>
+    NoOneArgContainerItem( Args&&... args )
+    {}
+  };
+
+  template< class MatrixContainerImp >
+  struct NoTwoArgContainerItem
+  {
+    using Matrix = MatrixContainerImp;
+
+    template< class ... Args>
+    NoTwoArgContainerItem( Args&&... args )
+    {}
+  };
+
+
 
   namespace details
   {
@@ -437,24 +358,26 @@ namespace Fem
   };
 
 
+
+
+  //template< class Item2TupleImp, class SubOrder2Imp, class Item1TupleImp, class SubOrderImp, class... DiscreteFunctions >
+  //class GlobalContainer;
+
   //TODO this is not a sub-container, it is a global container...
   //Put this class to another header...
   template< class Item2TupleImp, class Item1TupleImp, class SubOrderImp, class... DiscreteFunctions >
-  class GlobalContainer
-    : public TwoArgContainer< _template< Item2TupleImp >::template _t2, _template< Item1TupleImp >::template _t1,
-                              std::tuple< DiscreteFunctions... >, std::tuple< DiscreteFunctions... > >
+  class GlobalContainer//< Item2TupleImp, Item1TupleImp, SubOrderImp, DiscreteFunctions... >
   {
-    typedef TwoArgContainer< _template< Item2TupleImp >::template _t2, _template< Item1TupleImp >::template _t1,
-                             std::tuple< DiscreteFunctions... >, std::tuple< DiscreteFunctions... > > BaseType;
+    typedef TwoArgContainer< _template< Item2TupleImp >::template _t2Inv, _template< Item1TupleImp >::template _t1,
+                             std::tuple< DiscreteFunctions... >, std::tuple< DiscreteFunctions... > > ContainerType;
 
     static_assert( is_tuple< SubOrderImp >::value, "SubOrderImp has to be a std::tuple<std::tuple<>...>" );
   public:
-    using BaseType::operator();
 
     // constructor: do not touch, delegate everything
-    template< class ... Args>
-    GlobalContainer( Args&&... args )
-    : BaseType( args... )
+    template< class GridImp, class ... Args>
+    GlobalContainer( std::shared_ptr< GridImp > gridptr, Args&&... args )
+    : cont_( gridptr, std::forward<Args>(args)... )
     {}
 
     // sub container
@@ -467,9 +390,81 @@ namespace Fem
       //default implementation:
       //static const typename index_tuple< DiscreteFunctions... >::type order;
       static const SubOrderImp order;
-      return BaseType::operator()( std::get<i>(order), std::get<i>(order) );
+      return cont_( std::get<i>(order), std::get<i>(order) );
     }
+
+    const std::string name() const
+    {
+      return std::string("global");
+    }
+  private:
+    ContainerType cont_;
   };
+
+
+
+ // template< class... Item2TupleImp, class... SubOrder2Args, class... Item1TupleImp, class... SubOrder1Args, class... DiscreteFunctions >
+ // class GlobalContainer< std::tuple< Item2TupleImp >,
+ //                        std::tuple< SubOrder2Args >,
+ //                        std::tuple< Item1TupleImp >,
+ //                        std::tuple< std::tuple< SubOrder1Args >... >,
+ //                        DiscreteFunctions... >
+ // {
+ //   typedef std::tuple< std::tuple< SubOrderArgs >... >
+
+ //   typedef std::tuple< DiscreteFunctions... > ArgsType;
+
+ //   static_assert( std::tuple_size< std::tuple<Item2TupleImp...> >::value == std::tuple_size< std::tuple<Item1TupleImp...> >::value,
+ //                  "wrong size!" );
+
+ //   typedef std::tuple< TwoArgContainer< _template< Item2TupleImp >::template _t2Inv,
+ //                                        _template< Item1TupleImp >::template _t1,
+ //                                        ArgsType,
+ //                                        ArgsType >... >                         ContainerType;
+
+ //   template< int i >
+ //   using Sub = typename std::tuple_element< i, ContainerType >::type;
+
+ //   //static_assert( is_tuple< SubOrderImp >::value, "SubOrderImp has to be a std::tuple<std::tuple<>...>" );
+
+ //   static const int size = std::tuple_size< ContainerType >::value;
+ //   static std::make_integer_sequence< unsigned long int, size > sequence;
+
+ //   ////// Creation
+ //   template< unsigned long int i, class... Args >
+ //   static std::shared_ptr< Sub<i> > createSub( Args&&... args )
+ //   {
+ //     return std::make_shared< Sub<i> >( args );
+ //   }
+ //   template< unsigned long int ...i, class... Args >
+ //   static ContainerType createContainer( _indices<i...>, Args&&... args )
+ //   {
+ //     return std::make_tuple( createSub<i>( args )... );
+ //   }
+
+ // public:
+
+ //   // constructor: do not touch, delegate everything
+ //   template< class ... Args>
+ //   GlobalContainer( Args&&... args )
+ //   : cont_( createContainer( sequence, args... ) )
+ //   {}
+
+ //   // sub container
+ //   template< unsigned long int i >
+ //   decltype(auto) sub( _index<i> index )
+ //   {
+ //     static_assert( std::tuple_size< SubOrderImp >::value > i,
+ //                    "SubOrderImp does not contain the necessary sub structure information.\
+ //                     SubOrderImp has to be a std::tuple containing i std::tuple's!" );
+ //     //default implementation:
+ //     //static const typename index_tuple< DiscreteFunctions... >::type order;
+ //     static const SubOrderImp order;
+ //     return cont_( std::get<i>(order), std::get<i>(order) );
+ //   }
+ // private:
+ //   ContainerType cont_;
+ // };
 
 }
 }

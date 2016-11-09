@@ -15,7 +15,7 @@
 #include <dune/fem-dg/algorithm/sub/steadystate.hh>
 #include <dune/fem-dg/algorithm/sub/elliptic.hh>
 
-#include <dune/fem-dg/algorithm/sub/container.hh>
+#include <dune/fem-dg/algorithm/sub/containers.hh>
 
 
 namespace Dune
@@ -79,12 +79,12 @@ namespace Fem
   //with MatrixParameterNoPreconditioner
   template< template<class,class> class MatrixImp, class UDiscreteFunctionImp,class PDiscreteFunctionImp >
   class UzawaContainer
-    : public TwoArgContainer< _template< typename UzawaItem2< MatrixImp >::type >::template _t2,
+    : public TwoArgContainer< _template< typename UzawaItem2< MatrixImp >::type >::template _t2Inv,
                               _template2< SubSteadyStateContainerItem >::template _t1,
                               std::tuple< UDiscreteFunctionImp, PDiscreteFunctionImp >,
                               std::tuple< UDiscreteFunctionImp, PDiscreteFunctionImp > >
   {
-    typedef TwoArgContainer< _template< typename UzawaItem2< MatrixImp >::type >::template _t2,
+    typedef TwoArgContainer< _template< typename UzawaItem2< MatrixImp >::type >::template _t2Inv,
                              _template2< SubSteadyStateContainerItem >::template _t1,
                              std::tuple< UDiscreteFunctionImp, PDiscreteFunctionImp >,
                              std::tuple< UDiscreteFunctionImp, PDiscreteFunctionImp > >                   BaseType;
@@ -98,6 +98,11 @@ namespace Fem
     : BaseType( args... )
     {}
 
+    // constructor:
+    UzawaContainer( const typename UDiscreteFunctionImp::DiscreteFunctionSpaceType& uSpace,
+                    const typename PDiscreteFunctionImp::DiscreteFunctionSpaceType& pSpace )
+    : BaseType( uSpace, pSpace )
+    {}
   };
 
   /**
@@ -187,7 +192,7 @@ namespace Fem
 
     //Constructor
     template< class ContainerImp >
-    StokesAssembler( std::shared_ptr< ContainerImp > cont,
+    StokesAssembler( const std::shared_ptr<ContainerImp>& cont,
                      const ModelType& model,
                      double d11=1.,
                      double d12=1.)

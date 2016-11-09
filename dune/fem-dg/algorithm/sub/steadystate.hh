@@ -28,7 +28,7 @@
 #include <dune/fem-dg/algorithm/caller/sub/diagnostics.hh>
 #include <dune/fem-dg/algorithm/caller/sub/additionaloutput.hh>
 
-#include "container.hh"
+#include "containers.hh"
 
 namespace Dune
 {
@@ -44,7 +44,7 @@ namespace Fem
 
     // owning container
     template< class SameObject >
-    SubSteadyStateContainerItem( SameObject& obj, const std::string name = "" )
+    SubSteadyStateContainerItem( const std::shared_ptr<SameObject>& obj, const std::string name = "" )
     : stringId_( FunctionIDGenerator::instance().nextId() ),
       solution_(      std::make_shared< CItem >( name + "u" + stringId_, obj ) ),
       exactSolution_( std::make_shared< CItem >( name + "u-exact" + stringId_, *solution_ ) ),
@@ -96,7 +96,7 @@ namespace Fem
     // constructor: do not touch/delegate everything
     template< class ... Args>
     SubSteadyStateContainer( Args&&... args )
-    : BaseType( args... )
+    : BaseType( std::forward<Args>(args)... )
     {}
 
 #if 0
@@ -232,7 +232,7 @@ namespace Fem
     typedef SubSteadyStateContainer< DiscreteFunctionType >          ContainerType;
 
     template< class ContainerImp >
-    SubSteadyStateAlgorithm ( std::shared_ptr< ContainerImp > cont  )
+    SubSteadyStateAlgorithm ( const std::shared_ptr< ContainerImp >& cont  )
       : BaseType( const_cast< GridType& >( (*cont)(_0)->solution()->gridPart().grid() ) ),
         solverIterations_( 0 ),
         //newContainer_(  cont ? nullptr : std::make_shared< ContainerType >( grid, "name" ) )
@@ -252,7 +252,7 @@ namespace Fem
       : SubSteadyStateAlgorithm( grid, std::make_shared< ContainerType >( grid, "name" ) )
     {}
 
-    typename SolverType::type* solver()
+    typename SolverType::type* solver() const
     {
       return solver_.get();
     }

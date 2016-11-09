@@ -21,7 +21,7 @@
 #include <dune/fem-dg/algorithm/caller/sub/additionaloutput.hh>
 #include <dune/fem-dg/algorithm/caller/sub/adapt.hh>
 
-#include "container.hh"
+#include "containers.hh"
 
 namespace Dune
 {
@@ -61,7 +61,7 @@ namespace Fem
 
     // owning container
     template< class SameObject >
-    SubEvolutionContainerItem( SameObject& obj, const std::string name = "" )
+    SubEvolutionContainerItem( const std::shared_ptr<SameObject>& obj, const std::string name = "" )
     : stringId_( FunctionIDGenerator::instance().nextId() ),
       solution_(      std::make_shared< CItem >( name + "u" + stringId_, obj ) ),
       exactSolution_( std::make_shared< CItem >( name + "u-exact" + stringId_, *solution_ ) )
@@ -92,6 +92,10 @@ namespace Fem
     std::shared_ptr< CItem > exactSolution_;
   };
 
+
+
+
+
   template <class... DiscreteFunctions >
   struct SubEvolutionContainer
   : public OneArgContainer< SubEvolutionContainerItem, std::tuple< DiscreteFunctions... > >
@@ -103,9 +107,11 @@ namespace Fem
     // constructor: do not touch/delegate everything
     template< class ... Args>
     SubEvolutionContainer( Args&&... args )
-    : BaseType( args... )
+    : BaseType( std::forward<Args>(args)... )
     {}
   };
+
+
 
   template< class SubEvolutionAlgorithmTraits >
   class SubEvolutionAlgorithmBase;
@@ -120,7 +126,7 @@ namespace Fem
     typedef typename BaseType::ContainerType                             ContainerType;
 
     template< class ContainerImp >
-    SubEvolutionAlgorithm( Grid &grid, std::shared_ptr< ContainerImp > cont )
+    SubEvolutionAlgorithm( Grid &grid, const std::shared_ptr< ContainerImp >& cont )
     : BaseType( grid, cont )
     {}
   };
@@ -189,7 +195,7 @@ namespace Fem
     typedef SubEvolutionContainer< DiscreteFunctionType >               ContainerType;
 
     template< class ContainerImp >
-    SubEvolutionAlgorithmBase ( std::shared_ptr< ContainerImp > cont )
+    SubEvolutionAlgorithmBase ( const std::shared_ptr< ContainerImp >& cont )
     : BaseType( const_cast< GridType& >( (*cont)(_0)->solution()->gridPart().grid() ) ),
       overallTime_( 0 ),
       solution_( (*cont)(_0)->solution() ),

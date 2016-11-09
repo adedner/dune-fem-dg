@@ -144,7 +144,7 @@ namespace Fem
 
     template< class GlobalContainerImp >
     SteadyStateAlgorithm ( std::shared_ptr< GlobalContainerImp > cont, const std::string name = "" )
-    : BaseType( const_cast< GridType& >((*cont)(_0)->solution()->gridPart().grid()), name ),
+    : BaseType( const_cast< GridType& >( (*(cont->sub(_0)))(_0)->solution()->gridPart().grid()), name ),
       tuple_( CouplingType::apply( cont ) ),
       solverMonitorCaller_( tuple_ ),
       dataWriterCaller_( tuple_ ),
