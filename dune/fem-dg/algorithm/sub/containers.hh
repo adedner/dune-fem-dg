@@ -101,6 +101,8 @@ namespace Fem
     template< unsigned long int i >
     using Item1 = typename std::tuple_element< i, Item1TupleType>::type::element_type;
 
+    static const int numArgs = std::tuple_size< ArgTupleType >::value;
+
   protected:
     static const int size = std::tuple_size< Item1TupleType >::value;
     static std::make_integer_sequence< unsigned long int, size > sequence;
@@ -207,6 +209,9 @@ namespace Fem
     using Item2 = typename std::tuple_element< j, typename std::tuple_element< i, Item2TupleType>::type >::type::element_type;
 
     using BaseType::operator();
+
+    static const int numRowArgs = std::tuple_size< RowArgTupleType >::value;
+    static const int numColArgs = std::tuple_size< ColArgTupleType >::value;
 
   protected:
     using BaseType::item1_;
@@ -319,27 +324,8 @@ namespace Fem
     ColItem1TupleType       colItem1_;
   };
 
-  //template<class... DiscreteFunctionImp >
-  //struct NoOneArgContainerItem
-  //{
-  //  //using DiscreteFunction = DiscreteFunctionImp;
 
-  //  // constructor
-  //  template< class ... Args>
-  //  NoOneArgContainerItem( Args&&... args )
-  //  {}
-  //};
-
-  //template< class... MatrixContainerImp >
-  //struct NoTwoArgContainerItem
-  //{
-  //  //using Matrix = MatrixContainerImp;
-
-  //  template< class ... Args>
-  //  NoTwoArgContainerItem( Args&&... args )
-  //  {}
-  //};
-
+  //empty item1 oder item2 container
   template< class... MatrixContainerImp >
   struct EmptyContainerItem
   {
