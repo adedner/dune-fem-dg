@@ -33,6 +33,36 @@ namespace Fem
   typedef _index<17> __17;
   typedef _index<18> __18;
   typedef _index<19> __19;
+  typedef _index<20> __20;
+  typedef _index<21> __21;
+  typedef _index<22> __22;
+  typedef _index<23> __23;
+  typedef _index<24> __24;
+  typedef _index<25> __25;
+  typedef _index<26> __26;
+  typedef _index<27> __27;
+  typedef _index<28> __28;
+  typedef _index<29> __29;
+  typedef _index<30> __30;
+  typedef _index<31> __31;
+  typedef _index<32> __32;
+  typedef _index<33> __33;
+  typedef _index<34> __34;
+  typedef _index<35> __35;
+  typedef _index<36> __36;
+  typedef _index<37> __37;
+  typedef _index<38> __38;
+  typedef _index<39> __39;
+  typedef _index<40> __40;
+  typedef _index<41> __41;
+  typedef _index<42> __42;
+  typedef _index<43> __43;
+  typedef _index<44> __44;
+  typedef _index<45> __45;
+  typedef _index<46> __46;
+  typedef _index<47> __47;
+  typedef _index<48> __48;
+  typedef _index<49> __49;
 
 
   __0  _0;
@@ -55,7 +85,36 @@ namespace Fem
   __17 _17;
   __18 _18;
   __19 _19;
-
+  __20 _20;
+  __21 _21;
+  __22 _22;
+  __23 _23;
+  __24 _24;
+  __25 _25;
+  __26 _26;
+  __27 _27;
+  __28 _28;
+  __29 _29;
+  __30 _30;
+  __31 _31;
+  __32 _32;
+  __33 _33;
+  __34 _34;
+  __35 _35;
+  __36 _36;
+  __37 _37;
+  __38 _38;
+  __39 _39;
+  __40 _40;
+  __41 _41;
+  __42 _42;
+  __43 _43;
+  __44 _44;
+  __45 _45;
+  __46 _46;
+  __47 _47;
+  __48 _48;
+  __49 _49;
 
   //some easy print routines
   template< unsigned long int i >
