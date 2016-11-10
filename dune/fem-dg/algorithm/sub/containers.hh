@@ -109,31 +109,31 @@ namespace Fem
 
     ////// Creation
     template< unsigned long int i, class SameObject >
-    static std::shared_ptr< Item1<i> > createItem1( std::shared_ptr< SameObject > obj, const std::string name )
+    static decltype(auto) createItem1( std::shared_ptr< SameObject > obj, const std::string name )
     {
       std::cout << "###CREATE: item1 ('" << name << "'): " << print( _index<i>() ) << std::endl;
       return std::make_shared<Item1<i> >( obj, name );
     }
     template< unsigned long int i >
-    static std::shared_ptr< Item1<i> > createItem1( const std::string name )
+    static decltype(auto) createItem1( const std::string name )
     {
       std::cout << "###CREATE: item1 ('" << name << "'): " << print( _index<i>() ) << std::endl;
       return std::make_shared< Item1<i> >( name );
     }
     template< unsigned long int ...i, class SameObject>
-    static Item1TupleType createContainer( _indices<i...>, std::shared_ptr< SameObject > obj, const std::string name )
+    static decltype(auto) createContainer( _indices<i...>, std::shared_ptr< SameObject > obj, const std::string name )
     {
       return std::make_tuple( createItem1<i>( obj, name )... );
     }
     template< unsigned long int ...i >
-    static Item1TupleType createContainer( _indices<i...>, const std::string name )
+    static decltype(auto) createContainer( _indices<i...>, const std::string name )
     {
       return std::make_tuple( createItem1<i>( name )... );
     }
 
     ////// Copy
     template< class Item1Tuple, unsigned long int ...i >
-    static Item1TupleType copyContainer( const Item1Tuple& item1, std::tuple< _index<i>...  > )
+    static decltype(auto) copyContainer( const Item1Tuple& item1, std::tuple< _index<i>...  > )
     {
       std::cout << "###COPY: item1 ('-'): " << print( _index<i>()... ) << std::endl;
       return std::make_tuple( std::get<i>( item1 )... );
@@ -165,7 +165,7 @@ namespace Fem
 
     // item access
     template< unsigned long int i >
-    std::shared_ptr< Item1<i> > operator() ( _index<i> index )
+    decltype(auto) operator() ( _index<i> index )
     {
       const auto& res = std::get<i>( item1_ );
       //std::cout << "###ACCESS: item1 ('" << res->solution()->name() << "')" << print( index ) << std::endl;
@@ -174,8 +174,7 @@ namespace Fem
 
     // sub container
     template< unsigned long int... i >
-    std::shared_ptr< OneArgContainer< OneArgImp, std::tuple< typename std::tuple_element<i,ArgTupleType>::type...> > >
-    operator() ( std::tuple< _index<i>... > index )
+    decltype(auto) operator() ( std::tuple< _index<i>... > index )
     {
       typedef std::tuple< typename std::tuple_element<i,ArgTupleType>::type...> NewArgTupleType;
       typedef OneArgContainer< OneArgImp, NewArgTupleType > SubContainerType;
@@ -221,7 +220,7 @@ namespace Fem
 
     ///// Creation
     template< unsigned long int i, unsigned long int j >
-    std::shared_ptr< Item2<i,j> > createItem2( const std::string name )
+    decltype(auto) createItem2( const std::string name )
     {
       std::cout << "###CREATE: item2 ('" << name << "'): " << print( _index<i>(), _index<j>() ) << std::endl;
       return std::make_shared<Item2<i,j> >( BaseType::operator()( _index<i>() ),
@@ -229,31 +228,27 @@ namespace Fem
                                             name );
     }
     template< unsigned long int i, unsigned long int ...j >
-    std::tuple< std::shared_ptr< Item2<i,j> > ... >
-    createContainerRow( _indices<j...>, const std::string name )
+    decltype(auto) createContainerRow( _indices<j...>, const std::string name )
     {
       return std::make_tuple( createItem2<i,j>( name )... );
     }
     template< unsigned long int ...i, unsigned long int ...j >
-    auto createContainer( _indices<i...> row, _indices<j...> col, const std::string name )
-      -> decltype( std::make_tuple( createContainerRow<i>( col, name )... ) )
-
+    decltype(auto) createContainer( _indices<i...> row, _indices<j...> col, const std::string name )
     {
       return std::make_tuple( createContainerRow<i>( col, name )... );
     }
 
 
+
     ///// Copy
     template< unsigned long int i, unsigned long int ...j >
-    std::tuple< std::shared_ptr< Item2<i,j> > ... >
-    copyContainerRow( std::tuple< _index<j>... > )
+    decltype(auto) copyContainerRow( std::tuple< _index<j>... > )
     {
       std::cout << "###COPY: item2 ('-'): " << print( std::make_tuple( _index<j>()... ) ) << std::endl;
       return std::make_tuple( std::get<j>( std::get<i>( item2_ ) )... );
     }
     template< unsigned long int ...i, unsigned long int ...j >
-    auto copyContainer( std::tuple< _index<i>... > row, std::tuple< _index<j>... > col )
-      -> decltype( std::make_tuple( copyContainerRow<i>( col )... ) )
+    decltype(auto) copyContainer( std::tuple< _index<i>... > row, std::tuple< _index<j>... > col )
     {
       return std::make_tuple( copyContainerRow<i>( col )... );
     }
@@ -293,7 +288,7 @@ namespace Fem
 
     // item acess
     template< unsigned long int i, unsigned long int j >
-    std::shared_ptr< Item2< i, j > > operator() ( _index<i> row, _index<j> col  )
+    decltype(auto) operator() ( _index<i> row, _index<j> col  )
     {
       const auto& res = std::get<j>( std::get<i>( item2_ ) );
       //std::cout << "###ACCESS: item2 ('-')" << print( row, col ) << std::endl;
@@ -302,9 +297,7 @@ namespace Fem
 
     // sub Container
     template< unsigned long int... i, unsigned long int... j >
-    std::shared_ptr< TwoArgContainer< TwoArgImp, OneArgImp, std::tuple< typename std::tuple_element<i,RowArgTupleType>::type...>,
-                                                            std::tuple< typename std::tuple_element<j,ColArgTupleType>::type...> > >
-    operator() ( std::tuple< _index<i>... > row, std::tuple< _index<j>... > col )
+    decltype(auto) operator() ( std::tuple< _index<i>... > row, std::tuple< _index<j>... > col )
     {
       typedef std::tuple< typename std::tuple_element<i,RowArgTupleType>::type...> NewRowArgTupleType;
       typedef std::tuple< typename std::tuple_element<j,ColArgTupleType>::type...> NewColArgTupleType;
