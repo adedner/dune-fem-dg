@@ -126,8 +126,8 @@ namespace Fem
     typedef typename BaseType::ContainerType                             ContainerType;
 
     template< class ContainerImp >
-    SubEvolutionAlgorithm( Grid &grid, const std::shared_ptr< ContainerImp >& cont )
-    : BaseType( grid, cont )
+    SubEvolutionAlgorithm( const std::shared_ptr< ContainerImp >& cont )
+    : BaseType( cont )
     {}
   };
 

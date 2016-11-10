@@ -193,7 +193,8 @@ namespace Fem
     template< int polOrd >
     static decltype(auto) initContainer()
     {
-      typedef std::tuple< std::tuple<_index<0> > >                    SubOrderType;
+      typedef std::tuple< std::tuple<_index<0> > >                    SubOrder2Type;
+      typedef std::tuple< std::tuple<_index<0> > >                    SubOrder1Type;
 
       typedef _t<SubEllipticContainerItem, ISTLLinearOperator >       Def;
       //typedef _t<SubEllipticContainerItem, SparseRowLinearOperator >  Def;
@@ -205,7 +206,7 @@ namespace Fem
       typedef typename SubPoissonAlgorithmCreator::template DiscreteTraits<polOrd>::DiscreteFunctionType
                                                                       DFType;
 
-      typedef GlobalContainer< Item2TupleType, Item1TupleType, SubOrderType, DFType > GlobalContainerType;
+      typedef GlobalContainer< Item2TupleType, SubOrder2Type, Item1TupleType, SubOrder1Type, DFType > GlobalContainerType;
 
       //create grid
       std::shared_ptr< GridType > gridptr( DefaultGridInitializer< GridType >::initialize().release() );

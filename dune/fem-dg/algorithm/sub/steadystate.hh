@@ -260,7 +260,6 @@ namespace Fem
     DiscreteFunctionType& solution ()
     {
       assert( solution_ );
-      std::cout << "num solution shares: " << solution_.use_count() << std::endl;
       return *solution_;
     }
     const DiscreteFunctionType& solution () const

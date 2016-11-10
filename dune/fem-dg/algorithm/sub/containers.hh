@@ -109,11 +109,13 @@ namespace Fem
     template< unsigned long int i, class SameObject >
     static std::shared_ptr< Item1<i> > createItem1( std::shared_ptr< SameObject > obj, const std::string name )
     {
+      std::cout << "###CREATE: item1 ('" << name << "'): " << print( _index<i>() ) << std::endl;
       return std::make_shared<Item1<i> >( obj, name );
     }
     template< unsigned long int i >
     static std::shared_ptr< Item1<i> > createItem1( const std::string name )
     {
+      std::cout << "###CREATE: item1 ('" << name << "'): " << print( _index<i>() ) << std::endl;
       return std::make_shared< Item1<i> >( name );
     }
     template< unsigned long int ...i, class SameObject>
@@ -131,6 +133,7 @@ namespace Fem
     template< class Item1Tuple, unsigned long int ...i >
     static Item1TupleType copyContainer( const Item1Tuple& item1, std::tuple< _index<i>...  > )
     {
+      std::cout << "###COPY: item1 ('-'): " << print( _index<i>()... ) << std::endl;
       return std::make_tuple( std::get<i>( item1 )... );
     }
 
@@ -162,6 +165,8 @@ namespace Fem
     template< unsigned long int i >
     std::shared_ptr< Item1<i> > operator() ( _index<i> index )
     {
+      const auto& res = std::get<i>( item1_ );
+      //std::cout << "###ACCESS: item1 ('" << res->solution()->name() << "')" << print( index ) << std::endl;
       return std::get<i>( item1_ );
     }
 
@@ -213,6 +218,7 @@ namespace Fem
     template< unsigned long int i, unsigned long int j >
     std::shared_ptr< Item2<i,j> > createItem2( const std::string name )
     {
+      std::cout << "###CREATE: item2 ('" << name << "'): " << print( _index<i>(), _index<j>() ) << std::endl;
       return std::make_shared<Item2<i,j> >( BaseType::operator()( _index<i>() ),
                                             BaseType::operator()( _index<j>() ),
                                             name );
@@ -237,6 +243,7 @@ namespace Fem
     std::tuple< std::shared_ptr< Item2<i,j> > ... >
     copyContainerRow( std::tuple< _index<j>... > )
     {
+      std::cout << "###COPY: item2 ('-'): " << print( std::make_tuple( _index<j>()... ) ) << std::endl;
       return std::make_tuple( std::get<j>( std::get<i>( item2_ ) )... );
     }
     template< unsigned long int ...i, unsigned long int ...j >
@@ -283,7 +290,9 @@ namespace Fem
     template< unsigned long int i, unsigned long int j >
     std::shared_ptr< Item2< i, j > > operator() ( _index<i> row, _index<j> col  )
     {
-      return std::get<j>( std::get<i>( item2_ ) );
+      const auto& res = std::get<j>( std::get<i>( item2_ ) );
+      //std::cout << "###ACCESS: item2 ('-')" << print( row, col ) << std::endl;
+      return res;
     }
 
     // sub Container
@@ -300,6 +309,7 @@ namespace Fem
 
       typedef TwoArgContainer< TwoArgImp, OneArgImp, NewRowArgTupleType, NewColArgTupleType > SubContainerType;
 
+      std::cout << "###CREATE: local sub container " << print( row, col ) << std::endl;
       return std::make_shared< SubContainerType >( RowOneArgContainerType::copyContainer( item1_, row ),
                                                    ColOneArgContainerType::copyContainer( colItem1_, col ),
                                                    copyContainer( row, col ) );
@@ -309,28 +319,34 @@ namespace Fem
     ColItem1TupleType       colItem1_;
   };
 
-  template<class DiscreteFunctionImp >
-  struct NoOneArgContainerItem
-  {
-    using DiscreteFunction = DiscreteFunctionImp;
+  //template<class... DiscreteFunctionImp >
+  //struct NoOneArgContainerItem
+  //{
+  //  //using DiscreteFunction = DiscreteFunctionImp;
 
-    // constructor
+  //  // constructor
+  //  template< class ... Args>
+  //  NoOneArgContainerItem( Args&&... args )
+  //  {}
+  //};
+
+  //template< class... MatrixContainerImp >
+  //struct NoTwoArgContainerItem
+  //{
+  //  //using Matrix = MatrixContainerImp;
+
+  //  template< class ... Args>
+  //  NoTwoArgContainerItem( Args&&... args )
+  //  {}
+  //};
+
+  template< class... MatrixContainerImp >
+  struct EmptyContainerItem
+  {
     template< class ... Args>
-    NoOneArgContainerItem( Args&&... args )
+    EmptyContainerItem( Args&&... args )
     {}
   };
-
-  template< class MatrixContainerImp >
-  struct NoTwoArgContainerItem
-  {
-    using Matrix = MatrixContainerImp;
-
-    template< class ... Args>
-    NoTwoArgContainerItem( Args&&... args )
-    {}
-  };
-
-
 
   namespace details
   {
@@ -360,18 +376,15 @@ namespace Fem
 
 
 
-  //template< class Item2TupleImp, class SubOrder2Imp, class Item1TupleImp, class SubOrderImp, class... DiscreteFunctions >
-  //class GlobalContainer;
-
   //TODO this is not a sub-container, it is a global container...
   //Put this class to another header...
-  template< class Item2TupleImp, class Item1TupleImp, class SubOrderImp, class... DiscreteFunctions >
-  class GlobalContainer//< Item2TupleImp, Item1TupleImp, SubOrderImp, DiscreteFunctions... >
+  template< class Item2TupleImp, class SubOrder2Imp, class Item1TupleImp, class SubOrder1Imp, class... DiscreteFunctions >
+  class GlobalContainer
   {
     typedef TwoArgContainer< _template< Item2TupleImp >::template _t2Inv, _template< Item1TupleImp >::template _t1,
                              std::tuple< DiscreteFunctions... >, std::tuple< DiscreteFunctions... > > ContainerType;
 
-    static_assert( is_tuple< SubOrderImp >::value, "SubOrderImp has to be a std::tuple<std::tuple<>...>" );
+    static_assert( is_tuple< SubOrder1Imp >::value, "SubOrder1Imp has to be a std::tuple<std::tuple<>...>" );
   public:
 
     // constructor: do not touch, delegate everything
@@ -384,12 +397,16 @@ namespace Fem
     template< unsigned long int i >
     decltype(auto) sub( _index<i> index )
     {
-      static_assert( std::tuple_size< SubOrderImp >::value > i,
-                     "SubOrderImp does not contain the necessary sub structure information.\
-                      SubOrderImp has to be a std::tuple containing i std::tuple's!" );
+      static_assert( std::tuple_size< SubOrder1Imp >::value > i,
+                     "SubOrder1Imp does not contain the necessary sub structure information.\
+                      SubOrder1Imp has to be a std::tuple containing i std::tuple's!" );
       //default implementation:
       //static const typename index_tuple< DiscreteFunctions... >::type order;
-      static const SubOrderImp order;
+
+      static const SubOrder1Imp order;
+
+      std::cout << "###CREATE: sub container " << print( index )
+                << " from global container containing elements " << print( std::get<i>(order) )  << std::endl;
       return cont_( std::get<i>(order), std::get<i>(order) );
     }
 
@@ -402,6 +419,11 @@ namespace Fem
   };
 
 
+  template< class Item2TupleImp, class SubOrder2Imp, class Item1TupleImp, class SubOrder1Imp, class... DiscreteFunctions >
+  class GlobalContainer< std::tuple< std::tuple< Item2TupleImp > >, SubOrder2Imp, Item1TupleImp, SubOrder1Imp, std::tuple< DiscreteFunctions... > >
+  {
+
+  };
 
  // template< class... Item2TupleImp, class... SubOrder2Args, class... Item1TupleImp, class... SubOrder1Args, class... DiscreteFunctions >
  // class GlobalContainer< std::tuple< Item2TupleImp >,

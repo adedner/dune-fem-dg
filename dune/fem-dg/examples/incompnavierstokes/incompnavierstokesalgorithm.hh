@@ -4,6 +4,8 @@
 
 #include "../../algorithm/evolution.hh"
 
+#include "../../algorithm/sub/containers.hh"
+
 namespace Dune
 {
 namespace Fem
@@ -41,13 +43,19 @@ namespace Fem
                    "This InCompNavierStokesAlgorithm needs three sub algorithms: 1. Stokes, 2. Oseen, 3. Stokes" );
 
   public:
-    typedef EvolutionCreatorType< SubAlgorithmTupleType, GridType > CreatorType;
+    //typedef EvolutionCreatorType< SubAlgorithmTupleType, GridType > CreatorType;
 
     IncompNavierStokesAlgorithm ( GridType &grid, const std::string name = "" )
     : BaseType( grid, name  )
     {
-      //auto test = CreatorType::GlobalContainerType::template init<polOrder>( grid );
     }
+
+    template< class GlobalContainerImp >
+    IncompNavierStokesAlgorithm ( const std::shared_ptr<GlobalContainerImp>& cont, const std::string name = "" )
+    : BaseType( cont, name  )
+    {
+    }
+
 
     virtual void initialize ( int loop, TimeProviderType &tp )
     {

@@ -244,7 +244,6 @@ namespace Fem
         struct Solver
         {
           typedef UzawaSolver< typename Operator::AssemblerType,SubPoissonAlgorithmCreator::template Algorithm<polOrd> >
-          //typedef UzawaSolver< typename Operator::AssemblerType, typename PoissonDiscreteTraits::Solver::type >
                                                                                      type;
         };
 

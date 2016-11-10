@@ -56,6 +56,31 @@ namespace Fem
   __18 _18;
   __19 _19;
 
+
+  //some easy print routines
+  template< unsigned long int i >
+  static std::string print( _index<i> index )
+  {
+    return std::to_string( i );
+  }
+
+  template< unsigned long int i, unsigned long int... is >
+  static std::string print( _index<i> index, _index<is>... indices )
+  {
+    return std::to_string( i ) + " | " + print( indices... );
+  }
+
+  template< unsigned long int... is >
+  static std::string print( std::tuple< _index<is>... > )
+  {
+    return print( _index<is>()... );
+  }
+
+  template< unsigned long int... is, unsigned long int... js >
+  static std::string print( std::tuple< _index<is>... >, std::tuple< _index<js>... > )
+  {
+    return print( _index<is>()..., _index<js>()... );
+  }
 }
 }
 

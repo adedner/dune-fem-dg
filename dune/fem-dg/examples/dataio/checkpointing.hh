@@ -59,6 +59,31 @@ namespace Fem
     }
   };
 
+  template <class DiscreteFunctionImp >
+  struct SubCheckPointingItem
+  {
+    using CItem = ContainerItem< DiscreteFunctionImp >;
+  public:
+    using DiscreteFunction = DiscreteFunctionImp;
+
+    // owning container
+    template< class SameObject >
+    SubCheckPointingItem( const std::shared_ptr<SameObject>& obj, const std::string name = "" )
+    : stringId_( FunctionIDGenerator::instance().nextId() ),
+      solution_(      std::make_shared< CItem >( name + "checkpoint" + stringId_, obj ) )
+    {}
+
+    //solution
+    shared_ptr< DiscreteFunction > solution() const
+    {
+      return solution_->shared();
+    }
+  private:
+    const std::string          stringId_;
+    std::shared_ptr< CItem > solution_;
+  };
+
+
 
 
 
@@ -123,10 +148,10 @@ namespace Fem
     using BaseType::solution;
     using BaseType::gridSize;
 
-    SubCheckPointingAlgorithm ( GridType &grid, const ContainerType& container )
-    : BaseType( grid ),
-      container_( container ),
-      solution_( container_.solution() ),
+    template< class ContainerImp >
+    SubCheckPointingAlgorithm( const std::shared_ptr< ContainerImp >& cont )
+    : BaseType( const_cast< GridType& >( (*cont)(_0)->solution()->gridPart().grid() ) ),
+      solution_( (*cont)(_0)->solution() ),
       ioTuple_( std::make_tuple( &solution(), nullptr ) ),
       error_( 0.0 )
     {}
@@ -219,7 +244,6 @@ namespace Fem
     }
 
   protected:
-    const ContainerType&                    container_;
     std::shared_ptr< DiscreteFunctionType > solution_;
 
     IOTupleType                             ioTuple_;

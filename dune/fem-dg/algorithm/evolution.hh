@@ -196,6 +196,12 @@ namespace Fem
     EvolutionAlgorithm ( GridType &grid, const std::string name = "" )
       : BaseType( grid, name )
     {}
+
+    template< class GlobalContainerImp >
+    EvolutionAlgorithm ( const std::shared_ptr<GlobalContainerImp>& cont, const std::string name = "" )
+    : BaseType( cont, name )
+    {}
+
   };
 
   /**
@@ -311,6 +317,22 @@ namespace Fem
     EvolutionAlgorithmBase ( GridType &grid, const std::string name = "" )
     : BaseType( grid, name  ),
       tuple_( CouplingType::apply( grid ) ),
+      checkPointCaller_( tuple_ ),
+      dataWriterCaller_( tuple_ ),
+      diagnosticsCaller_( tuple_ ),
+      solverMonitorCaller_( tuple_ ),
+      postProcessingCaller_( tuple_ ),
+      adaptCaller_( tuple_ ),
+      param_( TimeSteppingParametersType( ParameterKey::generate( "", "femdg.stepper." ) ) ),
+      overallTimer_(),
+      timeStepTimer_( Dune::FemTimer::addTo("sum time for timestep") ),
+      fixedTimeStep_( param_.fixedTimeStep() )
+    {}
+
+    template< class GlobalContainerImp >
+    EvolutionAlgorithmBase ( const std::shared_ptr<GlobalContainerImp>& cont, const std::string name = "" )
+    : BaseType( const_cast< GridType& >( (*(cont->sub(_0)))(_0)->solution()->gridPart().grid()), name ),
+      tuple_( CouplingType::apply( cont ) ),
       checkPointCaller_( tuple_ ),
       dataWriterCaller_( tuple_ ),
       diagnosticsCaller_( tuple_ ),

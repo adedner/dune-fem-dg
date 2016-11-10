@@ -80,17 +80,17 @@ namespace Fem
     typedef typename BaseType::ContainerType                  ContainerType;
 
     template< class ContainerImp >
-    SubAdvectionDiffusionAlgorithm( GridType& grid, std::shared_ptr< ContainerImp > cont,
+    SubAdvectionDiffusionAlgorithm( std::shared_ptr< ContainerImp > cont,
                                     ExtraParameterTupleType tuple = ExtraParameterTupleType() ) :
-      BaseType( grid, cont ),
+      BaseType( cont ),
       //vSpace_( gridPart_ ),
       //velo_( "velocity", vSpace_ ),
       //tuple_( &velo_ ),
       tuple_( ),
-      operator_( Std::make_unique< OperatorType >( solution().space().gridPart(), problem(), typename OperatorType::ExtraParameterTupleType(), name() ) ),
-      advectionOperator_( Std::make_unique< ExplicitOperatorType >( solution().space().gridPart(), problem(), typename ExplicitOperatorType::ExtraParameterTupleType(), name() ) ),
-      diffusionOperator_( Std::make_unique< ImplicitOperatorType >( solution().space().gridPart(), problem(), typename ImplicitOperatorType::ExtraParameterTupleType(), name() ) ),
-      adaptIndicator_( Std::make_unique< AdaptIndicatorOptional<AdaptIndicatorType> >( solution(), problem(),  typename AdaptIndicatorType::ExtraParameterTupleType(), name() ) )
+      operator_( std::make_unique< OperatorType >( solution().space().gridPart(), problem(), typename OperatorType::ExtraParameterTupleType(), name() ) ),
+      advectionOperator_( std::make_unique< ExplicitOperatorType >( solution().space().gridPart(), problem(), typename ExplicitOperatorType::ExtraParameterTupleType(), name() ) ),
+      diffusionOperator_( std::make_unique< ImplicitOperatorType >( solution().space().gridPart(), problem(), typename ImplicitOperatorType::ExtraParameterTupleType(), name() ) ),
+      adaptIndicator_( std::make_unique< AdaptIndicatorOptional<AdaptIndicatorType> >( solution(), problem(),  typename AdaptIndicatorType::ExtraParameterTupleType(), name() ) )
     {}
 
     virtual AdaptIndicatorType* adaptIndicator ()
