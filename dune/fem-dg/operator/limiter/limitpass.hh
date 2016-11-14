@@ -622,10 +622,10 @@ namespace Fem
 
   private:
    typedef typename DiscreteModelType::Selector                          Selector;
-   typedef typename Dune::tuple_element< 0, Selector >::type             ArgumentIdType;
+   typedef typename std::tuple_element< 0, Selector >::type             ArgumentIdType;
    static const std::size_t argumentPosition
      = Dune::FirstTypeIndex< PassIds, ArgumentIdType >::type::value;
-   typedef typename Dune::tuple_element< argumentPosition, ArgumentType >::type ArgumentFunctionPtrType;
+   typedef typename std::tuple_element< argumentPosition, ArgumentType >::type ArgumentFunctionPtrType;
 
   public:
     typedef typename PreviousPassType::GlobalArgumentType                 ArgumentFunctionType;
@@ -1141,7 +1141,7 @@ namespace Fem
     void prepare(const ArgumentType& arg, DestinationType& dest, const bool firstThread ) const
     {
       // get reference to U
-      const ArgumentFunctionType &U = *(Dune::get< argumentPosition >( arg ));
+      const ArgumentFunctionType &U = *(std::get< argumentPosition >( arg ));
 
       // initialize dest as copy of U
       // if reconstruct_ false then only reconstruct in some cases
@@ -1311,7 +1311,7 @@ namespace Fem
       caller().setEntity( en );
 
       // get function to limit
-      const ArgumentFunctionType &U = *(Dune::get< argumentPosition >( *arg_ ));
+      const ArgumentFunctionType &U = *(std::get< argumentPosition >( *arg_ ));
 
       // get U on entity
       const LocalFunctionType uEn = U.localFunction(en);

@@ -436,7 +436,7 @@ namespace Fem
      * \param problem Class describing the initial(t=0) and exact solution
      */
     StokesModel(const ProblemType& problem)
-      : BaseType( problem.get<0>() ),
+      : BaseType( problem.template get<0>() ),
         problem_( problem )
     {}
 
