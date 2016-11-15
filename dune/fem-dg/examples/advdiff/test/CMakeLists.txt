@@ -16,12 +16,12 @@ dune_add_test_case( NAME advdiff
 add_code_generate_targets( advdiff )
 
 ## flops counting program
-if( dune-spgrid_FOUND )
-  dune_add_test_case( NAME advdiffflops
-                      SOURCES ../main.cc
-                      COMPILE_DEFINITIONS "SPGRID_COUNT_FLOPS;COUNT_FLOPS;POLORDER=${POLORDER}" )
-  add_code_generate_targets( advdiffflops )
-endif()
+#if( dune-spgrid_FOUND )
+#  dune_add_test_case( NAME advdiffflops
+#                      SOURCES ../main.cc
+#                      COMPILE_DEFINITIONS "SPGRID_COUNT_FLOPS;COUNT_FLOPS;POLORDER=${POLORDER}" )
+#  add_code_generate_targets( advdiffflops )
+#endif()
 
 
 if( NOT FEMDG_FAST_TESTBUILD )
