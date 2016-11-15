@@ -10,7 +10,7 @@
 #include <dune/fem-dg/operator/adaptation/adaptation.hh>
 #include <dune/fem-dg/operator/limiter/limiter.hh>
 
-#include <dune/fem/gridpart/filter/threadfilter.hh>
+#include <dune/fem/gridpart/filter/domainfilter.hh>
 
 namespace Dune
 {
@@ -415,7 +415,7 @@ namespace Fem
     typedef typename AdaptationType :: LocalIndicatorType  LocalIndicatorType;
 
     // type of thread filter in thread parallel runs
-    typedef Fem :: ThreadFilter<GridPartType> ThreadFilterType;
+    typedef Fem :: DomainFilter<GridPartType> ThreadDomainFilterType;
 
   public:
     /**
@@ -425,7 +425,7 @@ namespace Fem
                            const AdvectionFluxType& numf)
       : BaseType( mod, numf ),
         adaptation_( 0 ),
-        threadFilter_( 0 ),
+        threadDomainFilter_( 0 ),
         enIndicator_(),
         nbIndicator_(),
         weight_( 1 )
@@ -436,7 +436,7 @@ namespace Fem
     AdaptiveAdvectionModel( const AdaptiveAdvectionModel& other )
       : BaseType( other ),
         adaptation_( other.adaptation_ ),
-        threadFilter_( other.threadFilter_ ),
+        threadDomainFilter_( other.threadDomainFilter_ ),
         enIndicator_( other.enIndicator_ ),
         nbIndicator_( other.nbIndicator_ ),
         weight_( other.weight_ )
@@ -461,8 +461,8 @@ namespace Fem
         // if the neighbor does not belong to our
         // thread domain reset the pointer
         // to avoid update of indicators
-        if( threadFilter_ &&
-            ! threadFilter_->contains( neighbor ) )
+        if( threadDomainFilter_ &&
+            ! threadDomainFilter_->contains( neighbor ) )
         {
           // remove neighbor indicator
           nbIndicator_.reset();
@@ -479,17 +479,17 @@ namespace Fem
     void setAdaptation( AdaptationType& adaptation, double weight )
     {
       adaptation_ = & adaptation;
-      threadFilter_ = 0;
+      threadDomainFilter_ = 0;
       weight_ = weight ;
     }
 
     //! set pointer to adaptation indicator
     void setAdaptation( AdaptationType& adaptation,
-                        const ThreadFilterType& threadFilter,
+                        const ThreadDomainFilterType& threadDomainFilter,
                         double weight )
     {
       adaptation_   = & adaptation;
-      threadFilter_ = & threadFilter ;
+      threadDomainFilter_ = & threadDomainFilter ;
       weight_ = weight ;
     }
 
@@ -497,7 +497,7 @@ namespace Fem
     void removeAdaptation()
     {
       adaptation_   = 0 ;
-      threadFilter_ = 0 ;
+      threadDomainFilter_ = 0 ;
     }
 
   public:
@@ -598,7 +598,7 @@ namespace Fem
     using BaseType :: numflux_ ;
 
     AdaptationType*  adaptation_;
-    const ThreadFilterType*  threadFilter_;
+    const ThreadDomainFilterType*  threadDomainFilter_;
 
     mutable LocalIndicatorType enIndicator_;
     mutable LocalIndicatorType nbIndicator_;
