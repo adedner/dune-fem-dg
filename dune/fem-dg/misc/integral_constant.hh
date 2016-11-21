@@ -10,6 +10,9 @@ namespace Fem
   template< unsigned long int i>
   using _index = std::integral_constant< unsigned long int, i >;
 
+  template< unsigned long int i, unsigned long int j >
+  using _indexPair = std::pair< std::integral_constant< unsigned long int, i >, std::integral_constant< unsigned long int, j > >;
+
   template< unsigned long int... i>
   using _indices = std::integer_sequence< unsigned long int, i... >;
 

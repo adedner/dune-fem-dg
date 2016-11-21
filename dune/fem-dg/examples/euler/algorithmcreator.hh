@@ -154,19 +154,27 @@ namespace Fem
     template< int polOrd >
     static decltype(auto) initContainer()
     {
-      typedef std::tuple< std::tuple<_index<0> > >                    SubOrder2Type;
-      typedef std::tuple< std::tuple<_index<0> > >                    SubOrder1Type;
+      //Discrete Functions
+      typedef typename SubEulerAlgorithmCreator::template DiscreteTraits<polOrd>::DiscreteFunctionType
+                                                               DFType;
 
+      //Item1
+      typedef _t< SubEvolutionContainerItem >                         Steady;
+      typedef std::tuple< Steady >                                    Item1TupleType;
+
+      //Item2
       typedef _t< EmptyContainerItem >                                Empty;
-      typedef _t< SubEvolutionContainerItem >                         Steady1Type;
-
-      typedef std::tuple< Steady1Type >                               Item1TupleType;
       typedef std::tuple< std::tuple< Empty > >                       Item2TupleType;
 
-      typedef typename SubEulerAlgorithmCreator::template DiscreteTraits<polOrd>::DiscreteFunctionType
-                                                                      DFType;
 
-      typedef GlobalContainer< Item2TupleType, SubOrder2Type, Item1TupleType, SubOrder1Type, DFType > GlobalContainerType;
+      //Sub (discrete function argument ordering)
+      typedef std::tuple<__0 >                                        AdvDiffOrder;
+
+      typedef std::tuple< AdvDiffOrder >                              SubOrderRowType;
+      typedef SubOrderRowType                                         SubOrderColType;
+
+      //Global container
+      typedef GlobalContainer< Item2TupleType, Item1TupleType, SubOrderRowType, SubOrderColType,DFType > GlobalContainerType;
 
       //create grid
       std::shared_ptr< GridType > gridptr( DefaultGridInitializer< GridType >::initialize().release() );

@@ -277,6 +277,8 @@ namespace Fem
   {
     typedef typename details::VectorPack< OneArgImp, Rows, 0 >::type               type;
     typedef typename details::VectorPack< OneArgImp, Rows, 0 >::shared_type shared_type;
+
+    static const int size = std::tuple_size< Rows >::value;
   };
 
   template< template<class,class,int...> class TwoArgImp, class Rows, class Cols >
@@ -284,41 +286,179 @@ namespace Fem
   {
     typedef typename details::MatrixPack< TwoArgImp, Rows, Cols, 0, 0 >::type               type;
     typedef typename details::MatrixPack< TwoArgImp, Rows, Cols, 0, 0 >::shared_type shared_type;
+
+    static const int rows = std::tuple_size< Rows >::value;
+    static const int col = std::tuple_size< Rows >::value;
   };
 
 
-  //simple struct to produce nested TupleRows
-  template< template<class...> class... >
-  struct Nested;
+  //forward declaration
+  template< class TupleMatrix >
+  struct tuple_matrix;
 
-  template< template<class...> class ArgHead >
-  struct Nested< ArgHead >
+  template< class... >
+  struct tuple_min_rows;
+
+  template< class Row >
+  struct tuple_min_rows< Row >
   {
-    template<class... I>
-    struct _t{ typedef ArgHead<I...> type; };
+    static const unsigned long int value = std::tuple_size<Row>::value;
   };
 
-  template< template<class> class ArgHead, template<class...> class ArgHead2, template<class...> class... Args >
-  struct Nested< ArgHead, ArgHead2, Args... >
+  template< class Row1, class Row2, class... Args >
+  struct tuple_min_rows< Row1, Row2, Args... >
   {
-    template<class... I>
-    struct _t{ typedef ArgHead<typename Nested<ArgHead2,Args...>::template _t<I...>::type > type; };
+    static const unsigned long int value = std::min( std::tuple_size<Row1>::value, tuple_min_rows< Row2, Args... >::value );
+  };
+
+  template< class... >
+  struct tuple_max_rows;
+
+  template< class Row >
+  struct tuple_max_rows< Row >
+  {
+    static const unsigned long int value = std::tuple_size<Row>::value;
+  };
+
+  template< class Row1, class Row2, class... Args >
+  struct tuple_max_rows< Row1, Row2, Args... >
+  {
+    static const unsigned long int value = std::max( std::tuple_size<Row1>::value, tuple_max_rows< Row2, Args... >::value );
+  };
+
+  template< class... Args >
+  struct tuple_matrix< std::tuple<Args...> >
+  {
+
+    static const int rows = std::tuple_size< std::tuple<Args...> >::value;
+    static const int cols = tuple_max_rows< Args... >::value;
+
+    //check whether is rectangular
+    static const bool isMatrix = (tuple_max_rows< Args... >::value == tuple_min_rows< Args... >::value);
+
   };
 
 
-  //new version for template tuples
+  //forward declaration
+  template< int size, class TupleElement >
+  struct tuple_copy
+  {
+    typedef typename tuple_concat< std::tuple< TupleElement >, typename tuple_copy<size-1,TupleElement>::type >::type type;
+  };
+
+  template< class TupleElement >
+  struct tuple_copy<1,TupleElement>
+  {
+    typedef std::tuple<TupleElement> type;
+  };
+
+  template< class TupleElement >
+  struct tuple_copy<0,TupleElement>
+  {
+    typedef std::tuple<> type;
+  };
+
+  //forward declaration
+  template< int size, template<unsigned long int> class TupleElement >
+  struct tuple_copy_t
+  {
+    typedef typename tuple_concat< typename tuple_copy_t<size-1,TupleElement>::type, std::tuple< TupleElement<size-1> > >::type type;
+  };
+
+  template< template<unsigned long int> class TupleElement >
+  struct tuple_copy_t<1,TupleElement>
+  {
+    typedef std::tuple< TupleElement<0> > type;
+  };
+
+  template< template<unsigned long int> class TupleElement >
+  struct tuple_copy_t<0,TupleElement>
+  {
+    typedef std::tuple<> type;
+  };
+
+  //forward declaration
+  template< class TupleMatrix1, class TupleMatrix2, class Default >
+  struct tuple_matrix_combine;
+
+  template< class TupleRow1, int cols2, class Default/*= _t< EmptyContainerItem >*/ >
+  struct tuple_matrix_combine_row1
+  {
+    typedef typename tuple_concat< TupleRow1,
+                                   typename tuple_copy<cols2,Default>::type>::type type;
+  };
+
+  template< class TupleRow2, int cols1, class Default/*= _t< EmptyContainerItem >*/ >
+  struct tuple_matrix_combine_row2
+  {
+    typedef typename tuple_concat< typename tuple_copy<cols1,Default>::type,
+                                   TupleRow2 >::type type;
+  };
+
+  template< class... TupleRowArgs1, class... TupleRowArgs2, class Default >
+  struct tuple_matrix_combine<std::tuple<TupleRowArgs1...>, std::tuple<TupleRowArgs2... >, Default >
+  {
+    static const int col1 = tuple_matrix<std::tuple<TupleRowArgs1...> >::cols;
+    static const int col2 = tuple_matrix<std::tuple<TupleRowArgs2...> >::cols;
+
+    typedef std::tuple< typename tuple_matrix_combine_row1< TupleRowArgs1, col2, Default >::type... > Tuple1;
+    typedef std::tuple< typename tuple_matrix_combine_row2< TupleRowArgs2, col1, Default >::type... > Tuple2;
+
+    typedef typename tuple_concat< Tuple1, Tuple2 >::type type;
+
+
+    //static const int rows1 = tuple_matrix< TupleMatrix1 >::rows;
+    //static const int cols1 = tuple_matrix< TupleMatrix1 >::cols;
+    //static const bool isMatrix1 = tuple_matrix< TupleMatrix1 >::isMatrix;
+
+    //static const int rows2 = tuple_matrix< TupleMatrix2 >::rows;
+    //static const int cols2 = tuple_matrix< TupleMatrix2 >::cols;
+    //static const bool isMatrix2 = tuple_matrix< TupleMatrix2 >::isMatrix;
+
+    //static_assert( isMatrix1 && isMatrix2, "Sorry, only rectangular matrices, i.e. real matrices, allowed!" );
+
+  };
+
+
+  namespace details
+  {
+    //simple struct to produce nested TupleRows
+    template< template<class...> class... >
+    struct Nested;
+
+    template< template<class...> class ArgHead >
+    struct Nested< ArgHead >
+    {
+      template<class... I>
+      struct _t{ typedef ArgHead<I...> type; };
+    };
+
+    template< template<class> class ArgHead, template<class...> class ArgHead2, template<class...> class... Args >
+    struct Nested< ArgHead, ArgHead2, Args... >
+    {
+      template<class... I>
+      struct _t{ typedef ArgHead<typename Nested<ArgHead2,Args...>::template _t<I...>::type > type; };
+    };
+  }
+
+
+  // create a template tuple via
+  // std::tuple< _t< YourTemplates... > >
   template< template< class... >class ... Args >
-  using _t = Nested< Args... >;
+  using _t = details::Nested< Args... >;
 
   //expects a tuple of tuple
   template< class TupleImp >
   struct _template
   {
     template<class R,class C,int r,int c>
-    struct _t2{ typedef typename std::tuple_element<r,typename std::tuple_element<c,TupleImp>::type>::type::template _t<R,C>::type type; };
+    struct _t2{ typedef typename std::tuple_element<c,typename std::tuple_element<r,TupleImp>::type>::type::template _t<R,C>::type type; };
+
+    template<class R,class C,int r,int c>
+    struct _t2Inv{ typedef typename std::tuple_element<c,typename std::tuple_element<r,TupleImp>::type>::type::template _t<C,R>::type type; };
 
     template<class R,int r>
-    struct _t1{ typedef typename std::tuple_element<r,TupleImp>::type::template _t<R>::type type; };
+    struct _t1{ /*static_assert( r<std::tuple_size<TupleImp>::value, "selected tuple element does not exist." );*/typedef typename std::tuple_element<r,TupleImp>::type::template _t<R>::type type; };
   };
 
   //forward declaration, expects a template which is valid for all
@@ -330,6 +470,9 @@ namespace Fem
   {
     template<class R,class C,int r,int c>
     struct _t2{ typedef ArgHead< R,C > type; };
+
+    template<class R,class C,int r,int c>
+    struct _t2Inv{ typedef ArgHead< C,R > type; };
 
     template<class R,int r>
     struct _t1{ typedef ArgHead<R> type; };

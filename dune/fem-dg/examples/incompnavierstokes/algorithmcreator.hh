@@ -227,7 +227,7 @@ namespace Fem
 
         struct Solver
         {
-          typedef UzawaSolver< typename Operator::AssemblerType, typename PoissonDiscreteTraits::Solver::type >
+          typedef UzawaSolver< typename Operator::AssemblerType,SubPoissonAlgorithmCreator::template Algorithm<polOrd> >
                                                                                       type;
         };
 
@@ -358,62 +358,8 @@ namespace Fem
     using GlobalDiscreteFunction = std::tuple< typename SubStokesAlgorithmCreator::SubPoissonAlgorithmCreator::template DiscreteTraits< polOrd >::DiscreteFunctionType,
                                                typename SubStokesAlgorithmCreator::template DiscreteTraits< polOrd >::DiscreteFunctionType >;
 
-    struct GlobalContainer
-    {
-
-      template< int polOrd, class Grid >
-      static GlobalContainer& init( Grid& grid )
-      {
-        static const int numObjects = 2;
-
-
-        typedef typename std::tuple_element< 0, GlobalDiscreteFunction< polOrd > >::type DFType1;
-        typedef typename std::tuple_element< 1, GlobalDiscreteFunction< polOrd > >::type DFType2;
-
-
-        typedef ContainerItem< DFType1 > ContainerItemType1;
-        typedef ContainerItem< DFType2 > ContainerItemType2;
-
-        typedef typename DFType1::DiscreteFunctionSpaceType SpaceType1;
-        typedef typename DFType2::DiscreteFunctionSpaceType SpaceType2;
-
-        typedef typename SpaceType1::GridPartType GPType1;
-        typedef typename SpaceType2::GridPartType GPType2;
-
-        typedef typename GPType1::GridType GType1;
-        typedef typename GPType2::GridType GType2;
-
-        static_assert( std::is_same< GType1, GridType >::value, "type of grids does not match" );
-        static_assert( std::is_same< GType2, GridType >::value, "type of grids does not match" );
-
-        GPType1 gridPart1( grid );
-        GPType2 gridPart2( grid );
-
-        SpaceType1 space1( gridPart1 );
-        SpaceType2 space2( gridPart2 );
-
-        DFType1 df1( "space1", space1 );
-        DFType2 df2( "space2", space2 );
-
-
-        ContainerItemType1 c1( "c", grid );
-
-        ContainerItemType2 c7( "c7" ); c7 = c1.gridPart();
-
-        ContainerItemType2 sol2( "sol2", c7 );
-        ContainerItemType2 exactSol2( "exact", c7 );
-        ContainerItemType2 rhs2( "rhs", c7 );
-      }
-
-    };
-
-
-    template< class Grid, class... Args >
-    using MyThetaSchemeCoupling=ThetaSchemeCoupling< Grid, GlobalContainer, Args... >;
-
-
     template <int polOrd>
-    using Algorithm = IncompNavierStokesAlgorithm< polOrd, MyThetaSchemeCoupling, SubStokesAlgorithmCreator, SubNavierStokesAlgorithmCreator, SubStokesAlgorithmCreator >;
+    using Algorithm = IncompNavierStokesAlgorithm< polOrd, UncoupledSubAlgorithms, SubStokesAlgorithmCreator, SubNavierStokesAlgorithmCreator, SubStokesAlgorithmCreator >;
 
     typedef typename SubStokesAlgorithmCreator::GridType                  GridType;
 
@@ -425,29 +371,72 @@ namespace Fem
     template< int polOrd >
     static decltype(auto) initContainer()
     {
-      typedef std::tuple<_index<0>,_index<1> >                   SubType;
-      typedef std::tuple< SubType, SubType, SubType >            SubOrderType;
-
+      //Discrete Functions
       typedef typename SubStokesAlgorithmCreator::SubPoissonAlgorithmCreator::template DiscreteTraits<polOrd>::DiscreteFunctionType DFType1;
       typedef typename SubStokesAlgorithmCreator::template DiscreteTraits<polOrd>::DiscreteFunctionType DFType2;
 
-      typedef _t< SubSteadyStateContainerItem >                         Steady1Type;
-      typedef std::tuple< Steady1Type, Steady1Type >                    Item1TupleType;
 
-      typedef _t< SubEllipticContainerItem, ISTLLinearOperator >        Istl;
-      typedef _t< SubEllipticContainerItem, SparseRowLinearOperator >   Sp;
+      //Item1
+      //TODO add std::tuple< >
+      typedef std::tuple< _t< SubSteadyStateContainerItem >, _t< SubSteadyStateContainerItem >  >
+                                                                      Steady;
+      typedef std::tuple< _t< SubEvolutionContainerItem > >           Evol;
+      typedef std::tuple< Steady, Evol, Steady >                      Item1TupleType;
+
+      //Item2
+      typedef _t< SubEllipticContainerItem, ISTLLinearOperator >      Istl;
+      typedef _t< SubEllipticContainerItem, SparseRowLinearOperator > Sp;
+      typedef _t< EmptyContainerItem >                                Empty;
 
       typedef std::tuple< std::tuple< Sp, Sp >,
-                          std::tuple< Sp, Sp > >                       Item2TupleType;
+                          std::tuple< Sp, Sp > >                      Stokes;
+      typedef std::tuple< std::tuple< Empty > >                       AdvDiff;
+
+      typedef std::tuple< Stokes, AdvDiff, Stokes >                   Item2TupleType;
+
+
+      //Sub (discrete function argument ordering)
+      typedef std::tuple<__0,__1 >                                    StokesOrder;
+      typedef std::tuple<__0 >                                        AdvDiffOrder;
+
+      typedef std::tuple< StokesOrder, AdvDiffOrder, StokesOrder >    SubOrderRowType;
+      typedef SubOrderRowType                                         SubOrderColType;
+
 
       //Global container
-      typedef GlobalContainer< Item2TupleType, Item1TupleType, SubOrderType, DFType1, DFType2 > GlobalContainerType;
+      typedef CombinedGlobalContainer< Item2TupleType, Item1TupleType, SubOrderRowType, SubOrderColType, DFType1, DFType2 > GlobalContainerType;
+
+
+      //typedef typename tuple_matrix_combiner< Stokes, AdvDiff, Stokes >::type  CombinedItem2Type;
+
+
+
+      ////TODO
+      //typedef ThetaSchemeCouplingContainer< bla, bla, blubb >;
 
       //create grid
-      std::unique_ptr< GridType > gridptr( DefaultGridInitializer< GridType >::initialize().release() );
+      std::shared_ptr< GridType > gridptr( DefaultGridInitializer< GridType >::initialize().release() );
+
+      typedef typename DFType1::DiscreteFunctionSpaceType SpaceType1;
+      typedef typename DFType2::DiscreteFunctionSpaceType SpaceType2;
+
+      typedef typename SpaceType1::GridPartType GridPartType1;
+      typedef typename SpaceType2::GridPartType GridPartType2;
+
+      static_assert( std::is_same< GridPartType1, GridPartType2 >::value, "GridParts does not match!");
+
+      GridPartType1 gridPart( *gridptr );
+
+      SpaceType1 space1( gridPart );
+      SpaceType2 space2( gridPart );
+
+      auto shared_space1 = stackobject_to_shared_ptr(space1);
+      auto shared_space2 = stackobject_to_shared_ptr(space2);
+
+      //std::make_shared< GlobalContainerType >( space1, space2 );
 
       //create container
-      return std::make_shared< GlobalContainerType >( *gridptr );
+      return std::make_shared< GlobalContainerType >( gridptr, "global" /*, gridptr, gridptr */ );
 
     }
   };

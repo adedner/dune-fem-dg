@@ -193,20 +193,28 @@ namespace Fem
     template< int polOrd >
     static decltype(auto) initContainer()
     {
-      typedef std::tuple< std::tuple<_index<0> > >                    SubOrder2Type;
-      typedef std::tuple< std::tuple<_index<0> > >                    SubOrder1Type;
+      //Discrete Functions
+      typedef typename SubPoissonAlgorithmCreator::template DiscreteTraits<polOrd>::DiscreteFunctionType DFType;
 
-      typedef _t<SubEllipticContainerItem, ISTLLinearOperator >       Def;
+      //Item1
+      typedef _t< SubSteadyStateContainerItem >                         Steady;
+      typedef std::tuple< Steady >                                      Item1TupleType;
+
+      //Item2
+      typedef _t<SubEllipticContainerItem, ISTLLinearOperator >         Def;
       //typedef _t<SubEllipticContainerItem, SparseRowLinearOperator >  Def;
-      typedef _t< SubSteadyStateContainerItem >                       Steady1Type;
+      typedef _t< SubEllipticContainerItem, SparseRowLinearOperator >   Sp;
 
-      typedef std::tuple< Steady1Type >                               Item1TupleType;
-      typedef std::tuple< std::tuple< Def > >                         Item2TupleType;
+      typedef std::tuple< std::tuple< Def > >                           Item2TupleType;
 
-      typedef typename SubPoissonAlgorithmCreator::template DiscreteTraits<polOrd>::DiscreteFunctionType
-                                                                      DFType;
+      //Sub (discrete function argument ordering)
+      typedef std::tuple<__0 >                                          PoissonOrder;
 
-      typedef GlobalContainer< Item2TupleType, SubOrder2Type, Item1TupleType, SubOrder1Type, DFType > GlobalContainerType;
+      typedef std::tuple< PoissonOrder >                                SubOrderRowType;
+      typedef SubOrderRowType                                           SubOrderColType;
+
+      //Global container
+      typedef GlobalContainer< Item2TupleType, Item1TupleType, SubOrderRowType, SubOrderColType, DFType > GlobalContainerType;
 
       //create grid
       std::shared_ptr< GridType > gridptr( DefaultGridInitializer< GridType >::initialize().release() );

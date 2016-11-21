@@ -285,27 +285,32 @@ namespace Fem
     template< int polOrd >
     static decltype(auto) initContainer()
     {
-      typedef std::tuple< std::tuple<_index<0>,_index<1> > >            SubOrder1Type;
-
+      //Discrete Functions
       typedef typename SubStokesAlgorithmCreator::SubPoissonAlgorithmCreator::template DiscreteTraits<polOrd>::DiscreteFunctionType DFType1;
       typedef typename SubStokesAlgorithmCreator::template DiscreteTraits<polOrd>::DiscreteFunctionType DFType2;
 
-      typedef _t< SubSteadyStateContainerItem >                         Steady1Type;
-      typedef std::tuple< Steady1Type, Steady1Type >                    Item1TupleType;
+      //Item1
+      typedef _t< SubSteadyStateContainerItem >                         Steady;
+      typedef std::tuple< Steady, Steady >                              Item1TupleType;
 
+      //Item2
       typedef _t< SubEllipticContainerItem, SparseRowLinearOperator >   Def;
       //typedef _t< SubEllipticContainerItem, ISTLLinearOperator >        Def;
       typedef _t< SubEllipticContainerItem, SparseRowLinearOperator >   Sp;
 
       typedef std::tuple< std::tuple< Def, Sp >,
-                          std::tuple< Sp, Sp > >                       Item2TupleType;
+                          std::tuple< Sp, Sp > >                        Item2TupleType;
 
-      typedef std::pair< std::tuple<__0,__1 >, std::tuple<__0,__1 > >  SubMatType;
-      typedef std::pair< std::tuple<__0 >, std::tuple<__0 > >          SubMatType2;
-      typedef std::tuple< SubMatType, SubMatType2, SubMatType >             SubOrder2Type;
+      //Sub (discrete function argument ordering)
+      typedef std::tuple<__0,__1 >                                      StokesOrder;
+
+      typedef std::tuple< StokesOrder >                                 SubOrderRowType;
+      typedef SubOrderRowType                                           SubOrderColType;
+
+
 
       //Global container
-      typedef GlobalContainer< Item2TupleType, SubOrder2Type, Item1TupleType, SubOrder1Type, DFType1, DFType2 > GlobalContainerType;
+      typedef GlobalContainer< Item2TupleType, Item1TupleType, SubOrderRowType, SubOrderColType, DFType1, DFType2 > GlobalContainerType;
 
       //create grid
       std::shared_ptr< GridType > gridptr( DefaultGridInitializer< GridType >::initialize().release() );
