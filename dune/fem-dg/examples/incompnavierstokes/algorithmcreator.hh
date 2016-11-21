@@ -417,21 +417,21 @@ namespace Fem
       //create grid
       std::shared_ptr< GridType > gridptr( DefaultGridInitializer< GridType >::initialize().release() );
 
-      typedef typename DFType1::DiscreteFunctionSpaceType SpaceType1;
-      typedef typename DFType2::DiscreteFunctionSpaceType SpaceType2;
+      //typedef typename DFType1::DiscreteFunctionSpaceType SpaceType1;
+      //typedef typename DFType2::DiscreteFunctionSpaceType SpaceType2;
 
-      typedef typename SpaceType1::GridPartType GridPartType1;
-      typedef typename SpaceType2::GridPartType GridPartType2;
+      //typedef typename SpaceType1::GridPartType GridPartType1;
+      //typedef typename SpaceType2::GridPartType GridPartType2;
 
-      static_assert( std::is_same< GridPartType1, GridPartType2 >::value, "GridParts does not match!");
+      //static_assert( std::is_same< GridPartType1, GridPartType2 >::value, "GridParts does not match!");
 
-      GridPartType1 gridPart( *gridptr );
+      //GridPartType1 gridPart( *gridptr );
 
-      SpaceType1 space1( gridPart );
-      SpaceType2 space2( gridPart );
+      //SpaceType1 space1( gridPart );
+      //SpaceType2 space2( gridPart );
 
-      auto shared_space1 = stackobject_to_shared_ptr(space1);
-      auto shared_space2 = stackobject_to_shared_ptr(space2);
+      //auto shared_space1 = stackobject_to_shared_ptr(space1);
+      //auto shared_space2 = stackobject_to_shared_ptr(space2);
 
       //std::make_shared< GlobalContainerType >( space1, space2 );
 
