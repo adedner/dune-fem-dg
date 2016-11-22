@@ -449,6 +449,12 @@ namespace Fem
    * static_assert( std::is_same< SharedTupleType3, SharedTupleType4 >::value, "Upps again!" );
    * \endcode
    *
+   * \warning We need this helper class for generic definition of complex type structures.
+   * Using this class directly in the way described above does not really make sense,
+   * because (as you might have noticed) it may be much to complex.
+   * To escape this template hell, you should also have a look at
+   * the template alias _t (which is a shortcut for the class details::Nested) and
+   * the _template and _template2 wrapper classes.
    *
    *
    * \tparam OneArgImp template class describing
@@ -598,6 +604,12 @@ namespace Fem
    * static_assert( std::is_same< TupleType3, TupleType4 >::value, "Upps again!" );
    * \endcode
    *
+   * \warning We need this helper class for generic definition of complex type structures.
+   * Using this class directly in the way described above does not really make sense,
+   * because (as you might have noticed) it may be much to complex.
+   * To escape this template hell, you should also have a look at
+   * the template alias _t (which is a shortcut for the class details::Nested) and
+   * the _template and _template2 wrapper classes.
    *
    *
    * \tparam TwoArgImp template class describing
@@ -748,10 +760,17 @@ namespace Fem
 
   namespace details
   {
-    //simple struct to produce nested TupleRows
+    /**
+     * \brief helper class to
+     *
+     * See template alias _t for detailed explanation;
+     */
     template< template<class...> class... >
     struct Nested;
 
+    /**
+     * \brief partical specialization for one template argument.
+     */
     template< template<class...> class ArgHead >
     struct Nested< ArgHead >
     {
@@ -759,6 +778,9 @@ namespace Fem
       struct _t{ typedef ArgHead<I...> type; };
     };
 
+    /**
+     * \brief partical specialization for more than one template argument.
+     */
     template< template<class> class ArgHead, template<class...> class ArgHead2, template<class...> class... Args >
     struct Nested< ArgHead, ArgHead2, Args... >
     {
@@ -768,8 +790,65 @@ namespace Fem
   }
 
 
-  // create a template tuple via
-  // std::tuple< _t< YourTemplates... > >
+  /**
+   * \brief This alias template is an important helper to define a std::tuple
+   * (or any other classes expecting classes and not templates as template argument) of templates.
+   *
+   * Usually, it is not possible to store e.g. a std::tuple of template classes, i.e.
+   *
+   * \code
+   * typedef std::tuple< std::vector<int>, std::list<char> > Type;
+   * \endcode
+   *
+   * is possible, but
+   * \code
+   * typedef std::tuple< std::vector, std::list > Type;
+   * \endcode
+   *
+   * will fail.
+   *
+   * To escape this problem, it is possible to wrap this template:
+   *
+   * \code
+   * typedef std::tuple< _t< std::vector >, _t< std::list > > Type;
+   * \endcode
+   *
+   * To access the original template, use (e.g. for the first element of the tuple)
+   * \code
+   * typedef typename std::tuple_element<0, Type >::type FirstElementType;
+   * template< class... Args >
+   * using MyTemplate = FirstElementType::template _t< Args... >;
+   * \endcode
+   *
+   * Nesting
+   * -------
+   *
+   * Another feature is the usage of nested template: In order to use this feature simply add
+   * more than one template argument to the type alias _t.
+   *
+   * Writing
+   *
+   * \code
+   * typedef _t< std::shared_ptr, std::vector > NestedType;
+   * \endcode
+   *
+   * and
+   *
+   * \code
+   * template< class... Args >
+   * using MyTemplate = NestedType::template _t< Args... >;
+   * \endcode
+   *
+   * the following command line will compile
+   *
+   * \code
+   * static_assert( std::is_same< MyTemplate<int>, std::shared::ptr<std::vector<int> > >::value, "Upps" );
+   * \endcode
+   *
+   * \warning Note, that all outer templates have to have one template argument,
+   * i.e. the nesting has to be well defined afterwards.
+   *
+   */
   template< template< class... >class ... Args >
   using _t = details::Nested< Args... >;
 
