@@ -80,9 +80,29 @@ namespace Fem
 
 
 
+  /**
+   * \brief Picks some elements of a std::tuple,
+   * with elements defined by a std::index_sequence.
+   *
+   * Usage
+   * \code
+   * typedef std::tuple< int, char, std::string > Tuple;
+   * typedef std::index_sequence< 0, 2 > IndexSequence;
+   * typedef tuple_reducer< Tuple, IndexSequence > TupleReducer;
+   * typedef typename TupleReducer::type ReducedTuple;
+   * \endcode
+   *
+   * Thus, the following line will compile
+   * \code
+   * static_assert( std::is_same< std::tuple<int,std::string>, ReducedTuple >::value, "Upps" );
+   * \endcode
+   */
   template< class FullTupleImp, class IndexSequenceImp >
   struct tuple_reducer;
 
+  /**
+   * \brief partial specialization for std::index_sequence
+   */
   template< class FullTupleImp, std::size_t... i >
   struct tuple_reducer< FullTupleImp, std::index_sequence< i... > >
   {
@@ -92,7 +112,6 @@ namespace Fem
     {
       return std::make_tuple( std::get< i >( tuple )... );
     }
-
   };
 
   /**
@@ -155,6 +174,57 @@ namespace Fem
   struct drop_tuple< std::tuple< std::tuple< TupleArg... > > >
   {
     typedef std::tuple< TupleArg... > type;
+  };
+
+
+  namespace details
+  {
+    /**
+     * \brief helper class for make_index_tuple.
+     *
+     * For further details see make_index_tuple.
+     */
+    template< unsigned long int, class... >
+    struct make_index_tuple_generate;
+
+    /**
+     * \brief partial specialization for last element.
+     */
+    template< unsigned long int id, class Arg >
+    struct make_index_tuple_generate< id, Arg >
+    {
+      typedef std::tuple< _index<id> > type;
+    };
+
+    /**
+     * \brief partial specialization for more than one element.
+     */
+    template< unsigned long int id, class Arg, class Arg2, class... Args >
+    struct make_index_tuple_generate< id, Arg, Arg2, Args... >
+    {
+      typedef typename tuple_concat< std::tuple< _index<id> >, typename make_index_tuple_generate<id+1,Arg2,Args...>::type >::type type;
+    };
+  }
+
+  /**
+   * \brief generate tuple containing a consecutive number of `std::integral_constant<>`'s
+   *
+   * One easy example is
+   * \code
+   * typedef typename make_index_tuple<int,char,std::string>::type IndexTuple;
+   * \endcode
+   *
+   * This will be expanded to
+   * \code
+   * std::tuple< std::integral_constant< unsigned long int, 0 >,
+   *             std::integral_constant< unsigned long int, 1 >,
+   *             std::integral_constant< unsigned long int, 2 > >
+   * \endcode
+   */
+  template< class Arg, class... Args >
+  struct make_index_tuple
+  {
+    typedef typename details::make_index_tuple_generate< 0, Arg, Args... >::type type;
   };
 
 
@@ -727,6 +797,9 @@ namespace Fem
 
 
   //expects a tuple of tuple
+  /**
+   * \brief
+   */
   template< class TupleImp >
   struct _template
   {
@@ -768,6 +841,11 @@ namespace Fem
   };
 
 
+
+
+
+  // further tuple matrix helper classes
+  // -----------------------------------
 
 
   //forward declaration
@@ -856,31 +934,31 @@ namespace Fem
   };
 
   //forward declaration
-  template< class TupleMatrix1, class TupleMatrix2, class Default >
+  template< class TupleMatrix1, class TupleMatrix2, class EmptyDefault >
   struct tuple_matrix_combine;
 
-  template< class TupleRow1, int cols2, class Default/*= _t< EmptyContainerItem >*/ >
+  template< class TupleRow1, int cols2, class EmptyDefault >
   struct tuple_matrix_combine_row1
   {
     typedef typename tuple_concat< TupleRow1,
-                                   typename tuple_copy<cols2,Default>::type>::type type;
+                                   typename tuple_copy<cols2,EmptyDefault>::type>::type type;
   };
 
-  template< class TupleRow2, int cols1, class Default/*= _t< EmptyContainerItem >*/ >
+  template< class TupleRow2, int cols1, class EmptyDefault >
   struct tuple_matrix_combine_row2
   {
-    typedef typename tuple_concat< typename tuple_copy<cols1,Default>::type,
+    typedef typename tuple_concat< typename tuple_copy<cols1,EmptyDefault>::type,
                                    TupleRow2 >::type type;
   };
 
-  template< class... TupleRowArgs1, class... TupleRowArgs2, class Default >
-  struct tuple_matrix_combine<std::tuple<TupleRowArgs1...>, std::tuple<TupleRowArgs2... >, Default >
+  template< class... TupleRowArgs1, class... TupleRowArgs2, class EmptyDefault >
+  struct tuple_matrix_combine<std::tuple<TupleRowArgs1...>, std::tuple<TupleRowArgs2... >, EmptyDefault >
   {
     static const int col1 = tuple_matrix<std::tuple<TupleRowArgs1...> >::cols;
     static const int col2 = tuple_matrix<std::tuple<TupleRowArgs2...> >::cols;
 
-    typedef std::tuple< typename tuple_matrix_combine_row1< TupleRowArgs1, col2, Default >::type... > Tuple1;
-    typedef std::tuple< typename tuple_matrix_combine_row2< TupleRowArgs2, col1, Default >::type... > Tuple2;
+    typedef std::tuple< typename tuple_matrix_combine_row1< TupleRowArgs1, col2, EmptyDefault >::type... > Tuple1;
+    typedef std::tuple< typename tuple_matrix_combine_row2< TupleRowArgs2, col1, EmptyDefault >::type... > Tuple2;
 
     typedef typename tuple_concat< Tuple1, Tuple2 >::type type;
 

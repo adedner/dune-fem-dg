@@ -408,10 +408,6 @@ namespace Fem
       typedef CombinedGlobalContainer< Item2TupleType, Item1TupleType, SubOrderRowType, SubOrderColType, DFType1, DFType2 > GlobalContainerType;
 
 
-      //typedef typename tuple_matrix_combiner< Stokes, AdvDiff, Stokes >::type  CombinedItem2Type;
-
-
-
       ////TODO
       //typedef ThetaSchemeCouplingContainer< bla, bla, blubb >;
 

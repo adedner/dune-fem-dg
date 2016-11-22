@@ -9,6 +9,23 @@ namespace Dune
 namespace Fem
 {
 
+  template< class... >
+  struct SubOrderSelect;
+
+  template< class OrderHead, class... Args >
+  struct SubOrderSelect< std::tuple<OrderHead>,std::tuple<Args...> >
+  {
+    typedef std::tuple< typename std::tuple_element<OrderHead::value,std::tuple<Args...> >::type > type;
+  };
+
+  template< class OrderHead, class... OrderArgs, class... Args >
+  struct SubOrderSelect< std::tuple<OrderHead, OrderArgs...>,std::tuple<Args...> >
+  {
+    typedef typename tuple_concat< std::tuple< typename std::tuple_element<OrderHead::value,std::tuple<Args...> >::type >,
+                                   typename SubOrderSelect< std::tuple<OrderArgs...>, std::tuple<Args...> >::type >::type
+                                                                                                                     type;
+  };
+
 
 
   template< class Item2TupleImp, class Item1TupleImp, class SubOrderRowImp, class SubOrderColImp, class... DiscreteFunctions >
@@ -33,8 +50,6 @@ namespace Fem
       static_assert( std::tuple_size< SubOrderRowImp >::value > i,
                      "SubOrderRowImp does not contain the necessary sub structure information.\
                       SubOrderRowImp has to be a std::tuple containing i std::tuple's!" );
-      //default implementation:
-      //static const typename index_tuple< DiscreteFunctions... >::type order;
 
       static const SubOrderRowImp order;
 
@@ -52,22 +67,6 @@ namespace Fem
   };
 
 
-  template< class... >
-  struct SubOrderSelect;
-
-  template< class OrderHead, class... Args >
-  struct SubOrderSelect< std::tuple<OrderHead>,std::tuple<Args...> >
-  {
-    typedef std::tuple< typename std::tuple_element<OrderHead::value,std::tuple<Args...> >::type > type;
-  };
-
-  template< class OrderHead, class... OrderArgs, class... Args >
-  struct SubOrderSelect< std::tuple<OrderHead, OrderArgs...>,std::tuple<Args...> >
-  {
-    typedef typename tuple_concat< std::tuple< typename std::tuple_element<OrderHead::value,std::tuple<Args...> >::type >,
-                                   typename SubOrderSelect< std::tuple<OrderArgs...>, std::tuple<Args...> >::type >::type
-                                                                                                                     type;
-  };
 
 
   //Forward declaration

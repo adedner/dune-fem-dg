@@ -139,13 +139,6 @@ namespace Fem
       return std::make_tuple( std::get<i>( item1 )... );
     }
 
-    //Be your own (template) friend
-    template< template<class,int...> class, class >
-    friend class OneArgContainer;
-
-    template< template<class,class,int...> class, template<class,int...> class, class, class >
-    friend class TwoArgContainer;
-
   public:
     // copy, for internal use only
     OneArgContainer( const Item1TupleType& item )
@@ -251,15 +244,6 @@ namespace Fem
       return std::make_tuple( copyContainerRow<i>( col )... );
     }
 
-    //Be your own (template) friend
-    template< template<class,class,int...> class, template<class,int...> class, class, class >
-    friend class TwoArgContainer;
-
-    template< template<class,int...> class, class >
-    friend class OneArgContainer;
-
-    //todo: protected would be much better...
-    //protected:
   public:
     // copy, for internal use only
     TwoArgContainer( const RowItem1TupleType& rowItem1,
@@ -326,6 +310,7 @@ namespace Fem
     EmptyContainerItem( Args&&... args )
     {}
   };
+
 
   namespace details
   {
