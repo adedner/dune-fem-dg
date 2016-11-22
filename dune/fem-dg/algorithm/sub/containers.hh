@@ -596,8 +596,6 @@ namespace Fem
       static_assert( std::tuple_size< std::tuple<SubOrderRowImp...> >::value > i,
                      "SubOrderRowImp does not contain the necessary sub structure information.\
                       SubOrderRowImp has to be a std::tuple containing i std::tuple's!" );
-      //default implementation:
-      //static const typename index_tuple< DiscreteFunctions... >::type order;
 
       static const std::tuple<SubOrderRowImp...> rowOrder;
       static const std::tuple<SubOrderColImp...> colOrder;

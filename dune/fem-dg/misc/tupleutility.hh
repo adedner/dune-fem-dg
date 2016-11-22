@@ -95,13 +95,26 @@ namespace Fem
 
   };
 
-  //helper struct to write a static_assert() which will always fail
-  //note:
-  //static_assert( false, "error" );
-  //will always be false, especially in partial specializations of a class/struct
-  //use
-  //static_assert( static_fail< YourClassTemplate >, "error" );
-  //instead.
+  /**
+   * \brief helper struct to write a static_assert() which will always fail
+   *
+   * Note that, e.g.
+   *
+   * \code
+   * static_assert( false, "error" );
+   * \ȩndcode
+   *
+   * will always be false, especially in partial specializations of a class/struct.
+   * Thus, a small workaround is needed.
+   *
+   * Use
+   *
+   * \code
+   * static_assert( static_fail< YourClassTemplate >, "error" );
+   * \endcode
+   *
+   * instead.
+   */
   template<class... T>
   struct static_fail : std::false_type{};
 
@@ -110,16 +123,34 @@ namespace Fem
 
 
 
-  template< class TupleImp >
-  struct drop_tuple;
+  /**
+   * \brief helper class to drop a double nested std::tuple.
+   */
+  template< class Tuple >
+  struct drop_tuple
+  {
+    static_assert( static_fail<Tuple>::value,
+                   "Argument has to be a std::tuple< std::tuple<...> >!" );
+  };
 
+  /**
+   * \brief partial specialization.
+   */
   template< class Tuple >
   struct drop_tuple< std::tuple< Tuple > >
   {
     static_assert( static_fail<Tuple>::value ,
-                   "We do not unwrap a simple tuple to avoid unexpected behaviour!" );
+                   "We do not unwrap a simple (non nested) std::tuple to avoid unexpected behaviour!" );
   };
 
+  /**
+   * \brief partial specialization of helper class to drop a double nested std::tuple.
+   *
+   * This means, that the following statement is true:
+   * \code
+   * static const bool res = std::is_same< std::tuple< std::tuple< int, double > >, std::tuple<int, double > >::value;
+   * \endcode
+   */
   template< class... TupleArg >
   struct drop_tuple< std::tuple< std::tuple< TupleArg... > > >
   {
@@ -151,28 +182,38 @@ namespace Fem
   template<template<template<class...>class...>class> constexpr int template_level(){ return 2; }
 
 
-  // is_same for templates...
+  /**
+   * \brief std::is_same only allows to compare types of classes. This is a template template version.
+   */
   template< template<class... > class, template<class...> class >
   struct is_same_template : std::false_type{};
 
+  /**
+   * \brief partial specialization for the same type;
+   */
   template< template<class... > class A >
   struct is_same_template<A,A> : std::true_type{};
 
 
-
-  //helper class to generic pack a matrix and vector
   namespace details
   {
 
-    //forward declaration
+    /**
+     * \brief helper class used by VectorPacker class.
+     */
     template< template<class,int...> class, class, int >
     struct VectorPack;
-    //forward declaration
+
+    /**
+     * \brief helper class used by MatrixPacker class.
+     */
     template< template<class,class,int...> class PairImp, class Rows, class Cols, int row, int col >
     struct MatrixPack;
 
 
-    //Normal
+    /**
+     * \brief partial specialization for unique* template parameters.
+     */
     template<template<class> class OneArgImp, class... Rows, int row >
     struct VectorPack< OneArgImp, std::tuple< Rows... >, row >
     {
@@ -180,7 +221,9 @@ namespace Fem
       typedef std::tuple<                  OneArgImp< Rows >  ...  >        type;
     };
 
-    //Generic, i.e. each entry can be indivually choosen via <int> argument
+    /**
+     * \brief partial specialization for *non unique* template parameters, last element.
+     */
     template<template<class,int> class OneArgImp, class RowHead, int row >
     struct VectorPack< OneArgImp, std::tuple< RowHead >, row >
     {
@@ -188,6 +231,9 @@ namespace Fem
       typedef std::tuple<                  typename OneArgImp< RowHead, row >::type   >        type;
     };
 
+    /**
+     * \brief partial specialization for *non unique* template parameters.
+     */
     template<template<class,int> class OneArgImp, class RowHead, class... Rows, int row >
     struct VectorPack< OneArgImp, std::tuple< RowHead, Rows... >, row >
     {
@@ -203,16 +249,19 @@ namespace Fem
     };
 
 
-    ////Normal
-    //generate one row
+    /**
+     * \brief partial specialization for unique* template parameters, last row.
+     */
     template<template<class,class> class PairImp, class RowHead, class... Cols, int row, int col >
     struct MatrixPack< PairImp, std::tuple< RowHead >, std::tuple< Cols... >, row, col >
     {
-      //typedef std::tuple< std::tuple<                  typename PairImp::template type< RowHead, Cols > ... > >        type;
       typedef std::tuple< std::tuple<                  typename PairImp< RowHead, Cols >::type  ... > >        type;
       typedef std::tuple< std::tuple< std::shared_ptr< typename PairImp< RowHead, Cols >::type >... > > shared_type;
     };
 
+    /**
+     * \brief partial specialization for unique* template parameters.
+     */
     //generate whole matrix
     template<template<class,class> class PairImp, class RowHead, class RowHead2, class... Rows, class... Cols, int row, int col>
     struct MatrixPack< PairImp, std::tuple< RowHead, RowHead2, Rows... >, std::tuple< Cols... >, row, col >
@@ -230,8 +279,9 @@ namespace Fem
       typedef std::tuple< SharedTupleHead, SharedTupleEnd > shared_type;
     };
 
-    ////Generic, i.e. each entry can be indivually choosen via <int,int> argument
-    //generate last col element of a row
+    /**
+     * \brief partial specialization for *non unique* template parameters, last element in last row.
+     */
     template<template<class,class,int,int> class PairImp, class RowHead, class ColHead, int row, int col >
     struct MatrixPack< PairImp, std::tuple< RowHead >, std::tuple< ColHead >, row, col >
     {
@@ -239,6 +289,9 @@ namespace Fem
       typedef std::tuple< std::tuple< std::shared_ptr< typename PairImp< RowHead, ColHead, row, col >::type > > >  shared_type;
     };
 
+    /**
+     * \brief partial specialization for *non unique* template parameters, last row.
+     */
     //generate one row
     template<template<class,class,int,int> class PairImp, class RowHead, class ColHead, class... Cols, int row, int col >
     struct MatrixPack< PairImp, std::tuple< RowHead >, std::tuple< ColHead, Cols... >, row, col >
@@ -253,7 +306,9 @@ namespace Fem
       typedef std::tuple< typename tuple_concat< SharedTupleHead, SharedTupleEnd >::type > shared_type;
     };
 
-    //generate whole matrix
+    /**
+     * \brief partial specialization for *non unique* template parameters.
+     */
     template<template<class,class,int,int> class PairImp, class RowHead, class RowHead2, class... Rows, class... Cols, int row, int col >
     struct MatrixPack< PairImp, std::tuple< RowHead, RowHead2, Rows... >, std::tuple< Cols... >, row, col >
     {
@@ -272,18 +327,289 @@ namespace Fem
   }
 
 
+  /*
+   * \brief Helper class to create a std::tuple<> of classes which are described by a templated class.
+   *
+   * The templated class has to contain a typedef called 'type' and contain appropiate
+   * template arguments. Despite the fact, that the first template argument accepted by `VectorPacker`'
+   * allows one type argument and arbritary* `int` arguments, only two versions are valid
+   * (one zero and one `int` arguments). Others implementation will (hopefully) fail.
+   *
+   * We will give a detailed explanation of both versions:
+   *
+   *
+   * Creating a tuple of unique (wrapped) elements
+   * ---------------------------------------------
+   *
+   * The simplest version is, neglecting all `int` arguments.
+   * Then, we can just define a simple class
+   * \code
+   * template< class Arg >
+   * struct OneUniqueArg
+   * {
+   *   //The following codeline is the simplest typedef, but not
+   *   //the way we want to use this class ('cause it is boring...)
+   *   //typedef int type;
+   *
+   *   //more fancy stuff: Yes, we want to wrap an abritary class
+   *   //(std::vector, here) around the template argument.
+   *   typedef std::vector< Arg > type;
+   * };
+   * \endcode
+   *
+   * Furthermore, let us define a tuple of some arbitrary classes.
+   *
+   * \code
+   *   typedef std::tuple< int, char, std::string > ArgTupleType;
+   * \endcode
+   *
+   * Using the typedefs
+   *
+   * \code
+   *   typedef typename VectorPacker< OneUniqueArg, ArgTupleType >::type         TupleType;
+   *   typedef typename VectorPacker< OneUniqueArg, ArgTupleType >::shared_type  SharedTupleType;
+   * \endcode
+   *
+   * the following code should be acceptable
+   *
+   * \code
+   * typedef std::tuple< std::vector< int >,
+   *                     std::vector< char >,
+   *                     std::vector< std::string > >                       TupleType2;
+   * typedef std::tuple< std::shared_ptr< std::vector< int > >,
+   *                     std::shared_ptr< std::vector< char > >,
+   *                     std::shared_ptr< std::vector< std::string > > >    SharedTupleType2;
+   * static_assert( std::is_same< TupleType, TupleType2 >::value, "Upps!" );
+   * static_assert( std::is_same< SharedTupleType, SharedTupleType2 >::value, "Upps!" );
+   * \endcode
+   *
+   * The `shared_type` is mainly a convenience typedef.
+   *
+   * Maybe, this already looks a little bit fancy, but we want to go
+   * a step deeper.
+   *
+   *
+   * Creating a tuple of individual (wrapped) elements
+   * -------------------------------------------------
+   *
+   * Now, we want to exchange the `std::vector<>` of the last section by a
+   * `std::list<>`, but: Only* for the second* tuple element.
+   *
+   * This means, we want to define
+   * \code
+   * std::tuple< std::vector< int >,
+   *             std::list< char >,
+   *             std::vector< std::string > >;
+   * \endcode
+   *
+   * This is the point, where the `int` argument of the template class comes into play:
+   *
+   * \code
+   * template< class Arg, int >
+   * struct OneNonUniqueArg;
+   * \endcode
+   *
+   * Via partial specialization of classes, it is now possible to define different
+   * cases, i.e.
+   *
+   * \code
+   * // first element: std::vector
+   * template< class Arg >
+   * struct OneNonUniqueArg< Arg, 0 >
+   * { typedef std::vector< Arg > type; };
+   *
+   * // second element: std::list
+   * template< class Arg >
+   * struct OneNonUniqueArg< Arg, 1 >
+   * { typedef std::list< Arg > type; };
+   *
+   * // third element: std::vector
+   * template< class Arg >
+   * struct OneNonUniqueArg< Arg, 2 >
+   * { typedef std::vector< Arg > type;};
+   * \endcode
+   *
+   * Now, using the typedefs
+   *
+   * \code
+   *   typedef typename VectorPacker< OneNonUniqueArg, ArgTupleType >::type         TupleType3;
+   *   typedef typename VectorPacker< OneNonUniqueArg, ArgTupleType >::shared_type  SharedTupleType3;
+   * \endcode
+   *
+   * the following code should be acceptable
+   *
+   * \code
+   * typedef std::tuple< std::vector< int >,
+   *                     std::list< char >,
+   *                     std::vector< std::string > >                       TupleType4;
+   * typedef std::tuple< std::shared_ptr< std::vector< int > >,
+   *                     std::shared_ptr< std::list< char > >,
+   *                     std::shared_ptr< std::vector< std::string > > >    SharedTupleType4;
+   * static_assert( std::is_same< TupleType3, TupleType4 >::value, "Upps again!" );
+   * static_assert( std::is_same< SharedTupleType3, SharedTupleType4 >::value, "Upps again!" );
+   * \endcode
+   *
+   *
+   *
+   * \tparam OneArgImp template class describing
+   * \tparam Rows std::tuple of arguments
+   *
+   */
   template< template<class,int...> class OneArgImp, class Rows >
   struct VectorPacker
   {
+    static_assert( is_tuple<Rows>::value, "The template argument 'Rows' has to be a std::tuple<>!" );
     typedef typename details::VectorPack< OneArgImp, Rows, 0 >::type               type;
     typedef typename details::VectorPack< OneArgImp, Rows, 0 >::shared_type shared_type;
 
     static const int size = std::tuple_size< Rows >::value;
   };
 
+  /*
+   * \brief Helper class to create a std::tuple< std::tuple<>... > of classes which are
+   * described by a templated class.
+   *
+   * In general, this class is a generalization of the class VectorPacker with the only
+   * difference that we have got two arguments and the resulting type is a std::tuple<> of
+   * some std::tuple<>.
+   *
+   * The templated class `TwoArgImp` has to contain a typedef called 'type' and contain appropiate
+   * template arguments. Despite the fact, that the first template argument accepted by `MatrixPacker`'
+   * allows two type arguments and arbritary* `int` arguments, only two versions are valid
+   * (one zero and two `int` arguments). Others implementation will (hopefully) fail.
+   *
+   * We will give a detailed explanation of both versions.
+   *
+   * \note Since this is very similar to the VectorPacker class, we will drop the std::shared_ptr<>
+   * case, here.
+   *
+   *
+   * Creating a tuple of unique (wrapped) elements
+   * ---------------------------------------------
+   *
+   * The simplest version is, neglecting all `int` arguments.
+   * Then, we can just define a simple class
+   * \code
+   * template< class Row, class Col >
+   * struct TwoUniqueArg
+   * {
+   *   //more fancy stuff: Yes, we want to wrap an abritary class
+   *   //(std::pair, here) around the template argument.
+   *   typedef std::pair< Row, Col > type;
+   * };
+   * \endcode
+   *
+   * Furthermore, let us define a tuple of some arbitrary classes.
+   *
+   * \code
+   *   typedef std::tuple< int, char, std::string > ArgTupleType;
+   * \endcode
+   *
+   * Using the typedefs
+   *
+   * \code
+   *   typedef typename MatrixPacker< TwoUniqueArg, ArgTupleType, ArgTupleType >::type         TupleType;
+   * \endcode
+   *
+   * the following code should be acceptable
+   *
+   * \code
+   * using std::string;
+   * typedef std::tuple< std::tuple< std::pair< int,    int >, std::pair< int,    char >, std::pair< int,    string > >,
+   *                     std::tuple< std::pair< char,   int >, std::pair< char,   char >, std::pair< char,   string > >,
+   *                     std::tuple< std::pair< string, int >, std::pair< string, char >, std::pair< string, string > > >
+   *                                                                              TupleType2;
+   * static_assert( std::is_same< TupleType, TupleType2 >::value, "Upps! again" );
+   * \endcode
+   *
+   * Now, we want to go a step deeper.
+   *
+   *
+   * Creating a tuple of individual (wrapped) elements
+   * -------------------------------------------------
+   *
+   * Now, we want to exchange the `std::pair<>` of the last section by a
+   * `std::map<>`, but: Only* for the tuple element in the *second row* and *second column*.
+   *
+   * This means, we want to define
+   * \code
+   * using std::string;
+   * std::tuple< std::tuple< std::pair< int,    int >, std::pair< int,    char >, std::pair< int,    string > >,
+   *             std::tuple< std::pair< char,   int >, std::map < char,   char >, std::pair< char,   string > >,
+   *             std::tuple< std::pair< string, int >, std::pair< string, char >, std::pair< string, string > > >
+   * \endcode
+   *
+   * This is the point, where the `int` arguments of the template class comes into play:
+   *
+   * \code
+   * template< class Row, class Col, int, int >
+   * struct TwoNonUniqueArg;
+   * \endcode
+   *
+   * Via partial specialization of classes, it is now possible to define different
+   * cases, i.e.
+   *
+   * \code
+   * template< class Row, class Col >
+   * struct TwoNonUniqueArg< Row, Col, 0, 0 >
+   * { typedef std::pair< Row, Col > type; };
+   * template< class Row, class Col >
+   * struct TwoNonUniqueArg< Row, Col, 0, 1 >
+   * { typedef std::pair< Row, Col > type; };
+   * template< class Row, class Col >
+   * struct TwoNonUniqueArg< Row, Col, 0, 2 >
+   * { typedef std::pair< Row, Col > type;};
+   *
+   * template< class Row, class Col >
+   * struct TwoNonUniqueArg< Row, Col, 1, 0 >
+   * { typedef std::pair< Row, Col > type; };
+   * // -----> here comes the std::map! <------
+   * template< class Row, class Col >
+   * struct TwoNonUniqueArg< Row, Col, 1, 1 >
+   * { typedef std::map < Row, Col > type; };
+   * template< class Row, class Col >
+   * struct TwoNonUniqueArg< Row, Col, 1, 2 >
+   * { typedef std::pair< Row, Col > type;};
+   *
+   * template< class Row, class Col >
+   * struct TwoNonUniqueArg< Row, Col, 2, 0 >
+   * { typedef std::pair< Row, Col > type; };
+   * template< class Row, class Col >
+   * struct TwoNonUniqueArg< Row, Col, 2, 1 >
+   * { typedef std::pair< Row, Col > type; };
+   * template< class Row, class Col >
+   * struct TwoNonUniqueArg< Row, Col, 2, 2 >
+   * { typedef std::pair< Row, Col > type;};
+   * \endcode
+   *
+   * Now, using the typedefs
+   *
+   * \code
+   *   typedef typename MatrixPacker< TwoNonUniqueArg, ArgTupleType >::type         TupleType3;
+   * \endcode
+   *
+   * the following code should be acceptable
+   *
+   * \code
+   * typedef std::tuple< std::tuple< std::pair< int,    int >, std::pair< int,    char >, std::pair< int,    string > >,
+   *                     std::tuple< std::pair< char,   int >, std::map < char,   char >, std::pair< char,   string > >,
+   *                     std::tuple< std::pair< string, int >, std::pair< string, char >, std::pair< string, string > > >
+   *                                                                                TupleType4;
+   * static_assert( std::is_same< TupleType3, TupleType4 >::value, "Upps again!" );
+   * \endcode
+   *
+   *
+   *
+   * \tparam TwoArgImp template class describing
+   * \tparam Rows std::tuple of row arguments
+   * \tparam Cols std::tuple of col arguments
+   *
+   */
   template< template<class,class,int...> class TwoArgImp, class Rows, class Cols >
   struct MatrixPacker
   {
+    static_assert( is_tuple<Rows>::value, "The template argument 'Rows' has to be a std::tuple<>!" );
+    static_assert( is_tuple<Cols>::value, "The template argument 'Cols' has to be a std::tuple<>!" );
     typedef typename details::MatrixPack< TwoArgImp, Rows, Cols, 0, 0 >::type               type;
     typedef typename details::MatrixPack< TwoArgImp, Rows, Cols, 0, 0 >::shared_type shared_type;
 

@@ -358,6 +358,7 @@ namespace Fem
     using GlobalDiscreteFunction = std::tuple< typename SubStokesAlgorithmCreator::SubPoissonAlgorithmCreator::template DiscreteTraits< polOrd >::DiscreteFunctionType,
                                                typename SubStokesAlgorithmCreator::template DiscreteTraits< polOrd >::DiscreteFunctionType >;
 
+
     template <int polOrd>
     using Algorithm = IncompNavierStokesAlgorithm< polOrd, UncoupledSubAlgorithms, SubStokesAlgorithmCreator, SubNavierStokesAlgorithmCreator, SubStokesAlgorithmCreator >;
 
@@ -417,14 +418,15 @@ namespace Fem
       //create grid
       std::shared_ptr< GridType > gridptr( DefaultGridInitializer< GridType >::initialize().release() );
 
-      //typedef typename DFType1::DiscreteFunctionSpaceType SpaceType1;
-      //typedef typename DFType2::DiscreteFunctionSpaceType SpaceType2;
+      typedef typename DFType1::DiscreteFunctionSpaceType SpaceType1;
+      typedef typename DFType2::DiscreteFunctionSpaceType SpaceType2;
 
-      //typedef typename SpaceType1::GridPartType GridPartType1;
-      //typedef typename SpaceType2::GridPartType GridPartType2;
+      typedef typename SpaceType1::GridPartType GridPartType1;
+      typedef typename SpaceType2::GridPartType GridPartType2;
 
-      //static_assert( std::is_same< GridPartType1, GridPartType2 >::value, "GridParts does not match!");
+      static_assert( std::is_same< GridPartType1, GridPartType2 >::value, "GridParts does not match!");
 
+      ////TODO: deref of gridptr dangerous
       //GridPartType1 gridPart( *gridptr );
 
       //SpaceType1 space1( gridPart );
