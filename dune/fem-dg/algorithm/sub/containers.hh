@@ -1,5 +1,5 @@
-#ifndef DUNE_FEMDG_CONTAINER_HH
-#define DUNE_FEMDG_CONTAINER_HH
+#ifndef DUNE_FEMDG_SUB_CONTAINER_HH
+#define DUNE_FEMDG_SUB_CONTAINER_HH
 
 #include <memory>
 #include <dune/common/shared_ptr.hh>
@@ -238,103 +238,6 @@ namespace Fem
       return std::make_tuple( createContainerRow<i>( col, name )... );
     }
 
-
-
-
-   // template< int i, unsigned long int... i1, unsigned long int... i2 >
-   // constexpr unsigned long int entry1(std::tuple< std::pair< _index<i1>, _index<i2> >... >)
-   // {
-   //   typedef std::tuple< std::pair< _index<i1>, _index<i2> >... > TuplePair;
-   //   return typename std::tuple_element<i, typename TuplePair::first_type >::type::value;
-   // }
-
-   // template< int i, unsigned long int... i1, unsigned long int... i2 >
-   // constexpr unsigned long int entry2(std::tuple< std::pair< _index<i1>, _index<i2> >... >)
-   // {
-   //   typedef std::tuple< std::pair< _index<i1>, _index<i2> >... > TuplePair;
-   //   return typename std::tuple_element<i, typename TuplePair::second_type >::type::value;
-   // }
-
-
-
-
-   // template< unsigned long int i, unsigned long int j, unsigned long int... j1, unsigned long int... j2 >
-   // decltype(auto) copyContainerRowSubSub( std::tuple< std::pair< _index<j1>, _index<j2> >... > tupPair)
-   // {
-   //   typedef std::tuple< std::pair< _index<j1>, _index<j2> >... > TuplePair;
-
-   //   static unsigned long int jj = std::get<j>( tupPair );
-
-   //   return std::make_tuple( std::get<j>( std::get<i>( item2_ ) )... );
-   // }
-
-   // template< unsigned long int i, unsigned long int... j, unsigned long int... j1, unsigned long int... j2 >
-   // decltype(auto) copyContainerRowSub( _indices<j...>)
-   // {
-   //   return std::make_tuple( std::get<j>( std::get<i>( item2_ ) )... );
-   // }
-
-   // template< unsigned long int ii, unsigned long int ii2, unsigned long int... j1, unsigned long int... j2 >
-   // decltype(auto) copyContainerRow( std::tuple< std::pair< _index<j1>, _index<j2> >... > jPair )
-   // {
-   //   typedef std::tuple< std::pair< _index<j1>, _index<j2> >... > TupleImp;
-   // static const int tupIndSize = std::tuple_size< TupleImp >::value;
-   //   static std::make_integer_sequence< unsigned long int, tupIndSize > seq;
-   //   return copyContainerRowSub<ii>( seq );
-   // }
-
-   // //current work
-   // template< unsigned long int i, unsigned long int j, unsigned long int... i1, unsigned long int... i2, unsigned long int... j1, unsigned long int... j2 >
-   // decltype(auto) copyContainerRow( std::tuple< std::pair< _index<i1>, _index<i2> >... > iTup,
-   //                                  std::tuple< std::pair< _index<j1>, _index<j2> >... > jTup )
-   // {
-   //   typedef std::tuple< RowArgs... >        RowArgTupleImp;
-   //   typedef std::tuple< ColArgs... >        ColArgTupleImp;
-
-   //   typedef typename MatrixPacker< TwoArgImp, RowArgTupleImp, ColArgTupleImp >::type  RowItem2TupleImp;
-   //   typedef typename MatrixPacker< TwoArgImp, RowArgTupleImp, ColArgTupleImp >::type  ColItem2TupleImp;
-
-   //   template< unsigned long int i, unsigned long int j >
-   //   using RowItem2 = typename std::tuple_element< j, typename std::tuple_element< i, RowItem2TupleImp>::type >::type:
-
-   //   template< unsigned long int i, unsigned long int j >
-   //   using ColItem2 = typename std::tuple_element< j, typename std::tuple_element< i, ColItem2TupleImp>::type >::type:
-
-   //   typedef std::tuple< std::pair< _index<i1>, _index<i2> >... > ITuplePair;
-   //   typedef std::tuple< std::pair< _index<j1>, _index<j2> >... > JTuplePair;
-   //   //number of subcontainer
-   //   static unsigned long int iSub = typename std::tuple_element<i, typename ITuplePair::first_type >::type::value;
-   //   static unsigned long int jSub = typename std::tuple_element<j, typename JTuplePair::first_type >::type::value;
-   //   //
-   //   static unsigned long int ii = typename std::tuple_element<i, typename ITuplePair::second_type >::type::value;
-   //   static unsigned long int jj = typename std::tuple_element<j, typename JTuplePair::second_type >::type::value;
-
-   //   //Item2????
-   //   return std::make_shared<Item2<iSub,jSub> >( std::get<iSub>( item2 )( _index<ii>() ),
-   //                                               std::get<jSub>( item2 )( _index<jj>() ),
-   //                                               "dummy" );
-   // }
-
-
-
-   // template< unsigned long int... i1, unsigned long int... i2, unsigned long int... j1, unsigned long int... j2 >
-   // decltype(auto) copyContainer(std::tuple< std::pair< _index<i1>, _index<i2> >... > iTup,
-   //                              std::tuple< std::pair< _index<j1>, _index<j2> >... > jTup)
-   // {
-   //   typedef std::tuple< std::pair< _index<i1>, _index<i2> >... > IPairType;
-   //   typedef std::tuple< std::pair< _index<j1>, _index<j2> >... > JPairType;
-   //   //number sub container
-   //   static unsigned long int ii = entry1<i>( iTup );
-
-   //   static const int iPairSize = std::tuple_size< IPairType >::value;
-   //   static std::make_integer_sequence< unsigned long int, iPairSize > seq;
-
-   //   //number of sub element in subcontainer
-   //   static unsigned long int ii2 = entry2<i>( iTup );
-   //   return std::make_tuple( copyContainerRow<ii,ii2>( col )... );
-   // }
-
-
     ///// Copy
     template< unsigned long int i, unsigned long int ...j >
     decltype(auto) copyContainerRow( std::tuple< _index<j>... > )
@@ -413,7 +316,9 @@ namespace Fem
   };
 
 
-  //empty item1 oder item2 container
+  /**
+   * \brief A placeholder for empty item1 or item2 container.
+   */
   template< class... MatrixContainerImp >
   struct EmptyContainerItem
   {
@@ -471,149 +376,6 @@ namespace Fem
   };
 
 
-
-
-  //TODO this is not a sub-container, it is a global container...
-  //Put this class to another header...
-  template< class Item2TupleImp, class Item1TupleImp, class SubOrderRowImp, class SubOrderColImp, class... DiscreteFunctions >
-  class GlobalContainer
-  {
-    typedef TwoArgContainer< _template< Item2TupleImp >::template _t2Inv, _template< Item1TupleImp >::template _t1,
-                             std::tuple< DiscreteFunctions... >, std::tuple< DiscreteFunctions... > > ContainerType;
-
-    static_assert( is_tuple< SubOrderRowImp >::value, "SubOrderRowImp has to be a std::tuple<std::tuple<>...>" );
-  public:
-
-    // constructor: do not touch, delegate everything
-    template< class GridImp, class ... Args>
-    GlobalContainer( const std::shared_ptr< GridImp >& gridptr, Args&&... args )
-    : cont_( gridptr, std::forward<Args>(args)... )
-    {}
-
-    // sub container
-    template< unsigned long int i >
-    decltype(auto) sub( _index<i> index )
-    {
-      static_assert( std::tuple_size< SubOrderRowImp >::value > i,
-                     "SubOrderRowImp does not contain the necessary sub structure information.\
-                      SubOrderRowImp has to be a std::tuple containing i std::tuple's!" );
-      //default implementation:
-      //static const typename index_tuple< DiscreteFunctions... >::type order;
-
-      static const SubOrderRowImp order;
-
-      std::cout << "###CREATE: sub container " << print( index )
-                << " from global container containing elements " << print( std::get<i>(order) )  << std::endl;
-      return cont_( std::get<i>(order), std::get<i>(order) );
-    }
-
-    const std::string name() const
-    {
-      return std::string("global");
-    }
-  private:
-    ContainerType cont_;
-  };
-
-
-  template< class... >
-  struct SubOrderSelect;
-
-  template< class OrderHead, class... Args >
-  struct SubOrderSelect< std::tuple<OrderHead>,std::tuple<Args...> >
-  {
-    typedef std::tuple< typename std::tuple_element<OrderHead::value,std::tuple<Args...> >::type > type;
-  };
-
-  template< class OrderHead, class... OrderArgs, class... Args >
-  struct SubOrderSelect< std::tuple<OrderHead, OrderArgs...>,std::tuple<Args...> >
-  {
-    typedef typename tuple_concat< std::tuple< typename std::tuple_element<OrderHead::value,std::tuple<Args...> >::type >,
-                                   typename SubOrderSelect< std::tuple<OrderArgs...>, std::tuple<Args...> >::type >::type
-                                                                                                                     type;
-  };
-
-
-  //Forward declaration
-  template< class Item2TupleImp, class Item1TupleImp, class SubOrderRowImp, class SubOrderColImp, class... DiscreteFunctions >
-  class CombinedGlobalContainer;
-
-  template< class... Item2TupleImp, class... Item1TupleImp, class... SubOrderRowImp, class... SubOrderColImp, class... DiscreteFunctions >
-  class CombinedGlobalContainer< std::tuple< Item2TupleImp... >,
-                                 std::tuple< Item1TupleImp... >,
-                                 std::tuple< SubOrderRowImp... >,
-                                 std::tuple< SubOrderColImp... >,
-                                 DiscreteFunctions...>
-  {
-    static const int size1 = std::tuple_size< std::tuple< Item1TupleImp... > >::value;
-    static const int size2 = std::tuple_size< std::tuple< Item2TupleImp... > >::value;
-    static_assert( size1 == size2, "Item2TupleImp and Item1TupleImp has to contain the same numbers of elements." );
-
-    template< unsigned long int i >
-    using ContainerItem = TwoArgContainer< _template< typename std::tuple_element<i, std::tuple<Item2TupleImp...> >::type >::template _t2Inv,
-                                           _template< typename std::tuple_element<i, std::tuple<Item1TupleImp...> >::type >::template _t1,
-                                           typename SubOrderSelect< typename std::tuple_element<i,std::tuple<SubOrderRowImp...> >::type, std::tuple< DiscreteFunctions...> >::type,
-                                           typename SubOrderSelect< typename std::tuple_element<i,std::tuple<SubOrderColImp...> >::type, std::tuple< DiscreteFunctions...> >::type >;
-
-    template< unsigned long int i >
-    using SharedContainerItem = std::shared_ptr< ContainerItem<i> >;
-
-    typedef typename tuple_copy_t< size1, SharedContainerItem >::type ContainerType;
-
-    static_assert( is_tuple< std::tuple<SubOrderRowImp...> >::value, "SubOrderRowImp has to be a std::tuple<std::tuple<>...>" );
-  protected:
-    static std::make_integer_sequence< unsigned long int, size1 > sequence;
-
-    template< unsigned long int i, class... Args >
-    static decltype(auto) createItem( Args&&... args )
-    {
-      return std::make_shared<ContainerItem<i> >( args... );
-    }
-
-    template< unsigned long int ...i, class SameObject>
-    static decltype(auto) createContainer( _indices<i...>, std::shared_ptr< SameObject > obj, const std::string name )
-    {
-      return std::make_tuple( createItem<i>( obj, name )... );
-    }
-    template< unsigned long int ...i >
-    static decltype(auto) createContainer( _indices<i...>, const std::string name )
-    {
-      return std::make_tuple( createItem<i>( name )... );
-    }
-
-  public:
-
-    // constructor: do not touch, delegate everything
-    template< class GridImp, class ... Args>
-    explicit CombinedGlobalContainer( const std::shared_ptr< GridImp >& gridptr, Args&&... args )
-    : cont_( createContainer( sequence, gridptr, "" /*std::forward<Args>(args)...*/ ) )
-    {}
-
-    // sub container
-    template< unsigned long int i >
-    decltype(auto) sub( _index<i> index )
-    {
-      static_assert( std::tuple_size< std::tuple<SubOrderRowImp...> >::value > i,
-                     "SubOrderRowImp does not contain the necessary sub structure information.\
-                      SubOrderRowImp has to be a std::tuple containing i std::tuple's!" );
-
-      static const std::tuple<SubOrderRowImp...> rowOrder;
-      static const std::tuple<SubOrderColImp...> colOrder;
-
-      const auto& cont = std::get<i>( cont_ );
-
-      std::cout << "###CREATE: sub container " << print( index )
-                << " from combined global container containing elements " << print( std::get<i>(rowOrder) )<< " x " << print( std::get<i>(colOrder) )  << std::endl;
-      return (*cont)( std::get<i>(rowOrder), std::get<i>(colOrder) );
-    }
-
-    const std::string name() const
-    {
-      return std::string("global");
-    }
-  private:
-    ContainerType cont_;
-  };
 
 }
 }

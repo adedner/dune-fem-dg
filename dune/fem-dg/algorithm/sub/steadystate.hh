@@ -98,13 +98,6 @@ namespace Fem
     SubSteadyStateContainer( Args&&... args )
     : BaseType( std::forward<Args>(args)... )
     {}
-
-#if 0
-    //for global to local container extraction ???
-    static std::integer_sequence< unsigned long int, 0, 1, 4 > sub0;
-    static std::integer_sequence< unsigned long int, 3, 1, 2 > sub1;
-    static std::integer_sequence< unsigned long int, 5, 1, 2 > sub2;
-#endif
   };
 
 

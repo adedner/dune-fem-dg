@@ -27,6 +27,8 @@
 #include <dune/fem-dg/algorithm/caller/postprocessing.hh>
 #include <dune/fem-dg/algorithm/caller/adapt.hh>
 
+#include "containers.hh"
+
 namespace Dune
 {
 namespace Fem

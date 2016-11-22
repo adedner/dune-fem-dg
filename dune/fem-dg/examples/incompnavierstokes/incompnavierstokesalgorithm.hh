@@ -4,8 +4,6 @@
 
 #include "../../algorithm/evolution.hh"
 
-#include "../../algorithm/sub/containers.hh"
-
 namespace Dune
 {
 namespace Fem

@@ -189,7 +189,7 @@ namespace Fem
   struct is_same_template : std::false_type{};
 
   /**
-   * \brief partial specialization for the same type;
+   * \brief partial specialization, same type;
    */
   template< template<class... > class A >
   struct is_same_template<A,A> : std::true_type{};
@@ -630,6 +630,146 @@ namespace Fem
   };
 
 
+  namespace details
+  {
+    /**
+     * \brief helper class to
+     *
+     * See template alias _t for detailed explanation;
+     */
+    template< template<class...> class... >
+    struct Nested;
+
+    /**
+     * \brief partical specialization for one template argument.
+     */
+    template< template<class...> class ArgHead >
+    struct Nested< ArgHead >
+    {
+      template<class... I>
+      struct _t{ typedef ArgHead<I...> type; };
+    };
+
+    /**
+     * \brief partical specialization for more than one template argument.
+     */
+    template< template<class> class ArgHead, template<class...> class ArgHead2, template<class...> class... Args >
+    struct Nested< ArgHead, ArgHead2, Args... >
+    {
+      template<class... I>
+      struct _t{ typedef ArgHead<typename Nested<ArgHead2,Args...>::template _t<I...>::type > type; };
+    };
+  }
+
+
+  /**
+   * \brief This alias template is an important helper to define a std::tuple
+   * (or any other classes expecting classes and not templates as template argument) of templates.
+   *
+   * Usually, it is not possible to store e.g. a std::tuple of template classes, i.e.
+   *
+   * \code
+   * typedef std::tuple< std::vector<int>, std::list<char> > Type;
+   * \endcode
+   *
+   * is possible, but
+   * \code
+   * typedef std::tuple< std::vector, std::list > Type;
+   * \endcode
+   *
+   * will fail.
+   *
+   * To escape this problem, it is possible to wrap this template:
+   *
+   * \code
+   * typedef std::tuple< _t< std::vector >, _t< std::list > > Type;
+   * \endcode
+   *
+   * To access the original template, use (e.g. for the first element of the tuple)
+   * \code
+   * typedef typename std::tuple_element<0, Type >::type FirstElementType;
+   * template< class... Args >
+   * using MyTemplate = FirstElementType::template _t< Args... >;
+   * \endcode
+   *
+   * Nesting
+   * -------
+   *
+   * Another feature is the usage of nested template: In order to use this feature simply add
+   * more than one template argument to the type alias _t.
+   *
+   * Writing
+   *
+   * \code
+   * typedef _t< std::shared_ptr, std::vector > NestedType;
+   * \endcode
+   *
+   * and
+   *
+   * \code
+   * template< class... Args >
+   * using MyTemplate = NestedType::template _t< Args... >;
+   * \endcode
+   *
+   * the following command line will compile
+   *
+   * \code
+   * static_assert( std::is_same< MyTemplate<int>, std::shared::ptr<std::vector<int> > >::value, "Upps" );
+   * \endcode
+   *
+   * \warning Note, that all outer templates have to have one template argument,
+   * i.e. the nesting has to be well defined afterwards.
+   *
+   */
+  template< template< class... >class ... Args >
+  using _t = details::Nested< Args... >;
+
+
+
+  //expects a tuple of tuple
+  template< class TupleImp >
+  struct _template
+  {
+    template<class R,class C,int r,int c>
+    struct _t2{ typedef typename std::tuple_element<c,typename std::tuple_element<r,TupleImp>::type>::type::template _t<R,C>::type type; };
+
+    template<class R,class C,int r,int c>
+    struct _t2Inv{ typedef typename std::tuple_element<c,typename std::tuple_element<r,TupleImp>::type>::type::template _t<C,R>::type type; };
+
+    template<class R,int r>
+    struct _t1{ /*static_assert( r<std::tuple_size<TupleImp>::value, "selected tuple element does not exist." );*/typedef typename std::tuple_element<r,TupleImp>::type::template _t<R>::type type; };
+  };
+
+  //forward declaration, expects a template which is valid for all
+  template< template<class...> class... >
+  struct _template2;
+
+  template< template<class...> class ArgHead >
+  struct _template2< ArgHead >
+  {
+    template<class R,class C,int r,int c>
+    struct _t2{ typedef ArgHead< R,C > type; };
+
+    template<class R,class C,int r,int c>
+    struct _t2Inv{ typedef ArgHead< C,R > type; };
+
+    template<class R,int r>
+    struct _t1{ typedef ArgHead<R> type; };
+  };
+
+  template< template<class...> class ArgHead, template<class...> class ArgHead2, template<class...> class... Args >
+  struct _template2< ArgHead, ArgHead2, Args... >
+  {
+    template<class R,class C,int r,int c>
+    struct _t2{ typedef ArgHead< typename _template2<ArgHead2,Args... >::template _t2< R,C,r,c >::type > type; };
+
+    template<class R,int r>
+    struct _t1{ typedef ArgHead< typename _template2<ArgHead2,Args...>::template _t1<R,r>::type > type; };
+  };
+
+
+
+
   //forward declaration
   template< class TupleMatrix >
   struct tuple_matrix;
@@ -757,141 +897,6 @@ namespace Fem
 
   };
 
-
-  namespace details
-  {
-    /**
-     * \brief helper class to
-     *
-     * See template alias _t for detailed explanation;
-     */
-    template< template<class...> class... >
-    struct Nested;
-
-    /**
-     * \brief partical specialization for one template argument.
-     */
-    template< template<class...> class ArgHead >
-    struct Nested< ArgHead >
-    {
-      template<class... I>
-      struct _t{ typedef ArgHead<I...> type; };
-    };
-
-    /**
-     * \brief partical specialization for more than one template argument.
-     */
-    template< template<class> class ArgHead, template<class...> class ArgHead2, template<class...> class... Args >
-    struct Nested< ArgHead, ArgHead2, Args... >
-    {
-      template<class... I>
-      struct _t{ typedef ArgHead<typename Nested<ArgHead2,Args...>::template _t<I...>::type > type; };
-    };
-  }
-
-
-  /**
-   * \brief This alias template is an important helper to define a std::tuple
-   * (or any other classes expecting classes and not templates as template argument) of templates.
-   *
-   * Usually, it is not possible to store e.g. a std::tuple of template classes, i.e.
-   *
-   * \code
-   * typedef std::tuple< std::vector<int>, std::list<char> > Type;
-   * \endcode
-   *
-   * is possible, but
-   * \code
-   * typedef std::tuple< std::vector, std::list > Type;
-   * \endcode
-   *
-   * will fail.
-   *
-   * To escape this problem, it is possible to wrap this template:
-   *
-   * \code
-   * typedef std::tuple< _t< std::vector >, _t< std::list > > Type;
-   * \endcode
-   *
-   * To access the original template, use (e.g. for the first element of the tuple)
-   * \code
-   * typedef typename std::tuple_element<0, Type >::type FirstElementType;
-   * template< class... Args >
-   * using MyTemplate = FirstElementType::template _t< Args... >;
-   * \endcode
-   *
-   * Nesting
-   * -------
-   *
-   * Another feature is the usage of nested template: In order to use this feature simply add
-   * more than one template argument to the type alias _t.
-   *
-   * Writing
-   *
-   * \code
-   * typedef _t< std::shared_ptr, std::vector > NestedType;
-   * \endcode
-   *
-   * and
-   *
-   * \code
-   * template< class... Args >
-   * using MyTemplate = NestedType::template _t< Args... >;
-   * \endcode
-   *
-   * the following command line will compile
-   *
-   * \code
-   * static_assert( std::is_same< MyTemplate<int>, std::shared::ptr<std::vector<int> > >::value, "Upps" );
-   * \endcode
-   *
-   * \warning Note, that all outer templates have to have one template argument,
-   * i.e. the nesting has to be well defined afterwards.
-   *
-   */
-  template< template< class... >class ... Args >
-  using _t = details::Nested< Args... >;
-
-  //expects a tuple of tuple
-  template< class TupleImp >
-  struct _template
-  {
-    template<class R,class C,int r,int c>
-    struct _t2{ typedef typename std::tuple_element<c,typename std::tuple_element<r,TupleImp>::type>::type::template _t<R,C>::type type; };
-
-    template<class R,class C,int r,int c>
-    struct _t2Inv{ typedef typename std::tuple_element<c,typename std::tuple_element<r,TupleImp>::type>::type::template _t<C,R>::type type; };
-
-    template<class R,int r>
-    struct _t1{ /*static_assert( r<std::tuple_size<TupleImp>::value, "selected tuple element does not exist." );*/typedef typename std::tuple_element<r,TupleImp>::type::template _t<R>::type type; };
-  };
-
-  //forward declaration, expects a template which is valid for all
-  template< template<class...> class... >
-  struct _template2;
-
-  template< template<class...> class ArgHead >
-  struct _template2< ArgHead >
-  {
-    template<class R,class C,int r,int c>
-    struct _t2{ typedef ArgHead< R,C > type; };
-
-    template<class R,class C,int r,int c>
-    struct _t2Inv{ typedef ArgHead< C,R > type; };
-
-    template<class R,int r>
-    struct _t1{ typedef ArgHead<R> type; };
-  };
-
-  template< template<class...> class ArgHead, template<class...> class ArgHead2, template<class...> class... Args >
-  struct _template2< ArgHead, ArgHead2, Args... >
-  {
-    template<class R,class C,int r,int c>
-    struct _t2{ typedef ArgHead< typename _template2<ArgHead2,Args... >::template _t2< R,C,r,c >::type > type; };
-
-    template<class R,int r>
-    struct _t1{ typedef ArgHead< typename _template2<ArgHead2,Args...>::template _t1<R,r>::type > type; };
-  };
 
 }
 }
