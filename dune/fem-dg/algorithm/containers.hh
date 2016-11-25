@@ -28,6 +28,15 @@ namespace Fem
 
 
 
+  /**
+   * \brief Defines a global container
+   *
+   * \ingroup Container
+   *
+   * Before reading this summary, you should have read \ref Container.
+   *
+   * ![A global container](container7.png)
+   */
   template< class Item2TupleImp, class Item1TupleImp, class SubOrderRowImp, class SubOrderColImp, class... DiscreteFunctions >
   class GlobalContainer
   {
@@ -37,13 +46,17 @@ namespace Fem
     static_assert( is_tuple< SubOrderRowImp >::value, "SubOrderRowImp has to be a std::tuple<std::tuple<>...>" );
   public:
 
-    // constructor: do not touch, delegate everything
+    /**
+     * \brief constructor. Delegates everything
+     */
     template< class GridImp, class ... Args>
     GlobalContainer( const std::shared_ptr< GridImp >& gridptr, Args&&... args )
     : cont_( gridptr, std::forward<Args>(args)... )
     {}
 
-    // sub container
+    /**
+     * \brief returns the i's container
+     */
     template< unsigned long int i >
     decltype(auto) sub( _index<i> index )
     {
@@ -69,10 +82,44 @@ namespace Fem
 
 
 
-  //Forward declaration
+  /**
+   * \brief Defines a global container.
+   *
+   * \ingroup Container
+   */
   template< class Item2TupleImp, class Item1TupleImp, class SubOrderRowImp, class SubOrderColImp, class... DiscreteFunctions >
   class CombinedGlobalContainer;
 
+  /**
+   * \brief Defines a global container.
+   *
+   * \ingroup Container
+   *
+   * Before reading this summary, you should have read \ref Container.
+   *
+   * Global containers has got a method `sub<i>()` which returns the
+   * container for the `i`'s sub algorithm.
+   *
+   * In comparison to the class GlobalContainer this class is the more general one.
+   *
+   * The template parameters have to have the following structure to work properly:
+   * - The first argument has to be a `std::tuple<>` of the same template structure
+   *   used for TwoArgContainers.
+   * - The first argument has to be a `std::tuple<>` of the same template structure
+   *   used for OneArgContainers.
+   * - The third argument has to be a `std::tuple<>` and describing the argument
+   *   structure of the row arguments.
+   * - The forth argument has to be a `std::tuple<>` and describing the argument
+   *   structure of the column arguments.
+   * - The fifth and further template arguments has to be the arguments for the templates.
+   *
+   * \warning Each of the first four template classes should contain the same number of elements.
+   *
+   * The following picture gives an overview, how the class is created and how
+   * the template parameters has to be choosen.
+   *
+   * ![A combined global container](container6.png)
+   */
   template< class... Item2TupleImp, class... Item1TupleImp, class... SubOrderRowImp, class... SubOrderColImp, class... DiscreteFunctions >
   class CombinedGlobalContainer< std::tuple< Item2TupleImp... >,
                                  std::tuple< Item1TupleImp... >,
@@ -120,13 +167,17 @@ namespace Fem
 
   public:
 
-    // constructor: do not touch, delegate everything
+    /**
+     * \brief constructor. Delegates everything
+     */
     template< class GridImp, class ... Args>
     explicit CombinedGlobalContainer( const std::shared_ptr< GridImp >& gridptr, Args&&... args )
     : cont_( createContainer( sequence, gridptr, "" /*std::forward<Args>(args)...*/ ) )
     {}
 
-    // sub container
+    /**
+     * \brief returns the i's container
+     */
     template< unsigned long int i >
     decltype(auto) sub( _index<i> index )
     {

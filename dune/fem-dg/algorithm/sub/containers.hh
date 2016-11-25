@@ -252,6 +252,11 @@ namespace Fem
    * These classes only contains a `sub<i>()` method which extracts the `i`s
    * container.
    *
+   * Here are two pictures visualizing both classes
+   *
+   * ![CombinedContainer](container7.png)
+   *
+   * ![GlobalCombinedContainer](container6.png)
    *
    *
   ** @}*/
@@ -457,9 +462,20 @@ namespace Fem
 
 
   /**
-   * \brief Base class for all container classes taking two arguments.
+   * \brief Base class for all container classes taking two argument.
    *
    * \ingroup Container
+   *
+   * Before starting reading, you should have an overview: \ref Container.
+   *
+   * ![How to create sub containers and to access elements](container3_2.png)
+   *
+   * There are different ways to create the first template argument.
+   * The second argument is similarly constructed, see `OneArgContainer`.
+   *
+   * ![How to create the first template argument of the TwoArgContainer](container4.png)
+   *
+   *
    */
   template< template<class,class,int...> class TwoArgImp, template<class,int...> class OneArgImp, class... RowArgs, class... ColArgs >
   class TwoArgContainer< TwoArgImp, OneArgImp, std::tuple< RowArgs... >, std::tuple< ColArgs... > >
