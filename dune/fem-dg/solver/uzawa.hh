@@ -4,7 +4,7 @@
 
 #include <dune/fem/function/common/discretefunction.hh>
 #include <dune/fem/operator/common/operator.hh>
-
+#include <dune/fem-dg/misc/integral_constant.hh>
 
 namespace Dune
 {

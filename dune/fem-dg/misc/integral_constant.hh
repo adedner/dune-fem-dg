@@ -1,6 +1,9 @@
 #ifndef DUNE_FEM_INTEGRAL_CONSTANT_HH
 #define DUNE_FEM_INTEGRAL_CONSTANT_HH
 
+#include <type_traits>
+#include <utility>
+
 namespace Dune
 {
 namespace Fem
@@ -15,9 +18,6 @@ namespace Fem
    */
   template< unsigned long int i>
   using _index = std::integral_constant< unsigned long int, i >;
-
-  template< unsigned long int i, unsigned long int j >
-  using _indexPair = std::pair< std::integral_constant< unsigned long int, i >, std::integral_constant< unsigned long int, j > >;
 
   /**
    * \brief shortcut for std::integer_sequence<> used by container classes.
