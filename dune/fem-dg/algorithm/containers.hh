@@ -86,14 +86,6 @@ namespace Fem
    * \brief Defines a global container.
    *
    * \ingroup Container
-   */
-  template< class Item2TupleImp, class Item1TupleImp, class SubOrderRowImp, class SubOrderColImp, class... DiscreteFunctions >
-  class CombinedGlobalContainer;
-
-  /**
-   * \brief Defines a global container.
-   *
-   * \ingroup Container
    *
    * Before reading this summary, you should have read \ref Container.
    *
@@ -119,6 +111,19 @@ namespace Fem
    * the template parameters has to be choosen.
    *
    * ![A combined global container](container6.png)
+   */
+  template< class Item2TupleImp, class Item1TupleImp, class SubOrderRowImp, class SubOrderColImp, class... DiscreteFunctions >
+  class CombinedGlobalContainer
+  {
+    static_assert( static_fail< Item2TupleImp >::value, "Please check your template arguments" );
+  };
+
+  /**
+   * \brief Defines a global container. Partial specialization
+   *
+   * \ingroup Container
+   *
+   * \copydoc CombinedGlobalContainer
    */
   template< class... Item2TupleImp, class... Item1TupleImp, class... SubOrderRowImp, class... SubOrderColImp, class... DiscreteFunctions >
   class CombinedGlobalContainer< std::tuple< Item2TupleImp... >,
