@@ -101,7 +101,7 @@ template <class GR_GridType,
                     const int myRank,
                     const int numProcs)
   {
-    applyDF( grid, *(Dune::get< pos >( data )), time, timestep, myRank, numProcs );
+    applyDF( grid, *(std::get< pos >( data )), time, timestep, myRank, numProcs );
   }
 
   template <class GR_GridType, class DestinationType>

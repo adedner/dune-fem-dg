@@ -4,6 +4,7 @@
 #include <cassert>
 #include <iosfwd>
 #include <sstream>
+#include <utility>
 
 #include <dune/common/typetraits.hh>
 
@@ -468,7 +469,7 @@ namespace Dune
       {
         arg_  = &argument ;
         dest_ = &destination;
-        massInverseMass_.prepare( *(Dune::get< functionalPosition >( argument )), destination, doSetup );
+        massInverseMass_.prepare( *(std::get< functionalPosition >( argument )), destination, doSetup );
       }
 
       //! finalize for ThreadPass
@@ -480,7 +481,7 @@ namespace Dune
       //! interface method
       void finalize( const TotalArgumentType &argument, DestinationType &destination ) const
       {
-        massInverseMass_.finalize( *(Dune::get< functionalPosition >( argument )), destination );
+        massInverseMass_.finalize( *(std::get< functionalPosition >( argument )), destination );
         arg_  = 0;
         dest_ = 0;
       }
@@ -490,7 +491,7 @@ namespace Dune
       {
         assert( arg_  );
         assert( dest_ );
-        massInverseMass_.applyLocal( entity, *(Dune::get< functionalPosition >( *arg_ )), *dest_ );
+        massInverseMass_.applyLocal( entity, *(std::get< functionalPosition >( *arg_ )), *dest_ );
       }
 
       //! apply local with neighbor checker (not needed here)
@@ -521,7 +522,7 @@ namespace Dune
     protected:
       void compute ( const TotalArgumentType &argument, DestinationType &destination ) const
       {
-        massInverseMass_.compute( *(Dune::get< functionalPosition >( argument )), destination );
+        massInverseMass_.compute( *(std::get< functionalPosition >( argument )), destination );
       }
 
     protected:

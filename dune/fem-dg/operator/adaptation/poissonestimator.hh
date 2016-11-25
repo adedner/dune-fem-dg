@@ -6,6 +6,7 @@
 
 #include <cmath>
 
+#include <dune/geometry/type.hh>
 #include <dune/grid/yaspgrid.hh>
 
 #if HAVE_DUNE_ALUGRID
@@ -128,8 +129,8 @@ namespace Fem
     };
 
     // work arround internal compiler error
-    enum { simplexTopoId =  GenericGeometry::SimplexTopology< GridType::dimension >::type::id,
-           cubeTopoId    =  GenericGeometry::CubeTopology< GridType::dimension >::type::id,
+    enum { simplexTopoId =  Dune::Impl::SimplexTopology< GridType::dimension >::type::id,
+           cubeTopoId    =  Dune::Impl::CubeTopology< GridType::dimension >::type::id,
            myTopo        =  Dune::Capabilities::hasSingleGeometryType< GridType >::topologyId
          };
 
