@@ -4,7 +4,7 @@
 #include <tuple>
 #include <type_traits>
 #include <utility>
-
+#include <dune/fem-dg/misc/integral_constant.hh>
 #include <dune/fem/operator/linear/spoperator.hh>
 
 namespace Dune
@@ -397,8 +397,10 @@ namespace Fem
   }
 
 
-  /*
+  /**
    * \brief Helper class to create a std::tuple<> of classes which are described by a templated class.
+   *
+   * \ingroup Container
    *
    * The templated class has to contain a typedef called 'type' and contain appropiate
    * template arguments. Despite the fact, that the first template argument accepted by `VectorPacker`'
@@ -524,7 +526,8 @@ namespace Fem
    * because (as you might have noticed) it may be much to complex.
    * To escape this template hell, you should also have a look at
    * the template alias _t (which is a shortcut for the class details::Nested) and
-   * the _template and _template2 wrapper classes.
+   * the ArgContainerArgWrapper and _ArgContainerArgWrapperUnique wrapper classes.
+   * For a general overview of all related container classes, see \ref Container.
    *
    *
    * \tparam OneArgImp template class describing
@@ -541,9 +544,11 @@ namespace Fem
     static const int size = std::tuple_size< Rows >::value;
   };
 
-  /*
+  /**
    * \brief Helper class to create a std::tuple< std::tuple<>... > of classes which are
    * described by a templated class.
+   *
+   * \ingroup Container
    *
    * In general, this class is a generalization of the class VectorPacker with the only
    * difference that we have got two arguments and the resulting type is a std::tuple<> of
@@ -679,7 +684,8 @@ namespace Fem
    * because (as you might have noticed) it may be much to complex.
    * To escape this template hell, you should also have a look at
    * the template alias _t (which is a shortcut for the class details::Nested) and
-   * the _template and _template2 wrapper classes.
+   * the ArgContainerArgWrapper and ArgContainerArgWrapperUnique wrapper classes.
+   * For a general overview of all related container classes, see \ref Container.
    *
    *
    * \tparam TwoArgImp template class describing
@@ -703,7 +709,9 @@ namespace Fem
   namespace details
   {
     /**
-     * \brief helper class to
+     * \brief helper class to create nested templates.
+     *
+     * \ingroup Container
      *
      * See template alias _t for detailed explanation;
      */
@@ -735,6 +743,8 @@ namespace Fem
   /**
    * \brief This alias template is an important helper to define a std::tuple
    * (or any other classes expecting classes and not templates as template argument) of templates.
+   *
+   * \ingroup Container
    *
    * Usually, it is not possible to store e.g. a std::tuple of template classes, i.e.
    *
@@ -796,48 +806,109 @@ namespace Fem
 
 
 
-  //expects a tuple of tuple
   /**
-   * \brief
+   * \brief Unpacks a std::tuple in such a way that it can by used by OneArgContainer and TwoArgContainer
+   *
+   * \ingroup Container
+   *
+   * Why do I need this class?
+   *
+   * The OneArgContainer and the TwoArgContainer class expects (for *non unique* template case)
+   * template classes containing template<class,int> and template<class,class,int,int>, respectively.
+   *
+   * \note Each element of the std::tuple has to contain an inner struct called _t.
+   *
+   * This implementation supports the necessary inner structs _t2, _t1 (and _t2Inv) to wrap a
+   * std::tuple< std::tuple< _t<>... >... >
    */
   template< class TupleImp >
-  struct _template
+  struct ArgContainerArgWrapper
   {
+    /**
+     * \brief extracts structure for TwoArgContainer.
+     */
     template<class R,class C,int r,int c>
     struct _t2{ typedef typename std::tuple_element<c,typename std::tuple_element<r,TupleImp>::type>::type::template _t<R,C>::type type; };
 
+    /**
+     * \brief extracts structure for TwoArgContainer, but swaps arguments C and R.
+     */
     template<class R,class C,int r,int c>
     struct _t2Inv{ typedef typename std::tuple_element<c,typename std::tuple_element<r,TupleImp>::type>::type::template _t<C,R>::type type; };
 
+    /**
+     * \brief extracts structure for OneArgContainer.
+     */
     template<class R,int r>
     struct _t1{ /*static_assert( r<std::tuple_size<TupleImp>::value, "selected tuple element does not exist." );*/typedef typename std::tuple_element<r,TupleImp>::type::template _t<R>::type type; };
   };
 
-  //forward declaration, expects a template which is valid for all
+
+  /**
+   * \brief Unpacks a template in such a way that it can by used by OneArgContainer and TwoArgContainer.
+   *
+   * \ingroup Container
+   *
+   * Why do I need this class?
+   *
+   * The OneArgContainer and the TwoArgContainer class expects (for unique* template case)
+   * template classes containing template<class> and template<class,class>, respectively.
+   *
+   * This implementation supports the necessary inner structs _t2, _t1 (and _t2Inv) to wrap a
+   * template class.
+   *
+   * \note Since OneArgContainer and TwoArgContainer also allows template<class> and template<class,class>
+   * template parameters, the template parameter itself can be used for the OneArgContainer and TwoArgContainer
+   * classes without wrapping them (except for the .
+   *
+   * \note The arguments may be nested.
+   */
   template< template<class...> class... >
-  struct _template2;
+  struct ArgContainerArgWrapperUnique;
 
   template< template<class...> class ArgHead >
-  struct _template2< ArgHead >
+  struct ArgContainerArgWrapperUnique< ArgHead >
   {
+    /**
+     * \brief extracts structure for TwoArgContainer.
+     */
     template<class R,class C,int r,int c>
     struct _t2{ typedef ArgHead< R,C > type; };
 
+    /**
+     * \brief extracts structure for TwoArgContainer, but swaps arguments C and R.
+     */
     template<class R,class C,int r,int c>
     struct _t2Inv{ typedef ArgHead< C,R > type; };
 
+    /**
+     * \brief extracts structure for OneArgContainer.
+     */
     template<class R,int r>
     struct _t1{ typedef ArgHead<R> type; };
   };
 
+  /**
+   * \brief Partial specialization for nested arguments: Unpacks a template in such a way that it can by used by OneArgContainer and TwoArgContainer.
+   *
+   * \ingroup Container
+   *
+   * \note The arguments may be nested.
+   */
   template< template<class...> class ArgHead, template<class...> class ArgHead2, template<class...> class... Args >
-  struct _template2< ArgHead, ArgHead2, Args... >
+  struct ArgContainerArgWrapperUnique< ArgHead, ArgHead2, Args... >
   {
+    /**
+     * \brief extracts structure for TwoArgContainer.
+     */
     template<class R,class C,int r,int c>
-    struct _t2{ typedef ArgHead< typename _template2<ArgHead2,Args... >::template _t2< R,C,r,c >::type > type; };
+    struct _t2{ typedef ArgHead< typename ArgContainerArgWrapperUnique<ArgHead2,Args... >::template _t2< R,C,r,c >::type > type; };
 
+    /**
+     * \brief extracts structure for OneArgContainer.
+     */
     template<class R,int r>
-    struct _t1{ typedef ArgHead< typename _template2<ArgHead2,Args...>::template _t1<R,r>::type > type; };
+    struct _t1{ typedef ArgHead< typename ArgContainerArgWrapperUnique<ArgHead2,Args...>::template _t1<R,r>::type > type; };
   };
 
 

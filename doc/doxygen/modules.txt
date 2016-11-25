@@ -31,6 +31,9 @@ Main goal of parameter classes are
 
   \defgroup Callers Caller
   \ingroup Algorithms
+
+  \defgroup Container
+  \ingroup Algorithms
   
 \defgroup SubAlgorithms Sub-Algorithm
 

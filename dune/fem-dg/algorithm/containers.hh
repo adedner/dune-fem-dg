@@ -31,7 +31,7 @@ namespace Fem
   template< class Item2TupleImp, class Item1TupleImp, class SubOrderRowImp, class SubOrderColImp, class... DiscreteFunctions >
   class GlobalContainer
   {
-    typedef TwoArgContainer< _template< Item2TupleImp >::template _t2Inv, _template< Item1TupleImp >::template _t1,
+    typedef TwoArgContainer< ArgContainerArgWrapper< Item2TupleImp >::template _t2Inv, ArgContainerArgWrapper< Item1TupleImp >::template _t1,
                              std::tuple< DiscreteFunctions... >, std::tuple< DiscreteFunctions... > > ContainerType;
 
     static_assert( is_tuple< SubOrderRowImp >::value, "SubOrderRowImp has to be a std::tuple<std::tuple<>...>" );
@@ -87,8 +87,8 @@ namespace Fem
     static_assert( size1 == size2, "Item2TupleImp and Item1TupleImp has to contain the same numbers of elements." );
 
     template< unsigned long int i >
-    using ContainerItem = TwoArgContainer< _template< typename std::tuple_element<i, std::tuple<Item2TupleImp...> >::type >::template _t2Inv,
-                                           _template< typename std::tuple_element<i, std::tuple<Item1TupleImp...> >::type >::template _t1,
+    using ContainerItem = TwoArgContainer< ArgContainerArgWrapper< typename std::tuple_element<i, std::tuple<Item2TupleImp...> >::type >::template _t2Inv,
+                                           ArgContainerArgWrapper< typename std::tuple_element<i, std::tuple<Item1TupleImp...> >::type >::template _t1,
                                            typename SubOrderSelect< typename std::tuple_element<i,std::tuple<SubOrderRowImp...> >::type, std::tuple< DiscreteFunctions...> >::type,
                                            typename SubOrderSelect< typename std::tuple_element<i,std::tuple<SubOrderColImp...> >::type, std::tuple< DiscreteFunctions...> >::type >;
 

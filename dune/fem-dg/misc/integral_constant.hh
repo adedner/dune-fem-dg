@@ -7,64 +7,125 @@ namespace Fem
 {
   // Global Type Definitions
   // -----------------------
+
+  /**
+   * \brief shortcut for std::integral_constant<> used by container classes.
+   *
+   * \ingroup Container
+   */
   template< unsigned long int i>
   using _index = std::integral_constant< unsigned long int, i >;
 
   template< unsigned long int i, unsigned long int j >
   using _indexPair = std::pair< std::integral_constant< unsigned long int, i >, std::integral_constant< unsigned long int, j > >;
 
+  /**
+   * \brief shortcut for std::integer_sequence<> used by container classes.
+   *
+   * \ingroup Container
+   */
   template< unsigned long int... i>
   using _indices = std::integer_sequence< unsigned long int, i... >;
 
+  //! shortcut for std::integral_constant<>
   typedef _index< 0> __0;
+  //! shortcut for std::integral_constant<>
   typedef _index< 1> __1;
+  //! shortcut for std::integral_constant<>
   typedef _index< 2> __2;
+  //! shortcut for std::integral_constant<>
   typedef _index< 3> __3;
+  //! shortcut for std::integral_constant<>
   typedef _index< 4> __4;
+  //! shortcut for std::integral_constant<>
   typedef _index< 5> __5;
+  //! shortcut for std::integral_constant<>
   typedef _index< 6> __6;
+  //! shortcut for std::integral_constant<>
   typedef _index< 7> __7;
+  //! shortcut for std::integral_constant<>
   typedef _index< 8> __8;
+  //! shortcut for std::integral_constant<>
   typedef _index< 9> __9;
+  //! shortcut for std::integral_constant<>
   typedef _index<10> __10;
+  //! shortcut for std::integral_constant<>
   typedef _index<11> __11;
+  //! shortcut for std::integral_constant<>
   typedef _index<12> __12;
+  //! shortcut for std::integral_constant<>
   typedef _index<13> __13;
+  //! shortcut for std::integral_constant<>
   typedef _index<14> __14;
+  //! shortcut for std::integral_constant<>
   typedef _index<15> __15;
+  //! shortcut for std::integral_constant<>
   typedef _index<16> __16;
+  //! shortcut for std::integral_constant<>
   typedef _index<17> __17;
+  //! shortcut for std::integral_constant<>
   typedef _index<18> __18;
+  //! shortcut for std::integral_constant<>
   typedef _index<19> __19;
+  //! shortcut for std::integral_constant<>
   typedef _index<20> __20;
+  //! shortcut for std::integral_constant<>
   typedef _index<21> __21;
+  //! shortcut for std::integral_constant<>
   typedef _index<22> __22;
+  //! shortcut for std::integral_constant<>
   typedef _index<23> __23;
+  //! shortcut for std::integral_constant<>
   typedef _index<24> __24;
+  //! shortcut for std::integral_constant<>
   typedef _index<25> __25;
+  //! shortcut for std::integral_constant<>
   typedef _index<26> __26;
+  //! shortcut for std::integral_constant<>
   typedef _index<27> __27;
+  //! shortcut for std::integral_constant<>
   typedef _index<28> __28;
+  //! shortcut for std::integral_constant<>
   typedef _index<29> __29;
+  //! shortcut for std::integral_constant<>
   typedef _index<30> __30;
+  //! shortcut for std::integral_constant<>
   typedef _index<31> __31;
+  //! shortcut for std::integral_constant<>
   typedef _index<32> __32;
+  //! shortcut for std::integral_constant<>
   typedef _index<33> __33;
+  //! shortcut for std::integral_constant<>
   typedef _index<34> __34;
+  //! shortcut for std::integral_constant<>
   typedef _index<35> __35;
+  //! shortcut for std::integral_constant<>
   typedef _index<36> __36;
+  //! shortcut for std::integral_constant<>
   typedef _index<37> __37;
+  //! shortcut for std::integral_constant<>
   typedef _index<38> __38;
+  //! shortcut for std::integral_constant<>
   typedef _index<39> __39;
+  //! shortcut for std::integral_constant<>
   typedef _index<40> __40;
+  //! shortcut for std::integral_constant<>
   typedef _index<41> __41;
+  //! shortcut for std::integral_constant<>
   typedef _index<42> __42;
+  //! shortcut for std::integral_constant<>
   typedef _index<43> __43;
+  //! shortcut for std::integral_constant<>
   typedef _index<44> __44;
+  //! shortcut for std::integral_constant<>
   typedef _index<45> __45;
+  //! shortcut for std::integral_constant<>
   typedef _index<46> __46;
+  //! shortcut for std::integral_constant<>
   typedef _index<47> __47;
+  //! shortcut for std::integral_constant<>
   typedef _index<48> __48;
+  //! shortcut for std::integral_constant<>
   typedef _index<49> __49;
 
 

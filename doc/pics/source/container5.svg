@@ -31,7 +31,7 @@
      id="namedview6"
      showgrid="false"
      inkscape:zoom="0.89702955"
-     inkscape:cx="251.08937"
+     inkscape:cx="336.056"
      inkscape:cy="722.21348"
      inkscape:window-x="2040"
      inkscape:window-y="0"
@@ -56,7 +56,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -66,7 +66,10 @@
      x="71.71389"
      y="79.494499"
      id="text8231"
-     sodipodi:linespacing="1000%"><tspan
+     sodipodi:linespacing="1000%"
+     inkscape:export-filename="/home/stefan/dune-super-fem-blood/dune-fem-dg/doc/pics/container5.png"
+     inkscape:export-xdpi="77.694077"
+     inkscape:export-ydpi="77.694077"><tspan
        sodipodi:role="line"
        id="tspan8233"
        x="71.71389"
@@ -78,7 +81,10 @@
      x="541.59717"
      y="77.689659"
      id="text8231-0"
-     sodipodi:linespacing="1000%"><tspan
+     sodipodi:linespacing="1000%"
+     inkscape:export-filename="/home/stefan/dune-super-fem-blood/dune-fem-dg/doc/pics/container5.png"
+     inkscape:export-xdpi="77.694077"
+     inkscape:export-ydpi="77.694077"><tspan
        sodipodi:role="line"
        id="tspan8233-3"
        x="541.59717"
@@ -90,7 +96,10 @@
      x="46.508278"
      y="47.310425"
      id="text8253"
-     sodipodi:linespacing="1000%"><tspan
+     sodipodi:linespacing="1000%"
+     inkscape:export-filename="/home/stefan/dune-super-fem-blood/dune-fem-dg/doc/pics/container5.png"
+     inkscape:export-xdpi="77.694077"
+     inkscape:export-ydpi="77.694077"><tspan
        sodipodi:role="line"
        id="tspan8255"
        x="46.508278"
@@ -99,7 +108,10 @@
   <flowRoot
      xml:space="preserve"
      id="flowRoot12176"
-     style="fill:black;stroke:none;stroke-opacity:1;stroke-width:1px;stroke-linejoin:miter;stroke-linecap:butt;fill-opacity:1;font-family:sans-serif;font-style:normal;font-weight:normal;font-size:17.5px;line-height:1000%;letter-spacing:0px;word-spacing:-51.04000031px"><flowRegion
+     style="fill:black;stroke:none;stroke-opacity:1;stroke-width:1px;stroke-linejoin:miter;stroke-linecap:butt;fill-opacity:1;font-family:sans-serif;font-style:normal;font-weight:normal;font-size:17.5px;line-height:1000%;letter-spacing:0px;word-spacing:-51.04000031px"
+     inkscape:export-filename="/home/stefan/dune-super-fem-blood/dune-fem-dg/doc/pics/container5.png"
+     inkscape:export-xdpi="77"
+     inkscape:export-ydpi="77"><flowRegion
        id="flowRegion12178"><rect
          id="rect12180"
          width="43.755527"
@@ -109,7 +121,10 @@
        id="flowPara12182" /></flowRoot>  <flowRoot
      xml:space="preserve"
      id="flowRoot12230"
-     style="fill:black;stroke:none;stroke-opacity:1;stroke-width:1px;stroke-linejoin:miter;stroke-linecap:butt;fill-opacity:1;font-family:sans-serif;font-style:normal;font-weight:normal;font-size:17.5px;line-height:1000%;letter-spacing:0px;word-spacing:-51.04000031px"><flowRegion
+     style="fill:black;stroke:none;stroke-opacity:1;stroke-width:1px;stroke-linejoin:miter;stroke-linecap:butt;fill-opacity:1;font-family:sans-serif;font-style:normal;font-weight:normal;font-size:17.5px;line-height:1000%;letter-spacing:0px;word-spacing:-51.04000031px"
+     inkscape:export-filename="/home/stefan/dune-super-fem-blood/dune-fem-dg/doc/pics/container5.png"
+     inkscape:export-xdpi="77"
+     inkscape:export-ydpi="77"><flowRegion
        id="flowRegion12232"><rect
          id="rect12234"
          width="278.14023"
@@ -119,7 +134,10 @@
        id="flowPara12236" /></flowRoot>  <flowRoot
      xml:space="preserve"
      id="flowRoot12312"
-     style="fill:black;stroke:none;stroke-opacity:1;stroke-width:1px;stroke-linejoin:miter;stroke-linecap:butt;fill-opacity:1;font-family:sans-serif;font-style:normal;font-weight:normal;font-size:17.5px;line-height:125%;letter-spacing:0px;word-spacing:0px"><flowRegion
+     style="fill:black;stroke:none;stroke-opacity:1;stroke-width:1px;stroke-linejoin:miter;stroke-linecap:butt;fill-opacity:1;font-family:sans-serif;font-style:normal;font-weight:normal;font-size:17.5px;line-height:125%;letter-spacing:0px;word-spacing:0px"
+     inkscape:export-filename="/home/stefan/dune-super-fem-blood/dune-fem-dg/doc/pics/container5.png"
+     inkscape:export-xdpi="77"
+     inkscape:export-ydpi="77"><flowRegion
        id="flowRegion12314"><rect
          id="rect12316"
          width="211.25279"
@@ -132,14 +150,20 @@
      width="520.2356"
      height="299.42383"
      x="407.08429"
-     y="137.76643" />
+     y="137.76643"
+     inkscape:export-filename="/home/stefan/dune-super-fem-blood/dune-fem-dg/doc/pics/container5.png"
+     inkscape:export-xdpi="77.694077"
+     inkscape:export-ydpi="77.694077" />
   <text
      xml:space="preserve"
      style="font-style:normal;font-weight:normal;font-size:17.5px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
      x="416.52344"
      y="266.18655"
      id="text11683"
-     sodipodi:linespacing="125%"><tspan
+     sodipodi:linespacing="125%"
+     inkscape:export-filename="/home/stefan/dune-super-fem-blood/dune-fem-dg/doc/pics/container5.png"
+     inkscape:export-xdpi="77.694077"
+     inkscape:export-ydpi="77.694077"><tspan
        sodipodi:role="line"
        x="416.52344"
        y="266.18655"
@@ -160,7 +184,10 @@
      x="415.14648"
      y="159.319"
      id="text12242"
-     sodipodi:linespacing="125%"><tspan
+     sodipodi:linespacing="125%"
+     inkscape:export-filename="/home/stefan/dune-super-fem-blood/dune-fem-dg/doc/pics/container5.png"
+     inkscape:export-xdpi="77.694077"
+     inkscape:export-ydpi="77.694077"><tspan
        sodipodi:role="line"
        id="tspan12244"
        x="415.14648"
@@ -170,7 +197,10 @@
    id="tspan12246">Idea:</tspan> define a std::tuple&lt;std::tuple&lt;...&gt;...&gt; of templates</tspan></text>
   <g
      id="g12487"
-     transform="translate(76.395152,-171.34437)">
+     transform="translate(76.395152,-171.34437)"
+     inkscape:export-filename="/home/stefan/dune-super-fem-blood/dune-fem-dg/doc/pics/container5.png"
+     inkscape:export-xdpi="77.694077"
+     inkscape:export-ydpi="77.694077">
     <g
        transform="matrix(1.2983641,0,0,1.2983641,-131.6951,197.8731)"
        id="g12225">
@@ -219,7 +249,10 @@
   </g>
   <g
      id="g12473"
-     transform="translate(75.706412,-75.344371)">
+     transform="translate(75.706412,-75.344371)"
+     inkscape:export-filename="/home/stefan/dune-super-fem-blood/dune-fem-dg/doc/pics/container5.png"
+     inkscape:export-xdpi="77.694077"
+     inkscape:export-ydpi="77.694077">
     <g
        transform="translate(-47.018951,0)"
        id="g12464">
@@ -289,7 +322,10 @@
      x="416.40625"
      y="381.59174"
      id="text12335"
-     sodipodi:linespacing="125%"><tspan
+     sodipodi:linespacing="125%"
+     inkscape:export-filename="/home/stefan/dune-super-fem-blood/dune-fem-dg/doc/pics/container5.png"
+     inkscape:export-xdpi="77.694077"
+     inkscape:export-ydpi="77.694077"><tspan
        id="tspan4326"
        sodipodi:role="line"
        x="416.40625"
@@ -323,14 +359,20 @@
      width="390.91989"
      height="73.20459"
      x="1.1946927"
-     y="161.11789" />
+     y="161.11789"
+     inkscape:export-filename="/home/stefan/dune-super-fem-blood/dune-fem-dg/doc/pics/container5.png"
+     inkscape:export-xdpi="77.694077"
+     inkscape:export-ydpi="77.694077" />
   <text
      xml:space="preserve"
      style="font-style:normal;font-weight:normal;font-size:17.5px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
      x="7.6572638"
      y="183.70657"
      id="text9067"
-     sodipodi:linespacing="125%"><tspan
+     sodipodi:linespacing="125%"
+     inkscape:export-filename="/home/stefan/dune-super-fem-blood/dune-fem-dg/doc/pics/container5.png"
+     inkscape:export-xdpi="77.694077"
+     inkscape:export-ydpi="77.694077"><tspan
        sodipodi:role="line"
        x="7.6572638"
        y="183.70657"
@@ -342,7 +384,7 @@
        x="7.6572638"
        y="202.45657"
        style="font-size:15px;line-height:125%"
-       id="tspan12554">template&lt;class,class&gt; class template,</tspan><tspan
+       id="tspan12554">template&lt;class&gt; class template,</tspan><tspan
        sodipodi:role="line"
        x="7.6572638"
        y="221.20657"
@@ -354,14 +396,20 @@
      width="391.76419"
      height="182.45404"
      x="1.1946929"
-     y="257.73993" />
+     y="257.73993"
+     inkscape:export-filename="/home/stefan/dune-super-fem-blood/dune-fem-dg/doc/pics/container5.png"
+     inkscape:export-xdpi="77.694077"
+     inkscape:export-ydpi="77.694077" />
   <text
      xml:space="preserve"
      style="font-style:normal;font-weight:normal;font-size:40px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
      x="7.3394833"
      y="280.06366"
      id="text8231-6"
-     sodipodi:linespacing="125%"><tspan
+     sodipodi:linespacing="125%"
+     inkscape:export-filename="/home/stefan/dune-super-fem-blood/dune-fem-dg/doc/pics/container5.png"
+     inkscape:export-xdpi="77.694077"
+     inkscape:export-ydpi="77.694077"><tspan
        sodipodi:role="line"
        id="tspan8233-1"
        x="7.3394833"
@@ -393,7 +441,10 @@
      x="7.5762997"
      y="384.62378"
      id="text12335-1"
-     sodipodi:linespacing="125%"><tspan
+     sodipodi:linespacing="125%"
+     inkscape:export-filename="/home/stefan/dune-super-fem-blood/dune-fem-dg/doc/pics/container5.png"
+     inkscape:export-xdpi="77.694077"
+     inkscape:export-ydpi="77.694077"><tspan
        sodipodi:role="line"
        x="7.5762997"
        y="384.62378"
@@ -418,7 +469,7 @@
        x="7.5762997"
        y="452.76096"
        style="font-style:italic;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:11.25px;font-family:sans-serif;-inkscape-font-specification:'sans-serif Italic'"
-       id="tspan4032">                                           </tspan><tspan
+       id="tspan4032" /><tspan
        sodipodi:role="line"
        x="7.5762997"
        y="466.82346"
@@ -431,7 +482,10 @@
        id="tspan12799" /></text>
   <g
      id="g12176-9-4"
-     transform="matrix(0.2991525,0,0,0.2991525,125.69375,168.09234)">
+     transform="matrix(0.2991525,0,0,0.2991525,125.69375,168.09234)"
+     inkscape:export-filename="/home/stefan/dune-super-fem-blood/dune-fem-dg/doc/pics/container5.png"
+     inkscape:export-xdpi="77.694077"
+     inkscape:export-ydpi="77.694077">
     <rect
        y="810.06555"
        x="382.90466"
@@ -449,58 +503,44 @@
   </g>
   <g
      id="g12176-9-4-53"
-     transform="matrix(0.2991525,0,0,0.2991525,125.48268,271.52186)" />
-  <ellipse
-     style="opacity:0;fill:#ffff00;fill-opacity:1;stroke:#f60000;stroke-width:1.70000005;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
-     id="path12866"
-     cx="124.29914"
-     cy="228.8952"
-     rx="148.82452"
-     ry="75.24836" />
-  <rect
-     style="opacity:0;fill:#000000;fill-opacity:1;stroke:#f60000;stroke-width:1.70000005;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
-     id="rect12884"
-     width="372.06622"
-     height="173.4207"
-     x="-100.89931"
-     y="218.3663" />
-  <rect
-     style="opacity:0;fill:#000000;fill-opacity:1;stroke:#f60000;stroke-width:1.70000005;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
-     id="rect12886"
-     width="75.674484"
-     height="212.83449"
-     x="-178.15036"
-     y="327.14838" />
-  <rect
-     style="opacity:0;fill:#000000;fill-opacity:1;stroke:#f60000;stroke-width:2.0999999;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
-     id="rect3732"
-     width="223.87036"
-     height="125.33587"
-     x="-52.814484"
-     y="145.84491"
-     rx="882.59998" />
+     transform="matrix(0.2991525,0,0,0.2991525,125.48268,271.52186)"
+     inkscape:export-filename="/home/stefan/dune-super-fem-blood/dune-fem-dg/doc/pics/container5.png"
+     inkscape:export-xdpi="77"
+     inkscape:export-ydpi="77" />
   <rect
      style="opacity:1;fill:none;fill-opacity:1;stroke:#f60000;stroke-width:3;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
      id="rect4385"
      width="371.00281"
      height="30.467619"
      x="2.108248"
-     y="401.40695" />
+     y="401.40695"
+     inkscape:export-filename="/home/stefan/dune-super-fem-blood/dune-fem-dg/doc/pics/container5.png"
+     inkscape:export-xdpi="77.694077"
+     inkscape:export-ydpi="77.694077" />
   <rect
      style="opacity:1;fill:none;fill-opacity:1;stroke:#f60000;stroke-width:3;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
      id="rect4387"
      width="380.35739"
      height="31.939457"
      x="409.69925"
-     y="398.75586" />
+     y="398.75586"
+     inkscape:export-filename="/home/stefan/dune-super-fem-blood/dune-fem-dg/doc/pics/container5.png"
+     inkscape:export-xdpi="77.694077"
+     inkscape:export-ydpi="77.694077" />
   <path
      style="fill:#ff0000;fill-rule:evenodd;stroke:#ff0000;stroke-width:3;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
      d="m 592.08656,437.87481 -195.94205,80.4768"
      id="path4304-9"
-     inkscape:connector-curvature="0" />
+     inkscape:connector-curvature="0"
+     inkscape:export-filename="/home/stefan/dune-super-fem-blood/dune-fem-dg/doc/pics/container5.png"
+     inkscape:export-xdpi="77.694077"
+     inkscape:export-ydpi="77.694077" />
   <g
      id="g4427"
-     transform="translate(5.1531036,-152.21518)">
+     transform="translate(5.1531036,-152.21518)"
+     inkscape:export-filename="/home/stefan/dune-super-fem-blood/dune-fem-dg/doc/pics/container5.png"
+     inkscape:export-xdpi="77.694077"
+     inkscape:export-ydpi="77.694077">
     <text
        sodipodi:linespacing="125%"
        id="text4300"
@@ -523,7 +563,10 @@
   </g>
   <g
      id="g7352"
-     transform="translate(74.886211,-29.954484)">
+     transform="translate(74.886211,-29.954484)"
+     inkscape:export-filename="/home/stefan/dune-super-fem-blood/dune-fem-dg/doc/pics/container5.png"
+     inkscape:export-xdpi="77.694077"
+     inkscape:export-ydpi="77.694077">
     <g
        transform="matrix(0.95535623,0,0,0.95535623,374.83312,-577.98973)"
        id="g12286">
@@ -634,7 +677,10 @@
     </g>
   </g>
   <g
-     id="g7708">
+     id="g7708"
+     inkscape:export-filename="/home/stefan/dune-super-fem-blood/dune-fem-dg/doc/pics/container5.png"
+     inkscape:export-xdpi="77.694077"
+     inkscape:export-ydpi="77.694077">
     <g
        transform="matrix(0.47733552,0,0,0.47733552,-178.59626,-221.40066)"
        id="g12045-7">
@@ -743,15 +789,21 @@
   <flowRoot
      xml:space="preserve"
      id="flowRoot7381"
-     style="fill:black;stroke:none;stroke-opacity:1;stroke-width:1px;stroke-linejoin:miter;stroke-linecap:butt;fill-opacity:1;font-family:sans-serif;font-style:normal;font-weight:normal;font-size:17.5px;line-height:125%;letter-spacing:0px;word-spacing:0px"><flowRegion
+     style="fill:black;stroke:none;stroke-opacity:1;stroke-width:1px;stroke-linejoin:miter;stroke-linecap:butt;fill-opacity:1;font-family:sans-serif;font-style:normal;font-weight:normal;font-size:17.5px;line-height:125%;letter-spacing:0px;word-spacing:0px"
+     inkscape:export-filename="/home/stefan/dune-super-fem-blood/dune-fem-dg/doc/pics/container5.png"
+     inkscape:export-xdpi="77"
+     inkscape:export-ydpi="77"><flowRegion
        id="flowRegion7383"><rect
          id="rect7385"
          width="241.21243"
          height="39.413795"
          x="510.0145"
          y="85.147675" /></flowRegion><flowPara
-       id="flowPara7387"></flowPara></flowRoot>  <g
-     id="g7638">
+       id="flowPara7387" /></flowRoot>  <g
+     id="g7638"
+     inkscape:export-filename="/home/stefan/dune-super-fem-blood/dune-fem-dg/doc/pics/container5.png"
+     inkscape:export-xdpi="77.694077"
+     inkscape:export-ydpi="77.694077">
     <g
        transform="matrix(0.29073507,0,0,0.29073507,444.64109,76.393629)"
        id="g12045-2">
@@ -861,10 +913,16 @@
      style="fill:#ff0000;fill-rule:evenodd;stroke:#ff0000;stroke-width:3;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
      d="m 158.02968,437.41205 195.94205,80.4768"
      id="path4304-9-5"
-     inkscape:connector-curvature="0" />
+     inkscape:connector-curvature="0"
+     inkscape:export-filename="/home/stefan/dune-super-fem-blood/dune-fem-dg/doc/pics/container5.png"
+     inkscape:export-xdpi="77.694077"
+     inkscape:export-ydpi="77.694077" />
   <g
      id="g12061-0-0"
-     transform="matrix(0.3325963,0,0,0.3325963,-97.19263,-99.863395)">
+     transform="matrix(0.3325963,0,0,0.3325963,-97.19263,-99.863395)"
+     inkscape:export-filename="/home/stefan/dune-super-fem-blood/dune-fem-dg/doc/pics/container5.png"
+     inkscape:export-xdpi="77.694077"
+     inkscape:export-ydpi="77.694077">
     <rect
        y="924.31659"
        x="507.1077"

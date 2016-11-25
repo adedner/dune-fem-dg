@@ -60,12 +60,12 @@ namespace Fem
 
   template< template<class,class> class MatrixImp, class... DiscreteFunctions >
   struct SubEllipticContainer
-    : public TwoArgContainer< _template2< SubEllipticContainerItem, MatrixImp >::template _t2Inv,
-                              _template2< SubSteadyStateContainerItem >::template _t1,
+    : public TwoArgContainer< ArgContainerArgWrapperUnique< SubEllipticContainerItem, MatrixImp >::template _t2Inv,
+                              ArgContainerArgWrapperUnique< SubSteadyStateContainerItem >::template _t1,
                               std::tuple< DiscreteFunctions... >, std::tuple< DiscreteFunctions... > >
   {
-    typedef TwoArgContainer< _template2< SubEllipticContainerItem, MatrixImp >::template _t2Inv,
-                             _template2< SubSteadyStateContainerItem >::template _t1,
+    typedef TwoArgContainer< ArgContainerArgWrapperUnique< SubEllipticContainerItem, MatrixImp >::template _t2Inv,
+                             ArgContainerArgWrapperUnique< SubSteadyStateContainerItem >::template _t1,
                              std::tuple< DiscreteFunctions... >, std::tuple< DiscreteFunctions... > > BaseType;
 
   public:

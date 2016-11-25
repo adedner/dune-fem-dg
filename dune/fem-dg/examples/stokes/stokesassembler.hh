@@ -79,13 +79,13 @@ namespace Fem
   //with MatrixParameterNoPreconditioner
   template< template<class,class> class MatrixImp, class UDiscreteFunctionImp,class PDiscreteFunctionImp >
   class UzawaContainer
-    : public TwoArgContainer< _template< typename UzawaItem2< MatrixImp >::type >::template _t2Inv,
-                              _template2< SubSteadyStateContainerItem >::template _t1,
+    : public TwoArgContainer< ArgContainerArgWrapper< typename UzawaItem2< MatrixImp >::type >::template _t2Inv,
+                              ArgContainerArgWrapperUnique< SubSteadyStateContainerItem >::template _t1,
                               std::tuple< UDiscreteFunctionImp, PDiscreteFunctionImp >,
                               std::tuple< UDiscreteFunctionImp, PDiscreteFunctionImp > >
   {
-    typedef TwoArgContainer< _template< typename UzawaItem2< MatrixImp >::type >::template _t2Inv,
-                             _template2< SubSteadyStateContainerItem >::template _t1,
+    typedef TwoArgContainer< ArgContainerArgWrapper< typename UzawaItem2< MatrixImp >::type >::template _t2Inv,
+                             ArgContainerArgWrapperUnique< SubSteadyStateContainerItem >::template _t1,
                              std::tuple< UDiscreteFunctionImp, PDiscreteFunctionImp >,
                              std::tuple< UDiscreteFunctionImp, PDiscreteFunctionImp > >                   BaseType;
   public:

@@ -378,7 +378,6 @@ namespace Fem
 
 
       //Item1
-      //TODO add std::tuple< >
       typedef std::tuple< _t< SubSteadyStateContainerItem >, _t< SubSteadyStateContainerItem >  >
                                                                       Steady;
       typedef std::tuple< _t< SubEvolutionContainerItem > >           Evol;
@@ -422,8 +421,12 @@ namespace Fem
 
       static_assert( std::is_same< GridPartType1, GridPartType2 >::value, "GridParts does not match!");
 
-      ////TODO: deref of gridptr dangerous
-      //GridPartType1 gridPart( *gridptr );
+      {
+        std::shared_ptr< GridType > gridptr2 = gridptr;
+
+        ////TODO: deref of gridptr dangerous
+        GridPartType1 gridPart( *gridptr2 );
+      }
 
       //SpaceType1 space1( gridPart );
       //SpaceType2 space2( gridPart );
