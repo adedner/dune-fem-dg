@@ -2,6 +2,7 @@
 #define FEMDG_ALGORITHM_SOLVERMONITORCALLER_HH
 
 #include <string>
+#include <dune/fem/common/forloop.hh>
 #include <dune/fem/common/utility.hh>
 #include <dune/fem-dg/algorithm/monitor.hh>
 #include <dune/fem-dg/misc/optional.hh>
