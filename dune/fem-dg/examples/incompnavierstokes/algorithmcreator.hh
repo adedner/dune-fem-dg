@@ -228,7 +228,7 @@ namespace Fem
 
         struct Solver
         {
-          typedef UzawaSolver< typename Operator::AssemblerType,SubPoissonAlgorithmCreator::template Algorithm<polOrd> >
+          typedef UzawaSolver< typename Operator::AssemblerType,typename SubPoissonAlgorithmCreator::template Algorithm<polOrd> >
                                                                                       type;
         };
 
@@ -262,7 +262,7 @@ namespace Fem
 
     struct SubNavierStokesAlgorithmCreator
     {
-      typedef AlgorithmConfigurator< GridSelectorType::GridType,
+      typedef AlgorithmConfigurator< GridSelectorGridType,
                                      Galerkin::Enum::dg,
                                      Adaptivity::Enum::yes,
                                      DiscreteFunctionSpaces::Enum::legendre,
