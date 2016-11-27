@@ -45,39 +45,12 @@ namespace Dune
 namespace Fem
 {
 
-  // only to ensure unique types in sub algorithm creators
-  //namespace Global
-  //{
-  //  typedef std::tuple< Dune::GridSelector::GridType > GridTypes;
-
-  //  typedef AlgorithmConfigurator< typename std::tuple_element< 0, GridTypes >::type,
-  //                                 Galerkin::Enum::dg,
-  //                                 Adaptivity::Enum::yes,
-  //                                 DiscreteFunctionSpaces::Enum::legendre,
-  //                                 Solver::Enum::istl,
-  //                                 AdvectionLimiter::Enum::unlimited,
-  //                                 Matrix::Enum::assembled,
-  //                                 AdvectionFlux::Enum::upwind,
-  //                                 DiffusionFlux::Enum::primal > AC;
-
-  //  typedef std::tuple< AC >       AlgorithmConfiguratorTypes;
-
-  //  typedef std::tuple< typename AC::GridParts >                  GridPartTypes;
-
-  //  //typedef std::tuple< AC::template DiscreteFunctionSpaces< GridPartType, polOrd, FunctionSpaceType> > DiscreteFunctionSpaceTypes;
-
-  //  typedef std::tuple< AC::template DiscreteFunctionSpaceTemplates< GridPartType > > DiscreteFunctionSpaceTypes;
-
-  //  typedef typename AC::template DiscreteFunctions< DiscreteFunctionSpaceTypes >             DiscreteFunctionType;
-
-
-  //}
-
+  template< class GridSelectorGridType >
   struct PoissonAlgorithmCreator
   {
     struct SubPoissonAlgorithmCreator
     {
-      typedef AlgorithmConfigurator< Dune::GridSelector::GridType,
+      typedef AlgorithmConfigurator< GridSelectorGridType,
                                      Galerkin::Enum::dg,
                                      Adaptivity::Enum::yes,
                                      DiscreteFunctionSpaces::Enum::legendre,

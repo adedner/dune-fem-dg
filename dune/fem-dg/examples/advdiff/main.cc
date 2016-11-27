@@ -20,7 +20,7 @@ int main(int argc, char ** argv)
     // write parameters used (before simulation starts)
     Dune::Fem::Parameter::write("parameter.log");
 
-    Dune::Fem::AdvectionDiffusionAlgorithmCreator algorithmCreator;
+    Dune::Fem::AdvectionDiffusionAlgorithmCreator<Dune::GridSelector::GridType> algorithmCreator;
 
     // run simulation
     Dune::Fem::Simulator::run( algorithmCreator );

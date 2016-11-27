@@ -5,6 +5,7 @@
 #include <type_traits>
 #include <memory>
 #include <utility>
+#include <iostream>
 #include <dune/fem-dg/misc/integral_constant.hh>
 
 namespace Dune

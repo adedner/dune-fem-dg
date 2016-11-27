@@ -199,7 +199,7 @@ namespace Fem
     // return prefix for data loops
     virtual std::string dataPrefix() const
     {
-      return get<0>().dataPrefix();
+      return this->get<0>().dataPrefix();
     }
 
   protected:

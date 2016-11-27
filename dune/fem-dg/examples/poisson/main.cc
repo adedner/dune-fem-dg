@@ -4,7 +4,6 @@
 #include <dune/fem-dg/misc/simulator.hh>
 #include "algorithmcreator.hh"
 
-
 int main(int argc, char ** argv)
 {
   /* Initialize MPI (always do this even if you are not using MPI) */
@@ -20,7 +19,7 @@ int main(int argc, char ** argv)
     // write parameters used (before simulation starts)
     Dune::Fem::Parameter::write("parameter.log");
 
-    Dune::Fem::PoissonAlgorithmCreator algorithmCreator;
+    Dune::Fem::PoissonAlgorithmCreator<Dune::GridSelector::GridType> algorithmCreator;
 
     // run simulation
     Dune::Fem::Simulator::run( algorithmCreator );

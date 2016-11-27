@@ -59,12 +59,13 @@ namespace Fem
   ////produce some static compiler warnings in case we are using an uninstalled solver
   //static const AvailableSolvers< solverEnum > checkSolverInstalled;
 
+  template< class GridSelectorGridType >
   struct StokesAlgorithmCreator
   {
 
     struct SubStokesAlgorithmCreator
     {
-      typedef AlgorithmConfigurator< Dune::GridSelector::GridType,
+      typedef AlgorithmConfigurator< GridSelectorGridType,
                                      Galerkin::Enum::dg,
                                      Adaptivity::Enum::yes,
                                      DiscreteFunctionSpaces::Enum::hierarchic_legendre,
@@ -243,7 +244,7 @@ namespace Fem
 
         struct Solver
         {
-          typedef UzawaSolver< typename Operator::AssemblerType,SubPoissonAlgorithmCreator::template Algorithm<polOrd> >
+          typedef UzawaSolver< typename Operator::AssemblerType,typename SubPoissonAlgorithmCreator::template Algorithm<polOrd> >
                                                                                      type;
         };
 

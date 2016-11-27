@@ -2,7 +2,8 @@
 #define DUNE_FEMDG_CONTAINER_HH
 
 #include <memory>
-
+#include <dune/fem-dg/misc/tupleutility.hh>
+#include <dune/fem-dg/algorithm/sub/containers.hh>
 
 namespace Dune
 {

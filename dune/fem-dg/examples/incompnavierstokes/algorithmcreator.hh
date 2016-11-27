@@ -54,6 +54,7 @@ namespace Dune
 namespace Fem
 {
 
+  template< class GridSelectorGridType >
   struct IncompressibleNavierStokesAlgorithmCreator
   {
 
@@ -63,7 +64,7 @@ namespace Fem
 
     struct SubStokesAlgorithmCreator
     {
-      typedef AlgorithmConfigurator< Dune::GridSelector::GridType,
+      typedef AlgorithmConfigurator< GridSelectorGridType,
                                      Galerkin::Enum::dg,
                                      Adaptivity::Enum::yes,
                                      DiscreteFunctionSpaces::Enum::legendre,
@@ -261,7 +262,7 @@ namespace Fem
 
     struct SubNavierStokesAlgorithmCreator
     {
-      typedef AlgorithmConfigurator< Dune::GridSelector::GridType,
+      typedef AlgorithmConfigurator< GridSelectorType::GridType,
                                      Galerkin::Enum::dg,
                                      Adaptivity::Enum::yes,
                                      DiscreteFunctionSpaces::Enum::legendre,

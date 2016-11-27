@@ -80,13 +80,14 @@ namespace Fem
   /**
    *  \brief problem creator for an advection diffusion problem
    */
+  template< class GridSelectorGridType >
   struct CheckPointingAlgorithmCreator
   {
 
     struct SubCheckPointingAlgorithmCreator
     {
 
-      typedef Dune::GridSelector::GridType                    GridType;
+      typedef GridSelectorGridType                            GridType;
       typedef Dune::Fem::DGAdaptiveLeafGridPart< GridType >   HostGridPartType;
       //typedef Dune::Fem::LeafGridPart< GridType >           HostGridPartType;
       //typedef AdaptiveLeafGridPart< GridType >              HostGridPartType;
