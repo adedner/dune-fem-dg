@@ -16,14 +16,11 @@ namespace Fem
   /**
    *  \brief Creates a tuple of uncoupled sub algorithms
    *
-   *  \note This is the default implementation which should be used
-   *  for uncoupled algorithms.
-   *
    *  \tparam GridImp
    *  \tparam SubAlgorithmImp
    */
   template< class GridImp, class... SubAlgorithmsImp >
-  class UncoupledSubAlgorithms
+  class CreateSubAlgorithms
   {
     typedef GridImp               GridType;
 

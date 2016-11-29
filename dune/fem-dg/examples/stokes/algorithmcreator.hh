@@ -274,14 +274,12 @@ namespace Fem
 
 
     template <int polOrd>
-    using Algorithm = SteadyStateAlgorithm< polOrd, UncoupledSubAlgorithms, SubStokesAlgorithmCreator >;
+    using Algorithm = SteadyStateAlgorithm< polOrd, SubStokesAlgorithmCreator >;
 
     typedef typename SubStokesAlgorithmCreator::GridType       GridType;
 
     static inline std::string moduleName() { return ""; }
 
-    static inline GridPtr<GridType>
-    initializeGrid() { return PoissonGridInitializer< GridType >::initializeGrid(); }
 
     template< int polOrd >
     static decltype(auto) initContainer()

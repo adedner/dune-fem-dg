@@ -12,7 +12,7 @@
 
 #include <dune/fem/solver/timeprovider.hh>
 #include <utility>
-#include <dune/fem-dg/algorithm/coupling.hh>
+#include <dune/fem-dg/algorithm/createsubalgorithms.hh>
 
 //--------- CALLER --------------------------------
 #include <dune/fem-dg/algorithm/caller/sub/diagnostics.hh>
@@ -48,7 +48,7 @@ namespace Fem
 {
   // EvolutionAlgorithmTraits
   // -------------------------
-  template< int polOrder, template<class, class... > class CouplingImp, class ... ProblemTraits >
+  template< int polOrder, class ... ProblemTraits >
   struct CheckPointEvolutionAlgorithmTraits
   {
     // type of Grid
@@ -57,9 +57,9 @@ namespace Fem
     // wrap operator
     typedef Dune::Fem::GridTimeProvider< GridType >                                          TimeProviderType;
 
-    typedef CouplingImp< GridType, typename ProblemTraits::template Algorithm<polOrder>... > CouplingType;
+    typedef CreateSubAlgorithms< GridType, typename ProblemTraits::template Algorithm<polOrder>... > CreateSubAlgorithmsType;
 
-    typedef typename CouplingType::SubAlgorithmTupleType                                     SubAlgorithmTupleType;
+    typedef typename CreateSubAlgorithmsType::SubAlgorithmTupleType                          SubAlgorithmTupleType;
 
     typedef typename std::make_index_sequence< std::tuple_size< SubAlgorithmTupleType >::value >
                                                                                              IndexSequenceType;
@@ -140,31 +140,36 @@ namespace Fem
     };
 
     template <int polOrd>
-    using Algorithm = Dune::Fem::EvolutionAlgorithmBase< CheckPointEvolutionAlgorithmTraits< polOrd, UncoupledSubAlgorithms, SubCheckPointingAlgorithmCreator >, UncoupledSubAlgorithms  >;
+    using Algorithm = Dune::Fem::EvolutionAlgorithmBase< CheckPointEvolutionAlgorithmTraits< polOrd, SubCheckPointingAlgorithmCreator >  >;
 
     typedef typename SubCheckPointingAlgorithmCreator::GridType                          GridType;
 
     static inline std::string moduleName() { return ""; }
 
-    static inline Dune::GridPtr<GridType>
-    initializeGrid() { return Dune::Fem::DefaultGridInitializer< GridType >::initialize(); }
-
     template< int polOrd >
     static decltype(auto) initContainer()
     {
-      typedef std::tuple< std::tuple<_index<0> > >                    SubOrder2Type;
-      typedef std::tuple< std::tuple<_index<0> > >                    SubOrder1Type;
-
-      typedef _t< EmptyContainerItem >                                Empty;
-      typedef _t< SubCheckPointingItem >                              Steady1Type;
-
-      typedef std::tuple< Steady1Type >                               Item1TupleType;
-      typedef std::tuple< std::tuple< Empty > >                       Item2TupleType;
-
+      //Discrete Functions
       typedef typename SubCheckPointingAlgorithmCreator::template DiscreteTraits<polOrd>::DiscreteFunctionType
                                                                       DFType;
 
-      typedef GlobalContainer< Item2TupleType, SubOrder2Type, Item1TupleType, SubOrder1Type, DFType > GlobalContainerType;
+      //Item1
+      typedef _t< SubEvolutionContainerItem >                         Steady;
+      typedef std::tuple< Steady >                                    Item1TupleType;
+
+      //Item2
+      typedef _t< EmptyContainerItem >                                Empty;
+      typedef std::tuple< std::tuple< Empty > >                       Item2TupleType;
+
+
+      //Sub (discrete function argument ordering)
+      typedef std::tuple<__0 >                                        AdvDiffOrder;
+
+      typedef std::tuple< AdvDiffOrder >                              SubOrderRowType;
+      typedef SubOrderRowType                                         SubOrderColType;
+
+      //Global container
+      typedef GlobalContainer< Item2TupleType, Item1TupleType, SubOrderRowType, SubOrderColType,DFType > GlobalContainerType;
 
       //create grid
       std::shared_ptr< GridType > gridptr( DefaultGridInitializer< GridType >::initialize().release() );

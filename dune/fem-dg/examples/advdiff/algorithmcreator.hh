@@ -142,14 +142,11 @@ namespace Fem
     };
 
     template< int polOrd >
-    using Algorithm = EvolutionAlgorithm< polOrd, UncoupledSubAlgorithms, SubAdvectionDiffusionAlgorithmCreator >;
+    using Algorithm = EvolutionAlgorithm< polOrd, SubAdvectionDiffusionAlgorithmCreator >;
 
     typedef typename SubAdvectionDiffusionAlgorithmCreator::GridType           GridType;
 
     static inline std::string moduleName() { return ""; }
-
-    static inline GridPtr<GridType>
-    initializeGrid() { return DefaultGridInitializer< GridType >::initialize(); }
 
     template< int polOrd >
     static decltype(auto) initContainer()

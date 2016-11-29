@@ -12,7 +12,7 @@
 #include <dune/fem/solver/newtoninverseoperator.hh>
 
 #include <dune/fem-dg/algorithm/base.hh>
-#include <dune/fem-dg/algorithm/coupling.hh>
+#include <dune/fem-dg/algorithm/createsubalgorithms.hh>
 
 #include <dune/fem-dg/algorithm/caller/solvermonitor.hh>
 
@@ -32,7 +32,7 @@ namespace Fem
 
 
   //
-  template< int polOrder, template<class, class... > class CouplingImp, class ... ProblemTraits >
+  template< int polOrder, class ... ProblemTraits >
   struct SteadyStateTraits
   {
     // type of Grid
@@ -42,10 +42,10 @@ namespace Fem
     // wrap operator
     typedef GridTimeProvider< GridType >                                   TimeProviderType;
 
-    typedef CouplingImp< GridType, typename ProblemTraits::template Algorithm<polOrder>...  >
-                                                                           CouplingType;
+    typedef CreateSubAlgorithms< GridType, typename ProblemTraits::template Algorithm<polOrder>...  >
+                                                                           CreateSubAlgorithmsType;
 
-    typedef typename CouplingType::SubAlgorithmTupleType                   SubAlgorithmTupleType;
+    typedef typename CreateSubAlgorithmsType::SubAlgorithmTupleType        SubAlgorithmTupleType;
 
     //typedef typename std::make_index_sequence< std::tuple_size< SubAlgorithmTupleType >::value >
     //                                                                     IndexSequenceType;
@@ -63,12 +63,12 @@ namespace Fem
    *
    * \ingroup Algorithms
    */
-  template< int polOrder, template<class, class... > class CouplingImp, class... ProblemTraits>
+  template< int polOrder, class... ProblemTraits>
   class SteadyStateAlgorithm
-    : public AlgorithmInterface< SteadyStateTraits< polOrder, CouplingImp, ProblemTraits... > >
+    : public AlgorithmInterface< SteadyStateTraits< polOrder, ProblemTraits... > >
   {
 
-    typedef SteadyStateTraits< polOrder, CouplingImp, ProblemTraits... > Traits;
+    typedef SteadyStateTraits< polOrder, ProblemTraits... >             Traits;
     typedef AlgorithmInterface< Traits >                                BaseType;
   public:
     typedef typename BaseType::GridType                                 GridType;
@@ -78,7 +78,7 @@ namespace Fem
     typedef typename Traits::AdaptCallerType                            AdaptCallerType;
     typedef typename Traits::SubAlgorithmTupleType                      SubAlgorithmTupleType;
 
-    typedef typename Traits::CouplingType                               CouplingType;
+    typedef typename Traits::CreateSubAlgorithmsType                    CreateSubAlgorithmsType;
 
     typedef uint64_t                                                    UInt64Type ;
 
@@ -138,7 +138,7 @@ namespace Fem
 
     SteadyStateAlgorithm ( GridType &grid, const std::string name = "" )
     : BaseType( grid, name ),
-      tuple_( CouplingType::apply( grid ) ),
+      tuple_( CreateSubAlgorithmsType::apply( grid ) ),
       solverMonitorCaller_( tuple_ ),
       dataWriterCaller_( tuple_ ),
       adaptCaller_( tuple_ )
@@ -147,7 +147,7 @@ namespace Fem
     template< class GlobalContainerImp >
     SteadyStateAlgorithm ( const std::shared_ptr<GlobalContainerImp>& cont, const std::string name = "" )
     : BaseType( const_cast< GridType& >( (*(cont->sub(_0)))(_0)->solution()->gridPart().grid()), name ),
-      tuple_( CouplingType::apply( cont ) ),
+      tuple_( CreateSubAlgorithmsType::apply( cont ) ),
       solverMonitorCaller_( tuple_ ),
       dataWriterCaller_( tuple_ ),
       adaptCaller_( tuple_ )

@@ -91,9 +91,6 @@ namespace Fem
 
       static inline std::string moduleName() { return ""; }
 
-      static inline GridPtr<GridType>
-      initializeGrid() { return DefaultGridInitializer< GridType >::initialize(); }
-
       static ProblemInterfaceType* problem() { return new ProblemInterfaceType(); }
 
 
@@ -143,14 +140,11 @@ namespace Fem
     };
 
     template <int polOrd>
-    using Algorithm = EvolutionAlgorithm< polOrd, UncoupledSubAlgorithms, SubNavierStokesAlgorithmCreator >;
+    using Algorithm = EvolutionAlgorithm< polOrd, SubNavierStokesAlgorithmCreator >;
 
     typedef typename SubNavierStokesAlgorithmCreator::GridType        GridType;
 
     static inline std::string moduleName() { return ""; }
-
-    static inline GridPtr<GridType>
-    initializeGrid() { return DefaultGridInitializer< GridType >::initialize(); }
 
     template< int polOrd >
     static decltype(auto) initContainer()

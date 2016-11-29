@@ -7,7 +7,7 @@
 #include <dune/fem/misc/gridwidth.hh>
 
 #include <dune/fem-dg/algorithm/base.hh>
-#include <dune/fem-dg/algorithm/coupling.hh>
+#include <dune/fem-dg/algorithm/createsubalgorithms.hh>
 #include <dune/fem/misc/femtimer.hh>
 
 // include std libs
@@ -37,7 +37,7 @@ namespace Fem
   // internal forward declarations
   // -----------------------------
 
-  template< class Traits, template<class, class... > class CouplingImp >
+  template< class Traits >
   class EvolutionAlgorithmBase;
 
 
@@ -151,7 +151,7 @@ namespace Fem
   /**
    *  \brief Traits class
    */
-  template< int polOrder, template<class, class... > class CouplingImp, class ... ProblemTraits >
+  template< int polOrder, class ... ProblemTraits >
   struct EvolutionAlgorithmTraits
   {
     // type of Grid
@@ -161,10 +161,10 @@ namespace Fem
     // wrap operator
     typedef GridTimeProvider< GridType >                                TimeProviderType;
 
-    typedef CouplingImp< GridType, typename ProblemTraits::template Algorithm<polOrder>...  >
-                                                                        CouplingType;
+    typedef CreateSubAlgorithms< GridType, typename ProblemTraits::template Algorithm<polOrder>...  >
+                                                                        CreateSubAlgorithmsType;
 
-    typedef typename CouplingType::SubAlgorithmTupleType                SubAlgorithmTupleType;
+    typedef typename CreateSubAlgorithmsType::SubAlgorithmTupleType     SubAlgorithmTupleType;
 
     //typedef typename std::make_index_sequence< std::tuple_size< SubAlgorithmTupleType >::value >
     //                                                                  IndexSequenceType;
@@ -186,12 +186,12 @@ namespace Fem
    *
    * \ingroup Algorithms
    */
-  template< int polOrder, template<class, class... > class CouplingImp, class ... ProblemTraits >
+  template< int polOrder, class ... ProblemTraits >
   class EvolutionAlgorithm
-  : public EvolutionAlgorithmBase< EvolutionAlgorithmTraits< polOrder, CouplingImp, ProblemTraits ... >, CouplingImp >
+  : public EvolutionAlgorithmBase< EvolutionAlgorithmTraits< polOrder, ProblemTraits ... > >
   {
-    typedef EvolutionAlgorithmTraits< polOrder, CouplingImp, ProblemTraits... > Traits;
-    typedef EvolutionAlgorithmBase< Traits, CouplingImp > BaseType;
+    typedef EvolutionAlgorithmTraits< polOrder, ProblemTraits... > Traits;
+    typedef EvolutionAlgorithmBase< Traits > BaseType;
   public:
     typedef typename BaseType::GridType GridType;
 
@@ -211,7 +211,7 @@ namespace Fem
    *
    * \ingroup Algorithms
    */
-  template< class Traits, template<class, class... > class CouplingImp >
+  template< class Traits >
   class EvolutionAlgorithmBase
     : public AlgorithmInterface< Traits >
   {
@@ -230,7 +230,7 @@ namespace Fem
     typedef typename Traits::PostProcessingCallerType            PostProcessingCallerType;
     typedef typename Traits::AdaptCallerType                     AdaptCallerType;
 
-    typedef typename Traits::CouplingType                        CouplingType;
+    typedef typename Traits::CreateSubAlgorithmsType             CreateSubAlgorithmsType;
 
     typedef uint64_t                                             UInt64Type ;
 
@@ -318,7 +318,7 @@ namespace Fem
      */
     EvolutionAlgorithmBase ( GridType &grid, const std::string name = "" )
     : BaseType( grid, name  ),
-      tuple_( CouplingType::apply( grid ) ),
+      tuple_( CreateSubAlgorithmsType::apply( grid ) ),
       checkPointCaller_( tuple_ ),
       dataWriterCaller_( tuple_ ),
       diagnosticsCaller_( tuple_ ),
@@ -334,7 +334,7 @@ namespace Fem
     template< class GlobalContainerImp >
     EvolutionAlgorithmBase ( const std::shared_ptr<GlobalContainerImp>& cont, const std::string name = "" )
     : BaseType( const_cast< GridType& >( (*(cont->sub(_0)))(_0)->solution()->gridPart().grid()), name ),
-      tuple_( CouplingType::apply( cont ) ),
+      tuple_( CreateSubAlgorithmsType::apply( cont ) ),
       checkPointCaller_( tuple_ ),
       dataWriterCaller_( tuple_ ),
       diagnosticsCaller_( tuple_ ),

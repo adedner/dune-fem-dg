@@ -11,11 +11,11 @@ namespace Fem
 
   // ----------------------
 
-  template< int polOrder, template<class, class... > class EvolutionCreatorType, class ... ProblemTraits >
+  template< int polOrder, class ... ProblemTraits >
   class IncompNavierStokesAlgorithm
-    : public EvolutionAlgorithm< polOrder, EvolutionCreatorType, ProblemTraits... >
+    : public EvolutionAlgorithm< polOrder, ProblemTraits... >
   {
-    typedef EvolutionAlgorithm< polOrder, EvolutionCreatorType, ProblemTraits... >     BaseType;
+    typedef EvolutionAlgorithm< polOrder, ProblemTraits... >     BaseType;
   public:
     typedef typename BaseType::GridType                          GridType;
     typedef typename BaseType::IOTupleType                       IOTupleType;
@@ -41,8 +41,6 @@ namespace Fem
                    "This InCompNavierStokesAlgorithm needs three sub algorithms: 1. Stokes, 2. Oseen, 3. Stokes" );
 
   public:
-    //typedef EvolutionCreatorType< SubAlgorithmTupleType, GridType > CreatorType;
-
     IncompNavierStokesAlgorithm ( GridType &grid, const std::string name = "" )
     : BaseType( grid, name  )
     {
@@ -60,10 +58,6 @@ namespace Fem
       auto step1 = std::get<0>( BaseType::subAlgorithmTuple() );
       auto step2 = std::get<1>( BaseType::subAlgorithmTuple() );
       auto step3 = std::get<2>( BaseType::subAlgorithmTuple() );
-
-
-      //concate solutions()
-      //step3->setSolution( std::make_shared< typename std::remove_reference< decltype( step1->solution() ) >::type >( step1->solution() ) );
 
       BaseType::initialize( loop, tp );
     }

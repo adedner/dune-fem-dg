@@ -149,18 +149,12 @@ namespace Fem
 
     };
 
-    // structure of sub containers
-
     template <int polOrd>
-    using Algorithm = SteadyStateAlgorithm< polOrd, UncoupledSubAlgorithms, SubPoissonAlgorithmCreator >;
+    using Algorithm = SteadyStateAlgorithm< polOrd, SubPoissonAlgorithmCreator >;
 
     typedef typename SubPoissonAlgorithmCreator::GridType         GridType;
 
     static inline std::string moduleName() { return ""; }
-
-    static inline GridPtr<GridType>
-    initializeGrid() { return DefaultGridInitializer< GridType >::initialize(); }
-
 
 
     template< int polOrd >
