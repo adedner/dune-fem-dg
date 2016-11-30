@@ -64,16 +64,44 @@ namespace Fem
   };
 
 
+  template< class WrappedOperator >
+  class NoPreconditioner
+    : public WrappedOperator
+  {
+
+  public:
+
+    typedef WrappedOperator BaseType;
+
+    using BaseType::operator();
+    using BaseType::systemMatrix;
+    using BaseType::apply;
+    using BaseType::communicate;
+
+    typedef typename BaseType::DomainSpaceType DomainSpaceType;
+    typedef typename BaseType::RangeSpaceType  RangeSpaceType;
+
+    NoPreconditioner( const std::string& name,
+                      const DomainSpaceType &domainSpace,
+                      const RangeSpaceType &rangeSpace )
+      : BaseType( name, domainSpace, rangeSpace, MatrixParameterNoPreconditioner() )
+    {}
+
+  };
+
+
   template< template<class,class> class Default >
   struct UzawaItem2
   {
-    typedef _t< SubEllipticContainerItem, Default >                 Def;
+    typedef _t< SubEllipticContainerItem, Default >                   Def;
+    typedef _t< SubEllipticContainerItem, NoPreconditioner, Default > DefNo;
+
     typedef _t< SubEllipticContainerItem, SparseRowLinearOperator > Sp;
 
     //typedef std::tuple< std::tuple< Def, Sp >,
     //                    std::tuple< Sp,  Sp > >                       type;
-    typedef std::tuple< std::tuple< Def, Def >,
-                        std::tuple< Def,  Def > >                       type;
+    typedef std::tuple< std::tuple< Def,   DefNo >,
+                        std::tuple< DefNo, Def > >                       type;
   };
 
 

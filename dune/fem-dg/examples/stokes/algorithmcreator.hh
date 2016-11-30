@@ -302,9 +302,10 @@ namespace Fem
 
       //Item2
       typedef _t< SubEllipticContainerItem, DefaultContainer >          Def;
+      typedef _t< SubEllipticContainerItem, NoPreconditioner, DefaultContainer > DefNo;
 
-      typedef std::tuple< std::tuple< Def, Def >,
-                          std::tuple< Def, Def > >                        Item2TupleType;
+      typedef std::tuple< std::tuple< Def,   DefNo >,
+                          std::tuple< DefNo, Def > >                        Item2TupleType;
 
       //Sub (discrete function argument ordering)
       typedef std::tuple<__0,__1 >                                      StokesOrder;
