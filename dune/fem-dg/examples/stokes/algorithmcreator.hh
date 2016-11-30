@@ -62,18 +62,20 @@ namespace Fem
   template< class GridSelectorGridType >
   struct StokesAlgorithmCreator
   {
+    typedef AlgorithmConfigurator< GridSelectorGridType,
+                                   Galerkin::Enum::dg,
+                                   Adaptivity::Enum::yes,
+                                   DiscreteFunctionSpaces::Enum::hierarchic_legendre,
+                                   Solver::Enum::istl,
+                                   AdvectionLimiter::Enum::unlimited,
+                                   Matrix::Enum::assembled,
+                                   AdvectionFlux::Enum::none,
+                                   DiffusionFlux::Enum::primal > ACStokes;
 
+    template< class AC >
     struct SubStokesAlgorithmCreator
     {
-      typedef AlgorithmConfigurator< GridSelectorGridType,
-                                     Galerkin::Enum::dg,
-                                     Adaptivity::Enum::yes,
-                                     DiscreteFunctionSpaces::Enum::hierarchic_legendre,
-                                     Solver::Enum::fem,
-                                     AdvectionLimiter::Enum::unlimited,
-                                     Matrix::Enum::assembled,
-                                     AdvectionFlux::Enum::none,
-                                     DiffusionFlux::Enum::primal > AC;
+
 
       struct SubPoissonAlgorithmCreator
       {
@@ -268,37 +270,41 @@ namespace Fem
       };
 
       template <int polOrd>
-      using Algorithm = SubStokesAlgorithm< GridType, SubStokesAlgorithmCreator, SubPoissonAlgorithmCreator, polOrd >;
+      using Algorithm = SubStokesAlgorithm< GridType, SubStokesAlgorithmCreator<ACStokes>, SubPoissonAlgorithmCreator, polOrd >;
     };
 
 
 
     template <int polOrd>
-    using Algorithm = SteadyStateAlgorithm< polOrd, SubStokesAlgorithmCreator >;
+    using Algorithm = SteadyStateAlgorithm< polOrd, SubStokesAlgorithmCreator<ACStokes> >;
 
-    typedef typename SubStokesAlgorithmCreator::GridType       GridType;
+    typedef typename SubStokesAlgorithmCreator<ACStokes>::GridType       GridType;
 
     static inline std::string moduleName() { return ""; }
 
+  private:
+    //helper struct
+    template< class DDF, class RDF >
+    using DefaultContainer = typename ACStokes::template Containers< typename DDF::DiscreteFunctionSpaceType, typename RDF::DiscreteFunctionSpaceType >;
 
+  public:
     template< int polOrd >
     static decltype(auto) initContainer()
     {
+
       //Discrete Functions
-      typedef typename SubStokesAlgorithmCreator::SubPoissonAlgorithmCreator::template DiscreteTraits<polOrd>::DiscreteFunctionType DFType1;
-      typedef typename SubStokesAlgorithmCreator::template DiscreteTraits<polOrd>::DiscreteFunctionType DFType2;
+      typedef typename SubStokesAlgorithmCreator<ACStokes>::SubPoissonAlgorithmCreator::template DiscreteTraits<polOrd>::DiscreteFunctionType DFType1;
+      typedef typename SubStokesAlgorithmCreator<ACStokes>::template DiscreteTraits<polOrd>::DiscreteFunctionType DFType2;
 
       //Item1
       typedef _t< SubSteadyStateContainerItem >                         Steady;
       typedef std::tuple< Steady, Steady >                              Item1TupleType;
 
       //Item2
-      typedef _t< SubEllipticContainerItem, SparseRowLinearOperator >   Def;
-      //typedef _t< SubEllipticContainerItem, ISTLLinearOperator >        Def;
-      typedef _t< SubEllipticContainerItem, SparseRowLinearOperator >   Sp;
+      typedef _t< SubEllipticContainerItem, DefaultContainer >          Def;
 
-      typedef std::tuple< std::tuple< Def, Sp >,
-                          std::tuple< Sp, Sp > >                        Item2TupleType;
+      typedef std::tuple< std::tuple< Def, Def >,
+                          std::tuple< Def, Def > >                        Item2TupleType;
 
       //Sub (discrete function argument ordering)
       typedef std::tuple<__0,__1 >                                      StokesOrder;
