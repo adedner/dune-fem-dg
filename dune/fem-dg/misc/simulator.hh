@@ -66,6 +66,7 @@
 
 #include <dune/fem/misc/femeoc.hh>
 #include <dune/fem/misc/flops.hh>
+#include <dune/fem/common/forloop.hh>
 
 // Dune includes
 #ifdef BASEFUNCTIONSET_CODEGEN_GENERATE
