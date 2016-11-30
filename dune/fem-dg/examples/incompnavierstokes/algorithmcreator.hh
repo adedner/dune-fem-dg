@@ -107,7 +107,7 @@ namespace Fem
       typedef std::tuple< Steady, Evol, Steady >                      Item1TupleType;
 
       //Item2
-      typedef _t< SubEllipticContainerItem, ISTLLinearOperator >      Istl;
+      // typedef _t< SubEllipticContainerItem, ISTLLinearOperator >      Istl;
       typedef _t< SubEllipticContainerItem, SparseRowLinearOperator > Sp;
       typedef _t< EmptyContainerItem >                                Empty;
 

@@ -230,7 +230,7 @@ namespace Fem
 
         // run through all available polynomial order and check with dynamic polOrder
         // when -DONLY_ONE_P was passed only POLORDER is used
-        Dune::ForLoop< SimulatePolOrd, MIN_POLORD, MAX_POLORD > :: apply( algCreator, polOrder, bool(MIN_POLORD == MAX_POLORD) );
+        Dune::Fem::ForLoop< SimulatePolOrd, MIN_POLORD, MAX_POLORD > :: apply( algCreator, polOrder, bool(MIN_POLORD == MAX_POLORD) );
 #ifdef BASEFUNCTIONSET_CODEGEN_GENERATE
       }
       catch (Dune::Fem::CodegenInfoFinished) {}

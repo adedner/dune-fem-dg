@@ -5,7 +5,7 @@
 #include <tuple>
 #include <type_traits>
 
-#include <dune/common/forloop.hh>
+#include <dune/fem/common/forloop.hh>
 #include <dune/fem/misc/mpimanager.hh>
 #include <dune/fem/io/file/datawriter.hh>
 #include <dune/fem/io/parameter.hh>
@@ -183,7 +183,7 @@ namespace Fem
     {
       const auto& elem = std::get<0>( tuple_ );
       std::cout << elem.use_count() << std::endl;
-      const auto& elemRay = *elem;
+      //const auto& elemRay = *elem;
       const auto& sol = elem->solution();
       std::cout << "new container: name: " << sol.name() << ", size: " << sol.size() << std::endl;
 

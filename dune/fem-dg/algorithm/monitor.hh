@@ -46,9 +46,9 @@ namespace Fem
       total_ils_iterations( 0 ),
       max_newton_iterations( 0 ),
       max_ils_iterations( 0 ),
-      elements( 0 ),
       operator_calls( 0 ),
-      total_operator_calls( 0 )
+      total_operator_calls( 0 ),
+      elements( 0 )
     {}
 
     void setTimeStepInfo( const Dune::Fem::TimeProviderBase& tp )

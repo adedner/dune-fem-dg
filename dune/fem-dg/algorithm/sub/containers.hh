@@ -433,7 +433,7 @@ namespace Fem
     template< unsigned long int i >
     decltype(auto) operator() ( _index<i> index )
     {
-      const auto& res = std::get<i>( item1_ );
+      //const auto& res = std::get<i>( item1_ );
       //std::cout << "###ACCESS: item1 ('" << res->solution()->name() << "')" << print( index ) << std::endl;
       return std::get<i>( item1_ );
     }

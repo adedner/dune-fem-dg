@@ -514,7 +514,7 @@ namespace Fem
     template<class DSpace, class RSpace = DSpace>
     using LinearOperatorType = Dune::Fem::PetscLinearOperator< DiscreteFunctionType<DSpace>, DiscreteFunctionType<RSpace> >;
     template<class DSpace, class RSpace = DSpace>
-    using LinearInverseOperatorType = Dune::Fem::PetscInverseOperator< DiscreteFunctionType<DSpace>, LinearOperatorType<DFSpace,RSpace> >;
+    using LinearInverseOperatorType = Dune::Fem::PetscInverseOperator< DiscreteFunctionType<DSpace> >;
     // to switch between solvers for symmetric and non symmetric operators
     // use the parameter petsc.kspsolver.method
   };
