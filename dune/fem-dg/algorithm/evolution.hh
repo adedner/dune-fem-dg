@@ -161,7 +161,7 @@ namespace Fem
     // wrap operator
     typedef GridTimeProvider< GridType >                                TimeProviderType;
 
-    typedef CreateSubAlgorithms< GridType, typename ProblemTraits::template Algorithm<polOrder>...  >
+    typedef CreateSubAlgorithms< typename ProblemTraits::template Algorithm<polOrder>...  >
                                                                         CreateSubAlgorithmsType;
 
     typedef typename CreateSubAlgorithmsType::SubAlgorithmTupleType     SubAlgorithmTupleType;

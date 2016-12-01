@@ -16,14 +16,11 @@ namespace Fem
   /**
    *  \brief Creates a tuple of uncoupled sub algorithms
    *
-   *  \tparam GridImp
    *  \tparam SubAlgorithmImp
    */
-  template< class GridImp, class... SubAlgorithmsImp >
+  template< class... SubAlgorithmsImp >
   class CreateSubAlgorithms
   {
-    typedef GridImp               GridType;
-
     template <class Object>
     class AlgDeleter
     {
@@ -51,6 +48,10 @@ namespace Fem
     };
   public:
     typedef std::tuple< std::shared_ptr< SubAlgorithmsImp > ... >    SubAlgorithmTupleType;
+
+    static_assert( std::tuple_size<SubAlgorithmTupleType>::value > 0, "We need at least one Sub-Algorithm" );
+
+    typedef typename std::tuple_element<0,SubAlgorithmTupleType>::type::element_type::GridType GridType;
 
     template< int i >
     using ElementPtr = typename std::tuple_element< i, SubAlgorithmTupleType >::type;
