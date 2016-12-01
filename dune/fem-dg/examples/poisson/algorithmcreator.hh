@@ -48,17 +48,20 @@ namespace Fem
   template< class GridSelectorGridType >
   struct PoissonAlgorithmCreator
   {
+    typedef AlgorithmConfigurator< GridSelectorGridType,
+                                   Galerkin::Enum::dg,
+                                   Adaptivity::Enum::yes,
+                                   DiscreteFunctionSpaces::Enum::legendre,
+                                   Solver::Enum::istl,
+                                   AdvectionLimiter::Enum::unlimited,
+                                   Matrix::Enum::assembled,
+                                   AdvectionFlux::Enum::upwind,
+                                   DiffusionFlux::Enum::primal > ACPoisson;
+
+    template< class AC >
     struct SubPoissonAlgorithmCreator
     {
-      typedef AlgorithmConfigurator< GridSelectorGridType,
-                                     Galerkin::Enum::dg,
-                                     Adaptivity::Enum::yes,
-                                     DiscreteFunctionSpaces::Enum::legendre,
-                                     Solver::Enum::istl,
-                                     AdvectionLimiter::Enum::unlimited,
-                                     Matrix::Enum::assembled,
-                                     AdvectionFlux::Enum::upwind,
-                                     DiffusionFlux::Enum::primal > AC;
+
 
       typedef typename AC::GridType                         GridType;
       typedef typename AC::GridParts                        HostGridPartType;
@@ -128,8 +131,6 @@ namespace Fem
         { typedef typename AC::template DiscreteFunctions< SigmaDFSpaceType > type; };
 
         //TODO improve -> algorithm configurator
-
-
         typedef typename SigmaDiscreteFunctionSelector< DiscreteFunctionType, SigmaFunctionChooser >::type SigmaDiscreteFunctionType;
 
         typedef ErrorEstimator< DiscreteFunctionType, SigmaDiscreteFunctionType, typename Operator::AssemblerType >
@@ -145,14 +146,12 @@ namespace Fem
       };
 
       template <int polOrd>
-      using Algorithm = SubEllipticAlgorithm< GridType, SubPoissonAlgorithmCreator, polOrd >;
+      using Algorithm = SubEllipticAlgorithm< GridType, SubPoissonAlgorithmCreator<AC>, polOrd >;
 
     };
 
     template <int polOrd>
-    using Algorithm = SteadyStateAlgorithm< polOrd, SubPoissonAlgorithmCreator >;
-
-    typedef typename SubPoissonAlgorithmCreator::GridType         GridType;
+    using Algorithm = SteadyStateAlgorithm< polOrd, SubPoissonAlgorithmCreator<ACPoisson> >;
 
     static inline std::string moduleName() { return ""; }
 
@@ -160,8 +159,9 @@ namespace Fem
     template< int polOrd >
     static decltype(auto) initContainer()
     {
+      typedef typename SubPoissonAlgorithmCreator<ACPoisson>::GridType  GridType;
       //Discrete Functions
-      typedef typename SubPoissonAlgorithmCreator::template DiscreteTraits<polOrd>::DiscreteFunctionType DFType;
+      typedef typename SubPoissonAlgorithmCreator<ACPoisson>::template DiscreteTraits<polOrd>::DiscreteFunctionType DFType;
 
       //Item1
       typedef _t< SubSteadyStateContainerItem >                         Steady;

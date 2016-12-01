@@ -51,21 +51,20 @@ namespace Fem
   template< class GridSelectorGridType >
   struct NavierStokesAlgorithmCreator
   {
+    typedef AlgorithmConfigurator< GridSelectorGridType,
+                                   Galerkin::Enum::dg,
+                                   Adaptivity::Enum::yes,
+                                   DiscreteFunctionSpaces::Enum::legendre,
+                                   //Solver::Enum::istl,
+                                   Solver::Enum::fem,
+                                   AdvectionLimiter::Enum::unlimited,
+                                   Matrix::Enum::matrixfree,
+                                   AdvectionFlux::Enum::llf,
+                                   DiffusionFlux::Enum::primal > ACNavier;
 
-
+    template< class AC >
     struct SubNavierStokesAlgorithmCreator
     {
-      typedef AlgorithmConfigurator< GridSelectorGridType,
-                                     Galerkin::Enum::dg,
-                                     Adaptivity::Enum::yes,
-                                     DiscreteFunctionSpaces::Enum::legendre,
-                                     //Solver::Enum::istl,
-                                     Solver::Enum::fem,
-                                     AdvectionLimiter::Enum::unlimited,
-                                     Matrix::Enum::matrixfree,
-                                     AdvectionFlux::Enum::llf,
-                                     DiffusionFlux::Enum::primal > AC;
-
       typedef typename AC::GridType                                 GridType;
       typedef typename AC::GridParts                                HostGridPartType;
       typedef HostGridPartType                                      GridPartType;
@@ -99,7 +98,6 @@ namespace Fem
       {
         typedef typename AC::template DiscreteFunctionSpaces< GridPartType, polOrd, FunctionSpaceType>
                                                                                            DFSpaceType;
-        typedef std::tuple<>                                                               ExtraParameterTuple;
       public:
         typedef typename AC::template DiscreteFunctions< DFSpaceType >                     DiscreteFunctionType;
 
@@ -107,7 +105,7 @@ namespace Fem
 
         class Operator
         {
-          typedef typename AC::template DefaultOpTraits< DFSpaceType, polOrd, AnalyticalTraits, ExtraParameterTuple >
+          typedef typename AC::template DefaultOpTraits< DFSpaceType, polOrd, AnalyticalTraits >
                                                                                            OpTraits;
         public:
           typedef typename AC::template Operators< OpTraits,OperatorSplit::Enum::full >    type;
@@ -122,7 +120,7 @@ namespace Fem
         };
 
       private:
-        typedef typename AC::template DefaultOpTraits< DFSpaceType, polOrd, AnalyticalTraits, ExtraParameterTuple >
+        typedef typename AC::template DefaultOpTraits< DFSpaceType, polOrd, AnalyticalTraits >
                                                                                            OpTraits;
         typedef DGAdaptationIndicatorOperator< OpTraits >                                  IndicatorType;
         typedef Estimator< DiscreteFunctionType, typename AnalyticalTraits::ProblemType >  GradientIndicatorType ;
@@ -135,41 +133,42 @@ namespace Fem
       };
 
       template <int polOrd>
-      using Algorithm = SubAdvectionDiffusionAlgorithm< GridType, SubNavierStokesAlgorithmCreator, polOrd >;
+      using Algorithm = SubAdvectionDiffusionAlgorithm< GridType, SubNavierStokesAlgorithmCreator<AC>, polOrd >;
 
     };
 
     template <int polOrd>
-    using Algorithm = EvolutionAlgorithm< polOrd, SubNavierStokesAlgorithmCreator >;
+    using Algorithm = EvolutionAlgorithm< polOrd, SubNavierStokesAlgorithmCreator<ACNavier> >;
 
-    typedef typename SubNavierStokesAlgorithmCreator::GridType        GridType;
 
     static inline std::string moduleName() { return ""; }
 
     template< int polOrd >
     static decltype(auto) initContainer()
     {
+      typedef typename SubNavierStokesAlgorithmCreator<ACNavier>::GridType GridType;
       //Discrete Functions
-      typedef typename SubNavierStokesAlgorithmCreator::template DiscreteTraits<polOrd>::DiscreteFunctionType
-                                                                      DFType;
+      typedef typename SubNavierStokesAlgorithmCreator<ACNavier>::template DiscreteTraits<polOrd>::DiscreteFunctionType
+                                                                           DFType;
 
       //Item1
-      typedef _t< SubEvolutionContainerItem >                         Steady;
-      typedef std::tuple< Steady >                                    Item1TupleType;
+      typedef _t< SubEvolutionContainerItem >                              Steady;
+      typedef std::tuple< Steady >                                         Item1TupleType;
 
       //Item2
-      typedef _t< EmptyContainerItem >                                Empty;
-      typedef std::tuple< std::tuple< Empty > >                       Item2TupleType;
+      typedef _t< EmptyContainerItem >                                     Empty;
+      typedef std::tuple< std::tuple< Empty > >                            Item2TupleType;
 
 
       //Sub (discrete function argument ordering)
-      typedef std::tuple<__0 >                                        AdvDiffOrder;
+      typedef std::tuple<__0 >                                             AdvDiffOrder;
 
-      typedef std::tuple< AdvDiffOrder >                              SubOrderRowType;
-      typedef SubOrderRowType                                         SubOrderColType;
+      typedef std::tuple< AdvDiffOrder >                                   SubOrderRowType;
+      typedef SubOrderRowType                                              SubOrderColType;
 
       //Global container
-      typedef GlobalContainer< Item2TupleType, Item1TupleType, SubOrderRowType, SubOrderColType,DFType > GlobalContainerType;
+      typedef GlobalContainer< Item2TupleType, Item1TupleType, SubOrderRowType, SubOrderColType,DFType >
+                                                                           GlobalContainerType;
 
       //create grid
       std::shared_ptr< GridType > gridptr( DefaultGridInitializer< GridType >::initialize().release() );

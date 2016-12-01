@@ -94,9 +94,9 @@ namespace Fem
     struct DiscreteTraits
     {
     private:
-      typedef typename SubCreatorType::template DiscreteTraits< polOrd > PoissonDiscreteTraits;
+      typedef typename SubCreatorType::template DiscreteTraits< polOrd >           PoissonDiscreteTraits;
       typedef typename PoissonDiscreteTraits::DiscreteFunctionType                 VelDiscreteFunctionType;
-      typedef typename SubCreatorType::FunctionSpaceType                 VelFunctionSpaceType;
+      typedef typename SubCreatorType::FunctionSpaceType                           VelFunctionSpaceType;
       typedef typename AC::template DiscreteFunctionSpaces< GridPartType, polOrd, FunctionSpaceType>
                                                                                    DFSpaceType;
       typedef typename AC::template DiscreteFunctionSpaces< GridPartType, polOrd, VelFunctionSpaceType>
@@ -105,7 +105,6 @@ namespace Fem
       typedef typename AC::template DiscreteFunctions< DFSpaceType >               DiscreteFunctionType;
 
       typedef std::tuple< DiscreteFunctionType*, DiscreteFunctionType* >           IOTupleType;
-      typedef std::tuple<>                                                         ExtraParameterTuple;
 
       class Operator
       {
@@ -116,7 +115,7 @@ namespace Fem
 
         typedef typename AC::template RhsAnalyticalTraits< AnalyticalTraits, StokesModel< GridPartType, typename AnalyticalTraits::InitialDataType, true > >
                                                                               RhsAnalyticalTraitsType;
-        typedef typename AC::template DefaultOpTraits< VelDFSpaceType, polOrd, RhsAnalyticalTraitsType, ExtraParameterTuple >
+        typedef typename AC::template DefaultOpTraits< VelDFSpaceType, polOrd, RhsAnalyticalTraitsType >
                                                                               RhsOpTraits;
       public:
         typedef StokesAssembler< OpTraits, AC::template Containers,VelDiscreteFunctionType,DiscreteFunctionType >

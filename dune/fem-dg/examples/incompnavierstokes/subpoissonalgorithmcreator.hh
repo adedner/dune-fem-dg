@@ -94,7 +94,6 @@ namespace Fem
       typedef typename AC::template DiscreteFunctions< DFSpaceType >          DiscreteFunctionType;
 
       typedef std::tuple< DiscreteFunctionType*, DiscreteFunctionType* >      IOTupleType;
-      typedef std::tuple<>                                                    ExtraParameterTuple;
 
       class Operator
       {
@@ -103,7 +102,7 @@ namespace Fem
         typedef typename AC::template RhsAnalyticalTraits< AnalyticalTraits, PoissonModel< GridPartType, typename AnalyticalTraits::InitialDataType, true > >
                                                                               RhsAnalyticalTraitsType;
 
-        typedef typename AC::template DefaultOpTraits< DFSpaceType, polOrd, RhsAnalyticalTraitsType, ExtraParameterTuple >
+        typedef typename AC::template DefaultOpTraits< DFSpaceType, polOrd, RhsAnalyticalTraitsType >
                                                                               RhsOpTraits;
       public:
         typedef typename AC::template Operators< OpTraits >                   AssemblerType;

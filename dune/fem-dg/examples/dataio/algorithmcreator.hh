@@ -142,34 +142,35 @@ namespace Fem
     template <int polOrd>
     using Algorithm = Dune::Fem::EvolutionAlgorithmBase< CheckPointEvolutionAlgorithmTraits< polOrd, SubCheckPointingAlgorithmCreator >  >;
 
-    typedef typename SubCheckPointingAlgorithmCreator::GridType                          GridType;
 
     static inline std::string moduleName() { return ""; }
 
     template< int polOrd >
     static decltype(auto) initContainer()
     {
+      typedef typename SubCheckPointingAlgorithmCreator::GridType         GridType;
       //Discrete Functions
       typedef typename SubCheckPointingAlgorithmCreator::template DiscreteTraits<polOrd>::DiscreteFunctionType
-                                                                      DFType;
+                                                                          DFType;
 
       //Item1
-      typedef _t< SubEvolutionContainerItem >                         Steady;
-      typedef std::tuple< Steady >                                    Item1TupleType;
+      typedef _t< SubEvolutionContainerItem >                             Steady;
+      typedef std::tuple< Steady >                                        Item1TupleType;
 
       //Item2
-      typedef _t< EmptyContainerItem >                                Empty;
-      typedef std::tuple< std::tuple< Empty > >                       Item2TupleType;
+      typedef _t< EmptyContainerItem >                                    Empty;
+      typedef std::tuple< std::tuple< Empty > >                           Item2TupleType;
 
 
       //Sub (discrete function argument ordering)
-      typedef std::tuple<__0 >                                        AdvDiffOrder;
+      typedef std::tuple<__0 >                                            AdvDiffOrder;
 
-      typedef std::tuple< AdvDiffOrder >                              SubOrderRowType;
-      typedef SubOrderRowType                                         SubOrderColType;
+      typedef std::tuple< AdvDiffOrder >                                  SubOrderRowType;
+      typedef SubOrderRowType                                             SubOrderColType;
 
       //Global container
-      typedef GlobalContainer< Item2TupleType, Item1TupleType, SubOrderRowType, SubOrderColType,DFType > GlobalContainerType;
+      typedef GlobalContainer< Item2TupleType, Item1TupleType, SubOrderRowType, SubOrderColType,DFType >
+                                                                          GlobalContainerType;
 
       //create grid
       std::shared_ptr< GridType > gridptr( DefaultGridInitializer< GridType >::initialize().release() );

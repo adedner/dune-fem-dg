@@ -92,7 +92,6 @@ namespace Fem
     {
       typedef typename AC::template DiscreteFunctionSpaces< GridPartType, polOrd, FunctionSpaceType>
                                                                                          DFSpaceType;
-      typedef std::tuple<>                                                               ExtraParameterTuple;
     public:
       typedef typename AC::template DiscreteFunctions< DFSpaceType >                     DiscreteFunctionType;
 
@@ -100,12 +99,12 @@ namespace Fem
 
       class Operator
       {
-        typedef typename AC::template DefaultOpTraits< DFSpaceType, polOrd, AnalyticalTraits, ExtraParameterTuple >
+        typedef typename AC::template DefaultOpTraits< DFSpaceType, polOrd, AnalyticalTraits >
                                                                                          OpTraits;
 
         typedef typename AC::template RhsAnalyticalTraits< AnalyticalTraits, NavierStokesModel< GridPartType, typename AnalyticalTraits::InitialDataType, true > >
                                                                                          RhsAnalyticalTraitsType;
-        typedef typename AC::template DefaultOpTraits< DFSpaceType, polOrd, RhsAnalyticalTraitsType, ExtraParameterTuple >
+        typedef typename AC::template DefaultOpTraits< DFSpaceType, polOrd, RhsAnalyticalTraitsType >
                                                                                          RhsOpTraits;
 
       public:
@@ -123,7 +122,7 @@ namespace Fem
       };
 
     private:
-      typedef typename AC::template DefaultOpTraits< DFSpaceType, polOrd, AnalyticalTraits, ExtraParameterTuple >
+      typedef typename AC::template DefaultOpTraits< DFSpaceType, polOrd, AnalyticalTraits >
                                                                                          OpTraits;
       typedef DGAdaptationIndicatorOperator< OpTraits >                                  IndicatorType;
       typedef Estimator< DiscreteFunctionType, typename AnalyticalTraits::ProblemType >  GradientIndicatorType ;
