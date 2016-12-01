@@ -2,7 +2,7 @@
 #define DUNE_FEMDG_NAVIERSTOKES_ALGORITHM_EVOLUTION_HH
 
 
-#include "../../algorithm/evolution.hh"
+#include <dune/fem-dg/algorithm/evolution.hh>
 
 namespace Dune
 {

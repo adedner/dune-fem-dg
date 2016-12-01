@@ -16,36 +16,10 @@
 
 #include <dune/fem/io/parameter.hh>
 #include <dune/grid/io/file/dgfparser/dgfparser.hh>
-#include <dune/fem/misc/l2norm.hh>
-//--------- CALLER --------------------------------
-#include <dune/fem-dg/algorithm/caller/sub/diagnostics.hh>
-#include <dune/fem-dg/algorithm/caller/sub/solvermonitor.hh>
-#include <dune/fem-dg/algorithm/caller/sub/additionaloutput.hh>
-#include <dune/fem-dg/algorithm/caller/sub/adapt.hh>
 //--------- GRID HELPER ---------------------
 #include <dune/fem-dg/algorithm/gridinitializer.hh>
-//--------- OPERATOR/SOLVER -----------------
-#include <dune/fem-dg/assemble/primalmatrix.hh>
-#include <dune/fem-dg/operator/dg/operatortraits.hh>
-//--------- FLUXES ---------------------------
-#include <dune/fem-dg/operator/fluxes/advection/fluxes.hh>
-#include <dune/fem-dg/operator/fluxes/euler/fluxes.hh>
 //--------- STEPPER -------------------------
-#include <dune/fem-dg/algorithm/sub/advectiondiffusion.hh>
-#include <dune/fem-dg/algorithm/sub/advection.hh>
-#include <dune/fem-dg/examples/stokes/stokesalgorithm.hh>
-#include <dune/fem-dg/algorithm/evolution.hh>
 #include "incompnavierstokesalgorithm.hh"
-//--------- EOCERROR ------------------------
-#include <dune/fem-dg/misc/error/l2eocerror.hh>
-#include <dune/fem-dg/misc/error/h1eocerror.hh>
-#include <dune/fem-dg/misc/error/dgeocerror.hh>
-//--------- PROBLEMS ------------------------
-#include "problems.hh"
-//#include "../stokes/problems.hh"
-//--------- MODELS --------------------------
-#include "stokesmodel.hh"
-#include "models.hh"
 //--------- PROBLEMCREATORSELECTOR ----------
 #include <dune/fem-dg/misc/configurator.hh>
 //--------- SUBALGORITHMCREATOR -------------
@@ -88,13 +62,14 @@ namespace Fem
                                                            SubNavierStokesAlgorithmCreator<ACNavier>,
                                                            SubStokesAlgorithmCreator<ACStokes> >;
 
-    typedef typename SubStokesAlgorithmCreator<ACStokes>::GridType                  GridType;
 
     static inline std::string moduleName() { return ""; }
 
     template< int polOrd >
     static decltype(auto) initContainer()
     {
+      typedef typename SubStokesAlgorithmCreator<ACStokes>::GridType  GridType;
+
       //Discrete Functions
       typedef typename SubStokesAlgorithmCreator<ACStokes>::SubCreatorType::template DiscreteTraits<polOrd>::DiscreteFunctionType DFType1;
       typedef typename SubStokesAlgorithmCreator<ACStokes>::template DiscreteTraits<polOrd>::DiscreteFunctionType DFType2;

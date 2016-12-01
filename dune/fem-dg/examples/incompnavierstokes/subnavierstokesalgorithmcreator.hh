@@ -16,38 +16,28 @@
 
 #include <dune/fem/io/parameter.hh>
 #include <dune/grid/io/file/dgfparser/dgfparser.hh>
-#include <dune/fem/misc/l2norm.hh>
 //--------- CALLER --------------------------------
 #include <dune/fem-dg/algorithm/caller/sub/diagnostics.hh>
 #include <dune/fem-dg/algorithm/caller/sub/solvermonitor.hh>
 #include <dune/fem-dg/algorithm/caller/sub/additionaloutput.hh>
 #include <dune/fem-dg/algorithm/caller/sub/adapt.hh>
-//--------- GRID HELPER ---------------------
-#include <dune/fem-dg/algorithm/gridinitializer.hh>
 //--------- OPERATOR/SOLVER -----------------
 #include <dune/fem-dg/assemble/primalmatrix.hh>
 #include <dune/fem-dg/operator/dg/operatortraits.hh>
 //--------- FLUXES ---------------------------
 #include <dune/fem-dg/operator/fluxes/advection/fluxes.hh>
 #include <dune/fem-dg/operator/fluxes/euler/fluxes.hh>
-//--------- STEPPER -------------------------
+//--------- SUB-ALGORITHMS -------------------------
 #include <dune/fem-dg/algorithm/sub/advectiondiffusion.hh>
 #include <dune/fem-dg/algorithm/sub/advection.hh>
-#include <dune/fem-dg/examples/stokes/stokesalgorithm.hh>
-#include <dune/fem-dg/algorithm/evolution.hh>
-#include "incompnavierstokesalgorithm.hh"
 //--------- EOCERROR ------------------------
 #include <dune/fem-dg/misc/error/l2eocerror.hh>
 #include <dune/fem-dg/misc/error/h1eocerror.hh>
 #include <dune/fem-dg/misc/error/dgeocerror.hh>
 //--------- PROBLEMS ------------------------
 #include "problems.hh"
-//#include "../stokes/problems.hh"
 //--------- MODELS --------------------------
-#include "stokesmodel.hh"
 #include "models.hh"
-//--------- PROBLEMCREATORSELECTOR ----------
-#include <dune/fem-dg/misc/configurator.hh>
 
 namespace Dune
 {
