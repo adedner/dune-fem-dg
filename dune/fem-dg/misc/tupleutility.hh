@@ -525,8 +525,8 @@ namespace Fem
    * Using this class directly in the way described above does not really make sense,
    * because (as you might have noticed) it may be much to complex.
    * To escape this template hell, you should also have a look at
-   * the template alias _t (which is a shortcut for the class details::Nested) and
-   * the ArgContainerArgWrapper and _ArgContainerArgWrapperUnique wrapper classes.
+   * the class _t and the ArgContainerArgWrapper and _ArgContainerArgWrapperUnique
+   * wrapper classes.
    * For a general overview of all related container classes, see \ref Container.
    *
    *
@@ -683,8 +683,8 @@ namespace Fem
    * Using this class directly in the way described above does not really make sense,
    * because (as you might have noticed) it may be much to complex.
    * To escape this template hell, you should also have a look at
-   * the template alias _t (which is a shortcut for the class details::Nested) and
-   * the ArgContainerArgWrapper and ArgContainerArgWrapperUnique wrapper classes.
+   * the class _t and the ArgContainerArgWrapper and ArgContainerArgWrapperUnique
+   * wrapper classes.
    * For a general overview of all related container classes, see \ref Container.
    *
    *
@@ -704,40 +704,6 @@ namespace Fem
     static const int rows = std::tuple_size< Rows >::value;
     static const int col = std::tuple_size< Rows >::value;
   };
-
-
-  namespace details
-  {
-    /**
-     * \brief helper class to create nested templates.
-     *
-     * \ingroup Container
-     *
-     * See template alias _t for detailed explanation;
-     */
-    template< template<class...> class... >
-    struct Nested;
-
-    /**
-     * \brief partical specialization for one template argument.
-     */
-    template< template<class...> class ArgHead >
-    struct Nested< ArgHead >
-    {
-      template<class... I>
-      struct _t{ typedef ArgHead<I...> type; };
-    };
-
-    /**
-     * \brief partical specialization for more than one template argument.
-     */
-    template< template<class> class ArgHead, template<class...> class ArgHead2, template<class...> class... Args >
-    struct Nested< ArgHead, ArgHead2, Args... >
-    {
-      template<class... I>
-      struct _t{ typedef ArgHead<typename Nested<ArgHead2,Args...>::template _t<I...>::type > type; };
-    };
-  }
 
 
   /**
@@ -769,7 +735,7 @@ namespace Fem
    * \code
    * typedef typename std::tuple_element<0, Type >::type FirstElementType;
    * template< class... Args >
-   * using MyTemplate = FirstElementType::template _t< Args... >;
+   * using MyTemplate = FirstElementType::template _tn< Args... >;
    * \endcode
    *
    * Nesting
@@ -788,7 +754,7 @@ namespace Fem
    *
    * \code
    * template< class... Args >
-   * using MyTemplate = NestedType::template _t< Args... >;
+   * using MyTemplate = NestedType::template _tn< Args... >;
    * \endcode
    *
    * the following command line will compile
@@ -801,8 +767,28 @@ namespace Fem
    * i.e. the nesting has to be well defined afterwards.
    *
    */
-  template< template< class... >class ... Args >
-  using _t = details::Nested< Args... >;
+  template< template<class...> class... >
+  struct _t;
+
+  /**
+   * \brief partical specialization for one template argument.
+   */
+  template< template<class...> class ArgHead >
+  struct _t< ArgHead >
+  {
+    template<class... I>
+    struct _tn{ typedef ArgHead<I...> type; };
+  };
+
+  /**
+   * \brief partical specialization for more than one template argument.
+   */
+  template< template<class> class ArgHead, template<class...> class ArgHead2, template<class...> class... Args >
+  struct _t< ArgHead, ArgHead2, Args... >
+  {
+    template<class... I>
+    struct _tn{ typedef ArgHead<typename _t<ArgHead2,Args...>::template _tn<I...>::type > type; };
+  };
 
 
 
@@ -828,19 +814,19 @@ namespace Fem
      * \brief extracts structure for TwoArgContainer.
      */
     template<class R,class C,int r,int c>
-    struct _t2{ typedef typename std::tuple_element<c,typename std::tuple_element<r,TupleImp>::type>::type::template _t<R,C>::type type; };
+    struct _t2{ typedef typename std::tuple_element<c,typename std::tuple_element<r,TupleImp>::type>::type::template _tn<R,C>::type type; };
 
     /**
      * \brief extracts structure for TwoArgContainer, but swaps arguments C and R.
      */
     template<class R,class C,int r,int c>
-    struct _t2Inv{ typedef typename std::tuple_element<c,typename std::tuple_element<r,TupleImp>::type>::type::template _t<C,R>::type type; };
+    struct _t2Inv{ typedef typename std::tuple_element<c,typename std::tuple_element<r,TupleImp>::type>::type::template _tn<C,R>::type type; };
 
     /**
      * \brief extracts structure for OneArgContainer.
      */
     template<class R,int r>
-    struct _t1{ /*static_assert( r<std::tuple_size<TupleImp>::value, "selected tuple element does not exist." );*/typedef typename std::tuple_element<r,TupleImp>::type::template _t<R>::type type; };
+    struct _t1{ /*static_assert( r<std::tuple_size<TupleImp>::value, "selected tuple element does not exist." );*/typedef typename std::tuple_element<r,TupleImp>::type::template _tn<R>::type type; };
   };
 
 
