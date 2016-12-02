@@ -41,8 +41,10 @@ namespace Fem
   template< class Item2TupleImp, class Item1TupleImp, class SubOrderRowImp, class SubOrderColImp, class... DiscreteFunctions >
   class GlobalContainer
   {
-    typedef TwoArgContainer< ArgContainerArgWrapper< Item2TupleImp >::template _t2Inv, ArgContainerArgWrapper< Item1TupleImp >::template _t1,
-                             std::tuple< DiscreteFunctions... >, std::tuple< DiscreteFunctions... > > ContainerType;
+    typedef TwoArgContainer< ArgContainerArgWrapper< Item2TupleImp >::template _t2Inv,
+                             ArgContainerArgWrapper< Item1TupleImp >::template _t1,
+                             std::tuple< DiscreteFunctions... >,
+                             std::tuple< DiscreteFunctions... > >                      ContainerType;
 
     static_assert( is_tuple< SubOrderRowImp >::value, "SubOrderRowImp has to be a std::tuple<std::tuple<>...>" );
   public:
@@ -50,9 +52,9 @@ namespace Fem
     /**
      * \brief constructor. Delegates everything
      */
-    template< class GridImp, class ... Args>
-    GlobalContainer( const std::shared_ptr< GridImp >& gridptr, Args&&... args )
-    : cont_( gridptr, std::forward<Args>(args)... )
+    template< class... SameObjects >
+    explicit GlobalContainer( const std::string name, const std::shared_ptr< SameObjects >& ... obj )
+    : cont_( std::get<0>(std::tie( obj... ) ), name )
     {}
 
     /**
@@ -65,11 +67,12 @@ namespace Fem
                      "SubOrderRowImp does not contain the necessary sub structure information.\
                       SubOrderRowImp has to be a std::tuple containing i std::tuple's!" );
 
-      static const SubOrderRowImp order;
+      static const SubOrderRowImp rowOrder;
+      static const SubOrderColImp colOrder;
 
       std::cout << "###CREATE: sub container " << print( index )
-                << " from global container containing elements " << print( std::get<i>(order) )  << std::endl;
-      return cont_( std::get<i>(order), std::get<i>(order) );
+                << " from global container containing elements " << print( std::get<i>(rowOrder) )  << std::endl;
+      return cont_( std::get<i>(rowOrder), std::get<i>(colOrder) );
     }
 
     const std::string name() const
@@ -133,8 +136,6 @@ namespace Fem
                                  std::tuple< SubOrderColImp... >,
                                  DiscreteFunctions...>
   {
-    //std::tuple< std::tuple< std::tuple< Head2...> >, Item2TupleImp... >
-
     static const int size1 = std::tuple_size< std::tuple< Item1TupleImp... > >::value;
     static const int size2 = std::tuple_size< std::tuple< Item2TupleImp... > >::value;
     static_assert( size1 == size2, "Item2TupleImp and Item1TupleImp has to contain the same numbers of elements." );
@@ -154,31 +155,25 @@ namespace Fem
   protected:
     static std::make_integer_sequence< unsigned long int, size1 > sequence;
 
-    template< unsigned long int i, class... Args >
-    static decltype(auto) createItem( Args&&... args )
+    template< unsigned long int i, class SameObject >
+    static decltype(auto) createItem( const std::string name, const std::shared_ptr< SameObject>& obj )
     {
-      return std::make_shared<ContainerItem<i> >( args... );
+      return std::make_shared<ContainerItem<i> >( obj, name );
     }
 
-    template< unsigned long int ...i, class SameObject>
-    static decltype(auto) createContainer( _indices<i...>, std::shared_ptr< SameObject > obj, const std::string name )
+    template< unsigned long int ...i, class... SameObject>
+    static decltype(auto) createContainer( _indices<i...>, const std::string name, const std::shared_ptr< SameObject >&... obj)
     {
-      return std::make_tuple( createItem<i>( obj, name )... );
+      return std::make_tuple( createItem<i>( name, std::get<i>(obj) )... );
     }
-    template< unsigned long int ...i >
-    static decltype(auto) createContainer( _indices<i...>, const std::string name )
-    {
-      return std::make_tuple( createItem<i>( name )... );
-    }
-
   public:
 
     /**
      * \brief constructor. Delegates everything
      */
-    template< class GridImp, class ... Args>
-    explicit CombinedGlobalContainer( const std::shared_ptr< GridImp >& gridptr, Args&&... args )
-    : cont_( createContainer( sequence, gridptr, "" /*std::forward<Args>(args)...*/ ) )
+    template< class... SameObjects >
+    explicit CombinedGlobalContainer( const std::string name, const std::shared_ptr< SameObjects >& ... obj )
+    : cont_( createContainer( sequence, name, obj... ) )
     {}
 
     /**

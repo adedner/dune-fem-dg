@@ -900,6 +900,75 @@ namespace Fem
 
 
 
+  /**
+   *
+   * \brief Allows a static remap of the two last int arguments for template<class,int> structs
+   *
+   * This helper struct is mainly used for the first argument of OneArgContainer and the second argument
+   * of TwoArgContainer.
+   *
+   * \ingroup Container
+   */
+  template< template<class,int...> class, class >
+  struct MappedOneArgContainer;
+
+
+  /**
+   * \brief Partial specialization.
+   *
+   * \ingroup Container
+   *
+   * \copydoc MappedOneArgContainer
+   */
+  template< template<class,int...> class OneArgImp, unsigned long int... maps >
+  struct MappedOneArgContainer< OneArgImp, std::tuple< _index< maps >... > >
+  {
+    /**
+     * \brief extracts structure for OneArgContainer.
+     */
+    template<class R,int r>
+    struct _t1
+    {
+      typedef std::tuple< _index< maps >... > MapsType;
+      typedef typename OneArgImp<R,std::tuple_element<r,MapsType>::type::value>::type type;
+    };
+  };
+
+  /**
+   *
+   * \brief Allows a static remap of the two last int arguments for template<class,class,int,int> structs
+   *
+   * This helper struct is mainly used for the first argument of TwoArgContainer.
+   *
+   * \ingroup Container
+   */
+  template< template<class,class,int...> class, class, class >
+  struct MappedTwoArgContainer;
+
+  /**
+   * \brief Partial specialization.
+   *
+   * \ingroup Container
+   *
+   * \copydoc MappedTwoArgContainer
+   */
+  template< template<class,class,int...> class TwoArgImp, unsigned long int... rowMaps, unsigned long int... colMaps >
+  struct MappedTwoArgContainer< TwoArgImp, std::tuple< _index< rowMaps >... >, std::tuple< _index< colMaps >... >  >
+  {
+    /**
+     * \brief extracts structure for TwoArgContainer.
+     */
+    template<class R,class C,int r,int c>
+    struct _t2
+    {
+      typedef std::tuple< _index< rowMaps >... > RowMapsType;
+      typedef std::tuple< _index< colMaps >... > ColMapsType;
+      typedef typename TwoArgImp<R,C,std::tuple_element<r,RowMapsType>::type::value,std::tuple_element<c,ColMapsType>::type::value>::type type;
+    };
+  };
+
+
+
 
   // further tuple matrix helper classes
   // -----------------------------------

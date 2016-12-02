@@ -39,6 +39,9 @@ namespace Fem
     typedef typename std::tuple_element<0, std::tuple< ProblemTraits... > >::type::GridType
                                                                            GridType;
 
+    typedef std::tuple< typename std::add_lvalue_reference<typename ProblemTraits::GridType>::type ... >
+                                                                           GridTypes;
+
     // wrap operator
     typedef GridTimeProvider< GridType >                                   TimeProviderType;
 
@@ -136,17 +139,18 @@ namespace Fem
   public:
     using BaseType::grid;
 
-    SteadyStateAlgorithm ( GridType &grid, const std::string name = "" )
-    : BaseType( grid, name ),
-      tuple_( CreateSubAlgorithmsType::apply( grid ) ),
-      solverMonitorCaller_( tuple_ ),
-      dataWriterCaller_( tuple_ ),
-      adaptCaller_( tuple_ )
-    {}
+    //template< class... GridImps >
+    //SteadyStateAlgorithm ( const std::string name, GridImps&... grids )
+    //: BaseType( name, grids... ),
+    //  tuple_( CreateSubAlgorithmsType::apply( grids... ) ),
+    //  solverMonitorCaller_( tuple_ ),
+    //  dataWriterCaller_( tuple_ ),
+    //  adaptCaller_( tuple_ )
+    //{}
 
     template< class GlobalContainerImp >
-    SteadyStateAlgorithm ( const std::shared_ptr<GlobalContainerImp>& cont, const std::string name = "" )
-    : BaseType( const_cast< GridType& >( (*(cont->sub(_0)))(_0)->solution()->gridPart().grid()), name ),
+    SteadyStateAlgorithm ( const std::string name, const std::shared_ptr<GlobalContainerImp>& cont )
+    : BaseType( name, const_cast< GridType& >( (*(cont->sub(_0)))(_0)->solution()->gridPart().grid()) ),
       tuple_( CreateSubAlgorithmsType::apply( cont ) ),
       solverMonitorCaller_( tuple_ ),
       dataWriterCaller_( tuple_ ),

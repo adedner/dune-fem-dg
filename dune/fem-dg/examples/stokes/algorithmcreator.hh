@@ -170,12 +170,15 @@ namespace Fem
     template< class AC >
     struct SubStokesAlgorithmCreator
     {
-      typedef SubPoissonAlgorithmCreator<AC>                SubCreatorType;
+      typedef SubPoissonAlgorithmCreator<AC>                   SubCreatorType;
+
+      template< int polOrd >
+      using SubAlgorithms = typename SubCreatorType::template Algorithm<polOrd>;
 
 
-      typedef typename AC::GridType                         GridType;
-      typedef typename AC::GridParts                        HostGridPartType;
-      typedef HostGridPartType                              GridPartType;
+      typedef typename AC::GridType                            GridType;
+      typedef typename AC::GridParts                           HostGridPartType;
+      typedef HostGridPartType                                 GridPartType;
 
       // define problem type here if interface should be avoided
       typedef Stokes::ProblemInterface< GridType >             ProblemInterfaceType;
@@ -271,7 +274,6 @@ namespace Fem
     template <int polOrd>
     using Algorithm = SteadyStateAlgorithm< polOrd, SubStokesAlgorithmCreator<ACStokes> >;
 
-    typedef typename SubStokesAlgorithmCreator<ACStokes>::GridType       GridType;
 
     static inline std::string moduleName() { return ""; }
 
@@ -284,44 +286,40 @@ namespace Fem
     template< int polOrd >
     static decltype(auto) initContainer()
     {
+      typedef typename SubStokesAlgorithmCreator<ACStokes>::GridType        GridType;
 
       //Discrete Functions
       typedef typename SubStokesAlgorithmCreator<ACStokes>::SubCreatorType::template DiscreteTraits<polOrd>::DiscreteFunctionType DFType1;
       typedef typename SubStokesAlgorithmCreator<ACStokes>::template DiscreteTraits<polOrd>::DiscreteFunctionType DFType2;
 
       //Item1
-      typedef _t< SubSteadyStateContainerItem >                         Steady;
-      typedef std::tuple< Steady, Steady >                              Item1TupleType;
+      typedef _t< SubSteadyStateContainerItem >                             Steady;
+      typedef std::tuple< Steady, Steady >                                  Item1TupleType;
 
       //Item2
-      typedef _t< SubEllipticContainerItem, DefaultContainer >          Def;
+      typedef _t< SubEllipticContainerItem, DefaultContainer >              Def;
+      typedef _t< SubEllipticContainerItem, SparseRowLinearOperator >       Sp;
       typedef _t< SubEllipticContainerItem, NoPreconditioner, DefaultContainer > DefNo;
 
-      typedef std::tuple< std::tuple< Def,   DefNo >,
-                          std::tuple< DefNo, Def > >                    Item2TupleType;
-#if 0
-      typedef std::tuple< std::tuple< Def, Def >,
-                          std::tuple< Def, Def > >                      Item2TupleType;
-      typedef std::tuple< std::tuple< Ell > >                           Item2TupleType;
-#endif
+      typedef std::tuple< std::tuple< Def, Sp >,
+                          std::tuple< Sp, Sp > >                            Item2TupleType;
 
       //Sub (discrete function argument ordering)
-      typedef std::tuple<__0,__1 >                                      StokesOrder;
+      typedef std::tuple<__0,__1 >                                          StokesOrder;
 
-      typedef std::tuple< StokesOrder >                                 SubOrderRowType;
-      typedef SubOrderRowType                                           SubOrderColType;
-
+      typedef std::tuple< StokesOrder >                                     SubOrderRowType;
+      typedef SubOrderRowType                                               SubOrderColType;
 
 
       //Global container
       typedef GlobalContainer< Item2TupleType, Item1TupleType, SubOrderRowType, SubOrderColType, DFType1, DFType2 >
-                                                                        GlobalContainerType;
+                                                                            GlobalContainerType;
 
       //create grid
       std::shared_ptr< GridType > gridptr( DefaultGridInitializer< GridType >::initialize().release() );
 
       //create container
-      return std::make_shared< GlobalContainerType >( gridptr );
+      return std::make_shared< GlobalContainerType >( moduleName(), gridptr, gridptr );
 
     }
 

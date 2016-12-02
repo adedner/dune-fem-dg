@@ -148,6 +148,7 @@ namespace Fem
   public:
     // type of Grid
     typedef typename Traits::GridType                 GridType;
+    typedef typename Traits::GridTypes                GridTypes;
 
     // type of IOTuple
     typedef typename Traits::IOTupleType              IOTupleType;
@@ -158,8 +159,9 @@ namespace Fem
     typedef EocParameters                             EocParametersType;
 
     //! constructor
-    AlgorithmInterface ( GridType &grid, const std::string algorithmName = "" )
-      : grid_( grid ),
+    template< class... GridImps >
+    AlgorithmInterface ( const std::string algorithmName, GridImps&... grids )
+      : grids_( std::tie( grids... ) ),
         algorithmName_( algorithmName ),
         eocParam_( ParameterKey::generate( "", "fem.eoc." ) )
     {}
@@ -169,13 +171,13 @@ namespace Fem
     {}
 
     //! return reference to hierarchical grid
-    GridType &grid () const { return grid_; }
+    GridType &grid () const { return std::get<0>( grids_ ); }
 
     // return size of grid
     virtual std::size_t gridSize () const
     {
-      std::size_t grSize = grid_.size( 0 );
-      return grid_.comm().sum( grSize );
+      std::size_t grSize = std::get<0>(grids_).size( 0 );
+      return std::get<0>(grids_).comm().sum( grSize );
     }
 
     //! return default data tuple for data output
@@ -191,7 +193,7 @@ namespace Fem
     virtual const std::string name() { return algorithmName_; }
 
   private:
-    GridType &grid_;
+    GridTypes grids_;
     const std::string algorithmName_;
     EocParameters eocParam_;
   };
@@ -209,10 +211,10 @@ namespace Fem
     typedef typename Algorithm::GridType             GridType;
     typedef typename Algorithm::EocParametersType    EocParametersType;
 
-    GridType& grid = algorithm.grid();
+    auto& grid = algorithm.grid();
     auto dataTup = algorithm.dataTuple() ;
 
-    typedef typename Algorithm::DataWriterCallerType::template DataOutput< GridType, decltype( dataTup ) > ::Type DataOutputType;
+    typedef typename Algorithm::DataWriterCallerType::template DataOutput< decltype( grid ), decltype( dataTup ) > ::Type DataOutputType;
     DataOutputType dataOutput( grid, dataTup );
 
     // initialize FemEoc if eocSteps > 1

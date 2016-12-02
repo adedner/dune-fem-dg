@@ -451,7 +451,12 @@ namespace Fem
     decltype(auto) operator() ( std::tuple< _index<i>... > index )
     {
       typedef std::tuple< typename std::tuple_element<i,ArgTupleType>::type...> NewArgTupleType;
-      typedef OneArgContainer< OneArgImp, NewArgTupleType > SubContainerType;
+
+      typedef std::tuple< _index<i>... > Maps;
+
+      typedef MappedOneArgContainer< OneArgImp, Maps >            MappedOneArgImp;
+
+      typedef OneArgContainer< MappedOneArgImp::template _t1, NewArgTupleType > SubContainerType;
 
       return std::make_shared< SubContainerType >( copyContainer(item1_, index ) );
     }
@@ -592,7 +597,7 @@ namespace Fem
      * \brief This more advanced method allows to create sub containers out of an already existing container.
      *
      * \param row std::tuple of rows which should be contained in the new sub container.
-     * \param vol std::tuple of columns which should be contained in the new sub container.
+     * \param col std::tuple of columns which should be contained in the new sub container.
      *
      * \warning Just for the case, that the sub container only contains one row or one line:
      * Do not forget to wrap a std::tuple<> around the std::integral_constant<>.
@@ -604,14 +609,22 @@ namespace Fem
       typedef std::tuple< typename std::tuple_element<i,RowArgTupleType>::type...> NewRowArgTupleType;
       typedef std::tuple< typename std::tuple_element<j,ColArgTupleType>::type...> NewColArgTupleType;
 
-      typedef OneArgContainer< OneArgImp, NewRowArgTupleType > RowOneArgContainerType;
-      typedef OneArgContainer< OneArgImp, NewColArgTupleType > ColOneArgContainerType;
+      typedef std::tuple< _index<i>... > RowMaps;
+      typedef std::tuple< _index<j>... > ColMaps;
 
-      typedef TwoArgContainer< TwoArgImp, OneArgImp, NewRowArgTupleType, NewColArgTupleType > SubContainerType;
+      typedef MappedOneArgContainer< OneArgImp, RowMaps >            MappedRowOneArgImp;
+      typedef MappedOneArgContainer< OneArgImp, ColMaps >            MappedColOneArgImp;
+
+      //TODO: row and col shifts still have to be the same, atm!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+      typedef MappedTwoArgContainer< TwoArgImp, RowMaps, ColMaps > MappedTwoArgImp;
+
+      typedef TwoArgContainer< MappedTwoArgImp::template _t2, MappedRowOneArgImp::template _t1,
+                               NewRowArgTupleType, NewColArgTupleType> SubContainerType;
 
       std::cout << "###CREATE: local sub container " << print( row, col ) << std::endl;
-      return std::make_shared< SubContainerType >( RowOneArgContainerType::copyContainer( item1_, row ),
-                                                   ColOneArgContainerType::copyContainer( colItem1_, col ),
+      return std::make_shared< SubContainerType >( BaseType::copyContainer( item1_, row ),
+                                                   FakeColBaseType::copyContainer( colItem1_, col ),
                                                    copyContainer( row, col ) );
     }
   protected:

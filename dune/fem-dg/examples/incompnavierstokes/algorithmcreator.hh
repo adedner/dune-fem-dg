@@ -65,6 +65,12 @@ namespace Fem
 
     static inline std::string moduleName() { return ""; }
 
+  private:
+    //helper struct
+    template< class DDF, class RDF >
+    using DefaultContainer = typename ACStokes::template Containers< typename DDF::DiscreteFunctionSpaceType, typename RDF::DiscreteFunctionSpaceType >;
+
+  public:
     template< int polOrd >
     static decltype(auto) initContainer()
     {
@@ -77,32 +83,39 @@ namespace Fem
 
       //Item1
       typedef std::tuple< _t< SubSteadyStateContainerItem >, _t< SubSteadyStateContainerItem >  >
-                                                                      Steady;
-      typedef std::tuple< _t< SubEvolutionContainerItem > >           Evol;
-      typedef std::tuple< Steady, Evol, Steady >                      Item1TupleType;
+                                                                          Steady;
+      typedef std::tuple< _t< SubEvolutionContainerItem > >               Evol;
+      typedef std::tuple< Steady, Evol, Steady >                          Item1TupleType;
 
       //Item2
-      // typedef _t< SubEllipticContainerItem, ISTLLinearOperator >      Istl;
-      typedef _t< SubEllipticContainerItem, SparseRowLinearOperator > Sp;
-      typedef _t< EmptyContainerItem >                                Empty;
+      // typedef _t< SubEllipticContainerItem, ISTLLinearOperator >       Istl;
+      typedef _t< SubEllipticContainerItem, SparseRowLinearOperator >     Sp;
+      typedef _t< EmptyContainerItem >                                    Empty;
+
+      typedef _t< SubEllipticContainerItem, DefaultContainer >            Def;
+      typedef _t< SubEllipticContainerItem, NoPreconditioner, DefaultContainer > DefNo;
+
+      typedef std::tuple< std::tuple< Def,   DefNo >,
+                          std::tuple< DefNo, Def > >                      StokesNeu;
 
       typedef std::tuple< std::tuple< Sp, Sp >,
-                          std::tuple< Sp, Sp > >                      Stokes;
-      typedef std::tuple< std::tuple< Empty > >                       AdvDiff;
+                          std::tuple< Sp, Sp > >                          Stokes;
+      typedef std::tuple< std::tuple< Empty > >                           AdvDiff;
 
-      typedef std::tuple< Stokes, AdvDiff, Stokes >                   Item2TupleType;
+      typedef std::tuple< StokesNeu, AdvDiff, StokesNeu >                    Item2TupleType;
 
 
       //Sub (discrete function argument ordering)
-      typedef std::tuple<__0,__1 >                                    StokesOrder;
-      typedef std::tuple<__0 >                                        AdvDiffOrder;
+      typedef std::tuple<__0,__1 >                                         StokesOrder;
+      typedef std::tuple<__0 >                                             AdvDiffOrder;
 
-      typedef std::tuple< StokesOrder, AdvDiffOrder, StokesOrder >    SubOrderRowType;
-      typedef SubOrderRowType                                         SubOrderColType;
+      typedef std::tuple< StokesOrder, AdvDiffOrder, StokesOrder >         SubOrderRowType;
+      typedef SubOrderRowType                                              SubOrderColType;
 
 
       //Global container
-      typedef CombinedGlobalContainer< Item2TupleType, Item1TupleType, SubOrderRowType, SubOrderColType, DFType1, DFType2 > GlobalContainerType;
+      typedef CombinedGlobalContainer< Item2TupleType, Item1TupleType, SubOrderRowType, SubOrderColType, DFType1, DFType2 >
+                                                                           GlobalContainerType;
 
       ////TODO
       //typedef ThetaSchemeCouplingContainer< bla, bla, blubb >;
@@ -111,7 +124,7 @@ namespace Fem
       std::shared_ptr< GridType > gridptr( DefaultGridInitializer< GridType >::initialize().release() );
 
       //create container
-      return std::make_shared< GlobalContainerType >( gridptr, "global" /*, gridptr, gridptr */ );
+      return std::make_shared< GlobalContainerType >( moduleName(), gridptr, gridptr, gridptr );
 
     }
   };

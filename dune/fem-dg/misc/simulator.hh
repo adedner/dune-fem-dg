@@ -178,7 +178,7 @@ namespace Fem
 
     const auto& globalContainer = algCreator.template initContainer<polynomialOrder>();
     typedef typename AlgorithmCreator::template Algorithm< polynomialOrder > AlgorithmType;
-    auto algorithm = std::make_unique< AlgorithmType >( globalContainer );
+    auto algorithm = std::make_unique< AlgorithmType >( algCreator.moduleName(), globalContainer );
 
     // run the algorithm
     compute( *algorithm );

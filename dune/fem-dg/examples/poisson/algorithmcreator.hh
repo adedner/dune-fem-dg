@@ -187,7 +187,7 @@ namespace Fem
       std::shared_ptr< GridType > gridptr( DefaultGridInitializer< GridType >::initialize().release() );
 
       //create container
-      return std::make_shared< GlobalContainerType >( gridptr );
+      return std::make_shared< GlobalContainerType >( moduleName(), gridptr );
     }
 
   };

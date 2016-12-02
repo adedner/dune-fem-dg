@@ -98,10 +98,8 @@ namespace Fem
 
     typedef _t< SubEllipticContainerItem, SparseRowLinearOperator > Sp;
 
-    //typedef std::tuple< std::tuple< Def, Sp >,
-    //                    std::tuple< Sp,  Sp > >                       type;
-    typedef std::tuple< std::tuple< Def,   DefNo >,
-                        std::tuple< DefNo, Def > >                       type;
+    typedef std::tuple< std::tuple< Def, Sp >,
+                        std::tuple< Sp,  Sp > >                       type;
   };
 
 

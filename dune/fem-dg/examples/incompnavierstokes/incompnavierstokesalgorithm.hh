@@ -41,16 +41,10 @@ namespace Fem
                    "This InCompNavierStokesAlgorithm needs three sub algorithms: 1. Stokes, 2. Oseen, 3. Stokes" );
 
   public:
-    IncompNavierStokesAlgorithm ( GridType &grid, const std::string name = "" )
-    : BaseType( grid, name  )
-    {
-    }
-
     template< class GlobalContainerImp >
-    IncompNavierStokesAlgorithm ( const std::shared_ptr<GlobalContainerImp>& cont, const std::string name = "" )
-    : BaseType( cont, name  )
-    {
-    }
+    IncompNavierStokesAlgorithm ( const std::string name, const std::shared_ptr<GlobalContainerImp>& cont )
+    : BaseType( name, cont  )
+    {}
 
 
     virtual void initialize ( int loop, TimeProviderType &tp )

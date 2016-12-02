@@ -158,6 +158,10 @@ namespace Fem
     typedef typename std::tuple_element<0, std::tuple< ProblemTraits... > >::type::GridType
                                                                         GridType;
 
+    typedef std::tuple< typename std::add_lvalue_reference<typename ProblemTraits::GridType>::type ... >
+                                                                        GridTypes;
+
+
     // wrap operator
     typedef GridTimeProvider< GridType >                                TimeProviderType;
 
@@ -195,13 +199,9 @@ namespace Fem
   public:
     typedef typename BaseType::GridType GridType;
 
-    EvolutionAlgorithm ( GridType &grid, const std::string name = "" )
-      : BaseType( grid, name )
-    {}
-
     template< class GlobalContainerImp >
-    EvolutionAlgorithm ( const std::shared_ptr<GlobalContainerImp>& cont, const std::string name = "" )
-    : BaseType( cont, name )
+    EvolutionAlgorithm ( const std::string name, const std::shared_ptr<GlobalContainerImp>& cont )
+    : BaseType( name, cont )
     {}
 
   };
@@ -310,30 +310,31 @@ namespace Fem
 
   public:
 
-    /**
-     * \brief Constructor
-     *
-     * \param grid the grid
-     * \param name the name of the algorithm
-     */
-    EvolutionAlgorithmBase ( GridType &grid, const std::string name = "" )
-    : BaseType( grid, name  ),
-      tuple_( CreateSubAlgorithmsType::apply( grid ) ),
-      checkPointCaller_( tuple_ ),
-      dataWriterCaller_( tuple_ ),
-      diagnosticsCaller_( tuple_ ),
-      solverMonitorCaller_( tuple_ ),
-      postProcessingCaller_( tuple_ ),
-      adaptCaller_( tuple_ ),
-      param_( TimeSteppingParametersType( ParameterKey::generate( "", "femdg.stepper." ) ) ),
-      overallTimer_(),
-      timeStepTimer_( Dune::FemTimer::addTo("sum time for timestep") ),
-      fixedTimeStep_( param_.fixedTimeStep() )
-    {}
+    ///**
+    // * \brief Constructor
+    // *
+    // * \param grid the grid
+    // * \param name the name of the algorithm
+    // */
+    //template< class... GridImps >
+    //EvolutionAlgorithmBase ( const std::string name, GridImps&... grids )
+    //: BaseType( name, grids...  ),
+    //  tuple_( CreateSubAlgorithmsType::apply( grids... ) ),
+    //  checkPointCaller_( tuple_ ),
+    //  dataWriterCaller_( tuple_ ),
+    //  diagnosticsCaller_( tuple_ ),
+    //  solverMonitorCaller_( tuple_ ),
+    //  postProcessingCaller_( tuple_ ),
+    //  adaptCaller_( tuple_ ),
+    //  param_( TimeSteppingParametersType( ParameterKey::generate( "", "femdg.stepper." ) ) ),
+    //  overallTimer_(),
+    //  timeStepTimer_( Dune::FemTimer::addTo("sum time for timestep") ),
+    //  fixedTimeStep_( param_.fixedTimeStep() )
+    //{}
 
     template< class GlobalContainerImp >
-    EvolutionAlgorithmBase ( const std::shared_ptr<GlobalContainerImp>& cont, const std::string name = "" )
-    : BaseType( const_cast< GridType& >( (*(cont->sub(_0)))(_0)->solution()->gridPart().grid()), name ),
+    EvolutionAlgorithmBase ( const std::string name, const std::shared_ptr<GlobalContainerImp>& cont )
+    : BaseType( name, const_cast< GridType& >( (*(cont->sub(_0)))(_0)->solution()->gridPart().grid()) ),
       tuple_( CreateSubAlgorithmsType::apply( cont ) ),
       checkPointCaller_( tuple_ ),
       dataWriterCaller_( tuple_ ),
@@ -588,6 +589,7 @@ namespace Fem
     virtual void preStep ( int loop, TimeProviderType &tp )
     {
       ForLoopType< PreSolve >::apply( tuple_, loop, &tp );
+      //forEach( tuple_, []( auto& e, auto&&... a ){ e->preSolve( std::forward<decltype(a)>(a)... ) } );
     }
 
     /**
