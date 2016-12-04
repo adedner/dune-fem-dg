@@ -125,12 +125,6 @@ namespace Fem
     UzawaContainer( Args&&... args )
     : BaseType( args... )
     {}
-
-    // constructor: todo: Should not work...
-    UzawaContainer( const typename UDiscreteFunctionImp::DiscreteFunctionSpaceType& uSpace,
-                    const typename PDiscreteFunctionImp::DiscreteFunctionSpaceType& pSpace )
-    : BaseType( uSpace, pSpace )
-    {}
   };
 
   /**
