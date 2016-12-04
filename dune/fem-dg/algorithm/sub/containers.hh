@@ -342,10 +342,10 @@ namespace Fem
   };
 
   //forward declaration
-  template< template<class,class,int...> class, template<class,int...> class, class Arg, class >
+  template< template<class,class,int...> class, template<class,int...> class, template<class,int...> class, class Arg, class >
   class TwoArgContainer
   {
-    static_assert( static_fail< Arg >::value, "third/fourth argument has to be a tuple" );
+    static_assert( static_fail< Arg >::value, "fourth/fifth argument has to be a tuple" );
   };
 
   /**
@@ -404,7 +404,7 @@ namespace Fem
     }
 
     //Be your own (template) friend
-    template< template<class,class,int...> class, template<class,int...> class, class, class >
+    template< template<class,class,int...> class, template<class,int...> class, template<class,int...> class, class, class >
     friend class TwoArgContainer;
 
     template< template<class,int...> class, class >
@@ -485,25 +485,30 @@ namespace Fem
    *
    *
    */
-  template< template<class,class,int...> class TwoArgImp, template<class,int...> class OneArgImp, class... RowArgs, class... ColArgs >
-  class TwoArgContainer< TwoArgImp, OneArgImp, std::tuple< RowArgs... >, std::tuple< ColArgs... > >
-    : public OneArgContainer< OneArgImp, std::tuple< RowArgs... > >
+  template< template<class,class,int...> class TwoArgImp,
+            template<class,int...> class RowOneArgImp,
+            template<class,int...> class ColOneArgImp,
+            class... RowArgs,
+            class... ColArgs >
+  class TwoArgContainer< TwoArgImp, RowOneArgImp, ColOneArgImp, std::tuple< RowArgs... >, std::tuple< ColArgs... > >
+    : public OneArgContainer< ColOneArgImp, std::tuple< RowArgs... > >
   {
-    typedef OneArgContainer< OneArgImp, std::tuple< RowArgs... > > BaseType;
-    typedef OneArgContainer< OneArgImp, std::tuple< ColArgs... > > FakeColBaseType;
+    typedef OneArgContainer< RowOneArgImp, std::tuple< RowArgs... > > BaseType;
+    typedef OneArgContainer< ColOneArgImp, std::tuple< ColArgs... > > FakeColBaseType;
 
     typedef std::tuple< RowArgs... >        RowArgTupleType;
     typedef std::tuple< ColArgs... >        ColArgTupleType;
 
     typedef typename MatrixPacker< TwoArgImp, RowArgTupleType, ColArgTupleType >::shared_type  Item2TupleType;
-    typedef typename VectorPacker< OneArgImp, RowArgTupleType >::shared_type                   Item1TupleType;
+    typedef typename VectorPacker< RowOneArgImp, RowArgTupleType >::shared_type                Item1TupleType;
 
     typedef Item1TupleType                                                                     RowItem1TupleType;
-    typedef typename VectorPacker< OneArgImp, ColArgTupleType >::shared_type                   ColItem1TupleType;
+    typedef typename VectorPacker< ColOneArgImp, ColArgTupleType >::shared_type                ColItem1TupleType;
   public:
 
-    typedef OneArgContainerStore< OneArgImp > OneArgType;
-    typedef TwoArgContainerStore< TwoArgImp > TwoArgType;
+    typedef OneArgContainerStore< RowOneArgImp > RowOneArgType;
+    typedef OneArgContainerStore< ColOneArgImp > ColOneArgType;
+    typedef TwoArgContainerStore< TwoArgImp >    TwoArgType;
 
     template< unsigned long int i, unsigned long int j >
     using Item2 = typename std::tuple_element< j, typename std::tuple_element< i, Item2TupleType>::type >::type::element_type;
@@ -553,7 +558,7 @@ namespace Fem
     }
 
     //Be your own (template) friend
-    template< template<class,class,int...> class, template<class,int...> class, class, class >
+    template< template<class,class,int...> class, template<class,int...> class, template<class,int...> class, class, class >
     friend class TwoArgContainer;
 
     template< template<class,int...> class, class >
@@ -615,18 +620,18 @@ namespace Fem
       typedef std::tuple< typename std::tuple_element<i,RowArgTupleType>::type...> NewRowArgTupleType;
       typedef std::tuple< typename std::tuple_element<j,ColArgTupleType>::type...> NewColArgTupleType;
 
-      typedef std::tuple< _index<i>... > RowMaps;
-      typedef std::tuple< _index<j>... > ColMaps;
+      typedef std::tuple< _index<i>... >                                RowMaps;
+      typedef std::tuple< _index<j>... >                                ColMaps;
 
-      typedef MappedOneArgContainer< OneArgImp, RowMaps >            MappedRowOneArgImp;
-      typedef MappedOneArgContainer< OneArgImp, ColMaps >            MappedColOneArgImp;
+      typedef MappedOneArgContainer< RowOneArgImp, RowMaps >            MappedRowOneArgImp;
+      typedef MappedOneArgContainer< ColOneArgImp, ColMaps >            MappedColOneArgImp;
 
-      //TODO: row and col shifts still have to be the same, atm!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      typedef MappedTwoArgContainer< TwoArgImp, RowMaps, ColMaps >      MappedTwoArgImp;
 
-      typedef MappedTwoArgContainer< TwoArgImp, RowMaps, ColMaps > MappedTwoArgImp;
-
-      typedef TwoArgContainer< MappedTwoArgImp::template _t2, MappedRowOneArgImp::template _t1,
-                               NewRowArgTupleType, NewColArgTupleType> SubContainerType;
+      typedef TwoArgContainer< MappedTwoArgImp::template _t2,
+                               MappedRowOneArgImp::template _t1,
+                               MappedColOneArgImp::template _t1,
+                               NewRowArgTupleType, NewColArgTupleType>  SubContainerType;
 
       std::cout << "###CREATE: local sub container " << print( row, col ) << std::endl;
       return std::make_shared< SubContainerType >( BaseType::copyContainer( item1_, row ),

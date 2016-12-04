@@ -43,6 +43,7 @@ namespace Fem
   {
     typedef TwoArgContainer< ArgContainerArgWrapper< Item2TupleImp >::template _t2Inv,
                              ArgContainerArgWrapper< Item1TupleImp >::template _t1,
+                             ArgContainerArgWrapper< Item1TupleImp >::template _t1,
                              std::tuple< DiscreteFunctions... >,
                              std::tuple< DiscreteFunctions... > >                      ContainerType;
 
@@ -143,6 +144,7 @@ namespace Fem
     template< unsigned long int i >
     using ContainerItem = TwoArgContainer< ArgContainerArgWrapper< typename std::tuple_element<i, std::tuple<Item2TupleImp...> >::type >::template _t2Inv,
                                            ArgContainerArgWrapper< typename std::tuple_element<i, std::tuple<Item1TupleImp...> >::type >::template _t1,
+                                           ArgContainerArgWrapper< typename std::tuple_element<i, std::tuple<Item1TupleImp...> >::type >::template _t1,
                                            typename SubOrderSelect< typename std::tuple_element<i,std::tuple<SubOrderRowImp...> >::type, std::tuple< DiscreteFunctions...> >::type,
                                            typename SubOrderSelect< typename std::tuple_element<i,std::tuple<SubOrderColImp...> >::type, std::tuple< DiscreteFunctions...> >::type >;
 
@@ -232,33 +234,37 @@ namespace Fem
                                     std::tuple< SubOrderColImp... >,
                                     DiscreteFunctions...>
   {
-    typedef std::tuple< typename Containers::OneArgType... > Item1TupleImp;
+    typedef std::tuple< typename Containers::RowOneArgType... > RowItem1TupleImp;
+    typedef std::tuple< typename Containers::ColOneArgType... > ColItem1TupleImp;
     typedef std::tuple< typename Containers::TwoArgType... > Item2TupleImp;
 
-    static const int size1 = std::tuple_size< Item1TupleImp >::value;
-    static const int size2 = std::tuple_size< Item2TupleImp >::value;
+    static const int size = std::tuple_size< RowItem1TupleImp >::value;
 
     template< unsigned long int i >
-    using Test2 = typename std::tuple_element<i,Item2TupleImp>::type;
+    using Item2TupleItem = typename std::tuple_element<i,Item2TupleImp>::type;
 
     template< unsigned long int i >
-    using Test1 = typename std::tuple_element<i,Item1TupleImp>::type;
+    using RowItem1TupleItem = typename std::tuple_element<i,RowItem1TupleImp>::type;
+
+    template< unsigned long int i >
+    using ColItem1TupleItem = typename std::tuple_element<i,ColItem1TupleImp>::type;
 
 
     template< unsigned long int i >
-    using ContainerItem = TwoArgContainer< Test2<i>::template _t2,
-                                           Test1<i>::template _t1,
+    using ContainerItem = TwoArgContainer< Item2TupleItem<i>::template _t2,
+                                           RowItem1TupleItem<i>::template _t1,
+                                           ColItem1TupleItem<i>::template _t1,
                                            typename SubOrderSelect< typename std::tuple_element<i,std::tuple<SubOrderRowImp...> >::type, std::tuple< DiscreteFunctions...> >::type,
                                            typename SubOrderSelect< typename std::tuple_element<i,std::tuple<SubOrderColImp...> >::type, std::tuple< DiscreteFunctions...> >::type >;
 
     template< unsigned long int i >
     using SharedContainerItem = std::shared_ptr< ContainerItem<i> >;
 
-    typedef typename tuple_copy_t< size1, SharedContainerItem >::type ContainerType;
+    typedef typename tuple_copy_t< size, SharedContainerItem >::type ContainerType;
 
     static_assert( is_tuple< std::tuple<SubOrderRowImp...> >::value, "SubOrderRowImp has to be a std::tuple<std::tuple<>...>" );
   protected:
-    static std::make_integer_sequence< unsigned long int, size1 > sequence;
+    static std::make_integer_sequence< unsigned long int, size > sequence;
 
     template< unsigned long int i, class SameObject >
     static decltype(auto) createItem( const std::string name, const std::shared_ptr< SameObject>& obj )

@@ -62,9 +62,11 @@ namespace Fem
   struct SubEllipticContainer
     : public TwoArgContainer< ArgContainerArgWrapperUnique< SubEllipticContainerItem, MatrixImp >::template _t2Inv,
                               ArgContainerArgWrapperUnique< SubSteadyStateContainerItem >::template _t1,
+                              ArgContainerArgWrapperUnique< SubSteadyStateContainerItem >::template _t1,
                               std::tuple< DiscreteFunctions... >, std::tuple< DiscreteFunctions... > >
   {
     typedef TwoArgContainer< ArgContainerArgWrapperUnique< SubEllipticContainerItem, MatrixImp >::template _t2Inv,
+                             ArgContainerArgWrapperUnique< SubSteadyStateContainerItem >::template _t1,
                              ArgContainerArgWrapperUnique< SubSteadyStateContainerItem >::template _t1,
                              std::tuple< DiscreteFunctions... >, std::tuple< DiscreteFunctions... > > BaseType;
 

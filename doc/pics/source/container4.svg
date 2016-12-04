@@ -16,7 +16,10 @@
    id="svg2"
    version="1.1"
    inkscape:version="0.91 r13725"
-   sodipodi:docname="container4.svg">
+   sodipodi:docname="container4.svg"
+   inkscape:export-filename="/home/stefan/dune-super-fem-blood/dune-fem-dg/doc/pics/source/container4.svg.png"
+   inkscape:export-xdpi="76"
+   inkscape:export-ydpi="76">
   <sodipodi:namedview
      pagecolor="#ffffff"
      bordercolor="#666666"
@@ -30,10 +33,10 @@
      inkscape:window-height="1021"
      id="namedview6"
      showgrid="false"
-     inkscape:zoom="0.89702955"
-     inkscape:cx="-190.12808"
-     inkscape:cy="627.1793"
-     inkscape:window-x="2040"
+     inkscape:zoom="0.87615502"
+     inkscape:cx="630.03934"
+     inkscape:cy="494.65876"
+     inkscape:window-x="1716"
      inkscape:window-y="0"
      inkscape:window-maximized="1"
      inkscape:current-layer="svg2" />
@@ -952,7 +955,7 @@
          y="696.99127"
          x="96.716286"
          id="tspan4302"
-         sodipodi:role="line">TwoArgContainer&lt;          , -, - , - &gt;</tspan></text>
+         sodipodi:role="line">TwoArgContainer&lt;          , - , - , - , - &gt;</tspan></text>
     <rect
        y="681.91962"
        x="343.73541"
@@ -1492,4 +1495,13 @@
          x="625.39746"
          sodipodi:role="line">(_t2Inv is the same as _t2 but with swapped arguments)</tspan></text>
   </g>
+  <path
+     style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:3;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;stroke-miterlimit:4;stroke-dasharray:none"
+     d="m 939.33149,442.88102 c 59.89528,56.44379 -39.07117,273.8299 -287.62033,155.22368 l 9.1308,14.83755"
+     id="path8031"
+     inkscape:connector-curvature="0"
+     sodipodi:nodetypes="ccc"
+     inkscape:export-filename="/home/stefan/dune-super-fem-blood/dune-fem-dg/doc/pics/container4.png"
+     inkscape:export-xdpi="76"
+     inkscape:export-ydpi="76" />
 </svg>

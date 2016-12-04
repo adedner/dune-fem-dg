@@ -109,10 +109,12 @@ namespace Fem
   class UzawaContainer
     : public TwoArgContainer< ArgContainerArgWrapper< typename UzawaItem2< MatrixImp >::type >::template _t2Inv,
                               ArgContainerArgWrapperUnique< SubSteadyStateContainerItem >::template _t1,
+                              ArgContainerArgWrapperUnique< SubSteadyStateContainerItem >::template _t1,
                               std::tuple< UDiscreteFunctionImp, PDiscreteFunctionImp >,
                               std::tuple< UDiscreteFunctionImp, PDiscreteFunctionImp > >
   {
     typedef TwoArgContainer< ArgContainerArgWrapper< typename UzawaItem2< MatrixImp >::type >::template _t2Inv,
+                             ArgContainerArgWrapperUnique< SubSteadyStateContainerItem >::template _t1,
                              ArgContainerArgWrapperUnique< SubSteadyStateContainerItem >::template _t1,
                              std::tuple< UDiscreteFunctionImp, PDiscreteFunctionImp >,
                              std::tuple< UDiscreteFunctionImp, PDiscreteFunctionImp > >                   BaseType;
