@@ -162,7 +162,7 @@ namespace Fem
     }
 
     template< unsigned long int ...i, class... SameObject>
-    static decltype(auto) createContainer( _indices<i...>, const std::string name, const std::shared_ptr< SameObject >&... obj)
+    static decltype(auto) createContainer( _indices<i...>, const std::string name, std::tuple< std::shared_ptr< SameObject... > > obj)
     {
       return std::make_tuple( createItem<i>( name, std::get<i>(obj) )... );
     }
@@ -173,7 +173,7 @@ namespace Fem
      */
     template< class... SameObjects >
     explicit CombinedGlobalContainer( const std::string name, const std::shared_ptr< SameObjects >& ... obj )
-    : cont_( createContainer( sequence, name, obj... ) )
+    : cont_( createContainer( sequence, name, std::make_tuple( obj... ) ) )
     {}
 
     /**
