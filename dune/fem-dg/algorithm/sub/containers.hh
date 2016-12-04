@@ -370,6 +370,9 @@ namespace Fem
     typedef typename VectorPacker< OneArgImp, ArgTupleType >::shared_type Item1TupleType;
 
   public:
+
+    typedef OneArgContainerStore< OneArgImp > OneArgType;
+
     template< unsigned long int i >
     using Item1 = typename std::tuple_element< i, Item1TupleType>::type::element_type;
 
@@ -498,6 +501,9 @@ namespace Fem
     typedef Item1TupleType                                                                     RowItem1TupleType;
     typedef typename VectorPacker< OneArgImp, ColArgTupleType >::shared_type                   ColItem1TupleType;
   public:
+
+    typedef OneArgContainerStore< OneArgImp > OneArgType;
+    typedef TwoArgContainerStore< TwoArgImp > TwoArgType;
 
     template< unsigned long int i, unsigned long int j >
     using Item2 = typename std::tuple_element< j, typename std::tuple_element< i, Item2TupleType>::type >::type::element_type;

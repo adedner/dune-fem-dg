@@ -46,6 +46,7 @@
 //--------- PROBLEMCREATORSELECTOR ----------
 #include <dune/fem-dg/misc/configurator.hh>
 
+#define ROBERT_WANTS_USABILITY
 
 
 namespace Dune
@@ -292,6 +293,16 @@ namespace Fem
       typedef typename SubStokesAlgorithmCreator<ACStokes>::SubCreatorType::template DiscreteTraits<polOrd>::DiscreteFunctionType DFType1;
       typedef typename SubStokesAlgorithmCreator<ACStokes>::template DiscreteTraits<polOrd>::DiscreteFunctionType DFType2;
 
+#ifdef ROBERT_WANTS_USABILITY
+      typedef std::tuple< typename SubStokesAlgorithmCreator<ACStokes>::template Algorithm<polOrd>::ContainerType >
+                                                                           ContainerTupleType;
+
+      typedef std::tuple< std::tuple<__0,__1> >                            SubOrderType;
+
+      //Global container
+      typedef NewCombinedGlobalContainer< ContainerTupleType, SubOrderType, SubOrderType, DFType1, DFType2 >
+                                                                           GlobalContainerType;
+#else
       //Item1
       typedef _t< SubSteadyStateContainerItem >                             Steady;
       typedef std::tuple< Steady, Steady >                                  Item1TupleType;
@@ -306,7 +317,6 @@ namespace Fem
 
       //Sub (discrete function argument ordering)
       typedef std::tuple<__0,__1 >                                          StokesOrder;
-
       typedef std::tuple< StokesOrder >                                     SubOrderRowType;
       typedef SubOrderRowType                                               SubOrderColType;
 
@@ -314,12 +324,12 @@ namespace Fem
       //Global container
       typedef GlobalContainer< Item2TupleType, Item1TupleType, SubOrderRowType, SubOrderColType, DFType1, DFType2 >
                                                                             GlobalContainerType;
-
+#endif
       //create grid
       std::shared_ptr< GridType > gridptr( DefaultGridInitializer< GridType >::initialize().release() );
 
       //create container
-      return std::make_shared< GlobalContainerType >( moduleName(), gridptr, gridptr );
+      return std::make_shared< GlobalContainerType >( moduleName(), gridptr );
 
     }
 

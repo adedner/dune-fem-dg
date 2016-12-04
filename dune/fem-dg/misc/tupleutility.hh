@@ -900,6 +900,28 @@ namespace Fem
 
 
 
+  template< template<class,int...> class OneArgImp >
+  struct OneArgContainerStore
+  {
+    template<class R,int r>
+    struct _t1
+    {
+      typedef typename OneArgImp<R,r>::type type;
+    };
+  };
+
+  template< template<class,class,int...> class TwoArgImp >
+  struct TwoArgContainerStore
+  {
+    template<class R,class C,int r,int c>
+    struct _t2
+    {
+      typedef typename TwoArgImp<R,C,r,c>::type type;
+    };
+  };
+
+
+
   /**
    *
    * \brief Allows a static remap of the two last int arguments for template<class,int> structs
@@ -966,7 +988,6 @@ namespace Fem
       typedef typename TwoArgImp<R,C,std::tuple_element<r,RowMapsType>::type::value,std::tuple_element<c,ColMapsType>::type::value>::type type;
     };
   };
-
 
 
 

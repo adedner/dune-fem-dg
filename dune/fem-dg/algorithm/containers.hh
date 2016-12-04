@@ -204,6 +204,111 @@ namespace Fem
     ContainerType cont_;
   };
 
+
+
+
+  /**
+   * \brief Defines a global container.
+   *
+   * \ingroup Container
+   *
+   */
+  template< class Container, class SubOrderRowImp, class SubOrderColImp, class... DiscreteFunctions >
+  class NewCombinedGlobalContainer
+  {
+    static_assert( static_fail< Container >::value, "Please check your template arguments" );
+  };
+
+  /**
+   * \brief Defines a global container. Partial specialization
+   *
+   * \ingroup Container
+   *
+   * \copydoc NewCombinedGlobalContainer
+   */
+  template< class... Containers, class... SubOrderRowImp, class... SubOrderColImp, class... DiscreteFunctions >
+  class NewCombinedGlobalContainer< std::tuple< Containers... >,
+                                    std::tuple< SubOrderRowImp... >,
+                                    std::tuple< SubOrderColImp... >,
+                                    DiscreteFunctions...>
+  {
+    typedef std::tuple< typename Containers::OneArgType... > Item1TupleImp;
+    typedef std::tuple< typename Containers::TwoArgType... > Item2TupleImp;
+
+    static const int size1 = std::tuple_size< Item1TupleImp >::value;
+    static const int size2 = std::tuple_size< Item2TupleImp >::value;
+
+    template< unsigned long int i >
+    using Test2 = typename std::tuple_element<i,Item2TupleImp>::type;
+
+    template< unsigned long int i >
+    using Test1 = typename std::tuple_element<i,Item1TupleImp>::type;
+
+
+    template< unsigned long int i >
+    using ContainerItem = TwoArgContainer< Test2<i>::template _t2,
+                                           Test1<i>::template _t1,
+                                           typename SubOrderSelect< typename std::tuple_element<i,std::tuple<SubOrderRowImp...> >::type, std::tuple< DiscreteFunctions...> >::type,
+                                           typename SubOrderSelect< typename std::tuple_element<i,std::tuple<SubOrderColImp...> >::type, std::tuple< DiscreteFunctions...> >::type >;
+
+    template< unsigned long int i >
+    using SharedContainerItem = std::shared_ptr< ContainerItem<i> >;
+
+    typedef typename tuple_copy_t< size1, SharedContainerItem >::type ContainerType;
+
+    static_assert( is_tuple< std::tuple<SubOrderRowImp...> >::value, "SubOrderRowImp has to be a std::tuple<std::tuple<>...>" );
+  protected:
+    static std::make_integer_sequence< unsigned long int, size1 > sequence;
+
+    template< unsigned long int i, class SameObject >
+    static decltype(auto) createItem( const std::string name, const std::shared_ptr< SameObject>& obj )
+    {
+      return std::make_shared<ContainerItem<i> >( obj, name );
+    }
+
+    template< unsigned long int ...i, class... SameObject>
+    static decltype(auto) createContainer( _indices<i...>, const std::string name, std::tuple< std::shared_ptr< SameObject... > > obj)
+    {
+      return std::make_tuple( createItem<i>( name, std::get<i>(obj) )... );
+    }
+  public:
+
+    /**
+     * \brief constructor. Delegates everything
+     */
+    template< class... SameObjects >
+    explicit NewCombinedGlobalContainer( const std::string name, const std::shared_ptr< SameObjects >& ... obj )
+    : cont_( createContainer( sequence, name, std::make_tuple( obj... ) ) )
+    {}
+
+    /**
+     * \brief returns the i's container
+     */
+    template< unsigned long int i >
+    decltype(auto) sub( _index<i> index )
+    {
+      static_assert( std::tuple_size< std::tuple<SubOrderRowImp...> >::value > i,
+                     "SubOrderRowImp does not contain the necessary sub structure information.\
+                      SubOrderRowImp has to be a std::tuple containing i std::tuple's!" );
+
+      static const std::tuple<SubOrderRowImp...> rowOrder;
+      static const std::tuple<SubOrderColImp...> colOrder;
+
+      const auto& cont = std::get<i>( cont_ );
+
+      std::cout << "###CREATE: sub container " << print( index )
+                << " from combined global container containing elements " << print( std::get<i>(rowOrder) )<< " x " << print( std::get<i>(colOrder) )  << std::endl;
+      return (*cont)( std::get<i>(rowOrder), std::get<i>(colOrder) );
+    }
+
+    const std::string name() const
+    {
+      return std::string("global");
+    }
+  private:
+    ContainerType cont_;
+  };
+
 }
 }
 #endif // FEMHOWTO_STEPPER_HH
