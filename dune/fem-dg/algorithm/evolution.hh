@@ -310,31 +310,9 @@ namespace Fem
 
   public:
 
-    ///**
-    // * \brief Constructor
-    // *
-    // * \param grid the grid
-    // * \param name the name of the algorithm
-    // */
-    //template< class... GridImps >
-    //EvolutionAlgorithmBase ( const std::string name, GridImps&... grids )
-    //: BaseType( name, grids...  ),
-    //  tuple_( CreateSubAlgorithmsType::apply( grids... ) ),
-    //  checkPointCaller_( tuple_ ),
-    //  dataWriterCaller_( tuple_ ),
-    //  diagnosticsCaller_( tuple_ ),
-    //  solverMonitorCaller_( tuple_ ),
-    //  postProcessingCaller_( tuple_ ),
-    //  adaptCaller_( tuple_ ),
-    //  param_( TimeSteppingParametersType( ParameterKey::generate( "", "femdg.stepper." ) ) ),
-    //  overallTimer_(),
-    //  timeStepTimer_( Dune::FemTimer::addTo("sum time for timestep") ),
-    //  fixedTimeStep_( param_.fixedTimeStep() )
-    //{}
-
     template< class GlobalContainerImp >
     EvolutionAlgorithmBase ( const std::string name, const std::shared_ptr<GlobalContainerImp>& cont )
-    : BaseType( name, const_cast< GridType& >( (*(cont->sub(_0)))(_0)->solution()->gridPart().grid()) ),
+    : BaseType( name, CreateSubAlgorithmsType::grids( cont ) ),
       tuple_( CreateSubAlgorithmsType::apply( cont ) ),
       checkPointCaller_( tuple_ ),
       dataWriterCaller_( tuple_ ),

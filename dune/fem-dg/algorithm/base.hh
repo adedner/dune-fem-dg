@@ -159,9 +159,8 @@ namespace Fem
     typedef EocParameters                             EocParametersType;
 
     //! constructor
-    template< class... GridImps >
-    AlgorithmInterface ( const std::string algorithmName, GridImps&... grids )
-      : grids_( std::tie( grids... ) ),
+    AlgorithmInterface ( const std::string algorithmName, const GridTypes& grids )
+      : grids_( grids ),
         algorithmName_( algorithmName ),
         eocParam_( ParameterKey::generate( "", "fem.eoc." ) )
     {}
