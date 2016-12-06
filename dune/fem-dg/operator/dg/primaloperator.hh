@@ -32,7 +32,7 @@ namespace Fem
     // choose ids different to the tuple entries
     enum { u = std::tuple_size< typename Traits::ExtraParameterTupleType > ::value + 2 , cdgpass = u + 1 };
 
-    typedef AdvectionDiffusionDGPrimalModel< Traits, u, advection, diffusion> DiscreteModelType;
+    typedef AdvectionDiffusionDGPrimalModel< Traits, advection, diffusion, u> DiscreteModelType;
   };
 
   /**
@@ -178,14 +178,13 @@ namespace Fem
   ////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////
 
-  template <class Traits,
-            bool advection, bool diffusion >
+  template <class Traits, bool advection, bool diffusion >
   struct CDGAdaptationIndicatorTraits : public Traits
   {
     // choose ids different to the tuple entries
     enum { u = std::tuple_size< typename Traits::ExtraParameterTupleType > ::value + 2 , cdgpass = u + 1 };
 
-    typedef AdaptiveAdvectionDiffusionDGPrimalModel< Traits, u, advection, diffusion> DiscreteModelType;
+    typedef AdaptiveAdvectionDiffusionDGPrimalModel< Traits, advection, diffusion, u> DiscreteModelType;
   };
 
   // DGAdaptationIndicatorOperator
@@ -275,7 +274,7 @@ namespace Fem
 
 
     // The model of the advection pass (advectPassId)
-    typedef AdvectionDiffusionDGPrimalModel< Traits, limitPassId, advection, diffusion > DiscreteModel1Type;
+    typedef AdvectionDiffusionDGPrimalModel< Traits, advection, diffusion, limitPassId > DiscreteModel1Type;
 
     typedef typename DiscreteModel1Type::DiffusionFluxType                        DiffusionFluxType;
     typedef typename DiscreteModel1Type::AdaptationType                           AdaptationType;

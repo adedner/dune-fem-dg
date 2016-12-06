@@ -22,30 +22,30 @@ namespace Fem
   // GradientModel
   //--------------
 
-  template <class Traits, int passUId>
+  template <class Traits, int passUId, int... passIds >
   class GradientModel;
 
 
   // GradientTraits
   //---------------
 
-  template <class Traits, int passUId >
+  template <class Traits, int... passIds >
   struct GradientTraits : public Traits
   {
-    typedef GradientModel< Traits, passUId >         DGDiscreteModelType;
+    typedef GradientModel< Traits, passIds... >     DGDiscreteModelType;
   };
 
 
   // GradientModel
   //--------------
 
-  template < class OpTraits, int passUId>
+  template < class OpTraits, int passUId, int... passIds >
   class GradientModel :
     public Fem::DGDiscreteModelDefaultWithInsideOutside
-      < GradientTraits< OpTraits, passUId>, passUId >
+      < GradientTraits< OpTraits, passUId, passIds...>, passUId, passIds... >
   {
     typedef Fem::DGDiscreteModelDefaultWithInsideOutside
-              < GradientTraits< OpTraits, passUId >,  passUId > BaseType;
+              < GradientTraits< OpTraits, passUId, passIds... >, passUId, passIds... > BaseType;
 
     using BaseType::inside;
     using BaseType::outside;
@@ -54,7 +54,7 @@ namespace Fem
     std::integral_constant< int, passUId > uVar;
 
   public:
-    typedef GradientTraits< OpTraits, passUId >                    Traits;
+    typedef GradientTraits< OpTraits, passUId, passIds... >        Traits;
     typedef typename Traits::ModelType                             ModelType;
     typedef typename Traits::DiffusionFluxType                     DiffusionFluxType;
 
@@ -205,8 +205,8 @@ namespace Fem
   //---------------------------
 
   template< class Traits,
-            int passUId, int passGradId,
-            bool advectionPartExists, bool diffusionPartExists >
+            bool enableAdvection, bool enableDiffusion,
+            int passUId, int passGradId, int... passIds >
   class AdvectionDiffusionLDGModel;
 
 
@@ -214,16 +214,13 @@ namespace Fem
   //----------------------------
 
   template <class Traits,
-            int passUId, int passGradId,
-            bool advectionPartExists, bool diffusionPartExists >
+            bool enableAdvection, bool enableDiffusion,
+            int... passIds >
   struct AdvectionDiffusionLDGTraits
-  : public AdvectionTraits
-          < Traits, passUId, passGradId, advectionPartExists>
-
+  : public AdvectionTraits< Traits, enableAdvection, passIds... >
   {
-    typedef AdvectionDiffusionLDGModel
-      < Traits, passUId, passGradId,
-        advectionPartExists, diffusionPartExists >                   DGDiscreteModelType;
+    typedef AdvectionDiffusionLDGModel< Traits, enableAdvection, enableDiffusion, passIds... >
+                                                  DGDiscreteModelType;
   };
 
 
@@ -231,17 +228,16 @@ namespace Fem
   //---------------------------
 
   template< class OpTraits,
-            int passUId, int passGradId,
-            bool advectionPartExists, bool diffusionPartExists >
+            bool enableAdvection, bool enableDiffusion,
+            int passUId, int passGradId, int... passIds >
   class AdvectionDiffusionLDGModel :
-    public AdvectionModel< OpTraits, passUId, passGradId, advectionPartExists >
+    public AdvectionModel< OpTraits, enableAdvection, passUId, passGradId, passIds... >
   {
   public:
-    typedef AdvectionDiffusionLDGTraits
-      < OpTraits, passUId, passGradId,
-          advectionPartExists, diffusionPartExists >  Traits;
+    typedef AdvectionDiffusionLDGTraits< OpTraits, enableAdvection, enableDiffusion,
+                                         passUId, passGradId, passIds... > Traits;
 
-    typedef AdvectionModel< OpTraits, passUId, passGradId, advectionPartExists>    BaseType;
+    typedef AdvectionModel< OpTraits, enableAdvection, passUId, passGradId, passIds... >    BaseType;
 
     using BaseType::inside ;
     using BaseType::outside ;
@@ -260,8 +256,8 @@ namespace Fem
     enum { dimRange  = ModelType::dimRange };
     enum { dimDomain = ModelType::Traits::dimDomain };
 
-    enum { advection = advectionPartExists };
-    enum { diffusion = diffusionPartExists };
+    enum { advection = enableAdvection };
+    enum { diffusion = enableDiffusion };
 
     typedef typename BaseType::DomainType                    DomainType;
     typedef typename BaseType::RangeFieldType                RangeFieldType;

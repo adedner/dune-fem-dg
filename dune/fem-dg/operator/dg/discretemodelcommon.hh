@@ -50,13 +50,10 @@ namespace Fem
    * \ingroups DiscreteModels
    * \ingroups Pass
    */
-  template< class Traits,
-            int passUId, int passGradId >
-  class FemDGBaseDiscreteModel : public Fem::DGDiscreteModelDefaultWithInsideOutside< Traits, passUId, passGradId >
+  template< class Traits, int... passIds >
+  class FemDGBaseDiscreteModel
+    : public Fem::DGDiscreteModelDefaultWithInsideOutside< Traits, passIds... >
   {
-    typedef Fem::DGDiscreteModelDefaultWithInsideOutside< Traits, passUId, passGradId > BaseType;
-    typedef typename BaseType::Selector                   BaseSelectorType;
-
     typedef typename Traits::ModelType::ModelParameter    ModelParameter;
     typedef typename Traits::ExtraParameterTupleType      ExtraParameterTupleType;
 
@@ -70,7 +67,7 @@ namespace Fem
     //typedef typename Dune::Fem::Selector<  passUId, passGradId > ::Type Selector ;
 
     // overload selector type to add model parameters
-    typedef typename Dune::Fem::SelectorBase< Dune::Fem::ElementTuple< passUId, passGradId, -1, -1, -1, -1, -1, -1, -1, SelectedModelParameterType > >::Type  Selector;
+    typedef typename Dune::Fem::VariadicSelectorBase< SelectedModelParameterType, passIds... >::Type  Selector;
 
     /*
     FemDGBaseDiscreteModel()
@@ -88,20 +85,17 @@ namespace Fem
   // AdvectionModel
   //---------------
 
-  template< class OpTraits,
-            int passUId, int passGradId,
-            bool returnAdvectionPart>
+  template< class OpTraits, bool enableAdvection, int passUId, int... passIds >
   class AdvectionModel;
 
 
   // AdvectionTraits
   //----------------
 
-  template <class Traits,
-            int passUId, int passGradId, bool returnAdvectionPart>
+  template <class Traits, bool enableAdvection, int... passIds >
   struct AdvectionTraits : public Traits
   {
-    typedef AdvectionModel< Traits, passUId, passGradId, returnAdvectionPart >       DGDiscreteModelType;
+    typedef AdvectionModel< Traits, enableAdvection, passIds... >       DGDiscreteModelType;
   };
 
 
@@ -113,29 +107,26 @@ namespace Fem
    *  \tparam OpTraits Operator traits describing the operator
    *  \tparam passUId The id of a pass whose value is used here
    *  \tparam passGradId The id of a pass whose value is used here
-   *  \tparam returnAdvectionPart Switch on/off the advection
+   *  \tparam enableAdvection Switch on/off the advection
    */
-  template< class OpTraits,
-            int passUId, int passGradId,
-            bool returnAdvectionPart>
+  template< class OpTraits, bool enableAdvection, int passUId, int... passIds >
   class AdvectionModel :
-    public FemDGBaseDiscreteModel< AdvectionTraits< OpTraits, passUId, passGradId, returnAdvectionPart >,
-                                   passUId, passGradId
-                                 >
+    public FemDGBaseDiscreteModel< AdvectionTraits< OpTraits, enableAdvection, passUId, passIds... >,
+                                   passUId, passIds... >
   {
   public:
-    typedef AdvectionTraits< OpTraits, passUId, passGradId, returnAdvectionPart > Traits;
+    typedef AdvectionTraits< OpTraits, enableAdvection, passUId, passIds... > Traits;
 
     typedef typename Traits :: ModelType         ModelType ;
     typedef typename Traits :: AdvectionFluxType AdvectionFluxType;
 
-    typedef FemDGBaseDiscreteModel< Traits, passUId, passGradId >  BaseType;
+    typedef FemDGBaseDiscreteModel< Traits, passUId, passIds... >  BaseType;
 
     // These type definitions allow a convenient access to arguments of pass.
     std::integral_constant< int, passUId > uVar;
 
   public:
-    enum { advection = returnAdvectionPart  };
+    enum { advection = enableAdvection };
     enum { evaluateJacobian = false };
 
     typedef typename Traits :: GridPartType                            GridPartType;
@@ -353,19 +344,14 @@ namespace Fem
   // AdaptiveAdvectionModel
   //
   //////////////////////////////////////////////////////
-  template< class OpTraits,
-            int passUId, int passGradId,
-            bool returnAdvectionPart>
-  class AdaptiveAdvectionModel ;
+  template< class OpTraits, bool enableAdvection, int passUId, int... passIds >
+  class AdaptiveAdvectionModel;
 
-  template <class OpTraits,
-            int passUId, int passGradId, bool returnAdvectionPart>
+  template <class OpTraits, bool enableAdvection, int... passIds >
   struct AdaptiveAdvectionTraits
-    : public AdvectionTraits< OpTraits, passUId, passGradId,
-                              returnAdvectionPart >
+    : public AdvectionTraits< OpTraits, enableAdvection, passIds... >
   {
-    typedef AdaptiveAdvectionModel< OpTraits, passUId, passGradId,
-                                    returnAdvectionPart >       DGDiscreteModelType;
+    typedef AdaptiveAdvectionModel< OpTraits, enableAdvection, passIds... > DGDiscreteModelType;
   };
 
   /*  \brief discrete model for adaptive operator
@@ -376,18 +362,16 @@ namespace Fem
    *  \tparam OpTraits Operator traits describing the operator
    *  \tparam passUId The id of a pass whose value is used here
    *  \tparam passGradId The id of a pass whose value is used here
-   *  \tparam returnAdvectionPart Switch on/off the advection
+   *  \tparam enableAdvection Switch on/off the advection
    */
-  template< class OpTraits,
-            int passUId, int passGradId,
-            bool returnAdvectionPart>
+  template< class OpTraits, bool enableAdvection, int passUId, int... passIds >
   class AdaptiveAdvectionModel
-    : public AdvectionModel< OpTraits, passUId,  passGradId, returnAdvectionPart >
+    : public AdvectionModel< OpTraits, enableAdvection, passUId, passIds... >
   {
   public:
-    typedef AdaptiveAdvectionTraits< OpTraits, passUId, passGradId, returnAdvectionPart> Traits;
+    typedef AdaptiveAdvectionTraits< OpTraits, enableAdvection, passUId, passIds... > Traits;
 
-    typedef AdvectionModel< OpTraits, passUId,  passGradId, returnAdvectionPart > BaseType ;
+    typedef AdvectionModel< OpTraits, enableAdvection, passUId, passIds... > BaseType ;
 
     // These type definitions allow a convenient access to arguments of pass.
     std::integral_constant< int, passUId > uVar;
@@ -577,7 +561,7 @@ namespace Fem
         nbIndicator_.addChecked( error, weight );
       }
 
-      return ldt ;
+      return ldt;
     }
 
     /**

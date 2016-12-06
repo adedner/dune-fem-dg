@@ -366,8 +366,8 @@ namespace Fem
 
   //! \brief forward declaration
   template <class OpTraits,
-            int passUId,
-            bool returnAdvectionPart, bool returnDiffusionPart >
+            bool enableAdvection, bool enableDiffusion,
+            int pUId, int... passIds >
   class AdvectionDiffusionDGPrimalModel;
 
 
@@ -375,23 +375,23 @@ namespace Fem
   //---------------------------------
 
   template <class OpTraits,
-            int pUId,
-            bool returnAdvectionPart, bool returnDiffusionPart >
+            bool enableAdvection, bool enableDiffusion,
+            int pUId, int... passIds >
   struct AdvectionDiffusionDGPrimalTraits
-   : public AdvectionTraits< OpTraits, pUId, -1, returnAdvectionPart>
+   : public AdvectionTraits< OpTraits, enableAdvection, pUId >
   {
     typedef typename OpTraits::DiffusionFluxType               DiffusionFluxType;
 
-    enum { advection = returnAdvectionPart };
-    enum { diffusion = returnDiffusionPart };
+    enum { advection = enableAdvection };
+    enum { diffusion = enableDiffusion };
 
     enum { passUId = pUId };
 
     // type of base class
-    typedef AdvectionModel< OpTraits, passUId, -1, returnAdvectionPart >     AdvectionModelType ;
+    typedef AdvectionModel< OpTraits, enableAdvection, passUId >     AdvectionModelType ;
 
     // type of my discrete model
-    typedef AdvectionDiffusionDGPrimalModel< OpTraits, passUId, returnAdvectionPart, returnDiffusionPart > DGDiscreteModelType;
+    typedef AdvectionDiffusionDGPrimalModel< OpTraits, enableAdvection, enableDiffusion, passUId > DGDiscreteModelType;
   };
 
   // AdvectionDiffusionDGPrimalModel
@@ -403,15 +403,15 @@ namespace Fem
    *  \ingroup PassBased
    */
   template< class OpTraits,
-            int passUId,
-            bool returnAdvectionPart, bool returnDiffusionPart >
+            bool enableAdvection, bool enableDiffusion,
+            int passUId, int... passIds >
   class AdvectionDiffusionDGPrimalModel :
     public AdvectionDiffusionDGPrimalModelBase<
-              AdvectionDiffusionDGPrimalTraits < OpTraits, passUId, returnAdvectionPart, returnDiffusionPart > >
+              AdvectionDiffusionDGPrimalTraits < OpTraits, enableAdvection, enableDiffusion, passUId > >
   {
   public:
     typedef AdvectionDiffusionDGPrimalTraits
-      < OpTraits, passUId, returnAdvectionPart, returnDiffusionPart >   Traits;
+      < OpTraits, enableAdvection, enableDiffusion, passUId >   Traits;
 
     typedef AdvectionDiffusionDGPrimalModelBase< Traits > BaseType ;
     typedef typename BaseType :: DiffusionFluxType  DiffusionFluxType ;
@@ -438,8 +438,8 @@ namespace Fem
 
   //! \brief forward declaration
   template <class OpTraits,
-            int passUId,
-            bool returnAdvectionPart, bool returnDiffusionPart >
+            bool enableAdvection, bool enableDiffusion,
+            int passUId, int... passIds >
   class AdaptiveAdvectionDiffusionDGPrimalModel;
 
 
@@ -452,19 +452,18 @@ namespace Fem
    *  \ingroup PassBased
    */
   template <class OpTraits,
-            int passUId,
-            bool returnAdvectionPart, bool returnDiffusionPart >
+            bool enableAdvection, bool enableDiffusion,
+            int passUId, int... passIds >
   struct AdaptiveAdvectionDiffusionDGPrimalTraits
    : public AdvectionDiffusionDGPrimalTraits
-        < OpTraits, passUId, returnAdvectionPart, returnDiffusionPart >
+        < OpTraits, enableAdvection, enableDiffusion, passUId, passIds... >
   {
     // type of base class
-    typedef AdaptiveAdvectionModel< OpTraits, passUId, -1, returnAdvectionPart >     AdvectionModelType ;
+    typedef AdaptiveAdvectionModel< OpTraits, enableAdvection, passUId >     AdvectionModelType ;
 
     // type of my discrete model
     typedef AdaptiveAdvectionDiffusionDGPrimalModel
-      < OpTraits, passUId,
-        returnAdvectionPart, returnDiffusionPart >                   DGDiscreteModelType;
+      < OpTraits, enableAdvection, enableDiffusion, passUId >                 DGDiscreteModelType;
   };
 
   // AdaptiveAdvectionDiffusionDGPrimalModel
@@ -476,15 +475,15 @@ namespace Fem
    *  \ingroup PassBased
    */
   template< class OpTraits,
-            int passUId,
-            bool returnAdvectionPart, bool returnDiffusionPart >
+            bool enableAdvection, bool enableDiffusion,
+            int passUId, int... passIds >
   class AdaptiveAdvectionDiffusionDGPrimalModel :
     public AdvectionDiffusionDGPrimalModelBase<
-       AdaptiveAdvectionDiffusionDGPrimalTraits< OpTraits, passUId, returnAdvectionPart, returnDiffusionPart > >
+       AdaptiveAdvectionDiffusionDGPrimalTraits< OpTraits, enableAdvection, enableDiffusion, passUId > >
   {
   public:
     typedef AdaptiveAdvectionDiffusionDGPrimalTraits
-      < OpTraits, passUId, returnAdvectionPart, returnDiffusionPart >   Traits;
+      < OpTraits, enableAdvection, enableDiffusion, passUId >   Traits;
 
     typedef AdvectionDiffusionDGPrimalModelBase< Traits >  BaseType;
 
@@ -495,8 +494,8 @@ namespace Fem
     using BaseType :: uBnd_;
 
   public:
-    static const bool advection = returnAdvectionPart; // true if advection is enabled
-    static const bool diffusion = returnDiffusionPart; // this should be disabled for LDG
+    static const bool advection = enableAdvection; // true if advection is enabled
+    static const bool diffusion = enableDiffusion; // this should be disabled for LDG
 
     typedef typename BaseType :: IntersectionType    IntersectionType;
     typedef typename BaseType :: EntityType          EntityType;
