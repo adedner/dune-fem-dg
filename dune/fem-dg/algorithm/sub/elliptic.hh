@@ -117,7 +117,7 @@ namespace Fem
 
     // compute the function sigma = grad u + sum_e r_e
     template <class DF, class Operator>
-    struct SigmaLocal : public Fem::LocalFunctionAdapterHasInitialize
+    struct SigmaLocal /*: public Fem::LocalFunctionAdapterHasInitialize*/
     {
       typedef typename DF::DiscreteFunctionSpaceType                     UDFS;
       typedef typename UDFS::GridPartType                                GridPartType;
@@ -209,7 +209,7 @@ namespace Fem
     };
 
     template <class SigmaLocalType>
-    struct SigmaLocalFunction : public Fem::LocalFunctionAdapterHasInitialize
+    struct SigmaLocalFunction /*: public Fem::LocalFunctionAdapterHasInitialize*/
     {
       typedef typename DiscreteFunctionType::DiscreteFunctionSpaceType DiscreteFunctionSpaceType;
       typedef typename DiscreteFunctionType::RangeType                 RangeType;
