@@ -65,9 +65,9 @@ namespace Fem
                                                                                     GridType;
 
   public:
-    typedef typename IOTupleExtractor< TupleType >::type                            IOTupleType;
+    typedef typename IOTupleExtractor< TupleType >::type                           IOTupleType;
 
-    typedef DataWriter< GridType, IOTupleType >                                     DataWriterType;
+    typedef DataWriter< GridType, IOTupleType >                                    DataWriterType;
 
     template <class Grid, class DataTuple>
     struct DataOutput
@@ -81,10 +81,10 @@ namespace Fem
     struct AdditionalOutput
     {
       template<class T, class... Args >
-      static typename enable_if< std::is_void< typename T::element_type::AdditionalOutputType >::value >::type
+      static typename std::enable_if< std::is_void< typename T::element_type::AdditionalOutputType >::value >::type
       additionalOutput( T&, Args&& ... ){}
       template<class T, class TimeProviderImp, class... Args >
-      static typename enable_if< !std::is_void< typename T::element_type::AdditionalOutputType >::value >::type
+      static typename std::enable_if< !std::is_void< typename T::element_type::AdditionalOutputType >::value >::type
       additionalOutput( T& elem, TimeProviderImp& tp, Args && ... args )
       {
         if( elem->additionalOutput() )
@@ -109,8 +109,8 @@ namespace Fem
      * \param[in] tuple Tuple of all sub-algorithms.
      */
     DataWriterCaller( const AlgTupleType& tuple )
-      : tuple_( TupleReducerType::apply( tuple ) ),
-        dataWriter_(),
+    : tuple_( TupleReducerType::apply( tuple ) ),
+      dataWriter_(),
         dataTuple_( dataTuple( tuple_, IndexSequenceType() ) )
     {
     }

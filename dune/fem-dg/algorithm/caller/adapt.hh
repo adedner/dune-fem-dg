@@ -141,10 +141,10 @@ namespace Fem
     class LoopCallee
     {
       template<class C, class T, class... Args >
-      static typename enable_if< std::is_void< typename T::element_type::AdaptIndicatorType >::value >::type
+      static typename std::enable_if< std::is_void< typename T::element_type::AdaptIndicatorType >::value >::type
       getAdaptIndicator( T&, Args&& ... ){}
       template<class C, class T, class... Args >
-      static typename enable_if< !std::is_void< typename T::element_type::AdaptIndicatorType >::value >::type
+      static typename std::enable_if< !std::is_void< typename T::element_type::AdaptIndicatorType >::value >::type
       getAdaptIndicator( T& elem, Args &&... a )
       {
         if( elem->adaptIndicator() )
@@ -453,10 +453,10 @@ namespace Fem
 
 
     template< class T >
-    static typename enable_if< std::is_void< typename T::element_type::AdaptIndicatorType >::value, int >::type
+    static typename std::enable_if< std::is_void< typename T::element_type::AdaptIndicatorType >::value, int >::type
     getSequence( T& ){}
     template< class T >
-    static typename enable_if< !std::is_void< typename T::element_type::AdaptIndicatorType >::value, int >::type
+    static typename std::enable_if< !std::is_void< typename T::element_type::AdaptIndicatorType >::value, int >::type
     getSequence( T& elem )
     {
       if( elem->adaptationSolution() )
