@@ -65,8 +65,6 @@ namespace Fem
      // type of 64bit unsigned integer
     typedef typename BaseType::UInt64Type                      UInt64Type;
 
-    typedef typename FullOperatorType::ExtraParameterTupleType ExtraParameterTupleType;
-
     typedef typename BaseType::AdaptIndicatorType              AdaptIndicatorType;
 
     using BaseType::solution ;
@@ -76,14 +74,12 @@ namespace Fem
 
     typedef typename BaseType::ContainerType                   ContainerType;
 
-    // constructor
-    template< class ContainerImp >
-    SubAdvectionAlgorithm( std::shared_ptr< ContainerImp > cont,
-                           ExtraParameterTupleType tuple = ExtraParameterTupleType() ) :
-      BaseType( cont ),
-      tuple_( ),
-      advectionOperator_( Std::make_unique< FullOperatorType >( solution().space().gridPart(), problem(), tuple_, name() ) ),
-      adaptIndicator_( Std::make_unique< AdaptIndicatorOptional<AdaptIndicatorType> >( solution(), problem(), tuple_, name() ) )
+    template< class ContainerImp, class ExtraArgsImp >
+    SubAdvectionAlgorithm( const std::shared_ptr< ContainerImp >& cont,
+                           const std::shared_ptr< ExtraArgsImp >& extra )
+    : BaseType( cont, extra ),
+      advectionOperator_( Std::make_unique< FullOperatorType >( solution().space().gridPart(), problem(), extra, name() ) ),
+      adaptIndicator_( Std::make_unique< AdaptIndicatorOptional<AdaptIndicatorType> >( solution(), problem(), extra, name() ) )
     {}
 
     virtual AdaptIndicatorType* adaptIndicator ()
@@ -134,9 +130,6 @@ namespace Fem
    const ModelType& model () const { assert( advectionOperator_ ); return advectionOperator_->model(); }
 
   protected:
-    ExtraParameterTupleType tuple_;
-
-
     std::unique_ptr< FullOperatorType >    advectionOperator_;
     mutable std::unique_ptr< AdaptIndicatorOptional<AdaptIndicatorType> > adaptIndicator_;
   };

@@ -224,8 +224,9 @@ namespace Fem
     //type for a standalone container
     typedef SubSteadyStateContainer< DiscreteFunctionType >          ContainerType;
 
-    template< class ContainerImp >
-    SubSteadyStateAlgorithm ( const std::shared_ptr< ContainerImp >& cont  )
+    template< class ContainerImp, class ExtraArgsImp >
+    SubSteadyStateAlgorithm( const std::shared_ptr< ContainerImp >& cont,
+                             const std::shared_ptr< ExtraArgsImp >& extra )
       : BaseType( const_cast< GridType& >( (*cont)(_0)->solution()->gridPart().grid() ) ),
         solverIterations_( 0 ),
         //newContainer_(  cont ? nullptr : std::make_shared< ContainerType >( grid, "name" ) )

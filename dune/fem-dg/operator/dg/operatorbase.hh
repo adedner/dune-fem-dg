@@ -58,7 +58,7 @@ namespace Fem
       {
         std::shared_ptr< PreviousPass > previousPass = PreviousInsertFunctions::createPass( tuple );
         const DiscreteFunction* df = std::get< i-1 >( tuple );
-        return std::shared_ptr< PassType > ( new PassType( df, previousPass ) );
+        return std::make_shared<PassType>( df, previousPass );
       }
     };
 
@@ -68,7 +68,7 @@ namespace Fem
       typedef StartPassImp            PassType;
       static std::shared_ptr< PassType > createPass( Tuple& tuple )
       {
-        return std::shared_ptr< PassType > ( new PassType() );
+        return std::make_shared<PassType>();
       }
     };
   public:

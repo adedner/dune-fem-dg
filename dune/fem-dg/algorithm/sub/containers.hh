@@ -353,7 +353,7 @@ namespace Fem
    *
    * \ingroup Container
    *
-   * Before starting reading, you should have an overview: \ref Container.
+   * Before start reading, you should have an overview: \ref Container.
    *
    * ![How to create sub containers and to access elements](container3_1.png)
    *
@@ -434,7 +434,7 @@ namespace Fem
      * \param index the i's element we want to access
      */
     template< unsigned long int i >
-    decltype(auto) operator() ( _index<i> index )
+    decltype(auto) operator() ( _index<i> index ) const
     {
       //const auto& res = std::get<i>( item1_ );
       //std::cout << "###ACCESS: item1 ('" << res->solution()->name() << "')" << print( index ) << std::endl;
@@ -451,7 +451,7 @@ namespace Fem
      * Otherwise you may accidently call the wrong method...
      */
     template< unsigned long int... i >
-    decltype(auto) operator() ( std::tuple< _index<i>... > index )
+    decltype(auto) operator() ( std::tuple< _index<i>... > index ) const
     {
       typedef std::tuple< typename std::tuple_element<i,ArgTupleType>::type...> NewArgTupleType;
 
@@ -474,7 +474,7 @@ namespace Fem
    *
    * \ingroup Container
    *
-   * Before starting reading, you should have an overview: \ref Container.
+   * Before start reading, you should have an overview: \ref Container.
    *
    * ![How to create sub containers and to access elements](container3_2.png)
    *
@@ -546,13 +546,13 @@ namespace Fem
 
     ///// Copy
     template< unsigned long int i, unsigned long int ...j >
-    decltype(auto) copyContainerRow( std::tuple< _index<j>... > )
+    decltype(auto) copyContainerRow( std::tuple< _index<j>... > ) const
     {
       std::cout << "###COPY: item2 ('-'): " << print( std::make_tuple( _index<j>()... ) ) << std::endl;
       return std::make_tuple( std::get<j>( std::get<i>( item2_ ) )... );
     }
     template< unsigned long int ...i, unsigned long int ...j >
-    decltype(auto) copyContainer( std::tuple< _index<i>... > row, std::tuple< _index<j>... > col )
+    decltype(auto) copyContainer( std::tuple< _index<i>... > row, std::tuple< _index<j>... > col ) const
     {
       return std::make_tuple( copyContainerRow<i>( col )... );
     }
@@ -597,7 +597,7 @@ namespace Fem
      * \param col the j's col we want to access
      */
     template< unsigned long int i, unsigned long int j >
-    decltype(auto) operator() ( _index<i> row, _index<j> col  )
+    decltype(auto) operator() ( _index<i> row, _index<j> col ) const
     {
       const auto& res = std::get<j>( std::get<i>( item2_ ) );
       //std::cout << "###ACCESS: item2 ('-')" << print( row, col ) << std::endl;
@@ -615,7 +615,7 @@ namespace Fem
      * Otherwise you may accidently call the wrong method...
      */
     template< unsigned long int... i, unsigned long int... j >
-    decltype(auto) operator() ( std::tuple< _index<i>... > row, std::tuple< _index<j>... > col )
+    decltype(auto) operator() ( std::tuple< _index<i>... > row, std::tuple< _index<j>... > col ) const
     {
       typedef std::tuple< typename std::tuple_element<i,RowArgTupleType>::type...> NewRowArgTupleType;
       typedef std::tuple< typename std::tuple_element<j,ColArgTupleType>::type...> NewColArgTupleType;
@@ -644,6 +644,138 @@ namespace Fem
   };
 
 
+
+
+
+  template< class Arg >
+  struct ExtraArgContainer
+  {
+    static_assert( static_fail<Arg>::value, "wrong template args." );
+  };
+
+  /**
+   * \brief Base class for all container classes taking one argument.
+   *
+   * \ingroup Container
+   *
+   * Before start reading, you should have an overview: \ref Container.
+   */
+  template< class... Args >
+  struct ExtraArgContainer< std::tuple< std::shared_ptr< Args... > > >
+  {
+    typedef std::tuple< std::shared_ptr< Args... > >                    ArgTupleType;
+  public:
+    template< unsigned long int i >
+    using Item = typename std::tuple_element<i,ArgTupleType>::type;
+
+  protected:
+    ////// Copy
+    template< class ItemTuple, unsigned long int ...i >
+    static decltype(auto) copyContainer( const ItemTuple& item, std::tuple< _index<i>...  > )
+    {
+      return std::make_tuple( std::get<i>( item )... );
+    }
+
+    //template< class... >
+    //friend class ExtraArgContainer;
+  public:
+    /**
+     * \brief constructor.
+     */
+    ExtraArgContainer( const ArgTupleType& item )
+    : item_( item )
+    {}
+
+    /**
+     * \brief Allows access to the i's element.
+     *
+     * \param index the i's element we want to access
+     */
+    template< unsigned long int i >
+    decltype(auto) operator() ( _index<i> index ) const
+    {
+      return std::get<i>( item_ );
+    }
+
+    /**
+     * \brief This more advanced method allows to create sub containers out of an already existing container.
+     *
+     * \param index std::tuple of elements which should be contained in the new sub container.
+     *
+     * \warning Just for the case, that the sub container only contains one index:
+     * Do not forget to wrap a std::tuple<> around the std::integral_constant<>.
+     * Otherwise you may accidently call the wrong method...
+     */
+    template< unsigned long int... i >
+    decltype(auto) operator() ( std::tuple< _index<i>... > index ) const
+    {
+      typedef ExtraArgContainer< std::tuple< Item<i>... > > SubExtraContainerType;
+
+      return std::make_shared< SubExtraContainerType >( copyContainer(item_, index ) );
+    }
+  protected:
+    ArgTupleType item_;
+  };
+
+
+
+
+
+  /**
+   * \brief Base class for all container classes taking one argument.
+   *
+   * \ingroup Container
+   *
+   * Before start reading, you should have an overview: \ref Container.
+   */
+  template< class... Args >
+  struct ExtraArg
+  {
+    typedef std::tuple< Args... >                    ArgTupleType;
+  public:
+    template< unsigned long int i >
+    using Access = typename std::tuple_element< i, ArgTupleType>::type;
+
+  protected:
+  public:
+    static const int size = std::tuple_size< ArgTupleType >::value;
+    typedef std::make_integer_sequence< unsigned long int, size > SequenceType;
+    static SequenceType sequence;
+
+    ////// Creation
+    template< unsigned long int i, class ContainerImp >
+    static decltype(auto) createItem( const ContainerImp& cont )
+    {
+      typedef Access<i> AccessType;
+      //return value is/should be shared_ptr...
+      return Access<i>::apply( cont );
+    }
+    template< unsigned long int ...i, class ContainerImp >
+    static decltype(auto) createContainer( _indices<i...>, const ContainerImp& cont )
+    {
+      return std::make_tuple( createItem<i>( cont )... );
+    }
+
+    template< class... >
+    friend class ExtraArg;
+  public:
+    //no default constructor
+    ExtraArg() = delete;
+
+    template< class ContainerImp >
+    static decltype(auto) init( const ContainerImp& cont )
+    {
+      typedef decltype(std::declval<ExtraArg<Args...> >().createContainer( sequence,cont ) ) ReturnType;
+
+      return std::make_shared<ExtraArgContainer<ReturnType> >( createContainer( sequence, cont ) );
+    }
+  };
+
+
+
+
+
+
   /**
    * \brief A placeholder for empty item1 or item2 container.
    *
@@ -657,6 +789,120 @@ namespace Fem
     {}
   };
 
+
+
+  //Simple Select classes
+  //----------------------
+
+  template< class Id >
+  struct SolutionSelect
+  {
+    template< class ContainerImp >
+    static decltype(auto) apply( const std::shared_ptr<ContainerImp>& cont )
+    {
+      return (*cont)( Id() )->solution();
+    }
+  };
+
+  template< class Id >
+  struct ExactSolutionSelect
+  {
+    template< class ContainerImp >
+    static decltype(auto) apply( const std::shared_ptr<ContainerImp>& cont )
+    {
+      return (*cont)( Id() )->exactSolution();
+    }
+  };
+
+  template< class RowId, class ColId >
+  struct MatrixSelect
+  {
+    template< class ContainerImp >
+    static decltype(auto) apply( const std::shared_ptr<ContainerImp>& cont )
+    {
+      return (*cont)( RowId(), ColId() )->matrix();
+    }
+  };
+
+
+  //For IODataTuple
+  template< class Id >
+  struct IOSolutionSelect
+  {
+    template< class ContainerImp >
+    static decltype(auto) apply( const std::shared_ptr<ContainerImp>& cont )
+    {
+      return (*cont)( Id() )->solution().get();
+    }
+  };
+  template< class Id >
+  struct IOExactSolutionSelect
+  {
+    template< class ContainerImp >
+    static decltype(auto) apply( const std::shared_ptr<ContainerImp>& cont )
+    {
+      return (*cont)( Id() )->exactSolution().get();
+    }
+  };
+
+  //Container Access
+  //----------------------
+
+  template< template<class> class Select, class... >
+  struct OneArgAccess
+  {
+    static_assert( static_fail_t< Select >::value, "failed" );
+  };
+
+  //local version
+  template< template<class> class Select, unsigned long int local >
+  struct OneArgAccess< Select, _index<local> >
+  {
+    template< class ContainerImp >
+    static decltype(auto) apply( const ContainerImp& cont )
+    {
+      return Select< _index<local> >::apply( cont );
+    }
+  };
+
+  //global version
+  template< template<class> class Select, unsigned long int global, unsigned long int local >
+  struct OneArgAccess< Select, _index<global>, _index<local> >
+  {
+    template< class ContainerImp >
+    static decltype(auto) apply( const ContainerImp& cont )
+    {
+      return Select< _index<local> >::apply( cont.sub( _index<global>() ) );
+    }
+  };
+
+  template< template<class> class Select, class... Args >
+  using _e = OneArgAccess<Select,Args...>;
+
+  template< template<class,class> class Select, class... >
+  struct TwoArgAccess;
+
+  //local version
+  template< template<class,class> class Select, unsigned long int row, unsigned long int col >
+  struct TwoArgAccess< Select, _index<row>, _index<col> >
+  {
+    template< class ContainerImp >
+    static decltype(auto) apply( const ContainerImp& cont )
+    {
+      return Select< _index<row>, _index<col> >::apply( cont );
+    }
+  };
+
+  //global version
+  template< template<class,class> class Select, unsigned long int global, unsigned long int row, unsigned long int col >
+  struct TwoArgAccess< Select, _index<global>, _index<row>, _index<col> >
+  {
+    template< class ContainerImp >
+    static decltype(auto) apply( const ContainerImp& cont )
+    {
+      return Select< _index<row>, _index<col> >::apply( cont.sub( _index<global>() ) );
+    }
+  };
 
 
 

@@ -117,7 +117,7 @@ namespace Fem
    *
    * ![A combined global container](container6.png)
    */
-  template< class Item2TupleImp, class Item1TupleImp, class SubOrderRowImp, class SubOrderColImp, class... DiscreteFunctions >
+  template< class Item2TupleImp, class Item1TupleImp, class SubOrderRowImp, class SubOrderColImp, class ExtraArg, class... DiscreteFunctions >
   class CombinedGlobalContainer
   {
     static_assert( static_fail< Item2TupleImp >::value, "Please check your template arguments" );
@@ -130,11 +130,12 @@ namespace Fem
    *
    * \copydoc CombinedGlobalContainer
    */
-  template< class... Item2TupleImp, class... Item1TupleImp, class... SubOrderRowImp, class... SubOrderColImp, class... DiscreteFunctions >
+  template< class... Item2TupleImp, class... Item1TupleImp, class... SubOrderRowImp, class... SubOrderColImp, class... ExtraArgs, class... DiscreteFunctions >
   class CombinedGlobalContainer< std::tuple< Item2TupleImp... >,
                                  std::tuple< Item1TupleImp... >,
                                  std::tuple< SubOrderRowImp... >,
                                  std::tuple< SubOrderColImp... >,
+                                 std::tuple< ExtraArgs... >,
                                  DiscreteFunctions...>
   {
     static const int size1 = std::tuple_size< std::tuple< Item1TupleImp... > >::value;
@@ -182,7 +183,7 @@ namespace Fem
      * \brief returns the i's container
      */
     template< unsigned long int i >
-    decltype(auto) sub( _index<i> index )
+    decltype(auto) sub( _index<i> index ) const
     {
       static_assert( std::tuple_size< std::tuple<SubOrderRowImp...> >::value > i,
                      "SubOrderRowImp does not contain the necessary sub structure information.\
@@ -196,6 +197,13 @@ namespace Fem
       std::cout << "###CREATE: sub container " << print( index )
                 << " from combined global container containing elements " << print( std::get<i>(rowOrder) )<< " x " << print( std::get<i>(colOrder) )  << std::endl;
       return (*cont)( std::get<i>(rowOrder), std::get<i>(colOrder) );
+    }
+
+    template< unsigned long int i >
+    decltype(auto) extra( _index<i> index ) const
+    {
+      typedef typename std::tuple_element<i,std::tuple< ExtraArgs... > >::type ExtraArgType;
+      return ExtraArgType::init( *this );
     }
 
     const std::string name() const
@@ -215,7 +223,7 @@ namespace Fem
    * \ingroup Container
    *
    */
-  template< class Container, class SubOrderRowImp, class SubOrderColImp, class... DiscreteFunctions >
+  template< class Container, class SubOrderRowImp, class SubOrderColImp, class ExtraArgs, class... DiscreteFunctions >
   class NewCombinedGlobalContainer
   {
     static_assert( static_fail< Container >::value, "Please check your template arguments" );
@@ -228,15 +236,18 @@ namespace Fem
    *
    * \copydoc NewCombinedGlobalContainer
    */
-  template< class... Containers, class... SubOrderRowImp, class... SubOrderColImp, class... DiscreteFunctions >
+  template< class... Containers, class... SubOrderRowImp, class... SubOrderColImp, class... ExtraArgs, class... DiscreteFunctions >
   class NewCombinedGlobalContainer< std::tuple< Containers... >,
                                     std::tuple< SubOrderRowImp... >,
                                     std::tuple< SubOrderColImp... >,
+                                    std::tuple< ExtraArgs... >,
                                     DiscreteFunctions...>
   {
     typedef std::tuple< typename Containers::RowOneArgType... > RowItem1TupleImp;
     typedef std::tuple< typename Containers::ColOneArgType... > ColItem1TupleImp;
-    typedef std::tuple< typename Containers::TwoArgType... > Item2TupleImp;
+    typedef std::tuple< typename Containers::TwoArgType... >    Item2TupleImp;
+
+    typedef std::tuple< ExtraArgs... >                          ExtraArgsType;
 
     static const int size = std::tuple_size< RowItem1TupleImp >::value;
 
@@ -305,6 +316,12 @@ namespace Fem
       std::cout << "###CREATE: sub container " << print( index )
                 << " from combined global container containing elements " << print( std::get<i>(rowOrder) )<< " x " << print( std::get<i>(colOrder) )  << std::endl;
       return (*cont)( std::get<i>(rowOrder), std::get<i>(colOrder) );
+    }
+
+    template< unsigned long int i >
+    decltype(auto) extra( _index<i> index )
+    {
+      return ExtraArgsType::init( *this );
     }
 
     const std::string name() const

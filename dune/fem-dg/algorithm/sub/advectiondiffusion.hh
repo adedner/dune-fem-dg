@@ -68,8 +68,6 @@ namespace Fem
     // type of 64bit unsigned integer
     typedef typename BaseType::UInt64Type                     UInt64Type;
 
-    typedef typename OperatorType::ExtraParameterTupleType    ExtraParameterTupleType;
-
     typedef typename BaseType::AdaptIndicatorType             AdaptIndicatorType;
 
     using BaseType::grid;
@@ -79,18 +77,14 @@ namespace Fem
 
     typedef typename BaseType::ContainerType                  ContainerType;
 
-    template< class ContainerImp >
-    SubAdvectionDiffusionAlgorithm( std::shared_ptr< ContainerImp > cont,
-                                    ExtraParameterTupleType tuple = ExtraParameterTupleType() ) :
-      BaseType( cont ),
-      //vSpace_( gridPart_ ),
-      //velo_( "velocity", vSpace_ ),
-      //tuple_( &velo_ ),
-      tuple_( ),
-      operator_( std::make_unique< OperatorType >( solution().space().gridPart(), problem(), typename OperatorType::ExtraParameterTupleType(), name() ) ),
-      advectionOperator_( std::make_unique< ExplicitOperatorType >( solution().space().gridPart(), problem(), typename ExplicitOperatorType::ExtraParameterTupleType(), name() ) ),
-      diffusionOperator_( std::make_unique< ImplicitOperatorType >( solution().space().gridPart(), problem(), typename ImplicitOperatorType::ExtraParameterTupleType(), name() ) ),
-      adaptIndicator_( std::make_unique< AdaptIndicatorOptional<AdaptIndicatorType> >( solution(), problem(),  typename AdaptIndicatorType::ExtraParameterTupleType(), name() ) )
+    template< class ContainerImp, class ExtraArgsImp >
+    SubAdvectionDiffusionAlgorithm( const std::shared_ptr< ContainerImp >& cont,
+                                    const std::shared_ptr< ExtraArgsImp >& extra )
+    : BaseType( cont, extra ),
+      operator_( std::make_unique< OperatorType >( solution().space().gridPart(), problem(), extra, name() ) ),
+      advectionOperator_( std::make_unique< ExplicitOperatorType >( solution().space().gridPart(), problem(), extra, name() ) ),
+      diffusionOperator_( std::make_unique< ImplicitOperatorType >( solution().space().gridPart(), problem(), extra, name() ) ),
+      adaptIndicator_( std::make_unique< AdaptIndicatorOptional<AdaptIndicatorType> >( solution(), problem(), extra, name() ) )
     {}
 
     virtual AdaptIndicatorType* adaptIndicator ()
@@ -145,10 +139,6 @@ namespace Fem
     const ModelType& model () const { assert( operator_ ); return operator_->model(); }
 
   protected:
-    //typename OperatorTraits::SpaceType vSpace_;
-    //typename OperatorTraits::VeloType  velo_;
-    ExtraParameterTupleType tuple_;
-
     std::unique_ptr< OperatorType >         operator_;
     std::unique_ptr< ExplicitOperatorType > advectionOperator_;
     std::unique_ptr< ImplicitOperatorType > diffusionOperator_;

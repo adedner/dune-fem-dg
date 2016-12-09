@@ -638,9 +638,10 @@ namespace Fem
 
 
   public:
-    template< class ContainerImp >
-    SubEllipticAlgorithm( const std::shared_ptr< ContainerImp >& cont )
-    : BaseType( cont ),
+    template< class ContainerImp, class ExtraArgsImp >
+    SubEllipticAlgorithm( const std::shared_ptr< ContainerImp >& cont,
+                          const std::shared_ptr< ExtraArgsImp >& extra )
+    : BaseType( cont, extra ),
       assembler_( cont, model() ),
       matrix_( (*cont)(_0,_0)->matrix() ),
       adaptIndicator_( std::make_unique<AdaptIndicatorType>( cont, assembler_, problem(), name() ) ),

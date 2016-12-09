@@ -71,7 +71,10 @@ namespace Fem
       typedef typename RangeTuple :: template Value< VarId > :: Type ReturnType;
 
       template< class ... Args >
-      static const ReturnType& eval( const RangeTuple& tuple, const Functor& functor, const Args& ... args )
+
+      //static decltype(auto)
+      static const ReturnType&
+      eval( const RangeTuple& tuple, const Functor& functor, const Args& ... args )
       {
         return tuple.template at< VarId > ();
       }
@@ -84,10 +87,9 @@ namespace Fem
       typedef typename Functor::ReturnType ReturnType;
 
       template< class ... Args >
-      //static auto
+      //static decltype(auto)
       static ReturnType
       eval( const RangeTuple& tuple, const Functor& functor, const Args& ... args )
-       // -> decltype(functor( args ... ))
       {
         return functor( args ... );
       }

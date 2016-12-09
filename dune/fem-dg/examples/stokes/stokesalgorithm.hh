@@ -535,34 +535,19 @@ namespace Fem
 
   public:
 
-    template< class ContainerImp >
-    explicit SubStokesAlgorithm( const std::shared_ptr< ContainerImp >& cont )
-    : BaseType( (*cont)(std::make_tuple(_1), std::make_tuple(_1) ) ),
+    template< class ContainerImp, class ExtraArgsImp >
+    explicit SubStokesAlgorithm( const std::shared_ptr< ContainerImp >& cont,
+                                 const std::shared_ptr< ExtraArgsImp >& extra )
+    : BaseType( (*cont)(std::make_tuple(_1), std::make_tuple(_1) ), extra ),
       space_( (*cont)(_1)->solution()->space() ),
       assembler_( cont, model() ),
-      ellAlg_( (*cont)( std::make_tuple(_0), std::make_tuple(_0)  ) ),
+      ellAlg_( (*cont)( std::make_tuple(_0), std::make_tuple(_0)  ), extra ),
       stokesSolver_( std::make_shared< SolverType >( *cont, ellAlg_ ) ),
       adaptIndicator_( std::make_unique<AdaptIndicatorType>( cont, ellAlg_.assembler(), assembler_, problem(), BaseType::name() ) ),
       ioTuple_( new IOTupleType( *BaseType::dataTuple(), *ellAlg_.dataTuple() ) ),
       time_(0)
     {
     }
-
-
-    ////new version ?
-    //template< class ContainerImp >
-    //explicit SubStokesAlgorithm( const std::shared_ptr< ContainerImp >& cont, const EllipticalAlgorithmType& ellAlg )
-    //: BaseType( (*cont)(std::make_tuple(_1), std::make_tuple(_1) ) ),
-    //  space_( (*cont)(_1)->solution()->space() ),
-    //  assembler_( cont, model() ),
-    //  ellAlg_( ellAlg ),
-    //  stokesSolver_( std::make_shared< SolverType >( *cont, ellAlg_ ) ),
-    //  adaptIndicator_( std::make_unique<AdaptIndicatorType>( cont, ellAlg_.assembler(), assembler_, problem(), name() ) ),
-    //  ioTuple_( new IOTupleType( *BaseType::dataTuple(), *ellAlg_.dataTuple() ) ),
-    //  time_(0)
-    //{
-    //}
-
 
     virtual IOTupleType& dataTuple () override
     {

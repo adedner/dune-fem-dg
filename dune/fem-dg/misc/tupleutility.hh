@@ -54,6 +54,42 @@ namespace Fem
     typedef typename std::tuple_element< 0, std::tuple< Args... > >::type type;
   };
 
+ // /**
+ //  * \brief variadic std::is_same.
+ //  */
+ // template< class... >
+ // struct is_same : std::false_type{};
+
+ // template< class >
+ // struct is_same : std::true_type{};
+
+ // /**
+ //  * \brief variadic std::is_same;
+ //  */
+ // template< class A >
+ // struct is_same : std::true_type{};
+
+ // /**
+ //  * \brief variadic std::is_same;
+ //  */
+ // template< class A, class B, class... C >
+ // struct is_same<A,B,C...> : is_same<std::true_type{};
+
+  namespace details
+  {
+    template<class F, class Tuple, std::size_t ... I>
+    auto apply_impl(F&& f, Tuple&& t, std::index_sequence<I...>)
+    {
+      return std::forward<F>(f)(std::get<I>(std::forward<Tuple>(t))...);
+    }
+  }
+
+  template< class F, class Tuple>
+  auto apply(F&& f, Tuple&& t)
+  {
+    using Indices = std::make_index_sequence<std::tuple_size<std::decay_t<Tuple> >::value>;
+    return details::apply_impl(std::forward<F>(f), std::forward<Tuple>(t), Indices());
+  }
 
   /**
    * \brief typedef check if a type is a std::tuple<>
