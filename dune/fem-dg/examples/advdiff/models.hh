@@ -78,11 +78,6 @@ namespace Fem
     typedef std::integral_constant< int, blabla > blablabla;
     typedef std::tuple < velocityVar, pressure, blablabla >   ModelParameter;
 
-    //typedef Fem::Selector< velo >  ModelParameterSelectorType;
-    //typedef std::tuple< VelocityType* >  ModelParameterTypes;
-    //typedef Fem::Selector< >  ModelParameterSelectorType;
-    //typedef std::tuple< >  ModelParameterTypes;
-
     typedef typename Traits::ProblemType                      ProblemType ;
 
     static const int ConstantVelocity = ProblemType::ConstantVelocity;

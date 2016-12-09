@@ -91,11 +91,6 @@ namespace Fem
     typedef std::integral_constant< int, rhs  >           rhsVar;
     typedef std::tuple < velocityVar, rhsVar >            ModelParameter;
 
-    //typedef Fem::Selector< velo >  ModelParameterSelectorType;
-    //typedef std::tuple< VelocityType* >  ModelParameterTypes;
-    //typedef Fem::Selector< >  ModelParameterSelectorType;
-    //typedef std::tuple< >  ModelParameterTypes;
-
     typedef typename Traits::ProblemType                  ProblemType;
     static_assert( ProblemType::dimRange == Traits::dimRange, "dimRange of Problem and Model does not fit.");
 

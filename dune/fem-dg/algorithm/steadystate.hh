@@ -136,6 +136,9 @@ namespace Fem
     template< class Caller >
     using ForLoopType = ForLoop< LoopCallee<Caller>::template Apply, 0,  sizeof ... ( ProblemTraits )-1 >;
 
+    //static const int size = std::tuple_size< std::tuple< ProblemTraits... > >::value;
+    //typedef std::make_index_sequence<size> sequence;
+
   public:
     using BaseType::grid;
 
@@ -162,6 +165,7 @@ namespace Fem
     virtual double gridWidth () const
     {
       double res=0.0;
+      //Hybrid::forEach( sequence{}, [&](auto i){ res = std::max( std::get<i>( tuple_ )->gridWidth(), res ); } );
       ForLoopType< GridWidth >::apply( tuple_, res );
       return res;
     }

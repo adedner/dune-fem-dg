@@ -55,8 +55,6 @@ namespace Fem
     typedef EulerModelTraits< GridImp, ProblemImp > Traits;
     typedef typename Traits::ProblemType                 ProblemType;
 
-    typedef std::integral_constant< int, 0 > uVar;
-
     enum { dimDomain = Traits::dimDomain };
     enum { dimRange = Traits::dimRange };
 
