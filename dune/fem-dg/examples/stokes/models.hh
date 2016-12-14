@@ -29,7 +29,7 @@ namespace Stokes
     typedef Dune::FieldVector< typename BaseType::DomainFieldType, BaseType::dimGradRange >
                                                                        GradientType;
 
-    typedef std::tuple <>                                              ModelParameter;
+    static const int modelParameterSize = 0;
   };
 
   template <class GridImp, class ProblemImp>

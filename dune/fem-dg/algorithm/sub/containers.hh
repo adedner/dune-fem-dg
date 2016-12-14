@@ -661,9 +661,9 @@ namespace Fem
    * Before start reading, you should have an overview: \ref Container.
    */
   template< class... Args >
-  struct ExtraArgContainer< std::tuple< std::shared_ptr< Args... > > >
+  struct ExtraArgContainer< std::tuple< Args... > >
   {
-    typedef std::tuple< std::shared_ptr< Args... > >                    ArgTupleType;
+    typedef std::tuple< Args... >                    ArgTupleType;
   public:
     template< unsigned long int i >
     using Item = typename std::tuple_element<i,ArgTupleType>::type;
@@ -769,6 +769,8 @@ namespace Fem
 
       return std::make_shared<ExtraArgContainer<ReturnType> >( createContainer( sequence, cont ) );
     }
+
+    //typedef typename decltype(std::declval<ExtraArg<Args...> >().init( cont ) )::element_type ExtraArgContainerType;
   };
 
 

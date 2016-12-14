@@ -103,9 +103,10 @@ namespace Fem
     typedef typename Traits::ExtraParameterTupleType                  ExtraParameterTupleType;
 
   public:
+    template< class ExtraParameterTupleImp >
     LDGAdvectionDiffusionOperator( GridPartType& gridPart,
                                   ProblemType& problem,
-                                  ExtraParameterTupleType tuple =  ExtraParameterTupleType(),
+                                  ExtraParameterTupleImp tuple,
                                   const std::string keyPrefix = "" ) :
       model_( problem ),
       numflux_( model_ ),
@@ -228,15 +229,16 @@ namespace Fem
     DGAdvectionDiffusionOperatorBase< LDGAdvectionTraits< OpTraits, true > >
   {
     typedef LDGAdvectionTraits< OpTraits, true> Traits;
-    typedef DGAdvectionDiffusionOperatorBase< Traits >  BaseType;
+    typedef DGAdvectionDiffusionOperatorBase< Traits > BaseType;
   public:
-    typedef typename BaseType :: GridPartType  GridPartType;
-    typedef typename BaseType :: ProblemType   ProblemType;
-    typedef typename BaseType :: ExtraParameterTupleType ExtraParameterTupleType;
+    typedef typename BaseType::GridPartType            GridPartType;
+    typedef typename BaseType::ProblemType             ProblemType;
+    typedef typename BaseType::ExtraParameterTupleType ExtraParameterTupleType;
 
+    template< class ExtraParameterTupleImp >
     LDGAdvectionOperator( GridPartType& gridPart, ProblemType& problem,
-                         ExtraParameterTupleType  tuple =  ExtraParameterTupleType(),
-                         const std::string keyPrefix = "" )
+                          ExtraParameterTupleImp tuple,
+                          const std::string keyPrefix = "" )
       : BaseType( gridPart, problem, tuple, keyPrefix )
     {}
 
@@ -265,12 +267,13 @@ namespace Fem
     typedef LDGAdvectionDiffusionOperator< Traits, false >  BaseType;
 
   public:
-    typedef typename BaseType :: GridPartType  GridPartType;
-    typedef typename BaseType :: ProblemType   ProblemType;
-    typedef typename BaseType :: ExtraParameterTupleType ExtraParameterTupleType;
+    typedef typename BaseType::GridPartType            GridPartType;
+    typedef typename BaseType::ProblemType             ProblemType;
+    typedef typename BaseType::ExtraParameterTupleType ExtraParameterTupleType;
 
+    template< class ExtraParameterTupleImp >
     LDGDiffusionOperator( GridPartType& gridPart, ProblemType& problem,
-                          ExtraParameterTupleType  tuple =  ExtraParameterTupleType(),
+                          ExtraParameterTupleImp tuple,
                           const std::string keyPrefix = "" )
       : BaseType( gridPart, problem, tuple, keyPrefix )
     {}
@@ -401,8 +404,9 @@ namespace Fem
     };
 
   public:
+    template< class ExtraParameterTupleImp >
     LDGLimitedAdvectionDiffusionOperator( GridPartType& gridPart, ProblemType& problem,
-                                          ExtraParameterTupleType  tuple =  ExtraParameterTupleType(),
+                                          ExtraParameterTupleImp tuple,
                                           const std::string keyPrefix = "" )
       : model_( problem )
       , numflux_( model_ )
@@ -541,14 +545,15 @@ namespace Fem
     DGAdvectionDiffusionOperatorBase<
        AdaptationIndicatorTraits< OpTraits, advection, diffusion > >
   {
-    typedef AdaptationIndicatorTraits< OpTraits, advection, diffusion > Traits ;
-    typedef DGAdvectionDiffusionOperatorBase< Traits >  BaseType;
-    typedef typename BaseType :: GridPartType  GridPartType;
-    typedef typename BaseType :: ProblemType   ProblemType ;
-    typedef typename BaseType :: ExtraParameterTupleType ExtraParameterTupleType;
+    typedef AdaptationIndicatorTraits< OpTraits, advection, diffusion > Traits;
+    typedef DGAdvectionDiffusionOperatorBase< Traits >                  BaseType;
+    typedef typename BaseType::GridPartType                             GridPartType;
+    typedef typename BaseType::ProblemType                              ProblemType;
+    typedef typename BaseType::ExtraParameterTupleType                  ExtraParameterTupleType;
 
+    template< class ExtraParameterTupleImp >
     LDGAdaptationIndicatorOperator( GridPartType& gridPart, ProblemType& problem,
-                                    ExtraParameterTupleType  tuple =  ExtraParameterTupleType(),
+                                    ExtraParameterTupleImp tuple,
                                     const std::string keyPrefix = "" )
       : BaseType( gridPart, problem, tuple, keyPrefix )
     {

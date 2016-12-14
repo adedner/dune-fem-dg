@@ -89,7 +89,8 @@ namespace Fem
     enum { velo = 0, rhs = 1 };
     typedef std::integral_constant< int, velo >           velocityVar;
     typedef std::integral_constant< int, rhs  >           rhsVar;
-    typedef std::tuple < velocityVar, rhsVar >            ModelParameter;
+
+    static const int modelParameterSize = 2;
 
     typedef typename Traits::ProblemType                  ProblemType;
     static_assert( ProblemType::dimRange == Traits::dimRange, "dimRange of Problem and Model does not fit.");

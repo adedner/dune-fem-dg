@@ -320,9 +320,12 @@ namespace Fem
       typedef std::tuple< StokesOrder >                                     SubOrderRowType;
       typedef SubOrderRowType                                               SubOrderColType;
 
+      //external params lists
+      typedef ExtraArg<>                                                    ExtraType;
+
 
       //Global container
-      typedef GlobalContainer< Item2TupleType, Item1TupleType, SubOrderRowType, SubOrderColType, DFType1, DFType2 >
+      typedef GlobalContainer< Item2TupleType, Item1TupleType, SubOrderRowType, SubOrderColType, ExtraType, DFType1, DFType2 >
                                                                             GlobalContainerType;
 #endif
       //create grid

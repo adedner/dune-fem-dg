@@ -31,8 +31,7 @@ namespace Fem
   public:
     typedef Dune::FieldVector< typename BaseType::DomainFieldType, BaseType::dimGradRange >
                                                                     GradientType;
-
-    typedef std::tuple<>                                            ModelParameter;
+    static const int modelParameterSize = 0;
 
     typedef MinModLimiter< typename BaseType::DomainFieldType >     LimiterFunctionType ;
     //typedef SuperBeeLimiter< typename BaseType::DomainFieldType > LimiterFunctionType ;

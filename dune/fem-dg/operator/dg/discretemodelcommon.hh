@@ -27,19 +27,13 @@ namespace Fem
     }
   };
 
-  template< class Tuple, int begin, int end, class ArgTuple >
+  template< class, class >
   struct SelectTupleElements;
 
-  template< class Tuple, int begin, int end, class ... TupleArgs >
-  struct SelectTupleElements< Tuple, begin, end, std::tuple< TupleArgs ... > >
+  template< class Tuple, int... elements >
+  struct SelectTupleElements< Tuple, std::integer_sequence<int, elements... > >
   {
-    typedef typename SelectTupleElements< Tuple, begin+1, end, std::tuple< TupleArgs ..., typename std::tuple_element< begin, Tuple >::type > > :: type type;
-  };
-
-  template< class Tuple, int end, class ... TupleArgs >
-  struct SelectTupleElements< Tuple, end, end, std::tuple< TupleArgs ... >  >
-  {
-    typedef std::tuple< TupleArgs ... > type;
+    typedef std::tuple< typename std::tuple_element< elements, Tuple >::type... > type;
   };
 
   /**
@@ -54,20 +48,22 @@ namespace Fem
   class FemDGBaseDiscreteModel
     : public Fem::DGDiscreteModelDefaultWithInsideOutside< Traits, passIds... >
   {
-    typedef typename Traits::ModelType::ModelParameter    ModelParameter;
     typedef typename Traits::ExtraParameterTupleType      ExtraParameterTupleType;
 
-    static const int modParamSize = std::tuple_size< ModelParameter >::value ;
+    static const int modParamSize = Traits::ModelType::modelParameterSize;
     static const int extParamSize = std::tuple_size< ExtraParameterTupleType >::value ;
-    static const int selectedSize = ( extParamSize < modParamSize ) ? extParamSize : modParamSize ;
+
+    static_assert( modParamSize <= extParamSize, "Specify enough ExtraParameterTuple elements!" );
   public:
-    typedef typename SelectTupleElements< ModelParameter, 0, selectedSize, std::tuple<> >::type SelectedModelParameterType;
+    typedef std::make_integer_sequence< int, modParamSize > SequenceType;
+    typedef typename SelectTupleElements< ExtraParameterTupleType, SequenceType >::type SelectedExtraParameterType;
+    //typedef typename SelectTupleElements< ModelParameter, 0, selectedSize, std::tuple<> >::type SelectedModelParameterType;
 
     // the orignal selector
     //typedef typename Dune::Fem::Selector<  passUId, passGradId > ::Type Selector ;
 
     // overload selector type to add model parameters
-    typedef typename Dune::Fem::VariadicSelectorBase< SelectedModelParameterType, passIds... >::Type  Selector;
+    typedef typename Dune::Fem::VariadicSelectorBase< SelectedExtraParameterType, passIds... >::Type  Selector;
 
     /*
     FemDGBaseDiscreteModel()
@@ -117,10 +113,10 @@ namespace Fem
   public:
     typedef AdvectionTraits< OpTraits, enableAdvection, passUId, passIds... > Traits;
 
-    typedef typename Traits :: ModelType         ModelType ;
-    typedef typename Traits :: AdvectionFluxType AdvectionFluxType;
+    typedef typename Traits::ModelType                                        ModelType;
+    typedef typename Traits::AdvectionFluxType                                AdvectionFluxType;
 
-    typedef FemDGBaseDiscreteModel< Traits, passUId, passIds... >  BaseType;
+    typedef FemDGBaseDiscreteModel< Traits, passUId, passIds... >             BaseType;
 
     // These type definitions allow a convenient access to arguments of pass.
     std::integral_constant< int, passUId > uVar;

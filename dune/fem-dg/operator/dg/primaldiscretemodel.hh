@@ -418,12 +418,11 @@ namespace Fem
     typedef typename BaseType :: ModelType          ModelType ;
     typedef typename BaseType :: AdvectionFluxType  AdvectionFluxType ;
 
-    AdvectionDiffusionDGPrimalModel(const ModelType& mod,
-                                    const AdvectionFluxType& numf,
-                                    const DiffusionFluxType& diffflux )
-      : BaseType( mod, numf, diffflux )
-    {
-    }
+    // constructor: do not touch/delegate everything
+    template< class ... Args>
+    AdvectionDiffusionDGPrimalModel( Args&&... args )
+    : BaseType( std::forward<Args>(args)... )
+    {}
   };
 
 
@@ -512,15 +511,11 @@ namespace Fem
 
     enum { evaluateJacobian = DiffusionFluxType :: evaluateJacobian  }; // we need to evaluate jacobians here
   public:
-    /**
-     * \brief constructor
-     */
-    AdaptiveAdvectionDiffusionDGPrimalModel(const ModelType& mod,
-                                            const AdvectionFluxType& numf,
-                                            const DiffusionFluxType& diffflux )
-      : BaseType( mod, numf, diffflux )
-    {
-    }
+    // constructor: do not touch/delegate everything
+    template< class ... Args>
+    AdaptiveAdvectionDiffusionDGPrimalModel( Args&&... args )
+    : BaseType( std::forward<Args>(args)... )
+    {}
 
   public:
     /**

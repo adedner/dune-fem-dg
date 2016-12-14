@@ -6,11 +6,46 @@
 #include <dune/common/exceptions.hh>
 
 #include <dune/fem/misc/fmatrixconverter.hh>
+#include <dune/fem-dg/misc/integral_constant.hh>
 
 namespace Dune
 {
 namespace Fem
 {
+
+
+  template< int i, class Arg >
+  class PassIdGenerator;
+
+  template< int i, class... bools >
+  class PassIdGenerator< i, std::tuple< bools... > >
+  {
+    typedef std::tuple< bools... > T;
+
+    template<int ii>
+    static constexpr typename std::enable_if< (ii<std::tuple_size<T>::value), int>::type getId()
+    { return std::tuple_element<ii,T>::type::value; }
+
+    template<int ii>
+    static constexpr typename std::enable_if<!(ii<std::tuple_size<T>::value), int>::type getId()
+    { return 0; }
+
+    static const int thisId = getId<i>();
+  public:
+    static const int size = PassIdGenerator<i-1,T>::size + thisId;
+    static const int id = (thisId <= 0) ? -1 : size;
+  };
+
+  template< bool... b >
+  class PassIdGenerator< -1, std::tuple< _bool<b>... > >
+  {
+    typedef std::tuple< _bool<b>... > T;
+  public:
+    //start id
+    static const int size = 0;
+    static const int id = size;
+  };
+
 
   /**
    *  \brief Default traits class for models
@@ -90,7 +125,7 @@ namespace Fem
   class DefaultModel
   {
   public:
-    typedef std::tuple <>  ModelParameter;
+    static const int modelParameterSize = 0;
 
     static const int dimDomain = Traits::dimDomain;
     static const int dimRange  = Traits::dimRange;

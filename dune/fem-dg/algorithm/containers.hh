@@ -38,7 +38,7 @@ namespace Fem
    *
    * ![A global container](container7.png)
    */
-  template< class Item2TupleImp, class Item1TupleImp, class SubOrderRowImp, class SubOrderColImp, class... DiscreteFunctions >
+  template< class Item2TupleImp, class Item1TupleImp, class SubOrderRowImp, class SubOrderColImp, class ExtraArg, class... DiscreteFunctions >
   class GlobalContainer
   {
     typedef TwoArgContainer< ArgContainerArgWrapper< Item2TupleImp >::template _t2Inv,
@@ -74,6 +74,12 @@ namespace Fem
       std::cout << "###CREATE: sub container " << print( index )
                 << " from global container containing elements " << print( std::get<i>(rowOrder) )  << std::endl;
       return cont_( std::get<i>(rowOrder), std::get<i>(colOrder) );
+    }
+
+    template< unsigned long int i >
+    decltype(auto) extra( _index<i> index ) const
+    {
+      return ExtraArg::init( *this );
     }
 
     const std::string name() const
@@ -247,7 +253,6 @@ namespace Fem
     typedef std::tuple< typename Containers::ColOneArgType... > ColItem1TupleImp;
     typedef std::tuple< typename Containers::TwoArgType... >    Item2TupleImp;
 
-    typedef std::tuple< ExtraArgs... >                          ExtraArgsType;
 
     static const int size = std::tuple_size< RowItem1TupleImp >::value;
 
@@ -321,6 +326,7 @@ namespace Fem
     template< unsigned long int i >
     decltype(auto) extra( _index<i> index )
     {
+      typedef std::tuple< ExtraArgs... > ExtraArgsType;
       return ExtraArgsType::init( *this );
     }
 

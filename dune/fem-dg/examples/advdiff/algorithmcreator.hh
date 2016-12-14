@@ -77,7 +77,8 @@ namespace Fem
       {
         typedef ProblemInterfaceType                                    ProblemType;
         typedef ProblemInterfaceType                                    InitialDataType;
-        typedef HeatEqnModel< GridType, InitialDataType >               ModelType;
+        typedef HeatEqnModel< GridType, InitialDataType,
+                              std::tuple< __t > >                       ModelType;
 
         template< class Solution, class Model, class ExactFunction, class TimeProvider >
         static void addEOCErrors ( TimeProvider& tp, Solution &u, Model &model, ExactFunction &f )
@@ -169,8 +170,11 @@ namespace Fem
       typedef std::tuple< AdvDiffOrder >                                          SubOrderRowType;
       typedef SubOrderRowType                                                     SubOrderColType;
 
+      //external params lists
+      typedef ExtraArg<>                                                          ExtraType;
+
       //Global container
-      typedef GlobalContainer< Item2TupleType, Item1TupleType, SubOrderRowType, SubOrderColType,DFType >
+      typedef GlobalContainer< Item2TupleType, Item1TupleType, SubOrderRowType, SubOrderColType, ExtraType, DFType >
                                                                                   GlobalContainerType;
 
       //create grid

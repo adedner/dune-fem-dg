@@ -150,6 +150,67 @@ namespace Fem
     }
   };
 
+
+
+  template< int Int, class Tuple >
+  class checked_tuple_element
+  {
+    //tuple element type getter
+    template< int I, class T >
+    struct get_tuple_element
+    {
+      typedef typename std::tuple_element<I,T>::type type;
+    };
+
+    //tuple element type getter, specialization
+    template< class T >
+    struct get_tuple_element<-1, T>
+    {
+      typedef std::tuple<>   type;
+    };
+
+    template<int i,class T>
+    static constexpr typename std::enable_if< (i<std::tuple_size<T>::value), int>::type position()
+    {
+      return i;
+    }
+
+    template<int i, class T>
+    static constexpr typename std::enable_if<!(i<std::tuple_size<T>::value), int>::type position()
+    {
+      return -1;
+    }
+  public:
+    static const int value = position<Int,Tuple>();
+    typedef typename get_tuple_element<value,Tuple>::type type;
+  };
+
+
+  template<int i,class T>
+  static constexpr decltype(auto) checked_get( T&& t, typename std::enable_if< (checked_tuple_element<i,T>::value==-1), typename checked_tuple_element<i,T>::type >::type* = nullptr)
+  {
+    return std::make_tuple();
+  }
+
+  template<int i, class T>
+  static constexpr decltype(auto) checked_get( T&& t, typename std::enable_if<!(checked_tuple_element<i,T>::value==-1), typename checked_tuple_element<i,T>::type >::type = nullptr)
+  {
+    return std::get<i>( std::forward<T>( t ) );
+  }
+
+  template<int i,class T>
+  static constexpr decltype(auto) checked_get( T& t, typename std::enable_if< (checked_tuple_element<i,T>::value==-1), typename checked_tuple_element<i,T>::type >::type* = nullptr  )
+  {
+    return std::make_tuple();
+  }
+
+  template<int i, class T>
+  static constexpr decltype(auto) checked_get( T& t, typename std::enable_if<!(checked_tuple_element<i,T>::value==-1), typename checked_tuple_element<i,T>::type >::type* = nullptr )
+  {
+    return std::get<i>( std::forward<T>( t ) );
+  }
+
+
   /**
    * \brief helper struct to write a static_assert() which will always fail
    *

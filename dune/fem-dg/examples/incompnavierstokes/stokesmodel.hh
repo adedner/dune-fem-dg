@@ -30,7 +30,7 @@ namespace Fem
     typedef Dune::FieldVector< typename BaseType::DomainFieldType, BaseType::dimGradRange >
                                                                        GradientType;
 
-    typedef std::tuple <>                                              ModelParameter;
+    static const int modelParameterSize = 0;
   };
 
 
@@ -45,7 +45,8 @@ namespace Fem
                                                             Traits;
     enum { velo = 0 };
     typedef std::integral_constant< int, velo >             velocityVar;
-    typedef std::tuple < velocityVar >                      ModelParameter;
+
+    static const int modelParameterSize = 1;
 
     typedef typename Traits::GridType                       GridType;
     static const int dimDomain = Traits::dimDomain;

@@ -20,6 +20,16 @@ namespace Fem
   template< unsigned long int i>
   using _index = std::integral_constant< unsigned long int, i >;
 
+
+  template< bool b >
+  using _bool = std::integral_constant< bool, b >;
+
+  //! shortcut for std::integral_constant<bool,false>
+  typedef _bool<false> __f;
+
+  //! shortcut for std::integral_constant<bool,true>
+  typedef _bool<true> __t;
+
   /**
    * \brief shortcut for std::integer_sequence<> used by container classes.
    *

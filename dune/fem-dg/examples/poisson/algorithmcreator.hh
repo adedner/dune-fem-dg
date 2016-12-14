@@ -180,8 +180,11 @@ namespace Fem
       typedef std::tuple< PoissonOrder >                                SubOrderRowType;
       typedef SubOrderRowType                                           SubOrderColType;
 
+      //external params lists
+      typedef ExtraArg<>                                                ExtraType;
+
       //Global container
-      typedef GlobalContainer< Item2TupleType, Item1TupleType, SubOrderRowType, SubOrderColType, DFType > GlobalContainerType;
+      typedef GlobalContainer< Item2TupleType, Item1TupleType, SubOrderRowType, SubOrderColType, ExtraType, DFType > GlobalContainerType;
 
       //create grid
       std::shared_ptr< GridType > gridptr( DefaultGridInitializer< GridType >::initialize().release() );

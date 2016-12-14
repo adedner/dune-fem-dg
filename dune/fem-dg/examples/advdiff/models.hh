@@ -65,18 +65,40 @@ namespace Fem
    * \param Grid Grid for extraction of dimension
    * \param ProblemType Class describing the initial(t=0) and exact solution
    */
-  template <class GridImp, class ProblemImp>
-  class HeatEqnModel :
-    public DefaultModel < HeatEqnModelTraits< GridImp, ProblemImp > >
+  template <class GridImp, class ProblemImp, class ActivationImp = std::tuple<> >
+  class HeatEqnModel
+  : public DefaultModel < HeatEqnModelTraits< GridImp, ProblemImp > >
   {
   public:
     typedef HeatEqnModelTraits< GridImp, ProblemImp >    Traits;
 
-    enum { velo = 0, press = 1, blabla = 2 };
+    //typedef std::integral_constant< int, std::tuple_element<0,SubOrderImp>::type > velocityVar;
+    //
+    ////first element is velocity! set to -1 is not existent
+    //static const int velo = checked_tuple_element< 0,Activation>::value::value;
+    //
+    //
+    ////pass IDs/
+    //static const int size = std::tuple_size< ActivationImp >::value;
+    //
+    ////select ids between 0 and size-1
+    //static const int velo = std::get< __0 >;
+    //static const int pressure = b ? velo + 1 : -1;
+    //static const int blabla = pressure + 1;
+
+    template< int i >
+    using IdGenerator = PassIdGenerator<i,ActivationImp>;
+
+    static const int velo   = IdGenerator<0>::id;
+    static const int press  = IdGenerator<1>::id;
+    static const int blabla = IdGenerator<2>::id;
+
+    static const int modelParameterSize = IdGenerator<2>::size;
+
+    // passids from 0 to size-1
     typedef std::integral_constant< int, velo   > velocityVar;
     typedef std::integral_constant< int, press  > pressure;
-    typedef std::integral_constant< int, blabla > blablabla;
-    typedef std::tuple < velocityVar, pressure, blablabla >   ModelParameter;
+    typedef std::integral_constant< int, blabla > blablaVar;
 
     typedef typename Traits::ProblemType                      ProblemType ;
 
@@ -116,7 +138,7 @@ namespace Fem
     inline const ProblemType& problem() const { return problem_; }
 
     inline bool hasMass() const { return problem_.hasMass(); }
-    inline bool hasFlux() const { return true ; }
+    inline bool hasFlux() const { return true; }
     inline bool hasStiffSource() const { return problem_.hasStiffSource(); }
     inline bool hasNonStiffSource() const { return problem_.hasNonStiffSource(); }
 

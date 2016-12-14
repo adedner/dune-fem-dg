@@ -166,8 +166,11 @@ namespace Fem
       typedef std::tuple< AdvDiffOrder >                                   SubOrderRowType;
       typedef SubOrderRowType                                              SubOrderColType;
 
+      //external params lists
+      typedef ExtraArg<>                                                   ExtraType;
+
       //Global container
-      typedef GlobalContainer< Item2TupleType, Item1TupleType, SubOrderRowType, SubOrderColType,DFType >
+      typedef GlobalContainer< Item2TupleType, Item1TupleType, SubOrderRowType, SubOrderColType, ExtraType, DFType >
                                                                            GlobalContainerType;
 
       //create grid

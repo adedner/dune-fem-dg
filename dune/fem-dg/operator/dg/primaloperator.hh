@@ -45,8 +45,7 @@ namespace Fem
    */
   template< class OpTraits >
   struct DGAdvectionDiffusionOperator : public
-    DGAdvectionDiffusionOperatorBase<
-       CDGAdvectionDiffusionTraits< OpTraits, true, true > >
+    DGAdvectionDiffusionOperatorBase< CDGAdvectionDiffusionTraits< OpTraits, true, true > >
   {
     typedef CDGAdvectionDiffusionTraits< OpTraits, true, true > Traits;
     typedef DGAdvectionDiffusionOperatorBase< Traits >          BaseType;
@@ -54,10 +53,10 @@ namespace Fem
     typedef typename BaseType::ProblemType                      ProblemType;
     typedef typename BaseType::ExtraParameterTupleType          ExtraParameterTupleType;
 
-    DGAdvectionDiffusionOperator( GridPartType& gridPart, ProblemType& problem,
-                                  ExtraParameterTupleType tuple =  ExtraParameterTupleType(),
-                                  const std::string name = "" )
-      : BaseType( gridPart, problem, tuple, name )
+    // constructor: do not touch/delegate everything
+    template< class ... Args>
+    DGAdvectionDiffusionOperator( Args&&... args )
+    : BaseType( std::forward<Args>(args)... )
     {}
 
     std::string description() const
@@ -92,8 +91,7 @@ namespace Fem
    */
   template< class OpTraits >
   struct DGAdvectionOperator : public
-    DGAdvectionDiffusionOperatorBase<
-       CDGAdvectionDiffusionTraits< OpTraits, true, false > >
+    DGAdvectionDiffusionOperatorBase< CDGAdvectionDiffusionTraits< OpTraits, true, false > >
   {
     typedef CDGAdvectionDiffusionTraits< OpTraits, true, false > Traits;
     typedef DGAdvectionDiffusionOperatorBase< Traits >           BaseType;
@@ -101,10 +99,10 @@ namespace Fem
     typedef typename BaseType::ProblemType                       ProblemType;
     typedef typename BaseType::ExtraParameterTupleType           ExtraParameterTupleType;
 
-    DGAdvectionOperator( GridPartType& gridPart, ProblemType& problem,
-                         ExtraParameterTupleType tuple = ExtraParameterTupleType(),
-                         const std::string name = ""  )
-      : BaseType( gridPart, problem, tuple, name )
+    // constructor: do not touch/delegate everything
+    template< class ... Args>
+    DGAdvectionOperator( Args&&... args )
+    : BaseType( std::forward<Args>(args)... )
     {}
 
     std::string description() const
@@ -139,24 +137,23 @@ namespace Fem
    */
   template< class OpTraits >
   class DGDiffusionOperator : public
-    DGAdvectionDiffusionOperatorBase<
-        CDGAdvectionDiffusionTraits< OpTraits, false, true > >
+    DGAdvectionDiffusionOperatorBase< CDGAdvectionDiffusionTraits< OpTraits, false, true > >
   {
   public:
     typedef CDGAdvectionDiffusionTraits< OpTraits, false, true > Traits;
-    typedef DGAdvectionDiffusionOperatorBase< Traits >  BaseType;
-    typedef typename BaseType :: GridPartType  GridPartType;
-    typedef typename BaseType :: ProblemType   ProblemType;
-    typedef typename BaseType :: ExtraParameterTupleType  ExtraParameterTupleType;
+    typedef DGAdvectionDiffusionOperatorBase< Traits >           BaseType;
+    typedef typename BaseType::GridPartType                      GridPartType;
+    typedef typename BaseType::ProblemType                       ProblemType;
+    typedef typename BaseType::ExtraParameterTupleType           ExtraParameterTupleType;
 
   private:
     using BaseType::discreteModel_;
 
   public:
-    DGDiffusionOperator( GridPartType& gridPart, ProblemType& problem,
-                         ExtraParameterTupleType tuple = ExtraParameterTupleType(),
-                         const std::string name = ""  )
-      : BaseType( gridPart, problem, tuple, name )
+    // constructor: do not touch/delegate everything
+    template< class ... Args>
+    DGDiffusionOperator( Args&&... args )
+    : BaseType( std::forward<Args>(args)... )
     {}
 
     std::string description() const
@@ -206,16 +203,17 @@ namespace Fem
   struct DGAdaptationIndicatorOperator : public
     DGAdvectionDiffusionOperatorBase< CDGAdaptationIndicatorTraits< OpTraits, advection, diffusion > >
   {
-    typedef CDGAdaptationIndicatorTraits< OpTraits, advection, diffusion > Traits ;
+    typedef CDGAdaptationIndicatorTraits< OpTraits, advection, diffusion > Traits;
     typedef DGAdvectionDiffusionOperatorBase< Traits >  BaseType;
-    typedef typename BaseType :: GridPartType  GridPartType;
-    typedef typename BaseType :: ProblemType   ProblemType ;
-    typedef typename BaseType :: ExtraParameterTupleType  ExtraParameterTupleType;
+    typedef typename BaseType::GridPartType             GridPartType;
+    typedef typename BaseType::ProblemType              ProblemType ;
+    typedef typename BaseType::ExtraParameterTupleType  ExtraParameterTupleType;
 
-    DGAdaptationIndicatorOperator( GridPartType& gridPart, ProblemType& problem,
-                                   ExtraParameterTupleType tuple = ExtraParameterTupleType(),
-                                   const std::string name = ""  )
-      : BaseType( gridPart, problem, tuple, name )
+  public:
+    // constructor: do not touch/delegate everything
+    template< class ... Args>
+    DGAdaptationIndicatorOperator( Args&&... args )
+    : BaseType( std::forward<Args>(args)... )
     {}
 
     std::string description() const
@@ -351,9 +349,10 @@ namespace Fem
     }
 
   public:
+    template< class ExtraParameterTupleImp >
     DGLimitedAdvectionOperator( GridPartType& gridPart,
                                 ProblemType& problem,
-                                ExtraParameterTupleType tuple =  ExtraParameterTupleType(),
+                                ExtraParameterTupleImp tuple,
                                 const std::string name = "" )
       : model_( problem )
       , advflux_( model_ )
@@ -536,8 +535,10 @@ namespace Fem
     typedef typename BaseType::ProblemType                             ProblemType;
 
   public:
-    DGLimitedAdvectionDiffusionOperator ( GridPartType& gridPart, ProblemType& problem, const std::string keyPrefix = "" )
-    : BaseType( gridPart, problem, keyPrefix )
+    // constructor: do not touch/delegate everything
+    template< class ... Args>
+    DGLimitedAdvectionDiffusionOperator( Args&&... args )
+    : BaseType( std::forward<Args>(args)... )
     {}
 
     void printmyInfo(std::string filename) const

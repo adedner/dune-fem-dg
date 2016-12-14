@@ -36,37 +36,53 @@ namespace Fem
    */
   template< class Traits >
   class DGAdvectionDiffusionOperatorBase :
-    public Fem::SpaceOperatorInterface< typename Traits :: DestinationType >
+    public Fem::SpaceOperatorInterface< typename Traits::DestinationType >
   {
     enum { u = Traits :: u,
            cdgpass  = Traits :: cdgpass };
 
     enum { polynomialOrder = Traits :: polynomialOrder };
 
-    typedef Fem::SpaceOperatorInterface< typename Traits :: DestinationType >  BaseType ;
+    typedef Fem::SpaceOperatorInterface< typename Traits::DestinationType >  BaseType;
 
-    template <class Tuple, class StartPassImp, class ModelParameterImp, int i>
+    //note: ExtraParameterTuple contains non pointer types from now on
+    template <class Tuple, class StartPassImp, int i >
     struct InsertFunctions
     {
-      typedef InsertFunctions< Tuple, StartPassImp, ModelParameterImp, i-1 >                         PreviousInsertFunctions;
-      typedef typename PreviousInsertFunctions::PassType                                             PreviousPass ;
-      typedef typename std::remove_pointer< typename std::tuple_element< i-1, Tuple >::type >::type  DiscreteFunction;
-      static const int passId = std::tuple_element< i-1, ModelParameterImp >::type::value;
-      typedef Dune::Fem::InsertFunctionPass< DiscreteFunction, PreviousPass, passId >                PassType;
+      static_assert( i <= std::tuple_size< Tuple >::value,
+                     "Not enough extra discrete functions specified (see: ExtraParameterTuple) requested by model." );
 
-      static std::shared_ptr< PassType > createPass( Tuple& tuple )
+      typedef InsertFunctions< Tuple, StartPassImp, i-1 >                        PreviousInsertFunctions;
+      typedef typename PreviousInsertFunctions::PassType                         PreviousPass;
+
+      typedef typename std::tuple_element< i-1, Tuple >::type                    DiscreteFunction;
+
+      typedef Dune::Fem::InsertFunctionPass< DiscreteFunction, PreviousPass, i > PassType;
+
+      template< class TupleImp >
+      static std::shared_ptr< PassType > createPass( TupleImp& tuple )
       {
-        std::shared_ptr< PreviousPass > previousPass = PreviousInsertFunctions::createPass( tuple );
-        const DiscreteFunction* df = std::get< i-1 >( tuple );
+        //this has to fit!
+        static_assert( i <= std::tuple_size<TupleImp>::value,
+                       "Not enough Discrete Function Type in container!");
+
+        static_assert( std::is_same<std::tuple_element<i-1,TupleImp>,std::tuple_element<i-1,Tuple> >::value,
+                       "Discrete Function Type has to have the same type!");
+
+        auto previousPass = PreviousInsertFunctions::createPass( tuple );
+        //maybe empty!
+        const std::shared_ptr<DiscreteFunction> df = std::get< i-1 >( tuple );
         return std::make_shared<PassType>( df, previousPass );
       }
     };
 
-    template <class Tuple, class StartPassImp, class ModelParameterImp >
-    struct InsertFunctions< Tuple, StartPassImp, ModelParameterImp, 0 >
+    template <class Tuple, class StartPassImp >
+    struct InsertFunctions< Tuple, StartPassImp, 0 >
     {
       typedef StartPassImp            PassType;
-      static std::shared_ptr< PassType > createPass( Tuple& tuple )
+
+      template< class TupleImp >
+      static decltype(auto) createPass( TupleImp& tuple )
       {
         return std::make_shared<PassType>();
       }
@@ -96,11 +112,11 @@ namespace Fem
 #endif
       > Pass0Type;
 
-    typedef typename ModelType::ModelParameter            ModelParameter;
     typedef typename Traits::ExtraParameterTupleType      ExtraParameterTupleType;
 
-    typedef InsertFunctions< ExtraParameterTupleType, Pass0Type, ModelParameter,
-                             std::tuple_size< ExtraParameterTupleType >::value >
+    //typedef InsertFunctions< ExtraParameterTupleType, Pass0Type, ModelParameter,
+    //                         std::tuple_size< ExtraParameterTupleType >::value >
+    typedef InsertFunctions< ExtraParameterTupleType, Pass0Type, ModelType::modelParameterSize >
                                                           InsertFunctionsType;
     typedef typename InsertFunctionsType::PassType        InsertFunctionPassType;
 
@@ -126,8 +142,9 @@ namespace Fem
     typedef typename DiscreteModelType :: AdaptationType  AdaptationType;
 
   public:
+    template< class ExtraParameterTupleImp >
     DGAdvectionDiffusionOperatorBase( GridPartType& gridPart, ProblemType& problem,
-                                      ExtraParameterTupleType& tuple,
+                                      ExtraParameterTupleImp& tuple,
                                       const std::string name = "" )
       : model_( problem )
       , numflux_( model_ )
@@ -139,8 +156,9 @@ namespace Fem
       , pass1_( discreteModel_, *previousPass_, space_ )
     {}
 
+    template< class ExtraParameterTupleImp >
     DGAdvectionDiffusionOperatorBase( GridPartType& gridPart, const ModelType& model,
-                                      ExtraParameterTupleType& tuple,
+                                      ExtraParameterTupleImp& tuple,
                                       const std::string name = "" )
       : model_( model )
       , numflux_( model_ )
