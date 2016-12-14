@@ -42,7 +42,7 @@ namespace Fem
     typedef std::tuple< _bool<b>... > T;
   public:
     //start id
-    static const int size = 0;
+    static const int size = -1;
     static const int id = size;
   };
 

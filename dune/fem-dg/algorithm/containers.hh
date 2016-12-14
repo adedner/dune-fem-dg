@@ -62,7 +62,7 @@ namespace Fem
      * \brief returns the i's container
      */
     template< unsigned long int i >
-    decltype(auto) sub( _index<i> index )
+    decltype(auto) sub( _index<i> index ) const
     {
       static_assert( std::tuple_size< SubOrderRowImp >::value > i,
                      "SubOrderRowImp does not contain the necessary sub structure information.\

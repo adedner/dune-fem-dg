@@ -30,7 +30,7 @@ namespace Fem
   struct CDGAdvectionDiffusionTraits : public Traits
   {
     // choose ids different to the tuple entries
-    enum { u = std::tuple_size< typename Traits::ExtraParameterTupleType > ::value + 2 , cdgpass = u + 1 };
+    enum { u = Traits::ModelType::modelParameterSize + 1 , cdgpass = u + 1 };
 
     typedef AdvectionDiffusionDGPrimalModel< Traits, advection, diffusion, u> DiscreteModelType;
   };
@@ -179,7 +179,7 @@ namespace Fem
   struct CDGAdaptationIndicatorTraits : public Traits
   {
     // choose ids different to the tuple entries
-    enum { u = std::tuple_size< typename Traits::ExtraParameterTupleType > ::value + 2 , cdgpass = u + 1 };
+    enum { u = Traits::ModelType::modelParameterSize + 1 , cdgpass = u + 1 };
 
     typedef AdaptiveAdvectionDiffusionDGPrimalModel< Traits, advection, diffusion, u> DiscreteModelType;
   };

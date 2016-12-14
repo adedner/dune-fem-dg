@@ -17,23 +17,13 @@ namespace Dune
 namespace Fem
 {
 
-  template < int idx >
-  struct PrintTupleValues
-  {
-    template <class Tuple>
-    static void apply( const Tuple*  )
-    {
-      std::cout << "Tuple< " << idx << " > = " << std::tuple_element< idx, Tuple >::type::value << std::endl;
-    }
-  };
+  template< class >
+  struct Sequence2Tuple;
 
-  template< class, class >
-  struct SelectTupleElements;
-
-  template< class Tuple, int... elements >
-  struct SelectTupleElements< Tuple, std::integer_sequence<int, elements... > >
+  template< int... i >
+  struct Sequence2Tuple< std::integer_sequence< int, i... > >
   {
-    typedef std::tuple< typename std::tuple_element< elements, Tuple >::type... > type;
+    typedef std::tuple< std::integral_constant< int, i >... > type;
   };
 
   /**
@@ -48,34 +38,17 @@ namespace Fem
   class FemDGBaseDiscreteModel
     : public Fem::DGDiscreteModelDefaultWithInsideOutside< Traits, passIds... >
   {
-    typedef typename Traits::ExtraParameterTupleType      ExtraParameterTupleType;
-
     static const int modParamSize = Traits::ModelType::modelParameterSize;
-    static const int extParamSize = std::tuple_size< ExtraParameterTupleType >::value ;
+    static const int extParamSize = std::tuple_size< typename Traits::ExtraParameterTupleType >::value ;
 
     static_assert( modParamSize <= extParamSize, "Specify enough ExtraParameterTuple elements!" );
-  public:
-    typedef std::make_integer_sequence< int, modParamSize > SequenceType;
-    typedef typename SelectTupleElements< ExtraParameterTupleType, SequenceType >::type SelectedExtraParameterType;
-    //typedef typename SelectTupleElements< ModelParameter, 0, selectedSize, std::tuple<> >::type SelectedModelParameterType;
 
-    // the orignal selector
-    //typedef typename Dune::Fem::Selector<  passUId, passGradId > ::Type Selector ;
+    typedef typename Sequence2Tuple< std::make_integer_sequence< int, modParamSize > >::type ExtraParameterIds;
+  public:
 
     // overload selector type to add model parameters
-    typedef typename Dune::Fem::VariadicSelectorBase< SelectedExtraParameterType, passIds... >::Type  Selector;
+    typedef typename Dune::Fem::VariadicSelectorBase< ExtraParameterIds, passIds... >::Type  Selector;
 
-    /*
-    FemDGBaseDiscreteModel()
-    {
-#ifndef NDEBUG
-      if( Dune::Fem::Parameter::verbose() )
-      {
-        ForLoop< PrintTupleValues, 0, std::tuple_size< Selector >::value-1 >::apply( ( Selector* ) 0 );
-      }
-#endif
-    }
-    */
   };
 
   // AdvectionModel

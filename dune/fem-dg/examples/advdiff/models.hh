@@ -72,19 +72,6 @@ namespace Fem
   public:
     typedef HeatEqnModelTraits< GridImp, ProblemImp >    Traits;
 
-    //typedef std::integral_constant< int, std::tuple_element<0,SubOrderImp>::type > velocityVar;
-    //
-    ////first element is velocity! set to -1 is not existent
-    //static const int velo = checked_tuple_element< 0,Activation>::value::value;
-    //
-    //
-    ////pass IDs/
-    //static const int size = std::tuple_size< ActivationImp >::value;
-    //
-    ////select ids between 0 and size-1
-    //static const int velo = std::get< __0 >;
-    //static const int pressure = b ? velo + 1 : -1;
-    //static const int blabla = pressure + 1;
 
     template< int i >
     using IdGenerator = PassIdGenerator<i,ActivationImp>;

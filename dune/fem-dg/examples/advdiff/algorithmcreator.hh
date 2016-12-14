@@ -105,11 +105,14 @@ namespace Fem
       public:
         typedef typename AC::template DiscreteFunctions< DFSpaceType >                     DiscreteFunctionType;
 
+        typedef std::tuple< DiscreteFunctionType >                                         ExtraParameters;
+        //typedef std::tuple<>                                                               ExtraParameters;
+
         typedef std::tuple< DiscreteFunctionType*, DiscreteFunctionType* >                 IOTupleType;
 
         class Operator
         {
-          typedef typename AC::template DefaultOpTraits< DFSpaceType, polOrd, AnalyticalTraits >
+          typedef typename AC::template DefaultOpTraits< DFSpaceType, polOrd, AnalyticalTraits, ExtraParameters >
                                                                                            OpTraits;
         public:
           typedef typename AC::template Operators< OpTraits,OperatorSplit::Enum::full >    type;
@@ -124,7 +127,7 @@ namespace Fem
         };
 
       private:
-        typedef typename AC::template DefaultOpTraits< DFSpaceType, polOrd, AnalyticalTraits >
+        typedef typename AC::template DefaultOpTraits< DFSpaceType, polOrd, AnalyticalTraits, ExtraParameters >
                                                                                            OpTraits;
         typedef DGAdaptationIndicatorOperator< OpTraits >                                  IndicatorType;
         typedef Estimator< DiscreteFunctionType, typename AnalyticalTraits::ProblemType >  GradientIndicatorType ;
@@ -171,7 +174,8 @@ namespace Fem
       typedef SubOrderRowType                                                     SubOrderColType;
 
       //external params lists
-      typedef ExtraArg<>                                                          ExtraType;
+      typedef ExtraArg<_e< SolutionSelect, __0, __0 > >                           ExtraType;
+      //typedef ExtraArg< >                                                          ExtraType;
 
       //Global container
       typedef GlobalContainer< Item2TupleType, Item1TupleType, SubOrderRowType, SubOrderColType, ExtraType, DFType >

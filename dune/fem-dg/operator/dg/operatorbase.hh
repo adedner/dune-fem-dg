@@ -46,7 +46,7 @@ namespace Fem
     typedef Fem::SpaceOperatorInterface< typename Traits::DestinationType >  BaseType;
 
     //note: ExtraParameterTuple contains non pointer types from now on
-    template <class Tuple, class StartPassImp, int i >
+    template <class Tuple, class StartPassImp, unsigned long int i >
     struct InsertFunctions
     {
       static_assert( i <= std::tuple_size< Tuple >::value,
@@ -59,19 +59,21 @@ namespace Fem
 
       typedef Dune::Fem::InsertFunctionPass< DiscreteFunction, PreviousPass, i > PassType;
 
-      template< class TupleImp >
-      static std::shared_ptr< PassType > createPass( TupleImp& tuple )
+      template< class ExtraArgImp >
+      static std::shared_ptr< PassType > createPass( const std::shared_ptr< ExtraArgImp >& tuple )
       {
+        static const int size = ExtraArgImp::size;
         //this has to fit!
-        static_assert( i <= std::tuple_size<TupleImp>::value,
+        static_assert( i <= size,
                        "Not enough Discrete Function Type in container!");
 
-        static_assert( std::is_same<std::tuple_element<i-1,TupleImp>,std::tuple_element<i-1,Tuple> >::value,
-                       "Discrete Function Type has to have the same type!");
+        //static_assert( std::is_same<std::tuple_element<i-1,ExtraArgImp>,std::tuple_element<i-1,Tuple> >::value,
+        //               "Discrete Function Type has to have the same type!");
 
         auto previousPass = PreviousInsertFunctions::createPass( tuple );
         //maybe empty!
-        const std::shared_ptr<DiscreteFunction> df = std::get< i-1 >( tuple );
+        //const std::shared_ptr<DiscreteFunction> df = std::get< i-1 >( tuple );
+        const auto df = (*tuple)( _index<i-1>() ).get();
         return std::make_shared<PassType>( df, previousPass );
       }
     };
@@ -81,8 +83,8 @@ namespace Fem
     {
       typedef StartPassImp            PassType;
 
-      template< class TupleImp >
-      static decltype(auto) createPass( TupleImp& tuple )
+      template< class ExtraArgImp >
+      static decltype(auto) createPass( ExtraArgImp& tuple )
       {
         return std::make_shared<PassType>();
       }
@@ -114,8 +116,6 @@ namespace Fem
 
     typedef typename Traits::ExtraParameterTupleType      ExtraParameterTupleType;
 
-    //typedef InsertFunctions< ExtraParameterTupleType, Pass0Type, ModelParameter,
-    //                         std::tuple_size< ExtraParameterTupleType >::value >
     typedef InsertFunctions< ExtraParameterTupleType, Pass0Type, ModelType::modelParameterSize >
                                                           InsertFunctionsType;
     typedef typename InsertFunctionsType::PassType        InsertFunctionPassType;

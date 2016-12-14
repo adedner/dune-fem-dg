@@ -31,7 +31,7 @@ namespace Fem
     public Fem::SpaceOperatorInterface< typename Traits::DestinationType >
   {
     // choose ids for the three passes (including start pass) different to the tuple entries
-    enum PassIdType { u = std::tuple_size< typename Traits::ExtraParameterTupleType >::value + 2 , gradPass = u+1, advectPass = u + 2 };
+    enum PassIdType { u = Traits::ModelType::modelParameterSize + 1 , gradPass = u+1, advectPass = u + 2 };
 
     struct GradientTraits
       : public Traits
@@ -213,7 +213,7 @@ namespace Fem
   struct LDGAdvectionTraits : public Traits
   {
     // choose ids for the two passes (including start pass) different to the tuple entries
-    enum PassIdType { u = std::tuple_size< typename Traits::ExtraParameterTupleType >::value + 2 , cdgpass = u + 1 };
+    enum PassIdType { u = Traits::ModelType::modelParameterSize + 1 , cdgpass = u + 1 };
 
     typedef AdvectionDiffusionDGPrimalModel
       // put a method_none here to avoid diffusion
@@ -314,7 +314,7 @@ namespace Fem
       < typename Traits :: DestinationType >
   {
     // choose ids for the three passes (including start pass) different to the tuple entries
-    enum PassIdType { u = std::tuple_size< typename Traits::ExtraParameterTupleType >::value + 2 ,
+    enum PassIdType { u = Traits::ModelType::modelParameterSize + 1 ,
                       limitPassId  = u + 1,
                       gradPassId   = u + 2,
                       advectPassId = u + 3 };
@@ -530,7 +530,7 @@ namespace Fem
   struct AdaptationIndicatorTraits : public Traits
   {
     // choose ids for the two passes (including start pass) different to the tuple entries
-    enum PassIdType { u = std::tuple_size< typename Traits::ExtraParameterTupleType >::value + 2 , cdgpass = u + 1 };
+    enum PassIdType { u = Traits::ModelType::modelParameterSize + 1 , cdgpass = u + 1 };
 
     typedef AdaptiveAdvectionDiffusionDGPrimalModel
       < Traits, u, advection, diffusion> DiscreteModelType;

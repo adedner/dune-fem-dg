@@ -668,6 +668,8 @@ namespace Fem
     template< unsigned long int i >
     using Item = typename std::tuple_element<i,ArgTupleType>::type;
 
+    static const int size = std::tuple_size< ArgTupleType >::value;
+
   protected:
     ////// Copy
     template< class ItemTuple, unsigned long int ...i >
@@ -694,6 +696,7 @@ namespace Fem
     template< unsigned long int i >
     decltype(auto) operator() ( _index<i> index ) const
     {
+      static_assert( i<size, "index element does not exist!" );
       return std::get<i>( item_ );
     }
 
