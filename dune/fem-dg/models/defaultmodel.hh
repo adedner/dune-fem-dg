@@ -50,27 +50,32 @@ namespace Fem
   /**
    *  \brief Default traits class for models
    */
-  template <class GridImp, class ProblemImp>
+  template <class GridImp, class ProblemImp,class ActivationImp=std::tuple<>, int maxModelParameterSize = 0 >
   struct DefaultModelTraits
   {
     typedef ProblemImp                                                    ProblemType;
-    typedef typename ProblemType :: FunctionSpaceType                     FunctionSpaceType;
+    typedef typename ProblemType::FunctionSpaceType                       FunctionSpaceType;
     typedef GridImp                                                       GridType;
     static constexpr int dimDomain = FunctionSpaceType::dimDomain;
     static constexpr int dimRange  = FunctionSpaceType::dimRange;
     static constexpr int dimGradRange = dimRange * dimDomain;
 
-    typedef typename FunctionSpaceType :: DomainFieldType                 DomainFieldType;
-    typedef typename FunctionSpaceType :: RangeFieldType                  RangeFieldType;
+    typedef typename FunctionSpaceType::DomainFieldType                   DomainFieldType;
+    typedef typename FunctionSpaceType::RangeFieldType                    RangeFieldType;
 
-    typedef typename FunctionSpaceType :: DomainType                      DomainType;
-    typedef typename FunctionSpaceType :: RangeType                       RangeType;
+    typedef typename FunctionSpaceType::DomainType                        DomainType;
+    typedef typename FunctionSpaceType::RangeType                         RangeType;
     typedef Dune::FieldVector< DomainFieldType, dimDomain-1 >             FaceDomainType;
 
-    typedef typename FunctionSpaceType :: JacobianRangeType               JacobianRangeType;
+    typedef typename FunctionSpaceType::JacobianRangeType                 JacobianRangeType;
     typedef JacobianRangeType                                             FluxRangeType;
     typedef Dune::FieldMatrix< RangeFieldType, dimDomain, dimDomain >     DiffusionMatrixType;
     typedef Dune::FieldMatrix< RangeFieldType, dimGradRange, dimDomain >  DiffusionRangeType;
+
+    template< int i >
+    using IdGenerator = PassIdGenerator<i,ActivationImp>;
+
+    static const int modelParameterSize = IdGenerator<maxModelParameterSize>::size;
   };
 
   /**

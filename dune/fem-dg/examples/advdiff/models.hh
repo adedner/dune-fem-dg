@@ -21,11 +21,11 @@ namespace Dune
 {
 namespace Fem
 {
-  template <class GridImp, class ProblemImp >
+  template <class GridImp, class ProblemImp, class ActivationImp, int maxModelParameterSize >
   class HeatEqnModelTraits
-    : public DefaultModelTraits< GridImp, ProblemImp >
+    : public DefaultModelTraits< GridImp, ProblemImp, ActivationImp, maxModelParameterSize >
   {
-    typedef DefaultModelTraits< GridImp, ProblemImp >              BaseType;
+    typedef DefaultModelTraits< GridImp, ProblemImp, ActivationImp, maxModelParameterSize >     BaseType;
   public:
     typedef Dune::FieldVector< typename BaseType::DomainFieldType, BaseType::dimGradRange >
                                                                        GradientType;
@@ -67,20 +67,14 @@ namespace Fem
    */
   template <class GridImp, class ProblemImp, class ActivationImp = std::tuple<> >
   class HeatEqnModel
-  : public DefaultModel < HeatEqnModelTraits< GridImp, ProblemImp > >
+  : public DefaultModel < HeatEqnModelTraits< GridImp, ProblemImp, ActivationImp, 2 > >
   {
   public:
-    typedef HeatEqnModelTraits< GridImp, ProblemImp >    Traits;
+    typedef HeatEqnModelTraits< GridImp, ProblemImp, ActivationImp, 2 >    Traits;
 
-
-    template< int i >
-    using IdGenerator = PassIdGenerator<i,ActivationImp>;
-
-    static const int velo   = IdGenerator<0>::id;
-    static const int press  = IdGenerator<1>::id;
-    static const int blabla = IdGenerator<2>::id;
-
-    static const int modelParameterSize = IdGenerator<2>::size;
+    static const int velo   = Traits::template IdGenerator<0>::id;
+    static const int press  = Traits::template IdGenerator<1>::id;
+    static const int blabla = Traits::template IdGenerator<2>::id;
 
     // passids from 0 to size-1
     typedef std::integral_constant< int, velo   > velocityVar;

@@ -78,7 +78,7 @@ namespace Fem
         typedef ProblemInterfaceType                                    ProblemType;
         typedef ProblemInterfaceType                                    InitialDataType;
         typedef HeatEqnModel< GridType, InitialDataType,
-                              std::tuple< __t > >                       ModelType;
+                              std::tuple<> >                       ModelType;
 
         template< class Solution, class Model, class ExactFunction, class TimeProvider >
         static void addEOCErrors ( TimeProvider& tp, Solution &u, Model &model, ExactFunction &f )
