@@ -67,19 +67,14 @@ namespace Fem
    */
   template <class GridImp, class ProblemImp, class ActivationImp = std::tuple<> >
   class HeatEqnModel
-  : public DefaultModel < HeatEqnModelTraits< GridImp, ProblemImp, ActivationImp, 2 > >
+  : public DefaultModel < HeatEqnModelTraits< GridImp, ProblemImp, ActivationImp, 1 > >
   {
   public:
-    typedef HeatEqnModelTraits< GridImp, ProblemImp, ActivationImp, 2 >    Traits;
+    typedef HeatEqnModelTraits< GridImp, ProblemImp, ActivationImp, 1 >    Traits;
 
-    static const int velo   = Traits::template IdGenerator<0>::id;
-    static const int press  = Traits::template IdGenerator<1>::id;
-    static const int blabla = Traits::template IdGenerator<2>::id;
+    static const int velo = Traits::template IdGenerator<0>::id;
 
-    // passids from 0 to size-1
-    typedef std::integral_constant< int, velo   > velocityVar;
-    typedef std::integral_constant< int, press  > pressure;
-    typedef std::integral_constant< int, blabla > blablaVar;
+    typedef std::integral_constant< int, velo > velocityVar;
 
     typedef typename Traits::ProblemType                      ProblemType ;
 
