@@ -130,7 +130,7 @@ namespace Fem
   class DefaultModel
   {
   public:
-    static const int modelParameterSize = 0;
+    static const int modelParameterSize = Traits::modelParameterSize;
 
     static const int dimDomain = Traits::dimDomain;
     static const int dimRange  = Traits::dimRange;
