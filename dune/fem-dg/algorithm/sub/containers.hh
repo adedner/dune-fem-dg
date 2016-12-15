@@ -791,13 +791,43 @@ namespace Fem
    *
    * \ingroup Container
    */
-  template< class... MatrixContainerImp >
+  template< class... >
   struct EmptyContainerItem
   {
     template< class ... Args>
     EmptyContainerItem( Args&&... args )
     {}
   };
+
+  /**
+   * \brief Container only storing the solution.
+   *
+   * \ingroup Container
+   */
+  template <class DiscreteFunctionImp >
+  struct SolutionContainerItem
+  {
+    using CItem = ContainerItem< DiscreteFunctionImp >;
+  public:
+    using DiscreteFunction = DiscreteFunctionImp;
+
+    // owning container
+    template< class SameObject >
+    SolutionContainerItem( const std::shared_ptr<SameObject>& obj, const std::string name = "" )
+    : stringId_( FunctionIDGenerator::instance().nextId() ),
+      solution_(      std::make_shared< CItem >( name + "u" + stringId_, obj ) )
+    {}
+
+    //solution
+    shared_ptr< DiscreteFunction > solution() const
+    {
+      return solution_->shared();
+    }
+  private:
+    const std::string        stringId_;
+    std::shared_ptr< CItem > solution_;
+  };
+
 
 
 

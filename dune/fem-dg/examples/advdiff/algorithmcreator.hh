@@ -43,6 +43,10 @@ namespace Dune
 namespace Fem
 {
 
+//undef the following to prescribe an external discrete velocity.
+//This will not produce any physical results, yet. Just an example
+//#define VELO
+
   /**
    *  \brief problem creator for an advection diffusion problem
    */
@@ -77,8 +81,11 @@ namespace Fem
       {
         typedef ProblemInterfaceType                                    ProblemType;
         typedef ProblemInterfaceType                                    InitialDataType;
-        typedef HeatEqnModel< GridType, InitialDataType,
-                              std::tuple<__f > >                       ModelType;
+        typedef HeatEqnModel< GridType, InitialDataType, std::tuple<
+#ifdef VELO
+          __t
+#endif
+          > >                                                           ModelType;
 
         template< class Solution, class Model, class ExactFunction, class TimeProvider >
         static void addEOCErrors ( TimeProvider& tp, Solution &u, Model &model, ExactFunction &f )
@@ -102,11 +109,22 @@ namespace Fem
       {
         typedef typename AC::template DiscreteFunctionSpaces< GridPartType, polOrd, FunctionSpaceType>
                                                                                            DFSpaceType;
-      public:
-        typedef typename AC::template DiscreteFunctions< DFSpaceType >                     DiscreteFunctionType;
 
-        typedef std::tuple< DiscreteFunctionType >                                         ExtraParameters;
-        //typedef std::tuple<>                                                               ExtraParameters;
+#ifdef VELO
+        typedef typename AC::template FunctionSpaces<GRIDDIM>                              VelFunctionSpaceType;
+        typedef typename AC::template DiscreteFunctionSpaces< GridPartType, polOrd, VelFunctionSpaceType>
+                                                                                           VelDFSpaceType;
+#endif
+
+      public:
+
+        typedef typename AC::template DiscreteFunctions< DFSpaceType >                     DiscreteFunctionType;
+#ifdef VELO
+        typedef typename AC::template DiscreteFunctions< VelDFSpaceType >                  VelDiscreteFunctionType;
+        typedef std::tuple< VelDiscreteFunctionType >                                      ExtraParameters;
+#else
+        typedef std::tuple<>                                                               ExtraParameters;
+#endif
 
         typedef std::tuple< DiscreteFunctionType*, DiscreteFunctionType* >                 IOTupleType;
 
@@ -157,28 +175,54 @@ namespace Fem
       //Discrete Functions
       typedef typename SubAdvectionDiffusionAlgorithmCreator<ACAdvDiff>::template DiscreteTraits<polOrd>::DiscreteFunctionType
                                                                                   DFType;
+#ifdef VELO
+      typedef typename SubAdvectionDiffusionAlgorithmCreator<ACAdvDiff>::template DiscreteTraits<polOrd>::VelDiscreteFunctionType
+                                                                       VelDFType;
+#endif
 
       //Item1
       typedef _t< SubEvolutionContainerItem >                                     Steady;
+#ifdef VELO
+      typedef _t< SolutionContainerItem >                                         Solut;
+      typedef std::tuple< Steady, Solut >                                         Item1TupleType;
+#else
       typedef std::tuple< Steady >                                                Item1TupleType;
+#endif
 
       //Item2
       typedef _t< EmptyContainerItem >                                            Empty;
+#ifdef VELO
+      typedef std::tuple< std::tuple< Empty,Empty >,
+                          std::tuple< Empty,Empty > >                             Item2TupleType;
+#else
       typedef std::tuple< std::tuple< Empty > >                                   Item2TupleType;
+
+#endif
 
 
       //Sub (discrete function argument ordering)
+#ifdef VELO
+      typedef std::tuple<__0, __1 >                                               AdvDiffOrder;
+#else
       typedef std::tuple<__0 >                                                    AdvDiffOrder;
+#endif
 
       typedef std::tuple< AdvDiffOrder >                                          SubOrderRowType;
       typedef SubOrderRowType                                                     SubOrderColType;
 
       //external params lists
-      typedef ExtraArg<_e< SolutionSelect, __0, __0 > >                           ExtraType;
-      //typedef ExtraArg< >                                                          ExtraType;
+#ifdef VELO
+      typedef ExtraArg<_e< SolutionSelect, __0, __1 > >                           ExtraType;
+#else
+      typedef ExtraArg< >                                                          ExtraType;
+#endif
 
       //Global container
+#ifdef VELO
+      typedef GlobalContainer< Item2TupleType, Item1TupleType, SubOrderRowType, SubOrderColType, ExtraType, DFType, VelDFType >
+#else
       typedef GlobalContainer< Item2TupleType, Item1TupleType, SubOrderRowType, SubOrderColType, ExtraType, DFType >
+#endif
                                                                                   GlobalContainerType;
 
       //create grid
