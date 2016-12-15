@@ -67,13 +67,6 @@ namespace Fem
       exactSolution_( std::make_shared< CItem >( name + "u-exact" + stringId_, *solution_ ) )
     {}
 
-    // non owning container, for coupling
-    SubEvolutionContainerItem( const std::string name = "" )
-    : stringId_( FunctionIDGenerator::instance().nextId() ),
-      solution_(      std::make_shared< CItem >( name + "u" + stringId_ ) ),
-      exactSolution_( std::make_shared< CItem >( name + "u-exact" + stringId_ ) )
-    {}
-
     //solution
     shared_ptr< DiscreteFunction > solution() const
     {

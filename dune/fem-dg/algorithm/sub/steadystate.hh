@@ -51,14 +51,6 @@ namespace Fem
       rhs_(           std::make_shared< CItem >( name + "u-rhs" + stringId_, *solution_ ) )
     {}
 
-    // non owning container, for coupling
-    SubSteadyStateContainerItem( const std::string name = "" )
-    : stringId_( FunctionIDGenerator::instance().nextId() ),
-      solution_(      std::make_shared< CItem >( name + "u" + stringId_ ) ),
-      exactSolution_( std::make_shared< CItem >( name + "u-exact" + stringId_ ) ),
-      rhs_(           std::make_shared< CItem >( name + "u-rhs" + stringId_ ) )
-    {}
-
     //solution
     shared_ptr< DiscreteFunction > solution() const
     {
