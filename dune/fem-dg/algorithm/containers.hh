@@ -162,6 +162,9 @@ namespace Fem
 
     static_assert( is_tuple< std::tuple<SubOrderRowImp...> >::value, "SubOrderRowImp has to be a std::tuple<std::tuple<>...>" );
   protected:
+    static_assert( size1 >= 0, "invalid integer_sequence: Throw this additional assertion here because \
+                                gcc-6 won't stop compiling for a very long time... :(" );
+
     static std::make_integer_sequence< unsigned long int, size1 > sequence;
 
     template< unsigned long int i, class SameObject >
@@ -280,6 +283,8 @@ namespace Fem
 
     static_assert( is_tuple< std::tuple<SubOrderRowImp...> >::value, "SubOrderRowImp has to be a std::tuple<std::tuple<>...>" );
   protected:
+    static_assert( size >= 0, "invalid integer_sequence: Throw this additional assertion here because \
+                               gcc-6 won't stop compiling for a very long time... :(" );
     static std::make_integer_sequence< unsigned long int, size > sequence;
 
     template< unsigned long int i, class SameObject >

@@ -43,6 +43,8 @@ namespace Fem
 
     static_assert( modParamSize <= extParamSize, "Specify enough ExtraParameterTuple elements!" );
 
+    static_assert( modParamSize >= 0, "invalid integer_sequence: Throw this additional assertion here because \
+                                       gcc-6 won't stop compiling for a very long time... :(" );
     typedef typename Sequence2Tuple< std::make_integer_sequence< int, modParamSize > >::type ExtraParameterIds;
   public:
 

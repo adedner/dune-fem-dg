@@ -380,6 +380,9 @@ namespace Fem
 
   protected:
     static const int size = std::tuple_size< Item1TupleType >::value;
+    static_assert( size >= 0, "invalid integer_sequence: Throw this additional assertion here because \
+                               gcc-6 won't stop compiling for a very long time... :(" );
+
     static std::make_integer_sequence< unsigned long int, size > sequence;
 
     ////// Creation
@@ -742,6 +745,8 @@ namespace Fem
   protected:
   public:
     static const int size = std::tuple_size< ArgTupleType >::value;
+    static_assert( size >= 0, "invalid integer_sequence: Throw this additional assertion here because \
+                               gcc-6 won't stop compiling for a very long time... :(" );
     typedef std::make_integer_sequence< unsigned long int, size > SequenceType;
     static SequenceType sequence;
 
