@@ -57,7 +57,7 @@ namespace Fem
 
       typedef typename std::tuple_element< i-1, Tuple >::type                    DiscreteFunction;
 
-      typedef Dune::Fem::InsertFunctionPass< DiscreteFunction, PreviousPass, i > PassType;
+      typedef Dune::Fem::InsertFunctionPass< DiscreteFunction, PreviousPass, i-1 > PassType;
 
       template< class ExtraArgImp >
       static std::shared_ptr< PassType > createPass( const std::shared_ptr< ExtraArgImp >& tuple )
