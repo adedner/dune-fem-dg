@@ -42,9 +42,9 @@ namespace Fem
    *
    * This is an description class for the problem
    * \f{eqnarray*}{ V + \nabla a(U)      & = & 0 \\
-   * \partial_t U + \nabla (F(U)+A(U,V)) & = & 0 \\
-   *                          U          & = & g_D \\
-   *                   \nabla U \cdot n  & = & g_N \f}
+   * \partial_t U + \nabla \cdot(F(U)+A(U,V)) & = & 0 \\
+   *                               U          & = & g_D \\
+   *                        \nabla U \cdot n  & = & g_N \f}
    *
    * where each class methods describes an analytical function.
    * <ul>
@@ -232,6 +232,7 @@ namespace Fem
                           const JacobianRangeType& jac,
                           FluxRangeType& A) const
     {
+      auto test = jac[0][0];
       // copy v to A
       A = jac;
 

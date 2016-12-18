@@ -17,6 +17,22 @@ namespace Dune
 namespace Fem
 {
 
+  template< class, class >
+  struct InsertFunctionTuple;
+
+  template <class Tuple, unsigned long int... i >
+  struct InsertFunctionTuple< Tuple, std::integer_sequence< unsigned long int, i...> >
+  {
+    typedef std::tuple< std::shared_ptr< typename std::tuple_element< i, Tuple >::type >... > TupleType;
+
+    template< class ExtraArgImp >
+    static decltype(auto) createTuple( const std::shared_ptr< ExtraArgImp >& tuple )
+    {
+      return std::make_shared<TupleType>( (*tuple)( _index<i>() )... );
+    }
+  };
+
+
   /**
    * \brief Assembles the primal DG matrix.
    *

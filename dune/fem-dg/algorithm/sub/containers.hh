@@ -4,6 +4,7 @@
 #include <memory>
 #include <dune/common/shared_ptr.hh>
 #include <dune/fem-dg/misc/tupleutility.hh>
+#include <dune/fem-dg/misc/uniquefunctionname.hh>
 
 namespace Dune
 {
