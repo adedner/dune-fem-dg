@@ -26,11 +26,11 @@ namespace Fem
   /**
    * \brief Traits class for NavierStokesModel
    */
-  template <class GridPartImp, class ProblemImp >
+  template <class GridPartImp, class ProblemImp, class ActivationImp, int maxModelParameterSize  >
   class NavierStokesModelTraits
-    : public DefaultModelTraits< GridPartImp, ProblemImp >
+    : public DefaultModelTraits< GridPartImp, ProblemImp, ActivationImp, maxModelParameterSize  >
   {
-    typedef DefaultModelTraits< GridPartImp, ProblemImp >              BaseType;
+    typedef DefaultModelTraits< GridPartImp, ProblemImp, ActivationImp, maxModelParameterSize > BaseType;
   public:
     typedef Dune::FieldVector< typename BaseType::DomainFieldType, BaseType::dimGradRange >
                                                                        GradientType;
@@ -77,20 +77,19 @@ namespace Fem
   //  where V is constant vector
   //
   ////////////////////////////////////////////////////////
-  template <class GridPartImp, class ProblemImp, bool rightHandSideModel >
+  template <class GridPartImp, class ProblemImp, class ActivationImp = std::tuple<> >
   class NavierStokesModel :
-    public DefaultModel < NavierStokesModelTraits< GridPartImp, ProblemImp > >
+    public DefaultModel < NavierStokesModelTraits< GridPartImp, ProblemImp, ActivationImp, 2 > >
   {
   public:
-    typedef FractionalStepThetaScheme<0,rightHandSideModel> SplitType;
 
-    typedef NavierStokesModelTraits< GridPartImp, ProblemImp > Traits;
+    typedef NavierStokesModelTraits< GridPartImp, ProblemImp, ActivationImp, 2 > Traits;
 
-    enum { velo = 0, rhs = 1 };
+    static const int velo = Traits::template IdGenerator<0>::id;
+    static const int rhs = Traits::template IdGenerator<1>::id;
+
     typedef std::integral_constant< int, velo >           velocityVar;
     typedef std::integral_constant< int, rhs  >           rhsVar;
-
-    static const int modelParameterSize = 2;
 
     typedef typename Traits::ProblemType                  ProblemType;
     static_assert( ProblemType::dimRange == Traits::dimRange, "dimRange of Problem and Model does not fit.");
@@ -108,8 +107,14 @@ namespace Fem
     typedef typename Traits::FaceDomainType               FaceDomainType;
     typedef typename Traits::JacobianRangeType            JacobianRangeType;
 
+
+    typedef FractionalStepThetaScheme<0,rhs!=-1> SplitType;
+
     static const bool hasDiffusion = SplitType::hasDiffusion;
     static const bool hasAdvection = SplitType::hasAdvection;
+
+    // two function spaces here...
+    typedef typename Traits::template ParameterSpaces<dimDomain,dimRange>      ParameterSpacesType;
 
     NavierStokesModel(const NavierStokesModel& other);
     const NavierStokesModel &operator=(const NavierStokesModel &other);
@@ -185,7 +190,7 @@ namespace Fem
       }
 
       // right hand side f
-      if( !rightHandSideModel )
+      if( rhs != -1 )
       {
         // + \alpha \mu \Delta u^n+\theta - \nabla p
         //step 2: dgOperator (u*,rhs)  -> rhs_

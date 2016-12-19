@@ -52,22 +52,22 @@ namespace Fem
   struct SubStokesAlgorithmCreator
   {
     //only for inner creators needed
-    typedef SubPoissonAlgorithmCreator<AC>                              SubCreatorType;
+    typedef SubPoissonAlgorithmCreator<AC>                               SubCreatorType;
 
-    typedef typename AC::GridType                                       GridType;
-    typedef typename AC::GridParts                                      HostGridPartType;
-    typedef HostGridPartType                                            GridPartType;
+    typedef typename AC::GridType                                        GridType;
+    typedef typename AC::GridParts                                       HostGridPartType;
+    typedef HostGridPartType                                             GridPartType;
 
-    typedef NavierStokesProblemInterface< GridType >                    ProblemInterfaceType;
+    typedef NavierStokesProblemInterface< GridType >                     ProblemInterfaceType;
 
     typedef typename ProblemInterfaceType::StokesProblemType::FunctionSpaceType
-                                                                        FunctionSpaceType;
+                                                                         FunctionSpaceType;
 
     struct AnalyticalTraits
     {
-      typedef ProblemInterfaceType                                      ProblemType;
-      typedef ProblemInterfaceType                                      InitialDataType;
-      typedef StokesModel< GridPartType, InitialDataType, false >       ModelType;
+      typedef ProblemInterfaceType                                       ProblemType;
+      typedef ProblemInterfaceType                                       InitialDataType;
+      typedef StokesModel< GridPartType, InitialDataType, std::tuple<> > ModelType;
 
       template< class Solution, class Model, class ExactFunction >
       static void addEOCErrors ( Solution &u, Model &model, ExactFunction &f )

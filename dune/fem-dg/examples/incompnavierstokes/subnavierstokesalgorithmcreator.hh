@@ -58,9 +58,9 @@ namespace Fem
 
     struct AnalyticalTraits
     {
-      typedef ProblemInterfaceType                                       ProblemType;
-      typedef ProblemInterfaceType                                       InitialDataType;
-      typedef NavierStokesModel< GridPartType, InitialDataType, false >  ModelType;
+      typedef ProblemInterfaceType                                             ProblemType;
+      typedef ProblemInterfaceType                                             InitialDataType;
+      typedef NavierStokesModel< GridPartType, InitialDataType, std::tuple<> > ModelType;
 
       template< class Solution, class Model, class ExactFunction, class TimeProvider >
       static void addEOCErrors ( TimeProvider& tp, Solution &u, Model &model, ExactFunction &f )
@@ -89,7 +89,7 @@ namespace Fem
         typedef typename AC::template DefaultOpTraits< AnalyticalTraits, FunctionSpaceType, polOrd >
                                                                                          OpTraits;
 
-        typedef typename AC::template RhsAnalyticalTraits< AnalyticalTraits, NavierStokesModel< GridPartType, typename AnalyticalTraits::InitialDataType, true > >
+        typedef typename AC::template RhsAnalyticalTraits< AnalyticalTraits, NavierStokesModel< GridPartType, typename AnalyticalTraits::InitialDataType, std::tuple< /*__t*/ > > >
                                                                                          RhsAnalyticalTraitsType;
         typedef typename AC::template DefaultOpTraits< RhsAnalyticalTraitsType, FunctionSpaceType, polOrd >
                                                                                          RhsOpTraits;

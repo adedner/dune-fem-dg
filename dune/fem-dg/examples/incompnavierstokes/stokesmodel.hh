@@ -21,32 +21,31 @@ namespace Fem
   /**
    * \brief Traits class for StokesModel
    */
-  template <class GridPartImp, class ProblemImp>
+  template <class GridPartImp, class ProblemImp, class ActivationImp, int maxModelParameterSize >
   class StokesPoissonModelTraits
-    : public DefaultModelTraits< GridPartImp, ProblemImp >
+    : public DefaultModelTraits< GridPartImp, ProblemImp, ActivationImp, maxModelParameterSize >
   {
-    typedef DefaultModelTraits< GridPartImp, ProblemImp >              BaseType;
+    typedef DefaultModelTraits< GridPartImp, ProblemImp, ActivationImp, maxModelParameterSize >  BaseType;
   public:
     typedef Dune::FieldVector< typename BaseType::DomainFieldType, BaseType::dimGradRange >
                                                                        GradientType;
-
-    static const int modelParameterSize = 0;
   };
 
 
-  template <class GridPartImp, class ProblemImp, bool rightHandSideModel = false >
-  class PoissonModel : public DefaultModel< StokesPoissonModelTraits< GridPartImp, ProblemImp > >
+  template <class GridPartImp, class ProblemImp, class ActivationImp = std::tuple<> >
+  class PoissonModel
+  : public DefaultModel< StokesPoissonModelTraits< GridPartImp, ProblemImp, ActivationImp, 1 > >
   {
   public:
-    typedef FractionalStepThetaScheme<0,rightHandSideModel> SplitType;
 
     typedef ProblemImp                                      ProblemType;
-    typedef StokesPoissonModelTraits< GridPartImp, ProblemType >
+    typedef StokesPoissonModelTraits< GridPartImp, ProblemType, ActivationImp, 1 >
                                                             Traits;
-    enum { velo = 0 };
-    typedef std::integral_constant< int, velo >             velocityVar;
 
-    static const int modelParameterSize = 1;
+    static const int velo = Traits::template IdGenerator<0>::id;
+    //dummy atm
+    static const int rhs = -1;
+    typedef std::integral_constant< int, velo >             velocityVar;
 
     typedef typename Traits::GridType                       GridType;
     static const int dimDomain = Traits::dimDomain;
@@ -63,6 +62,10 @@ namespace Fem
 
     typedef typename Traits::DiffusionMatrixType            DiffusionMatrixType ;
 
+    // one function space here, with dimension of range type 'dimDomain'
+    typedef typename Traits::template ParameterSpaces<dimDomain>      ParameterSpacesType;
+
+    typedef FractionalStepThetaScheme<0, rhs!=-1> SplitType;
 
     static const bool hasDiffusion = SplitType::hasDiffusion;
     static const bool hasAdvection = SplitType::hasAdvection;
@@ -401,13 +404,14 @@ namespace Fem
   //  where V is constant vector
   //
   ////////////////////////////////////////////////////////
-  template <class GridPartImp, class ProblemImp, bool rightHandSideModel = false >
-  class StokesModel : public PoissonModel< GridPartImp, typename ProblemImp::PoissonProblemType, rightHandSideModel >
+  template <class GridPartImp, class ProblemImp, class ActivationImp = std::tuple<> >
+  class StokesModel
+  : public PoissonModel< GridPartImp, typename ProblemImp::PoissonProblemType, ActivationImp >
   {
-    typedef PoissonModel< GridPartImp, typename ProblemImp::PoissonProblemType > BaseType;
+    typedef PoissonModel< GridPartImp, typename ProblemImp::PoissonProblemType, ActivationImp > BaseType;
   public:
     typedef ProblemImp                                      ProblemType;
-    typedef StokesPoissonModelTraits< GridPartImp, typename ProblemType::PoissonProblemType >
+    typedef StokesPoissonModelTraits< GridPartImp, typename ProblemType::PoissonProblemType, ActivationImp, 1 >
                                                             Traits;
 
     typedef typename Traits::GridType                       GridType;

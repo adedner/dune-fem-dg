@@ -61,7 +61,7 @@ namespace Fem
     {
       typedef ProblemInterfaceType                                 ProblemType;
       typedef ProblemInterfaceType                                 InitialDataType;
-      typedef PoissonModel< GridPartType, InitialDataType, false > ModelType;
+      typedef PoissonModel< GridPartType, InitialDataType, std::tuple<> > ModelType;
 
       template< class Solution, class Model, class ExactFunction, class SigmaFunction>
       static void addEOCErrors ( Solution &u, Model &model, ExactFunction &f, SigmaFunction& sigma )
@@ -86,7 +86,7 @@ namespace Fem
       {
         typedef typename AC::template DefaultAssembTraits< AnalyticalTraits, FunctionSpaceType, polOrd >
                                                                                    OpTraits;
-        typedef typename AC::template RhsAnalyticalTraits< AnalyticalTraits, PoissonModel< GridPartType, typename AnalyticalTraits::InitialDataType, true > >
+        typedef typename AC::template RhsAnalyticalTraits< AnalyticalTraits, PoissonModel< GridPartType, typename AnalyticalTraits::InitialDataType, std::tuple</*__t*/> > >
                                                                                    RhsAnalyticalTraitsType;
 
         typedef typename AC::template DefaultOpTraits< RhsAnalyticalTraitsType, FunctionSpaceType, polOrd >

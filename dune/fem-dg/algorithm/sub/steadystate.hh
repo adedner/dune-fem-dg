@@ -226,7 +226,7 @@ namespace Fem
         solution_( (*cont)(_0)->solution() ),
         exactSolution_( (*cont)(_0)->exactSolution() ),
         rhs_( (*cont)(_0)->rhs() ),
-        rhsOperator_( doCreateRhsOperator() ),
+        rhsOperator_( std::make_shared< RhsOptional< RhsType > >( solution().space().gridPart(), problem(), extra, name() ) ),
         ioTuple_( std::make_unique<IOTupleType>( std::make_tuple( solution_.get(), exactSolution_.get() ) ) ),
         solver_( nullptr ),
         solverMonitor_( name() ),
@@ -290,12 +290,6 @@ namespace Fem
     }
 
   protected:
-
-    virtual std::shared_ptr< RhsOptional< RhsType > > doCreateRhsOperator()
-    {
-      return std::make_shared< RhsOptional< RhsType > >( solution().space().gridPart(), problem(), std::tuple<>(), name() );
-    }
-
     virtual std::shared_ptr< typename SolverType::type > doCreateSolver()
     {
       return nullptr;

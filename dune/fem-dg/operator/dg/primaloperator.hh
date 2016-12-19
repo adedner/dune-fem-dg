@@ -44,8 +44,8 @@ namespace Fem
    * \ingroup PassOperator
    */
   template< class OpTraits >
-  struct DGAdvectionDiffusionOperator : public
-    DGAdvectionDiffusionOperatorBase< CDGAdvectionDiffusionTraits< OpTraits, true, true > >
+  struct DGAdvectionDiffusionOperator
+  : public DGAdvectionDiffusionOperatorBase< CDGAdvectionDiffusionTraits< OpTraits, true, true > >
   {
     typedef CDGAdvectionDiffusionTraits< OpTraits, true, true > Traits;
     typedef DGAdvectionDiffusionOperatorBase< Traits >          BaseType;
