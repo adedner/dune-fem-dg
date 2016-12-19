@@ -150,6 +150,19 @@ namespace Fem
     }
   };
 
+  /**
+   * \brief partial specialization for std::integer_sequence< int >
+   */
+  template< class FullTupleImp, int... i >
+  struct tuple_reducer< FullTupleImp, std::integer_sequence< int, i... > >
+  {
+    typedef std::tuple< typename std::tuple_element< i, FullTupleImp >::type... > type;
+
+    static type apply( const FullTupleImp& tuple )
+    {
+      return std::make_tuple( std::get< i >( tuple )... );
+    }
+  };
 
 
   template< int Int, class Tuple >

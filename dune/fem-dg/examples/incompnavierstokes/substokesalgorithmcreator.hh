@@ -84,33 +84,20 @@ namespace Fem
     template< int polOrd >
     struct DiscreteTraits
     {
-    private:
-      typedef typename SubCreatorType::template DiscreteTraits< polOrd >           PoissonDiscreteTraits;
-      typedef typename PoissonDiscreteTraits::DiscreteFunctionType                 VelDiscreteFunctionType;
-      typedef typename SubCreatorType::FunctionSpaceType                           VelFunctionSpaceType;
-      typedef typename AC::template DiscreteFunctionSpaces< GridPartType, polOrd, FunctionSpaceType>
-                                                                                   DFSpaceType;
-      typedef typename AC::template DiscreteFunctionSpaces< GridPartType, polOrd, VelFunctionSpaceType>
-                                                                                   VelDFSpaceType;
+      static const int redPolOrd = polOrd-0;
     public:
-      typedef typename AC::template DiscreteFunctions< DFSpaceType >               DiscreteFunctionType;
+      typedef typename AC::template DiscreteFunctions< FunctionSpaceType, redPolOrd >   DiscreteFunctionType;
 
-      typedef std::tuple< DiscreteFunctionType*, DiscreteFunctionType* >           IOTupleType;
+      typedef std::tuple< DiscreteFunctionType*, DiscreteFunctionType* >                IOTupleType;
 
       class Operator
       {
-        typedef typename AC::template DefaultAssembTraits< DFSpaceType, DFSpaceType, polOrd, AnalyticalTraits >
-                                                                                   OpTraits;
-
-        typedef AssemblerTraitsList< std::tuple< VelDiscreteFunctionType, DiscreteFunctionType >, AC::template Containers > AssTraits;
-
-        typedef typename AC::template RhsAnalyticalTraits< AnalyticalTraits, StokesModel< GridPartType, typename AnalyticalTraits::InitialDataType, true > >
-                                                                              RhsAnalyticalTraitsType;
-        typedef typename AC::template DefaultOpTraits< VelDFSpaceType, polOrd, RhsAnalyticalTraitsType >
-                                                                              RhsOpTraits;
+        typedef typename AC::template DefaultAssembTraits< AnalyticalTraits, FunctionSpaceType, redPolOrd >
+                                                                                        OpTraits;
       public:
-        typedef StokesAssembler< OpTraits, AC::template Containers,VelDiscreteFunctionType,DiscreteFunctionType >
-                                                                                   AssemblerType;
+        typedef StokesAssembler< OpTraits, AC::template Containers,
+                                   typename SubCreatorType::template DiscreteTraits< polOrd >::DiscreteFunctionType,
+                                   DiscreteFunctionType >                               AssemblerType;
         //typedef StokesAssembler< AssTraits, OpTraits >                             AssemblerType;
         //the following typedef is not needed by stokes algorithm atm
         //typedef typename AssemblerType::MatrixType                               type;
@@ -121,26 +108,25 @@ namespace Fem
       struct Solver
       {
         typedef UzawaSolver< typename Operator::AssemblerType,typename SubCreatorType::template Algorithm<polOrd> >
-                                                                                    type;
+                                                                                        type;
       };
 
-      static_assert( (int)DFSpaceType::FunctionSpaceType::dimRange == 1 , "pressure dimrange does not fit");
+      static_assert( (int)FunctionSpaceType::dimRange == 1 , "pressure dimrange does not fit");
 
     private:
       typedef typename SubCreatorType::template DiscreteTraits<polOrd>::ErrorEstimatorType  PoissonErrorEstimatorType;
-      typedef typename SubCreatorType::template DiscreteTraits<polOrd>::SigmaEstimatorType  PoissonSigmaEstimatorType;
       typedef typename SubCreatorType::template DiscreteTraits<polOrd>::PAdaptivityType     PoissonPAdaptivityType;
 
       typedef StokesSigmaEstimator< PoissonErrorEstimatorType, typename Operator::AssemblerType > StokesSigmaEstimatorType;
-      typedef typename StokesSigmaEstimatorType::StokesErrorEstimatorType             StokesErrorEstimatorType;
+      typedef typename StokesSigmaEstimatorType::StokesErrorEstimatorType                   StokesErrorEstimatorType;
 
-      typedef StokesPAdaptivity< PoissonPAdaptivityType,
-                                 DFSpaceType, polOrd, StokesSigmaEstimatorType >       StokesPAdaptivityType;
+      typedef StokesPAdaptivity< PoissonPAdaptivityType,typename DiscreteFunctionType::DiscreteFunctionSpaceType,
+                                 polOrd, StokesSigmaEstimatorType >                         StokesPAdaptivityType;
     public:
 
-      typedef SubSolverMonitor< SolverMonitor >                                     SolverMonitorType;
-      typedef SubDiagnostics< Diagnostics >                                         DiagnosticsType;
-      typedef StokesPAdaptIndicator< StokesPAdaptivityType, ProblemInterfaceType >    AdaptIndicatorType;
+      typedef SubSolverMonitor< SolverMonitor >                                             SolverMonitorType;
+      typedef SubDiagnostics< Diagnostics >                                                 DiagnosticsType;
+      typedef StokesPAdaptIndicator< StokesPAdaptivityType, ProblemInterfaceType >          AdaptIndicatorType;
     };
 
     template <int polOrd>

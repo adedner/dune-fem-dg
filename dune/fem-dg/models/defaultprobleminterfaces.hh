@@ -22,20 +22,20 @@ namespace Fem
   class EvolutionProblemInterface
   {
     typedef EvolutionProblemInterface< FunctionSpaceImp,
-                                       constantVelocity >              ThisType;
+                                       constantVelocity >            ThisType;
 
   public:
-    typedef FunctionSpaceImp                                           FunctionSpaceType;
+    typedef FunctionSpaceImp                                         FunctionSpaceType;
 
     enum { ConstantVelocity = constantVelocity };
-    enum { dimDomain = FunctionSpaceType :: dimDomain };
-    enum { dimRange  = FunctionSpaceType :: dimRange  };
+    enum { dimDomain = FunctionSpaceType::dimDomain };
+    enum { dimRange  = FunctionSpaceType::dimRange  };
 
-    typedef typename FunctionSpaceType :: DomainType                   DomainType;
-    typedef typename FunctionSpaceType :: RangeType                    RangeType;
-    typedef typename FunctionSpaceType :: DomainFieldType              DomainFieldType;
-    typedef typename FunctionSpaceType :: RangeFieldType               RangeFieldType;
-    typedef typename FunctionSpaceType :: JacobianRangeType            JacobianRangeType;
+    typedef typename FunctionSpaceType::DomainType                   DomainType;
+    typedef typename FunctionSpaceType::RangeType                    RangeType;
+    typedef typename FunctionSpaceType::DomainFieldType              DomainFieldType;
+    typedef typename FunctionSpaceType::RangeFieldType               RangeFieldType;
+    typedef typename FunctionSpaceType::JacobianRangeType            JacobianRangeType;
 
     typedef Fem :: Parameter ParameterType ;
 
@@ -273,19 +273,19 @@ namespace Fem
   class ProblemInterface
   {
   public:
-    typedef FunctionSpaceImp                                           FunctionSpaceType;
-    typedef ProblemInterface< FunctionSpaceType >                      ThisType;
+    typedef FunctionSpaceImp                                         FunctionSpaceType;
+    typedef ProblemInterface< FunctionSpaceType >                    ThisType;
 
-    enum { dimDomain = FunctionSpaceType :: dimDomain };
-    enum { dimRange  = FunctionSpaceType :: dimRange  };
+    enum { dimDomain = FunctionSpaceType::dimDomain };
+    enum { dimRange  = FunctionSpaceType::dimRange  };
 
-    typedef typename FunctionSpaceType :: DomainType                   DomainType;
-    typedef typename FunctionSpaceType :: RangeType                    RangeType;
-    typedef typename FunctionSpaceType :: JacobianRangeType            JacobianRangeType;
-    typedef typename FunctionSpaceType :: DomainFieldType              DomainFieldType;
-    typedef typename FunctionSpaceType :: RangeFieldType               RangeFieldType;
+    typedef typename FunctionSpaceType::DomainType                   DomainType;
+    typedef typename FunctionSpaceType::RangeType                    RangeType;
+    typedef typename FunctionSpaceType::JacobianRangeType            JacobianRangeType;
+    typedef typename FunctionSpaceType::DomainFieldType              DomainFieldType;
+    typedef typename FunctionSpaceType::RangeFieldType               RangeFieldType;
 
-    typedef FieldMatrix< RangeFieldType, dimDomain, dimDomain >        DiffusionMatrixType;
+    typedef FieldMatrix< RangeFieldType, dimDomain, dimDomain >      DiffusionMatrixType;
 
   public:
 

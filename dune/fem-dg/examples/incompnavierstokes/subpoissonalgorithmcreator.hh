@@ -78,52 +78,46 @@ namespace Fem
     template< int polOrd >
     struct DiscreteTraits
     {
-      typedef typename AC::template DiscreteFunctionSpaces< GridPartType, polOrd, FunctionSpaceType>
-                                                                              DFSpaceType;
-    public:
-      typedef typename AC::template DiscreteFunctions< DFSpaceType >          DiscreteFunctionType;
+      typedef typename AC::template DiscreteFunctions< FunctionSpaceType, polOrd > DiscreteFunctionType;
 
-      typedef std::tuple< DiscreteFunctionType*, DiscreteFunctionType* >      IOTupleType;
+      typedef std::tuple< DiscreteFunctionType*, DiscreteFunctionType* >           IOTupleType;
 
       class Operator
       {
-        typedef typename AC::template DefaultAssembTraits< DFSpaceType, DFSpaceType, polOrd, AnalyticalTraits >
-                                                                              OpTraits;
+        typedef typename AC::template DefaultAssembTraits< AnalyticalTraits, FunctionSpaceType, polOrd >
+                                                                                   OpTraits;
         typedef typename AC::template RhsAnalyticalTraits< AnalyticalTraits, PoissonModel< GridPartType, typename AnalyticalTraits::InitialDataType, true > >
-                                                                              RhsAnalyticalTraitsType;
+                                                                                   RhsAnalyticalTraitsType;
 
-        typedef typename AC::template DefaultOpTraits< DFSpaceType, polOrd, RhsAnalyticalTraitsType >
-                                                                              RhsOpTraits;
+        typedef typename AC::template DefaultOpTraits< RhsAnalyticalTraitsType, FunctionSpaceType, polOrd >
+                                                                                   RhsOpTraits;
       public:
-        typedef typename AC::template Operators< OpTraits >                   AssemblerType;
-        typedef typename AssemblerType::MatrixType                            type;
+        typedef typename AC::template Operators< OpTraits >                        AssemblerType;
+        typedef typename AssemblerType::MatrixType                                 type;
 
-        typedef DGAdvectionDiffusionOperator< RhsOpTraits >                   RhsType;
+        typedef DGAdvectionDiffusionOperator< RhsOpTraits >                        RhsType;
       };
 
       struct Solver
       {
-        typedef typename AC::template LinearSolvers< DFSpaceType, true >      type;
+        typedef typename AC::template LinearSolvers< DiscreteFunctionType, true >  type;
       };
 
-    private:
-      //small helper class
-      template< class SigmaDFSpaceType > struct SigmaFunctionChooser
-      { typedef typename AC::template DiscreteFunctions< SigmaDFSpaceType > type; };
-    public:
-      typedef typename SigmaDiscreteFunctionSelector< DiscreteFunctionType, SigmaFunctionChooser >::type SigmaDiscreteFunctionType;
+      typedef typename AC::template WrappedDiscreteFunctions< SigmaDiscreteFunctionSelector, DiscreteFunctionType >
+                                                                                   SigmaDiscreteFunctionType;
 
       typedef ErrorEstimator< DiscreteFunctionType, SigmaDiscreteFunctionType, typename Operator::AssemblerType >
-                                                                              ErrorEstimatorType;
-      typedef PoissonSigmaEstimator< ErrorEstimatorType >                     SigmaEstimatorType;
+                                                                                   ErrorEstimatorType;
+      typedef PoissonSigmaEstimator< ErrorEstimatorType >                          SigmaEstimatorType;
 
-      typedef PAdaptivity<DFSpaceType, polOrd, SigmaEstimatorType >           PAdaptivityType;
+      typedef PAdaptivity<typename DiscreteFunctionType::DiscreteFunctionSpaceType, polOrd, SigmaEstimatorType >
+                                                                                   PAdaptivityType;
 
-      typedef PAdaptIndicator< PAdaptivityType, ProblemInterfaceType >        AdaptIndicatorType;
-      // typedef NoPAdaptIndicator                                               AdaptIndicatorType;
+      typedef PAdaptIndicator< PAdaptivityType, ProblemInterfaceType >             AdaptIndicatorType;
+      // typedef NoPAdaptIndicator                                                   AdaptIndicatorType;
 
-      typedef SubSolverMonitor< SolverMonitor >                               SolverMonitorType;
-      typedef SubDiagnostics< Diagnostics >                                   DiagnosticsType;
+      typedef SubSolverMonitor< SolverMonitor >                                    SolverMonitorType;
+      typedef SubDiagnostics< Diagnostics >                                        DiagnosticsType;
     };
 
     template <int polOrd>

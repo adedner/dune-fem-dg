@@ -104,45 +104,39 @@ namespace Fem
       template< int polOrd >
       struct DiscreteTraits
       {
-        typedef typename AC::template DiscreteFunctionSpaces< GridPartType, polOrd, FunctionSpaceType>
-                                                                                   DFSpaceType;
-      public:
-        typedef typename AC::template DiscreteFunctions< DFSpaceType >             DiscreteFunctionType;
+        typedef typename AC::template DiscreteFunctions< FunctionSpaceType, polOrd > DiscreteFunctionType;
 
-        typedef std::tuple< DiscreteFunctionType*, DiscreteFunctionType* >         IOTupleType;
+        typedef std::tuple< DiscreteFunctionType*, DiscreteFunctionType* >           IOTupleType;
 
         class Operator
         {
-          typedef typename AC::template DefaultAssembTraits< DFSpaceType, DFSpaceType, polOrd, AnalyticalTraits >
-                                                                                   OpTraits;
+          typedef typename AC::template DefaultAssembTraits< AnalyticalTraits, FunctionSpaceType, polOrd >
+                                                                                     OpTraits;
         public:
-          typedef typename AC::template Operators< OpTraits >                      AssemblerType;
-          typedef typename AssemblerType::LinearOperatorType                       type;
+          typedef typename AC::template Operators< OpTraits >                        AssemblerType;
+          typedef typename AssemblerType::LinearOperatorType                         type;
         };
 
         struct Solver
         {
-          typedef typename AC::template LinearSolvers< DFSpaceType, false/*true*/> type;
+          typedef typename AC::template LinearSolvers< DiscreteFunctionType, false > type;
         };
 
       private:
-        //small helper class
-        template< class SigmaDFSpaceType > struct SigmaFunctionChooser
-        { typedef typename AC::template DiscreteFunctions< SigmaDFSpaceType > type; };
-
-        //TODO improve -> algorithm configurator
-        typedef typename SigmaDiscreteFunctionSelector< DiscreteFunctionType, SigmaFunctionChooser >::type SigmaDiscreteFunctionType;
+        typedef typename AC::template WrappedDiscreteFunctions< SigmaDiscreteFunctionSelector, DiscreteFunctionType >
+                                                                                     SigmaDiscreteFunctionType;
 
         typedef ErrorEstimator< DiscreteFunctionType, SigmaDiscreteFunctionType, typename Operator::AssemblerType >
-                                                                                   ErrorEstimatorType;
-        typedef PoissonSigmaEstimator< ErrorEstimatorType >                        SigmaEstimatorType;
+                                                                                     ErrorEstimatorType;
+        typedef PoissonSigmaEstimator< ErrorEstimatorType >                          SigmaEstimatorType;
 
-        typedef PAdaptivity<DFSpaceType, polOrd, SigmaEstimatorType >              PAdaptivityType;
+        typedef PAdaptivity<typename DiscreteFunctionType::DiscreteFunctionSpaceType, polOrd, SigmaEstimatorType >
+                                                                                     PAdaptivityType;
       public:
 
-        typedef SubSolverMonitor< SolverMonitor >                                  SolverMonitorType;
-        typedef SubDiagnostics< Diagnostics >                                      DiagnosticsType;
-        typedef PAdaptIndicator< PAdaptivityType, ProblemInterfaceType >           AdaptIndicatorType;
+        typedef SubSolverMonitor< SolverMonitor >                                    SolverMonitorType;
+        typedef SubDiagnostics< Diagnostics >                                        DiagnosticsType;
+        typedef PAdaptIndicator< PAdaptivityType, ProblemInterfaceType >             AdaptIndicatorType;
       };
 
       template <int polOrd>
@@ -168,7 +162,7 @@ namespace Fem
       typedef std::tuple< Steady >                                      Item1TupleType;
 
       //Item2
-      typedef _t<SubEllipticContainerItem, ISTLLinearOperator >         Def;
+      typedef _t<SubEllipticContainerItem, ACPoisson::template Containers > Def;
       //typedef _t<SubEllipticContainerItem, SparseRowLinearOperator >  Def;
       typedef _t< SubEllipticContainerItem, SparseRowLinearOperator >   Sp;
 

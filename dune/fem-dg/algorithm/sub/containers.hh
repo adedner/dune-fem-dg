@@ -778,8 +778,6 @@ namespace Fem
 
       return std::make_shared<ExtraArgContainer<ReturnType> >( createContainer( sequence, cont ) );
     }
-
-    //typedef typename decltype(std::declval<ExtraArg<Args...> >().init( cont ) )::element_type ExtraArgContainerType;
   };
 
 
@@ -919,6 +917,9 @@ namespace Fem
 
   template< template<class> class Select, class... Args >
   using _e = OneArgAccess<Select,Args...>;
+
+  template< class... Args >
+  using _ee = OneArgAccess<SolutionSelect,Args...>;
 
   template< template<class,class> class Select, class... >
   struct TwoArgAccess;

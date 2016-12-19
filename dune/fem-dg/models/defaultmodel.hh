@@ -2,11 +2,13 @@
 #define DUNE_FEM_DG_DEFAULTMODEL_HH
 
 #include<limits>
+#include<tuple>
 
 #include <dune/common/exceptions.hh>
 
 #include <dune/fem/misc/fmatrixconverter.hh>
 #include <dune/fem-dg/misc/integral_constant.hh>
+#include <dune/fem/space/common/functionspace.hh>
 
 namespace Dune
 {
@@ -72,8 +74,16 @@ namespace Fem
     typedef Dune::FieldMatrix< RangeFieldType, dimDomain, dimDomain >     DiffusionMatrixType;
     typedef Dune::FieldMatrix< RangeFieldType, dimGradRange, dimDomain >  DiffusionRangeType;
 
+    //id generator for pass ids
     template< int i >
     using IdGenerator = PassIdGenerator<i,ActivationImp>;
+
+    //function space short cut
+    template< int... dims >
+    using ParameterSpaces = std::tuple< Dune::Fem::FunctionSpace< DomainFieldType, RangeFieldType, dimDomain, dims >... >;
+
+    //default
+    typedef ParameterSpaces<>                                             ParameterSpacesType;
 
     static const int modelParameterSize = IdGenerator<maxModelParameterSize>::size;
   };

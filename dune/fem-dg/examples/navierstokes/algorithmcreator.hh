@@ -96,16 +96,13 @@ namespace Fem
       template< int polOrd >
       struct DiscreteTraits
       {
-        typedef typename AC::template DiscreteFunctionSpaces< GridPartType, polOrd, FunctionSpaceType>
-                                                                                           DFSpaceType;
-      public:
-        typedef typename AC::template DiscreteFunctions< DFSpaceType >                     DiscreteFunctionType;
+        typedef typename AC::template DiscreteFunctions< FunctionSpaceType, polOrd >       DiscreteFunctionType;
 
         typedef std::tuple< DiscreteFunctionType*, DiscreteFunctionType* >                 IOTupleType;
 
         class Operator
         {
-          typedef typename AC::template DefaultOpTraits< DFSpaceType, polOrd, AnalyticalTraits >
+          typedef typename AC::template DefaultOpTraits< AnalyticalTraits, FunctionSpaceType, polOrd >
                                                                                            OpTraits;
         public:
           typedef typename AC::template Operators< OpTraits,OperatorSplit::Enum::full >    type;
@@ -115,12 +112,12 @@ namespace Fem
 
         struct Solver
         {
-          typedef typename AC::template LinearSolvers< DFSpaceType >                       LinearSolverType;
+          typedef typename AC::template LinearSolvers< DiscreteFunctionType >              LinearSolverType;
           typedef DuneODE::OdeSolverInterface< DiscreteFunctionType >                      type;
         };
 
       private:
-        typedef typename AC::template DefaultOpTraits< DFSpaceType, polOrd, AnalyticalTraits >
+        typedef typename AC::template DefaultOpTraits< AnalyticalTraits, FunctionSpaceType, polOrd >
                                                                                            OpTraits;
         typedef DGAdaptationIndicatorOperator< OpTraits >                                  IndicatorType;
         typedef Estimator< DiscreteFunctionType, typename AnalyticalTraits::ProblemType >  GradientIndicatorType ;

@@ -690,6 +690,43 @@ namespace Fem
     typedef DGPrimalDiffusionFlux< DiscreteFunctionSpaceImp, ModelImp, diffFluxId > type;
   };
 
+
+/////////////////////////////////////////////////////////////////////////
+// Extra Parameters
+/////////////////////////////////////////////////////////////////////////
+
+  namespace details
+  {
+    template< class ParameterSpacesImp, class AC, class polOrds >
+    struct ExtraParameterSelectorImpl;
+
+    template< class... ParameterSpaces, class... AC, int... polOrds >
+    struct ExtraParameterSelectorImpl< std::tuple<ParameterSpaces...>, std::tuple<AC...>, std::tuple< std::integral_constant< int, polOrds> ...> >
+    {
+      typedef std::tuple< typename AC::template DiscreteFunctions< ParameterSpaces, polOrds >... > type;
+    };
+  }
+
+
+  template< class ParameterSpacesImp, class AC, int... polOrds >
+  class ExtraParameterSelector;
+
+  template< class... ParameterSpaces, class... AC, int... polOrds >
+  class ExtraParameterSelector< std::tuple<ParameterSpaces...>, std::tuple<AC...>, polOrds... >
+  {
+    static_assert( sizeof...(ParameterSpaces) <= sizeof...(AC), "We expect for each parameter space an algorithm configurator!" );
+    static_assert( sizeof...(ParameterSpaces) <= sizeof...(polOrds), "We expect for each parameter space a polynomial order!" );
+
+    typedef std::make_integer_sequence< int, sizeof...(ParameterSpaces) > SequenceType;
+
+    typedef typename tuple_reducer< std::tuple<AC...>, SequenceType >::type RedAC;
+    typedef typename tuple_reducer< std::tuple<std::integral_constant<int,polOrds>...>, SequenceType >::type RedPolOrds;
+
+  public:
+    typedef typename details::ExtraParameterSelectorImpl< std::tuple<ParameterSpaces...>, RedAC, RedPolOrds >::type type;
+  };
+
+
 } // end namespace Fem
 } // end namespace Dune
 #endif

@@ -46,7 +46,7 @@
 //--------- PROBLEMCREATORSELECTOR ----------
 #include <dune/fem-dg/misc/configurator.hh>
 
-#define ROBERT_WANTS_USABILITY
+//#define ROBERT_WANTS_USABILITY
 
 
 namespace Dune
@@ -122,45 +122,39 @@ namespace Fem
       template< int polOrd >
       struct DiscreteTraits
       {
-        typedef typename AC::template DiscreteFunctionSpaces< GridPartType, polOrd, FunctionSpaceType>
-                                                                                   DFSpaceType;
-      public:
-        typedef typename AC::template DiscreteFunctions< DFSpaceType >             DiscreteFunctionType;
+        typedef typename AC::template DiscreteFunctions< FunctionSpaceType, polOrd > DiscreteFunctionType;
 
-        typedef std::tuple< DiscreteFunctionType*, DiscreteFunctionType* >         IOTupleType;
+        typedef std::tuple< DiscreteFunctionType*, DiscreteFunctionType* >           IOTupleType;
 
         class Operator
         {
-          typedef typename AC::template DefaultAssembTraits< DFSpaceType, DFSpaceType, polOrd, AnalyticalTraits >
-                                                                                   OpTraits;
+          typedef typename AC::template DefaultAssembTraits< AnalyticalTraits, FunctionSpaceType, polOrd >
+                                                                                     OpTraits;
         public:
-          typedef typename AC::template Operators< OpTraits >                      AssemblerType;
-          typedef typename AssemblerType::MatrixType                               type;
+          typedef typename AC::template Operators< OpTraits >                        AssemblerType;
+          typedef typename AssemblerType::MatrixType                                 type;
         };
 
         struct Solver
         {
-          typedef typename AC::template LinearSolvers< DFSpaceType, true> type;
+          typedef typename AC::template LinearSolvers< DiscreteFunctionType, true>   type;
         };
 
-      private:
-        //small helper class
-        template< class SigmaDFSpaceType > struct SigmaFunctionChooser
-        { typedef typename AC::template DiscreteFunctions< SigmaDFSpaceType > type; };
-      public:
-        typedef typename SigmaDiscreteFunctionSelector< DiscreteFunctionType, SigmaFunctionChooser >::type SigmaDiscreteFunctionType;
+        typedef typename AC::template WrappedDiscreteFunctions< SigmaDiscreteFunctionSelector, DiscreteFunctionType >
+                                                                                     SigmaDiscreteFunctionType;
 
         typedef ErrorEstimator< DiscreteFunctionType, SigmaDiscreteFunctionType, typename Operator::AssemblerType >
-                                                                                   ErrorEstimatorType;
-        typedef PoissonSigmaEstimator< ErrorEstimatorType >                        SigmaEstimatorType;
+                                                                                     ErrorEstimatorType;
+        typedef PoissonSigmaEstimator< ErrorEstimatorType >                          SigmaEstimatorType;
 
-        typedef PAdaptivity<DFSpaceType, polOrd, SigmaEstimatorType >              PAdaptivityType;
+        typedef PAdaptivity<typename DiscreteFunctionType::DiscreteFunctionSpaceType, polOrd, SigmaEstimatorType >
+                                                                                     PAdaptivityType;
 
-        typedef PAdaptIndicator< PAdaptivityType, ProblemInterfaceType >           AdaptIndicatorType;
-        // typedef NoPAdaptIndicator                                               AdaptIndicatorType;
+        typedef PAdaptIndicator< PAdaptivityType, ProblemInterfaceType >             AdaptIndicatorType;
+        // typedef NoPAdaptIndicator                                                 AdaptIndicatorType;
 
-        typedef SubSolverMonitor< SolverMonitor >                                  SolverMonitorType;
-        typedef SubDiagnostics< Diagnostics >                                      DiagnosticsType;
+        typedef SubSolverMonitor< SolverMonitor >                                    SolverMonitorType;
+        typedef SubDiagnostics< Diagnostics >                                        DiagnosticsType;
       };
 
       template <int polOrd>
@@ -218,47 +212,43 @@ namespace Fem
       struct DiscreteTraits
       {
       private:
-        typedef typename SubCreatorType::template DiscreteTraits< polOrd >           PoissonDiscreteTraits;
-        typedef typename PoissonDiscreteTraits::DiscreteFunctionType                 VelDiscreteFunctionType;
-        typedef typename AC::template DiscreteFunctionSpaces< GridPartType, polOrd-pressureOrderReduction, FunctionSpaceType>
-                                                                                     DFSpaceType;
+        static const int redPolOrd = polOrd-pressureOrderReduction;
       public:
-        typedef typename AC::template DiscreteFunctions< DFSpaceType >               DiscreteFunctionType;
+        typedef typename AC::template DiscreteFunctions< FunctionSpaceType, redPolOrd > DiscreteFunctionType;
 
-        typedef std::tuple< DiscreteFunctionType*, DiscreteFunctionType* >           IOTupleType;
+        typedef std::tuple< DiscreteFunctionType*, DiscreteFunctionType* >              IOTupleType;
 
         class Operator
         {
-          typedef typename AC::template DefaultAssembTraits< DFSpaceType, DFSpaceType, polOrd-pressureOrderReduction, AnalyticalTraits >
-                                                                                     OpTraits;
+          typedef typename AC::template DefaultAssembTraits< AnalyticalTraits, FunctionSpaceType, redPolOrd >
+                                                                                        OpTraits;
         public:
-          typedef StokesAssembler< OpTraits, AC::template Containers,VelDiscreteFunctionType,DiscreteFunctionType >
-                                                                                   AssemblerType;
+          typedef StokesAssembler< OpTraits, AC::template Containers,
+                                   typename SubCreatorType::template DiscreteTraits< polOrd >::DiscreteFunctionType,
+                                   DiscreteFunctionType >                               AssemblerType;
 
           //template< template<class,class>class MatrixImp >
           //using AssemblerType = StokesAssembler< OpTraits, OpTraits, MatrixImp >
           //the following typedef is not needed by stokes algorithm atm
-          //typedef typename AssemblerType::MatrixType                               type;
+          //typedef typename AssemblerType::MatrixType                                  type;
         };
 
         struct Solver
         {
           typedef UzawaSolver< typename Operator::AssemblerType,typename SubCreatorType::template Algorithm<polOrd> >
-                                                                                     type;
+                                                                                        type;
         };
 
-        static_assert( (int)DFSpaceType::FunctionSpaceType::dimRange == 1 , "pressure dimrange does not fit");
+        static_assert( (int)FunctionSpaceType::dimRange == 1 , "pressure dimrange does not fit");
 
       private:
         typedef typename SubCreatorType::template DiscreteTraits<polOrd>::ErrorEstimatorType  PoissonErrorEstimatorType;
-        typedef typename SubCreatorType::template DiscreteTraits<polOrd>::SigmaEstimatorType  PoissonSigmaEstimatorType;
         typedef typename SubCreatorType::template DiscreteTraits<polOrd>::PAdaptivityType     PoissonPAdaptivityType;
 
         typedef StokesSigmaEstimator< PoissonErrorEstimatorType, typename Operator::AssemblerType > StokesSigmaEstimatorType;
-        typedef typename StokesSigmaEstimatorType::StokesErrorEstimatorType             StokesErrorEstimatorType;
 
-        typedef StokesPAdaptivity< PoissonPAdaptivityType,
-                                   DFSpaceType, polOrd, StokesSigmaEstimatorType >       StokesPAdaptivityType;
+        typedef StokesPAdaptivity< PoissonPAdaptivityType,typename DiscreteFunctionType::DiscreteFunctionSpaceType,
+                                   polOrd, StokesSigmaEstimatorType >                   StokesPAdaptivityType;
 
       public:
         typedef SubSolverMonitor< SolverMonitor >                                       SolverMonitorType;
@@ -278,11 +268,6 @@ namespace Fem
 
     static inline std::string moduleName() { return ""; }
 
-  private:
-    //helper struct
-    template< class DDF, class RDF >
-    using DefaultContainer = typename ACStokes::template Containers< typename DDF::DiscreteFunctionSpaceType, typename RDF::DiscreteFunctionSpaceType >;
-
   public:
     template< int polOrd >
     static decltype(auto) initContainer()
@@ -299,8 +284,11 @@ namespace Fem
 
       typedef std::tuple< std::tuple<__0,__1> >                            SubOrderType;
 
+      //external params lists
+      typedef std::tuple< ExtraArg<> >                                     ExtraType;
+
       //Global container
-      typedef NewCombinedGlobalContainer< ContainerTupleType, SubOrderType, SubOrderType, DFType1, DFType2 >
+      typedef NewCombinedGlobalContainer< ContainerTupleType, SubOrderType, SubOrderType, ExtraType, DFType1, DFType2 >
                                                                            GlobalContainerType;
 #else
       //Item1
@@ -308,9 +296,9 @@ namespace Fem
       typedef std::tuple< Steady, Steady >                                  Item1TupleType;
 
       //Item2
-      typedef _t< SubEllipticContainerItem, DefaultContainer >              Def;
+      typedef _t< SubEllipticContainerItem, ACStokes::template Containers > Def;
       typedef _t< SubEllipticContainerItem, SparseRowLinearOperator >       Sp;
-      typedef _t< SubEllipticContainerItem, NoPreconditioner, DefaultContainer > DefNo;
+      typedef _t< SubEllipticContainerItem, NoPreconditioner, ACStokes::template Containers > DefNo;
 
       typedef std::tuple< std::tuple< Def, Sp >,
                           std::tuple< Sp, Sp > >                            Item2TupleType;

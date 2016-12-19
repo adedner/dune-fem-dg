@@ -70,30 +70,35 @@ namespace Fem
   : public DefaultModel < HeatEqnModelTraits< GridImp, ProblemImp, ActivationImp, 1 > >
   {
   public:
-    typedef HeatEqnModelTraits< GridImp, ProblemImp, ActivationImp, 1 >    Traits;
+    typedef HeatEqnModelTraits< GridImp, ProblemImp, ActivationImp, 1 > Traits;
 
     static const int velo = Traits::template IdGenerator<0>::id;
 
-    typedef std::integral_constant< int, velo > velocityVar;
+    typedef std::integral_constant< int, velo >                       velocityVar;
 
-    typedef typename Traits::ProblemType                      ProblemType ;
+    typedef typename Traits::ProblemType                              ProblemType;
 
     static const int ConstantVelocity = ProblemType::ConstantVelocity;
-    typedef typename Traits::GridType                         GridType;
+    typedef typename Traits::GridType                                 GridType;
     static const int dimDomain = Traits::dimDomain;
     static const int dimRange  = Traits::dimRange;
-    typedef typename Traits::DomainType                       DomainType;
-    typedef typename Traits::RangeType                        RangeType;
-    typedef typename Traits::GradientType                     GradientType;
-    typedef typename Traits::FluxRangeType                    FluxRangeType;
-    typedef typename Traits::DiffusionRangeType               DiffusionRangeType;
-    typedef typename Traits::DiffusionMatrixType              DiffusionMatrixType;
-    typedef typename Traits::FaceDomainType                   FaceDomainType;
-    typedef typename Traits::JacobianRangeType                JacobianRangeType;
+    typedef typename Traits::DomainType                               DomainType;
+    typedef typename Traits::RangeType                                RangeType;
+    typedef typename Traits::GradientType                             GradientType;
+    typedef typename Traits::FluxRangeType                            FluxRangeType;
+    typedef typename Traits::DiffusionRangeType                       DiffusionRangeType;
+    typedef typename Traits::DiffusionMatrixType                      DiffusionMatrixType;
+    typedef typename Traits::FaceDomainType                           FaceDomainType;
+    typedef typename Traits::JacobianRangeType                        JacobianRangeType;
 
     // for heat equations advection is disabled
     static const bool hasAdvection = true;
     static const bool hasDiffusion = true;
+
+
+    // one function space here, with dimension of range type 'dimDomain'
+    typedef typename Traits::template ParameterSpaces<dimDomain>      ParameterSpacesType;
+
 
     HeatEqnModel(const HeatEqnModel& otehr);
     const HeatEqnModel &operator=(const HeatEqnModel &other);

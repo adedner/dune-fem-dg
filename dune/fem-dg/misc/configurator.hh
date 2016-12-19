@@ -165,6 +165,7 @@ namespace Fem
     template< bool symmetric=false>
     using SolverSelect = typename SolverSelector< solverId, symmetric, Matrix::Enum::matrixfree == matrixId ? true : false >::type;
 
+
   public:
     typedef GridImp                                           GridType;
 
@@ -176,43 +177,54 @@ namespace Fem
     template< int dimRange >
     using FunctionSpaces = Fem::FunctionSpace< typename GridType::ctype, typename GridType::ctype, GridType::dimension, dimRange >;
 
-    template< class GridPartImp, int polOrd, class FunctionSpaceImp >
+    template< class FunctionSpaceImp, int polOrd, class GridPartImp = GridParts >
     using DiscreteFunctionSpaces = typename DiscreteFunctionSpaceSelector< FunctionSpaceImp, GridPartImp, polOrd, spaceId, dgId >::type;
 
-    template< class DFSpace >
-    using DiscreteFunctions = typename SolverSelect<>::template DiscreteFunctionType<DFSpace>;
+    template< class FunctionSpaceImp, int polOrd, class GridPartImp = GridParts >
+    using DiscreteFunctions = typename SolverSelect<>::template DiscreteFunctionType<DiscreteFunctionSpaces<FunctionSpaceImp,polOrd,GridPartImp> >;
+
+  private:
+    template<class DF> struct FunctionChooser
+    {
+      typedef DiscreteFunctionSpaces< typename DF::DiscreteFunctionSpaceType::FunctionSpaceType, DF::DiscreteFunctionSpaceType::polynomialOrder > type;
+    };
+  public:
+
+    template< template<class,template<class> class > class DFSelector, class DF >
+    using WrappedDiscreteFunctions = typename SolverSelect<>::template DiscreteFunctionType< typename DFSelector<DF,FunctionChooser >::type >;
 
     template< class ModelImp, AdvectionFlux::Enum id = advFluxId >
     using AdvectionFluxes = DGAdvectionFlux< ModelImp, id >;
 
-    template< class ModelImp, class DFSpace, DiffusionFlux::Enum id = diffFluxId >
-    using DiffusionFluxes = typename DiffusionFluxSelector< ModelImp, DFSpace, id, formId >::type;
+    template< class ModelImp, class DF, DiffusionFlux::Enum id = diffFluxId >
+    using DiffusionFluxes = typename DiffusionFluxSelector< ModelImp, typename DF::DiscreteFunctionSpaceType, id, formId >::type;
 
-    template< class DomainDFSpace,
-              class RangeDFSpace,
-              int polOrd,
-              class AnalyticalTraitsImp,
+    template< class AnalyticalTraitsImp,
+              class DFunctionSpaceImp,
+              int dPolOrd,
+              class RFunctionSpaceImp = DFunctionSpaceImp,
+              int rPolOrd = dPolOrd,
               AdvectionFlux::Enum advId = advFluxId,
               DiffusionFlux::Enum diffId = diffFluxId >
-    using DefaultAssembTraits = DefaultAssemblerTraits< polOrd,
+    using DefaultAssembTraits = DefaultAssemblerTraits< dPolOrd,
                                                         AnalyticalTraitsImp,
-                                                        typename SolverSelect<>::template LinearOperatorType<DomainDFSpace,RangeDFSpace>,
+                                                        typename SolverSelect<>::template LinearOperatorType<DiscreteFunctionSpaces< DFunctionSpaceImp, dPolOrd >, DiscreteFunctionSpaces< RFunctionSpaceImp, rPolOrd > >,
                                                         AdvectionFluxes< typename AnalyticalTraitsImp::ModelType, advId >,
-                                                        DiffusionFluxes< typename AnalyticalTraitsImp::ModelType, DomainDFSpace, diffId >,
-                                                        DiscreteFunctions< DomainDFSpace >,
-                                                        DiscreteFunctions< RangeDFSpace > >;
-    template< class DomainDFSpace,
+                                                        DiffusionFluxes< typename AnalyticalTraitsImp::ModelType, DiscreteFunctions< DFunctionSpaceImp, dPolOrd >, diffId >,
+                                                        DiscreteFunctions< DFunctionSpaceImp, dPolOrd >,
+                                                        DiscreteFunctions< RFunctionSpaceImp, rPolOrd > >;
+    template< class AnalyticalTraitsImp,
+              class FunctionSpaceImp,
               int polOrd,
-              class AnalyticalTraitsImp,
               class ExtraParameterTupleImp = std::tuple<>,
-              class AdaptationIndicatorFunctionSpaceImp = typename DomainDFSpace::FunctionSpaceType,
+              class AdaptationIndicatorFunctionSpaceImp = typename DiscreteFunctionSpaces< FunctionSpaceImp, polOrd >::FunctionSpaceType,
               AdvectionFlux::Enum advId = advFluxId,
               DiffusionFlux::Enum diffId = diffFluxId>
     using DefaultOpTraits = DefaultOperatorTraits< polOrd,
                                                    AnalyticalTraitsImp,
-                                                   DiscreteFunctions< DomainDFSpace >,
+                                                   DiscreteFunctions< FunctionSpaceImp, polOrd >,
                                                    AdvectionFluxes< typename AnalyticalTraitsImp::ModelType, advId >,
-                                                   DiffusionFluxes< typename AnalyticalTraitsImp::ModelType, DomainDFSpace, diffId >,
+                                                   DiffusionFluxes< typename AnalyticalTraitsImp::ModelType, DiscreteFunctions< FunctionSpaceImp, polOrd >, diffId >,
                                                    ExtraParameterTupleImp,
                                                    AdaptationIndicatorFunctionSpaceImp >;
 
@@ -224,13 +236,17 @@ namespace Fem
     using Operators = typename OperatorSelector< OpTraits, formId, advLimitId, opSplit, matrix >::type;
 
     //Matrix Containers
-    template< class DomainDFSpace, class RangeDFSpace  >
-    using Containers = typename SolverSelect<>::template LinearOperatorType<DomainDFSpace,RangeDFSpace>;
+    template< class DDF, class RDF  >
+    using Containers = typename SolverSelect<>::template LinearOperatorType<typename DDF::DiscreteFunctionSpaceType,typename RDF::DiscreteFunctionSpaceType>;
 
     //Solver
-    template< class DFSpace, bool symmetric = false >
-    using LinearSolvers = typename SolverSelect<symmetric>::template LinearInverseOperatorType<DFSpace>;
+    template< class DF, bool symmetric = false >
+    using LinearSolvers = typename SolverSelect<symmetric>::template LinearInverseOperatorType<typename DF::DiscreteFunctionSpaceType>;
 
+
+    //Extra Parameters
+    template< class AnaTraits, class AC, int... polOrds >
+    using ExtraParameters = typename ExtraParameterSelector< typename AnaTraits::ModelType::ParameterSpacesType, AC, polOrds... >::type;
 
     ////Real Jacobian for Runge-Kutta
     //template< class OperatorImp >
@@ -247,6 +263,7 @@ namespace Fem
     //using OdeSolvers = RungeKuttaSolver< OperatorImp, ExplicitOperatorImp, ImplicitOperatorImp, JacobianImplicitOperatorImp, BasicLinearSolverImp >;
 
   };
+
 
 
 }

@@ -116,33 +116,33 @@ namespace Fem
 #endif
 
       //external parameters
-      typedef _e< SolutionSelect, __2, __0 >                              UnType;
-      typedef _e< SolutionSelect, __0, __0 >                              UnThetaType;
-      typedef _e< SolutionSelect, __1, __0 >                              UnPlus1MinusThetaType;
+      typedef _ee< __2, __0 >                                             Un;
+      typedef _ee< __0, __0 >                                             UnTheta;
+      typedef _ee< __1, __0 >                                             UnPlus1MinusTheta;
 
-      typedef _e< SolutionSelect, __2, __1 >                              PnType;
-      typedef _e< SolutionSelect, __0, __1 >                              PnThetaType;
+      typedef _ee< __2, __1 >                                             Pn;
+      typedef _ee< __0, __1 >                                             PnTheta;
       //Does not exist:
-      //OneArgContainerAccess< SolutionSelect, __1, __1 >                 PnPlus1MinusThetaType;
+      //typedef _ee< __1, __1 >                                             PnPlus1MinusTheta;
 
 
       //external params lists
-      typedef ExtraArg< UnType >                                          StokesExtra1Type;
-      typedef ExtraArg< UnType, UnThetaType, PnThetaType >                AdvDiffExtraType;
-      typedef ExtraArg< UnType, UnThetaType, UnPlus1MinusThetaType >      StokesExtra2Type;
+      typedef ExtraArg< Un >                                              StokesExtra1Type;
+      typedef ExtraArg< Un, UnTheta, PnTheta >                            AdvDiffExtraType;
+      typedef ExtraArg< Un, UnTheta, UnPlus1MinusTheta >                  StokesExtra2Type;
 
       typedef std::tuple< StokesExtra1Type, AdvDiffExtraType, StokesExtra2Type > ExtraType;
 
 
       //IOData (uses raw pointers...)
       //------
-      typedef _e< IOSolutionSelect, __2, __0 >                            UType;
-      typedef _e< IOSolutionSelect, __2, __1 >                            PType;
-      typedef _e< IOExactSolutionSelect, __2, __0 >                       UExactType;
-      typedef _e< IOExactSolutionSelect, __2, __1 >                       PExactType;
+      typedef _e< IOSolutionSelect, __2, __0 >                            U;
+      typedef _e< IOSolutionSelect, __2, __1 >                            P;
+      typedef _e< IOExactSolutionSelect, __2, __0 >                       UExact;
+      typedef _e< IOExactSolutionSelect, __2, __1 >                       PExact;
 
       //IO data list
-      typedef ExtraArg< UType, PType, UExactType, PExactType >            IODataTupleType;
+      typedef ExtraArg< U, P, UExact, PExact >                            IODataTupleType;
 
       typedef std::tuple< IODataTupleType >                               IOExtraType;
 

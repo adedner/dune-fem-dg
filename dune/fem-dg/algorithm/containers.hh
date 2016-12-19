@@ -331,8 +331,8 @@ namespace Fem
     template< unsigned long int i >
     decltype(auto) extra( _index<i> index )
     {
-      typedef std::tuple< ExtraArgs... > ExtraArgsType;
-      return ExtraArgsType::init( *this );
+      typedef typename std::tuple_element<i,std::tuple< ExtraArgs... > >::type ExtraArgType;
+      return ExtraArgType::init( *this );
     }
 
     const std::string name() const

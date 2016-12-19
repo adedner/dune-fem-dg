@@ -45,7 +45,7 @@ namespace Fem
 
 //undef the following to prescribe an external discrete velocity.
 //This will not produce any physical results, yet. Just an example
-//#define VELO
+//define VELO
 
   /**
    *  \brief problem creator for an advection diffusion problem
@@ -107,30 +107,15 @@ namespace Fem
       template< int polOrd >
       struct DiscreteTraits
       {
-        typedef typename AC::template DiscreteFunctionSpaces< GridPartType, polOrd, FunctionSpaceType>
-                                                                                           DFSpaceType;
+        typedef typename AC::template DiscreteFunctions< FunctionSpaceType, polOrd >         DiscreteFunctionType;
 
-#ifdef VELO
-        typedef typename AC::template FunctionSpaces<GRIDDIM>                              VelFunctionSpaceType;
-        typedef typename AC::template DiscreteFunctionSpaces< GridPartType, polOrd, VelFunctionSpaceType>
-                                                                                           VelDFSpaceType;
-#endif
-
-      public:
-
-        typedef typename AC::template DiscreteFunctions< DFSpaceType >                     DiscreteFunctionType;
-#ifdef VELO
-        typedef typename AC::template DiscreteFunctions< VelDFSpaceType >                  VelDiscreteFunctionType;
-        typedef std::tuple< VelDiscreteFunctionType >                                      ExtraParameters;
-#else
-        typedef std::tuple<>                                                               ExtraParameters;
-#endif
+        typedef typename AC::template ExtraParameters< AnalyticalTraits, std::tuple< AC>, polOrd >  ExtraParameters;
 
         typedef std::tuple< DiscreteFunctionType*, DiscreteFunctionType* >                 IOTupleType;
 
         class Operator
         {
-          typedef typename AC::template DefaultOpTraits< DFSpaceType, polOrd, AnalyticalTraits, ExtraParameters >
+          typedef typename AC::template DefaultOpTraits< AnalyticalTraits, FunctionSpaceType, polOrd, ExtraParameters >
                                                                                            OpTraits;
         public:
           typedef typename AC::template Operators< OpTraits,OperatorSplit::Enum::full >    type;
@@ -140,12 +125,12 @@ namespace Fem
 
         struct Solver
         {
-          typedef typename AC::template LinearSolvers< DFSpaceType >                       LinearSolverType;
+          typedef typename AC::template LinearSolvers< DiscreteFunctionType >              LinearSolverType;
           typedef DuneODE::OdeSolverInterface< DiscreteFunctionType >                      type;
         };
 
       private:
-        typedef typename AC::template DefaultOpTraits< DFSpaceType, polOrd, AnalyticalTraits, ExtraParameters >
+        typedef typename AC::template DefaultOpTraits< AnalyticalTraits, FunctionSpaceType, polOrd, ExtraParameters >
                                                                                            OpTraits;
         typedef DGAdaptationIndicatorOperator< OpTraits >                                  IndicatorType;
         typedef Estimator< DiscreteFunctionType, typename AnalyticalTraits::ProblemType >  GradientIndicatorType ;
@@ -175,29 +160,24 @@ namespace Fem
       //Discrete Functions
       typedef typename SubAdvectionDiffusionAlgorithmCreator<ACAdvDiff>::template DiscreteTraits<polOrd>::DiscreteFunctionType
                                                                                   DFType;
-#ifdef VELO
-      typedef typename SubAdvectionDiffusionAlgorithmCreator<ACAdvDiff>::template DiscreteTraits<polOrd>::VelDiscreteFunctionType
-                                                                       VelDFType;
-#endif
 
       //Item1
       typedef _t< SubEvolutionContainerItem >                                     Steady;
-#ifdef VELO
+//#ifdef VELO
       typedef _t< SolutionContainerItem >                                         Solut;
       typedef std::tuple< Steady, Solut >                                         Item1TupleType;
-#else
-      typedef std::tuple< Steady >                                                Item1TupleType;
-#endif
+//#else
+//      typedef std::tuple< Steady >                                                Item1TupleType;
+//#endif
 
       //Item2
       typedef _t< EmptyContainerItem >                                            Empty;
-#ifdef VELO
+//#ifdef VELO
       typedef std::tuple< std::tuple< Empty,Empty >,
                           std::tuple< Empty,Empty > >                             Item2TupleType;
-#else
-      typedef std::tuple< std::tuple< Empty > >                                   Item2TupleType;
-
-#endif
+//#else
+//      typedef std::tuple< std::tuple< Empty > >                                   Item2TupleType;
+//#endif
 
 
       //Sub (discrete function argument ordering)
@@ -212,14 +192,15 @@ namespace Fem
 
       //external params lists
 #ifdef VELO
-      typedef ExtraArg<_e< SolutionSelect, __0, __1 > >                           ExtraType;
+      typedef ExtraArg< _ee< __0, __1 > >                                         ExtraType;
 #else
-      typedef ExtraArg< >                                                          ExtraType;
+      typedef ExtraArg< >                                                         ExtraType;
 #endif
 
       //Global container
 #ifdef VELO
-      typedef GlobalContainer< Item2TupleType, Item1TupleType, SubOrderRowType, SubOrderColType, ExtraType, DFType, VelDFType >
+      typedef typename std::tuple_element< 0, typename SubAdvectionDiffusionAlgorithmCreator<ACAdvDiff>::template DiscreteTraits<polOrd>::ExtraParameters >::type ExtraDF;
+      typedef GlobalContainer< Item2TupleType, Item1TupleType, SubOrderRowType, SubOrderColType, ExtraType, DFType, ExtraDF >
 #else
       typedef GlobalContainer< Item2TupleType, Item1TupleType, SubOrderRowType, SubOrderColType, ExtraType, DFType >
 #endif
