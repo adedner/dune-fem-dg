@@ -51,8 +51,7 @@ namespace Fem
   };
 
   // traits for the operator passes
-  template< int polOrd,
-            class ModelImp,
+  template< class ModelImp,
             class DiscreteFunctionImp,
             class AdvectionFluxImp,
             class DiffusionFluxImp,
@@ -68,10 +67,10 @@ namespace Fem
     typedef AdvectionFluxImp                                             AdvectionFluxType;
     typedef DiffusionFluxImp                                             DiffusionFluxType;
 
-    static const int polynomialOrder = polOrd == -1 ? 0 : polOrd;
-
-    typedef DiscreteFunctionImp                                          DestinationType ;
+    typedef DiscreteFunctionImp                                          DestinationType;
     typedef typename DestinationType::DiscreteFunctionSpaceType          DiscreteFunctionSpaceType;
+
+    static const int polynomialOrder = (DiscreteFunctionSpaceType::polynomialOrder==-1) ? 0 : DiscreteFunctionSpaceType::polynomialOrder;
 
     static_assert( std::is_same<typename ModelType::RangeType, typename DestinationType::RangeType>::value, "range type does not fit.");
 
@@ -87,7 +86,8 @@ namespace Fem
     typedef AdaptationHandler< GridType, AdaptationHandlerFunctionSpaceImp >
                                                                          AdaptationHandlerType;
 
-    static const int limiterPolynomialOrder = polOrd == -1 ? 1 : polOrd;
+    static const int limiterPolynomialOrder =(DiscreteFunctionSpaceType::polynomialOrder==-1) ? 1 : DiscreteFunctionSpaceType::polynomialOrder;
+
     typedef ExtraParameterTupleImp                                       ExtraParameterTupleType;
   };
 

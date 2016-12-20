@@ -144,7 +144,7 @@ namespace Fem
         typedef PAdaptivity<typename DiscreteFunctionType::DiscreteFunctionSpaceType, polOrd, SigmaEstimatorType >
                                                                                      PAdaptivityType;
 
-        typedef PAdaptIndicator< PAdaptivityType, ProblemInterfaceType >             AdaptIndicatorType;
+        typedef PAdaptIndicator< PAdaptivityType, ModelType >                        AdaptIndicatorType;
         // typedef NoPAdaptIndicator                                                 AdaptIndicatorType;
 
         typedef SubSolverMonitor< SolverMonitor >                                    SolverMonitorType;
@@ -242,7 +242,7 @@ namespace Fem
       public:
         typedef SubSolverMonitor< SolverMonitor >                                       SolverMonitorType;
         typedef SubDiagnostics< Diagnostics >                                           DiagnosticsType;
-        typedef StokesPAdaptIndicator< StokesPAdaptivityType, ProblemInterfaceType >    AdaptIndicatorType;
+        typedef StokesPAdaptIndicator< StokesPAdaptivityType, ModelType >               AdaptIndicatorType;
       };
 
       template <int polOrd>

@@ -8,13 +8,13 @@ namespace Dune
 namespace Fem
 {
   // traits for the operator passes
-  template< int polOrd,
-            class ModelImp,
+  template< class ModelImp,
             class MatrixContainerImp,
             class AdvectionFluxImp,
             class DiffusionFluxImp,
             class DomainDiscreteFunctionImp,
-            class RangeDiscreteFunctionImp = DomainDiscreteFunctionImp >
+            class RangeDiscreteFunctionImp = DomainDiscreteFunctionImp,
+            class ExtraParameterTupleImp = std::tuple<> >
   struct DefaultAssemblerTraits
   {
     typedef typename DomainDiscreteFunctionImp::GridPartType             GridPartType;
@@ -24,7 +24,8 @@ namespace Fem
     typedef AdvectionFluxImp                                             AdvectionFluxType;
     typedef DiffusionFluxImp                                             DiffusionFluxType;
 
-    static const int polynomialOrder = polOrd == -1 ? 0 : polOrd;
+    static const int polynomialOrder = (DomainDiscreteFunctionImp::DiscreteFunctionSpaceType::polynomialOrder==-1) ?
+                                        0 : DomainDiscreteFunctionImp::DiscreteFunctionSpaceType::polynomialOrder;
 
     typedef DomainDiscreteFunctionImp                                    DomainDiscreteFunctionType;
     typedef RangeDiscreteFunctionImp                                     RangeDiscreteFunctionType;
@@ -33,6 +34,7 @@ namespace Fem
     typedef Fem::CachingQuadrature< GridPartType, 0 >                    VolumeQuadratureType;
     typedef Fem::CachingQuadrature< GridPartType, 1 >                    FaceQuadratureType;
 
+    typedef ExtraParameterTupleImp                                       ExtraParameterTupleType;
   };
 
   //TODO more general structure for use with multitypeblockmatrix

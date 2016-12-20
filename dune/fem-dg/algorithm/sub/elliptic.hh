@@ -482,12 +482,13 @@ namespace Fem
   /**
    * \brief Adaptation indicator doing no indication and marking of the entities.
    */
-  template< class PAdaptivityImp, class ProblemImp >
+  template< class PAdaptivityImp, class ModelImp >
   class PAdaptIndicator
   {
     protected:
     typedef PAdaptivityImp                                               PAdaptivityType;
-    typedef ProblemImp                                                   ProblemType;
+    typedef ModelImp                                                     ModelType;
+    typedef typename ModelType::ProblemType                              ProblemType;
     typedef typename PAdaptivityType::SigmaEstimatorType                 SigmaEstimatorType;
     typedef typename PAdaptivityType::ErrorEstimatorType                 ErrorEstimatorType;
     typedef typename SigmaEstimatorType::DiscreteFunctionType            DiscreteFunctionType;
@@ -506,10 +507,10 @@ namespace Fem
     template< class ContainerImp >
     PAdaptIndicator( const std::shared_ptr< ContainerImp >& cont,
                      DGOperatorType& assembler,
-                     const ProblemType& problem,
+                     const ModelType& model,
                      const std::string name = "" )
       : pAdapt_( cont, assembler, name ),
-        problem_( problem )
+        problem_( model.problem() )
     {}
 
     bool adaptive() const

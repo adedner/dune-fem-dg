@@ -89,7 +89,7 @@ namespace Fem
 
       class Operator
       {
-        typedef typename AC::template DefaultAssembTraits< ModelType, FunctionSpaceType, redPolOrd/*,ExtraParameters*/ >
+        typedef typename AC::template DefaultAssembTraits< ModelType, FunctionSpaceType, redPolOrd, FunctionSpaceType, redPolOrd /*,ExtraParameters*/ >
                                                                                         OpTraits;
       public:
         typedef StokesAssembler< OpTraits, AC::template Containers,
@@ -123,7 +123,7 @@ namespace Fem
 
       typedef SubSolverMonitor< SolverMonitor >                                             SolverMonitorType;
       typedef SubDiagnostics< Diagnostics >                                                 DiagnosticsType;
-      typedef StokesPAdaptIndicator< StokesPAdaptivityType, ProblemInterfaceType >          AdaptIndicatorType;
+      typedef StokesPAdaptIndicator< StokesPAdaptivityType, ModelType >                     AdaptIndicatorType;
     };
 
     template <int polOrd>

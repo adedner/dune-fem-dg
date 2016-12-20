@@ -196,15 +196,16 @@ namespace Fem
               int dPolOrd,
               class RFunctionSpaceImp = DFunctionSpaceImp,
               int rPolOrd = dPolOrd,
+              class ExtraParameterTupleImp = std::tuple<>,
               AdvectionFlux::Enum advId = advFluxId,
               DiffusionFlux::Enum diffId = diffFluxId >
-    using DefaultAssembTraits = DefaultAssemblerTraits< dPolOrd,
-                                                        ModelImp,
+    using DefaultAssembTraits = DefaultAssemblerTraits< ModelImp,
                                                         typename SolverSelect<>::template LinearOperatorType<DiscreteFunctionSpaces< DFunctionSpaceImp, dPolOrd >, DiscreteFunctionSpaces< RFunctionSpaceImp, rPolOrd > >,
                                                         AdvectionFluxes< ModelImp, advId >,
                                                         DiffusionFluxes< ModelImp, DiscreteFunctions< DFunctionSpaceImp, dPolOrd >, diffId >,
                                                         DiscreteFunctions< DFunctionSpaceImp, dPolOrd >,
-                                                        DiscreteFunctions< RFunctionSpaceImp, rPolOrd > >;
+                                                        DiscreteFunctions< RFunctionSpaceImp, rPolOrd >,
+                                                        ExtraParameterTupleImp >;
     template< class ModelImp,
               class FunctionSpaceImp,
               int polOrd,
@@ -212,8 +213,7 @@ namespace Fem
               class AdaptationIndicatorFunctionSpaceImp = typename DiscreteFunctionSpaces< FunctionSpaceImp, polOrd >::FunctionSpaceType,
               AdvectionFlux::Enum advId = advFluxId,
               DiffusionFlux::Enum diffId = diffFluxId>
-    using DefaultOpTraits = DefaultOperatorTraits< polOrd,
-                                                   ModelImp,
+    using DefaultOpTraits = DefaultOperatorTraits< ModelImp,
                                                    DiscreteFunctions< FunctionSpaceImp, polOrd >,
                                                    AdvectionFluxes< ModelImp, advId >,
                                                    DiffusionFluxes< ModelImp, DiscreteFunctions< FunctionSpaceImp, polOrd >, diffId >,

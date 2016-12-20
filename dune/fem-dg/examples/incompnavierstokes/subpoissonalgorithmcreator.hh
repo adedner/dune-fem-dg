@@ -81,7 +81,7 @@ namespace Fem
 
       class Operator
       {
-        typedef typename AC::template DefaultAssembTraits< ModelType, FunctionSpaceType, polOrd/*, ExtraParameters*/ >
+        typedef typename AC::template DefaultAssembTraits< ModelType, FunctionSpaceType, polOrd, FunctionSpaceType, polOrd/*, ExtraParameters*/ >
                                                                                    OpTraits;
 
         typedef typename AC::template DefaultOpTraits< PoissonModel< GridPartType, typename ModelType::ProblemType, std::tuple</*__t*/> >,
@@ -109,7 +109,7 @@ namespace Fem
       typedef PAdaptivity<typename DiscreteFunctionType::DiscreteFunctionSpaceType, polOrd, SigmaEstimatorType >
                                                                                    PAdaptivityType;
 
-      typedef PAdaptIndicator< PAdaptivityType, ProblemInterfaceType >             AdaptIndicatorType;
+      typedef PAdaptIndicator< PAdaptivityType, ModelType >                        AdaptIndicatorType;
       // typedef NoPAdaptIndicator                                                   AdaptIndicatorType;
 
       typedef SubSolverMonitor< SolverMonitor >                                    SolverMonitorType;
