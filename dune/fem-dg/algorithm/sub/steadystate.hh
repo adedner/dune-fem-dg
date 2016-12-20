@@ -321,7 +321,7 @@ namespace Fem
         rhsTemp_->clear();
 
         //apply rhs operator
-        (*rhsOperator_)( solution(), rhsTemp_ );
+        (*rhsOperator_)( solution(), *rhsTemp_ );
 
         //save changes
         rhs() += (*rhsTemp_);
