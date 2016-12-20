@@ -209,9 +209,7 @@ namespace Fem
     //! constructor for DG matrix assembly
     template< class ContainerImp >
     DGPrimalMatrixAssembly( std::shared_ptr< ContainerImp > cont,
-                            const ModelType& model,
-                            const bool calculateFluxes = true,
-                            const bool strongBC = false )
+                            const ModelType& model )
       : model_( model ),
         space_( (*cont)(_0)->solution()->space() ),
         rhs_( (*cont)(_0)->rhs() ),
@@ -220,8 +218,8 @@ namespace Fem
         time_( 0 ),
         advFlux_( model_ ),
         diffusionFlux_( space_.gridPart(), model_, typename Traits::DiffusionFluxType::ParameterType( ParameterKey::generate( "", "dgdiffusionflux." ) ) ),
-        calculateFluxes_( calculateFluxes ),
-        useStrongBoundaryCondition_( strongBC )
+        calculateFluxes_( Dune::Fem::Parameter::getValue<bool>( "poissonassembler.calculateFluxes", true ) ),
+        useStrongBoundaryCondition_( Dune::Fem::Parameter::getValue<bool>( "poissonassembler.strongBC", false ) )
     {
     }
 

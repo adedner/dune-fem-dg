@@ -217,9 +217,7 @@ namespace Fem
     //Constructor
     template< class ContainerImp >
     StokesAssembler( const std::shared_ptr<ContainerImp>& cont,
-                     const ModelType& model,
-                     double d11=1.,
-                     double d12=1.)
+                     const ModelType& model )
     : spc_( (*cont)(_0)->solution()->space() ),
       pressurespc_( (*cont)(_1)->solution()->space() ),
       problem_( model.problem() ),
@@ -230,8 +228,8 @@ namespace Fem
       pressureGradMatrix_( (*cont)(_0,_1)->matrix() ),//PGM
       pressureDivMatrix_( (*cont)(_1,_0)->matrix() ),//PDM
       pressureStabMatrix_( (*cont)(_1,_1)->matrix() ),//PSM
-      d11_(d11),
-      d12_(d12),
+      d11_( Dune::Fem::Parameter::getValue<double>( "stokesassembler.d11", 1.0 ) ),
+      d12_( Dune::Fem::Parameter::getValue<double>( "stokesassembler.d12", 1.0 ) ),
       time_(0)
     {}
 
