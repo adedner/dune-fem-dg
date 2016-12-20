@@ -83,10 +83,10 @@ namespace Fem
         deltaT_( problem.deltaT() )
     {}
 
-    inline bool hasFlux() const { return true ; }
+    inline bool hasFlux() const { return true; }
 
-    inline bool hasStiffSource() const { return true ; }
-    inline bool hasNonStiffSource() const { return false ; }
+    inline bool hasStiffSource() const { return true; }
+    inline bool hasNonStiffSource() const { return false; }
 
     struct ComputeVelocity
     {
@@ -197,7 +197,7 @@ namespace Fem
                             const RangeType& u,
                             RangeType& maxValue) const
     {
-      DiffusionMatrixType K ;
+      DiffusionMatrixType K;
       DomainType xgl = local.entity().geometry().global( local.position() );
       problem_.K( xgl, K );
 

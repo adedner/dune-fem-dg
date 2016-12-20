@@ -222,6 +222,7 @@ namespace Fem
         solution_( (*cont)(_0)->solution() ),
         exactSolution_( (*cont)(_0)->exactSolution() ),
         rhs_( (*cont)(_0)->rhs() ),
+        rhsTemp_( nullptr ),
         rhsOperator_( std::make_shared< RhsOptional< RhsType > >( solution().space().gridPart(), model(), extra, name() ) ),
         ioTuple_( std::make_unique<IOTupleType>( std::make_tuple( solution_.get(), exactSolution_.get() ) ) ),
         solver_( nullptr ),
@@ -308,10 +309,24 @@ namespace Fem
 
     virtual void doPreSolve ( const int loop )
     {
-      if( *rhsOperator_ ) //rhs by external rhs operator
-        (*rhsOperator_)( solution(), rhs() );
-      solution().clear();
+      //create solver (e.g. assemble matrix etc.)
       solver_ = this->doCreateSolver();
+
+      //rhs by external rhs operator
+      if( *rhsOperator_ )
+      {
+        //create temp rhs if not existent
+        if( !rhsTemp_ )
+          rhsTemp_ = std::make_shared<DiscreteFunctionType>( rhs_->name() + "-temp", rhs_->space() );
+        rhsTemp_->clear();
+
+        //apply rhs operator
+        (*rhsOperator_)( solution(), rhsTemp_ );
+
+        //save changes
+        rhs() += (*rhsTemp_);
+      }
+      solution().clear();
     }
 
     virtual void doSolve ( const int loop )
@@ -345,6 +360,7 @@ namespace Fem
     std::shared_ptr< DiscreteFunctionType >      exactSolution_;
 
     std::shared_ptr< DiscreteFunctionType >      rhs_;
+    std::shared_ptr< DiscreteFunctionType >      rhsTemp_;
     std::shared_ptr< RhsOptional< RhsType > >    rhsOperator_;
 
     std::unique_ptr< IOTupleType >               ioTuple_;
