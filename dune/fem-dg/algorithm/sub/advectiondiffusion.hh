@@ -73,6 +73,7 @@ namespace Fem
     using BaseType::grid;
     using BaseType::solution;
     using BaseType::problem;
+    using BaseType::model;
     using BaseType::name;
 
     typedef typename BaseType::ContainerType                  ContainerType;
@@ -81,10 +82,10 @@ namespace Fem
     SubAdvectionDiffusionAlgorithm( const std::shared_ptr< ContainerImp >& cont,
                                     const std::shared_ptr< ExtraArgsImp >& extra )
     : BaseType( cont, extra ),
-      operator_( std::make_unique< OperatorType >( solution().space().gridPart(), problem(), extra, name() ) ),
-      advectionOperator_( std::make_unique< ExplicitOperatorType >( solution().space().gridPart(), problem(), extra, name() ) ),
-      diffusionOperator_( std::make_unique< ImplicitOperatorType >( solution().space().gridPart(), problem(), extra, name() ) ),
-      adaptIndicator_( std::make_unique< AdaptIndicatorOptional<AdaptIndicatorType> >( solution(), problem(), extra, name() ) )
+      operator_( std::make_unique< OperatorType >( solution().space().gridPart(), model(), extra, name() ) ),
+      advectionOperator_( std::make_unique< ExplicitOperatorType >( solution().space().gridPart(), model(), extra, name() ) ),
+      diffusionOperator_( std::make_unique< ImplicitOperatorType >( solution().space().gridPart(), model(), extra, name() ) ),
+      adaptIndicator_( std::make_unique< AdaptIndicatorOptional<AdaptIndicatorType> >( solution(), model(), extra, name() ) )
     {}
 
     virtual AdaptIndicatorType* adaptIndicator ()
@@ -135,8 +136,6 @@ namespace Fem
                                 LinearSolverType > SolverImpl;
       return std::make_shared< SolverImpl >( tp, *operator_, *advectionOperator_, *diffusionOperator_, name() );
     }
-
-    const ModelType& model () const { assert( operator_ ); return operator_->model(); }
 
   protected:
     std::unique_ptr< OperatorType >         operator_;

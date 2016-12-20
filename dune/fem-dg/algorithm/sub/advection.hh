@@ -69,6 +69,7 @@ namespace Fem
 
     using BaseType::solution ;
     using BaseType::problem;
+    using BaseType::model;
     using BaseType::name ;
     using BaseType::limitSolution;
 
@@ -78,8 +79,8 @@ namespace Fem
     SubAdvectionAlgorithm( const std::shared_ptr< ContainerImp >& cont,
                            const std::shared_ptr< ExtraArgsImp >& extra )
     : BaseType( cont, extra ),
-      advectionOperator_( Std::make_unique< FullOperatorType >( solution().space().gridPart(), problem(), extra, name() ) ),
-      adaptIndicator_( Std::make_unique< AdaptIndicatorOptional<AdaptIndicatorType> >( solution(), problem(), extra, name() ) )
+      advectionOperator_( std::make_unique< FullOperatorType >( solution().space().gridPart(), model(), extra, name() ) ),
+      adaptIndicator_( std::make_unique< AdaptIndicatorOptional<AdaptIndicatorType> >( solution(), model(), extra, name() ) )
     {}
 
     virtual AdaptIndicatorType* adaptIndicator ()
@@ -126,8 +127,6 @@ namespace Fem
                                              *advectionOperator_,
                                              name() );
     }
-
-   const ModelType& model () const { assert( advectionOperator_ ); return advectionOperator_->model(); }
 
   protected:
     std::unique_ptr< FullOperatorType >    advectionOperator_;

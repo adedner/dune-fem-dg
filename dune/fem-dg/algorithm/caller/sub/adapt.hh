@@ -93,14 +93,14 @@ namespace Fem
                                                                                                AdaptationHandlerType;
     typedef typename IndicatorType::ExtraParameterTupleType                                    ExtraParameterTupleType;
 
-    template< class Problem, class ExtraParameterTupleImp >
-    AdaptIndicator( DiscreteFunctionType& sol, Problem& problem, const ExtraParameterTupleImp& tuple, const std::string keyPrefix = "" )
+    template< class Model, class ExtraParameterTupleImp >
+    AdaptIndicator( DiscreteFunctionType& sol, Model& model, const ExtraParameterTupleImp& tuple, const std::string keyPrefix = "" )
     : sol_( sol ),
       adaptationHandler_( nullptr ),
       keyPrefix_( keyPrefix ),
       adaptParam_( AdaptationParametersType( ParameterKey::generate( keyPrefix, "fem.adaptation." ) ) ),
-      indicator_( const_cast<GridPartType&>(sol_.gridPart()), problem, tuple, keyPrefix_ ),
-      estimator_( sol_.space(), problem, adaptParam_ )
+      indicator_( const_cast<GridPartType&>(sol_.gridPart()), model, tuple, keyPrefix_ ),
+      estimator_( sol_.space(), model.problem(), adaptParam_ )
     {}
 
     /**

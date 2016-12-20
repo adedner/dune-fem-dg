@@ -143,20 +143,6 @@ namespace Fem
 
   public:
     template< class ExtraParameterTupleImp >
-    DGAdvectionDiffusionOperatorBase( GridPartType& gridPart, ProblemType& problem,
-                                      ExtraParameterTupleImp& tuple,
-                                      const std::string name = "" )
-      : model_( problem )
-      , numflux_( model_ )
-      , gridPart_( gridPart )
-      , space_( gridPart_ )
-      , discreteModel_( model_, numflux_,
-                        DiffusionFluxType( gridPart_, model_, typename DiffusionFluxType::ParameterType( ParameterKey::generate( name, "dgdiffusionflux." ) ) ) )
-      , previousPass_( InsertFunctionsType::createPass( tuple ) )
-      , pass1_( discreteModel_, *previousPass_, space_ )
-    {}
-
-    template< class ExtraParameterTupleImp >
     DGAdvectionDiffusionOperatorBase( GridPartType& gridPart, const ModelType& model,
                                       ExtraParameterTupleImp& tuple,
                                       const std::string name = "" )
@@ -253,14 +239,14 @@ namespace Fem
     const ModelType& model() const { return model_; }
 
   protected:
-    ModelType           model_;
-    AdvectionFluxType   numflux_;
-    GridPartType& gridPart_;
+    const ModelType&                          model_;
+    AdvectionFluxType                         numflux_;
+    GridPartType&                             gridPart_;
 
-    AdvDFunctionSpaceType space_;
-    DiscreteModelType discreteModel_;
+    AdvDFunctionSpaceType                     space_;
+    DiscreteModelType                         discreteModel_;
     std::shared_ptr< InsertFunctionPassType > previousPass_;
-    Pass1Type pass1_;
+    Pass1Type                                 pass1_;
   };
 
 }

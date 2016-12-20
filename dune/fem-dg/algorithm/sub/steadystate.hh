@@ -222,7 +222,7 @@ namespace Fem
         solution_( (*cont)(_0)->solution() ),
         exactSolution_( (*cont)(_0)->exactSolution() ),
         rhs_( (*cont)(_0)->rhs() ),
-        rhsOperator_( std::make_shared< RhsOptional< RhsType > >( solution().space().gridPart(), problem(), extra, name() ) ),
+        rhsOperator_( std::make_shared< RhsOptional< RhsType > >( solution().space().gridPart(), model(), extra, name() ) ),
         ioTuple_( std::make_unique<IOTupleType>( std::make_tuple( solution_.get(), exactSolution_.get() ) ) ),
         solver_( nullptr ),
         solverMonitor_( name() ),

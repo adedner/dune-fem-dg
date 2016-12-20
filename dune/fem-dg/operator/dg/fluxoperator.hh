@@ -105,10 +105,10 @@ namespace Fem
   public:
     template< class ExtraParameterTupleImp >
     LDGAdvectionDiffusionOperator( GridPartType& gridPart,
-                                  ProblemType& problem,
-                                  ExtraParameterTupleImp tuple,
-                                  const std::string keyPrefix = "" ) :
-      model_( problem ),
+                                   const ModelType& model,
+                                   ExtraParameterTupleImp tuple,
+                                   const std::string keyPrefix = "" ) :
+      model_( model ),
       numflux_( model_ ),
       gridPart_( gridPart ),
       space1_( gridPart_ ),
@@ -235,11 +235,10 @@ namespace Fem
     typedef typename BaseType::ProblemType             ProblemType;
     typedef typename BaseType::ExtraParameterTupleType ExtraParameterTupleType;
 
-    template< class ExtraParameterTupleImp >
-    LDGAdvectionOperator( GridPartType& gridPart, ProblemType& problem,
-                          ExtraParameterTupleImp tuple,
-                          const std::string keyPrefix = "" )
-      : BaseType( gridPart, problem, tuple, keyPrefix )
+    // constructor: do not touch/delegate everything
+    template< class ... Args>
+    LDGAdvectionOperator( Args&&... args )
+    : BaseType( std::forward<Args>(args)... )
     {}
 
     std::string description() const
@@ -271,11 +270,10 @@ namespace Fem
     typedef typename BaseType::ProblemType             ProblemType;
     typedef typename BaseType::ExtraParameterTupleType ExtraParameterTupleType;
 
-    template< class ExtraParameterTupleImp >
-    LDGDiffusionOperator( GridPartType& gridPart, ProblemType& problem,
-                          ExtraParameterTupleImp tuple,
-                          const std::string keyPrefix = "" )
-      : BaseType( gridPart, problem, tuple, keyPrefix )
+    // constructor: do not touch/delegate everything
+    template< class ... Args>
+    LDGDiffusionOperator( Args&&... args )
+    : BaseType( std::forward<Args>(args)... )
     {}
 
     std::string description() const
@@ -405,10 +403,10 @@ namespace Fem
 
   public:
     template< class ExtraParameterTupleImp >
-    LDGLimitedAdvectionDiffusionOperator( GridPartType& gridPart, ProblemType& problem,
+    LDGLimitedAdvectionDiffusionOperator( GridPartType& gridPart, const ModelType& model,
                                           ExtraParameterTupleImp tuple,
                                           const std::string keyPrefix = "" )
-      : model_( problem )
+      : model_( model )
       , numflux_( model_ )
       , gridPart_( gridPart )
       , space1_( gridPart_ )
@@ -418,15 +416,15 @@ namespace Fem
       , fvSpc_( gridPart_ )
       , indicator_( "Indicator", fvSpc_ )
       , diffFlux_( gridPart_, model_ )
-      , problem1_( model_ )
-      , problem2_( model_, diffFlux_ )
-      , problem3_( model_, numflux_, diffFlux_ )
+      , discreteModel1_( model_ )
+      , discreteModel2_( model_, diffFlux_ )
+      , discreteModel3_( model_, numflux_, diffFlux_ )
       , pass0_()
-      , pass1_(problem1_, pass0_, space1_)
-      , pass2_(problem2_, pass1_, space2_)
-      , pass3_(problem3_, pass2_, space3_)
+      , pass1_(discreteModel1_, pass0_, space1_)
+      , pass2_(discreteModel2_, pass1_, space2_)
+      , pass3_(discreteModel3_, pass2_, space3_)
     {
-      problem1_.setIndicator( &indicator_ );
+      discreteModel1_.setIndicator( &indicator_ );
     }
 
     ~LDGLimitedAdvectionDiffusionOperator() { delete uTmp_; }
@@ -511,9 +509,9 @@ namespace Fem
     DiffusionFluxType   diffFlux_;
 
   private:
-    DiscreteModel1Type  problem1_;
-    DiscreteModel2Type  problem2_;
-    DiscreteModel3Type  problem3_;
+    DiscreteModel1Type  discreteModel1_;
+    DiscreteModel2Type  discreteModel2_;
+    DiscreteModel3Type  discreteModel3_;
     Pass0Type           pass0_;
     Pass1Type           pass1_;
     Pass2Type           pass2_;
@@ -551,11 +549,10 @@ namespace Fem
     typedef typename BaseType::ProblemType                              ProblemType;
     typedef typename BaseType::ExtraParameterTupleType                  ExtraParameterTupleType;
 
-    template< class ExtraParameterTupleImp >
-    LDGAdaptationIndicatorOperator( GridPartType& gridPart, ProblemType& problem,
-                                    ExtraParameterTupleImp tuple,
-                                    const std::string keyPrefix = "" )
-      : BaseType( gridPart, problem, tuple, keyPrefix )
+    // constructor: do not touch/delegate everything
+    template< class ... Args>
+    LDGAdaptationIndicatorOperator( Args&&... args )
+    : BaseType( std::forward<Args>(args)... )
     {
       if ( Fem::Parameter::verbose() )
       {

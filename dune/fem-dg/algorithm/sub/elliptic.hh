@@ -642,7 +642,7 @@ namespace Fem
     : BaseType( cont, extra ),
       assembler_( cont, model() ),
       matrix_( (*cont)(_0,_0)->matrix() ),
-      adaptIndicator_( std::make_unique<AdaptIndicatorType>( cont, assembler_, problem(), name() ) ),
+      adaptIndicator_( std::make_unique<AdaptIndicatorType>( cont, assembler_, model(), name() ) ),
       step_( 0 ),
       time_( 0 )
     {
