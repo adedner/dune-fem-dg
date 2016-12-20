@@ -66,15 +66,15 @@ namespace Fem
       auto step2 = std::get<1>( BaseType::subAlgorithmTuple() );
       auto step3 = std::get<2>( BaseType::subAlgorithmTuple() );
 
-      const double theta = step1->problem().get<0>().theta();
+      const double theta = step1->problem().template get<0>().theta();
       const double time  = tp.time();
       const double dt    = tp.deltaT();
 
       //stokes
-      step1->problem().get<0>().setTime( time );
-      step1->problem().get<1>().setTime( time );
-      step1->problem().get<0>().setDeltaT( dt );
-      step1->problem().get<1>().setDeltaT( dt );
+      step1->problem().template get<0>().setTime( time );
+      step1->problem().template get<1>().setTime( time );
+      step1->problem().template get<0>().setDeltaT( dt );
+      step1->problem().template get<1>().setDeltaT( dt );
 
       //oseen
       TimeProviderType subTimeProvider( 0.0, 1.0, grid() );
@@ -84,10 +84,10 @@ namespace Fem
       subTimeProvider.next( (1.0 - 2.0 *theta) * dt );
 
       //stokes
-      step3->problem().get<0>().setTime( time + dt * ( 1.0 - theta ));
-      step3->problem().get<1>().setTime( time + dt * ( 1.0 - theta ));
-      step3->problem().get<0>().setDeltaT( dt );
-      step3->problem().get<1>().setDeltaT( dt );
+      step3->problem().template get<0>().setTime( time + dt * ( 1.0 - theta ));
+      step3->problem().template get<1>().setTime( time + dt * ( 1.0 - theta ));
+      step3->problem().template get<0>().setDeltaT( dt );
+      step3->problem().template get<1>().setDeltaT( dt );
 
       BaseType::preStep( loop, tp );
     }
@@ -99,7 +99,7 @@ namespace Fem
       auto step2 = std::get<1>( BaseType::subAlgorithmTuple() );
       auto step3 = std::get<2>( BaseType::subAlgorithmTuple() );
 
-      const double theta = step1->problem().get<0>().theta();
+      const double theta = step1->problem().template get<0>().theta();
       const double time  = tp.time();
       const double dt    = tp.deltaT();
 
