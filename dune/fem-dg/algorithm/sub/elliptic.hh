@@ -615,8 +615,6 @@ namespace Fem
 
     enum { dimension = GridType::dimension  };
 
-    typedef typename  BaseType::AnalyticalTraits           AnalyticalTraits;
-
     typedef typename BaseType::IOTupleType                 IOTupleType;
 
     typedef typename BaseType::TimeProviderType            TimeProviderType;
@@ -726,7 +724,7 @@ namespace Fem
     //! finalize computation by calculating errors and EOCs
     virtual void doFinalize ( const int loop ) override
     {
-      AnalyticalTraits::addEOCErrors( solution(), model(), problem().exactSolution(), adaptIndicator()->sigma() );
+      ProblemTraits::addEOCErrors( solution(), model(), problem().exactSolution(), adaptIndicator()->sigma() );
     }
 
 

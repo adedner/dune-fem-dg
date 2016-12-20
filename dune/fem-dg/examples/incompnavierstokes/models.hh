@@ -108,7 +108,7 @@ namespace Fem
     typedef typename Traits::JacobianRangeType            JacobianRangeType;
 
 
-    typedef FractionalStepThetaScheme<0,rhs!=-1> SplitType;
+    typedef FractionalStepThetaScheme<1,rhs!=-1> SplitType;
 
     static const bool hasDiffusion = SplitType::hasDiffusion;
     static const bool hasAdvection = SplitType::hasAdvection;

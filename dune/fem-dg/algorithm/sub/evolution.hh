@@ -43,7 +43,6 @@ namespace Fem
     enum { polynomialOrder = polOrder };
 
 
-    typedef typename ProblemTraits::AnalyticalTraits                    AnalyticalTraits;
     typedef typename ProblemTraits::template DiscreteTraits< polOrder > DiscreteTraits;
 
     typedef typename DiscreteTraits::Operator                           OperatorType;
@@ -173,9 +172,6 @@ namespace Fem
 
     // type of steady state solver
     typedef typename Traits::SolverType                              SolverType;
-
-    // type of analytical traits
-    typedef typename Traits::AnalyticalTraits                        AnalyticalTraits;
 
     // type of discrete traits
     typedef typename Traits::DiscreteTraits                          DiscreteTraits;
@@ -325,7 +321,7 @@ namespace Fem
     virtual void doFinalize ( const int loop, TimeProviderType& tp ) override
     {
       // add eoc errors
-      AnalyticalTraits::addEOCErrors( tp, solution(), model(), problem() );
+      Traits::ProblemTraitsType::addEOCErrors( tp, solution(), model(), problem() );
 
       // delete ode solver
       solver_ = nullptr;

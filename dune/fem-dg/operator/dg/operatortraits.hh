@@ -16,7 +16,7 @@ namespace Fem
   // traits for the operator passes
   template< class GridPart,
             int polOrd,
-            class AnalyticalTraits,
+            class ModelImp,
             class DiscreteFunctionImp,
             class AdvectionFluxImp,
             class DiffusionFluxImp,
@@ -28,10 +28,8 @@ namespace Fem
   {
     typedef GridPart                                                     GridPartType;
     typedef typename GridPartType::GridType                              GridType;
-    typedef AnalyticalTraits                                             AnalyticalTraitsType;
 
-    typedef typename AnalyticalTraitsType::InitialDataType               InitialDataType;
-    typedef typename AnalyticalTraitsType::ModelType                     ModelType ;
+    typedef ModelImp                                                     ModelType;
     typedef AdvectionFluxImp                                             AdvectionFluxType;
     typedef DiffusionFluxImp                                             DiffusionFluxType;
 
@@ -54,7 +52,7 @@ namespace Fem
 
   // traits for the operator passes
   template< int polOrd,
-            class AnalyticalTraits,
+            class ModelImp,
             class DiscreteFunctionImp,
             class AdvectionFluxImp,
             class DiffusionFluxImp,
@@ -65,10 +63,8 @@ namespace Fem
   {
     typedef typename DiscreteFunctionImp::GridPartType                   GridPartType;
     typedef typename GridPartType::GridType                              GridType;
-    typedef AnalyticalTraits                                             AnalyticalTraitsType;
 
-    typedef typename AnalyticalTraitsType::InitialDataType               InitialDataType;
-    typedef typename AnalyticalTraitsType::ModelType                     ModelType ;
+    typedef ModelImp                                                     ModelType;
     typedef AdvectionFluxImp                                             AdvectionFluxType;
     typedef DiffusionFluxImp                                             DiffusionFluxType;
 
@@ -83,7 +79,7 @@ namespace Fem
     typedef Fem::CachingQuadrature< GridPartType, 1 >                    FaceQuadratureType;
 
   private:
-    typedef Fem::FunctionSpace< typename GridType::ctype, double, AnalyticalTraits::ModelType::dimDomain, 3> FVFunctionSpaceType;
+    typedef Fem::FunctionSpace< typename GridType::ctype, double, ModelImp::dimDomain, 3> FVFunctionSpaceType;
     typedef Fem::FiniteVolumeSpace<FVFunctionSpaceType,GridPartType, 0, Fem::SimpleStorage> IndicatorSpaceType;
   public:
     typedef Fem::AdaptiveDiscreteFunction<IndicatorSpaceType>            LimiterIndicatorType;

@@ -56,19 +56,14 @@ namespace Fem
 
     typedef typename ProblemInterfaceType::FunctionSpaceType             FunctionSpaceType;
 
-    struct AnalyticalTraits
-    {
-      typedef ProblemInterfaceType                                             ProblemType;
-      typedef ProblemInterfaceType                                             InitialDataType;
-      typedef NavierStokesModel< GridPartType, InitialDataType, std::tuple<> > ModelType;
+    typedef NavierStokesModel< GridPartType, ProblemInterfaceType, std::tuple<> > ModelType;
 
-      template< class Solution, class Model, class ExactFunction, class TimeProvider >
-      static void addEOCErrors ( TimeProvider& tp, Solution &u, Model &model, ExactFunction &f )
-      {
-        static L2EOCError l2EocError( "$L^2$-Error");
-        l2EocError.add( tp, u, model, f );
-      }
-    };
+    template< class Solution, class Model, class ExactFunction, class TimeProvider >
+    static void addEOCErrors ( TimeProvider& tp, Solution &u, Model &model, ExactFunction &f )
+    {
+      static L2EOCError l2EocError( "$L^2$-Error");
+      l2EocError.add( tp, u, model, f );
+    }
 
     static inline std::string moduleName() { return ""; }
 
@@ -82,16 +77,17 @@ namespace Fem
     {
       typedef typename AC::template DiscreteFunctions< FunctionSpaceType, polOrd >       DiscreteFunctionType;
 
+      typedef typename AC::template ExtraParameters< ModelType, std::tuple< AC,AC>, polOrd,polOrd >  ExtraParameters;
+
       typedef std::tuple< DiscreteFunctionType*, DiscreteFunctionType* >                 IOTupleType;
 
       class Operator
       {
-        typedef typename AC::template DefaultOpTraits< AnalyticalTraits, FunctionSpaceType, polOrd >
+        typedef typename AC::template DefaultOpTraits< ModelType, FunctionSpaceType, polOrd, std::tuple<> /*ExtraParameters*/ >
                                                                                          OpTraits;
 
-        typedef typename AC::template RhsAnalyticalTraits< AnalyticalTraits, NavierStokesModel< GridPartType, typename AnalyticalTraits::InitialDataType, std::tuple< /*__t*/ > > >
-                                                                                         RhsAnalyticalTraitsType;
-        typedef typename AC::template DefaultOpTraits< RhsAnalyticalTraitsType, FunctionSpaceType, polOrd >
+        typedef typename AC::template DefaultOpTraits< NavierStokesModel< GridPartType, typename ModelType::ProblemType, std::tuple< /*__t*/ > >,
+                                                       FunctionSpaceType, polOrd, std::tuple<> /*ExtraParameters*/ >
                                                                                          RhsOpTraits;
 
       public:
@@ -109,10 +105,10 @@ namespace Fem
       };
 
     private:
-      typedef typename AC::template DefaultOpTraits< AnalyticalTraits, FunctionSpaceType, polOrd >
+      typedef typename AC::template DefaultOpTraits< ModelType, FunctionSpaceType, polOrd >
                                                                                          OpTraits;
       typedef DGAdaptationIndicatorOperator< OpTraits >                                  IndicatorType;
-      typedef Estimator< DiscreteFunctionType, typename AnalyticalTraits::ProblemType >  GradientIndicatorType ;
+      typedef Estimator< DiscreteFunctionType, typename ModelType::ProblemType >         GradientIndicatorType ;
     public:
 
       typedef AdaptIndicator< IndicatorType, GradientIndicatorType >                     AdaptIndicatorType;

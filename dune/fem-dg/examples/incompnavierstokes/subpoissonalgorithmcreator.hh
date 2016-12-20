@@ -57,16 +57,11 @@ namespace Fem
 
     typedef typename ProblemInterfaceType::FunctionSpaceType       FunctionSpaceType;
 
-    struct AnalyticalTraits
-    {
-      typedef ProblemInterfaceType                                 ProblemType;
-      typedef ProblemInterfaceType                                 InitialDataType;
-      typedef PoissonModel< GridPartType, InitialDataType, std::tuple<> > ModelType;
+    typedef PoissonModel< GridPartType, ProblemInterfaceType, std::tuple<> > ModelType;
 
-      template< class Solution, class Model, class ExactFunction, class SigmaFunction>
-      static void addEOCErrors ( Solution &u, Model &model, ExactFunction &f, SigmaFunction& sigma )
-      {}
-    };
+    template< class Solution, class Model, class ExactFunction, class SigmaFunction>
+    static void addEOCErrors ( Solution &u, Model &model, ExactFunction &f, SigmaFunction& sigma )
+    {}
 
     static inline std::string moduleName() { return "";}
 
@@ -80,16 +75,17 @@ namespace Fem
     {
       typedef typename AC::template DiscreteFunctions< FunctionSpaceType, polOrd > DiscreteFunctionType;
 
+      typedef typename AC::template ExtraParameters< ModelType, std::tuple< AC,AC>, polOrd,polOrd >  ExtraParameters;
+
       typedef std::tuple< DiscreteFunctionType*, DiscreteFunctionType* >           IOTupleType;
 
       class Operator
       {
-        typedef typename AC::template DefaultAssembTraits< AnalyticalTraits, FunctionSpaceType, polOrd >
+        typedef typename AC::template DefaultAssembTraits< ModelType, FunctionSpaceType, polOrd/*, ExtraParameters*/ >
                                                                                    OpTraits;
-        typedef typename AC::template RhsAnalyticalTraits< AnalyticalTraits, PoissonModel< GridPartType, typename AnalyticalTraits::InitialDataType, std::tuple</*__t*/> > >
-                                                                                   RhsAnalyticalTraitsType;
 
-        typedef typename AC::template DefaultOpTraits< RhsAnalyticalTraitsType, FunctionSpaceType, polOrd >
+        typedef typename AC::template DefaultOpTraits< PoissonModel< GridPartType, typename ModelType::ProblemType, std::tuple</*__t*/> >,
+                                                       FunctionSpaceType, polOrd, std::tuple<> /*ExtraParameters*/ >
                                                                                    RhsOpTraits;
       public:
         typedef typename AC::template Operators< OpTraits >                        AssemblerType;

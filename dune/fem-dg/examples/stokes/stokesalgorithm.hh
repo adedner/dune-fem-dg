@@ -517,8 +517,6 @@ namespace Fem
 
     typedef typename BaseType::TimeProviderType                     TimeProviderType;
 
-    typedef typename BaseType::AnalyticalTraits                     AnalyticalTraits;
-
     using BaseType::problem;
     using BaseType::model;
     using BaseType::name;
@@ -607,7 +605,7 @@ namespace Fem
     virtual void doFinalize( const int loop ) override
     {
       ellAlg_.finalize( loop );
-      AnalyticalTraits::addEOCErrors( solution(), ellAlg_.model(), problem().template get<1>().exactSolution() );
+      ProblemTraits::addEOCErrors( solution(), ellAlg_.model(), problem().template get<1>().exactSolution() );
     }
 
   protected:

@@ -83,26 +83,20 @@ namespace Fem
       // define problem type here if interface should be avoided
       typedef typename Stokes::ProblemInterface< GridType >::PoissonProblemType  ProblemInterfaceType;
 
-      typedef typename ProblemInterfaceType::FunctionSpaceType      FunctionSpaceType;
+      typedef typename ProblemInterfaceType::FunctionSpaceType               FunctionSpaceType;
 
+      typedef Stokes::PoissonModel< GridType, ProblemInterfaceType >         ModelType;
 
-      struct AnalyticalTraits
+      template< class Solution, class Model, class ExactFunction, class SigmaFunction>
+      static void addEOCErrors ( Solution &u, Model &model, ExactFunction &f, SigmaFunction& sigma )
       {
-        typedef ProblemInterfaceType                                  ProblemType;
-        typedef ProblemInterfaceType                                  InitialDataType;
-        typedef Stokes::PoissonModel< GridType, InitialDataType >     ModelType;
-
-        template< class Solution, class Model, class ExactFunction, class SigmaFunction>
-        static void addEOCErrors ( Solution &u, Model &model, ExactFunction &f, SigmaFunction& sigma )
-        {
-          static L2EOCError l2EocError( "$L^2$-Error" );
-          l2EocError.add( u, f );
-          static DGEOCError dgEocError( "DG-Error" );
-          dgEocError.add( u, f );
-          //static H1EOCError sigmaEocError( "sigma-norm" );
-          //sigmaEocError.add( sigma, f );
-        }
-      };
+        static L2EOCError l2EocError( "$L^2$-Error" );
+        l2EocError.add( u, f );
+        static DGEOCError dgEocError( "DG-Error" );
+        dgEocError.add( u, f );
+        //static H1EOCError sigmaEocError( "sigma-norm" );
+        //sigmaEocError.add( sigma, f );
+      }
 
       static inline std::string moduleName() { return "";}
 
@@ -128,7 +122,7 @@ namespace Fem
 
         class Operator
         {
-          typedef typename AC::template DefaultAssembTraits< AnalyticalTraits, FunctionSpaceType, polOrd >
+          typedef typename AC::template DefaultAssembTraits< ModelType, FunctionSpaceType, polOrd >
                                                                                      OpTraits;
         public:
           typedef typename AC::template Operators< OpTraits >                        AssemblerType;
@@ -180,19 +174,14 @@ namespace Fem
 
       typedef typename ProblemInterfaceType::StokesProblemType::FunctionSpaceType FunctionSpaceType;
 
-      struct AnalyticalTraits
-      {
-        typedef ProblemInterfaceType                                      ProblemType;
-        typedef ProblemInterfaceType                                      InitialDataType;
-        typedef Stokes::StokesModel< GridType, InitialDataType >          ModelType;
+      typedef Stokes::StokesModel< GridType, ProblemInterfaceType >              ModelType;
 
-        template< class Solution, class Model, class ExactFunction >
-        static void addEOCErrors ( Solution &u, Model &model, ExactFunction &f )
-        {
-          static L2EOCError l2EocError( "$L^2$-p-Error" );
-          l2EocError.add( u, f );
-        }
-      };
+      template< class Solution, class Model, class ExactFunction >
+      static void addEOCErrors ( Solution &u, Model &model, ExactFunction &f )
+      {
+        static L2EOCError l2EocError( "$L^2$-p-Error" );
+        l2EocError.add( u, f );
+      }
 
       static inline std::string moduleName() { return "";}
 
@@ -220,7 +209,7 @@ namespace Fem
 
         class Operator
         {
-          typedef typename AC::template DefaultAssembTraits< AnalyticalTraits, FunctionSpaceType, redPolOrd >
+          typedef typename AC::template DefaultAssembTraits< ModelType, FunctionSpaceType, redPolOrd >
                                                                                         OpTraits;
         public:
           typedef StokesAssembler< OpTraits, AC::template Containers,

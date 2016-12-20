@@ -133,7 +133,7 @@ namespace Fem
 
       typedef std::tuple< StokesExtra1Type, AdvDiffExtraType, StokesExtra2Type > ExtraType;
 
-
+#if 0
       //IOData (uses raw pointers...)
       //------
       typedef _e< IOSolutionSelect, __2, __0 >                            U;
@@ -145,8 +145,7 @@ namespace Fem
       typedef ExtraArg< U, P, UExact, PExact >                            IODataTupleType;
 
       typedef std::tuple< IODataTupleType >                               IOExtraType;
-
-
+#endif
 
       //Item2
       typedef _t< SubEllipticContainerItem, SparseRowLinearOperator >     Sp;

@@ -24,7 +24,6 @@ namespace Fem
   {
   public:
     // inherit types from Traits
-    typedef typename Traits::InitialDataType      InitialDataType;
     typedef typename Traits::ModelType            ModelType ;
     typedef typename Traits::AdvectionFluxType    AdvectionFluxType;
     typedef typename Traits::DiffusionFluxType    DiffusionFluxType;

@@ -9,7 +9,7 @@ namespace Fem
 {
   // traits for the operator passes
   template< int polOrd,
-            class AnalyticalTraits,
+            class ModelImp,
             class MatrixContainerImp,
             class AdvectionFluxImp,
             class DiffusionFluxImp,
@@ -19,10 +19,8 @@ namespace Fem
   {
     typedef typename DomainDiscreteFunctionImp::GridPartType             GridPartType;
     typedef typename GridPartType::GridType                              GridType;
-    typedef AnalyticalTraits                                             AnalyticalTraitsType;
 
-    typedef typename AnalyticalTraitsType::InitialDataType               InitialDataType;
-    typedef typename AnalyticalTraitsType::ModelType                     ModelType ;
+    typedef ModelImp                                                     ModelType;
     typedef AdvectionFluxImp                                             AdvectionFluxType;
     typedef DiffusionFluxImp                                             DiffusionFluxType;
 

@@ -63,16 +63,11 @@ namespace Fem
     typedef typename ProblemInterfaceType::StokesProblemType::FunctionSpaceType
                                                                          FunctionSpaceType;
 
-    struct AnalyticalTraits
-    {
-      typedef ProblemInterfaceType                                       ProblemType;
-      typedef ProblemInterfaceType                                       InitialDataType;
-      typedef StokesModel< GridPartType, InitialDataType, std::tuple<> > ModelType;
+    typedef StokesModel< GridPartType, ProblemInterfaceType, std::tuple<> > ModelType;
 
-      template< class Solution, class Model, class ExactFunction >
-      static void addEOCErrors ( Solution &u, Model &model, ExactFunction &f )
-      {}
-    };
+    template< class Solution, class Model, class ExactFunction >
+    static void addEOCErrors ( Solution &u, Model &model, ExactFunction &f )
+    {}
 
     static inline std::string moduleName() { return "";}
 
@@ -88,11 +83,13 @@ namespace Fem
     public:
       typedef typename AC::template DiscreteFunctions< FunctionSpaceType, redPolOrd >   DiscreteFunctionType;
 
+      typedef typename AC::template ExtraParameters< ModelType, std::tuple< AC,AC>, polOrd,polOrd >  ExtraParameters;
+
       typedef std::tuple< DiscreteFunctionType*, DiscreteFunctionType* >                IOTupleType;
 
       class Operator
       {
-        typedef typename AC::template DefaultAssembTraits< AnalyticalTraits, FunctionSpaceType, redPolOrd >
+        typedef typename AC::template DefaultAssembTraits< ModelType, FunctionSpaceType, redPolOrd/*,ExtraParameters*/ >
                                                                                         OpTraits;
       public:
         typedef StokesAssembler< OpTraits, AC::template Containers,

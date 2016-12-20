@@ -99,17 +99,13 @@ namespace Fem
       // define problem type here if interface should be avoided
       typedef U0< GridType >                                            ProblemInterfaceType;
 
-      struct AnalyticalTraits
-      {
-        typedef ProblemInterfaceType                                    ProblemType;
-        typedef ProblemInterfaceType                                    InitialDataType;
-        typedef NoModel< GridType, ProblemType >                        ModelType;
+      typedef ProblemInterfaceType                                    ProblemType;
+      typedef NoModel< GridType, ProblemType >                        ModelType;
 
-        template< class Solution, class Model, class ExactFunction, class TimeProvider >
-        static void addEOCErrors ( TimeProvider& tp, Solution &u, Model &model, ExactFunction &f )
-        {
-        }
-      };
+      template< class Solution, class Model, class ExactFunction, class TimeProvider >
+      static void addEOCErrors ( TimeProvider& tp, Solution &u, Model &model, ExactFunction &f )
+      {
+      }
 
       static inline std::string moduleName() { return ""; }
 

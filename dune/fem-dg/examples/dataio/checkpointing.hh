@@ -139,8 +139,6 @@ namespace Fem
 
     typedef SubEvolutionContainer< DiscreteFunctionType >     ContainerType;
 
-    typedef typename ProblemTraits::AnalyticalTraits          AnalyticalTraits;
-
     using BaseType::grid;
     using BaseType::name;
     using BaseType::problem;
@@ -222,7 +220,7 @@ namespace Fem
     virtual void doFinalize ( const int loop, TimeProviderType& tp ) override
     {
       // add eoc errors
-      AnalyticalTraits::addEOCErrors( tp, solution(), model(), problem() );
+      ProblemTraits::addEOCErrors( tp, solution(), model(), problem() );
 
     }
 

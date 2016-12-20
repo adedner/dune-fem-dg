@@ -144,14 +144,6 @@ namespace Fem
             DiffusionFlux::Enum diffFluxEnumId>
   class AlgorithmConfigurator
   {
-    template< class AnalyticalTraitsImp, class NewModelImp >
-    struct NewRhsAnalyticalTraits
-    {
-      typedef typename AnalyticalTraitsImp::ProblemType     ProblemType;
-      typedef typename AnalyticalTraitsImp::InitialDataType InitialDataType;
-      typedef NewModelImp                                   ModelType;
-    };
-
     static const Galerkin::Enum dgId                 =(dgEnumId == Galerkin::Enum::default_)?                   galerkinEnum   : dgEnumId;
     static const Adaptivity::Enum adapId             =(adapEnumId == Adaptivity::Enum::default_)?               adaptivityEnum : adapEnumId;
     static const DiscreteFunctionSpaces::Enum spaceId=(spaceEnumId == DiscreteFunctionSpaces::Enum::default_ )? dfSpaceEnum    : spaceEnumId;
@@ -199,7 +191,7 @@ namespace Fem
     template< class ModelImp, class DF, DiffusionFlux::Enum id = diffFluxId >
     using DiffusionFluxes = typename DiffusionFluxSelector< ModelImp, typename DF::DiscreteFunctionSpaceType, id, formId >::type;
 
-    template< class AnalyticalTraitsImp,
+    template< class ModelImp,
               class DFunctionSpaceImp,
               int dPolOrd,
               class RFunctionSpaceImp = DFunctionSpaceImp,
@@ -207,13 +199,13 @@ namespace Fem
               AdvectionFlux::Enum advId = advFluxId,
               DiffusionFlux::Enum diffId = diffFluxId >
     using DefaultAssembTraits = DefaultAssemblerTraits< dPolOrd,
-                                                        AnalyticalTraitsImp,
+                                                        ModelImp,
                                                         typename SolverSelect<>::template LinearOperatorType<DiscreteFunctionSpaces< DFunctionSpaceImp, dPolOrd >, DiscreteFunctionSpaces< RFunctionSpaceImp, rPolOrd > >,
-                                                        AdvectionFluxes< typename AnalyticalTraitsImp::ModelType, advId >,
-                                                        DiffusionFluxes< typename AnalyticalTraitsImp::ModelType, DiscreteFunctions< DFunctionSpaceImp, dPolOrd >, diffId >,
+                                                        AdvectionFluxes< ModelImp, advId >,
+                                                        DiffusionFluxes< ModelImp, DiscreteFunctions< DFunctionSpaceImp, dPolOrd >, diffId >,
                                                         DiscreteFunctions< DFunctionSpaceImp, dPolOrd >,
                                                         DiscreteFunctions< RFunctionSpaceImp, rPolOrd > >;
-    template< class AnalyticalTraitsImp,
+    template< class ModelImp,
               class FunctionSpaceImp,
               int polOrd,
               class ExtraParameterTupleImp = std::tuple<>,
@@ -221,15 +213,12 @@ namespace Fem
               AdvectionFlux::Enum advId = advFluxId,
               DiffusionFlux::Enum diffId = diffFluxId>
     using DefaultOpTraits = DefaultOperatorTraits< polOrd,
-                                                   AnalyticalTraitsImp,
+                                                   ModelImp,
                                                    DiscreteFunctions< FunctionSpaceImp, polOrd >,
-                                                   AdvectionFluxes< typename AnalyticalTraitsImp::ModelType, advId >,
-                                                   DiffusionFluxes< typename AnalyticalTraitsImp::ModelType, DiscreteFunctions< FunctionSpaceImp, polOrd >, diffId >,
+                                                   AdvectionFluxes< ModelImp, advId >,
+                                                   DiffusionFluxes< ModelImp, DiscreteFunctions< FunctionSpaceImp, polOrd >, diffId >,
                                                    ExtraParameterTupleImp,
                                                    AdaptationIndicatorFunctionSpaceImp >;
-
-    template< class AnalyticalTraitsImp, class NewModelImp >
-    using RhsAnalyticalTraits = NewRhsAnalyticalTraits< AnalyticalTraitsImp, NewModelImp >;
 
     //Operator/Assembler
     template< class OpTraits, OperatorSplit::Enum opSplit = OperatorSplit::Enum::full, Matrix::Enum matrix = matrixId >
@@ -245,8 +234,8 @@ namespace Fem
 
 
     //Extra Parameters
-    template< class AnaTraits, class AC, int... polOrds >
-    using ExtraParameters = typename ExtraParameterSelector< typename AnaTraits::ModelType::ParameterSpacesType, AC, polOrds... >::type;
+    template< class ModelImp, class AC, int... polOrds >
+    using ExtraParameters = typename ExtraParameterSelector< typename ModelImp::ParameterSpacesType, AC, polOrds... >::type;
 
     ////Real Jacobian for Runge-Kutta
     //template< class OperatorImp >

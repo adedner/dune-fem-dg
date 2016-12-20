@@ -73,8 +73,8 @@ struct AdditionalVariables< dimRange, dimRange >
       /*
       std::cout << "Setup additional variables" << std::endl;
       additionalVariables = new DestinationType("add", Uh.space() );
-      typedef typename AlgorithmType :: InitialDataType InitialDataType;
-      InitialDataType* problem = ProblemTraits :: problem() ;
+      typedef typename AlgorithmType::ProblemType ProblemType;
+      ProblemType* problem = ProblemTraits :: problem() ;
       typedef typename AlgorithmType :: ModelType  ModelType;
       ModelType model( *problem );
 
@@ -114,11 +114,10 @@ template <class GR_GridType,
   {
     typedef typename DestinationType :: DiscreteFunctionSpaceType DiscreteFunctionSpaceType;
     typedef typename DiscreteFunctionSpaceType :: GridPartType GridPartType;
-    typedef typename AlgorithmType :: InitialDataType InitialDataType;
+    typedef typename AlgorithmType :: ProblemTypeType ProblemType;
 
     DestinationType* additionalVariables =
-      AdditionalVariables< DiscreteFunctionSpaceType::dimRange,
-                           InitialDataType :: dimRange > ::  setup( time, Uh );
+      AdditionalVariables< DiscreteFunctionSpaceType::dimRange,ProblemType::dimRange >::setup( time, Uh );
 
     typedef Dune::Fem::AdaptiveLeafGridPart< typename GridPartType::GridType > VtxGridPartType;
     typedef Dune::Fem::LagrangeDiscreteFunctionSpace< typename DiscreteFunctionSpaceType::FunctionSpaceType,

@@ -140,7 +140,6 @@ namespace Fem
     CHECK_TYPEDEF_EXISTS( RhsType )
 
   public:
-    typedef typename ProblemTraits::AnalyticalTraits                   AnalyticalTraits;
     typedef typename ProblemTraits::template DiscreteTraits< polOrd >  DiscreteTraits;
 
     typedef typename DiscreteTraits::Solver                            SolverType;
@@ -195,9 +194,6 @@ namespace Fem
 
     // type of steady state solver
     typedef typename Traits::SolverType                              SolverType;
-
-    // type of analytical traits
-    typedef typename Traits::AnalyticalTraits                        AnalyticalTraits;
 
     // type of discrete traits
     typedef typename Traits::DiscreteTraits                          DiscreteTraits;
@@ -337,7 +333,7 @@ namespace Fem
     virtual void doFinalize ( const int loop )
     {
       // add eoc errors
-      //AnalyticalTraits::addEOCErrors( solution(), model(), problem() );
+      //ProblemTraits::addEOCErrors( solution(), model(), problem() );
 
       solver_ = nullptr;
     }

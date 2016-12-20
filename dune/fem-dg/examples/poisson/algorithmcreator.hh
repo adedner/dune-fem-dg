@@ -73,25 +73,20 @@ namespace Fem
 
       typedef typename ProblemInterfaceType::FunctionSpaceType      FunctionSpaceType;
 
-      struct AnalyticalTraits
+      typedef Poisson::Model< GridType, ProblemInterfaceType >      ModelType;
+
+      template< class Solution, class Model, class ExactFunction, class SigmaFunction>
+      static void addEOCErrors ( Solution &u, Model &model, ExactFunction &f, SigmaFunction& sigma )
       {
-        typedef ProblemInterfaceType                                ProblemType;
-        typedef ProblemInterfaceType                                InitialDataType;
-        typedef Poisson::Model< GridType, InitialDataType >         ModelType;
+        static L2EOCError l2EocError( "$L^2$-Error" );
+        l2EocError.add( u, f );
+        static DGEOCError dgEocError( "DG-Error" );
+        dgEocError.add( u, f );
 
-        template< class Solution, class Model, class ExactFunction, class SigmaFunction>
-        static void addEOCErrors ( Solution &u, Model &model, ExactFunction &f, SigmaFunction& sigma )
-        {
-          static L2EOCError l2EocError( "$L^2$-Error" );
-          l2EocError.add( u, f );
-          static DGEOCError dgEocError( "DG-Error" );
-          dgEocError.add( u, f );
-
-          //TODO what dimRange is sigma? This does not fit, yet
-          //static H1EOCError sigmaEocError( "sigma-norm" );
-          //sigmaEocError.add( sigma, f );
-        }
-      };
+        //TODO what dimRange is sigma? This does not fit, yet
+        //static H1EOCError sigmaEocError( "sigma-norm" );
+        //sigmaEocError.add( sigma, f );
+      }
 
       static inline std::string moduleName() { return ""; }
 
@@ -110,7 +105,7 @@ namespace Fem
 
         class Operator
         {
-          typedef typename AC::template DefaultAssembTraits< AnalyticalTraits, FunctionSpaceType, polOrd >
+          typedef typename AC::template DefaultAssembTraits< ModelType, FunctionSpaceType, polOrd >
                                                                                      OpTraits;
         public:
           typedef typename AC::template Operators< OpTraits >                        AssemblerType;

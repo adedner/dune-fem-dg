@@ -71,23 +71,16 @@ namespace Fem
 
       typedef typename ProblemInterfaceType::FunctionSpaceType     FunctionSpaceType;
 
+      typedef EulerModel< GridType, ProblemInterfaceType >         ModelType;
 
-      struct AnalyticalTraits
+      template< class Solution, class Model, class ExactFunction, class TimeProvider >
+      static void addEOCErrors ( TimeProvider& tp, Solution &u, Model &model, ExactFunction &f )
       {
-        typedef ProblemInterfaceType                               ProblemType;
-        typedef ProblemInterfaceType                               InitialDataType;
-        typedef EulerModel< GridType, InitialDataType >            ModelType;
-
-        template< class Solution, class Model, class ExactFunction, class TimeProvider >
-        static void addEOCErrors ( TimeProvider& tp, Solution &u, Model &model, ExactFunction &f )
-        {
-          static L1EOCError l1EocError( "$L^1$-Error");
-          l1EocError.add( tp, u, model, f );
-          static L2EOCError l2EocError( "$L^2$-Error");
-          l2EocError.add( tp, u, model, f );
-        }
-      };
-
+        static L1EOCError l1EocError( "$L^1$-Error");
+        l1EocError.add( tp, u, model, f );
+        static L2EOCError l2EocError( "$L^2$-Error");
+        l2EocError.add( tp, u, model, f );
+      }
 
       static inline std::string moduleName() { return ""; }
 
@@ -105,7 +98,7 @@ namespace Fem
 
         class Operator
         {
-          typedef typename AC::template DefaultOpTraits< AnalyticalTraits, FunctionSpaceType, polOrd >
+          typedef typename AC::template DefaultOpTraits< ModelType, FunctionSpaceType, polOrd >
                                                                                            OpTraits;
         public:
           typedef typename AC::template Operators< OpTraits,OperatorSplit::Enum::full >    type;
@@ -121,10 +114,10 @@ namespace Fem
         };
 
       private:
-        typedef typename AC::template DefaultOpTraits< AnalyticalTraits, FunctionSpaceType, polOrd >
+        typedef typename AC::template DefaultOpTraits< ModelType, FunctionSpaceType, polOrd >
                                                                                             OpTraits;
         typedef DGAdaptationIndicatorOperator< OpTraits >                                   IndicatorType;
-        typedef Estimator< DiscreteFunctionType, typename AnalyticalTraits::ProblemType >   GradientIndicatorType ;
+        typedef Estimator< DiscreteFunctionType, typename ModelType::ProblemType >          GradientIndicatorType ;
       public:
 
         typedef AdaptIndicator< IndicatorType, GradientIndicatorType >           AdaptIndicatorType;

@@ -34,7 +34,6 @@ namespace Fem
 
     typedef ProblemTraits                                         Traits;
 
-    typedef typename Traits::AnalyticalTraits                     AnalyticalTraits;
     typedef typename Traits::template DiscreteTraits< polOrder >  DiscreteTraits;
 
   public:
@@ -50,9 +49,9 @@ namespace Fem
     typedef GridTimeProvider< GridType >                          TimeProviderType;
 
     //! type of the model
-    typedef typename AnalyticalTraits::ModelType                  ModelType;
+    typedef typename Traits::ModelType                            ModelType;
     //! type of the problem
-    typedef typename AnalyticalTraits::ProblemType                ProblemType;
+    typedef typename ModelType::ProblemType                       ProblemType;
 
     //! type of the discrete function type
     typedef typename DiscreteTraits::DiscreteFunctionType         DiscreteFunctionType;
