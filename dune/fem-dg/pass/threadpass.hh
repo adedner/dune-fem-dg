@@ -204,13 +204,13 @@ namespace Fem
 
   public:
     /** \brief Constructor
-     * \param problem Actual problem definition (see problem.hh)
+     * \param discreteModel Actual discrete model
      * \param pass Previous pass
      * \param spc Space belonging to the discrete function local to this pass
      * \param volumeQuadOrd defines the order of the volume quadrature which is by default 2* space polynomial order
      * \param faceQuadOrd defines the order of the face quadrature which is by default 2* space polynomial order
      */
-    ThreadPass(const DiscreteModelType& problem,
+    ThreadPass(const DiscreteModelType& discreteModel,
                PreviousPassType& pass,
                const DiscreteFunctionSpaceType& spc,
                const int volumeQuadOrd = -1,
@@ -218,8 +218,8 @@ namespace Fem
       BaseType(pass, spc),
       delDofs_( spc ),
       iterators_( spc.gridPart() ),
-      singleProblem_( problem ),
-      problems_( Fem::ThreadManager::maxThreads(), nullptr ),
+      singleDiscreteModel_( discreteModel ),
+      discreteModels_( Fem::ThreadManager::maxThreads(), nullptr ),
       passes_( Fem::ThreadManager::maxThreads(), nullptr ),
       passComputeTime_( Fem::ThreadManager::maxThreads(), 0.0 ),
       firstStage_( false ),
@@ -241,10 +241,10 @@ namespace Fem
       const int maxThreads = Fem::ThreadManager::maxThreads();
       for(int i=0; i<maxThreads; ++i)
       {
-        // use separate discrete problem for each thread
-        problems_[ i ] = new DiscreteModelType( problem );
+        // use separate discrete discrete model for each thread
+        discreteModels_[ i ] = new DiscreteModelType( discreteModel );
         // create dg passes, the last bool disables communication in the pass itself
-        passes_[ i ]   = new InnerPassType( *problems_[ i ], pass, spc, volumeQuadOrd, faceQuadOrd );
+        passes_[ i ]   = new InnerPassType( *discreteModels_[ i ], pass, spc, volumeQuadOrd, faceQuadOrd );
       }
       */
 
@@ -253,7 +253,7 @@ namespace Fem
       const int maxThreads = Fem::ThreadManager::maxThreads();
       for(int i=0; i<maxThreads; ++i)
       {
-        assert( problems_[ i ] );
+        assert( discreteModels_[ i ] );
         assert( passes_[ i ] );
       }
 
@@ -269,7 +269,7 @@ namespace Fem
       for(int i=0; i<Fem::ThreadManager::maxThreads(); ++i)
       {
         delete passes_[ i ];
-        delete problems_[ i ];
+        delete discreteModels_[ i ];
       }
     }
 
@@ -279,7 +279,7 @@ namespace Fem
       const int maxThreads = Fem::ThreadManager::maxThreads();
       for(int thread=0; thread<maxThreads; ++thread)
       {
-        problems_[ thread ]->setAdaptation( adHandle,
+        discreteModels_[ thread ]->setAdaptation( adHandle,
 #ifdef USE_SMP_PARALLEL
             iterators_.filter( thread ), // add filter in thread parallel versions
 #endif
@@ -405,7 +405,7 @@ namespace Fem
     {
       const int maxThreads = Fem::ThreadManager::maxThreads();
       for(int i=0; i<maxThreads; ++i )
-        problems_[ i ]->switchUpwind();
+        discreteModels_[ i ]->switchUpwind();
     }
 
     //! overload compute method to use thread iterators
@@ -576,10 +576,10 @@ namespace Fem
       // initialization (called from constructor of this class)
       if( ! passes_[ thread ] )
       {
-        // use separate discrete problem for each thread
-        problems_[ thread ] = new DiscreteModelType( singleProblem_ );
+        // use separate discrete discrete model for each thread
+        discreteModels_[ thread ] = new DiscreteModelType( singleDiscreteModel_ );
         // create dg passes, the last bool disables communication in the pass itself
-        passes_[ thread ]   = new InnerPassType( *problems_[ thread ], previousPass_, spc_, volumeQuadOrd_, faceQuadOrd_ );
+        passes_[ thread ]   = new InnerPassType( *discreteModels_[ thread ], previousPass_, spc_, volumeQuadOrd_, faceQuadOrd_ );
 
         return ;
       }
@@ -697,8 +697,8 @@ namespace Fem
     DeleteCommunicatedDofs< DestinationType > delDofs_;
 
     mutable ThreadIteratorType iterators_;
-    const DiscreteModelType& singleProblem_;
-    mutable std::vector< DiscreteModelType* > problems_;
+    const DiscreteModelType& singleDiscreteModel_;
+    mutable std::vector< DiscreteModelType* > discreteModels_;
     mutable std::vector< InnerPassType* > passes_;
     mutable std::vector< double > passComputeTime_;
     mutable bool firstStage_;
