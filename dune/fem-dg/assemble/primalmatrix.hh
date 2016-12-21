@@ -645,11 +645,11 @@ namespace Fem
         baseSetNb.jacobianAll( faceQuadOutside[idx], dphiFaceNb[idx] );
       }
 
-      flux(dfSpace.gridPart(), intersectionStorage,
-           faceQuadInside, faceQuadOutside,
-           RangeValues(-1,phiFaceEn), JacobianRangeValues(-1,dphiFaceEn),
-           RangeValues(-1,phiFaceEn), JacobianRangeValues(-1,dphiFaceEn),
-           rhsValueEn, rhsDValueEn, rhsValueNb, rhsDValueNb, true );
+      numericalFlux(dfSpace.gridPart(), intersectionStorage,
+                    faceQuadInside, faceQuadOutside,
+                    RangeValues(-1,phiFaceEn), JacobianRangeValues(-1,dphiFaceEn),
+                    RangeValues(-1,phiFaceEn), JacobianRangeValues(-1,dphiFaceEn),
+                    rhsValueEn, rhsDValueEn, rhsValueNb, rhsDValueNb, true );
 
       // compute fluxes and assemble matrix
       for( unsigned int localCol = 0; localCol < numBasisFunctionsEn; ++localCol )
@@ -657,11 +657,11 @@ namespace Fem
         // compute flux for one base function, i.e.,
         // - uLeft=phiFaceEn[.][localCol]
         // - uRight=0
-        flux(dfSpace.gridPart(), intersectionStorage,
-             faceQuadInside, faceQuadOutside,
-             RangeValues(localCol,phiFaceEn), JacobianRangeValues(localCol,dphiFaceEn),
-             RangeValues(-1,phiFaceEn), JacobianRangeValues(-1,dphiFaceEn),
-             valueEn, dvalueEn, valueNb, dvalueNb, true );
+        numericalFlux(dfSpace.gridPart(), intersectionStorage,
+                      faceQuadInside, faceQuadOutside,
+                      RangeValues(localCol,phiFaceEn), JacobianRangeValues(localCol,dphiFaceEn),
+                      RangeValues(-1,phiFaceEn), JacobianRangeValues(-1,dphiFaceEn),
+                      valueEn, dvalueEn, valueNb, dvalueNb, true );
 
         for( size_t pt = 0; pt < numFaceQuadPoints; ++pt )
         {
@@ -687,11 +687,11 @@ namespace Fem
           // compute flux for one base function, i.e.,
           // - uLeft=phiFaceEn[.][localCol]
           // - uRight=0
-          flux(dfSpace.gridPart(), intersectionStorage,
-               faceQuadInside, faceQuadOutside,
-               RangeValues(-1,phiFaceNb), JacobianRangeValues(-1,dphiFaceNb),
-               RangeValues(localCol,phiFaceNb), JacobianRangeValues(localCol,dphiFaceNb),
-               valueEn, dvalueEn, valueNb, dvalueNb, true );
+          numericalFlux(dfSpace.gridPart(), intersectionStorage,
+                        faceQuadInside, faceQuadOutside,
+                        RangeValues(-1,phiFaceNb), JacobianRangeValues(-1,dphiFaceNb),
+                        RangeValues(localCol,phiFaceNb), JacobianRangeValues(localCol,dphiFaceNb),
+                        valueEn, dvalueEn, valueNb, dvalueNb, true );
           for( size_t pt = 0; pt < numFaceQuadPoints; ++pt )
           {
             const double weight = faceQuadInside.weight( pt );
@@ -777,14 +777,14 @@ namespace Fem
     }
 
     template <class Quadrature,class Value,class DValue,class RetType, class DRetType>
-    void flux(const GridPartType &gridPart,
-              const IntersectionStorage& intersectionStorage,
-              const Quadrature &faceQuadInside, const Quadrature &faceQuadOutside,
-              const Value &valueEn, const DValue &dvalueEn,
-              const Value &valueNb, const DValue &dvalueNb,
-              RetType &retEn, DRetType &dretEn,
-              RetType &retNb, DRetType &dretNb,
-              const bool initializeIntersection = true ) const
+    void numericalFlux(const GridPartType &gridPart,
+                       const IntersectionStorage& intersectionStorage,
+                       const Quadrature &faceQuadInside, const Quadrature &faceQuadOutside,
+                       const Value &valueEn, const DValue &dvalueEn,
+                       const Value &valueNb, const DValue &dvalueNb,
+                       RetType &retEn, DRetType &dretEn,
+                       RetType &retNb, DRetType &dretNb,
+                       const bool initializeIntersection = true ) const
     {
       RangeType gLeft,gRight;
       if( hasDiffusion & initializeIntersection )
@@ -841,8 +841,8 @@ namespace Fem
                      RetType &retNb, DRetType &dretNb,
                      DRetType &liftEn, DRetType &liftNb) const
     {
-      flux(left, right, valueEn,dvalueEn,valueNb,dvalueNb,
-           retEn,dretEn,retNb,dretNb);
+      numericalFlux(left, right, valueEn,dvalueEn,valueNb,dvalueNb,
+                    retEn,dretEn,retNb,dretNb);
 
      if( hasDiffusion )
      {

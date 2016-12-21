@@ -20,7 +20,7 @@ namespace Fem
   //            must implement evaluate
   // DGOperator: Operator providing the flux, needs method
   //             model() to access the diffusion method
-  //             flux(dfSpace_.gridPart(),
+  //             numericalFlux(dfSpace_.gridPart(),
   //                  intersection, inside, outside, 0, quadInside, quadOutside,
   //                  uValuesEn, duValuesEn, uValuesNb, duValuesNb,
   //                  fluxEn, dfluxEn, fluxNb, dfluxNb):

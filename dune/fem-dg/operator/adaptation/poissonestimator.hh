@@ -154,7 +154,7 @@ namespace Fem
   //            must implement evaluate
   // DGOperator: Operator providing the flux, needs method
   //             model() to access the diffusion method
-  //             flux(dfSpace_.gridPart(),
+  //             numericalFlux(dfSpace_.gridPart(),
   //                  intersection, inside, outside, 0, quadInside, quadOutside,
   //                  uValuesEn, duValuesEn, uValuesNb, duValuesNb,
   //                  fluxEn, dfluxEn, fluxNb, dfluxNb):
@@ -872,11 +872,11 @@ namespace Fem
 
       typedef typename DGOperatorType::IntersectionStorage IntersectionStorage;
       IntersectionStorage intersectionStorage( intersection, inside, inside, volume, volume);
-      oper_.flux(dfSpace_.gridPart(), intersectionStorage,
-                 quadInside, quadOutside,
-                 uValuesEn, duValuesEn, uValuesNb, duValuesNb,
-                 fluxEn, dfluxEn, fluxNb, dfluxNb
-                );
+      oper_.numericalFlux(dfSpace_.gridPart(), intersectionStorage,
+                          quadInside, quadOutside,
+                          uValuesEn, duValuesEn, uValuesNb, duValuesNb,
+                          fluxEn, dfluxEn, fluxNb, dfluxNb
+                          );
 
       sigmaValuesEn.resize( numQuadraturePoints );
       sigmaValuesNb.resize( numQuadraturePoints );
