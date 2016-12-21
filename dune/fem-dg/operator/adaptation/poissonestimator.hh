@@ -759,7 +759,7 @@ namespace Fem
         fluxEn[idx] /= integrationElement;
 
         const SigmaConverterType sigmaValueEn( sigmaValuesEn[idx] );
-        IntersectionLocalEvaluationType local( intersection, inside, quadInside, uValuesEn[idx], sigmaValueEn, idx, 0, volume );
+        IntersectionLocalEvaluationType local( intersection, inside, quadInside, idx, 0, volume, uValuesEn[idx], sigmaValueEn, );
 
         oper_.model().diffusion(local,
                                 uValuesEn[idx], sigmaValueEn, AJacEn);
@@ -910,9 +910,9 @@ namespace Fem
         fluxNb[idx] /= integrationElement;
 
         const SigmaConverterType sigmaValueEn( sigmaValuesEn[idx] );
-        const IntersectionLocalEvaluationType left( intersection, inside, quadInside, uValuesEn[idx], sigmaValueEn, idx, 0, volume );
+        const IntersectionLocalEvaluationType left( intersection, inside, quadInside, idx, 0, volume, uValuesEn[idx], sigmaValueEn );
         const SigmaConverterType sigmaValueNb( sigmaValuesNb[idx] );
-        const IntersectionLocalEvaluationType right( intersection, outside, quadInside, uValuesNb[idx], sigmaValueNb, idx, 0, volume );
+        const IntersectionLocalEvaluationType right( intersection, outside, quadInside, idx, 0, volume, uValuesNb[idx], sigmaValueNb );
 
         oper_.model().diffusion(left,
                                 uValuesEn[idx], sigmaValueEn, AJacEn);

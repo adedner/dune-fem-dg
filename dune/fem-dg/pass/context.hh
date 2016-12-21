@@ -353,11 +353,11 @@ namespace Fem
      */
     ExtraElementQuadraturePointContext( const Entity& entity,
                                         const Quadrature& quadrature,
-                                        const RangeTuple& values,
-                                        const JacobianTuple& jacobians,
                                         const int qp,
                                         const double time,
-                                        const double volume )
+                                        const double volume,
+                                        const RangeTuple& values,
+                                        const JacobianTuple& jacobians )
      : BaseType( entity, quadrature, qp, time, volume ),
        values_( values ),
        jacobians_( jacobians )
@@ -454,12 +454,12 @@ namespace Fem
       ExtraIntersectionQuadraturePointContext( const IntersectionType& intersection,
                                                const Entity& entity,
                                                const Quadrature& quadrature,
-                                               const RangeTuple& values,
-                                               const JacobianTuple& jacobians,
                                                const int qp,
                                                const double time,
-                                               const double volume )
-       : BaseType( entity, quadrature, values, jacobians, qp, time, volume ),
+                                               const double volume,
+                                               const RangeTuple& values,
+                                               const JacobianTuple& jacobians )
+       : BaseType( entity, quadrature, qp, time, volume, values, jacobians ),
          intersection_( intersection )
     {}
 

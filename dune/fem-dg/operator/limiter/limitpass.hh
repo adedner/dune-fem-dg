@@ -1485,7 +1485,7 @@ namespace Fem
               {
                 FaceQuadratureType faceQuadInner(gridPart_,intersection, 0, FaceQuadratureType::INSIDE);
                 ExtraIntersectionQuadraturePointContext< IntersectionType, EntityType,
-                  FaceQuadratureType, RangeType, RangeType > local( intersection, en, faceQuadInner, enVal, enVal, 0, currentTime_, geo.volume() );
+                  FaceQuadratureType, RangeType, RangeType > local( intersection, en, faceQuadInner, 0, currentTime_, geo.volume(), enVal, enVal );
                 discreteModel_.boundaryValue( local,
                                               enVal, nbVal);
                 // calculate difference

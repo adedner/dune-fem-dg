@@ -642,7 +642,7 @@ namespace Fem
                     LiftingFunction& func ) const
     {
       ExtraIntersectionQuadraturePointContext< IntersectionType, EntityType, QuadratureImp, ArgumentTuple, ArgumentTuple >
-        local( intersection, entity, faceQuad, uTuple, uTuple, quadPoint, time, entity.geometry().volume() );
+        local( intersection, entity, faceQuad, quadPoint, time, entity.geometry().volume(), uTuple, uTuple );
 
       const FaceDomainType& x = faceQuad.localPoint( quadPoint );
       DomainType normal = intersection.integrationOuterNormal( x );
