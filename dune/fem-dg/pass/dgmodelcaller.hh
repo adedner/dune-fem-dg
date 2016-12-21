@@ -74,7 +74,7 @@ namespace Fem
     typedef typename BaseType::RangeTupleType RangeTupleType;
     typedef typename BaseType::JacobianRangeTupleType JacobianRangeTupleType;
 
-    typedef ExtraElementQuadraturePointContext< EntityType, VolumeQuadratureType,
+    typedef ExtraQuadraturePointContext< EntityType, VolumeQuadratureType,
                      Dune::TypeIndexedTuple< RangeTupleType, Selector >,
                      Dune::TypeIndexedTuple< JacobianRangeTupleType, Selector > > ElementQuadratureContextType;
 
@@ -216,13 +216,13 @@ namespace Fem
       assert( valuesOutside_.size() >= inside.nop() );
       assert( quadOuterId_ == outside.id() );
 
-      typedef ExtraIntersectionQuadraturePointContext< IntersectionType, EntityType, QuadratureType,
+      typedef ExtraQuadraturePointContext< EntityType, IntersectionType, QuadratureType,
                      Dune::TypeIndexedTuple< RangeTupleType, Selector >,
                      Dune::TypeIndexedTuple< JacobianRangeTupleType, Selector > > QuadratureContextType ;
 
       return discreteModel().numericalFlux(
-                  QuadratureContextType( intersection, localFunctionsInside_.entity(),  inside,  qp, time(), discreteModel().enVolume(), valuesInside_[ qp ],  jacobianValue( jacobiansInside_, qp ) ),
-                  QuadratureContextType( intersection, localFunctionsOutside_.entity(), outside, qp, time(), discreteModel().nbVolume(), valuesOutside_[ qp ], jacobianValue( jacobiansOutside_, qp ) ),
+                  QuadratureContextType( localFunctionsInside_.entity(), intersection, inside,  qp, time(), discreteModel().enVolume(), valuesInside_[ qp ],  jacobianValue( jacobiansInside_, qp ) ),
+                  QuadratureContextType( localFunctionsOutside_.entity(), intersection, outside, qp, time(), discreteModel().nbVolume(), valuesOutside_[ qp ], jacobianValue( jacobiansOutside_, qp ) ),
                   gLeft, gRight, hLeft, hRight );
     }
 
@@ -235,13 +235,13 @@ namespace Fem
       assert( valuesInside_.size() >= quadrature.nop() );
       assert( quadInnerId_ == quadrature.id() );
 
-      typedef  ExtraIntersectionQuadraturePointContext< IntersectionType, EntityType, FaceQuadratureType,
+      typedef  ExtraQuadraturePointContext< EntityType, IntersectionType, FaceQuadratureType,
                      Dune::TypeIndexedTuple< RangeTupleType, Selector >,
                      Dune::TypeIndexedTuple< JacobianRangeTupleType, Selector > > QuadratureContextType ;
 
 
       return discreteModel().boundaryFlux(
-                  QuadratureContextType( intersection, localFunctionsInside_.entity(), quadrature, qp, time(), discreteModel().enVolume(), valuesInside_[ qp ],  jacobianValue( jacobiansInside_, qp ) ),
+                  QuadratureContextType( localFunctionsInside_.entity(), intersection, quadrature, qp, time(), discreteModel().enVolume(), valuesInside_[ qp ],  jacobianValue( jacobiansInside_, qp ) ),
                   gLeft, hLeft );
     }
 

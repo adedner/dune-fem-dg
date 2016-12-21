@@ -154,8 +154,7 @@ namespace Fem
   //            must implement evaluate
   // DGOperator: Operator providing the flux, needs method
   //             model() to access the diffusion method
-  //             numericalFlux(dfSpace_.gridPart(),
-  //                  intersection, inside, outside, 0, quadInside, quadOutside,
+  //             numericalFlux(inside, outside,
   //                  uValuesEn, duValuesEn, uValuesNb, duValuesNb,
   //                  fluxEn, dfluxEn, fluxNb, dfluxNb):
   //              method to compute -hatK, only fluxEn and fluxNb is used
@@ -718,18 +717,19 @@ namespace Fem
       uValuesEn.resize( numQuadraturePoints );
       uValuesNb.resize( numQuadraturePoints );
       uInside.evaluateQuadrature( quadInside, uValuesEn );
-      oper_.boundaryValues(intersection, inside,quadInside, volume,
-                           uValuesNb);
+
+      typedef QuadratureContext< ElementType, IntersectionType, FaceQuadratureType > PointContextType;
+      PointContextType local( inside, intersection, quadInside, 0.0, volume );
+
+      oper_.boundaryValues(local, uValuesNb);
       duValuesEn.resize( numQuadraturePoints );
       uInside.evaluateQuadrature( quadInside, duValuesEn );
       fluxEn.resize( numQuadraturePoints );
       dfluxEn.resize( numQuadraturePoints );
 
-      oper_.boundaryFlux(intersection, inside,
-                         volume, quadInside,
-                         uValuesEn, duValuesEn, uValuesNb,
-                         fluxEn, dfluxEn
-                         );
+      oper_.boundaryFlux( local,
+                          uValuesEn, duValuesEn, uValuesNb,
+                          fluxEn, dfluxEn );
 
       sigmaValuesEn.resize( numQuadraturePoints );
       sigmaInside.evaluateQuadrature( quadInside, sigmaValuesEn );
@@ -742,7 +742,7 @@ namespace Fem
 
       typedef RangeType           RangeTuple;
       typedef SigmaConverterType JacobianTuple;
-      typedef ExtraIntersectionQuadraturePointContext< IntersectionType, ElementType, FaceQuadratureType, RangeTuple, JacobianTuple > IntersectionLocalEvaluationType;
+      typedef ExtraQuadraturePointContext< ElementType, IntersectionType, FaceQuadratureType, RangeTuple, JacobianTuple > LocalEvaluationType;
 
       for( const auto qp : quadInside )
       {
@@ -759,10 +759,10 @@ namespace Fem
         fluxEn[idx] /= integrationElement;
 
         const SigmaConverterType sigmaValueEn( sigmaValuesEn[idx] );
-        IntersectionLocalEvaluationType local( intersection, inside, quadInside, idx, 0, volume, uValuesEn[idx], sigmaValueEn, );
+        LocalEvaluationType local2( local, idx, uValuesEn[idx], sigmaValueEn );
 
-        oper_.model().diffusion(local,
-                                uValuesEn[idx], sigmaValueEn, AJacEn);
+        oper_.model().diffusion(local2, uValuesEn[idx], sigmaValueEn, AJacEn);
+
         // note that flux=-hatA therefore we compute -hatA+Agrad u
         AJacEn.umv( unitNormal, fluxEn[idx]);
 
@@ -870,10 +870,10 @@ namespace Fem
       fluxNb.resize( numQuadraturePoints );
       dfluxNb.resize( numQuadraturePoints );
 
-      typedef typename DGOperatorType::IntersectionStorage IntersectionStorage;
-      IntersectionStorage intersectionStorage( intersection, inside, inside, volume, volume);
-      oper_.numericalFlux(dfSpace_.gridPart(), intersectionStorage,
-                          quadInside, quadOutside,
+      typedef QuadratureContext< ElementType, IntersectionType, QuadratureImp > ContextType;
+      ContextType localInside ( inside, intersection, quadInside, 0.0, volume );
+      ContextType localOutside( outside, intersection, quadOutside, 0.0, volume );
+      oper_.numericalFlux(localInside, localOutside,
                           uValuesEn, duValuesEn, uValuesNb, duValuesNb,
                           fluxEn, dfluxEn, fluxNb, dfluxNb
                           );
@@ -892,7 +892,7 @@ namespace Fem
 
       typedef RangeType           RangeTuple;
       typedef SigmaConverterType  JacobianTuple;
-      typedef ExtraIntersectionQuadraturePointContext< IntersectionType, ElementType, QuadratureImp, RangeTuple, JacobianTuple > IntersectionLocalEvaluationType;
+      typedef ExtraQuadraturePointContext< ElementType, IntersectionType, QuadratureImp, RangeTuple, JacobianTuple > LocalEvaluationType;
 
       for( const auto qp : quadInside )
       {
@@ -910,14 +910,12 @@ namespace Fem
         fluxNb[idx] /= integrationElement;
 
         const SigmaConverterType sigmaValueEn( sigmaValuesEn[idx] );
-        const IntersectionLocalEvaluationType left( intersection, inside, quadInside, idx, 0, volume, uValuesEn[idx], sigmaValueEn );
+        const LocalEvaluationType left( inside, intersection, quadInside, idx, 0, volume, uValuesEn[idx], sigmaValueEn );
         const SigmaConverterType sigmaValueNb( sigmaValuesNb[idx] );
-        const IntersectionLocalEvaluationType right( intersection, outside, quadInside, idx, 0, volume, uValuesNb[idx], sigmaValueNb );
+        const LocalEvaluationType right( outside, intersection, quadOutside, idx, 0, volume, uValuesNb[idx], sigmaValueNb );
 
-        oper_.model().diffusion(left,
-                                uValuesEn[idx], sigmaValueEn, AJacEn);
-        oper_.model().diffusion(right,
-                                uValuesNb[idx], sigmaValueNb, AJacNb);
+        oper_.model().diffusion(left,  uValuesEn[idx], sigmaValueEn, AJacEn);
+        oper_.model().diffusion(right, uValuesNb[idx], sigmaValueNb, AJacNb);
 
         // note that flux=-hatA therefore we compute -hatA+Agrad u
         AJacEn.umv( unitNormal, fluxEn[idx]);
@@ -978,7 +976,7 @@ namespace Fem
       }
       else
 #endif
-      typedef typename DGOperatorType::EntityStorage EntityStorage;
+      typedef PointContext< ElementType > PointContextType;
       const double volume = geo.volume();
       {
         // finite difference approximation
@@ -1005,14 +1003,14 @@ namespace Fem
           sigma_h.evaluate(x1,sigmax1);
 
           {
-            const EntityStorage entityStorage( entity, volume, xgl0, x0 );
+            const PointContextType local( entity, xgl0, x0, 0.0, volume );
             const SigmaConverterType jac0( sigmax0 );
-            oper_.model().diffusion(entityStorage, ux0, jac0, Asigmax0);
+            oper_.model().diffusion(local, ux0, jac0, Asigmax0);
           }
           {
-            const EntityStorage entityStorage( entity, volume, xgl1, x1 );
+            const PointContextType local( entity, xgl1, x1, 0.0, volume );
             const SigmaConverterType jac1( sigmax1 );
-            oper_.model().diffusion(entityStorage, ux1, jac1, Asigmax1);
+            oper_.model().diffusion(local, ux1, jac1, Asigmax1);
           }
           for( int r = 0; r < RangeType::dimension; ++r )
           {

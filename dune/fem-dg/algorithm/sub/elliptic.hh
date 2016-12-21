@@ -22,6 +22,7 @@
 #include <dune/fem/operator/projection/dgl2projection.hh>
 #include <dune/fem/misc/fmatrixconverter.hh>
 #include <dune/fem/operator/common/stencil.hh>
+#include <dune/fem-dg/pass/context.hh>
 
 #include <dune/fem/misc/gridname.hh>
 
@@ -176,12 +177,12 @@ namespace Fem
         typedef typename Operator::FaceQuadratureType                               FaceQuadratureType ;
         typedef Dune::Fem::IntersectionQuadrature< FaceQuadratureType, conforming > IntersectionQuadratureType;
 
-        const EntityType &outside = intersection.outside();
+        const EntityType &neighbor = intersection.outside();
 
-        typename DF::LocalFunctionType uOutside = df_.localFunction(outside);
+        typename DF::LocalFunctionType uOutside = df_.localFunction(neighbor);
 
         const int enOrder = df_.space().order( entity );
-        const int nbOrder = df_.space().order( outside );
+        const int nbOrder = df_.space().order( neighbor );
 
         const int quadOrder = 2 * std::max( enOrder, nbOrder ) + 1;
 
@@ -195,11 +196,13 @@ namespace Fem
         std::vector< URangeType > uValuesNb( numQuadraturePoints );
         localdf_.evaluateQuadrature( quadInside, uValuesEn );
         uOutside.evaluateQuadrature( quadOutside, uValuesNb );
-        oper_.lifting(df_.space().gridPart(),
-                      intersection, entity, outside, quadInside, quadOutside,
-                      uValuesEn, uValuesNb,
-                      localre_
-                     );
+
+        typedef QuadratureContext< EntityType, IntersectionType, typename IntersectionQuadratureType::FaceQuadratureType > LocalEvaluationType;
+
+        LocalEvaluationType left( entity, intersection, quadInside, 0.0, entity.geometry().volume() );
+        LocalEvaluationType right( neighbor, intersection, quadOutside, 0.0, neighbor.geometry().volume() );
+
+        oper_.lifting( left, right, uValuesEn, uValuesNb, localre_ );
       }
       const DF&                        df_;
       const Operator&                  oper_;

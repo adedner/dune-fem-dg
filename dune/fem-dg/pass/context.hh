@@ -10,20 +10,67 @@ namespace Dune
 {
 namespace Fem
 {
+
+
+  //forward declarations
+  template< class A, class... >
+  class Context
+  {
+    static_assert( static_fail<A>::value, "Context expects either one or two template arguments" );
+  };
+
+  //forward declarations
+  template< class A, class, class... >
+  class QuadratureContext
+  {
+    static_assert( static_fail<A>::value, "QuadratureContext expects either two or three template arguments" );
+  };
+
+  //forward declarations
+  template< class A, class, class... >
+  class QuadraturePointContext
+  {
+    static_assert( static_fail<A>::value, "QuadraturePointContext expects either two or three template arguments" );
+  };
+
+  //forward declarations
+  template <class A, class, class, class, class... >
+  class ExtraQuadraturePointContext
+  {
+    static_assert( static_fail<A>::value, "ExtraQuadraturePointContext expects either four or five template arguments" );
+  };
+
+  //forward declarations
+  template< class A, class... >
+  class PointContext
+  {
+    static_assert( static_fail<A>::value, "QuadratureContext expects either one or two template arguments" );
+  };
+
+
+  template< class Intersection >
+  class IntersectionStorage
+  {
+  public:
+    typedef Intersection IntersectionType;
+
+    explicit IntersectionStorage( const Intersection& intersection )
+      : intersection_( intersection )
+    {}
+    const IntersectionType& intersection() const { return intersection_; }
+  protected:
+    const Intersection& intersection_;
+  };
+
   /**
    * \brief This class collects several information which are relevant for the approximation of
    * integrals of discrete functions via quadrature schemes.
    */
-  template <class Entity,
-            class Quadrature >
-  class ElementQuadratureContext
+  template< class Entity >
+  class Context< Entity >
   {
   public:
     typedef Entity          EntityType;
-    typedef Quadrature      QuadratureType;
-    typedef typename QuadratureType::QuadraturePointWrapperType   QuadraturePointWrapperType;
-    typedef typename QuadratureType::CoordinateType               CoordinateType;
-    typedef typename QuadratureType::LocalCoordinateType          LocalCoordinateType;
 
     /**
      *  \brief constructor
@@ -33,12 +80,10 @@ namespace Fem
      *  \param[in] time the current time \f$ t \f$
      *  \param[in] volume the volume of the entity \f$ \mathrm{vol}(E) \f$
      */
-    ElementQuadratureContext( const Entity& entity,
-                              const Quadrature& quadrature,
-                              const double time,
-                              const double volume )
+    Context( const Entity& entity,
+             const double time,
+             const double volume )
      : entity_( entity ),
-       quad_( quadrature ),
        time_( time ),
        volume_( volume )
     {}
@@ -47,11 +92,6 @@ namespace Fem
      *  \brief returns the entity \f$ E \f$
      */
     const Entity& entity() const { return entity_; }
-
-    /**
-     *  \brief returns the quadrature
-     */
-    const Quadrature& quadrature() const { return quad_; }
 
     /**
      *  \brief return the current time \f$ t \f$, which is needed for instationary problems
@@ -65,29 +105,56 @@ namespace Fem
 
   protected:
     const Entity& entity_;
-    const Quadrature& quad_;
-
     const double time_;
     const double volume_;
   };
-
-
-
-
 
   /**
    * \brief This class collects several information which are relevant for the approximation of
    * integrals of discrete functions via quadrature schemes.
    */
-  template <class Intersection,
-            class Entity,
-            class Quadrature >
-  class IntersectionQuadratureContext
-    : public ElementQuadratureContext<Entity,Quadrature>
+  template< class Entity, class Intersection >
+  class Context< Entity, Intersection >
+    : public Context< Entity >,
+      public IntersectionStorage< Intersection >
   {
-    typedef ElementQuadratureContext<Entity,Quadrature> BaseType;
+    typedef Context< Entity >                   BaseType;
+    typedef IntersectionStorage< Intersection > InterBaseType;
   public:
+    typedef Entity          EntityType;
     typedef Intersection    IntersectionType;
+
+    /**
+     *  \brief constructor
+     *
+     *  \param[in] entity the entity \f$ E \f$ where the local evaluation should be done
+     *  \param[in] intersection the intersection where the local evaluation should be done
+     *  \param[in] time the current time \f$ t \f$
+     *  \param[in] volume the volume of the entity \f$ \mathrm{vol}(E) \f$
+     */
+    Context( const Entity& entity,
+             const Intersection& intersection,
+             const double time,
+             const double volume )
+     : BaseType( entity, time, volume ),
+       InterBaseType( intersection )
+    {}
+  };
+
+  /**
+   * \brief This class collects several information which are relevant for the approximation of
+   * integrals of discrete functions via quadrature schemes.
+   */
+  template <class Entity, class Quadrature >
+  class QuadratureContext< Entity, Quadrature >
+    : public Context< Entity >
+  {
+    typedef Context< Entity > BaseType;
+  public:
+    typedef Quadrature                                            QuadratureType;
+    typedef typename QuadratureType::QuadraturePointWrapperType   QuadraturePointWrapperType;
+    typedef typename QuadratureType::CoordinateType               CoordinateType;
+    typedef typename QuadratureType::LocalCoordinateType          LocalCoordinateType;
 
     /**
      *  \brief constructor
@@ -97,19 +164,134 @@ namespace Fem
      *  \param[in] time the current time \f$ t \f$
      *  \param[in] volume the volume of the entity \f$ \mathrm{vol}(E) \f$
      */
-    IntersectionQuadratureContext( const Intersection& intersection,
-                                   const Entity& entity,
-                                   const Quadrature& quadrature,
-                                   const double time,
-                                   const double volume )
-     : BaseType( entity, quadrature, time, volume ),
-       intersection_( intersection )
+    QuadratureContext( const Entity& entity,
+                       const Quadrature& quadrature,
+                       const double time,
+                       const double volume )
+     : BaseType( entity, time, volume ),
+       quad_( quadrature )
     {}
 
-    const IntersectionType& intersection() const { return intersection_; }
+    /**
+     *  \brief returns the quadrature
+     */
+    const Quadrature& quadrature() const { return quad_; }
 
   protected:
-    const Intersection& intersection_;
+    const Quadrature& quad_;
+  };
+
+
+
+  /**
+   * \brief This class collects several information which are relevant for the approximation of
+   * integrals of discrete functions via quadrature schemes.
+   */
+  template <class Entity, class Intersection, class Quadrature >
+  class QuadratureContext< Entity, Intersection, Quadrature >
+    : public QuadratureContext<Entity,Quadrature>,
+      public IntersectionStorage< Intersection >
+  {
+    typedef QuadratureContext<Entity,Quadrature> BaseType;
+    typedef IntersectionStorage< Intersection > InterBaseType;
+  public:
+    /**
+     *  \brief constructor
+     *
+     *  \param[in] entity the entity \f$ E \f$ where the local evaluation should be done
+     *  \param[in] quadrature the quadrature rule for the entity \f$ \hat{E} \f$
+     *  \param[in] time the current time \f$ t \f$
+     *  \param[in] volume the volume of the entity \f$ \mathrm{vol}(E) \f$
+     */
+    QuadratureContext( const Entity& entity,
+                       const Intersection& intersection,
+                       const Quadrature& quadrature,
+                       const double time,
+                       const double volume )
+     : BaseType( entity, quadrature, time, volume ),
+       InterBaseType( intersection )
+    {}
+  };
+
+
+  /**
+   * \brief This class collects several information which are relevant for the approximation of
+   * integrals of discrete functions via quadrature schemes.
+   */
+  template <class Entity >
+  class PointContext< Entity >
+    : public Context< Entity >
+  {
+    typedef Context< Entity > BaseType;
+  public:
+    typedef typename Entity::Geometry::LocalCoordinate  LocalCoordinateType;
+    typedef typename Entity::Geometry::GlobalCoordinate CoordinateType;
+
+    /**
+     *  \brief constructor
+     *
+     *  \param[in] entity the entity \f$ E \f$ where the local evaluation should be done
+     *  \param[in] time the current time \f$ t \f$
+     *  \param[in] volume the volume of the entity \f$ \mathrm{vol}(E) \f$
+     */
+    PointContext( const Entity& entity,
+                  const CoordinateType& position,
+                  const LocalCoordinateType& localPos,
+                  const double time,
+                  const double volume )
+     : BaseType( entity, time, volume ),
+       position_( position ),
+       localPos_( localPos )
+    {}
+
+    /**
+     *  \brief returns the global quadrature point \f$ x_p \f$
+     */
+    const CoordinateType& position() const { return position_; }
+
+    /**
+     *  \brief returns the local point \f$ \hat{x}_p \f$
+     */
+    const LocalCoordinateType& localPosition() const { return localPos_; }
+
+  protected:
+    const CoordinateType& position_;
+    const LocalCoordinateType& localPos_;
+  };
+
+
+
+  /**
+   * \brief This class collects several information which are relevant for the approximation of
+   * integrals of discrete functions via quadrature schemes.
+   */
+  template <class Entity, class Intersection >
+  class PointContext< Entity, Intersection >
+    : public PointContext<Entity>,
+      public IntersectionStorage< Intersection >
+  {
+    typedef PointContext<Entity> BaseType;
+    typedef IntersectionStorage< Intersection > InterBaseType;
+    typedef typename Entity::Geometry::LocalCoordinate  LocalCoordinateType;
+    typedef typename Entity::Geometry::GlobalCoordinate CoordinateType;
+  public:
+    /**
+     *  \brief constructor
+     *
+     *  \param[in] entity the entity \f$ E \f$ where the local evaluation should be done
+     *  \param[in] quadrature the quadrature rule for the entity \f$ \hat{E} \f$
+     *  \param[in] time the current time \f$ t \f$
+     *  \param[in] volume the volume of the entity \f$ \mathrm{vol}(E) \f$
+     */
+    PointContext( const Entity& entity,
+                  const Intersection& intersection,
+                  const CoordinateType& position,
+                  const LocalCoordinateType& localPos,
+                  const double time,
+                  const double volume )
+     : BaseType( entity, position, localPos, time, volume ),
+       InterBaseType( intersection )
+    {}
   };
 
 
@@ -146,12 +328,11 @@ namespace Fem
    * the sense that we are not only interested in the approximation of one discrete function \f$ u^t \f$
    * but in a tuple of functions \f$ (u^{a,t}, {u^b,t} \ldots\f$ yielding from a pass.
    */
-  template <class Entity,
-            class Quadrature >
-  class ElementQuadraturePointContext
-    : public ElementQuadratureContext< Entity, Quadrature >
+  template <class Entity, class Quadrature >
+  class QuadraturePointContext< Entity, Quadrature >
+    : public QuadratureContext< Entity, Quadrature >
   {
-    typedef ElementQuadratureContext< Entity, Quadrature > BaseType;
+    typedef QuadratureContext< Entity, Quadrature > BaseType;
   public:
     using BaseType::quadrature;
     typedef typename BaseType::QuadraturePointWrapperType   QuadraturePointWrapperType;
@@ -167,13 +348,20 @@ namespace Fem
      *  \param[in] time the current time \f$ t \f$
      *  \param[in] volume the volume of the entity \f$ \mathrm{vol}(E) \f$
      */
-    ElementQuadraturePointContext( const Entity& entity,
-                                   const Quadrature& quadrature,
-                                   const int qp,
-                                   const double time,
-                                   const double volume )
+    QuadraturePointContext( const Entity& entity,
+                            const Quadrature& quadrature,
+                            const int qp,
+                            const double time,
+                            const double volume )
      : BaseType( entity, quadrature, time, volume ),
        qp_( qp )
+    {}
+
+    //short cut
+    template< class LocalEvaluation >
+    QuadraturePointContext( const LocalEvaluation& local,
+                            const int qp )
+     : BaseType( local.entity(), local.quadrature(), qp, local.time(), local.volume() )
     {}
 
     /**
@@ -206,16 +394,14 @@ namespace Fem
    * \brief This class collects several information which are relevant for the approximation of
    * integrals of discrete functions via quadrature schemes.
    */
-  template <class Intersection,
-            class Entity,
-            class Quadrature >
-  class IntersectionQuadraturePointContext
-    : public ElementQuadraturePointContext<Entity,Quadrature>
+  template <class Entity, class Intersection, class Quadrature >
+  class QuadraturePointContext< Entity, Intersection, Quadrature >
+    : public QuadraturePointContext<Entity,Quadrature>,
+      public IntersectionStorage< Intersection >
   {
-    typedef ElementQuadraturePointContext<Entity,Quadrature> BaseType;
+    typedef QuadraturePointContext<Entity,Quadrature> BaseType;
+    typedef IntersectionStorage< Intersection > InterBaseType;
   public:
-    typedef Intersection    IntersectionType;
-
     /**
      *  \brief constructor
      *
@@ -224,20 +410,23 @@ namespace Fem
      *  \param[in] time the current time \f$ t \f$
      *  \param[in] volume the volume of the entity \f$ \mathrm{vol}(E) \f$
      */
-    IntersectionQuadraturePointContext( const Intersection& intersection,
-                                        const Entity& entity,
-                                        const Quadrature& quadrature,
-                                        const int qp,
-                                        const double time,
-                                        const double volume )
+    QuadraturePointContext( const Entity& entity,
+                            const Intersection& intersection,
+                            const Quadrature& quadrature,
+                            const int qp,
+                            const double time,
+                            const double volume )
      : BaseType( entity, quadrature, qp, time, volume ),
-       intersection_( intersection )
+       InterBaseType( intersection )
     {}
 
-    const IntersectionType& intersection() const { return intersection_; }
-
-  protected:
-    const Intersection& intersection_;
+    //short cut
+    template< class LocalEvaluation >
+    QuadraturePointContext( const LocalEvaluation& local,
+                            const int qp )
+     : BaseType( local.entity(), local.quadrature(), qp, local.time(), local.volume() ),
+       InterBaseType( local.intersection() )
+    {}
   };
 
 
@@ -274,14 +463,11 @@ namespace Fem
    * the sense that we are not only interested in the approximation of one discrete function \f$ u^t \f$
    * but in a tuple of functions \f$ (u^{a,t}, {u^b,t} \ldots\f$ yielding from a pass.
    */
-  template <class Entity,
-            class Quadrature,
-            class RangeTuple,
-            class JacobianTuple>
-  class ExtraElementQuadraturePointContext
-    : public ElementQuadraturePointContext< Entity, Quadrature >
+  template <class Entity, class Quadrature, class RangeTuple, class JacobianTuple>
+  class ExtraQuadraturePointContext< Entity, Quadrature, RangeTuple, JacobianTuple >
+    : public QuadraturePointContext< Entity, Quadrature >
   {
-    typedef ElementQuadraturePointContext< Entity, Quadrature > BaseType;
+    typedef QuadraturePointContext< Entity, Quadrature > BaseType;
 
     template <class Tuple, class VarId >
     struct Contains
@@ -351,14 +537,25 @@ namespace Fem
      *  \param[in] time the current time \f$ t \f$
      *  \param[in] volume the volume of the entity \f$ \mathrm{vol}(E) \f$
      */
-    ExtraElementQuadraturePointContext( const Entity& entity,
-                                        const Quadrature& quadrature,
-                                        const int qp,
-                                        const double time,
-                                        const double volume,
-                                        const RangeTuple& values,
-                                        const JacobianTuple& jacobians )
+    ExtraQuadraturePointContext( const Entity& entity,
+                                 const Quadrature& quadrature,
+                                 const int qp,
+                                 const double time,
+                                 const double volume,
+                                 const RangeTuple& values,
+                                 const JacobianTuple& jacobians )
      : BaseType( entity, quadrature, qp, time, volume ),
+       values_( values ),
+       jacobians_( jacobians )
+    {}
+
+    //short cut
+    template< class LocalEvaluation >
+    ExtraQuadraturePointContext( const LocalEvaluation& local,
+                                 const int qp,
+                                 const RangeTuple& values,
+                                 const JacobianTuple& jacobians )
+     : BaseType( local.entity(), local.quadrature(), qp, local.time(), local.volume() ),
        values_( values ),
        jacobians_( jacobians )
     {}
@@ -429,41 +626,42 @@ namespace Fem
    * \brief This class collects several information which are relevant for the approximation of
    * integrals of discrete functions via quadrature schemes.
    *
-   * This class just adds an intersection() method to the class ExtraElementQuadraturePointContext.
+   * This class just adds an intersection() method to the class ExtraQuadraturePointContext.
    * This additional information is needed for evaluations on intersections, i.e. numerical fluxes etc.
    */
-  template <class Intersection,
-            class Entity,
-            class Quadrature,
-            class RangeTuple,
-            class JacobianTuple>
-  class ExtraIntersectionQuadraturePointContext
-    : public ExtraElementQuadraturePointContext< Entity, Quadrature, RangeTuple, JacobianTuple >
+  template <class Entity, class Intersection, class Quadrature, class RangeTuple, class JacobianTuple>
+  class ExtraQuadraturePointContext< Entity, Intersection, Quadrature, RangeTuple, JacobianTuple >
+    : public ExtraQuadraturePointContext< Entity, Quadrature, RangeTuple, JacobianTuple >,
+      public IntersectionStorage< Intersection >
   {
-    typedef ExtraElementQuadraturePointContext< Entity, Quadrature, RangeTuple, JacobianTuple
-      > BaseType;
-  protected:
-    const Intersection& intersection_;
+    typedef ExtraQuadraturePointContext< Entity, Quadrature, RangeTuple, JacobianTuple > BaseType;
+    typedef IntersectionStorage< Intersection > InterBaseType;
 
   public:
-      typedef Intersection    IntersectionType;
-
-      /**
-       * \brief constructor
-       */
-      ExtraIntersectionQuadraturePointContext( const IntersectionType& intersection,
-                                               const Entity& entity,
-                                               const Quadrature& quadrature,
-                                               const int qp,
-                                               const double time,
-                                               const double volume,
-                                               const RangeTuple& values,
-                                               const JacobianTuple& jacobians )
-       : BaseType( entity, quadrature, qp, time, volume, values, jacobians ),
-         intersection_( intersection )
+    /**
+     * \brief constructor
+     */
+    ExtraQuadraturePointContext( const Entity& entity,
+                                 const Intersection& intersection,
+                                 const Quadrature& quadrature,
+                                 const int qp,
+                                 const double time,
+                                 const double volume,
+                                 const RangeTuple& values,
+                                 const JacobianTuple& jacobians )
+     : BaseType( entity, quadrature, qp, time, volume, values, jacobians ),
+       InterBaseType( intersection )
     {}
 
-    const IntersectionType& intersection() const { return intersection_; }
+    //short cut
+    template< class LocalEvaluation >
+    ExtraQuadraturePointContext( const LocalEvaluation& local,
+                                 const int qp,
+                                 const RangeTuple& values,
+                                 const JacobianTuple& jacobians )
+     : BaseType( local.entity(), local.quadrature(), qp, local.time(), local.volume(), values, jacobians ),
+       InterBaseType( local.intersection() )
+    {}
   };
 
 } // namespace Fem
