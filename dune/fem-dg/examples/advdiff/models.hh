@@ -153,11 +153,9 @@ namespace Fem
     }
 
   private:
-    template< int id >
     struct GetVelocity
     {
-      typedef std::integral_constant< int, id > VarId;
-      typedef DomainType  ReturnType;
+      typedef velocityVar VarId;
 
       template <class LocalEvaluation>
       DomainType operator() (const LocalEvaluation& local, const ProblemType& problem ) const
@@ -197,7 +195,7 @@ namespace Fem
     template <class LocalEvaluation>
     inline DomainType velocity(const LocalEvaluation& local) const
     {
-      return local.evaluate( GetVelocity< velo >(), local, problem_ );
+      return local.evaluate( GetVelocity(), local, problem_ );
     }
 
 

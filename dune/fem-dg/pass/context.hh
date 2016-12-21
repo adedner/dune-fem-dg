@@ -55,43 +55,48 @@ namespace Fem
       static const bool value = false;
     };
 
+    //pass version
     template <class Tuple, class Types, class VarId >
     struct Contains< TypeIndexedTuple< Tuple, Types >, VarId >
     {
       static const bool value = TypeIndexedTuple< Tuple, Types >::template Contains< VarId > :: value;
     };
 
+    //general version, without passes, just a simple std::tuple of arguments
+    template <class... Args, class VarId >
+    struct Contains< std::tuple< Args...>, VarId >
+    {
+      static const bool value = (VarId::value >= 0 && std::tuple_size<std::tuple<Args...> >::value < VarId::value);
+    };
+
     template <class Functor, bool containedInTuple >
     struct Evaluate;
 
     template <class Functor>
-    struct Evaluate<Functor, true>
+    struct Evaluate<Functor, false>
     {
-      typedef typename Functor :: VarId   VarId;
-      typedef typename RangeTuple :: template Value< VarId > :: Type ReturnType;
-
       template< class ... Args >
-
-      //static decltype(auto)
-      static const ReturnType&
-      eval( const RangeTuple& tuple, const Functor& functor, const Args& ... args )
+      static decltype(auto) eval( const RangeTuple& tuple, const Functor& functor, const Args& ... args )
       {
-        return tuple.template at< VarId > ();
+        return functor( args ... );
       }
-
     };
 
     template <class Functor>
-    struct Evaluate<Functor, false>
+    struct Evaluate<Functor, true>
     {
-      typedef typename Functor::ReturnType ReturnType;
-
-      template< class ... Args >
-      //static decltype(auto)
-      static ReturnType
-      eval( const RangeTuple& tuple, const Functor& functor, const Args& ... args )
+      //pass version
+      template< class Tuple, class Types, class ... Args >
+      static decltype(auto) eval( const TypeIndexedTuple< Tuple, Types >& tuple, const Functor& functor, const Args& ... args )
       {
-        return functor( args ... );
+        return tuple.template at< typename Functor::VarId >();
+      }
+
+      //no passes: assume a simple std::tuple of elements
+      template< class... ExtraArgs, class ... Args >
+      static decltype(auto) eval( const std::tuple< ExtraArgs... >& tuple, const Functor& functor, const Args& ... args )
+      {
+        return std::get< typename Functor::VarId::value >( tuple );
       }
     };
 
@@ -206,7 +211,6 @@ namespace Fem
      * struct ConstantData
      * {
      *   typedef varId VarId;
-     *   typedef double ReturnType;
      *
      *   const RangeType& operator() () const
      *   {
@@ -227,8 +231,7 @@ namespace Fem
      * \param args arguments which should be applied to the functor
      */
     template <class Functor, class ... Args>
-    typename Evaluate< Functor, Contains< RangeTuple, typename Functor::VarId >::value >::ReturnType
-    evaluate( const Functor& functor, const Args& ... args ) const
+    decltype(auto) evaluate( const Functor& functor, const Args& ... args ) const
     {
       return Evaluate< Functor, Contains< RangeTuple, typename Functor::VarId >::value>::eval( values(), functor, args ... );
     }
