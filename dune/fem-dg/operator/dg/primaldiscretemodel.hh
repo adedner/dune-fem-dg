@@ -180,7 +180,7 @@ namespace Fem
         if( diffFlux_.hasLifting() )
         {
           typedef typename ArgumentTupleVector :: value_type ArgumentTuple ;
-          typedef IntersectionQuadraturePointContext< IntersectionType, EntityType, QuadratureImp, ArgumentTuple, ArgumentTuple > IntersectionQuadraturePointContextType;
+          typedef ExtraIntersectionQuadraturePointContext< IntersectionType, EntityType, QuadratureImp, ArgumentTuple, ArgumentTuple > IntersectionQuadraturePointContextType;
           IntersectionQuadraturePointContextType local0( it, inside(), quadInner, uLeftVec[ 0 ], uLeftVec[ 0 ], 0, time, this->enVolume() );
           const bool hasBoundaryValue = model_.hasBoundaryValue( local0 );
 

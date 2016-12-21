@@ -742,7 +742,7 @@ namespace Fem
 
       typedef RangeType           RangeTuple;
       typedef SigmaConverterType JacobianTuple;
-      typedef IntersectionQuadraturePointContext< IntersectionType, ElementType, FaceQuadratureType, RangeTuple, JacobianTuple > IntersectionLocalEvaluationType;
+      typedef ExtraIntersectionQuadraturePointContext< IntersectionType, ElementType, FaceQuadratureType, RangeTuple, JacobianTuple > IntersectionLocalEvaluationType;
 
       for( const auto qp : quadInside )
       {
@@ -892,7 +892,7 @@ namespace Fem
 
       typedef RangeType           RangeTuple;
       typedef SigmaConverterType  JacobianTuple;
-      typedef IntersectionQuadraturePointContext< IntersectionType, ElementType, QuadratureImp, RangeTuple, JacobianTuple > IntersectionLocalEvaluationType;
+      typedef ExtraIntersectionQuadraturePointContext< IntersectionType, ElementType, QuadratureImp, RangeTuple, JacobianTuple > IntersectionLocalEvaluationType;
 
       for( const auto qp : quadInside )
       {

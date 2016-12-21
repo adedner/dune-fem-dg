@@ -254,7 +254,7 @@ namespace Fem
 
       typedef RangeType           RangeTuple;
       typedef JacobianRangeType   JacobianTuple;
-      typedef ElementQuadraturePointContext< EntityType, VolumeQuadratureType, RangeTuple, JacobianTuple >      LocalEvaluationType;
+      typedef ExtraElementQuadraturePointContext< EntityType, VolumeQuadratureType, RangeTuple, JacobianTuple >      LocalEvaluationType;
 
       typedef typename MatrixType::LocalMatrixType LocalMatrixType;
       matrix_->clear();
@@ -313,11 +313,6 @@ namespace Fem
             model_.nonStiffSource( local, uZero, uJacZero, sNonStiff );
             arhs += sNonStiff;
           }
-
-          //if model_.hasFlux()
-          //else()
-          //endif
-          //...
 
           JacobianRangeType arhsdphi;
           model_.diffusion( local, uZero, uJacZero, arhsdphi);
@@ -801,7 +796,7 @@ namespace Fem
       {
         typedef RangeType           RangeTuple;
         typedef JacobianRangeType   JacobianTuple;
-        typedef IntersectionQuadraturePointContext< IntersectionType, EntityType, Quadrature, RangeTuple, JacobianTuple > IntersectionLocalEvaluationType;
+        typedef ExtraIntersectionQuadraturePointContext< IntersectionType, EntityType, Quadrature, RangeTuple, JacobianTuple > IntersectionLocalEvaluationType;
         IntersectionLocalEvaluationType left( intersectionStorage.intersection(), intersectionStorage.inside(),
                                               faceQuadInside, valueEn[ pt ], dvalueEn[ pt ], pt, time_, intersectionStorage.enVolume() );
         IntersectionLocalEvaluationType right( intersectionStorage.intersection(), intersectionStorage.outside(),
@@ -884,7 +879,7 @@ namespace Fem
 
       typedef RangeType           RangeTuple;
       typedef JacobianRangeType   JacobianTuple;
-      typedef IntersectionQuadraturePointContext< IntersectionType, EntityType, Quadrature, RangeTuple, JacobianTuple > IntersectionLocalEvaluationType;
+      typedef ExtraIntersectionQuadraturePointContext< IntersectionType, EntityType, Quadrature, RangeTuple, JacobianTuple > IntersectionLocalEvaluationType;
 
       const size_t numFaceQuadPoints = faceQuadInside.nop();
       for( size_t pt = 0; pt < numFaceQuadPoints; ++pt )
@@ -916,7 +911,7 @@ namespace Fem
       {
         typedef RangeType           RangeTuple;
         typedef JacobianRangeType   JacobianTuple;
-        typedef IntersectionQuadraturePointContext< IntersectionType, EntityType, QuadratureImp, RangeTuple, JacobianTuple > IntersectionLocalEvaluationType;
+        typedef ExtraIntersectionQuadraturePointContext< IntersectionType, EntityType, QuadratureImp, RangeTuple, JacobianTuple > IntersectionLocalEvaluationType;
         IntersectionLocalEvaluationType local( intersection, entity, faceQuadInside, valueEn[ pt ], dvalueEn[ pt ], pt, time_, volume );
 
         if ( model_.hasBoundaryValue( local ) )

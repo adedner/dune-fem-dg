@@ -91,7 +91,6 @@ namespace Fem
     struct ComputeVelocity
     {
       typedef velocityVar VarId;
-      typedef DomainType  ReturnType;
 
       template <class LocalEvaluation>
       const RangeType& operator() (const LocalEvaluation& local, const RangeType& u ) const

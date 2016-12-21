@@ -152,7 +152,6 @@ namespace Fem
     struct ComputeRHS
     {
       typedef rhsVar     VarId;
-      typedef RangeType  ReturnType;
 
       //analytical rhs, if not specified in extra parameter tuple
       template <class LocalEvaluation>
@@ -165,7 +164,6 @@ namespace Fem
     struct ComputeVelocity
     {
       typedef velocityVar VarId;
-      typedef DomainType  ReturnType;
 
       template <class LocalEvaluation>
       const RangeType& operator() (const LocalEvaluation& local, const RangeType& u ) const

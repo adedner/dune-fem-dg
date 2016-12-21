@@ -641,7 +641,7 @@ namespace Fem
                     const RangeType& uRight,
                     LiftingFunction& func ) const
     {
-      IntersectionQuadraturePointContext< IntersectionType, EntityType, QuadratureImp, ArgumentTuple, ArgumentTuple >
+      ExtraIntersectionQuadraturePointContext< IntersectionType, EntityType, QuadratureImp, ArgumentTuple, ArgumentTuple >
         local( intersection, entity, faceQuad, uTuple, uTuple, quadPoint, time, entity.geometry().volume() );
 
       const FaceDomainType& x = faceQuad.localPoint( quadPoint );
@@ -1312,7 +1312,7 @@ namespace Fem
                       const GradientType& sigma,
                       JacobianRangeType& mat) const
     {
-      ElementQuadraturePointContext< EntityType, QuadratureImp, RangeType,
+      ExtraElementQuadraturePointContext< EntityType, QuadratureImp, RangeType,
       Fem::FieldMatrixConverter< GradientType, JacobianRangeType> gradient( sigma );
       // set mat = A(u)L_e
       this->model_.diffusion( entity, time, x, u, gradient, mat );

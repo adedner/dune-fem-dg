@@ -1484,7 +1484,7 @@ namespace Fem
               if( discreteModel_.hasBoundaryValue( intersection, currentTime_, localPoint ) )
               {
                 FaceQuadratureType faceQuadInner(gridPart_,intersection, 0, FaceQuadratureType::INSIDE);
-                IntersectionQuadraturePointContext< IntersectionType, EntityType,
+                ExtraIntersectionQuadraturePointContext< IntersectionType, EntityType,
                   FaceQuadratureType, RangeType, RangeType > local( intersection, en, faceQuadInner, enVal, enVal, 0, currentTime_, geo.volume() );
                 discreteModel_.boundaryValue( local,
                                               enVal, nbVal);

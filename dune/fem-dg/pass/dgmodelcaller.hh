@@ -74,7 +74,7 @@ namespace Fem
     typedef typename BaseType::RangeTupleType RangeTupleType;
     typedef typename BaseType::JacobianRangeTupleType JacobianRangeTupleType;
 
-    typedef ElementQuadraturePointContext< EntityType, VolumeQuadratureType,
+    typedef ExtraElementQuadraturePointContext< EntityType, VolumeQuadratureType,
                      Dune::TypeIndexedTuple< RangeTupleType, Selector >,
                      Dune::TypeIndexedTuple< JacobianRangeTupleType, Selector > > ElementQuadratureContextType ;
 
@@ -216,7 +216,7 @@ namespace Fem
       assert( valuesOutside_.size() >= inside.nop() );
       assert( quadOuterId_ == outside.id() );
 
-      typedef IntersectionQuadraturePointContext< IntersectionType, EntityType, QuadratureType,
+      typedef ExtraIntersectionQuadraturePointContext< IntersectionType, EntityType, QuadratureType,
                      Dune::TypeIndexedTuple< RangeTupleType, Selector >,
                      Dune::TypeIndexedTuple< JacobianRangeTupleType, Selector > > QuadratureContextType ;
 
@@ -235,7 +235,7 @@ namespace Fem
       assert( valuesInside_.size() >= quadrature.nop() );
       assert( quadInnerId_ == quadrature.id() );
 
-      typedef  IntersectionQuadraturePointContext< IntersectionType, EntityType, FaceQuadratureType,
+      typedef  ExtraIntersectionQuadraturePointContext< IntersectionType, EntityType, FaceQuadratureType,
                      Dune::TypeIndexedTuple< RangeTupleType, Selector >,
                      Dune::TypeIndexedTuple< JacobianRangeTupleType, Selector > > QuadratureContextType ;
 
