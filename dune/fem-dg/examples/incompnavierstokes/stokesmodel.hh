@@ -210,14 +210,6 @@ namespace Fem
       // take max eigenvalue
       maxValue = values.infinity_norm();
     }
-    template< class Entity >
-    inline double penaltyBoundary( const Entity& inside,
-                                   const double time,
-                                   const DomainType& xInside,
-                                   const RangeType& uLeft ) const
-    {
-      return penaltyFactor( inside, inside, time, xInside, uLeft, uLeft );
-    }
 
     /**
      * \brief diffusion term \f$A\f$
@@ -295,17 +287,7 @@ namespace Fem
 
     const ProblemType& problem () const { return problem_; }
 
-  private:
 
-    inline double lambdaK( const DiffusionMatrixType& K ) const
-    {
-      DomainType values ;
-      // calculate eigenvalues
-      FMatrixHelp :: eigenValues( K, values );
-
-      // value[ 0 ] is smallest ev
-      return SQR(values[ dimDomain -1 ]) / values[ 0 ];
-    }
 
     template <class LocalEvaluation>
     inline double penaltyFactor( const LocalEvaluation& left,
@@ -352,6 +334,18 @@ namespace Fem
       betaK = betaK * jump + (1.0 - jump) * betaN;
 
       return betaK ;
+    }
+
+  private:
+
+    inline double lambdaK( const DiffusionMatrixType& K ) const
+    {
+      DomainType values ;
+      // calculate eigenvalues
+      FMatrixHelp :: eigenValues( K, values );
+
+      // value[ 0 ] is smallest ev
+      return SQR(values[ dimDomain -1 ]) / values[ 0 ];
     }
 
     template <class T>

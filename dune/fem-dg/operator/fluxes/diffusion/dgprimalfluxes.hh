@@ -1124,8 +1124,7 @@ namespace Fem
         else
         {
           /*
-          double penFac = model_.penaltyBoundary( inside, time,
-                                                  xglInside, uLeft );
+          double penFac = model_.penaltyBoundary( left, uLeft );
           bndJumpU.mv( normal, penaltyTerm );
           penaltyTerm *= penFac ;
           */

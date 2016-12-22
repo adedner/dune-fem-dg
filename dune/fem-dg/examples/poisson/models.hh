@@ -229,15 +229,6 @@ namespace Poisson
       maxValue = values.infinity_norm();
     }
 
-    template< class Entity >
-    inline double penaltyBoundary (const Entity& inside,
-                                   const double time,
-                                   const DomainType& xInside,
-                                   const RangeType& uLeft) const
-    {
-      return penaltyFactor( inside, inside, time, xInside, uLeft, uLeft );
-    }
-
     /**
      * \brief diffusion term \f$A\f$
      *
@@ -359,7 +350,6 @@ namespace Poisson
       return DomainType( problem().constantAdvection() );
     }
 
-  private:
     template <class LocalEvaluation>
     inline double penaltyFactor (const LocalEvaluation& left,
                                  const LocalEvaluation& right,
@@ -407,6 +397,7 @@ namespace Poisson
       return betaK ;
     }
 
+  private:
     template <class T>
     T SQR( const T& a ) const
     {

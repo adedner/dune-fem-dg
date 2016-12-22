@@ -173,15 +173,6 @@ namespace Stokes
       maxValue = values.infinity_norm();
     }
 
-    template< class Entity >
-    inline double penaltyBoundary( const Entity& inside,
-                                   const double time,
-                                   const DomainType& xInside,
-                                   const RangeType& uLeft ) const
-    {
-      return penaltyFactor( inside, inside, time, xInside, uLeft, uLeft );
-    }
-
     /**
      * \brief diffusion term \f$A\f$
      */
@@ -253,7 +244,6 @@ namespace Stokes
     }
 
     const ProblemType& problem () const { return problem_; }
-  private:
 
     template <class LocalEvaluation>
     inline double penaltyFactor( const LocalEvaluation& left,
@@ -302,6 +292,7 @@ namespace Stokes
       return betaK ;
     }
 
+  private:
     template <class T>
     T SQR( const T& a ) const
     {

@@ -371,30 +371,7 @@ namespace Fem
           a[dimDomain*r+d][d] = u[r];
     }
 
-    /**
-     * \brief returns the maximum eigen value of \f$ K \f$.
-     *
-     * \param[in]  local local evaluation
-     * \param[in]  u evaluation of the local function, i.e. \f$ u_E( \hat{x} ) \f$
-     * \param[out] the maximal eigen value
-     */
-    template <class LocalEvaluation>
-    inline void eigenValues (const LocalEvaluation& local,
-                             const RangeType& u,
-                             RangeType& maxValue) const
-    {
-      DUNE_THROW(Dune::NotImplemented,"DefaultModel::eigenValues is not implemented");
-    }
 
-    template< class Entity >
-    inline double penaltyFactor( const double time,
-                                 const DomainType& xInside,
-                                 const Entity& inside,
-                                 const RangeType& uLeft ) const
-    {
-      DUNE_THROW(Dune::NotImplemented,"DefaultModel::penaltyValues is not implemented");
-      return 0.0;
-    }
 
    /**
      * \brief diffusion term \f$A\f$
@@ -429,6 +406,7 @@ namespace Fem
       diffusion( local, u, jac, A );
     }
 
+
     /**
      * \brief return the maximal wave speed due to the advection part
      *
@@ -460,26 +438,22 @@ namespace Fem
      * \param[in]  circumEstimate estimation of the circum
      * \param[in]  u evaluation of the local function, i.e. \f$ u_E( \hat{x} ) \f$
      */
-    template< class Intersection >
-    inline double diffusionTimeStep( const Intersection &it,
-                                     const double enVolume,
+    template <class LocalEvaluation>
+    inline double diffusionTimeStep( const LocalEvaluation& local,
                                      const double circumEstimate,
-                                     const double time,
-                                     const FaceDomainType& x,
                                      const RangeType& u ) const
     {
       return 0;
     }
+
 
     /**
      * \brief checks for existence of Dirichlet boundary values
      *
      * \param[in] local local evaluation
      */
-    template< class Intersection >
-    inline bool hasBoundaryValue(const Intersection& it,
-                                 const double time,
-                                 const FaceDomainType& x) const
+    template< class LocalEvaluation >
+    inline bool hasBoundaryValue(const LocalEvaluation& local) const
     {
       return true;
     }
@@ -563,10 +537,8 @@ namespace Fem
      * \param[in]  uLeft evaluation of the local function, i.e. \f$ u_{E^+}( \hat{x} ) \f$
      * \param[out] uRight the Dirichlet boundary value
      */
-    template< class Intersection >
-    inline void boundaryValue (const Intersection& it,
-                               const double time,
-                               const FaceDomainType& x,
+    template <class LocalEvaluation>
+    inline void boundaryValue (const LocalEvaluation& local,
                                const RangeType& uLeft,
                                RangeType& uRight) const
     {
@@ -583,6 +555,38 @@ namespace Fem
     inline bool allowsRefinement( const LocalEvaluation& local ) const
     {
       return true;
+    }
+
+    /**
+     * \brief returns the maximum eigen value of \f$ K \f$.
+     *
+     * \param[in]  local local evaluation
+     * \param[in]  u evaluation of the local function, i.e. \f$ u_E( \hat{x} ) \f$
+     * \param[out] the maximal eigen value
+     */
+    template <class LocalEvaluation>
+    inline void eigenValues (const LocalEvaluation& local,
+                             const RangeType& u,
+                             RangeType& maxValue) const
+    {
+      DUNE_THROW(Dune::NotImplemented,"DefaultModel::eigenValues is not implemented");
+    }
+
+    template< class LocalEvaluation >
+    inline double penaltyBoundary( const LocalEvaluation& local,
+                                   const RangeType& uLeft ) const
+    {
+      return penaltyFactor( local, local, uLeft, uLeft );
+    }
+
+    template <class LocalEvaluation>
+    inline double penaltyFactor (const LocalEvaluation& left,
+                                 const LocalEvaluation& right,
+                                 const RangeType& uLeft,
+                                 const RangeType& uRight) const
+    {
+      DUNE_THROW(Dune::NotImplemented,"DefaultModel::penaltyValues is not implemented");
+      return 0.0;
     }
   };
 
