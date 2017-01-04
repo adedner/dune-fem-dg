@@ -1092,9 +1092,9 @@ namespace Fem
                          JacobianRangeType& liftEn,
                          JacobianRangeType& liftNb) const
     {
-      assert( this->LePlusLifting().isInitialized() )
+      assert( this->LePlusLifting().isInitialized() );
       assert( this->LePlusLifting().entity() == left.entity() );
-      assert( this->LeMinusLifting().isInitialized() )
+      assert( this->LeMinusLifting().isInitialized() );
       assert( this->LeMinusLifting().entity() == right.entity() );
 
       const int qp = left.index();
