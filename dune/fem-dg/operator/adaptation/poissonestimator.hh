@@ -718,16 +718,21 @@ namespace Fem
       uValuesNb.resize( numQuadraturePoints );
       uInside.evaluateQuadrature( quadInside, uValuesEn );
 
-      typedef QuadratureContext< ElementType, IntersectionType, FaceQuadratureType > PointContextType;
-      PointContextType local( inside, intersection, quadInside, 0.0, volume );
+      typedef RangeType           RangeTuple;
+      typedef SigmaConverterType JacobianTuple;
 
-      oper_.boundaryValues(local, uValuesNb);
+      typedef QuadratureContext< ElementType, IntersectionType, FaceQuadratureType > ContextType;
+      typedef LocalEvaluation< ContextType, RangeTuple, JacobianTuple > LocalEvaluationType;
+
+      ContextType cLocal( inside, intersection, quadInside, volume );
+
+      oper_.boundaryValues(cLocal, uValuesNb);
       duValuesEn.resize( numQuadraturePoints );
       uInside.evaluateQuadrature( quadInside, duValuesEn );
       fluxEn.resize( numQuadraturePoints );
       dfluxEn.resize( numQuadraturePoints );
 
-      oper_.boundaryFlux( local,
+      oper_.boundaryFlux( cLocal,
                           uValuesEn, duValuesEn, uValuesNb,
                           fluxEn, dfluxEn );
 
@@ -739,10 +744,6 @@ namespace Fem
       faceVol = intersection.geometry().volume();
 
       volume/=3*faceVol;
-
-      typedef RangeType           RangeTuple;
-      typedef SigmaConverterType JacobianTuple;
-      typedef ExtraQuadraturePointContext< ElementType, IntersectionType, FaceQuadratureType, RangeTuple, JacobianTuple > LocalEvaluationType;
 
       for( const auto qp : quadInside )
       {
@@ -759,9 +760,9 @@ namespace Fem
         fluxEn[idx] /= integrationElement;
 
         const SigmaConverterType sigmaValueEn( sigmaValuesEn[idx] );
-        LocalEvaluationType local2( local, idx, uValuesEn[idx], sigmaValueEn );
+        LocalEvaluationType local( cLocal, uValuesEn[idx], sigmaValueEn );
 
-        oper_.model().diffusion(local2, uValuesEn[idx], sigmaValueEn, AJacEn);
+        oper_.model().diffusion(local[idx], uValuesEn[idx], sigmaValueEn, AJacEn);
 
         // note that flux=-hatA therefore we compute -hatA+Agrad u
         AJacEn.umv( unitNormal, fluxEn[idx]);
@@ -870,10 +871,15 @@ namespace Fem
       fluxNb.resize( numQuadraturePoints );
       dfluxNb.resize( numQuadraturePoints );
 
+      typedef RangeType           RangeTuple;
+      typedef SigmaConverterType  JacobianTuple;
       typedef QuadratureContext< ElementType, IntersectionType, QuadratureImp > ContextType;
-      ContextType localInside ( inside, intersection, quadInside, 0.0, volume );
-      ContextType localOutside( outside, intersection, quadOutside, 0.0, volume );
-      oper_.numericalFlux(localInside, localOutside,
+      typedef LocalEvaluation< ContextType, RangeTuple, JacobianTuple > LocalEvaluationType;
+
+      ContextType cLeft( inside, intersection, quadInside, volume );
+      ContextType cRight( outside, intersection, quadOutside, volume );
+
+      oper_.numericalFlux(cLeft, cRight,
                           uValuesEn, duValuesEn, uValuesNb, duValuesNb,
                           fluxEn, dfluxEn, fluxNb, dfluxNb
                           );
@@ -889,11 +895,6 @@ namespace Fem
       faceVol = intersection.geometry().volume();
 
       volume/=3*faceVol;
-
-      typedef RangeType           RangeTuple;
-      typedef SigmaConverterType  JacobianTuple;
-      typedef ExtraQuadraturePointContext< ElementType, IntersectionType, QuadratureImp, RangeTuple, JacobianTuple > LocalEvaluationType;
-
       for( const auto qp : quadInside )
       {
         const auto idx = qp.index();
@@ -910,12 +911,12 @@ namespace Fem
         fluxNb[idx] /= integrationElement;
 
         const SigmaConverterType sigmaValueEn( sigmaValuesEn[idx] );
-        const LocalEvaluationType left( inside, intersection, quadInside, idx, 0, volume, uValuesEn[idx], sigmaValueEn );
+        const LocalEvaluationType left( cLeft, uValuesEn[idx], sigmaValueEn );
         const SigmaConverterType sigmaValueNb( sigmaValuesNb[idx] );
-        const LocalEvaluationType right( outside, intersection, quadOutside, idx, 0, volume, uValuesNb[idx], sigmaValueNb );
+        const LocalEvaluationType right( cRight, uValuesNb[idx], sigmaValueNb );
 
-        oper_.model().diffusion(left,  uValuesEn[idx], sigmaValueEn, AJacEn);
-        oper_.model().diffusion(right, uValuesNb[idx], sigmaValueNb, AJacNb);
+        oper_.model().diffusion(left[idx],  uValuesEn[idx], sigmaValueEn, AJacEn);
+        oper_.model().diffusion(right[idx], uValuesNb[idx], sigmaValueNb, AJacNb);
 
         // note that flux=-hatA therefore we compute -hatA+Agrad u
         AJacEn.umv( unitNormal, fluxEn[idx]);
@@ -1003,12 +1004,12 @@ namespace Fem
           sigma_h.evaluate(x1,sigmax1);
 
           {
-            const PointContextType local( entity, xgl0, x0, 0.0, volume );
+            const PointContextType local( entity, xgl0, x0, volume );
             const SigmaConverterType jac0( sigmax0 );
             oper_.model().diffusion(local, ux0, jac0, Asigmax0);
           }
           {
-            const PointContextType local( entity, xgl1, x1, 0.0, volume );
+            const PointContextType local( entity, xgl1, x1, volume );
             const SigmaConverterType jac1( sigmax1 );
             oper_.model().diffusion(local, ux1, jac1, Asigmax1);
           }

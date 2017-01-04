@@ -45,7 +45,8 @@ namespace Fem
     : public DefaultModel < NSModelTraits< GridImp, ProblemImp > >
   {
     public:
-    typedef NSModelTraits< GridImp, ProblemImp >  Traits;
+    typedef NSModelTraits< GridImp, ProblemImp >       Traits;
+    typedef DefaultModel< Traits >                     BaseType;
 
     typedef GridImp                                    GridType;
     typedef typename Traits::ProblemType               ProblemType;
@@ -70,9 +71,12 @@ namespace Fem
     static const bool hasAdvection = true;
     static const bool hasDiffusion = true;
 
+    using BaseType::time;
+
    public:
     NSModel( const ProblemType& problem )
-      : thermodynamics_( problem.thermodynamics() )
+      : BaseType( problem.startTime() )
+      , thermodynamics_( problem.thermodynamics() )
       , problem_( problem )
       , nsFlux_( problem )
       , alpha_( std::pow( problem.gamma(), 1.5 ) * (problem.Re_inv() * problem.Pr_inv()) )
@@ -93,7 +97,7 @@ namespace Fem
     {
       // some special RHS for testcases/NSWaves
       const DomainType& xgl = local.entity().geometry().global( local.position() );
-      return problem_.stiffSource( local.time(), xgl, u, s );
+      return problem_.stiffSource( time(), xgl, u, s );
     }
 
     template <class LocalEvaluation>
@@ -104,7 +108,7 @@ namespace Fem
     {
       // some special RHS for testcases/NSWaves
       const DomainType& xgl = local.entity().geometry().global( local.position() );
-      return problem_.nonStiffSource( local.time(), xgl, u, s );
+      return problem_.nonStiffSource( time(), xgl, u, s );
     }
 
     template <class LocalEvaluation>
@@ -121,7 +125,6 @@ namespace Fem
     ////////////////////////////////////////////////////////////////
     template< class Entity >
     inline void velocity( const Entity& en,
-                          const double time,
                           const DomainType& x,
                           const RangeType& u,
                           DomainType& velocity) const
@@ -147,7 +150,6 @@ namespace Fem
     // calculate jump between left and right value
     template< class Intersection >
     inline void jump(const Intersection& it,
-                     const double time,
                      const FaceDomainType& x,
                      const RangeType& uLeft,
                      const RangeType& uRight,
@@ -164,13 +166,12 @@ namespace Fem
     template< class Intersection >
     inline void adaptationIndicator(
                      const Intersection& it,
-                     const double time,
                      const FaceDomainType& x,
                      const RangeType& uLeft,
                      const RangeType& uRight,
                      RangeType& indicator) const
     {
-      jump( it, time, x, uLeft, uRight, indicator );
+      jump( it, x, uLeft, uRight, indicator );
     }
 
 
@@ -279,7 +280,7 @@ namespace Fem
                                RangeType& uRight ) const
     {
       const DomainType xgl = local.intersection().geometry().global( local.localPosition() );
-      problem_.evaluate( local.time(), xgl, uRight );
+      problem_.evaluate( time(), xgl, uRight );
     }
 
     // here x is in global coordinates
@@ -318,7 +319,6 @@ namespace Fem
       problem_.evaluate( time, xgl, result );
       //thermodynamics_.conservativeToPrimitiveEnergyForm( cons, result );
     }
-
 
     inline const ProblemType& problem() const { return problem_; }
 

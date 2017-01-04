@@ -161,27 +161,36 @@ namespace Fem
     inline double source( const LocalEvaluation& local,
                           RangeType& s ) const
     {
-      return model_.nonStiffSource( local, local.values()[ uVar ], s );
+      return model_.nonStiffSource( local, local.values()[uVar], s );
     }
 
+    template <class LocalEvaluationVec >
+    void initializeIntersection(const LocalEvaluationVec& left,
+                                const LocalEvaluationVec& right )
+    {}
 
-    template <class QuadratureImp, class ArgumentTupleVector >
-    void initializeIntersection(const IntersectionType& it,
-                                const double time,
-                                const QuadratureImp& quadInner,
-                                const QuadratureImp& quadOuter,
-                                const ArgumentTupleVector& uLeftVec,
-                                const ArgumentTupleVector& uRightVec)
-    {
-    }
+    template <class LocalEvaluationVec >
+    void initializeBoundary(const LocalEvaluationVec& local )
+    {}
 
-    template <class QuadratureImp, class ArgumentTupleVector >
-    void initializeBoundary(const IntersectionType& it,
-                            const double time,
-                            const QuadratureImp& quadInner,
-                            const ArgumentTupleVector& uLeftVec)
-    {
-    }
+
+    //template <class QuadratureImp, class ArgumentTupleVector >
+    //void initializeIntersection(const IntersectionType& it,
+    //                            const double time,
+    //                            const QuadratureImp& quadInner,
+    //                            const QuadratureImp& quadOuter,
+    //                            const ArgumentTupleVector& uLeftVec,
+    //                            const ArgumentTupleVector& uRightVec)
+    //{
+    //}
+
+    //template <class QuadratureImp, class ArgumentTupleVector >
+    //void initializeBoundary(const IntersectionType& it,
+    //                        const double time,
+    //                        const QuadratureImp& quadInner,
+    //                        const ArgumentTupleVector& uLeftVec)
+    //{
+    //}
 
   public:
     /**
@@ -251,7 +260,7 @@ namespace Fem
           RangeType gRight;
           // returns advection wave speed
           return numflux_.numericalFlux(left, left,
-                                        left.values()[ uVar ], uBnd_, left.jacobians()[uVar], left.jacobians()[uVar],
+                                        left.values()[uVar], uBnd_, left.jacobians()[uVar], left.jacobians()[uVar],
                                         gLeft, gRight);
         }
         else
@@ -486,9 +495,9 @@ namespace Fem
       if( ! model_.allowsRefinement( left ) )
         return 0.;
 
-      double ldt = BaseType :: numericalFlux( left, gLeft, gRight, gDiffLeft, gDiffRight );
+      double ldt = BaseType::numericalFlux( left, gLeft, gRight, gDiffLeft, gDiffRight );
 
-      if( BaseType :: advection && adaptation_ )
+      if( BaseType::advection && adaptation_ )
       {
         RangeType error ;
         RangeType v ;
@@ -509,7 +518,7 @@ namespace Fem
         error -= v;
         error -= w;
 
-        const int dimRange = FunctionSpaceType :: dimRange;
+        const int dimRange = FunctionSpaceType::dimRange;
         for( int i=0; i<dimRange; ++i )
         {
           error[ i ] = std::abs( error[ i ] );
@@ -547,10 +556,10 @@ namespace Fem
     }
 
   protected:
-    using BaseType :: inside ;
-    using BaseType :: outside ;
-    using BaseType :: model_ ;
-    using BaseType :: numflux_ ;
+    using BaseType::inside ;
+    using BaseType::outside ;
+    using BaseType::model_ ;
+    using BaseType::numflux_ ;
 
     AdaptationType*  adaptation_;
     const ThreadDomainFilterType*  threadDomainFilter_;

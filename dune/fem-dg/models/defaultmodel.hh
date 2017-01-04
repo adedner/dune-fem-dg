@@ -152,14 +152,9 @@ namespace Fem
     typedef typename Traits::FaceDomainType              FaceDomainType;
     typedef typename Traits::JacobianRangeType           JacobianRangeType;
 
-    /**
-     * \brief Sets the current time
-     *
-     * This method is needed to make stationary problems time dependent.
-     *
-     * \param[in] time the current time \f$ t \f$
-     */
-    void setTime (double time) {}
+    explicit DefaultModel( double time = 0 )
+      : time_( time )
+    {}
 
     /**
      * \brief returns whether the mass term is not the identity
@@ -588,6 +583,19 @@ namespace Fem
       DUNE_THROW(Dune::NotImplemented,"DefaultModel::penaltyValues is not implemented");
       return 0.0;
     }
+
+    void setTime (double time)
+    {
+      time_ = time;
+    }
+
+    double time () const
+    {
+      return time_;
+    }
+
+  protected:
+    double time_;
   };
 
 }

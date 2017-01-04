@@ -51,7 +51,8 @@ namespace Fem
     public DefaultModel< EulerModelTraits< GridImp, ProblemImp > >
   {
   public:
-    typedef EulerModelTraits< GridImp, ProblemImp > Traits;
+    typedef EulerModelTraits< GridImp, ProblemImp >      Traits;
+    typedef DefaultModel< Traits >                       BaseType;
     typedef typename Traits::ProblemType                 ProblemType;
 
     enum { dimDomain = Traits::dimDomain };
@@ -73,6 +74,9 @@ namespace Fem
     // for Euler equations diffusion is disabled
     static const bool hasAdvection = true;
     static const bool hasDiffusion = false;
+
+    using BaseType::time;
+    using BaseType::time_;
 
    public:
     EulerModel( const ProblemType& problem )
@@ -188,7 +192,7 @@ namespace Fem
       if( bndId == Inflow )
       {
         const DomainType xgl = local.intersection().geometry().global( local.localPosition() );
-        problem_.evaluate(xgl, local.time(), uRight);
+        problem_.evaluate(xgl, time(), uRight);
         return ;
       }
       else if ( bndId == Outflow )
@@ -291,7 +295,6 @@ namespace Fem
     ////////////////////////////////////////////////////////////////
     template< class Entity >
     inline void velocity (const Entity& en,
-                          const double time,
                           const DomainType& x,
                           const RangeType& u,
                           DomainType& velocity) const
@@ -339,7 +342,6 @@ namespace Fem
     // calculate jump between left and right value
     template< class Intersection >
     inline void jump(const Intersection& it,
-                     const double time,
                      const FaceDomainType& x,
                      const RangeType& uLeft,
                      const RangeType& uRight,
@@ -354,7 +356,6 @@ namespace Fem
     // calculate jump between left and right value
     template< class Intersection >
     inline void adaptationIndicator (const Intersection& it,
-                                     const double time,
                                      const FaceDomainType& x,
                                      const RangeType& uLeft,
                                      const RangeType& uRight,

@@ -15,37 +15,7 @@ namespace Dune
 namespace Fem
 {
 
-  // DGFluxTupleToVectorConverter
-  //-----------------------------
 
-  template <class ArgumentVectorTuple, int passUId >
-  class DGFluxTupleToVectorConverter
-  {
-    std::integral_constant< int, passUId > uVar;
-    const ArgumentVectorTuple& vec_;
-
-    //DGFluxTupleToVectorConverter(const DGFluxTupleToVectorConverter&);
-  public:
-    typedef typename ArgumentVectorTuple :: value_type TupleType;
-    typedef typename TupleType::template Value< std::integral_constant< int, passUId > >::Type ValueType;
-
-    DGFluxTupleToVectorConverter(const ArgumentVectorTuple& vec)
-      : vec_( vec )
-    {}
-
-    // return element of vector at position i
-    const TupleType& at( const size_t i ) const
-    {
-      assert( i < vec_.size() );
-      return vec_[ i ];
-    }
-
-    // return tuple element according to passUId at position i
-    const ValueType& operator [] ( const size_t i ) const
-    {
-      return at( i )[ uVar ];
-    }
-  };
 
   /**
    * \brief Base class for all diffusion fluxes.
@@ -199,27 +169,27 @@ namespace Fem
     {
     }
 
-    template <class QuadratureImp, class ArgumentTupleVector >
-    void initializeIntersection(const IntersectionType& intersection,
-                                const EntityType& inside,
-                                const EntityType& outside,
-                                const double time,
-                                const QuadratureImp& quadInner,
-                                const QuadratureImp& quadOuter,
-                                const ArgumentTupleVector& uLeftVec,
-                                const ArgumentTupleVector& uRightVec)
-    {
-    }
+    //template <class QuadratureImp, class ArgumentTupleVector >
+    //void initializeIntersection(const IntersectionType& intersection,
+    //                            const EntityType& inside,
+    //                            const EntityType& outside,
+    //                            const double time,
+    //                            const QuadratureImp& quadInner,
+    //                            const QuadratureImp& quadOuter,
+    //                            const ArgumentTupleVector& uLeftVec,
+    //                            const ArgumentTupleVector& uRightVec)
+    //{
+    //}
 
-    template <class QuadratureImp, class ArgumentTupleVector>
-    void initializeBoundary(const IntersectionType& intersection,
-                            const EntityType& entity,
-                            const double time,
-                            const QuadratureImp& quadInner,
-                            const ArgumentTupleVector& uLeftVec,
-                            const std::vector< RangeType >& uRight)
-    {
-    }
+    //template <class QuadratureImp, class ArgumentTupleVector>
+    //void initializeBoundary(const IntersectionType& intersection,
+    //                        const EntityType& entity,
+    //                        const double time,
+    //                        const QuadratureImp& quadInner,
+    //                        const ArgumentTupleVector& uLeftVec,
+    //                        const std::vector< RangeType >& uRight)
+    //{
+    //}
 
   public:
     /**

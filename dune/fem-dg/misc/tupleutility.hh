@@ -114,7 +114,17 @@ namespace Fem
     static const int value = true;
   };
 
+  template< class T >
+  struct is_vector
+  {
+    static const int value = false;
+  };
 
+  template< class TElem >
+  struct is_vector< std::vector< TElem > >
+  {
+    static const int value = true;
+  };
 
   /**
    * \brief Picks some elements of a std::tuple,

@@ -298,6 +298,7 @@ namespace Fem
 
   public:
     typedef LimiterDefaultTraits<GlobalTraitsImp,Model,passId> Traits;
+    typedef Fem::DGDiscreteModelDefaultWithInsideOutside< Traits,passId > BaseType;
 
     typedef typename Traits::DomainType                     DomainType;
     typedef typename Traits::LocalDomainType                LocalDomainType;
@@ -316,6 +317,9 @@ namespace Fem
     enum { dimRange = RangeType::dimension };
 
   public:
+    using BaseType::inside;
+    using BaseType::outside;
+
     /** \brief default limiter discrete model */
     LimiterDefaultDiscreteModel(const Model& mod,
                                 const DomainFieldType veloEps = 1e-8)
@@ -336,10 +340,18 @@ namespace Fem
     //! \brief returns true
     bool hasFlux() const   { return true;  }
 
+    template <class LocalEvaluationVec >
+    void initializeIntersection( const LocalEvaluationVec& left,
+                                 const LocalEvaluationVec& right )
+    {}
 
+    template <class LocalEvaluationVec >
+    void initializeBoundary(const LocalEvaluationVec& local )
+    {}
+
+    //old version
     template <class QuadratureImp, class ArgumentTupleVector >
     void initializeIntersection(const IntersectionType& it,
-                                const double time,
                                 const QuadratureImp& quadInner,
                                 const QuadratureImp& quadOuter,
                                 const ArgumentTupleVector& uLeftVec,
@@ -347,9 +359,9 @@ namespace Fem
     {
     }
 
+    //old version
     template <class QuadratureImp, class ArgumentTupleVector >
     void initializeBoundary(const IntersectionType& it,
-                            const double time,
                             const QuadratureImp& quadInner,
                             const ArgumentTupleVector& uLeftVec)
     {
@@ -479,7 +491,7 @@ namespace Fem
                         const ArgumentTuple& uLeft) const
     {
       // evaluate velocity
-      model_.velocity(this->inside(),time, this->inside().geometry().local( it.geometry().global(x) ), uLeft[ uVar ], velocity_);
+      model_.velocity(this->inside(), this->inside().geometry().local( it.geometry().global(x) ), uLeft[ uVar ], velocity_);
       return checkDirection(it, x, velocity_);
     }
 
@@ -1484,10 +1496,12 @@ namespace Fem
               if( discreteModel_.hasBoundaryValue( intersection, currentTime_, localPoint ) )
               {
                 FaceQuadratureType faceQuadInner(gridPart_,intersection, 0, FaceQuadratureType::INSIDE);
-                ExtraQuadraturePointContext< EntityType, IntersectionType,
-                  FaceQuadratureType, RangeType, RangeType > local( en, intersection, faceQuadInner, 0, currentTime_, geo.volume(), enVal, enVal );
-                discreteModel_.boundaryValue( local,
-                                              enVal, nbVal);
+                typedef QuadratureContext< EntityType, IntersectionType, FaceQuadratureType > ContextType;
+                typedef LocalEvaluation< ContextType, RangeType > LocalEvaluationType;
+                ContextType cLocal( en, intersection, faceQuadInner, geo.volume()/*, 0*/ );
+                LocalEvaluationType local( cLocal[0], enVal );
+
+                discreteModel_.boundaryValue( local, enVal, nbVal);
                 // calculate difference
                 nbVal -= enVal;
               }
@@ -2638,7 +2652,7 @@ namespace Fem
     mutable std::vector< RangeType >  nbVals_;
     mutable std::vector< MatrixCacheType > matrixCacheVec_;
 
-    // vector for stroing the information which elements have been computed already
+    // vector for storing the information which elements have been computed already
     mutable std::vector< bool > visited_;
 
     LocalMassMatrixType localMassMatrix_;

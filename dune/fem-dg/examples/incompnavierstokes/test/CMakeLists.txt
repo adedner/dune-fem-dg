@@ -4,7 +4,7 @@ include_directories("${CMAKE_SOURCE_DIR}/dune/fem-dg/examples/incompnavierstokes
 add_definitions( "-DYASPGRID" )
 add_definitions( "-DGRIDDIM=2" )
 
-set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O0" )
+#set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O0" )
 
 configure_file( BuildTests.cmake BuildTests.cmake @ONLY)
 dune_add_test_case( NAME incompnavierstokes

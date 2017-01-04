@@ -71,6 +71,7 @@ namespace Fem
   {
   public:
     typedef HeatEqnModelTraits< GridImp, ProblemImp, ActivationImp, 1 > Traits;
+    typedef DefaultModel< Traits >                                    BaseType;
 
     static const int velo = Traits::template IdGenerator<0>::id;
 
@@ -99,6 +100,8 @@ namespace Fem
     // one function space here, with dimension of range type 'dimDomain'
     typedef typename Traits::template ParameterSpaces<dimDomain>      ParameterSpacesType;
 
+    using BaseType::time_;
+    using BaseType::time;
 
     HeatEqnModel(const HeatEqnModel& otehr);
     const HeatEqnModel &operator=(const HeatEqnModel &other);
@@ -110,7 +113,8 @@ namespace Fem
      *
      * \param problem Class describing the initial(t=0) and exact solution
      */
-    HeatEqnModel(const ProblemType& problem) :
+    HeatEqnModel(const ProblemType& problem)
+    : BaseType( problem.startTime() ),
       problem_(problem),
       epsilon_(problem.epsilon()),
       tstepEps_( getTStepEps() )
@@ -130,7 +134,7 @@ namespace Fem
                                   RangeType & s) const
     {
       DomainType xgl = local.entity().geometry().global( local.position() );
-      return problem_.nonStiffSource( xgl, local.time(), u, s );
+      return problem_.nonStiffSource( xgl, time_, u, s );
     }
 
 
@@ -141,7 +145,7 @@ namespace Fem
                                RangeType & s) const
     {
       DomainType xgl = local.entity().geometry().global( local.position() );
-      return problem_.stiffSource( xgl, local.time(), u, s );
+      return problem_.stiffSource( xgl, time_, u, s );
     }
 
     template <class LocalEvaluation>
@@ -149,7 +153,7 @@ namespace Fem
                       const RangeType& u,
                       RangeType& diag ) const
     {
-      problem_.mass( local.entity().geometry().global( local.position() ), local.time(), u, diag );
+      problem_.mass( local.entity().geometry().global( local.position() ), time_, u, diag );
     }
 
   private:
@@ -158,10 +162,10 @@ namespace Fem
       typedef velocityVar VarId;
 
       template <class LocalEvaluation>
-      DomainType operator() (const LocalEvaluation& local, const ProblemType& problem ) const
+      DomainType operator() (const LocalEvaluation& local, double time, const ProblemType& problem ) const
       {
         DomainType v;
-        problem.velocity( local.entity().geometry().global( local.position() ), local.time(), v);
+        problem.velocity( local.entity().geometry().global( local.position() ), time, v);
         return v;
       }
     };
@@ -195,7 +199,7 @@ namespace Fem
     template <class LocalEvaluation>
     inline DomainType velocity(const LocalEvaluation& local) const
     {
-      return local.evaluate( GetVelocity(), local, problem_ );
+      return local.values( GetVelocity(), local, time_, problem_ );
     }
 
 
@@ -305,16 +309,16 @@ namespace Fem
      * \brief dirichlet boundary values
      */
     template <class LocalEvaluation>
-    inline  void boundaryValue(const LocalEvaluation& local,
-                               const RangeType& uLeft,
-                               RangeType& uRight) const
+    inline void boundaryValue(const LocalEvaluation& local,
+                              const RangeType& uLeft,
+                              RangeType& uRight) const
     {
   #ifdef TESTOPERATOR
     uRight = 0;
     return;
   #endif
       DomainType xgl = local.intersection().geometry().global( local.localPosition() );
-      problem_.evaluate(xgl, local.time(), uRight);
+      problem_.evaluate(xgl, time_, uRight);
     }
 
 

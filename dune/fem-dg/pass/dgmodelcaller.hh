@@ -74,10 +74,15 @@ namespace Fem
     typedef typename BaseType::RangeTupleType RangeTupleType;
     typedef typename BaseType::JacobianRangeTupleType JacobianRangeTupleType;
 
-    typedef ExtraQuadraturePointContext< EntityType, VolumeQuadratureType,
-                     Dune::TypeIndexedTuple< RangeTupleType, Selector >,
-                     Dune::TypeIndexedTuple< JacobianRangeTupleType, Selector > > ElementQuadratureContextType;
+    template< class ContextImp >
+    using LocalEval = LocalEvaluation< ContextImp,
+                                       Dune::TypeIndexedTuple< RangeTupleType, Selector >,
+                                       Dune::TypeIndexedTuple< JacobianRangeTupleType, Selector > >;
 
+    template< class ContextImp >
+    using LocalEvalVec = LocalEvaluation< ContextImp,
+                                       std::vector< Dune::TypeIndexedTuple< RangeTupleType, Selector > >,
+                                       std::vector< Dune::TypeIndexedTuple< JacobianRangeTupleType, Selector > > >;
   public:
     static const bool evaluateJacobian = DiscreteModelType::evaluateJacobian;
 
@@ -113,27 +118,32 @@ namespace Fem
     template <class QuadratureImp>
     void initializeIntersection( const EntityType &neighbor,
                                  const IntersectionType &intersection,
-                                 const QuadratureImp &inside,
-                                 const QuadratureImp &outside )
+                                 const QuadratureImp &quadInner,
+                                 const QuadratureImp &quadOuter )
     {
       assert( intersection.neighbor() );
 
-      BaseType::setNeighbor( neighbor, inside, outside );
+      BaseType::setNeighbor( neighbor, quadInner, quadOuter );
 
       if( evaluateJacobian )
       {
-        jacobiansInside_.resize( inside.nop() );
-        localFunctionsInside_.evaluateQuadrature( inside, jacobiansInside_ );
-        jacobiansOutside_.resize( outside.nop() );
-        localFunctionsOutside_.evaluateQuadrature( outside, jacobiansOutside_ );
+        jacobiansOutside_.resize( quadOuter.nop() );
+        localFunctionsOutside_.evaluateQuadrature( quadOuter, jacobiansOutside_ );
+        jacobiansInside_.resize( quadInner.nop() );
+        localFunctionsInside_.evaluateQuadrature( quadInner, jacobiansInside_ );
       }
 
 #ifndef NDEBUG
-      quadInnerId_ = inside.id();
-      quadOuterId_ = outside.id();
+      quadInnerId_ = quadInner.id();
+      quadOuterId_ = quadOuter.id();
 #endif
+      typedef QuadratureContext< EntityType, IntersectionType, QuadratureImp > ContextType;
+      typedef LocalEvalVec< ContextType > EvalType;
 
-      discreteModel().initializeIntersection( intersection, time(), inside, outside, valuesInside_, valuesOutside_ );
+      ContextType cLeft( discreteModel().inside(), intersection, quadInner, discreteModel().enVolume() );
+      ContextType cRight( discreteModel().outside(), intersection, quadOuter, discreteModel().nbVolume() );
+      discreteModel().initializeIntersection( EvalType( cLeft,  valuesInside_, jacobiansInside_ ),
+                                              EvalType( cRight, valuesOutside_, jacobiansOutside_ ) );
     }
 
     template <class QuadratureImp>
@@ -153,15 +163,19 @@ namespace Fem
 #ifndef NDEBUG
       quadInnerId_ = quadrature.id();
 #endif
+      typedef QuadratureContext< EntityType, IntersectionType, QuadratureImp > ContextType;
+      typedef LocalEvalVec< ContextType > EvalType;
 
-      discreteModel().initializeBoundary( intersection, time(), quadrature, valuesInside_ );
+
+      ContextType cLocal( inside, intersection, quadrature, discreteModel().enVolume() );
+      discreteModel().initializeBoundary( EvalType( cLocal,  valuesInside_, jacobiansInside_ ) );
     }
 
     template <class QuadratureImp>
     void initializeBoundary ( const IntersectionType &intersection,
                               const QuadratureImp &quadrature )
     {
-      initializeBoundary( intersection.inside(), intersection, quadrature );
+      initializeBoundary( discreteModel().inside(), intersection, quadrature );
     }
 
     void analyticalFlux ( const EntityType &entity,
@@ -172,9 +186,11 @@ namespace Fem
       assert( quadId_ == quadrature.id() );
       assert( (int) values_.size() > qp );
 
-      discreteModel().analyticalFlux(
-          ElementQuadratureContextType( entity, quadrature, qp, time(), discreteModel().enVolume() , values_[ qp ], jacobianValue( jacobians_, qp ) ),
-          flux );
+      typedef QuadratureContext< EntityType, VolumeQuadratureType > ContextType;
+      typedef LocalEval< ContextType > EvalType;
+
+      ContextType cLocal( entity, quadrature, discreteModel().enVolume() );
+      discreteModel().analyticalFlux( EvalType( cLocal[qp], values_[qp], jacobianValue( jacobians_, qp ) ), flux );
     }
 
     double source ( const EntityType &entity,
@@ -185,9 +201,11 @@ namespace Fem
       assert( quadId_ == quadrature.id() );
       assert( (int) values_.size() > qp );
 
-      return discreteModel().source(
-          ElementQuadratureContextType( entity, quadrature, qp, time(), discreteModel().enVolume(), values_[ qp ], jacobianValue( jacobians_, qp ) ),
-          src );
+      typedef QuadratureContext< EntityType, VolumeQuadratureType > ContextType;
+      typedef LocalEval< ContextType > EvalType;
+
+      ContextType cLocal( entity, quadrature, discreteModel().enVolume() );
+      return discreteModel().source( EvalType( cLocal[qp], values_[qp], jacobianValue( jacobians_, qp ) ), src );
     }
 
     double analyticalFluxAndSource( const EntityType &entity,
@@ -203,26 +221,27 @@ namespace Fem
 
     template <class QuadratureType>
     double numericalFlux ( const IntersectionType &intersection,
-                           const QuadratureType &inside,
-                           const QuadratureType &outside,
+                           const QuadratureType &quadInner,
+                           const QuadratureType &quadOuter,
                            const int qp,
                            RangeType &gLeft,
                            RangeType &gRight,
                            JacobianRangeType &hLeft,
                            JacobianRangeType &hRight)
     {
-      assert( valuesInside_.size() >= inside.nop() );
-      assert( quadInnerId_ == inside.id() );
-      assert( valuesOutside_.size() >= inside.nop() );
-      assert( quadOuterId_ == outside.id() );
+      assert( valuesInside_.size() >= quadInner.nop() );
+      assert( quadInnerId_ == quadInner.id() );
+      assert( valuesOutside_.size() >= quadOuter.nop() );
+      assert( quadOuterId_ == quadOuter.id() );
 
-      typedef ExtraQuadraturePointContext< EntityType, IntersectionType, QuadratureType,
-                     Dune::TypeIndexedTuple< RangeTupleType, Selector >,
-                     Dune::TypeIndexedTuple< JacobianRangeTupleType, Selector > > QuadratureContextType ;
+      typedef QuadratureContext< EntityType, IntersectionType, QuadratureType > ContextType;
+      typedef LocalEval< ContextType > EvalType;
 
+      ContextType cLeft( localFunctionsInside_.entity(), intersection, quadInner, discreteModel().enVolume() );
+      ContextType cRight( localFunctionsOutside_.entity(), intersection, quadOuter, discreteModel().nbVolume() );
       return discreteModel().numericalFlux(
-                  QuadratureContextType( localFunctionsInside_.entity(), intersection, inside,  qp, time(), discreteModel().enVolume(), valuesInside_[ qp ],  jacobianValue( jacobiansInside_, qp ) ),
-                  QuadratureContextType( localFunctionsOutside_.entity(), intersection, outside, qp, time(), discreteModel().nbVolume(), valuesOutside_[ qp ], jacobianValue( jacobiansOutside_, qp ) ),
+                  EvalType( cLeft[qp], valuesInside_[qp],  jacobianValue( jacobiansInside_, qp ) ),
+                  EvalType( cRight[qp], valuesOutside_[qp], jacobianValue( jacobiansOutside_, qp ) ),
                   gLeft, gRight, hLeft, hRight );
     }
 
@@ -235,14 +254,11 @@ namespace Fem
       assert( valuesInside_.size() >= quadrature.nop() );
       assert( quadInnerId_ == quadrature.id() );
 
-      typedef  ExtraQuadraturePointContext< EntityType, IntersectionType, FaceQuadratureType,
-                     Dune::TypeIndexedTuple< RangeTupleType, Selector >,
-                     Dune::TypeIndexedTuple< JacobianRangeTupleType, Selector > > QuadratureContextType ;
+      typedef QuadratureContext< EntityType, IntersectionType, FaceQuadratureType > ContextType;
+      typedef LocalEval< ContextType > EvalType;
 
-
-      return discreteModel().boundaryFlux(
-                  QuadratureContextType( localFunctionsInside_.entity(), intersection, quadrature, qp, time(), discreteModel().enVolume(), valuesInside_[ qp ],  jacobianValue( jacobiansInside_, qp ) ),
-                  gLeft, hLeft );
+      ContextType cLocal( localFunctionsInside_.entity(), intersection, quadrature, discreteModel().enVolume(), qp );
+      return discreteModel().boundaryFlux( EvalType( cLocal, valuesInside_[qp], jacobianValue( jacobiansInside_, qp ) ), gLeft, hLeft );
     }
 
     void mass ( const EntityType &entity,
@@ -250,16 +266,18 @@ namespace Fem
                 const int qp,
                 MassFactorType &m )
     {
-      discreteModel().mass(
-          ElementQuadratureContextType( entity, quadrature, qp, time(), discreteModel().enVolume(), values_[ qp ], jacobianValue( jacobians_, qp ) ),
-          m );
+      typedef QuadratureContext< EntityType, VolumeQuadratureType > ContextType;
+      typedef LocalEval< ContextType > EvalType;
+
+      ContextType cLocal( entity, quadrature, discreteModel().enVolume(), qp );
+      discreteModel().mass( EvalType( cLocal, values_[ qp ], jacobianValue( jacobians_, qp ) ), m );
     }
   protected:
     template< class JacobianRangeTupleVectorType >
     const typename JacobianRangeTupleVectorType::value_type &jacobianValue ( const JacobianRangeTupleVectorType &jacobians, const int qp ) const
     {
       assert( ( evaluateJacobian ) ? (int) jacobians.size() > qp : true );
-      return ( evaluateJacobian ) ? jacobians[ qp ] : jacobians[ 0 ];
+      return ( evaluateJacobian ) ? jacobians[qp] : jacobians[0];
     }
 
     using BaseType::discreteModel;

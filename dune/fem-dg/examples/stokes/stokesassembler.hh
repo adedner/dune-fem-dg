@@ -215,8 +215,9 @@ namespace Fem
   public:
 
     //Constructor
-    template< class ContainerImp >
+    template< class ContainerImp, class ExtraParameterTupleImp >
     StokesAssembler( const std::shared_ptr<ContainerImp>& cont,
+                     ExtraParameterTupleImp tuple,
                      const ModelType& model )
     : spc_( (*cont)(_0)->solution()->space() ),
       pressurespc_( (*cont)(_1)->solution()->space() ),
@@ -238,11 +239,6 @@ namespace Fem
       divu=0.;
       for( int i=0;i<dimension;++i)
         divu+=du[i][i];
-    }
-
-    void setTime ( double time )
-    {
-      time_ = time;
     }
 
     void assemble()

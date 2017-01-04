@@ -24,12 +24,18 @@ namespace Fem
   template <class Tuple, unsigned long int... i >
   struct InsertFunctionTuple< Tuple, std::integer_sequence< unsigned long int, i...> >
   {
-    typedef std::tuple< std::shared_ptr< typename std::tuple_element< i, Tuple >::type >... > TupleType;
+    typedef std::tuple< std::shared_ptr< typename std::tuple_element< i, Tuple >::type >... > type;
+
+    template< class... AddRanges >
+    using RangeTypes = typename tuple_concat< std::tuple< typename std::tuple_element< i, Tuple >::RangeType... >, std::tuple< std::vector< AddRanges >... > >::type;
+
+    template< class... AddRanges >
+    using JacobianRangeTypes = typename tuple_concat< std::tuple< typename std::tuple_element< i, Tuple >::JacobianRangeType... >, std::tuple< std::vector< AddRanges >... > >::type;
 
     template< class ExtraArgImp >
-    static decltype(auto) createTuple( const std::shared_ptr< ExtraArgImp >& tuple )
+    static decltype(auto) create( const std::shared_ptr< ExtraArgImp >& tuple )
     {
-      return std::make_shared<TupleType>( (*tuple)( _index<i>() )... );
+      return std::make_shared<type>( (*tuple)( _index<i>() )... );
     }
   };
 
@@ -55,6 +61,7 @@ namespace Fem
     typedef Dune::Fem::SubEllipticContainer< FakeMatrixAdapter, DestinationType, DestinationType > ContainerType;
 
     typedef typename Traits::ModelType                            ModelType;
+    typedef typename Traits::ExtraParameterTupleType              ExtraParameterTupleType;
     static const bool hasDiffusion = ModelType::hasDiffusion;
 
     typedef typename DestinationType::DiscreteFunctionSpaceType   DiscreteFunctionSpaceType;
@@ -87,91 +94,32 @@ namespace Fem
     typedef ExtendedDGPrimalDiffusionFlux<DiscreteFunctionSpaceType, ModelType,
                                           typename Traits::DiffusionFluxType::ParameterType >
                                                                   DiffusionFluxType;
+    static const int size = ModelType::modelParameterSize;
 
+    typedef InsertFunctionTuple< ExtraParameterTupleType, std::make_integer_sequence<unsigned long int, size > >
+                                                                  InsertFunctionTupleType;
 
-    struct ZeroFunction
-    {
-      typedef typename DiscreteFunctionSpaceType::FunctionSpaceType FunctionSpaceType;
-      typedef typename FunctionSpaceType::DomainType DomainType;
-      typedef typename FunctionSpaceType::RangeType RangeType;
+    typedef std::vector< typename InsertFunctionTupleType::template RangeTypes< RangeType > > RangeEvalType;
+    typedef std::vector< typename InsertFunctionTupleType::template JacobianRangeTypes< JacobianRangeType > > JacobianEvalType;
 
-      template <class PointType>
-      void evaluate( const PointType &x, RangeType &phi ) const
-      {
-        phi = 0;
-      }
-    };
-
-    typedef Dune::Fem::GridFunctionAdapter< ZeroFunction, GridPartType > ZeroFunctionType;
-
-    struct RangeValues
-    {
-      typedef std::vector< std::vector< RangeType > > VectorType;
-      RangeValues(int col, const VectorType &vec) : col_(col), vec_(vec), zero_(0)
-      {}
-
-      const RangeType& at( int i ) const { return this->operator[] ( i ); }
-      const RangeType &operator[](int row) const
-      {
-        if (col_==-1)
-          return zero_;
-        else
-          return vec_[row][col_];
-      }
-    private:
-      const int col_;
-      const VectorType& vec_;
-      const RangeType zero_;
-    };
-
-    struct VectorToTupleVector
-    {
-      typedef std::vector< RangeType > VectorType;
-      VectorToTupleVector(const VectorType &vec) : vec_(vec)
-      {}
-
-      const RangeType& at( int i ) const { return this->operator[] ( i ); }
-      const RangeType &operator[](int i) const
-      {
-        return vec_[ i ];
-      }
-    private:
-      const VectorType& vec_;
-    };
-    struct JacobianRangeValues
-    {
-      typedef std::vector< std::vector< JacobianRangeType > > VectorType;
-      JacobianRangeValues(int col, const VectorType &vec) : col_(col), vec_(vec), zero_(0)
-      {}
-      const JacobianRangeType& at( int i ) const { return this->operator[] ( i ); }
-      const JacobianRangeType &operator[](int row) const
-      {
-        if (col_==-1)
-          return zero_;
-        else
-          return vec_[row][col_];
-      }
-    private:
-      const int col_;
-      const VectorType& vec_;
-      const JacobianRangeType zero_;
-    };
+    std::integral_constant<int,size> Id;
 
     public:
     //! constructor for DG matrix assembly
-    template< class ContainerImp >
+    template< class ContainerImp, class ExtraParameterTupleImp >
     DGPrimalMatrixAssembly( std::shared_ptr< ContainerImp > cont,
+                            ExtraParameterTupleImp tuple,
                             const ModelType& model )
       : model_( model ),
         space_( (*cont)(_0)->solution()->space() ),
         rhs_( (*cont)(_0)->rhs() ),
         matrix_( (*cont)(_0,_0)->matrix() ),
-        zero_(),
-        time_( 0 ),
+        extra_( InsertFunctionTupleType::create( tuple ) ),
         advFlux_( model_ ),
-        diffusionFlux_( space_.gridPart(), model_, typename Traits::DiffusionFluxType::ParameterType( ParameterKey::generate( "", "dgdiffusionflux." ) ) ),
+        diffFlux_( space_.gridPart(), model_, typename Traits::DiffusionFluxType::ParameterType( ParameterKey::generate( "", "dgdiffusionflux." ) ) ),
         calculateFluxes_( Dune::Fem::Parameter::getValue<bool>( "poissonassembler.calculateFluxes", true ) ),
-        useStrongBoundaryCondition_( Dune::Fem::Parameter::getValue<bool>( "poissonassembler.strongBC", false ) )
+        useStrongBoundaryCondition_( Dune::Fem::Parameter::getValue<bool>( "poissonassembler.strongBC", false ) ),
+        maxNumBasisFunctions_( maxNumScalarBasisFunctions( space_ ) )
     {
     }
 
@@ -182,19 +130,13 @@ namespace Fem
 
     const typename DiffusionFluxType::DiscreteGradientSpaceType &gradientSpace() const
     {
-      return diffusionFlux_.gradientSpace();
+      return diffFlux_.gradientSpace();
     }
 
     size_t maxNumScalarBasisFunctions( const DiscreteFunctionSpaceType& space ) const
     {
-      return space.blockMapper().maxNumDofs() * DiscreteFunctionSpaceType :: localBlockSize ;
+      return space.blockMapper().maxNumDofs() * DiscreteFunctionSpaceType::localBlockSize ;
     }
-
-    void setTime ( double time )
-    {
-      time_ = time;
-    }
-
 
     /*
      * Assemble Matrix for Elliptic Problem using the DGPrimalDIffusionFlux
@@ -206,7 +148,6 @@ namespace Fem
 
       typedef RangeType           RangeTuple;
       typedef JacobianRangeType   JacobianTuple;
-      typedef ExtraQuadraturePointContext< EntityType, VolumeQuadratureType, RangeTuple, JacobianTuple > LocalEvaluationType;
 
       typedef typename MatrixType::LocalMatrixType LocalMatrixType;
       matrix_->clear();
@@ -215,12 +156,10 @@ namespace Fem
         rhs_->clear();
       }
 
-      const size_t maxNumBasisFunctions = maxNumScalarBasisFunctions( space_ );
+      std::vector< RangeType > phi( maxNumBasisFunctions_ );
+      std::vector< JacobianRangeType > dphi( maxNumBasisFunctions_ );
 
-      std::vector< RangeType > phi( maxNumBasisFunctions );
-      std::vector< JacobianRangeType > dphi( maxNumBasisFunctions );
-
-      diffusionFlux_.initialize( space_ );
+      diffFlux_.initialize( space_ );
 
       const RangeType uZero(0);
       const JacobianRangeType uJacZero(0);
@@ -245,45 +184,55 @@ namespace Fem
 
         VolumeQuadratureType quadrature( entity, elementQuadOrder( space_.order( entity ) ) );
 
+        //set entity values
+        setEntity( baseSet, quadrature );
+
+        typedef QuadratureContext< EntityType, VolumeQuadratureType > ContextType;
+        typedef LocalEvaluation< ContextType, RangeEvalType, JacobianEvalType > LocalEvaluationType;
+        ContextType cLocal( entity, quadrature, volume );
+
+        LocalEvaluationType localF( cLocal, phi_, dphi_ );
+
         for( const auto qp : quadrature )
         {
-          LocalEvaluationType local( entity, quadrature, qp.index(), time_, volume, uZero, uJacZero );
+          const auto& local = localF[Id][qp.index()];
+          const auto& local0 = local(0);
 
           const double weight = qp.weight() * geometry.integrationElement( local.position() );
-
-          // resize of phi and dphi is done in evaluate methods
-          baseSet.evaluateAll( qp, phi );
-          baseSet.jacobianAll( qp, dphi );
 
           RangeType arhs(0);
           // first assemble rhs (evaluate source with u=0)
           if ( model_.hasStiffSource() )
-            model_.stiffSource( local, uZero, uJacZero, arhs );
+            model_.stiffSource( local0, uZero, uJacZero, arhs );
           if ( model_.hasNonStiffSource() )
           {
             RangeType sNonStiff (0);
-            model_.nonStiffSource( local, uZero, uJacZero, sNonStiff );
+            model_.nonStiffSource( local0, uZero, uJacZero, sNonStiff );
             arhs += sNonStiff;
           }
 
           JacobianRangeType arhsdphi;
-          model_.diffusion( local, uZero, uJacZero, arhsdphi);
+          model_.diffusion( local0, uZero, uJacZero, arhsdphi);
           JacobianRangeType brhsphi;
-          model_.advection( local, uZero, uJacZero, brhsphi);
+          model_.advection( local0, uZero, uJacZero, brhsphi);
           arhsdphi -= brhsphi;
 
-          for( unsigned int localCol = 0; localCol < numBasisFunctionsEn; ++localCol )
+          for( int i = 0; i < numBasisFunctionsEn; ++i )
           {
+            const auto& locali = local[i];
+            const auto& phii = locali.values();
+            const auto& dphii = locali.jacobians();
+
             // now assemble source part depending on u (mass part)
             RangeType aphi(0);
             if ( model_.hasStiffSource() )
             {
-              model_.stiffSource( local, phi[localCol], dphi[localCol], aphi );
+              model_.stiffSource( locali, phii, dphii, aphi );
             }
             if ( model_.hasNonStiffSource() )
             {
               RangeType sNonStiff (0);
-              model_.nonStiffSource( local, phi[localCol], dphi[localCol], sNonStiff );
+              model_.nonStiffSource( locali, phii, dphii, sNonStiff );
               aphi += sNonStiff;
             }
             // subtract affine part and move to left hand side
@@ -291,17 +240,17 @@ namespace Fem
             aphi *= -1;
 
             JacobianRangeType adphi;
-            model_.diffusion( local, phi[localCol], dphi[localCol], adphi);
+            model_.diffusion( locali, phii, dphii, adphi);
 
             JacobianRangeType bphi;
-            model_.advection( local, phi[localCol], dphi[localCol], bphi);
+            model_.advection( locali, phii, dphii, bphi);
 
             adphi -= bphi;
 
             adphi -= arhsdphi;
 
             // get column object and call axpy method
-            localOpEn.column( localCol ).axpy( phi, dphi, aphi, adphi, weight );
+            localOpEn.column( i ).axpy( std::get<size>(phi_[qp.index()]), std::get<size>(dphi_[qp.index()]), aphi, adphi, weight );
           }
 
           if( rhs_ )
@@ -333,49 +282,42 @@ namespace Fem
                                               faceQuadOrder( space_.order( entity ) ),
                                               FaceQuadratureType::INSIDE);
 
-            const size_t numFaceQuadPoints = faceQuadInside.nop();
-            resize( numFaceQuadPoints, maxNumBasisFunctions );
-
-            // evaluate base functions
-            for( const auto qp : faceQuadInside )
-            {
-              baseSet.evaluateAll( qp, phiFaceEn[qp.index()] );
-              baseSet.jacobianAll( qp, dphiFaceEn[qp.index()] );
-            }
+            // initialize
+            initializeBoundary( baseSet, faceQuadInside );
 
             typedef QuadratureContext< EntityType, IntersectionType, FaceQuadratureType > ContextType;
-            ContextType local( entity, intersection, faceQuadInside, time_, volume );
-
-            // storage for all flux values
-            boundaryValues(local, bndValues);
+            typedef LocalEvaluation< ContextType, RangeEvalType, JacobianEvalType > LocalEvaluationType;
+            ContextType cLocal( entity, intersection, faceQuadInside, volume );
+            LocalEvaluationType local( cLocal, phiFaceEn_, dphiFaceEn_ );
 
             // first compute affine part of boundary flux
-            boundaryFlux(local,
-                         RangeValues(-1,phiFaceEn), JacobianRangeValues(-1,dphiFaceEn),
-                         bndValues, valueNb,dvalueNb);
+            const auto& local0 = local[Id](0);
+            boundaryValues(local0, bndValues_);
+            boundaryFlux(local0, local0.values(), local0.jacobians(),
+                         bndValues_, valueNb_, dvalueNb_);
 
-            // for( size_t pt = 0; pt < numFaceQuadPoints; ++pt )
-            //   bndValues[pt] = RangeType(0);
+            const size_t numFaceQuadPoints = faceQuadInside.nop();
             // compute boundary fluxes depending on u
-            for( unsigned int localCol = 0; localCol < numBasisFunctionsEn; ++localCol )
+            for( int i = 0; i < numBasisFunctionsEn; ++i )
             {
-              boundaryFlux(local,
-                           RangeValues(localCol,phiFaceEn), JacobianRangeValues(localCol,dphiFaceEn),bndValues,
-                           valueEn,dvalueEn);
+              const auto& locali = local[Id][i];
+              boundaryFlux(locali, locali.values(), locali.jacobians(),
+                           bndValues_, valueEn_, dvalueEn_);
+
               for( size_t pt = 0; pt < numFaceQuadPoints; ++pt )
               {
                 const double weight = faceQuadInside.weight( pt );
-                valueEn[pt] -= valueNb[pt];
-                dvalueEn[pt] -= dvalueNb[pt];
-                localOpEn.column( localCol ).axpy( phiFaceEn[pt], dphiFaceEn[pt],
-                                                   valueEn[pt], dvalueEn[pt], weight );
+                valueEn_[pt] -= valueNb_[pt];
+                dvalueEn_[pt] -= dvalueNb_[pt];
+                localOpEn.column( i ).axpy( std::get<size>(phiFaceEn_[pt]), std::get<size>(dphiFaceEn_[pt]),
+                                            valueEn_[pt], dvalueEn_[pt], weight );
               }
             }
             // now move affine part to right hand side
             for( size_t pt = 0; pt < numFaceQuadPoints; ++pt )
             {
-              RangeType& rhsFlux          = valueNb[ pt ];
-              JacobianRangeType& drhsFlux = dvalueNb[ pt ];
+              RangeType& rhsFlux          = valueNb_[ pt ];
+              JacobianRangeType& drhsFlux = dvalueNb_[ pt ];
 
               const double weight = faceQuadInside.weight( pt );
               rhsFlux  *= -weight;
@@ -384,7 +326,7 @@ namespace Fem
 
             if( rhs_ )
             {
-              rhsLocal.axpyQuadrature( faceQuadInside, valueNb, dvalueNb );
+              rhsLocal.axpyQuadrature( faceQuadInside, valueNb_, dvalueNb_ );
             }
           }
         }
@@ -400,48 +342,48 @@ namespace Fem
       // finish matrix build process
       matrix_->communicate();
 
-     // matrix.systemMatrix().matrix().print();
-     // //rhs->print( std::cout );
-     // //abort();
-     // //
+      //matrix.systemMatrix().matrix().print();
+      //rhs->print( std::cout );
+      //abort();
+      //
 
-     // const int sep = 8;
-     // int i;
-     // int j;
+      //const int sep = 8;
+      //int i;
+      //int j;
 
-     // std::cout << "###########" << std::endl;
-     // for(i=0; i<space_.size(); ++i)
-     // {
-     //   if( i % sep == 0 )
-     //   {
-     //     for( int j=0; j<space_.size(); j++)
-     //       std::cout << "------";
-     //     std::cout << std::endl;
-     //   }
-     //   for(j=0;j<space_.size(); ++j)
-     //   {
-     //     if( j % sep == 0 )
-     //       std::cout << "|";
+      //std::cout << "###########" << std::endl;
+      //for(i=0; i<space_.size(); ++i)
+      //{
+      //  if( i % sep == 0 )
+      //  {
+      //    for( int j=0; j<space_.size(); j++)
+      //      std::cout << "------";
+      //    std::cout << std::endl;
+      //  }
+      //  for(j=0;j<space_.size(); ++j)
+      //  {
+      //    if( j % sep == 0 )
+      //      std::cout << "|";
 
-     //     std::cout.width(5);
-     //     if( std::abs(  matrix.matrix()(j,i) ) < 1e-14 )
-     //       std::cout << std::setprecision(2) << "0" << " ";
-     //     else
-     //       std::cout << std::setprecision(2) << matrix.matrix()(j,i) << " ";
-     //   }
-     //   if( j % sep == 0 )
-     //     std::cout << "|";
+      //    std::cout.width(5);
+      //    if( std::abs(  matrix_->matrix()(j,i) ) < 1e-14 )
+      //      std::cout << std::setprecision(2) << "0" << " ";
+      //    else
+      //      std::cout << std::setprecision(2) << matrix_->matrix()(j,i) << " ";
+      //  }
+      //  if( j % sep == 0 )
+      //    std::cout << "|";
 
-     //   std::cout << std::endl;
-     // }
-     // if( i % sep == 0 )
-     // {
-     //   for( int j=0; j<space_.size(); j++)
-     //     std::cout << "------";
-     //   std::cout << std::endl;
-     // }
-     // std::cout << std::endl;
-     // std::cout << "###########" << std::endl;
+      //  std::cout << std::endl;
+      //}
+      //if( i % sep == 0 )
+      //{
+      //  for( int j=0; j<space_.size(); j++)
+      //    std::cout << "------";
+      //  std::cout << std::endl;
+      //}
+      //std::cout << std::endl;
+      //std::cout << "###########" << std::endl;
 
 
       if( Dune::Fem::Parameter::verbose() )
@@ -454,11 +396,9 @@ namespace Fem
     {
       rhs_->clear();
 
-      const size_t maxNumBasisFunctions = maxNumScalarBasisFunctions( space_ );
-
       if( hasDiffusion )
       {
-        diffusionFlux_.initialize(space_);
+        diffFlux_.initialize(space_);
       }
 
       const RangeType uZero(0);
@@ -486,41 +426,35 @@ namespace Fem
                                               faceQuadOrder( space_.order( entity ) ),
                                               FaceQuadratureType::INSIDE);
 
-            const size_t numFaceQuadPoints = faceQuadInside.nop();
-            resize( numFaceQuadPoints, maxNumBasisFunctions );
-
-            // store all basis functions
-
-            // evalute base functions
-            for( size_t pt = 0; pt < numFaceQuadPoints; ++pt )
-            {
-              baseSet.evaluateAll( faceQuadInside[ pt ], phiFaceEn[pt] );
-              baseSet.jacobianAll( faceQuadInside[ pt ], dphiFaceEn[pt] );
-            }
+            // initialize
+            initializeBoundary( baseSet, faceQuadInside );
 
             typedef QuadratureContext< EntityType, IntersectionType, FaceQuadratureType > ContextType;
-            ContextType local( entity, intersection, faceQuadInside, time_, volume );
+            typedef LocalEvaluation< ContextType, RangeEvalType, JacobianEvalType > LocalEvaluationType;
+            ContextType cLocal( entity, intersection, faceQuadInside, volume );
+            LocalEvaluationType local( cLocal, phiFaceEn_, dphiFaceEn_ );
 
             // store for all flux values
-            boundaryValues(local, bndValues);
+            boundaryValues(local, bndValues_);
 
             // first compute affine part of boundary flux
-            boundaryFlux(local,
-                         RangeValues(-1,phiFaceEn), JacobianRangeValues(-1,dphiFaceEn),
-                         bndValues,
-                         valueNb,dvalueNb);
+            const auto& local0 = local[Id](0);
+            boundaryValues(local0, bndValues_);
+            boundaryFlux(local0, local0.values(), local0.jacobians(),
+                         bndValues_, valueNb_, dvalueNb_);
 
+            const size_t numFaceQuadPoints = faceQuadInside.nop();
             // now move affine part to right hand side
             for( size_t pt = 0; pt < numFaceQuadPoints; ++pt )
             {
-              RangeType& rhsFlux          = valueNb[ pt ];
-              JacobianRangeType& drhsFlux = dvalueNb[ pt ];
+              RangeType& rhsFlux          = valueNb_[ pt ];
+              JacobianRangeType& drhsFlux = dvalueNb_[ pt ];
 
               const double weight = faceQuadInside.weight( pt );
               rhsFlux  *= -weight;
               drhsFlux *= -weight;
             }
-            rhsLocal.axpyQuadrature( faceQuadInside, valueNb, dvalueNb );
+            rhsLocal.axpyQuadrature( faceQuadInside, valueNb_, dvalueNb_ );
           }
         }
       }
@@ -535,7 +469,6 @@ namespace Fem
                                LocalFunction& rhsLocal,
                                const bool assembleRHS ) const
     {
-      const size_t maxNumBasisFunctions = maxNumScalarBasisFunctions( dfSpace );
       typedef typename MatrixType::LocalMatrixType LocalMatrixType;
       // make sure we got the right conforming statement
       assert( intersection.conforming() == conforming );
@@ -577,51 +510,47 @@ namespace Fem
       const QuadratureImp &faceQuadInside  = interQuad.inside();
       const QuadratureImp &faceQuadOutside = interQuad.outside();
 
+      //initialize
+      initializeIntersection( baseSet,  baseSetNb, faceQuadInside, faceQuadOutside );
+
       typedef QuadratureContext< EntityType, IntersectionType, QuadratureImp > ContextType;
-      ContextType localInside ( entity, intersection, faceQuadInside, time_, entity.geometry().volume() );
-      ContextType localOutside( neighbor, intersection, faceQuadOutside, time_, neighbor.geometry().volume() );
+      typedef LocalEvaluation< ContextType, RangeEvalType, JacobianEvalType > LocalEvaluationType;
+
+      ContextType cLeft( entity, intersection, faceQuadInside, entity.geometry().volume() );
+      ContextType cRight( neighbor, intersection, faceQuadInside, neighbor.geometry().volume() );
+      LocalEvaluationType localInside( cLeft, phiFaceEn_, dphiFaceEn_ );
+      LocalEvaluationType localOutside( cRight, phiFaceNb_, dphiFaceNb_ );
+
+      const auto& localInside0 = localInside[Id](0);
+      const auto& localOutside0 = localOutside[Id](0);
+      numericalFlux(localInside0, localOutside0, localInside0.values(), localInside0.jacobians(), localOutside0.values(), localOutside0.jacobians(),
+                    rhsValueEn_, rhsDValueEn_, rhsValueNb_, rhsDValueNb_, true );
 
       const size_t numFaceQuadPoints = faceQuadInside.nop();
-      resize( numFaceQuadPoints, maxNumBasisFunctions );
-
-      // evalute base functions
-      for( const auto qp : faceQuadInside )
-      {
-        // resize is done in evaluateAll and jacobianAll
-        const auto idx = qp.index();
-        baseSet.evaluateAll( qp, phiFaceEn[idx] );
-        baseSet.jacobianAll( qp, dphiFaceEn[idx] );
-        baseSetNb.evaluateAll( faceQuadOutside[idx], phiFaceNb[idx] );
-        baseSetNb.jacobianAll( faceQuadOutside[idx], dphiFaceNb[idx] );
-      }
-
-      numericalFlux(localInside, localOutside,
-                    RangeValues(-1,phiFaceEn), JacobianRangeValues(-1,dphiFaceEn),
-                    RangeValues(-1,phiFaceEn), JacobianRangeValues(-1,dphiFaceEn),
-                    rhsValueEn, rhsDValueEn, rhsValueNb, rhsDValueNb, true );
 
       // compute fluxes and assemble matrix
-      for( unsigned int localCol = 0; localCol < numBasisFunctionsEn; ++localCol )
+      for( int i = 0; i < numBasisFunctionsEn; ++i )
       {
         // compute flux for one base function, i.e.,
-        // - uLeft=phiFaceEn[.][localCol]
+        // - uLeft=phiFaceEn_[.][i]
         // - uRight=0
-        numericalFlux(localInside, localOutside,
-                      RangeValues(localCol,phiFaceEn), JacobianRangeValues(localCol,dphiFaceEn),
-                      RangeValues(-1,phiFaceEn), JacobianRangeValues(-1,dphiFaceEn),
-                      valueEn, dvalueEn, valueNb, dvalueNb, true );
+        const auto& localInsidei = localInside[Id][i];
+        const auto& localOutsidei = localOutside[Id][i];
+        numericalFlux(localInsidei, localOutsidei, localInsidei.values(), localInsidei.jacobians(), localInside0.values(), localInside0.jacobians(),
+                      valueEn_, dvalueEn_, valueNb_, dvalueNb_, true );
+
 
         for( size_t pt = 0; pt < numFaceQuadPoints; ++pt )
         {
           const double weight = faceQuadInside.weight( pt );
-          valueEn[pt] -= rhsValueEn[pt];
-          dvalueEn[pt] -= rhsDValueEn[pt];
-          valueNb[pt] -= rhsValueNb[pt];
-          dvalueNb[pt] -= rhsDValueNb[pt];
-          localOpEn.column( localCol ).axpy( phiFaceEn[pt], dphiFaceEn[pt],
-                                             valueEn[pt], dvalueEn[pt], weight );
-          localOpNb.column( localCol ).axpy( phiFaceNb[pt], dphiFaceNb[pt],
-                                             valueNb[pt], dvalueNb[pt], -weight );
+          valueEn_[pt] -= rhsValueEn_[pt];
+          dvalueEn_[pt] -= rhsDValueEn_[pt];
+          valueNb_[pt] -= rhsValueNb_[pt];
+          dvalueNb_[pt] -= rhsDValueNb_[pt];
+          localOpEn.column( i ).axpy( std::get<size>(phiFaceEn_[pt]), std::get<size>(dphiFaceEn_[pt]),
+                                      valueEn_[pt], dvalueEn_[pt], weight );
+          localOpNb.column( i ).axpy( std::get<size>(phiFaceNb_[pt]), std::get<size>(dphiFaceNb_[pt]),
+                                      valueNb_[pt], dvalueNb_[pt], -weight );
         }
       }
 
@@ -630,26 +559,28 @@ namespace Fem
       {
         LocalMatrixType localOpNbNb = matrix_->localMatrix( neighbor, neighbor );
         LocalMatrixType localOpNbEn = matrix_->localMatrix( neighbor, entity );
-        for( unsigned int localCol = 0; localCol < numBasisFunctionsEn; ++localCol )
+        for( int i = 0; i < numBasisFunctionsEn; ++i )
         {
           // compute flux for one base function, i.e.,
-          // - uLeft=phiFaceEn[.][localCol]
+          // - uLeft=phiFaceEn_[.][i]
           // - uRight=0
-          numericalFlux(localInside, localOutside,
-                        RangeValues(-1,phiFaceNb), JacobianRangeValues(-1,dphiFaceNb),
-                        RangeValues(localCol,phiFaceNb), JacobianRangeValues(localCol,dphiFaceNb),
-                        valueEn, dvalueEn, valueNb, dvalueNb, true );
+          const auto& localInsidei = localInside[Id][i];
+          const auto& localOutsidei = localOutside[Id][i];
+          numericalFlux(localInsidei, localOutsidei, localOutside0.values(), localOutside0.jacobians(), localOutsidei.values(), localOutsidei.jacobians(),
+                        valueEn_, dvalueEn_, valueNb_, dvalueNb_, true );
+
+
           for( size_t pt = 0; pt < numFaceQuadPoints; ++pt )
           {
             const double weight = faceQuadInside.weight( pt );
-            valueEn[pt] -= rhsValueEn[pt];
-            dvalueEn[pt] -= rhsDValueEn[pt];
-            valueNb[pt] -= rhsValueNb[pt];
-            dvalueNb[pt] -= rhsDValueNb[pt];
-            localOpNbNb.column( localCol ).axpy( phiFaceNb[pt], dphiFaceNb[pt],  // +
-                                                 valueNb[pt], dvalueNb[pt], -weight );
-            localOpNbEn.column( localCol ).axpy( phiFaceEn[pt], dphiFaceEn[pt],  // -
-                                                 valueEn[pt], dvalueEn[pt], weight );
+            valueEn_[pt] -= rhsValueEn_[pt];
+            dvalueEn_[pt] -= rhsDValueEn_[pt];
+            valueNb_[pt] -= rhsValueNb_[pt];
+            dvalueNb_[pt] -= rhsDValueNb_[pt];
+            localOpNbNb.column( i ).axpy( std::get<size>(phiFaceNb_[pt]), std::get<size>(dphiFaceNb_[pt]),  // +
+                                          valueNb_[pt], dvalueNb_[pt], -weight );
+            localOpNbEn.column( i ).axpy( std::get<size>(phiFaceEn_[pt]), std::get<size>(dphiFaceEn_[pt]),  // -
+                                          valueEn_[pt], dvalueEn_[pt], weight );
           }
         }
       }
@@ -658,13 +589,13 @@ namespace Fem
       for( size_t pt = 0; pt < numFaceQuadPoints; ++pt )
       {
         const double weight = faceQuadInside.weight( pt );
-        rhsValueEn[pt] *= -weight;
-        rhsDValueEn[pt] *= -weight;
+        rhsValueEn_[pt] *= -weight;
+        rhsDValueEn_[pt] *= -weight;
       }
 
       if( assembleRHS )
       {
-        rhsLocal.axpyQuadrature( faceQuadInside, rhsValueEn, rhsDValueEn );
+        rhsLocal.axpyQuadrature( faceQuadInside, rhsValueEn_, rhsDValueEn_ );
       }
     }
 
@@ -674,10 +605,10 @@ namespace Fem
       //  testMatrixSymmetry( *matrix_ );
     }
 
-    template <class LocalEvaluation, class Value,class DValue,class RetType, class DRetType>
-    void numericalFlux(const LocalEvaluation& inside, const LocalEvaluation& outside,
+    template <class LocalEvaluationVec, class Value,class DValue,class Value2,class DValue2,class RetType, class DRetType>
+    void numericalFlux(const LocalEvaluationVec& left, const LocalEvaluationVec& right,
                        const Value &valueEn, const DValue &dvalueEn,
-                       const Value &valueNb, const DValue &dvalueNb,
+                       const Value2 &valueNb, const DValue2 &dvalueNb,
                        RetType &retEn, DRetType &dretEn,
                        RetType &retNb, DRetType &dretNb,
                        const bool initializeIntersection = true ) const
@@ -685,26 +616,17 @@ namespace Fem
       RangeType gLeft,gRight;
       if( hasDiffusion & initializeIntersection )
       {
-        diffusionFlux_.initializeIntersection( inside, outside, valueEn, valueNb);
+        diffFlux_.initializeIntersection( left, right, valueEn, valueNb);
       }
 
-      const size_t numFaceQuadPoints = inside.quadrature().nop();
+      const size_t numFaceQuadPoints = left.quadrature().nop();
       for( size_t pt = 0; pt < numFaceQuadPoints; ++pt )
       {
-        typedef RangeType           RangeTuple;
-        typedef JacobianRangeType   JacobianTuple;
-        typedef ExtraQuadraturePointContext< EntityType, IntersectionType, typename LocalEvaluation::QuadratureType, RangeTuple, JacobianTuple > LocalEvaluationType;
-
-        LocalEvaluationType left( inside, pt, valueEn[ pt ], dvalueEn[ pt ] );
-        LocalEvaluationType right( outside, pt, valueNb[ pt ], dvalueNb[ pt ] );
-
         if( hasDiffusion )
         {
-          diffusionFlux_.numericalFlux( left, right,
-                                        valueEn[ pt ], valueNb[ pt ],
-                                        dvalueEn[ pt ], dvalueNb[ pt ],
-                                        retEn[ pt ], retNb[ pt ],
-                                        dretEn[ pt ], dretNb[ pt ]);
+          diffFlux_.numericalFlux( left[pt], right[pt],
+                                   valueEn[pt], valueNb[pt], dvalueEn[pt], dvalueNb[pt],
+                                   retEn[pt], retNb[pt], dretEn[pt], dretNb[pt]);
         }
         else
         {
@@ -714,119 +636,182 @@ namespace Fem
           dretNb[pt] = JacobianRangeType(0);
         }
 
-        advFlux_.numericalFlux(left, right,
-                               valueEn[ pt ],valueNb[ pt ],
-                               dvalueEn[ pt ], dvalueNb[ pt ],
+        advFlux_.numericalFlux(left[pt], right[pt],
+                               valueEn[pt], valueNb[pt], dvalueEn[pt], dvalueNb[pt],
                                gLeft, gRight);
         retEn[pt] += gLeft;
         retNb[pt] += gRight;
       }
     }
 
-    template <class LocalEvaluation,class Value,class DValue,class RetType, class DRetType>
-    void fluxAndLift(const LocalEvaluation& left,
-                     const LocalEvaluation& right,
+    template <class LocalEvaluationVec,class Value,class DValue,class RetType, class DRetType>
+    void fluxAndLift(const LocalEvaluationVec& left,
+                     const LocalEvaluationVec& right,
                      const Value &valueEn, const DValue &dvalueEn,
                      const Value &valueNb, const DValue &dvalueNb,
                      RetType &retEn, DRetType &dretEn,
                      RetType &retNb, DRetType &dretNb,
                      DRetType &liftEn, DRetType &liftNb) const
     {
-      numericalFlux(left, right, valueEn,dvalueEn,valueNb,dvalueNb,
-                    retEn,dretEn,retNb,dretNb);
+      numericalFlux(left, right,
+                    valueEn, dvalueEn, valueNb, dvalueNb,
+                    retEn, dretEn, retNb, dretNb);
 
-     if( hasDiffusion )
-     {
-       const size_t numFaceQuadPoints = left.quadrature().nop();
-       for( size_t pt = 0; pt < numFaceQuadPoints; ++pt )
-       {
-          diffusionFlux_.evaluateLifting(left, right, valueEn[pt],valueNb[pt],
-                                         liftEn[pt],liftNb[pt]);
-       }
+      if( hasDiffusion )
+      {
+        const size_t numFaceQuadPoints = left.quadrature().nop();
+        for( size_t pt = 0; pt < numFaceQuadPoints; ++pt )
+        {
+          diffFlux_.evaluateLifting(left[pt], right[pt], valueEn[pt], valueNb[pt],
+                                    liftEn[pt], liftNb[pt]);
+        }
       }
     }
 
-    template <class LocalEvaluation, class Value,class LiftingFunction>
-    void lifting(const LocalEvaluation& left, const LocalEvaluation& right,
+    template <class LocalEvaluationVec, class Value,class LiftingFunction>
+    void lifting(const LocalEvaluationVec& left, const LocalEvaluationVec& right,
                  const Value &valueEn, const Value &valueNb,
                  LiftingFunction &lifting) const
     {
-      VectorToTupleVector valEn( valueEn );
-      VectorToTupleVector valNb( valueNb );
       if( hasDiffusion )
       {
-        diffusionFlux_.initializeIntersection( left, right, valEn, valNb, true );
-        lifting += diffusionFlux_.getInsideLifting();
+        diffFlux_.initializeIntersection( left, right, valueEn, valueNb, true );
+        lifting += diffFlux_.getInsideLifting();
       }
     }
 
-    template <class LocalEvaluation,class RetType>
-    void boundaryValues(const LocalEvaluation& local,
+    template <class LocalEvaluationVec,class RetType>
+    void boundaryValues(const LocalEvaluationVec& local,
                         RetType &bndValues) const
     {
       const RangeType uZero(0);
       const JacobianRangeType uJacZero( 0 );
 
-      typedef RangeType           RangeTuple;
-      typedef JacobianRangeType   JacobianTuple;
-      typedef ExtraQuadraturePointContext< EntityType, IntersectionType, typename LocalEvaluation::QuadratureType, RangeTuple, JacobianTuple > LocalEvaluationType;
-
       const size_t numFaceQuadPoints = local.quadrature().nop();
       for( size_t pt = 0; pt < numFaceQuadPoints; ++pt )
       {
-        LocalEvaluationType local2( local, pt, uZero, uJacZero );
-        model_.boundaryValue( local2, uZero, bndValues[ pt ]);
+        model_.boundaryValue( local[Id][pt], uZero, bndValues[pt]);
       }
     }
 
-    template <class LocalEvaluation, class Value,class DValue,class GValue,class RetType, class DRetType>
-    void boundaryFlux( const LocalEvaluation& local,
+    template <class LocalEvaluationVec, class Value,class DValue,class GValue,class RetType, class DRetType>
+    void boundaryFlux( const LocalEvaluationVec& local,
                        const Value &valueEn,
                        const DValue &dvalueEn,
                        const GValue &valueNb,
                        RetType &retEn,
                        DRetType &dretEn) const
     {
+      const size_t numFaceQuadPoints = local.quadrature().nop();
+
       RangeType gLeft,gRight;
       if( hasDiffusion )
       {
-        diffusionFlux_.initializeBoundary( local, valueEn, valueNb );
+        diffFlux_.initializeBoundary( local, valueEn, valueNb );
       }
 
-      const size_t numFaceQuadPoints = local.quadrature().nop();
       for( size_t pt = 0; pt < numFaceQuadPoints; ++pt )
       {
-        typedef RangeType           RangeTuple;
-        typedef JacobianRangeType   JacobianTuple;
-        typedef ExtraQuadraturePointContext< EntityType, IntersectionType, typename LocalEvaluation::QuadratureType, RangeTuple, JacobianTuple > LocalEvaluationType;
-        LocalEvaluationType local2( local, pt, valueEn[ pt ], dvalueEn[ pt ] );
-
-        if ( model_.hasBoundaryValue( local2 ) )
+        if ( model_.hasBoundaryValue( local[pt] ) )
         {
           if( hasDiffusion )
           {
-            diffusionFlux_.boundaryFlux( local2, valueEn[ pt ], valueNb[ pt ],  dvalueEn[ pt ],
-                                         retEn[ pt ], dretEn[ pt ]);
+            diffFlux_.boundaryFlux( local[pt],
+                                    valueEn[pt], valueNb[pt], dvalueEn[pt],
+                                    retEn[pt], dretEn[pt]);
           }
           else
           {
             retEn[pt]  = RangeType(0);
             dretEn[pt] = JacobianRangeType(0);
           }
-          advFlux_.numericalFlux(local2, local2,
-                                 valueEn[ pt ],valueNb[ pt ],
-                                 dvalueEn[ pt ], dvalueEn[ pt ],
+          advFlux_.numericalFlux(local[pt], local[pt],
+                                 valueEn[pt], valueNb[pt], dvalueEn[pt], dvalueEn[pt],
                                  gLeft,gRight);
           retEn[pt] += gLeft;
         }
         else
         {
-          model_.boundaryFlux(local2,valueEn[pt], dvalueEn[ pt ], retEn[pt]);
+          model_.boundaryFlux(local[pt], valueEn[pt], dvalueEn[pt], retEn[pt]);
           dretEn[pt] = 0;
         }
       }
     }
 
+    template< class QuadratureImp, class BasisFunctionSetImp >
+    void setEntity ( const BasisFunctionSetImp& basisSet, const QuadratureImp &quad ) const
+    {
+      resizeEntity( quad.nop() );
+
+      //evaluate all base functions
+      for( const auto qp : quad )
+      {
+        basisSet.evaluateAll( qp, std::get<size>(phi_[qp.index()]) );
+        basisSet.jacobianAll( qp, std::get<size>(dphi_[qp.index()]) );
+      }
+      //extra<i>( basisSet, quad );
+    }
+
+    //template< class QuadratureImp, class BasisFunctionSetImp >
+    //void setNeighbor ( const BasisFunctionSetImp& basisSet, const QuadratureImp &quad )
+    //{
+    //  resize( quad.nop() );
+
+    //  //evaluate all base functions
+    //  for( const auto qp : quad )
+    //  {
+    //    basisSet.evaluateAll( qp, phi_[qp.index()] );
+    //    basisSet.jacobianAll( qp, dphi_[qp.index()] );
+    //    //TODO: Also evaluate extra parameters, if present
+    //  }
+    //}
+
+    template <class QuadratureImp, class BasisFunctionSetImp >
+    void initializeIntersection( const BasisFunctionSetImp basisSetInner,
+                                 const BasisFunctionSetImp basisSetOuter,
+                                 const QuadratureImp &quadInner,
+                                 const QuadratureImp &quadOuter ) const
+    {
+      resizeIntersection( quadInner.nop() );
+
+      //evaluate all base functions
+      for( const auto qp : quadInner )
+      {
+        basisSetInner.evaluateAll( qp, std::get<size>(phiFaceEn_[qp.index()]) );
+        basisSetInner.jacobianAll( qp, std::get<size>(dphiFaceEn_[qp.index()]) );
+
+      }
+      for( const auto qp : quadOuter )
+      {
+        basisSetOuter.evaluateAll( qp, std::get<size>(phiFaceNb_[qp.index()]) );
+        basisSetOuter.jacobianAll( qp, std::get<size>(dphiFaceNb_[qp.index()]) );
+      }
+      //extra<i>( basisSetInner, quadInner );
+      //extra<i>( basisSetOuter, quadOuter );
+    }
+
+    template <class QuadratureImp, class BasisFunctionSetImp >
+    void initializeBoundary( const BasisFunctionSetImp basisSet,
+                             const QuadratureImp &quadInner ) const
+    {
+      resizeIntersection( quadInner.nop() );
+
+      //evaluate all base functions
+      for( const auto qp : quadInner )
+      {
+        basisSet.evaluateAll( qp, std::get<size>(phiFaceEn_[qp.index()]) );
+        basisSet.jacobianAll( qp, std::get<size>(dphiFaceEn_[qp.index()]) );
+      }
+      //extra<i>( basisSet, quadInner );
+    }
+
+    template< int i, class QuadratureImp, class BasisFunctionSetImp  >
+    void extra( const BasisFunctionSetImp basisSet,
+                const QuadratureImp &quad )
+    {
+      //std::get<i>(extra_)->localFunction( basisSet.entity() ).evaluateQuadrature( quad, swap(phiFaceEn_[size][i] ) );
+      //std::get<i>(extra_)->localFunction( basisSet.entity() ).evaluateQuadrature( quad, swap(dphiFaceEn_[size][i] ) );
+    }
 
     const ModelType &model() const
     {
@@ -843,58 +828,72 @@ namespace Fem
       return 2*polOrder;
     }
 
-    void resize( unsigned int numFaceQuadPoints, unsigned int maxNumBasisFunctions ) const
+    void resizeEntity( unsigned int numFaceQuadPoints ) const
     {
-      if (phiFaceEn.size() >= numFaceQuadPoints)
+      if (phi_.size() >= numFaceQuadPoints)
         return;
 
-      phiFaceEn.resize( numFaceQuadPoints );
-      for (unsigned int i=0;i<numFaceQuadPoints;++i) phiFaceEn[i].resize(maxNumBasisFunctions);
-      dphiFaceEn.resize( numFaceQuadPoints );
-      for (unsigned int i=0;i<numFaceQuadPoints;++i) dphiFaceEn[i].resize(maxNumBasisFunctions);
-      phiFaceNb.resize( numFaceQuadPoints );
-      for (unsigned int i=0;i<numFaceQuadPoints;++i) phiFaceNb[i].resize(maxNumBasisFunctions);
-      dphiFaceNb.resize( numFaceQuadPoints );
-      for (unsigned int i=0;i<numFaceQuadPoints;++i) dphiFaceNb[i].resize(maxNumBasisFunctions);
-      valueEn.resize( numFaceQuadPoints );
-      dvalueEn.resize( numFaceQuadPoints );
-      valueNb.resize( numFaceQuadPoints );
-      dvalueNb.resize( numFaceQuadPoints );
-      rhsValueEn.resize( numFaceQuadPoints );
-      rhsDValueEn.resize( numFaceQuadPoints );
-      rhsValueNb.resize( numFaceQuadPoints );
-      rhsDValueNb.resize( numFaceQuadPoints );
-      bndValues.resize( numFaceQuadPoints );
+      phi_.resize( numFaceQuadPoints );
+      for (unsigned int i=0;i<numFaceQuadPoints;++i) std::get<size>(phi_[i]).resize(maxNumBasisFunctions_);
+      dphi_.resize( numFaceQuadPoints );
+      for (unsigned int i=0;i<numFaceQuadPoints;++i) std::get<size>(dphi_[i]).resize(maxNumBasisFunctions_);
+    }
+
+    void resizeIntersection( unsigned int numFaceQuadPoints ) const
+    {
+      if (phiFaceEn_.size() >= numFaceQuadPoints)
+        return;
+
+      for (unsigned int i=0;i<numFaceQuadPoints;++i) std::get<size>(dphi_[i]).resize(maxNumBasisFunctions_);
+      phiFaceEn_.resize( numFaceQuadPoints );
+      for (unsigned int i=0;i<numFaceQuadPoints;++i) std::get<size>(phiFaceEn_[i]).resize(maxNumBasisFunctions_);
+      dphiFaceEn_.resize( numFaceQuadPoints );
+      for (unsigned int i=0;i<numFaceQuadPoints;++i) std::get<size>(dphiFaceEn_[i]).resize(maxNumBasisFunctions_);
+      phiFaceNb_.resize( numFaceQuadPoints );
+      for (unsigned int i=0;i<numFaceQuadPoints;++i) std::get<size>(phiFaceNb_[i]).resize(maxNumBasisFunctions_);
+      dphiFaceNb_.resize( numFaceQuadPoints );
+      for (unsigned int i=0;i<numFaceQuadPoints;++i) std::get<size>(dphiFaceNb_[i]).resize(maxNumBasisFunctions_);
+      valueEn_.resize( numFaceQuadPoints );
+      dvalueEn_.resize( numFaceQuadPoints );
+      valueNb_.resize( numFaceQuadPoints );
+      dvalueNb_.resize( numFaceQuadPoints );
+      rhsValueEn_.resize( numFaceQuadPoints );
+      rhsDValueEn_.resize( numFaceQuadPoints );
+      rhsValueNb_.resize( numFaceQuadPoints );
+      rhsDValueNb_.resize( numFaceQuadPoints );
+      bndValues_.resize( numFaceQuadPoints );
     }
 
     const ModelType&                   model_;
     const DiscreteFunctionSpaceType&   space_;
     std::shared_ptr< DestinationType > rhs_;
     std::shared_ptr< MatrixType >      matrix_;
-    ZeroFunction                       zero_;
-    double                             time_;
+    std::shared_ptr< typename InsertFunctionTupleType::type > extra_;
 
     AdvectionFluxType                  advFlux_;
-    mutable DiffusionFluxType          diffusionFlux_;
+    mutable DiffusionFluxType          diffFlux_;
     const bool                         calculateFluxes_;
-    const bool                         useStrongBoundaryCondition_ ;
+    const bool                         useStrongBoundaryCondition_;
+    const size_t                       maxNumBasisFunctions_;
 
     // storage for all flux values
-    mutable std::vector< RangeType >         valueEn;
-    mutable std::vector< JacobianRangeType > dvalueEn;
-    mutable std::vector< RangeType >         valueNb;
-    mutable std::vector< JacobianRangeType > dvalueNb;
-    mutable std::vector< RangeType >         rhsValueEn;
-    mutable std::vector< JacobianRangeType > rhsDValueEn;
-    mutable std::vector< RangeType >         rhsValueNb;
-    mutable std::vector< JacobianRangeType > rhsDValueNb;
-    mutable std::vector< RangeType >         bndValues;
+    mutable std::vector< RangeType >         valueEn_;
+    mutable std::vector< JacobianRangeType > dvalueEn_;
+    mutable std::vector< RangeType >         valueNb_;
+    mutable std::vector< JacobianRangeType > dvalueNb_;
+    mutable std::vector< RangeType >         rhsValueEn_;
+    mutable std::vector< JacobianRangeType > rhsDValueEn_;
+    mutable std::vector< RangeType >         rhsValueNb_;
+    mutable std::vector< JacobianRangeType > rhsDValueNb_;
+    mutable std::vector< RangeType >         bndValues_;
 
     // store all basis functions
-    mutable std::vector< std::vector< RangeType > >         phiFaceEn;
-    mutable std::vector< std::vector< JacobianRangeType > > dphiFaceEn;
-    mutable std::vector< std::vector< RangeType > >         phiFaceNb;
-    mutable std::vector< std::vector< JacobianRangeType > > dphiFaceNb;
+    mutable RangeEvalType         phi_;
+    mutable JacobianEvalType      dphi_;
+    mutable RangeEvalType         phiFaceEn_;
+    mutable JacobianEvalType      dphiFaceEn_;
+    mutable RangeEvalType         phiFaceNb_;
+    mutable JacobianEvalType      dphiFaceNb_;
   };
 
 }

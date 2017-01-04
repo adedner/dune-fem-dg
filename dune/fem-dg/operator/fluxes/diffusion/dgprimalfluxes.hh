@@ -74,13 +74,13 @@ namespace Fem
 #ifdef USE_CACHED_INVERSE_MASSMATRIX
 #warning "Using cached inverse local mass matrix"
       // type of communication manager object which does communication
-      typedef typename DiscreteGradientSpaceType::template ToNewDimRange< 1 >::Type ScalarDiscreteFunctionSpaceType;
-      typedef Fem::DGMassInverseMassImplementation< ScalarDiscreteFunctionSpaceType, true > MassInverseMassType ;
-      typedef typename MassInverseMassType :: KeyType KeyType;
-      typedef Fem::SingletonList< KeyType, MassInverseMassType >  InverseMassProviderType;
-      typedef MassInverseMassType&  LocalMassMatrixStorageType ;
+      typedef typename DiscreteGradientSpaceType::template ToNewDimRange< 1 >::Type         ScalarDiscreteFunctionSpaceType;
+      typedef Fem::DGMassInverseMassImplementation< ScalarDiscreteFunctionSpaceType, true > MassInverseMassType;
+      typedef typename MassInverseMassType::KeyType                                         KeyType;
+      typedef Fem::SingletonList< KeyType, MassInverseMassType >                            InverseMassProviderType;
+      typedef MassInverseMassType&                                                          LocalMassMatrixStorageType;
 #else
-      typedef LocalMassMatrixType  LocalMassMatrixStorageType;
+      typedef LocalMassMatrixType                                                           LocalMassMatrixStorageType;
 #endif
 
       const DiscreteGradientSpaceType& gradSpc_;
@@ -212,11 +212,7 @@ namespace Fem
             ++numFaces ;
             if ( intersection.neighbor() )
             {
-#if DUNE_VERSION_NEWER(DUNE_GRID,2,4)
               double outsideVol = intersection.outside().geometry().volume();
-#else
-              double outsideVol = intersection.outside()->geometry().volume();
-#endif
               numOutflowFaces += (determineDirection(areaSwitch_, insideVol,outsideVol,intersection) ? 1 : 0);
               if ( !areaSwitch_ || insideVol/outsideVol < 1)
                 maxNeighborsVolumeRatio_ = std::max( maxNeighborsVolumeRatio_, insideVol/outsideVol );
@@ -355,49 +351,23 @@ namespace Fem
     {
     }
 
-    template <class LocalEvaluation, class ArgumentTupleVector >
-    void initializeIntersection(const LocalEvaluation& left,
-                                const LocalEvaluation& right,
-                                const ArgumentTupleVector& uLeftVec,
-                                const ArgumentTupleVector& uRightVec)
+    template <class LocalEvaluationVec, class RangeVector >
+    void initializeIntersection(const LocalEvaluationVec& left,
+                                const LocalEvaluationVec& right,
+                                const RangeVector& uLeftVec,
+                                const RangeVector& uRightVec)
     {
       if( hasLifting() )
       {
-        computeLiftings( left.intersection(), left.entity(), right.entity(), left.time(),
-                         left.quadrature(), right.quadrature(),
-                         uLeftVec, uRightVec,
-                         (method_ == EnumType::br2 ) );
+        computeLiftings( left, right, uLeftVec, uRightVec, (method_ == EnumType::br2) );
       }
     }
 
-    template <class QuadratureImp, class ArgumentTupleVector >
-    void initializeIntersection(const IntersectionType& intersection,
-                                const EntityType& inside,
-                                const EntityType& outside,
-                                const double time,
-                                const QuadratureImp& quadInner,
-                                const QuadratureImp& quadOuter,
-                                const ArgumentTupleVector& uLeftVec,
-                                const ArgumentTupleVector& uRightVec)
-    {
-      if( hasLifting() )
-      {
-        computeLiftings( intersection, inside, outside, time,
-                         quadInner, quadOuter,
-                         uLeftVec, uRightVec,
-                         (method_ == EnumType::br2 ) );
-      }
-    }
-
-    template <class QuadratureImp, class ArgumentTupleVector >
-    void computeLiftings(const IntersectionType& intersection,
-                         const EntityType& inside,
-                         const EntityType& outside,
-                         const double time,
-                         const QuadratureImp& quadInner,
-                         const QuadratureImp& quadOuter,
-                         const ArgumentTupleVector& uLeftVec,
-                         const ArgumentTupleVector& uRightVec,
+    template <class LocalEvaluationVec, class RangeVector >
+    void computeLiftings(const LocalEvaluationVec& left,
+                         const LocalEvaluationVec& right,
+                         const RangeVector& uLeftVec,
+                         const RangeVector& uRightVec,
                          const bool computeBoth )
     {
       if( hasLifting() || computeBoth )
@@ -416,155 +386,63 @@ namespace Fem
         //  L_e = 0 elsewhere
 
         // get Ke- in entity
-        insideIsInflow_ = determineDirection( areaSwitch_, inside.geometry().volume(),
-                                              outside.geometry().volume(),
-                                              intersection );
+        insideIsInflow_ = determineDirection( areaSwitch_, left.entity().geometry().volume(),
+                                              right.entity().geometry().volume(),
+                                              left.intersection() );
 
-        const EntityType& entity = ( insideIsInflow_ ) ? outside : inside;
-        const ArgumentTupleVector& u = ( insideIsInflow_ ) ? uRightVec : uLeftVec;
+        // get right local evaluation
+        const LocalEvaluationVec& inflow = insideIsInflow_ ? right : left;
 
-        const size_t quadNoInp = quadInner.nop();
+        const RangeVector& uInflow = insideIsInflow_ ? uRightVec : uLeftVec;
+
+        const size_t quadNoInp = left.quadrature().nop();
         liftingEvalLeMinus_.resize( quadNoInp );
 
-        // get the right quadrature for the lifting entity
-        const QuadratureImp& faceQuad = ( insideIsInflow_ ) ? quadOuter : quadInner;
-  /*
-#ifdef LOCALDEBUG
-        const size_t quadNoOutp = quadOuter.nop();
-        double sum = 0;
-        double sum2 = 0;
-
-        // get Ke+ in entity2
-        // calculate L_e=2*r_e on Ke+
-        const EntityType& entity2 = ( insideIsInflow_ ) ? inside : outside;
-        LeMinusLifting().initialize( entity2 );
-
-        {
-          // get the right quadrature for the lifting entity
-          const QuadratureImp& faceQuad2 = ( insideIsInflow_ ) ? quadInner : quadOuter;
-
-          for(size_t qp = 0; qp < quadNoInp; ++qp )
-          {
-            // get value of 2*r_e in quadrature point
-            addLifting(intersection, time, faceQuad2, qp,
-                       uLeftVec[ qp ], uRightVec[ qp ], liftingEvalLeMinus_[ qp ] );
-          }
-          // add to local function
-          LeMinusLifting().function().axpyQuadrature( faceQuad, liftingEvalLeMinus_ );
-
-          LeMinusLifting().finalize();
-        }
-
-        // calculate 4*\int_Ke+(r_e*r_e)
-        double term1;
-        term1 = integrateLifting( LeMinusLifting().function(),
-                                  LeMinusLifting().function().entity().geometry() );
-        const double interiorFactor =
-          ( insideIsInflow_ ? -1. : 1. );
-
-        // set sum += -4*\int_Ke+(r_e*r_e)
-        sum += interiorFactor*term1;
-
-        // calculate L_e=2*r_e on Ke-
-        LeMinusLifting2().initialize( entity );
-
-        for(size_t qp = 0; qp < quadNoOutp; ++qp )
-        {
-          // get value of 2*r_e in quadrature point
-          addLifting(intersection, time, faceQuad, qp,
-                     uLeftVec[ qp ], uRightVec[ qp ], liftingEvalLeMinus_ );
-        }
-        LeMinusLifting2().function().axpyQuadrature( faceQuad, liftingEvalLeMinus_ );
-        LeMinusLifting2().finalize();
-
-        // calculate 4*\int_Ke-(r_e*r_e)
-        double term2;
-        term2 = integrateLifting( LeMinusLifting2().function(),
-                                  LeMinusLifting2().function().entity().geometry() );
-
-        sum2 = sum;
-
-        // put 4*(\int_Ke-(r_e*r_e) - \int_Ke+(r_e*r_e))
-        //  = 4*\int_e(r_e*l_e) in sum
-        // put 4*(\int_Ke-(r_e*r_e) + \int_Ke+(r_e*r_e))
-        //  = 4*\int_e(r_e*r_e) in sum2
-        sum -= interiorFactor*term2;
-        sum2 += std::abs( term2 );
-
-        if (sim2 > 1e-20)
-        {
-          localMaxRatio_ = std::max( localMaxRatio_, std::abs(sum/sum2) );
-          localMinRatio_ = std::min( localMinRatio_, std::abs(sum/sum2) );
-        } else
-          localMaxRatio_ = std::numeric_limits<double>();
-
-        if ( (std::abs(sum) > sum2) )
-        {
-          std::cout <<"sum: " <<sum <<" sum2: " <<sum2 <<std::endl;
-          std::cout <<"term1: " <<term1 <<std::endl;
-          std::cout <<"term2: " <<term2 <<std::endl <<std::endl;
-          abort();
-        }
-
-        // add to final sum
-        //    \sum_e (\int_Ke+ r_e*r_e - \int_Ke- r_e*r_e)
-        //    \sum_e (\int_Ke+ r_e*r_e + \int_Ke- r_e*r_e)
-        sum_ += sum;
-        sum2_ += sum2;
-#endif
-        */
-
         // back to the real computation, entity=Ke-
-        LeMinusLifting().initialize( entity );
+        LeMinusLifting().initialize( inflow.entity() );
 
         // calculate real lifting
         for(size_t qp = 0; qp < quadNoInp; ++qp )
         {
-          addLifting(intersection, entity, u.at( qp ), u[ qp ], time, faceQuad,  qp,
-                     uLeftVec[ qp ], uRightVec[ qp ],
-                     liftingEvalLeMinus_[ qp ] );
+          addLifting( inflow[qp], uInflow[qp], uLeftVec[qp], uRightVec[qp], liftingEvalLeMinus_[qp] );
         }
         // add to local function
-        LeMinusLifting().function().axpyQuadrature( faceQuad, liftingEvalLeMinus_ );
+        LeMinusLifting().function().axpyQuadrature( inflow.quadrature(), liftingEvalLeMinus_ );
 
         // LeMinusLifting_ has L_e=2*r_e on Ke-
         LeMinusLifting().finalize( );
 
         // already evaluate for all quadrature points
-        LeMinusLifting().function().evaluateQuadrature( faceQuad, liftingEvalLeMinus_ );
+        LeMinusLifting().function().evaluateQuadrature( inflow.quadrature(), liftingEvalLeMinus_ );
 
         if ( computeBoth )
         {
           if ( ! LePlusLifting_ )
             LePlusLifting_.reset( new Lifting( gradSpc_ ) );
 
-          // get Ke+ in entity2
+          // get right local evaluation
+          const LocalEvaluationVec& outflow = ( insideIsInflow_ ) ? left : right;
+          const RangeVector& uOutflow = insideIsInflow_ ? uLeftVec : uRightVec;
+
           // calculate 2*r_e on Ke+
-          const EntityType& entity2 = ( insideIsInflow_ ) ? inside : outside;
-          const ArgumentTupleVector& u2 = ( insideIsInflow_ ) ? uLeftVec : uRightVec;
-          LePlusLifting().initialize( entity2 );
+          LePlusLifting().initialize( outflow.entity() );
 
-          // get the right quadrature for the lifting entity
-          const QuadratureImp& faceQuad2 = ( insideIsInflow_ ) ? quadInner : quadOuter;
-
-          const size_t quadNoOutp = quadOuter.nop();
+          const size_t quadNoOutp = right.quadrature().nop();
           liftingEvalLePlus_.resize( quadNoOutp );
           for(size_t qp = 0; qp < quadNoOutp; ++qp )
           {
             // get value of 2*r_e in quadrature point
-            // use correct order on interface quadratures!
-            addLifting(intersection, entity2, u2.at( qp ), u2[ qp ], time, faceQuad2,  qp,
-                       uLeftVec[ qp ], uRightVec[ qp ], liftingEvalLePlus_[ qp ] );
+            addLifting( outflow[qp], uOutflow[qp], uLeftVec[qp], uRightVec[qp], liftingEvalLePlus_[qp] );
           }
 
           // add to local function
-          LePlusLifting().function().axpyQuadrature( faceQuad2, liftingEvalLePlus_ );
+          LePlusLifting().function().axpyQuadrature( outflow.quadrature(), liftingEvalLePlus_ );
 
           // LePlusLifting_ carries 2*r_e on Ke+
           LePlusLifting().finalize( );
 
           // already evaluate for all quadrature points, reuse liftTmp here
-          LeMinusLifting().function().evaluateQuadrature( faceQuad, liftingEvalLePlus_ );
+          LeMinusLifting().function().evaluateQuadrature( outflow.quadrature(), liftingEvalLePlus_ );
         }
       }
     }
@@ -573,7 +451,7 @@ namespace Fem
     template <class LiftingFunction , class Geometry >
     double integrateLifting( const LiftingFunction& lifting, const Geometry& geometry ) const
     {
-      typedef typename LiftingFunction :: RangeType RangeType;
+      typedef typename LiftingFunction::RangeType RangeType;
       VolumeQuadratureType quad( lifting.entity(), 2 * lifting.order() + 2 );
       const int quadNop = quad.nop();
       RangeType val;
@@ -589,69 +467,47 @@ namespace Fem
     }
 #endif
 
-    template <class LocalEvaluation, class ArgumentTupleVector>
-    void initializeBoundary(const LocalEvaluation& local,
-                            const ArgumentTupleVector& uLeftVec,
-                            const std::vector< RangeType >& uRight)
-    {
-      initializeBoundary( local.intersection(), local.entity(), local.time(), local.quadrature(), uLeftVec, uRight );
-    }
-
-
-    template <class QuadratureImp, class ArgumentTupleVector>
-    void initializeBoundary(const IntersectionType& intersection,
-                            const EntityType& entity,
-                            const double time,
-                            const QuadratureImp& quadInner,
-                            const ArgumentTupleVector& uLeftVec,
-                            const std::vector< RangeType >& uRight)
+    template <class LocalEvaluationVec, class RangeVector, class RangeVector2 >
+    void initializeBoundary(const LocalEvaluationVec& local,
+                            const RangeVector& uLeftVec,
+                            const RangeVector2& uRightVec)
     {
       if( hasLifting() )
       {
         insideIsInflow_ = true;
 
-        LeMinusLifting().initialize( entity );
+        LeMinusLifting().initialize( local.entity() );
 
-        const size_t quadNop = quadInner.nop();
+        const size_t quadNop = local.quadrature().nop();
         liftingEvalLeMinus_.resize( quadNop );
         for(size_t qp = 0; qp < quadNop; ++qp )
         {
-          addLifting(intersection, entity, uLeftVec.at( qp ), uLeftVec[ qp ], time, quadInner, qp,
-                     uLeftVec[ qp ], uRight[ qp ] , liftingEvalLeMinus_[ qp ] );
+          addLifting( local[qp], uLeftVec[qp], uLeftVec[qp], uRightVec[qp], liftingEvalLeMinus_[qp] );
         }
         // add to local function
-        LeMinusLifting().function().axpyQuadrature( quadInner, liftingEvalLeMinus_ );
+        LeMinusLifting().function().axpyQuadrature( local.quadrature(), liftingEvalLeMinus_ );
         // finalize function
         LeMinusLifting().finalize();
         // already evaluate all liftings
-        LeMinusLifting().function().evaluateQuadrature( quadInner, liftingEvalLeMinus_ );
+        LeMinusLifting().function().evaluateQuadrature( local.quadrature(), liftingEvalLeMinus_ );
       }
     }
 
   protected:
-    template <class QuadratureImp, class ArgumentTuple, class LiftingFunction >
-    void addLifting(const IntersectionType& intersection,
-                    const EntityType &entity,
-                    const ArgumentTuple &uTuple,
-                    const RangeType& u,
-                    const double time,
-                    const QuadratureImp& faceQuad,
-                    const int quadPoint,
+    template <class LocalEvaluation, class LiftingFunction >
+    void addLifting(const LocalEvaluation& inside,
+                    const RangeType& uInflow,
                     const RangeType& uLeft,
                     const RangeType& uRight,
                     LiftingFunction& func ) const
     {
-      ExtraQuadraturePointContext< EntityType, IntersectionType, QuadratureImp, ArgumentTuple, ArgumentTuple >
-        local( entity, intersection, faceQuad, quadPoint, time, entity.geometry().volume(), uTuple, uTuple );
-
-      const FaceDomainType& x = faceQuad.localPoint( quadPoint );
-      DomainType normal = intersection.integrationOuterNormal( x );
+      DomainType normal = inside.intersection().integrationOuterNormal( inside.localPosition() );
 
       JacobianRangeType jumpUNormal;
       for(int r = 0; r < dimRange; ++r)
       {
         for(int j=0; j<dimDomain; ++j)
-          jumpUNormal[ r ][ j ] = normal[ j ] * (uLeft[ r ] - uRight[ r ]);
+          jumpUNormal[r][j] = normal[j] * (uLeft[r] - uRight[r]);
       }
 
       Fem::FieldMatrixConverter< GradientType, JacobianRangeType> func1( func );
@@ -660,15 +516,15 @@ namespace Fem
       else
       {
         JacobianRangeType AJumpUNormal;
-        model_.diffusion( local, u, jumpUNormal, AJumpUNormal );
+        model_.diffusion( inside, uInflow, jumpUNormal, AJumpUNormal );
         func1 = AJumpUNormal;
       }
-      func *= -faceQuad.weight( quadPoint );
+      func *= -inside.quadrature().weight( inside.index() );
     }
 
     /** \return A(u)L_e*n */
     template <class LocalEvaluation>
-    void applyLifting(const LocalEvaluation& local,
+    void applyLifting(const LocalEvaluation& inside,
                       const DomainType& normal,
                       const RangeType& u,
                       const GradientType& sigma,
@@ -681,7 +537,7 @@ namespace Fem
       {
         JacobianRangeType mat;
         // set mat = A(u)L_e
-        model_.diffusion( local, u, gradient, mat );
+        model_.diffusion( inside, u, gradient, mat );
         // set lift = A(u)L_e*n
         mat.mv( normal, lift );
       }
@@ -786,8 +642,8 @@ namespace Fem
 
       const double faceLengthSqr = normal.two_norm2();
 
-      JacobianRangeType diffmatrix ;
-      RangeType diffflux ;
+      JacobianRangeType diffmatrix;
+      RangeType diffflux;
 
       // for all methods except CDG we need to evaluate {A(u)grad(u)}
       if (method_ != EnumType::cdg)
@@ -817,10 +673,10 @@ namespace Fem
         ////////////////////////////////
         // [ phi ] * [ A(u^out)grad(u^out) ] ...
         ///////////////////////////////
-        if ( ! insideIsInflow_ )
-          model_.diffusion( left, uLeft, jacLeft, diffmatrix );
-        else
+        if ( insideIsInflow_ )
           model_.diffusion( right, uRight, jacRight, diffmatrix );
+        else
+          model_.diffusion( left, uLeft, jacLeft, diffmatrix );
 
         // diffflux=(A(u)grad(u)*n)|Ke-
         diffmatrix.mv( normal, diffflux );
@@ -928,13 +784,13 @@ namespace Fem
       if( hasLifting() )
       {
         // ... and the values of u from Ke-
-        const RangeType& u = ( insideIsInflow_ ) ? uRight : uLeft;
-        const LocalEvaluation& local = ( insideIsInflow_ ) ? right : left ;
+        const RangeType& u = insideIsInflow_ ? uRight : uLeft;
+        const LocalEvaluation& inflow = insideIsInflow_ ? right : left ;
 
         RangeType lift;
         // LiftingFunctionType& LeMinus = LeMinusLifting().function();
         // get value of A(u^out)L_e^out*n into liftTotal
-        applyLifting( local, normal, u, liftingEvalLeMinus_[ local.index() ], lift );
+        applyLifting( inflow, normal, u, liftingEvalLeMinus_[inflow.index()], lift );
 
         // only for CDG-type methods
         if (method_ != EnumType::br2)
@@ -948,7 +804,7 @@ namespace Fem
 
         if( method_ == EnumType::cdg )
         {
-          const RangeFieldType C_12 = ( insideIsInflow_ ) ? 0.5 : -0.5;
+          const RangeFieldType C_12 = insideIsInflow_ ? 0.5 : -0.5;
           JacobianRangeType resU;
 
           ////////////////////////////////
@@ -979,17 +835,14 @@ namespace Fem
           // so penaltyTerm = C_BR2 (A(u_out)r_e([u])*n + A(u_in)r_e([u])*n)/2
 
           // get correct quadrature, the one from Ke+
-          //const QuadratureImp& faceQuadPlus =
-          //  ( ! insideIsInflow_ ) ? faceQuadOuter : faceQuadInner;
           // ... and the values of u from Ke+
-          const RangeType& uPlus = ( ! insideIsInflow_ ) ? uRight : uLeft;
-          const LocalEvaluation& local = ( ! insideIsInflow_ ) ? right : left ;
+          const RangeType& uPlus = insideIsInflow_ ? uLeft : uRight;
+          const LocalEvaluation& inflow = insideIsInflow_ ? left : right;
 
           RangeType liftTotal;
-          // LiftingFunctionType& LePlus = LePlusLifting().function();
 
           // get value of A(u^in)L_e^in*n into liftTotal
-          applyLifting( local, normal, uPlus, liftingEvalLePlus_[ local.index() ], liftTotal );
+          applyLifting( inflow, normal, uPlus, liftingEvalLePlus_[inflow.index()], liftTotal );
 
           // set liftTotal = {A(u)r_e}*n = 0.25*(A(u^in)L_e^in*n + A(u^out)L_e^out*n)
           liftTotal += lift;
@@ -1057,11 +910,9 @@ namespace Fem
 
       if( hasLifting() )
       {
-        // LiftingFunctionType& LeMinus = LeMinusLifting().function();
-
         RangeType lift;
         // get value of A(u)L_e*n into lift
-        applyLifting( left, normal, uRight, liftingEvalLeMinus_[ left.index() ], lift );
+        applyLifting( left, normal, uRight, liftingEvalLeMinus_[left.index()], lift );
 
         if( method_ == EnumType::br2 )
         {
@@ -1206,7 +1057,7 @@ namespace Fem
     typedef typename BaseType::GradientType        GradientType;
     typedef typename BaseType::DomainType          DomainType;
 
-    typedef typename BaseType :: ParameterType  ParameterType;
+    typedef typename BaseType::ParameterType       ParameterType;
 
     ExtendedDGPrimalDiffusionFlux( GridPartType& gridPart,
                                    const Model& model,
@@ -1221,34 +1072,15 @@ namespace Fem
     }
 
     using BaseType::initializeIntersection;
-    template <class LocalEvaluation, class ArgumentTupleVector>
-    void initializeIntersection(const LocalEvaluation& left,
-                                const LocalEvaluation& right,
-                                const ArgumentTupleVector& uLeftVec,
-                                const ArgumentTupleVector& uRightVec,
+
+    template <class LocalEvaluationVec, class RangeVector >
+    void initializeIntersection(const LocalEvaluationVec& left,
+                                const LocalEvaluationVec& right,
+                                const RangeVector& uLeftVec,
+                                const RangeVector& uRightVec,
                                 bool computeBoth)
     {
-      this->computeLiftings(left.intersection(), left.entity(), right.entity(), left.time(),
-                            left.quadrature(), right.quadrature(),
-                            uLeftVec,uRightVec,
-                            computeBoth );
-    }
-
-    template <class QuadratureImp, class ArgumentTupleVector >
-    void initializeIntersection(const IntersectionType& intersection,
-                                const EntityType& inside,
-                                const EntityType& outside,
-                                const double time,
-                                const QuadratureImp& quadInner,
-                                const QuadratureImp& quadOuter,
-                                const ArgumentTupleVector& uLeftVec,
-                                const ArgumentTupleVector& uRightVec,
-                                const bool computeBoth )
-    {
-      this->computeLiftings(intersection, inside, outside, time,
-                            quadInner, quadOuter,
-                            uLeftVec,uRightVec,
-                            computeBoth );
+      this->computeLiftings(left, right, uLeftVec, uRightVec, computeBoth );
     }
 
     // return AL_e.n on element and neighbor
@@ -1260,22 +1092,22 @@ namespace Fem
                          JacobianRangeType& liftEn,
                          JacobianRangeType& liftNb) const
     {
-      assert( this->LePlusLifting().isInitialized() );
-      assert( this->LeMinusLifting().isInitialized() );
-      const int quadPoint = left.index();
+      assert( this->LePlusLifting().isInitialized() )
+      assert( this->LePlusLifting().entity() == left.entity() );
+      assert( this->LeMinusLifting().isInitialized() )
+      assert( this->LeMinusLifting().entity() == right.entity() );
+
+      const int qp = left.index();
       if ( this->insideIsInflow_)
       {
-        applyLifting( this->LePlusLifting().function().entity(), time,
-                      left.quadrature(), quadPoint, uEn, liftingEvalLePlus_[quadPoint], liftEn );
-        applyLifting( this->LeMinusLifting().function().entity(), time,
-                      right.quadrature(), quadPoint, uNb, liftingEvalLeMinus_[quadPoint], liftNb );
+        applyLifting( left, left.intersection().normal(), uEn, liftingEvalLePlus_[qp], liftEn );
+        applyLifting( right, right.intersection().normal(), uNb, liftingEvalLeMinus_[qp], liftNb );
       }
       else
       {
-        applyLifting( this->LeMinusLifting().function().entity(), time,
-                      right.quadrature(), quadPoint, uEn, liftingEvalLeMinus_[quadPoint], liftEn );
-        applyLifting( this->LePlusLifting().function().entity(), time,
-                      left.quadrature(), quadPoint, uNb, liftingEvalLePlus_[quadPoint], liftNb );
+        applyLifting( right, left.intersection().normal(), uEn, liftingEvalLeMinus_[qp], liftNb );
+        applyLifting( left, right.intersection().normal(), uNb, liftingEvalLePlus_[qp], liftEn );
+
       }
       assert( liftEn == liftEn );
       assert( liftNb == liftNb );
@@ -1311,7 +1143,6 @@ namespace Fem
                       const GradientType& sigma,
                       JacobianRangeType& mat) const
     {
-      ExtraQuadraturePointContext< EntityType, QuadratureImp, RangeType,
       Fem::FieldMatrixConverter< GradientType, JacobianRangeType> gradient( sigma );
       // set mat = A(u)L_e
       this->model_.diffusion( entity, time, x, u, gradient, mat );

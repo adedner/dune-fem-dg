@@ -197,10 +197,14 @@ namespace Fem
         localdf_.evaluateQuadrature( quadInside, uValuesEn );
         uOutside.evaluateQuadrature( quadOutside, uValuesNb );
 
-        typedef QuadratureContext< EntityType, IntersectionType, typename IntersectionQuadratureType::FaceQuadratureType > LocalEvaluationType;
+        typedef QuadratureContext< EntityType, IntersectionType, typename IntersectionQuadratureType::FaceQuadratureType > ContextType;
+        typedef LocalEvaluation< ContextType, std::vector< URangeType >, std::vector< URangeType >  > LocalEvaluationType;
 
-        LocalEvaluationType left( entity, intersection, quadInside, 0.0, entity.geometry().volume() );
-        LocalEvaluationType right( neighbor, intersection, quadOutside, 0.0, neighbor.geometry().volume() );
+        ContextType cLeft( entity, intersection, quadInside, entity.geometry().volume() );
+        ContextType cRight( neighbor, intersection, quadOutside, neighbor.geometry().volume() );
+
+        LocalEvaluationType left( cLeft, uValuesEn, uValuesEn );
+        LocalEvaluationType right( cRight, uValuesNb, uValuesNb );
 
         oper_.lifting( left, right, uValuesEn, uValuesNb, localre_ );
       }
@@ -644,11 +648,10 @@ namespace Fem
     SubEllipticAlgorithm( const std::shared_ptr< ContainerImp >& cont,
                           const std::shared_ptr< ExtraArgsImp >& extra )
     : BaseType( cont, extra ),
-      assembler_( cont, model() ),
+      assembler_( cont, extra, model() ),
       matrix_( (*cont)(_0,_0)->matrix() ),
       adaptIndicator_( std::make_unique<AdaptIndicatorType>( cont, assembler_, model(), name() ) ),
-      step_( 0 ),
-      time_( 0 )
+      step_( 0 )
     {
       std::string gridName = Fem::gridName( grid() );
       if( gridName == "ALUGrid" || gridName == "ALUConformGrid" || gridName == "ALUSimplexGrid" )
@@ -665,8 +668,7 @@ namespace Fem
 
     void virtual setTime ( const double time ) override
     {
-      time_ = time;
-      assembler_.setTime( time_ );
+      model().setTime( time );
     }
 
     const AssemblerType& assembler () const
@@ -750,7 +752,6 @@ namespace Fem
     std::shared_ptr< OperatorType >              matrix_;
     std::unique_ptr< AdaptIndicatorType >        adaptIndicator_;
     int                                          step_;
-    double                                       time_;
   };
 
 }

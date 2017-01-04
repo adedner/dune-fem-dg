@@ -225,7 +225,7 @@ namespace Fem
                           const BaseAssemblerType& ass,
                           const AssemblerType& assembler,
                           const std::string keyPrefix = "" )
-    : BaseType( (*cont)( std::make_tuple(_0), std::make_tuple(_0) ), ass, keyPrefix ),
+    : BaseType( (*cont)(std::make_tuple(_0),std::make_tuple(_0) ), ass, keyPrefix ),
       stkFlux_( *(*cont)(_1)->solution(), ass ),
       stkLocalEstimate_( *(*cont)(_0)->solution(), *(*cont)(_1)->solution(), ass ),
       stkEstimateFunction_("stokes estimate", stkLocalEstimate_, (*cont)(_0)->solution()->gridPart(), (*cont)(_0)->solution()->space().order() ),
@@ -280,7 +280,7 @@ namespace Fem
 
     template< class ContainerImp >
     StokesPAdaptivity( const shared_ptr< ContainerImp >& cont, BaseAssemblerType& ass, AssemblerType& assembler, const std::string name = ""  )
-      : pAdapt_( (*cont)( std::make_tuple(_0), std::make_tuple(_0) ), ass, name ),
+      : pAdapt_( (*cont)(std::make_tuple(_0),std::make_tuple(_0) ), ass, name ),
         polOrderContainer_( (*cont)(_0)->solution()->gridPart().grid(), 0 ),
         space_( (*cont)(_1)->solution()->space() ),
         sigmaEstimator_( cont, ass, assembler, name ),
@@ -537,14 +537,13 @@ namespace Fem
     template< class ContainerImp, class ExtraArgsImp >
     explicit SubStokesAlgorithm( const std::shared_ptr< ContainerImp >& cont,
                                  const std::shared_ptr< ExtraArgsImp >& extra )
-    : BaseType( (*cont)(std::make_tuple(_1), std::make_tuple(_1) ), extra ),
+    : BaseType( (*cont)(std::make_tuple(_1),std::make_tuple(_1 ) ), extra ),
       space_( (*cont)(_1)->solution()->space() ),
-      assembler_( cont, model() ),
-      ellAlg_( (*cont)( std::make_tuple(_0), std::make_tuple(_0)  ), extra ),
+      assembler_( cont, extra, model() ),
+      ellAlg_( (*cont)(std::make_tuple(_0),std::make_tuple(_0)), extra ),
       stokesSolver_( std::make_shared< SolverType >( *cont, ellAlg_ ) ),
       adaptIndicator_( std::make_unique<AdaptIndicatorType>( cont, ellAlg_.assembler(), assembler_, problem(), BaseType::name() ) ),
-      ioTuple_( new IOTupleType( *BaseType::dataTuple(), *ellAlg_.dataTuple() ) ),
-      time_(0)
+      ioTuple_( new IOTupleType( *BaseType::dataTuple(), *ellAlg_.dataTuple() ) )
     {
     }
 
@@ -555,9 +554,8 @@ namespace Fem
 
     void virtual setTime ( const double time ) override
     {
-      time_ = time;
-      assembler_.setTime( time_ );
-      ellAlg_.setTime( time_ );
+      model().setTime( time );
+      ellAlg_.setTime( time );
     }
 
 
@@ -618,7 +616,6 @@ namespace Fem
     std::shared_ptr< SolverType >          stokesSolver_;
     std::unique_ptr< AdaptIndicatorType >  adaptIndicator_;
     std::unique_ptr< IOTupleType >         ioTuple_;
-    double                                 time_;
   };
 
 

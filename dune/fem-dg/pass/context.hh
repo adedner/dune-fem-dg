@@ -12,6 +12,432 @@ namespace Fem
 {
 
 
+  template < class T, typename std::enable_if < !is_vector<T>::value, int >::type = 0 >
+  decltype(auto) indexIfVector(const T& value, int i)
+  {
+    return value;
+  }
+
+  template<class T, typename std::enable_if<is_vector<T>::value, int>::type = 0>
+  decltype(auto) indexIfVector(const T& value, int i)
+  {
+    typedef std::remove_reference_t<decltype(std::declval<T>()[0] )> ElemType;
+    return i < 0 ? ElemType(0) : value[i];
+  }
+
+  // (qp, id, base)   std::get<id>(arg[qp])[base]
+
+  // (qp, id      )   std::get<id>(arg[qp])
+  // (qp,     base)   operator[*]: std::get<*>(arg[qp])[base]
+  // (    id, base)   operator[*]: std::get<id>(arg[*])[base]
+
+  // (qp          )   operator[*]: std::get<*>(arg[qp])[*]
+  // (    id      )   operator[*]: std::get<id>(arg[*])[*]
+  // (        base)   operator[*]: std::get<*>(arg[*])[base]
+
+  template< class E, bool qpAct, bool idAct, bool baseAct, int id >
+  struct Eval;
+
+  template< class E, int id >
+  struct FinalEval
+  {
+    FinalEval( const E& e, int qp, int b ) : e_(e) {}
+
+    static_assert( static_fail< E >::value, "alert: This should not happen: Use std::vector, std::tuple etc..." );
+    decltype(auto) operator()()
+    { return e_; }
+  private:
+    const E& e_;
+  };
+
+
+  //////////// Last Element
+  template< class Arg, int id >
+  struct FinalEval<std::vector< Arg >,id>
+  {
+    typedef std::vector< Arg > E;
+    FinalEval( const E& e, int qp, int b ) : e_(e), b_(b) {}
+
+    decltype(auto) operator()()
+    { return indexIfVector( e_, b_ ); }
+  private:
+    const E& e_; int b_;
+  };
+
+  template< class Arg, int id >
+  struct FinalEval<std::vector<std::vector<Arg> >,id>
+  {
+    typedef std::vector<std::vector<Arg> > E;
+    FinalEval( const E& e, int qp, int b ) : e_(e), qp_(qp), b_(b) {}
+
+    decltype(auto) operator()()
+    { return indexIfVector( e_[qp_], b_ ); }
+  private:
+    const E& e_; int qp_; int b_;
+  };
+
+  template< class... Args, int id >
+  struct FinalEval<std::vector<std::tuple<Args...> >,id>
+  {
+    typedef std::vector<std::tuple<Args...> > E;
+    FinalEval( const E& e, int qp, int b ) : e_(e), qp_(qp), b_(b) {}
+
+    decltype(auto) operator()()
+    { return indexIfVector( std::get<id>(e_[qp_]), b_ ); }
+  private:
+    const E& e_; int qp_; int b_;
+  };
+
+  template< class... Args, int id >
+  struct FinalEval<std::vector<Dune::TypeIndexedTuple<Args...> >,id>
+  {
+    typedef std::vector<Dune::TypeIndexedTuple<Args...> > E;
+    FinalEval( const E& e, int qp, int b ) : e_(e), qp_(qp), b_(b) {}
+
+    decltype(auto) operator()()
+    { return indexIfVector( e_[qp_][std::integral_constant<int,id>()], b_ ); }
+  private:
+    const E& e_; int qp_; int b_;
+  };
+
+  template< class... Args, int id >
+  struct FinalEval<Dune::TypeIndexedTuple<Args...>,id>
+  {
+    typedef Dune::TypeIndexedTuple<Args...> E;
+    FinalEval( const E& e, int qp, int b ) : e_(e), b_(b) {}
+
+    decltype(auto) operator()()
+    { return indexIfVector( e_[std::integral_constant<int,id>()], b_ ); }
+  private:
+    const E& e_; int b_;
+  };
+
+
+  // this should not happen
+  template< class E, bool b1, bool b2, bool b3, bool id, int outerId >
+  struct FinalEval<Eval<E,b1,b2,b3,id>,outerId >
+  {
+    static_assert( static_fail< E >::value, "alert: This should not happen: Use std::vector, std::tuple etc..." );
+  };
+
+  //////////// End Last Element
+
+
+  template< class E, int id >
+  struct Eval<E,false,false,false,id>
+    : public std::remove_cv_t<std::remove_reference_t<decltype(std::declval<FinalEval<E,id> >()())> >
+  {
+  private:
+    typedef FinalEval<E,id> FinalEvalType;
+    typedef std::remove_cv_t<std::remove_reference_t<decltype(std::declval<FinalEvalType>()())> > BaseType;
+  public:
+    using BaseType::size;
+    Eval( const E& e, int qp, int b )
+      : BaseType( FinalEvalType( e, qp, b )() )
+    {}
+  };
+
+
+  template< class E, int id >
+  struct Eval<E,true,false,false,id>
+  {
+    Eval( const E& e, int qp, int b ) : e_(e), b_(b) {}
+
+    decltype(auto) operator[]( int idx ) const
+    { return FinalEval<E,id>(e_,idx,b_)(); }
+  private:
+    const E& e_; int b_;
+  };
+
+  template< class E, int id >
+  struct Eval<E,false,true,false,id>
+  {
+    Eval( const E& e, int qp, int b ) : e_(e), qp_(qp), b_(b) {}
+
+    template< class Int, Int idx >
+    decltype(auto) operator[]( const std::integral_constant<Int,idx>& ) const
+    { return FinalEval<E,idx>(e_,qp_,b_)(); }
+  private:
+    const E& e_; int qp_; int b_;
+  };
+
+  template< class E, int id >
+  struct Eval<E,false,false,true,id>
+  {
+    Eval( const E& e, int qp, int b ) : e_(e), qp_(qp) {}
+
+    decltype(auto) operator[]( int idx ) const
+    { return FinalEval<E,id>(e_,qp_,idx)(); }
+
+  private:
+    const E& e_; int qp_;
+  };
+
+  template< class E, int id >
+  struct Eval<E,true,true,false,id>
+  {
+    Eval( const E& e, int qp, int b ) : e_(e), qp_(qp), b_(b) {}
+
+    //access: quadrature point
+    decltype(auto) operator[]( unsigned int idx ) const
+    { return Eval<E,false,false,true,id>( e_, idx, b_ ); }
+
+    //access: quadrature point II
+    decltype(auto) operator[]( unsigned long int idx ) const
+    { return Eval<E,false,false,true,id>( e_, idx, b_ ); }
+
+    //access: multi values
+    template< class Int, Int idx >
+    decltype(auto) operator[]( const std::integral_constant<Int,idx>& ) const
+    { return Eval<E,true,false,false,idx>( e_, qp_, b_ ); }
+
+  private:
+    template< class NoImplicitTypeConversion >
+    void operator[]( NoImplicitTypeConversion ) const {}
+
+    const E& e_; int qp_; int b_;
+  };
+
+  template< class E, int id >
+  struct Eval<E,true,false,true,id>
+  {
+    Eval( const E& e, int qp, int b ) : e_(e), qp_(qp), b_(b) {}
+
+    //access: quadrature point
+    decltype(auto) operator[]( unsigned int idx ) const
+    { return Eval<E,false,false,true,id>( e_, idx, b_ ); }
+
+    //access: quadrature point II
+    decltype(auto) operator[]( unsigned long int idx ) const
+    { return Eval<E,false,false,true,id>( e_, idx, b_ ); }
+
+    //access: basis functions
+    decltype(auto) operator[]( int idx ) const
+    { return Eval<E,true,false,false,id>( e_, qp_, idx ); }
+  private:
+    template< class NoImplicitTypeConversion >
+    void operator[]( NoImplicitTypeConversion ) const {}
+
+    const E& e_; int qp_; int b_;
+  };
+
+  template< class E, int id >
+  struct Eval<E,false,true,true,id>
+  {
+    Eval( const E& e, int qp, int b ) : e_(e), qp_(qp), b_(b) {}
+
+    //access: multi values
+    template< class Int, Int idx >
+    decltype(auto) operator[]( const std::integral_constant<Int,idx>& ) const
+    { return Eval<E,false,false,true,idx>( e_, qp_, b_ ); }
+
+    //acess: basis functions
+    decltype(auto) operator[]( int idx ) const
+    { return Eval<E,false,true,false,id>( e_, qp_, idx ); }
+  private:
+    template< class NoImplicitTypeConversion >
+    void operator[]( NoImplicitTypeConversion ) const {}
+
+    const E& e_; int qp_; int b_;
+  };
+
+  template< class E, int id >
+  struct Eval<E,true,true,true,id>
+  {
+    Eval( const E& e, int qp, int b ) : e_(e), qp_(qp), b_(b) {}
+
+    //access: quadrature point
+    decltype(auto) operator[]( unsigned int idx ) const
+    { return Eval<E,false,true,true,id>( e_, idx, b_ ); }
+
+    //access: quadrature point II
+    decltype(auto) operator[]( unsigned long int idx ) const
+    { return Eval<E,false,true,true,id>( e_, idx, b_ ); }
+
+    //access: multi values
+    template< class Int, Int idx >
+    decltype(auto) operator[]( const std::integral_constant<Int,idx>& ) const
+    { return Eval<E,true,false,true,idx>( e_, qp_, b_ ); }
+
+    //access: basis functions
+    decltype(auto) operator[]( int idx ) const
+    { return Eval<E,true,true,false,id>( e_, qp_, idx ); }
+  private:
+    template< class NoImplicitTypeConversion >
+    void operator[]( NoImplicitTypeConversion ) const {}
+
+    const E& e_; int qp_; int b_;
+  };
+
+
+  template< bool hasQPs = true, bool hasIds = true, bool hasBasis = true, bool isNonZero = true, int id = -1 >
+  struct Access
+  {
+
+    Access( int qp = -1, int base = -1 )
+    : qp_( qp ),
+      base_( base )
+    {}
+
+    static constexpr bool hasQuadPoints = hasQPs;
+    static constexpr bool hasBasisFunctions = hasBasis;
+    static constexpr bool hasMultiValues = hasIds;
+
+    // access: quadrature points
+    decltype(auto) setQuadraturePoint( int qp ) const
+    {
+      assert( qp >= 0 );
+      return Access<false,hasIds,hasBasis,isNonZero,id>( qp, base_ );
+    }
+
+    // access: multi Values
+    template< class Int, Int i >
+    decltype(auto) setMultiValue( std::integral_constant<Int,i> ) const
+    {
+      assert( i >= 0 );
+      return Access<hasQPs,false,hasBasis,isNonZero,(int)i>( qp_, base_ );
+    }
+
+    // access: basis function, zero
+    decltype(auto) setBasisFunction() const
+    {
+      return Access<hasQPs,hasIds,false,false,id>( qp_, -1 );
+    }
+
+    // access: basis function
+    decltype(auto) setBasisFunction( int base ) const
+    {
+      assert( base >= 0 );
+      return Access<hasQPs,hasIds,false,isNonZero,id>( qp_, base );
+    }
+
+    int quadPoint() const
+    {
+      return qp_;
+    }
+
+    int basisFunction() const
+    {
+      return base_;
+    }
+
+    static constexpr int multiValue()
+    {
+      return id;
+    }
+
+    static constexpr int isZero()
+    {
+      return !isNonZero;
+    }
+
+  protected:
+    const int qp_;
+    const int base_;
+  };
+
+
+  //maximal access length based on types
+  template< class EvalImp >
+  struct EvalAccess
+  {
+    //fallback: no, we cannot select anything
+    typedef Access< false, false, false > type;
+  };
+
+  template< class Arg >
+  struct EvalAccess<std::vector< Arg > >
+  {
+    typedef Access< true, false, false > type;
+  };
+
+  template< class Arg >
+  struct EvalAccess<std::vector<std::vector<Arg> > >
+  {
+    typedef Access< true, false, true > type;
+  };
+
+  template< class... Args >
+  struct EvalAccess<std::vector<std::tuple<Args...> > >
+  {
+    typedef Access< true, true, true > type;
+  };
+
+  template< class... Args >
+  struct EvalAccess<std::tuple<Args...> >
+  {
+    typedef Access< false, true, true > type;
+  };
+
+
+  template< class... Args >
+  struct EvalAccess<std::vector<Dune::TypeIndexedTuple<Args...> > >
+  {
+    typedef Access< true, true, false > type;
+  };
+
+  template< class... Args >
+  struct EvalAccess<Dune::TypeIndexedTuple<Args...> >
+  {
+    typedef Access< false, true, false > type;
+  };
+
+
+  struct ContextEvaluate
+  {
+    template <class Tuple, class VarId >
+    struct Contains
+    {
+      static const bool value = false;
+    };
+
+    //pass version
+    template <class Tuple, class Types, class VarId >
+    struct Contains< TypeIndexedTuple< Tuple, Types >, VarId >
+    {
+      static const bool value = TypeIndexedTuple< Tuple, Types >::template Contains<VarId>::value;
+    };
+
+    //general version, without passes, just a simple std::tuple of arguments
+    template <class... Args, class VarId >
+    struct Contains< std::tuple< Args...>, VarId >
+    {
+      static const bool value = (VarId::value >= 0 && std::tuple_size<std::tuple<Args...> >::value < VarId::value);
+    };
+
+    template <class Functor, bool containedInTuple >
+    struct Evaluate;
+
+    template <class Functor>
+    struct Evaluate<Functor, false>
+    {
+      template< class RangeTuple, class ... Args >
+      static decltype(auto) eval( const RangeTuple& tuple, const Functor& functor, const Args& ... args )
+      {
+        return functor( args ... );
+      }
+    };
+
+    template <class Functor>
+    struct Evaluate<Functor, true>
+    {
+      //pass version
+      template< class Tuple, class Types, class ... Args >
+      static decltype(auto) eval( const TypeIndexedTuple< Tuple, Types >& tuple, const Functor& functor, const Args& ... args )
+      {
+        return tuple.template at< typename Functor::VarId >();
+      }
+
+      //no passes: assume a simple std::tuple of elements
+      template< class... ExtraArgs, class ... Args >
+      static decltype(auto) eval( const std::tuple< ExtraArgs... >& tuple, const Functor& functor, const Args& ... args )
+      {
+        return std::get< typename Functor::VarId::value >( tuple );
+      }
+    };
+  };
+
+
   //forward declarations
   template< class A, class... >
   class Context
@@ -23,28 +449,14 @@ namespace Fem
   template< class A, class, class... >
   class QuadratureContext
   {
-    static_assert( static_fail<A>::value, "QuadratureContext expects either two or three template arguments" );
-  };
-
-  //forward declarations
-  template< class A, class, class... >
-  class QuadraturePointContext
-  {
     static_assert( static_fail<A>::value, "QuadraturePointContext expects either two or three template arguments" );
-  };
-
-  //forward declarations
-  template <class A, class, class, class, class... >
-  class ExtraQuadraturePointContext
-  {
-    static_assert( static_fail<A>::value, "ExtraQuadraturePointContext expects either four or five template arguments" );
   };
 
   //forward declarations
   template< class A, class... >
   class PointContext
   {
-    static_assert( static_fail<A>::value, "QuadratureContext expects either one or two template arguments" );
+    static_assert( static_fail<A>::value, "PointContext expects either one or two template arguments" );
   };
 
 
@@ -77,14 +489,11 @@ namespace Fem
      *
      *  \param[in] entity the entity \f$ E \f$ where the local evaluation should be done
      *  \param[in] quadrature the quadrature rule for the entity \f$ \hat{E} \f$
-     *  \param[in] time the current time \f$ t \f$
      *  \param[in] volume the volume of the entity \f$ \mathrm{vol}(E) \f$
      */
     Context( const Entity& entity,
-             const double time,
              const double volume )
      : entity_( entity ),
-       time_( time ),
        volume_( volume )
     {}
 
@@ -94,18 +503,15 @@ namespace Fem
     const Entity& entity() const { return entity_; }
 
     /**
-     *  \brief return the current time \f$ t \f$, which is needed for instationary problems
-     */
-    const double time () const { return time_; }
-
-    /**
      *  \brief return the volume of the entity \f$ E \f$
      */
     const double volume() const { return volume_; }
 
+    //nasty dummy, just to have an intersection() method.
+    decltype(auto) intersection() const { return{}; }
+
   protected:
     const Entity& entity_;
-    const double time_;
     const double volume_;
   };
 
@@ -129,86 +535,12 @@ namespace Fem
      *
      *  \param[in] entity the entity \f$ E \f$ where the local evaluation should be done
      *  \param[in] intersection the intersection where the local evaluation should be done
-     *  \param[in] time the current time \f$ t \f$
      *  \param[in] volume the volume of the entity \f$ \mathrm{vol}(E) \f$
      */
     Context( const Entity& entity,
              const Intersection& intersection,
-             const double time,
              const double volume )
-     : BaseType( entity, time, volume ),
-       InterBaseType( intersection )
-    {}
-  };
-
-  /**
-   * \brief This class collects several information which are relevant for the approximation of
-   * integrals of discrete functions via quadrature schemes.
-   */
-  template <class Entity, class Quadrature >
-  class QuadratureContext< Entity, Quadrature >
-    : public Context< Entity >
-  {
-    typedef Context< Entity > BaseType;
-  public:
-    typedef Quadrature                                            QuadratureType;
-    typedef typename QuadratureType::QuadraturePointWrapperType   QuadraturePointWrapperType;
-    typedef typename QuadratureType::CoordinateType               CoordinateType;
-    typedef typename QuadratureType::LocalCoordinateType          LocalCoordinateType;
-
-    /**
-     *  \brief constructor
-     *
-     *  \param[in] entity the entity \f$ E \f$ where the local evaluation should be done
-     *  \param[in] quadrature the quadrature rule for the entity \f$ \hat{E} \f$
-     *  \param[in] time the current time \f$ t \f$
-     *  \param[in] volume the volume of the entity \f$ \mathrm{vol}(E) \f$
-     */
-    QuadratureContext( const Entity& entity,
-                       const Quadrature& quadrature,
-                       const double time,
-                       const double volume )
-     : BaseType( entity, time, volume ),
-       quad_( quadrature )
-    {}
-
-    /**
-     *  \brief returns the quadrature
-     */
-    const Quadrature& quadrature() const { return quad_; }
-
-  protected:
-    const Quadrature& quad_;
-  };
-
-
-
-  /**
-   * \brief This class collects several information which are relevant for the approximation of
-   * integrals of discrete functions via quadrature schemes.
-   */
-  template <class Entity, class Intersection, class Quadrature >
-  class QuadratureContext< Entity, Intersection, Quadrature >
-    : public QuadratureContext<Entity,Quadrature>,
-      public IntersectionStorage< Intersection >
-  {
-    typedef QuadratureContext<Entity,Quadrature> BaseType;
-    typedef IntersectionStorage< Intersection > InterBaseType;
-  public:
-    /**
-     *  \brief constructor
-     *
-     *  \param[in] entity the entity \f$ E \f$ where the local evaluation should be done
-     *  \param[in] quadrature the quadrature rule for the entity \f$ \hat{E} \f$
-     *  \param[in] time the current time \f$ t \f$
-     *  \param[in] volume the volume of the entity \f$ \mathrm{vol}(E) \f$
-     */
-    QuadratureContext( const Entity& entity,
-                       const Intersection& intersection,
-                       const Quadrature& quadrature,
-                       const double time,
-                       const double volume )
-     : BaseType( entity, quadrature, time, volume ),
+     : BaseType( entity, volume ),
        InterBaseType( intersection )
     {}
   };
@@ -231,15 +563,13 @@ namespace Fem
      *  \brief constructor
      *
      *  \param[in] entity the entity \f$ E \f$ where the local evaluation should be done
-     *  \param[in] time the current time \f$ t \f$
      *  \param[in] volume the volume of the entity \f$ \mathrm{vol}(E) \f$
      */
     PointContext( const Entity& entity,
                   const CoordinateType& position,
                   const LocalCoordinateType& localPos,
-                  const double time,
                   const double volume )
-     : BaseType( entity, time, volume ),
+     : BaseType( entity, volume ),
        position_( position ),
        localPos_( localPos )
     {}
@@ -257,41 +587,6 @@ namespace Fem
   protected:
     const CoordinateType& position_;
     const LocalCoordinateType& localPos_;
-  };
-
-
-
-  /**
-   * \brief This class collects several information which are relevant for the approximation of
-   * integrals of discrete functions via quadrature schemes.
-   */
-  template <class Entity, class Intersection >
-  class PointContext< Entity, Intersection >
-    : public PointContext<Entity>,
-      public IntersectionStorage< Intersection >
-  {
-    typedef PointContext<Entity> BaseType;
-    typedef IntersectionStorage< Intersection > InterBaseType;
-    typedef typename Entity::Geometry::LocalCoordinate  LocalCoordinateType;
-    typedef typename Entity::Geometry::GlobalCoordinate CoordinateType;
-  public:
-    /**
-     *  \brief constructor
-     *
-     *  \param[in] entity the entity \f$ E \f$ where the local evaluation should be done
-     *  \param[in] quadrature the quadrature rule for the entity \f$ \hat{E} \f$
-     *  \param[in] time the current time \f$ t \f$
-     *  \param[in] volume the volume of the entity \f$ \mathrm{vol}(E) \f$
-     */
-    PointContext( const Entity& entity,
-                  const Intersection& intersection,
-                  const CoordinateType& position,
-                  const LocalCoordinateType& localPos,
-                  const double time,
-                  const double volume )
-     : BaseType( entity, position, localPos, time, volume ),
-       InterBaseType( intersection )
-    {}
   };
 
 
@@ -329,15 +624,16 @@ namespace Fem
    * but in a tuple of functions \f$ (u^{a,t}, {u^b,t} \ldots\f$ yielding from a pass.
    */
   template <class Entity, class Quadrature >
-  class QuadraturePointContext< Entity, Quadrature >
-    : public QuadratureContext< Entity, Quadrature >
+  class QuadratureContext< Entity, Quadrature >
+    : public Context< Entity >
   {
-    typedef QuadratureContext< Entity, Quadrature > BaseType;
+    typedef Context< Entity >                                     BaseType;
   public:
-    using BaseType::quadrature;
-    typedef typename BaseType::QuadraturePointWrapperType   QuadraturePointWrapperType;
-    typedef typename BaseType::CoordinateType               CoordinateType;
-    typedef typename BaseType::LocalCoordinateType          LocalCoordinateType;
+    typedef Entity                                                EntityType;
+    typedef Quadrature                                            QuadratureType;
+    typedef typename QuadratureType::QuadraturePointWrapperType   QuadraturePointWrapperType;
+    typedef typename QuadratureType::CoordinateType               CoordinateType;
+    typedef typename QuadratureType::LocalCoordinateType          LocalCoordinateType;
 
     /**
      *  \brief constructor
@@ -345,90 +641,103 @@ namespace Fem
      *  \param[in] entity the entity \f$ E \f$ where the local evaluation should be done
      *  \param[in] quadrature the quadrature rule for the entity \f$ \hat{E} \f$
      *  \param[in] qp the number of the quadrature point, i.e. \f$ p \f$
-     *  \param[in] time the current time \f$ t \f$
      *  \param[in] volume the volume of the entity \f$ \mathrm{vol}(E) \f$
      */
-    QuadraturePointContext( const Entity& entity,
-                            const Quadrature& quadrature,
-                            const int qp,
-                            const double time,
-                            const double volume )
-     : BaseType( entity, quadrature, time, volume ),
+    QuadratureContext( const Entity& entity,
+                       const Quadrature& quadrature,
+                       const double volume,
+                       const int qp = -1 )
+     : BaseType( entity, volume ),
+       quad_( quadrature ),
        qp_( qp )
     {}
 
+    using BaseType::entity;
+    using BaseType::volume;
+
     //short cut
     template< class LocalEvaluation >
-    QuadraturePointContext( const LocalEvaluation& local,
-                            const int qp )
-     : BaseType( local.entity(), local.quadrature(), qp, local.time(), local.volume() )
+    QuadratureContext( const LocalEvaluation& local,
+                       const int qp )
+     : BaseType( local.entity(), local.quadrature(), qp, local.volume() )
     {}
 
     /**
      *  \brief returns a quadrature point object containing the following information \f$ \hat{x}_p, x_p, \omega_p, p \f$
      */
-    const QuadraturePointWrapperType quadraturePoint() const { return quadrature()[ index() ]; }
+    const QuadraturePointWrapperType quadraturePoint() const { assert( index() >= 0 ); return quadrature()[ index() ]; }
 
     /**
      *  \brief returns the global quadrature point \f$ x_p \f$
      */
-    const CoordinateType& position() const { return quadrature().point( index() ); }
+    const CoordinateType& position() const { assert( index() >= 0 ); return quadrature().point( index() ); }
 
     /**
      *  \brief returns the local point \f$ \hat{x}_p \f$
      */
-    const LocalCoordinateType& localPosition() const { return quadrature().localPoint( index() ); }
+    const LocalCoordinateType& localPosition() const { assert( index() >= 0 ); return quadrature().localPoint( index() ); }
 
     /**
      *  \brief returns the number of the quadrature point \f$ p \f$
      */
     const int index() const { return qp_; }
 
+    /**
+     *  \brief returns the quadrature
+     */
+    const Quadrature& quadrature() const { return quad_; }
+
+    decltype(auto) operator[]( int idx ) const
+    {
+      return QuadratureContext<Entity,Quadrature>( entity(), quad_, volume(), idx );
+    }
+
+    void setIndex( int qp ) const { qp_ = qp; }
   protected:
-    const int qp_;
+    const Quadrature& quad_;
+    mutable int qp_;
   };
 
-
-
-  /**
-   * \brief This class collects several information which are relevant for the approximation of
-   * integrals of discrete functions via quadrature schemes.
-   */
   template <class Entity, class Intersection, class Quadrature >
-  class QuadraturePointContext< Entity, Intersection, Quadrature >
-    : public QuadraturePointContext<Entity,Quadrature>,
+  class QuadratureContext< Entity, Intersection, Quadrature >
+    : public QuadratureContext< Entity, Quadrature >,
       public IntersectionStorage< Intersection >
+
   {
-    typedef QuadraturePointContext<Entity,Quadrature> BaseType;
-    typedef IntersectionStorage< Intersection > InterBaseType;
+    typedef QuadratureContext< Entity, Quadrature >               BaseType;
+    typedef IntersectionStorage< Intersection >                   BaseType2;
   public:
+    typedef Entity                                                EntityType;
+    typedef Intersection                                          IntersectionType;
+    typedef Quadrature                                            QuadratureType;
+    typedef typename QuadratureType::QuadraturePointWrapperType   QuadraturePointWrapperType;
+    typedef typename QuadratureType::CoordinateType               CoordinateType;
+    typedef typename QuadratureType::LocalCoordinateType          LocalCoordinateType;
+
+    using BaseType2::intersection;
+
     /**
      *  \brief constructor
      *
      *  \param[in] entity the entity \f$ E \f$ where the local evaluation should be done
      *  \param[in] quadrature the quadrature rule for the entity \f$ \hat{E} \f$
-     *  \param[in] time the current time \f$ t \f$
+     *  \param[in] qp the number of the quadrature point, i.e. \f$ p \f$
      *  \param[in] volume the volume of the entity \f$ \mathrm{vol}(E) \f$
      */
-    QuadraturePointContext( const Entity& entity,
-                            const Intersection& intersection,
-                            const Quadrature& quadrature,
-                            const int qp,
-                            const double time,
-                            const double volume )
-     : BaseType( entity, quadrature, qp, time, volume ),
-       InterBaseType( intersection )
+    QuadratureContext( const Entity& entity,
+                       const Intersection& intersection,
+                       const Quadrature& quadrature,
+                       const double volume,
+                       const int qp = -1 )
+     : BaseType( entity, quadrature, volume, qp ),
+       BaseType2( intersection )
     {}
 
-    //short cut
-    template< class LocalEvaluation >
-    QuadraturePointContext( const LocalEvaluation& local,
-                            const int qp )
-     : BaseType( local.entity(), local.quadrature(), qp, local.time(), local.volume() ),
-       InterBaseType( local.intersection() )
-    {}
+    decltype(auto) operator[]( int idx ) const
+    {
+      return QuadratureContext<Entity,Intersection,Quadrature>( BaseType::entity(), intersection(), BaseType::quad_, BaseType::volume(), idx );
+    }
   };
-
 
 
   /**
@@ -458,211 +767,179 @@ namespace Fem
    *
    * This class was introduced to allow more flexible interfaces for classes
    * needing a local evaluation of a discrete function.
-   *
-   * \note This class is following the pass concept and the above description is simplified in
-   * the sense that we are not only interested in the approximation of one discrete function \f$ u^t \f$
-   * but in a tuple of functions \f$ (u^{a,t}, {u^b,t} \ldots\f$ yielding from a pass.
    */
-  template <class Entity, class Quadrature, class RangeTuple, class JacobianTuple>
-  class ExtraQuadraturePointContext< Entity, Quadrature, RangeTuple, JacobianTuple >
-    : public QuadraturePointContext< Entity, Quadrature >
+
+  template< class QuadratureContextImp, class RangeType, class JacobianType = RangeType, class AccessImp = typename EvalAccess<RangeType>::type >
+  class LocalEvaluation
   {
-    typedef QuadraturePointContext< Entity, Quadrature > BaseType;
-
-    template <class Tuple, class VarId >
-    struct Contains
-    {
-      static const bool value = false;
-    };
-
-    //pass version
-    template <class Tuple, class Types, class VarId >
-    struct Contains< TypeIndexedTuple< Tuple, Types >, VarId >
-    {
-      static const bool value = TypeIndexedTuple< Tuple, Types >::template Contains< VarId > :: value;
-    };
-
-    //general version, without passes, just a simple std::tuple of arguments
-    template <class... Args, class VarId >
-    struct Contains< std::tuple< Args...>, VarId >
-    {
-      static const bool value = (VarId::value >= 0 && std::tuple_size<std::tuple<Args...> >::value < VarId::value);
-    };
-
-    template <class Functor, bool containedInTuple >
-    struct Evaluate;
-
-    template <class Functor>
-    struct Evaluate<Functor, false>
-    {
-      template< class ... Args >
-      static decltype(auto) eval( const RangeTuple& tuple, const Functor& functor, const Args& ... args )
-      {
-        return functor( args ... );
-      }
-    };
-
-    template <class Functor>
-    struct Evaluate<Functor, true>
-    {
-      //pass version
-      template< class Tuple, class Types, class ... Args >
-      static decltype(auto) eval( const TypeIndexedTuple< Tuple, Types >& tuple, const Functor& functor, const Args& ... args )
-      {
-        return tuple.template at< typename Functor::VarId >();
-      }
-
-      //no passes: assume a simple std::tuple of elements
-      template< class... ExtraArgs, class ... Args >
-      static decltype(auto) eval( const std::tuple< ExtraArgs... >& tuple, const Functor& functor, const Args& ... args )
-      {
-        return std::get< typename Functor::VarId::value >( tuple );
-      }
-    };
+    template <class EvalImp >
+    using Evaluator = Eval< EvalImp, AccessImp::hasQuadPoints, AccessImp::hasMultiValues, AccessImp::hasBasisFunctions, AccessImp::multiValue() >;
 
   public:
-    typedef RangeTuple      RangeTupleType;
-    typedef JacobianTuple   JacobianTupleType;
-
-    /**
-     *  \brief constructor
-     *
-     *  \param[in] entity the entity \f$ E \f$ where the local evaluation should be done
-     *  \param[in] quadrature the quadrature rule for the entity \f$ \hat{E} \f$
-     *  \param[in] values tuple of a evaluation of local functions,
-     *             i.e. \f$ ( u^{a,t}_E( \hat{x}_p ), u^{b,t}_E( \hat{x}_p )\ldots ) \f$
-     *  \param[in] jacobians tuple of a evaluation of the gradient of local functions,
-     *             i.e. \f$ ( \nabla u^{a,t}_E( \hat{x}_p ), \nabla u^{b,t}_E( \hat{x}_p )\ldots ) \f$
-     *  \param[in] qp the number of the quadrature point, i.e. \f$ p \f$
-     *  \param[in] time the current time \f$ t \f$
-     *  \param[in] volume the volume of the entity \f$ \mathrm{vol}(E) \f$
-     */
-    ExtraQuadraturePointContext( const Entity& entity,
-                                 const Quadrature& quadrature,
-                                 const int qp,
-                                 const double time,
-                                 const double volume,
-                                 const RangeTuple& values,
-                                 const JacobianTuple& jacobians )
-     : BaseType( entity, quadrature, qp, time, volume ),
-       values_( values ),
-       jacobians_( jacobians )
+    LocalEvaluation( const QuadratureContextImp& quadImp, const RangeType& values, const JacobianType& jacobians, const AccessImp& access )
+    : quadImp_( quadImp ),
+      access_( std::make_unique<AccessImp>( access.quadPoint(), access.basisFunction() ) ),
+      values_( values ),
+      jacobians_( jacobians )
     {}
 
-    //short cut
-    template< class LocalEvaluation >
-    ExtraQuadraturePointContext( const LocalEvaluation& local,
-                                 const int qp,
-                                 const RangeTuple& values,
-                                 const JacobianTuple& jacobians )
-     : BaseType( local.entity(), local.quadrature(), qp, local.time(), local.volume() ),
-       values_( values ),
-       jacobians_( jacobians )
+    //default range = jacobian
+    LocalEvaluation( const QuadratureContextImp& quadImp, const RangeType& values, const AccessImp& access )
+    : quadImp_( quadImp ),
+      access_( std::make_unique<AccessImp>( access.quadPoint(), access.basisFunction() ) ),
+      values_( values ),
+      jacobians_( values )
     {}
 
-    /**
-     *  \brief returns tuple of a evaluation of local functions,
-     *         i.e. \f$ ( u^{a,t}_E( \hat{x}_p ), u^{b,t}_E( \hat{x}_p )\ldots ) \f$
-     */
-    const RangeTuple& values() const { return values_; }
+    LocalEvaluation( const QuadratureContextImp& quadImp, const RangeType& values, const JacobianType& jacobians )
+    : quadImp_( quadImp ),
+      access_( std::make_unique<AccessImp>() ),
+      values_( values ),
+      jacobians_( jacobians )
+    {}
+
+    //default range = jacobian
+    LocalEvaluation( const QuadratureContextImp& quadImp, const RangeType& values )
+    : quadImp_( quadImp ),
+      access_( std::make_unique<AccessImp>() ),
+      values_( values ),
+      jacobians_( values )
+    {}
+
+    typedef typename QuadratureContextImp::EntityType                 EntityType;
+    typedef typename QuadratureContextImp::QuadratureType             QuadratureType;
+    typedef typename QuadratureContextImp::QuadraturePointWrapperType QuadraturePointWrapperType;
+    typedef typename QuadratureContextImp::CoordinateType             CoordinateType;
+    typedef typename QuadratureContextImp::LocalCoordinateType        LocalCoordinateType;
 
     /**
-     *  \brief returns tuple of a evaluation of the gradient of local functions,
-     *         i.e. \f$ ( \nabla u^{a,t}_E( \hat{x}_p ), \nabla u^{b,t}_E( \hat{x}_p )\ldots ) \f$
+     *  \brief returns a quadrature point object containing the following information \f$ \hat{x}_p, x_p, \omega_p, p \f$
      */
-    const JacobianTuple& jacobians() const { return jacobians_; }
+    const QuadraturePointWrapperType quadraturePoint() const { return quadImp_.quadraturePoint(); }
 
-  public:
     /**
-     * \brief Returns the values for a local function regarding a static id or the evaluation of a functor
-     *
-     * The evaluation of the local function is dependent on the VarId which is
-     * given by the functor which is passed as an argument.
-     *
-     * There are two cases
-     * - Case Functor::VarId is found RangeTuple: return values()[Functor::VarId]
-     * - Case Functor::VarId is not found RangeTuple: return Functor( args )
-     *
-     * The idea of this class is to allow the combination of either
-     * - discrete data (Function::VarId is found) or
-     * - analytical data (Function::VarId is not found).
-     *
-     * The simplest functor should be a constant functor:
-     * \code{.cpp}
-     * struct ConstantData
-     * {
-     *   typedef varId VarId;
-     *
-     *   const RangeType& operator() () const
-     *   {
-     *     return 42.0;
-     *   }
-     * };
-     * \endcode
-     *
-     * This structure is then called by
-     *
-     * \code{.cpp}
-     * this->evaluate( ConstantData() );
-     * \endcode
-     *
-     * An interesting usage of this functionality could be the Model classes.
-     *
-     * \param functor A functor which should be applied
-     * \param args arguments which should be applied to the functor
+     *  \brief returns the global quadrature point \f$ x_p \f$
      */
-    template <class Functor, class ... Args>
-    decltype(auto) evaluate( const Functor& functor, const Args& ... args ) const
+    const CoordinateType& position() const { return quadImp_.position(); }
+
+    /**
+     *  \brief returns the local point \f$ \hat{x}_p \f$
+     */
+    const LocalCoordinateType& localPosition() const { return quadImp_.localPosition(); }
+
+    /**
+     *  \brief returns the number of the quadrature point \f$ p \f$
+     */
+    const int index() const { return quadImp_.index(); }
+
+    /**
+     *  \brief returns the quadrature
+     */
+    const QuadratureType& quadrature() const { return quadImp_.quadrature(); }
+
+    /**
+     *  \brief returns the entity \f$ E \f$
+     */
+    const EntityType& entity() const { return quadImp_.entity(); }
+
+    /**
+     *  \brief returns the entity \f$ E \f$
+     */
+    decltype(auto) intersection() const { return quadImp_.intersection(); }
+
+    /**
+     *  \brief return the volume of the entity \f$ E \f$
+     */
+    const double volume() const { return quadImp_.volume(); }
+
+    //access: quadpoints
+    decltype(auto) operator[]( unsigned int idx ) const
     {
-      return Evaluate< Functor, Contains< RangeTuple, typename Functor::VarId >::value>::eval( values(), functor, args ... );
+      typedef std::decay_t<decltype( std::declval<AccessImp>().setQuadraturePoint(idx))> NewAccessType;
+      typedef LocalEvaluation<QuadratureContextImp, RangeType, JacobianType, NewAccessType > NewContextType;
+      //cheating a little bit, here
+      quadImp_.setIndex( idx );
+      return NewContextType( quadImp_, values_, jacobians_, access_->setQuadraturePoint(idx) );
     }
 
-  protected:
-    const RangeTuple& values_;
-    const JacobianTuple& jacobians_;
+    //access: quadpoints II
+    decltype(auto) operator[]( unsigned long int idx ) const
+    {
+      typedef std::decay_t<decltype( std::declval<AccessImp>().setQuadraturePoint(idx))> NewAccessType;
+      typedef LocalEvaluation<QuadratureContextImp, RangeType, JacobianType, NewAccessType > NewContextType;
+      //cheating a little bit, here
+      quadImp_.setIndex( idx );
+      return NewContextType( quadImp_, values_, jacobians_, access_->setQuadraturePoint(idx) );
+    }
+
+    //access: multi values, i.e. tuples
+    template< class Int, Int id >
+    decltype(auto) operator[]( const std::integral_constant<Int,id>& idx ) const
+    {
+      typedef std::decay_t<decltype( std::declval<AccessImp>().setMultiValue(idx))> NewAccessType;
+      typedef LocalEvaluation<QuadratureContextImp, RangeType, JacobianType, NewAccessType> NewContextType;
+      return NewContextType( quadImp_, values_, jacobians_, access_->setMultiValue(idx) );
+    }
+
+    //access: basis functions, zero
+    decltype(auto) operator()(int i=0) const
+    {
+      typedef std::decay_t<decltype( std::declval<AccessImp>().setBasisFunction())> NewAccessType;
+      typedef LocalEvaluation<QuadratureContextImp, RangeType, JacobianType, NewAccessType> NewContextType;
+      return NewContextType( quadImp_, values_, jacobians_, access_->setBasisFunction() );
+    }
+
+    //access: basis functions
+    decltype(auto) operator[]( int idx ) const
+    {
+      typedef std::decay_t<decltype( std::declval<AccessImp>().setBasisFunction(idx))> NewAccessType;
+      typedef LocalEvaluation<QuadratureContextImp, RangeType, JacobianType, NewAccessType> NewContextType;
+      return NewContextType( quadImp_, values_, jacobians_, access_->setBasisFunction(idx) );
+    }
+
+    //access: failure
+    template< class Fail >
+    decltype(auto) operator[]( Fail ) const
+    {
+      static_assert( static_fail<Fail>::value, "This should not happen. Please check the exact type of your argument." );
+      return {};
+    }
+
+
+
+    const decltype(auto) values() const
+    {
+      return Evaluator<RangeType>( values_, access_->quadPoint(), access_->basisFunction() );
+    }
+
+    const decltype(auto) jacobians() const
+    {
+      return Evaluator<JacobianType>( jacobians_, access_->quadPoint(), access_->basisFunction() );
+    }
+
+    template <class Functor, class ... Args>
+    decltype(auto) values( const Functor& functor, const Args& ... args ) const
+    {
+      return ContextEvaluate::Evaluate< Functor, ContextEvaluate::Contains< RangeType, typename Functor::VarId >::value>::eval( values(), functor, args ... );
+    }
+
+    template <class Functor, class ... Args>
+    decltype(auto) jacobians( const Functor& functor, const Args& ... args ) const
+    {
+      return ContextEvaluate::Evaluate< Functor, ContextEvaluate::Contains< JacobianType, typename Functor::VarId >::value>::eval( jacobians(), functor, args ... );
+    }
+
+
+  private:
+    const QuadratureContextImp& quadImp_;
+    std::unique_ptr<AccessImp> access_;
+    const RangeType& values_;
+    const JacobianType& jacobians_;
   };
 
-  /**
-   * \brief This class collects several information which are relevant for the approximation of
-   * integrals of discrete functions via quadrature schemes.
-   *
-   * This class just adds an intersection() method to the class ExtraQuadraturePointContext.
-   * This additional information is needed for evaluations on intersections, i.e. numerical fluxes etc.
-   */
-  template <class Entity, class Intersection, class Quadrature, class RangeTuple, class JacobianTuple>
-  class ExtraQuadraturePointContext< Entity, Intersection, Quadrature, RangeTuple, JacobianTuple >
-    : public ExtraQuadraturePointContext< Entity, Quadrature, RangeTuple, JacobianTuple >,
-      public IntersectionStorage< Intersection >
-  {
-    typedef ExtraQuadraturePointContext< Entity, Quadrature, RangeTuple, JacobianTuple > BaseType;
-    typedef IntersectionStorage< Intersection > InterBaseType;
 
-  public:
-    /**
-     * \brief constructor
-     */
-    ExtraQuadraturePointContext( const Entity& entity,
-                                 const Intersection& intersection,
-                                 const Quadrature& quadrature,
-                                 const int qp,
-                                 const double time,
-                                 const double volume,
-                                 const RangeTuple& values,
-                                 const JacobianTuple& jacobians )
-     : BaseType( entity, quadrature, qp, time, volume, values, jacobians ),
-       InterBaseType( intersection )
-    {}
 
-    //short cut
-    template< class LocalEvaluation >
-    ExtraQuadraturePointContext( const LocalEvaluation& local,
-                                 const int qp,
-                                 const RangeTuple& values,
-                                 const JacobianTuple& jacobians )
-     : BaseType( local.entity(), local.quadrature(), qp, local.time(), local.volume(), values, jacobians ),
-       InterBaseType( local.intersection() )
-    {}
-  };
+
 
 } // namespace Fem
 } // namespace Dune

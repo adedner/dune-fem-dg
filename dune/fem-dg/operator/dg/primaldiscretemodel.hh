@@ -12,6 +12,8 @@
 #include <dune/fem-dg/operator/dg/discretemodelcommon.hh>
 #include <dune/fem-dg/operator/fluxes/diffusion/fluxes.hh>
 
+#include <dune/fem-dg/operator/fluxes/diffusion/fluxes.hh>
+
 namespace Dune
 {
 namespace Fem
@@ -138,7 +140,7 @@ namespace Fem
       }
 
       // return the fastest wave from source terms
-      return dtEst ;
+      return dtEst;
     }
 
     void switchUpwind() const
@@ -149,68 +151,43 @@ namespace Fem
       diffFlux_.switchUpwind();
     }
 
-    template <class QuadratureImp, class ArgumentTupleVector >
-    void initializeIntersection(const IntersectionType& it,
-                                const double time,
-                                const QuadratureImp& quadInner,
-                                const QuadratureImp& quadOuter,
-                                const ArgumentTupleVector& uLeftVec,
-                                const ArgumentTupleVector& uRightVec)
+    template <class LocalEvaluationVec >
+    void initializeIntersection( const LocalEvaluationVec& left,
+                                 const LocalEvaluationVec& right )
     {
       if( diffusion )
       {
-        typedef DGFluxTupleToVectorConverter< ArgumentTupleVector, passUId > ConverterType;
         // call diffusion flux
-        diffFlux_.initializeIntersection( it, inside(), outside(),
-                                          time, quadInner, quadOuter,
-                                          ConverterType( uLeftVec ),
-                                          ConverterType( uRightVec ) );
+        diffFlux_.initializeIntersection( left[uVar], right[uVar], left[uVar].values(), right[uVar].values() );
       }
     }
 
-    template <class QuadratureImp, class ArgumentTupleVector >
-    void initializeBoundary(const IntersectionType& it,
-                            const double time,
-                            const QuadratureImp& quadInner,
-                            const ArgumentTupleVector& uLeftVec)
+    template <class LocalEvaluationVec >
+    void initializeBoundary(const LocalEvaluationVec& local )
     {
       if( diffusion )
       {
-        typedef DGFluxTupleToVectorConverter< ArgumentTupleVector, passUId > ConverterType;
         if( diffFlux_.hasLifting() )
         {
-          typedef typename ArgumentTupleVector :: value_type ArgumentTuple ;
-          typedef ExtraQuadraturePointContext< EntityType, IntersectionType, QuadratureImp, ArgumentTuple, ArgumentTuple > LocalEvaluationType;
-          LocalEvaluationType local0( inside(), it, quadInner, 0, time, this->enVolume(), uLeftVec[ 0 ], uLeftVec[ 0 ] );
-          const bool hasBoundaryValue = model_.hasBoundaryValue( local0 );
+          const bool hasBoundaryValue = model_.hasBoundaryValue( local(0) );
 
-
-          // turns uLeftVec into a fake
-          // vector of RangeTypes by storing the passUId
-          ConverterType uLeft ( uLeftVec ) ;
-
-          const size_t quadNop = quadInner.nop();
-          if( uBndVec_.size() < quadNop ) uBndVec_.resize( quadNop );
+          const size_t quadNop = local.quadrature().nop();
+          if( uBndVec_.size() < quadNop )
+            uBndVec_.resize( quadNop );
 
           for(size_t qp = 0; qp < quadNop; ++qp)
           {
-            LocalEvaluationType
-              local( inside(), it, quadInner, qp, time, this->enVolume(), uLeftVec[ qp ], uLeftVec[ qp ] );
-
-            assert( hasBoundaryValue ==
-                model_.hasBoundaryValue( local ) );
+            assert( hasBoundaryValue == model_.hasBoundaryValue( local(qp) ) );
 
             if( hasBoundaryValue )
-              model_.boundaryValue(local, uLeft[ qp ], uBndVec_[ qp ] );
+              model_.boundaryValue(local[qp], local[qp].values()[uVar], uBndVec_[qp] );
             else
               // do something bad to uBndVec as it shouldn't be used
-              uBndVec_[ qp ] = std::numeric_limits< double >::quiet_NaN();
+              uBndVec_[qp] = std::numeric_limits< double >::quiet_NaN();
           }
 
           // call diffusion flux
-          diffFlux_.initializeBoundary( it, inside(),
-                                        time, quadInner,
-                                        uLeft, uBndVec_ );
+          diffFlux_.initializeBoundary( local[uVar], local[uVar].values(), uBndVec_ );
         }
       }
     }
@@ -221,8 +198,6 @@ namespace Fem
      *
      * \param left local evaluation
      * \param right local evaluation
-     * \param uLeft DOF evaluation on this side of \c it
-     * \param uRight DOF evaluation on the other side of \c it
      * \param gLeft result for this side of \c it
      * \param gRight result for the other side of \c it
      * \return wave speed estimate (multiplied with the integration element of the intersection).
@@ -250,8 +225,8 @@ namespace Fem
 
         diffusionWaveSpeed =
           diffFlux_.numericalFlux(left, right,
-                                  left.values()[ uVar ], right.values()[ uVar ],
-                                  left.jacobians()[ uVar ], right.jacobians()[ uVar ],
+                                  left.values()[uVar], right.values()[uVar],
+                                  left.jacobians()[uVar], right.jacobians()[uVar],
                                   dLeft, dRight,
                                   gDiffLeft, gDiffRight);
 
@@ -279,7 +254,7 @@ namespace Fem
       /****************************/
       /* Advection                *
        ****************************/
-      double advectionWaveSpeed = BaseType :: boundaryFlux( left, gLeft, gDiffLeft );
+      double advectionWaveSpeed = BaseType::boundaryFlux( left, gLeft, gDiffLeft );
 
       /****************************/
       /* Diffusion                 *
@@ -294,9 +269,9 @@ namespace Fem
         // diffusion boundary flux for Dirichlet boundaries
         RangeType dLeft ( 0 );
         diffusionWaveSpeed =
-          diffFlux_.boundaryFlux(left,
-                                 left.values()[ uVar ], uBnd_, // is set during call of  BaseType::boundaryFlux
-                                 left.jacobians()[ uVar ],
+          diffFlux_.boundaryFlux(left[uVar],
+                                 left[uVar].values(), uBnd_, // is set during call of  BaseType::boundaryFlux
+                                 left[uVar].jacobians(),
                                  dLeft,
                                  gDiffLeft);
         gLeft += dLeft;
@@ -486,30 +461,30 @@ namespace Fem
 
     typedef AdvectionDiffusionDGPrimalModelBase< Traits >  BaseType;
 
-    using BaseType :: uVar;
-    using BaseType :: inside;
-    using BaseType :: outside;
-    using BaseType :: model_;
-    using BaseType :: uBnd_;
+    using BaseType::uVar;
+    using BaseType::inside;
+    using BaseType::outside;
+    using BaseType::model_;
+    using BaseType::uBnd_;
 
   public:
     static const bool advection = enableAdvection; // true if advection is enabled
     static const bool diffusion = enableDiffusion; // this should be disabled for LDG
 
-    typedef typename BaseType :: IntersectionType    IntersectionType;
-    typedef typename BaseType :: EntityType          EntityType;
-    typedef typename BaseType :: RangeType           RangeType;
-    typedef typename BaseType :: JacobianRangeType   JacobianRangeType;
-    typedef typename BaseType :: DomainType          DomainType;
+    typedef typename BaseType::IntersectionType    IntersectionType;
+    typedef typename BaseType::EntityType          EntityType;
+    typedef typename BaseType::RangeType           RangeType;
+    typedef typename BaseType::JacobianRangeType   JacobianRangeType;
+    typedef typename BaseType::DomainType          DomainType;
 
-    typedef typename Traits :: DiscreteFunctionSpaceType DiscreteFunctionSpaceType;
+    typedef typename Traits::DiscreteFunctionSpaceType DiscreteFunctionSpaceType;
 
     // type of diffusion flux implementation
-    typedef typename BaseType :: AdvectionFluxType  AdvectionFluxType;
-    typedef typename BaseType :: DiffusionFluxType  DiffusionFluxType;
-    typedef typename BaseType :: ModelType          ModelType;
+    typedef typename BaseType::AdvectionFluxType  AdvectionFluxType;
+    typedef typename BaseType::DiffusionFluxType  DiffusionFluxType;
+    typedef typename BaseType::ModelType          ModelType;
 
-    enum { evaluateJacobian = DiffusionFluxType :: evaluateJacobian  }; // we need to evaluate jacobians here
+    enum { evaluateJacobian = DiffusionFluxType::evaluateJacobian  }; // we need to evaluate jacobians here
   public:
     // constructor: do not touch/delegate everything
     template< class ... Args>

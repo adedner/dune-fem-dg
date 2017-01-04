@@ -5,7 +5,7 @@ set( GRIDTYPE ALUGRID_CUBE )
 set( GRIDDIM 2 )
 set( POLORDER 2 )
 
-set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O0" )
+#set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O0" )
 
 add_definitions( "-D${GRIDTYPE}" )
 add_definitions( "-DGRIDDIM=${GRIDDIM}" )

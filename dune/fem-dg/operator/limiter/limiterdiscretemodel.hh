@@ -64,9 +64,7 @@ namespace Fem
     enum { evaluateJacobian = false };
 
   protected:
-    using BaseType :: model_;
-    using BaseType :: inside ;
-    using BaseType :: outside ;
+    using BaseType::model_;
 
     IndicatorType* indicator_;
 
@@ -77,6 +75,9 @@ namespace Fem
     const bool shockIndicatorAdaptivty_;
 
   public:
+    using BaseType::inside;
+    using BaseType::outside;
+
     //! constructor
     StandardLimiterDiscreteModel(const Model& mod,
                                  const int polOrd,
@@ -184,11 +185,11 @@ namespace Fem
       else
       {
         // evaluate adaptation indicator
-        model_.adaptationIndicator( left.intersection(), left.time(), x,
+        model_.adaptationIndicator( left.intersection(), x,
                                     left.values()[ uVar ], right.values()[ uVar ],
                                     adaptIndicator );
 
-        model_.jump( left.intersection(), left.time(), x,
+        model_.jump( left.intersection(), x,
                      left.values()[ uVar ], right.values()[ uVar ],
                      shockIndicator );
         return 1.;
@@ -217,7 +218,7 @@ namespace Fem
       }
       else
       {
-        model_.jump( left.intersection(), left.time(), x, left.values()[ uVar ], uRight, adaptIndicator);
+        model_.jump( left.intersection(), x, left.values()[ uVar ], uRight, adaptIndicator);
         return 1.;
       }
     }

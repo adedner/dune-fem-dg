@@ -40,6 +40,7 @@ namespace Stokes
     typedef ProblemImp                                      ProblemType;
     typedef StokesPoissonModelTraits< GridImp, ProblemType >
                                                             Traits;
+    typedef DefaultModel<Traits>                            BaseType;
 
     typedef typename Traits::GridType                       GridType;
     static const int dimDomain = Traits::dimDomain;
@@ -59,6 +60,8 @@ namespace Stokes
     static const bool hasDiffusion = true;
     static const int ConstantVelocity = false;
 
+    using BaseType::time;
+
     /**
      * \brief Constructor
      *
@@ -67,7 +70,8 @@ namespace Stokes
      * \param problem Class describing the initial(t=0) and exact solution
      */
     PoissonModel(const ProblemType& problem)
-      : problem_(problem)
+      : BaseType(0.0),
+        problem_(problem)
     {}
 
     inline bool hasFlux() const { return true ; }

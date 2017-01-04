@@ -84,6 +84,7 @@ namespace Fem
   public:
 
     typedef NavierStokesModelTraits< GridPartImp, ProblemImp, ActivationImp, 2 > Traits;
+    typedef DefaultModel< Traits >                         BaseType;
 
     static const int velo = Traits::template IdGenerator<0>::id;
     static const int rhs = Traits::template IdGenerator<1>::id;
@@ -119,6 +120,8 @@ namespace Fem
     NavierStokesModel(const NavierStokesModel& other);
     const NavierStokesModel &operator=(const NavierStokesModel &other);
   public:
+    using BaseType::time;
+
     /**
      * \brief Constructor
      *
@@ -126,7 +129,8 @@ namespace Fem
      *
      * \param problem Class describing the initial(t=0) and exact solution
      */
-    NavierStokesModel(const ProblemType& problem) :
+    NavierStokesModel(const ProblemType& problem)
+    : BaseType( problem.startTime() ),
       problem_(problem),
       epsilon_(problem.epsilon()),
       tstepEps_( problem.beta()*problem.mu() ),
@@ -183,7 +187,7 @@ namespace Fem
       if( SplitType::hasSource )
       {
         // right hand side
-        problem_.stiffSource( local.position(), local.time(), u, s );
+        problem_.stiffSource( local.position(), time(), u, s );
         s *= SplitType::source();
       }
 
@@ -192,7 +196,7 @@ namespace Fem
       {
         // + \alpha \mu \Delta u^n+\theta - \nabla p
         //step 2: dgOperator (u*,rhs)  -> rhs_
-        s += local.evaluate( ComputeRHS(), local ) ;
+        s += local.values( ComputeRHS(), local ) ;
       }
       return 0;
     }
@@ -231,7 +235,7 @@ namespace Fem
     template <class LocalEvaluation>
     inline DomainType velocity(const LocalEvaluation& local, const RangeType& u ) const
     {
-      return local.evaluate( ComputeVelocity(), local, u);
+      return local.values( ComputeVelocity(), local, u);
     }
 
 
@@ -352,7 +356,7 @@ namespace Fem
     return;
   #endif
       DomainType xgl = local.intersection().geometry().global( local.localPosition() );
-      problem_.evaluate(xgl, local.time(), uRight);
+      problem_.evaluate(xgl, time(), uRight);
     }
 
 
