@@ -273,67 +273,17 @@ namespace Fem
   template< bool hasQPs = true, bool hasIds = true, bool hasBasis = true, bool isNonZero = true, int id = -1 >
   struct Access
   {
-
-    Access( int qp = -1, int base = -1 )
-    : qp_( qp ),
-      base_( base )
-    {}
-
     static constexpr bool hasQuadPoints = hasQPs;
     static constexpr bool hasBasisFunctions = hasBasis;
     static constexpr bool hasMultiValues = hasIds;
 
-    // access: quadrature points
-    decltype(auto) setQuadraturePoint( int qp ) const
-    {
-      assert( qp >= 0 );
-      return Access<false,hasIds,hasBasis,isNonZero,id>( qp, base_ );
-    }
+    typedef Access<false,hasIds,hasBasis,isNonZero,id> QuadraturePointType;
+    template< int i >
+    using MultiValueType = Access<hasQPs,false,hasBasis,isNonZero,i>;
+    typedef Access<hasQPs,hasIds,false,false,id>     ZeroBasisFunctionType;
+    typedef Access<hasQPs,hasIds,false,isNonZero,id> BasisFunctionType;
 
-    // access: multi Values
-    template< class Int, Int i >
-    decltype(auto) setMultiValue( std::integral_constant<Int,i> ) const
-    {
-      assert( i >= 0 );
-      return Access<hasQPs,false,hasBasis,isNonZero,(int)i>( qp_, base_ );
-    }
-
-    // access: basis function, zero
-    decltype(auto) setBasisFunction() const
-    {
-      return Access<hasQPs,hasIds,false,false,id>( qp_, -1 );
-    }
-
-    // access: basis function
-    decltype(auto) setBasisFunction( int base ) const
-    {
-      assert( base >= 0 );
-      return Access<hasQPs,hasIds,false,isNonZero,id>( qp_, base );
-    }
-
-    int quadPoint() const
-    {
-      return qp_;
-    }
-
-    int basisFunction() const
-    {
-      return base_;
-    }
-
-    static constexpr int multiValue()
-    {
-      return id;
-    }
-
-    static constexpr int isZero()
-    {
-      return !isNonZero;
-    }
-
-  protected:
-    const int qp_;
-    const int base_;
+    static const int multiValue = id;
   };
 
 
@@ -773,37 +723,24 @@ namespace Fem
   class LocalEvaluation
   {
     template <class EvalImp >
-    using Evaluator = Eval< EvalImp, AccessImp::hasQuadPoints, AccessImp::hasMultiValues, AccessImp::hasBasisFunctions, AccessImp::multiValue() >;
+    using Evaluator = Eval< EvalImp, AccessImp::hasQuadPoints, AccessImp::hasMultiValues, AccessImp::hasBasisFunctions, AccessImp::multiValue >;
 
   public:
-    LocalEvaluation( const QuadratureContextImp& quadImp, const RangeType& values, const JacobianType& jacobians, const AccessImp& access )
+    LocalEvaluation( const QuadratureContextImp& quadImp, const RangeType& values, const JacobianType& jacobians, int qp = -1, int basis = -1 )
     : quadImp_( quadImp ),
-      access_( std::make_unique<AccessImp>( access.quadPoint(), access.basisFunction() ) ),
       values_( values ),
-      jacobians_( jacobians )
+      jacobians_( jacobians ),
+      qp_( qp ),
+      basis_( basis )
     {}
 
     //default range = jacobian
-    LocalEvaluation( const QuadratureContextImp& quadImp, const RangeType& values, const AccessImp& access )
+    LocalEvaluation( const QuadratureContextImp& quadImp, const RangeType& values, int qp = -1, int basis = -1 )
     : quadImp_( quadImp ),
-      access_( std::make_unique<AccessImp>( access.quadPoint(), access.basisFunction() ) ),
       values_( values ),
-      jacobians_( values )
-    {}
-
-    LocalEvaluation( const QuadratureContextImp& quadImp, const RangeType& values, const JacobianType& jacobians )
-    : quadImp_( quadImp ),
-      access_( std::make_unique<AccessImp>() ),
-      values_( values ),
-      jacobians_( jacobians )
-    {}
-
-    //default range = jacobian
-    LocalEvaluation( const QuadratureContextImp& quadImp, const RangeType& values )
-    : quadImp_( quadImp ),
-      access_( std::make_unique<AccessImp>() ),
-      values_( values ),
-      jacobians_( values )
+      jacobians_( values ),
+      qp_( qp ),
+      basis_( basis )
     {}
 
     typedef typename QuadratureContextImp::EntityType                 EntityType;
@@ -855,46 +792,41 @@ namespace Fem
     //access: quadpoints
     decltype(auto) operator[]( unsigned int idx ) const
     {
-      typedef std::decay_t<decltype( std::declval<AccessImp>().setQuadraturePoint(idx))> NewAccessType;
-      typedef LocalEvaluation<QuadratureContextImp, RangeType, JacobianType, NewAccessType > NewContextType;
+      typedef LocalEvaluation<QuadratureContextImp, RangeType, JacobianType, typename AccessImp::QuadraturePointType > NewContextType;
       //cheating a little bit, here
       quadImp_.setIndex( idx );
-      return NewContextType( quadImp_, values_, jacobians_, access_->setQuadraturePoint(idx) );
+      return NewContextType( quadImp_, values_, jacobians_, idx, basis_ );
     }
 
     //access: quadpoints II
     decltype(auto) operator[]( unsigned long int idx ) const
     {
-      typedef std::decay_t<decltype( std::declval<AccessImp>().setQuadraturePoint(idx))> NewAccessType;
-      typedef LocalEvaluation<QuadratureContextImp, RangeType, JacobianType, NewAccessType > NewContextType;
+      typedef LocalEvaluation<QuadratureContextImp, RangeType, JacobianType, typename AccessImp::QuadraturePointType > NewContextType;
       //cheating a little bit, here
       quadImp_.setIndex( idx );
-      return NewContextType( quadImp_, values_, jacobians_, access_->setQuadraturePoint(idx) );
+      return NewContextType( quadImp_, values_, jacobians_, idx, basis_ );
     }
 
     //access: multi values, i.e. tuples
     template< class Int, Int id >
     decltype(auto) operator[]( const std::integral_constant<Int,id>& idx ) const
     {
-      typedef std::decay_t<decltype( std::declval<AccessImp>().setMultiValue(idx))> NewAccessType;
-      typedef LocalEvaluation<QuadratureContextImp, RangeType, JacobianType, NewAccessType> NewContextType;
-      return NewContextType( quadImp_, values_, jacobians_, access_->setMultiValue(idx) );
+      typedef LocalEvaluation<QuadratureContextImp, RangeType, JacobianType, typename AccessImp::template MultiValueType<id> > NewContextType;
+      return NewContextType( quadImp_, values_, jacobians_, qp_, basis_ );
     }
 
     //access: basis functions, zero
     decltype(auto) operator()(int i=0) const
     {
-      typedef std::decay_t<decltype( std::declval<AccessImp>().setBasisFunction())> NewAccessType;
-      typedef LocalEvaluation<QuadratureContextImp, RangeType, JacobianType, NewAccessType> NewContextType;
-      return NewContextType( quadImp_, values_, jacobians_, access_->setBasisFunction() );
+      typedef LocalEvaluation<QuadratureContextImp, RangeType, JacobianType, typename AccessImp::ZeroBasisFunctionType > NewContextType;
+      return NewContextType( quadImp_, values_, jacobians_, qp_, -1 );
     }
 
     //access: basis functions
     decltype(auto) operator[]( int idx ) const
     {
-      typedef std::decay_t<decltype( std::declval<AccessImp>().setBasisFunction(idx))> NewAccessType;
-      typedef LocalEvaluation<QuadratureContextImp, RangeType, JacobianType, NewAccessType> NewContextType;
-      return NewContextType( quadImp_, values_, jacobians_, access_->setBasisFunction(idx) );
+      typedef LocalEvaluation<QuadratureContextImp, RangeType, JacobianType, typename AccessImp::BasisFunctionType> NewContextType;
+      return NewContextType( quadImp_, values_, jacobians_, qp_, idx );
     }
 
     //access: failure
@@ -905,16 +837,14 @@ namespace Fem
       return {};
     }
 
-
-
     const decltype(auto) values() const
     {
-      return Evaluator<RangeType>( values_, access_->quadPoint(), access_->basisFunction() );
+      return Evaluator<RangeType>( values_, qp_, basis_ );
     }
 
     const decltype(auto) jacobians() const
     {
-      return Evaluator<JacobianType>( jacobians_, access_->quadPoint(), access_->basisFunction() );
+      return Evaluator<JacobianType>( jacobians_, qp_, basis_ );
     }
 
     template <class Functor, class ... Args>
@@ -932,9 +862,11 @@ namespace Fem
 
   private:
     const QuadratureContextImp& quadImp_;
-    std::unique_ptr<AccessImp> access_;
+    //std::unique_ptr<AccessImp> access_;
     const RangeType& values_;
     const JacobianType& jacobians_;
+    int qp_;
+    int basis_;
   };
 
 
