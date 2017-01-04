@@ -173,25 +173,6 @@ namespace Fem
     void initializeBoundary(const LocalEvaluationVec& local )
     {}
 
-
-    //template <class QuadratureImp, class ArgumentTupleVector >
-    //void initializeIntersection(const IntersectionType& it,
-    //                            const double time,
-    //                            const QuadratureImp& quadInner,
-    //                            const QuadratureImp& quadOuter,
-    //                            const ArgumentTupleVector& uLeftVec,
-    //                            const ArgumentTupleVector& uRightVec)
-    //{
-    //}
-
-    //template <class QuadratureImp, class ArgumentTupleVector >
-    //void initializeBoundary(const IntersectionType& it,
-    //                        const double time,
-    //                        const QuadratureImp& quadInner,
-    //                        const ArgumentTupleVector& uLeftVec)
-    //{
-    //}
-
   public:
     /**
      * \brief flux function on interfaces between cells for advection and diffusion
@@ -227,8 +208,8 @@ namespace Fem
       {
         // returns advection wave speed
         return numflux_.numericalFlux(left, right,
-                                      left.values()[ uVar ], right.values()[ uVar ],
-                                      left.jacobians()[ uVar ], right.jacobians()[ uVar ],
+                                      left.values()[uVar], right.values()[uVar],
+                                      left.jacobians()[uVar], right.jacobians()[uVar],
                                       gLeft, gRight);
       }
       else
@@ -284,7 +265,7 @@ namespace Fem
                          JacobianRangeType& f ) const
     {
       if( advection )
-        model_.advection( local, local.values()[ uVar ],local.jacobians()[uVar], f);
+        model_.advection( local, local.values()[uVar],local.jacobians()[uVar], f);
       else
         f = 0;
     }
@@ -294,7 +275,7 @@ namespace Fem
                RangeType& m ) const
     {
       assert( hasMass() );
-      model_.mass( local, local.values()[ uVar ], m );
+      model_.mass( local, local.values()[uVar], m );
     }
 
   protected:
@@ -304,7 +285,7 @@ namespace Fem
       const bool hasBndValue = model_.hasBoundaryValue( left );
       if( hasBndValue )
       {
-        model_.boundaryValue( left, left.values()[ uVar ], uBnd_ );
+        model_.boundaryValue( left, left.values()[uVar], uBnd_ );
       }
       else
         // do something bad to uBnd_ as it shouldn't be used
@@ -503,12 +484,12 @@ namespace Fem
         RangeType v ;
         // v = g( ul, ul ) = f( ul )
         numflux_.numericalFlux(left, left,
-                               left.values()[ uVar ], left.values()[ uVar ], v, error);
+                               left.values()[uVar], left.values()[uVar], v, error);
 
         RangeType w ;
         // v = g( ur, ur ) = f( ur )
         numflux_.numericalFlux(right, right,
-                               right.values()[ uVar ], right.values()[ uVar ], w, error);
+                               right.values()[uVar], right.values()[uVar], w, error);
 
         // err = 2 * g(u,v) - g(u,u) - g(v,v)
         // 2 * g(u,v) = gLeft + gRight
@@ -525,7 +506,7 @@ namespace Fem
           /*
           // otherwise ul = ur
           if( std::abs( error[ i ] > 1e-12 ) )
-            error[ i ] /= (uLeft[ uVar ][i] - uRight[ uVar ][i] );
+            error[ i ] /= (uLeft[uVar][i] - uRight[uVar][i] );
             */
         }
 

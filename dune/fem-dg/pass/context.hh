@@ -333,7 +333,7 @@ namespace Fem
   };
 
 
-  struct ContextEvaluate
+  struct FunctorContext
   {
     template <class Tuple, class VarId >
     struct Contains
@@ -726,21 +726,44 @@ namespace Fem
     using Evaluator = Eval< EvalImp, AccessImp::hasQuadPoints, AccessImp::hasMultiValues, AccessImp::hasBasisFunctions, AccessImp::multiValue >;
 
   public:
-    LocalEvaluation( const QuadratureContextImp& quadImp, const RangeType& values, const JacobianType& jacobians, int qp = -1, int basis = -1 )
+    LocalEvaluation( const QuadratureContextImp& quadImp, const RangeType& values, const JacobianType& jacobians, int qp, int basis = -1 )
     : quadImp_( quadImp ),
       values_( values ),
       jacobians_( jacobians ),
       qp_( qp ),
       basis_( basis )
-    {}
+    {
+      //small hack
+      quadImp_.setIndex(qp);
+    }
 
     //default range = jacobian
-    LocalEvaluation( const QuadratureContextImp& quadImp, const RangeType& values, int qp = -1, int basis = -1 )
+    LocalEvaluation( const QuadratureContextImp& quadImp, const RangeType& values, int qp, int basis = -1 )
     : quadImp_( quadImp ),
       values_( values ),
       jacobians_( values ),
       qp_( qp ),
       basis_( basis )
+    {
+      //small hack
+      quadImp_.setIndex(qp);
+    }
+
+    LocalEvaluation( const QuadratureContextImp& quadImp, const RangeType& values, const JacobianType& jacobians )
+    : quadImp_( quadImp ),
+      values_( values ),
+      jacobians_( jacobians ),
+      qp_( -1 ),
+      basis_( -1 )
+    {}
+
+    //default range = jacobian
+    LocalEvaluation( const QuadratureContextImp& quadImp, const RangeType& values )
+    : quadImp_( quadImp ),
+      values_( values ),
+      jacobians_( values ),
+      qp_( -1 ),
+      basis_( -1 )
     {}
 
     typedef typename QuadratureContextImp::EntityType                 EntityType;
@@ -793,8 +816,6 @@ namespace Fem
     decltype(auto) operator[]( unsigned int idx ) const
     {
       typedef LocalEvaluation<QuadratureContextImp, RangeType, JacobianType, typename AccessImp::QuadraturePointType > NewContextType;
-      //cheating a little bit, here
-      quadImp_.setIndex( idx );
       return NewContextType( quadImp_, values_, jacobians_, idx, basis_ );
     }
 
@@ -802,8 +823,6 @@ namespace Fem
     decltype(auto) operator[]( unsigned long int idx ) const
     {
       typedef LocalEvaluation<QuadratureContextImp, RangeType, JacobianType, typename AccessImp::QuadraturePointType > NewContextType;
-      //cheating a little bit, here
-      quadImp_.setIndex( idx );
       return NewContextType( quadImp_, values_, jacobians_, idx, basis_ );
     }
 
@@ -850,19 +869,17 @@ namespace Fem
     template <class Functor, class ... Args>
     decltype(auto) values( const Functor& functor, const Args& ... args ) const
     {
-      return ContextEvaluate::Evaluate< Functor, ContextEvaluate::Contains< RangeType, typename Functor::VarId >::value>::eval( values(), functor, args ... );
+      return FunctorContext::Evaluate< Functor, FunctorContext::Contains< RangeType, typename Functor::VarId >::value>::eval( values(), functor, args ... );
     }
 
     template <class Functor, class ... Args>
     decltype(auto) jacobians( const Functor& functor, const Args& ... args ) const
     {
-      return ContextEvaluate::Evaluate< Functor, ContextEvaluate::Contains< JacobianType, typename Functor::VarId >::value>::eval( jacobians(), functor, args ... );
+      return FunctorContext::Evaluate< Functor, FunctorContext::Contains< JacobianType, typename Functor::VarId >::value>::eval( jacobians(), functor, args ... );
     }
-
 
   private:
     const QuadratureContextImp& quadImp_;
-    //std::unique_ptr<AccessImp> access_;
     const RangeType& values_;
     const JacobianType& jacobians_;
     int qp_;

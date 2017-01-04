@@ -190,7 +190,7 @@ namespace Fem
       typedef LocalEval< ContextType > EvalType;
 
       ContextType cLocal( entity, quadrature, discreteModel().enVolume() );
-      discreteModel().analyticalFlux( EvalType( cLocal[qp], values_[qp], jacobianValue( jacobians_, qp ) ), flux );
+      discreteModel().analyticalFlux( EvalType( cLocal, values_[qp], jacobianValue( jacobians_, qp ), qp ), flux );
     }
 
     double source ( const EntityType &entity,
@@ -205,7 +205,7 @@ namespace Fem
       typedef LocalEval< ContextType > EvalType;
 
       ContextType cLocal( entity, quadrature, discreteModel().enVolume() );
-      return discreteModel().source( EvalType( cLocal[qp], values_[qp], jacobianValue( jacobians_, qp ) ), src );
+      return discreteModel().source( EvalType( cLocal, values_[qp], jacobianValue( jacobians_, qp ), qp ), src );
     }
 
     double analyticalFluxAndSource( const EntityType &entity,
@@ -240,8 +240,8 @@ namespace Fem
       ContextType cLeft( localFunctionsInside_.entity(), intersection, quadInner, discreteModel().enVolume() );
       ContextType cRight( localFunctionsOutside_.entity(), intersection, quadOuter, discreteModel().nbVolume() );
       return discreteModel().numericalFlux(
-                  EvalType( cLeft[qp], valuesInside_[qp],  jacobianValue( jacobiansInside_, qp ) ),
-                  EvalType( cRight[qp], valuesOutside_[qp], jacobianValue( jacobiansOutside_, qp ) ),
+                  EvalType( cLeft, valuesInside_[qp],  jacobianValue( jacobiansInside_, qp ), qp ),
+                  EvalType( cRight, valuesOutside_[qp], jacobianValue( jacobiansOutside_, qp ), qp ),
                   gLeft, gRight, hLeft, hRight );
     }
 
@@ -257,8 +257,8 @@ namespace Fem
       typedef QuadratureContext< EntityType, IntersectionType, FaceQuadratureType > ContextType;
       typedef LocalEval< ContextType > EvalType;
 
-      ContextType cLocal( localFunctionsInside_.entity(), intersection, quadrature, discreteModel().enVolume(), qp );
-      return discreteModel().boundaryFlux( EvalType( cLocal, valuesInside_[qp], jacobianValue( jacobiansInside_, qp ) ), gLeft, hLeft );
+      ContextType cLocal( localFunctionsInside_.entity(), intersection, quadrature, discreteModel().enVolume() );
+      return discreteModel().boundaryFlux( EvalType( cLocal, valuesInside_[qp], jacobianValue( jacobiansInside_, qp ), qp ), gLeft, hLeft );
     }
 
     void mass ( const EntityType &entity,
@@ -269,8 +269,8 @@ namespace Fem
       typedef QuadratureContext< EntityType, VolumeQuadratureType > ContextType;
       typedef LocalEval< ContextType > EvalType;
 
-      ContextType cLocal( entity, quadrature, discreteModel().enVolume(), qp );
-      discreteModel().mass( EvalType( cLocal, values_[ qp ], jacobianValue( jacobians_, qp ) ), m );
+      ContextType cLocal( entity, quadrature, discreteModel().enVolume() );
+      discreteModel().mass( EvalType( cLocal, values_[qp], jacobianValue( jacobians_, qp ), qp ), m );
     }
   protected:
     template< class JacobianRangeTupleVectorType >
