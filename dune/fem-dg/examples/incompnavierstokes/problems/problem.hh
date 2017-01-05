@@ -184,14 +184,18 @@ namespace Fem
       : problems_( std::make_tuple( new PoissonProblemType(), new StokesProblemType(), new NavierStokesProblemType() ) )
     {}
 
+    NavierStokesProblemInterface( PoissonProblemType* poisson, StokesProblemType* stokes, NavierStokesProblemType* navier )
+      : problems_( std::make_tuple( poisson, stokes, navier ) )
+    {}
+
     template< int i >
-    const typename std::remove_pointer< typename std::tuple_element<i,ProblemTupleType>::type >::type& get() const
+    const std::remove_pointer_t< std::tuple_element_t<i,ProblemTupleType> >& get() const
     {
       return *(std::get<i>( problems_) );
     }
 
     template< int i >
-    typename std::remove_pointer< typename std::tuple_element<i,ProblemTupleType>::type >::type& get()
+    std::remove_pointer_t< std::tuple_element_t<i,ProblemTupleType> >& get()
     {
       return *(std::get<i>( problems_) );
     }
@@ -202,16 +206,12 @@ namespace Fem
       return this->get<0>().dataPrefix();
     }
 
-  protected:
-    template< class PoissonProblemPtrImp, class StokesProblemPtrImp, class NavierStokesProblemPtrImp >
-    void create( const PoissonProblemPtrImp& poisson, const StokesProblemPtrImp& stokes,
-                 const NavierStokesProblemPtrImp& navier )
+    virtual ~NavierStokesProblemInterface()
     {
-      std::get<0>( problems_ ) = poisson;
-      std::get<1>( problems_ ) = stokes;
-      std::get<2>( problems_ ) = navier;
+      delete std::get<0>(problems_);
+      delete std::get<1>(problems_);
+      delete std::get<2>(problems_);
     }
-
   private:
     mutable ProblemTupleType   problems_;
   };
@@ -244,18 +244,8 @@ namespace Fem
     typedef typename NavierStokesProblemImp<GridImp>::NavierStokesProblemType NavierStokesProblemType;
 
     NavierStokesProblem()
-      : BaseType(),
-        poisson_( new PoissonProblemType() ),
-        stokes_( new StokesProblemType() ),
-        navier_( new NavierStokesProblemType() )
-    {
-      BaseType::create( poisson_, stokes_, navier_ );
-    }
-
-  private:
-    mutable PoissonProblemBaseType* poisson_;
-    mutable StokesProblemBaseType*  stokes_;
-    mutable NavierStokesProblemBaseType* navier_;
+      : BaseType( new PoissonProblemType(), new StokesProblemType(), new NavierStokesProblemType() )
+    {}
 
   };
 

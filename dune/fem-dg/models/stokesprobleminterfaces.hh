@@ -50,14 +50,18 @@ namespace Stokes
       : problems_( std::make_tuple( new PoissonProblemType(), new StokesProblemType() ) )
     {}
 
+    ProblemInterface( PoissonProblemType* poisson, StokesProblemType* stokes )
+      : problems_( std::make_tuple( poisson, stokes ) )
+    {}
+
     template< int i >
-    const typename std::remove_pointer< typename std::tuple_element<i,ProblemTupleType>::type >::type& get() const
+    const std::remove_pointer_t< std::tuple_element_t<i,ProblemTupleType> >& get() const
     {
       return *(std::get<i>( problems_) );
     }
 
     template< int i >
-    typename std::remove_pointer< typename std::tuple_element<i,ProblemTupleType>::type >::type& get()
+    std::remove_pointer_t< std::tuple_element_t<i,ProblemTupleType> >& get()
     {
       return *(std::get<i>( problems_) );
     }
@@ -68,14 +72,11 @@ namespace Stokes
       return this->get<0>().dataPrefix();
     }
 
-  protected:
-    template< class PoissonProblemPtrImp, class StokesProblemPtrImp >
-    void create( const PoissonProblemPtrImp& poisson, const StokesProblemPtrImp& stokes )
+    virtual ~ProblemInterface()
     {
-      std::get<0>( problems_ ) = poisson;
-      std::get<1>( problems_ ) = stokes;
+      delete std::get<0>( problems_ );
+      delete std::get<1>( problems_ );
     }
-
   private:
     mutable ProblemTupleType   problems_;
   };
@@ -106,16 +107,8 @@ namespace Stokes
     typedef typename StokesProblemImp<GridImp>::StokesProblemType            StokesProblemType;
 
     Problem()
-      : BaseType(),
-        poisson_( new PoissonProblemType() ),
-        stokes_( new StokesProblemType() )
-    {
-      BaseType::create( poisson_, stokes_ );
-    }
-
-  private:
-    mutable PoissonProblemBaseType* poisson_;
-    mutable StokesProblemBaseType*  stokes_;
+      : BaseType( new PoissonProblemType(), new StokesProblemType() )
+    {}
 
   };
 
