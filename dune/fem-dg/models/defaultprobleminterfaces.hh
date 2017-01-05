@@ -44,12 +44,7 @@ namespace Fem
      * \brief define problem parameters
      */
     EvolutionProblemInterface()
-    : writeGridSolution_( ParameterType::getValue<bool>("gridsol.writesolution", false) ),
-      saveStep_( ParameterType :: getValue< double >("gridsol.firstwrite", 0.0 ) ),
-      saveInterval_( ParameterType :: getValue< double >("gridsol.savestep", 0.0 ) ),
-      writeCounter_( 0 )
-    {
-    }
+    {}
 
   public:
     typedef Fem::InstationaryFunction< ThisType, Fem::__InstationaryFunction::HoldReference > InstationaryFunctionType;
@@ -206,28 +201,6 @@ namespace Fem
     {
       return std::string("");
     }
-
-    /* \brief
-     */
-    template< class GridType, class DiscreteFunctionType >
-    inline void postProcessTimeStep( const GridType& grid,
-                                     const DiscreteFunctionType& solution,
-                                     const double time ) const
-    {
-      if( writeGridSolution_ && time > saveStep_ )
-      {
-        typedef Dune::Fem::GridSolutionVector< GridType, DiscreteFunctionType > ExSolGrid;
-        ExSolGrid :: writeDiscreteFunction( grid, solution, time, writeCounter_ );
-        ++writeCounter_;
-        saveStep_ += saveInterval_;
-      }
-    }
-
-  protected:
-    const bool writeGridSolution_;
-    mutable double saveStep_ ;
-    const double saveInterval_ ;
-    mutable int writeCounter_ ;
 
   };
 

@@ -491,6 +491,7 @@ namespace Fem
       dataWriterCaller_.finalizeStart( this, loop, tp );
       solverMonitorCaller_.finalizeStart( this, loop, tp );
       adaptCaller_.finalizeStart( this, loop, tp );
+      checkPointCaller_.finalizeStart( this, loop, tp );
 
       finalize( loop, tp );
 

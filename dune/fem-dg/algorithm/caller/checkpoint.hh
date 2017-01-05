@@ -8,6 +8,7 @@
 #include <dune/fem/io/file/datawriter.hh>
 #include <dune/fem/io/parameter.hh>
 #include <dune/fem/common/utility.hh>
+#include <dune/fem/misc/gridsolution.hh>
 #include <dune/fem-dg/misc/parameterkey.hh>
 #include <dune/fem-dg/misc/tupleutility.hh>
 #include "interface.hh"
@@ -123,6 +124,16 @@ namespace Fem
       }
     };
 
+    template< int i >
+    struct WriteGridSolution
+    {
+      template< class Tuple, class TimeProvider, class ... Args >
+      static void apply ( Tuple &tuple, const TimeProvider& tp, int counter, Args && ... args )
+      {
+        typedef Dune::Fem::GridSolutionVector< GridType, std::decay_t<decltype( std::get<i>(tuple_)->solution() )> > ExSolGrid;
+        ExSolGrid::writeDiscreteFunction( std::get<i>(tuple)->solution().space().grid(), std::get<i>(tuple)->solution(), tp.time(), counter );
+      }
+    };
   public:
     typedef AlgTupleImp                                                            AlgTupleType;
 
@@ -155,7 +166,11 @@ namespace Fem
         checkPointer_(),
         checkPointRestored_( false ),
         keyPrefix_( std::get<0>( tuple_ )->name() ),
-        checkParam_( ParameterKey::generate( keyPrefix_, "fem.io." ) )
+        checkParam_( ParameterKey::generate( keyPrefix_, "fem.io." ) ),
+        writeGridSolution_( Fem::Parameter::getValue<bool>("gridsol.writesolution", false) ),
+        saveStep_( Fem::Parameter::getValue< double >("gridsol.firstwrite", 0.0 ) ),
+        saveInterval_( Fem::Parameter::getValue< double >("gridsol.savestep", 0.0 ) ),
+        writeCounter_( 0 )
     {}
 
     /**
@@ -205,6 +220,30 @@ namespace Fem
     }
 
     /**
+     * \brief Write current, final solution and additional output data to disk.
+     *
+     * \param[in] alg pointer to the calling sub-algorithm
+     * \param[in] loop number of eoc loop
+     * \param[in] tp the time provider
+     */
+    template< class SubAlgImp, class TimeProviderImp >
+    void finalizeStart( SubAlgImp* alg, int loop, TimeProviderImp& tp )
+    {
+      if( writeGridSolution_ && tp.time() > saveStep_ )
+      {
+        ForLoopType< WriteGridSolution >::apply( tuple_, tp, writeCounter_ );
+        //increase counter
+        ++writeCounter_;
+        saveStep_ += saveInterval_;
+
+        ////later usage for eoc calculation against discrete solution
+        //static const int rank = 0;
+        //ExSolGrid gridSol;
+        //gridsol.discreteFunction(rank);
+      }
+    }
+
+    /**
      * \brief Returns the checkpointer.
      *
      * \param[in] tp the time provider
@@ -229,6 +268,11 @@ namespace Fem
     bool checkPointRestored_;
     const std::string keyPrefix_;
     CheckPointerParametersType checkParam_;
+    //grid solution writer...
+    const bool                        writeGridSolution_;
+    mutable double                    saveStep_ ;
+    const double                      saveInterval_ ;
+    mutable int                       writeCounter_ ;
   };
 
 
