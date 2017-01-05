@@ -144,17 +144,6 @@ namespace Fem
     }
 
 
-    /*  \brief finalize the simulation using the calculated numerical
-     *  solution u for this problem
-     *
-     *  \param[in] variablesToOutput Numerical solution in the suitably chosen variables
-     *  \param[in] eocloop Specific EOC loop
-     */
-    template< class DiscreteFunctionType >
-    void finalizeSimulation( DiscreteFunctionType& variablesToOutput,
-                             const int eocloop) const
-    {}
-
   protected:
     const double  startTime_;
     const double  epsilon_;

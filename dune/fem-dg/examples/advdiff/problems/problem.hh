@@ -233,17 +233,6 @@ namespace Fem
       return myName;
     }
 
-    /*  \brief finalize the simulation using the calculated numerical
-     *  solution u for this problem
-     *
-     *  \param[in] variablesToOutput Numerical solution in the suitably chosen variables
-     *  \param[in] eocloop Specific EOC loop
-     */
-    template< class DiscreteFunctionType >
-    void finalizeSimulation( DiscreteFunctionType& variablesToOutput,
-                             const int eocloop) const
-    {}
-
   private:
     DomainType velocity_;
     int        max_n_of_coefs_;

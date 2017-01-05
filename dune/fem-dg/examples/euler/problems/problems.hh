@@ -78,17 +78,6 @@ namespace Fem
 
     void bg ( const DomainType&, RangeType& ) const {}
 
-    /*  \brief finalize the simulation using the calculated numerical
-     *  solution u for this problem
-     *
-     *  \param[in] variablesToOutput Numerical solution in the suitably chosen var
-     *  \param[in] eocloop Specific EOC loop
-     */
-    template< class DiscreteFunctionType >
-    void finalizeSimulation( DiscreteFunctionType& variablesToOutput,
-                             const int eocloop) const
-    {}
-
     //! methods for gradient based indicator
     bool twoIndicators() const { return false ; }
 

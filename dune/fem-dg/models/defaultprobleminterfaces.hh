@@ -52,8 +52,7 @@ namespace Fem
     }
 
   public:
-    typedef Fem :: InstationaryFunction< ThisType, Fem::__InstationaryFunction::HoldReference > InstationaryFunctionType;
-    typedef InstationaryFunctionType  TimeDependentFunctionType;
+    typedef Fem::InstationaryFunction< ThisType, Fem::__InstationaryFunction::HoldReference > InstationaryFunctionType;
 
     //! turn timedependent function into function by fixing time
     InstationaryFunctionType fixedTimeFunction( const double time ) const
@@ -208,22 +207,6 @@ namespace Fem
       return std::string("");
     }
 
-    /*  \brief calculate EOC between exact and numerical solution
-     *
-     *  \param[in] tp     time provider
-     *  \param[in] u      numerical solution
-     *  \param[in] eocId  for FemEoc
-     *
-     *  \return true if no EOC was calculated
-     */
-    template< class TimeProviderType, class DiscreteFunctionType >
-    bool calculateEOC( TimeProviderType& tp, DiscreteFunctionType& u,
-                       const unsigned int eocId ) const
-    {
-      // return true means that EOC is calculated in algorithm
-      return true ;
-    }
-
     /* \brief
      */
     template< class GridType, class DiscreteFunctionType >
@@ -233,24 +216,12 @@ namespace Fem
     {
       if( writeGridSolution_ && time > saveStep_ )
       {
-        typedef Dune :: Fem :: GridSolutionVector< GridType, DiscreteFunctionType > ExSolGrid;
+        typedef Dune::Fem::GridSolutionVector< GridType, DiscreteFunctionType > ExSolGrid;
         ExSolGrid :: writeDiscreteFunction( grid, solution, time, writeCounter_ );
         ++writeCounter_;
         saveStep_ += saveInterval_;
       }
     }
-
-
-    /*  \brief finalize the simulation using the calculated numerical
-     *  solution u for this problem
-     *
-     *  \param[in] variablesToOutput Numerical solution in the suitably chosen variables
-     *  \param[in] eocloop Specific EOC loop
-     */
-    template< class DiscreteFunctionType >
-    void finalizeSimulation( DiscreteFunctionType& variablesToOutput,
-                             const int eocloop) const
-    {}
 
   protected:
     const bool writeGridSolution_;

@@ -115,18 +115,6 @@ namespace Fem
     inline void pressAndTemp( const RangeImp& u, RangeFieldType& p, RangeFieldType& T ) const;
 
 
-    /*  \brief finalize the simulation using the calculated numerical
-     *  solution u for this problem
-     *
-     *  \param[in] variablesToOutput Numerical solution in the suitably chosen variables
-     *  \param[in] eocloop Specific EOC loop
-     */
-    template< class DiscreteFunctionType >
-    void finalizeSimulation( DiscreteFunctionType& variablesToOutput,
-                             const int eocloop) const
-    {}
-
-
     const ThermodynamicsType& thermodynamics() const { return *this; }
     using ThermodynamicsType :: Re ;
     using ThermodynamicsType :: Re_inv;
