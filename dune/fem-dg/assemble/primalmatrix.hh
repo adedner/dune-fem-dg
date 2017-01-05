@@ -195,7 +195,7 @@ namespace Fem
 
         for( const auto qp : quadrature )
         {
-          const auto& local = localF[Id][qp.index()];
+          const auto& local = localF[qp.index()];
           const auto& local0 = local(0);
 
           const double weight = qp.weight() * geometry.integrationElement( local.position() );
@@ -220,8 +220,8 @@ namespace Fem
           for( int i = 0; i < numBasisFunctionsEn; ++i )
           {
             const auto& locali = local[i];
-            const auto& phii = locali.values();
-            const auto& dphii = locali.jacobians();
+            const auto& phii = locali.values()[Id];
+            const auto& dphii = locali.jacobians()[Id];
 
             // now assemble source part depending on u (mass part)
             RangeType aphi(0);
@@ -291,17 +291,17 @@ namespace Fem
             LocalEvaluationType local( cLocal, phiFaceEn_, dphiFaceEn_ );
 
             // first compute affine part of boundary flux
-            const auto& local0 = local[Id](0);
+            const auto& local0 = local(0);
             boundaryValues(local0, bndValues_);
-            boundaryFlux(local0, local0.values(), local0.jacobians(),
+            boundaryFlux(local0, local0.values()[Id], local0.jacobians()[Id],
                          bndValues_, valueNb_, dvalueNb_);
 
             const size_t numFaceQuadPoints = faceQuadInside.nop();
             // compute boundary fluxes depending on u
             for( int i = 0; i < numBasisFunctionsEn; ++i )
             {
-              const auto& locali = local[Id][i];
-              boundaryFlux(locali, locali.values(), locali.jacobians(),
+              const auto& locali = local[i];
+              boundaryFlux(locali, locali.values()[Id], locali.jacobians()[Id],
                            bndValues_, valueEn_, dvalueEn_);
 
               for( size_t pt = 0; pt < numFaceQuadPoints; ++pt )
@@ -438,9 +438,9 @@ namespace Fem
             boundaryValues(local, bndValues_);
 
             // first compute affine part of boundary flux
-            const auto& local0 = local[Id](0);
+            const auto& local0 = local(0);
             boundaryValues(local0, bndValues_);
-            boundaryFlux(local0, local0.values(), local0.jacobians(),
+            boundaryFlux(local0, local0.values()[Id], local0.jacobians()[Id],
                          bndValues_, valueNb_, dvalueNb_);
 
             const size_t numFaceQuadPoints = faceQuadInside.nop();
@@ -521,9 +521,9 @@ namespace Fem
       LocalEvaluationType localInside( cLeft, phiFaceEn_, dphiFaceEn_ );
       LocalEvaluationType localOutside( cRight, phiFaceNb_, dphiFaceNb_ );
 
-      const auto& localInside0 = localInside[Id](0);
-      const auto& localOutside0 = localOutside[Id](0);
-      numericalFlux(localInside0, localOutside0, localInside0.values(), localInside0.jacobians(), localOutside0.values(), localOutside0.jacobians(),
+      const auto& localInside0 = localInside(0);
+      const auto& localOutside0 = localOutside(0);
+      numericalFlux(localInside0, localOutside0, localInside0.values()[Id], localInside0.jacobians()[Id], localOutside0.values()[Id], localOutside0.jacobians()[Id],
                     rhsValueEn_, rhsDValueEn_, rhsValueNb_, rhsDValueNb_, true );
 
       const size_t numFaceQuadPoints = faceQuadInside.nop();
@@ -534,9 +534,9 @@ namespace Fem
         // compute flux for one base function, i.e.,
         // - uLeft=phiFaceEn_[.][i]
         // - uRight=0
-        const auto& localInsidei = localInside[Id][i];
-        const auto& localOutsidei = localOutside[Id][i];
-        numericalFlux(localInsidei, localOutsidei, localInsidei.values(), localInsidei.jacobians(), localInside0.values(), localInside0.jacobians(),
+        const auto& localInsidei = localInside[i];
+        const auto& localOutsidei = localOutside[i];
+        numericalFlux(localInsidei, localOutsidei, localInsidei.values()[Id], localInsidei.jacobians()[Id], localInside0.values()[Id], localInside0.jacobians()[Id],
                       valueEn_, dvalueEn_, valueNb_, dvalueNb_, true );
 
 
@@ -564,9 +564,9 @@ namespace Fem
           // compute flux for one base function, i.e.,
           // - uLeft=phiFaceEn_[.][i]
           // - uRight=0
-          const auto& localInsidei = localInside[Id][i];
-          const auto& localOutsidei = localOutside[Id][i];
-          numericalFlux(localInsidei, localOutsidei, localOutside0.values(), localOutside0.jacobians(), localOutsidei.values(), localOutsidei.jacobians(),
+          const auto& localInsidei = localInside[i];
+          const auto& localOutsidei = localOutside[i];
+          numericalFlux(localInsidei, localOutsidei, localOutside0.values()[Id], localOutside0.jacobians()[Id], localOutsidei.values()[Id], localOutsidei.jacobians()[Id],
                         valueEn_, dvalueEn_, valueNb_, dvalueNb_, true );
 
 
@@ -690,7 +690,7 @@ namespace Fem
       const size_t numFaceQuadPoints = local.quadrature().nop();
       for( size_t pt = 0; pt < numFaceQuadPoints; ++pt )
       {
-        model_.boundaryValue( local[Id][pt], uZero, bndValues[pt]);
+        model_.boundaryValue( local[pt], uZero, bndValues[pt]);
       }
     }
 
@@ -738,6 +738,12 @@ namespace Fem
       }
     }
 
+    const ModelType &model() const
+    {
+      return model_;
+    }
+
+  private:
     template< class QuadratureImp, class BasisFunctionSetImp >
     void setEntity ( const BasisFunctionSetImp& basisSet, const QuadratureImp &quad ) const
     {
@@ -749,7 +755,7 @@ namespace Fem
         basisSet.evaluateAll( qp, std::get<size>(phi_[qp.index()]) );
         basisSet.jacobianAll( qp, std::get<size>(dphi_[qp.index()]) );
       }
-      //extra<i>( basisSet, quad );
+      extra( basisSet, quad );
     }
 
     //template< class QuadratureImp, class BasisFunctionSetImp >
@@ -762,8 +768,8 @@ namespace Fem
     //  {
     //    basisSet.evaluateAll( qp, phi_[qp.index()] );
     //    basisSet.jacobianAll( qp, dphi_[qp.index()] );
-    //    //TODO: Also evaluate extra parameters, if present
     //  }
+    //  extra( basisSet, quad );
     //}
 
     template <class QuadratureImp, class BasisFunctionSetImp >
@@ -786,8 +792,8 @@ namespace Fem
         basisSetOuter.evaluateAll( qp, std::get<size>(phiFaceNb_[qp.index()]) );
         basisSetOuter.jacobianAll( qp, std::get<size>(dphiFaceNb_[qp.index()]) );
       }
-      //extra<i>( basisSetInner, quadInner );
-      //extra<i>( basisSetOuter, quadOuter );
+      extra( basisSetInner, quadInner );
+      extra( basisSetOuter, quadOuter );
     }
 
     template <class QuadratureImp, class BasisFunctionSetImp >
@@ -802,23 +808,42 @@ namespace Fem
         basisSet.evaluateAll( qp, std::get<size>(phiFaceEn_[qp.index()]) );
         basisSet.jacobianAll( qp, std::get<size>(dphiFaceEn_[qp.index()]) );
       }
-      //extra<i>( basisSet, quadInner );
+      extra( basisSet, quadInner );
     }
 
-    template< int i, class QuadratureImp, class BasisFunctionSetImp  >
-    void extra( const BasisFunctionSetImp basisSet,
-                const QuadratureImp &quad )
+    template< int i >
+    struct Extra
     {
-      //std::get<i>(extra_)->localFunction( basisSet.entity() ).evaluateQuadrature( quad, swap(phiFaceEn_[size][i] ) );
-      //std::get<i>(extra_)->localFunction( basisSet.entity() ).evaluateQuadrature( quad, swap(dphiFaceEn_[size][i] ) );
-    }
+      template<class T, class QuadratureImp, class BasisFunctionSetImp, class RangeVal, class JacobianVal >
+      static void apply( T extra, const QuadratureImp& quad, const BasisFunctionSetImp& basisSet, const RangeVal& phi, const JacobianVal& dphi )
+      {
+        std::cout << "reading extra: " << i << std::endl;
+        for( const auto qp : quad )
+        {
+          std::get<i>( extra )->localFunction( basisSet.entity() ).evaluateQuadrature( quad, std::get<i>(phi[qp.index()]) );
+          std::get<i>( extra )->localFunction( basisSet.entity() ).evaluateQuadrature( quad, std::get<i>(dphi[qp.index()]) );
+        }
+      }
+    };
 
-    const ModelType &model() const
+    template< class QuadratureImp, class BasisFunctionSetImp >
+    void extra( const BasisFunctionSetImp basisSet, const QuadratureImp &quad ) const
     {
-      return model_;
+      extraImpl<size>( basisSet, quad );
     }
 
-  private:
+    //empty case
+    template< int s, class QuadratureImp, class BasisFunctionSetImp >
+    void extraImpl( const BasisFunctionSetImp basisSet, const QuadratureImp &quad, typename std::enable_if<(s<=0)>::type* = 0 ) const
+    {}
+
+    //read extra data
+    template< int s, class QuadratureImp, class BasisFunctionSetImp >
+    void extraImpl( const BasisFunctionSetImp basisSet, const QuadratureImp &quad, typename std::enable_if<(s>=1)>::type* = 0 ) const
+    {
+      ForLoop<Extra,0,s-1>::apply( extra_, basisSet, quad, phiFaceEn_, dphiFaceEn_);
+    }
+
     int elementQuadOrder( int polOrder ) const
     {
       return 2*polOrder;

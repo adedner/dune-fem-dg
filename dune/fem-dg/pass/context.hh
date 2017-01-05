@@ -289,45 +289,45 @@ namespace Fem
 
   //maximal access length based on types
   template< class EvalImp >
-  struct EvalAccess
+  struct DefaultAccess
   {
     //fallback: no, we cannot select anything
     typedef Access< false, false, false > type;
   };
 
   template< class Arg >
-  struct EvalAccess<std::vector< Arg > >
+  struct DefaultAccess<std::vector< Arg > >
   {
     typedef Access< true, false, false > type;
   };
 
   template< class Arg >
-  struct EvalAccess<std::vector<std::vector<Arg> > >
+  struct DefaultAccess<std::vector<std::vector<Arg> > >
   {
     typedef Access< true, false, true > type;
   };
 
   template< class... Args >
-  struct EvalAccess<std::vector<std::tuple<Args...> > >
+  struct DefaultAccess<std::vector<std::tuple<Args...> > >
   {
     typedef Access< true, true, true > type;
   };
 
   template< class... Args >
-  struct EvalAccess<std::tuple<Args...> >
+  struct DefaultAccess<std::tuple<Args...> >
   {
     typedef Access< false, true, true > type;
   };
 
 
   template< class... Args >
-  struct EvalAccess<std::vector<Dune::TypeIndexedTuple<Args...> > >
+  struct DefaultAccess<std::vector<Dune::TypeIndexedTuple<Args...> > >
   {
     typedef Access< true, true, false > type;
   };
 
   template< class... Args >
-  struct EvalAccess<Dune::TypeIndexedTuple<Args...> >
+  struct DefaultAccess<Dune::TypeIndexedTuple<Args...> >
   {
     typedef Access< false, true, false > type;
   };
@@ -719,7 +719,7 @@ namespace Fem
    * needing a local evaluation of a discrete function.
    */
 
-  template< class QuadratureContextImp, class RangeType, class JacobianType = RangeType, class AccessImp = typename EvalAccess<RangeType>::type >
+  template< class QuadratureContextImp, class RangeType, class JacobianType = RangeType, class AccessImp = typename DefaultAccess<RangeType>::type >
   class LocalEvaluation
   {
     template <class EvalImp >
