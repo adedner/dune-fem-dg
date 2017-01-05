@@ -15,7 +15,7 @@ namespace Stokes
 {
 
   template< class GridImp>
-  class ProblemInterfaceBase
+  class ProblemInterfaceTraits
   {
   public:
     typedef Dune::Fem::FunctionSpace< double, double, GridImp::dimension, GridImp::dimension > FunctionSpaceType;
@@ -29,14 +29,14 @@ namespace Stokes
   template< class GridImp >
   class ProblemInterface
   {
-    typedef ProblemInterfaceBase< GridImp >        BaseType;
+    typedef ProblemInterfaceTraits< GridImp >            Traits;
   public:
 
-    typedef typename BaseType::FunctionSpaceType         FunctionSpaceType;
-    typedef typename BaseType::PressureFunctionSpaceType PressureFunctionSpaceType;
+    typedef typename Traits::FunctionSpaceType           FunctionSpaceType;
+    typedef typename Traits::PressureFunctionSpaceType   PressureFunctionSpaceType;
 
-    typedef typename BaseType::PoissonProblemType        PoissonProblemType;
-    typedef typename BaseType::StokesProblemType         StokesProblemType;
+    typedef typename Traits::PoissonProblemType          PoissonProblemType;
+    typedef typename Traits::StokesProblemType           StokesProblemType;
 
     typedef std::tuple< PoissonProblemType*, StokesProblemType* >         ProblemTupleType;
 

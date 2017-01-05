@@ -21,15 +21,14 @@ namespace Stokes
    */
   template< class GridImp>
   class ProblemDefault
-    : public ProblemInterfaceBase< GridImp >
   {
-    typedef ProblemInterfaceBase< GridImp >        BaseType;
+    typedef ProblemInterfaceTraits< GridImp >            Traits;
 
-    typedef typename BaseType::FunctionSpaceType         FunctionSpaceType;
-    typedef typename BaseType::PressureFunctionSpaceType PressureFunctionSpaceType;
+    typedef typename Traits::FunctionSpaceType           FunctionSpaceType;
+    typedef typename Traits::PressureFunctionSpaceType   PressureFunctionSpaceType;
 
-    typedef typename BaseType::PoissonProblemType        PoissonProblemBaseType;
-    typedef typename BaseType::StokesProblemType         StokesProblemBaseType;
+    typedef typename Traits::PoissonProblemType          PoissonProblemBaseType;
+    typedef typename Traits::StokesProblemType           StokesProblemBaseType;
 
   public:
 
@@ -154,15 +153,14 @@ namespace Stokes
    */
   template< class GridImp>
   class ProblemPeriodic
-    : public ProblemInterfaceBase< GridImp >
   {
-    typedef ProblemInterfaceBase< GridImp >        BaseType;
+    typedef ProblemInterfaceTraits< GridImp >            Traits;
 
-    typedef typename BaseType::FunctionSpaceType         FunctionSpaceType;
-    typedef typename BaseType::PressureFunctionSpaceType PressureFunctionSpaceType;
+    typedef typename Traits::FunctionSpaceType           FunctionSpaceType;
+    typedef typename Traits::PressureFunctionSpaceType   PressureFunctionSpaceType;
 
-    typedef typename BaseType::PoissonProblemType        PoissonProblemBaseType;
-    typedef typename BaseType::StokesProblemType         StokesProblemBaseType;
+    typedef typename Traits::PoissonProblemType          PoissonProblemBaseType;
+    typedef typename Traits::StokesProblemType           StokesProblemBaseType;
 
   public:
 
@@ -291,15 +289,14 @@ namespace Stokes
    */
   template< class GridImp>
   class GeneralizedProblem
-    : public ProblemInterfaceBase< GridImp >
   {
-    typedef ProblemInterfaceBase< GridImp >        BaseType;
+    typedef ProblemInterfaceTraits< GridImp >            Traits;
 
-    typedef typename BaseType::FunctionSpaceType         FunctionSpaceType;
-    typedef typename BaseType::PressureFunctionSpaceType PressureFunctionSpaceType;
+    typedef typename Traits::FunctionSpaceType           FunctionSpaceType;
+    typedef typename Traits::PressureFunctionSpaceType   PressureFunctionSpaceType;
 
-    typedef typename BaseType::PoissonProblemType        PoissonProblemBaseType;
-    typedef typename BaseType::StokesProblemType         StokesProblemBaseType;
+    typedef typename Traits::PoissonProblemType          PoissonProblemBaseType;
+    typedef typename Traits::StokesProblemType           StokesProblemBaseType;
   public:
 
     class PoissonProblem
@@ -433,15 +430,14 @@ namespace Stokes
    */
   template< class GridImp>
   class DrivenCavityProblem
-    : public ProblemInterfaceBase< GridImp >
   {
-    typedef ProblemInterfaceBase< GridImp >        BaseType;
+    typedef ProblemInterfaceTraits< GridImp >            Traits;
 
-    typedef typename BaseType::FunctionSpaceType         FunctionSpaceType;
-    typedef typename BaseType::PressureFunctionSpaceType PressureFunctionSpaceType;
+    typedef typename Traits::FunctionSpaceType           FunctionSpaceType;
+    typedef typename Traits::PressureFunctionSpaceType   PressureFunctionSpaceType;
 
-    typedef typename BaseType::PoissonProblemType        PoissonProblemBaseType;
-    typedef typename BaseType::StokesProblemType         StokesProblemBaseType;
+    typedef typename Traits::PoissonProblemType          PoissonProblemBaseType;
+    typedef typename Traits::StokesProblemType           StokesProblemBaseType;
   public:
 
     class PoissonProblem
