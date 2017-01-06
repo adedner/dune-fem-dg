@@ -1,6 +1,8 @@
 #ifndef PRIMALMATRIXASSEMBLY_HH
 #define PRIMALMATRIXASSEMBLY_HH
 
+#include <dune/common/hybridutilities.hh>
+
 #include <dune/fem/quadrature/intersectionquadrature.hh>
 #include <dune/fem/function/common/gridfunctionadapter.hh>
 #include <dune/fem/misc/fmatrixconverter.hh>
@@ -811,37 +813,19 @@ namespace Fem
       extra( basisSet, quadInner );
     }
 
-    template< int i >
-    struct Extra
+    template< class QuadratureImp, class BasisFunctionSetImp >
+    void extra( const BasisFunctionSetImp basisSet, const QuadratureImp &quad ) const
     {
-      template<class T, class QuadratureImp, class BasisFunctionSetImp, class RangeVal, class JacobianVal >
-      static void apply( T extra, const QuadratureImp& quad, const BasisFunctionSetImp& basisSet, const RangeVal& phi, const JacobianVal& dphi )
+      Dune::Hybrid::forEach(*extra_,
+      [&](auto i)
       {
         std::cout << "reading extra: " << i << std::endl;
         for( const auto qp : quad )
         {
-          std::get<i>( extra )->localFunction( basisSet.entity() ).evaluateQuadrature( quad, std::get<i>(phi[qp.index()]) );
-          std::get<i>( extra )->localFunction( basisSet.entity() ).evaluateQuadrature( quad, std::get<i>(dphi[qp.index()]) );
+          std::get<i>( extra )->localFunction( basisSet.entity() ).evaluateQuadrature( quad, std::get<i>(phiFaceEn_[qp.index()]) );
+          std::get<i>( extra )->localFunction( basisSet.entity() ).evaluateQuadrature( quad, std::get<i>(dphiFaceEn_[qp.index()]) );
         }
-      }
-    };
-
-    template< class QuadratureImp, class BasisFunctionSetImp >
-    void extra( const BasisFunctionSetImp basisSet, const QuadratureImp &quad ) const
-    {
-      extraImpl<size>( basisSet, quad );
-    }
-
-    //empty case
-    template< int s, class QuadratureImp, class BasisFunctionSetImp >
-    void extraImpl( const BasisFunctionSetImp basisSet, const QuadratureImp &quad, typename std::enable_if<(s<=0)>::type* = 0 ) const
-    {}
-
-    //read extra data
-    template< int s, class QuadratureImp, class BasisFunctionSetImp >
-    void extraImpl( const BasisFunctionSetImp basisSet, const QuadratureImp &quad, typename std::enable_if<(s>=1)>::type* = 0 ) const
-    {
-      ForLoop<Extra,0,s-1>::apply( extra_, basisSet, quad, phiFaceEn_, dphiFaceEn_);
+      } );
     }
 
     int elementQuadOrder( int polOrder ) const
