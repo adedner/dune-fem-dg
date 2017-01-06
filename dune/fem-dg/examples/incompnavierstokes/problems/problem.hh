@@ -16,6 +16,7 @@ namespace Fem
 
   struct ProblemToEvolutionInterface
   {
+
     ProblemToEvolutionInterface()
       : time_( 0 ),
         deltaT_( 0 )
@@ -146,7 +147,7 @@ namespace Fem
   };
 
   template< class GridImp>
-  class NavierStokesProblemInterfaceBase
+  class NavierStokesProblemInterfaceTraits
   {
   public:
     typedef Dune::Fem::FunctionSpace< double, double, GridImp::dimension, GridImp::dimension > FunctionSpaceType;
@@ -162,15 +163,15 @@ namespace Fem
   template< class GridImp >
   class NavierStokesProblemInterface
   {
-    typedef NavierStokesProblemInterfaceBase< GridImp >        BaseType;
+    typedef NavierStokesProblemInterfaceTraits< GridImp > Traits;
   public:
 
-    typedef typename BaseType::FunctionSpaceType         FunctionSpaceType;
-    typedef typename BaseType::PressureFunctionSpaceType PressureFunctionSpaceType;
+    typedef typename Traits::FunctionSpaceType             FunctionSpaceType;
+    typedef typename Traits::PressureFunctionSpaceType     PressureFunctionSpaceType;
 
-    typedef typename BaseType::PoissonProblemType        PoissonProblemType;
-    typedef typename BaseType::StokesProblemType         StokesProblemType;
-    typedef typename BaseType::NavierStokesProblemType   NavierStokesProblemType;
+    typedef typename Traits::PoissonProblemType            PoissonProblemType;
+    typedef typename Traits::StokesProblemType             StokesProblemType;
+    typedef typename Traits::NavierStokesProblemType       NavierStokesProblemType;
 
     typedef std::tuple< PoissonProblemType*, StokesProblemType*, NavierStokesProblemType* >         ProblemTupleType;
 
@@ -252,16 +253,15 @@ namespace Fem
 
   template< class GridImp>
   class NavierStokesProblemDefault
-    : public NavierStokesProblemInterfaceBase< GridImp >
   {
-    typedef NavierStokesProblemInterfaceBase< GridImp >    BaseType;
+    typedef NavierStokesProblemInterfaceTraits< GridImp >  Traits;
 
-    typedef typename BaseType::FunctionSpaceType           FunctionSpaceType;
-    typedef typename BaseType::PressureFunctionSpaceType   PressureFunctionSpaceType;
+    typedef typename Traits::FunctionSpaceType             FunctionSpaceType;
+    typedef typename Traits::PressureFunctionSpaceType     PressureFunctionSpaceType;
 
-    typedef typename BaseType::PoissonProblemType          PoissonProblemBaseType;
-    typedef typename BaseType::StokesProblemType           StokesProblemBaseType;
-    typedef typename BaseType::NavierStokesProblemType     NavierStokesProblemBaseType;
+    typedef typename Traits::PoissonProblemType            PoissonProblemBaseType;
+    typedef typename Traits::StokesProblemType             StokesProblemBaseType;
+    typedef typename Traits::NavierStokesProblemType       NavierStokesProblemBaseType;
 
     class PoissonProblem
       : public PoissonProblemBaseType
