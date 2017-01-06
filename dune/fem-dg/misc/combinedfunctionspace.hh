@@ -64,15 +64,15 @@ namespace Fem
     template< int i >
     struct SubFunctionSpace
     {
-      typedef typename std::tuple_element< i, FunctionSpaceTupleType >::type::DomainFieldType         DomainFieldType;
-      typedef typename std::tuple_element< i, FunctionSpaceTupleType >::type::RangeFieldType          RangeFieldType;
-      static const int dimDomain = std::tuple_element< i, FunctionSpaceTupleType >::type::dimDomain;
-      static const int dimRange = std::tuple_element< i, FunctionSpaceTupleType >::type::dimRange;
-      typedef typename std::tuple_element< i, FunctionSpaceTupleType >::type::DomainType              DomainType;
-      typedef typename std::tuple_element< i, FunctionSpaceTupleType >::type::RangeType               RangeType;
-      typedef typename std::tuple_element< i, FunctionSpaceTupleType >::type::JacobianRangeType       JacobianRangeType;
-      typedef typename std::tuple_element< i, FunctionSpaceTupleType >::type::ScalarFunctionSpaceType ScalarFunctionSpaceType;
-      typedef typename std::tuple_element< i, FunctionSpaceTupleType >::type::HessianRangeType        HessianRangeType;
+      typedef typename std::tuple_element_t< i, FunctionSpaceTupleType >::DomainFieldType         DomainFieldType;
+      typedef typename std::tuple_element_t< i, FunctionSpaceTupleType >::RangeFieldType          RangeFieldType;
+      static const int dimDomain = std::tuple_element_t< i, FunctionSpaceTupleType >::dimDomain;
+      static const int dimRange = std::tuple_element_t< i, FunctionSpaceTupleType >::dimRange;
+      typedef typename std::tuple_element_t< i, FunctionSpaceTupleType >::DomainType              DomainType;
+      typedef typename std::tuple_element_t< i, FunctionSpaceTupleType >::RangeType               RangeType;
+      typedef typename std::tuple_element_t< i, FunctionSpaceTupleType >::JacobianRangeType       JacobianRangeType;
+      typedef typename std::tuple_element_t< i, FunctionSpaceTupleType >::ScalarFunctionSpaceType ScalarFunctionSpaceType;
+      typedef typename std::tuple_element_t< i, FunctionSpaceTupleType >::HessianRangeType        HessianRangeType;
     };
     typedef ThisType FunctionSpaceType;
   };

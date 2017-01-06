@@ -36,7 +36,7 @@ namespace Fem
   struct SteadyStateTraits
   {
     // type of Grid
-    typedef typename std::tuple_element<0, std::tuple< ProblemTraits... > >::type::GridType
+    typedef typename std::tuple_element_t<0, std::tuple< ProblemTraits... > >::GridType
                                                                            GridType;
 
     typedef std::tuple< typename std::add_lvalue_reference<typename ProblemTraits::GridType>::type ... >

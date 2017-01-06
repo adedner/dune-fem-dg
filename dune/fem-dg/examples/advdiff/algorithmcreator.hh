@@ -193,7 +193,7 @@ namespace Fem
 
       //Global container
 #ifdef VELO
-      typedef typename std::tuple_element< 0, typename SubAdvectionDiffusionAlgorithmCreator<ACAdvDiff>::template DiscreteTraits<polOrd>::ExtraParameters >::type ExtraDF;
+      typedef std::tuple_element_t< 0, typename SubAdvectionDiffusionAlgorithmCreator<ACAdvDiff>::template DiscreteTraits<polOrd>::ExtraParameters > ExtraDF;
       typedef GlobalContainer< Item2TupleType, Item1TupleType, SubOrderRowType, SubOrderColType, ExtraType, DFType, ExtraDF >
 #else
       typedef GlobalContainer< Item2TupleType, Item1TupleType, SubOrderRowType, SubOrderColType, ExtraType, DFType >

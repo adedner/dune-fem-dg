@@ -44,10 +44,10 @@ namespace Fem
     static const int size = std::tuple_size< DiscreteFunctionTupleImp >::value;
 
     template< std::size_t i, std::size_t j >
-    using DomainDiscreteFunction = typename std::tuple_element< j, DiscreteFunctionTupleImp >::type;
+    using DomainDiscreteFunction = std::tuple_element_t< j, DiscreteFunctionTupleImp >;
 
     template< std::size_t i, std::size_t j >
-    using RangeDiscreteFunction = typename std::tuple_element< i, DiscreteFunctionTupleImp >::type;
+    using RangeDiscreteFunction = std::tuple_element_t< i, DiscreteFunctionTupleImp >;
 
     template< std::size_t i, std::size_t j >
     using Matrix = MatrixContainerImp< typename DomainDiscreteFunction<i,j>::DiscreteFunctionSpaceType,
@@ -62,7 +62,7 @@ namespace Fem
 
     ////todo improve
     //template< std::size_t i, std::size_t j >
-    //using OperatorType = std::tuple_element< i, OperatorTupleImp >::type;
+    //using OperatorType = std::tuple_element_t< i, OperatorTupleImp >;
 
 #if HAVE_ISTL
     ////todo allow multitype block matrix from istl!

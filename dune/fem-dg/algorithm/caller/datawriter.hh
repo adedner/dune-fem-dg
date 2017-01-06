@@ -61,8 +61,7 @@ namespace Fem
 
     static_assert( std::tuple_size< TupleType >::value>=1, "Empty Tuples not allowed..." );
 
-    typedef typename std::tuple_element< 0, TupleType >::type::element_type::GridType
-                                                                                    GridType;
+    typedef typename std::tuple_element_t< 0, TupleType >::element_type::GridType  GridType;
 
   public:
     typedef typename IOTupleExtractor< TupleType >::type                           IOTupleType;

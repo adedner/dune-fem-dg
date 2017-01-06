@@ -16,13 +16,13 @@ namespace Fem
   template< class OrderHead, class... Args >
   struct SubOrderSelect< std::tuple<OrderHead>,std::tuple<Args...> >
   {
-    typedef std::tuple< typename std::tuple_element<OrderHead::value,std::tuple<Args...> >::type > type;
+    typedef std::tuple< std::tuple_element_t<OrderHead::value,std::tuple<Args...> > > type;
   };
 
   template< class OrderHead, class... OrderArgs, class... Args >
   struct SubOrderSelect< std::tuple<OrderHead, OrderArgs...>,std::tuple<Args...> >
   {
-    typedef typename tuple_concat< std::tuple< typename std::tuple_element<OrderHead::value,std::tuple<Args...> >::type >,
+    typedef typename tuple_concat< std::tuple< std::tuple_element_t<OrderHead::value,std::tuple<Args...> > >,
                                    typename SubOrderSelect< std::tuple<OrderArgs...>, std::tuple<Args...> >::type >::type
                                                                                                                      type;
   };
@@ -149,11 +149,11 @@ namespace Fem
     static_assert( size1 == size2, "Item2TupleImp and Item1TupleImp has to contain the same numbers of elements." );
 
     template< unsigned long int i >
-    using ContainerItem = TwoArgContainer< ArgContainerArgWrapper< typename std::tuple_element<i, std::tuple<Item2TupleImp...> >::type >::template _t2Inv,
-                                           ArgContainerArgWrapper< typename std::tuple_element<i, std::tuple<Item1TupleImp...> >::type >::template _t1,
-                                           ArgContainerArgWrapper< typename std::tuple_element<i, std::tuple<Item1TupleImp...> >::type >::template _t1,
-                                           typename SubOrderSelect< typename std::tuple_element<i,std::tuple<SubOrderRowImp...> >::type, std::tuple< DiscreteFunctions...> >::type,
-                                           typename SubOrderSelect< typename std::tuple_element<i,std::tuple<SubOrderColImp...> >::type, std::tuple< DiscreteFunctions...> >::type >;
+    using ContainerItem = TwoArgContainer< ArgContainerArgWrapper< std::tuple_element_t<i, std::tuple<Item2TupleImp...> > >::template _t2Inv,
+                                           ArgContainerArgWrapper< std::tuple_element_t<i, std::tuple<Item1TupleImp...> > >::template _t1,
+                                           ArgContainerArgWrapper< std::tuple_element_t<i, std::tuple<Item1TupleImp...> > >::template _t1,
+                                           typename SubOrderSelect< std::tuple_element_t<i,std::tuple<SubOrderRowImp...> >, std::tuple< DiscreteFunctions...> >::type,
+                                           typename SubOrderSelect< std::tuple_element_t<i,std::tuple<SubOrderColImp...> >, std::tuple< DiscreteFunctions...> >::type >;
 
     template< unsigned long int i >
     using SharedContainerItem = std::shared_ptr< ContainerItem<i> >;
@@ -211,7 +211,7 @@ namespace Fem
     template< unsigned long int i >
     decltype(auto) extra( _index<i> index ) const
     {
-      typedef typename std::tuple_element<i,std::tuple< ExtraArgs... > >::type ExtraArgType;
+      typedef std::tuple_element_t<i,std::tuple< ExtraArgs... > > ExtraArgType;
       return ExtraArgType::init( *this );
     }
 
@@ -260,21 +260,21 @@ namespace Fem
     static const int size = std::tuple_size< RowItem1TupleImp >::value;
 
     template< unsigned long int i >
-    using Item2TupleItem = typename std::tuple_element<i,Item2TupleImp>::type;
+    using Item2TupleItem = std::tuple_element_t<i,Item2TupleImp>;
 
     template< unsigned long int i >
-    using RowItem1TupleItem = typename std::tuple_element<i,RowItem1TupleImp>::type;
+    using RowItem1TupleItem = std::tuple_element_t<i,RowItem1TupleImp>;
 
     template< unsigned long int i >
-    using ColItem1TupleItem = typename std::tuple_element<i,ColItem1TupleImp>::type;
+    using ColItem1TupleItem = std::tuple_element_t<i,ColItem1TupleImp>;
 
 
     template< unsigned long int i >
     using ContainerItem = TwoArgContainer< Item2TupleItem<i>::template _t2,
                                            RowItem1TupleItem<i>::template _t1,
                                            ColItem1TupleItem<i>::template _t1,
-                                           typename SubOrderSelect< typename std::tuple_element<i,std::tuple<SubOrderRowImp...> >::type, std::tuple< DiscreteFunctions...> >::type,
-                                           typename SubOrderSelect< typename std::tuple_element<i,std::tuple<SubOrderColImp...> >::type, std::tuple< DiscreteFunctions...> >::type >;
+                                           typename SubOrderSelect< std::tuple_element_t<i,std::tuple<SubOrderRowImp...> >, std::tuple< DiscreteFunctions...> >::type,
+                                           typename SubOrderSelect< std::tuple_element_t<i,std::tuple<SubOrderColImp...> >, std::tuple< DiscreteFunctions...> >::type >;
 
     template< unsigned long int i >
     using SharedContainerItem = std::shared_ptr< ContainerItem<i> >;
@@ -331,7 +331,7 @@ namespace Fem
     template< unsigned long int i >
     decltype(auto) extra( _index<i> index )
     {
-      typedef typename std::tuple_element<i,std::tuple< ExtraArgs... > >::type ExtraArgType;
+      typedef std::tuple_element_t<i,std::tuple< ExtraArgs... > > ExtraArgType;
       return ExtraArgType::init( *this );
     }
 

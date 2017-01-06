@@ -82,7 +82,7 @@ namespace Fem
 
     typedef uint64_t                                                                           UInt64Type;
 
-    typedef typename std::tuple_element< 0, TupleType >::type::element_type::GridType          GridType;
+    typedef typename std::tuple_element_t< 0, TupleType >::element_type::GridType              GridType;
 
 
     typedef typename RPDefaultTupleExtractor< TupleType >::type                                RestrictionProlongationType;

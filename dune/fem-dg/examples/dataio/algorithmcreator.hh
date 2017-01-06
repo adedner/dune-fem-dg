@@ -52,7 +52,7 @@ namespace Fem
   struct CheckPointEvolutionAlgorithmTraits
   {
     // type of Grid
-    typedef typename std::tuple_element<0, std::tuple< ProblemTraits... > >::type::GridType  GridType;
+    typedef typename std::tuple_element_t<0, std::tuple< ProblemTraits... > >::GridType  GridType;
 
     // wrap operator
     typedef Dune::Fem::GridTimeProvider< GridType >                                          TimeProviderType;

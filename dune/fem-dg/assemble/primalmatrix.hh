@@ -24,13 +24,13 @@ namespace Fem
   template <class Tuple, unsigned long int... i >
   struct InsertFunctionTuple< Tuple, std::integer_sequence< unsigned long int, i...> >
   {
-    typedef std::tuple< std::shared_ptr< typename std::tuple_element< i, Tuple >::type >... > type;
+    typedef std::tuple< std::shared_ptr< std::tuple_element_t< i, Tuple > >... > type;
 
     template< class... AddRanges >
-    using RangeTypes = typename tuple_concat< std::tuple< typename std::tuple_element< i, Tuple >::RangeType... >, std::tuple< std::vector< AddRanges >... > >::type;
+    using RangeTypes = typename tuple_concat< std::tuple< typename std::tuple_element_t< i, Tuple >::RangeType... >, std::tuple< std::vector< AddRanges >... > >::type;
 
     template< class... AddRanges >
-    using JacobianRangeTypes = typename tuple_concat< std::tuple< typename std::tuple_element< i, Tuple >::JacobianRangeType... >, std::tuple< std::vector< AddRanges >... > >::type;
+    using JacobianRangeTypes = typename tuple_concat< std::tuple< typename std::tuple_element_t< i, Tuple >::JacobianRangeType... >, std::tuple< std::vector< AddRanges >... > >::type;
 
     template< class ExtraArgImp >
     static decltype(auto) create( const std::shared_ptr< ExtraArgImp >& tuple )

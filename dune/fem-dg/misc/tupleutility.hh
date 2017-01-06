@@ -51,7 +51,7 @@ namespace Fem
   {
     static_assert( sizeof ... ( Args ) > 0,
                    "tuple_head<> needs at least one template argument" );
-    typedef typename std::tuple_element< 0, std::tuple< Args... > >::type type;
+    typedef std::tuple_element_t< 0, std::tuple< Args... > > type;
   };
 
  // /**
@@ -152,7 +152,7 @@ namespace Fem
   template< class FullTupleImp, std::size_t... i >
   struct tuple_reducer< FullTupleImp, std::index_sequence< i... > >
   {
-    typedef std::tuple< typename std::tuple_element< i, FullTupleImp >::type... > type;
+    typedef std::tuple< std::tuple_element_t< i, FullTupleImp >... > type;
 
     static type apply( const FullTupleImp& tuple )
     {
@@ -166,7 +166,7 @@ namespace Fem
   template< class FullTupleImp, int... i >
   struct tuple_reducer< FullTupleImp, std::integer_sequence< int, i... > >
   {
-    typedef std::tuple< typename std::tuple_element< i, FullTupleImp >::type... > type;
+    typedef std::tuple< std::tuple_element_t< i, FullTupleImp >... > type;
 
     static type apply( const FullTupleImp& tuple )
     {
@@ -182,7 +182,7 @@ namespace Fem
     template< int I, class T >
     struct get_tuple_element
     {
-      typedef typename std::tuple_element<I,T>::type type;
+      typedef std::tuple_element_t<I,T> type;
     };
 
     //tuple element type getter, specialization
@@ -853,7 +853,7 @@ namespace Fem
    *
    * To access the original template, use (e.g. for the first element of the tuple)
    * \code
-   * typedef typename std::tuple_element<0, Type >::type FirstElementType;
+   * typedef std::tuple_element_t<0, Type >   FirstElementType;
    * template< class... Args >
    * using MyTemplate = FirstElementType::template _tn< Args... >;
    * \endcode
@@ -934,13 +934,13 @@ namespace Fem
      * \brief extracts structure for TwoArgContainer.
      */
     template<class R,class C,int r,int c>
-    struct _t2{ typedef typename std::tuple_element<c,typename std::tuple_element<r,TupleImp>::type>::type::template _tn<R,C>::type type; };
+    struct _t2{ typedef typename std::tuple_element<c,std::tuple_element_t<r,TupleImp> >::type::template _tn<R,C>::type type; };
 
     /**
      * \brief extracts structure for TwoArgContainer, but swaps arguments C and R.
      */
     template<class R,class C,int r,int c>
-    struct _t2Inv{ typedef typename std::tuple_element<c,typename std::tuple_element<r,TupleImp>::type>::type::template _tn<C,R>::type type; };
+    struct _t2Inv{ typedef typename std::tuple_element<c,std::tuple_element_t<r,TupleImp> >::type::template _tn<C,R>::type type; };
 
     /**
      * \brief extracts structure for OneArgContainer.
@@ -1072,7 +1072,7 @@ namespace Fem
     struct _t1
     {
       typedef std::tuple< _index< maps >... > MapsType;
-      typedef typename OneArgImp<R,std::tuple_element<r,MapsType>::type::value>::type type;
+      typedef typename OneArgImp<R,std::tuple_element_t<r,MapsType>::value>::type type;
     };
   };
 
@@ -1105,7 +1105,7 @@ namespace Fem
     {
       typedef std::tuple< _index< rowMaps >... > RowMapsType;
       typedef std::tuple< _index< colMaps >... > ColMapsType;
-      typedef typename TwoArgImp<R,C,std::tuple_element<r,RowMapsType>::type::value,std::tuple_element<c,ColMapsType>::type::value>::type type;
+      typedef typename TwoArgImp<R,C,std::tuple_element_t<r,RowMapsType>::value,std::tuple_element_t<c,ColMapsType>::value>::type type;
     };
   };
 

@@ -29,7 +29,7 @@ namespace Fem
     static_assert( std::tuple_size<SubAlgorithmTupleType>::value > 0, "We need at least one Sub-Algorithm" );
 
     template< int i >
-    using SubAlgorithm = typename std::tuple_element< i, SubAlgorithmTupleType >::type::element_type;
+    using SubAlgorithm = typename std::tuple_element_t< i, SubAlgorithmTupleType >::element_type;
 
     template< unsigned long int ...i, class GlobalContainerImp  >
     static decltype(auto) apply ( std::index_sequence< i... >, const std::shared_ptr< GlobalContainerImp >& cont )

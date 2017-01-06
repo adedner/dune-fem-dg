@@ -55,7 +55,7 @@ namespace Fem
       typedef InsertFunctions< Tuple, StartPassImp, i-1 >                        PreviousInsertFunctions;
       typedef typename PreviousInsertFunctions::PassType                         PreviousPass;
 
-      typedef typename std::tuple_element< i-1, Tuple >::type                    DiscreteFunction;
+      typedef std::tuple_element_t< i-1, Tuple >                                 DiscreteFunction;
 
       typedef Dune::Fem::InsertFunctionPass< DiscreteFunction, PreviousPass, i-1 > PassType;
 
@@ -67,7 +67,7 @@ namespace Fem
         static_assert( i <= size,
                        "Not enough Discrete Function Type in container!");
 
-        //static_assert( std::is_same<std::tuple_element<i-1,ExtraArgImp>,std::tuple_element<i-1,Tuple> >::value,
+        //static_assert( std::is_same<std::tuple_element_t<i-1,ExtraArgImp>,std::tuple_element_t<i-1,Tuple> >::value,
         //               "Discrete Function Type has to have the same type!");
 
         auto previousPass = PreviousInsertFunctions::createPass( tuple );

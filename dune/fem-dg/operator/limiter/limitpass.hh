@@ -634,10 +634,10 @@ namespace Fem
 
   private:
    typedef typename DiscreteModelType::Selector                          Selector;
-   typedef typename std::tuple_element< 0, Selector >::type             ArgumentIdType;
+   typedef std::tuple_element_t< 0, Selector >                           ArgumentIdType;
    static const std::size_t argumentPosition
      = Dune::FirstTypeIndex< PassIds, ArgumentIdType >::type::value;
-   typedef typename std::tuple_element< argumentPosition, ArgumentType >::type ArgumentFunctionPtrType;
+   typedef std::tuple_element_t< argumentPosition, ArgumentType >         ArgumentFunctionPtrType;
 
   public:
     typedef typename PreviousPassType::GlobalArgumentType                 ArgumentFunctionType;

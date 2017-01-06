@@ -375,7 +375,7 @@ namespace Fem
     typedef OneArgContainerStore< OneArgImp > OneArgType;
 
     template< unsigned long int i >
-    using Item1 = typename std::tuple_element< i, Item1TupleType>::type::element_type;
+    using Item1 = typename std::tuple_element_t< i, Item1TupleType>::element_type;
 
     static const int numArgs = std::tuple_size< ArgTupleType >::value;
 
@@ -457,7 +457,7 @@ namespace Fem
     template< unsigned long int... i >
     decltype(auto) operator() ( std::tuple< _index<i>... > index ) const
     {
-      typedef std::tuple< typename std::tuple_element<i,ArgTupleType>::type...> NewArgTupleType;
+      typedef std::tuple< std::tuple_element_t<i,ArgTupleType>...> NewArgTupleType;
 
       typedef std::tuple< _index<i>... > Maps;
 
@@ -515,7 +515,7 @@ namespace Fem
     typedef TwoArgContainerStore< TwoArgImp >    TwoArgType;
 
     template< unsigned long int i, unsigned long int j >
-    using Item2 = typename std::tuple_element< j, typename std::tuple_element< i, Item2TupleType>::type >::type::element_type;
+    using Item2 = typename std::tuple_element_t< j, std::tuple_element_t< i, Item2TupleType> >::element_type;
 
     using BaseType::operator();
 
@@ -621,8 +621,8 @@ namespace Fem
     template< unsigned long int... i, unsigned long int... j >
     decltype(auto) operator() ( std::tuple< _index<i>... > row, std::tuple< _index<j>... > col ) const
     {
-      typedef std::tuple< typename std::tuple_element<i,RowArgTupleType>::type...> NewRowArgTupleType;
-      typedef std::tuple< typename std::tuple_element<j,ColArgTupleType>::type...> NewColArgTupleType;
+      typedef std::tuple< std::tuple_element_t<i,RowArgTupleType>...>   NewRowArgTupleType;
+      typedef std::tuple< std::tuple_element_t<j,ColArgTupleType>...>   NewColArgTupleType;
 
       typedef std::tuple< _index<i>... >                                RowMaps;
       typedef std::tuple< _index<j>... >                                ColMaps;
@@ -670,7 +670,7 @@ namespace Fem
     typedef std::tuple< Args... >                    ArgTupleType;
   public:
     template< unsigned long int i >
-    using Item = typename std::tuple_element<i,ArgTupleType>::type;
+    using Item = std::tuple_element_t<i,ArgTupleType>;
 
     static const int size = std::tuple_size< ArgTupleType >::value;
 
@@ -741,7 +741,7 @@ namespace Fem
     typedef std::tuple< Args... >                    ArgTupleType;
   public:
     template< unsigned long int i >
-    using Access = typename std::tuple_element< i, ArgTupleType>::type;
+    using Access = std::tuple_element_t< i, ArgTupleType>;
 
   protected:
   public:
