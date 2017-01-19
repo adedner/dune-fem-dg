@@ -478,11 +478,11 @@ namespace Fem
       PressureRangeType uNormal(0.);
       RangeType pNormal(0.);
 
-      LocalPressureGradMatType  nbPressGrad=pressureGradMatrix_->localMatrix(nb,en);
-      LocalPressureDivMatType   nbPressDiv=pressureDivMatrix_->localMatrix(nb,en);
+      LocalPressureGradMatType  nbPGrad=pressureGradMatrix_->localMatrix(nb,en);
+      LocalPressureDivMatType   nbPDiv=pressureDivMatrix_->localMatrix(nb,en);
 
 #if PRESSURESTABILIZATION
-      LocalPressureStabMatType  nbPressStab=pressureStabMatrix_->localMatrix(nb,en);
+      LocalPressureStabMatType  nbPStab=pressureStabMatrix_->localMatrix(nb,en);
 #endif
       //for( const auto qpp : faceQuad )
       //{
@@ -531,7 +531,7 @@ namespace Fem
               for(unsigned int m=0;m<numPBaseFunctionsEn;++m)
               {
                 double PSM_nb=pEn[m]*pEn[n]*weight*d11_;
-                nbPressStab.add(m,n,PSM_nb);
+                nbPStab.add(m,n,PSM_nb);
               }
               for(unsigned int m=0;m<numPBaseFunctionsNb;++m)
               {
@@ -555,7 +555,7 @@ namespace Fem
             pNormal*=pNb[n][0];
             double PGM_nb=(uEn[j]*pNormal*weight);
             PGM_nb*=0.5;
-            nbPressGrad.add(j,n,PGM_nb);
+            nbPGrad.add(j,n,PGM_nb);
           }
         }
 
@@ -570,7 +570,7 @@ namespace Fem
             uNormal[0]=uNb[j]*normal;
             double PDM_nb =( pEn[n]*uNormal[0])*weight;
             PDM_nb*=-0.5;
-            nbPressDiv.add(n,j,PDM_nb);
+            nbPDiv.add(n,j,PDM_nb);
 
 #if PRESSURESTABILIZATION
             if(j==0)
@@ -581,7 +581,7 @@ namespace Fem
               for(unsigned int m=0;m<numPBaseFunctionsEn;++m)
               {
                 double PSM_nb=pEn[m]*pEn[n]*weight*d11_;
-                nbPressStab.add(m,n,PSM_nb);
+                nbPStab.add(m,n,PSM_nb);
               }
               for(unsigned int m=0;m<numPBaseFunctionsNb;++m)
               {

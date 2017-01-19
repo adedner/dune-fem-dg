@@ -100,23 +100,23 @@ namespace Fem
     enum { advection = enableAdvection };
     enum { evaluateJacobian = false };
 
-    typedef typename Traits :: GridPartType                            GridPartType;
-    typedef typename Traits :: GridType                                GridType;
-    typedef typename Traits :: DiscreteFunctionSpaceType               DiscreteFunctionSpaceType;
+    typedef typename Traits::GridPartType                            GridPartType;
+    typedef typename Traits::GridType                                GridType;
+    typedef typename Traits::DiscreteFunctionSpaceType               DiscreteFunctionSpaceType;
 
-    typedef typename GridPartType :: IntersectionIteratorType          IntersectionIteratorType;
-    typedef typename GridPartType :: IntersectionType                  IntersectionType;
-    typedef typename BaseType :: EntityType                            EntityType;
-    typedef typename DiscreteFunctionSpaceType :: FunctionSpaceType    FunctionSpaceType;
-    typedef typename FunctionSpaceType :: RangeFieldType               RangeFieldType;
-    typedef typename FunctionSpaceType :: DomainFieldType              DomainFieldType;
-    typedef typename FunctionSpaceType :: DomainType                   DomainType;
-    typedef typename FunctionSpaceType :: RangeType                    RangeType;
-    typedef typename FunctionSpaceType :: JacobianRangeType            JacobianRangeType;
+    typedef typename GridPartType::IntersectionIteratorType          IntersectionIteratorType;
+    typedef typename GridPartType::IntersectionType                  IntersectionType;
+    typedef typename BaseType::EntityType                            EntityType;
+    typedef typename DiscreteFunctionSpaceType::FunctionSpaceType    FunctionSpaceType;
+    typedef typename FunctionSpaceType::RangeFieldType               RangeFieldType;
+    typedef typename FunctionSpaceType::DomainFieldType              DomainFieldType;
+    typedef typename FunctionSpaceType::DomainType                   DomainType;
+    typedef typename FunctionSpaceType::RangeType                    RangeType;
+    typedef typename FunctionSpaceType::JacobianRangeType            JacobianRangeType;
 
 
     // discrete function storing the adaptation indicator information
-    typedef typename Traits :: AdaptationHandlerType   AdaptationType ;
+    typedef typename Traits::AdaptationHandlerType                   AdaptationType;
 
   public:
     /**

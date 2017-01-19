@@ -239,7 +239,6 @@ namespace Fem
                           const JacobianRangeType& jac,
                           FluxRangeType& A) const
     {
-      auto test = jac[0][0];
       // copy v to A
       A = jac;
 

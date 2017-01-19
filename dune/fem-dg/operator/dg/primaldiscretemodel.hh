@@ -46,12 +46,12 @@ namespace Fem
     static const bool advection = Traits::advection; // true if advection is enabled
     static const bool diffusion = Traits::diffusion; // this should be disabled for LDG
 
-    enum { passUId = Traits :: passUId };
+    enum { passUId = Traits::passUId };
 
-    typedef typename BaseType :: DomainType         DomainType;
+    typedef typename BaseType::DomainType         DomainType;
 
-    typedef typename BaseType :: ModelType          ModelType ;
-    typedef typename BaseType :: AdvectionFluxType  AdvectionFluxType ;
+    typedef typename BaseType::ModelType          ModelType ;
+    typedef typename BaseType::AdvectionFluxType  AdvectionFluxType ;
 
 #if defined TESTOPERATOR
 #warning NO MASSOPERATOR APPLIED
@@ -60,22 +60,22 @@ namespace Fem
     enum { ApplyInverseMassOperator = true };
 #endif
 
-    typedef typename BaseType :: GridPartType                            GridPartType;
-    typedef typename BaseType :: GridType                                GridType;
-    typedef typename BaseType :: IntersectionIteratorType                IntersectionIteratorType;
-    typedef typename BaseType :: IntersectionType                        IntersectionType;
-    typedef typename BaseType :: EntityType                              EntityType;
-    typedef typename BaseType :: RangeFieldType                          RangeFieldType;
-    typedef typename BaseType :: DomainFieldType                         DomainFieldType;
-    typedef typename BaseType :: RangeType                               RangeType;
-    typedef typename BaseType :: JacobianRangeType                       JacobianRangeType;
+    typedef typename BaseType::GridPartType                            GridPartType;
+    typedef typename BaseType::GridType                                GridType;
+    typedef typename BaseType::IntersectionIteratorType                IntersectionIteratorType;
+    typedef typename BaseType::IntersectionType                        IntersectionType;
+    typedef typename BaseType::EntityType                              EntityType;
+    typedef typename BaseType::RangeFieldType                          RangeFieldType;
+    typedef typename BaseType::DomainFieldType                         DomainFieldType;
+    typedef typename BaseType::RangeType                               RangeType;
+    typedef typename BaseType::JacobianRangeType                       JacobianRangeType;
 
-    typedef typename BaseType :: DiscreteFunctionSpaceType DiscreteFunctionSpaceType;
+    typedef typename BaseType::DiscreteFunctionSpaceType DiscreteFunctionSpaceType;
 
     // type of diffusion flux implementation
     typedef typename Traits::DiffusionFluxType                           DiffusionFluxType;
 
-    enum { evaluateJacobian = DiffusionFluxType :: evaluateJacobian  }; // we need to evaluate jacobians here
+    enum { evaluateJacobian = DiffusionFluxType::evaluateJacobian }; // we need to evaluate jacobians here
   public:
     /**
      * \brief constructor

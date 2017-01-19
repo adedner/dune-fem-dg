@@ -58,9 +58,9 @@ namespace Fem
     typedef typename Traits::ModelType                             ModelType;
     typedef typename Traits::DiffusionFluxType                     DiffusionFluxType;
 
-    typedef typename Traits::DiscreteFunctionSpaceType::FunctionSpaceType::DomainType                         DomainType;
-    typedef typename Traits::DiscreteFunctionSpaceType::FunctionSpaceType::RangeType                          RangeType;
-    typedef typename Traits::DiscreteFunctionSpaceType::FunctionSpaceType::JacobianRangeType                  JacobianRangeType;
+    typedef typename Traits::DiscreteFunctionSpaceType::FunctionSpaceType::DomainType        DomainType;
+    typedef typename Traits::DiscreteFunctionSpaceType::FunctionSpaceType::RangeType         RangeType;
+    typedef typename Traits::DiscreteFunctionSpaceType::FunctionSpaceType::JacobianRangeType JacobianRangeType;
     typedef typename Traits::GridType                              GridType;
     typedef typename Traits::GridPartType                          GridPartType;
     typedef typename GridPartType::IntersectionIteratorType        IntersectionIterator;
