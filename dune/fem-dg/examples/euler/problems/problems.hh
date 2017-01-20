@@ -74,8 +74,6 @@ namespace Fem
 
     virtual double endTime () const { return 0.1 ; }
 
-    virtual std::string dataPrefix() const { return "euler" ; }
-
     void bg ( const DomainType&, RangeType& ) const {}
 
     //! methods for gradient based indicator
@@ -161,7 +159,6 @@ namespace Fem
       res[dim+1] = p/(gamma() - 1.0) + 0.5*rho*u_sq;
     }
 
-    std::string dataPrefix() const { return "smooth1d"; }
   };
 
 
@@ -236,7 +233,6 @@ namespace Fem
       return 3;
     }
 
-    std::string dataPrefix() const { return "ffs"; }
   };
 
   /**
@@ -422,7 +418,6 @@ namespace Fem
       ofs.close();
 
     }
-    std::string dataPrefix() const { return myName; }
     std::string myName;
     int flag;
   };
@@ -554,8 +549,6 @@ namespace Fem
 
       ofs.close();
     }
-
-    std::string dataPrefix () const { return myName; }
 
     std::string myName;
   };

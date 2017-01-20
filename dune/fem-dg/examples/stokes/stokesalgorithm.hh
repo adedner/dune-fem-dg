@@ -486,12 +486,6 @@ namespace Fem
     // Choose a suitable GridView
     typedef typename BaseType::GridPartType                         GridPartType;
 
-    // initial data type
-    typedef typename BaseType::ProblemType                          ProblemType;
-
-    // An analytical version of our model
-    typedef typename BaseType::ModelType                            ModelType;
-
     typedef typename BaseType::OperatorType::AssemblerType          AssemblerType;
 
     typedef typename EllipticalAlgorithmType::DiscreteTraits::DiscreteFunctionType
@@ -515,8 +509,7 @@ namespace Fem
 
     typedef typename BaseType::TimeProviderType                     TimeProviderType;
 
-    using BaseType::problem;
-    using BaseType::model;
+    using BaseType::model_;
     using BaseType::name;
     using BaseType::grid;
     using BaseType::rhs;
@@ -536,16 +529,16 @@ namespace Fem
                                  const std::shared_ptr< ExtraArgsImp >& extra )
     : BaseType( (*cont)(std::make_tuple(_1),std::make_tuple(_1 ) ), extra ),
       space_( (*cont)(_1)->solution()->space() ),
-      assembler_( cont, extra, model() ),
+      assembler_( cont, extra, model_ ),
       ellAlg_( (*cont)(std::make_tuple(_0),std::make_tuple(_0)), extra ),
       stokesSolver_( std::make_shared< SolverType >( *cont, ellAlg_ ) ),
-      adaptIndicator_( std::make_unique<AdaptIndicatorType>( cont, ellAlg_.assembler(), assembler_, problem(), BaseType::name() ) )
+      adaptIndicator_( std::make_unique<AdaptIndicatorType>( cont, ellAlg_.assembler(), assembler_, model_.problem(), BaseType::name() ) )
     {
     }
 
     void virtual setTime ( const double time ) override
     {
-      model().setTime( time );
+      model_.setTime( time );
       ellAlg_.setTime( time );
     }
 
@@ -597,7 +590,7 @@ namespace Fem
       ellAlg_.finalize( loop );
 
       //add error
-      model().eocErrors( solution() );
+      model_.eocErrors( solution() );
 
       BaseType::doFinalize( loop );
     }

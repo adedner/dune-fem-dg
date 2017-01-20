@@ -507,15 +507,6 @@ namespace Fem
     }
 
     /**
-     * \brief Returns data prefix for EOC loops (default is loop).
-     */
-    virtual std::string dataPrefix () const
-    {
-      //only dataPrefix from first tuple element
-      return std::get<0>( tuple_ )->problem().dataPrefix();
-    }
-
-    /**
      * \brief Initializes all sub-algorithms.
      *
      * This method calls consecutively `initialize()` for all sub-algorithms.

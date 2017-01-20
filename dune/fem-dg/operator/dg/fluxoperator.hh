@@ -58,6 +58,8 @@ namespace Fem
       typedef typename ToNewSpace< typename Traits::DestinationType >::Type DestinationType;
     };
 
+    typedef Fem::SpaceOperatorInterface< typename Traits::DestinationType > BaseType;
+
   public:
     typedef typename Traits::AdvectionFluxType                        AdvectionFluxType;
     typedef typename Traits::ModelType                                ModelType;
@@ -184,7 +186,7 @@ namespace Fem
       return stream.str();
     }
 
-    const ModelType& model() const { return model_; }
+    using BaseType::discreteModel;
 
   private:
     ModelType           model_;
@@ -307,9 +309,8 @@ namespace Fem
    */
   template< class Traits,
             bool advection = true >
-  class LDGLimitedAdvectionDiffusionOperator :
-    public Fem::SpaceOperatorInterface
-      < typename Traits :: DestinationType >
+  class LDGLimitedAdvectionDiffusionOperator
+   : public Fem::SpaceOperatorInterface< typename Traits::DestinationType >
   {
     // choose ids for the three passes (including start pass) different to the tuple entries
     enum PassIdType { u = Traits::ModelType::modelParameterSize,
@@ -323,6 +324,9 @@ namespace Fem
       typedef typename Traits::ModelType         ModelType;
       typedef typename Traits::DiffusionFluxType FluxType;
     };
+
+    typedef Fem::SpaceOperatorInterface< typename Traits::DestinationType > BaseType;
+
   public:
     typedef typename Traits::ModelType                                  ModelType;
     typedef typename Traits::AvectionFluxType                           AdvectionFluxType;
@@ -492,7 +496,7 @@ namespace Fem
       return stream.str();
     }
 
-    const ModelType& model() const { return model_; }
+    using BaseType::discreteModel;
 
   private:
     ModelType                   model_;

@@ -120,7 +120,7 @@ namespace Fem
     {
       s = 0;
 
-      double dtEst = std::numeric_limits< double > :: max();
+      double dtEst = std::numeric_limits< double >::max();
 
       if ( model_.hasStiffSource() )
       {
@@ -146,7 +146,7 @@ namespace Fem
     void switchUpwind() const
     {
       // reset max time steps
-      BaseType :: switchUpwind() ;
+      BaseType::switchUpwind() ;
       // switch upwind direction if necessary
       diffFlux_.switchUpwind();
     }
@@ -300,7 +300,7 @@ namespace Fem
       /*****************************
        * Advection                 *
        ****************************/
-      BaseType :: analyticalFlux( local, f );
+      BaseType::analyticalFlux( local, f );
 
       /*****************************
        * Diffusion                 *
@@ -389,9 +389,9 @@ namespace Fem
       < OpTraits, enableAdvection, enableDiffusion, passUId >   Traits;
 
     typedef AdvectionDiffusionDGPrimalModelBase< Traits > BaseType ;
-    typedef typename BaseType :: DiffusionFluxType  DiffusionFluxType ;
-    typedef typename BaseType :: ModelType          ModelType ;
-    typedef typename BaseType :: AdvectionFluxType  AdvectionFluxType ;
+    typedef typename BaseType::DiffusionFluxType  DiffusionFluxType ;
+    typedef typename BaseType::ModelType          ModelType ;
+    typedef typename BaseType::AdvectionFluxType  AdvectionFluxType ;
 
     // constructor: do not touch/delegate everything
     template< class ... Args>
@@ -521,7 +521,7 @@ namespace Fem
         return 0.;
 
       // call numerical flux of base type
-      const double ldt = BaseType :: numericalFlux( it, time, faceQuadInner, faceQuadOuter, quadPoint,
+      const double ldt = BaseType::numericalFlux( it, time, faceQuadInner, faceQuadOuter, quadPoint,
                                               uLeft, uRight, jacLeft, jacRight,
                                               gLeft, gRight, gDiffLeft, gDiffRight );
 
@@ -569,7 +569,7 @@ namespace Fem
                         RangeType& gLeft,
                         JacobianRangeType& gDiffLeft ) const
     {
-      const double ldt = BaseType :: boundaryFlux( left, gLeft, gDiffLeft );
+      const double ldt = BaseType::boundaryFlux( left, gLeft, gDiffLeft );
 
       if( diffusion && adaptation_ )
       {
@@ -581,10 +581,10 @@ namespace Fem
 
   protected:
     // defined in AdvectionModel
-    using BaseType :: adaptation_ ;
-    using BaseType :: enIndicator_;
-    using BaseType :: nbIndicator_;
-    using BaseType :: weight_ ;
+    using BaseType::adaptation_ ;
+    using BaseType::enIndicator_;
+    using BaseType::nbIndicator_;
+    using BaseType::weight_ ;
   };
 
 } // end of namespace

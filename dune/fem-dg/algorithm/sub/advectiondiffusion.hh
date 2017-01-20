@@ -37,12 +37,6 @@ namespace Fem
     // Choose a suitable GridView
     typedef typename BaseType::GridPartType                   GridPartType;
 
-    // initial data type
-    typedef typename BaseType::ProblemType                    ProblemType;
-
-    // An analytical version of our model
-    typedef typename BaseType::ModelType                      ModelType;
-
     // The DG space operator
     // The first operator is sum of the other two
     // The other two are needed for semi-implicit time discretization
@@ -70,20 +64,21 @@ namespace Fem
 
     using BaseType::grid;
     using BaseType::solution;
-    using BaseType::problem;
-    using BaseType::model;
     using BaseType::name;
 
+  protected:
+    using BaseType::model_;
+  public:
     typedef typename BaseType::ContainerType                  ContainerType;
 
     template< class ContainerImp, class ExtraArgsImp >
     SubAdvectionDiffusionAlgorithm( const std::shared_ptr< ContainerImp >& cont,
                                     const std::shared_ptr< ExtraArgsImp >& extra )
     : BaseType( cont, extra ),
-      operator_( std::make_unique< OperatorType >( solution().space().gridPart(), model(), extra, name() ) ),
-      advectionOperator_( std::make_unique< ExplicitOperatorType >( solution().space().gridPart(), model(), extra, name() ) ),
-      diffusionOperator_( std::make_unique< ImplicitOperatorType >( solution().space().gridPart(), model(), extra, name() ) ),
-      adaptIndicator_( std::make_unique< AdaptIndicatorOptional<AdaptIndicatorType> >( solution(), model(), extra, name() ) )
+      operator_( std::make_unique< OperatorType >( solution().space().gridPart(), model_, extra, name() ) ),
+      advectionOperator_( std::make_unique< ExplicitOperatorType >( solution().space().gridPart(), model_, extra, name() ) ),
+      diffusionOperator_( std::make_unique< ImplicitOperatorType >( solution().space().gridPart(), model_, extra, name() ) ),
+      adaptIndicator_( std::make_unique< AdaptIndicatorOptional<AdaptIndicatorType> >( solution(), model_, extra, name() ) )
     {}
 
     virtual AdaptIndicatorType* adaptIndicator ()

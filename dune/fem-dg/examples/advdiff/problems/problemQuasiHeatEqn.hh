@@ -151,12 +151,6 @@ namespace Fem
     }
 
 
-    // return prefix for data loops
-    virtual std::string dataPrefix() const
-    {
-      return myName;
-    }
-
 
   private:
     DomainType velocity_;

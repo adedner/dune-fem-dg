@@ -597,12 +597,6 @@ namespace Fem
     // Choose a suitable GridView
     typedef typename BaseType::GridPartType                GridPartType;
 
-    // initial data type
-    typedef typename BaseType::ProblemType                 ProblemType;
-
-    // An analytical version of our model
-    typedef typename BaseType::ModelType                   ModelType;
-
     // type of linear operator (i.e. matrix implementation)
     typedef typename BaseType::OperatorType::type          OperatorType;
 
@@ -629,8 +623,6 @@ namespace Fem
 
     typedef typename BaseType::AdaptationDiscreteFunctionType AdaptationDiscreteFunctionType;
 
-    using BaseType::problem;
-    using BaseType::model;
     using BaseType::name;
     using BaseType::grid;
     using BaseType::gridWidth;
@@ -640,15 +632,17 @@ namespace Fem
     using BaseType::exactSolution;
     using BaseType::solver;
 
+  protected:
+    using BaseType::model_;
 
   public:
     template< class ContainerImp, class ExtraArgsImp >
     SubEllipticAlgorithm( const std::shared_ptr< ContainerImp >& cont,
                           const std::shared_ptr< ExtraArgsImp >& extra )
     : BaseType( cont, extra ),
-      assembler_( cont, extra, model() ),
+      assembler_( cont, extra, model_ ),
       matrix_( (*cont)(_0,_0)->matrix() ),
-      adaptIndicator_( std::make_unique<AdaptIndicatorType>( cont, assembler_, model(), name() ) ),
+      adaptIndicator_( std::make_unique<AdaptIndicatorType>( cont, assembler_, model_, name() ) ),
       step_( 0 )
     {
       std::string gridName = Fem::gridName( grid() );
@@ -666,7 +660,7 @@ namespace Fem
 
     void virtual setTime ( const double time ) override
     {
-      model().setTime( time );
+      model_.setTime( time );
     }
 
     const AssemblerType& assembler () const
@@ -728,7 +722,7 @@ namespace Fem
     //! finalize computation by calculating errors and EOCs
     virtual void doFinalize ( const int loop ) override
     {
-      model().eocErrors( solution(), adaptIndicator()->sigma() );
+      model_.eocErrors( solution(), adaptIndicator()->sigma() );
     }
 
 

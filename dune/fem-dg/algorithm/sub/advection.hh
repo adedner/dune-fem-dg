@@ -36,12 +36,6 @@ namespace Fem
     // Choose a suitable GridView
     typedef typename BaseType::GridPartType                    GridPartType;
 
-    // initial data type
-    typedef typename BaseType::ProblemType                     ProblemType;
-
-    // An analytical version of our model
-    typedef typename BaseType::ModelType                       ModelType;
-
     // The DG space operator
     // The first operator is sum of the other two
     // The other two are needed for semi-implicit time discretization
@@ -65,9 +59,10 @@ namespace Fem
 
     typedef typename BaseType::AdaptIndicatorType              AdaptIndicatorType;
 
+  private:
+    using BaseType::model_;
+  public:
     using BaseType::solution ;
-    using BaseType::problem;
-    using BaseType::model;
     using BaseType::name ;
     using BaseType::limitSolution;
 
@@ -77,8 +72,8 @@ namespace Fem
     SubAdvectionAlgorithm( const std::shared_ptr< ContainerImp >& cont,
                            const std::shared_ptr< ExtraArgsImp >& extra )
     : BaseType( cont, extra ),
-      advectionOperator_( std::make_unique< FullOperatorType >( solution().space().gridPart(), model(), extra, name() ) ),
-      adaptIndicator_( std::make_unique< AdaptIndicatorOptional<AdaptIndicatorType> >( solution(), model(), extra, name() ) )
+      advectionOperator_( std::make_unique< FullOperatorType >( solution().space().gridPart(), model_, extra, name() ) ),
+      adaptIndicator_( std::make_unique< AdaptIndicatorOptional<AdaptIndicatorType> >( solution(), model_, extra, name() ) )
     {}
 
     virtual AdaptIndicatorType* adaptIndicator ()

@@ -142,12 +142,6 @@ namespace Fem
       return ofs.str();
     }
 
-    // return prefix for data loops
-    virtual std::string dataPrefix() const
-    {
-      return myName_;
-    }
-
   protected:
     const DomainType velocity_;
     const double  startTime_;

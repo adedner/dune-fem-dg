@@ -66,12 +66,6 @@ namespace Stokes
       return *(std::get<i>( problems_) );
     }
 
-    // return prefix for data loops
-    virtual std::string dataPrefix() const
-    {
-      return this->get<0>().dataPrefix();
-    }
-
     virtual ~ProblemInterface()
     {
       delete std::get<0>( problems_ );

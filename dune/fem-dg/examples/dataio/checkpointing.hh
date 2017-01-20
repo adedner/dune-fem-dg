@@ -109,12 +109,6 @@ namespace Fem
     // Choose a suitable GridView
     typedef typename BaseType::GridPartType                   GridPartType;
 
-    // initial data type
-    typedef typename BaseType::ProblemType                    ProblemType;
-
-    // An analytical version of our model
-    typedef typename BaseType::ModelType                      ModelType;
-
     // The discrete function for the unknown solution is defined in the DgOperator
     typedef typename BaseType::DiscreteFunctionType           DiscreteFunctionType;
 
@@ -138,8 +132,7 @@ namespace Fem
 
     using BaseType::grid;
     using BaseType::name;
-    using BaseType::problem;
-    using BaseType::model;
+    using BaseType::model_;
     using BaseType::solution;
     using BaseType::gridSize;
 
@@ -187,7 +180,7 @@ namespace Fem
   private:
     virtual void doInitialize ( const int loop, TimeProviderType& tp ) override
     {
-      auto ftf = model().problem().exactSolution( tp.time() );
+      auto ftf = model_.problem().exactSolution( tp.time() );
       interpolate( gridFunctionAdapter( ftf, solution().space().gridPart(), solution().space().order()+2 ), solution() );
     }
 
@@ -201,7 +194,7 @@ namespace Fem
 
     virtual void doSolve ( const int loop, TimeProviderType& tp ) override
     {
-      auto ftf = model().problem().exactSolution( tp.time() );
+      auto ftf = model_.problem().exactSolution( tp.time() );
       interpolate( gridFunctionAdapter( ftf, solution().space().gridPart(), solution().space().order()+2 ), solution() );
 
       // exchange data to ghost cells
@@ -218,9 +211,8 @@ namespace Fem
     {
       L2ErrorNoComm< DiscreteFunctionType > l2norm;
       // Compute L2 error of discretized solution ...
-      typedef Dune::Fem::InstationaryFunction< ProblemType, Dune::Fem::__InstationaryFunction::HoldReference > FunctionType;
-      FunctionType function( problem(), tp.time() );
-      return l2norm.norm( function, u );
+      auto ftf = model_.problem().exactSolution( tp.time() );
+      return l2norm.norm( ftf, u );
     }
 
     // reset solution on ghost cells

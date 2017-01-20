@@ -38,10 +38,10 @@ namespace Fem
   class DGAdvectionDiffusionOperatorBase :
     public Fem::SpaceOperatorInterface< typename Traits::DestinationType >
   {
-    enum { u = Traits :: u,
-           cdgpass  = Traits :: cdgpass };
+    enum { u = Traits::u,
+           cdgpass  = Traits::cdgpass };
 
-    enum { polynomialOrder = Traits :: polynomialOrder };
+    enum { polynomialOrder = Traits::polynomialOrder };
 
     typedef Fem::SpaceOperatorInterface< typename Traits::DestinationType >  BaseType;
 
@@ -90,7 +90,7 @@ namespace Fem
       }
     };
   public:
-    using BaseType :: operator () ;
+    using BaseType::operator () ;
 
     typedef typename Traits::ModelType                    ModelType;
     typedef typename ModelType::ProblemType               ProblemType ;
@@ -139,7 +139,7 @@ namespace Fem
     typedef AdvDFunctionSpaceType DiscreteFunctionSpaceType;
     typedef AdvDestinationType DestinationType;
 
-    typedef typename DiscreteModelType :: AdaptationType  AdaptationType;
+    typedef typename DiscreteModelType::AdaptationType  AdaptationType;
 
   public:
     template< class ExtraParameterTupleImp >
@@ -236,7 +236,7 @@ namespace Fem
 
     virtual std::string description() const = 0;
 
-    const ModelType& model() const { return model_; }
+    const DiscreteModelType& discreteModel() const { return discreteModel_; }
 
   protected:
     const ModelType&                          model_;

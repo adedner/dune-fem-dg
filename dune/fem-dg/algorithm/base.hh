@@ -35,10 +35,10 @@ namespace Fem
     protected:
     std::string loop_;
     public:
-    EocDataOutputParameters(int loop, const std::string& name)
+    EocDataOutputParameters(int loop, const std::string& name = "" )
     {
       std::stringstream ss;
-      ss << name << loop;
+      ss << (name == "" ? "loop" : name) << loop;
       loop_ = ss.str();
     }
     EocDataOutputParameters(const EocDataOutputParameters& other)
@@ -73,7 +73,7 @@ namespace Fem
      * \param[in] loop the current number of the eoc loop
      * \param[in] name an additional name
      */
-    const EocDataOutputParameters dataOutputParameters( int loop, const std::string& name ) const
+    const EocDataOutputParameters dataOutputParameters( int loop, const std::string& name = "" ) const
     {
       return EocDataOutputParameters( loop, name );
     }
@@ -292,9 +292,9 @@ namespace Fem
       return eocParam_.steps();
     }
 
-    EocParametersType& eocParams() { return eocParam_; }
+    const EocParametersType& eocParams() const { return eocParam_; }
 
-    virtual const std::string name() { return algorithmName_; }
+    virtual const std::string name() const { return algorithmName_; }
 
     SubAlgorithmTupleType &subAlgorithmTuple () { return tuple_; }
     const SubAlgorithmTupleType &subAlgorithmTuple () const { return tuple_; }

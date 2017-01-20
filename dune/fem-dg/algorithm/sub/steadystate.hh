@@ -168,10 +168,6 @@ namespace Fem
 
     typedef typename BaseType::TimeProviderType                      TimeProviderType;
 
-
-    typedef typename BaseType::ModelType                             ModelType;
-    typedef typename BaseType::ProblemType                           ProblemType;
-
     typedef typename BaseType::DiscreteFunctionType                  DiscreteFunctionType;
 
     typedef typename BaseType::UInt64Type                            UInt64Type;
@@ -199,11 +195,10 @@ namespace Fem
 
     typedef typename Traits::RhsType                                 RhsType;
 
+    using BaseType::model_;
   public:
     using BaseType::grid;
     using BaseType::name;
-    using BaseType::problem;
-    using BaseType::model;
     using BaseType::gridSize;
 
   public:
@@ -216,13 +211,11 @@ namespace Fem
                              const std::shared_ptr< ExtraArgsImp >& extra )
       : BaseType( const_cast< GridType& >( (*cont)(_0)->solution()->gridPart().grid() ) ),
         solverIterations_( 0 ),
-        //newContainer_(  cont ? nullptr : std::make_shared< ContainerType >( grid, "name" ) )
-        //solution_( cont ? : (*cont)(_0)->solution() : (*newContainer_)(_0)->solution() ),
         solution_( (*cont)(_0)->solution() ),
         exactSolution_( (*cont)(_0)->exactSolution() ),
         rhs_( (*cont)(_0)->rhs() ),
         rhsTemp_( nullptr ),
-        rhsOperator_( std::make_shared< RhsOptional< RhsType > >( solution().space().gridPart(), model(), extra, name() ) ),
+        rhsOperator_( std::make_shared< RhsOptional< RhsType > >( solution().space().gridPart(), model_, extra, name() ) ),
         solver_( nullptr ),
         solverMonitor_( name() ),
         diagnostics_( name() ),

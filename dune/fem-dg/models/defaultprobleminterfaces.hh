@@ -63,12 +63,6 @@ namespace Fem
       return InstationaryFunctionType( *this, time );
     }
 
-    // return prefix for data loops
-    virtual std::string dataPrefix() const
-    {
-      return std::string( "loop" );
-    }
-
     //! destructor
     virtual ~EvolutionProblemInterface() {}
 
@@ -305,12 +299,6 @@ namespace Fem
     virtual bool dirichletBoundary(const int bndId, const DomainType& x) const
     {
       return true;
-    }
-
-    // return prefix for data loops
-    virtual std::string dataPrefix() const
-    {
-      return std::string( "loop" );
     }
 
     /**

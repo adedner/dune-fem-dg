@@ -227,12 +227,6 @@ namespace Fem
       return ofs.str();
     }
 
-    // return prefix for data loops
-    virtual std::string dataPrefix() const
-    {
-      return myName;
-    }
-
   private:
     DomainType velocity_;
     int        max_n_of_coefs_;

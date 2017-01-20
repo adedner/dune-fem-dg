@@ -134,7 +134,7 @@ namespace Fem
     SubAlgorithmInterface ( GridType &grid )
     : grid_( grid ),
       problem_( ProblemTraits::problem() ),
-      model_( problem() )
+      model_( *problem_ )
     {}
 
     /** virtual destructor since this class has virtual methods */
@@ -267,21 +267,25 @@ namespace Fem
       else doFinalize( loop, *tp );
     }
 
-    virtual ProblemType& problem ()
+    //virtual ProblemType& problem ()
+    //{
+    //  assert( problem_ );
+    //  return *problem_;
+    //}
+
+    //virtual const ProblemType& problem () const
+    //{
+    //  assert( problem_ );
+    //  return *problem_;
+    //}
+
+    //virtual const ModelType& model () const { return model_; }
+    //virtual ModelType& model () { return model_; }
+
+    decltype(auto) exactSolution( double time = 0.0 )
     {
-      assert( problem_ );
-      return *problem_;
+      return model_.problem().exactSolution( time );
     }
-
-    virtual const ProblemType& problem () const
-    {
-      assert( problem_ );
-      return *problem_;
-    }
-
-    virtual const ModelType& model () const { return model_; }
-    virtual ModelType& model () { return model_; }
-
 
   protected:
     virtual bool doCheckSolutionValid ( const int loop, TimeProviderType& tp ) const { return true; }

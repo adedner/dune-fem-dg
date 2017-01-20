@@ -256,11 +256,13 @@ namespace Fem
   template< class Traits,
             bool advection = true, bool diffusion = false>
   class DGLimitedAdvectionOperator :
-    public Fem::SpaceOperatorInterface< typename Traits :: DestinationType >
+    public Fem::SpaceOperatorInterface< typename Traits::DestinationType >
   {
     enum PassIdType { u, limitPassId, advectPassId };
     enum { polOrd = Traits::polynomialOrder };
     enum { limiterPolOrd = Traits::limiterPolynomialOrder };
+
+    typedef Fem::SpaceOperatorInterface< typename Traits::DestinationType >       BaseType;
 
   public:
     typedef typename Traits::ExtraParameterTupleType                              ExtraParameterTupleType;
@@ -488,7 +490,10 @@ namespace Fem
       */
     }
 
-    const ModelType& model () const { return model_; }
+    const DiscreteModel1Type& discreteModel() const
+    {
+      return discreteModel1_;
+    }
 
   private:
     ModelType                  model_;

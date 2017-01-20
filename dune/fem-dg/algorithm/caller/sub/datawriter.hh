@@ -126,7 +126,7 @@ namespace Fem
       if( solution_ == nullptr )
         init( alg );
 
-      auto ftf = alg->model().problem().exactSolution( tp.time() );
+      auto ftf = alg->exactSolution( tp.time() );
       interpolate( gridFunctionAdapter( ftf, solution_->space().gridPart(), solution_->space().order()+2 ), *solution_ );
     }
 

@@ -160,7 +160,7 @@ namespace Fem
     void initializeEnd( AlgImp* alg, int loop, TimeProviderImp& tp )
     {
       dataWriter_ = std::make_unique<DataWriterType>( std::get<0>(tuple_)->solution().space().grid(), ioTuple_, tp,
-                                                      alg->eocParams().dataOutputParameters( loop, alg->dataPrefix() ) );
+                                                      alg->eocParams().dataOutputParameters( loop ) );
     }
 
     /**

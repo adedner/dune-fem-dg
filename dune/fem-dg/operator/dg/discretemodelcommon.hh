@@ -278,6 +278,11 @@ namespace Fem
       model_.mass( local, local.values()[uVar], m );
     }
 
+    const ModelType& model() const
+    {
+      return model_;
+    }
+
   protected:
     template <class LocalEvaluation>
     bool boundaryValue(const LocalEvaluation& left) const
@@ -338,29 +343,29 @@ namespace Fem
     std::integral_constant< int, passUId > uVar;
 
   public:
-    typedef typename BaseType :: ModelType          ModelType;
-    typedef typename BaseType :: AdvectionFluxType  AdvectionFluxType;
+    typedef typename BaseType::ModelType          ModelType;
+    typedef typename BaseType::AdvectionFluxType  AdvectionFluxType;
 
 
-    typedef typename BaseType :: GridPartType                          GridPartType;
-    typedef typename BaseType :: GridType                              GridType;
-    typedef typename BaseType :: IntersectionIteratorType              IntersectionIteratorType;
-    typedef typename BaseType :: IntersectionType                      IntersectionType;
-    typedef typename BaseType :: FunctionSpaceType                     FunctionSpaceType;
-    typedef typename BaseType :: EntityType                            EntityType;
-    typedef typename BaseType :: DomainType                            DomainType ;
-    typedef typename BaseType :: RangeFieldType                        RangeFieldType;
-    typedef typename BaseType :: DomainFieldType                       DomainFieldType;
-    typedef typename BaseType :: RangeType                             RangeType;
-    typedef typename BaseType :: JacobianRangeType                     JacobianRangeType;
+    typedef typename BaseType::GridPartType                          GridPartType;
+    typedef typename BaseType::GridType                              GridType;
+    typedef typename BaseType::IntersectionIteratorType              IntersectionIteratorType;
+    typedef typename BaseType::IntersectionType                      IntersectionType;
+    typedef typename BaseType::FunctionSpaceType                     FunctionSpaceType;
+    typedef typename BaseType::EntityType                            EntityType;
+    typedef typename BaseType::DomainType                            DomainType ;
+    typedef typename BaseType::RangeFieldType                        RangeFieldType;
+    typedef typename BaseType::DomainFieldType                       DomainFieldType;
+    typedef typename BaseType::RangeType                             RangeType;
+    typedef typename BaseType::JacobianRangeType                     JacobianRangeType;
 
     // discrete function storing the adaptation indicator information
-    typedef typename Traits :: AdaptationHandlerType    AdaptationType ;
+    typedef typename Traits::AdaptationHandlerType    AdaptationType ;
 
-    typedef typename AdaptationType :: LocalIndicatorType  LocalIndicatorType;
+    typedef typename AdaptationType::LocalIndicatorType  LocalIndicatorType;
 
     // type of thread filter in thread parallel runs
-    typedef Fem :: DomainFilter<GridPartType> ThreadDomainFilterType;
+    typedef Fem::DomainFilter<GridPartType> ThreadDomainFilterType;
 
   public:
     /**
@@ -390,7 +395,7 @@ namespace Fem
 
     void setEntity( const EntityType& entity )
     {
-      BaseType :: setEntity( entity );
+      BaseType::setEntity( entity );
 
       if( adaptation_ )
         enIndicator_ = adaptation_->localIndicator( entity );
@@ -398,7 +403,7 @@ namespace Fem
 
     void setNeighbor( const EntityType& neighbor )
     {
-      BaseType :: setNeighbor( neighbor );
+      BaseType::setNeighbor( neighbor );
 
       if( adaptation_ )
       {
@@ -533,7 +538,12 @@ namespace Fem
                         RangeType& gLeft,
                         JacobianRangeType& gDiffLeft ) const
     {
-      return BaseType :: boundaryFlux( left, gLeft, gDiffLeft );
+      return BaseType::boundaryFlux( left, gLeft, gDiffLeft );
+    }
+
+    const ModelType& model() const
+    {
+      return model_;
     }
 
   protected:

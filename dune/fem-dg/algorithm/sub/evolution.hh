@@ -140,16 +140,14 @@ namespace Fem
     typedef SubAlgorithmInterface< typename Traits::GridType,
                                    typename Traits::ProblemTraitsType,
                                    Traits::polynomialOrder > BaseType;
-
+  protected:
+    using BaseType::model_;
   public:
     typedef typename BaseType::GridType                              GridType;
     typedef typename BaseType::GridPartType                          GridPartType;
     typedef typename BaseType::HostGridPartType                      HostGridPartType;
 
     typedef typename BaseType::TimeProviderType                      TimeProviderType;
-
-    typedef typename BaseType::ModelType                             ModelType;
-    typedef typename BaseType::ProblemType                           ProblemType;
 
     typedef typename BaseType::DiscreteFunctionType                  DiscreteFunctionType;
 
@@ -177,8 +175,6 @@ namespace Fem
 
     using BaseType::grid;
     using BaseType::name;
-    using BaseType::problem;
-    using BaseType::model;
     using BaseType::gridSize;
 
     typedef SubEvolutionContainer< DiscreteFunctionType >               ContainerType;
@@ -213,16 +209,16 @@ namespace Fem
       return *solution_;
     }
 
-    DiscreteFunctionType& exactSolution ()
-    {
-      assert( exactSolution_ );
-      return *exactSolution_;
-    }
-    const DiscreteFunctionType& exactSolution () const
-    {
-      assert( exactSolution_ );
-      return *exactSolution_;
-    }
+    //DiscreteFunctionType& exactSolution ()
+    //{
+    //  assert( exactSolution_ );
+    //  return *exactSolution_;
+    //}
+    //const DiscreteFunctionType& exactSolution () const
+    //{
+    //  assert( exactSolution_ );
+    //  return *exactSolution_;
+    //}
 
     // return grid width of grid (overload in derived classes)
     virtual double gridWidth () const { return GridWidth::calcGridWidth( solution_->space().gridPart() ); }
@@ -263,10 +259,8 @@ namespace Fem
     {
       // project initial data
       //TODO check whether this version work
-      auto ftp = problem().fixedTimeFunction( tp.time() );
-      GridFunctionAdapter< typename ProblemType::InstationaryFunctionType, GridPartType >
-        adapter( "-exact", ftp, solution_->space().gridPart(), solution_->space().order() + 2 );
-      interpolate( adapter, solution() );
+      auto ftp = model_.problem().fixedTimeFunction( tp.time() );
+      interpolate( gridFunctionAdapter( ftp, solution_->space().gridPart(), solution_->space().order() + 2 ), solution() );
       if( NonBlockingCommParameter::nonBlockingCommunication() )
         solution().communicate();
 
@@ -316,7 +310,7 @@ namespace Fem
     virtual void doFinalize ( const int loop, TimeProviderType& tp ) override
     {
       // add eoc errors
-      model().eocErrors( solution() );
+      model_.eocErrors( solution() );
 
       // delete ode solver
       solver_ = nullptr;
