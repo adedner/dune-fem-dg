@@ -81,10 +81,10 @@ namespace Fem
     struct AdditionalOutput
     {
       template<class T, class... Args >
-      static typename enable_if< std::is_void< typename T::element_type::AdditionalOutputType >::value >::type
+      static typename std::enable_if< std::is_void< typename T::element_type::AdditionalOutputType >::value >::type
       additionalOutput( T&, Args&& ... ){}
       template<class T, class TimeProviderImp, class... Args >
-      static typename enable_if< !std::is_void< typename T::element_type::AdditionalOutputType >::value >::type
+      static typename std::enable_if< !std::is_void< typename T::element_type::AdditionalOutputType >::value >::type
       additionalOutput( T& elem, TimeProviderImp& tp, Args && ... args )
       {
         if( elem->additionalOutput() )
