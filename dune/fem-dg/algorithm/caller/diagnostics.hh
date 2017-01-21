@@ -58,10 +58,10 @@ namespace Fem
     class LoopCallee
     {
       template<class C, class T, class... Args >
-      static typename enable_if< std::is_void< typename T::element_type::DiagnosticsType >::value >::type
+      static typename std::enable_if< std::is_void< typename T::element_type::DiagnosticsType >::value >::type
       getDiagnostics( T&, Args&& ... ){}
       template<class C, class T, class... Args >
-      static typename enable_if< !std::is_void< typename T::element_type::DiagnosticsType >::value >::type
+      static typename std::enable_if< !std::is_void< typename T::element_type::DiagnosticsType >::value >::type
       getDiagnostics( T& elem, Args &&... a )
       {
         if( elem->diagnostics() )
