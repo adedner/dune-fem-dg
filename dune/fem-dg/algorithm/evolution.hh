@@ -235,10 +235,10 @@ namespace Fem
     struct Initialize {
     private:
       template<class T, class AdaptCaller, class... Args >
-      static typename enable_if< std::is_void< typename T::element_type::DiagnosticsType >::value >::type
+      static typename std::enable_if< std::is_void< typename T::element_type::DiagnosticsType >::value >::type
       getDiagnostics( T&, AdaptCaller&, Args&& ... ){}
       template<class T, class AdaptCaller, class... Args >
-      static typename enable_if< !std::is_void< typename T::element_type::DiagnosticsType >::value >::type
+      static typename std::enable_if< !std::is_void< typename T::element_type::DiagnosticsType >::value >::type
       getDiagnostics( T& e, AdaptCaller& caller, Args &&... a )
       {
         if( e->diagnostics() )
