@@ -258,7 +258,6 @@ namespace Fem
     virtual void doInitialize ( const int loop, TimeProviderType& tp ) override
     {
       // project initial data
-      //TODO check whether this version work
       auto ftp = model_.problem().fixedTimeFunction( tp.time() );
       interpolate( gridFunctionAdapter( ftp, solution_->space().gridPart(), solution_->space().order() + 2 ), solution() );
       if( NonBlockingCommParameter::nonBlockingCommunication() )
