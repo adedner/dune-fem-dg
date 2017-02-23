@@ -54,3 +54,5 @@ cmake/modules/petsc
 config_collected.h.cmake
 dune-fem-dg-config-version.cmake
 dune-fem-dg-config.cmake
+
+*.idea
