@@ -36,30 +36,27 @@ namespace Dune
         typename GridFunction::LocalFunctionType uLocal( u_ );
 
         const auto endit = iterators_.end();
-        auto it = iterators_.begin();
-        if( it != endit )
+        // iterate over selected partition
+        for( auto it = iterators_.begin(); it != endit; ++it )
         {
+          const auto& entity = *it;
+
           // obtain local interpolation
-          const auto interpolation = v_.space().interpolation( *it );
-          assert( ! v_.space().continuous() );
+          const auto interpolation = v_.space().interpolation( entity );
 
-          // iterate over selected partition
-          for( auto it = iterators_.begin(); it != endit; ++it )
-          {
-            const auto& entity = *it;
+          // resize local dof vector
+          ldv.resize( v_.space().basisFunctionSet( entity ).size() );
 
-            // resize local dof vector
-            ldv.resize( v_.space().basisFunctionSet( entity ).size() );
+          // interpolate u locally
+          uLocal.init( entity );
+          interpolation( uLocal, ldv );
 
-            // interpolate u locally
-            uLocal.init( entity );
-            interpolation( uLocal, ldv );
+          // write local dofs into v
+          v_.setLocalDofs( entity, ldv );
 
-            // write local dofs into v
-            v_.setLocalDofs( entity, ldv );
-
-            if( stopAfterFirst ) return ;
-          }
+          // if true return since only one element is needed for
+          // initialization of singleton caches
+          if( stopAfterFirst ) return ;
         }
       }
     };
