@@ -20,6 +20,8 @@
 #include <dune/fem-dg/algorithm/caller/sub/additionaloutput.hh>
 #include <dune/fem-dg/algorithm/caller/sub/adapt.hh>
 
+#include <dune/fem-dg/misc/interpolatethreaded.hh>
+
 namespace Dune
 {
 namespace Fem
@@ -292,7 +294,9 @@ namespace Fem
       auto ftp = problem().fixedTimeFunction( tp.time() );
       GridFunctionAdapter< typename ProblemType::InstationaryFunctionType, GridPartType >
         adapter( "-exact", ftp, gridPart_, space_.order() + 2 );
-      interpolate( adapter, solution() );
+
+      interpolateThreaded( adapter, solution() );
+
       if( NonBlockingCommParameter::nonBlockingCommunication() )
         solution().communicate();
 
