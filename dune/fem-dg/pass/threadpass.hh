@@ -430,7 +430,7 @@ namespace Fem
       if( firstCall_ )
       {
         //! get pass for my thread
-        BaseType& myPass = pass( 0 );
+        InnerPassType& myPass = pass( 0 );
 
         // stop time
         Dune::Timer timer ;
@@ -444,19 +444,13 @@ namespace Fem
         }
 
         // use the default compute method of the given pass
-        myPass.compute( arg, dest );
-
-        // get number of elements
-        numberOfElements_ = myPass.numberOfElements();
-        // store time
-        computeTime_ += timer.elapsed();
+        // and break after 3 elements have been computed
+        myPass.compute( arg, dest, 3 );
 
         // set tot false since first call has been done
         firstCall_ = false ;
-
-        return ;
       }
-      else
+
       {
         // update thread iterators in case grid changed
         iterators_.update();
