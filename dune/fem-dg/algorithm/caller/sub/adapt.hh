@@ -98,7 +98,7 @@ namespace Fem
     : sol_( sol ),
       adaptationHandler_( nullptr ),
       keyPrefix_( keyPrefix ),
-      adaptParam_( AdaptationParametersType( ParameterKey::generate( keyPrefix, "fem.adaptation." ) ) ),
+      adaptParam_( AdaptationParametersType( ParameterKey::generate( "", "fem.adaptation." ) ) ),
       indicator_( const_cast<GridPartType&>(sol_.gridPart()), model, tuple, keyPrefix_ ),
       estimator_( sol_.space(), model.problem(), adaptParam_ )
     {}

@@ -127,6 +127,70 @@ void finalizeCodegen()
 }
 #endif
 
+bool readParameters( int argc, char ** argv )
+{
+  // append all parameters from command line
+  Dune::Fem::Parameter::append(argc,argv);
+  // no parameters defined: search for parameter file
+  if( argc <= 1 )
+    Dune::Fem::Parameter::append("parameter");
+
+
+  //get full test case path
+  const std::string testCasePath = Dune::Fem::Parameter::getValue< std::string >( "testcase.path", "" );
+  //get name for a test case
+  const std::string testCaseName = Dune::Fem::Parameter::getValue< std::string >( "testcase", "" );
+
+  std::string path( argv[0] );
+  std::string targetName = path.substr(path.find_last_of("/") + 1);
+
+  //append test case name, if given
+  if( testCaseName != "" )
+    targetName = targetName + "_" + testCaseName;
+  //set important paths which are related to the test case path
+  if( testCasePath != "" )
+  {
+    Dune::Fem::Parameter::append("fem.prefix.input",testCasePath);
+    Dune::Fem::Parameter::append("fem.prefix",testCasePath + "data/" + targetName );
+    Dune::Fem::Parameter::append("fem.eoc.outputpath",testCasePath + "data/" + targetName );
+  }
+  else
+  {
+    //fail: We need data to provide further information via parameter file
+    if( !Dune::Fem::Parameter::exists( "fem.prefix" ) )
+    {
+      std::cout << "Please specify parameter 'fem.prefix'" << std::endl;
+      return false;
+    }
+    if( !Dune::Fem::Parameter::exists( "fem.prefix.input" ) )
+    {
+      std::cout << "Please specify parameter 'fem.prefix.input'" << std::endl;
+      return false;
+    }
+    if( !Dune::Fem::Parameter::exists( "fem.eoc.outputpath" ) )
+    {
+      std::cout << "Please specify parameter 'fem.eoc.outputpath'" << std::endl;
+      return false;
+    }
+  }
+
+  //read problem dependend file, if existent
+  std::string fullpath = Dune::Fem::Parameter::commonInputPath() + "/parameters/" + targetName;
+  if( std::ifstream( fullpath ) )
+    Dune::Fem::Parameter::append( fullpath );
+  else
+  {
+    std::cout << "Parameter file not found in " << fullpath << ". Aborting." << std::endl;
+    return false;
+  }
+
+  // write parameters used (before simulation starts)
+  Dune::Fem::Parameter::write("parameter.log");
+
+  return true;
+}
+
+
 
 namespace Dune
 {

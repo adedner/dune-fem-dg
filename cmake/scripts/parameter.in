@@ -1,9 +1,1 @@
-# toggle verbosity of on process 
-# (-1: off, p: process p is verbose, in general 0 is a good choice)
-fem.verboserank: 0 
-
-fem.prefix: ${CMAKE_CURRENT_SOURCE_DIR}/data/${TESTCASE_OUTPUT} # specify directory for data output (is created if not exists)
-fem.prefix.input: ${CMAKE_CURRENT_SOURCE_DIR}/
-fem.eoc.outputpath: ${CMAKE_CURRENT_SOURCE_DIR}/data/${TESTCASE_OUTPUT}
-
-paramfile: parameters/${TESTCASE_INPUT} #real parameter file
+testcase.path: ${CMAKE_CURRENT_SOURCE_DIR}/

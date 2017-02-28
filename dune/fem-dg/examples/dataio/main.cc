@@ -9,15 +9,9 @@ int main(int argc, char ** argv)
   /* Initialize MPI (always do this even if you are not using MPI) */
   Dune::Fem::MPIManager :: initialize( argc, argv );
   try {
-    // *** Initialization
-    Dune::Fem::Parameter::append(argc,argv);
-    if (argc >= 2)
-      Dune::Fem::Parameter::append(argv[1]);
-    else
-      Dune::Fem::Parameter::append("parameter");
-
-    // write parameters used (before simulation starts)
-    Dune::Fem::Parameter::write("parameter.log");
+    // read Parameters
+    if( !readParameters( argc, argv ) )
+      return 1;
 
     Dune::Fem::CheckPointingAlgorithmCreator<Dune::GridSelector::GridType> algorithmCreator;
 

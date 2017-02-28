@@ -59,9 +59,4 @@ if( NOT FEMDG_FAST_TESTBUILD )
                       COMPILE_DEFINITIONS "${GRIDTYPE};POLORDER=${POLORDER};DISCRETEFUNCTIONSPACESENUM=4"
                       TIMEOUT 3000 )
 
-  dune_add_test_case( NAME advdiff_orthonormal
-                      SOURCES ../main.cc
-                      COMPILE_DEFINITIONS "${GRIDTYPE};POLORDER=${POLORDER};DISCRETEFUNCTIONSPACESENUM=4"
-                      TIMEOUT 3000 )
-
 endif()
