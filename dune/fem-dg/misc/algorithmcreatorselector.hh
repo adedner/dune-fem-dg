@@ -528,8 +528,8 @@ namespace Fem
 
 #if HAVE_EIGEN
 #warning "Eigen solver is not working at the moment.!"
-  template <class DomainDFSpace, class RangeDFSpace,bool symmetric>
-  struct MatrixSolverSelector<Solver::Enum::eigen,symmetric,DomainDFSpace,RangeDFSpace>
+  template <bool symmetric>
+  struct MatrixSolverSelector<Solver::Enum::eigen,symmetric>
   {
     static const bool solverConfigured = true;
     // choose type of discrete function, Matrix implementation and solver implementation
@@ -539,7 +539,7 @@ namespace Fem
     template<class DSpace, class RSpace = DSpace>
     using LinearOperatorType = Dune::Fem::EigenLinearOperator< DiscreteFunctionType<DSpace>, DiscreteFunctionType<RSpace> >;
     template<class DSpace, class RSpace = DSpace>
-    using LinearInverseOperatorType = EigenCGInverseOperator< DiscreteFunctionType<DSpace > >
+    using LinearInverseOperatorType = EigenCGInverseOperator< DiscreteFunctionType<DSpace > >;
   };
 #else
   //template< bool dummy >
