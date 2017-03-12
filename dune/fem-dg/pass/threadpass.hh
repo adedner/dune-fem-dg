@@ -287,7 +287,7 @@ namespace Fem
       }
     }
 
-    //! call apropriate method on all internal passes
+    //! call appropriate method on all internal passes
     void enable() const
     {
       const int maxThreads = Fem::ThreadManager::maxThreads();
@@ -297,7 +297,7 @@ namespace Fem
       }
     }
 
-    //! call apropriate method on all internal passes
+    //! call appropriate method on all internal passes
     void disable() const
     {
       const int maxThreads = Fem::ThreadManager::maxThreads();
@@ -429,12 +429,6 @@ namespace Fem
       // after one grid traversal everything should be set up
       if( firstCall_ )
       {
-        //! get pass for my thread
-        InnerPassType& myPass = pass( 0 );
-
-        // stop time
-        Dune::Timer timer ;
-
         // for the first call we need to receive data already here,
         // since the flux calculation is done at once
         if( useNonBlockingCommunication() )
@@ -445,7 +439,8 @@ namespace Fem
 
         // use the default compute method of the given pass
         // and break after 3 elements have been computed
-        myPass.compute( arg, dest, 3 );
+        // This is only for initialization storage caches
+        pass( 0 ).compute( arg, dest, 3 );
 
         // set tot false since first call has been done
         firstCall_ = false ;
@@ -497,9 +492,6 @@ namespace Fem
         // END PARALLEL REGION
         /////////////////////////////////////////////////
 
-        arg_  = 0;
-        dest_ = 0;
-
         double accCompTime = 0.0;
         double ratioMaster = 1.0;
         for(int i=0; i<maxThreads; ++i )
@@ -534,12 +526,14 @@ namespace Fem
       // if useNonBlockingComm_ is disabled then communicate here if communication is required
       if( requireCommunication_ && ! nonBlockingComm_.nonBlockingCommunication() )
       {
-        if( &dest ) // could also be reference to NULL
-        {
-          // communicate calculated function
-          dest.communicate();
-        }
+        assert( dest_ );
+        // communicate calculated function
+        dest.communicate();
       }
+
+      // remove pointers
+      arg_  = 0;
+      dest_ = 0;
     }
 
     //! return true if communication is necessary and non-blocking should be used

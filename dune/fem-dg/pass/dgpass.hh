@@ -220,7 +220,7 @@ namespace Fem
     //! The actual computations are performed as follows. First, prepare
     //! the grid walkthrough, then call applyLocal on each entity and then
     //! call finalize.
-    void compute(const ArgumentType& arg, DestinationType& dest, const int breakAfter ) const
+    void compute(const ArgumentType& arg, DestinationType& dest, const size_t breakAfter ) const
     {
       // get stopwatch
       Dune::Timer timer;
@@ -229,7 +229,7 @@ namespace Fem
 
       if( reallyCompute_ )
       {
-        int count = 0;
+        size_t count = 0;
         const auto endit = spc_.end();
         for( auto it = spc_.begin(); (it != endit) && (count < breakAfter) ; ++it, ++count )
         {
