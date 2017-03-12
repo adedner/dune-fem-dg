@@ -2,7 +2,7 @@
 #define FEMDG_ALGORITHM_SOLUTIONLIMITERHANDLER_HH
 
 #include <dune/fem-dg/misc/tupleutility.hh>
-#include <dune/common/forloop.hh>
+#include <dune/fem/common/forloop.hh>
 #include "interface.hh"
 
 namespace Dune
