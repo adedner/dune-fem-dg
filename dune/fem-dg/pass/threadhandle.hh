@@ -120,7 +120,7 @@ namespace Fem
       void start( ObjectIF* obj )
       {
         // init object
-        objPtr_ = obj ;
+        objPtr_ = obj;
 
         if( isSlave() )
         {

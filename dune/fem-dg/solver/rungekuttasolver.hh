@@ -318,7 +318,7 @@ namespace Fem
         minIterationSteps_ = std::min( minIterationSteps_, iterationSteps );
         maxIterationSteps_ = std::max( maxIterationSteps_, iterationSteps );
 
-        if( verbose_ == 3 )
+        if( verbose_ == 3 && MPIManager::rank()<=0 )
         {
           // get advection and diffusion time step
           getAdvectionDiffsionTimeSteps( maxAdvStep, maxDiffStep );
@@ -344,7 +344,7 @@ namespace Fem
         // if true solve next time step with semi implicit solver
         useImex_ = ( maxDiffStep < (factor * maxAdvStep) ) ;
 
-        if( verbose_ == 3 )
+        if( verbose_ == 3 && MPIManager::rank()<=0 )
         {
           std::cout << maxAdvStep << " a | d " << maxDiffStep << "  factor: " << factor
             << "  " << minIterationSteps_ << " min | max " << maxIterationSteps_
