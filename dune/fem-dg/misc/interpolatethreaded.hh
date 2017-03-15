@@ -1,7 +1,9 @@
 #ifndef DUNE_FEM_DG_INTERPOLATE_HH
 #define DUNE_FEM_DG_INTERPOLATE_HH
 
+#include <dune/fem/function/common/discretefunction.hh>
 #include <dune/fem/misc/threads/threaditerator.hh>
+#include <dune/fem-dg/pass/threadhandle.hh>
 
 namespace Dune
 {
