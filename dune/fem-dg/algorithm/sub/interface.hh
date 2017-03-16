@@ -287,6 +287,17 @@ namespace Fem
       return model_.problem().exactSolution( time );
     }
 
+    template< class DomainType, class InRangeType, class OutRangeType >
+    decltype(auto) paraview( const double time,
+                             const DomainType& xgl,
+                             const InRangeType& cons,
+                             OutRangeType& result,
+                             bool forVisual = true )
+    {
+      return model_.conservativeToPrimitive( time, xgl, cons, result, forVisual );
+    }
+
+
   protected:
     virtual bool doCheckSolutionValid ( const int loop, TimeProviderType& tp ) const { return true; }
     /**

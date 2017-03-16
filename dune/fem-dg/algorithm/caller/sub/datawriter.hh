@@ -77,8 +77,7 @@ namespace Fem
           consLF.evaluate( qp, cons );
 
           // it is useful to visualize better suited quantities
-          bool forVisual = true;
-          alg->model().conservativeToPrimitive( tp.time(), xgl, cons, prim, forVisual );
+          alg->paraview( tp.time(), xgl, cons, prim );
 
           prim *=  qp.weight();
           primLF.axpy( qp, prim );
