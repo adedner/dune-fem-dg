@@ -325,6 +325,8 @@ namespace Fem
     template< class AlgImp, class TimeProviderImp >
     bool needsAdaptation( AlgImp* alg, int loop, TimeProviderImp& tp )
     {
+      if( !tp.timeStepValid() )
+        return false;
       return( tp.timeStep() % adaptParam_.adaptCount() == 0 );
     }
 

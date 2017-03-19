@@ -53,18 +53,21 @@ namespace Fem
 
     void setTimeStepInfo( const Dune::Fem::TimeProviderBase& tp )
     {
-      const double ldt = tp.timeStepValid() ? tp.deltaT() : 0.0;
-      // calculate time step info
-      minTimeStep  = std::min( ldt, minTimeStep );
-      maxTimeStep  = std::max( ldt, maxTimeStep );
-      avgTimeStep += ldt;
+      if( tp.timeStepValid() )
+      {
+        const double ldt = tp.deltaT();
+        // calculate time step info
+        minTimeStep  = std::min( ldt, minTimeStep );
+        maxTimeStep  = std::max( ldt, maxTimeStep );
+        avgTimeStep += ldt;
 
-      timeSteps = tp.timeStep() + 1;
+        timeSteps = tp.timeStep() + 1;
 
-      // accumulate iteration information
-      total_newton_iterations += newton_iterations;
-      total_ils_iterations += ils_iterations;
-      total_operator_calls += operator_calls;
+        // accumulate iteration information
+        total_newton_iterations += newton_iterations;
+        total_ils_iterations += ils_iterations;
+        total_operator_calls += operator_calls;
+      }
     }
 
     void finalize( const double h = 0, const unsigned long el = 0 )

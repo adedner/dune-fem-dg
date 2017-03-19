@@ -456,32 +456,35 @@ namespace Fem
         // stop FemTimer for this time step
         Dune::FemTimer::stop(timeStepTimer_,Dune::FemTimer::sum);
 
-        const int timeStep = tp.timeStep() + 1;
-
-        printTimeStepInformation( timeStep, tp );
-
-        // next advance should not exceed endtime
-        if( stopAtEndTime )
-          tp.provideTimeStepEstimate( (endTime - tp.time()) );
-
-        // next time step is prescribed by fixedTimeStep
-        if ( fixedTimeStep > 1e-20 )
-          tp.next( fixedTimeStep );
-        else
-          tp.next();
-
-        // for debugging and codegen only
-        if( timeStep >= maximalTimeSteps )
+        if( tp.timeStepValid() )
         {
-          if( Fem::Parameter::verbose() )
-            std::cerr << "ABORT: time step count reached max limit of " << maximalTimeSteps << std::endl;
-          break ;
-        }
+          const int timeStep = tp.timeStep() + 1;
 
-        if (tp.timeStep()<2)
-        {
-          // write parameters used (before simulation starts)
-          Fem::Parameter::write("parameter.log");
+          printTimeStepInformation( timeStep, tp );
+
+          // next advance should not exceed endtime
+          if( stopAtEndTime )
+            tp.provideTimeStepEstimate( (endTime - tp.time()) );
+
+          // next time step is prescribed by fixedTimeStep
+          if ( fixedTimeStep > 1e-20 )
+            tp.next( fixedTimeStep );
+          else
+            tp.next();
+
+          // for debugging and codegen only
+          if( timeStep >= maximalTimeSteps )
+          {
+            if( Fem::Parameter::verbose() )
+              std::cerr << "ABORT: time step count reached max limit of " << maximalTimeSteps << std::endl;
+            break ;
+          }
+
+          if (tp.timeStep()<2)
+          {
+            // write parameters used (before simulation starts)
+            Fem::Parameter::write("parameter.log");
+          }
         }
       } /****** END of time loop *****/
 
@@ -615,7 +618,7 @@ namespace Fem
         const UInt64Type grdsize = gridSize();
         if( grid().comm().rank() == 0 )
         {
-          double dt = tp.timeStepValid() ? tp.deltaT() : 0.0;
+          double dt = tp.deltaT();
           std::cout << "step: " << timeStep << "  time = " << tp.time()+dt << ", dt = " << dt
                     <<",  grid size: " << grdsize << ", elapsed time: ";
           Dune::FemTimer::print(std::cout,timeStepTimer_);
