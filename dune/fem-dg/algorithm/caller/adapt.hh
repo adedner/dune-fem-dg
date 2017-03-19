@@ -219,8 +219,11 @@ namespace Fem
           // some info in verbose mode
           if( Fem::Parameter::verbose() )
           {
-            std::cout << "Start adaptation: step " << startCount << ",  dt = " << tp.deltaT() << ",  grid size: " << alg->gridSize()
-                      << std::endl;
+            if( tp.timeStepValid() )
+            {
+              std::cout << "Start adaptation: step " << startCount << ",  dt = " << tp.deltaT() << ",  grid size: " << alg->gridSize()
+                        << std::endl;
+            }
           }
         }
       }

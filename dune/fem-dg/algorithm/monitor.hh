@@ -53,7 +53,7 @@ namespace Fem
 
     void setTimeStepInfo( const Dune::Fem::TimeProviderBase& tp )
     {
-      const double ldt = tp.deltaT();
+      const double ldt = tp.timeStepValid() ? tp.deltaT() : 0.0;
       // calculate time step info
       minTimeStep  = std::min( ldt, minTimeStep );
       maxTimeStep  = std::max( ldt, maxTimeStep );

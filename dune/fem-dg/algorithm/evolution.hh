@@ -615,7 +615,8 @@ namespace Fem
         const UInt64Type grdsize = gridSize();
         if( grid().comm().rank() == 0 )
         {
-          std::cout << "step: " << timeStep << "  time = " << tp.time()+tp.deltaT() << ", dt = " << tp.deltaT()
+          double dt = tp.timeStepValid() ? tp.deltaT() : 0.0;
+          std::cout << "step: " << timeStep << "  time = " << tp.time()+dt << ", dt = " << dt
                     <<",  grid size: " << grdsize << ", elapsed time: ";
           Dune::FemTimer::print(std::cout,timeStepTimer_);
           std::cout << "Newton:  " << solverMonitorCaller_.getData( "Newton" ) << ", ";
