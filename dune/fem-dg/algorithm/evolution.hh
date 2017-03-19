@@ -422,12 +422,9 @@ namespace Fem
       //******************************
       for( ; tp.time() < endTime; )
       {
-        if( tp.timeStepValid() )
-        {
-          // CALLER
-          dataWriterCaller_.preSolveStart( this, loop, tp );
-          checkPointCaller_.preSolveStart( this, loop, tp );
-        }
+        // CALLER
+        dataWriterCaller_.preSolveStart( this, loop, tp );
+        checkPointCaller_.preSolveStart( this, loop, tp );
 
         // reset time step estimate
         tp.provideTimeStepEstimate( maxTimeStep );
@@ -446,25 +443,23 @@ namespace Fem
         // perform the solve for one time step, i.e. solve ODE
         solve( loop, tp );
 
+        //abort time step on error
         if( !tp.timeStepValid() )
-          continue;
+        {
 
-        // CALLER
-        postProcessingCaller_.solveEnd( this, loop, tp );
+          // CALLER
+          postProcessingCaller_.solveEnd( this, loop, tp );
 
-        postSolve( loop, tp );
+          postSolve( loop, tp );
 
-        // CALLER
-        solverMonitorCaller_.postSolveEnd( this, loop, tp );
-        diagnosticsCaller_.postSolveEnd( this, loop, tp );
-        dataWriterCaller_.postSolveEnd( this, loop, tp );
+          // CALLER
+          solverMonitorCaller_.postSolveEnd( this, loop, tp );
+          diagnosticsCaller_.postSolveEnd( this, loop, tp );
+          dataWriterCaller_.postSolveEnd( this, loop, tp );
+        }
 
         // stop FemTimer for this time step
         Dune::FemTimer::stop(timeStepTimer_,Dune::FemTimer::sum);
-
-        const int timeStep = tp.timeStep() + 1;
-
-        printTimeStepInformation( timeStep, tp );
 
         // next advance should not exceed endtime
         if( stopAtEndTime )
@@ -475,6 +470,9 @@ namespace Fem
           tp.next( fixedTimeStep );
         else
           tp.next();
+
+        const int timeStep = tp.timeStep();
+        printTimeStepInformation( timeStep, tp );
 
         // for debugging and codegen only
         if( timeStep >= maximalTimeSteps )
