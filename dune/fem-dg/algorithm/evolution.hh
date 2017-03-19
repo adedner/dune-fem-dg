@@ -422,9 +422,12 @@ namespace Fem
       //******************************
       for( ; tp.time() < endTime; )
       {
-        // CALLER
-        dataWriterCaller_.preSolveStart( this, loop, tp );
-        checkPointCaller_.preSolveStart( this, loop, tp );
+        if( tp.timeStepValid() )
+        {
+          // CALLER
+          dataWriterCaller_.preSolveStart( this, loop, tp );
+          checkPointCaller_.preSolveStart( this, loop, tp );
+        }
 
         // reset time step estimate
         tp.provideTimeStepEstimate( maxTimeStep );
