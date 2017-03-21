@@ -23,17 +23,21 @@ namespace Fem
   {
   public:
     typedef DiscreteFunctionImp DiscreteFunctionType;
+    typedef typename DiscreteFunctionType::DiscreteFunctionSpaceType DiscreteFunctionSpaceType;
 
     template< class... Args >
     Cons2PrimOutput( Args&&... args )
-      : solution_( nullptr )
+      : solution_( nullptr ),
+        space_( nullptr )
     {}
 
     template< class SubAlgImp >
     void init( const std::shared_ptr<SubAlgImp>& alg )
     {
       if( solution_ ) delete solution_;
-      solution_ = new DiscreteFunctionType( alg->solution().name() + "[cons2prim]", alg->solution().space() );
+      if( space_ ) delete space_;
+      space_ = new DiscreteFunctionSpaceType( alg->solution().space().gridPart() );
+      solution_ = new DiscreteFunctionType( alg->solution().name() + "[cons2prim]", *space_ );
     }
 
     /** \brief converts a discrete function of conservative variables to
@@ -96,7 +100,8 @@ namespace Fem
     }
 
   private:
-    DiscreteFunctionType*   solution_;
+    DiscreteFunctionType*       solution_;
+    DiscreteFunctionSpaceType*  space_;
   };
 
 
