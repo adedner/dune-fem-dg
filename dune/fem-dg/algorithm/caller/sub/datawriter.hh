@@ -69,7 +69,7 @@ namespace Fem
         const auto& geo = entity.geometry();
 
         // get quadrature rule for L2 projection
-        Dune::Fem::CachingQuadrature< GridPartType, 0 > quad( entity, 2*space.order()+1 );
+        Dune::Fem::CachingQuadrature< GridPartType, 0 > quad( entity, 2*space.order()+3 );
 
         typename InDiscreteFunctionType::LocalFunctionType consLF = alg->solution().localFunction( entity );
         typename OutDiscreteFunctionType::LocalFunctionType primLF = solution_->localFunction( entity );
