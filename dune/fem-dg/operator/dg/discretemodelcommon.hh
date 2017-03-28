@@ -287,7 +287,7 @@ namespace Fem
     template <class LocalEvaluation>
     bool boundaryValue(const LocalEvaluation& left) const
     {
-      const bool hasBndValue = model_.hasBoundaryValue( left );
+      const bool hasBndValue = model_.hasBoundaryValue( left ) || model_.hasRobinBoundaryValue( left );
       if( hasBndValue )
       {
         model_.boundaryValue( left, left.values()[uVar], uBnd_ );

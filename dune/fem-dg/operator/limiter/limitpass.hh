@@ -427,6 +427,15 @@ namespace Fem
 
     /** \brief returns true if model provides boundary values for this
         intersection */
+    inline bool hasRobinBoundaryValue(const IntersectionType& it,
+                                 const double time,
+                                 const FaceLocalDomainType& x) const
+    {
+      return false;
+    }
+
+    /** \brief returns true if model provides boundary values for this
+        intersection */
     inline bool hasBoundaryValue(const IntersectionType& it,
                                  const double time,
                                  const FaceLocalDomainType& x) const
@@ -1493,7 +1502,8 @@ namespace Fem
               const FaceLocalDomainType localPoint
                     ( interGeo.local( lambda + enBary ) );
 
-              if( discreteModel_.hasBoundaryValue( intersection, currentTime_, localPoint ) )
+              if( discreteModel_.hasBoundaryValue( intersection, currentTime_, localPoint ) ||
+                  discreteModel_.hasRobinBoundaryValue( intersection, currentTime_, localPoint ) )
               {
                 FaceQuadratureType faceQuadInner(gridPart_,intersection, 0, FaceQuadratureType::INSIDE);
                 typedef QuadratureContext< EntityType, IntersectionType, FaceQuadratureType > ContextType;

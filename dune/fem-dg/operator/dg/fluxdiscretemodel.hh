@@ -423,31 +423,35 @@ namespace Fem
       double diffTimeStep = 0.0;
 
       bool hasBoundaryValue = model_.hasBoundaryValue( left );
+      bool hasRobinBoundaryValue = model_.hasRobinBoundaryValue( left );
 
-      if( diffusion && hasBoundaryValue )
+      if( diffusion )
       {
-        // diffusion boundary flux for Dirichlet boundaries
-        RangeType dLeft ( 0 );
-        typedef typename DiffusionFluxType::GradientRangeType GradientRangeType;
-        Dune::Fem::FieldMatrixConverter< GradientRangeType, JacobianRangeType > uJac( left.values()[ sigmaVar ] );
+        if( hasBoundaryValue || hasRobinBoundaryValue )
+        {
+          // diffusion boundary flux for Dirichlet boundaries
+          RangeType dLeft ( 0 );
+          typedef typename DiffusionFluxType::GradientRangeType GradientRangeType;
+          Dune::Fem::FieldMatrixConverter< GradientRangeType, JacobianRangeType > uJac( left.values()[ sigmaVar ] );
 
-        diffTimeStep = diffFlux_.boundaryFlux( left,
-                                               left.values()[ uVar ],
-                                               uBnd_, // is set during call of  BaseType::boundaryFlux
-                                               uJac,
-                                               dLeft,
-                                               gDiffLeft);
-        gLeft += dLeft;
-      }
-      else if ( diffusion )
-      {
-        RangeType diffBndFlux ( 0 );
+          diffTimeStep = diffFlux_.boundaryFlux( left,
+                                                 left.values()[ uVar ],
+                                                 uBnd_, // is set during call of  BaseType::boundaryFlux
+                                                 uJac,
+                                                 dLeft,
+                                                 gDiffLeft);
+          gLeft += dLeft;
+        }
+        if( !hasBoundaryValue )
+        {
+          RangeType diffBndFlux ( 0 );
 
-        typedef typename DiffusionFluxType::GradientRangeType GradientRangeType;
-        Dune::Fem::FieldMatrixConverter< GradientRangeType, JacobianRangeType > uJac( left.values()[ sigmaVar ] );
+          typedef typename DiffusionFluxType::GradientRangeType GradientRangeType;
+          Dune::Fem::FieldMatrixConverter< GradientRangeType, JacobianRangeType > uJac( left.values()[ sigmaVar ] );
 
-        model_.diffusionBoundaryFlux( left, left.values()[uVar], uJac, diffBndFlux );
-        gLeft += diffBndFlux;
+          model_.diffusionBoundaryFlux( left, left.values()[uVar], uJac, diffBndFlux );
+          gLeft += diffBndFlux;
+        }
       }
       else
         gDiffLeft = 0;

@@ -170,6 +170,7 @@ namespace Fem
         if( diffFlux_.hasLifting() )
         {
           const bool hasBoundaryValue = model_.hasBoundaryValue( local(0) );
+          const bool hasRobinBoundaryValue = model_.hasRobinBoundaryValue( local(0) );
 
           const size_t quadNop = local.quadrature().nop();
           if( uBndVec_.size() < quadNop )
@@ -178,8 +179,9 @@ namespace Fem
           for(size_t qp = 0; qp < quadNop; ++qp)
           {
             assert( hasBoundaryValue == model_.hasBoundaryValue( local(qp) ) );
+            assert( hasRobinBoundaryValue == model_.hasRobinBoundaryValue( local(qp) ) );
 
-            if( hasBoundaryValue )
+            if( hasBoundaryValue || hasRobinBoundaryValue )
               model_.boundaryValue(local[qp], local[qp].values()[uVar], uBndVec_[qp] );
             else
               // do something bad to uBndVec as it shouldn't be used
@@ -261,28 +263,32 @@ namespace Fem
        ****************************/
       double diffusionWaveSpeed = 0.0;
 
-      const bool hasBoundaryValue =
-        model_.hasBoundaryValue( left );
+      const bool hasBoundaryValue = model_.hasBoundaryValue( left );
+      const bool hasRobinBoundaryValue = model_.hasRobinBoundaryValue( left );
 
-      if( diffusion && hasBoundaryValue )
+
+      if( diffusion )
       {
-        // diffusion boundary flux for Dirichlet boundaries
-        RangeType dLeft ( 0 );
-        diffusionWaveSpeed =
-          diffFlux_.boundaryFlux(left[uVar],
-                                 left[uVar].values(), uBnd_, // is set during call of  BaseType::boundaryFlux
-                                 left[uVar].jacobians(),
-                                 dLeft,
-                                 gDiffLeft);
-        gLeft += dLeft;
-      }
-      else if ( diffusion )
-      {
-        RangeType diffBndFlux ( 0 );
-        model_.diffusionBoundaryFlux( left,
-                                      left.values()[uVar], left.jacobians()[uVar], diffBndFlux );
-        gLeft += diffBndFlux;
-        // gDiffLeft not set here ????
+        if( hasBoundaryValue || hasRobinBoundaryValue)
+        {
+          // diffusion boundary flux for Dirichlet boundaries
+          RangeType dLeft ( 0 );
+          diffusionWaveSpeed =
+            diffFlux_.boundaryFlux(left[uVar],
+                                   left[uVar].values(), uBnd_, // is set during call of  BaseType::boundaryFlux
+                                   left[uVar].jacobians(),
+                                   dLeft,
+                                   gDiffLeft);
+          gLeft += dLeft;
+        }
+        if( !hasBoundaryValue )
+        {
+          RangeType diffBndFlux ( 0 );
+          model_.diffusionBoundaryFlux( left,
+                                        left.values()[uVar], left.jacobians()[uVar], diffBndFlux );
+          gLeft += diffBndFlux;
+        }
+
       }
       else
         gDiffLeft = 0;

@@ -122,6 +122,7 @@ namespace Fem
    * | nonStiffSource()           | \f$ S_2 \f$                               |
    * | boundaryValue()            | \f$ g_D\f$                                |
    * | hasBoundaryValue()         | true if \f$ x \in \Gamma_D \f$            |
+   * | hasRobinBoundaryValue()    | true if \f$ x \in \Gamma_R \f$            |
    * | diffusion()                | \f$ A \f$                                 |
    * | advection()                | \f$ F \f$                                 |
    * | jacobian()                 | \f$ a \f$                                 |
@@ -443,6 +444,16 @@ namespace Fem
       return 0;
     }
 
+    /**
+     * \brief checks for existence of Robin boundary values
+     *
+     * \param[in] local local evaluation
+     */
+    template< class LocalEvaluation >
+    inline bool hasRobinBoundaryValue(const LocalEvaluation& local) const
+    {
+      return false;
+    }
 
     /**
      * \brief checks for existence of Dirichlet boundary values
