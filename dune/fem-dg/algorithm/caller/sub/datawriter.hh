@@ -71,14 +71,14 @@ namespace Fem
       // create local function adapter
       typedef Dune::Fem::LocalAnalyticalFunctionBinder<OutDiscreteFunctionSpaceType> LocalAnalyticalFunctionType;
       LocalAnalyticalFunctionType localAnalyticalFunction(
-          [&](const OutDomainType &x,double t,const typename OutDiscreteFunctionSpaceType::EntityType& entity)
+          [&](const OutDomainType &xgl,double t,const typename OutDiscreteFunctionSpaceType::EntityType& entity)
           {
             OutRangeType prim(0);
             typename InDiscreteFunctionType::LocalFunctionType consLF = alg->solution().localFunction( entity );
 
-            OutDomainType xgl = entity.geometry().global( coordinate( x ) );
+            OutDomainType x = entity.geometry().local( xgl );
 
-            consLF.evaluate( coordinate( x ), cons );
+            consLF.evaluate( x, cons );
 
             alg->paraview( t, xgl, cons, prim );
 
