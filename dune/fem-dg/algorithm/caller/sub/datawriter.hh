@@ -56,37 +56,39 @@ namespace Fem
 
       typedef typename InDiscreteFunctionSpaceType::GridPartType  GridPartType;
       typedef typename InDiscreteFunctionSpaceType::RangeType     InRangeType;
+      typedef typename InDiscreteFunctionSpaceType::DomainType    InDomainType;
       typedef typename OutDiscreteFunctionSpaceType::RangeType    OutRangeType;
+      typedef typename OutDiscreteFunctionSpaceType::DomainType   OutDomainType;
+
+      typedef Dune::Fem::CachingQuadrature< GridPartType, 0 >     QuadratureType;
 
       const auto& space =  alg->solution().space();
       solution_->clear();
 
       InRangeType cons(0.0);
-      OutRangeType prim(0.0);
-
-      for( const auto& entity : elements( space.gridPart() ) )
-      {
-        const auto& geo = entity.geometry();
-
-        // get quadrature rule for L2 projection
-        Dune::Fem::CachingQuadrature< GridPartType, 0 > quad( entity, 2*space.order()+3 );
-
-        typename InDiscreteFunctionType::LocalFunctionType consLF = alg->solution().localFunction( entity );
-        typename OutDiscreteFunctionType::LocalFunctionType primLF = solution_->localFunction( entity );
 
 
-        for( const auto qp : quad )
-        {
-          const auto& xgl = geo.global( qp.position() );
-          consLF.evaluate( qp, cons );
+      // create local function adapter
+      typedef Dune::Fem::LocalAnalyticalFunctionBinder<OutDiscreteFunctionSpaceType> LocalAnalyticalFunctionType;
+      LocalAnalyticalFunctionType localAnalyticalFunction(
+          [&](const OutDomainType &x,double t,const typename OutDiscreteFunctionSpaceType::EntityType& entity)
+          {
+            OutRangeType prim(0);
+            typename InDiscreteFunctionType::LocalFunctionType consLF = alg->solution().localFunction( entity );
 
-          // it is useful to visualize better suited quantities
-          alg->paraview( tp.time(), xgl, cons, prim );
+            OutDomainType xgl = entity.geometry().global( coordinate( x ) );
 
-          prim *=  qp.weight();
-          primLF.axpy( qp, prim );
-        }
-      }
+            consLF.evaluate( coordinate( x ), cons );
+
+            alg->paraview( t, xgl, cons, prim );
+
+            return prim;
+          });
+      typedef Dune::Fem::LocalFunctionAdapter<LocalAnalyticalFunctionType> LocalAdaptedFunctionType;
+      LocalAdaptedFunctionType localAdapted("local adapted function",std::move(localAnalyticalFunction),space_->gridPart(),5);
+
+      // interpolate local adpated function over discrete function
+      Dune::Fem::interpolate(localAdapted,*solution_);
     }
 
     DiscreteFunctionType* data() const
