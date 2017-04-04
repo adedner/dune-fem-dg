@@ -60,7 +60,7 @@ namespace Fem
       typedef typename OutDiscreteFunctionSpaceType::RangeType    OutRangeType;
       typedef typename OutDiscreteFunctionSpaceType::DomainType   OutDomainType;
 
-      typedef Dune::Fem::CachingQuadrature< GridPartType, 0 >     QuadratureType;
+      //typedef Dune::Fem::CachingQuadrature< GridPartType, 0 >     QuadratureType;
 
       const auto& space =  alg->solution().space();
       solution_->clear();
@@ -87,7 +87,7 @@ namespace Fem
             return prim;
           });
       typedef Dune::Fem::LocalFunctionAdapter<LocalAnalyticalFunctionType> LocalAdaptedFunctionType;
-      LocalAdaptedFunctionType localAdapted("local adapted function",std::move(localAnalyticalFunction),space_->gridPart(),5);
+      LocalAdaptedFunctionType localAdapted("local adapted function",std::move(localAnalyticalFunction),space_->gridPart(),2*space_->order()+3);
 
       // interpolate local adpated function over discrete function
       Dune::Fem::interpolate(localAdapted,*solution_);
