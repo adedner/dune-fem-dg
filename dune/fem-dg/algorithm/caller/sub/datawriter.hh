@@ -80,7 +80,9 @@ namespace Fem
 
             consLF.evaluate( x, cons );
 
-            alg->paraview( t, xgl, cons, prim );
+            //neglegt zero values
+            if( cons[0] > 1e-15 )
+              alg->paraview( t, xgl, cons, prim );
 
             return prim;
           });
