@@ -73,7 +73,7 @@ namespace Fem
       const DomainType normal = left.intersection().integrationOuterNormal(x);
 
       // get velocity
-      const DomainType v = model_.velocity( left );
+      const DomainType v = model_.velocity( left, uLeft );
       const double upwind = normal * v;
 
       if (upwind>0)

@@ -120,7 +120,7 @@ namespace Stokes
                            FluxRangeType & f) const
     {
       // evaluate velocity V
-      const DomainType v = velocity( local );
+      const DomainType v = velocity( local, u );
 
       //f = uV;
       for( int r=0; r<dimRange; ++r )
@@ -132,7 +132,8 @@ namespace Stokes
      * \brief velocity calculation, is called by advection()
      */
     template <class LocalEvaluation>
-    inline DomainType velocity ( const LocalEvaluation& local ) const
+    inline DomainType velocity ( const LocalEvaluation& local,
+                                 const RangeType& u ) const
     {
       DomainType v;
       problem_.velocity( local.entity().geometry().global( local.position() ), v );

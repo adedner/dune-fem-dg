@@ -342,7 +342,8 @@ namespace Fem
      * \param[in] local local evaluation
      */
     template <class LocalEvaluation>
-    DomainType velocity (const LocalEvaluation& local) const
+    DomainType velocity (const LocalEvaluation& local,
+                         const RangeType& u ) const
     {
       return (DomainType)0;
     }

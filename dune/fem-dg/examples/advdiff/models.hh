@@ -185,7 +185,7 @@ namespace Fem
                           const JacobianRangeType& jacu,
                           FluxRangeType & f) const
     {
-      const DomainType& v = velocity( local );
+      const DomainType& v = velocity( local, u );
 
       // f = uV;
       for( int r=0; r<dimRange; ++r )
@@ -197,7 +197,8 @@ namespace Fem
      * \brief velocity calculation, is called by advection()
      */
     template <class LocalEvaluation>
-    inline DomainType velocity(const LocalEvaluation& local) const
+    inline DomainType velocity(const LocalEvaluation& local,
+                               const RangeType& u )
     {
       return local.values( GetVelocity(), local, time_, problem_ );
     }

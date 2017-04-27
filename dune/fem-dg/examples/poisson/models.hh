@@ -177,7 +177,7 @@ namespace Poisson
                            const JacobianRangeType& jac,
                            FluxRangeType& f) const
     {
-      const DomainType v = velocity( local );
+      const DomainType v = velocity( local, u );
       //f = uv;
       for( int r=0; r<dimRange; ++r )
         for( int d=0; d<dimDomain; ++d )
@@ -345,7 +345,8 @@ namespace Poisson
      * \param[in] local local evaluation
      */
     template <class LocalEvaluation>
-    DomainType velocity (const LocalEvaluation& local) const
+    DomainType velocity (const LocalEvaluation& local,
+                         const RangeType& uLeft ) const
     {
       return DomainType( problem().constantAdvection() );
     }
