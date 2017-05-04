@@ -198,7 +198,7 @@ namespace Fem
      */
     template <class LocalEvaluation>
     inline DomainType velocity(const LocalEvaluation& local,
-                               const RangeType& u )
+                               const RangeType& u ) const
     {
       return local.values( GetVelocity(), local, time_, problem_ );
     }
