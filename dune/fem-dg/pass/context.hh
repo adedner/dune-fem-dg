@@ -869,13 +869,13 @@ namespace Fem
     template <class Functor, class ... Args>
     decltype(auto) values( const Functor& functor, const Args& ... args ) const
     {
-      return FunctorContext::Evaluate< Functor, FunctorContext::Contains< RangeType, typename Functor::VarId >::value>::eval( values(), functor, args ... );
+      return FunctorContext::Evaluate< Functor, FunctorContext::Contains< RangeType, typename Functor::VarId >::value>::eval( values_, functor, args ... );
     }
 
     template <class Functor, class ... Args>
     decltype(auto) jacobians( const Functor& functor, const Args& ... args ) const
     {
-      return FunctorContext::Evaluate< Functor, FunctorContext::Contains< JacobianType, typename Functor::VarId >::value>::eval( jacobians(), functor, args ... );
+      return FunctorContext::Evaluate< Functor, FunctorContext::Contains< JacobianType, typename Functor::VarId >::value>::eval( jacobians_, functor, args ... );
     }
 
   private:
