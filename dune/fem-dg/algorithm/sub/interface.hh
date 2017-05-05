@@ -14,7 +14,7 @@
 
 #include <dune/fem-dg/algorithm/caller/sub/diagnostics.hh>
 #include <dune/fem-dg/algorithm/caller/sub/solvermonitor.hh>
-#include <dune/fem-dg/algorithm/caller/sub/additionaloutput.hh>
+#include <dune/fem-dg/algorithm/caller/sub/datawriter.hh>
 #include <dune/fem-dg/algorithm/caller/sub/adapt.hh>
 
 namespace Dune
@@ -28,7 +28,7 @@ namespace Fem
 
   private:
     CHECK_TYPEDEF_EXISTS( AdaptIndicatorType )
-    CHECK_TYPEDEF_EXISTS( AdditionalOutputType )
+    CHECK_TYPEDEF_EXISTS( DataWriterType )
     CHECK_TYPEDEF_EXISTS( SolverMonitorType )
     CHECK_TYPEDEF_EXISTS( DiagnosticsType )
 
@@ -63,9 +63,8 @@ namespace Fem
     typedef DiscreteFunctionType                                  LimitDiscreteFunctionType;
     typedef DiscreteFunctionType                                  AdaptationDiscreteFunctionType;
 
-    typedef CovariantTuple< typename DiscreteTraits::IOTupleType > IOTupleType;
     typedef typename AdaptIndicatorTypes< DiscreteTraits >::type   AdaptIndicatorType;
-    typedef typename AdditionalOutputTypes< DiscreteTraits >::type AdditionalOutputType;
+    typedef typename DataWriterTypes< DiscreteTraits >::type       DataWriterType;
     typedef typename SolverMonitorTypes< DiscreteTraits >::type    SolverMonitorType;
     typedef typename DiagnosticsTypes< DiscreteTraits >::type      DiagnosticsType;
   };
@@ -121,11 +120,10 @@ namespace Fem
     typedef typename Traits::LimitDiscreteFunctionType            LimitDiscreteFunctionType;
     typedef typename Traits::AdaptationDiscreteFunctionType       AdaptationDiscreteFunctionType;
 
-    typedef typename Traits::IOTupleType                          IOTupleType;
     typedef typename Traits::AdaptIndicatorType                   AdaptIndicatorType;
     typedef typename Traits::DiagnosticsType                      DiagnosticsType;
     typedef typename Traits::SolverMonitorType                    SolverMonitorType;
-    typedef typename Traits::AdditionalOutputType                 AdditionalOutputType;
+    typedef typename Traits::DataWriterType                       DataWriterType;
 
 
     /**
@@ -204,17 +202,14 @@ namespace Fem
     // return reference to discrete function holding solution
     virtual DiscreteFunctionType& solution () = 0;
 
-    //DATAWRITING
-    virtual IOTupleType& dataTuple () = 0;
-
     //SOLVERMONITOR
     virtual SolverMonitorType* monitor() { return nullptr; }
 
     //DIAGNOSTICS
     virtual DiagnosticsType* diagnostics() { return nullptr; }
 
-    //ADDITIONALOUTPUT
-    virtual AdditionalOutputType* additionalOutput() { return nullptr; }
+    //DATAWRITER
+    virtual DataWriterType* dataWriter() { return nullptr; }
 
     //LIMITING
     virtual void limit(){}

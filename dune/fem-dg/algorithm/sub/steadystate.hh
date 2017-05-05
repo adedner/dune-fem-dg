@@ -26,7 +26,7 @@
 
 #include <dune/fem-dg/algorithm/caller/sub/solvermonitor.hh>
 #include <dune/fem-dg/algorithm/caller/sub/diagnostics.hh>
-#include <dune/fem-dg/algorithm/caller/sub/additionaloutput.hh>
+#include <dune/fem-dg/algorithm/caller/sub/datawriter.hh>
 
 #include "containers.hh"
 
@@ -180,11 +180,10 @@ namespace Fem
     typedef typename BaseType::LimitDiscreteFunctionType             LimitDiscreteFunctionType;
     typedef typename BaseType::AdaptationDiscreteFunctionType        AdaptationDiscreteFunctionType;
 
-    typedef typename BaseType::IOTupleType                           IOTupleType;
     typedef typename BaseType::AdaptIndicatorType                    AdaptIndicatorType;
     typedef typename BaseType::DiagnosticsType                       DiagnosticsType;
     typedef typename BaseType::SolverMonitorType                     SolverMonitorType;
-    typedef typename BaseType::AdditionalOutputType                  AdditionalOutputType;
+    typedef typename BaseType::DataWriterType                        DataWriterType;
 
 
     typedef typename DiscreteFunctionType::DiscreteFunctionSpaceType DiscreteFunctionSpaceType;
@@ -224,11 +223,10 @@ namespace Fem
         rhs_( (*cont)(_0)->rhs() ),
         rhsTemp_( nullptr ),
         rhsOperator_( std::make_shared< RhsOptional< RhsType > >( solution().space().gridPart(), model(), extra, name() ) ),
-        ioTuple_( std::make_unique<IOTupleType>( std::make_tuple( solution_.get(), exactSolution_.get() ) ) ),
         solver_( nullptr ),
         solverMonitor_( name() ),
         diagnostics_( name() ),
-        additionalOutput_( name() )
+        dataWriter_( name() )
     {}
 
     SubSteadyStateAlgorithm ( GridType &grid  )
@@ -274,17 +272,11 @@ namespace Fem
     //SOLVERMONITOR
     virtual SolverMonitorType* monitor() { return solverMonitor_.value(); }
 
-    //ADDITIONALOUTPUT
-    virtual AdditionalOutputType* additionalOutput() { return additionalOutput_.value(); }
-
-    //DATAWRITING
-    IOTupleType& dataTuple () { return *ioTuple_; }
+    //DATAWRITER
+    virtual DataWriterType* dataWriter() { return dataWriter_.value(); }
 
     //DIAGNOSTICS
-    virtual DiagnosticsType* diagnostics()
-    {
-      return diagnostics_.value();
-    }
+    virtual DiagnosticsType* diagnostics() { return diagnostics_.value(); }
 
   protected:
     virtual std::shared_ptr< typename SolverType::type > doCreateSolver()
@@ -347,9 +339,6 @@ namespace Fem
 
     virtual void doFinalize ( const int loop )
     {
-      // add eoc errors
-      //ProblemTraits::addEOCErrors( solution(), model(), problem() );
-
       solver_ = nullptr;
     }
   protected:
@@ -363,13 +352,11 @@ namespace Fem
     std::shared_ptr< DiscreteFunctionType >      rhsTemp_;
     std::shared_ptr< RhsOptional< RhsType > >    rhsOperator_;
 
-    std::unique_ptr< IOTupleType >               ioTuple_;
-
     std::shared_ptr< typename SolverType::type > solver_;
 
-    SolverMonitorOptional< SolverMonitorType >       solverMonitor_;
-    DiagnosticsOptional< DiagnosticsType >           diagnostics_;
-    AdditionalOutputOptional< AdditionalOutputType > additionalOutput_;
+    SolverMonitorOptional< SolverMonitorType >   solverMonitor_;
+    DiagnosticsOptional< DiagnosticsType >       diagnostics_;
+    DataWriterOptional< DataWriterType >         dataWriter_;
   };
 
 

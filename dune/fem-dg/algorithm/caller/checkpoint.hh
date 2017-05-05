@@ -180,8 +180,8 @@ namespace Fem
      * \param[in] loop number of eoc loop
      * \param[in] tp the time provider
      */
-    template< class SubAlgImp, class TimeProviderImp >
-    void initializeStart( SubAlgImp* alg, int loop, TimeProviderImp& tp )
+    template< class AlgImp, class TimeProviderImp >
+    void initializeStart( AlgImp* alg, int loop, TimeProviderImp& tp )
     {
       if( alg->eocParams().steps() == 1 && BaseType::checkPointExists(keyPrefix_) )
       {
@@ -199,8 +199,8 @@ namespace Fem
      * \param[in] loop number of eoc loop
      * \param[in] tp the time provider
      */
-    template< class SubAlgImp, class TimeProviderImp >
-    void initializeEnd( SubAlgImp* alg, int loop, TimeProviderImp& tp )
+    template< class AlgImp, class TimeProviderImp >
+    void initializeEnd( AlgImp* alg, int loop, TimeProviderImp& tp )
     {
       if( BaseType::checkPointExists(keyPrefix_) )
         ForLoopType< RegisterData >::apply( tuple_ );
@@ -213,8 +213,8 @@ namespace Fem
      * \param[in] loop number of eoc loop
      * \param[in] tp the time provider
      */
-    template< class SubAlgImp, class TimeProviderImp >
-    void preSolveStart( SubAlgImp* alg, int loop, TimeProviderImp& tp )
+    template< class AlgImp, class TimeProviderImp >
+    void preSolveStart( AlgImp* alg, int loop, TimeProviderImp& tp )
     {
       checkPointer( tp ).write( tp );
     }
@@ -226,8 +226,8 @@ namespace Fem
      * \param[in] loop number of eoc loop
      * \param[in] tp the time provider
      */
-    template< class SubAlgImp, class TimeProviderImp >
-    void finalizeStart( SubAlgImp* alg, int loop, TimeProviderImp& tp )
+    template< class AlgImp, class TimeProviderImp >
+    void finalizeStart( AlgImp* alg, int loop, TimeProviderImp& tp )
     {
       if( writeGridSolution_ && tp.time() > saveStep_ )
       {

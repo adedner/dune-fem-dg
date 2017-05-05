@@ -13,7 +13,7 @@
 //--------- CALLER --------------------------------
 #include <dune/fem-dg/algorithm/caller/sub/diagnostics.hh>
 #include <dune/fem-dg/algorithm/caller/sub/solvermonitor.hh>
-#include <dune/fem-dg/algorithm/caller/sub/additionaloutput.hh>
+#include <dune/fem-dg/algorithm/caller/sub/datawriter.hh>
 #include <dune/fem-dg/algorithm/caller/sub/adapt.hh>
 
 //--------- GRID HELPER ---------------------
@@ -75,19 +75,6 @@ namespace Fem
 
       typedef Poisson::Model< GridType, ProblemInterfaceType >      ModelType;
 
-      template< class Solution, class Model, class ExactFunction, class SigmaFunction>
-      static void addEOCErrors ( Solution &u, Model &model, ExactFunction &f, SigmaFunction& sigma )
-      {
-        static L2EOCError l2EocError( "$L^2$-Error" );
-        l2EocError.add( u, f );
-        static DGEOCError dgEocError( "DG-Error" );
-        dgEocError.add( u, f );
-
-        //TODO what dimRange is sigma? This does not fit, yet
-        //static H1EOCError sigmaEocError( "sigma-norm" );
-        //sigmaEocError.add( sigma, f );
-      }
-
       static inline std::string moduleName() { return ""; }
 
       static ProblemInterfaceType* problem()
@@ -100,8 +87,6 @@ namespace Fem
       struct DiscreteTraits
       {
         typedef typename AC::template DiscreteFunctions< FunctionSpaceType, polOrd > DiscreteFunctionType;
-
-        typedef std::tuple< DiscreteFunctionType*, DiscreteFunctionType* >           IOTupleType;
 
         class Operator
         {
@@ -132,6 +117,8 @@ namespace Fem
         typedef SubSolverMonitor< SolverMonitor >                                    SolverMonitorType;
         typedef SubDiagnostics< Diagnostics >                                        DiagnosticsType;
         typedef PAdaptIndicator< PAdaptivityType, ModelType >                        AdaptIndicatorType;
+        typedef SubDataWriter< SolutionOutput<DiscreteFunctionType>, ExactSolutionOutput<DiscreteFunctionType> >
+                                                                                     DataWriterType;
       };
 
       template <int polOrd>

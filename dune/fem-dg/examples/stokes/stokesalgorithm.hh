@@ -513,9 +513,6 @@ namespace Fem
 
     typedef typename BaseType::AdaptationDiscreteFunctionType       AdaptationDiscreteFunctionType;
 
-    typedef CovariantTuple< typename BaseType::IOTupleType::type, typename EllipticalAlgorithmType::IOTupleType::type >
-                                                                    IOTupleType;
-
     typedef typename BaseType::TimeProviderType                     TimeProviderType;
 
     using BaseType::problem;
@@ -542,14 +539,8 @@ namespace Fem
       assembler_( cont, extra, model() ),
       ellAlg_( (*cont)(std::make_tuple(_0),std::make_tuple(_0)), extra ),
       stokesSolver_( std::make_shared< SolverType >( *cont, ellAlg_ ) ),
-      adaptIndicator_( std::make_unique<AdaptIndicatorType>( cont, ellAlg_.assembler(), assembler_, problem(), BaseType::name() ) ),
-      ioTuple_( new IOTupleType( *BaseType::dataTuple(), *ellAlg_.dataTuple() ) )
+      adaptIndicator_( std::make_unique<AdaptIndicatorType>( cont, ellAlg_.assembler(), assembler_, problem(), BaseType::name() ) )
     {
-    }
-
-    virtual IOTupleType& dataTuple () override
-    {
-      return *ioTuple_;
     }
 
     void virtual setTime ( const double time ) override
@@ -604,7 +595,11 @@ namespace Fem
     virtual void doFinalize( const int loop ) override
     {
       ellAlg_.finalize( loop );
-      ProblemTraits::addEOCErrors( solution(), ellAlg_.model(), problem().template get<1>().exactSolution() );
+
+      //add error
+      model().eocErrors( solution() );
+
+      BaseType::doFinalize( loop );
     }
 
   protected:
@@ -615,7 +610,6 @@ namespace Fem
     EllipticalAlgorithmType                ellAlg_;
     std::shared_ptr< SolverType >          stokesSolver_;
     std::unique_ptr< AdaptIndicatorType >  adaptIndicator_;
-    std::unique_ptr< IOTupleType >         ioTuple_;
   };
 
 

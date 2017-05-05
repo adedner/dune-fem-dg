@@ -19,8 +19,14 @@ namespace Fem
 
     ProblemToEvolutionInterface()
       : time_( 0 ),
-        deltaT_( 0 )
-    {}
+        deltaT_( 0 ),
+        unique_( 0 )
+    {
+      static int counter = 0;
+      unique_ = counter;
+      std::cout << "00000CREATED: " << unique_ << std::endl;
+      counter++;
+    }
 
     //set time for stationary problems to fake time provider
     virtual void setTime( const double time ) const
@@ -37,14 +43,20 @@ namespace Fem
     //set time step size for mass matrix scaling
     virtual void setDeltaT( const double deltaT ) const
     {
+      std::cout << "0000setDeltaT: " << unique_ << std::endl;
       deltaT_ = deltaT;
     };
 
-    double deltaT() const { return deltaT_; }
+    double deltaT() const
+    {
+      std::cout << "0000deltaT: " << unique_ << std::endl;
+      return deltaT_;
+    }
 
   protected:
     mutable double time_;
     mutable double deltaT_;
+    mutable double unique_;
   };
 
   // ProblemInterface
@@ -213,6 +225,12 @@ namespace Fem
       delete std::get<1>(problems_);
       delete std::get<2>(problems_);
     }
+
+
+    typename NavierStokesProblemType::ExactSolutionType exactSolution( const double time=0.0 ) const
+    {
+      return std::get<2>( problems_ )->exactSolution(time);
+    }
   private:
     mutable ProblemTupleType   problems_;
   };
@@ -290,8 +308,7 @@ namespace Fem
         const double t2 = t*t;
         const double t5 = t2*t2*t;
 
-        ret[ 0 ] = 3.0*t2*x[1]*x[0] - mu_*2.0*t2*t + t + 2.0*t5*x[0];
-        ret[ 1 ] = 2.0*t*x[0] + 1.0 + t5*x[1]*x[1];
+        ret = { 3.0*t2*x[1]*x[0] - mu_*2.0*t2*t + t + 2.0*t5*x[0], 2.0*t*x[0] + 1.0 + t5*x[1]*x[1] };
       }
 
 
@@ -300,8 +317,7 @@ namespace Fem
       {
         const double t = time_;
 
-        ret[ 0 ] = t*t*t * x[1]*x[1];
-        ret[ 1 ] = t*t* x[0];
+        ret = {t*t*t * x[1]*x[1], t*t* x[0] };
       }
 
       //! the diffusion matrix
@@ -345,7 +361,7 @@ namespace Fem
       void u(const DomainType& x, RangeType& ret) const
       {
         const double t = time_;
-        ret = t * x[ 0 ] + x[ 1 ] - (t + 1.0) * 0.5;
+        ret = t * x[0] + x[1] - (t + 1.0) * 0.5;
       }
     };
 
@@ -367,8 +383,7 @@ namespace Fem
                             const double t, RangeType& res) const
       {
         //todo: same as poisson problem -> improve...
-        res[ 0 ] = t*t*t * x[1]*x[1];
-        res[ 1 ] = t*t* x[0];
+        res = { t*t*t * x[1]*x[1], t*t* x[0]};
       }
     };
 

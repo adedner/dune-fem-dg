@@ -68,8 +68,8 @@ namespace Fem
      * \param[in] loop number of eoc loop
      * \param[in] tp the time provider
      */
-    template< class SubAlgImp, class TimeProviderImp >
-    void solveEnd( SubAlgImp* alg, int loop, TimeProviderImp& tp )
+    template< class AlgImp, class TimeProviderImp >
+    void solveEnd( AlgImp* alg, int loop, TimeProviderImp& tp )
     {
       ForLoopType< LimitSolution >::apply( tuple_ );
     }

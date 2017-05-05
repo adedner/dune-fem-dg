@@ -32,12 +32,19 @@ namespace Fem
   class NoModel
     : public DefaultModel< DefaultNoModelTraits< GridImp, ProblemImp > >
   {
+    typedef DefaultModel< DefaultNoModelTraits< GridImp, ProblemImp > > BaseType;
 
-    public:
+  public:
+    typedef ProblemImp ProblemType;
 
     NoModel( const ProblemImp& problem )
+      : problem_( problem )
     {}
 
+    inline const ProblemType& problem() const { return problem_; }
+
+  private:
+    const ProblemType& problem_;
   };
 
 }

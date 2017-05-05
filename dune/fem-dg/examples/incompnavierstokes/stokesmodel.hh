@@ -79,8 +79,7 @@ namespace Fem
      * \param problem Class describing the initial(t=0) and exact solution
      */
     PoissonModel(const ProblemType& problem)
-      : problem_(problem),
-        deltaT_( problem.deltaT() )
+      : problem_(problem)
     {}
 
     inline bool hasFlux() const { return true; }
@@ -107,8 +106,10 @@ namespace Fem
     {
       // mass part
       RangeType mass( u );
-      mass /= (deltaT_ * SplitType::mass());
+      mass /= (problem_.deltaT() * SplitType::mass());
       s = mass;
+
+      assert( mass == mass );
 
       if( SplitType::hasSource )
       {
@@ -355,7 +356,6 @@ namespace Fem
     }
   protected:
     const ProblemType& problem_;
-    const double& deltaT_;
   };
 
 

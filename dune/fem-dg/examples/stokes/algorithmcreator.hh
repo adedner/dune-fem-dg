@@ -20,7 +20,7 @@
 //--------- CALLER --------------------------------
 #include <dune/fem-dg/algorithm/caller/sub/diagnostics.hh>
 #include <dune/fem-dg/algorithm/caller/sub/solvermonitor.hh>
-#include <dune/fem-dg/algorithm/caller/sub/additionaloutput.hh>
+#include <dune/fem-dg/algorithm/caller/sub/datawriter.hh>
 #include <dune/fem-dg/algorithm/caller/sub/adapt.hh>
 
 //--------- GRID HELPER ---------------------
@@ -87,17 +87,6 @@ namespace Fem
 
       typedef Stokes::PoissonModel< GridType, ProblemInterfaceType >         ModelType;
 
-      template< class Solution, class Model, class ExactFunction, class SigmaFunction>
-      static void addEOCErrors ( Solution &u, Model &model, ExactFunction &f, SigmaFunction& sigma )
-      {
-        static L2EOCError l2EocError( "$L^2$-Error" );
-        l2EocError.add( u, f );
-        static DGEOCError dgEocError( "DG-Error" );
-        dgEocError.add( u, f );
-        //static H1EOCError sigmaEocError( "sigma-norm" );
-        //sigmaEocError.add( sigma, f );
-      }
-
       static inline std::string moduleName() { return "";}
 
       static ProblemInterfaceType* problem()
@@ -117,8 +106,6 @@ namespace Fem
       struct DiscreteTraits
       {
         typedef typename AC::template DiscreteFunctions< FunctionSpaceType, polOrd > DiscreteFunctionType;
-
-        typedef std::tuple< DiscreteFunctionType*, DiscreteFunctionType* >           IOTupleType;
 
         class Operator
         {
@@ -149,6 +136,9 @@ namespace Fem
 
         typedef SubSolverMonitor< SolverMonitor >                                    SolverMonitorType;
         typedef SubDiagnostics< Diagnostics >                                        DiagnosticsType;
+        typedef SubDataWriter< SolutionOutput<DiscreteFunctionType>, ExactSolutionOutput<DiscreteFunctionType> >
+                                                                                     DataWriterType;
+
       };
 
       template <int polOrd>
@@ -176,13 +166,6 @@ namespace Fem
 
       typedef Stokes::StokesModel< GridType, ProblemInterfaceType >              ModelType;
 
-      template< class Solution, class Model, class ExactFunction >
-      static void addEOCErrors ( Solution &u, Model &model, ExactFunction &f )
-      {
-        static L2EOCError l2EocError( "$L^2$-p-Error" );
-        l2EocError.add( u, f );
-      }
-
       static inline std::string moduleName() { return "";}
 
       static ProblemInterfaceType* problem()
@@ -204,8 +187,6 @@ namespace Fem
         static const int redPolOrd = polOrd-pressureOrderReduction;
       public:
         typedef typename AC::template DiscreteFunctions< FunctionSpaceType, redPolOrd > DiscreteFunctionType;
-
-        typedef std::tuple< DiscreteFunctionType*, DiscreteFunctionType* >              IOTupleType;
 
         class Operator
         {
@@ -243,6 +224,8 @@ namespace Fem
         typedef SubSolverMonitor< SolverMonitor >                                       SolverMonitorType;
         typedef SubDiagnostics< Diagnostics >                                           DiagnosticsType;
         typedef StokesPAdaptIndicator< StokesPAdaptivityType, ModelType >               AdaptIndicatorType;
+        typedef SubDataWriter< SolutionOutput<DiscreteFunctionType>, ExactSolutionOutput<DiscreteFunctionType> >
+                                                                                        DataWriterType;
       };
 
       template <int polOrd>

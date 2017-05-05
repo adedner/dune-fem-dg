@@ -162,6 +162,7 @@ namespace Fem
       };
     };
 
+
     template< class Caller >
     using ForLoopType = ForLoop< LoopCallee<Caller>::template Apply, 0, numAlgs - 1 >;
 
@@ -200,8 +201,8 @@ namespace Fem
      * \param[in] loop number of eoc loop
      * \param[in] tp the time provider
      */
-    template< class SubAlgImp, class TimeProviderImp >
-    void initializeEnd( SubAlgImp* alg, int loop, TimeProviderImp& tp)
+    template< class AlgImp, class TimeProviderImp >
+    void initializeEnd( AlgImp* alg, int loop, TimeProviderImp& tp)
     {
       if( adaptive() )
       {
@@ -231,8 +232,8 @@ namespace Fem
      * \param[in] alg pointer to the calling sub-algorithm
      * \param[in] loop number of eoc loop
      */
-    template< class SubAlgImp >
-    void initializeEnd( SubAlgImp* alg, int loop )
+    template< class AlgImp >
+    void initializeEnd( AlgImp* alg, int loop )
     {
       if( adaptive() )
       {
@@ -252,8 +253,8 @@ namespace Fem
      * \param[in] loop number of eoc loop
      * \param[in] tp the time provider
      */
-    template< class SubAlgImp, class TimeProviderImp >
-    void solveStart( SubAlgImp* alg, int loop, TimeProviderImp& tp )
+    template< class AlgImp, class TimeProviderImp >
+    void solveStart( AlgImp* alg, int loop, TimeProviderImp& tp )
     {
       if( needsAdaptation( alg, loop, tp ) )
       {
@@ -270,8 +271,8 @@ namespace Fem
      * \param[in] alg pointer to the calling sub-algorithm
      * \param[in] loop number of eoc loop
      */
-    template< class SubAlgImp >
-    void solveStart( SubAlgImp* alg, int loop )
+    template< class AlgImp >
+    void solveStart( AlgImp* alg, int loop )
     {
       if( adaptive() )
       {
@@ -289,8 +290,8 @@ namespace Fem
      * \param[in] loop number of eoc loop
      * \param[in] tp the time provider
      */
-    template< class SubAlgImp, class TimeProviderImp >
-    void finalizeStart( SubAlgImp* alg, int loop, TimeProviderImp& tp)
+    template< class AlgImp, class TimeProviderImp >
+    void finalizeStart( AlgImp* alg, int loop, TimeProviderImp& tp)
     {
       ForLoopType< Finalize >::apply( tuple_ );
     }
@@ -301,8 +302,8 @@ namespace Fem
      * \param[in] alg pointer to the calling sub-algorithm
      * \param[in] loop number of eoc loop
      */
-    template< class SubAlgImp >
-    void finalizeStart( SubAlgImp* alg, int loop )
+    template< class AlgImp >
+    void finalizeStart( AlgImp* alg, int loop )
     {
       ForLoopType< Finalize >::apply( tuple_ );
     }
@@ -318,14 +319,14 @@ namespace Fem
     }
 
 
-    template< class SubAlgImp, class TimeProviderImp >
-    bool needsAdaptation( SubAlgImp* alg, int loop, TimeProviderImp& tp )
+    template< class AlgImp, class TimeProviderImp >
+    bool needsAdaptation( AlgImp* alg, int loop, TimeProviderImp& tp )
     {
       return( tp.timeStep() % adaptParam_.adaptCount() == 0 );
     }
 
-    template< class SubAlgImp >
-    bool needsAdaptation( SubAlgImp* alg, int loop )
+    template< class AlgImp >
+    bool needsAdaptation( AlgImp* alg, int loop )
     {
       //TODO set a better condition, here (from padaptindicator?)...
       static int maxIteration = 0;
@@ -417,6 +418,14 @@ namespace Fem
 
     const int finestLevel() const
     {
+      //int res = 0;
+      //Dune::Hybrid::forEach(tuple_,
+      //[&](auto i)
+      //{
+      //  typedef typename std::is_void< typename std::tuple_element_t<i,TupleType>::element_type::AdaptIndicatorType >::type hasAdaptIndicatorType;
+      //  Dune::Hybrid::ifElse( hasAdaptIndicatorType(), [&](auto i){ res=std::max(res,std::get<i>(tuple_)->finestLevel()); } );
+      //} );
+      //return res;
       int finestLevel = 0;
       ForLoopType< FinestLevel >::apply( tuple_, finestLevel );
       return finestLevel;
@@ -437,8 +446,8 @@ namespace Fem
         ForLoopType< EstimateMark >::apply( tuple_, initialAdaptation );
     }
 
-    template< class SubAlgImp, class TimeProviderImp >
-    void adapt( SubAlgImp* alg, int loop, TimeProviderImp& tp)
+    template< class AlgImp, class TimeProviderImp >
+    void adapt( AlgImp* alg, int loop, TimeProviderImp& tp)
     {
       if( adaptive() )
       {

@@ -108,8 +108,8 @@ namespace Fem
      * \param[in] loop number of eoc loop
      * \param[in] tp the time provider
      */
-    template< class SubAlgImp, class TimeProviderImp >
-    void finalizeStart( SubAlgImp* alg, int loop, TimeProviderImp& tp )
+    template< class AlgImp, class TimeProviderImp >
+    void finalizeStart( AlgImp* alg, int loop, TimeProviderImp& tp )
     {
       ForLoopType< Finalize >::apply( tuple_ );
     }
@@ -121,8 +121,8 @@ namespace Fem
      * \param[in] loop number of eoc loop
      * \param[in] tp the time provider
      */
-    template< class SubAlgImp, class TimeProviderImp >
-    void postSolveEnd( SubAlgImp* alg, int loop, TimeProviderImp& tp )
+    template< class AlgImp, class TimeProviderImp >
+    void postSolveEnd( AlgImp* alg, int loop, TimeProviderImp& tp )
     {
       ForLoopType< Write >::apply( tuple_, tp );
     }

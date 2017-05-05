@@ -19,7 +19,7 @@
 //--------- CALLER --------------------------------
 #include <dune/fem-dg/algorithm/caller/sub/diagnostics.hh>
 #include <dune/fem-dg/algorithm/caller/sub/solvermonitor.hh>
-#include <dune/fem-dg/algorithm/caller/sub/additionaloutput.hh>
+#include <dune/fem-dg/algorithm/caller/sub/datawriter.hh>
 #include <dune/fem-dg/algorithm/caller/sub/adapt.hh>
 //--------- OPERATOR/SOLVER -----------------
 #include <dune/fem-dg/assemble/primalmatrix.hh>
@@ -65,10 +65,6 @@ namespace Fem
 
     typedef StokesModel< GridPartType, ProblemInterfaceType, std::tuple<> > ModelType;
 
-    template< class Solution, class Model, class ExactFunction >
-    static void addEOCErrors ( Solution &u, Model &model, ExactFunction &f )
-    {}
-
     static inline std::string moduleName() { return "";}
 
     static ProblemInterfaceType* problem()
@@ -84,8 +80,6 @@ namespace Fem
       typedef typename AC::template DiscreteFunctions< FunctionSpaceType, redPolOrd >   DiscreteFunctionType;
 
       typedef typename AC::template ExtraParameters< ModelType, std::tuple< AC,AC>, polOrd,polOrd >  ExtraParameters;
-
-      typedef std::tuple< DiscreteFunctionType*, DiscreteFunctionType* >                IOTupleType;
 
       class Operator
       {
@@ -124,6 +118,8 @@ namespace Fem
       typedef SubSolverMonitor< SolverMonitor >                                             SolverMonitorType;
       typedef SubDiagnostics< Diagnostics >                                                 DiagnosticsType;
       typedef StokesPAdaptIndicator< StokesPAdaptivityType, ModelType >                     AdaptIndicatorType;
+      typedef SubDataWriter< SolutionOutput<DiscreteFunctionType>, ExactSolutionOutput<DiscreteFunctionType> >
+                                                                                     DataWriterType;
     };
 
     template <int polOrd>

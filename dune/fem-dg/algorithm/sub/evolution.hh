@@ -18,7 +18,7 @@
 #include <dune/fem-dg/algorithm/sub/interface.hh>
 #include <dune/fem-dg/algorithm/caller/sub/diagnostics.hh>
 #include <dune/fem-dg/algorithm/caller/sub/solvermonitor.hh>
-#include <dune/fem-dg/algorithm/caller/sub/additionaloutput.hh>
+#include <dune/fem-dg/algorithm/caller/sub/datawriter.hh>
 #include <dune/fem-dg/algorithm/caller/sub/adapt.hh>
 
 #include "containers.hh"
@@ -159,11 +159,10 @@ namespace Fem
     typedef typename BaseType::LimitDiscreteFunctionType             LimitDiscreteFunctionType;
     typedef typename BaseType::AdaptationDiscreteFunctionType        AdaptationDiscreteFunctionType;
 
-    typedef typename BaseType::IOTupleType                           IOTupleType;
     typedef typename BaseType::AdaptIndicatorType                    AdaptIndicatorType;
     typedef typename BaseType::DiagnosticsType                       DiagnosticsType;
     typedef typename BaseType::SolverMonitorType                     SolverMonitorType;
-    typedef typename BaseType::AdditionalOutputType                  AdditionalOutputType;
+    typedef typename BaseType::DataWriterType                        DataWriterType;
 
     typedef typename DiscreteFunctionType::DiscreteFunctionSpaceType DiscreteFunctionSpaceType;
 
@@ -192,10 +191,9 @@ namespace Fem
       solution_( (*cont)(_0)->solution() ),
       exactSolution_( (*cont)(_0)->exactSolution() ),
       solver_( nullptr ),
-      ioTuple_( new IOTupleType( std::make_tuple( solution_.get(), exactSolution_.get() ) ) ),
       diagnostics_( name() ),
       solverMonitor_( name() ),
-      additionalOutput_( exactSolution() ),
+      dataWriter_( name() ),
       odeSolverMonitor_()
     {}
 
@@ -235,8 +233,8 @@ namespace Fem
     //DIAGNOSTICS
     virtual DiagnosticsType* diagnostics() { return diagnostics_.value(); }
 
-    //ADDITIONALOUTPUT
-    virtual AdditionalOutputType* additionalOutput() { return additionalOutput_.value(); }
+    //DATAWRITER
+    virtual DataWriterType* dataWriter() { return dataWriter_.value(); }
 
     //LIMITING
     virtual void limit(){}
@@ -248,9 +246,6 @@ namespace Fem
 
     //CHECKPOINTING
     virtual CheckPointDiscreteFunctionType* checkPointSolution () { return solution_.get(); }
-
-    //DATAWRITING
-    virtual IOTupleType& dataTuple () { assert( ioTuple_ ); return *ioTuple_; }
 
   private:
     virtual std::shared_ptr< typename SolverType::type > doCreateSolver( TimeProviderType& tp )
@@ -321,7 +316,7 @@ namespace Fem
     virtual void doFinalize ( const int loop, TimeProviderType& tp ) override
     {
       // add eoc errors
-      Traits::ProblemTraitsType::addEOCErrors( tp, solution(), model(), problem() );
+      model().eocErrors( solution() );
 
       // delete ode solver
       solver_ = nullptr;
@@ -336,12 +331,11 @@ namespace Fem
     std::shared_ptr< DiscreteFunctionType > exactSolution_;
 
     std::shared_ptr< typename SolverType::type > solver_;
-    std::unique_ptr< IOTupleType >               ioTuple_;
 
-    DiagnosticsOptional< DiagnosticsType >           diagnostics_;
-    SolverMonitorOptional< SolverMonitorType >       solverMonitor_;
-    AdditionalOutputOptional< AdditionalOutputType > additionalOutput_;
-    typename SolverType::type::MonitorType           odeSolverMonitor_;
+    DiagnosticsOptional< DiagnosticsType >       diagnostics_;
+    SolverMonitorOptional< SolverMonitorType >   solverMonitor_;
+    DataWriterOptional< DataWriterType >         dataWriter_;
+    typename SolverType::type::MonitorType       odeSolverMonitor_;
   };
 
 

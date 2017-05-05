@@ -17,9 +17,10 @@
 //--------- CALLER --------------------------------
 #include <dune/fem-dg/algorithm/caller/sub/diagnostics.hh>
 #include <dune/fem-dg/algorithm/caller/sub/solvermonitor.hh>
-#include <dune/fem-dg/algorithm/caller/sub/additionaloutput.hh>
+#include <dune/fem-dg/algorithm/caller/sub/datawriter.hh>
 #include <dune/fem-dg/algorithm/caller/sub/adapt.hh>
 #include <dune/fem-dg/algorithm/monitor.hh>
+#include <dune/fem-dg/algorithm/caller/eocwriter.hh>
 
 //--------- GRID HELPER ---------------------
 #include <dune/fem-dg/algorithm/gridinitializer.hh>
@@ -52,12 +53,14 @@ namespace Fem
   struct CheckPointEvolutionAlgorithmTraits
   {
     // type of Grid
-    typedef typename std::tuple_element_t<0, std::tuple< ProblemTraits... > >::GridType  GridType;
+    typedef typename std::tuple_element_t<0, std::tuple< ProblemTraits... > >::GridType      GridType;
 
+    typedef std::tuple< typename std::add_lvalue_reference<typename ProblemTraits::GridType>::type ... >
+                                                                                             GridTypes;
     // wrap operator
     typedef Dune::Fem::GridTimeProvider< GridType >                                          TimeProviderType;
 
-    typedef CreateSubAlgorithms< GridType, typename ProblemTraits::template Algorithm<polOrder>... > CreateSubAlgorithmsType;
+    typedef CreateSubAlgorithms< typename ProblemTraits::template Algorithm<polOrder>...  >  CreateSubAlgorithmsType;
 
     typedef typename CreateSubAlgorithmsType::SubAlgorithmTupleType                          SubAlgorithmTupleType;
 
@@ -70,9 +73,8 @@ namespace Fem
     typedef Dune::Fem::SolverMonitorCaller < SubAlgorithmTupleType, NoIndexSequenceType >    SolverMonitorCallerType;
     typedef Dune::Fem::CheckedCheckPointCaller < SubAlgorithmTupleType >                     CheckPointCallerType;
     typedef Dune::Fem::DataWriterCaller < SubAlgorithmTupleType >                            DataWriterCallerType;
+    typedef Dune::Fem::EocWriterCaller < SubAlgorithmTupleType >                             EocWriterCallerType;
     typedef Dune::Fem::PostProcessingCaller < SubAlgorithmTupleType, NoIndexSequenceType >   PostProcessingCallerType;
-
-    typedef typename DataWriterCallerType::IOTupleType                                       IOTupleType;
 
   };
 
@@ -102,11 +104,6 @@ namespace Fem
       typedef ProblemInterfaceType                                    ProblemType;
       typedef NoModel< GridType, ProblemType >                        ModelType;
 
-      template< class Solution, class Model, class ExactFunction, class TimeProvider >
-      static void addEOCErrors ( TimeProvider& tp, Solution &u, Model &model, ExactFunction &f )
-      {
-      }
-
       static inline std::string moduleName() { return ""; }
 
       static ProblemInterfaceType* problem()
@@ -122,12 +119,11 @@ namespace Fem
       public:
         typedef Dune::Fem::AdaptiveDiscreteFunction< DiscreteFunctionSpaceType >                 DiscreteFunctionType;
 
-        typedef std::tuple< DiscreteFunctionType*, DiscreteFunctionType* >                       IOTupleType;
-
         typedef void                                                                             AdaptIndicatorType;
         typedef void                                                                             SolverMonitorType;
         typedef void                                                                             DiagnosticsType;
-        typedef void                                                                             AdditionalOutputType;
+        typedef SubDataWriter< SolutionOutput<DiscreteFunctionType> >                            DataWriterType;
+
       };
 
       template <int polOrd>
@@ -164,8 +160,11 @@ namespace Fem
       typedef std::tuple< AdvDiffOrder >                                  SubOrderRowType;
       typedef SubOrderRowType                                             SubOrderColType;
 
+      //external params lists
+      typedef ExtraArg<>                                                  ExtraType;
+
       //Global container
-      typedef GlobalContainer< Item2TupleType, Item1TupleType, SubOrderRowType, SubOrderColType,DFType >
+      typedef GlobalContainer< Item2TupleType, Item1TupleType, SubOrderRowType, SubOrderColType,ExtraType,DFType >
                                                                           GlobalContainerType;
 
       //create grid

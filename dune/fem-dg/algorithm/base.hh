@@ -14,6 +14,8 @@
 #include <dune/fem-dg/algorithm/monitor.hh>
 #include <dune/fem-dg/operator/adaptation/utility.hh>
 #include <dune/fem-dg/misc/parameterkey.hh>
+#include <dune/fem-dg/misc/tupleutility.hh>
+#include <dune/fem/common/utility.hh>
 #include <dune/fem/misc/femtimer.hh>
 #include <dune/fem/misc/femeoc.hh>
 
@@ -113,15 +115,6 @@ namespace Fem
   };
 
 
-  //! add solver Monitor data to Fem Eoc
-  template< class Monitor >
-  void writeFemEoc ( const Monitor &m, const double runTime, std::stringstream &out )
-  {
-    Fem::FemEoc::write( m.getData( "GridWidth" ), m.getData( "Elements" ), runTime, m.getData( "TimeSteps" ),
-                        m.getData( "AvgTimeStep" ), m.getData( "MinTimeStep" ), m.getData( "MaxTimeStep" ),
-                        m.getData( "Newton" ), m.getData( "ILS" ), m.getData( "MaxNewton" ), m.getData( "MaxILS" ), out );
-  }
-
 
   //! get memory in MB
   inline double getMemoryUsage()
@@ -131,8 +124,47 @@ namespace Fem
     return (info.ru_maxrss / 1024.0);
   }
 
+  /**
+   *  \brief Interface class for all algorithms.
+   *
+   *  \ingroup Algorithms
+   */
+  class EOCAlgorithmInterface
+  {
+  public:
+    //! constructor
+    EOCAlgorithmInterface ( )
+    {}
 
-  // AlgorithmInterface
+    //! destructor
+    virtual~ EOCAlgorithmInterface()
+    {}
+
+    virtual void eocInitialize ()
+    {}
+
+    virtual void eocPreSolve ( const int loop )
+    {}
+
+    // solve the problem for eoc loop 'loop'
+    virtual void eocSolve ( const int loop )
+    {}
+
+    virtual void eocPostSolve ( const int loop )
+    {}
+
+    virtual void eocFinalize()
+    {}
+
+    int eocSteps() const
+    {
+      return 0;
+    }
+  };
+
+
+
+  // EOCAlgorithm
   // -------------
 
   /**
@@ -141,7 +173,8 @@ namespace Fem
    *  \ingroup Algorithms
    */
   template< class AlgorithmTraits >
-  class AlgorithmInterface
+  class EOCAlgorithm
+    : public EOCAlgorithmInterface
   {
     typedef AlgorithmTraits Traits;
 
@@ -150,52 +183,176 @@ namespace Fem
     typedef typename Traits::GridType                 GridType;
     typedef typename Traits::GridTypes                GridTypes;
 
-    // type of IOTuple
-    typedef typename Traits::IOTupleType              IOTupleType;
-
     // type of statistics monitor
     typedef typename Traits::SolverMonitorCallerType  SolverMonitorCallerType;
+    typedef typename Traits::DataWriterCallerType     DataWriterCallerType;
+    typedef typename Traits::EocWriterCallerType      EocWriterCallerType;
+
+    typedef typename Traits::CreateSubAlgorithmsType  CreateSubAlgorithmsType;
+
+    typedef typename Traits::SubAlgorithmTupleType    SubAlgorithmTupleType;
+
+    static const int size = std::tuple_size< SubAlgorithmTupleType >::value;
+
+    typedef typename std::make_index_sequence< size > IndexSequenceType;
 
     typedef EocParameters                             EocParametersType;
 
+    typedef uint64_t                                  UInt64Type;
+
     //! constructor
-    AlgorithmInterface ( const std::string algorithmName, const GridTypes& grids )
-      : grids_( grids ),
+    template< class GlobalContainerImp >
+    EOCAlgorithm ( const std::string algorithmName, const std::shared_ptr<GlobalContainerImp>& cont )
+      : grids_( CreateSubAlgorithmsType::grids( cont ) ),
+        tuple_( CreateSubAlgorithmsType::apply( cont ) ),
+        solverMonitorCaller_( tuple_ ),
+        dataWriterCaller_( tuple_ ),
+        eocWriterCaller_( tuple_ ),
         algorithmName_( algorithmName ),
         eocParam_( ParameterKey::generate( "", "fem.eoc." ) )
     {}
 
     //! destructor
-    virtual~ AlgorithmInterface()
+    virtual~ EOCAlgorithm()
     {}
 
-    //! return reference to hierarchical grid
-    GridType &grid () const { return std::get<0>( grids_ ); }
-
-    // return size of grid
-    virtual std::size_t gridSize () const
+    //! return default data tuple for data output
+    virtual DataWriterCallerType& dataWriter ()
     {
-      std::size_t grSize = std::get<0>(grids_).size( 0 );
-      return std::get<0>(grids_).comm().sum( grSize );
+      return dataWriterCaller_;
+    }
+
+    virtual SolverMonitorCallerType& monitor()
+    {
+      return solverMonitorCaller_;
     }
 
     //! return default data tuple for data output
-    virtual IOTupleType dataTuple() = 0;
+    virtual EocWriterCallerType& eocWriter ()
+    {
+      return eocWriterCaller_;
+    }
+
+    //! return reference to hierarchical grid
+    GridType& grid () const
+    {
+      return std::get<0>( grids_ );
+    }
+
+    //! return reference to hierarchical grids
+    const GridTypes& grids () const
+    {
+      return grids_;
+    }
+
+
+    // return size of grid
+    virtual UInt64Type gridSize () const
+    {
+      return gridSize( grids_, IndexSequenceType() );
+    }
+
+    // return size of grid
+    virtual typename tuple_copy< size, UInt64Type >::type gridSizes () const
+    {
+      return gridSizes( grids_, IndexSequenceType() );
+    }
+
+    virtual void eocInitialize ()
+    {
+      //CALLER
+      dataWriter().eocInitializeStart( this );
+      eocWriter().eocInitializeStart( this );
+    }
+
+    virtual void eocPreSolve ( const int loop )
+    {
+      eocWriter().eocPreSolveEnd( this, loop );
+    }
 
     // solve the problem for eoc loop 'loop'
-    virtual void solve ( const int loop ) = 0;
+    virtual void eocSolve ( const int loop )
+    {}
 
-    virtual SolverMonitorCallerType& monitor() = 0;
+    virtual void eocPostSolve ( const int loop )
+    {
+      //CALLER
+      eocWriter().eocPostSolveEnd( this, loop );
+      dataWriter().eocPostSolveEnd( this, loop );
+
+      // Refine the grid for the next EOC Step.
+      refineGrid( IndexSequenceType() );
+    }
+
+    virtual void eocFinalize()
+    {}
+
+    int eocSteps() const
+    {
+      return eocParam_.steps();
+    }
 
     EocParametersType& eocParams() { return eocParam_; }
 
     virtual const std::string name() { return algorithmName_; }
 
-  private:
-    GridTypes grids_;
-    const std::string algorithmName_;
-    EocParameters eocParam_;
+    SubAlgorithmTupleType &subAlgorithmTuple () { return tuple_; }
+    const SubAlgorithmTupleType &subAlgorithmTuple () const { return tuple_; }
+
+  protected:
+    template< int i >
+    struct RefineGrid
+    {
+      template< class T, class GridSizes >
+      static void apply ( T &t, const GridSizes& oldGridSizes, GridSizes& newGridSizes  )
+      {
+        typedef std::remove_reference_t< std::tuple_element_t<i,GridTypes> > Element;
+        const int step = std::get<i>(gridSizes( t, IndexSequenceType() ))==std::get<i>(oldGridSizes) ?
+                         Dune::DGFGridInfo<Element>::refineStepsForHalf() : 0;
+        Fem::GlobalRefine::apply( std::get<i>(t), step );
+
+        //manipulate newGridSizes to prevent double refinement
+        //std::get<i>(newGridSizes) = std::get<0>(gridSizes( t, std::index_sequence<i>() ) );
+
+      }
+    };
+    template< template< int > class Caller >
+    using ForLoopType = ForLoop< Caller, 0, size-1 >;
+
+    template< unsigned long int... i >
+    static decltype(auto) gridSizes ( const GridTypes& grids, std::index_sequence<i...> seq )
+    {
+      auto grSizes = std::make_tuple( std::get<i>(grids).size( 0 )... );
+      return std::make_tuple( std::get<i>(grids).comm().sum( std::get<i>( grSizes ) )... );
+    }
+
+    template< unsigned long int... i >
+    static decltype(auto) gridSize ( const GridTypes& grids, std::index_sequence<i...> seq )
+    {
+      const auto& grdSizes = gridSizes( grids, seq );
+      return Std::max( std::get<i>(grdSizes)...);
+    }
+
+    template< unsigned long int... i >
+    void refineGrid( std::index_sequence<i...> seq )
+    {
+      if( eocSteps() > 1 )
+      {
+        auto newGridSizes = gridSizes();
+        ForLoopType< RefineGrid >::apply( grids(), gridSizes(), newGridSizes );
+      }
+    }
+
+  protected:
+    GridTypes                      grids_;
+    SubAlgorithmTupleType          tuple_;
+    SolverMonitorCallerType        solverMonitorCaller_;
+    DataWriterCallerType           dataWriterCaller_;
+    EocWriterCallerType            eocWriterCaller_;
+    const std::string              algorithmName_;
+    EocParameters                  eocParam_;
   };
+
 
 
 
@@ -207,63 +364,31 @@ namespace Fem
   template <class Algorithm>
   void compute(Algorithm& algorithm)
   {
-    typedef typename Algorithm::GridType             GridType;
-    typedef typename Algorithm::EocParametersType    EocParametersType;
-
-    auto& grid = algorithm.grid();
-    auto dataTup = algorithm.dataTuple() ;
-
-    typedef typename Algorithm::DataWriterCallerType::template DataOutput< decltype( grid ), decltype( dataTup ) > ::Type DataOutputType;
-    DataOutputType dataOutput( grid, dataTup );
-
-    // initialize FemEoc if eocSteps > 1
-    EocParametersType& eocParam( algorithm.eocParams() );
-    FemEoc::clear();
-    FemEoc::initialize( eocParam.outputPath(), eocParam.fileName(), "results" );
+    algorithm.eocInitialize();
 
     const unsigned int femTimerId = FemTimer::addTo("timestep");
-    for(int eocloop=0; eocloop < eocParam.steps(); ++eocloop )
+    for(int eocloop=0; eocloop < algorithm.eocSteps(); ++eocloop )
     {
       // start fem timer (enable with -DFEMTIMER)
-      FemTimer :: start(femTimerId);
+      FemTimer::start(femTimerId);
 
-      // additional timer
-      Dune::Timer timer ;
+      algorithm.eocPreSolve( eocloop );
 
       // call algorithm and return solver statistics and some info
-      algorithm.solve( eocloop );
-
-      // get run time
-      const double runTime = timer.elapsed();
+      algorithm.eocSolve( eocloop );
 
       // also get times for FemTimer if enabled
       FemTimer::stop(femTimerId);
       FemTimer::printFile("./timer.out");
       FemTimer::reset(femTimerId);
 
-      std::stringstream eocInfo ;
-
-      // generate EOC information
-      writeFemEoc( algorithm.monitor(), runTime, eocInfo );
-
-      // in verbose mode write EOC info to std::cout
-      if( Fem::Parameter::verbose() )
-      {
-        std::cout << std::endl << "EOC info: " << std::endl << eocInfo.str() << std::endl;
-      }
-
-      // write eoc step
-      dataOutput.writeData( eocloop );
-
-      // Refine the grid for the next EOC Step. If the scheme uses adaptation,
-      // the refinement level needs to be set in the algorithms' initialize method.
-      if( eocParam.steps() > 1 )
-        Fem::GlobalRefine::apply(grid,Dune::DGFGridInfo<GridType>::refineStepsForHalf());
-
+      algorithm.eocPostSolve( eocloop );
     } /***** END of EOC Loop *****/
 
     // FemTimer cleanup
     FemTimer::removeAll();
+
+    algorithm.eocFinalize();
   }
 
 

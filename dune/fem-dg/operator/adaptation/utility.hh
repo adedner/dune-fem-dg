@@ -19,6 +19,8 @@ namespace Fem
   struct AdaptationParameters
     : public Fem::LocalParameter< AdaptationParameters, AdaptationParameters >
   {
+    typedef Fem::Parameter ParameterType;
+
     protected:
     const std::string keyPrefix_;
     int markStrategy_;
@@ -32,29 +34,38 @@ namespace Fem
         markStrategy_( getStrategy() )
     {}
 
+    ////TODO:
+    //AdaptationParameters( std::initializer_list<std::pair<std::string,std::string> > paramList, const std::string keyPrefix = "fem.adaptation."  )
+    //  : keyPrefix_( keyPrefix ),
+    //    markStrategy_( getStrategy() )
+    //{
+    //  for( auto it : paramList )
+    //    ParameterType::append( it->first, it->second );
+    //}
+
     int getStrategy () const
     {
       const std::string names[] = { "shockind", "apost", "grad" };
       // default value is gradient
-      return Fem::Parameter::getEnum( keyPrefix_ + "markingStrategy", names, 2 );
+      return ParameterType::getEnum( keyPrefix_ + "markingStrategy", names, 2 );
     }
 
     //! simulation end time
     virtual double endTime () const
     {
-      return Fem::Parameter::getValue< double >( "femdg.stepper.endtime" );
+      return ParameterType::getValue< double >( "femdg.stepper.endtime" );
     }
 
     //! retujrn refinement tolerance
     virtual double refinementTolerance () const
     {
-      return Fem::Parameter::getValue< double >( keyPrefix_ + "refineTolerance" );
+      return ParameterType::getValue< double >( keyPrefix_ + "refineTolerance" );
     }
 
     //! return percentage of refinement tolerance used for coarsening tolerance
     virtual double coarsenPercentage () const
     {
-      return Fem::Parameter::getValue< double >( keyPrefix_ + "coarsenPercent", 0.1 );
+      return ParameterType::getValue< double >( keyPrefix_ + "coarsenPercent", 0.1 );
     }
 
     //! return product of refinementTolerance and coarsenPercentage
@@ -67,20 +78,20 @@ namespace Fem
     virtual int finestLevel ( const int refineStepsForHalf = 1 ) const
     {
       return refineStepsForHalf *
-             Fem::Parameter::getValue< int >( keyPrefix_ + "finestLevel" );
+             ParameterType::getValue< int >( keyPrefix_ + "finestLevel" );
     }
 
     //! return minimal level achieved by refinement
     virtual int coarsestLevel ( const int refineStepsForHalf = 1 ) const
     {
       return refineStepsForHalf *
-             Fem::Parameter::getValue< int >( keyPrefix_ + "coarsestLevel", 0 );
+             ParameterType::getValue< int >( keyPrefix_ + "coarsestLevel", 0 );
     }
 
     //! return depth for refining neighbors of a cell marked for refinement
     virtual int neighborRefLevel () const
     {
-      return Fem::Parameter::getValue< int >( keyPrefix_ + "grad.neighborRefLevel", 1 );
+      return ParameterType::getValue< int >( keyPrefix_ + "grad.neighborRefLevel", 1 );
     }
 
     //! return true if marking strategy is based on shock indicator
@@ -103,31 +114,31 @@ namespace Fem
 
     virtual int adaptCount() const
     {
-      return Fem::Parameter::getValue<int>( keyPrefix_ + "adaptcount", 1 );
+      return ParameterType::getValue<int>( keyPrefix_ + "adaptcount", 1 );
     }
 
     virtual int method () const
     {
       const std::string names[] = { "none", "generic", "callback" };
       // default value is generic
-      return Fem::Parameter::getEnum( keyPrefix_ + "method", names, 1 );
+      return ParameterType::getEnum( keyPrefix_ + "method", names, 1 );
     }
 
     virtual double theta() const
     {
-      return Fem::Parameter::getValue<double>( keyPrefix_ + "theta", 0.5);
+      return ParameterType::getValue<double>( keyPrefix_ + "theta", 0.5);
     }
 
     virtual bool maximumStrategy() const
     {
-      return Fem::Parameter::getValue<bool>( keyPrefix_ + "maximumstrategy", true );
+      return ParameterType::getValue<bool>( keyPrefix_ + "maximumstrategy", true );
     }
 
     virtual int padaptiveMethod () const
     {
       const std::string names[] = { "none", "coeffroot", "prior2p" };
       // default value is generic
-      return Fem::Parameter::getEnum( keyPrefix_ + "padaptive.method", names, 1 );
+      return ParameterType::getEnum( keyPrefix_ + "padaptive.method", names, 1 );
     }
 
     virtual bool adaptive () const
@@ -136,7 +147,7 @@ namespace Fem
     }
 
     //! return true if verbosity mode is enabled
-    virtual bool verbose () const { return Fem::Parameter::getValue< bool >( keyPrefix_ + "verbose", false ); }
+    virtual bool verbose () const { return ParameterType::getValue< bool >( keyPrefix_ + "verbose", false ); }
   };
 
   class ComputeMinMaxVolume

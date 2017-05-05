@@ -37,7 +37,7 @@ namespace Fem
     typedef typename FunctionSpaceType::RangeFieldType               RangeFieldType;
     typedef typename FunctionSpaceType::JacobianRangeType            JacobianRangeType;
 
-    typedef Fem :: Parameter ParameterType ;
+    typedef Fem::Parameter ParameterType;
 
   protected:
     /**
@@ -49,8 +49,16 @@ namespace Fem
   public:
     typedef Fem::InstationaryFunction< ThisType, Fem::__InstationaryFunction::HoldReference > InstationaryFunctionType;
 
+    typedef InstationaryFunctionType ExactSolutionType;
+
+
     //! turn timedependent function into function by fixing time
     InstationaryFunctionType fixedTimeFunction( const double time ) const
+    {
+      return InstationaryFunctionType( *this, time );
+    }
+
+    ExactSolutionType exactSolution( const double time ) const
     {
       return InstationaryFunctionType( *this, time );
     }
@@ -361,7 +369,10 @@ namespace Fem
     ExactSolutionType exactSolution_;
 
   public:
-    const ExactSolutionType& exactSolution() const { return exactSolution_; }
+    const ExactSolutionType& exactSolution( const double time=0.0 ) const
+    {
+      return exactSolution_;
+    }
   };
 
 }

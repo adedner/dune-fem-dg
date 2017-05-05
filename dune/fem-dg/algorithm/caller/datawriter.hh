@@ -50,7 +50,7 @@ namespace Fem
   {
     template< class TupleType > struct IOTupleExtractor;
     template< class ... Args > struct IOTupleExtractor< std::tuple< Args... > >
-    { typedef typename tuple_concat< typename Args::element_type::IOTupleType::type... >::type type; };
+    { typedef typename tuple_concat< typename Args::element_type::DataWriterType::IOTupleType... >::type type; };
 
     typedef AlgTupleImp                                                            AlgTupleType;
 
@@ -68,34 +68,52 @@ namespace Fem
 
     typedef DataWriter< GridType, IOTupleType >                                    DataWriterType;
 
-    template <class Grid, class DataTuple>
-    struct DataOutput
-    {
-      typedef Dune::Fem::DataWriter< Grid, DataTuple > Type;
-    };
-
+    typedef Dune::Fem::DataOutput< GridType, IOTupleType >                         DataOutputType;
 
   private:
     template< int i >
-    struct AdditionalOutput
+    struct DataWriterOutput
     {
       template<class T, class... Args >
-      static typename std::enable_if< std::is_void< typename T::element_type::AdditionalOutputType >::value >::type
-      additionalOutput( T&, Args&& ... ){}
+      static typename std::enable_if< std::is_void< typename T::element_type::DataWriterType >::value >::type
+      dataWriter( T&, Args&& ... ){}
       template<class T, class TimeProviderImp, class... Args >
-      static typename std::enable_if< !std::is_void< typename T::element_type::AdditionalOutputType >::value >::type
-      additionalOutput( T& elem, TimeProviderImp& tp, Args && ... args )
+      static typename std::enable_if< !std::is_void< typename T::element_type::DataWriterType >::value >::type
+      dataWriter( T& elem, TimeProviderImp& tp, Args && ... args )
       {
-        if( elem->additionalOutput() )
-          elem->additionalOutput()->step( tp, *elem, args... );
+        if( elem->dataWriter() )
+          elem->dataWriter()->prepare( tp, elem /*args...*/ );
       }
 
       template< class Tuple, class ... Args >
       static void apply ( Tuple &tuple, Args && ... args )
       {
-        additionalOutput( std::get<i>( tuple ), std::forward<Args>(args)... );
+        dataWriter( std::get<i>( tuple ), std::forward<Args>(args)... );
       }
     };
+
+    template< int i >
+    struct Init
+    {
+      template<class T, class... Args >
+      static typename std::enable_if< std::is_void< typename T::element_type::DataWriterType >::value >::type
+      dataWriter( T&, Args&& ... ){}
+      template<class T, class... Args >
+      static typename std::enable_if< !std::is_void< typename T::element_type::DataWriterType >::value >::type
+      dataWriter( T& elem, Args && ... args )
+      {
+        if( elem->dataWriter() )
+          elem->dataWriter()->init( elem /*std::forward<Args>(args)...*/ );
+      }
+
+      template< class Tuple, class ... Args >
+      static void apply ( Tuple &tuple, Args && ... args )
+      {
+        dataWriter( std::get<i>( tuple ), std::forward<Args>(args)... );
+      }
+    };
+
+
 
     template< template< int > class Caller >
     using ForLoopType = ForLoop< Caller, 0, numAlgs - 1 >;
@@ -108,11 +126,28 @@ namespace Fem
      * \param[in] tuple Tuple of all sub-algorithms.
      */
     DataWriterCaller( const AlgTupleType& tuple )
-    : tuple_( TupleReducerType::apply( tuple ) ),
-      dataWriter_(),
-        dataTuple_( dataTuple( tuple_, IndexSequenceType() ) )
+      : tuple_( TupleReducerType::apply( tuple ) ),
+      dataOutput_(),
+        dataWriter_(),
+      ioTuple_()
+    {}
+
+    template< class AlgImp >
+    void eocInitializeStart( AlgImp* alg )
     {
+      ForLoopType< Init >::apply( tuple_, alg );
+
+      ioTuple_ = dataTuple( tuple_, IndexSequenceType() );
+
+      dataOutput_ = std::make_unique<DataWriterType>( std::get<0>(tuple_)->solution().space().grid(), ioTuple_ );
     }
+
+    template< class AlgImp >
+    void eocPostSolveEnd( AlgImp* alg, int loop )
+    {
+      dataOutput_->writeData( loop );
+    }
+
 
     /**
      * \brief Creates the data writer.
@@ -121,11 +156,11 @@ namespace Fem
      * \param[in] loop number of eoc loop
      * \param[in] tp the time provider
      */
-    template< class SubAlgImp, class TimeProviderImp >
-    void initializeEnd( SubAlgImp* alg, int loop, TimeProviderImp& tp )
+    template< class AlgImp, class TimeProviderImp >
+    void initializeEnd( AlgImp* alg, int loop, TimeProviderImp& tp )
     {
-      dataWriter_.reset( new DataWriterType( std::get<0>(tuple_)->solution().space().grid(), dataTuple_, tp,
-                                             alg->eocParams().dataOutputParameters( loop, alg->dataPrefix() ) ) );
+      dataWriter_ = std::make_unique<DataWriterType>( std::get<0>(tuple_)->solution().space().grid(), ioTuple_, tp,
+                                                      alg->eocParams().dataOutputParameters( loop, alg->dataPrefix() ) );
     }
 
     /**
@@ -135,8 +170,8 @@ namespace Fem
      * \param[in] loop number of eoc loop
      * \param[in] tp the time provider
      */
-    template< class SubAlgImp, class TimeProviderImp >
-    void preSolveStart( SubAlgImp* alg, int loop, TimeProviderImp& tp )
+    template< class AlgImp, class TimeProviderImp >
+    void preSolveStart( AlgImp* alg, int loop, TimeProviderImp& tp )
     {
       finalizeStart( alg, loop, tp );
     }
@@ -148,8 +183,8 @@ namespace Fem
      * \param[in] loop number of eoc loop
      * \param[in] tp the time provider
      */
-    template< class SubAlgImp, class TimeProviderImp >
-    void postSolveEnd( SubAlgImp* alg, int loop, TimeProviderImp& tp )
+    template< class AlgImp, class TimeProviderImp >
+    void postSolveEnd( AlgImp* alg, int loop, TimeProviderImp& tp )
     {
       // Check that no NAN have been generated
       if( !alg->checkSolutionValid( loop, tp ) )
@@ -167,37 +202,29 @@ namespace Fem
      * \param[in] loop number of eoc loop
      * \param[in] tp the time provider
      */
-    template< class SubAlgImp, class TimeProviderImp >
-    void finalizeStart( SubAlgImp* alg, int loop, TimeProviderImp& tp )
+    template< class AlgImp, class TimeProviderImp >
+    void finalizeStart( AlgImp* alg, int loop, TimeProviderImp& tp )
     {
       if( dataWriter_ && dataWriter_->willWrite( tp ) )
       {
         //update all additional Output
-        ForLoopType< AdditionalOutput >::apply( tuple_, tp );
+        ForLoopType< DataWriterOutput >::apply( tuple_, tp, alg );
         //writeData
         dataWriter_->write( tp );
       }
-    }
-
-    /**
-     * \brief Returns a tuple of pointer to all discrete functions that should be
-     * written to disk.
-     */
-    IOTupleType dataTuple()
-    {
-      return dataTuple_;
     }
 
   private:
     template< std::size_t ... i >
     IOTupleType dataTuple ( const TupleType &tuple, std::index_sequence< i ... > )
     {
-      return std::tuple_cat( (*std::get< i >( tuple )->dataTuple() )... );
+      return std::tuple_cat( (std::get< i >( tuple )->dataWriter()->dataTuple() )... );
     }
 
     TupleType                         tuple_;
+    std::unique_ptr< DataOutputType > dataOutput_;
     std::unique_ptr< DataWriterType > dataWriter_;
-    IOTupleType                       dataTuple_;
+    IOTupleType                       ioTuple_;
   };
 
 
@@ -211,12 +238,6 @@ namespace Fem
     : public CallerInterface
   {
   public:
-    template <class Grid, class DataTuple>
-    struct DataOutput
-    {
-      typedef Dune::Fem::DataOutput< Grid, DataTuple > Type;
-    };
-
     template< class ... Args >
     DataWriterCaller( Args&& ... ) {}
 

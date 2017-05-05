@@ -623,8 +623,6 @@ namespace Fem
 
     enum { dimension = GridType::dimension  };
 
-    typedef typename BaseType::IOTupleType                 IOTupleType;
-
     typedef typename BaseType::TimeProviderType            TimeProviderType;
 
     typedef typename BaseType::AdaptIndicatorType          AdaptIndicatorType;
@@ -730,7 +728,7 @@ namespace Fem
     //! finalize computation by calculating errors and EOCs
     virtual void doFinalize ( const int loop ) override
     {
-      ProblemTraits::addEOCErrors( solution(), model(), problem().exactSolution(), adaptIndicator()->sigma() );
+      model().eocErrors( solution(), adaptIndicator()->sigma() );
     }
 
 

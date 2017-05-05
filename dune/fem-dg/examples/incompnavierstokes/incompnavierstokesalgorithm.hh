@@ -18,7 +18,6 @@ namespace Fem
     typedef EvolutionAlgorithm< polOrder, ProblemTraits... >     BaseType;
   public:
     typedef typename BaseType::GridType                          GridType;
-    typedef typename BaseType::IOTupleType                       IOTupleType;
 
     typedef typename BaseType::SubAlgorithmTupleType             SubAlgorithmTupleType;
     typedef typename BaseType::TimeProviderType                  TimeProviderType;
@@ -56,21 +55,23 @@ namespace Fem
       BaseType::initialize( loop, tp );
     }
 
-    virtual void preStep ( int loop, TimeProviderType &tp )
+    virtual void preSolve ( int loop, TimeProviderType &tp )
     {
       auto step1 = std::get<0>( BaseType::subAlgorithmTuple() );
       auto step2 = std::get<1>( BaseType::subAlgorithmTuple() );
       auto step3 = std::get<2>( BaseType::subAlgorithmTuple() );
 
-      const double theta = step1->problem().template get<0>().theta();
+      const double theta = step1->model().problem().template get<0>().theta();
       const double time  = tp.time();
       const double dt    = tp.deltaT();
 
       //stokes
-      step1->problem().template get<0>().setTime( time );
-      step1->problem().template get<1>().setTime( time );
-      step1->problem().template get<0>().setDeltaT( dt );
-      step1->problem().template get<1>().setDeltaT( dt );
+      step1->model().problem().template get<0>().setTime( time );
+      step1->model().problem().template get<1>().setTime( time );
+      step1->model().problem().template get<0>().setDeltaT( dt );
+      step1->model().problem().template get<1>().setDeltaT( dt );
+      //step1->setTime( time );
+      //step1->setDeltaT( dt );
 
       //oseen
       TimeProviderType subTimeProvider( 0.0, 1.0, grid() );
@@ -80,28 +81,30 @@ namespace Fem
       subTimeProvider.next( (1.0 - 2.0 *theta) * dt );
 
       //stokes
-      step3->problem().template get<0>().setTime( time + dt * ( 1.0 - theta ));
-      step3->problem().template get<1>().setTime( time + dt * ( 1.0 - theta ));
-      step3->problem().template get<0>().setDeltaT( dt );
-      step3->problem().template get<1>().setDeltaT( dt );
+      step3->model().problem().template get<0>().setTime( time + dt * ( 1.0 - theta ));
+      step3->model().problem().template get<1>().setTime( time + dt * ( 1.0 - theta ));
+      step3->model().problem().template get<0>().setDeltaT( dt );
+      step3->model().problem().template get<1>().setDeltaT( dt );
+      //step3->setTime( time + dt * ( 1.0 - theta ));
+      //step3->setDeltaT( dt );
 
-      BaseType::preStep( loop, tp );
+      BaseType::preSolve( loop, tp );
     }
 
     //define your own time step
-    virtual void step ( int loop, TimeProviderType &tp )
+    virtual void solve ( int loop, TimeProviderType &tp )
     {
       auto step1 = std::get<0>( BaseType::subAlgorithmTuple() );
       auto step2 = std::get<1>( BaseType::subAlgorithmTuple() );
       auto step3 = std::get<2>( BaseType::subAlgorithmTuple() );
 
-      const double theta = step1->problem().template get<0>().theta();
+      const double theta = step1->model().problem().template get<0>().theta();
       const double time  = tp.time();
       const double dt    = tp.deltaT();
 
 
       //stokes
-      std::cout << "###### STOKES I ###### time: " << step1->problem().template get<0>().time() << " dt: " << step1->problem().template get<0>().deltaT() << std::endl;
+      std::cout << "###### STOKES I ###### time: " << step1->model().problem().template get<0>().time() << " dt: " << step1->model().problem().template get<0>().deltaT() << std::endl;
       step1->solve( loop, &tp );
 
       //oseen
@@ -118,7 +121,7 @@ namespace Fem
 
 
       //stokes
-      std::cout << "###### STOKES II ###### time: " << step3->problem().template get<0>().time() << " dt: " << step3->problem().template get<0>().deltaT() << std::endl;
+      std::cout << "###### STOKES II ###### time: " << step3->model().problem().template get<0>().time() << " dt: " << step3->model().problem().template get<0>().deltaT() << std::endl;
       step3->solve( loop, &tp );
 
 

@@ -335,6 +335,13 @@ namespace Fem
       totalspeed = advspeed;
     }
 
+    template< class DiscreteFunction >
+    void eocErrors( const DiscreteFunction& df ) const
+    {
+      //default version!
+      EOCErrorList::setErrors<L2EOCError>( *this, df );
+    }
+
    protected:
     double getTStepEps() const
     {

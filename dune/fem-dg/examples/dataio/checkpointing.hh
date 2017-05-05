@@ -66,7 +66,6 @@ namespace Fem
   public:
     using DiscreteFunction = DiscreteFunctionImp;
 
-    // owning container
     template< class SameObject >
     SubCheckPointingItem( const std::shared_ptr<SameObject>& obj, const std::string name = "" )
     : stringId_( FunctionIDGenerator::instance().nextId() ),
@@ -122,8 +121,6 @@ namespace Fem
     // ... as well as the Space type
     typedef typename DiscreteFunctionType::DiscreteFunctionSpaceType DiscreteFunctionSpaceType;
 
-    typedef typename BaseType::IOTupleType                    IOTupleType;
-
     typedef typename BaseType::TimeProviderType               TimeProviderType;
 
     // type of 64bit unsigned integer
@@ -132,7 +129,7 @@ namespace Fem
     typedef typename BaseType::AdaptIndicatorType             AdaptIndicatorType;
     typedef typename BaseType::DiagnosticsType                DiagnosticsType;
     typedef typename BaseType::SolverMonitorType              SolverMonitorType;
-    typedef typename BaseType::AdditionalOutputType           AdditionalOutputType;
+    typedef typename BaseType::DataWriterType                 DataWriterType;
     typedef typename BaseType::LimitDiscreteFunctionType      LimitDiscreteFunctionType;
     typedef typename BaseType::CheckPointDiscreteFunctionType CheckPointDiscreteFunctionType;
     typedef typename BaseType::AdaptationDiscreteFunctionType AdaptationDiscreteFunctionType;
@@ -146,19 +143,20 @@ namespace Fem
     using BaseType::solution;
     using BaseType::gridSize;
 
-    template< class ContainerImp >
-    SubCheckPointingAlgorithm( const std::shared_ptr< ContainerImp >& cont )
+    template< class ContainerImp, class ExtraArgsImp >
+    SubCheckPointingAlgorithm( const std::shared_ptr< ContainerImp >& cont,
+                               const std::shared_ptr< ExtraArgsImp >& extra )
     : BaseType( const_cast< GridType& >( (*cont)(_0)->solution()->gridPart().grid() ) ),
       solution_( (*cont)(_0)->solution() ),
-      ioTuple_( std::make_tuple( &solution(), nullptr ) ),
+      dataWriter_(),
       error_( 0.0 )
     {}
 
     //CHECKPOINTING
     virtual CheckPointDiscreteFunctionType* checkPointSolution () { return &solution(); }
 
-    //DATAWRITING
-    virtual IOTupleType& dataTuple () { return ioTuple_; }
+    //DATAWRITER
+    virtual DataWriterType* dataWriter() { return dataWriter_.value(); }
 
     virtual DiscreteFunctionType& solution ()
     {
@@ -189,10 +187,8 @@ namespace Fem
   private:
     virtual void doInitialize ( const int loop, TimeProviderType& tp ) override
     {
-      auto ftp = problem().fixedTimeFunction( tp.time() );
-      GridFunctionAdapter< typename ProblemType::InstationaryFunctionType, GridPartType >
-        adapter( "-exact", ftp, solution().gridPart(), solution().space().order()+2 );
-      interpolate( adapter, solution());
+      auto ftf = model().problem().exactSolution( tp.time() );
+      interpolate( gridFunctionAdapter( ftf, solution().space().gridPart(), solution().space().order()+2 ), solution() );
     }
 
     virtual void doPreSolve ( const int loop, TimeProviderType& tp ) override
@@ -205,10 +201,8 @@ namespace Fem
 
     virtual void doSolve ( const int loop, TimeProviderType& tp ) override
     {
-      auto ftp = problem().fixedTimeFunction( tp.time() );
-      GridFunctionAdapter< typename ProblemType::InstationaryFunctionType, GridPartType >
-        adapter( "-exact", ftp, solution().gridPart(), solution().space().order()+2 );
-      interpolate( adapter, solution() );
+      auto ftf = model().problem().exactSolution( tp.time() );
+      interpolate( gridFunctionAdapter( ftf, solution().space().gridPart(), solution().space().order()+2 ), solution() );
 
       // exchange data to ghost cells
       solution().communicate();
@@ -218,11 +212,7 @@ namespace Fem
     }
 
     virtual void doFinalize ( const int loop, TimeProviderType& tp ) override
-    {
-      // add eoc errors
-      ProblemTraits::addEOCErrors( tp, solution(), model(), problem() );
-
-    }
+    {}
 
     double computeError(TimeProviderType& tp, DiscreteFunctionType& u)
     {
@@ -243,8 +233,7 @@ namespace Fem
 
   protected:
     std::shared_ptr< DiscreteFunctionType > solution_;
-
-    IOTupleType                             ioTuple_;
+    DataWriterOptional< DataWriterType >    dataWriter_;
     double                                  error_;
 
   };

@@ -24,6 +24,7 @@
 #include <dune/fem-dg/algorithm/caller/solvermonitor.hh>
 #include <dune/fem-dg/algorithm/caller/checkpoint.hh>
 #include <dune/fem-dg/algorithm/caller/datawriter.hh>
+#include <dune/fem-dg/algorithm/caller/eocwriter.hh>
 #include <dune/fem-dg/algorithm/caller/postprocessing.hh>
 #include <dune/fem-dg/algorithm/caller/adapt.hh>
 
@@ -177,11 +178,9 @@ namespace Fem
     typedef Dune::Fem::CheckPointCaller< SubAlgorithmTupleType >        CheckPointCallerType;
     typedef Dune::Fem::SolverMonitorCaller< SubAlgorithmTupleType >     SolverMonitorCallerType;
     typedef Dune::Fem::DataWriterCaller< SubAlgorithmTupleType >        DataWriterCallerType;
+    typedef Dune::Fem::EocWriterCaller< SubAlgorithmTupleType >         EocWriterCallerType;
     typedef Dune::Fem::DiagnosticsCaller< SubAlgorithmTupleType >       DiagnosticsCallerType;
     typedef Dune::Fem::PostProcessingCaller< SubAlgorithmTupleType >    PostProcessingCallerType;
-
-    typedef typename DataWriterCallerType::IOTupleType                  IOTupleType;
-
   };
 
 
@@ -213,12 +212,11 @@ namespace Fem
    */
   template< class Traits >
   class EvolutionAlgorithmBase
-    : public AlgorithmInterface< Traits >
+    : public EOCAlgorithm< Traits >
   {
-    typedef AlgorithmInterface< Traits >                         BaseType;
+    typedef EOCAlgorithm< Traits >                               BaseType;
   public:
     typedef typename BaseType::GridType                          GridType;
-    typedef typename BaseType::IOTupleType                       IOTupleType;
     typedef typename BaseType::SolverMonitorCallerType           SolverMonitorCallerType;
 
     typedef typename Traits::SubAlgorithmTupleType               SubAlgorithmTupleType;
@@ -227,17 +225,21 @@ namespace Fem
     typedef typename Traits::DiagnosticsCallerType               DiagnosticsCallerType;
     typedef typename Traits::CheckPointCallerType                CheckPointCallerType;
     typedef typename Traits::DataWriterCallerType                DataWriterCallerType;
+    typedef typename Traits::EocWriterCallerType                 EocWriterCallerType;
     typedef typename Traits::PostProcessingCallerType            PostProcessingCallerType;
     typedef typename Traits::AdaptCallerType                     AdaptCallerType;
 
     typedef typename Traits::CreateSubAlgorithmsType             CreateSubAlgorithmsType;
 
-    typedef uint64_t                                             UInt64Type ;
+    typedef typename BaseType::UInt64Type                        UInt64Type;
 
     typedef TimeSteppingParameters                               TimeSteppingParametersType;
 
     using BaseType::eocParams;
     using BaseType::grid;
+    using BaseType::tuple_;
+    using BaseType::dataWriterCaller_;
+    using BaseType::solverMonitorCaller_;
 
   private:
     struct Initialize {
@@ -312,12 +314,9 @@ namespace Fem
 
     template< class GlobalContainerImp >
     EvolutionAlgorithmBase ( const std::string name, const std::shared_ptr<GlobalContainerImp>& cont )
-    : BaseType( name, CreateSubAlgorithmsType::grids( cont ) ),
-      tuple_( CreateSubAlgorithmsType::apply( cont ) ),
+    : BaseType( name, cont ),
       checkPointCaller_( tuple_ ),
-      dataWriterCaller_( tuple_ ),
       diagnosticsCaller_( tuple_ ),
-      solverMonitorCaller_( tuple_ ),
       postProcessingCaller_( tuple_ ),
       adaptCaller_( tuple_ ),
       param_( TimeSteppingParametersType( ParameterKey::generate( "", "femdg.stepper." ) ) ),
@@ -361,7 +360,7 @@ namespace Fem
      *
      *  \param loop the number of the eoc loop
      */
-    void solve ( const int loop )
+    void eocSolve ( const int loop )
     {
       // get start and end time from parameter file
       const double startTime = param_.startTime();
@@ -371,7 +370,7 @@ namespace Fem
       TimeProviderType tp( startTime, this->grid() );
 
       // call solve implementation taking start and end time
-      solve( loop, tp, endTime );
+      eocSolve( loop, tp, endTime );
     }
 
     /**
@@ -381,7 +380,7 @@ namespace Fem
      *  \param tp time provider
      *  \param endTime end Time of the simulation
      */
-    void solve ( const int loop, TimeProviderType& tp, const double endTime )
+    void eocSolve ( const int loop, TimeProviderType& tp, const double endTime )
     {
       double maxTimeStep = param_.maxTimeStep();
 
@@ -436,18 +435,18 @@ namespace Fem
         Dune::FemTimer::start( timeStepTimer_ );
         overallTimer_.reset();
 
-        preStep( loop, tp );
+        preSolve( loop, tp );
 
         // CALLER
         adaptCaller_.solveStart( this, loop, tp );
 
         // perform the solve for one time step, i.e. solve ODE
-        step( loop, tp );
+        solve( loop, tp );
 
         // CALLER
         postProcessingCaller_.solveEnd( this, loop, tp );
 
-        postStep( loop, tp );
+        postSolve( loop, tp );
 
         // CALLER
         solverMonitorCaller_.postSolveEnd( this, loop, tp );
@@ -508,22 +507,6 @@ namespace Fem
     }
 
     /**
-     * \brief Returns solver monitor caller.
-     */
-    virtual SolverMonitorCallerType& monitor()
-    {
-      return solverMonitorCaller_;
-    }
-
-    /**
-     * \brief Returns data tuple for data writing.
-     */
-    virtual IOTupleType dataTuple ()
-    {
-      return dataWriterCaller_.dataTuple();
-    }
-
-    /**
      * \brief Returns data prefix for EOC loops (default is loop).
      */
     virtual std::string dataPrefix () const
@@ -565,7 +548,7 @@ namespace Fem
      * \param[in] loop number of eoc loop
      * \param[in] tp the time provider
      */
-    virtual void preStep ( int loop, TimeProviderType &tp )
+    virtual void preSolve ( int loop, TimeProviderType &tp )
     {
       ForLoopType< PreSolve >::apply( tuple_, loop, &tp );
       //forEach( tuple_, []( auto& e, auto&&... a ){ e->preSolve( std::forward<decltype(a)>(a)... ) } );
@@ -587,7 +570,7 @@ namespace Fem
      * \param[in] loop number of eoc loop
      * \param[in] tp the time provider
      */
-    virtual void step ( int loop, TimeProviderType &tp )
+    virtual void solve ( int loop, TimeProviderType &tp )
     {
       ForLoopType< Solve >::apply( tuple_, loop, &tp );
     }
@@ -606,7 +589,7 @@ namespace Fem
      * \param[in] loop number of eoc loop
      * \param[in] tp the time provider
      */
-    virtual void postStep ( int loop, TimeProviderType &tp )
+    virtual void postSolve ( int loop, TimeProviderType &tp )
     {
       ForLoopType< PostSolve >::apply( tuple_, loop, &tp );
     }
@@ -629,9 +612,6 @@ namespace Fem
     {
       ForLoopType< Finalize >::apply( tuple_, loop, &tp );
     }
-
-    SubAlgorithmTupleType &subAlgorithmTuple () { return tuple_; }
-    const SubAlgorithmTupleType &subAlgorithmTuple () const { return tuple_; }
 
   private:
 
@@ -656,12 +636,8 @@ namespace Fem
     }
 
   protected:
-    SubAlgorithmTupleType          tuple_;
-
     CheckPointCallerType           checkPointCaller_;
-    DataWriterCallerType           dataWriterCaller_;
     DiagnosticsCallerType          diagnosticsCaller_;
-    SolverMonitorCallerType        solverMonitorCaller_;
     PostProcessingCallerType       postProcessingCaller_;
     AdaptCallerType                adaptCaller_;
 

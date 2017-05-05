@@ -395,7 +395,24 @@ namespace Poisson
       betaK = betaK * jump + (1.0 - jump) * betaN;
 
       return betaK ;
+
     }
+    template< class DiscreteFunction, class SigmaDiscreteFunction >
+    void eocErrors( const DiscreteFunction& df, const SigmaDiscreteFunction& sigma ) const
+    {
+      eocErrors( df );
+      //TODO: What is the analytical solution for sigma?
+      //EOCErrorList::setErrors<H1EOCError>( *this, sigma );
+    }
+
+    template< class DiscreteFunction >
+    void eocErrors( const DiscreteFunction& df ) const
+    {
+      //default version!
+      EOCErrorList::setErrors<L2EOCError>( *this, df );
+      EOCErrorList::setErrors<DGEOCError>( *this, df );
+    }
+
 
   private:
     template <class T>

@@ -58,8 +58,6 @@ namespace Fem
     // ... as well as the Space type
     typedef typename BaseType::DiscreteFunctionSpaceType      DiscreteFunctionSpaceType;
 
-    typedef typename BaseType::IOTupleType                    IOTupleType;
-
     // The ODE Solvers
     typedef typename BaseType::SolverType::type               SolverType;
 

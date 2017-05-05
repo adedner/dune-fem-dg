@@ -374,6 +374,13 @@ namespace Fem
       }
     }
 
+    template< class DiscreteFunction >
+    void eocErrors( const DiscreteFunction& df ) const
+    {
+      EOCErrorList::setErrors<L2EOCError>( *this, df );
+      EOCErrorList::setErrors<L1EOCError>( *this, df );
+    }
+
    protected:
     const EulerAnalyticalFlux<dimDomain, RangeFieldType > eulerFlux_;
     const ThermodynamicsType thermodynamics_;

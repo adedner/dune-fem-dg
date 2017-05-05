@@ -296,6 +296,20 @@ namespace Stokes
       return betaK ;
     }
 
+    template< class DiscreteFunction, class SigmaDiscreteFunction >
+    void eocErrors( const DiscreteFunction& df, const SigmaDiscreteFunction& sigma ) const
+    {
+      eocErrors( df );
+    }
+
+    template< class DiscreteFunction >
+    void eocErrors( const DiscreteFunction& df ) const
+    {
+      //default version!
+      EOCErrorList::setErrors<L2EOCError>( *this, df );
+      EOCErrorList::setErrors<DGEOCError>( *this, df );
+    }
+
   private:
     template <class T>
     T SQR( const T& a ) const
@@ -390,6 +404,13 @@ namespace Stokes
       : BaseType( problem.template get<0>() ),
         problem_( problem )
     {}
+
+    template< class DiscreteFunction >
+    void eocErrors( const DiscreteFunction& df ) const
+    {
+      //default version, pressure!
+      EOCErrorList::setErrors<L2EOCError>( *this, df );
+    }
 
 
     const ProblemType& problem () const { return problem_; }

@@ -20,6 +20,7 @@
 #include <dune/fem-dg/algorithm/caller/solvermonitor.hh>
 #include <dune/fem-dg/algorithm/caller/checkpoint.hh>
 #include <dune/fem-dg/algorithm/caller/datawriter.hh>
+#include <dune/fem-dg/algorithm/caller/eocwriter.hh>
 #include <dune/fem-dg/algorithm/caller/postprocessing.hh>
 #include <dune/fem-dg/algorithm/caller/adapt.hh>
 
@@ -55,9 +56,8 @@ namespace Fem
 
     typedef Dune::Fem::SolverMonitorCaller< SubAlgorithmTupleType >        SolverMonitorCallerType;
     typedef Dune::Fem::DataWriterCaller< SubAlgorithmTupleType >           DataWriterCallerType;
+    typedef Dune::Fem::EocWriterCaller< SubAlgorithmTupleType >            EocWriterCallerType;
     typedef Dune::Fem::AdaptCaller< SubAlgorithmTupleType >                AdaptCallerType;
-
-    typedef typename DataWriterCallerType::IOTupleType                     IOTupleType;
   };
 
 
@@ -68,22 +68,22 @@ namespace Fem
    */
   template< int polOrder, class... ProblemTraits>
   class SteadyStateAlgorithm
-    : public AlgorithmInterface< SteadyStateTraits< polOrder, ProblemTraits... > >
+    : public EOCAlgorithm< SteadyStateTraits< polOrder, ProblemTraits... > >
   {
 
     typedef SteadyStateTraits< polOrder, ProblemTraits... >             Traits;
-    typedef AlgorithmInterface< Traits >                                BaseType;
+    typedef EOCAlgorithm< Traits >                                      BaseType;
   public:
     typedef typename BaseType::GridType                                 GridType;
-    typedef typename BaseType::IOTupleType                              IOTupleType;
     typedef typename BaseType::SolverMonitorCallerType                  SolverMonitorCallerType;
     typedef typename Traits::DataWriterCallerType                       DataWriterCallerType;
+    typedef typename Traits::EocWriterCallerType                        EocWriterCallerType;
     typedef typename Traits::AdaptCallerType                            AdaptCallerType;
     typedef typename Traits::SubAlgorithmTupleType                      SubAlgorithmTupleType;
 
     typedef typename Traits::CreateSubAlgorithmsType                    CreateSubAlgorithmsType;
 
-    typedef uint64_t                                                    UInt64Type ;
+    typedef typename BaseType::UInt64Type                               UInt64Type;
 
   private:
     struct Initialize {
@@ -139,27 +139,17 @@ namespace Fem
     //static const int size = std::tuple_size< std::tuple< ProblemTraits... > >::value;
     //typedef std::make_index_sequence<size> sequence;
 
+    using BaseType::tuple_;
   public:
     using BaseType::grid;
 
     template< class GlobalContainerImp >
     SteadyStateAlgorithm ( const std::string name, const std::shared_ptr<GlobalContainerImp>& cont )
-    : BaseType( name, CreateSubAlgorithmsType::grids( cont ) ),
-      tuple_( CreateSubAlgorithmsType::apply( cont ) ),
-      solverMonitorCaller_( tuple_ ),
-      dataWriterCaller_( tuple_ ),
+    : BaseType( name, cont ),
       adaptCaller_( tuple_ )
     {}
 
-    virtual IOTupleType dataTuple ()
-    {
-      return dataWriterCaller_.dataTuple();
-    }
 
-    virtual SolverMonitorCallerType& monitor()
-    {
-      return solverMonitorCaller_;
-    }
 
     // return grid width of grid (overload in derived classes)
     virtual double gridWidth () const
@@ -189,7 +179,7 @@ namespace Fem
       ForLoopType< PreSolve >::apply( tuple_, loop );
     }
 
-    virtual void solve ( const int loop )
+    virtual void eocSolve ( const int loop )
     {
       initialize( loop );
       preSolve( loop );
@@ -216,10 +206,6 @@ namespace Fem
     }
 
   protected:
-
-    SubAlgorithmTupleType          tuple_;
-    SolverMonitorCallerType        solverMonitorCaller_;
-    DataWriterCallerType           dataWriterCaller_;
     AdaptCallerType                adaptCaller_;
 
   };

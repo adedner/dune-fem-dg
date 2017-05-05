@@ -77,6 +77,11 @@ namespace Stokes
       delete std::get<0>( problems_ );
       delete std::get<1>( problems_ );
     }
+
+    const typename StokesProblemType::ExactSolutionType& exactSolution( const double time=0.0 ) const
+    {
+      return std::get<1>( problems_ )->exactSolution();
+    }
   private:
     mutable ProblemTupleType   problems_;
   };

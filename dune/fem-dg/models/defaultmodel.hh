@@ -8,6 +8,8 @@
 
 #include <dune/fem/misc/fmatrixconverter.hh>
 #include <dune/fem-dg/misc/integral_constant.hh>
+#include <dune/fem-dg/misc/error/eocerrorlist.hh>
+#include <dune/fem-dg/misc/error/l2eocerror.hh>
 #include <dune/fem/space/common/functionspace.hh>
 
 namespace Dune
@@ -593,6 +595,17 @@ namespace Fem
     {
       return time_;
     }
+
+    template< class DiscreteFunction, class... DiscreteFunctions >
+    void eocErrors( const DiscreteFunction& df, const DiscreteFunctions&... dfs ) const
+    {
+      //default l2 error
+      EOCErrorList::setErrors<L2EOCError>( *this, df );
+      eocErrors( dfs... );
+    }
+
+    void eocErrors() const
+    {}
 
   protected:
     double time_;

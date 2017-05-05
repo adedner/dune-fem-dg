@@ -11,6 +11,9 @@
 #include "thermodynamics.hh"
 #include "navierstokesflux.hh"
 
+#include <dune/fem-dg/misc/error/l2eocerror.hh>
+#include <dune/fem-dg/misc/error/l1eocerror.hh>
+
 namespace Dune
 {
 namespace Fem
@@ -318,6 +321,13 @@ namespace Fem
     {
       problem_.evaluate( time, xgl, result );
       //thermodynamics_.conservativeToPrimitiveEnergyForm( cons, result );
+    }
+
+    template< class DiscreteFunction >
+    void eocErrors( const DiscreteFunction& df ) const
+    {
+      //default version!
+      EOCErrorList::setErrors<L2EOCError>( *this, df );
     }
 
     inline const ProblemType& problem() const { return problem_; }
