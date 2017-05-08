@@ -111,12 +111,14 @@ namespace Fem
       if( dataInt_.find(name) != dataInt_.end() )
       {
         assert( std::get<0>(dataInt_[ name ]) );
-        return (double)*std::get<0>(dataInt_[ name ]);
+        const double dat = (double)(*std::get<0>(dataInt_[ name ]));
+        return dat;
       }
       if( dataLongInt_.find(name) != dataLongInt_.end() )
       {
         assert( std::get<0>(dataLongInt_[ name ]) );
-        return (double)*std::get<0>(dataLongInt_[ name ]);
+        const double dat = (double)(*std::get<0>(dataLongInt_[ name ]));
+        return dat;
       }
 
       if( dataDouble_.find(name) != dataDouble_.end() )
