@@ -325,7 +325,7 @@ namespace Fem
     //! Some timestep size management.
     void doFinalize(DestinationType& dest, const bool doCommunicate) const
     {
-      if( doCommunicate && (&dest) )
+      if( doCommunicate /* && (&dest)*/ )
       {
         // communicate calculated function (not in thread parallel version)
         dest.communicate();

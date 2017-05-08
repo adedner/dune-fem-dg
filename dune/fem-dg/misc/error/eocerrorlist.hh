@@ -55,8 +55,8 @@ namespace Fem
       return (it == std::end(names_)) ? -1 : std::distance( std::begin(names_), it);
     }
 
-    std::vector< int > ids_;
     std::vector< std::string > names_;
+    std::vector< int > ids_;
   };
 
   using EOCErrorList = SubEOCErrorList<0>;
