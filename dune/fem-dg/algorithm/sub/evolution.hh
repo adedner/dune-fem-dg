@@ -315,11 +315,6 @@ namespace Fem
       solver_ = nullptr;
     }
 
-    virtual bool doCheckSolutionValid ( const int loop ) const override
-    {
-      return solution().dofsValid();
-    }
-
   protected:
     double                                  overallTime_;
     Dune::Timer                             overallTimer_;
