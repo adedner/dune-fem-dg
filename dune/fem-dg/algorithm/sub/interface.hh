@@ -299,7 +299,7 @@ namespace Fem
 
 
   protected:
-    virtual bool doCheckSolutionValid ( const int loop, TimeProviderType& tp ) const { return true; }
+    virtual bool doCheckSolutionValid ( const int loop, TimeProviderType& tp ) const { return doCheckSolutionValid(loop); }
     /**
      * \brief instationary version
      */

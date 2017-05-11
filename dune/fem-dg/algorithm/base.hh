@@ -307,7 +307,7 @@ namespace Fem
       static void apply ( T &t, const GridSizes& oldGridSizes, GridSizes& newGridSizes  )
       {
         typedef std::remove_reference_t< std::tuple_element_t<i,GridTypes> > Element;
-        const int step = std::get<i>(gridSizes( t, IndexSequenceType() ))==std::get<i>(oldGridSizes) ?
+        const int step = std::get<i>(gridSizes( t, IndexSequenceType() ))==(int)std::get<i>(oldGridSizes) ?
                          Dune::DGFGridInfo<Element>::refineStepsForHalf() : 0;
         Fem::GlobalRefine::apply( std::get<i>(t), step );
 
