@@ -444,7 +444,7 @@ namespace Fem
         solve( loop, tp );
 
         //abort time step on error
-        if( !tp.timeStepValid() )
+        if( !tp.timeStepValid() || !checkSolutionValid( loop, tp ) )
         {
 
           // CALLER
