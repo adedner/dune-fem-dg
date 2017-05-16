@@ -492,7 +492,7 @@ namespace Fem
     template<class DSpace, class RSpace = DSpace>
     using LinearOperatorType = Dune::Fem::SparseRowLinearOperator< DiscreteFunctionType<DSpace>, DiscreteFunctionType<RSpace> >;
     template<class DSpace, class RSpace = DSpace>
-    using LinearInverseOperatorType = Dune::Fem::UMFPACKOp< DiscreteFunctionType<DSpace>, LinearOperatorType<DFSpace,RSpace>, symmetric >;
+    using LinearInverseOperatorType = Dune::Fem::UMFPACKOp< DiscreteFunctionType<DSpace>, LinearOperatorType<DSpace,RSpace>, symmetric >;
   };
 #else
   //template< bool dummy >
