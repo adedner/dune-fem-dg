@@ -148,8 +148,8 @@ namespace Fem
     {
       Dune::Timer timer ;
 
-      typedef RangeType           RangeTuple;
-      typedef JacobianRangeType   JacobianTuple;
+      //typedef RangeType           RangeTuple;
+      //typedef JacobianRangeType   JacobianTuple;
 
       typedef typename MatrixType::LocalMatrixType LocalMatrixType;
       matrix_->clear();

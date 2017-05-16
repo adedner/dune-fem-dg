@@ -54,9 +54,9 @@ namespace Fem
       typedef DiscreteFunctionImp                                           OutDiscreteFunctionType;
       typedef typename OutDiscreteFunctionType::DiscreteFunctionSpaceType   OutDiscreteFunctionSpaceType;
 
-      typedef typename InDiscreteFunctionSpaceType::GridPartType  GridPartType;
+      //typedef typename InDiscreteFunctionSpaceType::GridPartType  GridPartType;
       typedef typename InDiscreteFunctionSpaceType::RangeType     InRangeType;
-      typedef typename InDiscreteFunctionSpaceType::DomainType    InDomainType;
+      //typedef typename InDiscreteFunctionSpaceType::DomainType    InDomainType;
       typedef typename OutDiscreteFunctionSpaceType::RangeType    OutRangeType;
       typedef typename OutDiscreteFunctionSpaceType::DomainType   OutDomainType;
 
