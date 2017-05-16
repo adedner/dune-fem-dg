@@ -443,10 +443,9 @@ namespace Fem
         // perform the solve for one time step, i.e. solve ODE
         solve( loop, tp );
 
-        //abort time step on error
-        if( !tp.timeStepValid() || !checkSolutionValid( loop, tp ) )
+        //go to next time step, if time step was invalidated by solver
+        if( tp.timeStepValid() )
         {
-
           // CALLER
           postProcessingCaller_.solveEnd( this, loop, tp );
 
@@ -472,14 +471,15 @@ namespace Fem
           tp.next();
 
         const int timeStep = tp.timeStep();
-        printTimeStepInformation( timeStep, tp );
+        if( tp.timeStepValid() )
+          printTimeStepInformation( timeStep, tp );
 
         // for debugging and codegen only
         if( timeStep >= maximalTimeSteps )
         {
           if( Fem::Parameter::verbose() )
             std::cerr << "ABORT: time step count reached max limit of " << maximalTimeSteps << std::endl;
-          break ;
+          break;
         }
 
         if (tp.timeStep()<2)
