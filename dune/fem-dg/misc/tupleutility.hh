@@ -126,6 +126,47 @@ namespace Fem
     static const int value = true;
   };
 
+
+  template< class Sequence >
+  struct index_sequence_to_tuple;
+
+  template< size_t... i >
+  struct index_sequence_to_tuple< std::index_sequence<i...> >
+  {
+    //wrap integral_constant around it...
+    typedef std::tuple< std::integral_constant< size_t, i >... > type;
+  };
+
+  template< class Sequence >
+  struct integer_sequence_to_tuple;
+
+  template< int... i >
+  struct integer_sequence_to_tuple< std::integer_sequence<int, i...> >
+  {
+    //wrap integral_constant around it...
+    typedef std::tuple< std::integral_constant< int, i >... > type;
+  };
+
+
+  template< class Sequence >
+  struct tuple_to_index_sequence;
+
+  template< size_t... i >
+  struct tuple_to_index_sequence< std::tuple< std::integral_constant< size_t, i>... > >
+  {
+    typedef std::index_sequence< std::integral_constant< size_t, i >::value... > type;
+  };
+
+  template< class Sequence >
+  struct tuple_to_integer_sequence;
+
+  template< int... i >
+  struct tuple_to_integer_sequence< std::tuple< std::integral_constant< int, i>... > >
+  {
+    typedef std::integer_sequence< std::integral_constant< int, i >::value... > type;
+  };
+
+
   /**
    * \brief Picks some elements of a std::tuple,
    * with elements defined by a std::index_sequence.
@@ -173,6 +214,57 @@ namespace Fem
       return std::make_tuple( std::get< i >( tuple )... );
     }
   };
+
+
+  //namespace details
+  //{
+  //  template< class FullTupleImp, template<class> class Selector >
+  //  struct tuple_reducer_impl
+  //  {
+  //    typedef typename tuple_concat< std::conditional_t< Selector< std::tuple_element_t< i, FullTupleImp > >::value,
+  //                                                       std::tuple_element_t< i, FullTupleImp >,
+  //                                                       std::tuple<>
+  //                                                      >... >::type type;
+  //  };
+
+  //  template< class FullTupleImp, template<class> class Selector, class IndexSequenceType >
+  //  struct index_sequence_reducer
+  //  {};
+
+  //  template< class FullTupleImp, template<class> class Selector >
+  //  struct index_sequence_reducer< FullTupleImp, Selector, std::index_sequence<> >
+  //  {
+  //    typedef std::index_sequence<> type;
+
+  //    //
+  //    typedef typename index_sequence_to_tuple< std::index_sequence<i...> >::type TupleType;
+
+
+  //    typename tuple_to_index_sequence< typename index_sequence_to_tuple< std::index_sequence<i...> >::type >::type
+  //  };
+
+  //  template< class FullTupleImp, template<class> class Selector, std::size_t i  >
+  //  struct index_sequence_reducer< FullTupleImp, Selector, std::index_sequence< i >
+  //  {
+  //    typedef std::conditional_t< Selector< std::tuple_element_t< i, FullTupleImp > >::value,
+  //                                typename index_sequence_reducer<FullTupleImp, Selector, std::index_sequence<i> >::type,
+  //                                typename index_sequence_reducer<FullTupleImp, Selector, std::index_sequence<> >::type > type;
+  //  };
+
+
+  //  template< class FullTupleImp, template<class> class Selector, std::size_t i, std::size_t... j >
+  //  struct index_sequence_reducer< FullTupleImp, Selector, std::index_sequence< i, j... > >
+  //  {
+  //  private:
+  //    typedef std::index_sequence<i,j...> FullIndexSequenceType;
+  //    typedef std::index_sequence<j...>   ShortenIndexSequenceType;
+  //  public:
+  //    typedef std::conditional_t< Selector< std::tuple_element_t< i, FullTupleImp > >::value,
+  //                                typename index_sequence_reducer<FullTupleImp, Selector, FullIndexSequenceType >::type,
+  //                                typename index_sequence_reducer<FullTupleImp, Selector, ShortenIndexSequenceType >::type > type;
+  //  };
+
+  //}
 
 
   template< int Int, class Tuple >
