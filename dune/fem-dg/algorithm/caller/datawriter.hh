@@ -113,6 +113,27 @@ namespace Fem
       }
     };
 
+    template< int i >
+    struct Write
+    {
+      template<class T, class... Args >
+      static typename std::enable_if< std::is_void< typename T::element_type::DataWriterType >::value >::type
+      dataWriter( T&, Args&& ... ){}
+      template<class T, class TimeProviderImp, class... Args >
+      static typename std::enable_if< !std::is_void< typename T::element_type::DataWriterType >::value >::type
+      dataWriter( T& elem, TimeProviderImp& tp, Args && ... args )
+      {
+        if( elem->dataWriter() )
+          elem->dataWriter()->write( tp, elem /*args...*/ );
+      }
+
+      template< class Tuple, class ... Args >
+      static void apply ( Tuple &tuple, Args && ... args )
+      {
+        dataWriter( std::get<i>( tuple ), std::forward<Args>(args)... );
+      }
+    };
+
 
 
     template< template< int > class Caller >
@@ -128,7 +149,7 @@ namespace Fem
     DataWriterCaller( const AlgTupleType& tuple )
       : tuple_( TupleReducerType::apply( tuple ) ),
       dataOutput_(),
-        dataWriter_(),
+      dataWriter_(),
       ioTuple_()
     {}
 
@@ -211,6 +232,9 @@ namespace Fem
         ForLoopType< DataWriterOutput >::apply( tuple_, tp, alg );
         //writeData
         dataWriter_->write( tp );
+
+        //write everthing a sub data writer wants to write...
+        ForLoopType< Write >::apply( tuple_, tp, alg );
       }
     }
 

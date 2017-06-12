@@ -21,9 +21,10 @@ namespace Fem
   template< class DiscreteFunctionImp >
   class Cons2PrimOutput
   {
-  public:
     typedef DiscreteFunctionImp DiscreteFunctionType;
     typedef typename DiscreteFunctionType::DiscreteFunctionSpaceType DiscreteFunctionSpaceType;
+  public:
+    typedef std::tuple< DiscreteFunctionType* >      DataType;
 
     template< class... Args >
     Cons2PrimOutput( Args&&... args )
@@ -93,9 +94,12 @@ namespace Fem
       Dune::Fem::interpolate(localAdapted,*solution_);
     }
 
-    DiscreteFunctionType* data() const
+    template <class ... Args>
+    void write(Args&& ... ) const {}
+
+    DataType data() const
     {
-      return solution_;
+      return std::make_tuple( solution_ );
     }
 
     ~Cons2PrimOutput()
@@ -112,8 +116,9 @@ namespace Fem
   template< class DiscreteFunctionImp >
   class ExactSolutionOutput
   {
-  public:
     typedef DiscreteFunctionImp                        DiscreteFunctionType;
+  public:
+    typedef std::tuple< DiscreteFunctionType* >        DataType;
 
     template< class... Args >
     ExactSolutionOutput( Args&&... args )
@@ -138,9 +143,12 @@ namespace Fem
       interpolate( gridFunctionAdapter( ftf, solution_->space().gridPart(), solution_->space().order()+2 ), *solution_ );
     }
 
-    DiscreteFunctionType* data() const
+    template <class ... Args>
+    void write(Args&& ... ) const {}
+
+    DataType data() const
     {
-      return solution_;
+      return std::make_tuple( solution_ );
     }
 
     ~ExactSolutionOutput()
@@ -156,8 +164,9 @@ namespace Fem
   template< class DiscreteFunctionImp >
   class SolutionOutput
   {
-  public:
     typedef DiscreteFunctionImp                         DiscreteFunctionType;
+  public:
+    typedef std::tuple< DiscreteFunctionType* >         DataType;
 
     template< class... Args >
     SolutionOutput( Args&&... args )
@@ -177,14 +186,45 @@ namespace Fem
         init( alg );
     }
 
-    DiscreteFunctionType* data() const
+    template <class ... Args>
+    void write(Args&& ... ) const {}
+
+    DataType data() const
     {
-      return solution_;
+      return std::make_tuple( solution_ );
     }
   private:
     DiscreteFunctionType* solution_;
   };
 
+
+
+  class VoidSolutionOutput
+  {
+  public:
+    typedef std::tuple<>                              DataType;
+
+    template< class... Args >
+    VoidSolutionOutput( Args&&... args )
+    {}
+
+    template< class SubAlgImp >
+    void init( const std::shared_ptr<SubAlgImp>& alg )
+    {}
+
+    template< class TimeProviderImp, class SubAlgImp >
+    void prepare( TimeProviderImp& tp, const std::shared_ptr<SubAlgImp>& alg )
+    {}
+
+    template <class ... Args>
+    void write(Args&& ... ) const
+    {}
+
+    DataType data() const
+    {
+      return std::make_tuple();
+    }
+  };
 
 
 
@@ -216,13 +256,24 @@ namespace Fem
       }
     };
 
+    template< int i >
+    struct Write
+    {
+      template< class Tuple, class ... Args >
+      static void apply ( Tuple &tuple, Args && ... args )
+      {
+        std::get<i>( tuple ).write( std::forward<Args>(args)... );
+      }
+    };
+
     template< template< int > class Caller >
     using ForLoopType = ForLoop< Caller, 0, numAlgs - 1 >;
 
   public:
 
-    typedef std::tuple< OutputImp... >                                 OutputTupleType;
-    typedef std::tuple< typename OutputImp::DiscreteFunctionType*... > IOTupleType;
+    typedef std::tuple< OutputImp... >                                       OutputTupleType;
+    typedef typename tuple_concat< typename OutputImp::DataType... >::type   IOTupleType;
+
 
     SubDataWriter( const std::string keyPrefix = "" )
       : tuple_( outputTuple( IndexSequenceType()) ) //initialize with nullptr
@@ -240,6 +291,12 @@ namespace Fem
       ForLoopType< Prepare >::apply( tuple_, tp, alg );
     }
 
+    template< class TimeProviderImp, class SubAlgImp >
+    void write( TimeProviderImp& tp, const std::shared_ptr<SubAlgImp>& alg )
+    {
+      ForLoopType< Write >::apply( tuple_, tp, alg );
+    }
+
     IOTupleType dataTuple()
     {
       return dataTuple( tuple_, IndexSequenceType() );
@@ -247,9 +304,9 @@ namespace Fem
 
   private:
     template< std::size_t ... i >
-    IOTupleType dataTuple ( const OutputTupleType &tuple, std::index_sequence< i ... > )
+    IOTupleType dataTuple ( const OutputTupleType& tuple, std::index_sequence< i ... > )
     {
-      return std::make_tuple( (std::get< i >( tuple ).data() )... );
+      return std::tuple_cat( std::tuple_cat( std::get< i >( tuple ).data()...  ) );
     }
 
     template< std::size_t ... i >
