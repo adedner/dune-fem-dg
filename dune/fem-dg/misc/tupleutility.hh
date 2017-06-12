@@ -154,7 +154,7 @@ namespace Fem
   template< size_t... i >
   struct tuple_to_index_sequence< std::tuple< std::integral_constant< size_t, i>... > >
   {
-    typedef std::index_sequence< std::integral_constant< size_t, i >::value... > type;
+    typedef std::index_sequence< i... > type;
   };
 
   template< class Sequence >
@@ -163,7 +163,7 @@ namespace Fem
   template< int... i >
   struct tuple_to_integer_sequence< std::tuple< std::integral_constant< int, i>... > >
   {
-    typedef std::integer_sequence< std::integral_constant< int, i >::value... > type;
+    typedef std::integer_sequence< int, i... > type;
   };
 
 
