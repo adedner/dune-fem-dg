@@ -24,20 +24,18 @@ namespace Fem
    */
   template <class GridType, int dimRange >
   struct QuasiHeatEqnSolution : public EvolutionProblemInterface<
-                    Dune::Fem::FunctionSpace< typename GridType :: ctype, typename GridType::ctype,
-                                              GridType::dimension, dimRange>,
-                    false >
+                    Dune::Fem::FunctionSpace< typename GridType::ctype, typename GridType::ctype,
+                                              GridType::dimension, dimRange> >
   {
   public:
     typedef EvolutionProblemInterface<
-                   Dune::Fem::FunctionSpace< typename GridType :: ctype, typename GridType::ctype,
-                                             GridType::dimension, dimRange >,
-                   false >                                              BaseType;
+                   Dune::Fem::FunctionSpace< typename GridType::ctype, typename GridType::ctype,
+                                             GridType::dimension, dimRange > >   BaseType;
 
-    enum{ dimDomain = BaseType :: dimDomain };
-    typedef typename BaseType :: DomainType                            DomainType;
-    typedef typename BaseType :: RangeType                             RangeType;
-    typedef typename BaseType :: JacobianRangeType     JacobianRangeType;
+    enum{ dimDomain = BaseType::dimDomain };
+    typedef typename BaseType::DomainType            DomainType;
+    typedef typename BaseType::RangeType             RangeType;
+    typedef typename BaseType::JacobianRangeType     JacobianRangeType;
 
     typedef Fem :: Parameter  ParameterType ;
 

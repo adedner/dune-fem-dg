@@ -19,10 +19,9 @@ namespace Fem
    * \ingroup Problems
    */
   template< class FunctionSpaceImp, bool constantVelocity = false >
-  class EvolutionProblemInterface
+  class EvolutionProblemInterfaceBase
   {
-    typedef EvolutionProblemInterface< FunctionSpaceImp,
-                                       constantVelocity >            ThisType;
+    typedef EvolutionProblemInterfaceBase< FunctionSpaceImp, constantVelocity > ThisType;
 
   public:
     typedef FunctionSpaceImp                                         FunctionSpaceType;
@@ -43,13 +42,11 @@ namespace Fem
     /**
      * \brief define problem parameters
      */
-    EvolutionProblemInterface()
+    EvolutionProblemInterfaceBase()
     {}
 
   public:
     typedef Fem::InstationaryFunction< ThisType, Fem::__InstationaryFunction::HoldReference > InstationaryFunctionType;
-
-    typedef InstationaryFunctionType ExactSolutionType;
 
 
     //! turn timedependent function into function by fixing time
@@ -58,13 +55,8 @@ namespace Fem
       return InstationaryFunctionType( *this, time );
     }
 
-    ExactSolutionType exactSolution( const double time ) const
-    {
-      return InstationaryFunctionType( *this, time );
-    }
-
     //! destructor
-    virtual ~EvolutionProblemInterface() {}
+    virtual ~EvolutionProblemInterfaceBase() {}
 
     //! return true is source term is available
     virtual inline bool hasStiffSource() const { return true ; }
@@ -181,7 +173,7 @@ namespace Fem
      * \brief evaluate exact solution, to be implemented in derived classes
      */
     virtual void evaluate(const DomainType& arg,
-                          const double t, RangeType& res) const = 0 ;
+                          const double t, RangeType& res) const = 0;
 
 
     /**
@@ -206,6 +198,58 @@ namespace Fem
 
   };
 
+  /**
+   * \brief Interface class for
+   * initial and exact solution of the advection-diffusion model
+   *
+   * \ingroup Problems
+   */
+  template< class FunctionSpaceImp,
+            bool constantVelocity = false,
+            class ExactSolutionImp = Fem::InstationaryFunction< EvolutionProblemInterfaceBase< FunctionSpaceImp, constantVelocity >, Fem::__InstationaryFunction::HoldReference > >
+  class EvolutionProblemInterface
+    : public EvolutionProblemInterfaceBase< FunctionSpaceImp, constantVelocity >
+  {
+    typedef EvolutionProblemInterfaceBase< FunctionSpaceImp, constantVelocity > BaseType;
+
+  public:
+    typedef FunctionSpaceImp                                   FunctionSpaceType;
+
+    enum { ConstantVelocity = constantVelocity };
+    enum { dimDomain = FunctionSpaceType::dimDomain };
+    enum { dimRange  = FunctionSpaceType::dimRange  };
+
+    typedef typename FunctionSpaceType::DomainType             DomainType;
+    typedef typename FunctionSpaceType::RangeType              RangeType;
+    typedef typename FunctionSpaceType::DomainFieldType        DomainFieldType;
+    typedef typename FunctionSpaceType::RangeFieldType         RangeFieldType;
+    typedef typename FunctionSpaceType::JacobianRangeType      JacobianRangeType;
+
+    typedef Fem::Parameter ParameterType;
+
+    typedef ExactSolutionImp                                   ExactSolutionType;
+
+  protected:
+    /**
+     * \brief define problem parameters
+     */
+    EvolutionProblemInterface()
+      : BaseType()
+    {}
+
+  public:
+    using BaseType::evaluate;
+
+
+    ExactSolutionType exactSolution( const double time ) const
+    {
+      return ExactSolutionType( *this, time );
+    }
+
+    //! destructor
+    virtual ~EvolutionProblemInterface() {}
+
+  };
 
 
   // ProblemInterface
@@ -216,11 +260,10 @@ namespace Fem
    * \ingroup Problems
    */
   template <class FunctionSpaceImp>
-  class ProblemInterface
+  class ProblemInterfaceBase
   {
   public:
     typedef FunctionSpaceImp                                         FunctionSpaceType;
-    typedef ProblemInterface< FunctionSpaceType >                    ThisType;
 
     enum { dimDomain = FunctionSpaceType::dimDomain };
     enum { dimRange  = FunctionSpaceType::dimRange  };
@@ -233,10 +276,11 @@ namespace Fem
 
     typedef FieldMatrix< RangeFieldType, dimDomain, dimDomain >      DiffusionMatrixType;
 
-  public:
+    ProblemInterfaceBase()
+    {}
 
     //! destructor
-    virtual ~ProblemInterface() {}
+    virtual ~ProblemInterfaceBase() {}
 
     virtual std::string name () const { return "ProblemInterface"; }
 
@@ -309,58 +353,96 @@ namespace Fem
       return std::string("");
     }
 
-    ProblemInterface() : exactSolution_( *this ) {}
+   };
 
-  protected:
-    //! the exact solution to the problem for EOC calculation
-    class ExactSolution
-    : public Fem:: Function< FunctionSpaceType, ExactSolution >
+  //! the exact solution to the problem for EOC calculation
+  template< class FunctionSpaceImp, class FunctionImp >
+  class ProblemInterfaceExactSolution
+  : public Fem::Function< FunctionSpaceImp, ProblemInterfaceExactSolution< FunctionSpaceImp, FunctionImp> >
+  {
+    typedef Fem::Function< FunctionSpaceImp, ProblemInterfaceExactSolution< FunctionSpaceImp, FunctionImp> > BaseType;
+    typedef ProblemInterfaceBase< FunctionSpaceImp>                  DataType;
+
+  public:
+    typedef FunctionSpaceImp                                         FunctionSpaceType;
+
+    typedef typename FunctionSpaceType::DomainType                   DomainType;
+    typedef typename FunctionSpaceType::RangeType                    RangeType;
+    typedef typename FunctionSpaceType::JacobianRangeType            JacobianRangeType;
+    typedef typename FunctionSpaceType::DomainFieldType              DomainFieldType;
+    typedef typename FunctionSpaceType::RangeFieldType               RangeFieldType;
+
+
+    inline ProblemInterfaceExactSolution ( const DataType& data )
+    : BaseType(),
+      data_( data )
+    {}
+
+    inline void evaluate ( const DomainType &x, RangeType &ret ) const
     {
-    private:
-      typedef Fem:: Function< FunctionSpaceType, ExactSolution >      BaseType;
+      data_.u( x, ret );
+    }
 
-      typedef ProblemInterface< FunctionSpaceType>   DataType;
-    protected:
-      FunctionSpaceType  functionSpace_;
-      const DataType &data_;
+    inline void jacobian ( const DomainType &x, JacobianRangeType &ret ) const
+    {
+      data_.gradient( x, ret );
+    }
 
-    public:
-      inline ExactSolution ( const ThisType& data )
-      : BaseType( ),
-        functionSpace_(),
-        data_( data )
-      {
-      }
-
-      inline void evaluate ( const DomainType &x, RangeType &ret ) const
-      {
-        data_.u( x, ret );
-      }
-
-      inline void jacobian ( const DomainType &x, JacobianRangeType &ret ) const
-      {
-        data_.gradient( x, ret );
-      }
-
-      inline void evaluate (const DomainType &x,
-                            const double time, RangeType &phi ) const
-      {
-        evaluate( x, phi );
-      }
-    }; // end class ExactSolution
-
-  public:
-    //! type of function converter for exact solution and gradient
-    typedef ExactSolution ExactSolutionType;
+    inline void evaluate (const DomainType &x,
+                          const double time, RangeType &phi ) const
+    {
+      evaluate( x, phi );
+    }
 
   protected:
-    ExactSolutionType exactSolution_;
+    const DataType& data_;
+  }; // end class ExactSolution
 
+
+
+  // ProblemInterfaceBase
+  //-----------------
+  /**
+   * \brief Interface class for a Poisson problem
+   *
+   * \ingroup Problems
+   */
+  template <class FunctionSpaceImp,
+            class ExactSolutionImp = ProblemInterfaceExactSolution< FunctionSpaceImp, ProblemInterfaceBase<FunctionSpaceImp> > >
+  class ProblemInterface
+    : public ProblemInterfaceBase<FunctionSpaceImp>
+  {
+    typedef ProblemInterfaceBase< FunctionSpaceImp >                 BaseType;
   public:
+    typedef FunctionSpaceImp                                         FunctionSpaceType;
+
+    enum { dimDomain = FunctionSpaceType::dimDomain };
+    enum { dimRange  = FunctionSpaceType::dimRange  };
+
+    typedef typename FunctionSpaceType::DomainType                   DomainType;
+    typedef typename FunctionSpaceType::RangeType                    RangeType;
+    typedef typename FunctionSpaceType::JacobianRangeType            JacobianRangeType;
+    typedef typename FunctionSpaceType::DomainFieldType              DomainFieldType;
+    typedef typename FunctionSpaceType::RangeFieldType               RangeFieldType;
+
+    typedef FieldMatrix< RangeFieldType, dimDomain, dimDomain >      DiffusionMatrixType;
+
+    typedef ExactSolutionImp                                         ExactSolutionType;
+
+    ProblemInterface()
+      : exactSolution_( *this )
+    {}
+
+    //! destructor
+    virtual ~ProblemInterface() {}
+
     const ExactSolutionType& exactSolution( const double time=0.0 ) const
     {
       return exactSolution_;
     }
+
+  protected:
+    ExactSolutionType exactSolution_;
   };
 
 }

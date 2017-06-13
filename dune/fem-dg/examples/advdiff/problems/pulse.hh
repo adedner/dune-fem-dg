@@ -25,14 +25,12 @@ namespace Fem
   template <class GridType, int dimRange>
   class Pulse : public EvolutionProblemInterface<
                     Fem::FunctionSpace< typename GridType :: ctype, typename GridType::ctype,
-                                        GridType::dimension, dimRange>,
-                    false >
+                                        GridType::dimension, dimRange> >
   {
   public:
     typedef EvolutionProblemInterface<
                    Fem::FunctionSpace< typename GridType :: ctype, typename GridType::ctype,
-                                       GridType::dimension, dimRange >,
-                   false >                                              BaseType;
+                                       GridType::dimension, dimRange > >  BaseType;
 
     enum{ dimDomain = BaseType :: dimDomain };
     typedef typename BaseType :: DomainType            DomainType;
