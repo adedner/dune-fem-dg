@@ -11,6 +11,8 @@ namespace Dune
 {
 namespace Fem
 {
+  template< class Arg >
+  using Instationary = Fem::InstationaryFunction< Arg, Fem::__InstationaryFunction::HoldReference >;
 
   /**
    * \brief Interface class for
@@ -36,7 +38,7 @@ namespace Fem
     typedef typename FunctionSpaceType::RangeFieldType               RangeFieldType;
     typedef typename FunctionSpaceType::JacobianRangeType            JacobianRangeType;
 
-    typedef Fem::Parameter ParameterType;
+    typedef Fem::Parameter                                           ParameterType;
 
   protected:
     /**
@@ -46,7 +48,7 @@ namespace Fem
     {}
 
   public:
-    typedef Fem::InstationaryFunction< ThisType, Fem::__InstationaryFunction::HoldReference > InstationaryFunctionType;
+    typedef Instationary< ThisType >  InstationaryFunctionType;
 
 
     //! turn timedependent function into function by fixing time
@@ -198,6 +200,12 @@ namespace Fem
 
   };
 
+
+  template< class FunctionSpaceImp, bool constantVelocity >
+  //using EocEvolutionExactSolution = Instationary< EvolutionProblemInterfaceBase< FunctionSpaceImp, constantVelocity > >;
+  using EocEvolutionExactSolution = EvolutionProblemInterfaceBase< FunctionSpaceImp, constantVelocity >;
+
+
   /**
    * \brief Interface class for
    * initial and exact solution of the advection-diffusion model
@@ -206,11 +214,11 @@ namespace Fem
    */
   template< class FunctionSpaceImp,
             bool constantVelocity = false,
-            class ExactSolutionImp = Fem::InstationaryFunction< EvolutionProblemInterfaceBase< FunctionSpaceImp, constantVelocity >, Fem::__InstationaryFunction::HoldReference > >
+            class ExactSolutionImp = Instationary< EocEvolutionExactSolution< FunctionSpaceImp, constantVelocity > > >
   class EvolutionProblemInterface
-    : public EvolutionProblemInterfaceBase< FunctionSpaceImp, constantVelocity >
+    : public EocEvolutionExactSolution< FunctionSpaceImp, constantVelocity >
   {
-    typedef EvolutionProblemInterfaceBase< FunctionSpaceImp, constantVelocity > BaseType;
+    typedef EocEvolutionExactSolution< FunctionSpaceImp, constantVelocity > BaseType;
 
   public:
     typedef FunctionSpaceImp                                   FunctionSpaceType;
@@ -225,7 +233,7 @@ namespace Fem
     typedef typename FunctionSpaceType::RangeFieldType         RangeFieldType;
     typedef typename FunctionSpaceType::JacobianRangeType      JacobianRangeType;
 
-    typedef Fem::Parameter ParameterType;
+    typedef Fem::Parameter                                     ParameterType;
 
     typedef ExactSolutionImp                                   ExactSolutionType;
 
@@ -353,52 +361,61 @@ namespace Fem
       return std::string("");
     }
 
-   };
+  };
+
 
   //! the exact solution to the problem for EOC calculation
-  template< class FunctionSpaceImp, class FunctionImp >
+  template< class FunctionImp >
   class ProblemInterfaceExactSolution
-  : public Fem::Function< FunctionSpaceImp, ProblemInterfaceExactSolution< FunctionSpaceImp, FunctionImp> >
+  : public Fem::Function< typename FunctionImp::FunctionSpaceType, ProblemInterfaceExactSolution<FunctionImp> >
   {
-    typedef Fem::Function< FunctionSpaceImp, ProblemInterfaceExactSolution< FunctionSpaceImp, FunctionImp> > BaseType;
-    typedef ProblemInterfaceBase< FunctionSpaceImp>                  DataType;
+    typedef Fem::Function< typename FunctionImp::FunctionSpaceType, ProblemInterfaceExactSolution<FunctionImp> > BaseType;
+    typedef FunctionImp                                              DataType;
 
   public:
-    typedef FunctionSpaceImp                                         FunctionSpaceType;
+    typedef typename FunctionImp::FunctionSpaceType                  FunctionSpaceType;
 
     typedef typename FunctionSpaceType::DomainType                   DomainType;
     typedef typename FunctionSpaceType::RangeType                    RangeType;
     typedef typename FunctionSpaceType::JacobianRangeType            JacobianRangeType;
+    typedef typename FunctionSpaceType::HessianRangeType             HessianRangeType;
     typedef typename FunctionSpaceType::DomainFieldType              DomainFieldType;
     typedef typename FunctionSpaceType::RangeFieldType               RangeFieldType;
 
 
-    inline ProblemInterfaceExactSolution ( const DataType& data )
+    ProblemInterfaceExactSolution ( const DataType& data )
     : BaseType(),
       data_( data )
     {}
 
-    inline void evaluate ( const DomainType &x, RangeType &ret ) const
+    void evaluate ( const DomainType &x, RangeType &ret ) const
     {
       data_.u( x, ret );
     }
 
-    inline void jacobian ( const DomainType &x, JacobianRangeType &ret ) const
+    void jacobian ( const DomainType &x, JacobianRangeType &ret ) const
     {
       data_.gradient( x, ret );
     }
 
-    inline void evaluate (const DomainType &x,
-                          const double time, RangeType &phi ) const
+    void hessian ( const DomainType &x, HessianRangeType &ret ) const
     {
-      evaluate( x, phi );
+      assert( false );
+      DUNE_THROW( NotImplemented, "hessian() not implemented!" );
+    }
+
+    void evaluate (const DomainType &x,
+                   const double time, RangeType &ret ) const
+    {
+      evaluate( x, ret );
     }
 
   protected:
     const DataType& data_;
-  }; // end class ExactSolution
+  };
 
-
+  template< class FunctionSpaceImp >
+  using EocExactSolution = ProblemInterfaceExactSolution< ProblemInterfaceBase<FunctionSpaceImp> >;
 
   // ProblemInterfaceBase
   //-----------------
@@ -408,7 +425,7 @@ namespace Fem
    * \ingroup Problems
    */
   template <class FunctionSpaceImp,
-            class ExactSolutionImp = ProblemInterfaceExactSolution< FunctionSpaceImp, ProblemInterfaceBase<FunctionSpaceImp> > >
+            class ExactSolutionImp = EocExactSolution< FunctionSpaceImp > >
   class ProblemInterface
     : public ProblemInterfaceBase<FunctionSpaceImp>
   {
