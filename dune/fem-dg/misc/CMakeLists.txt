@@ -1,3 +1,4 @@
+dune_add_subdirs( error )
 dune_install(
 algorithmcreatorselector.hh  covarianttuple.hh  evaluatecaller.hh  static_warning.hh
 codegen.hh                   crs.hh             memory.hh          streams.hh
