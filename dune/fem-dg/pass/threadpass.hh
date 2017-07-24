@@ -198,11 +198,12 @@ namespace Fem
     typedef ThreadIterator                                                ThreadIteratorType;
 
   protected:
-    using BaseType :: spc_;
-    using BaseType :: pass ;
-    using BaseType :: previousPass_ ;
+    using BaseType::spc_;
+    using BaseType::previousPass_ ;
 
   public:
+    using BaseType::pass;
+
     /** \brief Constructor
      * \param discreteModel Actual discrete model
      * \param pass Previous pass
@@ -387,13 +388,14 @@ namespace Fem
       return *( passes_[ thread ] );
     }
 
-    using BaseType :: time ;
-    using BaseType :: computeTime_ ;
-    using BaseType :: destination_ ;
-    using BaseType :: destination ;
-    using BaseType :: receiveCommunication ;
+    using BaseType::time ;
+    using BaseType::computeTime_ ;
+    using BaseType::destination_ ;
+    using BaseType::destination;
 
   public:
+    using BaseType::receiveCommunication;
+
     //! return number of elements visited on last application
     size_t numberOfElements () const
     {
