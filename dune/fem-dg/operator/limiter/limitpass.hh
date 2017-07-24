@@ -1104,10 +1104,19 @@ namespace Fem
       }
     };
 
+  public:
     //! The actual computations are performed as follows. First, prepare
     //! the grid walkthrough, then call applyLocal on each entity and then
     //! call finalize.
     void compute(const ArgumentType& arg, DestinationType& dest) const
+    {
+      compute( arg, dest, std::numeric_limits<size_t>::max() );
+    }
+
+    //! The actual computations are performed as follows. First, prepare
+    //! the grid walkthrough, then call applyLocal on each entity and then
+    //! call finalize.
+    void compute(const ArgumentType& arg, DestinationType& dest, const size_t breakAfter) const
     {
       // get stopwatch
       Dune::Timer timer;
@@ -1119,9 +1128,11 @@ namespace Fem
         prepare(arg, dest);
 
         elementCounter_ = 0;
-        // dod limitation
-        for( const auto& en : elements( spc_.gridPart() ) )
+        // do limitation
+        const auto endit = spc_.end();
+        for( auto it = spc_.begin(); (it != endit) && (elementCounter_ < breakAfter); ++it )
         {
+          const auto& en = *it;
           Dune::Timer localTime;
           applyLocalImp(en);
           stepTime_[2] += localTime.elapsed();

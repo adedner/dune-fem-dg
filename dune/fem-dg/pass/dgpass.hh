@@ -102,6 +102,7 @@ namespace Fem
 
     // type of local id set
     typedef typename GridPartType::IndexSetType                         IndexSetType;
+
     typedef Fem::TemporaryLocalFunction< DiscreteFunctionSpaceType >    TemporaryLocalFunctionType;
 
 #ifdef USE_CACHED_INVERSE_MASSMATRIX
@@ -213,6 +214,14 @@ namespace Fem
     //! call finalize.
     void compute(const ArgumentType& arg, DestinationType& dest) const
     {
+      compute( arg, dest, std::numeric_limits<int>::max() );
+    }
+
+    //! The actual computations are performed as follows. First, prepare
+    //! the grid walkthrough, then call applyLocal on each entity and then
+    //! call finalize.
+    void compute(const ArgumentType& arg, DestinationType& dest, const size_t breakAfter ) const
+    {
       // get stopwatch
       Dune::Timer timer;
 
@@ -220,9 +229,11 @@ namespace Fem
 
       if( reallyCompute_ )
       {
-        for( const auto& en : elements( spc_.gridPart() ) )
+        size_t count = 0;
+        const auto endit = spc_.end();
+        for( auto it = spc_.begin(); (it != endit) && (count < breakAfter) ; ++it, ++count )
         {
-          applyLocal(en);
+          applyLocal( *it );
         }
 
         finalize(arg, dest);
@@ -500,6 +511,7 @@ namespace Fem
       {
         assert( volumeQuadratureOrder( entity ) >=0 );
         VolumeQuadratureType volQuad(entity, volumeQuadratureOrder( entity ) );
+
         caller().setEntity(entity, volQuad);
 
         // if only flux, evaluate only flux
@@ -694,11 +706,10 @@ namespace Fem
     template <class LocalFunctionImp>
     void updateFunctionAndApplyMass(
                         const EntityType& entity,
-                        LocalFunctionImp& update) const
+                        LocalFunctionImp& update ) const
     {
       if( dest_ )
       {
-        // get local function and add update
         LocalFunctionType function = dest_->localFunction( entity );
         function += update;
 

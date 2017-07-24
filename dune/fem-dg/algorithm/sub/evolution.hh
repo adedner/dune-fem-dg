@@ -23,6 +23,8 @@
 
 #include "containers.hh"
 
+#include <dune/fem-dg/misc/interpolatethreaded.hh>
+
 namespace Dune
 {
 namespace Fem
@@ -91,7 +93,7 @@ namespace Fem
   template <class... DiscreteFunctions >
   struct SubEvolutionContainer
   : public OneArgContainer< SubEvolutionContainerItem, std::tuple< DiscreteFunctions... > >
-  {
+    {
     typedef OneArgContainer< SubEvolutionContainerItem, std::tuple< DiscreteFunctions...> > BaseType;
   public:
     using BaseType::operator();
@@ -259,7 +261,7 @@ namespace Fem
     {
       // project initial data
       auto ftp = model_.problem().fixedTimeFunction( tp.time() );
-      interpolate( gridFunctionAdapter( ftp, solution_->space().gridPart(), solution_->space().order() + 2 ), solution() );
+      interpolateThreaded( gridFunctionAdapter( ftp, solution_->space().gridPart(), solution_->space().order() + 2 ), solution() );
       if( NonBlockingCommParameter::nonBlockingCommunication() )
         solution().communicate();
 
@@ -325,10 +327,10 @@ namespace Fem
 
     std::shared_ptr< typename SolverType::type > solver_;
 
-    DiagnosticsOptional< DiagnosticsType >       diagnostics_;
-    SolverMonitorOptional< SolverMonitorType >   solverMonitor_;
+    DiagnosticsOptional< DiagnosticsType >           diagnostics_;
+    SolverMonitorOptional< SolverMonitorType >       solverMonitor_;
     DataWriterOptional< DataWriterType >         dataWriter_;
-    typename SolverType::type::MonitorType       odeSolverMonitor_;
+    typename SolverType::type::MonitorType           odeSolverMonitor_;
   };
 
 

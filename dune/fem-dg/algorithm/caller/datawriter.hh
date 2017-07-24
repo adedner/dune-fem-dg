@@ -64,9 +64,9 @@ namespace Fem
     typedef typename std::tuple_element_t< 0, TupleType >::element_type::GridType  GridType;
 
   public:
-    typedef typename IOTupleExtractor< TupleType >::type                           IOTupleType;
+    typedef typename IOTupleExtractor< TupleType >::type                            IOTupleType;
 
-    typedef DataWriter< GridType, IOTupleType >                                    DataWriterType;
+    typedef DataWriter< GridType, IOTupleType >                                     DataWriterType;
 
     typedef Dune::Fem::DataOutput< GridType, IOTupleType >                         DataOutputType;
 
@@ -149,7 +149,7 @@ namespace Fem
     DataWriterCaller( const AlgTupleType& tuple )
       : tuple_( TupleReducerType::apply( tuple ) ),
       dataOutput_(),
-      dataWriter_(),
+        dataWriter_(),
       ioTuple_()
     {}
 

@@ -4,4 +4,5 @@ codegen.hh                   crs.hh             memory.hh          streams.hh
 combinedfunctionspace.hh     default.hh         optional.hh        tupleutility.hh
 configurator.hh              dgnorm.hh          parameterkey.hh    typedefcheck.hh
 cons2prim.hh                 diagnostics.hh     simulator.hh       uniquefunctionname.hh
+interpolatethreaded.hh
 )
