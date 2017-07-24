@@ -103,7 +103,7 @@ set(FEMDG_FAST_TESTBUILD ON CACHE BOOL
 
 macro(add_header_listing)
     # header
-    file( GLOB_RECURSE header "${CMAKE_CURRENT_SOURCE_DIR}/*.hh" "${CMAKE_CURRENT_SOURCE_DIR}/*.h "${CMAKE_CURRENT_SOURCE_DIR}/*.ui"")
+    file( GLOB_RECURSE header "${CMAKE_CURRENT_SOURCE_DIR}/*.hh" "${CMAKE_CURRENT_SOURCE_DIR}/*.h" "${CMAKE_CURRENT_SOURCE_DIR}/*.ui")
     set( COMMON_HEADER ${header} ${DUNE_HEADERS} )
 
     # add header of dependent modules for header listing
