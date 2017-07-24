@@ -202,7 +202,6 @@ namespace Fem
 
 
   template< class FunctionSpaceImp, bool constantVelocity >
-  //using EocEvolutionExactSolution = Instationary< EvolutionProblemInterfaceBase< FunctionSpaceImp, constantVelocity > >;
   using EocEvolutionExactSolution = EvolutionProblemInterfaceBase< FunctionSpaceImp, constantVelocity >;
 
 

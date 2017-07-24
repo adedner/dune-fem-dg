@@ -40,6 +40,8 @@
 //--------- MODELS --------------------------
 #include "stokesmodel.hh"
 
+//--------- PROBLEMCREATORSELECTOR ----------
+#include <dune/fem-dg/misc/configurator.hh>
 
 #include "subpoissonalgorithmcreator.hh"
 

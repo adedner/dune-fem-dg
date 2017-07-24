@@ -20,8 +20,6 @@
 #include <dune/fem-dg/algorithm/gridinitializer.hh>
 //--------- STEPPER -------------------------
 #include "incompnavierstokesalgorithm.hh"
-//--------- PROBLEMCREATORSELECTOR ----------
-#include <dune/fem-dg/misc/configurator.hh>
 //--------- SUBALGORITHMCREATOR -------------
 #include "substokesalgorithmcreator.hh"
 #include "subnavierstokesalgorithmcreator.hh"

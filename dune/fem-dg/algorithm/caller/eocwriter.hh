@@ -5,6 +5,7 @@
 #include <tuple>
 
 #include <dune/fem/misc/mpimanager.hh>
+#include <dune/fem/misc/femeoc.hh>
 #include <dune/fem/io/file/datawriter.hh>
 #include <dune/fem/io/parameter.hh>
 #include <dune/fem-dg/misc/tupleutility.hh>

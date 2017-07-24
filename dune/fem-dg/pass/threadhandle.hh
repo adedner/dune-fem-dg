@@ -7,6 +7,8 @@
 
 #include <cassert>
 #include <mutex>
+#include <vector>
+#include <memory>
 
 #include <dune/common/exceptions.hh>
 #include <dune/fem/misc/threads/threadmanager.hh>

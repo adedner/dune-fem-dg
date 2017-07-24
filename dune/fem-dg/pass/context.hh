@@ -4,6 +4,7 @@
 #include <cassert>
 #include <vector>
 #include <dune/fem/common/typeindexedtuple.hh>
+#include <dune/fem-dg/misc/tupleutility.hh>
 
 
 namespace Dune

@@ -2,6 +2,8 @@
 #define MATRIXUTILS_HH
 
 #include <string>
+#include <iostream>
+#include <cmath>
 
 namespace Dune
 {

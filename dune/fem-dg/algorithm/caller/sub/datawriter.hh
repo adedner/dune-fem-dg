@@ -11,7 +11,8 @@
 #include <dune/fem/quadrature/cachingquadrature.hh>
 #include <dune/fem-dg/misc/optional.hh>
 #include <dune/fem/function/common/gridfunctionadapter.hh>
-
+#include <dune/fem/space/common/interpolate.hh>
+#include <dune/fem-dg/misc/tupleutility.hh>
 
 namespace Dune
 {

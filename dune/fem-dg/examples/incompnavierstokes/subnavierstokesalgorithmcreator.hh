@@ -39,6 +39,9 @@
 //--------- MODELS --------------------------
 #include "models.hh"
 
+//--------- PROBLEMCREATORSELECTOR ----------
+#include <dune/fem-dg/misc/configurator.hh>
+
 namespace Dune
 {
 namespace Fem

@@ -6,6 +6,8 @@
 #include <dune/fem/io/parameter.hh>
 
 #include <dune/fem-dg/models/defaultmodel.hh>
+#include <dune/fem-dg/misc/error/l2eocerror.hh>
+#include <dune/fem-dg/misc/error/dgeocerror.hh>
 
 namespace Dune
 {
