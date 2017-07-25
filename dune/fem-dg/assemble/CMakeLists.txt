@@ -1,1 +1,1 @@
-dune_install( primalmatrix.hh)
+dune_install( assemblertraits.hh primalmatrix.hh)

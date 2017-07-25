@@ -1,1 +1,1 @@
-dune_install( smartodesolver.hh  rungekuttasolver.hh)
+dune_install( linearsolvers.hh rungekuttasolver.hh smartodesolver.hh uzawa.hh )
