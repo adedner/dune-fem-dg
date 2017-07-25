@@ -54,3 +54,12 @@ Installation
 
 For a full explanation of the DUNE installation process please read
 the installation notes https://www.dune-project.org/doc/installation/.
+
+
+Documentation
+-------------
+
+A documentation for the 2.4 release can be found in
+
+* A. Dedner, S. Girke, R. Klöfkorn, T. Malkmus. 2017. The DUNE-FEM-DG module. 
+Archive of Numerical Software 5(1): 21--61. http://dx.doi.org/10.11588/ans.2017.1.28602
