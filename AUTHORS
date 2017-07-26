@@ -3,12 +3,12 @@
   Discontinuous Galerkin methods for compressible flow problems, 
   e.g. the compressible Euler and Navier-Stokes equations.
 
-  Copyright (C) 2010 - 2016 Robert Kloefkorn
+  Copyright (C) 2010 - 2017 Robert Kloefkorn
   Copyright (C) 2010 - 2016 Andreas Dedner
   Copyright (C) 2010 - 2012 Slavko Brdar 
   Copyright (C) 2012 - 2014 Martin Nolte
-  Copyright (C) 2012 - 2016 Tobias Malkmus
-  Copyright (C) 2014 - 2016 Stefan Girke
+  Copyright (C) 2012 - 2017 Tobias Malkmus
+  Copyright (C) 2014 - 2017 Stefan Wierling (geb. Girke)
 
   The dune-fem-dg module is free software; you can redistribute it and/or 
   modify it under the terms of the GNU General Public License as 
