@@ -1,8 +1,6 @@
 #ifndef DUNE_FEMDG_ALGORITHM_ADVECTIONDIFFUSION_STEPPER_HH
 #define DUNE_FEMDG_ALGORITHM_ADVECTIONDIFFUSION_STEPPER_HH
 
-#include <dune/fem-dg/misc/memory.hh>
-
 // dune-fem-dg includes
 #include <dune/fem-dg/operator/adaptation/estimator.hh>
 #include <dune/fem-dg/solver/rungekuttasolver.hh>
