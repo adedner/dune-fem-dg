@@ -272,8 +272,8 @@ namespace Fem
 
   public:
 
-    typedef std::tuple< OutputImp... >                                       OutputTupleType;
-    typedef typename tuple_concat< typename OutputImp::DataType... >::type   IOTupleType;
+    typedef std::tuple< OutputImp... >                            OutputTupleType;
+    typedef tuple_concat_t< typename OutputImp::DataType... >     IOTupleType;
 
 
     SubDataWriter( const std::string keyPrefix = "" )

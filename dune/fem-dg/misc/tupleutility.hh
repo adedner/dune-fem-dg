@@ -41,6 +41,10 @@ namespace Fem
   };
 
 
+  template < class... Args >
+  using tuple_concat_t = typename tuple_concat< Args... >::type;
+
+
   /**
    * \brief Extracts the first element out of a variadic list of Arguments
    *
@@ -414,7 +418,7 @@ namespace Fem
     template< unsigned long int id, class Arg, class Arg2, class... Args >
     struct make_index_tuple_generate< id, Arg, Arg2, Args... >
     {
-      typedef typename tuple_concat< std::tuple< _index<id> >, typename make_index_tuple_generate<id+1,Arg2,Args...>::type >::type type;
+      typedef tuple_concat_t< std::tuple< _index<id> >, typename make_index_tuple_generate<id+1,Arg2,Args...>::type > type;
     };
   }
 
@@ -525,8 +529,8 @@ namespace Fem
       typedef typename VectorPack< OneArgImp, std::tuple< Rows >..., row+1 >::shared_type  SharedTupleEnd;
       typedef typename VectorPack< OneArgImp, std::tuple< Rows >..., row+1 >::type               TupleEnd;
     public:
-      typedef typename tuple_concat< SharedTupleHead, SharedTupleEnd >::type shared_type;
-      typedef typename tuple_concat< TupleHead,       TupleEnd       >::type        type;
+      typedef tuple_concat_t< SharedTupleHead, SharedTupleEnd > shared_type;
+      typedef tuple_concat_t< TupleHead,       TupleEnd       >        type;
 
     };
 
@@ -584,8 +588,8 @@ namespace Fem
       typedef typename drop_tuple< typename MatrixPack< PairImp, std::tuple< RowHead>, std::tuple< Cols...>, row, col+1 >::type        >::type       TupleEnd;
       typedef typename drop_tuple< typename MatrixPack< PairImp, std::tuple< RowHead>, std::tuple< Cols...>, row, col+1 >::shared_type >::type SharedTupleEnd;
     public:
-      typedef std::tuple< typename tuple_concat< TupleHead,       TupleEnd       >::type >        type;
-      typedef std::tuple< typename tuple_concat< SharedTupleHead, SharedTupleEnd >::type > shared_type;
+      typedef std::tuple< tuple_concat_t< TupleHead,       TupleEnd       > >        type;
+      typedef std::tuple< tuple_concat_t< SharedTupleHead, SharedTupleEnd > > shared_type;
     };
 
     /**
@@ -1258,7 +1262,7 @@ namespace Fem
   template< int size, class TupleElement >
   struct tuple_copy
   {
-    typedef typename tuple_concat< std::tuple< TupleElement >, typename tuple_copy<size-1,TupleElement>::type >::type type;
+    typedef tuple_concat_t< std::tuple< TupleElement >, typename tuple_copy<size-1,TupleElement>::type > type;
   };
 
   template< class TupleElement >
@@ -1277,7 +1281,7 @@ namespace Fem
   template< int size, template<unsigned long int> class TupleElement >
   struct tuple_copy_t
   {
-    typedef typename tuple_concat< typename tuple_copy_t<size-1,TupleElement>::type, std::tuple< TupleElement<size-1> > >::type type;
+    typedef tuple_concat_t< typename tuple_copy_t<size-1,TupleElement>::type, std::tuple< TupleElement<size-1> > > type;
   };
 
   template< template<unsigned long int> class TupleElement >
@@ -1299,15 +1303,13 @@ namespace Fem
   template< class TupleRow1, int cols2, class EmptyDefault >
   struct tuple_matrix_combine_row1
   {
-    typedef typename tuple_concat< TupleRow1,
-                                   typename tuple_copy<cols2,EmptyDefault>::type>::type type;
+    typedef tuple_concat_t< TupleRow1, typename tuple_copy<cols2,EmptyDefault>::type> type;
   };
 
   template< class TupleRow2, int cols1, class EmptyDefault >
   struct tuple_matrix_combine_row2
   {
-    typedef typename tuple_concat< typename tuple_copy<cols1,EmptyDefault>::type,
-                                   TupleRow2 >::type type;
+    typedef tuple_concat_t< typename tuple_copy<cols1,EmptyDefault>::type,TupleRow2 > type;
   };
 
   template< class... TupleRowArgs1, class... TupleRowArgs2, class EmptyDefault >
@@ -1319,7 +1321,7 @@ namespace Fem
     typedef std::tuple< typename tuple_matrix_combine_row1< TupleRowArgs1, col2, EmptyDefault >::type... > Tuple1;
     typedef std::tuple< typename tuple_matrix_combine_row2< TupleRowArgs2, col1, EmptyDefault >::type... > Tuple2;
 
-    typedef typename tuple_concat< Tuple1, Tuple2 >::type type;
+    typedef tuple_concat_t< Tuple1, Tuple2 > type;
 
 
     //static const int rows1 = tuple_matrix< TupleMatrix1 >::rows;

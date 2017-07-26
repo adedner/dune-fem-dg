@@ -29,10 +29,10 @@ namespace Fem
     typedef std::tuple< std::shared_ptr< std::tuple_element_t< i, Tuple > >... > type;
 
     template< class... AddRanges >
-    using RangeTypes = typename tuple_concat< std::tuple< typename std::tuple_element_t< i, Tuple >::RangeType... >, std::tuple< std::vector< AddRanges >... > >::type;
+    using RangeTypes = tuple_concat_t< std::tuple< typename std::tuple_element_t< i, Tuple >::RangeType... >, std::tuple< std::vector< AddRanges >... > >;
 
     template< class... AddRanges >
-    using JacobianRangeTypes = typename tuple_concat< std::tuple< typename std::tuple_element_t< i, Tuple >::JacobianRangeType... >, std::tuple< std::vector< AddRanges >... > >::type;
+    using JacobianRangeTypes = tuple_concat_t< std::tuple< typename std::tuple_element_t< i, Tuple >::JacobianRangeType... >, std::tuple< std::vector< AddRanges >... > >;
 
     template< class ExtraArgImp >
     static decltype(auto) create( const std::shared_ptr< ExtraArgImp >& tuple )

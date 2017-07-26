@@ -22,9 +22,8 @@ namespace Fem
   template< class OrderHead, class... OrderArgs, class... Args >
   struct SubOrderSelect< std::tuple<OrderHead, OrderArgs...>,std::tuple<Args...> >
   {
-    typedef typename tuple_concat< std::tuple< std::tuple_element_t<OrderHead::value,std::tuple<Args...> > >,
-                                   typename SubOrderSelect< std::tuple<OrderArgs...>, std::tuple<Args...> >::type >::type
-                                                                                                                     type;
+    typedef tuple_concat_t< std::tuple< std::tuple_element_t<OrderHead::value,std::tuple<Args...> > >,
+                            typename SubOrderSelect< std::tuple<OrderArgs...>, std::tuple<Args...> >::type > type;
   };
 
 

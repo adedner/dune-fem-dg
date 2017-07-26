@@ -136,7 +136,7 @@ namespace Fem
 
   public:
     //! type of the concatenated, wrapped tuple
-    typedef typename tuple_concat< TupleBase, Tuples... >::type type;
+    typedef tuple_concat_t< TupleBase, Tuples... > type;
 
     /**
      *  \brief Constructor

@@ -50,7 +50,7 @@ namespace Fem
   {
     template< class TupleType > struct IOTupleExtractor;
     template< class ... Args > struct IOTupleExtractor< std::tuple< Args... > >
-    { typedef typename tuple_concat< typename Args::element_type::DataWriterType::IOTupleType... >::type type; };
+    { typedef tuple_concat_t< typename Args::element_type::DataWriterType::IOTupleType... > type; };
 
     typedef AlgTupleImp                                                            AlgTupleType;
 
