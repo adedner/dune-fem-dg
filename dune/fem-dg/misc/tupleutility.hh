@@ -41,6 +41,9 @@ namespace Fem
   };
 
 
+  /**
+   * \brief type alias for `typename tuple_concat<A...>::type`
+   */
   template < class... Args >
   using tuple_concat_t = typename tuple_concat< Args... >::type;
 
@@ -220,56 +223,6 @@ namespace Fem
   };
 
 
-  //namespace details
-  //{
-  //  template< class FullTupleImp, template<class> class Selector >
-  //  struct tuple_reducer_impl
-  //  {
-  //    typedef typename tuple_concat< std::conditional_t< Selector< std::tuple_element_t< i, FullTupleImp > >::value,
-  //                                                       std::tuple_element_t< i, FullTupleImp >,
-  //                                                       std::tuple<>
-  //                                                      >... >::type type;
-  //  };
-
-  //  template< class FullTupleImp, template<class> class Selector, class IndexSequenceType >
-  //  struct index_sequence_reducer
-  //  {};
-
-  //  template< class FullTupleImp, template<class> class Selector >
-  //  struct index_sequence_reducer< FullTupleImp, Selector, std::index_sequence<> >
-  //  {
-  //    typedef std::index_sequence<> type;
-
-  //    //
-  //    typedef typename index_sequence_to_tuple< std::index_sequence<i...> >::type TupleType;
-
-
-  //    typename tuple_to_index_sequence< typename index_sequence_to_tuple< std::index_sequence<i...> >::type >::type
-  //  };
-
-  //  template< class FullTupleImp, template<class> class Selector, std::size_t i  >
-  //  struct index_sequence_reducer< FullTupleImp, Selector, std::index_sequence< i >
-  //  {
-  //    typedef std::conditional_t< Selector< std::tuple_element_t< i, FullTupleImp > >::value,
-  //                                typename index_sequence_reducer<FullTupleImp, Selector, std::index_sequence<i> >::type,
-  //                                typename index_sequence_reducer<FullTupleImp, Selector, std::index_sequence<> >::type > type;
-  //  };
-
-
-  //  template< class FullTupleImp, template<class> class Selector, std::size_t i, std::size_t... j >
-  //  struct index_sequence_reducer< FullTupleImp, Selector, std::index_sequence< i, j... > >
-  //  {
-  //  private:
-  //    typedef std::index_sequence<i,j...> FullIndexSequenceType;
-  //    typedef std::index_sequence<j...>   ShortenIndexSequenceType;
-  //  public:
-  //    typedef std::conditional_t< Selector< std::tuple_element_t< i, FullTupleImp > >::value,
-  //                                typename index_sequence_reducer<FullTupleImp, Selector, FullIndexSequenceType >::type,
-  //                                typename index_sequence_reducer<FullTupleImp, Selector, ShortenIndexSequenceType >::type > type;
-  //  };
-
-  //}
-
 
   template< int Int, class Tuple >
   class checked_tuple_element
@@ -391,6 +344,13 @@ namespace Fem
   {
     typedef std::tuple< TupleArg... > type;
   };
+
+
+  /**
+   * \brief type alias for `typename drop_tuple<A...>::type`.
+   */
+  template< class... Args >
+  using drop_tuple_t = typename drop_tuple< Args... >::type;
 
 
   namespace details
@@ -558,8 +518,8 @@ namespace Fem
 
       typedef std::tuple<                  typename PairImp< RowHead, Cols >::type  ... >       TupleHead;
       typedef std::tuple< std::shared_ptr< typename PairImp< RowHead, Cols >::type >... > SharedTupleHead;
-      typedef typename drop_tuple< typename MatrixPack< PairImp, RowTuple, ColTuple, row, col >::type        >::type       TupleEnd;
-      typedef typename drop_tuple< typename MatrixPack< PairImp, RowTuple, ColTuple, row, col >::shared_type >::type SharedTupleEnd;
+      typedef drop_tuple_t< typename MatrixPack< PairImp, RowTuple, ColTuple, row, col >::type        >       TupleEnd;
+      typedef drop_tuple_t< typename MatrixPack< PairImp, RowTuple, ColTuple, row, col >::shared_type > SharedTupleEnd;
     public:
       typedef std::tuple< TupleHead,       TupleEnd       > type;
       typedef std::tuple< SharedTupleHead, SharedTupleEnd > shared_type;
@@ -585,8 +545,8 @@ namespace Fem
     private:
       typedef std::tuple<                  typename PairImp< RowHead, ColHead, row, col >::type   > TupleHead;
       typedef std::tuple< std::shared_ptr< typename PairImp< RowHead, ColHead, row, col >::type > > SharedTupleHead;
-      typedef typename drop_tuple< typename MatrixPack< PairImp, std::tuple< RowHead>, std::tuple< Cols...>, row, col+1 >::type        >::type       TupleEnd;
-      typedef typename drop_tuple< typename MatrixPack< PairImp, std::tuple< RowHead>, std::tuple< Cols...>, row, col+1 >::shared_type >::type SharedTupleEnd;
+      typedef drop_tuple_t< typename MatrixPack< PairImp, std::tuple< RowHead>, std::tuple< Cols...>, row, col+1 >::type        >       TupleEnd;
+      typedef drop_tuple_t< typename MatrixPack< PairImp, std::tuple< RowHead>, std::tuple< Cols...>, row, col+1 >::shared_type > SharedTupleEnd;
     public:
       typedef std::tuple< tuple_concat_t< TupleHead,       TupleEnd       > >        type;
       typedef std::tuple< tuple_concat_t< SharedTupleHead, SharedTupleEnd > > shared_type;
@@ -602,10 +562,10 @@ namespace Fem
       typedef std::tuple< RowHead2, Rows... > RowTuple;
       typedef std::tuple< Cols... > ColTuple;
 
-      typedef std::tuple<                  typename PairImp< RowHead, Cols, row, col >::type  ... >                        TupleHead;
-      typedef std::tuple< std::shared_ptr< typename PairImp< RowHead, Cols, row, col >::type >... >                  SharedTupleHead;
-      typedef typename drop_tuple< typename MatrixPack< PairImp, RowTuple, ColTuple, row+1, 0 >::type        >::type       TupleEnd;
-      typedef typename drop_tuple< typename MatrixPack< PairImp, RowTuple, ColTuple, row+1, 0 >::shared_type >::type SharedTupleEnd;
+      typedef std::tuple<                  typename PairImp< RowHead, Cols, row, col >::type  ... >         TupleHead;
+      typedef std::tuple< std::shared_ptr< typename PairImp< RowHead, Cols, row, col >::type >... >   SharedTupleHead;
+      typedef drop_tuple_t< typename MatrixPack< PairImp, RowTuple, ColTuple, row+1, 0 >::type        >       TupleEnd;
+      typedef drop_tuple_t< typename MatrixPack< PairImp, RowTuple, ColTuple, row+1, 0 >::shared_type > SharedTupleEnd;
     public:
       typedef std::tuple< TupleHead,       TupleEnd       >         type;
       typedef std::tuple< SharedTupleHead, SharedTupleEnd >  shared_type;
