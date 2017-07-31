@@ -23,6 +23,8 @@ namespace Fem
   decltype(auto) indexIfVector(const T& value, int i)
   {
     typedef std::remove_reference_t<decltype(std::declval<T>()[0] )> ElemType;
+    //negative index i means: set to zero
+    //otherwise: return value
     return i < 0 ? ElemType(0) : value[i];
   }
 
@@ -35,6 +37,15 @@ namespace Fem
   // (qp          )   operator[*]: std::get<*>(arg[qp])[*]
   // (    id      )   operator[*]: std::get<id>(arg[*])[*]
   // (        base)   operator[*]: std::get<*>(arg[*])[base]
+
+
+
+
+  // Pass (instationary):         std::vector< TypeIndexedTuple<> >
+  //
+  // Non-Pass (stationary):       std::vector< std::tuple< std::vector< > > >
+  // Non-Pass (stationary):       std::vector< std::vector< > >
+
 
   template< class E, bool qpAct, bool idAct, bool baseAct, int id >
   struct Eval;
@@ -89,6 +100,19 @@ namespace Fem
     const E& e_; int qp_; int b_;
   };
 
+  ////////
+  //template< class... Args, int id >
+  //struct FinalEval<std::tuple<Args...>,id>
+  //{
+  //  typedef std::tuple<Args...> E;
+  //  FinalEval( const E& e, int qp, int b ) : e_(e), b_(b) {}
+
+  //  decltype(auto) operator()()
+  //  { return indexIfVector( std::get<id>(e_), b_ ); }
+  //private:
+  //  const E& e_; int b_;
+  //};
+
   template< class... Args, int id >
   struct FinalEval<std::vector<Dune::TypeIndexedTuple<Args...> >,id>
   {
@@ -112,6 +136,7 @@ namespace Fem
   private:
     const E& e_; int b_;
   };
+
 
 
   // this should not happen
@@ -271,24 +296,74 @@ namespace Fem
   };
 
 
+  /**
+   * \brief class for storing the access pattern of a local evaluation in a static way.
+   *
+   * \tparam hasQps true, if quadrature point has been selected
+   * \tparam hasIds true, if id has been selected
+   * \tparam hasBasis true, if basis function has been selected
+   * \tparam isNonZero true, if basis function should not be set to zero, i.e. the evaluation will be done.
+   * \tparam id the id.
+   */
   template< bool hasQPs = true, bool hasIds = true, bool hasBasis = true, bool isNonZero = true, int id = -1 >
   struct Access
   {
     static constexpr bool hasQuadPoints = hasQPs;
     static constexpr bool hasBasisFunctions = hasBasis;
     static constexpr bool hasMultiValues = hasIds;
-
-    typedef Access<false,hasIds,hasBasis,isNonZero,id> QuadraturePointType;
-    template< int i >
-    using MultiValueType = Access<hasQPs,false,hasBasis,isNonZero,i>;
-    typedef Access<hasQPs,hasIds,false,false,id>     ZeroBasisFunctionType;
-    typedef Access<hasQPs,hasIds,false,isNonZero,id> BasisFunctionType;
-
     static const int multiValue = id;
+
+    /**
+     * \brief Use this struct and typedefs therein to retrieve an Access class
+     * where a basis function, a multivalue or a quadrature point is set.
+     */
+    struct Set
+    {
+      typedef Access<false,hasIds,hasBasis,isNonZero,id> QuadPoint;
+      template< int i >
+      using MultiValue = Access<hasQPs,false,hasBasis,isNonZero,i>;
+      typedef Access<hasQPs,hasIds,false,false,id>     ZeroBasisFunction;
+      typedef Access<hasQPs,hasIds,false,isNonZero,id> BasisFunction;
+    };
   };
 
 
-  //maximal access length based on types
+  /**
+   * \brief Maps types of local evaluations arising from pass-based or non pass-based
+   * frameworks to a default Access class.
+   *
+   * The type of a local evaluation is exchangable, but not completely arbritray.
+   * Using Dune-Fem-DG, a certain structure is expected.
+   * In order to map this certain structure to an Access class,
+   * this class is defined via partial specialization.
+   *
+   * Use the `type` typedef to extract the correct Access type.
+   *
+   * \note This class realizises also cases of not already implemented
+   * structures.
+   *
+   * \note This class tries to fill the gap between the Pass-based
+   * approach used by instationary, matrix-free problems
+   * and non Pass-based stationary problem.
+   *
+   *
+   * Currently, there are three diffent types of local evaluations in
+   * Dune-Fem-DG implemented:
+   *
+   * - Pass-based approach for (matrix-free) instationary problems
+   * - A simple non Pass-based approach for stationary problems
+   * - A non Pass-based approach for stationary problems
+   *   (containing multiple values, accessible via an id,
+   *   similar to the Pass-based approach)
+   *
+   * This non specialized class is the fallback implementation.
+   * We can neither access basis functions, nor quadrature points,
+   * nor the id of a multiple value.
+   *
+   * \note This class also implements the case: simple non Pass-based
+   * for instationary (matrix-free) implementations.
+   * Nevertheless, this case is currently not used by Dune-Fem-DG!
+   */
   template< class EvalImp >
   struct DefaultAccess
   {
@@ -296,42 +371,167 @@ namespace Fem
     typedef Access< false, false, false > type;
   };
 
+
+
+  /**
+   * \brief Specialization for a non Pass-based approach.
+   *
+   * This class knows the Access type for a simple non Pass-based approach.
+   *
+   * ![Simple non Pass-based access](local_eval_structure_q.png)
+   *
+   * \note This class also implements the case: simple non Pass-based
+   * for instationary (matrix-free) implementations.
+   * Nevertheless, this case is currently not used by Dune-Fem-DG!
+   */
   template< class Arg >
   struct DefaultAccess<std::vector< Arg > >
   {
+    //no pass (simple), 'stationary'
     typedef Access< true, false, false > type;
   };
-
+  /**
+   * \brief Specialization for a non Pass-based approach.
+   *
+   * This class knows the Access type for a simple non Pass-based approach.
+   *
+   * ![Simple non Pass-based access](local_eval_structure_qb.png)
+   */
   template< class Arg >
   struct DefaultAccess<std::vector<std::vector<Arg> > >
   {
+    //no pass (simple), 'stationary'
     typedef Access< true, false, true > type;
   };
 
+  //no pass (simple), 'instationary'  [NOT USED!]
+  //-> already specialized, s.a.
+  //template< class Arg > struct DefaultAccess< Arg >;
+  //no pass (simple), 'instationary'  [NOT USED!]
+  //-> already specialized, s.a.
+  //template< class Arg > struct DefaultAccess<std::vector<Arg> >;
+
+  /**
+   * \brief Specialization for a non Pass-based approach.
+   *
+   * This class knows the Access type for a non Pass-based approach
+   * containing multiple values.
+   *
+   * ![Non Pass-based access](local_eval_structure_qib.png)
+   */
+  template< class Arg >
+  struct DefaultAccess<std::vector<std::tuple<std::vector<Arg> > > >
+  {
+    //no pass, 'stationary'
+    typedef Access< true, true, true > type;
+  };
+  /**
+   * \brief Specialization for a non Pass-based approach.
+   *
+   * This class knows the Access type for a non Pass-based approach
+   * containing multiple values.
+   *
+   * ![Non Pass-based access](local_eval_structure_ib.png)
+   */
+  template< class Arg >
+  struct DefaultAccess<std::tuple<std::vector<Arg> > >
+  {
+    //no pass, 'stationary'
+    typedef Access< false, true, true > type;
+  };
+
+  /**
+   * \brief Specialization for a non Pass-based approach.
+   *
+   * This class knows the Access type for a non Pass-based approach
+   * containing multiple values.
+   *
+   * ![Non Pass-based access](local_eval_structure_qi.png)
+   *
+   * \note This version is currently not used in Dune-Fem-DG.
+   */
   template< class... Args >
   struct DefaultAccess<std::vector<std::tuple<Args...> > >
   {
-    typedef Access< true, true, true > type;
+    //no pass, 'instationary' [NOT USED!]
+    typedef Access< true, true, false > type;
   };
-
+  /**
+   * \brief Specialization for a non Pass-based approach.
+   *
+   * This class knows the Access type for a non Pass-based approach
+   * containing multiple values.
+   *
+   * ![Non Pass-based access](local_eval_structure_i.png)
+   *
+   * \note This version is currently not used in Dune-Fem-DG.
+   */
   template< class... Args >
   struct DefaultAccess<std::tuple<Args...> >
   {
+    //no pass, 'instationary' [NOT USED!]
+    typedef Access< false, true, false > type;
+  };
+
+
+  /**
+   * \brief Specialization for a Pass-based approach.
+   *
+   * This class knows the Access type for a Pass-based approach.
+   *
+   * ![Pass-based access](local_eval_structure_qi.png)
+   */
+  template< class... Args >
+  struct DefaultAccess<std::vector<Dune::TypeIndexedTuple<Args...> > >
+  {
+    //pass, 'instationary'
+    typedef Access< true, true, false > type;
+  };
+  /**
+   * \brief Specialization for a Pass-based approach.
+   *
+   * This class knows the Access type for a Pass-based approach.
+   *
+   * ![Pass-based access](local_eval_structure_i.png)
+   */
+  template< class... Args >
+  struct DefaultAccess<Dune::TypeIndexedTuple<Args...> >
+  {
+    //pass, 'instationary'
+    typedef Access< false, true, false > type;
+  };
+  /**
+   * \brief Specialization for a Pass-based approach.
+   *
+   * This class knows the Access type for a Pass-based approach.
+   *
+   * ![Pass-based access](local_eval_structure_qib.png)
+   *
+   * \note This version is currently not used in Dune-Fem-DG.
+   */
+  template< class... Args, class Arg >
+  struct DefaultAccess<std::vector<Dune::TypeIndexedTuple<std::tuple<std::vector<Args>... >, Arg > > >
+  {
+    //pass, 'stationary' [NOT USED!]
+    typedef Access< true, true, true > type;
+  };
+  /**
+   * \brief Specialization for a Pass-based approach.
+   *
+   * This class knows the Access type for a Pass-based approach.
+   *
+   * ![Pass-based access](local_eval_structure_ib.png)
+   *
+   * \note This version is currently not used in Dune-Fem-DG.
+   */
+  template< class... Args, class Arg >
+  struct DefaultAccess<Dune::TypeIndexedTuple<std::tuple<std::vector<Args>... >, Arg > >
+  {
+    //pass, 'stationary' [NOT USED!]
     typedef Access< false, true, true > type;
   };
 
 
-  template< class... Args >
-  struct DefaultAccess<std::vector<Dune::TypeIndexedTuple<Args...> > >
-  {
-    typedef Access< true, true, false > type;
-  };
-
-  template< class... Args >
-  struct DefaultAccess<Dune::TypeIndexedTuple<Args...> >
-  {
-    typedef Access< false, true, false > type;
-  };
 
 
   struct FunctorContext
@@ -353,9 +553,13 @@ namespace Fem
     template <class... Args, class VarId >
     struct Contains< std::tuple< Args...>, VarId >
     {
-      static const bool value = (VarId::value >= 0 && std::tuple_size<std::tuple<Args...> >::value < VarId::value);
+      //true, if VarId \in [0,#tuple-1]
+      static const bool value = (VarId::value >= 0 && VarId::value < std::tuple_size<std::tuple<Args...> >::value );
     };
 
+    /**
+     * \brief This class evalu
+     */
     template <class Functor, bool containedInTuple >
     struct Evaluate;
 
@@ -695,26 +899,25 @@ namespace Fem
    * \brief This class collects several information which are relevant for the approximation of
    * integrals of discrete functions via quadrature schemes.
    *
-   * \ingroup PassBased
+   * In many discretization schemes for Partial Differential Equations local data has to be evaluated.
+   * This local data can be more complex than just the simple evaluation of a discrete function \f$ u\f$ in
+   * some point \f$ x\in\Omega \f$. In order to provide all needed local data, we have developed this class
+   * which should provide a flexible structure.
    *
-   * We are following the \ref Notation "general notation":
+   * A local evaluation simply knows, _how_ a complex local data structure has to be treated and evaluated
+   * and adds a certain structure to this evaluation.
    *
-   * Let \f$ u^t,v^t:\mathcal{\Omega}_\mathcal{G} \rightarrow \mathbb{R}^d\f$ be discrete functions for a fixed time
-   * \f$ t\in [t_{\text{start}},t_{\text{end}}] \f$. Now, we want to be able to approximate the integral over an
-   * entity \f$ E \in \mathcal{G} \f$
-   *
-   * \f[ \int_E u^t(x) + \nabla v^t(x) \mathrm{d}x \f]
-   *
-   * via a quadrature rule. This can be done in the following way
+   * In a mathematical way, the structure of a local evaluation \f$ \mathsf{E}\f$ can be described
+   * as a function, defined by
    *
    * \f{eqnarray*}{
-   *    \int_E u^t(x) + \nabla v^t(x) \mathrm{d}x &=& \int_E u^t|_E(x) + \nabla v^t|_E(x) \mathrm{d}x\\
-   *      &=&        \int_{E} u^t_E(F_E^{-1}(x)) + \nabla v^t_E(F_E^{-1}(x)) \mathrm{d}x\\
-   *      &=&        \int_{\hat{E}} \left|\det DF_E(\hat{x})\right|\left( u^t_E(\hat{x}) + \nabla v^t_E(\hat{x}) \right)\mathrm{d}\hat{x} \\
-   *      &\approx & \sum_{p\in X_p} \left|\det DF_E(\hat{x})\right| \omega_i \left(u^t_E(\hat{x}_p) + \nabla v^t_E(\hat{x}_p) \right)
+   *   \mathsf{E}:\mathcal{Q} \times \mathcal{I} \times \mathcal{B} \rightarrow \mathbb{K}^n
    * \f}
    *
-   * To archieve this goal, we collect some of the information above in this class.
+   * with \f$ \mathcal{Q}=[0,\ldots,\text{#quadPoints}] \f$, \f$ \mathcal{I}=\mathbb{N}\f$ and
+   * \f$ \mathcal{B}=[0,\ldots,\text{#basisfkt}-1] \f$.
+   *
+   *
    *
    * This class was introduced to allow more flexible interfaces for classes
    * needing a local evaluation of a discrete function.
@@ -816,14 +1019,14 @@ namespace Fem
     //access: quadpoints
     decltype(auto) operator[]( unsigned int idx ) const
     {
-      typedef LocalEvaluation<QuadratureContextImp, RangeType, JacobianType, typename AccessImp::QuadraturePointType > NewContextType;
+      typedef LocalEvaluation<QuadratureContextImp, RangeType, JacobianType, typename AccessImp::Set::QuadPoint > NewContextType;
       return NewContextType( quadImp_, values_, jacobians_, idx, basis_ );
     }
 
     //access: quadpoints II
     decltype(auto) operator[]( unsigned long int idx ) const
     {
-      typedef LocalEvaluation<QuadratureContextImp, RangeType, JacobianType, typename AccessImp::QuadraturePointType > NewContextType;
+      typedef LocalEvaluation<QuadratureContextImp, RangeType, JacobianType, typename AccessImp::Set::QuadPoint > NewContextType;
       return NewContextType( quadImp_, values_, jacobians_, idx, basis_ );
     }
 
@@ -831,21 +1034,21 @@ namespace Fem
     template< class Int, Int id >
     decltype(auto) operator[]( const std::integral_constant<Int,id>& idx ) const
     {
-      typedef LocalEvaluation<QuadratureContextImp, RangeType, JacobianType, typename AccessImp::template MultiValueType<id> > NewContextType;
+      typedef LocalEvaluation<QuadratureContextImp, RangeType, JacobianType, typename AccessImp::Set::template MultiValue<id> > NewContextType;
       return NewContextType( quadImp_, values_, jacobians_, qp_, basis_ );
     }
 
     //access: basis functions, zero
     decltype(auto) operator()(int i=0) const
     {
-      typedef LocalEvaluation<QuadratureContextImp, RangeType, JacobianType, typename AccessImp::ZeroBasisFunctionType > NewContextType;
+      typedef LocalEvaluation<QuadratureContextImp, RangeType, JacobianType, typename AccessImp::Set::ZeroBasisFunction > NewContextType;
       return NewContextType( quadImp_, values_, jacobians_, qp_, -1 );
     }
 
     //access: basis functions
     decltype(auto) operator[]( int idx ) const
     {
-      typedef LocalEvaluation<QuadratureContextImp, RangeType, JacobianType, typename AccessImp::BasisFunctionType> NewContextType;
+      typedef LocalEvaluation<QuadratureContextImp, RangeType, JacobianType, typename AccessImp::Set::BasisFunction> NewContextType;
       return NewContextType( quadImp_, values_, jacobians_, qp_, idx );
     }
 
