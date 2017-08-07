@@ -137,7 +137,7 @@ namespace Fem
                   const int volumeQuadOrd = -1,
                   const int faceQuadOrd = -1 )
       : BaseType(pass, spc),
-        caller_( 0 ),
+        caller_(),
         discreteModel_(discreteModel),
         arg_(0),
         dest_(0),
@@ -178,10 +178,6 @@ namespace Fem
       valJacEn_.setMemoryFactor( 1.1 );
       valJacNb_.setMemoryFactor( 1.1 );
     }
-
-    //! Destructor
-    virtual ~LocalCDGPass()
-    {}
 
     //! print tex info
     void printTexInfo(std::ostream& out) const {
@@ -292,7 +288,7 @@ namespace Fem
       caller.numericalFlux(intersection, faceQuadInner, faceQuadOuter, l,
                            fluxEn, fluxNb, diffFluxEn, diffFluxNb);
 
-      arg_  = 0;
+      arg_ = nullptr;
     }
 
     //! In the preparations, store pointers to the actual arguments and
@@ -320,7 +316,7 @@ namespace Fem
 
       assert( ! caller_ );
       // set arguments to caller
-      caller_ = new DiscreteModelCallerType( *arg_, discreteModel_ );
+      caller_.reset( new DiscreteModelCallerType( *arg_, discreteModel_ ) );
       caller_->setTime( this->time() );
 
       // resize indicator function
@@ -336,21 +332,17 @@ namespace Fem
     //! Some timestep size management.
     void doFinalize(DestinationType& dest, const bool doCommunicate) const
     {
-      if( doCommunicate  && (&dest) )
+      if( doCommunicate )
       {
         // communicate calculated function (not in thread parallel version)
         dest.communicate();
       }
 
       // call finalize
-      if( caller_ )
-      {
-        delete caller_;
-        caller_ = 0;
-      }
+      caller_.reset();
 
-      arg_  = 0;
-      dest_ = 0;
+      arg_  = nullptr;
+      dest_ = nullptr;
     }
 
     //! Some timestep size management.
@@ -952,7 +944,7 @@ namespace Fem
       return *caller_;
     }
 
-    mutable DiscreteModelCallerType *caller_;
+    mutable std::unique_ptr< DiscreteModelCallerType > caller_;
     DiscreteModelType& discreteModel_;
 
     mutable ArgumentType* arg_;
