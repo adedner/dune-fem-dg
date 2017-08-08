@@ -1130,8 +1130,10 @@ namespace Fem
         elementCounter_ = 0;
         // do limitation
         const auto endit = spc_.end();
-        for( auto it = spc_.begin(); (it != endit) && (elementCounter_ < breakAfter); ++it )
+        for( auto it = spc_.begin(); (it != endit); ++it )
         {
+          // for initialization of thread passes for only a few iterations
+          if( elementCounter_ > breakAfter) break;
           const auto& en = *it;
           Dune::Timer localTime;
           applyLocalImp(en);
@@ -1519,8 +1521,8 @@ namespace Fem
                 FaceQuadratureType faceQuadInner(gridPart_,intersection, 0, FaceQuadratureType::INSIDE);
                 typedef QuadratureContext< EntityType, IntersectionType, FaceQuadratureType > ContextType;
                 typedef LocalEvaluation< ContextType, RangeType > LocalEvaluationType;
-                ContextType cLocal( en, intersection, faceQuadInner, geo.volume()/*, 0*/ );
-                LocalEvaluationType local( cLocal[0], enVal );
+                ContextType cLocal( en, intersection, faceQuadInner, geo.volume() /*, 0 */);
+                LocalEvaluationType local( cLocal, enVal );
 
                 discreteModel_.boundaryValue( local, enVal, nbVal);
                 // calculate difference
