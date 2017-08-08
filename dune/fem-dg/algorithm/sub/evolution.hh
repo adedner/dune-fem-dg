@@ -310,6 +310,9 @@ namespace Fem
 
     virtual void doFinalize ( const int loop, TimeProviderType& tp ) override
     {
+      // set current time to model for evaluation of exact solution
+      model_.setTime( tp.time() );
+
       // add eoc errors
       model_.eocErrors( solution() );
 
