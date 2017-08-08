@@ -73,6 +73,8 @@ namespace Fem
 
     typedef typename Traits::ThermodynamicsType          ThermodynamicsType;
 
+    typedef Dune::Fem::BoundaryIdProvider < GridType >   BoundaryIdProviderType;
+
     // for Euler equations diffusion is disabled
     static const bool hasAdvection = true;
     static const bool hasDiffusion = false;
@@ -171,9 +173,15 @@ namespace Fem
     enum { MaxBnd = Slip };
 
     template <class LocalEvaluation>
+    int getBoundaryId( const LocalEvaluation& local ) const
+    {
+      return BoundaryIdProviderType::boundaryId( local.intersection() );
+    }
+
+    template <class LocalEvaluation>
     inline bool hasBoundaryValue( const LocalEvaluation& local ) const
     {
-      const int bndId = problem_.boundaryId( local.intersection().boundaryId() );
+      const int bndId = problem_.boundaryId( getBoundaryId( local ) );
       // on slip boundary we use boundaryFlux
       return bndId != Slip;
     }
@@ -188,7 +196,7 @@ namespace Fem
       //uRight = uLeft;
       // 5 and 6 is also Reflection
       //const int bndId = (it.boundaryId() > MaxBnd) ? MaxBnd : it.boundaryId();
-      const int bndId = problem_.boundaryId( local.intersection().boundaryId() );
+      const int bndId = problem_.boundaryId( getBoundaryId( local ) );
 
       assert( bndId > 0 );
       if( bndId == Inflow )
