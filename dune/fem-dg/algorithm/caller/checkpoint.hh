@@ -29,9 +29,9 @@ namespace Fem
   class GridCheckPointCaller
   {
   public:
-    typedef GridImp                                            GridType;
-    typedef Dune::Fem::CheckPointer< GridType, std::tuple<> >  CheckPointerType;
-    typedef Dune::Fem::CheckPointerParameters                  CheckPointerParametersType;
+    typedef GridImp                                GridType;
+    typedef Dune::Fem::CheckPointer< GridType >    CheckPointerType;
+    typedef Dune::Fem::CheckPointerParameters      CheckPointerParametersType;
 
     /**
      * \brief Returns true if checkpoint file exists.
