@@ -1,3 +1,3 @@
-dune_install( checkedcheckpointcaller.hh  checkpointing.hh  models.hh  algorithmcreator.hh  problem.hh )
+dune_install( algorithmcreator.hh checkedcheckpointcaller.hh checkpointing.hh models.hh problem.hh )
 
 dune_add_subdirs( test )

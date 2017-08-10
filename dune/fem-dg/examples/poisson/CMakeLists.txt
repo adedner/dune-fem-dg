@@ -1,3 +1,3 @@
-dune_install( main.cc  gridinitializer.hh  models.hh  algorithmcreator.hh  problems.hh )
+dune_install( main.cc algorithmcreator.hh gridinitializer.hh models.hh problems.hh )
 
-dune_add_subdirs( test )
+dune_add_subdirs( problems test )

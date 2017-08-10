@@ -1,3 +1,3 @@
-dune_install( main.cc incompnavierstokesalgorithm.hh  models.hh  algorithmcreator.hh  problems.hh  stokesmodel.hh )
+dune_install( main.cc algorithmcreator.hh incompnavierstokesalgorithm.hh models.hh problems.hh stokesmodel.hh subnavierstokesalgorithmcreator.hh subpoissonalgorithmcreator.hh substokesalgorithmcreator.hh  )
 
-dune_add_subdirs( test )
+dune_add_subdirs( problems test )
