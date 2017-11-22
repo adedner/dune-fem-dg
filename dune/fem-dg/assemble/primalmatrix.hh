@@ -182,7 +182,7 @@ namespace Fem
         }
 
         const BasisFunctionSetType &baseSet = localOpEn.domainBasisFunctionSet();
-        const unsigned int numBasisFunctionsEn = baseSet.size();
+        const int numBasisFunctionsEn = baseSet.size();
 
         VolumeQuadratureType quadrature( entity, elementQuadOrder( space_.order( entity ) ) );
 
@@ -485,8 +485,8 @@ namespace Fem
       const BasisFunctionSetType &baseSetNb = localOpNb.rangeBasisFunctionSet();
 
       // get neighbor's base function set
-      const unsigned int numBasisFunctionsEn = baseSet.size();
-      const unsigned int numBasisFunctionsNb = baseSetNb.size();
+      const int numBasisFunctionsEn = baseSet.size();
+      const int numBasisFunctionsNb = baseSetNb.size();
 
       // only do one sided evaluation if the polynomial orders match
       const bool oneSidedEvaluation = ( numBasisFunctionsEn == numBasisFunctionsNb );
