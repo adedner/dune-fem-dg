@@ -197,7 +197,7 @@ namespace Dune
         assert( localDest.numDofs() == numBasis );
 
         // vector holding basis function evaluation
-        Dune::array< ctype, numBasis > lfX;
+        std::array< ctype, numBasis > lfX;
         for( int i=0; i<numBasis; ++i )
           lfX[ i ] = localDest[ i ];
 
@@ -317,7 +317,7 @@ namespace Dune
         LocalMatrixType matrix( 0 );
 
         // vector holding basis function evaluation
-        Dune::array< ScalarRangeType, numScalarBasis > phi ;
+        std::array< ScalarRangeType, numScalarBasis > phi ;
 
         // make sure that the number of basis functions is correct
         assert( numScalarBasis == int(set.size()) );
