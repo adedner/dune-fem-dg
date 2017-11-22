@@ -4,6 +4,7 @@
 #include <dune/fem/version.hh>
 #include <dune/fem/misc/fmatrixconverter.hh>
 #include <dune/fem/io/parameter.hh>
+#include <dune/fem/misc/boundaryidprovider.hh>
 
 #include <dune/fem-dg/models/defaultmodel.hh>
 #include <dune/fem-dg/misc/error/dgeocerror.hh>
@@ -79,24 +80,25 @@ namespace Poisson
   {
     typedef DefaultModel< PoissonModelTraits< GridImp, ProblemImp > > BaseType;
   public:
-    typedef GridImp                                           GridType;
-    typedef PoissonModelTraits< GridImp, ProblemImp >         Traits;
-    typedef typename Traits::ProblemType                      ProblemType;
+    typedef GridImp                                      GridType;
+    typedef BoundaryIdProvider< GridType >               BoundaryIdProviderType;
+    typedef PoissonModelTraits< GridImp, ProblemImp >    Traits;
+    typedef typename Traits::ProblemType                 ProblemType;
 
     static const int dimDomain = Traits::dimDomain;
     static const int dimRange = Traits::dimRange;
 
-    typedef typename Traits::DomainFieldType                  DomainFieldType;
-    typedef typename Traits::RangeFieldType                   RangeFieldType;
-    typedef typename Traits::DomainType                       DomainType;
-    typedef typename Traits::RangeType                        RangeType;
-    typedef typename Traits::GradientType                     GradientType;
-    typedef typename Traits::FluxRangeType                    FluxRangeType;
-    typedef typename Traits::DiffusionRangeType               DiffusionRangeType;
-    typedef typename Traits::FaceDomainType                   FaceDomainType;
-    typedef typename Traits::JacobianRangeType                JacobianRangeType;
+    typedef typename Traits::DomainFieldType             DomainFieldType;
+    typedef typename Traits::RangeFieldType              RangeFieldType;
+    typedef typename Traits::DomainType                  DomainType;
+    typedef typename Traits::RangeType                   RangeType;
+    typedef typename Traits::GradientType                GradientType;
+    typedef typename Traits::FluxRangeType               FluxRangeType;
+    typedef typename Traits::DiffusionRangeType          DiffusionRangeType;
+    typedef typename Traits::FaceDomainType              FaceDomainType;
+    typedef typename Traits::JacobianRangeType           JacobianRangeType;
 
-    typedef typename ProblemType::DiffusionMatrixType         DiffusionMatrixType ;
+    typedef typename ProblemType::DiffusionMatrixType    DiffusionMatrixType ;
 
     static const bool hasDiffusion = true;
     static const int ConstantVelocity = false;
@@ -305,7 +307,7 @@ namespace Poisson
                                const RangeType& uLeft,
                                RangeType& uRight) const
     {
-      if ( local.intersection().boundaryId() == 99) // Dirichlet zero boundary conditions
+      if ( BoundaryIdProviderType::boundaryId( local.intersection() ) == 99) // Dirichlet zero boundary conditions
       {
         uRight = 0;
       }
