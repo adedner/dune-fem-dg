@@ -219,41 +219,6 @@ namespace Fem
 
     };
 
-    /////////////////////////////////////////////////////////////////////////
-    //  parDG ODE solvers based on double*
-    /////////////////////////////////////////////////////////////////////////
-    template < class Op >
-    struct OdeSolverSelection< Op, Fem :: AdaptiveDiscreteFunction< typename Op::SpaceType >, true >
-    {
-      typedef Fem :: AdaptiveDiscreteFunction< typename Operator::SpaceType >  DiscreteFunctionType ;
-      // old ode solver based on double* from pardg
-      typedef DuneODE :: ImplicitOdeSolver< DiscreteFunctionType >       ImplicitOdeSolverType;
-      typedef DuneODE :: ExplicitOdeSolver< DiscreteFunctionType >       ExplicitOdeSolverType;
-      typedef DuneODE :: SemiImplicitOdeSolver< DiscreteFunctionType >   SemiImplicitOdeSolverType;
-
-      template < class OdeParameter >
-      static solverpair_t
-      createExplicitSolver( Op& op, Fem::TimeProviderBase& tp, const int rkSteps, const OdeParameter& param, const std::string& name = ""  )
-      {
-        return solverpair_t(new ExplicitOdeSolverType( op, tp, rkSteps ), nullptr );
-      }
-
-      template < class OdeParameter >
-      static solverpair_t
-      createImplicitSolver( Op& op, Fem::TimeProviderBase& tp, const int rkSteps, const OdeParameter& param, const std::string& name = "" )
-      {
-        return solverpair_t(new ImplicitOdeSolverType( op, tp, rkSteps, param), nullptr );
-      }
-
-      template <class ExplOp, class ImplOp, class OdeParameter >
-      static solverpair_t
-      createSemiImplicitSolver( ExplOp& explOp, ImplOp& implOp, Fem::TimeProviderBase& tp, const int rkSteps, const OdeParameter& param, const std::string& name = "" )
-      {
-        return solverpair_t(new SemiImplicitOdeSolverType( explOp, implOp, tp, rkSteps, param), nullptr );
-      }
-
-    };
-
     static const bool useParDGSolvers = false ;
     typedef OdeSolverSelection< OperatorType, DestinationType, useParDGSolvers >  OdeSolversType ;
 
