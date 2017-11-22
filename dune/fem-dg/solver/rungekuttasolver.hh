@@ -7,7 +7,7 @@
 #include <dune/fem/solver/rungekutta/implicit.hh>
 #include <dune/fem/solver/rungekutta/semiimplicit.hh>
 #include <dune/fem/solver/newtoninverseoperator.hh>
-#include <dune/fem/solver/pardginverseoperators.hh>
+#include <dune/fem/solver/krylovinverseoperators.hh>
 
 #include <dune/fem/operator/dghelmholtz.hh>
 #include <dune/fem-dg/misc/parameterkey.hh>
