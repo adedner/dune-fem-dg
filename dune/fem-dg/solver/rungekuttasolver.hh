@@ -10,13 +10,98 @@
 #include <dune/fem/solver/pardginverseoperators.hh>
 
 #include <dune/fem/operator/dghelmholtz.hh>
-#include <dune/fem-dg/solver/smartodesolver.hh>
 #include <dune/fem-dg/misc/parameterkey.hh>
 
 namespace Dune
 {
 namespace Fem
 {
+  /**
+   * \brief Parameter class for selection of ode solver.
+   *
+   * \ingroup ParameterClass
+   */
+  struct RungeKuttaSolverParameters
+    : public DuneODE::ImplicitRungeKuttaSolverParameters
+  {
+    /**
+     * \brief Constructor
+     *
+     * \param[in] keyPrefix key prefix for parameter file.
+     */
+    RungeKuttaSolverParameters( const std::string keyPrefix = "fem.ode." )
+      : DuneODE::ImplicitRungeKuttaSolverParameters( keyPrefix )
+    {}
+
+    using DuneODE::ImplicitRungeKuttaSolverParameters::keyPrefix_;
+
+    /**
+     * \brief returns a factor for the decision whether to use IMEX Runge-Kutta
+     * oder Explicit Runge-Kutta scheme.
+     *
+     * This parameter is needed for the "IMEX+" scheme where for each time step
+     * a solver is chosen regarding the following rule
+     * - Implicit/Explicit Runge-Kutta, if \f$ c_\text{diff} < c_\text{factor} c_\text{adv} \f$
+     * - Explicit Runge-Kutts, otherwise
+     *
+     * where \f$ c_\text{diff} \f$ is the maximal time step estimate of the diffusion term,
+     * \f$ c_\text{adv} \f$ is the maximal time step estimate of the advection term
+     * and \f$ c_\text{factor} \f$ is the factor returned by this function.
+     */
+    virtual double explicitFactor() const
+    {
+      return Fem::Parameter::getValue< double >( keyPrefix_ + "explicitfactor" , 1.0 );
+    }
+
+    /**
+     * \brief Clones the object.
+     */
+    RungeKuttaSolverParameters* clone() const
+    {
+      return new RungeKuttaSolverParameters( *this );
+    }
+
+    /**
+     * \brief Chooses the type of the Runge-Kutta scheme.
+     *
+     * Possible values are
+     * | Scheme                           | Description       | Integer value |
+     * | -------------------------------- | ----------------- | ------------- |
+     * | Explicit RK                      | "EX"              | 0             |
+     * | Implicit RK                      | "IM"              | 1             |
+     * | Implicit/Explicit RK             | "EX"              | 2             |
+     * | IMEX/EX RK                       | "IMEX+"           | 3             |
+     *
+     *
+     * \returns An integer describing the selected Runge-Kutta scheme.
+     */
+    virtual int obtainOdeSolverType () const
+    {
+      // we need this choice of explicit or implicit ode solver
+      // defined here, so that it can be used later in two different
+      // methods
+      static const std::string odeSolver[]  = { "EX", "IM" ,"IMEX", "IMEX+"  };
+      std::string key( keyPrefix_ + "odesolver" );
+      return Fem::Parameter::getEnum( key, odeSolver, 0 );
+    }
+
+    /**
+     * \brief returns the number of Runge-Kutta steps
+     *
+     * \param[in] defaultRKOrder The default value if not specified in parameter file.
+     * \returns The number of Runge-Kutta steps.
+     */
+    virtual int obtainRungeKuttaSteps( const int defaultRKOrder ) const
+    {
+      std::string key( keyPrefix_ + "order");
+      if ( Fem :: Parameter :: exists( key ) )
+        return Fem::Parameter::getValue< int > ( key );
+      else
+        return defaultRKOrder ;
+    }
+
+  };
+
 
 
   /**
@@ -67,7 +152,7 @@ namespace Fem
 
     typedef std::pair< OdeSolverInterfaceType* ,  HelmHoltzOperatorType* > solverpair_t ;
 
-    typedef SmartOdeSolverParameters ParameterType;
+    typedef RungeKuttaSolverParameters ParameterType;
 
     /////////////////////////////////////////////////////////////////////////
     //  ODE solvers from dune-fem/dune/fem/solver/rungekutta
@@ -180,7 +265,7 @@ namespace Fem
     const std::string      name_;
     ExplicitOperatorType&  explicitOperator_;
     ImplicitOperatorType&  implicitOperator_;
-    const SmartOdeSolverParameters* param_;
+    const RungeKuttaSolverParameters* param_;
 
     OdeSolverInterfaceType* explicitSolver_;
     OdeSolverInterfaceType* odeSolver_;
@@ -204,7 +289,7 @@ namespace Fem
        name_( name ),
        explicitOperator_( advOp ),
        implicitOperator_( diffOp ),
-       param_( new SmartOdeSolverParameters( ParameterKey::generate( name_, "fem.ode." ) ) ),
+       param_( new RungeKuttaSolverParameters( ParameterKey::generate( name_, "fem.ode." ) ) ),
        explicitSolver_( 0 ),
        odeSolver_( 0 ),
        helmholtzOperator_( 0 ),
