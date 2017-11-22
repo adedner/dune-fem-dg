@@ -15,11 +15,10 @@
 #include <dune/fem/space/padaptivespace.hh>
 #include <dune/fem/space/discontinuousgalerkin/legendre.hh>
 #include <dune/fem/space/discontinuousgalerkin/space.hh>
-#include <dune/fem/operator/projection/l2projection.hh>
+#include <dune/fem/space/common/interpolate.hh>
 #include <dune/fem/function/common/localfunctionadapter.hh>
 
 // dune-fem-dg includes
-#include <dune/fem/operator/projection/dgl2projection.hh>
 #include <dune/fem/misc/fmatrixconverter.hh>
 #include <dune/fem/operator/common/stencil.hh>
 #include <dune/fem-dg/pass/context.hh>
@@ -273,7 +272,8 @@ namespace Fem
 
     void update ()
     {
-      Dune::Fem::DGL2ProjectionImpl::project( sigmaEstimateFunction_, sigmaDiscreteFunction_ );
+      interpolate( sigmaEstimateFunction_, sigmaDiscreteFunction_ );
+      // sigmaDiscreteFunction_.communicate();
     }
 
     //const SigmaLocalFunctionAdapterType& sigma () const
