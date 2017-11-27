@@ -4,8 +4,6 @@
 #include <cassert>
 #include <cmath>
 
-#include <dune/common/array.hh>
-
 #include <dune/fem-dg/models/stokesprobleminterfaces.hh>
 
 namespace Dune

@@ -20,9 +20,7 @@
 // include linear operators
 #include <dune/fem/operator/linear/spoperator.hh>
 #include <dune/fem/solver/diagonalpreconditioner.hh>
-#include <dune/fem/solver/cginverseoperator.hh>
-#include <dune/fem/solver/pardginverseoperators.hh>
-#include <dune/fem/solver/oemsolver.hh>
+#include <dune/fem/solver/krylovinverseoperators.hh>
 
 #if HAVE_DUNE_ISTL
 #include <dune/fem/function/blockvectorfunction.hh>
@@ -169,8 +167,6 @@ namespace Fem
       default_,
       //! use the matrix based version of the dune-fem solvers
       fem,
-      //! use the matrix based version of the dune-fem solvers with blas
-      femoem,
       //! use the dune-istl solvers
       istl,
       //! use the direct solver umfpack
@@ -435,25 +431,8 @@ namespace Fem
     template<class DSpace, class RSpace = DSpace>
     using LinearInverseOperatorType
       = typename std::conditional<symmetric,
-                                  Dune::Fem::CGInverseOperator< DiscreteFunctionType<DSpace> >,
-                                  Dune::Fem::ParDGGeneralizedMinResInverseOperator< DiscreteFunctionType<DSpace> > >::type;
-  };
-
-  template <bool symmetric>
-  struct MatrixSolverSelector<Solver::Enum::femoem,symmetric>
-  {
-    static const bool solverConfigured = true;
-    // choose type of discrete function, Matrix implementation and solver implementation
-    // this work with a discrete function implementation based on a double* dof storage
-    template<class Space>
-    using DiscreteFunctionType = Dune::Fem::AdaptiveDiscreteFunction<Space>;
-    template<class DSpace, class RSpace = DSpace>
-    using LinearOperatorType = Dune::Fem::SparseRowLinearOperator< DiscreteFunctionType<DSpace>, DiscreteFunctionType<RSpace> >;
-    template<class DSpace, class RSpace = DSpace>
-    using LinearInverseOperatorType
-      = typename std::conditional<symmetric,
-                                  Dune::Fem::OEMCGOp< DiscreteFunctionType<DSpace>, LinearOperatorType<DSpace,RSpace> >,
-                                  Dune::Fem::OEMBICGSTABOp< DiscreteFunctionType<DSpace>, LinearOperatorType<DSpace,RSpace> > >::type;
+                                  Dune::Fem::CgInverseOperator< DiscreteFunctionType<DSpace> >,
+                                  Dune::Fem::KrylovInverseOperator< DiscreteFunctionType<DSpace> > >::type;
   };
 
 #if HAVE_DUNE_ISTL
