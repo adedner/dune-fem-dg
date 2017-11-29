@@ -12,7 +12,6 @@
 
 // dune-fem includes
 #include <dune/fem/misc/l2norm.hh>
-#include <dune/fem/operator/projection/l2projection.hh>
 #include <dune/fem/gridpart/common/gridpart.hh>
 #include <dune/fem/function/common/localfunctionadapter.hh>
 #include <dune/fem/operator/common/stencil.hh>
