@@ -8,7 +8,7 @@
 // dune-fem includes
 #include <dune/fem/io/file/datawriter.hh>
 #include <dune/fem/solver/timeprovider.hh>
-#include <dune/fem/space/common/adaptmanager.hh>
+#include <dune/fem/space/common/adaptationmanager.hh>
 
 // local includes
 #include <dune/fem-dg/algorithm/monitor.hh>

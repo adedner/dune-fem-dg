@@ -16,7 +16,7 @@
 
 #include <dune/fem/gridpart/adaptiveleafgridpart.hh>
 #include <dune/fem/quadrature/cachingquadrature.hh>
-#include <dune/fem/space/common/adaptmanager.hh>
+#include <dune/fem/space/common/adaptationmanager.hh>
 
 #include <dune/fem/io/streams/streams.hh>
 #include <dune/fem/solver/timeprovider.hh>

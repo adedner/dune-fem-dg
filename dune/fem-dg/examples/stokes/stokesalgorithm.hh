@@ -78,11 +78,11 @@ namespace Fem
 
     public:
       SigmaEval(const DiscreteFunction &uh,
-          const DiscretePressureFunctionType &ph,
-          const Operator& oper)
+                const DiscretePressureFunctionType &ph,
+                const Operator& oper)
         : SigmaBaseType(uh,oper),
-         ph_(ph),
-         localp_(ph_)
+          ph_(ph),
+          localp_(ph_)
       {}
       SigmaEval(const SigmaEval &other)
       : SigmaBaseType(other), ph_(other.ph_), localp_(ph_)
