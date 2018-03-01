@@ -13,9 +13,9 @@ fem.timeprovider.factor: 0.45
 fem.timeprovider.updatestep: 1
 
 # parameter for the implicit solvers 
-fem.solver.verbose: true
+fem.solver.verbose: false
 fem.solver.gmres.restart: 15
-fem.solver.newton.verbose: true
+fem.solver.newton.verbose: false
 fem.solver.newton.linear.verbose: true
 fem.solver.newton.maxlineariterations: 1000
 fem.solver.newton.tolerance: 1e-10
