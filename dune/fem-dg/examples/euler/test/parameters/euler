@@ -76,5 +76,24 @@ fem.io.macroGridFile_3d:  ../../grids/unitcube3.dgf
 
 # SOLVER CONFIGURATION
 #---------------------
-fem.ode.odesolver: EX
+fem.ode.odesolver: IM
+fem.ode.order: 2
+fem.ode.verbose: none # ode output: none, cfl, full
+fem.ode.cflincrease: 1.05
+fem.ode.miniterations: 95
+fem.ode.maxiterations: 105
+fem.ode.cflStart: 1.
+#fem.ode.cflMax: 5
+fem.timeprovider.factor: 0.45
+fem.timeprovider.updatestep: 1
+
+# parameter for the implicit solvers 
+fem.solver.verbose: false
+fem.solver.gmres.restart: 15
+fem.solver.newton.verbose: false
+fem.solver.newton.linear.verbose: false
+fem.solver.newton.maxlineariterations: 1000
+fem.solver.newton.tolerance: 1e-10
+
+
 paramfile: ../../parameter/paramSolver
