@@ -735,9 +735,12 @@ namespace Fem
       // get stopwatch
       Dune::Timer timer;
 
+      std::cout << "LimitPass::compute ";
+
       // if polOrder of destination is > 0 then we have to do something
       if( spc_.order() > 0 && active() )
       {
+        std::cout << " is active";
         // prepare, i.e. set argument and destination
         prepare(arg, dest);
 
@@ -758,6 +761,8 @@ namespace Fem
         // finalize
         finalize(arg, dest);
       }
+
+      std::cout << std::endl;
 
       // accumulate time
       this->computeTime_ += timer.elapsed();
@@ -1138,47 +1143,57 @@ namespace Fem
       // increase number of limited elements
       ++limitedElements_;
 
-      // obtain combination set
-      ComboSetType& comboSet = storedComboSets_[ nbVals_.size() ];
-      if( comboSet.empty() )
-      {
-        // create combination set
-        LimiterUtilityType::buildComboSet( nbVals_.size(), comboSet );
-      }
-
-      // reset values
-      deoMods_.clear();
-      comboVec_.clear();
-
-      if( usedAdmissibleFunctions_ >= ReconstructedFunctions )
-      {
-        // level is only needed for Cartesian grids to access the matrix caches
-        const int matrixCacheLevel = ( flags.cartesian ) ? en.level() : 0 ;
-        assert( matrixCacheLevel < (int) matrixCacheVec_.size() );
-        MatrixCacheType& matrixCache = matrixCacheVec_[ matrixCacheLevel ];
-
-        // calculate linear functions, stored in deoMods_ and comboVec_
-        LimiterUtilityType::calculateLinearFunctions( comboSet, geomType, flags,
-                                  barys_, nbVals_,
-                                  matrixCache,
-                                  deoMods_,
-                                  comboVec_ );
-      }
-
-      // add DG Function
-      if( (usedAdmissibleFunctions_ % 2) == DGFunctions )
-      {
-        addDGFunction( en, geo, uEn, enVal, enBary );
-      }
-
-      // Limiting
-      std::vector< RangeType > factors;
-      LimiterUtilityType::limitFunctions(
-          discreteModel_.limiterFunction(), comboVec_, barys_, nbVals_, deoMods_, factors );
-
       const unsigned int enIndex = indexSet_.index( en );
-      // take maximum of limited functions
-      LimiterUtilityType::getMaxFunction(deoMods_, deoMod_, factors_[ enIndex ], numbers_[ enIndex ], factors );
+#if HAVE_DUNE_OPTIM
+      bool useLinProg = true ;
+      if( useLinProg )
+      {
+        deoMod_ = gradients_[ enIndex ];
+      }
+      else
+#endif
+      {
+        // obtain combination set
+        ComboSetType& comboSet = storedComboSets_[ nbVals_.size() ];
+        if( comboSet.empty() )
+        {
+          // create combination set
+          LimiterUtilityType::buildComboSet( nbVals_.size(), comboSet );
+        }
+
+        // reset values
+        deoMods_.clear();
+        comboVec_.clear();
+
+        if( usedAdmissibleFunctions_ >= ReconstructedFunctions )
+        {
+          // level is only needed for Cartesian grids to access the matrix caches
+          const int matrixCacheLevel = ( flags.cartesian ) ? en.level() : 0 ;
+          assert( matrixCacheLevel < (int) matrixCacheVec_.size() );
+          MatrixCacheType& matrixCache = matrixCacheVec_[ matrixCacheLevel ];
+
+          // calculate linear functions, stored in deoMods_ and comboVec_
+          LimiterUtilityType::calculateLinearFunctions( comboSet, geomType, flags,
+                                    barys_, nbVals_,
+                                    matrixCache,
+                                    deoMods_,
+                                    comboVec_ );
+        }
+
+        // add DG Function
+        if( (usedAdmissibleFunctions_ % 2) == DGFunctions )
+        {
+          addDGFunction( en, geo, uEn, enVal, enBary );
+        }
+
+        // Limiting
+        std::vector< RangeType > factors;
+        LimiterUtilityType::limitFunctions(
+            discreteModel_.limiterFunction(), comboVec_, barys_, nbVals_, deoMods_, factors );
+
+        // take maximum of limited functions
+        LimiterUtilityType::getMaxFunction(deoMods_, deoMod_, factors_[ enIndex ], numbers_[ enIndex ], factors );
+      } // end if linProg
 
       // get local funnction for limited values
       DestLocalFunctionType limitEn = dest_->localFunction(en);
