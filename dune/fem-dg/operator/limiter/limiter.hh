@@ -7,12 +7,103 @@
 
 #include <dune/fem-dg/operator/limiter/limitpass.hh>
 #include <dune/fem-dg/operator/limiter/limiterdiscretemodel.hh>
+#include <dune/fem-dg/operator/limiter/limitermodel.hh>
 #include <dune/fem/function/adaptivefunction.hh>
 
 namespace Dune
 {
 namespace Fem
 {
+
+  /**
+   * \brief Limited reconstruction.
+   *
+   * \ingroup PassBased
+   */
+  template <class DiscreteFunction>
+  class Limiter
+  {
+    // MethodOrderTraits
+    struct PassTraits
+    {
+      typedef DiscreteFunction     DiscreteFunctionType;
+      typedef DiscreteFunctionType DestinationType;
+
+      typedef typename DiscreteFunctionType :: DiscreteFunctionSpaceType   DiscreteFunctionSpaceType;
+      typedef typename DiscreteFunctionSpaceType :: FunctionSpaceType  FunctionSpaceType;
+
+      typedef typename DiscreteFunctionSpaceType :: GridPartType  GridPartType ;
+      typedef typename GridPartType :: GridType GridType;
+      typedef typename GridType :: ctype ctype;
+      enum { dimDomain = FunctionSpaceType :: dimDomain };
+
+      typedef CachingQuadrature<GridPartType,0> VolumeQuadratureType;
+      typedef CachingQuadrature<GridPartType,1> FaceQuadratureType;
+
+      typedef typename FunctionSpaceType :: RangeFieldType FieldType;
+
+      // Indicator for Limiter
+      typedef FunctionSpace< ctype, FieldType, dimDomain, 3> FVFunctionSpaceType;
+      typedef FiniteVolumeSpace<FVFunctionSpaceType,GridPartType, 0, SimpleStorage> IndicatorSpaceType;
+      typedef AdaptiveDiscreteFunction<IndicatorSpaceType> IndicatorType;
+    };
+
+  public:
+    typedef DiscreteFunction DiscreteFunctionType;
+    typedef typename DiscreteFunctionType :: DiscreteFunctionSpaceType
+      DiscreteFunctionSpaceType;
+
+    typedef typename DiscreteFunctionSpaceType :: FunctionSpaceType  FunctionSpaceType;
+    typedef typename DiscreteFunctionSpaceType :: GridPartType       GridPartType;
+    typedef typename GridPartType :: GridType   GridType;
+
+    typedef typename DiscreteFunctionSpaceType :: EntityType  EntityType;
+
+    // pass ids
+    enum PassIdType{ u = 0 , limitPass = 1 };
+    enum { dimRange = DiscreteFunctionSpaceType :: dimRange };
+
+    typedef typename DiscreteFunctionSpaceType :: RangeFieldType ftype;
+
+    typedef PassTraits PassTraitsType;
+    typedef LimiterDefaultModel< GridType, FunctionSpaceType > Model;
+    typedef StandardLimiterDiscreteModel<PassTraitsType, Model, u > LimiterDiscreteModelType;
+
+    // same type as DiscreteFunction
+    typedef typename LimiterDiscreteModelType :: DestinationType DestinationType ;
+
+    typedef StartPass< DiscreteFunctionType , u > StartPassType;
+    typedef LimitDGPass< LimiterDiscreteModelType, StartPassType, limitPass > LimitPassType;
+
+  public:
+    Limiter( const DiscreteFunctionSpaceType& space )
+      : space_( space )
+      , model_( )
+      , discreteModel_( model_, space_.order() )
+      , startPass_()
+      , limitPass_( discreteModel_ , startPass_, space_ )
+    {}
+
+    //! calculate internal reconstruction
+    void operator () ( const DiscreteFunctionType& arg, DiscreteFunctionType& dest )
+    {
+      // apply limit pass in any case
+      limitPass_.enable();
+      // calculate reconstruction
+      limitPass_( arg, dest );
+    }
+
+  private:
+    Limiter( const Limiter& );
+
+  protected:
+    const DiscreteFunctionSpaceType& space_;
+    Model model_;
+    LimiterDiscreteModelType discreteModel_;
+
+    StartPassType startPass_;
+    LimitPassType limitPass_;
+  };
 
   /**
    * \brief Limited reconstruction.
