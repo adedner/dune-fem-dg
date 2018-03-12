@@ -313,6 +313,8 @@ namespace Fem
     typedef LocalCDGPass   < DiscreteModel1Type, Pass1Type, advectPassId >        Pass2Type;
 #endif
 
+    typedef Limiter< DestinationType > LimiterOperator;
+
     typedef typename LimiterDiscreteModelType::IndicatorType                      LimiterIndicatorType;
     typedef typename LimiterIndicatorType::DiscreteFunctionSpaceType              LimiterIndicatorSpaceType;
 
@@ -370,6 +372,7 @@ namespace Fem
       , pass0_()
       , pass1_( limitDiscreteModel_, pass0_, limiterSpace_ )
       , pass2_( discreteModel1_, pass1_, space_ )
+      , limOp_( space_ )
     {
       // create indicator if enabled
       createIndicator();
@@ -383,6 +386,13 @@ namespace Fem
         delete indicator_; indicator_ = 0;
         delete fvSpc_;     fvSpc_     = 0;
       }
+    }
+
+    void activateLinear() const {
+      limitPass().disable();
+    }
+    void deactivateLinear() const {
+      limitPass().enable();
     }
 
     void setAdaptationHandler( AdaptationType& adHandle, double weight = 1 )
@@ -516,6 +526,8 @@ namespace Fem
     Pass0Type           pass0_;
     Pass1Type           pass1_;
     Pass2Type           pass2_;
+
+    LimiterOperator  limOp_;
   };
 
 

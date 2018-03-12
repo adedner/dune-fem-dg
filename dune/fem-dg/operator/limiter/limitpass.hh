@@ -143,7 +143,7 @@ namespace Fem
     enum { dimGrid = GridType::dimension };
 
     typedef GlobalTraitsImp Traits;
-    typedef typename Traits::ModelType::ProblemType::FunctionSpaceType FunctionSpaceType;
+    typedef typename ModelTraits::FunctionSpaceType FunctionSpaceType;
 
     typedef typename Traits::VolumeQuadratureType VolumeQuadratureType;
     typedef typename Traits::FaceQuadratureType FaceQuadratureType;
@@ -735,12 +735,13 @@ namespace Fem
       // get stopwatch
       Dune::Timer timer;
 
-      std::cout << "LimitPass::compute ";
+      //std::cout << "LimitPass::compute ";
 
       // if polOrder of destination is > 0 then we have to do something
       if( spc_.order() > 0 && active() )
       {
-        std::cout << " is active";
+        //std::cout << "LimitPass::compute is active" << std::endl;
+        //std::cout << " is active";
         // prepare, i.e. set argument and destination
         prepare(arg, dest);
 
@@ -761,8 +762,17 @@ namespace Fem
         // finalize
         finalize(arg, dest);
       }
+      else
+      {
+        /*
+        std::cout << "LimitPass::compute deactive " << std::endl;
+        // get reference to U and pass on to dest
+        const ArgumentFunctionType &U = *(std::get< argumentPosition >( arg ));
+        dest.assign( U );
+        */
+      }
 
-      std::cout << std::endl;
+      //std::cout << std::endl;
 
       // accumulate time
       this->computeTime_ += timer.elapsed();
