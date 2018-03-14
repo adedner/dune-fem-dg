@@ -99,6 +99,8 @@ namespace Fem
       }
     }
 
+    bool calculateIndicator () const { return model_.calculateIndicator(); }
+
     void setIndicator(IndicatorType* indicator)
     {
       indicator_ = indicator;

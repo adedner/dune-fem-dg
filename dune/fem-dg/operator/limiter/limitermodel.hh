@@ -85,13 +85,24 @@ namespace Fem
     using BaseType::time;
     using BaseType::time_;
 
+    // saturation component in RangeType vector, saturation in the last component
+    static const int sat = FunctionSpace :: dimRange - 1;
+
+  protected:
+    const double lower_;
+    const double upper_;
+
    public:
-    LimiterDefaultModel()
+    LimiterDefaultModel( const double lower, const double upper )
+      : lower_( lower ), upper_( upper )
     {}
 
     inline bool hasStiffSource() const { return false; }
     inline bool hasNonStiffSource() const { return false; }
     inline bool hasFlux() const { return true ; }
+    // we only need physical check
+    inline bool calculateIndicator() const { return false ; }
+
 
     template <class LocalEvaluation>
     inline double stiffSource( const LocalEvaluation& local,
@@ -240,7 +251,7 @@ namespace Fem
     // we have physical check for this model
     bool hasPhysical() const
     {
-      return false;
+      return true;
     }
 
     // calculate jump between left and right value
@@ -249,17 +260,24 @@ namespace Fem
                          const DomainType& xGlobal,
                          const RangeType& u) const
     {
-      return true;
+      return (u[ sat ] >= lower_) && (u[ sat ] <= upper_);
     }
 
     // adjust average value if necessary
     // (e.g. transform from conservative to primitive variables )
     template< class Entity >
-    void adjustAverageValue( const Entity& entity,
+    bool adjustAverageValue( const Entity& entity,
                              const DomainType& xLocal,
                              RangeType& u ) const
     {
+      if( u[ sat ] < lower_ )
+      {
+        u[ sat ] = lower_;
+        return false ;
+      }
+
       // nothing to be done here for this test case
+      return true;
     }
 
     // calculate jump between left and right value
@@ -270,8 +288,9 @@ namespace Fem
                      const RangeType& uRight,
                      RangeType& jump) const
     {
-      jump  = uLeft;
-      jump -= uRight;
+      assert( calculateIndicator() );
+      jump = 0;
+      //jump[ sat ] = (uLeft[ sat ] - uRight[ sat ])/(0.5*(uLeft[ sat ] + uRight[ sat ]));
     }
 
     // calculate jump between left and right value

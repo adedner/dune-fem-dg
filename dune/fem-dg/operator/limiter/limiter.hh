@@ -20,9 +20,11 @@ namespace Fem
    *
    * \ingroup PassBased
    */
-  template <class DiscreteFunction>
+  template <class DomainFunction, class RangeFunction = DomainFunction>
   class Limiter
   {
+    typedef DomainFunction DiscreteFunction ;
+
     // MethodOrderTraits
     struct PassTraits
     {
@@ -49,6 +51,12 @@ namespace Fem
     };
 
   public:
+    typedef DomainFunction DomainFunctionType;
+    typedef RangeFunction  RangeFunctionType;
+
+    typedef typename DomainFunctionType :: DiscreteFunctionSpaceType  DomainSpaceType;
+    typedef typename RangeFunctionType  :: DiscreteFunctionSpaceType  RangeSpaceType;
+
     typedef DiscreteFunction DiscreteFunctionType;
     typedef typename DiscreteFunctionType :: DiscreteFunctionSpaceType
       DiscreteFunctionSpaceType;
@@ -75,29 +83,51 @@ namespace Fem
     typedef StartPass< DiscreteFunctionType , u > StartPassType;
     typedef LimitDGPass< LimiterDiscreteModelType, StartPassType, limitPass > LimitPassType;
 
+    typedef typename PassTraitsType :: IndicatorSpaceType  IndicatorSpaceType;
+    typedef typename PassTraitsType :: IndicatorType       IndicatorType;
+
   public:
-    Limiter( const DiscreteFunctionSpaceType& space )
-      : space_( space )
-      , model_( )
-      , discreteModel_( model_, space_.order() )
+    Limiter( const DomainSpaceType& domainSpace,
+             const double lowerBound, const double upperBound )
+      : Limiter( domainSpace, domainSpace, lowerBound, upperBound ) {}
+
+    Limiter( const DomainSpaceType& domainSpace,
+             const RangeSpaceType& rangeSpace,
+             const double lowerBound, const double upperBound )
+      : domainSpace_( domainSpace )
+      , rangeSpace_( rangeSpace )
+      , indicatorSpace_( domainSpace_.gridPart() )
+      , indicator_("indicator", indicatorSpace_ )
+      , model_( lowerBound, upperBound )
+      , discreteModel_( model_, domainSpace_.order() )
       , startPass_()
-      , limitPass_( discreteModel_ , startPass_, space_ )
-    {}
+      , limitPass_( discreteModel_ , startPass_, domainSpace_ )
+    {
+      discreteModel_.setIndicator( &indicator_ );
+    }
 
     //! calculate internal reconstruction
-    void operator () ( const DiscreteFunctionType& arg, DiscreteFunctionType& dest )
+    void operator () ( const DomainFunctionType& arg, RangeFunctionType& dest )
     {
       // apply limit pass in any case
       limitPass_.enable();
+
       // calculate reconstruction
       limitPass_( arg, dest );
     }
+
+    const IndicatorType& indicator() const { return indicator_; }
 
   private:
     Limiter( const Limiter& );
 
   protected:
-    const DiscreteFunctionSpaceType& space_;
+    const DomainSpaceType& domainSpace_;
+    const RangeSpaceType&  rangeSpace_;
+
+    IndicatorSpaceType indicatorSpace_;
+    IndicatorType      indicator_;
+
     Model model_;
     LimiterDiscreteModelType discreteModel_;
 
