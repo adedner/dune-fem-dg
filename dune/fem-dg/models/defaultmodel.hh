@@ -183,6 +183,12 @@ namespace Fem
     inline bool hasNonStiffSource () const { return false ; }
 
     /**
+     *  \brief returns whether the shock indicator needs to be computed when the
+     *  LimitPass is used.
+     */
+    bool calculateIndicator () const { return true; }
+
+    /**
      * \brief returns the mass factor term \f$ R \f$
      *
      * \param[in]  local local evaluation

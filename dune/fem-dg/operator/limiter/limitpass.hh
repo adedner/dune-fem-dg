@@ -640,7 +640,7 @@ namespace Fem
       adaptive_((AdaptationMethodType(gridPart_.grid())).adaptive()),
       cartesianGrid_( CheckCartesianType::check( gridPart_ ) ),
       stepTime_(3, 0.0),
-      calcIndicator_(true),
+      calcIndicator_(discreteModel_.calculateIndicator()),
       reconstruct_(false),
       admissibleFunctions_( getAdmissibleFunctions() ),
       usedAdmissibleFunctions_( admissibleFunctions_ )
@@ -937,7 +937,6 @@ namespace Fem
     //! Some management (thread parallel version)
     void finalize(const ArgumentType& arg, DestinationType& dest, const bool doCommunicate) const
     {
-      /*
       if( limitedElements_ > 0 )
       {
         std::cout << " Time: " << currentTime_
@@ -945,7 +944,6 @@ namespace Fem
                   << " due to side effects: " << notPhysicalElements_
                   << std::endl;
       }
-      */
 
       if( doCommunicate )
       {
@@ -1065,7 +1063,7 @@ namespace Fem
       RangeType enVal;
 
       // if limiter is true then limitation is done
-      // when we want ro reconstruct in any case then
+      // when we want to reconstruct in any case then
       // limiter is true but indicator is calculated
       // because of adaptation
       bool limiter = reconstruct_;
@@ -1082,6 +1080,16 @@ namespace Fem
       {
         // check shock indicator
         limiter = calculateIndicator(en, uEn, geo, limiter, limit, shockIndicator, adaptIndicator);
+      }
+      else if( !reconstruct_ )
+      {
+        // check physical values for quadrature
+        VolumeQuadratureType quad( en, spc_.order( en ) + 1 );
+        if( ! checkPhysicalQuad( quad, uEn ) )
+        {
+          limiter = true;
+          shockIndicator = 1.5;
+        }
       }
 
       {
@@ -1126,7 +1134,7 @@ namespace Fem
       // if limit, then limit all components
       limit = limiter;
       {
-        // check whether not physical occured
+        // check whether not physical occurred
         if (limiter && shockIndicator[0] < 1.)
         {
           shockIndicator = -1;
@@ -1678,6 +1686,7 @@ namespace Fem
 
       bool limiter = initLimiter;
       limit = false;
+
       shockIndicator = 0;
       adaptIndicator = 0;
 
