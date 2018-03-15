@@ -530,27 +530,23 @@ namespace Fem
       RangeType minVal( enVal );
       RangeType maxVal( enVal );
 
-      // evaluate uEn on all quadrature points on the intersections
-      for (const auto& intersection : intersections(gridPart_, en) )
-      {
-        FaceQuadratureType faceQuadInner(gridPart_,intersection, faceQuadOrd_, FaceQuadratureType::INSIDE);
-        if( !checkPhysicalQuad( faceQuadInner, uEn, minVal, maxVal ) )
-        {
-          limiter = true;
-        }
-      }
-
       CornerPointSetType cornerquad( en );
       if( ! checkPhysicalQuad( cornerquad, uEn, minVal, maxVal ) )
       {
         limiter = true;
-      }
 
-      // evaluate uEn on all interior quadrature points
-      VolumeQuadratureType quad( en, spc_.order( en ) );
-      if( ! checkPhysicalQuad( quad, uEn, minVal, maxVal ) )
-      {
-        limiter = true;
+        // compute full set of min and max values
+
+        // evaluate uEn on all quadrature points on the intersections
+        for (const auto& intersection : intersections(gridPart_, en) )
+        {
+          FaceQuadratureType faceQuadInner(gridPart_,intersection, faceQuadOrd_, FaceQuadratureType::INSIDE);
+          checkPhysicalQuad( faceQuadInner, uEn, minVal, maxVal );
+        }
+
+        // evaluate uEn on all interior quadrature points
+        VolumeQuadratureType quad( en, spc_.order( en ) );
+        checkPhysicalQuad( quad, uEn, minVal, maxVal );
       }
 
       // scale function
