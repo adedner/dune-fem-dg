@@ -414,7 +414,7 @@ namespace Fem
     {
       if( limitedElements_ > 0 )
       {
-        std::cout << " ScalingLimitPass: Elements limited = " << limitedElements_
+        std::cout << "ScalingLimitPass: Elements limited = " << limitedElements_
                   << std::endl;
       }
 
