@@ -89,13 +89,17 @@ namespace Fem
     static const int sat = FunctionSpace :: dimRange - 1;
 
   protected:
-    const double lower_;
-    const double upper_;
+    RangeType lower_;
+    RangeType upper_;
 
    public:
     LimiterDefaultModel( const double lower, const double upper )
-      : lower_( lower ), upper_( upper )
-    {}
+      : lower_( 0 ), upper_( 1e308 )
+    {
+      lower_[ sat ] = lower;
+      upper_[ sat ] = upper;
+
+    }
 
     inline bool hasStiffSource() const { return false; }
     inline bool hasNonStiffSource() const { return false; }
@@ -103,6 +107,16 @@ namespace Fem
     // we only need physical check
     inline bool calculateIndicator() const { return false ; }
 
+    void obtainBounds( RangeType& globalMin, RangeType& globalMax) const
+    {
+      globalMin = lower_;
+      globalMax = upper_;
+    }
+
+    bool isConstant( const RangeType& minVal, const RangeType& maxVal ) const
+    {
+      return std::abs( maxVal[ sat ] - minVal[ sat ] ) < 1e-10 ;
+    }
 
     template <class LocalEvaluation>
     inline double stiffSource( const LocalEvaluation& local,
@@ -260,7 +274,7 @@ namespace Fem
                          const DomainType& xGlobal,
                          const RangeType& u) const
     {
-      return (u[ sat ] >= lower_) && (u[ sat ] <= upper_);
+      return (u[ sat ] >= lower_[ sat ]) && (u[ sat ] <= upper_[ sat ]);
     }
 
     // adjust average value if necessary
@@ -270,9 +284,9 @@ namespace Fem
                              const DomainType& xLocal,
                              RangeType& u ) const
     {
-      if( u[ sat ] < lower_ )
+      if( u[ sat ] < lower_[ sat])
       {
-        u[ sat ] = lower_;
+        u[ sat ] = lower_[ sat ];
         return false ;
       }
 
