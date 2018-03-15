@@ -115,6 +115,11 @@ namespace Fem
     {
     }
 
+    void obtainBounds( RangeType& globalMin, RangeType& globalMax ) const
+    {
+      model_.obtainBounds( globalMin, globalMax );
+    }
+
     enum { Coarsen = -1 , None = 0, Refine = 1 };
 
     //! mark element for refinement or coarsening
