@@ -992,10 +992,6 @@ namespace Fem
     const DiscreteFunctionSpaceType& spc_;
     GridPartType& gridPart_;
 
-#if HAVE_DUNE_OPTIM
-    mutable LinearProgramming linProg_;
-#endif
-
     const IndexSetType& indexSet_;
     const LocalIdSetType& localIdSet_;
 
