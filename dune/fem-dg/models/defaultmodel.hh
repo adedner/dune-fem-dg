@@ -189,6 +189,16 @@ namespace Fem
     bool calculateIndicator () const { return true; }
 
     /**
+     *  \brief returns whether the shock indicator needs to be computed when the
+     *  LimitPass is used.
+     */
+    void obtainBounds( RangeType& globalMin, RangeType& globalMax ) const
+    {
+      globalMin =  1e308;
+      globalMax = -1e308;
+    }
+
+    /**
      * \brief returns the mass factor term \f$ R \f$
      *
      * \param[in]  local local evaluation
