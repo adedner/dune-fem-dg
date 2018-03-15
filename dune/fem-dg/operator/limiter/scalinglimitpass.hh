@@ -109,9 +109,6 @@ namespace Fem
     typedef typename GridPartType::template Codim<0>::GeometryType        Geometry;
     typedef typename Geometry::LocalCoordinate                            LocalDomainType;
 
-    // define limiter utility class
-    typedef LimiterUtility< typename DiscreteFunctionSpaceType::FunctionSpaceType, GridType::dimension > LimiterUtilityType;
-
     // Various other types
     typedef typename DestinationType::LocalFunctionType                   DestLocalFunctionType;
 
@@ -132,9 +129,6 @@ namespace Fem
     static const bool StructuredGrid     = GridPartCapabilities::isCartesian< GridPartType >::v;
     static const bool conformingGridPart = GridPartCapabilities::isConforming< GridPartType >::v;
 
-    typedef typename LimiterUtilityType::GradientType  GradientType;
-    typedef typename LimiterUtilityType::MatrixType    MatrixType;
-
     typedef typename GridPartType :: IndexSetType IndexSetType;
     typedef AllGeomTypes< IndexSetType, GridType> GeometryInformationType;
 
@@ -145,25 +139,9 @@ namespace Fem
     // get lagrange point set of order 1
     typedef std::map< Dune::GeometryType, CornerPointSetType >             CornerPointSetContainerType;
 
-    typedef typename LimiterUtilityType::KeyType         KeyType;
-    typedef typename LimiterUtilityType::CheckType       CheckType;
-    typedef typename LimiterUtilityType::VectorCompType  VectorCompType;
-    typedef typename LimiterUtilityType::ComboSetType    ComboSetType;
-
-    typedef std::map< int, ComboSetType > ComboSetMapType ;
-
-    typedef typename LimiterUtilityType::MatrixStorage MatrixCacheEntry;
-    typedef std::map< KeyType, MatrixCacheEntry > MatrixCacheType;
-
     //! type of local mass matrix
     typedef LocalMassMatrix< DiscreteFunctionSpaceType,
                   VolumeQuadratureType > LocalMassMatrixType;
-
-    //! type of used adaptation method
-    typedef AdaptationMethod<GridType> AdaptationMethodType;
-
-    //! id for choosing admissible linear functions
-    enum AdmissibleFunctions { DGFunctions = 0, ReconstructedFunctions = 1 , BothFunctions = 2 };
 
     //! returns true of pass is currently active in the pass tree
     using BaseType :: active ;
@@ -214,30 +192,17 @@ namespace Fem
       spc_(spc),
       gridPart_(spc_.gridPart()),
       indexSet_( gridPart_.indexSet() ),
-      localIdSet_( gridPart_.grid().localIdSet()),
       cornerPointSetContainer_(),
-      orderPower_( -((spc_.order()+1.0) * 0.25)),
       dofConversion_(dimRange),
       faceQuadOrd_( (fQ < 0) ? (2 * spc_.order() + 1) : fQ ),
       volumeQuadOrd_( (vQ < 0) ? (2 * spc_.order()) : vQ ),
       argOrder_( spc_.order() ),
-      storedComboSets_(),
-      tolFactor_( getTolFactor() ),
-      tol_1_( 1.0/getTol() ),
       geoInfo_( gridPart_.indexSet() ),
       faceGeoInfo_( geoInfo_.geomTypes(1) ),
       phi0_( 0 ),
-      matrixCacheVec_( gridPart_.grid().maxLevel() + 1 ),
-      factors_(),
-      numbers_(),
       localMassMatrix_( spc_ , volumeQuadOrd_ ),
-      adaptive_((AdaptationMethodType(gridPart_.grid())).adaptive()),
       cartesianGrid_( CheckCartesianType::check( gridPart_ ) ),
-      stepTime_(3, 0.0),
-      calcIndicator_(discreteModel_.calculateIndicator()),
-      reconstruct_(false),
-      admissibleFunctions_( getAdmissibleFunctions() ),
-      usedAdmissibleFunctions_( admissibleFunctions_ )
+      stepTime_(3, 0.0)
     {
       // we need the flux here
       assert(problem.hasFlux());
@@ -250,33 +215,6 @@ namespace Fem
     virtual ~ScalingLimitDGPass() {}
 
   protected:
-    //! get tolerance factor for shock detector
-    double getTolFactor() const
-    {
-      const double dim = dimGrid;
-      const double dimFactor = 1./dim;
-      const double order = spc_.order();
-      return dimFactor * 0.016 * std::pow(5.0, order);
-    }
-
-    //! get tolerance for shock detector
-    double getTol() const
-    {
-      double tol = 1.0;
-      tol = Parameter::getValue("femdg.limiter.tolerance", tol );
-      return tol;
-    }
-
-    //! get tolerance for shock detector
-    AdmissibleFunctions getAdmissibleFunctions() const
-    {
-      // default value
-      int val = 1;
-      val = Parameter::getValue("femdg.limiter.admissiblefunctions", val);
-      assert( val >= DGFunctions || val <= BothFunctions );
-      return (AdmissibleFunctions) val;
-    }
-
     template <class S1, class S2>
     struct AssignFunction
     {
@@ -439,28 +377,11 @@ namespace Fem
 
       // initialize dest as copy of U
       // if reconstruct_ false then only reconstruct in some cases
-      reconstruct_ =
-          AssignFunction<typename ArgumentFunctionType ::
-          DiscreteFunctionSpaceType,DiscreteFunctionSpaceType>::
-               assign( U , dest, firstThread );
-
-      // if case of finite volume scheme set admissible functions to reconstructions
-      usedAdmissibleFunctions_ = reconstruct_ ? ReconstructedFunctions : admissibleFunctions_;
-
-      // in case of reconstruction
-      if( reconstruct_ )
-      {
-        // in case of non-adaptive scheme indicator not needed
-        calcIndicator_ = adaptive_;
-
-        // adjust quadrature orders
-        argOrder_ = U.space().order();
-        faceQuadOrd_ = 2 * argOrder_ + 1;
-        volumeQuadOrd_ = 2 * argOrder_;
-      }
+      AssignFunction<typename ArgumentFunctionType ::
+                     DiscreteFunctionSpaceType,DiscreteFunctionSpaceType>::assign( U , dest, firstThread );
 
       limitedElements_ = 0;
-      notPhysicalElements_ = 0;
+      discreteModel_.clearIndicator();
 
       arg_ = const_cast<ArgumentType*>(&arg);
       dest_ = &dest;
@@ -480,17 +401,6 @@ namespace Fem
       // reset visited vector
       visited_.resize( size );
       std::fill( visited_.begin(), visited_.end(), false );
-
-      factors_.resize( size );
-      numbers_.clear();
-      numbers_.resize( size );
-
-      const int numLevels = gridPart_.grid().maxLevel() + 1;
-      // check size of matrix cache vec
-      if( (int) matrixCacheVec_.size() < numLevels )
-      {
-        matrixCacheVec_.resize( numLevels );
-      }
     }
 
     //! Some management (interface version)
@@ -504,9 +414,7 @@ namespace Fem
     {
       if( limitedElements_ > 0 )
       {
-        std::cout << " Time: " << currentTime_
-                  << " Elements limited: " << limitedElements_
-                  << " due to side effects: " << notPhysicalElements_
+        std::cout << " ScalingLimitPass: Elements limited = " << limitedElements_
                   << std::endl;
       }
 
@@ -610,9 +518,6 @@ namespace Fem
 
       RangeType enVal ;
 
-      RangeType minVal(  1e308 );
-      RangeType maxVal( -1e308 );
-
       bool limiter = false;
 
       // check physicality of data
@@ -621,6 +526,9 @@ namespace Fem
       {
         limiter = true;
       }
+
+      RangeType minVal( enVal );
+      RangeType maxVal( enVal );
 
       // evaluate uEn on all quadrature points on the intersections
       for (const auto& intersection : intersections(gridPart_, en) )
@@ -632,6 +540,12 @@ namespace Fem
         }
       }
 
+      CornerPointSetType cornerquad( en );
+      if( ! checkPhysicalQuad( cornerquad, uEn, minVal, maxVal ) )
+      {
+        limiter = true;
+      }
+
       // evaluate uEn on all interior quadrature points
       VolumeQuadratureType quad( en, spc_.order( en ) );
       if( ! checkPhysicalQuad( quad, uEn, minVal, maxVal ) )
@@ -640,13 +554,16 @@ namespace Fem
       }
 
       // scale function
-      if( limiter )
+      if( limiter && ! discreteModel_.isConstant( minVal, maxVal ) )
       {
         // get local funnction for limited values
         DestLocalFunctionType limitEn = dest_->localFunction(en);
 
         // project deoMod_ to limitEn
         L2project(en, geo, enVal, uEn, minVal, maxVal, limitEn);
+
+        // set indicator 1
+        discreteModel_.markIndicator();
 
         // increase number of limited elements
         ++limitedElements_;
@@ -835,6 +752,9 @@ namespace Fem
 
       uEn.evaluateQuadrature( quad, tmpVal_ );
 
+      //std::cout << globalMin << " " << globalMax << std::endl;
+      //std::cout << minVal  << " " << maxVal << std::endl;
+
       // compute scaling theta after Shu et al.
       RangeType theta ;
       for( int d=0; d<dimRange; ++d )
@@ -993,69 +913,37 @@ namespace Fem
     GridPartType& gridPart_;
 
     const IndexSetType& indexSet_;
-    const LocalIdSetType& localIdSet_;
 
     CornerPointSetContainerType cornerPointSetContainer_;
 
-    const double orderPower_;
     const DofConversionUtilityType dofConversion_;
     mutable int faceQuadOrd_;
     mutable int volumeQuadOrd_;
     mutable int argOrder_;
 
-    mutable ComboSetMapType storedComboSets_;
-
-    // tolerance to scale shock indicator
-    const double tolFactor_;
-    const double tol_1_;
-
     // if true scheme is TVD
     const GeometryInformationType geoInfo_;
     const FaceGeometryInformationType faceGeoInfo_;
 
-    mutable GradientType deoMod_;
     mutable RangeType    phi0_ ;
 
     mutable RangeType    globalMin_;
     mutable RangeType    globalMax_ ;
 
-    mutable std::vector< GradientType > deoMods_;
-    mutable std::vector< CheckType >    comboVec_;
-
     mutable std::vector< RangeType >  tmpVal_ ;
 
     mutable std::vector< RangeType >  aver_ ;
-    mutable std::vector< DomainType > barys_;
-    mutable std::vector< RangeType >  nbVals_;
-    mutable std::vector< MatrixCacheType > matrixCacheVec_;
-
-    mutable std::vector< RangeType  > factors_;
-    mutable std::vector< std::vector< int > > numbers_;
 
     // vector for stroing the information which elements have been computed already
     mutable std::vector< bool > visited_;
 
     LocalMassMatrixType localMassMatrix_;
-    //! true if limiter is used in adaptive scheme
-    const bool adaptive_;
+
     //! true if grid is cartesian like
     const bool cartesianGrid_;
-    mutable int limitedElements_, notPhysicalElements_;
+    mutable int limitedElements_;
     mutable std::vector<double> stepTime_;
     mutable size_t elementCounter_;
-
-    //! true if indicator should be calculated
-    mutable bool calcIndicator_;
-
-    //! true if limiter is used as finite volume scheme of higher order
-    mutable bool reconstruct_;
-
-    // choice of admissible linear functions
-    const AdmissibleFunctions admissibleFunctions_;
-    mutable AdmissibleFunctions usedAdmissibleFunctions_ ;
-
-    mutable std::vector< RangeType  > values_;
-    mutable std::vector< GradientType > gradients_;
 
   }; // end DGLimitPass
 

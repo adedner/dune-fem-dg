@@ -115,12 +115,33 @@ namespace Fem
     {
     }
 
+    bool isConstant( const RangeType& minVal, const RangeType& maxVal ) const
+    {
+      return model_.isConstant( minVal, maxVal );
+    }
+
     void obtainBounds( RangeType& globalMin, RangeType& globalMax ) const
     {
       model_.obtainBounds( globalMin, globalMax );
     }
 
     enum { Coarsen = -1 , None = 0, Refine = 1 };
+
+    void clearIndicator() { if( indicator_ ) indicator_->clear(); }
+
+    void markIndicator()
+    {
+      // set indicator
+      if( indicator_ )
+      {
+        typedef typename IndicatorType :: LocalFunctionType  LocalFunctionType;
+        LocalFunctionType lf = indicator_->localFunction( inside() );
+        assert( lf.numDofs() == 3 );
+        lf[0] = 1;
+        lf[1] = 1;
+        lf[2] = 1; // store real adapt indicator
+      }
+    }
 
     //! mark element for refinement or coarsening
     void adaptation(GridType& grid,
