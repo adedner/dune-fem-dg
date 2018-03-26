@@ -117,6 +117,11 @@ namespace Fem
       limitPass_( arg, dest );
     }
 
+    bool activated( const EntityType& entity ) const
+    {
+      return std::abs( indicator_.localFunction( entity )[ 0 ] ) > 0.0;
+    }
+
     const IndicatorType& indicator() const { return indicator_; }
 
   private:
@@ -238,6 +243,11 @@ namespace Fem
 
       // calculate reconstruction
       limitPass_( arg, dest );
+    }
+
+    bool activated( const EntityType& entity ) const
+    {
+      return std::abs( indicator_.localFunction( entity )[ 0 ] ) > 0.0;
     }
 
     const IndicatorType& indicator() const { return indicator_; }
