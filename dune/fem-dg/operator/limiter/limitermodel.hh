@@ -115,7 +115,7 @@ namespace Fem
 
     bool isConstant( const RangeType& minVal, const RangeType& maxVal ) const
     {
-      return std::abs( maxVal[ sat ] - minVal[ sat ] ) < 1e-10 ;
+      return (std::abs( maxVal[ sat ] - minVal[ sat ] ) / (upper_[ sat ] - lower_[ sat ]))  < 1e-8;
     }
 
     template <class LocalEvaluation>
