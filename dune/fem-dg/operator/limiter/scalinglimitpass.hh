@@ -46,10 +46,9 @@ namespace Fem
    *
    *  \note: A detailed description can be found in:
    *
-   *   A. Dedner and R. Klöfkorn.
-   *   \b A Generic Stabilization Approach for Higher Order
-   *   Discontinuous Galerkin Methods for Convection Dominated Problems. \b
-   *   J. Sci. Comput., 47(3):365-388, 2011. http://link.springer.com/article/10.1007%2Fs10915-010-9448-0
+   *  X. Zhang and C.-W. Shu,
+   *  Maximum-principle-satisfying and positivity-preserving high order schemes
+   *  for conservation laws: Survey and new developments.
    */
   template <class DiscreteModelImp, class PreviousPassImp, int passId >
   class ScalingLimitDGPass

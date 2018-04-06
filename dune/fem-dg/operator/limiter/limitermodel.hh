@@ -41,7 +41,8 @@ namespace Fem
                                                                     GradientType;
     static const int modelParameterSize = 0;
 
-    typedef MinModLimiter< typename BaseType::DomainFieldType >     LimiterFunctionType ;
+    typedef NoLimiter< typename BaseType::DomainFieldType >    LimiterFunctionType;
+    //typedef MinModLimiter< typename BaseType::DomainFieldType >     LimiterFunctionType ;
     //typedef SuperBeeLimiter< typename BaseType::DomainFieldType > LimiterFunctionType ;
     //typedef VanLeerLimiter< typename BaseType::DomainFieldType >  LimiterFunctionType ;
 
