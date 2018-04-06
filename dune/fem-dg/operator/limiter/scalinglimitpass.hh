@@ -766,7 +766,6 @@ namespace Fem
         theta[ d ] = std::min( std::min( std::abs( fst ), std::abs( sec ) ), double(1) );
       }
 
-      //const BaseFunctionSetType& baseset = limitEn.baseFunctionSet();
       for(int qP = 0; qP < quadNop ; ++qP)
       {
         // get quadrature weight
@@ -777,7 +776,9 @@ namespace Fem
         RangeType &value = tmpVal_[ qP ];
 
         // \tilde{p}(x) = \theta (p(x) - \bar{u}) + \bar{u}
-        for( int d=0; d<dimRange; ++d )
+        // modifiedRange contains all components that should be modified
+        // default is 0,...,dimRange-1
+        for( const auto& d : discreteModel_.model().modifiedRange()  )
         {
           value[ d ] = theta[ d ] * ( value[ d ] - enVal[ d ]) + enVal[ d ];
         }

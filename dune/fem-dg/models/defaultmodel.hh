@@ -155,9 +155,22 @@ namespace Fem
     typedef typename Traits::FaceDomainType              FaceDomainType;
     typedef typename Traits::JacobianRangeType           JacobianRangeType;
 
+    // default is 0,...,dimRange-1
+    typedef Dune::FieldVector< int, dimRange > ModifiedRangeType;
+
     explicit DefaultModel( double time = 0 )
       : time_( time )
-    {}
+    {
+      for( int d=0; d<dimRange; ++d )
+        modified_[ d ] = d;
+    }
+
+    /**
+     * \brief return set of components to be modified by the limiter */
+    const ModifiedRangeType& modifiedRange() const
+    {
+      return modified_;
+    }
 
     /**
      * \brief returns whether the mass term is not the identity
@@ -637,6 +650,7 @@ namespace Fem
 
   protected:
     double time_;
+    ModifiedRangeType modified_;
   };
 
 }

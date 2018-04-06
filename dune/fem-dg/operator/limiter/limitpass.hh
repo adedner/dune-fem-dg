@@ -465,6 +465,7 @@ namespace Fem
     typedef typename DiscreteModelType::Traits::FaceQuadratureType        FaceQuadratureType;
     typedef typename DiscreteModelType::Traits::DiscreteFunctionSpaceType DiscreteFunctionSpaceType;
     typedef typename DiscreteFunctionSpaceType::IteratorType              IteratorType;
+    typedef TemporaryLocalFunction< DiscreteFunctionSpaceType >           TemporaryLocalFunctionType;
 
     // Types extracted from the discrete function space type
     typedef typename DiscreteFunctionSpaceType::GridType                  GridType;
@@ -617,6 +618,7 @@ namespace Fem
       indexSet_( gridPart_.indexSet() ),
       localIdSet_( gridPart_.grid().localIdSet()),
       cornerPointSetContainer_(),
+      uTmpLocal_( spc_ ),
       orderPower_( -((spc_.order()+1.0) * 0.25)),
       dofConversion_(dimRange),
       faceQuadOrd_( (fQ < 0) ? (2 * spc_.order() + 1) : fQ ),
@@ -1232,8 +1234,8 @@ namespace Fem
       GradientType D;
       FieldMatrix<double,dimDomain,dimDomain> A;
       RangeType b[dimDomain];
-      TemporaryLocalFunction< DiscreteFunctionSpaceType > uTmp(spc_,en);
-      uTmp.clear();
+      uTmpLocal_.init( en );
+      uTmpLocal_.clear();
 
       // assume that basis functions are hierarchical
       assert( HierarchicalBasis< DiscreteFunctionSpaceType > :: v );
@@ -1243,7 +1245,7 @@ namespace Fem
         for (int i=0; i<dimDomain+1; ++i)
         {
           const int idx = dofConversion_.combinedDof(i,r);
-          uTmp[ idx ] = uEn[ idx ];
+          uTmpLocal_[ idx ] = uEn[ idx ];
         }
       }
 
@@ -1252,7 +1254,7 @@ namespace Fem
       const CornerPointSetType quad( en );
       for(int i=0; i<dimDomain; ++i)
       {
-        uTmp.evaluate( quad[ i ], b[ i ]);
+        uTmpLocal_.evaluate( quad[ i ], b[ i ]);
         b[i] -= enVal;
         A[i]  = geo.corner( i );
         A[i] -= enBary;
@@ -1417,7 +1419,8 @@ namespace Fem
       const bool affineMapping = localMassMatrix_.affine();
 
       // set zero dof to zero
-      limitEn.clear();
+      uTmpLocal_.init( en );
+      uTmpLocal_.clear();
 
       // get quadrature for destination space order
       VolumeQuadratureType quad( en, spc_.order() + 1 );
@@ -1445,26 +1448,26 @@ namespace Fem
         }
 
         retVal *= intel;
-        limitEn.axpy( quad[ qP ], retVal );
+        uTmpLocal_.axpy( quad[ qP ], retVal );
       }
 
       // apply local inverse mass matrix for non-linear mappings
       if( !affineMapping )
-        localMassMatrix_.applyInverse( en, limitEn );
+        localMassMatrix_.applyInverse( en, uTmpLocal_ );
 
       // check physicality of projected data
-      if ( (! constantValue) && (! checkPhysical(en, geo, limitEn)) )
+      if ( (! constantValue) && (! checkPhysical(en, geo, uTmpLocal_)) )
       {
         // for affine mapping we only need to set higher moments to zero
         if( affineMapping )
         {
-          const int numBasis = limitEn.numDofs()/dimRange;
+          const int numBasis = uTmpLocal_.numDofs()/dimRange;
           for(int i=1; i<numBasis; ++i)
           {
             for(int r=0; r<dimRange; ++r)
             {
               const int dofIdx = dofConversion_.combinedDof(i,r);
-              limitEn[dofIdx] = 0;
+              uTmpLocal_[dofIdx] = 0;
             }
           }
         }
@@ -1472,6 +1475,17 @@ namespace Fem
         {
           // if not physical project to mean value
           L2project(en,geo,enBary,enVal,limit,deoMod_, limitEn, true);
+        }
+      }
+
+      // copy to limitEn skipping components that should not be limited
+      const int numBasis = uTmpLocal_.numDofs()/dimRange;
+      for(int i=1; i<numBasis; ++i)
+      {
+        for( const auto& r : discreteModel_.model().modifiedRange() )
+        {
+          const int dofIdx = dofConversion_.combinedDof(i,r);
+          limitEn[ dofIdx ] = uTmpLocal_[ dofIdx ];
         }
       }
     }
@@ -1931,6 +1945,8 @@ namespace Fem
     const LocalIdSetType& localIdSet_;
 
     CornerPointSetContainerType cornerPointSetContainer_;
+
+    TemporaryLocalFunctionType uTmpLocal_;
 
     const double orderPower_;
     const DofConversionUtilityType dofConversion_;

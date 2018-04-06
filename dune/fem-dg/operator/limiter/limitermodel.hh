@@ -79,6 +79,8 @@ namespace Fem
 
     typedef Dune::Fem::BoundaryIdProvider < GridType >   BoundaryIdProviderType;
 
+    typedef Dune::FieldVector< int, FunctionSpace :: dimRange - 1 > ModifiedRangeType;
+
     // for Euler equations diffusion is disabled
     static const bool hasAdvection = true;
     static const bool hasDiffusion = false;
@@ -92,10 +94,14 @@ namespace Fem
   protected:
     RangeType lower_;
     RangeType upper_;
+    ModifiedRangeType modified_;
 
    public:
-    LimiterDefaultModel( const double lower, const double upper )
-      : lower_( 0 ), upper_( 1e308 )
+    LimiterDefaultModel( const double lower, const double upper,
+                         ModifiedRangeType mod = ModifiedRangeType( sat ) )
+      : lower_( 0 ),
+        upper_( 1e308 ),
+        modified_( mod )
     {
       lower_[ sat ] = lower;
       upper_[ sat ] = upper;
@@ -113,6 +119,9 @@ namespace Fem
       globalMin = lower_;
       globalMax = upper_;
     }
+
+    // return set with components to be modified by limiter
+    const ModifiedRangeType& modifiedRange () const { return modified_; }
 
     bool isConstant( const RangeType& minVal, const RangeType& maxVal ) const
     {
