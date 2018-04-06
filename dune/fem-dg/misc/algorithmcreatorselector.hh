@@ -79,10 +79,12 @@ namespace Fem
     {
       //! use default value
       default_,
-      //! limitation of advection term
-      unlimited,
       //! no limitation of advection term
+      unlimited,
+      //! limitation of advection term
       limited,
+      //! scaling limitation of advection term
+      scalinglimited
     };
   }
 
@@ -312,6 +314,22 @@ namespace Fem
     static const int diffusion = OperatorTraits::ModelType::hasDiffusion;
     typedef DGLimitedAdvectionDiffusionOperator< OperatorTraits >            DgType;
     typedef DGLimitedAdvectionOperator< OperatorTraits >                     DgAdvectionType;
+    typedef DGDiffusionOperator< OperatorTraits >                            DgDiffusionType;
+    typedef ImplExplOperatorSelector< DgType, DgAdvectionType, DgDiffusionType, advection, diffusion >
+                                                                             ImplExplOperatorSelectorType;
+  public:
+    typedef typename ImplExplOperatorSelectorType::FullOperatorType          FullOperatorType;
+    typedef typename ImplExplOperatorSelectorType::ImplicitOperatorType      ImplicitOperatorType;
+    typedef typename ImplExplOperatorSelectorType::ExplicitOperatorType      ExplicitOperatorType;
+  };
+
+  template< class OperatorTraits >
+  class AdvectionDiffusionOperatorSelector< OperatorTraits, Formulation::Enum::primal, AdvectionLimiter::Enum::scalinglimited >
+  {
+    static const int advection = OperatorTraits::ModelType::hasAdvection;
+    static const int diffusion = OperatorTraits::ModelType::hasDiffusion;
+    typedef DGLimitedAdvectionDiffusionOperator< OperatorTraits >            DgType;
+    typedef DGScalingLimitedAdvectionOperator< OperatorTraits >              DgAdvectionType;
     typedef DGDiffusionOperator< OperatorTraits >                            DgDiffusionType;
     typedef ImplExplOperatorSelector< DgType, DgAdvectionType, DgDiffusionType, advection, diffusion >
                                                                              ImplExplOperatorSelectorType;

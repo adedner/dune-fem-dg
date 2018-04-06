@@ -97,6 +97,12 @@ namespace Fem
     inline bool hasNonStiffSource() const { return false; }
     inline bool hasFlux() const { return true ; }
 
+    bool isConstant( const RangeType& min, const RangeType& max ) const
+    {
+      return (min - max).infinity_norm() < 1e-10;
+    }
+
+
     template <class LocalEvaluation>
     inline double stiffSource( const LocalEvaluation& local,
                                const RangeType& u,

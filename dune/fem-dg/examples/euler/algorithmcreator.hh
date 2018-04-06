@@ -54,6 +54,7 @@ namespace Fem
                                    Adaptivity::Enum::yes,
                                    DiscreteFunctionSpaces::Enum::orthonormal,
                                    Solver::Enum::fem,
+                                   //AdvectionLimiter::Enum::scalinglimited,
                                    AdvectionLimiter::Enum::limited,
                                    Matrix::Enum::matrixfree,
                                    AdvectionFlux::Enum::euler_hllc,
