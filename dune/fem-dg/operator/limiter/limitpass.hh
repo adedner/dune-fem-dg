@@ -211,15 +211,10 @@ namespace Fem
     /** \brief default limiter discrete model */
     LimiterDefaultDiscreteModel(const Model& mod,
                                 const DomainFieldType veloEps = 1e-8)
-      : model_(mod) , velocity_(0)
+      : model_(mod)
+      , limiterFunction_()
+      , velocity_(0)
       , veloEps_( veloEps )
-    {
-    }
-
-    /** \brief copy constructor */
-    LimiterDefaultDiscreteModel(const LimiterDefaultDiscreteModel& org)
-      : model_(org.model_) , velocity_(org.velocity_)
-      , veloEps_(org.veloEps_)
     {
     }
 

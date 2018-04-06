@@ -904,7 +904,8 @@ namespace Fem
     const double limitEps_;
     LimiterFunctionBase()
       : limitEps_( getEpsilon() )
-    {}
+    {
+    }
 
     //! get tolerance for shock detector
     static double getEpsilon()
@@ -923,6 +924,21 @@ namespace Fem
       {
         std::cout << "LimiterFunction: " << name << " with limitEps = " << limitEps_ << std::endl;
       }
+    }
+  };
+
+  /* empty limiter does not limit anything */
+  template <class Field>
+  struct NoLimiter
+  {
+    typedef Field FieldType;
+
+    //! return epsilon for limiting
+    double epsilon () const { return 1.0; }
+
+    FieldType operator ()(const FieldType& g, const FieldType& d ) const
+    {
+      return 1.0;
     }
   };
 
