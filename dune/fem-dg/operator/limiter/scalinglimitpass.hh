@@ -193,13 +193,13 @@ namespace Fem
       indexSet_( gridPart_.indexSet() ),
       cornerPointSetContainer_(),
       dofConversion_(dimRange),
-      faceQuadOrd_( (fQ < 0) ? (2 * spc_.order() + 1) : fQ ),
-      volumeQuadOrd_( (vQ < 0) ? (2 * spc_.order()) : vQ ),
+      faceQuadOrd_( fQ ),
+      volumeQuadOrd_( vQ ),
       argOrder_( spc_.order() ),
       geoInfo_( gridPart_.indexSet() ),
       faceGeoInfo_( geoInfo_.geomTypes(1) ),
       phi0_( 0 ),
-      localMassMatrix_( spc_ , volumeQuadOrd_ ),
+      localMassMatrix_( spc_ , 2*spc_.order() ),
       cartesianGrid_( CheckCartesianType::check( gridPart_ ) ),
       stepTime_(3, 0.0)
     {
@@ -214,6 +214,24 @@ namespace Fem
     virtual ~ScalingLimitDGPass() {}
 
   protected:
+    //! return appropriate quadrature order, default is 2 * order(entity)
+    int volumeQuadratureOrder( const EntityType& entity ) const
+    {
+      return ( volumeQuadOrd_ < 0 ) ? ( spc_.order( entity ) * 2 ) : volumeQuadOrd_ ;
+    }
+
+    //! return default face quadrature order
+    int defaultFaceQuadOrder( const EntityType& entity ) const
+    {
+      return (2 * spc_.order( entity )) + 1;
+    }
+
+    //! return appropriate quadrature order, default is 2 * order( entity ) + 1
+    int faceQuadratureOrder( const EntityType& entity ) const
+    {
+      return ( faceQuadOrd_ < 0 ) ? defaultFaceQuadOrder( entity ) : faceQuadOrd_ ;
+    }
+
     template <class S1, class S2>
     struct AssignFunction
     {
@@ -532,7 +550,7 @@ namespace Fem
       // evaluate uEn on all quadrature points on the intersections
       for (const auto& intersection : intersections(gridPart_, en) )
       {
-        FaceQuadratureType faceQuadInner(gridPart_,intersection, faceQuadOrd_, FaceQuadratureType::INSIDE);
+        FaceQuadratureType faceQuadInner(gridPart_,intersection, faceQuadratureOrder( en ), FaceQuadratureType::INSIDE);
         if( !checkPhysicalQuad( faceQuadInner, uEn, minVal, maxVal ) )
         {
           limiter = true;
@@ -720,7 +738,7 @@ namespace Fem
         VolumeQuadratureType quad1( type, 0 );
 
         // get quadrature
-        VolumeQuadratureType quad2( type, volumeQuadOrd_ );
+        VolumeQuadratureType quad2( type, 2*spc_.order() );
       }
     }
 
@@ -850,7 +868,7 @@ namespace Fem
         const Geometry& geo = en.geometry();
 
         // get quadrature
-        VolumeQuadratureType quad( en, volumeQuadOrd_ );
+        VolumeQuadratureType quad( en, volumeQuadratureOrder( en ) );
 
         // set value to zero
         val = 0;
