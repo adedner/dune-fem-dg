@@ -934,6 +934,7 @@ namespace Fem
     //! Some management (thread parallel version)
     void finalize(const ArgumentType& arg, DestinationType& dest, const bool doCommunicate) const
     {
+      /*
       if( limitedElements_ > 0 )
       {
         std::cout << " Time: " << currentTime_
@@ -941,6 +942,7 @@ namespace Fem
                   << " due to side effects: " << notPhysicalElements_
                   << std::endl;
       }
+      */
 
       if( doCommunicate )
       {
@@ -1475,6 +1477,7 @@ namespace Fem
         {
           // if not physical project to mean value
           L2project(en,geo,enBary,enVal,limit,deoMod_, limitEn, true);
+          return ;
         }
       }
 
@@ -1946,7 +1949,7 @@ namespace Fem
 
     CornerPointSetContainerType cornerPointSetContainer_;
 
-    TemporaryLocalFunctionType uTmpLocal_;
+    mutable TemporaryLocalFunctionType uTmpLocal_;
 
     const double orderPower_;
     const DofConversionUtilityType dofConversion_;
