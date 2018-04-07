@@ -5,6 +5,7 @@
 #include <config.h>
 #include <cmath>
 #include <type_traits>
+#include <limits>
 
 // DUNE includes
 #include <dune/common/version.hh>
@@ -79,7 +80,7 @@ namespace Fem
 
     typedef Dune::Fem::BoundaryIdProvider < GridType >   BoundaryIdProviderType;
 
-    typedef Dune::FieldVector< int, FunctionSpace :: dimRange - 1 > ModifiedRangeType;
+    typedef Dune::FieldVector< int, FunctionSpace :: dimRange > ModifiedRangeType;
 
     // for Euler equations diffusion is disabled
     static const bool hasAdvection = true;
@@ -99,12 +100,15 @@ namespace Fem
    public:
     LimiterDefaultModel( const double lower, const double upper,
                          ModifiedRangeType mod = ModifiedRangeType( sat ) )
-      : lower_( 0 ),
-        upper_( 1e308 ),
+      : lower_( lower ),
+        upper_( std::numeric_limits< double >::max() ),
         modified_( mod )
     {
       lower_[ sat ] = lower;
       upper_[ sat ] = upper;
+
+      for( int d=0; d<dimRange; ++d )
+        modified_[ d ] = d;
 
     }
 
@@ -125,7 +129,7 @@ namespace Fem
 
     bool isConstant( const RangeType& minVal, const RangeType& maxVal ) const
     {
-      return (std::abs( maxVal[ sat ] - minVal[ sat ] ) / (upper_[ sat ] - lower_[ sat ]))  < 1e-8;
+      return false;//(std::abs( maxVal[ sat ] - minVal[ sat ] ) / (upper_[ sat ] - lower_[ sat ]))  < 1e-8;
     }
 
     template <class LocalEvaluation>
@@ -284,7 +288,7 @@ namespace Fem
                          const DomainType& xGlobal,
                          const RangeType& u) const
     {
-      return (u[ sat ] >= lower_[ sat ]) && (u[ sat ] <= upper_[ sat ]);
+      return (u[ 0 ] >= lower_[ 0 ]) && (u[ sat ] >= lower_[ sat ]) && (u[ sat ] <= upper_[ sat ]);
     }
 
     // adjust average value if necessary
