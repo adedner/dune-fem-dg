@@ -200,6 +200,7 @@ namespace Fem
     enum PassIdType{ u = 0 , limitPass = 1 };
     enum { dimRange = DiscreteFunctionSpaceType :: dimRange };
 
+    typedef typename DiscreteFunctionSpaceType :: RangeType      RangeType;
     typedef typename DiscreteFunctionSpaceType :: RangeFieldType ftype;
 
     typedef PassTraits PassTraitsType;

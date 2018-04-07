@@ -217,7 +217,7 @@ namespace Fem
     //! return appropriate quadrature order, default is 2 * order(entity)
     int volumeQuadratureOrder( const EntityType& entity ) const
     {
-      return ( volumeQuadOrd_ < 0 ) ? ( spc_.order( entity ) * 2 ) : volumeQuadOrd_ ;
+      return ( volumeQuadOrd_ < 0 ) ? ( 2*spc_.order( entity ) +3 ) : volumeQuadOrd_ ;
     }
 
     //! return default face quadrature order
@@ -566,7 +566,7 @@ namespace Fem
       */
 
       // evaluate uEn on all interior quadrature points
-      VolumeQuadratureType quad( en, spc_.order( en ) );
+      VolumeQuadratureType quad( en, volumeQuadratureOrder( en ) );
       if( ! checkPhysicalQuad( quad, uEn, minVal, maxVal ) )
       {
         limiter = true;
@@ -757,14 +757,14 @@ namespace Fem
       // true if geometry mapping is affine
       const bool affineMapping = localMassMatrix_.affine();
 
-      // set zero dof to zero
+      // set all dofs to zero
       limitEn.clear();
 
       const RangeType& globalMin = globalMin_;
       const RangeType& globalMax = globalMax_;
 
       // get quadrature for destination space order
-      VolumeQuadratureType quad( en, uEn.order() + limitEn.order() );
+      VolumeQuadratureType quad( en, 2*uEn.order()+3 );//limitEn.order())+1 );
 
       const int quadNop = quad.nop();
       tmpVal_.resize( quadNop );
@@ -775,13 +775,36 @@ namespace Fem
       //std::cout << minVal  << " " << maxVal << std::endl;
 
       // compute scaling theta after Shu et al.
-      RangeType theta ;
+      RangeType theta ( std::numeric_limits<double>::max() );
+
+      /*
       for( int d=0; d<dimRange; ++d )
       {
-        const double fst = (globalMax[ d ] - enVal[ d ])/(maxVal[ d ] - enVal[ d ]);
-        const double sec = (globalMin[ d ] - enVal[ d ])/(minVal[ d ] - enVal[ d ]);
+        //double fst = 1.0;
+        //double sec = 1.0;
+        //if( std::abs( maxVal[ d ] - enVal[ d ] ) > 1e-10 )
+        //  fst = (globalMax[ d ] - enVal[ d ])/(maxVal[ d ] - enVal[ d ]);
 
+        //if( std::abs( minVal[ d ] - enVal[ d ] ) > 1e-10 )
+        //  sec = (globalMin[ d ] - enVal[ d ])/(minVal[ d ] - enVal[ d ]);
+
+        double sec = std::abs( (enVal[ d ] - 1e-13)/(enVal[d] -
+        std::cout << d << " " << fst << "  " << sec <<  std::endl;
         theta[ d ] = std::min( std::min( std::abs( fst ), std::abs( sec ) ), double(1) );
+        if( std::abs( theta[d ] ) < 1e-12 )
+          theta[ d ] = 0;
+      }
+      */
+
+      // compute theta using all values
+      for(int qP = 0; qP < quadNop ; ++qP)
+      {
+        RangeType &value = tmpVal_[ qP ];
+        for( const auto& d : discreteModel_.model().modifiedRange() )
+        {
+          double tet = std::min( std::abs( ( enVal[ d ] - globalMin[d])/(enVal[d] - value[d ])), 1.0 );
+          theta[ d ] = std::min( tet, theta[d ]);
+        }
       }
 
       for(int qP = 0; qP < quadNop ; ++qP)
