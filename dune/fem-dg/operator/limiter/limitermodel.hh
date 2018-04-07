@@ -80,7 +80,7 @@ namespace Fem
 
     typedef Dune::Fem::BoundaryIdProvider < GridType >   BoundaryIdProviderType;
 
-    typedef Dune::FieldVector< int, FunctionSpace :: dimRange > ModifiedRangeType;
+    typedef Dune::FieldVector< int, dimRange-1 > ModifiedRangeType;
 
     // for Euler equations diffusion is disabled
     static const bool hasAdvection = true;
@@ -90,7 +90,7 @@ namespace Fem
     using BaseType::time_;
 
     // saturation component in RangeType vector, saturation in the last component
-    static const int sat = FunctionSpace :: dimRange - 1;
+    static const int sat = dimRange - 1;
 
   protected:
     RangeType lower_;
@@ -107,9 +107,8 @@ namespace Fem
       lower_[ sat ] = lower;
       upper_[ sat ] = upper;
 
-      for( int d=0; d<dimRange; ++d )
-        modified_[ d ] = d;
-
+      //for( int d=0; d<dimRange; ++d )
+      //  modified_[ d ] = d;
     }
 
     inline bool hasStiffSource() const { return false; }
@@ -127,10 +126,13 @@ namespace Fem
     // return set with components to be modified by limiter
     const ModifiedRangeType& modifiedRange () const { return modified_; }
 
+    /*
+    // return true if solution is constant, i.e. min == max
     bool isConstant( const RangeType& minVal, const RangeType& maxVal ) const
     {
-      return false;//(std::abs( maxVal[ sat ] - minVal[ sat ] ) / (upper_[ sat ] - lower_[ sat ]))  < 1e-8;
+      return false ;//(std::abs( maxVal[ sat ] - minVal[ sat ] ) / (upper_[ sat ] - lower_[ sat ]))  < 1e-10;
     }
+    */
 
     template <class LocalEvaluation>
     inline double stiffSource( const LocalEvaluation& local,

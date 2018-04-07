@@ -573,7 +573,7 @@ namespace Fem
       }
 
       // scale function
-      if( limiter && ! discreteModel_.isConstant( minVal, maxVal ) )
+      if( limiter )
       {
         // get local funnction for limited values
         DestLocalFunctionType limitEn = dest_->localFunction(en);
