@@ -766,35 +766,58 @@ namespace Fem
       // get quadrature for destination space order
       VolumeQuadratureType quad( en, 2*uEn.order()+3 );//limitEn.order())+1 );
 
-      const int quadNop = quad.nop();
-      tmpVal_.resize( quadNop );
-
-      uEn.evaluateQuadrature( quad, tmpVal_ );
-
       //std::cout << globalMin << " " << globalMax << std::endl;
       //std::cout << minVal  << " " << maxVal << std::endl;
 
+      // also take check at corners of element
+      CornerPointSetType cornerquad( en );
+      const int corners = cornerquad.nop();
+
       // compute scaling theta after Shu et al.
-      RangeType theta ( std::numeric_limits<double>::max() );
+      RangeType theta ( 1 );
 
-      /*
-      for( int d=0; d<dimRange; ++d )
+      tmpVal_.resize( corners );
+
+      uEn.evaluateQuadrature( cornerquad, tmpVal_ );
+
+      // compute theta using all values
+      for(int qP = 0; qP < corners; ++qP)
       {
-        //double fst = 1.0;
-        //double sec = 1.0;
-        //if( std::abs( maxVal[ d ] - enVal[ d ] ) > 1e-10 )
-        //  fst = (globalMax[ d ] - enVal[ d ])/(maxVal[ d ] - enVal[ d ]);
+        RangeType &value = tmpVal_[ qP ];
+        for( const auto& d : discreteModel_.model().modifiedRange() )
+        {
+          const double denominator = std::abs( enVal[ d ] - value[ d ] );
+          if( denominator < 1e-12 ) continue ;
 
-        //if( std::abs( minVal[ d ] - enVal[ d ] ) > 1e-10 )
-        //  sec = (globalMin[ d ] - enVal[ d ])/(minVal[ d ] - enVal[ d ]);
+          const double upper = std::min( std::abs( enVal[ d ] - globalMax[ d ] ) / denominator, 1.0 );
+          const double lower = std::min( std::abs( enVal[ d ] - globalMin[ d ] ) / denominator, 1.0 );
 
-        double sec = std::abs( (enVal[ d ] - 1e-13)/(enVal[d] -
-        std::cout << d << " " << fst << "  " << sec <<  std::endl;
+          theta[ d ] = std::min( std::min( upper, lower ), theta[d ]);
+        }
+      }
+
+      //old version that did not work well
+      /*
+      for( const auto& d : discreteModel_.model().modifiedRange() )
+      {
+        double fst = 1.0;
+        double sec = 1.0;
+        if( std::abs( maxVal[ d ] - enVal[ d ] ) > 1e-10 )
+          fst = (globalMax[ d ] - enVal[ d ])/(maxVal[ d ] - enVal[ d ]);
+
+        if( std::abs( minVal[ d ] - enVal[ d ] ) > 1e-10 )
+          sec = (globalMin[ d ] - enVal[ d ])/(minVal[ d ] - enVal[ d ]);
+
         theta[ d ] = std::min( std::min( std::abs( fst ), std::abs( sec ) ), double(1) );
         if( std::abs( theta[d ] ) < 1e-12 )
           theta[ d ] = 0;
       }
       */
+
+      const int quadNop = quad.nop();
+      tmpVal_.resize( quadNop );
+
+      uEn.evaluateQuadrature( quad, tmpVal_ );
 
       // compute theta using all values
       for(int qP = 0; qP < quadNop ; ++qP)
@@ -802,18 +825,18 @@ namespace Fem
         RangeType &value = tmpVal_[ qP ];
         for( const auto& d : discreteModel_.model().modifiedRange() )
         {
-          double tet = std::min( std::abs( ( enVal[ d ] - globalMin[d])/(enVal[d] - value[d ])), 1.0 );
-          theta[ d ] = std::min( tet, theta[d ]);
+          const double denominator = std::abs( enVal[ d ] - value[ d ] );
+          if( denominator < 1e-12 ) continue ;
+
+          const double upper = std::min( std::abs( enVal[ d ] - globalMax[ d ] ) / denominator, 1.0 );
+          const double lower = std::min( std::abs( enVal[ d ] - globalMin[ d ] ) / denominator, 1.0 );
+
+          theta[ d ] = std::min( std::min( upper, lower ), theta[d ]);
         }
       }
 
       for(int qP = 0; qP < quadNop ; ++qP)
       {
-        // get quadrature weight
-        const double intel = (affineMapping) ?
-          quad.weight(qP) : // affine case
-          quad.weight(qP) * geo.integrationElement( quad.point(qP) ); // general case
-
         RangeType &value = tmpVal_[ qP ];
 
         // \tilde{p}(x) = \theta (p(x) - \bar{u}) + \bar{u}
@@ -824,10 +847,16 @@ namespace Fem
           value[ d ] = theta[ d ] * ( value[ d ] - enVal[ d ]) + enVal[ d ];
         }
 
+        // get quadrature weight
+        const double intel = (affineMapping) ?
+          quad.weight(qP) : // affine case
+          quad.weight(qP) * geo.integrationElement( quad.point(qP) ); // general case
+
         // quadrature scaling
         value *= intel;
       }
 
+      // add all value to limitEn
       limitEn.axpyQuadrature( quad, tmpVal_ );
 
       // apply local inverse mass matrix for non-linear mappings
