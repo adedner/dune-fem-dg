@@ -217,7 +217,7 @@ namespace Fem
     //! return appropriate quadrature order, default is 2 * order(entity)
     int volumeQuadratureOrder( const EntityType& entity ) const
     {
-      return ( volumeQuadOrd_ < 0 ) ? ( 2*spc_.order( entity ) +3 ) : volumeQuadOrd_ ;
+      return ( volumeQuadOrd_ < 0 ) ? ( 2*spc_.order( entity ) ) : volumeQuadOrd_ ;
     }
 
     //! return default face quadrature order
@@ -544,30 +544,27 @@ namespace Fem
         limiter = true;
       }
 
-      RangeType minVal( enVal );
-      RangeType maxVal( enVal );
+      RangeType theta( 1 );
+
+      CornerPointSetType cornerquad( en );
+      if( ! checkPhysicalQuad( cornerquad, uEn, enVal, theta ) )
+      {
+        limiter = true;
+      }
 
       // evaluate uEn on all quadrature points on the intersections
       for (const auto& intersection : intersections(gridPart_, en) )
       {
         FaceQuadratureType faceQuadInner(gridPart_,intersection, faceQuadratureOrder( en ), FaceQuadratureType::INSIDE);
-        if( !checkPhysicalQuad( faceQuadInner, uEn, minVal, maxVal ) )
+        if( !checkPhysicalQuad( faceQuadInner, uEn, enVal, theta ) )
         {
           limiter = true;
         }
       }
 
-      /*
-      CornerPointSetType cornerquad( en );
-      if( ! checkPhysicalQuad( cornerquad, uEn, minVal, maxVal ) )
-      {
-        limiter = true;
-      }
-      */
-
       // evaluate uEn on all interior quadrature points
       VolumeQuadratureType quad( en, volumeQuadratureOrder( en ) );
-      if( ! checkPhysicalQuad( quad, uEn, minVal, maxVal ) )
+      if( ! checkPhysicalQuad( quad, uEn, enVal, theta ) )
       {
         limiter = true;
       }
@@ -579,7 +576,7 @@ namespace Fem
         DestLocalFunctionType limitEn = dest_->localFunction(en);
 
         // project deoMod_ to limitEn
-        L2project(en, geo, enVal, uEn, minVal, maxVal, limitEn);
+        L2project(en, geo, enVal, uEn, theta, limitEn);
 
         // set indicator 1
         discreteModel_.markIndicator();
@@ -597,8 +594,8 @@ namespace Fem
     template <class QuadratureType, class LocalFunctionImp>
     bool checkPhysicalQuad(const QuadratureType& quad,
                            const LocalFunctionImp& uEn,
-                           RangeType& minVal,
-                           RangeType& maxVal ) const
+                           const RangeType& enVal,
+                           RangeType& theta ) const
     {
       // geometry and also use caching
       const int quadNop = quad.nop();
@@ -616,10 +613,15 @@ namespace Fem
       {
         const RangeType& u = tmpVal_[ l ];
 
-        for( int d=0; d<dimRange; ++d )
+        for( const auto& d : discreteModel_.model().modifiedRange() )
         {
-          minVal[ d ] = std::min( minVal[ d ], u[ d ] );
-          maxVal[ d ] = std::max( maxVal[ d ], u[ d ] );
+          const double denominator = std::abs( enVal[ d ] - u[ d ] );
+          if( denominator < 1e-12 ) continue ;
+
+          const double upper = std::min( std::abs( enVal[ d ] - globalMax_[ d ] ) / denominator, 1.0 );
+          const double lower = std::min( std::abs( enVal[ d ] - globalMin_[ d ] ) / denominator, 1.0 );
+
+          theta[ d ] = std::min( std::min( upper, lower ), theta[d ]);
         }
 
         // warning!!! caching of geo can be more efficient
@@ -641,26 +643,29 @@ namespace Fem
     bool checkPhysicalQuad(const QuadratureType& quad,
                            const LocalFunctionImp& uEn) const
     {
-      // use LagrangePointSet to evaluate on corners of the
       // geometry and also use caching
-      RangeType u;
       const int quadNop = quad.nop();
       const EntityType& en = uEn.entity();
+
+      tmpVal_.resize( quadNop );
+
+      // evaluate uEn on all quadrature points
+      uEn.evaluateQuadrature( quad , tmpVal_ );
+
       //const Geometry& geo = en.geometry();
       for(int l=0; l<quadNop; ++l)
       {
-        uEn.evaluate( quad[l] , u );
+        const RangeType& u = tmpVal_[ l ];
+
         // warning!!! caching of geo can be more efficient
         //const DomainType& xgl = geo.global( quad[l] );
         // check data
         if ( ! discreteModel_.physical( en, quad.point(l), u ) )
         {
-          // return notPhysical
-          return false;
+          // notPhysical
+          return false ;
         }
       }
-      // solution is physical
-      return true;
     }
 
     //! check physicallity of data
@@ -748,8 +753,7 @@ namespace Fem
                    const Geometry& geo,
                    const RangeType& enVal,
                    const LocalFunctionType& uEn,
-                   const RangeType& minVal,
-                   const RangeType& maxVal,
+                   const RangeType& theta,
                    LocalFunctionImp& limitEn ) const
     {
       enum { dim = dimGrid };
@@ -760,41 +764,11 @@ namespace Fem
       // set all dofs to zero
       limitEn.clear();
 
-      const RangeType& globalMin = globalMin_;
-      const RangeType& globalMax = globalMax_;
-
       // get quadrature for destination space order
-      VolumeQuadratureType quad( en, 2*uEn.order()+3 );//limitEn.order())+1 );
+      VolumeQuadratureType quad( en, volumeQuadratureOrder( en ) );
 
       //std::cout << globalMin << " " << globalMax << std::endl;
       //std::cout << minVal  << " " << maxVal << std::endl;
-
-      // also take check at corners of element
-      CornerPointSetType cornerquad( en );
-      const int corners = cornerquad.nop();
-
-      // compute scaling theta after Shu et al.
-      RangeType theta ( 1 );
-
-      tmpVal_.resize( corners );
-
-      uEn.evaluateQuadrature( cornerquad, tmpVal_ );
-
-      // compute theta using all values
-      for(int qP = 0; qP < corners; ++qP)
-      {
-        RangeType &value = tmpVal_[ qP ];
-        for( const auto& d : discreteModel_.model().modifiedRange() )
-        {
-          const double denominator = std::abs( enVal[ d ] - value[ d ] );
-          if( denominator < 1e-12 ) continue ;
-
-          const double upper = std::min( std::abs( enVal[ d ] - globalMax[ d ] ) / denominator, 1.0 );
-          const double lower = std::min( std::abs( enVal[ d ] - globalMin[ d ] ) / denominator, 1.0 );
-
-          theta[ d ] = std::min( std::min( upper, lower ), theta[d ]);
-        }
-      }
 
       //old version that did not work well
       /*
@@ -814,26 +788,12 @@ namespace Fem
       }
       */
 
-      const int quadNop = quad.nop();
-      tmpVal_.resize( quadNop );
+      const int quadNop = tmpVal_.size();// quad.nop();
+      assert( quadNop == int(quad.nop()) );
 
-      uEn.evaluateQuadrature( quad, tmpVal_ );
-
-      // compute theta using all values
-      for(int qP = 0; qP < quadNop ; ++qP)
-      {
-        RangeType &value = tmpVal_[ qP ];
-        for( const auto& d : discreteModel_.model().modifiedRange() )
-        {
-          const double denominator = std::abs( enVal[ d ] - value[ d ] );
-          if( denominator < 1e-12 ) continue ;
-
-          const double upper = std::min( std::abs( enVal[ d ] - globalMax[ d ] ) / denominator, 1.0 );
-          const double lower = std::min( std::abs( enVal[ d ] - globalMin[ d ] ) / denominator, 1.0 );
-
-          theta[ d ] = std::min( std::min( upper, lower ), theta[d ]);
-        }
-      }
+      // tmpVal_ should be correct from last evaluation on volume quad
+      // tmpVal_.resize( quadNop );
+      // uEn.evaluateQuadrature( quad, tmpVal_ );
 
       for(int qP = 0; qP < quadNop ; ++qP)
       {
