@@ -290,7 +290,8 @@ namespace Fem
                          const DomainType& xGlobal,
                          const RangeType& u) const
     {
-      return (u[ 0 ] >= lower_[ 0 ]) && (u[ sat ] >= lower_[ sat ]) && (u[ sat ] <= upper_[ sat ]);
+      //return (u[ 0 ] >= lower_[ 0 ]) && (u[ sat ] >= lower_[ sat ]) && (u[ sat ] <= upper_[ sat ]);
+      return (u[ sat ]>= lower_[ sat ]) && (u[ sat ] <= upper_[ sat ]);
     }
 
     // adjust average value if necessary
@@ -300,9 +301,10 @@ namespace Fem
                              const DomainType& xLocal,
                              RangeType& u ) const
     {
+
       if( u[ sat ] < lower_[ sat])
       {
-        u[ sat ] = lower_[ sat ];
+        u[ sat ] = lower_[ sat ] + 1e-14 ;
         return false ;
       }
 
