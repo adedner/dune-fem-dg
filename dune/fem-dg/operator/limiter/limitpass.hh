@@ -621,8 +621,8 @@ namespace Fem
       uTmpLocal_( spc_ ),
       orderPower_( -((spc_.order()+1.0) * 0.25)),
       dofConversion_(dimRange),
-      faceQuadOrd_( (fQ < 0) ? (2 * spc_.order() + 1) : fQ ),
-      volumeQuadOrd_( (vQ < 0) ? (2 * spc_.order()) : vQ ),
+      faceQuadOrd_( fQ ),
+      volumeQuadOrd_( vQ ),
       argOrder_( spc_.order() ),
       storedComboSets_(),
       tolFactor_( getTolFactor() ),
@@ -633,7 +633,7 @@ namespace Fem
       matrixCacheVec_( gridPart_.grid().maxLevel() + 1 ),
       factors_(),
       numbers_(),
-      localMassMatrix_( spc_ , volumeQuadOrd_ ),
+      localMassMatrix_( spc_ , 2*spc_.order() ),
       adaptive_((AdaptationMethodType(gridPart_.grid())).adaptive()),
       cartesianGrid_( CheckCartesianType::check( gridPart_ ) ),
       stepTime_(3, 0.0),
@@ -664,6 +664,26 @@ namespace Fem
     virtual ~LimitDGPass() {}
 
   protected:
+    //! return appropriate quadrature order, default is 2 * order(entity)
+    int volumeQuadratureOrder( const EntityType& entity ) const
+    {
+      return ( volumeQuadOrd_ < 0 ) ? ( 2*spc_.order( entity ) ) : volumeQuadOrd_ ;
+    }
+
+    //! return default face quadrature order
+    int defaultFaceQuadOrder( const EntityType& entity ) const
+    {
+      return (2 * spc_.order( entity )) + 1;
+    }
+
+    //! return appropriate quadrature order, default is 2 * order( entity ) + 1
+    int faceQuadratureOrder( const EntityType& entity ) const
+    {
+      return ( faceQuadOrd_ < 0 ) ? defaultFaceQuadOrder( entity ) : faceQuadOrd_ ;
+    }
+
+
+
     //! get tolerance factor for shock detector
     double getTolFactor() const
     {
@@ -1324,7 +1344,7 @@ namespace Fem
         return checkPhysicalQuad( CornerPointSetType( en ), uEn );
 #else
         {
-          VolumeQuadratureType volQuad(en, volumeQuadOrd_ );
+          VolumeQuadratureType volQuad(en, volumeQuadratureOrder( en ) );
           if( ! checkPhysicalQuad(volQuad, uEn) ) return false;
         }
 
@@ -1336,13 +1356,13 @@ namespace Fem
           if( intersection.neighbor() && ! intersection.conforming() )
           {
             typedef typename FaceQuadratureType :: NonConformingQuadratureType NonConformingQuadratureType;
-            NonConformingQuadratureType faceQuadInner(gridPart_,intersection, faceQuadOrd_, FaceQuadratureType::INSIDE);
+            NonConformingQuadratureType faceQuadInner(gridPart_,intersection, faceQuadratureOrder( faceQuadratureOrder(en ), FaceQuadratureType::INSIDE);
             if( ! checkPhysicalQuad( faceQuadInner, uEn ) ) return false;
           }
           else
           {
             // conforming case
-            FaceQuadratureType faceQuadInner(gridPart_,intersection, faceQuadOrd_, FaceQuadratureType::INSIDE);
+            FaceQuadratureType faceQuadInner(gridPart_,intersection, faceQuadratureOrder( faceQuadratureOrder(en ), FaceQuadratureType::INSIDE);
             if( ! checkPhysicalQuad( faceQuadInner, uEn ) ) return false;
           }
         }
@@ -1400,7 +1420,7 @@ namespace Fem
         VolumeQuadratureType quad1( type, 0 );
 
         // get quadrature
-        VolumeQuadratureType quad2( type, volumeQuadOrd_ );
+        VolumeQuadratureType quad2( type, 2*spc_.order() );
       }
     }
 
@@ -1549,7 +1569,7 @@ namespace Fem
         const Geometry& geo = en.geometry();
 
         // get quadrature
-        VolumeQuadratureType quad( en, volumeQuadOrd_ );
+        VolumeQuadratureType quad( en, volumeQuadratureOrder( en ) );
 
         // set value to zero
         val = 0;
@@ -1599,7 +1619,7 @@ namespace Fem
       typedef typename IntersectionQuadratureType :: FaceQuadratureType QuadratureImp;
 
       // create intersection quadrature (no neighbor check here)
-      IntersectionQuadratureType interQuad( gridPart_, intersection, faceQuadOrd_, true );
+      IntersectionQuadratureType interQuad( gridPart_, intersection, faceQuadratureOrder( nb ), true );
 
       // get appropriate references
       const QuadratureImp &faceQuadInner = interQuad.inside();
@@ -1618,8 +1638,8 @@ namespace Fem
       {
         // calculate jump
         const double val = caller().numericalFlux( intersection,
-                                                  faceQuadInner, faceQuadOuter, l,
-                                                  jump , adapt, dummy, dummy );
+                                                   faceQuadInner, faceQuadOuter, l,
+                                                   jump , adapt, dummy, dummy );
 
         // non-physical solution
         if(val < 0.0)
@@ -1725,7 +1745,7 @@ namespace Fem
         const double vol = interGeo.volume();
         currVol += vol;
 
-        const int quadOrd = discreteModel_.hasPhysical() ? faceQuadOrd_ : 0;
+        const int quadOrd = discreteModel_.hasPhysical() ? faceQuadratureOrder( en ) : 0;
 
         // flag to trigger inflow intersection
         bool inflowIntersection = false;
