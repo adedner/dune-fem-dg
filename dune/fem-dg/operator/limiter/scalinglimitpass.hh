@@ -199,7 +199,7 @@ namespace Fem
       geoInfo_( gridPart_.indexSet() ),
       faceGeoInfo_( geoInfo_.geomTypes(1) ),
       phi0_( 0 ),
-      localMassMatrix_( spc_ , 2*spc_.order() ),
+      localMassMatrix_( spc_ , 2*spc_.order()+3 ),
       cartesianGrid_( CheckCartesianType::check( gridPart_ ) ),
       stepTime_(3, 0.0)
     {
@@ -217,13 +217,13 @@ namespace Fem
     //! return appropriate quadrature order, default is 2 * order(entity)
     int volumeQuadratureOrder( const EntityType& entity ) const
     {
-      return ( volumeQuadOrd_ < 0 ) ? ( 2*spc_.order( entity ) ) : volumeQuadOrd_ ;
+      return ( volumeQuadOrd_ < 0 ) ? ( 2*spc_.order( entity )+3 ) : volumeQuadOrd_ ;
     }
 
     //! return default face quadrature order
     int defaultFaceQuadOrder( const EntityType& entity ) const
     {
-      return (2 * spc_.order( entity )) + 1;
+      return (2 * spc_.order( entity )) + 3;
     }
 
     //! return appropriate quadrature order, default is 2 * order( entity ) + 1
