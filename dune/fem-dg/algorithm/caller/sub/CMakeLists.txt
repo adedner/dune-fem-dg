@@ -1,1 +1,6 @@
-dune_install( adapt.hh additionaloutput.hh diagnostics.hh solvermonitor.hh)
+dune_install(
+  adapt.hh
+  datawriter.hh
+  diagnostics.hh
+  solvermonitor.hh
+)
