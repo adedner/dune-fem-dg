@@ -197,10 +197,8 @@ namespace Fem
       volumeQuadOrd_( vQ ),
       argOrder_( spc_.order() ),
       geoInfo_( gridPart_.indexSet() ),
-      faceGeoInfo_( geoInfo_.geomTypes(1) ),
       phi0_( 0 ),
       localMassMatrix_( spc_ , 2*spc_.order()+3 ),
-      cartesianGrid_( CheckCartesianType::check( gridPart_ ) ),
       stepTime_(3, 0.0)
     {
       // we need the flux here
@@ -555,7 +553,13 @@ namespace Fem
       // evaluate uEn on all quadrature points on the intersections
       for (const auto& intersection : intersections(gridPart_, en) )
       {
-        FaceQuadratureType faceQuadInner(gridPart_,intersection, faceQuadratureOrder( en ), FaceQuadratureType::INSIDE);
+        int faceQuadOrd = faceQuadratureOrder( en );
+        if( intersection.neighbor() )
+        {
+          faceQuadOrd = std::max( faceQuadOrd, faceQuadratureOrder( intersection.outside() ) );
+        }
+
+        FaceQuadratureType faceQuadInner(gridPart_,intersection, faceQuadOrd, FaceQuadratureType::INSIDE);
         if( !checkPhysicalQuad( faceQuadInner, uEn, enVal, theta ) )
         {
           limiter = true;
@@ -955,7 +959,6 @@ namespace Fem
 
     // if true scheme is TVD
     const GeometryInformationType geoInfo_;
-    const FaceGeometryInformationType faceGeoInfo_;
 
     mutable RangeType    phi0_ ;
 
@@ -972,7 +975,6 @@ namespace Fem
     LocalMassMatrixType localMassMatrix_;
 
     //! true if grid is cartesian like
-    const bool cartesianGrid_;
     mutable int limitedElements_;
     mutable std::vector<double> stepTime_;
     mutable size_t elementCounter_;
