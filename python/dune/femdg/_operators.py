@@ -53,7 +53,7 @@ def createOrderRedcution(domainSpace):
 
     _, domainFunctionIncludes, domainFunctionType, _, _ = domainSpace.storage
 
-    includes = ["dune/fem/operator/common/orderreduction.hh"]
+    includes = ["dune/fem-dg/operator/common/orderreduction.hh"]
     includes += domainSpace._includes + domainFunctionIncludes
 
     typeName = 'Dune::Fem::OrderReduction< ' + domainFunctionType + ' >'
