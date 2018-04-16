@@ -10,6 +10,7 @@
 // DUNE includes
 #include <dune/common/version.hh>
 #include <dune/fem/misc/fmatrixconverter.hh>
+#include <dune/fem/misc/boundaryidprovider.hh>
 #include <dune/fem/space/common/functionspace.hh>
 
 #include <dune/fem-dg/models/defaultmodel.hh>
