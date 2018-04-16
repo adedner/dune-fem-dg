@@ -6,4 +6,4 @@ dune_install(
   problems.hh
   thermodynamics.hh
 )
-dune_add_subdirs( test )
+dune_add_subdirs( test problems )
