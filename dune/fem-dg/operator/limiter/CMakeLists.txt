@@ -1,1 +1,8 @@
-dune_install(limiter.hh limitpass.hh limiterdiscretemodel.hh)
+dune_install(
+  limiterdiscretemodel.hh
+  limiter.hh
+  limitermodel.hh
+  limiterutility.hh
+  limitpass.hh
+  scalinglimitpass.hh
+)
