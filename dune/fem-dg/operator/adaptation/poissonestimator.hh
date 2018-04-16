@@ -1,5 +1,5 @@
-#ifndef ERROR_ESTIMATOR_HH
-#define ERROR_ESTIMATOR_HH
+#ifndef DUNE_FEMDG_POISSON_ERROR_ESTIMATOR_HH
+#define DUNE_FEMDG_POISSON_ERROR_ESTIMATOR_HH
 
 //- Dune includes
 // #include <dune/grid/common/referenceelements.hh>
