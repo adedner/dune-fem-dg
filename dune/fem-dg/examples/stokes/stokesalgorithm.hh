@@ -12,7 +12,6 @@
 
 // dune-fem includes
 #include <dune/fem/misc/l2norm.hh>
-#include <dune/fem/operator/projection/l2projection.hh>
 #include <dune/fem/gridpart/common/gridpart.hh>
 #include <dune/fem/function/common/localfunctionadapter.hh>
 #include <dune/fem/operator/common/stencil.hh>
@@ -78,11 +77,11 @@ namespace Fem
 
     public:
       SigmaEval(const DiscreteFunction &uh,
-          const DiscretePressureFunctionType &ph,
-          const Operator& oper)
+                const DiscretePressureFunctionType &ph,
+                const Operator& oper)
         : SigmaBaseType(uh,oper),
-         ph_(ph),
-         localp_(ph_)
+          ph_(ph),
+          localp_(ph_)
       {}
       SigmaEval(const SigmaEval &other)
       : SigmaBaseType(other), ph_(other.ph_), localp_(ph_)

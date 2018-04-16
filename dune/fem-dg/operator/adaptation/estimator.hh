@@ -59,8 +59,7 @@ namespace Fem
     typedef typename BaseType :: FaceQuadratureType             FaceQuadratureType;
     typedef typename BaseType :: JacobianInverseType            JacobianInverseType;
     typedef typename BaseType :: IndicatorType                  IndicatorType;
-    typedef Dune::ReferenceElement
-      < DomainFieldType, dimension >                            ReferenceElementType;
+
     typedef Dune::ReferenceElements
       < DomainFieldType, dimension >                            ReferenceElementContainerType;
 
@@ -96,7 +95,7 @@ namespace Fem
     //! \brief calculates the coordinates of the barycenter for given grid entity
     const DomainType& localBarycenterPoint( const ElementType& entity ) const
     {
-      const ReferenceElementType& referenceElement
+      const auto referenceElement
                 = ReferenceElementContainerType::general( entity.type() );
       return referenceElement.position( 0, 0 );
     }

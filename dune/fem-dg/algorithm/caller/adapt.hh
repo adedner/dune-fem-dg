@@ -17,7 +17,7 @@
 
 #include <dune/fem-dg/operator/adaptation/adaptation.hh>
 #include <dune/fem-dg/operator/adaptation/utility.hh>
-#include <dune/fem/space/common/adaptmanager.hh>
+#include <dune/fem/space/common/adaptationmanager.hh>
 #include <dune/fem-dg/misc/optional.hh>
 #include <dune/fem-dg/misc/tupleutility.hh>
 #include <dune/fem-dg/misc/integral_constant.hh>

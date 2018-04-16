@@ -84,7 +84,7 @@ namespace Fem
 
       typedef typename DiscreteFunctionType::DiscreteFunctionSpaceType FunctionSpaceType;
       typedef typename FunctionSpaceType::RangeFieldType Field;
-       Field gamma=0, delta, rho;
+      Field delta, rho;
 
       DiscreteFunctionType f("f",spc_);
       // f := rhs1

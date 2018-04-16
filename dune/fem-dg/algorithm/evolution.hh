@@ -16,7 +16,6 @@
 
 // Dune includes
 #include <dune/fem/misc/l2norm.hh>
-#include <dune/fem/operator/projection/l2projection.hh>
 #include <dune/fem-dg/pass/threadpass.hh>
 #include <dune/common/timer.hh>
 

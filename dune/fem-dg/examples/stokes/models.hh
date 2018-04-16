@@ -3,6 +3,7 @@
 
 #include <dune/fem/version.hh>
 #include <dune/fem/misc/fmatrixconverter.hh>
+#include <dune/fem/misc/boundaryidprovider.hh>
 #include <dune/fem/io/parameter.hh>
 
 #include <dune/fem-dg/models/defaultmodel.hh>
@@ -44,7 +45,10 @@ namespace Stokes
                                                             Traits;
     typedef DefaultModel<Traits>                            BaseType;
 
+
     typedef typename Traits::GridType                       GridType;
+    typedef Dune::Fem::BoundaryIdProvider< GridType >       BoundaryIdProviderType;
+
     static const int dimDomain = Traits::dimDomain;
     static const int dimRange  = Traits::dimRange;
     typedef typename Traits::DomainFieldType                DomainFieldType;
@@ -227,7 +231,7 @@ namespace Stokes
                                const RangeType& uLeft,
                                RangeType& uRight) const
     {
-      if ( local.intersection().boundaryId() == 99) // Dirichlet zero boundary conditions
+      if ( BoundaryIdProviderType::boundaryId( local.intersection() ) == 99) // Dirichlet zero boundary conditions
       {
         uRight = 0;
       }

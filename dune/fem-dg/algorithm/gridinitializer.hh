@@ -8,7 +8,7 @@
 #include <dune/fem/misc/mpimanager.hh>
 #include <dune/fem/misc/femeoc.hh>
 #include <dune/fem/misc/femtimer.hh>
-#include <dune/fem/space/common/adaptmanager.hh>
+#include <dune/fem/space/common/adaptationmanager.hh>
 #include <dune/fem-dg/misc/parameterkey.hh>
 
 #include <dune/fem-dg/operator/adaptation/utility.hh>

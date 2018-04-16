@@ -19,7 +19,7 @@
 #include <dune/fem/pass/localdg/discretemodel.hh>
 #include <dune/fem/pass/localdg.hh>
 
-#include <dune/fem/space/common/adaptmanager.hh>
+#include <dune/fem/space/common/adaptationmanager.hh>
 #include <dune/fem/space/common/basesetlocalkeystorage.hh>
 
 #include <dune/fem/space/discontinuousgalerkin.hh>
@@ -32,6 +32,10 @@
 #include <dune/fem/misc/compatibility.hh>
 
 #include <dune/fem-dg/pass/context.hh>
+
+#if HAVE_DUNE_OPTIM
+#include <dune/fv/lpreconstruction.hh>
+#endif
 
 //*************************************************************
 namespace Dune
@@ -972,6 +976,26 @@ namespace Fem
       static const bool v = true ;
     };
 
+#if HAVE_DUNE_OPTIM
+    typedef typename GridPartType :: GridViewType  GridViewType ;
+
+    struct BoundaryValue
+    {
+      const ThisType& op_;
+      BoundaryValue( const ThisType& op ) : op_( op ) {}
+
+      RangeType operator () ( const typename GridViewType::Intersection &i,
+                              const DomainType &x,
+                              const DomainType &n,
+                              const RangeType &uIn ) const
+      {
+        return uIn;
+      }
+    };
+
+    typedef Dune::FV::LPReconstruction< GridViewType, RangeType, BoundaryValue > LinearProgramming;
+#endif
+
   public:
     //- Public methods
     /** \brief constructor
@@ -995,6 +1019,11 @@ namespace Fem
       dest_(0),
       spc_(spc),
       gridPart_(spc_.gridPart()),
+#if HAVE_DUNE_OPTIM
+      linProg_( static_cast< GridViewType > (gridPart_), BoundaryValue( *this ),
+                Dune::Fem::Parameter::getValue<double>("finitevolume.linearprogramming.tol", 1e-8 )
+              ),
+#endif
       indexSet_( gridPart_.indexSet() ),
       localIdSet_( gridPart_.grid().localIdSet()),
       cornerPointSetContainer_(),
@@ -1225,6 +1254,22 @@ namespace Fem
       {
         matrixCacheVec_.resize( numLevels );
       }
+
+#if HAVE_DUNE_OPTIM
+      values_.resize( indexSet_.size( 0 ) );
+      gradients_.resize( indexSet_.size( 0 ) );
+      // do limitation
+      const auto endit = spc_.end();
+      for( auto it = spc_.begin(); (it != endit); ++it )
+      {
+        const auto& en = *it;
+        computeAverage( en, values_[ gridPart_.indexSet().index( en ) ] );
+      }
+
+      // get reconstructions
+      linProg_( gridPart_.indexSet(), values_, gradients_ );
+#endif
+
     }
 
     //! Some management (interface version)
@@ -1319,6 +1364,28 @@ namespace Fem
     }
 
   protected:
+    //! Perform the limitation on all elements.
+    void computeAverage(const EntityType& en, RangeType& uAvg ) const
+    {
+      // extract types
+      enum { dim = EntityType :: dimension };
+
+      // check argument is not zero
+      assert( arg_ );
+
+      //- statements
+      // set entity to caller
+      caller().setEntity( en );
+
+      // get function to limit
+      const ArgumentFunctionType &U = *(std::get< argumentPosition >( *arg_ ));
+
+      // get U on entity
+      const LocalFunctionType uEn = U.localFunction(en);
+
+      evalAverage( en, uEn, uAvg );
+    }
+
     //! Perform the limitation on all elements.
     void applyLocalImp(const EntityType& en) const
     {
@@ -1574,38 +1641,45 @@ namespace Fem
       // get local funnction for limited values
       DestLocalFunctionType limitEn = dest_->localFunction(en);
 
-      // create combination set
-      const ComboSetType& comboSet = setupComboSet( nbVals_.size() , geomType , nonConforming );
-
-      // initialize combo vecs
-      const size_t comboSize = comboSet.size();
-      deoMods_.reserve( comboSize );
-      comboVec_.reserve( comboSize );
-
-      // reset values
-      deoMods_.resize( 0 );
-      comboVec_.resize( 0 );
-
-      if( usedAdmissibleFunctions_ >= ReconstructedFunctions )
+      if( selectedRecon_ )
       {
-        // level is only needed for Cartesian grids to access the matrix caches
-        const int matrixCacheLevel = ( cartesian ) ? en.level() : 0 ;
-        // calculate linear functions
-        calculateLinearFunctions( matrixCacheLevel, comboSet, geomType,
-                                  boundary, nonConforming , cartesian );
-      }
+        // create combination set
+        const ComboSetType& comboSet = setupComboSet( nbVals_.size() , geomType , nonConforming );
 
-      // add DG Function
-      if( (usedAdmissibleFunctions_ % 2) == DGFunctions )
+        // initialize combo vecs
+        const size_t comboSize = comboSet.size();
+        deoMods_.reserve( comboSize );
+        comboVec_.reserve( comboSize );
+
+        // reset values
+        deoMods_.resize( 0 );
+        comboVec_.resize( 0 );
+
+        if( usedAdmissibleFunctions_ >= ReconstructedFunctions )
+        {
+          // level is only needed for Cartesian grids to access the matrix caches
+          const int matrixCacheLevel = ( cartesian ) ? en.level() : 0 ;
+          // calculate linear functions
+          calculateLinearFunctions( matrixCacheLevel, comboSet, geomType,
+                                    boundary, nonConforming , cartesian );
+        }
+
+        // add DG Function
+        if( (usedAdmissibleFunctions_ % 2) == DGFunctions )
+        {
+          addDGFunction( en, geo, uEn, enVal, enBary );
+        }
+
+        // Limiting
+        limitFunctions(comboVec_,barys_,nbVals_,geomType,deoMods_);
+
+        // take maximum of limited functions
+        getMaxFunction(deoMods_, deoMod_);
+      }
+      else
       {
-        addDGFunction( en, geo, uEn, enVal, enBary );
+        // Compute LP reconstruction
       }
-
-      // Limiting
-      limitFunctions(comboVec_,barys_,nbVals_,geomType,deoMods_);
-
-      // take maximum of limited functions
-      getMaxFunction(deoMods_, deoMod_);
 
       // project deoMod_ to limitEn
       L2project(en, geo, enBary, enVal, limit, deoMod_, limitEn);
@@ -2641,6 +2715,11 @@ namespace Fem
 
     const DiscreteFunctionSpaceType& spc_;
     GridPartType& gridPart_;
+
+#if HAVE_DUNE_OPTIM
+    mutable LinearProgramming linProg_;
+#endif
+
     const IndexSetType& indexSet_;
     const LocalIdSetType& localIdSet_;
 
@@ -2696,6 +2775,10 @@ namespace Fem
     // choice of admissible linear functions
     const AdmissibleFunctions admissibleFunctions_;
     mutable AdmissibleFunctions usedAdmissibleFunctions_ ;
+
+    mutable std::vector< RangeType  > values_;
+    mutable std::vector< DeoModType > gradients_;
+
   }; // end DGLimitPass
 
 
