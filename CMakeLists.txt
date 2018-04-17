@@ -32,11 +32,11 @@ add_header_listing()
 
 if(dune-python_FOUND)
   add_subdirectory(python)
-  #dune_python_install_package(PATH "python")
+  dune_python_install_package(PATH "python")
 elseif(dune-corepy_FOUND)
   add_subdirectory(python)
   if(NOT (${DUNE_COMMON_VERSION} VERSION_LESS 2.6))
-    #  dune_python_install_package(PATH "python")
+    dune_python_install_package(PATH "python")
   endif()
 endif()
 
