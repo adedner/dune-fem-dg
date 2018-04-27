@@ -3,13 +3,13 @@ variables:
   DUNECI_OPTS: "/builds/dune-fem-dg/dune-fem/scripts/opts/ci-gcc.opts"
 
 before_script:
-  - duneci-install-module https://gitlab.dune-project.org/dune-fem/dune-fem.git
-  - duneci-install-module https://gitlab.dune-project.org/dune-fem/dune-fem-dg.git
   - duneci-install-module https://gitlab.dune-project.org/core/dune-common.git
   - duneci-install-module https://gitlab.dune-project.org/core/dune-geometry.git
   - duneci-install-module https://gitlab.dune-project.org/core/dune-grid.git
   - duneci-install-module https://gitlab.dune-project.org/extensions/dune-alugrid.git
   - duneci-install-module https://gitlab.dune-project.org/extensions/dune-spgrid.git
+  - duneci-install-module https://gitlab.dune-project.org/dune-fem/dune-fem.git
+  - duneci-install-module https://gitlab.dune-project.org/dune-fem/dune-fem-dg.git
 
 debian:10  gcc:c++17:
   image: duneci/base:10
