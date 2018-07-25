@@ -51,7 +51,7 @@ def createOrderRedcution(domainSpace):
 
     domainSpaceType = domainSpace._typeName
 
-    _, domainFunctionIncludes, domainFunctionType, _, _ = domainSpace.storage
+    _, domainFunctionIncludes, domainFunctionType, _, _, _ = domainSpace.storage
 
     includes = ["dune/fem-dg/operator/common/orderreduction.hh"]
     includes += domainSpace._includes + domainFunctionIncludes
