@@ -155,9 +155,22 @@ namespace Fem
     typedef typename Traits::FaceDomainType              FaceDomainType;
     typedef typename Traits::JacobianRangeType           JacobianRangeType;
 
+    // default is 0,...,dimRange-1
+    typedef Dune::FieldVector< int, dimRange > ModifiedRangeType;
+
     explicit DefaultModel( double time = 0 )
       : time_( time )
-    {}
+    {
+      for( int d=0; d<dimRange; ++d )
+        modified_[ d ] = d;
+    }
+
+    /**
+     * \brief return set of components to be modified by the limiter */
+    const ModifiedRangeType& modifiedRange() const
+    {
+      return modified_;
+    }
 
     /**
      * \brief returns whether the mass term is not the identity
@@ -181,6 +194,22 @@ namespace Fem
      *  or not, i.e.\f$ S_2\neq 0 \f$
      */
     inline bool hasNonStiffSource () const { return false ; }
+
+    /**
+     *  \brief returns whether the shock indicator needs to be computed when the
+     *  LimitPass is used.
+     */
+    bool calculateIndicator () const { return true; }
+
+    /**
+     *  \brief returns whether the shock indicator needs to be computed when the
+     *  LimitPass is used.
+     */
+    void obtainBounds( RangeType& globalMin, RangeType& globalMax ) const
+    {
+      globalMin =  1e308;
+      globalMax = -1e308;
+    }
 
     /**
      * \brief returns the mass factor term \f$ R \f$
@@ -598,6 +627,11 @@ namespace Fem
       return 0.0;
     }
 
+    template <class Entity>
+    void setEntity( const Entity& entity ) const
+    {
+    }
+
     void setTime (double time)
     {
       time_ = time;
@@ -621,6 +655,7 @@ namespace Fem
 
   protected:
     double time_;
+    ModifiedRangeType modified_;
   };
 
 }

@@ -20,8 +20,12 @@ dune_project()
 
 include(DuneMPI)
 
+if(dune-fempy_FOUND)
+  set(PYDEMO_DIR pydemo)
+endif()
+
 #add sub directories
-dune_add_subdirs( dune lib doc cmake/modules pydemo)
+dune_add_subdirs( dune lib doc cmake/modules ${PYDEMO_DIR})
 
 #add fem-dg test, i.e. tests which are not included in a directory called "test"
 #set( _dirnew dune/fem-dg/examples/advdiff_test )
@@ -30,6 +34,15 @@ dune_add_subdirs( dune lib doc cmake/modules pydemo)
 make_dependent_modules_sys_included()
 add_header_listing()
 
+if(dune-python_FOUND)
+  add_subdirectory(python)
+  dune_python_install_package(PATH "python")
+elseif(dune-corepy_FOUND)
+  add_subdirectory(python)
+  if(NOT (${DUNE_COMMON_VERSION} VERSION_LESS 2.6))
+    dune_python_install_package(PATH "python")
+  endif()
+endif()
 
 # finalize the dune project, e.g., generate config.h etc.
 finalize_dune_project(GENERATE_CONFIG_H_CMAKE)

@@ -19,6 +19,10 @@ dune_add_test_case( NAME euler
                     SOURCES ${MAIN} ${CHORJO}
                     COMPILE_DEFINITIONS "POLORDER=${POLORDER}" )
 
+dune_add_test_case( NAME euler_wrapper
+                    SOURCES ${MAIN} ${CHORJO}
+                    COMPILE_DEFINITIONS "POLORDER=${POLORDER}" EULER_WRAPPER )
+
 add_code_generate_targets( euler )
 
 if( NOT FEMDG_FAST_TESTBUILD )

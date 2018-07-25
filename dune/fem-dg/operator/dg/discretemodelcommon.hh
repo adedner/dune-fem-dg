@@ -396,6 +396,7 @@ namespace Fem
     void setEntity( const EntityType& entity )
     {
       BaseType::setEntity( entity );
+      model_.setEntity( entity );
 
       if( adaptation_ )
         enIndicator_ = adaptation_->localIndicator( entity );

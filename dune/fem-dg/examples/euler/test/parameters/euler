@@ -39,8 +39,8 @@ paramfile: ../../parameter/paramBase
 #--------
 fem.eoc.steps: 4
 femdg.stepper.starttime: 0.
-femdg.stepper.endtime: 0.15
-femdg.stepper.maxtimestep: 0.1
+femdg.stepper.endtime: 0.1
+#femdg.stepper.maxtimestep: 0.1
 
 
 # PROBLEM SETUP
@@ -66,6 +66,11 @@ y_c: 0.25 # y-center of perturbation ball
 z_c: 0.25 # z-center of perturbation ball
 r: 0.25 # radius of perturbation ball
 
+# coarsest level that should be present
+#fem.adaptation.coarsestLevel: 2
+# finest level that should be present
+#fem.adaptation.finestLevel: 2
+
 
 # DOMAIN SETUP
 #-------------
@@ -77,4 +82,23 @@ fem.io.macroGridFile_3d:  ../../grids/unitcube3.dgf
 # SOLVER CONFIGURATION
 #---------------------
 fem.ode.odesolver: EX
+#fem.ode.order: 2
+fem.ode.verbose: none # ode output: none, cfl, full
+fem.ode.cflincrease: 1.05
+fem.ode.miniterations: 95
+fem.ode.maxiterations: 105
+fem.ode.cflStart: 1.
+#fem.ode.cflMax: 5
+fem.timeprovider.factor: 0.25
+fem.timeprovider.updatestep: 1
+
+# parameter for the implicit solvers 
+fem.solver.verbose: false
+fem.solver.gmres.restart: 15
+fem.solver.newton.verbose: false
+fem.solver.newton.linear.verbose: false
+fem.solver.newton.maxlineariterations: 1000
+fem.solver.newton.tolerance: 1e-10
+
+
 paramfile: ../../parameter/paramSolver

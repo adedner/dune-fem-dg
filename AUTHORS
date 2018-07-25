@@ -3,7 +3,7 @@
   Discontinuous Galerkin methods for compressible flow problems, 
   e.g. the compressible Euler and Navier-Stokes equations.
 
-  Copyright (C) 2010 - 2017 Robert Kloefkorn
+  Copyright (C) 2010 - 2018 Robert Kloefkorn
   Copyright (C) 2010 - 2016 Andreas Dedner
   Copyright (C) 2010 - 2012 Slavko Brdar 
   Copyright (C) 2012 - 2014 Martin Nolte

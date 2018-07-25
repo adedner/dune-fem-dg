@@ -12,8 +12,6 @@
 #include <dune/fem/misc/boundaryidprovider.hh>
 #include <dune/fem/space/common/functionspace.hh>
 
-#include "../navierstokes/thermodynamics.hh"
-
 #include <dune/fem-dg/models/defaultmodel.hh>
 #include <dune/fem-dg/operator/fluxes/euler/fluxes.hh>
 #include <dune/fem-dg/operator/fluxes/rotator.hh>
@@ -26,6 +24,17 @@ namespace Dune
 {
 namespace Fem
 {
+  template <class ModelImp>
+  struct ModelImplementationWrapper
+    : public ModelImp,
+      public U0Smooth1D< typename ModelImp::GridPartType::GridType >
+  {
+    typedef typename ModelImp :: RFunctionSpaceType   FunctionSpaceType ;
+    ModelImplementationWrapper() : ModelImp() {}
+
+    using ModelImp :: init;
+  };
+
   template< class GridImp, class ProblemImp >
   class EulerModelTraits
     : public DefaultModelTraits< GridImp, ProblemImp >
@@ -39,8 +48,6 @@ namespace Fem
     typedef MinModLimiter< typename BaseType::DomainFieldType >     LimiterFunctionType ;
     //typedef SuperBeeLimiter< typename BaseType::DomainFieldType > LimiterFunctionType ;
     //typedef VanLeerLimiter< typename BaseType::DomainFieldType >  LimiterFunctionType ;
-
-    typedef Thermodynamics< BaseType::dimDomain >                   ThermodynamicsType;
   };
 
 
@@ -54,6 +61,7 @@ namespace Fem
     public DefaultModel< EulerModelTraits< typename GridPartImp::GridType , ProblemImp > >
   {
   public:
+    typedef GridPartImp                                  GridPartType;
     typedef typename GridPartImp :: GridType             GridType;
     typedef EulerModelTraits< GridType, ProblemImp >     Traits;
     typedef DefaultModel< Traits >                       BaseType;
@@ -72,8 +80,6 @@ namespace Fem
     typedef typename Traits::JacobianRangeType           JacobianRangeType;
     typedef typename Traits::DiffusionRangeType          DiffusionRangeType;
 
-    typedef typename Traits::ThermodynamicsType          ThermodynamicsType;
-
     typedef Dune::Fem::BoundaryIdProvider < GridType >   BoundaryIdProviderType;
 
     typedef Dune::FieldVector< int, 2 > ModifiedRangeType;
@@ -88,12 +94,16 @@ namespace Fem
    public:
     EulerModel( const ProblemType& problem )
       : gamma_( problem.gamma() )
-      , eulerFlux_()
       , problem_( problem )
-      , fieldRotator_( 1 ) // insert number of fist velocity component
     {
       modified_[ 0 ] = 0;
       modified_[ 1 ] = dimRange-1;
+    }
+
+    template <class Entity>
+    void setEntity( const Entity& entity ) const
+    {
+      problem_.init( entity );
     }
 
     double gamma () const { return gamma_; }
@@ -122,7 +132,7 @@ namespace Fem
                                const JacobianRangeType& du,
                                RangeType & s) const
     {
-      s = 0;
+      problem_.source( local.quadraturePoint(), u, du, s );
       return 0;
     }
 
@@ -137,28 +147,22 @@ namespace Fem
       return 0;
     }
 
-    inline double pressure( const RangeType& u ) const
-    {
-      return eulerFlux_.pressure( gamma_ , u );
-    }
-
     inline void conservativeToPrimitive( const double time,
                                          const DomainType& xgl,
                                          const RangeType& cons,
                                          RangeType& prim,
                                          const bool ) const
     {
-      problem_.evaluate( xgl, time, prim );
-      //thermodynamics_.conservativeToPrimitiveEnergyForm( cons, prim );
+      // problem_.evaluate( xgl, time, prim );
     }
 
     template <class LocalEvaluation>
     inline void advection( const LocalEvaluation& local,
                            const RangeType& u,
-                           const FluxRangeType& jacu,
-                           FluxRangeType& f ) const
+                           const JacobianRangeType& du,
+                           JacobianRangeType& f ) const
     {
-      eulerFlux_.analyticalFlux( gamma_ , u , f );
+      problem_.diffusiveFlux( local.quadraturePoint(), u, du, f);
     }
 
     template <class LocalEvaluation>
@@ -185,25 +189,15 @@ namespace Fem
                            const FluxRangeType& du,
                            RangeType& A ) const
     {
-      eulerFlux_.jacobian( gamma_ , u , du , A );
-    }
-
-
-    enum { Inflow = 1, Outflow = 2, Reflection = 3 , Slip = 4 };
-    enum { MaxBnd = Slip };
-
-    template <class LocalEvaluation>
-    int getBoundaryId( const LocalEvaluation& local ) const
-    {
-      return BoundaryIdProviderType::boundaryId( local.intersection() );
+      // TODO: u != ubar and du != dubar
+      problem_.linDiffusiveFlux( u, du, local.quadraturePoint(), u, du, A);
     }
 
     template <class LocalEvaluation>
     inline bool hasBoundaryValue( const LocalEvaluation& local ) const
     {
-      const int bndId = problem_.boundaryId( getBoundaryId( local ) );
-      // on slip boundary we use boundaryFlux
-      return bndId != Slip;
+      Dune::FieldVector< int, dimRange > bndIds;
+      return problem_.isDirichletIntersection( local.intersection(), bndIds );
     }
 
     // return iRight for insertion into the numerical flux
@@ -212,55 +206,10 @@ namespace Fem
                                const RangeType& uLeft,
                                RangeType& uRight ) const
     {
-      // Neumann boundary condition
-      //uRight = uLeft;
-      // 5 and 6 is also Reflection
-      //const int bndId = (it.boundaryId() > MaxBnd) ? MaxBnd : it.boundaryId();
-      const int bndId = problem_.boundaryId( getBoundaryId( local ) );
-
-      assert( bndId > 0 );
-      if( bndId == Inflow )
-      {
-        const DomainType xgl = local.intersection().geometry().global( local.localPosition() );
-        problem_.evaluate(xgl, time(), uRight);
-        return ;
-      }
-      else if ( bndId == Outflow )
-      {
-        uRight = uLeft;
-        return ;
-      }
-      else if ( bndId == Reflection )
-      {
-        uRight = uLeft;
-        const DomainType unitNormal = local.intersection().unitOuterNormal( local.localPosition() );
-        fieldRotator_.rotateForth( uRight , unitNormal );
-        // Specific for euler: opposite sign for first component of momentum
-        uRight[1] = -uRight[1];
-        fieldRotator_.rotateBack( uRight, unitNormal );
-        return ;
-      }
-      /*
-      else if ( bndId == Slip )
-      {
-        RangeType tmp(uLeft);
-        const DomainType unitNormal = it.unitOuterNormal(x);
-        this->rot_.rotateForth( tmp , unitNormal );
-        tmp[1] = 0.;
-        tmp[2] /= tmp[0];
-        tmp[3] = pressure(uLeft);
-        prim2cons(tmp,uRight);
-        this->rot_.rotateBack( uRight, unitNormal );
-        return ;
-      }
-      */
-      else
-      {
-        uRight = uLeft;
-        return ;
-        assert( false );
-        abort();
-      }
+      Dune::FieldVector< int, dimRange > bndIds;
+      bool isDirichlet = problem_.isDirichletIntersection( local.intersection(), bndIds );
+      assert( isDirichlet );
+      problem_.dirichlet( bndIds[ 0 ], local.quadraturePoint(), uRight );
     }
 
     // boundary condition here is slip boundary cond. <u,n>=0
@@ -271,6 +220,7 @@ namespace Fem
                                 const JacobianRangeType&,
                                 RangeType& gLeft ) const
     {
+      /*
       // Slip boundary condition
       const DomainType normal = local.intersection().integrationOuterNormal( local.localPosition() );
 
@@ -278,6 +228,9 @@ namespace Fem
       gLeft = 0;
       for ( int i = 0 ; i < dimDomain ; ++i )
         gLeft[i+1] = normal[i] * p;
+        */
+
+      gLeft = 0;
       return 0.;
     }
 
@@ -309,7 +262,9 @@ namespace Fem
                           double& advspeed,
                           double& totalspeed ) const
     {
-      advspeed = eulerFlux_.maxSpeed( gamma_ , normal , u );
+      // TODO
+      std::abort();
+      // advspeed = eulerFlux_.maxSpeed( gamma_ , normal , u );
       totalspeed = advspeed;
     }
 
@@ -355,7 +310,8 @@ namespace Fem
       else
       {
         //std::cout << eulerFlux_.rhoeps(u) << std::endl;
-        return (eulerFlux_.rhoeps(u) > 1e-8);
+        // return (eulerFlux_.rhoeps(u) > 1e-8);
+        return true ;
       }
     }
 
@@ -378,9 +334,9 @@ namespace Fem
                      RangeType& jump) const
     {
       // take pressure as shock detection values
-      const RangeFieldType pl = pressure( uLeft );
-      const RangeFieldType pr = pressure( uRight );
-      jump  = (pl-pr)/(0.5*(pl+pr));
+      //const RangeFieldType pl = pressure( uLeft );
+      //const RangeFieldType pr = pressure( uRight );
+      //jump  = (pl-pr)/(0.5*(pl+pr));
     }
 
     // calculate jump between left and right value
@@ -391,17 +347,6 @@ namespace Fem
                                      const RangeType& uRight,
                                      RangeType& indicator) const
     {
-      // take density as shock detection values
-      indicator = (uLeft[0] - uRight[0])/(0.5 * (uLeft[0]+uRight[0]));
-
-      const DomainType unitNormal = it.unitOuterNormal(x);
-      RangeType ul(uLeft),ur(uRight);
-      fieldRotator_.rotateForth( ul , unitNormal );
-      fieldRotator_.rotateForth( ur , unitNormal );
-      for (int i=1; i<dimDomain+1; ++i)
-      {
-        indicator += ((ul[i+1]/ul[0] - ur[i+1]/ur[0])/problem_.V());
-      }
     }
 
     template< class DiscreteFunction >
@@ -412,10 +357,7 @@ namespace Fem
     }
 
    protected:
-    const EulerAnalyticalFlux<dimDomain, RangeFieldType > eulerFlux_;
-    const ThermodynamicsType thermodynamics_;
     const ProblemType& problem_;
-    FieldRotator< DomainType, RangeType > fieldRotator_;
 
     ModifiedRangeType modified_;
   };

@@ -36,8 +36,15 @@
 #include <dune/fem-dg/misc/error/l1eocerror.hh>
 //--------- PROBLEMS ------------------------
 #include "problems.hh"
+
+#ifdef EULER_WRAPPER
+#include "euler.hh"
+#include "modelwrapper.hh"
+#else
 //--------- MODELS --------------------------
 #include "models.hh"
+#endif
+
 //--------- PROBLEMCREATORSELECTOR ----------
 #include <dune/fem-dg/misc/configurator.hh>
 
@@ -54,6 +61,7 @@ namespace Fem
                                    Adaptivity::Enum::yes,
                                    DiscreteFunctionSpaces::Enum::orthonormal,
                                    Solver::Enum::fem,
+                                   //AdvectionLimiter::Enum::scalinglimited,
                                    AdvectionLimiter::Enum::limited,
                                    Matrix::Enum::matrixfree,
                                    AdvectionFlux::Enum::euler_hllc,
@@ -67,17 +75,23 @@ namespace Fem
       typedef typename AC::GridParts                               HostGridPartType;
       typedef typename AC::GridParts                               GridPartType;
 
+#ifdef EULER_WRAPPER
+      typedef ModelImplementationWrapper< euler::Model< GridPartType > >  ProblemInterfaceType;
+#else
       typedef ProblemBase< GridType >                              ProblemInterfaceType;
-
+#endif
+      typedef EulerModel< GridPartType, ProblemInterfaceType >     ModelType;
       typedef typename ProblemInterfaceType::FunctionSpaceType     FunctionSpaceType;
-
-      typedef EulerModel< GridType, ProblemInterfaceType >         ModelType;
 
       static inline std::string moduleName() { return ""; }
 
       static ProblemInterfaceType* problem()
       {
+#ifdef EULER_WRAPPER
+        return new ProblemInterfaceType();
+#else
         return AnalyticalEulerProblemCreator<GridType>::apply();
+#endif
       }
 
       template< int polOrd >
