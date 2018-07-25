@@ -49,19 +49,19 @@ namespace Fem
    *
    * \ingroup AnalyticalModels
    */
-  template< class GridImp, class ProblemImp >
+  template< class GridPartImp, class ProblemImp >
   class EulerModel :
-    public DefaultModel< EulerModelTraits< GridImp, ProblemImp > >
+    public DefaultModel< EulerModelTraits< typename GridPartImp::GridType , ProblemImp > >
   {
   public:
-    typedef EulerModelTraits< GridImp, ProblemImp >      Traits;
+    typedef typename GridPartImp :: GridType             GridType;
+    typedef EulerModelTraits< GridType, ProblemImp >     Traits;
     typedef DefaultModel< Traits >                       BaseType;
     typedef typename Traits::ProblemType                 ProblemType;
 
     enum { dimDomain = Traits::dimDomain };
     enum { dimRange = Traits::dimRange };
 
-    typedef typename Traits::GridType                    GridType;
     typedef typename Traits::FaceDomainType              FaceDomainType;
 
     typedef typename Traits::RangeType                   RangeType;

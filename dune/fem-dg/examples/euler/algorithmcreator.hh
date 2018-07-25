@@ -72,7 +72,7 @@ namespace Fem
 
       typedef typename ProblemInterfaceType::FunctionSpaceType     FunctionSpaceType;
 
-      typedef EulerModel< GridType, ProblemInterfaceType >         ModelType;
+      typedef EulerModel< GridPartType, ProblemInterfaceType >     ModelType;
 
       static inline std::string moduleName() { return ""; }
 
