@@ -44,8 +44,8 @@
 #include <dune/fem-dg/misc/streams.hh>
 
 #if defined USE_BASEFUNCTIONSET_CODEGEN || defined BASEFUNCTIONSET_CODEGEN_GENERATE
-#include <dune/fem-dg/misc/default.hh>
-#include <dune/fem-dg/misc/codegen.hh>
+#include <dune/fem/space/basisfunctionset/default_codegen.hh>
+#include <dune/fem/space/basisfunctionset/codegen.hh>
 #endif
 
 #ifdef USE_BASEFUNCTIONSET_CODEGEN
