@@ -627,6 +627,11 @@ namespace Fem
       return 0.0;
     }
 
+    template <class Entity>
+    void setEntity( const Entity& entity ) const
+    {
+    }
+
     void setTime (double time)
     {
       time_ = time;
