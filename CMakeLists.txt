@@ -20,8 +20,12 @@ dune_project()
 
 include(DuneMPI)
 
+if(dune-fempy_FOUND)
+  set(PYDEMO_DIR pydemo)
+endif()
+
 #add sub directories
-dune_add_subdirs( dune lib doc cmake/modules pydemo)
+dune_add_subdirs( dune lib doc cmake/modules ${PYDEMO_DIR})
 
 #add fem-dg test, i.e. tests which are not included in a directory called "test"
 #set( _dirnew dune/fem-dg/examples/advdiff_test )
