@@ -1,0 +1,6 @@
+space = Space(2, 1)
+u, v = TrialFunction(space), TestFunction(space)
+x = SpatialCoordinate(space.cell())
+
+b = as_vector( [1,1] )
+models = {"Explicit":u[0]*dot(b,grad(v[0])) * dx}
