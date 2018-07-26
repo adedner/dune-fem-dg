@@ -21,8 +21,8 @@ def createLimiter(domainSpace, rangeSpace=None, bounds = [1e-12,1.], limiter='sc
     domainSpaceType = domainSpace._typeName
     rangeSpaceType = rangeSpace._typeName
 
-    _, domainFunctionIncludes, domainFunctionType, _, _ = domainSpace.storage
-    _, rangeFunctionIncludes, rangeFunctionType, _, _ = rangeSpace.storage
+    _, domainFunctionIncludes, domainFunctionType, _, _, _ = domainSpace.storage
+    _, rangeFunctionIncludes, rangeFunctionType, _, _, _ = rangeSpace.storage
 
     includes = ["dune/fem-dg/operator/limiter/limiter.hh"]
     includes += domainSpace._includes + domainFunctionIncludes
@@ -70,30 +70,57 @@ def createOrderRedcution(domainSpace):
 
 
 # create DG operator + solver
-def createFemDGSolver(name, space, advectionModel, diffusionModel = None ):
+def createFemDGSolver(Model, space):
+    from ufl import TestFunction,TrialFunction,dx,grad,inner,zero
+    import dune.create as create
 
-    if diffusionModel is None:
-        diffusionModel = advectionModel
+    u = TrialFunction(space)
+    v = TestFunction(space)
+    if hasattr(Model,"F_c"):
+        advModel = inner(Model.F_c(u),grad(v))*dx
+    else:
+        advModel = inner(grad(u-u),grad(v))*dx
+    if hasattr(Model,"S_ns"):
+        advModel += inner(S_ns(u,grad(u)),v)*dx
+    if hasattr(Model,"F_d"):
+        diffModel = inner(Model.F_d(u,grad(u)),grad(v))*dx
+    else:
+        diffModel = inner(grad(u-u),grad(v))*dx
+    if hasattr(Model,"S_s"):
+        diffModel += inner(S_s(u,grad(u)),v)*dx
+    advModel  = create.model("elliptic",space.grid, advModel)
+    diffModel = create.model("elliptic",space.grid, diffModel)
 
     spaceType = space._typeName
 
-    advectionModelType = advectionModel._typeName
-    diffusionModelType = diffusionModel._typeName
+    modelType = "DiffusionModel< " +\
+          "typename " + spaceType + "::GridPartType, " +\
+          spaceType + "::dimRange, " +\
+          spaceType + "::dimRange, " +\
+          "typename " + spaceType + "::RangeFieldType >"
 
-    _, destinationIncludes, destinationType, _, _ = space.storage
+    advModelType  = modelType
+    diffModelType = modelType
 
-    print("model name :", advectionModelType )
+    _, destinationIncludes, destinationType, _, _, _ = space.storage
 
-    includes  = [ name + '.hh' ]
-    includes += ["dune/fem-dg/solver/dg.hh"]
+    includes  = ["dune/fem-dg/solver/dg.hh"]
     includes += space._includes + destinationIncludes
+    includes += ["dune/fem/schemes/diffusionmodel.hh", "dune/fempy/parameter.hh"]
 
-    typeName = 'Dune::Fem::DGOperator< ' + destinationType + ', ' + advectionModelType + ', ' + diffusionModelType + ' >'
+    typeName = 'Dune::Fem::DGOperator< ' + destinationType + ', ' + advModelType + ', ' + diffModelType + ' >'
 
-    constructor = Constructor(['const '+spaceType + ' &space'],
+    constructor = Constructor(['const '+spaceType + ' &space',
+                               'const '+advModelType + ' &advectionModel',
+                               'const '+diffModelType + ' &diffusionModel'
+                              ],
                               ['return new ' + typeName + '(space);'],
                               ['"space"_a',
-                               'pybind11::keep_alive< 1, 2 >()', 'pybind11::keep_alive< 1, 3 >()'])
+                               '"advectionModel"_a',
+                               '"diffusionModel"_a',
+                               'pybind11::keep_alive< 1, 2 >()',
+                               'pybind11::keep_alive< 1, 3 >()',
+                               'pybind11::keep_alive< 1, 4 >()'])
 
     # add method activated to inspect limited cells.
     setTimeStepSize = Method('setTimeStepSize', '&'+typeName+'::setTimeStepSize')

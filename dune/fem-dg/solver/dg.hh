@@ -26,7 +26,7 @@ namespace Fem
   template < class DestinationImp,
              class AdvectionModel,
              class DiffusionModel >
-  class DGOperator : public Fem::SpaceOperatorInterface< typename Traits::DestinationType >
+  class DGOperator : public Fem::SpaceOperatorInterface< DestinationImp >
   {
   public:
     typedef DestinationImp   DestinationType;
@@ -35,7 +35,7 @@ namespace Fem
     static const int polynomialOrder = DiscreteFunctionSpaceType :: polynomialOrder ;
 
     typedef typename DiscreteFunctionSpaceType :: GridPartType   GridPartType;
-    typedef typename GridPartType                                GridType;
+    typedef typename GridPartType::GridType                      GridType;
 
     typedef ModelImplementationWrapper< AdvectionModel >         ProblemType;
     typedef ModelWrapper< GridType, ProblemType >                ModelType;
@@ -55,10 +55,13 @@ namespace Fem
 
     static std::string name() const { return std::string("DGOperator"); }
 
-    DGOperator( const DiscreteFunctionSpaceType& space )
+    DGOperator( const DiscreteFunctionSpaceType& space,
+                const AdvectionModel &advectionModel,
+                const DiffusionModel &diffusionModel
+        )
       : extra_(),
         tp_(),
-        model_(),
+        model_(advectionModel),
         dgOperator( space.gridPart(), model_, extra_, name() ),
         rkSolver_( tp_, dgOperator_, dgOperator_, dgOperator_, name() )
     {}

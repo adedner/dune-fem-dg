@@ -18,29 +18,16 @@ class Compressible2DEuler:
     def alpha(U,n):
         rho, u,v, p = Compressible2DEuler.toPrim(U)
         return abs(u*n[0]+v*n[1]) + sqrt(gamma*p/rho)
-class LLFFlux:
-    def flux(Descr,U,n,dt):
-        return jump(U)
-        UL = U('-')
-        UR = U('+')
-        return UL-UR
-        FL = Descr.F_c(UL)*n
-        FR = Descr.F_c(UR)*n
-        flux = (FL+FR)
-        max_value = lambda a,b: (a+b+abs(a-b))/2.
-        visc = max_value( Descr.alpha(UL,n), Descr.alpha(UR,n) )
-        return flux + visc/dt*(UR-UL)
 
 Model = Compressible2DEuler
-NumFLux = LLFFlux
 
+from dune.ufl import Space, NamedConstant
 space = Space(2,4)
 u = TrialFunction(space)
 v = TestFunction(space)
-dt = NamedConstant(triangle, "dt")    # time step
 
 # just a starting point...
 def femdgModel(description):
     return inner(description.F_c(u),grad(v))*dx
 
-F = -dt*femdgModel(Model)
+F = femdgModel(Model)

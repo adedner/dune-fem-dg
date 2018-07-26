@@ -145,10 +145,12 @@ namespace Fem
     using BaseType::time_;
 
    public:
+#if 0
     ModelWrapper()
       : impl()
     {
     }
+#endif
 
     ModelWrapper( const ProblemType& problem )
       : impl_( problem )
