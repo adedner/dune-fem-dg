@@ -1,0 +1,13 @@
+space = Space(2, 1)
+u, v = TrialFunction(space), TestFunction(space)
+x = SpatialCoordinate(space.cell())
+
+b  = as_vector( [1,1] )
+Fc = u[0]*dot(b,grad(v[0])) * dx
+Fd = inner(grad(u),grad(v)) * dx
+
+g1 = as_vector([x[1]*cos(x[0]),sin(x[0])])
+bc1 = DirichletBC(space, g1, 1)
+
+models = {"Explicit":Fc, "Implicit":[Fd,bc1]}
+
