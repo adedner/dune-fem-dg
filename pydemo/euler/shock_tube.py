@@ -6,6 +6,7 @@ from ufl import TestFunction, TrialFunction, SpatialCoordinate, triangle, exp,\
                 FacetNormal, dx, grad, inner, as_vector, replace, sqrt,\
                 conditional, as_matrix, Max, dS, ds, avg, jump, outer
 from dune.ufl import NamedConstant
+from dune.femdg import createFemDGSolver
 
 parameter.append({"fem.verboserank": -1})
 
@@ -38,7 +39,8 @@ u_h_n = u_h.copy(name="previous")
 fullModel = inner(u_h_n,v)*dx-euler.F +\
             dt*inner(LLFFlux.flux(Euler,u,n,dt),avg(v))*dS +\
             dt*inner(Euler.F_c(u)*n,v)*ds
-operator = create.operator("galerkin", fullModel, space )
+# operator = create.operator("galerkin", fullModel, space )
+operator = createFemDGSolver( "euler", space, fullModel )
 
 operator.model.dt = 5e-4
 

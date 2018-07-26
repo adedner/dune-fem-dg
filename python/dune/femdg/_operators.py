@@ -67,3 +67,35 @@ def createOrderRedcution(domainSpace):
 
     # return load(includes, typeName, constructor, maxRelevantOrder).Operator( domainSpace )
     return load(includes, typeName, constructor).Operator( domainSpace )
+
+
+# create DG operator + solver
+def createFemDGSolver(name, space, advectionModel, diffusionModel = None ):
+
+    if diffusionModel is None:
+        diffusionModel = advectionModel
+
+    spaceType = space._typeName
+
+    advectionModelType = advectionModel._typeName
+    diffusionModelType = diffusionModel._typeName
+
+    _, destinationIncludes, destinationType, _, _ = space.storage
+
+    print("model name :", advectionModelType )
+
+    includes  = [ name + '.hh' ]
+    includes += ["dune/fem-dg/solver/dg.hh"]
+    includes += space._includes + destinationIncludes
+
+    typeName = 'Dune::Fem::DGOperator< ' + destinationType + ', ' + advectionModelType + ', ' + diffusionModelType + ' >'
+
+    constructor = Constructor(['const '+spaceType + ' &space'],
+                              ['return new ' + typeName + '(space);'],
+                              ['"space"_a',
+                               'pybind11::keep_alive< 1, 2 >()', 'pybind11::keep_alive< 1, 3 >()'])
+
+    # add method activated to inspect limited cells.
+    setTimeStepSize = Method('setTimeStepSize', '&'+typeName+'::setTimeStepSize')
+
+    return load(includes, typeName, constructor, setTimeStepSize).Operator( space )

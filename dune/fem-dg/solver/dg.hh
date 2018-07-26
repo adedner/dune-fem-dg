@@ -13,7 +13,6 @@
 #include <dune/fem-dg/operator/dg/primaloperator.hh>
 #include <dune/fem-dg/solver/rungekuttasolver.hh>
 #include <dune/fem-dg/models/modelwrapper.hh>
-#include <dune/fem-dg/misc/configurator.hh>
 #include <dune/fem-dg/misc/algorithmcreatorselector.hh>
 
 namespace Dune
