@@ -49,12 +49,12 @@ namespace Fem
    *
    * \ingroup AnalyticalModels
    */
-  template< class GridPartImp, class ProblemImp >
+  template< class GridImp, class ProblemImp >
   class EulerModel :
-    public DefaultModel< EulerModelTraits< typename GridPartImp::GridType , ProblemImp > >
+    public DefaultModel< EulerModelTraits< GridImp, ProblemImp > >
   {
   public:
-    typedef typename GridPartImp :: GridType             GridType;
+    typedef GridImp                                      GridType;
     typedef EulerModelTraits< GridType, ProblemImp >     Traits;
     typedef DefaultModel< Traits >                       BaseType;
     typedef typename Traits::ProblemType                 ProblemType;

@@ -80,7 +80,7 @@ namespace Fem
 #else
       typedef ProblemBase< GridType >                              ProblemInterfaceType;
 #endif
-      typedef EulerModel< GridPartType, ProblemInterfaceType >     ModelType;
+      typedef EulerModel< GridType, ProblemInterfaceType >         ModelType;
       typedef typename ProblemInterfaceType::FunctionSpaceType     FunctionSpaceType;
 
       static inline std::string moduleName() { return ""; }

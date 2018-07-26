@@ -13,6 +13,8 @@
 #include <dune/fem/space/common/functionspace.hh>
 
 #include <dune/fem-dg/models/defaultmodel.hh>
+#include <dune/fem-dg/models/defaultprobleminterfaces.hh>
+
 #include <dune/fem-dg/operator/fluxes/euler/fluxes.hh>
 #include <dune/fem-dg/operator/fluxes/rotator.hh>
 #include <dune/fem-dg/operator/limiter/limitpass.hh>
@@ -24,10 +26,66 @@ namespace Dune
 {
 namespace Fem
 {
+  namespace detail {
+
+    template <class ModelImp>
+    class ProblemWrapper :
+      public Dune::Fem::EvolutionProblemInterface< typename ModelImp :: RFunctionSpaceType, false >
+    {
+      typedef Dune::Fem::EvolutionProblemInterface< typename ModelImp :: RFunctionSpaceType, false > BaseType;
+
+    public:
+      using BaseType :: evaluate ;
+      using BaseType :: fixedTimeFunction;
+
+      typedef Dune::Fem::Parameter ParameterType;
+
+      typedef typename BaseType :: FunctionSpaceType  FunctionSpaceType;
+
+      enum { dimDomain = FunctionSpaceType::dimDomain };
+      typedef typename FunctionSpaceType :: RangeType  RangeType ;
+      typedef typename FunctionSpaceType :: DomainType DomainType ;
+
+      typedef typename FunctionSpaceType :: RangeFieldType  RangeFieldType ;
+      typedef RangeFieldType FieldType ;
+
+      ProblemWrapper() {}
+
+      void init () {}
+
+      virtual double endTime () const { return 0.1; }
+
+      void bg ( const DomainType&, RangeType& ) const {}
+
+      //! methods for gradient based indicator
+      bool twoIndicators() const { return false ; }
+
+      //! methods for gradient based indicator
+      double indicator1( const DomainType& xgl, const RangeType& u ) const
+      {
+        // use density as indicator
+        return u[ 0 ];
+      }
+
+      virtual int boundaryId ( const int id ) const
+      {
+        return 1;
+      }
+
+      void evaluate(const DomainType& x, const double time, RangeType& res) const
+      {
+        // TODO: extract from ModelImp
+        res = 0 ;
+      }
+    };
+
+  } // end namespace detail
+
+
   template <class ModelImp>
   struct ModelImplementationWrapper
     : public ModelImp,
-      public U0Smooth1D< typename ModelImp::GridPartType::GridType >
+      public detail::ProblemWrapper< ModelImp >
   {
     typedef typename ModelImp :: RFunctionSpaceType   FunctionSpaceType ;
     ModelImplementationWrapper() : ModelImp() {}
@@ -56,13 +114,12 @@ namespace Fem
    *
    * \ingroup AnalyticalModels
    */
-  template< class GridPartImp, class ProblemImp >
+  template< class GridImp, class ProblemImp >
   class EulerModel :
-    public DefaultModel< EulerModelTraits< typename GridPartImp::GridType , ProblemImp > >
+    public DefaultModel< EulerModelTraits< GridImp, ProblemImp > >
   {
   public:
-    typedef GridPartImp                                  GridPartType;
-    typedef typename GridPartImp :: GridType             GridType;
+    typedef GridImp                                      GridType;
     typedef EulerModelTraits< GridType, ProblemImp >     Traits;
     typedef DefaultModel< Traits >                       BaseType;
     typedef typename Traits::ProblemType                 ProblemType;
@@ -93,8 +150,7 @@ namespace Fem
 
    public:
     EulerModel( const ProblemType& problem )
-      : gamma_( problem.gamma() )
-      , problem_( problem )
+      : problem_( problem )
     {
       modified_[ 0 ] = 0;
       modified_[ 1 ] = dimRange-1;
@@ -106,7 +162,7 @@ namespace Fem
       problem_.init( entity );
     }
 
-    double gamma () const { return gamma_; }
+    double gamma () const { return 1.4; }
 
     inline bool hasStiffSource() const { return false; }
     inline bool hasNonStiffSource() const { return false; }
@@ -207,7 +263,10 @@ namespace Fem
                                RangeType& uRight ) const
     {
       Dune::FieldVector< int, dimRange > bndIds;
-      bool isDirichlet = problem_.isDirichletIntersection( local.intersection(), bndIds );
+#ifndef NDEBUG
+      const bool isDirichlet =
+#endif
+      problem_.isDirichletIntersection( local.intersection(), bndIds );
       assert( isDirichlet );
       problem_.dirichlet( bndIds[ 0 ], local.quadraturePoint(), uRight );
     }
@@ -272,8 +331,6 @@ namespace Fem
     {
       return problem_;
     }
-
-    const double gamma_;
 
     /////////////////////////////////////////////////////////////////
     // Limiter section
