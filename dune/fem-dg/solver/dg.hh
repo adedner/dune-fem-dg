@@ -77,6 +77,11 @@ namespace Fem
       rkSolver_.solve( dest, monitor_ );
     }
 
+    void setTimeStepSize( const double dt )
+    {
+      tp_.provideTimeStepEstimate( dt );
+    }
+
   protected:
     std::tuple<>          extra_;
     TimeProviderType      tp_;

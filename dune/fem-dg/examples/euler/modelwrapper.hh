@@ -149,8 +149,13 @@ namespace Fem
     using BaseType::time_;
 
    public:
+    EulerModel()
+      : impl()
+    {
+    }
+
     EulerModel( const ProblemType& problem )
-      : problem_( problem )
+      : impl_( problem )
     {
       modified_[ 0 ] = 0;
       modified_[ 1 ] = dimRange-1;
@@ -159,7 +164,7 @@ namespace Fem
     template <class Entity>
     void setEntity( const Entity& entity ) const
     {
-      problem_.init( entity );
+      impl_.init( entity );
     }
 
     double gamma () const { return 1.4; }
@@ -188,7 +193,7 @@ namespace Fem
                                const JacobianRangeType& du,
                                RangeType & s) const
     {
-      problem_.source( local.quadraturePoint(), u, du, s );
+      impl_.source( local.quadraturePoint(), u, du, s );
       return 0;
     }
 
@@ -209,7 +214,7 @@ namespace Fem
                                          RangeType& prim,
                                          const bool ) const
     {
-      // problem_.evaluate( xgl, time, prim );
+      // impl_.evaluate( xgl, time, prim );
     }
 
     template <class LocalEvaluation>
@@ -218,7 +223,7 @@ namespace Fem
                            const JacobianRangeType& du,
                            JacobianRangeType& f ) const
     {
-      problem_.diffusiveFlux( local.quadraturePoint(), u, du, f);
+      impl_.diffusiveFlux( local.quadraturePoint(), u, du, f);
     }
 
     template <class LocalEvaluation>
@@ -246,14 +251,14 @@ namespace Fem
                            RangeType& A ) const
     {
       // TODO: u != ubar and du != dubar
-      problem_.linDiffusiveFlux( u, du, local.quadraturePoint(), u, du, A);
+      impl_.linDiffusiveFlux( u, du, local.quadraturePoint(), u, du, A);
     }
 
     template <class LocalEvaluation>
     inline bool hasBoundaryValue( const LocalEvaluation& local ) const
     {
       Dune::FieldVector< int, dimRange > bndIds;
-      return problem_.isDirichletIntersection( local.intersection(), bndIds );
+      return impl_.isDirichletIntersection( local.intersection(), bndIds );
     }
 
     // return iRight for insertion into the numerical flux
@@ -266,9 +271,9 @@ namespace Fem
 #ifndef NDEBUG
       const bool isDirichlet =
 #endif
-      problem_.isDirichletIntersection( local.intersection(), bndIds );
+      impl_.isDirichletIntersection( local.intersection(), bndIds );
       assert( isDirichlet );
-      problem_.dirichlet( bndIds[ 0 ], local.quadraturePoint(), uRight );
+      impl_.dirichlet( bndIds[ 0 ], local.quadraturePoint(), uRight );
     }
 
     // boundary condition here is slip boundary cond. <u,n>=0
@@ -329,7 +334,7 @@ namespace Fem
 
     inline const ProblemType& problem() const
     {
-      return problem_;
+      return impl_;
     }
 
     /////////////////////////////////////////////////////////////////
@@ -413,9 +418,8 @@ namespace Fem
       EOCErrorList::setErrors<L1EOCError>( *this, df );
     }
 
-   protected:
-    const ProblemType& problem_;
-
+  protected:
+    ProblemType impl_;
     ModifiedRangeType modified_;
   };
 
