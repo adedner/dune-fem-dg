@@ -2,7 +2,7 @@ gamma = 1.4
 class Compressible2DEuler:
     def rhoeps(U):
         v = 0.5*(U[1]**2 + U[2]**2)/U[0]
-        rE = U[-1]
+        rE = U[3]
         return rE - v
     def pressure(U):
         return (gamma-1)*Compressible2DEuler.rhoeps(U)
@@ -12,7 +12,7 @@ class Compressible2DEuler:
         return [U[0],U[1]/U[0],U[2]/U[0],Compressible2DEuler.pressure(U)]
     def F_c(U):
         rho, u,v, p = Compressible2DEuler.toPrim(U)
-        rE = U[-1]
+        rE = U[3]
         res = as_matrix( [ [rho*u, rho*v],
                            [rho*u**2 + p, rho*u*v],
                            [rho*u*v, rho*v**2 + p],
@@ -26,6 +26,10 @@ class Compressible2DEuler:
         return as_vector( [U[1],U[2]] )
     def physical(U):
         return conditional( (U[0]>1e-8), conditional( Compressible2DEuler.rhoeps(U) > 1e-8 , 1, 0 ), 0 )
+    def jump(U,V):
+        pL = Compressible2DEuler.pressure(U)
+        pR = Compressible2DEuler.pressure(V)
+        return (pL - pR)/(0.5*(pL + pR))
 
 Model = Compressible2DEuler
 

@@ -234,6 +234,16 @@ def createFemDGSolver(Model, space):
             targs=['class Entity, class Point'], static=True,
             predefined=predefined)
 
+    jump = getattr(Model,"jump",None)
+    jump = jump(u,v)
+    generateMethod(struct, jump,
+            'double', 'jump',
+            args=['const Intersection& it', 'const Point &x',
+                  'const RangeType &u',
+                  'const RangeType &v'],
+            targs=['class Intersection, class Point'], static=True,
+            predefined=predefined)
+
     writer = SourceWriter(StringWriter())
     writer.emit([struct])
 

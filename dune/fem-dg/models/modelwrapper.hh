@@ -338,15 +338,6 @@ namespace Fem
                           DomainType& velocity) const
     {
       velocity = AdditionalType :: velocity( en, x, u );
-      /*
-      for(int i=0; i<dimDomain; ++i)
-      {
-        // U = (rho, rho v_0,...,rho v_(d-1), e )
-        // we store \rho u but do not need to divide by \rho here since only
-        // sign is needed.
-        velocity[i] = u[i+1];
-      }
-      */
     }
 
     // we have physical check for this model
@@ -382,6 +373,7 @@ namespace Fem
                      const RangeType& uRight,
                      RangeType& jump) const
     {
+      jump = AdditionalType :: jump( it, x, uLeft, uRight );
       // take pressure as shock detection values
       //const RangeFieldType pl = pressure( uLeft );
       //const RangeFieldType pr = pressure( uRight );
