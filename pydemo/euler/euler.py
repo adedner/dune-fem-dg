@@ -7,3 +7,5 @@ def RiemanProblem(UL,UR):
 def Sod():
     return RiemanProblem( Model.toCons([1,0,0,1]),
                           Model.toCons([0.125,0,0,0.1]) )
+def Constant():
+    return as_vector( [0.1,0.,0.,0.1] )

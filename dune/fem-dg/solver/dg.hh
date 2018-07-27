@@ -56,7 +56,7 @@ namespace Fem
     typedef typename DiscreteFunctionSpaceType :: GridPartType    GridPartType;
     typedef typename GridPartType::GridType                       GridType;
 
-    typedef typename GridType :: CollectiveCommunicationType      CollectiveCommunicationType;
+    typedef typename GridType :: CollectiveCommunication          CollectiveCommunicationType;
     typedef TimeProvider< CollectiveCommunicationType >           TimeProviderType;
 
     typedef ModelWrapper< GridType, AdvectionModel, Additional >  ModelType;

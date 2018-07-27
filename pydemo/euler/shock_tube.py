@@ -1,5 +1,5 @@
 import time
-from dune.grid import structuredGrid
+from dune.grid import structuredGrid, cartesianDomain
 from dune.fem import parameter
 import dune.create as create
 from dune.models.elliptic.formfiles import loadModels
@@ -7,12 +7,15 @@ from llf import NumFlux
 from dune.femdg import createFemDGSolver
 from ufl import *
 
-from euler import Model,Sod
+from euler import Model
+from euler import Sod as Initial
 
 parameter.append("parameter")
 parameter.append({"fem.verboserank": -1})
 
-grid = structuredGrid([-1, 0], [1, 0.1], [20, 5])
+x0,x1,N = [-1, 0], [1, 0.1], [20, 5]
+grid = structuredGrid(x0,x1,N)
+# grid = create.grid("ALUSimplex", cartesianDomain(x0,x1,N))
 dimR      = 4
 t = 0
 dt = 1e-5
@@ -31,7 +34,7 @@ def useGalerkinOp():
 
     n = FacetNormal(space.cell())
 
-    u_h   = space.interpolate(Sod(), name='u_h')
+    u_h   = space.interpolate(Initial(), name='u_h')
     u_h_n = u_h.copy(name="previous")
 
     fullModel = inner( Model.F_c(u), grad(v) ) * dx -\
@@ -61,10 +64,10 @@ def useODESolver():
     spaceName = "dgonb"
     polOrder = 2
     space = create.space(spaceName, grid, order=polOrder, dimrange=dimR)
-    u_h   = space.interpolate(Sod(), name='u_h')
+    u_h   = space.interpolate(Initial(), name='u_h')
     u_h_n = u_h.copy(name="previous")
     operator = createFemDGSolver( Model, space )
-    operator.setTimeStepSize(dt)
+    # operator.setTimeStepSize(dt)
 
     start = time.time()
     grid.writeVTK('sod', pointdata=[u_h], number=count)
