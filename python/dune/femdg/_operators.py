@@ -12,7 +12,8 @@ from dune.fem.operator import load
 from dune.ufl.tensors import ExprTensor
 from dune.ufl.codegen import generateCode
 from dune.source.cplusplus import assign, TypeAlias, Declaration, Variable,\
-        UnformattedBlock, UnformattedExpression, Struct, return_
+        UnformattedBlock, UnformattedExpression, Struct, return_,\
+        SwitchStatement
 from dune.source.cplusplus import Method as clsMethod
 from dune.source.cplusplus import SourceWriter, ListWriter, StringWriter
 
@@ -78,23 +79,13 @@ def createOrderRedcution(domainSpace):
 
 #####################################################
 
-def generateMethod(struct,expr, cppType, name,
-        targs=None, args=None, static=False, const=False, volatile=False,
-        predefined={}):
-    if cppType is None:
-        cppType = 'void'
-    if cppType == 'void':
-        args = args + [cppType + ' &result']
-    meth = clsMethod(cppType, name,
-            args=args,
-            targs=targs, static=static, const=const, volatile=volatile)
+def generateMethodBody(cppType, expr, returnResult, default, predefined):
     if expr is not None:
         try:
             dimR = expr.ufl_shape[0]
         except:
             dimR = 1
             expr = as_vector([expr])
-            assert cppType == 'double'
         t = ExprTensor((dimR, ), [expr[int(i)] for i in range(dimR)])
         expression = [expr[i] for i in t.keys()]
         u = coeff(expr)[0]
@@ -108,23 +99,43 @@ def generateMethod(struct,expr, cppType, name,
             predefined.update( {u: arg_u, du: arg_du, d2u: arg_d2u} )
         else:
             predefined = {}
-        code, results = generateCode(predefined, expression)
+        code, results = generateCode(predefined, expression, tempVars=False)
         result = Variable(cppType, 'result')
         if cppType == 'double':
             code = code + [assign(result, results[0])]
         else:
             code = code + [assign(result[i], r) for i, r in zip(t.keys(), results)]
-        if cppType != 'void':
+        if returnResult:
             code = [Declaration(result)] + code + [return_(result)]
     else:
         result = Variable(cppType, 'result')
-        code = [assign(result, construct(cppTye,'0') )]
-        if cppType != 'void':
+        code = [assign(result, construct(cppTye,default) )]
+        if returnResult:
             code = [Declaration(result)] + code + [return_(result)]
+    return code
+def generateMethod(struct,expr, cppType, name,
+        returnResult=True,
+        defaultReturn='0',
+        targs=None, args=None, static=False, const=False, volatile=False,
+        predefined={}):
+    if not returnResult:
+        args = args + [cppType + ' &result']
 
-    writer = SourceWriter(ListWriter())
-    writer.emit(code, context=clsMethod('void', 'meth'))
-    meth.append(UnformattedBlock('\n'.join(writer.writer.lines)))
+    if isinstance(expr,dict):
+        bndId = Variable('const int', 'bndId')
+        code = SwitchStatement(bndId, default=return_(False))
+        for id, e in expr.items():
+            code.append(id,
+                    [generateMethodBody('RangeType', e, False, defaultReturn,
+                        predefined), return_(True)])
+        code = [code]
+    else:
+        code = generateMethodBody(cppType, expr, returnResult, defaultReturn,predefined)
+
+    meth = clsMethod(cppType, name,
+            code=code,
+            args=args,
+            targs=targs, static=static, const=const, volatile=volatile)
     struct.append(meth)
 
 #####################################################
@@ -243,12 +254,42 @@ def createFemDGSolver(Model, space):
             targs=['class Intersection, class Point'], static=True,
             predefined=predefined)
 
+    boundaryFluxDict = getattr(Model,"boundaryFlux",None)
+    if boundaryFluxDict is not None:
+        boundaryFlux = {}
+        for id,f in boundaryFluxDict.items(): boundaryFlux.update({id:f(u,n)})
+    else:
+        boundaryFlux = {}
+    generateMethod(struct, boundaryFlux,
+            'bool', 'boundaryFlux',
+            args=['const int bndId',
+                  'const Entity& entity', 'const Point &x',
+                  'const DomainType &normal',
+                  'const RangeType &u',
+                  'RangeType &result'],
+            targs=['class Entity, class Point'], static=True,
+            predefined=predefined)
+    boundaryValueDict = getattr(Model,"boundaryValue",None)
+    if boundaryValueDict is not None:
+        boundaryValue = {}
+        for id,f in boundaryValueDict.items(): boundaryValue.update({id:f(u)})
+    else:
+        boundaryValue = {}
+    generateMethod(struct, boundaryValue,
+            'bool', 'boundaryValue',
+            args=['const int bndId',
+                  'const Entity& entity', 'const Point &x',
+                  'const RangeType &u',
+                  'RangeType &result'],
+            targs=['class Entity, class Point'], static=True,
+            predefined=predefined)
+
     writer = SourceWriter(StringWriter())
     writer.emit([struct])
 
-    # print("#################################")
-    # print(writer.writer.getvalue())
-    # print("#################################")
+    print("#################################")
+    print(writer.writer.getvalue())
+    print("#################################")
 
     return load(includes, typeName, constructor, setTimeStepSize, deltaT,
               preamble=writer.writer.getvalue()).\

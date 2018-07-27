@@ -71,9 +71,9 @@ def useODESolver():
         u_h_n.assign(u_h)
         operator(u_h_n, u_h)
         dt = operator.deltaT()
-        print('dt = ', dt )
         t += dt
         if t > saveTime:
+            print('dt = ', dt, 'time = ',t, 'count = ',count )
             count += 1
             grid.writeVTK('sod', pointdata=[u_h], number=count)
             saveTime += saveStep

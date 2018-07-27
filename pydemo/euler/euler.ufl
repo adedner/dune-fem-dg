@@ -31,6 +31,14 @@ class Compressible2DEuler:
         pR = Compressible2DEuler.pressure(V)
         return (pL - pR)/(0.5*(pL + pR))
 
+    def outflowFlux(u,n):
+        return Compressible2DEuler.F_c(u)*n
+    def outflowValue(u):
+        return u
+
+    # boundaryFlux = {1: outflowFlux}
+    boundaryValue = {1: outflowValue}
+
 Model = Compressible2DEuler
 
 from dune.ufl import Space, NamedConstant
