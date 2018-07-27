@@ -125,4 +125,4 @@ def createFemDGSolver(Model, space):
     # add method activated to inspect limited cells.
     setTimeStepSize = Method('setTimeStepSize', '&'+typeName+'::setTimeStepSize')
 
-    return load(includes, typeName, constructor, setTimeStepSize).Operator( space )
+    return load(includes, typeName, constructor, setTimeStepSize).Operator( space, advModel, diffModel )
