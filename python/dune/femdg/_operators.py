@@ -114,7 +114,7 @@ def createFemDGSolver(Model, space):
                                'const '+advModelType + ' &advectionModel',
                                'const '+diffModelType + ' &diffusionModel'
                               ],
-                              ['return new ' + typeName + '(space);'],
+                              ['return new ' + typeName + '(space, advectionModel, diffusionModel);'],
                               ['"space"_a',
                                '"advectionModel"_a',
                                '"diffusionModel"_a',

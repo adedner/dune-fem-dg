@@ -417,7 +417,7 @@ namespace Fem
     }
 
   protected:
-    ProblemType impl_;
+    const ProblemType &impl_;
     ModifiedRangeType modified_;
   };
 
