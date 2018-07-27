@@ -14,6 +14,7 @@ parameter.append({"fem.verboserank": -1})
 grid = structuredGrid([-1, 0], [1, 0.1], [200, 10])
 dimR      = 4
 t = 0
+dt = 1e-5
 saveStep = 0.01
 saveTime = saveStep
 count = 0
@@ -54,6 +55,7 @@ def useGalerkinOp():
     print("time loop:",time.time()-start)
 
 def useODESolver():
+    global count, t, dt, saveTime
     spaceName = "dgonb"
     polOrder = 0
     space = create.space(spaceName, grid, order=polOrder, dimrange=dimR)

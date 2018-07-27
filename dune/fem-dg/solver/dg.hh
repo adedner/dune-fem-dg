@@ -113,8 +113,10 @@ namespace Fem
     {
       if( !initialized_ )
       {
+        const double dt = tp_.timeStepEstimate();
         rkSolver_.initialize( dest );
         initialized_ = true;
+        tp_.provideTimeStepEstimate( dt );
       }
 
         // next time step is prescribed by fixedTimeStep
