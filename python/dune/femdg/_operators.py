@@ -175,7 +175,9 @@ def createFemDGSolver(Model, space):
     includes += space._includes + destinationIncludes
     includes += ["dune/fem/schemes/diffusionmodel.hh", "dune/fempy/parameter.hh"]
 
-    typeName = 'Dune::Fem::DGOperator< ' + destinationType + ', ' + advModelType + ', ' + diffModelType + ' >'
+    additionalType = 'Additional< typename ' + spaceType + '::FunctionSpaceType >'
+
+    typeName = 'Dune::Fem::DGOperator< ' + destinationType + ', ' + advModelType + ', ' + diffModelType + ', ' + additionalType + ' >'
 
     constructor = Constructor(['const '+spaceType + ' &space',
                                'const '+advModelType + ' &advectionModel',
