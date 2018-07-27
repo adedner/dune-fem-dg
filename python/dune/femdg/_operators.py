@@ -216,6 +216,14 @@ def createFemDGSolver(Model, space):
             targs=['class Entity, class Point'], static=True,
             predefined=predefined)
 
+    velocity = getattr(Model,"velocity",None)
+    generateMethod(struct, velocity,
+            'DomainType', 'velocity',
+            args=['const Entity &entity', 'const Point &x',
+                  'const RangeType &u'],
+            targs=['class Entity, class Point'], static=True,
+            predefined=predefined)
+
     writer = SourceWriter(StringWriter())
     writer.emit([struct])
 
