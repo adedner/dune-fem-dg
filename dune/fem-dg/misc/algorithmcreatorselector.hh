@@ -590,10 +590,7 @@ namespace Fem
     template<class DSpace, class RSpace = DSpace>
     using LinearOperatorType = Dune::Fem::Operator< DiscreteFunctionType<DSpace>, DiscreteFunctionType<RSpace> >;
     template<class DSpace, class RSpace = DSpace>
-    using LinearInverseOperatorType
-      = typename std::conditional<symmetric,
-                                  Dune::Fem::CGInverseOperator< DiscreteFunctionType<DSpace> >,
-                                  Dune::Fem::ParDGGeneralizedMinResInverseOperator< DiscreteFunctionType<DSpace> > >::type;
+    using LinearInverseOperatorType = Dune::Fem::KrylovInverseOperator< DiscreteFunctionType<DSpace> >;
   };
 
 #if HAVE_DUNE_ISTL

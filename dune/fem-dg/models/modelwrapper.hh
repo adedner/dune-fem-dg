@@ -138,7 +138,7 @@ namespace Fem
     using BaseType :: setTime;
     using BaseType :: hasMass;
 
-   public:
+  public:
     ModelWrapper( const ModelImplementationType& impl )
       : impl_( impl ),
         problem_()
