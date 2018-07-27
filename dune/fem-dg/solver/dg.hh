@@ -60,7 +60,7 @@ namespace Fem
       DGOperatorType ;
 
     // solver selection, available fem, istl, petsc, ...
-    typedef typename SolverSelector< Solver::Enum::fem, symmetric, matrixfree > :: type  LinearSolverType ;
+    typedef typename SolverSelector< Solver::Enum::fem, symmetric, matrixfree > :: type :: LinearInverseOperatorType   LinearSolverType ;
 
     typedef DuneODE::OdeSolverInterface< DestinationType >      OdeSolverInterfaceType;
     // type of runge kutta solver
