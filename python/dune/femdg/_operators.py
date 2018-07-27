@@ -96,7 +96,6 @@ def generateMethod(struct,expr, cppType, name,
             expr = as_vector([expr])
             assert cppType == 'double'
         t = ExprTensor((dimR, ), [expr[int(i)] for i in range(dimR)])
-        print(t.keys())
         expression = [expr[i] for i in t.keys()]
         u = coeff(expr)[0]
         if u != []:
