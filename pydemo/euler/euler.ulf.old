@@ -1,29 +1,29 @@
-gamma = 1.4
 class Compressible2DEuler:
     def rhoeps(U):
-        v = 0.5*(U[1]**2 + U[2]**2)/U[0]
-        rE = U[3]
+        v = U[1]*U[1]
+        for i in range(dim-1): v += U[i+2]*U[i+2]
+        v *= 0.5/U[0]
+        rE = U[dim]
         return rE - v
     def pressure(U):
         return (gamma-1)*Compressible2DEuler.rhoeps(U)
-    def toCons(U):
-        return [U[0],U[0]*U[1],U[0]*U[2],U[3]/(gamma-1)+U[0]/2*(U[1]**2+U[2]**2)]
+    def velo(U):
+        return [U[i] for i in range(1,dim+1)]
     def toPrim(U):
-        return [U[0],U[1]/U[0],U[2]/U[0],Compressible2DEuler.pressure(U)]
+        return [U[0], Compressible2DEuler.velo(U), U[dim]]
     def F_c(U):
-        rho, u,v, p = Compressible2DEuler.toPrim(U)
-        rE = U[3]
-        res = as_matrix( [ [rho*u, rho*v],
-                           [rho*u**2 + p, rho*u*v],
-                           [rho*u*v, rho*v**2 + p],
-                           [(rE+p)*u, (rE+p)*v]
-                         ])
-        return res
+        rho, v, p = Compressible2DEuler.toPrim(U)
+        rE = U[dim]
+        res = [ rho*v,
+               [rho*v[0]*v[0] + p, rho*v[0]*v[1]],
+               [rho*v[0]*v[1], rho*v[1]*v[1] + p],
+                (rE+p)*v
+              ]
     def maxLambda(U,n):
-        rho, u,v, p = Compressible2DEuler.toPrim(U)
-        return abs(u*n[0]+v*n[1]) + sqrt(gamma*p/rho)
+        rho, v, p = Compressible2DEuler.toPrim(U)
+        return abs(dot(v,n)) + sqrt(gamma*p/rho)
     def velocity(U):
-        return as_vector( [U[1],U[2]] )
+        return Compressible2DEuler.velo(U)
     def physical(U):
         return conditional( (U[0]>1e-8), conditional( Compressible2DEuler.rhoeps(U) > 1e-8 , 1, 0 ), 0 )
     def jump(U,V):

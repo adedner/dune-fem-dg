@@ -17,7 +17,7 @@ from dune.source.cplusplus import assign, TypeAlias, Declaration, Variable,\
 from dune.source.cplusplus import Method as clsMethod
 from dune.source.cplusplus import SourceWriter, ListWriter, StringWriter
 
-from ufl import as_vector, TestFunction,TrialFunction,Coefficient, dx,ds,grad,inner,zero,FacetNormal,dot
+from ufl import as_vector, as_matrix, TestFunction,TrialFunction,Coefficient, dx,ds,grad,inner,zero,FacetNormal,dot
 from ufl.algorithms.analysis import extract_arguments_and_coefficients as coeff
 from ufl.differentiation import Grad
 
@@ -84,8 +84,11 @@ def generateMethodBody(cppType, expr, returnResult, default, predefined):
         try:
             dimR = expr.ufl_shape[0]
         except:
-            dimR = 1
-            expr = as_vector([expr])
+            if isinstance(expr,list) or isinstance(expr,tuple):
+                expr = as_vector(expr)
+            else:
+                expr = as_vector([expr])
+            dimR = expr.ufl_shape[0]
         t = ExprTensor((dimR, ), [expr[int(i)] for i in range(dimR)])
         expression = [expr[i] for i in t.keys()]
         u = coeff(expr)[0]
@@ -97,8 +100,6 @@ def generateMethodBody(cppType, expr, returnResult, default, predefined):
             arg_du = Variable("const JacobianRangeType &", "du")
             arg_d2u = Variable("const HessianRangeType &", "d2u")
             predefined.update( {u: arg_u, du: arg_du, d2u: arg_d2u} )
-        else:
-            predefined = {}
         code, results = generateCode(predefined, expression, tempVars=False)
         result = Variable(cppType, 'result')
         if cppType == 'double':
@@ -130,7 +131,7 @@ def generateMethod(struct,expr, cppType, name,
                         predefined), return_(True)])
         code = [code]
     else:
-        code = generateMethodBody(cppType, expr, returnResult, defaultReturn,predefined)
+        code = generateMethodBody(cppType, expr, returnResult, defaultReturn, predefined)
 
     meth = clsMethod(cppType, name,
             code=code,
@@ -148,17 +149,17 @@ def createFemDGSolver(Model, space):
     v = TestFunction(space)
     n = FacetNormal(space.cell())
     if hasattr(Model,"F_c"):
-        advModel = inner(Model.F_c(u),grad(v))*dx
+        advModel = inner(as_matrix(Model.F_c(u)),grad(v))*dx
     else:
         advModel = inner(grad(u-u),grad(v))*dx    # TODO: make a better empty model
     if hasattr(Model,"S_ns"):
-        advModel += inner(S_ns(u,grad(u)),v)*dx
+        advModel += inner(as_vector(S_ns(u,grad(u))),v)*dx
     if hasattr(Model,"F_d"):
-        diffModel = inner(Model.F_d(u,grad(u)),grad(v))*dx
+        diffModel = inner(as_matrix(Model.F_d(u,grad(u))),grad(v))*dx
     else:
         diffModel = inner(grad(u-u),grad(v))*dx   # TODO: make a better empty model
     if hasattr(Model,"S_s"):
-        diffModel += inner(S_s(u,grad(u)),v)*dx
+        diffModel += inner(as_vector(S_s(u,grad(u))),v)*dx
 
     # TODO: needs more general treatment of boundaries
     # advModel  -= inner(dot(Model.F_c(u),n),v)*ds

@@ -7,13 +7,17 @@ from llf import NumFlux
 from dune.femdg import createFemDGSolver
 from ufl import *
 
-from euler import Model
-from euler import Sod as Initial
+gamma = 1.4
+dim = 2
+from euler import CompressibleEuler as model
+from euler import Sod as initial
+Model = model(dim,gamma)
+initial = initial(dim,gamma)
 
 parameter.append("parameter")
 parameter.append({"fem.verboserank": -1})
 
-x0,x1,N = [-1, 0], [1, 0.1], [20, 5]
+x0,x1,N = [-1, 0], [1, 0.1], [50, 5]
 grid = structuredGrid(x0,x1,N)
 # grid = create.grid("ALUSimplex", cartesianDomain(x0,x1,N))
 dimR      = 4
@@ -34,7 +38,7 @@ def useGalerkinOp():
 
     n = FacetNormal(space.cell())
 
-    u_h   = space.interpolate(Initial(), name='u_h')
+    u_h   = space.interpolate(initial, name='u_h')
     u_h_n = u_h.copy(name="previous")
 
     fullModel = inner( Model.F_c(u), grad(v) ) * dx -\
@@ -48,7 +52,7 @@ def useGalerkinOp():
 
     start = time.time()
     grid.writeVTK('sod', pointdata=[u_h], number=count)
-    while t < 0.4:
+    while t < endTime:
         u_h_n.assign(u_h)
         operator.solve(target=u_h)
         t += operator.model.dt
@@ -64,14 +68,14 @@ def useODESolver():
     spaceName = "dgonb"
     polOrder = 2
     space = create.space(spaceName, grid, order=polOrder, dimrange=dimR)
-    u_h   = space.interpolate(Initial(), name='u_h')
+    u_h   = space.interpolate(initial, name='u_h')
     u_h_n = u_h.copy(name="previous")
     operator = createFemDGSolver( Model, space )
     # operator.setTimeStepSize(dt)
 
     start = time.time()
-    grid.writeVTK('sod', pointdata=[u_h], number=count)
-    while t < 0.4:
+    grid.writeVTK('sod', celldata=[u_h], number=count)
+    while t < endTime:
         u_h_n.assign(u_h)
         operator(u_h_n, u_h)
         dt = operator.deltaT()
@@ -79,9 +83,9 @@ def useODESolver():
         if t > saveTime:
             print('dt = ', dt, 'time = ',t, 'count = ',count )
             count += 1
-            grid.writeVTK('sod', pointdata=[u_h], number=count)
+            grid.writeVTK('sod', celldata=[u_h], number=count)
             saveTime += saveStep
-    grid.writeVTK('sod', pointdata=[u_h], number=count)
+    grid.writeVTK('sod', celldata=[u_h], number=count)
     print("time loop:",time.time()-start)
 
 useODESolver()

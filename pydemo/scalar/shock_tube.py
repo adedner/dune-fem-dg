@@ -6,7 +6,8 @@ from dune.models.elliptic.formfiles import loadModels
 from dune.femdg import createFemDGSolver
 
 from scalar import RiemanProblem
-from scalar import Transport1D as Model
+# from scalar import Transport1D as Model
+from scalar import Burgers1D as Model
 
 parameter.append("parameter")
 parameter.append({"fem.verboserank": -1})
