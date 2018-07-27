@@ -245,6 +245,7 @@ namespace Fem
     template <class LocalEvaluation>
     inline bool hasBoundaryValue( const LocalEvaluation& local ) const
     {
+      return true;
       Dune::FieldVector< int, dimRange > bndIds;
       return impl_.isDirichletIntersection( local.intersection(), bndIds );
     }
@@ -255,6 +256,10 @@ namespace Fem
                                const RangeType& uLeft,
                                RangeType& uRight ) const
     {
+      uRight = uLeft;
+      return;
+
+
       Dune::FieldVector< int, dimRange > bndIds;
 #ifndef NDEBUG
       const bool isDirichlet =
@@ -332,6 +337,8 @@ namespace Fem
                           const RangeType& u,
                           DomainType& velocity) const
     {
+      velocity = AdditionalType :: velocity( en, x, u );
+      /*
       for(int i=0; i<dimDomain; ++i)
       {
         // U = (rho, rho v_0,...,rho v_(d-1), e )
@@ -339,6 +346,7 @@ namespace Fem
         // sign is needed.
         velocity[i] = u[i+1];
       }
+      */
     }
 
     // we have physical check for this model
@@ -350,17 +358,10 @@ namespace Fem
     // calculate jump between left and right value
     template< class Entity >
     inline bool physical(const Entity& entity,
-                         const DomainType& xGlobal,
+                         const DomainType& x,
                          const RangeType& u) const
     {
-      if (u[0]<1e-8)
-        return false;
-      else
-      {
-        //std::cout << eulerFlux_.rhoeps(u) << std::endl;
-        // return (eulerFlux_.rhoeps(u) > 1e-8);
-        return true ;
-      }
+      return AdditionalType :: physical( entity, x, u ) > 0;
     }
 
     // adjust average value if necessary
