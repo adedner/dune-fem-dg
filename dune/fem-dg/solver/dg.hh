@@ -81,19 +81,33 @@ namespace Fem
         dgOperator_( space.gridPart(), model_, extra_, name() ),
         rkSolver_( tp_, dgOperator_, dgOperator_, dgOperator_, name() ),
         initialized_( false )
-    {}
+    {
+      std::string keyPrefix("femdg.stepper.");
+      const double maxTimeStep =
+        Dune::Fem::Parameter::getValue< double >( keyPrefix +  "maxtimestep", std::numeric_limits<double>::max());
+      fixedTimeStep_ = Dune::Fem::Parameter::getValue< double >( keyPrefix + "fixedtimestep" , 0.0 );
+      // start first time step with prescribed fixed time step
+      // if it is not 0 otherwise use the internal estimate
+      tp_.provideTimeStepEstimate(maxTimeStep);
+
+      // adjust fixed time step with timeprovider.factor()
+      fixedTimeStep_ /= tp_.factor() ;
+      if ( fixedTimeStep_ > 1e-20 )
+        tp_.init( fixedTimeStep_ );
+      else
+        tp_.init();
+    }
+
+    const DiscreteFunctionSpaceType& space () const { return space_; }
+    const DiscreteFunctionSpaceType& domainSpace () const { return space_; }
+    const DiscreteFunctionSpaceType& rangeSpace () const { return space_; }
 
     //! evaluate the operator
     void operator()( const DestinationType& arg, DestinationType& dest ) const
     {
       dest.assign( arg );
       solve( dest );
-      // dgOperator_( arg, dest );
     }
-
-    const DiscreteFunctionSpaceType& space () const { return space_; }
-    const DiscreteFunctionSpaceType& domainSpace () const { return space_; }
-    const DiscreteFunctionSpaceType& rangeSpace () const { return space_; }
 
     void solve( DestinationType& dest ) const
     {
@@ -103,11 +117,18 @@ namespace Fem
         initialized_ = true;
       }
 
+        // next time step is prescribed by fixedTimeStep
+      if ( fixedTimeStep_ > 1e-20 )
+        tp_.next( fixedTimeStep_ );
+      else
+        tp_.next();
+
       rkSolver_.solve( dest, monitor_ );
     }
 
     void setTimeStepSize( const double dt )
     {
+      fixedTimeStep_ = dt ;
       tp_.provideTimeStepEstimate( dt );
     }
 
@@ -115,12 +136,13 @@ namespace Fem
     const DiscreteFunctionSpaceType&      space_;
 
     std::tuple<>                          extra_;
-    TimeProviderType                      tp_;
+    mutable TimeProviderType              tp_;
     mutable MonitorType                   monitor_;
     ModelType                             model_;
     DGOperatorType                        dgOperator_;
     mutable RKSolverType                  rkSolver_;
-    mutable bool initialized_;
+    mutable double                        fixedTimeStep_ ;
+    mutable bool                          initialized_;
   };
 
 }

@@ -313,9 +313,9 @@ namespace Fem
                           double& totalspeed ) const
     {
       // TODO
-      std::abort();
+      //std::abort();
       // advspeed = eulerFlux_.maxSpeed( gamma_ , normal , u );
-      totalspeed = advspeed;
+      totalspeed = advspeed = 1e-5 ;
     }
 
     inline const ProblemType& problem() const
