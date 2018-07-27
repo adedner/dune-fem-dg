@@ -102,7 +102,7 @@ namespace Fem
    *
    * \ingroup AnalyticalModels
    */
-  template< class GridImp, class ModelImp >
+  template< class GridImp, class ModelImp, class AdditionalImp >
   class ModelWrapper :
     public DefaultModel< ModelWrapperTraits< GridImp, detail::EmptyProblem< ModelImp > > >
   {
@@ -112,6 +112,8 @@ namespace Fem
     typedef DefaultModel< Traits >                       BaseType;
     typedef typename Traits::ProblemType                 ProblemType;
     typedef ModelImp                                     ModelImplementationType;
+
+    typedef AdditionalImp                                AdditionalType;
 
     enum { dimDomain = Traits::dimDomain };
     enum { dimRange = Traits::dimRange };
@@ -218,7 +220,7 @@ namespace Fem
                             RangeType& maxValue) const
     {
       std::cerr <<"eigenValues for problems/euler not implemented\n";
-      abort();
+      std::abort();
     }
 
     template <class LocalEvaluation>
@@ -312,10 +314,8 @@ namespace Fem
                           double& advspeed,
                           double& totalspeed ) const
     {
-      // TODO
-      //std::abort();
-      // advspeed = eulerFlux_.maxSpeed( gamma_ , normal , u );
-      totalspeed = advspeed = 1e-5 ;
+      advspeed = AdditionalType::maxSpeed( local.entity(), local.quadraturePoint(), normal, u );
+      totalspeed = advspeed;
     }
 
     inline const ProblemType& problem() const

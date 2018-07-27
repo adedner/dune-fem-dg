@@ -27,6 +27,7 @@ namespace Fem
   template < class DestinationImp,
              class AdvectionModel,
              class DiffusionModel,
+             class Additional,
              Solver::Enum solverId             = Solver::Enum::fem,
              Formulation::Enum formId          = Formulation::Enum::primal,
              AdvectionLimiter::Enum limiterId  = AdvectionLimiter::Enum::limited,
@@ -38,6 +39,7 @@ namespace Fem
   template < class DestinationImp,
              class AdvectionModel,
              class DiffusionModel,
+             class Additional,
              Solver::Enum solverId,
              Formulation::Enum formId,
              AdvectionLimiter::Enum limiterId,
@@ -51,19 +53,14 @@ namespace Fem
     typedef typename DiscreteFunctionSpaceType :: FunctionSpaceType  FunctionSpaceType;
     static const int polynomialOrder = DiscreteFunctionSpaceType :: polynomialOrder ;
 
-    typedef typename DiscreteFunctionSpaceType :: GridPartType   GridPartType;
-    typedef typename GridPartType::GridType                      GridType;
+    typedef typename DiscreteFunctionSpaceType :: GridPartType    GridPartType;
+    typedef typename GridPartType::GridType                       GridType;
 
-    typedef typename GridType :: CollectiveCommunicationType     CollectiveCommunicationType;
-    typedef TimeProvider< CollectiveCommunicationType >          TimeProviderType;
+    typedef typename GridType :: CollectiveCommunicationType      CollectiveCommunicationType;
+    typedef TimeProvider< CollectiveCommunicationType >           TimeProviderType;
 
-    typedef ModelWrapper< GridType, AdvectionModel >             ModelType;
+    typedef ModelWrapper< GridType, AdvectionModel, Additional >  ModelType;
 
-    //enum { limiterId   =  AdvectionLimiter::Enum::limited };
-    //enum { formId      =  Formulation::Enum::primal };
-    //enum { advFluxId   =  AdvectionFlux::Enum::llf };
-    //enum { diffFluxId  =  DiffusionFlux::Enum::primal };
-    //enum { solverId    =  Solver::Enum::fem };
     static constexpr bool symmetric  =  false ;
     static constexpr bool matrixfree =  true  ;
 
@@ -135,7 +132,7 @@ namespace Fem
         tp_.provideTimeStepEstimate( dt );
       }
 
-        // next time step is prescribed by fixedTimeStep
+      // next time step is prescribed by fixedTimeStep
       if ( fixedTimeStep_ > 1e-20 )
         tp_.next( fixedTimeStep_ );
       else
@@ -165,6 +162,6 @@ namespace Fem
     mutable bool                          initialized_;
   };
 
-}
-}
+} // end namespace Fem
+} // end namespace Dune
 #endif
