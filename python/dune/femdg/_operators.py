@@ -17,7 +17,7 @@ from dune.source.cplusplus import assign, TypeAlias, Declaration, Variable,\
 from dune.source.cplusplus import Method as clsMethod
 from dune.source.cplusplus import SourceWriter, ListWriter, StringWriter
 
-from ufl import as_vector
+from ufl import as_vector, TestFunction,TrialFunction,Coefficient, dx,ds,grad,inner,zero,FacetNormal,dot
 from ufl.algorithms.analysis import extract_arguments_and_coefficients as coeff
 from ufl.differentiation import Grad
 
@@ -142,7 +142,6 @@ def generateMethod(struct,expr, cppType, name,
 
 # create DG operator + solver
 def createFemDGSolver(Model, space):
-    from ufl import TestFunction,TrialFunction,dx,ds,grad,inner,zero,FacetNormal,dot
     import dune.create as create
 
     u = TrialFunction(space)
@@ -244,13 +243,15 @@ def createFemDGSolver(Model, space):
             targs=['class Entity, class Point'], static=True,
             predefined=predefined)
 
+    w = Coefficient(space)
+    predefined.update( {w:Variable("const RangeType &", "w")} )
     jump = getattr(Model,"jump",None)
-    jump = jump(u,v)
+    jump = jump(u,w)
     generateMethod(struct, jump,
             'double', 'jump',
             args=['const Intersection& it', 'const Point &x',
                   'const RangeType &u',
-                  'const RangeType &v'],
+                  'const RangeType &w'],
             targs=['class Intersection, class Point'], static=True,
             predefined=predefined)
 

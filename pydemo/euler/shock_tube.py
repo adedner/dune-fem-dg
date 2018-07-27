@@ -9,6 +9,7 @@ from ufl import *
 
 from euler import Model,Sod
 
+parameter.append("parameter")
 parameter.append({"fem.verboserank": -1})
 
 grid = structuredGrid([-1, 0], [1, 0.1], [20, 5])
