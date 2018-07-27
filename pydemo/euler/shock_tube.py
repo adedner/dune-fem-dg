@@ -68,6 +68,7 @@ def useODESolver():
     while t < 0.4:
         u_h_n.assign(u_h)
         operator(u_h_n, u_h)
+        dt = operator.deltaT()
         t += dt
         if t > saveTime:
             count += 1

@@ -134,6 +134,8 @@ namespace Fem
       tp_.provideTimeStepEstimate( dt );
     }
 
+    double deltaT() const { return tp_.deltaT(); }
+
   protected:
     const DiscreteFunctionSpaceType&      space_;
 
