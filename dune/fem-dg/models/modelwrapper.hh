@@ -18,6 +18,10 @@
 #include <dune/fem-dg/misc/error/l2eocerror.hh>
 #include <dune/fem-dg/misc/error/l1eocerror.hh>
 
+#if HAVE_DUNE_FEMPY
+#include <dune/fem/schemes/diffusionmodel.hh>
+#endif
+
 namespace Dune
 {
 namespace Fem
@@ -25,7 +29,7 @@ namespace Fem
   namespace detail {
 
     template <class ModelImp>
-    class ProblemWrapper :
+    class EmptyProblem :
       public Dune::Fem::EvolutionProblemInterface< typename ModelImp :: RFunctionSpaceType, false >
     {
       typedef Dune::Fem::EvolutionProblemInterface< typename ModelImp :: RFunctionSpaceType, false > BaseType;
@@ -45,7 +49,7 @@ namespace Fem
       typedef typename FunctionSpaceType :: RangeFieldType  RangeFieldType ;
       typedef RangeFieldType FieldType ;
 
-      ProblemWrapper() {}
+      EmptyProblem() {}
 
       void init () {}
 
@@ -77,18 +81,6 @@ namespace Fem
 
   } // end namespace detail
 
-
-  template <class ModelImp>
-  struct ModelImplementationWrapper
-    : public ModelImp,
-      public detail::ProblemWrapper< ModelImp >
-  {
-    typedef typename ModelImp :: RFunctionSpaceType   FunctionSpaceType ;
-    ModelImplementationWrapper() : ModelImp() {}
-
-    using ModelImp :: init;
-  };
-
   template< class GridImp, class ProblemImp >
   class ModelWrapperTraits
     : public DefaultModelTraits< GridImp, ProblemImp >
@@ -110,15 +102,16 @@ namespace Fem
    *
    * \ingroup AnalyticalModels
    */
-  template< class GridImp, class ProblemImp >
+  template< class GridImp, class ModelImp >
   class ModelWrapper :
-    public DefaultModel< ModelWrapperTraits< GridImp, ProblemImp > >
+    public DefaultModel< ModelWrapperTraits< GridImp, detail::EmptyProblem< ModelImp > > >
   {
   public:
     typedef GridImp                                      GridType;
-    typedef ModelWrapperTraits< GridType, ProblemImp >     Traits;
+    typedef ModelWrapperTraits< GridType, detail::EmptyProblem< ModelImp > > Traits;
     typedef DefaultModel< Traits >                       BaseType;
     typedef typename Traits::ProblemType                 ProblemType;
+    typedef ModelImp                                     ModelImplementationType;
 
     enum { dimDomain = Traits::dimDomain };
     enum { dimRange = Traits::dimRange };
@@ -141,19 +134,14 @@ namespace Fem
     static const bool hasAdvection = true;
     static const bool hasDiffusion = false;
 
-    using BaseType::time;
-    using BaseType::time_;
+    using BaseType :: time;
+    using BaseType :: setTime;
+    using BaseType :: hasMass;
 
    public:
-#if 0
-    ModelWrapper()
-      : impl()
-    {
-    }
-#endif
-
-    ModelWrapper( const ProblemType& problem )
-      : impl_( problem )
+    ModelWrapper( const ModelImplementationType& impl )
+      : impl_( impl ),
+        problem_()
     {
       modified_[ 0 ] = 0;
       modified_[ 1 ] = dimRange-1;
@@ -332,7 +320,7 @@ namespace Fem
 
     inline const ProblemType& problem() const
     {
-      return impl_;
+      return problem_;
     }
 
     /////////////////////////////////////////////////////////////////
@@ -417,7 +405,8 @@ namespace Fem
     }
 
   protected:
-    const ProblemType &impl_;
+    const ModelImplementationType& impl_;
+    ProblemType problem_;
     ModifiedRangeType modified_;
   };
 

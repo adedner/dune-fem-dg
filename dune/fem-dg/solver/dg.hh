@@ -41,8 +41,7 @@ namespace Fem
     typedef typename GridType :: CollectiveCommunicationType     CollectiveCommunicationType;
     typedef TimeProvider< CollectiveCommunicationType >          TimeProviderType;
 
-    typedef ModelImplementationWrapper< AdvectionModel >         ProblemType;
-    typedef ModelWrapper< GridType, ProblemType >                ModelType;
+    typedef ModelWrapper< GridType, AdvectionModel >             ModelType;
 
     //enum { limiterId   =  AdvectionLimiter::Enum::limited };
     //enum { formId      =  Formulation::Enum::primal };
