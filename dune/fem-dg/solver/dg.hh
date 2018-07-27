@@ -30,7 +30,7 @@ namespace Fem
              class Additional,
              Solver::Enum solverId             = Solver::Enum::fem,
              Formulation::Enum formId          = Formulation::Enum::primal,
-             AdvectionLimiter::Enum limiterId  = AdvectionLimiter::Enum::unlimited,
+             AdvectionLimiter::Enum limiterId  = AdvectionLimiter::Enum::limited,
              AdvectionFlux::Enum advFluxId     = AdvectionFlux::Enum::llf,
              DiffusionFlux::Enum diffFluxId    = DiffusionFlux::Enum::primal
              >

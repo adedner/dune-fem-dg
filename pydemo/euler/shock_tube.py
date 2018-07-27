@@ -11,7 +11,7 @@ from euler import Model,Sod
 
 parameter.append({"fem.verboserank": -1})
 
-grid = structuredGrid([-1, 0], [1, 0.1], [200, 10])
+grid = structuredGrid([-1, 0], [1, 0.1], [20, 5])
 dimR      = 4
 t = 0
 dt = 1e-5
@@ -58,7 +58,7 @@ def useGalerkinOp():
 def useODESolver():
     global count, t, dt, saveTime
     spaceName = "dgonb"
-    polOrder = 0
+    polOrder = 2
     space = create.space(spaceName, grid, order=polOrder, dimrange=dimR)
     u_h   = space.interpolate(Sod(), name='u_h')
     u_h_n = u_h.copy(name="previous")
@@ -71,6 +71,7 @@ def useODESolver():
         u_h_n.assign(u_h)
         operator(u_h_n, u_h)
         dt = operator.deltaT()
+        print('dt = ', dt )
         t += dt
         if t > saveTime:
             count += 1

@@ -374,10 +374,6 @@ namespace Fem
                      RangeType& jump) const
     {
       jump = AdditionalType :: jump( it, x, uLeft, uRight );
-      // take pressure as shock detection values
-      //const RangeFieldType pl = pressure( uLeft );
-      //const RangeFieldType pr = pressure( uRight );
-      //jump  = (pl-pr)/(0.5*(pl+pr));
     }
 
     // calculate jump between left and right value
