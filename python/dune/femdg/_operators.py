@@ -217,8 +217,18 @@ def createFemDGSolver(Model, space):
             predefined=predefined)
 
     velocity = getattr(Model,"velocity",None)
+    velocity = velocity(u)
     generateMethod(struct, velocity,
             'DomainType', 'velocity',
+            args=['const Entity &entity', 'const Point &x',
+                  'const RangeType &u'],
+            targs=['class Entity, class Point'], static=True,
+            predefined=predefined)
+
+    physical = getattr(Model,"physical",None)
+    physical = physical(u)
+    generateMethod(struct, physical,
+            'double', 'physical',
             args=['const Entity &entity', 'const Point &x',
                   'const RangeType &u'],
             targs=['class Entity, class Point'], static=True,
