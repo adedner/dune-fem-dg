@@ -84,7 +84,7 @@ namespace Fem
       public detail::ProblemWrapper< ModelImp >
   {
     typedef typename ModelImp :: RFunctionSpaceType   FunctionSpaceType ;
-    ModelImplementationWrapper() : ModelImp() {}
+    ModelImplementationWrapper( const ModelImp& modelImpl ) {}
 
     using ModelImp :: init;
   };
@@ -145,13 +145,6 @@ namespace Fem
     using BaseType::time_;
 
    public:
-#if 0
-    ModelWrapper()
-      : impl()
-    {
-    }
-#endif
-
     ModelWrapper( const ProblemType& problem )
       : impl_( problem )
     {
