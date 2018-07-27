@@ -26,7 +26,23 @@ namespace Fem
 
   template < class DestinationImp,
              class AdvectionModel,
-             class DiffusionModel >
+             class DiffusionModel,
+             Solver::Enum solverId             = Solver::Enum::fem,
+             Formulation::Enum formId          = Formulation::Enum::primal,
+             AdvectionLimiter::Enum limiterId  = AdvectionLimiter::Enum::limited,
+             AdvectionFlux::Enum advFluxId     = AdvectionFlux::Enum::llf,
+             DiffusionFlux::Enum diffFluxId    = DiffusionFlux::Enum::primal
+             >
+  class DGOperator;
+
+  template < class DestinationImp,
+             class AdvectionModel,
+             class DiffusionModel,
+             Solver::Enum solverId,
+             Formulation::Enum formId,
+             AdvectionLimiter::Enum limiterId,
+             AdvectionFlux::Enum advFluxId,
+             DiffusionFlux::Enum diffFluxId >
   class DGOperator : public Fem::SpaceOperatorInterface< DestinationImp >
   {
   public:
@@ -51,16 +67,16 @@ namespace Fem
     static constexpr bool symmetric  =  false ;
     static constexpr bool matrixfree =  true  ;
 
-    typedef DGAdvectionFlux< ModelType, AdvectionFlux::Enum::llf >       AdvectionFluxType;
-    typedef typename DiffusionFluxSelector< ModelType, DiscreteFunctionSpaceType, DiffusionFlux::Enum::primal, Formulation::Enum::primal >::type  DiffusionFluxType;
+    typedef DGAdvectionFlux< ModelType, advFluxId >       AdvectionFluxType;
+    typedef typename DiffusionFluxSelector< ModelType, DiscreteFunctionSpaceType, diffFluxId, formId >::type  DiffusionFluxType;
 
     typedef DefaultOperatorTraits< ModelType, DestinationType, AdvectionFluxType, DiffusionFluxType >  OpTraits;
 
-    typedef typename AdvectionDiffusionOperatorSelector< OpTraits, Formulation::Enum::primal, AdvectionLimiter::Enum::limited > :: FullOperatorType
+    typedef typename AdvectionDiffusionOperatorSelector< OpTraits, formId, limiterId > :: FullOperatorType
       DGOperatorType ;
 
     // solver selection, available fem, istl, petsc, ...
-    typedef typename MatrixFreeSolverSelector< Solver::Enum::fem, symmetric > :: template LinearInverseOperatorType< DiscreteFunctionSpaceType, DiscreteFunctionSpaceType >  LinearSolverType ;
+    typedef typename MatrixFreeSolverSelector< solverId, symmetric > :: template LinearInverseOperatorType< DiscreteFunctionSpaceType, DiscreteFunctionSpaceType >  LinearSolverType ;
 
     typedef DuneODE::OdeSolverInterface< DestinationType >      OdeSolverInterfaceType;
     // type of runge kutta solver
