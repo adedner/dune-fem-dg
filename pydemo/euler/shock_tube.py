@@ -21,6 +21,7 @@ count = 0
 endTime = 0.4
 
 def useGalerkinOp():
+    global count, t, dt, saveTime
     # a full fv implementation using UFL and the galerkin operator
     # some sign error or something else leading to wrong results
     # still needs fixing
@@ -62,6 +63,7 @@ def useODESolver():
     u_h   = space.interpolate(Sod(), name='u_h')
     u_h_n = u_h.copy(name="previous")
     operator = createFemDGSolver( Model, space )
+    operator.setTimeStepSize(dt)
 
     start = time.time()
     grid.writeVTK('sod', pointdata=[u_h], number=count)

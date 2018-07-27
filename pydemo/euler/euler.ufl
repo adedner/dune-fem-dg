@@ -15,7 +15,7 @@ class Compressible2DEuler:
                            [(rE+p)*u, (rE+p)*v]
                          ])
         return res
-    def alpha(U,n):
+    def maxLambda(U,n):
         rho, u,v, p = Compressible2DEuler.toPrim(U)
         return abs(u*n[0]+v*n[1]) + sqrt(gamma*p/rho)
 
