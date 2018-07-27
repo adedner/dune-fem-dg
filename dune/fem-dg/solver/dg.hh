@@ -79,7 +79,8 @@ namespace Fem
         tp_( space_.gridPart().comm() ),
         model_(advectionModel),
         dgOperator_( space.gridPart(), model_, extra_, name() ),
-        rkSolver_( tp_, dgOperator_, dgOperator_, dgOperator_, name() )
+        rkSolver_( tp_, dgOperator_, dgOperator_, dgOperator_, name() ),
+        initialized_( false )
     {}
 
     //! evaluate the operator
@@ -96,6 +97,12 @@ namespace Fem
 
     void solve( DestinationType& dest ) const
     {
+      if( !initialized_ )
+      {
+        rkSolver_.initialize( dest );
+        initialized_ = true;
+      }
+
       rkSolver_.solve( dest, monitor_ );
     }
 
@@ -113,6 +120,7 @@ namespace Fem
     ModelType                             model_;
     DGOperatorType                        dgOperator_;
     mutable RKSolverType                  rkSolver_;
+    mutable bool initialized_;
   };
 
 }

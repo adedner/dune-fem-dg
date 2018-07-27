@@ -163,7 +163,7 @@ namespace Fem
      */
     virtual IdEnum getMethod() const
     {
-      const int i = Fem::Parameter::getEnum( keyPrefix_ + "method", PrimalDiffusionFlux::_strings );
+      const int i = Fem::Parameter::getEnum( keyPrefix_ + "method", PrimalDiffusionFlux::_strings, 0 );
       return PrimalDiffusionFlux::_enums[i];
     }
 
@@ -194,13 +194,13 @@ namespace Fem
     //! todo please doc me
     virtual double penalty() const
     {
-      return Fem::Parameter::getValue<double>( keyPrefix_ + "penalty" );
+      return Fem::Parameter::getValue<double>( keyPrefix_ + "penalty", 1.0 );
     }
 
     //! todo please doc me
     virtual double liftfactor() const
     {
-      return Fem::Parameter::getValue<double>( keyPrefix_ + "liftfactor" );
+      return Fem::Parameter::getValue<double>( keyPrefix_ + "liftfactor", 1.0 );
     }
 
     /**
