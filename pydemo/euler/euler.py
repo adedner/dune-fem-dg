@@ -38,22 +38,25 @@ def CompressibleEuler(dim, gamma):
             pR = Model.pressure(V)
             return (pL - pR)/(0.5*(pL + pR))
 
-        def outflowFlux(u,n):
+        def outflowFlux(x,u,n):
             return Model.F_c(u)*n
-        def outflowValue(u):
+        def outflowValue(x,u):
             return u
 
         # boundaryFlux = {1: outflowFlux}
         boundaryValue = {1: outflowValue}
     return Model
 
-def RiemanProblem(x,x0,UL,UR):
+def riemanProblem(x,x0,UL,UR):
     return conditional(x[0]<x0,as_vector(UL),as_vector(UR))
-def Sod(dim,gamma):
+
+def sod(dim,gamma):
     space = Space(dim,dim+2)
     x = SpatialCoordinate(space.cell())
-    return RiemanProblem( x, 0.,
+    return CompressibleEuler(dim,gamma) ,\
+           riemanProblem( x, 0.,
                           CompressibleEuler(dim,gamma).toCons([1,0,0,1]),
                           CompressibleEuler(dim,gamma).toCons([0.125,0,0,0.1]) )
-def Constant():
-    return as_vector( [0.1,0.,0.,0.1] )
+def constant(dim,gamma):
+    return CompressibleEuler(dim,gamma) ,\
+           as_vector( [0.1,0.,0.,0.1] )

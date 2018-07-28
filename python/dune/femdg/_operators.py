@@ -17,7 +17,8 @@ from dune.source.cplusplus import assign, TypeAlias, Declaration, Variable,\
 from dune.source.cplusplus import Method as clsMethod
 from dune.source.cplusplus import SourceWriter, ListWriter, StringWriter
 
-from ufl import as_vector, as_matrix, TestFunction,TrialFunction,Coefficient, dx,ds,grad,inner,zero,FacetNormal,dot
+from ufl import SpatialCoordinate,TestFunction,TrialFunction,Coefficient,\
+        as_vector, as_matrix,dx,ds,grad,inner,zero,FacetNormal,dot
 from ufl.algorithms.analysis import extract_arguments_and_coefficients as coeff
 from ufl.differentiation import Grad
 
@@ -148,14 +149,19 @@ def createFemDGSolver(Model, space):
     u = TrialFunction(space)
     v = TestFunction(space)
     n = FacetNormal(space.cell())
-    if hasattr(Model,"F_c"):
+    x = SpatialCoordinate(space.cell())
+
+    hasAdvection = hasattr(Model,"F_c")
+    if hasAdvection:
         advModel = inner(as_matrix(Model.F_c(u)),grad(v))*dx
     else:
         advModel = inner(grad(u-u),grad(v))*dx    # TODO: make a better empty model
     if hasattr(Model,"S_ns"):
         advModel += inner(as_vector(S_ns(u,grad(u))),v)*dx
-    if hasattr(Model,"F_d"):
-        diffModel = inner(as_matrix(Model.F_d(u,grad(u))),grad(v))*dx
+
+    hasDiffusion = hasattr(Model,"F_v")
+    if hasDiffusion:
+        diffModel = inner(Model.F_v(u,grad(u)),grad(v))*dx
     else:
         diffModel = inner(grad(u-u),grad(v))*dx   # TODO: make a better empty model
     if hasattr(Model,"S_s"):
@@ -259,7 +265,7 @@ def createFemDGSolver(Model, space):
     boundaryFluxDict = getattr(Model,"boundaryFlux",None)
     if boundaryFluxDict is not None:
         boundaryFlux = {}
-        for id,f in boundaryFluxDict.items(): boundaryFlux.update({id:f(u,n)})
+        for id,f in boundaryFluxDict.items(): boundaryFlux.update({id:f(x,u,n)})
     else:
         boundaryFlux = {}
     generateMethod(struct, boundaryFlux,
@@ -274,7 +280,7 @@ def createFemDGSolver(Model, space):
     boundaryValueDict = getattr(Model,"boundaryValue",None)
     if boundaryValueDict is not None:
         boundaryValue = {}
-        for id,f in boundaryValueDict.items(): boundaryValue.update({id:f(u)})
+        for id,f in boundaryValueDict.items(): boundaryValue.update({id:f(x,u)})
     else:
         boundaryValue = {}
     generateMethod(struct, boundaryValue,
@@ -288,6 +294,13 @@ def createFemDGSolver(Model, space):
 
     writer = SourceWriter(StringWriter())
     writer.emit([struct])
+
+    writer.emit([Declaration(
+        Variable("const bool", "hasAdvection"), initializer=hasAdvection,
+        static=True)])
+    writer.emit([Declaration(
+        Variable("const bool", "hasDiffusion"), initializer=hasDiffusion,
+        static=True)])
 
     print("#################################")
     print(writer.writer.getvalue())

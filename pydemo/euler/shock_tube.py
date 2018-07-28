@@ -9,10 +9,9 @@ from ufl import *
 
 gamma = 1.4
 dim = 2
-from euler import CompressibleEuler as model
-from euler import Sod as initial
-Model = model(dim,gamma)
-initial = initial(dim,gamma)
+from euler import sod as problem
+
+Model, initial = problem(dim,gamma)
 
 parameter.append("parameter")
 parameter.append({"fem.verboserank": -1})

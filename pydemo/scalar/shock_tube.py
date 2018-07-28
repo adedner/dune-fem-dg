@@ -5,9 +5,15 @@ import dune.create as create
 from dune.models.elliptic.formfiles import loadModels
 from dune.femdg import createFemDGSolver
 
-from scalar import RiemanProblem
-# from scalar import Transport1D as Model
-from scalar import Burgers1D as Model
+# from scalar import riemanProblem as problem
+# from scalar import constantTransport as probelm
+# from scalar import cosProblem as problem
+# from scalar import burgersShock as problem
+from scalar import burgersVW as problem
+# from scalar import burgersStationaryShock as problem
+
+Model, initial = problem()
+
 
 parameter.append("parameter")
 parameter.append({"fem.verboserank": -1})
@@ -24,7 +30,6 @@ endTime  = 1.
 
 def useODESolver():
     global count, t, saveTime
-    initial = RiemanProblem( [1], [0] )
 
     spaceName = "dgonb"
     polOrder = 2
