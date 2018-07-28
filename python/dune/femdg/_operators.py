@@ -153,7 +153,7 @@ def createFemDGSolver(Model, space):
 
     hasAdvection = hasattr(Model,"F_c")
     if hasAdvection:
-        advModel = inner(as_matrix(Model.F_c(u)),grad(v))*dx
+        advModel = inner(Model.F_c(u),grad(v))*dx
     else:
         advModel = inner(grad(u-u),grad(v))*dx    # TODO: make a better empty model
     if hasattr(Model,"S_ns"):

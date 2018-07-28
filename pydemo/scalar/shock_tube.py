@@ -8,8 +8,9 @@ from dune.femdg import createFemDGSolver
 # from scalar import riemanProblem as problem
 # from scalar import constantTransport as probelm
 # from scalar import cosProblem as problem
+from scalar import cosProblem as problem
 # from scalar import burgersShock as problem
-from scalar import burgersVW as problem
+# from scalar import burgersVW as problem
 # from scalar import burgersStationaryShock as problem
 
 Model, initial = problem()
@@ -18,7 +19,7 @@ Model, initial = problem()
 parameter.append("parameter")
 parameter.append({"fem.verboserank": -1})
 
-x0,x1,N = [-1, 0], [1, 0.1], [20, 5]
+x0,x1,N = [-1, 0], [1, 0.1], [50, 7]
 grid = structuredGrid(x0,x1,N)
 # grid = create.grid("ALUSimplex", cartesianDomain(x0,x1,N))
 dimR     = 1

@@ -16,17 +16,19 @@ def CompressibleEuler(dim, gamma):
             v = as_vector( [U[i] for i in range(1,dim+1)] )
             rhoEps = U[dim+1]/(gamma-1.)
             kin = dot(v,v) * 0.5*U[0]
-            return [U[0], *(U[0]*v), rhoEps+kin]
+            return as_vector( [U[0], *(U[0]*v), rhoEps+kin] )
         def toPrim(U):
-            return [U[0], Model.velocity(U), Model.pressure(U)]
+            return U[0], Model.velocity(U), Model.pressure(U)
         def F_c(U):
             assert dim==2
             rho, v, p = Model.toPrim(U)
             rE = U[dim+1]
-            res = [ [rho*v[0], rho*v[1]],
+            # TODO make indpendent of dim
+            res = as_matrix([
+                    [rho*v[0], rho*v[1]],
                     [rho*v[0]*v[0] + p, rho*v[0]*v[1]],
                     [rho*v[0]*v[1], rho*v[1]*v[1] + p],
-                    [(rE+p)*v[0], (rE+p)*v[1]] ]
+                    [(rE+p)*v[0], (rE+p)*v[1]] ] )
             return res
         def maxLambda(U,n):
             rho, v, p = Model.toPrim(U)
@@ -48,7 +50,7 @@ def CompressibleEuler(dim, gamma):
     return Model
 
 def riemanProblem(x,x0,UL,UR):
-    return conditional(x[0]<x0,as_vector(UL),as_vector(UR))
+    return conditional(x[0]<x0,UL,UR)
 
 def sod(dim,gamma):
     space = Space(dim,dim+2)
