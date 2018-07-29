@@ -70,6 +70,8 @@ def riemanProblem(x,x0,UL,UR):
 
 def constantTransport():
     return Transport1D, as_vector( [0.1] )
+def shockTransport():
+    return Transport1D, riemanProblem(x[0],-0.5, [1], [0])
 
 def sinProblem():
     return LinearAdvectionDiffusion1DDirichlet, as_vector( [sin(2*pi*x[0])] )

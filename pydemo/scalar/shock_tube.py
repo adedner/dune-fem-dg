@@ -5,10 +5,10 @@ import dune.create as create
 from dune.models.elliptic.formfiles import loadModels
 from dune.femdg import createFemDGSolver
 
-# from scalar import riemanProblem as problem
+from scalar import shockTransport as problem
 # from scalar import constantTransport as probelm
 # from scalar import cosProblem as problem
-from scalar import cosProblem as problem
+# from scalar import cosProblem as problem
 # from scalar import burgersShock as problem
 # from scalar import burgersVW as problem
 # from scalar import burgersStationaryShock as problem
