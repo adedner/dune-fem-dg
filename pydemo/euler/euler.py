@@ -39,26 +39,64 @@ def CompressibleEuler(dim, gamma):
             pL = Model.pressure(U)
             pR = Model.pressure(V)
             return (pL - pR)/(0.5*(pL + pR))
+    return Model
 
+def CompressibleEulerNeuman(dim, gamma):
+    class Model(CompressibleEuler(dim,gamma)):
         def outflowFlux(x,u,n):
             return Model.F_c(u)*n
+        boundaryFlux = {1: outflowFlux}
+    return Model
+def CompressibleEulerDirichlet(dim, gamma):
+    class Model(CompressibleEuler(dim,gamma)):
         def outflowValue(x,u):
             return u
-
-        # boundaryFlux = {1: outflowFlux}
         boundaryValue = {1: outflowValue}
+    return Model
+def CompressibleEulerSlip(dim, gamma):
+    class Model(CompressibleEuler(dim,gamma)):
+        def outflowFlux(x,u,n):
+            _,_, p = CompressibleEuler(dim,gamma).toPrim(u)
+            return as_vector([ 0, *(p*n), 0 ])
+        boundaryFlux = {1: outflowFlux}
     return Model
 
 def riemanProblem(x,x0,UL,UR):
-    return conditional(x[0]<x0,UL,UR)
+    return conditional(x<x0,UL,UR)
 
+def constant(dim,gamma):
+    return CompressibleEulerDirichlet(dim,gamma) ,\
+           as_vector( [0.1,0.,0.,0.1] ),\
+           [-1, 0], [1, 0.1], [50, 5]
 def sod(dim,gamma):
     space = Space(dim,dim+2)
     x = SpatialCoordinate(space.cell())
-    return CompressibleEuler(dim,gamma) ,\
-           riemanProblem( x, 0.,
+    return CompressibleEulerNeuman(dim,gamma) ,\
+           riemanProblem( x[0], 0.,
                           CompressibleEuler(dim,gamma).toCons([1,0,0,1]),
-                          CompressibleEuler(dim,gamma).toCons([0.125,0,0,0.1]) )
-def constant(dim,gamma):
-    return CompressibleEuler(dim,gamma) ,\
-           as_vector( [0.1,0.,0.,0.1] )
+                          CompressibleEuler(dim,gamma).toCons([0.125,0,0,0.1])),\
+           [-1, 0], [1, 0.1], [50, 5]
+def radialSod1(dim,gamma):
+    space = Space(dim,dim+2)
+    x = SpatialCoordinate(space.cell())
+    return CompressibleEulerDirichlet(dim,gamma) ,\
+           riemanProblem( sqrt(dot(x,x)), 0.3,
+                          CompressibleEuler(dim,gamma).toCons([1,0,0,1]),
+                          CompressibleEuler(dim,gamma).toCons([0.125,0,0,0.1])),\
+           [-1, -1], [1, 1], [50, 50]
+def radialSod2(dim,gamma):
+    space = Space(dim,dim+2)
+    x = SpatialCoordinate(space.cell())
+    return CompressibleEulerNeuman(dim,gamma) ,\
+           riemanProblem( sqrt(dot(x,x)), 0.3,
+                          CompressibleEuler(dim,gamma).toCons([0.125,0,0,0.1]),
+                          CompressibleEuler(dim,gamma).toCons([1,0,0,1])),\
+           [-1, -1], [1, 1], [50, 50]
+def radialSod3(dim,gamma):
+    space = Space(dim,dim+2)
+    x = SpatialCoordinate(space.cell())
+    return CompressibleEulerSlip(dim,gamma) ,\
+           riemanProblem( sqrt(dot(x,x)), 0.3,
+                          CompressibleEuler(dim,gamma).toCons([1,0,0,1]),
+                          CompressibleEuler(dim,gamma).toCons([0.125,0,0,0.1])),\
+           [-1, -1], [1, 1], [50, 50]

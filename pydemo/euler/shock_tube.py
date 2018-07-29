@@ -10,13 +10,13 @@ from ufl import *
 gamma = 1.4
 dim = 2
 from euler import sod as problem
+# from euler import radialSod3 as problem
 
-Model, initial = problem(dim,gamma)
+Model, initial, x0, x1, N = problem(dim,gamma)
 
 parameter.append("parameter")
 parameter.append({"fem.verboserank": -1})
 
-x0,x1,N = [-1, 0], [1, 0.1], [50, 5]
 grid = structuredGrid(x0,x1,N)
 # grid = create.grid("ALUSimplex", cartesianDomain(x0,x1,N))
 dimR      = 4
