@@ -79,7 +79,7 @@ def constant(dim,gamma):
 def sod(dim,gamma):
     space = Space(dim,dim+2)
     x = SpatialCoordinate(space.cell())
-    return CompressibleEulerNeuman(dim,gamma) ,\
+    return CompressibleEulerDirichlet(dim,gamma) ,\
            riemanProblem( x[0], 0.,
                           CompressibleEuler(dim,gamma).toCons([1,0,0,1]),
                           CompressibleEuler(dim,gamma).toCons([0.125,0,0,0.1])),\

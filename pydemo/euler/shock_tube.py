@@ -75,18 +75,21 @@ def useODESolver():
     space = create.space(spaceName, grid, order=polOrder, dimrange=dimR)
     u_h = initialize(space)
     rho, v, p = Model.toPrim(u_h)
+
     operator = createFemDGSolver( Model, space, limiter='default' )
     # operator.setTimeStepSize(dt)
 
     start = time.time()
+    # operator.applyLimiter( u_h );
     grid.writeVTK(name,
         pointdata=[u_h],
-        celldata={"density":rho, "pressure":p},
+        # celldata={"density":rho, "pressure":p}, # bug: density not shown correctly
+        celldata={"pressure":p},
         cellvector={"velocity":v},
         number=count)
     while t < endTime:
-        # operator.applyLimiter( u_h );
         operator.solve(target=u_h)
+        # operator.applyLimiter( u_h );
         dt = operator.deltaT()
         t += dt
         if t > saveTime:
@@ -94,13 +97,13 @@ def useODESolver():
             count += 1
             grid.writeVTK(name,
                 pointdata=[u_h],
-                celldata={"density":rho, "pressure":p},
+                celldata={"pressure":p},
                 cellvector={"velocity":v},
                 number=count)
             saveTime += saveStep
     grid.writeVTK(name,
         pointdata=[u_h],
-        celldata={"density":rho, "pressure":p},
+        celldata={"pressure":p},
         cellvector={"velocity":v},
         number=count)
     print("time loop:",time.time()-start)
