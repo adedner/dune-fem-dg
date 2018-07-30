@@ -190,47 +190,8 @@ def createFemDGSolver(Model, space,
 
     _, destinationIncludes, destinationType, _, _, _ = space.storage
 
-    includes  = ["dune/fem-dg/solver/dg.hh"]
-    includes += space._includes + destinationIncludes
-    includes += ["dune/fem/schemes/diffusionmodel.hh", "dune/fempy/parameter.hh"]
-
-    additionalType = 'Additional< typename ' + spaceType + '::FunctionSpaceType >'
-
-    solverId   = "Dune::Fem::Solver::Enum::fem"
-    formId     = "Dune::Fem::Formulation::Enum::primal"
-    limiterId  = "Dune::Fem::AdvectionLimiter::Enum::limited"
-    advFluxId  = "Dune::Fem::AdvectionFlux::Enum::llf"
-    diffFluxId = "Dune::Fem::DiffusionFlux::Enum::primal"
-    if limiter == None or limiter == False or limiter.lower() == "unlimiter":
-        limiterId = "Dune::Fem::AdvectionLimiter::Enum::unlimited"
-
-    typeName = 'Dune::Fem::DGOperator< ' +\
-            destinationType + ', ' +\
-            advModelType + ', ' + diffModelType + ', ' + additionalType +\
-            " >"
-
-    constructor = Constructor(['const '+spaceType + ' &space',
-                               'const '+advModelType + ' &advectionModel',
-                               'const '+diffModelType + ' &diffusionModel'
-                              ],
-                              ['return new DuneType(space, advectionModel, diffusionModel);'],
-                              ['"space"_a',
-                               '"advectionModel"_a',
-                               '"diffusionModel"_a',
-                               'pybind11::keep_alive< 1, 2 >()',
-                               'pybind11::keep_alive< 1, 3 >()',
-                               'pybind11::keep_alive< 1, 4 >()'])
-
-    # add method activated to inspect limited cells.
-    setTimeStepSize = Method('setTimeStepSize', '&DuneType::setTimeStepSize')
-    applyLimiter = Method('applyLimiter', '''[](
-        DuneType &self, typename DuneType::DestinationType &u) {
-        self.limit(u); }''' );
-
-    # add method to obtain time step size
-    deltaT = Method('deltaT', '&DuneType::deltaT')
-
-    # extra methods for limiter and time step control
+    ###'###############################################
+    ### extra methods for limiter and time step control
     struct = Struct('Additional', targs=['class FunctionSpace'])
     struct.append(TypeAlias('DomainType','typename FunctionSpace::DomainType'))
     struct.append(TypeAlias('RangeType','typename FunctionSpace::RangeType'))
@@ -321,6 +282,19 @@ def createFemDGSolver(Model, space,
     struct.append([Declaration(
         Variable("const bool", "hasDiffusion"), initializer=hasDiffusion,
         static=True)])
+
+    ###################################################
+    ## choose details of discretization (i.e. fluxes)
+    ## default settings:
+    solverId   = "Dune::Fem::Solver::Enum::fem"
+    formId     = "Dune::Fem::Formulation::Enum::primal"
+    limiterId  = "Dune::Fem::AdvectionLimiter::Enum::limited"
+    advFluxId  = "Dune::Fem::AdvectionFlux::Enum::llf"
+    diffFluxId = "Dune::Fem::DiffusionFlux::Enum::cdg2"
+
+    if limiter == None or limiter == False or limiter.lower() == "unlimiter":
+        limiterId = "Dune::Fem::AdvectionLimiter::Enum::unlimited"
+
     struct.append([Declaration(
         Variable("const Dune::Fem::Solver::Enum", "solverId = " + solverId),
         static=True)])
@@ -343,6 +317,40 @@ def createFemDGSolver(Model, space,
     print("#################################")
     print(writer.writer.getvalue())
     print("#################################")
+
+    ################################################################
+    ### Construct DuneType, includes, and extra methods/constructors
+    includes  = ["dune/fem-dg/solver/dg.hh"]
+    includes += space._includes + destinationIncludes
+    includes += ["dune/fem/schemes/diffusionmodel.hh", "dune/fempy/parameter.hh"]
+
+    additionalType = 'Additional< typename ' + spaceType + '::FunctionSpaceType >'
+
+    typeName = 'Dune::Fem::DGOperator< ' +\
+            destinationType + ', ' +\
+            advModelType + ', ' + diffModelType + ', ' + additionalType +\
+            " >"
+
+    constructor = Constructor(['const '+spaceType + ' &space',
+                               'const '+advModelType + ' &advectionModel',
+                               'const '+diffModelType + ' &diffusionModel'
+                              ],
+                              ['return new DuneType(space, advectionModel, diffusionModel);'],
+                              ['"space"_a',
+                               '"advectionModel"_a',
+                               '"diffusionModel"_a',
+                               'pybind11::keep_alive< 1, 2 >()',
+                               'pybind11::keep_alive< 1, 3 >()',
+                               'pybind11::keep_alive< 1, 4 >()'])
+
+    # add method activated to inspect limited cells.
+    setTimeStepSize = Method('setTimeStepSize', '&DuneType::setTimeStepSize')
+    applyLimiter = Method('applyLimiter', '''[](
+        DuneType &self, typename DuneType::DestinationType &u) {
+        self.limit(u); }''' );
+
+    # add method to obtain time step size
+    deltaT = Method('deltaT', '&DuneType::deltaT')
 
     return load(includes, typeName, constructor, setTimeStepSize, deltaT, applyLimiter,
               preamble=writer.writer.getvalue()).\
