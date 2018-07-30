@@ -31,11 +31,13 @@ namespace Fem
   class DGOperator : public Fem::SpaceOperatorInterface< DestinationImp >
   {
   public:
-    static const Solver::Enum solverId = Additional::solverId;
-    static const Formulation::Enum formId = Additional::formId;
-    static const AdvectionLimiter::Enum limiterId = Additional::limiterId;
-    static const AdvectionFlux::Enum advFluxId = Additional::advFluxId;
-    static const DiffusionFlux::Enum diffFluxId = Additional::diffFluxId;
+    static const Solver::Enum solverId             = Additional::solverId;
+    static const Formulation::Enum formId          = Additional::formId;
+    static const AdvectionLimiter::Enum limiterId  = Additional::limiterId;
+    // for valid advection fluxes see dune/fem-dg/operator/fluxes/advection/parameters.hh
+    static const AdvectionFlux::Enum advFluxId     = Additional::advFluxId;
+    // for valid diffusion fluxes see dune/fem-dg/operator/fluxes/diffusion/parameters.hh
+    static const DiffusionFlux::Enum diffFluxId    = Additional::diffFluxId;
     typedef DestinationImp   DestinationType;
     typedef typename DestinationType :: DiscreteFunctionSpaceType    DiscreteFunctionSpaceType;
     typedef typename DiscreteFunctionSpaceType :: FunctionSpaceType  FunctionSpaceType;
@@ -47,7 +49,7 @@ namespace Fem
     typedef typename GridType :: CollectiveCommunication          CollectiveCommunicationType;
     typedef TimeProvider< CollectiveCommunicationType >           TimeProviderType;
 
-    typedef ModelWrapper< GridType, AdvectionModel, Additional >  ModelType;
+    typedef ModelWrapper< GridType, AdvectionModel, DiffusionModel, Additional >  ModelType;
 
     static constexpr bool symmetric  =  false ;
     static constexpr bool matrixfree =  true  ;
@@ -57,8 +59,10 @@ namespace Fem
 
     typedef DefaultOperatorTraits< ModelType, DestinationType, AdvectionFluxType, DiffusionFluxType >  OpTraits;
 
-    typedef typename AdvectionDiffusionOperatorSelector< OpTraits, formId, limiterId > :: FullOperatorType
-      DGOperatorType ;
+    //typedef typename AdvectionDiffusionOperatorSelector< OpTraits, formId, limiterId > :: FullOperatorType
+    //  DGOperatorType ;
+
+    typedef typename AdvectionDiffusionOperatorSelector< OpTraits, formId, limiterId > :: ExplicitOperatorType  DGOperatorType ;
 
     // solver selection, available fem, istl, petsc, ...
     typedef typename MatrixFreeSolverSelector< solverId, symmetric > :: template LinearInverseOperatorType< DiscreteFunctionSpaceType, DiscreteFunctionSpaceType >  LinearSolverType ;
@@ -78,7 +82,7 @@ namespace Fem
       : space_( space ),
         extra_(),
         tp_( space_.gridPart().comm() ),
-        model_(advectionModel),
+        model_( advectionModel, diffusionModel ),
         dgOperator_( space.gridPart(), model_, extra_, name() ),
         rkSolver_( tp_, dgOperator_, dgOperator_, dgOperator_, name() ),
         initialized_( false )
@@ -97,6 +101,8 @@ namespace Fem
         tp_.init( fixedTimeStep_ );
       else
         tp_.init();
+
+      std::cout << "cfl = " << double(tp_.factor()) << std::endl;
     }
 
     const DiscreteFunctionSpaceType& space () const { return space_; }
@@ -106,7 +112,7 @@ namespace Fem
     //! evaluate the operator
     void operator()( const DestinationType& arg, DestinationType& dest ) const
     {
-      dest.assign( arg );
+      //dest.assign( arg );
       solve( dest );
     }
 
