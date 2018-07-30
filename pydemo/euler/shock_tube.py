@@ -17,15 +17,13 @@ Model, initial, x0, x1, N, name = problem(dim,gamma)
 parameter.append("parameter")
 parameter.append({"fem.verboserank": -1})
 
-grid = structuredGrid(x0,x1,N)
-# grid = create.grid("ALUSimplex", cartesianDomain(x0,x1,N))
-dimR      = 4
-t = 0
-dt = 1e-5
+dimR     = 4
+t        = 0
+dt       = 1e-3
 saveStep = 0.01
 saveTime = saveStep
-count = 0
-endTime = 0.4
+count     = 0
+endTime   = 0.4
 
 def initialize(space):
     lagOrder = 1 # space.order
@@ -68,15 +66,15 @@ def useGalerkinOp():
     grid.writeVTK(name, pointdata=[u_h], number=count)
     print("time loop:",time.time()-start)
 
-def useODESolver():
+def useODESolver(polOrder=2, limiter='default'):
     global count, t, dt, saveTime
     spaceName = "dgonb"
-    polOrder = 2
+    polOrder = polOrder
     space = create.space(spaceName, grid, order=polOrder, dimrange=dimR)
     u_h = initialize(space)
     rho, v, p = Model.toPrim(u_h)
 
-    operator = createFemDGSolver( Model, space, limiter='default' )
+    operator = createFemDGSolver( Model, space, limiter=limiter )
     # operator.setTimeStepSize(dt)
 
     start = time.time()
@@ -84,7 +82,7 @@ def useODESolver():
     grid.writeVTK(name,
         pointdata=[u_h],
         # celldata={"density":rho, "pressure":p}, # bug: density not shown correctly
-        celldata={"pressure":p},
+        celldata={"pressure":p, "maxLambda":Model.maxLambda(0,0,u_h,as_vector([1,0]))},
         cellvector={"velocity":v},
         number=count)
     while t < endTime:
@@ -97,15 +95,29 @@ def useODESolver():
             count += 1
             grid.writeVTK(name,
                 pointdata=[u_h],
-                celldata={"pressure":p},
+                celldata={"pressure":p, "maxLambda":Model.maxLambda(0,0,u_h,as_vector([1,0]))},
                 cellvector={"velocity":v},
                 number=count)
             saveTime += saveStep
     grid.writeVTK(name,
         pointdata=[u_h],
-        celldata={"pressure":p},
+        celldata={"pressure":p, "maxLambda":Model.maxLambda(0,0,u_h,as_vector([1,0]))},
         cellvector={"velocity":v},
         number=count)
     print("time loop:",time.time()-start)
 
-useODESolver()
+
+if True:
+    grid = structuredGrid(x0,x1,N)
+    # grid = create.grid("ALUSimplex", cartesianDomain(x0,x1,N))
+    useODESolver(2,'default')      # third order with limiter
+elif False:
+    N = [n*10 for n in N]
+    grid = structuredGrid(x0,x1,N)
+    # grid = create.grid("ALUSimplex", cartesianDomain(x0,x1,N))
+    useODESolver(0,None)           # FV scheme
+elif False:
+    N = [n*10 for n in N]
+    grid = structuredGrid(x0,x1,N)
+    # grid = create.grid("ALUSimplex", cartesianDomain(x0,x1,N))
+    useODESolver(0,'default')      # FV scheme with limiter

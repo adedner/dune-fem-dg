@@ -327,9 +327,9 @@ def createFemDGSolver(Model, space,
     writer = SourceWriter(StringWriter())
     writer.emit([struct])
 
-    print("#################################")
-    print(writer.writer.getvalue())
-    print("#################################")
+    # print("#################################")
+    # print(writer.writer.getvalue())
+    # print("#################################")
 
     ################################################################
     ### Construct DuneType, includes, and extra methods/constructors

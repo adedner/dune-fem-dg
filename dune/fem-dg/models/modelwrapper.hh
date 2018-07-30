@@ -365,7 +365,11 @@ namespace Fem
     {
       // TODO: add a max speed for the diffusion time step control
       assert( hasAdvection );
-      advspeed = AdditionalType::maxSpeed( time(), local.entity(), local.quadraturePoint(), normal, u );
+      double len = normal.two_norm();
+      DomainType unitNormal(normal);
+      unitNormal /= len;
+      advspeed = AdditionalType::maxSpeed( time(), local.entity(), local.quadraturePoint(), unitNormal, u );
+      advspeed *= len;
       totalspeed = advspeed;
     }
 
