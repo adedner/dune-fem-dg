@@ -9,8 +9,8 @@ from ufl import *
 
 gamma = 1.4
 dim = 2
-# from euler import sod as problem
-from euler import radialSod3 as problem
+from euler import sod as problem
+# from euler import radialSod3 as problem
 
 Model, initial, x0, x1, N, name = problem(dim,gamma)
 
@@ -74,7 +74,6 @@ def useODESolver():
     polOrder = 2
     space = create.space(spaceName, grid, order=polOrder, dimrange=dimR)
     u_h = initialize(space)
-    u_h_n = u_h.copy(name="previous")
     rho, v, p = Model.toPrim(u_h)
     operator = createFemDGSolver( Model, space, limiter=None )
     # operator.setTimeStepSize(dt)
@@ -86,9 +85,8 @@ def useODESolver():
         cellvector={"velocity":v},
         number=count)
     while t < endTime:
-        u_h_n.assign(u_h)
-        # operator.applyLimiter( u_h_n );
-        operator(u_h_n, u_h)
+        # operator.applyLimiter( u_h );
+        operator.solve(target=u_h)
         dt = operator.deltaT()
         t += dt
         if t > saveTime:

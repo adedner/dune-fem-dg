@@ -112,7 +112,7 @@ namespace Fem
     //! evaluate the operator
     void operator()( const DestinationType& arg, DestinationType& dest ) const
     {
-      //dest.assign( arg );
+      dest.assign( arg );
       solve( dest );
     }
 

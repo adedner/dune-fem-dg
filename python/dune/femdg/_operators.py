@@ -154,12 +154,13 @@ def createFemDGSolver(Model, space,
     x = SpatialCoordinate(space.cell())
     t = NamedConstant(space,"time")
 
-    hasAdvection = hasattr(Model,"F_c")
-    if hasAdvection:
+    hasFlux = hasattr(Model,"F_c")
+    if hasFlux:
         advModel = inner(Model.F_c(t,x,u),grad(v))*dx
     else:
         advModel = inner(t*grad(u-u),grad(v))*dx    # TODO: make a better empty model
-    if hasattr(Model,"S_ns"):
+    hasNonStiffSource = hasattr(Model,"S_ns")
+    if hasNonStiffSource:
         advModel += inner(as_vector(S_ns(t,x,u,grad(u))),v)*dx
     else:
         advModel += inner(t*u,v)*dx
@@ -169,7 +170,8 @@ def createFemDGSolver(Model, space,
         diffModel = inner(Model.F_v(t,x,u,grad(u)),grad(v))*dx
     else:
         diffModel = inner(t*grad(u-u),grad(v))*dx   # TODO: make a better empty model
-    if hasattr(Model,"S_s"):
+    hasStiffSource = hasattr(Model,"S_s")
+    if hasStiffSource:
         diffModel += inner(as_vector(S_s(t,x,u,grad(u))),v)*dx
     else:
         advModel += inner(t*u,v)*dx
@@ -276,11 +278,22 @@ def createFemDGSolver(Model, space,
             targs=['class Entity, class Point'], static=True,
             predefined=predefined)
 
+    ##################################
+    ## Add 'has*' properties for model
     struct.append([Declaration(
-        Variable("const bool", "hasAdvection"), initializer=hasAdvection,
+        Variable("const bool", "hasAdvection"), initializer=hasFlux or hasNonStiffSource,
         static=True)])
     struct.append([Declaration(
         Variable("const bool", "hasDiffusion"), initializer=hasDiffusion,
+        static=True)])
+    struct.append([Declaration(
+        Variable("const bool", "hasStiffSource"), initializer=hasStiffSource,
+        static=True)])
+    struct.append([Declaration(
+        Variable("const bool", "hasNonStiffSource"), initializer=hasNonStiffSource,
+        static=True)])
+    struct.append([Declaration(
+        Variable("const bool", "hasFlux"), initializer=hasFlux,
         static=True)])
 
     ###################################################
@@ -344,14 +357,16 @@ def createFemDGSolver(Model, space,
                                'pybind11::keep_alive< 1, 4 >()'])
 
     # add method activated to inspect limited cells.
-    setTimeStepSize = Method('setTimeStepSize', '&DuneType::setTimeStepSize')
     applyLimiter = Method('applyLimiter', '''[](
         DuneType &self, typename DuneType::DestinationType &u) {
         self.limit(u); }''' );
-
     # add method to obtain time step size
     deltaT = Method('deltaT', '&DuneType::deltaT')
+    # add method to set a fixed time step
+    setTimeStepSize = Method('setTimeStepSize', '&DuneType::setTimeStepSize')
+    # add method to solve (not requiring u_h_n)
+    solve = Method('solve', '&DuneType::solve', extra=['"target"_a'])
 
-    return load(includes, typeName, constructor, setTimeStepSize, deltaT, applyLimiter,
+    return load(includes, typeName, constructor, setTimeStepSize, deltaT, applyLimiter, solve,
               preamble=writer.writer.getvalue()).\
                     Operator( space, advModel, diffModel )
