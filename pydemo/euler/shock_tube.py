@@ -75,7 +75,7 @@ def useODESolver():
     space = create.space(spaceName, grid, order=polOrder, dimrange=dimR)
     u_h = initialize(space)
     rho, v, p = Model.toPrim(u_h)
-    operator = createFemDGSolver( Model, space, limiter=None )
+    operator = createFemDGSolver( Model, space, limiter='default' )
     # operator.setTimeStepSize(dt)
 
     start = time.time()
