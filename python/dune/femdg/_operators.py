@@ -152,23 +152,27 @@ def createFemDGSolver(Model, space,
     v = TestFunction(space)
     n = FacetNormal(space.cell())
     x = SpatialCoordinate(space.cell())
-    # t = NamedConstant(space,"time")
+    t = NamedConstant(space,"time")
 
     hasAdvection = hasattr(Model,"F_c")
     if hasAdvection:
-        advModel = inner(Model.F_c(x,u),grad(v))*dx
+        advModel = inner(Model.F_c(t,x,u),grad(v))*dx
     else:
-        advModel = inner(grad(u-u),grad(v))*dx    # TODO: make a better empty model
+        advModel = inner(t*grad(u-u),grad(v))*dx    # TODO: make a better empty model
     if hasattr(Model,"S_ns"):
-        advModel += inner(as_vector(S_ns(x,u,grad(u))),v)*dx
+        advModel += inner(as_vector(S_ns(t,x,u,grad(u))),v)*dx
+    else:
+        advModel += inner(t*u,v)*dx
 
     hasDiffusion = hasattr(Model,"F_v")
     if hasDiffusion:
-        diffModel = inner(Model.F_v(x,u,grad(u)),grad(v))*dx
+        diffModel = inner(Model.F_v(t,x,u,grad(u)),grad(v))*dx
     else:
-        diffModel = inner(grad(u-u),grad(v))*dx   # TODO: make a better empty model
+        diffModel = inner(t*grad(u-u),grad(v))*dx   # TODO: make a better empty model
     if hasattr(Model,"S_s"):
-        diffModel += inner(as_vector(S_s(x,u,grad(u))),v)*dx
+        diffModel += inner(as_vector(S_s(t,x,u,grad(u))),v)*dx
+    else:
+        advModel += inner(t*u,v)*dx
 
     advModel  = create.model("elliptic",space.grid, advModel)
     diffModel = create.model("elliptic",space.grid, diffModel)
@@ -199,10 +203,10 @@ def createFemDGSolver(Model, space,
     diffFluxId = "Dune::Fem::DiffusionFlux::Enum::primal"
     if limiter == None or limiter == False or limiter.lower() == "unlimiter":
         limiterId = "Dune::Fem::AdvectionLimiter::Enum::unlimited"
+
     typeName = 'Dune::Fem::DGOperator< ' +\
             destinationType + ', ' +\
-            advModelType + ', ' + diffModelType + ', ' + additionalType + ' ,' +\
-            ", ".join([solverId,formId,limiterId,advFluxId,diffFluxId]) +\
+            advModelType + ', ' + diffModelType + ', ' + additionalType +\
             " >"
 
     constructor = Constructor(['const '+spaceType + ' &space',
@@ -236,20 +240,22 @@ def createFemDGSolver(Model, space,
     arg_n = Variable("const DomainType &", "normal")
     predefined = {n: arg_n}
     maxSpeed = getattr(Model,"maxLambda",None)
-    maxSpeed = maxSpeed(x,u,n)
+    maxSpeed = maxSpeed(t,x,u,n)
     generateMethod(struct, maxSpeed,
             'double', 'maxSpeed',
-            args=['const Entity &entity', 'const Point &x',
+            args=['const double &t',
+                  'const Entity &entity', 'const Point &x',
                   'const DomainType &normal',
                   'const RangeType &u'],
             targs=['class Entity, class Point'], static=True,
             predefined=predefined)
 
     velocity = getattr(Model,"velocity",None)
-    velocity = velocity(x,u)
+    velocity = velocity(t,x,u)
     generateMethod(struct, velocity,
             'DomainType', 'velocity',
-            args=['const Entity &entity', 'const Point &x',
+            args=['const double &t',
+                  'const Entity &entity', 'const Point &x',
                   'const RangeType &u'],
             targs=['class Entity, class Point'], static=True,
             predefined=predefined)
@@ -280,12 +286,13 @@ def createFemDGSolver(Model, space,
     boundaryFluxDict = getattr(Model,"boundaryFlux",None)
     if boundaryFluxDict is not None:
         boundaryFlux = {}
-        for id,f in boundaryFluxDict.items(): boundaryFlux.update({id:f(x,u,n)})
+        for id,f in boundaryFluxDict.items(): boundaryFlux.update({id:f(t,x,u,n)})
     else:
         boundaryFlux = {}
     generateMethod(struct, boundaryFlux,
             'bool', 'boundaryFlux',
             args=['const int bndId',
+                  'const double &t',
                   'const Entity& entity', 'const Point &x',
                   'const DomainType &normal',
                   'const RangeType &u',
@@ -295,27 +302,43 @@ def createFemDGSolver(Model, space,
     boundaryValueDict = getattr(Model,"boundaryValue",None)
     if boundaryValueDict is not None:
         boundaryValue = {}
-        for id,f in boundaryValueDict.items(): boundaryValue.update({id:f(x,u)})
+        for id,f in boundaryValueDict.items(): boundaryValue.update({id:f(t,x,u)})
     else:
         boundaryValue = {}
     generateMethod(struct, boundaryValue,
             'bool', 'boundaryValue',
             args=['const int bndId',
+                  'const double &t',
                   'const Entity& entity', 'const Point &x',
                   'const RangeType &u',
                   'RangeType &result'],
             targs=['class Entity, class Point'], static=True,
             predefined=predefined)
 
-    writer = SourceWriter(StringWriter())
-    writer.emit([struct])
-
-    writer.emit([Declaration(
+    struct.append([Declaration(
         Variable("const bool", "hasAdvection"), initializer=hasAdvection,
         static=True)])
-    writer.emit([Declaration(
+    struct.append([Declaration(
         Variable("const bool", "hasDiffusion"), initializer=hasDiffusion,
         static=True)])
+    struct.append([Declaration(
+        Variable("const Dune::Fem::Solver::Enum", "solverId = " + solverId),
+        static=True)])
+    struct.append([Declaration(
+        Variable("const Dune::Fem::Formulation::Enum", "formId = " + formId),
+        static=True)])
+    struct.append([Declaration(
+        Variable("const Dune::Fem::AdvectionLimiter::Enum", "limiterId = " + limiterId),
+        static=True)])
+    struct.append([Declaration(
+        Variable("const Dune::Fem::AdvectionFlux::Enum", "advFluxId = " + advFluxId),
+        static=True)])
+    struct.append([Declaration(
+        Variable("const Dune::Fem::DiffusionFlux::Enum", "diffFluxId = " + diffFluxId),
+        static=True)])
+
+    writer = SourceWriter(StringWriter())
+    writer.emit([struct])
 
     print("#################################")
     print(writer.writer.getvalue())

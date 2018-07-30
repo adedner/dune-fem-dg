@@ -3,16 +3,17 @@ from dune.ufl import Space
 class Transport1D:
     name = 'transport'
 
-    def F_c(x,U):
+    def F_c(t,x,U):
         return as_matrix( [ [U[0], 0] ] )
 
-    def outflowValue(x,u):
+    def outflowValue(t,x,u):
         return u
-    boundaryValue = {1: outflowValue}
+    boundaryValue = {}
+    for i in range(1,5): boundaryValue.update( {i: outflowValue} )
 
-    def maxLambda(x,U,n):
+    def maxLambda(t,x,U,n):
         return abs(n[0])
-    def velocity(x,U):
+    def velocity(t,x,U):
         return as_vector( [1,0] )
     def physical(U):
         return 1
@@ -22,41 +23,43 @@ class Transport1D:
 class LinearAdvectionDiffusion1D:
     name = 'linearAD'
 
-    # def F_c(x,U):
+    # def F_c(t,x,U):
     #     return as_matrix( [ [U[0], 0] ] )
-    def F_v(x,U,DU):
+    def F_v(t,x,U,DU):
         return 0.1*DU
-    def maxLambda(x,U,n):
+    def maxLambda(t,x,U,n):
         return abs(n[0])
-    def velocity(x,U):
+    def velocity(t,x,U):
         return as_vector( [0,0] )
     def physical(U):
         return 1
     def jump(U,V):
         return U-V
 class LinearAdvectionDiffusion1DDirichlet(LinearAdvectionDiffusion1D):
-    def dirichletValue(x,u):
+    def dirichletValue(t,x,u):
         return as_vector( [cos(2*pi*x[0])] )
-    boundaryValue = {1: dirichletValue}
+    boundaryValue = {}
+    for i in range(1,5): boundaryValue.update( {i: dirichletValue} )
 class LinearAdvectionDiffusion1DNeuman(LinearAdvectionDiffusion1D):
-    def outflowFlux(x,u,n):
+    def zeroFlux(t,x,u,n):
         return 0
-        # return LinearAdvectionDiffusion1D.F_c(u)*n
-    boundaryFlux = {1: outflowFlux}
+    boundaryFlux = {}
+    for i in range(1,5): boundaryFlux.update( {i: zeroFlux} )
 
 class Burgers1D:
     name = 'burgers'
 
-    def F_c(x,U):
+    def F_c(t,x,U):
         return as_matrix( [ [U[0]*U[0]/2, 0] ] )
 
-    def outflowValue(x,u):
+    def outflowValue(t,x,u):
         return u
-    boundaryValue = {1: outflowValue}
+    boundaryValue = {}
+    for i in range(1,5): boundaryValue.update( {i: outflowValue} )
 
-    def maxLambda(x,U,n):
+    def maxLambda(t,x,U,n):
         return abs(U[0]*n[0])
-    def velocity(x,U):
+    def velocity(t,x,U):
         return as_vector( [U[0],0] )
     def physical(U):
         return 1

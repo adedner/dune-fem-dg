@@ -27,27 +27,15 @@ namespace Fem
   template < class DestinationImp,
              class AdvectionModel,
              class DiffusionModel,
-             class Additional,
-             Solver::Enum solverId             = Solver::Enum::fem,
-             Formulation::Enum formId          = Formulation::Enum::primal,
-             AdvectionLimiter::Enum limiterId  = AdvectionLimiter::Enum::limited,
-             AdvectionFlux::Enum advFluxId     = AdvectionFlux::Enum::llf,
-             DiffusionFlux::Enum diffFluxId    = DiffusionFlux::Enum::primal
-             >
-  class DGOperator;
-
-  template < class DestinationImp,
-             class AdvectionModel,
-             class DiffusionModel,
-             class Additional,
-             Solver::Enum solverId,
-             Formulation::Enum formId,
-             AdvectionLimiter::Enum limiterId,
-             AdvectionFlux::Enum advFluxId,
-             DiffusionFlux::Enum diffFluxId >
+             class Additional>
   class DGOperator : public Fem::SpaceOperatorInterface< DestinationImp >
   {
   public:
+    static const Solver::Enum solverId = Additional::solverId;
+    static const Formulation::Enum formId = Additional::formId;
+    static const AdvectionLimiter::Enum limiterId = Additional::limiterId;
+    static const AdvectionFlux::Enum advFluxId = Additional::advFluxId;
+    static const DiffusionFlux::Enum diffFluxId = Additional::diffFluxId;
     typedef DestinationImp   DestinationType;
     typedef typename DestinationType :: DiscreteFunctionSpaceType    DiscreteFunctionSpaceType;
     typedef typename DiscreteFunctionSpaceType :: FunctionSpaceType  FunctionSpaceType;

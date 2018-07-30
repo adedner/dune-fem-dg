@@ -133,14 +133,18 @@ namespace Fem
     typedef Dune::FieldVector< int, 2 > ModifiedRangeType;
 
     // for Euler equations diffusion is disabled
-    static const bool hasAdvection = true;
-    static const bool hasDiffusion = false;
+    static const bool hasAdvection = AdditionalType::hasAdvection;
+    static const bool hasDiffusion = AdditionalType::hasDiffusion;
 
     using BaseType :: time;
-    using BaseType :: setTime;
     using BaseType :: hasMass;
 
-  public:
+    void setTime (double t)
+    {
+      BaseType::setTime(t);
+      // impl_.time() = t;
+    }
+
     ModelWrapper( const ModelImplementationType& impl )
       : impl_( impl ),
         problem_()
@@ -243,30 +247,31 @@ namespace Fem
     }
 
     template <class LocalEvaluation>
-    inline bool hasBoundaryValue( const LocalEvaluation& local ) const
+    int getBoundaryId( const LocalEvaluation& local ) const
     {
-      return true;
-      Dune::FieldVector< int, dimRange > bndIds;
-      return impl_.isDirichletIntersection( local.intersection(), bndIds );
+      return BoundaryIdProviderType::boundaryId( local.intersection() );
     }
 
-    // return iRight for insertion into the numerical flux
+    template <class LocalEvaluation>
+    inline bool hasBoundaryValue( const LocalEvaluation& local ) const
+    {
+      RangeType u;
+      int id = getBoundaryId( local );
+      return AdditionalType::boundaryValue(id, time(), local.entity(), local.quadraturePoint(), u, u);
+    }
+
+    // return uRight for insertion into the numerical flux
     template <class LocalEvaluation>
     inline void boundaryValue( const LocalEvaluation& local,
                                const RangeType& uLeft,
                                RangeType& uRight ) const
     {
-      uRight = uLeft;
-      return;
-
-
-      Dune::FieldVector< int, dimRange > bndIds;
+      int id = getBoundaryId( local );
 #ifndef NDEBUG
       const bool isDirichlet =
 #endif
-      impl_.isDirichletIntersection( local.intersection(), bndIds );
+      AdditionalType::boundaryValue(id, time(), local.entity(), local.quadraturePoint(), uLeft, uRight);
       assert( isDirichlet );
-      impl_.dirichlet( bndIds[ 0 ], local.quadraturePoint(), uRight );
     }
 
     // boundary condition here is slip boundary cond. <u,n>=0
@@ -277,18 +282,20 @@ namespace Fem
                                 const JacobianRangeType&,
                                 RangeType& gLeft ) const
     {
-      /*
-      // Slip boundary condition
       const DomainType normal = local.intersection().integrationOuterNormal( local.localPosition() );
-
-      const double p = eulerFlux_.pressure( gamma_ , uLeft );
-      gLeft = 0;
-      for ( int i = 0 ; i < dimDomain ; ++i )
-        gLeft[i+1] = normal[i] * p;
-        */
-
-      gLeft = 0;
-      return 0.;
+      int id = getBoundaryId( local );
+#ifndef NDEBUG
+      const bool isFluxBnd =
+#endif
+      AdditionalType::boundaryFlux(id, time(), local.entity(), local.quadraturePoint(), normal, uLeft, gLeft);
+#if 0
+      std::cout << "BoundaryFlux with id=" << id << " with uLeft=" << uLeft
+                << " results in flux=" << gLeft
+                << " --- " << isFluxBnd
+                << std::endl;
+#endif
+      assert( isFluxBnd );
+      return 0; // QUESTION: do something better here?
     }
 
     template <class LocalEvaluation>
@@ -319,7 +326,7 @@ namespace Fem
                           double& advspeed,
                           double& totalspeed ) const
     {
-      advspeed = AdditionalType::maxSpeed( local.entity(), local.quadraturePoint(), normal, u );
+      advspeed = AdditionalType::maxSpeed( time(), local.entity(), local.quadraturePoint(), normal, u );
       totalspeed = advspeed;
     }
 
@@ -337,7 +344,7 @@ namespace Fem
                           const RangeType& u,
                           DomainType& velocity) const
     {
-      velocity = AdditionalType :: velocity( en, x, u );
+      velocity = AdditionalType :: velocity(time(), en, x, u );
     }
 
     // we have physical check for this model
