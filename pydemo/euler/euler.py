@@ -3,10 +3,10 @@ from dune.ufl import Space
 
 def CompressibleEuler(dim, gamma):
     class Model:
-        def velocity(U):
+        def velo(U):
             return as_vector( [U[i]/U[0] for i in range(1,dim+1)] )
         def rhoeps(U):
-            v = Model.velocity(U)
+            v = Model.velo(U)
             kin = dot(v,v) * 0.5*U[0]
             rE = U[dim+1]
             return rE - kin
@@ -18,8 +18,10 @@ def CompressibleEuler(dim, gamma):
             kin = dot(v,v) * 0.5*U[0]
             return as_vector( [U[0], *(U[0]*v), rhoEps+kin] )
         def toPrim(U):
-            return U[0], Model.velocity(U), Model.pressure(U)
-        def F_c(U):
+            return U[0], Model.velo(U), Model.pressure(U)
+
+        # interface methods
+        def F_c(x,U):
             assert dim==2
             rho, v, p = Model.toPrim(U)
             rE = U[dim+1]
@@ -30,9 +32,11 @@ def CompressibleEuler(dim, gamma):
                     [rho*v[0]*v[1], rho*v[1]*v[1] + p],
                     [(rE+p)*v[0], (rE+p)*v[1]] ] )
             return res
-        def maxLambda(U,n):
+        def maxLambda(x,U,n):
             rho, v, p = Model.toPrim(U)
             return abs(dot(v,n)) + sqrt(gamma*p/rho)
+        def velocity(x,U):
+            return Model.velo(U)
         def physical(U):
             return conditional( (U[0]>1e-8), conditional( Model.rhoeps(U) > 1e-8 , 1, 0 ), 0 )
         def jump(U,V):
@@ -44,7 +48,7 @@ def CompressibleEuler(dim, gamma):
 def CompressibleEulerNeuman(dim, gamma):
     class Model(CompressibleEuler(dim,gamma)):
         def outflowFlux(x,u,n):
-            return Model.F_c(u)*n
+            return Model.F_c(x,u)*n
         boundaryFlux = {1: outflowFlux}
     return Model
 def CompressibleEulerDirichlet(dim, gamma):

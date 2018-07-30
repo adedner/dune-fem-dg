@@ -3,16 +3,16 @@ from dune.ufl import Space
 class Transport1D:
     name = 'transport'
 
-    def F_c(U):
+    def F_c(x,U):
         return as_matrix( [ [U[0], 0] ] )
 
     def outflowValue(x,u):
         return u
     boundaryValue = {1: outflowValue}
 
-    def maxLambda(U,n):
+    def maxLambda(x,U,n):
         return abs(n[0])
-    def velocity(U):
+    def velocity(x,U):
         return as_vector( [1,0] )
     def physical(U):
         return 1
@@ -22,13 +22,13 @@ class Transport1D:
 class LinearAdvectionDiffusion1D:
     name = 'linearAD'
 
-    # def F_c(U):
+    # def F_c(x,U):
     #     return as_matrix( [ [U[0], 0] ] )
-    def F_v(U,DU):
+    def F_v(x,U,DU):
         return 0.1*DU
-    def maxLambda(U,n):
+    def maxLambda(x,U,n):
         return abs(n[0])
-    def velocity(U):
+    def velocity(x,U):
         return as_vector( [0,0] )
     def physical(U):
         return 1
@@ -47,16 +47,16 @@ class LinearAdvectionDiffusion1DNeuman(LinearAdvectionDiffusion1D):
 class Burgers1D:
     name = 'burgers'
 
-    def F_c(U):
+    def F_c(x,U):
         return as_matrix( [ [U[0]*U[0]/2, 0] ] )
 
     def outflowValue(x,u):
         return u
     boundaryValue = {1: outflowValue}
 
-    def maxLambda(U,n):
+    def maxLambda(x,U,n):
         return abs(U[0]*n[0])
-    def velocity(U):
+    def velocity(x,U):
         return as_vector( [U[0],0] )
     def physical(U):
         return 1

@@ -69,13 +69,14 @@ def useODESolver():
     space = create.space(spaceName, grid, order=polOrder, dimrange=dimR)
     u_h   = space.interpolate(initial, name='u_h')
     u_h_n = u_h.copy(name="previous")
-    operator = createFemDGSolver( Model, space )
+    operator = createFemDGSolver( Model, space, limiter=None )
     # operator.setTimeStepSize(dt)
 
     start = time.time()
     grid.writeVTK('sod', celldata=[u_h], number=count)
     while t < endTime:
         u_h_n.assign(u_h)
+        # operator.applyLimiter( u_h_n );
         operator(u_h_n, u_h)
         dt = operator.deltaT()
         t += dt

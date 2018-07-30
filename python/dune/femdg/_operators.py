@@ -9,6 +9,7 @@ from dune.common.checkconfiguration import assertHave, preprocessorAssert, Confi
 from dune.generator import Constructor, Method
 from dune.fem.operator import load
 
+from dune.ufl import NamedConstant
 from dune.ufl.tensors import ExprTensor
 from dune.ufl.codegen import generateCode
 from dune.source.cplusplus import assign, TypeAlias, Declaration, Variable,\
@@ -143,33 +144,31 @@ def generateMethod(struct,expr, cppType, name,
 #####################################################
 
 # create DG operator + solver
-def createFemDGSolver(Model, space):
+def createFemDGSolver(Model, space,
+        limiter="default"):
     import dune.create as create
 
     u = TrialFunction(space)
     v = TestFunction(space)
     n = FacetNormal(space.cell())
     x = SpatialCoordinate(space.cell())
+    # t = NamedConstant(space,"time")
 
     hasAdvection = hasattr(Model,"F_c")
     if hasAdvection:
-        advModel = inner(Model.F_c(u),grad(v))*dx
+        advModel = inner(Model.F_c(x,u),grad(v))*dx
     else:
         advModel = inner(grad(u-u),grad(v))*dx    # TODO: make a better empty model
     if hasattr(Model,"S_ns"):
-        advModel += inner(as_vector(S_ns(u,grad(u))),v)*dx
+        advModel += inner(as_vector(S_ns(x,u,grad(u))),v)*dx
 
     hasDiffusion = hasattr(Model,"F_v")
     if hasDiffusion:
-        diffModel = inner(Model.F_v(u,grad(u)),grad(v))*dx
+        diffModel = inner(Model.F_v(x,u,grad(u)),grad(v))*dx
     else:
         diffModel = inner(grad(u-u),grad(v))*dx   # TODO: make a better empty model
     if hasattr(Model,"S_s"):
-        diffModel += inner(as_vector(S_s(u,grad(u))),v)*dx
-
-    # TODO: needs more general treatment of boundaries
-    # advModel  -= inner(dot(Model.F_c(u),n),v)*ds
-    # diffModel -= inner(dot(Model.F_c(u),n),v)*ds
+        diffModel += inner(as_vector(S_s(x,u,grad(u))),v)*dx
 
     advModel  = create.model("elliptic",space.grid, advModel)
     diffModel = create.model("elliptic",space.grid, diffModel)
@@ -193,7 +192,18 @@ def createFemDGSolver(Model, space):
 
     additionalType = 'Additional< typename ' + spaceType + '::FunctionSpaceType >'
 
-    typeName = 'Dune::Fem::DGOperator< ' + destinationType + ', ' + advModelType + ', ' + diffModelType + ', ' + additionalType + ' >'
+    solverId   = "Dune::Fem::Solver::Enum::fem"
+    formId     = "Dune::Fem::Formulation::Enum::primal"
+    limiterId  = "Dune::Fem::AdvectionLimiter::Enum::limited"
+    advFluxId  = "Dune::Fem::AdvectionFlux::Enum::llf"
+    diffFluxId = "Dune::Fem::DiffusionFlux::Enum::primal"
+    if limiter == None or limiter == False or limiter.lower() == "unlimiter":
+        limiterId = "Dune::Fem::AdvectionLimiter::Enum::unlimited"
+    typeName = 'Dune::Fem::DGOperator< ' +\
+            destinationType + ', ' +\
+            advModelType + ', ' + diffModelType + ', ' + additionalType + ' ,' +\
+            ", ".join([solverId,formId,limiterId,advFluxId,diffFluxId]) +\
+            " >"
 
     constructor = Constructor(['const '+spaceType + ' &space',
                                'const '+advModelType + ' &advectionModel',
@@ -209,6 +219,9 @@ def createFemDGSolver(Model, space):
 
     # add method activated to inspect limited cells.
     setTimeStepSize = Method('setTimeStepSize', '&DuneType::setTimeStepSize')
+    applyLimiter = Method('applyLimiter', '''[](
+        DuneType &self, typename DuneType::DestinationType &u) {
+        self.limit(u); }''' );
 
     # add method to obtain time step size
     deltaT = Method('deltaT', '&DuneType::deltaT')
@@ -223,7 +236,7 @@ def createFemDGSolver(Model, space):
     arg_n = Variable("const DomainType &", "normal")
     predefined = {n: arg_n}
     maxSpeed = getattr(Model,"maxLambda",None)
-    maxSpeed = maxSpeed(u,n)
+    maxSpeed = maxSpeed(x,u,n)
     generateMethod(struct, maxSpeed,
             'double', 'maxSpeed',
             args=['const Entity &entity', 'const Point &x',
@@ -233,7 +246,7 @@ def createFemDGSolver(Model, space):
             predefined=predefined)
 
     velocity = getattr(Model,"velocity",None)
-    velocity = velocity(u)
+    velocity = velocity(x,u)
     generateMethod(struct, velocity,
             'DomainType', 'velocity',
             args=['const Entity &entity', 'const Point &x',
@@ -241,6 +254,7 @@ def createFemDGSolver(Model, space):
             targs=['class Entity, class Point'], static=True,
             predefined=predefined)
 
+    # QUESTION: should `physical` actually depend on x? Perhaps even t?
     physical = getattr(Model,"physical",None)
     physical = physical(u)
     generateMethod(struct, physical,
@@ -250,6 +264,7 @@ def createFemDGSolver(Model, space):
             targs=['class Entity, class Point'], static=True,
             predefined=predefined)
 
+    # QUESTION: should `jump` actually depend on x? Perhaps even t?
     w = Coefficient(space)
     predefined.update( {w:Variable("const RangeType &", "w")} )
     jump = getattr(Model,"jump",None)
@@ -306,6 +321,6 @@ def createFemDGSolver(Model, space):
     print(writer.writer.getvalue())
     print("#################################")
 
-    return load(includes, typeName, constructor, setTimeStepSize, deltaT,
+    return load(includes, typeName, constructor, setTimeStepSize, deltaT, applyLimiter,
               preamble=writer.writer.getvalue()).\
                     Operator( space, advModel, diffModel )

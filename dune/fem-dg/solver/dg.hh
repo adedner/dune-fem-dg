@@ -122,6 +122,8 @@ namespace Fem
       solve( dest );
     }
 
+    void limit( DestinationType &u) { dgOperator_.limit(u); }
+
     void solve( DestinationType& dest ) const
     {
       if( !initialized_ )

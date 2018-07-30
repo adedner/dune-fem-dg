@@ -43,6 +43,7 @@ def useODESolver():
     grid.writeVTK(Model.name, celldata=[u_h], number=count)
     while t < endTime:
         u_h_n.assign(u_h)
+        # operator.applyLimiter( u_h_n );
         operator(u_h_n, u_h)
         dt = operator.deltaT()
         t += dt
