@@ -12,6 +12,7 @@
 #include <dune/fem/misc/boundaryidprovider.hh>
 #include <dune/fem/space/common/functionspace.hh>
 
+//#include <dune/fem-dg/operator/fluxes/analyticaleulerflux.hh>
 #include <dune/fem-dg/models/defaultmodel.hh>
 #include <dune/fem-dg/models/defaultprobleminterfaces.hh>
 
@@ -74,8 +75,18 @@ namespace Fem
 
       void evaluate(const DomainType& x, const double time, RangeType& res) const
       {
-        // TODO: extract from ModelImp
-        res = 0 ;
+        res = 0;
+        if( x[0] < 0.5 )
+        {
+          // default is sod's rp
+          res[ 0 ] = 1.0;
+          res[ dimDomain+1 ] = 1.0;
+        }
+        else
+        {
+          res[ 0 ] = 0.125;
+          res[ dimDomain + 1 ] = 0.1;
+        }
       }
     };
 
@@ -102,16 +113,20 @@ namespace Fem
    *
    * \ingroup AnalyticalModels
    */
-  template< class GridImp, class ModelImp, class AdditionalImp >
+  template< class GridImp,
+            class AdvectionModelImp,
+            class DiffusionModelImp,
+            class AdditionalImp >
   class ModelWrapper :
-    public DefaultModel< ModelWrapperTraits< GridImp, detail::EmptyProblem< ModelImp > > >
+    public DefaultModel< ModelWrapperTraits< GridImp, detail::EmptyProblem< AdvectionModelImp > > >
   {
   public:
     typedef GridImp                                      GridType;
-    typedef ModelWrapperTraits< GridType, detail::EmptyProblem< ModelImp > > Traits;
+    typedef ModelWrapperTraits< GridType, detail::EmptyProblem< AdvectionModelImp > > Traits;
     typedef DefaultModel< Traits >                       BaseType;
     typedef typename Traits::ProblemType                 ProblemType;
-    typedef ModelImp                                     ModelImplementationType;
+    typedef AdvectionModelImp                            AdvectionModelType ;
+    typedef DiffusionModelImp                            DiffusionModelType ;
 
     typedef AdditionalImp                                AdditionalType;
 
@@ -142,11 +157,12 @@ namespace Fem
     void setTime (double t)
     {
       BaseType::setTime(t);
-      // impl_.time() = t;
     }
 
-    ModelWrapper( const ModelImplementationType& impl )
-      : impl_( impl ),
+    ModelWrapper( const AdvectionModelType& advModel, const DiffusionModelType& diffModel )
+      : advection_( advModel ),
+        diffusion_( diffModel ),
+        //eulerFlux_(),
         problem_()
     {
       modified_[ 0 ] = 0;
@@ -156,10 +172,11 @@ namespace Fem
     template <class Entity>
     void setEntity( const Entity& entity ) const
     {
-      impl_.init( entity );
+      if( hasAdvection )
+        advection_.init( entity );
+      if( hasDiffusion )
+        diffusion_.init( entity );
     }
-
-    double gamma () const { return 1.4; }
 
     inline bool hasStiffSource() const { return false; }
     inline bool hasNonStiffSource() const { return false; }
@@ -185,7 +202,8 @@ namespace Fem
                                const JacobianRangeType& du,
                                RangeType & s) const
     {
-      impl_.source( local.quadraturePoint(), u, du, s );
+      assert( hasAdvection );
+      advection_.source( local.quadraturePoint(), u, du, s );
       return 0;
     }
 
@@ -193,10 +211,11 @@ namespace Fem
     template< class LocalEvaluation >
     inline double nonStiffSource( const LocalEvaluation& local,
                                   const RangeType& u,
-                                  const JacobianRangeType& jac,
+                                  const JacobianRangeType& du,
                                   RangeType& s) const
     {
-      s = 0;
+      assert( hasDiffusion );
+      diffusion_.source( local.quadraturePoint(), u, du, s );
       return 0;
     }
 
@@ -215,7 +234,19 @@ namespace Fem
                            const JacobianRangeType& du,
                            JacobianRangeType& f ) const
     {
-      impl_.diffusiveFlux( local.quadraturePoint(), u, du, f);
+      assert( hasAdvection );
+      advection_.diffusiveFlux( local.quadraturePoint(), u, du, f);
+
+      //JacobianRangeType fTest;
+      //eulerFlux_.analyticalFlux( gamma() , u , fTest );
+
+      /*
+      if( ( f - fTest ).infinity_norm() > 1e-10 )
+      {
+        std::cout << f << " diffFlux" << std::endl;
+        std::cout << fTest << " eulerFlux" << std::endl;
+      }
+      */
     }
 
     template <class LocalEvaluation>
@@ -232,6 +263,7 @@ namespace Fem
                                      const double circumEstimate,
                                      const RangeType& u ) const
     {
+      // TODO: implement using diffusion model
       return 0;
     }
 
@@ -242,8 +274,9 @@ namespace Fem
                            const FluxRangeType& du,
                            RangeType& A ) const
     {
+      assert( hasAdvection );
       // TODO: u != ubar and du != dubar
-      impl_.linDiffusiveFlux( u, du, local.quadraturePoint(), u, du, A);
+      advection_.linDiffusiveFlux( u, du, local.quadraturePoint(), u, du, A);
     }
 
     template <class LocalEvaluation>
@@ -295,15 +328,17 @@ namespace Fem
                 << std::endl;
 #endif
       assert( isFluxBnd );
-      return 0; // QUESTION: do something better here?
+      return 0; // QUESTION: do something better here? Yes, return time step restriction if possible
     }
 
     template <class LocalEvaluation>
     void diffusion( const LocalEvaluation& local,
                     const RangeType& u,
-                    const JacobianRangeType& v,
+                    const JacobianRangeType& du,
                     JacobianRangeType& diff ) const
     {
+      assert( hasDiffusion );
+      diffusion_.diffusiveFlux( local.quadraturePoint(), u, du, diff);
     }
 
 
@@ -315,6 +350,7 @@ namespace Fem
                                          const JacobianRangeType& jacLeft,
                                          RangeType& gLeft ) const
     {
+      assert( hasDiffusion );
       return 0;
     }
 
@@ -326,6 +362,7 @@ namespace Fem
                           double& advspeed,
                           double& totalspeed ) const
     {
+      assert( hasAdvection );
       advspeed = AdditionalType::maxSpeed( time(), local.entity(), local.quadraturePoint(), normal, u );
       totalspeed = advspeed;
     }
@@ -344,7 +381,7 @@ namespace Fem
                           const RangeType& u,
                           DomainType& velocity) const
     {
-      velocity = AdditionalType :: velocity(time(), en, x, u );
+      velocity = AdditionalType :: velocity( time(), en, x, u );
     }
 
     // we have physical check for this model
@@ -391,6 +428,7 @@ namespace Fem
                                      const RangeType& uRight,
                                      RangeType& indicator) const
     {
+      indicator = AdditionalType :: jump( it, x, uLeft, uRight );
     }
 
     template< class DiscreteFunction >
@@ -401,7 +439,10 @@ namespace Fem
     }
 
   protected:
-    const ModelImplementationType& impl_;
+    const AdvectionModelType& advection_;
+    const DiffusionModelType& diffusion_;
+
+    //EulerAnalyticalFlux<dimDomain, RangeFieldType > eulerFlux_;
     ProblemType problem_;
     ModifiedRangeType modified_;
   };
