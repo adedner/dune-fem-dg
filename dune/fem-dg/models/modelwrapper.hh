@@ -141,7 +141,6 @@ namespace Fem
     ModelWrapper( const AdvectionModelType& advModel, const DiffusionModelType& diffModel )
       : advection_( advModel ),
         diffusion_( diffModel ),
-        //eulerFlux_(),
         problem_()
     {
       modified_[ 0 ] = 0;
@@ -213,17 +212,6 @@ namespace Fem
     {
       assert( hasAdvection );
       advection_.diffusiveFlux( local.quadraturePoint(), u, du, f);
-
-      //JacobianRangeType fTest;
-      //eulerFlux_.analyticalFlux( gamma() , u , fTest );
-
-      /*
-      if( ( f - fTest ).infinity_norm() > 1e-10 )
-      {
-        std::cout << f << " diffFlux" << std::endl;
-        std::cout << fTest << " eulerFlux" << std::endl;
-      }
-      */
     }
 
     template <class LocalEvaluation>
@@ -334,18 +322,15 @@ namespace Fem
 
     template <class LocalEvaluation>
     inline void maxSpeed( const LocalEvaluation& local,
-                          const DomainType& normal,
+                          const DomainType& unitNormal,
                           const RangeType& u,
                           double& advspeed,
                           double& totalspeed ) const
     {
       // TODO: add a max speed for the diffusion time step control
+      // this needs to be added in diffusionTimeStep
       assert( hasAdvection );
-      double len = normal.two_norm();
-      DomainType unitNormal(normal);
-      unitNormal /= len;
       advspeed = AdditionalType::maxSpeed( time(), local.entity(), local.quadraturePoint(), unitNormal, u );
-      advspeed *= len;
       totalspeed = advspeed;
     }
 
@@ -423,7 +408,6 @@ namespace Fem
     const AdvectionModelType& advection_;
     const DiffusionModelType& diffusion_;
 
-    //EulerAnalyticalFlux<dimDomain, RangeFieldType > eulerFlux_;
     ProblemType problem_;
     ModifiedRangeType modified_;
   };

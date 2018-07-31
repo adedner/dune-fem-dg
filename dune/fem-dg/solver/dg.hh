@@ -10,6 +10,8 @@
 #include <dune/fem/operator/common/spaceoperatorif.hh>
 
 // dune-fem-dg includes
+#include <dune/fem-dg/operator/fluxes/advection/fluxes.hh>
+#include <dune/fem-dg/operator/fluxes/euler/fluxes.hh>
 #include <dune/fem-dg/operator/dg/operatortraits.hh>
 #include <dune/fem-dg/operator/dg/primaloperator.hh>
 #include <dune/fem-dg/solver/rungekuttasolver.hh>
@@ -82,7 +84,7 @@ namespace Fem
                 const DiffusionModel &diffusionModel )
       : space_( space ),
         extra_(),
-        tp_( space_.gridPart().comm() ),
+        tp_( space_.gridPart().comm()),
         model_( advectionModel, diffusionModel ),
         dgOperator_( space.gridPart(), model_, extra_, name() ),
         rkSolver_( tp_, dgOperator_, dgOperator_, dgOperator_, name() ),
@@ -90,7 +92,7 @@ namespace Fem
     {
       std::string keyPrefix("femdg.stepper.");
       const double maxTimeStep =
-        Dune::Fem::Parameter::getValue< double >( keyPrefix +  "maxtimestep", std::numeric_limits<double>::max());
+        Dune::Fem::Parameter::getValue< double >( keyPrefix +  "maxtimestep", 1e-4);
       fixedTimeStep_ = Dune::Fem::Parameter::getValue< double >( keyPrefix + "fixedtimestep" , 0.0 );
       // start first time step with prescribed fixed time step
       // if it is not 0 otherwise use the internal estimate
@@ -103,7 +105,7 @@ namespace Fem
       else
         tp_.init();
 
-      std::cout << "cfl = " << double(tp_.factor()) << std::endl;
+      std::cout << "cfl = " << double(tp_.factor()) << " " << tp_.time() << std::endl;
     }
 
     const DiscreteFunctionSpaceType& space () const { return space_; }
@@ -117,7 +119,7 @@ namespace Fem
       solve( dest );
     }
 
-    void limit( DestinationType &u) { dgOperator_.limit(u); }
+    void limit( DestinationType &u) const { dgOperator_.limit(u); }
 
     void solve( DestinationType& dest ) const
     {
@@ -126,8 +128,11 @@ namespace Fem
         const double dt = tp_.timeStepEstimate();
         rkSolver_.initialize( dest );
         initialized_ = true;
-        tp_.provideTimeStepEstimate( dt );
+        // tp_.provideTimeStepEstimate( dt );
       }
+
+      // limit( dest );
+      rkSolver_.solve( dest, monitor_ );
 
       // next time step is prescribed by fixedTimeStep
       if ( fixedTimeStep_ > 1e-20 )
@@ -135,7 +140,11 @@ namespace Fem
       else
         tp_.next();
 
-      rkSolver_.solve( dest, monitor_ );
+       //       // reset time step estimate
+       // tp.provideTimeStepEstimate( maxTimeStep );
+
+       // return limited solution, to be discussed
+       limit( dest );
     }
 
     void setTimeStepSize( const double dt )
@@ -153,7 +162,7 @@ namespace Fem
     mutable TimeProviderType              tp_;
     mutable MonitorType                   monitor_;
     ModelType                             model_;
-    DGOperatorType                        dgOperator_;
+    mutable DGOperatorType                dgOperator_;
     mutable RKSolverType                  rkSolver_;
     mutable double                        fixedTimeStep_ ;
     mutable bool                          initialized_;
