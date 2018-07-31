@@ -10,7 +10,7 @@ from ufl import *
 gamma = 1.4
 dim = 2
 # from euler import sod as problem
-from euler import radialSod3 as problem
+from euler import sod as problem
 
 Model, initial, x0, x1, N, name = problem(dim,gamma)
 
@@ -19,13 +19,12 @@ parameter.append({"fem.verboserank": -1})
 
 grid = structuredGrid(x0,x1,N)
 # grid = create.grid("ALUSimplex", cartesianDomain(x0,x1,N))
-dimR      = 4
+dimR      = grid.dimension + 2
 t = 0
-dt = 1e-5
 saveStep = 0.01
 saveTime = saveStep
 count = 0
-endTime = 0.4
+endTime = 0.15
 
 def initialize(space):
     lagOrder = 1 # space.order
@@ -69,14 +68,15 @@ def useGalerkinOp():
     print("time loop:",time.time()-start)
 
 def useODESolver():
-    global count, t, dt, saveTime
+    global count, t, saveTime
+    dt = 1e-3
     spaceName = "dgonb"
     polOrder = 2
     space = create.space(spaceName, grid, order=polOrder, dimrange=dimR)
     u_h = initialize(space)
     u_h_n = u_h.copy(name="previous")
     rho, v, p = Model.toPrim(u_h)
-    operator = createFemDGSolver( Model, space, limiter=None )
+    operator = createFemDGSolver( Model, space ) #, limiter=None )
     # operator.setTimeStepSize(dt)
 
     start = time.time()
@@ -94,6 +94,7 @@ def useODESolver():
         if t > saveTime:
             print('dt = ', dt, 'time = ',t, 'count = ',count )
             count += 1
+            rho, v, p = Model.toPrim(u_h)
             grid.writeVTK(name,
                 pointdata=[u_h],
                 celldata={"density":rho, "pressure":p},

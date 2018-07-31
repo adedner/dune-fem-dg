@@ -80,10 +80,10 @@ def sod(dim,gamma):
     space = Space(dim,dim+2)
     x = SpatialCoordinate(space.cell())
     return CompressibleEulerNeuman(dim,gamma) ,\
-           riemanProblem( x[0], 0.,
+           riemanProblem( x[0], 0.5,
                           CompressibleEuler(dim,gamma).toCons([1,0,0,1]),
                           CompressibleEuler(dim,gamma).toCons([0.125,0,0,0.1])),\
-           [-1, 0], [1, 0.1], [50, 5],\
+           [0, 0], [1, 0.25], [64, 16],\
            "sod"
 def radialSod1(dim,gamma):
     space = Space(dim,dim+2)

@@ -2,7 +2,7 @@
 #---------------------
 
 fem.ode.odesolver: EX # ode solvers: EX, IM, IMEX
-fem.ode.order: 2
+fem.ode.order: 3
 fem.ode.verbose: full # ode output: none, cfl, full
 fem.ode.cflincrease: 1.25
 fem.ode.miniterations: 95
