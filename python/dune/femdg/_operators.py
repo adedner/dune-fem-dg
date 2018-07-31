@@ -200,8 +200,12 @@ def createFemDGSolver(Model, space,
     struct.append(TypeAlias('JacobianRangeType','typename FunctionSpace::JacobianRangeType'))
     struct.append(TypeAlias('HessianRangeType','typename FunctionSpace::HessianRangeType'))
 
+    predefined = {}
+    spatial = Variable('const auto', 'y')
+    predefined.update( {x: UnformattedExpression('auto', 'entity.geometry().global( Dune::Fem::coordinate( x ) )') })
+
     arg_n = Variable("const DomainType &", "normal")
-    predefined = {n: arg_n}
+    predefined.update( {n: arg_n} )
     maxSpeed = getattr(Model,"maxLambda",None)
     maxSpeed = maxSpeed(t,x,u,n)
     generateMethod(struct, maxSpeed,
