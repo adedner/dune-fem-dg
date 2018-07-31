@@ -61,18 +61,18 @@ namespace Fem
 
     typedef DefaultOperatorTraits< ModelType, DestinationType, AdvectionFluxType, DiffusionFluxType >  OpTraits;
 
-    //typedef DGLimitedAdvectionOperator< OpTraits, Additional::hasAdvection, Additional::hasDiffusion > DGOperatorType;
-    typedef typename AdvectionDiffusionOperatorSelector< OpTraits, formId, limiterId > :: FullOperatorType
-      DGOperatorType ;
+    typedef AdvectionDiffusionOperatorSelector< OpTraits, formId, limiterId > OperatorSelectorType ;
 
-    // typedef typename AdvectionDiffusionOperatorSelector< OpTraits, formId, limiterId > :: ExplicitOperatorType  DGOperatorType ;
+    typedef typename OperatorSelectorType :: FullOperatorType      FullOperatorType;
+    typedef typename OperatorSelectorType :: ExplicitOperatorType  ExplicitOperatorType;
+    typedef typename OperatorSelectorType :: ImplicitOperatorType  ImplicitOperatorType;
 
     // solver selection, available fem, istl, petsc, ...
     typedef typename MatrixFreeSolverSelector< solverId, symmetric > :: template LinearInverseOperatorType< DiscreteFunctionSpaceType, DiscreteFunctionSpaceType >  LinearSolverType ;
 
     typedef DuneODE::OdeSolverInterface< DestinationType >      OdeSolverInterfaceType;
     // type of runge kutta solver
-    typedef RungeKuttaSolver< DGOperatorType, DGOperatorType, DGOperatorType,
+    typedef RungeKuttaSolver< FullOperatorType, ExplicitOperatorType, ImplicitOperatorType,
                               LinearSolverType > RKSolverType;
 
     typedef typename OdeSolverInterfaceType :: MonitorType MonitorType;
@@ -86,8 +86,10 @@ namespace Fem
         extra_(),
         tp_( space_.gridPart().comm()),
         model_( advectionModel, diffusionModel ),
-        dgOperator_( space.gridPart(), model_, extra_, name() ),
-        rkSolver_( tp_, dgOperator_, dgOperator_, dgOperator_, name() ),
+        fullOperator_( space.gridPart(), model_, extra_, name() ),
+        explOperator_( space.gridPart(), model_, extra_, name() ),
+        implOperator_( space.gridPart(), model_, extra_, name() ),
+        rkSolver_( tp_, fullOperator_, explOperator_, implOperator_, name() ),
         initialized_( false )
     {
       std::string keyPrefix("femdg.stepper.");
@@ -119,7 +121,7 @@ namespace Fem
       solve( dest );
     }
 
-    void limit( DestinationType &u) const { dgOperator_.limit(u); }
+    void limit( DestinationType &u) const { explOperator_.limit(u); }
 
     void solve( DestinationType& dest ) const
     {
@@ -162,7 +164,9 @@ namespace Fem
     mutable TimeProviderType              tp_;
     mutable MonitorType                   monitor_;
     ModelType                             model_;
-    mutable DGOperatorType                dgOperator_;
+    mutable FullOperatorType              fullOperator_;
+    mutable ExplicitOperatorType          explOperator_;
+    mutable ImplicitOperatorType          implOperator_;
     mutable RKSolverType                  rkSolver_;
     mutable double                        fixedTimeStep_ ;
     mutable bool                          initialized_;
