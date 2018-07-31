@@ -61,9 +61,9 @@ namespace Fem
 
     typedef DefaultOperatorTraits< ModelType, DestinationType, AdvectionFluxType, DiffusionFluxType >  OpTraits;
 
-    typedef DGLimitedAdvectionOperator< OpTraits, Additional::hasAdvection, Additional::hasDiffusion > DGOperatorType;
-    //typedef typename AdvectionDiffusionOperatorSelector< OpTraits, formId, limiterId > :: FullOperatorType
-    //  DGOperatorType ;
+    //typedef DGLimitedAdvectionOperator< OpTraits, Additional::hasAdvection, Additional::hasDiffusion > DGOperatorType;
+    typedef typename AdvectionDiffusionOperatorSelector< OpTraits, formId, limiterId > :: FullOperatorType
+      DGOperatorType ;
 
     // typedef typename AdvectionDiffusionOperatorSelector< OpTraits, formId, limiterId > :: ExplicitOperatorType  DGOperatorType ;
 
