@@ -303,7 +303,10 @@ def createFemDGSolver(Model, space,
     formId     = "Dune::Fem::Formulation::Enum::primal"
     limiterId  = "Dune::Fem::AdvectionLimiter::Enum::limited"
     advFluxId  = "Dune::Fem::AdvectionFlux::Enum::llf"
-    diffFluxId = "Dune::Fem::DiffusionFlux::Enum::cdg2"
+
+    diffFluxId = "Dune::Fem::DiffusionFlux::Enum::none"
+    if hasDiffusion:
+        diffFluxId = "Dune::Fem::DiffusionFlux::Enum::cdg2"
 
     if limiter == None or limiter == False or limiter.lower() == "unlimiter":
         limiterId = "Dune::Fem::AdvectionLimiter::Enum::unlimited"
