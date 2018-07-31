@@ -33,8 +33,7 @@ namespace Fem
   public:
     static const Solver::Enum solverId             = Additional::solverId;
     static const Formulation::Enum formId          = Additional::formId;
-    static const AdvectionLimiter::Enum limiterId  =
-      AdvectionLimiter::Enum::limited; //   Additional::limiterId;
+    static const AdvectionLimiter::Enum limiterId  = Additional::limiterId;
     // for valid advection fluxes see dune/fem-dg/operator/fluxes/advection/parameters.hh
     static const AdvectionFlux::Enum advFluxId     = Additional::advFluxId;
     // for valid diffusion fluxes see dune/fem-dg/operator/fluxes/diffusion/parameters.hh
