@@ -92,8 +92,17 @@ def radialSod1(dim,gamma):
            riemanProblem( sqrt(dot(x,x)), 0.3,
                           CompressibleEuler(dim,gamma).toCons([1,0,0,1]),
                           CompressibleEuler(dim,gamma).toCons([0.125,0,0,0.1])),\
-           [-1, -1], [1, 1], [50, 50],\
+           [-0.5, -0.5], [0.5, 0.5], [20, 20],\
            "radialSod1"
+def radialSod1Large(dim,gamma):
+    space = Space(dim,dim+2)
+    x = SpatialCoordinate(space.cell())
+    return CompressibleEulerDirichlet(dim,gamma) ,\
+           riemanProblem( sqrt(dot(x,x)), 0.3,
+                          CompressibleEuler(dim,gamma).toCons([1,0,0,1]),
+                          CompressibleEuler(dim,gamma).toCons([0.125,0,0,0.1])),\
+           [-1.5, -1.5], [1.5, 1.5], [60, 60],\
+           "radialSod1Large"
 def radialSod2(dim,gamma):
     space = Space(dim,dim+2)
     x = SpatialCoordinate(space.cell())
@@ -101,7 +110,7 @@ def radialSod2(dim,gamma):
            riemanProblem( sqrt(dot(x,x)), 0.3,
                           CompressibleEuler(dim,gamma).toCons([0.125,0,0,0.1]),
                           CompressibleEuler(dim,gamma).toCons([1,0,0,1])),\
-           [-1, -1], [1, 1], [50, 50],\
+           [-0.5, -0.5], [0.5, 0.5], [20, 20],\
            "radialSod2"
 def radialSod3(dim,gamma):
     space = Space(dim,dim+2)
@@ -110,5 +119,5 @@ def radialSod3(dim,gamma):
            riemanProblem( sqrt(dot(x,x)), 0.3,
                           CompressibleEuler(dim,gamma).toCons([1,0,0,1]),
                           CompressibleEuler(dim,gamma).toCons([0.125,0,0,0.1])),\
-           [-1, -1], [1, 1], [50, 50],\
+           [-0.5, -0.5], [0.5, 0.5], [20, 20],\
            "radialSod3"

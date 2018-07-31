@@ -9,8 +9,8 @@ from ufl import *
 
 gamma = 1.4
 dim = 2
-from euler import sod as problem
-# from euler import radialSod3 as problem
+# from euler import sod as problem
+from euler import radialSod1Large as problem
 
 Model, initial, x0, x1, N, name = problem(dim,gamma)
 
@@ -21,17 +21,20 @@ grid = structuredGrid(x0,x1,N)
 # grid = create.grid("ALUSimplex", cartesianDomain(x0,x1,N))
 dimR     = grid.dimension + 2
 t        = 0
-endTime  = 0.15
+endTime  = 0.25
 dt       = 1e-3
 count    = 0
 saveStep = 0.01
 saveTime = saveStep
 
 def initialize(space):
-    #lagOrder = 1 # space.order
-    #lag = create.space("lagrange", space.grid, order=1, dimrange=space.dimRange)
-    #u_h = spacelag.interpolate(initial, name='tmp')
-    return space.interpolate(initial, name='u_h')
+    if space.order == 0:
+        return space.interpolate(initial, name='u_h')
+    else:
+        lagOrder = 1 # space.order
+        spacelag = create.space("lagrange", space.grid, order=lagOrder, dimrange=space.dimRange)
+        u_h = spacelag.interpolate(initial, name='tmp')
+        return space.interpolate(u_h, name='u_h')
 
 def useGalerkinOp():
     global count, t, dt, saveTime
@@ -86,7 +89,7 @@ def useODESolver(polOrder=2, limiter='default'):
         # celldata={"density":rho, "pressure":p}, # bug: density not shown correctly
         celldata={"pressure":p, "maxLambda":Model.maxLambda(0,0,u_h,as_vector([1,0]))},
         cellvector={"velocity":v},
-        number=count)
+        number=count, subsampling=2)
     tcount = 0
     while t < endTime:
         operator.solve(target=u_h)
@@ -97,18 +100,18 @@ def useODESolver(polOrder=2, limiter='default'):
         if t > saveTime:
             print('dt = ', dt, 'time = ',t, 'count = ',count )
             count += 1
-            rho, v, p = Model.toPrim(u_h)
+            # rho, v, p = Model.toPrim(u_h) # is this needed - works for me # without and it should...
             grid.writeVTK(name,
                 pointdata=[u_h],
                 celldata={"pressure":p, "maxLambda":Model.maxLambda(0,0,u_h,as_vector([1,0]))},
                 cellvector={"velocity":v},
-                number=count)
+                number=count, subsampling=2)
             saveTime += saveStep
     grid.writeVTK(name,
         pointdata=[u_h],
         celldata={"pressure":p, "maxLambda":Model.maxLambda(0,0,u_h,as_vector([1,0]))},
         cellvector={"velocity":v},
-        number=count)
+        number=count, subsampling=2)
     print("time loop:",time.time()-start)
     print("number of time steps ", tcount)
 
