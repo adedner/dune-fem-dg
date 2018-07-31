@@ -26,7 +26,7 @@ class LinearAdvectionDiffusion1D:
     # def F_c(t,x,U):
     #     return as_matrix( [ [U[0], 0] ] )
     def F_v(t,x,U,DU):
-        return 0.1*DU
+        return 0.5*DU
     def maxLambda(t,x,U,n):
         return abs(n[0])
     def velocity(t,x,U):
@@ -35,11 +35,13 @@ class LinearAdvectionDiffusion1D:
         return 1
     def jump(U,V):
         return U-V
-class LinearAdvectionDiffusion1DDirichlet(LinearAdvectionDiffusion1D):
-    def dirichletValue(t,x,u):
-        return as_vector( [cos(2*pi*x[0])] )
-    boundaryValue = {}
-    for i in range(1,5): boundaryValue.update( {i: dirichletValue} )
+def LinearAdvectionDiffusion1DDirichlet(bnd):
+    class Model(LinearAdvectionDiffusion1D):
+        def dirichletValue(t,x,u):
+            return bnd
+        boundaryValue = {}
+        for i in range(1,5): boundaryValue.update( {i: dirichletValue} )
+    return Model
 class LinearAdvectionDiffusion1DNeuman(LinearAdvectionDiffusion1D):
     def zeroFlux(t,x,u,n):
         return 0
@@ -77,7 +79,8 @@ def shockTransport():
     return Transport1D, riemanProblem(x[0],-0.5, [1], [0])
 
 def sinProblem():
-    return LinearAdvectionDiffusion1DDirichlet, as_vector( [sin(2*pi*x[0])] )
+    u0 = as_vector( [sin(2*pi*x[0])] )
+    return LinearAdvectionDiffusion1DDirichlet(u0), u0
 
 def cosProblem():
     return LinearAdvectionDiffusion1DNeuman, as_vector( [cos(2*pi*x[0])] )
