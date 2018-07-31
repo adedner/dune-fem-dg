@@ -265,7 +265,6 @@ namespace Fem
     template <class LocalEvaluation>
     inline bool hasBoundaryValue( const LocalEvaluation& local ) const
     {
-      return true;
       RangeType u;
       int id = getBoundaryId( local );
       return AdditionalType::boundaryValue(id, time(), local.entity(), local.quadraturePoint(), u, u);
@@ -277,8 +276,6 @@ namespace Fem
                                const RangeType& uLeft,
                                RangeType& uRight ) const
     {
-      uRight  = uLeft;
-      return ;
       int id = getBoundaryId( local );
 #ifndef NDEBUG
       const bool isDirichlet =
