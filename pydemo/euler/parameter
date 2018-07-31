@@ -1,6 +1,6 @@
 # LIMITER SETTINGS
 #-----------------
-# 0 = only dg solution | 1 = only reconstruction | 2 = both 
+# 0 = only dg solution | 1 = only reconstruction | 2 = both
 femdg.limiter.admissiblefunctions: 1
 # tolerance for shock indicator
 femdg.limiter.tolerance: 1

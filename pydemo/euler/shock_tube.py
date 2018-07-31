@@ -28,10 +28,10 @@ saveStep = 0.01
 saveTime = saveStep
 
 def initialize(space):
-    lagOrder = 1 # space.order
-    lag = create.space("lagrange", space.grid, order=1, dimrange=space.dimRange)
-    u_h = lag.interpolate(initial, name='tmp')
-    return space.interpolate(u_h, name='u_h')
+    #lagOrder = 1 # space.order
+    #lag = create.space("lagrange", space.grid, order=1, dimrange=space.dimRange)
+    #u_h = spacelag.interpolate(initial, name='tmp')
+    return space.interpolate(initial, name='u_h')
 
 def useGalerkinOp():
     global count, t, dt, saveTime
@@ -80,17 +80,20 @@ def useODESolver(polOrder=2, limiter='default'):
 
     start = time.time()
     # operator.applyLimiter( u_h );
+    print(grid.size(0))
     grid.writeVTK(name,
         pointdata=[u_h],
         # celldata={"density":rho, "pressure":p}, # bug: density not shown correctly
         celldata={"pressure":p, "maxLambda":Model.maxLambda(0,0,u_h,as_vector([1,0]))},
         cellvector={"velocity":v},
         number=count)
+    tcount = 0
     while t < endTime:
         operator.solve(target=u_h)
         # operator.applyLimiter( u_h );
         dt = operator.deltaT()
         t += dt
+        tcount += 1
         if t > saveTime:
             print('dt = ', dt, 'time = ',t, 'count = ',count )
             count += 1
@@ -107,12 +110,14 @@ def useODESolver(polOrder=2, limiter='default'):
         cellvector={"velocity":v},
         number=count)
     print("time loop:",time.time()-start)
+    print("number of time steps ", tcount)
 
 
 if True:
     grid = structuredGrid(x0,x1,N)
     # grid = create.grid("ALUSimplex", cartesianDomain(x0,x1,N))
     useODESolver(2,'default')      # third order with limiter
+#    useODESolver(2,None)      # third order with limiter
 elif False:
     N = [n*10 for n in N]
     grid = structuredGrid(x0,x1,N)
