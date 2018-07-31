@@ -12,16 +12,9 @@
 #include <dune/fem/misc/boundaryidprovider.hh>
 #include <dune/fem/space/common/functionspace.hh>
 
-//#include <dune/fem-dg/operator/fluxes/analyticaleulerflux.hh>
+// fem-dg includes
 #include <dune/fem-dg/models/defaultmodel.hh>
 #include <dune/fem-dg/models/defaultprobleminterfaces.hh>
-
-#include <dune/fem-dg/misc/error/l2eocerror.hh>
-#include <dune/fem-dg/misc/error/l1eocerror.hh>
-
-#if HAVE_DUNE_FEMPY
-#include <dune/fem/schemes/diffusionmodel.hh>
-#endif
 
 namespace Dune
 {
@@ -75,19 +68,10 @@ namespace Fem
 
       void evaluate(const DomainType& x, const double time, RangeType& res) const
       {
-        res = 0;
-        if( x[0] < 0.5 )
-        {
-          // default is sod's rp
-          res[ 0 ] = 1.0;
-          res[ dimDomain+1 ] = 1.0;
-        }
-        else
-        {
-          res[ 0 ] = 0.125;
-          res[ dimDomain + 1 ] = 0.1;
-        }
+        std::abort();
       }
+
+      double gamma () const { return 1.4; }
     };
 
   } // end namespace detail
@@ -154,11 +138,6 @@ namespace Fem
     using BaseType :: time;
     using BaseType :: hasMass;
 
-    void setTime (double t)
-    {
-      BaseType::setTime(t);
-    }
-
     ModelWrapper( const AdvectionModelType& advModel, const DiffusionModelType& diffModel )
       : advection_( advModel ),
         diffusion_( diffModel ),
@@ -168,6 +147,13 @@ namespace Fem
       modified_[ 0 ] = 0;
       modified_[ 1 ] = dimRange-1;
     }
+
+    void setTime (const double t)
+    {
+      BaseType::setTime(t);
+    }
+
+    double gamma () const { return problem_.gamma(); }
 
     template <class Entity>
     void setEntity( const Entity& entity ) const
@@ -217,15 +203,6 @@ namespace Fem
       assert( hasDiffusion );
       diffusion_.source( local.quadraturePoint(), u, du, s );
       return 0;
-    }
-
-    inline void conservativeToPrimitive( const double time,
-                                         const DomainType& xgl,
-                                         const RangeType& cons,
-                                         RangeType& prim,
-                                         const bool ) const
-    {
-      // impl_.evaluate( xgl, time, prim );
     }
 
     template <class LocalEvaluation>
@@ -288,6 +265,7 @@ namespace Fem
     template <class LocalEvaluation>
     inline bool hasBoundaryValue( const LocalEvaluation& local ) const
     {
+      return true;
       RangeType u;
       int id = getBoundaryId( local );
       return AdditionalType::boundaryValue(id, time(), local.entity(), local.quadraturePoint(), u, u);
@@ -299,6 +277,8 @@ namespace Fem
                                const RangeType& uLeft,
                                RangeType& uRight ) const
     {
+      uRight  = uLeft;
+      return ;
       int id = getBoundaryId( local );
 #ifndef NDEBUG
       const bool isDirichlet =
@@ -354,7 +334,6 @@ namespace Fem
       return 0;
     }
 
-    // here x is in global coordinates
     template <class LocalEvaluation>
     inline void maxSpeed( const LocalEvaluation& local,
                           const DomainType& normal,
@@ -431,11 +410,10 @@ namespace Fem
       indicator = AdditionalType :: jump( it, x, uLeft, uRight );
     }
 
+    // misc for eoc calculation
     template< class DiscreteFunction >
     void eocErrors( const DiscreteFunction& df ) const
     {
-      EOCErrorList::setErrors<L2EOCError>( *this, df );
-      EOCErrorList::setErrors<L1EOCError>( *this, df );
     }
 
   protected:

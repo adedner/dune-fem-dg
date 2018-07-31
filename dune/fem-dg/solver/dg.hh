@@ -33,7 +33,8 @@ namespace Fem
   public:
     static const Solver::Enum solverId             = Additional::solverId;
     static const Formulation::Enum formId          = Additional::formId;
-    static const AdvectionLimiter::Enum limiterId  = Additional::limiterId;
+    static const AdvectionLimiter::Enum limiterId  =
+      AdvectionLimiter::Enum::limited; //   Additional::limiterId;
     // for valid advection fluxes see dune/fem-dg/operator/fluxes/advection/parameters.hh
     static const AdvectionFlux::Enum advFluxId     = Additional::advFluxId;
     // for valid diffusion fluxes see dune/fem-dg/operator/fluxes/diffusion/parameters.hh
@@ -59,10 +60,11 @@ namespace Fem
 
     typedef DefaultOperatorTraits< ModelType, DestinationType, AdvectionFluxType, DiffusionFluxType >  OpTraits;
 
+    typedef DGLimitedAdvectionOperator< OpTraits, Additional::hasAdvection, Additional::hasDiffusion > DGOperatorType;
     //typedef typename AdvectionDiffusionOperatorSelector< OpTraits, formId, limiterId > :: FullOperatorType
     //  DGOperatorType ;
 
-    typedef typename AdvectionDiffusionOperatorSelector< OpTraits, formId, limiterId > :: ExplicitOperatorType  DGOperatorType ;
+    // typedef typename AdvectionDiffusionOperatorSelector< OpTraits, formId, limiterId > :: ExplicitOperatorType  DGOperatorType ;
 
     // solver selection, available fem, istl, petsc, ...
     typedef typename MatrixFreeSolverSelector< solverId, symmetric > :: template LinearInverseOperatorType< DiscreteFunctionSpaceType, DiscreteFunctionSpaceType >  LinearSolverType ;
