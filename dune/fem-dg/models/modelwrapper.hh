@@ -164,9 +164,9 @@ namespace Fem
         diffusion_.init( entity );
     }
 
-    inline bool hasStiffSource() const { return false; }
-    inline bool hasNonStiffSource() const { return false; }
-    inline bool hasFlux() const { return true ; }
+    inline bool hasStiffSource() const { return AdditionalType::hasStiffSource; }
+    inline bool hasNonStiffSource() const { return AdditionalType::hasNonStiffSource; }
+    inline bool hasFlux() const { return AdditionalType::hasFlux; }
 
     const ModifiedRangeType& modifiedRange() const { return modified_; }
 
@@ -188,8 +188,8 @@ namespace Fem
                                const JacobianRangeType& du,
                                RangeType & s) const
     {
-      assert( hasAdvection );
-      advection_.source( local.quadraturePoint(), u, du, s );
+      assert( hasDiffusion );
+      diffusion_.source( local.quadraturePoint(), u, du, s );
       return 0;
     }
 
@@ -200,8 +200,8 @@ namespace Fem
                                   const JacobianRangeType& du,
                                   RangeType& s) const
     {
-      assert( hasDiffusion );
-      diffusion_.source( local.quadraturePoint(), u, du, s );
+      assert( hasAdvection );
+      advection_.source( local.quadraturePoint(), u, du, s );
       return 0;
     }
 
@@ -240,7 +240,7 @@ namespace Fem
                                      const double circumEstimate,
                                      const RangeType& u ) const
     {
-      // TODO: implement using diffusion model
+      // TODO: implement using diffusion model - something on Additional?
       return 0;
     }
 
@@ -330,6 +330,7 @@ namespace Fem
                                          const JacobianRangeType& jacLeft,
                                          RangeType& gLeft ) const
     {
+      // TODO: need to add something to 'Addtional'?
       assert( hasDiffusion );
       return 0;
     }
@@ -341,8 +342,13 @@ namespace Fem
                           double& advspeed,
                           double& totalspeed ) const
     {
+      // TODO: add a max speed for the diffusion time step control
       assert( hasAdvection );
-      advspeed = AdditionalType::maxSpeed( time(), local.entity(), local.quadraturePoint(), normal, u );
+      double len = normal.two_norm();
+      DomainType unitNormal(normal);
+      unitNormal /= len;
+      advspeed = AdditionalType::maxSpeed( time(), local.entity(), local.quadraturePoint(), unitNormal, u );
+      advspeed *= len;
       totalspeed = advspeed;
     }
 

@@ -64,7 +64,7 @@ namespace Fem
                                    //AdvectionLimiter::Enum::scalinglimited,
                                    AdvectionLimiter::Enum::limited,
                                    Matrix::Enum::matrixfree,
-                                   AdvectionFlux::Enum::euler_hllc,
+                                   AdvectionFlux::Enum::llf,
                                    PrimalDiffusionFlux::Enum::none > ACEuler;
 
     template< class AC >

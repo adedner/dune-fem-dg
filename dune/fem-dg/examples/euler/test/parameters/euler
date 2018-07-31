@@ -39,7 +39,7 @@ paramfile: ../../parameter/paramBase
 #--------
 fem.eoc.steps: 4
 femdg.stepper.starttime: 0.
-femdg.stepper.endtime: 0.1
+femdg.stepper.endtime: 0.15
 #femdg.stepper.maxtimestep: 0.1
 
 

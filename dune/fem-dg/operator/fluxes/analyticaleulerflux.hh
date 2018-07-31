@@ -211,7 +211,7 @@ namespace Fem
       u_normal /= u[0];
 
       FieldType p = pressure(gamma,u);
-      FieldType c2 = gamma * p/ u[0] * n.two_norm2();
+      FieldType c2 = gamma * p/ u[0];// * n.two_norm2();
       assert( c2 > FieldType( 1e-10 ) );
       FieldType maxspd = std::abs(double(u_normal)) + std::sqrt(double(c2));
       return maxspd;
