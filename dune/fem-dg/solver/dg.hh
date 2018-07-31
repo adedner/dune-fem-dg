@@ -152,6 +152,7 @@ namespace Fem
     void setTimeStepSize( const double dt )
     {
       fixedTimeStep_ = dt ;
+      fixedTimeStep_ /= tp_.factor() ;
       tp_.provideTimeStepEstimate( dt );
     }
 
