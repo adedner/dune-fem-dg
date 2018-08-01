@@ -5,8 +5,8 @@ fem.ode.odesolver: IM # ode solvers: EX, IM, IMEX
 fem.ode.order: 3
 fem.ode.verbose: cfl # ode output: none, cfl, full
 fem.ode.cflincrease: 1.25
-fem.ode.miniterations: 95
-fem.ode.maxiterations: 105
+fem.ode.miniterations: 5
+fem.ode.maxiterations: 100005
 fem.ode.cflStart: 1.
 #fem.ode.cflMax: 5
 fem.timeprovider.factor: 0.45
@@ -14,12 +14,15 @@ fem.timeprovider.updatestep: 1
 
 # parameter for the implicit solvers
 fem.differenceoperator.eps: 1e-12
-fem.solver.verbose: false
-fem.solver.gmres.restart: 15
-fem.solver.newton.verbose: false
+fem.solver.gmres.restart: 50
+fem.solver.newton.verbose: true
 fem.solver.newton.linear.verbose: false
+fem.solver.verbose: false
 fem.solver.newton.maxlineariterations: 1000
-fem.solver.newton.tolerance: 1e-6
+fem.solver.newton.tolerance: 1e-10
+fem.solver.newton.linabstol: 1.25e-12
+fem.solver.newton.linreduction: 1.25e-12
+
 
 dgdiffusionflux.method: CDG2 # diffusion flux: CDG2, CDG, BR2, IP, NIPG, BO
 dgdiffusionflux.theoryparameters: 1 # scaling with theory parameters
