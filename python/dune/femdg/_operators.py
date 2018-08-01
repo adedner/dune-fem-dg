@@ -154,8 +154,8 @@ def createFemDGSolver(Model, space,
     x = SpatialCoordinate(space.cell())
     t = NamedConstant(space,"time")
 
-    hasFlux = hasattr(Model,"F_c")
-    if hasFlux:
+    hasAdvFlux = hasattr(Model,"F_c")
+    if hasAdvFlux:
         advModel = inner(Model.F_c(t,x,u),grad(v))*dx
     else:
         advModel = inner(t*grad(u-u),grad(v))*dx    # TODO: make a better empty model
@@ -165,8 +165,8 @@ def createFemDGSolver(Model, space,
     else:
         advModel += inner(t*u,v)*dx
 
-    hasDiffusion = hasattr(Model,"F_v")
-    if hasDiffusion:
+    hasDiffFlux = hasattr(Model,"F_v")
+    if hasDiffFlux:
         diffModel = inner(Model.F_v(t,x,u,grad(u)),grad(v))*dx
     else:
         diffModel = inner(t*grad(u-u),grad(v))*dx   # TODO: make a better empty model
@@ -285,10 +285,10 @@ def createFemDGSolver(Model, space,
     ##################################
     ## Add 'has*' properties for model
     struct.append([Declaration(
-        Variable("const bool", "hasAdvection"), initializer=hasFlux or hasNonStiffSource,
+        Variable("const bool", "hasAdvection"), initializer=hasAdvFlux or hasNonStiffSource,
         static=True)])
     struct.append([Declaration(
-        Variable("const bool", "hasDiffusion"), initializer=hasDiffusion,
+        Variable("const bool", "hasDiffusion"), initializer=hasDiffFlux,
         static=True)])
     struct.append([Declaration(
         Variable("const bool", "hasStiffSource"), initializer=hasStiffSource,
@@ -297,7 +297,7 @@ def createFemDGSolver(Model, space,
         Variable("const bool", "hasNonStiffSource"), initializer=hasNonStiffSource,
         static=True)])
     struct.append([Declaration(
-        Variable("const bool", "hasFlux"), initializer=hasFlux,
+        Variable("const bool", "hasFlux"), initializer=hasAdvFlux or hasDiffFlux,
         static=True)])
 
     ###################################################
@@ -309,8 +309,8 @@ def createFemDGSolver(Model, space,
     advFluxId  = "Dune::Fem::AdvectionFlux::Enum::llf"
 
     diffFluxId = "Dune::Fem::DiffusionFlux::Enum::none"
-    if hasDiffusion:
-        diffFluxId = "Dune::Fem::DiffusionFlux::Enum::cdg2"
+    if hasDiffFlux:
+        diffFluxId = "Dune::Fem::DiffusionFlux::Enum::primal"
 
     if limiter == None or limiter == False or limiter.lower() == "unlimiter":
         limiterId = "Dune::Fem::AdvectionLimiter::Enum::unlimited"
