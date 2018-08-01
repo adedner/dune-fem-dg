@@ -77,7 +77,7 @@ namespace Fem
 
     typedef typename OdeSolverInterfaceType :: MonitorType MonitorType;
 
-    static std::string name() { return std::string("DGOperator"); }
+    static std::string name() { return std::string(""); }
 
     DGOperator( const DiscreteFunctionSpaceType& space,
                 const AdvectionModel &advectionModel,
