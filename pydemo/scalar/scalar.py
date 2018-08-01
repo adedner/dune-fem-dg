@@ -82,6 +82,20 @@ def sinProblem():
     u0 = as_vector( [sin(2*pi*x[0])] )
     return LinearAdvectionDiffusion1DDirichlet(u0), u0
 
+def pulse():
+    t = 0
+    eps = 0.001
+    center = as_vector([ 0.5,0.5 ])
+    x0 = x[0] - center[0]
+    x1 = x[1] - center[1]
+    sig2 = 0.004
+    sig2PlusDt4 = sig2+(4.0*eps*t);
+    xq = ( x0*cos(4.0*t) + x1*sin(4.0*t))
+    yq = (-x0*sin(4.0*t) + x1*cos(4.0*t))
+
+    u0 = as_vector( [(sig2/ (sig2PlusDt4) ) * exp (-( xq*xq + yq*yq ) / sig2PlusDt4 )] )
+    return LinearAdvectionDiffusion1DDirichlet(u0), u0
+
 def cosProblem():
     return LinearAdvectionDiffusion1DNeuman, as_vector( [cos(2*pi*x[0])] )
 

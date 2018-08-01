@@ -19,6 +19,7 @@ parameter.append({"fem.verboserank": 0})
 parameter.append("parameter")
 
 x0,x1,N = [-1, 0], [1, 0.1], [50, 7]
+#x0,x1,N = [0, 0], [1, 1], [8,8]
 grid = structuredGrid(x0,x1,N)
 
 # grid = create.grid("ALUSimplex", cartesianDomain(x0,x1,N))
