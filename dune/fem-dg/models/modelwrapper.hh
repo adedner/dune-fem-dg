@@ -193,6 +193,7 @@ namespace Fem
                                const JacobianRangeType& du,
                                RangeType & s) const
     {
+      std::abort();
       assert( hasDiffusion );
       diffusion_.source( local.quadraturePoint(), u, du, s );
       return 0;
@@ -205,6 +206,7 @@ namespace Fem
                                   const JacobianRangeType& du,
                                   RangeType& s) const
     {
+      std::abort();
       assert( hasAdvection );
       advection_.source( local.quadraturePoint(), u, du, s );
       return 0;
@@ -217,7 +219,8 @@ namespace Fem
                            JacobianRangeType& f ) const
     {
       assert( hasAdvection );
-      advection_.diffusiveFlux( local.quadraturePoint(), u, du, f);
+      AdditionType::advection( local.quadraturePoint(), u, du, f );
+      //advection_.diffusiveFlux( local.quadraturePoint(), u, du, f);
     }
 
     template <class LocalEvaluation>
@@ -245,6 +248,7 @@ namespace Fem
                            const FluxRangeType& du,
                            RangeType& A ) const
     {
+      std::abort();
       assert( hasAdvection );
       // TODO: u != ubar and du != dubar
       advection_.linDiffusiveFlux( u, du, local.quadraturePoint(), u, du, A);
@@ -259,6 +263,7 @@ namespace Fem
     template <class LocalEvaluation>
     inline bool hasBoundaryValue( const LocalEvaluation& local ) const
     {
+      return true;
       RangeType u;
       int id = getBoundaryId( local );
       return AdditionalType::boundaryValue(id, time(), local.entity(), local.intersection().geometry().center(), u, u);
@@ -286,6 +291,7 @@ namespace Fem
                                 const JacobianRangeType&,
                                 RangeType& gLeft ) const
     {
+      std::abort();
       const DomainType normal = local.intersection().integrationOuterNormal( local.localPosition() );
       int id = getBoundaryId( local );
 #ifndef NDEBUG
@@ -308,6 +314,7 @@ namespace Fem
                     const JacobianRangeType& du,
                     JacobianRangeType& diff ) const
     {
+      std::abort();
       assert( hasDiffusion );
       diffusion_.diffusiveFlux( local.quadraturePoint(), u, du, diff);
     }
