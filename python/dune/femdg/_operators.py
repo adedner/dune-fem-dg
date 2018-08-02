@@ -12,7 +12,7 @@ from dune.fem.operator import load
 from dune.ufl import NamedConstant
 from dune.ufl.tensors import ExprTensor
 from dune.ufl.codegen import generateCode
-from dune.source.cplusplus import assign, TypeAlias, Declaration, Variable,\
+from dune.source.cplusplus import assign, construct, TypeAlias, Declaration, Variable,\
         UnformattedBlock, UnformattedExpression, Struct, return_,\
         SwitchStatement
 from dune.source.cplusplus import Method as clsMethod
@@ -91,7 +91,8 @@ def generateMethodBody(cppType, expr, returnResult, default, predefined):
             else:
                 expr = as_vector([expr])
             dimR = expr.ufl_shape[0]
-        t = ExprTensor((dimR, ), [expr[int(i)] for i in range(dimR)])
+        # t = ExprTensor((dimR, ), [expr[int(i)] for i in range(dimR)])
+        t = ExprTensor(expr.ufl_shape, [expr[int(i)] for i in range(dimR)])
         expression = [expr[i] for i in t.keys()]
         u = coeff(expr)[0]
         if u != []:
@@ -112,7 +113,7 @@ def generateMethodBody(cppType, expr, returnResult, default, predefined):
             code = [Declaration(result)] + code + [return_(result)]
     else:
         result = Variable(cppType, 'result')
-        code = [assign(result, construct(cppTye,default) )]
+        code = [assign(result, construct(cppType,default) )]
         if returnResult:
             code = [Declaration(result)] + code + [return_(result)]
     return code
@@ -124,6 +125,9 @@ def generateMethod(struct,expr, cppType, name,
         predefined={}):
     if not returnResult:
         args = args + [cppType + ' &result']
+        returnType = 'void'
+    else:
+        returnType = cppType
 
     if isinstance(expr,dict):
         if evalSwitch:
@@ -139,7 +143,7 @@ def generateMethod(struct,expr, cppType, name,
     else:
         code = generateMethodBody(cppType, expr, returnResult, defaultReturn, predefined)
 
-    meth = clsMethod(cppType, name,
+    meth = clsMethod(returnType, name,
             code=code,
             args=args,
             targs=targs, static=static, const=const, volatile=volatile)
@@ -156,7 +160,14 @@ def createFemDGSolver(Model, space,
     v = TestFunction(space)
     n = FacetNormal(space.cell())
     x = SpatialCoordinate(space.cell())
-    t = NamedConstant(space,"time")
+    t = NamedConstant(space,"t")
+    predefined = {}
+    spatial = Variable('const auto', 'y')
+    predefined.update( {x: UnformattedExpression('auto', 'entity.geometry().global( Dune::Fem::coordinate( x ) )') })
+    arg_n = Variable("const DomainType &", "normal")
+    predefined.update( {n: arg_n} )
+    arg_t = Variable("const double &", "t")
+    predefined.update( {t: arg_t} )
 
     hasAdvFlux = hasattr(Model,"F_c")
     if hasAdvFlux:
@@ -200,14 +211,23 @@ def createFemDGSolver(Model, space,
     struct.append(TypeAlias('JacobianRangeType','typename FunctionSpace::JacobianRangeType'))
     struct.append(TypeAlias('HessianRangeType','typename FunctionSpace::HessianRangeType'))
 
-    predefined = {}
-    spatial = Variable('const auto', 'y')
-    predefined.update( {x: UnformattedExpression('auto', 'entity.geometry().global( Dune::Fem::coordinate( x ) )') })
+    advFlux2 = getattr(Model,"F_c",None)
+    if advFlux2 is not None:
+        advFlux2 = advFlux2(t,x,u)
+    generateMethod(struct, advFlux2,
+            'JacobianRangeType', 'advection',
+            returnResult=False,
+            args=['const double &t',
+                  'const Entity &entity',
+                  'const Point &x',
+                  'const RangeType &u'],
+            targs=['class Entity, class Point'], static=True,
+            predefined=predefined)
 
-    arg_n = Variable("const DomainType &", "normal")
-    predefined.update( {n: arg_n} )
+
     maxSpeed = getattr(Model,"maxLambda",None)
-    maxSpeed = maxSpeed(t,x,u,n)
+    if maxSpeed is not None:
+        maxSpeed = maxSpeed(t,x,u,n)
     generateMethod(struct, maxSpeed,
             'double', 'maxSpeed',
             args=['const double &t',
@@ -218,7 +238,8 @@ def createFemDGSolver(Model, space,
             predefined=predefined)
 
     velocity = getattr(Model,"velocity",None)
-    velocity = velocity(t,x,u)
+    if velocity is not None:
+        velocity = velocity(t,x,u)
     generateMethod(struct, velocity,
             'DomainType', 'velocity',
             args=['const double &t',
@@ -229,7 +250,8 @@ def createFemDGSolver(Model, space,
 
     # QUESTION: should `physical` actually depend on x? Perhaps even t?
     physical = getattr(Model,"physical",None)
-    physical = physical(u)
+    if physical is not None:
+        physical = physical(u)
     generateMethod(struct, physical,
             'double', 'physical',
             args=['const Entity &entity', 'const Point &x',
@@ -241,7 +263,8 @@ def createFemDGSolver(Model, space,
     w = Coefficient(space)
     predefined.update( {w:Variable("const RangeType &", "w")} )
     jump = getattr(Model,"jump",None)
-    jump = jump(u,w)
+    if jump is not None:
+        jump = jump(u,w)
     generateMethod(struct, jump,
             'double', 'jump',
             args=['const Intersection& it', 'const Point &x',
