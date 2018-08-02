@@ -149,10 +149,10 @@ namespace Fem
     template <class LocalEvaluation>
     inline void advection( const LocalEvaluation& local,
                            const RangeType& u,
-                           const FluxRangeType& jacu,
-                           FluxRangeType& f ) const
+                           const FluxRangeType& du,
+                           FluxRangeType& result ) const
     {
-      eulerFlux_.analyticalFlux( gamma_ , u , f );
+      eulerFlux_.analyticalFlux( gamma_ , u , result );
     }
 
     template <class LocalEvaluation>
