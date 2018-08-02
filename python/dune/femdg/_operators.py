@@ -149,7 +149,7 @@ def generateMethod(struct,expr, cppType, name,
 
 # create DG operator + solver
 def createFemDGSolver(Model, space,
-        limiter="default"):
+        limiter="default", diffusionScheme = "cdg2"):
     import dune.create as create
 
     u = TrialFunction(space)
@@ -166,8 +166,6 @@ def createFemDGSolver(Model, space,
     hasNonStiffSource = hasattr(Model,"S_ns")
     if hasNonStiffSource:
         advModel += inner(as_vector(S_ns(t,x,u,grad(u))),v)*dx
-    else:
-        advModel += inner(t*u,v)*dx
 
     hasDiffFlux = hasattr(Model,"F_v")
     if hasDiffFlux:
@@ -177,8 +175,6 @@ def createFemDGSolver(Model, space,
     hasStiffSource = hasattr(Model,"S_s")
     if hasStiffSource:
         diffModel += inner(as_vector(S_s(t,x,u,grad(u))),v)*dx
-    else:
-        advModel += inner(t*u,v)*dx
 
     advModel  = create.model("elliptic",space.grid, advModel)
     diffModel = create.model("elliptic",space.grid, diffModel)
@@ -270,6 +266,23 @@ def createFemDGSolver(Model, space,
                   'RangeType &result'],
             targs=['class Entity, class Point'], static=True,
             predefined=predefined)
+    diffusionBoundaryFluxDict = getattr(Model,"diffusionBoundaryFlux",None)
+    if diffusionBoundaryFluxDict is not None:
+        diffusionBoundaryFlux = {}
+        for id,f in diffusionBoundaryFluxDict.items(): diffusionBoundaryFlux.update({id:f(t,x,u,n)})
+    else:
+        diffusionBoundaryFlux = {}
+    generateMethod(struct, diffusionBoundaryFlux,
+            'bool', 'diffusionBoundaryFlux',
+            args=['const int bndId',
+                  'const double &t',
+                  'const Entity& entity', 'const Point &x',
+                  'const DomainType &normal',
+                  'const RangeType &u',
+                  'const JacobianRangeType &jac',
+                  'RangeType &result'],
+            targs=['class Entity, class Point'], static=True,
+            predefined=predefined)
     boundaryValueDict = getattr(Model,"boundaryValue",None)
     if boundaryValueDict is not None:
         boundaryValue = {}
@@ -330,12 +343,13 @@ def createFemDGSolver(Model, space,
     solverId   = "Dune::Fem::Solver::Enum::fem"
     formId     = "Dune::Fem::Formulation::Enum::primal"
     limiterId  = "Dune::Fem::AdvectionLimiter::Enum::limited"
-    advFluxId  = "Dune::Fem::AdvectionFlux::Enum::llf"
-
+    advFluxId  = "Dune::Fem::AdvectionFlux::Enum::none"
     diffFluxId = "Dune::Fem::DiffusionFlux::Enum::none"
-    if hasDiffFlux:
-        diffFluxId = "Dune::Fem::DiffusionFlux::Enum::primal"
 
+    if hasDiffFlux:
+        diffFluxId = "Dune::Fem::DiffusionFlux::Enum::"+diffusionScheme
+    if hasAdvFlux:
+        advFluxId  = "Dune::Fem::AdvectionFlux::Enum::llf"
     if limiter == None or limiter == False or limiter.lower() == "unlimiter":
         limiterId = "Dune::Fem::AdvectionLimiter::Enum::unlimited"
 

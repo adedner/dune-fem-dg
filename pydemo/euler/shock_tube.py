@@ -73,9 +73,12 @@ def useGalerkinOp():
 
 def useODESolver(polOrder=2, limiter='default'):
     global count, t, dt, saveTime
-    spaceName = "dgonb"
     polOrder = polOrder
-    space = create.space(spaceName, grid, order=polOrder, dimrange=dimR)
+    if False:
+        # needs change in dune/fem-dg/operator/dg/passtraits.hh
+        space = create.space("dglegendre", grid, order=polOrder, dimrange=dimR, hierarchical=False)
+    else:
+        space = create.space("dgonb", grid, order=polOrder, dimrange=dimR)
     u_h = initialize(space)
     rho, v, p = Model.toPrim(u_h)
     operator = createFemDGSolver( Model, space, limiter=limiter )
@@ -98,7 +101,7 @@ def useODESolver(polOrder=2, limiter='default'):
         t += dt
         tcount += 1
         if t > saveTime:
-            print('dt = ', dt, 'time = ',t, 'count = ',count )
+            print('dt = ', dt, 'time = ',t, 'count = ',count, flush=True )
             count += 1
             # rho, v, p = Model.toPrim(u_h) # is this needed - works for me # without and it should...
             grid.writeVTK(name,
@@ -120,7 +123,6 @@ if True:
     grid = structuredGrid(x0,x1,N)
     # grid = create.grid("ALUSimplex", cartesianDomain(x0,x1,N))
     useODESolver(2,'default')      # third order with limiter
-#    useODESolver(2,None)      # third order with limiter
 elif False:
     N = [n*10 for n in N]
     grid = structuredGrid(x0,x1,N)
