@@ -9,8 +9,8 @@ from ufl import *
 
 gamma = 1.4
 dim = 2
-# from euler import sod as problem
-from euler import radialSod3 as problem
+from euler import sod as problem
+# from euler import radialSod3 as problem
 
 Model, initial, x0,x1,N, endTime, name = problem(dim,gamma)
 
@@ -57,8 +57,8 @@ def useGalerkinOp():
 
     operator.model.dt = 1e-5
 
-    start = time.time()
     grid.writeVTK(name, pointdata=[u_h], number=count)
+    start = time.time()
     while t < endTime:
         u_h_n.assign(u_h)
         operator.solve(target=u_h)
@@ -67,8 +67,8 @@ def useGalerkinOp():
             count += 1
             grid.writeVTK(name, pointdata=[u_h], number=count)
             saveTime += saveStep
-    grid.writeVTK(name, pointdata=[u_h], number=count)
     print("time loop:",time.time()-start)
+    grid.writeVTK(name, pointdata=[u_h], number=count)
 
 def useODESolver(polOrder=2, limiter='default'):
     global count, t, dt, saveTime
@@ -83,15 +83,15 @@ def useODESolver(polOrder=2, limiter='default'):
     operator = createFemDGSolver( Model, space, limiter=limiter )
     # operator.setTimeStepSize(dt)
 
-    start = time.time()
     # operator.applyLimiter( u_h );
-    print(grid.size(0))
+    print("number of elements: ",grid.size(0),flush=True)
     grid.writeVTK(name,
         pointdata=[u_h],
         # celldata={"density":rho, "pressure":p}, # bug: density not shown correctly
         celldata={"pressure":p, "maxLambda":Model.maxLambda(0,0,u_h,as_vector([1,0]))},
         cellvector={"velocity":v},
         number=count, subsampling=2)
+    start = time.time()
     tcount = 0
     while t < endTime:
         operator.solve(target=u_h)
@@ -99,8 +99,9 @@ def useODESolver(polOrder=2, limiter='default'):
         dt = operator.deltaT()
         t += dt
         tcount += 1
-        if t > saveTime:
-            print('dt = ', dt, 'time = ',t, 'count = ',count, flush=True )
+        if tcount%100 == 0:
+            print('[',tcount,']','dt = ', dt, 'time = ',t, 'count = ',count, flush=True )
+        if False: # t > saveTime:
             count += 1
             # rho, v, p = Model.toPrim(u_h) # is this needed - works for me # without and it should...
             grid.writeVTK(name,
@@ -109,18 +110,17 @@ def useODESolver(polOrder=2, limiter='default'):
                 cellvector={"velocity":v},
                 number=count, subsampling=2)
             saveTime += saveStep
+    print("time loop:",time.time()-start)
+    print("number of time steps ", tcount)
     grid.writeVTK(name,
         pointdata=[u_h],
         celldata={"pressure":p, "maxLambda":Model.maxLambda(0,0,u_h,as_vector([1,0]))},
         cellvector={"velocity":v},
         number=count, subsampling=2)
-    print("time loop:",time.time()-start)
-    print("number of time steps ", tcount)
-
 
 if True:
-    grid = structuredGrid(x0,x1,N)
-    # grid = create.grid("ALUSimplex", cartesianDomain(x0,x1,N))
+    # grid = structuredGrid(x0,x1,N)
+    grid = create.grid("ALUCube", cartesianDomain(x0,x1,N))
     useODESolver(2,'default')      # third order with limiter
 elif False:
     N = [n*10 for n in N]

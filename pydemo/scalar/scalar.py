@@ -21,7 +21,7 @@ class Transport1D:
         return U-V
 
 def LinearAdvectionDiffusion1D(v,eps):
-    v = as_vector(v)
+    if v is not None: v = as_vector(v)
     class Model:
         if v is not None and eps is not None:
             name = 'linearAD'
@@ -32,13 +32,13 @@ def LinearAdvectionDiffusion1D(v,eps):
         if v is not None:
             def F_c(t,x,U):
                 return as_matrix( [[ *(v*U[0]) ]] )
+            def maxLambda(t,x,U,n):
+                return abs(dot(v,n))
+            def velocity(t,x,U):
+                return v
         if eps is not None:
             def F_v(t,x,U,DU):
                 return eps*DU
-        def maxLambda(t,x,U,n):
-            return abs(dot(v,n))
-        def velocity(t,x,U):
-            return v
         def physical(U):
             return 1
         def jump(U,V):
@@ -47,7 +47,7 @@ def LinearAdvectionDiffusion1D(v,eps):
 def LinearAdvectionDiffusion1DMixed(v,eps,bnd):
     class Model(LinearAdvectionDiffusion1D(v,eps)):
         def dirichletValue(t,x,u):
-            return bnd
+            return bnd(t,x)
         boundaryValue = {1:dirichletValue, 2:dirichletValue}
         def zeroFlux(t,x,u,n):
             return 0
@@ -56,7 +56,7 @@ def LinearAdvectionDiffusion1DMixed(v,eps,bnd):
 def LinearAdvectionDiffusion1DDirichlet(v,eps,bnd):
     class Model(LinearAdvectionDiffusion1D(v,eps)):
         def dirichletValue(t,x,u):
-            return bnd
+            return bnd(t,x)
         boundaryValue = {}
         for i in range(1,5): boundaryValue.update( {i: dirichletValue} )
     return Model
@@ -89,36 +89,36 @@ def riemanProblem(x,x0,UL,UR):
 def constantTransport():
     return Transport1D, as_vector( [0.1] ),\
            [-1, 0], [1, 0.1], [50, 7], 0.1,\
-           "constant"
+           "constant", None
 def shockTransport():
     return Transport1D, riemanProblem(x[0],-0.5, [1], [0]),\
            [-1, 0], [1, 0.1], [50, 7], 1.0,\
-           "shockTransport"
+           "shockTransport", None
 
 def sinProblem():
-    u0 = as_vector( [sin(2*pi*x[0])] )
-    return LinearAdvectionDiffusion1DMixed(None,0.5,u0), u0,\
+    u0 = lambda t,x: as_vector( [sin(2*pi*x[0])] )
+    return LinearAdvectionDiffusion1DMixed(None,0.5,u0), u0(0,x),\
            [-1, 0], [1, 0.1], [50, 7], 0.2,\
-           "cos"
+           "cos", None
 
 def pulse():
-    t = 0
     eps = 0.001
     center = as_vector([ 0.5,0.5 ])
     x0 = x[0] - center[0]
     x1 = x[1] - center[1]
-    sig2 = 0.004
-    sig2PlusDt4 = sig2+(4.0*eps*t)
-    xq = ( x0*cos(4.0*t) + x1*sin(4.0*t)) - 0.25
-    yq = (-x0*sin(4.0*t) + x1*cos(4.0*t))
 
-    ux = -4.0*x1;
-    uy =  4.0*x0;
+    ux = -4.0*x1
+    uy =  4.0*x0
 
-    u0 = as_vector( [(sig2/ (sig2PlusDt4) ) * exp (-( xq*xq + yq*yq ) / sig2PlusDt4 )] )
-    return LinearAdvectionDiffusion1DDirichlet([ux,uy],eps,u0), u0,\
+    def u0(t,x):
+        sig2 = 0.004
+        sig2PlusDt4 = sig2+(4.0*eps*t)
+        xq = ( x0*cos(4.0*t) + x1*sin(4.0*t)) - 0.25
+        yq = (-x0*sin(4.0*t) + x1*cos(4.0*t))
+        return as_vector( [(sig2/ (sig2PlusDt4) ) * exp (-( xq*xq + yq*yq ) / sig2PlusDt4 )] )
+    return LinearAdvectionDiffusion1DDirichlet([ux,uy],eps,u0), u0(0,x),\
            [0, 0], [1, 1], [8,8], 1.0,\
-           "puls"
+           "pulse", lambda t: u0(t,x)
 
 def burgersShock():
     return Burgers1D, riemanProblem(x[0],-0.5,[1],[0])

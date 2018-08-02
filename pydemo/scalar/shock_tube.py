@@ -1,16 +1,18 @@
 import time
 from dune.grid import structuredGrid, cartesianDomain
 from dune.fem import parameter
+from dune.fem.function import integrate
 import dune.create as create
 from dune.models.elliptic.formfiles import loadModels
 from dune.femdg import createFemDGSolver
+from ufl import dot
 
 # from scalar import shockTransport as problem
 # from scalar import constantTransport as probelm
-# from scalar import sinProblem as problem
-from scalar import pulse as problem
+from scalar import sinProblem as problem
+# from scalar import pulse as problem
 
-Model, initial, x0,x1,N, endTime, name = problem()
+Model, initial, x0,x1,N, endTime, name, exact = problem()
 
 parameter.append({"fem.verboserank": 0})
 parameter.append("parameter")
@@ -49,5 +51,6 @@ def useODESolver():
             saveTime += saveStep
     grid.writeVTK(name, celldata=[u_h], number=count, subsampling=2)
     print("time loop:",time.time()-start)
+    # error = integrate( dot(u_h-exact(t),u_h-exact(t)), order=5 )
 
 useODESolver()

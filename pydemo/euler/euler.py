@@ -83,7 +83,7 @@ def sod(dim,gamma):
            riemanProblem( x[0], 0.5,
                           CompressibleEuler(dim,gamma).toCons([1,0,0,1]),
                           CompressibleEuler(dim,gamma).toCons([0.125,0,0,0.1])),\
-           [0, 0], [1, 0.25], [64, 16], 0.25,\
+           [0, 0], [1, 0.25], [64, 16], 0.15,\
            "sod"
 def radialSod1(dim,gamma):
     space = Space(dim,dim+2)
