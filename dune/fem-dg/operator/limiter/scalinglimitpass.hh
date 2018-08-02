@@ -617,7 +617,7 @@ namespace Fem
       {
         const RangeType& u = tmpVal_[ l ];
 
-        for( const auto& d : discreteModel_.model().modifiedRange() )
+        for( const auto& d : discreteModel_.model().limitedRange() )
         {
           const double denominator = std::abs( enVal[ d ] - u[ d ] );
           if( denominator < 1e-12 ) continue ;
@@ -776,7 +776,7 @@ namespace Fem
 
       //old version that did not work well
       /*
-      for( const auto& d : discreteModel_.model().modifiedRange() )
+      for( const auto& d : discreteModel_.model().limitedRange() )
       {
         double fst = 1.0;
         double sec = 1.0;
@@ -804,9 +804,9 @@ namespace Fem
         RangeType &value = tmpVal_[ qP ];
 
         // \tilde{p}(x) = \theta (p(x) - \bar{u}) + \bar{u}
-        // modifiedRange contains all components that should be modified
+        // limitedRange contains all components that should be modified
         // default is 0,...,dimRange-1
-        for( const auto& d : discreteModel_.model().modifiedRange()  )
+        for( const auto& d : discreteModel_.model().limitedRange()  )
         {
           value[ d ] = theta[ d ] * ( value[ d ] - enVal[ d ]) + enVal[ d ];
         }

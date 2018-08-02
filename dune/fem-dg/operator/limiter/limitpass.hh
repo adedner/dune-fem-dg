@@ -1508,7 +1508,7 @@ namespace Fem
       const int numBasis = uTmpLocal_.numDofs()/dimRange;
       for(int i=1; i<numBasis; ++i)
       {
-        for( const auto& r : discreteModel_.model().modifiedRange() )
+        for( const auto& r : discreteModel_.model().limitedRange() )
         {
           const int dofIdx = dofConversion_.combinedDof(i,r);
           limitEn[ dofIdx ] = uTmpLocal_[ dofIdx ];

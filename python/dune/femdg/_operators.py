@@ -120,17 +120,21 @@ def generateMethod(struct,expr, cppType, name,
         returnResult=True,
         defaultReturn='0',
         targs=None, args=None, static=False, const=False, volatile=False,
+        evalSwitch=True,
         predefined={}):
     if not returnResult:
         args = args + [cppType + ' &result']
 
     if isinstance(expr,dict):
-        bndId = Variable('const int', 'bndId')
-        code = SwitchStatement(bndId, default=return_(False))
-        for id, e in expr.items():
-            code.append(id,
-                    [generateMethodBody('RangeType', e, False, defaultReturn,
-                        predefined), return_(True)])
+        if evalSwitch:
+            bndId = Variable('const int', 'bndId')
+            code = SwitchStatement(bndId, default=return_(False))
+            for id, e in expr.items():
+                code.append(id,
+                        [generateMethodBody('RangeType', e, False, defaultReturn,
+                            predefined), return_(True)])
+        else:
+            code = UnformattedBlock()
         code = [code]
     else:
         code = generateMethodBody(cppType, expr, returnResult, defaultReturn, predefined)
@@ -282,6 +286,26 @@ def createFemDGSolver(Model, space,
             targs=['class Entity, class Point'], static=True,
             predefined=predefined)
 
+    limiterModifiedDict = getattr(Model,"limitedRange",None)
+    if limiterModifiedDict is None:
+        limiterModified = {}
+        limitedDimRange = "FunctionSpace :: dimRange"
+    else:
+        limiterModified = {}
+        count = 0
+        for id,f in limiterModifiedDict.items(): count += 1
+        limitedDimRange = str(count)
+    generateMethod(struct, limiterModified,
+            'void', 'limitedRange',
+            args=['LimitedRange& limRange'],
+            targs=['class LimitedRange'], static=True, evalSwitch=False,
+            predefined=None)
+
+    ##################################
+    ## limiter modification size
+    struct.append([Declaration(
+        Variable("const int", "limitedDimRange = " + limitedDimRange),
+        static=True)])
     ##################################
     ## Add 'has*' properties for model
     struct.append([Declaration(

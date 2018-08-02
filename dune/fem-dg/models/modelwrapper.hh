@@ -129,7 +129,8 @@ namespace Fem
 
     typedef Dune::Fem::BoundaryIdProvider < GridType >   BoundaryIdProviderType;
 
-    typedef Dune::FieldVector< int, 2 > ModifiedRangeType;
+    static const int limitedDimRange = AdditionalType :: limitedDimRange ;
+    typedef Dune::FieldVector< int, limitedDimRange > LimitedRangeType;
 
     // for Euler equations diffusion is disabled
     static const bool hasAdvection = AdditionalType::hasAdvection;
@@ -141,10 +142,15 @@ namespace Fem
     ModelWrapper( const AdvectionModelType& advModel, const DiffusionModelType& diffModel )
       : advection_( advModel ),
         diffusion_( diffModel ),
-        problem_()
+        problem_(),
+        limitedRange_()
     {
-      modified_[ 0 ] = 0;
-      modified_[ 1 ] = dimRange-1;
+      // by default this should be the identity
+      for( int i=0; i<limitedDimRange; ++i )
+        limitedRange_[ i ] = i;
+
+      // if method has been filled then modified will be set differently
+      AdditionalType :: limitedRange( limitedRange_ );
     }
 
     void setTime (const double t)
@@ -167,7 +173,7 @@ namespace Fem
     inline bool hasNonStiffSource() const { return AdditionalType::hasNonStiffSource; }
     inline bool hasFlux() const { return AdditionalType::hasFlux; }
 
-    const ModifiedRangeType& modifiedRange() const { return modified_; }
+    const LimitedRangeType& limitedRange() const { return limitedRange_; }
 
     void obtainBounds( RangeType& globalMin, RangeType& globalMax) const
     {
@@ -409,7 +415,7 @@ namespace Fem
     const DiffusionModelType& diffusion_;
 
     ProblemType problem_;
-    ModifiedRangeType modified_;
+    LimitedRangeType limitedRange_;
   };
 
 }

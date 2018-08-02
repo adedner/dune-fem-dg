@@ -156,20 +156,20 @@ namespace Fem
     typedef typename Traits::JacobianRangeType           JacobianRangeType;
 
     // default is 0,...,dimRange-1
-    typedef Dune::FieldVector< int, dimRange > ModifiedRangeType;
+    typedef Dune::FieldVector< int, dimRange > LimitedRangeType;
 
     explicit DefaultModel( double time = 0 )
       : time_( time )
     {
       for( int d=0; d<dimRange; ++d )
-        modified_[ d ] = d;
+        defaultLimitedRange_[ d ] = d;
     }
 
     /**
      * \brief return set of components to be modified by the limiter */
-    const ModifiedRangeType& modifiedRange() const
+    const LimitedRangeType& limitedRange() const
     {
-      return modified_;
+      return defaultLimitedRange_;
     }
 
     /**
@@ -655,7 +655,7 @@ namespace Fem
 
   protected:
     double time_;
-    ModifiedRangeType modified_;
+    LimitedRangeType defaultLimitedRange_;
   };
 
 }
