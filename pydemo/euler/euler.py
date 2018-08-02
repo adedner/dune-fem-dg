@@ -74,7 +74,7 @@ def riemanProblem(x,x0,UL,UR):
 def constant(dim,gamma):
     return CompressibleEulerDirichlet(dim,gamma) ,\
            as_vector( [0.1,0.,0.,0.1] ),\
-           [-1, 0], [1, 0.1], [50, 5],\
+           [-1, 0], [1, 0.1], [50, 5], 0.1,\
            "constant"
 def sod(dim,gamma):
     space = Space(dim,dim+2)
@@ -83,7 +83,7 @@ def sod(dim,gamma):
            riemanProblem( x[0], 0.5,
                           CompressibleEuler(dim,gamma).toCons([1,0,0,1]),
                           CompressibleEuler(dim,gamma).toCons([0.125,0,0,0.1])),\
-           [0, 0], [1, 0.25], [64, 16],\
+           [0, 0], [1, 0.25], [64, 16], 0.25,\
            "sod"
 def radialSod1(dim,gamma):
     space = Space(dim,dim+2)
@@ -92,7 +92,7 @@ def radialSod1(dim,gamma):
            riemanProblem( sqrt(dot(x,x)), 0.3,
                           CompressibleEuler(dim,gamma).toCons([1,0,0,1]),
                           CompressibleEuler(dim,gamma).toCons([0.125,0,0,0.1])),\
-           [-0.5, -0.5], [0.5, 0.5], [20, 20],\
+           [-0.5, -0.5], [0.5, 0.5], [20, 20], 0.25,\
            "radialSod1"
 def radialSod1Large(dim,gamma):
     space = Space(dim,dim+2)
@@ -101,7 +101,7 @@ def radialSod1Large(dim,gamma):
            riemanProblem( sqrt(dot(x,x)), 0.3,
                           CompressibleEuler(dim,gamma).toCons([1,0,0,1]),
                           CompressibleEuler(dim,gamma).toCons([0.125,0,0,0.1])),\
-           [-1.5, -1.5], [1.5, 1.5], [60, 60],\
+           [-1.5, -1.5], [1.5, 1.5], [60, 60], 0.5,\
            "radialSod1Large"
 def radialSod2(dim,gamma):
     space = Space(dim,dim+2)
@@ -110,7 +110,7 @@ def radialSod2(dim,gamma):
            riemanProblem( sqrt(dot(x,x)), 0.3,
                           CompressibleEuler(dim,gamma).toCons([0.125,0,0,0.1]),
                           CompressibleEuler(dim,gamma).toCons([1,0,0,1])),\
-           [-0.5, -0.5], [0.5, 0.5], [20, 20],\
+           [-0.5, -0.5], [0.5, 0.5], [20, 20], 0.25,\
            "radialSod2"
 def radialSod3(dim,gamma):
     space = Space(dim,dim+2)
@@ -119,5 +119,5 @@ def radialSod3(dim,gamma):
            riemanProblem( sqrt(dot(x,x)), 0.3,
                           CompressibleEuler(dim,gamma).toCons([1,0,0,1]),
                           CompressibleEuler(dim,gamma).toCons([0.125,0,0,0.1])),\
-           [-0.5, -0.5], [0.5, 0.5], [20, 20],\
+           [-0.5, -0.5], [0.5, 0.5], [20, 20], 0.5,\
            "radialSod3"

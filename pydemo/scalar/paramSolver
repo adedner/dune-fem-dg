@@ -13,18 +13,18 @@ fem.timeprovider.factor: 0.45
 fem.timeprovider.updatestep: 1
 
 # parameter for the implicit solvers
-fem.differenceoperator.eps: 1e-12
+# fem.differenceoperator.eps: 1e-12
 fem.solver.gmres.restart: 50
 fem.solver.newton.verbose: true
-fem.solver.newton.linear.verbose: false
-fem.solver.verbose: false
-fem.solver.newton.maxlineariterations: 1000
-fem.solver.newton.tolerance: 1e-10
-fem.solver.newton.linabstol: 1.25e-12
-fem.solver.newton.linreduction: 1.25e-12
+fem.solver.newton.linear.verbose: true
+fem.solver.verbose: true
+fem.solver.newton.maxlineariterations: 100000
+fem.solver.newton.tolerance: 1e-07
+fem.solver.newton.linabstol: 1.25e-9
+fem.solver.newton.linreduction: 1.25e-9
 
 
 dgdiffusionflux.method: CDG2 # diffusion flux: CDG2, CDG, BR2, IP, NIPG, BO
-dgdiffusionflux.theoryparameters: 1 # scaling with theory parameters
-dgdiffusionflux.penalty: 0.
+dgdiffusionflux.theoryparameters: 0 # scaling with theory parameters
+dgdiffusionflux.penalty: 20.
 dgdiffusionflux.liftfactor: 1.0

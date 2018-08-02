@@ -57,13 +57,16 @@ namespace Fem
     typedef Fem::CachingQuadrature< GridPartType, 1 >    FaceQuadratureType;
 
     // Allow generalization to systems
+#if 1
     typedef Fem::DiscontinuousGalerkinSpace<
                                         FunctionSpaceType,
                                         GridPartType, polynomialOrder,
                                         Fem::CachingStorage >             DiscreteFunctionSpaceType;
-    //typedef Fem::LegendreDiscontinuousGalerkinSpace< FunctionSpaceType,
-    //                                    GridPartType, polOrd,
-    //                                    Fem::CachingStorage >             DiscreteFunctionSpaceType;
+#else
+    typedef Fem::LegendreDiscontinuousGalerkinSpace< FunctionSpaceType,
+                                        GridPartType, polOrd,
+                                        Fem::CachingStorage >             DiscreteFunctionSpaceType;
+#endif
     typedef Fem::AdaptiveDiscreteFunction< DiscreteFunctionSpaceType >    DestinationType;
 
     // Indicator for Limiter

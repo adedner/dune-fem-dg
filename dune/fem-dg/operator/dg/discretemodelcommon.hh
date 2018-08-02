@@ -50,7 +50,6 @@ namespace Fem
 
     // overload selector type to add model parameters
     typedef typename Dune::Fem::VariadicSelectorBase< ExtraParameterIds, passIds... >::Type  Selector;
-
   };
 
   // AdvectionModel
@@ -135,6 +134,12 @@ namespace Fem
         model_( other.model_ ),
         numflux_( other.numflux_ )
     {
+    }
+
+    void setEntity( const EntityType& entity )
+    {
+      BaseType::setEntity( entity );
+      model_.setEntity( entity );
     }
 
     void setTime ( double time ) { const_cast< ModelType & >( model_ ).setTime( time ); }

@@ -13,6 +13,7 @@
 #include <dune/fem/space/common/functionspace.hh>
 
 // fem-dg includes
+#include <dune/fem-dg/operator/fluxes/analyticaleulerflux.hh>
 #include <dune/fem-dg/models/defaultmodel.hh>
 #include <dune/fem-dg/models/defaultprobleminterfaces.hh>
 
@@ -140,7 +141,8 @@ namespace Fem
     using BaseType :: hasMass;
 
     ModelWrapper( const AdvectionModelType& advModel, const DiffusionModelType& diffModel )
-      : advection_( advModel ),
+      : eulerFlux_(),
+        advection_( advModel ),
         diffusion_( diffModel ),
         problem_(),
         limitedRange_()
@@ -163,10 +165,10 @@ namespace Fem
     template <class Entity>
     void setEntity( const Entity& entity ) const
     {
-      if( hasAdvection )
-        advection_.init( entity );
-      if( hasDiffusion )
-        diffusion_.init( entity );
+      //if( hasAdvection )
+      //  advection_.init( entity );
+      //if( hasDiffusion )
+      //  diffusion_.init( entity );
     }
 
     inline bool hasStiffSource() const { return AdditionalType::hasStiffSource; }
@@ -216,11 +218,39 @@ namespace Fem
     inline void advection( const LocalEvaluation& local,
                            const RangeType& u,
                            const JacobianRangeType& du,
-                           JacobianRangeType& f ) const
+                           JacobianRangeType& result ) const
     {
       assert( hasAdvection );
-      AdditionType::advection( local.quadraturePoint(), u, du, f );
-      //advection_.diffusiveFlux( local.quadraturePoint(), u, du, f);
+      const auto tmp0 = u[ 1 ] / u[ 0 ];
+      const auto tmp1 = u[ 0 ] * tmp0;
+      const auto tmp2 = u[ 2 ] / u[ 0 ];
+      const auto tmp3 = u[ 0 ] * tmp2;
+      const auto tmp4 = tmp0 * tmp0;
+      const auto tmp5 = tmp2 * tmp2;
+      const auto tmp6 = tmp4 + tmp5;
+      const auto tmp7 = 0.5 * tmp6;
+      const auto tmp8 = u[ 0 ] * tmp7;
+      const auto tmp9 = -1 * tmp8;
+      const auto tmp10 = u[ 3 ] + tmp9;
+      const auto tmp11 = 0.3999999999999999 * tmp10;
+      const auto tmp12 = tmp1 * tmp0;
+      const auto tmp13 = tmp11 + tmp12;
+      const auto tmp14 = tmp1 * tmp2;
+      const auto tmp15 = tmp3 * tmp2;
+      const auto tmp16 = tmp11 + tmp15;
+      const auto tmp17 = u[ 3 ] + tmp11;
+      const auto tmp18 = tmp17 * tmp0;
+      const auto tmp19 = tmp17 * tmp2;
+      (result[ 0 ])[ 0 ] = tmp1;
+      (result[ 0 ])[ 1 ] = tmp3;
+      (result[ 1 ])[ 0 ] = tmp13;
+      (result[ 1 ])[ 1 ] = tmp14;
+      (result[ 2 ])[ 0 ] = tmp14;
+      (result[ 2 ])[ 1 ] = tmp16;
+      (result[ 3 ])[ 0 ] = tmp18;
+      (result[ 3 ])[ 1 ] = tmp19;
+      //AdditionType::advection( local.quadraturePoint(), u, du, result );
+      //advection_.diffusiveFlux( local.quadraturePoint(), u, du, result );
     }
 
     template <class LocalEvaluation>
@@ -250,6 +280,7 @@ namespace Fem
     {
       std::abort();
       assert( hasAdvection );
+      assert( 0 ); // if this is used we have to check if this is correct
       // TODO: u != ubar and du != dubar
       advection_.linDiffusiveFlux( u, du, local.quadraturePoint(), u, du, A);
     }
@@ -298,12 +329,6 @@ namespace Fem
       const bool isFluxBnd =
 #endif
       AdditionalType::boundaryFlux(id, time(), local.entity(), local.quadraturePoint(), normal, uLeft, gLeft);
-#if 0
-      std::cout << "BoundaryFlux with id=" << id << " with uLeft=" << uLeft
-                << " results in flux=" << gLeft
-                << " --- " << isFluxBnd
-                << std::endl;
-#endif
       assert( isFluxBnd );
       return 0; // QUESTION: do something better here? Yes, return time step restriction if possible
     }
@@ -328,9 +353,15 @@ namespace Fem
                                          const JacobianRangeType& jacLeft,
                                          RangeType& gLeft ) const
     {
-      // TODO: need to add something to 'Addtional'?
-      assert( hasDiffusion );
-      return 0;
+      std::abort();
+      const DomainType normal = local.intersection().integrationOuterNormal( local.localPosition() );
+      int id = getBoundaryId( local );
+#ifndef NDEBUG
+      const bool isFluxBnd =
+#endif
+      AdditionalType::diffusionBoundaryFlux(id, time(), local.entity(), local.quadraturePoint(), normal, uLeft, jacLeft, gLeft);
+      assert( isFluxBnd );
+      return 0; // QUESTION: do something better here? Yes, return time step restriction if possible
     }
 
     template <class LocalEvaluation>
@@ -343,7 +374,8 @@ namespace Fem
       // TODO: add a max speed for the diffusion time step control
       // this needs to be added in diffusionTimeStep
       assert( hasAdvection );
-      advspeed = AdditionalType::maxSpeed( time(), local.entity(), local.quadraturePoint(), unitNormal, u );
+      advspeed = eulerFlux_.maxSpeed( gamma() , unitNormal , u );
+      //advspeed = AdditionalType::maxSpeed( time(), local.entity(), local.quadraturePoint(), unitNormal, u );
       totalspeed = advspeed;
     }
 
@@ -361,7 +393,16 @@ namespace Fem
                           const RangeType& u,
                           DomainType& velocity) const
     {
-      velocity = AdditionalType :: velocity( time(), en, x, u );
+      for(int i=0; i<dimDomain; ++i)
+      {
+        // U = (rho, rho v_0,...,rho v_(d-1), e )
+        // we store \rho u but do not need to divide by \rho here since only
+        // sign is needed.
+        velocity[i] = u[i+1];
+      }
+
+      //
+      //velocity = AdditionalType :: velocity( time(), en, x, u );
     }
 
     // we have physical check for this model
@@ -376,7 +417,14 @@ namespace Fem
                          const DomainType& x,
                          const RangeType& u) const
     {
-      return AdditionalType :: physical( entity, x, u ) > 0;
+      if (u[0]<1e-8)
+        return false;
+      else
+      {
+        //std::cout << eulerFlux_.rhoeps(u) << std::endl;
+        return (eulerFlux_.rhoeps(u) > 1e-8);
+      }
+      //return AdditionalType :: physical( entity, x, u ) > 0;
     }
 
     // adjust average value if necessary
@@ -397,7 +445,11 @@ namespace Fem
                      const RangeType& uRight,
                      RangeType& jump) const
     {
-      jump = AdditionalType :: jump( it, x, uLeft, uRight );
+      // take pressure as shock detection values
+      const RangeFieldType pl = eulerFlux_.pressure( gamma(), uLeft );
+      const RangeFieldType pr = eulerFlux_.pressure( gamma(), uRight );
+      jump  = (pl-pr)/(0.5*(pl+pr));
+      //jump = AdditionalType :: jump( it, x, uLeft, uRight );
     }
 
     // calculate jump between left and right value
@@ -418,6 +470,7 @@ namespace Fem
     }
 
   protected:
+    const EulerAnalyticalFlux<dimDomain, RangeFieldType > eulerFlux_;
     const AdvectionModelType& advection_;
     const DiffusionModelType& diffusion_;
 
