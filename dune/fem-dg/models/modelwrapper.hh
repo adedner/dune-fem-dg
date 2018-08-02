@@ -217,6 +217,7 @@ namespace Fem
                            JacobianRangeType& f ) const
     {
       assert( hasAdvection );
+      advection_.init( local.entity() ); // TODO: this should not be required but the pulse problem fails without
       advection_.diffusiveFlux( local.quadraturePoint(), u, du, f);
     }
 
@@ -246,6 +247,7 @@ namespace Fem
                            RangeType& A ) const
     {
       assert( hasAdvection );
+      assert( 0 ); // if this is used we have to check if this is correct
       // TODO: u != ubar and du != dubar
       advection_.linDiffusiveFlux( u, du, local.quadraturePoint(), u, du, A);
     }
@@ -292,12 +294,6 @@ namespace Fem
       const bool isFluxBnd =
 #endif
       AdditionalType::boundaryFlux(id, time(), local.entity(), local.quadraturePoint(), normal, uLeft, gLeft);
-#if 0
-      std::cout << "BoundaryFlux with id=" << id << " with uLeft=" << uLeft
-                << " results in flux=" << gLeft
-                << " --- " << isFluxBnd
-                << std::endl;
-#endif
       assert( isFluxBnd );
       return 0; // QUESTION: do something better here? Yes, return time step restriction if possible
     }
@@ -321,9 +317,14 @@ namespace Fem
                                          const JacobianRangeType& jacLeft,
                                          RangeType& gLeft ) const
     {
-      // TODO: need to add something to 'Addtional'?
-      assert( hasDiffusion );
-      return 0;
+      const DomainType normal = local.intersection().integrationOuterNormal( local.localPosition() );
+      int id = getBoundaryId( local );
+#ifndef NDEBUG
+      const bool isFluxBnd =
+#endif
+      AdditionalType::diffusionBoundaryFlux(id, time(), local.entity(), local.quadraturePoint(), normal, uLeft, jacLeft, gLeft);
+      assert( isFluxBnd );
+      return 0; // QUESTION: do something better here? Yes, return time step restriction if possible
     }
 
     template <class LocalEvaluation>
