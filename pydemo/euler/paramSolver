@@ -3,7 +3,7 @@
 
 fem.ode.odesolver: EX # ode solvers: EX, IM, IMEX
 fem.ode.order: 3
-fem.ode.verbose: full # ode output: none, cfl, full
+fem.ode.verbose: cfl # ode output: none, cfl, full
 fem.ode.cflincrease: 1.25
 fem.ode.miniterations: 95
 fem.ode.maxiterations: 105
@@ -16,7 +16,7 @@ fem.timeprovider.updatestep: 1
 fem.solver.verbose: false
 fem.solver.gmres.restart: 15
 fem.solver.newton.verbose: false
-fem.solver.newton.linear.verbose: true
+fem.solver.newton.linear.verbose: false
 fem.solver.newton.maxlineariterations: 1000
 fem.solver.newton.tolerance: 1e-10
 
