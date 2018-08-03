@@ -9,6 +9,8 @@
 #include <dune/fem/solver/timeprovider.hh>
 #include <dune/fem/operator/common/spaceoperatorif.hh>
 
+#include <dune/fem-dg/algorithm/evolution.hh>
+
 // dune-fem-dg includes
 #include <dune/fem-dg/operator/fluxes/advection/fluxes.hh>
 #include <dune/fem-dg/operator/fluxes/euler/fluxes.hh>
@@ -17,6 +19,10 @@
 #include <dune/fem-dg/solver/rungekuttasolver.hh>
 #include <dune/fem-dg/models/modelwrapper.hh>
 #include <dune/fem-dg/misc/algorithmcreatorselector.hh>
+
+#ifdef EULER_WRAPPER_TEST
+#include <dune/fem-dg/models/additional.hh>
+#endif
 
 namespace Dune
 {
@@ -30,7 +36,11 @@ namespace Fem
              class AdvectionModel,
              class DiffusionModel,
              class Additional>
+#ifdef EULER_WRAPPER_TEST
+  class DGOperator : public DuneODE :: OdeSolverInterface< DestinationImp >
+#else
   class DGOperator : public Fem::SpaceOperatorInterface< DestinationImp >
+#endif
   {
   public:
     static const Solver::Enum solverId             = Additional::solverId;
@@ -51,7 +61,15 @@ namespace Fem
     typedef typename GridType :: CollectiveCommunication          CollectiveCommunicationType;
     typedef TimeProvider< CollectiveCommunicationType >           TimeProviderType;
 
-    typedef ModelWrapper< GridType, AdvectionModel, DiffusionModel, Additional >  ModelType;
+#ifdef EULER_WRAPPER_TEST
+    typedef U0Sod< GridType > Problem;
+#endif
+
+    typedef ModelWrapper< GridType, AdvectionModel, DiffusionModel, Additional
+#ifdef EULER_WRAPPER_TEST
+        , Problem
+#endif
+      >  ModelType;
 
     static constexpr bool symmetric  =  false ;
     static constexpr bool matrixfree =  true  ;
@@ -81,10 +99,12 @@ namespace Fem
 
     DGOperator( const DiscreteFunctionSpaceType& space,
                 const AdvectionModel &advectionModel,
-                const DiffusionModel &diffusionModel )
+                const DiffusionModel &diffusionModel,
+                const TimeSteppingParameters& param = TimeSteppingParameters())
       : space_( space ),
         extra_(),
-        tp_( space_.gridPart().comm()),
+        tpPtr_( new TimeProviderType(space_.gridPart().comm()) ),
+        tp_( *tpPtr_ ),
         model_( advectionModel, diffusionModel ),
         fullOperator_( space.gridPart(), model_, extra_, name() ),
         explOperator_( space.gridPart(), model_, extra_, name() ),
@@ -92,10 +112,8 @@ namespace Fem
         rkSolver_( tp_, fullOperator_, explOperator_, implOperator_, name() ),
         initialized_( false )
     {
-      std::string keyPrefix("femdg.stepper.");
-      const double maxTimeStep =
-        Dune::Fem::Parameter::getValue< double >( keyPrefix +  "maxtimestep", 1e-4);
-      fixedTimeStep_ = Dune::Fem::Parameter::getValue< double >( keyPrefix + "fixedtimestep" , 0.0 );
+      const double maxTimeStep = param.maxTimeStep();
+      fixedTimeStep_ = param.fixedTimeStep();
       // start first time step with prescribed fixed time step
       // if it is not 0 otherwise use the internal estimate
       tp_.provideTimeStepEstimate(maxTimeStep);
@@ -110,24 +128,64 @@ namespace Fem
       std::cout << "cfl = " << double(tp_.factor()) << " " << tp_.time() << std::endl;
     }
 
+    DGOperator( TimeProviderType& tp,
+                const DiscreteFunctionSpaceType& space,
+                const AdvectionModel &advectionModel,
+                const DiffusionModel &diffusionModel,
+                const TimeSteppingParameters& param = TimeSteppingParameters())
+      : space_( space ),
+        extra_(),
+        tp_( tp ),
+        model_( advectionModel, diffusionModel ),
+        fullOperator_( space.gridPart(), model_, extra_, name() ),
+        explOperator_( space.gridPart(), model_, extra_, name() ),
+        implOperator_( space.gridPart(), model_, extra_, name() ),
+        rkSolver_( tp_, fullOperator_, explOperator_, implOperator_, name() ),
+        initialized_( false )
+    {
+      std::cout << "cfl = " << double(tp_.factor()) << " " << tp_.time() << std::endl;
+    }
+
+    virtual void initialize( const DestinationType& dest )
+    {
+      if( !initialized_ )
+      {
+        std::cout << "Call init " << std::endl;
+        //const double dt = tp_.timeStepEstimate();
+        rkSolver_.initialize( dest );
+        initialized_ = true;
+        // tp_.provideTimeStepEstimate( dt );
+        std::cout << "Finish init " << std::endl;
+      }
+    }
+
+    virtual void description( std::ostream&) const {}
+
     const DiscreteFunctionSpaceType& space () const { return space_; }
     const DiscreteFunctionSpaceType& domainSpace () const { return space_; }
     const DiscreteFunctionSpaceType& rangeSpace () const { return space_; }
 
+#ifndef EULER_WRAPPER_TEST
     //! evaluate the operator
     void operator()( const DestinationType& arg, DestinationType& dest ) const
     {
       dest.assign( arg );
       solve( dest );
     }
+#endif
 
     void limit( DestinationType &u) const { explOperator_.limit(u); }
 
-    void solve( DestinationType& dest ) const
+    void solve( DestinationType& dest, MonitorType& )
+    {
+      solve( dest );
+    }
+
+    void solve( DestinationType& dest )
     {
       if( !initialized_ )
       {
-        const double dt = tp_.timeStepEstimate();
+        //const double dt = tp_.timeStepEstimate();
         rkSolver_.initialize( dest );
         initialized_ = true;
         // tp_.provideTimeStepEstimate( dt );
@@ -136,17 +194,22 @@ namespace Fem
       // limit( dest );
       rkSolver_.solve( dest, monitor_ );
 
-      // next time step is prescribed by fixedTimeStep
-      if ( fixedTimeStep_ > 1e-20 )
-        tp_.next( fixedTimeStep_ );
-      else
-        tp_.next();
+      if( tpPtr_ )
+      {
+        // next time step is prescribed by fixedTimeStep
+        if ( fixedTimeStep_ > 1e-20 )
+          tp_.next( fixedTimeStep_ );
+        else
+          tp_.next();
+      }
 
        //       // reset time step estimate
        // tp.provideTimeStepEstimate( maxTimeStep );
 
+#ifndef EULER_WRAPPER_TEST
        // return limited solution, to be discussed
        limit( dest );
+#endif
     }
 
     void setTimeStepSize( const double dt )
@@ -162,7 +225,8 @@ namespace Fem
     const DiscreteFunctionSpaceType&      space_;
 
     std::tuple<>                          extra_;
-    mutable TimeProviderType              tp_;
+    std::unique_ptr< TimeProviderType >   tpPtr_;
+    TimeProviderType&                     tp_;
     mutable MonitorType                   monitor_;
     ModelType                             model_;
     mutable FullOperatorType              fullOperator_;
