@@ -15,6 +15,7 @@
 // fem-dg includes
 #include <dune/fem-dg/models/defaultmodel.hh>
 #include <dune/fem-dg/models/defaultprobleminterfaces.hh>
+//#include <dune/fem-dg/examples/euler/problems.hh>
 
 namespace Dune
 {
@@ -100,13 +101,14 @@ namespace Fem
   template< class GridImp,
             class AdvectionModelImp,
             class DiffusionModelImp,
-            class AdditionalImp >
+            class AdditionalImp,
+            class Problem = detail::EmptyProblem< AdvectionModelImp > >
   class ModelWrapper :
-    public DefaultModel< ModelWrapperTraits< GridImp, detail::EmptyProblem< AdvectionModelImp > > >
+    public DefaultModel< ModelWrapperTraits< GridImp, Problem > >
   {
   public:
     typedef GridImp                                      GridType;
-    typedef ModelWrapperTraits< GridType, detail::EmptyProblem< AdvectionModelImp > > Traits;
+    typedef ModelWrapperTraits< GridType, Problem >      Traits;
     typedef DefaultModel< Traits >                       BaseType;
     typedef typename Traits::ProblemType                 ProblemType;
     typedef AdvectionModelImp                            AdvectionModelType ;
