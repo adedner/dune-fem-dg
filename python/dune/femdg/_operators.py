@@ -286,13 +286,42 @@ def createFemDGSolver(Model, space,
             targs=['class Intersection, class Point'], static=True,
             predefined=predefined)
 
-    boundaryFluxDict = getattr(Model,"boundaryFlux",None)
-    if boundaryFluxDict is not None:
-        boundaryFlux = {}
-        for id,f in boundaryFluxDict.items(): boundaryFlux.update({id:f(t,x,u,n)})
-    else:
-        boundaryFlux = {}
-    generateMethod(struct, boundaryFlux,
+
+    #####################
+    ## boundary treatment
+    boundaryDict = getattr(Model,"boundary",{})
+    boundaryAFlux = {}
+    boundaryDFlux = {}
+    boundaryValue = {}
+    for k,f in boundaryDict.items():
+        # collect all ids (could be list or range)
+        ids = []
+        try:
+            for kk in k:
+                ids += [kk]
+        except TypeError:
+            ids += [k]
+        # TODO: check that id is not used more then once
+        # figure out what type of boundary condition is used
+        if isinstance(f,tuple) or isinstance(f,list):
+            assert hasAdvFlux and hasDiffFlux, "two boundary fluxes provided for id "+str(k)+" but only one bulk flux given"
+            method = [f[0](t,x,u,n), f[1](t,x,u,n)]
+            boundaryAFlux.update( [ (kk,method[0]) for kk in ids] )
+            boundaryDFlux.update( [ (kk,method[1]) for kk in ids] )
+        else:
+            try:
+                method = f(t,x,u,n)
+                if hasAdvFlux and not hasDiffFlux:
+                    boundaryAFlux.update( [ (kk,method) for kk in ids] )
+                elif not hasAdvFlux and hasDiffFlux:
+                    boundaryDFlux.update( [ (kk,method) for kk in ids] )
+                else:
+                    assert not (hasAdvFlux and hasDiffFlux), "one boundary fluxes provided for id "+str(k)+" but two bulk flux given"
+            except TypeError:
+                method = f(t,x,u)
+                boundaryValue.update( [ (kk,method) for kk in ids] )
+
+    generateMethod(struct, boundaryAFlux,
             'bool', 'boundaryFlux',
             args=['const int bndId',
                   'const double &t',
@@ -302,13 +331,7 @@ def createFemDGSolver(Model, space,
                   'RangeType &result'],
             targs=['class Entity, class Point'], static=True,
             predefined=predefined)
-    diffusionBoundaryFluxDict = getattr(Model,"diffusionBoundaryFlux",None)
-    if diffusionBoundaryFluxDict is not None:
-        diffusionBoundaryFlux = {}
-        for id,f in diffusionBoundaryFluxDict.items(): diffusionBoundaryFlux.update({id:f(t,x,u,n)})
-    else:
-        diffusionBoundaryFlux = {}
-    generateMethod(struct, diffusionBoundaryFlux,
+    generateMethod(struct, boundaryDFlux,
             'bool', 'diffusionBoundaryFlux',
             args=['const int bndId',
                   'const double &t',
@@ -319,12 +342,6 @@ def createFemDGSolver(Model, space,
                   'RangeType &result'],
             targs=['class Entity, class Point'], static=True,
             predefined=predefined)
-    boundaryValueDict = getattr(Model,"boundaryValue",None)
-    if boundaryValueDict is not None:
-        boundaryValue = {}
-        for id,f in boundaryValueDict.items(): boundaryValue.update({id:f(t,x,u)})
-    else:
-        boundaryValue = {}
     generateMethod(struct, boundaryValue,
             'bool', 'boundaryValue',
             args=['const int bndId',

@@ -9,8 +9,9 @@ from ufl import *
 
 gamma = 1.4
 dim = 2
-from euler import sod as problem
-# from euler import radialSod3 as problem
+
+# from euler import sod as problem
+from euler import radialSod3 as problem
 
 Model, initial, x0,x1,N, endTime, name = problem(dim,gamma)
 
@@ -27,6 +28,7 @@ saveStep = 0.01
 saveTime = saveStep
 
 def initialize(space):
+    return space.interpolate(initial, name='u_h')
     if space.order == 0:
         return space.interpolate(initial, name='u_h')
     else:
@@ -83,7 +85,7 @@ def useODESolver(polOrder=2, limiter='default'):
     operator = createFemDGSolver( Model, space, limiter=limiter )
     # operator.setTimeStepSize(dt)
 
-    # operator.applyLimiter( u_h );
+    operator.applyLimiter( u_h );
     print("number of elements: ",grid.size(0),flush=True)
     grid.writeVTK(name,
         pointdata=[u_h],
@@ -101,9 +103,8 @@ def useODESolver(polOrder=2, limiter='default'):
         tcount += 1
         if tcount%100 == 0:
             print('[',tcount,']','dt = ', dt, 'time = ',t, 'count = ',count, flush=True )
-        if False: # t > saveTime:
+        if t > saveTime:
             count += 1
-            # rho, v, p = Model.toPrim(u_h) # is this needed - works for me # without and it should...
             grid.writeVTK(name,
                 pointdata=[u_h],
                 celldata={"pressure":p, "maxLambda":Model.maxLambda(0,0,u_h,as_vector([1,0]))},
@@ -121,6 +122,8 @@ def useODESolver(polOrder=2, limiter='default'):
 if True:
     # grid = structuredGrid(x0,x1,N)
     grid = create.grid("ALUCube", cartesianDomain(x0,x1,N))
+    # grid.hierarchicalGrid.globalRefine(2)
+    # grid = create.view("adaptive", grid)
     useODESolver(2,'default')      # third order with limiter
 elif False:
     N = [n*10 for n in N]
