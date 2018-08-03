@@ -117,7 +117,7 @@ def pulse():
         yq = (-x0*sin(4.0*t) + x1*cos(4.0*t))
         return as_vector( [(sig2/ (sig2PlusDt4) ) * exp (-( xq*xq + yq*yq ) / sig2PlusDt4 )] )
     return LinearAdvectionDiffusion1DDirichlet([ux,uy],eps,u0), u0(0,x),\
-           [0, 0], [1, 1], [8,8], 1.0,\
+           [0, 0], [1, 1], [16,16], 1.0,\
            "pulse", lambda t: u0(t,x)
 
 def burgersShock():
