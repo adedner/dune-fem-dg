@@ -6,10 +6,7 @@ class Transport1D:
     def F_c(t,x,U):
         return as_matrix( [ [U[0], 0] ] )
 
-    def outflowValue(t,x,u):
-        return u
-    boundaryValue = {}
-    for i in range(1,5): boundaryValue.update( {i: outflowValue} )
+    boundary = {range(1,5): lambda t,x,u: u}
 
     def maxLambda(t,x,U,n):
         return abs(n[0])
@@ -48,19 +45,21 @@ def LinearAdvectionDiffusion1DMixed(v,eps,bnd):
     class Model(LinearAdvectionDiffusion1D(v,eps)):
         def dirichletValue(t,x,u):
             return bnd(t,x)
-        boundaryValue = {1:dirichletValue, 2:dirichletValue}
         def zeroFlux(t,x,u,n):
             return 0
-        diffusionBoundaryFlux = {3: zeroFlux, 4: zeroFlux}
+        if v is not None and eps is not None:
+            boundary = {(1,2): dirichletValue, (3,4): [zeroFlux,zeroFlux] }
+        else:
+            boundary = {(1,2): dirichletValue, (3,4): zeroFlux }
     return Model
 def LinearAdvectionDiffusion1DDirichlet(v,eps,bnd):
     class Model(LinearAdvectionDiffusion1D(v,eps)):
         def dirichletValue(t,x,u):
             return bnd(t,x)
-        boundaryValue = {}
-        for i in range(1,5): boundaryValue.update( {i: dirichletValue} )
+        boundary = { range(1,5): dirichletValue }
     return Model
 
+# burgers problems still need to be adapted to new API
 class Burgers1D:
     name = 'burgers'
 
@@ -96,13 +95,13 @@ def shockTransport():
            "shockTransport", None
 
 def sinProblem():
-    u0 = lambda t,x: as_vector( [sin(2*pi*x[0])] )
-    return LinearAdvectionDiffusion1DMixed(None,0.5,u0), u0(0,x),\
+    eps = 0.5
+    u0 = lambda t,x: as_vector( [sin(2*pi*x[0])*exp(-t*eps*(2*pi)**2)] )
+    return LinearAdvectionDiffusion1DMixed(None,eps,u0), u0(0,x),\
            [-1, 0], [1, 0.1], [50, 7], 0.2,\
-           "cos", None
+           "cos", lambda t: u0(t,x)
 
-def pulse():
-    eps = 0.001
+def pulse(eps=None):
     center = as_vector([ 0.5,0.5 ])
     x0 = x[0] - center[0]
     x1 = x[1] - center[1]
@@ -112,13 +111,18 @@ def pulse():
 
     def u0(t,x):
         sig2 = 0.004
-        sig2PlusDt4 = sig2+(4.0*eps*t)
+        if eps is None:
+            sig2PlusDt4 = sig2
+        else:
+            sig2PlusDt4 = sig2+(4.0*eps*t)
         xq = ( x0*cos(4.0*t) + x1*sin(4.0*t)) - 0.25
         yq = (-x0*sin(4.0*t) + x1*cos(4.0*t))
         return as_vector( [(sig2/ (sig2PlusDt4) ) * exp (-( xq*xq + yq*yq ) / sig2PlusDt4 )] )
     return LinearAdvectionDiffusion1DDirichlet([ux,uy],eps,u0), u0(0,x),\
            [0, 0], [1, 1], [16,16], 1.0,\
-           "pulse", lambda t: u0(t,x)
+           "pulse"+str(eps), lambda t: u0(t,x)
+def diffusivePulse():
+    return pulse(0.001)
 
 def burgersShock():
     return Burgers1D, riemanProblem(x[0],-0.5,[1],[0])
