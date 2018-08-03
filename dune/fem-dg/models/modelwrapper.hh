@@ -217,8 +217,9 @@ namespace Fem
                            JacobianRangeType& f ) const
     {
       assert( hasAdvection );
-      advection_.init( local.entity() ); // TODO: this should not be required but the pulse problem fails without
-      advection_.diffusiveFlux( local.quadraturePoint(), u, du, f);
+      AdditionalType::advection( time(), local.entity(), local.quadraturePoint(), u, f);
+      // advection_.init( local.entity() ); // TODO: this should not be required but the pulse problem fails without
+      // advection_.diffusiveFlux( local.quadraturePoint(), u, du, f);
     }
 
     template <class LocalEvaluation>
