@@ -47,25 +47,18 @@ def CompressibleEuler(dim, gamma):
 
 def CompressibleEulerNeuman(dim, gamma):
     class Model(CompressibleEuler(dim,gamma)):
-        def outflowFlux(t,x,u,n):
-            return Model.F_c(t,x,u)*n
-        boundaryFlux = {}
-        for i in range(1,5): boundaryFlux.update( {i: outflowFlux} )
+        boundary = {range(1,5): lambda t,x,u,n: Model.F_c(t,x,u)*n}
     return Model
 def CompressibleEulerDirichlet(dim, gamma):
     class Model(CompressibleEuler(dim,gamma)):
-        def outflowValue(t,x,u):
-            return u
-        boundaryValue = {}
-        for i in range(1,5): boundaryValue.update( {i: outflowValue} )
+        boundary = {range(1,5): lambda t,x,u: u}
     return Model
 def CompressibleEulerSlip(dim, gamma):
     class Model(CompressibleEuler(dim,gamma)):
         def outflowFlux(t,x,u,n):
             _,_, p = CompressibleEuler(dim,gamma).toPrim(u)
             return as_vector([ 0, *(p*n), 0 ])
-        boundaryFlux = {}
-        for i in range(1,5): boundaryFlux.update( {i: outflowFlux} )
+        boundary = {range(1,5): outflowFlux}
     return Model
 
 def riemanProblem(x,x0,UL,UR):

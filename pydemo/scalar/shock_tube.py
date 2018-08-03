@@ -8,9 +8,9 @@ from dune.femdg import createFemDGSolver
 from ufl import dot
 
 # from scalar import shockTransport as problem
-# from scalar import constantTransport as probelm
 # from scalar import sinProblem as problem
-from scalar import pulse as problem
+# from scalar import pulse as problem
+from scalar import diffusivePulse as problem
 
 Model, initial, x0,x1,N, endTime, name, exact = problem()
 
