@@ -346,9 +346,9 @@ namespace Fem
       // if indicator output is enabled create objects
       if( Fem::Parameter::getValue<bool> ("femdg.limiter.indicatoroutput", false ) )
       {
-        fvSpc_     = new LimiterIndicatorSpaceType( gridPart_ );
-        indicator_ = new LimiterIndicatorType( "SE", *fvSpc_ );
-        limitDiscreteModel_.setIndicator( indicator_ );
+        fvSpc_.reset( new LimiterIndicatorSpaceType( gridPart_ ) );
+        indicator_.reset(new LimiterIndicatorType( "SE", *fvSpc_ ) );
+        limitDiscreteModel_.setIndicator( indicator() );
       }
     }
 
@@ -363,30 +363,28 @@ namespace Fem
       , gridPart_( gridPart )
       , space_( gridPart_ )
       , limiterSpace_( gridPart_ )
-      , uTmp_( 0 )
-      , fvSpc_( 0 )
-      , indicator_( 0 )
+      , uTmp_()
+      , fvSpc_()
+      , indicator_()
+      , operatorCalled_( 0 )
       , diffFlux_( gridPart_, model_, DGPrimalDiffusionFluxParameters( ParameterKey::generate( name, "dgdiffusionflux." ) ) )
       , discreteModel1_( model_, advflux_, diffFlux_ )
       , limitDiscreteModel_( model_ , space_.order() )
       , pass0_()
       , pass1_( limitDiscreteModel_, pass0_, limiterSpace_ )
       , pass2_( discreteModel1_, pass1_, space_ )
-      //, limOp_( space_, 0.0, 1.0  )
     {
       // create indicator if enabled
       createIndicator();
     }
 
+    /*
     ~DGLimitedAdvectionOperator()
     {
-      delete uTmp_; uTmp_ = 0;
-      if( indicator_ )
-      {
-        delete indicator_; indicator_ = 0;
-        delete fvSpc_;     fvSpc_     = 0;
-      }
+      std::cout << "DGLimitedOperator called " << operatorCalled_ << " times."
+        << std::endl;
     }
+    */
 
     void activateLinear() const {
       limitPass().disable();
@@ -416,6 +414,7 @@ namespace Fem
 
     void operator()( const DestinationType& arg, DestinationType& dest ) const
     {
+      ++operatorCalled_;
       pass2_( arg, dest );
     }
 
@@ -452,15 +451,16 @@ namespace Fem
     }
 
     // return pointer to indicator function
-    LimiterIndicatorType* indicator() { return indicator_ ; }
+    LimiterIndicatorType* indicator() { return indicator_.operator->() ; }
 
     inline void limit( DestinationType& U ) const
     {
       // copy U to uTmp_
       if( polOrd > 0 )
       {
+        //std::cout << "Called extra limit" << std::endl;
         if( ! uTmp_ )
-          uTmp_ = new LimiterDestinationType("limitTmp", limiterSpace_);
+          uTmp_.reset(new LimiterDestinationType("limitTmp", limiterSpace_) );
 
         assert( uTmp_ );
         uTmp_->assign( U );
@@ -511,10 +511,12 @@ namespace Fem
     GridPartType&              gridPart_;
     SpaceType                  space_;
     LimiterSpaceType           limiterSpace_;
-    mutable LimiterDestinationType* uTmp_;
 
-    LimiterIndicatorSpaceType* fvSpc_;
-    LimiterIndicatorType*      indicator_;
+    mutable std::unique_ptr< LimiterDestinationType > uTmp_;
+    std::unique_ptr< LimiterIndicatorSpaceType > fvSpc_;
+    std::unique_ptr< LimiterIndicatorType      > indicator_;
+
+    mutable int operatorCalled_;
 
 
   protected:
@@ -642,9 +644,9 @@ namespace Fem
       // if indicator output is enabled create objects
       if( Fem::Parameter::getValue<bool> ("femdg.limiter.indicatoroutput", false ) )
       {
-        fvSpc_     = new LimiterIndicatorSpaceType( gridPart_ );
-        indicator_ = new LimiterIndicatorType( "SE", *fvSpc_ );
-        limitDiscreteModel_.setIndicator( indicator_ );
+        fvSpc_.reset( new LimiterIndicatorSpaceType( gridPart_ ) );
+        indicator_.reset( new LimiterIndicatorType( "SE", *fvSpc_ ) );
+        limitDiscreteModel_.setIndicator( indicator() );
       }
     }
 
@@ -659,9 +661,9 @@ namespace Fem
       , gridPart_( gridPart )
       , space_( gridPart_ )
       , limiterSpace_( gridPart_ )
-      , uTmp_( 0 )
-      , fvSpc_( 0 )
-      , indicator_( 0 )
+      , uTmp_()
+      , fvSpc_()
+      , indicator_()
       , diffFlux_( gridPart_, model_, DGPrimalDiffusionFluxParameters( ParameterKey::generate( name, "dgdiffusionflux." ) ) )
       , discreteModel1_( model_, advflux_, diffFlux_ )
       , limitDiscreteModel_( model_ , space_.order() )
@@ -671,16 +673,6 @@ namespace Fem
     {
       // create indicator if enabled
       createIndicator();
-    }
-
-    ~DGScalingLimitedAdvectionOperator()
-    {
-      delete uTmp_; uTmp_ = 0;
-      if( indicator_ )
-      {
-        delete indicator_; indicator_ = 0;
-        delete fvSpc_;     fvSpc_     = 0;
-      }
     }
 
     void activateLinear() const {
@@ -747,7 +739,7 @@ namespace Fem
     }
 
     // return pointer to indicator function
-    LimiterIndicatorType* indicator() { return indicator_ ; }
+    LimiterIndicatorType* indicator() { return indicator_.operator->() ; }
 
     inline void limit( DestinationType& U ) const
     {
@@ -755,7 +747,7 @@ namespace Fem
       if( polOrd > 0 )
       {
         if( ! uTmp_ )
-          uTmp_ = new LimiterDestinationType("limitTmp", limiterSpace_);
+          uTmp_.reset( new LimiterDestinationType("limitTmp", limiterSpace_) );
 
         assert( uTmp_ );
         uTmp_->assign( U );
@@ -806,10 +798,11 @@ namespace Fem
     GridPartType&              gridPart_;
     SpaceType                  space_;
     LimiterSpaceType           limiterSpace_;
-    mutable LimiterDestinationType* uTmp_;
 
-    LimiterIndicatorSpaceType* fvSpc_;
-    LimiterIndicatorType*      indicator_;
+
+    mutable std::unique_ptr< LimiterDestinationType > uTmp_;
+    std::unique_ptr< LimiterIndicatorSpaceType >  fvSpc_;
+    std::unique_ptr< LimiterIndicatorType      >  indicator_;
 
 
   protected:
