@@ -221,36 +221,8 @@ namespace Fem
                            JacobianRangeType& result ) const
     {
       assert( hasAdvection );
-      const auto tmp0 = u[ 1 ] / u[ 0 ];
-      const auto tmp1 = u[ 0 ] * tmp0;
-      const auto tmp2 = u[ 2 ] / u[ 0 ];
-      const auto tmp3 = u[ 0 ] * tmp2;
-      const auto tmp4 = tmp0 * tmp0;
-      const auto tmp5 = tmp2 * tmp2;
-      const auto tmp6 = tmp4 + tmp5;
-      const auto tmp7 = 0.5 * tmp6;
-      const auto tmp8 = u[ 0 ] * tmp7;
-      const auto tmp9 = -1 * tmp8;
-      const auto tmp10 = u[ 3 ] + tmp9;
-      const auto tmp11 = 0.3999999999999999 * tmp10;
-      const auto tmp12 = tmp1 * tmp0;
-      const auto tmp13 = tmp11 + tmp12;
-      const auto tmp14 = tmp1 * tmp2;
-      const auto tmp15 = tmp3 * tmp2;
-      const auto tmp16 = tmp11 + tmp15;
-      const auto tmp17 = u[ 3 ] + tmp11;
-      const auto tmp18 = tmp17 * tmp0;
-      const auto tmp19 = tmp17 * tmp2;
-      (result[ 0 ])[ 0 ] = tmp1;
-      (result[ 0 ])[ 1 ] = tmp3;
-      (result[ 1 ])[ 0 ] = tmp13;
-      (result[ 1 ])[ 1 ] = tmp14;
-      (result[ 2 ])[ 0 ] = tmp14;
-      (result[ 2 ])[ 1 ] = tmp16;
-      (result[ 3 ])[ 0 ] = tmp18;
-      (result[ 3 ])[ 1 ] = tmp19;
       //AdditionType::advection( local.quadraturePoint(), u, du, result );
-      //advection_.diffusiveFlux( local.quadraturePoint(), u, du, result );
+      advection_.diffusiveFlux( local.quadraturePoint(), u, du, result );
     }
 
     template <class LocalEvaluation>
