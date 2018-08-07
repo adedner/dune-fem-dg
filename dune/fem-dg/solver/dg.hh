@@ -177,12 +177,14 @@ namespace Fem
 
     void limit( DestinationType &u) const { explOperator_.limit(u); }
 
+#ifdef EULER_WRAPPER_TEST
     void solve( DestinationType& dest, MonitorType& )
     {
       solve( dest );
     }
+#endif
 
-    void solve( DestinationType& dest )
+    void solve( DestinationType& dest ) const
     {
       if( !initialized_ )
       {
