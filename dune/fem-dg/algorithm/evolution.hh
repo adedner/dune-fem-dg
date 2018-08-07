@@ -439,11 +439,8 @@ namespace Fem
         // CALLER
         adaptCaller_.solveStart( this, loop, tp );
 
-        Dune :: Timer timer;
         // perform the solve for one time step, i.e. solve ODE
         solve( loop, tp );
-
-        std::cout << "Solve of timestep took " << timer.elapsed() << std::endl;
 
         //go to next time step, if time step was invalidated by solver
         if( tp.timeStepValid() )
