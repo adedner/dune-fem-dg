@@ -415,6 +415,7 @@ namespace Fem
     void operator()( const DestinationType& arg, DestinationType& dest ) const
     {
       ++operatorCalled_;
+      std::cout << "Operator call." << std::endl;
       pass2_( arg, dest );
     }
 
@@ -458,7 +459,7 @@ namespace Fem
       // copy U to uTmp_
       if( polOrd > 0 )
       {
-        //std::cout << "Called extra limit" << std::endl;
+        std::cout << "Called extra limit" << std::endl;
         if( ! uTmp_ )
           uTmp_.reset(new LimiterDestinationType("limitTmp", limiterSpace_) );
 

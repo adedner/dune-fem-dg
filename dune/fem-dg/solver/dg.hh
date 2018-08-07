@@ -10,6 +10,7 @@
 #include <dune/fem/operator/common/spaceoperatorif.hh>
 
 // dune-fem-dg includes
+#include <dune/fem-dg/algorithm/evolution.hh>
 #include <dune/fem-dg/operator/fluxes/advection/fluxes.hh>
 #include <dune/fem-dg/operator/fluxes/euler/fluxes.hh>
 #include <dune/fem-dg/operator/dg/operatortraits.hh>
@@ -81,7 +82,8 @@ namespace Fem
 
     DGOperator( const DiscreteFunctionSpaceType& space,
                 const AdvectionModel &advectionModel,
-                const DiffusionModel &diffusionModel )
+                const DiffusionModel &diffusionModel,
+                const TimeSteppingParameters& param = TimeSteppingParameters() )
       : space_( space ),
         extra_(),
         tp_( space_.gridPart().comm()),
@@ -92,10 +94,8 @@ namespace Fem
         rkSolver_( tp_, fullOperator_, explOperator_, implOperator_, name() ),
         initialized_( false )
     {
-      std::string keyPrefix("femdg.stepper.");
-      const double maxTimeStep =
-        Dune::Fem::Parameter::getValue< double >( keyPrefix +  "maxtimestep", 1e-4);
-      fixedTimeStep_ = Dune::Fem::Parameter::getValue< double >( keyPrefix + "fixedtimestep" , 0.0 );
+      const double maxTimeStep = 1e-3;//param.maxTimeStep();
+      fixedTimeStep_ = param.fixedTimeStep();
       // start first time step with prescribed fixed time step
       // if it is not 0 otherwise use the internal estimate
       tp_.provideTimeStepEstimate(maxTimeStep);
@@ -127,14 +127,18 @@ namespace Fem
     {
       if( !initialized_ )
       {
-        const double dt = tp_.timeStepEstimate();
+        //const double dt = tp_.timeStepEstimate();
         rkSolver_.initialize( dest );
         initialized_ = true;
         // tp_.provideTimeStepEstimate( dt );
       }
 
+      std::cout << "Start operator solve!" << std::endl;
+      Dune :: Timer timer;
       // limit( dest );
       rkSolver_.solve( dest, monitor_ );
+
+      std::cout << "Operator solve called: " << timer.elapsed() << std::endl;
 
       // next time step is prescribed by fixedTimeStep
       if ( fixedTimeStep_ > 1e-20 )

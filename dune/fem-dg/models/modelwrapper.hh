@@ -167,10 +167,10 @@ namespace Fem
     template <class Entity>
     void setEntity( const Entity& entity ) const
     {
-      //if( hasAdvection )
-      //  advection_.init( entity );
-      //if( hasDiffusion )
-      //  diffusion_.init( entity );
+      if( hasAdvection )
+        advection_.init( entity );
+      if( hasDiffusion )
+        diffusion_.init( entity );
     }
 
     inline bool hasStiffSource() const { return AdditionalType::hasStiffSource; }
