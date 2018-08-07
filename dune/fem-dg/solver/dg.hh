@@ -149,15 +149,7 @@ namespace Fem
 
     virtual void initialize( const DestinationType& dest )
     {
-      if( !initialized_ )
-      {
-        std::cout << "Call init " << std::endl;
-        //const double dt = tp_.timeStepEstimate();
-        rkSolver_.initialize( dest );
-        initialized_ = true;
-        // tp_.provideTimeStepEstimate( dt );
-        std::cout << "Finish init " << std::endl;
-      }
+      checkInitialize( dest );
     }
 
     virtual void description( std::ostream&) const {}
@@ -184,7 +176,7 @@ namespace Fem
     }
 #endif
 
-    void solve( DestinationType& dest ) const
+    void checkInitialize( const DestinationType& dest ) const
     {
       if( !initialized_ )
       {
@@ -193,8 +185,13 @@ namespace Fem
         initialized_ = true;
         // tp_.provideTimeStepEstimate( dt );
       }
+    }
 
-      std::cout << "Start operator solve!" << std::endl;
+    void solve( DestinationType& dest ) const
+    {
+      checkInitialize( dest );
+
+      //std::cout << "Start operator solve!" << std::endl;
       Dune :: Timer timer;
       // limit( dest );
       rkSolver_.solve( dest, monitor_ );

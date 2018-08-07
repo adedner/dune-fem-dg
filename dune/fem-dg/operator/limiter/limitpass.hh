@@ -640,8 +640,8 @@ namespace Fem
       calcIndicator_(discreteModel_.calculateIndicator()),
       reconstruct_(false),
       admissibleFunctions_( getAdmissibleFunctions() ),
-      usedAdmissibleFunctions_( admissibleFunctions_ ),
-      limiterCalled_(0)
+      usedAdmissibleFunctions_( admissibleFunctions_ )
+      //, limiterCalled_(0)
     {
       if( Parameter :: verbose () )
       {
@@ -663,7 +663,7 @@ namespace Fem
 
     //! Destructor
     virtual ~LimitDGPass() {
-      std::cout << "Limiter::compute called " << limiterCalled_ << std::endl;
+      //std::cout << "Limiter::compute called " << limiterCalled_ << std::endl;
     }
 
   protected:
@@ -760,7 +760,7 @@ namespace Fem
       // if polOrder of destination is > 0 then we have to do something
       if( spc_.order() > 0 && active() )
       {
-        std::cout << "LimitPass::compute is active" << std::endl;
+        //std::cout << "LimitPass::compute is active" << std::endl;
         //std::cout << " is active";
         // prepare, i.e. set argument and destination
         prepare(arg, dest);
@@ -779,7 +779,7 @@ namespace Fem
           ++elementCounter_;
         }
 
-        ++limiterCalled_;
+        //++limiterCalled_;
         // finalize
         finalize(arg, dest);
       }
@@ -2033,7 +2033,7 @@ namespace Fem
     mutable std::vector< RangeType  > values_;
     mutable std::vector< GradientType > gradients_;
 
-    mutable int limiterCalled_;
+    //mutable int limiterCalled_;
 
   }; // end DGLimitPass
 

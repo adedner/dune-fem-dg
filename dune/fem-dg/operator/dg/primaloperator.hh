@@ -366,7 +366,7 @@ namespace Fem
       , uTmp_()
       , fvSpc_()
       , indicator_()
-      , operatorCalled_( 0 )
+      //, operatorCalled_( 0 )
       , diffFlux_( gridPart_, model_, DGPrimalDiffusionFluxParameters( ParameterKey::generate( name, "dgdiffusionflux." ) ) )
       , discreteModel1_( model_, advflux_, diffFlux_ )
       , limitDiscreteModel_( model_ , space_.order() )
@@ -378,11 +378,13 @@ namespace Fem
       createIndicator();
     }
 
+    /*
     ~DGLimitedAdvectionOperator()
     {
       std::cout << "DGLimitedOperator called " << operatorCalled_ << " times."
         << std::endl;
     }
+    */
 
     void activateLinear() const {
       limitPass().disable();
@@ -412,8 +414,8 @@ namespace Fem
 
     void operator()( const DestinationType& arg, DestinationType& dest ) const
     {
-      ++operatorCalled_;
-      std::cout << "Operator call." << std::endl;
+      //++operatorCalled_;
+      //std::cout << "Operator call." << std::endl;
       pass2_( arg, dest );
     }
 
@@ -457,7 +459,7 @@ namespace Fem
       // copy U to uTmp_
       if( polOrd > 0 )
       {
-        std::cout << "Called extra limit" << std::endl;
+        //std::cout << "Called extra limit" << std::endl;
         if( ! uTmp_ )
           uTmp_.reset(new LimiterDestinationType("limitTmp", limiterSpace_) );
 
@@ -515,8 +517,7 @@ namespace Fem
     std::unique_ptr< LimiterIndicatorSpaceType > fvSpc_;
     std::unique_ptr< LimiterIndicatorType      > indicator_;
 
-    mutable int operatorCalled_;
-
+    //mutable int operatorCalled_;
 
   protected:
     DiffusionFluxType   diffFlux_;
