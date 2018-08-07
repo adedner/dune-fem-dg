@@ -37,13 +37,8 @@
 //--------- PROBLEMS ------------------------
 #include "problems.hh"
 
-#ifdef EULER_WRAPPER
-#include "euler.hh"
-#include "modelwrapper.hh"
-#else
 //--------- MODELS --------------------------
 #include "models.hh"
-#endif
 
 //--------- PROBLEMCREATORSELECTOR ----------
 #include <dune/fem-dg/misc/configurator.hh>
@@ -75,11 +70,7 @@ namespace Fem
       typedef typename AC::GridParts                               HostGridPartType;
       typedef typename AC::GridParts                               GridPartType;
 
-#ifdef EULER_WRAPPER
-      typedef ModelImplementationWrapper< euler::Model< GridPartType > >  ProblemInterfaceType;
-#else
       typedef ProblemBase< GridType >                              ProblemInterfaceType;
-#endif
       typedef EulerModel< GridType, ProblemInterfaceType >         ModelType;
       typedef typename ProblemInterfaceType::FunctionSpaceType     FunctionSpaceType;
 
@@ -87,11 +78,7 @@ namespace Fem
 
       static ProblemInterfaceType* problem()
       {
-#ifdef EULER_WRAPPER
-        return new ProblemInterfaceType();
-#else
         return AnalyticalEulerProblemCreator<GridType>::apply();
-#endif
       }
 
       template< int polOrd >

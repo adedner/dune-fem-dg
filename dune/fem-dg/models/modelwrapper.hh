@@ -16,7 +16,7 @@
 #include <dune/fem-dg/operator/fluxes/analyticaleulerflux.hh>
 #include <dune/fem-dg/models/defaultmodel.hh>
 #include <dune/fem-dg/models/defaultprobleminterfaces.hh>
-//#include <dune/fem-dg/examples/euler/problems.hh>
+#include <dune/fem-dg/examples/euler/problems.hh>
 
 namespace Dune
 {

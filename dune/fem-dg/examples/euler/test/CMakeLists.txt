@@ -21,7 +21,7 @@ dune_add_test_case( NAME euler
 
 dune_add_test_case( NAME euler_wrapper
                     SOURCES ${MAIN} ${CHORJO}
-                    COMPILE_DEFINITIONS "POLORDER=${POLORDER}" EULER_WRAPPER )
+                    COMPILE_DEFINITIONS "POLORDER=${POLORDER}" EULER_WRAPPER_TEST )
 
 add_code_generate_targets( euler )
 

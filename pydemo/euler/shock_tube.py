@@ -10,8 +10,8 @@ from ufl import *
 gamma = 1.4
 dim = 2
 
-# from euler import sod as problem
-from euler import radialSod3 as problem
+from euler import sod as problem
+#from euler import radialSod3 as problem
 
 Model, initial, x0,x1,N, endTime, name = problem(dim,gamma)
 
@@ -122,7 +122,7 @@ def useODESolver(polOrder=2, limiter='default'):
 if True:
     # grid = structuredGrid(x0,x1,N)
     grid = create.grid("ALUCube", cartesianDomain(x0,x1,N))
-    # grid.hierarchicalGrid.globalRefine(2)
+    grid.hierarchicalGrid.globalRefine(1)
     # grid = create.view("adaptive", grid)
     useODESolver(2,'default')      # third order with limiter
 elif False:

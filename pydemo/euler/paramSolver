@@ -11,6 +11,7 @@ fem.ode.cflStart: 1.
 #fem.ode.cflMax: 5
 fem.timeprovider.factor: 0.45
 fem.timeprovider.updatestep: 1
+femdg.stepper.maxtimestep: 1e-3
 
 # parameter for the implicit solvers
 fem.solver.verbose: false
