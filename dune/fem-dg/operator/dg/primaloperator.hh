@@ -378,13 +378,11 @@ namespace Fem
       createIndicator();
     }
 
-    /*
     ~DGLimitedAdvectionOperator()
     {
       std::cout << "DGLimitedOperator called " << operatorCalled_ << " times."
         << std::endl;
     }
-    */
 
     void activateLinear() const {
       limitPass().disable();
