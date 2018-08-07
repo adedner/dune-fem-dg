@@ -57,6 +57,7 @@
 #include <dune/fem-dg/operator/fluxes/advection/fluxes.hh>
 #include <dune/fem-dg/operator/fluxes/euler/fluxes.hh>
 #include <dune/fem-dg/operator/fluxes/diffusion/fluxes.hh>
+#include <dune/fem-dg/operator/limiter/limiterutility.hh>
 
 
 
@@ -85,6 +86,27 @@ namespace Fem
       limited,
       //! scaling limitation of advection term
       scalinglimited
+    };
+  }
+
+  /**
+   *  \brief Namespace containing an Enum class to describe the limiting
+   *  function used in the limited advection operators.
+   */
+  namespace AdvectionLimiterFunction
+  {
+    /**
+     * \ingroup FemDGParameter
+     */
+    enum class Enum
+    {
+      default_,
+      //! MinMod limiter
+      minmod,
+      //! Superbee limiter
+      superbee,
+      //! van Leer limiter
+      vanleer
     };
   }
 
@@ -280,6 +302,28 @@ namespace Fem
     typedef DiffusionOp          FullOperatorType;
     typedef FullOperatorType     ImplicitOperatorType;
     typedef FullOperatorType     ExplicitOperatorType;
+  };
+
+///////////////////////////////////////////////////////////////////////////
+// AdvectionLimiterFunctionSelector
+///////////////////////////////////////////////////////////////////////////
+  // default is minmod
+  template< class DomainFieldType, AdvectionLimiterFunction::Enum limiterFct >
+  struct AdvectionLimiterFunctionSelector
+  {
+    typedef MinModLimiter< DomainFieldType > type;
+  };
+
+  template< class DomainFieldType >
+  struct AdvectionLimiterFunctionSelector< DomainFieldType, AdvectionLimiterFunction::Enum::superbee >
+  {
+    typedef SuperBeeLimiter< DomainFieldType > type;
+  };
+
+  template< class DomainFieldType >
+  struct AdvectionLimiterFunctionSelector< DomainFieldType, AdvectionLimiterFunction::Enum::vanleer >
+  {
+    typedef VanLeerLimiter< DomainFieldType > type;
   };
 
 

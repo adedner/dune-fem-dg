@@ -77,7 +77,7 @@ namespace Fem
 
   } // end namespace detail
 
-  template< class GridImp, class ProblemImp >
+  template< class GridImp, class ProblemImp, class LimiterFunction = MinModLimiter< typename GridImp::ctype> >
   class ModelWrapperTraits
     : public DefaultModelTraits< GridImp, ProblemImp >
   {
@@ -87,7 +87,8 @@ namespace Fem
                                                                     GradientType;
     static const int modelParameterSize = 0;
 
-    typedef MinModLimiter< typename BaseType::DomainFieldType >     LimiterFunctionType ;
+    typedef LimiterFunction LimiterFunctionType;
+    //typedef MinModLimiter< typename BaseType::DomainFieldType >     LimiterFunctionType ;
     //typedef SuperBeeLimiter< typename BaseType::DomainFieldType > LimiterFunctionType ;
     //typedef VanLeerLimiter< typename BaseType::DomainFieldType >  LimiterFunctionType ;
   };
@@ -102,13 +103,14 @@ namespace Fem
             class AdvectionModelImp,
             class DiffusionModelImp,
             class AdditionalImp,
+            class LimiterFunction,
             class Problem = detail::EmptyProblem< AdvectionModelImp > >
   class ModelWrapper :
-    public DefaultModel< ModelWrapperTraits< GridImp, Problem > >
+    public DefaultModel< ModelWrapperTraits< GridImp, Problem, LimiterFunction > >
   {
   public:
     typedef GridImp                                      GridType;
-    typedef ModelWrapperTraits< GridType, Problem >      Traits;
+    typedef ModelWrapperTraits< GridType, Problem, LimiterFunction > Traits;
     typedef DefaultModel< Traits >                       BaseType;
     typedef typename Traits::ProblemType                 ProblemType;
     typedef AdvectionModelImp                            AdvectionModelType ;

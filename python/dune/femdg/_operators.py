@@ -151,9 +151,10 @@ def generateMethod(struct,expr, cppType, name,
 
 #####################################################
 
-# create DG operator + solver
+# create DG operator + solver (limiter = none,minmod,vanleer,superbee),
+# (diffusionScheme = cdg2,br2,ip,nipg,...)
 def createFemDGSolver(Model, space,
-        limiter="default", diffusionScheme = "cdg2"):
+        limiter="minmod", diffusionScheme = "cdg2"):
     import dune.create as create
 
     u = TrialFunction(space)
@@ -211,19 +212,18 @@ def createFemDGSolver(Model, space,
     struct.append(TypeAlias('JacobianRangeType','typename FunctionSpace::JacobianRangeType'))
     struct.append(TypeAlias('HessianRangeType','typename FunctionSpace::HessianRangeType'))
 
-    advFlux2 = getattr(Model,"F_c",None)
-    if advFlux2 is not None:
-        advFlux2 = advFlux2(t,x,u)
-    generateMethod(struct, advFlux2,
-            'JacobianRangeType', 'advection',
-            returnResult=False,
-            args=['const double &t',
-                  'const Entity &entity',
-                  'const Point &x',
-                  'const RangeType &u'],
-            targs=['class Entity, class Point'], static=True,
-            predefined=predefined)
-
+    #advFlux2 = getattr(Model,"F_c",None)
+    #if advFlux2 is not None:
+    #    advFlux2 = advFlux2(t,x,u)
+    #generateMethod(struct, advFlux2,
+    #        'JacobianRangeType', 'advection',
+    #        returnResult=False,
+    #        args=['const double &t',
+    #              'const Entity &entity',
+    #              'const Point &x',
+    #              'const RangeType &u'],
+    #        targs=['class Entity, class Point'], static=True,
+    #        predefined=predefined)
 
     maxSpeed = getattr(Model,"maxLambda",None)
     if maxSpeed is not None:
@@ -248,8 +248,8 @@ def createFemDGSolver(Model, space,
             targs=['class Entity, class Point'], static=True,
             predefined=predefined)
 
-    advFlux2 = getattr(Model,"F_c",None)
-    advFlux2 = advFlux2(t,x,u)
+    #advFlux2 = getattr(Model,"F_c",None)
+    #advFlux2 = advFlux2(t,x,u)
     #generateMethod(struct, advFlux2,
     #        'void', 'advection',
     #        args=['const double &t',
@@ -393,18 +393,24 @@ def createFemDGSolver(Model, space,
     ###################################################
     ## choose details of discretization (i.e. fluxes)
     ## default settings:
-    solverId   = "Dune::Fem::Solver::Enum::fem"
-    formId     = "Dune::Fem::Formulation::Enum::primal"
-    limiterId  = "Dune::Fem::AdvectionLimiter::Enum::limited"
-    advFluxId  = "Dune::Fem::AdvectionFlux::Enum::none"
-    diffFluxId = "Dune::Fem::DiffusionFlux::Enum::none"
+    solverId     = "Dune::Fem::Solver::Enum::fem"
+    formId       = "Dune::Fem::Formulation::Enum::primal"
+    limiterId    = "Dune::Fem::AdvectionLimiter::Enum::limited"
+    limiterFctId = "Dune::Fem::AdvectionLimiterFunction::Enum::minmod"
+    advFluxId    = "Dune::Fem::AdvectionFlux::Enum::none"
+    diffFluxId   = "Dune::Fem::DiffusionFlux::Enum::none"
 
     if hasDiffFlux:
         diffFluxId = "Dune::Fem::DiffusionFlux::Enum::"+diffusionScheme
     if hasAdvFlux:
         advFluxId  = "Dune::Fem::AdvectionFlux::Enum::llf"
-    if limiter == None or limiter == False or limiter.lower() == "unlimiter":
+    if limiter == None or limiter == False or limiter.lower() == "unlimited":
         limiterId = "Dune::Fem::AdvectionLimiter::Enum::unlimited"
+    # check for different limiter functions (default is minmod)
+    if limiter.lower() == "superbee":
+        limiterFctId = "Dune::Fem::AdvectionLimiterFunction::Enum::superbee"
+    if limiter.lower() == "vanleer":
+        limiterFctId = "Dune::Fem::AdvectionLimiterFunction::Enum::vanleer"
 
     struct.append([Declaration(
         Variable("const Dune::Fem::Solver::Enum", "solverId = " + solverId),
@@ -414,6 +420,9 @@ def createFemDGSolver(Model, space,
         static=True)])
     struct.append([Declaration(
         Variable("const Dune::Fem::AdvectionLimiter::Enum", "limiterId = " + limiterId),
+        static=True)])
+    struct.append([Declaration(
+        Variable("const Dune::Fem::AdvectionLimiterFunction::Enum", "limiterFunctionId = " + limiterFctId),
         static=True)])
     struct.append([Declaration(
         Variable("const Dune::Fem::AdvectionFlux::Enum", "advFluxId = " + advFluxId),

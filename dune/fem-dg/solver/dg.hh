@@ -47,6 +47,7 @@ namespace Fem
     static const Solver::Enum solverId             = Additional::solverId;
     static const Formulation::Enum formId          = Additional::formId;
     static const AdvectionLimiter::Enum limiterId  = Additional::limiterId;
+    static const AdvectionLimiterFunction::Enum limiterFunctionId = Additional::limiterFunctionId;
     // for valid advection fluxes see dune/fem-dg/operator/fluxes/advection/parameters.hh
     static const AdvectionFlux::Enum advFluxId     = Additional::advFluxId;
     // for valid diffusion fluxes see dune/fem-dg/operator/fluxes/diffusion/parameters.hh
@@ -66,7 +67,12 @@ namespace Fem
     typedef U0Sod< GridType > Problem;
 #endif
 
-    typedef ModelWrapper< GridType, AdvectionModel, DiffusionModel, Additional
+    typedef typename AdvectionLimiterFunctionSelector<
+      typename FunctionSpaceType::DomainFieldType, limiterFunctionId > :: type
+      LimiterFunctionType;
+
+    typedef ModelWrapper< GridType, AdvectionModel, DiffusionModel, Additional,
+                          LimiterFunctionType
 #ifdef EULER_WRAPPER_TEST
         , Problem
 #endif
