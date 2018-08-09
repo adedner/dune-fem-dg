@@ -157,6 +157,12 @@ def createFemDGSolver(Model, space,
         limiter="minmod", diffusionScheme = "cdg2"):
     import dune.create as create
 
+    if limiter is None or limiter is False:
+        limiter = "unlimited"
+
+    if diffusionScheme is None or diffusionScheme is False:
+        diffusionScheme = "none"
+
     u = TrialFunction(space)
     v = TestFunction(space)
     n = FacetNormal(space.cell())
@@ -248,6 +254,17 @@ def createFemDGSolver(Model, space,
             targs=['class Entity, class Point'], static=True,
             predefined=predefined)
 
+    # TODO: fill in diffusion time step from Model
+    diffusionTimeStep = getattr(Model,"maxDiffusion",None)
+    if diffusionTimeStep is not None:
+        diffusionTimeStep = diffusionTimeStep(t,x,u)
+    generateMethod(struct, diffusionTimeStep,
+            'double', 'diffusionTimeStep',
+            args=['const Entity& entity', 'const Point &x',
+                  'const T& circumEstimate', 'const RangeType &u'],
+            targs=['class Entity, class Point, class T'], static=True,
+            predefined=None)
+
     #advFlux2 = getattr(Model,"F_c",None)
     #advFlux2 = advFlux2(t,x,u)
     #generateMethod(struct, advFlux2,
@@ -286,6 +303,13 @@ def createFemDGSolver(Model, space,
             targs=['class Intersection, class Point'], static=True,
             predefined=predefined)
 
+    adjustAverageValue = {}
+    generateMethod(struct, adjustAverageValue,
+            'void', 'adjustAverageValue',
+            args=['const Entity& entity', 'const Point &x',
+                  'RangeType &u'],
+            targs=['class Entity, class Point'], static=True, evalSwitch=False,
+            predefined=None)
 
     #####################
     ## boundary treatment
@@ -404,7 +428,7 @@ def createFemDGSolver(Model, space,
         diffFluxId = "Dune::Fem::DiffusionFlux::Enum::"+diffusionScheme
     if hasAdvFlux:
         advFluxId  = "Dune::Fem::AdvectionFlux::Enum::llf"
-    if limiter == None or limiter == False or limiter.lower() == "unlimited":
+    if limiter.lower() == "unlimited":
         limiterId = "Dune::Fem::AdvectionLimiter::Enum::unlimited"
     # check for different limiter functions (default is minmod)
     if limiter.lower() == "superbee":
