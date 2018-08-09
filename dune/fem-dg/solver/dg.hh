@@ -189,7 +189,10 @@ namespace Fem
       {
         rkSolver_.initialize( dest );
         // initialize TimeProvider with the estimate obtained form operator
-        tp_.init();
+        if ( fixedTimeStep_ > 1e-20 )
+          tp_.init( fixedTimeStep_ );
+        else
+          tp_.init();
         initialized_ = true;
       }
     }
