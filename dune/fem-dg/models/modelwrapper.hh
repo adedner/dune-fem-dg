@@ -88,6 +88,7 @@ namespace Fem
     static const int modelParameterSize = 0;
 
     typedef LimiterFunction LimiterFunctionType;
+    // possible options are
     //typedef MinModLimiter< typename BaseType::DomainFieldType >     LimiterFunctionType ;
     //typedef SuperBeeLimiter< typename BaseType::DomainFieldType > LimiterFunctionType ;
     //typedef VanLeerLimiter< typename BaseType::DomainFieldType >  LimiterFunctionType ;
@@ -142,6 +143,7 @@ namespace Fem
 
     using BaseType :: time;
     using BaseType :: hasMass;
+    using BaseType :: velocity ;
 
     ModelWrapper( const AdvectionModelType& advModel, const DiffusionModelType& diffModel )
       : advection_( advModel ),
@@ -221,7 +223,6 @@ namespace Fem
                            JacobianRangeType& result ) const
     {
       assert( hasAdvection );
-      //AdditionType::advection( local.quadraturePoint(), u, du, result );
       advection_.diffusiveFlux( local.quadraturePoint(), u, du, result );
     }
 
@@ -234,13 +235,12 @@ namespace Fem
       std::abort();
     }
 
-    template <class LocalEvaluation>
+    template <class LocalEvaluation, class T>
     inline double diffusionTimeStep( const LocalEvaluation& local,
-                                     const double circumEstimate,
+                                     const T& circumEstimate,
                                      const RangeType& u ) const
     {
-      // TODO: implement using diffusion model - something on Additional?
-      return 0;
+      return AdditionalType :: diffusionTimeStep( local.entity(), local.quadraturePoint(), circumEstimate, u );
     }
 
     // is not used
@@ -350,6 +350,14 @@ namespace Fem
       return problem_;
     }
 
+    // velocity method for Upwind flux
+    template< class LocalEvaluation >
+    inline DomainType velocity (const LocalEvaluation& local,
+                                RangeType& u) const
+    {
+      return AdditionalType :: velocity( time(), local.entity(), local.quadraturePoint(), u );
+    }
+
     /////////////////////////////////////////////////////////////////
     // Limiter section
     ////////////////////////////////////////////////////////////////
@@ -359,16 +367,7 @@ namespace Fem
                           const RangeType& u,
                           DomainType& velocity) const
     {
-      for(int i=0; i<dimDomain; ++i)
-      {
-        // U = (rho, rho v_0,...,rho v_(d-1), e )
-        // we store \rho u but do not need to divide by \rho here since only
-        // sign is needed.
-        velocity[i] = u[i+1];
-      }
-
-      //
-      //velocity = AdditionalType :: velocity( time(), en, x, u );
+      velocity = AdditionalType :: velocity( time(), en, x, u );
     }
 
     // we have physical check for this model
@@ -394,6 +393,7 @@ namespace Fem
                              RangeType& u ) const
     {
       // nothing to be done here for this test case
+      AdditionalType :: adjustAverageValue( entity, xLocal, u );
     }
 
     // calculate jump between left and right value

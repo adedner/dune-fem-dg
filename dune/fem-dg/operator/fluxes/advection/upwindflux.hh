@@ -74,12 +74,13 @@ namespace Fem
 
       // get velocity
       const DomainType v = model_.velocity( left, uLeft );
-      const double upwind = normal * v;
+      const auto upwind = normal * v;
 
-      if (upwind>0)
+      if (upwind > 0)
         gLeft = uLeft;
       else
         gLeft = uRight;
+
       gLeft *= upwind;
       gRight = gLeft;
       return std::abs(upwind);
