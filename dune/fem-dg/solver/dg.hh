@@ -121,6 +121,7 @@ namespace Fem
     {
       const double maxTimeStep = param.maxTimeStep();
       fixedTimeStep_ = param.fixedTimeStep();
+
       // start first time step with prescribed fixed time step
       // if it is not 0 otherwise use the internal estimate
       tp_.provideTimeStepEstimate(maxTimeStep);
@@ -186,23 +187,23 @@ namespace Fem
     {
       if( !initialized_ )
       {
-        //const double dt = tp_.timeStepEstimate();
         rkSolver_.initialize( dest );
+        // initialize TimeProvider with the estimate obtained form operator
+        tp_.init();
         initialized_ = true;
-        // tp_.provideTimeStepEstimate( dt );
       }
     }
 
     void solve( DestinationType& dest ) const
     {
+      // check if initialization needs to be done
       checkInitialize( dest );
 
-      //std::cout << "Start operator solve!" << std::endl;
-      Dune :: Timer timer;
-      // limit( dest );
-      rkSolver_.solve( dest, monitor_ );
+      // make sure the current time step is valid
+      assert( tp_.timeStepValid() );
 
-      //std::cout << "Operator solve called: " << timer.elapsed() << std::endl;
+      // solve ODE
+      rkSolver_.solve( dest, monitor_ );
 
       if( tpPtr_ )
       {
@@ -213,18 +214,16 @@ namespace Fem
           tp_.next();
       }
 
-       //       // reset time step estimate
-       // tp.provideTimeStepEstimate( maxTimeStep );
-
 #ifndef EULER_WRAPPER_TEST
-       // return limited solution, to be discussed
-       limit( dest );
+      // return limited solution, to be discussed
+      // this is only enabled when AdvectionLimiter is not unlimited
+      limit( dest );
 #endif
     }
 
     void setTimeStepSize( const double dt )
     {
-      fixedTimeStep_ = dt ;
+      fixedTimeStep_  = dt ;
       fixedTimeStep_ /= tp_.factor() ;
       tp_.provideTimeStepEstimate( dt );
     }
