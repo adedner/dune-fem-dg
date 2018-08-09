@@ -36,10 +36,12 @@ def LinearAdvectionDiffusion1D(v,eps):
         if eps is not None:
             def F_v(t,x,U,DU):
                 return eps*DU
+            def maxDiffusion(t,x,U):
+                return eps
         def physical(U):
             return 1
         def jump(U,V):
-            return U-V
+            return abs(U-V)
     return Model
 def LinearAdvectionDiffusion1DMixed(v,eps,bnd):
     class Model(LinearAdvectionDiffusion1D(v,eps)):
@@ -102,7 +104,7 @@ def sinProblem():
            "cos", lambda t: u0(t,x)
 
 def pulse(eps=None):
-    center = as_vector([ 0.5,0.5 ])
+    center  = as_vector([ 0.5,0.5 ])
     x0 = x[0] - center[0]
     x1 = x[1] - center[1]
 
@@ -115,7 +117,7 @@ def pulse(eps=None):
             sig2PlusDt4 = sig2
         else:
             sig2PlusDt4 = sig2+(4.0*eps*t)
-        xq = ( x0*cos(4.0*t) + x1*sin(4.0*t)) - 0.25
+        xq = ( x0*cos(4.0*t) + x1*sin(4.0*t)) + 0.25
         yq = (-x0*sin(4.0*t) + x1*cos(4.0*t))
         return as_vector( [(sig2/ (sig2PlusDt4) ) * exp (-( xq*xq + yq*yq ) / sig2PlusDt4 )] )
     return LinearAdvectionDiffusion1DDirichlet([ux,uy],eps,u0), u0(0,x),\
