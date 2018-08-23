@@ -33,8 +33,8 @@ def ShallowWater(topography,g):
             return (hL - hR)/(0.5*(hL + hR))
         def S_ns(t,x,U,DU): # or S_s for a stiff source
             return as_vector( [0, *(-U[0]*g*grad(topography(x))) ])
-        boundary = {range(1,5): lambda t,x,u,n: Model.F_c(t,x,u)*n}
-        # boundary = {range(1,5): lambda t,x,u: u}
+        # boundary = {range(1,5): lambda t,x,u,n: Model.F_c(t,x,u)*n}
+        boundary = {range(1,5): lambda t,x,u: u}
     return Model
 
 # example 5.1 and 7.1 from

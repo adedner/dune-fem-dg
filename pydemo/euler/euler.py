@@ -114,3 +114,12 @@ def radialSod3(dim,gamma):
                           CompressibleEuler(dim,gamma).toCons([0.125,0,0,0.1])),\
            [-0.5, -0.5], [0.5, 0.5], [20, 20], 0.5,\
            "radialSod3"
+
+def leVeque(dim,gamma):
+    space = Space(dim,dim+2)
+    x = SpatialCoordinate(space.cell())
+    initial = conditional(abs(x[0]-0.15)<0.05,1.2,1)
+    return CompressibleEulerDirichlet(dim,gamma),\
+           as_vector( [initial,0,0,initial] ),\
+           [0, 0], [1, 0.25], [64, 16], 0.7,\
+           "leVeque1D"
