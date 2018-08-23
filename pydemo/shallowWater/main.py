@@ -6,7 +6,7 @@ from dune.femdg import createFemDGSolver
 
 from shallowwater import leVeque as problem
 
-Model, initial, x0,x1,N, endTime, name = problem()
+Model, initial, x0,x1,N, endTime, name = problem(1)
 
 parameter.append({"fem.verboserank": -1})
 parameter.append("parameter")
@@ -19,6 +19,7 @@ saveStep = 0.01
 saveTime = saveStep
 polOrder = 2
 limiter  = "default"
+subsamp  = 0
 
 space = create.space("dgonb", grid, order=polOrder, dimrange=dimR)
 u_h = space.interpolate(Model.toCons(initial), name='u_h')
@@ -27,7 +28,7 @@ operator = createFemDGSolver( Model, space, limiter=limiter )
 
 operator.applyLimiter( u_h );
 print("number of elements: ",grid.size(0),flush=True)
-vtk = grid.writeVTK(name, subsampling=2, write=False,
+vtk = grid.writeVTK(name, subsampling=subsamp, write=False,
            celldata=[u_h],
            pointdata={"freeSurface":eta},
            cellvector={"velocity":v}
