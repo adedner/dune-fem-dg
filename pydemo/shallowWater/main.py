@@ -12,6 +12,7 @@ parameter.append({"fem.verboserank": -1})
 parameter.append("parameter")
 
 grid     = structuredGrid(x0,x1,N)
+# grid.hierarchicalGrid.globalRefine(3)
 dimR     = Model.dimension
 t        = 0
 count    = 0

@@ -267,7 +267,10 @@ namespace Fem
     {
       RangeType u;
       int id = getBoundaryId( local );
-      bool bndVal = AdditionalType::boundaryValue(id, time(), local.entity(), local.intersection().geometry().center(), u, u);
+      // note: the local coordinate used here is not important since we
+      // only check if the intersection as a whole is part of the dirichlet
+      // boundary - so the center is used
+      bool bndVal = AdditionalType::boundaryValue(id, time(), local.entity(), local.intersection().geometryInInside().center(), u, u);
 
       return bndVal;
     }
@@ -294,14 +297,17 @@ namespace Fem
                                 const JacobianRangeType&,
                                 RangeType& gLeft ) const
     {
-      const DomainType normal = local.intersection().integrationOuterNormal( local.localPosition() );
+      DomainType normal = local.intersection().integrationOuterNormal( local.localPosition() );
+      double len = normal.two_norm();
+      normal /= len;
       int id = getBoundaryId( local );
 #ifndef NDEBUG
       const bool isFluxBnd =
 #endif
       AdditionalType::boundaryFlux(id, time(), local.entity(), local.quadraturePoint(), normal, uLeft, gLeft);
+      gLeft *= len;
       assert( isFluxBnd );
-      return 0; // QUESTION: do something better here? Yes, return time step restriction if possible
+      return 0; // TODO: do something better here
     }
 
     template <class LocalEvaluation>
@@ -323,12 +329,15 @@ namespace Fem
                                          const JacobianRangeType& jacLeft,
                                          RangeType& gLeft ) const
     {
-      const DomainType normal = local.intersection().integrationOuterNormal( local.localPosition() );
+      DomainType normal = local.intersection().integrationOuterNormal( local.localPosition() );
+      double len = normal.two_norm();
+      normal /= len;
       int id = getBoundaryId( local );
 #ifndef NDEBUG
       const bool isFluxBnd =
 #endif
       AdditionalType::diffusionBoundaryFlux(id, time(), local.entity(), local.quadraturePoint(), normal, uLeft, jacLeft, gLeft);
+      gLeft *= len;
       assert( isFluxBnd );
       return 0; // QUESTION: do something better here? Yes, return time step restriction if possible
     }
