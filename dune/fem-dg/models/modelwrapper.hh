@@ -267,7 +267,9 @@ namespace Fem
     {
       RangeType u;
       int id = getBoundaryId( local );
-      return AdditionalType::boundaryValue(id, time(), local.entity(), local.intersection().geometry().center(), u, u);
+      bool bndVal = AdditionalType::boundaryValue(id, time(), local.entity(), local.intersection().geometry().center(), u, u);
+
+      return bndVal;
     }
 
     // return uRight for insertion into the numerical flux

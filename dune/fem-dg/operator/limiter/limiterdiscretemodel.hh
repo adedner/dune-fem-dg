@@ -228,27 +228,41 @@ namespace Fem
     //! value
     template <class LocalEvaluation>
     double boundaryFlux(const LocalEvaluation& left,
-                        RangeType& adaptIndicator,
-                        JacobianRangeType& gDiffLeft ) const
+                        RangeType& jump,
+                        JacobianRangeType& dummy ) const
     {
-      const FaceLocalDomainType& x = left.localPosition();
-
       RangeType uRight;
 
-      // evaluate boundary value
-      model_.boundaryValue( left, left.values()[ uVar ], uRight );
+      if( model_.hasBoundaryValue( left ) )
+      {
+        // evaluate boundary value
+        model_.boundaryValue( left, left.values()[ uVar ], uRight );
+      }
+      else
+      {
+        // jump = 0
+        jump = 0;
+        return 0.;
+      }
 
       if (! physical(left.entity(), left.position(), left.values()[ uVar ] ) ||
           ! physical(left.entity(), left.position(), uRight ) )
       {
-        adaptIndicator = 1e10;
+        jump = 1e10;
         return -1.;
       }
       else
       {
-        model_.jump( left.intersection(), x, left.values()[ uVar ], uRight, adaptIndicator);
+        model_.jump( left.intersection(), left.localPosition(), left.values()[ uVar ], uRight, jump);
         return 1.;
       }
+    }
+
+    //! return true if method boundaryValue returns something meaningful.
+    template <class LocalEvaluation>
+    bool hasBoundaryValue( const LocalEvaluation& local ) const
+    {
+      return model_.hasBoundaryValue( local );
     }
 
     //! returns difference between internal value and boundary

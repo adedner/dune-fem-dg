@@ -292,15 +292,10 @@ namespace Fem
         with the boundary value. This is needed for the limiter.
         The default returns 0, meaning that we use the interior value as ghost value.
     */
-    template <class FaceQuadratureImp,
-              class ArgumentTuple,
-              class JacobianTuple>
-    double boundaryFlux(const IntersectionType& it,
-                        const double time,
-                        const FaceQuadratureImp& innerQuad,
-                        const int quadPoint,
-                        const ArgumentTuple& uLeft,
-                        const JacobianTuple& jacLeft,
+    //! returns difference between internal value and boundary
+    //! value
+    template <class LocalEvaluation>
+    double boundaryFlux(const LocalEvaluation& left,
                         RangeType& adaptIndicator,
                         JacobianRangeType& gDiffLeft ) const
     {
@@ -310,27 +305,24 @@ namespace Fem
 
     /** \brief returns true if model provides boundary values for this
         intersection */
-    inline bool hasRobinBoundaryValue(const IntersectionType& it,
-                                 const double time,
-                                 const FaceLocalDomainType& x) const
+    template <class LocalEvaluation>
+    inline bool hasRobinBoundaryValue(const LocalEvaluation& local) const
     {
       return false;
     }
 
     /** \brief returns true if model provides boundary values for this
         intersection */
-    inline bool hasBoundaryValue(const IntersectionType& it,
-                                 const double time,
-                                 const FaceLocalDomainType& x) const
+    template <class LocalEvaluation>
+    inline bool hasBoundaryValue(const LocalEvaluation& local) const
     {
       return true;
     }
 
     //! returns difference between internal value and boundary
     //! value
-    inline void boundaryValue(const IntersectionType& it,
-                              const double time,
-                              const FaceLocalDomainType& x,
+    template <class LocalEvaluation>
+    inline void boundaryValue(const LocalEvaluation& local,
                               const RangeType& uLeft,
                               RangeType& uRight) const
     {
@@ -831,16 +823,17 @@ namespace Fem
         const typename IntersectionGeometry::LocalCoordinate localPoint = interGeo.local( globalPoint );
         const double currentTime = op_.time();
 
-        // check for boundary Value
-        if( discreteModel_.hasBoundaryValue( intersection, currentTime, localPoint ) )
-        {
-          // create quadrature of low order
-          FaceQuadratureType faceQuadInner( gridPart_, intersection, 0, FaceQuadratureType::INSIDE);
-          typedef QuadratureContext< EntityType, IntersectionType, FaceQuadratureType > ContextType;
-          typedef LocalEvaluation< ContextType, RangeType, RangeType > EvalType;
+        FaceQuadratureType faceQuadInner( gridPart_, intersection, 0, FaceQuadratureType::INSIDE );
+        typedef QuadratureContext< EntityType, IntersectionType, FaceQuadratureType > ContextType;
+        typedef LocalEvaluation< ContextType, RangeType, RangeType > EvalType;
 
-          ContextType cLeft( entity, intersection, faceQuadInner, volume_ );
-          EvalType local( cLeft, entityValue, entityValue );
+        ContextType cLeft( entity, intersection, faceQuadInner, volume_ );
+        // create quadrature of low order
+        EvalType local( cLeft, entityValue, entityValue );
+
+        // check for boundary Value
+        if( discreteModel_.hasBoundaryValue( local ) )
+        {
           discreteModel_.boundaryValue( local, entityValue, neighborValue );
           return true ;
         }
@@ -1103,7 +1096,7 @@ namespace Fem
       else if ( calcIndicator_ )
       {
         // check shock indicator
-        limiter = calculateIndicator(en, uEn, geo, limiter, limit, shockIndicator, adaptIndicator);
+        limiter = calculateIndicator(en, uEn, enVal, geo, limiter, limit, shockIndicator, adaptIndicator);
       }
       else if( !reconstruct_ )
       {
@@ -1668,21 +1661,31 @@ namespace Fem
     }
 
     template <class QuadratureImp>
-    bool applyBoundary(const IntersectionType & intersection,
-                      const QuadratureImp & faceQuadInner,
-                      RangeType& shockIndicator,
-                      RangeType& adaptIndicator) const
+    bool applyBoundary(const EntityType& entity,
+                       const IntersectionType & intersection,
+                       const QuadratureImp & faceQuadInner,
+                       const RangeType& entityValue,
+                       RangeType& shockIndicator,
+                       RangeType& adaptIndicator) const
     {
       typedef typename IntersectionType :: Geometry LocalGeometryType;
       const LocalGeometryType& interGeo = intersection.geometry();
 
       RangeType jump;
       JacobianRangeType dummy ;
+
+      typedef QuadratureContext< EntityType, IntersectionType, QuadratureImp > ContextType;
+      typedef LocalEvaluation< ContextType, RangeType, RangeType > EvalType;
+
+      ContextType cLeft( entity, intersection, faceQuadInner, 0.0 );
+      // create quadrature of low order
+      EvalType local( cLeft, entityValue, entityValue );
+
       const int faceQuadNop = faceQuadInner.nop();
       for(int l=0; l<faceQuadNop; ++l)
       {
         // calculate jump
-        const double val = caller().boundaryFlux(intersection, faceQuadInner, l, jump, dummy);
+        const double val = caller().boundaryFlux( intersection, faceQuadInner, l, jump, dummy);
 
         // non-physical solution
         if (val < 0.0)
@@ -1704,6 +1707,7 @@ namespace Fem
     // calculate shock detector
     bool calculateIndicator(const EntityType& en,
                             const LocalFunctionType& uEn,
+                            const RangeType& enVal,
                             const Geometry& geo,
                             const bool initLimiter,
                             FieldVector<bool,dimRange>& limit,
@@ -1853,7 +1857,7 @@ namespace Fem
             // initialize intersection
             caller().initializeBoundary( intersection, faceQuadInner );
 
-            if (applyBoundary(intersection, faceQuadInner, shockIndicator, adaptIndicator))
+            if (applyBoundary(en, intersection, faceQuadInner, enVal, shockIndicator, adaptIndicator))
             {
               shockIndicator = -1;
               return true;

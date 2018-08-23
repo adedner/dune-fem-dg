@@ -386,7 +386,7 @@ namespace Fem
         // --boundary
         ////////////////////////////
         // use ghost cell approach for limiting,
-        if( intersection.boundary() )
+        if( hasBoundary )
         {
           // we have entity with boundary intersections
           flags.boundary = true ;
