@@ -8,9 +8,10 @@ from dune.femdg import createFemDGSolver
 from ufl import dot
 
 # from scalar import shockTransport as problem
-#from scalar import sinProblem as problem
+# from scalar import sinProblem as problem
+from scalar import sinTransportProblem as problem
 # from scalar import pulse as problem
-from scalar import diffusivePulse as problem
+# from scalar import diffusivePulse as problem
 
 Model, initial, x0,x1,N, endTime, name, exact = problem()
 
@@ -49,9 +50,9 @@ def useODESolver():
             exit(0)
         dt = operator.deltaT()
         t += dt
+        print('dt = ', dt, 'time = ',t, 'count = ',count, flush=True )
         if t > saveTime:
             count += 1
-            print('dt = ', dt, 'time = ',t, 'count = ',count, flush=True )
             grid.writeVTK(name, celldata=[u_h], number=count)
             saveTime += saveStep
     grid.writeVTK(name, celldata=[u_h], number=count)

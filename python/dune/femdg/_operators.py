@@ -183,7 +183,7 @@ def createFemDGSolver(Model, space,
         advModel = inner(t*grad(u-u),grad(v))*dx    # TODO: make a better empty model
     hasNonStiffSource = hasattr(Model,"S_ns")
     if hasNonStiffSource:
-        advModel += inner(as_vector(S_ns(t,x,u,grad(u))),v)*dx
+        advModel += inner(as_vector(Model.S_ns(t,x,u,grad(u))),v)*dx
 
     hasDiffFlux = hasattr(Model,"F_v")
     if hasDiffFlux:
@@ -192,7 +192,7 @@ def createFemDGSolver(Model, space,
         diffModel = inner(t*grad(u-u),grad(v))*dx   # TODO: make a better empty model
     hasStiffSource = hasattr(Model,"S_s")
     if hasStiffSource:
-        diffModel += inner(as_vector(S_s(t,x,u,grad(u))),v)*dx
+        diffModel += inner(as_vector(Model.S_s(t,x,u,grad(u))),v)*dx
 
     advModel  = create.model("elliptic",space.grid, advModel)
     diffModel = create.model("elliptic",space.grid, diffModel)
@@ -329,7 +329,7 @@ def createFemDGSolver(Model, space,
         # figure out what type of boundary condition is used
         if isinstance(f,tuple) or isinstance(f,list):
             assert hasAdvFlux and hasDiffFlux, "two boundary fluxes provided for id "+str(k)+" but only one bulk flux given"
-            method = [f[0](t,x,u,n), f[1](t,x,u,n)]
+            method = [f[0](t,x,u,n), f[1](t,x,u,grad(u),n)]
             boundaryAFlux.update( [ (kk,method[0]) for kk in ids] )
             boundaryDFlux.update( [ (kk,method[1]) for kk in ids] )
         else:

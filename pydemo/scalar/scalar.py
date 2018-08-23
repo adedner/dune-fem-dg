@@ -36,8 +36,11 @@ def LinearAdvectionDiffusion1D(v,eps):
         if eps is not None:
             def F_v(t,x,U,DU):
                 return eps*DU
-            def maxDiffusion(t,x,U):
-                return eps
+            # TODO: this method is used in an IMEX method allough the
+            # diffusion is explicit - should we change that behaviour?
+            # commented out for test of IMEX
+            # def maxDiffusion(t,x,U):
+            #    return eps
         def physical(U):
             return 1
         def jump(U,V):
@@ -49,8 +52,10 @@ def LinearAdvectionDiffusion1DMixed(v,eps,bnd):
             return bnd(t,x)
         def zeroFlux(t,x,u,n):
             return 0
+        def zeroDiffFlux(t,x,u,du,n):
+            return 0
         if v is not None and eps is not None:
-            boundary = {(1,2): dirichletValue, (3,4): [zeroFlux,zeroFlux] }
+            boundary = {(1,2): dirichletValue, (3,4): [zeroFlux,zeroDiffFlux] }
         else:
             boundary = {(1,2): dirichletValue, (3,4): zeroFlux }
     return Model
@@ -101,7 +106,15 @@ def sinProblem():
     u0 = lambda t,x: as_vector( [sin(2*pi*x[0])*exp(-t*eps*(2*pi)**2)] )
     return LinearAdvectionDiffusion1DMixed(None,eps,u0), u0(0,x),\
            [-1, 0], [1, 0.1], [50, 7], 0.2,\
-           "cos", lambda t: u0(t,x)
+           "sin", lambda t: u0(t,x)
+
+def sinTransportProblem():
+    eps = 0.5
+    v   = [1,0]
+    u0 = lambda t,x: as_vector( [sin(2*pi*x[0])*exp(-t*eps*(2*pi)**2)] )
+    return LinearAdvectionDiffusion1DMixed(v,eps,u0), u0(0,x),\
+           [-1, 0], [1, 0.1], [50, 7], 0.2,\
+           "sin", lambda t: u0(t,x)
 
 def pulse(eps=None):
     center  = as_vector([ 0.5,0.5 ])
