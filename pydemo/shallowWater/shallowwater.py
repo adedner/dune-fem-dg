@@ -7,7 +7,7 @@ def ShallowWater(topography):
     x = SpatialCoordinate(space.cell())
     g = 9.81
     class Model:
-        dimension = dim+2
+        dimension = dim+1
         def velo(U):
             return as_vector( [U[i]/U[0] for i in range(1,dim+1)] )
         def toCons(U,x=x):
@@ -38,8 +38,8 @@ def ShallowWater(topography):
             return (hL - hR)/(0.5*(hL + hR))
         def S_ns(t,x,U,DU): # or S_s for a stiff source
             return as_vector( [0, *(-U[0]*g*grad(topography(x))) ])
-        boundary = {range(1,5): lambda t,x,u,n: Model.F_c(t,x,u)*n}
-        # boundary = {range(1,5): lambda t,x,u: u}
+        # boundary = {range(1,5): lambda t,x,u,n: Model.F_c(t,x,u)*n}
+        boundary = {range(1,5): lambda t,x,u: u}
     return Model
 
 def leVeque():
@@ -48,7 +48,7 @@ def leVeque():
     space = Space(2,3)
     x = SpatialCoordinate(space.cell())
     initial = conditional(x[0]<0.1,1,conditional(x[0]<0.2,1.2,1))
-    return ShallowWater(topography) ,\
-           as_vector( [initial,0,0] ) ,\
+    return ShallowWater(topography),\
+           as_vector( [initial,0,0] ),\
            [0, 0], [1, 0.25], [64, 16], 0.1,\
            "leVeque"
