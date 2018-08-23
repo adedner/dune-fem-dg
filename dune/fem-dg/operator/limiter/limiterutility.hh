@@ -351,7 +351,8 @@ namespace Fem
         }
 
         DomainType lambda( 1 );
-        RangeType neighborValue( 0 );
+        // initialize with zero which assumes entityValue == neighborValue
+        RangeType jumpNeighborEntity( 0 );
 
         /////////////////////////////////////
         //  if we have a neighbor
@@ -360,7 +361,6 @@ namespace Fem
         {
           // check all neighbors
           const EntityType& neighbor = intersection.outside();
-          //const int nbIndex = gridPart.indexSet().index( neighbor );
 
           // nonConforming case
           flags.nonConforming |= (! intersection.conforming() );
@@ -369,17 +369,16 @@ namespace Fem
           if( ! hasBoundary )
           {
             // get barycenter of neighbor
-            //lambda = centers[ nbIndex ];
             lambda = neighbor.geometry().center();
             // calculate difference
             lambda -= entityCenter;
           }
 
           // evaluate average value on neighbor
-          flags.limiter |= average.evaluate( neighbor, neighborValue );
+          flags.limiter |= average.evaluate( neighbor, jumpNeighborEntity );
 
           // calculate difference
-          neighborValue -= entityValue;
+          jumpNeighborEntity -= entityValue;
 
         } // end neighbor
 
@@ -422,16 +421,16 @@ namespace Fem
             const DomainType pointOnBoundary = lambda + entityCenter;
 
             // evaluate data on boundary
-            if( average.boundaryValue( entity, intersection, interGeo, pointOnBoundary, entityValue, neighborValue ) )
+            if( average.boundaryValue( entity, intersection, interGeo, pointOnBoundary, entityValue, jumpNeighborEntity ) )
             {
-              neighborValue -= entityValue;
+              jumpNeighborEntity -= entityValue;
             }
           }
 
         } //end boundary
 
         // store difference of mean values
-        nbVals.push_back(neighborValue);
+        nbVals.push_back(jumpNeighborEntity);
 
         // store difference between bary centers
         barys.push_back(lambda);

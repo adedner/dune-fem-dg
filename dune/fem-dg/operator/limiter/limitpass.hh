@@ -834,8 +834,7 @@ namespace Fem
         // check for boundary Value
         if( discreteModel_.hasBoundaryValue( intersection, currentTime, localPoint ) )
         {
-          neighborValue = entityValue ;
-          /*
+          // create quadrature of low order
           FaceQuadratureType faceQuadInner( gridPart_, intersection, 0, FaceQuadratureType::INSIDE);
           typedef QuadratureContext< EntityType, IntersectionType, FaceQuadratureType > ContextType;
           typedef LocalEvaluation< ContextType, RangeType, RangeType > EvalType;
@@ -843,7 +842,6 @@ namespace Fem
           ContextType cLeft( entity, intersection, faceQuadInner, volume_ );
           EvalType local( cLeft, entityValue, entityValue );
           discreteModel_.boundaryValue( local, entityValue, neighborValue );
-          */
           return true ;
         }
         return false ;
