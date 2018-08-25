@@ -33,7 +33,11 @@ namespace Fem
     typedef AdvectionFluxImp                                             AdvectionFluxType;
     typedef DiffusionFluxImp                                             DiffusionFluxType;
 
-    static const int polynomialOrder = polOrd == -1 ? 0 : polOrd;
+    // polynomial order of ansatz space
+    static const int polynomialOrder = polOrd;
+
+    // if polynomialOrder is 0 then limiting will be linear (higher order FV case)
+    static const int limiterPolynomialOrder = (polynomialOrder == 0) ? 1 : polynomialOrder;
 
     typedef DiscreteFunctionImp                                          DestinationType ;
     //static_assert( std::is_same<typename  ModelType::RangeType, typename DiscreteFunctionType::RangeType>::value, "range type does not fit.");
@@ -46,7 +50,6 @@ namespace Fem
 
     typedef AdaptationHandlerImp                                         AdaptationHandlerType ;
 
-    static const int limiterPolynomialOrder = polOrd == -1 ? 1 : polOrd;
     typedef ExtraParameterTupleImp                                       ExtraParameterTupleType;
   };
 
@@ -70,7 +73,11 @@ namespace Fem
     typedef DiscreteFunctionImp                                          DestinationType;
     typedef typename DestinationType::DiscreteFunctionSpaceType          DiscreteFunctionSpaceType;
 
-    static const int polynomialOrder = (DiscreteFunctionSpaceType::polynomialOrder==-1) ? 0 : DiscreteFunctionSpaceType::polynomialOrder;
+    // polynomial order of ansatz space
+    static const int polynomialOrder = DiscreteFunctionSpaceType::polynomialOrder;
+
+    // if polynomialOrder is 0 then limiting will be linear (higher order FV case)
+    static const int limiterPolynomialOrder = (polynomialOrder == 0) ? 1 : polynomialOrder;
 
     static_assert( std::is_same<typename ModelType::RangeType, typename DestinationType::RangeType>::value, "range type does not fit.");
 
@@ -85,8 +92,6 @@ namespace Fem
 
     typedef AdaptationHandler< GridType, AdaptationHandlerFunctionSpaceImp >
                                                                          AdaptationHandlerType;
-
-    static const int limiterPolynomialOrder =(DiscreteFunctionSpaceType::polynomialOrder==-1) ? 1 : DiscreteFunctionSpaceType::polynomialOrder;
 
     typedef ExtraParameterTupleImp                                       ExtraParameterTupleType;
   };

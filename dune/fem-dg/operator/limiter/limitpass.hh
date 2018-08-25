@@ -533,7 +533,7 @@ namespace Fem
     //! id for choosing admissible linear functions
     enum AdmissibleFunctions { DGFunctions = 0, ReconstructedFunctions = 1 , BothFunctions = 2 };
 
-    //! returns true of pass is currently active in the pass tree
+    //! returns true if pass is currently active in the pass tree
     using BaseType :: active ;
 
     //! type of cartesian grid checker
@@ -633,7 +633,6 @@ namespace Fem
       reconstruct_(false),
       admissibleFunctions_( getAdmissibleFunctions() ),
       usedAdmissibleFunctions_( admissibleFunctions_ )
-      //, limiterCalled_(0)
     {
       if( Parameter :: verbose () )
       {
@@ -654,9 +653,7 @@ namespace Fem
     }
 
     //! Destructor
-    virtual ~LimitDGPass() {
-      //std::cout << "Limiter::compute called " << limiterCalled_ << std::endl;
-    }
+    virtual ~LimitDGPass() {}
 
   protected:
     //! return appropriate quadrature order, default is 2 * order(entity)
@@ -747,8 +744,6 @@ namespace Fem
       // get stopwatch
       Dune::Timer timer;
 
-      //std::cout << "LimitPass::compute ";
-
       // if polOrder of destination is > 0 then we have to do something
       if( spc_.order() > 0 && active() )
       {
@@ -764,25 +759,21 @@ namespace Fem
         {
           // for initialization of thread passes for only a few iterations
           if( elementCounter_ > breakAfter) break;
-          const auto& en = *it;
+          const auto& entity = *it;
           Dune::Timer localTime;
-          applyLocalImp(en);
+          applyLocalImp( entity );
           stepTime_[2] += localTime.elapsed();
           ++elementCounter_;
         }
 
-        //++limiterCalled_;
         // finalize
         finalize(arg, dest);
       }
       else
       {
-        /*
-        std::cout << "LimitPass::compute deactive " << std::endl;
         // get reference to U and pass on to dest
         const ArgumentFunctionType &U = *(std::get< argumentPosition >( arg ));
         dest.assign( U );
-        */
       }
 
       //std::cout << std::endl;
@@ -1234,7 +1225,7 @@ namespace Fem
       DestLocalFunctionType limitEn = dest_->localFunction(en);
 
       // project deoMod_ to limitEn
-      L2project(en, geo, enBary, enVal, limit, deoMod_, limitEn);
+      L2project(en, geo, enBary, enVal, limit, deoMod_, limitEn );
 
       assert( checkPhysical(en, geo, limitEn) );
 
@@ -1445,7 +1436,6 @@ namespace Fem
       // get quadrature for destination space order
       VolumeQuadratureType quad( en, spc_.order() + 1 );
 
-      //const BaseFunctionSetType& baseset = limitEn.baseFunctionSet();
       const int quadNop = quad.nop();
       for(int qP = 0; qP < quadNop ; ++qP)
       {
@@ -1499,14 +1489,23 @@ namespace Fem
         }
       }
 
-      // copy to limitEn skipping components that should not be limited
-      const int numBasis = uTmpLocal_.numDofs()/dimRange;
-      for(int i=1; i<numBasis; ++i)
+      // in case of higher order FV the whole local functions needs to be assigned
+      // since dest is not previously initialized with the current solution
+      if( reconstruct_ )
       {
-        for( const auto& r : discreteModel_.model().limitedRange() )
+        limitEn.assign( uTmpLocal_ );
+      }
+      else
+      {
+        // copy to limitEn skipping components that should not be limited
+        const int numBasis = uTmpLocal_.numDofs()/dimRange;
+        for(int i=1; i<numBasis; ++i)
         {
-          const int dofIdx = dofConversion_.combinedDof(i,r);
-          limitEn[ dofIdx ] = uTmpLocal_[ dofIdx ];
+          for( const auto& r : discreteModel_.model().limitedRange() )
+          {
+            const int dofIdx = dofConversion_.combinedDof(i,r);
+            limitEn[ dofIdx ] = uTmpLocal_[ dofIdx ];
+          }
         }
       }
     }
@@ -2034,8 +2033,6 @@ namespace Fem
 
     mutable std::vector< RangeType  > values_;
     mutable std::vector< GradientType > gradients_;
-
-    //mutable int limiterCalled_;
 
   }; // end DGLimitPass
 

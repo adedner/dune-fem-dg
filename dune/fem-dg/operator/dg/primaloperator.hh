@@ -313,8 +313,6 @@ namespace Fem
     typedef LocalCDGPass   < DiscreteModel1Type, Pass1Type, advectPassId >        Pass2Type;
 #endif
 
-    //typedef ScalingLimiter< DestinationType > LimiterOperator;
-
     typedef typename LimiterDiscreteModelType::IndicatorType                      LimiterIndicatorType;
     typedef typename LimiterIndicatorType::DiscreteFunctionSpaceType              LimiterIndicatorSpaceType;
 
@@ -366,7 +364,6 @@ namespace Fem
       , uTmp_()
       , fvSpc_()
       , indicator_()
-      //, operatorCalled_( 0 )
       , diffFlux_( gridPart_, model_, DGPrimalDiffusionFluxParameters( ParameterKey::generate( name, "dgdiffusionflux." ) ) )
       , discreteModel1_( model_, advflux_, diffFlux_ )
       , limitDiscreteModel_( model_ , space_.order() )
@@ -377,14 +374,6 @@ namespace Fem
       // create indicator if enabled
       createIndicator();
     }
-
-    /*
-    ~DGLimitedAdvectionOperator()
-    {
-      std::cout << "DGLimitedOperator called " << operatorCalled_ << " times."
-        << std::endl;
-    }
-    */
 
     void activateLinear() const {
       limitPass().disable();
@@ -456,12 +445,12 @@ namespace Fem
 
     inline void limit( DestinationType& U ) const
     {
-      // copy U to uTmp_
+      // copy U to uTmp_ (only for higher order DG scheme)
       if( polOrd > 0 )
       {
         //std::cout << "Called extra limit" << std::endl;
         if( ! uTmp_ )
-          uTmp_.reset(new LimiterDestinationType("limitTmp", limiterSpace_) );
+          uTmp_.reset(new DestinationType("utmp-limit", space_) );
 
         assert( uTmp_ );
         uTmp_->assign( U );
@@ -513,9 +502,9 @@ namespace Fem
     SpaceType                  space_;
     LimiterSpaceType           limiterSpace_;
 
-    mutable std::unique_ptr< LimiterDestinationType > uTmp_;
-    std::unique_ptr< LimiterIndicatorSpaceType > fvSpc_;
-    std::unique_ptr< LimiterIndicatorType      > indicator_;
+    mutable std::unique_ptr< DestinationType   >  uTmp_;
+    std::unique_ptr< LimiterIndicatorSpaceType >  fvSpc_;
+    std::unique_ptr< LimiterIndicatorType      >  indicator_;
 
     //mutable int operatorCalled_;
 
@@ -747,7 +736,7 @@ namespace Fem
       if( polOrd > 0 )
       {
         if( ! uTmp_ )
-          uTmp_.reset( new LimiterDestinationType("limitTmp", limiterSpace_) );
+          uTmp_.reset( new DestinationType("utmp-limit", space_) );
 
         assert( uTmp_ );
         uTmp_->assign( U );
@@ -800,7 +789,7 @@ namespace Fem
     LimiterSpaceType           limiterSpace_;
 
 
-    mutable std::unique_ptr< LimiterDestinationType > uTmp_;
+    mutable std::unique_ptr< DestinationType   >  uTmp_;
     std::unique_ptr< LimiterIndicatorSpaceType >  fvSpc_;
     std::unique_ptr< LimiterIndicatorType      >  indicator_;
 

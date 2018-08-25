@@ -406,7 +406,8 @@ namespace Fem
           point -= entityCenter;
 
           const double length = (point * lambda);
-          const double factorLength = (cartesianGrid) ? 2.0 * length : length ;
+          //const double factorLength = (cartesianGrid) ? 2.0 * length : length ;
+          const double factorLength = length;//(cartesianGrid) ? 2.0 * length : length ;
           lambda *= factorLength;
 
           assert( lambda.two_norm () > 0 );
