@@ -229,33 +229,38 @@ namespace Fem
     template <class LocalEvaluation>
     double boundaryFlux(const LocalEvaluation& left,
                         RangeType& jump,
-                        JacobianRangeType& dummy ) const
+                        JacobianRangeType& dummy) const
     {
-      RangeType uRight;
 
       if( model_.hasBoundaryValue( left ) )
       {
+        RangeType uRight;
         // evaluate boundary value
         model_.boundaryValue( left, left.values()[ uVar ], uRight );
+
+        // use boundaryValue to check physical and jump
+        if (! physical(left.entity(), left.position(), left.values()[ uVar ] ) ||
+            ! physical(left.entity(), left.position(), uRight ) )
+        {
+          jump = 1e10;
+          return -1.;
+        }
+        else
+        {
+          model_.jump( left.intersection(), left.localPosition(), left.values()[ uVar ], uRight, jump);
+          return 1.;
+        }
       }
       else
       {
-        // jump = 0
+        // otherwise evaluate boundary flux
+        //model_.boundaryFlux( left, left.values()[ uVar ], left.jacobians()[ uVar ], jump );
+        //std::cout << jump << " boundary flux" << std::endl;
+        //return ( std::abs( jump[ 0 ] ) > 1e-10 ) ? -1. : 1.;
         jump = 0;
-        return 0.;
+        return 0;
       }
 
-      if (! physical(left.entity(), left.position(), left.values()[ uVar ] ) ||
-          ! physical(left.entity(), left.position(), uRight ) )
-      {
-        jump = 1e10;
-        return -1.;
-      }
-      else
-      {
-        model_.jump( left.intersection(), left.localPosition(), left.values()[ uVar ], uRight, jump);
-        return 1.;
-      }
     }
 
     //! return true if method boundaryValue returns something meaningful.
