@@ -1,13 +1,15 @@
 import time, math
 from dune.grid import structuredGrid
 import dune.create as create
+from dune.fem.function import integrate
 from dune.femdg import createFemDGSolver
+from ufl import dot
 
 def run(Model, initial, x0,x1,N, endTime, name, exact,
         polOrder, limiter="default", startLevel=0,
-        primitive, saveStep, subsamp=0):
+        primitive=None, saveStep=None, subsamp=0):
     grid     = structuredGrid(x0,x1,N)
-    grid.hierarchicGrid.globalRefine(startLevel)
+    grid.hierarchicalGrid.globalRefine(startLevel)
     dimR     = Model.dimension
     t        = 0
     count    = 0
@@ -19,12 +21,13 @@ def run(Model, initial, x0,x1,N, endTime, name, exact,
 
     operator.applyLimiter( u_h );
     print("number of elements: ",grid.size(0),flush=True)
-    vtk = grid.writeVTK(name, subsampling=subsamp, write=False,
+    if saveStep is not None:
+        vtk = grid.writeVTK(name, subsampling=subsamp, write=False,
                celldata=[u_h],
                pointdata=primitive(Model,u_h) if primitive else None,
                cellvector={"velocity":Model.velo(u_h)}
             )
-    vtk.write(name, count)
+        vtk.write(name, count)
     start = time.time()
     tcount = 0
     while t < endTime:
@@ -37,7 +40,7 @@ def run(Model, initial, x0,x1,N, endTime, name, exact,
         tcount += 1
         if True: # tcount%100 == 0:
             print('[',tcount,']','dt = ', dt, 'time = ',t, 'count = ',count, flush=True )
-        if t > saveTime:
+        if saveStep is not None and t > saveTime:
             count += 1
             vtk.write(name, count)
             saveTime += saveStep
