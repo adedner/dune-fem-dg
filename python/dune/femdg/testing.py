@@ -1,5 +1,5 @@
 import time, math
-from dune.grid import structuredGrid
+from dune.grid import structuredGrid, OutputType
 import dune.create as create
 from dune.fem.function import integrate
 from dune.femdg import createFemDGSolver
@@ -27,7 +27,7 @@ def run(Model, initial, x0,x1,N, endTime, name, exact,
                pointdata=primitive(Model,u_h) if primitive else None,
                cellvector={"velocity":Model.velo(u_h)}
             )
-        vtk.write(name, count)
+        vtk.write(name, count, outputType=OutputType.appendedraw)
     start = time.time()
     tcount = 0
     while t < endTime:
@@ -42,11 +42,11 @@ def run(Model, initial, x0,x1,N, endTime, name, exact,
             print('[',tcount,']','dt = ', dt, 'time = ',t, 'count = ',count, flush=True )
         if saveStep is not None and t > saveTime:
             count += 1
-            vtk.write(name, count)
+            vtk.write(name, count, outputType=OutputType.appendedraw)
             saveTime += saveStep
     print("time loop:",time.time()-start)
     print("number of time steps ", tcount)
-    vtk.write(name, count)
+    vtk.write(name, count, outputType=OutputType.appendedraw)
 
     if exact is not None:
         error = integrate( grid, dot(u_h-exact(t),u_h-exact(t)), order=5 )
