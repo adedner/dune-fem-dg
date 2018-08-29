@@ -3,6 +3,7 @@ from dune.ufl import Space
 
 def CompressibleEuler(dim, gamma):
     class Model:
+        dimension = dim+2
         def velo(U):
             return as_vector( [U[i]/U[0] for i in range(1,dim+1)] )
         def rhoeps(U):
@@ -64,11 +65,12 @@ def CompressibleEulerSlip(dim, gamma):
 def riemanProblem(x,x0,UL,UR):
     return conditional(x<x0,UL,UR)
 
+# TODO Add exact solution where available (last argument)
 def constant(dim,gamma):
     return CompressibleEulerDirichlet(dim,gamma) ,\
            as_vector( [0.1,0.,0.,0.1] ),\
            [-1, 0], [1, 0.1], [50, 5], 0.1,\
-           "constant"
+           "constant", None
 def sod(dim,gamma):
     space = Space(dim,dim+2)
     x = SpatialCoordinate(space.cell())
@@ -77,7 +79,7 @@ def sod(dim,gamma):
                           CompressibleEuler(dim,gamma).toCons([1,0,0,1]),
                           CompressibleEuler(dim,gamma).toCons([0.125,0,0,0.1])),\
            [0, 0], [1, 0.25], [64, 16], 0.15,\
-           "sod"
+           "sod", None
 def radialSod1(dim,gamma):
     space = Space(dim,dim+2)
     x = SpatialCoordinate(space.cell())
@@ -86,7 +88,7 @@ def radialSod1(dim,gamma):
                           CompressibleEuler(dim,gamma).toCons([1,0,0,1]),
                           CompressibleEuler(dim,gamma).toCons([0.125,0,0,0.1])),\
            [-0.5, -0.5], [0.5, 0.5], [20, 20], 0.25,\
-           "radialSod1"
+           "radialSod1", None
 def radialSod1Large(dim,gamma):
     space = Space(dim,dim+2)
     x = SpatialCoordinate(space.cell())
@@ -95,7 +97,7 @@ def radialSod1Large(dim,gamma):
                           CompressibleEuler(dim,gamma).toCons([1,0,0,1]),
                           CompressibleEuler(dim,gamma).toCons([0.125,0,0,0.1])),\
            [-1.5, -1.5], [1.5, 1.5], [60, 60], 0.5,\
-           "radialSod1Large"
+           "radialSod1Large", None
 def radialSod2(dim,gamma):
     space = Space(dim,dim+2)
     x = SpatialCoordinate(space.cell())
@@ -104,7 +106,7 @@ def radialSod2(dim,gamma):
                           CompressibleEuler(dim,gamma).toCons([0.125,0,0,0.1]),
                           CompressibleEuler(dim,gamma).toCons([1,0,0,1])),\
            [-0.5, -0.5], [0.5, 0.5], [20, 20], 0.25,\
-           "radialSod2"
+           "radialSod2", None
 def radialSod3(dim,gamma):
     space = Space(dim,dim+2)
     x = SpatialCoordinate(space.cell())
@@ -113,7 +115,7 @@ def radialSod3(dim,gamma):
                           CompressibleEuler(dim,gamma).toCons([1,0,0,1]),
                           CompressibleEuler(dim,gamma).toCons([0.125,0,0,0.1])),\
            [-0.5, -0.5], [0.5, 0.5], [20, 20], 0.5,\
-           "radialSod3"
+           "radialSod3", None
 
 def leVeque(dim,gamma):
     space = Space(dim,dim+2)
@@ -122,4 +124,21 @@ def leVeque(dim,gamma):
     return CompressibleEulerDirichlet(dim,gamma),\
            as_vector( [initial,0,0,initial] ),\
            [0, 0], [1, 0.25], [64, 16], 0.7,\
-           "leVeque1D"
+           "leVeque1D", None
+
+def vortex(dim,gamma):
+    S = 13.5    # strength of vortex
+    R = 1.5     # radius of vortex
+    M = 0.4     # Machnumber
+
+    space = Space(dim,dim+2)
+    x = SpatialCoordinate(space.cell())
+    f = (1 - x[0]*x[0] - x[1]*x[1])/(2*R*R)
+    rho = pow(1 - S*S*M*M*(gamma - 1)*exp(2*f)/(8*pi*pi), 1/(gamma - 1))
+    u =     S*x[1]*exp(f)/(2*pi*R)
+    v = 1 - S*x[0]*exp(f)/(2*pi*R)
+    p = rho / (gamma*M*M)
+    return CompressibleEulerDirichlet(dim,gamma),\
+           as_vector( [rho,u,v,p] ),\
+           [-2, 2], [2, 2], [64, 64], 100,\
+           "vortex", None

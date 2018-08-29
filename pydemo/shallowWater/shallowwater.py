@@ -33,8 +33,8 @@ def ShallowWater(topography,g):
             return (hL - hR)/(0.5*(hL + hR))
         def S_ns(t,x,U,DU): # or S_s for a stiff source
             return as_vector( [0, *(-U[0]*g*grad(topography(x))) ])
-        # boundary = {range(1,5): lambda t,x,u,n: Model.F_c(t,x,u)*n}
-        boundary = {range(1,5): lambda t,x,u: u}
+        boundary = {range(1,5): lambda t,x,u,n: Model.F_c(t,x,u)*n}
+        # boundary = {range(1,5): lambda t,x,u: u}
     return Model
 
 # example 5.1 and 7.1 from
@@ -48,7 +48,7 @@ def leVeque(dim):
         return ShallowWater(topography,1),\
                as_vector( [initial,0,0] ),\
                [0, 0], [1, 0.25], [64, 16], 0.7,\
-               "leVeque1D"
+               "leVeque1D", None
     else:
         topography = lambda x: 0.8*exp(-5*(x[0]-0.9)**2-50*(x[1]-0.5)**2)
         space = Space(2,3)
@@ -57,4 +57,4 @@ def leVeque(dim):
         return ShallowWater(topography,1),\
                as_vector( [initial,0,0] ),\
                [0, 0], [2, 1], [80, 40], 1.8,\
-               "leVeque2D"
+               "leVeque2D", None
