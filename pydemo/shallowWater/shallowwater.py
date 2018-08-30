@@ -6,13 +6,15 @@ def ShallowWater(topography,g):
     space = Space(2,3)
     x = SpatialCoordinate(space.cell())
     class Model:
-        dimension = dim+1
         def velo(U):
             return as_vector( [U[i]/U[0] for i in range(1,dim+1)] )
         def toCons(U,x=x):
             return as_vector( [U[0]-topography(x)]+[U[i] for i in range(1,dim+1)] )
         def toPrim(U,x=x):
             return U[0]+topography(x), Model.velo(U)
+
+        # interface methods
+        dimension = dim+1
         def F_c(t,x,U):
             assert dim==2
             h, v = U[0], Model.velo(U)
@@ -35,26 +37,27 @@ def ShallowWater(topography,g):
             return as_vector( [0, *(-U[0]*g*grad(topography(x))) ])
         boundary = {range(1,5): lambda t,x,u,n: Model.F_c(t,x,u)*n}
         # boundary = {range(1,5): lambda t,x,u: u}
+
     return Model
 
 # example 5.1 and 7.1 from
 # https://www.sciencedirect.com/science/article/pii/S0021999198960582
 def leVeque(dim):
+    space = Space(2,3)
+    x = SpatialCoordinate(space.cell())
     if dim == 1:
         topography = lambda x: conditional(abs(x[0]-0.5)<0.1, 1./4.*(cos(10*pi*(x[0]-0.5))+1), 0)
-        space = Space(2,3)
-        x = SpatialCoordinate(space.cell())
         initial = conditional(abs(x[0]-0.15)<0.05,1.2,1)
-        return ShallowWater(topography,1),\
-               as_vector( [initial,0,0] ),\
+        Model = ShallowWater(topography,1)
+        return Model,\
+               Model.toCons(as_vector( [initial,0,0] )),\
                [0, 0], [1, 0.25], [64, 16], 0.7,\
                "leVeque1D", None
     else:
         topography = lambda x: 0.8*exp(-5*(x[0]-0.9)**2-50*(x[1]-0.5)**2)
-        space = Space(2,3)
-        x = SpatialCoordinate(space.cell())
         initial = conditional(abs(x[0]-0.1)<0.05,1.01,1)
-        return ShallowWater(topography,1),\
-               as_vector( [initial,0,0] ),\
+        Model = ShallowWater(topography,1)
+        return Model,\
+               Model.toCons(as_vector( [initial,0,0] )),\
                [0, 0], [2, 1], [80, 40], 1.8,\
                "leVeque2D", None

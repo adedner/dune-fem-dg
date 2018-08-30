@@ -2,12 +2,7 @@ from ufl import *
 from dune.ufl import Space
 class Transport1D:
     dimension = 1
-    name = 'transport'
 
-    def velo(U):
-        return as_vector( [1,0] )
-    def toCons(U):
-        return U
     def F_c(t,x,U):
         return as_matrix( [ [U[0], 0] ] )
 
@@ -16,7 +11,7 @@ class Transport1D:
     def maxLambda(t,x,U,n):
         return abs(n[0])
     def velocity(t,x,U):
-        return Transport1D.velo(U)
+        return v
     def physical(U):
         return 1
     def jump(U,V):
@@ -26,26 +21,14 @@ def LinearAdvectionDiffusion1D(v,eps):
     if v is not None: v = as_vector(v)
     class Model:
         dimension = 1
-        def toCons(U):
-            return U
-        if v is not None and eps is not None:
-            name = 'linearAD'
-        elif v is not None:
-            name = 'linearA'
-        else:
-            name = 'linearD'
         if v is not None:
-            def velo(U):
-                return v
             def F_c(t,x,U):
                 return as_matrix( [[ *(v*U[0]) ]] )
             def maxLambda(t,x,U,n):
                 return abs(dot(v,n))
             def velocity(t,x,U):
-                return Model.velo(U)
+                return v*t*10
         if eps is not None:
-            def velo(U):
-                return as_vector([0,0])
             def F_v(t,x,U,DU):
                 return eps*DU
             # TODO: this method is used in an IMEX method allough the
@@ -81,12 +64,6 @@ def LinearAdvectionDiffusion1DDirichlet(v,eps,bnd):
 # burgers problems still need to be adapted to new API
 class Burgers1D:
     dimension = 1
-    name = 'burgers'
-    def toCons(U):
-        return U
-
-    def velo(U):
-        return as_vector( [U[0],0] )
     def F_c(t,x,U):
         return as_matrix( [ [U[0]*U[0]/2, 0] ] )
 
@@ -98,7 +75,7 @@ class Burgers1D:
     def maxLambda(t,x,U,n):
         return abs(U[0]*n[0])
     def velocity(t,x,U):
-        return Burgers1D.velo(U)
+        return as_vector( [U[0],0] )
     def physical(U):
         return 1
     def jump(U,V):

@@ -338,6 +338,7 @@ namespace Fem
       // loop over all neighbors
       for (auto it = gridPart.ibegin( entity ); it != endit; ++it )
       {
+        bool storeNeighbor = true;
         const IntersectionType& intersection = *it;
 
         const bool hasBoundary = intersection.boundary();
@@ -426,15 +427,22 @@ namespace Fem
             {
               jumpNeighborEntity -= entityValue;
             }
+            else
+            {
+              // storeNeighbor = false;
+            }
           }
 
         } //end boundary
 
-        // store difference of mean values
-        nbVals.push_back(jumpNeighborEntity);
+        if (storeNeighbor)
+        {
+          // store difference of mean values
+          nbVals.push_back(jumpNeighborEntity);
 
-        // store difference between bary centers
-        barys.push_back(lambda);
+          // store difference between bary centers
+          barys.push_back(lambda);
+        }
 
       } // end intersection iterator
 

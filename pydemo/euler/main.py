@@ -12,7 +12,7 @@ gamma = 1.4
 parameter.append({"fem.verboserank": -1})
 parameter.append("parameter")
 
-primitive=lambda Model,uh: {"freesurface":Model.toPrim(uh)[0]}
+primitive=lambda Model,uh: {"pressure":Model.toPrim(uh)[2]}
 
 run(*problem(dim,gamma),
         startLevel=0, polOrder=2, limiter="default",
