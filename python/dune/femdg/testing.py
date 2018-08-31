@@ -1,5 +1,5 @@
 import time, math
-from dune.grid import structuredGrid, OutputType
+from dune.grid import structuredGrid, cartesianDomain, OutputType
 import dune.create as create
 from dune.fem.function import integrate
 from dune.femdg import createFemDGSolver
@@ -10,7 +10,8 @@ def run(Model, initial, x0,x1,N, endTime, name, exact,
         polOrder, limiter="default", startLevel=0,
         primitive=None, saveStep=None, subsamp=0,
         dt=None):
-    grid     = structuredGrid(x0,x1,N)
+    domain   = cartesianDomain(x0,x1,N,periodic=[False,False])
+    grid     = create.grid("yasp",domain)
     grid.hierarchicalGrid.globalRefine(startLevel)
     dimR     = Model.dimension
     t        = 0
