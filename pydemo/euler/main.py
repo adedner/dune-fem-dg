@@ -14,6 +14,7 @@ parameter.append("parameter")
 
 primitive=lambda Model,uh: {"pressure":Model.toPrim(uh)[2]}
 
-run(*problem(dim,gamma),
+run(*problem(),
         startLevel=0, polOrder=2, limiter="default",
-        primitive=primitive, saveStep=0.01, subsamp=2)
+        primitive=primitive, saveStep=0.1, subsamp=2,
+        dt=None)

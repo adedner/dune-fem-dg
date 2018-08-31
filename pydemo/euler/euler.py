@@ -63,7 +63,7 @@ def CompressibleEulerSlip(dim, gamma):
     return Model
 
 def riemanProblem(Model,x,x0,UL,UR):
-    return Model.toCons( conditional(x<x0,UL,UR) )
+    return Model.toCons( conditional(x<x0,as_vector(UL),as_vector(UR)) )
 
 # TODO Add exact solution where available (last argument)
 def constant(dim,gamma):
@@ -75,10 +75,8 @@ def sod(dim=2,gamma=1.4):
     space = Space(dim,dim+2)
     x = SpatialCoordinate(space.cell())
     Model = CompressibleEulerDirichlet(dim,gamma)
-    return  Model,\
-            riemanProblem( Model, x[0], 0.5,
-                          CompressibleEuler(dim,gamma).toCons([1,0,0,1]),
-                          CompressibleEuler(dim,gamma).toCons([0.125,0,0,0.1])),\
+    return Model,\
+           riemanProblem( Model, x[0], 0.5, [1,0,0,1], [0.125,0,0,0.1]),\
            [0, 0], [1, 0.25], [64, 16], 0.15,\
            "sod", None
 def radialSod1(dim=2,gamma=1.4):
@@ -87,8 +85,7 @@ def radialSod1(dim=2,gamma=1.4):
     Model = CompressibleEulerDirichlet(dim,gamma)
     return Model,\
            riemanProblem( Model, sqrt(dot(x,x)), 0.3,
-                          CompressibleEuler(dim,gamma).toCons([1,0,0,1]),
-                          CompressibleEuler(dim,gamma).toCons([0.125,0,0,0.1])),\
+                          [1,0,0,1], [0.125,0,0,0.1]),\
            [-0.5, -0.5], [0.5, 0.5], [20, 20], 0.25,\
            "radialSod1", None
 def radialSod1Large(dim=2,gamma=1.4):
@@ -97,8 +94,7 @@ def radialSod1Large(dim=2,gamma=1.4):
     Model = CompressibleEulerDirichlet(dim,gamma)
     return Model,\
            riemanProblem( Model, sqrt(dot(x,x)), 0.3,
-                          CompressibleEuler(dim,gamma).toCons([1,0,0,1]),
-                          CompressibleEuler(dim,gamma).toCons([0.125,0,0,0.1])),\
+                          [1,0,0,1], [0.125,0,0,0.1]),\
            [-1.5, -1.5], [1.5, 1.5], [60, 60], 0.5,\
            "radialSod1Large", None
 def radialSod2(dim=2,gamma=1.4):
@@ -107,8 +103,7 @@ def radialSod2(dim=2,gamma=1.4):
     Model = CompressibleEulerNeuman(dim,gamma)
     return Model,\
            riemanProblem( Model, sqrt(dot(x,x)), 0.3,
-                          CompressibleEuler(dim,gamma).toCons([0.125,0,0,0.1]),
-                          CompressibleEuler(dim,gamma).toCons([1,0,0,1])),\
+                          [0.125,0,0,0.1], [1,0,0,1]),\
            [-0.5, -0.5], [0.5, 0.5], [20, 20], 0.25,\
            "radialSod2", None
 def radialSod3(dim=2,gamma=1.4):
@@ -117,8 +112,7 @@ def radialSod3(dim=2,gamma=1.4):
     Model = CompressibleEulerSlip(dim,gamma)
     return Model,\
            riemanProblem( Model, sqrt(dot(x,x)), 0.3,
-                          CompressibleEuler(dim,gamma).toCons([1,0,0,1]),
-                          CompressibleEuler(dim,gamma).toCons([0.125,0,0,0.1])),\
+                          [1,0,0,1], [0.125,0,0,0.1]),\
            [-0.5, -0.5], [0.5, 0.5], [20, 20], 0.5,\
            "radialSod3", None
 
@@ -138,16 +132,16 @@ def vortex(dim=2,gamma=1.4):
     M = 0.4     # Machnumber
 
     space = Space(dim,dim+2)
-    x = SpatialCoordinate(space.cell())
-    f = (1 - x[0]*x[0] - x[1]*x[1])/(2*R*R)
-    rho = pow(1 - S*S*M*M*(gamma - 1)*exp(2*f)/(8*pi*pi), 1/(gamma - 1))
-    u =     S*x[1]*exp(f)/(2*pi*R)
-    v = 1 - S*x[0]*exp(f)/(2*pi*R)
-    p = rho / (gamma*M*M)
+    x     = SpatialCoordinate(space.cell())
+    f     = (1. - x[0]*x[0] - x[1]*x[1])/(2.*R*R)
+    rho   = pow(1. - S*S*M*M*(gamma - 1.)*exp(2.*f)/(8.*pi*pi), 1./(gamma - 1.))
+    u     =      S*x[1]*exp(f)/(2.*pi*R)
+    v     = 1. - S*x[0]*exp(f)/(2.*pi*R)
+    p     = rho / (gamma*M*M)
     Model = CompressibleEulerDirichlet(dim,gamma)
     return Model,\
            Model.toCons( as_vector( [rho,u,v,p] )),\
-           [-2, 2], [2, 2], [64, 64], 100,\
+           [-10, -10], [10, 10], [20, 20], 100,\
            "vortex", None
 
 problems = [sod, radialSod1, radialSod2, radialSod3,\

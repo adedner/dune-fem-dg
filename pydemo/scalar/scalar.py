@@ -83,6 +83,7 @@ class Burgers1D:
 
 space = Space(2,1)
 x = SpatialCoordinate(space.cell())
+
 def riemanProblem(x,x0,UL,UR):
     return conditional(x<x0,as_vector(UL),as_vector(UR))
 
@@ -141,3 +142,7 @@ def burgersVW():
 
 def burgersStationaryShock():
     return Burgers1D, riemanProblem(x[0],0,[1],[-1])
+
+problems = [ constantTransport, shockTransport, sinProblem,\
+             sinTransportProblem, pulse, diffusivePulse,\
+             burgersShock, burgersVW, burgersStationaryShock ]

@@ -61,3 +61,7 @@ def leVeque(dim):
                Model.toCons(as_vector( [initial,0,0] )),\
                [0, 0], [2, 1], [80, 40], 1.8,\
                "leVeque2D", None
+
+leVeque1D = lambda: leVeque(1)
+leVeque2D = lambda: leVeque(2)
+problems = [leVeque1D,leVeque2D]
