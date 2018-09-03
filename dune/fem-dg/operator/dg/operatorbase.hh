@@ -12,11 +12,9 @@
 #include <dune/fem-dg/operator/dg/passtraits.hh>
 #include <dune/fem-dg/misc/parameterkey.hh>
 
-#ifdef USE_SMP_PARALLEL
 #include <dune/fem/misc/threads/domainthreaditerator.hh>
 #include <dune/fem/misc/threads/threaditerator.hh>
 #include <dune/fem-dg/pass/threadpass.hh>
-#endif
 
 namespace Dune
 {
@@ -44,6 +42,8 @@ namespace Fem
     enum { polynomialOrder = Traits::polynomialOrder };
 
     typedef Fem::SpaceOperatorInterface< typename Traits::DestinationType >  BaseType;
+
+    static const bool threaded = Traits :: threaded ;
 
     //note: ExtraParameterTuple contains non pointer types from now on
     template <class Tuple, class StartPassImp, unsigned long int i >
@@ -108,30 +108,27 @@ namespace Fem
     typedef AdvDFunctionType                              IndicatorType;
     typedef typename AdvTraits::GridPartType              GridPartType;
 
-    typedef Fem::StartPass< AdvDFunctionType, u
-#ifdef USE_SMP_PARALLEL
-         , NonBlockingCommHandle< AdvDFunctionType >
-#endif
-      > Pass0Type;
+    // select non-blocking communication handle
+    typedef typename
+      std::conditional< threaded,
+          NonBlockingCommHandle< AdvDFunctionType >,
+          EmptyNonBlockingComm > :: type NonBlockingCommHandleType;
+
+    typedef Fem::StartPass< AdvDFunctionType, u, NonBlockingCommHandleType >  Pass0Type;
 
     typedef typename Traits::ExtraParameterTupleType      ExtraParameterTupleType;
 
     typedef InsertFunctions< ExtraParameterTupleType, Pass0Type, ModelType::modelParameterSize >
                                                           InsertFunctionsType;
+
     typedef typename InsertFunctionsType::PassType        InsertFunctionPassType;
 
-    typedef
-#ifdef USE_SMP_PARALLEL
-      ThreadPass <
-#endif
-      LocalCDGPass< DiscreteModelType, InsertFunctionPassType, cdgpass >
-#ifdef USE_SMP_PARALLEL
-      //, Fem::DomainDecomposedIteratorStorage< GridPartType >
-      , Fem::ThreadIterator< GridPartType >
-      , true // non-blocking communication
-        >
-#endif
-    Pass1Type;
+    typedef Fem::ThreadIterator< GridPartType >           ThreadIteratorType;
+
+    typedef LocalCDGPass< DiscreteModelType, InsertFunctionPassType, cdgpass >   InnerPassType;
+    typedef typename std::conditional< threaded,
+         ThreadPass< InnerPassType, ThreadIteratorType, true >,
+         InnerPassType > :: type                                                 Pass1Type;
 
     typedef typename AdvTraits::DiscreteFunctionSpaceType AdvDFunctionSpaceType;
     typedef typename AdvTraits::DestinationType AdvDestinationType;
@@ -160,17 +157,8 @@ namespace Fem
 
     void setAdaptation( AdaptationType& adHandle, double weight = 1 )
     {
-#ifdef USE_SMP_PARALLEL
       // also set adaptation handler to the discrete models in the thread pass
-      {
-        pass1_.setAdaptation( adHandle, weight );
-      }
-#else
-      {
-        // set adaptation handle to discrete model
-        discreteModel_.setAdaptation( adHandle, weight );
-      }
-#endif
+      pass1_.setAdaptation( adHandle, weight );
     }
 
     void setTime(const double time) {

@@ -59,7 +59,14 @@ namespace Fem
             class AdvectionFluxImp,
             class DiffusionFluxImp,
             class ExtraParameterTupleImp = std::tuple<>,
-            class AdaptationHandlerFunctionSpaceImp = typename DiscreteFunctionImp::DiscreteFunctionSpaceType::FunctionSpaceType
+            class AdaptationHandlerFunctionSpaceImp = typename DiscreteFunctionImp::DiscreteFunctionSpaceType::FunctionSpaceType,
+            bool enableThreaded =
+    // static cmake variables provided by dune-fem
+#if USE_PTHREADS || USE_OPENMP
+              true
+#else
+              false
+#endif
           >
   struct DefaultOperatorTraits
   {
@@ -78,6 +85,9 @@ namespace Fem
 
     // if polynomialOrder is 0 then limiting will be linear (higher order FV case)
     static const int limiterPolynomialOrder = (polynomialOrder == 0) ? 1 : polynomialOrder;
+
+    // enables the possibility to run in threaded mode
+    static const bool threaded = enableThreaded ;
 
     static_assert( std::is_same<typename ModelType::RangeType, typename DestinationType::RangeType>::value, "range type does not fit.");
 

@@ -30,6 +30,7 @@
 
 #include <dune/fem-dg/pass/dgmodelcaller.hh>
 #include <dune/fem/misc/compatibility.hh>
+#include <dune/fem/misc/threads/threadmanager.hh>
 
 #include <dune/fem-dg/pass/context.hh>
 
@@ -647,33 +648,35 @@ namespace Fem
 
       // we need the flux here
       assert(problem.hasFlux());
-
-      // intialize volume quadratures, otherwise we run into troubles with the threading
-      initializeVolumeQuadratures( geoInfo_.geomTypes( 0 ) );
     }
 
     //! Destructor
     virtual ~LimitDGPass() {}
 
+    //! return default face quadrature order
+    static int defaultVolumeQuadratureOrder( const DiscreteFunctionSpaceType& space, const EntityType& entity )
+    {
+      return (2 * space.order( entity ));
+    }
+
+    //! return default face quadrature order
+    static int defaultFaceQuadratureOrder( const DiscreteFunctionSpaceType& space, const EntityType& entity )
+    {
+      return (2 * space.order( entity )) + 1;
+    }
+
   protected:
     //! return appropriate quadrature order, default is 2 * order(entity)
     int volumeQuadratureOrder( const EntityType& entity ) const
     {
-      return ( volumeQuadOrd_ < 0 ) ? ( 2*spc_.order( entity ) ) : volumeQuadOrd_ ;
-    }
-
-    //! return default face quadrature order
-    int defaultFaceQuadOrder( const EntityType& entity ) const
-    {
-      return (2 * spc_.order( entity )) + 1;
+      return ( volumeQuadOrd_ < 0 ) ? ( defaultVolumeQuadratureOrder( spc_, entity ) ) : volumeQuadOrd_ ;
     }
 
     //! return appropriate quadrature order, default is 2 * order( entity ) + 1
     int faceQuadratureOrder( const EntityType& entity ) const
     {
-      return ( faceQuadOrd_ < 0 ) ? defaultFaceQuadOrder( entity ) : faceQuadOrd_ ;
+      return ( faceQuadOrd_ < 0 ) ? defaultFaceQuadratureOrder( spc_, entity ) : faceQuadOrd_ ;
     }
-
 
 
     //! get tolerance factor for shock detector
@@ -728,6 +731,7 @@ namespace Fem
       }
     };
 
+  public:
     //! The actual computations are performed as follows. First, prepare
     //! the grid walkthrough, then call applyLocal on each entity and then
     //! call finalize.
@@ -758,7 +762,7 @@ namespace Fem
         for( auto it = spc_.begin(); (it != endit); ++it )
         {
           // for initialization of thread passes for only a few iterations
-          if( elementCounter_ > breakAfter) break;
+          //if( elementCounter_ > breakAfter) break;
           const auto& entity = *it;
           Dune::Timer localTime;
           applyLocalImp( entity );
@@ -782,6 +786,7 @@ namespace Fem
       this->computeTime_ += timer.elapsed();
     }
 
+  protected:
     struct EvalAverage
     {
       const ThisType& op_;
@@ -811,9 +816,6 @@ namespace Fem
                           const RangeType& entityValue,
                           RangeType& neighborValue ) const
       {
-        const typename IntersectionGeometry::LocalCoordinate localPoint = interGeo.local( globalPoint );
-        const double currentTime = op_.time();
-
         FaceQuadratureType faceQuadInner( gridPart_, intersection, 0, FaceQuadratureType::INSIDE );
         typedef QuadratureContext< EntityType, IntersectionType, FaceQuadratureType > ContextType;
         typedef LocalEvaluation< ContextType, RangeType, RangeType > EvalType;
@@ -1397,22 +1399,6 @@ namespace Fem
     };
     */
 
-    void initializeVolumeQuadratures( const std::vector< GeometryType >& geomTypes ) const
-    {
-      for( size_t i=0; i<geomTypes.size(); ++ i )
-      {
-        const GeometryType& type = geomTypes[ i ];
-        // get quadrature for destination space order
-        VolumeQuadratureType quad0( type, spc_.order() + 1 );
-
-        // get point quadrature
-        VolumeQuadratureType quad1( type, 0 );
-
-        // get quadrature
-        VolumeQuadratureType quad2( type, 2*spc_.order() );
-      }
-    }
-
     // L2 projection
     template <class LocalFunctionImp>
     void L2project(const EntityType& en,
@@ -1572,27 +1558,32 @@ namespace Fem
         val = 0;
 
         const int quadNop = quad.nop();
+        /*
         if( int(aver_.size()) < quadNop )
         {
           // resize value vector
           aver_.resize( quadNop );
         }
+        */
 
-        // evaluate quadrature at once
-        lf.evaluateQuadrature( quad, aver_ );
+        // evaluate quadrature at once (does not qork correctly yet)
+        // lf.evaluateQuadrature( quad, aver_ );
+        RangeType aver;
 
         for(int qp=0; qp<quadNop; ++qp)
         {
+          lf.evaluate( quad[ qp ], aver );
+
           // check whether value is physical
-          notphysical |= (discreteModel_.hasPhysical() && !discreteModel_.physical( en, quad.point( qp ), aver_[ qp ] ) );
+          notphysical |= (discreteModel_.hasPhysical() && !discreteModel_.physical( en, quad.point( qp ), aver ) );
 
           // possibly adjust average value, e.g. calculate primitive vairables and so on
-          discreteModel_.adjustAverageValue( en, quad.point( qp ), aver_[ qp ] );
+          discreteModel_.adjustAverageValue( en, quad.point( qp ), aver );
 
           // apply integration weight
-          aver_[ qp ] *= quad.weight(qp) * geo.integrationElement( quad.point(qp) );
+          aver *= quad.weight(qp) * geo.integrationElement( quad.point(qp) );
           // sum up
-          val += aver_[ qp ];
+          val += aver;
         }
 
         // mean value, i.e. devide by volume

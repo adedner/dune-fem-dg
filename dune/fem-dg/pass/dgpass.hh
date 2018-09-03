@@ -198,6 +198,12 @@ namespace Fem
       BaseType::setTime( time );
     }
 
+    template <class AdaptationType>
+    void setAdaptation( AdaptationType& adHandle, double weight )
+    {
+      discreteModel_.setAdaptation( adHandle, weight );
+    }
+
     //! Estimate for the timestep size
     double timeStepEstimateImpl() const
     {
@@ -910,30 +916,37 @@ namespace Fem
     LocalCDGPass(const LocalCDGPass&);
     LocalCDGPass& operator=(const LocalCDGPass&);
 
+  public:
+    //! return default face quadrature order
+    static int defaultVolumeQuadratureOrder( const DiscreteFunctionSpaceType& space, const EntityType& entity )
+    {
+      return (2 * space.order( entity ));
+    }
+
+    //! return default face quadrature order
+    static int defaultFaceQuadratureOrder( const DiscreteFunctionSpaceType& space, const EntityType& entity )
+    {
+      return (2 * space.order( entity )) + 1;
+    }
+
   protected:
     //! return appropriate quadrature order, default is 2 * order(entity)
     int volumeQuadratureOrder( const EntityType& entity ) const
     {
-      return ( volumeQuadOrd_ < 0 ) ? ( spc_.order( entity ) * 2 ) : volumeQuadOrd_ ;
-    }
-
-    //! return default face quadrature order
-    int defaultFaceQuadOrder( const EntityType& entity ) const
-    {
-      return (2 * spc_.order( entity )) + 1;
+      return ( volumeQuadOrd_ < 0 ) ? defaultVolumeQuadratureOrder( spc_, entity ) : volumeQuadOrd_ ;
     }
 
     //! return appropriate quadrature order, default is 2 * order( entity ) + 1
     int faceQuadratureOrder( const EntityType& entity ) const
     {
-      return ( faceQuadOrd_ < 0 ) ? defaultFaceQuadOrder( entity ) : faceQuadOrd_ ;
+      return ( faceQuadOrd_ < 0 ) ? defaultFaceQuadratureOrder( spc_, entity ) : faceQuadOrd_ ;
     }
 
     //! return appropriate quadrature order, default is 2 * order( entity ) + 1
     int faceQuadratureOrder( const EntityType& entity, const EntityType& neighbor ) const
     {
       return ( faceQuadOrd_ < 0 ) ?
-        std::max( defaultFaceQuadOrder( entity ), defaultFaceQuadOrder( neighbor ) ) :
+        std::max( defaultFaceQuadratureOrder( spc_, entity ), defaultFaceQuadratureOrder( spc_, neighbor ) ) :
         faceQuadOrd_ ;
     }
 

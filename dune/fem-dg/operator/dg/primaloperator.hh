@@ -298,20 +298,29 @@ namespace Fem
     typedef typename LimiterTraitsType::DestinationType                           LimiterDestinationType ;
     typedef typename LimiterDestinationType::DiscreteFunctionSpaceType            LimiterSpaceType;
 
-#ifdef USE_SMP_PARALLEL
-    typedef Fem::StartPass < DestinationType, u, NonBlockingCommHandle< DestinationType > > Pass0Type;
-    typedef LimitDGPass    < LimiterDiscreteModelType, Pass0Type, limitPassId >             InnerPass1Type;
-    typedef ThreadPass     < InnerPass1Type, Fem::ThreadIterator< GridPartType >, true >    Pass1Type;
-    typedef LocalCDGPass   < DiscreteModel1Type, Pass1Type, advectPassId >                  InnerPass2Type;
-    typedef ThreadPass     < InnerPass2Type,
-              //Fem::DomainDecomposedIteratorStorage<GridPartType >,
-              Fem::ThreadIterator< GridPartType >,
-              true > Pass2Type;
-#else
-    typedef Fem::StartPass < DestinationType, u >                                 Pass0Type;
-    typedef LimitDGPass    < LimiterDiscreteModelType, Pass0Type, limitPassId >   Pass1Type;
-    typedef LocalCDGPass   < DiscreteModel1Type, Pass1Type, advectPassId >        Pass2Type;
-#endif
+    static constexpr bool threaded = Traits :: threaded ;
+
+    // select non-blocking communication handle
+    typedef typename
+      std::conditional< threaded,
+          NonBlockingCommHandle< DestinationType >,
+          EmptyNonBlockingComm > :: type                                          NonBlockingCommHandleType;
+
+    typedef Fem::StartPass< DestinationType, u, NonBlockingCommHandleType >       Pass0Type;
+
+    typedef Fem::ThreadIterator< GridPartType >                                   ThreadIteratorType;
+
+    typedef LimitDGPass< LimiterDiscreteModelType, Pass0Type, limitPassId >       InnerPass1Type;
+
+    typedef typename std::conditional< threaded,
+            ThreadPass < InnerPass1Type, ThreadIteratorType, true>,
+            InnerPass1Type > :: type                                              Pass1Type;
+
+    typedef LocalCDGPass< DiscreteModel1Type, Pass1Type, advectPassId >           InnerPass2Type;
+
+    typedef typename std::conditional< threaded,
+            ThreadPass < InnerPass2Type, ThreadIteratorType, true>,
+            InnerPass2Type > :: type                                              Pass2Type;
 
     typedef typename LimiterDiscreteModelType::IndicatorType                      LimiterIndicatorType;
     typedef typename LimiterIndicatorType::DiscreteFunctionSpaceType              LimiterIndicatorSpaceType;
@@ -384,11 +393,7 @@ namespace Fem
 
     void setAdaptationHandler( AdaptationType& adHandle, double weight = 1 )
     {
-#ifdef USE_SMP_PARALLEL
       pass2_.setAdaptation( adHandle, weight );
-#else
-      discreteModel1_.setAdaptation( adHandle, weight );
-#endif
     }
 
     void setTime(const double time)
@@ -585,20 +590,29 @@ namespace Fem
     typedef typename LimiterTraitsType::DestinationType                           LimiterDestinationType ;
     typedef typename LimiterDestinationType::DiscreteFunctionSpaceType            LimiterSpaceType;
 
-#ifdef USE_SMP_PARALLEL
-    typedef Fem::StartPass < DestinationType, u, NonBlockingCommHandle< DestinationType > > Pass0Type;
-    typedef ScalingLimitDGPass    < LimiterDiscreteModelType, Pass0Type, limitPassId >             InnerPass1Type;
-    typedef ThreadPass     < InnerPass1Type, Fem::ThreadIterator< GridPartType >, true >    Pass1Type;
-    typedef LocalCDGPass   < DiscreteModel1Type, Pass1Type, advectPassId >                  InnerPass2Type;
-    typedef ThreadPass     < InnerPass2Type,
-              //Fem::DomainDecomposedIteratorStorage<GridPartType >,
-              Fem::ThreadIterator< GridPartType >,
-              true > Pass2Type;
-#else
-    typedef Fem::StartPass     < DestinationType, u >                                 Pass0Type;
-    typedef ScalingLimitDGPass < LimiterDiscreteModelType, Pass0Type, limitPassId >   Pass1Type;
-    typedef LocalCDGPass       < DiscreteModel1Type, Pass1Type, advectPassId >        Pass2Type;
-#endif
+    static constexpr bool threaded = Traits :: threaded ;
+
+    // select non-blocking communication handle
+    typedef typename
+      std::conditional< threaded,
+          NonBlockingCommHandle< DestinationType >,
+          EmptyNonBlockingComm > :: type                                          NonBlockingCommHandleType;
+
+    typedef Fem::StartPass< DestinationType, u, NonBlockingCommHandleType >       Pass0Type;
+
+    typedef Fem::ThreadIterator< GridPartType >                                   ThreadIteratorType;
+
+    typedef ScalingLimitDGPass< LimiterDiscreteModelType, Pass0Type, limitPassId >   InnerPass1Type;
+
+    typedef typename std::conditional< threaded,
+            ThreadPass < InnerPass1Type, ThreadIteratorType, true>,
+            InnerPass1Type > :: type                                              Pass1Type;
+
+    typedef LocalCDGPass   < DiscreteModel1Type, Pass1Type, advectPassId >        InnerPass2Type;
+
+    typedef typename std::conditional< threaded,
+            ThreadPass < InnerPass2Type, ThreadIteratorType, true>,
+            InnerPass2Type > :: type                                              Pass2Type;
 
     //typedef ScalingLimiter< DestinationType > LimiterOperator;
 
@@ -673,11 +687,7 @@ namespace Fem
 
     void setAdaptationHandler( AdaptationType& adHandle, double weight = 1 )
     {
-#ifdef USE_SMP_PARALLEL
       pass2_.setAdaptation( adHandle, weight );
-#else
-      discreteModel1_.setAdaptation( adHandle, weight );
-#endif
     }
 
     void setTime(const double time)

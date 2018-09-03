@@ -80,11 +80,13 @@ namespace Fem
 
     static constexpr bool symmetric  =  false ;
     static constexpr bool matrixfree =  true  ;
+    static constexpr bool threaded   = Additional::threaded;
 
     typedef DGAdvectionFlux< ModelType, advFluxId >       AdvectionFluxType;
     typedef typename DiffusionFluxSelector< ModelType, DiscreteFunctionSpaceType, diffFluxId, formId >::type  DiffusionFluxType;
 
-    typedef DefaultOperatorTraits< ModelType, DestinationType, AdvectionFluxType, DiffusionFluxType >  OpTraits;
+    typedef DefaultOperatorTraits< ModelType, DestinationType, AdvectionFluxType, DiffusionFluxType,
+                std::tuple<>, typename DiscreteFunctionSpaceType::FunctionSpaceType, threaded >  OpTraits;
 
     typedef AdvectionDiffusionOperatorSelector< OpTraits, formId, limiterId > OperatorSelectorType ;
 
