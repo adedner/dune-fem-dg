@@ -80,13 +80,13 @@ namespace Fem
 
     static constexpr bool symmetric  =  false ;
     static constexpr bool matrixfree =  true  ;
-    static constexpr bool threaded   = Additional::threaded;
+    static constexpr bool threading  = Additional::nThreads > 1 ;
 
     typedef DGAdvectionFlux< ModelType, advFluxId >       AdvectionFluxType;
     typedef typename DiffusionFluxSelector< ModelType, DiscreteFunctionSpaceType, diffFluxId, formId >::type  DiffusionFluxType;
 
     typedef DefaultOperatorTraits< ModelType, DestinationType, AdvectionFluxType, DiffusionFluxType,
-                std::tuple<>, typename DiscreteFunctionSpaceType::FunctionSpaceType, threaded >  OpTraits;
+                std::tuple<>, typename DiscreteFunctionSpaceType::FunctionSpaceType, threading >  OpTraits;
 
     typedef AdvectionDiffusionOperatorSelector< OpTraits, formId, limiterId > OperatorSelectorType ;
 
@@ -121,6 +121,8 @@ namespace Fem
         rkSolver_( tp_, fullOperator_, explOperator_, implOperator_, name() ),
         initialized_( false )
     {
+      Dune::Fem::Parameter::append("fem.parallel.numberofthreads", std::to_string( Additional::nThreads ) );
+
       const double maxTimeStep = param.maxTimeStep();
       fixedTimeStep_ = param.fixedTimeStep();
 
@@ -153,6 +155,7 @@ namespace Fem
         rkSolver_( tp_, fullOperator_, explOperator_, implOperator_, name() ),
         initialized_( false )
     {
+      Dune::Fem::Parameter::append("fem.parallel.numberofthreads", std::to_string( Additional::nThreads ) );
       std::cout << "cfl = " << double(tp_.factor()) << " " << tp_.time() << std::endl;
     }
 

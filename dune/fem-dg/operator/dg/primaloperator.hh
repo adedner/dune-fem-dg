@@ -298,11 +298,11 @@ namespace Fem
     typedef typename LimiterTraitsType::DestinationType                           LimiterDestinationType ;
     typedef typename LimiterDestinationType::DiscreteFunctionSpaceType            LimiterSpaceType;
 
-    static constexpr bool threaded = Traits :: threaded ;
+    static constexpr bool threading = Traits :: threading ;
 
     // select non-blocking communication handle
     typedef typename
-      std::conditional< threaded,
+      std::conditional< threading,
           NonBlockingCommHandle< DestinationType >,
           EmptyNonBlockingComm > :: type                                          NonBlockingCommHandleType;
 
@@ -312,13 +312,13 @@ namespace Fem
 
     typedef LimitDGPass< LimiterDiscreteModelType, Pass0Type, limitPassId >       InnerPass1Type;
 
-    typedef typename std::conditional< threaded,
+    typedef typename std::conditional< threading,
             ThreadPass < InnerPass1Type, ThreadIteratorType, true>,
             InnerPass1Type > :: type                                              Pass1Type;
 
     typedef LocalCDGPass< DiscreteModel1Type, Pass1Type, advectPassId >           InnerPass2Type;
 
-    typedef typename std::conditional< threaded,
+    typedef typename std::conditional< threading,
             ThreadPass < InnerPass2Type, ThreadIteratorType, true>,
             InnerPass2Type > :: type                                              Pass2Type;
 
@@ -590,11 +590,11 @@ namespace Fem
     typedef typename LimiterTraitsType::DestinationType                           LimiterDestinationType ;
     typedef typename LimiterDestinationType::DiscreteFunctionSpaceType            LimiterSpaceType;
 
-    static constexpr bool threaded = Traits :: threaded ;
+    static constexpr bool threading = Traits :: threading ;
 
     // select non-blocking communication handle
     typedef typename
-      std::conditional< threaded,
+      std::conditional< threading,
           NonBlockingCommHandle< DestinationType >,
           EmptyNonBlockingComm > :: type                                          NonBlockingCommHandleType;
 
@@ -604,13 +604,13 @@ namespace Fem
 
     typedef ScalingLimitDGPass< LimiterDiscreteModelType, Pass0Type, limitPassId >   InnerPass1Type;
 
-    typedef typename std::conditional< threaded,
+    typedef typename std::conditional< threading,
             ThreadPass < InnerPass1Type, ThreadIteratorType, true>,
             InnerPass1Type > :: type                                              Pass1Type;
 
     typedef LocalCDGPass   < DiscreteModel1Type, Pass1Type, advectPassId >        InnerPass2Type;
 
-    typedef typename std::conditional< threaded,
+    typedef typename std::conditional< threading,
             ThreadPass < InnerPass2Type, ThreadIteratorType, true>,
             InnerPass2Type > :: type                                              Pass2Type;
 

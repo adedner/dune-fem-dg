@@ -11,7 +11,7 @@ def run(Model, initial, x0,x1,N, endTime, name, exact,
         primitive=None, saveStep=None, subsamp=0,
         dt=None):
     domain   = cartesianDomain(x0,x1,N,periodic=[False,False])
-    grid     = create.grid("yasp",domain)
+    grid     = create.grid("alucube",domain)
     grid.hierarchicalGrid.globalRefine(startLevel)
     dimR     = Model.dimension
     t        = 0

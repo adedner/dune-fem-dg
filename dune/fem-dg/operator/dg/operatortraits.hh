@@ -87,7 +87,7 @@ namespace Fem
     static const int limiterPolynomialOrder = (polynomialOrder == 0) ? 1 : polynomialOrder;
 
     // enables the possibility to run in threaded mode
-    static const bool threaded = enableThreaded ;
+    static const bool threading = enableThreaded ;
 
     static_assert( std::is_same<typename ModelType::RangeType, typename DestinationType::RangeType>::value, "range type does not fit.");
 

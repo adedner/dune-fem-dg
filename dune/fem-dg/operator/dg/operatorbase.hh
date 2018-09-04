@@ -43,7 +43,7 @@ namespace Fem
 
     typedef Fem::SpaceOperatorInterface< typename Traits::DestinationType >  BaseType;
 
-    static const bool threaded = Traits :: threaded ;
+    static const bool threading = Traits :: threading ;
 
     //note: ExtraParameterTuple contains non pointer types from now on
     template <class Tuple, class StartPassImp, unsigned long int i >
@@ -110,7 +110,7 @@ namespace Fem
 
     // select non-blocking communication handle
     typedef typename
-      std::conditional< threaded,
+      std::conditional< threading,
           NonBlockingCommHandle< AdvDFunctionType >,
           EmptyNonBlockingComm > :: type NonBlockingCommHandleType;
 
@@ -126,7 +126,7 @@ namespace Fem
     typedef Fem::ThreadIterator< GridPartType >           ThreadIteratorType;
 
     typedef LocalCDGPass< DiscreteModelType, InsertFunctionPassType, cdgpass >   InnerPassType;
-    typedef typename std::conditional< threaded,
+    typedef typename std::conditional< threading,
          ThreadPass< InnerPassType, ThreadIteratorType, true >,
          InnerPassType > :: type                                                 Pass1Type;
 
