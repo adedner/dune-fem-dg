@@ -20,7 +20,7 @@ def run(Model, initial, x0,x1,N, endTime, name, exact,
 
     space = create.space("dgonb", grid, order=polOrder, dimrange=dimR)
     u_h = space.interpolate(initial, name='u_h')
-    operator = createFemDGSolver( Model, space, limiter=limiter )
+    operator = createFemDGSolver( Model, space, limiter=limiter, threading=True )
     operator.applyLimiter( u_h );
     print("number of elements: ",grid.size(0),flush=True)
     if saveStep is not None:

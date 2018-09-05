@@ -154,7 +154,7 @@ def generateMethod(struct,expr, cppType, name,
 # create DG operator + solver (limiter = none,minmod,vanleer,superbee),
 # (diffusionScheme = cdg2,br2,ip,nipg,...)
 def createFemDGSolver(Model, space,
-        limiter="minmod", diffusionScheme = "cdg2", nThreads=1 ):
+        limiter="minmod", diffusionScheme = "cdg2", threading=False ):
     import dune.create as create
 
     if limiter is None or limiter is False:
@@ -414,7 +414,7 @@ def createFemDGSolver(Model, space,
         Variable("const bool", "hasFlux"), initializer=hasAdvFlux or hasDiffFlux,
         static=True)])
     struct.append([Declaration(
-        Variable("const int", "nThreads"), initializer=nThreads,
+        Variable("const bool", "threading"), initializer=threading,
         static=True)])
 
     ###################################################
