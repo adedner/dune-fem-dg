@@ -62,7 +62,7 @@ namespace Fem
             class AdaptationHandlerFunctionSpaceImp = typename DiscreteFunctionImp::DiscreteFunctionSpaceType::FunctionSpaceType,
             bool enableThreaded =
     // static cmake variables provided by dune-fem
-#if USE_PTHREADS || USE_OPENMP
+#ifdef USE_SMP_PARALLEL
               true
 #else
               false

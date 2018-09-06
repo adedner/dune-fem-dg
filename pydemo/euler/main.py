@@ -12,6 +12,7 @@ dim = 2
 gamma = 1.4
 
 parameter.append({"fem.verboserank": -1})
+parameter.append({"fem.parallel.numberofthreads": 4})
 parameter.append("parameter")
 
 primitive=lambda Model,uh: {"pressure":Model.toPrim(uh)[2]}
@@ -19,4 +20,4 @@ primitive=lambda Model,uh: {"pressure":Model.toPrim(uh)[2]}
 run(*problem(),
         startLevel=0, polOrder=2, limiter="default",
         primitive=primitive, saveStep=0.1, subsamp=2,
-        dt=None,useThreads=True,grid="yasp")
+        dt=None,threading=True,grid="yasp")

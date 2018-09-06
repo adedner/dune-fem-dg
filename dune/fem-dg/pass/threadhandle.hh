@@ -1,10 +1,6 @@
 #ifndef DUNE_FEM_PTHREADCLASS_HH
 #define DUNE_FEM_PTHREADCLASS_HH
 
-#if USE_PTHREADS && ! HAVE_PTHREAD
-#error "pthreads not found, reconfigure!"
-#endif
-
 #include <cassert>
 #include <mutex>
 #include <vector>
@@ -52,7 +48,7 @@ namespace Fem
       }
     };
 
-#if USE_PTHREADS
+#if HAVE_PTHREAD
     ////////////////////////////////////////////
     // class ThreadHandleObject
     ////////////////////////////////////////////
@@ -303,7 +299,7 @@ namespace Fem
       pthread_barrier_destroy( &waitBegin_ );
     }
 
-#endif
+#endif // end HAVE_PTHREAD
 
   public:
     template <class Object>
@@ -314,20 +310,23 @@ namespace Fem
       if( ! ThreadManager :: singleThreadMode() )
         DUNE_THROW(InvalidStateException,"ThreadHandle :: run called from thread parallel region!");
 
-#if USE_PTHREADS
+#if HAVE_PTHREAD
+      if( ThreadManager :: pthreads )
       {
         // pthread version
         instance().runThreads( obj );
       }
-#else
-      // OpenMP parallel region
+      else
+#endif
+      {
+        // OpenMP parallel region
 #ifdef _OPENMP
 #pragma omp parallel
 #endif
-      {
-        obj.runThread();
+        {
+          obj.runThread();
+        }
       }
-#endif
     }
 
     template <class Object>
@@ -341,23 +340,26 @@ namespace Fem
       // run threads in blocking mode
       std::mutex mtx;
 
-#if USE_PTHREADS
+#if HAVE_PTHREAD
+      if( ThreadManager :: pthreads )
       {
         // pthread version
         instance().runThreads( obj, &mtx );
       }
-#else
-      // use mutex to lock call
-      typename ThreadHandle::template ObjectWrapper< Object > objCaller( obj, &mtx );
+      else
+#endif
+      {
+        // use mutex to lock call
+        typename ThreadHandle::template ObjectWrapper< Object > objCaller( obj, &mtx );
 
-      // OpenMP parallel region
+        // OpenMP parallel region
 #ifdef _OPENMP
 #pragma omp parallel
 #endif
-      {
-        objCaller.run();
+        {
+          objCaller.run();
+        }
       }
-#endif
     }
 
   };
