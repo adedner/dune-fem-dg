@@ -138,10 +138,10 @@ def vortex(dim=2,gamma=1.4):
     u     =      S*x[1]*exp(f)/(2.*pi*R)
     v     = 1. - S*x[0]*exp(f)/(2.*pi*R)
     p     = rho / (gamma*M*M)
-    Model = CompressibleEulerDirichlet(dim,gamma)
+    Model = CompressibleEuler(dim,gamma)
     return Model,\
            Model.toCons( as_vector( [rho,u,v,p] )),\
-           [-10, -10], [10, 10], [20, 20], 100,\
+           [-10, -10], [10, 10], [20, 20], 10,\
            "vortex", None
 
 problems = [sod, radialSod1, radialSod2, radialSod3,\

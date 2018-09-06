@@ -80,7 +80,7 @@ namespace Fem
 
     static constexpr bool symmetric  =  false ;
     static constexpr bool matrixfree =  true  ;
-    static constexpr bool threading  = Additional::nThreads > 1 ;
+    static constexpr bool threading  = Additional::useThreads;
 
     typedef DGAdvectionFlux< ModelType, advFluxId >       AdvectionFluxType;
     typedef typename DiffusionFluxSelector< ModelType, DiscreteFunctionSpaceType, diffFluxId, formId >::type  DiffusionFluxType;
@@ -121,8 +121,6 @@ namespace Fem
         rkSolver_( tp_, fullOperator_, explOperator_, implOperator_, name() ),
         initialized_( false )
     {
-      Dune::Fem::Parameter::append("fem.parallel.numberofthreads", std::to_string( Additional::nThreads ) );
-
       const double maxTimeStep = param.maxTimeStep();
       fixedTimeStep_ = param.fixedTimeStep();
 
@@ -155,7 +153,6 @@ namespace Fem
         rkSolver_( tp_, fullOperator_, explOperator_, implOperator_, name() ),
         initialized_( false )
     {
-      Dune::Fem::Parameter::append("fem.parallel.numberofthreads", std::to_string( Additional::nThreads ) );
       std::cout << "cfl = " << double(tp_.factor()) << " " << tp_.time() << std::endl;
     }
 

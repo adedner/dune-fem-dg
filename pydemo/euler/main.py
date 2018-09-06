@@ -19,4 +19,4 @@ primitive=lambda Model,uh: {"pressure":Model.toPrim(uh)[2]}
 run(*problem(),
         startLevel=0, polOrder=2, limiter="default",
         primitive=primitive, saveStep=0.1, subsamp=2,
-        dt=None,nThreads=4,grid="yasp")
+        dt=None,useThreads=True,grid="yasp")
