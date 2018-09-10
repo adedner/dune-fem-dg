@@ -822,7 +822,7 @@ namespace Fem
 
         ContextType cLeft( entity, intersection, faceQuadInner, volume_ );
         // create quadrature of low order
-        EvalType local( cLeft, entityValue, entityValue );
+        EvalType local( cLeft, entityValue, entityValue, 0 );
 
         // check for boundary Value
         if( discreteModel_.hasBoundaryValue( local ) )

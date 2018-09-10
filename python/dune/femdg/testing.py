@@ -10,7 +10,19 @@ def run(Model, initial, x0,x1,N, endTime, name, exact,
         polOrder, limiter="default", startLevel=0,
         primitive=None, saveStep=None, subsamp=0,
         dt=None,grid="yasp",threading=True):
-    domain   = cartesianDomain(x0,x1,N,periodic=[True,True])
+    periodic=[True,]*len(x0)
+    if hasattr(Model,"boundary"):
+        bnd=set()
+        for b in Model.boundary:
+            bnd.update(b)
+        for i in range(len(x0)):
+            if 2*i+1 in bnd:
+                assert(2*i+2 in bnd)
+                periodic[i] = False
+    if any(bnd):
+        print("Setting periodic boundaries",periodic,flush=True)
+
+    domain   = cartesianDomain(x0,x1,N,periodic=periodic,overlap=0)
     grid     = create.grid(grid,domain)
     grid.hierarchicalGrid.globalRefine(startLevel)
     dimR     = Model.dimension
@@ -49,12 +61,12 @@ def run(Model, initial, x0,x1,N, endTime, name, exact,
         dt = operator.deltaT()
         if math.isnan( u_h.scalarProductDofs( u_h ) ):
             grid.writeVTK(name, subsampling=subsamp, celldata=[u_h])
-            print('ERROR: dofs invalid t =', t)
+            print('ERROR: dofs invalid t =', t,flush=True)
             print('[',tcount,']','dt = ', dt, 'time = ',t, 'count = ',count, flush=True )
             exit(0)
         t += dt
         tcount += 1
-        if tcount%100 == 0:
+        if True: # tcount%100 == 0:
             print('[',tcount,']','dt = ', dt, 'time = ',t, 'count = ',count, flush=True )
         if saveStep is not None and t > saveTime:
             count += 1
@@ -65,8 +77,8 @@ def run(Model, initial, x0,x1,N, endTime, name, exact,
             vtk.write(name, count, outputType=OutputType.appendedraw)
             saveTime += saveStep
 
-    print("time loop:",time.time()-start)
-    print("number of time steps ", tcount)
+    print("time loop:",time.time()-start,flush=True)
+    print("number of time steps ", tcount,flush=True)
     if saveStep is not None:
         try:
             velo[0].setConstant("time",[t])
@@ -81,4 +93,4 @@ def run(Model, initial, x0,x1,N, endTime, name, exact,
 
     if exact is not None:
         error = integrate( grid, dot(u_h-exact(t),u_h-exact(t)), order=5 )
-        print("error:", math.sqrt(error) )
+        print("error:", math.sqrt(error),flush=True )
