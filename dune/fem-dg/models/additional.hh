@@ -145,17 +145,24 @@ struct Additional
   {
     {}
   }
+  template< class Entity, class Point >
+  static void adjustAverageValue ( const Entity& entity, const Point &x, RangeType &u )
+  {
+    {}
+  }
   static const int limitedDimRange = FunctionSpace :: dimRange;
   static const bool hasAdvection = true;
   static const bool hasDiffusion = false;
   static const bool hasStiffSource = false;
   static const bool hasNonStiffSource = false;
   static const bool hasFlux = true;
+  static const bool threading = true;
   static const Dune::Fem::Solver::Enum solverId = Dune::Fem::Solver::Enum::fem;
   static const Dune::Fem::Formulation::Enum formId = Dune::Fem::Formulation::Enum::primal;
   static const Dune::Fem::AdvectionLimiter::Enum limiterId = Dune::Fem::AdvectionLimiter::Enum::limited;
   static const Dune::Fem::AdvectionFlux::Enum advFluxId = Dune::Fem::AdvectionFlux::Enum::llf;
   static const Dune::Fem::DiffusionFlux::Enum diffFluxId = Dune::Fem::DiffusionFlux::Enum::none;
+  static const Dune::Fem::AdvectionLimiterFunction::Enum limiterFunctionId = Dune::Fem::AdvectionLimiterFunction::Enum::minmod;
 };
 
 // Model

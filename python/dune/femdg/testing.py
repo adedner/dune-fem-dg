@@ -66,7 +66,7 @@ def run(Model, initial, x0,x1,N, endTime, name, exact,
             exit(0)
         t += dt
         tcount += 1
-        if True: # tcount%100 == 0:
+        if tcount%100 == 0:
             print('[',tcount,']','dt = ', dt, 'time = ',t, 'count = ',count, flush=True )
         if saveStep is not None and t > saveTime:
             count += 1

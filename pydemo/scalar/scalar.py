@@ -11,7 +11,7 @@ class Transport1D:
     def maxLambda(t,x,U,n):
         return abs(n[0])
     def velocity(t,x,U):
-        return v
+        return as_vector([1,0])
     def physical(U):
         return 1
     def jump(U,V):
