@@ -451,8 +451,8 @@ namespace Fem
       // init local function
       initLocalFunction( entity , updEn_ );
 
-      // calculate element integral
-      elementIntegral(entity, updEn_);
+      // calculate element integral, but also set entity in any case
+      elementIntegral(entity, updEn_, true );
 
       // calculate surface integral for interior and boundary intersections
       surfaceIntegral(entity, updEn_, nbChecker );
@@ -498,9 +498,6 @@ namespace Fem
       // increase element counter
       ++numberOfElements_ ;
 
-      // only call geometry once, who know what is done in this function
-      const Geometry & geo = entity.geometry();
-
       const bool hasSource = discreteModel_.hasSource();
       const bool hasMass   = discreteModel_.hasMass();
       // only apply volumetric integral if order > 0
@@ -509,6 +506,10 @@ namespace Fem
       {
         assert( volumeQuadratureOrder( entity ) >=0 );
         VolumeQuadratureType volQuad(entity, volumeQuadratureOrder( entity ) );
+
+        // only call geometry once, who know what is done in this function
+        const Geometry & geo = entity.geometry();
+
 
         caller().setEntity(entity, volQuad);
 
