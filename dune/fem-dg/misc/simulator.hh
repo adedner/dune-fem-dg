@@ -30,7 +30,7 @@
 #define MAX_POLORD POLORDER
 #else
 #ifndef MIN_POLORD
-#define MIN_POLORD 1
+#define MIN_POLORD 0
 #endif
 #ifndef MAX_POLORD
 #define MAX_POLORD 4
@@ -269,7 +269,10 @@ namespace Fem
       if( computeAnyway || polOrd == polynomialOrder )
       {
         if( Dune::Fem::Parameter::verbose() )
-          std::cout << "Simulator: run for polynomialOrder = " << polOrd << std::endl;
+        {
+          int pOrd = computeAnyway ? POLORDER : polOrd ;
+          std::cout << "Simulator: run for polynomialOrder = " << pOrd << std::endl;
+        }
 
         simulate< polOrd > ( algCreator );
       }
