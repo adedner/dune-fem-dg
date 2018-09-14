@@ -2,7 +2,6 @@ import time, math
 from dune.grid import structuredGrid, cartesianDomain, OutputType
 import dune.create as create
 from dune.fem.function import integrate
-from dune.femdg import createFemDGSolver
 from dune.ufl import NamedConstant
 from ufl import dot, SpatialCoordinate
 
@@ -33,7 +32,7 @@ def run(Model, initial, x0,x1,N, endTime, name, exact,
 
     space = create.space("dgonb", grid, order=polOrder, dimrange=dimR)
     u_h = space.interpolate(initial, name='u_h')
-    operator = createFemDGSolver( Model, space, limiter=limiter, threading=True, parameters=parameters )
+    operator = create.scheme("femDG",Model, space, limiter=limiter, threading=True, parameters=parameters )
     operator.applyLimiter( u_h );
     print("number of elements: ",grid.size(0),flush=True)
     if saveStep is not None:
@@ -58,7 +57,7 @@ def run(Model, initial, x0,x1,N, endTime, name, exact,
     while t < endTime:
         if dt is not None:
             operator.setTimeStepSize(dt)
-        operator.solve(target=u_h)
+        operator.step(target=u_h)
         dt = operator.deltaT()
         if math.isnan( u_h.scalarProductDofs( u_h ) ):
             grid.writeVTK(name, subsampling=subsamp, celldata=[u_h])

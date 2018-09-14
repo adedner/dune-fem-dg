@@ -153,7 +153,7 @@ def generateMethod(struct,expr, cppType, name,
 
 # create DG operator + solver (limiter = none,minmod,vanleer,superbee),
 # (diffusionScheme = cdg2,br2,ip,nipg,...)
-def createFemDGSolver(Model, space,
+def femDGOperator(Model, space,
         limiter="minmod", diffusionScheme = "cdg2", threading=False,
         parameters={}):
     import dune.create as create
@@ -502,7 +502,7 @@ def createFemDGSolver(Model, space,
     # add method to set a fixed time step
     setTimeStepSize = Method('setTimeStepSize', '&DuneType::setTimeStepSize')
     # add method to solve (not requiring u_h_n)
-    solve = Method('solve', '&DuneType::solve', extra=['"target"_a'])
+    solve = Method('step', '&DuneType::solve', extra=['"target"_a'])
 
     return load(includes, typeName, constructor, setTimeStepSize, deltaT, applyLimiter, solve,
               preamble=writer.writer.getvalue()).\
