@@ -72,6 +72,7 @@ namespace Fem
     double crsTol_;
     int finLevel_;
     int crsLevel_;
+    const AdaptationParameters param;
     const bool shockIndicatorAdaptivty_;
 
   public:
@@ -81,13 +82,14 @@ namespace Fem
     //! constructor
     StandardLimiterDiscreteModel(const Model& mod,
                                  const int polOrd,
-                                 const AdaptationParameters& param = AdaptationParameters() )
-      : BaseType(mod),
+                                 const Dune::Fem::ParameterReader &parameter = Dune::Fem::Parameter::container() )
+      : BaseType(mod, 1e-8, parameter),
         indicator_( 0 ),
         refTol_( -1 ),
         crsTol_( -1 ),
         finLevel_( 0 ),
         crsLevel_( 0 ),
+        param(parameter),
         shockIndicatorAdaptivty_( param.shockIndicator() )
     {
       if( shockIndicatorAdaptivty_ )

@@ -142,9 +142,10 @@ namespace Fem
     template< class ExtraParameterTupleImp >
     DGAdvectionDiffusionOperatorBase( GridPartType& gridPart, const ModelType& model,
                                       ExtraParameterTupleImp& tuple,
-                                      const std::string name = "" )
+                                      const std::string name = "",
+                                      const Dune::Fem::ParameterReader &parameter = Dune::Fem::Parameter::container() )
       : model_( model )
-      , numflux_( model_ )
+      , numflux_( model_, parameter )
       , gridPart_( gridPart )
       , space_( gridPart_ )
       , discreteModel_( model_, numflux_,

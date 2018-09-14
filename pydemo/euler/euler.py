@@ -46,20 +46,20 @@ def CompressibleEuler(dim, gamma):
             return (pL - pR)/(0.5*(pL + pR))
     return Model
 
-def CompressibleEulerNeuman(dim, gamma):
+def CompressibleEulerNeuman(dim, gamma, bnd=range(1,5)):
     class Model(CompressibleEuler(dim,gamma)):
-        boundary = {range(1,5): lambda t,x,u,n: Model.F_c(t,x,u)*n}
+        boundary = {bnd: lambda t,x,u,n: Model.F_c(t,x,u)*n}
     return Model
-def CompressibleEulerDirichlet(dim, gamma):
+def CompressibleEulerDirichlet(dim, gamma, bnd=range(1,5)):
     class Model(CompressibleEuler(dim,gamma)):
-        boundary = {range(1,5): lambda t,x,u: u}
+        boundary = {bnd: lambda t,x,u: u}
     return Model
-def CompressibleEulerSlip(dim, gamma):
+def CompressibleEulerSlip(dim, gamma,bnd=range(1,5)):
     class Model(CompressibleEuler(dim,gamma)):
         def outflowFlux(t,x,u,n):
             _,_, p = CompressibleEuler(dim,gamma).toPrim(u)
             return as_vector([ 0, *(p*n), 0 ])
-        boundary = {range(1,5): outflowFlux}
+        boundary = {bnd: outflowFlux}
     return Model
 
 def riemanProblem(Model,x,x0,UL,UR):
@@ -138,7 +138,8 @@ def vortex(dim=2,gamma=1.4):
     u     =      S*x[1]*exp(f)/(2.*pi*R)
     v     = 1. - S*x[0]*exp(f)/(2.*pi*R)
     p     = rho / (gamma*M*M)
-    Model = CompressibleEulerDirichlet(dim,gamma)
+    # Model = CompressibleEuler(dim,gamma)
+    Model = CompressibleEulerSlip(dim,gamma,bnd=(1,2))
     return Model,\
            Model.toCons( as_vector( [rho,u,v,p] )),\
            [-10, -10], [10, 10], [20, 20], 100,\

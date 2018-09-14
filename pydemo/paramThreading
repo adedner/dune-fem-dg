@@ -1,6 +1,5 @@
 # OMP THREADS 
 #------------
-fem.verboserank: 0
 # number of threads used in OMP program
 fem.parallel.numberofthreads: 1
 # write diagnostics file (

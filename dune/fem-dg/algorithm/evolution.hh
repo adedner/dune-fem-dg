@@ -51,6 +51,7 @@ namespace Fem
   {
     protected:
     const std::string keyPrefix_;
+    const Dune::Fem::ParameterReader parameter_;
 
     public:
     /**
@@ -58,8 +59,10 @@ namespace Fem
      *
      * \param keyPrefix the key prefix for the parameter file.
      */
-    TimeSteppingParameters( const std::string keyPrefix = "femdg.stepper." )
-      : keyPrefix_( keyPrefix )
+    TimeSteppingParameters( const std::string keyPrefix = "femdg.stepper.",
+                            const Dune::Fem::ParameterReader &parameter = Dune::Fem::Parameter::container() )
+      : keyPrefix_( keyPrefix ),
+        parameter_( parameter )
     {}
 
     /**
@@ -70,7 +73,7 @@ namespace Fem
      */
     virtual double fixedTimeStep() const
     {
-      return Dune::Fem::Parameter::getValue< double >( keyPrefix_ + "fixedtimestep" , 0.0 );
+      return parameter_.getValue< double >( keyPrefix_ + "fixedtimestep" , 0.0 );
     }
 
     /**
@@ -81,7 +84,7 @@ namespace Fem
      */
     virtual double fixedTimeStepEocLoopFactor() const
     {
-      return Dune::Fem::Parameter::getValue< double >( keyPrefix_ + "fixedtimestepeocloopfactor" , 1.0 );
+      return parameter_.getValue< double >( keyPrefix_ + "fixedtimestepeocloopfactor" , 1.0 );
     }
 
     /**
@@ -89,7 +92,7 @@ namespace Fem
      */
     virtual double startTime() const
     {
-      return Dune::Fem::Parameter::getValue< double >( keyPrefix_ + "starttime" , 0.0 );
+      return parameter_.getValue< double >( keyPrefix_ + "starttime" , 0.0 );
     }
 
     /**
@@ -97,7 +100,7 @@ namespace Fem
      */
     virtual double endTime() const
     {
-      return Dune::Fem::Parameter::getValue< double >( keyPrefix_ + "endtime"/*, 1.0 */);
+      return parameter_.getValue< double >( keyPrefix_ + "endtime"/*, 1.0 */);
     }
 
     /**
@@ -109,7 +112,7 @@ namespace Fem
      */
     virtual int printCount() const
     {
-      return Dune::Fem::Parameter::getValue< int >( keyPrefix_ + "printcount" , -1 );
+      return parameter_.getValue< int >( keyPrefix_ + "printcount" , -1 );
     }
 
     /**
@@ -118,7 +121,7 @@ namespace Fem
      */
     virtual double maxTimeStep() const
     {
-      return Dune::Fem::Parameter::getValue< double >( keyPrefix_ + "maxtimestep", std::numeric_limits<double>::max());
+      return parameter_.getValue< double >( keyPrefix_ + "maxtimestep", std::numeric_limits<double>::max());
     }
 
     /**
@@ -126,7 +129,7 @@ namespace Fem
      */
     virtual int maximalTimeSteps () const
     {
-      return Dune::Fem::Parameter::getValue< int >(  keyPrefix_ + "maximaltimesteps", std::numeric_limits<int>::max());
+      return parameter_.getValue< int >(  keyPrefix_ + "maximaltimesteps", std::numeric_limits<int>::max());
     }
 
     /**
@@ -142,7 +145,7 @@ namespace Fem
      */
     virtual bool stopAtEndTime() const
     {
-      return Dune::Fem::Parameter::getValue< bool >( keyPrefix_ + "stopatendtime", bool(false) );
+      return parameter_.getValue< bool >( keyPrefix_ + "stopatendtime", bool(false) );
     }
 
   };

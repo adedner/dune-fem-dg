@@ -909,16 +909,16 @@ namespace Fem
   struct LimiterFunctionBase
   {
     const double limitEps_;
-    LimiterFunctionBase()
-      : limitEps_( getEpsilon() )
+    LimiterFunctionBase( const Dune::Fem::ParameterReader &parameter = Dune::Fem::Parameter::container() )
+      : limitEps_( getEpsilon(parameter) )
     {
     }
 
     //! get tolerance for shock detector
-    static double getEpsilon()
+    static double getEpsilon( const Dune::Fem::ParameterReader &parameter = Dune::Fem::Parameter::container() )
     {
       // default value is 1e-8
-      return Parameter::getValue("femdg.limiter.limiteps", double(1e-8) );
+      return parameter.getValue("femdg.limiter.limiteps", double(1e-8) );
     }
 
     //! return epsilon for limiting
@@ -955,7 +955,8 @@ namespace Fem
     using LimiterFunctionBase :: limitEps_ ;
     typedef Field FieldType;
 
-    MinModLimiter() : LimiterFunctionBase()
+    MinModLimiter( const Dune::Fem::ParameterReader &parameter = Dune::Fem::Parameter::container() )
+    : LimiterFunctionBase(parameter)
     {
       printInfo( "minmod" );
     }
@@ -983,7 +984,8 @@ namespace Fem
     using LimiterFunctionBase :: limitEps_ ;
     typedef Field FieldType;
 
-    SuperBeeLimiter() : LimiterFunctionBase()
+    SuperBeeLimiter( const Dune::Fem::ParameterReader &parameter = Dune::Fem::Parameter::container() )
+    : LimiterFunctionBase(parameter)
     {
       printInfo( "superbee" );
     }
@@ -1012,7 +1014,8 @@ namespace Fem
     using LimiterFunctionBase :: limitEps_ ;
     typedef Field FieldType;
 
-    VanLeerLimiter() : LimiterFunctionBase()
+    VanLeerLimiter( const Dune::Fem::ParameterReader &parameter = Dune::Fem::Parameter::container() )
+    : LimiterFunctionBase(parameter)
     {
       printInfo( "vanLeer" );
     }
