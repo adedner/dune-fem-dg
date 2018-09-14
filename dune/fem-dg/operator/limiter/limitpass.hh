@@ -211,9 +211,10 @@ namespace Fem
 
     /** \brief default limiter discrete model */
     LimiterDefaultDiscreteModel(const Model& mod,
-                                const DomainFieldType veloEps = 1e-8)
+                                const DomainFieldType veloEps = 1e-8,
+                                const Dune::Fem::ParameterReader &parameter = Dune::Fem::Parameter::container() )
       : model_(mod)
-      , limiterFunction_()
+      , limiterFunction_(parameter)
       , velocity_(0)
       , veloEps_( veloEps )
     {

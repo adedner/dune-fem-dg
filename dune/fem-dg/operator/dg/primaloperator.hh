@@ -364,18 +364,19 @@ namespace Fem
     DGLimitedAdvectionOperator( GridPartType& gridPart,
                                 const ModelType& model,
                                 ExtraParameterTupleImp tuple,
-                                const std::string name = "" )
+                                const std::string name = "",
+                                const Dune::Fem::ParameterReader &parameter = Dune::Fem::Parameter::container() )
       : model_( model )
-      , advflux_( model_ )
+      , advflux_( model_, parameter )
       , gridPart_( gridPart )
       , space_( gridPart_ )
       , limiterSpace_( gridPart_ )
       , uTmp_()
       , fvSpc_()
       , indicator_()
-      , diffFlux_( gridPart_, model_, DGPrimalDiffusionFluxParameters( ParameterKey::generate( name, "dgdiffusionflux." ) ) )
+      , diffFlux_( gridPart_, model_, DGPrimalDiffusionFluxParameters( ParameterKey::generate( name, "dgdiffusionflux." ), parameter ) )
       , discreteModel1_( model_, advflux_, diffFlux_ )
-      , limitDiscreteModel_( model_ , space_.order() )
+      , limitDiscreteModel_( model_ , space_.order(), parameter )
       , pass0_()
       , pass1_( limitDiscreteModel_, pass0_, limiterSpace_ )
       , pass2_( discreteModel1_, pass1_, space_ )

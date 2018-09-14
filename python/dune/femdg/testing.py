@@ -9,7 +9,8 @@ from ufl import dot, SpatialCoordinate
 def run(Model, initial, x0,x1,N, endTime, name, exact,
         polOrder, limiter="default", startLevel=0,
         primitive=None, saveStep=None, subsamp=0,
-        dt=None,grid="yasp",threading=True):
+        dt=None,grid="yasp",threading=True,
+        parameters={}):
     periodic=[True,]*len(x0)
     if hasattr(Model,"boundary"):
         bnd=set()
@@ -32,7 +33,7 @@ def run(Model, initial, x0,x1,N, endTime, name, exact,
 
     space = create.space("dgonb", grid, order=polOrder, dimrange=dimR)
     u_h = space.interpolate(initial, name='u_h')
-    operator = createFemDGSolver( Model, space, limiter=limiter, threading=True )
+    operator = createFemDGSolver( Model, space, limiter=limiter, threading=True, parameters=parameters )
     operator.applyLimiter( u_h );
     print("number of elements: ",grid.size(0),flush=True)
     if saveStep is not None:

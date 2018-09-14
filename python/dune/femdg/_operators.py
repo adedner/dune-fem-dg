@@ -154,7 +154,8 @@ def generateMethod(struct,expr, cppType, name,
 # create DG operator + solver (limiter = none,minmod,vanleer,superbee),
 # (diffusionScheme = cdg2,br2,ip,nipg,...)
 def createFemDGSolver(Model, space,
-        limiter="minmod", diffusionScheme = "cdg2", threading=False ):
+        limiter="minmod", diffusionScheme = "cdg2", threading=False,
+        parameters={}):
     import dune.create as create
 
     if limiter is None or limiter is False:
@@ -480,12 +481,14 @@ def createFemDGSolver(Model, space,
 
     constructor = Constructor(['const '+spaceType + ' &space',
                                'const '+advModelType + ' &advectionModel',
-                               'const '+diffModelType + ' &diffusionModel'
+                               'const '+diffModelType + ' &diffusionModel',
+                               'const pybind11::dict &parameters'
                               ],
-                              ['return new DuneType(space, advectionModel, diffusionModel);'],
+                              ['return new DuneType(space, advectionModel, diffusionModel, Dune::FemPy::pyParameter( parameters, std::make_shared< std::string >() ) );'],
                               ['"space"_a',
                                '"advectionModel"_a',
                                '"diffusionModel"_a',
+                               '"parameters"_a',
                                'pybind11::keep_alive< 1, 2 >()',
                                'pybind11::keep_alive< 1, 3 >()',
                                'pybind11::keep_alive< 1, 4 >()'])
@@ -503,4 +506,4 @@ def createFemDGSolver(Model, space,
 
     return load(includes, typeName, constructor, setTimeStepSize, deltaT, applyLimiter, solve,
               preamble=writer.writer.getvalue()).\
-                    Operator( space, advModel, diffModel )
+                    Operator( space, advModel, diffModel, parameters=parameters )

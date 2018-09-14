@@ -24,14 +24,20 @@ namespace Fem
     protected:
     const std::string keyPrefix_;
     int markStrategy_;
-
-
+    const Dune::Fem::ParameterReader parameter_;
 
     public:
     //! constructor
-    AdaptationParameters( const std::string keyPrefix = "fem.adaptation." )
+    AdaptationParameters( const std::string keyPrefix = "fem.adaptation.",
+                          const Dune::Fem::ParameterReader &parameter = Dune::Fem::Parameter::container() )
       : keyPrefix_( keyPrefix ),
-        markStrategy_( getStrategy() )
+        markStrategy_( getStrategy() ),
+        parameter_(parameter)
+    {}
+    AdaptationParameters( const Dune::Fem::ParameterReader &parameter )
+      : keyPrefix_( "fem.adaptation" ),
+        markStrategy_( getStrategy() ),
+        parameter_(parameter)
     {}
 
     ////TODO:

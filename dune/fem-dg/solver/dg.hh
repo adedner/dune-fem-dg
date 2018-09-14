@@ -140,6 +140,41 @@ namespace Fem
       std::cout << "cfl = " << double(tp_.factor()) << " " << tp_.time() << std::endl;
     }
 
+    DGOperator( const DiscreteFunctionSpaceType& space,
+                const AdvectionModel &advectionModel,
+                const DiffusionModel &diffusionModel,
+                const Dune::Fem::ParameterReader &parameter = Dune::Fem::Parameter::container() )
+      : space_( space ),
+        extra_(),
+        tpPtr_( new TimeProviderType(space_.gridPart().comm(), parameter) ),
+        tp_( *tpPtr_ ),
+        model_( advectionModel, diffusionModel ),
+        fullOperator_( space.gridPart(), model_, extra_, name(), parameter ),
+        explOperator_( space.gridPart(), model_, extra_, name(), parameter ),
+        implOperator_( space.gridPart(), model_, extra_, name(), parameter ),
+        rkSolver_( tp_, fullOperator_, explOperator_, implOperator_, name(), parameter ),
+        initialized_( false )
+    {
+      //Dune::Fem::Parameter::append("fem.parallel.numberofthreads", std::to_string( Additional::nThreads ) );
+
+      const TimeSteppingParameters param("femdg.stepper.",parameter);
+      const double maxTimeStep = param.maxTimeStep();
+      fixedTimeStep_ = param.fixedTimeStep();
+
+      // start first time step with prescribed fixed time step
+      // if it is not 0 otherwise use the internal estimate
+      tp_.provideTimeStepEstimate(maxTimeStep);
+
+      // adjust fixed time step with timeprovider.factor()
+      fixedTimeStep_ /= tp_.factor() ;
+      if ( fixedTimeStep_ > 1e-20 )
+        tp_.init( fixedTimeStep_ );
+      else
+        tp_.init();
+
+      std::cout << "cfl = " << double(tp_.factor()) << " " << tp_.time() << std::endl;
+    }
+
     DGOperator( TimeProviderType& tp,
                 const DiscreteFunctionSpaceType& space,
                 const AdvectionModel &advectionModel,
