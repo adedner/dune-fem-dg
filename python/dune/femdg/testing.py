@@ -86,12 +86,12 @@ def run(Model, initial, x0,x1,N, endTime, name, exact,
         except:
             pass
         vtk.write(name, count, outputType=OutputType.appendedraw)
-    else:
-        if exact is not None:
-            grid.writeVTK(name, subsampling=subsamp, celldata=[u_h, exact(t)])
-        else:
-            grid.writeVTK(name, subsampling=subsamp, celldata=[u_h])
 
+    # output the final result and compute error (if exact is available)
     if exact is not None:
+        grid.writeVTK(name, subsampling=subsamp,
+                celldata={"solution":u_h, "exact":exact(t)})
         error = integrate( grid, dot(u_h-exact(t),u_h-exact(t)), order=5 )
         print("error:", math.sqrt(error),flush=True )
+    else:
+        grid.writeVTK(name, subsampling=subsamp, celldata=[u_h])
