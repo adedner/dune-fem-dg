@@ -27,7 +27,7 @@ parameters = {"fem.ode.odesolver": "EX",
 
 
 run(*problem(),
-        startLevel=0, polOrder=2, limiter="default",
+        startLevel=0, polOrder=0, limiter=None, # "default",
         primitive=primitive, saveStep=0.1, subsamp=2,
         dt=None,threading=True,grid="alucube",
         parameters=parameters)
