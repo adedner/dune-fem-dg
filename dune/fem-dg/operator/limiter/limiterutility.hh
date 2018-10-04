@@ -939,6 +939,8 @@ namespace Fem
   struct NoLimiter
   {
     typedef Field FieldType;
+    NoLimiter(const Dune::Fem::ParameterReader &parameter = Dune::Fem::Parameter::container() )
+    {}
 
     //! return epsilon for limiting
     double epsilon () const { return 1.0; }
