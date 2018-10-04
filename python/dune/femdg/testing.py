@@ -19,8 +19,7 @@ def run(Model, initial, x0,x1,N, endTime, name, exact,
             if 2*i+1 in bnd:
                 assert(2*i+2 in bnd)
                 periodic[i] = False
-    if any(bnd):
-        print("Setting periodic boundaries",periodic,flush=True)
+    print("Setting periodic boundaries",periodic,flush=True)
 
     domain   = cartesianDomain(x0,x1,N,periodic=periodic,overlap=0)
     grid     = create.grid(grid,domain)
@@ -89,7 +88,7 @@ def run(Model, initial, x0,x1,N, endTime, name, exact,
     # output the final result and compute error (if exact is available)
     if exact is not None:
         grid.writeVTK(name, subsampling=subsamp,
-                celldata={"solution":u_h, "exact":exact(t)})
+                celldata=[u_h], pointdata={"exact":exact(t)})
         error = integrate( grid, dot(u_h-exact(t),u_h-exact(t)), order=5 )
         print("error:", math.sqrt(error),flush=True )
     else:

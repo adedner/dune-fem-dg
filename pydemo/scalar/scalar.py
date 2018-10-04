@@ -67,10 +67,7 @@ class Burgers1D:
     def F_c(t,x,U):
         return as_matrix( [ [U[0]*U[0]/2, 0] ] )
 
-    def outflowValue(t,x,u):
-        return u
-    boundaryValue = {}
-    for i in range(1,5): boundaryValue.update( {i: outflowValue} )
+    boundary = {range(1,5): lambda t,x,u: u}
 
     def maxLambda(t,x,U,n):
         return abs(U[0]*n[0])
@@ -135,13 +132,27 @@ def diffusivePulse():
     return pulse(0.001)
 
 def burgersShock():
-    return Burgers1D, riemanProblem(x[0],-0.5,[1],[0])
+    Model = Burgers1D
+    UL = 1
+    UR = 0
+    speed = (UL-UR)/2.
+    u0 = lambda t,x: riemanProblem(x[0],-0.5+t*speed,[UL],[UR])
+    return Model, u0(0,x),\
+           [-1, 0], [1, 0.1], [50, 7], 1.,\
+           "burgersShock", lambda t: u0(t,x)
 
 def burgersVW():
-    return Burgers1D, riemanProblem(x[0],0,[-1],[1])
+    Model = Burgers1D
+    return Model, riemanProblem(x[0],0,[-1],[1]),\
+           [-1, 0], [1, 0.1], [50, 7], 0.7,\
+           "burgersShock", None
 
 def burgersStationaryShock():
-    return Burgers1D, riemanProblem(x[0],0,[1],[-1])
+    Model = Burgers1D
+    u0 = lambda t,x: riemanProblem(x[0],0,[1],[-1])
+    return Model, u0(0,x),\
+           [-1, 0], [1, 0.1], [50, 7], 0.2,\
+           "burgersShock", lambda t: u0(t,x)
 
 problems = [ constantTransport, shockTransport, sinProblem,\
              sinTransportProblem, pulse, diffusivePulse,\
