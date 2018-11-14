@@ -25,7 +25,7 @@
 #if HAVE_DUNE_ISTL
 #include <dune/fem/function/blockvectorfunction.hh>
 #include <dune/fem/operator/linear/istloperator.hh>
-#include <dune/fem/solver/istlsolver.hh>
+#include <dune/fem/solver/istlinverseoperators.hh>
 #endif
 
 #if HAVE_UMFPACK || HAVE_SUITESPARSE_UMFPACK
@@ -36,7 +36,7 @@
 #if HAVE_PETSC
 #include <dune/fem/function/petscdiscretefunction/petscdiscretefunction.hh>
 #include <dune/fem/operator/linear/petscoperator.hh>
-#include <dune/fem/solver/petscsolver.hh>
+#include <dune/fem/solver/petscinverseoperators.hh>
 #endif
 
 #if HAVE_EIGEN
