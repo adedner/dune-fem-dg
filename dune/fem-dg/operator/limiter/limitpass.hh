@@ -1763,7 +1763,7 @@ namespace Fem
         else
         { // non-conforming case
           typedef typename FaceQuadratureType :: NonConformingQuadratureType NonConformingQuadratureType;
-          NonConformingQuadratureType faceQuadInner(gridPart_,intersection, quadOrd, FaceQuadratureType::INSIDE);
+          NonConformingQuadratureType faceQuadInner(gridPart_,intersection, quadOrd, NonConformingQuadratureType::INSIDE);
           if( checkIntersection( intersection, faceQuadInner, inflowIntersection ) )
           {
             shockIndicator = -1;
@@ -1794,7 +1794,7 @@ namespace Fem
           { // non-conforming case
             typedef typename FaceQuadratureType :: NonConformingQuadratureType NonConformingQuadratureType;
             NonConformingQuadratureType faceQuadOuter(gridPart_,intersection, quadOrd,
-                                                      FaceQuadratureType::OUTSIDE);
+                                                      NonConformingQuadratureType::OUTSIDE);
             if( checkIntersection( intersection, faceQuadOuter, inflowIntersection , false ) )
             {
               shockIndicator = -1;

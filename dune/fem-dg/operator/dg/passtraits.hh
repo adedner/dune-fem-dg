@@ -17,7 +17,7 @@ namespace Dune
 namespace Fem
 {
 
-  //PassTraits
+  //PassTraits (should not be used anymore)
   //----------
   template <class Traits, int polOrd, int dimR, class GridPartImp = typename Traits::ModelType::GridPartType >
   class PassTraits
@@ -50,11 +50,9 @@ namespace Fem
 
     //static const int dimRange  = ModelTraits::dimRange;
     //static const int dimDomain = ModelTraits::dimDomain;
-    //typedef Fem::ElementQuadrature< GridPartType, 0 >                     VolumeQuadratureType;
-    //typedef ElementQuadrature< GridPartType, 1 >                     FaceQuadratureType;
 
-    typedef Fem::CachingQuadrature< GridPartType, 0 >    VolumeQuadratureType;
-    typedef Fem::CachingQuadrature< GridPartType, 1 >    FaceQuadratureType;
+    typedef typename Traits :: VolumeQuadratureType        VolumeQuadratureType;
+    typedef typename Traits :: FaceQuadratureType          FaceQuadratureType;
 
     // Allow generalization to systems
 #if 1

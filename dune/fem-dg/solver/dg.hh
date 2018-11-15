@@ -25,6 +25,8 @@
 #include <dune/fem-dg/models/additional.hh>
 #endif
 
+#include <dune/fempy/quadrature/fempyquadratures.hh>
+
 namespace Dune
 {
 namespace Fem
@@ -86,7 +88,9 @@ namespace Fem
     typedef typename DiffusionFluxSelector< ModelType, DiscreteFunctionSpaceType, diffFluxId, formId >::type  DiffusionFluxType;
 
     typedef DefaultOperatorTraits< ModelType, DestinationType, AdvectionFluxType, DiffusionFluxType,
-                std::tuple<>, typename DiscreteFunctionSpaceType::FunctionSpaceType, threading >  OpTraits;
+                std::tuple<>, typename DiscreteFunctionSpaceType::FunctionSpaceType,
+                Dune::FemPy::FempyQuadratureTraits, // use quadratures from dune-fempy
+                threading >  OpTraits;
 
     typedef AdvectionDiffusionOperatorSelector< OpTraits, formId, limiterId > OperatorSelectorType ;
 
@@ -256,6 +260,8 @@ namespace Fem
         else
           tp_.next();
       }
+
+      //std::cout << "t = " << tp_.time() << "  dt = " << tp_.deltaT() << std::endl;
 
 #ifndef EULER_WRAPPER_TEST
       // return limited solution, to be discussed

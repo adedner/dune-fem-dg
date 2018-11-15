@@ -22,7 +22,8 @@ namespace Fem
             class DiffusionFluxImp,
             class LimiterIndicatorFunctionImp,
             class AdaptationHandlerImp,
-            class ExtraParameterTupleImp = std::tuple<>
+            class ExtraParameterTupleImp = std::tuple<>,
+            template <class F, int d> class QuadratureTraits = Dune::Fem::DefaultQuadratureTraits
           >
   struct OperatorTraits
   {
@@ -43,8 +44,8 @@ namespace Fem
     //static_assert( std::is_same<typename  ModelType::RangeType, typename DiscreteFunctionType::RangeType>::value, "range type does not fit.");
     typedef typename DestinationType::DiscreteFunctionSpaceType          DiscreteFunctionSpaceType;
 
-    typedef Fem::CachingQuadrature< GridPartType, 0 >                    VolumeQuadratureType;
-    typedef Fem::CachingQuadrature< GridPartType, 1 >                    FaceQuadratureType;
+    typedef Fem::CachingQuadrature< GridPartType, 0, QuadratureTraits >  VolumeQuadratureType;
+    typedef Fem::CachingQuadrature< GridPartType, 1, QuadratureTraits >  FaceQuadratureType;
 
     typedef LimiterIndicatorFunctionImp                                  LimiterIndicatorType;
 
@@ -60,6 +61,7 @@ namespace Fem
             class DiffusionFluxImp,
             class ExtraParameterTupleImp = std::tuple<>,
             class AdaptationHandlerFunctionSpaceImp = typename DiscreteFunctionImp::DiscreteFunctionSpaceType::FunctionSpaceType,
+            template <class F, int d> class QuadratureTraits = Dune::Fem::DefaultQuadratureTraits,
             bool enableThreaded =
     // static cmake variables provided by dune-fem
 #ifdef USE_SMP_PARALLEL
@@ -91,8 +93,8 @@ namespace Fem
 
     static_assert( std::is_same<typename ModelType::RangeType, typename DestinationType::RangeType>::value, "range type does not fit.");
 
-    typedef Fem::CachingQuadrature< GridPartType, 0 >                    VolumeQuadratureType;
-    typedef Fem::CachingQuadrature< GridPartType, 1 >                    FaceQuadratureType;
+    typedef Fem::CachingQuadrature< GridPartType, 0, QuadratureTraits >  VolumeQuadratureType;
+    typedef Fem::CachingQuadrature< GridPartType, 1, QuadratureTraits >  FaceQuadratureType;
 
   private:
     typedef Fem::FunctionSpace< typename GridType::ctype, double, ModelImp::dimDomain, 3> FVFunctionSpaceType;
