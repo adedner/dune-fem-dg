@@ -15,6 +15,7 @@
 // fem-dg includes
 #include <dune/fem-dg/models/defaultmodel.hh>
 #include <dune/fem-dg/models/defaultprobleminterfaces.hh>
+#include <dune/fem-dg/operator/limiter/limiterutility.hh>
 #include <dune/fem-dg/examples/euler/problems.hh>
 
 namespace Dune

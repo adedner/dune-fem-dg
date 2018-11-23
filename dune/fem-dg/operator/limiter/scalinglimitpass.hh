@@ -1,38 +1,6 @@
 #ifndef DUNE_FEMDG_SCALINGLIMITPASS_HH
 #define DUNE_FEMDG_SCALINGLIMITPASS_HH
 
-#include <vector>
-#include <type_traits>
-
-#include <dune/common/fvector.hh>
-#include <dune/common/timer.hh>
-
-#include <dune/grid/common/grid.hh>
-#include <dune/grid/io/file/dgfparser/entitykey.hh>
-
-#include <dune/fem/gridpart/common/capabilities.hh>
-#include <dune/fem/quadrature/cornerpointset.hh>
-#include <dune/fem/io/parameter.hh>
-
-#include <dune/fem/operator/1order/localmassmatrix.hh>
-#include <dune/fem/common/typeindexedtuple.hh>
-#include <dune/fem/pass/localdg/discretemodel.hh>
-#include <dune/fem/pass/localdg.hh>
-
-#include <dune/fem/space/common/adaptationmanager.hh>
-#include <dune/fem/space/common/basesetlocalkeystorage.hh>
-
-#include <dune/fem/space/discontinuousgalerkin.hh>
-#include <dune/fem/space/finitevolume.hh>
-#include <dune/fem/space/lagrange/lagrangepoints.hh>
-
-#include <dune/fem/function/adaptivefunction.hh>
-
-#include <dune/fem-dg/pass/dgmodelcaller.hh>
-#include <dune/fem/misc/compatibility.hh>
-
-#include <dune/fem-dg/pass/context.hh>
-
 #include <dune/fem-dg/operator/limiter/limitpass.hh>
 
 //*************************************************************

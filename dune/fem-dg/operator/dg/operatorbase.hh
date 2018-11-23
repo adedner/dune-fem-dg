@@ -5,9 +5,9 @@
 
 #include <dune/fem/solver/timeprovider.hh>
 #include <dune/fem/operator/common/spaceoperatorif.hh>
-#include <dune/fem/pass/insertfunction.hh>
 
 // dune-fem-dg includes
+#include <dune/fem-dg/pass/insertfunction.hh>
 #include <dune/fem-dg/pass/dgpass.hh>
 #include <dune/fem-dg/operator/dg/passtraits.hh>
 #include <dune/fem-dg/misc/parameterkey.hh>

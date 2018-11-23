@@ -4,9 +4,9 @@
 #include <type_traits>
 
 #include <dune/fem/misc/fmatrixconverter.hh>
-#include <dune/fem/pass/localdg/discretemodel.hh>
 #include <dune/fem/quadrature/cachingquadrature.hh>
 
+#include <dune/fem-dg/pass/discretemodel.hh>
 #include <dune/fem-dg/operator/adaptation/adaptation.hh>
 #include <dune/fem-dg/operator/limiter/limiter.hh>
 

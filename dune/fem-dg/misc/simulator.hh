@@ -7,6 +7,11 @@
 #endif
 #endif
 
+// to make headercheck work
+#ifndef POLORDER
+#warning "Using default POLORDER = 1"
+#define POLORDER 1
+#endif
 
 // in dbug mode also enable FieldVector checking and dune devel mode
 #ifndef NDEBUG

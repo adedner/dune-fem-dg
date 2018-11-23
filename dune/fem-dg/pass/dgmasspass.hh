@@ -10,9 +10,9 @@
 
 #include <dune/fem/storage/singletonlist.hh>
 #include <dune/fem/common/tupleutility.hh>
-#include <dune/fem/pass/common/local.hh>
 #include <dune/fem/quadrature/cachingquadrature.hh>
-#include <dune/fem/pass/dginversemass.hh>
+
+#include <dune/fem-dg/pass/dginversemass.hh>
 #include <dune/fem-dg/misc/crs.hh>
 
 namespace Dune

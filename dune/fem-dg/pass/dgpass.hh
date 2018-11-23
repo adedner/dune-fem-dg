@@ -5,19 +5,19 @@
 
 #include <dune/grid/common/grid.hh>
 
+
 #include <dune/fem/function/localfunction/temporary.hh>
 #include <dune/fem/gridpart/common/capabilities.hh>
 #include <dune/fem/operator/1order/localmassmatrix.hh>
-#include <dune/fem/pass/localdg/discretemodel.hh>
-#include <dune/fem/pass/common/local.hh>
 #include <dune/fem/quadrature/caching/twistutility.hh>
 #include <dune/fem/quadrature/intersectionquadrature.hh>
 #include <dune/fem/solver/timeprovider.hh>
 #include <dune/fem/space/common/allgeomtypes.hh>
 #include <dune/fem/storage/dynamicarray.hh>
 
-
-#include <dune/fem-dg/pass/dgmodelcaller.hh>
+#include <dune/fem-dg/pass/pass.hh>
+#include <dune/fem-dg/pass/modelcaller.hh>
+#include <dune/fem-dg/pass/discretemodel.hh>
 #include <dune/fem/misc/compatibility.hh>
 
 namespace Dune

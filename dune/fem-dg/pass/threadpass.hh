@@ -3,11 +3,12 @@
 
 #include <dune/fem/function/common/scalarproducts.hh>
 #include <dune/fem/operator/1order/localmassmatrix.hh>
-#include <dune/fem/pass/common/local.hh>
 #include <dune/fem/quadrature/caching/twistutility.hh>
 #include <dune/fem/quadrature/intersectionquadrature.hh>
 #include <dune/fem/solver/timeprovider.hh>
 #include <dune/fem/space/common/allgeomtypes.hh>
+
+#include <dune/fem-dg/pass/pass.hh>
 
 #include "threadhandle.hh"
 

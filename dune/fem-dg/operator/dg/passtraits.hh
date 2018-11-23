@@ -3,7 +3,6 @@
 
 #include <dune/fem/function/adaptivefunction.hh>
 #include <dune/fem/gridpart/adaptiveleafgridpart.hh>
-#include <dune/fem/pass/localdg/discretemodel.hh>
 #include <dune/fem/quadrature/cachingquadrature.hh>
 #include <dune/fem/space/discontinuousgalerkin.hh>
 #include <dune/fem/space/finitevolume.hh>

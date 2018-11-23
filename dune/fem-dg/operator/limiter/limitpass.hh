@@ -8,16 +8,12 @@
 #include <dune/common/timer.hh>
 
 #include <dune/grid/common/grid.hh>
-#include <dune/grid/io/file/dgfparser/entitykey.hh>
 
 #include <dune/fem/gridpart/common/capabilities.hh>
 #include <dune/fem/quadrature/cornerpointset.hh>
 #include <dune/fem/io/parameter.hh>
 
 #include <dune/fem/operator/1order/localmassmatrix.hh>
-#include <dune/fem/common/typeindexedtuple.hh>
-#include <dune/fem/pass/localdg/discretemodel.hh>
-#include <dune/fem/pass/localdg.hh>
 
 #include <dune/fem/space/common/adaptationmanager.hh>
 #include <dune/fem/space/common/basesetlocalkeystorage.hh>
@@ -28,11 +24,13 @@
 
 #include <dune/fem/function/adaptivefunction.hh>
 
-#include <dune/fem-dg/pass/dgmodelcaller.hh>
 #include <dune/fem/misc/compatibility.hh>
 #include <dune/fem/misc/threads/threadmanager.hh>
 
+#include <dune/fem-dg/pass/pass.hh>
 #include <dune/fem-dg/pass/context.hh>
+#include <dune/fem-dg/pass/discretemodel.hh>
+#include <dune/fem-dg/pass/modelcaller.hh>
 
 #include <dune/fem-dg/operator/limiter/limiterutility.hh>
 
