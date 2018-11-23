@@ -260,7 +260,6 @@ namespace Fem
   {
     enum PassIdType { u, limitPassId, advectPassId };
     enum { polOrd = Traits::polynomialOrder };
-    enum { limiterPolOrd = Traits::limiterPolynomialOrder };
 
     typedef Fem::SpaceOperatorInterface< typename Traits::DestinationType >       BaseType;
 
@@ -292,9 +291,9 @@ namespace Fem
     // overload some functionality from Traits in case of higher order FV
     struct LimiterTraits : public Traits
     {
-      static const bool higherOrderFV  = Traits :: limiterPolynomialOrder > Traits :: polynomialOrder;
-      // select limiter polynomial order for LimitPass, i.e. the reconstructions
-      static const int polynomialOrder = Traits :: limiterPolynomialOrder;
+      // if polynomialOrder is 0 then limiting will be linear (higher order FV case)
+      static constexpr bool higherOrderFV  = Traits :: polynomialOrder == 0;
+      static constexpr int polynomialOrder = higherOrderFV ? 1 : Traits :: polynomialOrder;
 
       // if higher order finite volume is selected
       // then use orthonormal DG space for storing the reconstructions
@@ -571,7 +570,6 @@ namespace Fem
   {
     enum PassIdType { u, limitPassId, advectPassId };
     enum { polOrd = Traits::polynomialOrder };
-    enum { limiterPolOrd = Traits::limiterPolynomialOrder };
 
     typedef Fem::SpaceOperatorInterface< typename Traits::DestinationType >       BaseType;
 

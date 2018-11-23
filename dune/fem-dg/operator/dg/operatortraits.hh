@@ -37,9 +37,6 @@ namespace Fem
     // polynomial order of ansatz space
     static const int polynomialOrder = polOrd;
 
-    // if polynomialOrder is 0 then limiting will be linear (higher order FV case)
-    static const int limiterPolynomialOrder = (polynomialOrder == 0) ? 1 : polynomialOrder;
-
     typedef DiscreteFunctionImp                                          DestinationType ;
     //static_assert( std::is_same<typename  ModelType::RangeType, typename DiscreteFunctionType::RangeType>::value, "range type does not fit.");
     typedef typename DestinationType::DiscreteFunctionSpaceType          DiscreteFunctionSpaceType;
@@ -84,9 +81,6 @@ namespace Fem
 
     // polynomial order of ansatz space
     static const int polynomialOrder = DiscreteFunctionSpaceType::polynomialOrder;
-
-    // if polynomialOrder is 0 then limiting will be linear (higher order FV case)
-    static const int limiterPolynomialOrder = (polynomialOrder == 0) ? 1 : polynomialOrder;
 
     // enables the possibility to run in threaded mode
     static const bool threading = enableThreaded ;
