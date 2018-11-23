@@ -317,11 +317,13 @@ namespace Fem
                       gradPassId   = u + 2,
                       advectPassId = u + 3 };
 
-    struct GradientTraits
-      : public PassTraits< Traits, Traits::polynomialOrder, Traits::ModelType::Traits::dimGradRange >
+    struct GradientTraits : public Traits
     {
-      typedef typename Traits::ModelType         ModelType;
-      typedef typename Traits::DiffusionFluxType FluxType;
+      static const int dimRange = Traits::ModelType::Traits::dimGradRange ;
+      // overload discrete function space
+      typedef typename Traits :: DiscreteFunctionSpaceType ::template ToNewDimRange< dimRange > :: Type  DiscreteFunctionSpaceType;
+      // set new discrete function type
+      typedef AdaptiveDiscreteFunction< DiscreteFunctionSpaceType >  DestinationType;
     };
 
     typedef Fem::SpaceOperatorInterface< typename Traits::DestinationType > BaseType;

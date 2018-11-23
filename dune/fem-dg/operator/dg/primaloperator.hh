@@ -7,6 +7,7 @@
 // dune-fem includes
 #include <dune/fem/solver/timeprovider.hh>
 #include <dune/fem/operator/common/spaceoperatorif.hh>
+#include <dune/fem/space/discontinuousgalerkin.hh>
 
 // dune-fem-dg includes
 #include <dune/fem-dg/operator/limiter/limiterdiscretemodel.hh>
@@ -288,9 +289,27 @@ namespace Fem
     typedef typename Traits::DestinationType                                      DestinationType;
     typedef typename DestinationType::GridPartType                                GridPartType;
 
+    // overload some functionality from Traits in case of higher order FV
+    struct LimiterTraits : public Traits
+    {
+      static const bool higherOrderFV  = Traits :: limiterPolynomialOrder > Traits :: polynomialOrder;
+      // select limiter polynomial order for LimitPass, i.e. the reconstructions
+      static const int polynomialOrder = Traits :: limiterPolynomialOrder;
 
-    //typedef Traits                                                              PassTraitsType;
-    typedef PassTraits< Traits, limiterPolOrd, dimRange, GridPartType  >          LimiterTraitsType;
+      // if higher order finite volume is selected
+      // then use orthonormal DG space for storing the reconstructions
+      typedef typename std::conditional< higherOrderFV,
+         DiscontinuousGalerkinSpace< typename Traits::DiscreteFunctionSpaceType::FunctionSpaceType, GridPartType, polynomialOrder >,
+         typename Traits :: DiscreteFunctionSpaceType > :: type  DiscreteFunctionSpaceType;
+
+      // set limiter destination type to new discrete function space
+      typedef typename std::conditional< higherOrderFV,
+          AdaptiveDiscreteFunction< DiscreteFunctionSpaceType >,
+          typename Traits :: DestinationType > :: type DestinationType;
+    };
+
+
+    typedef LimiterTraits                                                         LimiterTraitsType;
     // The model of the limiter pass (limitPassId)
     typedef Fem::StandardLimiterDiscreteModel< LimiterTraitsType, ModelType, u >  LimiterDiscreteModelType;
 
@@ -582,8 +601,7 @@ namespace Fem
     typedef typename DestinationType::GridPartType                                GridPartType;
 
 
-    //typedef Traits                                                              PassTraitsType;
-    typedef PassTraits< Traits, limiterPolOrd, dimRange, GridPartType  >          LimiterTraitsType;
+    typedef Traits                                                                LimiterTraitsType;
     // The model of the limiter pass (limitPassId)
     typedef Fem::StandardLimiterDiscreteModel< LimiterTraitsType, ModelType, u >  LimiterDiscreteModelType;
 

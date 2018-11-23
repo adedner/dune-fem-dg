@@ -9,7 +9,6 @@
 // dune-fem-dg includes
 #include <dune/fem-dg/pass/insertfunction.hh>
 #include <dune/fem-dg/pass/dgpass.hh>
-#include <dune/fem-dg/operator/dg/passtraits.hh>
 #include <dune/fem-dg/misc/parameterkey.hh>
 
 #include <dune/fem/misc/threads/domainthreaditerator.hh>
