@@ -11,7 +11,8 @@ from dune.fem.operator import load
 
 from dune.ufl import NamedConstant
 from dune.ufl.tensors import ExprTensor
-from dune.ufl.codegen import generateCode
+from dune.ufl.codegen import generateCode, generateMethodBody, generateMethod
+
 from dune.source.cplusplus import assign, construct, TypeAlias, Declaration, Variable,\
         UnformattedBlock, UnformattedExpression, Struct, return_,\
         SwitchStatement
@@ -80,74 +81,6 @@ def createOrderRedcution(domainSpace):
     return load(includes, typeName, constructor).Operator( domainSpace )
 
 #####################################################
-
-def generateMethodBody(cppType, expr, returnResult, default, predefined):
-    if expr is not None:
-        try:
-            dimR = expr.ufl_shape[0]
-        except:
-            if isinstance(expr,list) or isinstance(expr,tuple):
-                expr = as_vector(expr)
-            else:
-                expr = as_vector([expr])
-            dimR = expr.ufl_shape[0]
-        # t = ExprTensor((dimR, ), [expr[int(i)] for i in range(dimR)])
-        t = ExprTensor(expr.ufl_shape, [expr[int(i)] for i in range(dimR)])
-        expression = [expr[i] for i in t.keys()]
-        u = coeff(expr)[0]
-        if u != []:
-            u = u[0]
-            du = Grad(u)
-            d2u = Grad(du)
-            arg_u = Variable("const RangeType &", "u")
-            arg_du = Variable("const JacobianRangeType &", "du")
-            arg_d2u = Variable("const HessianRangeType &", "d2u")
-            predefined.update( {u: arg_u, du: arg_du, d2u: arg_d2u} )
-        code, results = generateCode(predefined, expression, tempVars=False)
-        result = Variable(cppType, 'result')
-        if cppType == 'double':
-            code = code + [assign(result, results[0])]
-        else:
-            code = code + [assign(result[i], r) for i, r in zip(t.keys(), results)]
-        if returnResult:
-            code = [Declaration(result)] + code + [return_(result)]
-    else:
-        result = Variable(cppType, 'result')
-        code = [assign(result, construct(cppType,default) )]
-        if returnResult:
-            code = [Declaration(result)] + code + [return_(result)]
-    return code
-def generateMethod(struct,expr, cppType, name,
-        returnResult=True,
-        defaultReturn='0',
-        targs=None, args=None, static=False, const=False, volatile=False,
-        evalSwitch=True,
-        predefined={}):
-    if not returnResult:
-        args = args + [cppType + ' &result']
-        returnType = 'void'
-    else:
-        returnType = cppType
-
-    if isinstance(expr,dict):
-        if evalSwitch:
-            bndId = Variable('const int', 'bndId')
-            code = SwitchStatement(bndId, default=return_(False))
-            for id, e in expr.items():
-                code.append(id,
-                        [generateMethodBody('RangeType', e, False, defaultReturn,
-                            predefined), return_(True)])
-        else:
-            code = UnformattedBlock()
-        code = [code]
-    else:
-        code = generateMethodBody(cppType, expr, returnResult, defaultReturn, predefined)
-
-    meth = clsMethod(returnType, name,
-            code=code,
-            args=args,
-            targs=targs, static=static, const=const, volatile=volatile)
-    struct.append(meth)
 
 #####################################################
 
