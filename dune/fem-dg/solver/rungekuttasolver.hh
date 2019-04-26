@@ -190,9 +190,10 @@ namespace Fem
         typedef DuneODE::ImplicitRungeKuttaSolver< HelmholtzOperatorType,
                       NonlinearInverseOperatorType > ImplicitOdeSolverType;
 
-        typedef typename NonlinearInverseOperatorType::ParametersType NonlinParametersType;
+        typedef typename NonlinearInverseOperatorType::ParameterType NonlinParametersType;
 
-        return solverpair_t(new ImplicitOdeSolverType( *helmOp, tp, rkSteps, param, NonlinParametersType( ParameterKey::generate( name, "fem.solver.newton." ), parameter ) ), helmOp );
+        return solverpair_t(new ImplicitOdeSolverType( *helmOp, tp, rkSteps, param, NonlinParametersType( parameter ) ),
+                            helmOp );
 #endif
       }
 
@@ -217,10 +218,11 @@ namespace Fem
                       HelmholtzOperatorType, NonlinearInverseOperatorType > SemiImplicitOdeSolverType ;
 
 
-        typedef typename NonlinearInverseOperatorType::ParametersType NonlinParametersType;
+        typedef typename NonlinearInverseOperatorType::ParameterType NonlinParametersType;
 
 
-        return solverpair_t(new SemiImplicitOdeSolverType( explOp, *helmOp, tp, rkSteps, param, NonlinParametersType( ParameterKey::generate( name, "fem.solver.newton." ), parameter ) ), helmOp );
+        return solverpair_t(new SemiImplicitOdeSolverType( explOp, *helmOp, tp, rkSteps, param, NonlinParametersType( parameter ) ),
+                            helmOp );
 #endif
       }
 
