@@ -40,7 +40,7 @@ variables:
 debian-10-gcc-8-17:
   <<: *base-petsc
   image: dune-fem-ci:git-debian-10-gcc-8-17
-  script: duneci-standard-test --opts=/builds/dune-fem-dg/dune-fem/scripts/opts/ci-gcc.opts
+  script: duneci-standard-test --opts=/builds/dune-fem-dg/dune-fem-dg/scripts/opts/ci-gcc.opts
   only:
     - triggers
     - schedules
@@ -48,4 +48,4 @@ debian-10-gcc-8-17:
 ubuntu-18.04-clang-6-17:
   <<: *base-petsc
   image: dune-fem-ci:git-ubuntu-18.04-clang-6-17
-  script: duneci-standard-test --opts=/builds/dune-fem-dg/dune-fem/scripts/opts/ci-clang.opts
+  script: duneci-standard-test --opts=/builds/dune-fem-dg/dune-fem-dg/scripts/opts/ci-clang.opts
