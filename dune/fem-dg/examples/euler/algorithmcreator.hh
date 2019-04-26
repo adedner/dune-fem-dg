@@ -51,6 +51,9 @@ namespace Fem
   template< class GridSelectorGridType >
   struct EulerAlgorithmCreator
   {
+    // polynomialOrder = 0 and unlimited results in first order finite volume scheme
+    // polynomialOrder = 0 and limited results in second order finite volume scheme
+    // polynomialOrder > 0 results in DG scheme (limited and unlimited)
     typedef AlgorithmConfigurator< GridSelectorGridType,
                                    Galerkin::Enum::dg,
                                    Adaptivity::Enum::yes,

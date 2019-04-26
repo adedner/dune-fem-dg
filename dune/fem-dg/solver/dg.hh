@@ -24,7 +24,9 @@
 #include <dune/fem-dg/models/additional.hh>
 #endif
 
+#if HAVE_DUNE_FEMPY
 #include <dune/fempy/quadrature/fempyquadratures.hh>
+#endif
 
 namespace Dune
 {
@@ -88,7 +90,11 @@ namespace Fem
 
     typedef DefaultOperatorTraits< ModelType, DestinationType, AdvectionFluxType, DiffusionFluxType,
                 std::tuple<>, typename DiscreteFunctionSpaceType::FunctionSpaceType,
+#if HAVE_DUNE_FEMPY
                 Dune::FemPy::FempyQuadratureTraits, // use quadratures from dune-fempy
+#else
+                Dune::Fem::DefaultQuadratureTraits,
+#endif
                 threading >  OpTraits;
 
     typedef AdvectionDiffusionOperatorSelector< OpTraits, formId, limiterId > OperatorSelectorType ;
