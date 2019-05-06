@@ -9,7 +9,7 @@ from dune.common.checkconfiguration import assertHave, preprocessorAssert, Confi
 from dune.generator import Constructor, Method
 from dune.fem.operator import load
 
-from dune.ufl import NamedConstant
+from dune.ufl import Constant
 from dune.ufl.tensors import ExprTensor
 from dune.ufl.codegen import generateCode, generateMethodBody, generateMethod
 
@@ -88,7 +88,7 @@ def createOrderRedcution(domainSpace):
 # (diffusionScheme = cdg2,br2,ip,nipg,...)
 def femDGOperator(Model, space,
         limiter="minmod", diffusionScheme = "cdg2", threading=False,
-        parameters={}):
+        initialTime=0.0, parameters={}):
     import dune.create as create
 
     if limiter is None or limiter is False:
@@ -101,7 +101,7 @@ def femDGOperator(Model, space,
     v = TestFunction(space)
     n = FacetNormal(space.cell())
     x = SpatialCoordinate(space.cell())
-    t = NamedConstant(space,"t")
+    t = Constant(initialTime,"t")
     predefined = {}
     spatial = Variable('const auto', 'y')
     predefined.update( {x: UnformattedExpression('auto', 'entity.geometry().global( Dune::Fem::coordinate( x ) )') })
