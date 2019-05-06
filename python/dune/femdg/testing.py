@@ -2,7 +2,7 @@ import time, math
 from dune.grid import structuredGrid, cartesianDomain, OutputType
 import dune.create as create
 from dune.fem.function import integrate
-from dune.ufl import NamedConstant
+from dune.ufl import Constant
 from ufl import dot, SpatialCoordinate
 
 def run(Model, initial, x0,x1,N, endTime, name, exact,
@@ -21,22 +21,32 @@ def run(Model, initial, x0,x1,N, endTime, name, exact,
                 periodic[i] = False
     print("Setting periodic boundaries",periodic,flush=True)
 
+    # create domain and grid
     domain   = cartesianDomain(x0,x1,N,periodic=periodic,overlap=0)
     grid     = create.grid(grid,domain)
+    # initial refinement of grid
     grid.hierarchicalGrid.globalRefine(startLevel)
+
     dimR     = Model.dimension
     t        = 0
     count    = 0
     saveTime = saveStep
 
+    # create discrete function space
     space = create.space( space, grid, order=polOrder, dimrange=dimR)
+    # create and initialize solution
     u_h = space.interpolate(initial, name='u_h')
+    # create solution scheme, i.e. operator and ODE solver
     operator = create.scheme("femDG",Model, space, limiter=limiter, threading=True, parameters=parameters )
+    # limit initial data if necessary
     operator.applyLimiter( u_h );
+
     print("number of elements: ",grid.size(0),flush=True)
+
+    # preparation for output
     if saveStep is not None:
         x = SpatialCoordinate(space.cell())
-        tc = NamedConstant(space.cell(),"time")
+        tc = Constant(0.0,"time")
         try:
             velo = [create.function("ufl",space.grid, ufl=Model.velocity(tc,x,u_h), order=2, name="velocity")]
         except AttributeError:
@@ -51,20 +61,31 @@ def run(Model, initial, x0,x1,N, endTime, name, exact,
         except:
             pass
         vtk.write(name, count) # , outputType=OutputType.appendedraw)
+
+    # measure CPU time
     start = time.time()
+
     tcount = 0
+    # time loop
     while t < endTime:
+        # set time step size to ODE solver
         if dt is not None:
             operator.setTimeStepSize(dt)
+        # solver time step
         operator.step(target=u_h)
+        # obtain new time step size
         dt = operator.deltaT()
+        # check that solution is meaningful
         if math.isnan( u_h.scalarProductDofs( u_h ) ):
             grid.writeVTK(name, subsampling=subsamp, celldata=[u_h])
             print('ERROR: dofs invalid t =', t,flush=True)
             print('[',tcount,']','dt = ', dt, 'time = ',t, 'count = ',count, flush=True )
             exit(0)
+        # increment time and time step counter
         t += dt
         tcount += 1
+
+        # output
         if tcount%100 == 0:
             print('[',tcount,']','dt = ', dt, 'time = ',t, 'count = ',count, flush=True )
         if saveStep is not None and t > saveTime:
