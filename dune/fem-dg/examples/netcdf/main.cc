@@ -3,6 +3,8 @@
 
 #include <dune/fem-dg/misc/simulator.hh>
 
+#include <netcdf.h>
+
 int main(int argc, char ** argv)
 {
   /* Initialize MPI (always do this even if you are not using MPI) */
@@ -11,6 +13,17 @@ int main(int argc, char ** argv)
     // read Parameters
     if( !readParameters( argc, argv ) )
       return 1;
+
+    int ncid = -1;
+    int err = nc_create("./ncfile", NC_NOCLOBBER, &ncid );
+
+    // inquire dimensions etc.
+    int dims  = -1;
+    int nvars = -1;
+    int natts = -1;
+    int unlimdimid = -1;
+    err = nc_inq(ncid, &dims, &nvars, &natts, &unlimdimid);
+
   }
   catch (const Dune::Exception &e)
   {
