@@ -1,51 +1,89 @@
 ---
 variables:
-  DUNECI_OPTS: "/builds/dune-fem/dune-fem/scripts/opts/ci-gcc.opts"
+  DUNECI_BRANCH: "master"
+  DUNECI_OPTS: "/builds/dune-fem/dune-fem-dg/scripts/opts/ci-gcc.opts"
+  DUNECI_PARALLEL: 4
+# TORTURE_TESTS is set to "on" for scheduled nightly build.
+  TORTURE_TESTS: "off"
 
-#before_script:
+#stages:
+#  - test
+#  - torture
+
+before_script:
 #  - rm -rf /duneci/modules/dune-alugrid
-#  - duneci-install-module https://gitlab.dune-project.org/extensions/dune-alugrid.git
-#  - duneci-install-module https://gitlab.dune-project.org/extensions/dune-spgrid.git
+#  - DUNECI_BRANCH_AUTO=0 duneci-install-module -b bugfix/creategrid-unique-ptr-return https://gitlab.dune-project.org/claus-justus.heine/dune-alugrid.git
+  - rm -rf /duneci/modules/dune-fem
+  - duneci-install-module -b master https://gitlab.dune-project.org/dune-fem/dune-fem.git
+#  - /modules/dune-common/bin/dune-control git checkout ${CI_BUILD_REF_NAME}
 
-.base: &base
-  stage: test
-  when: always
-  tags:
-    - "stuttgart"
-
-# FEM_REQUIRE_PETSC=force is intended to trigger an error during cmake
-# configuration if PETSc is not found
-.base-petsc: &base-petsc
-  <<: *base
-  variables:
-    FEM_REQUIRE_PETSC: "force"
-
-# available image tags,
+# available image tags
 # debian-9-gcc-6-14
 # debian-10-gcc-7-14
 # debian-10-gcc-8-17
 # debian-10-gcc-8-noassert-17
-# debian-10-clang-6-libcpp-17 <-- this one does not seem to work
+# debian-10-clang-7-libcpp-17
 # ubuntu-18.04-clang-6-17
-#
-# We reserve some jobs for the nightly build. The Gitlab-schedule for
-# the nightly build will also set the environment variable
-# TORTURE_TESTS=on
 
-#debian-10-gcc-7-14:
-#  <<: *base-petsc
-#  image: dune-fem-ci:git-debian-10-gcc-7-14
-#  script: duneci-standard-test --opts=/builds/dune-fem/dune-fem/scripts/opts/ci-gcc7.opts
+.default: &default
+  tags:
+   - "stuttgart"
+#    - "stuttgart1"
+#    - "stuttgart2"
 
-debian-10-gcc-8-17:
-  <<: *base-petsc
-  image: dune-fem-ci:git-debian-10-gcc-8-17
-  script: duneci-standard-test --opts=/builds/dune-fem-dg/dune-fem-dg/scripts/opts/ci-gcc.opts
-  only:
-    - triggers
-    - schedules
+debian-10-gcc-7-14:
+  <<: *default
+  stage: test
+  image: dune-fem-ci:git-debian-10-gcc-7-14
+  script: env ; pwd ; duneci-standard-test --opts=/builds/dune-fem/dune-fem-dg/scripts/opts/ci-gcc7.opts
+  when: always
 
 ubuntu-18.04-clang-6-17:
-  <<: *base-petsc
+  <<: *default
+  stage: test
   image: dune-fem-ci:git-ubuntu-18.04-clang-6-17
-  script: duneci-standard-test --opts=/builds/dune-fem-dg/dune-fem-dg/scripts/opts/ci-clang.opts
+  script: duneci-standard-test --opts=/builds/dune-fem/dune-fem-dg/scripts/opts/ci-clang6.opts
+  when: always
+ # only:
+ #   - triggers
+ #   - schedules
+
+debian-10-gcc-8-17:
+  <<: *default
+  stage: test
+  image: dune-fem-ci:git-debian-10-gcc-8-17
+  script: duneci-standard-test --opts=/builds/dune-fem/dune-fem-dg/scripts/opts/ci-gcc8.opts
+  when: always
+
+  #debian-10-clang-6-libcpp-17:
+  #  <<: *default
+  #  stage: test
+  #  image: dune-fem-ci:git-debian-10-clang-6-libcpp-17
+  #  script: duneci-standard-test --opts=/builds/dune-fem/dune-fem-dg/scripts/opts/ci-clang6-libcpp.opts
+  #  when: always
+  #  only:
+  #   - schedules
+
+debian-10-clang-7-libcpp-17:
+  <<: *default
+  stage: test
+  image: dune-fem-ci:git-debian-10-clang-7-libcpp-17
+  script: duneci-standard-test --opts=/builds/dune-fem/dune-fem-dg/scripts/opts/ci-clang7-libcpp.opts
+  when: always
+ # only:
+ #   - triggers
+ #   - schedules
+
+
+headercheck:
+  <<: *default
+  stage: test
+  image: dune-fem-ci:git-ubuntu-18.04-clang-6-17
+  script:
+    - cd /builds/dune-fem
+    - dunecontrol --opts=/builds/dune-fem/dune-fem-dg/scripts/opts/ci-headercheck.opts --only=dune-fem-dg configure
+    - cd dune-fem-dg/build-cmake
+    - make headercheck
+  when: always
+  only:
+    - schedules

@@ -1,0 +1,19 @@
+BUILDTYPE=Release
+
+STDFLAGS="-O3 -g3 -Wall -Wno-unused-local-typedefs -Wno-deprecated-declarations" # -Wno-unused-but-set-variable"
+
+CC=$(type -p gcc)
+CXX=$(type -p g++)
+
+# set flags for CMake:
+# compiler flags, 3rd party software, grid extensions
+CMAKE_FLAGS="\
+ -DCMAKE_C_COMPILER=${CC}\
+ -DCMAKE_CXX_COMPILER=${CXX}\
+ -DCMAKE_CXX_FLAGS='$STDFLAGS'\
+ -DCMAKE_BUILD_TYPE=${BUILDTYPE}\
+ -DDUNE_GRID_GRIDTYPE_SELECTOR=ON\
+ -DENABLE_HEADERCHECK=ON\
+"
+
+MAKE_FLAGS=-j4
