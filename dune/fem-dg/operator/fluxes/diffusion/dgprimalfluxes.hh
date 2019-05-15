@@ -5,7 +5,6 @@
 
 #include <dune/fem/misc/fmatrixconverter.hh>
 #include <dune/fem/operator/1order/localmassmatrix.hh>
-#include <dune/fem/pass/localdg/discretemodel.hh>
 #include <dune/fem-dg/pass/context.hh>
 #include <dune/fem/quadrature/cachingquadrature.hh>
 #include <dune/fem/solver/timeprovider.hh>

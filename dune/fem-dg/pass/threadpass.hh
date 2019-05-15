@@ -3,11 +3,12 @@
 
 #include <dune/fem/function/common/scalarproducts.hh>
 #include <dune/fem/operator/1order/localmassmatrix.hh>
-#include <dune/fem/pass/common/local.hh>
 #include <dune/fem/quadrature/caching/twistutility.hh>
 #include <dune/fem/quadrature/intersectionquadrature.hh>
 #include <dune/fem/solver/timeprovider.hh>
 #include <dune/fem/space/common/allgeomtypes.hh>
+
+#include <dune/fem-dg/pass/pass.hh>
 
 #include "threadhandle.hh"
 
@@ -21,11 +22,8 @@ namespace Fem
     static bool nonBlockingCommunication()
     {
       // non-blocking communication is only avaiable in smp mode
-#ifdef USE_SMP_PARALLEL
+      // because the implementation is done in ThreadPass
       return Fem :: Parameter :: getValue< bool > ("femdg.nonblockingcomm", false );
-#else
-      return false;
-#endif
     }
   };
 
@@ -233,21 +231,14 @@ namespace Fem
       requireCommunication_( true ),
       sumComputeTime_( Fem :: Parameter :: getValue<bool>("fem.parallel.sumcomputetime", false ) )
     {
+      // initialize quadratures before entering multithread mode
+      initializeQuadratures( spc,  volumeQuadOrd, faceQuadOrd );
+
       // initialize each thread pass by the thread itself to avoid NUMA effects
       {
         // see threadhandle.hh
         Fem :: ThreadHandle :: runLocked( *this );
       }
-      /*
-      const int maxThreads = Fem::ThreadManager::maxThreads();
-      for(int i=0; i<maxThreads; ++i)
-      {
-        // use separate discrete discrete model for each thread
-        discreteModels_[ i ] = new DiscreteModelType( discreteModel );
-        // create dg passes, the last bool disables communication in the pass itself
-        passes_[ i ]   = new InnerPassType( *discreteModels_[ i ], pass, spc, volumeQuadOrd, faceQuadOrd );
-      }
-      */
 
 #ifndef NDEBUG
       // check that all objects have been created
@@ -265,6 +256,43 @@ namespace Fem
       requireCommunication_ = passes_[ 0 ]->requireCommunication();
     }
 
+    static void initializeQuadratures( const DiscreteFunctionSpaceType& space, const int volQuadOrder, const int faceQuadOrder )
+    {
+      const auto& gridPart = space.gridPart();
+      for( const auto& entity : space )
+      {
+        // get quadrature for destination space order
+        VolumeQuadratureType quad0( entity, space.order() + 1 );
+
+        // get point quadrature
+        VolumeQuadratureType quad1( entity, 0 );
+
+        // get quadrature
+        VolumeQuadratureType quad2( entity, InnerPassType::defaultVolumeQuadratureOrder(space, entity) );
+
+        if( volQuadOrder >= 0 )
+        {
+          // get quadrature
+          VolumeQuadratureType quad3( entity, volQuadOrder );
+        }
+
+        const auto end = gridPart.iend( entity );
+        for( auto it = gridPart.ibegin( entity ); it != end; ++it )
+        {
+          const auto& intersection = *it ;
+          FaceQuadratureType interQuad0( gridPart, intersection, 0, FaceQuadratureType::INSIDE);
+          FaceQuadratureType interQuad1( gridPart, intersection,
+              InnerPassType::defaultFaceQuadratureOrder(space, entity), FaceQuadratureType::INSIDE);
+          if( faceQuadOrder >= 0 )
+          {
+            FaceQuadratureType interQuad2( gridPart, intersection, faceQuadOrder, FaceQuadratureType::INSIDE);
+          }
+        }
+
+        return ;
+      }
+    }
+
     virtual ~ThreadPass ()
     {
       for(int i=0; i<Fem::ThreadManager::maxThreads(); ++i)
@@ -280,11 +308,9 @@ namespace Fem
       const int maxThreads = Fem::ThreadManager::maxThreads();
       for(int thread=0; thread<maxThreads; ++thread)
       {
-        discreteModels_[ thread ]->setAdaptation( adHandle,
-#ifdef USE_SMP_PARALLEL
-            iterators_.filter( thread ), // add filter in thread parallel versions
-#endif
-            weight );
+        discreteModels_[ thread ]->setAdaptation(
+            adHandle, weight, &iterators_.filter( thread ) );
+        // add filter in thread parallel versions
       }
     }
 
@@ -395,6 +421,7 @@ namespace Fem
 
   public:
     using BaseType::receiveCommunication;
+    using BaseType::space;
 
     //! return number of elements visited on last application
     size_t numberOfElements () const
@@ -569,7 +596,7 @@ namespace Fem
         // use separate discrete discrete model for each thread
         discreteModels_[ thread ] = new DiscreteModelType( singleDiscreteModel_ );
         // create dg passes, the last bool disables communication in the pass itself
-        passes_[ thread ]   = new InnerPassType( *discreteModels_[ thread ], previousPass_, spc_, volumeQuadOrd_, faceQuadOrd_ );
+        passes_[ thread ]   = new InnerPassType( *discreteModels_[ thread ], previousPass_, space(), volumeQuadOrd_, faceQuadOrd_ );
 
         return ;
       }

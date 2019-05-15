@@ -25,7 +25,7 @@
 #if HAVE_DUNE_ISTL
 #include <dune/fem/function/blockvectorfunction.hh>
 #include <dune/fem/operator/linear/istloperator.hh>
-#include <dune/fem/solver/istlsolver.hh>
+#include <dune/fem/solver/istlinverseoperators.hh>
 #endif
 
 #if HAVE_UMFPACK || HAVE_SUITESPARSE_UMFPACK
@@ -36,7 +36,7 @@
 #if HAVE_PETSC
 #include <dune/fem/function/petscdiscretefunction/petscdiscretefunction.hh>
 #include <dune/fem/operator/linear/petscoperator.hh>
-#include <dune/fem/solver/petscsolver.hh>
+#include <dune/fem/solver/petscinverseoperators.hh>
 #endif
 
 #if HAVE_EIGEN
@@ -57,6 +57,7 @@
 #include <dune/fem-dg/operator/fluxes/advection/fluxes.hh>
 #include <dune/fem-dg/operator/fluxes/euler/fluxes.hh>
 #include <dune/fem-dg/operator/fluxes/diffusion/fluxes.hh>
+#include <dune/fem-dg/operator/limiter/limiterutility.hh>
 
 
 
@@ -85,6 +86,27 @@ namespace Fem
       limited,
       //! scaling limitation of advection term
       scalinglimited
+    };
+  }
+
+  /**
+   *  \brief Namespace containing an Enum class to describe the limiting
+   *  function used in the limited advection operators.
+   */
+  namespace AdvectionLimiterFunction
+  {
+    /**
+     * \ingroup FemDGParameter
+     */
+    enum class Enum
+    {
+      default_,
+      //! MinMod limiter
+      minmod,
+      //! Superbee limiter
+      superbee,
+      //! van Leer limiter
+      vanleer
     };
   }
 
@@ -282,6 +304,28 @@ namespace Fem
     typedef FullOperatorType     ExplicitOperatorType;
   };
 
+///////////////////////////////////////////////////////////////////////////
+// AdvectionLimiterFunctionSelector
+///////////////////////////////////////////////////////////////////////////
+  // default is minmod
+  template< class DomainFieldType, AdvectionLimiterFunction::Enum limiterFct >
+  struct AdvectionLimiterFunctionSelector
+  {
+    typedef MinModLimiter< DomainFieldType > type;
+  };
+
+  template< class DomainFieldType >
+  struct AdvectionLimiterFunctionSelector< DomainFieldType, AdvectionLimiterFunction::Enum::superbee >
+  {
+    typedef SuperBeeLimiter< DomainFieldType > type;
+  };
+
+  template< class DomainFieldType >
+  struct AdvectionLimiterFunctionSelector< DomainFieldType, AdvectionLimiterFunction::Enum::vanleer >
+  {
+    typedef VanLeerLimiter< DomainFieldType > type;
+  };
+
 
 ///////////////////////////////////////////////////////////////////////////
 // AdvectionDiffusionOperatorSelector
@@ -435,7 +479,7 @@ namespace Fem
     template<class DSpace, class RSpace = DSpace>
     using LinearOperatorType = Dune::Fem::SparseRowLinearOperator< DiscreteFunctionType<DSpace>, DiscreteFunctionType<RSpace> >;
     template<class DSpace, class RSpace = DSpace>
-    using LinearInverseOperatorType = Dune::Fem::CGInverseOperator< DiscreteFunctionType<DSpace > >;
+    using LinearInverseOperatorType = Dune::Fem::CgInverseOperator< DiscreteFunctionType<DSpace > >;
   };
 
   template <bool symmetric>
@@ -577,8 +621,8 @@ namespace Fem
     template<class DSpace, class RSpace = DSpace>
     using LinearInverseOperatorType
       = typename std::conditional<symmetric,
-                                  Dune::Fem::CGInverseOperator< DiscreteFunctionType<DSpace> >,
-                                  Dune::Fem::ParDGGeneralizedMinResInverseOperator< DiscreteFunctionType<DSpace> > >::type;
+                                  Dune::Fem::CgInverseOperator< DiscreteFunctionType<DSpace> >,
+                                  Dune::Fem::KrylovInverseOperator< DiscreteFunctionType<DSpace> > >::type;
   };
 
   template <bool symmetric>
@@ -590,10 +634,7 @@ namespace Fem
     template<class DSpace, class RSpace = DSpace>
     using LinearOperatorType = Dune::Fem::Operator< DiscreteFunctionType<DSpace>, DiscreteFunctionType<RSpace> >;
     template<class DSpace, class RSpace = DSpace>
-    using LinearInverseOperatorType
-      = typename std::conditional<symmetric,
-                                  Dune::Fem::CGInverseOperator< DiscreteFunctionType<DSpace> >,
-                                  Dune::Fem::ParDGGeneralizedMinResInverseOperator< DiscreteFunctionType<DSpace> > >::type;
+    using LinearInverseOperatorType = Dune::Fem::KrylovInverseOperator< DiscreteFunctionType<DSpace> >;
   };
 
 #if HAVE_DUNE_ISTL

@@ -1,0 +1,21 @@
+# LIMITER SETTINGS
+#-----------------
+# 0 = only dg solution | 1 = only reconstruction | 2 = both
+femdg.limiter.admissiblefunctions: 1
+# tolerance for shock indicator
+femdg.limiter.tolerance: 1 # 1e-10
+# threshold for avoiding over-excessive limitation
+femdg.limiter.limiteps: 1e-8
+
+# GENERAL
+#--------
+paramfile: paramBase
+
+
+# choises are: LLF, HLL, HLLC, LLF2
+dgadvectionflux.method: LLF
+
+# SOLVER CONFIGURATION
+#---------------------
+fem.ode.odesolver: EX
+paramfile: paramSolver

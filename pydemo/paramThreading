@@ -1,0 +1,14 @@
+# OMP THREADS 
+#------------
+# number of threads used in OMP program
+fem.parallel.numberofthreads: 1
+# write diagnostics file (
+# 0 don't, 1 only speedup file, 2 write all runfiles 
+# 3 only write 0, others at end, 4 all files at end for scaling) 
+fem.parallel.diagnostics: 1
+# if true non-blocking communication is enabled
+femdg.nonblockingcomm: true
+fem.threads.verbose: true
+# if true thread 0 only communicates data but does not computation
+fem.threads.communicationthread: false
+fem.threads.partitioningmethod: sfc

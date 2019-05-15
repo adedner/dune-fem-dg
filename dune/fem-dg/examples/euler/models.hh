@@ -76,8 +76,6 @@ namespace Fem
 
     typedef Dune::Fem::BoundaryIdProvider < GridType >   BoundaryIdProviderType;
 
-    typedef Dune::FieldVector< int, 2 > ModifiedRangeType;
-
     // for Euler equations diffusion is disabled
     static const bool hasAdvection = true;
     static const bool hasDiffusion = false;
@@ -92,8 +90,6 @@ namespace Fem
       , problem_( problem )
       , fieldRotator_( 1 ) // insert number of fist velocity component
     {
-      modified_[ 0 ] = 0;
-      modified_[ 1 ] = dimRange-1;
     }
 
     double gamma () const { return gamma_; }
@@ -101,8 +97,6 @@ namespace Fem
     inline bool hasStiffSource() const { return false; }
     inline bool hasNonStiffSource() const { return false; }
     inline bool hasFlux() const { return true ; }
-
-    const ModifiedRangeType& modifiedRange() const { return modified_; }
 
     void obtainBounds( RangeType& globalMin, RangeType& globalMax) const
     {
@@ -155,10 +149,10 @@ namespace Fem
     template <class LocalEvaluation>
     inline void advection( const LocalEvaluation& local,
                            const RangeType& u,
-                           const FluxRangeType& jacu,
-                           FluxRangeType& f ) const
+                           const FluxRangeType& du,
+                           FluxRangeType& result ) const
     {
-      eulerFlux_.analyticalFlux( gamma_ , u , f );
+      eulerFlux_.analyticalFlux( gamma_ , u , result );
     }
 
     template <class LocalEvaluation>
@@ -416,8 +410,6 @@ namespace Fem
     const ThermodynamicsType thermodynamics_;
     const ProblemType& problem_;
     FieldRotator< DomainType, RangeType > fieldRotator_;
-
-    ModifiedRangeType modified_;
   };
 
 }

@@ -134,3 +134,5 @@ endmacro(make_dependent_modules_sys_included)
 
 include(Codegen)
 include(TargetDistclean)
+
+find_package(NETCDF)

@@ -4,7 +4,6 @@
 #include <type_traits>
 #include <dune/fem/function/localfunction/temporary.hh>
 #include <dune/fem/misc/fmatrixconverter.hh>
-#include <dune/fem/pass/localdg/discretemodel.hh>
 #include <dune/fem/quadrature/cachingquadrature.hh>
 #include <dune/fem/solver/timeprovider.hh>
 

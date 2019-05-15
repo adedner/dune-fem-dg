@@ -67,38 +67,39 @@ namespace Fem
     {
       const FaceDomainType& x = left.localPosition();
       DomainType normal = left.intersection().integrationOuterNormal(x);
-      const double len = normal.two_norm();
-      normal *= 1./len;
+      const auto faceArea = normal.two_norm();
+      normal *= 1./faceArea;
 
-      RangeType visc;
       FluxRangeType anaflux;
 
       model_.advection( left, uLeft, jacLeft, anaflux );
-
       // set gLeft
       anaflux.mv( normal, gLeft );
 
       model_.advection( right, uRight, jacRight, anaflux );
+      // add to gLeft
       anaflux.umv( normal, gLeft );
 
-      double maxspeedl, maxspeedr, maxspeed;
-      double viscparal, viscparar, viscpara;
+      double maxspeedl, maxspeedr;
+      double viscparal, viscparar;
 
       model_.maxSpeed( left,  normal, uLeft,  viscparal, maxspeedl );
       model_.maxSpeed( right, normal, uRight, viscparar, maxspeedr );
 
-      maxspeed = (maxspeedl > maxspeedr) ? maxspeedl : maxspeedr;
-      viscpara = (viscparal > viscparar) ? viscparal : viscparar;
+      const double maxspeed = std::max( maxspeedl, maxspeedr);
+      const double viscpara = std::max( viscparal, viscparar);
 
-      visc = uRight;
+      RangeType visc( uRight );
       visc -= uLeft;
       visc *= viscpara;
       gLeft -= visc;
 
-      gLeft *= 0.5*len;
+      // multiply with 0.5 for averaging and with face area
+      gLeft *= 0.5 * faceArea;
+      // conservation property
       gRight = gLeft;
 
-      return maxspeed;
+      return maxspeed * faceArea;
     }
   };
 

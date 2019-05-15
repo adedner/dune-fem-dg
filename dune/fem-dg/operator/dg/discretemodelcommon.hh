@@ -4,9 +4,9 @@
 #include <type_traits>
 
 #include <dune/fem/misc/fmatrixconverter.hh>
-#include <dune/fem/pass/localdg/discretemodel.hh>
 #include <dune/fem/quadrature/cachingquadrature.hh>
 
+#include <dune/fem-dg/pass/discretemodel.hh>
 #include <dune/fem-dg/operator/adaptation/adaptation.hh>
 #include <dune/fem-dg/operator/limiter/limiter.hh>
 
@@ -50,7 +50,6 @@ namespace Fem
 
     // overload selector type to add model parameters
     typedef typename Dune::Fem::VariadicSelectorBase< ExtraParameterIds, passIds... >::Type  Selector;
-
   };
 
   // AdvectionModel
@@ -135,6 +134,12 @@ namespace Fem
         model_( other.model_ ),
         numflux_( other.numflux_ )
     {
+    }
+
+    void setEntity( const EntityType& entity )
+    {
+      BaseType::setEntity( entity );
+      model_.setEntity( entity );
     }
 
     void setTime ( double time ) { const_cast< ModelType & >( model_ ).setTime( time ); }
@@ -408,7 +413,6 @@ namespace Fem
 
       if( adaptation_ )
       {
-#ifdef USE_SMP_PARALLEL
         // if the neighbor does not belong to our
         // thread domain reset the pointer
         // to avoid update of indicators
@@ -419,7 +423,6 @@ namespace Fem
           nbIndicator_.reset();
         }
         else
-#endif
         {
           nbIndicator_ = adaptation_->localIndicator( neighbor );
         }
@@ -427,21 +430,12 @@ namespace Fem
     }
 
     //! set pointer to adaptation indicator
-    void setAdaptation( AdaptationType& adaptation, double weight )
+    void setAdaptation( AdaptationType& adaptation, const double weight,
+                        const ThreadDomainFilterType* threadDomainFilter = nullptr )
     {
       adaptation_ = & adaptation;
-      threadDomainFilter_ = 0;
       weight_ = weight ;
-    }
-
-    //! set pointer to adaptation indicator
-    void setAdaptation( AdaptationType& adaptation,
-                        const ThreadDomainFilterType& threadDomainFilter,
-                        double weight )
-    {
-      adaptation_   = & adaptation;
-      threadDomainFilter_ = & threadDomainFilter ;
-      weight_ = weight ;
+      threadDomainFilter_ = threadDomainFilter;
     }
 
     //! remove pointer to adaptation indicator

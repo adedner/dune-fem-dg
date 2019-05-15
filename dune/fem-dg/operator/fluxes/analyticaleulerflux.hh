@@ -205,13 +205,15 @@ namespace Fem
     inline FieldType maxSpeed(const FieldType gamma, const DomainType& n, const RangeType& u) const
     {
       assert( u[0] > FieldType( 1e-10 ) );
+      // make sure that n is unit normal
+      assert( std::abs( n.two_norm() - 1.0 ) < 1e12 );
       FieldType u_normal = u[1] * n[0];
       for (int i=1; i<dimDomain; ++i )
         u_normal += u[i+1] * n[i];
       u_normal /= u[0];
 
       FieldType p = pressure(gamma,u);
-      FieldType c2 = gamma * p/ u[0] * n.two_norm2();
+      FieldType c2 = gamma * p/ u[0];
       assert( c2 > FieldType( 1e-10 ) );
       FieldType maxspd = std::abs(double(u_normal)) + std::sqrt(double(c2));
       return maxspd;

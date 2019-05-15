@@ -5,9 +5,9 @@
 #include <string>
 
 // dune-fem includes
-#include <dune/fem/pass/localdg/discretemodel.hh>
 #include <dune/fem/solver/timeprovider.hh>
 #include <dune/fem/operator/common/spaceoperatorif.hh>
+#include <dune/fem/space/discontinuousgalerkin.hh>
 
 // dune-fem-dg includes
 #include <dune/fem-dg/operator/limiter/limiterdiscretemodel.hh>
@@ -260,7 +260,6 @@ namespace Fem
   {
     enum PassIdType { u, limitPassId, advectPassId };
     enum { polOrd = Traits::polynomialOrder };
-    enum { limiterPolOrd = Traits::limiterPolynomialOrder };
 
     typedef Fem::SpaceOperatorInterface< typename Traits::DestinationType >       BaseType;
 
@@ -289,31 +288,56 @@ namespace Fem
     typedef typename Traits::DestinationType                                      DestinationType;
     typedef typename DestinationType::GridPartType                                GridPartType;
 
+    // overload some functionality from Traits in case of higher order FV
+    struct LimiterTraits : public Traits
+    {
+      // if polynomialOrder is 0 then limiting will be linear (higher order FV case)
+      static constexpr bool higherOrderFV  = Traits :: polynomialOrder == 0;
+      static constexpr int polynomialOrder = higherOrderFV ? 1 : Traits :: polynomialOrder;
 
-    //typedef Traits                                                              PassTraitsType;
-    typedef PassTraits< Traits, limiterPolOrd, dimRange, GridPartType  >          LimiterTraitsType;
+      // if higher order finite volume is selected
+      // then use orthonormal DG space for storing the reconstructions
+      typedef typename std::conditional< higherOrderFV,
+         DiscontinuousGalerkinSpace< typename Traits::DiscreteFunctionSpaceType::FunctionSpaceType, GridPartType, polynomialOrder >,
+         typename Traits :: DiscreteFunctionSpaceType > :: type  DiscreteFunctionSpaceType;
+
+      // set limiter destination type to new discrete function space
+      typedef typename std::conditional< higherOrderFV,
+          AdaptiveDiscreteFunction< DiscreteFunctionSpaceType >,
+          typename Traits :: DestinationType > :: type DestinationType;
+    };
+
+
+    typedef LimiterTraits                                                         LimiterTraitsType;
     // The model of the limiter pass (limitPassId)
     typedef Fem::StandardLimiterDiscreteModel< LimiterTraitsType, ModelType, u >  LimiterDiscreteModelType;
 
     typedef typename LimiterTraitsType::DestinationType                           LimiterDestinationType ;
     typedef typename LimiterDestinationType::DiscreteFunctionSpaceType            LimiterSpaceType;
 
-#ifdef USE_SMP_PARALLEL
-    typedef Fem::StartPass < DestinationType, u, NonBlockingCommHandle< DestinationType > > Pass0Type;
-    typedef LimitDGPass    < LimiterDiscreteModelType, Pass0Type, limitPassId >             InnerPass1Type;
-    typedef ThreadPass     < InnerPass1Type, Fem::ThreadIterator< GridPartType >, true >    Pass1Type;
-    typedef LocalCDGPass   < DiscreteModel1Type, Pass1Type, advectPassId >                  InnerPass2Type;
-    typedef ThreadPass     < InnerPass2Type,
-              //Fem::DomainDecomposedIteratorStorage<GridPartType >,
-              Fem::ThreadIterator< GridPartType >,
-              true > Pass2Type;
-#else
-    typedef Fem::StartPass < DestinationType, u >                                 Pass0Type;
-    typedef LimitDGPass    < LimiterDiscreteModelType, Pass0Type, limitPassId >   Pass1Type;
-    typedef LocalCDGPass   < DiscreteModel1Type, Pass1Type, advectPassId >        Pass2Type;
-#endif
+    static constexpr bool threading = Traits :: threading ;
 
-    //typedef ScalingLimiter< DestinationType > LimiterOperator;
+    // select non-blocking communication handle
+    typedef typename
+      std::conditional< threading,
+          NonBlockingCommHandle< DestinationType >,
+          EmptyNonBlockingComm > :: type                                          NonBlockingCommHandleType;
+
+    typedef Fem::StartPass< DestinationType, u, NonBlockingCommHandleType >       Pass0Type;
+
+    typedef Fem::ThreadIterator< GridPartType >                                   ThreadIteratorType;
+
+    typedef LimitDGPass< LimiterDiscreteModelType, Pass0Type, limitPassId >       InnerPass1Type;
+
+    typedef typename std::conditional< threading,
+            ThreadPass < InnerPass1Type, ThreadIteratorType, true>,
+            InnerPass1Type > :: type                                              Pass1Type;
+
+    typedef LocalCDGPass< DiscreteModel1Type, Pass1Type, advectPassId >           InnerPass2Type;
+
+    typedef typename std::conditional< threading,
+            ThreadPass < InnerPass2Type, ThreadIteratorType, true>,
+            InnerPass2Type > :: type                                              Pass2Type;
 
     typedef typename LimiterDiscreteModelType::IndicatorType                      LimiterIndicatorType;
     typedef typename LimiterIndicatorType::DiscreteFunctionSpaceType              LimiterIndicatorSpaceType;
@@ -346,9 +370,9 @@ namespace Fem
       // if indicator output is enabled create objects
       if( Fem::Parameter::getValue<bool> ("femdg.limiter.indicatoroutput", false ) )
       {
-        fvSpc_     = new LimiterIndicatorSpaceType( gridPart_ );
-        indicator_ = new LimiterIndicatorType( "SE", *fvSpc_ );
-        limitDiscreteModel_.setIndicator( indicator_ );
+        fvSpc_.reset( new LimiterIndicatorSpaceType( gridPart_ ) );
+        indicator_.reset(new LimiterIndicatorType( "SE", *fvSpc_ ) );
+        limitDiscreteModel_.setIndicator( indicator() );
       }
     }
 
@@ -357,35 +381,25 @@ namespace Fem
     DGLimitedAdvectionOperator( GridPartType& gridPart,
                                 const ModelType& model,
                                 ExtraParameterTupleImp tuple,
-                                const std::string name = "" )
+                                const std::string name = "",
+                                const Dune::Fem::ParameterReader &parameter = Dune::Fem::Parameter::container() )
       : model_( model )
-      , advflux_( model_ )
+      , advflux_( model_, parameter )
       , gridPart_( gridPart )
       , space_( gridPart_ )
       , limiterSpace_( gridPart_ )
-      , uTmp_( 0 )
-      , fvSpc_( 0 )
-      , indicator_( 0 )
-      , diffFlux_( gridPart_, model_, DGPrimalDiffusionFluxParameters( ParameterKey::generate( name, "dgdiffusionflux." ) ) )
+      , uTmp_()
+      , fvSpc_()
+      , indicator_()
+      , diffFlux_( gridPart_, model_, DGPrimalDiffusionFluxParameters( ParameterKey::generate( name, "dgdiffusionflux." ), parameter ) )
       , discreteModel1_( model_, advflux_, diffFlux_ )
-      , limitDiscreteModel_( model_ , space_.order() )
+      , limitDiscreteModel_( model_ , space_.order(), parameter )
       , pass0_()
       , pass1_( limitDiscreteModel_, pass0_, limiterSpace_ )
       , pass2_( discreteModel1_, pass1_, space_ )
-      //, limOp_( space_, 0.0, 1.0  )
     {
       // create indicator if enabled
       createIndicator();
-    }
-
-    ~DGLimitedAdvectionOperator()
-    {
-      delete uTmp_; uTmp_ = 0;
-      if( indicator_ )
-      {
-        delete indicator_; indicator_ = 0;
-        delete fvSpc_;     fvSpc_     = 0;
-      }
     }
 
     void activateLinear() const {
@@ -397,11 +411,7 @@ namespace Fem
 
     void setAdaptationHandler( AdaptationType& adHandle, double weight = 1 )
     {
-#ifdef USE_SMP_PARALLEL
       pass2_.setAdaptation( adHandle, weight );
-#else
-      discreteModel1_.setAdaptation( adHandle, weight );
-#endif
     }
 
     void setTime(const double time)
@@ -416,6 +426,8 @@ namespace Fem
 
     void operator()( const DestinationType& arg, DestinationType& dest ) const
     {
+      //++operatorCalled_;
+      //std::cout << "Operator call." << std::endl;
       pass2_( arg, dest );
     }
 
@@ -452,15 +464,16 @@ namespace Fem
     }
 
     // return pointer to indicator function
-    LimiterIndicatorType* indicator() { return indicator_ ; }
+    LimiterIndicatorType* indicator() { return indicator_.operator->() ; }
 
     inline void limit( DestinationType& U ) const
     {
-      // copy U to uTmp_
+      // copy U to uTmp_ (only for higher order DG scheme)
       if( polOrd > 0 )
       {
+        //std::cout << "Called extra limit" << std::endl;
         if( ! uTmp_ )
-          uTmp_ = new LimiterDestinationType("limitTmp", limiterSpace_);
+          uTmp_.reset(new DestinationType("utmp-limit", space_) );
 
         assert( uTmp_ );
         uTmp_->assign( U );
@@ -511,11 +524,12 @@ namespace Fem
     GridPartType&              gridPart_;
     SpaceType                  space_;
     LimiterSpaceType           limiterSpace_;
-    mutable LimiterDestinationType* uTmp_;
 
-    LimiterIndicatorSpaceType* fvSpc_;
-    LimiterIndicatorType*      indicator_;
+    mutable std::unique_ptr< DestinationType   >  uTmp_;
+    std::unique_ptr< LimiterIndicatorSpaceType >  fvSpc_;
+    std::unique_ptr< LimiterIndicatorType      >  indicator_;
 
+    //mutable int operatorCalled_;
 
   protected:
     DiffusionFluxType   diffFlux_;
@@ -556,7 +570,6 @@ namespace Fem
   {
     enum PassIdType { u, limitPassId, advectPassId };
     enum { polOrd = Traits::polynomialOrder };
-    enum { limiterPolOrd = Traits::limiterPolynomialOrder };
 
     typedef Fem::SpaceOperatorInterface< typename Traits::DestinationType >       BaseType;
 
@@ -586,28 +599,36 @@ namespace Fem
     typedef typename DestinationType::GridPartType                                GridPartType;
 
 
-    //typedef Traits                                                              PassTraitsType;
-    typedef PassTraits< Traits, limiterPolOrd, dimRange, GridPartType  >          LimiterTraitsType;
+    typedef Traits                                                                LimiterTraitsType;
     // The model of the limiter pass (limitPassId)
     typedef Fem::StandardLimiterDiscreteModel< LimiterTraitsType, ModelType, u >  LimiterDiscreteModelType;
 
     typedef typename LimiterTraitsType::DestinationType                           LimiterDestinationType ;
     typedef typename LimiterDestinationType::DiscreteFunctionSpaceType            LimiterSpaceType;
 
-#ifdef USE_SMP_PARALLEL
-    typedef Fem::StartPass < DestinationType, u, NonBlockingCommHandle< DestinationType > > Pass0Type;
-    typedef ScalingLimitDGPass    < LimiterDiscreteModelType, Pass0Type, limitPassId >             InnerPass1Type;
-    typedef ThreadPass     < InnerPass1Type, Fem::ThreadIterator< GridPartType >, true >    Pass1Type;
-    typedef LocalCDGPass   < DiscreteModel1Type, Pass1Type, advectPassId >                  InnerPass2Type;
-    typedef ThreadPass     < InnerPass2Type,
-              //Fem::DomainDecomposedIteratorStorage<GridPartType >,
-              Fem::ThreadIterator< GridPartType >,
-              true > Pass2Type;
-#else
-    typedef Fem::StartPass     < DestinationType, u >                                 Pass0Type;
-    typedef ScalingLimitDGPass < LimiterDiscreteModelType, Pass0Type, limitPassId >   Pass1Type;
-    typedef LocalCDGPass       < DiscreteModel1Type, Pass1Type, advectPassId >        Pass2Type;
-#endif
+    static constexpr bool threading = Traits :: threading ;
+
+    // select non-blocking communication handle
+    typedef typename
+      std::conditional< threading,
+          NonBlockingCommHandle< DestinationType >,
+          EmptyNonBlockingComm > :: type                                          NonBlockingCommHandleType;
+
+    typedef Fem::StartPass< DestinationType, u, NonBlockingCommHandleType >       Pass0Type;
+
+    typedef Fem::ThreadIterator< GridPartType >                                   ThreadIteratorType;
+
+    typedef ScalingLimitDGPass< LimiterDiscreteModelType, Pass0Type, limitPassId >   InnerPass1Type;
+
+    typedef typename std::conditional< threading,
+            ThreadPass < InnerPass1Type, ThreadIteratorType, true>,
+            InnerPass1Type > :: type                                              Pass1Type;
+
+    typedef LocalCDGPass   < DiscreteModel1Type, Pass1Type, advectPassId >        InnerPass2Type;
+
+    typedef typename std::conditional< threading,
+            ThreadPass < InnerPass2Type, ThreadIteratorType, true>,
+            InnerPass2Type > :: type                                              Pass2Type;
 
     //typedef ScalingLimiter< DestinationType > LimiterOperator;
 
@@ -642,9 +663,9 @@ namespace Fem
       // if indicator output is enabled create objects
       if( Fem::Parameter::getValue<bool> ("femdg.limiter.indicatoroutput", false ) )
       {
-        fvSpc_     = new LimiterIndicatorSpaceType( gridPart_ );
-        indicator_ = new LimiterIndicatorType( "SE", *fvSpc_ );
-        limitDiscreteModel_.setIndicator( indicator_ );
+        fvSpc_.reset( new LimiterIndicatorSpaceType( gridPart_ ) );
+        indicator_.reset( new LimiterIndicatorType( "SE", *fvSpc_ ) );
+        limitDiscreteModel_.setIndicator( indicator() );
       }
     }
 
@@ -659,9 +680,9 @@ namespace Fem
       , gridPart_( gridPart )
       , space_( gridPart_ )
       , limiterSpace_( gridPart_ )
-      , uTmp_( 0 )
-      , fvSpc_( 0 )
-      , indicator_( 0 )
+      , uTmp_()
+      , fvSpc_()
+      , indicator_()
       , diffFlux_( gridPart_, model_, DGPrimalDiffusionFluxParameters( ParameterKey::generate( name, "dgdiffusionflux." ) ) )
       , discreteModel1_( model_, advflux_, diffFlux_ )
       , limitDiscreteModel_( model_ , space_.order() )
@@ -673,16 +694,6 @@ namespace Fem
       createIndicator();
     }
 
-    ~DGScalingLimitedAdvectionOperator()
-    {
-      delete uTmp_; uTmp_ = 0;
-      if( indicator_ )
-      {
-        delete indicator_; indicator_ = 0;
-        delete fvSpc_;     fvSpc_     = 0;
-      }
-    }
-
     void activateLinear() const {
       limitPass().disable();
     }
@@ -692,11 +703,7 @@ namespace Fem
 
     void setAdaptationHandler( AdaptationType& adHandle, double weight = 1 )
     {
-#ifdef USE_SMP_PARALLEL
       pass2_.setAdaptation( adHandle, weight );
-#else
-      discreteModel1_.setAdaptation( adHandle, weight );
-#endif
     }
 
     void setTime(const double time)
@@ -747,7 +754,7 @@ namespace Fem
     }
 
     // return pointer to indicator function
-    LimiterIndicatorType* indicator() { return indicator_ ; }
+    LimiterIndicatorType* indicator() { return indicator_.operator->() ; }
 
     inline void limit( DestinationType& U ) const
     {
@@ -755,7 +762,7 @@ namespace Fem
       if( polOrd > 0 )
       {
         if( ! uTmp_ )
-          uTmp_ = new LimiterDestinationType("limitTmp", limiterSpace_);
+          uTmp_.reset( new DestinationType("utmp-limit", space_) );
 
         assert( uTmp_ );
         uTmp_->assign( U );
@@ -806,10 +813,11 @@ namespace Fem
     GridPartType&              gridPart_;
     SpaceType                  space_;
     LimiterSpaceType           limiterSpace_;
-    mutable LimiterDestinationType* uTmp_;
 
-    LimiterIndicatorSpaceType* fvSpc_;
-    LimiterIndicatorType*      indicator_;
+
+    mutable std::unique_ptr< DestinationType   >  uTmp_;
+    std::unique_ptr< LimiterIndicatorSpaceType >  fvSpc_;
+    std::unique_ptr< LimiterIndicatorType      >  indicator_;
 
 
   protected:

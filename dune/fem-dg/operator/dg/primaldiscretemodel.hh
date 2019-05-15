@@ -2,7 +2,6 @@
 #define DUNE_FEM_DG_PRIMALDISCRETEMODELS_HH
 
 // Dune-Fem includes
-#include <dune/fem/pass/localdg/discretemodel.hh>
 #include <dune/fem/function/adaptivefunction.hh>
 #include <dune/fem/quadrature/cachingquadrature.hh>
 

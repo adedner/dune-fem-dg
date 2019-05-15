@@ -37,13 +37,8 @@
 //--------- PROBLEMS ------------------------
 #include "problems.hh"
 
-#ifdef EULER_WRAPPER
-#include "euler.hh"
-#include "modelwrapper.hh"
-#else
 //--------- MODELS --------------------------
 #include "models.hh"
-#endif
 
 //--------- PROBLEMCREATORSELECTOR ----------
 #include <dune/fem-dg/misc/configurator.hh>
@@ -56,6 +51,9 @@ namespace Fem
   template< class GridSelectorGridType >
   struct EulerAlgorithmCreator
   {
+    // polynomialOrder = 0 and unlimited results in first order finite volume scheme
+    // polynomialOrder = 0 and limited results in second order finite volume scheme
+    // polynomialOrder > 0 results in DG scheme (limited and unlimited)
     typedef AlgorithmConfigurator< GridSelectorGridType,
                                    Galerkin::Enum::dg,
                                    Adaptivity::Enum::yes,
@@ -64,7 +62,7 @@ namespace Fem
                                    //AdvectionLimiter::Enum::scalinglimited,
                                    AdvectionLimiter::Enum::limited,
                                    Matrix::Enum::matrixfree,
-                                   AdvectionFlux::Enum::euler_hllc,
+                                   AdvectionFlux::Enum::llf,
                                    PrimalDiffusionFlux::Enum::none > ACEuler;
 
     template< class AC >
@@ -75,11 +73,7 @@ namespace Fem
       typedef typename AC::GridParts                               HostGridPartType;
       typedef typename AC::GridParts                               GridPartType;
 
-#ifdef EULER_WRAPPER
-      typedef ModelImplementationWrapper< euler::Model< GridPartType > >  ProblemInterfaceType;
-#else
       typedef ProblemBase< GridType >                              ProblemInterfaceType;
-#endif
       typedef EulerModel< GridType, ProblemInterfaceType >         ModelType;
       typedef typename ProblemInterfaceType::FunctionSpaceType     FunctionSpaceType;
 
@@ -87,11 +81,7 @@ namespace Fem
 
       static ProblemInterfaceType* problem()
       {
-#ifdef EULER_WRAPPER
-        return new ProblemInterfaceType();
-#else
         return AnalyticalEulerProblemCreator<GridType>::apply();
-#endif
       }
 
       template< int polOrd >

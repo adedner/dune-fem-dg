@@ -1,5 +1,5 @@
-#ifndef DUNE_EULERMODEL_HH
-#define DUNE_EULERMODEL_HH
+#ifndef DUNE_MODELWRAPPER_HH
+#define DUNE_MODELWRAPPER_HH
 
 // system includes
 #include <config.h>
@@ -12,15 +12,11 @@
 #include <dune/fem/misc/boundaryidprovider.hh>
 #include <dune/fem/space/common/functionspace.hh>
 
+// fem-dg includes
 #include <dune/fem-dg/models/defaultmodel.hh>
 #include <dune/fem-dg/models/defaultprobleminterfaces.hh>
-
-#include <dune/fem-dg/operator/fluxes/euler/fluxes.hh>
-#include <dune/fem-dg/operator/fluxes/rotator.hh>
-#include <dune/fem-dg/operator/limiter/limitpass.hh>
-#include <dune/fem-dg/operator/fluxes/analyticaleulerflux.hh>
-#include <dune/fem-dg/misc/error/l2eocerror.hh>
-#include <dune/fem-dg/misc/error/l1eocerror.hh>
+#include <dune/fem-dg/operator/limiter/limiterutility.hh>
+#include <dune/fem-dg/examples/euler/problems.hh>
 
 namespace Dune
 {
@@ -29,7 +25,7 @@ namespace Fem
   namespace detail {
 
     template <class ModelImp>
-    class ProblemWrapper :
+    class EmptyProblem :
       public Dune::Fem::EvolutionProblemInterface< typename ModelImp :: RFunctionSpaceType, false >
     {
       typedef Dune::Fem::EvolutionProblemInterface< typename ModelImp :: RFunctionSpaceType, false > BaseType;
@@ -49,7 +45,7 @@ namespace Fem
       typedef typename FunctionSpaceType :: RangeFieldType  RangeFieldType ;
       typedef RangeFieldType FieldType ;
 
-      ProblemWrapper() {}
+      EmptyProblem() {}
 
       void init () {}
 
@@ -74,27 +70,16 @@ namespace Fem
 
       void evaluate(const DomainType& x, const double time, RangeType& res) const
       {
-        // TODO: extract from ModelImp
-        res = 0 ;
+        std::abort();
       }
+
+      double gamma () const { return 1.4; }
     };
 
   } // end namespace detail
 
-
-  template <class ModelImp>
-  struct ModelImplementationWrapper
-    : public ModelImp,
-      public detail::ProblemWrapper< ModelImp >
-  {
-    typedef typename ModelImp :: RFunctionSpaceType   FunctionSpaceType ;
-    ModelImplementationWrapper() : ModelImp() {}
-
-    using ModelImp :: init;
-  };
-
-  template< class GridImp, class ProblemImp >
-  class EulerModelTraits
+  template< class GridImp, class ProblemImp, class LimiterFunction = MinModLimiter< typename GridImp::ctype> >
+  class ModelWrapperTraits
     : public DefaultModelTraits< GridImp, ProblemImp >
   {
     typedef DefaultModelTraits< GridImp, ProblemImp >           BaseType;
@@ -103,7 +88,9 @@ namespace Fem
                                                                     GradientType;
     static const int modelParameterSize = 0;
 
-    typedef MinModLimiter< typename BaseType::DomainFieldType >     LimiterFunctionType ;
+    typedef LimiterFunction LimiterFunctionType;
+    // possible options are
+    //typedef MinModLimiter< typename BaseType::DomainFieldType >     LimiterFunctionType ;
     //typedef SuperBeeLimiter< typename BaseType::DomainFieldType > LimiterFunctionType ;
     //typedef VanLeerLimiter< typename BaseType::DomainFieldType >  LimiterFunctionType ;
   };
@@ -114,15 +101,24 @@ namespace Fem
    *
    * \ingroup AnalyticalModels
    */
-  template< class GridImp, class ProblemImp >
-  class EulerModel :
-    public DefaultModel< EulerModelTraits< GridImp, ProblemImp > >
+  template< class GridImp,
+            class AdvectionModelImp,
+            class DiffusionModelImp,
+            class AdditionalImp,
+            class LimiterFunction,
+            class Problem = detail::EmptyProblem< AdvectionModelImp > >
+  class ModelWrapper :
+    public DefaultModel< ModelWrapperTraits< GridImp, Problem, LimiterFunction > >
   {
   public:
     typedef GridImp                                      GridType;
-    typedef EulerModelTraits< GridType, ProblemImp >     Traits;
+    typedef ModelWrapperTraits< GridType, Problem, LimiterFunction > Traits;
     typedef DefaultModel< Traits >                       BaseType;
     typedef typename Traits::ProblemType                 ProblemType;
+    typedef AdvectionModelImp                            AdvectionModelType ;
+    typedef DiffusionModelImp                            DiffusionModelType ;
+
+    typedef AdditionalImp                                AdditionalType;
 
     enum { dimDomain = Traits::dimDomain };
     enum { dimRange = Traits::dimRange };
@@ -139,41 +135,52 @@ namespace Fem
 
     typedef Dune::Fem::BoundaryIdProvider < GridType >   BoundaryIdProviderType;
 
-    typedef Dune::FieldVector< int, 2 > ModifiedRangeType;
+    static const int limitedDimRange = AdditionalType :: limitedDimRange ;
+    typedef Dune::FieldVector< int, limitedDimRange > LimitedRangeType;
 
     // for Euler equations diffusion is disabled
-    static const bool hasAdvection = true;
-    static const bool hasDiffusion = false;
+    static const bool hasAdvection = AdditionalType::hasAdvection;
+    static const bool hasDiffusion = AdditionalType::hasDiffusion;
 
-    using BaseType::time;
-    using BaseType::time_;
+    using BaseType :: time;
+    using BaseType :: hasMass;
+    using BaseType :: velocity ;
 
-   public:
-    EulerModel()
-      : impl()
+    ModelWrapper( const AdvectionModelType& advModel, const DiffusionModelType& diffModel )
+      : advection_( advModel ),
+        diffusion_( diffModel ),
+        problem_(),
+        limitedRange_()
     {
+      // by default this should be the identity
+      for( int i=0; i<limitedDimRange; ++i )
+        limitedRange_[ i ] = i;
+
+      // if method has been filled then modified will be set differently
+      AdditionalType :: limitedRange( limitedRange_ );
     }
 
-    EulerModel( const ProblemType& problem )
-      : impl_( problem )
+    void setTime (const double t)
     {
-      modified_[ 0 ] = 0;
-      modified_[ 1 ] = dimRange-1;
+      BaseType::setTime(t);
     }
+
+    double gamma () const { return problem_.gamma(); }
 
     template <class Entity>
     void setEntity( const Entity& entity ) const
     {
-      impl_.init( entity );
+      if( hasAdvection )
+        advection_.init( entity );
+      if( hasDiffusion )
+        diffusion_.init( entity );
     }
 
-    double gamma () const { return 1.4; }
+    inline bool hasStiffSource() const { return AdditionalType::hasStiffSource; }
+    inline bool hasNonStiffSource() const { return AdditionalType::hasNonStiffSource; }
+    inline bool hasFlux() const { return AdditionalType::hasFlux; }
 
-    inline bool hasStiffSource() const { return false; }
-    inline bool hasNonStiffSource() const { return false; }
-    inline bool hasFlux() const { return true ; }
-
-    const ModifiedRangeType& modifiedRange() const { return modified_; }
+    const LimitedRangeType& limitedRange() const { return limitedRange_; }
 
     void obtainBounds( RangeType& globalMin, RangeType& globalMax) const
     {
@@ -193,7 +200,8 @@ namespace Fem
                                const JacobianRangeType& du,
                                RangeType & s) const
     {
-      impl_.source( local.quadraturePoint(), u, du, s );
+      assert( hasDiffusion );
+      diffusion_.source( local.quadraturePoint(), u, du, s );
       return 0;
     }
 
@@ -201,29 +209,22 @@ namespace Fem
     template< class LocalEvaluation >
     inline double nonStiffSource( const LocalEvaluation& local,
                                   const RangeType& u,
-                                  const JacobianRangeType& jac,
+                                  const JacobianRangeType& du,
                                   RangeType& s) const
     {
-      s = 0;
+      assert( hasAdvection );
+      advection_.source( local.quadraturePoint(), u, du, s );
       return 0;
-    }
-
-    inline void conservativeToPrimitive( const double time,
-                                         const DomainType& xgl,
-                                         const RangeType& cons,
-                                         RangeType& prim,
-                                         const bool ) const
-    {
-      // impl_.evaluate( xgl, time, prim );
     }
 
     template <class LocalEvaluation>
     inline void advection( const LocalEvaluation& local,
                            const RangeType& u,
                            const JacobianRangeType& du,
-                           JacobianRangeType& f ) const
+                           JacobianRangeType& result ) const
     {
-      impl_.diffusiveFlux( local.quadraturePoint(), u, du, f);
+      assert( hasAdvection );
+      advection_.diffusiveFlux( local.quadraturePoint(), u, du, result );
     }
 
     template <class LocalEvaluation>
@@ -232,15 +233,15 @@ namespace Fem
                             RangeType& maxValue) const
     {
       std::cerr <<"eigenValues for problems/euler not implemented\n";
-      abort();
+      std::abort();
     }
 
-    template <class LocalEvaluation>
+    template <class LocalEvaluation, class T>
     inline double diffusionTimeStep( const LocalEvaluation& local,
-                                     const double circumEstimate,
+                                     const T& circumEstimate,
                                      const RangeType& u ) const
     {
-      return 0;
+      return AdditionalType :: diffusionTimeStep( local.entity(), local.quadraturePoint(), circumEstimate, u );
     }
 
     // is not used
@@ -250,30 +251,43 @@ namespace Fem
                            const FluxRangeType& du,
                            RangeType& A ) const
     {
+      assert( hasAdvection );
+      assert( 0 ); // if this is used we have to check if this is correct
       // TODO: u != ubar and du != dubar
-      impl_.linDiffusiveFlux( u, du, local.quadraturePoint(), u, du, A);
+      advection_.linDiffusiveFlux( u, du, local.quadraturePoint(), u, du, A);
+    }
+
+    template <class LocalEvaluation>
+    int getBoundaryId( const LocalEvaluation& local ) const
+    {
+      return BoundaryIdProviderType::boundaryId( local.intersection() );
     }
 
     template <class LocalEvaluation>
     inline bool hasBoundaryValue( const LocalEvaluation& local ) const
     {
-      Dune::FieldVector< int, dimRange > bndIds;
-      return impl_.isDirichletIntersection( local.intersection(), bndIds );
+      RangeType u;
+      int id = getBoundaryId( local );
+      // note: the local coordinate used here is not important since we
+      // only check if the intersection as a whole is part of the dirichlet
+      // boundary - so the center is used
+      bool bndVal = AdditionalType::boundaryValue(id, time(), local.entity(), local.intersection().geometryInInside().center(), u, u);
+
+      return bndVal;
     }
 
-    // return iRight for insertion into the numerical flux
+    // return uRight for insertion into the numerical flux
     template <class LocalEvaluation>
     inline void boundaryValue( const LocalEvaluation& local,
                                const RangeType& uLeft,
                                RangeType& uRight ) const
     {
-      Dune::FieldVector< int, dimRange > bndIds;
+      int id = getBoundaryId( local );
 #ifndef NDEBUG
       const bool isDirichlet =
 #endif
-      impl_.isDirichletIntersection( local.intersection(), bndIds );
+      AdditionalType::boundaryValue(id, time(), local.entity(), local.quadraturePoint(), uLeft, uRight);
       assert( isDirichlet );
-      impl_.dirichlet( bndIds[ 0 ], local.quadraturePoint(), uRight );
     }
 
     // boundary condition here is slip boundary cond. <u,n>=0
@@ -284,26 +298,27 @@ namespace Fem
                                 const JacobianRangeType&,
                                 RangeType& gLeft ) const
     {
-      /*
-      // Slip boundary condition
-      const DomainType normal = local.intersection().integrationOuterNormal( local.localPosition() );
-
-      const double p = eulerFlux_.pressure( gamma_ , uLeft );
-      gLeft = 0;
-      for ( int i = 0 ; i < dimDomain ; ++i )
-        gLeft[i+1] = normal[i] * p;
-        */
-
-      gLeft = 0;
-      return 0.;
+      DomainType normal = local.intersection().integrationOuterNormal( local.localPosition() );
+      double len = normal.two_norm();
+      normal /= len;
+      int id = getBoundaryId( local );
+#ifndef NDEBUG
+      const bool isFluxBnd =
+#endif
+      AdditionalType::boundaryFlux(id, time(), local.entity(), local.quadraturePoint(), normal, uLeft, gLeft);
+      gLeft *= len;
+      assert( isFluxBnd );
+      return 0; // TODO: do something better here
     }
 
     template <class LocalEvaluation>
     void diffusion( const LocalEvaluation& local,
                     const RangeType& u,
-                    const JacobianRangeType& v,
+                    const JacobianRangeType& du,
                     JacobianRangeType& diff ) const
     {
+      assert( hasDiffusion );
+      diffusion_.diffusiveFlux( local.quadraturePoint(), u, du, diff);
     }
 
 
@@ -315,26 +330,44 @@ namespace Fem
                                          const JacobianRangeType& jacLeft,
                                          RangeType& gLeft ) const
     {
-      return 0;
+      DomainType normal = local.intersection().integrationOuterNormal( local.localPosition() );
+      double len = normal.two_norm();
+      normal /= len;
+      int id = getBoundaryId( local );
+#ifndef NDEBUG
+      const bool isFluxBnd =
+#endif
+      AdditionalType::diffusionBoundaryFlux(id, time(), local.entity(), local.quadraturePoint(), normal, uLeft, jacLeft, gLeft);
+      gLeft *= len;
+      assert( isFluxBnd );
+      return 0; // QUESTION: do something better here? Yes, return time step restriction if possible
     }
 
-    // here x is in global coordinates
     template <class LocalEvaluation>
     inline void maxSpeed( const LocalEvaluation& local,
-                          const DomainType& normal,
+                          const DomainType& unitNormal,
                           const RangeType& u,
                           double& advspeed,
                           double& totalspeed ) const
     {
-      // TODO
-      std::abort();
-      // advspeed = eulerFlux_.maxSpeed( gamma_ , normal , u );
+      // TODO: add a max speed for the diffusion time step control
+      // this needs to be added in diffusionTimeStep
+      assert( hasAdvection );
+      advspeed = AdditionalType::maxSpeed( time(), local.entity(), local.quadraturePoint(), unitNormal, u );
       totalspeed = advspeed;
     }
 
     inline const ProblemType& problem() const
     {
-      return impl_;
+      return problem_;
+    }
+
+    // velocity method for Upwind flux
+    template< class LocalEvaluation >
+    inline DomainType velocity (const LocalEvaluation& local,
+                                RangeType& u) const
+    {
+      return AdditionalType :: velocity( time(), local.entity(), local.quadraturePoint(), u );
     }
 
     /////////////////////////////////////////////////////////////////
@@ -346,13 +379,7 @@ namespace Fem
                           const RangeType& u,
                           DomainType& velocity) const
     {
-      for(int i=0; i<dimDomain; ++i)
-      {
-        // U = (rho, rho v_0,...,rho v_(d-1), e )
-        // we store \rho u but do not need to divide by \rho here since only
-        // sign is needed.
-        velocity[i] = u[i+1];
-      }
+      velocity = AdditionalType :: velocity( time(), en, x, u );
     }
 
     // we have physical check for this model
@@ -364,17 +391,10 @@ namespace Fem
     // calculate jump between left and right value
     template< class Entity >
     inline bool physical(const Entity& entity,
-                         const DomainType& xGlobal,
+                         const DomainType& x,
                          const RangeType& u) const
     {
-      if (u[0]<1e-8)
-        return false;
-      else
-      {
-        //std::cout << eulerFlux_.rhoeps(u) << std::endl;
-        // return (eulerFlux_.rhoeps(u) > 1e-8);
-        return true ;
-      }
+      return AdditionalType :: physical( entity, x, u ) > 0;
     }
 
     // adjust average value if necessary
@@ -385,6 +405,7 @@ namespace Fem
                              RangeType& u ) const
     {
       // nothing to be done here for this test case
+      AdditionalType :: adjustAverageValue( entity, xLocal, u );
     }
 
     // calculate jump between left and right value
@@ -395,10 +416,7 @@ namespace Fem
                      const RangeType& uRight,
                      RangeType& jump) const
     {
-      // take pressure as shock detection values
-      //const RangeFieldType pl = pressure( uLeft );
-      //const RangeFieldType pr = pressure( uRight );
-      //jump  = (pl-pr)/(0.5*(pl+pr));
+      jump = AdditionalType :: jump( it, x, uLeft, uRight );
     }
 
     // calculate jump between left and right value
@@ -409,18 +427,21 @@ namespace Fem
                                      const RangeType& uRight,
                                      RangeType& indicator) const
     {
+      indicator = AdditionalType :: jump( it, x, uLeft, uRight );
     }
 
+    // misc for eoc calculation
     template< class DiscreteFunction >
     void eocErrors( const DiscreteFunction& df ) const
     {
-      EOCErrorList::setErrors<L2EOCError>( *this, df );
-      EOCErrorList::setErrors<L1EOCError>( *this, df );
     }
 
   protected:
-    ProblemType impl_;
-    ModifiedRangeType modified_;
+    const AdvectionModelType& advection_;
+    const DiffusionModelType& diffusion_;
+
+    ProblemType problem_;
+    LimitedRangeType limitedRange_;
   };
 
 }

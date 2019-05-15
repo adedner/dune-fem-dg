@@ -72,6 +72,7 @@ namespace Fem
     double crsTol_;
     int finLevel_;
     int crsLevel_;
+    const AdaptationParameters param;
     const bool shockIndicatorAdaptivty_;
 
   public:
@@ -81,13 +82,14 @@ namespace Fem
     //! constructor
     StandardLimiterDiscreteModel(const Model& mod,
                                  const int polOrd,
-                                 const AdaptationParameters& param = AdaptationParameters() )
-      : BaseType(mod),
+                                 const Dune::Fem::ParameterReader &parameter = Dune::Fem::Parameter::container() )
+      : BaseType(mod, 1e-8, parameter),
         indicator_( 0 ),
         refTol_( -1 ),
         crsTol_( -1 ),
         finLevel_( 0 ),
         crsLevel_( 0 ),
+        param(parameter),
         shockIndicatorAdaptivty_( param.shockIndicator() )
     {
       if( shockIndicatorAdaptivty_ )
@@ -228,27 +230,46 @@ namespace Fem
     //! value
     template <class LocalEvaluation>
     double boundaryFlux(const LocalEvaluation& left,
-                        RangeType& adaptIndicator,
-                        JacobianRangeType& gDiffLeft ) const
+                        RangeType& jump,
+                        JacobianRangeType& dummy) const
     {
-      const FaceLocalDomainType& x = left.localPosition();
 
-      RangeType uRight;
-
-      // evaluate boundary value
-      model_.boundaryValue( left, left.values()[ uVar ], uRight );
-
-      if (! physical(left.entity(), left.position(), left.values()[ uVar ] ) ||
-          ! physical(left.entity(), left.position(), uRight ) )
+      if( model_.hasBoundaryValue( left ) )
       {
-        adaptIndicator = 1e10;
-        return -1.;
+        RangeType uRight;
+        // evaluate boundary value
+        model_.boundaryValue( left, left.values()[ uVar ], uRight );
+
+        // use boundaryValue to check physical and jump
+        if (! physical(left.entity(), left.position(), left.values()[ uVar ] ) ||
+            ! physical(left.entity(), left.position(), uRight ) )
+        {
+          jump = 1e10;
+          return -1.;
+        }
+        else
+        {
+          model_.jump( left.intersection(), left.localPosition(), left.values()[ uVar ], uRight, jump);
+          return 1.;
+        }
       }
       else
       {
-        model_.jump( left.intersection(), x, left.values()[ uVar ], uRight, adaptIndicator);
-        return 1.;
+        // otherwise evaluate boundary flux
+        //model_.boundaryFlux( left, left.values()[ uVar ], left.jacobians()[ uVar ], jump );
+        //std::cout << jump << " boundary flux" << std::endl;
+        //return ( std::abs( jump[ 0 ] ) > 1e-10 ) ? -1. : 1.;
+        jump = 0;
+        return 0;
       }
+
+    }
+
+    //! return true if method boundaryValue returns something meaningful.
+    template <class LocalEvaluation>
+    bool hasBoundaryValue( const LocalEvaluation& local ) const
+    {
+      return model_.hasBoundaryValue( local );
     }
 
     //! returns difference between internal value and boundary

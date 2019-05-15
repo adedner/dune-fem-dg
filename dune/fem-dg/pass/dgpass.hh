@@ -5,19 +5,19 @@
 
 #include <dune/grid/common/grid.hh>
 
+
 #include <dune/fem/function/localfunction/temporary.hh>
 #include <dune/fem/gridpart/common/capabilities.hh>
 #include <dune/fem/operator/1order/localmassmatrix.hh>
-#include <dune/fem/pass/localdg/discretemodel.hh>
-#include <dune/fem/pass/common/local.hh>
 #include <dune/fem/quadrature/caching/twistutility.hh>
 #include <dune/fem/quadrature/intersectionquadrature.hh>
 #include <dune/fem/solver/timeprovider.hh>
 #include <dune/fem/space/common/allgeomtypes.hh>
 #include <dune/fem/storage/dynamicarray.hh>
 
-
-#include <dune/fem-dg/pass/dgmodelcaller.hh>
+#include <dune/fem-dg/pass/pass.hh>
+#include <dune/fem-dg/pass/modelcaller.hh>
+#include <dune/fem-dg/pass/discretemodel.hh>
 #include <dune/fem/misc/compatibility.hh>
 
 namespace Dune
@@ -196,6 +196,12 @@ namespace Fem
     {
       discreteModel_.setTime( time );
       BaseType::setTime( time );
+    }
+
+    template <class AdaptationType>
+    void setAdaptation( AdaptationType& adHandle, double weight )
+    {
+      discreteModel_.setAdaptation( adHandle, weight );
     }
 
     //! Estimate for the timestep size
@@ -445,8 +451,8 @@ namespace Fem
       // init local function
       initLocalFunction( entity , updEn_ );
 
-      // calculate element integral
-      elementIntegral(entity, updEn_);
+      // calculate element integral, but also set entity in any case
+      elementIntegral(entity, updEn_, true );
 
       // calculate surface integral for interior and boundary intersections
       surfaceIntegral(entity, updEn_, nbChecker );
@@ -492,9 +498,6 @@ namespace Fem
       // increase element counter
       ++numberOfElements_ ;
 
-      // only call geometry once, who know what is done in this function
-      const Geometry & geo = entity.geometry();
-
       const bool hasSource = discreteModel_.hasSource();
       const bool hasMass   = discreteModel_.hasMass();
       // only apply volumetric integral if order > 0
@@ -503,6 +506,10 @@ namespace Fem
       {
         assert( volumeQuadratureOrder( entity ) >=0 );
         VolumeQuadratureType volQuad(entity, volumeQuadratureOrder( entity ) );
+
+        // only call geometry once, who know what is done in this function
+        const Geometry & geo = entity.geometry();
+
 
         caller().setEntity(entity, volQuad);
 
@@ -910,30 +917,37 @@ namespace Fem
     LocalCDGPass(const LocalCDGPass&);
     LocalCDGPass& operator=(const LocalCDGPass&);
 
+  public:
+    //! return default face quadrature order
+    static int defaultVolumeQuadratureOrder( const DiscreteFunctionSpaceType& space, const EntityType& entity )
+    {
+      return (2 * space.order( entity ));
+    }
+
+    //! return default face quadrature order
+    static int defaultFaceQuadratureOrder( const DiscreteFunctionSpaceType& space, const EntityType& entity )
+    {
+      return (2 * space.order( entity )) + 1;
+    }
+
   protected:
     //! return appropriate quadrature order, default is 2 * order(entity)
     int volumeQuadratureOrder( const EntityType& entity ) const
     {
-      return ( volumeQuadOrd_ < 0 ) ? ( spc_.order( entity ) * 2 ) : volumeQuadOrd_ ;
-    }
-
-    //! return default face quadrature order
-    int defaultFaceQuadOrder( const EntityType& entity ) const
-    {
-      return (2 * spc_.order( entity )) + 1;
+      return ( volumeQuadOrd_ < 0 ) ? defaultVolumeQuadratureOrder( spc_, entity ) : volumeQuadOrd_ ;
     }
 
     //! return appropriate quadrature order, default is 2 * order( entity ) + 1
     int faceQuadratureOrder( const EntityType& entity ) const
     {
-      return ( faceQuadOrd_ < 0 ) ? defaultFaceQuadOrder( entity ) : faceQuadOrd_ ;
+      return ( faceQuadOrd_ < 0 ) ? defaultFaceQuadratureOrder( spc_, entity ) : faceQuadOrd_ ;
     }
 
     //! return appropriate quadrature order, default is 2 * order( entity ) + 1
     int faceQuadratureOrder( const EntityType& entity, const EntityType& neighbor ) const
     {
       return ( faceQuadOrd_ < 0 ) ?
-        std::max( defaultFaceQuadOrder( entity ), defaultFaceQuadOrder( neighbor ) ) :
+        std::max( defaultFaceQuadratureOrder( spc_, entity ), defaultFaceQuadratureOrder( spc_, neighbor ) ) :
         faceQuadOrd_ ;
     }
 

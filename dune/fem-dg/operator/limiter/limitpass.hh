@@ -8,16 +8,12 @@
 #include <dune/common/timer.hh>
 
 #include <dune/grid/common/grid.hh>
-#include <dune/grid/io/file/dgfparser/entitykey.hh>
 
 #include <dune/fem/gridpart/common/capabilities.hh>
 #include <dune/fem/quadrature/cornerpointset.hh>
 #include <dune/fem/io/parameter.hh>
 
 #include <dune/fem/operator/1order/localmassmatrix.hh>
-#include <dune/fem/common/typeindexedtuple.hh>
-#include <dune/fem/pass/localdg/discretemodel.hh>
-#include <dune/fem/pass/localdg.hh>
 
 #include <dune/fem/space/common/adaptationmanager.hh>
 #include <dune/fem/space/common/basesetlocalkeystorage.hh>
@@ -28,10 +24,13 @@
 
 #include <dune/fem/function/adaptivefunction.hh>
 
-#include <dune/fem-dg/pass/dgmodelcaller.hh>
 #include <dune/fem/misc/compatibility.hh>
+#include <dune/fem/misc/threads/threadmanager.hh>
 
+#include <dune/fem-dg/pass/pass.hh>
 #include <dune/fem-dg/pass/context.hh>
+#include <dune/fem-dg/pass/discretemodel.hh>
+#include <dune/fem-dg/pass/modelcaller.hh>
 
 #include <dune/fem-dg/operator/limiter/limiterutility.hh>
 
@@ -210,9 +209,10 @@ namespace Fem
 
     /** \brief default limiter discrete model */
     LimiterDefaultDiscreteModel(const Model& mod,
-                                const DomainFieldType veloEps = 1e-8)
+                                const DomainFieldType veloEps = 1e-8,
+                                const Dune::Fem::ParameterReader &parameter = Dune::Fem::Parameter::container() )
       : model_(mod)
-      , limiterFunction_()
+      , limiterFunction_(parameter)
       , velocity_(0)
       , veloEps_( veloEps )
     {
@@ -292,15 +292,10 @@ namespace Fem
         with the boundary value. This is needed for the limiter.
         The default returns 0, meaning that we use the interior value as ghost value.
     */
-    template <class FaceQuadratureImp,
-              class ArgumentTuple,
-              class JacobianTuple>
-    double boundaryFlux(const IntersectionType& it,
-                        const double time,
-                        const FaceQuadratureImp& innerQuad,
-                        const int quadPoint,
-                        const ArgumentTuple& uLeft,
-                        const JacobianTuple& jacLeft,
+    //! returns difference between internal value and boundary
+    //! value
+    template <class LocalEvaluation>
+    double boundaryFlux(const LocalEvaluation& left,
                         RangeType& adaptIndicator,
                         JacobianRangeType& gDiffLeft ) const
     {
@@ -310,27 +305,24 @@ namespace Fem
 
     /** \brief returns true if model provides boundary values for this
         intersection */
-    inline bool hasRobinBoundaryValue(const IntersectionType& it,
-                                 const double time,
-                                 const FaceLocalDomainType& x) const
+    template <class LocalEvaluation>
+    inline bool hasRobinBoundaryValue(const LocalEvaluation& local) const
     {
       return false;
     }
 
     /** \brief returns true if model provides boundary values for this
         intersection */
-    inline bool hasBoundaryValue(const IntersectionType& it,
-                                 const double time,
-                                 const FaceLocalDomainType& x) const
+    template <class LocalEvaluation>
+    inline bool hasBoundaryValue(const LocalEvaluation& local) const
     {
       return true;
     }
 
     //! returns difference between internal value and boundary
     //! value
-    inline void boundaryValue(const IntersectionType& it,
-                              const double time,
-                              const FaceLocalDomainType& x,
+    template <class LocalEvaluation>
+    inline void boundaryValue(const LocalEvaluation& local,
                               const RangeType& uLeft,
                               RangeType& uRight) const
     {
@@ -541,7 +533,7 @@ namespace Fem
     //! id for choosing admissible linear functions
     enum AdmissibleFunctions { DGFunctions = 0, ReconstructedFunctions = 1 , BothFunctions = 2 };
 
-    //! returns true of pass is currently active in the pass tree
+    //! returns true if pass is currently active in the pass tree
     using BaseType :: active ;
 
     //! type of cartesian grid checker
@@ -655,33 +647,35 @@ namespace Fem
 
       // we need the flux here
       assert(problem.hasFlux());
-
-      // intialize volume quadratures, otherwise we run into troubles with the threading
-      initializeVolumeQuadratures( geoInfo_.geomTypes( 0 ) );
     }
 
     //! Destructor
     virtual ~LimitDGPass() {}
 
+    //! return default face quadrature order
+    static int defaultVolumeQuadratureOrder( const DiscreteFunctionSpaceType& space, const EntityType& entity )
+    {
+      return (2 * space.order( entity ));
+    }
+
+    //! return default face quadrature order
+    static int defaultFaceQuadratureOrder( const DiscreteFunctionSpaceType& space, const EntityType& entity )
+    {
+      return (2 * space.order( entity )) + 1;
+    }
+
   protected:
     //! return appropriate quadrature order, default is 2 * order(entity)
     int volumeQuadratureOrder( const EntityType& entity ) const
     {
-      return ( volumeQuadOrd_ < 0 ) ? ( 2*spc_.order( entity ) ) : volumeQuadOrd_ ;
-    }
-
-    //! return default face quadrature order
-    int defaultFaceQuadOrder( const EntityType& entity ) const
-    {
-      return (2 * spc_.order( entity )) + 1;
+      return ( volumeQuadOrd_ < 0 ) ? ( defaultVolumeQuadratureOrder( spc_, entity ) ) : volumeQuadOrd_ ;
     }
 
     //! return appropriate quadrature order, default is 2 * order( entity ) + 1
     int faceQuadratureOrder( const EntityType& entity ) const
     {
-      return ( faceQuadOrd_ < 0 ) ? defaultFaceQuadOrder( entity ) : faceQuadOrd_ ;
+      return ( faceQuadOrd_ < 0 ) ? defaultFaceQuadratureOrder( spc_, entity ) : faceQuadOrd_ ;
     }
-
 
 
     //! get tolerance factor for shock detector
@@ -736,6 +730,7 @@ namespace Fem
       }
     };
 
+  public:
     //! The actual computations are performed as follows. First, prepare
     //! the grid walkthrough, then call applyLocal on each entity and then
     //! call finalize.
@@ -752,8 +747,6 @@ namespace Fem
       // get stopwatch
       Dune::Timer timer;
 
-      //std::cout << "LimitPass::compute ";
-
       // if polOrder of destination is > 0 then we have to do something
       if( spc_.order() > 0 && active() )
       {
@@ -768,10 +761,10 @@ namespace Fem
         for( auto it = spc_.begin(); (it != endit); ++it )
         {
           // for initialization of thread passes for only a few iterations
-          if( elementCounter_ > breakAfter) break;
-          const auto& en = *it;
+          //if( elementCounter_ > breakAfter) break;
+          const auto& entity = *it;
           Dune::Timer localTime;
-          applyLocalImp(en);
+          applyLocalImp( entity );
           stepTime_[2] += localTime.elapsed();
           ++elementCounter_;
         }
@@ -781,12 +774,9 @@ namespace Fem
       }
       else
       {
-        /*
-        std::cout << "LimitPass::compute deactive " << std::endl;
         // get reference to U and pass on to dest
         const ArgumentFunctionType &U = *(std::get< argumentPosition >( arg ));
         dest.assign( U );
-        */
       }
 
       //std::cout << std::endl;
@@ -795,6 +785,7 @@ namespace Fem
       this->computeTime_ += timer.elapsed();
     }
 
+  protected:
     struct EvalAverage
     {
       const ThisType& op_;
@@ -824,19 +815,18 @@ namespace Fem
                           const RangeType& entityValue,
                           RangeType& neighborValue ) const
       {
-        const typename IntersectionGeometry::LocalCoordinate localPoint = interGeo.local( globalPoint );
-        const double currentTime = op_.time();
+        FaceQuadratureType faceQuadInner( gridPart_, intersection, 0, FaceQuadratureType::INSIDE );
+        typedef QuadratureContext< EntityType, IntersectionType, FaceQuadratureType > ContextType;
+        typedef LocalEvaluation< ContextType, RangeType, RangeType > EvalType;
+
+        ContextType cLeft( entity, intersection, faceQuadInner, volume_ );
+        // create quadrature of low order
+        EvalType local( cLeft, entityValue, entityValue, 0 );
 
         // check for boundary Value
-        if( discreteModel_.hasBoundaryValue( intersection, currentTime, localPoint ) )
+        if( discreteModel_.hasBoundaryValue( local ) )
         {
-          /*
-          FaceQuadratureType faceQuadInner( gridPart_, intersection, 0, FaceQuadratureType::INSIDE);
-          IntersectionQuadraturePointContext< IntersectionType, EntityType,
-            FaceQuadratureType, RangeType, RangeType > local( intersection, entity, faceQuadInner, entityValue, entityValue,
-                                                              0, currentTime, volume_);
           discreteModel_.boundaryValue( local, entityValue, neighborValue );
-          */
           return true ;
         }
         return false ;
@@ -1098,7 +1088,7 @@ namespace Fem
       else if ( calcIndicator_ )
       {
         // check shock indicator
-        limiter = calculateIndicator(en, uEn, geo, limiter, limit, shockIndicator, adaptIndicator);
+        limiter = calculateIndicator(en, uEn, enVal, geo, limiter, limit, shockIndicator, adaptIndicator);
       }
       else if( !reconstruct_ )
       {
@@ -1236,7 +1226,7 @@ namespace Fem
       DestLocalFunctionType limitEn = dest_->localFunction(en);
 
       // project deoMod_ to limitEn
-      L2project(en, geo, enBary, enVal, limit, deoMod_, limitEn);
+      L2project(en, geo, enBary, enVal, limit, deoMod_, limitEn );
 
       assert( checkPhysical(en, geo, limitEn) );
 
@@ -1408,22 +1398,6 @@ namespace Fem
     };
     */
 
-    void initializeVolumeQuadratures( const std::vector< GeometryType >& geomTypes ) const
-    {
-      for( size_t i=0; i<geomTypes.size(); ++ i )
-      {
-        const GeometryType& type = geomTypes[ i ];
-        // get quadrature for destination space order
-        VolumeQuadratureType quad0( type, spc_.order() + 1 );
-
-        // get point quadrature
-        VolumeQuadratureType quad1( type, 0 );
-
-        // get quadrature
-        VolumeQuadratureType quad2( type, 2*spc_.order() );
-      }
-    }
-
     // L2 projection
     template <class LocalFunctionImp>
     void L2project(const EntityType& en,
@@ -1447,7 +1421,6 @@ namespace Fem
       // get quadrature for destination space order
       VolumeQuadratureType quad( en, spc_.order() + 1 );
 
-      //const BaseFunctionSetType& baseset = limitEn.baseFunctionSet();
       const int quadNop = quad.nop();
       for(int qP = 0; qP < quadNop ; ++qP)
       {
@@ -1501,14 +1474,23 @@ namespace Fem
         }
       }
 
-      // copy to limitEn skipping components that should not be limited
-      const int numBasis = uTmpLocal_.numDofs()/dimRange;
-      for(int i=1; i<numBasis; ++i)
+      // in case of higher order FV the whole local functions needs to be assigned
+      // since dest is not previously initialized with the current solution
+      if( reconstruct_ )
       {
-        for( const auto& r : discreteModel_.model().modifiedRange() )
+        limitEn.assign( uTmpLocal_ );
+      }
+      else
+      {
+        // copy to limitEn skipping components that should not be limited
+        const int numBasis = uTmpLocal_.numDofs()/dimRange;
+        for(int i=1; i<numBasis; ++i)
         {
-          const int dofIdx = dofConversion_.combinedDof(i,r);
-          limitEn[ dofIdx ] = uTmpLocal_[ dofIdx ];
+          for( const auto& r : discreteModel_.model().limitedRange() )
+          {
+            const int dofIdx = dofConversion_.combinedDof(i,r);
+            limitEn[ dofIdx ] = uTmpLocal_[ dofIdx ];
+          }
         }
       }
     }
@@ -1575,27 +1557,32 @@ namespace Fem
         val = 0;
 
         const int quadNop = quad.nop();
+        /*
         if( int(aver_.size()) < quadNop )
         {
           // resize value vector
           aver_.resize( quadNop );
         }
+        */
 
-        // evaluate quadrature at once
-        lf.evaluateQuadrature( quad, aver_ );
+        // evaluate quadrature at once (does not qork correctly yet)
+        // lf.evaluateQuadrature( quad, aver_ );
+        RangeType aver;
 
         for(int qp=0; qp<quadNop; ++qp)
         {
+          lf.evaluate( quad[ qp ], aver );
+
           // check whether value is physical
-          notphysical |= (discreteModel_.hasPhysical() && !discreteModel_.physical( en, quad.point( qp ), aver_[ qp ] ) );
+          notphysical |= (discreteModel_.hasPhysical() && !discreteModel_.physical( en, quad.point( qp ), aver ) );
 
           // possibly adjust average value, e.g. calculate primitive vairables and so on
-          discreteModel_.adjustAverageValue( en, quad.point( qp ), aver_[ qp ] );
+          discreteModel_.adjustAverageValue( en, quad.point( qp ), aver );
 
           // apply integration weight
-          aver_[ qp ] *= quad.weight(qp) * geo.integrationElement( quad.point(qp) );
+          aver *= quad.weight(qp) * geo.integrationElement( quad.point(qp) );
           // sum up
-          val += aver_[ qp ];
+          val += aver;
         }
 
         // mean value, i.e. devide by volume
@@ -1663,21 +1650,31 @@ namespace Fem
     }
 
     template <class QuadratureImp>
-    bool applyBoundary(const IntersectionType & intersection,
-                      const QuadratureImp & faceQuadInner,
-                      RangeType& shockIndicator,
-                      RangeType& adaptIndicator) const
+    bool applyBoundary(const EntityType& entity,
+                       const IntersectionType & intersection,
+                       const QuadratureImp & faceQuadInner,
+                       const RangeType& entityValue,
+                       RangeType& shockIndicator,
+                       RangeType& adaptIndicator) const
     {
       typedef typename IntersectionType :: Geometry LocalGeometryType;
       const LocalGeometryType& interGeo = intersection.geometry();
 
       RangeType jump;
       JacobianRangeType dummy ;
+
+      typedef QuadratureContext< EntityType, IntersectionType, QuadratureImp > ContextType;
+      typedef LocalEvaluation< ContextType, RangeType, RangeType > EvalType;
+
+      ContextType cLeft( entity, intersection, faceQuadInner, 0.0 );
+      // create quadrature of low order
+      EvalType local( cLeft, entityValue, entityValue );
+
       const int faceQuadNop = faceQuadInner.nop();
       for(int l=0; l<faceQuadNop; ++l)
       {
         // calculate jump
-        const double val = caller().boundaryFlux(intersection, faceQuadInner, l, jump, dummy);
+        const double val = caller().boundaryFlux( intersection, faceQuadInner, l, jump, dummy);
 
         // non-physical solution
         if (val < 0.0)
@@ -1699,6 +1696,7 @@ namespace Fem
     // calculate shock detector
     bool calculateIndicator(const EntityType& en,
                             const LocalFunctionType& uEn,
+                            const RangeType& enVal,
                             const Geometry& geo,
                             const bool initLimiter,
                             FieldVector<bool,dimRange>& limit,
@@ -1763,7 +1761,7 @@ namespace Fem
         else
         { // non-conforming case
           typedef typename FaceQuadratureType :: NonConformingQuadratureType NonConformingQuadratureType;
-          NonConformingQuadratureType faceQuadInner(gridPart_,intersection, quadOrd, FaceQuadratureType::INSIDE);
+          NonConformingQuadratureType faceQuadInner(gridPart_,intersection, quadOrd, NonConformingQuadratureType::INSIDE);
           if( checkIntersection( intersection, faceQuadInner, inflowIntersection ) )
           {
             shockIndicator = -1;
@@ -1794,7 +1792,7 @@ namespace Fem
           { // non-conforming case
             typedef typename FaceQuadratureType :: NonConformingQuadratureType NonConformingQuadratureType;
             NonConformingQuadratureType faceQuadOuter(gridPart_,intersection, quadOrd,
-                                                      FaceQuadratureType::OUTSIDE);
+                                                      NonConformingQuadratureType::OUTSIDE);
             if( checkIntersection( intersection, faceQuadOuter, inflowIntersection , false ) )
             {
               shockIndicator = -1;
@@ -1848,7 +1846,7 @@ namespace Fem
             // initialize intersection
             caller().initializeBoundary( intersection, faceQuadInner );
 
-            if (applyBoundary(intersection, faceQuadInner, shockIndicator, adaptIndicator))
+            if (applyBoundary(en, intersection, faceQuadInner, enVal, shockIndicator, adaptIndicator))
             {
               shockIndicator = -1;
               return true;

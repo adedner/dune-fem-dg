@@ -5,29 +5,16 @@
 #include <type_traits>
 
 #include <dune/common/fvector.hh>
-#include <dune/common/timer.hh>
 
-#include <dune/grid/common/grid.hh>
 #include <dune/grid/io/file/dgfparser/entitykey.hh>
 
 #include <dune/fem/gridpart/common/capabilities.hh>
 #include <dune/fem/io/parameter.hh>
 
-#include <dune/fem/operator/1order/localmassmatrix.hh>
-#include <dune/fem/common/typeindexedtuple.hh>
-#include <dune/fem/pass/localdg/discretemodel.hh>
-#include <dune/fem/pass/localdg.hh>
-
-#include <dune/fem/space/common/adaptationmanager.hh>
-#include <dune/fem/space/common/basesetlocalkeystorage.hh>
-
-#include <dune/fem/space/discontinuousgalerkin.hh>
-#include <dune/fem/space/finitevolume.hh>
-#include <dune/fem/space/lagrange/lagrangepoints.hh>
-
-#include <dune/fem/function/adaptivefunction.hh>
+#include <dune/fem/quadrature/intersectionquadrature.hh>
 
 #include <dune/fem/misc/compatibility.hh>
+#include <dune/fem/misc/checkgeomaffinity.hh>
 
 //*************************************************************
 namespace Dune
@@ -338,6 +325,7 @@ namespace Fem
       // loop over all neighbors
       for (auto it = gridPart.ibegin( entity ); it != endit; ++it )
       {
+        bool storeNeighbor = true;
         const IntersectionType& intersection = *it;
 
         const bool hasBoundary = intersection.boundary();
@@ -351,7 +339,8 @@ namespace Fem
         }
 
         DomainType lambda( 1 );
-        RangeType neighborValue( 0 );
+        // initialize with zero which assumes entityValue == neighborValue
+        RangeType jumpNeighborEntity( 0 );
 
         /////////////////////////////////////
         //  if we have a neighbor
@@ -360,7 +349,6 @@ namespace Fem
         {
           // check all neighbors
           const EntityType& neighbor = intersection.outside();
-          //const int nbIndex = gridPart.indexSet().index( neighbor );
 
           // nonConforming case
           flags.nonConforming |= (! intersection.conforming() );
@@ -369,17 +357,16 @@ namespace Fem
           if( ! hasBoundary )
           {
             // get barycenter of neighbor
-            //lambda = centers[ nbIndex ];
             lambda = neighbor.geometry().center();
             // calculate difference
             lambda -= entityCenter;
           }
 
           // evaluate average value on neighbor
-          flags.limiter |= average.evaluate( neighbor, neighborValue );
+          flags.limiter |= average.evaluate( neighbor, jumpNeighborEntity );
 
           // calculate difference
-          neighborValue -= entityValue;
+          jumpNeighborEntity -= entityValue;
 
         } // end neighbor
 
@@ -387,7 +374,7 @@ namespace Fem
         // --boundary
         ////////////////////////////
         // use ghost cell approach for limiting,
-        if( intersection.boundary() )
+        if( hasBoundary )
         {
           // we have entity with boundary intersections
           flags.boundary = true ;
@@ -422,19 +409,26 @@ namespace Fem
             const DomainType pointOnBoundary = lambda + entityCenter;
 
             // evaluate data on boundary
-            if( average.boundaryValue( entity, intersection, interGeo, pointOnBoundary, entityValue, neighborValue ) )
+            if( average.boundaryValue( entity, intersection, interGeo, pointOnBoundary, entityValue, jumpNeighborEntity ) )
             {
-              neighborValue -= entityValue;
+              jumpNeighborEntity -= entityValue;
+            }
+            else
+            {
+              // storeNeighbor = false;
             }
           }
 
         } //end boundary
 
-        // store difference of mean values
-        nbVals.push_back(neighborValue);
+        if (storeNeighbor)
+        {
+          // store difference of mean values
+          nbVals.push_back(jumpNeighborEntity);
 
-        // store difference between bary centers
-        barys.push_back(lambda);
+          // store difference between bary centers
+          barys.push_back(lambda);
+        }
 
       } // end intersection iterator
 
@@ -902,16 +896,16 @@ namespace Fem
   struct LimiterFunctionBase
   {
     const double limitEps_;
-    LimiterFunctionBase()
-      : limitEps_( getEpsilon() )
+    LimiterFunctionBase( const Dune::Fem::ParameterReader &parameter = Dune::Fem::Parameter::container() )
+      : limitEps_( getEpsilon(parameter) )
     {
     }
 
     //! get tolerance for shock detector
-    static double getEpsilon()
+    static double getEpsilon( const Dune::Fem::ParameterReader &parameter = Dune::Fem::Parameter::container() )
     {
       // default value is 1e-8
-      return Parameter::getValue("femdg.limiter.limiteps", double(1e-8) );
+      return parameter.getValue("femdg.limiter.limiteps", double(1e-8) );
     }
 
     //! return epsilon for limiting
@@ -932,6 +926,8 @@ namespace Fem
   struct NoLimiter
   {
     typedef Field FieldType;
+    NoLimiter(const Dune::Fem::ParameterReader &parameter = Dune::Fem::Parameter::container() )
+    {}
 
     //! return epsilon for limiting
     double epsilon () const { return 1.0; }
@@ -948,7 +944,8 @@ namespace Fem
     using LimiterFunctionBase :: limitEps_ ;
     typedef Field FieldType;
 
-    MinModLimiter() : LimiterFunctionBase()
+    MinModLimiter( const Dune::Fem::ParameterReader &parameter = Dune::Fem::Parameter::container() )
+    : LimiterFunctionBase(parameter)
     {
       printInfo( "minmod" );
     }
@@ -976,7 +973,8 @@ namespace Fem
     using LimiterFunctionBase :: limitEps_ ;
     typedef Field FieldType;
 
-    SuperBeeLimiter() : LimiterFunctionBase()
+    SuperBeeLimiter( const Dune::Fem::ParameterReader &parameter = Dune::Fem::Parameter::container() )
+    : LimiterFunctionBase(parameter)
     {
       printInfo( "superbee" );
     }
@@ -1005,7 +1003,8 @@ namespace Fem
     using LimiterFunctionBase :: limitEps_ ;
     typedef Field FieldType;
 
-    VanLeerLimiter() : LimiterFunctionBase()
+    VanLeerLimiter( const Dune::Fem::ParameterReader &parameter = Dune::Fem::Parameter::container() )
+    : LimiterFunctionBase(parameter)
     {
       printInfo( "vanLeer" );
     }

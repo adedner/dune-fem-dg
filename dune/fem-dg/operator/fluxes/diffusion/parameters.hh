@@ -139,8 +139,10 @@ namespace Fem
      *
      * \param[in] keyPrefix key prefix for parameter file.
      */
-    DGPrimalDiffusionFluxParameters( const std::string keyPrefix = "dgdiffusionflux." )
-      : keyPrefix_( keyPrefix )
+    DGPrimalDiffusionFluxParameters( const std::string keyPrefix = "dgdiffusionflux.",
+                                     const Dune::Fem::ParameterReader &parameter = Dune::Fem::Parameter::container() )
+      : keyPrefix_( keyPrefix ),
+        parameter_( parameter )
     {}
 
     /**
@@ -163,7 +165,7 @@ namespace Fem
      */
     virtual IdEnum getMethod() const
     {
-      const int i = Fem::Parameter::getEnum( keyPrefix_ + "method", PrimalDiffusionFlux::_strings );
+      const int i = parameter_.getEnum( keyPrefix_ + "method", PrimalDiffusionFlux::_strings, 0 );
       return PrimalDiffusionFlux::_enums[i];
     }
 
@@ -187,20 +189,20 @@ namespace Fem
      */
     virtual LiftingEnum getLifting() const
     {
-      const int i = Fem::Parameter::getEnum( keyPrefix_ + "lifting", PrimalDiffusionLifting::_strings, 0 );
+      const int i = parameter_.getEnum( keyPrefix_ + "lifting", PrimalDiffusionLifting::_strings, 0 );
       return PrimalDiffusionLifting::_enums[i];
     }
 
     //! todo please doc me
     virtual double penalty() const
     {
-      return Fem::Parameter::getValue<double>( keyPrefix_ + "penalty" );
+      return parameter_.getValue<double>( keyPrefix_ + "penalty", 1.0 );
     }
 
     //! todo please doc me
     virtual double liftfactor() const
     {
-      return Fem::Parameter::getValue<double>( keyPrefix_ + "liftfactor" );
+      return parameter_.getValue<double>( keyPrefix_ + "liftfactor", 1.0 );
     }
 
     /**
@@ -208,19 +210,19 @@ namespace Fem
      */
     virtual double theoryparameters() const
     {
-      return Fem::Parameter::getValue<double>( keyPrefix_ + "theoryparameters", 0. );
+      return parameter_.getValue<double>( keyPrefix_ + "theoryparameters", 0. );
     }
 
     //! todo please doc me
     template <class DomainType>
     void upwind( DomainType& upwd ) const
     {
-      Fem::Parameter::get(keyPrefix_ + "upwind", upwd, upwd);
+      parameter_.get(keyPrefix_ + "upwind", upwd, upwd);
     }
   private:
 
     const std::string keyPrefix_;
-
+    const Dune::Fem::ParameterReader parameter_;
   };
 
   /**

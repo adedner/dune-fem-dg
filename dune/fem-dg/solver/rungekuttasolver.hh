@@ -29,11 +29,13 @@ namespace Fem
      *
      * \param[in] keyPrefix key prefix for parameter file.
      */
-    RungeKuttaSolverParameters( const std::string keyPrefix = "fem.ode." )
-      : DuneODE::ImplicitRungeKuttaSolverParameters( keyPrefix )
+    RungeKuttaSolverParameters( const std::string keyPrefix = "fem.ode.",
+                                const Dune::Fem::ParameterReader &parameter = Dune::Fem::Parameter::container() )
+      : DuneODE::ImplicitRungeKuttaSolverParameters( keyPrefix, parameter )
     {}
 
     using DuneODE::ImplicitRungeKuttaSolverParameters::keyPrefix_;
+    using DuneODE::ImplicitRungeKuttaSolverParameters::parameter;
 
     /**
      * \brief returns a factor for the decision whether to use IMEX Runge-Kutta
@@ -50,7 +52,7 @@ namespace Fem
      */
     virtual double explicitFactor() const
     {
-      return Fem::Parameter::getValue< double >( keyPrefix_ + "explicitfactor" , 1.0 );
+      return parameter().getValue< double >( keyPrefix_ + "explicitfactor" , 1.0 );
     }
 
     /**
@@ -82,7 +84,7 @@ namespace Fem
       // methods
       static const std::string odeSolver[]  = { "EX", "IM" ,"IMEX", "IMEX+"  };
       std::string key( keyPrefix_ + "odesolver" );
-      return Fem::Parameter::getEnum( key, odeSolver, 0 );
+      return parameter().getEnum( key, odeSolver, 0 );
     }
 
     /**
@@ -95,11 +97,10 @@ namespace Fem
     {
       std::string key( keyPrefix_ + "order");
       if ( Fem :: Parameter :: exists( key ) )
-        return Fem::Parameter::getValue< int > ( key );
+        return parameter().getValue< int > ( key );
       else
         return defaultRKOrder ;
     }
-
   };
 
 
@@ -162,7 +163,9 @@ namespace Fem
     {
       template < class OdeParameter >
       static solverpair_t
-      createExplicitSolver( Op& op, Fem::TimeProviderBase& tp, const int rkSteps, const OdeParameter& param, const std::string& name = ""  )
+      createExplicitSolver( Op& op, Fem::TimeProviderBase& tp, const int rkSteps, const OdeParameter& param,
+                            const Dune::Fem::ParameterReader &parameter,
+                            const std::string& name = ""  )
       {
         typedef DuneODE :: ExplicitRungeKuttaSolver< DiscreteFunctionType >          ExplicitOdeSolverType;
         return solverpair_t( new ExplicitOdeSolverType( op, tp, rkSteps ), nullptr );
@@ -170,7 +173,9 @@ namespace Fem
 
       template < class OdeParameter >
       static solverpair_t
-      createImplicitSolver( Op& op, Fem::TimeProviderBase& tp, const int rkSteps, const OdeParameter& param, const std::string& name = "" )
+      createImplicitSolver( Op& op, Fem::TimeProviderBase& tp, const int rkSteps, const OdeParameter& param,
+                            const Dune::Fem::ParameterReader &parameter,
+                            const std::string& name = "" )
       {
 #ifdef COUNT_FLOPS
         return solverpair_t();
@@ -185,16 +190,19 @@ namespace Fem
         typedef DuneODE::ImplicitRungeKuttaSolver< HelmholtzOperatorType,
                       NonlinearInverseOperatorType > ImplicitOdeSolverType;
 
-        typedef typename NonlinearInverseOperatorType::ParametersType NonlinParametersType;
+        typedef typename NonlinearInverseOperatorType::ParameterType NonlinParametersType;
 
-        return solverpair_t(new ImplicitOdeSolverType( *helmOp, tp, rkSteps, param, NonlinParametersType( ParameterKey::generate( name, "fem.solver.newton." ) ) ), helmOp );
+        return solverpair_t(new ImplicitOdeSolverType( *helmOp, tp, rkSteps, param, NonlinParametersType( parameter ) ),
+                            helmOp );
 #endif
       }
 
       template < class ExplOp, class ImplOp, class OdeParameter >
       static solverpair_t
       createSemiImplicitSolver( ExplOp& explOp, ImplOp& implOp, Fem::TimeProviderBase& tp,
-                                const int rkSteps, const OdeParameter& param, const std::string& name = "" )
+                                const int rkSteps, const OdeParameter& param,
+                                const Dune::Fem::ParameterReader &parameter,
+                                const std::string& name = "" )
       {
 #ifdef COUNT_FLOPS
         return solverpair_t();
@@ -210,10 +218,11 @@ namespace Fem
                       HelmholtzOperatorType, NonlinearInverseOperatorType > SemiImplicitOdeSolverType ;
 
 
-        typedef typename NonlinearInverseOperatorType::ParametersType NonlinParametersType;
+        typedef typename NonlinearInverseOperatorType::ParameterType NonlinParametersType;
 
 
-        return solverpair_t(new SemiImplicitOdeSolverType( explOp, *helmOp, tp, rkSteps, param, NonlinParametersType( ParameterKey::generate( name, "fem.solver.newton." ) ) ), helmOp );
+        return solverpair_t(new SemiImplicitOdeSolverType( explOp, *helmOp, tp, rkSteps, param, NonlinParametersType( parameter ) ),
+                            helmOp );
 #endif
       }
 
@@ -248,13 +257,14 @@ namespace Fem
                       OperatorType& op,
                       ExplicitOperatorType& advOp,
                       ImplicitOperatorType& diffOp,
-                      const std::string name = "" )
+                      const std::string name = "",
+                      const Dune::Fem::ParameterReader &parameter = Dune::Fem::Parameter::container() )
      : operator_( op ),
        timeProvider_( tp ),
        name_( name ),
        explicitOperator_( advOp ),
        implicitOperator_( diffOp ),
-       param_( new RungeKuttaSolverParameters( ParameterKey::generate( name_, "fem.ode." ) ) ),
+       param_( new RungeKuttaSolverParameters( ParameterKey::generate( name_, "fem.ode." ), parameter ) ),
        explicitSolver_( 0 ),
        odeSolver_( 0 ),
        helmholtzOperator_( 0 ),
@@ -271,11 +281,11 @@ namespace Fem
       // create implicit or explicit ode solver
       if( odeSolverType_ == 0 )
       {
-        solver = OdeSolversType :: createExplicitSolver( operator_, tp, rkSteps_, *param_, name_ );
+        solver = OdeSolversType :: createExplicitSolver( operator_, tp, rkSteps_, *param_, parameter, name_ );
       }
       else if (odeSolverType_ == 1)
       {
-        solver = OdeSolversType :: createImplicitSolver( operator_, tp, rkSteps_, *param_, name_ );
+        solver = OdeSolversType :: createImplicitSolver( operator_, tp, rkSteps_, *param_, parameter, name_ );
       }
       else if( odeSolverType_ > 1 )
       {
@@ -285,11 +295,11 @@ namespace Fem
           DUNE_THROW(Dune::InvalidStateException,"Advection and Diffusion operator are the same, therefore IMEX cannot work!");
         }
 
-        solver = OdeSolversType :: createSemiImplicitSolver( explicitOperator_, implicitOperator_, tp, rkSteps_, *param_, name_ );
+        solver = OdeSolversType :: createSemiImplicitSolver( explicitOperator_, implicitOperator_, tp, rkSteps_, *param_, parameter, name_ );
 
         // IMEX+
         if( odeSolverType_ == 3 )
-          explicitSolver_ = OdeSolversType :: createExplicitSolver( operator_, tp, rkSteps_, *param_, name_ ).first;
+          explicitSolver_ = OdeSolversType :: createExplicitSolver( operator_, tp, rkSteps_, *param_, parameter, name_ ).first;
       }
       else
       {
