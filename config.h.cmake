@@ -13,6 +13,6 @@
 #define DUNE_FEM_DG_VERSION_REVISION ${DUNE_FEM_DG_VERSION_REVISION}
 
 /* Define if NETCDF has been found */
-#cmakedefine HAVE_NETCDF ENABLE_NETCDF
+#cmakedefine HAVE_NETCDF 1
 
 /* end dune-fem-dg */
