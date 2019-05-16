@@ -4,6 +4,7 @@ import dune.create as create
 from dune.fem.function import integrate
 from dune.ufl import Constant
 from ufl import dot, SpatialCoordinate
+from dune.femdg import femDGOperator
 
 def run(Model, initial, x0,x1,N, endTime, name, exact,
         polOrder, limiter="default", startLevel=0,
@@ -37,7 +38,7 @@ def run(Model, initial, x0,x1,N, endTime, name, exact,
     # create and initialize solution
     u_h = space.interpolate(initial, name='u_h')
     # create solution scheme, i.e. operator and ODE solver
-    operator = create.scheme("femDG",Model, space, limiter=limiter, threading=True, parameters=parameters )
+    operator = femDGOperator(Model, space, limiter=limiter, threading=True, parameters=parameters )
     # limit initial data if necessary
     operator.applyLimiter( u_h );
 
