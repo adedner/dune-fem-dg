@@ -1,9 +1,3 @@
-from os import environ
-if environ.get('DUNE_PY_DIR') is None:
-    import sys
-    print("ERROR: Dune variables not set, source variables.sh first")
-    sys.exit()
-
 from dune.fem import parameter
 from scheme import run
 
