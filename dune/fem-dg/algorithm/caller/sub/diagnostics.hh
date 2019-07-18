@@ -75,7 +75,7 @@ namespace Fem
       dataInt_.insert( std::make_pair(name, diagnosticsData ) );
     }
 
-    const double getData( const std::string name )
+    double getData( const std::string name )
     {
       if( dataInt_.find(name) != dataInt_.end() )
       {

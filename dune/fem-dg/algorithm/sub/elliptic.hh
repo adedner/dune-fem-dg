@@ -312,7 +312,7 @@ namespace Fem
       // set polynomial order to 2 by default
       PolOrderStructure() : val_( -1 ) {}
       explicit PolOrderStructure(int init) : val_( init ) {}
-      const int value() const
+      int value() const
       {
         assert( val_ > 0 );
         return val_;
@@ -475,7 +475,7 @@ namespace Fem
 
     int maxNumberOfElements() const { return 0; }
 
-    const int finestLevel() const { return 0; }
+    int finestLevel() const { return 0; }
 
     // return some info
    // const typename SigmaEstimatorType::SigmaDiscreteFunctionType& sigma()
@@ -560,7 +560,7 @@ namespace Fem
 
     int maxNumberOfElements() const { return 0; }
 
-    const int finestLevel() const { return 0; }
+    int finestLevel() const { return 0; }
 
     // return some info
     const typename SigmaEstimatorType::SigmaDiscreteFunctionType& sigma()
