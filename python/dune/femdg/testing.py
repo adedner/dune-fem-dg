@@ -33,7 +33,7 @@ def run(Model, initial, x0,x1,N, endTime, name, exact,
     saveTime = saveStep
 
     # create discrete function space
-    space = create.space( space, grid, order=polOrder, dimrange=dimR)
+    space = create.space( space, grid, order=polOrder, dimRange=dimR)
     # create and initialize solution
     u_h = space.interpolate(initial, name='u_h')
     # create solution scheme, i.e. operator and ODE solver
