@@ -152,6 +152,8 @@ namespace Fem
     typedef DuneODE :: OdeSolverInterface< DestinationType >        OdeSolverInterfaceType;
     typedef typename OdeSolverInterfaceType :: MonitorType MonitorType;
 
+    typedef DiscreteFunctionType DomainFunctionType;
+    typedef DiscreteFunctionType RangeFunctionType;
 
     typedef Dune::Fem::Operator< DestinationType, DestinationType > HelmHoltzOperatorType ;
 
@@ -315,13 +317,9 @@ namespace Fem
       helmholtzOperator_ = solver.second;
     }
 
-    RungeKuttaSolver( OperatorType& op,
-                      ExplicitOperatorType& advOp,
-                      ImplicitOperatorType& diffOp,
-                      const std::string name = "",
-                      const Dune::Fem::ParameterReader &parameter = Dune::Fem::Parameter::container() )
+    RungeKuttaSolver( OperatorType& op )
      : RungeKuttaSolver( *(new TimeProviderType( op.space().gridPart().comm() )),
-                         op, advOp, diffOp, name, parameter )
+                         op, op, op, "PyRK" )
     {
       tpPtr_.reset( static_cast< TimeProviderType* > (&timeProvider_) );
     }
@@ -360,6 +358,12 @@ namespace Fem
       }
     }
 
+    void operator () (const DestinationType& U, DestinationType& dest )
+    {
+      dest.assign( U );
+      solve( dest );
+    }
+
     //! solver the ODE
     void solve( DestinationType& U )
     {
@@ -375,9 +379,9 @@ namespace Fem
       Dune::Timer timer ;
 
       // switch upwind direction
-      operator_.switchupwind();
-      explicitOperator_.switchupwind();
-      implicitOperator_.switchupwind();
+      //operator_.switchupwind();
+      //explicitOperator_.switchupwind();
+      //implicitOperator_.switchupwind();
 
       // reset compute time counter
       resetComputeTime();
@@ -450,20 +454,21 @@ namespace Fem
     {
       if( useImex_ )
       {
-        return explicitOperator_.computeTime() +
-               implicitOperator_.computeTime() ;
+        return 0.0;
+          //explicitOperator_.computeTime() +
+          //     implicitOperator_.computeTime() ;
       }
       else
-        return operator_.computeTime();
+        return 0.0;//operator_.computeTime();
     }
 
     //! return number of elements meat during operator evaluation
     size_t numberOfElements() const
     {
       if( useImex_ )
-        return explicitOperator_.numberOfElements();
+        return 0; //explicitOperator_.numberOfElements();
       else
-        return operator_.numberOfElements();
+        return 0; //operator_.numberOfElements();
     }
 
     void description(std::ostream&) const {}
@@ -474,11 +479,13 @@ namespace Fem
     {
       std::string latexInfo;
 
+      /*
       if ((odeSolverType_==0) || (odeSolverType_==1))
         latexInfo = operator_.description();
       else
         latexInfo = explicitOperator_.description()
                     + implicitOperator_.description();
+                    */
 
       std::stringstream odeInfo;
       odeSolver_->description( odeInfo );
@@ -496,11 +503,18 @@ namespace Fem
     void resetComputeTime() const
     {
       // this will reset the internal time counters
-      operator_.computeTime() ;
-      explicitOperator_.computeTime();
-      implicitOperator_.computeTime();
+      //operator_.computeTime() ;
+      //explicitOperator_.computeTime();
+      //implicitOperator_.computeTime();
     }
   }; // end RungeKuttaSolver
+
+  template <class DestinationType>
+  using SimpleRungeKuttaSolver = RungeKuttaSolver<
+          Dune::Fem::SpaceOperatorInterface< DestinationType >,
+          Dune::Fem::SpaceOperatorInterface< DestinationType >,
+          Dune::Fem::SpaceOperatorInterface< DestinationType >,
+          Dune::Fem::KrylovInverseOperator< DestinationType > >;
 
 } // end namespace
 } // end namespace Dune

@@ -460,22 +460,24 @@ def createRungeKuttaSolver( space, fullOperator, explOperator=None, implOperator
 
     _, domainFunctionIncludes, domainFunctionType, _, _, _ = space.storage
 
-    fullOperatorType = 'Dune::Fem::SpaceOperatorInterface< Dune::Fem::AdaptiveDiscreteFunction< ' + spaceType + '> >'
-    explOperatorType = 'Dune::Fem::SpaceOperatorInterface< Dune::Fem::AdaptiveDiscreteFunction< ' + spaceType + '> >'
-    implOperatorType = 'Dune::Fem::SpaceOperatorInterface< Dune::Fem::AdaptiveDiscreteFunction< ' + spaceType + '> >'
+    fullOperatorType = 'Dune::Fem::SpaceOperatorInterface< ' + domainFunctionType + '>'
+    explOperatorType = fullOperatorType
+    implOperatorType = fullOperatorType
     #fullOperatorType = fullOperator._typeName
     #explOperatorType = explOperator._typeName
     #implOperatorType = implOperator._typeName
-    linearInverseOperatorType = 'Dune::Fem::KrylovInverseOperator< Dune::Fem::AdaptiveDiscreteFunction< ' + spaceType + '> >'
     #linearInverseOperatorType = 'typename Dune::Fem::MatrixFreeSolverSelector< Dune::Fem::Solver::Enum::fem, false > :: template LinearInverseOperatorType< ' + spaceType + ', ' + spaceType + '>::type '
 
-    typeName = 'Dune::Fem::RungeKuttaSolver< ' + fullOperatorType + ', ' + explOperatorType + ', ' + implOperatorType + ', ' + linearInverseOperatorType + '>'
+    typeName = 'Dune::Fem::SimpleRungeKuttaSolver< ' + domainFunctionType + '>'
 
-    constructor = Constructor([fullOperatorType + ' &op, ' + explOperatorType + ' &explOp, ' + implOperatorType + ' &implOp'],
-                              ['return new ' + typeName + '(op, explOp, implOp);'],
-                              ['"op"_a', '"explOp"_a', '"implOp"_a',
-                               'pybind11::keep_alive< 1, 2 >()', 'pybind11::keep_alive< 1, 3 >()'])
+    constructor = Constructor([fullOperatorType + ' &op'],
+                              ['return new ' + typeName + '(op);'],
+                              ['"op"_a','pybind11::keep_alive< 1, 2 >()' ])
+    #constructor = Constructor([fullOperatorType + ' &op, ' + explOperatorType + ' &explOp, ' + implOperatorType + ' &implOp'],
+    #                          ['return new ' + typeName + '(op, explOp, implOp);'],
+    #                          ['"op"_a', '"explOp"_a', '"implOp"_a',
+    #                           'pybind11::keep_alive< 1, 2 >()', 'pybind11::keep_alive< 1, 3 >()','pybind11::keep_alive< 1, 4 >()' ])
 
-    solve = Method('step', '&DuneType::solve', extra=['"target"_a'])
+    #solve = Method('step', '&DuneType::solve', extra=['"target"_a'])
 
-    return load(includes, typeName, constructor, solve).Operator( fullOperator, explOperator, implOperator )
+    return load(includes, typeName, constructor).Operator( fullOperator )
