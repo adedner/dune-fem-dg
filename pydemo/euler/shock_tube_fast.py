@@ -33,7 +33,7 @@ def initialize(space):
         return space.interpolate(initial, name='u_h')
     else:
         lagOrder = 1 # space.order
-        spacelag = create.space("lagrange", space.grid, order=lagOrder, dimrange=space.dimRange)
+        spacelag = create.space("lagrange", space.grid, order=lagOrder, dimRange=space.dimRange)
         u_h = spacelag.interpolate(initial, name='tmp')
         return space.interpolate(u_h, name='u_h')
 
@@ -43,7 +43,7 @@ def useGalerkinOp():
     # some sign error or something else leading to wrong results
     # still needs fixing
     spaceName = "finitevolume"
-    space = create.space(spaceName, grid, dimrange=dimR)
+    space = create.space(spaceName, grid, dimRange=dimR)
 
     n = FacetNormal(space.cell())
 
@@ -77,9 +77,9 @@ def useODESolver(polOrder=2, limiter='default'):
     polOrder = polOrder
     if False:
         # needs change in dune/fem-dg/operator/dg/passtraits.hh
-        space = create.space("dglegendre", grid, order=polOrder, dimrange=dimR, hierarchical=False)
+        space = create.space("dglegendre", grid, order=polOrder, dimRange=dimR, hierarchical=False)
     else:
-        space = create.space("dgonb", grid, order=polOrder, dimrange=dimR)
+        space = create.space("dgonb", grid, order=polOrder, dimRange=dimR)
     u_h = initialize(space)
     # rho, v, p = Model.toPrim(u_h)
     operator = createFemDGSolver( Model, space, limiter=limiter )

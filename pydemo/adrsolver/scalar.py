@@ -108,28 +108,36 @@ def sinTransportProblem():
            [-1, 0], [1, 0.1], [50, 7], 0.2,\
            "sin", lambda t: u0(t,x)
 
-def pulse(eps=None):
-    center  = as_vector([ 0.5,0.5 ])
-    x0 = x[0] - center[0]
-    x1 = x[1] - center[1]
+def pulse(velo=None,eps=None):
+    if velo is None:
+        center  = as_vector([ 0.5,0.5 ])
+        x0 = x[0] - center[0]
+        x1 = x[1] - center[1]
 
-    ux = -4.0*x1
-    uy =  4.0*x0
+        ux = -4.0*x1
+        uy =  4.0*x0
 
-    def u0(t,x):
-        sig2 = 0.004
-        if eps is None:
-            sig2PlusDt4 = sig2
-        else:
-            sig2PlusDt4 = sig2+(4.0*eps*t)
-        xq = ( x0*cos(4.0*t) + x1*sin(4.0*t)) + 0.25
-        yq = (-x0*sin(4.0*t) + x1*cos(4.0*t))
-        return as_vector( [(sig2/ (sig2PlusDt4) ) * exp (-( xq*xq + yq*yq ) / sig2PlusDt4 )] )
-    return LinearAdvectionDiffusion1DDirichlet([ux,uy],eps,u0), u0(0,x),\
-           [0, 0], [1, 1], [16,16], 1.0,\
-           "pulse"+str(eps), lambda t: u0(t,x)
+        def u0(t,x):
+            sig2 = 0.004
+            if eps is None:
+                sig2PlusDt4 = sig2
+            else:
+                sig2PlusDt4 = sig2+(4.0*eps*t)
+            xq = ( x0*cos(4.0*t) + x1*sin(4.0*t)) + 0.25
+            yq = (-x0*sin(4.0*t) + x1*cos(4.0*t))
+            return as_vector( [(sig2/ (sig2PlusDt4) ) * exp (-( xq*xq + yq*yq ) / sig2PlusDt4 )] )
+        return LinearAdvectionDiffusion1DDirichlet([ux,uy],eps,u0), u0(0,x),\
+               [0, 0], [1, 1], [16,16], 1.0,\
+               "pulse"+str(eps), lambda t: u0(t,x)
+    else:
+        return LinearAdvectionDiffusion1DDirichlet(velo,eps,u0), u0(0,x),\
+               [0, 0], [1, 1], [16,16], 1.0,\
+               "pulse"+str(eps), lambda t: u0(t,x)
 def diffusivePulse():
     return pulse(0.001)
+
+def veloDiffusivePulse(velo):
+    return pulse(velo,0.001)
 
 def burgersShock():
     Model = Burgers1D
