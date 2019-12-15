@@ -106,7 +106,7 @@ namespace Fem
       dataDouble_.insert( std::make_pair(name, std::make_tuple( monitorData, externalMonitorData, internal ) ) );
     }
 
-    const double getData( const std::string name )
+    double getData( const std::string name )
     {
       if( dataInt_.find(name) != dataInt_.end() )
       {

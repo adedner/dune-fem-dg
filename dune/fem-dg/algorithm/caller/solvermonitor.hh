@@ -148,7 +148,7 @@ namespace Fem
       ForLoopType< Finalize >::apply( tuple_, alg->gridWidth(), alg->gridSize() );
     }
 
-    const double getData( const std::string name, CombinationType comb = CombinationType::max ) const
+    double getData( const std::string name, CombinationType comb = CombinationType::max ) const
     {
       double res = (comb == CombinationType::min) ? std::numeric_limits<double>::max() : 0.0;
       ForLoopType< GetData >::apply( tuple_, res, name, comb );
@@ -172,7 +172,7 @@ namespace Fem
     {}
 
     template <class ... Args>
-    const double getData( Args&& ... ) const
+    double getData( Args&& ... ) const
     { return 0.0; }
 
   };

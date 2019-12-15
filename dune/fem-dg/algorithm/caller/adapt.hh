@@ -421,7 +421,7 @@ namespace Fem
       rp_.reset( new RestrictionProlongationType( *(std::get< i >( tuple_ )->adaptationSolution() )... ) );
     }
 
-    const int finestLevel() const
+    int finestLevel() const
     {
       //int res = 0;
       //Dune::Hybrid::forEach(tuple_,
@@ -517,10 +517,10 @@ namespace Fem
     void setAdaptation( Args&& ... ){}
 
     template< class ... Args >
-    const double adaptationTime( Args&& ... ) const { return 0.0; }
+    double adaptationTime( Args&& ... ) const { return 0.0; }
 
     template< class ... Args >
-    const double loadBalanceTime( Args&& ... ) const { return 0.0; }
+    double loadBalanceTime( Args&& ... ) const { return 0.0; }
   };
 
 }

@@ -65,7 +65,7 @@ namespace Fem
 
     int maxNumberOfElements() const { return 0; }
 
-    const int finestLevel() const { return 0; }
+    int finestLevel() const { return 0; }
   };
 
 
@@ -224,7 +224,7 @@ namespace Fem
     /**
      * \brief Returns the maximum finest level of the grid.
      */
-    const int finestLevel() const
+    int finestLevel() const
     {
       return adaptParam_.finestLevel();
     }
