@@ -478,6 +478,8 @@ def createRungeKuttaSolver( space, fullOperator, explOperator=None, implOperator
     #                          ['"op"_a', '"explOp"_a', '"implOp"_a',
     #                           'pybind11::keep_alive< 1, 2 >()', 'pybind11::keep_alive< 1, 3 >()','pybind11::keep_alive< 1, 4 >()' ])
 
+    solve = Method('solve', '''[]( DuneType &self, typename DuneType::DestinationType &u) { self.solve(u); }''' );
+
     #solve = Method('step', '&DuneType::solve', extra=['"target"_a'])
 
-    return load(includes, typeName, constructor).Operator( fullOperator )
+    return load(includes, typeName, constructor, solve).Operator( fullOperator )

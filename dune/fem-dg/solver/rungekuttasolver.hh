@@ -123,6 +123,7 @@ namespace Fem
     typedef ImplicitOperator  ImplicitOperatorType;
 
     typedef DuneODE :: OdeSolverInterface< typename Operator :: DestinationType > BaseType;
+    typedef RungeKuttaSolver< Operator, ExplicitOperator, ImplicitOperator, LinearInverseOperator > ThisType;
 
     template <class AdvOp, class DiffOp>
     struct IsSame
@@ -358,10 +359,10 @@ namespace Fem
       }
     }
 
-    void operator () (const DestinationType& U, DestinationType& dest )
+    void operator () (const DestinationType& U, DestinationType& dest ) const
     {
       dest.assign( U );
-      solve( dest );
+      const_cast< ThisType& > (*this).solve( dest );
     }
 
     //! solver the ODE

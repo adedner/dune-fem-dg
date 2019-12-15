@@ -41,6 +41,7 @@ namespace Fem
              class DiffusionModel,
              class Additional>
 #ifdef EULER_WRAPPER_TEST
+#error
   class DGOperator : public DuneODE :: OdeSolverInterface< DestinationImp >
 #else
   class DGOperator : public Fem::SpaceOperatorInterface< DestinationImp >
