@@ -476,7 +476,6 @@ def createRungeKuttaSolver( space, fullOperator, explOperator=None, implOperator
                               ['"op"_a', '"explOp"_a', '"implOp"_a',
                                'pybind11::keep_alive< 1, 2 >()', 'pybind11::keep_alive< 1, 3 >()'])
 
-    # add method activated to inspect limited cells.
-    solve = Method('step', '&'+typeName+'::solve')
+    solve = Method('step', '&DuneType::solve', extra=['"target"_a'])
 
     return load(includes, typeName, constructor, solve).Operator( fullOperator, explOperator, implOperator )
