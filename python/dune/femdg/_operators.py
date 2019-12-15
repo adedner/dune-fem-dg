@@ -440,3 +440,40 @@ def femDGOperator(Model, space,
     return load(includes, typeName, constructor, setTimeStepSize, deltaT, applyLimiter, solve,
               preamble=writer.writer.getvalue()).\
                     Operator( space, advModel, diffModel, parameters=parameters )
+
+# RungeKutta solvers
+def createRungeKuttaSolver( fullOperator, explOperator=None, implOperator=None, imex='EX', butchertable=None ):
+
+    includes = ["dune/fem-dg/solver/rungekuttasolver.hh"]
+    includes += fullOperator._includes
+    if explOperator is None:
+        explOperator = fullOperator
+    else:
+        includes += explOperator._includes
+
+    if implOperator is None:
+        implOperator = fullOperator
+    else:
+        includes += implOperator._includes
+
+    space = fullOperator._space
+    spaceType = space._typeName
+
+    _, domainFunctionIncludes, domainFunctionType, _, _, _ = space.storage
+
+    fullOperatorType = fullOperator._typeName
+    explOperatorType = explOperator._typeName
+    implOperatorType = implOperator._typeName
+    linearInverseOperatorType = 'typename MatrixFreeSolverSelector< Solver::Enum::fem, false > :: template LinearInverseOperatorType< ' + spaceType + ', ' + spaceType + '>'
+
+    typeName = 'Dune::Fem::RungeKuttaSolver< ' + fullOperatorType + ', ' + explOperatorType + ', ' + implOperatorType + ', ' + linearInverseOperatorType + '>'
+
+    constructor = Constructor([fullOperatorType + ' &op, ' + explOperatorType + ' &explOp, ' + implOperatorType + ' &implOp'],
+                              ['return new ' + typeName + '(op, explOp, implOp);'],
+                              ['"op"_a', '"explOp"_a', '"implOp"_a',
+                               'pybind11::keep_alive< 1, 2 >()', 'pybind11::keep_alive< 1, 3 >()', 'pybind11::keep_alive< 1, 4 >()'])
+
+    # add method activated to inspect limited cells.
+    solve = Method('solve', '&'+typeName+'::solve')
+
+    return load(includes, typeName, constructor, solve).Operator( fullOperator, explOperator, implOperator )
