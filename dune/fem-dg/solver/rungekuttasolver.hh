@@ -8,6 +8,7 @@
 #include <dune/fem/solver/rungekutta/semiimplicit.hh>
 #include <dune/fem/solver/newtoninverseoperator.hh>
 #include <dune/fem/solver/krylovinverseoperators.hh>
+#include <dune/fem/solver/timeprovider.hh>
 
 #include <dune/fem/operator/dghelmholtz.hh>
 #include <dune/fem-dg/misc/parameterkey.hh>
@@ -144,6 +145,9 @@ namespace Fem
   public:
     typedef typename OperatorType :: DestinationType DestinationType ;
     typedef DestinationType  DiscreteFunctionType;
+    typedef typename DiscreteFunctionType :: DiscreteFunctionSpaceType :: GridType GridType;
+    typedef typename GridType :: CollectiveCommunication            CollectiveCommunicationType;
+    typedef Dune::Fem::TimeProvider< CollectiveCommunicationType >  TimeProviderType;
 
     typedef DuneODE :: OdeSolverInterface< DestinationType >        OdeSolverInterfaceType;
     typedef typename OdeSolverInterfaceType :: MonitorType MonitorType;
@@ -235,6 +239,7 @@ namespace Fem
   protected:
     OperatorType&           operator_;
     Fem::TimeProviderBase&  timeProvider_;
+    std::unique_ptr< TimeProviderType > tpPtr_;
 
     const std::string      name_;
     ExplicitOperatorType&  explicitOperator_;
@@ -310,6 +315,17 @@ namespace Fem
       helmholtzOperator_ = solver.second;
     }
 
+    RungeKuttaSolver( OperatorType& op,
+                      ExplicitOperatorType& advOp,
+                      ImplicitOperatorType& diffOp,
+                      const std::string name = "",
+                      const Dune::Fem::ParameterReader &parameter = Dune::Fem::Parameter::container() )
+     : RungeKuttaSolver( *(new TimeProviderType( op.space().gridPart().comm() )),
+                         op, advOp, diffOp, name, parameter )
+    {
+      tpPtr_.reset( static_cast< TimeProviderType* > (&timeProvider_) );
+    }
+
     //! destructor
     ~RungeKuttaSolver()
     {
@@ -342,6 +358,13 @@ namespace Fem
         advStep  = steps[ 0 ];
         diffStep = steps[ 1 ];
       }
+    }
+
+    //! solver the ODE
+    void solve( DestinationType& U )
+    {
+      MonitorType monitor;
+      solve( U, monitor );
     }
 
     //! solver the ODE

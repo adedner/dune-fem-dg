@@ -442,9 +442,9 @@ def femDGOperator(Model, space,
                     Operator( space, advModel, diffModel, parameters=parameters )
 
 # RungeKutta solvers
-def createRungeKuttaSolver( fullOperator, explOperator=None, implOperator=None, imex='EX', butchertable=None ):
+def createRungeKuttaSolver( space, fullOperator, explOperator=None, implOperator=None, imex='EX', butchertable=None ):
 
-    includes = ["dune/fem-dg/solver/rungekuttasolver.hh"]
+    includes = ["dune/fem-dg/solver/rungekuttasolver.hh", "dune/fem-dg/misc/algorithmcreatorselector.hh"]
     includes += fullOperator._includes
     if explOperator is None:
         explOperator = fullOperator
@@ -456,24 +456,27 @@ def createRungeKuttaSolver( fullOperator, explOperator=None, implOperator=None, 
     else:
         includes += implOperator._includes
 
-    space = fullOperator._space
     spaceType = space._typeName
 
     _, domainFunctionIncludes, domainFunctionType, _, _, _ = space.storage
 
-    fullOperatorType = fullOperator._typeName
-    explOperatorType = explOperator._typeName
-    implOperatorType = implOperator._typeName
-    linearInverseOperatorType = 'typename MatrixFreeSolverSelector< Solver::Enum::fem, false > :: template LinearInverseOperatorType< ' + spaceType + ', ' + spaceType + '>'
+    fullOperatorType = 'Dune::Fem::SpaceOperatorInterface< Dune::Fem::AdaptiveDiscreteFunction< ' + spaceType + '> >'
+    explOperatorType = 'Dune::Fem::SpaceOperatorInterface< Dune::Fem::AdaptiveDiscreteFunction< ' + spaceType + '> >'
+    implOperatorType = 'Dune::Fem::SpaceOperatorInterface< Dune::Fem::AdaptiveDiscreteFunction< ' + spaceType + '> >'
+    #fullOperatorType = fullOperator._typeName
+    #explOperatorType = explOperator._typeName
+    #implOperatorType = implOperator._typeName
+    linearInverseOperatorType = 'Dune::Fem::KrylovInverseOperator< Dune::Fem::AdaptiveDiscreteFunction< ' + spaceType + '> >'
+    #linearInverseOperatorType = 'typename Dune::Fem::MatrixFreeSolverSelector< Dune::Fem::Solver::Enum::fem, false > :: template LinearInverseOperatorType< ' + spaceType + ', ' + spaceType + '>::type '
 
     typeName = 'Dune::Fem::RungeKuttaSolver< ' + fullOperatorType + ', ' + explOperatorType + ', ' + implOperatorType + ', ' + linearInverseOperatorType + '>'
 
     constructor = Constructor([fullOperatorType + ' &op, ' + explOperatorType + ' &explOp, ' + implOperatorType + ' &implOp'],
                               ['return new ' + typeName + '(op, explOp, implOp);'],
                               ['"op"_a', '"explOp"_a', '"implOp"_a',
-                               'pybind11::keep_alive< 1, 2 >()', 'pybind11::keep_alive< 1, 3 >()', 'pybind11::keep_alive< 1, 4 >()'])
+                               'pybind11::keep_alive< 1, 2 >()', 'pybind11::keep_alive< 1, 3 >()'])
 
     # add method activated to inspect limited cells.
-    solve = Method('solve', '&'+typeName+'::solve')
+    solve = Method('step', '&'+typeName+'::solve')
 
     return load(includes, typeName, constructor, solve).Operator( fullOperator, explOperator, implOperator )
