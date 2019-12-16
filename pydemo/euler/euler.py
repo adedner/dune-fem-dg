@@ -44,6 +44,11 @@ def CompressibleEuler(dim, gamma):
             pL = Model.pressure(U)
             pR = Model.pressure(V)
             return (pL - pR)/(0.5*(pL + pR))
+        def rotateForth(u, n):
+            return [ u[0], n[0]*u[1] + n[1]*u[2], -n[1]*u[1] + n[0]*u[2], u[3] ]
+        def rotateBack(u, n):
+            return [ u[0], n[0]*u[1] - n[1]*u[2],  n[1]*u[1] + n[0]*u[2], u[3] ]
+
     return Model
 
 def CompressibleEulerNeuman(dim, gamma, bnd=range(1,5)):
@@ -61,6 +66,15 @@ def CompressibleEulerSlip(dim, gamma,bnd=range(1,5)):
             return as_vector([ 0, *(p*n), 0 ])
         boundary = {bnd: outflowFlux}
     return Model
+def CompressibleEulerReflection(dim, gamma,bnd=range(1,5)):
+    class Model(CompressibleEuler(dim,gamma)):
+        def reflection(t,x,u,n):
+            uRot = CompressibleEuler(dim,gamma).rotateForth(u, n)
+            # flip sign of x-momentum (velocity)
+            uRot[ 1 ] = -uRot[ 1 ]
+            return as_vector( CompressibleEuler(dim,gamma).rotateBack(uRot, n) )
+        boundary = {bnd: reflection}
+    return Model
 
 def riemanProblem(Model,x,x0,UL,UR):
     return Model.toCons( conditional(x<x0,as_vector(UL),as_vector(UR)) )
@@ -74,7 +88,7 @@ def constant(dim,gamma):
 def sod(dim=2,gamma=1.4):
     space = Space(dim,dim+2)
     x = SpatialCoordinate(space.cell())
-    Model = CompressibleEulerDirichlet(dim,gamma)
+    Model = CompressibleEulerReflection(dim,gamma)
     return Model,\
            riemanProblem( Model, x[0], 0.5, [1,0,0,1], [0.125,0,0,0.1]),\
            [0, 0], [1, 0.25], [64, 16], 0.15,\
