@@ -101,7 +101,9 @@ def femDGSolver(Model, space,
     v = TestFunction(space)
     n = FacetNormal(space.cell())
     x = SpatialCoordinate(space.cell())
-    t = Constant(initialTime,"t")
+    # this variable needs to be called time in order
+    # to work with the implementation in DiffusionModel
+    t = Constant(initialTime,"time")
     predefined = {}
     spatial = Variable('const auto', 'y')
     predefined.update( {x: UnformattedExpression('auto', 'entity.geometry().global( Dune::Fem::coordinate( x ) )') })

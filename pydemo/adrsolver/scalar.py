@@ -1,7 +1,7 @@
 from ufl import *
 from dune.ufl import Space
 class Transport1D:
-    dimension = 1
+    dimRange = 1
 
     def F_c(t,x,U):
         return as_matrix( [ [U[0], 0] ] )
@@ -20,7 +20,7 @@ class Transport1D:
 def LinearAdvectionDiffusion1D(v,eps):
     if v is not None: v = as_vector(v)
     class Model:
-        dimension = 1
+        dimRange = 1
         if v is not None:
             def F_c(t,x,U):
                 return as_matrix( [[ *(v*U[0]) ]] )
@@ -63,7 +63,7 @@ def LinearAdvectionDiffusion1DDirichlet(v,eps,bnd):
 
 # burgers problems still need to be adapted to new API
 class Burgers1D:
-    dimension = 1
+    dimRange = 1
     def F_c(t,x,U):
         return as_matrix( [ [U[0]*U[0]/2, 0] ] )
 

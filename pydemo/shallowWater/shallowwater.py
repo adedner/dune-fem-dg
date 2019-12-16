@@ -14,7 +14,7 @@ def ShallowWater(topography,g):
             return U[0]+topography(x), Model.velo(U)
 
         # interface methods
-        dimension = dim+1
+        dimRange = dim+1
         def F_c(t,x,U):
             assert dim==2
             h, v = U[0], Model.velo(U)

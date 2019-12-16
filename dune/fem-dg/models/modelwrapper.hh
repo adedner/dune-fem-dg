@@ -163,6 +163,9 @@ namespace Fem
     void setTime (const double t)
     {
       BaseType::setTime(t);
+      // update model times (only if time method is available on these models)
+      advection_.setTime(t);
+      diffusion_.setTime(t);
     }
 
     double gamma () const { return problem_.gamma(); }
