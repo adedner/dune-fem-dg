@@ -434,10 +434,10 @@ def femDGSolver(Model, space,
     deltaT = Method('deltaT', '&DuneType::deltaT')
     # add method to set a fixed time step
     setTimeStepSize = Method('setTimeStepSize', '&DuneType::setTimeStepSize')
-    # add method to solve (not requiring u_h_n)
-    solve = Method('step', '&DuneType::solve', extra=['"target"_a'])
+    # add method to solve one step (not requiring u_h_n)
+    step = Method('step', '&DuneType::step', extra=['"target"_a'])
 
-    return load(includes, typeName, constructor, setTimeStepSize, deltaT, applyLimiter, solve,
+    return load(includes, typeName, constructor, setTimeStepSize, deltaT, applyLimiter, step,
               preamble=writer.writer.getvalue()).\
                     Operator( space, advModel, diffModel, parameters=parameters )
 

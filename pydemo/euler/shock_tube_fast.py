@@ -4,7 +4,7 @@ from dune.fem import parameter
 import dune.create as create
 from dune.models.elliptic.formfiles import loadModels
 from llf import NumFlux
-from dune.femdg import createFemDGSolver
+from dune.femdg import femDGSolver
 from ufl import *
 
 gamma = 1.4
@@ -13,10 +13,18 @@ dim = 2
 from euler import sod as problem
 #from euler import radialSod3 as problem
 
-Model, initial, x0,x1,N, endTime, name = problem(dim,gamma)
+Model, initial, x0,x1,N, endTime, name, exact = problem(dim,gamma)
 
 parameter.append({"fem.verboserank": -1})
 parameter.append("parameter")
+
+parameters = {"fem.ode.odesolver": "EX",
+              "fem.timeprovider.factor": 0.45,
+              "dgadvectionflux.method": "EULER-HLLC",
+              "femdg.limiter.limiteps": 1,
+              "femdg.limiter.admissiblefunctions": 1,
+              "femdg.limiter.tolerance": 1}
+
 
 grid = structuredGrid(x0,x1,N)
 # grid = create.grid("ALUSimplex", cartesianDomain(x0,x1,N))
@@ -82,7 +90,7 @@ def useODESolver(polOrder=2, limiter='default'):
         space = create.space("dgonb", grid, order=polOrder, dimRange=dimR)
     u_h = initialize(space)
     # rho, v, p = Model.toPrim(u_h)
-    operator = createFemDGSolver( Model, space, limiter=limiter )
+    operator = femDGSolver( Model, space, limiter=limiter, parameters=parameters )
     # operator.setTimeStepSize(dt)
 
     operator.applyLimiter( u_h );
@@ -96,7 +104,7 @@ def useODESolver(polOrder=2, limiter='default'):
     start = time.time()
     tcount = 0
     while t < endTime:
-        operator.solve(target=u_h)
+        operator.step(target=u_h)
         # operator.applyLimiter( u_h );
         dt = operator.deltaT()
         t += dt

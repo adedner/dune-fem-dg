@@ -41,7 +41,7 @@ def run(Model, initial, x0,x1,N, endTime, name, exact,
     # create solution scheme, i.e. operator and ODE solver
     operator = femDGOperator( Model, space, limiter=limiter, threading=True, parameters=parameters )
     explOp = operator.explicitOperator()
-    #rksolver = createRungeKuttaSolver( space, operator )
+    rksolver = createRungeKuttaSolver( space, operator )
 
     # limit initial data if necessary
     operator.applyLimiter( u_h );
@@ -77,7 +77,7 @@ def run(Model, initial, x0,x1,N, endTime, name, exact,
         if dt is not None:
             operator.setTimeStepSize(dt)
         # solver time step
-        #rksolver.step(target=u_h)
+        rksolver.step(target=u_h)
         #operator.step(target=u_h)
         # obtain new time step size
         dt = operator.deltaT()

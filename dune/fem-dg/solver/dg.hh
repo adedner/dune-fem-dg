@@ -199,7 +199,13 @@ namespace Fem
       }
     }
 
+    //! deprecated method
     void solve( DestinationType& dest ) const
+    {
+      step( dest );
+    }
+
+    void step( DestinationType& dest ) const
     {
       // check if initialization needs to be done
       checkInitialize( dest );
