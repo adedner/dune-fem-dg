@@ -16,14 +16,14 @@ from euler import sod as problem
 Model, initial, x0,x1,N, endTime, name, exact = problem(dim,gamma)
 
 parameter.append({"fem.verboserank": -1})
+parameter.append({"fem.timeprovider.factor": 0.25})
 parameter.append("parameter")
 
 parameters = {"fem.ode.odesolver": "EX",
-              "fem.timeprovider.factor": 0.45,
+              "fem.timeprovider.factor": "0.35",
               "dgadvectionflux.method": "EULER-HLLC",
-              "femdg.limiter.limiteps": 1,
               "femdg.limiter.admissiblefunctions": 1,
-              "femdg.limiter.tolerance": 1}
+              "femdg.limiter.tolerance": 1e-8}
 
 
 grid = structuredGrid(x0,x1,N)
@@ -71,7 +71,7 @@ def useGalerkinOp():
     start = time.time()
     while t < endTime:
         u_h_n.assign(u_h)
-        operator.solve(target=u_h)
+        operator.step(target=u_h)
         t += operator.model.dt
         if t > saveTime:
             count += 1
@@ -90,10 +90,10 @@ def useODESolver(polOrder=2, limiter='default'):
         space = create.space("dgonb", grid, order=polOrder, dimRange=dimR)
     u_h = initialize(space)
     # rho, v, p = Model.toPrim(u_h)
-    operator = femDGSolver( Model, space, limiter=limiter, parameters=parameters )
+    operator = femDGSolver( Model, space, limiter=limiter, threading=True, parameters=parameters )
     # operator.setTimeStepSize(dt)
 
-    operator.applyLimiter( u_h );
+    operator.applyLimiter( u_h )
     print("number of elements: ",grid.size(0),flush=True)
     grid.writeVTK(name,
         pointdata=[u_h],
@@ -127,19 +127,25 @@ def useODESolver(polOrder=2, limiter='default'):
         #cellvector={"velocity":v},
         number=count, subsampling=2)
 
-if True:
+scheme = 1
+
+if scheme == 0:
     # grid = structuredGrid(x0,x1,N)
-    grid = create.grid("ALUCube", cartesianDomain(x0,x1,N))
+    grid = create.grid("ALUSimplex", cartesianDomain(x0,x1,N))
+    #grid = create.grid("ALUCube", cartesianDomain(x0,x1,N))
     grid.hierarchicalGrid.globalRefine(1)
     # grid = create.view("adaptive", grid)
     useODESolver(2,'default')      # third order with limiter
-elif False:
-    N = [n*10 for n in N]
-    grid = structuredGrid(x0,x1,N)
+elif scheme == 1:
+    #N = [n*4 for n in N]
+    #grid = structuredGrid(x0,x1,N)
+    grid = create.grid("ALUSimplex", cartesianDomain(x0,x1,N))
+    #grid = create.grid("ALUCube", cartesianDomain(x0,x1,N))
+    grid.hierarchicalGrid.globalRefine(1)
     # grid = create.grid("ALUSimplex", cartesianDomain(x0,x1,N))
     useODESolver(0,None)           # FV scheme
-elif False:
-    N = [n*10 for n in N]
+elif scheme == 2:
+    N = [n*6 for n in N]
     grid = structuredGrid(x0,x1,N)
     # grid = create.grid("ALUSimplex", cartesianDomain(x0,x1,N))
     useODESolver(0,'default')      # FV scheme with limiter

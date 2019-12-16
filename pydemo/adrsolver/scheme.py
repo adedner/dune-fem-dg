@@ -27,7 +27,7 @@ def run(Model, initial, x0,x1,N, endTime, name, exact,
     # initial refinement of grid
     grid.hierarchicalGrid.globalRefine(startLevel)
 
-    dimR     = Model.dimension
+    dimR     = Model.dimRange
     t        = 0
     count    = 0
     saveTime = saveStep

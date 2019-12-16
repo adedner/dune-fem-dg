@@ -3,7 +3,7 @@ from dune.ufl import Space
 
 def CompressibleEuler(dim, gamma):
     class Model:
-        dimension = dim+2
+        dimRange = dim+2
         def velo(U):
             return as_vector( [U[i]/U[0] for i in range(1,dim+1)] )
         def rhoeps(U):
@@ -69,10 +69,11 @@ def CompressibleEulerSlip(dim, gamma,bnd=range(1,5)):
 def CompressibleEulerReflection(dim, gamma,bnd=range(1,5)):
     class Model(CompressibleEuler(dim,gamma)):
         def reflection(t,x,u,n):
-            uRot = CompressibleEuler(dim,gamma).rotateForth(u, n)
+            fakeN = [ n[0], n[1] ]
+            uRot = CompressibleEuler(dim,gamma).rotateForth(u, fakeN)
             # flip sign of x-momentum (velocity)
             uRot[ 1 ] = -uRot[ 1 ]
-            return as_vector( CompressibleEuler(dim,gamma).rotateBack(uRot, n) )
+            return as_vector( CompressibleEuler(dim,gamma).rotateBack(uRot, fakeN) )
         boundary = {bnd: reflection}
     return Model
 

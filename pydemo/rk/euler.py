@@ -3,7 +3,7 @@ from dune.ufl import Space
 
 def CompressibleEuler(dim, gamma):
     class Model:
-        dimension = dim+2
+        dimRange = dim+2
         def velo(U):
             return as_vector( [U[i]/U[0] for i in range(1,dim+1)] )
         def rhoeps(U):
