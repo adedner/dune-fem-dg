@@ -4,7 +4,7 @@ import dune.create as create
 from dune.fem.function import integrate
 from dune.ufl import Constant
 from ufl import dot, SpatialCoordinate
-from dune.femdg import femDGOperator, createRungeKuttaSolver
+from dune.femdg import femDGSolver, createRungeKuttaSolver
 
 def run(Model, initial, x0,x1,N, endTime, name, exact,
         polOrder, limiter="default", startLevel=0,
@@ -39,7 +39,7 @@ def run(Model, initial, x0,x1,N, endTime, name, exact,
     u_h = space.interpolate(initial, name='u_h')
 
     # create solution scheme, i.e. operator and ODE solver
-    operator = femDGOperator( Model, space, limiter=limiter, threading=True, parameters=parameters )
+    operator = femDGSolver( Model, space, limiter=limiter, threading=True, parameters=parameters )
     rksolver = createRungeKuttaSolver( space, operator )
 
     # limit initial data if necessary

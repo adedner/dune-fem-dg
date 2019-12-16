@@ -86,7 +86,7 @@ def createOrderRedcution(domainSpace):
 
 # create DG operator + solver (limiter = none,minmod,vanleer,superbee),
 # (diffusionScheme = cdg2,br2,ip,nipg,...)
-def femDGOperator(Model, space,
+def femDGSolver(Model, space,
         limiter="minmod", diffusionScheme = "cdg2", threading=False,
         initialTime=0.0, parameters={}):
     import dune.create as create
@@ -407,7 +407,7 @@ def femDGOperator(Model, space,
 
     additionalType = 'Additional< typename ' + spaceType + '::FunctionSpaceType >'
 
-    typeName = 'Dune::Fem::DGOperator< ' +\
+    typeName = 'Dune::Fem::DGSolver< ' +\
             destinationType + ', ' +\
             advModelType + ', ' + diffModelType + ', ' + additionalType +\
             " >"
