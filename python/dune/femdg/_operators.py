@@ -401,7 +401,8 @@ def femDGSolver(Model, space,
 
     ################################################################
     ### Construct DuneType, includes, and extra methods/constructors
-    includes  = ["dune/fem-dg/solver/dg.hh"]
+    includes  = ["dune/fem-dg/python/operator.hh"]
+    includes += ["dune/fem-dg/solver/dg.hh"]
     includes += space._includes + destinationIncludes
     includes += ["dune/fem/schemes/diffusionmodel.hh", "dune/fempy/parameter.hh"]
 
@@ -437,7 +438,11 @@ def femDGSolver(Model, space,
     # add method to solve one step (not requiring u_h_n)
     step = Method('step', '&DuneType::step', extra=['"target"_a'])
 
-    return load(includes, typeName, constructor, setTimeStepSize, deltaT, applyLimiter, step,
+    _, domainFunctionIncludes, domainFunctionType, _, _, _ = space.storage
+    base = 'Dune::Fem::SpaceOperatorInterface< ' + domainFunctionType + '>'
+    return load(includes, typeName,
+              constructor, setTimeStepSize, deltaT, applyLimiter, step,
+              baseClasses=[base],
               preamble=writer.writer.getvalue()).\
                     Operator( space, advModel, diffModel, parameters=parameters )
 
@@ -758,7 +763,8 @@ def femDGOperator(Model, space,
 
     ################################################################
     ### Construct DuneType, includes, and extra methods/constructors
-    includes  = ["dune/fem-dg/operator/dg/dgpyoperator.hh"]
+    includes  = ["dune/fem-dg/python/operator.hh"]
+    includes += ["dune/fem-dg/operator/dg/dgpyoperator.hh"]
     includes += space._includes + destinationIncludes
     includes += ["dune/fem/schemes/diffusionmodel.hh", "dune/fempy/parameter.hh"]
 
@@ -792,49 +798,58 @@ def femDGOperator(Model, space,
     explOp  = Method('explicitOperator', '&DuneType::explicitOperator')
     implOp  = Method('implicitOperator', '&DuneType::implicitOperator')
 
-    return load(includes, typeName, constructor, applyLimiter, explOp, implOp,
+    _, domainFunctionIncludes, domainFunctionType, _, _, _ = space.storage
+    base = 'Dune::Fem::SpaceOperatorInterface< ' + domainFunctionType + '>'
+    return load(includes, typeName,
+                # constructor, applyLimiter, explOp, implOp,
+                baseClasses = [base],
                 preamble=writer.writer.getvalue()).\
-                    Operator( space, advModel, diffModel, parameters=parameters )
+                Operator( space, advModel, diffModel, parameters=parameters )
 
 # RungeKutta solvers
-def createRungeKuttaSolver( space, fullOperator, explOperator=None, implOperator=None, imex='EX', butchertable=None ):
+# def rungeKuttaSolver( fullOperator=None, explOperator=None, implOperator=None, imex='EX', butchertable=None ):
+def rungeKuttaSolver( fullOperator, imex='EX', butchertable=None ):
 
     includes = ["dune/fem-dg/solver/rungekuttasolver.hh", "dune/fem-dg/misc/algorithmcreatorselector.hh"]
     includes += fullOperator._includes
-    if explOperator is None:
-        explOperator = fullOperator
-    else:
-        includes += explOperator._includes
+    # if explOperator is None:
+    #     explOperator = fullOperator
+    # else:
+    #     includes += explOperator._includes
+    # if implOperator is None:
+    #     implOperator = fullOperator
+    # else:
+    #     includes += implOperator._includes
 
-    if implOperator is None:
-        implOperator = fullOperator
-    else:
-        includes += implOperator._includes
-
+    space = fullOperator.domainSpace
     spaceType = space._typeName
 
     _, domainFunctionIncludes, domainFunctionType, _, _, _ = space.storage
 
-    fullOperatorType = 'Dune::Fem::SpaceOperatorInterface< ' + domainFunctionType + '>'
-    explOperatorType = fullOperatorType
-    implOperatorType = fullOperatorType
-    #fullOperatorType = fullOperator._typeName
-    #explOperatorType = explOperator._typeName
-    #implOperatorType = implOperator._typeName
-    #linearInverseOperatorType = 'typename Dune::Fem::MatrixFreeSolverSelector< Dune::Fem::Solver::Enum::fem, false > :: template LinearInverseOperatorType< ' + spaceType + ', ' + spaceType + '>::type '
+    baseOperatorType = 'Dune::Fem::SpaceOperatorInterface< ' + domainFunctionType + '>'
+    fullOperatorType = baseOperatorType
+    explOperatorType = baseOperatorType
+    implOperatorType = baseOperatorType
 
     typeName = 'Dune::Fem::SimpleRungeKuttaSolver< ' + domainFunctionType + '>'
 
-    constructor = Constructor([fullOperatorType + ' &op'],
-                              ['return new ' + typeName + '(op);'],
-                              ['"op"_a','pybind11::keep_alive< 1, 2 >()' ])
-    #constructor = Constructor([fullOperatorType + ' &op, ' + explOperatorType + ' &explOp, ' + implOperatorType + ' &implOp'],
-    #                          ['return new ' + typeName + '(op, explOp, implOp);'],
-    #                          ['"op"_a', '"explOp"_a', '"implOp"_a',
-    #                           'pybind11::keep_alive< 1, 2 >()', 'pybind11::keep_alive< 1, 3 >()','pybind11::keep_alive< 1, 4 >()' ])
+
+    # TODO: move this to header file in dune/fem-dg/python
+    # constructor = Constructor([operatorType + ' &op'],
+    #                           ['return new ' + typeName + '(op);'],
+    #                           ['"op"_a','pybind11::keep_alive< 1, 2 >()' ])
+    constructor = Constructor([fullOperatorType + ' &op, ' + explOperatorType + ' &explOp, ' + implOperatorType + ' &implOp'],
+                              ['return new ' + typeName + '(op, explOp, implOp);'],
+                              ['"op"_a', '"explOp"_a', '"implOp"_a',
+                               'pybind11::keep_alive< 1, 2 >()', 'pybind11::keep_alive< 1, 3 >()','pybind11::keep_alive< 1, 4 >()' ])
 
     solve = Method('solve', '''[]( DuneType &self, typename DuneType::DestinationType &u) { self.solve(u); }''' );
+    setTimeStepSize = Method('setTimeStepSize', '&DuneType::setTimeStepSize')
+    deltaT = Method('deltaT', '&DuneType::deltaT')
 
     #solve = Method('step', '&DuneType::solve', extra=['"target"_a'])
 
-    return load(includes, typeName, constructor, solve).Operator( fullOperator )
+    return load(includes, typeName, constructor, solve, setTimeStepSize, deltaT).Operator(
+            fullOperator,
+            fullOperator.explicitOperator,
+            fullOperator.implicitOperator )

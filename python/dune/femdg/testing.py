@@ -4,6 +4,7 @@ import dune.create as create
 from dune.fem.function import integrate
 from dune.ufl import Constant
 from ufl import dot, SpatialCoordinate
+from dune.femdg import femDGOperator, femDGSolver, rungeKuttaSolver
 
 def run(Model, initial, x0,x1,N, endTime, name, exact,
         polOrder, limiter="default", startLevel=0,
@@ -37,7 +38,11 @@ def run(Model, initial, x0,x1,N, endTime, name, exact,
     # create and initialize solution
     u_h = space.interpolate(initial, name='u_h')
     # create solution scheme, i.e. operator and ODE solver
-    operator = create.scheme("femDG",Model, space, limiter=limiter, threading=True, parameters=parameters )
+
+    operator = femDGOperator(Model, space, limiter=limiter, threading=True, parameters=parameters )
+    # rkScheme = rungeKuttaSolver( operator )
+    rkScheme = femDGSolver(Model, space, limiter=limiter, threading=True, parameters=parameters )
+
     # limit initial data if necessary
     operator.applyLimiter( u_h );
 
@@ -67,14 +72,16 @@ def run(Model, initial, x0,x1,N, endTime, name, exact,
 
     tcount = 0
     # time loop
+    print("Start solving")
     while t < endTime:
         # set time step size to ODE solver
         if dt is not None:
-            operator.setTimeStepSize(dt)
+            rkScheme.setTimeStepSize(dt)
         # solver time step
-        operator.step(target=u_h)
+        # rk solver: rkScheme.solve(u_h)
+        rkScheme.step(target=u_h)
         # obtain new time step size
-        dt = operator.deltaT()
+        dt = rkScheme.deltaT()
         # check that solution is meaningful
         if math.isnan( u_h.scalarProductDofs( u_h ) ):
             grid.writeVTK(name, subsampling=subsamp, celldata=[u_h])
@@ -86,7 +93,7 @@ def run(Model, initial, x0,x1,N, endTime, name, exact,
         tcount += 1
 
         # output
-        if tcount%100 == 0:
+        if True: # tcount%100 == 0:
             print('[',tcount,']','dt = ', dt, 'time = ',t, 'count = ',count, flush=True )
         if saveStep is not None and t > saveTime:
             count += 1

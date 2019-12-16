@@ -117,7 +117,7 @@ namespace Fem
               const Dune::Fem::ParameterReader &parameter = Dune::Fem::Parameter::container() )
       : dgOperator_( space, advectionModel, diffusionModel ),
         extra_(),
-        tpPtr_( new TimeProviderType(space.gridPart().comm()) ),
+        tpPtr_( new TimeProviderType(space.gridPart().comm(),parameter) ),
         tp_( *tpPtr_ ),
         rkSolver_( tp_, dgOperator_.fullOperator(), dgOperator_.explicitOperator(), dgOperator_.implicitOperator(), name() ),
         initialized_( false )
