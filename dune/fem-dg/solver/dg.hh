@@ -89,7 +89,7 @@ namespace Fem
         extra_(),
         tpPtr_( new TimeProviderType(space.gridPart().comm()) ),
         tp_( *tpPtr_ ),
-        rkSolver_( tp_, dgOperator_.fullOperator(), dgOperator_.explOperator(), dgOperator_.implOperator(), name() ),
+        rkSolver_( tp_, dgOperator_.fullOperator(), dgOperator_.explicitOperator(), dgOperator_.implicitOperator(), name() ),
         initialized_( false )
     {
       //Dune::Fem::Parameter::append("fem.parallel.numberofthreads", std::to_string( Additional::nThreads ) );
@@ -119,7 +119,7 @@ namespace Fem
         extra_(),
         tpPtr_( new TimeProviderType(space.gridPart().comm()) ),
         tp_( *tpPtr_ ),
-        rkSolver_( tp_, dgOperator_.fullOperator(), dgOperator_.explOperator(), dgOperator_.implOperator(), name() ),
+        rkSolver_( tp_, dgOperator_.fullOperator(), dgOperator_.explicitOperator(), dgOperator_.implicitOperator(), name() ),
         initialized_( false )
     {
       //Dune::Fem::Parameter::append("fem.parallel.numberofthreads", std::to_string( Additional::nThreads ) );
@@ -151,7 +151,7 @@ namespace Fem
         extra_(),
         tpPtr_(),
         tp_( tp ),
-        rkSolver_( tp_, dgOperator_.fullOperator(), dgOperator_.explOperator(), dgOperator_.implOperator(), name() ),
+        rkSolver_( tp_, dgOperator_.fullOperator(), dgOperator_.explicitOperator(), dgOperator_.implicitOperator(), name() ),
         initialized_( false )
     {
       //Dune::Fem::Parameter::append("fem.parallel.numberofthreads", std::to_string( Additional::nThreads ) );

@@ -128,9 +128,9 @@ namespace Fem
     const DiscreteFunctionSpaceType& domainSpace () const { return space(); }
     const DiscreteFunctionSpaceType& rangeSpace () const { return space(); }
 
-    FullOperatorType& fullOperator() const { return fullOperator_; }
-    ExplicitOperatorType& explOperator() const { return explOperator_; }
-    ImplicitOperatorType& implOperator() const { return implOperator_; }
+    FullOperatorType&     fullOperator() const { return fullOperator_; }
+    ExplicitOperatorType& explicitOperator() const { return explOperator_; }
+    ImplicitOperatorType& implicitOperator() const { return implOperator_; }
 
     //! evaluate the operator
     void operator()( const DestinationType& arg, DestinationType& dest ) const
