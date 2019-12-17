@@ -49,7 +49,6 @@ def CompressibleEuler(dim, gamma):
             return [ u[0], n[0]*u[1] + n[1]*u[2], -n[1]*u[1] + n[0]*u[2], u[3] ]
         def rotateBack(u, n):
             return [ u[0], n[0]*u[1] - n[1]*u[2],  n[1]*u[1] + n[0]*u[2], u[3] ]
-
     return Model
 
 def CompressibleEulerNeuman(dim, gamma, bnd=range(1,5)):
@@ -69,12 +68,11 @@ def CompressibleEulerSlip(dim, gamma,bnd=range(1,5)):
     return Model
 def CompressibleEulerReflection(dim, gamma,bnd=range(1,5)):
     class Model(CompressibleEuler(dim,gamma)):
-        def reflection(t,x,u,n):
-            fakeN = [ n[0], n[1] ]
-            uRot = CompressibleEuler(dim,gamma).rotateForth(u, fakeN)
+        def reflection(t,x,u,n,k):
+            uRot = CompressibleEuler(dim,gamma).rotateForth(u, n)
             # flip sign of x-momentum (velocity)
             uRot[ 1 ] = -uRot[ 1 ]
-            return as_vector( CompressibleEuler(dim,gamma).rotateBack(uRot, fakeN) )
+            return as_vector( CompressibleEuler(dim,gamma).rotateBack(uRot, n) )
         boundary = {bnd: reflection}
     return Model
 

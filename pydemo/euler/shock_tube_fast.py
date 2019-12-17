@@ -13,7 +13,7 @@ dim = 2
 from euler import sod as problem
 #from euler import radialSod3 as problem
 
-Model, initial, x0,x1,N, endTime, name, exact = problem(dim,gamma)
+Model, initial, domain, endTime, name, exact = problem(dim,gamma)
 
 parameter.append({"fem.verboserank": -1})
 parameter.append({"fem.timeprovider.factor": 0.25})
@@ -25,7 +25,7 @@ parameters = {"fem.ode.odesolver": "EX",
               "femdg.limiter.admissiblefunctions": 1,
               "femdg.limiter.tolerance": 1e-8}
 
-
+x0,x1,N = domain
 grid = structuredGrid(x0,x1,N)
 # grid = create.grid("ALUSimplex", cartesianDomain(x0,x1,N))
 dimR     = grid.dimension + 2
@@ -127,7 +127,7 @@ def useODESolver(polOrder=2, limiter='default'):
         #cellvector={"velocity":v},
         number=count, subsampling=2)
 
-scheme = 1
+scheme = 2
 
 if scheme == 0:
     # grid = structuredGrid(x0,x1,N)
@@ -145,7 +145,10 @@ elif scheme == 1:
     # grid = create.grid("ALUSimplex", cartesianDomain(x0,x1,N))
     useODESolver(0,None)           # FV scheme
 elif scheme == 2:
-    N = [n*6 for n in N]
-    grid = structuredGrid(x0,x1,N)
+    grid = create.grid("ALUSimplex", cartesianDomain(x0,x1,N))
+    #grid = create.grid("ALUCube", cartesianDomain(x0,x1,N))
+    grid.hierarchicalGrid.globalRefine(1)
+    #N = [n*6 for n in N]
+    #grid = structuredGrid(x0,x1,N)
     # grid = create.grid("ALUSimplex", cartesianDomain(x0,x1,N))
     useODESolver(0,'default')      # FV scheme with limiter
