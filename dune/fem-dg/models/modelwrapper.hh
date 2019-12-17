@@ -269,14 +269,9 @@ namespace Fem
     template <class LocalEvaluation>
     inline bool hasBoundaryValue( const LocalEvaluation& local ) const
     {
-      RangeType u;
-      int id = getBoundaryId( local );
-      // note: the local coordinate used here is not important since we
-      // only check if the intersection as a whole is part of the dirichlet
-      // boundary - so the center is used
-      bool bndVal = AdditionalType::boundaryValue(id, time(), local.entity(), local.intersection().geometryInInside().center(), u, u);
-
-      return bndVal;
+      RangeType u; // fake return variable
+      const int id = getBoundaryId( local );
+      return AdditionalType::hasBoundaryValue(id, time(), local.entity(), local.quadraturePoint(), u, u);
     }
 
     // return uRight for insertion into the numerical flux
@@ -289,7 +284,9 @@ namespace Fem
 #ifndef NDEBUG
       const bool isDirichlet =
 #endif
-      AdditionalType::boundaryValue(id, time(), local.entity(), local.quadraturePoint(), uLeft, uRight);
+      AdditionalType::boundaryValue(id, time(), local.entity(), local.quadraturePoint(),
+                                    local.intersection().unitOuterNormal( local.localPosition() ),
+                                    uLeft, uRight);
       assert( isDirichlet );
     }
 

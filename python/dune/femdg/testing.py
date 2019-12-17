@@ -52,8 +52,9 @@ def run(Model, initial, domain, endTime, name, exact,
     # create solution scheme, i.e. operator and ODE solver
 
     operator = femDGOperator(Model, space, limiter=limiter, threading=True, parameters=parameters )
-    # rkScheme = rungeKuttaSolver( operator )
-    rkScheme = femDGSolver(Model, space, limiter=limiter, threading=True, parameters=parameters )
+    rkScheme = rungeKuttaSolver( operator )
+    #rkScheme = femDGSolver(Model, space, limiter=limiter, threading=True, parameters=parameters )
+    #operator = rkScheme
 
     # limit initial data if necessary
     operator.applyLimiter( u_h );

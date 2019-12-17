@@ -4,7 +4,7 @@ import dune.create as create
 from dune.fem.function import integrate
 from dune.ufl import Constant
 from ufl import dot, SpatialCoordinate
-from dune.femdg import femDGSolver, femDGOperator, createRungeKuttaSolver
+from dune.femdg import femDGOperator, rungeKuttaSolver
 
 def run(Model, initial, x0,x1,N, endTime, name, exact,
         polOrder, limiter="default", startLevel=0,
@@ -40,8 +40,7 @@ def run(Model, initial, x0,x1,N, endTime, name, exact,
 
     # create solution scheme, i.e. operator and ODE solver
     operator = femDGOperator( Model, space, limiter=limiter, threading=True, parameters=parameters )
-    explOp = operator.explicitOperator()
-    rksolver = createRungeKuttaSolver( space, operator )
+    ode = rungeKuttaSolver( operator, imex='EX', parameters=parameters )
 
     # limit initial data if necessary
     operator.applyLimiter( u_h );
@@ -77,10 +76,9 @@ def run(Model, initial, x0,x1,N, endTime, name, exact,
         if dt is not None:
             operator.setTimeStepSize(dt)
         # solver time step
-        rksolver.step(target=u_h)
-        #operator.step(target=u_h)
+        ode.solve(u_h)
         # obtain new time step size
-        dt = operator.deltaT()
+        dt = ode.deltaT()
         # check that solution is meaningful
         if math.isnan( u_h.scalarProductDofs( u_h ) ):
             grid.writeVTK(name, subsampling=subsamp, celldata=[u_h])
