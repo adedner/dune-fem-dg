@@ -1,5 +1,9 @@
 from ufl import *
 from dune.ufl import Space
+import dune.fem
+from dune.femdg.testing import Parameters
+# Parameters are: "Model", "initial", "domain", "endTime", "name", "exact"
+
 class Transport1D:
     dimRange = 1
 
@@ -27,12 +31,12 @@ def LinearAdvectionDiffusion1D(v,eps):
             def maxLambda(t,x,U,n):
                 return abs(dot(v,n))
             def velocity(t,x,U):
-                return v*t*10
+                return v
         if eps is not None:
             def F_v(t,x,U,DU):
                 return eps*DU
             # TODO: this method is used in an IMEX method allough the
-            # diffusion is explicit - should we change that behaviour?
+            # diffusion is implicit - should we change that behaviour?
             # commented out for test of IMEX
             # def maxDiffusion(t,x,U):
             #    return eps
@@ -85,28 +89,35 @@ def riemanProblem(x,x0,UL,UR):
     return conditional(x<x0,as_vector(UL),as_vector(UR))
 
 def constantTransport():
-    return Transport1D, as_vector( [0.1] ),\
-           [-1, 0], [1, 0.1], [50, 7], 0.1,\
-           "constant", None
+    return Parameters(Model=Transport1D, initial=as_vector( [0.1] ),
+                      domain=[[-1, 0], [1, 0.1], [50, 7]], endTime=0.1,
+                      name="constant")
 def shockTransport():
-    return Transport1D, riemanProblem(x[0],-0.5, [1], [0]),\
-           [-1, 0], [1, 0.1], [50, 7], 1.0,\
-           "shockTransport", None
+    return Parameters(Model=Transport1D, initial=riemanProblem(x[0],-0.5, [1], [0]),
+                      domain=[[-1, 0], [1, 0.1], [50, 7]], endTime=1.0,
+                      name="shockTransport")
+
+def sinAdvDiffProblem():
+    eps = 0.5
+    v   = [4,0]
+    u0 = lambda t,x: as_vector( [sin(2*pi*x[0])*exp(-t*eps*(2*pi)**2)] )
+    return Parameters(Model=LinearAdvectionDiffusion1DMixed(v,eps,u0),
+                      initial=u0(0,x), domain=[[-1, 0], [1, 0.1], [50, 7]], endTime=0.2,
+                      name="sin", exact=lambda t: u0(t,x))
 
 def sinProblem():
     eps = 0.5
     u0 = lambda t,x: as_vector( [sin(2*pi*x[0])*exp(-t*eps*(2*pi)**2)] )
-    return LinearAdvectionDiffusion1DMixed(None,eps,u0), u0(0,x),\
-           [-1, 0], [1, 0.1], [50, 7], 0.2,\
-           "sin", lambda t: u0(t,x)
+    return Parameters(Model=LinearAdvectionDiffusion1DMixed(None,eps,u0), initial=u0(0,x),
+                      domain=[[-1, 0], [1, 0.1], [50, 7]], endTime=0.2,
+                      name="sin", exact=lambda t: u0(t,x))
 
 def sinTransportProblem():
-    eps = 0.5
     v   = [1,0]
-    u0 = lambda t,x: as_vector( [sin(2*pi*x[0])*exp(-t*eps*(2*pi)**2)] )
-    return LinearAdvectionDiffusion1DMixed(v,eps,u0), u0(0,x),\
-           [-1, 0], [1, 0.1], [50, 7], 0.2,\
-           "sin", lambda t: u0(t,x)
+    u0 = lambda t,x: as_vector( [sin(2*pi*x[0])] )
+    return Parameters(Model=LinearAdvectionDiffusion1DMixed(v,None,u0), initial=u0(0,x),
+                      domain=[[-1, 0], [1, 0.1], [50, 7]], endTime=0.2,
+                      name="sin", exact=lambda t: u0(t,x))
 
 def pulse(eps=None):
     center  = as_vector([ 0.5,0.5 ])
@@ -125,9 +136,10 @@ def pulse(eps=None):
         xq = ( x0*cos(4.0*t) + x1*sin(4.0*t)) + 0.25
         yq = (-x0*sin(4.0*t) + x1*cos(4.0*t))
         return as_vector( [(sig2/ (sig2PlusDt4) ) * exp (-( xq*xq + yq*yq ) / sig2PlusDt4 )] )
-    return LinearAdvectionDiffusion1DDirichlet([ux,uy],eps,u0), u0(0,x),\
-           [0, 0], [1, 1], [16,16], 1.0,\
-           "pulse"+str(eps), lambda t: u0(t,x)
+    return Parameters(Model=LinearAdvectionDiffusion1DDirichlet([ux,uy],eps,u0),
+                      initial=u0(0,x),
+                      domain=[[0, 0], [1, 1], [16,16]], endTime=1.0,
+                      name="pulse"+str(eps), exact=lambda t: u0(t,x))
 def diffusivePulse():
     return pulse(0.001)
 
@@ -137,22 +149,22 @@ def burgersShock():
     UR = 0
     speed = (UL-UR)/2.
     u0 = lambda t,x: riemanProblem(x[0],-0.5+t*speed,[UL],[UR])
-    return Model, u0(0,x),\
-           [-1, 0], [1, 0.1], [50, 7], 1.,\
-           "burgersShock", lambda t: u0(t,x)
+    return Parameters(Model=Model, initial=u0(0,x),
+                      domain=[[-1, 0], [1, 0.1], [50, 7]], endTime=1.,
+                      name="burgersShock", exact=lambda t: u0(t,x))
 
 def burgersVW():
     Model = Burgers1D
-    return Model, riemanProblem(x[0],0,[-1],[1]),\
-           [-1, 0], [1, 0.1], [50, 7], 0.7,\
-           "burgersShock", None
+    return Parameters(Model=Model, initial=riemanProblem(x[0],0,[-1],[1]),
+                      domain=[[-1, 0], [1, 0.1], [50, 7]], endTime=0.7,
+                      name="burgersShock")
 
 def burgersStationaryShock():
     Model = Burgers1D
     u0 = lambda t,x: riemanProblem(x[0],0,[1],[-1])
-    return Model, u0(0,x),\
-           [-1, 0], [1, 0.1], [50, 7], 0.2,\
-           "burgersShock", lambda t: u0(t,x)
+    return Parameters(Model=Model, initial=u0(0,x),
+                      domain=[[-1, 0], [1, 0.1], [50, 7]], endTime=0.2,
+                      name="burgersShock", exact=lambda t: u0(t,x))
 
 problems = [ constantTransport, shockTransport, sinProblem,\
              sinTransportProblem, pulse, diffusivePulse,\

@@ -6,27 +6,39 @@ from dune.ufl import Constant
 from ufl import dot, SpatialCoordinate
 from dune.femdg import femDGOperator, femDGSolver, rungeKuttaSolver
 
-def run(Model, initial, x0,x1,N, endTime, name, exact,
+from collections import namedtuple
+
+Parameters = namedtuple("TestingParameters",
+                        ["Model", "initial", "domain", "endTime", "name", "exact"])
+Parameters.__new__.__defaults__ = (None,None) # defaults for name, exact
+
+def run(Model, initial, domain, endTime, name, exact,
         polOrder, limiter="default", startLevel=0,
         primitive=None, saveStep=None, subsamp=0,
         dt=None,grid="yasp", space="dgonb", threading=True,
         parameters={}):
-    periodic=[True,]*len(x0)
-    if hasattr(Model,"boundary"):
-        bnd=set()
-        for b in Model.boundary:
-            bnd.update(b)
-        for i in range(len(x0)):
-            if 2*i+1 in bnd:
-                assert(2*i+2 in bnd)
-                periodic[i] = False
-    print("Setting periodic boundaries",periodic,flush=True)
-
-    # create domain and grid
-    domain   = cartesianDomain(x0,x1,N,periodic=periodic,overlap=0)
-    grid     = create.grid(grid,domain)
-    # initial refinement of grid
-    grid.hierarchicalGrid.globalRefine(startLevel)
+    print("*************************************")
+    print("**** Running simulation",name)
+    print("*************************************")
+    try: # passed in a [xL,xR,N] tripple
+        x0,x1,N = domain
+        periodic=[True,]*len(x0)
+        if hasattr(Model,"boundary"):
+            bnd=set()
+            for b in Model.boundary:
+                bnd.update(b)
+            for i in range(len(x0)):
+                if 2*i+1 in bnd:
+                    assert(2*i+2 in bnd)
+                    periodic[i] = False
+        print("Setting periodic boundaries",periodic,flush=True)
+        # create domain and grid
+        domain   = cartesianDomain(x0,x1,N,periodic=periodic,overlap=0)
+        grid     = create.grid(grid,domain)
+        # initial refinement of grid
+        grid.hierarchicalGrid.globalRefine(startLevel)
+    except TypeError: # assume the 'domain' is already a gridview
+        grid = domain
 
     dimR     = Model.dimRange
     t        = 0
@@ -56,16 +68,20 @@ def run(Model, initial, x0,x1,N, endTime, name, exact,
             velo = [create.function("ufl",space.grid, ufl=Model.velocity(tc,x,u_h), order=2, name="velocity")]
         except AttributeError:
             velo = None
-        vtk = grid.writeVTK(name, subsampling=subsamp, write=False,
-               celldata=[u_h],
-               pointdata=primitive(Model,u_h) if primitive else None,
-               cellvector=velo
-            )
+        if name is not None:
+            vtk = grid.writeVTK(name, subsampling=subsamp, write=False,
+                   celldata=[u_h],
+                   pointdata=primitive(Model,u_h) if primitive else None,
+                   cellvector=velo
+                )
+        else:
+            vtk = None
         try:
             velo[0].setConstant("time",[t])
         except:
             pass
-        vtk.write(name, count) # , outputType=OutputType.appendedraw)
+        if vtk is not None:
+            vtk.write(name, count) # , outputType=OutputType.appendedraw)
 
     # measure CPU time
     start = time.time()
@@ -83,7 +99,7 @@ def run(Model, initial, x0,x1,N, endTime, name, exact,
         # obtain new time step size
         dt = rkScheme.deltaT()
         # check that solution is meaningful
-        if math.isnan( u_h.scalarProductDofs( u_h ) ):
+        if name is not None and math.isnan( u_h.scalarProductDofs( u_h ) ):
             grid.writeVTK(name, subsampling=subsamp, celldata=[u_h])
             print('ERROR: dofs invalid t =', t,flush=True)
             print('[',tcount,']','dt = ', dt, 'time = ',t, 'count = ',count, flush=True )
@@ -101,12 +117,13 @@ def run(Model, initial, x0,x1,N, endTime, name, exact,
                 velo[0].setConstant("time",[t])
             except:
                 pass
-            vtk.write(name, count, outputType=OutputType.appendedraw)
+            if vtk is not None:
+                vtk.write(name, count, outputType=OutputType.appendedraw)
             saveTime += saveStep
 
     print("time loop:",time.time()-start,flush=True)
     print("number of time steps ", tcount,flush=True)
-    if saveStep is not None:
+    if name is not None and saveStep is not None:
         try:
             velo[0].setConstant("time",[t])
         except:
@@ -114,10 +131,14 @@ def run(Model, initial, x0,x1,N, endTime, name, exact,
         vtk.write(name, count, outputType=OutputType.appendedraw)
 
     # output the final result and compute error (if exact is available)
-    if exact is not None:
+    if exact is not None and name is not None:
         grid.writeVTK(name, subsampling=subsamp,
                 celldata=[u_h], pointdata={"exact":exact(t)})
         error = integrate( grid, dot(u_h-exact(t),u_h-exact(t)), order=5 )
         print("error:", math.sqrt(error),flush=True )
-    else:
+    elif name is not None:
         grid.writeVTK(name, subsampling=subsamp, celldata=[u_h])
+    print("*************************************")
+    print("**** Completed simulation",name)
+    print("*************************************")
+    return u_h

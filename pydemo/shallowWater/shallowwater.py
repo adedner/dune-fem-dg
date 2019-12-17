@@ -1,5 +1,7 @@
 from ufl import *
 from dune.ufl import Space
+from dune.femdg.testing import Parameters
+# Parameters are: "Model", "initial", "domain", "endTime", "name", "exact"
 
 def ShallowWater(topography,g):
     dim = 2
@@ -49,18 +51,18 @@ def leVeque(dim):
         topography = lambda x: conditional(abs(x[0]-0.5)<0.1, 1./4.*(cos(10*pi*(x[0]-0.5))+1), 0)
         initial = conditional(abs(x[0]-0.15)<0.05,1.2,1)
         Model = ShallowWater(topography,1)
-        return Model,\
-               Model.toCons(as_vector( [initial,0,0] )),\
-               [0, 0], [1, 0.25], [64, 16], 0.7,\
-               "leVeque1D", None
+        return Parameters(Model=Model,
+                          initial=Model.toCons(as_vector( [initial,0,0] )),
+                          domain=[[0, 0], [1, 0.25], [64, 16]], endTime=0.7,
+                          name="leVeque1D")
     else:
         topography = lambda x: 0.8*exp(-5*(x[0]-0.9)**2-50*(x[1]-0.5)**2)
         initial = conditional(abs(x[0]-0.1)<0.05,1.01,1)
         Model = ShallowWater(topography,1)
-        return Model,\
-               Model.toCons(as_vector( [initial,0,0] )),\
-               [0, 0], [2, 1], [80, 40], 1.8,\
-               "leVeque2D", None
+        return Parameters(Model=Model,
+                          initial=Model.toCons(as_vector( [initial,0,0] )),
+                          domain=[[0, 0], [2, 1], [80, 40]], endTime=1.8,
+                          name="leVeque2D")
 
 leVeque1D = lambda: leVeque(1)
 leVeque2D = lambda: leVeque(2)

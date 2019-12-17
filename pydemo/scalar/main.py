@@ -4,12 +4,13 @@ from dune.femdg.testing import run
 # from scalar import shockTransport as problem
 # from scalar import sinProblem as problem
 # from scalar import sinTransportProblem as problem
+from scalar import sinAdvDiffProblem as problem
 # from scalar import pulse as problem
-from scalar import diffusivePulse as problem
+# from scalar import diffusivePulse as problem
 
 parameter.append({"fem.verboserank": 0})
 
-parameters = {"fem.ode.odesolver": "IM",   # EX, IM, IMEX
+parameters = {"fem.ode.odesolver": "IMEX",   # EX, IM, IMEX
               "fem.ode.order": 3,
               "fem.ode.verbose": "none",      # none, cfl, full
               "fem.ode.cflincrease": 1.25,
@@ -27,7 +28,7 @@ try:
     run(*problem(),
             startLevel=0, polOrder=2, limiter=None,
             primitive=None, saveStep=0.01, subsamp=0,
-            dt=0.1,
+            dt=0.001,
             parameters=parameters)
 except NameError:
     # from scalar import burgersShock as problem
