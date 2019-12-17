@@ -247,19 +247,21 @@ namespace Fem
     const std::string      name_;
     ExplicitOperatorType&  explicitOperator_;
     ImplicitOperatorType&  implicitOperator_;
-    const RungeKuttaSolverParameters* param_;
+    std::unique_ptr< const RungeKuttaSolverParameters > param_;
 
-    OdeSolverInterfaceType* explicitSolver_;
-    OdeSolverInterfaceType* odeSolver_;
-    HelmHoltzOperatorType * helmholtzOperator_;
+    std::unique_ptr< OdeSolverInterfaceType > explicitSolver_;
+    std::unique_ptr< OdeSolverInterfaceType > odeSolver_;
+    std::unique_ptr< HelmHoltzOperatorType  > helmholtzOperator_;
 
-    const double explFactor_ ;
+    const   double explFactor_ ;
+    mutable double fixedTimeStep_ ;
     const int verbose_ ;
     const int rkSteps_ ;
     const int odeSolverType_ ;
     int imexCounter_ , exCounter_;
     int minIterationSteps_, maxIterationSteps_ ;
     bool useImex_ ;
+    mutable bool initialized_;
   public:
     RungeKuttaSolver( Fem::TimeProviderBase& tp,
                       OperatorType& op,
@@ -273,9 +275,9 @@ namespace Fem
        explicitOperator_( advOp ),
        implicitOperator_( diffOp ),
        param_( new RungeKuttaSolverParameters( ParameterKey::generate( name_, "fem.ode." ), parameter ) ),
-       explicitSolver_( 0 ),
-       odeSolver_( 0 ),
-       helmholtzOperator_( 0 ),
+       explicitSolver_(),
+       odeSolver_(),
+       helmholtzOperator_(),
        explFactor_( param_->explicitFactor() ),
        verbose_( param_->verbose() ),
        rkSteps_( param_->obtainRungeKuttaSteps( operator_.space().order() + 1 ) ),
@@ -283,7 +285,8 @@ namespace Fem
        imexCounter_( 0 ), exCounter_ ( 0 ),
        minIterationSteps_( std::numeric_limits< int > :: max() ),
        maxIterationSteps_( 0 ),
-       useImex_( odeSolverType_ > 1 )
+       useImex_( odeSolverType_ > 1 ),
+       initialized_( false )
     {
       solverpair_t solver( nullptr, nullptr ) ;
       // create implicit or explicit ode solver
@@ -307,20 +310,23 @@ namespace Fem
 
         // IMEX+
         if( odeSolverType_ == 3 )
-          explicitSolver_ = OdeSolversType :: createExplicitSolver( operator_, tp, rkSteps_, *param_, parameter, name_ ).first;
+        {
+          explicitSolver_.reset( OdeSolversType :: createExplicitSolver( operator_, tp, rkSteps_, *param_, parameter, name_ ).first );
+        }
       }
       else
       {
         DUNE_THROW(NotImplemented,"Wrong ODE solver selected");
       }
 
-      odeSolver_ = solver.first;
-      helmholtzOperator_ = solver.second;
+      odeSolver_.reset( solver.first );
+      helmholtzOperator_.reset( solver.second );
     }
 
     RungeKuttaSolver( OperatorType& op,
                       ExplicitOperatorType& advOp,
                       ImplicitOperatorType& diffOp,
+                      const int  odeSolverType,
                       const Dune::Fem::ParameterReader &parameter = Dune::Fem::Parameter::container() )
      : RungeKuttaSolver( *(new TimeProviderType( op.space().gridPart().comm(), parameter )),
                          op, advOp, diffOp, "PyRK", parameter )
@@ -338,27 +344,10 @@ namespace Fem
         tpPtr_->init( fixedTimeStep_ );
       else
         tpPtr_->init();
-      std::cout << "cfl = " << double(tpPtr_->factor()) << " " << tpPtr_->time() << std::endl;
-    }
-
-    RungeKuttaSolver( OperatorType& op )
-     : RungeKuttaSolver( *(new TimeProviderType( op.space().gridPart().comm() )),
-                         op, op, op, "PyRK" )
-    {
-      tpPtr_.reset( static_cast< TimeProviderType* > (&timeProvider_) );
-    }
-
-    //! destructor
-    ~RungeKuttaSolver()
-    {
-      delete param_;           param_ = 0;
-      delete odeSolver_;       odeSolver_ = 0;
-      delete explicitSolver_ ; explicitSolver_ = 0;
-      delete helmholtzOperator_; helmholtzOperator_ = 0;
+      std::cout << "cfl = " << double(tpPtr_->factor()) << ", T_0 = " << tpPtr_->time() << std::endl;
     }
 
     //! initialize method
-    mutable bool initialized_ = false;
     void initialize( const DestinationType& U ) const
     {
       std::cout << "called initialize\n";
@@ -403,7 +392,6 @@ namespace Fem
       const_cast< ThisType& > (*this).solve( dest );
     }
 
-    mutable double                        fixedTimeStep_ ;
     void setTimeStepSize( const double dt )
     {
       fixedTimeStep_  = dt ;
@@ -423,7 +411,6 @@ namespace Fem
     void solve( DestinationType& U ,
                 MonitorType& monitor )
     {
-      std::cout << "call initialize\n";
       initialize( U );
 
       // take CPU time of solution process
