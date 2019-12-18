@@ -4,7 +4,6 @@
 // dune-fem-dg includes
 #include <dune/fem-dg/operator/adaptation/estimator.hh>
 #include <dune/fem-dg/solver/rungekuttasolver.hh>
-#include <dune/fem-dg/solver/dg.hh>
 
 // local includes
 #include <dune/fem-dg/algorithm/sub/evolution.hh>
