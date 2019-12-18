@@ -6,10 +6,90 @@ from ufl.core.expr import Expr
 from dune.source.cplusplus import Variable, UnformattedExpression, AccessModifier
 from ufl.algorithms import expand_compounds, expand_derivatives, expand_indices, expand_derivatives
 
+def uflExpr(Model,space,t):
+    u = TrialFunction(space)
+    n = FacetNormal(space.cell())
+    x = SpatialCoordinate(space.cell())
+
+    maxSpeed = getattr(Model,"maxLambda",None)
+    if maxSpeed is not None:
+        maxSpeed = maxSpeed(t,x,u,n)
+    velocity = getattr(Model,"velocity",None)
+    if velocity is not None:
+        velocity = velocity(t,x,u)
+    diffusionTimeStep = getattr(Model,"maxDiffusion",None)
+    if diffusionTimeStep is not None:
+        diffusionTimeStep = diffusionTimeStep(t,x,u)
+    physical = getattr(Model,"physical",None)
+    if physical is not None:
+        physical = physical(u)
+    # TODO: jump is problematic since the coefficient 'w' causes issues -
+    # no predefined when extracting required Coefficients so needs fixing
+    # So jump is not returned by this method and is constructed again in
+    # the code generation process
+    w = Coefficient(space)
+    jump = getattr(Model,"jump",None)
+    if jump is not None:
+        jump = jump(u,w)
+    hasAdvFlux = hasattr(Model,"F_c")
+    hasDiffFlux = hasattr(Model,"F_v")
+    boundaryDict = getattr(Model,"boundary",{})
+    boundaryAFlux = {}
+    boundaryDFlux = {}
+    boundaryValue = {}
+    hasBoundaryValue = {}
+    for k,f in boundaryDict.items():
+        # collect all ids (could be list or range)
+        ids = []
+        try:
+            for kk in k:
+                ids += [kk]
+        except TypeError:
+            ids += [k]
+        # TODO: check that id is not used more then once
+        # figure out what type of boundary condition is used
+        if isinstance(f,tuple) or isinstance(f,list):
+            assert hasAdvFlux and hasDiffFlux, "two boundary fluxes provided for id "+str(k)+" but only one bulk flux given"
+            method = [f[0](t,x,u,n), f[1](t,x,u,grad(u),n)]
+            boundaryAFlux.update( [ (kk,method[0]) for kk in ids] )
+            boundaryDFlux.update( [ (kk,method[1]) for kk in ids] )
+        else:
+            try:
+                method = f(t,x,u,n)
+                if hasAdvFlux and not hasDiffFlux:
+                    boundaryAFlux.update( [ (kk,method) for kk in ids] )
+                elif not hasAdvFlux and hasDiffFlux:
+                    boundaryDFlux.update( [ (kk,method) for kk in ids] )
+                else:
+                    assert not (hasAdvFlux and hasDiffFlux), "one boundary fluxes provided for id "+str(k)+" but two bulk flux given"
+            except TypeError:
+                try:
+                    method = f(t,x,u)
+                except TypeError:
+                    method = f(t,x,u,n,n)
+                boundaryValue.update( [ (kk,method) for kk in ids] )
+                # add dummy values for hasBoundaryValue method
+                bndReturn = True
+                hasBoundaryValue.update( [ (kk,bndReturn) for kk in ids] )
+
+    limiterModifiedDict = getattr(Model,"limitedRange",None)
+    if limiterModifiedDict is None:
+        limiterModified = {}
+        limitedDimRange = "DFunctionSpace :: dimRange"
+    else:
+        limiterModified = {}
+        count = 0
+        for id,f in limiterModifiedDict.items(): count += 1
+        limitedDimRange = str(count)
+    jump = None # TODO: see comment above
+    return velocity, maxSpeed, velocity, diffusionTimeStep, physical, jump,\
+           boundaryAFlux, boundaryDFlux, boundaryValue, hasBoundaryValue
+
 def codeFemDg(self):
     code = self._code()
     code.append(AccessModifier("public"))
-
+    # velocity, maxSpeed, velocity, diffusionTimeStep, physical, jump,\
+    #        boundaryAFlux,boundaryDFlux,boundaryValues,hasBoundaryValues = self._patchExpr
     space = self._space
     Model = self._Model
     t = self._t
@@ -26,6 +106,7 @@ def codeFemDg(self):
     predefined.update( {n: arg_n} )
     arg_t = Variable("const double &", "t")
     predefined.update( {t: arg_t} )
+    self.predefineCoefficients(predefined,'x')
 
     maxSpeed = getattr(Model,"maxLambda",None)
     if maxSpeed is not None:
@@ -197,6 +278,7 @@ def codeFemDg(self):
     return code
 
 def transform(Model,space,t):
+    allExpr = uflExpr(Model,space,t)
     def transform_(model):
         if model.baseName == "modelFemDg":
             return
@@ -206,5 +288,9 @@ def transform(Model,space,t):
         model._Model = Model
         model._space = space
         model._t = t
+        model._patchExpr = allExpr
         # model.modelWrapper = "DiffusionModelWrapper< Model >"
-    return [transform_,None] # add ufl forms in second argument to extract extra coeffs
+    retExpr  = [x for x in allExpr if not isinstance(x,(int,float,dict,list)) and x is not None]
+    retExpr += [x for d in allExpr if isinstance(d,(dict,list))
+                  for x in d.values() if not isinstance(x,(int,float,dict,list)) and x is not None]
+    return [transform_, retExpr]
