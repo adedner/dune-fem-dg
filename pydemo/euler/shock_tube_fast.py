@@ -94,7 +94,7 @@ def useODESolver(polOrder=2, limiter='default'):
         #cellvector={"velocity":v},
         number=count, subsampling=2)
 
-scheme = 2
+scheme = 1
 
 if scheme == 0:
     # grid = structuredGrid(x0,x1,N)

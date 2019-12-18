@@ -879,15 +879,15 @@ def rungeKuttaSolver( fullOperator, imex='EX', butchertable=None, parameters={} 
                               ['"op"_a', '"explOp"_a', '"implOp"_a', '"imexId"_a', '"parameters"_a',
                                'pybind11::keep_alive< 1, 2 >()', 'pybind11::keep_alive< 1, 3 >()','pybind11::keep_alive< 1, 4 >()' ])
 
-    solve = Method('solve', '''[]( DuneType &self, typename DuneType::DestinationType &u) { self.solve(u); }''' );
+    solve = Method('step', '''[]( DuneType &self, typename DuneType::DestinationType &u) { self.solve(u); }''' );
+    # add method to solve one step (not requiring u_h_n)
+    step = Method('step', '&DuneType::step', extra=['"target"_a'])
     setTimeStepSize = Method('setTimeStepSize', '&DuneType::setTimeStepSize')
     deltaT = Method('deltaT', '&DuneType::deltaT')
 
-    return load(includes, typeName, constructor, solve, setTimeStepSize, deltaT).Operator(
-            fullOperator,
-            #fullOperator.explicitOperator,
-            #fullOperator.implicitOperator,
-            fullOperator,
-            fullOperator,
+    return load(includes, typeName, constructor, step, solve, setTimeStepSize, deltaT).Operator(
+            fullOperator.fullOperator,
+            fullOperator.explicitOperator,
+            fullOperator.implicitOperator,
             imexId,
             parameters=parameters)
