@@ -305,6 +305,8 @@ def femDGOperator(Model, space,
     if limiter is None or limiter is False:
         limiter = "unlimited"
 
+    # TODO: does this make sense - if there is no diffusion then it doesn't
+    # matter and with diffusion using 'none' seems a bad idea?
     if diffusionScheme is None or diffusionScheme is False:
         diffusionScheme = "none"
 
@@ -313,13 +315,6 @@ def femDGOperator(Model, space,
     n = FacetNormal(space.cell())
     x = SpatialCoordinate(space.cell())
     t = Constant(initialTime,"time")
-    predefined = {}
-    spatial = Variable('const auto', 'y')
-    predefined.update( {x: UnformattedExpression('auto', 'entity.geometry().global( Dune::Fem::coordinate( x ) )') })
-    arg_n = Variable("const DomainType &", "normal")
-    predefined.update( {n: arg_n} )
-    arg_t = Variable("const double &", "t")
-    predefined.update( {t: arg_t} )
 
     hasAdvFlux = hasattr(Model,"F_c")
     if hasAdvFlux:
@@ -468,33 +463,9 @@ def femDGOperator(Model, space,
             advModelType + ', ' + diffModelType + ', ' + additionalType +\
             " >"
 
-    constructor = Constructor(['const '+spaceType + ' &space',
-                               'const '+advModelType + ' &advectionModel',
-                               'const '+diffModelType + ' &diffusionModel',
-                               'const pybind11::dict &parameters'
-                              ],
-                              ['return new DuneType(space, advectionModel, diffusionModel, Dune::FemPy::pyParameter( parameters, std::make_shared< std::string >() ) );'],
-                              ['"space"_a',
-                               '"advectionModel"_a',
-                               '"diffusionModel"_a',
-                               '"parameters"_a',
-                               'pybind11::keep_alive< 1, 2 >()',
-                               'pybind11::keep_alive< 1, 3 >()',
-                               'pybind11::keep_alive< 1, 4 >()'])
-
-    # add method activated to inspect limited cells.
-    applyLimiter = Method('applyLimiter', '''[](
-        DuneType &self, typename DuneType::DestinationType &u) {
-        self.limit(u); }''' );
-
-    # add method to extract explicit and implicit part of the operator
-    explOp  = Method('explicitOperator', '&DuneType::explicitOperator')
-    implOp  = Method('implicitOperator', '&DuneType::implicitOperator')
-
     _, domainFunctionIncludes, domainFunctionType, _, _, _ = space.storage
     base = 'Dune::Fem::SpaceOperatorInterface< ' + domainFunctionType + '>'
     return load(includes, typeName,
-                # constructor, applyLimiter, explOp, implOp,
                 baseClasses = [base],
                 preamble=writer.writer.getvalue()).\
                 Operator( space, advModel, diffModel, parameters=parameters )
@@ -533,8 +504,7 @@ def rungeKuttaSolver( fullOperator, imex='EX', butchertable=None, parameters={} 
                                'const int imexId',
                                'const pybind11::dict &parameters'],
                               ['return new ' + typeName + '(op, explOp, implOp, imexId, Dune::FemPy::pyParameter( parameters, std::make_shared< std::string >() ));'],
-                              ['"op"_a', '"explOp"_a', '"implOp"_a', '"imexId"_a', '"parameters"_a',
-                               'pybind11::keep_alive< 1, 2 >()', 'pybind11::keep_alive< 1, 3 >()','pybind11::keep_alive< 1, 5 >()' ])
+                              ['"op"_a', '"explOp"_a', '"implOp"_a', '"imexId"_a', '"parameters"_a', 'pybind11::keep_alive< 1, 2 >()', 'pybind11::keep_alive< 1, 3 >()','pybind11::keep_alive< 1, 4 >()','pybind11::keep_alive< 1, 6>()' ])
 
     solve = Method('solve', '''[]( DuneType &self, typename DuneType::DestinationType &u) { self.solve(u); }''' );
     setTimeStepSize = Method('setTimeStepSize', '&DuneType::setTimeStepSize')
@@ -542,9 +512,9 @@ def rungeKuttaSolver( fullOperator, imex='EX', butchertable=None, parameters={} 
 
     return load(includes, typeName, constructor, solve, setTimeStepSize, deltaT).Operator(
             fullOperator,
-            # fullOperator.explicitOperator,
-            # fullOperator.implicitOperator,
-            fullOperator,
-            fullOperator,
+            fullOperator.explicitOperator,
+            fullOperator.implicitOperator,
+            # fullOperator,
+            # fullOperator,
             imexId,
             parameters=parameters)

@@ -95,6 +95,7 @@ def run(Model, initial, domain, endTime, name, exact,
         if dt is not None:
             rkScheme.setTimeStepSize(dt)
         # solver time step
+        assert not math.isnan( u_h.scalarProductDofs( u_h ) )
         rkScheme.solve(u_h)
         # rkScheme.step(target=u_h)
         # obtain new time step size

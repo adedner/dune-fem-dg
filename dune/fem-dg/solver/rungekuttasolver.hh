@@ -357,9 +357,8 @@ namespace Fem
         if( tpPtr_ )
         {
           // adjust fixed time step with timeprovider.factor()
-          fixedTimeStep_ /= tpPtr_->factor() ;
           if ( fixedTimeStep_ > 1e-20 )
-            tpPtr_->init( fixedTimeStep_ );
+            tpPtr_->init( fixedTimeStep_ / tpPtr_->factor());
           else
             tpPtr_->init();
           std::cout << "cfl = " << double(tpPtr_->factor()) << ", T_0 = " << tpPtr_->time() << " dtEst = " << tpPtr_->timeStepEstimate() << std::endl;
@@ -394,10 +393,9 @@ namespace Fem
       assert(tpPtr_);
       if( tpPtr_ )
       {
-        fixedTimeStep_ /= tpPtr_->factor() ;
         if (!initialized_)
           if ( fixedTimeStep_ > 1e-20 )
-            tpPtr_->init( fixedTimeStep_ );
+            tpPtr_->init( fixedTimeStep_ / tpPtr_->factor());
           else
             tpPtr_->init();
         else
@@ -446,6 +444,7 @@ namespace Fem
       }
       else
       {
+        std::cout << "in solver: dt=" << timeProvider_.deltaT() << std::endl;
         assert( odeSolver_ );
         odeSolver_->solve( U, monitor );
 
@@ -455,7 +454,7 @@ namespace Fem
         minIterationSteps_ = std::min( minIterationSteps_, iterationSteps );
         maxIterationSteps_ = std::max( maxIterationSteps_, iterationSteps );
 
-        if( verbose_ == 3 && MPIManager::rank()<=0 )
+        if( 1 ) // verbose_ == 3 && MPIManager::rank()<=0 )
         {
           // get advection and diffusion time step
           getAdvectionDiffsionTimeSteps( maxAdvStep, maxDiffStep );
@@ -481,7 +480,7 @@ namespace Fem
         // if true solve next time step with semi implicit solver
         useImex_ = ( maxDiffStep < (factor * maxAdvStep) ) ;
 
-        if( verbose_ == 3 && MPIManager::rank()<=0 )
+        if( 1 ) // verbose_ == 3 && MPIManager::rank()<=0 )
         {
           std::cout << maxAdvStep << " a | d " << maxDiffStep << "  factor: " << factor
             << "  " << minIterationSteps_ << " min | max " << maxIterationSteps_
@@ -503,7 +502,7 @@ namespace Fem
       {
         // next time step is prescribed by fixedTimeStep
         if ( fixedTimeStep_ > 1e-20 )
-          tpPtr_->next( fixedTimeStep_ );
+          tpPtr_->next( fixedTimeStep_/tpPtr_->factor() );
         else
           tpPtr_->next();
       }
