@@ -34,6 +34,8 @@ namespace Dune
       } ), "space"_a, "advectionModel"_a, "diffusionModel"_a, "parameters"_a,
            pybind11::keep_alive< 1, 2 >(), pybind11::keep_alive< 1, 3 >(), pybind11::keep_alive< 1, 4 >() );
       cls.def( "applyLimiter", []( Operator &self, DF &u) { self.limit(u); } );
+      cls.def_property_readonly( "fullOperator", [](Operator &self) -> const Base&
+          { return self.fullOperator(); } );
       cls.def_property_readonly( "explicitOperator", [](Operator &self) -> const Base&
           { return self.explicitOperator(); } );
       cls.def_property_readonly( "implicitOperator", [](Operator &self) -> const Base&
