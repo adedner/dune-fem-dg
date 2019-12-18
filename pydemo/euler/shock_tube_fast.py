@@ -4,7 +4,7 @@ from dune.fem import parameter
 import dune.create as create
 from dune.models.elliptic.formfiles import loadModels
 from llf import NumFlux
-from dune.femdg import femDGOperator, rungeKuttaSolver
+from dune.femdg import femDGOperator, rungeKuttaSolver, femDGSolver
 from ufl import *
 
 gamma = 1.4
@@ -55,8 +55,10 @@ def useODESolver(polOrder=2, limiter='default'):
         space = create.space("dgonb", grid, order=polOrder, dimRange=dimR)
     u_h = initialize(space)
     # rho, v, p = Model.toPrim(u_h)
-    operator = femDGOperator(Model, space, limiter=limiter, threading=True, parameters=parameters )
-    ode = rungeKuttaSolver( operator, parameters=parameters )
+    #operator = femDGOperator(Model, space, limiter=limiter, threading=True, parameters=parameters )
+    #ode = rungeKuttaSolver( operator, parameters=parameters )
+    operator = femDGSolver(Model, space, limiter=limiter, threading=True, parameters=parameters )
+    ode = operator
 
     operator.applyLimiter( u_h )
     print("number of elements: ",grid.size(0),flush=True)
@@ -69,10 +71,9 @@ def useODESolver(polOrder=2, limiter='default'):
     start = time.time()
     tcount = 0
     while t < endTime:
-        ode.solve(u_h)
+        ode.step(target=u_h)
         # operator.applyLimiter( u_h );
         dt = ode.deltaT()
-        print('dt = ',dt)
         t += dt
         tcount += 1
         if tcount%100 == 0:
