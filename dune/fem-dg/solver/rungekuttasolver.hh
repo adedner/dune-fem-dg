@@ -361,7 +361,6 @@ namespace Fem
     mutable bool initialized_ = false;
     void initialize( const DestinationType& U ) const
     {
-      std::cout << "called initialize\n";
       if (initialized_) return;
       if( explicitSolver_ )
       {
@@ -423,7 +422,6 @@ namespace Fem
     void solve( DestinationType& U ,
                 MonitorType& monitor )
     {
-      std::cout << "call initialize\n";
       initialize( U );
 
       // take CPU time of solution process

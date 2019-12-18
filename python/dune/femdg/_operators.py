@@ -90,6 +90,7 @@ def femDGSolver(Model, space,
         limiter="minmod", diffusionScheme = "cdg2", threading=False,
         initialTime=0.0, parameters={}):
     import dune.create as create
+    virtualize = False
 
     if limiter is None or limiter is False:
         limiter = "unlimited"
@@ -130,19 +131,26 @@ def femDGSolver(Model, space,
     if hasStiffSource:
         diffModel += inner(as_vector(Model.S_s(t,x,u,grad(u))),v)*dx
 
-    advModel  = create.model("elliptic",space.grid, advModel)
-    diffModel = create.model("elliptic",space.grid, diffModel)
+    advModel  = create.model("elliptic",space.grid, advModel,
+                      modelPatch=transform(Model,space,t),
+                      virtualize=virtualize)
+    diffModel = create.model("elliptic",space.grid, diffModel,
+                      modelPatch=transform(Model,space,t),
+                      virtualize=virtualize)
 
     spaceType = space._typeName
 
-    modelType = "DiffusionModel< " +\
-          "typename " + spaceType + "::GridPartType, " +\
-          spaceType + "::dimRange, " +\
-          spaceType + "::dimRange, " +\
-          "typename " + spaceType + "::RangeFieldType >"
-
-    advModelType  = modelType
-    diffModelType = modelType
+    if virtualize:
+        modelType = "DiffusionModel< " +\
+              "typename " + spaceType + "::GridPartType, " +\
+              spaceType + "::dimRange, " +\
+              spaceType + "::dimRange, " +\
+              "typename " + spaceType + "::RangeFieldType >"
+        advModelType  = modelType
+        diffModelType = modelType
+    else:
+        advModelType  = advModel._typeName # modelType
+        diffModelType = diffModel._typeName # modelType
 
     _, destinationIncludes, destinationType, _, _, _ = space.storage
 
@@ -154,164 +162,8 @@ def femDGSolver(Model, space,
     struct.append(TypeAlias('JacobianRangeType','typename FunctionSpace::JacobianRangeType'))
     struct.append(TypeAlias('HessianRangeType','typename FunctionSpace::HessianRangeType'))
 
-    #advFlux2 = getattr(Model,"F_c",None)
-    #if advFlux2 is not None:
-    #    advFlux2 = advFlux2(t,x,u)
-    #generateMethod(struct, advFlux2,
-    #        'JacobianRangeType', 'advection',
-    #        returnResult=False,
-    #        args=['const double &t',
-    #              'const Entity &entity',
-    #              'const Point &x',
-    #              'const RangeType &u'],
-    #        targs=['class Entity, class Point'], static=True,
-    #        predefined=predefined)
-
-    maxSpeed = getattr(Model,"maxLambda",None)
-    if maxSpeed is not None:
-        maxSpeed = maxSpeed(t,x,u,n)
-    generateMethod(struct, maxSpeed,
-            'double', 'maxSpeed',
-            args=['const double &t',
-                  'const Entity &entity', 'const Point &x',
-                  'const DomainType &normal',
-                  'const RangeType &u'],
-            targs=['class Entity, class Point'], static=True,
-            predefined=predefined)
-
-    velocity = getattr(Model,"velocity",None)
-    if velocity is not None:
-        velocity = velocity(t,x,u)
-    generateMethod(struct, velocity,
-            'DomainType', 'velocity',
-            args=['const double &t',
-                  'const Entity &entity', 'const Point &x',
-                  'const RangeType &u'],
-            targs=['class Entity, class Point'], static=True,
-            predefined=predefined)
-
-    # TODO: fill in diffusion time step from Model
-    diffusionTimeStep = getattr(Model,"maxDiffusion",None)
-    if diffusionTimeStep is not None:
-        diffusionTimeStep = diffusionTimeStep(t,x,u)
-    generateMethod(struct, diffusionTimeStep,
-            'double', 'diffusionTimeStep',
-            args=['const Entity& entity', 'const Point &x',
-                  'const T& circumEstimate', 'const RangeType &u'],
-            targs=['class Entity, class Point, class T'], static=True,
-            predefined=None)
-
-    #advFlux2 = getattr(Model,"F_c",None)
-    #advFlux2 = advFlux2(t,x,u)
-    #generateMethod(struct, advFlux2,
-    #        'void', 'advection',
-    #        args=['const double &t',
-    #              'const Entity &entity',
-    #              'const Point &x',
-    #              'const RangeType &u',
-    #              'const JacobianRangeType& du',
-    #              'JacobianRangeType& result'],
-    #        targs=['class Entity, class Point'], static=True,
-    #        predefined=predefined)
-
-    # QUESTION: should `physical` actually depend on x? Perhaps even t?
-    physical = getattr(Model,"physical",None)
-    if physical is not None:
-        physical = physical(u)
-    generateMethod(struct, physical,
-            'double', 'physical',
-            args=['const Entity &entity', 'const Point &x',
-                  'const RangeType &u'],
-            targs=['class Entity, class Point'], static=True,
-            predefined=predefined)
-
-    # QUESTION: should `jump` actually depend on x? Perhaps even t?
-    w = Coefficient(space)
-    predefined.update( {w:Variable("const RangeType &", "w")} )
-    jump = getattr(Model,"jump",None)
-    if jump is not None:
-        jump = jump(u,w)
-    generateMethod(struct, jump,
-            'double', 'jump',
-            args=['const Intersection& it', 'const Point &x',
-                  'const RangeType &u',
-                  'const RangeType &w'],
-            targs=['class Intersection, class Point'], static=True,
-            predefined=predefined)
-
-    adjustAverageValue = {}
-    generateMethod(struct, adjustAverageValue,
-            'void', 'adjustAverageValue',
-            args=['const Entity& entity', 'const Point &x',
-                  'RangeType &u'],
-            targs=['class Entity, class Point'], static=True, evalSwitch=False,
-            predefined=None)
-
-    #####################
-    ## boundary treatment
-    boundaryDict = getattr(Model,"boundary",{})
-    boundaryAFlux = {}
-    boundaryDFlux = {}
-    boundaryValue = {}
-    for k,f in boundaryDict.items():
-        # collect all ids (could be list or range)
-        ids = []
-        try:
-            for kk in k:
-                ids += [kk]
-        except TypeError:
-            ids += [k]
-        # TODO: check that id is not used more then once
-        # figure out what type of boundary condition is used
-        if isinstance(f,tuple) or isinstance(f,list):
-            assert hasAdvFlux and hasDiffFlux, "two boundary fluxes provided for id "+str(k)+" but only one bulk flux given"
-            method = [f[0](t,x,u,n), f[1](t,x,u,grad(u),n)]
-            boundaryAFlux.update( [ (kk,method[0]) for kk in ids] )
-            boundaryDFlux.update( [ (kk,method[1]) for kk in ids] )
-        else:
-            try:
-                method = f(t,x,u,n)
-                if hasAdvFlux and not hasDiffFlux:
-                    boundaryAFlux.update( [ (kk,method) for kk in ids] )
-                elif not hasAdvFlux and hasDiffFlux:
-                    boundaryDFlux.update( [ (kk,method) for kk in ids] )
-                else:
-                    assert not (hasAdvFlux and hasDiffFlux), "one boundary fluxes provided for id "+str(k)+" but two bulk flux given"
-            except TypeError:
-                method = f(t,x,u)
-                boundaryValue.update( [ (kk,method) for kk in ids] )
-
-    generateMethod(struct, boundaryAFlux,
-            'bool', 'boundaryFlux',
-            args=['const int bndId',
-                  'const double &t',
-                  'const Entity& entity', 'const Point &x',
-                  'const DomainType &normal',
-                  'const RangeType &u',
-                  'RangeType &result'],
-            targs=['class Entity, class Point'], static=True,
-            predefined=predefined)
-    generateMethod(struct, boundaryDFlux,
-            'bool', 'diffusionBoundaryFlux',
-            args=['const int bndId',
-                  'const double &t',
-                  'const Entity& entity', 'const Point &x',
-                  'const DomainType &normal',
-                  'const RangeType &u',
-                  'const JacobianRangeType &jac',
-                  'RangeType &result'],
-            targs=['class Entity, class Point'], static=True,
-            predefined=predefined)
-    generateMethod(struct, boundaryValue,
-            'bool', 'boundaryValue',
-            args=['const int bndId',
-                  'const double &t',
-                  'const Entity& entity', 'const Point &x',
-                  'const RangeType &u',
-                  'RangeType &result'],
-            targs=['class Entity, class Point'], static=True,
-            predefined=predefined)
-
+    ##################################
+    ## limiter modification size
     limiterModifiedDict = getattr(Model,"limitedRange",None)
     if limiterModifiedDict is None:
         limiterModified = {}
@@ -321,14 +173,6 @@ def femDGSolver(Model, space,
         count = 0
         for id,f in limiterModifiedDict.items(): count += 1
         limitedDimRange = str(count)
-    generateMethod(struct, limiterModified,
-            'void', 'limitedRange',
-            args=['LimitedRange& limRange'],
-            targs=['class LimitedRange'], static=True, evalSwitch=False,
-            predefined=None)
-
-    ##################################
-    ## limiter modification size
     struct.append([Declaration(
         Variable("const int", "limitedDimRange = " + limitedDimRange),
         static=True)])
@@ -407,6 +251,7 @@ def femDGSolver(Model, space,
     includes += ["dune/fem-dg/solver/dg.hh"]
     includes += space._includes + destinationIncludes
     includes += ["dune/fem/schemes/diffusionmodel.hh", "dune/fempy/parameter.hh"]
+    includes += advModel._includes + diffModel._includes
 
     additionalType = 'Additional< typename ' + spaceType + '::FunctionSpaceType >'
 
@@ -448,11 +293,13 @@ def femDGSolver(Model, space,
               preamble=writer.writer.getvalue()).\
                     Operator( space, advModel, diffModel, parameters=parameters )
 
+from dune.femdg.patch import transform
 # create DG operator + solver (limiter = none,minmod,vanleer,superbee),
 # (diffusionScheme = cdg2,br2,ip,nipg,...)
 def femDGOperator(Model, space,
         limiter="minmod", diffusionScheme = "cdg2", threading=False,
         initialTime=0.0, parameters={}):
+    virtualize = False
     import dune.create as create
 
     if limiter is None or limiter is False:
@@ -465,7 +312,7 @@ def femDGOperator(Model, space,
     v = TestFunction(space)
     n = FacetNormal(space.cell())
     x = SpatialCoordinate(space.cell())
-    t = Constant(initialTime,"t")
+    t = Constant(initialTime,"time")
     predefined = {}
     spatial = Variable('const auto', 'y')
     predefined.update( {x: UnformattedExpression('auto', 'entity.geometry().global( Dune::Fem::coordinate( x ) )') })
@@ -492,19 +339,26 @@ def femDGOperator(Model, space,
     if hasStiffSource:
         diffModel += inner(as_vector(Model.S_s(t,x,u,grad(u))),v)*dx
 
-    advModel  = create.model("elliptic",space.grid, advModel)
-    diffModel = create.model("elliptic",space.grid, diffModel)
+    advModel  = create.model("elliptic",space.grid, advModel,
+                      modelPatch=transform(Model,space,t),
+                      virtualize=virtualize)
+    diffModel = create.model("elliptic",space.grid, diffModel,
+                      modelPatch=transform(Model,space,t),
+                      virtualize=virtualize)
 
     spaceType = space._typeName
 
-    modelType = "DiffusionModel< " +\
-          "typename " + spaceType + "::GridPartType, " +\
-          spaceType + "::dimRange, " +\
-          spaceType + "::dimRange, " +\
-          "typename " + spaceType + "::RangeFieldType >"
-
-    advModelType  = modelType
-    diffModelType = modelType
+    if virtualize:
+        modelType = "DiffusionModel< " +\
+              "typename " + spaceType + "::GridPartType, " +\
+              spaceType + "::dimRange, " +\
+              spaceType + "::dimRange, " +\
+              "typename " + spaceType + "::RangeFieldType >"
+        advModelType  = modelType
+        diffModelType = modelType
+    else:
+        advModelType  = advModel._typeName # modelType
+        diffModelType = diffModel._typeName # modelType
 
     _, destinationIncludes, destinationType, _, _, _ = space.storage
 
@@ -516,164 +370,8 @@ def femDGOperator(Model, space,
     struct.append(TypeAlias('JacobianRangeType','typename FunctionSpace::JacobianRangeType'))
     struct.append(TypeAlias('HessianRangeType','typename FunctionSpace::HessianRangeType'))
 
-    #advFlux2 = getattr(Model,"F_c",None)
-    #if advFlux2 is not None:
-    #    advFlux2 = advFlux2(t,x,u)
-    #generateMethod(struct, advFlux2,
-    #        'JacobianRangeType', 'advection',
-    #        returnResult=False,
-    #        args=['const double &t',
-    #              'const Entity &entity',
-    #              'const Point &x',
-    #              'const RangeType &u'],
-    #        targs=['class Entity, class Point'], static=True,
-    #        predefined=predefined)
-
-    maxSpeed = getattr(Model,"maxLambda",None)
-    if maxSpeed is not None:
-        maxSpeed = maxSpeed(t,x,u,n)
-    generateMethod(struct, maxSpeed,
-            'double', 'maxSpeed',
-            args=['const double &t',
-                  'const Entity &entity', 'const Point &x',
-                  'const DomainType &normal',
-                  'const RangeType &u'],
-            targs=['class Entity, class Point'], static=True,
-            predefined=predefined)
-
-    velocity = getattr(Model,"velocity",None)
-    if velocity is not None:
-        velocity = velocity(t,x,u)
-    generateMethod(struct, velocity,
-            'DomainType', 'velocity',
-            args=['const double &t',
-                  'const Entity &entity', 'const Point &x',
-                  'const RangeType &u'],
-            targs=['class Entity, class Point'], static=True,
-            predefined=predefined)
-
-    # TODO: fill in diffusion time step from Model
-    diffusionTimeStep = getattr(Model,"maxDiffusion",None)
-    if diffusionTimeStep is not None:
-        diffusionTimeStep = diffusionTimeStep(t,x,u)
-    generateMethod(struct, diffusionTimeStep,
-            'double', 'diffusionTimeStep',
-            args=['const Entity& entity', 'const Point &x',
-                  'const T& circumEstimate', 'const RangeType &u'],
-            targs=['class Entity, class Point, class T'], static=True,
-            predefined=None)
-
-    #advFlux2 = getattr(Model,"F_c",None)
-    #advFlux2 = advFlux2(t,x,u)
-    #generateMethod(struct, advFlux2,
-    #        'void', 'advection',
-    #        args=['const double &t',
-    #              'const Entity &entity',
-    #              'const Point &x',
-    #              'const RangeType &u',
-    #              'const JacobianRangeType& du',
-    #              'JacobianRangeType& result'],
-    #        targs=['class Entity, class Point'], static=True,
-    #        predefined=predefined)
-
-    # QUESTION: should `physical` actually depend on x? Perhaps even t?
-    physical = getattr(Model,"physical",None)
-    if physical is not None:
-        physical = physical(u)
-    generateMethod(struct, physical,
-            'double', 'physical',
-            args=['const Entity &entity', 'const Point &x',
-                  'const RangeType &u'],
-            targs=['class Entity, class Point'], static=True,
-            predefined=predefined)
-
-    # QUESTION: should `jump` actually depend on x? Perhaps even t?
-    w = Coefficient(space)
-    predefined.update( {w:Variable("const RangeType &", "w")} )
-    jump = getattr(Model,"jump",None)
-    if jump is not None:
-        jump = jump(u,w)
-    generateMethod(struct, jump,
-            'double', 'jump',
-            args=['const Intersection& it', 'const Point &x',
-                  'const RangeType &u',
-                  'const RangeType &w'],
-            targs=['class Intersection, class Point'], static=True,
-            predefined=predefined)
-
-    adjustAverageValue = {}
-    generateMethod(struct, adjustAverageValue,
-            'void', 'adjustAverageValue',
-            args=['const Entity& entity', 'const Point &x',
-                  'RangeType &u'],
-            targs=['class Entity, class Point'], static=True, evalSwitch=False,
-            predefined=None)
-
-    #####################
-    ## boundary treatment
-    boundaryDict = getattr(Model,"boundary",{})
-    boundaryAFlux = {}
-    boundaryDFlux = {}
-    boundaryValue = {}
-    for k,f in boundaryDict.items():
-        # collect all ids (could be list or range)
-        ids = []
-        try:
-            for kk in k:
-                ids += [kk]
-        except TypeError:
-            ids += [k]
-        # TODO: check that id is not used more then once
-        # figure out what type of boundary condition is used
-        if isinstance(f,tuple) or isinstance(f,list):
-            assert hasAdvFlux and hasDiffFlux, "two boundary fluxes provided for id "+str(k)+" but only one bulk flux given"
-            method = [f[0](t,x,u,n), f[1](t,x,u,grad(u),n)]
-            boundaryAFlux.update( [ (kk,method[0]) for kk in ids] )
-            boundaryDFlux.update( [ (kk,method[1]) for kk in ids] )
-        else:
-            try:
-                method = f(t,x,u,n)
-                if hasAdvFlux and not hasDiffFlux:
-                    boundaryAFlux.update( [ (kk,method) for kk in ids] )
-                elif not hasAdvFlux and hasDiffFlux:
-                    boundaryDFlux.update( [ (kk,method) for kk in ids] )
-                else:
-                    assert not (hasAdvFlux and hasDiffFlux), "one boundary fluxes provided for id "+str(k)+" but two bulk flux given"
-            except TypeError:
-                method = f(t,x,u)
-                boundaryValue.update( [ (kk,method) for kk in ids] )
-
-    generateMethod(struct, boundaryAFlux,
-            'bool', 'boundaryFlux',
-            args=['const int bndId',
-                  'const double &t',
-                  'const Entity& entity', 'const Point &x',
-                  'const DomainType &normal',
-                  'const RangeType &u',
-                  'RangeType &result'],
-            targs=['class Entity, class Point'], static=True,
-            predefined=predefined)
-    generateMethod(struct, boundaryDFlux,
-            'bool', 'diffusionBoundaryFlux',
-            args=['const int bndId',
-                  'const double &t',
-                  'const Entity& entity', 'const Point &x',
-                  'const DomainType &normal',
-                  'const RangeType &u',
-                  'const JacobianRangeType &jac',
-                  'RangeType &result'],
-            targs=['class Entity, class Point'], static=True,
-            predefined=predefined)
-    generateMethod(struct, boundaryValue,
-            'bool', 'boundaryValue',
-            args=['const int bndId',
-                  'const double &t',
-                  'const Entity& entity', 'const Point &x',
-                  'const RangeType &u',
-                  'RangeType &result'],
-            targs=['class Entity, class Point'], static=True,
-            predefined=predefined)
-
+    ##################################
+    ## limiter modification size
     limiterModifiedDict = getattr(Model,"limitedRange",None)
     if limiterModifiedDict is None:
         limiterModified = {}
@@ -683,14 +381,6 @@ def femDGOperator(Model, space,
         count = 0
         for id,f in limiterModifiedDict.items(): count += 1
         limitedDimRange = str(count)
-    generateMethod(struct, limiterModified,
-            'void', 'limitedRange',
-            args=['LimitedRange& limRange'],
-            targs=['class LimitedRange'], static=True, evalSwitch=False,
-            predefined=None)
-
-    ##################################
-    ## limiter modification size
     struct.append([Declaration(
         Variable("const int", "limitedDimRange = " + limitedDimRange),
         static=True)])
@@ -769,6 +459,7 @@ def femDGOperator(Model, space,
     includes += ["dune/fem-dg/operator/dg/dgpyoperator.hh"]
     includes += space._includes + destinationIncludes
     includes += ["dune/fem/schemes/diffusionmodel.hh", "dune/fempy/parameter.hh"]
+    includes += advModel._includes + diffModel._includes
 
     additionalType = 'Additional< typename ' + spaceType + '::FunctionSpaceType >'
 

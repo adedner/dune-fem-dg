@@ -11,6 +11,7 @@
 #include <dune/fem/misc/fmatrixconverter.hh>
 #include <dune/fem/misc/boundaryidprovider.hh>
 #include <dune/fem/space/common/functionspace.hh>
+#include <dune/fem/schemes/diffusionmodel.hh>
 
 // fem-dg includes
 #include <dune/fem-dg/models/defaultmodel.hh>
@@ -157,15 +158,22 @@ namespace Fem
         limitedRange_[ i ] = i;
 
       // if method has been filled then modified will be set differently
-      AdditionalType :: limitedRange( limitedRange_ );
+      // AdditionalType :: limitedRange( limitedRange_ );
+      advection_.limitedRange( limitedRange_ );
     }
 
     void setTime (const double t)
     {
       BaseType::setTime(t);
       // update model times (only if time method is available on these models)
-      advection_.setTime(t);
-      diffusion_.setTime(t);
+      //! TODO problem without virtualization advection_.setTime(t);
+      //! TODO problem without virtualization diffusion_.setTime(t);
+      ::detail::CallSetTime< AdvectionModelType,
+                           ::detail::CheckTimeMethod< AdvectionModelType >::value >
+        ::setTime( const_cast< AdvectionModelType& > (advection_), t );
+      ::detail::CallSetTime< DiffusionModelType,
+                           ::detail::CheckTimeMethod< DiffusionModelType >::value >
+        ::setTime( const_cast< DiffusionModelType& > (diffusion_), t );
     }
 
     double gamma () const { return problem_.gamma(); }
@@ -244,7 +252,8 @@ namespace Fem
                                      const T& circumEstimate,
                                      const RangeType& u ) const
     {
-      return AdditionalType :: diffusionTimeStep( local.entity(), local.quadraturePoint(), circumEstimate, u );
+      // return AdditionalType :: diffusionTimeStep( local.entity(), local.quadraturePoint(), circumEstimate, u );
+      return diffusion_.diffusionTimeStep( local.entity(), local.quadraturePoint(), circumEstimate, u );
     }
 
     // is not used
@@ -274,7 +283,8 @@ namespace Fem
       // note: the local coordinate used here is not important since we
       // only check if the intersection as a whole is part of the dirichlet
       // boundary - so the center is used
-      bool bndVal = AdditionalType::boundaryValue(id, time(), local.entity(), local.intersection().geometryInInside().center(), u, u);
+      // bool bndVal = AdditionalType::boundaryValue(id, time(), local.entity(), local.intersection().geometryInInside().center(), u, u);
+      bool bndVal = advection_.boundaryValue(id, time(), local.entity(), local.intersection().geometryInInside().center(), u, u);
 
       return bndVal;
     }
@@ -289,7 +299,8 @@ namespace Fem
 #ifndef NDEBUG
       const bool isDirichlet =
 #endif
-      AdditionalType::boundaryValue(id, time(), local.entity(), local.quadraturePoint(), uLeft, uRight);
+      // AdditionalType::boundaryValue(id, time(), local.entity(), local.quadraturePoint(), uLeft, uRight);
+      advection_.boundaryValue(id, time(), local.entity(), local.quadraturePoint(), uLeft, uRight);
       assert( isDirichlet );
     }
 
@@ -308,7 +319,8 @@ namespace Fem
 #ifndef NDEBUG
       const bool isFluxBnd =
 #endif
-      AdditionalType::boundaryFlux(id, time(), local.entity(), local.quadraturePoint(), normal, uLeft, gLeft);
+      // AdditionalType::boundaryFlux(id, time(), local.entity(), local.quadraturePoint(), normal, uLeft, gLeft);
+      advection_.boundaryFlux(id, time(), local.entity(), local.quadraturePoint(), normal, uLeft, gLeft);
       gLeft *= len;
       assert( isFluxBnd );
       return 0; // TODO: do something better here
@@ -340,7 +352,8 @@ namespace Fem
 #ifndef NDEBUG
       const bool isFluxBnd =
 #endif
-      AdditionalType::diffusionBoundaryFlux(id, time(), local.entity(), local.quadraturePoint(), normal, uLeft, jacLeft, gLeft);
+      // AdditionalType::diffusionBoundaryFlux(id, time(), local.entity(), local.quadraturePoint(), normal, uLeft, jacLeft, gLeft);
+      diffusion_.diffusionBoundaryFlux(id, time(), local.entity(), local.quadraturePoint(), normal, uLeft, jacLeft, gLeft);
       gLeft *= len;
       assert( isFluxBnd );
       return 0; // QUESTION: do something better here? Yes, return time step restriction if possible
@@ -356,7 +369,8 @@ namespace Fem
       // TODO: add a max speed for the diffusion time step control
       // this needs to be added in diffusionTimeStep
       assert( hasAdvection );
-      advspeed = AdditionalType::maxSpeed( time(), local.entity(), local.quadraturePoint(), unitNormal, u );
+      // advspeed = AdditionalType::maxSpeed( time(), local.entity(), local.quadraturePoint(), unitNormal, u );
+      advection_.maxSpeed( time(), local.entity(), local.quadraturePoint(), unitNormal, u );
       totalspeed = advspeed;
     }
 
@@ -370,7 +384,8 @@ namespace Fem
     inline DomainType velocity (const LocalEvaluation& local,
                                 RangeType& u) const
     {
-      return AdditionalType :: velocity( time(), local.entity(), local.quadraturePoint(), u );
+      // return AdditionalType :: velocity( time(), local.entity(), local.quadraturePoint(), u );
+      return advection_.velocity( time(), local.entity(), local.quadraturePoint(), u );
     }
 
     /////////////////////////////////////////////////////////////////
@@ -382,7 +397,8 @@ namespace Fem
                           const RangeType& u,
                           DomainType& velocity) const
     {
-      velocity = AdditionalType :: velocity( time(), en, x, u );
+      // velocity = AdditionalType :: velocity( time(), en, x, u );
+      velocity = advection_.velocity( time(), en, x, u );
     }
 
     // we have physical check for this model
@@ -397,7 +413,8 @@ namespace Fem
                          const DomainType& x,
                          const RangeType& u) const
     {
-      return AdditionalType :: physical( entity, x, u ) > 0;
+      // return AdditionalType :: physical( entity, x, u ) > 0;
+      return advection_.physical( entity, x, u ) > 0;
     }
 
     // adjust average value if necessary
@@ -408,7 +425,8 @@ namespace Fem
                              RangeType& u ) const
     {
       // nothing to be done here for this test case
-      AdditionalType :: adjustAverageValue( entity, xLocal, u );
+      // AdditionalType :: adjustAverageValue( entity, xLocal, u );
+      advection_.adjustAverageValue( entity, xLocal, u );
     }
 
     // calculate jump between left and right value
@@ -419,7 +437,8 @@ namespace Fem
                      const RangeType& uRight,
                      RangeType& jump) const
     {
-      jump = AdditionalType :: jump( it, x, uLeft, uRight );
+      // jump = AdditionalType :: jump( it, x, uLeft, uRight );
+      jump = advection_.jump( it, x, uLeft, uRight );
     }
 
     // calculate jump between left and right value
@@ -430,7 +449,8 @@ namespace Fem
                                      const RangeType& uRight,
                                      RangeType& indicator) const
     {
-      indicator = AdditionalType :: jump( it, x, uLeft, uRight );
+      // indicator = AdditionalType :: jump( it, x, uLeft, uRight );
+      indicator = advection_.jump( it, x, uLeft, uRight );
     }
 
     // misc for eoc calculation

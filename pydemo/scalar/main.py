@@ -24,6 +24,11 @@ parameters = {"fem.ode.odesolver": "IMEX",   # EX, IM, IMEX
               "dgdiffusionflux.penalty": 0,
               "dgdiffusionflux.liftfactor": 1}
 
+run(*problem(),
+        startLevel=0, polOrder=2, limiter=None,
+        primitive=None, saveStep=0.01, subsamp=0,
+        dt=0.001,
+        parameters=parameters)
 try:
     run(*problem(),
             startLevel=0, polOrder=2, limiter=None,
