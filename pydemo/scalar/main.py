@@ -29,19 +29,3 @@ run(*problem(),
         primitive=None, saveStep=0.01, subsamp=0,
         dt=0.001,
         parameters=parameters)
-try:
-    run(*problem(),
-            startLevel=0, polOrder=2, limiter=None,
-            primitive=None, saveStep=0.01, subsamp=0,
-            dt=0.001,
-            parameters=parameters)
-except NameError:
-    # from scalar import burgersShock as problem
-    # from scalar import burgersVW as problem
-    from scalar import burgersStationaryShock as problem
-    parameters["fem.ode.odesolver"] = "EX"
-    run(*problem(),
-            startLevel=0, polOrder=2, limiter="default",
-            primitive=None, saveStep=0.01, subsamp=2,
-            dt=None,
-            parameters=parameters)

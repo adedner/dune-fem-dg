@@ -10,17 +10,18 @@ from dune.femdg.testing import run, Parameters
 def problem():
     gridView = Grid(cartesianDomain([0,0],[1,1],[50,50]))
     def velocity():
-        velocitySpace = dune.fem.space.lagrange(gridView, order=1)
+        # TODO without dimRange the 'vectorization' is not carried out correctly
+        velocitySpace = dune.fem.space.lagrange(gridView, order=1, dimRange=1)
         Psi  = velocitySpace.interpolate(0,name="streamFunction")
         u    = TrialFunction(velocitySpace)
         phi  = TestFunction(velocitySpace)
         x    = SpatialCoordinate(velocitySpace)
         form = ( inner(grad(u),grad(phi)) -
-                 0.1*2*(2*pi)**2*sin(2*pi*x[0])*sin(2*pi*x[1]) * phi ) * dx
-        dbc  = DirichletBC(velocitySpace,0)
+                 0.1*2*(2*pi)**2*sin(2*pi*x[0])*sin(2*pi*x[1]) * phi[0] ) * dx
+        dbc  = DirichletBC(velocitySpace,[0])
         velocityScheme = dune.fem.scheme.galerkin([form == 0, dbc], solver="cg")
         velocityScheme.solve(target=Psi)
-        return as_vector([-Psi.dx(1),Psi.dx(0)])
+        return as_vector([-Psi[0].dx(1),Psi[0].dx(0)])
 
     v = velocity()
 
@@ -42,15 +43,11 @@ def problem():
             r = K*as_vector([U[0]*U[1], U[0]*U[1], -2*U[0]*U[1] + 10*U[2]])
             return r - f
         def F_c(t,x,U):
-            vv = as_vector([1,1])
-            print( as_matrix([ [*(v*u)] for u in U ]) )
             return as_matrix([ [*(v*u)] for u in U ])
         def maxLambda(t,x,U,n):
-            vv = as_vector([1,1])
-            return abs(dot(vv,n))
+            return abs(dot(v,n))
         def velocity(t,x,U):
-            vv = as_vector([1,1])
-            return vv
+            return v
         def F_v(t,x,U,DU):
             return eps*DU
         def maxDiffusion(t,x,U):
