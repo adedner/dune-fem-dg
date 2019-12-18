@@ -487,32 +487,22 @@ def femDGOperator(Model, space,
         DuneType &self, typename DuneType::DestinationType &u) {
         self.limit(u); }''' );
 
-    # add method to obtain time step size
-    explOp  = Method('explicitOperator', '&DuneType::explicitOperator')
-    implOp  = Method('implicitOperator', '&DuneType::implicitOperator')
+    # add method to extract explicit and implicit part of the operator
+    #explOp  = Method('explicitOperator', '&DuneType::explicitOperator')
+    #implOp  = Method('implicitOperator', '&DuneType::implicitOperator')
 
     _, domainFunctionIncludes, domainFunctionType, _, _, _ = space.storage
     base = 'Dune::Fem::SpaceOperatorInterface< ' + domainFunctionType + '>'
     return load(includes, typeName,
-                # constructor, applyLimiter, explOp, implOp,
                 baseClasses = [base],
                 preamble=writer.writer.getvalue()).\
                 Operator( space, advModel, diffModel, parameters=parameters )
 
 # RungeKutta solvers
-# def rungeKuttaSolver( fullOperator=None, explOperator=None, implOperator=None, imex='EX', butchertable=None ):
-def rungeKuttaSolver( fullOperator, imex='EX', butchertable=None ):
+def rungeKuttaSolver( fullOperator, imex='EX', butchertable=None, parameters={} ):
 
     includes = ["dune/fem-dg/solver/rungekuttasolver.hh", "dune/fem-dg/misc/algorithmcreatorselector.hh"]
     includes += fullOperator._includes
-    # if explOperator is None:
-    #     explOperator = fullOperator
-    # else:
-    #     includes += explOperator._includes
-    # if implOperator is None:
-    #     implOperator = fullOperator
-    # else:
-    #     includes += implOperator._includes
 
     space = fullOperator.domainSpace
     spaceType = space._typeName
@@ -526,23 +516,34 @@ def rungeKuttaSolver( fullOperator, imex='EX', butchertable=None ):
 
     typeName = 'Dune::Fem::SimpleRungeKuttaSolver< ' + domainFunctionType + '>'
 
+    imexId = 0 # == 'EX'
+    if imex == 'IM':
+        imexId = 1
+    elif imex == 'IMEX':
+        imexId = 2
 
     # TODO: move this to header file in dune/fem-dg/python
     # constructor = Constructor([operatorType + ' &op'],
     #                           ['return new ' + typeName + '(op);'],
     #                           ['"op"_a','pybind11::keep_alive< 1, 2 >()' ])
-    constructor = Constructor([fullOperatorType + ' &op, ' + explOperatorType + ' &explOp, ' + implOperatorType + ' &implOp'],
-                              ['return new ' + typeName + '(op, explOp, implOp);'],
-                              ['"op"_a', '"explOp"_a', '"implOp"_a',
+    constructor = Constructor([fullOperatorType + ' &op',
+                               explOperatorType + ' &explOp',
+                               implOperatorType + ' &implOp',
+                               'const int imexId',
+                               'const pybind11::dict &parameters'],
+                              ['return new ' + typeName + '(op, explOp, implOp, imexId, Dune::FemPy::pyParameter( parameters, std::make_shared< std::string >() ));'],
+                              ['"op"_a', '"explOp"_a', '"implOp"_a', '"imexId"_a', '"parameters"_a',
                                'pybind11::keep_alive< 1, 2 >()', 'pybind11::keep_alive< 1, 3 >()','pybind11::keep_alive< 1, 4 >()' ])
 
     solve = Method('solve', '''[]( DuneType &self, typename DuneType::DestinationType &u) { self.solve(u); }''' );
     setTimeStepSize = Method('setTimeStepSize', '&DuneType::setTimeStepSize')
     deltaT = Method('deltaT', '&DuneType::deltaT')
 
-    #solve = Method('step', '&DuneType::solve', extra=['"target"_a'])
-
     return load(includes, typeName, constructor, solve, setTimeStepSize, deltaT).Operator(
             fullOperator,
-            fullOperator.explicitOperator,
-            fullOperator.implicitOperator )
+            #fullOperator.explicitOperator,
+            #fullOperator.implicitOperator,
+            fullOperator,
+            fullOperator,
+            imexId,
+            parameters=parameters)

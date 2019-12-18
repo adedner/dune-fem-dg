@@ -4,7 +4,7 @@ from dune.fem import parameter
 import dune.create as create
 from dune.models.elliptic.formfiles import loadModels
 from llf import NumFlux
-from dune.femdg import femDGSolver
+from dune.femdg import femDGOperator, rungeKuttaSolver
 from ufl import *
 
 gamma = 1.4
@@ -13,7 +13,7 @@ dim = 2
 from euler import sod as problem
 #from euler import radialSod3 as problem
 
-Model, initial, x0,x1,N, endTime, name, exact = problem(dim,gamma)
+Model, initial, domain, endTime, name, exact = problem(dim,gamma)
 
 parameter.append({"fem.verboserank": -1})
 parameter.append({"fem.timeprovider.factor": 0.25})
@@ -25,7 +25,7 @@ parameters = {"fem.ode.odesolver": "EX",
               "femdg.limiter.admissiblefunctions": 1,
               "femdg.limiter.tolerance": 1e-8}
 
-
+x0,x1,N = domain
 grid = structuredGrid(x0,x1,N)
 # grid = create.grid("ALUSimplex", cartesianDomain(x0,x1,N))
 dimR     = grid.dimension + 2
@@ -45,41 +45,6 @@ def initialize(space):
         u_h = spacelag.interpolate(initial, name='tmp')
         return space.interpolate(u_h, name='u_h')
 
-def useGalerkinOp():
-    global count, t, dt, saveTime
-    # a full fv implementation using UFL and the galerkin operator
-    # some sign error or something else leading to wrong results
-    # still needs fixing
-    spaceName = "finitevolume"
-    space = create.space(spaceName, grid, dimRange=dimR)
-
-    n = FacetNormal(space.cell())
-
-    u_h   = space.interpolate(initial, name='u_h')
-    u_h_n = u_h.copy(name="previous")
-
-    fullModel = inner( Model.F_c(u), grad(v) ) * dx -\
-                inner( NumFlux(Model,u,n,dt), v('+')-v('-')) * dS -\
-                inner( Model.F_c(u)*n, v) * ds
-    operator = create.operator("galerkin",
-                 inner(u-u_h_n,v)*dx == dt*replace(fullModel,{u:u_h_n}),
-                 space )
-
-    operator.model.dt = 1e-5
-
-    grid.writeVTK(name, pointdata=[u_h], number=count)
-    start = time.time()
-    while t < endTime:
-        u_h_n.assign(u_h)
-        operator.step(target=u_h)
-        t += operator.model.dt
-        if t > saveTime:
-            count += 1
-            grid.writeVTK(name, pointdata=[u_h], number=count)
-            saveTime += saveStep
-    print("time loop:",time.time()-start)
-    grid.writeVTK(name, pointdata=[u_h], number=count)
-
 def useODESolver(polOrder=2, limiter='default'):
     global count, t, dt, saveTime
     polOrder = polOrder
@@ -90,8 +55,8 @@ def useODESolver(polOrder=2, limiter='default'):
         space = create.space("dgonb", grid, order=polOrder, dimRange=dimR)
     u_h = initialize(space)
     # rho, v, p = Model.toPrim(u_h)
-    operator = femDGSolver( Model, space, limiter=limiter, threading=True, parameters=parameters )
-    # operator.setTimeStepSize(dt)
+    operator = femDGOperator(Model, space, limiter=limiter, threading=True, parameters=parameters )
+    ode = rungeKuttaSolver( operator, parameters=parameters )
 
     operator.applyLimiter( u_h )
     print("number of elements: ",grid.size(0),flush=True)
@@ -104,9 +69,10 @@ def useODESolver(polOrder=2, limiter='default'):
     start = time.time()
     tcount = 0
     while t < endTime:
-        operator.step(target=u_h)
+        ode.solve(u_h)
         # operator.applyLimiter( u_h );
-        dt = operator.deltaT()
+        dt = ode.deltaT()
+        print('dt = ',dt)
         t += dt
         tcount += 1
         if tcount%100 == 0:
@@ -127,7 +93,7 @@ def useODESolver(polOrder=2, limiter='default'):
         #cellvector={"velocity":v},
         number=count, subsampling=2)
 
-scheme = 1
+scheme = 2
 
 if scheme == 0:
     # grid = structuredGrid(x0,x1,N)
@@ -145,7 +111,10 @@ elif scheme == 1:
     # grid = create.grid("ALUSimplex", cartesianDomain(x0,x1,N))
     useODESolver(0,None)           # FV scheme
 elif scheme == 2:
-    N = [n*6 for n in N]
-    grid = structuredGrid(x0,x1,N)
+    grid = create.grid("ALUSimplex", cartesianDomain(x0,x1,N))
+    #grid = create.grid("ALUCube", cartesianDomain(x0,x1,N))
+    grid.hierarchicalGrid.globalRefine(1)
+    #N = [n*6 for n in N]
+    #grid = structuredGrid(x0,x1,N)
     # grid = create.grid("ALUSimplex", cartesianDomain(x0,x1,N))
     useODESolver(0,'default')      # FV scheme with limiter

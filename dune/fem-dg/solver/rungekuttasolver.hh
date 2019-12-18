@@ -247,19 +247,21 @@ namespace Fem
     const std::string      name_;
     ExplicitOperatorType&  explicitOperator_;
     ImplicitOperatorType&  implicitOperator_;
-    const RungeKuttaSolverParameters* param_;
+    std::unique_ptr< const RungeKuttaSolverParameters > param_;
 
-    OdeSolverInterfaceType* explicitSolver_;
-    OdeSolverInterfaceType* odeSolver_;
-    HelmHoltzOperatorType * helmholtzOperator_;
+    std::unique_ptr< OdeSolverInterfaceType > explicitSolver_;
+    std::unique_ptr< OdeSolverInterfaceType > odeSolver_;
+    std::unique_ptr< HelmHoltzOperatorType  > helmholtzOperator_;
 
-    const double explFactor_ ;
+    const   double explFactor_ ;
+    mutable double fixedTimeStep_ ;
     const int verbose_ ;
     const int rkSteps_ ;
     const int odeSolverType_ ;
     int imexCounter_ , exCounter_;
     int minIterationSteps_, maxIterationSteps_ ;
     bool useImex_ ;
+    mutable bool initialized_;
   public:
     RungeKuttaSolver( Fem::TimeProviderBase& tp,
                       OperatorType& op,
@@ -273,9 +275,9 @@ namespace Fem
        explicitOperator_( advOp ),
        implicitOperator_( diffOp ),
        param_( new RungeKuttaSolverParameters( ParameterKey::generate( name_, "fem.ode." ), parameter ) ),
-       explicitSolver_( 0 ),
-       odeSolver_( 0 ),
-       helmholtzOperator_( 0 ),
+       explicitSolver_(),
+       odeSolver_(),
+       helmholtzOperator_(),
        explFactor_( param_->explicitFactor() ),
        verbose_( param_->verbose() ),
        rkSteps_( param_->obtainRungeKuttaSteps( operator_.space().order() + 1 ) ),
@@ -283,12 +285,14 @@ namespace Fem
        imexCounter_( 0 ), exCounter_ ( 0 ),
        minIterationSteps_( std::numeric_limits< int > :: max() ),
        maxIterationSteps_( 0 ),
-       useImex_( odeSolverType_ > 1 )
+       useImex_( odeSolverType_ > 1 ),
+       initialized_( false )
     {
       solverpair_t solver( nullptr, nullptr ) ;
       // create implicit or explicit ode solver
       if( odeSolverType_ == 0 )
       {
+        std::cout << "Creating explicit ode solver" << std::endl;
         solver = OdeSolversType :: createExplicitSolver( operator_, tp, rkSteps_, *param_, parameter, name_ );
       }
       else if (odeSolverType_ == 1)
@@ -307,79 +311,55 @@ namespace Fem
 
         // IMEX+
         if( odeSolverType_ == 3 )
-          explicitSolver_ = OdeSolversType :: createExplicitSolver( operator_, tp, rkSteps_, *param_, parameter, name_ ).first;
+        {
+          explicitSolver_.reset( OdeSolversType :: createExplicitSolver( operator_, tp, rkSteps_, *param_, parameter, name_ ).first );
+        }
       }
       else
       {
         DUNE_THROW(NotImplemented,"Wrong ODE solver selected");
       }
 
-      odeSolver_ = solver.first;
-      helmholtzOperator_ = solver.second;
+      odeSolver_.reset( solver.first );
+      helmholtzOperator_.reset( solver.second );
     }
 
     RungeKuttaSolver( OperatorType& op,
                       ExplicitOperatorType& advOp,
                       ImplicitOperatorType& diffOp,
+                      const int  odeSolverType,
                       const Dune::Fem::ParameterReader &parameter = Dune::Fem::Parameter::container() )
      : RungeKuttaSolver( *(new TimeProviderType( op.space().gridPart().comm(), parameter )),
                          op, advOp, diffOp, "PyRK", parameter )
     {
-      tpPtr_.reset( static_cast< TimeProviderType* > (&timeProvider_) );
+      tpPtr_.reset( dynamic_cast< TimeProviderType* > (&timeProvider_) );
       const TimeSteppingParameters param("femdg.stepper.",parameter);
       const double maxTimeStep = param.maxTimeStep();
       // start first time step with prescribed fixed time step
       // if it is not 0 otherwise use the internal estimate
       tpPtr_->provideTimeStepEstimate(maxTimeStep);
-
-      // adjust fixed time step with timeprovider.factor()
-      fixedTimeStep_ /= tpPtr_->factor() ;
-      if ( fixedTimeStep_ > 1e-20 )
-        tpPtr_->init( fixedTimeStep_ );
-      else
-        tpPtr_->init();
-      std::cout << "cfl = " << double(tpPtr_->factor()) << " " << tpPtr_->time() << std::endl;
     }
 
-    RungeKuttaSolver( OperatorType& op )
-     : RungeKuttaSolver( *(new TimeProviderType( op.space().gridPart().comm() )),
-                         op, op, op, "PyRK" )
-    {
-      tpPtr_.reset( static_cast< TimeProviderType* > (&timeProvider_) );
-    }
-
-    //! destructor
-    ~RungeKuttaSolver()
-    {
-      delete param_;           param_ = 0;
-      delete odeSolver_;       odeSolver_ = 0;
-      delete explicitSolver_ ; explicitSolver_ = 0;
-      delete helmholtzOperator_; helmholtzOperator_ = 0;
-    }
-
-    //! initialize method
-    mutable bool initialized_ = false;
-    void initialize( const DestinationType& U ) const
-    {
-      if (initialized_) return;
-      if( explicitSolver_ )
-      {
-        explicitSolver_->initialize( U );
-      }
-      assert( odeSolver_ );
-      odeSolver_->initialize( U );
-      initialized_ = true;
-    }
     void initialize( const DestinationType& U )
     {
-      if (initialized_) return;
-      if( explicitSolver_ )
+      if ( ! initialized_)
       {
-        explicitSolver_->initialize( U );
+        std::cout << "Called initialize " << std::endl;
+        if( explicitSolver_ )
+        {
+          explicitSolver_->initialize( U );
+        }
+        assert( odeSolver_ );
+        odeSolver_->initialize( U );
+        // adjust fixed time step with timeprovider.factor()
+        fixedTimeStep_ /= tpPtr_->factor() ;
+        if ( fixedTimeStep_ > 1e-20 )
+          tpPtr_->init( fixedTimeStep_ );
+        else
+          tpPtr_->init();
+        std::cout << "cfl = " << double(tpPtr_->factor()) << ", T_0 = " << tpPtr_->time() << " dtEst = " << tpPtr_->timeStepEstimate() << std::endl;
+        initialized_ = true;
       }
-      assert( odeSolver_ );
-      odeSolver_->initialize( U );
-      initialized_ = true;
     }
 
     void getAdvectionDiffsionTimeSteps( double& advStep, double& diffStep ) const
@@ -402,14 +382,15 @@ namespace Fem
       const_cast< ThisType& > (*this).solve( dest );
     }
 
-    mutable double                        fixedTimeStep_ ;
     void setTimeStepSize( const double dt )
     {
       fixedTimeStep_  = dt ;
       fixedTimeStep_ /= tpPtr_->factor() ;
       tpPtr_->provideTimeStepEstimate( dt );
     }
-    double deltaT() const { return timeProvider_.deltaT(); }
+
+    double deltaT() const { return tpPtr_->deltaT(); }
+    double time()   const { return tpPtr_->time(); }
 
     //! solver the ODE
     void solve( DestinationType& U )
@@ -423,6 +404,9 @@ namespace Fem
                 MonitorType& monitor )
     {
       initialize( U );
+
+      // make sure the current time step is valid
+      assert( timeProvder_.timeStepValid() );
 
       // take CPU time of solution process
       Dune::Timer timer ;
@@ -496,6 +480,16 @@ namespace Fem
       monitor.odeSolveTime_     = timer.elapsed();
       monitor.operatorTime_     = operatorTime();
       monitor.numberOfElements_ = numberOfElements();
+
+      // if TimeProvider was created locally, it needs to be updated here
+      if( tpPtr_ )
+      {
+        // next time step is prescribed by fixedTimeStep
+        if ( fixedTimeStep_ > 1e-20 )
+          tpPtr_->next( fixedTimeStep_ );
+        else
+          tpPtr_->next();
+      }
     }
 
     //! return CPU time needed for the operator evaluation

@@ -12,6 +12,8 @@ dim = 2
 gamma = 1.4
 
 parameter.append({"fem.verboserank": -1})
+#, "fem.timeprovider.factor": 0.25,
+#                  "fem.ode.odesolver": "EX","fem.ode.odesolver.verbose": "full"})
 
 primitive=lambda Model,uh: {"pressure": Model.toPrim(uh)[2]}
 parameters = {"fem.ode.odesolver": "EX",
