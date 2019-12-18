@@ -332,7 +332,7 @@ namespace Fem
      : RungeKuttaSolver( *(new TimeProviderType( op.space().gridPart().comm(), parameter )),
                          op, advOp, diffOp, "PyRK", parameter )
     {
-      tpPtr_.reset( dynamic_cast< TimeProviderType* > (&timeProvider_) );
+      tpPtr_.reset( static_cast< TimeProviderType* > (&timeProvider_) );
       const TimeSteppingParameters param("femdg.stepper.",parameter);
       const double maxTimeStep = param.maxTimeStep();
       // start first time step with prescribed fixed time step
@@ -351,13 +351,17 @@ namespace Fem
         }
         assert( odeSolver_ );
         odeSolver_->initialize( U );
-        // adjust fixed time step with timeprovider.factor()
-        fixedTimeStep_ /= tpPtr_->factor() ;
-        if ( fixedTimeStep_ > 1e-20 )
-          tpPtr_->init( fixedTimeStep_ );
-        else
-          tpPtr_->init();
-        std::cout << "cfl = " << double(tpPtr_->factor()) << ", T_0 = " << tpPtr_->time() << " dtEst = " << tpPtr_->timeStepEstimate() << std::endl;
+
+        if( tpPtr_ )
+        {
+          // adjust fixed time step with timeprovider.factor()
+          fixedTimeStep_ /= tpPtr_->factor() ;
+          if ( fixedTimeStep_ > 1e-20 )
+            tpPtr_->init( fixedTimeStep_ );
+          else
+            tpPtr_->init();
+          std::cout << "cfl = " << double(tpPtr_->factor()) << ", T_0 = " << tpPtr_->time() << " dtEst = " << tpPtr_->timeStepEstimate() << std::endl;
+        }
         initialized_ = true;
       }
     }
@@ -385,12 +389,15 @@ namespace Fem
     void setTimeStepSize( const double dt )
     {
       fixedTimeStep_  = dt ;
-      fixedTimeStep_ /= tpPtr_->factor() ;
-      tpPtr_->provideTimeStepEstimate( dt );
+      if( tpPtr_ )
+      {
+        fixedTimeStep_ /= tpPtr_->factor() ;
+        tpPtr_->provideTimeStepEstimate( dt );
+      }
     }
 
-    double deltaT() const { return tpPtr_->deltaT(); }
-    double time()   const { return tpPtr_->time(); }
+    double deltaT() const { return timeProvider_.deltaT(); }
+    double time()   const { return timeProvider_.time(); }
 
     //! solver the ODE
     void solve( DestinationType& U )
