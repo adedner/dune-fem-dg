@@ -3,8 +3,8 @@ from dune.femdg.testing import run
 
 # from scalar import shockTransport as problem
 # from scalar import sinProblem as problem
-# from scalar import sinTransportProblem as problem
-from scalar import sinAdvDiffProblem as problem
+from scalar import sinTransportProblem as problem
+# from scalar import sinAdvDiffProblem as problem
 # from scalar import pulse as problem
 # from scalar import diffusivePulse as problem
 

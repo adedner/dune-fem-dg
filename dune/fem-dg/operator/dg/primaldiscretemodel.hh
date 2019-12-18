@@ -168,8 +168,8 @@ namespace Fem
       {
         if( diffFlux_.hasLifting() )
         {
-          const bool hasBoundaryValue = model_.hasBoundaryValue( local(0) );
-          const bool hasRobinBoundaryValue = model_.hasRobinBoundaryValue( local(0) );
+          const bool hasBoundaryValue = model_.hasBoundaryValue( local );
+          const bool hasRobinBoundaryValue = model_.hasRobinBoundaryValue( local );
 
           const size_t quadNop = local.quadrature().nop();
           if( uBndVec_.size() < quadNop )
@@ -177,8 +177,8 @@ namespace Fem
 
           for(size_t qp = 0; qp < quadNop; ++qp)
           {
-            assert( hasBoundaryValue == model_.hasBoundaryValue( local(qp) ) );
-            assert( hasRobinBoundaryValue == model_.hasRobinBoundaryValue( local(qp) ) );
+            assert( hasBoundaryValue == model_.hasBoundaryValue( local[qp] ) );
+            assert( hasRobinBoundaryValue == model_.hasRobinBoundaryValue( local[qp] ) );
 
             if( hasBoundaryValue || hasRobinBoundaryValue )
               model_.boundaryValue(local[qp], local[qp].values()[uVar], uBndVec_[qp] );

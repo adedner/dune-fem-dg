@@ -288,6 +288,8 @@ namespace Fem
        useImex_( odeSolverType_ > 1 ),
        initialized_( false )
     {
+      tpPtr_.reset( static_cast< TimeProviderType* > (&timeProvider_) );
+
       solverpair_t solver( nullptr, nullptr ) ;
       // create implicit or explicit ode solver
       if( odeSolverType_ == 0 )
@@ -332,7 +334,7 @@ namespace Fem
      : RungeKuttaSolver( *(new TimeProviderType( op.space().gridPart().comm(), parameter )),
                          op, advOp, diffOp, "PyRK", parameter )
     {
-      tpPtr_.reset( static_cast< TimeProviderType* > (&timeProvider_) );
+      assert(tpPtr_);
       const TimeSteppingParameters param("femdg.stepper.",parameter);
       const double maxTimeStep = param.maxTimeStep();
       // start first time step with prescribed fixed time step
@@ -389,11 +391,19 @@ namespace Fem
     void setTimeStepSize( const double dt )
     {
       fixedTimeStep_  = dt ;
+      assert(tpPtr_);
       if( tpPtr_ )
       {
         fixedTimeStep_ /= tpPtr_->factor() ;
-        tpPtr_->provideTimeStepEstimate( dt );
+        if (!initialized_)
+          if ( fixedTimeStep_ > 1e-20 )
+            tpPtr_->init( fixedTimeStep_ );
+          else
+            tpPtr_->init();
+        else
+          tpPtr_->provideTimeStepEstimate( fixedTimeStep_ );
       }
+      assert(tpPtr_->deltaT() == timeProvider_.deltaT());
     }
 
     double deltaT() const { return timeProvider_.deltaT(); }

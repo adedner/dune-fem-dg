@@ -534,7 +534,7 @@ def rungeKuttaSolver( fullOperator, imex='EX', butchertable=None, parameters={} 
                                'const pybind11::dict &parameters'],
                               ['return new ' + typeName + '(op, explOp, implOp, imexId, Dune::FemPy::pyParameter( parameters, std::make_shared< std::string >() ));'],
                               ['"op"_a', '"explOp"_a', '"implOp"_a', '"imexId"_a', '"parameters"_a',
-                               'pybind11::keep_alive< 1, 2 >()', 'pybind11::keep_alive< 1, 3 >()','pybind11::keep_alive< 1, 4 >()' ])
+                               'pybind11::keep_alive< 1, 2 >()', 'pybind11::keep_alive< 1, 3 >()','pybind11::keep_alive< 1, 5 >()' ])
 
     solve = Method('solve', '''[]( DuneType &self, typename DuneType::DestinationType &u) { self.solve(u); }''' );
     setTimeStepSize = Method('setTimeStepSize', '&DuneType::setTimeStepSize')
@@ -542,8 +542,8 @@ def rungeKuttaSolver( fullOperator, imex='EX', butchertable=None, parameters={} 
 
     return load(includes, typeName, constructor, solve, setTimeStepSize, deltaT).Operator(
             fullOperator,
-            #fullOperator.explicitOperator,
-            #fullOperator.implicitOperator,
+            # fullOperator.explicitOperator,
+            # fullOperator.implicitOperator,
             fullOperator,
             fullOperator,
             imexId,

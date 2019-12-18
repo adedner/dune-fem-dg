@@ -1,4 +1,4 @@
-import time, math
+import time, math, sys
 from dune.grid import structuredGrid, cartesianDomain, OutputType
 import dune.create as create
 from dune.fem.function import integrate
@@ -52,8 +52,8 @@ def run(Model, initial, domain, endTime, name, exact,
     # create solution scheme, i.e. operator and ODE solver
 
     operator = femDGOperator(Model, space, limiter=limiter, threading=True, parameters=parameters )
-    #rkScheme = rungeKuttaSolver( operator )
-    rkScheme = femDGSolver(Model, space, limiter=limiter, threading=True, parameters=parameters )
+    rkScheme = rungeKuttaSolver( operator, parameters=parameters )
+    # rkScheme = femDGSolver(Model, space, limiter=limiter, threading=True, parameters=parameters )
     #operator = rkScheme
 
     # limit initial data if necessary
@@ -95,8 +95,8 @@ def run(Model, initial, domain, endTime, name, exact,
         if dt is not None:
             rkScheme.setTimeStepSize(dt)
         # solver time step
-        # rk solver: rkScheme.solve(u_h)
-        rkScheme.step(target=u_h)
+        rkScheme.solve(u_h)
+        # rkScheme.step(target=u_h)
         # obtain new time step size
         dt = rkScheme.deltaT()
         # check that solution is meaningful
@@ -104,7 +104,7 @@ def run(Model, initial, domain, endTime, name, exact,
             grid.writeVTK(name, subsampling=subsamp, celldata=[u_h])
             print('ERROR: dofs invalid t =', t,flush=True)
             print('[',tcount,']','dt = ', dt, 'time = ',t, 'count = ',count, flush=True )
-            exit(0)
+            sys.exit(1)
         # increment time and time step counter
         t += dt
         tcount += 1
