@@ -406,7 +406,7 @@ namespace Fem
       initialize( U );
 
       // make sure the current time step is valid
-      assert( timeProvder_.timeStepValid() );
+      assert( timeProvider_.timeStepValid() );
 
       // take CPU time of solution process
       Dune::Timer timer ;

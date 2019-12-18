@@ -488,12 +488,13 @@ def femDGOperator(Model, space,
         self.limit(u); }''' );
 
     # add method to extract explicit and implicit part of the operator
-    #explOp  = Method('explicitOperator', '&DuneType::explicitOperator')
-    #implOp  = Method('implicitOperator', '&DuneType::implicitOperator')
+    explOp  = Method('explicitOperator', '&DuneType::explicitOperator')
+    implOp  = Method('implicitOperator', '&DuneType::implicitOperator')
 
     _, domainFunctionIncludes, domainFunctionType, _, _, _ = space.storage
     base = 'Dune::Fem::SpaceOperatorInterface< ' + domainFunctionType + '>'
     return load(includes, typeName,
+                # constructor, applyLimiter, explOp, implOp,
                 baseClasses = [base],
                 preamble=writer.writer.getvalue()).\
                 Operator( space, advModel, diffModel, parameters=parameters )
