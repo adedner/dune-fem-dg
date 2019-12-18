@@ -262,6 +262,8 @@ namespace Fem
     int minIterationSteps_, maxIterationSteps_ ;
     bool useImex_ ;
     mutable bool initialized_;
+    mutable MonitorType monitor_;
+
   public:
     RungeKuttaSolver( Fem::TimeProviderBase& tp,
                       OperatorType& op,
@@ -344,7 +346,7 @@ namespace Fem
         tpPtr_->init( fixedTimeStep_ );
       else
         tpPtr_->init();
-      std::cout << "cfl = " << double(tpPtr_->factor()) << ", T_0 = " << tpPtr_->time() << " dtEst = " << tpPtr_->timeStepEstimate() << std::endl;
+      std::cout << "cfl = " << double(tpPtr_->factor()) << ", T_0 = " << tpPtr_->time() << std::endl;
     }
 
     void initialize( const DestinationType& U )
@@ -353,6 +355,7 @@ namespace Fem
       {
         if( explicitSolver_ )
         {
+          std::abort();
           explicitSolver_->initialize( U );
         }
         assert( odeSolver_ );
@@ -391,12 +394,9 @@ namespace Fem
 
     void setTimeStepSize( const double dt )
     {
-      fixedTimeStep_  = dt ;
-      if( tpPtr_ )
-      {
-        fixedTimeStep_ /= tpPtr_->factor() ;
-      }
-      tpPtr_->provideTimeStepEstimate( fixedTimeStep_ );
+      const double factor_1 = tpPtr_ ? 1.0 / tpPtr_->factor() : 1.0;
+      fixedTimeStep_  = dt * factor_1 ;
+      timeProvider_.provideTimeStepEstimate( fixedTimeStep_ );
     }
 
     double deltaT() const { return timeProvider_.deltaT(); }
@@ -405,15 +405,13 @@ namespace Fem
     //! solver the ODE
     void step( DestinationType& U ) const
     {
-      MonitorType monitor;
-      const_cast< ThisType& > (*this).solve( U, monitor );
+      const_cast< ThisType& > (*this).solve( U, monitor_ );
     }
 
     //! solver the ODE
     void solve( DestinationType& U )
     {
-      MonitorType monitor;
-      solve( U, monitor );
+      solve( U, monitor_ );
     }
 
     //! solver the ODE

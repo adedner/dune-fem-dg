@@ -843,12 +843,12 @@ def femDGOperator(Model, space,
                 Operator( space, advModel, diffModel, parameters=parameters )
 
 # RungeKutta solvers
-def rungeKuttaSolver( fullOperator, imex='EX', butchertable=None, parameters={} ):
+def rungeKuttaSolver( dgOperator, imex='EX', butchertable=None, parameters={} ):
 
     includes = ["dune/fem-dg/solver/rungekuttasolver.hh", "dune/fem-dg/misc/algorithmcreatorselector.hh"]
-    includes += fullOperator._includes
+    includes += dgOperator._includes
 
-    space = fullOperator.domainSpace
+    space = dgOperator.domainSpace
     spaceType = space._typeName
 
     _, domainFunctionIncludes, domainFunctionType, _, _, _ = space.storage
@@ -870,24 +870,24 @@ def rungeKuttaSolver( fullOperator, imex='EX', butchertable=None, parameters={} 
     # constructor = Constructor([operatorType + ' &op'],
     #                           ['return new ' + typeName + '(op);'],
     #                           ['"op"_a','pybind11::keep_alive< 1, 2 >()' ])
-    constructor = Constructor([fullOperatorType + ' &op',
+    constructor = Constructor([fullOperatorType + ' &fullOp',
                                explOperatorType + ' &explOp',
                                implOperatorType + ' &implOp',
                                'const int imexId',
                                'const pybind11::dict &parameters'],
-                              ['return new ' + typeName + '(op, explOp, implOp, imexId, Dune::FemPy::pyParameter( parameters, std::make_shared< std::string >() ));'],
-                              ['"op"_a', '"explOp"_a', '"implOp"_a', '"imexId"_a', '"parameters"_a',
+                              ['return new ' + typeName + '(fullOp, explOp, implOp, imexId, Dune::FemPy::pyParameter( parameters, std::make_shared< std::string >() ));'],
+                              ['"fullOp"_a', '"explOp"_a', '"implOp"_a', '"imexId"_a', '"parameters"_a',
                                'pybind11::keep_alive< 1, 2 >()', 'pybind11::keep_alive< 1, 3 >()','pybind11::keep_alive< 1, 4 >()' ])
 
-    solve = Method('step', '''[]( DuneType &self, typename DuneType::DestinationType &u) { self.solve(u); }''' );
+    solve = Method('solve', '''[]( DuneType &self, typename DuneType::DestinationType &u) { self.solve(u); }''' );
     # add method to solve one step (not requiring u_h_n)
     step = Method('step', '&DuneType::step', extra=['"target"_a'])
     setTimeStepSize = Method('setTimeStepSize', '&DuneType::setTimeStepSize')
     deltaT = Method('deltaT', '&DuneType::deltaT')
 
     return load(includes, typeName, constructor, step, solve, setTimeStepSize, deltaT).Operator(
-            fullOperator.fullOperator,
-            fullOperator.explicitOperator,
-            fullOperator.implicitOperator,
+            dgOperator.fullOperator,
+            dgOperator.explicitOperator,
+            dgOperator.implicitOperator,
             imexId,
             parameters=parameters)

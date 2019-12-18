@@ -28,7 +28,7 @@ parameters = {"fem.ode.odesolver": "EX",
 x0,x1,N = domain
 grid = structuredGrid(x0,x1,N)
 # grid = create.grid("ALUSimplex", cartesianDomain(x0,x1,N))
-dimR     = grid.dimension + 2
+dimR     = Model.dimRange
 t        = 0
 dt       = 1e-3
 count    = 0
@@ -55,10 +55,10 @@ def useODESolver(polOrder=2, limiter='default'):
         space = create.space("dgonb", grid, order=polOrder, dimRange=dimR)
     u_h = initialize(space)
     # rho, v, p = Model.toPrim(u_h)
-    #operator = femDGOperator(Model, space, limiter=limiter, threading=True, parameters=parameters )
-    #ode = rungeKuttaSolver( operator, parameters=parameters )
-    operator = femDGSolver(Model, space, limiter=limiter, threading=True, parameters=parameters )
-    ode = operator
+    operator = femDGOperator(Model, space, limiter=limiter, threading=True, parameters=parameters )
+    ode = rungeKuttaSolver( operator, parameters=parameters )
+    #operator = femDGSolver(Model, space, limiter=limiter, threading=True, parameters=parameters )
+    #ode = operator
 
     operator.applyLimiter( u_h )
     print("number of elements: ",grid.size(0),flush=True)
@@ -72,6 +72,7 @@ def useODESolver(polOrder=2, limiter='default'):
     tcount = 0
     while t < endTime:
         ode.step(target=u_h)
+        #ode.solve(u_h)
         # operator.applyLimiter( u_h );
         dt = ode.deltaT()
         t += dt
@@ -104,11 +105,11 @@ if scheme == 0:
     # grid = create.view("adaptive", grid)
     useODESolver(2,'default')      # third order with limiter
 elif scheme == 1:
-    #N = [n*4 for n in N]
-    #grid = structuredGrid(x0,x1,N)
-    grid = create.grid("ALUSimplex", cartesianDomain(x0,x1,N))
+    N = [n*6 for n in N]
+    grid = structuredGrid(x0,x1,N)
+    #grid = create.grid("ALUSimplex", cartesianDomain(x0,x1,N))
     #grid = create.grid("ALUCube", cartesianDomain(x0,x1,N))
-    grid.hierarchicalGrid.globalRefine(1)
+    #grid.hierarchicalGrid.globalRefine(1)
     # grid = create.grid("ALUSimplex", cartesianDomain(x0,x1,N))
     useODESolver(0,None)           # FV scheme
 elif scheme == 2:
