@@ -98,9 +98,6 @@ def run(Model, initial, domain, endTime, name, exact,
         assert not math.isnan( u_h.scalarProductDofs( u_h ) )
         rkScheme.solve(u_h)
 
-        # limit solution if necessary
-        operator.applyLimiter( u_h )
-
         # obtain new time step size
         dt = rkScheme.deltaT()
         # check that solution is meaningful
