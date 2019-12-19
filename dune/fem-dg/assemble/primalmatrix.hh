@@ -12,6 +12,7 @@
 #include <dune/fem-dg/algorithm/sub/elliptic.hh>
 #include <dune/fem-dg/misc/uniquefunctionname.hh>
 #include <dune/fem-dg/misc/matrixutils.hh>
+#include <dune/fem-dg/operator/fluxes/advection/parameters.hh>
 #include <dune/fem-dg/operator/fluxes/diffusion/dgprimalfluxes.hh>
 #include "assemblertraits.hh"
 
@@ -106,7 +107,7 @@ namespace Fem
 
     std::integral_constant<int,size> Id;
 
-    public:
+  public:
     //! constructor for DG matrix assembly
     template< class ContainerImp, class ExtraParameterTupleImp >
     DGPrimalMatrixAssembly( std::shared_ptr< ContainerImp > cont,
@@ -117,7 +118,7 @@ namespace Fem
         rhs_( (*cont)(_0)->rhs() ),
         matrix_( (*cont)(_0,_0)->matrix() ),
         extra_( InsertFunctionTupleType::create( tuple ) ),
-        advFlux_( model_ ),
+        advFlux_( model_, AdvectionFluxParameters() ),
         diffFlux_( space_.gridPart(), model_, typename Traits::DiffusionFluxType::ParameterType( ParameterKey::generate( "", "dgdiffusionflux." ) ) ),
         calculateFluxes_( Dune::Fem::Parameter::getValue<bool>( "poissonassembler.calculateFluxes", true ) ),
         useStrongBoundaryCondition_( Dune::Fem::Parameter::getValue<bool>( "poissonassembler.strongBC", false ) ),
@@ -342,7 +343,7 @@ namespace Fem
       } // end grid iteration
 
       // finish matrix build process
-      matrix_->communicate();
+      matrix_->finalize();
 
       //matrix.systemMatrix().matrix().print();
       //rhs->print( std::cout );
