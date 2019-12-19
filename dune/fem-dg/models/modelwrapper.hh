@@ -280,11 +280,8 @@ namespace Fem
     {
       RangeType u; // fake return variable
       const int id = getBoundaryId( local );
-      return false;
       // the following fails since is is called with
-      // /home/dedner/DUNE/dune-fem-dg/dune/fem-dg/operator/dg/primaldiscretemodel.hh:171
-      // return AdditionalType::hasBoundaryValue(id, time(), local.entity(), local.quadraturePoint(), u, u);
-      return advection_.hasBoundaryValue(id, time(), local.entity(), local.quadraturePoint(), u, u);
+      return advection_.hasBoundaryValue(id, time(), local.entity(), local.position(), u, u);
     }
 
     // return uRight for insertion into the numerical flux
@@ -369,7 +366,7 @@ namespace Fem
       // this needs to be added in diffusionTimeStep
       assert( hasAdvection );
       // advspeed = AdditionalType::maxSpeed( time(), local.entity(), local.quadraturePoint(), unitNormal, u );
-      advection_.maxSpeed( time(), local.entity(), local.quadraturePoint(), unitNormal, u );
+      advspeed = advection_.maxSpeed( time(), local.entity(), local.quadraturePoint(), unitNormal, u );
       totalspeed = advspeed;
     }
 

@@ -140,7 +140,7 @@ namespace Fem
     {
       static bool check(const AdvOp& a, const AdvOp& d)
       {
-        return true;
+        return &a == &d;
       }
     };
 
@@ -263,6 +263,8 @@ namespace Fem
     int minIterationSteps_, maxIterationSteps_ ;
     bool useImex_ ;
     mutable bool initialized_;
+    mutable MonitorType monitor_;
+
   public:
     RungeKuttaSolver( Fem::TimeProviderBase& tp,
                       OperatorType& op,
@@ -331,7 +333,7 @@ namespace Fem
                       const int  odeSolverType,
                       const Dune::Fem::ParameterReader &parameter = Dune::Fem::Parameter::container() )
      : RungeKuttaSolver( *(new TimeProviderType( op.space().gridPart().comm(), parameter )),
-                         op, advOp, diffOp, "PyRK", parameter )
+                         op, advOp, diffOp, "", parameter )
     {
       tpPtr_.reset( static_cast< TimeProviderType* > (&timeProvider_) );
       const TimeSteppingParameters param("femdg.stepper.",parameter);
@@ -339,15 +341,22 @@ namespace Fem
       // start first time step with prescribed fixed time step
       // if it is not 0 otherwise use the internal estimate
       tpPtr_->provideTimeStepEstimate(maxTimeStep);
+      // adjust fixed time step with timeprovider.factor()
+      fixedTimeStep_ /= tpPtr_->factor() ;
+      if ( fixedTimeStep_ > 1e-20 )
+        tpPtr_->init( fixedTimeStep_ );
+      else
+        tpPtr_->init();
+      std::cout << "cfl = " << double(tpPtr_->factor()) << ", T_0 = " << tpPtr_->time() << std::endl;
     }
 
     void initialize( const DestinationType& U )
     {
       if ( ! initialized_)
       {
-        std::cout << "Called initialize " << std::endl;
         if( explicitSolver_ )
         {
+          std::abort();
           explicitSolver_->initialize( U );
         }
         assert( odeSolver_ );
@@ -355,13 +364,10 @@ namespace Fem
 
         if( tpPtr_ )
         {
-          // adjust fixed time step with timeprovider.factor()
-          fixedTimeStep_ /= tpPtr_->factor() ;
           if ( fixedTimeStep_ > 1e-20 )
             tpPtr_->init( fixedTimeStep_ );
           else
             tpPtr_->init();
-          std::cout << "cfl = " << double(tpPtr_->factor()) << ", T_0 = " << tpPtr_->time() << " dtEst = " << tpPtr_->timeStepEstimate() << std::endl;
         }
         initialized_ = true;
       }
@@ -389,22 +395,24 @@ namespace Fem
 
     void setTimeStepSize( const double dt )
     {
-      fixedTimeStep_  = dt ;
-      if( tpPtr_ )
-      {
-        fixedTimeStep_ /= tpPtr_->factor() ;
-        tpPtr_->provideTimeStepEstimate( dt );
-      }
+      const double factor_1 = tpPtr_ ? 1.0 / tpPtr_->factor() : 1.0;
+      fixedTimeStep_  = dt * factor_1 ;
+      timeProvider_.provideTimeStepEstimate( fixedTimeStep_ );
     }
 
     double deltaT() const { return timeProvider_.deltaT(); }
     double time()   const { return timeProvider_.time(); }
 
     //! solver the ODE
+    void step( DestinationType& U ) const
+    {
+      const_cast< ThisType& > (*this).solve( U, monitor_ );
+    }
+
+    //! solver the ODE
     void solve( DestinationType& U )
     {
-      MonitorType monitor;
-      solve( U, monitor );
+      solve( U, monitor_ );
     }
 
     //! solver the ODE
@@ -414,7 +422,7 @@ namespace Fem
       initialize( U );
 
       // make sure the current time step is valid
-      assert( timeProvider_.timeStepValid() );
+      assert( timeProvder_.timeStepValid() );
 
       // take CPU time of solution process
       Dune::Timer timer ;
@@ -497,6 +505,12 @@ namespace Fem
           tpPtr_->next( fixedTimeStep_ );
         else
           tpPtr_->next();
+
+        // apply Limiter to make solution physical (only when tpPtr_ was set)
+        if( explicitOperator_.hasLimiter() )
+          explicitOperator_.applyLimiter( U );
+        else if ( operator_.hasLimiter() )
+          operator_.applyLimiter( U );
       }
     }
 

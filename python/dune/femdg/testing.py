@@ -1,4 +1,4 @@
-import time, math
+import time, math, sys
 from dune.grid import structuredGrid, cartesianDomain, OutputType
 import dune.create as create
 from dune.fem.function import integrate
@@ -51,10 +51,10 @@ def run(Model, initial, domain, endTime, name, exact,
     u_h = space.interpolate(initial, name='u_h')
     # create solution scheme, i.e. operator and ODE solver
 
+    # create DG operator based on Model
     operator = femDGOperator(Model, space, limiter=limiter, threading=True, parameters=parameters )
-    #rkScheme = rungeKuttaSolver( operator )
-    rkScheme = femDGSolver(Model, space, limiter=limiter, threading=True, parameters=parameters )
-    #operator = rkScheme
+    # create Runge-Kutta solver
+    rkScheme = rungeKuttaSolver( operator, parameters=parameters )
 
     # limit initial data if necessary
     operator.applyLimiter( u_h );
@@ -72,7 +72,7 @@ def run(Model, initial, domain, endTime, name, exact,
         if name is not None:
             vtk = grid.writeVTK(name, subsampling=subsamp, write=False,
                    celldata=[u_h],
-                   pointdata=primitive(Model,u_h) if primitive else None,
+                   pointdata=primitive(Model,u_h) if primitive else [u_h],
                    cellvector=velo
                 )
         else:
@@ -89,14 +89,15 @@ def run(Model, initial, domain, endTime, name, exact,
 
     tcount = 0
     # time loop
+    # set time step size to ODE solver
+    if dt is not None:
+        rkScheme.setTimeStepSize(dt)
     print("Start solving")
     while t < endTime:
-        # set time step size to ODE solver
-        if dt is not None:
-            rkScheme.setTimeStepSize(dt)
         # solver time step
-        # rk solver: rkScheme.solve(u_h)
-        rkScheme.step(target=u_h)
+        assert not math.isnan( u_h.scalarProductDofs( u_h ) )
+        rkScheme.solve(u_h)
+
         # obtain new time step size
         dt = rkScheme.deltaT()
         # check that solution is meaningful
@@ -104,7 +105,7 @@ def run(Model, initial, domain, endTime, name, exact,
             grid.writeVTK(name, subsampling=subsamp, celldata=[u_h])
             print('ERROR: dofs invalid t =', t,flush=True)
             print('[',tcount,']','dt = ', dt, 'time = ',t, 'count = ',count, flush=True )
-            exit(0)
+            sys.exit(1)
         # increment time and time step counter
         t += dt
         tcount += 1

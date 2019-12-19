@@ -87,7 +87,7 @@ namespace Fem
               const TimeSteppingParameters& param = TimeSteppingParameters() )
       : dgOperator_( space, advectionModel, diffusionModel ),
         extra_(),
-        tpPtr_( new TimeProviderType(space.gridPart().comm()) ),
+        tpPtr_( new TimeProviderType(space.gridPart().comm(),param) ),
         tp_( *tpPtr_ ),
         rkSolver_( tp_, dgOperator_.fullOperator(), dgOperator_.explicitOperator(), dgOperator_.implicitOperator(), name() ),
         initialized_( false )

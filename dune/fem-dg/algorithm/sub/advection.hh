@@ -83,7 +83,7 @@ namespace Fem
     virtual void limit ()
     {
       if( limitSolution() )
-        advectionOperator_->limit( *limitSolution() );
+        advectionOperator_->applyLimiter( *limitSolution() );
     }
 
     //! return overal number of grid elements

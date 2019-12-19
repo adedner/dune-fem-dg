@@ -8,8 +8,6 @@
 #include <dune/fempy/py/operator.hh>
 #include <dune/fempy/pybind11/pybind11.hh>
 
-#include <dune/fem-dg/solver/dg.hh>
-
 namespace Dune
 {
 
@@ -24,6 +22,9 @@ namespace Dune
       typedef typename DF::DiscreteFunctionSpaceType DFSpace;
       typedef typename DF::GridPartType GridPartType;
       typedef typename Fem::SpaceOperatorInterface<DF> Base;
+      typedef Base FullType;
+      typedef Base ExplType;
+      typedef Base ImplType;
       Dune::FemPy::detail::registerOperator< Operator >( module, cls );
       cls.def( pybind11::init( [] ( const DFSpace &space,
                const MA &advectionModel,
@@ -32,15 +33,24 @@ namespace Dune
       {
         return new Operator(space, advectionModel, diffusionModel, Dune::FemPy::pyParameter( parameters, std::make_shared< std::string >() ) );
       } ), "space"_a, "advectionModel"_a, "diffusionModel"_a, "parameters"_a,
-           pybind11::keep_alive< 1, 2 >(), pybind11::keep_alive< 1, 3 >(), pybind11::keep_alive< 1, 4 >() );
-      cls.def( "applyLimiter", []( Operator &self, DF &u) { self.limit(u); } );
-      cls.def_property_readonly( "explicitOperator", [](Operator &self) -> const Base&
-          { return self.explicitOperator(); } );
-      cls.def_property_readonly( "implicitOperator", [](Operator &self) -> const Base&
-          { return self.implicitOperator(); } );
-      // cls.def( "setTimeStepSize", &Operator::setTimeStepSize );
-      // cls.def( "deltaT", &Operator::deltaT );
-      // cls.def( "step", &Operator::solve, "target"_a );
+           pybind11::keep_alive< 1, 2 >(),
+           pybind11::keep_alive< 1, 3 >(), pybind11::keep_alive< 1, 4 >(),
+           pybind11::keep_alive< 1, 5 >()
+           );
+      cls.def( "applyLimiter", []( Operator &self, DF &u) { self.applyLimiter(u); } );
+
+      Dune::Python::insertClass<ExplType>(cls,"ExplType",
+          Dune::Python::GenerateTypeName("NotAvailable"),
+          Dune::Python::IncludeFiles{});
+      Dune::Python::insertClass<ImplType>(cls,"ImplType",
+          Dune::Python::GenerateTypeName("NotAvailable"),
+          Dune::Python::IncludeFiles{});
+      cls.def_property_readonly("fullOperator", [](const Operator &self) -> const FullType&
+           { return self.fullOperator(); } );
+      cls.def_property_readonly("explicitOperator", [](const Operator &self) -> const ExplType&
+           { return self.explicitOperator(); } );
+      cls.def_property_readonly("implicitOperator", [](const Operator &self) -> const ImplType&
+           { return self.implicitOperator(); } );
     }
 
   } // namespace FemPy

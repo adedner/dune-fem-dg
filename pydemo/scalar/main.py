@@ -10,9 +10,9 @@ from scalar import sinAdvDiffProblem as problem
 
 parameter.append({"fem.verboserank": 0})
 
-parameters = {"fem.ode.odesolver": "IMEX",   # EX, IM, IMEX
+parameters = {"fem.ode.odesolver": "IM",   # EX, IM, IMEX
               "fem.ode.order": 3,
-              "fem.ode.verbose": "none",      # none, cfl, full
+              "fem.ode.verbose": "full",      # none, cfl, full
               "fem.ode.cflincrease": 1.25,
               "fem.ode.miniterations": 35,
               "fem.ode.maxiterations": 100,
