@@ -51,10 +51,10 @@ def run(Model, initial, domain, endTime, name, exact,
     u_h = space.interpolate(initial, name='u_h')
     # create solution scheme, i.e. operator and ODE solver
 
+    # create DG operator based on Model
     operator = femDGOperator(Model, space, limiter=limiter, threading=True, parameters=parameters )
+    # create Runge-Kutta solver
     rkScheme = rungeKuttaSolver( operator, parameters=parameters )
-    # rkScheme = femDGSolver(Model, space, limiter=limiter, threading=True, parameters=parameters )
-    #operator = rkScheme
 
     # limit initial data if necessary
     operator.applyLimiter( u_h );
@@ -97,7 +97,10 @@ def run(Model, initial, domain, endTime, name, exact,
         # solver time step
         assert not math.isnan( u_h.scalarProductDofs( u_h ) )
         rkScheme.solve(u_h)
-        # rkScheme.step(target=u_h)
+
+        # limit solution if necessary
+        operator.applyLimiter( u_h )
+
         # obtain new time step size
         dt = rkScheme.deltaT()
         # check that solution is meaningful
