@@ -64,6 +64,18 @@ def LinearAdvectionDiffusion1DDirichlet(v,eps,bnd):
             return bnd(t,x)
         boundary = { range(1,5): dirichletValue }
     return Model
+def LinearAdvectionDiffusion1DPeriodic(v,eps):
+    class Model(LinearAdvectionDiffusion1D(v,eps)):
+        def zeroFlux(t,x,u,n):
+            return 0
+        def zeroDiffFlux(t,x,u,du,n):
+            return 0
+        if v is not None and eps is not None:
+            boundary = {(3,4): [zeroFlux,zeroDiffFlux] }
+        else:
+            boundary = {(3,4): zeroFlux }
+    return Model
+
 
 # burgers problems still need to be adapted to new API
 class Burgers1D:
@@ -100,12 +112,13 @@ def shockTransport():
 def sinAdvDiffProblem():
     eps = 0.5
     v   = [4,0]
-    u0 = lambda t,x: as_vector( [sin(2*pi*x[0])*exp(-t*eps*(2*pi)**2)] )
-    return Parameters(Model=LinearAdvectionDiffusion1DMixed(v,eps,u0),
+    u0 = lambda t,x: as_vector( [sin(2*pi*(x[0]-t*v[0]))*exp(-t*eps*(2*pi)**2)] )
+    # return Parameters(Model=LinearAdvectionDiffusion1DMixed(v,eps,u0),
+    return Parameters(Model=LinearAdvectionDiffusion1DPeriodic(v,None),
                       initial=u0(0,x), domain=[[-1, 0], [1, 0.1], [50, 7]], endTime=0.2,
                       name="sin", exact=lambda t: u0(t,x))
 
-def sinProblem():
+def sinDiffProblem():
     eps = 0.5
     u0 = lambda t,x: as_vector( [sin(2*pi*x[0])*exp(-t*eps*(2*pi)**2)] )
     return Parameters(Model=LinearAdvectionDiffusion1DMixed(None,eps,u0), initial=u0(0,x),
@@ -114,11 +127,13 @@ def sinProblem():
 
 def sinTransportProblem():
     v   = [1,0]
-    u0 = lambda t,x: as_vector( [sin(2*pi*x[0])] )
-    # return Parameters(Model=LinearAdvectionDiffusion1DDirichlet(v,None,u0), initial=u0(0,x),
-    # return Parameters(Model=LinearAdvectionDiffusion1DMixed(v,None,u0), initial=u0(0,x),
-    return Parameters(Model=LinearAdvectionDiffusion1D(v,None), initial=u0(0,x),
-                      domain=[[-1, 0], [1, 0.1], [50, 7]], endTime=0.2,
+    u0 = lambda t,x: as_vector( [sin(2*pi*(x[0]-t*v[0]))] )
+    return Parameters(Model=LinearAdvectionDiffusion1DDirichlet(v,None,u0),
+    # return Parameters(Model=LinearAdvectionDiffusion1DMixed(v,None,u0),
+    # return Parameters(Model=LinearAdvectionDiffusion1D(v,None),
+    # return Parameters(Model=LinearAdvectionDiffusion1DPeriodic(v,None),
+                      initial=u0(0,x),
+                      domain=[[-1, 0], [1, 0.1], [50, 7]], endTime=0.5,
                       name="sin", exact=lambda t: u0(t,x))
 
 def pulse(eps=None):
@@ -168,6 +183,7 @@ def burgersStationaryShock():
                       domain=[[-1, 0], [1, 0.1], [50, 7]], endTime=0.2,
                       name="burgersShock", exact=lambda t: u0(t,x))
 
-problems = [ constantTransport, shockTransport, sinProblem,\
-             sinTransportProblem, pulse, diffusivePulse,\
+problems = [ constantTransport, shockTransport,\
+             sinDiffProblem, sinTransportProblem, sinAdvDiffProblem,\
+             pulse, diffusivePulse,\
              burgersShock, burgersVW, burgersStationaryShock ]

@@ -35,10 +35,10 @@ def run(Model, initial, domain, endTime, name, exact,
         # create domain and grid
         domain   = cartesianDomain(x0,x1,N,periodic=periodic,overlap=0)
         grid     = create.grid(grid,domain)
-        # initial refinement of grid
-        grid.hierarchicalGrid.globalRefine(startLevel)
     except TypeError: # assume the 'domain' is already a gridview
         grid = domain
+    # initial refinement of grid
+    grid.hierarchicalGrid.globalRefine(startLevel)
 
     dimR     = Model.dimRange
     t        = 0
@@ -112,7 +112,7 @@ def run(Model, initial, domain, endTime, name, exact,
 
         # output
         if True: # tcount%100 == 0:
-            print('[',tcount,']','dt = ', dt, 'time = ',t, 'count = ',count, flush=True )
+            print('[',tcount,']','dt = ', dt, 'time = ',t, 'elements = ',grid.size(0), 'count = ',count, flush=True )
         if saveStep is not None and t > saveTime:
             count += 1
             try:
@@ -134,13 +134,22 @@ def run(Model, initial, domain, endTime, name, exact,
 
     # output the final result and compute error (if exact is available)
     if exact is not None and name is not None:
+        tc = Constant(0, "time")
+        # using '0' here because uusing 't'
+        # instead means that this value is added to the generated code so
+        # that slight changes to 't' require building new local functions -
+        # should be fixed in dune-fem
+        u = exact(tc)
+        tc.value = t
         grid.writeVTK(name, subsampling=subsamp,
-                celldata=[u_h], pointdata={"exact":exact(t)})
-        error = integrate( grid, dot(u_h-exact(t),u_h-exact(t)), order=5 )
-        print("error:", math.sqrt(error),flush=True )
+                celldata=[u_h], pointdata={"exact":u})
+        error = integrate( grid, dot(u_h-u,u_h-u), order=5 )
     elif name is not None:
         grid.writeVTK(name, subsampling=subsamp, celldata=[u_h])
+        error = integrate( grid, dot(u_h,u_h), order=5 )
+    error = math.sqrt(error)
     print("*************************************")
     print("**** Completed simulation",name)
-    print("*************************************")
-    return u_h
+    print("**** error:", error)
+    print("*************************************",flush=True)
+    return u_h, error
