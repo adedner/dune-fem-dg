@@ -152,9 +152,6 @@ namespace Fem
       return discModel2_.maxDiffusionTimeStep();
     }
 
-    inline void limit(const DestinationType& arg,DestinationType& dest) const
-    {}
-
     inline double computeTime() const
     {
       return pass2_.computeTime();

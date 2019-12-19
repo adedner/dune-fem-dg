@@ -22,8 +22,6 @@ namespace Dune
       typedef typename DF::DiscreteFunctionSpaceType DFSpace;
       typedef typename DF::GridPartType GridPartType;
       typedef typename Fem::SpaceOperatorInterface<DF> Base;
-      // typedef typename Operator::ExplicitOperatorType ExplType;
-      // typedef typename Operator::ImplicitOperatorType ImplType;
       typedef Base FullType;
       typedef Base ExplType;
       typedef Base ImplType;
@@ -39,7 +37,7 @@ namespace Dune
            pybind11::keep_alive< 1, 3 >(), pybind11::keep_alive< 1, 4 >(),
            pybind11::keep_alive< 1, 5 >()
            );
-      cls.def( "applyLimiter", []( Operator &self, DF &u) { self.limit(u); } );
+      cls.def( "applyLimiter", []( Operator &self, DF &u) { self.applyLimiter(u); } );
 
       Dune::Python::insertClass<ExplType>(cls,"ExplType",
           Dune::Python::GenerateTypeName("NotAvailable"),
@@ -53,8 +51,6 @@ namespace Dune
            { return self.explicitOperator(); } );
       cls.def_property_readonly("implicitOperator", [](const Operator &self) -> const ImplType&
            { return self.implicitOperator(); } );
-      // cls.def_property_readonly("explicitOperator", &Operator::explicitOperator);
-      // cls.def_property_readonly("implicitOperator", &Operator::implicitOperator);
     }
 
   } // namespace FemPy

@@ -388,7 +388,6 @@ namespace Fem
       , gridPart_( gridPart )
       , space_( gridPart_ )
       , limiterSpace_( gridPart_ )
-      , uTmp_()
       , fvSpc_()
       , indicator_()
       , diffFlux_( gridPart_, model_, DGPrimalDiffusionFluxParameters( ParameterKey::generate( name, "dgdiffusionflux." ), parameter ) )
@@ -466,21 +465,8 @@ namespace Fem
     // return pointer to indicator function
     LimiterIndicatorType* indicator() { return indicator_.operator->() ; }
 
-    inline void limit( DestinationType& U ) const
-    {
-      // copy U to uTmp_ (only for higher order DG scheme)
-      if( polOrd > 0 )
-      {
-        //std::cout << "Called extra limit" << std::endl;
-        if( ! uTmp_ )
-          uTmp_.reset(new DestinationType("utmp-limit", space_) );
-
-        assert( uTmp_ );
-        uTmp_->assign( U );
-
-        limit( *uTmp_, U );
-      }
-    }
+    //! this pass has an implemented limit() operator
+    bool hasLimiter () const { return polOrd > 0; }
 
     inline void limit( const DestinationType& arg, DestinationType& U ) const
     {
@@ -525,7 +511,6 @@ namespace Fem
     SpaceType                  space_;
     LimiterSpaceType           limiterSpace_;
 
-    mutable std::unique_ptr< DestinationType   >  uTmp_;
     std::unique_ptr< LimiterIndicatorSpaceType >  fvSpc_;
     std::unique_ptr< LimiterIndicatorType      >  indicator_;
 
@@ -680,7 +665,6 @@ namespace Fem
       , gridPart_( gridPart )
       , space_( gridPart_ )
       , limiterSpace_( gridPart_ )
-      , uTmp_()
       , fvSpc_()
       , indicator_()
       , diffFlux_( gridPart_, model_, DGPrimalDiffusionFluxParameters( ParameterKey::generate( name, "dgdiffusionflux." ) ) )
@@ -756,20 +740,8 @@ namespace Fem
     // return pointer to indicator function
     LimiterIndicatorType* indicator() { return indicator_.operator->() ; }
 
-    inline void limit( DestinationType& U ) const
-    {
-      // copy U to uTmp_
-      if( polOrd > 0 )
-      {
-        if( ! uTmp_ )
-          uTmp_.reset( new DestinationType("utmp-limit", space_) );
-
-        assert( uTmp_ );
-        uTmp_->assign( U );
-
-        limit( *uTmp_, U );
-      }
-    }
+    //! this pass has an implemented limit() operator if polOrd > 0
+    bool hasLimiter () const { return polOrd > 0; }
 
     inline void limit( const DestinationType& arg, DestinationType& U ) const
     {
@@ -815,7 +787,6 @@ namespace Fem
     LimiterSpaceType           limiterSpace_;
 
 
-    mutable std::unique_ptr< DestinationType   >  uTmp_;
     std::unique_ptr< LimiterIndicatorSpaceType >  fvSpc_;
     std::unique_ptr< LimiterIndicatorType      >  indicator_;
 

@@ -124,9 +124,9 @@ namespace Fem
 
     virtual void description( std::ostream&) const {}
 
-    const DiscreteFunctionSpaceType& space () const { return space_; }
+    const DiscreteFunctionSpaceType& space ()       const { return space_; }
     const DiscreteFunctionSpaceType& domainSpace () const { return space(); }
-    const DiscreteFunctionSpaceType& rangeSpace () const { return space(); }
+    const DiscreteFunctionSpaceType& rangeSpace ()  const { return space(); }
 
     FullOperatorType&     fullOperator()     const { return fullOperator_; }
     ExplicitOperatorType& explicitOperator() const { return explOperator_; }
@@ -138,19 +138,17 @@ namespace Fem
       fullOperator_( arg, dest );
     }
 
-    //! apply limiter to u, which is always embedded in the explicit operator
-    void limit( DestinationType &u ) const { explOperator_.limit(u); }
-
     /// Methods from SpaceOperatorInterface ////
 
-    bool hasLimiter() const { return limiterId != AdvectionLimiter::Enum::unlimited; }
-    //bool hasLimiter() const { return true; }
+    bool hasLimiter() const { return explOperator_.hasLimiter(); }
 
     /** \copydoc SpaceOperatorInterface::limit */
     void limit (const DestinationType& arg, DestinationType& dest) const
     {
-      dest.assign( arg );
-      limit( dest );
+      if( hasLimiter() )
+      {
+        explOperator_.limit( arg, dest );
+      }
     }
 
     /** \copydoc SpaceOperatorInterface::setTime */
@@ -164,7 +162,7 @@ namespace Fem
     //// End Methods from SpaceOperatorInterface /////
 
   protected:
-    const DiscreteFunctionSpaceType&      space_;
+    const DiscreteFunctionSpaceType&            space_;
 
     std::tuple<>                          extra_;
     ModelType                             model_;

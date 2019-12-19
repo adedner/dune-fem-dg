@@ -504,6 +504,12 @@ namespace Fem
           tpPtr_->next( fixedTimeStep_ );
         else
           tpPtr_->next();
+
+        // apply Limiter to make solution physical (only when tpPtr_ was set)
+        if( explicitOperator_.hasLimiter() )
+          explicitOperator_.applyLimiter( U );
+        else if ( operator_.hasLimiter() )
+          operator_.applyLimiter( U );
       }
     }
 
