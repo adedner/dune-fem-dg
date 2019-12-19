@@ -12,6 +12,7 @@
 
 #include <dune/fem/operator/dghelmholtz.hh>
 #include <dune/fem-dg/misc/parameterkey.hh>
+#include <dune/fem-dg/misc/timesteppingparameter.hh>
 
 namespace Dune
 {
