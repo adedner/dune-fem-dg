@@ -1060,8 +1060,13 @@ namespace Fem
 
     ExtendedDGPrimalDiffusionFlux( GridPartType& gridPart,
                                    const Model& model,
-                                   const ParameterType& parameters = ParameterType() )
+                                   const ParameterType& parameters )
       : BaseType( gridPart, model, parameters, BaseType::EnumType::primal )
+    { }
+
+    ExtendedDGPrimalDiffusionFlux( GridPartType& gridPart,
+                                   const Model& model )
+      : ExtendedDGPrimalDiffusionFlux( gridPart, model, ParameterType() )
     { }
 
     //! copy constructor (needed for thread parallel programs)

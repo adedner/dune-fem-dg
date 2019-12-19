@@ -36,17 +36,28 @@ namespace Fem
     typedef FluxParameterImp                       ParameterType;
     typedef typename ParameterType::IdEnum         IdEnum;
 
+    /**
+     * \brief Constructor
+     *
+     * \param[in] mod analytical model
+     * \param[in] parameters  parameter reader
+     */
+    DGAdvectionFluxBase (const ModelType& mod,
+                         const Dune::Fem::ParameterReader& parameter = Dune::Fem::Parameter::container() )
+      : model_(mod),
+        param_( parameter )
+    {}
 
     /**
      * \brief Constructor
      *
      * \param[in] mod analytical model
-     * \param[in] parameters parameters
+     * \param[in] parameters  parameter reader
      */
     DGAdvectionFluxBase (const ModelType& mod,
-                         const ParameterType& parameters = ParameterType() )
+                         const AdvectionFluxParameters& parameter )
       : model_(mod),
-        param_( parameters )
+        param_( parameter )
     {}
 
     /**

@@ -139,10 +139,18 @@ namespace Fem
      *
      * \param[in] keyPrefix key prefix for parameter file.
      */
-    DGPrimalDiffusionFluxParameters( const std::string keyPrefix = "dgdiffusionflux.",
+    DGPrimalDiffusionFluxParameters( const std::string& keyPrefix,
                                      const Dune::Fem::ParameterReader &parameter = Dune::Fem::Parameter::container() )
       : keyPrefix_( keyPrefix ),
         parameter_( parameter )
+    {}
+
+    /**
+     * \brief Default Constructor
+     *
+     */
+    DGPrimalDiffusionFluxParameters( const Dune::Fem::ParameterReader &parameter = Dune::Fem::Parameter::container() )
+      : DGPrimalDiffusionFluxParameters( "dgdiffusionflux.", parameter )
     {}
 
     /**
@@ -218,6 +226,11 @@ namespace Fem
     void upwind( DomainType& upwd ) const
     {
       parameter_.get(keyPrefix_ + "upwind", upwd, upwd);
+    }
+
+    const Dune::Fem::ParameterReader& parameters() const
+    {
+      return parameter_;
     }
   private:
 

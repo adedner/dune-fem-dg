@@ -70,14 +70,14 @@ namespace Fem
      *
      * \param[in] keyPrefix key prefix for parameter file.
      */
-    AdvectionFluxParameters( const std::string keyPrefix = "dgadvectionflux.",
+    AdvectionFluxParameters( const std::string& keyPrefix,
                              const Dune::Fem::ParameterReader &parameter = Dune::Fem::Parameter::container() )
       : keyPrefix_( keyPrefix ),
         parameter_( parameter )
     {}
+
     AdvectionFluxParameters( const Dune::Fem::ParameterReader &parameter = Dune::Fem::Parameter::container() )
-      : keyPrefix_( "dgadvectionflux." ),
-        parameter_( parameter )
+      : AdvectionFluxParameters( "dgadvectionflux.", parameter )
     {}
 
     /**
@@ -103,6 +103,8 @@ namespace Fem
       const int i = parameter_.getEnum( keyPrefix_ + "method", AdvectionFlux::_strings );
       return AdvectionFlux::_enums[i];
     }
+
+    const Dune::Fem::ParameterReader& parameters() const { return parameter_; }
 
   private:
     const std::string keyPrefix_;

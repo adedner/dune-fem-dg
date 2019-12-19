@@ -38,8 +38,7 @@ namespace Fem
     typedef typename BaseType::IdEnum             IdEnum;
     typedef typename BaseType::ModelType          ModelType;
 
-    DGAdvectionFlux( const ModelType& mod,
-                     const ParameterType& parameters = ParameterType() )
+    DGAdvectionFlux( const ModelType& mod, const ParameterType& parameters = Dune::Fem::Parameter::container() )
       : BaseType( mod, parameters )
     {}
   };
@@ -85,7 +84,7 @@ namespace Fem
     typedef typename BaseType::ModelType          ModelType;
 
     DGAdvectionFlux( const ModelType& mod,
-                     const ParameterType& parameters = ParameterType() )
+                     const ParameterType& parameters = Dune::Fem::Parameter::container() )
       : BaseType( mod, parameters )
     {}
   };
@@ -121,7 +120,7 @@ namespace Fem
      * \brief Constructor
      */
     DGAdvectionFlux (const ModelType& mod,
-                     const ParameterType& parameters = ParameterType())
+                     const ParameterType& parameters = Dune::Fem::Parameter::container() )
       : BaseType( mod, parameters ),
         method_( parameters.getMethod() ),
         flux_none_( mod ),
