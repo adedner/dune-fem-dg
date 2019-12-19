@@ -128,17 +128,40 @@ namespace Fem
     const DiscreteFunctionSpaceType& domainSpace () const { return space(); }
     const DiscreteFunctionSpaceType& rangeSpace () const { return space(); }
 
-    FullOperatorType&     fullOperator() const { return fullOperator_; }
+    FullOperatorType&     fullOperator()     const { return fullOperator_; }
     ExplicitOperatorType& explicitOperator() const { return explOperator_; }
     ImplicitOperatorType& implicitOperator() const { return implOperator_; }
 
-    //! evaluate the operator
+    //! evaluate the operator, which always referrers to the fullOperator here
     void operator()( const DestinationType& arg, DestinationType& dest ) const
     {
       fullOperator_( arg, dest );
     }
 
-    void limit( DestinationType &u) const { explOperator_.limit(u); }
+    //! apply limiter to u, which is always embedded in the explicit operator
+    void limit( DestinationType &u ) const { explOperator_.limit(u); }
+
+    /// Methods from SpaceOperatorInterface ////
+
+    bool hasLimiter() const { return limiterId != AdvectionLimiter::Enum::unlimited; }
+    //bool hasLimiter() const { return true; }
+
+    /** \copydoc SpaceOperatorInterface::limit */
+    void limit (const DestinationType& arg, DestinationType& dest) const
+    {
+      dest.assign( arg );
+      limit( dest );
+    }
+
+    /** \copydoc SpaceOperatorInterface::setTime */
+    void setTime( const double time )
+    {
+      fullOperator_.setTime( time );
+    }
+
+    double timeStepEstimate() const { return fullOperator_.timeStepEstimate(); }
+
+    //// End Methods from SpaceOperatorInterface /////
 
   protected:
     const DiscreteFunctionSpaceType&      space_;

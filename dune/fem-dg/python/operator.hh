@@ -24,6 +24,7 @@ namespace Dune
       typedef typename Fem::SpaceOperatorInterface<DF> Base;
       // typedef typename Operator::ExplicitOperatorType ExplType;
       // typedef typename Operator::ImplicitOperatorType ImplType;
+      typedef Base FullType;
       typedef Base ExplType;
       typedef Base ImplType;
       Dune::FemPy::detail::registerOperator< Operator >( module, cls );
@@ -46,7 +47,7 @@ namespace Dune
       Dune::Python::insertClass<ImplType>(cls,"ImplType",
           Dune::Python::GenerateTypeName("NotAvailable"),
           Dune::Python::IncludeFiles{});
-      cls.def_property_readonly("fullOperator", [](const Operator &self) -> const ExplType&
+      cls.def_property_readonly("fullOperator", [](const Operator &self) -> const FullType&
            { return self.fullOperator(); } );
       cls.def_property_readonly("explicitOperator", [](const Operator &self) -> const ExplType&
            { return self.explicitOperator(); } );

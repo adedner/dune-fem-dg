@@ -495,9 +495,6 @@ def rungeKuttaSolver( fullOperator, imex='EX', butchertable=None, parameters={} 
         imexId = 2
 
     # TODO: move this to header file in dune/fem-dg/python
-    # constructor = Constructor([operatorType + ' &op'],
-    #                           ['return new ' + typeName + '(op);'],
-    #                           ['"op"_a','pybind11::keep_alive< 1, 2 >()' ])
     constructor = Constructor([fullOperatorType + ' &op',
                                explOperatorType + ' &explOp',
                                implOperatorType + ' &implOp',
@@ -514,7 +511,5 @@ def rungeKuttaSolver( fullOperator, imex='EX', butchertable=None, parameters={} 
             fullOperator.fullOperator,
             fullOperator.explicitOperator,
             fullOperator.implicitOperator,
-            # fullOperator,
-            # fullOperator,
             imexId,
             parameters=parameters)
