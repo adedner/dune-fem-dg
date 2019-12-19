@@ -89,11 +89,11 @@ def run(Model, initial, domain, endTime, name, exact,
 
     tcount = 0
     # time loop
+    # set time step size to ODE solver
+    if dt is not None:
+        rkScheme.setTimeStepSize(dt)
     print("Start solving")
     while t < endTime:
-        # set time step size to ODE solver
-        if dt is not None:
-            rkScheme.setTimeStepSize(dt)
         # solver time step
         assert not math.isnan( u_h.scalarProductDofs( u_h ) )
         rkScheme.solve(u_h)

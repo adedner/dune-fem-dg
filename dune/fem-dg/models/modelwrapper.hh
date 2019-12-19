@@ -369,7 +369,7 @@ namespace Fem
       // this needs to be added in diffusionTimeStep
       assert( hasAdvection );
       // advspeed = AdditionalType::maxSpeed( time(), local.entity(), local.quadraturePoint(), unitNormal, u );
-      advection_.maxSpeed( time(), local.entity(), local.quadraturePoint(), unitNormal, u );
+      advspeed = advection_.maxSpeed( time(), local.entity(), local.quadraturePoint(), unitNormal, u );
       totalspeed = advspeed;
     }
 

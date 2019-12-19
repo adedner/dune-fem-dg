@@ -115,7 +115,9 @@ def sinProblem():
 def sinTransportProblem():
     v   = [1,0]
     u0 = lambda t,x: as_vector( [sin(2*pi*x[0])] )
-    return Parameters(Model=LinearAdvectionDiffusion1DMixed(v,None,u0), initial=u0(0,x),
+    # return Parameters(Model=LinearAdvectionDiffusion1DDirichlet(v,None,u0), initial=u0(0,x),
+    # return Parameters(Model=LinearAdvectionDiffusion1DMixed(v,None,u0), initial=u0(0,x),
+    return Parameters(Model=LinearAdvectionDiffusion1D(v,None), initial=u0(0,x),
                       domain=[[-1, 0], [1, 0.1], [50, 7]], endTime=0.2,
                       name="sin", exact=lambda t: u0(t,x))
 

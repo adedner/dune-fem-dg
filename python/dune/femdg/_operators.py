@@ -247,7 +247,7 @@ def femDGSolver(Model, space,
 
     ################################################################
     ### Construct DuneType, includes, and extra methods/constructors
-    includes  = ["dune/fem-dg/python/operator.hh"]
+    includes  = [] # ["dune/fem-dg/python/operator.hh"]
     includes += ["dune/fem-dg/solver/dg.hh"]
     includes += space._includes + destinationIncludes
     includes += ["dune/fem/schemes/diffusionmodel.hh", "dune/fempy/parameter.hh"]
