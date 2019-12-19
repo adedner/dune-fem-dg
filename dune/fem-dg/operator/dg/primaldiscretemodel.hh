@@ -168,7 +168,7 @@ namespace Fem
       {
         if( diffFlux_.hasLifting() )
         {
-          // use unsigned int, otherwise oeprator [] on LocalEvaluation has
+          // use unsigned int, otherwise operator [] on LocalEvaluation has
           // different meaning
           unsigned int qp = 0;
           const bool hasBoundaryValue = model_.hasBoundaryValue( local[ qp ] );
