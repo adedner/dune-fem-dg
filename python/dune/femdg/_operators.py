@@ -511,7 +511,7 @@ def rungeKuttaSolver( fullOperator, imex='EX', butchertable=None, parameters={} 
     deltaT = Method('deltaT', '&DuneType::deltaT')
 
     return load(includes, typeName, constructor, solve, setTimeStepSize, deltaT).Operator(
-            fullOperator,
+            fullOperator.fullOperator,
             fullOperator.explicitOperator,
             fullOperator.implicitOperator,
             # fullOperator,

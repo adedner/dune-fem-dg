@@ -332,7 +332,7 @@ namespace Fem
                       const int  odeSolverType,
                       const Dune::Fem::ParameterReader &parameter = Dune::Fem::Parameter::container() )
      : RungeKuttaSolver( *(new TimeProviderType( op.space().gridPart().comm(), parameter )),
-                         op, advOp, diffOp, "PyRK", parameter )
+                         op, advOp, diffOp, "", parameter )
     {
       assert(tpPtr_);
       const TimeSteppingParameters param("femdg.stepper.",parameter);

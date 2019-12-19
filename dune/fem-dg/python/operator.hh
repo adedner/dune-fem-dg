@@ -46,6 +46,8 @@ namespace Dune
       Dune::Python::insertClass<ImplType>(cls,"ImplType",
           Dune::Python::GenerateTypeName("NotAvailable"),
           Dune::Python::IncludeFiles{});
+      cls.def_property_readonly("fullOperator", [](const Operator &self) -> const ExplType&
+           { return self.fullOperator(); } );
       cls.def_property_readonly("explicitOperator", [](const Operator &self) -> const ExplType&
            { return self.explicitOperator(); } );
       cls.def_property_readonly("implicitOperator", [](const Operator &self) -> const ImplType&
