@@ -29,6 +29,7 @@ gridsol.savestep: 0.5
 gridsol.firstwrite: 0.5
 gridsol.filename: straka-checkpoint
 
+fem.eoc.steps: 3
 
 # GENERAL
 #--------
@@ -67,9 +68,9 @@ z_c: 0.25 # z-center of perturbation ball
 r: 0.25 # radius of perturbation ball
 
 # coarsest level that should be present
-fem.adaptation.coarsestLevel: 4
+fem.adaptation.coarsestLevel: 2
 # finest level that should be present
-fem.adaptation.finestLevel: 4
+fem.adaptation.finestLevel: 2
 
 
 # DOMAIN SETUP
