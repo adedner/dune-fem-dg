@@ -262,6 +262,8 @@ namespace Fem
     int minIterationSteps_, maxIterationSteps_ ;
     bool useImex_ ;
     mutable bool initialized_;
+    mutable MonitorType monitor_;
+
   public:
     RungeKuttaSolver( Fem::TimeProviderBase& tp,
                       OperatorType& op,
@@ -288,8 +290,6 @@ namespace Fem
        useImex_( odeSolverType_ > 1 ),
        initialized_( false )
     {
-      tpPtr_.reset( static_cast< TimeProviderType* > (&timeProvider_) );
-
       solverpair_t solver( nullptr, nullptr ) ;
       // create implicit or explicit ode solver
       if( odeSolverType_ == 0 )
@@ -334,21 +334,28 @@ namespace Fem
      : RungeKuttaSolver( *(new TimeProviderType( op.space().gridPart().comm(), parameter )),
                          op, advOp, diffOp, "PyRK", parameter )
     {
-      assert(tpPtr_);
+      tpPtr_.reset( static_cast< TimeProviderType* > (&timeProvider_) );
       const TimeSteppingParameters param("femdg.stepper.",parameter);
       const double maxTimeStep = param.maxTimeStep();
       // start first time step with prescribed fixed time step
       // if it is not 0 otherwise use the internal estimate
       tpPtr_->provideTimeStepEstimate(maxTimeStep);
+      // adjust fixed time step with timeprovider.factor()
+      fixedTimeStep_ /= tpPtr_->factor() ;
+      if ( fixedTimeStep_ > 1e-20 )
+        tpPtr_->init( fixedTimeStep_ );
+      else
+        tpPtr_->init();
+      std::cout << "cfl = " << double(tpPtr_->factor()) << ", T_0 = " << tpPtr_->time() << std::endl;
     }
 
     void initialize( const DestinationType& U )
     {
       if ( ! initialized_)
       {
-        std::cout << "Called initialize " << std::endl;
         if( explicitSolver_ )
         {
+          std::abort();
           explicitSolver_->initialize( U );
         }
         assert( odeSolver_ );
@@ -356,12 +363,10 @@ namespace Fem
 
         if( tpPtr_ )
         {
-          // adjust fixed time step with timeprovider.factor()
           if ( fixedTimeStep_ > 1e-20 )
-            tpPtr_->init( fixedTimeStep_ / tpPtr_->factor());
+            tpPtr_->init( fixedTimeStep_ );
           else
             tpPtr_->init();
-          std::cout << "cfl = " << double(tpPtr_->factor()) << ", T_0 = " << tpPtr_->time() << " dtEst = " << tpPtr_->timeStepEstimate() << std::endl;
         }
         initialized_ = true;
       }
@@ -389,29 +394,24 @@ namespace Fem
 
     void setTimeStepSize( const double dt )
     {
-      fixedTimeStep_  = dt ;
-      assert(tpPtr_);
-      if( tpPtr_ )
-      {
-        if (!initialized_)
-          if ( fixedTimeStep_ > 1e-20 )
-            tpPtr_->init( fixedTimeStep_ / tpPtr_->factor());
-          else
-            tpPtr_->init();
-        else
-          tpPtr_->provideTimeStepEstimate( fixedTimeStep_ );
-      }
-      assert(tpPtr_->deltaT() == timeProvider_.deltaT());
+      const double factor_1 = tpPtr_ ? 1.0 / tpPtr_->factor() : 1.0;
+      fixedTimeStep_  = dt * factor_1 ;
+      timeProvider_.provideTimeStepEstimate( fixedTimeStep_ );
     }
 
     double deltaT() const { return timeProvider_.deltaT(); }
     double time()   const { return timeProvider_.time(); }
 
     //! solver the ODE
+    void step( DestinationType& U ) const
+    {
+      const_cast< ThisType& > (*this).solve( U, monitor_ );
+    }
+
+    //! solver the ODE
     void solve( DestinationType& U )
     {
-      MonitorType monitor;
-      solve( U, monitor );
+      solve( U, monitor_ );
     }
 
     //! solver the ODE
@@ -421,7 +421,7 @@ namespace Fem
       initialize( U );
 
       // make sure the current time step is valid
-      assert( timeProvider_.timeStepValid() );
+      assert( timeProvder_.timeStepValid() );
 
       // take CPU time of solution process
       Dune::Timer timer ;
@@ -444,7 +444,6 @@ namespace Fem
       }
       else
       {
-        std::cout << "in solver: dt=" << timeProvider_.deltaT() << std::endl;
         assert( odeSolver_ );
         odeSolver_->solve( U, monitor );
 
@@ -454,7 +453,7 @@ namespace Fem
         minIterationSteps_ = std::min( minIterationSteps_, iterationSteps );
         maxIterationSteps_ = std::max( maxIterationSteps_, iterationSteps );
 
-        if( 1 ) // verbose_ == 3 && MPIManager::rank()<=0 )
+        if( verbose_ == 3 && MPIManager::rank()<=0 )
         {
           // get advection and diffusion time step
           getAdvectionDiffsionTimeSteps( maxAdvStep, maxDiffStep );
@@ -480,7 +479,7 @@ namespace Fem
         // if true solve next time step with semi implicit solver
         useImex_ = ( maxDiffStep < (factor * maxAdvStep) ) ;
 
-        if( 1 ) // verbose_ == 3 && MPIManager::rank()<=0 )
+        if( verbose_ == 3 && MPIManager::rank()<=0 )
         {
           std::cout << maxAdvStep << " a | d " << maxDiffStep << "  factor: " << factor
             << "  " << minIterationSteps_ << " min | max " << maxIterationSteps_
@@ -502,7 +501,7 @@ namespace Fem
       {
         // next time step is prescribed by fixedTimeStep
         if ( fixedTimeStep_ > 1e-20 )
-          tpPtr_->next( fixedTimeStep_/tpPtr_->factor() );
+          tpPtr_->next( fixedTimeStep_ );
         else
           tpPtr_->next();
       }
