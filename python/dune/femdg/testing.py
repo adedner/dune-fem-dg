@@ -72,7 +72,7 @@ def run(Model, initial, domain, endTime, name, exact,
         if name is not None:
             vtk = grid.writeVTK(name, subsampling=subsamp, write=False,
                    celldata=[u_h],
-                   pointdata=primitive(Model,u_h) if primitive else None,
+                   pointdata=primitive(Model,u_h) if primitive else [u_h],
                    cellvector=velo
                 )
         else:
