@@ -9,9 +9,6 @@ set( POLORDER 2 )
 add_definitions( "-DGRIDDIM=${GRIDDIM}" )
 add_definitions( "-DDIMRANGE=5" )
 
-#set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Ofast -march=native -flto -funroll-loops -frename-registers -DNDEBUG")
-set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0 -g -DNDEBUG")
-
 dune_add_test_case( NAME advdiff
                     SOURCES ../main.cc
                     COMPILE_DEFINITIONS "${GRIDTYPE};POLORDER=${POLORDER}"
