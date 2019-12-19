@@ -34,14 +34,14 @@ def problem():
 
     class Model:
         dimRange = 3
-        def S_s(t,x,U,DU): # or S_ns for a non stiff source
+        def S_ns(t,x,U,DU): # or S_ns for a non stiff source
             # sources
             f1 = conditional(dot(x-P1,x-P1) < RF**2, Q, 0)
             f2 = conditional(dot(x-P2,x-P2) < RF**2, Q, 0)
             f  = as_vector([f1,f2,0])
             # reaction rates
             r = K*as_vector([U[0]*U[1], U[0]*U[1], -2*U[0]*U[1] + 10*U[2]])
-            return r - f
+            return f - r
         def F_c(t,x,U):
             return as_matrix([ [*(v*u)] for u in U ])
         def maxLambda(t,x,U,n):
@@ -56,13 +56,16 @@ def problem():
             return 1
         def jump(U,V):
             return abs(U-V)
+        def dirichletValue(t,x,u):
+            return as_vector(Model.dimRange*[0])
+        boundary = {(1,2,3,4): dirichletValue}
 
     return Parameters(Model=Model, initial=as_vector([0,0,0]),
                       domain=gridView, endTime=5, name="chemical")
 
 parameter.append({"fem.verboserank": 0})
 
-parameters = {"fem.ode.odesolver": "IM",      # EX, IM, IMEX
+parameters = {"fem.ode.odesolver": "IMEX",    # EX, IM, IMEX
               "fem.ode.order": 1,
               "fem.ode.verbose": "none",      # none, cfl, full
               "fem.ode.cflincrease": 1.25,

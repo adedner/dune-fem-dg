@@ -139,7 +139,7 @@ namespace Fem
     {
       static bool check(const AdvOp& a, const AdvOp& d)
       {
-        return true;
+        return &a == &d;
       }
     };
 
