@@ -1,3 +1,5 @@
+fem.io.verboserank: 0
+
 # prefix data data files 
 fem.io.datafileprefix: solution
 # if you want to add time stemp to eoc file name
@@ -8,7 +10,7 @@ fem.eoc.steps: 4
 # PROBLEM
 # ----------
 # problem number (see ../problems/poissonproblem for a list of valid numbers)
-problem: 1
+problem: 0
 globalshift: 0
 factor: 1
 epsilon: 0.1
@@ -54,8 +56,8 @@ fem.io.subsamplinglevel: 0
 # SOLVER
 # ------
 paramfile: ../../parameter/paramSolver
-istl.preconditioning.method: amg-ilu-0
-istl.preconditioning.iterations: 1
+istl.preconditioning.method: ilu
+istl.preconditioning.iterations: 0
 istl.preconditioning.relaxation: 1
 
 #cg, bicg, bicgstab, gmres
