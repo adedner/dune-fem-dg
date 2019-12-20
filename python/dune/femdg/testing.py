@@ -111,7 +111,7 @@ def run(Model, initial, domain, endTime, name, exact,
         tcount += 1
 
         # output
-        if True: # tcount%100 == 0:
+        if tcount%100 == 0:
             print('[',tcount,']','dt = ', dt, 'time = ',t, 'elements = ',grid.size(0), 'count = ',count, flush=True )
         if saveStep is not None and t > saveTime:
             count += 1

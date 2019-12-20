@@ -12,7 +12,8 @@ parameter.append({"fem.verboserank": 0})
 
 parameters = {"fem.ode.odesolver": "EX",   # EX, IM, IMEX
               "fem.ode.order": 3,
-              "fem.ode.verbose": "full",      # none, cfl, full
+              "fem.ode.verbose": "cfl",      # none, cfl, full
+              "fem.ode.cflMax": 5,
               "fem.ode.cflincrease": 1.25,
               "fem.ode.miniterations": 35,
               "fem.ode.maxiterations": 100,
