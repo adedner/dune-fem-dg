@@ -277,14 +277,14 @@ def codeFemDg(self):
 
     return code
 
-def transform(Model,space,t):
+def transform(Model,space,t, name="" ):
     allExpr = uflExpr(Model,space,t)
     def transform_(model):
-        if model.baseName == "modelFemDg":
+        if model.baseName == "modelFemDg"+name:
             return
         model._code = model.code
         model.code  = lambda *args,**kwargs: codeFemDg(*args,**kwargs)
-        model.baseName = "modelFemDg"
+        model.baseName = "modelFemDg"+name
         model._Model = Model
         model._space = space
         model._t = t

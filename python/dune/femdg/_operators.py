@@ -125,10 +125,10 @@ def femDGOperator(Model, space,
         diffModel += inner(as_vector(Model.S_s(t,x,u,grad(u))),v)*dx
 
     advModel  = create.model("elliptic",space.grid, advModel,
-                      modelPatch=transform(Model,space,t),
+                      modelPatch=transform(Model,space,t,"Adv"),
                       virtualize=virtualize)
     diffModel = create.model("elliptic",space.grid, diffModel,
-                      modelPatch=transform(Model,space,t),
+                      modelPatch=transform(Model,space,t,"Diff"),
                       virtualize=virtualize)
 
     spaceType = space._typeName

@@ -89,7 +89,7 @@ def run(Model, initial, domain, endTime, name, exact,
 
     tcount = 0
     # time loop
-    # set time step size to ODE solver
+    # set fixed time step size to ODE solver
     if dt is not None:
         rkScheme.setTimeStepSize(dt)
     print("Start solving")
@@ -111,7 +111,7 @@ def run(Model, initial, domain, endTime, name, exact,
         tcount += 1
 
         # output
-        if tcount%100 == 0:
+        if True: # tcount%100 == 0:
             print('[',tcount,']','dt = ', dt, 'time = ',t, 'elements = ',grid.size(0), 'count = ',count, flush=True )
         if saveStep is not None and t > saveTime:
             count += 1
