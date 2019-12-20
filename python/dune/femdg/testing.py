@@ -4,7 +4,7 @@ import dune.create as create
 from dune.fem.function import integrate
 from dune.ufl import Constant
 from ufl import dot, SpatialCoordinate
-from dune.femdg import femDGOperator, femDGSolver, rungeKuttaSolver
+from dune.femdg import femDGOperator, rungeKuttaSolver
 
 from collections import namedtuple
 
