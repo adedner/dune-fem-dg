@@ -13,7 +13,7 @@ parameter.append({"fem.verboserank": 0})
 parameters = {"fem.ode.odesolver": "EX",   # EX, IM, IMEX
               "fem.ode.order": 3,
               "fem.ode.verbose": "cfl",      # none, cfl, full
-              "fem.ode.cflMax": 5,
+              "fem.ode.cflMax": 100,
               "fem.ode.cflincrease": 1.25,
               "fem.ode.miniterations": 35,
               "fem.ode.maxiterations": 100,
@@ -35,7 +35,7 @@ parameters['fem.ode.odesolver'] = 'IM'
 uh,errorIm = run(*problem(),
         startLevel=0, polOrder=2, limiter=None,
         primitive=None, saveStep=0.01, subsamp=0,
-        dt=0.001,
+        dt=None, # 0.001, otherwise this is fixed time step
         parameters=parameters)
 parameters['fem.ode.odesolver'] = 'IMEX'
 uh,errorImex = run(*problem(),
