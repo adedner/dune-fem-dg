@@ -35,6 +35,11 @@
 #include <dune/fem-dg/operator/limiter/limiterutility.hh>
 
 #if HAVE_DUNE_OPTIM
+//#define WANT_DUNE_OPTIM 1
+#define WANT_DUNE_OPTIM 0
+#endif
+
+#if WANT_DUNE_OPTIM
 #include <dune/fv/lpreconstruction.hh>
 #endif
 
@@ -558,7 +563,7 @@ namespace Fem
       static const bool v = true ;
     };
 
-#if HAVE_DUNE_OPTIM
+#if WANT_DUNE_OPTIM
     typedef typename GridPartType :: GridViewType  GridViewType ;
 
     struct BoundaryValue
@@ -602,7 +607,7 @@ namespace Fem
       dest_(0),
       spc_(spc),
       gridPart_(spc_.gridPart()),
-#if HAVE_DUNE_OPTIM
+#if WANT_DUNE_OPTIM
       linProg_( static_cast< GridViewType > (gridPart_), BoundaryValue( *this ),
                 Dune::Fem::Parameter::getValue<double>("finitevolume.linearprogramming.tol", 1e-8 )
               ),
@@ -915,7 +920,7 @@ namespace Fem
         matrixCacheVec_.resize( numLevels );
       }
 
-#if HAVE_DUNE_OPTIM
+#if WANT_DUNE_OPTIM
       values_.resize( size );
       gradients_.resize( size );
 
@@ -1171,7 +1176,7 @@ namespace Fem
       ++limitedElements_;
 
       const unsigned int enIndex = indexSet_.index( en );
-#if HAVE_DUNE_OPTIM
+#if WANT_DUNE_OPTIM
       bool useLinProg = true ;
       if( useLinProg )
       {
@@ -1958,7 +1963,7 @@ namespace Fem
     const DiscreteFunctionSpaceType& spc_;
     GridPartType& gridPart_;
 
-#if HAVE_DUNE_OPTIM
+#if WANT_DUNE_OPTIM
     mutable LinearProgramming linProg_;
 #endif
 
