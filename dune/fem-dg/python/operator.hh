@@ -38,7 +38,9 @@ namespace Dune
            pybind11::keep_alive< 1, 5 >()
            );
       cls.def( "applyLimiter", []( Operator &self, DF &u) { self.applyLimiter(u); } );
-
+      cls.def( "setTime", &Operator::setTime);
+      cls.def_property_readonly("timeStepEstimate",
+          [](const Operator &self) -> double {return self.timeStepEstimate(); });
       Dune::Python::insertClass<ExplType>(cls,"ExplType",
           Dune::Python::GenerateTypeName("NotAvailable"),
           Dune::Python::IncludeFiles{});

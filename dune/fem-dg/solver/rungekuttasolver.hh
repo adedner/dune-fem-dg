@@ -342,11 +342,14 @@ namespace Fem
       // if it is not 0 otherwise use the internal estimate
       tpPtr_->provideTimeStepEstimate(maxTimeStep);
       // adjust fixed time step with timeprovider.factor()
+      // SAD: how is fixedTimeStep_ initialized here?
+      fixedTimeStep_ = 0;
       fixedTimeStep_ /= tpPtr_->factor() ;
       if ( fixedTimeStep_ > 1e-20 )
         tpPtr_->init( fixedTimeStep_ );
       else
         tpPtr_->init();
+      tpPtr_->init();
       std::cout << "cfl = " << double(tpPtr_->factor()) << ", T_0 = " << tpPtr_->time() << std::endl;
     }
 

@@ -12,11 +12,20 @@ Parameters = namedtuple("TestingParameters",
                         ["Model", "initial", "domain", "endTime", "name", "exact"])
 Parameters.__new__.__defaults__ = (None,None) # defaults for name, exact
 
-def run(Model, initial, domain, endTime, name, exact,
-        polOrder, limiter="default", startLevel=0,
+def run(Model,
+        initial=None, domain=None, endTime=None, name=None, exact=None, # deprecated - now Model attributes
+        polOrder=1, limiter="default", startLevel=0,
         primitive=None, saveStep=None, subsamp=0,
         dt=None,grid="yasp", space="dgonb", threading=True,
         parameters={}):
+    if initial is not None:
+        print("deprecated usage of run: add initial etc as class atttributes to the Model")
+    else:
+        initial = Model.initial
+        domain = Model.domain
+        endTime = Model.endTime
+        name = Model.name
+        exact = Model.exact
     print("*************************************")
     print("**** Running simulation",name)
     print("*************************************")
@@ -31,10 +40,10 @@ def run(Model, initial, domain, endTime, name, exact,
                 if 2*i+1 in bnd:
                     assert(2*i+2 in bnd)
                     periodic[i] = False
-        print("Setting periodic boundaries",periodic,flush=True)
         # create domain and grid
         domain   = cartesianDomain(x0,x1,N,periodic=periodic,overlap=0)
         grid     = create.grid(grid,domain)
+        print("Setting periodic boundaries",periodic,flush=True)
     except TypeError: # assume the 'domain' is already a gridview
         grid = domain
     # initial refinement of grid

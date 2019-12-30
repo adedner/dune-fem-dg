@@ -255,10 +255,25 @@ def femDGOperator(Model, space,
 
     _, domainFunctionIncludes, domainFunctionType, _, _, _ = space.storage
     base = 'Dune::Fem::SpaceOperatorInterface< ' + domainFunctionType + '>'
-    return load(includes, typeName,
-                baseClasses = [base],
-                preamble=writer.writer.getvalue()).\
-                Operator( space, advModel, diffModel, parameters=parameters )
+    op = load(includes, typeName,
+             baseClasses = [base],
+             preamble=writer.writer.getvalue()).\
+             Operator( space, advModel, diffModel, parameters=parameters )
+    op._t = t
+    op.time = t.value
+    op.models = [advModel,diffModel]
+    op.space = space
+    def addToTime(self,dt):
+        # print(dt,t.value,self.models[0].time,self.models[1].time)
+        self._t.value += dt
+        self.time += dt
+        self.setTime(self.time)
+        # print(" ",t.value,self.models[0].time,self.models[1].time)
+    def stepTime(self,c,dt):
+        self.setTime(self.time+c*dt)
+    op.addToTime = addToTime.__get__(op)
+    op.stepTime  = stepTime.__get__(op)
+    return op
 
 # RungeKutta solvers
 def rungeKuttaSolver( fullOperator, imex='EX', butchertable=None, parameters={} ):
