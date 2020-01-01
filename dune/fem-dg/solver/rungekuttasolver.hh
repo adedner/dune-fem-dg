@@ -97,11 +97,7 @@ namespace Fem
      */
     virtual int obtainRungeKuttaSteps( const int defaultRKOrder ) const
     {
-      std::string key( keyPrefix_ + "order");
-      if ( Fem :: Parameter :: exists( key ) )
-        return parameter().getValue< int > ( key );
-      else
-        return defaultRKOrder ;
+      return parameter().getValue< int > ( keyPrefix_+"order", defaultRKOrder );
     }
   };
 
