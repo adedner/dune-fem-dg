@@ -2,7 +2,7 @@ import time, math, sys
 from dune.grid import structuredGrid, cartesianDomain, OutputType
 import dune.create as create
 from dune.fem.function import integrate
-from dune.ufl import Constant
+from dune.ufl import Constant, expression2GF
 from ufl import dot, SpatialCoordinate
 from dune.femdg import femDGOperator, rungeKuttaSolver
 
@@ -12,7 +12,141 @@ Parameters = namedtuple("TestingParameters",
                         ["Model", "initial", "domain", "endTime", "name", "exact"])
 Parameters.__new__.__defaults__ = (None,None) # defaults for name, exact
 
-def run(Model,
+
+def run(Model, Stepper,
+        initial=None, domain=None, endTime=None, name=None, exact=None, # deprecated - now Model attributes
+        polOrder=1, limiter="default", startLevel=0,
+        primitive=None, saveStep=None, subsamp=0,
+        dt=None,cfl=None,grid="yasp", space="dgonb", threading=True,
+        parameters={}):
+    if initial is not None:
+        print("deprecated usage of run: add initial etc as class atttributes to the Model")
+    else:
+        initial = Model.initial
+        domain = Model.domain
+        endTime = Model.endTime
+        name = Model.name
+        exact = Model.exact
+    print("*************************************")
+    print("**** Running simulation",name)
+    print("*************************************")
+    try: # passed in a [xL,xR,N] tripple
+        x0,x1,N = domain
+        periodic=[True,]*len(x0)
+        if hasattr(Model,"boundary"):
+            bnd=set()
+            for b in Model.boundary:
+                bnd.update(b)
+            for i in range(len(x0)):
+                if 2*i+1 in bnd:
+                    assert(2*i+2 in bnd)
+                    periodic[i] = False
+        # create domain and grid
+        domain   = cartesianDomain(x0,x1,N,periodic=periodic,overlap=0)
+        grid     = create.grid(grid,domain)
+        print("Setting periodic boundaries",periodic,flush=True)
+    except TypeError: # assume the 'domain' is already a gridview
+        grid = domain
+    # initial refinement of grid
+    grid.hierarchicalGrid.globalRefine(startLevel)
+    dimR     = Model.dimRange
+    t        = 0
+    tcount   = 0
+    saveTime = saveStep
+
+    # create discrete function space
+    space = create.space( space, grid, order=polOrder, dimRange=dimR)
+    operator = femDGOperator(Model, space, limiter=limiter, threading=True, parameters=parameters )
+    stepper  = Stepper(operator, cfl)
+    # create and initialize solution
+    u_h = space.interpolate(initial, name='u_h')
+    operator.applyLimiter( u_h )
+
+    # preparation for output
+    vtk = lambda : None
+    if saveStep is not None and name is not None:
+        x = SpatialCoordinate(space.cell())
+        tc = Constant(0.0,"time")
+        try:
+            velo = [create.function("ufl",space.grid, ufl=Model.velocity(tc,x,u_h), order=2, name="velocity")]
+        except AttributeError:
+            velo = None
+        vtk = grid.sequencedVTK(name, subsampling=subsamp,
+               celldata=[u_h],
+               pointdata=primitive(Model,u_h) if primitive else [u_h],
+               cellvector=velo
+            )
+        try:
+            velo[0].setConstant("time",[t])
+        except:
+            pass
+    vtk()
+
+    # measure CPU time
+    start = time.time()
+
+    fixedDt = dt is not None
+
+    # tracemalloc.start()
+
+    while operator.time < endTime:
+        assert not math.isnan( u_h.scalarProductDofs( u_h ) )
+        dt = stepper(u_h)
+        # check that solution is meaningful
+        if math.isnan( u_h.scalarProductDofs( u_h ) ):
+            vtk()
+            print('ERROR: dofs invalid t =', t,flush=True)
+            print('[',tcount,']','dt = ', dt, 'time = ',t, flush=True )
+            sys.exit(1)
+        # increment time and time step counter
+        operator.addToTime(dt)
+        tcount += 1
+        if operator.time > saveTime:
+            print('[',tcount,']','dt = ', dt, 'time = ',operator.time,
+                    'dtEst = ',operator.timeStepEstimate,
+                    'elements = ',grid.size(0), flush=True )
+            try:
+                velo[0].setConstant("time",[operator.time])
+            except:
+                pass
+            vtk()
+            saveTime += saveStep
+        # snapshot = tracemalloc.take_snapshot()
+        # display_top(snapshot)
+
+    runTime = time.time()-start
+    print("time loop:",runTime,flush=True)
+    print("number of time steps ", tcount,flush=True)
+    try:
+        velo[0].setConstant("time",[operator.time])
+        vtk()
+    except:
+        pass
+
+    # output the final result and compute error (if exact is available)
+    if exact is not None and name is not None:
+        tc = Constant(0, "time")
+        # using '0' here because uusing 't'
+        # instead means that this value is added to the generated code so
+        # that slight changes to 't' require building new local functions -
+        # should be fixed in dune-fem
+        u = expression2GF(grid,exact(tc),order=5)
+        tc.value = operator.time
+        grid.writeVTK(name, subsampling=subsamp,
+                celldata=[u_h], pointdata={"exact":u})
+        error = integrate( grid, dot(u-u_h,u-u_h), order=5 )
+    elif name is not None:
+        grid.writeVTK(name, subsampling=subsamp, celldata=[u_h])
+        error = integrate( grid, dot(u_h,u_h), order=5 )
+    error = math.sqrt(error)
+    print("*************************************")
+    print("**** Completed simulation",name)
+    print("**** error:", error)
+    print("*************************************",flush=True)
+    return u_h, [error, runTime, tcount, operator.counter()]
+
+
+def oldRun(Model,
         initial=None, domain=None, endTime=None, name=None, exact=None, # deprecated - now Model attributes
         polOrder=1, limiter="default", startLevel=0,
         primitive=None, saveStep=None, subsamp=0,
@@ -66,7 +200,7 @@ def run(Model,
     rkScheme = rungeKuttaSolver( operator, parameters=parameters )
 
     # limit initial data if necessary
-    operator.applyLimiter( u_h );
+    operator.applyLimiter( u_h )
 
     print("number of elements: ",grid.size(0),flush=True)
 
@@ -161,4 +295,4 @@ def run(Model,
     print("**** Completed simulation",name)
     print("**** error:", error)
     print("*************************************",flush=True)
-    return u_h, error
+    return u_h, (error,operator.counter)

@@ -1,10 +1,5 @@
-import math, time, sys
-from dune.grid import structuredGrid, cartesianDomain, OutputType
-import dune.create as create
-from dune.fem.space import dgonb
-from dune.fem.function import integrate
-from dune.ufl import Constant
-from ufl import dot, SpatialCoordinate
+from math import sqrt
+from scipy.optimize import newton_krylov
 from dune.femdg import femDGOperator, rungeKuttaSolver
 
 class FemDGStepper:
@@ -24,66 +19,280 @@ def femdgStepper(parameters):
         return FemDGStepper(op,parameters)
     return _femdgStepper
 
+# Set up problem: L[baru+a*k] - k = 0
+class HelmholtzButcher:
+    def __init__(self,op):
+        self.op = op
+        self._alpha = None
+        self.res = op.space.interpolate(op.space.dimRange*[0],name="res")
+        self.x   = op.space.interpolate(op.space.dimRange*[0],name="res")
+        self.counter = 0
+        self.inner_counter = 0
+    @property
+    def alpha(self):
+        return self._alpha
+    @alpha.setter
+    def alpha(self,value):
+        self._alpha = value
+    def f(self, x_coeff):
+        ## the following produces a memory leak - needs fixing!
+        # x = self.op.space.function("tmp", dofVector=x_coeff)
+        ## for now copy dof vector
+        self.x.as_numpy[:]  = x_coeff[:]
+        self.x.as_numpy[:] *= self.alpha
+        self.x.as_numpy[:] += self.baru.as_numpy[:]
+        self.op(self.x, self.res)
+        self.res.as_numpy[:] -= x_coeff[:]
+        return self.res.as_numpy
+    def solve(self,baru,target):
+        counter = 0
+        inner_counter = 0
+        def callb(x,Fx): nonlocal counter;       counter+=1
+        def icallb(rk):  nonlocal inner_counter; inner_counter+=1
+        self.baru = baru
+
+        sol_coeff = target.as_numpy
+        sol_coeff[:] = newton_krylov(self.f, sol_coeff,
+                    verbose=False,
+                    callback=callb, inner_callback=icallb)
+        self.counter = counter
+        self.inner_counter = inner_counter # linear iterations not crrect
+# Set up problem: rhs + a*L[y] - y = 0
+class HelmholtzShuOsher:
+    def __init__(self,op):
+        self.op = op
+        self._alpha = None
+        self.res = op.space.interpolate(op.space.dimRange*[0],name="res")
+        self.x   = op.space.interpolate(op.space.dimRange*[0],name="res")
+        self.counter = 0
+        self.inner_counter = 0
+    @property
+    def alpha(self):
+        return self._alpha
+    @alpha.setter
+    def alpha(self,value):
+        self._alpha = value
+    def f(self, x_coeff):
+        self.x.as_numpy[:]    = x_coeff[:]
+        self.op(self.x, self.res)
+        self.res.as_numpy[:] *= self.alpha
+        self.res.as_numpy[:] -= x_coeff[:]
+        self.res.as_numpy[:] += self.rhs.as_numpy[:]
+        return self.res.as_numpy
+    def solve(self,rhs,target):
+        counter = 0
+        inner_counter = 0
+        def callb(x,Fx): nonlocal counter;       counter+=1
+        def icallb(rk):  nonlocal inner_counter; inner_counter+=1
+        self.rhs = rhs
+
+        sol_coeff = target.as_numpy
+        sol_coeff[:] = newton_krylov(self.f, sol_coeff,
+                    verbose=False,
+                    callback=callb, inner_callback=icallb)
+        self.counter = counter
+        self.inner_counter = inner_counter # linear iterations not crrect
+
+class RungeKutta:
+    def __init__(self,op,cfl, A,b,c):
+        self.op = op
+        self.A = A
+        self.b = b
+        self.c = c
+        self.stages = len(b)
+        self.cfl = cfl
+        self.dt = None
+        self.k = self.stages*[None]
+        for i in range(self.stages):
+            self.k[i] = op.space.interpolate(op.space.dimRange*[0],name="k")
+        self.tmp = op.space.interpolate(op.space.dimRange*[0],name="tmp")
+        self.explicit = all([abs(A[i][i])<1e-15 for i in range(self.stages)])
+        if not self.explicit:
+            self.helmholtz = HelmholtzButcher(self.op)
+    def __call__(self,u,dt=None):
+        if self.explicit:
+            assert abs(self.c[0])<1e-15
+            self.op.stepTime(0,0)
+            self.op(u,self.k[0])
+            if dt is None and self.dt is None:
+                dt = self.op.timeStepEstimate*self.cfl
+            elif dt is None:
+                dt = self.dt
+            self.dt = 1e10
+            for i in range(1,self.stages):
+                self.tmp.assign(u)
+                for j in range(i):
+                    self.tmp.axpy(dt*self.A[i][j],self.k[j])
+                self.op.stepTime(self.c[i],dt)
+                self.op(self.tmp,self.k[i])
+                self.dt = min(self.dt, self.op.timeStepEstimate*self.cfl)
+        else:
+            if dt is None and self.dt is None:
+                self.op.stepTime(0,0)
+                self.op(u,self.k[0])
+                dt = self.op.timeStepEstimate*self.cfl
+            elif dt is None:
+                dt = self.dt
+            self.dt = 1e10
+            for i in range(0,self.stages):
+                self.tmp.assign(u)
+                for j in range(i):
+                    self.tmp.axpy(dt*self.A[i][j],self.k[j])
+                self.op.stepTime(self.c[i],dt)
+                self.op(self.tmp,self.k[i]) # this seems like a good initial guess for dt small
+                self.dt = min(self.dt, self.op.timeStepEstimate*self.cfl)
+                self.helmholtz.alpha = dt*self.A[i][i]
+                self.helmholtz.solve(baru=self.tmp,target=self.k[i])
+
+        for i in range(self.stages):
+            u.axpy(dt*self.b[i],self.k[i])
+        self.op.applyLimiter( u )
+        return dt
+class Heun(RungeKutta):
+    def __init__(self, op, cfl=None):
+        A = [[0,0],
+             [1,0]]
+        b = [0.5,0.5]
+        c = [0,1]
+        cfl = 0.45 if cfl is None else cfl
+        RungeKutta.__init__(self,op,cfl,A,b,c)
+# The following seems an inefficient implementation in the sense that it
+# converges very slowly - there is a better implementation below using a
+# Shu-Osher form of the method - the dune-fem implementation of DIRK also
+# uses some transformation of the Butcher tableau which could be
+# reimplemented here.
+# A lot about DIRK - worth looking into more closely
+# https://ntrs.nasa.gov/archive/nasa/casi.ntrs.nasa.gov/20160005923.pdf
+class Midpoint(RungeKutta):
+    def __init__(self, op, cfl=None):
+        A = [[0.5]]
+        b = [1]
+        c = [0.5]
+        cfl = 0.45 if cfl is None else cfl
+        RungeKutta.__init__(self,op,cfl,A,b,c)
+class ImplSSP2: # with stages=1 same as above - increasing stages does not improve anything
+    def __init__(self,stages,op,cfl=None):
+        self.stages = stages
+        self.op     = op
+
+        self.mu11   = 1/(2*stages)
+        self.mu21   = 1/(2*stages)
+        self.musps  = 1/(2*stages)
+        self.lamsps = 1
+
+        self.q2     = op.space.interpolate(op.space.dimRange*[0],name="q2")
+        self.tmp    = self.q2.copy()
+        self.cfl    = 0.45 if cfl is None else cfl
+        self.dt     = None
+        self.helmholtz = HelmholtzShuOsher(self.op)
+    def c(self,i):
+        return i/(2*self.stages)
+    def __call__(self,u,dt=None):
+        if dt is None and self.dt is None:
+            self.op.stepTime(0,0)
+            self.op(u, self.tmp)
+            dt = self.op.timeStepEstimate*self.cfl
+        elif dt is None:
+            dt = self.dt
+        self.dt = 1e10
+        self.helmholtz.alpha = dt*self.mu11
+
+        self.op.stepTime(self.c(1),dt)
+        self.helmholtz.solve(u,self.q2) # first stage
+        for i in range(2,self.stages+1):
+            self.op.stepTime(self.c(i),dt)
+            self.op(self.q2, self.tmp)
+            self.dt = min(self.dt, self.op.timeStepEstimate*self.cfl)
+            self.q2.axpy(dt*self.mu21, self.tmp)
+            self.helmholtz.solve(self.q2,self.tmp)
+            self.q2.assign(self.tmp)
+        u.as_numpy[:] *= (1-self.lamsps)
+        u.axpy(self.lamsps, self.q2)
+        self.op(self.q2, self.tmp)
+        self.dt = min(self.dt, self.op.timeStepEstimate*self.cfl)
+        u.axpy(dt*self.musps, self.tmp)
+        self.op.applyLimiter( u )
+        return dt
+class ExplSSP2:
+    def __init__(self,stages,op,cfl=None):
+        self.op     = op
+        self.stages = stages
+        self.q2     = op.space.interpolate(op.space.dimRange*[0],name="q2")
+        self.tmp    = self.q2.copy()
+        self.cfl    = 0.45 * (stages-1)
+        self.dt     = None
+    def c(self,i):
+        return (i-1)/(self.stages-1)
+    def __call__(self,u,dt=None):
+        if dt is None and self.dt is None:
+            self.op.stepTime(0,0)
+            self.op(u, self.tmp)
+            dt = self.op.timeStepEstimate*self.cfl
+        elif dt is None:
+            dt = self.dt
+        self.dt = 1e10
+        fac = dt/(self.stages-1)
+        self.q2.assign(u)
+        for i in range(1,self.stages):
+            self.op.stepTime(self.c(i),dt)
+            self.op(u,self.tmp)
+            self.dt = min(self.dt, self.op.timeStepEstimate*self.cfl)
+            u.axpy(fac, self.tmp)
+        self.op.stepTime(self.c(i),dt)
+        self.op(u,self.tmp)
+        self.dt = min(self.dt, self.op.timeStepEstimate*self.cfl)
+        u.as_numpy[:] *= (self.stages-1)/self.stages
+        u.axpy(dt/self.stages, self.tmp)
+        u.axpy(1/self.stages, self.q2)
+        self.op.applyLimiter( u )
+        return dt
+def ssp2(stages,explicit=True):
+    if explicit:
+        return lambda op,cfl=None: ExplSSP2(stages,op,cfl)
+    else:
+        return lambda op,cfl=None: ImplSSP2(stages,op,cfl)
+# optimal low storage methods:
 # http://www.sspsite.org
 # https://arxiv.org/pdf/1605.02429.pdf
 # https://openaccess.leidenuniv.nl/bitstream/handle/1887/3295/02.pdf?sequence=7
 # https://epubs.siam.org/doi/10.1137/07070485X
-class Heun:
-    def __init__(self, op, cfl=None):
-        self.stages = 2
-        self.op = op
-        self.c = [0,1]
-        self.b = [0.5,0.5]
-        self.A = [[0,0],[1,0]]
-        self.k = self.stages*[None]
-        self.cfl = 0.45 if cfl is None else cfl
-        for i in range(self.stages):
-            self.k[i] = op.space.interpolate(op.space.dimRange*[0],name="k")
-        self.tmp = op.space.interpolate(op.space.dimRange*[0],name="tmp")
-    def __call__(self,u,dt=None):
-        self.op(u,self.k[0])
-        if dt is None:
-            dt = self.op.timeStepEstimate*self.cfl
-        for i in range(1,self.stages):
-            self.tmp.assign(u)
-            for j in range(i):
-                self.tmp.axpy(dt*self.A[i][j],self.k[j])
-            self.op.stepTime(self.c[i],dt)
-            self.op(self.tmp,self.k[i])
-        for i in range(self.stages):
-            u.axpy(dt*self.b[i],self.k[i])
-        return dt
+# implicit: https://www.sciencedirect.com/science/article/abs/pii/S0168927408000688
 class ExplSSP3:
     def __init__(self,stages,op,cfl=None):
         self.op     = op
-        self.n      = math.ceil(math.sqrt(stages))
+        self.n      = int(sqrt(stages))
         self.stages = self.n*self.n
+        assert self.stages == stages, "doesn't work if sqrt(s) is not integer"
         self.r      = self.stages-self.n
         self.q2     = op.space.interpolate(op.space.dimRange*[0],name="q2")
         self.tmp    = self.q2.copy()
-        self.cfl    = 0.45 * stages*(1-1/self.n) \
-                      if cfl is None else cfl
-        for i in range(1,self.stages+1):
-            print(i,self.c(i))
+        self.cfl    = 0.45 * stages*(1-1/self.n) if cfl is None else cfl
+        self.dt     = None
     def c(self,i):
         return (i-1)/(self.n*self.n-self.n) \
-               if i<=(self.n+2)*(self.n-1)/2 \
-               else (i-self.n)/(self.n*self.n-self.n)
+               if i<=(self.n+2)*(self.n-1)/2+1 \
+               else (i-self.n-1)/(self.n*self.n-self.n)
     def __call__(self,u,dt=None):
-        if dt is None:
+        if dt is None and self.dt is None:
+            self.op.stepTime(0,0)
             self.op(u, self.tmp)
             dt = self.op.timeStepEstimate*self.cfl
+        elif dt is None:
+            dt = self.dt
+        self.dt = 1e10
         fac = dt/self.r
         i = 1
         while i <= (self.n-1)*(self.n-2)/2:
             self.op.stepTime(self.c(i),dt)
             self.op(u,self.tmp)
+            self.dt = min(self.dt, self.op.timeStepEstimate*self.cfl)
             u.axpy(fac, self.tmp)
             i += 1
         self.q2.assign(u)
         while i <= self.n*(self.n+1)/2:
             self.op.stepTime(self.c(i),dt)
             self.op(u,self.tmp)
+            self.dt = min(self.dt, self.op.timeStepEstimate*self.cfl)
             u.axpy(fac, self.tmp)
             i += 1
         u.as_numpy[:] *= (self.n-1)/(2*self.n-1)
@@ -91,11 +300,68 @@ class ExplSSP3:
         while i <= self.stages:
             self.op.stepTime(self.c(i),dt)
             self.op(u,self.tmp)
+            self.dt = min(self.dt, self.op.timeStepEstimate*self.cfl)
             u.axpy(fac, self.tmp)
             i += 1
+        self.op.applyLimiter( u )
         return dt
-def explSSP3(stages):
-    return lambda op,cfl=None: ExplSSP3(stages,op,cfl)
+class ImplSSP3:
+    def __init__(self,stages,op,cfl=None):
+        self.stages = stages
+        self.op     = op
+
+        self.mu11   = 0.5*( 1 - sqrt( (stages-1)/(stages+1) ) )
+        self.mu21   = 0.5*( sqrt( (stages+1)/(stages-1) ) - 1 )
+        q           = stages*(stages+1+sqrt(stages*stages-1))
+        self.musps  = (stages+1)/q
+        self.lamsps = (stages+1)/q*(stages-1+sqrt(stages*stages-1))
+
+        self.q2     = op.space.interpolate(op.space.dimRange*[0],name="q2")
+        self.tmp    = self.q2.copy()
+        self.cfl    = 0.45 * (stages-1+sqrt(stages*stages-1)) if cfl is None else cfl
+        self.dt     = None
+        self.helmholtz = HelmholtzShuOsher(self.op)
+    def c(self,i):
+        assert False, "not yet implemented"
+    def __call__(self,u,dt=None):
+        # y_1 = u + dt mu_{i,i-1}L[y_{i-1}]
+        # y_i = y_{i-1} + dt mu_{i,i-1}L[y_{i-1}] + dt mu_{i,i}L[y_i]   i>1
+        # or
+        # (1 - dt mu_{ii} L)y_1 = u
+        # (1 - dt mu_{ii} L)y_i = (1 + dt * mu_{i,i-1} L)y_{i-1}        i>1
+        # and u = (1-lamsps)u + (lamsps + dt musps L)y_s
+
+        if dt is None and self.dt is None:
+            # self.op.stepTime(0,0)
+            self.op(u, self.tmp)
+            dt = self.op.timeStepEstimate*self.cfl
+        elif dt is None:
+            dt = self.dt
+        self.dt = 1e10
+        self.helmholtz.alpha = dt*self.mu11
+
+        # self.op.stepTime(self.c(1),dt)
+        self.helmholtz.solve(u,self.q2) # first stage
+        for i in range(2,self.stages+1):
+            # self.op.stepTime(self.c(i),dt)
+            self.op(self.q2, self.tmp)
+            self.dt = min(self.dt, self.op.timeStepEstimate*self.cfl)
+            self.q2.axpy(dt*self.mu21, self.tmp)
+            self.helmholtz.solve(self.q2,self.tmp)
+            self.q2.assign(self.tmp)
+        u.as_numpy[:] *= (1-self.lamsps)
+        u.axpy(self.lamsps, self.q2)
+        self.op(self.q2, self.tmp)
+        self.dt = min(self.dt, self.op.timeStepEstimate*self.cfl)
+        u.axpy(dt*self.musps, self.tmp)
+        self.op.applyLimiter( u )
+        return dt
+def ssp3(stages,explicit=True):
+    if explicit:
+        return lambda op,cfl=None: ExplSSP3(stages,op,cfl)
+    else:
+        return lambda op,cfl=None: ImplSSP3(stages,op,cfl)
+
 class ExplSSP4_10:
     def __init__(self, op,cfl=None):
         self.op     = op
@@ -103,165 +369,44 @@ class ExplSSP4_10:
         self.q2     = op.space.interpolate(op.space.dimRange*[0],name="q2")
         self.tmp    = self.q2.copy()
         self.cfl    = 0.45 * self.stages*0.6 if cfl is None else cfl
-        for i in range(1,self.stages+1):
-            print(i,self.c(i))
+        self.dt     = None
     def c(self,i):
         return (i-1)/6 if i<=5 else (i-4)/6
     def __call__(self,u,dt=None):
-        if dt is None:
+        if dt is None and self.dt is None:
+            self.op.stepTime(0,0)
             self.op(u, self.tmp)
-            dt = self.op.timeStepEstimate*self.cfl # how is this reset for the next time step
+            dt = self.op.timeStepEstimate*self.cfl
+        elif dt is None:
+            dt = self.dt
+        self.dt = 1e10
+
         i = 1
         self.q2.assign(u)
         while i <= 5:
-            self.op.stepTime(self.c(i),dt)
-            self.op(u,self.tmp)
+            self.op.stepTime(self.c(i), dt)
+            self.op(u, self.tmp)
+            self.dt = min(self.dt, self.op.timeStepEstimate*self.cfl)
             u.axpy(dt/6, self.tmp)
             i += 1
 
         self.q2.as_numpy[:] *= 1/25
-        self.q2.axpy(9/25,u)
+        self.q2.axpy(9/25, u)
         u.as_numpy[:] *= -5
-        u.axpy(15,self.q2)
+        u.axpy(15, self.q2)
 
         while i <= 9:
-            self.op.stepTime(self.c(i),dt)
-            self.op(u,self.tmp)
+            self.op.stepTime(self.c(i), dt)
+            self.op(u, self.tmp)
+            self.dt = min(self.dt, self.op.timeStepEstimate*self.cfl)
             u.axpy(dt/6, self.tmp)
             i += 1
 
-        self.op.stepTime(self.c(i),dt)
-        self.op(u,self.tmp)
+        self.op.stepTime(self.c(i), dt)
+        self.op(u, self.tmp)
+        self.dt = min(self.dt, self.op.timeStepEstimate*self.cfl)
         u.as_numpy[:] *= 3/5
-        u.axpy(1,self.q2)
+        u.axpy(1, self.q2)
         u.axpy(dt/10, self.tmp)
+        self.op.applyLimiter( u )
         return dt
-
-def run(Model, Stepper,
-        initial=None, domain=None, endTime=None, name=None, exact=None, # deprecated - now Model attributes
-        polOrder=1, limiter="default", startLevel=0,
-        primitive=None, saveStep=None, subsamp=0,
-        dt=None,cfl=None,grid="yasp", space="dgonb", threading=True,
-        parameters={}):
-    if initial is not None:
-        print("deprecated usage of run: add initial etc as class atttributes to the Model")
-    else:
-        initial = Model.initial
-        domain = Model.domain
-        endTime = Model.endTime
-        name = Model.name
-        exact = Model.exact
-    print("*************************************")
-    print("**** Running simulation",name)
-    print("*************************************")
-    try: # passed in a [xL,xR,N] tripple
-        x0,x1,N = domain
-        periodic=[True,]*len(x0)
-        if hasattr(Model,"boundary"):
-            bnd=set()
-            for b in Model.boundary:
-                bnd.update(b)
-            for i in range(len(x0)):
-                if 2*i+1 in bnd:
-                    assert(2*i+2 in bnd)
-                    periodic[i] = False
-        # create domain and grid
-        domain   = cartesianDomain(x0,x1,N,periodic=periodic,overlap=0)
-        grid     = create.grid(grid,domain)
-        print("Setting periodic boundaries",periodic,flush=True)
-    except TypeError: # assume the 'domain' is already a gridview
-        grid = domain
-    # initial refinement of grid
-    grid.hierarchicalGrid.globalRefine(startLevel)
-    dimR     = Model.dimRange
-    t        = 0
-    tcount   = 0
-    saveTime = saveStep
-
-    # create discrete function space
-    space = create.space( space, grid, order=polOrder, dimRange=dimR)
-    operator = femDGOperator(Model, space, limiter=limiter, threading=True, parameters=parameters )
-    stepper  = Stepper(operator, cfl)
-    # create and initialize solution
-    u_h = space.interpolate(initial, name='u_h')
-    operator.applyLimiter( u_h )
-
-    # preparation for output
-    if saveStep is not None:
-        x = SpatialCoordinate(space.cell())
-        tc = Constant(0.0,"time")
-        try:
-            velo = [create.function("ufl",space.grid, ufl=Model.velocity(tc,x,u_h), order=2, name="velocity")]
-        except AttributeError:
-            velo = None
-        if name is not None:
-            vtk = grid.sequencedVTK(name, subsampling=subsamp,
-                   celldata=[u_h],
-                   pointdata=primitive(Model,u_h) if primitive else [u_h],
-                   cellvector=velo
-                )
-        else:
-            vtk = lambda : None
-        try:
-            velo[0].setConstant("time",[t])
-        except:
-            pass
-    vtk()
-
-    # measure CPU time
-    start = time.time()
-
-    fixedDt = dt is not None
-
-    while operator.time < endTime:
-        assert not math.isnan( u_h.scalarProductDofs( u_h ) )
-        dt = stepper(u_h)
-        # check that solution is meaningful
-        if math.isnan( u_h.scalarProductDofs( u_h ) ):
-            vtk()
-            print('ERROR: dofs invalid t =', t,flush=True)
-            print('[',tcount,']','dt = ', dt, 'time = ',t, flush=True )
-            sys.exit(1)
-        # increment time and time step counter
-        operator.addToTime(dt)
-        tcount += 1
-        print('[',tcount,']','dt = ', dt, 'time = ',operator.time,
-                'dtEst = ',operator.timeStepEstimate,
-                'elements = ',grid.size(0), flush=True )
-        if operator.time > saveTime:
-            try:
-                velo[0].setConstant("time",[operator.time])
-                vtk()
-            except:
-                pass
-            saveTime += saveStep
-    runTime = time.time()-start
-    print("time loop:",runTime,flush=True)
-    print("number of time steps ", tcount,flush=True)
-    try:
-        velo[0].setConstant("time",[operator.time])
-        vtk()
-    except:
-        pass
-
-    # output the final result and compute error (if exact is available)
-    if exact is not None and name is not None:
-        tc = Constant(0, "time")
-        # using '0' here because uusing 't'
-        # instead means that this value is added to the generated code so
-        # that slight changes to 't' require building new local functions -
-        # should be fixed in dune-fem
-        u = exact(tc)
-        tc.value = operator.time
-        grid.writeVTK(name, subsampling=subsamp,
-                celldata=[u_h], pointdata={"exact":u})
-        error = integrate( grid, dot(u_h-u,u_h-u), order=5 )
-    elif name is not None:
-        grid.writeVTK(name, subsampling=subsamp, celldata=[u_h])
-        error = integrate( grid, dot(u_h,u_h), order=5 )
-    error = math.sqrt(error)
-    print("*************************************")
-    print("**** Completed simulation",name)
-    print("**** error:", error)
-    print("*************************************",flush=True)
-    return u_h, [error, runTime, tcount]
