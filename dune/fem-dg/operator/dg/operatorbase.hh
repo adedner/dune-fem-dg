@@ -151,6 +151,7 @@ namespace Fem
                         DiffusionFluxType( gridPart_, model_, typename DiffusionFluxType::ParameterType( ParameterKey::generate( name, "dgdiffusionflux." ) ) ) )
       , previousPass_( InsertFunctionsType::createPass( tuple ) )
       , pass1_( discreteModel_, *previousPass_, space_ )
+      , counter_(0)
     {}
 
     IndicatorType* indicator() { return 0; }
@@ -171,6 +172,7 @@ namespace Fem
 
     //! evaluate the spatial operator
     void operator()( const DestinationType& arg, DestinationType& dest ) const {
+      called();
 	    pass1_( arg, dest );
     }
 
@@ -188,6 +190,8 @@ namespace Fem
     inline DiscreteFunctionSpaceType& space() {
 	    return space_;
     }
+    int counter() const {return counter_;}
+    void called() const {counter_++;}
 
     inline void switchupwind()
     {
@@ -235,6 +239,7 @@ namespace Fem
     DiscreteModelType                         discreteModel_;
     std::shared_ptr< InsertFunctionPassType > previousPass_;
     Pass1Type                                 pass1_;
+    mutable int                               counter_;
   };
 
 }

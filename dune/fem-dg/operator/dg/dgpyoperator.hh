@@ -16,7 +16,6 @@
 #include <dune/fem-dg/operator/fluxes/euler/fluxes.hh>
 #include <dune/fem-dg/operator/dg/operatortraits.hh>
 #include <dune/fem-dg/operator/dg/primaloperator.hh>
-#include <dune/fem-dg/solver/rungekuttasolver.hh>
 #include <dune/fem-dg/models/modelwrapper.hh>
 #include <dune/fem-dg/misc/algorithmcreatorselector.hh>
 
@@ -131,6 +130,10 @@ namespace Fem
     FullOperatorType&     fullOperator()     const { return fullOperator_; }
     ExplicitOperatorType& explicitOperator() const { return explOperator_; }
     ImplicitOperatorType& implicitOperator() const { return implOperator_; }
+    std::tuple<int,int,int> counter() const
+    {
+      return {fullOperator_.counter(),explOperator_.counter(),implOperator_.counter()};
+    }
 
     //! evaluate the operator, which always referrers to the fullOperator here
     void operator()( const DestinationType& arg, DestinationType& dest ) const

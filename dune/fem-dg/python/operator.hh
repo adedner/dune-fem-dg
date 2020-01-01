@@ -53,6 +53,8 @@ namespace Dune
            { return self.explicitOperator(); } );
       cls.def_property_readonly("implicitOperator", [](const Operator &self) -> const ImplType&
            { return self.implicitOperator(); } );
+      cls.def("counter", [](const Operator &self) -> std::tuple<int,int,int>
+           { return self.counter(); } );
     }
 
   } // namespace FemPy

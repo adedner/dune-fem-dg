@@ -396,6 +396,7 @@ namespace Fem
       , pass0_()
       , pass1_( limitDiscreteModel_, pass0_, limiterSpace_ )
       , pass2_( discreteModel1_, pass1_, space_ )
+      , counter_(0)
     {
       // create indicator if enabled
       createIndicator();
@@ -423,8 +424,12 @@ namespace Fem
       return pass2_.timeStepEstimate();
     }
 
+    void called() const { counter_++; }
+    int counter() const { return counter_; }
+
     void operator()( const DestinationType& arg, DestinationType& dest ) const
     {
+      called();
       //++operatorCalled_;
       //std::cout << "Operator call." << std::endl;
       pass2_( arg, dest );
@@ -526,6 +531,7 @@ namespace Fem
     Pass1Type           pass1_;
     Pass2Type           pass2_;
 
+    mutable int         counter_;
     //LimiterOperator  limOp_;
   };
 
@@ -673,6 +679,7 @@ namespace Fem
       , pass0_()
       , pass1_( limitDiscreteModel_, pass0_, limiterSpace_ )
       , pass2_( discreteModel1_, pass1_, space_ )
+      , counter_(0)
     {
       // create indicator if enabled
       createIndicator();
@@ -700,8 +707,12 @@ namespace Fem
       return pass2_.timeStepEstimate();
     }
 
+    void called() const { counter_++; }
+    int counter() const { return counter_; }
+
     void operator()( const DestinationType& arg, DestinationType& dest ) const
     {
+      called();
       pass2_( arg, dest );
     }
 
@@ -800,6 +811,8 @@ namespace Fem
     Pass0Type           pass0_;
     Pass1Type           pass1_;
     Pass2Type           pass2_;
+
+    mutable int         counter_;
 
     //LimiterOperator  limOp_;
   };
