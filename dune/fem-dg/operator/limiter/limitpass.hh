@@ -223,6 +223,11 @@ namespace Fem
     {
     }
 
+    void setEntity(const EntityType& en)
+    {
+      BaseType :: setEntity ( en );
+      model().setEntity( en );
+    }
     //! \brief returns false
     bool hasSource() const { return false; }
     //! \brief returns true
