@@ -5,6 +5,7 @@ from dune.fem.function import integrate
 from dune.ufl import Constant, expression2GF
 from ufl import dot, SpatialCoordinate
 from dune.femdg import femDGOperator, rungeKuttaSolver
+from dune.femdg.rk import femdgStepper
 
 from collections import namedtuple
 
@@ -13,12 +14,14 @@ Parameters = namedtuple("TestingParameters",
 Parameters.__new__.__defaults__ = (None,None) # defaults for name, exact
 
 
-def run(Model, Stepper,
+def run(Model, Stepper=None,
         initial=None, domain=None, endTime=None, name=None, exact=None, # deprecated - now Model attributes
         polOrder=1, limiter="default", startLevel=0,
         primitive=None, saveStep=None, subsamp=0,
         dt=None,cfl=None,grid="yasp", space="dgonb", threading=True,
         parameters={}):
+    if Stepper is None:
+        Stepper = femdgStepper(parameters)
     if initial is not None:
         print("deprecated usage of run: add initial etc as class atttributes to the Model")
     else:
@@ -51,7 +54,8 @@ def run(Model, Stepper,
     except TypeError: # assume the 'domain' is already a gridview
         grid = domain
     # initial refinement of grid
-    grid.hierarchicalGrid.globalRefine(startLevel)
+    if startLevel>0: # note this call clears all discrete function e.g. the velocity in the chemical problem
+        grid.hierarchicalGrid.globalRefine(startLevel)
     dimR     = Model.dimRange
     t        = 0
     tcount   = 0
@@ -71,16 +75,16 @@ def run(Model, Stepper,
         x = SpatialCoordinate(space.cell())
         tc = Constant(0.0,"time")
         try:
-            velo = [create.function("ufl",space.grid, ufl=Model.velocity(tc,x,u_h), order=2, name="velocity")]
+            velo = create.function("ufl",space.grid, ufl=Model.velocity(tc,x,u_h), order=2, name="velocity")
         except AttributeError:
             velo = None
         vtk = grid.sequencedVTK(name, subsampling=subsamp,
                celldata=[u_h],
                pointdata=primitive(Model,u_h) if primitive else [u_h],
-               cellvector=velo
+               cellvector=[velo]
             )
         try:
-            velo[0].setConstant("time",[t])
+            velo.setConstant("time",[t])
         except:
             pass
     vtk()
@@ -109,7 +113,7 @@ def run(Model, Stepper,
                     'dtEst = ',operator.timeStepEstimate,
                     'elements = ',grid.size(0), flush=True )
             try:
-                velo[0].setConstant("time",[operator.time])
+                velo0.setConstant("time",[operator.time])
             except:
                 pass
             vtk()
@@ -121,7 +125,7 @@ def run(Model, Stepper,
     print("time loop:",runTime,flush=True)
     print("number of time steps ", tcount,flush=True)
     try:
-        velo[0].setConstant("time",[operator.time])
+        velo.setConstant("time",[operator.time])
         vtk()
     except:
         pass
@@ -162,7 +166,10 @@ def oldRun(Model,
         domain = Model.domain
         endTime = Model.endTime
         name = Model.name
-        exact = Model.exact
+        try:
+            exact = Model.exact
+        except:
+            exact = None
     print("*************************************")
     print("**** Running simulation",name)
     print("*************************************")
@@ -184,7 +191,8 @@ def oldRun(Model,
     except TypeError: # assume the 'domain' is already a gridview
         grid = domain
     # initial refinement of grid
-    grid.hierarchicalGrid.globalRefine(startLevel)
+    if startLevel>0: # note this call clears all discrete function e.g. the velocity in the chemical problem
+        grid.hierarchicalGrid.globalRefine(startLevel)
 
     dimR     = Model.dimRange
     t        = 0
@@ -212,19 +220,21 @@ def oldRun(Model,
         x = SpatialCoordinate(space.cell())
         tc = Constant(0.0,"time")
         try:
-            velo = [create.function("ufl",space.grid, ufl=Model.velocity(tc,x,u_h), order=2, name="velocity")]
+            velo = create.function("ufl",space.grid, ufl=Model.velocity(tc,x,u_h), order=2, name="velocity")
         except AttributeError:
             velo = None
+        # BUG: the local function should have a plot command - like the df
+        # velo.plot()
         if name is not None:
             vtk = grid.writeVTK(name, subsampling=subsamp, write=False,
                    celldata=[u_h],
                    pointdata=primitive(Model,u_h) if primitive else [u_h],
-                   cellvector=velo
+                   cellvector=[velo]
                 )
         else:
             vtk = None
         try:
-            velo[0].setConstant("time",[t])
+            velo.setConstant("time",[t])
         except:
             pass
         if vtk is not None:
@@ -262,7 +272,7 @@ def oldRun(Model,
         if saveStep is not None and t > saveTime:
             count += 1
             try:
-                velo[0].setConstant("time",[t])
+                velo.setConstant("time",[t])
             except:
                 pass
             if vtk is not None:
@@ -273,7 +283,7 @@ def oldRun(Model,
     print("number of time steps ", tcount,flush=True)
     if name is not None and saveStep is not None:
         try:
-            velo[0].setConstant("time",[t])
+            velo.setConstant("time",[t])
         except:
             pass
         vtk.write(name, count, outputType=OutputType.appendedraw)
