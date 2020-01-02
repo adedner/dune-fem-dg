@@ -81,64 +81,67 @@ def riemanProblem(Model,x,x0,UL,UR):
 
 # TODO Add exact solution where available (last argument)
 def constant(dim,gamma):
-    return Parameters(Model=CompressibleEulerDirichlet(dim,gamma),
-                      initial=as_vector( [0.1,0.,0.,0.1] ),
-                      domain=[[-1, 0], [1, 0.1], [50, 5]], endTime=0.1,
-                      name="constant")
+    Model=CompressibleEulerDirichlet(dim,gamma)
+    Model.initial=as_vector( [0.1,0.,0.,0.1] )
+    Model.domain=[[-1, 0], [1, 0.1], [50, 5]]
+    Model.endTime=0.1
+    Model.name="constant"
+    return Model
 def sod(dim=2,gamma=1.4):
     space = Space(dim,dim+2)
     x = SpatialCoordinate(space.cell())
     Model = CompressibleEulerReflection(dim,gamma)
-    return Parameters(Model=Model,
-                      initial=riemanProblem( Model, x[0], 0.5, [1,0,0,1], [0.125,0,0,0.1]),
-                      domain=[[0, 0], [1, 0.25], [64, 16]], endTime=0.15,
-                      name="sod")
+    Model.initial=riemanProblem( Model, x[0], 0.5, [1,0,0,1], [0.125,0,0,0.1])
+    Model.domain=[[0, 0], [1, 0.25], [64, 16]]
+    Model.endTime=0.15
+    Model.name="sod"
+    return Model
 def radialSod1(dim=2,gamma=1.4):
     space = Space(dim,dim+2)
     x = SpatialCoordinate(space.cell())
     Model = CompressibleEulerDirichlet(dim,gamma)
-    return Parameters(Model=Model,
-                      initial=riemanProblem(Model, sqrt(dot(x,x)), 0.3,
-                                            [1,0,0,1], [0.125,0,0,0.1]),
-                      domain=[[-0.5, -0.5], [0.5, 0.5], [20, 20]], endTime=0.25,
-                      name="radialSod1")
+    Model.initial=riemanProblem(Model, sqrt(dot(x,x)), 0.3, [1,0,0,1], [0.125,0,0,0.1])
+    Model.domain=[[-0.5, -0.5], [0.5, 0.5], [20, 20]]
+    Model.endTime=0.25
+    Model.name="radialSod1"
+    return Model
 def radialSod1Large(dim=2,gamma=1.4):
     space = Space(dim,dim+2)
     x = SpatialCoordinate(space.cell())
     Model = CompressibleEulerDirichlet(dim,gamma)
-    return Parameters(Model=Model,
-                      initial=riemanProblem( Model, sqrt(dot(x,x)), 0.3,
-                                             [1,0,0,1], [0.125,0,0,0.1]),
-                      domain=[[-1.5, -1.5], [1.5, 1.5], [60, 60]], endTime=0.5,
-                      name="radialSod1Large")
+    Model.initial=riemanProblem( Model, sqrt(dot(x,x)), 0.3, [1,0,0,1], [0.125,0,0,0.1])
+    Model.domain=[[-1.5, -1.5], [1.5, 1.5], [60, 60]]
+    Model.endTime=0.5
+    Model.name="radialSod1Large"
+    return Model
 def radialSod2(dim=2,gamma=1.4):
     space = Space(dim,dim+2)
     x = SpatialCoordinate(space.cell())
     Model = CompressibleEulerNeuman(dim,gamma)
-    return Parameters(Model=Model,
-                      initial=riemanProblem( Model, sqrt(dot(x,x)), 0.3,
-                                     [0.125,0,0,0.1], [1,0,0,1]),
-                      domain=[[-0.5, -0.5], [0.5, 0.5], [20, 20]], endTime=0.25,
-                      name="radialSod2")
+    Model.initial=riemanProblem( Model, sqrt(dot(x,x)), 0.3, [0.125,0,0,0.1], [1,0,0,1])
+    Model.domain=[[-0.5, -0.5], [0.5, 0.5], [20, 20]]
+    Model.endTime=0.25
+    Model.name="radialSod2"
+    return Model
 def radialSod3(dim=2,gamma=1.4):
     space = Space(dim,dim+2)
     x = SpatialCoordinate(space.cell())
     Model = CompressibleEulerSlip(dim,gamma)
-    return Parameters(Model=Model,
-                      initial=riemanProblem( Model, sqrt(dot(x,x)), 0.3,
-                                     [1,0,0,1], [0.125,0,0,0.1]),
-                      domain=[[-0.5, -0.5], [0.5, 0.5], [20, 20]], endTime=0.5,
-                      name="radialSod3")
-
+    Model.initial=riemanProblem( Model, sqrt(dot(x,x)), 0.3, [1,0,0,1], [0.125,0,0,0.1])
+    Model.domain=[[-0.5, -0.5], [0.5, 0.5], [20, 20]]
+    Model.endTime=0.5
+    Model.name="radialSod3"
+    return Model
 def leVeque(dim=2,gamma=1.4):
     space = Space(dim,dim+2)
     x = SpatialCoordinate(space.cell())
     initial = conditional(abs(x[0]-0.15)<0.05,1.2,1)
     Model = CompressibleEulerDirichlet(dim,gamma)
-    return Parameters(Model=Model,
-                      initial=Model.toCons(as_vector( [initial,0,0,initial] )),
-                      domain=[[0, 0], [1, 0.25], [64, 16]], endTime=0.7,
-                      name="leVeque1D")
+    Model.initial=Model.toCons(as_vector( [initial,0,0,initial] ))
+    Model.domain=[[0, 0], [1, 0.25], [64, 16]]
+    Model.endTime=0.7
+    Model.name="leVeque1D"
+    return Model
 
 def vortex(dim=2,gamma=1.4):
     S = 13.5    # strength of vortex
@@ -154,10 +157,11 @@ def vortex(dim=2,gamma=1.4):
     p     = rho / (gamma*M*M)
     # Model = CompressibleEuler(dim,gamma)
     Model = CompressibleEulerSlip(dim,gamma,bnd=(1,2))
-    return Parameters(Model=Model,
-                      initial=Model.toCons( as_vector( [rho,u,v,p] )),
-                      domain=[[-10, -10], [10, 10], [20, 20]], endTime=100,
-                      name="vortex")
+    Model.initial=Model.toCons( as_vector( [rho,u,v,p] ))
+    Model.domain=[[-10, -10], [10, 10], [20, 20]]
+    Model.endTime=100
+    Model.name="vortex"
+    return Model
 
 problems = [sod, radialSod1, radialSod2, radialSod3,\
             radialSod1Large, leVeque, vortex]

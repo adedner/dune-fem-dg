@@ -75,9 +75,16 @@ class HelmholtzShuOsher:
     def f(self, x_coeff):
         self.x.as_numpy[:]    = x_coeff[:]
         self.op(self.x, self.res)
-        self.res.as_numpy[:] *= self.alpha
-        self.res.as_numpy[:] -= x_coeff[:]
-        self.res.as_numpy[:] += self.rhs.as_numpy[:]
+        # needs speedup, e.g.
+        # - 2011: https://technicaldiscovery.blogspot.com/2011/06/speeding-up-python-numpy-cython-and.html
+        import numexpr, numpy
+        a = numpy.array([self.alpha])
+        res = self.res.as_numpy
+        rhs = self.rhs.as_numpy
+        self.res.as_numpy[:] = numexpr.evaluate('a*res-x_coeff+rhs')
+        # self.res.as_numpy[:] *= self.alpha
+        # self.res.as_numpy[:] -= x_coeff[:]
+        # self.res.as_numpy[:] += self.rhs.as_numpy[:]
         return self.res.as_numpy
     def solve(self,rhs,target):
         counter = 0
@@ -197,6 +204,7 @@ class ImplSSP2: # with stages=1 same as above - increasing stages does not impro
         self.dt = 1e10
         self.helmholtz.alpha = dt*self.mu11
 
+        self.q2.assign(u)
         self.op.stepTime(self.c(1),dt)
         self.helmholtz.solve(u,self.q2) # first stage
         for i in range(2,self.stages+1):
@@ -204,8 +212,8 @@ class ImplSSP2: # with stages=1 same as above - increasing stages does not impro
             self.op(self.q2, self.tmp)
             self.dt = min(self.dt, self.op.timeStepEstimate*self.cfl)
             self.q2.axpy(dt*self.mu21, self.tmp)
-            self.helmholtz.solve(self.q2,self.tmp)
-            self.q2.assign(self.tmp)
+            self.q2.assgin(tmp)
+            self.helmholtz.solve(self.tmp, self.q2)
         u.as_numpy[:] *= (1-self.lamsps)
         u.axpy(self.lamsps, self.q2)
         self.op(self.q2, self.tmp)

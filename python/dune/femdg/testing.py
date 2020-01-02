@@ -26,7 +26,10 @@ def run(Model, Stepper,
         domain = Model.domain
         endTime = Model.endTime
         name = Model.name
-        exact = Model.exact
+        try:
+            exact = Model.exact
+        except:
+            exact = None
     print("*************************************")
     print("**** Running simulation",name)
     print("*************************************")
