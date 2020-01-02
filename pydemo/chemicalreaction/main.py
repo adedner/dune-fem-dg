@@ -4,12 +4,12 @@ from dune.grid import cartesianDomain
 from dune.alugrid import aluCubeGrid as Grid
 import dune.fem
 from dune.fem import parameter
-from dune.femdg.testing import run, Parameters
+from dune.femdg.testing import oldRun, Parameters
 
 
 def problem():
     gridView = Grid(cartesianDomain([0,0],[1,1],[50,50]))
-    def velocity():
+    def computeVelocity():
         # TODO without dimRange the 'vectorization' is not carried out correctly
         velocitySpace = dune.fem.space.lagrange(gridView, order=1, dimRange=1)
         Psi  = velocitySpace.interpolate(0,name="streamFunction")
@@ -23,9 +23,7 @@ def problem():
         velocityScheme.solve(target=Psi)
         return as_vector([-Psi[0].dx(1),Psi[0].dx(0)])
 
-    v = velocity()
-
-    eps = 0.01                # diffusion rate
+    eps = 0.001               # diffusion rate
     K = 10                    # reaction rate
     Q = 0.1                   # source strength
     P1 = as_vector([0.1,0.1]) # midpoint of first source
@@ -33,6 +31,7 @@ def problem():
     RF = 0.075                # radius of sources
 
     class Model:
+        transportVelocity = computeVelocity()
         dimRange = 3
         def S_ns(t,x,U,DU): # or S_ns for a non stiff source
             # sources
@@ -43,17 +42,21 @@ def problem():
             r = K*as_vector([U[0]*U[1], U[0]*U[1], -2*U[0]*U[1] + 10*U[2]])
             return f - r
         def F_c(t,x,U):
-            return as_matrix([ [*(v*u)] for u in U ])
+            return as_matrix([ [*(Model.velocity(t,x,u)*u)] for u in U ])
         def maxLambda(t,x,U,n):
-            return abs(dot(v,n))
+            return abs(dot(Model.velocity(t,x,U),n))
         def velocity(t,x,U):
-            return v
+            return Model.transportVelocity
         def F_v(t,x,U,DU):
             return eps*DU
         def maxDiffusion(t,x,U):
            return eps
         def physical(U):
             return 1
+            # the followng fails
+            return conditional(U[0]>=-1e-10,1,0)*\
+                   conditional(U[1]>=-1e-10,1,0)*\
+                   conditional(U[2]>=-1e-10,1,0)
         def jump(U,V):
             return abs(U-V)
         def dirichletValue(t,x,u):
@@ -66,7 +69,7 @@ def problem():
 parameter.append({"fem.verboserank": 0})
 
 parameters = {"fem.ode.odesolver": "IMEX",    # EX, IM, IMEX
-              "fem.ode.order": 1,
+              "fem.ode.order": 3,
               "fem.ode.verbose": "none",      # none, cfl, full
               "fem.ode.cflincrease": 1.25,
               "fem.ode.miniterations": 35,
@@ -79,7 +82,7 @@ parameters = {"fem.ode.odesolver": "IMEX",    # EX, IM, IMEX
               "dgdiffusionflux.penalty": 0,
               "dgdiffusionflux.liftfactor": 1}
 
-run(*problem(), dt=0.01,
-    startLevel=0, polOrder=1, limiter=None,
+oldRun(*problem(), dt=None,
+    startLevel=0, polOrder=3, limiter="minmod",
     primitive=None, saveStep=0.01, subsamp=0,
     parameters=parameters)
