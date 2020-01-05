@@ -1,6 +1,7 @@
 from ufl import *
 from dune.ufl import Space
 from dune.femdg.testing import Parameters
+from dune.generator import algorithm
 
 def CompressibleEuler(dim, gamma):
     class Model:
@@ -88,12 +89,17 @@ def constant(dim,gamma):
     Model.name="constant"
     return Model
 def sod(dim=2,gamma=1.4):
+    x0 = 0.5
     space = Space(dim,dim+2)
     x = SpatialCoordinate(space.cell())
     Model = CompressibleEulerReflection(dim,gamma)
-    Model.initial=riemanProblem( Model, x[0], 0.5, [1,0,0,1], [0.125,0,0,0.1])
+    Model.initial=riemanProblem( Model, x[0], x0, [1,0,0,1], [0.125,0,0,0.1])
     Model.domain=[[0, 0], [1, 0.25], [64, 16]]
     Model.endTime=0.15
+    #def u(t,x):
+    #    val = algorithm.load('sod','sod.hh', t, x0, x )
+    #    return val
+    #Model.exact = lambda t: u(t,x)
     Model.name="sod"
     return Model
 def radialSod1(dim=2,gamma=1.4):
