@@ -47,6 +47,13 @@ def run(Model, Stepper=None,
                 if 2*i+1 in bnd:
                     assert(2*i+2 in bnd)
                     periodic[i] = False
+        # periodic boundaries do not work for YaspGrid because the concept
+        # is different from ALUGrid and SPGrid which is the concept used in
+        # dune-fem-dg
+        elif grid == 'yasp':
+           errorstr = "YaspGrid (grid='"+grid+"') does not work with periodic  boundaries!\nChoose grid='alucube' or grid='spbisection'"
+           raise Exception(errorstr)
+
         # create domain and grid
         domain   = cartesianDomain(x0,x1,N,periodic=periodic,overlap=0)
         grid     = create.grid(grid,domain)
