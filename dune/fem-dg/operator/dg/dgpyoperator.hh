@@ -81,8 +81,8 @@ namespace Fem
 #endif
       >  ModelType;
 
-    static constexpr bool symmetric  =  false ;
-    static constexpr bool matrixfree =  true  ;
+    static constexpr bool symmetric  = false ;
+    static constexpr bool matrixfree = true  ;
     static constexpr bool threading  = Additional::threading;
 
     typedef DGAdvectionFlux< ModelType, advFluxId >       AdvectionFluxType;

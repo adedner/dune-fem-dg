@@ -328,13 +328,12 @@ namespace Fem
     typedef Fem::ThreadIterator< GridPartType >                                   ThreadIteratorType;
 
     // standard limiter pass
-    typedef LimitDGPass< LimiterDiscreteModelType, Pass0Type, limitPassId >         LimiterInnerPass1Type;
     // scaling limiter pass
-    typedef ScalingLimitDGPass< LimiterDiscreteModelType, Pass0Type, limitPassId >  ScalingInnerPass1Type;
 
     // select limiter pass depending on whether scalingLimiter flag is true or not
-    typedef typename std::conditional< Traits::scalingLimiter,
-              ScalingInnerPass1Type, LimiterInnerPass1Type > :: type                InnerPass1Type;
+    typedef typename std::conditional< ModelType::scalingLimiter,
+            ScalingLimitDGPass< LimiterDiscreteModelType, Pass0Type, limitPassId >,
+            LimitDGPass< LimiterDiscreteModelType, Pass0Type, limitPassId > > :: type  InnerPass1Type;
 
     typedef typename std::conditional< threading,
             ThreadPass < InnerPass1Type, ThreadIteratorType, true>,
