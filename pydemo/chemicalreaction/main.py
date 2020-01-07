@@ -23,9 +23,9 @@ def problem():
         velocityScheme.solve(target=Psi)
         return as_vector([-Psi[0].dx(1),Psi[0].dx(0)])
 
-    eps = 0.001               # diffusion rate
+    eps = 0.01                # diffusion rate
     K = 10                    # reaction rate
-    Q = 0.1                   # source strength
+    Q = 1                     # source strength
     P1 = as_vector([0.1,0.1]) # midpoint of first source
     P2 = as_vector([0.9,0.9]) # midpoint of second source
     RF = 0.075                # radius of sources
@@ -37,9 +37,9 @@ def problem():
             # sources
             f1 = conditional(dot(x-P1,x-P1) < RF**2, Q, 0)
             f2 = conditional(dot(x-P2,x-P2) < RF**2, Q, 0)
-            f  = as_vector([f1,f2,0])
+            f  = conditional(t<5, as_vector([f1,f2,0]), as_vector([0,0,0]))
             # reaction rates
-            r = K*as_vector([U[0]*U[1], U[0]*U[1], -2*U[0]*U[1] + 10*U[2]])
+            r = K*as_vector([U[0]*U[1], U[0]*U[1], -2*U[0]*U[1]]) #  + U[2]])
             return f - r
         def F_c(t,x,U):
             return as_matrix([ [*(Model.velocity(t,x,u)*u)] for u in U ])
@@ -52,7 +52,6 @@ def problem():
         def maxDiffusion(t,x,U):
            return eps
         def physical(U):
-            return 1
             # the followng fails
             return conditional(U[0]>=-1e-10,1,0)*\
                    conditional(U[1]>=-1e-10,1,0)*\
@@ -64,7 +63,7 @@ def problem():
         boundary = {(1,2,3,4): dirichletValue}
 
     return Parameters(Model=Model, initial=as_vector([0,0,0]),
-                      domain=gridView, endTime=5, name="chemical")
+                      domain=gridView, endTime=10, name="chemical")
 
 parameter.append({"fem.verboserank": 0})
 
@@ -83,6 +82,6 @@ parameters = {"fem.ode.odesolver": "IMEX",    # EX, IM, IMEX
               "dgdiffusionflux.liftfactor": 1}
 
 oldRun(*problem(), dt=None,
-    startLevel=0, polOrder=3, limiter="minmod",
+    startLevel=0, polOrder=3, limiter="scaling",
     primitive=None, saveStep=0.01, subsamp=0,
     parameters=parameters)

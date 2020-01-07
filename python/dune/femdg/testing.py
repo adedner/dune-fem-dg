@@ -103,24 +103,25 @@ def run(Model, Stepper=None,
 
     # tracemalloc.start()
 
-    while operator.time < endTime:
+    t = 0
+    while t < endTime:
         assert not math.isnan( u_h.scalarProductDofs( u_h ) )
+        operator.setTime(t)
         dt = stepper(u_h)
+        t += dt
+        tcount += 1
         # check that solution is meaningful
         if math.isnan( u_h.scalarProductDofs( u_h ) ):
             vtk()
             print('ERROR: dofs invalid t =', t,flush=True)
             print('[',tcount,']','dt = ', dt, 'time = ',t, flush=True )
             sys.exit(1)
-        # increment time and time step counter
-        operator.addToTime(dt)
-        tcount += 1
-        if operator.time > saveTime:
-            print('[',tcount,']','dt = ', dt, 'time = ',operator.time,
+        if t > saveTime:
+            print('[',tcount,']','dt = ', dt, 'time = ',t,
                     'dtEst = ',operator.timeStepEstimate,
                     'elements = ',grid.size(0), flush=True )
             try:
-                velo0.setConstant("time",[operator.time])
+                velo0.setConstant("time",[t])
             except:
                 pass
             vtk()
@@ -132,7 +133,7 @@ def run(Model, Stepper=None,
     print("time loop:",runTime,flush=True)
     print("number of time steps ", tcount,flush=True)
     try:
-        velo.setConstant("time",[operator.time])
+        velo.setConstant("time",[t])
         vtk()
     except:
         pass
@@ -145,7 +146,7 @@ def run(Model, Stepper=None,
         # that slight changes to 't' require building new local functions -
         # should be fixed in dune-fem
         u = expression2GF(grid,exact(tc),order=5)
-        tc.value = operator.time
+        tc.value = t
         grid.writeVTK(name, subsampling=subsamp,
                 celldata=[u_h], pointdata={"exact":u})
         error = integrate( grid, dot(u-u_h,u-u_h), order=5 )

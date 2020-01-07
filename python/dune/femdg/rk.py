@@ -154,6 +154,7 @@ class RungeKutta:
         for i in range(self.stages):
             u.axpy(dt*self.b[i],self.k[i])
         self.op.applyLimiter( u )
+        self.op.stepTime(0,0)
         return dt
 class Heun(RungeKutta):
     def __init__(self, op, cfl=None):
@@ -220,6 +221,7 @@ class ImplSSP2: # with stages=1 same as above - increasing stages does not impro
         self.dt = min(self.dt, self.op.timeStepEstimate*self.cfl)
         u.axpy(dt*self.musps, self.tmp)
         self.op.applyLimiter( u )
+        self.op.stepTime(0,0)
         return dt
 class ExplSSP2:
     def __init__(self,stages,op,cfl=None):
@@ -253,6 +255,7 @@ class ExplSSP2:
         u.axpy(dt/self.stages, self.tmp)
         u.axpy(1/self.stages, self.q2)
         self.op.applyLimiter( u )
+        self.op.stepTime(0,0)
         return dt
 def ssp2(stages,explicit=True):
     if explicit:
@@ -312,6 +315,7 @@ class ExplSSP3:
             u.axpy(fac, self.tmp)
             i += 1
         self.op.applyLimiter( u )
+        self.op.stepTime(0,0)
         return dt
 class ImplSSP3:
     def __init__(self,stages,op,cfl=None):
@@ -363,6 +367,7 @@ class ImplSSP3:
         self.dt = min(self.dt, self.op.timeStepEstimate*self.cfl)
         u.axpy(dt*self.musps, self.tmp)
         self.op.applyLimiter( u )
+        self.op.stepTime(0,0)
         return dt
 def ssp3(stages,explicit=True):
     if explicit:
@@ -417,4 +422,5 @@ class ExplSSP4_10:
         u.axpy(1, self.q2)
         u.axpy(dt/10, self.tmp)
         self.op.applyLimiter( u )
+        self.op.stepTime(0,0)
         return dt

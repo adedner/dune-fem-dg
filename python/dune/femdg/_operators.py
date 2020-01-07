@@ -211,6 +211,10 @@ def femDGOperator(Model, space,
         limiterFctId = "Dune::Fem::AdvectionLimiterFunction::Enum::superbee"
     if limiter.lower() == "vanleer":
         limiterFctId = "Dune::Fem::AdvectionLimiterFunction::Enum::vanleer"
+    if limiter.lower() == "scaling":
+        limiterFctId = "Dune::Fem::AdvectionLimiterFunction::Enum::scaling"
+    else:
+        raise ValueError("limiter not recognised")
 
     struct.append([Declaration(
         Variable("const Dune::Fem::Solver::Enum", "solverId = " + solverId),
@@ -263,15 +267,16 @@ def femDGOperator(Model, space,
     op.time = t.value
     op.models = [advModel,diffModel]
     op.space = space
-    def addToTime(self,dt):
-        # print(dt,t.value,self.models[0].time,self.models[1].time)
-        self._t.value += dt
-        self.time += dt
-        self.setTime(self.time)
-        # print(" ",t.value,self.models[0].time,self.models[1].time)
+    def setTime(self,time):
+        self._t.value = time
+        self.time = time
+        self._setTime(self.time)
+    op.setTime = setTime.__get__(op)
+    # def addToTime(self,dt):
+    #     self.setTime(self,self.time+dt)
+    # op.addToTime = addToTime.__get__(op)
     def stepTime(self,c,dt):
         self.setTime(self.time+c*dt)
-    op.addToTime = addToTime.__get__(op)
     op.stepTime  = stepTime.__get__(op)
     return op
 
