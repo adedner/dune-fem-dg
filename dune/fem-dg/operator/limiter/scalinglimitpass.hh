@@ -250,7 +250,7 @@ namespace Fem
       // get stopwatch
       Dune::Timer timer;
 
-      //std::cout << "LimitPass::compute ";
+      //std::cout << "ScalingLimitPass::compute " << std::endl;
 
       // if polOrder of destination is > 0 then we have to do something
       if( spc_.order() > 0 && active() )
@@ -279,12 +279,10 @@ namespace Fem
       }
       else
       {
-        /*
-        std::cout << "LimitPass::compute deactive " << std::endl;
+        std::cout << "ScalingLimitPass::compute deactive " << std::endl;
         // get reference to U and pass on to dest
         const ArgumentFunctionType &U = *(std::get< argumentPosition >( arg ));
         dest.assign( U );
-        */
       }
 
       //std::cout << std::endl;
@@ -408,8 +406,8 @@ namespace Fem
     {
       if( limitedElements_ > 0 )
       {
-        // std::cout << "ScalingLimitPass: Elements limited = " << limitedElements_
-        //           << std::endl;
+         std::cout << "ScalingLimitPass: Elements limited = " << limitedElements_
+                   << std::endl;
       }
 
       if( doCommunicate )
@@ -488,6 +486,7 @@ namespace Fem
     //! Perform the limitation on all elements.
     void applyLocalImp(const EntityType& en) const
     {
+      //std::cout << "ScalingPass::applyLocalImp" << std::endl;
       // timer for shock detection
       Dune::Timer indiTime;
 
@@ -558,7 +557,7 @@ namespace Fem
         // get local funnction for limited values
         DestLocalFunctionType limitEn = dest_->localFunction(en);
 
-        // project deoMod_ to limitEn
+        // project scaled function to limitEn
         L2project(en, geo, enVal, uEn, theta, limitEn);
 
         // set indicator 1
@@ -774,8 +773,7 @@ namespace Fem
       const int quadNop = tmpVal_.size();// quad.nop();
       assert( quadNop == int(quad.nop()) );
 
-      // tmpVal_ should be correct from last evaluation on volume quad
-      // tmpVal_.resize( quadNop );
+      // this has been done previously in checkPhysicalQuad
       // uEn.evaluateQuadrature( quad, tmpVal_ );
 
       for(int qP = 0; qP < quadNop ; ++qP)

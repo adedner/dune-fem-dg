@@ -95,7 +95,11 @@ namespace Fem
     //typedef SuperBeeLimiter< typename BaseType::DomainFieldType > LimiterFunctionType ;
     //typedef VanLeerLimiter< typename BaseType::DomainFieldType >  LimiterFunctionType ;
     //typedef NoLimiter< typename BaseType::DomainFieldType >  LimiterFunctionType ;
-    static const bool scalingLimiter = std::is_same< LimiterFunctionType, NoLimiter< typename BaseType::DomainFieldType > > :: value ;
+
+    // check whether LimiterFunction is NoLimiter, in that case scalingLimiter
+    // might have been chosen
+    static const bool scalingLimiter =
+      std::is_same< LimiterFunctionType, NoLimiter< typename LimiterFunctionType::FieldType > > :: value ;
   };
 
 
@@ -162,7 +166,6 @@ namespace Fem
         limitedRange_[ i ] = i;
 
       // if method has been filled then modified will be set differently
-      // AdditionalType :: limitedRange( limitedRange_ );
       advection_.limitedRange( limitedRange_ );
     }
 
