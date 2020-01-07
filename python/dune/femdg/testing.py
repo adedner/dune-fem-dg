@@ -70,7 +70,7 @@ def run(Model, Stepper=None,
 
     # create discrete function space
     space = create.space( space, grid, order=polOrder, dimRange=dimR)
-    operator = femDGOperator(Model, space, limiter=limiter, threading=True, parameters=parameters )
+    operator = femDGOperator(Model, space, limiter=limiter, threading=threading, parameters=parameters )
     stepper  = Stepper(operator, cfl)
     # create and initialize solution
     u_h = space.interpolate(initial, name='u_h')
@@ -214,7 +214,7 @@ def oldRun(Model,
     # create solution scheme, i.e. operator and ODE solver
 
     # create DG operator based on Model
-    operator = femDGOperator(Model, space, limiter=limiter, threading=True, parameters=parameters )
+    operator = femDGOperator(Model, space, limiter=limiter, threading=threading, parameters=parameters )
     # create Runge-Kutta solver
     rkScheme = rungeKuttaSolver( operator, parameters=parameters )
 
