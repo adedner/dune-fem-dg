@@ -106,7 +106,9 @@ namespace Fem
       //! Superbee limiter
       superbee,
       //! van Leer limiter
-      vanleer
+      vanleer,
+      //! no limiter
+      none
     };
   }
 
@@ -326,6 +328,12 @@ namespace Fem
     typedef VanLeerLimiter< DomainFieldType > type;
   };
 
+  template< class DomainFieldType >
+  struct AdvectionLimiterFunctionSelector< DomainFieldType, AdvectionLimiterFunction::Enum::none >
+  {
+    typedef NoLimiter< DomainFieldType > type;
+  };
+
 
 ///////////////////////////////////////////////////////////////////////////
 // AdvectionDiffusionOperatorSelector
@@ -369,18 +377,8 @@ namespace Fem
 
   template< class OperatorTraits >
   class AdvectionDiffusionOperatorSelector< OperatorTraits, Formulation::Enum::primal, AdvectionLimiter::Enum::scalinglimited >
+   : public AdvectionDiffusionOperatorSelector< OperatorTraits, Formulation::Enum::primal, AdvectionLimiter::Enum::limited >
   {
-    static const int advection = OperatorTraits::ModelType::hasAdvection;
-    static const int diffusion = OperatorTraits::ModelType::hasDiffusion;
-    typedef DGLimitedAdvectionDiffusionOperator< OperatorTraits >            DgType;
-    typedef DGScalingLimitedAdvectionOperator< OperatorTraits >              DgAdvectionType;
-    typedef DGDiffusionOperator< OperatorTraits >                            DgDiffusionType;
-    typedef ImplExplOperatorSelector< DgType, DgAdvectionType, DgDiffusionType, advection, diffusion >
-                                                                             ImplExplOperatorSelectorType;
-  public:
-    typedef typename ImplExplOperatorSelectorType::FullOperatorType          FullOperatorType;
-    typedef typename ImplExplOperatorSelectorType::ImplicitOperatorType      ImplicitOperatorType;
-    typedef typename ImplExplOperatorSelectorType::ExplicitOperatorType      ExplicitOperatorType;
   };
 
   template< class OperatorTraits >

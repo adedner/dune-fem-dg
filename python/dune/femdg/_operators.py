@@ -206,13 +206,14 @@ def femDGOperator(Model, space,
         advFluxId  = "Dune::Fem::AdvectionFlux::Enum::llf"
     if limiter.lower() == "unlimited":
         limiterId = "Dune::Fem::AdvectionLimiter::Enum::unlimited"
+    elif limiter.lower() == "scaling":
+        limiterFctId = "Dune::Fem::AdvectionLimiterFunction::Enum::none"
+        limiterId = "Dune::Fem::AdvectionLimiter::Enum::scalinglimited"
     # check for different limiter functions (default is minmod)
     elif limiter.lower() == "superbee":
         limiterFctId = "Dune::Fem::AdvectionLimiterFunction::Enum::superbee"
     elif limiter.lower() == "vanleer":
         limiterFctId = "Dune::Fem::AdvectionLimiterFunction::Enum::vanleer"
-    elif limiter.lower() == "scaling":
-        limiterFctId = "Dune::Fem::AdvectionLimiterFunction::Enum::scaling"
     else:
         raise ValueError("limiter not recognised")
 

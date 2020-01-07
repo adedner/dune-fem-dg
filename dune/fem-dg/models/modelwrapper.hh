@@ -94,6 +94,8 @@ namespace Fem
     //typedef MinModLimiter< typename BaseType::DomainFieldType >     LimiterFunctionType ;
     //typedef SuperBeeLimiter< typename BaseType::DomainFieldType > LimiterFunctionType ;
     //typedef VanLeerLimiter< typename BaseType::DomainFieldType >  LimiterFunctionType ;
+    //typedef NoLimiter< typename BaseType::DomainFieldType >  LimiterFunctionType ;
+    static const bool scalingLimiter = std::is_same< LimiterFunctionType, NoLimiter< typename BaseType::DomainFieldType > > :: value ;
   };
 
 
@@ -138,6 +140,8 @@ namespace Fem
 
     static const int limitedDimRange = AdditionalType :: limitedDimRange ;
     typedef Dune::FieldVector< int, limitedDimRange > LimitedRangeType;
+
+    static const bool scalingLimiter = Traits::scalingLimiter;
 
     // for Euler equations diffusion is disabled
     static const bool hasAdvection = AdditionalType::hasAdvection;

@@ -144,6 +144,7 @@ namespace Fem
   {
   public:
     static const int modelParameterSize = Traits::modelParameterSize;
+    static const bool scalingLimiter = false ;
 
     static const int dimDomain = Traits::dimDomain;
     static const int dimRange  = Traits::dimRange;

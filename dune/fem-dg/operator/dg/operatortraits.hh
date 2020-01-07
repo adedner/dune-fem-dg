@@ -85,6 +85,8 @@ namespace Fem
     // enables the possibility to run in threaded mode
     static const bool threading = enableThreaded ;
 
+    static const bool scalingLimiter = ModelType::scalingLimiter;
+
     static_assert( std::is_same<typename ModelType::RangeType, typename DestinationType::RangeType>::value, "range type does not fit.");
 
     typedef Fem::CachingQuadrature< GridPartType, 0, QuadratureTraits >  VolumeQuadratureType;
