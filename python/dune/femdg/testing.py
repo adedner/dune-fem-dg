@@ -4,7 +4,7 @@ import dune.create as create
 from dune.fem.function import integrate
 from dune.ufl import Constant, expression2GF
 from ufl import dot, SpatialCoordinate
-from dune.femdg import femDGOperator, rungeKuttaSolver
+from dune.femdg import femDGOperator, rungeKuttaSolver, createLimiter
 from dune.femdg.rk import femdgStepper
 
 from collections import namedtuple
@@ -211,10 +211,17 @@ def oldRun(Model,
     space = create.space( space, grid, order=polOrder, dimRange=dimR)
     # create and initialize solution
     u_h = space.interpolate(initial, name='u_h')
+    u_h_n = space.interpolate(initial, name='u_h_n')
     # create solution scheme, i.e. operator and ODE solver
+
+    scalingLimiter=None
+    if limiter == "scaling":
+        limiter = None
+        scalingLimiter = createLimiter( space, limiter='scaling' )
 
     # create DG operator based on Model
     operator = femDGOperator(Model, space, limiter=limiter, threading=threading, parameters=parameters )
+
     # create Runge-Kutta solver
     rkScheme = rungeKuttaSolver( operator, parameters=parameters )
 
@@ -261,6 +268,9 @@ def oldRun(Model,
         # solver time step
         assert not math.isnan( u_h.scalarProductDofs( u_h ) )
         rkScheme.solve(u_h)
+        if scalingLimiter is not None:
+            u_h_n.assign( u_h )
+            scalingLimiter( u_h_n, u_h )
 
         # obtain new time step size
         dt = rkScheme.deltaT()
