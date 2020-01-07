@@ -8,7 +8,7 @@ from dune.femdg.testing import oldRun, Parameters
 
 
 def problem():
-    gridView = Grid(cartesianDomain([0,0],[1,1],[50,50]))
+    gridView = Grid(cartesianDomain([0,0],[1,1],[25,25]))
     def computeVelocity():
         # TODO without dimRange the 'vectorization' is not carried out correctly
         velocitySpace = dune.fem.space.lagrange(gridView, order=1, dimRange=1)
@@ -52,10 +52,10 @@ def problem():
         def maxDiffusion(t,x,U):
            return eps
         def physical(U):
-            # the followng fails
-            return conditional(U[0]>=-1e-10,1,0)*\
-                   conditional(U[1]>=-1e-10,1,0)*\
-                   conditional(U[2]>=-1e-10,1,0)
+            # make sure all components are between 0 and 1
+            return conditional(U[0]>=0.,1,0)*\
+                   conditional(U[1]>=0.,1,0)*\
+                   conditional(U[2]>=0.,1,0)
         def jump(U,V):
             return abs(U-V)
         def dirichletValue(t,x,u):
@@ -82,6 +82,6 @@ parameters = {"fem.ode.odesolver": "IMEX",    # EX, IM, IMEX
               "dgdiffusionflux.liftfactor": 1}
 
 oldRun(*problem(), dt=None,
-    startLevel=0, polOrder=3, limiter="scaling",
-    primitive=None, saveStep=0.01, subsamp=0,
-    parameters=parameters)
+       startLevel=0, polOrder=3, limiter="scaling",
+       primitive=None, saveStep=0.01, subsamp=0,
+       parameters=parameters)
