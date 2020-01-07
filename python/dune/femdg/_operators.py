@@ -279,6 +279,8 @@ def femDGOperator(Model, space,
     def stepTime(self,c,dt):
         self.setTime(self.time+c*dt)
     op.stepTime  = stepTime.__get__(op)
+    op._hasAdvFlux = hasAdvFlux
+    op._hasDiffFlux = hasDiffFlux
     return op
 
 # RungeKutta solvers

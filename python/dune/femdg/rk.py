@@ -10,12 +10,29 @@ class FemDGStepper:
             self.rkScheme.setTimeStepSize(dt)
         self.rkScheme.solve(u)
         return self.rkScheme.deltaT()
-def femdgStepper(parameters):
+def femdgStepper(order=None,rkType=None,parameters={}):
     def _femdgStepper(op,cfl=None):
-        if cfl is not None:
-            parameters["fem.timeprovider.factor"] = cfl
-        elif not "fem.timeprovider.factor" in parameters:
-            parameters["fem.timeprovider.factor"] = 0.45
+        if not "fem.timeprovider.factor" in parameters:
+            if cfl is not None:
+                parameters["fem.timeprovider.factor"] = cfl
+            else:
+                parameters["fem.timeprovider.factor"] = 0.45
+        if not "fem.ode.odesolver" in parameters:
+            if rkType is not None:
+                parameters["fem.ode.odesolver"] = rkType
+            elif op._hasAdvFlux and op._hasDiffFlux:
+                parameters["fem.ode.odesolver"] = "IMEX"
+            elif op._hasAdvFlux:
+                parameters["fem.ode.odesolver"] = "EX"
+            else:
+                parameters["fem.ode.odesolver"] = "IM"
+        if not "fem.ode.order" in parameters:
+            assert order is not None, "need to pass the order of the rk method to the 'femDGStepper' as argument or set it in the parameters"
+            parameters["fem.ode.order"] = order
+        if not "fem.ode.maxiterations" in parameters:
+            parameters["fem.ode.maxiterations"] =  100 # the default (16) seems to lead to very small time steps
+        from pprint import pprint
+        pprint(parameters)
         return FemDGStepper(op,parameters)
     return _femdgStepper
 

@@ -4,7 +4,7 @@ from dune.grid import cartesianDomain
 from dune.alugrid import aluCubeGrid as Grid
 import dune.fem
 from dune.fem import parameter
-from dune.femdg.testing import oldRun, Parameters
+from dune.femdg.testing import run, Parameters
 
 
 def problem():
@@ -56,14 +56,15 @@ def problem():
             return conditional(U[0]>=-1e-10,1,0)*\
                    conditional(U[1]>=-1e-10,1,0)*\
                    conditional(U[2]>=-1e-10,1,0)
-        def jump(U,V):
-            return abs(U-V)
         def dirichletValue(t,x,u):
             return as_vector(Model.dimRange*[0])
         boundary = {(1,2,3,4): dirichletValue}
 
-    return Parameters(Model=Model, initial=as_vector([0,0,0]),
-                      domain=gridView, endTime=10, name="chemical")
+    Model.initial=as_vector([0,0,0])
+    Model.domain=gridView
+    Model.endTime=10
+    Model.name="chemical"
+    return Model
 
 parameter.append({"fem.verboserank": 0})
 
@@ -81,7 +82,7 @@ parameters = {"fem.ode.odesolver": "IMEX",    # EX, IM, IMEX
               "dgdiffusionflux.penalty": 0,
               "dgdiffusionflux.liftfactor": 1}
 
-oldRun(*problem(), dt=None,
-    startLevel=0, polOrder=3, limiter="scaling",
+run(problem(), dt=None,
+    startLevel=0, polOrder=3, limiter=None,
     primitive=None, saveStep=0.01, subsamp=0,
     parameters=parameters)
