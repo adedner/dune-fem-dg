@@ -179,7 +179,18 @@ namespace Fem
     //! Destructor
     virtual ~ScalingLimitDGPass() {}
 
-  protected:
+    //! return default face quadrature order
+    static int defaultVolumeQuadratureOrder( const DiscreteFunctionSpaceType& space, const EntityType& entity )
+    {
+      return (2 * space.order( entity ));
+    }
+
+    //! return default face quadrature order
+    static int defaultFaceQuadratureOrder( const DiscreteFunctionSpaceType& space, const EntityType& entity )
+    {
+      return (2 * space.order( entity )) + 1;
+    }
+
     //! return appropriate quadrature order, default is 2 * order(entity)
     int volumeQuadratureOrder( const EntityType& entity ) const
     {
