@@ -96,7 +96,6 @@ def femDGOperator(Model, space,
         limiter = "unlimited"
 
     if limiter.lower() == "default":
-        print("Setting limiter to minmod")
         limiter = "minmod"
 
     # TODO: does this make sense - if there is no diffusion then it doesn't
