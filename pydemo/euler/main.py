@@ -16,10 +16,14 @@ parameter.append({"fem.verboserank": -1})
 primitive=lambda Model,uh: {"pressure": Model.toPrim(uh)[2]}
 parameters = {"fem.ode.odesolver": "EX",
               "fem.timeprovider.factor": 0.25,
+              "fem.ode.order": 3,
               "dgadvectionflux.method": "EULER-HLLC",
               "femdg.limiter.admissiblefunctions": 1,
-              "femdg.limiter.tolerance": 1e-8}
+              "femdg.limiter.tolerance": 1,
+              "femdg.limiter.epsilon": 1e-6}
 #-----------------
+# femdg.limiter.tolerance: 1 (tolerance for shock indicator)
+# femdg.limiter.epsilon: 1e-8 (epsilon to avoid rounding errors)
 # femdg.limiter.admissiblefunctions:
 #    0 = only dg solution | 1 = only reconstruction | 2 = both
 #-----------------

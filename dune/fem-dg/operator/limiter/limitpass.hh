@@ -652,7 +652,7 @@ namespace Fem
         else
           std::cout << "unstructured";
         //std::cout << "! LimitEps: "<< limitEps_ << ", LimitTol: "<< 1./tol_1_ << std::endl;
-        std::cout << "! LimitTol: "<< 1./tol_1_ << std::endl;
+        std::cout << "! Limiter.tolerance: "<< 1./tol_1_ << std::endl;
       }
 
       // we need the flux here
