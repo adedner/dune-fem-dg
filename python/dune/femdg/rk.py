@@ -30,7 +30,7 @@ def femdgStepper(*,order=None,rkType=None,parameters={}):
             assert order is not None, "need to pass the order of the rk method to the 'femDGStepper' as argument or set it in the parameters"
             parameters["fem.ode.order"] = order
         if not "fem.ode.maxiterations" in parameters:
-            parameters["fem.ode.maxiterations"] =  100 # the default (16) seems to lead to very small time steps
+            parameters["fem.ode.maxiterations"] = 100 # the default (16) seems to lead to very small time steps
         from pprint import pprint
         pprint(parameters)
         return FemDGStepper(op,parameters)
