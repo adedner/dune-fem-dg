@@ -50,14 +50,23 @@ namespace Fem
 
       void init () {}
 
-      virtual double endTime () const {
+      virtual double endTime () const
+      {
         DUNE_THROW(InvalidStateException,"EmptyProblem::endTime: this method should not be called");
-        return 0.0; }
+        return 0.0;
+      }
 
-      void bg ( const DomainType&, RangeType& ) const {}
+      void bg ( const DomainType&, RangeType& ) const
+      {
+        DUNE_THROW(InvalidStateException,"EmptyProblem::endTime: this method should not be called");
+      }
 
       //! methods for gradient based indicator
-      bool twoIndicators() const { return false ; }
+      bool twoIndicators() const
+      {
+        DUNE_THROW(InvalidStateException,"EmptyProblem::endTime: this method should not be called");
+        return false ;
+      }
 
       //! methods for gradient based indicator
       double indicator1( const DomainType& xgl, const RangeType& u ) const
