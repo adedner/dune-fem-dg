@@ -88,7 +88,27 @@ namespace Fem
         std::abort();
       }
 
-      double gamma() const { return ModelImp::gamma; }
+    private:
+      template <int, bool>
+      struct Gamma
+      {
+        static double value()
+        {
+          DUNE_THROW(NotImplemented,"Python Model does not implement a gamma() method, please add that!");
+          return 0.0;
+        }
+      };
+
+      template <int d>
+      struct Gamma<d, true>
+      {
+        static double value() { return ModelImp::gamma; }
+      };
+
+      double gamma() const
+      {
+        return Gamma< 0, ModelImp::hasGamma >::value();
+      }
     };
 
   } // end namespace detail

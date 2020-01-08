@@ -99,14 +99,14 @@ def codeFemDg(self):
     n = FacetNormal(space.cell())
     x = SpatialCoordinate(space.cell())
 
-    hasGamma = getattr(Model,"gamm",None)
-    gamma = 0.0
-    if hasGamma:
-        gamma = Model.gamm
-
+    hasGamma = getattr(Model,"gamma",None)
     code.append([Declaration(
-                 Variable("constexpr double", "gamma"), initializer=gamma,
+                 Variable("constexpr bool", "hasGamma"), initializer=True if hasGamma else False,
                  static=True)])
+    if hasGamma:
+        code.append([Declaration(
+                     Variable("constexpr double", "gamma"), initializer=Model.gamma(),
+                     static=True)])
 
     predefined = {}
     spatial = Variable('const auto', 'y')
