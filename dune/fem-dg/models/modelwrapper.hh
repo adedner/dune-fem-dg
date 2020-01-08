@@ -46,7 +46,7 @@ namespace Fem
       typedef typename FunctionSpaceType :: RangeFieldType  RangeFieldType ;
       typedef RangeFieldType FieldType ;
 
-      EmptyProblem( const double gamma ) : gamma_( gamma ) {}
+      EmptyProblem() {}
 
       void init () {}
 
@@ -79,10 +79,7 @@ namespace Fem
         std::abort();
       }
 
-      double gamma() const { return gamma_; }
-
-   protected:
-      const double gamma_;
+      double gamma() const { return ModelImp::gamma; }
     };
 
   } // end namespace detail
@@ -166,7 +163,7 @@ namespace Fem
     ModelWrapper( const AdvectionModelType& advModel, const DiffusionModelType& diffModel )
       : advection_( advModel ),
         diffusion_( diffModel ),
-        problem_( AdvectionModelType::gamma ),
+        problem_(),
         limitedRange_()
     {
       // by default this should be the identity
