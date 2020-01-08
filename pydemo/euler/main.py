@@ -20,7 +20,7 @@ parameters = {"fem.ode.odesolver": "EX",
               "dgadvectionflux.method": "EULER-HLLC",
               "femdg.limiter.admissiblefunctions": 1,
               "femdg.limiter.tolerance": 1,
-              "femdg.limiter.epsilon": 1e-6}
+              "femdg.limiter.epsilon": 1e-8}
 #-----------------
 # femdg.limiter.tolerance: 1 (tolerance for shock indicator)
 # femdg.limiter.epsilon: 1e-8 (epsilon to avoid rounding errors)
@@ -31,6 +31,6 @@ parameters = {"fem.ode.odesolver": "EX",
 
 run(problem(),
     startLevel=0, polOrder=2, limiter="default",
-    primitive=primitive, saveStep=0.1, subsamp=2,
+    primitive=primitive, saveStep=0.16, subsamp=2,
     dt=None,threading=True,grid="alucube", space="dgonb",
     parameters=parameters)

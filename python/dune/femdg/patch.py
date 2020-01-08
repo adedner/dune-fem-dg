@@ -3,7 +3,7 @@ from __future__ import division, print_function, unicode_literals
 from dune.ufl.codegen import generateMethod
 from ufl import grad, TrialFunction, SpatialCoordinate, FacetNormal, Coefficient, replace, diff, as_vector
 from ufl.core.expr import Expr
-from dune.source.cplusplus import Variable, UnformattedExpression, AccessModifier
+from dune.source.cplusplus import Variable, UnformattedExpression, AccessModifier, Declaration
 from ufl.algorithms import expand_compounds, expand_derivatives, expand_indices, expand_derivatives
 
 def uflExpr(Model,space,t):
@@ -98,6 +98,15 @@ def codeFemDg(self):
     # v = TestFunction(space)
     n = FacetNormal(space.cell())
     x = SpatialCoordinate(space.cell())
+
+    hasGamma = getattr(Model,"gamm",None)
+    gamma = 0.0
+    if hasGamma:
+        gamma = Model.gamm
+
+    code.append([Declaration(
+                 Variable("constexpr double", "gamma"), initializer=gamma,
+                 static=True)])
 
     predefined = {}
     spatial = Variable('const auto', 'y')

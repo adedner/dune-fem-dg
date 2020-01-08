@@ -46,11 +46,13 @@ namespace Fem
       typedef typename FunctionSpaceType :: RangeFieldType  RangeFieldType ;
       typedef RangeFieldType FieldType ;
 
-      EmptyProblem() {}
+      EmptyProblem( const double gamma ) : gamma_( gamma ) {}
 
       void init () {}
 
-      virtual double endTime () const { return 0.1; }
+      virtual double endTime () const {
+        DUNE_THROW(InvalidStateException,"EmptyProblem::endTime: this method should not be called");
+        return 0.0; }
 
       void bg ( const DomainType&, RangeType& ) const {}
 
@@ -60,21 +62,27 @@ namespace Fem
       //! methods for gradient based indicator
       double indicator1( const DomainType& xgl, const RangeType& u ) const
       {
+        DUNE_THROW(InvalidStateException,"EmptyProblem::endTime: this method should not be called");
         // use density as indicator
         return u[ 0 ];
       }
 
       virtual int boundaryId ( const int id ) const
       {
-        return 1;
+        DUNE_THROW(InvalidStateException,"EmptyProblem::endTime: this method should not be called");
+        return -1;
       }
 
       void evaluate(const DomainType& x, const double time, RangeType& res) const
       {
+        DUNE_THROW(InvalidStateException,"EmptyProblem::endTime: this method should not be called");
         std::abort();
       }
 
-      double gamma () const { return 1.4; }
+      double gamma() const { return gamma_; }
+
+   protected:
+      const double gamma_;
     };
 
   } // end namespace detail
@@ -158,7 +166,7 @@ namespace Fem
     ModelWrapper( const AdvectionModelType& advModel, const DiffusionModelType& diffModel )
       : advection_( advModel ),
         diffusion_( diffModel ),
-        problem_(),
+        problem_( AdvectionModelType::gamma ),
         limitedRange_()
     {
       // by default this should be the identity
@@ -176,10 +184,10 @@ namespace Fem
       //! TODO problem without virtualization advection_.setTime(t);
       //! TODO problem without virtualization diffusion_.setTime(t);
       ::detail::CallSetTime< AdvectionModelType,
-                           ::detail::CheckTimeMethod< AdvectionModelType >::value >
+                             ::detail::CheckTimeMethod< AdvectionModelType >::value >
         ::setTime( const_cast< AdvectionModelType& > (advection_), t );
       ::detail::CallSetTime< DiffusionModelType,
-                           ::detail::CheckTimeMethod< DiffusionModelType >::value >
+                             ::detail::CheckTimeMethod< DiffusionModelType >::value >
         ::setTime( const_cast< DiffusionModelType& > (diffusion_), t );
     }
 

@@ -6,6 +6,7 @@ from dune.generator import algorithm
 def CompressibleEuler(dim, gamma):
     class Model:
         dimRange = dim+2
+        gamm = gamma
         def velo(U):
             return as_vector( [U[i]/U[0] for i in range(1,dim+1)] )
         def rhoeps(U):
@@ -94,7 +95,7 @@ def sod(dim=2,gamma=1.4):
     x = SpatialCoordinate(space.cell())
     Model = CompressibleEulerReflection(dim,gamma)
     Model.initial=riemanProblem( Model, x[0], x0, [1,0,0,1], [0.125,0,0,0.1])
-    Model.domain=[[0, 0], [1, 0.25], [64, 16]]
+    Model.domain=[[0, 0], [1, 0.25], [128, 32]]
     Model.endTime=0.15
     #def u(t,x):
     #    val = algorithm.load('sod','sod.hh', t, x0, x )
