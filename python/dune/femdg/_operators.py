@@ -95,6 +95,10 @@ def femDGOperator(Model, space,
     if limiter is None or limiter is False:
         limiter = "unlimited"
 
+    if limiter.lower() == "default":
+        print("Setting limiter to minmod")
+        limiter = "minmod"
+
     # TODO: does this make sense - if there is no diffusion then it doesn't
     # matter and with diffusion using 'none' seems a bad idea?
     if diffusionScheme is None or diffusionScheme is False:
@@ -204,6 +208,7 @@ def femDGOperator(Model, space,
         diffFluxId = "Dune::Fem::DiffusionFlux::Enum::"+diffusionScheme
     if hasAdvFlux:
         advFluxId  = "Dune::Fem::AdvectionFlux::Enum::llf"
+
     if limiter.lower() == "unlimited":
         limiterId = "Dune::Fem::AdvectionLimiter::Enum::unlimited"
     elif limiter.lower() == "scaling":
@@ -214,7 +219,7 @@ def femDGOperator(Model, space,
         limiterFctId = "Dune::Fem::AdvectionLimiterFunction::Enum::superbee"
     elif limiter.lower() == "vanleer":
         limiterFctId = "Dune::Fem::AdvectionLimiterFunction::Enum::vanleer"
-    else:
+    elif limiter.lower() != "minmod":
         raise ValueError("limiter not recognised")
 
     struct.append([Declaration(
