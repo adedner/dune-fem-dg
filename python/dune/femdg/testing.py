@@ -21,7 +21,7 @@ def run(Model, Stepper=None,
         dt=None,cfl=None,grid="yasp", space="dgonb", threading=True,
         parameters={}):
     if Stepper is None:
-        Stepper = femdgStepper(parameters)
+        Stepper = femdgStepper(parameters=parameters)
     if initial is not None:
         print("deprecated usage of run: add initial etc as class atttributes to the Model")
     else:

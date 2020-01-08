@@ -10,7 +10,7 @@ class FemDGStepper:
             self.rkScheme.setTimeStepSize(dt)
         self.rkScheme.solve(u)
         return self.rkScheme.deltaT()
-def femdgStepper(order=None,rkType=None,parameters={}):
+def femdgStepper(*,order=None,rkType=None,parameters={}):
     def _femdgStepper(op,cfl=None):
         if not "fem.timeprovider.factor" in parameters:
             if cfl is not None:

@@ -56,8 +56,6 @@ def problem():
         def physical(U):
             # the followng fails
             return conditional(U[0]>=0,1,0)*conditional(U[1]>=0,1,0)*conditional(U[2]>=0,1,0)
-        # def jump(U,V):
-        #     return abs(U-V)
         def dirichletValue(t,x,u):
             return as_vector(Model.dimRange*[0])
         boundary = {(1,2,3,4): dirichletValue}

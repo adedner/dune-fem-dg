@@ -45,21 +45,21 @@ for startLevel in startLevels:
             print("#############################")
             if m == "ex2":
                 parameters.update({'fem.ode.odesolver':'EX',"fem.ode.order":2})
-                stepper = femdgStepper(parameters)
+                stepper = femdgStepper(parameters=parameters)
             elif m == "heun":
                 stepper = Heun
             elif m == "ex3":
                 parameters.update({'fem.ode.odesolver':'EX',"fem.ode.order":3})
-                stepper = femdgStepper(parameters)
+                stepper = femdgStepper(parameters=parameters)
             elif m == "ex4":
                 parameters.update({'fem.ode.odesolver':'EX',"fem.ode.order":4})
-                stepper = femdgStepper(parameters)
+                stepper = femdgStepper(parameters=parameters)
             elif m == "im2":
                 parameters.update({'fem.ode.odesolver':'IM',"fem.ode.order":2})
-                stepper = femdgStepper(parameters)
+                stepper = femdgStepper(parameters=parameters)
             elif m == "im3":
                 parameters.update({'fem.ode.odesolver':'IM',"fem.ode.order":3})
-                stepper = femdgStepper(parameters)
+                stepper = femdgStepper(parameters=parameters)
             elif m == "midp":
                 stepper = Midpoint
             elif m == "sspIm2-1":
