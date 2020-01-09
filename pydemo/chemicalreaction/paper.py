@@ -54,7 +54,6 @@ def problem():
         def maxDiffusion(t,x,U):
            return eps
         def physical(U):
-            # the followng fails
             return conditional(U[0]>=0,1,0)*conditional(U[1]>=0,1,0)*conditional(U[2]>=0,1,0)
         def dirichletValue(t,x,u):
             return as_vector(Model.dimRange*[0])

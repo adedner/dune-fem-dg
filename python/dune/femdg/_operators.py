@@ -219,7 +219,7 @@ def femDGOperator(Model, space,
     elif limiter.lower() == "vanleer":
         limiterFctId = "Dune::Fem::AdvectionLimiterFunction::Enum::vanleer"
     elif limiter.lower() != "minmod":
-        raise ValueError("limiter not recognised")
+        raise ValueError("limiter "+limiter+" not recognised")
 
     struct.append([Declaration(
         Variable("const Dune::Fem::Solver::Enum", "solverId = " + solverId),
@@ -264,10 +264,16 @@ def femDGOperator(Model, space,
 
     _, domainFunctionIncludes, domainFunctionType, _, _, _ = space.storage
     base = 'Dune::Fem::SpaceOperatorInterface< ' + domainFunctionType + '>'
-    op = load(includes, typeName,
-             baseClasses = [base],
-             preamble=writer.writer.getvalue()).\
-             Operator( space, advModel, diffModel, parameters=parameters )
+    if parameters is not None:
+        op = load(includes, typeName,
+                 baseClasses = [base],
+                 preamble=writer.writer.getvalue()).\
+                 Operator( space, advModel, diffModel, parameters=parameters )
+    else:
+        op = load(includes, typeName,
+                 baseClasses = [base],
+                 preamble=writer.writer.getvalue()).\
+                 Operator( space, advModel, diffModel )
     op._t = t
     op.time = t.value
     op.models = [advModel,diffModel]

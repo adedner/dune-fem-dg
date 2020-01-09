@@ -37,6 +37,15 @@ namespace Dune
            pybind11::keep_alive< 1, 3 >(), pybind11::keep_alive< 1, 4 >(),
            pybind11::keep_alive< 1, 5 >()
            );
+      cls.def( pybind11::init( [] ( const DFSpace &space,
+               const MA &advectionModel,
+               const MD &diffusionModel )
+      {
+        return new Operator(space, advectionModel, diffusionModel);
+      } ), "space"_a, "advectionModel"_a, "diffusionModel"_a,
+           pybind11::keep_alive< 1, 2 >(),
+           pybind11::keep_alive< 1, 3 >(), pybind11::keep_alive< 1, 4 >()
+           );
       cls.def( "applyLimiter", []( Operator &self, DF &u) { self.applyLimiter(u); } );
       // cls.def( "setTime", &Operator::setTime);
       cls.def( "_setTime", &Operator::setTime);
