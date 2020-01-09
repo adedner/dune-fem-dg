@@ -19,10 +19,6 @@
 #include <dune/fem-dg/models/modelwrapper.hh>
 #include <dune/fem-dg/misc/algorithmcreatorselector.hh>
 
-#ifdef EULER_WRAPPER_TEST
-#include <dune/fem-dg/models/additional.hh>
-#endif
-
 #if HAVE_DUNE_FEMPY
 #include <dune/fempy/quadrature/fempyquadratures.hh>
 #endif
@@ -39,12 +35,7 @@ namespace Fem
              class AdvectionModel,
              class DiffusionModel,
              class Additional>
-#ifdef EULER_WRAPPER_TEST
-#error
-  class DGOperator : public DuneODE :: OdeSolverInterface< DestinationImp >
-#else
   class DGOperator : public Fem::SpaceOperatorInterface< DestinationImp >
-#endif
   {
   public:
     static const Solver::Enum solverId             = Additional::solverId;
@@ -66,20 +57,15 @@ namespace Fem
     typedef typename GridType :: CollectiveCommunication          CollectiveCommunicationType;
     typedef TimeProvider< CollectiveCommunicationType >           TimeProviderType;
 
-#ifdef EULER_WRAPPER_TEST
-    typedef U0Sod< GridType > Problem;
-#endif
-
     typedef typename AdvectionLimiterFunctionSelector<
       typename FunctionSpaceType::DomainFieldType, limiterFunctionId > :: type
       LimiterFunctionType;
 
+
+    typedef detail::Problem< AdvectionModel > ProblemType;
+
     typedef ModelWrapper< GridType, AdvectionModel, DiffusionModel, Additional,
-                          LimiterFunctionType
-#ifdef EULER_WRAPPER_TEST
-        , Problem
-#endif
-      >  ModelType;
+                          LimiterFunctionType, ProblemType > ModelType;
 
     static constexpr bool symmetric  = false ;
     static constexpr bool matrixfree = true  ;
@@ -114,7 +100,8 @@ namespace Fem
                 const Dune::Fem::ParameterReader &parameter = Dune::Fem::Parameter::container() )
       : space_( space ),
         extra_(),
-        model_( advectionModel, diffusionModel ),
+        problem_(),
+        model_( advectionModel, diffusionModel, problem_ ),
         fullOperator_( space.gridPart(), model_, extra_, name(), parameter ),
         explOperator_( space.gridPart(), model_, extra_, name(), parameter ),
         implOperator_( space.gridPart(), model_, extra_, name(), parameter )
@@ -168,6 +155,7 @@ namespace Fem
     const DiscreteFunctionSpaceType&            space_;
 
     std::tuple<>                          extra_;
+    ProblemType                           problem_;
     ModelType                             model_;
     mutable FullOperatorType              fullOperator_;
     mutable ExplicitOperatorType          explOperator_;

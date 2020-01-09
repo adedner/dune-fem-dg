@@ -111,20 +111,12 @@ namespace Fem
       if( adaptIndicator_ )
         adaptIndicator_->setAdaptation( tp );
 
-#ifdef EULER_WRAPPER_TEST
-      typedef DGTesting::Additional < typename DiscreteFunctionSpaceType :: FunctionSpaceType > AdditionalType;
-      typedef DGTesting::PythonModel< GridPartType > AdvectionModel;
-      typedef DGOperator< DiscreteFunctionType, AdvectionModel, AdvectionModel, AdditionalType  > SolverImpl;
-      static AdvectionModel* model = new AdvectionModel();
-      return std::make_shared< SolverImpl >( tp, solution().space(), *model, *model );
-#else
       typedef RungeKuttaSolver< FullOperatorType, FullOperatorType, FullOperatorType,
                                 LinearSolverType > SolverImpl;
       return std::make_shared< SolverImpl >( tp, *advectionOperator_,
                                              *advectionOperator_,
                                              *advectionOperator_,
                                              name() );
-#endif
     }
 
   protected:

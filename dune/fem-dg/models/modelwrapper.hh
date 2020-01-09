@@ -11,7 +11,7 @@
 #include <dune/fem/misc/fmatrixconverter.hh>
 #include <dune/fem/misc/boundaryidprovider.hh>
 #include <dune/fem/space/common/functionspace.hh>
-#include <dune/fem/schemes/diffusionmodel.hh>
+//#include <dune/fem/schemes/diffusionmodel.hh>
 
 // fem-dg includes
 #include <dune/fem-dg/models/defaultmodel.hh>
@@ -189,10 +189,11 @@ namespace Fem
     using BaseType :: hasMass;
     using BaseType :: velocity ;
 
-    ModelWrapper( const AdvectionModelType& advModel, const DiffusionModelType& diffModel )
+    // default constructor called by DGOperator
+    ModelWrapper( const AdvectionModelType& advModel, const DiffusionModelType& diffModel, const ProblemType& problem )
       : advection_( advModel ),
         diffusion_( diffModel ),
-        problem_(),
+        problem_( problem ),
         limitedRange_()
     {
       // by default this should be the identity
@@ -203,9 +204,16 @@ namespace Fem
       advection_.limitedRange( limitedRange_ );
     }
 
+#ifdef EULER_WRAPPER_TEST
+    ModelWrapper( const ProblemType& problem )
+      : ModelWrapper( *(new AdvectionModelType()), *(new DiffusionModelType()), problem )
+    {}
+#endif
+
     void setTime (const double t)
     {
       BaseType::setTime(t);
+#if HAVE_DUNE_FEMPY
       // update model times (only if time method is available on these models)
       //! TODO problem without virtualization advection_.setTime(t);
       //! TODO problem without virtualization diffusion_.setTime(t);
@@ -215,6 +223,7 @@ namespace Fem
       ::detail::CallSetTime< DiffusionModelType,
                              ::detail::CheckTimeMethod< DiffusionModelType >::value >
         ::setTime( const_cast< DiffusionModelType& > (diffusion_), t );
+#endif
     }
 
     double gamma () const { return problem_.gamma(); }
@@ -500,7 +509,7 @@ namespace Fem
     const AdvectionModelType& advection_;
     const DiffusionModelType& diffusion_;
 
-    ProblemType problem_;
+    const ProblemType& problem_;
     LimitedRangeType limitedRange_;
   };
 
