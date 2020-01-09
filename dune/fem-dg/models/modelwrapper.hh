@@ -11,7 +11,10 @@
 #include <dune/fem/misc/fmatrixconverter.hh>
 #include <dune/fem/misc/boundaryidprovider.hh>
 #include <dune/fem/space/common/functionspace.hh>
-//#include <dune/fem/schemes/diffusionmodel.hh>
+
+#if HAVE_DUNE_PYTHON
+#include <dune/fem/schemes/diffusionmodel.hh>
+#endif
 
 // fem-dg includes
 #include <dune/fem-dg/models/defaultmodel.hh>

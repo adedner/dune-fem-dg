@@ -62,7 +62,7 @@ namespace Fem
       LimiterFunctionType;
 
 
-    typedef detail::Problem< AdvectionModel > ProblemType;
+    typedef detail::EmptyProblem< AdvectionModel > ProblemType;
 
     typedef ModelWrapper< GridType, AdvectionModel, DiffusionModel, Additional,
                           LimiterFunctionType, ProblemType > ModelType;
@@ -76,11 +76,11 @@ namespace Fem
 
     typedef DefaultOperatorTraits< ModelType, DestinationType, AdvectionFluxType, DiffusionFluxType,
                 std::tuple<>, typename DiscreteFunctionSpaceType::FunctionSpaceType,
-#if HAVE_DUNE_FEMPY
-                Dune::FemPy::FempyQuadratureTraits, // use quadratures from dune-fempy
-#else
+//#if HAVE_DUNE_FEMPY
+//                Dune::FemPy::FempyQuadratureTraits, // use quadratures from dune-fempy
+//#else
                 Dune::Fem::DefaultQuadratureTraits,
-#endif
+//#endif
                 threading >  OpTraits;
 
     typedef AdvectionDiffusionOperatorSelector< OpTraits, formId, limiterId > OperatorSelectorType ;
