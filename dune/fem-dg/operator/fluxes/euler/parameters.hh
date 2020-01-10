@@ -38,8 +38,19 @@ namespace Euler
      *
      * \param[in] keyPrefix key prefix for parameter file.
      */
-    AdvectionFluxParameters( const std::string keyPrefix = "dgadvectionflux." )
-      : keyPrefix_( keyPrefix )
+    AdvectionFluxParameters( const std::string keyPrefix = "dgadvectionflux.",
+                             const Dune::Fem::ParameterReader &parameter = Dune::Fem::Parameter::container() )
+      : keyPrefix_( keyPrefix ),
+        parameter_( parameter )
+    {}
+
+    /**
+     * \brief Constructor
+     *
+     * \param[in] keyPrefix key prefix for parameter file.
+     */
+    AdvectionFluxParameters( const Dune::Fem::ParameterReader &parameter = Dune::Fem::Parameter::container() )
+      : parameter_( parameter )
     {}
 
     /**
@@ -62,11 +73,12 @@ namespace Euler
      */
     virtual IdEnum getMethod() const
     {
-      const int i = Fem::Parameter::getEnum( keyPrefix_ + "method", AdvectionFlux::_strings );
+      const int i = parameter_.getEnum( keyPrefix_ + "method", AdvectionFlux::_strings );
       return AdvectionFlux::_enums[i];
     }
   private:
     const std::string keyPrefix_;
+    const Dune::Fem::ParameterReader parameter_;
   };
 
 

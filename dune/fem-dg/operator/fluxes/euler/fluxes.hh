@@ -149,8 +149,9 @@ namespace Fem
         case IdEnum::euler_hllc:
           return flux_hllc_.numericalFlux( left, right, uLeft, uRight, jacLeft, jacRight, gLeft, gRight );
       }
-      assert( false );
       std::cerr << "Error: Advection flux not chosen via parameter file" << std::endl;
+      assert( false );
+      std::abort();
       return 0.0;
     }
 
