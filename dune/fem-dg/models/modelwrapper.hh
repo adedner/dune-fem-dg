@@ -88,7 +88,6 @@ namespace Fem
       void evaluate(const DomainType& x, const double time, RangeType& res) const
       {
         DUNE_THROW(InvalidStateException,"EmptyProblem::endTime: this method should not be called");
-        std::abort();
       }
 
     private:
@@ -108,6 +107,7 @@ namespace Fem
         static double value() { return ModelImp::gamma; }
       };
 
+    public:
       double gamma() const
       {
         return Gamma< 0, ModelImp::hasGamma >::value();

@@ -32,7 +32,7 @@ namespace Fem
     typedef typename BaseType::ModelType              ModelType;
 
     DGAdvectionFlux( const Model& mod,
-               const ParameterType& parameters = ParameterType() )
+                     const ParameterType& parameters = ParameterType() )
       : BaseType( mod, parameters )
     {}
     static std::string name () { return "LLF (Dennis)"; }
@@ -55,7 +55,7 @@ namespace Fem
     typedef typename BaseType::ModelType              ModelType;
 
     DGAdvectionFlux( const Model& mod,
-               const ParameterType& parameters = ParameterType() )
+                     const ParameterType& parameters = ParameterType() )
       : BaseType( mod, parameters )
     {}
     static std::string name () { return "HLL (Dennis)"; }
@@ -78,7 +78,7 @@ namespace Fem
     typedef typename BaseType::ModelType              ModelType;
 
     DGAdvectionFlux( const Model& mod,
-               const ParameterType& parameters = ParameterType() )
+                     const ParameterType& parameters = ParameterType() )
       : BaseType( mod, parameters )
     {}
     static std::string name () { return "HLLC (Dennis)"; }
@@ -103,8 +103,6 @@ namespace Fem
     typedef typename ModelImp::JacobianRangeType  JacobianRangeType;
     typedef typename ModelImp::FluxRangeType      FluxRangeType;
     typedef typename ModelImp::FaceDomainType     FaceDomainType;
-    typedef typename ModelImp::EntityType         EntityType;
-    typedef typename ModelImp::IntersectionType   IntersectionType;
 
   public:
     typedef typename BaseType::IdEnum             IdEnum;
@@ -115,7 +113,7 @@ namespace Fem
      * \copydoc DGAdvectionFluxBase::DGAdvectionFluxBase()
      */
     DGAdvectionFlux( const ModelType& mod,
-               const ParameterType& parameters = ParameterType() )
+                     const ParameterType& parameters = ParameterType() )
       : BaseType( mod, parameters ),
         method_( parameters.getMethod() ),
         flux_llf_( mod ),
