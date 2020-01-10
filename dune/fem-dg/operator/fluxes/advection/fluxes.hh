@@ -84,8 +84,8 @@ namespace Fem
     typedef typename BaseType::ModelType          ModelType;
 
     DGAdvectionFlux( const ModelType& mod,
-                     const ParameterType& parameters = Dune::Fem::Parameter::container() )
-      : BaseType( mod, parameters )
+                     const ParameterType& parameters = ParameterType() )
+      : BaseType( mod )
     {}
   };
 
@@ -120,11 +120,11 @@ namespace Fem
      * \brief Constructor
      */
     DGAdvectionFlux (const ModelType& mod,
-                     const ParameterType& parameters = Dune::Fem::Parameter::container() )
+                     const ParameterType& parameters = ParameterType() )
       : BaseType( mod, parameters ),
         method_( parameters.getMethod() ),
-        flux_none_( mod ),
-        flux_llf_( mod ),
+        flux_none_( mod, parameters ),
+        flux_llf_( mod, parameters ),
         flux_upwind_( mod )
     {}
 
@@ -147,22 +147,29 @@ namespace Fem
                    RangeType& gLeft,
                    RangeType& gRight) const
     {
-      switch (method_)
+      if( method_ == IdEnum::upwind )
       {
-        case IdEnum::none:
-          return flux_none_.numericalFlux( left, right, uLeft, uRight, jacLeft, jacRight, gLeft, gRight );
-        case IdEnum::llf:
-          return flux_llf_.numericalFlux( left, right, uLeft, uRight, jacLeft, jacRight, gLeft, gRight );
-        case IdEnum::upwind:
-          return flux_upwind_.numericalFlux( left, right, uLeft, uRight, jacLeft, jacRight, gLeft, gRight );
+        return flux_upwind_.numericalFlux( left, right, uLeft, uRight, jacLeft, jacRight, gLeft, gRight );
       }
-      std::cerr << "Error: Advection flux not chosen via parameter file" << std::endl;
-      assert( false );
+      else if( method_ == IdEnum::llf )
+      {
+        return flux_llf_.numericalFlux( left, right, uLeft, uRight, jacLeft, jacRight, gLeft, gRight );
+      }
+      else if( method_ == IdEnum::none )
+      {
+        return flux_none_.numericalFlux( left, right, uLeft, uRight, jacLeft, jacRight, gLeft, gRight );
+      }
+      else
+      {
+        std::cerr << "Error: Advection flux " << method_ << " not supported!" << std::endl;
+        assert( false );
+        std::abort();
+      }
       return 0.0;
     }
 
   private:
-    const IdEnum&                                method_;
+    const IdEnum                                 method_;
     DGAdvectionFlux< ModelType, IdEnum::none >   flux_none_;
     DGAdvectionFlux< ModelType, IdEnum::llf >    flux_llf_;
     DGAdvectionFlux< ModelType, IdEnum::upwind > flux_upwind_;

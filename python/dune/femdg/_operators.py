@@ -214,7 +214,7 @@ def femDGOperator(Model, space,
         if key in parameters.keys():
             value = parameters["dgadvectionflux.method"]
             # set parameter in dune-fem parameter container
-            parameterReader.append( { key: value } )
+            # parameterReader.append( { key: value } )
             if value.upper().find( 'LLF' ) >= 0:
                 advFluxId  = "Dune::Fem::AdvectionFlux::Enum::llf"
             else:

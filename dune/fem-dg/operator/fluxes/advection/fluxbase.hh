@@ -55,7 +55,7 @@ namespace Fem
      * \param[in] parameters  parameter reader
      */
     DGAdvectionFluxBase (const ModelType& mod,
-                         const AdvectionFluxParameters& parameter )
+                         const ParameterType& parameter )
       : model_(mod),
         param_( parameter )
     {}
