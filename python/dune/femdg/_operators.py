@@ -205,8 +205,14 @@ def femDGOperator(Model, space,
 
     if hasDiffFlux:
         diffFluxId = "Dune::Fem::DiffusionFlux::Enum::"+diffusionScheme
+
     if hasAdvFlux:
-        advFluxId  = "Dune::Fem::AdvectionFlux::Enum::llf"
+        # if dgadvectionflux.method has been selected, then use general flux,
+        # otherwise default to LLF flux
+        if 'dgadvectionflux.method' in parameters.keys():
+            advFluxId  = "Dune::Fem::AdvectionFlux::Enum::general"
+        else:
+            advFluxId  = "Dune::Fem::AdvectionFlux::Enum::llf"
 
     if limiter.lower() == "unlimited":
         limiterId = "Dune::Fem::AdvectionLimiter::Enum::unlimited"
