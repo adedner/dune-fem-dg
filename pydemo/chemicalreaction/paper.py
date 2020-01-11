@@ -2,7 +2,8 @@ import time, math, sys
 from ufl import *
 from dune.ufl import DirichletBC
 from dune.grid import structuredGrid, cartesianDomain
-from dune.alugrid import aluCubeGrid as Grid
+from dune.alugrid import aluCubeGrid as cubeGrid
+from dune.alugrid import aluSimplexGrid as simplexGrid
 from dune.fem.space import lagrange, dgonb, raviartThomas
 from dune.fem.scheme import galerkin
 from dune.femdg import femDGOperator
@@ -16,9 +17,9 @@ P2 = as_vector([0.9,0.9]) # midpoint of second source
 RF = 0.075                # radius of sources
 
 def problem():
-    gridView = Grid(cartesianDomain([0,0],[1,1],[50,50]))
 
     def computeVelocityCurl():
+        gridView = cubeGrid(cartesianDomain([0,0],[1,1],[20,20]))
         # TODO without dimRange the 'vectorization' is not carried out correctly
         streamSpace = lagrange(gridView, order=1, dimRange=1)
         Psi  = streanSpace.interpolate(0,name="streamFunction")
@@ -31,9 +32,10 @@ def problem():
         streamScheme = galerkin([form == 0, dbc], solver="cg")
         streamScheme.solve(target=Psi)
         velocity = as_vector([-Psi[0].dx(1),Psi[0].dx(0)]) # note: not extra projection
-        return velocity
+        return gridView, velocity
 
     def computeVelocityGrad():
+        gridView = simplexGrid(cartesianDomain([0,0],[1,1],[50,50]))
         # could also use dg here
         pressureSpace = lagrange(gridView, order=1, dimRange=1)
         pressure      = pressureSpace.interpolate(0,name="pressure")
@@ -42,20 +44,22 @@ def problem():
         x    = SpatialCoordinate(pressureSpace)
         n    = FacetNormal(pressureSpace)
         form = inner(grad(u),grad(phi)) * dx
-        # dbc  = DirichletBC(pressureSpace,[10*(x[0]-0.5)**3*(x[1]-1/2)**3])
-        dbc  = DirichletBC(pressureSpace,[ sin(2*pi*(x[0]-0.5)*(x[1]-0.5)) ])
+        dbc  = DirichletBC(pressureSpace,[ -sin(2*pi*(x[0]-0.5)*(x[1]-0.5)) ])
         pressureScheme = galerkin([form == 0, dbc], solver="cg")
         pressureScheme.solve(target=pressure)
-        pressure.plot()
-        velocity = grad(pressure[0])
+        ## ufl expression for pressure = [ -sin(2*pi*(x[0]-0.5)*(x[1]-0.5)) ]
+        velo = grad(pressure[0])
+        # project into rt space
         velocitySpace = raviartThomas(gridView,order=1,dimRange=1)
-        velo = velocitySpace.project(velocity,name="velocity")
-        velo.plot(vectors=[0,1])
-        return velocitySpace.project(velocity,name="velocity")
+        ## projection seems to be buggy velo = velocitySpace.project(velocity,name="velocity")
+        velo = velocitySpace.interpolate(velo,name="velocity")
+        gridView.writeVTK("velocity",pointvector={"Velo":velo},cellvector=[velo])
+
+        return gridView, velo
 
     class Model:
-        # transportVelocity = computeVelocityCurl()
-        transportVelocity = computeVelocityGrad()
+        # domain, transportVelocity = computeVelocityCurl()
+        domain, transportVelocity = computeVelocityGrad()
         dimRange = 3
         def S_ns(t,x,U,DU): # or S_ns for a non stiff source
             # sources
@@ -82,7 +86,6 @@ def problem():
         boundary = {(1,2,3,4): dirichletValue}
 
     Model.initial=as_vector([0,0,0])
-    Model.domain=gridView
     Model.endTime=10
     Model.name="chemical"
     return Model
@@ -92,13 +95,14 @@ Stepper = femdgStepper(order=3)
 
 # create discrete function space
 space = dgonb( Model.domain, order=3, dimRange=Model.dimRange)
-operator = femDGOperator(Model, space, limiter="scaling", threading=True)
+# operator = femDGOperator(Model, space, limiter="scaling", threading=True)
+operator = femDGOperator(Model, space, limiter=None, threading=True)
 stepper  = Stepper(operator)
 # create and initialize solution
 u_h = space.interpolate(Model.initial, name='u_h')
 operator.applyLimiter( u_h )
 
-vtk = Model.domain.sequencedVTK("chemicalreaction", subsampling=1, pointdata=[u_h])
+vtk = Model.domain.sequencedVTK("Chemicalreaction", subsampling=1, pointdata=[u_h])
 vtk() # output initial solution
 
 t        = 0
