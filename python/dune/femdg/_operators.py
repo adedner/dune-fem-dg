@@ -8,6 +8,7 @@ from dune.common.checkconfiguration import assertHave, preprocessorAssert, Confi
 
 from dune.generator import Constructor, Method
 from dune.fem.operator import load
+from dune.fem import parameter as parameterReader
 
 from dune.ufl import Constant
 from dune.ufl.tensors import ExprTensor
@@ -205,8 +206,24 @@ def femDGOperator(Model, space,
 
     if hasDiffFlux:
         diffFluxId = "Dune::Fem::DiffusionFlux::Enum::"+diffusionScheme
+
     if hasAdvFlux:
-        advFluxId  = "Dune::Fem::AdvectionFlux::Enum::llf"
+        # if dgadvectionflux.method has been selected, then use general flux,
+        # otherwise default to LLF flux
+        key = 'dgadvectionflux.method'
+        if key in parameters.keys():
+            value = parameters["dgadvectionflux.method"]
+            # set parameter in dune-fem parameter container
+            # parameterReader.append( { key: value } )
+            if value.upper().find( 'LLF' ) >= 0:
+                advFluxId  = "Dune::Fem::AdvectionFlux::Enum::llf"
+            else:
+                if value.upper().find( 'EULER' ) >= 0:
+                    advFluxId  = "Dune::Fem::AdvectionFlux::Enum::euler_general"
+                else:
+                    advFluxId  = "Dune::Fem::AdvectionFlux::Enum::general"
+        else:
+            advFluxId  = "Dune::Fem::AdvectionFlux::Enum::llf"
 
     if limiter.lower() == "unlimited":
         limiterId = "Dune::Fem::AdvectionLimiter::Enum::unlimited"

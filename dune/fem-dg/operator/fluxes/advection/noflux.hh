@@ -35,7 +35,7 @@ namespace Fem
     /**
      * \copydoc DGAdvectionFluxBase::DGAdvectionFluxBase()
      */
-    NoFlux( const ModelType& mod, const ParameterType& parameter = ParameterType() )
+    NoFlux( const ModelType& mod, const ParameterType& parameter )
       : BaseType( mod, parameter )
     {}
 
