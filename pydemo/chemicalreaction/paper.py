@@ -3,7 +3,7 @@ from ufl import *
 from dune.ufl import DirichletBC
 from dune.grid import structuredGrid, cartesianDomain
 from dune.alugrid import aluCubeGrid as Grid
-from dune.fem.space import lagrange, dgonb
+from dune.fem.space import lagrange, dgonb, raviartThomas
 from dune.fem.scheme import galerkin
 from dune.femdg import femDGOperator
 from dune.femdg.rk import femdgStepper
@@ -18,22 +18,43 @@ RF = 0.075                # radius of sources
 def problem():
     gridView = Grid(cartesianDomain([0,0],[1,1],[50,50]))
 
-    def computeVelocity():
+    def computeVelocityCurl():
         # TODO without dimRange the 'vectorization' is not carried out correctly
-        velocitySpace = lagrange(gridView, order=1, dimRange=1)
-        Psi  = velocitySpace.interpolate(0,name="streamFunction")
-        u    = TrialFunction(velocitySpace)
-        phi  = TestFunction(velocitySpace)
-        x    = SpatialCoordinate(velocitySpace)
+        streamSpace = lagrange(gridView, order=1, dimRange=1)
+        Psi  = streanSpace.interpolate(0,name="streamFunction")
+        u    = TrialFunction(streamSpace)
+        phi  = TestFunction(streamSpace)
+        x    = SpatialCoordinate(streamSpace)
         form = ( inner(grad(u),grad(phi)) -
                  0.1*2*(2*pi)**2*sin(2*pi*x[0])*sin(2*pi*x[1]) * phi[0] ) * dx
-        dbc  = DirichletBC(velocitySpace,[0])
-        velocityScheme = galerkin([form == 0, dbc], solver="cg")
-        velocityScheme.solve(target=Psi)
-        return as_vector([-Psi[0].dx(1),Psi[0].dx(0)])
+        dbc  = DirichletBC(streamSpace,[0])
+        streamScheme = galerkin([form == 0, dbc], solver="cg")
+        streamScheme.solve(target=Psi)
+        velocity = as_vector([-Psi[0].dx(1),Psi[0].dx(0)]) # note: not extra projection
+        return velocity
+
+    def computeVelocityGrad():
+        # could also use dg here
+        pressureSpace = lagrange(gridView, order=1, dimRange=1)
+        pressure      = pressureSpace.interpolate(0,name="pressure")
+        u    = TrialFunction(pressureSpace)
+        phi  = TestFunction(pressureSpace)
+        x    = SpatialCoordinate(pressureSpace)
+        n    = FacetNormal(pressureSpace)
+        form = inner(grad(u),grad(phi)) * dx
+        dbc  = DirichletBC(pressureSpace,[(x[0]-0.5)**3*(x[1]-1/2)**3])
+        pressureScheme = galerkin([form == 0, dbc], solver="cg")
+        pressureScheme.solve(target=pressure)
+        pressure.plot()
+        velocity = grad(pressure[0])
+        velocitySpace = raviartThomas(gridView,order=1,dimRange=1)
+        velo = velocitySpace.project(velocity,name="velocity")
+        velo.plot(vectors=[0,1])
+        return velocitySpace.project(velocity,name="velocity")
 
     class Model:
-        transportVelocity = computeVelocity()
+        # transportVelocity = computeVelocityCurl()
+        transportVelocity = computeVelocityGrad()
         dimRange = 3
         def S_ns(t,x,U,DU): # or S_ns for a non stiff source
             # sources
@@ -94,7 +115,7 @@ while t < Model.endTime:
         print('ERROR: dofs invalid t =', t,flush=True)
         print('[',tcount,']','dt = ', dt, 'time = ',t, flush=True )
         sys.exit(1)
-    if t > saveTime:
+    if 1: # t > saveTime:
         print('[',tcount,']','dt = ', dt, 'time = ',t,
                 'dtEst = ',operator.timeStepEstimate,
                 'elements = ',Model.domain.size(0), flush=True )
