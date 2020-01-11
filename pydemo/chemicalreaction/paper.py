@@ -42,7 +42,8 @@ def problem():
         x    = SpatialCoordinate(pressureSpace)
         n    = FacetNormal(pressureSpace)
         form = inner(grad(u),grad(phi)) * dx
-        dbc  = DirichletBC(pressureSpace,[(x[0]-0.5)**3*(x[1]-1/2)**3])
+        # dbc  = DirichletBC(pressureSpace,[10*(x[0]-0.5)**3*(x[1]-1/2)**3])
+        dbc  = DirichletBC(pressureSpace,[ sin(2*pi*(x[0]-0.5)*(x[1]-0.5)) ])
         pressureScheme = galerkin([form == 0, dbc], solver="cg")
         pressureScheme.solve(target=pressure)
         pressure.plot()
