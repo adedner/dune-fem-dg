@@ -50,7 +50,11 @@ namespace Dune
       // cls.def( "setTime", &Operator::setTime);
       cls.def( "_setTime", &Operator::setTime);
       cls.def_property_readonly("timeStepEstimate",
-          [](const Operator &self) -> double {return self.timeStepEstimate(); });
+          [](const Operator &self) -> std::tuple<double,double,double>
+          { return {self.timeStepEstimate(),
+                    self.explicitOperator().timeStepEstimate(),
+                    self.implicitOperator().timeStepEstimate()};
+          });
       Dune::Python::insertClass<ExplType>(cls,"ExplType",
           Dune::Python::GenerateTypeName("NotAvailable"),
           Dune::Python::IncludeFiles{});
