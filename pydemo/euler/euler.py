@@ -33,7 +33,6 @@ def CompressibleEuler(dim, gamma):
 
             rE = U[dim+1]
 
-            # TODO make independent of dim
             res = as_matrix([
                     # density
                     [ rho*v[i] for i in range(0,dim)], # rho * v
@@ -54,9 +53,40 @@ def CompressibleEuler(dim, gamma):
             pR = Model.pressure(V)
             return (pL - pR)/(0.5*(pL + pR))
         def rotateForth(u, n):
-            return [ u[0], n[0]*u[1] + n[1]*u[2], -n[1]*u[1] + n[0]*u[2], u[3] ]
+            if dim == 1:
+                return [ u[0], n[0]*u[1], u[2] ]
+            elif dim == 2:
+                return [ u[0], n[0]*u[1] + n[1]*u[2], -n[1]*u[1] + n[0]*u[2], u[3] ]
+            elif dim == 3:
+                d = sqrt( n[0]*n[0]+n[1]*n[1] )
+                if d > 1e-8:
+                    d_1 = 1./d
+                    return [  u[0],
+                              n[0]*u[1] + n[1]*u[2] + n[2]*u[3],
+                            - n[1] * d_1 * u[1] + n[0] * d_1 * u[2],
+                            - n[0] * n[2] * d_1 * u[1] - n[1] * n[2] * d_1 * u[2] + d * u[3],
+                              u[4] ]
+                else:
+                    return [ u[0], n[2] * u[3], u[2], -n[2] * u[1], u[4] ]
+
         def rotateBack(u, n):
-            return [ u[0], n[0]*u[1] - n[1]*u[2],  n[1]*u[1] + n[0]*u[2], u[3] ]
+            if dim == 1:
+                return [ u[0], n[0]*u[1], u[2] ]
+            elif dim == 2:
+                return [ u[0], n[0]*u[1] - n[1]*u[2],  n[1]*u[1] + n[0]*u[2], u[3] ]
+            elif dim == 3:
+                d = sqrt( n[0]*n[0]+n[1]*n[1] )
+                if d > 1e-8:
+                    d_1 = 1./d
+                    return [  u[0],
+                              n[0] * u[1] - n[1]*d_1 * u[2] - n[0]*n[2]*d_1 * u[3],
+                              n[1] * u[1] + n[0]*d_1 * u[2] - n[1]*n[2]*d_1 * u[3],
+                              n[2] * u[1] + d * u[3],
+                              u[4] ]
+                else:
+                    return [ u[0], -n[2]*u[3], u[2], n[2]*u[1], u[4] ]
+
+
     return Model
 
 def CompressibleEulerNeuman(dim, gamma, bnd=range(1,5)):
@@ -101,8 +131,8 @@ def sod(dim=2,gamma=1.4):
     x = SpatialCoordinate(space.cell())
     Model = CompressibleEulerReflection(dim,gamma)
     Model.initial=riemanProblem( Model, x[0], x0, [1,0,0,1], [0.125,0,0,0.1])
-    #Model.domain=[[0, 0], [1, 0.25], [256, 64]]
-    Model.domain=[[0, 0], [1, 0.25], [128, 32]]
+    Model.domain=[[0, 0], [1, 0.25], [256, 64]]
+    #Model.domain=[[0, 0], [1, 0.25], [128, 32]]
     Model.endTime=0.15
     #def u(t,x):
     #    val = algorithm.load('sod','sod.hh', t, x0, x )
