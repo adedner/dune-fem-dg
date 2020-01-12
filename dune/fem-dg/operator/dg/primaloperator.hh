@@ -403,9 +403,15 @@ namespace Fem
       , pass1_( limitDiscreteModel_, pass0_, limiterSpace_ )
       , pass2_( discreteModel1_, pass1_, space_ )
       , counter_(0)
+      , limitTime_( 0 )
+      , computeTime_( 0 )
     {
       // create indicator if enabled
       createIndicator();
+    }
+
+    virtual ~DGLimitedAdvectionOperator() {
+      std::cout << "~DGLimitedAdvectionOperator: op calls = " << counter_ << " T_l = " << limitTime_ << "  T_op = " << computeTime_ << std::endl;
     }
 
     void activateLinear() const {
@@ -439,6 +445,9 @@ namespace Fem
       //++operatorCalled_;
       //std::cout << "Operator call." << std::endl;
       pass2_( arg, dest );
+
+      limitTime_   += limitTime();
+      computeTime_ += computeTime();
     }
 
     inline const SpaceType& space() const {
@@ -538,6 +547,9 @@ namespace Fem
     Pass2Type           pass2_;
 
     mutable int         counter_;
+
+    mutable double limitTime_;
+    mutable double computeTime_;
   };
 
 
