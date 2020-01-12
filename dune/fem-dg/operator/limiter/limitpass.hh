@@ -642,7 +642,8 @@ namespace Fem
       calcIndicator_(discreteModel_.calculateIndicator()),
       reconstruct_(false),
       admissibleFunctions_( getAdmissibleFunctions() ),
-      usedAdmissibleFunctions_( admissibleFunctions_ )
+      usedAdmissibleFunctions_( admissibleFunctions_ ),
+      counter_( 0 )
     {
       if( Parameter :: verbose () )
       {
@@ -660,7 +661,9 @@ namespace Fem
     }
 
     //! Destructor
-    virtual ~LimitDGPass() {}
+    virtual ~LimitDGPass() {
+      std::cout << "~LimitDGPass: op calls " << counter_ << std::endl;
+    }
 
     //! return default face quadrature order
     static int defaultVolumeQuadratureOrder( const DiscreteFunctionSpaceType& space, const EntityType& entity )
@@ -781,6 +784,7 @@ namespace Fem
 
         // finalize
         finalize(arg, dest);
+        ++counter_;
       }
       else
       {
@@ -2033,6 +2037,8 @@ namespace Fem
 
     mutable std::vector< RangeType  > values_;
     mutable std::vector< GradientType > gradients_;
+
+    mutable int counter_;
 
   }; // end DGLimitPass
 
