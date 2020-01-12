@@ -10,6 +10,7 @@ from dune.femdg import femDGOperator
 from dune.femdg.rk import femdgStepper
 
 eps = 0.01                # diffusion rate
+#  eps = 0.05                 # diffusion rate
 K = 10                    # reaction rate
 Q = 1                     # source strength
 P1 = as_vector([0.1,0.1]) # midpoint of first source
@@ -35,7 +36,7 @@ def problem():
         return gridView, velocity
 
     def computeVelocityGrad():
-        gridView = simplexGrid(cartesianDomain([0,0],[1,1],[50,50]))
+        gridView = cubeGrid(cartesianDomain([0,0],[1,1],[50,50]))
         # could also use dg here
         pressureSpace = lagrange(gridView, order=1, dimRange=1)
         pressure      = pressureSpace.interpolate(0,name="pressure")
@@ -46,14 +47,19 @@ def problem():
         form = inner(grad(u),grad(phi)) * dx
         dbc  = DirichletBC(pressureSpace,[ -sin(2*pi*(x[0]-0.5)*(x[1]-0.5)) ])
         pressureScheme = galerkin([form == 0, dbc], solver="cg")
-        pressureScheme.solve(target=pressure)
-        ## ufl expression for pressure = [ -sin(2*pi*(x[0]-0.5)*(x[1]-0.5)) ]
+        # pressureScheme.solve(target=pressure)
+        ## ufl expression for
+        pressure = [ -sin(2*pi*(x[0]-0.5))*sin(2*pi*(x[1]-0.5)) ]
         velo = grad(pressure[0])
         # project into rt space
         velocitySpace = raviartThomas(gridView,order=1,dimRange=1)
-        ## projection seems to be buggy velo = velocitySpace.project(velocity,name="velocity")
+        ## projection seems to be buggy
+        _velo = velocitySpace.project(velo,name="velocity")
         velo = velocitySpace.interpolate(velo,name="velocity")
-        gridView.writeVTK("velocity",pointvector={"Velo":velo},cellvector=[velo])
+        gridView.writeVTK("velocity",subsampling=1,
+                pointvector={"pVelo":velo, "pProjVelo":_velo},
+                cellvector={"cVelo":velo, "cProjVelo":_velo}
+                )
 
         return gridView, velo
 
@@ -102,7 +108,7 @@ stepper  = Stepper(operator)
 u_h = space.interpolate(Model.initial, name='u_h')
 operator.applyLimiter( u_h )
 
-vtk = Model.domain.sequencedVTK("Chemicalreaction", subsampling=1, pointdata=[u_h])
+vtk = Model.domain.sequencedVTK("Chemical_diff", subsampling=1, pointdata=[u_h])
 vtk() # output initial solution
 
 t        = 0
@@ -120,7 +126,9 @@ while t < Model.endTime:
         print('ERROR: dofs invalid t =', t,flush=True)
         print('[',tcount,']','dt = ', dt, 'time = ',t, flush=True )
         sys.exit(1)
-    if 1: # t > saveTime:
+    if t > saveTime:
+        # TODO: issue with time step estimate: here the 'fullPass' is used
+        # but that is not set for IMEX
         print('[',tcount,']','dt = ', dt, 'time = ',t,
                 'dtEst = ',operator.timeStepEstimate,
                 'elements = ',Model.domain.size(0), flush=True )
