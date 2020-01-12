@@ -29,13 +29,17 @@ def CompressibleEuler(dim, gamma):
         def F_c(t,x,U):
             assert dim==2
             rho, v, p = Model.toPrim(U)
+            def P(i,j):
+                return p if i == j else 0
+
             rE = U[dim+1]
-            # TODO make indpendent of dim
+
+            # TODO make independent of dim
             res = as_matrix([
-                    [rho*v[0], rho*v[1]],
-                    [rho*v[0]*v[0] + p, rho*v[0]*v[1]],
-                    [rho*v[0]*v[1], rho*v[1]*v[1] + p],
-                    [(rE+p)*v[0], (rE+p)*v[1]] ] )
+                    [ rho*v[i] for i in range(0,dim)], # rho * v
+                    [ rho*v[0]*v[i] + P(0,i) for i in range(0,dim) ],
+                    [ rho*v[1]*v[i] + P(1,i) for i in range(0,dim) ],
+                    [ (rE+p)*v[i] for i in range(0,dim)] ] ) # (rE +p) * v
             return res
         def maxLambda(t,x,U,n):
             rho, v, p = Model.toPrim(U)
@@ -96,6 +100,7 @@ def sod(dim=2,gamma=1.4):
     x = SpatialCoordinate(space.cell())
     Model = CompressibleEulerReflection(dim,gamma)
     Model.initial=riemanProblem( Model, x[0], x0, [1,0,0,1], [0.125,0,0,0.1])
+    #Model.domain=[[0, 0], [1, 0.25], [256, 64]]
     Model.domain=[[0, 0], [1, 0.25], [128, 32]]
     Model.endTime=0.15
     #def u(t,x):
