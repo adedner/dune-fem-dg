@@ -27,7 +27,6 @@ def CompressibleEuler(dim, gamma):
 
         # interface methods
         def F_c(t,x,U):
-            assert dim==2
             rho, v, p = Model.toPrim(U)
             def P(i,j):
                 return p if i == j else 0
@@ -36,9 +35,11 @@ def CompressibleEuler(dim, gamma):
 
             # TODO make independent of dim
             res = as_matrix([
+                    # density
                     [ rho*v[i] for i in range(0,dim)], # rho * v
-                    [ rho*v[0]*v[i] + P(0,i) for i in range(0,dim) ],
-                    [ rho*v[1]*v[i] + P(1,i) for i in range(0,dim) ],
+                    # momentum
+                  *([ [ rho*v[j]*v[i] + P(j,i) for i in range(0,dim) ] for j in range(0,dim)]),
+                    # energy
                     [ (rE+p)*v[i] for i in range(0,dim)] ] ) # (rE +p) * v
             return res
         def maxLambda(t,x,U,n):
