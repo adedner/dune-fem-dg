@@ -149,7 +149,7 @@ def codeFemDg(self):
             args=['const Entity& entity', 'const Point &x',
                   'const T& circumEstimate', 'const DRangeType &u'],
             targs=['class Entity, class Point, class T'], const=True,
-            predefined=None)
+            predefined=predefined)
 
     # QUESTION: should `physical` actually depend on x? Perhaps even t?
     physical = getattr(Model,"physical",None)
@@ -182,7 +182,7 @@ def codeFemDg(self):
             args=['const Entity& entity', 'const Point &x',
                   'DRangeType &u'],
             targs=['class Entity, class Point'], const=True, evalSwitch=False,
-            predefined=None)
+            predefined=predefined)
 
     hasAdvFlux = hasattr(Model,"F_c")
     hasDiffFlux = hasattr(Model,"F_v")
@@ -282,7 +282,7 @@ def codeFemDg(self):
             'void', 'limitedRange',
             args=['LimitedRange& limRange'],
             targs=['class LimitedRange'], const=True, evalSwitch=False,
-            predefined=None)
+            predefined=predefined)
 
     return code
 
