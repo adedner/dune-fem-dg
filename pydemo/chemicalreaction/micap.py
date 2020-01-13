@@ -22,7 +22,7 @@ def problem(V):
 
         # Set up time
         secperhour = 3600
-        t = Constant(t_start, "time")  # time variable
+        t = Constant(0, "time")  # time variable
 
         # reaction, diffusion and other coefficients
         phi_crit = 0.1
@@ -37,8 +37,6 @@ def problem(V):
         # Well
         Qp = 1.25e-3
         Qw = Qp
-        # source_p = Well(mesh=mesh, Q=Qp, degree=1)  # UNCOMMENT
-        # Pressure (natural)
         # p0_in = Constant(1.25e7)
 
         cu_in = 2000
@@ -86,6 +84,7 @@ def problem(V):
         cu0  = 0
         cb0  = 0
 
+
         ### Model functions ###
         def toPrim(U):
             # ( phi, phi cu, phi cb ) --> (phi, cu, cb)
@@ -95,6 +94,10 @@ def problem(V):
             # ( phi, cu, cb ) --> (phi, phi cu, phi cb)
             return U[0], U[1] * U[0], U[2] * U[0]
 
+        # circle of 0.3 around center
+        def inlet( x ):
+            return conditional(sqrt( x[0]*x[0] + x[1]*x[1] ) < 0.3, 1., 0. )
+
         def darcyVelocity( p ):
             return -1./Model.mu * Model.K * grad(p[0])
 
@@ -103,7 +106,7 @@ def problem(V):
             phi, cu, cb = Model.toPrim( U )
             qu   = Model.ke * phi * Model.Mb * cb * cu / (Model.Ku + cu )
             hour = Model.t / Model.secperhour
-            # TODO fix hours here
+            # TODO add x and inlet
             Qw1_t = conditional( hour > 20., conditional( hour < 25., Model.Qw, 0), 0 )
             Qw2_t = conditional( hour > 45., conditional( hour < 60., Model.Qw, 0), 0 )
             return as_vector([ qu + Qw1_t + Qw2_t ])
@@ -116,8 +119,8 @@ def problem(V):
             qb = cb * ( phi * ( Model.b0 + Model.ka) + qc * Model.Mc_rhoc )
 
             hour = t / Model.secperhour
-            Qu_t = conditional( hour > 25., conditional( hour < 45., Model.Qcu, 0), 0 )
-            Qb_t = conditional( hour < 20., Model.Qcb, 0 )
+            Qu_t = Model.inlet( x ) * conditional( hour > 25., conditional( hour < 45., Model.Qcu, 0), 0 )
+            Qb_t = Model.inlet( x ) * conditional( hour < 20., Model.Qcb, 0 )
             return as_vector([ -qu * Model.Mc_rhoc,
                                -qu + Qu_t,
                                -qb + Qb_t
@@ -193,7 +196,8 @@ pressureScheme = galerkin([form == 0, dbc], solver="cg",
                            parameters={"newton.linear.verbose":True,
                                        "newton.verbose":True} )
 
-Stepper = femdgStepper(order=3, rkType="EX")
+Stepper = femdgStepper(order=3, rkType="IM",
+                       parameters={"fem.solver.verbose":True})
 
 operator = femDGOperator(Model, space, limiter=None, threading=True)
 operator.applyLimiter( u_h )
@@ -220,6 +224,8 @@ t        = 0
 tcount   = 0
 saveStep = 0.001 # Model.endTime/100
 saveTime = saveStep
+
+fixedDt = 300
 while t < Model.endTime:
 
     # compute new pressure
@@ -232,7 +238,7 @@ while t < Model.endTime:
 
     print("### Compute advection-diffusion ###")
     operator.setTime(t)
-    dt = stepper(u_h)
+    dt = stepper(u_h, fixedDt )
     t += dt
     tcount += 1
     # check that solution is meaningful
