@@ -95,7 +95,7 @@ def problem(V):
 
         dimRange = 3 # three unknowns: (phi, phi cu, phi cb)^T
 
-        dim = 2 # TODO extract from domain
+        dim = V.space.dimDomain # TODO extract from domain
 
         ### Model functions ###
         def toPrim(U):
@@ -105,6 +105,9 @@ def problem(V):
         def toCons(U):
             # ( phi, cu, cb ) --> (phi, phi cu, phi cb)
             return U[0], U[1] * U[0], U[2] * U[0]
+
+        def darcyVelocity( p ):
+            return -1./Model.mu * Model.K * grad(p[0])
 
         # right hand side for pressure equation
         def pressureRHS(U):
@@ -179,6 +182,7 @@ dbc  = DirichletBC(pressureSpace,[ 0 ])
 velocitySpace = raviartThomas(gridView,order=1,dimRange=1)
 
 ## projection seems to be buggy
+# there interpolation is used
 transportVelocity = velocitySpace.interpolate([0,0],name="velocity")
 
 Model = problem( transportVelocity )
@@ -189,8 +193,9 @@ space = dgonb( gridView, order=2, dimRange=Model.dimRange)
 # create and initialize solution
 u_h = space.interpolate(Model.initial, name='u_h')
 
-form = inner(grad(u),grad(phi)) * dx - inner(rhs, phi) * dx
+# TODO use Model.pressureRHS directly
 #        Model.pressureRHS(u_h), phi) * dx
+form = inner(grad(u),grad(phi)) * dx - inner(rhs, phi) * dx
 pressureScheme = galerkin([form == 0, dbc], solver="cg",
                            parameters={"newton.linear.verbose":True,
                                        "newton.verbose":True} )
@@ -204,7 +209,7 @@ stepper  = Stepper(operator)
 vtk = gridView.sequencedVTK("Chemical_highK", subsampling=1, pointdata=[u_h])
 vtk() # output initial solution
 
-
+# TODO t and Model.t
 def updateVelocity( t ):
     Model.t.value = t
     # update right hand side
@@ -227,8 +232,10 @@ while t < Model.endTime:
     # compute new pressure
     # TODO, update pressure here
 
+    print("### Compute Darcy velocity ###")
     updateVelocity( t )
 
+    print("### Compute advection-diffusion ###")
     operator.setTime(t)
     dt = stepper(u_h)
     t += dt
