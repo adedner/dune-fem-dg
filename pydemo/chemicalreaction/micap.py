@@ -8,6 +8,8 @@ from dune.fem.space import lagrange, dgonb, raviartThomas
 from dune.fem.scheme import galerkin
 from dune.femdg import femDGOperator
 from dune.femdg.rk import femdgStepper
+import dune.create as create
+from dune.grid import reader
 
 
 def problem(V):
@@ -97,6 +99,11 @@ def problem(V):
 
         dim = V.space.dimDomain # TODO extract from domain
 
+        ### initial ###
+        phi0 = 0.2
+        cu0  = 0
+        cb0  = 0
+
         ### Model functions ###
         def toPrim(U):
             # ( phi, phi cu, phi cb ) --> (phi, cu, cb)
@@ -115,8 +122,9 @@ def problem(V):
             qu   = Model.ke * phi * Model.Mb * cb * cu / (Model.Ku + cu )
             hour = Model.t / Model.secperhour
             # TODO fix hours here
-            Qw_t = conditional( hour > 25., conditional( hour < 45., Model.Qw, 0), 0 )
-            return as_vector([ qu + Qw_t ])
+            Qw1_t = conditional( hour > 20., conditional( hour < 25., Model.Qw, 0), 0 )
+            Qw2_t = conditional( hour > 45., conditional( hour < 60., Model.Qw, 0), 0 )
+            return as_vector([ qu + Qw1_t + Qw2_t ])
 
         def S_s(t,x,U,DU): # or S_s for a stiff source
             phi, cu, cb = Model.toPrim( U )
@@ -157,7 +165,7 @@ def problem(V):
             return as_vector(Model.dimRange*[0])
         boundary = {(1,2,3,4): dirichletValue}
 
-    Model.initial=as_vector([0,0,0])
+    Model.initial=as_vector([Model.phi0, Model.cu0, Model.cb0])
     Model.endTime=250 * Model.secperhour
     Model.name="micap"
     return Model
@@ -165,11 +173,14 @@ def problem(V):
 
 #### main program ####
 
-gridView = cubeGrid(cartesianDomain([0,0],[1,1],[50,50]))
+#gridView = cubeGrid(cartesianDomain([0,0],[1,1],[50,50]))
+domain = (reader.gmsh, "circlemeshquad.msh")
+gridView = create.view("adaptive", grid="ALUCube", constructor=domain, dimgrid=2)
+
 # could also use dg here
 pressureSpace = lagrange(gridView, order=1, dimRange=1)
-pressure = pressureSpace.interpolate(0,name="pressure")
-rhs      = pressureSpace.interpolate(0,name="rhs")
+pressure = pressureSpace.interpolate([1e-7],name="pressure")
+rhs      = pressureSpace.interpolate([0],name="rhs")
 
 u    = TrialFunction(pressureSpace)
 phi  = TestFunction(pressureSpace)
@@ -200,13 +211,13 @@ pressureScheme = galerkin([form == 0, dbc], solver="cg",
                            parameters={"newton.linear.verbose":True,
                                        "newton.verbose":True} )
 
-Stepper = femdgStepper(order=3)
+Stepper = femdgStepper(order=3, rkType="EX")
 
 operator = femDGOperator(Model, space, limiter=None, threading=True)
 operator.applyLimiter( u_h )
 stepper  = Stepper(operator)
 
-vtk = gridView.sequencedVTK("Chemical_highK", subsampling=1, pointdata=[u_h])
+vtk = gridView.sequencedVTK("Chemical_highK", subsampling=1, celldata=[transportVelocity], pointdata=[pressure,u_h])
 vtk() # output initial solution
 
 # TODO t and Model.t
@@ -234,6 +245,8 @@ while t < Model.endTime:
 
     print("### Compute Darcy velocity ###")
     updateVelocity( t )
+
+    vtk()
 
     print("### Compute advection-diffusion ###")
     operator.setTime(t)
