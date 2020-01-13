@@ -9,77 +9,10 @@ from dune.fem.scheme import galerkin
 from dune.femdg import femDGOperator
 from dune.femdg.rk import femdgStepper
 
-# eps = 0.2                 # diffusion rate
-K = 200                    # reaction rate
-Q = 1                     # source strength
-P1 = as_vector([0.1,0.1]) # midpoint of first source
-P2 = as_vector([0.9,0.9]) # midpoint of second source
-RF = 0.075                # radius of sources
 
-def problem():
-
-    def computeVelocityCurl():
-        gridView = cubeGrid(cartesianDomain([0,0],[1,1],[20,20]))
-        # TODO without dimRange the 'vectorization' is not carried out correctly
-        streamSpace = lagrange(gridView, order=1, dimRange=1)
-        Psi  = streanSpace.interpolate(0,name="streamFunction")
-        u    = TrialFunction(streamSpace)
-        phi  = TestFunction(streamSpace)
-        x    = SpatialCoordinate(streamSpace)
-        form = ( inner(grad(u),grad(phi)) -
-                 0.1*2*(2*pi)**2*sin(2*pi*x[0])*sin(2*pi*x[1]) * phi[0] ) * dx
-        dbc  = DirichletBC(streamSpace,[0])
-        streamScheme = galerkin([form == 0, dbc], solver="cg")
-        streamScheme.solve(target=Psi)
-        velocity = as_vector([-Psi[0].dx(1),Psi[0].dx(0)]) # note: not extra projection
-        return gridView, velocity
-
-    def computeVelocityGrad():
-        gridView = cubeGrid(cartesianDomain([0,0],[1,1],[50,50]))
-        # could also use dg here
-        pressureSpace = lagrange(gridView, order=1, dimRange=1)
-        pressure      = pressureSpace.interpolate(0,name="pressure")
-        u    = TrialFunction(pressureSpace)
-        phi  = TestFunction(pressureSpace)
-        x    = SpatialCoordinate(pressureSpace)
-        n    = FacetNormal(pressureSpace)
-        form = inner(grad(u),grad(phi)) * dx
-        dbc  = DirichletBC(pressureSpace,[ -sin(2*pi*(x[0]-0.5)*(x[1]-0.5)) ])
-        pressureScheme = galerkin([form == 0, dbc], solver="cg",
-                                   parameters={"newton.linear.verbose":True,
-                                               "newton.verbose":True} )
-        pressureScheme.solve(target=pressure)
-        ## ufl expression for
-
-        # pressure = [ -sin(2*pi*(x[0]-0.5)*(x[1]-0.5)) ]
-        K = Constant(1.0e-12)
-
-        # Misc. other parameters
-        mu = Constant(0.0008)  # viscosity of water
-
-        # Darcy velocity
-        velocity = -1./mu * K * grad(pressure[0])
-
-        # project into rt space
-        velocitySpace = raviartThomas(gridView,order=1,dimRange=1)
-        ## projection seems to be buggy
-        _velo = velocitySpace.project(velocity,name="velocity")
-        velo = velocitySpace.interpolate(velocity,name="velocity")
-        gridView.writeVTK("velocity",subsampling=1,
-                pointvector={"pVelo":velo, "pProjVelo":_velo},
-                cellvector={"cVelo":velo, "cProjVelo":_velo}
-                )
-
-        return gridView, velo
+def problem(V):
 
     class Model:
-        # domain, transportVelocity = computeVelocityCurl()
-
-        domain, transportVelocity = computeVelocityGrad()
-        dimRange = 3 # three unknowns: (phi, phi cu, phi cb)^T
-
-        dim = 2 # TODO extract from domain
-
         # Set up time
         secperhour = 3600
         t_start_hour = 0
@@ -104,6 +37,8 @@ def problem():
         Mb = Constant(1.0)  # Molar mass suspended biomass
         Mc = Constant(0.100)  # Molar mass calcite
 
+        Mc_rhoc = Mc / rhoc
+
         #outflowVeldirich = conditional(x[0]>-0.3,1.,0.) * conditional(x[1]>-0.3,1.,0.) * conditional(x[0]<0.3,1.,0.) * conditional(x[1]<0.3,1.,0.)
 
         # Well
@@ -124,8 +59,8 @@ def problem():
         D_mol = Constant(1.587e-9)  # molecular diffusion
         alpha_long = 0.01  # longitudinal dispersivity
         # CONSTANT
-        D_mech = Constant(1e-6)
-        D = Constant(1e-6)
+        # D_mech = Constant(1e-6)
+        D = D_mol
 
         # FULL TENSOR
         # I = Identity(dim)
@@ -134,6 +69,9 @@ def problem():
         kurease = 706.7
         ke = Constant(kub * kurease)
         Ku = Constant(355)  # Ku = KU * rho_w = 0.355 * 1e3
+
+        # attachment
+        ka = 8.51e-7
 
         # fu=0
         # Biomass
@@ -146,22 +84,55 @@ def problem():
         # From Johannes
         b0 = Constant(3.18e-7)  # decay rate coeff.
 
-        def S_s(t,x,U,DU): # or S_s for a stiff source
-            phi  = U[0] # porosity
-            qu   = kurease * kub * phi * Mb * U[2] * U[1] / (Ku + U[1] )
-            qc = qu # Assumption in the report, before eq 3.12
-            qb = U[2] * ( phi * ( b0 + ka) + qc * Mc / rhoc )
+        ## ufl expression for
 
-            Qu_t = conditional( t > 25., conditional( t < 45., Qu, 0), 0 )
-            Qb_t = conditional( t < 20., Qb, 0 )
-            return as_vector([ -Mc * qu / rhoc,
+        # pressure = [ -sin(2*pi*(x[0]-0.5)*(x[1]-0.5)) ]
+        K = Constant(1.0e-12)
+
+        # Misc. other parameters
+        mu = Constant(0.0008)  # viscosity of water
+
+        transportVelocity = V
+
+        dimRange = 3 # three unknowns: (phi, phi cu, phi cb)^T
+
+        dim = 2 # TODO extract from domain
+
+        ### Model functions ###
+        def toPrim(U):
+            # ( phi, phi cu, phi cb ) --> (phi, cu, cb)
+            return U[0], U[1] / U[0], U[2] / U[0]
+
+        def toCons(U):
+            # ( phi, cu, cb ) --> (phi, phi cu, phi cb)
+            return U[0], U[1] * U[0], U[2] * U[0]
+
+        # right hand side for pressure equation
+        def pRHS(t,x,U):
+            phi, cu, cb = Model.toPrim( U )
+            qu   = Model.ke * phi * Model.Mb * cb * cu / (Model.Ku + cu )
+            return as_vector([ qu * Model.Mc_rhoc ])
+
+        def S_s(t,x,U,DU): # or S_s for a stiff source
+            phi, cu, cb = Model.toPrim( U )
+
+            qu = Model.ke * phi * Model.Mb * cb * cu / (Model.Ku + cu )
+            qc = qu # Assumption in the report, before eq 3.12
+            qb = cb * ( phi * ( Model.b0 + Model.ka) + qc * Model.Mc_rhoc )
+
+            hour = t / Model.secperhour
+            Qu_t = conditional( hour > 25., conditional( hour < 45., Model.Qcu, 0), 0 )
+            Qb_t = conditional( hour < 20., Model.Qcb, 0 )
+            return as_vector([ -qu * Model.Mc_rhoc,
                                -qu + Qu_t,
                                -qb + Qb_t
                              ])
         def F_c(t,x,U):
+            phi, cu, cb = Model.toPrim(U)
             # first flux should be zero since porosity is simply an ODE
-            return as_matrix([  as_vector([ 0 ]),
-                              *([Model.velocity(t,x,U) * U[i]/U[0] for i in range(1,dimRange)]),
+            return as_matrix([ [*(Model.velocity(t,x,u) *  0)],
+                               [*(Model.velocity(t,x,U) * cu)],
+                               [*(Model.velocity(t,x,U) * cb)]
                              ])
         def maxLambda(t,x,U,n):
             return abs(dot(Model.velocity(t,x,U),n))
@@ -173,7 +144,9 @@ def problem():
         def maxDiffusion(t,x,U):
            return Model.D * pow(U[0], 1./3.)
         def physical(U):
+            #phi, cu, cb = Model.toPrim( U )
             # U should be positive
+            #return conditional( phi>=0,1,0)*conditional(cu>=0,1,0)*conditional(cb>=0,1,0)
             return conditional(U[0]>=0,1,0)*conditional(U[1]>=0,1,0)*conditional(U[2]>=0,1,0)
         def dirichletValue(t,x,u):
             return as_vector(Model.dimRange*[0])
@@ -183,12 +156,39 @@ def problem():
     Model.endTime=250 * Model.secperhour
     Model.name="micap"
     return Model
+    # end def problem
 
-Model = problem()
+#### main program ####
+
+gridView = cubeGrid(cartesianDomain([0,0],[1,1],[50,50]))
+# could also use dg here
+pressureSpace = lagrange(gridView, order=1, dimRange=1)
+pressure = pressureSpace.interpolate(0,name="pressure")
+rhs      = pressureSpace.interpolate(0,name="rhs")
+
+u    = TrialFunction(pressureSpace)
+phi  = TestFunction(pressureSpace)
+x    = SpatialCoordinate(pressureSpace)
+n    = FacetNormal(pressureSpace)
+
+form = inner(grad(u),grad(phi)) * dx - inner(rhs, phi) * dx
+
+dbc  = DirichletBC(pressureSpace,[ 0 ])
+pressureScheme = galerkin([form == 0, dbc], solver="cg",
+                           parameters={"newton.linear.verbose":True,
+                                       "newton.verbose":True} )
+
+# project into rt space
+velocitySpace = raviartThomas(gridView,order=1,dimRange=1)
+
+## projection seems to be buggy
+transportVelocity = velocitySpace.interpolate([0,0],name="velocity")
+
+Model = problem( transportVelocity )
 Stepper = femdgStepper(order=3)
 
 # create discrete function space
-space = dgonb( Model.domain, order=3, dimRange=Model.dimRange)
+space = dgonb( gridView, order=2, dimRange=Model.dimRange)
 # operator = femDGOperator(Model, space, limiter="scaling", threading=True)
 operator = femDGOperator(Model, space, limiter=None, threading=True)
 stepper  = Stepper(operator)
@@ -200,6 +200,21 @@ operator.applyLimiter( u_h )
 vtk = Model.domain.sequencedVTK("Chemical_highK", subsampling=1, pointdata=[u_h])
 vtk() # output initial solution
 
+
+def updateVelocity():
+    rhsFct = lambda t,x: Model.rhs(t,x,u_h)
+
+    # update right hand side
+    rhs = pressureSpace.interpolate( rhsFct )
+    # re-compute pressure
+    pressureScheme.solve(target=pressure)
+
+    # Darcy velocity
+    velocity = -1./Model.mu * Model.K * grad(pressure[0])
+
+    # project into rt space
+    transportVelocity = velocitySpace.interpolate(velocity)
+
 t        = 0
 tcount   = 0
 saveStep = 0.001 # Model.endTime/100
@@ -208,6 +223,8 @@ while t < Model.endTime:
 
     # compute new pressure
     # TODO, update pressure here
+
+    updateVelocity()
 
     operator.setTime(t)
     dt = stepper(u_h)
