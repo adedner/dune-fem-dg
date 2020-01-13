@@ -192,6 +192,7 @@ space = dgonb( Model.domain, order=3, dimRange=Model.dimRange)
 # operator = femDGOperator(Model, space, limiter="scaling", threading=True)
 operator = femDGOperator(Model, space, limiter=None, threading=True)
 stepper  = Stepper(operator)
+
 # create and initialize solution
 u_h = space.interpolate(Model.initial, name='u_h')
 operator.applyLimiter( u_h )
@@ -204,6 +205,10 @@ tcount   = 0
 saveStep = 0.001 # Model.endTime/100
 saveTime = saveStep
 while t < Model.endTime:
+
+    # compute new pressure
+    # TODO, update pressure here
+
     operator.setTime(t)
     dt = stepper(u_h)
     t += dt
