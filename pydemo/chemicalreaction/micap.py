@@ -24,18 +24,17 @@ def problem(V):
         dt_ = 10*(t_end - t_start) / nt  # time step (s)
         # t_values = np.arange(t_start, t_end + dt_, dt_)
         #t_values = np.linspace(t_start, t_end, nt)
-        t = Constant(t_start)  # time variable
+        t = Constant(t_start, "time")  # time variable
 
         # reaction, diffusion and other coefficients
         # K   = dune.ufl.Constant(10.0, "reactionRate")
-        eps = Constant(0.01, "diffusionRate")
         # dt = dune.ufl.Constant(0.01, "timeStep")
         # t  = dune.ufl.Constant(0., "timeStep")
-        phi_crit = Constant(0.1)
+        phi_crit = 0.1
         # K = Constant(1.0e-12) * ((phi - phi_crit) / (phi0 - phi_crit)) ** 3  #
-        rhoc = Constant(2710)  # density calcite
-        Mb = Constant(1.0)  # Molar mass suspended biomass
-        Mc = Constant(0.100)  # Molar mass calcite
+        rhoc = 2710  # density calcite
+        Mb = 1.0  # Molar mass suspended biomass
+        Mc = 0.1  # Molar mass calcite
 
         Mc_rhoc = Mc / rhoc
 
@@ -56,7 +55,7 @@ def problem(V):
         #
         # Dispersivity (constant):
         #
-        D_mol = Constant(1.587e-9)  # molecular diffusion
+        D_mol = 1.587e-9  # molecular diffusion
         alpha_long = 0.01  # longitudinal dispersivity
         # CONSTANT
         # D_mech = Constant(1e-6)
@@ -67,8 +66,8 @@ def problem(V):
 
         kub = 0.01
         kurease = 706.7
-        ke = Constant(kub * kurease)
-        Ku = Constant(355)  # Ku = KU * rho_w = 0.355 * 1e3
+        ke = kub * kurease
+        Ku = 355  # Ku = KU * rho_w = 0.355 * 1e3
 
         # attachment
         ka = 8.51e-7
@@ -76,21 +75,21 @@ def problem(V):
         # fu=0
         # Biomass
         # From Johannes
-        b0 = Constant(3.18e-7)  # decay rate coeff.
-        c_attach = Constant(4e-6)  # unspecific attachment rate
+        b0 = 3.18e-7  # decay rate coeff.
+        c_attach = 4e-6  # unspecific attachment rate
 
 
         # Biomass
         # From Johannes
-        b0 = Constant(3.18e-7)  # decay rate coeff.
+        b0 = 3.18e-7  # decay rate coeff.
 
         ## ufl expression for
 
         # pressure = [ -sin(2*pi*(x[0]-0.5)*(x[1]-0.5)) ]
-        K = Constant(1.0e-12)
+        K = 1.0e-12
 
         # Misc. other parameters
-        mu = Constant(0.0008)  # viscosity of water
+        mu = 0.0008  # viscosity of water
 
         transportVelocity = V
 
@@ -109,13 +108,12 @@ def problem(V):
 
         # right hand side for pressure equation
         def pressureRHS(U):
-            def rhs(t,x):
-                phi, cu, cb = Model.toPrim( U )
-                qu   = Model.ke * phi * Model.Mb * cb * cu / (Model.Ku + cu )
-                hour = t / Model.secperhour
-                # TODO fix hours here
-                Qw_t = conditional( hour > 25., conditional( hour < 45., Model.Qw, 0), 0 )
-            return rhs
+            phi, cu, cb = Model.toPrim( U )
+            qu   = Model.ke * phi * Model.Mb * cb * cu / (Model.Ku + cu )
+            hour = Model.t / Model.secperhour
+            # TODO fix hours here
+            Qw_t = conditional( hour > 25., conditional( hour < 45., Model.Qw, 0), 0 )
+            return as_vector([ qu + Qw_t ])
 
         def S_s(t,x,U,DU): # or S_s for a stiff source
             phi, cu, cb = Model.toPrim( U )
@@ -191,7 +189,8 @@ space = dgonb( gridView, order=2, dimRange=Model.dimRange)
 # create and initialize solution
 u_h = space.interpolate(Model.initial, name='u_h')
 
-form = inner(grad(u),grad(phi)) * dx - inner(Model.pressureRHS(u_h), phi) * dx
+form = inner(grad(u),grad(phi)) * dx - inner(rhs, phi) * dx
+#        Model.pressureRHS(u_h), phi) * dx
 pressureScheme = galerkin([form == 0, dbc], solver="cg",
                            parameters={"newton.linear.verbose":True,
                                        "newton.verbose":True} )
@@ -206,11 +205,10 @@ vtk = gridView.sequencedVTK("Chemical_highK", subsampling=1, pointdata=[u_h])
 vtk() # output initial solution
 
 
-def updateVelocity():
-    rhsFct = lambda t,x: Model.rhs(t,x,u_h)
-
+def updateVelocity( t ):
+    Model.t.value = t
     # update right hand side
-    rhs = pressureSpace.interpolate( rhsFct, "pressure" )
+    rhs.interpolate( Model.pressureRHS( u_h ) )
     # re-compute pressure
     pressureScheme.solve(target=pressure)
 
@@ -218,7 +216,7 @@ def updateVelocity():
     velocity = -1./Model.mu * Model.K * grad(pressure[0])
 
     # project into rt space
-    transportVelocity = velocitySpace.interpolate(velocity)
+    transportVelocity.interpolate( velocity )
 
 t        = 0
 tcount   = 0
@@ -229,7 +227,7 @@ while t < Model.endTime:
     # compute new pressure
     # TODO, update pressure here
 
-    updateVelocity()
+    updateVelocity( t )
 
     operator.setTime(t)
     dt = stepper(u_h)

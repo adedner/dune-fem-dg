@@ -97,6 +97,7 @@ def problem():
     Model.endTime=10
     Model.name="chemical"
     return Model
+    # end def problem
 
 Model = problem()
 Stepper = femdgStepper(order=3)
