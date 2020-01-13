@@ -108,10 +108,14 @@ def problem(V):
             return U[0], U[1] * U[0], U[2] * U[0]
 
         # right hand side for pressure equation
-        def pRHS(t,x,U):
-            phi, cu, cb = Model.toPrim( U )
-            qu   = Model.ke * phi * Model.Mb * cb * cu / (Model.Ku + cu )
-            return as_vector([ qu * Model.Mc_rhoc ])
+        def pressureRHS(U):
+            def rhs(t,x):
+                phi, cu, cb = Model.toPrim( U )
+                qu   = Model.ke * phi * Model.Mb * cb * cu / (Model.Ku + cu )
+                hour = t / Model.secperhour
+                # TODO fix hours here
+                Qw_t = conditional( hour > 25., conditional( hour < 45., Model.Qw, 0), 0 )
+            return rhs
 
         def S_s(t,x,U,DU): # or S_s for a stiff source
             phi, cu, cb = Model.toPrim( U )
@@ -171,13 +175,8 @@ phi  = TestFunction(pressureSpace)
 x    = SpatialCoordinate(pressureSpace)
 n    = FacetNormal(pressureSpace)
 
-form = inner(grad(u),grad(phi)) * dx - inner(rhs, phi) * dx
 
 dbc  = DirichletBC(pressureSpace,[ 0 ])
-pressureScheme = galerkin([form == 0, dbc], solver="cg",
-                           parameters={"newton.linear.verbose":True,
-                                       "newton.verbose":True} )
-
 # project into rt space
 velocitySpace = raviartThomas(gridView,order=1,dimRange=1)
 
@@ -185,19 +184,25 @@ velocitySpace = raviartThomas(gridView,order=1,dimRange=1)
 transportVelocity = velocitySpace.interpolate([0,0],name="velocity")
 
 Model = problem( transportVelocity )
-Stepper = femdgStepper(order=3)
 
 # create discrete function space
 space = dgonb( gridView, order=2, dimRange=Model.dimRange)
-# operator = femDGOperator(Model, space, limiter="scaling", threading=True)
-operator = femDGOperator(Model, space, limiter=None, threading=True)
-stepper  = Stepper(operator)
 
 # create and initialize solution
 u_h = space.interpolate(Model.initial, name='u_h')
-operator.applyLimiter( u_h )
 
-vtk = Model.domain.sequencedVTK("Chemical_highK", subsampling=1, pointdata=[u_h])
+form = inner(grad(u),grad(phi)) * dx - inner(Model.pressureRHS(u_h), phi) * dx
+pressureScheme = galerkin([form == 0, dbc], solver="cg",
+                           parameters={"newton.linear.verbose":True,
+                                       "newton.verbose":True} )
+
+Stepper = femdgStepper(order=3)
+
+operator = femDGOperator(Model, space, limiter=None, threading=True)
+operator.applyLimiter( u_h )
+stepper  = Stepper(operator)
+
+vtk = gridView.sequencedVTK("Chemical_highK", subsampling=1, pointdata=[u_h])
 vtk() # output initial solution
 
 
@@ -205,7 +210,7 @@ def updateVelocity():
     rhsFct = lambda t,x: Model.rhs(t,x,u_h)
 
     # update right hand side
-    rhs = pressureSpace.interpolate( rhsFct )
+    rhs = pressureSpace.interpolate( rhsFct, "pressure" )
     # re-compute pressure
     pressureScheme.solve(target=pressure)
 
