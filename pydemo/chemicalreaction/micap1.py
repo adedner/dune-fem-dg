@@ -92,6 +92,7 @@ class Model:
     phi0 = 0.2
     cu0  = 0
     cb0  = 0
+    initial = as_vector([phi0, cu0, cb0])
 
     ### Model functions ###
     def toPrim(U):
@@ -156,12 +157,10 @@ class Model:
         #phi, cu, cb = Model.toPrim( U )
         # U should be positive
         #return conditional( phi>=0,1,0)*conditional(cu>=0,1,0)*conditional(cb>=0,1,0)
-        return conditional(U[0]>=0,1,0)*conditional(U[1]>=0,1,0)*conditional(U[2]>=0,1,0)
+        return conditional(U[0]>1e-10,1,0)*conditional(U[1]>=0,1,0)*conditional(U[2]>=0,1,0)
     def dirichletValue(t,x,u):
-        return as_vector(Model.dimRange*[0])
+        return Model.initial
     boundary = {1: dirichletValue}
-
-    initial = as_vector([phi0, cu0, cb0])
     endTime = 250 * secperhour
     name = "micap"
 
@@ -171,7 +170,7 @@ pressureScheme = galerkin(Model.pressureForm(), solver="cg",
                           parameters={"newton.linear.verbose":True,
                                       "newton.verbose":True} )
 operator = femDGOperator(Model, space, limiter=None, threading=True)
-stepper = femdgStepper(order=3, rkType="IMEX")(operator) # Andreas: move away from 'EX'?
+stepper = femdgStepper(order=3, rkType="EX")(operator) # Andreas: move away from 'EX'?
 
 u_h.interpolate(Model.initial)
 operator.applyLimiter( u_h )
@@ -203,7 +202,7 @@ while t < Model.endTime:
 
     print("### Compute advection-diffusion ###")
     operator.setTime(t)
-    dt = stepper(u_h)
+    dt = stepper(u_h, dt=0.1)
     t += dt
     tcount += 1
     # check that solution is meaningful
@@ -217,7 +216,7 @@ while t < Model.endTime:
         # but that is not set for IMEX
         print('[',tcount,']','dt = ', dt, 'time = ',t,
                 'dtEst = ',operator.timeStepEstimate,
-                'elements = ',Model.domain.size(0), flush=True )
+                'elements = ',gridView.size(0), flush=True )
         vtk()
         saveTime += saveStep
 
