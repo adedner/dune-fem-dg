@@ -643,7 +643,8 @@ namespace Fem
       reconstruct_(false),
       admissibleFunctions_( getAdmissibleFunctions() ),
       usedAdmissibleFunctions_( admissibleFunctions_ ),
-      counter_( 0 )
+      counter_( 0 ),
+      computeTime_( 0 )
     {
       if( Parameter :: verbose () )
       {
@@ -662,7 +663,7 @@ namespace Fem
 
     //! Destructor
     virtual ~LimitDGPass() {
-      std::cout << "~LimitDGPass: op calls " << counter_ << std::endl;
+      std::cout << "~LimitDGPass: op calls " << counter_ << " T_l = " << computeTime_ << std::endl;
     }
 
     //! return default face quadrature order
@@ -785,6 +786,7 @@ namespace Fem
         // finalize
         finalize(arg, dest);
         ++counter_;
+        computeTime_ += timer.elapsed();
       }
       else
       {
@@ -2039,6 +2041,7 @@ namespace Fem
     mutable std::vector< GradientType > gradients_;
 
     mutable int counter_;
+    mutable double computeTime_;
 
   }; // end DGLimitPass
 
