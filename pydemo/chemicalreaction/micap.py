@@ -15,6 +15,11 @@ from dune.grid import reader
 def problem(V):
 
     class Model:
+        dimRange = 3 # three unknowns: (phi, phi cu, phi cb)^T
+
+        # dimension of domain
+        dim = V.space.dimDomain
+
         # Set up time
         secperhour = 3600
         t = Constant(t_start, "time")  # time variable
@@ -75,10 +80,6 @@ def problem(V):
         mu = 0.0008  # viscosity of water
 
         transportVelocity = V
-
-        dimRange = 3 # three unknowns: (phi, phi cu, phi cb)^T
-
-        dim = V.space.dimDomain # TODO extract from domain
 
         ### initial ###
         phi0 = 0.2
