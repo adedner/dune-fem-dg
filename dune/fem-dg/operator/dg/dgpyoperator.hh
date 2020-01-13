@@ -130,14 +130,19 @@ namespace Fem
 
     /// Methods from SpaceOperatorInterface ////
 
-    bool hasLimiter() const { return explOperator_.hasLimiter(); }
+    bool hasLimiter() const
+    {
+      // make sure full operator and explicit operator have the same state on limiter
+      assert( fullOperator_.hasLimiter() == explOperator_.hasLimiter() );
+      return fullOperator_.hasLimiter();
+    }
 
     /** \copydoc SpaceOperatorInterface::limit */
     void limit (const DestinationType& arg, DestinationType& dest) const
     {
       if( hasLimiter() )
       {
-        explOperator_.limit( arg, dest );
+        fullOperator_.limit( arg, dest );
       }
     }
 
@@ -152,7 +157,7 @@ namespace Fem
     //// End Methods from SpaceOperatorInterface /////
 
   protected:
-    const DiscreteFunctionSpaceType&            space_;
+    const DiscreteFunctionSpaceType&      space_;
 
     std::tuple<>                          extra_;
     ProblemType                           problem_;

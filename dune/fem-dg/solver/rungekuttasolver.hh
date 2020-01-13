@@ -506,7 +506,8 @@ namespace Fem
           tpPtr_->next();
 
         // apply Limiter to make solution physical (only when tpPtr_ was set)
-        if( explicitOperator_.hasLimiter() )
+        // first check if explicitSolver is set (IMEX case)
+        if( explicitSolver_ && explicitOperator_.hasLimiter() )
           explicitOperator_.applyLimiter( U );
         else if ( operator_.hasLimiter() )
           operator_.applyLimiter( U );
