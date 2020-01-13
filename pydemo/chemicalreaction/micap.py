@@ -17,23 +17,10 @@ def problem(V):
     class Model:
         # Set up time
         secperhour = 3600
-        t_start_hour = 0
-        t_start = t_start_hour * secperhour  # start (s)
-        t_end_hour = 250  # (h)
-        t_end = t_end_hour * secperhour  # (s)
-        nt_hour = 36  # 12 time steps per hour
-        nt = nt_hour * (t_end_hour - t_start_hour)  # time steps total
-        dt_ = 10*(t_end - t_start) / nt  # time step (s)
-        # t_values = np.arange(t_start, t_end + dt_, dt_)
-        #t_values = np.linspace(t_start, t_end, nt)
         t = Constant(t_start, "time")  # time variable
 
         # reaction, diffusion and other coefficients
-        # K   = dune.ufl.Constant(10.0, "reactionRate")
-        # dt = dune.ufl.Constant(0.01, "timeStep")
-        # t  = dune.ufl.Constant(0., "timeStep")
         phi_crit = 0.1
-        # K = Constant(1.0e-12) * ((phi - phi_crit) / (phi0 - phi_crit)) ** 3  #
         rhoc = 2710  # density calcite
         Mb = 1.0  # Molar mass suspended biomass
         Mc = 0.1  # Molar mass calcite
@@ -74,20 +61,14 @@ def problem(V):
         # attachment
         ka = 8.51e-7
 
-        # fu=0
         # Biomass
-        # From Johannes
         b0 = 3.18e-7  # decay rate coeff.
         c_attach = 4e-6  # unspecific attachment rate
 
 
         # Biomass
-        # From Johannes
         b0 = 3.18e-7  # decay rate coeff.
 
-        ## ufl expression for
-
-        # pressure = [ -sin(2*pi*(x[0]-0.5)*(x[1]-0.5)) ]
         K = 1.0e-12
 
         # Misc. other parameters
