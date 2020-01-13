@@ -305,7 +305,6 @@ namespace Fem
                                      const T& circumEstimate,
                                      const RangeType& u ) const
     {
-      // return AdditionalType :: diffusionTimeStep( local.entity(), local.quadraturePoint(), circumEstimate, u );
       return diffusion_.diffusionTimeStep( local.entity(), local.quadraturePoint(), circumEstimate, u );
     }
 
@@ -368,7 +367,6 @@ namespace Fem
 #ifndef NDEBUG
       const bool isFluxBnd =
 #endif
-      // AdditionalType::boundaryFlux(id, time(), local.entity(), local.quadraturePoint(), normal, uLeft, gLeft);
       advection_.boundaryFlux(id, time(), local.entity(), local.quadraturePoint(), normal, uLeft, gLeft);
       gLeft *= len;
       assert( isFluxBnd );
@@ -401,7 +399,6 @@ namespace Fem
 #ifndef NDEBUG
       const bool isFluxBnd =
 #endif
-      // AdditionalType::diffusionBoundaryFlux(id, time(), local.entity(), local.quadraturePoint(), normal, uLeft, jacLeft, gLeft);
       diffusion_.diffusionBoundaryFlux(id, time(), local.entity(), local.quadraturePoint(), normal, uLeft, jacLeft, gLeft);
       gLeft *= len;
       assert( isFluxBnd );
@@ -418,7 +415,6 @@ namespace Fem
       // TODO: add a max speed for the diffusion time step control
       // this needs to be added in diffusionTimeStep
       assert( hasAdvection );
-      // advspeed = AdditionalType::maxSpeed( time(), local.entity(), local.quadraturePoint(), unitNormal, u );
       advspeed = advection_.maxSpeed( time(), local.entity(), local.quadraturePoint(), unitNormal, u );
       totalspeed = advspeed;
     }
@@ -433,7 +429,6 @@ namespace Fem
     inline DomainType velocity (const LocalEvaluation& local,
                                 RangeType& u) const
     {
-      // return AdditionalType :: velocity( time(), local.entity(), local.quadraturePoint(), u );
       return advection_.velocity( time(), local.entity(), local.quadraturePoint(), u );
     }
 
@@ -446,7 +441,6 @@ namespace Fem
                           const RangeType& u,
                           DomainType& velocity) const
     {
-      // velocity = AdditionalType :: velocity( time(), en, x, u );
       velocity = advection_.velocity( time(), en, x, u );
     }
 
@@ -462,7 +456,6 @@ namespace Fem
                          const DomainType& x,
                          const RangeType& u) const
     {
-      // return AdditionalType :: physical( entity, x, u ) > 0;
       return advection_.physical( entity, x, u ) > 0;
     }
 
@@ -474,7 +467,6 @@ namespace Fem
                              RangeType& u ) const
     {
       // nothing to be done here for this test case
-      // AdditionalType :: adjustAverageValue( entity, xLocal, u );
       advection_.adjustAverageValue( entity, xLocal, u );
     }
 
@@ -486,7 +478,6 @@ namespace Fem
                      const RangeType& uRight,
                      RangeType& jump) const
     {
-      // jump = AdditionalType :: jump( it, x, uLeft, uRight );
       jump = advection_.jump( it, x, uLeft, uRight );
     }
 
@@ -498,7 +489,6 @@ namespace Fem
                                      const RangeType& uRight,
                                      RangeType& indicator) const
     {
-      // indicator = AdditionalType :: jump( it, x, uLeft, uRight );
       indicator = advection_.jump( it, x, uLeft, uRight );
     }
 
