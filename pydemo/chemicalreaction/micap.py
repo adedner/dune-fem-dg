@@ -40,8 +40,6 @@ class Model:
 
     Mc_rhoc = Mc / rhoc
 
-    #outflowVeldirich = conditional(x[0]>-0.3,1.,0.) * conditional(x[1]>-0.3,1.,0.) * conditional(x[0]<0.3,1.,0.) * conditional(x[1]<0.3,1.,0.)
-
     # Well
     Qp = 1.25e-3
     Qw = Qp
@@ -71,13 +69,11 @@ class Model:
     ke = kub * kurease
     Ku = 355  # Ku = KU * rho_w = 0.355 * 1e3
 
-    # attachment
-    ka = 8.51e-7
+    # unspecific attachment rate
+    ka = 4e-6
 
     # Biomass
     b0 = 3.18e-7  # decay rate coeff.
-    c_attach = 4e-6  # unspecific attachment rate
-
 
     # Biomass
     b0 = 3.18e-7  # decay rate coeff.
@@ -133,8 +129,8 @@ class Model:
         qb = cb * ( phi * ( Model.b0 + Model.ka) + qc * Model.Mc_rhoc )
 
         hour = t / Model.secperhour
-        Qu_t = conditional( hour > 25., conditional( hour < 45., Model.Qcu, 0), 0 )
-        Qb_t = conditional( hour < 20., Model.Qcb, 0 )
+        Qu_t = inlet(x) * conditional( hour > 25., conditional( hour < 45., Model.Qcu, 0), 0 )
+        Qb_t = inlet(x) * conditional( hour < 20., Model.Qcb, 0 )
         return as_vector([ -qu * Model.Mc_rhoc,
                            -qu + Qu_t,
                            -qb + Qb_t
@@ -142,7 +138,7 @@ class Model:
     def F_c(t,x,U):
         phi, cu, cb = Model.toPrim(U)
         # first flux should be zero since porosity is simply an ODE
-        return as_matrix([ Model.dimDomain*[0], # [*(Model.velocity(t,x,U) *  0)],
+        return as_matrix([ Model.dimDomain*[0],
                            [*(Model.velocity(t,x,U) * cu)],
                            [*(Model.velocity(t,x,U) * cb)]
                          ])
@@ -172,7 +168,7 @@ operator = femDGOperator(Model, space, limiter=None, threading=True)
 pressureScheme = galerkin(Model.pressureForm( operator._t ), solver="cg",
                           parameters={"newton.linear.verbose":True,
                                       "newton.verbose":True} )
-stepper = femdgStepper(order=3, rkType="EX")(operator) # Andreas: move away from 'EX'?
+stepper = femdgStepper(order=3, rkType="IM")(operator) # Andreas: move away from 'EX'?
 
 u_h.interpolate(Model.initial)
 operator.applyLimiter( u_h )
@@ -203,7 +199,7 @@ while t < Model.endTime:
 
     print("### Compute advection-diffusion ###")
     operator.setTime(t)
-    dt = stepper(u_h, dt=1)
+    dt = stepper(u_h, dt=300)
     t += dt
     tcount += 1
     # check that solution is meaningful
