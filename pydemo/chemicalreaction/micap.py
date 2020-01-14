@@ -31,7 +31,6 @@ class Model:
     # Set up time
     secperhour = 3600
     # Andreas: what is t_start? t = Constant(t_start, "time")  # time variable
-    t = Constant(0, "time")  # time variable
 
     # reaction, diffusion and other coefficients
     phi_crit = 0.1
@@ -111,18 +110,17 @@ class Model:
         return -1./Model.mu * Model.K * grad(p[0])
 
     # form for pressure equation
-    def pressureForm():
+    def pressureForm( time ):
         u    = TrialFunction(pressureSpace)
         v    = TestFunction(pressureSpace)
-        # x    = SpatialCoordinate(pressureSpace)
+        x    = SpatialCoordinate(pressureSpace)
         # n    = FacetNormal(pressureSpace)
         dbc  = DirichletBC(pressureSpace,[ 0 ])
         phi, cu, cb = Model.toPrim( u_h )
         qu   = Model.ke * phi * Model.Mb * cb * cu / (Model.Ku + cu )
-        hour = Model.t / Model.secperhour
-        # TODO fix hours here
-        Qw1_t = conditional( hour > 20., conditional( hour < 25., Model.Qw, 0), 0 )
-        Qw2_t = conditional( hour > 45., conditional( hour < 60., Model.Qw, 0), 0 )
+        hour = time / Model.secperhour
+        Qw1_t = Model.inlet( x ) * conditional( hour > 20., conditional( hour < 25., Model.Qw, 0), 0 )
+        Qw2_t = Model.inlet( x ) * conditional( hour > 45., conditional( hour < 60., Model.Qw, 0), 0 )
         pressureRhs = as_vector([ qu + Qw1_t + Qw2_t ])
         return [ inner(grad(u),grad(v)) * dx == inner(pressureRhs, v) * dx,
                  dbc ]
@@ -170,10 +168,10 @@ class Model:
 
 #### main program ####
 
-pressureScheme = galerkin(Model.pressureForm(), solver="cg",
+operator = femDGOperator(Model, space, limiter=None, threading=True)
+pressureScheme = galerkin(Model.pressureForm( operator._t ), solver="cg",
                           parameters={"newton.linear.verbose":True,
                                       "newton.verbose":True} )
-operator = femDGOperator(Model, space, limiter=None, threading=True)
 stepper = femdgStepper(order=3, rkType="EX")(operator) # Andreas: move away from 'EX'?
 
 u_h.interpolate(Model.initial)
@@ -183,8 +181,7 @@ vtk = gridView.sequencedVTK("micap", subsampling=1, celldata=[transportVelocity]
 vtk() # output initial solution
 
 # TODO t and Model.t
-def updateVelocity( t ):
-    Model.t.value = t
+def updateVelocity( ):
     # re-compute pressure
     pressureScheme.solve(target=pressure)
     # Darcy velocity
@@ -200,13 +197,13 @@ saveTime = saveStep
 while t < Model.endTime:
 
     print("### Compute Darcy velocity ###")
-    updateVelocity( t )
+    updateVelocity()
 
     vtk()
 
     print("### Compute advection-diffusion ###")
     operator.setTime(t)
-    dt = stepper(u_h, dt=0.1)
+    dt = stepper(u_h, dt=1)
     t += dt
     tcount += 1
     # check that solution is meaningful
