@@ -103,6 +103,10 @@ class Model:
         # ( phi, cu, cb ) --> (phi, phi cu, phi cb)
         return U[0], U[1] * U[0], U[2] * U[0]
 
+    # circle of 0.3 around center
+    def inlet( x ):
+        return conditional(sqrt( x[0]*x[0] + x[1]*x[1] ) < 0.3, 1., 0. )
+
     def darcyVelocity( p ):
         return -1./Model.mu * Model.K * grad(p[0])
 
