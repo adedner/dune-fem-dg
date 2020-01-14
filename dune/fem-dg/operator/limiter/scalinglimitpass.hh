@@ -404,11 +404,14 @@ namespace Fem
     //! Some management (thread parallel version)
     void finalize(const ArgumentType& arg, DestinationType& dest, const bool doCommunicate) const
     {
+      /*
       if( limitedElements_ > 0 )
       {
-         std::cout << "ScalingLimitPass: Elements limited = " << limitedElements_
-                   << std::endl;
+
+        std::cout << "ScalingLimitPass: Elements limited = " << limitedElements_
+                  << std::endl;
       }
+      */
 
       if( doCommunicate )
       {
