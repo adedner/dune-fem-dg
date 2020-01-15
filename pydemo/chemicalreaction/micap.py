@@ -5,23 +5,40 @@ from dune.grid import structuredGrid, cartesianDomain
 from dune.alugrid import aluCubeGrid as cubeGrid
 from dune.alugrid import aluSimplexGrid as simplexGrid
 from dune.fem.view import adaptiveLeafGridView as adaptive
-from dune.fem.space import lagrange, dgonb, raviartThomas
+from dune.fem.space import lagrange, dgonbhp, raviartThomas
 from dune.fem.scheme import galerkin
 from dune.femdg import femDGOperator
 from dune.femdg.rk import femdgStepper
 from dune.grid import reader
+from dune.fem import parameter
+
+import timeit
+
+parameter.append({"fem.verboserank": 0})
 
 #gridView = cubeGrid(cartesianDomain([0,0],[1,1],[50,50]))
 domain = (reader.gmsh, "circlemeshquad.msh")
 gridView = adaptive( grid=cubeGrid(constructor=domain, dimgrid=2) )
+gridView.hierarchicalGrid.globalRefine(4)
+
+#domain = (reader.gmsh, "circlemesh.msh")
+#gridView = adaptive( grid=simplexGrid(constructor=domain, dimgrid=2) )
+#gridView.hierarchicalGrid.globalRefine(2)
+
+print("Grid size = ", gridView.size(0))
+
 
 dimRange          = 3
-space             = dgonb( gridView, order=2, dimRange = dimRange)
+space             = dgonbhp( gridView, order=2, dimRange = dimRange)
 u_h               = space.interpolate(dimRange*[0], name='u_h')
-pressureSpace     = lagrange(gridView, order=1, dimRange=1)
+pressureSpace     = lagrange(gridView, order=1, dimRange=1, storage='istl')
 pressure          = pressureSpace.interpolate([1e-7],name="pressure") # Andreas: why not zero?
 velocitySpace     = raviartThomas(gridView,order=1,dimRange=1)
+
+print("Velocity projection")
+start = time.time()
 transportVelocity = velocitySpace.interpolate([0,0],name="velocity")
+print("Done.", time.time()-start)
 
 # Model
 class Model:
@@ -41,12 +58,10 @@ class Model:
     Mc_rhoc = Mc / rhoc
 
     # Well
-    Qp = 1.25e-3
-    Qw = Qp
-    # source_p = Well(mesh=mesh, Q=Qp, degree=1)  # UNCOMMENT
-    # Pressure (natural)
-    # p0_in = Constant(1.25e7)
+    #Qw = 1.14e5
+    Qw = 1.25e-3
 
+    Qp = 1.25e-3
     cu_in = 2000
     Qcu = Qp * cu_in
 
@@ -58,8 +73,10 @@ class Model:
     D_mol = 1.587e-9  # molecular diffusion
     alpha_long = 0.01  # longitudinal dispersivity
     # CONSTANT
-    # D_mech = Constant(1e-6)
-    D = D_mol
+    D_mech = 1e-6
+    #D = D_mol
+    powPhi = 1.4 # approx pow( 0.2, 1./3.)
+    D = D_mech * powPhi
 
     # FULL TENSOR
     # I = Identity(dim)
@@ -71,9 +88,6 @@ class Model:
 
     # unspecific attachment rate
     ka = 4e-6
-
-    # Biomass
-    b0 = 3.18e-7  # decay rate coeff.
 
     # Biomass
     b0 = 3.18e-7  # decay rate coeff.
@@ -100,7 +114,7 @@ class Model:
 
     # circle of 0.3 around center
     def inlet( x ):
-        return conditional(sqrt( x[0]*x[0] + x[1]*x[1] ) < 0.3, 1., 0. )
+        return conditional(sqrt( x[0]*x[0] + x[1]*x[1] ) < 0.4, 1., 0. )
 
     def darcyVelocity( p ):
         return -1./Model.mu * Model.K * grad(p[0])
@@ -110,12 +124,11 @@ class Model:
         u    = TrialFunction(pressureSpace)
         v    = TestFunction(pressureSpace)
         x    = SpatialCoordinate(pressureSpace)
-        # n    = FacetNormal(pressureSpace)
-        dbc  = DirichletBC(pressureSpace,[ 0 ])
+        dbc  = DirichletBC(pressureSpace,[ 1e-7 ])
         phi, cu, cb = Model.toPrim( u_h )
         qu   = Model.ke * phi * Model.Mb * cb * cu / (Model.Ku + cu )
         hour = time / Model.secperhour
-        Qw1_t = Model.inlet( x ) * conditional( hour > 20., conditional( hour < 25., Model.Qw, 0), 0 )
+        Qw1_t = Model.inlet( x ) * conditional( hour > 10., conditional( hour < 25., Model.Qw, 0), 0 )
         Qw2_t = Model.inlet( x ) * conditional( hour > 45., conditional( hour < 60., Model.Qw, 0), 0 )
         pressureRhs = as_vector([ qu + Qw1_t + Qw2_t ])
         return [ inner(grad(u),grad(v)) * dx == inner(pressureRhs, v) * dx,
@@ -129,8 +142,8 @@ class Model:
         qb = cb * ( phi * ( Model.b0 + Model.ka) + qc * Model.Mc_rhoc )
 
         hour = t / Model.secperhour
-        Qu_t = inlet(x) * conditional( hour > 25., conditional( hour < 45., Model.Qcu, 0), 0 )
-        Qb_t = inlet(x) * conditional( hour < 20., Model.Qcb, 0 )
+        Qu_t = Model.inlet(x) * conditional( hour > 25., conditional( hour < 45., Model.Qcu, 0), 0 )
+        Qb_t = Model.inlet(x) * conditional( hour < 20., Model.Qcb, 0 )
         return as_vector([ -qu * Model.Mc_rhoc,
                            -qu + Qu_t,
                            -qb + Qb_t
@@ -146,11 +159,11 @@ class Model:
         return abs(dot(Model.velocity(t,x,U),n))
     def velocity(t,x,U):
         return transportVelocity
+
     def F_v(t,x,U,DU):
-        # eps * phi^(1/3) * grad U
-        return Model.D * pow(U[0], 1./3.) * DU
+        return Model.D * DU
     def maxDiffusion(t,x,U):
-       return Model.D * pow(U[0], 1./3.)
+       return Model.D
     def physical(U):
         #phi, cu, cb = Model.toPrim( U )
         # U should be positive
@@ -164,19 +177,34 @@ class Model:
 
 #### main program ####
 
-operator = femDGOperator(Model, space, limiter=None, threading=True)
-pressureScheme = galerkin(Model.pressureForm( operator._t ), solver="cg",
-                          parameters={"newton.linear.verbose":True,
-                                      "newton.verbose":True} )
-stepper = femdgStepper(order=3, rkType="IM")(operator) # Andreas: move away from 'EX'?
+print("Start main program")
 
+odeParam={"fem.ode.verbose": "none",
+          "fem.solver.verbose": True,
+          "fem.solver.newton.verbose": True,
+          "fem.solver.newton.linear.verbose": True,
+          "fem.solver.newton.tolerance": 1e-6,
+          "fem.solver.newton.linear.tolerance": 1e-8,
+          "fem.solver.method": "gmres",
+          "fem.solver.gmres.restart": 50,
+          "dgdiffusionflux.theoryparameters": 1}
+parameter.append( odeParam )
+
+#operator = femDGOperator(Model, space, limiter='scaling', diffusionScheme = 'cdg2', threading=True)
+operator = femDGOperator(Model, space, limiter='scaling', diffusionScheme = 'ip', threading=True)
+pressureScheme = galerkin(Model.pressureForm( operator._t ), solver="cg",
+                          parameters={"newton.linear.verbose":False,
+                                      "newton.verbose":False,
+                                      "istl.preconditioning.method": "ilu"} )
+stepper = femdgStepper(order=1, rkType="IMEX")(operator)
 u_h.interpolate(Model.initial)
 operator.applyLimiter( u_h )
 
-vtk = gridView.sequencedVTK("micap", subsampling=1, celldata=[transportVelocity], pointdata=[pressure,u_h])
+#vtk = gridView.sequencedVTK("micap", subsampling=1, celldata=[transportVelocity], pointdata=[pressure,u_h])
+vtk = gridView.sequencedVTK("micap", pointdata=[pressure,u_h])
+#vtk = gridView.sequencedVTK("micap", celldata=[transportVelocity], pointdata=[pressure,u_h])
 vtk() # output initial solution
 
-# TODO t and Model.t
 def updateVelocity( ):
     # re-compute pressure
     pressureScheme.solve(target=pressure)
@@ -187,19 +215,26 @@ def updateVelocity( ):
 
 t        = 0
 tcount   = 0
-saveStep = 0.001 # Model.endTime/100
+saveStep = Model.secperhour # Model.endTime/100
 saveTime = saveStep
 
+print("Start time loop #el = ", gridView.size(0))
+
 while t < Model.endTime:
-
-    print("### Compute Darcy velocity ###")
-    updateVelocity()
-
-    vtk()
-
-    print("### Compute advection-diffusion ###")
+    # update operator time
     operator.setTime(t)
-    dt = stepper(u_h, dt=300)
+
+    if t / Model.secperhour > 9.5:
+        updateVelocity()
+
+    # measure CPU time
+    start = time.time()
+
+    dt = stepper(u_h, dt=360)
+
+    runTime = time.time()-start
+    print("Stepper used ", runTime)
+
     t += dt
     tcount += 1
     # check that solution is meaningful
@@ -208,10 +243,10 @@ while t < Model.endTime:
         print('ERROR: dofs invalid t =', t,flush=True)
         print('[',tcount,']','dt = ', dt, 'time = ',t, flush=True )
         sys.exit(1)
-    if 1: # t > saveTime:
+    if t > saveTime:
         # TODO: issue with time step estimate: here the 'fullPass' is used
         # but that is not set for IMEX
-        print('[',tcount,']','dt = ', dt, 'time = ',t,
+        print('[',tcount,']','dt = ', dt, 'time = ',t / Model.secperhour,
                 'dtEst = ',operator.timeStepEstimate,
                 'elements = ',gridView.size(0), flush=True )
         vtk()
