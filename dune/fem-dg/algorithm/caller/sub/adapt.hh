@@ -193,7 +193,7 @@ namespace Fem
      *
      * \param[in] initialAdapt true if this is the initial adaptation (needed for adaptation handler)
      */
-    void estimateMark( DiscreteFunctionType& solution, const double dt, const bool initialAdapt = false )
+    void estimateMark( const DiscreteFunctionType& solution, const double dt, const bool initialAdapt = false )
     {
       if( adaptive() )
       {
