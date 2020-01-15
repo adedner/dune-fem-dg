@@ -57,8 +57,7 @@ namespace Fem
 
       virtual double endTime () const
       {
-        DUNE_THROW(InvalidStateException,"EmptyProblem::endTime: this method should not be called");
-        return 0.0;
+        return ParameterType::getValue< double >( "femdg.stepper.endtime" );
       }
 
       void bg ( const DomainType&, RangeType& ) const
@@ -69,14 +68,14 @@ namespace Fem
       //! methods for gradient based indicator
       bool twoIndicators() const
       {
-        DUNE_THROW(InvalidStateException,"EmptyProblem::endTime: this method should not be called");
+        //DUNE_THROW(InvalidStateException,"EmptyProblem::endTime: this method should not be called");
         return false ;
       }
 
       //! methods for gradient based indicator
       double indicator1( const DomainType& xgl, const RangeType& u ) const
       {
-        DUNE_THROW(InvalidStateException,"EmptyProblem::endTime: this method should not be called");
+        //DUNE_THROW(InvalidStateException,"EmptyProblem::endTime: this method should not be called");
         // use density as indicator
         return u[ 0 ];
       }

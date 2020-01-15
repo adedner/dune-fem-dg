@@ -53,7 +53,7 @@ namespace Fem
     {
       const std::string names[] = { "shockind", "apost", "grad" };
       // default value is gradient
-      return ParameterType::getEnum( keyPrefix_ + "markingStrategy", names, 2 );
+      return ParameterType::getEnum( keyPrefix_ + "markingStrategy", names, 1 );
     }
 
     //! simulation end time

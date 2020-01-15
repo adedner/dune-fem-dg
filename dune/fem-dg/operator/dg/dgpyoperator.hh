@@ -185,7 +185,7 @@ namespace Fem
     mutable double                        fixedTimeStep_ ;
     mutable bool                          initialized_;
 
-    std::unique_ptr< AdaptIndicatorType > adaptIndicator_;
+    mutable std::unique_ptr< AdaptIndicatorType > adaptIndicator_;
   };
 
 } // end namespace Fem
