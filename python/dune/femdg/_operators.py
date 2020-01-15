@@ -281,13 +281,16 @@ def femDGOperator(Model, space,
 
     _, domainFunctionIncludes, domainFunctionType, _, _, _ = space.storage
     base = 'Dune::Fem::SpaceOperatorInterface< ' + domainFunctionType + '>'
+
+    estimateMark = Method('estimateMark', '''[]( DuneType &self, const typename DuneType::DestinationType &u, const double dt) { self.estimateMark(u, dt); }''' );
+
     if parameters is not None:
-        op = load(includes, typeName,
+        op = load(includes, typeName, estimateMark,
                  baseClasses = [base],
                  preamble=writer.writer.getvalue()).\
                  Operator( space, advModel, diffModel, parameters=parameters )
     else:
-        op = load(includes, typeName,
+        op = load(includes, typeName, estimateMark,
                  baseClasses = [base],
                  preamble=writer.writer.getvalue()).\
                  Operator( space, advModel, diffModel )
