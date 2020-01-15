@@ -9,8 +9,8 @@ from dune.fem.space import lagrange, dgonbhp, raviartThomas
 from dune.fem.scheme import galerkin
 from dune.femdg import femDGOperator
 from dune.femdg.rk import femdgStepper
-from dune.grid import reader
-from dune.fem import parameter
+from dune.grid import reader, Marker
+from dune.fem import parameter, adapt
 
 import timeit
 
@@ -19,20 +19,40 @@ parameter.append({"fem.verboserank": 0})
 #gridView = cubeGrid(cartesianDomain([0,0],[1,1],[50,50]))
 domain = (reader.gmsh, "circlemeshquad.msh")
 gridView = adaptive( grid=cubeGrid(constructor=domain, dimgrid=2) )
-gridView.hierarchicalGrid.globalRefine(4)
+
+hgrid = gridView.hierarchicalGrid
+hgrid.globalRefine(1)
 
 #domain = (reader.gmsh, "circlemesh.msh")
 #gridView = adaptive( grid=simplexGrid(constructor=domain, dimgrid=2) )
 #gridView.hierarchicalGrid.globalRefine(2)
 
+def mark( element ):
+    center = element.geometry.center
+    print("Called Mark", center)
+    if (sqrt(center[0]*center[0] + center[1]*center[1])) < 10.:
+        print ("Return refine")
+        return Marker.refine
+    else:
+        return Marker.keep
+
 print("Grid size = ", gridView.size(0))
 
+# initial adapt
+for i in range(0,4):
+    hgrid.mark(mark)
+    hgrid.adapt()
+    hgrid.loadBalance()
+
+gridView = adaptive( grid=hgrid )
+
+print("Grid size = ", gridView.size(0))
 
 dimRange          = 3
 space             = dgonbhp( gridView, order=2, dimRange = dimRange)
 u_h               = space.interpolate(dimRange*[0], name='u_h')
 pressureSpace     = lagrange(gridView, order=1, dimRange=1, storage='istl')
-pressure          = pressureSpace.interpolate([1e-7],name="pressure") # Andreas: why not zero?
+pressure          = pressureSpace.interpolate([0],name="pressure") # Andreas: why not zero?
 velocitySpace     = raviartThomas(gridView,order=1,dimRange=1)
 
 print("Velocity projection")
@@ -114,7 +134,7 @@ class Model:
 
     # circle of 0.3 around center
     def inlet( x ):
-        return conditional(sqrt( x[0]*x[0] + x[1]*x[1] ) < 0.4, 1., 0. )
+        return conditional(( x[0]*x[0] + x[1]*x[1] ) < 0.4*0.4, 1., 0. )
 
     def darcyVelocity( p ):
         return -1./Model.mu * Model.K * grad(p[0])
@@ -124,12 +144,12 @@ class Model:
         u    = TrialFunction(pressureSpace)
         v    = TestFunction(pressureSpace)
         x    = SpatialCoordinate(pressureSpace)
-        dbc  = DirichletBC(pressureSpace,[ 1e-7 ])
+        dbc  = DirichletBC(pressureSpace,[ 0 ])
         phi, cu, cb = Model.toPrim( u_h )
         qu   = Model.ke * phi * Model.Mb * cb * cu / (Model.Ku + cu )
         hour = time / Model.secperhour
-        Qw1_t = Model.inlet( x ) * conditional( hour > 10., conditional( hour < 25., Model.Qw, 0), 0 )
-        Qw2_t = Model.inlet( x ) * conditional( hour > 45., conditional( hour < 60., Model.Qw, 0), 0 )
+        Qw1_t = Model.inlet( x ) * conditional( hour > 20., conditional( hour < 35., Model.Qw, 0), 0 )
+        Qw2_t = Model.inlet( x ) * conditional( hour > 37., conditional( hour < 50., Model.Qw, 0), 0 )
         pressureRhs = as_vector([ qu + Qw1_t + Qw2_t ])
         return [ inner(grad(u),grad(v)) * dx == inner(pressureRhs, v) * dx,
                  dbc ]
@@ -142,7 +162,7 @@ class Model:
         qb = cb * ( phi * ( Model.b0 + Model.ka) + qc * Model.Mc_rhoc )
 
         hour = t / Model.secperhour
-        Qu_t = Model.inlet(x) * conditional( hour > 25., conditional( hour < 45., Model.Qcu, 0), 0 )
+        Qu_t = Model.inlet(x) * conditional( hour > 35., conditional( hour < 37., Model.Qcu, 0), 0 )
         Qb_t = Model.inlet(x) * conditional( hour < 20., Model.Qcb, 0 )
         return as_vector([ -qu * Model.Mc_rhoc,
                            -qu + Qu_t,
@@ -161,6 +181,7 @@ class Model:
         return transportVelocity
 
     def F_v(t,x,U,DU):
+        # TODO remove diffusion for phi, comp 0
         return Model.D * DU
     def maxDiffusion(t,x,U):
        return Model.D
@@ -180,13 +201,20 @@ class Model:
 print("Start main program")
 
 odeParam={"fem.ode.verbose": "none",
-          "fem.solver.verbose": True,
+          "fem.solver.verbose": False,
           "fem.solver.newton.verbose": True,
-          "fem.solver.newton.linear.verbose": True,
+          "fem.solver.newton.linear.verbose": False,
           "fem.solver.newton.tolerance": 1e-6,
           "fem.solver.newton.linear.tolerance": 1e-8,
-          "fem.solver.method": "gmres",
+          "fem.solver.method": "cg",
           "fem.solver.gmres.restart": 50,
+          "fem.adaptation.finestLevel": 5,
+          "fem.adaptation.coarsestLevel": 3,
+          "fem.adaptation.method": "callback",
+          "fem.adaptation.refineTolerance": 0.5,
+          "fem.adaptation.coarsenPercent": 0.05,
+          "femdg.stepper.endtime": Model.endTime,
+          "fem.adaptation.markingStrategy": "grad",
           "dgdiffusionflux.theoryparameters": 1}
 parameter.append( odeParam )
 
@@ -200,18 +228,16 @@ stepper = femdgStepper(order=1, rkType="IMEX")(operator)
 u_h.interpolate(Model.initial)
 operator.applyLimiter( u_h )
 
-#vtk = gridView.sequencedVTK("micap", subsampling=1, celldata=[transportVelocity], pointdata=[pressure,u_h])
-vtk = gridView.sequencedVTK("micap", pointdata=[pressure,u_h])
+vtk = gridView.sequencedVTK("micap", subsampling=1, celldata=[transportVelocity], pointdata=[pressure,u_h])
+#vtk = gridView.sequencedVTK("micap", pointdata=[pressure,u_h])
 #vtk = gridView.sequencedVTK("micap", celldata=[transportVelocity], pointdata=[pressure,u_h])
 vtk() # output initial solution
 
 def updateVelocity( ):
     # re-compute pressure
     pressureScheme.solve(target=pressure)
-    # Darcy velocity
-    velocity = Model.darcyVelocity(pressure)
     # project into rt space
-    transportVelocity.interpolate( velocity )
+    transportVelocity.interpolate( Model.darcyVelocity(pressure) )
 
 t        = 0
 tcount   = 0
@@ -231,6 +257,12 @@ while t < Model.endTime:
     start = time.time()
 
     dt = stepper(u_h, dt=360)
+
+    # compute indicator and mark cells
+    # operator.estimateMark( u_h, dt )
+
+    # adapt grid
+    # adapt([u_h,pressure,transportVelocity])
 
     runTime = time.time()-start
     print("Stepper used ", runTime)
