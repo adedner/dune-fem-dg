@@ -2,6 +2,7 @@ from ufl import *
 from dune.ufl import Space
 from dune.femdg.testing import Parameters
 from dune.generator import algorithm
+import numpy
 
 def CompressibleEuler(dim, gamma):
     class Model:
@@ -28,26 +29,30 @@ def CompressibleEuler(dim, gamma):
         # interface methods
         def F_c(t,x,U):
             rho, v, p = Model.toPrim(U)
+            rE = U[dim+1]
             def P(i,j):
                 return p if i == j else 0
-
-            rE = U[dim+1]
-
             res = as_matrix([
-                    # density
-                    [ rho*v[i] for i in range(0,dim)], # rho * v
-                    # momentum
+                    # density: rho * v
+                    [ rho*v[i] for i in range(0,dim)],
+                    # momentum: v x v + pI
                   *([ [ rho*v[j]*v[i] + P(j,i) for i in range(0,dim) ] for j in range(0,dim)]),
-                    # energy
-                    [ (rE+p)*v[i] for i in range(0,dim)] ] ) # (rE +p) * v
+                    # energy: (rE +p) * v
+                    [ (rE+p)*v[i] for i in range(0,dim)] ] )
             return res
+#            v = numpy.array(v)
+#            res = numpy.vstack([ rho*v,
+#                                 rho*numpy.outer(v,v + p*numpy.eye(dim)),
+#                                 (rE+p)*v ])
+#            return as_matrix(res)
+
         def maxLambda(t,x,U,n):
             rho, v, p = Model.toPrim(U)
             return abs(dot(v,n)) + sqrt(gamma*p/rho)
         def velocity(t,x,U):
             return Model.velo(U)
         def physical(U):
-            return conditional( (U[0]>1e-8), conditional( Model.rhoeps(U) > 1e-8 , 1, 0 ), 0 )
+            return conditional( (U[0]<1e-8), 0, conditional( Model.rhoeps(U) > 1e-8 , 1, 0 ) )
         def jump(U,V):
             pL = Model.pressure(U)
             pR = Model.pressure(V)
@@ -85,7 +90,6 @@ def CompressibleEuler(dim, gamma):
                               u[4] ]
                 else:
                     return [ u[0], -n[2]*u[3], u[2], n[2]*u[1], u[4] ]
-
 
     return Model
 
@@ -131,8 +135,9 @@ def sod(dim=2,gamma=1.4):
     x = SpatialCoordinate(space.cell())
     Model = CompressibleEulerReflection(dim,gamma)
     Model.initial=riemanProblem( Model, x[0], x0, [1,0,0,1], [0.125,0,0,0.1])
-    Model.domain=[[0, 0], [1, 0.25], [256, 64]]
+    #Model.domain=[[0, 0], [1, 0.25], [256, 64]]
     #Model.domain=[[0, 0], [1, 0.25], [128, 32]]
+    Model.domain=[[0, 0], [1, 0.25], [64, 16]]
     Model.endTime=0.15
     #def u(t,x):
     #    val = algorithm.load('sod','sod.hh', t, x0, x )
