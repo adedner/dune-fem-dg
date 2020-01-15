@@ -66,13 +66,6 @@ namespace Fem
       }
 
       //! methods for gradient based indicator
-      bool twoIndicators() const
-      {
-        //DUNE_THROW(InvalidStateException,"EmptyProblem::endTime: this method should not be called");
-        return false ;
-      }
-
-      //! methods for gradient based indicator
       double indicator1( const DomainType& xgl, const RangeType& u ) const
       {
         //DUNE_THROW(InvalidStateException,"EmptyProblem::endTime: this method should not be called");
