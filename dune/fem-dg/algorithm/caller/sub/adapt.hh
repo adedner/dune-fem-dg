@@ -89,18 +89,30 @@ namespace Fem
     typedef typename GridPartType::GridType                                                    GridType;
     typedef AdaptationParameters                                                               AdaptationParametersType;
 
+    // time provider
+    typedef Fem::TimeProviderBase TimeProviderType;
+
     typedef AdaptationHandler< GridType, typename DiscreteFunctionSpaceType::FunctionSpaceType >
                                                                                                AdaptationHandlerType;
     typedef typename IndicatorType::ExtraParameterTupleType                                    ExtraParameterTupleType;
 
     template< class Model, class ExtraParameterTupleImp >
     AdaptIndicator( DiscreteFunctionType& sol, Model& model, const ExtraParameterTupleImp& tuple, const std::string keyPrefix = "" )
-    : sol_( sol ),
+    : AdaptIndicator( sol.space(), model, tuple, keyPrefix )
+    {
+      sol_ = &sol;
+    }
+
+    template< class Model, class ExtraParameterTupleImp >
+    AdaptIndicator( const DiscreteFunctionSpaceType& space, Model& model, const ExtraParameterTupleImp& tuple, const std::string keyPrefix = "" )
+    : sol_( nullptr ),
+      space_( space ),
       adaptationHandler_( nullptr ),
       keyPrefix_( keyPrefix ),
       adaptParam_( AdaptationParametersType( ParameterKey::generate( "", "fem.adaptation." ) ) ),
-      indicator_( const_cast<GridPartType&>(sol_.gridPart()), model, tuple, keyPrefix_ ),
-      estimator_( sol_.space(), model.problem(), adaptParam_ )
+      indicator_( const_cast<GridPartType&>(space.gridPart()), model, tuple, keyPrefix_ ),
+      estimator_( space, model.problem(), adaptParam_ ),
+      timeProvider_( nullptr )
     {}
 
     /**
@@ -143,9 +155,10 @@ namespace Fem
       // create adaptation handler in case of apost indicator
       if( adaptive() )
       {
+        timeProvider_ = &tp;
         if( !adaptationHandler_ && adaptParam_.aposterioriIndicator() )
         {
-          adaptationHandler_.reset( new AdaptationHandlerType( const_cast<GridType&>(sol_.gridPart().grid()), tp ) );
+          adaptationHandler_.reset( new AdaptationHandlerType( const_cast<GridType&>(space_.gridPart().grid()) ) );
           indicator_.setAdaptation( *adaptationHandler_ );
         }
       }
@@ -166,20 +179,36 @@ namespace Fem
      */
     void estimateMark( const bool initialAdapt = false )
     {
+      if( sol_ )
+      {
+        const double dt = timeProvider_ ? timeProvider_->deltaT() : 0;
+        estimateMark( *sol_, dt, initialAdapt );
+      }
+      else
+        DUNE_THROW(InvalidStateException,"AdaptIndicator: sol_ pointer is not set");
+    }
+
+    /**
+     * \brief estimate the local error and mark all entities
+     *
+     * \param[in] initialAdapt true if this is the initial adaptation (needed for adaptation handler)
+     */
+    void estimateMark( DiscreteFunctionType& solution, const double dt, const bool initialAdapt = false )
+    {
       if( adaptive() )
       {
         if( useIndicator() )
         {
           //clear old values of indicator
-          adaptationHandler_->resetStatus();
+          adaptationHandler_->resetStatus( dt );
 
-          indicator_.evaluateOnly( sol_ );
+          indicator_.evaluateOnly( solution );
           // mark all entities depending on error
           adaptationHandler_->markEntities( initialAdapt );
         }
         else if( useGradientIndicator() )
         {
-          estimator_.estimateAndMark( sol_ );
+          estimator_.estimateAndMark( solution );
         }
       }
     }
@@ -246,12 +275,15 @@ namespace Fem
       return adaptParam_.gradientBasedIndicator();
     }
 
-    DiscreteFunctionType&                         sol_;
+    DiscreteFunctionType*                         sol_;
+    const DiscreteFunctionSpaceType&              space_;
     std::unique_ptr< AdaptationHandlerType >      adaptationHandler_;
     const std::string                             keyPrefix_;
     const AdaptationParametersType                adaptParam_;
     IndicatorType                                 indicator_;
     EstimatorType                                 estimator_;
+
+    TimeProviderType*                             timeProvider_;
   };
 
 

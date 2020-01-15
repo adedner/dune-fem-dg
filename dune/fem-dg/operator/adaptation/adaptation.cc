@@ -13,7 +13,6 @@ namespace Fem
   template< class GridImp, class FunctionSpace >
   AdaptationHandler< GridImp, FunctionSpace >::
   AdaptationHandler ( GridType &grid,
-                      TimeProviderType &timeProvider,
                       const AdaptationParameters &param )
     : ComputeMinMaxVolume( GridPartType( grid ),
                            param.coarsestLevel( DGFGridInfo< GridType >::refineStepsForHalf() ),
@@ -24,7 +23,6 @@ namespace Fem
     , mpAccess_( MPIHelper::getCommunicator() )
 #endif
     , indicator_( grid_, 0, 0.0 )
-    , timeProvider_( timeProvider )
     , globalTolerance_( param.refinementTolerance() )
     , coarsenTheta_( param.coarsenPercentage() )
     // make intial error count as 2.5 percent of the total error
@@ -32,6 +30,7 @@ namespace Fem
     , globalNumElements_( 0 )
     , localNumElements_( 0 )
     , endTime_( param.endTime() )
+    , deltaT_( 0 )
     , verbose_( Fem::Parameter::verbose() && param.verbose() )
   {
     const bool verboseOutput = Fem::Parameter::verbose();
@@ -63,13 +62,13 @@ namespace Fem
     : grid_( other.grid_ )
     , gridPart_( grid_ )
     , indicator_( other.indicator_ )
-    , timeProvider_( other.timeProvider_ )
     , globalTolerance_( other.globalTolerance_ )
     , coarsenTheta_( other.coarsenTheta_ )
     , initialTheta_( other.initialTheta_ )
     , globalNumElements_( other.globalNumElements_ )
     , localNumElements_( other.localNumElements_ )
     , endTime_( other.endTime_ )
+    , deltaT_( other.deltaT_ )
     , verbose_( other.verbose_ )
   {}
 
@@ -143,7 +142,7 @@ namespace Fem
   addToLocalIndicator ( LocalIndicatorDataType &indicator,
                         const FullRangeType &error, const double h ) const
   {
-    //const double dt = timeProvider_.deltaT();
+    //const double dt = deltaT();
     //const double factor = ( h + dt  ) * dt;
     //indicator += (factor * error.two_norm());
     indicator += error.two_norm();
@@ -258,7 +257,7 @@ namespace Fem
   AdaptationHandler< GridImp, FunctionSpace >::
   getLocalInTimeTolerance () const
   {
-    double dt = timeProvider_.deltaT();
+    double dt = deltaT();
     return (1. - initialTheta_) * globalTolerance_ * globalTolerance_* (dt / endTime_);
   }
 
@@ -269,7 +268,7 @@ namespace Fem
   {
     assert( singleThreadMode() );
     const double globalNumberElements = globalNumberOfElements();
-    const double dt = timeProvider_.deltaT();
+    const double dt = deltaT();
     const double localInTimeTol = initialTheta_ * globalTolerance_ * globalTolerance_* (dt / endTime_);
     const double localTol = localInTimeTol / globalNumberElements;
 
@@ -380,7 +379,7 @@ namespace Fem
   template< class GridImp, class FunctionSpace >
   void
   AdaptationHandler< GridImp, FunctionSpace >::
-  resetStatus ()
+  resetStatus ( const double dt )
   {
     assert( singleThreadMode() );
 
@@ -394,6 +393,9 @@ namespace Fem
     // output new number of elements
     if( verbose() )
       std::cout << "   Adaptation: Num El = " << globalNumElements_ << "\n";
+
+    // set new dt if provided (default = 0)
+    setDeltaT( dt );
   }
 
   //! count number of overall leaf entities

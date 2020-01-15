@@ -18,6 +18,7 @@
 #include <dune/fem-dg/operator/dg/primaloperator.hh>
 #include <dune/fem-dg/models/modelwrapper.hh>
 #include <dune/fem-dg/misc/algorithmcreatorselector.hh>
+#include <dune/fem-dg/operator/adaptation/estimator.hh>
 
 #if HAVE_DUNE_FEMPY
 #include <dune/fempy/quadrature/fempyquadratures.hh>
@@ -89,6 +90,11 @@ namespace Fem
     typedef typename OperatorSelectorType :: ExplicitOperatorType  ExplicitOperatorType;
     typedef typename OperatorSelectorType :: ImplicitOperatorType  ImplicitOperatorType;
 
+    typedef DGAdaptationIndicatorOperator< OpTraits >                       IndicatorType;
+    typedef Estimator< DestinationType, typename ModelType::ProblemType >   GradientIndicatorType ;
+    typedef AdaptIndicator< IndicatorType, GradientIndicatorType >          AdaptIndicatorType;
+
+
     // solver selection, available fem, istl, petsc, ...
     typedef typename MatrixFreeSolverSelector< solverId, symmetric > :: template LinearInverseOperatorType< DiscreteFunctionSpaceType, DiscreteFunctionSpaceType >  LinearSolverType ;
 
@@ -104,7 +110,8 @@ namespace Fem
         model_( advectionModel, diffusionModel, problem_ ),
         fullOperator_( space.gridPart(), model_, extra_, name(), parameter ),
         explOperator_( space.gridPart(), model_, extra_, name(), parameter ),
-        implOperator_( space.gridPart(), model_, extra_, name(), parameter )
+        implOperator_( space.gridPart(), model_, extra_, name(), parameter ),
+        adaptIndicator_() //  space, model_, extra_ ) // TODO pass parameters
     {
     }
 
@@ -126,6 +133,16 @@ namespace Fem
     void operator()( const DestinationType& arg, DestinationType& dest ) const
     {
       fullOperator_( arg, dest );
+    }
+
+    //! evaluation indicator and mark grid
+    void estimateMark( const DestinationType& arg, const double dt ) const
+    {
+      if( ! adaptIndicator_ )
+      {
+        adaptIndicator_.reset( new AdaptIndicatorType( space_, model_, extra_ ) );
+      }
+      adaptIndicator_->estimateMark( arg, dt );
     }
 
     /// Methods from SpaceOperatorInterface ////
@@ -167,6 +184,8 @@ namespace Fem
     mutable ImplicitOperatorType          implOperator_;
     mutable double                        fixedTimeStep_ ;
     mutable bool                          initialized_;
+
+    std::unique_ptr< AdaptIndicatorType > adaptIndicator_;
   };
 
 } // end namespace Fem
