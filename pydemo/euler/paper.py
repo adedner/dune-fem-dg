@@ -1,3 +1,4 @@
+import math
 from ufl import *
 from dune.grid import structuredGrid
 from dune.fem.space import dgonb
@@ -31,20 +32,31 @@ class Model:
         rho, v, p = Model.toPrim(U)
         return abs(dot(v,n)) + sqrt(Model.gamma*p/rho)
 
+    def velocity(t,x,U):
+        _, v ,_ = Model.toPrim(U)
+        return v
+    def physical(U):
+        rho, v, p = Model.toPrim(U)
+        kin = dot(v,v) * rho / 2
+        return conditional( (rho>1e-8), conditional( U[3] > kin , 1, 0 ), 0 )
+    def jump(U,V):
+        _,_, pL = Model.toPrim(U)
+        _,_, pR = Model.toPrim(V)
+        return (pL - pR)/(0.5*(pL + pR))
+
 # Part 1: basic set up and time loop - no limiter and fixed time step
 #         using constant initial data
-gridView = structuredGrid([-1,0],[1,0.1],[200,5])
+gridView = structuredGrid([-1,-1],[1,1],[100,100])
 space = dgonb( gridView, order=3, dimRange=4)
-operator = femDGOperator(Model, space, limiter="minmod")
+operator = femDGOperator(Model, space, limiter=None)
 stepper  = femdgStepper(order=3, operator=operator)
 u_h = space.interpolate([1.4,0,0,1], name='u_h')
 t  = 0
 # don't show vtk in paper
 vtk = gridView.sequencedVTK("paperA", pointdata=[u_h])
-while t < 0.4:
-    vtk()
+while t < 0.1:
     operator.setTime(t)
-    t += stepper(u_h, dt=0.01)
+    t += stepper(u_h, dt=0.001)
 vtk()
 
 # Part 2: add limiter and methods for troubled cell indicator
@@ -52,27 +64,33 @@ def velocity(t,x,U):
     _, v ,_ = Model.toPrim(U)
     return v
 def physical(U):
-    rho, v, p = Model.toPrim(U)
-    kin = dot(v,v) * rho / 2
-    return conditional( (rho>1e-8), conditional( U[3] > kin , 1, 0 ), 0 )
+    rho, _, p = Model.toPrim(U)
+    return conditional( rho>1e-8, conditional( p>1e-8 , 1, 0 ), 0 )
 def jump(U,V):
     _,_, pL = Model.toPrim(U)
     _,_, pR = Model.toPrim(V)
     return (pL - pR)/(0.5*(pL + pR))
 # don't show the following lines just explain that the above method is added to the Model
-Model.velocity = velocity
-Model.physical = physical
-Model.jump     = jump
+# Model.velocity = velocity
+# Model.physical = physical
+# Model.jump     = jump
 
+parameters = {"femdg.limiter.admissiblefunctions": 1,
+              "femdg.limiter.tolerance": 1,
+              "femdg.limiter.epsilon": 1e-8}
 operator = femDGOperator(Model, space, limiter="MinMod")
-stepper  = femdgStepper(order=3, operator=operator)
+stepper  = femdgStepper(order=3, operator=operator, cfl=0.2,
+                        parameters=parameters)
 x = SpatialCoordinate(space)
-u_h.interpolate( conditional(x[0]<0,as_vector([1,0,0,2.5]),
-                                    as_vector([0.125,0,0,0.25])) )
+u_h.interpolate( conditional(dot(x,x)<0.1,as_vector([1,0,0,2.5]),
+                                          as_vector([0.125,0,0,0.25])) )
+operator.applyLimiter(u_h)
 t  = 0
 vtk = gridView.sequencedVTK("paperB", pointdata=[u_h])
 while t < 0.4:
     vtk()
+    assert not math.isnan( u_h.scalarProductDofs( u_h ) )
     operator.setTime(t)
     t += stepper(u_h)
+    print(t)
 vtk()
