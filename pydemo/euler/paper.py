@@ -25,30 +25,20 @@ class Model:
                   [(U[3]+p)*v[0], (U[3]+p)*v[1]] ] )
     # simple 'outflow' boundary conditions on all boundaries
     boundary = {range(1,5): lambda t,x,U: U}
-    # boundary = {range(1,5): lambda t,x,u,n: Model.F_c(t,x,u)*n}
 
     # interface method needed for LLF and time step control
     def maxLambda(t,x,U,n):
         rho, v, p = Model.toPrim(U)
         return abs(dot(v,n)) + sqrt(Model.gamma*p/rho)
 
-    def velocity(t,x,U):
-        _, v ,_ = Model.toPrim(U)
-        return v
-    def physical(U):
-        rho, v, p = Model.toPrim(U)
-        kin = dot(v,v) * rho / 2
-        return conditional( (rho>1e-8), conditional( U[3] > kin , 1, 0 ), 0 )
-    def jump(U,V):
-        _,_, pL = Model.toPrim(U)
-        _,_, pR = Model.toPrim(V)
-        return (pL - pR)/(0.5*(pL + pR))
+########################################################################
 
 # Part 1: basic set up and time loop - no limiter and fixed time step
 #         using constant initial data
-gridView = structuredGrid([-1,-1],[1,1],[100,100])
+gridView = structuredGrid([-1,-1],[1,1],[40,40])
 space = dgonb( gridView, order=3, dimRange=4)
 operator = femDGOperator(Model, space, limiter=None)
+print(operator.__module__)
 stepper  = femdgStepper(order=3, operator=operator)
 u_h = space.interpolate([1.4,0,0,1], name='u_h')
 t  = 0
@@ -71,16 +61,13 @@ def jump(U,V):
     _,_, pR = Model.toPrim(V)
     return (pL - pR)/(0.5*(pL + pR))
 # don't show the following lines just explain that the above method is added to the Model
-# Model.velocity = velocity
-# Model.physical = physical
-# Model.jump     = jump
+Model.velocity = velocity
+Model.physical = physical
+Model.jump     = jump
 
-parameters = {"femdg.limiter.admissiblefunctions": 1,
-              "femdg.limiter.tolerance": 1,
-              "femdg.limiter.epsilon": 1e-8}
 operator = femDGOperator(Model, space, limiter="MinMod")
-stepper  = femdgStepper(order=3, operator=operator, cfl=0.2,
-                        parameters=parameters)
+print(operator.__module__)
+stepper  = femdgStepper(order=3, operator=operator, cfl=0.2)
 x = SpatialCoordinate(space)
 u_h.interpolate( conditional(dot(x,x)<0.1,as_vector([1,0,0,2.5]),
                                           as_vector([0.125,0,0,0.25])) )
