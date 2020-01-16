@@ -24,6 +24,7 @@ class Model:
                   [(U[3]+p)*v[0], (U[3]+p)*v[1]] ] )
     # simple 'outflow' boundary conditions on all boundaries
     boundary = {range(1,5): lambda t,x,U: U}
+    # boundary = {range(1,5): lambda t,x,u,n: Model.F_c(t,x,u)*n}
 
     # interface method needed for LLF and time step control
     def maxLambda(t,x,U,n):
@@ -32,9 +33,9 @@ class Model:
 
 # Part 1: basic set up and time loop - no limiter and fixed time step
 #         using constant initial data
-gridView = structuredGrid([-1,0],[1,0.1],[50,5])
+gridView = structuredGrid([-1,0],[1,0.1],[200,5])
 space = dgonb( gridView, order=3, dimRange=4)
-operator = femDGOperator(Model, space, limiter=None)
+operator = femDGOperator(Model, space, limiter="minmod")
 stepper  = femdgStepper(order=3, operator=operator)
 u_h = space.interpolate([1.4,0,0,1], name='u_h')
 t  = 0
