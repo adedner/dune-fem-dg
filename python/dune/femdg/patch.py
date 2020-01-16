@@ -82,12 +82,13 @@ def uflExpr(Model,space,t):
         for id,f in limiterModifiedDict.items(): count += 1
         limitedDimRange = str(count)
     jump = None # TODO: see comment above
-    return velocity, maxSpeed, velocity, diffusionTimeStep, physical, jump,\
+    return maxSpeed, velocity, diffusionTimeStep, physical, jump,\
            boundaryAFlux, boundaryDFlux, boundaryValue, hasBoundaryValue
 
 def codeFemDg(self):
     code = self._code()
     code.append(AccessModifier("public"))
+    # TODO: why isn't this being used - see jump? Code duplication going on here...
     # velocity, maxSpeed, velocity, diffusionTimeStep, physical, jump,\
     #        boundaryAFlux,boundaryDFlux,boundaryValues,hasBoundaryValues = self._patchExpr
     space = self._space
@@ -99,14 +100,20 @@ def codeFemDg(self):
     n = FacetNormal(space.cell())
     x = SpatialCoordinate(space.cell())
 
+    # TODO come up with something better!
     hasGamma = getattr(Model,"gamma",None)
     code.append([Declaration(
                  Variable("constexpr bool", "hasGamma"), initializer=True if hasGamma else False,
                  static=True)])
     if hasGamma:
-        code.append([Declaration(
-                     Variable("constexpr double", "gamma"), initializer=Model.gamma(),
-                     static=True)])
+        try:
+            code.append([Declaration(
+                         Variable("constexpr double", "gamma"), initializer=Model.gamma(),
+                         static=True)])
+        except TypeError:
+            code.append([Declaration(
+                         Variable("constexpr double", "gamma"), initializer=Model.gamma,
+                         static=True)])
 
     predefined = {}
     spatial = Variable('const auto', 'y')
@@ -152,8 +159,8 @@ def codeFemDg(self):
             predefined=predefined)
 
     # QUESTION: should `physical` actually depend on x? Perhaps even t?
-    physical = getattr(Model,"physical",None)
-    if physical is not None:
+    physical = getattr(Model,"physical",True)
+    if not isinstance(physical,bool):
         physical = physical(u)
     generateMethod(code, physical,
             'double', 'physical',
@@ -188,6 +195,7 @@ def codeFemDg(self):
     hasDiffFlux = hasattr(Model,"F_v")
     #####################
     ## boundary treatment
+    # TODO make 'copy' boundary conditions the default?
     boundaryDict = getattr(Model,"boundary",{})
     boundaryAFlux = {}
     boundaryDFlux = {}

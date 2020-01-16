@@ -13,7 +13,11 @@ class FemDGStepper:
             self.rkScheme.setTimeStepSize(dt)
         self.rkScheme.solve(u)
         return self.rkScheme.deltaT()
-def femdgStepper(*,order=None,rkType=None,parameters={}):
+def femdgStepper(*,order=None,rkType=None,operator=None,cfl=None,parameters=True):
+    if parameters is True:
+        parameters = {}
+    elif parameters is False:
+        parameters = None
     def _femdgStepper(op,cfl=None):
         if parameters is not None:
             if not "fem.timeprovider.factor" in parameters:
@@ -36,7 +40,10 @@ def femdgStepper(*,order=None,rkType=None,parameters={}):
             if not "fem.ode.maxiterations" in parameters:
                 parameters["fem.ode.maxiterations"] = 100 # the default (16) seems to lead to very small time steps
         return FemDGStepper(op,parameters)
-    return _femdgStepper
+    if operator is None:
+        return _femdgStepper
+    else:
+        return _femdgStepper(operator,cfl)
 
 # Set up problem: L[baru+a*k] - k = 0
 class HelmholtzButcher:

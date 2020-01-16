@@ -7,6 +7,7 @@ logger = logging.getLogger(__name__)
 from dune.common.checkconfiguration import assertHave, preprocessorAssert, ConfigurationError
 
 from dune.generator import Constructor, Method
+from dune.common.hashit import hashIt
 from dune.fem.operator import load
 from dune.fem import parameter as parameterReader
 
@@ -89,7 +90,7 @@ from dune.femdg.patch import transform
 # (diffusionScheme = cdg2,br2,ip,nipg,...)
 def femDGOperator(Model, space,
         limiter="minmod", diffusionScheme = "cdg2", threading=False,
-        initialTime=0.0, parameters={}):
+        initialTime=0.0, parameters=None):
     virtualize = False
     import dune.create as create
 
@@ -112,12 +113,12 @@ def femDGOperator(Model, space,
 
     hasAdvFlux = hasattr(Model,"F_c")
     if hasAdvFlux:
-        advModel = inner(Model.F_c(t,x,u),grad(v))*dx
+        advModel = inner(Model.F_c(t,x,u),grad(v))*dx   # -div F_c v
     else:
         advModel = inner(t*grad(u-u),grad(v))*dx    # TODO: make a better empty model
     hasNonStiffSource = hasattr(Model,"S_ns")
     if hasNonStiffSource:
-        advModel += inner(as_vector(Model.S_ns(t,x,u,grad(u))),v)*dx
+        advModel += inner(as_vector(Model.S_ns(t,x,u,grad(u))),v)*dx   # (-div F_v + S_ns) * v
 
     hasDiffFlux = hasattr(Model,"F_v")
     if hasDiffFlux:
@@ -153,7 +154,53 @@ def femDGOperator(Model, space,
 
     ###'###############################################
     ### extra methods for limiter and time step control
-    struct = Struct('Additional', targs=['class FunctionSpace'])
+    ###################################################
+    ## choose details of discretization (i.e. fluxes)
+    ## default settings:
+    solverId     = "Dune::Fem::Solver::Enum::fem"
+    formId       = "Dune::Fem::Formulation::Enum::primal"
+    limiterId    = "Dune::Fem::AdvectionLimiter::Enum::limited"
+    limiterFctId = "Dune::Fem::AdvectionLimiterFunction::Enum::minmod"
+    advFluxId    = "Dune::Fem::AdvectionFlux::Enum::none"
+    diffFluxId   = "Dune::Fem::DiffusionFlux::Enum::none"
+
+    if hasDiffFlux:
+        diffFluxId = "Dune::Fem::DiffusionFlux::Enum::"+diffusionScheme
+
+    if hasAdvFlux:
+        # if dgadvectionflux.method has been selected, then use general flux,
+        # otherwise default to LLF flux
+        key = 'dgadvectionflux.method'
+        if parameters is not None and key in parameters.keys():
+            value = parameters["dgadvectionflux.method"]
+            # set parameter in dune-fem parameter container
+            # parameterReader.append( { key: value } )
+            if value.upper().find( 'LLF' ) >= 0:
+                advFluxId  = "Dune::Fem::AdvectionFlux::Enum::llf"
+            else:
+                if value.upper().find( 'EULER' ) >= 0:
+                    advFluxId  = "Dune::Fem::AdvectionFlux::Enum::euler_general"
+                else:
+                    advFluxId  = "Dune::Fem::AdvectionFlux::Enum::general"
+        else:
+            advFluxId  = "Dune::Fem::AdvectionFlux::Enum::llf"
+
+    if limiter.lower() == "unlimited":
+        limiterId = "Dune::Fem::AdvectionLimiter::Enum::unlimited"
+    elif limiter.lower() == "scaling":
+        limiterFctId = "Dune::Fem::AdvectionLimiterFunction::Enum::none"
+        limiterId = "Dune::Fem::AdvectionLimiter::Enum::scalinglimited"
+    # check for different limiter functions (default is minmod)
+    elif limiter.lower() == "superbee":
+        limiterFctId = "Dune::Fem::AdvectionLimiterFunction::Enum::superbee"
+    elif limiter.lower() == "vanleer":
+        limiterFctId = "Dune::Fem::AdvectionLimiterFunction::Enum::vanleer"
+    elif limiter.lower() != "minmod":
+        raise ValueError("limiter "+limiter+" not recognised")
+
+    signature = (advFluxId,diffusionScheme,threading,solverId,formId,limiterId,limiterFctId,advFluxId,diffFluxId,)
+    additionalClass = "Additional_"+hashIt(str(signature))
+    struct = Struct(additionalClass, targs=['class FunctionSpace'])
     struct.append(TypeAlias('DomainType','typename FunctionSpace::DomainType'))
     struct.append(TypeAlias('RangeType','typename FunctionSpace::RangeType'))
     struct.append(TypeAlias('JacobianRangeType','typename FunctionSpace::JacobianRangeType'))
@@ -194,50 +241,6 @@ def femDGOperator(Model, space,
         Variable("const bool", "threading"), initializer=threading,
         static=True)])
 
-    ###################################################
-    ## choose details of discretization (i.e. fluxes)
-    ## default settings:
-    solverId     = "Dune::Fem::Solver::Enum::fem"
-    formId       = "Dune::Fem::Formulation::Enum::primal"
-    limiterId    = "Dune::Fem::AdvectionLimiter::Enum::limited"
-    limiterFctId = "Dune::Fem::AdvectionLimiterFunction::Enum::minmod"
-    advFluxId    = "Dune::Fem::AdvectionFlux::Enum::none"
-    diffFluxId   = "Dune::Fem::DiffusionFlux::Enum::none"
-
-    if hasDiffFlux:
-        diffFluxId = "Dune::Fem::DiffusionFlux::Enum::"+diffusionScheme
-
-    if hasAdvFlux:
-        # if dgadvectionflux.method has been selected, then use general flux,
-        # otherwise default to LLF flux
-        key = 'dgadvectionflux.method'
-        if key in parameters.keys():
-            value = parameters["dgadvectionflux.method"]
-            # set parameter in dune-fem parameter container
-            # parameterReader.append( { key: value } )
-            if value.upper().find( 'LLF' ) >= 0:
-                advFluxId  = "Dune::Fem::AdvectionFlux::Enum::llf"
-            else:
-                if value.upper().find( 'EULER' ) >= 0:
-                    advFluxId  = "Dune::Fem::AdvectionFlux::Enum::euler_general"
-                else:
-                    advFluxId  = "Dune::Fem::AdvectionFlux::Enum::general"
-        else:
-            advFluxId  = "Dune::Fem::AdvectionFlux::Enum::llf"
-
-    if limiter.lower() == "unlimited":
-        limiterId = "Dune::Fem::AdvectionLimiter::Enum::unlimited"
-    elif limiter.lower() == "scaling":
-        limiterFctId = "Dune::Fem::AdvectionLimiterFunction::Enum::none"
-        limiterId = "Dune::Fem::AdvectionLimiter::Enum::scalinglimited"
-    # check for different limiter functions (default is minmod)
-    elif limiter.lower() == "superbee":
-        limiterFctId = "Dune::Fem::AdvectionLimiterFunction::Enum::superbee"
-    elif limiter.lower() == "vanleer":
-        limiterFctId = "Dune::Fem::AdvectionLimiterFunction::Enum::vanleer"
-    elif limiter.lower() != "minmod":
-        raise ValueError("limiter "+limiter+" not recognised")
-
     struct.append([Declaration(
         Variable("const Dune::Fem::Solver::Enum", "solverId = " + solverId),
         static=True)])
@@ -272,7 +275,7 @@ def femDGOperator(Model, space,
     includes += ["dune/fem/schemes/diffusionmodel.hh", "dune/fempy/parameter.hh"]
     includes += advModel._includes + diffModel._includes
 
-    additionalType = 'Additional< typename ' + spaceType + '::FunctionSpaceType >'
+    additionalType = additionalClass + '< typename ' + spaceType + '::FunctionSpaceType >'
 
     typeName = 'Dune::Fem::DGOperator< ' +\
             destinationType + ', ' +\
