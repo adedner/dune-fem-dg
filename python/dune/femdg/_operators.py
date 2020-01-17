@@ -116,11 +116,13 @@ def femDGOperator(Model, space,
         advModel = inner(Model.F_c(t,x,u),grad(v))*dx   # -div F_c v
     else:
         advModel = inner(t*grad(u-u),grad(v))*dx    # TODO: make a better empty model
-    hasNonStiffSource = hasattr(Model,"S_ns")
+    hasNonStiffSource = hasattr(Model,"S_expl")
     if hasNonStiffSource:
-        advModel += inner(as_vector(Model.S_ns(t,x,u,grad(u))),v)*dx   # (-div F_v + S_ns) * v
+        advModel += inner(as_vector(Model.S_expl(t,x,u,grad(u))),v)*dx   # (-div F_v + S_ns) * v
     else:
         hasNonStiffSource = hasattr(Model,"S_ns")
+        if hasNonStiffSource:
+           advModel += inner(as_vector(Model.S_ns(t,x,u,grad(u))),v)*dx   # (-div F_v + S_ns) * v
         print("Model.S_ns is deprecated. Use S_expl instead!")
 
     hasDiffFlux = hasattr(Model,"F_v")
@@ -129,12 +131,13 @@ def femDGOperator(Model, space,
     else:
         diffModel = inner(t*grad(u-u),grad(v))*dx   # TODO: make a better empty model
 
-
     hasStiffSource = hasattr(Model,"S_impl")
     if hasStiffSource:
-        diffModel += inner(as_vector(Model.S_s(t,x,u,grad(u))),v)*dx
+        diffModel += inner(as_vector(Model.S_impl(t,x,u,grad(u))),v)*dx
     else:
         hasStiffSource = hasattr(Model,"S_s")
+        if hasStiffSource:
+            diffModel += inner(as_vector(Model.S_impl(t,x,u,grad(u))),v)*dx
         print("Model.S_s is deprecated. Use S_impl instead!")
 
     advModel  = create.model("elliptic",space.grid, advModel,
