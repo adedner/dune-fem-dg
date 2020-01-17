@@ -35,7 +35,7 @@ def ShallowWater(topography,g):
         def jump(U,V):
             hL, hR = U[0], V[0]
             return (hL - hR)/(0.5*(hL + hR))
-        def S_expl(t,x,U,DU): # or S_impl for a stiff source
+        def S_e(t,x,U,DU): # or S_i for a stiff source
             return as_vector( [0, *(-U[0]*g*grad(topography(x))) ])
         boundary = {range(1,5): lambda t,x,u,n: Model.F_c(t,x,u)*n}
         # boundary = {range(1,5): lambda t,x,u: u}

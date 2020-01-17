@@ -116,9 +116,9 @@ def femDGOperator(Model, space,
         advModel = inner(Model.F_c(t,x,u),grad(v))*dx   # -div F_c v
     else:
         advModel = inner(t*grad(u-u),grad(v))*dx    # TODO: make a better empty model
-    hasNonStiffSource = hasattr(Model,"S_expl")
+    hasNonStiffSource = hasattr(Model,"S_e")
     if hasNonStiffSource:
-        advModel += inner(as_vector(Model.S_expl(t,x,u,grad(u))),v)*dx   # (-div F_v + S_ns) * v
+        advModel += inner(as_vector(Model.S_e(t,x,u,grad(u))),v)*dx   # (-div F_v + S_e) * v
     else:
         hasNonStiffSource = hasattr(Model,"S_ns")
         if hasNonStiffSource:
@@ -131,9 +131,9 @@ def femDGOperator(Model, space,
     else:
         diffModel = inner(t*grad(u-u),grad(v))*dx   # TODO: make a better empty model
 
-    hasStiffSource = hasattr(Model,"S_impl")
+    hasStiffSource = hasattr(Model,"S_i")
     if hasStiffSource:
-        diffModel += inner(as_vector(Model.S_impl(t,x,u,grad(u))),v)*dx
+        diffModel += inner(as_vector(Model.S_i(t,x,u,grad(u))),v)*dx
     else:
         hasStiffSource = hasattr(Model,"S_s")
         if hasStiffSource:

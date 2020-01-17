@@ -69,7 +69,7 @@ def problem():
         # domain, transportVelocity = computeVelocityCurl()
         domain, transportVelocity = computeVelocityGrad()
         dimRange = 3
-        def S_expl(t,x,U,DU): # or S_expl for a non stiff source
+        def S_e(t,x,U,DU): # or S_e for a non stiff source
             # sources
             f1 = conditional(dot(x-P1,x-P1) < RF**2, Q, 0)
             f2 = conditional(dot(x-P2,x-P2) < RF**2, Q, 0)

@@ -160,7 +160,7 @@ class Model:
         return [ inner(grad(u),grad(v)) * dx == inner(pressureRhs, v) * dx,
                  dbc ]
 
-    def S_impl(t,x,U,DU): # or S_impl for a stiff source
+    def S_i(t,x,U,DU): # or S_i for a stiff source
         phi, cu, cb = Model.toPrim( U )
 
         qu = Model.qu( phi, cu, cb )
