@@ -119,15 +119,23 @@ def femDGOperator(Model, space,
     hasNonStiffSource = hasattr(Model,"S_ns")
     if hasNonStiffSource:
         advModel += inner(as_vector(Model.S_ns(t,x,u,grad(u))),v)*dx   # (-div F_v + S_ns) * v
+    else:
+        hasNonStiffSource = hasattr(Model,"S_ns")
+        print("Model.S_ns is deprecated. Use S_expl instead!")
 
     hasDiffFlux = hasattr(Model,"F_v")
     if hasDiffFlux:
         diffModel = inner(Model.F_v(t,x,u,grad(u)),grad(v))*dx
     else:
         diffModel = inner(t*grad(u-u),grad(v))*dx   # TODO: make a better empty model
-    hasStiffSource = hasattr(Model,"S_s")
+
+
+    hasStiffSource = hasattr(Model,"S_impl")
     if hasStiffSource:
         diffModel += inner(as_vector(Model.S_s(t,x,u,grad(u))),v)*dx
+    else:
+        hasStiffSource = hasattr(Model,"S_s")
+        print("Model.S_s is deprecated. Use S_impl instead!")
 
     advModel  = create.model("elliptic",space.grid, advModel,
                       modelPatch=transform(Model,space,t,"Adv"),
