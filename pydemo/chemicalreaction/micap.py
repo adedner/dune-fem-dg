@@ -30,7 +30,7 @@ hgrid.globalRefine(1)
 def mark( element ):
     center = element.geometry.center
     print("Called Mark", center)
-    if (sqrt(center[0]*center[0] + center[1]*center[1])) < 10.:
+    if (sqrt(center[0]*center[0] + center[1]*center[1])) < 15.:
         print ("Return refine")
         return Marker.refine
     else:
@@ -79,10 +79,10 @@ class Model:
 
     # Well
     #Qw = 1.14e5
-    Qw = 1.25e-3
+    Qw = 1.25e-1
 
     Qp = 1.25e-3
-    cu_in = 2000
+    cu_in = 2000 # in the report 5000
     Qcu = Qp * cu_in
 
     cb_in = 0.01
@@ -96,7 +96,9 @@ class Model:
     D_mech = 1e-6
     #D = D_mol
     powPhi = 1.4 # approx pow( 0.2, 1./3.)
-    D = D_mech * powPhi
+    D = D_mech * powPhi # Constant( D_mech * powPhi, "D" )
+
+    #D.value = D_mech * powPhi
 
     # FULL TENSOR
     # I = Identity(dim)
@@ -113,9 +115,10 @@ class Model:
     b0 = 3.18e-7  # decay rate coeff.
 
     K = 1.0e-12
-
     # Misc. other parameters
     mu = 0.0008  # viscosity of water
+
+    K_mu = -1./mu * K
 
     ### initial ###
     phi0 = 0.2
@@ -137,7 +140,10 @@ class Model:
         return conditional(( x[0]*x[0] + x[1]*x[1] ) < 0.4*0.4, 1., 0. )
 
     def darcyVelocity( p ):
-        return -1./Model.mu * Model.K * grad(p[0])
+        return Model.K_mu * grad(p[0])
+
+    def qu( phi, cu, cb ):
+        return Model.ke * Model.Mb * phi * cb * cu / (Model.Ku + cu )
 
     # form for pressure equation
     def pressureForm( time ):
@@ -146,9 +152,9 @@ class Model:
         x    = SpatialCoordinate(pressureSpace)
         dbc  = DirichletBC(pressureSpace,[ 0 ])
         phi, cu, cb = Model.toPrim( u_h )
-        qu   = Model.ke * phi * Model.Mb * cb * cu / (Model.Ku + cu )
+        qu   = Model.qu( phi, cu, cb )
         hour = time / Model.secperhour
-        Qw1_t = Model.inlet( x ) * conditional( hour > 20., conditional( hour < 35., Model.Qw, 0), 0 )
+        Qw1_t = Model.inlet( x ) * conditional( hour > 3., conditional( hour < 35., Model.Qw, 0), 0 )
         Qw2_t = Model.inlet( x ) * conditional( hour > 37., conditional( hour < 50., Model.Qw, 0), 0 )
         pressureRhs = as_vector([ qu + Qw1_t + Qw2_t ])
         return [ inner(grad(u),grad(v)) * dx == inner(pressureRhs, v) * dx,
@@ -157,7 +163,7 @@ class Model:
     def S_s(t,x,U,DU): # or S_s for a stiff source
         phi, cu, cb = Model.toPrim( U )
 
-        qu = Model.ke * phi * Model.Mb * cb * cu / (Model.Ku + cu )
+        qu = Model.qu( phi, cu, cb )
         qc = qu # Assumption in the report, before eq 3.12
         qb = cb * ( phi * ( Model.b0 + Model.ka) + qc * Model.Mc_rhoc )
 
@@ -183,6 +189,9 @@ class Model:
     def F_v(t,x,U,DU):
         # TODO remove diffusion for phi, comp 0
         return Model.D * DU
+        #return as_matrix([ Model.dimDomain*[0],
+        #                  [*(Model.D * DU[1])],
+        #                  [*(Model.D * DU[2])] ])
     def maxDiffusion(t,x,U):
        return Model.D
     def physical(U):
@@ -200,10 +209,12 @@ class Model:
 
 print("Start main program")
 
+linearSolver = False
+newtonSolver = False
 odeParam={"fem.ode.verbose": "none",
-          "fem.solver.verbose": False,
-          "fem.solver.newton.verbose": True,
-          "fem.solver.newton.linear.verbose": False,
+          "fem.solver.verbose": linearSolver,
+          "fem.solver.newton.verbose": newtonSolver,
+          "fem.solver.newton.linear.verbose": linearSolver,
           "fem.solver.newton.tolerance": 1e-6,
           "fem.solver.newton.linear.tolerance": 1e-8,
           "fem.solver.method": "cg",
