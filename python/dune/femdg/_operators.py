@@ -349,7 +349,7 @@ def rungeKuttaSolver( fullOperator, imex='EX', butchertable=None, parameters={} 
                               ['return new ' + typeName + '(op, explOp, implOp, imexId, Dune::FemPy::pyParameter( parameters, std::make_shared< std::string >() ));'],
                               ['"op"_a', '"explOp"_a', '"implOp"_a', '"imexId"_a', '"parameters"_a', 'pybind11::keep_alive< 1, 2 >()', 'pybind11::keep_alive< 1, 3 >()','pybind11::keep_alive< 1, 4 >()','pybind11::keep_alive< 1, 6>()' ])
 
-    solve = Method('solve', '''[]( DuneType &self, typename DuneType::DestinationType &u) { self.solve(u); }''' );
+    solve = Method('solve', '''[]( DuneType &self, typename DuneType::DestinationType &u) { self.solve(u); }''' )
     setTimeStepSize = Method('setTimeStepSize', '&DuneType::setTimeStepSize')
     deltaT = Method('deltaT', '&DuneType::deltaT')
 
