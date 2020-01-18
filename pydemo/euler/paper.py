@@ -1,7 +1,7 @@
 import math
 from ufl import *
 from dune.grid import structuredGrid
-from dune.fem.space import dgonb
+from dune.fem.space import dgonb, finiteVolume
 from dune.femdg import femDGOperator
 from dune.femdg.rk import femdgStepper
 
@@ -38,7 +38,6 @@ class Model:
 gridView = structuredGrid([-1,-1],[1,1],[40,40])
 space = dgonb( gridView, order=3, dimRange=4)
 operator = femDGOperator(Model, space, limiter=None)
-print(operator.__module__)
 stepper  = femdgStepper(order=3, operator=operator)
 u_h = space.interpolate([1.4,0,0,1], name='u_h')
 t  = 0
@@ -66,8 +65,7 @@ Model.physical = physical
 Model.jump     = jump
 
 operator = femDGOperator(Model, space, limiter="MinMod")
-print(operator.__module__)
-stepper  = femdgStepper(order=3, operator=operator, cfl=0.2)
+stepper  = femdgStepper(order=3, operator=operator)
 x = SpatialCoordinate(space)
 u_h.interpolate( conditional(dot(x,x)<0.1,as_vector([1,0,0,2.5]),
                                           as_vector([0.125,0,0,0.25])) )
@@ -76,13 +74,11 @@ t  = 0
 vtk = gridView.sequencedVTK("paperB", pointdata=[u_h])
 while t < 0.4:
     vtk()
-    assert not math.isnan( u_h.scalarProductDofs( u_h ) )
     operator.setTime(t)
     t += stepper(u_h)
-    print(t)
 vtk()
 
-# Part 2: FV on polygonal grid
+# Part 3: FV on polygonal grid
 from dune.generator import algorithm
 from dune.polygongrid import voronoiDomain, polygonGrid
 import numpy
@@ -93,23 +89,18 @@ N  = [40,40]
 boundingBox = numpy.array([ x0, x1 ])
 vb = voronoiDomain(N[0]*N[1], boundingBox, seed=1234)
 gridView = polygonGrid( vb )
-space = dgonb( gridView, order=0, dimRange=4)
-operator = femDGOperator(Model, space, limiter=None)
-#operator = femDGOperator(Model, space, limiter="MinMod")
-print(operator.__module__)
+space = finiteVolume( gridView, dimRange=4)
+# space = dgonb( gridView, order=0, dimRange=4)
+u_h   = space.interpolate( conditional(dot(x,x)<0.1,as_vector([1,0,0,2.5]),
+                                                    as_vector([0.125,0,0,0.25])),
+                                                    name="uh")
+operator = femDGOperator(Model, space, limiter="MinMod")
 stepper  = femdgStepper(order=1, operator=operator, cfl=0.4)
-x = SpatialCoordinate(space)
-u_h.interpolate( conditional(dot(x,x)<0.1,as_vector([1,0,0,2.5]),
-                                          as_vector([0.125,0,0,0.25])) )
-#operator.applyLimiter(u_h)
+operator.applyLimiter(u_h)
 t  = 0
-#vtk = gridView.sequencedVTK("paperB", pointdata=[u_h])
 while t < 0.4:
-    #vtk()
     assert not math.isnan( u_h.scalarProductDofs( u_h ) )
     operator.setTime(t)
     t += stepper(u_h)
     print(t)
-
 algorithm.run('vtkout', 'vtkout.hh', u_h )
-#vtk()
