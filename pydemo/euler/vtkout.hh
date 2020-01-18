@@ -16,5 +16,5 @@ void vtkout(const DiscreteFunction& u, int step )
   Dune::Fem::DataOutputParameters param;
   DUNE_EXPORT static DataOutputType dataOutput( grid, tup, param );
 
-  dataOutput.writeData( 1.0 );
+  dataOutput.writeData( double(step) );
 }
