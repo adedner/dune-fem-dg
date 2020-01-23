@@ -89,10 +89,29 @@ namespace Fem
 
     static_assert( std::is_same<typename ModelType::RangeType, typename DestinationType::RangeType>::value, "range type does not fit.");
 
-    typedef Fem::CachingQuadrature< GridPartType, 0, QuadratureTraits >  VolumeQuadratureType;
-    typedef Fem::CachingQuadrature< GridPartType, 1, QuadratureTraits >  FaceQuadratureType;
-    //typedef Fem::ElementQuadrature< GridPartType, 0, QuadratureTraits >  VolumeQuadratureType;
-    //typedef Fem::ElementQuadrature< GridPartType, 1, QuadratureTraits >  FaceQuadratureType;
+
+    // default quadrature selection should be CachingQuadrature
+    template <class DFS>
+    struct SelectQuadrature
+    {
+      typedef Fem::CachingQuadrature< GridPartType, 0, QuadratureTraits >  VolumeQuadratureType;
+      typedef Fem::CachingQuadrature< GridPartType, 1, QuadratureTraits >  FaceQuadratureType;
+    };
+
+    // if selected discrete function space has no caching storage,
+    // then select ElementQuadrature, and not  CachingQuadrature
+    template <class FS, class GP, int polOrd,
+              template <class, class, int, template <class> class> class DFS>
+    struct SelectQuadrature< DFS< FS, GP, polOrd, Dune::Fem::SimpleStorage > >
+    {
+      typedef Fem::ElementQuadrature< GridPartType, 0, QuadratureTraits >  VolumeQuadratureType;
+      typedef Fem::ElementQuadrature< GridPartType, 1, QuadratureTraits >  FaceQuadratureType;
+    };
+
+    typedef SelectQuadrature< DiscreteFunctionSpaceType >  SelectQuadratureType;
+
+    typedef typename SelectQuadratureType::VolumeQuadratureType   VolumeQuadratureType;
+    typedef typename SelectQuadratureType::FaceQuadratureType     FaceQuadratureType;
 
   private:
     typedef Fem::FunctionSpace< typename GridType::ctype, double, ModelImp::dimDomain, 3> FVFunctionSpaceType;
