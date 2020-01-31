@@ -64,7 +64,10 @@ Model.velocity = velocity
 Model.physical = physical
 Model.jump     = jump
 
-operator = femDGOperator(Model, space, limiter="MinMod")
+import os
+fluxHeader = os.getcwd() + "/llf.hh"
+
+operator = femDGOperator(Model, space, advectionFlux=fluxHeader, limiter="MinMod")
 stepper  = femdgStepper(order=3, operator=operator)
 x = SpatialCoordinate(space)
 u_h.interpolate( conditional(dot(x,x)<0.1,as_vector([1,0,0,2.5]),

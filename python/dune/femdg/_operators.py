@@ -89,7 +89,9 @@ from dune.femdg.patch import transform
 # create DG operator + solver (limiter = none,minmod,vanleer,superbee),
 # (diffusionScheme = cdg2,br2,ip,nipg,...)
 def femDGOperator(Model, space,
-        limiter="minmod", diffusionScheme = "cdg2", threading=False,
+        limiter="minmod",
+        advectionFlux="default",
+        diffusionScheme = "cdg2", threading=False,
         initialTime=0.0, parameters=None):
     virtualize = False
     import dune.create as create
@@ -179,22 +181,28 @@ def femDGOperator(Model, space,
         diffFluxId = "Dune::Fem::DiffusionFlux::Enum::"+diffusionScheme
 
     if hasAdvFlux:
-        # if dgadvectionflux.method has been selected, then use general flux,
-        # otherwise default to LLF flux
-        key = 'dgadvectionflux.method'
-        if parameters is not None and key in parameters.keys():
-            value = parameters["dgadvectionflux.method"]
-            # set parameter in dune-fem parameter container
-            # parameterReader.append( { key: value } )
-            if value.upper().find( 'LLF' ) >= 0:
-                advFluxId  = "Dune::Fem::AdvectionFlux::Enum::llf"
-            else:
-                if value.upper().find( 'EULER' ) >= 0:
-                    advFluxId  = "Dune::Fem::AdvectionFlux::Enum::euler_general"
-                else:
-                    advFluxId  = "Dune::Fem::AdvectionFlux::Enum::general"
+        # default value is LLF
+        advFluxId  = "Dune::Fem::AdvectionFlux::Enum::llf"
+        # if flux choice is default check parameters
+        if advectionFlux.lower().find(".h") >= 0:
+            advFluxId  = "Dune::Fem::AdvectionFlux::Enum::userdefined"
         else:
-            advFluxId  = "Dune::Fem::AdvectionFlux::Enum::llf"
+            # if dgadvectionflux.method has been selected, then use general flux,
+            # otherwise default to LLF flux
+            if advectionFlux == "default":
+                key = 'dgadvectionflux.method'
+                if parameters is not None and key in parameters.keys():
+                    advectionFlux = parameters["dgadvectionflux.method"]
+
+                    # set parameter in dune-fem parameter container
+                    # parameterReader.append( { key: value } )
+                    if advectionFlux.upper().find( 'LLF' ) >= 0:
+                        advFluxId  = "Dune::Fem::AdvectionFlux::Enum::llf"
+                    else:
+                        if advectionFlux.upper().find( 'EULER' ) >= 0:
+                            advFluxId  = "Dune::Fem::AdvectionFlux::Enum::euler_general"
+                        else:
+                            advFluxId  = "Dune::Fem::AdvectionFlux::Enum::general"
 
     if limiter.lower() == "unlimited":
         limiterId = "Dune::Fem::AdvectionLimiter::Enum::unlimited"
@@ -285,6 +293,8 @@ def femDGOperator(Model, space,
     includes += space._includes + destinationIncludes
     includes += ["dune/fem/schemes/diffusionmodel.hh", "dune/fempy/parameter.hh"]
     includes += advModel._includes + diffModel._includes
+    if advFluxId == "Dune::Fem::AdvectionFlux::Enum::userdefined":
+        includes += [ advectionFlux ]
 
     additionalType = additionalClass + '< typename ' + spaceType + '::FunctionSpaceType >'
 

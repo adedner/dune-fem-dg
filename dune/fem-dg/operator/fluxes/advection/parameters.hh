@@ -41,8 +41,11 @@ namespace Fem
       //! the HLLC flux
       euler_hllc,
       //! general flux: Parameter selection is done via parameter file!
-      euler_general
+      euler_general,
 
+      //! a flux implemented by the user and provided to the python code
+      //! for C++ just add another enum id
+      userdefined
     };
 
     //! Contains all known enums for advection fluxes which can be chosen via parameter file.
