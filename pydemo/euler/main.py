@@ -3,6 +3,7 @@ import mpi4py.rc
 from dune.fem import parameter
 from dune.femdg.testing import run
 
+# from euler import constant as problem
 from euler import sod as problem
 # from euler import vortex as problem
 # from euler import leVeque as problem
