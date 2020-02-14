@@ -1,6 +1,6 @@
 import math
 from ufl import *
-from dune.grid import structuredGrid
+from dune.grid import structuredGrid, reader
 from dune.fem.space import dgonb, finiteVolume
 from dune.femdg import femDGOperator
 from dune.femdg.rk import femdgStepper
@@ -95,9 +95,9 @@ if True:
     x1 = [ 1, 1]
     N  = [40,40]
     boundingBox = numpy.array([ x0, x1 ])
-    vb = voronoiDomain(N[0]*N[1], boundingBox, seed=1234)
-    gridView = polygonGrid( vb )
-    # space = finiteVolume( gridView, dimRange=4)
+    # vb = voronoiDomain(N[0]*N[1], boundingBox, seed=1234)
+    gridView = polygonGrid( (reader.dgf,"triangle.dgf"), dualGrid=True )
+    fvSpace = finiteVolume( gridView, dimRange=4)
     space = dgonb( gridView, order=2, dimRange=4)
     x = SpatialCoordinate(space)
     u_h   = space.interpolate( conditional(dot(x,x)<0.1,as_vector([1,0,0,2.5]),
@@ -107,9 +107,15 @@ if True:
     stepper  = femdgStepper(order=3, operator=operator, cfl=0.4)
     operator.applyLimiter(u_h)
     t  = 0
+    count = 0
+    fvu_h = fvSpace.interpolate( u_h, name="fv")
+    gridView.writeVTK("paperA", pointdata=[u_h],number=0)
     while t < 0.4:
         assert not math.isnan( u_h.scalarProductDofs( u_h ) )
         operator.setTime(t)
         t += stepper(u_h)
         print(t)
-    algorithm.run('vtkout', 'vtkout.hh', u_h )
+        count += 1
+        operator.applyLimiter(u_h)
+        fvu_h.interpolate( u_h )
+        gridView.writeVTK("paperA", pointdata=[u_h],number=count)
