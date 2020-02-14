@@ -905,13 +905,16 @@ namespace Fem
     static double getEpsilon( const Dune::Fem::ParameterReader &parameter = Dune::Fem::Parameter::container() )
     {
       double defaultEps = 1e-8;
+
       // default value is 1e-8
-      if( parameter.exists("femdg.limiter.epsilon") )
-        return parameter.getValue("femdg.limiter.epsilon", defaultEps );
-      else
+      if( parameter.exists("femdg.limiter.limiteps") )
       {
         std::cout <<"WARNING: parameter 'femdg.limiter.limiteps' is deprecated. \nUse 'femdg.limiter.epsilon' instread!" << std::endl;
         return parameter.getValue("femdg.limiter.limiteps", defaultEps );
+      }
+      else
+      {
+        return parameter.getValue("femdg.limiter.epsilon", defaultEps );
       }
     }
 
