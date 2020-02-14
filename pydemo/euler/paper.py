@@ -33,6 +33,8 @@ class Model:
 
 ########################################################################
 
+print("\n Part 1\n")
+
 # Part 1: basic set up and time loop - no limiter and fixed time step
 #         using constant initial data
 gridView = structuredGrid([-1,-1],[1,1],[40,40])
@@ -75,6 +77,8 @@ u_h.interpolate( conditional(dot(x,x)<0.1,as_vector([1,0,0,2.5]),
 operator.applyLimiter(u_h)
 t  = 0
 vtk = gridView.sequencedVTK("paperB", pointdata=[u_h])
+
+print("Start Part 2\n")
 while t < 0.4:
     vtk()
     operator.setTime(t)
@@ -84,26 +88,37 @@ vtk()
 # Part 3: FV on polygonal grid
 from dune.generator import algorithm
 from dune.polygongrid import voronoiDomain, polygonGrid
+from dune.grid import reader
+
 import numpy
 
 x0 = [-1,-1]
 x1 = [ 1, 1]
 N  = [40,40]
-boundingBox = numpy.array([ x0, x1 ])
-vb = voronoiDomain(N[0]*N[1], boundingBox, seed=1234)
-gridView = polygonGrid( vb )
-space = finiteVolume( gridView, dimRange=4)
-# space = dgonb( gridView, order=0, dimRange=4)
+#boundingBox = numpy.array([ x0, x1 ])
+#vb = voronoiDomain(N[0]*N[1], boundingBox, seed=1234)
+
+domain = (reader.dgf, "triangle.dgf")
+gridView = polygonGrid( domain, dualGrid=False )
+fvspc = finiteVolume( gridView, dimRange=4)
+space = dgonb( gridView, order=1, dimRange=4, caching=False )
 u_h   = space.interpolate( conditional(dot(x,x)<0.1,as_vector([1,0,0,2.5]),
                                                     as_vector([0.125,0,0,0.25])),
                                                     name="uh")
+fvU = fvspc.interpolate( [0,0,0,0], name = "fvU" )
+
 operator = femDGOperator(Model, space, limiter="MinMod")
 stepper  = femdgStepper(order=1, operator=operator, cfl=0.4)
 operator.applyLimiter(u_h)
+count = 0
+gridView.writeVTK("paperC", celldata=[fvU], number=count)
 t  = 0
+print("Start Part 3\n")
 while t < 0.4:
     assert not math.isnan( u_h.scalarProductDofs( u_h ) )
     operator.setTime(t)
     t += stepper(u_h)
     print(t)
-algorithm.run('vtkout', 'vtkout.hh', u_h )
+    fvU.interpolate( u_h )
+    count += 1
+    gridView.writeVTK("paperC", celldata=[fvU], number=count)
