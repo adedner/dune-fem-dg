@@ -2,7 +2,6 @@
 #define DUNE_FEMDG_SUB_CONTAINER_HH
 
 #include <memory>
-#include <dune/common/shared_ptr.hh>
 #include <dune/fem-dg/misc/tupleutility.hh>
 #include <dune/fem-dg/misc/uniquefunctionname.hh>
 
@@ -818,7 +817,7 @@ namespace Fem
     {}
 
     //solution
-    shared_ptr< DiscreteFunction > solution() const
+    std::shared_ptr< DiscreteFunction > solution() const
     {
       return solution_->shared();
     }
