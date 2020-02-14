@@ -30,21 +30,11 @@ def CompressibleEuler(dim, gamma):
         def F_c(t,x,U):
             rho, v, p = Model.toPrim(U)
             rE = U[dim+1]
-            def P(i,j):
-                return p if i == j else 0
-            res = as_matrix([
-                    # density: rho * v
-                    [ rho*v[i] for i in range(0,dim)],
-                    # momentum: v x v + pI
-                  *([ [ rho*v[j]*v[i] + P(j,i) for i in range(0,dim) ] for j in range(0,dim)]),
-                    # energy: (rE +p) * v
-                    [ (rE+p)*v[i] for i in range(0,dim)] ] )
-            return res
-#            v = numpy.array(v)
-#            res = numpy.vstack([ rho*v,
-#                                 rho*numpy.outer(v,v + p*numpy.eye(dim)),
-#                                 (rE+p)*v ])
-#            return as_matrix(res)
+            v = numpy.array(v)
+            res = numpy.vstack([ rho*v,
+                                 rho*numpy.outer(v,v) + p*numpy.eye(dim),
+                                 (rE+p)*v ])
+            return as_matrix(res)
 
         def maxLambda(t,x,U,n):
             rho, v, p = Model.toPrim(U)
@@ -92,7 +82,6 @@ def CompressibleEuler(dim, gamma):
                     return [ u[0], -n[2]*u[3], u[2], n[2]*u[1], u[4] ]
 
     return Model
-
 def CompressibleEulerNeuman(dim, gamma, bnd=range(1,5)):
     class Model(CompressibleEuler(dim,gamma)):
         boundary = {bnd: lambda t,x,u,n: Model.F_c(t,x,u)*n}
@@ -122,7 +111,7 @@ def riemanProblem(Model,x,x0,UL,UR):
     return Model.toCons( conditional(x<x0,as_vector(UL),as_vector(UR)) )
 
 # TODO Add exact solution where available (last argument)
-def constant(dim,gamma):
+def constant(dim=2,gamma=1.4):
     Model=CompressibleEulerDirichlet(dim,gamma)
     Model.initial=as_vector( [0.1,0.,0.,0.1] )
     Model.domain=[[-1, 0], [1, 0.1], [50, 5]]
