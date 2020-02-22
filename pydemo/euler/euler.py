@@ -1,7 +1,7 @@
 from ufl import *
-from dune.ufl import Space
-from dune.femdg.testing import Parameters
-from dune.generator import algorithm
+from dune.common import FieldVector
+from dune.ufl import Space, GridFunction
+from dune.fem.function import gridFunction
 import numpy
 
 def CompressibleEuler(dim, gamma):
@@ -123,15 +123,23 @@ def sod(dim=2,gamma=1.4):
     space = Space(dim,dim+2)
     x = SpatialCoordinate(space.cell())
     Model = CompressibleEulerReflection(dim,gamma)
-    Model.initial=riemanProblem( Model, x[0], x0, [1,0,0,1], [0.125,0,0,0.1])
+    Vl, Vr = [1.,0.,0.,1.], [0.125,0,0,0.1]
+    Model.initial=riemanProblem( Model, x[0], x0, Vl, Vr)
     #Model.domain=[[0, 0], [1, 0.25], [256, 64]]
     #Model.domain=[[0, 0], [1, 0.25], [128, 32]]
     Model.domain=[[0, 0], [1, 0.25], [64, 16]]
     Model.endTime=0.15
-    #def u(t,x):
-    #    val = algorithm.load('sod','sod.hh', t, x0, x )
-    #    return val
-    #Model.exact = lambda t: u(t,x)
+    def chorin(gv,t):
+        gf = gv.function("chorin","chorin.hh", Vl,Vr,gamma,x0,t,name="chorin")
+        lgf = gf.localFunction() # this seems to fail?
+        @gridFunction(gv,"sod",3)
+        def lf(e,x):
+            lgf.bind(e)
+            return FieldVector( Model.toCons(lgf(x)) )
+            # return Model.toCons(gf(e,x))
+        lf.plot()
+        return lf
+    Model.exact = lambda gv,t: chorin(gv,t)
     Model.name="sod"
     return Model
 def radialSod1(dim=2,gamma=1.4):
