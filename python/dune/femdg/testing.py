@@ -9,11 +9,6 @@ from dune.femdg.rk import femdgStepper
 
 from collections import namedtuple
 
-Parameters = namedtuple("TestingParameters",
-                        ["Model", "initial", "domain", "endTime", "name", "exact"])
-Parameters.__new__.__defaults__ = (None,None) # defaults for name, exact
-
-
 def run(Model, Stepper=None,
         initial=None, domain=None, endTime=None, name=None, exact=None, # deprecated - now Model attributes
         polOrder=1, limiter="default", startLevel=0,
@@ -150,11 +145,21 @@ def run(Model, Stepper=None,
         # instead means that this value is added to the generated code so
         # that slight changes to 't' require building new local functions -
         # should be fixed in dune-fem
-        u = expression2GF(grid,exact(tc),order=5)
+        try:
+            u = expression2GF(grid,exact(tc),order=5)
+        except:
+            u = exact(grid,t)
         tc.value = t
         grid.writeVTK(name, subsampling=subsamp,
                 celldata=[u_h], pointdata={"exact":u})
+        # TODO make the gridfunctions from dune-python work nicely with ufl...
+        # error = integrate( grid, dot(u-u_h,u-u_h), order=5 )
         error = integrate( grid, dot(u-u_h,u-u_h), order=5 )
+        try:
+            error = integrate( grid, dot(u-u_h,u-u_h), order=5 )
+        except:
+            error = 0
+            pass
     elif name is not None:
         grid.writeVTK(name, subsampling=subsamp, celldata=[u_h])
         error = integrate( grid, dot(u_h,u_h), order=5 )
