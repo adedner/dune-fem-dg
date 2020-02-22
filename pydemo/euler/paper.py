@@ -66,10 +66,21 @@ Model.velocity = velocity
 Model.physical = physical
 Model.jump     = jump
 
-import os
-fluxHeader = os.getcwd() + "/llf.hh"
+from dune.generator import path
+if True: # use flux in header
+    fluxHeader = path(__file__)+"llf.hh"
+    operator = femDGOperator(Model, space, advectionFlux=fluxHeader, limiter="MinMod")
+elif False:
+    from dune.generator.importclass import load
+    from dune.typeregistry import generateTypeName
+    def flux(model): # possibly also want to pass in parameters
+        # wrong model class used here - EllipticModel with no Traits
+        clsName,includes = generateTypeName("Dune::Fem::DGAdvectionFlux",model._typeName,"Dune::Fem::AdvectionFlux::Enum::userdefined")
+        return load(clsName,[path(__file__)+"llf.hh"]+includes,model)
+    operator = femDGOperator(Model, space, advectionFlux=flux, limiter="MinMod")
+else:
+    operator = femDGOperator(Model, space, limiter="MinMod")
 
-operator = femDGOperator(Model, space, advectionFlux=fluxHeader, limiter="MinMod")
 stepper  = femdgStepper(order=3, operator=operator)
 x = SpatialCoordinate(space)
 u_h.interpolate( conditional(dot(x,x)<0.1,as_vector([1,0,0,2.5]),

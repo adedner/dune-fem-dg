@@ -184,6 +184,9 @@ def femDGOperator(Model, space,
         # default value is LLF
         advFluxId  = "Dune::Fem::AdvectionFlux::Enum::llf"
         # if flux choice is default check parameters
+        if callable(advectionFlux):
+            advFluxId  = "Dune::Fem::AdvectionFlux::Enum::userdefined"
+            advectionFlux = advectionFlux(advModel)
         if advectionFlux.lower().find(".h") >= 0:
             advFluxId  = "Dune::Fem::AdvectionFlux::Enum::userdefined"
         else:
