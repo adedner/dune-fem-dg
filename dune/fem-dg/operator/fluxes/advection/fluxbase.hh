@@ -22,8 +22,6 @@ namespace Fem
   template <class ModelImp, class FluxParameterImp >
   class DGAdvectionFluxBase
   {
-    typedef typename ModelImp::Traits            Traits;
-
     enum { dimRange = ModelImp::dimRange };
     typedef typename ModelImp::DomainType        DomainType;
     typedef typename ModelImp::RangeType         RangeType;
