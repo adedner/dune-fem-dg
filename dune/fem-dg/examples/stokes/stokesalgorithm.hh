@@ -220,7 +220,7 @@ namespace Fem
     typedef typename AssemblerType::ContainerType                    ContainerType;
 
     template< class ContainerImp >
-    StokesSigmaEstimator( const shared_ptr< ContainerImp >& cont,
+    StokesSigmaEstimator( const std::shared_ptr< ContainerImp >& cont,
                           const BaseAssemblerType& ass,
                           const AssemblerType& assembler,
                           const std::string keyPrefix = "" )
@@ -278,7 +278,7 @@ namespace Fem
     typedef typename PAdaptivityType::PolOrderContainer         PolOrderContainer;
 
     template< class ContainerImp >
-    StokesPAdaptivity( const shared_ptr< ContainerImp >& cont, BaseAssemblerType& ass, AssemblerType& assembler, const std::string name = ""  )
+    StokesPAdaptivity( const std::shared_ptr< ContainerImp >& cont, BaseAssemblerType& ass, AssemblerType& assembler, const std::string name = ""  )
       : pAdapt_( (*cont)(std::make_tuple(_0),std::make_tuple(_0) ), ass, name ),
         polOrderContainer_( (*cont)(_0)->solution()->gridPart().grid(), 0 ),
         space_( (*cont)(_1)->solution()->space() ),

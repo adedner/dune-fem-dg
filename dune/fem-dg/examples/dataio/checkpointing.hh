@@ -73,7 +73,7 @@ namespace Fem
     {}
 
     //solution
-    shared_ptr< DiscreteFunction > solution() const
+    std::shared_ptr< DiscreteFunction > solution() const
     {
       return solution_->shared();
     }
