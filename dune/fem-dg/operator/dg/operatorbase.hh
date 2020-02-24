@@ -2,6 +2,7 @@
 #define DUNE_FEM_DG_OPERATORBASE_HH
 
 #include <string>
+#include <memory>
 
 #include <dune/fem/solver/timeprovider.hh>
 #include <dune/fem/operator/common/spaceoperatorif.hh>
@@ -143,9 +144,24 @@ namespace Fem
                                       ExtraParameterTupleImp& tuple,
                                       const std::string name = "",
                                       const Dune::Fem::ParameterReader &parameter = Dune::Fem::Parameter::container() )
-      : model_( model )
-      , numflux_( model_, parameter )
-      , gridPart_( gridPart )
+      : DGAdvectionDiffusionOperatorBase( gridPart, model,
+                                          *(new AdvectionFluxType( model, parameter )),
+                                          tuple, name, parameter )
+    {
+      // store pointer to avoid memory leaks
+      numfluxPtr_.reset( &numflux_ );
+    }
+
+    template< class ExtraParameterTupleImp >
+    DGAdvectionDiffusionOperatorBase( GridPartType& gridPart,
+                                      const ModelType& model,
+                                      AdvectionFluxType& numflux,
+                                      ExtraParameterTupleImp& tuple,
+                                      const std::string name = "",
+                                      const Dune::Fem::ParameterReader &parameter = Dune::Fem::Parameter::container() )
+      : gridPart_( gridPart )
+      , model_( model )
+      , numflux_( numflux ),
       , space_( gridPart_ )
       , discreteModel_( model_, numflux_,
                         DiffusionFluxType( gridPart_, model_, typename DiffusionFluxType::ParameterType( ParameterKey::generate( name, "dgdiffusionflux." ) ) ) )
@@ -231,9 +247,10 @@ namespace Fem
     const DiscreteModelType& discreteModel() const { return discreteModel_; }
 
   protected:
-    const ModelType&                          model_;
-    AdvectionFluxType                         numflux_;
     GridPartType&                             gridPart_;
+    const ModelType&                          model_;
+    AdvectionFluxType&                        numflux_;
+    std::unique_ptr< AdvectionFluxType >      numfluxPtr_;
 
     AdvDFunctionSpaceType                     space_;
     DiscreteModelType                         discreteModel_;

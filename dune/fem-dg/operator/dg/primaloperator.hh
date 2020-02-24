@@ -3,6 +3,7 @@
 
 // system includes
 #include <string>
+#include <memory>
 
 // dune-fem includes
 #include <dune/fem/solver/timeprovider.hh>
@@ -389,9 +390,23 @@ namespace Fem
                                 ExtraParameterTupleImp tuple,
                                 const std::string name = "",
                                 const Dune::Fem::ParameterReader &parameter = Dune::Fem::Parameter::container() )
-      : model_( model )
-      , advflux_( model_, parameter )
-      , gridPart_( gridPart )
+      : DGLimitedAdvectionOperator( gridPart, model,
+                                    *(new AdvectionFluxType( model, parameter ) ),
+                                    tuple, name, parameter )
+    {
+      advfluxPtr_.reset( &advflux_ );
+    }
+
+    template< class ExtraParameterTupleImp >
+    DGLimitedAdvectionOperator( GridPartType& gridPart,
+                                const ModelType& model,
+                                AdvectionFluxType& advflux,
+                                ExtraParameterTupleImp tuple,
+                                const std::string name = "",
+                                const Dune::Fem::ParameterReader &parameter = Dune::Fem::Parameter::container() )
+      : gridPart_( gridPart )
+      , model_( model )
+      , advflux_( advflux )
       , space_( gridPart_ )
       , limiterSpace_( gridPart_ )
       , fvSpc_()
@@ -525,9 +540,11 @@ namespace Fem
     }
 
   private:
-    ModelType                  model_;
-    AdvectionFluxType          advflux_;
     GridPartType&              gridPart_;
+    const ModelType&           model_;
+    AdvectionFluxType&         advflux_;
+    std::unique_ptr< AdvectionFluxType > advfluxPtr_;
+
     SpaceType                  space_;
     LimiterSpaceType           limiterSpace_;
 
