@@ -1,5 +1,6 @@
 dune_add_subdirs( error )
 dune_install(
+  algorithmcreatorenums.hh
   algorithmcreatorselector.hh
   codegen.hh
   configurator.hh
