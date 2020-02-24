@@ -20,16 +20,8 @@ namespace Dune
     class DGAdvectionFlux< ModelImp, AdvectionFlux::Enum::userdefined >
      : public DGAdvectionFluxBase< ModelImp, AdvectionFluxParameters >
     {
-      typedef DGAdvectionFluxBase< ModelImp, AdvectionFluxParameters  >
-                                                    BaseType;
+      typedef DGAdvectionFluxBase< ModelImp, AdvectionFluxParameters  >  BaseType;
 
-      typedef typename ModelImp::Traits             Traits;
-      enum { dimRange = ModelImp::dimRange };
-      typedef typename ModelImp::DomainType         DomainType;
-      typedef typename ModelImp::RangeType          RangeType;
-      typedef typename ModelImp::JacobianRangeType  JacobianRangeType;
-      typedef typename ModelImp::FluxRangeType      FluxRangeType;
-      typedef typename ModelImp::FaceDomainType     FaceDomainType;
     protected:
       using BaseType::model_;
 
@@ -38,12 +30,20 @@ namespace Dune
       typedef typename BaseType::ModelType          ModelType;
       typedef typename BaseType::ParameterType      ParameterType;
 
+      // ModelType != ModelImp
+      enum { dimRange = ModelType::dimRange };
+      typedef typename ModelType::DomainType         DomainType;
+      typedef typename ModelType::RangeType          RangeType;
+      typedef typename ModelType::JacobianRangeType  JacobianRangeType;
+      typedef typename ModelType::FluxRangeType      FluxRangeType;
+      typedef typename ModelType::FaceDomainType     FaceDomainType;
+
       /**
        * \brief Constructor
        */
-      DGAdvectionFlux (const ModelType& mod,
+      DGAdvectionFlux (const ModelImp& modelImp,
                        const ParameterType& parameters = ParameterType() )
-        : BaseType( mod, parameters )
+        : BaseType( *(new ModelType(modelImp)), parameters )
       {}
 
       /**

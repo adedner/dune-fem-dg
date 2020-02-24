@@ -4,7 +4,11 @@
 #include <string>
 #include <assert.h>
 
+//#include <dune/fem-dg/misc/algorithmcreatorenums.hh>
+
 #include "parameters.hh"
+
+#include <dune/fem-dg/models/modelwrapper.hh>
 
 namespace Dune
 {
@@ -22,15 +26,35 @@ namespace Fem
   template <class ModelImp, class FluxParameterImp >
   class DGAdvectionFluxBase
   {
-    enum { dimRange = ModelImp::dimRange };
-    typedef typename ModelImp::DomainType        DomainType;
-    typedef typename ModelImp::RangeType         RangeType;
-    typedef typename ModelImp::JacobianRangeType JacobianRangeType;
-    typedef typename ModelImp::FluxRangeType     FluxRangeType;
-    typedef typename ModelImp::FaceDomainType    FaceDomainType;
+    template< class FunctionSpace >
+    struct Additional
+    {
+      static const int limitedDimRange = FunctionSpace :: dimRange;
+      static const bool hasAdvection = true;
+      static const bool hasDiffusion = false;
+      static const bool hasStiffSource = false;
+      static const bool hasNonStiffSource = false;
+      static const bool hasFlux = true;
+    };
+
+    typedef AdvectionModelWrapper< typename ModelImp::GridPartType::GridType,
+                                   ModelImp,
+                                   Additional< typename ModelImp::DFunctionSpaceType >,
+                                   NoLimiter< typename ModelImp::DFunctionSpaceType::DomainFieldType > > ModelWrapperType;
+                    //typename AdvectionLimiterFunctionSelector< typename ModelImp::DFunctionSpaceType::DomainFieldType, limiterFunctionId > :: type >
 
   public:
-    typedef ModelImp                               ModelType;
+    typedef typename std::conditional<
+      std::is_base_of< Fem::IsFemDGModel, ModelImp >::value,
+                       ModelImp, ModelWrapperType > :: type ModelType;
+
+    enum { dimRange = ModelType::dimRange };
+    typedef typename ModelType::DomainType         DomainType;
+    typedef typename ModelType::RangeType          RangeType;
+    typedef typename ModelType::JacobianRangeType  JacobianRangeType;
+    typedef typename ModelType::FluxRangeType      FluxRangeType;
+    typedef typename ModelType::FaceDomainType     FaceDomainType;
+
     typedef FluxParameterImp                       ParameterType;
     typedef typename ParameterType::IdEnum         IdEnum;
 

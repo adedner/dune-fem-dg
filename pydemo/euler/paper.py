@@ -67,10 +67,10 @@ Model.physical = physical
 Model.jump     = jump
 
 from dune.generator import path
-if True: # use flux in header
+if False: # use flux in header
     fluxHeader = path(__file__)+"llf.hh"
     operator = femDGOperator(Model, space, advectionFlux=fluxHeader, limiter="MinMod")
-elif False:
+elif True:
     from dune.generator.importclass import load
     from dune.typeregistry import generateTypeName
     def flux(model): # possibly also want to pass in parameters

@@ -152,6 +152,9 @@ namespace Fem
     static const int dimDomain = Traits::dimDomain;
     static const int dimRange  = Traits::dimRange;
 
+    typedef typename Traits::FunctionSpaceType           FunctionSpaceType;
+    typedef FunctionSpaceType                            DFunctionSpaceType;
+    typedef FunctionSpaceType                            RFunctionSpaceType;
     typedef typename Traits::DomainType                  DomainType;
     typedef typename Traits::RangeType                   RangeType;
     typedef typename Traits::GradientType                GradientType;

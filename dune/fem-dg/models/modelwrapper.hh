@@ -22,7 +22,7 @@
 #include <dune/fem-dg/models/defaultmodel.hh>
 #include <dune/fem-dg/models/defaultprobleminterfaces.hh>
 #include <dune/fem-dg/operator/limiter/limiterutility.hh>
-#include <dune/fem-dg/examples/euler/problems.hh>
+//#include <dune/fem-dg/examples/euler/problems.hh>
 
 namespace Dune
 {
@@ -152,6 +152,8 @@ namespace Fem
     typedef GridImp                                      GridType;
     typedef ModelWrapperTraits< GridType, Problem, LimiterFunction > Traits;
     typedef DefaultModel< Traits >                       BaseType;
+
+    typedef typename AdvectionModelImp::GridPartType     GridPartType;
     typedef typename Traits::ProblemType                 ProblemType;
     typedef AdvectionModelImp                            AdvectionModelType ;
     typedef DiffusionModelImp                            DiffusionModelType ;
@@ -159,7 +161,7 @@ namespace Fem
     typedef AdditionalImp                                AdditionalType;
 
     enum { dimDomain = Traits::dimDomain };
-    enum { dimRange = Traits::dimRange };
+    enum { dimRange  = Traits::dimRange  };
 
     typedef typename Traits::FaceDomainType              FaceDomainType;
 
@@ -516,8 +518,30 @@ namespace Fem
     JacobianRangeType unity_;
   };
 
-}
+  template< class GridImp,
+            class AdvectionModelImp,
+            class AdditionalImp,
+            class LimiterFunction >
+  class AdvectionModelWrapper
+    : public ModelWrapper< GridImp, AdvectionModelImp, AdvectionModelImp, AdditionalImp, LimiterFunction >
+  {
+    typedef ModelWrapper< GridImp, AdvectionModelImp, AdvectionModelImp, AdditionalImp, LimiterFunction >  BaseType;
 
-}
+  public:
+    typedef typename BaseType :: ProblemType          ProblemType;
+    typedef typename BaseType :: AdvectionModelType   AdvectionModelType;
+
+    // default constructor called by DGOperator
+    AdvectionModelWrapper( const AdvectionModelType& advModel )
+      : BaseType( advModel, advModel, *(new ProblemType() )),
+        problemPtr_( &this->problem_ )
+    {}
+
+  protected:
+    std::unique_ptr< const ProblemType > problemPtr_;
+  };
+
+} // end namespace Fem
+} // end namespace Dune
 
 #endif
