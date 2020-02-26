@@ -3,13 +3,26 @@
 
 #include <string>
 
-#include <dune/fem-dg/operator/fluxes/advection/fluxes.hh>
+#include <dune/fem-dg/operator/fluxes/advection/python.hh>
 
 
 namespace Dune
 {
   namespace Fem
   {
+
+
+    template< class FunctionSpace >
+    struct EmptyAdditional
+    {
+      static const int limitedDimRange = FunctionSpace :: dimRange;
+      static const bool hasAdvection = true;
+      static const bool hasDiffusion = false;
+      static const bool hasStiffSource = false;
+      static const bool hasNonStiffSource = false;
+      static const bool hasFlux = true;
+    };
+
     /**
      * \brief class specialization for a general flux chosen by a parameter file.
      *
@@ -18,9 +31,10 @@ namespace Dune
      */
     template< class ModelImp >
     class DGAdvectionFlux< ModelImp, AdvectionFlux::Enum::userdefined >
-     : public DGAdvectionFluxBase< ModelImp, AdvectionFluxParameters >
+     : public DGAdvectionFluxPythonUserDefine< ModelImp,
+                EmptyAdditional< typename ModelImp::DFunctionSpaceType> >
     {
-      typedef DGAdvectionFluxBase< ModelImp, AdvectionFluxParameters  >  BaseType;
+      typedef DGAdvectionFluxPythonUserDefine< ModelImp, EmptyAdditional< typename ModelImp::DFunctionSpaceType> >  BaseType;
 
     protected:
       using BaseType::model_;
@@ -43,7 +57,7 @@ namespace Dune
        */
       DGAdvectionFlux (const ModelImp& modelImp,
                        const ParameterType& parameters = ParameterType() )
-        : BaseType( *(new ModelType(modelImp)), parameters )
+        : BaseType( modelImp, parameters )
       {}
 
       /**
