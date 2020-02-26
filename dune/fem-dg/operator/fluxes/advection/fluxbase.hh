@@ -4,11 +4,7 @@
 #include <string>
 #include <assert.h>
 
-//#include <dune/fem-dg/misc/algorithmcreatorenums.hh>
-
 #include "parameters.hh"
-
-#include <dune/fem-dg/models/modelwrapper.hh>
 
 namespace Dune
 {
@@ -26,27 +22,8 @@ namespace Fem
   template <class ModelImp, class FluxParameterImp >
   class DGAdvectionFluxBase
   {
-    template< class FunctionSpace >
-    struct Additional
-    {
-      static const int limitedDimRange = FunctionSpace :: dimRange;
-      static const bool hasAdvection = true;
-      static const bool hasDiffusion = false;
-      static const bool hasStiffSource = false;
-      static const bool hasNonStiffSource = false;
-      static const bool hasFlux = true;
-    };
-
-    typedef AdvectionModelWrapper< typename ModelImp::GridPartType::GridType,
-                                   ModelImp,
-                                   Additional< typename ModelImp::DFunctionSpaceType >,
-                                   NoLimiter< typename ModelImp::DFunctionSpaceType::DomainFieldType > > ModelWrapperType;
-                    //typename AdvectionLimiterFunctionSelector< typename ModelImp::DFunctionSpaceType::DomainFieldType, limiterFunctionId > :: type >
-
   public:
-    typedef typename std::conditional<
-      std::is_base_of< Fem::IsFemDGModel, ModelImp >::value,
-                       ModelImp, ModelWrapperType > :: type ModelType;
+    typedef ModelImp  ModelType;
 
     enum { dimRange = ModelType::dimRange };
     typedef typename ModelType::DomainType         DomainType;

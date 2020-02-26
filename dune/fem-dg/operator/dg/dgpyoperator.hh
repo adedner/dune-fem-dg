@@ -115,6 +115,22 @@ namespace Fem
     {
     }
 
+    DGOperator( const DiscreteFunctionSpaceType& space,
+                const AdvectionModel &advectionModel,
+                const DiffusionModel &diffusionModel,
+                const AdvectionFluxType& advFlux,
+                const Dune::Fem::ParameterReader &parameter = Dune::Fem::Parameter::container() )
+      : space_( space ),
+        extra_(),
+        problem_(),
+        model_( advectionModel, diffusionModel, problem_ ),
+        fullOperator_( space.gridPart(), model_, advFlux, extra_, name(), parameter ),
+        explOperator_( space.gridPart(), model_, advFlux, extra_, name(), parameter ),
+        implOperator_( space.gridPart(), model_, advFlux, extra_, name(), parameter ),
+        adaptIndicator_() //  space, model_, extra_ ) // TODO pass parameters
+    {
+    }
+
     virtual void description( std::ostream&) const {}
 
     const DiscreteFunctionSpaceType& space ()       const { return space_; }

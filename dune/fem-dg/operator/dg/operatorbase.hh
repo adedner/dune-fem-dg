@@ -149,21 +149,21 @@ namespace Fem
                                           tuple, name, parameter )
     {
       // store pointer to avoid memory leaks
-      numfluxPtr_.reset( &numflux_ );
+      numFluxPtr_.reset( &numFlux_ );
     }
 
     template< class ExtraParameterTupleImp >
     DGAdvectionDiffusionOperatorBase( GridPartType& gridPart,
                                       const ModelType& model,
-                                      AdvectionFluxType& numflux,
+                                      const AdvectionFluxType& numFlux,
                                       ExtraParameterTupleImp& tuple,
                                       const std::string name = "",
                                       const Dune::Fem::ParameterReader &parameter = Dune::Fem::Parameter::container() )
       : gridPart_( gridPart )
       , model_( model )
-      , numflux_( numflux ),
+      , numFlux_( numFlux )
       , space_( gridPart_ )
-      , discreteModel_( model_, numflux_,
+      , discreteModel_( model_, numFlux_,
                         DiffusionFluxType( gridPart_, model_, typename DiffusionFluxType::ParameterType( ParameterKey::generate( name, "dgdiffusionflux." ) ) ) )
       , previousPass_( InsertFunctionsType::createPass( tuple ) )
       , pass1_( discreteModel_, *previousPass_, space_ )
@@ -247,16 +247,16 @@ namespace Fem
     const DiscreteModelType& discreteModel() const { return discreteModel_; }
 
   protected:
-    GridPartType&                             gridPart_;
-    const ModelType&                          model_;
-    AdvectionFluxType&                        numflux_;
-    std::unique_ptr< AdvectionFluxType >      numfluxPtr_;
+    std::unique_ptr< const AdvectionFluxType > numFluxPtr_;
+    GridPartType&                              gridPart_;
+    const ModelType&                           model_;
+    const AdvectionFluxType&                   numFlux_;
 
-    AdvDFunctionSpaceType                     space_;
-    DiscreteModelType                         discreteModel_;
-    std::shared_ptr< InsertFunctionPassType > previousPass_;
-    Pass1Type                                 pass1_;
-    mutable int                               counter_;
+    AdvDFunctionSpaceType                      space_;
+    DiscreteModelType                          discreteModel_;
+    std::shared_ptr< InsertFunctionPassType >  previousPass_;
+    Pass1Type                                  pass1_;
+    mutable int                                counter_;
   };
 
 }

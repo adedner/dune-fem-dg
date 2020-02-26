@@ -69,13 +69,13 @@ namespace Fem
       discreteModel_.diffusionFlux().diffusionFluxPenalty( stream );
       stream <<"$, $\\chi = ";
       discreteModel_.diffusionFlux().diffusionFluxLiftFactor( stream );
-      stream << "$, {\\bf Adv. Flux:} " << numflux_.name() << ",\\\\" << std::endl;
+      stream << "$, {\\bf Adv. Flux:} " << numFlux_.name() << ",\\\\" << std::endl;
       return stream.str();
     }
 
   protected:
     using BaseType::discreteModel_;
-    using BaseType::numflux_;
+    using BaseType::numFlux_;
   };
 
 
@@ -115,13 +115,13 @@ namespace Fem
       discreteModel_.diffusionFlux().diffusionFluxPenalty( stream );
       stream <<"$, $\\chi = ";
       discreteModel_.diffusionFlux().diffusionFluxLiftFactor( stream );
-      stream << "$, {\\bf Adv. Flux:} " << numflux_.name() << ",\\\\" << std::endl;
+      stream << "$, {\\bf Adv. Flux:} " << numFlux_.name() << ",\\\\" << std::endl;
       return stream.str();
     }
 
   protected:
     using BaseType::discreteModel_;
-    using BaseType::numflux_;
+    using BaseType::numFlux_;
   };
 
 
@@ -226,13 +226,13 @@ namespace Fem
       discreteModel_.diffusionFlux().diffusionFluxPenalty( stream );
       stream <<"$, $\\chi = ";
       discreteModel_.diffusionFlux().diffusionFluxLiftFactor( stream );
-      stream << "$, {\\bf Adv. Flux:} " << numflux_.name() << ",\\\\" << std::endl;
+      stream << "$, {\\bf Adv. Flux:} " << numFlux_.name() << ",\\\\" << std::endl;
       return stream.str();
     }
 
   protected:
     using BaseType::discreteModel_;
-    using BaseType::numflux_;
+    using BaseType::numFlux_;
   };
 
 
@@ -394,25 +394,25 @@ namespace Fem
                                     *(new AdvectionFluxType( model, parameter ) ),
                                     tuple, name, parameter )
     {
-      advfluxPtr_.reset( &advflux_ );
+      advFluxPtr_.reset( &advFlux_ );
     }
 
     template< class ExtraParameterTupleImp >
     DGLimitedAdvectionOperator( GridPartType& gridPart,
                                 const ModelType& model,
-                                AdvectionFluxType& advflux,
+                                const AdvectionFluxType& advFlux,
                                 ExtraParameterTupleImp tuple,
                                 const std::string name = "",
                                 const Dune::Fem::ParameterReader &parameter = Dune::Fem::Parameter::container() )
       : gridPart_( gridPart )
       , model_( model )
-      , advflux_( advflux )
+      , advFlux_( advFlux )
       , space_( gridPart_ )
       , limiterSpace_( gridPart_ )
       , fvSpc_()
       , indicator_()
       , diffFlux_( gridPart_, model_, DGPrimalDiffusionFluxParameters( ParameterKey::generate( name, "dgdiffusionflux." ), parameter ) )
-      , discreteModel1_( model_, advflux_, diffFlux_ )
+      , discreteModel1_( model_, advFlux_, diffFlux_ )
       , limitDiscreteModel_( model_ , space_.order(), parameter )
       , pass0_()
       , pass1_( limitDiscreteModel_, pass0_, limiterSpace_ )
@@ -539,11 +539,12 @@ namespace Fem
       return discreteModel1_;
     }
 
-  private:
+  protected:
+    std::unique_ptr< const AdvectionFluxType > advFluxPtr_;
+
     GridPartType&              gridPart_;
     const ModelType&           model_;
-    AdvectionFluxType&         advflux_;
-    std::unique_ptr< AdvectionFluxType > advfluxPtr_;
+    const AdvectionFluxType&   advFlux_;
 
     SpaceType                  space_;
     LimiterSpaceType           limiterSpace_;
@@ -553,10 +554,8 @@ namespace Fem
 
     //mutable int operatorCalled_;
 
-  protected:
     DiffusionFluxType   diffFlux_;
 
-  private:
     DiscreteModel1Type  discreteModel1_;
     LimiterDiscreteModelType  limitDiscreteModel_;
     Pass0Type           pass0_;
