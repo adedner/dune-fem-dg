@@ -96,6 +96,8 @@ def femDGOperator(Model, space,
     virtualize = False
     import dune.create as create
 
+    includes = []
+
     if limiter is None or limiter is False:
         limiter = "unlimited"
 
@@ -187,8 +189,10 @@ def femDGOperator(Model, space,
         if callable(advectionFlux):
             advFluxId  = "Dune::Fem::AdvectionFlux::Enum::userdefined"
             advectionFlux = advectionFlux(advModel)
+            includes += advectionFlux._includes
         elif advectionFlux.lower().find(".h") >= 0:
             advFluxId  = "Dune::Fem::AdvectionFlux::Enum::userdefined"
+            includes += [ advectionFlux ]
         else:
             # if dgadvectionflux.method has been selected, then use general flux,
             # otherwise default to LLF flux
@@ -291,13 +295,11 @@ def femDGOperator(Model, space,
 
     ################################################################
     ### Construct DuneType, includes, and extra methods/constructors
-    includes  = ["dune/fem-dg/python/operator.hh"]
+    includes += ["dune/fem-dg/python/operator.hh"]
     includes += ["dune/fem-dg/operator/dg/dgpyoperator.hh"]
     includes += space._includes + destinationIncludes
     includes += ["dune/fem/schemes/diffusionmodel.hh", "dune/fempy/parameter.hh"]
     includes += advModel._includes + diffModel._includes
-    if advFluxId == "Dune::Fem::AdvectionFlux::Enum::userdefined":
-        includes += [ advectionFlux ]
 
     additionalType = additionalClass + '< typename ' + spaceType + '::FunctionSpaceType >'
 
