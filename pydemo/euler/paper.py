@@ -1,5 +1,6 @@
-import math
+import math, sys
 from ufl import *
+from dune.generator import path
 from dune.grid import structuredGrid
 from dune.fem.space import dgonb, finiteVolume
 from dune.femdg import femDGOperator
@@ -33,7 +34,7 @@ class Model:
 
 ########################################################################
 
-print("\n Part 1\n")
+print("\n###############\n Start Part 1\n",flush=True)
 
 # Part 1: basic set up and time loop - no limiter and fixed time step
 #         using constant initial data
@@ -50,7 +51,9 @@ while t < 0.1:
     t += stepper(u_h, dt=0.001)
 vtk()
 
+##############################################################
 # Part 2: add limiter and methods for troubled cell indicator
+print("\n###############\n Start Part 2\n",flush=True)
 def velocity(t,x,U):
     _, v ,_ = Model.toPrim(U)
     return v
@@ -66,37 +69,41 @@ Model.velocity = velocity
 Model.physical = physical
 Model.jump     = jump
 
-from dune.generator import path
-if False: # use flux in header
+def femdgFlux():
+    return femDGOperator(Model, space, limiter="MinMod")
+def headerFlux():
     fluxHeader = path(__file__)+"llf.hh"
-    operator = femDGOperator(Model, space, advectionFlux=fluxHeader, limiter="MinMod")
-elif True:
+    return femDGOperator(Model, space, advectionFlux=fluxHeader, limiter="MinMod")
+def classFlux():
     from dune.generator.importclass import load
     from dune.typeregistry import generateTypeName
     def flux(model): # possibly also want to pass in parameters
         # wrong model class used here - EllipticModel with no Traits
         clsName,includes = generateTypeName("Dune::Fem::DGAdvectionFlux",model._typeName,"Dune::Fem::AdvectionFlux::Enum::userdefined")
         return load(clsName,[path(__file__)+"llf.hh"]+includes,model)
-    operator = femDGOperator(Model, space, advectionFlux=flux, limiter="MinMod")
-else:
-    operator = femDGOperator(Model, space, limiter="MinMod")
-
-stepper  = femdgStepper(order=3, operator=operator)
-x = SpatialCoordinate(space)
-u_h.interpolate( conditional(dot(x,x)<0.1,as_vector([1,0,0,2.5]),
-                                          as_vector([0.125,0,0,0.25])) )
-operator.applyLimiter(u_h)
-t  = 0
-vtk = gridView.sequencedVTK("paperB", pointdata=[u_h])
-
-print("Start Part 2\n")
-while t < 0.4:
+    return femDGOperator(Model, space, advectionFlux=flux, limiter="MinMod")
+# versions = [femdgFlux,headerFlux,classFlux]
+versions = [classFlux]
+for op in versions:
+    print("####", op.__name__,flush=True)
+    operator = op()
+    stepper  = femdgStepper(order=3, operator=operator)
+    x = SpatialCoordinate(space)
+    u_h.interpolate( conditional(dot(x,x)<0.1,as_vector([1,0,0,2.5]),
+                                              as_vector([0.125,0,0,0.25])) )
+    operator.applyLimiter(u_h)
+    t  = 0
+    vtk = gridView.sequencedVTK("paperB"+op.__name__, pointdata=[u_h])
+    while t < 0.004:
+        vtk()
+        operator.setTime(t)
+        t += stepper(u_h)
+        print(t)
     vtk()
-    operator.setTime(t)
-    t += stepper(u_h)
-vtk()
+sys.exit(0)
 
 # Part 3: FV on polygonal grid
+print("\n###############\n Start Part 3\n",flush=True)
 from dune.generator import algorithm
 from dune.polygongrid import voronoiDomain, polygonGrid
 from dune.grid import reader
@@ -124,7 +131,6 @@ operator.applyLimiter(u_h)
 count = 0
 gridView.writeVTK("paperC", celldata=[fvU], number=count)
 t  = 0
-print("Start Part 3\n")
 while t < 0.4:
     assert not math.isnan( u_h.scalarProductDofs( u_h ) )
     operator.setTime(t)
