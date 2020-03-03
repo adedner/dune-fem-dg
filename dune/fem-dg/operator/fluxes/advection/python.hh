@@ -22,8 +22,9 @@ namespace Fem
    * \tparam FluxParameterImp type of the flux parameters
    */
   template <class ModelImp, class Additional, class FluxParameterImp = AdvectionFluxParameters >
-  class DGAdvectionFluxPythonUserDefine : public DGAdvectionFluxBase<
-          AdvectionModelWrapper< typename ModelImp::GridPartType::GridType,
+  class DGAdvectionFluxPythonUserDefine
+    : public DGAdvectionFluxBase<
+           AdvectionModelWrapper< typename ModelImp::GridPartType::GridType,
                                   ModelImp,
                                   Additional,
                                   NoLimiter< typename ModelImp::DFunctionSpaceType::DomainFieldType > >, FluxParameterImp >
@@ -32,11 +33,13 @@ namespace Fem
                                    ModelImp,
                                    Additional,
                                    NoLimiter< typename ModelImp::DFunctionSpaceType::DomainFieldType > > ModelWrapperType;
+
+  public:
+    typedef typename std::conditional< std::is_base_of< Dune::Fem::IsFemDGModel, ModelImp >::value,
+            ModelImp, ModelWrapperType > :: type ModelType;
                     //typename AdvectionLimiterFunctionSelector< typename ModelImp::DFunctionSpaceType::DomainFieldType, limiterFunctionId > :: type >
 
-    typedef DGAdvectionFluxBase< ModelWrapperType, FluxParameterImp  > BaseType;
-  public:
-    typedef ModelWrapperType ModelType;
+    typedef DGAdvectionFluxBase< ModelType, FluxParameterImp  > BaseType;
 
     enum { dimRange = ModelType::dimRange };
     typedef typename ModelType::DomainType         DomainType;
@@ -71,6 +74,18 @@ namespace Fem
       : BaseType( *(new ModelType(modelImp)), parameter )
     {
       modelPtr_.reset( &this->model_ );
+    }
+
+    /**
+     * \brief Constructor
+     *
+     * \param[in] mod analytical model
+     * \param[in] parameters  parameter reader
+     */
+    DGAdvectionFluxPythonUserDefine (const ModelType& model,
+                                     const ParameterType& parameter )
+      : BaseType( model, parameter )
+    {
     }
 
   protected:

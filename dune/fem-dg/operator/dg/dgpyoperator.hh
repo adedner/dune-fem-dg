@@ -72,7 +72,12 @@ namespace Fem
     static constexpr bool matrixfree = true  ;
     static constexpr bool threading  = Additional::threading;
 
-    typedef DGAdvectionFlux< ModelType, advFluxId >       AdvectionFluxType;
+    static const bool fluxIsUserDefined = ( advFluxId == AdvectionFlux::Enum::userdefined );
+
+    typedef typename std::conditional< fluxIsUserDefined,
+                                       DGAdvectionFlux< AdvectionModel, advFluxId >,
+                                       DGAdvectionFlux< ModelType, advFluxId > > :: type  AdvectionFluxType;
+
     typedef typename DiffusionFluxSelector< ModelType, DiscreteFunctionSpaceType, diffFluxId, formId >::type  DiffusionFluxType;
 
     typedef DefaultOperatorTraits< ModelType, DestinationType, AdvectionFluxType, DiffusionFluxType,
@@ -108,9 +113,11 @@ namespace Fem
         extra_(),
         problem_(),
         model_( advectionModel, diffusionModel, problem_ ),
-        fullOperator_( space.gridPart(), model_, extra_, name(), parameter ),
-        explOperator_( space.gridPart(), model_, extra_, name(), parameter ),
-        implOperator_( space.gridPart(), model_, extra_, name(), parameter ),
+        advFluxPtr_(),
+        advFlux_( advectionFlux( parameter, std::integral_constant< bool, fluxIsUserDefined >() )),
+        fullOperator_( space.gridPart(), model_, advFlux_, extra_, name(), parameter ),
+        explOperator_( space.gridPart(), model_, advFlux_, extra_, name(), parameter ),
+        implOperator_( space.gridPart(), model_, advFlux_, extra_, name(), parameter ),
         adaptIndicator_() //  space, model_, extra_ ) // TODO pass parameters
     {
     }
@@ -124,9 +131,10 @@ namespace Fem
         extra_(),
         problem_(),
         model_( advectionModel, diffusionModel, problem_ ),
-        fullOperator_( space.gridPart(), model_, advFlux, extra_, name(), parameter ),
-        explOperator_( space.gridPart(), model_, advFlux, extra_, name(), parameter ),
-        implOperator_( space.gridPart(), model_, advFlux, extra_, name(), parameter ),
+        advFlux_( advFlux ),
+        fullOperator_( space.gridPart(), model_, advFlux_, extra_, name(), parameter ),
+        explOperator_( space.gridPart(), model_, advFlux_, extra_, name(), parameter ),
+        implOperator_( space.gridPart(), model_, advFlux_, extra_, name(), parameter ),
         adaptIndicator_() //  space, model_, extra_ ) // TODO pass parameters
     {
     }
@@ -154,11 +162,13 @@ namespace Fem
     //! evaluation indicator and mark grid
     void estimateMark( const DestinationType& arg, const double dt ) const
     {
+      /*
       if( ! adaptIndicator_ )
       {
         adaptIndicator_.reset( new AdaptIndicatorType( space_, model_, extra_ ) );
       }
       adaptIndicator_->estimateMark( arg, dt );
+      */
     }
 
     /// Methods from SpaceOperatorInterface ////
@@ -190,11 +200,27 @@ namespace Fem
     //// End Methods from SpaceOperatorInterface /////
 
   protected:
+    const AdvectionFluxType& advectionFlux( const Dune::Fem::ParameterReader &parameter, std::integral_constant< bool, false > ) const
+    {
+      advFluxPtr_.reset( new AdvectionFluxType( model_, parameter ) );
+      return *advFluxPtr_;
+    }
+
+    const AdvectionFluxType& advectionFlux( const Dune::Fem::ParameterReader &parameter, std::integral_constant< bool, true > ) const
+    {
+      DUNE_THROW(InvalidStateException,"DGOperator::DGOPerator: When advFluxId is userdefined, flux needs to be passed in constructor!");
+      return *((AdvectionFluxType *) 0);
+    }
+
     const DiscreteFunctionSpaceType&      space_;
 
     std::tuple<>                          extra_;
     ProblemType                           problem_;
     ModelType                             model_;
+
+    mutable std::unique_ptr< const AdvectionFluxType >  advFluxPtr_;
+    const AdvectionFluxType&                    advFlux_;
+
     mutable FullOperatorType              fullOperator_;
     mutable ExplicitOperatorType          explOperator_;
     mutable ImplicitOperatorType          implOperator_;

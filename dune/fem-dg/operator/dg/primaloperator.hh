@@ -387,19 +387,6 @@ namespace Fem
     template< class ExtraParameterTupleImp >
     DGLimitedAdvectionOperator( GridPartType& gridPart,
                                 const ModelType& model,
-                                ExtraParameterTupleImp tuple,
-                                const std::string name = "",
-                                const Dune::Fem::ParameterReader &parameter = Dune::Fem::Parameter::container() )
-      : DGLimitedAdvectionOperator( gridPart, model,
-                                    *(new AdvectionFluxType( model, parameter ) ),
-                                    tuple, name, parameter )
-    {
-      advFluxPtr_.reset( &advFlux_ );
-    }
-
-    template< class ExtraParameterTupleImp >
-    DGLimitedAdvectionOperator( GridPartType& gridPart,
-                                const ModelType& model,
                                 const AdvectionFluxType& advFlux,
                                 ExtraParameterTupleImp tuple,
                                 const std::string name = "",
@@ -540,8 +527,6 @@ namespace Fem
     }
 
   protected:
-    std::unique_ptr< const AdvectionFluxType > advFluxPtr_;
-
     GridPartType&              gridPart_;
     const ModelType&           model_;
     const AdvectionFluxType&   advFlux_;

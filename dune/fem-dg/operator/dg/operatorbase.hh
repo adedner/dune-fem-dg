@@ -140,19 +140,6 @@ namespace Fem
 
   public:
     template< class ExtraParameterTupleImp >
-    DGAdvectionDiffusionOperatorBase( GridPartType& gridPart, const ModelType& model,
-                                      ExtraParameterTupleImp& tuple,
-                                      const std::string name = "",
-                                      const Dune::Fem::ParameterReader &parameter = Dune::Fem::Parameter::container() )
-      : DGAdvectionDiffusionOperatorBase( gridPart, model,
-                                          *(new AdvectionFluxType( model, parameter )),
-                                          tuple, name, parameter )
-    {
-      // store pointer to avoid memory leaks
-      numFluxPtr_.reset( &numFlux_ );
-    }
-
-    template< class ExtraParameterTupleImp >
     DGAdvectionDiffusionOperatorBase( GridPartType& gridPart,
                                       const ModelType& model,
                                       const AdvectionFluxType& numFlux,
@@ -247,7 +234,6 @@ namespace Fem
     const DiscreteModelType& discreteModel() const { return discreteModel_; }
 
   protected:
-    std::unique_ptr< const AdvectionFluxType > numFluxPtr_;
     GridPartType&                              gridPart_;
     const ModelType&                           model_;
     const AdvectionFluxType&                   numFlux_;

@@ -182,17 +182,19 @@ def femDGOperator(Model, space,
     if hasDiffFlux:
         diffFluxId = "Dune::Fem::DiffusionFlux::Enum::"+diffusionScheme
 
+    advectionFluxIsCallable = False
     if hasAdvFlux:
         # default value is LLF
         advFluxId  = "Dune::Fem::AdvectionFlux::Enum::llf"
         # if flux choice is default check parameters
         if callable(advectionFlux):
             advFluxId  = "Dune::Fem::AdvectionFlux::Enum::userdefined"
+            advectionFluxIsCallable = True
             advectionFlux = advectionFlux(advModel)
             includes += advectionFlux._includes
-        elif advectionFlux.lower().find(".h") >= 0:
-            advFluxId  = "Dune::Fem::AdvectionFlux::Enum::userdefined"
-            includes += [ advectionFlux ]
+        #elif advectionFlux.lower().find(".h") >= 0:
+        #    advFluxId  = "Dune::Fem::AdvectionFlux::Enum::userdefined"
+        #    includes += [ advectionFlux ]
         else:
             # if dgadvectionflux.method has been selected, then use general flux,
             # otherwise default to LLF flux
@@ -319,10 +321,17 @@ def femDGOperator(Model, space,
                  preamble=writer.writer.getvalue()).\
                  Operator( space, advModel, diffModel, parameters=parameters )
     else:
-        op = load(includes, typeName, estimateMark,
-                 baseClasses = [base],
-                 preamble=writer.writer.getvalue()).\
-                 Operator( space, advModel, diffModel )
+        if advectionFluxIsCallable:
+            op = load(includes, typeName, estimateMark,
+                     baseClasses = [base],
+                     preamble=writer.writer.getvalue()).\
+                     Operator( space, advModel, diffModel, advectionFlux )
+        else:
+            op = load(includes, typeName, estimateMark,
+                     baseClasses = [base],
+                     preamble=writer.writer.getvalue()).\
+                     Operator( space, advModel, diffModel )
+
     op._t = t
     op.time = t.value
     op.models = [advModel,diffModel]
