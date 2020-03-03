@@ -131,6 +131,7 @@ namespace Fem
         extra_(),
         problem_(),
         model_( advectionModel, diffusionModel, problem_ ),
+        advFluxPtr_(),
         advFlux_( advFlux ),
         fullOperator_( space.gridPart(), model_, advFlux_, extra_, name(), parameter ),
         explOperator_( space.gridPart(), model_, advFlux_, extra_, name(), parameter ),

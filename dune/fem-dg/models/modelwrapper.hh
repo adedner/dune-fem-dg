@@ -205,7 +205,7 @@ namespace Fem
 
       for( int i=0; i<JacobianRangeType::rows; ++i )
       {
-        unity_[ i ][ i ] = 1;
+        // unity_[ i ][ i ] = 1;
       }
     }
 

@@ -59,8 +59,6 @@ namespace Dune
                        const ParameterType& parameters = ParameterType() )
         : BaseType( modelImp, parameters )
       {}
-      ~DGAdvectionFlux()
-      { std::cout << "in destructor\n"; }
 
       /**
        * \copydoc DGAdvectionFluxBase::name()

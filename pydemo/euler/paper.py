@@ -82,8 +82,7 @@ def classFlux():
         clsName,includes = generateTypeName("Dune::Fem::DGAdvectionFlux",model._typeName,"Dune::Fem::AdvectionFlux::Enum::userdefined")
         return load(clsName,[path(__file__)+"llf.hh"]+includes,model)
     return femDGOperator(Model, space, advectionFlux=flux, limiter="MinMod")
-# versions = [femdgFlux,headerFlux,classFlux]
-versions = [classFlux]
+versions = [femdgFlux,headerFlux,classFlux]
 for op in versions:
     print("####", op.__name__,flush=True)
     operator = op()
@@ -100,7 +99,6 @@ for op in versions:
         t += stepper(u_h)
         print(t)
     vtk()
-sys.exit(0)
 
 # Part 3: FV on polygonal grid
 print("\n###############\n Start Part 3\n",flush=True)
