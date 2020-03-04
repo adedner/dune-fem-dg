@@ -193,8 +193,7 @@ namespace Fem
       : advection_( advModel ),
         diffusion_( diffModel ),
         problem_( problem ),
-        limitedRange_(),
-        unity_( 0 )
+        limitedRange_()
     {
       // by default this should be the identity
       for( int i=0; i<limitedDimRange; ++i )
@@ -202,11 +201,6 @@ namespace Fem
 
       // if method has been filled then modified will be set differently
       advection_.limitedRange( limitedRange_ );
-
-      for( int i=0; i<JacobianRangeType::rows; ++i )
-      {
-        // unity_[ i ][ i ] = 1;
-      }
     }
 
 #ifdef EULER_WRAPPER_TEST
@@ -301,12 +295,6 @@ namespace Fem
       if( hasDiffusion )
       {
         maxValue = diffusion_.diffusionTimeStep( local.entity(), local.quadraturePoint(), 0.0, u );
-        /*
-        JacobianRangeType diff;
-        diffusion_.diffusiveFlux( local.quadraturePoint(), u, unity_, diff);
-
-        FMatrixHelp::eigenValues( diff, maxValue );
-        */
       }
     }
 
@@ -514,8 +502,6 @@ namespace Fem
 
     const ProblemType& problem_;
     LimitedRangeType limitedRange_;
-
-    JacobianRangeType unity_;
   };
 
   template< class GridImp,
