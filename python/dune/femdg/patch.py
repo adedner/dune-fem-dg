@@ -1,6 +1,6 @@
 from __future__ import division, print_function, unicode_literals
 
-from dune.ufl.codegen import generateMethod
+# from dune.ufl.codegen import generateMethod
 from ufl import grad, TrialFunction, SpatialCoordinate, FacetNormal, Coefficient, replace, diff, as_vector
 from ufl.core.expr import Expr
 from dune.source.cplusplus import Variable, UnformattedExpression, AccessModifier, Declaration
@@ -22,15 +22,15 @@ def uflExpr(Model,space,t):
         diffusionTimeStep = diffusionTimeStep(t,x,u)
     physical = getattr(Model,"physical",None)
     if physical is not None:
-        physical = physical(u)
+        physical = physical(t,x,u)
     # TODO: jump is problematic since the coefficient 'w' causes issues -
     # no predefined when extracting required Coefficients so needs fixing
     # So jump is not returned by this method and is constructed again in
     # the code generation process
-    w = Coefficient(space)
+    # w = Coefficient(space)
     jump = getattr(Model,"jump",None)
     if jump is not None:
-        jump = jump(u,w)
+        jump = jump(t,x,u,u)
     hasAdvFlux = hasattr(Model,"F_c")
     hasDiffFlux = hasattr(Model,"F_v")
     boundaryDict = getattr(Model,"boundary",{})
@@ -81,7 +81,7 @@ def uflExpr(Model,space,t):
         count = 0
         for id,f in limiterModifiedDict.items(): count += 1
         limitedDimRange = str(count)
-    jump = None # TODO: see comment above
+    # jump = None # TODO: see comment above
     return maxSpeed, velocity, diffusionTimeStep, physical, jump,\
            boundaryAFlux, boundaryDFlux, boundaryValue, hasBoundaryValue
 
@@ -127,7 +127,7 @@ def codeFemDg(self):
     maxSpeed = getattr(Model,"maxLambda",None)
     if maxSpeed is not None:
         maxSpeed = maxSpeed(t,x,u,n)
-    generateMethod(code, maxSpeed,
+    self.generateMethod(code, maxSpeed,
             'double', 'maxSpeed',
             args=['const double &t',
                   'const Entity &entity', 'const Point &x',
@@ -139,7 +139,7 @@ def codeFemDg(self):
     velocity = getattr(Model,"velocity",None)
     if velocity is not None:
         velocity = velocity(t,x,u)
-    generateMethod(code, velocity,
+    self.generateMethod(code, velocity,
             'DDomainType', 'velocity',
             args=['const double &t',
                   'const Entity &entity', 'const Point &x',
@@ -151,7 +151,7 @@ def codeFemDg(self):
     diffusionTimeStep = getattr(Model,"maxDiffusion",None)
     if diffusionTimeStep is not None:
         diffusionTimeStep = diffusionTimeStep(t,x,u)
-    generateMethod(code, diffusionTimeStep,
+    self.generateMethod(code, diffusionTimeStep,
             'double', 'diffusionTimeStep',
             args=['const Entity& entity', 'const Point &x',
                   'const T& circumEstimate', 'const DRangeType &u'],
@@ -161,30 +161,32 @@ def codeFemDg(self):
     # QUESTION: should `physical` actually depend on x? Perhaps even t?
     physical = getattr(Model,"physical",True)
     if not isinstance(physical,bool):
-        physical = physical(u)
-    generateMethod(code, physical,
+        physical = physical(t,x,u)
+    self.generateMethod(code, physical,
             'double', 'physical',
             args=['const Entity &entity', 'const Point &x',
                   'const DRangeType &u'],
             targs=['class Entity, class Point'], const=True,
             predefined=predefined)
 
-    # QUESTION: should `jump` actually depend on x? Perhaps even t?
     w = Coefficient(space)
-    predefined.update( {w:Variable("const DRangeType &", "w")} )
+    jmpPredefined = predefined.copy()
+    jmpPredefined.update( {w:Variable("const DRangeType &", "w")} )
+    jmpPredefined.update( {x: UnformattedExpression('auto', 'it.geometry().global( Dune::Fem::coordinate( x ) )') })
     jump = getattr(Model,"jump",None)
     if jump is not None:
-        jump = jump(u,w)
-    generateMethod(code, jump,
+        jump = jump(t,x,u,w)
+    self.generateMethod(code, jump,
             'double', 'jump',
             args=['const Intersection& it', 'const Point &x',
                   'const DRangeType &u',
                   'const DRangeType &w'],
             targs=['class Intersection, class Point'], const=True,
-            predefined=predefined)
+            predefined=jmpPredefined)
 
+    # still missing
     adjustAverageValue = {}
-    generateMethod(code, adjustAverageValue,
+    self.generateMethod(code, adjustAverageValue,
             'void', 'adjustAverageValue',
             args=['const Entity& entity', 'const Point &x',
                   'DRangeType &u'],
@@ -235,7 +237,7 @@ def codeFemDg(self):
                 bndReturn = True
                 hasBoundaryValue.update( [ (kk,bndReturn) for kk in ids] )
 
-    generateMethod(code, boundaryAFlux,
+    self.generateMethod(code, boundaryAFlux,
             'bool', 'boundaryFlux',
             args=['const int bndId',
                   'const double &t',
@@ -245,7 +247,7 @@ def codeFemDg(self):
                   'RRangeType &result'],
             targs=['class Entity, class Point'], const=True,
             predefined=predefined)
-    generateMethod(code, boundaryDFlux,
+    self.generateMethod(code, boundaryDFlux,
             'bool', 'diffusionBoundaryFlux',
             args=['const int bndId',
                   'const double &t',
@@ -257,7 +259,7 @@ def codeFemDg(self):
             targs=['class Entity, class Point'], const=True,
             predefined=predefined)
 
-    generateMethod(code, hasBoundaryValue,
+    self.generateMethod(code, hasBoundaryValue,
             'bool', 'hasBoundaryValue',
             args=['const int bndId',
                   'const double &t',
@@ -266,7 +268,7 @@ def codeFemDg(self):
                   'RRangeType &result'],
             targs=['class Entity, class Point'], const=True,
             predefined=predefined)
-    generateMethod(code, boundaryValue,
+    self.generateMethod(code, boundaryValue,
             'bool', 'boundaryValue',
             args=['const int bndId',
                   'const double &t',
@@ -286,7 +288,7 @@ def codeFemDg(self):
         count = 0
         for id,f in limiterModifiedDict.items(): count += 1
         limitedDimRange = str(count)
-    generateMethod(code, limiterModified,
+    self.generateMethod(code, limiterModified,
             'void', 'limitedRange',
             args=['LimitedRange& limRange'],
             targs=['class LimitedRange'], const=True, evalSwitch=False,

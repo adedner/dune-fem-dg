@@ -41,9 +41,9 @@ def CompressibleEuler(dim, gamma):
             return abs(dot(v,n)) + sqrt(gamma*p/rho)
         def velocity(t,x,U):
             return Model.velo(U)
-        def physical(U):
+        def physical(t,x,U):
             return conditional( (U[0]<1e-8), 0, conditional( Model.rhoeps(U) > 1e-8 , 1, 0 ) )
-        def jump(U,V):
+        def jump(t,x,U,V):
             pL = Model.pressure(U)
             pR = Model.pressure(V)
             return (pL - pR)/(0.5*(pL + pR))

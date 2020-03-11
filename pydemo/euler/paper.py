@@ -57,10 +57,10 @@ print("\n###############\n Start Part 2\n",flush=True)
 def velocity(t,x,U):
     _, v ,_ = Model.toPrim(U)
     return v
-def physical(U):
+def physical(t,x,U):
     rho, _, p = Model.toPrim(U)
     return conditional( rho>1e-8, conditional( p>1e-8 , 1, 0 ), 0 )
-def jump(U,V):
+def jump(t,x,U,V):
     _,_, pL = Model.toPrim(U)
     _,_, pR = Model.toPrim(V)
     return (pL - pR)/(0.5*(pL + pR))
@@ -75,14 +75,11 @@ def headerFlux():
     fluxHeader = path(__file__)+"llf.hh"
     return femDGOperator(Model, space, advectionFlux=fluxHeader, limiter="MinMod")
 def classFlux():
-    from dune.generator.importclass import load
-    from dune.typeregistry import generateTypeName
-    def flux(model): # possibly also want to pass in parameters
-        # wrong model class used here - EllipticModel with no Traits
-        clsName,includes = generateTypeName("Dune::Fem::DGAdvectionFlux",model._typeName,"Dune::Fem::AdvectionFlux::Enum::userdefined")
+    def flux(model,clsName,includes): # possibly also want to pass in parameters
+        from dune.generator.importclass import load
         return load(clsName,[path(__file__)+"llf.hh"]+includes,model)
     return femDGOperator(Model, space, advectionFlux=flux, limiter="MinMod")
-versions = [femdgFlux,headerFlux,classFlux]
+versions = [classFlux] # [femdgFlux,headerFlux,classFlux]
 for op in versions:
     print("####", op.__name__,flush=True)
     operator = op()

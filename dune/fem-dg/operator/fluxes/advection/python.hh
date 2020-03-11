@@ -13,6 +13,17 @@ namespace Dune
 namespace Fem
 {
 
+  template< class FunctionSpace >
+  struct EmptyAdditional
+  {
+    static const int limitedDimRange = FunctionSpace :: dimRange;
+    static const bool hasAdvection = true;
+    static const bool hasDiffusion = false;
+    static const bool hasStiffSource = false;
+    static const bool hasNonStiffSource = false;
+    static const bool hasFlux = true;
+  };
+
   /**
    * \brief Defines an interface for advective fluxes.
    *
@@ -21,7 +32,8 @@ namespace Fem
    * \tparam ModelImp type of the analytical model
    * \tparam FluxParameterImp type of the flux parameters
    */
-  template <class ModelImp, class Additional, class FluxParameterImp = AdvectionFluxParameters >
+  template <class ModelImp, class Additional=EmptyAdditional<typename ModelImp::DFunctionSpaceType>,
+            class FluxParameterImp = AdvectionFluxParameters >
   class DGAdvectionFluxPythonUserDefine
     : public DGAdvectionFluxBase<
            AdvectionModelWrapper< typename ModelImp::GridPartType::GridType,

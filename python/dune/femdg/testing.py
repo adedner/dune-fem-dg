@@ -10,29 +10,22 @@ from dune.femdg.rk import femdgStepper
 from collections import namedtuple
 
 def run(Model, Stepper=None,
-        initial=None, domain=None, endTime=None, name=None, exact=None, # deprecated - now Model attributes
         polOrder=1, limiter="default", startLevel=0,
         primitive=None, saveStep=None, subsamp=0,
         dt=None,cfl=None,grid="yasp", space="dgonb", threading=True,
-        parameters={}):
+        parameters={},
+        modifyModel=None):
     if Stepper is None:
         Stepper = femdgStepper(parameters=parameters)
-    if initial is not None:
-        print("deprecated usage of run: add initial etc as class atttributes to the Model")
-    else:
-        initial = Model.initial
-        domain = Model.domain
-        endTime = Model.endTime
-        name = Model.name
-        try:
-            exact = Model.exact
-        except:
-            exact = None
+    try:
+        exact = Model.exact
+    except:
+        exact = None
     print("*************************************")
-    print("**** Running simulation",name)
+    print("**** Running simulation",Model.name)
     print("*************************************")
     try: # passed in a [xL,xR,N] tripple
-        x0,x1,N = domain
+        x0,x1,N = Model.domain
         periodic=[True,]*len(x0)
         if hasattr(Model,"boundary"):
             bnd=set()
@@ -54,7 +47,7 @@ def run(Model, Stepper=None,
         grid     = create.grid(grid,domain)
         print("Setting periodic boundaries",periodic,flush=True)
     except TypeError: # assume the 'domain' is already a gridview
-        grid = domain
+        grid = Model.domain
     # initial refinement of grid
     if startLevel>0: # note this call clears all discrete function e.g. the velocity in the chemical problem
         grid.hierarchicalGrid.globalRefine(startLevel)
@@ -64,23 +57,29 @@ def run(Model, Stepper=None,
     saveTime = saveStep
 
     # create discrete function space
-    space = create.space( space, grid, order=polOrder, dimRange=dimR)
+    try:
+        space = create.space( space, grid, order=polOrder, dimRange=dimR)
+    except:
+        assert space.dimRange > 0
+    if modifyModel is not None:
+        Model = modifyModel(Model,space)
+
     operator = femDGOperator(Model, space, limiter=limiter, threading=threading, parameters=parameters )
     stepper  = Stepper(operator, cfl)
     # create and initialize solution
-    u_h = space.interpolate(initial, name='u_h')
+    u_h = space.interpolate(Model.initial, name='u_h')
     operator.applyLimiter( u_h )
 
     # preparation for output
     vtk = lambda : None
-    if saveStep is not None and name is not None:
+    if saveStep is not None and Model.name is not None:
         x = SpatialCoordinate(space.cell())
         tc = Constant(0.0,"time")
         try:
             velo = create.function("ufl",space.grid, ufl=Model.velocity(tc,x,u_h), order=2, name="velocity")
         except AttributeError:
             velo = None
-        vtk = grid.sequencedVTK(name, subsampling=subsamp,
+        vtk = grid.sequencedVTK(Model.name, subsampling=subsamp,
                celldata=[u_h],
                pointdata=primitive(Model,u_h) if primitive else [u_h],
                cellvector=[velo]
@@ -104,7 +103,7 @@ def run(Model, Stepper=None,
     assert not math.isnan( u_h.scalarProductDofs( u_h ) )
 
     t = 0
-    while t < endTime:
+    while t < Model.endTime:
         operator.setTime(t)
         dt = stepper(u_h)
         t += dt
@@ -139,7 +138,7 @@ def run(Model, Stepper=None,
         pass
 
     # output the final result and compute error (if exact is available)
-    if exact is not None and name is not None:
+    if exact is not None and Model.name is not None:
         tc = Constant(0, "time")
         # using '0' here because uusing 't'
         # instead means that this value is added to the generated code so
@@ -150,7 +149,7 @@ def run(Model, Stepper=None,
         except:
             u = exact(grid,t)
         tc.value = t
-        grid.writeVTK(name, subsampling=subsamp,
+        grid.writeVTK(Model.name, subsampling=subsamp,
                 celldata=[u_h], pointdata={"exact":u})
         # TODO make the gridfunctions from dune-python work nicely with ufl...
         # error = integrate( grid, dot(u-u_h,u-u_h), order=5 )
@@ -160,12 +159,12 @@ def run(Model, Stepper=None,
         except:
             error = 0
             pass
-    elif name is not None:
-        grid.writeVTK(name, subsampling=subsamp, celldata=[u_h])
+    elif Model.name is not None:
+        grid.writeVTK(Model.name, subsampling=subsamp, celldata=[u_h])
         error = integrate( grid, dot(u_h,u_h), order=5 )
     error = math.sqrt(error)
     print("*************************************")
-    print("**** Completed simulation",name)
+    print("**** Completed simulation",Model.name)
     print("**** error:", error)
     print("*************************************",flush=True)
     return u_h, [error, runTime, tcount, operator.counter()]

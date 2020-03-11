@@ -194,7 +194,7 @@ class Model:
         #                  [*(Model.D * DU[2])] ])
     def maxDiffusion(t,x,U):
        return Model.D
-    def physical(U):
+    def physical(t,x,U):
         #phi, cu, cb = Model.toPrim( U )
         # U should be positive
         #return conditional( phi>=0,1,0)*conditional(cu>=0,1,0)*conditional(cb>=0,1,0)

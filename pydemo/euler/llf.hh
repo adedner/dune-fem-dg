@@ -5,36 +5,18 @@
 
 #include <dune/fem-dg/operator/fluxes/advection/python.hh>
 
-
 namespace Dune
 {
   namespace Fem
   {
-
-
-    template< class FunctionSpace >
-    struct EmptyAdditional
-    {
-      static const int limitedDimRange = FunctionSpace :: dimRange;
-      static const bool hasAdvection = true;
-      static const bool hasDiffusion = false;
-      static const bool hasStiffSource = false;
-      static const bool hasNonStiffSource = false;
-      static const bool hasFlux = true;
-    };
-
-    /**
-     * \brief class specialization for a general flux chosen by a parameter file.
-     *
-     * The purpose of this class is to allow the selection of an advection flux
-     * via an enum given in AdvectionFlux::Enum.
-     */
     template< class ModelImp >
     class DGAdvectionFlux< ModelImp, AdvectionFlux::Enum::userdefined >
-     : public DGAdvectionFluxPythonUserDefine< ModelImp,
-                EmptyAdditional< typename ModelImp::DFunctionSpaceType> >
+    : public DGAdvectionFluxPythonUserDefine< ModelImp >
+                // EmptyAdditional< typename ModelImp::DFunctionSpaceType> >
     {
-      typedef DGAdvectionFluxPythonUserDefine< ModelImp, EmptyAdditional< typename ModelImp::DFunctionSpaceType> >  BaseType;
+      typedef DGAdvectionFluxPythonUserDefine< ModelImp >
+        //, EmptyAdditional< typename ModelImp::DFunctionSpaceType> >
+        BaseType;
 
     protected:
       using BaseType::model_;
@@ -117,6 +99,6 @@ namespace Dune
         return maxspeed * faceArea;
       }
     };
-  } // end namespace Fem
-} // end namespace Dune
+  }
+}
 #endif

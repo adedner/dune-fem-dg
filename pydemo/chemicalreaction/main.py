@@ -51,7 +51,7 @@ def problem():
             return eps*DU
         def maxDiffusion(t,x,U):
            return eps
-        def physical(U):
+        def physical(t,x,U):
             # make sure all components are between 0 and 1
             return conditional(U[0]>=0.,1,0)*\
                    conditional(U[1]>=0.,1,0)*\

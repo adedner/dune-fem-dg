@@ -182,6 +182,9 @@ def femDGOperator(Model, space,
     if hasDiffFlux:
         diffFluxId = "Dune::Fem::DiffusionFlux::Enum::"+diffusionScheme
 
+    if hasattr(Model,"NumericalF_c") and advectionFlux=="default":
+        advectionFlux = Model.NumericalF_c
+
     advectionFluxIsCallable = False
     if hasAdvFlux:
         # default value is LLF
@@ -190,7 +193,13 @@ def femDGOperator(Model, space,
         if callable(advectionFlux):
             advFluxId  = "Dune::Fem::AdvectionFlux::Enum::userdefined"
             advectionFluxIsCallable = True
-            advectionFlux = advectionFlux(advModel)
+            # wrong model class used here - EllipticModel with no Traits
+            # at the moment this is always the same type (depending on
+            # model._typeName) so could be done by only providing the header
+            # file in the dg operator construction method
+            from dune.typeregistry import generateTypeName
+            clsName,includes = generateTypeName("Dune::Fem::DGAdvectionFlux",advModel._typeName,"Dune::Fem::AdvectionFlux::Enum::userdefined")
+            advectionFlux = advectionFlux(advModel,clsName,includes)
             includes += advectionFlux._includes
         #elif advectionFlux.lower().find(".h") >= 0:
         #    advFluxId  = "Dune::Fem::AdvectionFlux::Enum::userdefined"
@@ -213,7 +222,7 @@ def femDGOperator(Model, space,
                         else:
                             advFluxId  = "Dune::Fem::AdvectionFlux::Enum::general"
 
-    if limiter.lower() == "unlimited":
+    if limiter.lower() == "unlimited" or limiter.lower() == "none":
         limiterId = "Dune::Fem::AdvectionLimiter::Enum::unlimited"
     elif limiter.lower() == "scaling":
         limiterFctId = "Dune::Fem::AdvectionLimiterFunction::Enum::none"
@@ -316,10 +325,16 @@ def femDGOperator(Model, space,
     estimateMark = Method('estimateMark', '''[]( DuneType &self, const typename DuneType::DestinationType &u, const double dt) { self.estimateMark(u, dt); }''' );
 
     if parameters is not None:
-        op = load(includes, typeName, estimateMark,
-                 baseClasses = [base],
-                 preamble=writer.writer.getvalue()).\
-                 Operator( space, advModel, diffModel, parameters=parameters )
+        if advectionFluxIsCallable:
+            op = load(includes, typeName, estimateMark,
+                     baseClasses = [base],
+                     preamble=writer.writer.getvalue()).\
+                     Operator( space, advModel, diffModel, advectionFlux, parameters=parameters )
+        else:
+            op = load(includes, typeName, estimateMark,
+                     baseClasses = [base],
+                     preamble=writer.writer.getvalue()).\
+                     Operator( space, advModel, diffModel, parameters=parameters )
     else:
         if advectionFluxIsCallable:
             op = load(includes, typeName, estimateMark,

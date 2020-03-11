@@ -37,7 +37,7 @@ class Model:
         return Model.transportVelocity
     def F_v(t,x,U,DU):
         return 0.02*DU
-    def physical(U):
+    def physical(t,x,U):
         return conditional(U[0]>=0,1,0)*conditional(U[1]>=0,1,0)*\
                conditional(U[2]>=0,1,0)
     boundary = {range(1,5): as_vector([0,0,0])}
