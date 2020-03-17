@@ -89,6 +89,8 @@ namespace Fem
     typedef typename GridPartType::GridType                                                    GridType;
     typedef AdaptationParameters                                                               AdaptationParametersType;
 
+    typedef typename IndicatorType :: AdvectionFluxType                                        AdvectionFluxType;
+
     // time provider
     typedef Fem::TimeProviderBase TimeProviderType;
 
@@ -97,20 +99,23 @@ namespace Fem
     typedef typename IndicatorType::ExtraParameterTupleType                                    ExtraParameterTupleType;
 
     template< class Model, class ExtraParameterTupleImp >
-    AdaptIndicator( DiscreteFunctionType& sol, Model& model, const ExtraParameterTupleImp& tuple, const std::string keyPrefix = "" )
-    : AdaptIndicator( sol.space(), model, tuple, keyPrefix )
+    AdaptIndicator( DiscreteFunctionType& sol, Model& model, const AdvectionFluxType& numFlux,
+                    const ExtraParameterTupleImp& tuple, const std::string keyPrefix = "" )
+    : AdaptIndicator( sol.space(), model, numFlux, tuple, keyPrefix )
     {
       sol_ = &sol;
     }
 
     template< class Model, class ExtraParameterTupleImp >
-    AdaptIndicator( const DiscreteFunctionSpaceType& space, Model& model, const ExtraParameterTupleImp& tuple, const std::string keyPrefix = "" )
+    AdaptIndicator( const DiscreteFunctionSpaceType& space, Model& model, const AdvectionFluxType& numFlux,
+                    const ExtraParameterTupleImp& tuple, const std::string keyPrefix = "" )
     : sol_( nullptr ),
       space_( space ),
       adaptationHandler_( nullptr ),
       keyPrefix_( keyPrefix ),
       adaptParam_( AdaptationParametersType( ParameterKey::generate( "", "fem.adaptation." ) ) ),
-      indicator_( const_cast<GridPartType&>(space.gridPart()), model, tuple, keyPrefix_ ),
+      // this is a DG operator (see operator/dg)
+      indicator_( const_cast<GridPartType&>(space.gridPart()), model, numFlux, tuple, keyPrefix_ ),
       estimator_( space, model.problem(), adaptParam_ ),
       timeProvider_( nullptr )
     {}
