@@ -100,22 +100,25 @@ namespace Fem
 
     template< class Model, class ExtraParameterTupleImp >
     AdaptIndicator( DiscreteFunctionType& sol, Model& model, const AdvectionFluxType& numFlux,
-                    const ExtraParameterTupleImp& tuple, const std::string keyPrefix = "" )
-    : AdaptIndicator( sol.space(), model, numFlux, tuple, keyPrefix )
+                    const ExtraParameterTupleImp& tuple,
+                    const std::string& name = "AdaptIndDG",
+                    const Dune::Fem::ParameterReader &parameter = Dune::Fem::Parameter::container() )
+    : AdaptIndicator( sol.space(), model, numFlux, tuple, name, parameter )
     {
       sol_ = &sol;
     }
 
     template< class Model, class ExtraParameterTupleImp >
     AdaptIndicator( const DiscreteFunctionSpaceType& space, Model& model, const AdvectionFluxType& numFlux,
-                    const ExtraParameterTupleImp& tuple, const std::string keyPrefix = "" )
+                    const ExtraParameterTupleImp& tuple,
+                    const std::string& name = "AdaptIndDG",
+                    const Dune::Fem::ParameterReader &parameter = Dune::Fem::Parameter::container() )
     : sol_( nullptr ),
       space_( space ),
       adaptationHandler_( nullptr ),
-      keyPrefix_( keyPrefix ),
-      adaptParam_( AdaptationParametersType( ParameterKey::generate( "", "fem.adaptation." ) ) ),
+      adaptParam_( parameter ),
       // this is a DG operator (see operator/dg)
-      indicator_( const_cast<GridPartType&>(space.gridPart()), model, numFlux, tuple, keyPrefix_ ),
+      indicator_( const_cast<GridPartType&>(space.gridPart()), model, numFlux, tuple, name, parameter ),
       estimator_( space, model.problem(), adaptParam_ ),
       timeProvider_( nullptr )
     {}

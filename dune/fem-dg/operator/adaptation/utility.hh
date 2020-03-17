@@ -65,7 +65,7 @@ namespace Fem
     //! retujrn refinement tolerance
     virtual double refinementTolerance () const
     {
-      return ParameterType::getValue< double >( keyPrefix_ + "refineTolerance" );
+      return ParameterType::getValue< double >( keyPrefix_ + "refineTolerance", 0.05 );
     }
 
     //! return percentage of refinement tolerance used for coarsening tolerance
@@ -84,7 +84,7 @@ namespace Fem
     virtual int finestLevel ( const int refineStepsForHalf = 1 ) const
     {
       return refineStepsForHalf *
-             ParameterType::getValue< int >( keyPrefix_ + "finestLevel" );
+             ParameterType::getValue< int >( keyPrefix_ + "finestLevel", 0 );
     }
 
     //! return minimal level achieved by refinement

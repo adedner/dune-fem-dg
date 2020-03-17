@@ -118,7 +118,7 @@ namespace Fem
         fullOperator_( space.gridPart(), model_, advFlux_, extra_, name(), parameter ),
         explOperator_( space.gridPart(), model_, advFlux_, extra_, name(), parameter ),
         implOperator_( space.gridPart(), model_, advFlux_, extra_, name(), parameter ),
-        adaptIndicator_( space, model_, advFlux_, extra_, parameter )
+        adaptIndicator_( space, model_, advFlux_, extra_, name()+"_adaptind", parameter )
     {
     }
 
@@ -136,7 +136,7 @@ namespace Fem
         fullOperator_( space.gridPart(), model_, advFlux_, extra_, name(), parameter ),
         explOperator_( space.gridPart(), model_, advFlux_, extra_, name(), parameter ),
         implOperator_( space.gridPart(), model_, advFlux_, extra_, name(), parameter ),
-        adaptIndicator_( space, model_, advFlux_, extra_, parameter )
+        adaptIndicator_( space, model_, advFlux_, extra_, name()+"_adaptind", parameter )
     {
     }
 
@@ -219,7 +219,7 @@ namespace Fem
     mutable FullOperatorType              fullOperator_;
     mutable ExplicitOperatorType          explOperator_;
     mutable ImplicitOperatorType          implOperator_;
-    mutable AdaptIndicatorType >          adaptIndicator_;
+    mutable AdaptIndicatorType            adaptIndicator_;
 
     mutable double                        fixedTimeStep_ ;
     mutable bool                          initialized_;
