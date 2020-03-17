@@ -34,12 +34,9 @@ namespace Fem
   {
     typedef LLFAdvFlux< ModelImp > BaseType;
   public:
-    typedef typename BaseType::ParameterType      ParameterType;
-    typedef typename BaseType::IdEnum             IdEnum;
-    typedef typename BaseType::ModelType          ModelType;
-
-    DGAdvectionFlux( const ModelType& mod, const ParameterType& parameters = Dune::Fem::Parameter::container() )
-      : BaseType( mod, parameters )
+    template< class ... Args>
+    DGAdvectionFlux(  Args&&... args )
+      : BaseType( std::forward<Args>(args)... )
     {}
   };
 
@@ -56,13 +53,9 @@ namespace Fem
   {
     typedef NoFlux< ModelImp > BaseType;
   public:
-    typedef typename BaseType::ParameterType      ParameterType;
-    typedef typename BaseType::IdEnum             IdEnum;
-    typedef typename BaseType::ModelType          ModelType;
-
-    DGAdvectionFlux( const ModelType& mod,
-                     const ParameterType& parameters = ParameterType() )
-      : BaseType( mod, parameters )
+    template< class ... Args>
+    DGAdvectionFlux(  Args&&... args )
+      : BaseType( std::forward<Args>(args)... )
     {}
   };
 
@@ -79,13 +72,9 @@ namespace Fem
   {
     typedef UpwindFlux< ModelImp > BaseType;
   public:
-    typedef typename BaseType::ParameterType      ParameterType;
-    typedef typename BaseType::IdEnum             IdEnum;
-    typedef typename BaseType::ModelType          ModelType;
-
-    DGAdvectionFlux( const ModelType& mod,
-                     const ParameterType& parameters = ParameterType() )
-      : BaseType( mod )
+    template< class ... Args>
+    DGAdvectionFlux(  Args&&... args )
+      : BaseType( std::forward<Args>(args)... )
     {}
   };
 
@@ -118,13 +107,13 @@ namespace Fem
     /**
      * \brief Constructor
      */
-    DGAdvectionFlux (const ModelType& mod,
-                     const ParameterType& parameters = ParameterType() )
-      : BaseType( mod, parameters ),
-        method_( parameters.getMethod() ),
-        flux_none_( mod, parameters ),
-        flux_llf_( mod, parameters ),
-        flux_upwind_( mod )
+    template< class ... Args>
+    DGAdvectionFlux(  Args&&... args )
+      : BaseType( std::forward<Args>(args)... ),
+        method_( this->parameter().getMethod() ),
+        flux_none_( this->model(), this->parameter() ),
+        flux_llf_( this->model(), this->parameter() ),
+        flux_upwind_( this->model(), this->parameter() )
     {}
 
     /**

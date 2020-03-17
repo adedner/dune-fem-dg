@@ -27,13 +27,9 @@ namespace Fem
   {
     typedef EulerFluxImpl< Model, EulerNumFlux::EulerFlux<Model,EulerNumFlux::EulerFluxType::LLF > > BaseType ;
   public:
-    typedef typename BaseType::ParameterType          ParameterType;
-    typedef typename BaseType::IdEnum                 IdEnum;
-    typedef typename BaseType::ModelType              ModelType;
-
-    DGAdvectionFlux( const Model& mod,
-                     const ParameterType& parameters = ParameterType() )
-      : BaseType( mod, parameters )
+    template< class ... Args>
+    DGAdvectionFlux(  Args&&... args )
+      : BaseType( std::forward<Args>(args)... )
     {}
     static std::string name () { return "LLF (Dennis)"; }
   };
@@ -50,13 +46,9 @@ namespace Fem
   {
     typedef EulerFluxImpl< Model, EulerNumFlux::EulerFlux<Model,EulerNumFlux::EulerFluxType::HLL > > BaseType ;
   public:
-    typedef typename BaseType::ParameterType          ParameterType;
-    typedef typename BaseType::IdEnum                 IdEnum;
-    typedef typename BaseType::ModelType              ModelType;
-
-    DGAdvectionFlux( const Model& mod,
-                     const ParameterType& parameters = ParameterType() )
-      : BaseType( mod, parameters )
+    template< class ... Args>
+    DGAdvectionFlux(  Args&&... args )
+      : BaseType( std::forward<Args>(args)... )
     {}
     static std::string name () { return "HLL (Dennis)"; }
   };
@@ -73,13 +65,9 @@ namespace Fem
   {
     typedef EulerFluxImpl< Model, EulerNumFlux::EulerFlux<Model,EulerNumFlux::EulerFluxType::HLLC > > BaseType ;
   public:
-    typedef typename BaseType::ParameterType          ParameterType;
-    typedef typename BaseType::IdEnum                 IdEnum;
-    typedef typename BaseType::ModelType              ModelType;
-
-    DGAdvectionFlux( const Model& mod,
-                     const ParameterType& parameters = ParameterType() )
-      : BaseType( mod, parameters )
+    template< class ... Args>
+    DGAdvectionFlux(  Args&&... args )
+      : BaseType( std::forward<Args>(args)... )
     {}
     static std::string name () { return "HLLC (Dennis)"; }
   };
@@ -111,13 +99,13 @@ namespace Fem
     /**
      * \copydoc DGAdvectionFluxBase::DGAdvectionFluxBase()
      */
-    DGAdvectionFlux( const ModelType& mod,
-                     const ParameterType& parameters = ParameterType() )
-      : BaseType( mod, parameters ),
-        method_( parameters.getMethod() ),
-        flux_llf_( mod ),
-        flux_hll_( mod ),
-        flux_hllc_( mod )
+    template< class ... Args>
+    DGAdvectionFlux(  Args&&... args )
+      : BaseType( std::forward<Args>(args)... ),
+        method_( this->parameter().getMethod() ),
+        flux_llf_(this->model() ),
+        flux_hll_( this->model() ),
+        flux_hllc_( this->model() )
     {}
 
     /**
