@@ -3,6 +3,7 @@
 
 #include <dune/fem-dg/misc/simulator.hh>
 
+#if HAVE_NETCDF
 #include <netcdf.h>
 
 int main(int argc, char ** argv)
@@ -37,3 +38,9 @@ int main(int argc, char ** argv)
   }
   return 0;
 }
+#else
+int main(int argc, char ** argv)
+{
+  return 0;
+}
+#endif
