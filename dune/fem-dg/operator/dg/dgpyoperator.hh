@@ -118,7 +118,7 @@ namespace Fem
         fullOperator_( space.gridPart(), model_, advFlux_, extra_, name(), parameter ),
         explOperator_( space.gridPart(), model_, advFlux_, extra_, name(), parameter ),
         implOperator_( space.gridPart(), model_, advFlux_, extra_, name(), parameter ),
-        adaptIndicator_() //  space, model_, extra_ ) // TODO pass parameters
+        adaptIndicator_( space, model_, advFlux_, extra_, parameter )
     {
     }
 
@@ -136,7 +136,7 @@ namespace Fem
         fullOperator_( space.gridPart(), model_, advFlux_, extra_, name(), parameter ),
         explOperator_( space.gridPart(), model_, advFlux_, extra_, name(), parameter ),
         implOperator_( space.gridPart(), model_, advFlux_, extra_, name(), parameter ),
-        adaptIndicator_() //  space, model_, extra_ ) // TODO pass parameters
+        adaptIndicator_( space, model_, advFlux_, extra_, parameter )
     {
     }
 
@@ -163,13 +163,7 @@ namespace Fem
     //! evaluation indicator and mark grid
     void estimateMark( const DestinationType& arg, const double dt ) const
     {
-      /*
-      if( ! adaptIndicator_ )
-      {
-        adaptIndicator_.reset( new AdaptIndicatorType( space_, model_, extra_ ) );
-      }
-      adaptIndicator_->estimateMark( arg, dt );
-      */
+      adaptIndicator_.estimateMark( arg, dt );
     }
 
     /// Methods from SpaceOperatorInterface ////
@@ -225,10 +219,11 @@ namespace Fem
     mutable FullOperatorType              fullOperator_;
     mutable ExplicitOperatorType          explOperator_;
     mutable ImplicitOperatorType          implOperator_;
+    mutable AdaptIndicatorType >          adaptIndicator_;
+
     mutable double                        fixedTimeStep_ ;
     mutable bool                          initialized_;
 
-    mutable std::unique_ptr< AdaptIndicatorType > adaptIndicator_;
   };
 
 } // end namespace Fem
