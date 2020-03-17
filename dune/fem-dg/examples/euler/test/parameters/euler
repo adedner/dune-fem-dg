@@ -29,7 +29,7 @@ gridsol.savestep: 0.5
 gridsol.firstwrite: 0.5
 gridsol.filename: straka-checkpoint
 
-fem.eoc.steps: 4
+fem.eoc.steps: 3
 
 
 # STEPPER
