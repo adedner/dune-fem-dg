@@ -707,10 +707,8 @@ namespace Fem
 
       assembler_.testSymmetry();
 
-      double absLimit   = Dune::Fem::Parameter::getValue<double>("istl.absLimit",1.e-10);
-      double reduction  = Dune::Fem::Parameter::getValue<double>("istl.reduction",1.e-6);
-
-      return std::make_shared< SolverType >( matrix(), reduction, absLimit );
+      SolverParameter solverParameter;
+      return std::make_shared< SolverType >( matrix(), solverParameter );
     }
 
     //! default time loop implementation, overload for changes
