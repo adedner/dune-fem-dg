@@ -2,6 +2,7 @@
 project("dune-fem-dg" C CXX)
 
 set(DUNE_REENABLE_ADD_TEST TRUE)
+option(DUNE_GRID_GRIDTYPE_SELECTOR ON)
 
 # general stuff
 cmake_minimum_required(VERSION 2.8.12)
@@ -16,7 +17,6 @@ include(DuneMacros)
 
 # start a dune project with information from dune.module
 dune_project()
-
 
 include(DuneMPI)
 
