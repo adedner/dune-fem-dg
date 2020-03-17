@@ -67,17 +67,17 @@ namespace Fem
     enum class Enum
     {
       //! use default value
-      default_,
-      //! Discrete function space with Lagrange Finite Elements
-      lagrange,
+      default_, // default is orthonormal which is the most general space
+      //! Discrete function space with hierarchic orthonormal monomial basis functions
+      orthonormal,
       //! Discrete function space with Legendre Finite Elements
       legendre,
       //! Discrete function space with hierarchic Legendre Finite Elements
       hierarchic_legendre,
-      //! Discrete function space with hierarchic orthonormal monomial basis functions
-      orthonormal
+      //! Discrete function space with Lagrange Finite Elements
+      lagrange,
       //! p-adaptive space from dune-fem, implementing dg and lagrange
-      // padaptive
+      padaptive
     };
   }
 
