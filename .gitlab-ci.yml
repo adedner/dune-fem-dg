@@ -23,14 +23,14 @@ ubuntu:18.04--clang:
   script: duneci-standard-test
   variables: {DUNECI_OPTS: /duneci/opts.clang}
 
-ubuntu:18.04--python:
-  image: duneci/ubuntu:18.04
-  variables: {DUNECI_OPTS: /duneci/opts.gcc}
-  script:
-    - cd /duneci/modules/
-    - export DUNE_PY_DIR=${PWD}/cache/
-    - export PYTHONPATH=${PWD}/dune-python/build-cmake/python:${PWD}/dune-alugrid/build-cmake/python:${PWD}/dune-fem/build-cmake/python:${PWD}/dune-fem/build-cmake/python:${PWD}/dune-fem-dg/build-cmake/python:${PWD}/dune-polygongrid/build-cmake/python:${PWD}/dune-spgrid/build-cmake/python:${PWD}/dune-vem/build-cmake/python:${PWD}/opm-grid/build-cmake/python
-    - dunecontrol
-    - cd /duneci/modules/dune-fem-dg/pydemo/euler
-    - python paper.py
-  variables: {DUNECI_OPTS: /duneci/opts.clang}
+#ubuntu:18.04--python:
+#  image: duneci/ubuntu:18.04
+#  variables: {DUNECI_OPTS: /duneci/opts.gcc}
+# script:
+#  - cd /duneci/modules/
+#  - export DUNE_PY_DIR=${PWD}/cache/
+#  - export PYTHONPATH=${PWD}/dune-python/build-cmake/python:${PWD}/dune-alugrid/build-cmake/python:${PWD}/dune-fem/build-cmake/python:${PWD}/dune-fem/build-cmake/python:${PWD}/dune-fem-dg/build-cmake/python:${PWD}/dune-polygongrid/build-cmake/python:${PWD}/dune-spgrid/build-cmake/python:${PWD}/dune-vem/build-cmake/python:${PWD}/opm-grid/build-cmake/python
+#  - dunecontrol
+#  - cd /duneci/modules/dune-fem-dg/pydemo/euler
+#  - python paper.py
+#variables: {DUNECI_OPTS: /duneci/opts.clang}
