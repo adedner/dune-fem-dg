@@ -7,7 +7,9 @@ logger = logging.getLogger(__name__)
 from dune.common.checkconfiguration import assertHave, preprocessorAssert, ConfigurationError
 
 from dune.generator import Constructor, Method
+from dune.common.hashit import hashIt
 from dune.fem.operator import load
+from dune.fem import parameter as parameterReader
 
 from dune.ufl import Constant
 from dune.ufl.tensors import ExprTensor
@@ -87,13 +89,20 @@ from dune.femdg.patch import transform
 # create DG operator + solver (limiter = none,minmod,vanleer,superbee),
 # (diffusionScheme = cdg2,br2,ip,nipg,...)
 def femDGOperator(Model, space,
-        limiter="minmod", diffusionScheme = "cdg2", threading=False,
-        initialTime=0.0, parameters={}):
+        limiter="minmod",
+        advectionFlux="default",
+        diffusionScheme = "cdg2", threading=False,
+        initialTime=0.0, parameters=None):
     virtualize = False
     import dune.create as create
 
+    includes = []
+
     if limiter is None or limiter is False:
         limiter = "unlimited"
+
+    if limiter.lower() == "default":
+        limiter = "minmod"
 
     # TODO: does this make sense - if there is no diffusion then it doesn't
     # matter and with diffusion using 'none' seems a bad idea?
@@ -108,21 +117,32 @@ def femDGOperator(Model, space,
 
     hasAdvFlux = hasattr(Model,"F_c")
     if hasAdvFlux:
-        advModel = inner(Model.F_c(t,x,u),grad(v))*dx
+        advModel = inner(Model.F_c(t,x,u),grad(v))*dx   # -div F_c v
     else:
         advModel = inner(t*grad(u-u),grad(v))*dx    # TODO: make a better empty model
-    hasNonStiffSource = hasattr(Model,"S_ns")
+    hasNonStiffSource = hasattr(Model,"S_e")
     if hasNonStiffSource:
-        advModel += inner(as_vector(Model.S_ns(t,x,u,grad(u))),v)*dx
+        advModel += inner(as_vector(Model.S_e(t,x,u,grad(u))),v)*dx   # (-div F_v + S_e) * v
+    else:
+        hasNonStiffSource = hasattr(Model,"S_ns")
+        if hasNonStiffSource:
+           advModel += inner(as_vector(Model.S_ns(t,x,u,grad(u))),v)*dx   # (-div F_v + S_ns) * v
+           print("Model.S_ns is deprecated. Use S_e instead!")
 
     hasDiffFlux = hasattr(Model,"F_v")
     if hasDiffFlux:
         diffModel = inner(Model.F_v(t,x,u,grad(u)),grad(v))*dx
     else:
         diffModel = inner(t*grad(u-u),grad(v))*dx   # TODO: make a better empty model
-    hasStiffSource = hasattr(Model,"S_s")
+
+    hasStiffSource = hasattr(Model,"S_i")
     if hasStiffSource:
-        diffModel += inner(as_vector(Model.S_s(t,x,u,grad(u))),v)*dx
+        diffModel += inner(as_vector(Model.S_i(t,x,u,grad(u))),v)*dx
+    else:
+        hasStiffSource = hasattr(Model,"S_s")
+        if hasStiffSource:
+            diffModel += inner(as_vector(Model.S_impl(t,x,u,grad(u))),v)*dx
+            print("Model.S_s is deprecated. Use S_i instead!")
 
     advModel  = create.model("elliptic",space.grid, advModel,
                       modelPatch=transform(Model,space,t,"Adv"),
@@ -149,7 +169,75 @@ def femDGOperator(Model, space,
 
     ###'###############################################
     ### extra methods for limiter and time step control
-    struct = Struct('Additional', targs=['class FunctionSpace'])
+    ###################################################
+    ## choose details of discretization (i.e. fluxes)
+    ## default settings:
+    solverId     = "Dune::Fem::Solver::Enum::fem"
+    formId       = "Dune::Fem::Formulation::Enum::primal"
+    limiterId    = "Dune::Fem::AdvectionLimiter::Enum::limited"
+    limiterFctId = "Dune::Fem::AdvectionLimiterFunction::Enum::minmod"
+    advFluxId    = "Dune::Fem::AdvectionFlux::Enum::none"
+    diffFluxId   = "Dune::Fem::DiffusionFlux::Enum::none"
+
+    if hasDiffFlux:
+        diffFluxId = "Dune::Fem::DiffusionFlux::Enum::"+diffusionScheme
+
+    if hasattr(Model,"NumericalF_c") and advectionFlux=="default":
+        advectionFlux = Model.NumericalF_c
+
+    advectionFluxIsCallable = False
+    if hasAdvFlux:
+        # default value is LLF
+        advFluxId  = "Dune::Fem::AdvectionFlux::Enum::llf"
+        # if flux choice is default check parameters
+        if callable(advectionFlux):
+            advFluxId  = "Dune::Fem::AdvectionFlux::Enum::userdefined"
+            advectionFluxIsCallable = True
+            # wrong model class used here - EllipticModel with no Traits
+            # at the moment this is always the same type (depending on
+            # model._typeName) so could be done by only providing the header
+            # file in the dg operator construction method
+            from dune.typeregistry import generateTypeName
+            clsName,includes = generateTypeName("Dune::Fem::DGAdvectionFlux",advModel._typeName,"Dune::Fem::AdvectionFlux::Enum::userdefined")
+            advectionFlux = advectionFlux(advModel,clsName,includes)
+            includes += advectionFlux._includes
+        #elif advectionFlux.lower().find(".h") >= 0:
+        #    advFluxId  = "Dune::Fem::AdvectionFlux::Enum::userdefined"
+        #    includes += [ advectionFlux ]
+        else:
+            # if dgadvectionflux.method has been selected, then use general flux,
+            # otherwise default to LLF flux
+            if advectionFlux == "default":
+                key = 'dgadvectionflux.method'
+                if parameters is not None and key in parameters.keys():
+                    advectionFlux = parameters["dgadvectionflux.method"]
+
+                    # set parameter in dune-fem parameter container
+                    # parameterReader.append( { key: value } )
+                    if advectionFlux.upper().find( 'LLF' ) >= 0:
+                        advFluxId  = "Dune::Fem::AdvectionFlux::Enum::llf"
+                    else:
+                        if advectionFlux.upper().find( 'EULER' ) >= 0:
+                            advFluxId  = "Dune::Fem::AdvectionFlux::Enum::euler_general"
+                        else:
+                            advFluxId  = "Dune::Fem::AdvectionFlux::Enum::general"
+
+    if limiter.lower() == "unlimited" or limiter.lower() == "none":
+        limiterId = "Dune::Fem::AdvectionLimiter::Enum::unlimited"
+    elif limiter.lower() == "scaling":
+        limiterFctId = "Dune::Fem::AdvectionLimiterFunction::Enum::none"
+        limiterId = "Dune::Fem::AdvectionLimiter::Enum::scalinglimited"
+    # check for different limiter functions (default is minmod)
+    elif limiter.lower() == "superbee":
+        limiterFctId = "Dune::Fem::AdvectionLimiterFunction::Enum::superbee"
+    elif limiter.lower() == "vanleer":
+        limiterFctId = "Dune::Fem::AdvectionLimiterFunction::Enum::vanleer"
+    elif limiter.lower() != "minmod":
+        raise ValueError("limiter "+limiter+" not recognised")
+
+    signature = (advFluxId,diffusionScheme,threading,solverId,formId,limiterId,limiterFctId,advFluxId,diffFluxId,)
+    additionalClass = "Additional_"+hashIt(str(signature))
+    struct = Struct(additionalClass, targs=['class FunctionSpace'])
     struct.append(TypeAlias('DomainType','typename FunctionSpace::DomainType'))
     struct.append(TypeAlias('RangeType','typename FunctionSpace::RangeType'))
     struct.append(TypeAlias('JacobianRangeType','typename FunctionSpace::JacobianRangeType'))
@@ -190,28 +278,6 @@ def femDGOperator(Model, space,
         Variable("const bool", "threading"), initializer=threading,
         static=True)])
 
-    ###################################################
-    ## choose details of discretization (i.e. fluxes)
-    ## default settings:
-    solverId     = "Dune::Fem::Solver::Enum::fem"
-    formId       = "Dune::Fem::Formulation::Enum::primal"
-    limiterId    = "Dune::Fem::AdvectionLimiter::Enum::limited"
-    limiterFctId = "Dune::Fem::AdvectionLimiterFunction::Enum::minmod"
-    advFluxId    = "Dune::Fem::AdvectionFlux::Enum::none"
-    diffFluxId   = "Dune::Fem::DiffusionFlux::Enum::none"
-
-    if hasDiffFlux:
-        diffFluxId = "Dune::Fem::DiffusionFlux::Enum::"+diffusionScheme
-    if hasAdvFlux:
-        advFluxId  = "Dune::Fem::AdvectionFlux::Enum::llf"
-    if limiter.lower() == "unlimited":
-        limiterId = "Dune::Fem::AdvectionLimiter::Enum::unlimited"
-    # check for different limiter functions (default is minmod)
-    if limiter.lower() == "superbee":
-        limiterFctId = "Dune::Fem::AdvectionLimiterFunction::Enum::superbee"
-    if limiter.lower() == "vanleer":
-        limiterFctId = "Dune::Fem::AdvectionLimiterFunction::Enum::vanleer"
-
     struct.append([Declaration(
         Variable("const Dune::Fem::Solver::Enum", "solverId = " + solverId),
         static=True)])
@@ -240,13 +306,13 @@ def femDGOperator(Model, space,
 
     ################################################################
     ### Construct DuneType, includes, and extra methods/constructors
-    includes  = ["dune/fem-dg/python/operator.hh"]
+    includes += ["dune/fem-dg/python/operator.hh"]
     includes += ["dune/fem-dg/operator/dg/dgpyoperator.hh"]
     includes += space._includes + destinationIncludes
     includes += ["dune/fem/schemes/diffusionmodel.hh", "dune/fempy/parameter.hh"]
     includes += advModel._includes + diffModel._includes
 
-    additionalType = 'Additional< typename ' + spaceType + '::FunctionSpaceType >'
+    additionalType = additionalClass + '< typename ' + spaceType + '::FunctionSpaceType >'
 
     typeName = 'Dune::Fem::DGOperator< ' +\
             destinationType + ', ' +\
@@ -255,10 +321,50 @@ def femDGOperator(Model, space,
 
     _, domainFunctionIncludes, domainFunctionType, _, _, _ = space.storage
     base = 'Dune::Fem::SpaceOperatorInterface< ' + domainFunctionType + '>'
-    return load(includes, typeName,
-                baseClasses = [base],
-                preamble=writer.writer.getvalue()).\
-                Operator( space, advModel, diffModel, parameters=parameters )
+
+    estimateMark = Method('estimateMark', '''[]( DuneType &self, const typename DuneType::DestinationType &u, const double dt) { self.estimateMark(u, dt); }''' );
+
+    if parameters is not None:
+        if advectionFluxIsCallable:
+            op = load(includes, typeName, estimateMark,
+                     baseClasses = [base],
+                     preamble=writer.writer.getvalue()).\
+                     Operator( space, advModel, diffModel, advectionFlux, parameters=parameters )
+        else:
+            op = load(includes, typeName, estimateMark,
+                     baseClasses = [base],
+                     preamble=writer.writer.getvalue()).\
+                     Operator( space, advModel, diffModel, parameters=parameters )
+    else:
+        if advectionFluxIsCallable:
+            op = load(includes, typeName, estimateMark,
+                     baseClasses = [base],
+                     preamble=writer.writer.getvalue()).\
+                     Operator( space, advModel, diffModel, advectionFlux )
+        else:
+            op = load(includes, typeName, estimateMark,
+                     baseClasses = [base],
+                     preamble=writer.writer.getvalue()).\
+                     Operator( space, advModel, diffModel )
+
+    op._t = t
+    op.time = t.value
+    op.models = [advModel,diffModel]
+    op.space = space
+    def setTime(self,time):
+        self._t.value = time
+        self.time = time
+        self._setTime(self.time)
+    op.setTime = setTime.__get__(op)
+    # def addToTime(self,dt):
+    #     self.setTime(self,self.time+dt)
+    # op.addToTime = addToTime.__get__(op)
+    def stepTime(self,c,dt):
+        self.setTime(self.time+c*dt)
+    op.stepTime  = stepTime.__get__(op)
+    op._hasAdvFlux = hasAdvFlux
+    op._hasDiffFlux = hasDiffFlux
+    return op
 
 # RungeKutta solvers
 def rungeKuttaSolver( fullOperator, imex='EX', butchertable=None, parameters={} ):
@@ -293,7 +399,7 @@ def rungeKuttaSolver( fullOperator, imex='EX', butchertable=None, parameters={} 
                               ['return new ' + typeName + '(op, explOp, implOp, imexId, Dune::FemPy::pyParameter( parameters, std::make_shared< std::string >() ));'],
                               ['"op"_a', '"explOp"_a', '"implOp"_a', '"imexId"_a', '"parameters"_a', 'pybind11::keep_alive< 1, 2 >()', 'pybind11::keep_alive< 1, 3 >()','pybind11::keep_alive< 1, 4 >()','pybind11::keep_alive< 1, 6>()' ])
 
-    solve = Method('solve', '''[]( DuneType &self, typename DuneType::DestinationType &u) { self.solve(u); }''' );
+    solve = Method('solve', '''[]( DuneType &self, typename DuneType::DestinationType &u) { self.solve(u); }''' )
     setTimeStepSize = Method('setTimeStepSize', '&DuneType::setTimeStepSize')
     deltaT = Method('deltaT', '&DuneType::deltaT')
 

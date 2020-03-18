@@ -42,6 +42,8 @@ namespace Fem
     typedef typename BaseType::OperatorType::ExplicitType     ExplicitOperatorType;
     typedef typename BaseType::OperatorType::ImplicitType     ImplicitOperatorType;
 
+    typedef typename OperatorType :: AdvectionFluxType        AdvectionFluxType;
+
     typedef typename BaseType::SolverType::LinearSolverType   LinearSolverType;
 
     // The discrete function for the unknown solution is defined in the DgOperator
@@ -73,10 +75,11 @@ namespace Fem
     SubAdvectionDiffusionAlgorithm( const std::shared_ptr< ContainerImp >& cont,
                                     const std::shared_ptr< ExtraArgsImp >& extra )
     : BaseType( cont, extra ),
-      operator_( std::make_unique< OperatorType >( solution().space().gridPart(), model_, extra, name() ) ),
-      advectionOperator_( std::make_unique< ExplicitOperatorType >( solution().space().gridPart(), model_, extra, name() ) ),
-      diffusionOperator_( std::make_unique< ImplicitOperatorType >( solution().space().gridPart(), model_, extra, name() ) ),
-      adaptIndicator_( std::make_unique< AdaptIndicatorOptional<AdaptIndicatorType> >( solution(), model_, extra, name() ) )
+      numFlux_( model_ ),
+      operator_( std::make_unique< OperatorType >( solution().space().gridPart(), model_, numFlux_, extra, name() ) ),
+      advectionOperator_( std::make_unique< ExplicitOperatorType >( solution().space().gridPart(), model_, numFlux_, extra, name() ) ),
+      diffusionOperator_( std::make_unique< ImplicitOperatorType >( solution().space().gridPart(), model_, numFlux_, extra, name() ) ),
+      adaptIndicator_( std::make_unique< AdaptIndicatorOptional<AdaptIndicatorType> >( solution(), model_, numFlux_, extra, name() ) )
     {}
 
     virtual AdaptIndicatorType* adaptIndicator ()
@@ -129,9 +132,10 @@ namespace Fem
     }
 
   protected:
-    std::unique_ptr< OperatorType >         operator_;
-    std::unique_ptr< ExplicitOperatorType > advectionOperator_;
-    std::unique_ptr< ImplicitOperatorType > diffusionOperator_;
+    AdvectionFluxType                         numFlux_;
+    std::unique_ptr< OperatorType >           operator_;
+    std::unique_ptr< ExplicitOperatorType >   advectionOperator_;
+    std::unique_ptr< ImplicitOperatorType >   diffusionOperator_;
     mutable std::unique_ptr< AdaptIndicatorOptional<AdaptIndicatorType> > adaptIndicator_;
   };
 }

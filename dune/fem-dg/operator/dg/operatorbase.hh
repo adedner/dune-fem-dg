@@ -2,6 +2,7 @@
 #define DUNE_FEM_DG_OPERATORBASE_HH
 
 #include <string>
+#include <memory>
 
 #include <dune/fem/solver/timeprovider.hh>
 #include <dune/fem/operator/common/spaceoperatorif.hh>
@@ -139,18 +140,21 @@ namespace Fem
 
   public:
     template< class ExtraParameterTupleImp >
-    DGAdvectionDiffusionOperatorBase( GridPartType& gridPart, const ModelType& model,
+    DGAdvectionDiffusionOperatorBase( GridPartType& gridPart,
+                                      const ModelType& model,
+                                      const AdvectionFluxType& numFlux,
                                       ExtraParameterTupleImp& tuple,
                                       const std::string name = "",
                                       const Dune::Fem::ParameterReader &parameter = Dune::Fem::Parameter::container() )
-      : model_( model )
-      , numflux_( model_, parameter )
-      , gridPart_( gridPart )
+      : gridPart_( gridPart )
+      , model_( model )
+      , numFlux_( numFlux )
       , space_( gridPart_ )
-      , discreteModel_( model_, numflux_,
+      , discreteModel_( model_, numFlux_,
                         DiffusionFluxType( gridPart_, model_, typename DiffusionFluxType::ParameterType( ParameterKey::generate( name, "dgdiffusionflux." ) ) ) )
       , previousPass_( InsertFunctionsType::createPass( tuple ) )
       , pass1_( discreteModel_, *previousPass_, space_ )
+      , counter_(0)
     {}
 
     IndicatorType* indicator() { return 0; }
@@ -171,6 +175,7 @@ namespace Fem
 
     //! evaluate the spatial operator
     void operator()( const DestinationType& arg, DestinationType& dest ) const {
+      called();
 	    pass1_( arg, dest );
     }
 
@@ -188,6 +193,8 @@ namespace Fem
     inline DiscreteFunctionSpaceType& space() {
 	    return space_;
     }
+    int counter() const {return counter_;}
+    void called() const {counter_++;}
 
     inline void switchupwind()
     {
@@ -227,14 +234,15 @@ namespace Fem
     const DiscreteModelType& discreteModel() const { return discreteModel_; }
 
   protected:
-    const ModelType&                          model_;
-    AdvectionFluxType                         numflux_;
-    GridPartType&                             gridPart_;
+    GridPartType&                              gridPart_;
+    const ModelType&                           model_;
+    const AdvectionFluxType&                   numFlux_;
 
-    AdvDFunctionSpaceType                     space_;
-    DiscreteModelType                         discreteModel_;
-    std::shared_ptr< InsertFunctionPassType > previousPass_;
-    Pass1Type                                 pass1_;
+    AdvDFunctionSpaceType                      space_;
+    DiscreteModelType                          discreteModel_;
+    std::shared_ptr< InsertFunctionPassType >  previousPass_;
+    Pass1Type                                  pass1_;
+    mutable int                                counter_;
   };
 
 }

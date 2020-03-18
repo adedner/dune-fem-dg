@@ -9,7 +9,6 @@
 #include <dune/common/fvector.hh>
 #include <dune/grid/common/grid.hh>
 #include <dune/fem/quadrature/caching/twistutility.hh>
-#include <dune/fem-dg/operator/dg/passtraits.hh>
 #include <dune/fem-dg/assemble/assemblertraits.hh>
 
 #include <dune/fem-dg/algorithm/sub/steadystate.hh>

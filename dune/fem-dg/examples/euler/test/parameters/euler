@@ -12,14 +12,14 @@ femdg.limiter.admissiblefunctions: 1
 # tolerance for shock indicator 
 femdg.limiter.tolerance: 1
 # threshold for avoiding over-excessive limitation 
-femdg.limiter.limiteps: 1e-8
+femdg.limiter.epsilon: 1e-8
 # add indicator to outputvariables 
 femdg.limiter.indicatoroutput: true
 
 # DATA WRITER
 #------------
 fem.io.datafileprefix: RC
-fem.io.savestep: 0.01 # SaveStep (write data every `saveStep' time period, <=0 deactivates)
+fem.io.savestep: 0.16 # SaveStep (write data every `saveStep' time period, <=0 deactivates)
 fem.io.savecount: -1 # SaveCount (write data every saveCount time steps, <=0 deactivates)
 
 
@@ -31,14 +31,9 @@ gridsol.filename: straka-checkpoint
 
 fem.eoc.steps: 3
 
-# GENERAL
-#--------
-paramfile: ../../parameter/paramBase
-
 
 # STEPPER
 #--------
-fem.eoc.steps: 1
 femdg.stepper.starttime: 0.
 femdg.stepper.endtime: 0.15
 #femdg.stepper.maxtimestep: 0.1
@@ -49,7 +44,7 @@ femdg.stepper.endtime: 0.15
 paramfile: ../../parameter/paramPhysicalConstants
 
 # choises are: LLF, HLL, HLLC, LLF2
-dgadvectionflux.method: LLF
+dgadvectionflux.method: EULER-HLLC
 
 g: 1. # gravity force [m/ss]
 hSpeed0: 1. # x-axis speed [m/s]
@@ -68,9 +63,9 @@ z_c: 0.25 # z-center of perturbation ball
 r: 0.25 # radius of perturbation ball
 
 # coarsest level that should be present
-fem.adaptation.coarsestLevel: 2
+fem.adaptation.coarsestLevel: 0
 # finest level that should be present
-fem.adaptation.finestLevel: 2
+fem.adaptation.finestLevel: 0
 
 
 # DOMAIN SETUP
@@ -91,7 +86,7 @@ fem.ode.miniterations: 95
 fem.ode.maxiterations: 105
 fem.ode.cflStart: 1.
 #fem.ode.cflMax: 5
-fem.timeprovider.factor: 0.45
+fem.timeprovider.factor: 0.25
 fem.timeprovider.updatestep: 1
 
 # parameter for the implicit solvers 
@@ -101,6 +96,10 @@ fem.solver.newton.verbose: false
 fem.solver.newton.linear.verbose: false
 fem.solver.newton.maxlineariterations: 1000
 fem.solver.newton.tolerance: 1e-10
+
+# GENERAL
+#--------
+paramfile: ../../parameter/paramBase
 
 
 paramfile: ../../parameter/paramSolver

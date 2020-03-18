@@ -15,6 +15,7 @@ gridsol.filename: heat-checkpoint
 
 # GENERAL
 #--------
+# femdg.stepper.printcount: 10
 paramfile: ../../parameter/paramBase
 
 # PROBLEM SETUP
@@ -23,8 +24,8 @@ paramfile: ../../parameter/paramBase
 # problem: heat, quasi, plaplace
 problem: pulse
 
-fem.eoc.steps: 1
-femdg.stepper.endtime: 1.0
+fem.eoc.steps: 3
+femdg.stepper.endtime: 0.15
 femdg.stepper.diffusiontimestep: 1
 epsilon: 0.001
 #plaplace: 3.0 
@@ -46,4 +47,9 @@ fem.io.macroGridFile_3d: ../../grids/unitcube3.dgf
 #-------
 dgdiffusionflux.upwind: -1 -0.001
 femdg.stepper.maxtimestep: 0.5
+
+# use explicit solver for tests
+fem.ode.odesolver: EX # ode solvers: EX, IM, IMEX
+fem.ode.verbose: none
+
 paramfile: ../../parameter/paramSolver

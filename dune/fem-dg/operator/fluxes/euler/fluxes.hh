@@ -27,13 +27,9 @@ namespace Fem
   {
     typedef EulerFluxImpl< Model, EulerNumFlux::EulerFlux<Model,EulerNumFlux::EulerFluxType::LLF > > BaseType ;
   public:
-    typedef typename BaseType::ParameterType          ParameterType;
-    typedef typename BaseType::IdEnum                 IdEnum;
-    typedef typename BaseType::ModelType              ModelType;
-
-    DGAdvectionFlux( const Model& mod,
-               const ParameterType& parameters = ParameterType() )
-      : BaseType( mod, parameters )
+    template< class ... Args>
+    DGAdvectionFlux(  Args&&... args )
+      : BaseType( std::forward<Args>(args)... )
     {}
     static std::string name () { return "LLF (Dennis)"; }
   };
@@ -50,13 +46,9 @@ namespace Fem
   {
     typedef EulerFluxImpl< Model, EulerNumFlux::EulerFlux<Model,EulerNumFlux::EulerFluxType::HLL > > BaseType ;
   public:
-    typedef typename BaseType::ParameterType          ParameterType;
-    typedef typename BaseType::IdEnum                 IdEnum;
-    typedef typename BaseType::ModelType              ModelType;
-
-    DGAdvectionFlux( const Model& mod,
-               const ParameterType& parameters = ParameterType() )
-      : BaseType( mod, parameters )
+    template< class ... Args>
+    DGAdvectionFlux(  Args&&... args )
+      : BaseType( std::forward<Args>(args)... )
     {}
     static std::string name () { return "HLL (Dennis)"; }
   };
@@ -73,13 +65,9 @@ namespace Fem
   {
     typedef EulerFluxImpl< Model, EulerNumFlux::EulerFlux<Model,EulerNumFlux::EulerFluxType::HLLC > > BaseType ;
   public:
-    typedef typename BaseType::ParameterType          ParameterType;
-    typedef typename BaseType::IdEnum                 IdEnum;
-    typedef typename BaseType::ModelType              ModelType;
-
-    DGAdvectionFlux( const Model& mod,
-               const ParameterType& parameters = ParameterType() )
-      : BaseType( mod, parameters )
+    template< class ... Args>
+    DGAdvectionFlux(  Args&&... args )
+      : BaseType( std::forward<Args>(args)... )
     {}
     static std::string name () { return "HLLC (Dennis)"; }
   };
@@ -96,31 +84,28 @@ namespace Fem
   {
     typedef DGAdvectionFluxBase< ModelImp, AdvectionFluxParameters >   BaseType;
 
-    typedef typename ModelImp::Traits             Traits;
     enum { dimRange = ModelImp::dimRange };
     typedef typename ModelImp::DomainType         DomainType;
     typedef typename ModelImp::RangeType          RangeType;
     typedef typename ModelImp::JacobianRangeType  JacobianRangeType;
     typedef typename ModelImp::FluxRangeType      FluxRangeType;
     typedef typename ModelImp::FaceDomainType     FaceDomainType;
-    typedef typename ModelImp::EntityType         EntityType;
-    typedef typename ModelImp::IntersectionType   IntersectionType;
 
   public:
-    typedef typename BaseType::IdEnum             IdEnum;
+    typedef AdvectionFlux::Enum                   IdEnum;
     typedef typename BaseType::ModelType          ModelType;
     typedef typename BaseType::ParameterType      ParameterType;
 
     /**
      * \copydoc DGAdvectionFluxBase::DGAdvectionFluxBase()
      */
-    DGAdvectionFlux( const ModelType& mod,
-               const ParameterType& parameters = ParameterType() )
-      : BaseType( mod, parameters ),
-        method_( parameters.getMethod() ),
-        flux_llf_( mod ),
-        flux_hll_( mod ),
-        flux_hllc_( mod )
+    template< class ... Args>
+    DGAdvectionFlux(  Args&&... args )
+      : BaseType( std::forward<Args>(args)... ),
+        method_( this->parameter().getMethod() ),
+        flux_llf_(this->model() ),
+        flux_hll_( this->model() ),
+        flux_hllc_( this->model() )
     {}
 
     /**
@@ -142,22 +127,29 @@ namespace Fem
                    RangeType& gLeft,
                    RangeType& gRight) const
     {
-      switch (method_)
+      if( IdEnum::euler_llf == method_ )
       {
-        case IdEnum::euler_llf:
-          return flux_llf_.numericalFlux( left, right, uLeft, uRight, jacLeft, jacRight, gLeft, gRight );
-        case IdEnum::euler_hll:
-          return flux_hll_.numericalFlux( left, right, uLeft, uRight, jacLeft, jacRight, gLeft, gRight );
-        case IdEnum::euler_hllc:
-          return flux_hllc_.numericalFlux( left, right, uLeft, uRight, jacLeft, jacRight, gLeft, gRight );
+        return flux_llf_.numericalFlux( left, right, uLeft, uRight, jacLeft, jacRight, gLeft, gRight );
       }
-      assert( false );
-      std::cerr << "Error: Advection flux not chosen via parameter file" << std::endl;
+      else if ( IdEnum::euler_hll == method_ )
+      {
+        return flux_hll_.numericalFlux( left, right, uLeft, uRight, jacLeft, jacRight, gLeft, gRight );
+      }
+      else if ( IdEnum::euler_hllc == method_ )
+      {
+        return flux_hllc_.numericalFlux( left, right, uLeft, uRight, jacLeft, jacRight, gLeft, gRight );
+      }
+      else
+      {
+        std::cerr << "Error: Advection flux not chosen via parameter file" << std::endl;
+        assert( false );
+        std::abort();
+      }
       return 0.0;
     }
 
   private:
-    const IdEnum&                                    method_;
+    const IdEnum                                    method_;
     DGAdvectionFlux< ModelImp, IdEnum::euler_llf >  flux_llf_;
     DGAdvectionFlux< ModelImp, IdEnum::euler_hll >  flux_hll_;
     DGAdvectionFlux< ModelImp, IdEnum::euler_hllc > flux_hllc_;

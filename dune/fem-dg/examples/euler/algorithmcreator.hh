@@ -40,6 +40,11 @@
 //--------- MODELS --------------------------
 #include "models.hh"
 
+#ifdef EULER_WRAPPER_TEST
+#include <dune/fem-dg/models/modelwrapper.hh>
+#include "generatedmodel.hh"
+#endif
+
 //--------- PROBLEMCREATORSELECTOR ----------
 #include <dune/fem-dg/misc/configurator.hh>
 
@@ -59,7 +64,6 @@ namespace Fem
                                    Adaptivity::Enum::yes,
                                    DiscreteFunctionSpaces::Enum::orthonormal,
                                    Solver::Enum::fem,
-                                   //AdvectionLimiter::Enum::scalinglimited,
                                    AdvectionLimiter::Enum::limited,
                                    Matrix::Enum::matrixfree,
                                    AdvectionFlux::Enum::llf,
@@ -74,8 +78,16 @@ namespace Fem
       typedef typename AC::GridParts                               GridPartType;
 
       typedef ProblemBase< GridType >                              ProblemInterfaceType;
-      typedef EulerModel< GridType, ProblemInterfaceType >         ModelType;
       typedef typename ProblemInterfaceType::FunctionSpaceType     FunctionSpaceType;
+
+#ifdef EULER_WRAPPER_TEST
+      typedef ModelImpl::Additional< FunctionSpaceType >               AdditionalType;
+      typedef ModelImpl::Model< GridPartType >                         ModelImplType;
+      typedef ModelWrapper< GridType, ModelImplType, ModelImplType,
+              AdditionalType, MinModLimiter< typename GridType::ctype>, ProblemInterfaceType> ModelType;
+#else
+      typedef EulerModel< GridType, ProblemInterfaceType >           ModelType;
+#endif
 
       static inline std::string moduleName() { return ""; }
 

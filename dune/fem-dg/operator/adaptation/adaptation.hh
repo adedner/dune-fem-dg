@@ -137,14 +137,18 @@ namespace Fem
   public:
     //! constructor
     AdaptationHandler ( GridType &grid,
-                        TimeProviderType &timeProvider,
                         const AdaptationParameters &param = AdaptationParameters() );
 
     // copy constructor
     AdaptationHandler ( const AdaptationHandler & );
 
-    //const TimeProviderType &timeProvider() const;
-    TimeProviderType *timeProvider () { return &timeProvider_; }
+    TimeProviderType *timeProvider () {
+      std::abort();
+      return nullptr;
+    }
+
+    double deltaT () const { return deltaT_; }
+    void setDeltaT( const double dt ) { deltaT_ = dt; }
 
     //! clear indicator
     void clearIndicator();
@@ -212,7 +216,7 @@ namespace Fem
     void adapt( AdaptationManagerType &, const bool initialAdapt = false );
 
     //! reset status of indicator and count elements
-    void resetStatus ();
+    void resetStatus ( const double dt = 0.0 );
 
     //! module interface for intialize
     void initialize ()
@@ -250,9 +254,6 @@ namespace Fem
     //! persistent container holding local indicators
     IndicatorType indicator_;
 
-    //! timestep size in time discretization parameters und endTime
-    TimeProviderType &timeProvider_;
-
     //! parameters for adaptation
     mutable double globalTolerance_;
     const double coarsenTheta_;
@@ -265,6 +266,7 @@ namespace Fem
     mutable int localNumElements_;
 
     double endTime_;
+    double deltaT_;
 
     const bool verbose_;
   };

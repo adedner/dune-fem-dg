@@ -12,9 +12,9 @@ class Transport1D:
         return abs(n[0])
     def velocity(t,x,U):
         return as_vector([1,0])
-    def physical(U):
+    def physical(t,x,U):
         return 1
-    def jump(U,V):
+    def jump(t,x,U,V):
         return U-V
 
 def LinearAdvectionDiffusion1D(v,eps):
@@ -36,9 +36,9 @@ def LinearAdvectionDiffusion1D(v,eps):
             # commented out for test of IMEX
             # def maxDiffusion(t,x,U):
             #    return eps
-        def physical(U):
+        def physical(t,x,U):
             return conditional( abs( U[0] - 1) > 1e-10, 1, 0 )
-        def jump(U,V):
+        def jump(t,x,U,V):
             return abs(U-V)
     return Model
 def LinearAdvectionDiffusion1DMixed(v,eps,bnd):
@@ -73,9 +73,9 @@ class Burgers1D:
         return abs(U[0]*n[0])
     def velocity(t,x,U):
         return as_vector( [U[0],0] )
-    def physical(U):
+    def physical(t,x,U):
         return 1
-    def jump(U,V):
+    def jump(t,x,U,V):
         return U-V
 
 space = Space(2,1)

@@ -72,11 +72,11 @@ namespace Fem
 #elif DISCRETEFUNCTIONSPACESENUM == 3
   DiscreteFunctionSpaces::Enum::hierarchic_legendre;
 #elif DISCRETEFUNCTIONSPACESENUM == 4
-  DiscreteFunctionSpaces::Enum::orthonormal;
+  DiscreteFunctionSpaces::Enum::lagrange;
 #elif DISCRETEFUNCTIONSPACESENUM == 5
   DiscreteFunctionSpaces::Enum::padaptive;
 #else // DISCRETEFUNCTIONSPACESENUM == 1
-  DiscreteFunctionSpaces::Enum::lagrange;
+  DiscreteFunctionSpaces::Enum::orthonormal;
 #endif
 
   static const Solver::Enum solverEnum =

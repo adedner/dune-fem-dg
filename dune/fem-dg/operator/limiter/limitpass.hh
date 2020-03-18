@@ -223,6 +223,11 @@ namespace Fem
     {
     }
 
+    void setEntity(const EntityType& en)
+    {
+      BaseType :: setEntity ( en );
+      model().setEntity( en );
+    }
     //! \brief returns false
     bool hasSource() const { return false; }
     //! \brief returns true
@@ -637,7 +642,8 @@ namespace Fem
       calcIndicator_(discreteModel_.calculateIndicator()),
       reconstruct_(false),
       admissibleFunctions_( getAdmissibleFunctions() ),
-      usedAdmissibleFunctions_( admissibleFunctions_ )
+      usedAdmissibleFunctions_( admissibleFunctions_ ),
+      counter_( 0 )
     {
       if( Parameter :: verbose () )
       {
@@ -647,7 +653,7 @@ namespace Fem
         else
           std::cout << "unstructured";
         //std::cout << "! LimitEps: "<< limitEps_ << ", LimitTol: "<< 1./tol_1_ << std::endl;
-        std::cout << "! LimitTol: "<< 1./tol_1_ << std::endl;
+        std::cout << "! Limiter.tolerance: "<< 1./tol_1_ << std::endl;
       }
 
       // we need the flux here
@@ -655,7 +661,9 @@ namespace Fem
     }
 
     //! Destructor
-    virtual ~LimitDGPass() {}
+    virtual ~LimitDGPass() {
+      std::cout << "~LimitDGPass: op calls " << counter_ << std::endl;
+    }
 
     //! return default face quadrature order
     static int defaultVolumeQuadratureOrder( const DiscreteFunctionSpaceType& space, const EntityType& entity )
@@ -776,6 +784,8 @@ namespace Fem
 
         // finalize
         finalize(arg, dest);
+        ++counter_;
+        this->computeTime_ += timer.elapsed();
       }
       else
       {
@@ -787,7 +797,7 @@ namespace Fem
       //std::cout << std::endl;
 
       // accumulate time
-      this->computeTime_ += timer.elapsed();
+      //this->computeTime_ += timer.elapsed();
     }
 
   protected:
@@ -1307,13 +1317,9 @@ namespace Fem
       RangeType u;
       const int quadNop = quad.nop();
       const EntityType& en = uEn.entity();
-      //const Geometry& geo = en.geometry();
       for(int l=0; l<quadNop; ++l)
       {
         uEn.evaluate( quad[l] , u );
-        // warning!!! caching of geo can be more efficient
-        //const DomainType& xgl = geo.global( quad[l] );
-        // check data
         if ( ! discreteModel_.physical( en, quad.point(l), u ) )
         {
           // return notPhysical
@@ -1334,9 +1340,32 @@ namespace Fem
       if( discreteModel_.hasPhysical() )
       {
 #if 1
-        // use LagrangePointSet to evaluate on corners of the
-        // geometry and also use caching
-        return checkPhysicalQuad( CornerPointSetType( en ), uEn );
+        if( en.type().isNone() )
+        {
+          RangeType u;
+          // for polyhedral cells check corners manually
+          // since caching with CornerPointSet won't work
+          const int nCorners = geo.corners();
+          for( int i=0; i<nCorners; ++i )
+          {
+            const auto local = geo.local( geo.corner( i  ) );
+            uEn.evaluate( local, u );
+            if ( ! discreteModel_.physical( en, local, u ) )
+            {
+              // return notPhysical
+              return false;
+            }
+          }
+
+          // solution is physical
+          return true;
+        }
+        else
+        {
+          // use LagrangePointSet to evaluate on corners of the
+          // geometry and also use caching
+          return checkPhysicalQuad( CornerPointSetType( en ), uEn );
+        }
 #else
         {
           VolumeQuadratureType volQuad(en, volumeQuadratureOrder( en ) );
@@ -1375,8 +1404,8 @@ namespace Fem
       }
     };
 
-    template <class LocalFunctionImp, class FunctionSpaceImp, class
-      GridPartImp, int polOrd, template <class> class StrorageImp >
+    template <class LocalFunctionImp, class FunctionSpaceImp, class GridPartImp,
+              int polOrd, template <class> class StrorageImp >
     struct NumLinearBasis<LocalFunctionImp,
               DiscontinuousGalerkinSpace<FunctionSpaceImp, GridPartImp, polOrd,
                                          StrorageImp> >
@@ -1386,22 +1415,6 @@ namespace Fem
         return dimGrid + 1;
       }
     };
-
-    /*
-    template <class LocalFunctionImp, class FunctionSpaceImp, class
-      GridPartImp, int polOrd, template <class> class StrorageImp,
-          int N , DofStoragePolicy policy >
-    struct NumLinearBasis<LocalFunctionImp,
-              CombinedSpace<
-              DiscontinuousGalerkinSpace<FunctionSpaceImp, GridPartImp, polOrd,
-                                         StrorageImp> , N , policy > >
-    {
-      inline static int numBasis(const LocalFunctionImp& lf)
-      {
-        return dimGrid + 1;
-      }
-    };
-    */
 
     // L2 projection
     template <class LocalFunctionImp>
@@ -1451,7 +1464,6 @@ namespace Fem
         uTmpLocal_.axpy( quad[ qP ], retVal );
       }
 
-      // apply local inverse mass matrix for non-linear mappings
       if( !affineMapping )
         localMassMatrix_.applyInverse( en, uTmpLocal_ );
 
@@ -2029,6 +2041,7 @@ namespace Fem
     mutable std::vector< RangeType  > values_;
     mutable std::vector< GradientType > gradients_;
 
+    mutable int counter_;
   }; // end DGLimitPass
 
 } // namespace

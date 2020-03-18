@@ -97,11 +97,7 @@ namespace Fem
      */
     virtual int obtainRungeKuttaSteps( const int defaultRKOrder ) const
     {
-      std::string key( keyPrefix_ + "order");
-      if ( Fem :: Parameter :: exists( key ) )
-        return parameter().getValue< int > ( key );
-      else
-        return defaultRKOrder ;
+      return parameter().getValue< int > ( keyPrefix_+"order", defaultRKOrder );
     }
   };
 
@@ -342,11 +338,14 @@ namespace Fem
       // if it is not 0 otherwise use the internal estimate
       tpPtr_->provideTimeStepEstimate(maxTimeStep);
       // adjust fixed time step with timeprovider.factor()
+      // SAD: how is fixedTimeStep_ initialized here?
+      fixedTimeStep_ = 0;
       fixedTimeStep_ /= tpPtr_->factor() ;
       if ( fixedTimeStep_ > 1e-20 )
         tpPtr_->init( fixedTimeStep_ );
       else
         tpPtr_->init();
+      tpPtr_->init();
       std::cout << "cfl = " << double(tpPtr_->factor()) << ", T_0 = " << tpPtr_->time() << std::endl;
     }
 
@@ -422,7 +421,7 @@ namespace Fem
       initialize( U );
 
       // make sure the current time step is valid
-      assert( timeProvder_.timeStepValid() );
+      assert( timeProvider_.timeStepValid() );
 
       // take CPU time of solution process
       Dune::Timer timer ;
@@ -507,7 +506,8 @@ namespace Fem
           tpPtr_->next();
 
         // apply Limiter to make solution physical (only when tpPtr_ was set)
-        if( explicitOperator_.hasLimiter() )
+        // first check if explicitSolver is set (IMEX case)
+        if( explicitSolver_ && explicitOperator_.hasLimiter() )
           explicitOperator_.applyLimiter( U );
         else if ( operator_.hasLimiter() )
           operator_.applyLimiter( U );

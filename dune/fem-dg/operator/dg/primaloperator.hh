@@ -3,6 +3,7 @@
 
 // system includes
 #include <string>
+#include <memory>
 
 // dune-fem includes
 #include <dune/fem/solver/timeprovider.hh>
@@ -68,13 +69,13 @@ namespace Fem
       discreteModel_.diffusionFlux().diffusionFluxPenalty( stream );
       stream <<"$, $\\chi = ";
       discreteModel_.diffusionFlux().diffusionFluxLiftFactor( stream );
-      stream << "$, {\\bf Adv. Flux:} " << numflux_.name() << ",\\\\" << std::endl;
+      stream << "$, {\\bf Adv. Flux:} " << numFlux_.name() << ",\\\\" << std::endl;
       return stream.str();
     }
 
   protected:
     using BaseType::discreteModel_;
-    using BaseType::numflux_;
+    using BaseType::numFlux_;
   };
 
 
@@ -114,13 +115,13 @@ namespace Fem
       discreteModel_.diffusionFlux().diffusionFluxPenalty( stream );
       stream <<"$, $\\chi = ";
       discreteModel_.diffusionFlux().diffusionFluxLiftFactor( stream );
-      stream << "$, {\\bf Adv. Flux:} " << numflux_.name() << ",\\\\" << std::endl;
+      stream << "$, {\\bf Adv. Flux:} " << numFlux_.name() << ",\\\\" << std::endl;
       return stream.str();
     }
 
   protected:
     using BaseType::discreteModel_;
-    using BaseType::numflux_;
+    using BaseType::numFlux_;
   };
 
 
@@ -225,13 +226,13 @@ namespace Fem
       discreteModel_.diffusionFlux().diffusionFluxPenalty( stream );
       stream <<"$, $\\chi = ";
       discreteModel_.diffusionFlux().diffusionFluxLiftFactor( stream );
-      stream << "$, {\\bf Adv. Flux:} " << numflux_.name() << ",\\\\" << std::endl;
+      stream << "$, {\\bf Adv. Flux:} " << numFlux_.name() << ",\\\\" << std::endl;
       return stream.str();
     }
 
   protected:
     using BaseType::discreteModel_;
-    using BaseType::numflux_;
+    using BaseType::numFlux_;
   };
 
 
@@ -327,7 +328,13 @@ namespace Fem
 
     typedef Fem::ThreadIterator< GridPartType >                                   ThreadIteratorType;
 
-    typedef LimitDGPass< LimiterDiscreteModelType, Pass0Type, limitPassId >       InnerPass1Type;
+    // standard limiter pass
+    // scaling limiter pass
+
+    // select limiter pass depending on whether scalingLimiter flag is true or not
+    typedef typename std::conditional< ModelType::scalingLimiter,
+            ScalingLimitDGPass< LimiterDiscreteModelType, Pass0Type, limitPassId >,
+            LimitDGPass< LimiterDiscreteModelType, Pass0Type, limitPassId > > :: type  InnerPass1Type;
 
     typedef typename std::conditional< threading,
             ThreadPass < InnerPass1Type, ThreadIteratorType, true>,
@@ -380,25 +387,33 @@ namespace Fem
     template< class ExtraParameterTupleImp >
     DGLimitedAdvectionOperator( GridPartType& gridPart,
                                 const ModelType& model,
+                                const AdvectionFluxType& advFlux,
                                 ExtraParameterTupleImp tuple,
                                 const std::string name = "",
                                 const Dune::Fem::ParameterReader &parameter = Dune::Fem::Parameter::container() )
-      : model_( model )
-      , advflux_( model_, parameter )
-      , gridPart_( gridPart )
+      : gridPart_( gridPart )
+      , model_( model )
+      , advFlux_( advFlux )
       , space_( gridPart_ )
       , limiterSpace_( gridPart_ )
       , fvSpc_()
       , indicator_()
       , diffFlux_( gridPart_, model_, DGPrimalDiffusionFluxParameters( ParameterKey::generate( name, "dgdiffusionflux." ), parameter ) )
-      , discreteModel1_( model_, advflux_, diffFlux_ )
+      , discreteModel1_( model_, advFlux_, diffFlux_ )
       , limitDiscreteModel_( model_ , space_.order(), parameter )
       , pass0_()
       , pass1_( limitDiscreteModel_, pass0_, limiterSpace_ )
       , pass2_( discreteModel1_, pass1_, space_ )
+      , counter_(0)
+      , limitTime_( 0 )
+      , computeTime_( 0 )
     {
       // create indicator if enabled
       createIndicator();
+    }
+
+    virtual ~DGLimitedAdvectionOperator() {
+      std::cout << "~DGLimitedAdvectionOperator: op calls = " << counter_ << " T_l = " << limitTime_ << "  T_op = " << computeTime_ << std::endl;
     }
 
     void activateLinear() const {
@@ -423,11 +438,18 @@ namespace Fem
       return pass2_.timeStepEstimate();
     }
 
+    void called() const { counter_++; }
+    int counter() const { return counter_; }
+
     void operator()( const DestinationType& arg, DestinationType& dest ) const
     {
+      called();
       //++operatorCalled_;
       //std::cout << "Operator call." << std::endl;
       pass2_( arg, dest );
+
+      limitTime_   += limitTime();
+      computeTime_ += computeTime();
     }
 
     inline const SpaceType& space() const {
@@ -504,10 +526,11 @@ namespace Fem
       return discreteModel1_;
     }
 
-  private:
-    ModelType                  model_;
-    AdvectionFluxType          advflux_;
+  protected:
     GridPartType&              gridPart_;
+    const ModelType&           model_;
+    const AdvectionFluxType&   advFlux_;
+
     SpaceType                  space_;
     LimiterSpaceType           limiterSpace_;
 
@@ -516,292 +539,18 @@ namespace Fem
 
     //mutable int operatorCalled_;
 
-  protected:
     DiffusionFluxType   diffFlux_;
 
-  private:
     DiscreteModel1Type  discreteModel1_;
     LimiterDiscreteModelType  limitDiscreteModel_;
     Pass0Type           pass0_;
     Pass1Type           pass1_;
     Pass2Type           pass2_;
 
-    //LimiterOperator  limOp_;
-  };
+    mutable int         counter_;
 
-
-  //////////////////////////////////////////////////////////////////////////////////
-  //////////////////////////////////////////////////////////////////////////////////
-
-
-  // DGScalingLimitedAdvectionOperator
-  //------------------------------------
-
-  /**
-   * \brief Advection operator for CDG with a limiting
-   *         of the numerical solution
-   *
-   * \ingroup PassBased
-   * \ingroup PassOperator
-   *
-   * \tparam Traits
-   * \tparam advection Advection
-   * \tparam diffusion Diffusion
-   */
-  template< class Traits,
-            bool advection = true, bool diffusion = false>
-  class DGScalingLimitedAdvectionOperator :
-    public Fem::SpaceOperatorInterface< typename Traits::DestinationType >
-  {
-    enum PassIdType { u, limitPassId, advectPassId };
-    enum { polOrd = Traits::polynomialOrder };
-
-    typedef Fem::SpaceOperatorInterface< typename Traits::DestinationType >       BaseType;
-
-  public:
-    typedef typename Traits::ExtraParameterTupleType                              ExtraParameterTupleType;
-
-    typedef typename Traits::ModelType                                            ModelType;
-    typedef typename Traits::AdvectionFluxType                                    AdvectionFluxType;
-    enum { dimRange  = ModelType::dimRange };
-    enum { dimDomain = ModelType::Traits::dimDomain };
-
-
-    // The model of the advection pass (advectPassId)
-    typedef AdvectionDiffusionDGPrimalModel< Traits, advection, diffusion, limitPassId > DiscreteModel1Type;
-
-    typedef typename DiscreteModel1Type::DiffusionFluxType                        DiffusionFluxType;
-    typedef typename DiscreteModel1Type::AdaptationType                           AdaptationType;
-
-
-    typedef typename ModelType::ProblemType                                       ProblemType;
-    typedef typename ModelType::Traits::GridType                                  GridType;
-
-    typedef typename ModelType::DomainType                                        DomainType;
-
-    typedef typename Traits::DiscreteFunctionSpaceType                            SpaceType;
-    typedef typename Traits::DestinationType                                      DestinationType;
-    typedef typename DestinationType::GridPartType                                GridPartType;
-
-
-    typedef Traits                                                                LimiterTraitsType;
-    // The model of the limiter pass (limitPassId)
-    typedef Fem::StandardLimiterDiscreteModel< LimiterTraitsType, ModelType, u >  LimiterDiscreteModelType;
-
-    typedef typename LimiterTraitsType::DestinationType                           LimiterDestinationType ;
-    typedef typename LimiterDestinationType::DiscreteFunctionSpaceType            LimiterSpaceType;
-
-    static constexpr bool threading = Traits :: threading ;
-
-    // select non-blocking communication handle
-    typedef typename
-      std::conditional< threading,
-          NonBlockingCommHandle< DestinationType >,
-          EmptyNonBlockingComm > :: type                                          NonBlockingCommHandleType;
-
-    typedef Fem::StartPass< DestinationType, u, NonBlockingCommHandleType >       Pass0Type;
-
-    typedef Fem::ThreadIterator< GridPartType >                                   ThreadIteratorType;
-
-    typedef ScalingLimitDGPass< LimiterDiscreteModelType, Pass0Type, limitPassId >   InnerPass1Type;
-
-    typedef typename std::conditional< threading,
-            ThreadPass < InnerPass1Type, ThreadIteratorType, true>,
-            InnerPass1Type > :: type                                              Pass1Type;
-
-    typedef LocalCDGPass   < DiscreteModel1Type, Pass1Type, advectPassId >        InnerPass2Type;
-
-    typedef typename std::conditional< threading,
-            ThreadPass < InnerPass2Type, ThreadIteratorType, true>,
-            InnerPass2Type > :: type                                              Pass2Type;
-
-    //typedef ScalingLimiter< DestinationType > LimiterOperator;
-
-    typedef typename LimiterDiscreteModelType::IndicatorType                      LimiterIndicatorType;
-    typedef typename LimiterIndicatorType::DiscreteFunctionSpaceType              LimiterIndicatorSpaceType;
-
-    template< class Limiter, int pO >
-    struct LimiterCall
-    {
-      template <class ArgumentType, class DestinationType>
-      static inline void limit(const Limiter& limiter,
-                               ArgumentType& arg,
-                               DestinationType& dest)
-      {
-        limiter(arg, dest);
-      }
-    };
-
-    template <class Limiter>
-    struct LimiterCall<Limiter,0>
-    {
-      template <class ArgumentType, class DestinationType>
-      static inline void limit(const Limiter& limiter,
-                               const ArgumentType& arg,
-                               DestinationType& dest)
-      {
-      }
-    };
-
-    void createIndicator()
-    {
-      // if indicator output is enabled create objects
-      if( Fem::Parameter::getValue<bool> ("femdg.limiter.indicatoroutput", false ) )
-      {
-        fvSpc_.reset( new LimiterIndicatorSpaceType( gridPart_ ) );
-        indicator_.reset( new LimiterIndicatorType( "SE", *fvSpc_ ) );
-        limitDiscreteModel_.setIndicator( indicator() );
-      }
-    }
-
-  public:
-    template< class ExtraParameterTupleImp >
-    DGScalingLimitedAdvectionOperator( GridPartType& gridPart,
-                                       const ModelType& model,
-                                       ExtraParameterTupleImp tuple,
-                                       const std::string name = "" )
-      : model_( model )
-      , advflux_( model_ )
-      , gridPart_( gridPart )
-      , space_( gridPart_ )
-      , limiterSpace_( gridPart_ )
-      , fvSpc_()
-      , indicator_()
-      , diffFlux_( gridPart_, model_, DGPrimalDiffusionFluxParameters( ParameterKey::generate( name, "dgdiffusionflux." ) ) )
-      , discreteModel1_( model_, advflux_, diffFlux_ )
-      , limitDiscreteModel_( model_ , space_.order() )
-      , pass0_()
-      , pass1_( limitDiscreteModel_, pass0_, limiterSpace_ )
-      , pass2_( discreteModel1_, pass1_, space_ )
-    {
-      // create indicator if enabled
-      createIndicator();
-    }
-
-    void activateLinear() const {
-      limitPass().disable();
-    }
-    void deactivateLinear() const {
-      limitPass().enable();
-    }
-
-    void setAdaptationHandler( AdaptationType& adHandle, double weight = 1 )
-    {
-      pass2_.setAdaptation( adHandle, weight );
-    }
-
-    void setTime(const double time)
-    {
-      pass2_.setTime( time );
-    }
-
-    double timeStepEstimate() const
-    {
-      return pass2_.timeStepEstimate();
-    }
-
-    void operator()( const DestinationType& arg, DestinationType& dest ) const
-    {
-      pass2_( arg, dest );
-    }
-
-    inline const SpaceType& space() const {
-      return space_;
-    }
-
-    inline void switchupwind()
-    {}
-
-    double limitTime() const
-    {
-      return limitPass().computeTime();
-    }
-
-    std::vector<double> limitSteps() const
-    {
-      return limitPass().computeTimeSteps();
-    }
-
-    inline double computeTime() const
-    {
-      return pass2_.computeTime();
-    }
-
-    inline size_t numberOfElements () const
-    {
-      return pass2_.numberOfElements();
-    }
-
-    const Pass1Type& limitPass() const
-    {
-      return pass1_;
-    }
-
-    // return pointer to indicator function
-    LimiterIndicatorType* indicator() { return indicator_.operator->() ; }
-
-    //! this pass has an implemented limit() operator if polOrd > 0
-    bool hasLimiter () const { return polOrd > 0; }
-
-    inline void limit( const DestinationType& arg, DestinationType& U ) const
-    {
-      LimiterCall< Pass1Type, polOrd >::limit( limitPass(), arg, U );
-    }
-
-    void printmyInfo(std::string filename) const
-    {
-      std::ostringstream filestream;
-            filestream << filename;
-            std::ofstream ofs(filestream.str().c_str(), std::ios::app);
-            ofs << "Limited Adv. Op., polynomial order: " << polOrd << "\\\\\n\n";
-            ofs.close();
-    }
-
-    std::string description() const
-    {
-      std::cerr <<"DGLimitedAdvectionOperator::description() not implemented" <<std::endl;
-      abort();
-
-      /*
-      std::stringstream stream;
-      stream <<", {\\bf Adv. Flux:} ";
-      if (FLUX==1)
-        stream <<"LLF";
-      else if (FLUX==2)
-        stream <<"HLL";
-      stream <<",\\\\\n";
-      return stream.str();
-      */
-    }
-
-    const DiscreteModel1Type& discreteModel() const
-    {
-      return discreteModel1_;
-    }
-
-  private:
-    ModelType                  model_;
-    AdvectionFluxType          advflux_;
-    GridPartType&              gridPart_;
-    SpaceType                  space_;
-    LimiterSpaceType           limiterSpace_;
-
-
-    std::unique_ptr< LimiterIndicatorSpaceType >  fvSpc_;
-    std::unique_ptr< LimiterIndicatorType      >  indicator_;
-
-
-  protected:
-    DiffusionFluxType   diffFlux_;
-
-  private:
-    DiscreteModel1Type  discreteModel1_;
-    LimiterDiscreteModelType  limitDiscreteModel_;
-    Pass0Type           pass0_;
-    Pass1Type           pass1_;
-    Pass2Type           pass2_;
-
-    //LimiterOperator  limOp_;
+    mutable double limitTime_;
+    mutable double computeTime_;
   };
 
 

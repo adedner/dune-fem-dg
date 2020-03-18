@@ -22,17 +22,16 @@ namespace Fem
   template <class ModelImp, class FluxParameterImp >
   class DGAdvectionFluxBase
   {
-    typedef typename ModelImp::Traits            Traits;
-
-    enum { dimRange = ModelImp::dimRange };
-    typedef typename ModelImp::DomainType        DomainType;
-    typedef typename ModelImp::RangeType         RangeType;
-    typedef typename ModelImp::JacobianRangeType JacobianRangeType;
-    typedef typename ModelImp::FluxRangeType     FluxRangeType;
-    typedef typename ModelImp::FaceDomainType    FaceDomainType;
-
   public:
-    typedef ModelImp                               ModelType;
+    typedef ModelImp  ModelType;
+
+    enum { dimRange = ModelType::dimRange };
+    typedef typename ModelType::DomainType         DomainType;
+    typedef typename ModelType::RangeType          RangeType;
+    typedef typename ModelType::JacobianRangeType  JacobianRangeType;
+    typedef typename ModelType::FluxRangeType      FluxRangeType;
+    typedef typename ModelType::FaceDomainType     FaceDomainType;
+
     typedef FluxParameterImp                       ParameterType;
     typedef typename ParameterType::IdEnum         IdEnum;
 
@@ -55,7 +54,7 @@ namespace Fem
      * \param[in] parameters  parameter reader
      */
     DGAdvectionFluxBase (const ModelType& mod,
-                         const AdvectionFluxParameters& parameter )
+                         const ParameterType& parameter )
       : model_(mod),
         param_( parameter )
     {}

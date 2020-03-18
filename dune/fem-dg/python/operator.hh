@@ -19,6 +19,7 @@ namespace Dune
     {
       using pybind11::operator""_a;
       typedef Fem::DGOperator<DF,MA,MD,Add> Operator;
+      typedef typename Operator::AdvectionFluxType AdvectionFluxType;
       typedef typename DF::DiscreteFunctionSpaceType DFSpace;
       typedef typename DF::GridPartType GridPartType;
       typedef typename Fem::SpaceOperatorInterface<DF> Base;
@@ -37,8 +38,48 @@ namespace Dune
            pybind11::keep_alive< 1, 3 >(), pybind11::keep_alive< 1, 4 >(),
            pybind11::keep_alive< 1, 5 >()
            );
+      cls.def( pybind11::init( [] ( const DFSpace &space,
+               const MA &advectionModel,
+               const MD &diffusionModel )
+      {
+        return new Operator(space, advectionModel, diffusionModel);
+      } ), "space"_a, "advectionModel"_a, "diffusionModel"_a,
+           pybind11::keep_alive< 1, 2 >(),
+           pybind11::keep_alive< 1, 3 >(), pybind11::keep_alive< 1, 4 >()
+           );
+      cls.def( pybind11::init( [] ( const DFSpace &space,
+               const MA &advectionModel,
+               const MD &diffusionModel,
+               const AdvectionFluxType &advectionFlux,
+               const pybind11::dict &parameters )
+      {
+        return new Operator(space, advectionModel, diffusionModel, advectionFlux, Dune::FemPy::pyParameter( parameters, std::make_shared< std::string >() ) );
+      } ), "space"_a, "advectionModel"_a, "diffusionModel"_a, "advectionFlux"_a, "parameters"_a,
+           pybind11::keep_alive< 1, 2 >(),
+           pybind11::keep_alive< 1, 3 >(), pybind11::keep_alive< 1, 4 >(),
+           pybind11::keep_alive< 1, 5 >(),
+           pybind11::keep_alive< 1, 6 >()
+           );
+      cls.def( pybind11::init( [] ( const DFSpace &space,
+               const MA &advectionModel,
+               const MD &diffusionModel,
+               const AdvectionFluxType &advectionFlux )
+      {
+        return new Operator(space, advectionModel, diffusionModel, advectionFlux);
+      } ), "space"_a, "advectionModel"_a, "diffusionModel"_a, "advectionFlux"_a,
+           pybind11::keep_alive< 1, 2 >(),
+           pybind11::keep_alive< 1, 3 >(), pybind11::keep_alive< 1, 4 >(),
+           pybind11::keep_alive< 1, 5 >()
+           );
       cls.def( "applyLimiter", []( Operator &self, DF &u) { self.applyLimiter(u); } );
-
+      // cls.def( "setTime", &Operator::setTime);
+      cls.def( "_setTime", &Operator::setTime);
+      cls.def_property_readonly("timeStepEstimate",
+          [](const Operator &self) -> std::tuple<double,double,double>
+          { return {self.timeStepEstimate(),
+                    self.explicitOperator().timeStepEstimate(),
+                    self.implicitOperator().timeStepEstimate()};
+          });
       Dune::Python::insertClass<ExplType>(cls,"ExplType",
           Dune::Python::GenerateTypeName("NotAvailable"),
           Dune::Python::IncludeFiles{});
@@ -51,6 +92,8 @@ namespace Dune
            { return self.explicitOperator(); } );
       cls.def_property_readonly("implicitOperator", [](const Operator &self) -> const ImplType&
            { return self.implicitOperator(); } );
+      cls.def("counter", [](const Operator &self) -> std::tuple<int,int,int>
+           { return self.counter(); } );
     }
 
   } // namespace FemPy

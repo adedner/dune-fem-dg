@@ -16,13 +16,9 @@
 #include <dune/fem-dg/operator/fluxes/euler/fluxes.hh>
 #include <dune/fem-dg/operator/dg/operatortraits.hh>
 #include <dune/fem-dg/operator/dg/primaloperator.hh>
-#include <dune/fem-dg/solver/rungekuttasolver.hh>
 #include <dune/fem-dg/models/modelwrapper.hh>
 #include <dune/fem-dg/misc/algorithmcreatorselector.hh>
-
-#ifdef EULER_WRAPPER_TEST
-#include <dune/fem-dg/models/additional.hh>
-#endif
+#include <dune/fem-dg/operator/adaptation/estimator.hh>
 
 #if HAVE_DUNE_FEMPY
 #include <dune/fempy/quadrature/fempyquadratures.hh>
@@ -40,12 +36,7 @@ namespace Fem
              class AdvectionModel,
              class DiffusionModel,
              class Additional>
-#ifdef EULER_WRAPPER_TEST
-#error
-  class DGOperator : public DuneODE :: OdeSolverInterface< DestinationImp >
-#else
   class DGOperator : public Fem::SpaceOperatorInterface< DestinationImp >
-#endif
   {
   public:
     static const Solver::Enum solverId             = Additional::solverId;
@@ -67,26 +58,26 @@ namespace Fem
     typedef typename GridType :: CollectiveCommunication          CollectiveCommunicationType;
     typedef TimeProvider< CollectiveCommunicationType >           TimeProviderType;
 
-#ifdef EULER_WRAPPER_TEST
-    typedef U0Sod< GridType > Problem;
-#endif
-
     typedef typename AdvectionLimiterFunctionSelector<
       typename FunctionSpaceType::DomainFieldType, limiterFunctionId > :: type
       LimiterFunctionType;
 
-    typedef ModelWrapper< GridType, AdvectionModel, DiffusionModel, Additional,
-                          LimiterFunctionType
-#ifdef EULER_WRAPPER_TEST
-        , Problem
-#endif
-      >  ModelType;
 
-    static constexpr bool symmetric  =  false ;
-    static constexpr bool matrixfree =  true  ;
+    typedef detail::EmptyProblem< AdvectionModel > ProblemType;
+
+    typedef ModelWrapper< GridType, AdvectionModel, DiffusionModel, Additional,
+                          LimiterFunctionType, ProblemType > ModelType;
+
+    static constexpr bool symmetric  = false ;
+    static constexpr bool matrixfree = true  ;
     static constexpr bool threading  = Additional::threading;
 
-    typedef DGAdvectionFlux< ModelType, advFluxId >       AdvectionFluxType;
+    static const bool fluxIsUserDefined = ( advFluxId == AdvectionFlux::Enum::userdefined );
+
+    typedef typename std::conditional< fluxIsUserDefined,
+                                       DGAdvectionFlux< AdvectionModel, advFluxId >,
+                                       DGAdvectionFlux< ModelType, advFluxId > > :: type  AdvectionFluxType;
+
     typedef typename DiffusionFluxSelector< ModelType, DiscreteFunctionSpaceType, diffFluxId, formId >::type  DiffusionFluxType;
 
     typedef DefaultOperatorTraits< ModelType, DestinationType, AdvectionFluxType, DiffusionFluxType,
@@ -104,6 +95,11 @@ namespace Fem
     typedef typename OperatorSelectorType :: ExplicitOperatorType  ExplicitOperatorType;
     typedef typename OperatorSelectorType :: ImplicitOperatorType  ImplicitOperatorType;
 
+    typedef DGAdaptationIndicatorOperator< OpTraits >                       IndicatorType;
+    typedef Estimator< DestinationType, typename ModelType::ProblemType >   GradientIndicatorType ;
+    typedef AdaptIndicator< IndicatorType, GradientIndicatorType >          AdaptIndicatorType;
+
+
     // solver selection, available fem, istl, petsc, ...
     typedef typename MatrixFreeSolverSelector< solverId, symmetric > :: template LinearInverseOperatorType< DiscreteFunctionSpaceType, DiscreteFunctionSpaceType >  LinearSolverType ;
 
@@ -115,10 +111,32 @@ namespace Fem
                 const Dune::Fem::ParameterReader &parameter = Dune::Fem::Parameter::container() )
       : space_( space ),
         extra_(),
-        model_( advectionModel, diffusionModel ),
-        fullOperator_( space.gridPart(), model_, extra_, name(), parameter ),
-        explOperator_( space.gridPart(), model_, extra_, name(), parameter ),
-        implOperator_( space.gridPart(), model_, extra_, name(), parameter )
+        problem_(),
+        model_( advectionModel, diffusionModel, problem_ ),
+        advFluxPtr_(),
+        advFlux_( advectionFlux( parameter, std::integral_constant< bool, fluxIsUserDefined >() )),
+        fullOperator_( space.gridPart(), model_, advFlux_, extra_, name(), parameter ),
+        explOperator_( space.gridPart(), model_, advFlux_, extra_, name(), parameter ),
+        implOperator_( space.gridPart(), model_, advFlux_, extra_, name(), parameter ),
+        adaptIndicator_( space, model_, advFlux_, extra_, name()+"_adaptind", parameter )
+    {
+    }
+
+    DGOperator( const DiscreteFunctionSpaceType& space,
+                const AdvectionModel &advectionModel,
+                const DiffusionModel &diffusionModel,
+                const AdvectionFluxType& advFlux,
+                const Dune::Fem::ParameterReader &parameter = Dune::Fem::Parameter::container() )
+      : space_( space ),
+        extra_(),
+        problem_(),
+        model_( advectionModel, diffusionModel, problem_ ),
+        advFluxPtr_(),
+        advFlux_( advFlux ),
+        fullOperator_( space.gridPart(), model_, advFlux_, extra_, name(), parameter ),
+        explOperator_( space.gridPart(), model_, advFlux_, extra_, name(), parameter ),
+        implOperator_( space.gridPart(), model_, advFlux_, extra_, name(), parameter ),
+        adaptIndicator_( space, model_, advFlux_, extra_, name()+"_adaptind", parameter )
     {
     }
 
@@ -131,6 +149,10 @@ namespace Fem
     FullOperatorType&     fullOperator()     const { return fullOperator_; }
     ExplicitOperatorType& explicitOperator() const { return explOperator_; }
     ImplicitOperatorType& implicitOperator() const { return implOperator_; }
+    std::tuple<int,int,int> counter() const
+    {
+      return {fullOperator_.counter(),explOperator_.counter(),implOperator_.counter()};
+    }
 
     //! evaluate the operator, which always referrers to the fullOperator here
     void operator()( const DestinationType& arg, DestinationType& dest ) const
@@ -138,16 +160,27 @@ namespace Fem
       fullOperator_( arg, dest );
     }
 
+    //! evaluation indicator and mark grid
+    void estimateMark( const DestinationType& arg, const double dt ) const
+    {
+      adaptIndicator_.estimateMark( arg, dt );
+    }
+
     /// Methods from SpaceOperatorInterface ////
 
-    bool hasLimiter() const { return explOperator_.hasLimiter(); }
+    bool hasLimiter() const
+    {
+      // make sure full operator and explicit operator have the same state on limiter
+      assert( fullOperator_.hasLimiter() == explOperator_.hasLimiter() );
+      return fullOperator_.hasLimiter();
+    }
 
     /** \copydoc SpaceOperatorInterface::limit */
     void limit (const DestinationType& arg, DestinationType& dest) const
     {
       if( hasLimiter() )
       {
-        explOperator_.limit( arg, dest );
+        fullOperator_.limit( arg, dest );
       }
     }
 
@@ -162,15 +195,35 @@ namespace Fem
     //// End Methods from SpaceOperatorInterface /////
 
   protected:
-    const DiscreteFunctionSpaceType&            space_;
+    const AdvectionFluxType& advectionFlux( const Dune::Fem::ParameterReader &parameter, std::integral_constant< bool, false > ) const
+    {
+      advFluxPtr_.reset( new AdvectionFluxType( model_, parameter ) );
+      return *advFluxPtr_;
+    }
+
+    const AdvectionFluxType& advectionFlux( const Dune::Fem::ParameterReader &parameter, std::integral_constant< bool, true > ) const
+    {
+      DUNE_THROW(InvalidStateException,"DGOperator::DGOPerator: When advFluxId is userdefined, flux needs to be passed in constructor!");
+      return *((AdvectionFluxType *) 0);
+    }
+
+    const DiscreteFunctionSpaceType&      space_;
 
     std::tuple<>                          extra_;
+    ProblemType                           problem_;
     ModelType                             model_;
+
+    mutable std::unique_ptr< const AdvectionFluxType >  advFluxPtr_;
+    const AdvectionFluxType&                    advFlux_;
+
     mutable FullOperatorType              fullOperator_;
     mutable ExplicitOperatorType          explOperator_;
     mutable ImplicitOperatorType          implOperator_;
+    mutable AdaptIndicatorType            adaptIndicator_;
+
     mutable double                        fixedTimeStep_ ;
     mutable bool                          initialized_;
+
   };
 
 } // end namespace Fem

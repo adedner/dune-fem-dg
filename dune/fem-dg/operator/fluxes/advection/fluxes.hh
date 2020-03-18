@@ -34,12 +34,9 @@ namespace Fem
   {
     typedef LLFAdvFlux< ModelImp > BaseType;
   public:
-    typedef typename BaseType::ParameterType      ParameterType;
-    typedef typename BaseType::IdEnum             IdEnum;
-    typedef typename BaseType::ModelType          ModelType;
-
-    DGAdvectionFlux( const ModelType& mod, const ParameterType& parameters = Dune::Fem::Parameter::container() )
-      : BaseType( mod, parameters )
+    template< class ... Args>
+    DGAdvectionFlux(  Args&&... args )
+      : BaseType( std::forward<Args>(args)... )
     {}
   };
 
@@ -56,13 +53,9 @@ namespace Fem
   {
     typedef NoFlux< ModelImp > BaseType;
   public:
-    typedef typename BaseType::ParameterType      ParameterType;
-    typedef typename BaseType::IdEnum             IdEnum;
-    typedef typename BaseType::ModelType          ModelType;
-
-    DGAdvectionFlux( const ModelType& mod,
-                     const ParameterType& parameters = ParameterType() )
-      : BaseType( mod, parameters )
+    template< class ... Args>
+    DGAdvectionFlux(  Args&&... args )
+      : BaseType( std::forward<Args>(args)... )
     {}
   };
 
@@ -79,13 +72,9 @@ namespace Fem
   {
     typedef UpwindFlux< ModelImp > BaseType;
   public:
-    typedef typename BaseType::ParameterType      ParameterType;
-    typedef typename BaseType::IdEnum             IdEnum;
-    typedef typename BaseType::ModelType          ModelType;
-
-    DGAdvectionFlux( const ModelType& mod,
-                     const ParameterType& parameters = Dune::Fem::Parameter::container() )
-      : BaseType( mod, parameters )
+    template< class ... Args>
+    DGAdvectionFlux(  Args&&... args )
+      : BaseType( std::forward<Args>(args)... )
     {}
   };
 
@@ -103,7 +92,6 @@ namespace Fem
     typedef DGAdvectionFluxBase< ModelImp, AdvectionFluxParameters  >
                                                   BaseType;
 
-    typedef typename ModelImp::Traits             Traits;
     enum { dimRange = ModelImp::dimRange };
     typedef typename ModelImp::DomainType         DomainType;
     typedef typename ModelImp::RangeType          RangeType;
@@ -119,13 +107,13 @@ namespace Fem
     /**
      * \brief Constructor
      */
-    DGAdvectionFlux (const ModelType& mod,
-                     const ParameterType& parameters = Dune::Fem::Parameter::container() )
-      : BaseType( mod, parameters ),
-        method_( parameters.getMethod() ),
-        flux_none_( mod ),
-        flux_llf_( mod ),
-        flux_upwind_( mod )
+    template< class ... Args>
+    DGAdvectionFlux(  Args&&... args )
+      : BaseType( std::forward<Args>(args)... ),
+        method_( this->parameter().getMethod() ),
+        flux_none_( this->model(), this->parameter() ),
+        flux_llf_( this->model(), this->parameter() ),
+        flux_upwind_( this->model(), this->parameter() )
     {}
 
     /**
@@ -147,22 +135,29 @@ namespace Fem
                    RangeType& gLeft,
                    RangeType& gRight) const
     {
-      switch (method_)
+      if( method_ == IdEnum::upwind )
       {
-        case IdEnum::none:
-          return flux_none_.numericalFlux( left, right, uLeft, uRight, jacLeft, jacRight, gLeft, gRight );
-        case IdEnum::llf:
-          return flux_llf_.numericalFlux( left, right, uLeft, uRight, jacLeft, jacRight, gLeft, gRight );
-        case IdEnum::upwind:
-          return flux_upwind_.numericalFlux( left, right, uLeft, uRight, jacLeft, jacRight, gLeft, gRight );
+        return flux_upwind_.numericalFlux( left, right, uLeft, uRight, jacLeft, jacRight, gLeft, gRight );
       }
-      std::cerr << "Error: Advection flux not chosen via parameter file" << std::endl;
-      assert( false );
+      else if( method_ == IdEnum::llf )
+      {
+        return flux_llf_.numericalFlux( left, right, uLeft, uRight, jacLeft, jacRight, gLeft, gRight );
+      }
+      else if( method_ == IdEnum::none )
+      {
+        return flux_none_.numericalFlux( left, right, uLeft, uRight, jacLeft, jacRight, gLeft, gRight );
+      }
+      else
+      {
+        std::cerr << "Error: Advection flux " << method_ << " not supported!" << std::endl;
+        assert( false );
+        std::abort();
+      }
       return 0.0;
     }
 
   private:
-    const IdEnum&                                method_;
+    const IdEnum                                 method_;
     DGAdvectionFlux< ModelType, IdEnum::none >   flux_none_;
     DGAdvectionFlux< ModelType, IdEnum::llf >    flux_llf_;
     DGAdvectionFlux< ModelType, IdEnum::upwind > flux_upwind_;

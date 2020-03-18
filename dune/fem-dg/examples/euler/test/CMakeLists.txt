@@ -18,13 +18,13 @@ dune_add_test_case( NAME euler
                     SOURCES ${MAIN}
                     COMPILE_DEFINITIONS "POLORDER=${POLORDER}" )
 
-dune_add_test_case( NAME euler_wrapper
-                    SOURCES ${MAIN}
-                    COMPILE_DEFINITIONS "POLORDER=${POLORDER}" EULER_WRAPPER_TEST )
-
 add_code_generate_targets( euler )
 
 if( NOT FEMDG_FAST_TESTBUILD )
+  dune_add_test_case( NAME euler_wrapper
+                      SOURCES ${MAIN}
+                      COMPILE_DEFINITIONS "POLORDER=${POLORDER}" EULER_WRAPPER_TEST )
+
   dune_add_test_case( NAME eulerall
                       SOURCES ${MAIN}
                       COMPILE_DEFINITIONS LIMITER )

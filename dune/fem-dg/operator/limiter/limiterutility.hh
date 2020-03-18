@@ -895,28 +895,38 @@ namespace Fem
   // base class for Limiters, mainly reading limitEps
   struct LimiterFunctionBase
   {
-    const double limitEps_;
+    const double epsilon_;
     LimiterFunctionBase( const Dune::Fem::ParameterReader &parameter = Dune::Fem::Parameter::container() )
-      : limitEps_( getEpsilon(parameter) )
+      : epsilon_( getEpsilon(parameter) )
     {
     }
 
     //! get tolerance for shock detector
     static double getEpsilon( const Dune::Fem::ParameterReader &parameter = Dune::Fem::Parameter::container() )
     {
+      double defaultEps = 1e-8;
+
       // default value is 1e-8
-      return parameter.getValue("femdg.limiter.limiteps", double(1e-8) );
+      if( parameter.exists("femdg.limiter.limiteps") )
+      {
+        std::cout <<"WARNING: parameter 'femdg.limiter.limiteps' is deprecated. \nUse 'femdg.limiter.epsilon' instread!" << std::endl;
+        return parameter.getValue("femdg.limiter.limiteps", defaultEps );
+      }
+      else
+      {
+        return parameter.getValue("femdg.limiter.epsilon", defaultEps );
+      }
     }
 
     //! return epsilon for limiting
-    double epsilon () const { return limitEps_; }
+    double epsilon () const { return epsilon_; }
 
   protected:
     void printInfo(const std::string& name ) const
     {
       //if( Parameter::verbose() )
       {
-        std::cout << "LimiterFunction: " << name << " with limitEps = " << limitEps_ << std::endl;
+        std::cout << "LimiterFunction: " << name << " with epsilon = " << epsilon_ << std::endl;
       }
     }
   };
@@ -941,7 +951,7 @@ namespace Fem
   template <class Field>
   struct MinModLimiter : public LimiterFunctionBase
   {
-    using LimiterFunctionBase :: limitEps_ ;
+    using LimiterFunctionBase :: epsilon_ ;
     typedef Field FieldType;
 
     MinModLimiter( const Dune::Fem::ParameterReader &parameter = Dune::Fem::Parameter::container() )
@@ -955,7 +965,7 @@ namespace Fem
       const FieldType absG = std::abs( g );
 
       // avoid rounding errors
-      // gradient of linear functions is nerly zero
+      // gradient of linear functions is nearly zero
       if ( absG < 1e-10 ) return 1;
 
       // if product smaller than zero set localFactor to zero
@@ -970,7 +980,7 @@ namespace Fem
   template <class Field>
   struct SuperBeeLimiter : public LimiterFunctionBase
   {
-    using LimiterFunctionBase :: limitEps_ ;
+    using LimiterFunctionBase :: epsilon_ ;
     typedef Field FieldType;
 
     SuperBeeLimiter( const Dune::Fem::ParameterReader &parameter = Dune::Fem::Parameter::container() )
@@ -982,8 +992,8 @@ namespace Fem
     FieldType operator ()(const FieldType& g, const FieldType& d ) const
     {
       // avoid rounding errors
-      // gradient of linear functions is nerly zero
-      if ( std::abs( g ) < limitEps_ ) return 1;
+      // gradient of linear functions is nearly zero
+      if ( std::abs( g ) < epsilon_ ) return 1;
 
       const FieldType r = d / g ;
 
@@ -1000,7 +1010,7 @@ namespace Fem
   template <class Field>
   struct VanLeerLimiter : public LimiterFunctionBase
   {
-    using LimiterFunctionBase :: limitEps_ ;
+    using LimiterFunctionBase :: epsilon_ ;
     typedef Field FieldType;
 
     VanLeerLimiter( const Dune::Fem::ParameterReader &parameter = Dune::Fem::Parameter::container() )
@@ -1015,8 +1025,8 @@ namespace Fem
       const FieldType absD = std::abs( d );
 
       // avoid rounding errors
-      if ( (absG < limitEps_) && (absD < limitEps_) ) return 1;
-      if ( absG < limitEps_ ) return 1;
+      if ( (absG < epsilon_) && (absD < epsilon_) ) return 1;
+      if ( absG < epsilon_ ) return 1;
 
       const FieldType r = d / g ;
       const FieldType absR = std::abs( r );

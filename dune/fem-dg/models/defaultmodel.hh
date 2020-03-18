@@ -90,6 +90,9 @@ namespace Fem
     static const int modelParameterSize = IdGenerator<maxModelParameterSize>::size;
   };
 
+  struct IsFemDGModel
+  {};
+
   /**
    * \brief Describes a general analytical model
    *
@@ -140,14 +143,18 @@ namespace Fem
    * \tparam Traits traits class
    */
   template < class Traits >
-  class DefaultModel
+  class DefaultModel : public IsFemDGModel
   {
   public:
     static const int modelParameterSize = Traits::modelParameterSize;
+    static const bool scalingLimiter = false ;
 
     static const int dimDomain = Traits::dimDomain;
     static const int dimRange  = Traits::dimRange;
 
+    typedef typename Traits::FunctionSpaceType           FunctionSpaceType;
+    typedef FunctionSpaceType                            DFunctionSpaceType;
+    typedef FunctionSpaceType                            RFunctionSpaceType;
     typedef typename Traits::DomainType                  DomainType;
     typedef typename Traits::RangeType                   RangeType;
     typedef typename Traits::GradientType                GradientType;

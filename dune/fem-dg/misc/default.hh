@@ -95,9 +95,6 @@ namespace Dune
       typedef typename ScalarFunctionSpaceType::RangeType         ScalarRangeType;
       typedef typename ScalarFunctionSpaceType::JacobianRangeType ScalarJacobianRangeType;
 
-      //! \brief type of reference element
-      typedef Dune::ReferenceElement< ctype, GeometryType::coorddimension > ReferenceElementType;
-
       enum { dimDomain = FunctionSpaceType::dimDomain };
       enum { dimRange  = FunctionSpaceType::dimRange  };
 
@@ -144,7 +141,7 @@ namespace Dune
       std::size_t numDifferentBaseFunctions () const { return size()/dimRange; }
 
       //! \brief return reference element
-      const ReferenceElementType &referenceElement () const
+      const auto &referenceElement () const
       {
         return Dune::ReferenceElements< ctype, GeometryType::coorddimension >::general( type() );
       }

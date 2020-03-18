@@ -8,16 +8,21 @@
 
 // DUNE includes
 #include <dune/common/version.hh>
+#include <dune/common/fmatrixev.hh>
+
 #include <dune/fem/misc/fmatrixconverter.hh>
 #include <dune/fem/misc/boundaryidprovider.hh>
 #include <dune/fem/space/common/functionspace.hh>
+
+#if HAVE_DUNE_PYTHON
 #include <dune/fem/schemes/diffusionmodel.hh>
+#endif
 
 // fem-dg includes
 #include <dune/fem-dg/models/defaultmodel.hh>
 #include <dune/fem-dg/models/defaultprobleminterfaces.hh>
 #include <dune/fem-dg/operator/limiter/limiterutility.hh>
-#include <dune/fem-dg/examples/euler/problems.hh>
+//#include <dune/fem-dg/examples/euler/problems.hh>
 
 namespace Dune
 {
@@ -50,31 +55,57 @@ namespace Fem
 
       void init () {}
 
-      virtual double endTime () const { return 0.1; }
+      virtual double endTime () const
+      {
+        return ParameterType::getValue< double >( "femdg.stepper.endtime" );
+      }
 
-      void bg ( const DomainType&, RangeType& ) const {}
-
-      //! methods for gradient based indicator
-      bool twoIndicators() const { return false ; }
+      void bg ( const DomainType&, RangeType& ) const
+      {
+        DUNE_THROW(InvalidStateException,"EmptyProblem::endTime: this method should not be called");
+      }
 
       //! methods for gradient based indicator
       double indicator1( const DomainType& xgl, const RangeType& u ) const
       {
+        //DUNE_THROW(InvalidStateException,"EmptyProblem::endTime: this method should not be called");
         // use density as indicator
         return u[ 0 ];
       }
 
       virtual int boundaryId ( const int id ) const
       {
-        return 1;
+        DUNE_THROW(InvalidStateException,"EmptyProblem::endTime: this method should not be called");
+        return -1;
       }
 
       void evaluate(const DomainType& x, const double time, RangeType& res) const
       {
-        std::abort();
+        DUNE_THROW(InvalidStateException,"EmptyProblem::endTime: this method should not be called");
       }
 
-      double gamma () const { return 1.4; }
+    private:
+      template <int, bool>
+      struct Gamma
+      {
+        static double value()
+        {
+          DUNE_THROW(NotImplemented,"Python Model does not implement a gamma() method, please add that!");
+          return 0.0;
+        }
+      };
+
+      template <int d>
+      struct Gamma<d, true>
+      {
+        static double value() { return ModelImp::gamma; }
+      };
+
+    public:
+      double gamma() const
+      {
+        return Gamma< 0, ModelImp::hasGamma >::value();
+      }
     };
 
   } // end namespace detail
@@ -94,6 +125,12 @@ namespace Fem
     //typedef MinModLimiter< typename BaseType::DomainFieldType >     LimiterFunctionType ;
     //typedef SuperBeeLimiter< typename BaseType::DomainFieldType > LimiterFunctionType ;
     //typedef VanLeerLimiter< typename BaseType::DomainFieldType >  LimiterFunctionType ;
+    //typedef NoLimiter< typename BaseType::DomainFieldType >  LimiterFunctionType ;
+
+    // check whether LimiterFunction is NoLimiter, in that case scalingLimiter
+    // might have been chosen
+    static const bool scalingLimiter =
+      std::is_same< LimiterFunctionType, NoLimiter< typename LimiterFunctionType::FieldType > > :: value ;
   };
 
 
@@ -115,6 +152,8 @@ namespace Fem
     typedef GridImp                                      GridType;
     typedef ModelWrapperTraits< GridType, Problem, LimiterFunction > Traits;
     typedef DefaultModel< Traits >                       BaseType;
+
+    typedef typename AdvectionModelImp::GridPartType     GridPartType;
     typedef typename Traits::ProblemType                 ProblemType;
     typedef AdvectionModelImp                            AdvectionModelType ;
     typedef DiffusionModelImp                            DiffusionModelType ;
@@ -122,7 +161,7 @@ namespace Fem
     typedef AdditionalImp                                AdditionalType;
 
     enum { dimDomain = Traits::dimDomain };
-    enum { dimRange = Traits::dimRange };
+    enum { dimRange  = Traits::dimRange  };
 
     typedef typename Traits::FaceDomainType              FaceDomainType;
 
@@ -139,6 +178,8 @@ namespace Fem
     static const int limitedDimRange = AdditionalType :: limitedDimRange ;
     typedef Dune::FieldVector< int, limitedDimRange > LimitedRangeType;
 
+    static const bool scalingLimiter = Traits::scalingLimiter;
+
     // for Euler equations diffusion is disabled
     static const bool hasAdvection = AdditionalType::hasAdvection;
     static const bool hasDiffusion = AdditionalType::hasDiffusion;
@@ -147,10 +188,11 @@ namespace Fem
     using BaseType :: hasMass;
     using BaseType :: velocity ;
 
-    ModelWrapper( const AdvectionModelType& advModel, const DiffusionModelType& diffModel )
+    // default constructor called by DGOperator
+    ModelWrapper( const AdvectionModelType& advModel, const DiffusionModelType& diffModel, const ProblemType& problem )
       : advection_( advModel ),
         diffusion_( diffModel ),
-        problem_(),
+        problem_( problem ),
         limitedRange_()
     {
       // by default this should be the identity
@@ -158,22 +200,29 @@ namespace Fem
         limitedRange_[ i ] = i;
 
       // if method has been filled then modified will be set differently
-      // AdditionalType :: limitedRange( limitedRange_ );
       advection_.limitedRange( limitedRange_ );
     }
+
+#ifdef EULER_WRAPPER_TEST
+    ModelWrapper( const ProblemType& problem )
+      : ModelWrapper( *(new AdvectionModelType()), *(new DiffusionModelType()), problem )
+    {}
+#endif
 
     void setTime (const double t)
     {
       BaseType::setTime(t);
+#if HAVE_DUNE_FEMPY
       // update model times (only if time method is available on these models)
       //! TODO problem without virtualization advection_.setTime(t);
       //! TODO problem without virtualization diffusion_.setTime(t);
       ::detail::CallSetTime< AdvectionModelType,
-                           ::detail::CheckTimeMethod< AdvectionModelType >::value >
+                             ::detail::CheckTimeMethod< AdvectionModelType >::value >
         ::setTime( const_cast< AdvectionModelType& > (advection_), t );
       ::detail::CallSetTime< DiffusionModelType,
-                           ::detail::CheckTimeMethod< DiffusionModelType >::value >
+                             ::detail::CheckTimeMethod< DiffusionModelType >::value >
         ::setTime( const_cast< DiffusionModelType& > (diffusion_), t );
+#endif
     }
 
     double gamma () const { return problem_.gamma(); }
@@ -243,8 +292,10 @@ namespace Fem
                             const RangeType& u,
                             RangeType& maxValue) const
     {
-      std::cerr <<"eigenValues for problems/euler not implemented\n";
-      std::abort();
+      if( hasDiffusion )
+      {
+        maxValue = diffusion_.diffusionTimeStep( local.entity(), local.quadraturePoint(), 0.0, u );
+      }
     }
 
     template <class LocalEvaluation, class T>
@@ -252,7 +303,6 @@ namespace Fem
                                      const T& circumEstimate,
                                      const RangeType& u ) const
     {
-      // return AdditionalType :: diffusionTimeStep( local.entity(), local.quadraturePoint(), circumEstimate, u );
       return diffusion_.diffusionTimeStep( local.entity(), local.quadraturePoint(), circumEstimate, u );
     }
 
@@ -315,7 +365,6 @@ namespace Fem
 #ifndef NDEBUG
       const bool isFluxBnd =
 #endif
-      // AdditionalType::boundaryFlux(id, time(), local.entity(), local.quadraturePoint(), normal, uLeft, gLeft);
       advection_.boundaryFlux(id, time(), local.entity(), local.quadraturePoint(), normal, uLeft, gLeft);
       gLeft *= len;
       assert( isFluxBnd );
@@ -348,7 +397,6 @@ namespace Fem
 #ifndef NDEBUG
       const bool isFluxBnd =
 #endif
-      // AdditionalType::diffusionBoundaryFlux(id, time(), local.entity(), local.quadraturePoint(), normal, uLeft, jacLeft, gLeft);
       diffusion_.diffusionBoundaryFlux(id, time(), local.entity(), local.quadraturePoint(), normal, uLeft, jacLeft, gLeft);
       gLeft *= len;
       assert( isFluxBnd );
@@ -365,7 +413,6 @@ namespace Fem
       // TODO: add a max speed for the diffusion time step control
       // this needs to be added in diffusionTimeStep
       assert( hasAdvection );
-      // advspeed = AdditionalType::maxSpeed( time(), local.entity(), local.quadraturePoint(), unitNormal, u );
       advspeed = advection_.maxSpeed( time(), local.entity(), local.quadraturePoint(), unitNormal, u );
       totalspeed = advspeed;
     }
@@ -380,7 +427,6 @@ namespace Fem
     inline DomainType velocity (const LocalEvaluation& local,
                                 RangeType& u) const
     {
-      // return AdditionalType :: velocity( time(), local.entity(), local.quadraturePoint(), u );
       return advection_.velocity( time(), local.entity(), local.quadraturePoint(), u );
     }
 
@@ -393,7 +439,6 @@ namespace Fem
                           const RangeType& u,
                           DomainType& velocity) const
     {
-      // velocity = AdditionalType :: velocity( time(), en, x, u );
       velocity = advection_.velocity( time(), en, x, u );
     }
 
@@ -409,7 +454,6 @@ namespace Fem
                          const DomainType& x,
                          const RangeType& u) const
     {
-      // return AdditionalType :: physical( entity, x, u ) > 0;
       return advection_.physical( entity, x, u ) > 0;
     }
 
@@ -421,7 +465,6 @@ namespace Fem
                              RangeType& u ) const
     {
       // nothing to be done here for this test case
-      // AdditionalType :: adjustAverageValue( entity, xLocal, u );
       advection_.adjustAverageValue( entity, xLocal, u );
     }
 
@@ -433,7 +476,6 @@ namespace Fem
                      const RangeType& uRight,
                      RangeType& jump) const
     {
-      // jump = AdditionalType :: jump( it, x, uLeft, uRight );
       jump = advection_.jump( it, x, uLeft, uRight );
     }
 
@@ -445,7 +487,6 @@ namespace Fem
                                      const RangeType& uRight,
                                      RangeType& indicator) const
     {
-      // indicator = AdditionalType :: jump( it, x, uLeft, uRight );
       indicator = advection_.jump( it, x, uLeft, uRight );
     }
 
@@ -459,12 +500,34 @@ namespace Fem
     const AdvectionModelType& advection_;
     const DiffusionModelType& diffusion_;
 
-    ProblemType problem_;
+    const ProblemType& problem_;
     LimitedRangeType limitedRange_;
   };
 
-}
+  template< class GridImp,
+            class AdvectionModelImp,
+            class AdditionalImp,
+            class LimiterFunction >
+  class AdvectionModelWrapper
+    : public ModelWrapper< GridImp, AdvectionModelImp, AdvectionModelImp, AdditionalImp, LimiterFunction >
+  {
+    typedef ModelWrapper< GridImp, AdvectionModelImp, AdvectionModelImp, AdditionalImp, LimiterFunction >  BaseType;
 
-}
+  public:
+    typedef typename BaseType :: ProblemType          ProblemType;
+    typedef typename BaseType :: AdvectionModelType   AdvectionModelType;
+
+    // default constructor called by DGOperator
+    AdvectionModelWrapper( const AdvectionModelType& advModel )
+      : BaseType( advModel, advModel, *(new ProblemType() )),
+        problemPtr_( &this->problem_ )
+    {}
+
+  protected:
+    std::unique_ptr< const ProblemType > problemPtr_;
+  };
+
+} // end namespace Fem
+} // end namespace Dune
 
 #endif

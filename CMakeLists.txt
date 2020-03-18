@@ -3,6 +3,9 @@ project("dune-fem-dg" C CXX)
 
 set(DUNE_REENABLE_ADD_TEST TRUE)
 
+# this option is mandatory for dune-fem-dg
+option(DUNE_GRID_GRIDTYPE_SELECTOR "Grid selector definition added to config.h" ON)
+
 # general stuff
 cmake_minimum_required(VERSION 2.8.12)
 
@@ -16,7 +19,6 @@ include(DuneMacros)
 
 # start a dune project with information from dune.module
 dune_project()
-
 
 include(DuneMPI)
 

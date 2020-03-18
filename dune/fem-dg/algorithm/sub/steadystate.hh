@@ -52,19 +52,19 @@ namespace Fem
     {}
 
     //solution
-    shared_ptr< DiscreteFunction > solution() const
+    std::shared_ptr< DiscreteFunction > solution() const
     {
       return solution_->shared();
     }
 
     //exact solution
-    shared_ptr< DiscreteFunction > exactSolution() const
+    std::shared_ptr< DiscreteFunction > exactSolution() const
     {
       return exactSolution_->shared();
     }
 
     //rhs
-    shared_ptr< DiscreteFunction > rhs() const
+    std::shared_ptr< DiscreteFunction > rhs() const
     {
       return rhs_->shared();
     }
