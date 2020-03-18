@@ -35,7 +35,7 @@ namespace Fem
         parameter_(parameter)
     {}
     AdaptationParameters( const Dune::Fem::ParameterReader &parameter )
-      : keyPrefix_( "fem.adaptation" ),
+      : keyPrefix_( "fem.adaptation." ),
         markStrategy_( getStrategy() ),
         parameter_(parameter)
     {}
