@@ -22,7 +22,7 @@ dune_project()
 
 include(DuneMPI)
 
-if(dune-fempy_FOUND)
+if(dune-python_FOUND)
   set(PYDEMO_DIR pydemo)
 endif()
 
