@@ -113,11 +113,11 @@ N  = [40,40]
 
 domain = (reader.dgf, "triangle.dgf")
 gridView = polygonGrid( domain, dualGrid=True )
-fvspc = finiteVolume( gridView, dimRange=4)
 space = dgonb( gridView, order=1, dimRange=4 )
 u_h   = space.interpolate( conditional(dot(x,x)<0.1,as_vector([1,0,0,2.5]),
                                                     as_vector([0.125,0,0,0.25])),
                                                     name="uh")
+fvspc = finiteVolume( gridView, dimRange=4)
 fvU = fvspc.interpolate( u_h, name = "fvU" )
 
 operator = femDGOperator(Model, space, limiter="MinMod")

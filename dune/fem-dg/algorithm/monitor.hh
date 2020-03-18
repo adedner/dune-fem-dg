@@ -84,7 +84,9 @@ namespace Fem
       values.push_back( DoublePairType("avg dt", avgTimeStep ) );
       values.push_back( DoublePairType("min dt", minTimeStep ) );
       values.push_back( DoublePairType("max dt", maxTimeStep ) );
-      return std::move( values );
+      // causes warning: moving a local object in a return statement prevents copy elision [-Wpessimizing-move]
+      // return std::move( values );
+      return values;
     }
 
     std::vector< IntPairType > intValues() const
@@ -96,7 +98,9 @@ namespace Fem
       values.push_back( IntPairType("max{Newton/linS}", max_newton_iterations ) );
       values.push_back( IntPairType("max{ILS/linS}", max_ils_iterations ) );
       values.push_back( IntPairType("OCs:", total_operator_calls ) );
-      return std::move( values );
+      // causes warning: moving a local object in a return statement prevents copy elision [-Wpessimizing-move]
+      // return std::move( values );
+      return values;
     }
 
     void dump( std::ostream& out ) const
