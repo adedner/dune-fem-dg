@@ -21,17 +21,19 @@ debian-10-gcc-8-17:
     DUNECI_TEST_LABELS: ""
     DUNECI_TOOLCHAIN: gcc-7-17
     DUNE_TEST_EXPECTED_VC_IMPLEMENTATION: AVX
-    CMAKE_DISABLE_FIND_PACKAGE_Vc: TRUE
-    CMAKE_DISABLE_FIND_PACKAGE_Alberta: TRUE
+    #CMAKE_DISABLE_FIND_PACKAGE_Vc: TRUE
+    #CMAKE_DISABLE_FIND_PACKAGE_Alberta: TRUE
 
 ubuntu:18.04--gcc:
   image: duneci/ubuntu:18.04
   script: duneci-standard-test
+  variables:
+    DUNECI_TOOLCHAIN: gcc-7-17
 
-ubuntu:18.04--clang:
-  image: duneci/ubuntu:18.04
-  script: duneci-standard-test
-  variables: {DUNECI_OPTS: /duneci/opts.clang}
+#ubuntu:18.04--clang:
+#  image: duneci/ubuntu:18.04
+#  script: duneci-standard-test
+#  variables: {DUNECI_OPTS: /duneci/opts.clang}
 
 #ubuntu:18.04--python:
 #  image: duneci/ubuntu:18.04
