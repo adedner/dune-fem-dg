@@ -13,7 +13,14 @@ before_script:
 debian-10-gcc-8-17:
   image: duneci/debian:10
   script: duneci-standard-test
-  variables: {DUNECI_OPTS: /duneci/opts.gcc.c++17}
+  #variables: 
+  # DUNECI_OPTS: /duneci/opts.gcc.c++17
+  #    # allow expensive tests
+  variables:
+    DUNECI_CXXFLAGS: -mavx
+    DUNECI_TEST_LABELS: ""
+    DUNECI_TOOLCHAIN: gcc-7-17
+    DUNE_TEST_EXPECTED_VC_IMPLEMENTATION: AVX
 
 ubuntu:18.04--gcc:
   image: duneci/ubuntu:18.04
