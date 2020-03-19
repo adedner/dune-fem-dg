@@ -390,6 +390,7 @@ namespace Fem
 #endif
 
 #if HAVE_EIGEN
+#ifndef NDEBUG
 #warning "Eigen solver is not working at the moment.!"
   template <bool symmetric>
   struct MatrixSolverSelector<Solver::Enum::eigen,symmetric>
@@ -410,7 +411,8 @@ namespace Fem
   //{
   //  static_warning(false, "You have chosen the Eigen solver backend which is currently not installed. Falling back to standard solver!");
   //};
-#endif
+#endif // NDEBUG
+#endif // HAVE_EIGEN
 
 
   ///////////////////////////////////////////////////////////////////////////
