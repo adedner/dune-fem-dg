@@ -9,7 +9,8 @@ before_script:
   - duneci-install-module https://gitlab.dune-project.org/extensions/dune-alugrid.git
   - duneci-install-module https://gitlab.dune-project.org/dune-fem/dune-fem.git
 
-debian:10  gcc:c++17:
+    # debian:10  gcc:c++17:
+debian-10-gcc-8-17:
   image: duneci/debian:10
   script: duneci-standard-test
   variables: {DUNECI_OPTS: /duneci/opts.gcc.c++17}
