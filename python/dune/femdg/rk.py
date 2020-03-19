@@ -1,5 +1,4 @@
 from math import sqrt
-from scipy.optimize import newton_krylov
 from dune.femdg import femDGOperator, rungeKuttaSolver
 
 class FemDGStepper:
@@ -71,6 +70,7 @@ class HelmholtzButcher:
         self.res.as_numpy[:] -= x_coeff[:]
         return self.res.as_numpy
     def solve(self,baru,target):
+        from scipy.optimize import newton_krylov
         counter = 0
         inner_counter = 0
         def callb(x,Fx): nonlocal counter;       counter+=1
@@ -79,8 +79,8 @@ class HelmholtzButcher:
 
         sol_coeff = target.as_numpy
         sol_coeff[:] = newton_krylov(self.f, sol_coeff,
-                    verbose=False,
-                    callback=callb, inner_callback=icallb)
+                                         verbose=False,
+                                         callback=callb, inner_callback=icallb)
         self.counter = counter
         self.inner_counter = inner_counter # linear iterations not crrect
 # Set up problem: rhs + a*L[y] - y = 0
