@@ -15,18 +15,13 @@ template <class GridView>
 auto chorin(const std::vector<double> &UL, const std::vector<double> &UR, double gamma,
             double x0, double t)
 {
-  typedef typename Dune::Python::stdFunction<GridView,GridView::dimension+2> fct;
-  typedef typename fct::Entity Entity;
-  typedef typename fct::Value Value;
-  typedef typename fct::Coordinate Coordinate;
-  typename fct::value f = [UL,UR,gamma,t,x0](const Entity& en,const Coordinate& x) -> Value
+  return [UL,UR,gamma,t,x0](const auto& en,const auto& x) -> auto
   {
+    Dune::FieldVector<double,GridView::dimension+2> res( 0 );
     auto y = en.geometry().global(x);
-    Value res( 0 );
     double Ulr[6] = { UL[0],UL[1],UL[GridView::dimension+1],
                       UR[0],UR[1],UR[GridView::dimension+1] };
     chorin(Ulr,gamma,t,y[0]-x0,res[0],res[1],res[GridView::dimension+1]);
-    return res; // TODO convert to conservative
+    return res; // TODO convert to conservative using Model
   };
-  return f;
 }
