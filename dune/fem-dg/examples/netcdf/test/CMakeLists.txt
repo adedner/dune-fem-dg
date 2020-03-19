@@ -16,4 +16,5 @@ set( MAIN ${CMAKE_CURRENT_SOURCE_DIR}/../main.cc )
 
 dune_add_test_case( NAME netcdf
                     SOURCES ${MAIN}
-                    COMPILE_DEFINITIONS "POLORDER=${POLORDER}" )
+                    COMPILE_DEFINITIONS "POLORDER=${POLORDER}"
+                    CMAKE_GUARD netcdf_FOUND)
