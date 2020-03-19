@@ -4,6 +4,7 @@
 #include <iostream>
 #include <string>
 #include <type_traits>
+#include <memory>
 
 #include <dune/fem/misc/gridwidth.hh>
 
