@@ -17,13 +17,18 @@ before_script:
   - duneci-install-module https://gitlab.dune-project.org/staging/dune-python.git
   - duneci-install-module https://gitlab.dune-project.org/extensions/dune-alugrid.git
   - duneci-install-module https://gitlab.dune-project.org/dune-fem/dune-fem.git
+  - python3 -m venv /duneci/modules/dune-pip
 
     # debian:10  gcc:c++17:
 debian-10-gcc-8-17:
   image: duneci/debian:10
-  script: duneci-standard-test
+  script: 
+    - source /duneci/modules/dune-pip/bin/activate 
+    - pip install --upgrade pip
+    - pip install ufl numpy matplotlib mpi4py
+    - duneci-standard-test
 
-ubuntu:18.04--gcc:
-  image: duneci/ubuntu:18.04
-  script: duneci-standard-test
+#ubuntu:18.04--gcc:
+#  image: duneci/ubuntu:18.04
+#  script: duneci-standard-test
 
