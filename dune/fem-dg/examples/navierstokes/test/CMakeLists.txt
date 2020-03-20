@@ -10,14 +10,13 @@ add_definitions( "-D${GRIDTYPE}" )
 add_definitions( "-DGRIDDIM=${GRIDDIM}" )
 #add_definitions( "-DCOUNT_FLOPS" )
 
-dune_add_test_case( NAME navierstokes
-                    SOURCES ../main.cc
-                    COMPILE_DEFINITIONS "POLORDER=${POLORDER}" )
-
-add_code_generate_targets( navierstokes )
-
 if( NOT FEMDG_FAST_TESTBUILD )
-  dune_add_test_case( NAME navierstokesall 
+  dune_add_test_case( NAME navierstokes
+                      SOURCES ../main.cc
+                      COMPILE_DEFINITIONS "POLORDER=${POLORDER}" )
+  add_code_generate_targets( navierstokes )
+
+  dune_add_test_case( NAME navierstokesall
                       SOURCES ../main.cc )
 
   add_code_generate_targets( navierstokesall )

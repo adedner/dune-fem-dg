@@ -9,7 +9,7 @@ variables:
   PYTHONPATH:        "/duneci/modules/dune-python/build-cmake/python:/duneci/modules/dune-fem/build-cmake/python:/duneci/modules/dune-alugrid/build-cmake/python:$CI_PROJECT_DIR/build-cmake/python"
 
 before_script:
-  - duneci-install-module https://gitlab.dune-project.org/core/dune-common.git
+  - duneci-install-module https://gitlab.dune-project.org/core/dune-common.git $CI_PROJECT_DIR/scripts/opts/ci-gcc.opts
   - duneci-install-module https://gitlab.dune-project.org/core/dune-geometry.git
   - duneci-install-module https://gitlab.dune-project.org/core/dune-grid.git
   - duneci-install-module https://gitlab.dune-project.org/core/dune-istl.git
