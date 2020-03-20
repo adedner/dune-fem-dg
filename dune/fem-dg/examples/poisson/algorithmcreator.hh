@@ -146,7 +146,7 @@ namespace Fem
       //Item2
       typedef _t<SubEllipticContainerItem, ACPoisson::template Containers > Def;
       //typedef _t<SubEllipticContainerItem, SparseRowLinearOperator >  Def;
-      typedef _t< SubEllipticContainerItem, SparseRowLinearOperator >   Sp;
+      //typedef _t< SubEllipticContainerItem, SparseRowLinearOperator >   Sp;
 
       typedef std::tuple< std::tuple< Def > >                           Item2TupleType;
 
