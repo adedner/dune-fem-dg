@@ -28,6 +28,7 @@ before_script:
 debian-10-gcc-8-17:
   image: duneci/debian:10
   script:
+    # activate virtual env
     - source /duneci/modules/dune-pip/bin/activate
       # issue with setup-dunepy: dune-fem-dg not yet build so dependency in dune-fem-dg fails
       # - python /duneci/modules/dune-python/bin/setup-dunepy.py --opts=$CI_PROJECT_DIR/scripts/opts/ci-gcc.opts install
