@@ -1,6 +1,7 @@
 # option file for dunecontrol, used by the CI system; see also .gitlab-ci.yml
 CMAKE_FLAGS="
   -DDUNE_MAX_TEST_CORES=4
+  -DBUILD_SHARED_LIBS=TRUE
   -DDUNE_PYTHON_INSTALL_LOCATION=none
   -DCMAKE_DISABLE_FIND_PACKAGE_LATEX=TRUE
   -DCMAKE_DISABLE_FIND_PACKAGE_Alberta=TRUE
