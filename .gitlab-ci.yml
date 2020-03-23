@@ -1,9 +1,6 @@
 ---
 variables:
-  DUNECI_OPTS:       $CI_PROJECT_DIR/scripts/opts/ci-gcc.opts
   # dune-python will use DUNE_OPTS when building stuff
-  # doen't seem to be true anymore - uses DUNE_CMAKE_FLAGS instead
-  # DUNE_OPTS:         $CI_PROJECT_DIR/opts.gcc
   DUNECI_CMAKE_FLAGS: "-DDUNE_MAX_TEST_CORES=4 -DBUILD_SHARED_LIBS=TRUE -DDUNE_PYTHON_INSTALL_LOCATION=none -DCMAKE_POSITION_INDEPENDENT_CODE=TRUE -DCMAKE_DISABLE_FIND_PACKAGE_LATEX=TRUE -DCMAKE_DISABLE_FIND_PACKAGE_Alberta=TRUE -DCMAKE_DISABLE_FIND_PACKAGE_Vc=TRUE -DCMAKE_DISABLE_DOCUMENTATION=TRUE"
   DUNECI_TOOLCHAIN:  gcc-7-17
   DUNE_CONTROL_PATH: /duneci/modules:$CI_PROJECT_DIR
@@ -24,14 +21,15 @@ before_script:
   - duneci-install-module https://gitlab.dune-project.org/extensions/dune-alugrid.git
   - duneci-install-module https://gitlab.dune-project.org/dune-fem/dune-fem.git
 
-    # debian:10  gcc:c++17:
-#debian-10-gcc-8-17:
-#image: duneci/debian:10
-# script:
-#    - source /duneci/modules/dune-pip/bin/activate
+debian-11-gcc-9-17:
+  image: duneci/debian:11
+  script:
+    - source /duneci/modules/dune-pip/bin/activate
       # issue with setup-dunepy: dune-fem-dg not yet build so dependency in dune-fem-dg fails
       # - python /duneci/modules/dune-python/bin/setup-dunepy.py --opts=$CI_PROJECT_DIR/scripts/opts/ci-gcc.opts install
-#    - duneci-standard-test
+    - duneci-standard-test
+  variables:
+    DUNECI_TOOLCHAIN:  gcc-9-17
 
 ubuntu:18.04--gcc:
   image: duneci/ubuntu:18.04
