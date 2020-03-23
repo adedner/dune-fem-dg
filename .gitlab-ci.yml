@@ -1,5 +1,17 @@
 ---
+variables:
+  # dune-python will use DUNE_OPTS when building stuff
+  DUNECI_CMAKE_FLAGS: "-DDUNE_MAX_TEST_CORES=4 -DBUILD_SHARED_LIBS=TRUE -DDUNE_PYTHON_INSTALL_LOCATION=none -DCMAKE_POSITION_INDEPENDENT_CODE=TRUE -DCMAKE_DISABLE_FIND_PACKAGE_LATEX=TRUE -DCMAKE_DISABLE_FIND_PACKAGE_Alberta=TRUE -DCMAKE_DISABLE_FIND_PACKAGE_Vc=TRUE -DCMAKE_DISABLE_DOCUMENTATION=TRUE"
+  DUNECI_TOOLCHAIN:  gcc-7-17
+  DUNE_CONTROL_PATH: /duneci/modules:$CI_PROJECT_DIR
+  DUNE_PY_DIR:       /duneci/modules/dune-py
+  PYTHONPATH:        "/duneci/modules/dune-python/build-cmake/python:/duneci/modules/dune-fem/build-cmake/python:/duneci/modules/dune-alugrid/build-cmake/python:$CI_PROJECT_DIR/build-cmake/python"
+
 before_script:
+  - python3 -m venv /duneci/modules/dune-pip
+  - source /duneci/modules/dune-pip/bin/activate
+  - pip install --upgrade pip
+  - pip install ufl numpy matplotlib mpi4py portalocker
   - duneci-install-module https://gitlab.dune-project.org/core/dune-common.git
   - duneci-install-module https://gitlab.dune-project.org/core/dune-geometry.git
   - duneci-install-module https://gitlab.dune-project.org/core/dune-grid.git
@@ -9,40 +21,21 @@ before_script:
   - duneci-install-module https://gitlab.dune-project.org/extensions/dune-alugrid.git
   - duneci-install-module https://gitlab.dune-project.org/dune-fem/dune-fem.git
 
-    # debian:10  gcc:c++17:
-debian-10-gcc-8-17:
-  image: duneci/debian:10
-  script: duneci-standard-test
-  #variables: 
-  # DUNECI_OPTS: /duneci/opts.gcc.c++17
-  #    # allow expensive tests
+debian-11-gcc-9-17:
+  image: duneci/debian:11
+  script:
+    - source /duneci/modules/dune-pip/bin/activate
+      # issue with setup-dunepy: dune-fem-dg not yet build so dependency in dune-fem-dg fails
+      # - python /duneci/modules/dune-python/bin/setup-dunepy.py --opts=$CI_PROJECT_DIR/scripts/opts/ci-gcc.opts install
+    - duneci-standard-test
   variables:
-    DUNECI_CXXFLAGS: -mavx
-    DUNECI_TEST_LABELS: ""
-    DUNECI_TOOLCHAIN: gcc-7-17
-    DUNE_TEST_EXPECTED_VC_IMPLEMENTATION: AVX
-    #CMAKE_DISABLE_FIND_PACKAGE_Vc: TRUE
-    #CMAKE_DISABLE_FIND_PACKAGE_Alberta: TRUE
+    DUNECI_TOOLCHAIN:  gcc-9-17
 
 ubuntu:18.04--gcc:
   image: duneci/ubuntu:18.04
-  script: duneci-standard-test
-  variables:
-    DUNECI_TOOLCHAIN: gcc-7-17
+  script:
+    - source /duneci/modules/dune-pip/bin/activate
+      # issue with setup-dunepy: dune-fem-dg not yet build so dependency in dune-fem-dg fails
+      # - python /duneci/modules/dune-python/bin/setup-dunepy.py --opts=$CI_PROJECT_DIR/scripts/opts/ci-gcc.opts install
+    - duneci-standard-test
 
-#ubuntu:18.04--clang:
-#  image: duneci/ubuntu:18.04
-#  script: duneci-standard-test
-#  variables: {DUNECI_OPTS: /duneci/opts.clang}
-
-#ubuntu:18.04--python:
-#  image: duneci/ubuntu:18.04
-#  variables: {DUNECI_OPTS: /duneci/opts.gcc}
-# script:
-#  - cd /duneci/modules/
-#  - export DUNE_PY_DIR=${PWD}/cache/
-#  - export PYTHONPATH=${PWD}/dune-python/build-cmake/python:${PWD}/dune-alugrid/build-cmake/python:${PWD}/dune-fem/build-cmake/python:${PWD}/dune-fem/build-cmake/python:${PWD}/dune-fem-dg/build-cmake/python:${PWD}/dune-polygongrid/build-cmake/python:${PWD}/dune-spgrid/build-cmake/python:${PWD}/dune-vem/build-cmake/python:${PWD}/opm-grid/build-cmake/python
-#  - dunecontrol
-#  - cd /duneci/modules/dune-fem-dg/pydemo/euler
-#  - python paper.py
-#variables: {DUNECI_OPTS: /duneci/opts.clang}
