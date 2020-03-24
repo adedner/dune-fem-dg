@@ -33,15 +33,12 @@
 #include <dune/fem-dg/pass/modelcaller.hh>
 
 #include <dune/fem-dg/operator/limiter/limiterutility.hh>
+#include <dune/fem-dg/operator/limiter/lpreconstruction.hh>
 
-#if HAVE_DUNE_OPTIM
-//#define WANT_DUNE_OPTIM 1
-#define WANT_DUNE_OPTIM 0
-#endif
-
-#if WANT_DUNE_OPTIM
-#include <dune/fv/lpreconstruction.hh>
-#endif
+//#if HAVE_DUNE_OPTIM
+#define WANT_DUNE_OPTIM 1
+//#define WANT_DUNE_OPTIM 0
+//#endif
 
 
 //*************************************************************

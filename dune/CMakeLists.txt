@@ -1,1 +1,1 @@
-dune_add_subdirs(fem-dg)
+dune_add_subdirs(fem-dg optim)
