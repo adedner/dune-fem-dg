@@ -1,8 +1,6 @@
 # set up project
 project("dune-fem-dg" C CXX)
 
-set(DUNE_REENABLE_ADD_TEST TRUE)
-
 # this option is mandatory for dune-fem-dg
 option(DUNE_GRID_GRIDTYPE_SELECTOR "Grid selector definition added to config.h" ON)
 
@@ -39,11 +37,6 @@ add_header_listing()
 if(dune-python_FOUND)
   add_subdirectory(python)
   dune_python_install_package(PATH "python")
-elseif(dune-corepy_FOUND)
-  add_subdirectory(python)
-  if(NOT (${DUNE_COMMON_VERSION} VERSION_LESS 2.6))
-    dune_python_install_package(PATH "python")
-  endif()
 endif()
 
 # finalize the dune project, e.g., generate config.h etc.

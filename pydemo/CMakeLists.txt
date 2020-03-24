@@ -1,3 +1,4 @@
 #dune_add_subdirs(scalar)
 #dune_add_subdirs(shallowWater)
+dune_add_subdirs(chemicalreaction)
 dune_add_subdirs(euler)
