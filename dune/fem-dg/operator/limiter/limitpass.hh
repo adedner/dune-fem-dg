@@ -1049,7 +1049,6 @@ namespace Fem
       enum { dim = dimGrid };
       if( discreteModel_.hasPhysical() )
       {
-#if 1
         if( en.type().isNone() )
         {
           RangeType u;
@@ -1076,31 +1075,6 @@ namespace Fem
           // geometry and also use caching
           return checkPhysicalQuad( CornerPointSetType( en ), uEn );
         }
-#else
-        {
-          VolumeQuadratureType volQuad(en, volumeQuadratureOrder( en ) );
-          if( ! checkPhysicalQuad(volQuad, uEn) ) return false;
-        }
-
-        const IntersectionIteratorType endnit = gridPart_.iend(en);
-        for (IntersectionIteratorType nit = gridPart_.ibegin(en);
-             nit != endnit; ++nit)
-        {
-          const IntersectionType& intersection = *nit;
-          if( intersection.neighbor() && ! intersection.conforming() )
-          {
-            typedef typename FaceQuadratureType :: NonConformingQuadratureType NonConformingQuadratureType;
-            NonConformingQuadratureType faceQuadInner(gridPart_,intersection, faceQuadratureOrder( faceQuadratureOrder(en ), FaceQuadratureType::INSIDE);
-            if( ! checkPhysicalQuad( faceQuadInner, uEn ) ) return false;
-          }
-          else
-          {
-            // conforming case
-            FaceQuadratureType faceQuadInner(gridPart_,intersection, faceQuadratureOrder( faceQuadratureOrder(en ), FaceQuadratureType::INSIDE);
-            if( ! checkPhysicalQuad( faceQuadInner, uEn ) ) return false;
-          }
-        }
-#endif
       } // end physical
       return true;
     }
@@ -1283,19 +1257,8 @@ namespace Fem
         // set value to zero
         val = 0;
 
-        const int quadNop = quad.nop();
-        /*
-        if( int(aver_.size()) < quadNop )
-        {
-          // resize value vector
-          aver_.resize( quadNop );
-        }
-        */
-
-        // evaluate quadrature at once (does not qork correctly yet)
-        // lf.evaluateQuadrature( quad, aver_ );
         RangeType aver;
-
+        const int quadNop = quad.nop();
         for(int qp=0; qp<quadNop; ++qp)
         {
           lf.evaluate( quad[ qp ], aver );
@@ -1718,7 +1681,6 @@ namespace Fem
     mutable std::vector< GradientType > deoMods_;
     mutable std::vector< CheckType >    comboVec_;
 
-    mutable std::vector< RangeType >  aver_ ;
     mutable std::vector< DomainType > barys_;
     mutable std::vector< RangeType >  nbVals_;
     mutable std::vector< MatrixCacheType > matrixCacheVec_;
