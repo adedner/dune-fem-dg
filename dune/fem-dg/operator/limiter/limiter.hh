@@ -42,6 +42,14 @@ namespace Fem
       typedef FiniteVolumeSpace<FVFunctionSpaceType,GridPartType, 0, SimpleStorage> IndicatorSpaceType;
       typedef AdaptiveDiscreteFunction<IndicatorSpaceType> IndicatorType;
     };
+
+    template <class DiscreteFunction, int passId >
+    using DefaultLimiterDiscreteModel =
+      Fem::LimiterDefaultDiscreteModel < LimiterTraits< DiscreteFunction >,
+                                         Fem::LimiterDefaultModel< typename DiscreteFunction::GridType,
+                                                                   typename DiscreteFunction::FunctionSpaceType >,
+                                         passId
+                                       >;
   }
 
   /**
@@ -50,8 +58,8 @@ namespace Fem
    * \ingroup PassBased
    */
   template <class DomainFunction, class RangeFunction = DomainFunction,
-            class Model = LimiterDefaultModel< typename DomainFunction::GridType,
-                                               typename DomainFunction::FunctionSpaceType >
+            class LimiterDiscreteModel = detail::DefaultLimiterDiscreteModel< DomainFunction, 0 >,
+            bool threading = false
            >
   class Limiter
   {
@@ -80,18 +88,30 @@ namespace Fem
 
     typedef typename DiscreteFunctionSpaceType :: RangeFieldType ftype;
 
-    typedef detail::LimiterTraits< DomainFunctionType >  PassTraitsType;
-    //typedef LimiterDefaultModel< GridType, FunctionSpaceType > Model;
-    typedef StandardLimiterDiscreteModel<PassTraitsType, Model, u > LimiterDiscreteModelType;
+    typedef LimiterDiscreteModel   LimiterDiscreteModelType;
+    typedef typename LimiterDiscreteModelType  :: ModelType      ModelType;
 
     // same type as DiscreteFunction
     typedef typename LimiterDiscreteModelType :: DestinationType DestinationType ;
 
-    typedef StartPass< DiscreteFunctionType , u > StartPassType;
-    typedef LimitDGPass< LimiterDiscreteModelType, StartPassType, limitPass > LimitPassType;
+    // select non-blocking communication handle
+    typedef typename
+      std::conditional< threading,
+          NonBlockingCommHandle< RangeFunctionType >,
+          EmptyNonBlockingComm > :: type                                      NonBlockingCommHandleType;
 
-    typedef typename PassTraitsType :: IndicatorSpaceType  IndicatorSpaceType;
-    typedef typename PassTraitsType :: IndicatorType       IndicatorType;
+    typedef Fem::ThreadIterator< GridPartType >                               ThreadIteratorType;
+
+    typedef StartPass< DomainFunctionType, u, NonBlockingCommHandleType >     StartPassType;
+
+    typedef LimitDGPass< LimiterDiscreteModelType, StartPassType, limitPass > InnerPassType;
+
+    typedef typename std::conditional< threading,
+            ThreadPass < InnerPassType, ThreadIteratorType, true>,
+            InnerPassType > :: type                                           LimitPassType;
+
+    typedef typename LimiterDiscreteModelType::IndicatorType                  IndicatorType;
+    typedef typename IndicatorType :: DiscreteFunctionSpaceType               IndicatorSpaceType;
 
   public:
     Limiter( const DomainSpaceType& domainSpace,
@@ -101,11 +121,19 @@ namespace Fem
     Limiter( const DomainSpaceType& domainSpace,
              const RangeSpaceType&  rangeSpace,
              const double lowerBound, const double upperBound )
+      : Limiter( domainSpace, domainSpace, *(new ModelType( lowerBound, upperBound )) )
+    {
+      modelPtr_.reset( &model_ );
+    }
+
+    Limiter( const DomainSpaceType& domainSpace,
+             const RangeSpaceType&  rangeSpace,
+             const ModelType& model )
       : domainSpace_( domainSpace )
       , rangeSpace_( rangeSpace )
       , indicatorSpace_( domainSpace_.gridPart() )
       , indicator_("indicator", indicatorSpace_ )
-      , model_( lowerBound, upperBound )
+      , model_( model )
       , discreteModel_( model_, domainSpace_.order() )
       , startPass_()
       , limitPass_( discreteModel_ , startPass_, domainSpace_ )
@@ -114,24 +142,8 @@ namespace Fem
     }
 
     //! calculate internal reconstruction
-    void operator () ( const DomainFunctionType& arg, RangeFunctionType& dest )
+    void operator () ( const DomainFunctionType& arg, RangeFunctionType& dest ) const
     {
-      /*
-      values_.resize( size );
-      gradients_.resize( size );
-
-      // helper class for evaluation of average value of discrete function
-      EvalAverage average( *this, arg, discreteModel_);
-
-      // obtain average values for all cells
-      const auto endit = spc_.end();
-      for( auto it = spc_.begin(); (it != endit); ++it )
-      {
-        const auto& en = *it;
-        average.evaluate( en, values_[ gridPart_.indexSet().index( en ) ] );
-      }
-      */
-
       // apply limit pass in any case
       limitPass_.enable();
 
@@ -146,6 +158,8 @@ namespace Fem
 
     const IndicatorType& indicator() const { return indicator_; }
 
+    double computeTime() const { return limitPass_.computeTime(); }
+
   private:
     Limiter( const Limiter& );
 
@@ -156,11 +170,13 @@ namespace Fem
     IndicatorSpaceType indicatorSpace_;
     IndicatorType      indicator_;
 
-    Model model_;
-    LimiterDiscreteModelType discreteModel_;
+    const ModelType&          model_;
+    LimiterDiscreteModelType  discreteModel_;
 
     StartPassType startPass_;
     LimitPassType limitPass_;
+
+    std::unique_ptr< const ModelType > modelPtr_;
   };
 
 

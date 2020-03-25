@@ -20,7 +20,6 @@
 
 #include <dune/fem/space/discontinuousgalerkin.hh>
 #include <dune/fem/space/finitevolume.hh>
-#include <dune/fem/space/lagrange/lagrangepoints.hh>
 
 #include <dune/fem/function/adaptivefunction.hh>
 
@@ -33,6 +32,7 @@
 #include <dune/fem-dg/pass/modelcaller.hh>
 
 #include <dune/fem-dg/operator/limiter/limiterutility.hh>
+#include <dune/fem-dg/operator/limiter/limiterdiscretemodel.hh>
 #include <dune/fem-dg/operator/limiter/lpreconstruction.hh>
 
 //#if HAVE_DUNE_OPTIM
@@ -84,7 +84,6 @@ namespace Fem
 #endif
       // evaluate data
       localFunctionsInside_.evaluate( quadrature[ qp ], ranges_ );
-      // BaseType :: evaluateQuad( quadrature, qp, localFunctionsInside_, values_ );
 
       // call problem checkDirection
       const typename BaseType::EntityType &entity = intersection.inside();
@@ -259,7 +258,7 @@ namespace Fem
     //! returns true if pass is currently active in the pass tree
     using BaseType :: active ;
 
-    //! type of cartesian grid checker
+    //! type of Cartesian grid checker
     typedef CheckCartesian< GridPartType >  CheckCartesianType;
 
   protected:

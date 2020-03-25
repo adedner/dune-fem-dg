@@ -70,7 +70,8 @@ namespace Fem
     // These type definitions allow a convenient access to arguments of pass.
     std::integral_constant< int, passId > uVar;
   public:
-    typedef LimiterDefaultTraits<GlobalTraitsImp,Model, passId >    Traits;
+    typedef Model                                                       ModelType;
+    typedef LimiterDefaultTraits<GlobalTraitsImp,Model, passId >        Traits;
 
     typedef typename Traits::RangeType                                  RangeType;
     typedef typename Traits::DomainType                                 DomainType;
