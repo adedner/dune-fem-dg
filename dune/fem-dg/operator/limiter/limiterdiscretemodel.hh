@@ -461,7 +461,7 @@ namespace Fem
     }
   };
 
-  template <class GlobalPassTraitsImp, class Model, int passId >
+  template <class GlobalPassTraitsImp, class Model, int passId = -1 >
   using StandardLimiterDiscreteModel = LimiterDefaultDiscreteModel< GlobalPassTraitsImp, Model, passId >;
 
 } // end namespace Fem
