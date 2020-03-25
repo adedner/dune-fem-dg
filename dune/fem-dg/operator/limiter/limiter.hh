@@ -16,18 +16,10 @@ namespace Dune
 namespace Fem
 {
 
-  /**
-   * \brief Limited reconstruction.
-   *
-   * \ingroup PassBased
-   */
-  template <class DomainFunction, class RangeFunction = DomainFunction>
-  class Limiter
+  namespace detail
   {
-    typedef DomainFunction DiscreteFunction ;
-
-    // MethodOrderTraits
-    struct PassTraits
+    template <class DiscreteFunction>
+    struct LimiterTraits
     {
       typedef DiscreteFunction     DiscreteFunctionType;
       typedef DiscreteFunctionType DestinationType;
@@ -50,6 +42,20 @@ namespace Fem
       typedef FiniteVolumeSpace<FVFunctionSpaceType,GridPartType, 0, SimpleStorage> IndicatorSpaceType;
       typedef AdaptiveDiscreteFunction<IndicatorSpaceType> IndicatorType;
     };
+  }
+
+  /**
+   * \brief Limited reconstruction.
+   *
+   * \ingroup PassBased
+   */
+  template <class DomainFunction, class RangeFunction = DomainFunction,
+            class Model = LimiterDefaultModel< typename DomainFunction::GridType,
+                                               typename DomainFunction::FunctionSpaceType >
+           >
+  class Limiter
+  {
+    typedef DomainFunction DiscreteFunction ;
 
   public:
     typedef DomainFunction DomainFunctionType;
@@ -74,8 +80,8 @@ namespace Fem
 
     typedef typename DiscreteFunctionSpaceType :: RangeFieldType ftype;
 
-    typedef PassTraits PassTraitsType;
-    typedef LimiterDefaultModel< GridType, FunctionSpaceType > Model;
+    typedef detail::LimiterTraits< DomainFunctionType >  PassTraitsType;
+    //typedef LimiterDefaultModel< GridType, FunctionSpaceType > Model;
     typedef StandardLimiterDiscreteModel<PassTraitsType, Model, u > LimiterDiscreteModelType;
 
     // same type as DiscreteFunction
@@ -93,7 +99,7 @@ namespace Fem
       : Limiter( domainSpace, domainSpace, lowerBound, upperBound ) {}
 
     Limiter( const DomainSpaceType& domainSpace,
-             const RangeSpaceType& rangeSpace,
+             const RangeSpaceType&  rangeSpace,
              const double lowerBound, const double upperBound )
       : domainSpace_( domainSpace )
       , rangeSpace_( rangeSpace )
@@ -110,6 +116,22 @@ namespace Fem
     //! calculate internal reconstruction
     void operator () ( const DomainFunctionType& arg, RangeFunctionType& dest )
     {
+      /*
+      values_.resize( size );
+      gradients_.resize( size );
+
+      // helper class for evaluation of average value of discrete function
+      EvalAverage average( *this, arg, discreteModel_);
+
+      // obtain average values for all cells
+      const auto endit = spc_.end();
+      for( auto it = spc_.begin(); (it != endit); ++it )
+      {
+        const auto& en = *it;
+        average.evaluate( en, values_[ gridPart_.indexSet().index( en ) ] );
+      }
+      */
+
       // apply limit pass in any case
       limitPass_.enable();
 
