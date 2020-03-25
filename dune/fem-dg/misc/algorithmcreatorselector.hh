@@ -333,8 +333,9 @@ namespace Fem
     template<class DSpace, class RSpace = DSpace>
     using LinearInverseOperatorType =
     typename std::conditional<symmetric,
-                              Dune::Fem::ISTLCGOp< DiscreteFunctionType<DSpace>, LinearOperatorType<DSpace,RSpace> >,
-                              Dune::Fem::ISTLBICGSTABOp< DiscreteFunctionType<DSpace>, LinearOperatorType<DSpace,RSpace> > >::type;
+                              Dune::Fem::ISTLInverseOperator< DiscreteFunctionType<DSpace>, SolverParameter::cg>,
+                              Dune::Fem::ISTLInverseOperator< DiscreteFunctionType<DSpace>, SolverParameter::bicgstab>
+                             >::type;
   };
 #else
   template< bool dummy >
@@ -473,8 +474,9 @@ namespace Fem
     template<class DSpace, class RSpace = DSpace>
     using LinearInverseOperatorType
       = typename std::conditional<symmetric,
-                                  Dune::Fem::ISTLCGOp< DiscreteFunctionType<DSpace>, LinearOperatorType<DSpace,RSpace> >,
-                                  Dune::Fem::ISTLGMResOp< DiscreteFunctionType<DSpace>, LinearOperatorType<DSpace,RSpace> > >::type;
+                                  Dune::Fem::ISTLInverseOperator< DiscreteFunctionType<DSpace>, SolverParameter::cg>,
+                                  Dune::Fem::ISTLInverseOperator< DiscreteFunctionType<DSpace>, SolverParameter::bicgstab>
+                                 >::type;
   };
 #endif
 
