@@ -5,7 +5,13 @@ variables:
   DUNECI_TOOLCHAIN:  gcc-7-17
   DUNE_CONTROL_PATH: /duneci/modules:$CI_PROJECT_DIR
   DUNE_PY_DIR:       /duneci/modules/dune-py
-  PYTHONPATH:        "/duneci/modules/dune-python/build-cmake/python:/duneci/modules/dune-fem/build-cmake/python:/duneci/modules/dune-alugrid/build-cmake/python:$CI_PROJECT_DIR/build-cmake/python"
+  PYTHONPATH:        "/duneci/modules/dune-common/build-cmake/python:
+                      /duneci/modules/dune-geometry/build-cmake/python:
+                      /duneci/modules/dune-grid/build-cmake/python:
+                      /duneci/modules/dune-istl/build-cmake/python:
+                      /duneci/modules/dune-alugrid/build-cmake/python:
+                      /duneci/modules/dune-fem/build-cmake/python:
+                      $CI_PROJECT_DIR/build-cmake/python"
 
 before_script:
   - python3 -m venv /duneci/modules/dune-pip
@@ -17,7 +23,6 @@ before_script:
   - duneci-install-module https://gitlab.dune-project.org/core/dune-grid.git
   - duneci-install-module https://gitlab.dune-project.org/core/dune-istl.git
   - duneci-install-module https://gitlab.dune-project.org/core/dune-localfunctions.git
-  - duneci-install-module https://gitlab.dune-project.org/staging/dune-python.git
   - duneci-install-module https://gitlab.dune-project.org/extensions/dune-alugrid.git
   - duneci-install-module https://gitlab.dune-project.org/dune-fem/dune-fem.git
 
@@ -38,4 +43,3 @@ ubuntu:18.04--gcc:
       # issue with setup-dunepy: dune-fem-dg not yet build so dependency in dune-fem-dg fails
       # - python /duneci/modules/dune-python/bin/setup-dunepy.py --opts=$CI_PROJECT_DIR/scripts/opts/ci-gcc.opts install
     - duneci-standard-test
-
