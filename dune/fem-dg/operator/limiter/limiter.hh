@@ -3,8 +3,10 @@
 
 #include <dune/fem/space/discontinuousgalerkin.hh>
 #include <dune/fem/space/finitevolume.hh>
+#include <dune/fem/misc/threads/threaditerator.hh>
 #include <dune/fem/io/parameter.hh>
 
+#include <dune/fem-dg/pass/threadpass.hh>
 #include <dune/fem-dg/operator/limiter/limitpass.hh>
 #include <dune/fem-dg/operator/limiter/scalinglimitpass.hh>
 #include <dune/fem-dg/operator/limiter/limiterdiscretemodel.hh>
@@ -16,18 +18,10 @@ namespace Dune
 namespace Fem
 {
 
-  /**
-   * \brief Limited reconstruction.
-   *
-   * \ingroup PassBased
-   */
-  template <class DomainFunction, class RangeFunction = DomainFunction>
-  class Limiter
+  namespace detail
   {
-    typedef DomainFunction DiscreteFunction ;
-
-    // MethodOrderTraits
-    struct PassTraits
+    template <class DiscreteFunction>
+    struct LimiterTraits
     {
       typedef DiscreteFunction     DiscreteFunctionType;
       typedef DiscreteFunctionType DestinationType;
@@ -50,6 +44,29 @@ namespace Fem
       typedef FiniteVolumeSpace<FVFunctionSpaceType,GridPartType, 0, SimpleStorage> IndicatorSpaceType;
       typedef AdaptiveDiscreteFunction<IndicatorSpaceType> IndicatorType;
     };
+
+    template <class DiscreteFunction, int passId >
+    using DefaultLimiterDiscreteModel =
+      Fem::LimiterDefaultDiscreteModel < LimiterTraits< DiscreteFunction >,
+                                         Fem::LimiterDefaultModel< typename DiscreteFunction::GridType,
+                                                                   typename DiscreteFunction::FunctionSpaceType >,
+                                         passId
+                                       >;
+  }
+
+  /**
+   * \brief Limited reconstruction.
+   *
+   * \ingroup PassBased
+   */
+  template <class DomainFunction, class RangeFunction = DomainFunction,
+            class LimiterDiscreteModel = detail::DefaultLimiterDiscreteModel< DomainFunction, 0 >,
+            bool threading = false,
+            bool scalingLimiter = false
+           >
+  class Limiter
+  {
+    typedef DomainFunction DiscreteFunction ;
 
   public:
     typedef DomainFunction DomainFunctionType;
@@ -74,18 +91,32 @@ namespace Fem
 
     typedef typename DiscreteFunctionSpaceType :: RangeFieldType ftype;
 
-    typedef PassTraits PassTraitsType;
-    typedef LimiterDefaultModel< GridType, FunctionSpaceType > Model;
-    typedef StandardLimiterDiscreteModel<PassTraitsType, Model, u > LimiterDiscreteModelType;
+    typedef LimiterDiscreteModel   LimiterDiscreteModelType;
+    typedef typename LimiterDiscreteModelType  :: ModelType      ModelType;
 
     // same type as DiscreteFunction
     typedef typename LimiterDiscreteModelType :: DestinationType DestinationType ;
 
-    typedef StartPass< DiscreteFunctionType , u > StartPassType;
-    typedef LimitDGPass< LimiterDiscreteModelType, StartPassType, limitPass > LimitPassType;
+    // select non-blocking communication handle
+    typedef typename
+      std::conditional< threading,
+          NonBlockingCommHandle< RangeFunctionType >,
+          EmptyNonBlockingComm > :: type                                      NonBlockingCommHandleType;
 
-    typedef typename PassTraitsType :: IndicatorSpaceType  IndicatorSpaceType;
-    typedef typename PassTraitsType :: IndicatorType       IndicatorType;
+    typedef Fem::ThreadIterator< GridPartType >                               ThreadIteratorType;
+
+    typedef StartPass< DomainFunctionType, u, NonBlockingCommHandleType >     StartPassType;
+
+    typedef typename std::conditional< scalingLimiter,
+            ScalingLimitDGPass< LimiterDiscreteModelType, StartPassType, limitPass >,
+            LimitDGPass< LimiterDiscreteModelType, StartPassType, limitPass > > :: type  InnerPassType;
+
+    typedef typename std::conditional< threading,
+            ThreadPass < InnerPassType, ThreadIteratorType, true>,
+            InnerPassType > :: type                                           LimitPassType;
+
+    typedef typename LimiterDiscreteModelType::IndicatorType                  IndicatorType;
+    typedef typename IndicatorType :: DiscreteFunctionSpaceType               IndicatorSpaceType;
 
   public:
     Limiter( const DomainSpaceType& domainSpace,
@@ -93,26 +124,37 @@ namespace Fem
       : Limiter( domainSpace, domainSpace, lowerBound, upperBound ) {}
 
     Limiter( const DomainSpaceType& domainSpace,
-             const RangeSpaceType& rangeSpace,
+             const RangeSpaceType&  rangeSpace,
              const double lowerBound, const double upperBound )
+      : Limiter( domainSpace, domainSpace, *(new ModelType( lowerBound, upperBound )) )
+    {
+      modelPtr_.reset( &model_ );
+    }
+
+    Limiter( const DomainSpaceType& domainSpace,
+             const RangeSpaceType&  rangeSpace,
+             const ModelType& model )
       : domainSpace_( domainSpace )
       , rangeSpace_( rangeSpace )
       , indicatorSpace_( domainSpace_.gridPart() )
       , indicator_("indicator", indicatorSpace_ )
-      , model_( lowerBound, upperBound )
+      , model_( model )
       , discreteModel_( model_, domainSpace_.order() )
       , startPass_()
       , limitPass_( discreteModel_ , startPass_, domainSpace_ )
     {
       discreteModel_.setIndicator( &indicator_ );
+
+      // enable limit pass
+      limitPass_.enable();
     }
 
-    //! calculate internal reconstruction
-    void operator () ( const DomainFunctionType& arg, RangeFunctionType& dest )
-    {
-      // apply limit pass in any case
-      limitPass_.enable();
+    void enable () const { limitPass_.enable(); }
+    void disable() const { limitPass_.disable(); }
 
+    //! calculate internal reconstruction
+    void operator () ( const DomainFunctionType& arg, RangeFunctionType& dest ) const
+    {
       // calculate reconstruction
       limitPass_( arg, dest );
     }
@@ -123,6 +165,13 @@ namespace Fem
     }
 
     const IndicatorType& indicator() const { return indicator_; }
+
+    double computeTime() const { return limitPass_.computeTime(); }
+
+    std::vector<double> computeTimeSteps () const
+    {
+      return limitPass_.computeTimeSteps();
+    }
 
   private:
     Limiter( const Limiter& );
@@ -134,141 +183,20 @@ namespace Fem
     IndicatorSpaceType indicatorSpace_;
     IndicatorType      indicator_;
 
-    Model model_;
-    LimiterDiscreteModelType discreteModel_;
+    const ModelType&          model_;
+    LimiterDiscreteModelType  discreteModel_;
 
     StartPassType startPass_;
-    LimitPassType limitPass_;
+    mutable LimitPassType limitPass_;
+
+    std::unique_ptr< const ModelType > modelPtr_;
   };
 
-
-
-
-  /**
-   * \brief Limited reconstruction.
-   *
-   * \ingroup PassBased
-   */
-  template <class DomainFunction, class RangeFunction = DomainFunction>
-  class ScalingLimiter
-  {
-    typedef DomainFunction DiscreteFunction ;
-
-    // MethodOrderTraits
-    struct PassTraits
-    {
-      typedef DiscreteFunction     DiscreteFunctionType;
-      typedef DiscreteFunctionType DestinationType;
-
-      typedef typename DiscreteFunctionType :: DiscreteFunctionSpaceType   DiscreteFunctionSpaceType;
-      typedef typename DiscreteFunctionSpaceType :: FunctionSpaceType  FunctionSpaceType;
-
-      typedef typename DiscreteFunctionSpaceType :: GridPartType  GridPartType ;
-      typedef typename GridPartType :: GridType GridType;
-      typedef typename GridType :: ctype ctype;
-      enum { dimDomain = FunctionSpaceType :: dimDomain };
-
-      typedef CachingQuadrature<GridPartType,0> VolumeQuadratureType;
-      typedef CachingQuadrature<GridPartType,1> FaceQuadratureType;
-
-      typedef typename FunctionSpaceType :: RangeFieldType FieldType;
-
-      // Indicator for Limiter
-      typedef FunctionSpace< ctype, FieldType, dimDomain, 3> FVFunctionSpaceType;
-      typedef FiniteVolumeSpace<FVFunctionSpaceType,GridPartType, 0, SimpleStorage> IndicatorSpaceType;
-      typedef AdaptiveDiscreteFunction<IndicatorSpaceType> IndicatorType;
-    };
-
-  public:
-    typedef DomainFunction DomainFunctionType;
-    typedef RangeFunction  RangeFunctionType;
-
-    typedef typename DomainFunctionType :: DiscreteFunctionSpaceType  DomainSpaceType;
-    typedef typename RangeFunctionType  :: DiscreteFunctionSpaceType  RangeSpaceType;
-
-    typedef DiscreteFunction DiscreteFunctionType;
-    typedef typename DiscreteFunctionType :: DiscreteFunctionSpaceType
-      DiscreteFunctionSpaceType;
-
-    typedef typename DiscreteFunctionSpaceType :: FunctionSpaceType  FunctionSpaceType;
-    typedef typename DiscreteFunctionSpaceType :: GridPartType       GridPartType;
-    typedef typename GridPartType :: GridType   GridType;
-
-    typedef typename DiscreteFunctionSpaceType :: EntityType  EntityType;
-
-    // pass ids
-    enum PassIdType{ u = 0 , limitPass = 1 };
-    enum { dimRange = DiscreteFunctionSpaceType :: dimRange };
-
-    typedef typename DiscreteFunctionSpaceType :: RangeType      RangeType;
-    typedef typename DiscreteFunctionSpaceType :: RangeFieldType ftype;
-
-    typedef PassTraits PassTraitsType;
-    typedef LimiterDefaultModel< GridType, FunctionSpaceType > Model;
-    typedef StandardLimiterDiscreteModel<PassTraitsType, Model, u > LimiterDiscreteModelType;
-
-    // same type as DiscreteFunction
-    typedef typename LimiterDiscreteModelType :: DestinationType DestinationType ;
-
-    typedef StartPass< DiscreteFunctionType , u > StartPassType;
-    typedef ScalingLimitDGPass< LimiterDiscreteModelType, StartPassType, limitPass > LimitPassType;
-
-    typedef typename PassTraitsType :: IndicatorSpaceType  IndicatorSpaceType;
-    typedef typename PassTraitsType :: IndicatorType       IndicatorType;
-
-  public:
-    ScalingLimiter( const DomainSpaceType& domainSpace,
-                    const double lowerBound, const double upperBound )
-      : ScalingLimiter( domainSpace, domainSpace, lowerBound, upperBound ) {}
-
-    ScalingLimiter( const DomainSpaceType& domainSpace,
-                    const RangeSpaceType& rangeSpace,
-                    const double lowerBound, const double upperBound )
-      : domainSpace_( domainSpace )
-      , rangeSpace_( rangeSpace )
-      , indicatorSpace_( domainSpace_.gridPart() )
-      , indicator_("indicator", indicatorSpace_ )
-      , model_( lowerBound, upperBound )
-      , discreteModel_( model_, domainSpace_.order() )
-      , startPass_()
-      , limitPass_( discreteModel_ , startPass_, domainSpace_ )
-    {
-      discreteModel_.setIndicator( &indicator_ );
-    }
-
-    //! calculate internal reconstruction
-    void operator () ( const DomainFunctionType& arg, RangeFunctionType& dest )
-    {
-      // apply limit pass in any case
-      limitPass_.enable();
-
-      // calculate reconstruction
-      limitPass_( arg, dest );
-    }
-
-    bool activated( const EntityType& entity ) const
-    {
-      return std::abs( indicator_.localFunction( entity )[ 0 ] ) > 0.0;
-    }
-
-    const IndicatorType& indicator() const { return indicator_; }
-
-  private:
-    ScalingLimiter( const ScalingLimiter& );
-
-  protected:
-    const DomainSpaceType& domainSpace_;
-    const RangeSpaceType&  rangeSpace_;
-
-    IndicatorSpaceType indicatorSpace_;
-    IndicatorType      indicator_;
-
-    Model model_;
-    LimiterDiscreteModelType discreteModel_;
-
-    StartPassType startPass_;
-    LimitPassType limitPass_;
-  };
+  template <class DomainFunction, class RangeFunction = DomainFunction,
+            class LimiterDiscreteModel = detail::DefaultLimiterDiscreteModel< DomainFunction, 0 >,
+            bool threading = false
+           >
+  using ScalingLimiter = Limiter< DomainFunction, RangeFunction, LimiterDiscreteModel, threading, true>;
 
   /**
    * \brief Limited reconstruction.

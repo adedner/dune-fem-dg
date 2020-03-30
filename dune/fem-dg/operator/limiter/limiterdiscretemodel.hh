@@ -12,14 +12,47 @@ namespace Dune
 namespace Fem
 {
 
-  template <class GlobalPassTraitsImp, class Model, int passId = -1 >
-  class StandardLimiterDiscreteModel;
+  template <class GlobalPassTraitsImp, class Model, int passId = -1>
+  class LimiterDefaultDiscreteModel;
 
-  template <class GlobalPassTraitsImp, class Model, int passId >
-  struct LimiterTraits
-    : public LimiterDefaultTraits<GlobalPassTraitsImp,Model,passId>
+  template <class GlobalTraitsImp, class Model, int passId >
+  struct LimiterDefaultTraits
   {
-    typedef StandardLimiterDiscreteModel<GlobalPassTraitsImp,Model,passId> DGDiscreteModelType;
+    typedef Model ModelType;
+    typedef typename ModelType::Traits ModelTraits;
+    typedef typename ModelTraits::GridType GridType;
+
+    enum { dimRange = ModelTraits::dimRange };
+    enum { dimDomain = ModelTraits::dimDomain };
+    enum { dimGrid = GridType::dimension };
+
+    typedef GlobalTraitsImp Traits;
+    typedef typename ModelTraits::FunctionSpaceType FunctionSpaceType;
+
+    typedef typename Traits::VolumeQuadratureType VolumeQuadratureType;
+    typedef typename Traits::FaceQuadratureType FaceQuadratureType;
+    typedef typename Traits::GridPartType GridPartType;
+    typedef typename Traits::DiscreteFunctionSpaceType DiscreteFunctionSpaceType;
+    typedef typename Traits::DestinationType DestinationType;
+    typedef DestinationType DiscreteFunctionType;
+
+    typedef typename DestinationType::DomainFieldType DomainFieldType;
+    typedef typename DestinationType::DomainType DomainType;
+    typedef FieldVector<DomainFieldType, dimGrid >  LocalDomainType;
+    typedef typename DestinationType::RangeType RangeType;
+    typedef typename DestinationType::JacobianRangeType JacobianRangeType;
+    typedef FieldVector<DomainFieldType, dimGrid - 1> FaceLocalDomainType;
+
+    // Indicator function type for Limiter (for output mainly)
+    typedef Fem::FunctionSpace< DomainFieldType, double, dimDomain, 3> FVFunctionSpaceType;
+    typedef Fem::FiniteVolumeSpace<FVFunctionSpaceType,GridPartType, 0, Fem::SimpleStorage> IndicatorSpaceType;
+    typedef Fem::AdaptiveDiscreteFunction<IndicatorSpaceType> IndicatorType;
+
+    typedef LimiterDefaultDiscreteModel <GlobalTraitsImp,Model,passId> DGDiscreteModelType;
+
+    //typedef typename ExistsLimiterFunction< Model, DomainFieldType > :: LimiterFunctionType  LimiterFunctionType;
+    //typedef MinModLimiter< DomainFieldType > LimiterFunctionType;
+    typedef typename Model :: Traits :: LimiterFunctionType  LimiterFunctionType;
   };
 
   /**
@@ -28,16 +61,17 @@ namespace Fem
    * \ingroup Pass
    * \ingroup DiscreteModel
    */
-  template <class GlobalPassTraitsImp, class Model, int passId >
-  class StandardLimiterDiscreteModel :
-    public LimiterDefaultDiscreteModel<GlobalPassTraitsImp, Model , passId >
+  template <class GlobalTraitsImp, class Model, int passId >
+  class LimiterDefaultDiscreteModel :
+    public Fem::DGDiscreteModelDefaultWithInsideOutside< LimiterDefaultTraits<GlobalTraitsImp,Model,passId >, passId >
   {
-    typedef LimiterDefaultDiscreteModel<GlobalPassTraitsImp, Model, passId > BaseType;
+    typedef Fem::DGDiscreteModelDefaultWithInsideOutside< LimiterDefaultTraits<GlobalTraitsImp,Model,passId >, passId >  BaseType;
 
     // These type definitions allow a convenient access to arguments of pass.
     std::integral_constant< int, passId > uVar;
   public:
-    typedef LimiterTraits<GlobalPassTraitsImp,Model, passId >           Traits;
+    typedef Model                                                       ModelType;
+    typedef LimiterDefaultTraits<GlobalTraitsImp,Model, passId >        Traits;
 
     typedef typename Traits::RangeType                                  RangeType;
     typedef typename Traits::DomainType                                 DomainType;
@@ -60,11 +94,17 @@ namespace Fem
     // Indicator for Limiter
     typedef typename Traits::IndicatorType                              IndicatorType ;
 
+    // type of limiter function, No, MinMod, VanLeer, SuperBee
+    typedef typename Traits::LimiterFunctionType                        LimiterFunctionType;
+
     enum { dimRange = Traits :: dimRange };
     enum { evaluateJacobian = false };
 
   protected:
-    using BaseType::model_;
+    const Model& model_;
+    const LimiterFunctionType limiterFunction_;
+    mutable DomainType velocity_;
+    const DomainFieldType veloEps_;
 
     IndicatorType* indicator_;
 
@@ -80,10 +120,14 @@ namespace Fem
     using BaseType::outside;
 
     //! constructor
-    StandardLimiterDiscreteModel(const Model& mod,
-                                 const int polOrd,
-                                 const Dune::Fem::ParameterReader &parameter = Dune::Fem::Parameter::container() )
-      : BaseType(mod, 1e-8, parameter),
+    LimiterDefaultDiscreteModel(const Model& mod,
+                                const int polOrd,
+                                const Dune::Fem::ParameterReader &parameter = Dune::Fem::Parameter::container(),
+                                const DomainFieldType veloEps = 1e-8 )
+      : model_( mod ),
+        limiterFunction_(parameter),
+        velocity_(0),
+        veloEps_( veloEps ),
         indicator_( 0 ),
         refTol_( -1 ),
         crsTol_( -1 ),
@@ -110,7 +154,40 @@ namespace Fem
 
     void setEntity(const EntityType& en)
     {
-      BaseType :: setEntity ( en );
+      BaseType::setEntity( en );
+      model_.setEntity ( en );
+    }
+
+    //! \brief returns false
+    bool hasSource() const { return false; }
+    //! \brief returns true
+    bool hasFlux() const   { return true;  }
+
+    template <class LocalEvaluationVec >
+    void initializeIntersection( const LocalEvaluationVec& left,
+                                 const LocalEvaluationVec& right )
+    {}
+
+    template <class LocalEvaluationVec >
+    void initializeBoundary(const LocalEvaluationVec& local )
+    {}
+
+    // old version
+    template <class QuadratureImp, class ArgumentTupleVector >
+    void initializeIntersection(const IntersectionType& it,
+                                const QuadratureImp& quadInner,
+                                const QuadratureImp& quadOuter,
+                                const ArgumentTupleVector& uLeftVec,
+                                const ArgumentTupleVector& uRightVec)
+    {
+    }
+
+    // old version
+    template <class QuadratureImp, class ArgumentTupleVector >
+    void initializeBoundary(const IntersectionType& it,
+                            const QuadratureImp& quadInner,
+                            const ArgumentTupleVector& uLeftVec)
+    {
     }
 
     void indicatorMax() const
@@ -194,6 +271,45 @@ namespace Fem
 
       // set new refinement marker
       grid.mark( refinement, gridEntity );
+    }
+
+    /** \brief numericalFlux of for limiter evaluateing the difference
+         of the solution in the current integration point if we are a an
+         inflow intersection.
+         This is needed for the shock detection.
+    */
+    template <class FaceQuadratureImp,
+              class ArgumentTuple,
+              class JacobianTuple>
+    double numericalFlux(const IntersectionType& it,
+                         const double time,
+                         const FaceQuadratureImp& innerQuad,
+                         const FaceQuadratureImp& outerQuad,
+                         const int quadPoint,
+                         const ArgumentTuple& uLeft,
+                         const ArgumentTuple& uRight,
+                         const JacobianTuple& jacLeft,
+                         const JacobianTuple& jacRight,
+                         RangeType& shockIndicator,
+                         RangeType& adaptIndicator,
+                         JacobianRangeType&,
+                         JacobianRangeType& ) const
+    {
+      std::abort();
+      const FaceLocalDomainType& x = innerQuad.localPoint( quadPoint );
+
+      if( checkDirection(it,time, x, uLeft) )
+      {
+        shockIndicator  = uLeft[ uVar ];
+        shockIndicator -= uRight[ uVar ];
+        adaptIndicator = shockIndicator;
+        return it.integrationOuterNormal( x ).two_norm();
+      }
+      else
+      {
+        adaptIndicator = shockIndicator = 0;
+        return 0.0;
+      }
     }
 
     template <class LocalEvaluation>
@@ -309,7 +425,45 @@ namespace Fem
     {
       model_.adjustAverageValue( entity, xLocal, u );
     }
+
+    //! return reference to model
+    const Model& model() const { return model_; }
+
+    // g = grad L ( w_E,i - w_E ) ,  d = u_E,i - u_E
+    // default limiter function is minmod
+    const LimiterFunctionType& limiterFunction() const
+    {
+      return limiterFunction_;
+    }
+
+    //! returns true, if we have an inflow boundary
+    template <class ArgumentTuple>
+    bool checkDirection(const IntersectionType& it,
+                        const double time, const FaceLocalDomainType& x,
+                        const ArgumentTuple& uLeft) const
+    {
+      // evaluate velocity
+      model_.velocity(this->inside(), this->inside().geometry().local( it.geometry().global(x) ), uLeft[ uVar ], velocity_);
+      return checkDirection(it, x, velocity_);
+    }
+
+  protected:
+    //! returns true, if we have an inflow boundary
+    bool checkDirection(const IntersectionType& it,
+                        const FaceLocalDomainType& x,
+                        const DomainType& velocity) const
+    {
+      // calculate scalar product of normal and velocity
+      const double scalarProduct = it.outerNormal(x) * velocity;
+
+      // if scalar product is larger than veloEps it's considered to be
+      // an outflow intersection, otherwise an inflow intersection
+      return (scalarProduct < veloEps_);
+    }
   };
+
+  template <class GlobalPassTraitsImp, class Model, int passId = -1 >
+  using StandardLimiterDiscreteModel = LimiterDefaultDiscreteModel< GlobalPassTraitsImp, Model, passId >;
 
 } // end namespace Fem
 } // end namespace Dune
