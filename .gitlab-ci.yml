@@ -5,7 +5,7 @@ variables:
   DUNECI_TOOLCHAIN:  gcc-7-17
   DUNE_CONTROL_PATH: /duneci/modules:$CI_PROJECT_DIR
   DUNE_PY_DIR:       /duneci/modules/dune-py
-  PYTHONPATH:        "/duneci/modules/dune-python/build-cmake/python:/duneci/modules/dune-fem/build-cmake/python:/duneci/modules/dune-alugrid/build-cmake/python:$CI_PROJECT_DIR/build-cmake/python"
+  PYTHONPATH:        "/duneci/modules/dune-common/build-cmake/python:/duneci/modules/dune-geometry/build-cmake/python:/duneci/modules/dune-grid/build-cmake/python:/duneci/modules/dune-istl/build-cmake/python:/duneci/modules/dune-alugrid/build-cmake/python:/duneci/modules/dune-fem/build-cmake/python:$CI_PROJECT_DIR/build-cmake/python"
 
 before_script:
   - python3 -m venv /duneci/modules/dune-pip
