@@ -1,8 +1,6 @@
 # set up project
 project("dune-fem-dg" C CXX)
 
-set(DUNE_REENABLE_ADD_TEST TRUE)
-
 # this option is mandatory for dune-fem-dg
 option(DUNE_GRID_GRIDTYPE_SELECTOR "Grid selector definition added to config.h" ON)
 
