@@ -1,6 +1,8 @@
 # set up project
 project("dune-fem-dg" C CXX)
 
+set(DUNE_REENABLE_ADD_TEST TRUE)
+
 # this option is mandatory for dune-fem-dg
 option(DUNE_GRID_GRIDTYPE_SELECTOR "Grid selector definition added to config.h" ON)
 
@@ -20,10 +22,8 @@ dune_project()
 
 include(DuneMPI)
 
-if( DUNE_ENABLE_PYTHONBINDINGS )
-  # add_subdirectory("python")
-  set(PYDEMO_DIR pydemo python)
-  dune_python_install_package(PATH python)
+if(dune-python_FOUND)
+  set(PYDEMO_DIR pydemo)
 endif()
 
 #add sub directories
@@ -35,6 +35,16 @@ dune_add_subdirs( dune lib doc cmake/modules ${PYDEMO_DIR})
 
 make_dependent_modules_sys_included()
 add_header_listing()
+
+if(dune-python_FOUND)
+  add_subdirectory(python)
+  dune_python_install_package(PATH "python")
+elseif(dune-corepy_FOUND)
+  add_subdirectory(python)
+  if(NOT (${DUNE_COMMON_VERSION} VERSION_LESS 2.6))
+    dune_python_install_package(PATH "python")
+  endif()
+endif()
 
 # finalize the dune project, e.g., generate config.h etc.
 finalize_dune_project(GENERATE_CONFIG_H_CMAKE)
