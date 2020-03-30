@@ -22,8 +22,10 @@ dune_project()
 
 include(DuneMPI)
 
-if(dune-python_FOUND)
-  set(PYDEMO_DIR pydemo)
+if( DUNE_ENABLE_PYTHONBINDINGS )
+  # add_subdirectory("python")
+  set(PYDEMO_DIR pydemo python)
+  dune_python_install_package(PATH python)
 endif()
 
 #add sub directories
@@ -35,9 +37,6 @@ dune_add_subdirs( dune lib doc cmake/modules ${PYDEMO_DIR})
 
 make_dependent_modules_sys_included()
 add_header_listing()
-
-add_subdirectory("python")
-dune_python_install_package(PATH "python")
 
 # finalize the dune project, e.g., generate config.h etc.
 finalize_dune_project(GENERATE_CONFIG_H_CMAKE)
