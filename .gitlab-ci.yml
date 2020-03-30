@@ -1,7 +1,7 @@
 ---
 variables:
   # dune-python will use DUNE_OPTS when building stuff
-  DUNECI_CMAKE_FLAGS: "-DDUNE_MAX_TEST_CORES=4 -DBUILD_SHARED_LIBS=TRUE -DDUNE_PYTHON_INSTALL_LOCATION=none -DCMAKE_POSITION_INDEPENDENT_CODE=TRUE -DCMAKE_DISABLE_FIND_PACKAGE_LATEX=TRUE -DCMAKE_DISABLE_FIND_PACKAGE_Alberta=TRUE -DCMAKE_DISABLE_FIND_PACKAGE_Vc=TRUE -DCMAKE_DISABLE_DOCUMENTATION=TRUE"
+  DUNECI_CMAKE_FLAGS: "-DDUNE_ENABLE_PYTHONBINDINGS=TRUE -DDUNE_MAX_TEST_CORES=4 -DBUILD_SHARED_LIBS=TRUE -DDUNE_PYTHON_INSTALL_LOCATION=none -DCMAKE_POSITION_INDEPENDENT_CODE=TRUE -DCMAKE_DISABLE_FIND_PACKAGE_LATEX=TRUE -DCMAKE_DISABLE_FIND_PACKAGE_Alberta=TRUE -DCMAKE_DISABLE_FIND_PACKAGE_Vc=TRUE -DCMAKE_DISABLE_DOCUMENTATION=TRUE"
   DUNECI_TOOLCHAIN:  gcc-7-17
   DUNE_CONTROL_PATH: /duneci/modules:$CI_PROJECT_DIR
   DUNE_PY_DIR:       /duneci/modules/dune-py
@@ -17,7 +17,6 @@ before_script:
   - duneci-install-module https://gitlab.dune-project.org/core/dune-grid.git
   - duneci-install-module https://gitlab.dune-project.org/core/dune-istl.git
   - duneci-install-module https://gitlab.dune-project.org/core/dune-localfunctions.git
-  - duneci-install-module https://gitlab.dune-project.org/staging/dune-python.git
   - duneci-install-module https://gitlab.dune-project.org/extensions/dune-alugrid.git
   - duneci-install-module https://gitlab.dune-project.org/dune-fem/dune-fem.git
 
@@ -38,4 +37,3 @@ ubuntu:18.04--gcc:
       # issue with setup-dunepy: dune-fem-dg not yet build so dependency in dune-fem-dg fails
       # - python /duneci/modules/dune-python/bin/setup-dunepy.py --opts=$CI_PROJECT_DIR/scripts/opts/ci-gcc.opts install
     - duneci-standard-test
-
