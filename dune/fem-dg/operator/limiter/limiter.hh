@@ -126,7 +126,7 @@ namespace Fem
     Limiter( const DomainSpaceType& domainSpace,
              const RangeSpaceType&  rangeSpace,
              const double lowerBound, const double upperBound )
-      : Limiter( domainSpace, domainSpace, *(new ModelType( lowerBound, upperBound )) )
+      : Limiter( domainSpace, rangeSpace, *(new ModelType( lowerBound, upperBound )) )
     {
       modelPtr_.reset( &model_ );
     }
@@ -141,7 +141,7 @@ namespace Fem
       , model_( model )
       , discreteModel_( model_, domainSpace_.order() )
       , startPass_()
-      , limitPass_( discreteModel_ , startPass_, domainSpace_ )
+      , limitPass_( discreteModel_ , startPass_, rangeSpace_ )
     {
       discreteModel_.setIndicator( &indicator_ );
 
