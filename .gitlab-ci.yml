@@ -12,7 +12,7 @@ before_script:
   - python3 -m venv /duneci/modules/dune-pip
   - source /duneci/modules/dune-pip/bin/activate
   - pip install --upgrade pip
-  - pip install ufl numpy matplotlib mpi4py portalocker
+  - pip install ufl numpy matplotlib mpi4py # portalocker
   - duneci-install-module https://gitlab.dune-project.org/core/dune-common.git
   - duneci-install-module https://gitlab.dune-project.org/core/dune-geometry.git
   - duneci-install-module https://gitlab.dune-project.org/core/dune-grid.git
