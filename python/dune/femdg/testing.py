@@ -58,7 +58,10 @@ def run(Model, Stepper=None,
 
     # create discrete function space
     try:
-        space = create.space( space, grid, order=polOrder, dimRange=dimR)
+        if space.lower() == "finitevolume":
+            space = create.space( space, grid, dimRange=dimR)
+        else:
+            space = create.space( space, grid, order=polOrder, dimRange=dimR)
     except:
         assert space.dimRange > 0
     if modifyModel is not None:

@@ -34,6 +34,15 @@ Makefile.in
 *.lo
 *.la
 *.tmp
+*.vtu
+*.pvtu
+__pycache__
+*.dump
+*.out
+*.log
+*.aux
+*.pickle
+*.png
 
 data
 
