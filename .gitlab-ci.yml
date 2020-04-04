@@ -1,13 +1,16 @@
 ---
 variables:
-  # dune-python will use DUNE_OPTS when building stuff
-  DUNECI_CMAKE_FLAGS: "-DDUNE_MAX_TEST_CORES=4 -DBUILD_SHARED_LIBS=TRUE -DDUNE_PYTHON_INSTALL_LOCATION=none -DCMAKE_POSITION_INDEPENDENT_CODE=TRUE -DCMAKE_DISABLE_FIND_PACKAGE_LATEX=TRUE -DCMAKE_DISABLE_FIND_PACKAGE_Alberta=TRUE -DCMAKE_DISABLE_FIND_PACKAGE_Vc=TRUE -DCMAKE_DISABLE_DOCUMENTATION=TRUE"
-  DUNECI_TOOLCHAIN:  gcc-7-17
-  DUNE_CONTROL_PATH: /duneci/modules:$CI_PROJECT_DIR
-  DUNE_PY_DIR:       /duneci/modules/dune-py
-  PYTHONPATH:        "/duneci/modules/dune-python/build-cmake/python:/duneci/modules/dune-fem/build-cmake/python:/duneci/modules/dune-alugrid/build-cmake/python:$CI_PROJECT_DIR/build-cmake/python"
+  DUNE_CMAKE_FLAGS:   "-DDUNE_ENABLE_PYTHONBINDINGS=ON -DDUNE_MAX_TEST_CORES=4 -DBUILD_SHARED_LIBS=TRUE -DDUNE_PYTHON_INSTALL_LOCATION=none -DCMAKE_POSITION_INDEPENDENT_CODE=TRUE -DCMAKE_DISABLE_FIND_PACKAGE_LATEX=TRUE -DCMAKE_DISABLE_FIND_PACKAGE_Alberta=TRUE -DCMAKE_DISABLE_FIND_PACKAGE_Vc=TRUE -DCMAKE_DISABLE_DOCUMENTATION=TRUE"
+  DUNECI_CMAKE_FLAGS: $DUNE_CMAKE_FLAGS
+  DUNE_CONTROL_PATH:  /duneci/modules:$CI_PROJECT_DIR
+  DUNE_PY_DIR:        /duneci/modules/dune-py
+  # adding this actually leads to the test failure seen in the core modules
+  # don't know why this is required here but not for core modules - magic?
+  DUNECI_PARALLEL:      "6"
+  PYTHONPATH:         "/duneci/modules/dune-common/build-cmake/python:/duneci/modules/dune-geometry/build-cmake/python:/duneci/modules/dune-grid/build-cmake/python:/duneci/modules/dune-istl/build-cmake/python:/duneci/modules/dune-alugrid/build-cmake/python:/duneci/modules/dune-fem/build-cmake/python:$CI_PROJECT_DIR/build-cmake/python"
 
 before_script:
+  - . /duneci/bin/duneci-init-job
   - python3 -m venv /duneci/modules/dune-pip
   - source /duneci/modules/dune-pip/bin/activate
   - pip install --upgrade pip
@@ -17,7 +20,6 @@ before_script:
   - duneci-install-module https://gitlab.dune-project.org/core/dune-grid.git
   - duneci-install-module https://gitlab.dune-project.org/core/dune-istl.git
   - duneci-install-module https://gitlab.dune-project.org/core/dune-localfunctions.git
-  - duneci-install-module https://gitlab.dune-project.org/staging/dune-python.git
   - duneci-install-module https://gitlab.dune-project.org/extensions/dune-alugrid.git
   - duneci-install-module https://gitlab.dune-project.org/dune-fem/dune-fem.git
 
@@ -30,6 +32,9 @@ debian-11-gcc-9-17:
     - duneci-standard-test
   variables:
     DUNECI_TOOLCHAIN:  gcc-9-17
+    # DUNE_LOG_FORMAT:   '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    # DUNE_LOG_LEVEL:    DEBUG
+    # MAKEFLAGS:         "--verbose --output-sync=target --print-directory"
 
 ubuntu:18.04--gcc:
   image: duneci/ubuntu:18.04
@@ -38,4 +43,5 @@ ubuntu:18.04--gcc:
       # issue with setup-dunepy: dune-fem-dg not yet build so dependency in dune-fem-dg fails
       # - python /duneci/modules/dune-python/bin/setup-dunepy.py --opts=$CI_PROJECT_DIR/scripts/opts/ci-gcc.opts install
     - duneci-standard-test
-
+  variables:
+    DUNECI_TOOLCHAIN:  gcc-7-17

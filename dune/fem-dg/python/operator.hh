@@ -21,7 +21,6 @@ namespace Dune
       typedef Fem::DGOperator<DF,MA,MD,Add> Operator;
       typedef typename Operator::AdvectionFluxType AdvectionFluxType;
       typedef typename DF::DiscreteFunctionSpaceType DFSpace;
-      typedef typename DF::GridPartType GridPartType;
       typedef typename Fem::SpaceOperatorInterface<DF> Base;
       typedef Base FullType;
       typedef Base ExplType;
