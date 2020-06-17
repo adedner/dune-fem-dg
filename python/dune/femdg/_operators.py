@@ -7,7 +7,7 @@ logger = logging.getLogger(__name__)
 from dune.common.checkconfiguration import assertHave, preprocessorAssert, ConfigurationError
 
 from dune.generator import Constructor, Method
-from dune.common.hashit import hashIt
+from dune.utility import hashIt
 from dune.fem.operator import load
 from dune.fem import parameter as parameterReader
 
@@ -44,7 +44,7 @@ def createLimiter(domainSpace, rangeSpace=None, bounds = [1e-12,1.], limiter='sc
 
     typeName = 'Dune::Fem::ScalingLimiter< ' + domainFunctionType + ', ' + rangeFunctionType + ' >'
     # FV type limiter where FV based reconstructions are done
-    if limiter is 'fv':
+    if limiter == 'fv':
         typeName = 'Dune::Fem::Limiter< ' + domainFunctionType + ', ' + rangeFunctionType + ' >'
 
     constructor = Constructor(['const '+domainSpaceType + ' &dSpace, const '+rangeSpaceType + ' &rSpace, double lower,double upper'],
