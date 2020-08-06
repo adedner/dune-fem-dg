@@ -219,6 +219,7 @@ def femDGOperator(Model, space,
                     else:
                         if advectionFlux.upper().find( 'EULER' ) >= 0:
                             advFluxId  = "Dune::Fem::AdvectionFlux::Enum::euler_general"
+                            includes += [ "dune/fem-dg/operator/fluxes/euler/fluxes.hh" ]
                         else:
                             advFluxId  = "Dune::Fem::AdvectionFlux::Enum::general"
             else:

@@ -55,7 +55,6 @@
 #include <dune/fem-dg/operator/dg/operatortraits.hh>
 
 #include <dune/fem-dg/operator/fluxes/advection/fluxes.hh>
-#include <dune/fem-dg/operator/fluxes/euler/fluxes.hh>
 #include <dune/fem-dg/operator/fluxes/diffusion/fluxes.hh>
 #include <dune/fem-dg/operator/limiter/limiterutility.hh>
 

@@ -13,7 +13,6 @@
 // dune-fem-dg includes
 #include <dune/fem-dg/algorithm/evolution.hh>
 #include <dune/fem-dg/operator/fluxes/advection/fluxes.hh>
-#include <dune/fem-dg/operator/fluxes/euler/fluxes.hh>
 #include <dune/fem-dg/operator/dg/operatortraits.hh>
 #include <dune/fem-dg/operator/dg/primaloperator.hh>
 #include <dune/fem-dg/models/modelwrapper.hh>

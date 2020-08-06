@@ -16,13 +16,6 @@
 #include <dune/fem-dg/models/defaultmodel.hh>
 #include <dune/fem-dg/operator/limiter/limitpass.hh>
 
-// needed?
-#include <dune/fem-dg/operator/fluxes/euler/fluxes.hh>
-#include <dune/fem-dg/operator/fluxes/rotator.hh>
-#include <dune/fem-dg/operator/fluxes/analyticaleulerflux.hh>
-#include <dune/fem-dg/misc/error/l2eocerror.hh>
-#include <dune/fem-dg/misc/error/l1eocerror.hh>
-
 namespace Dune
 {
 namespace Fem
