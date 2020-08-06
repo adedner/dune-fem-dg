@@ -105,7 +105,7 @@ namespace Fem
     }
   protected:
     const ModelType& model_;
-    const ParameterType& param_;
+    const ParameterType param_;
   };
 
 

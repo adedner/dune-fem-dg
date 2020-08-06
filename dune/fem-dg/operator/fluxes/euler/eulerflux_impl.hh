@@ -482,9 +482,8 @@ namespace Fem
     /**
      * \copydoc DGAdvectionFluxBase::DGAdvectionFluxBase()
      */
-    EulerFluxImpl (const ModelImp& mod,
-                   const ParameterType& parameters )
-      : BaseType( mod, parameters ),
+    EulerFluxImpl (const ModelImp& mod )
+      : BaseType( mod ),
         numFlux_( mod )
     {}
 

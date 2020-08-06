@@ -221,6 +221,9 @@ def femDGOperator(Model, space,
                             advFluxId  = "Dune::Fem::AdvectionFlux::Enum::euler_general"
                         else:
                             advFluxId  = "Dune::Fem::AdvectionFlux::Enum::general"
+            else:
+                advFluxId = advectionFlux
+                # raise KeyError("wrong value "+advectionFlux+" for 'advectionFlux' parameter")
 
     if limiter.lower() == "unlimited" or limiter.lower() == "none":
         limiterId = "Dune::Fem::AdvectionLimiter::Enum::unlimited"
