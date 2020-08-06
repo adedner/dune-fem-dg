@@ -7,7 +7,7 @@ logger = logging.getLogger(__name__)
 from dune.common.checkconfiguration import assertHave, preprocessorAssert, ConfigurationError
 
 from dune.generator import Constructor, Method
-from dune.utility import hashIt
+from dune.common.hashit import hashIt
 from dune.fem.operator import load
 from dune.fem import parameter as parameterReader
 
