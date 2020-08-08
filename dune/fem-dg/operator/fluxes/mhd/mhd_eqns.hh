@@ -205,18 +205,16 @@ private:
     double dt = dt_local(ldat1de,ldat1dn,gamma_id());
 
     double pe  = p_2d(pdatae,gamma_id());
-    double che = (fabs(pdatae[1])>fabs(pdatae[2])?
-                  fabs(pdatae[1]/pdatae[0]):fabs(pdatae[2]/pdatae[0])) +
-                  std::sqrt( (gamma_id()*pe +
+    double uMaxe = std::sqrt(pdatae[1]*pdatae[1]+pdatae[2]*pdatae[2]) / pdatae[0];
+    double che = uMaxe + std::sqrt( (gamma_id()*pe +
                         (pdatae[4]*pdatae[4]+pdatae[5]*pdatae[5]+pdatae[6]*pdatae[6])/(4.*M_PI)
                         )/pdatae[0] );
     double pn  = p_2d(pdatan,gamma_id());
-    double chn = (fabs(pdatan[1])>fabs(pdatan[2])?
-                  fabs(pdatan[1]/pdatan[0]):fabs(pdatan[2]/pdatan[0])) +
-                  std::sqrt( (gamma_id()*pn +
+    double uMaxn = std::sqrt(pdatan[1]*pdatan[1]+pdatan[2]*pdatan[2]) / pdatan[0];
+    double chn = uMaxn + std::sqrt( (gamma_id()*pn +
                         (pdatan[4]*pdatan[4]+pdatan[5]*pdatan[5]+pdatan[6]*pdatan[6])/(4.*M_PI)
                         )/pdatan[0] );
-    double ch = 0.5; // 0.1*(che+chn)/2.;
+    double ch = 0.9*(che+chn)/2.;
 
     double B_m   = 0.5*(pdatae[4]+pdatan[4]);
     double psi_m = 0.5*(pdatae[8]+pdatan[8]);
@@ -257,7 +255,7 @@ private:
     if (chMin>ch)
     {
       chMin = ch;
-      std::cout << "chMin = " << ch << std::endl;
+      // std::cout << "chMin = " << ch << std::endl;
     }
 
     return dt;
