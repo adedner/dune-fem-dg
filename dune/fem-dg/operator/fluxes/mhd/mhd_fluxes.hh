@@ -1837,7 +1837,7 @@ void Flux_dwc<EQNS>::operator()(const cons_t &pconsl,
 
   /* perform hll-fix */
 
-  double lphi = phi(ch(priml,primr,mpval));
+  double lphi = this->phi(this->ch(priml,primr,mpval));
 
   if (lphi > eps)
     (*flux_hlle)(pconsl,pconsr,pret,pdt,phl,phr);
@@ -1863,7 +1863,7 @@ void Flux_dwc<EQNS>::operator()(const cons_t &pconsl,
 
       for (k=0;k<lambda.size();k++)
         {
-          double lpsi = psi(lambda[k]);
+          double lpsi = this->psi(lambda[k]);
           v0[k] = (pconsl * (1.0 - lpsi) + pconsr * lpsi).vec();
         }
 
@@ -1981,7 +1981,7 @@ void Flux_dw<EQNS>::operator()(const cons_t &pconsl,
 
   /* perform hll-fix */
 
-  double lphi = phi(ch(priml,primr,mval));
+  double lphi = this->phi(this->ch(priml,primr,mval));
 
   if (lphi > eps)
     (*flux_hlle)(pconsl,pconsr,pret,pdt,phl,phr);
@@ -2011,7 +2011,7 @@ void Flux_dw<EQNS>::operator()(const cons_t &pconsl,
 
       for (k=0;k<lambda.size();k++)
         {
-          double lpsi = psi(lambda[k]);
+          double lpsi = this->psi(lambda[k]);
           v0[k] = priml.vec() * (1.0 - lpsi) + primr.vec() * lpsi;
         }
 
@@ -2154,10 +2154,10 @@ void Flux_hllemc<EQNS>::operator()(const cons_t &pconsl,
   /* calculate anti-diffusion coefficients */
 
   vec_t delta;
-  double phi1 = phi(vel[0] - vel[1]);
+  double phi1 = this->phi(vel[0] - vel[1]);
   double phi2 = 0.0;
 
-  phi2 = phi(cmval.B2());
+  phi2 = this->phi(cmval.B2());
 
   double div = vel[0] + (1.0 - phi2) * vel[ewave];
 
@@ -2283,10 +2283,10 @@ void Flux_hllem<EQNS>::operator()(const prim_t &ppriml,
   /* calculate anti-diffusion coefficients */
 
   vec_t delta;
-  double phi1 = phi(vel[0] - vel[1]);
+  double phi1 = this->phi(vel[0] - vel[1]);
   double phi2 = 0.0;
 
-  phi2 = phi(mval.B2());
+  phi2 = this->phi(mval.B2());
 
   double div = vel[0] + (1.0 - phi2) * vel[ewave];
 
@@ -2476,7 +2476,7 @@ void Flux_vfroe<EQNS>::operator()(const prim_t &ppriml,
 
   /* perform hll- and entropy-fix */
 
-  double lphi = phi(ce(ppriml,pprimr)+ch(ppriml,pprimr,mval));
+  double lphi = this->phi(this->ce(ppriml,pprimr)+this->ch(ppriml,pprimr,mval));
 
   if (lphi > eps)
     (*flux_hlle)(ppriml,pprimr,pret,pdt,phl,phr);

@@ -57,6 +57,26 @@ private:
     assert(lp > 0.0);
     return lp;
   }
+  template <class VEC>
+  double p_2d(const VEC pu,double gamma) {
+    double lp,lrho,lrhoux,lrhouy,lrhouz,lBx,lBy,lBz,lrhoE;
+    lrho   = pu[0];
+    lrhoux = pu[1];
+    lrhouy = pu[2];
+    lrhouz = pu[3];
+    lBx    = pu[4];
+    lBy    = pu[5];
+    lBz    = pu[6];
+    lrhoE  = pu[7];
+    assert(lrho > 0.0);
+    lp  = (gamma - 1.0)
+      * (lrhoE - 0.5 * (  lrhoux * lrhoux
+      + lrhouy * lrhouy
+      + lrhouz * lrhouz ) / lrho
+      - ( lBx * lBx + lBy * lBy + lBz * lBz ) / ( 8.0 * M_PI ));
+    assert(lp > 0.0);
+    return lp;
+  }
 
   double dt_local(const VEC1D prdate,const VEC1D prdatn,double gamma) {
     double lval;
@@ -80,8 +100,10 @@ private:
 
     return lval;
   }
-  double relax (const Vec9 &pdatae, const Vec9 &pdatan,const double (&x)[3],
-		Vec9 &pret) {
+  template <class Vec>
+  double relax (const Vec &pdatae, const Vec &pdatan,const double (&x)[3],
+    Vec &pret) {
+#if 0 // TODO
     double lgamma1,lGamma1;
     double lrepsl,lrepsr,lreps1l,lreps1r,lreps2l,lreps2r;
     cons_t ldatae(EOS_CONS,EOS_PRIM,pdatae);
@@ -155,9 +177,12 @@ private:
     pret[7] = lret[7];
     pret[8] = 0.0;
     return dt_local(ldat1de,ldat1dn,lgamma1);
+    #endif
+    return 1/0;
   }
-  double ipflux(const Vec9 &pdatae, const Vec9 &pdatan, const double (&x)[3],
-			   Vec9 &pret) {
+  template <class Vec>
+  double ipflux(const Vec &pdatae, const Vec &pdatan, const double (&x)[3],
+        Vec &pret) {
     VEC1D  ldat1de,ldat1dn,lret;
     double lBxe,lBxn,lBx;
     ldat1de[0] = pdatae[0];
@@ -176,15 +201,42 @@ private:
     ldat1dn[5] = pdatan[5];
     ldat1dn[6] = pdatan[6];
     ldat1dn[7] = pdatan[7];
+
+    double dt = dt_local(ldat1de,ldat1dn,gamma_id());
+
+    double pe  = p_2d(pdatae,gamma_id());
+    double che = (fabs(pdatae[1])>fabs(pdatae[2])?
+                  fabs(pdatae[1]/pdatae[0]):fabs(pdatae[2]/pdatae[0])) +
+                  std::sqrt( (gamma_id()*pe +
+                        (pdatae[4]*pdatae[4]+pdatae[5]*pdatae[5]+pdatae[6]*pdatae[6])/(4.*M_PI)
+                        )/pdatae[0] );
+    double pn  = p_2d(pdatan,gamma_id());
+    double chn = (fabs(pdatan[1])>fabs(pdatan[2])?
+                  fabs(pdatan[1]/pdatan[0]):fabs(pdatan[2]/pdatan[0])) +
+                  std::sqrt( (gamma_id()*pn +
+                        (pdatan[4]*pdatan[4]+pdatan[5]*pdatan[5]+pdatan[6]*pdatan[6])/(4.*M_PI)
+                        )/pdatan[0] );
+    double ch = 0.5; // 0.1*(che+chn)/2.;
+
+    double B_m   = 0.5*(pdatae[4]+pdatan[4]);
+    double psi_m = 0.5*(pdatae[8]+pdatan[8]);
+
+    // GLM correction
+    if (ch > 1e-10)
+    {
+      B_m   -= 0.5/ch*(pdatan[8]-pdatae[8]);
+      psi_m -= 0.5*ch*(pdatan[4]-pdatae[4]);
+    }
+
     lBxe = ldat1de[4];
     lBxn = ldat1dn[4];
-    lBx  = 0.5 * (lBxe + lBxn);
     ldat1de[7] -= (lBxe * lBxe) / (8.0 * M_PI);
+    ldat1de[4] = B_m;
     ldat1dn[7] -= (lBxn * lBxn) / (8.0 * M_PI);
-    ldat1de[4]=lBx;
-    ldat1dn[4]=lBx;
+    ldat1dn[4] = B_m;
     (*ipflux_1d)(ldat1de,ldat1dn,&lret,gamma_id());
-    lret[1]    -= (lBx * lBx) / (8.0 * M_PI);
+    lret[1]  -= (B_m * B_m) / (8.0 * M_PI);
+
     pret[0] = lret[0];
     pret[1] = lret[1];
     pret[2] = lret[2];
@@ -194,7 +246,21 @@ private:
     pret[6] = lret[6];
     pret[7] = lret[7];
     pret[8] = 0.0;
-    return dt_local(ldat1de,ldat1dn,gamma_id());
+
+    // GLM correction
+    if (ch > 1e-10)
+    {
+      pret[4] += psi_m;
+      pret[8] += ch*ch*B_m;
+    }
+    static double chMin = 1e10;
+    if (chMin>ch)
+    {
+      chMin = ch;
+      std::cout << "chMin = " << ch << std::endl;
+    }
+
+    return dt;
   }
 public:
     class Eosmode
@@ -241,13 +307,14 @@ public:
     MhdSolver::init_eos(leosmode);
     MhdSolver::init(MhdSolver::FLUXCHOICE);
   }
-  double operator()(const Vec9 &pdatae, const Vec9 &pdatan, const double (&x)[3],
-		    Vec9 &pret) {
+  template <class Vec>
+  double operator()(const Vec &pdatae, const Vec &pdatan, const double (&x)[3],
+          Vec &pret) {
     if (MhdSolver::FLUXCHOICE < MhdSolver::first_rgflux) {
       if (eos_is_ideal())
-	return ipflux(pdatae,pdatan,x,pret);
+        return ipflux(pdatae,pdatan,x,pret);
       else
-	return relax(pdatae,pdatan,x,pret);
+        return relax(pdatae,pdatan,x,pret);
     }
     else abort();
   }
@@ -803,7 +870,7 @@ inline Eos_prim<size>::Eos_prim(int pdeps_avail) : deps_avail(pdeps_avail)
 template <const int size>
 double Eos_prim<size>::gamma(const var_t &pvar) const
 {
-  return (cs2(pvar) / (pvar.tau() * pvar.p()));
+  return (this->cs2(pvar) / (pvar.tau() * pvar.p()));
 }
 
 template <const int size>

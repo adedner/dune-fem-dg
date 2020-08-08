@@ -1,6 +1,7 @@
 #ifndef DUNE_FEM_DG_MHDFLUXES_HH
 #define DUNE_FEM_DG_MHDFLUXES_HH
 #warning "Using Mhd NumFluxes"
+#define USE_MHDFLUXES_INLINE
 
 #include <cmath>
 
@@ -15,164 +16,216 @@
 #include <dune/fem-dg/operator/fluxes/mhd/mhd_eqns.hh>
 #include <dune/fem-dg/operator/fluxes/rotator.hh>
 
-// Dai-Woodward
-template <class Model>
-class DWNumFlux;
-
-// HLLEM
-template <class Model>
-class HLLEMNumFlux;
-
-// ************************************************
-template <int dimDomain>
-class ConsVec : public Dune :: FieldVector< double, dimDomain+2>
+namespace Dune
 {
-public:
-  explicit ConsVec (const double& t) : Dune :: FieldVector<double,dimDomain+2>(t) {}
-  ConsVec () : Dune :: FieldVector<double,dimDomain+2>(0) {}
-};
-
-namespace Mhd {
-  typedef enum { DW, HLLEM } MhdFluxType;
-}
-
-// ***********************
-template < class Model, Mhd :: MhdFluxType fluxtype >
-class MHDNumFluxBase
+namespace Fem
 {
-public:
-  typedef Model                                       ModelType;
-  enum { dimDomain = Model::dimDomain };
-  enum { dimRange = Model::dimRange };
-  typedef typename Model::Traits                      Traits;
-  typedef typename Traits::GridType                   GridType;
-  typedef typename GridType::ctype                    ctype;
-  typedef typename Traits::EntityType                 EntityType;
 
-  typedef typename Traits::DomainType                 DomainType;
-  typedef typename Traits::FaceDomainType             FaceDomainType;
-  typedef typename Traits::RangeType RangeType;
-  typedef typename Traits::FluxRangeType              FluxRangeType;
+  // Dai-Woodward
+  template <class Model>
+  class DWNumFlux;
 
-  typedef Mhd::MhdSolver MhdSolverType;
+  // HLLEM
+  template <class Model>
+  class HLLEMNumFlux;
 
-  typedef double value_t[ 9 ];
-
-protected:
-  MHDNumFluxBase(const Model& mod)
-   : model_(mod),
-     eos( MhdSolverType::Eosmode::me_ideal ),
-     numFlux_(eos,  mod.c_p() * mod.c_v_inv(), 1.0 ),
-     rot_(1)
+  // ************************************************
+  template <int dimDomain>
+  class ConsVec : public Dune :: FieldVector< double, dimDomain+2>
   {
-    if( fluxtype == Mhd :: HLLEM )
-    {
-      if( Dune :: Fem :: Parameter :: verbose () )
-        std::cout << "Choosing HLLEM Flux " << std::endl;
+  public:
+    explicit ConsVec (const double& t) : Dune :: FieldVector<double,dimDomain+2>(t) {}
+    ConsVec () : Dune :: FieldVector<double,dimDomain+2>(0) {}
+  };
 
-      numFlux_.init(Mhd :: MhdSolver :: mf_rghllem );
-    }
+  namespace Mhd {
+    typedef enum { DW, HLLEM } MhdFluxType;
   }
 
-public:
-  // Return value: maximum wavespeed*length of integrationOuterNormal
-  // gLeft,gRight are fluxed * length of integrationOuterNormal
-  template< class Intersection, class QuadratureImp >
-  inline double
-  numericalFlux( const Intersection& intersection,
-                 const EntityType& inside,
-                 const EntityType& outside,
-                 const double time,
-                 const QuadratureImp& faceQuadInner,
-                 const QuadratureImp& faceQuadOuter,
-                 const int quadPoint,
-                 const RangeType& uLeft,
-                 const RangeType& uRight,
-                 RangeType& gLeft,
-                 RangeType& gRight) const
+  // ***********************
+  template < class Model, Mhd :: MhdFluxType fluxtype >
+  class MHDNumFluxBase
   {
-    DomainType normal = intersection.integrationOuterNormal( faceQuadInner.localPoint( quadPoint ) );
-    // double len = normal.two_norm();
-    const double len = normal.two_norm();
-    normal *= 1./len;
+  public:
+    typedef Model                                       ModelType;
+    enum { dimDomain = Model::dimDomain };
+    enum { dimRange = Model::dimRange };
+    typedef typename Model::Traits                      Traits;
+    typedef typename Traits::GridType                   GridType;
+    typedef typename GridType::ctype                    ctype;
 
-    RangeType ul(uLeft);
-    RangeType ur(uRight);
+    typedef typename Traits::DomainType                 DomainType;
+    typedef typename Traits::RangeType RangeType;
+    typedef typename Traits::FluxRangeType              FluxRangeType;
 
-    rot_.rotateForth(ul, normal);
-    rot_.rotateForth(ur, normal);
+    typedef ::Mhd::MhdSolver MhdSolverType;
 
-    enum { e = dimDomain + 1 };
+    typedef double value_t[ 9 ];
 
-    value_t res;
-    const double dummy[ 3 ] = { 0, 0, 0 };
-
-    value_t entity = { 0,0,0,0,0,0,0,0 };
-    value_t neigh  = { 0,0,0,0,0,0,0,0 };
-    for(int i=0; i<e; ++i)
+  protected:
+    MHDNumFluxBase(const Model& mod)
+     : model_(mod),
+       eos( MhdSolverType::Eosmode::me_ideal ),
+       numFlux_(eos,  1.4, 1.0 ), // gamma=mod.c_p() * mod.c_v_inv(), R=1.0 ),
+       rotU_(1),
+       rotB_(4)
     {
-      entity[ i ] = ul[ i ];
-      neigh [ i ] = ur[ i ];
+      if( fluxtype == Mhd :: HLLEM )
+      {
+        if( Dune :: Fem :: Parameter :: verbose () )
+          std::cout << "Choosing HLLEM Flux " << std::endl;
+
+        numFlux_.init(::Mhd :: MhdSolver :: mf_rghllem );
+      }
     }
 
-    entity[ 7 ] = ul[ e ];
-    neigh [ 7 ] = ur[ e ];
+  public:
+    // Return value: maximum wavespeed*length of integrationOuterNormal
+    // gLeft,gRight are fluxed * length of integrationOuterNormal
+    double
+    numericalFlux( const DomainType& normal,
+                   const RangeType& uLeft,
+                   const RangeType& uRight,
+                   RangeType& gLeft) const
+    {
+      RangeType ul(uLeft);
+      RangeType ur(uRight);
 
-    const double ldt = numFlux_(entity, neigh, dummy, res);
+      rotU_.rotateForth(ul, normal);
+      rotB_.rotateForth(ul, normal);
+      rotU_.rotateForth(ur, normal);
+      rotB_.rotateForth(ur, normal);
 
-    // copy first components
-    for(int i=0; i<e; ++i)
-      gLeft[ i ] = res[ i ];
+      value_t res;
+      const double dummy[ 3 ] = { 0, 0, 0 };
 
-    // copy energy
-    gLeft[ e ] = res[ 7 ];
+      const double ldt = numFlux_(ul, ur, dummy, gLeft);
 
-    // rotate flux
-    rot_.rotateBack( gLeft, normal );
+      // rotate flux
+      rotU_.rotateBack( gLeft, normal );
+      rotB_.rotateBack( gLeft, normal );
 
-    // conservation
-    gLeft *= len;
-    gRight = gLeft;
-    return ldt*len;
-  }
+      return ldt;
+    }
 
-  const Model& model() const { return model_; }
-protected:
-  const Model& model_;
-  const typename MhdSolverType::Eosmode::meos_t eos;
-  mutable MhdSolverType numFlux_;
-  Dune::Fem::FieldRotator<DomainType, RangeType> rot_;
-  //mutable MhdSolverType::Vec9 ulmhd_, urmhd_, retmhd_;
-};
-
+    const Model& model() const { return model_; }
+  protected:
+    const Model& model_;
+    const typename MhdSolverType::Eosmode::meos_t eos;
+    mutable MhdSolverType numFlux_;
+    Dune::Fem::FieldRotator<DomainType, RangeType> rotU_, rotB_;
+    //mutable MhdSolverType::Vec9 ulmhd_, urmhd_, retmhd_;
+  };
 
 
-//////////////////////////////////////////////////////////
-//
-//  Flux Implementations
-//
-//////////////////////////////////////////////////////////
 
-template < class Model >
-class DWNumFlux : public MHDNumFluxBase< Model, Mhd::DW >
-{
-  typedef MHDNumFluxBase< Model, Mhd::DW > BaseType ;
-public:
-  DWNumFlux( const Model& model )
-    : BaseType( model )
-  {}
-  static std::string name () { return "DW (Mhd)"; }
-};
+  //////////////////////////////////////////////////////////
+  //
+  //  Flux Implementations
+  //
+  //////////////////////////////////////////////////////////
 
-template < class Model >
-class HLLEMNumFlux : public MHDNumFluxBase< Model, Mhd::HLLEM >
-{
-  typedef MHDNumFluxBase< Model, Mhd::HLLEM > BaseType ;
-public:
-  HLLEMNumFlux( const Model& model )
-    : BaseType( model )
-  {}
-  static std::string name () { return "HLLEM (Mhd)"; }
-};
+  template < class Model >
+  class DWNumFlux : public MHDNumFluxBase< Model, Mhd::DW >
+  {
+    typedef MHDNumFluxBase< Model, Mhd::DW > BaseType ;
+  public:
+    DWNumFlux( const Model& model )
+      : BaseType( model )
+    {}
+    static std::string name () { return "DW (Mhd)"; }
+  };
 
+  template < class Model >
+  class HLLEMNumFlux : public MHDNumFluxBase< Model, Mhd::HLLEM >
+  {
+    typedef MHDNumFluxBase< Model, Mhd::HLLEM > BaseType ;
+  public:
+    HLLEMNumFlux( const Model& model )
+      : BaseType( model )
+    {}
+    static std::string name () { return "HLLEM (Mhd)"; }
+  };
+
+
+  template< class ModelImp >
+  class DGAdvectionFlux< ModelImp, AdvectionFlux::Enum::mhd_general >
+    : public DGAdvectionFluxBase< ModelImp, AdvectionFluxParameters >
+  {
+    typedef DGAdvectionFluxBase< ModelImp, AdvectionFluxParameters >   BaseType;
+
+    enum { dimRange  = ModelImp::dimRange };
+    enum { dimDomain = ModelImp::dimDomain };
+    typedef typename ModelImp::DomainType         DomainType;
+    typedef typename ModelImp::RangeType          RangeType;
+    typedef typename ModelImp::JacobianRangeType  JacobianRangeType;
+    typedef typename ModelImp::FluxRangeType      FluxRangeType;
+    typedef typename ModelImp::FaceDomainType     FaceDomainType;
+
+  public:
+    typedef AdvectionFlux::Enum                   IdEnum;
+    typedef typename BaseType::ModelType          ModelType;
+    typedef typename BaseType::ParameterType      ParameterType;
+
+    /**
+     * \copydoc DGAdvectionFluxBase::DGAdvectionFluxBase()
+     */
+    template< class ... Args>
+    DGAdvectionFlux(  Args&&... args )
+      : BaseType( std::forward<Args>(args)... ),
+        method_( this->parameter().getMethod() ),
+        flux_dw_(this->model() ),
+        flux_hllem_( this->model() )
+    {}
+
+    /**
+     * \copydoc DGAdvectionFluxBase::name()
+     */
+    static std::string name () { return "AdvectionFlux - MHD (via parameter file)"; }
+
+    /**
+     * \copydoc DGAdvectionFluxBase::numericalFlux()
+     */
+    template< class LocalEvaluation >
+    inline double
+    numericalFlux( const LocalEvaluation& left,
+                   const LocalEvaluation& right,
+                   const RangeType& uLeft,
+                   const RangeType& uRight,
+                   const JacobianRangeType& jacLeft,
+                   const JacobianRangeType& jacRight,
+                   RangeType& gLeft,
+                   RangeType& gRight) const
+    {
+      Dune::FieldVector< double, dimDomain > normal = left.intersection().integrationOuterNormal( left.localPosition() );
+      const double len = normal.two_norm();
+      normal *= 1./len;
+      double ldt;
+      if ( IdEnum::mhd_dw == method_ )
+      {
+        ldt = flux_dw_.numericalFlux( normal, uLeft, uRight, gLeft );
+      }
+      else if ( IdEnum::mhd_hllem == method_ )
+      {
+        ldt = flux_hllem_.numericalFlux( normal, uLeft, uRight, gLeft );
+      }
+      else
+      {
+        std::cerr << "Error: Advection flux not chosen via parameter file" << std::endl;
+        assert( false );
+        std::abort();
+      }
+      // conservation
+      gLeft *= len;
+      gRight = gLeft;
+      return ldt*len;
+    }
+
+  private:
+    const IdEnum             method_;
+    DWNumFlux< ModelImp >    flux_dw_;
+    HLLEMNumFlux< ModelImp > flux_hllem_;
+  };
+
+}}
 #endif // DUNE_MHDFLUXES_HH

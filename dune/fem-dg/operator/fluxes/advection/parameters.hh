@@ -43,17 +43,28 @@ namespace Fem
       //! general flux: Parameter selection is done via parameter file!
       euler_general,
 
+      /////////////// mhd fluxes //////////////////////////////
+      mhd_dw,
+      mhd_hllem,
+      mhd_general,
+
       //! a flux implemented by the user and provided to the python code
       //! for C++ just add another enum id
       userdefined
     };
 
     //! Contains all known enums for advection fluxes which can be chosen via parameter file.
-    const Enum        _enums[] = { Enum::none, Enum::upwind, Enum::llf, Enum::euler_llf, Enum::euler_hll, Enum::euler_hllc };
+    const Enum        _enums[] = { Enum::none, Enum::upwind, Enum::llf,
+                                   Enum::euler_llf, Enum::euler_hll, Enum::euler_hllc,
+                                   Enum::mhd_dw, Enum::mhd_hllem
+                                   };
     //! Contains all known names of advection fluxes which can be chosen via parameter file.
-    const std::string _strings[] = { "NONE", "UPWIND" , "LLF", "EULER-LLF", "EULER-HLL" , "EULER-HLLC" };
+    const std::string _strings[] = { "NONE", "UPWIND" , "LLF",
+                                     "EULER-LLF", "EULER-HLL" , "EULER-HLLC",
+                                     "MHD-DW", "MHD-HLLEM"
+                                     };
     //! Number of known advection fluxes which can be chosen via parameter file.
-    static const int  _size = 6;
+    static const int  _size = 8;
 
   }
 
