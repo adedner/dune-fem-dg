@@ -17,6 +17,7 @@
 
 #include <dune/fem/space/common/adaptationmanager.hh>
 #include <dune/fem/space/common/basesetlocalkeystorage.hh>
+#include <dune/fem/space/common/capabilities.hh>
 
 #include <dune/fem/space/discontinuousgalerkin.hh>
 #include <dune/fem/space/finitevolume.hh>
@@ -35,10 +36,10 @@
 #include <dune/fem-dg/operator/limiter/limiterdiscretemodel.hh>
 #include <dune/fem-dg/operator/limiter/lpreconstruction.hh>
 
-//#if HAVE_DUNE_OPTIM
+#if HAVE_DUNE_OPTIM
 #define WANT_DUNE_OPTIM 1
 //#define WANT_DUNE_OPTIM 0
-//#endif
+#endif
 
 
 //*************************************************************
@@ -214,8 +215,7 @@ namespace Fem
     enum { dimRange = DiscreteFunctionSpaceType::dimRange,
            dimDomain = DiscreteFunctionSpaceType::dimDomain};
     enum { dimGrid = GridType :: dimension };
-    typedef typename GridType::ctype                                       ctype;
-    typedef FieldVector<ctype, dimGrid-1>                                  FaceLocalDomainType;
+    typedef FieldVector< typename GridType::ctype, dimGrid-1>              FaceLocalDomainType;
 
     typedef PointBasedDofConversionUtility< dimRange >                     DofConversionUtilityType;
 
@@ -262,24 +262,6 @@ namespace Fem
     typedef CheckCartesian< GridPartType >  CheckCartesianType;
 
   protected:
-    template <class DiscreteSpace>
-    struct HierarchicalBasis
-    {
-      static const bool v = false ;
-    };
-
-    template < class FunctionSpace, class GridPart, int polOrder, template< class > class Storage >
-    struct HierarchicalBasis< DiscontinuousGalerkinSpace< FunctionSpace, GridPart, polOrder, Storage > >
-    {
-      static const bool v = true ;
-    };
-
-    template < class FunctionSpace, class GridPart, int polOrder, template< class > class Storage >
-    struct HierarchicalBasis< HierarchicLegendreDiscontinuousGalerkinSpace< FunctionSpace, GridPart, polOrder, Storage > >
-    {
-      static const bool v = true ;
-    };
-
 #if WANT_DUNE_OPTIM
     typedef typename GridPartType :: GridViewType  GridViewType ;
 
@@ -801,38 +783,27 @@ namespace Fem
       // because of adaptation
       bool limiter = reconstruct_;
 
-      // check physicality of data
-      // evaluate average returns true if not physical
-      if( evalAverage( en, uEn, enVal ) )
-      {
-        limiter = true;
-        // enable adaptation because of not physical
-        adaptIndicator = -1;
-      }
-      else if ( calcIndicator_ )
-      {
-        // check shock indicator
-        limiter = calculateIndicator(en, uEn, enVal, geo, limiter, limit, shockIndicator, adaptIndicator);
-      }
-      else if( !reconstruct_ )
-      {
-        // check physical values for quadrature
-        VolumeQuadratureType quad( en, spc_.order( en ) + 1 );
-        if( ! checkPhysicalQuad( quad, uEn ) )
-        {
-          limiter = true;
-          shockIndicator = 1.5;
-        }
-      }
+      ///////////////////////////////////////////////////
+      //
+      //  Troubled Cell Indicator
+      //
+      ///////////////////////////////////////////////////
 
+      // check physicality of data at quadrature points
+      // evaluate average returns true if all quadrature points hold physical values
+      const bool oneNotPhysical = evalAverage( en, uEn, enVal ); // returns enVal
+
+      // make sure that the average value is physical,
+      // otherwise everything may be corrupted
       {
         // get barycenter of entity
         const DomainType& enBaryLocal = (int(dimGrid) == int(dimDomain)) ?
           geoInfo_.localCenter( geomType ) :
           geo.local( enBary ) ;
 
-        // check average value
-        if( discreteModel_.hasPhysical() && !discreteModel_.physical( en, enBaryLocal, enVal ) )
+        // check that average value is physical
+        if(  discreteModel_.hasPhysical() &&
+            !discreteModel_.physical( en, enBaryLocal, enVal ) )
         {
           std::cerr << "Average Value "
                     << enVal
@@ -845,8 +816,57 @@ namespace Fem
         }
       }
 
+      if( oneNotPhysical ) // already enough to trigger limitation process
+      {
+        limiter = true;
+        // enable adaptation because of not physical
+        adaptIndicator = -1;
+      }
+      else if ( calcIndicator_ ) // otherwise compute shock indicator
+      {
+        // check shock indicator
+        limiter = calculateIndicator(en, uEn, geo, limiter,                   // parameter
+                                     limit, shockIndicator, adaptIndicator);  // return values
+      }
+      else if( !reconstruct_ )
+      {
+        // check physical values for quadrature
+        VolumeQuadratureType quad( en, spc_.order( en ) + 1 );
+        if( ! checkPhysicalQuad( quad, uEn ) )
+        {
+          limiter = true;
+          shockIndicator = 1.5;
+        }
+      }
+
       stepTime_[0] += indiTime.elapsed();
       indiTime.reset();
+
+      // if limit, then limit all components
+      limit = limiter;
+      {
+        // check whether not physical occurred
+        if (limiter && shockIndicator[0] < 1.)
+        {
+          shockIndicator = -1;
+          ++notPhysicalElements_;
+        }
+
+        // if limiter also adapt if not finite volume scheme
+        if( limiter && ! reconstruct_ )
+        {
+          adaptIndicator = -1;
+        }
+
+        // call problem adaptation for setting refinement marker
+        discreteModel_.adaptation( gridPart_.grid() , en, shockIndicator, adaptIndicator );
+      }
+
+      ///////////////////////////////////////////////////
+      //
+      //  Reconstruction, Limiting and L2 projection
+      //
+      ///////////////////////////////////////////////////
 
       // boundary is true if boundary segment was found
       // nonconforming is true if entity has at least one non-conforming intersections
@@ -862,26 +882,6 @@ namespace Fem
         // setup neighbors barycenter and mean value for all neighbors
         LimiterUtilityType::setupNeighborValues( gridPart_, en, average, enBary, enVal,
                                                  StructuredGrid, flags, barys_, nbVals_ );
-      }
-
-      // if limit, then limit all components
-      limit = limiter;
-      {
-        // check whether not physical occurred
-        if (limiter && shockIndicator[0] < 1.)
-        {
-          shockIndicator = -1;
-          ++notPhysicalElements_;
-        }
-
-        // if limiter also adapt
-        if( limiter && ! reconstruct_ )
-        {
-          adaptIndicator = -1;
-        }
-
-        // call problem adaptation for setting refinement marker
-        discreteModel_.adaptation( gridPart_.grid() , en, shockIndicator, adaptIndicator );
       }
 
       // mark entity as finished, even if not limited everything necessary was done
@@ -974,7 +974,7 @@ namespace Fem
       uTmpLocal_.clear();
 
       // assume that basis functions are hierarchical
-      assert( HierarchicalBasis< DiscreteFunctionSpaceType > :: v );
+      assert( Dune::Fem::Capabilities::isHierarchic< DiscreteFunctionSpaceType > :: v );
 
       for (int r=0;r<dimRange;++r)
       {
@@ -1226,7 +1226,7 @@ namespace Fem
                      RangeType& val) const
     {
       bool notphysical = false;
-      if( HierarchicalBasis< DiscreteFunctionSpaceType > :: v
+      if( Dune::Fem::Capabilities::isHierarchic< DiscreteFunctionSpaceType > :: v
           && localMassMatrix_.affine() )
       {
         // get point quadrature
@@ -1278,14 +1278,15 @@ namespace Fem
         val *= 1.0/geo.volume();
       }
 
+      // return true if average value is not physical
       return notphysical;
     }
 
     template <bool conforming>
-    bool applyLocalNeighbor(const IntersectionType & intersection,
-                            const EntityType& nb,
-                            RangeType& shockIndicator,
-                            RangeType& adaptIndicator) const
+    bool integrateIntersection(const IntersectionType & intersection,
+                               const EntityType& nb,
+                               RangeType& shockIndicator,
+                               RangeType& adaptIndicator) const
     {
       // make sure we got the right conforming statement
       assert( intersection.conforming() == conforming );
@@ -1339,25 +1340,17 @@ namespace Fem
     }
 
     template <class QuadratureImp>
-    bool applyBoundary(const EntityType& entity,
-                       const IntersectionType & intersection,
-                       const QuadratureImp & faceQuadInner,
-                       const RangeType& entityValue,
-                       RangeType& shockIndicator,
-                       RangeType& adaptIndicator) const
+    bool integrateBoundary(const EntityType& entity,
+                           const IntersectionType & intersection,
+                           const QuadratureImp & faceQuadInner,
+                           RangeType& shockIndicator,
+                           RangeType& adaptIndicator) const
     {
       typedef typename IntersectionType :: Geometry LocalGeometryType;
       const LocalGeometryType& interGeo = intersection.geometry();
 
       RangeType jump;
       JacobianRangeType dummy ;
-
-      typedef QuadratureContext< EntityType, IntersectionType, QuadratureImp > ContextType;
-      typedef LocalEvaluation< ContextType, RangeType, RangeType > EvalType;
-
-      ContextType cLeft( entity, intersection, faceQuadInner, 0.0 );
-      // create quadrature of low order
-      EvalType local( cLeft, entityValue, entityValue );
 
       const int faceQuadNop = faceQuadInner.nop();
       for(int l=0; l<faceQuadNop; ++l)
@@ -1385,7 +1378,6 @@ namespace Fem
     // calculate shock detector
     bool calculateIndicator(const EntityType& en,
                             const LocalFunctionType& uEn,
-                            const RangeType& enVal,
                             const Geometry& geo,
                             const bool initLimiter,
                             FieldVector<bool,dimRange>& limit,
@@ -1511,7 +1503,7 @@ namespace Fem
             // conforming case
             if( ! conformingGridPart && ! intersection.conforming() )
             { // non-conforming case
-              if (applyLocalNeighbor< false > (intersection, nb, shockIndicator, adaptIndicator))
+              if (integrateIntersection< false > (intersection, nb, shockIndicator, adaptIndicator))
               {
                 shockIndicator = -1;
                 return true;
@@ -1519,7 +1511,7 @@ namespace Fem
             }
             else
             {
-              if (applyLocalNeighbor< true > (intersection, nb, shockIndicator, adaptIndicator))
+              if (integrateIntersection< true > (intersection, nb, shockIndicator, adaptIndicator))
               {
                 shockIndicator = -1;
                 return true;
@@ -1535,7 +1527,7 @@ namespace Fem
             // initialize intersection
             caller().initializeBoundary( intersection, faceQuadInner );
 
-            if (applyBoundary(en, intersection, faceQuadInner, enVal, shockIndicator, adaptIndicator))
+            if (integrateBoundary(en, intersection, faceQuadInner, shockIndicator, adaptIndicator))
             {
               shockIndicator = -1;
               return true;
