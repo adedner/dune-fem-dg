@@ -770,7 +770,6 @@ namespace Fem
 
       // if a component is true, then this component has to be limited
       FieldVector<bool,dimRange> limit(false);
-      // determ whether limitation is necessary
       // total jump vector
       RangeType shockIndicator(0);
       RangeType adaptIndicator(0);
@@ -864,7 +863,7 @@ namespace Fem
 
       ///////////////////////////////////////////////////
       //
-      //  Reconstruction, Limiting and L2 projection
+      //  Reconstruction and Limiting
       //
       ///////////////////////////////////////////////////
 
@@ -945,6 +944,12 @@ namespace Fem
         // take maximum of limited functions
         LimiterUtilityType::getMaxFunction(deoMods_, deoMod_, factors_[ enIndex ], numbers_[ enIndex ], factors );
       } // end if linProg
+
+      ////////////////////////////////////////////////////////////////////
+      //
+      //  L2 projection of limited function to destination
+      //
+      ////////////////////////////////////////////////////////////////////
 
       // get local funnction for limited values
       DestLocalFunctionType limitEn = dest_->localFunction(en);
