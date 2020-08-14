@@ -1202,7 +1202,7 @@ namespace Fem
 
     template <class BasisFunctionSetType, class PointType>
     const RangeType& evaluateConstantBasis( const BasisFunctionSetType& basisSet,
-                                           const PointType& x ) const
+                                            const PointType& x ) const
     {
       // calculate constant part of the basis functions
       if( ! (phi0_[ 0 ] > 0 ) )
@@ -1442,7 +1442,6 @@ namespace Fem
             shockIndicator = -1;
             return true;
           }
-
         }
         else
         { // non-conforming case
