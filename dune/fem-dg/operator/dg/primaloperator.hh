@@ -382,7 +382,7 @@ namespace Fem
       , indicator_()
       , diffFlux_( gridPart_, model_, DGPrimalDiffusionFluxParameters( ParameterKey::generate( name, "dgdiffusionflux." ), parameter ) )
       , discreteModel1_( model_, advFlux_, diffFlux_ )
-      , limiter_( space_, limiterSpace_, model_ )
+      , limiter_( space_, limiterSpace_, model_, parameter )
       , pass0_()
       , pass2_( discreteModel1_, pass0_, space_ )
       , counter_(0)

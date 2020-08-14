@@ -133,15 +133,16 @@ namespace Fem
 
     Limiter( const DomainSpaceType& domainSpace,
              const RangeSpaceType&  rangeSpace,
-             const ModelType& model )
+             const ModelType& model,
+             const Dune::Fem::ParameterReader &parameter = Dune::Fem::Parameter::container() )
       : domainSpace_( domainSpace )
       , rangeSpace_( rangeSpace )
       , indicatorSpace_( domainSpace_.gridPart() )
       , indicator_("indicator", indicatorSpace_ )
       , model_( model )
-      , discreteModel_( model_, domainSpace_.order() )
+      , discreteModel_( model_, domainSpace_.order(), parameter )
       , startPass_()
-      , limitPass_( discreteModel_ , startPass_, rangeSpace_ )
+      , limitPass_( discreteModel_ , startPass_, rangeSpace_, parameter )
     {
       discreteModel_.setIndicator( &indicator_ );
 

@@ -297,6 +297,25 @@ namespace Fem
                 PreviousPassType& pass,
                 const DiscreteFunctionSpaceType& spc,
                 const int vQ = -1,
+                const int fQ = -1 )
+      : LimitDGPass(problem, pass, spc, Dune::Fem::Parameter::container(), vQ, fQ )
+    {}
+    //- Public methods
+    /** \brief constructor
+     *
+     *  \param  problem    Actual problem definition (see problem.hh)
+     *  \param  pass       Previous pass
+     *  \param  spc        Space belonging to the discrete function local to this pass
+     *  \param  parameter  Parameter reader for dynamic parameters
+     *  \param  vQ         order of volume quadrature
+     *  \param  fQ         order of face quadrature
+     */
+
+    LimitDGPass(DiscreteModelType& problem,
+                PreviousPassType& pass,
+                const DiscreteFunctionSpaceType& spc,
+                const Dune::Fem::ParameterReader &parameter = Dune::Fem::Parameter::container(),
+                const int vQ = -1,
                 const int fQ = -1 ) :
       BaseType(pass, spc),
       caller_( 0 ),
@@ -322,7 +341,7 @@ namespace Fem
       argOrder_( spc_.order() ),
       storedComboSets_(),
       tolFactor_( getTolFactor() ),
-      tol_1_( 1.0/getTol() ),
+      tol_1_( 1.0/ parameter.getValue("femdg.limiter.tolerance", double(1.0) ) ),
       geoInfo_( gridPart_.indexSet() ),
       faceGeoInfo_( geoInfo_.geomTypes(1) ),
       phi0_( 0 ),
@@ -335,7 +354,7 @@ namespace Fem
       stepTime_(3, 0.0),
       calcIndicator_(discreteModel_.calculateIndicator()),
       reconstruct_(false),
-      admissibleFunctions_( getAdmissibleFunctions() ),
+      admissibleFunctions_( getAdmissibleFunctions( parameter ) ),
       usedAdmissibleFunctions_( admissibleFunctions_ ),
       counter_( 0 )
     {
@@ -347,7 +366,7 @@ namespace Fem
         else
           std::cout << "unstructured";
         //std::cout << "! LimitEps: "<< limitEps_ << ", LimitTol: "<< 1./tol_1_ << std::endl;
-        std::cout << "! Limiter.tolerance: "<< 1./tol_1_ << std::endl;
+        std::cout << "! Limiter.tolerance: "<< 1./tol_1_ << ";  admissibleFunctions: " << admissibleFunctions_ << std::endl;
       }
 
       // we need the flux here
@@ -403,11 +422,11 @@ namespace Fem
     }
 
     //! get tolerance for shock detector
-    AdmissibleFunctions getAdmissibleFunctions() const
+    AdmissibleFunctions getAdmissibleFunctions( const Dune::Fem::ParameterReader &parameter ) const
     {
       // default value
       int val = 1;
-      val = Parameter::getValue("femdg.limiter.admissiblefunctions", val);
+      val = parameter.getValue("femdg.limiter.admissiblefunctions", val);
       assert( val >= DGFunctions || val <= BothFunctions );
       return (AdmissibleFunctions) val;
     }

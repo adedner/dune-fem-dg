@@ -116,25 +116,6 @@ namespace Fem
     //! type of cartesian grid checker
     typedef CheckCartesian< GridPartType >  CheckCartesianType;
 
-  protected:
-    template <class DiscreteSpace>
-    struct HierarchicalBasis
-    {
-      static const bool v = false ;
-    };
-
-    template < class FunctionSpace, class GridPart, int polOrder, template< class > class Storage >
-    struct HierarchicalBasis< DiscontinuousGalerkinSpace< FunctionSpace, GridPart, polOrder, Storage > >
-    {
-      static const bool v = true ;
-    };
-
-    template < class FunctionSpace, class GridPart, int polOrder, template< class > class Storage >
-    struct HierarchicalBasis< HierarchicLegendreDiscontinuousGalerkinSpace< FunctionSpace, GridPart, polOrder, Storage > >
-    {
-      static const bool v = true ;
-    };
-
   public:
     //- Public methods
     /** \brief constructor
@@ -146,10 +127,28 @@ namespace Fem
      *  \param  fQ         order of face quadrature
      */
     ScalingLimitDGPass(DiscreteModelType& problem,
-                PreviousPassType& pass,
-                const DiscreteFunctionSpaceType& spc,
-                const int vQ = -1,
-                const int fQ = -1 ) :
+                       PreviousPassType& pass,
+                       const DiscreteFunctionSpaceType& spc,
+                       const int vQ = -1,
+                       const int fQ = -1 )
+      : ScalingLimitDGPass( problem, pass, spc, Dune::Fem::Parameter::container() )
+    {}
+
+    //- Public methods
+    /** \brief constructor
+     *
+     *  \param  problem    Actual problem definition (see problem.hh)
+     *  \param  pass       Previous pass
+     *  \param  spc        Space belonging to the discrete function local to this pass
+     *  \param  vQ         order of volume quadrature
+     *  \param  fQ         order of face quadrature
+     */
+    ScalingLimitDGPass(DiscreteModelType& problem,
+                       PreviousPassType& pass,
+                       const DiscreteFunctionSpaceType& spc,
+                       const Dune::Fem::ParameterReader &parameter = Dune::Fem::Parameter::container(),
+                       const int vQ = -1,
+                       const int fQ = -1 ) :
       BaseType(pass, spc),
       caller_( 0 ),
       discreteModel_(problem),
@@ -839,7 +838,7 @@ namespace Fem
                      RangeType& val) const
     {
       bool notphysical = false;
-      if( HierarchicalBasis< DiscreteFunctionSpaceType > :: v
+      if( Dune::Fem::Capabilities::isHierarchic< DiscreteFunctionSpaceType > :: v
           && localMassMatrix_.affine() )
       {
         // get point quadrature
