@@ -36,6 +36,8 @@
 #include <dune/fem-dg/operator/limiter/limiterdiscretemodel.hh>
 #include <dune/fem-dg/operator/limiter/lpreconstruction.hh>
 
+#include <dune/fem-dg/operator/limiter/smoothness.hh>
+
 #if HAVE_DUNE_OPTIM
 #define WANT_DUNE_OPTIM 1
 //#define WANT_DUNE_OPTIM 0
@@ -341,6 +343,7 @@ namespace Fem
       argOrder_( spc_.order() ),
       storedComboSets_(),
       tolFactor_( getTolFactor() ),
+      indicator_( getIndicator(parameter) ),
       tol_1_( 1.0/ parameter.getValue("femdg.limiter.tolerance", double(1.0) ) ),
       geoInfo_( gridPart_.indexSet() ),
       faceGeoInfo_( geoInfo_.geomTypes(1) ),
@@ -366,7 +369,9 @@ namespace Fem
         else
           std::cout << "unstructured";
         //std::cout << "! LimitEps: "<< limitEps_ << ", LimitTol: "<< 1./tol_1_ << std::endl;
-        std::cout << "! Limiter.tolerance: "<< 1./tol_1_ << ";  admissibleFunctions: " << admissibleFunctions_ << std::endl;
+        std::cout << "! Limiter.tolerance: "<< 1./tol_1_
+                  << "; admissibleFunctions: " << admissibleFunctions_
+                  << "; TroubledCell.indicator: " << indicator_ << std::endl;
       }
 
       // we need the flux here
@@ -413,12 +418,21 @@ namespace Fem
       return dimFactor * 0.016 * std::pow(5.0, order);
     }
 
+#if 0 // not needed anymore
     //! get tolerance for shock detector
     double getTol() const
     {
       double tol = 1.0;
       tol = Parameter::getValue("femdg.limiter.tolerance", tol );
       return tol;
+    }
+#endif
+    //! get tolerance for shock detector
+    double getIndicator( const Dune::Fem::ParameterReader &parameter ) const
+    {
+      static const std::string indicators[]  = { "none", "jump" ,"modal", "always" };
+      std::string key( "femdg.limiter.indicator" );
+      return parameter.getEnum( key, indicators, 1 );
     }
 
     //! get tolerance for shock detector
@@ -898,7 +912,7 @@ namespace Fem
         EvalAverage average( *this, U, discreteModel_, geo.volume() );
 
         // setup neighbors barycenter and mean value for all neighbors
-        LimiterUtilityType::setupNeighborValues( gridPart_, en, average, enBary, enVal,
+        LimiterUtilityType::setupNeighborValues( gridPart_, en, average, enBary, enVal, uEn,
                                                  StructuredGrid, flags, barys_, nbVals_ );
       }
 
@@ -1560,6 +1574,9 @@ namespace Fem
 
       } // end intersection iterator
 
+      if (indicator_ == 0)
+        return false;
+
       // calculate max face volume
       {
         //    min faceVol
@@ -1584,11 +1601,21 @@ namespace Fem
       // multiply h pol ord with circume
       const double circFactor = (circume > 0.0) ? (hPowPolOrder/(circume * tolFactor_ )) : 0.0;
 
+      double modalInd = -1;
+      if (indicator_ == 2)
+        modalInd = 1./smoothnessIndicator(uEn);
+
       for(int r=0; r<dimRange; ++r)
       {
         // only scale shock indicator with tolerance
-        shockIndicator[r] = std::abs(shockIndicator[r]) * circFactor * tol_1_;
+        if (indicator_ == 2)
+          shockIndicator[r] = modalInd * tol_1_;
+        else if (indicator_ == 1)
+          shockIndicator[r] = std::abs(shockIndicator[r]) * circFactor * tol_1_;
+        else
+          shockIndicator[r] = 2;
         adaptIndicator[r] = std::abs(adaptIndicator[r]) * circFactor;
+
         if(shockIndicator[r] > 1.)
         {
           limit[r] = true;
@@ -1683,6 +1710,7 @@ namespace Fem
 
     // tolerance to scale shock indicator
     const double tolFactor_;
+    std::size_t indicator_;
     const double tol_1_;
 
     // if true scheme is TVD
