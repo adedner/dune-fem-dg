@@ -287,13 +287,14 @@ namespace Fem
     }
 
 
-    template <class GridPart, class Entity, class EvalAverage>
+    template <class GridPart, class Entity, class EvalAverage, class LFEn>
     static void
     setupNeighborValues( const GridPart& gridPart,
                          const Entity& entity,
                          const EvalAverage& average,
                          const DomainType& entityCenter,
                          const RangeType&  entityValue,
+                         const LFEn& lfEn,
                          const bool StructuredGrid,
                          Flags& flags,
                          std::vector< DomainType >& baryCenters,
@@ -394,7 +395,12 @@ namespace Fem
           point -= entityCenter;
 
           const double length = (point * lambda);
-          const double factorLength = (cartesianGrid) ? 2.0 * length : length ;
+          // this version mirrors the point outside of the domain but only
+          // for Cartesian grids - I think having different behaviour
+          // depending on the grid not so satisfactory
+          //    const double factorLength = (cartesianGrid) ? 2.0 * length : length ;
+          // instead put the point onto the boundary
+          const double factorLength = length ;
           lambda *= factorLength;
 
           assert( lambda.two_norm () > 0 );
@@ -409,7 +415,13 @@ namespace Fem
             const DomainType pointOnBoundary = lambda + entityCenter;
 
             // evaluate data on boundary
-            if( average.boundaryValue( entity, intersection, interGeo, pointOnBoundary, entityValue, jumpNeighborEntity ) )
+            // This version uses the bary center value to construct the
+            // boundary value
+            //    if( average.boundaryValue( entity, intersection, interGeo, pointOnBoundary, entityValue, jumpNeighborEntity ) )
+            // instead evaluate the discrete function directly on the boundary
+            RangeType enBnd(entityValue);
+            lfEn.evaluate(entity.geometry().local(pointOnBoundary), enBnd);
+            if( average.boundaryValue( entity, intersection, interGeo, pointOnBoundary, enBnd, jumpNeighborEntity ) )
             {
               jumpNeighborEntity -= entityValue;
             }
