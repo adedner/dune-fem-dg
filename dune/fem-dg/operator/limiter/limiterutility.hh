@@ -936,9 +936,9 @@ namespace Fem
   protected:
     void printInfo(const std::string& name ) const
     {
-      //if( Parameter::verbose() )
+      if( Parameter::verbose() )
       {
-        std::cout << "LimiterFunction: " << name << " with epsilon = " << epsilon_ << std::endl;
+        std::cout << "LimiterFunction (" << name << ") with femdg.limiter.epsilon: " << epsilon_ << std::endl;
       }
     }
   };

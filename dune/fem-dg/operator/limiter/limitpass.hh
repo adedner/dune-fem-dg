@@ -383,15 +383,16 @@ namespace Fem
     {
       if( Parameter :: verbose () )
       {
-        std::cout << "LimitPass: Grid is ";
+        std::cout << "LimitDGPass (Grid is ";
         if( cartesianGrid_ )
-          std::cout << "cartesian";
+          std::cout << "cartesian) ";
         else
-          std::cout << "unstructured";
-        //std::cout << "! LimitEps: "<< limitEps_ << ", LimitTol: "<< 1./tol_1_ << std::endl;
-        std::cout << "! Limiter.tolerance: "<< 1./tol_1_
-                  << "; admissibleFunctions: " << admissibleFunctions_
-                  << "; TroubledCell.indicator: " << indicator_ << std::endl;
+          std::cout << "unstructured) ";
+
+        std::cout << "parameters: " << std::endl;
+        std::cout << "  femdg.limiter.tolerance: " << 1./tol_1_ << std::endl;
+        std::cout << "  femdg.limiter.indicator: " << indicator_ << std::endl;
+        std::cout << "  femdg.limiter.admissiblefunctions: " << admissibleFunctions_ << std::endl;
       }
 
       // we need the flux here
