@@ -857,9 +857,10 @@ namespace Fem
       }
       else if ( calcIndicator_ ) // otherwise compute shock indicator
       {
+        bool externalIndicator = indicator_ != 1;
         // check shock indicator
-        limiter = calculateIndicator(en, uEn, geo, limiter,                   // parameter
-                                     limit, shockIndicator, adaptIndicator);  // return values
+        limiter = calculateIndicator(en, uEn, geo, limiter, externalIndicator, // parameter
+                                     limit, shockIndicator, adaptIndicator);   // return values
       }
       else if( !reconstruct_ )
       {
@@ -1321,11 +1322,22 @@ namespace Fem
       return notphysical;
     }
 
-    template <bool conforming>
     bool integrateIntersection(const IntersectionType & intersection,
                                const EntityType& nb,
                                RangeType& shockIndicator,
                                RangeType& adaptIndicator) const
+    {
+      if( ! conformingGridPart && ! intersection.conforming() )
+        return integrateIntersectionImpl< false >(intersection, nb, shockIndicator, adaptIndicator);
+      else
+        return integrateIntersectionImpl< true  >(intersection, nb, shockIndicator, adaptIndicator);
+    }
+
+    template <bool conforming>
+    bool integrateIntersectionImpl(const IntersectionType & intersection,
+                                   const EntityType& nb,
+                                   RangeType& shockIndicator,
+                                   RangeType& adaptIndicator) const
     {
       // make sure we got the right conforming statement
       assert( intersection.conforming() == conforming );
@@ -1419,9 +1431,10 @@ namespace Fem
                             const LocalFunctionType& uEn,
                             const Geometry& geo,
                             const bool initLimiter,
+                            const bool externalIndicator,
                             FieldVector<bool,dimRange>& limit,
                             RangeType& shockIndicator,
-                            RangeType& adaptIndicator) const
+                            RangeType& adaptIndicator ) const
     {
       enum { dim = EntityType :: dimension };
 
@@ -1529,54 +1542,53 @@ namespace Fem
           // add face vol to circume
           circume += vol;
 
-          // order of quadrature
-          const int jumpQuadOrd = spc_.order();
-
-          // check all neighbors
-          if (intersection.neighbor())
+          // internal shock indicator based on Krivodonova et al.
+          if( ! externalIndicator )
           {
-            // get neighbor entity
-            const EntityType& nb = intersection.outside();
+            // order of quadrature
+            const int jumpQuadOrd = spc_.order();
 
-            // conforming case
-            if( ! conformingGridPart && ! intersection.conforming() )
-            { // non-conforming case
-              if (integrateIntersection< false > (intersection, nb, shockIndicator, adaptIndicator))
+            // check all neighbors
+            if (intersection.neighbor())
+            {
+              // get neighbor entity
+              const EntityType& nb = intersection.outside();
+
+              if (integrateIntersection(intersection, nb, shockIndicator, adaptIndicator))
               {
                 shockIndicator = -1;
                 return true;
               }
             }
-            else
+
+            // check all neighbors
+            if ( intersection.boundary() )
             {
-              if (integrateIntersection< true > (intersection, nb, shockIndicator, adaptIndicator))
+              FaceQuadratureType faceQuadInner(gridPart_,intersection, jumpQuadOrd, FaceQuadratureType::INSIDE);
+
+              // initialize intersection
+              caller().initializeBoundary( intersection, faceQuadInner );
+
+              if (integrateBoundary(en, intersection, faceQuadInner, shockIndicator, adaptIndicator))
               {
                 shockIndicator = -1;
                 return true;
               }
-            }
-          }
-
-          // check all neighbors
-          if ( intersection.boundary() )
-          {
-            FaceQuadratureType faceQuadInner(gridPart_,intersection, jumpQuadOrd, FaceQuadratureType::INSIDE);
-
-            // initialize intersection
-            caller().initializeBoundary( intersection, faceQuadInner );
-
-            if (integrateBoundary(en, intersection, faceQuadInner, shockIndicator, adaptIndicator))
-            {
-              shockIndicator = -1;
-              return true;
             }
           }
         }
-
       } // end intersection iterator
 
       if (indicator_ == 0)
         return false;
+
+      /*
+      double extInd = 0;
+      if( externalIndicator_ )
+      {
+        extInd = externalIndicator_( U, uEn );
+      }
+      */
 
       // calculate max face volume
       {
@@ -1635,10 +1647,10 @@ namespace Fem
     {
       // check whether we have an inflow intersection or not
       const int quadNop = quad.nop();
-      for(int l=0; l<quadNop; ++l)
+      for(int qp=0; qp<quadNop; ++qp)
       {
         // check physicality of value
-        const bool physical = caller().checkPhysical( intersection, quad, l );
+        const bool physical = caller().checkPhysical( intersection, quad, qp );
 
         if( checkPhysical && ! physical )
         {
@@ -1649,7 +1661,7 @@ namespace Fem
         if( ! inflowIntersection )
         {
           // check intersection
-          if( physical && caller().checkDirection(intersection, quad, l) )
+          if( physical && caller().checkDirection(intersection, quad, qp) )
           {
             inflowIntersection = true;
             // in case of physicality check is disabled
