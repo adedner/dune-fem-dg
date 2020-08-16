@@ -132,6 +132,19 @@ namespace Fem
     typedef typename  Model::Traits::LimiterFunctionType  LimiterFunctionType;
   };
 
+  /*
+  template <class DiscreteFunction>
+  class TroubledCellIndicatorInterface
+  {
+  public:
+    virtual ~TroubledCellIndicatorInterface() {}
+
+    typedef typename DiscreteFunction :: LocalFunctionType LocalFunctionType;
+
+    virtual double operator() (const DiscreteFunction& U, const LocalFunctionType& uEn ) const = 0;
+  };
+  */
+
 
   /** \brief Concrete implementation of Pass for Limiting.
    *
@@ -264,6 +277,10 @@ namespace Fem
     //! type of Cartesian grid checker
     typedef CheckCartesian< GridPartType >  CheckCartesianType;
 
+    typedef const std::function< double(const DestinationType&, const LocalFunctionType& ) > TroubledCellIndicatorType;
+
+    //typedef TroubledCellIndicatorInterface< DiscreteFunctionType > TroubledCellIndicatorType;
+
   protected:
 #if WANT_DUNE_OPTIM
     typedef typename GridPartType :: GridViewType  GridViewType ;
@@ -321,7 +338,7 @@ namespace Fem
                 const int vQ = -1,
                 const int fQ = -1 ) :
       BaseType(pass, spc),
-      caller_( 0 ),
+      caller_(),
       discreteModel_(problem),
       currentTime_(0.0),
       arg_(0),
@@ -360,6 +377,8 @@ namespace Fem
       reconstruct_(false),
       admissibleFunctions_( getAdmissibleFunctions( parameter ) ),
       usedAdmissibleFunctions_( admissibleFunctions_ ),
+      extTroubledCellIndicator_( indicator_ == 2
+          ? &SmoothnessIndicator< DestinationType >::troubledCellIndicator : nullptr ),
       counter_( 0 )
     {
       if( Parameter :: verbose () )
@@ -409,7 +428,6 @@ namespace Fem
       return ( faceQuadOrd_ < 0 ) ? defaultFaceQuadratureOrder( spc_, entity ) : faceQuadOrd_ ;
     }
 
-
     //! get tolerance factor for shock detector
     double getTolFactor() const
     {
@@ -419,15 +437,6 @@ namespace Fem
       return dimFactor * 0.016 * std::pow(5.0, order);
     }
 
-#if 0 // not needed anymore
-    //! get tolerance for shock detector
-    double getTol() const
-    {
-      double tol = 1.0;
-      tol = Parameter::getValue("femdg.limiter.tolerance", tol );
-      return tol;
-    }
-#endif
     //! get tolerance for shock detector
     double getIndicator( const Dune::Fem::ParameterReader &parameter ) const
     {
@@ -617,7 +626,7 @@ namespace Fem
       // in case of reconstruction
       if( reconstruct_ )
       {
-        // in case of non-adaptive scheme indicator not needed
+        // for FV scheme in case of non-adaptive scheme indicator not needed
         calcIndicator_ = adaptive_;
 
         // adjust quadrature orders
@@ -636,7 +645,7 @@ namespace Fem
       currentTime_ = this->time();
 
       // initialize caller
-      caller_ = new DiscreteModelCallerType( *arg_, discreteModel_ );
+      caller_.reset( new DiscreteModelCallerType( *arg_, discreteModel_ ) );
       caller_->setTime(currentTime_);
 
       // calculate maximal indicator (if necessary)
@@ -701,11 +710,7 @@ namespace Fem
       }
 
       // finalize caller
-      if( caller_ )
-      {
-        delete caller_;
-        caller_ = 0;
-      }
+      caller_.reset();
     }
 
     //! apply local is virtual
@@ -857,10 +862,9 @@ namespace Fem
       }
       else if ( calcIndicator_ ) // otherwise compute shock indicator
       {
-        bool externalIndicator = indicator_ != 1;
         // check shock indicator
-        limiter = calculateIndicator(en, uEn, geo, limiter, externalIndicator, // parameter
-                                     limit, shockIndicator, adaptIndicator);   // return values
+        limiter = calculateIndicator(U, uEn, geo, limiter,                   // parameter
+                                     limit, shockIndicator, adaptIndicator); // return values
       }
       else if( !reconstruct_ )
       {
@@ -1427,15 +1431,15 @@ namespace Fem
     }
 
     // calculate shock detector
-    bool calculateIndicator(const EntityType& en,
+    bool calculateIndicator(const DestinationType& U,
                             const LocalFunctionType& uEn,
                             const Geometry& geo,
                             const bool initLimiter,
-                            const bool externalIndicator,
                             FieldVector<bool,dimRange>& limit,
                             RangeType& shockIndicator,
                             RangeType& adaptIndicator ) const
     {
+      const EntityType& en = uEn.entity();
       enum { dim = EntityType :: dimension };
 
       // calculate circume during neighbor check
@@ -1543,7 +1547,7 @@ namespace Fem
           circume += vol;
 
           // internal shock indicator based on Krivodonova et al.
-          if( ! externalIndicator )
+          if( ! extTroubledCellIndicator_ )
           {
             // order of quadrature
             const int jumpQuadOrd = spc_.order();
@@ -1582,14 +1586,6 @@ namespace Fem
       if (indicator_ == 0)
         return false;
 
-      /*
-      double extInd = 0;
-      if( externalIndicator_ )
-      {
-        extInd = externalIndicator_( U, uEn );
-      }
-      */
-
       // calculate max face volume
       {
         //    min faceVol
@@ -1615,18 +1611,25 @@ namespace Fem
       const double circFactor = (circume > 0.0) ? (hPowPolOrder/(circume * tolFactor_ )) : 0.0;
 
       double modalInd = -1;
-      if (indicator_ == 2)
-        modalInd = 1./smoothnessIndicator(uEn);
+      if( extTroubledCellIndicator_ )
+      {
+        shockIndicator = ( tol_1_ * extTroubledCellIndicator_( U, uEn ) );
+      }
+      else if( indicator_ == 1 )
+      {
+        for(int r=0; r<dimRange; ++r)
+        {
+          shockIndicator[r] = std::abs(shockIndicator[r]) * circFactor * tol_1_;
+        }
+      }
+      else if ( indicator_ != 1 )
+      {
+        // always limit on each cell
+        shockIndicator = 2.;
+      }
 
       for(int r=0; r<dimRange; ++r)
       {
-        // only scale shock indicator with tolerance
-        if (indicator_ == 2)
-          shockIndicator[r] = modalInd * tol_1_;
-        else if (indicator_ == 1)
-          shockIndicator[r] = std::abs(shockIndicator[r]) * circFactor * tol_1_;
-        else
-          shockIndicator[r] = 2;
         adaptIndicator[r] = std::abs(adaptIndicator[r]) * circFactor;
 
         if(shockIndicator[r] > 1.)
@@ -1692,7 +1695,7 @@ namespace Fem
     }
 
   private:
-    mutable DiscreteModelCallerType *caller_;
+    mutable std::unique_ptr< DiscreteModelCallerType > caller_;
     DiscreteModelType& discreteModel_;
     mutable double currentTime_;
 
@@ -1755,7 +1758,7 @@ namespace Fem
     mutable std::vector<double> stepTime_;
     mutable size_t elementCounter_;
 
-    //! true if indicator should be calculated
+    //! true if troubled cell indicator should be calculated
     mutable bool calcIndicator_;
 
     //! true if limiter is used as finite volume scheme of higher order
@@ -1767,6 +1770,9 @@ namespace Fem
 
     mutable std::vector< RangeType  > values_;
     mutable std::vector< GradientType > gradients_;
+
+    // function pointer to external troubled cell indicator, can be nullptr
+    TroubledCellIndicatorType extTroubledCellIndicator_;
 
     mutable int counter_;
   }; // end DGLimitPass

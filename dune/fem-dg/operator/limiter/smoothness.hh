@@ -7,6 +7,7 @@
 #include <dune/fem/space/shapefunctionset/orthonormal.hh>
 
 
+
 template <class LF>
 double smoothnessIndicator(const LF& uLocal)
 {
@@ -106,3 +107,19 @@ auto smoothnessGF(const GF &gf) {
     return smoothnessIndicator(lgf);
   };
 }
+
+template <class DiscreteFunction>
+class SmoothnessIndicator
+{
+  public:
+    typedef typename DiscreteFunction :: LocalFunctionType  LocalFunctionType;
+    static double troubledCellIndicator( const DiscreteFunction& U,
+                                         const LocalFunctionType& uEn )
+    {
+      double modalInd = smoothnessIndicator( uEn );
+      if( std::abs( modalInd ) > 1e-14 )
+        return 1.0 / modalInd ;
+      else
+        return 0.0;
+    }
+};
