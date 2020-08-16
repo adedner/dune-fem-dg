@@ -90,7 +90,8 @@ namespace Fem
 
       // call problem checkDirection
       const typename BaseType::EntityType &entity = intersection.inside();
-      return discreteModel().checkPhysical( entity, entity.geometry().local( intersection.geometry().global( quadrature.localPoint( qp ) ) ), ranges_ );
+      //return discreteModel().checkPhysical( entity, entity.geometry().local( intersection.geometry().global( quadrature.localPoint( qp ) ) ), ranges_ );
+      return discreteModel().checkPhysical( entity, quadrature.point( qp ), ranges_ );
     }
 
     // check whether we have inflow or outflow direction
@@ -104,7 +105,7 @@ namespace Fem
       assert( quadPoint_ == qp );
 
       // call checkDirection() on discrete model
-      return discreteModel().checkDirection( intersection, time(), quadrature.localPoint( qp ), ranges_ );
+      return discreteModel().checkDirection( intersection, quadrature.localPoint( qp ), quadrature.point( qp ), ranges_ );
     }
   protected:
     using BaseType::discreteModel;

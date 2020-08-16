@@ -439,12 +439,13 @@ namespace Fem
     //! returns true, if we have an inflow boundary
     template <class ArgumentTuple>
     bool checkDirection(const IntersectionType& it,
-                        const double time, const FaceLocalDomainType& x,
+                        const FaceLocalDomainType& xFace,
+                        const LocalDomainType& xLocal,
                         const ArgumentTuple& uLeft) const
     {
       // evaluate velocity
-      model_.velocity(this->inside(), this->inside().geometry().local( it.geometry().global(x) ), uLeft[ uVar ], velocity_);
-      return checkDirection(it, x, velocity_);
+      model_.velocity(this->inside(), xLocal, uLeft[ uVar ], velocity_);
+      return checkDirection(it, xFace, velocity_);
     }
 
   protected:
