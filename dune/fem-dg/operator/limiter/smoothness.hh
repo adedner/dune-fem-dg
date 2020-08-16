@@ -111,15 +111,15 @@ auto smoothnessGF(const GF &gf) {
 template <class DiscreteFunction>
 class SmoothnessIndicator
 {
-  public:
-    typedef typename DiscreteFunction :: LocalFunctionType  LocalFunctionType;
-    static double troubledCellIndicator( const DiscreteFunction& U,
-                                         const LocalFunctionType& uEn )
-    {
-      double modalInd = smoothnessIndicator( uEn );
-      if( std::abs( modalInd ) > 1e-14 )
-        return 1.0 / modalInd ;
-      else
-        return 0.0;
-    }
+public:
+  typedef typename DiscreteFunction :: LocalFunctionType  LocalFunctionType;
+  static double troubledCellIndicator( const DiscreteFunction& U,
+                                       const LocalFunctionType& uEn )
+  {
+    double modalInd = smoothnessIndicator( uEn );
+    if( std::abs( modalInd ) > 1e-14 )
+      return 1.0 / modalInd ;
+    else
+      return 0.0;
+  }
 };
