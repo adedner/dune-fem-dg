@@ -265,7 +265,7 @@ namespace Fem
     typedef CheckCartesian< GridPartType >  CheckCartesianType;
 
     //! function describing an external troubled cell indicator
-    typedef const std::function< double(const DestinationType&, const LocalFunctionType& ) > TroubledCellIndicatorType;
+    typedef const std::function< double(const ArgumentFunctionType&, const LocalFunctionType& ) > TroubledCellIndicatorType;
 
   protected:
 #if WANT_DUNE_OPTIM
@@ -365,7 +365,7 @@ namespace Fem
       admissibleFunctions_( getAdmissibleFunctions( parameter ) ),
       usedAdmissibleFunctions_( admissibleFunctions_ ),
       extTroubledCellIndicator_( indicator_ == 2
-           ? &ModalSmoothnessIndicator< DestinationType >::troubledCellIndicator : nullptr ),
+           ? &ModalSmoothnessIndicator< ArgumentFunctionType >::troubledCellIndicator : nullptr ),
       counter_( 0 )
     {
       if( Parameter :: verbose () )
@@ -1419,7 +1419,7 @@ namespace Fem
     }
 
     // calculate shock detector
-    bool calculateIndicator(const DestinationType& U,
+    bool calculateIndicator(const ArgumentFunctionType& U,
                             const LocalFunctionType& uEn,
                             const Geometry& geo,
                             const bool initLimiter,
