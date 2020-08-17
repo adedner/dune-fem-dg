@@ -321,7 +321,7 @@ namespace Fem
 
       const auto endit = gridPart.iend( entity );
 
-      const bool cartesianGrid = flags.cartesian;
+      //const bool cartesianGrid = flags.cartesian;
 
       // loop over all neighbors
       for (auto it = gridPart.ibegin( entity ); it != endit; ++it )
