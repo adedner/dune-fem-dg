@@ -1598,7 +1598,6 @@ namespace Fem
       // multiply h pol ord with circume
       const double circFactor = (circume > 0.0) ? (hPowPolOrder/(circume * tolFactor_ )) : 0.0;
 
-      double modalInd = -1;
       if( extTroubledCellIndicator_ )
       {
         shockIndicator = ( tol_1_ * extTroubledCellIndicator_( U, uEn ) );
