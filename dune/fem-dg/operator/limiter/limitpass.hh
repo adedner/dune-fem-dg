@@ -132,19 +132,6 @@ namespace Fem
     typedef typename  Model::Traits::LimiterFunctionType  LimiterFunctionType;
   };
 
-  /*
-  template <class DiscreteFunction>
-  class TroubledCellIndicatorInterface
-  {
-  public:
-    virtual ~TroubledCellIndicatorInterface() {}
-
-    typedef typename DiscreteFunction :: LocalFunctionType LocalFunctionType;
-
-    virtual double operator() (const DiscreteFunction& U, const LocalFunctionType& uEn ) const = 0;
-  };
-  */
-
 
   /** \brief Concrete implementation of Pass for Limiting.
    *
@@ -277,9 +264,8 @@ namespace Fem
     //! type of Cartesian grid checker
     typedef CheckCartesian< GridPartType >  CheckCartesianType;
 
+    //! function describing an external troubled cell indicator
     typedef const std::function< double(const DestinationType&, const LocalFunctionType& ) > TroubledCellIndicatorType;
-
-    //typedef TroubledCellIndicatorInterface< DiscreteFunctionType > TroubledCellIndicatorType;
 
   protected:
 #if WANT_DUNE_OPTIM
@@ -320,6 +306,7 @@ namespace Fem
                 const int fQ = -1 )
       : LimitDGPass(problem, pass, spc, Dune::Fem::Parameter::container(), vQ, fQ )
     {}
+
     //- Public methods
     /** \brief constructor
      *
@@ -378,7 +365,7 @@ namespace Fem
       admissibleFunctions_( getAdmissibleFunctions( parameter ) ),
       usedAdmissibleFunctions_( admissibleFunctions_ ),
       extTroubledCellIndicator_( indicator_ == 2
-          ? &SmoothnessIndicator< DestinationType >::troubledCellIndicator : nullptr ),
+           ? &ModalSmoothnessIndicator< DestinationType >::troubledCellIndicator : nullptr ),
       counter_( 0 )
     {
       if( Parameter :: verbose () )

@@ -109,7 +109,7 @@ auto smoothnessGF(const GF &gf) {
 }
 
 template <class DiscreteFunction>
-class SmoothnessIndicator
+class ModalSmoothnessIndicator
 {
 public:
   typedef typename DiscreteFunction :: LocalFunctionType  LocalFunctionType;
