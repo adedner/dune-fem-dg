@@ -38,12 +38,6 @@
 
 #include <dune/fem-dg/operator/limiter/smoothness.hh>
 
-#if HAVE_DUNE_OPTIM
-#define WANT_DUNE_OPTIM 1
-//#define WANT_DUNE_OPTIM 0
-#endif
-
-
 //*************************************************************
 namespace Dune
 {
@@ -256,7 +250,7 @@ namespace Fem
     typedef AdaptationMethod<GridType> AdaptationMethodType;
 
     //! id for choosing admissible linear functions
-    enum AdmissibleFunctions { DGFunctions = 0, ReconstructedFunctions = 1 , BothFunctions = 2 };
+    enum AdmissibleFunctions { DGFunctions = 0, ReconstructedFunctions = 1 , DGAndReconFunctions = 2, LPFunction = 3 };
 
     //! returns true if pass is currently active in the pass tree
     using BaseType :: active ;
@@ -268,7 +262,6 @@ namespace Fem
     typedef const std::function< double(const ArgumentFunctionType&, const LocalFunctionType& ) > TroubledCellIndicatorType;
 
   protected:
-#if WANT_DUNE_OPTIM
     typedef typename GridPartType :: GridViewType  GridViewType ;
 
     struct BoundaryValue
@@ -286,8 +279,6 @@ namespace Fem
     };
 
     typedef Dune::FV::LPReconstruction< GridViewType, RangeType, BoundaryValue > LinearProgramming;
-#endif
-
 
   public:
     //- Public methods
@@ -332,11 +323,6 @@ namespace Fem
       dest_(0),
       spc_(spc),
       gridPart_(spc_.gridPart()),
-#if WANT_DUNE_OPTIM
-      linProg_( static_cast< GridViewType > (gridPart_), BoundaryValue( *this ),
-                Dune::Fem::Parameter::getValue<double>("finitevolume.linearprogramming.tol", 1e-8 )
-              ),
-#endif
       indexSet_( gridPart_.indexSet() ),
       localIdSet_( gridPart_.grid().localIdSet()),
       cornerPointSetContainer_(),
@@ -364,10 +350,17 @@ namespace Fem
       reconstruct_(false),
       admissibleFunctions_( getAdmissibleFunctions( parameter ) ),
       usedAdmissibleFunctions_( admissibleFunctions_ ),
+      linProg_(),
       extTroubledCellIndicator_( indicator_ == 2
            ? &ModalSmoothnessIndicator< ArgumentFunctionType >::troubledCellIndicator : nullptr ),
       counter_( 0 )
     {
+      if( admissibleFunctions_ == LPFunction )
+      {
+        linProg_.reset( new LinearProgramming( static_cast< GridViewType > (gridPart_), BoundaryValue( *this ),
+                      Dune::Fem::Parameter::getValue<double>("finitevolume.linearprogramming.tol", 1e-8 )) );
+      }
+
       if( Parameter :: verbose () )
       {
         std::cout << "LimitDGPass (Grid is ";
@@ -437,9 +430,10 @@ namespace Fem
     AdmissibleFunctions getAdmissibleFunctions( const Dune::Fem::ParameterReader &parameter ) const
     {
       // default value
-      int val = 1;
+      //int val = 1; // reconstruction
+      int val = 3; // lp-reconstruction
       val = parameter.getValue("femdg.limiter.admissiblefunctions", val);
-      assert( val >= DGFunctions || val <= BothFunctions );
+      assert( val >= DGFunction || val <= LPFunctions );
       return (AdmissibleFunctions) val;
     }
 
@@ -655,21 +649,22 @@ namespace Fem
         matrixCacheVec_.resize( numLevels );
       }
 
-#if WANT_DUNE_OPTIM
-      // helper class for evaluation of average value of discrete function
-      EvalAverage average( *this, U, discreteModel_);
-
-      values_.resize( size );
-      // evaluate average values on all cells
-      for( const auto& element : Dune::elements( gridPart_ ) )
+      if( linProg_ )
       {
-        average.evaluate( element, values_[ gridPart_.indexSet().index( element ) ] );
-      }
+        // helper class for evaluation of average value of discrete function
+        EvalAverage average( *this, U, discreteModel_);
 
-      gradients_.resize( size );
-      // get reconstructions
-      linProg_( gridPart_.indexSet(), values_, gradients_ );
-#endif
+        values_.resize( size );
+        // evaluate average values on all cells
+        for( const auto& element : Dune::elements( gridPart_ ) )
+        {
+          average.evaluate( element, values_[ gridPart_.indexSet().index( element ) ] );
+        }
+
+        gradients_.resize( size );
+        // get reconstructions
+        (*linProg_)( gridPart_.indexSet(), values_, gradients_ );
+      }
     }
 
     //! Some management (interface version)
@@ -921,14 +916,12 @@ namespace Fem
       ++limitedElements_;
 
       const unsigned int enIndex = indexSet_.index( en );
-#if WANT_DUNE_OPTIM
-      bool useLinProg = true ;
-      if( useLinProg )
+      // use linear function from LP reconstruction
+      if( admissibleFunctions_ == LPFunction )
       {
         deoMod_ = gradients_[ enIndex ];
       }
       else
-#endif
       {
         // obtain combination set
         ComboSetType& comboSet = storedComboSets_[ nbVals_.size() ];
@@ -1692,9 +1685,7 @@ namespace Fem
     const DiscreteFunctionSpaceType& spc_;
     GridPartType& gridPart_;
 
-#if WANT_DUNE_OPTIM
-    mutable LinearProgramming linProg_;
-#endif
+    std::unique_ptr< LinearProgramming > linProg_;
 
     const IndexSetType& indexSet_;
     const LocalIdSetType& localIdSet_;
@@ -1752,8 +1743,8 @@ namespace Fem
     mutable bool reconstruct_;
 
     // choice of admissible linear functions
-    const AdmissibleFunctions admissibleFunctions_;
-    mutable AdmissibleFunctions usedAdmissibleFunctions_ ;
+    const AdmissibleFunctions    admissibleFunctions_;
+    mutable AdmissibleFunctions  usedAdmissibleFunctions_ ;
 
     mutable std::vector< RangeType  > values_;
     mutable std::vector< GradientType > gradients_;
