@@ -21,6 +21,11 @@ def run(Model, Stepper=None,
         exact = Model.exact
     except:
         exact = None
+
+    if grid == "polygon":
+        subsamp=None
+        print('Disabling subsampling for PolygonGrid')
+
     print("*************************************")
     print("**** Running simulation",Model.name)
     print("*************************************")
