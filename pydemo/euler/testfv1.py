@@ -1,4 +1,4 @@
-import mpi4py.rc
+# import mpi4py.rc
 # mpi4py.rc.threaded = False
 from dune.fem import parameter
 from dune.femdg.testing import run
