@@ -38,7 +38,7 @@ Model.exact = None
 
 run(Model,
     startLevel=0, limiter="default",
-    primitive=primitive, saveStep=0.16, subsamp=2,
+    primitive=primitive, saveStep=0.16,
     dt=None,threading=False,grid="polygon", space="finitevolume",
     parameters=parameters)
 
