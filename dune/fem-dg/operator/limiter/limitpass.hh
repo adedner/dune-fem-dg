@@ -250,7 +250,7 @@ namespace Fem
     typedef AdaptationMethod<GridType> AdaptationMethodType;
 
     //! id for choosing admissible linear functions
-    enum AdmissibleFunctions { DGFunctions = 0, ReconstructedFunctions = 1 , DGAndReconFunctions = 2, LPFunction = 3 };
+    enum AdmissibleFunctions { DGFunctions = 0, ReconstructedFunctions = 1 , DGAndReconFunctions = 2, LPFunctions = 3 };
 
     //! returns true if pass is currently active in the pass tree
     using BaseType :: active ;
@@ -323,6 +323,7 @@ namespace Fem
       dest_(0),
       spc_(spc),
       gridPart_(spc_.gridPart()),
+      linProg_(),
       indexSet_( gridPart_.indexSet() ),
       localIdSet_( gridPart_.grid().localIdSet()),
       cornerPointSetContainer_(),
@@ -350,12 +351,11 @@ namespace Fem
       reconstruct_(false),
       admissibleFunctions_( getAdmissibleFunctions( parameter ) ),
       usedAdmissibleFunctions_( admissibleFunctions_ ),
-      linProg_(),
       extTroubledCellIndicator_( indicator_ == 2
            ? &ModalSmoothnessIndicator< ArgumentFunctionType >::troubledCellIndicator : nullptr ),
       counter_( 0 )
     {
-      if( admissibleFunctions_ == LPFunction )
+      if( admissibleFunctions_ == LPFunctions )
       {
         linProg_.reset( new LinearProgramming( static_cast< GridViewType > (gridPart_), BoundaryValue( *this ),
                       Dune::Fem::Parameter::getValue<double>("finitevolume.linearprogramming.tol", 1e-8 )) );
@@ -433,7 +433,7 @@ namespace Fem
       //int val = 1; // reconstruction
       int val = 3; // lp-reconstruction
       val = parameter.getValue("femdg.limiter.admissiblefunctions", val);
-      assert( val >= DGFunction || val <= LPFunctions );
+      assert( val >= DGFunctions || val <= LPFunctions );
       return (AdmissibleFunctions) val;
     }
 
@@ -783,8 +783,8 @@ namespace Fem
       // cache geometry type
       const GeometryType geomType = geo.type();
       // get bary center of element
-      const LocalDomainType& x = geoInfo_.localCenter( geomType );
-      const DomainType enBary = geo.global( x );
+      const LocalDomainType& wLocal = geoInfo_.localCenter( geomType );
+      const DomainType enBary = geomType.isNone() ? geo.center() : geo.global( wLocal );
 
       const IntersectionIteratorType endnit = gridPart_.iend( en );
       IntersectionIteratorType niter = gridPart_.ibegin(en);
@@ -818,9 +818,8 @@ namespace Fem
       // otherwise everything may be corrupted
       {
         // get barycenter of entity
-        const DomainType& enBaryLocal = (int(dimGrid) == int(dimDomain)) ?
-          geoInfo_.localCenter( geomType ) :
-          geo.local( enBary ) ;
+        const DomainType& enBaryLocal = (int(dimGrid) == int(dimDomain) && ! geomType.isNone() ) ?
+                wLocal : geo.local( enBary ) ;
 
         // check that average value is physical
         if(  discreteModel_.hasPhysical() &&
@@ -917,7 +916,7 @@ namespace Fem
 
       const unsigned int enIndex = indexSet_.index( en );
       // use linear function from LP reconstruction
-      if( admissibleFunctions_ == LPFunction )
+      if( admissibleFunctions_ == LPFunctions )
       {
         deoMod_ = gradients_[ enIndex ];
       }
