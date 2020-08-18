@@ -61,7 +61,7 @@ def uflExpr(Model,space,t):
                 elif not hasAdvFlux and hasDiffFlux:
                     boundaryDFlux.update( [ (kk,method) for kk in ids] )
                 else:
-                    assert not (hasAdvFlux and hasDiffFlux), "one boundary fluxes provided for id "+str(k)+" but two bulk flux given"
+                    assert not (hasAdvFlux and hasDiffFlux), "one boundary fluxes provided for id "+str(k)+" but two bulk fluxes given"
             except TypeError:
                 try:
                     method = f(t,x,u)

@@ -5,8 +5,7 @@
 #include <dune/common/dynmatrix.hh>
 #include <dune/fem/function/localfunction/const.hh>
 #include <dune/fem/space/shapefunctionset/orthonormal.hh>
-
-
+#include <dune/fem-dg/operator/limiter/indicatorbase.hh>
 
 template <class LF>
 double smoothnessIndicator(const LF& uLocal)
@@ -100,21 +99,12 @@ double smoothnessIndicator(const LF& uLocal)
   // std::cout << "       indicator= " << s << std::endl;
   return s;
 }
-template <class GridView, class GF>
-auto smoothnessGF(const GF &gf) {
-  return [lgf=constLocalFunction(gf)] (const auto& en,const auto& xLocal) mutable -> auto {
-    lgf.bind(en);
-    return smoothnessIndicator(lgf);
-  };
-}
-
 template <class DiscreteFunction>
-class ModalSmoothnessIndicator
+struct ModalSmoothnessIndicator
+: public Dune::Fem::TroubledCellIndicatorBase<DiscreteFunction>
 {
-public:
   typedef typename DiscreteFunction :: LocalFunctionType  LocalFunctionType;
-  static double troubledCellIndicator( const DiscreteFunction& U,
-                                       const LocalFunctionType& uEn )
+  double operator()( const DiscreteFunction& U, const LocalFunctionType& uEn) const override
   {
     double modalInd = smoothnessIndicator( uEn );
     if( std::abs( modalInd ) > 1e-14 )

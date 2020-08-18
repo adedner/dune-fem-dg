@@ -320,6 +320,7 @@ namespace Fem
     // Destination of Limiter can differ from the operators destination type depending on FV or DG
     // standard limiter and  scaling limiter
     typedef Limiter< DestinationType, LimiterDestinationType,  LimiterDiscreteModelType, threading, ModelType::scalingLimiter > LimiterType;
+    typedef typename LimiterType :: TroubledCellIndicatorType TroubledCellIndicatorType;
 
     // select non-blocking communication handle
     typedef typename
@@ -479,6 +480,11 @@ namespace Fem
     inline void limit( const DestinationType& arg, DestinationType& U ) const
     {
       LimiterCall< LimiterType, polOrd >::limit( limiter_, arg, U );
+    }
+
+    void setTroubledCellIndicator(TroubledCellIndicatorType *indicator)
+    {
+      limiter_.setTroubledCellIndicator(indicator);
     }
 
     void printmyInfo(std::string filename) const

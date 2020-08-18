@@ -115,8 +115,9 @@ namespace Fem
             ThreadPass < InnerPassType, ThreadIteratorType, true>,
             InnerPassType > :: type                                           LimitPassType;
 
-    typedef typename LimiterDiscreteModelType::IndicatorType                  IndicatorType;
+    typedef typename LimiterDiscreteModelType :: IndicatorType                IndicatorType;
     typedef typename IndicatorType :: DiscreteFunctionSpaceType               IndicatorSpaceType;
+    typedef typename LimitPassType :: TroubledCellIndicatorType               TroubledCellIndicatorType;
 
   public:
     Limiter( const DomainSpaceType& domainSpace,
@@ -158,6 +159,11 @@ namespace Fem
     {
       // calculate reconstruction
       limitPass_( arg, dest );
+    }
+
+    void setTroubledCellIndicator(TroubledCellIndicatorType *indicator)
+    {
+      limitPass_.setTroubledCellIndicator(indicator);
     }
 
     bool activated( const EntityType& entity ) const

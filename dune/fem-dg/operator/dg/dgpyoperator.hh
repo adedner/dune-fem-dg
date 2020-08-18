@@ -97,7 +97,7 @@ namespace Fem
     typedef DGAdaptationIndicatorOperator< OpTraits >                       IndicatorType;
     typedef Estimator< DestinationType, typename ModelType::ProblemType >   GradientIndicatorType ;
     typedef AdaptIndicator< IndicatorType, GradientIndicatorType >          AdaptIndicatorType;
-
+    typedef typename FullOperatorType :: TroubledCellIndicatorType          TroubledCellIndicatorType;
 
     // solver selection, available fem, istl, petsc, ...
     typedef typename MatrixFreeSolverSelector< solverId, symmetric > :: template LinearInverseOperatorType< DiscreteFunctionSpaceType, DiscreteFunctionSpaceType >  LinearSolverType ;
@@ -183,6 +183,13 @@ namespace Fem
       }
     }
 
+    void setTroubledCellIndicator(TroubledCellIndicatorType *indicator)
+    {
+      fullOperator_.setTroubledCellIndicator(indicator);
+      explOperator_.setTroubledCellIndicator(indicator);
+    }
+
+
     /** \copydoc SpaceOperatorInterface::setTime */
     void setTime( const double time )
     {
@@ -222,7 +229,6 @@ namespace Fem
 
     mutable double                        fixedTimeStep_ ;
     mutable bool                          initialized_;
-
   };
 
 } // end namespace Fem

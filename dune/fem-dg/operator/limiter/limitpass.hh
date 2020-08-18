@@ -37,6 +37,7 @@
 #include <dune/fem-dg/operator/limiter/lpreconstruction.hh>
 
 #include <dune/fem-dg/operator/limiter/smoothness.hh>
+#include <dune/fem-dg/operator/limiter/indicatorbase.hh>
 
 #if HAVE_DUNE_OPTIM
 #define WANT_DUNE_OPTIM 1
@@ -265,7 +266,7 @@ namespace Fem
     typedef CheckCartesian< GridPartType >  CheckCartesianType;
 
     //! function describing an external troubled cell indicator
-    typedef const std::function< double(const ArgumentFunctionType&, const LocalFunctionType& ) > TroubledCellIndicatorType;
+    typedef TroubledCellIndicatorBase<ArgumentFunctionType> TroubledCellIndicatorType;
 
   protected:
 #if WANT_DUNE_OPTIM
@@ -365,7 +366,7 @@ namespace Fem
       admissibleFunctions_( getAdmissibleFunctions( parameter ) ),
       usedAdmissibleFunctions_( admissibleFunctions_ ),
       extTroubledCellIndicator_( indicator_ == 2
-           ? &ModalSmoothnessIndicator< ArgumentFunctionType >::troubledCellIndicator : nullptr ),
+           ? new ModalSmoothnessIndicator< ArgumentFunctionType >() : nullptr ),
       counter_( 0 )
     {
       if( Parameter :: verbose () )
@@ -389,6 +390,11 @@ namespace Fem
     //! Destructor
     virtual ~LimitDGPass() {
       std::cout << "~LimitDGPass: op calls " << counter_ << std::endl;
+    }
+
+    void setTroubledCellIndicator(TroubledCellIndicatorType *indicator)
+    {
+      extTroubledCellIndicator_ = indicator;
     }
 
     //! return default face quadrature order
@@ -1600,7 +1606,7 @@ namespace Fem
 
       if( extTroubledCellIndicator_ )
       {
-        shockIndicator = ( tol_1_ * extTroubledCellIndicator_( U, uEn ) );
+        shockIndicator = ( tol_1_ * (*extTroubledCellIndicator_)( U, uEn ) );
       }
       else if( indicator_ == 1 )
       {
@@ -1759,7 +1765,7 @@ namespace Fem
     mutable std::vector< GradientType > gradients_;
 
     // function pointer to external troubled cell indicator, can be nullptr
-    TroubledCellIndicatorType extTroubledCellIndicator_;
+    TroubledCellIndicatorType *extTroubledCellIndicator_;
 
     mutable int counter_;
   }; // end DGLimitPass
