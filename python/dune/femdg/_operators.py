@@ -362,7 +362,7 @@ def femDGOperator(Model, space,
 
     includes += ["dune/fem-dg/operator/limiter/indicatorbase.hh"]
     setIndicator = Method('setTroubledCellIndicator',
-            args=['DuneType &self, typename DuneType::TroubledCellIndicatorType *indicator'],
+            args=['DuneType &self, typename DuneType::TroubledCellIndicatorType indicator'],
             body=['self.setTroubledCellIndicator(indicator);'],
             extra=['pybind11::keep_alive<0,1>()'])
 
@@ -412,7 +412,8 @@ def femDGOperator(Model, space,
 
 def troubledCellIndicator(clsName, includes, u_h, ctorArgs):
     baseName,_ = generateTypeName("Dune::Fem::TroubledCellIndicatorBase",u_h)
-    return classLoad(clsName, includes,*ctorArgs, baseClasses=[baseName])
+    return classLoad(clsName, includes,*ctorArgs, baseClasses=[baseName],
+                              holder="std::shared_ptr")
 
 # RungeKutta solvers
 def rungeKuttaSolver( fullOperator, imex='EX', butchertable=None, parameters={} ):

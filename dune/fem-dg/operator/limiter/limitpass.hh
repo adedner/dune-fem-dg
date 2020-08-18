@@ -260,7 +260,7 @@ namespace Fem
     typedef CheckCartesian< GridPartType >  CheckCartesianType;
 
     //! function describing an external troubled cell indicator
-    typedef TroubledCellIndicatorBase<ArgumentFunctionType> TroubledCellIndicatorType;
+    typedef std::shared_ptr< TroubledCellIndicatorBase<ArgumentFunctionType> > TroubledCellIndicatorType;
 
   protected:
     typedef typename GridPartType :: GridViewType  GridViewType ;
@@ -385,7 +385,7 @@ namespace Fem
       std::cout << "~LimitDGPass: op calls " << counter_ << std::endl;
     }
 
-    void setTroubledCellIndicator(TroubledCellIndicatorType *indicator)
+    void setTroubledCellIndicator(TroubledCellIndicatorType indicator)
     {
       extTroubledCellIndicator_ = indicator;
     }
@@ -1755,7 +1755,7 @@ namespace Fem
     mutable std::vector< GradientType > gradients_;
 
     // function pointer to external troubled cell indicator, can be nullptr
-    TroubledCellIndicatorType *extTroubledCellIndicator_;
+    TroubledCellIndicatorType extTroubledCellIndicator_;
 
     mutable int counter_;
   }; // end DGLimitPass

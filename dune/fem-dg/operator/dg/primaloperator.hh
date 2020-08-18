@@ -482,7 +482,7 @@ namespace Fem
       LimiterCall< LimiterType, polOrd >::limit( limiter_, arg, U );
     }
 
-    void setTroubledCellIndicator(TroubledCellIndicatorType *indicator)
+    void setTroubledCellIndicator(TroubledCellIndicatorType indicator)
     {
       limiter_.setTroubledCellIndicator(indicator);
     }

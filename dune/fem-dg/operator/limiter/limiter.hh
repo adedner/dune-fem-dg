@@ -161,7 +161,7 @@ namespace Fem
       limitPass_( arg, dest );
     }
 
-    void setTroubledCellIndicator(TroubledCellIndicatorType *indicator)
+    void setTroubledCellIndicator(TroubledCellIndicatorType indicator)
     {
       limitPass_.setTroubledCellIndicator(indicator);
     }

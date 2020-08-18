@@ -183,7 +183,7 @@ namespace Fem
       }
     }
 
-    void setTroubledCellIndicator(TroubledCellIndicatorType *indicator)
+    void setTroubledCellIndicator(TroubledCellIndicatorType indicator)
     {
       fullOperator_.setTroubledCellIndicator(indicator);
       explOperator_.setTroubledCellIndicator(indicator);
