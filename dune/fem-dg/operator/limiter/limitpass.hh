@@ -352,7 +352,7 @@ namespace Fem
       reconstruct_(false),
       admissibleFunctions_( getAdmissibleFunctions( parameter ) ),
       usedAdmissibleFunctions_( admissibleFunctions_ ),
-      extTroubledCellIndicator_( indicator_ == 2
+      extTroubledCellIndicator_( indicator_ == 3
            ? new ModalSmoothnessIndicator< ArgumentFunctionType >() : nullptr ),
       counter_( 0 )
     {
@@ -427,9 +427,9 @@ namespace Fem
     //! get tolerance for shock detector
     double getIndicator( const Dune::Fem::ParameterReader &parameter ) const
     {
-      static const std::string indicators[]  = { "none", "jump" ,"modal", "always" };
+      static const std::string indicators[]  = { "user", "none", "jump" ,"modal", "always" };
       std::string key( "femdg.limiter.indicator" );
-      return parameter.getEnum( key, indicators, 1 );
+      return parameter.getEnum( key, indicators, 2);
     }
 
     //! get tolerance for shock detector
@@ -1569,7 +1569,7 @@ namespace Fem
         }
       } // end intersection iterator
 
-      if (indicator_ == 0)
+      if (indicator_ == 1)
         return false;
 
       // calculate max face volume
@@ -1596,21 +1596,28 @@ namespace Fem
       // multiply h pol ord with circume
       const double circFactor = (circume > 0.0) ? (hPowPolOrder/(circume * tolFactor_ )) : 0.0;
 
-      if( extTroubledCellIndicator_ )
+      assert(indicator_!=0 || extTroubledCellIndicator_);
+      if( extTroubledCellIndicator_ ) // also true for indicator_=3
       {
         shockIndicator = ( tol_1_ * (*extTroubledCellIndicator_)( U, uEn ) );
       }
-      else if( indicator_ == 1 )
+      else if( indicator_ == 2 )
       {
         for(int r=0; r<dimRange; ++r)
         {
           shockIndicator[r] = std::abs(shockIndicator[r]) * circFactor * tol_1_;
         }
       }
-      else if ( indicator_ != 1 )
+      else if ( indicator_ == 4 )
       {
         // always limit on each cell
         shockIndicator = 2.;
+      }
+      else
+      {
+        std::cout << "wrong indicator selection\n";
+        assert(0);
+        abort();
       }
 
       for(int r=0; r<dimRange; ++r)
