@@ -54,6 +54,8 @@ namespace Fem
     typedef typename BaseType::ProblemType                      ProblemType;
     typedef typename BaseType::ExtraParameterTupleType          ExtraParameterTupleType;
 
+    typedef void* TroubledCellIndicatorType;
+    void setTroubledCellIndicator(TroubledCellIndicatorType indicator) {}
     // constructor: do not touch/delegate everything
     template< class ... Args>
     DGAdvectionDiffusionOperator( Args&&... args )
