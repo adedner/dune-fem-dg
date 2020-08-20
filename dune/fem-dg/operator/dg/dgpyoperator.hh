@@ -97,6 +97,7 @@ namespace Fem
     typedef DGAdaptationIndicatorOperator< OpTraits >                       IndicatorType;
     typedef Estimator< DestinationType, typename ModelType::ProblemType >   GradientIndicatorType ;
     typedef AdaptIndicator< IndicatorType, GradientIndicatorType >          AdaptIndicatorType;
+
     typedef typename FullOperatorType :: TroubledCellIndicatorType          TroubledCellIndicatorType;
 
     // solver selection, available fem, istl, petsc, ...

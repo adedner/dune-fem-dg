@@ -92,6 +92,11 @@ namespace Fem
   public:
     using BaseType::operator () ;
 
+    // dummy method for a troubled cell indicator to be passed to the
+    // limited advection operator
+    typedef void* TroubledCellIndicatorType;
+    void setTroubledCellIndicator(TroubledCellIndicatorType indicator) {}
+
     typedef typename Traits::ModelType                    ModelType;
     typedef typename ModelType::ProblemType               ProblemType ;
 
