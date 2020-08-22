@@ -3,6 +3,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import sys
 import logging
 logger = logging.getLogger(__name__)
+from io import StringIO
 
 from dune.common.checkconfiguration import assertHave, preprocessorAssert, ConfigurationError
 
@@ -230,9 +231,10 @@ def femDGOperator(Model, space,
             clsName,includes = generateTypeName("Dune::Fem::DGAdvectionFlux",advModel._typeName,"Dune::Fem::AdvectionFlux::Enum::userdefined")
             advectionFlux = advectionFlux(advModel,clsName,includes)
             includes += advectionFlux._includes
-        #elif advectionFlux.lower().find(".h") >= 0:
-        #    advFluxId  = "Dune::Fem::AdvectionFlux::Enum::userdefined"
-        #    includes += [ advectionFlux ]
+        elif hasattr(advectionFlux,"_typeName"):
+            advFluxId  = "Dune::Fem::AdvectionFlux::Enum::userdefined"
+            advectionFluxIsCallable = True
+            includes += advectionFlux._includes
         else:
             # if dgadvectionflux.method has been selected, then use general flux,
             # otherwise default to LLF flux
@@ -410,10 +412,35 @@ def femDGOperator(Model, space,
         op.setTroubledCellIndicator(limiterIndicator)
     return op
 
-def troubledCellIndicator(clsName, includes, u_h, ctorArgs):
+def troubledCellIndicator(clsName, includes, u_h, ctorArgs=None):
+    if ctorArgs is None: ctorArgs=[]
     baseName,_ = generateTypeName("Dune::Fem::TroubledCellIndicatorBase",u_h)
     return classLoad(clsName, includes,*ctorArgs, baseClasses=[baseName],
                               holder="std::shared_ptr")
+def advectionNumericalFlux(clsName ,includes, advModel, additionalArgs=None):
+    if additionalArgs is None: additionalArgs=[]
+    code = '''
+namespace Dune
+{
+  namespace Fem
+  {
+    template <>
+    struct DGAdvectionFlux< XXXADV_MODELXXX, AdvectionFlux::Enum::userdefined >
+    : public XXXIMPL_MODELXXX
+    {
+      template< class ... Args>
+      DGAdvectionFlux( Args&&... args )
+      : XXXIMPL_MODELXXX( std::forward<Args>(args)... ) {}
+      std::string name() const {return "user defined flux";}
+    };
+  }
+}
+'''
+    code = code.replace("XXXADV_MODELXXX",advModel._typeName)
+    code = code.replace("XXXIMPL_MODELXXX",clsName)
+    clsName,includesA = generateTypeName("Dune::Fem::DGAdvectionFlux",advModel,
+                                         "Dune::Fem::AdvectionFlux::Enum::userdefined")
+    return classLoad(clsName, includes+includesA+[StringIO(code)], advModel, *additionalArgs)
 
 # RungeKutta solvers
 def rungeKuttaSolver( fullOperator, imex='EX', butchertable=None, parameters={} ):
