@@ -199,6 +199,12 @@ namespace Fem
 
     double timeStepEstimate() const { return fullOperator_.timeStepEstimate(); }
 
+    //! return number of interior elements visited by the operator
+    inline size_t gridSizeInterior() const
+    {
+      return std::max( fullOperator_.numberOfElements(), explOperator_.numberOfElements() );
+    }
+
     //// End Methods from SpaceOperatorInterface /////
 
   protected:

@@ -367,26 +367,27 @@ def femDGOperator(Model, space,
             args=['DuneType &self, typename DuneType::TroubledCellIndicatorType indicator'],
             body=['self.setTroubledCellIndicator(indicator);'],
             extra=['pybind11::keep_alive<0,1>()'])
+    gridSizeInterior = Method('gridSizeInterior', '&DuneType::gridSizeInterior')
 
     if parameters is not None:
         if advectionFluxIsCallable:
-            op = load(includes, typeName, estimateMark, setIndicator,
+            op = load(includes, typeName, estimateMark, setIndicator, gridSizeInterior,
                      baseClasses = [base],
                      preamble=writer.writer.getvalue()).\
                      Operator( space, advModel, diffModel, advectionFlux, parameters=parameters )
         else:
-            op = load(includes, typeName, estimateMark, setIndicator,
+            op = load(includes, typeName, estimateMark, setIndicator, gridSizeInterior,
                      baseClasses = [base],
                      preamble=writer.writer.getvalue()).\
                      Operator( space, advModel, diffModel, parameters=parameters )
     else:
         if advectionFluxIsCallable:
-            op = load(includes, typeName, estimateMark, setIndicator,
+            op = load(includes, typeName, estimateMark, setIndicator, gridSizeInterior,
                      baseClasses = [base],
                      preamble=writer.writer.getvalue()).\
                      Operator( space, advModel, diffModel, advectionFlux )
         else:
-            op = load(includes, typeName, estimateMark, setIndicator,
+            op = load(includes, typeName, estimateMark, setIndicator, gridSizeInterior,
                      baseClasses = [base],
                      preamble=writer.writer.getvalue()).\
                      Operator( space, advModel, diffModel )
