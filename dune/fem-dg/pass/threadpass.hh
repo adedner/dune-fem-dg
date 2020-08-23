@@ -213,6 +213,22 @@ namespace Fem
                PreviousPassType& pass,
                const DiscreteFunctionSpaceType& spc,
                const int volumeQuadOrd = -1,
+               const int faceQuadOrd = -1)
+      : ThreadPass( discreteModel, pass, spc, Dune::Fem::Parameter::container(), volumeQuadOrd, faceQuadOrd )
+    {}
+
+    /** \brief Constructor
+     * \param discreteModel Actual discrete model
+     * \param pass Previous pass
+     * \param spc Space belonging to the discrete function local to this pass
+     * \param volumeQuadOrd defines the order of the volume quadrature which is by default 2* space polynomial order
+     * \param faceQuadOrd defines the order of the face quadrature which is by default 2* space polynomial order
+     */
+    ThreadPass(const DiscreteModelType& discreteModel,
+               PreviousPassType& pass,
+               const DiscreteFunctionSpaceType& spc,
+               const Dune::Fem::ParameterReader &parameter,
+               const int volumeQuadOrd = -1,
                const int faceQuadOrd = -1) :
       BaseType(pass, spc),
       delDofs_( spc ),
@@ -229,7 +245,8 @@ namespace Fem
       faceQuadOrd_( faceQuadOrd ),
       firstCall_( true ),
       requireCommunication_( true ),
-      sumComputeTime_( Fem :: Parameter :: getValue<bool>("fem.parallel.sumcomputetime", false ) )
+      parameter_( &parameter ),
+      sumComputeTime_( parameter.getValue<bool>("fem.parallel.sumcomputetime", false ) )
     {
       // initialize quadratures before entering multithread mode
       initializeQuadratures( spc,  volumeQuadOrd, faceQuadOrd );
@@ -254,6 +271,17 @@ namespace Fem
 #endif
       // get information about communication
       requireCommunication_ = passes_[ 0 ]->requireCommunication();
+      parameter_ = nullptr;
+    }
+
+    template <class TroubledCellIndicatorType>
+    void setTroubledCellIndicator( TroubledCellIndicatorType indicator )
+    {
+      const int maxThreads = Fem::ThreadManager::maxThreads();
+      for(int i=0; i<maxThreads; ++i)
+      {
+        passes_[ i ]->setTroubledCellIndicator( indicator );
+      }
     }
 
     static void initializeQuadratures( const DiscreteFunctionSpaceType& space, const int volQuadOrder, const int faceQuadOrder )
@@ -595,8 +623,16 @@ namespace Fem
       {
         // use separate discrete discrete model for each thread
         discreteModels_[ thread ] = new DiscreteModelType( singleDiscreteModel_ );
-        // create dg passes, the last bool disables communication in the pass itself
-        passes_[ thread ]   = new InnerPassType( *discreteModels_[ thread ], previousPass_, space(), volumeQuadOrd_, faceQuadOrd_ );
+        if( parameter_ )
+        {
+          // create dg passes, the last bool disables communication in the pass itself
+          passes_[ thread ]   = new InnerPassType( *discreteModels_[ thread ], previousPass_, space(), *parameter_, volumeQuadOrd_, faceQuadOrd_ );
+        }
+        else
+        {
+          // create dg passes, the last bool disables communication in the pass itself
+          passes_[ thread ]   = new InnerPassType( *discreteModels_[ thread ], previousPass_, space(), volumeQuadOrd_, faceQuadOrd_ );
+        }
 
         return ;
       }
@@ -733,6 +769,8 @@ namespace Fem
     mutable bool firstCall_;
     bool requireCommunication_;
     const bool sumComputeTime_;
+
+    const Dune::Fem::ParameterReader* parameter_;
   };
 //! @}
 

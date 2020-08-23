@@ -117,7 +117,9 @@ namespace Fem
 
     typedef typename LimiterDiscreteModelType :: IndicatorType                IndicatorType;
     typedef typename IndicatorType :: DiscreteFunctionSpaceType               IndicatorSpaceType;
-    typedef typename LimitPassType :: TroubledCellIndicatorType               TroubledCellIndicatorType;
+
+    // InnerPassType == LimitPass in case of threading
+    typedef typename InnerPassType :: TroubledCellIndicatorType               TroubledCellIndicatorType;
 
   public:
     Limiter( const DomainSpaceType& domainSpace,

@@ -136,6 +136,22 @@ namespace Fem
                   const DiscreteFunctionSpaceType& spc,
                   const int volumeQuadOrd = -1,
                   const int faceQuadOrd = -1 )
+      : LocalCDGPass( discreteModel, pass, spc, Dune::Fem::Parameter::container(), volumeQuadOrd, faceQuadOrd )
+    {}
+
+    //- Public methods
+    //! Constructor
+    //! \param discreteModel Actual discrete model definition (see dgdiscretemodels.hh)
+    //! \param pass Previous pass
+    //! \param spc Space belonging to the discrete function local to this pass
+    //! \param volumeQuadOrd defines the order of the volume quadrature which is by default 2* space polynomial order
+    //! \param faceQuadOrd defines the order of the face quadrature which is by default 2* space polynomial order
+    LocalCDGPass( DiscreteModelType& discreteModel,
+                  PreviousPassType& pass,
+                  const DiscreteFunctionSpaceType& spc,
+                  const Dune::Fem::ParameterReader& /* parameter */,
+                  const int volumeQuadOrd = -1,
+                  const int faceQuadOrd = -1 )
       : BaseType(pass, spc),
         caller_(),
         discreteModel_(discreteModel),

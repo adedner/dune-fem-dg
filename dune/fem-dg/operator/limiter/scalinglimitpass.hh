@@ -116,6 +116,10 @@ namespace Fem
     //! type of cartesian grid checker
     typedef CheckCartesian< GridPartType >  CheckCartesianType;
 
+    //! function describing an external troubled cell indicator
+    typedef std::shared_ptr< TroubledCellIndicatorBase<ArgumentFunctionType> > TroubledCellIndicatorType;
+
+
   public:
     //- Public methods
     /** \brief constructor
