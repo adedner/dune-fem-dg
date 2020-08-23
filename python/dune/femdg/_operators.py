@@ -160,8 +160,8 @@ def femDGOperator(Model, space,
 
     hasAdvFlux = hasattr(Model,"F_c")
     hasDiffFlux = hasattr(Model,"F_v")
-    hasStiffSource = hasattr(Model,"S_i")
-    hasNonStiffSource = hasattr(Model,"S_ns")
+    hasStiffSource = hasattr(Model,"S_i") or hasattr(Model,"S_s")
+    hasNonStiffSource = hasattr(Model,"S_e") or hasattr(Model,"S_ns")
     virtualize = False
     includes = []
 
