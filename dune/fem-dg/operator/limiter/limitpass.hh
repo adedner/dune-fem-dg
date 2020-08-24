@@ -1185,7 +1185,7 @@ namespace Fem
       {
         // for affine mapping we only need to set higher moments to zero
         if( affineMapping )
-        {
+        { // note: the following assumes an ONB made up of moments
           const int numBasis = uTmpLocal_.numDofs()/dimRange;
           for(int i=1; i<numBasis; ++i)
           {
@@ -1214,7 +1214,7 @@ namespace Fem
       {
         // copy to limitEn skipping components that should not be limited
         const int numBasis = uTmpLocal_.numDofs()/dimRange;
-        for(int i=1; i<numBasis; ++i)
+        for(int i=0; i<numBasis; ++i)
         {
           for( const auto& r : discreteModel_.model().limitedRange() )
           {
