@@ -768,9 +768,10 @@ namespace Fem
     const int faceQuadOrd_;
     mutable bool firstCall_;
     bool requireCommunication_;
-    const bool sumComputeTime_;
 
     const Dune::Fem::ParameterReader* parameter_;
+
+    const bool sumComputeTime_;
   };
 //! @}
 
