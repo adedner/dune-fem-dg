@@ -488,6 +488,10 @@ namespace Fem
       applyLocalImp( entity );
     }
 
+    void setTroubledCellIndicator(TroubledCellIndicatorType indicator)
+    { // don't need a troubled cell indicator here
+    }
+
   protected:
     //! Perform the limitation on all elements.
     void applyLocalImp(const EntityType& en) const
