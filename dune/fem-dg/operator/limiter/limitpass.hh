@@ -251,7 +251,11 @@ namespace Fem
     typedef AdaptationMethod<GridType> AdaptationMethodType;
 
     //! id for choosing admissible linear functions
-    enum AdmissibleFunctions { DGFunctions = 0, ReconstructedFunctions = 1 , DGAndReconFunctions = 2, LPFunctions = 3 };
+    //enum AdmissibleFunctions { DGFunctions = 0, ReconstructedFunctions = 1 , DGAndReconFunctions = 2, LPFunctions = 3 };
+
+    //! id for choosing admissible linear functions
+    //! _default refers to muscl(1) on simplices and LP limiter (4) on cubes
+    enum AdmissibleFunctions { dgonly = 0, muscl = 1 , muscldg = 2, lp = 3, _default = 4 };
 
     //! returns true if pass is currently active in the pass tree
     using BaseType :: active ;
@@ -351,15 +355,15 @@ namespace Fem
       calcIndicator_(discreteModel_.calculateIndicator()),
       reconstruct_(false),
       admissibleFunctions_( getAdmissibleFunctions( parameter ) ),
-      usedAdmissibleFunctions_( admissibleFunctions_ ),
+      usedAdmissibleFunctions_( usedAdmissibleFunctions() ),
       extTroubledCellIndicator_( indicator_ == 3
            ? new ModalSmoothnessIndicator< ArgumentFunctionType >() : nullptr ),
       counter_( 0 )
     {
-      if( admissibleFunctions_ == LPFunctions )
+      if( usedAdmissibleFunctions_ == lp )
       {
         linProg_.reset( new LinearProgramming( static_cast< GridViewType > (gridPart_), BoundaryValue( *this ),
-                      Dune::Fem::Parameter::getValue<double>("finitevolume.linearprogramming.tol", 1e-8 )) );
+                        parameter.getValue<double>("finitevolume.linearprogramming.tol", 1e-8 )) );
       }
 
       if( Parameter :: verbose () )
@@ -373,7 +377,10 @@ namespace Fem
         std::cout << "parameters: " << std::endl;
         std::cout << "  femdg.limiter.tolerance: " << 1./tol_1_ << std::endl;
         std::cout << "  femdg.limiter.indicator: " << indicator_ << std::endl;
-        std::cout << "  femdg.limiter.admissiblefunctions: " << admissibleFunctions_ << std::endl;
+        std::string adFctName( admissibleFctNames()[ admissibleFunctions_ ] );
+        if( admissibleFunctions_ != usedAdmissibleFunctions_ )
+          adFctName += "("+admissibleFctNames()[ usedAdmissibleFunctions_ ] + ")";
+        std::cout << "  femdg.limiter.admissiblefunctions: " << adFctName << std::endl;
       }
 
       // we need the flux here
@@ -432,15 +439,36 @@ namespace Fem
       return parameter.getEnum( key, indicators, 2);
     }
 
+    static const std::string (&admissibleFctNames())[5]
+    {
+      static const std::string admissiblefct[]  = { "dgonly" , "muscl", "muscl+dg", "lp", "default" };
+      return admissiblefct;
+    }
+
     //! get tolerance for shock detector
     AdmissibleFunctions getAdmissibleFunctions( const Dune::Fem::ParameterReader &parameter ) const
     {
-      // default value
-      //int val = 1; // reconstruction
-      int val = 3; // lp-reconstruction
-      val = parameter.getValue("femdg.limiter.admissiblefunctions", val);
-      assert( val >= DGFunctions || val <= LPFunctions );
-      return (AdmissibleFunctions) val;
+      std::string key( "femdg.limiter.admissiblefunctions" );
+      return (AdmissibleFunctions) parameter.getEnum( key, admissibleFctNames(), _default );
+    }
+
+    AdmissibleFunctions usedAdmissibleFunctions() const
+    {
+      if( admissibleFunctions_ == _default )
+      {
+        if( ! geoInfo_.multipleGeomTypes() && geoInfo_.geomTypes(0)[0].isSimplex() )
+        {
+          // default for simplices is muscl reconstruction because it
+          // seems to work better for simplex grids
+          return muscl;
+        }
+        else
+        {
+          // default for all other element types is lp reconstruction
+          return lp;
+        }
+      }
+      return admissibleFunctions_;
     }
 
     template <class S1, class S2>
@@ -609,7 +637,11 @@ namespace Fem
                assign( U , dest, firstThread );
 
       // if case of finite volume scheme set admissible functions to reconstructions
-      usedAdmissibleFunctions_ = reconstruct_ ? ReconstructedFunctions : admissibleFunctions_;
+      if( reconstruct_ && ! linProg_ )
+      {
+        // if linProg is not available then the only other FV reconstruction is muscl
+        usedAdmissibleFunctions_ = muscl;
+      }
 
       // in case of reconstruction
       if( reconstruct_ )
@@ -700,6 +732,8 @@ namespace Fem
 
       // finalize caller
       caller_.reset();
+      // reset usedAdmissibleFunction value to class default
+      usedAdmissibleFunctions_ = usedAdmissibleFunctions();
     }
 
     //! apply local is virtual
@@ -922,7 +956,7 @@ namespace Fem
 
       const unsigned int enIndex = indexSet_.index( en );
       // use linear function from LP reconstruction
-      if( admissibleFunctions_ == LPFunctions )
+      if( usedAdmissibleFunctions_ == lp )
       {
         deoMod_ = gradients_[ enIndex ];
       }
@@ -940,7 +974,7 @@ namespace Fem
         deoMods_.clear();
         comboVec_.clear();
 
-        if( usedAdmissibleFunctions_ >= ReconstructedFunctions )
+        if( usedAdmissibleFunctions_ == muscl || usedAdmissibleFunctions_ == muscldg )
         {
           // level is only needed for Cartesian grids to access the matrix caches
           const int matrixCacheLevel = ( flags.cartesian ) ? en.level() : 0 ;
@@ -956,7 +990,7 @@ namespace Fem
         }
 
         // add DG Function
-        if( (usedAdmissibleFunctions_ % 2) == DGFunctions )
+        if( usedAdmissibleFunctions_ == dgonly || usedAdmissibleFunctions_ == muscldg )
         {
           addDGFunction( en, geo, uEn, enVal, enBary );
         }
