@@ -70,20 +70,26 @@ namespace Fem
       const auto faceArea = normal.two_norm();
       normal *= 1./faceArea;
 
+      double maxspeedl, maxspeedr;
+      double viscparal, viscparar;
+
       FluxRangeType anaflux;
+
+      // assume that model is set to left entity
+      model_.setEntity( left.entity() );
 
       model_.advection( left, uLeft, jacLeft, anaflux );
       // set gLeft
       anaflux.mv( normal, gLeft );
 
+      model_.maxSpeed( left,  normal, uLeft,  viscparal, maxspeedl );
+
+      model_.setEntity( right.entity() );
+
       model_.advection( right, uRight, jacRight, anaflux );
       // add to gLeft
       anaflux.umv( normal, gLeft );
 
-      double maxspeedl, maxspeedr;
-      double viscparal, viscparar;
-
-      model_.maxSpeed( left,  normal, uLeft,  viscparal, maxspeedl );
       model_.maxSpeed( right, normal, uRight, viscparar, maxspeedr );
 
       const double maxspeed = std::max( maxspeedl, maxspeedr);
@@ -98,6 +104,8 @@ namespace Fem
       gLeft *= 0.5 * faceArea;
       // conservation property
       gRight = gLeft;
+
+      model_.setEntity( left.entity() );
 
       return maxspeed * faceArea;
     }
