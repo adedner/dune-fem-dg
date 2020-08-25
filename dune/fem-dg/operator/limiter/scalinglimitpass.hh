@@ -600,7 +600,6 @@ namespace Fem
       // evaluate uEn on all quadrature points
       uEn.evaluateQuadrature( quad , tmpVal_ );
 
-      //const Geometry& geo = en.geometry();
       for(int l=0; l<quadNop; ++l)
       {
         const RangeType& u = tmpVal_[ l ];
@@ -616,8 +615,6 @@ namespace Fem
           theta[ d ] = std::min( std::min( upper, lower ), theta[d ]);
         }
 
-        // warning!!! caching of geo can be more efficient
-        //const DomainType& xgl = geo.global( quad[l] );
         // check data
         if ( ! discreteModel_.physical( en, quad.point(l), u ) )
         {
@@ -628,78 +625,6 @@ namespace Fem
 
       // solution is physical
       return physical;
-    }
-
-    // check physicality on given quadrature
-    template <class QuadratureType, class LocalFunctionImp>
-    bool checkPhysicalQuad(const QuadratureType& quad,
-                           const LocalFunctionImp& uEn) const
-    {
-      // geometry and also use caching
-      const int quadNop = quad.nop();
-      const EntityType& en = uEn.entity();
-
-      tmpVal_.resize( quadNop );
-
-      // evaluate uEn on all quadrature points
-      uEn.evaluateQuadrature( quad , tmpVal_ );
-
-      //const Geometry& geo = en.geometry();
-      for(int l=0; l<quadNop; ++l)
-      {
-        const RangeType& u = tmpVal_[ l ];
-
-        // warning!!! caching of geo can be more efficient
-        //const DomainType& xgl = geo.global( quad[l] );
-        // check data
-        if ( ! discreteModel_.physical( en, quad.point(l), u ) )
-        {
-          // notPhysical
-          return false ;
-        }
-      }
-    }
-
-    //! check physicallity of data
-    template <class LocalFunctionImp>
-    bool checkPhysical(const EntityType& en,
-                       const Geometry& geo,
-                       const LocalFunctionImp& uEn) const
-    {
-      enum { dim = dimGrid };
-      if( discreteModel_.hasPhysical() )
-      {
-#if 1
-        // use LagrangePointSet to evaluate on corners of the
-        // geometry and also use caching
-        return checkPhysicalQuad( CornerPointSetType( en ), uEn );
-#else
-        {
-          VolumeQuadratureType volQuad(en, volumeQuadOrd_ );
-          if( ! checkPhysicalQuad(volQuad, uEn) ) return false;
-        }
-
-        const IntersectionIteratorType endnit = gridPart_.iend(en);
-        for (IntersectionIteratorType nit = gridPart_.ibegin(en);
-             nit != endnit; ++nit)
-        {
-          const IntersectionType& intersection = *nit;
-          if( intersection.neighbor() && ! intersection.conforming() )
-          {
-            typedef typename FaceQuadratureType :: NonConformingQuadratureType NonConformingQuadratureType;
-            NonConformingQuadratureType faceQuadInner(gridPart_,intersection, faceQuadOrd_, FaceQuadratureType::INSIDE);
-            if( ! checkPhysicalQuad( faceQuadInner, uEn ) ) return false;
-          }
-          else
-          {
-            // conforming case
-            FaceQuadratureType faceQuadInner(gridPart_,intersection, faceQuadOrd_, FaceQuadratureType::INSIDE);
-            if( ! checkPhysicalQuad( faceQuadInner, uEn ) ) return false;
-          }
-        }
-#endif
-      } // end physical
-      return true;
     }
 
     template <class LocalFunctionImp, class SpaceImp>
@@ -759,32 +684,8 @@ namespace Fem
       // get quadrature for destination space order
       VolumeQuadratureType quad( en, volumeQuadratureOrder( en ) );
 
-      //std::cout << globalMin << " " << globalMax << std::endl;
-      //std::cout << minVal  << " " << maxVal << std::endl;
-
-      //old version that did not work well
-      /*
-      for( const auto& d : discreteModel_.model().limitedRange() )
-      {
-        double fst = 1.0;
-        double sec = 1.0;
-        if( std::abs( maxVal[ d ] - enVal[ d ] ) > 1e-10 )
-          fst = (globalMax[ d ] - enVal[ d ])/(maxVal[ d ] - enVal[ d ]);
-
-        if( std::abs( minVal[ d ] - enVal[ d ] ) > 1e-10 )
-          sec = (globalMin[ d ] - enVal[ d ])/(minVal[ d ] - enVal[ d ]);
-
-        theta[ d ] = std::min( std::min( std::abs( fst ), std::abs( sec ) ), double(1) );
-        if( std::abs( theta[d ] ) < 1e-12 )
-          theta[ d ] = 0;
-      }
-      */
-
       const int quadNop = tmpVal_.size();// quad.nop();
       assert( quadNop == int(quad.nop()) );
-
-      // this has been done previously in checkPhysicalQuad
-      // uEn.evaluateQuadrature( quad, tmpVal_ );
 
       for(int qP = 0; qP < quadNop ; ++qP)
       {
