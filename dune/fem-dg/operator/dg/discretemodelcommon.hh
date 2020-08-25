@@ -304,7 +304,11 @@ namespace Fem
       return hasBndValue;
     }
 
-    const ModelType&   model_;
+    // store an instance here so that for thread parallel
+    // runs class variables are thread private since discrete models
+    // are thread private
+    ModelType  model_;
+
     const AdvectionFluxType& numflux_;
     mutable RangeType uBnd_;
   };                                              /*@LST0E@*/

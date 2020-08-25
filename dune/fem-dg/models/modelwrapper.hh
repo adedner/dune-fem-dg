@@ -16,8 +16,6 @@
 
 #include <dune/fem/schemes/diffusionmodel.hh>
 
-#include <dune/fem/misc/threads/threadsafevalue.hh>
-
 // fem-dg includes
 #include <dune/fem-dg/models/defaultmodel.hh>
 #include <dune/fem-dg/models/defaultprobleminterfaces.hh>
@@ -497,14 +495,13 @@ namespace Fem
     }
 
   protected:
-    const AdvectionModelType& advection () const { return *advection_; }
-    const DiffusionModelType& diffusion () const { return *diffusion_; }
+    const AdvectionModelType& advection () const { return advection_; }
+    const DiffusionModelType& diffusion () const { return diffusion_; }
 
-    Dune::Fem::ThreadSafeValue< AdvectionModelType > advection_;
-    Dune::Fem::ThreadSafeValue< DiffusionModelType > diffusion_;
-
-    //const AdvectionModelType& advection_;
-    //const DiffusionModelType& diffusion_;
+    // store a copy of the models here for thread parallel runs
+    // where we need class variables to be thread safe
+    AdvectionModelType advection_;
+    DiffusionModelType diffusion_;
 
     const ProblemType& problem_;
     LimitedRangeType limitedRange_;

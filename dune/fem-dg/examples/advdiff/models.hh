@@ -103,8 +103,6 @@ namespace Fem
     using BaseType::time_;
     using BaseType::time;
 
-    HeatEqnModel(const HeatEqnModel& otehr);
-    const HeatEqnModel &operator=(const HeatEqnModel &other);
   public:
     /**
      * \brief Constructor
