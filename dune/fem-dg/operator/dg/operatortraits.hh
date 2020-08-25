@@ -60,23 +60,11 @@ namespace Fem
     static_assert( std::is_same<typename ModelType::RangeType, typename DestinationType::RangeType>::value, "range type does not fit.");
 
     // default quadrature selection should be CachingQuadrature
-    template <class Grid, bool cachingStorage, bool regularGrid>
+    template <class Grid, bool caching>
     struct SelectQuadrature
     {
       typedef Fem::CachingQuadrature< GridPartType, 0, QuadratureTraits >  VolumeQuadratureType;
       typedef Fem::CachingQuadrature< GridPartType, 1, QuadratureTraits >  FaceQuadratureType;
-    };
-
-    // if selected discrete function space has caching storage,
-    // but the grid is polygonal or polyhedral in 2d we can use
-    // CachingQuadarature for face integrals (edges in 2d)
-    template <class Grid>
-    struct SelectQuadrature< Grid, true, false >
-    {
-      typedef Fem::ElementQuadrature< GridPartType, 0, QuadratureTraits >  VolumeQuadratureType;
-      typedef typename std::conditional< GridType::dimension < 3,
-                        Fem::CachingQuadrature< GridPartType, 1, QuadratureTraits >,
-                        Fem::ElementQuadrature< GridPartType, 1, QuadratureTraits > > ::type   FaceQuadratureType;
     };
 
     // if selected discrete function space has no caching storage,
@@ -84,7 +72,7 @@ namespace Fem
     // also, if the grid is polygonal or polyhedral
     // CachingQuadarature cannot be used
     template <class Grid>
-    struct SelectQuadrature< Grid, false, false >
+    struct SelectQuadrature< Grid, false >
     {
       typedef Fem::ElementQuadrature< GridPartType, 0, QuadratureTraits >  VolumeQuadratureType;
       typedef Fem::ElementQuadrature< GridPartType, 1, QuadratureTraits >  FaceQuadratureType;
@@ -119,7 +107,7 @@ namespace Fem
 
     // define quad selector which contains the correct types for quadratures
     typedef SelectQuadrature< GridType,
-                              CheckSpace< DiscreteFunctionSpaceType > :: value,
+                              CheckSpace< DiscreteFunctionSpaceType > :: value  &&
                               CheckGrid < GridType > :: value >  SelectQuadratureType;
 
     typedef typename SelectQuadratureType::VolumeQuadratureType   VolumeQuadratureType;
