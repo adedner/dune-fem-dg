@@ -389,7 +389,7 @@ namespace Fem
 
     //! Destructor
     virtual ~LimitDGPass() {
-      std::cout << "~LimitDGPass: op calls " << counter_ << std::endl;
+      // std::cout << "~LimitDGPass: op calls " << counter_ << std::endl;
     }
 
     void setTroubledCellIndicator(TroubledCellIndicatorType indicator)
