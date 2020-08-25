@@ -115,9 +115,9 @@ namespace Fem
         model_( advectionModel, diffusionModel, problem_ ),
         advFluxPtr_(),
         advFlux_( advectionFlux( parameter, std::integral_constant< bool, fluxIsUserDefined >() )),
-        fullOperator_( space.gridPart(), model_, advFlux_, extra_, name(), parameter ),
-        explOperator_( space.gridPart(), model_, advFlux_, extra_, name(), parameter ),
-        implOperator_( space.gridPart(), model_, advFlux_, extra_, name(), parameter ),
+        fullOperator_( space.gridPart(), model_, advFlux_, extra_, "full", parameter ),
+        explOperator_( space.gridPart(), model_, advFlux_, extra_, "expl", parameter ),
+        implOperator_( space.gridPart(), model_, advFlux_, extra_, "impl", parameter ),
         adaptIndicator_( space, model_, advFlux_, extra_, name()+"_adaptind", parameter )
     {
     }
@@ -133,9 +133,9 @@ namespace Fem
         model_( advectionModel, diffusionModel, problem_ ),
         advFluxPtr_(),
         advFlux_( advFlux ),
-        fullOperator_( space.gridPart(), model_, advFlux_, extra_, name(), parameter ),
-        explOperator_( space.gridPart(), model_, advFlux_, extra_, name(), parameter ),
-        implOperator_( space.gridPart(), model_, advFlux_, extra_, name(), parameter ),
+        fullOperator_( space.gridPart(), model_, advFlux_, extra_, "full", parameter ),
+        explOperator_( space.gridPart(), model_, advFlux_, extra_, "expl", parameter ),
+        implOperator_( space.gridPart(), model_, advFlux_, extra_, "impl", parameter ),
         adaptIndicator_( space, model_, advFlux_, extra_, name()+"_adaptind", parameter )
     {
     }

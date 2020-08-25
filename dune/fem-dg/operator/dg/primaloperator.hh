@@ -389,11 +389,14 @@ namespace Fem
       , counter_(0)
       , limitTime_( 0 )
       , computeTime_( 0 )
+      , name_( name )
+      , verbose_( Dune::Fem::Parameter::verbose() ) // ||parameter.verbose() )
     {
     }
 
     virtual ~DGLimitedAdvectionOperator() {
-      std::cout << "~DGLimitedAdvectionOperator: op calls = " << counter_ << " T_l = " << limitTime_ << "  T_op = " << computeTime_ << std::endl;
+      if( verbose_ )
+        std::cout << "~DGLimitedAdvectionOperator("<<name_<<"): op calls = " << counter_ << " T_l = " << limitTime_ << "  T_op = " << computeTime_ << std::endl;
     }
 
     void activateLinear() const {
@@ -519,11 +522,11 @@ namespace Fem
     }
 
   protected:
-    GridPartType&              gridPart_;
-    const ModelType&           model_;
-    const AdvectionFluxType&   advFlux_;
+    GridPartType&                   gridPart_;
+    const ModelType&                model_;
+    const AdvectionFluxType&        advFlux_;
 
-    SpaceType                  space_;
+    SpaceType                       space_;
     LimiterSpaceType                limiterSpace_;
     mutable LimiterDestinationType  limitedU_;
 
@@ -545,6 +548,9 @@ namespace Fem
 
     mutable double limitTime_;
     mutable double computeTime_;
+
+    std::string name_;
+    const bool verbose_;
   };
 
 
