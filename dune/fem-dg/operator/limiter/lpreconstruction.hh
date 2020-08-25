@@ -83,6 +83,7 @@ namespace Dune
       typedef Optim::GaussJordanSolver< FieldMatrix< Field, GlobalCoordinate::dimension, GlobalCoordinate::dimension > > Solver;
       typedef Optim::LinearProgramming< Solver, false > LP;
 
+      typedef std::vector< std::pair< GlobalCoordinate, StateVector > > DifferencesVectorType;
     public:
       LPReconstruction ( const GridView &gridView, BoundaryValue boundaryValue, Real tolerance )
         : gridView_( gridView ),
@@ -105,119 +106,127 @@ namespace Dune
         }
       }
 
+      template< class Entity, class Mapper, class Vector >
+      void applyLocal ( const Entity& element,
+                        const Mapper &mapper,
+                        const Vector &u,
+                        Jacobian& du ) const
+      {
+        DifferencesVectorType& differences = differences_;
+        differences.clear();
+
+        Constraints constraints;
+
+        const std::size_t elIndex = mapper.index( element );
+        const GlobalCoordinate elCenter = element.geometry().center();
+
+        std::array< unsigned int, dimension+1 > select;
+        const std::vector< unsigned int > &faceAxes = faceAxes_[ LocalGeometryTypeIndex::index( element.type() ) ];
+        if( !faceAxes.empty() )
+        {
+          const auto iend = gridView().iend( element );
+          for( auto iit = gridView().ibegin( element ); iit != iend; ++iit )
+          {
+            const auto intersection = *iit;
+
+            select[ faceAxes[ intersection.indexInInside() ] ] = differences.size();
+
+            if( intersection.boundary() )
+            {
+              const GlobalCoordinate iCenter = intersection.geometry().center();
+              const GlobalCoordinate iNormal = intersection.centerUnitOuterNormal();
+              const StateVector uBnd = boundaryValue_( intersection, iCenter, iNormal, u[ elIndex ] );
+              differences.emplace_back( iCenter - elCenter, uBnd - u[ elIndex ] );
+            }
+            else if( intersection.neighbor() )
+            {
+              const auto neighbor = intersection.outside();
+              const GlobalCoordinate nbCenter = neighbor.geometry().center();
+              differences.emplace_back( nbCenter - elCenter, u[ mapper.index( neighbor ) ] - u[ elIndex ] );
+            }
+          }
+        }
+        else
+        {
+          Dune::ReservedVector< GlobalCoordinate, dimension > onb;
+
+          const auto iend = gridView().iend( element );
+          for( auto iit = gridView().ibegin( element ); iit != iend; ++iit )
+          {
+            const auto intersection = *iit;
+
+            select[ onb.size() ] = differences.size();
+
+            if( intersection.boundary() )
+            {
+              const GlobalCoordinate iCenter = intersection.geometry().center();
+              const GlobalCoordinate iNormal = intersection.centerUnitOuterNormal();
+              const StateVector uBnd = boundaryValue_( intersection, iCenter, iNormal, u[ elIndex ] );
+              differences.emplace_back( iCenter - elCenter, uBnd - u[ elIndex ] );
+            }
+            else if( intersection.neighbor() )
+            {
+              const auto neighbor = intersection.outside();
+              const GlobalCoordinate nbCenter = neighbor.geometry().center();
+              differences.emplace_back( nbCenter - elCenter, u[ mapper.index( neighbor ) ] - u[ elIndex ] );
+            }
+
+            if( onb.size() < dimension )
+            {
+              GlobalCoordinate dx = differences.back().first;
+              for( const GlobalCoordinate &v : onb )
+                dx.axpy( -(dx*v), v );
+
+              const Real dxNorm = dx.two_norm();
+              if( dxNorm >= tolerance_ )
+                onb.push_back( dx /= dxNorm );
+            }
+          }
+        }
+
+        // reserve memory for constraints
+        const std::size_t numConstraints = differences.size();
+        constraints.resize( 2u*numConstraints );
+        Optim::ActiveIndexMapper< SmallObjectAllocator< unsigned int > > active( GlobalCoordinate::dimension, constraints.size() );
+        for( int j = 0; j < StateVector::dimension; ++j )
+        {
+          GlobalCoordinate negGradient( 0 );
+          for( std::size_t i = 0u; i < numConstraints; ++i )
+          {
+            const Field sign = (differences[ i ].second[ j ] >= 0 ? 1 : -1);
+
+            negGradient.axpy( sign, differences[ i ].first );
+
+            constraints[ 2*i ].normal() = differences[ i ].first;
+            constraints[ 2*i ].normal() *= sign;
+            constraints[ 2*i ].rhs() = sign*differences[ i ].second[ j ];
+
+            constraints[ 2*i+1 ].normal() = constraints[ 2*i ].normal();
+            constraints[ 2*i+1 ].normal() *= Field( -1 );
+            constraints[ 2*i+1 ].rhs() = 0;
+          }
+
+          // activate GlobalCoordinate::dimension constraints active in the origin
+          active.clear();
+          for( int i = 0; i < dimension; ++i )
+            active.activate( 2*select[ i ]+1 );
+
+          // solve
+          du[ j ] = 0;
+          lp_( negGradient, constraints, du[ j ], active );
+        }
+      }
+
       template< class Mapper, class Vector >
       void operator () ( const Mapper &mapper, const Vector &u, std::vector< Jacobian > &du ) const
       {
         du.resize( u.size() );
 
-        std::vector< std::pair< GlobalCoordinate, StateVector > > differences;
-        Constraints constraints;
-
         const auto end = gridView().template end< 0, Dune::InteriorBorder_Partition >();
         for( auto it = gridView().template begin< 0, Dune::InteriorBorder_Partition>(); it != end; ++it )
         {
           const auto element = *it;
-
-          const std::size_t elIndex = mapper.index( element );
-          const GlobalCoordinate elCenter = element.geometry().center();
-
-          std::array< unsigned int, dimension+1 > select;
-          const std::vector< unsigned int > &faceAxes = faceAxes_[ LocalGeometryTypeIndex::index( element.type() ) ];
-          if( !faceAxes.empty() )
-          {
-            differences.clear();
-            const auto iend = gridView().iend( element );
-            for( auto iit = gridView().ibegin( element ); iit != iend; ++iit )
-            {
-              const auto intersection = *iit;
-
-              select[ faceAxes[ intersection.indexInInside() ] ] = differences.size();
-
-              if( intersection.boundary() )
-              {
-                const GlobalCoordinate iCenter = intersection.geometry().center();
-                const GlobalCoordinate iNormal = intersection.centerUnitOuterNormal();
-                const StateVector uBnd = boundaryValue_( intersection, iCenter, iNormal, u[ elIndex ] );
-                differences.emplace_back( iCenter - elCenter, uBnd - u[ elIndex ] );
-              }
-              else if( intersection.neighbor() )
-              {
-                const auto neighbor = intersection.outside();
-                const GlobalCoordinate nbCenter = neighbor.geometry().center();
-                differences.emplace_back( nbCenter - elCenter, u[ mapper.index( neighbor ) ] - u[ elIndex ] );
-              }
-            }
-          }
-          else
-          {
-            Dune::ReservedVector< GlobalCoordinate, dimension > onb;
-
-            differences.clear();
-            const auto iend = gridView().iend( element );
-            for( auto iit = gridView().ibegin( element ); iit != iend; ++iit )
-            {
-              const auto intersection = *iit;
-
-              select[ onb.size() ] = differences.size();
-
-              if( intersection.boundary() )
-              {
-                const GlobalCoordinate iCenter = intersection.geometry().center();
-                const GlobalCoordinate iNormal = intersection.centerUnitOuterNormal();
-                const StateVector uBnd = boundaryValue_( intersection, iCenter, iNormal, u[ elIndex ] );
-                differences.emplace_back( iCenter - elCenter, uBnd - u[ elIndex ] );
-              }
-              else if( intersection.neighbor() )
-              {
-                const auto neighbor = intersection.outside();
-                const GlobalCoordinate nbCenter = neighbor.geometry().center();
-                differences.emplace_back( nbCenter - elCenter, u[ mapper.index( neighbor ) ] - u[ elIndex ] );
-              }
-
-              if( onb.size() < dimension )
-              {
-                GlobalCoordinate dx = differences.back().first;
-                for( const GlobalCoordinate &v : onb )
-                  dx.axpy( -(dx*v), v );
-
-                const Real dxNorm = dx.two_norm();
-                if( dxNorm >= tolerance_ )
-                  onb.push_back( dx /= dxNorm );
-              }
-            }
-          }
-
-          // reserve memory for constraints
-          const std::size_t numConstraints = differences.size();
-          constraints.resize( 2u*numConstraints );
-          Optim::ActiveIndexMapper< SmallObjectAllocator< unsigned int > > active( GlobalCoordinate::dimension, constraints.size() );
-          for( int j = 0; j < StateVector::dimension; ++j )
-          {
-            GlobalCoordinate negGradient( 0 );
-            for( std::size_t i = 0u; i < numConstraints; ++i )
-            {
-              const Field sign = (differences[ i ].second[ j ] >= 0 ? 1 : -1);
-
-              negGradient.axpy( sign, differences[ i ].first );
-
-              constraints[ 2*i ].normal() = differences[ i ].first;
-              constraints[ 2*i ].normal() *= sign;
-              constraints[ 2*i ].rhs() = sign*differences[ i ].second[ j ];
-
-              constraints[ 2*i+1 ].normal() = constraints[ 2*i ].normal();
-              constraints[ 2*i+1 ].normal() *= Field( -1 );
-              constraints[ 2*i+1 ].rhs() = 0;
-            }
-
-            // activate GlobalCoordinate::dimension constraints active in the origin
-            active.clear();
-            for( int i = 0; i < dimension; ++i )
-              active.activate( 2*select[ i ]+1 );
-
-            // solve
-            du[ elIndex ][ j ] = 0;
-            lp_( negGradient, constraints, du[ elIndex ][ j ], active );
-          }
+          applyLocal( element, mapper, u, du[ mapper.index( element ) ] );
         }
 
         //auto handle = vectorCommDataHandle( mapper, du, [] ( Jacobian a, Jacobian b ) { return b; } );
@@ -232,6 +241,7 @@ namespace Dune
       Real tolerance_;
       LP lp_;
       std::vector< std::vector< unsigned int > > faceAxes_;
+      mutable DifferencesVectorType differences_;
     };
 
 
