@@ -689,19 +689,9 @@ namespace Fem
 
       if( linProg_ )
       {
-        // helper class for evaluation of average value of discrete function
-        EvalAverage average( *this, U, discreteModel_);
-
         values_.resize( size );
-        // evaluate average values on all cells
-        for( const auto& element : Dune::elements( gridPart_ ) )
-        {
-          average.evaluate( element, values_[ gridPart_.indexSet().index( element ) ] );
-        }
-
-        gradients_.resize( size );
-        // get reconstructions
-        (*linProg_)( gridPart_.indexSet(), values_, gradients_ );
+        valuesComputed_.resize( size );
+        std::fill( valuesComputed_.begin(), valuesComputed_.end(), false );
       }
     }
 
@@ -944,6 +934,8 @@ namespace Fem
                                                  StructuredGrid, flags, barys_, nbVals_ );
       }
 
+      const unsigned int enIndex = indexSet_.index( en );
+
       // mark entity as finished, even if not limited everything necessary was done
       assert( indexSet_.index( en ) < int(visited_.size()) );
       visited_[ indexSet_.index( en ) ] = true ;
@@ -954,11 +946,14 @@ namespace Fem
       // increase number of limited elements
       ++limitedElements_;
 
-      const unsigned int enIndex = indexSet_.index( en );
       // use linear function from LP reconstruction
       if( usedAdmissibleFunctions_ == lp )
       {
-        deoMod_ = gradients_[ enIndex ];
+        // compute average values on neighboring elements
+        fillAverageValues( en, enIndex, U, enVal );
+        assert( linProg_ );
+        // compute optimal linear reconstruction
+        linProg_->applyLocal( en, gridPart_.indexSet(), values_, deoMod_ );
       }
       else
       {
@@ -1024,6 +1019,34 @@ namespace Fem
     }
 
   protected:
+    void fillAverageValues( const EntityType& en, const unsigned int enIndex,
+                            const ArgumentFunctionType &U, const RangeType& enVal ) const
+    {
+      // helper class for evaluation of average value of discrete function
+      EvalAverage average( *this, U, discreteModel_);
+
+      if( ! valuesComputed_[ enIndex ] )
+      {
+        values_[ enIndex ] = enVal;
+        valuesComputed_[ enIndex ] = true;
+      }
+
+      const auto& indexSet = gridPart_.indexSet();
+      for (const auto& intersection : intersections(gridPart_, en) )
+      {
+        if( intersection.neighbor() )
+        {
+          const auto neighbor = intersection.outside();
+          const unsigned int nbIndex = indexSet.index( neighbor );
+          if( ! valuesComputed_[ nbIndex ] )
+          {
+            average.evaluate( neighbor, values_[ nbIndex ] );
+            valuesComputed_[ nbIndex ] = true;
+          }
+        }
+      }
+    }
+
     // add linear components of the DG function
     void addDGFunction(const EntityType& en,
                        const Geometry& geo,
@@ -1794,7 +1817,7 @@ namespace Fem
     mutable AdmissibleFunctions  usedAdmissibleFunctions_ ;
 
     mutable std::vector< RangeType  > values_;
-    mutable std::vector< GradientType > gradients_;
+    mutable std::vector< bool >       valuesComputed_;
 
     // function pointer to external troubled cell indicator, can be nullptr
     TroubledCellIndicatorType extTroubledCellIndicator_;
