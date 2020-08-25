@@ -1218,8 +1218,9 @@ namespace Fem
       if ( (! constantValue) && (! checkPhysical(en, geo, uTmpLocal_)) )
       {
         // for affine mapping we only need to set higher moments to zero
-        if( affineMapping )
-        { // note: the following assumes an ONB made up of moments
+        if( Dune::Fem::Capabilities::isHierarchic< DiscreteFunctionSpaceType > :: v &&
+            affineMapping )
+        { // note: the following assumes an ONB made up of moments and affine mapping
           const int numBasis = uTmpLocal_.numDofs()/dimRange;
           for(int i=1; i<numBasis; ++i)
           {
