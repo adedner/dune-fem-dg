@@ -251,10 +251,7 @@ namespace Fem
     typedef AdaptationMethod<GridType> AdaptationMethodType;
 
     //! id for choosing admissible linear functions
-    //enum AdmissibleFunctions { DGFunctions = 0, ReconstructedFunctions = 1 , DGAndReconFunctions = 2, LPFunctions = 3 };
-
-    //! id for choosing admissible linear functions
-    //! _default refers to muscl(1) on simplices and LP limiter (4) on cubes
+    //! _default refers to muscl(1) on simplices and LP limiter (3) on cubes and polygons
     enum AdmissibleFunctions { dgonly = 0, muscl = 1 , muscldg = 2, lp = 3, _default = 4 };
 
     //! returns true if pass is currently active in the pass tree
