@@ -623,15 +623,16 @@ namespace Fem
       {
         // use separate discrete discrete model for each thread
         discreteModels_[ thread ] = new DiscreteModelType( singleDiscreteModel_ );
+        const bool verbose = Dune::Fem::Parameter::verbose() && Fem::ThreadManager::isMaster();
         if( parameter_ )
         {
           // create dg passes, the last bool disables communication in the pass itself
-          passes_[ thread ]   = new InnerPassType( *discreteModels_[ thread ], previousPass_, space(), *parameter_, volumeQuadOrd_, faceQuadOrd_ );
+          passes_[ thread ]   = new InnerPassType( *discreteModels_[ thread ], previousPass_, space(), *parameter_, volumeQuadOrd_, faceQuadOrd_, verbose );
         }
         else
         {
           // create dg passes, the last bool disables communication in the pass itself
-          passes_[ thread ]   = new InnerPassType( *discreteModels_[ thread ], previousPass_, space(), volumeQuadOrd_, faceQuadOrd_ );
+          passes_[ thread ]   = new InnerPassType( *discreteModels_[ thread ], previousPass_, space(), volumeQuadOrd_, faceQuadOrd_, verbose );
         }
 
         return ;

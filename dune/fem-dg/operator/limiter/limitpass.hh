@@ -299,8 +299,9 @@ namespace Fem
                 PreviousPassType& pass,
                 const DiscreteFunctionSpaceType& spc,
                 const int vQ = -1,
-                const int fQ = -1 )
-      : LimitDGPass(problem, pass, spc, Dune::Fem::Parameter::container(), vQ, fQ )
+                const int fQ = -1,
+                const bool verbose = Dune::Fem::Parameter::verbose() )
+      : LimitDGPass(problem, pass, spc, Dune::Fem::Parameter::container(), vQ, fQ, verbose )
     {}
 
     //- Public methods
@@ -319,7 +320,8 @@ namespace Fem
                 const DiscreteFunctionSpaceType& spc,
                 const Dune::Fem::ParameterReader &parameter = Dune::Fem::Parameter::container(),
                 const int vQ = -1,
-                const int fQ = -1 ) :
+                const int fQ = -1,
+                const bool verbose = Dune::Fem::Parameter::verbose() ) :
       BaseType(pass, spc),
       caller_(),
       discreteModel_(problem),
@@ -366,7 +368,7 @@ namespace Fem
                         parameter.getValue<double>("finitevolume.linearprogramming.tol", 1e-8 )) );
       }
 
-      if( Parameter :: verbose () )
+      if( verbose )
       {
         std::cout << "LimitDGPass (Grid is ";
         if( cartesianGrid_ )

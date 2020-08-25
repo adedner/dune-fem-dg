@@ -20,6 +20,8 @@
 #include <dune/fem-dg/pass/discretemodel.hh>
 #include <dune/fem/misc/compatibility.hh>
 
+#include <dune/fem/io/parameter.hh>
+
 namespace Dune
 {
 namespace Fem
@@ -135,8 +137,9 @@ namespace Fem
                   PreviousPassType& pass,
                   const DiscreteFunctionSpaceType& spc,
                   const int volumeQuadOrd = -1,
-                  const int faceQuadOrd = -1 )
-      : LocalCDGPass( discreteModel, pass, spc, Dune::Fem::Parameter::container(), volumeQuadOrd, faceQuadOrd )
+                  const int faceQuadOrd = -1,
+                  const bool verbose = Dune::Fem::Parameter::verbose() )
+      : LocalCDGPass( discreteModel, pass, spc, Dune::Fem::Parameter::container(), volumeQuadOrd, faceQuadOrd, verbose )
     {}
 
     //- Public methods
@@ -151,7 +154,8 @@ namespace Fem
                   const DiscreteFunctionSpaceType& spc,
                   const Dune::Fem::ParameterReader& /* parameter */,
                   const int volumeQuadOrd = -1,
-                  const int faceQuadOrd = -1 )
+                  const int faceQuadOrd = -1,
+                  const bool verbose = Dune::Fem::Parameter::verbose() )
       : BaseType(pass, spc),
         caller_(),
         discreteModel_(discreteModel),
