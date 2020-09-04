@@ -50,7 +50,7 @@ namespace Fem
     typedef typename DestinationType::DiscreteFunctionSpaceType          DiscreteFunctionSpaceType;
 
     // polynomial order of ansatz space
-    static const int polynomialOrder = DiscreteFunctionSpaceType::polynomialOrder;
+    // static const int polynomialOrder = DiscreteFunctionSpaceType::polynomialOrder;
 
     // enables the possibility to run in threaded mode
     static const bool threading = enableThreaded ;

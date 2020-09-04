@@ -78,9 +78,9 @@ namespace Fem
      */
     GradientModel(const ModelType& mod,
                   const DiffusionFluxType& diffFlux) :
-      model_( mod ),
-      gradientFlux_( diffFlux ),
-      cflDiffinv_( 2.0 * ( Traits::polynomialOrder + 1) )
+      model_( mod )
+      , gradientFlux_( diffFlux )
+      , cflDiffinv_( 2.0 * ( 4 + 1) ) // TODO: using polOrder=4
     {
       #if defined TESTOPERATOR
         std::cerr <<"didn't test how to use TESTOPERATOR with dual formulation";
@@ -287,10 +287,10 @@ namespace Fem
     AdvectionDiffusionLDGModel(const ModelType& mod,
                                const AdvectionFluxType& numf,
                                DiffusionFluxType& diffflux)
-      : BaseType( mod, numf ),
-        diffFlux_( diffflux ),
-        penalty_( 1.0 ),
-        cflDiffinv_( 8.0 * ( Traits::polynomialOrder + 1) )
+      : BaseType( mod, numf )
+      , diffFlux_( diffflux )
+      , penalty_( 1.0 )
+      , cflDiffinv_( 8.0 * ( 4 + 1) ) // TODO using polOrder=4
     {}
 
     bool hasSource() const

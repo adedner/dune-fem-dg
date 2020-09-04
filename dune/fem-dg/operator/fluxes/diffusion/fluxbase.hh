@@ -50,7 +50,7 @@ namespace Fem
     typedef typename GridPartType::GridType                          GridType;
     typedef typename DiscreteFunctionSpaceType::EntityType           EntityType;
     enum { dimGradRange = dimDomain * dimRange };
-    enum { polOrd = DiscreteFunctionSpaceType::polynomialOrder };
+    // enum { polOrd = DiscreteFunctionSpaceType::polynomialOrder };
 
     // type of gradient space
     typedef typename DiscreteFunctionSpaceType::
@@ -81,7 +81,8 @@ namespace Fem
       param_( parameters ),
       upwind_( upwindDefault() ),
       // Set CFL number for penalty term (compare diffusion in first pass)
-      cflDiffinv_(8. * (polOrd+1.) ),
+      // cflDiffinv_(8. * (polOrd+1.) ),
+      cflDiffinv_(8. * (4+1.) ), // TODO
       dimensionFactor_( 2.0 * ( dimDomain ) ),
       nonconformingFactor_( 2.0 * ( dimDomain - 1 ) )
     {
@@ -286,7 +287,7 @@ namespace Fem
     typedef typename BaseType::GridType                 GridType;
     typedef typename BaseType::EntityType               EntityType;
     enum { dimGradRange = dimDomain * dimRange };
-    enum { polOrd = DiscreteFunctionSpaceType::polynomialOrder };
+    // enum { polOrd = DiscreteFunctionSpaceType::polynomialOrder };
 
     typedef typename BaseType::ParameterType             ParameterType;
 

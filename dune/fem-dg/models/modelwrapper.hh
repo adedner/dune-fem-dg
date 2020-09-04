@@ -210,7 +210,6 @@ namespace Fem
     void setTime (const double t)
     {
       BaseType::setTime(t);
-#if HAVE_DUNE_FEMPY
       // update model times (only if time method is available on these models)
       //! TODO problem without virtualization advection_.setTime(t);
       //! TODO problem without virtualization diffusion().setTime(t);
@@ -220,7 +219,6 @@ namespace Fem
       ::detail::CallSetTime< DiffusionModelType,
                              ::detail::CheckTimeMethod< DiffusionModelType >::value >
         ::setTime( const_cast< DiffusionModelType& > (diffusion()), t );
-#endif
     }
 
     double gamma () const { return problem_.gamma(); }

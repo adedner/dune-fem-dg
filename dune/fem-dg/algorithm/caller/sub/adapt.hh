@@ -118,7 +118,7 @@ namespace Fem
       adaptationHandler_( nullptr ),
       adaptParam_( parameter ),
       // this is a DG operator (see operator/dg)
-      indicator_( const_cast<GridPartType&>(space.gridPart()), model, numFlux, tuple, name, parameter ),
+      indicator_( space, model, numFlux, tuple, name, parameter ),
       estimator_( space, model.problem(), adaptParam_ ),
       timeProvider_( nullptr )
     {}

@@ -166,14 +166,14 @@ namespace Fem
 	    std::ostringstream filestream;
             filestream << filename;
             std::ofstream ofs(filestream.str().c_str(), std::ios::app);
-            ofs << "LDG Op., polynomial order: " << Traits::polynomialOrder << "\\\\\n\n";
+            ofs << "LDG Op., polynomial order: " << space2_.order() << "\\\\\n\n";
             ofs.close();
     }
 
     std::string description() const
     {
       std::stringstream stream;
-      stream <<" {\\bf LDG Diff. Op.}, flux formulation, order: " << Traits::polynomialOrder+1
+      stream <<" {\\bf LDG Diff. Op.}, flux formulation, order: " << space2_.order()+1
              <<", $\\eta = ";
       diffFlux_.diffusionFluxPenalty( stream );
       stream <<"$, {\\bf Adv. Flux:} ";
@@ -242,7 +242,8 @@ namespace Fem
     std::string description() const
     {
       std::stringstream stream;
-      stream <<"{\\bf Adv. Op.}, flux formulation, order: " << Traits::polynomialOrder+1
+      stream <<"{\\bf Adv. Op.}, flux formulation, order: " <<
+      BaseType::space().order()+1
              <<", {\\bf Adv. Flux:} ";
       /*if (FLUX==1)
         stream <<"LLF";
@@ -277,7 +278,7 @@ namespace Fem
     std::string description() const
     {
       std::stringstream stream;
-      stream <<"{\\bf LDG Diff. Op.}, flux formulation, order: " << Traits::polynomialOrder+1
+      stream <<"{\\bf LDG Diff. Op.}, flux formulation, order: " << BaseType::space().order()+1
              <<", $\\eta = ";
       diffFlux_.diffusionFluxPenalty( stream );
       stream <<"$, {\\bf Adv. Flux:} ";
@@ -365,6 +366,8 @@ namespace Fem
     typedef Destination3Type                                            DestinationType;
     typedef Space3Type                                                  SpaceType;
 
+    static const bool isFV = false; // TODO
+
     typedef typename Traits2::GridPartType                              GridPartType;
 
     typedef Fem::StartPass< DiscreteFunction3Type, u >                  Pass0Type;
@@ -376,7 +379,7 @@ namespace Fem
     typedef typename LimiterIndicatorType::DiscreteFunctionSpaceType    LimiterIndicatorSpaceType;
     typedef typename Traits::ExtraParameterTupleType                    ExtraParameterTupleType;
 
-    template <class Limiter, int pOrd>
+    template <class Limiter, bool>
     struct LimiterCall
     {
       template <class ArgumentType, class DestinationType>
@@ -393,7 +396,7 @@ namespace Fem
     };
 
     template <class Limiter>
-    struct LimiterCall<Limiter,0>
+    struct LimiterCall<Limiter,false>
     {
       template <class ArgumentType, class DestinationType>
       static inline void limit(const Limiter& limiter,
@@ -414,7 +417,7 @@ namespace Fem
       , space1_( gridPart_ )
       , space2_( gridPart_ )
       , space3_( gridPart_ )
-      , uTmp_( (Traits::polynomialOrder > 0) ? (new DestinationType("limitTmp", space3_)) : 0 )
+      , uTmp_( (!isFV) ? (new DestinationType("limitTmp", space3_)) : 0 )
       , fvSpc_( gridPart_ )
       , indicator_( "Indicator", fvSpc_ )
       , diffFlux_( gridPart_, model_ )
@@ -468,7 +471,7 @@ namespace Fem
     inline void limit( const DestinationType& arg, DestinationType& dest) const
     {
       pass1_.enableFirstCall();
-      LimiterCall< Pass1Type, Traits::polynomialOrder >::limit( pass1_, uTmp_, dest );
+      LimiterCall< Pass1Type, !isFV >::limit( pass1_, uTmp_, dest );
     }
 
     void printmyInfo(std::string filename) const {
@@ -567,7 +570,7 @@ namespace Fem
     {
       std::stringstream stream;
       discreteModel_.diffusionFlux().diffusionFluxName( stream );
-      stream <<" {\\bf Adv. Op.} in primal formulation, order: " << Traits::polynomialOrder+1
+      stream <<" {\\bf Adv. Op.} in primal formulation, order: " << space().order()+1
              <<", $\\eta = ";
       discreteModel_.diffusionFlux().diffusionFluxPenalty( stream );
       stream <<"$, $\\chi = ";
@@ -579,6 +582,7 @@ namespace Fem
   protected:
     using BaseType::discreteModel_;
     using BaseType::numflux_;
+    using BaseType::space;
   };
 
 }

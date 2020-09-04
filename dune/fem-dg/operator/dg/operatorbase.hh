@@ -39,7 +39,7 @@ namespace Fem
     enum { u = Traits::u,
            cdgpass  = Traits::cdgpass };
 
-    enum { polynomialOrder = Traits::polynomialOrder };
+    // enum { polynomialOrder = Traits::polynomialOrder };
 
     typedef Fem::SpaceOperatorInterface< typename Traits::DestinationType >  BaseType;
 
@@ -145,18 +145,18 @@ namespace Fem
 
   public:
     template< class ExtraParameterTupleImp >
-    DGAdvectionDiffusionOperatorBase( GridPartType& gridPart,
+    DGAdvectionDiffusionOperatorBase( const DiscreteFunctionSpaceType& space,
                                       const ModelType& model,
                                       const AdvectionFluxType& numFlux,
                                       ExtraParameterTupleImp& tuple,
                                       const std::string name = "",
                                       const Dune::Fem::ParameterReader &parameter = Dune::Fem::Parameter::container() )
-      : gridPart_( gridPart )
+      : gridPart_( space.gridPart() )
       , model_( model )
       , numFlux_( numFlux )
-      , space_( gridPart_ )
+      , space_( space )
       , discreteModel_( model_, numFlux_,
-                        DiffusionFluxType( gridPart_, model_, typename DiffusionFluxType::ParameterType( ParameterKey::generate( name, "dgdiffusionflux." ) ) ) )
+                        DiffusionFluxType( const_cast<GridPartType&>(gridPart_), model_, typename DiffusionFluxType::ParameterType( ParameterKey::generate( name, "dgdiffusionflux." ) ) ) )
       , previousPass_( InsertFunctionsType::createPass( tuple ) )
       , pass1_( discreteModel_, *previousPass_, space_ )
       , counter_(0)
@@ -243,7 +243,7 @@ namespace Fem
     const ModelType&                           model_;
     const AdvectionFluxType&                   numFlux_;
 
-    AdvDFunctionSpaceType                      space_;
+    const AdvDFunctionSpaceType                &space_;
     DiscreteModelType                          discreteModel_;
     std::shared_ptr< InsertFunctionPassType >  previousPass_;
     Pass1Type                                  pass1_;

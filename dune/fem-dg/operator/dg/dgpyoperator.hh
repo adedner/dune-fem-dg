@@ -19,9 +19,7 @@
 #include <dune/fem-dg/misc/algorithmcreatorselector.hh>
 #include <dune/fem-dg/operator/adaptation/estimator.hh>
 
-#if HAVE_DUNE_FEMPY
 #include <dune/fempy/quadrature/fempyquadratures.hh>
-#endif
 
 namespace Dune
 {
@@ -49,7 +47,7 @@ namespace Fem
     typedef DestinationImp   DestinationType;
     typedef typename DestinationType :: DiscreteFunctionSpaceType    DiscreteFunctionSpaceType;
     typedef typename DiscreteFunctionSpaceType :: FunctionSpaceType  FunctionSpaceType;
-    static const int polynomialOrder = DiscreteFunctionSpaceType :: polynomialOrder ;
+    // static const int polynomialOrder = DiscreteFunctionSpaceType :: polynomialOrder ;
 
     typedef typename DiscreteFunctionSpaceType :: GridPartType    GridPartType;
     typedef typename GridPartType::GridType                       GridType;
@@ -81,7 +79,7 @@ namespace Fem
 
     typedef DefaultOperatorTraits< ModelType, DestinationType, AdvectionFluxType, DiffusionFluxType,
                 std::tuple<>, typename DiscreteFunctionSpaceType::FunctionSpaceType,
-#if HAVE_DUNE_FEMPY
+#if 1
                 Dune::FemPy::FempyQuadratureTraits, // use quadratures from dune-fempy
 #else
                 Dune::Fem::DefaultQuadratureTraits,
@@ -115,9 +113,9 @@ namespace Fem
         model_( advectionModel, diffusionModel, problem_ ),
         advFluxPtr_(),
         advFlux_( advectionFlux( parameter, std::integral_constant< bool, fluxIsUserDefined >() )),
-        fullOperator_( space.gridPart(), model_, advFlux_, extra_, "full", parameter ),
-        explOperator_( space.gridPart(), model_, advFlux_, extra_, "expl", parameter ),
-        implOperator_( space.gridPart(), model_, advFlux_, extra_, "impl", parameter ),
+        fullOperator_( space, model_, advFlux_, extra_, "full", parameter ),
+        explOperator_( space, model_, advFlux_, extra_, "expl", parameter ),
+        implOperator_( space, model_, advFlux_, extra_, "impl", parameter ),
         adaptIndicator_( space, model_, advFlux_, extra_, name()+"_adaptind", parameter )
     {
     }
@@ -133,9 +131,9 @@ namespace Fem
         model_( advectionModel, diffusionModel, problem_ ),
         advFluxPtr_(),
         advFlux_( advFlux ),
-        fullOperator_( space.gridPart(), model_, advFlux_, extra_, "full", parameter ),
-        explOperator_( space.gridPart(), model_, advFlux_, extra_, "expl", parameter ),
-        implOperator_( space.gridPart(), model_, advFlux_, extra_, "impl", parameter ),
+        fullOperator_( space, model_, advFlux_, extra_, "full", parameter ),
+        explOperator_( space, model_, advFlux_, extra_, "expl", parameter ),
+        implOperator_( space, model_, advFlux_, extra_, "impl", parameter ),
         adaptIndicator_( space, model_, advFlux_, extra_, name()+"_adaptind", parameter )
     {
     }

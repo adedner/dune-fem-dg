@@ -41,7 +41,7 @@ namespace Fem
     typedef typename GridPartType :: GridType                          GridType;
     typedef typename DiscreteFunctionSpaceType :: EntityType           EntityType;
     enum { dimGradRange = dimDomain * dimRange };
-    enum { polOrd = DiscreteFunctionSpaceType :: polynomialOrder };
+    // enum { polOrd = DiscreteFunctionSpaceType :: polynomialOrder };
 
     typedef typename BaseType :: ParameterType  ParameterType;
 

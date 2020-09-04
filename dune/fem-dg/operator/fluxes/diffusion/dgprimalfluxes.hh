@@ -40,7 +40,7 @@ namespace Fem
     enum { dimDomain = DiscreteFunctionSpaceType::dimDomain };
     enum { dimRange  = DiscreteFunctionSpaceType::dimRange };
     enum { dimGradRange = dimDomain * dimRange };
-    enum { polOrd = DiscreteFunctionSpaceType::polynomialOrder };
+    // enum { polOrd = DiscreteFunctionSpaceType::polynomialOrder };
 
     typedef typename DiscreteFunctionSpaceType::RangeFieldType        RangeFieldType;
     typedef typename DiscreteFunctionSpaceType::DomainFieldType       DomainFieldType;
@@ -160,7 +160,7 @@ namespace Fem
     /**
      * \brief constructor reading parameters
      */
-    DGPrimalDiffusionFluxImpl( GridPartType& gridPart,
+    DGPrimalDiffusionFluxImpl( GridPartType& gridPart, // TODO: pass in a 'value' DFS
                                const Model& model,
                                const ParameterType& parameters,
                                const EnumType staticMethod ) :
@@ -176,7 +176,7 @@ namespace Fem
       penaltyTerm_( method_ == EnumType::ip || ((std::abs(  penalty_ ) > 0) &&
                     method_ != EnumType::br2 &&
                     method_ != EnumType::bo )),
-      gradSpc_( gridPart_ ),
+      gradSpc_( gridPart_ ), // TODO: here a different constructor is needed
       LeMinusLifting_( hasLifting() ? new Lifting( gradSpc_ ) : 0 ),
       LePlusLifting_( ( method_ == EnumType::br2 ) ? new Lifting( gradSpc_ ) : 0 ),
 #ifdef LOCALDEBUG
@@ -193,7 +193,7 @@ namespace Fem
       double theoryFactor = parameter().theoryparameters();
       useTheoryParams_ = (theoryFactor > 0.);
 
-      double n_k = DiscreteFunctionSpaceType :: polynomialOrder ;
+      double n_k = BaseType::space().order();
       ainsworthFactor_ = theoryFactor * 0.5 * n_k * ( n_k + 1.0 );
 
       int maxNumFaces = 0 ;

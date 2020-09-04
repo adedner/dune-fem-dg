@@ -64,7 +64,7 @@ namespace Fem
     {
       std::stringstream stream;
       discreteModel_.diffusionFlux().diffusionFluxName( stream );
-      stream <<" {\\bf Diff. Op.} in primal formulation, order: " << Traits::polynomialOrder+1
+      stream <<" {\\bf Diff. Op.} in primal formulation, order: " << space().order()+1
              <<", $\\eta = ";
       discreteModel_.diffusionFlux().diffusionFluxPenalty( stream );
       stream <<"$, $\\chi = ";
@@ -76,6 +76,7 @@ namespace Fem
   protected:
     using BaseType::discreteModel_;
     using BaseType::numFlux_;
+    using BaseType::space;
   };
 
 
@@ -110,7 +111,7 @@ namespace Fem
     {
       std::stringstream stream;
       discreteModel_.diffusionFlux().diffusionFluxName( stream );
-      stream <<" {\\bf Adv. Op.} in primal formulation, order: " << Traits::polynomialOrder+1
+      stream <<" {\\bf Adv. Op.} in primal formulation, order: " << space().order()+1
              <<", $\\eta = ";
       discreteModel_.diffusionFlux().diffusionFluxPenalty( stream );
       stream <<"$, $\\chi = ";
@@ -122,6 +123,7 @@ namespace Fem
   protected:
     using BaseType::discreteModel_;
     using BaseType::numFlux_;
+    using BaseType::space;
   };
 
 
@@ -149,6 +151,7 @@ namespace Fem
 
   private:
     using BaseType::discreteModel_;
+    using BaseType::space;
 
   public:
     // constructor: do not touch/delegate everything
@@ -161,7 +164,7 @@ namespace Fem
     {
       std::stringstream stream;
       discreteModel_.diffusionFlux().diffusionFluxName( stream );
-      stream <<" {\\bf Diff. Op.} in primal formulation, order: " << Traits::polynomialOrder+1
+      stream <<" {\\bf Diff. Op.} in primal formulation, order: " << space().order()+1
              <<", $\\eta = ";
       discreteModel_.diffusionFlux().diffusionFluxPenalty( stream );
       stream <<"$, $\\chi = ";
@@ -221,7 +224,7 @@ namespace Fem
     {
       std::stringstream stream;
       discreteModel_.diffusionFlux().diffusionFluxName( stream );
-      stream <<" {\\bf Adv. Op.} in primal formulation, order: " << Traits::polynomialOrder+1
+      stream <<" {\\bf Adv. Op.} in primal formulation, order: " << space_.order()+1
              <<", $\\eta = ";
       discreteModel_.diffusionFlux().diffusionFluxPenalty( stream );
       stream <<"$, $\\chi = ";
@@ -233,6 +236,7 @@ namespace Fem
   protected:
     using BaseType::discreteModel_;
     using BaseType::numFlux_;
+    using BaseType::space_;
   };
 
 
@@ -260,7 +264,7 @@ namespace Fem
     public Fem::SpaceOperatorInterface< typename Traits::DestinationType >
   {
     enum PassIdType { u, advectPassId };
-    enum { polOrd = Traits::polynomialOrder };
+    const unsigned int polOrder_;
 
     typedef Fem::SpaceOperatorInterface< typename Traits::DestinationType >       BaseType;
 
@@ -293,13 +297,14 @@ namespace Fem
     struct LimiterTraits : public Traits
     {
       // if polynomialOrder is 0 then limiting will be linear (higher order FV case)
-      static constexpr bool higherOrderFV  = Traits :: polynomialOrder == 0;
-      static constexpr int polynomialOrder = higherOrderFV ? 1 : Traits :: polynomialOrder;
+      static constexpr bool higherOrderFV  = false; // TODO Traits :: polynomialOrder == 0;
+      // static constexpr int polynomialOrder = higherOrderFV ? 1 : Traits :: polynomialOrder;
 
       // if higher order finite volume is selected
       // then use orthonormal DG space for storing the reconstructions
       typedef typename std::conditional< higherOrderFV,
-         DiscontinuousGalerkinSpace< typename Traits::DiscreteFunctionSpaceType::FunctionSpaceType, GridPartType, polynomialOrder >,
+         DiscontinuousGalerkinSpace< typename Traits::DiscreteFunctionSpaceType::FunctionSpaceType, GridPartType, 1 >,
+         // DiscontinuousGalerkinSpace< typename Traits::DiscreteFunctionSpaceType::FunctionSpaceType, GridPartType, polynomialOrder >,
          typename Traits :: DiscreteFunctionSpaceType > :: type  DiscreteFunctionSpaceType;
 
       // set limiter destination type to new discrete function space
@@ -367,6 +372,35 @@ namespace Fem
 
   public:
     template< class ExtraParameterTupleImp >
+    DGLimitedAdvectionOperator( const SpaceType& space,
+                                const ModelType& model,
+                                const AdvectionFluxType& advFlux,
+                                ExtraParameterTupleImp tuple,
+                                const std::string name = "",
+                                const Dune::Fem::ParameterReader &parameter = Dune::Fem::Parameter::container() )
+      : gridPart_( space.gridPart() )
+      , model_( model )
+      , advFlux_( advFlux )
+      , space_( space )
+      , polOrder_( space.order() )
+      // , limiterSpace_( gridPart_ )
+      , limitedU_( "Limited-U", space_ )
+      , fvSpc_()
+      , indicator_()
+      , diffFlux_( gridPart_, model_, DGPrimalDiffusionFluxParameters( ParameterKey::generate( name, "dgdiffusionflux." ), parameter ) )
+      , discreteModel1_( model_, advFlux_, diffFlux_ )
+      , limiter_( space_, space_, model_, parameter )
+      , pass0_()
+      , pass2_( discreteModel1_, pass0_, space_ )
+      , counter_(0)
+      , limitTime_( 0 )
+      , computeTime_( 0 )
+      , name_( name )
+      , verbose_( Dune::Fem::Parameter::verbose() ) // ||parameter.verbose() )
+    {
+    }
+    #if 0
+    template< class ExtraParameterTupleImp >
     DGLimitedAdvectionOperator( GridPartType& gridPart,
                                 const ModelType& model,
                                 const AdvectionFluxType& advFlux,
@@ -377,6 +411,8 @@ namespace Fem
       , model_( model )
       , advFlux_( advFlux )
       , space_( gridPart_ )
+      , polOrder_( space_.order() ) // TODO segfaults with DGLagrangeSpace....
+      // , polOrder_( Traits::polynomialOrder )
       , limiterSpace_( gridPart_ )
       , limitedU_( "Limited-U", limiterSpace_ )
       , fvSpc_()
@@ -393,6 +429,7 @@ namespace Fem
       , verbose_( Dune::Fem::Parameter::verbose() ) // ||parameter.verbose() )
     {
     }
+    #endif
 
     virtual ~DGLimitedAdvectionOperator() {
       if( verbose_ )
@@ -478,11 +515,14 @@ namespace Fem
     LimiterIndicatorType* indicator() { return indicator_.operator->() ; }
 
     //! this pass has an implemented limit() operator
-    bool hasLimiter () const { return polOrd > 0; }
+    bool hasLimiter () const { return polOrder_ > 0; }
 
     inline void limit( const DestinationType& arg, DestinationType& U ) const
     {
-      LimiterCall< LimiterType, polOrd >::limit( limiter_, arg, U );
+      // LimiterCall< LimiterType, polOrd >::limit( limiter_, arg, U );
+      // LimiterCall< LimiterType, 1 >::limit( limiter_, arg, U );
+      if (polOrder_>0)
+        limiter_(arg,U);
     }
 
     void setTroubledCellIndicator(TroubledCellIndicatorType indicator)
@@ -495,7 +535,7 @@ namespace Fem
       std::ostringstream filestream;
             filestream << filename;
             std::ofstream ofs(filestream.str().c_str(), std::ios::app);
-            ofs << "Limited Adv. Op., polynomial order: " << polOrd << "\\\\\n\n";
+            ofs << "Limited Adv. Op., polynomial order: " << polOrder_ << "\\\\\n\n";
             ofs.close();
     }
 
@@ -526,8 +566,8 @@ namespace Fem
     const ModelType&                model_;
     const AdvectionFluxType&        advFlux_;
 
-    SpaceType                       space_;
-    LimiterSpaceType                limiterSpace_;
+    const SpaceType&                space_;
+    // LimiterSpaceType                limiterSpace_;
     mutable LimiterDestinationType  limitedU_;
 
     std::unique_ptr< LimiterIndicatorSpaceType >  fvSpc_;
@@ -586,7 +626,8 @@ namespace Fem
       std::ostringstream filestream;
             filestream << filename;
             std::ofstream ofs(filestream.str().c_str(), std::ios::app);
-            ofs << "Limited Adv. Diff. Op., polynomial order: " << Traits::polynomialOrder << "\\\\\n\n";
+            ofs << "Limited Adv. Diff. Op., polynomial order: " <<
+            BaseType::space().order() << "\\\\\n\n";
             ofs.close();
     }
 
