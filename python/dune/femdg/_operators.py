@@ -1,6 +1,6 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import sys
+import sys, hashlib
 import logging
 logger = logging.getLogger(__name__)
 from io import StringIO
@@ -148,9 +148,13 @@ def femDGModels(Model, space, initialTime=0):
 def femDGOperator(Model, space,
         limiter="minmod",
         advectionFlux="default",
-        diffusionScheme = "cdg2", threading=False,
-        defaultQuadrature = True,
+        diffusionScheme = "cdg2",
+        threading=False,
+        defaultQuadrature=False,
+        codeGen=True,
         initialTime=0.0, parameters=None):
+
+    includes = []
 
     if type(Model)==list or type(Model)==tuple:
         advModel = Model[1]
@@ -164,7 +168,6 @@ def femDGOperator(Model, space,
     hasStiffSource = hasattr(Model,"S_i") or hasattr(Model,"S_s")
     hasNonStiffSource = hasattr(Model,"S_e") or hasattr(Model,"S_ns")
     virtualize = False
-    includes = []
 
     if limiter is None or limiter is False:
         limiter = "unlimited"
@@ -274,7 +277,8 @@ def femDGOperator(Model, space,
     elif limiter.lower() != "minmod":
         raise ValueError("limiter "+limiter+" not recognised")
 
-    signature = (advFluxId,diffusionScheme,threading,solverId,formId,limiterId,limiterFctId,advFluxId,diffFluxId,)
+    signature = (advFluxId,diffusionScheme,threading,solverId,formId,
+                 limiterId,limiterFctId,advFluxId,diffFluxId,str(defaultQuadrature))
     additionalClass = "Additional_"+hashIt(str(signature))
     struct = Struct(additionalClass, targs=['class FunctionSpace'])
     struct.append(TypeAlias('DomainType','typename FunctionSpace::DomainType'))
@@ -373,26 +377,40 @@ def femDGOperator(Model, space,
             extra=['pybind11::keep_alive<0,1>()'])
     gridSizeInterior = Method('gridSizeInterior', '&DuneType::gridSizeInterior')
 
+    order = space.order
+    if codeGen:
+        includesExt, moduleNameExt = space.codegen(
+          "op"+ "_" + hashlib.md5(typeName.encode('utf-8')).hexdigest(),
+          interiorQuadratureOrders=[0, 1, 2, 3, order, order+1, 2*order],
+          skeletonQuadratureOrders=[0, 1, 2, order, 2*order, 2*order+1] )
+        includes = includesExt + includes
+    else:
+        moduleNameExt = ""
+
     if parameters is not None:
         if advectionFluxIsCallable:
             op = load(includes, typeName, estimateMark, setIndicator, gridSizeInterior,
                      baseClasses = [base],
+                     moduleExtension = moduleNameExt,
                      preamble=writer.writer.getvalue()).\
                      Operator( space, advModel, diffModel, advectionFlux, parameters=parameters )
         else:
             op = load(includes, typeName, estimateMark, setIndicator, gridSizeInterior,
                      baseClasses = [base],
+                     moduleExtension = moduleNameExt,
                      preamble=writer.writer.getvalue()).\
                      Operator( space, advModel, diffModel, parameters=parameters )
     else:
         if advectionFluxIsCallable:
             op = load(includes, typeName, estimateMark, setIndicator, gridSizeInterior,
                      baseClasses = [base],
+                     moduleExtension = moduleNameExt,
                      preamble=writer.writer.getvalue()).\
                      Operator( space, advModel, diffModel, advectionFlux )
         else:
             op = load(includes, typeName, estimateMark, setIndicator, gridSizeInterior,
                      baseClasses = [base],
+                     moduleExtension = moduleNameExt,
                      preamble=writer.writer.getvalue()).\
                      Operator( space, advModel, diffModel )
 
