@@ -1007,8 +1007,10 @@ namespace Fem
       // get local funnction for limited values
       DestLocalFunctionType limitEn = dest_->localFunction(en);
 
+      // if the sum of all entries is small we assume constant value
+      const bool constantValue = deoMod_.infinity_norm() < 1e-10;
       // project deoMod_ to limitEn
-      L2project(en, geo, enBary, enVal, limit, deoMod_, limitEn );
+      L2project(en, geo, enBary, enVal, limit, deoMod_, limitEn, constantValue );
 
       assert( checkPhysical(en, geo, limitEn) );
 
