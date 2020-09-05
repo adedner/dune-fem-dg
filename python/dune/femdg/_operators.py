@@ -381,8 +381,8 @@ def femDGOperator(Model, space,
     if codeGen:
         includesExt, moduleNameExt = space.codegen(
           "op"+ "_" + hashlib.md5(typeName.encode('utf-8')).hexdigest(),
-          interiorQuadratureOrders=[0, 1, 2, 3, order, order+1, 2*order],
-          skeletonQuadratureOrders=[0, 1, 2, order, 2*order, 2*order+1] )
+          interiorQuadratureOrders=range(2,2*order+2),
+          skeletonQuadratureOrders=range(2,2*order+2) )
         includes = includesExt + includes
     else:
         moduleNameExt = ""
