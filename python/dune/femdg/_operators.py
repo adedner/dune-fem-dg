@@ -149,6 +149,7 @@ def femDGOperator(Model, space,
         limiter="minmod",
         advectionFlux="default",
         diffusionScheme = "cdg2", threading=False,
+        defaultQuadrature = True,
         initialTime=0.0, parameters=None):
 
     if type(Model)==list or type(Model)==tuple:
@@ -333,6 +334,9 @@ def femDGOperator(Model, space,
         static=True)])
     struct.append([Declaration(
         Variable("const Dune::Fem::DiffusionFlux::Enum", "diffFluxId = " + diffFluxId),
+        static=True)])
+    struct.append([Declaration(
+        Variable("const bool", "defaultQuadrature"), initializer=defaultQuadrature,
         static=True)])
 
     writer = SourceWriter(StringWriter())
