@@ -134,8 +134,9 @@ namespace Fem
                        PreviousPassType& pass,
                        const DiscreteFunctionSpaceType& spc,
                        const int vQ = -1,
-                       const int fQ = -1 )
-      : ScalingLimitDGPass( problem, pass, spc, Dune::Fem::Parameter::container() )
+                       const int fQ = -1,
+                       const bool verbose = Dune::Fem::Parameter::verbose()) :
+      ScalingLimitDGPass( problem, pass, spc, Dune::Fem::Parameter::container() )
     {}
 
     //- Public methods
@@ -152,7 +153,8 @@ namespace Fem
                        const DiscreteFunctionSpaceType& spc,
                        const Dune::Fem::ParameterReader &parameter = Dune::Fem::Parameter::container(),
                        const int vQ = -1,
-                       const int fQ = -1 ) :
+                       const int fQ = -1,
+                       const bool verbose = Dune::Fem::Parameter::verbose()) :
       BaseType(pass, spc),
       caller_( 0 ),
       discreteModel_(problem),
