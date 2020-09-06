@@ -151,7 +151,7 @@ def femDGOperator(Model, space,
         diffusionScheme = "cdg2",
         threading=False,
         defaultQuadrature=False,
-        codeGen=True,
+        codegen=True,
         initialTime=0.0, parameters=None):
 
     includes = []
@@ -378,39 +378,35 @@ def femDGOperator(Model, space,
     gridSizeInterior = Method('gridSizeInterior', '&DuneType::gridSizeInterior')
 
     order = space.order
-    if codeGen:
-        includesExt, moduleNameExt = space.codegen(
-          "op"+ "_" + hashlib.md5(typeName.encode('utf-8')).hexdigest(),
-          interiorQuadratureOrders=range(2,2*order+2),
-          skeletonQuadratureOrders=range(2,2*order+2) )
-        includes = includesExt + includes
+    if codegen:
+        codegen = [space,range(2,2*order+2),range(2,2*order+2)]
     else:
-        moduleNameExt = ""
+        codegen = None
 
     if parameters is not None:
         if advectionFluxIsCallable:
             op = load(includes, typeName, estimateMark, setIndicator, gridSizeInterior,
-                     baseClasses = [base],
-                     moduleExtension = moduleNameExt,
+                     baseClasses=[base],
+                     codegen=codegen,
                      preamble=writer.writer.getvalue()).\
                      Operator( space, advModel, diffModel, advectionFlux, parameters=parameters )
         else:
             op = load(includes, typeName, estimateMark, setIndicator, gridSizeInterior,
                      baseClasses = [base],
-                     moduleExtension = moduleNameExt,
+                     codegen=codegen,
                      preamble=writer.writer.getvalue()).\
                      Operator( space, advModel, diffModel, parameters=parameters )
     else:
         if advectionFluxIsCallable:
             op = load(includes, typeName, estimateMark, setIndicator, gridSizeInterior,
                      baseClasses = [base],
-                     moduleExtension = moduleNameExt,
+                     codegen=codegen,
                      preamble=writer.writer.getvalue()).\
                      Operator( space, advModel, diffModel, advectionFlux )
         else:
             op = load(includes, typeName, estimateMark, setIndicator, gridSizeInterior,
                      baseClasses = [base],
-                     moduleExtension = moduleNameExt,
+                     codegen=codegen,
                      preamble=writer.writer.getvalue()).\
                      Operator( space, advModel, diffModel )
 
@@ -502,9 +498,11 @@ def rungeKuttaSolver( fullOperator, imex='EX', butchertable=None, parameters={} 
     setTimeStepSize = Method('setTimeStepSize', '&DuneType::setTimeStepSize')
     deltaT = Method('deltaT', '&DuneType::deltaT')
 
-    return load(includes, typeName, constructor, solve, setTimeStepSize, deltaT).Operator(
-            fullOperator.fullOperator,
-            fullOperator.explicitOperator,
-            fullOperator.implicitOperator,
-            imexId,
-            parameters=parameters)
+    return load(includes, typeName,
+                constructor, solve, setTimeStepSize, deltaT,
+                codegen=fullOperator.codegen).\
+            Operator( fullOperator.fullOperator,
+                      fullOperator.explicitOperator,
+                      fullOperator.implicitOperator,
+                      imexId,
+                      parameters=parameters )
