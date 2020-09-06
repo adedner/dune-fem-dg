@@ -296,6 +296,17 @@ namespace Fem
         diagnostics_.registerData( "OverallTimer", &overallTime_ );
         diagnostics_.registerData( "NumberOfElements", &odeSolverMonitor_.numberOfElements_ );
       }
+
+#ifdef BASEFUNCTIONSET_CODEGEN_GENERATE
+      {
+        const int maxOrder = 2*solution().space().order() ;
+        std::vector< int > quadOrder( maxOrder );
+        for( int i=2; i<maxOrder+2; ++i )
+          quadOrder.push_back( i );
+        Dune::Fem::generateCode( solution().space(), quadOrder, quadOrder );
+
+      }
+#endif
     }
 
     virtual void doSolve ( const int loop, TimeProviderType& tp ) override

@@ -63,6 +63,7 @@ namespace Fem
                                    Galerkin::Enum::dg,
                                    Adaptivity::Enum::yes,
                                    DiscreteFunctionSpaces::Enum::orthonormal,
+                                   //DiscreteFunctionSpaces::Enum::lagrange,
                                    Solver::Enum::fem,
                                    AdvectionLimiter::Enum::limited,
                                    Matrix::Enum::matrixfree,
