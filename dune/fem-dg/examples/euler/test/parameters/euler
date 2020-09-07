@@ -8,7 +8,7 @@ problem: sod
 # LIMITER SETTINGS
 #-----------------
 # 0 = only dg solution | 1 = only reconstruction | 2 = both 
-femdg.limiter.admissiblefunctions: 1 
+#femdg.limiter.admissiblefunctions: 1 
 # tolerance for shock indicator 
 femdg.limiter.tolerance: 1
 # threshold for avoiding over-excessive limitation 
@@ -29,7 +29,7 @@ gridsol.savestep: 0.5
 gridsol.firstwrite: 0.5
 gridsol.filename: straka-checkpoint
 
-fem.eoc.steps: 3
+fem.eoc.steps: 5
 
 
 # STEPPER
