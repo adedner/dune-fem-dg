@@ -24,7 +24,7 @@ paramfile: ../../parameter/paramBase
 # problem: heat, quasi, plaplace
 problem: pulse
 
-fem.eoc.steps: 3
+fem.eoc.steps: 5
 femdg.stepper.endtime: 0.15
 femdg.stepper.diffusiontimestep: 1
 epsilon: 0.001

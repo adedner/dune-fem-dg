@@ -56,8 +56,9 @@ namespace Fem
     typedef AlgorithmConfigurator< GridSelectorGridType,
                                    Galerkin::Enum::default_,
                                    Adaptivity::Enum::default_,
-                                   DiscreteFunctionSpaces::Enum::gausslobatto, //legendre
-                                   //DiscreteFunctionSpaces::Enum::default_,
+                                   //DiscreteFunctionSpaces::Enum::gausslobatto, //legendre
+                                   //DiscreteFunctionSpaces::Enum::gausslegendre, //legendre
+                                   DiscreteFunctionSpaces::Enum::default_,
                                    Solver::Enum::default_,
                                    AdvectionLimiter::Enum::default_,
                                    Matrix::Enum::default_,

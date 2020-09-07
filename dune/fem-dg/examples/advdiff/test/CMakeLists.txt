@@ -7,7 +7,7 @@ set( GRIDDIM 2 )
 set( POLORDER 2 )
 
 add_definitions( "-DGRIDDIM=${GRIDDIM}" )
-add_definitions( "-DDIMRANGE=5" )
+add_definitions( "-DDIMRANGE=3" )
 
 dune_add_test_case( NAME advdiff
                     SOURCES ../main.cc
