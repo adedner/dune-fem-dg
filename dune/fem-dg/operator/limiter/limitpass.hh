@@ -402,13 +402,13 @@ namespace Fem
     //! return default face quadrature order
     static int defaultVolumeQuadratureOrder( const DiscreteFunctionSpaceType& space, const EntityType& entity )
     {
-      return (2 * space.order( entity ));
+      return DefaultQuadrature< DiscreteFunctionSpaceType >::volumeOrder( space.order( entity ) );
     }
 
     //! return default face quadrature order
     static int defaultFaceQuadratureOrder( const DiscreteFunctionSpaceType& space, const EntityType& entity )
     {
-      return (2 * space.order( entity )) + 1;
+      return DefaultQuadrature< DiscreteFunctionSpaceType >::faceOrder( space.order( entity ) );
     }
 
   protected:
