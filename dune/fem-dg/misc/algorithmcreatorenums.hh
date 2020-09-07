@@ -77,7 +77,11 @@ namespace Fem
       //! Discrete function space with Lagrange Finite Elements
       lagrange,
       //! p-adaptive space from dune-fem, implementing dg and lagrange
-      padaptive
+      padaptive,
+      //! Lagrange space with GaussLobatto interpolation points
+      gausslobatto,
+      //! Lagrange space with GaussLegendre interpolation points
+      gausslegendre
     };
   }
 

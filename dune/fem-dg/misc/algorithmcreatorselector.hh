@@ -51,6 +51,7 @@
 
 #include <dune/fem-dg/assemble/primalmatrix.hh>
 #include <dune/fem/space/discontinuousgalerkin.hh>
+#include <dune/fem/space/lagrange.hh>
 
 #include <dune/fem-dg/operator/dg/operatortraits.hh>
 
@@ -536,6 +537,20 @@ namespace Fem
   {
     typedef HierarchicLegendreDiscontinuousGalerkinSpace< FunctionSpaceImp, GridPartImp, polOrder, CachingStorage > type;
   };
+
+#if HAVE_DUNE_LOCALFUNCTIONS
+  template< class FunctionSpaceImp, class GridPartImp, int polOrder >
+  struct DiscreteFunctionSpaceSelector< FunctionSpaceImp, GridPartImp, polOrder, DiscreteFunctionSpaces::Enum::gausslobatto, Galerkin::Enum::dg >
+  {
+    typedef FixedOrderDGLagrangeSpace< FunctionSpaceImp, GridPartImp, polOrder, Dune::GaussLobattoPointSet, CachingStorage > type;
+  };
+
+  template< class FunctionSpaceImp, class GridPartImp, int polOrder >
+  struct DiscreteFunctionSpaceSelector< FunctionSpaceImp, GridPartImp, polOrder, DiscreteFunctionSpaces::Enum::gausslegendre, Galerkin::Enum::dg >
+  {
+    typedef FixedOrderDGLagrangeSpace< FunctionSpaceImp, GridPartImp, polOrder, Dune::GaussLegendrePointSet, CachingStorage > type;
+  };
+#endif
 
   template< class ModelImp, class DiscreteFunctionSpaceImp,
             DiffusionFlux::Enum diffFluxId, Formulation::Enum form >
