@@ -14,6 +14,7 @@
 
 #include <dune/fem-dg/pass/dginversemass.hh>
 #include <dune/fem-dg/misc/crs.hh>
+#include <dune/fem-dg/operator/dg/defaultquadrature.hh>
 
 namespace Dune
 {
@@ -107,7 +108,8 @@ namespace Dune
       : scalarSpace_( const_cast< GridPartType& > (key.gridPart()) ),
         volumeQuadratureOrder_( 2 * scalarSpace_.order() ),
         matrices_( Fem :: ThreadManager :: maxThreads() ),
-        localMassMatrix_( scalarSpace_ ),
+        localMassMatrix_( scalarSpace_, [this](const int order) { return
+            DefaultQuadrature< ScalarDiscreteFunctionSpaceType >::volumeOrder(order); }  ),
         sequence_( -1 )
       {
         assert( Fem::ThreadManager::singleThreadMode() );

@@ -13,6 +13,8 @@
 
 #include <dune/fem-dg/pass/pass.hh>
 #include <dune/fem-dg/pass/discretemodel.hh>
+#include <dune/fem-dg/operator/dg/defaultquadrature.hh>
+
 
 namespace Dune
 {
@@ -94,7 +96,7 @@ namespace Dune
       explicit DGInverseMassPass ( PreviousPass &previousPass,
                                    const DiscreteFunctionSpaceType &space )
       : BaseType( previousPass, space, "DGInverseMassPass" ),
-        localMassMatrix_( space, 2*space.order() ),
+        localMassMatrix_( space, [this](const int order) { return DefaultQuadrature<DiscreteFunctionSpaceType >::volumeOrder(order); } ),
         arg_( 0 ),
         dest_( 0 )
       {}
@@ -106,7 +108,8 @@ namespace Dune
                                    const int volQuadOrd  = -1,
                                    const int faceQuadOrd = -1)
       : BaseType( previousPass, space, "DGInverseMassPass" ),
-        localMassMatrix_( space, ( volQuadOrd == -1 ) ? (2*space.order()) : volQuadOrd ),
+        localMassMatrix_( space, [this,volQuadOrd](const int order) { return
+            ( volQuadOrd == -1 ) ? DefaultQuadrature<DiscreteFunctionSpaceType >::volumeOrder(order) : volQuadOrd; } ),
         arg_( 0 ),
         dest_( 0 )
       {}

@@ -171,7 +171,7 @@ namespace Fem
       argOrder_( spc_.order() ),
       geoInfo_( gridPart_.indexSet() ),
       phi0_( 0 ),
-      localMassMatrix_( spc_ , 2*spc_.order()+3 ),
+      localMassMatrix_( spc_, [this](const int order) { return DefaultQuadrature<DiscreteFunctionSpaceType >::volumeOrder(order); } ),
       stepTime_(3, 0.0)
     {
       // we need the flux here

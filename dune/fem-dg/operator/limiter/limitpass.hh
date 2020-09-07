@@ -39,6 +39,9 @@
 #include <dune/fem-dg/operator/limiter/smoothness.hh>
 #include <dune/fem-dg/operator/limiter/indicatorbase.hh>
 
+#include <dune/fem-dg/operator/dg/defaultquadrature.hh>
+
+
 //*************************************************************
 namespace Dune
 {
@@ -347,7 +350,7 @@ namespace Fem
       matrixCacheVec_( gridPart_.grid().maxLevel() + 1 ),
       factors_(),
       numbers_(),
-      localMassMatrix_( spc_ , 2*spc_.order() ),
+      localMassMatrix_( spc_ , [this](const int order) { return DefaultQuadrature<DiscreteFunctionSpaceType >::volumeOrder(order); } ),
       adaptive_((AdaptationMethodType(gridPart_.grid())).adaptive()),
       cartesianGrid_( CheckCartesianType::check( gridPart_ ) ),
       stepTime_(3, 0.0),

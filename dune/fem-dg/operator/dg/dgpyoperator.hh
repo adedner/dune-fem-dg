@@ -22,6 +22,7 @@
 #include <dune/fem-dg/models/modelwrapper.hh>
 #include <dune/fem-dg/misc/algorithmcreatorselector.hh>
 #include <dune/fem-dg/operator/adaptation/estimator.hh>
+#include <dune/fem-dg/operator/dg/defaultquadrature.hh>
 
 // this is part of dune-fem now
 #include <dune/fempy/quadrature/fempyquadratures.hh>
@@ -82,40 +83,11 @@ namespace Fem
 
     typedef typename DiffusionFluxSelector< ModelType, DiscreteFunctionSpaceType, diffFluxId, formId >::type  DiffusionFluxType;
 
-    template <int d, class Space>
-    struct OperatorTraitsSelector
-    {
-      // default quadratures for normal spaces
-      typedef DefaultOperatorTraits< ModelType, DestinationType, AdvectionFluxType, DiffusionFluxType,
-                                     std::tuple<>, typename Space::FunctionSpaceType,
-                                     Dune::Fem::DefaultQuadratureTraits,
-                                     threading> type;
-    };
-
-#if HAVE_DUNE_LOCALFUNCTIONS
-    template < int d, class FunctionSpace, class GridPart, unsigned int order, template< class > class Storage >
-    struct OperatorTraitsSelector< d, Dune::Fem::FixedOrderDGLagrangeSpace< FunctionSpace, GridPart, order, Dune::GaussLobattoPointSet, Storage > >
-    {
-      // default quadratures for normal spaces
-      typedef DefaultOperatorTraits< ModelType, DestinationType, AdvectionFluxType, DiffusionFluxType,
-                                     std::tuple<>, FunctionSpace,
-                                     Dune::Fem::GaussLobattoQuadratureTraits,
-                                     threading> type;
-    };
-
-    template < int d, class FunctionSpace, class GridPart, unsigned int order, template< class > class Storage >
-    struct OperatorTraitsSelector< d, Dune::Fem::FixedOrderDGLagrangeSpace< FunctionSpace, GridPart, order, Dune::GaussLegendrePointSet, Storage > >
-    {
-      // default quadratures for normal spaces
-      typedef DefaultOperatorTraits< ModelType, DestinationType, AdvectionFluxType, DiffusionFluxType,
-                                     std::tuple<>, FunctionSpace,
-                                     Dune::Fem::GaussLegendreQuadratureTraits,
-                                     threading> type;
-    };
-#endif
-
     typedef typename std::conditional< Additional::defaultQuadrature,
-            typename OperatorTraitsSelector< 0, DiscreteFunctionSpaceType > :: type,
+            DefaultOperatorTraits< ModelType, DestinationType, AdvectionFluxType, DiffusionFluxType,
+                                   std::tuple<>, typename DiscreteFunctionSpaceType::FunctionSpaceType,
+                                   DefaultQuadrature< DiscreteFunctionSpaceType >::template DefaultQuadratureTraits,
+                                   threading>,
             // fempy quadratures
             DefaultOperatorTraits< ModelType, DestinationType, AdvectionFluxType, DiffusionFluxType,
                                    std::tuple<>, typename DiscreteFunctionSpaceType::FunctionSpaceType,

@@ -19,6 +19,7 @@
 #include <dune/fem-dg/pass/modelcaller.hh>
 #include <dune/fem-dg/pass/discretemodel.hh>
 #include <dune/fem/misc/compatibility.hh>
+#include <dune/fem-dg/operator/dg/defaultquadrature.hh>
 
 #include <dune/fem/io/parameter.hh>
 
@@ -159,12 +160,12 @@ namespace Fem
       : BaseType(pass, spc),
         caller_(),
         discreteModel_(discreteModel),
-        arg_(0),
-        dest_(0),
+        arg_( nullptr ),
+        dest_( nullptr ),
         spc_(spc),
         gridPart_(spc_.gridPart()),
         indexSet_(gridPart_.indexSet()),
-        visited_(0),
+        visited_(),
         updEn_(spc_),
         updNeigh_(spc_),
         valEnVec_( 20 ),
@@ -179,7 +180,7 @@ namespace Fem
 #ifdef USE_CACHED_INVERSE_MASSMATRIX
         localMassMatrix_( InverseMassProviderType :: getObject( MassKeyType( gridPart_ ) ) ),
 #else
-        localMassMatrix_( spc_ , volumeQuadOrd_ ),
+        localMassMatrix_( spc_ , [this](const int order) { return DefaultQuadrature<DiscreteFunctionSpaceType >::volumeOrder(order); } ),
 #endif
         reallyCompute_( true )
     {
@@ -662,10 +663,10 @@ namespace Fem
 
               // eval boundary Flux
               wspeedS += caller().boundaryFlux(intersection,
-                                              faceQuadInner,
-                                              l,
-                                              fluxEn,
-                                              diffFluxEn)
+                                               faceQuadInner,
+                                               l,
+                                               fluxEn,
+                                               diffFluxEn)
                        * faceQuadInner.weight(l);
 
               // apply weights
@@ -771,6 +772,7 @@ namespace Fem
         flux *= intel;
 
       }
+
       // add values to local function
       updEn.axpyQuadrature( volQuad, valJacEn_ );
     }
@@ -941,13 +943,13 @@ namespace Fem
     //! return default face quadrature order
     static int defaultVolumeQuadratureOrder( const DiscreteFunctionSpaceType& space, const EntityType& entity )
     {
-      return (2 * space.order( entity ));
+      return DefaultQuadrature< DiscreteFunctionSpaceType >::volumeOrder( space.order( entity ) );
     }
 
-    //! return default face quadrature order
+    //! return default face quadrature
     static int defaultFaceQuadratureOrder( const DiscreteFunctionSpaceType& space, const EntityType& entity )
     {
-      return (2 * space.order( entity )) + 1;
+      return DefaultQuadrature< DiscreteFunctionSpaceType >::faceOrder( space.order( entity ) );
     }
 
   protected:
