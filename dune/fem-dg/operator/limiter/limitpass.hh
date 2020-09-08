@@ -23,6 +23,7 @@
 #include <dune/fem/space/finitevolume.hh>
 
 #include <dune/fem/function/adaptivefunction.hh>
+#include <dune/fem/function/localfunction/bindable.hh>
 
 #include <dune/fem/misc/compatibility.hh>
 #include <dune/fem/misc/threads/threadmanager.hh>
@@ -285,6 +286,60 @@ namespace Fem
 
     typedef Dune::FV::LPReconstruction< GridViewType, RangeType, BoundaryValue > LinearProgramming;
 
+    struct ConstantFunction :
+      public Dune::Fem::BindableGridFunction< GridPartType, Dune::Dim<dimRange> >
+    {
+      typedef Dune::Fem::BindableGridFunction<GridPartType, Dune::Dim<dimRange> > Base;
+      typedef typename Base::RangeType RangeType;
+      using Base::Base;
+
+      RangeType value_;
+
+      template <class Point>
+      void evaluate(const Point &x, typename Base::RangeType &ret) const
+      {
+        ret = value_;
+      }
+
+      bool isConstant() const { return true; }
+
+      unsigned int order() const { return 0; }
+      std::string name() const { return "LimmitPass::ConstantFunction"; } // needed for output
+    };
+
+    struct LinearFunction : public ConstantFunction
+    {
+      DomainType   center_;
+      GradientType gradient_;
+
+      typedef ConstantFunction Base;
+      typedef typename Base::RangeType RangeType;
+      using Base::Base;
+      using Base::value_;
+
+      template <class Point>
+      void evaluate(const Point &x, RangeType &ret) const
+      {
+        Base::evaluate( x, ret );
+
+        // get global coordinate
+        auto point = Base::global( x );
+        point -= center_;
+
+        // evaluate linear function
+        for( int r = 0; r < dimRange; ++r )
+        {
+          ret[ r ] += (gradient_[ r ] * point);
+        }
+      }
+
+      bool isConstant() const { return gradient_.infinity_norm() < 1e-10; }
+
+      unsigned int order() const { return 1; }
+      std::string name() const { return "LimmitPass::LinearFunction"; } // needed for output
+    };
+
+
   public:
     //- Public methods
     /** \brief constructor
@@ -330,6 +385,7 @@ namespace Fem
       dest_(0),
       spc_(spc),
       gridPart_(spc_.gridPart()),
+      linearFunction_( gridPart_ ),
       linProg_(),
       indexSet_( gridPart_.indexSet() ),
       localIdSet_( gridPart_.grid().localIdSet()),
@@ -803,6 +859,9 @@ namespace Fem
       // set entity to caller
       caller().setEntity( en );
 
+      // initialize linear function
+      linearFunction_.bind( en );
+
       // get function to limit
       const ArgumentFunctionType &U = *(std::get< argumentPosition >( *arg_ ));
 
@@ -810,13 +869,17 @@ namespace Fem
       const LocalFunctionType uEn = U.localFunction(en);
 
       // get geometry
-      const Geometry& geo = en.geometry();
+      const Geometry& geo = linearFunction_.geometry();
 
       // cache geometry type
       const GeometryType geomType = geo.type();
       // get bary center of element
       const LocalDomainType& wLocal = geoInfo_.localCenter( geomType );
-      const DomainType enBary = geomType.isNone() ? geo.center() : geo.global( wLocal );
+
+      DomainType& enBary = linearFunction_.center_;
+
+      // compute barycenter of element
+      enBary = geomType.isNone() ? geo.center() : geo.global( wLocal );
 
       const IntersectionIteratorType endnit = gridPart_.iend( en );
       IntersectionIteratorType niter = gridPart_.ibegin(en);
@@ -828,7 +891,7 @@ namespace Fem
       RangeType shockIndicator(0);
       RangeType adaptIndicator(0);
 
-      RangeType enVal;
+      RangeType& enVal = linearFunction_.value_;
 
       // if limiter is true then limitation is done
       // when we want to reconstruct in any case then
@@ -948,6 +1011,8 @@ namespace Fem
       // increase number of limited elements
       ++limitedElements_;
 
+      GradientType& gradient = linearFunction_.gradient_;
+
       // use linear function from LP reconstruction
       if( usedAdmissibleFunctions_ == lp )
       {
@@ -955,7 +1020,7 @@ namespace Fem
         fillAverageValues( en, enIndex, U, enVal );
         assert( linProg_ );
         // compute optimal linear reconstruction
-        linProg_->applyLocal( en, gridPart_.indexSet(), values_, deoMod_ );
+        linProg_->applyLocal( en, gridPart_.indexSet(), values_, gradient );
       }
       else
       {
@@ -968,7 +1033,7 @@ namespace Fem
         }
 
         // reset values
-        deoMods_.clear();
+        gradients_.clear();
         comboVec_.clear();
 
         if( usedAdmissibleFunctions_ == muscl || usedAdmissibleFunctions_ == muscldg )
@@ -978,11 +1043,11 @@ namespace Fem
           assert( matrixCacheLevel < (int) matrixCacheVec_.size() );
           MatrixCacheType& matrixCache = matrixCacheVec_[ matrixCacheLevel ];
 
-          // calculate linear functions, stored in deoMods_ and comboVec_
+          // calculate linear functions, stored in gradients_ and comboVec_
           LimiterUtilityType::calculateLinearFunctions( comboSet, geomType, flags,
                                     barys_, nbVals_,
                                     matrixCache,
-                                    deoMods_,
+                                    gradients_,
                                     comboVec_ );
         }
 
@@ -995,10 +1060,10 @@ namespace Fem
         // Limiting
         std::vector< RangeType > factors;
         LimiterUtilityType::limitFunctions(
-            discreteModel_.limiterFunction(), comboVec_, barys_, nbVals_, deoMods_, factors );
+            discreteModel_.limiterFunction(), comboVec_, barys_, nbVals_, gradients_, factors );
 
         // take maximum of limited functions
-        LimiterUtilityType::getMaxFunction(deoMods_, deoMod_, factors_[ enIndex ], numbers_[ enIndex ], factors );
+        LimiterUtilityType::getMaxFunction(gradients_, gradient, factors_[ enIndex ], numbers_[ enIndex ], factors );
       } // end if linProg
 
       ////////////////////////////////////////////////////////////////////
@@ -1010,10 +1075,8 @@ namespace Fem
       // get local funnction for limited values
       DestLocalFunctionType limitEn = dest_->localFunction(en);
 
-      // if the sum of all entries is small we assume constant value
-      const bool constantValue = deoMod_.infinity_norm() < 1e-10;
-      // project deoMod_ to limitEn
-      L2project(en, geo, enBary, enVal, limit, deoMod_, limitEn, constantValue );
+      // project linearFunction onto limitEn
+      interpolate( en, geo, limit, linearFunction_, limitEn );
 
       assert( checkPhysical(en, geo, limitEn) );
 
@@ -1100,7 +1163,7 @@ namespace Fem
         A.mv( rhs, D[ r ]);
       }
 
-      deoMods_.push_back( D );
+      gradients_.push_back( D );
       std::vector<int> comb( nbVals_.size() );
       const size_t combSize = comb.size();
       for (size_t i=0;i<combSize; ++i) comb[ i ] = i;
@@ -1190,16 +1253,14 @@ namespace Fem
       }
     };
 
+
     // L2 projection
     template <class LocalFunctionImp>
-    void L2project(const EntityType& en,
-       const Geometry& geo,
-       const DomainType& enBary,
-       const RangeType& enVal,
-       const FieldVector<bool,dimRange>& limit,
-       const GradientType& deoMod,
-       LocalFunctionImp& limitEn,
-       const bool constantValue = false ) const
+    void interpolate(const EntityType& en,
+                     const Geometry& geo,
+                     const FieldVector<bool,dimRange>& limit,
+                     const LinearFunction& linearFunction,
+                     LocalFunctionImp& limitEn ) const
     {
       enum { dim = dimGrid };
 
@@ -1210,36 +1271,18 @@ namespace Fem
       uTmpLocal_.init( en );
       uTmpLocal_.clear();
 
-      // get quadrature for destination space order
-      VolumeQuadratureType quad( en, spc_.order() + 1 );
+      const auto interpolation = spc_.interpolation( en );
 
-      const int quadNop = quad.nop();
-      for(int qP = 0; qP < quadNop ; ++qP)
+      const bool constantValue = linearFunction.isConstant();
+      if( constantValue )
       {
-        // get quadrature weight
-        const double intel = (affineMapping) ?
-          quad.weight(qP) : // affine case
-          quad.weight(qP) * geo.integrationElement( quad.point(qP) ); // general case
-
-        RangeType retVal( enVal );
-        // if we don't have only constant value then evaluate function
-        if( !constantValue )
-        {
-          // get global coordinate
-          DomainType point = geo.global( quad.point( qP ) );
-          point -= enBary;
-
-          // evaluate linear function
-          for( int r = 0; r < dimRange; ++r )
-            retVal[ r ] += (deoMod[ r ] * point);
-        }
-
-        retVal *= intel;
-        uTmpLocal_.axpy( quad[ qP ], retVal );
+        const ConstantFunction& constFct = linearFunction;
+        interpolation( constFct, uTmpLocal_.localDofVector() );
       }
-
-      if( !affineMapping )
-        localMassMatrix_.applyInverse( en, uTmpLocal_ );
+      else
+      {
+        interpolation( linearFunction, uTmpLocal_.localDofVector() );
+      }
 
       // check physicality of projected data
       if ( (! constantValue) && (! checkPhysical(en, geo, uTmpLocal_)) )
@@ -1260,9 +1303,9 @@ namespace Fem
         }
         else
         {
-          // if not physical project to mean value
-          L2project(en,geo,enBary,enVal,limit,deoMod_, limitEn, true);
-          return ;
+          // general interpolation of constant value
+          const ConstantFunction& constFct = linearFunction;
+          interpolation( constFct, uTmpLocal_.localDofVector() );
         }
       }
 
@@ -1759,6 +1802,8 @@ namespace Fem
     const DiscreteFunctionSpaceType& spc_;
     GridPartType& gridPart_;
 
+    mutable LinearFunction linearFunction_;
+
     std::unique_ptr< LinearProgramming > linProg_;
 
     const IndexSetType& indexSet_;
@@ -1785,10 +1830,9 @@ namespace Fem
     const GeometryInformationType geoInfo_;
     const FaceGeometryInformationType faceGeoInfo_;
 
-    mutable GradientType deoMod_;
     mutable RangeType    phi0_ ;
 
-    mutable std::vector< GradientType > deoMods_;
+    mutable std::vector< GradientType > gradients_;
     mutable std::vector< CheckType >    comboVec_;
 
     mutable std::vector< DomainType > barys_;
