@@ -64,7 +64,8 @@ namespace Fem
     typedef typename DiscreteGradientSpaceType::RangeType             GradientType;
     typedef Fem::TemporaryLocalFunction< DiscreteGradientSpaceType >  LiftingFunctionType;
 
-    typedef Fem::CachingQuadrature< GridPartType, 0>                  VolumeQuadratureType ;
+    typedef Fem::CachingQuadrature< GridPartType, 0,
+         DefaultQuadrature<DiscreteGradientSpaceType>::template DefaultQuadratureTraits>   VolumeQuadratureType ;
 
     typedef Fem::LocalMassMatrix
       < DiscreteGradientSpaceType, VolumeQuadratureType >             LocalMassMatrixType;
