@@ -295,6 +295,14 @@ namespace Fem
 
       RangeType value_;
 
+      template <class Quadrature, class RangeArray>
+      void evaluateQuadrature(const Quadrature& quadrature, RangeArray &values) const
+      {
+        const int nop = quadrature.nop();
+        values.resize( nop );
+        std::fill( values.begin(), values.end(), value_ );
+      }
+
       template <class Point>
       void evaluate(const Point &x, typename Base::RangeType &ret) const
       {
@@ -316,6 +324,17 @@ namespace Fem
       typedef typename Base::RangeType RangeType;
       using Base::Base;
       using Base::value_;
+
+      template <class Quadrature, class RangeArray>
+      void evaluateQuadrature(const Quadrature& quadrature, RangeArray &values) const
+      {
+        const int nop = quadrature.nop();
+        values.resize( nop );
+        for( int qp = 0; qp<nop; ++qp )
+        {
+          evaluate( quadrature[ qp ], values[ qp ] );
+        }
+      }
 
       template <class Point>
       void evaluate(const Point &x, RangeType &ret) const
