@@ -503,6 +503,13 @@ namespace Fem
 ///////////////////////////////////////////////////////////////////////////
 // DiscreteFunctionSpaceSelector
 ///////////////////////////////////////////////////////////////////////////
+#if USE_BASEFUNCTIONSET_CODEGEN
+  template <class T>
+  using Storage = Dune::Fem::CodegenStorage<T>;
+#else
+  template <class T>
+  using Storage = Dune::Fem::CachingStorage<T>;
+#endif
 
   template< class FunctionSpaceImp, class GridPartImp, int polOrder, DiscreteFunctionSpaces::Enum dfType, Galerkin::Enum opType >
   struct DiscreteFunctionSpaceSelector;
@@ -510,45 +517,45 @@ namespace Fem
   template< class FunctionSpaceImp, class GridPartImp, int polOrder >
   struct DiscreteFunctionSpaceSelector< FunctionSpaceImp, GridPartImp, polOrder, DiscreteFunctionSpaces::Enum::lagrange, Galerkin::Enum::cg >
   {
-    typedef LagrangeDiscreteFunctionSpace< FunctionSpaceImp, GridPartImp, polOrder, CachingStorage > type;
+    typedef LagrangeDiscreteFunctionSpace< FunctionSpaceImp, GridPartImp, polOrder, Storage > type;
   };
 
   template< class FunctionSpaceImp, class GridPartImp, int polOrder >
   struct DiscreteFunctionSpaceSelector< FunctionSpaceImp, GridPartImp, polOrder, DiscreteFunctionSpaces::Enum::legendre, Galerkin::Enum::dg >
   {
-    typedef LegendreDiscontinuousGalerkinSpace< FunctionSpaceImp, GridPartImp, polOrder, CachingStorage > type;
+    typedef LegendreDiscontinuousGalerkinSpace< FunctionSpaceImp, GridPartImp, polOrder, Storage > type;
   };
 
   template< class FunctionSpaceImp, class GridPartImp, int polOrder >
   struct DiscreteFunctionSpaceSelector< FunctionSpaceImp, GridPartImp, polOrder, DiscreteFunctionSpaces::Enum::orthonormal, Galerkin::Enum::dg >
   {
-    typedef DiscontinuousGalerkinSpace< FunctionSpaceImp, GridPartImp, polOrder, CachingStorage > type;
+    typedef DiscontinuousGalerkinSpace< FunctionSpaceImp, GridPartImp, polOrder, Storage > type;
   };
 
   template< class FunctionSpaceImp, class GridPartImp, int polOrder >
   struct DiscreteFunctionSpaceSelector< FunctionSpaceImp, GridPartImp, polOrder, DiscreteFunctionSpaces::Enum::lagrange, Galerkin::Enum::dg >
   {
-    typedef LagrangeDiscontinuousGalerkinSpace< FunctionSpaceImp, GridPartImp, polOrder, CachingStorage > type;
+    typedef LagrangeDiscontinuousGalerkinSpace< FunctionSpaceImp, GridPartImp, polOrder, Storage > type;
   };
 
 
   template< class FunctionSpaceImp, class GridPartImp, int polOrder >
   struct DiscreteFunctionSpaceSelector< FunctionSpaceImp, GridPartImp, polOrder, DiscreteFunctionSpaces::Enum::hierarchic_legendre, Galerkin::Enum::dg >
   {
-    typedef HierarchicLegendreDiscontinuousGalerkinSpace< FunctionSpaceImp, GridPartImp, polOrder, CachingStorage > type;
+    typedef HierarchicLegendreDiscontinuousGalerkinSpace< FunctionSpaceImp, GridPartImp, polOrder, Storage > type;
   };
 
 #if HAVE_DUNE_LOCALFUNCTIONS
   template< class FunctionSpaceImp, class GridPartImp, int polOrder >
   struct DiscreteFunctionSpaceSelector< FunctionSpaceImp, GridPartImp, polOrder, DiscreteFunctionSpaces::Enum::gausslobatto, Galerkin::Enum::dg >
   {
-    typedef FixedOrderDGLagrangeSpace< FunctionSpaceImp, GridPartImp, polOrder, Dune::GaussLobattoPointSet, CachingStorage > type;
+    typedef FixedOrderDGLagrangeSpace< FunctionSpaceImp, GridPartImp, polOrder, Dune::GaussLobattoPointSet, Storage > type;
   };
 
   template< class FunctionSpaceImp, class GridPartImp, int polOrder >
   struct DiscreteFunctionSpaceSelector< FunctionSpaceImp, GridPartImp, polOrder, DiscreteFunctionSpaces::Enum::gausslegendre, Galerkin::Enum::dg >
   {
-    typedef FixedOrderDGLagrangeSpace< FunctionSpaceImp, GridPartImp, polOrder, Dune::GaussLegendrePointSet, CachingStorage > type;
+    typedef FixedOrderDGLagrangeSpace< FunctionSpaceImp, GridPartImp, polOrder, Dune::GaussLegendrePointSet, Storage > type;
   };
 #endif
 
