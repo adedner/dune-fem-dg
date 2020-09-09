@@ -66,7 +66,7 @@ namespace Dune
 
     template< class FunctionSpace, class GridPart, unsigned int order >
     struct DefaultQuadratureSpec< FixedOrderLagrangeFiniteElementMap< FunctionSpace, GridPart, order, Dune::GaussLegendrePointSet > >
-    : public DefaultQuadratureGaussLobatto
+    : public DefaultQuadratureGaussLegendre
     {
     };
 
