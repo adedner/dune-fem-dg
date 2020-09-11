@@ -63,7 +63,10 @@ def run(Model, Stepper=None,
 
     # create discrete function space
     try:
-        if space.lower() == "finitevolume":
+        if type(space) in [list,tuple]:
+            space = create.space( space[0], grid, dimRange=dimR, order=polOrder,
+                       pointType=space[1] )
+        elif space.lower() == "finitevolume":
             space = create.space( space, grid, dimRange=dimR)
         else:
             space = create.space( space, grid, order=polOrder, dimRange=dimR)
@@ -72,7 +75,10 @@ def run(Model, Stepper=None,
     if modifyModel is not None:
         Model = modifyModel(Model,space)
 
-    operator = femDGOperator(Model, space, limiter=limiter, threading=threading, parameters=parameters )
+    operator = femDGOperator(Model, space,
+        limiter=limiter, threading=threading, parameters=parameters,
+        defaultQuadrature=True
+        )
     stepper  = Stepper(operator, cfl)
     # create and initialize solution
     u_h = space.interpolate(Model.initial, name='u_h')

@@ -1,5 +1,6 @@
 from ufl import *
 from dune.common import FieldVector
+from dune.grid import reader
 from dune.ufl import Space, GridFunction
 from dune.fem.function import gridFunction
 import numpy
@@ -128,7 +129,8 @@ def sod(dim=2,gamma=1.4):
     #Model.domain=[[0, 0], [1, 0.25], [256, 64]]
     #Model.domain=[[0, 0], [1, 0.25], [128, 32]]
     Model.domain=[[0, 0], [1, 0.25], [64, 16]]
-    Model.endTime=0.15
+    Model.domain=(reader.dgf, "grid2d_nonaffine.dgf")
+    Model.endTime=0.25
     def chorin(gv,t):
         gf = gv.function("chorin","chorin.hh", Vl,Vr,gamma,x0,t,name="chorin")
         lgf = gf.localFunction() # this seems to fail?
@@ -137,7 +139,7 @@ def sod(dim=2,gamma=1.4):
             lgf.bind(e)
             return FieldVector( Model.toCons(lgf(x)) )
             # return Model.toCons(gf(e,x))
-        lf.plot()
+        # lf.plot()
         return lf
     Model.exact = lambda gv,t: chorin(gv,t)
     Model.name="sod"

@@ -150,7 +150,7 @@ def femDGOperator(Model, space,
         advectionFlux="default",
         diffusionScheme = "cdg2",
         threading=False,
-        defaultQuadrature=False,
+        defaultQuadrature=True,
         codegen=True,
         initialTime=0.0, parameters=None):
 
