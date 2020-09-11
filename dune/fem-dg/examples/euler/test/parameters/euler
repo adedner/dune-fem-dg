@@ -19,7 +19,7 @@ femdg.limiter.indicatoroutput: true
 # DATA WRITER
 #------------
 fem.io.datafileprefix: RC
-fem.io.savestep: 0.16 # SaveStep (write data every `saveStep' time period, <=0 deactivates)
+fem.io.savestep: 0.01 # SaveStep (write data every `saveStep' time period, <=0 deactivates)
 fem.io.savecount: -1 # SaveCount (write data every saveCount time steps, <=0 deactivates)
 
 
@@ -31,6 +31,9 @@ gridsol.filename: straka-checkpoint
 
 fem.eoc.steps: 4
 femdg.stepper.printcount: 100
+
+# coarsest level that should be present (also initial refinement)
+fem.adaptation.coarsestLevel: 0
 
 # STEPPER
 #--------
@@ -71,7 +74,8 @@ fem.adaptation.finestLevel: 6
 # DOMAIN SETUP
 #-------------
 fem.io.macroGridFile_1d:  ../../grids/unitcube1.dgf
-fem.io.macroGridFile_2d:  ../../grids/grid2d_str1d.dgf
+#fem.io.macroGridFile_2d:  ../../grids/grid2d_str1d.dgf
+fem.io.macroGridFile_2d:  ../../grids/grid2d_nonaffine.dgf
 fem.io.macroGridFile_3d:  ../../grids/unitcube3.dgf
 
 
