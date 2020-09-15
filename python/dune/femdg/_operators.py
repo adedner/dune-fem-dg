@@ -294,8 +294,7 @@ def femDGOperator(Model, space,
         limitedDimRange = "FunctionSpace :: dimRange"
     else:
         limiterModified = {}
-        count = 0
-        for id,f in limiterModifiedDict.items(): count += 1
+        count = len( limiterModifiedDict.items() )
         limitedDimRange = str(count)
     struct.append([Declaration(
         Variable("const int", "limitedDimRange = " + limitedDimRange),

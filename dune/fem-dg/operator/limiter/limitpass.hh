@@ -418,7 +418,7 @@ namespace Fem
       storedComboSets_(),
       tolFactor_( getTolFactor() ),
       indicator_( getIndicator(parameter) ),
-      tol_1_( 1.0/ parameter.getValue("femdg.limiter.tolerance", double(0.5) ) ),
+      tol_1_( 2./ parameter.getValue("femdg.limiter.tolerance", double(1.0) ) ),
       geoInfo_( gridPart_.indexSet() ),
       faceGeoInfo_( geoInfo_.geomTypes(1) ),
       phi0_( 0 ),

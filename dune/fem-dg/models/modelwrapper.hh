@@ -240,8 +240,8 @@ namespace Fem
 
     void obtainBounds( RangeType& globalMin, RangeType& globalMax) const
     {
-      globalMin = 0;
-      globalMax = std::numeric_limits<double>::max();
+      assert( hasAdvection );
+      advection().obtainBounds(globalMin, globalMax);
     }
 
     bool isConstant( const RangeType& min, const RangeType& max ) const

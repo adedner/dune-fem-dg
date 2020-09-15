@@ -1,9 +1,12 @@
-from __future__ import division, print_function, unicode_literals
 
-# from dune.ufl.codegen import generateMethod
-from ufl import grad, TrialFunction, SpatialCoordinate, FacetNormal, Coefficient, replace, diff, as_vector
+from functools import reduce
+
+from ufl import grad, TrialFunction, SpatialCoordinate, FacetNormal,\
+                Coefficient, replace, diff, as_vector,\
+                conditional
 from ufl.core.expr import Expr
-from dune.source.cplusplus import Variable, UnformattedExpression, AccessModifier, Declaration
+from dune.source.cplusplus import Variable, UnformattedExpression,\
+                                  AccessModifier, Declaration, Method
 from ufl.algorithms import expand_compounds, expand_derivatives, expand_indices, expand_derivatives
 
 def uflExpr(Model,space,t):
@@ -11,6 +14,32 @@ def uflExpr(Model,space,t):
     n = FacetNormal(space.cell())
     x = SpatialCoordinate(space.cell())
 
+    physicalBound = None
+    lowerBound = getattr(Model,"lowerBound",None)
+    if lowerBound is None:
+        lowerBound = space.dimRange*["std::numeric_limits<double>::min()"]
+    else:
+        physicalBound = reduce( (lambda x,y: x*y),
+                                [conditional(u[i]>=lowerBound[i],1,0)
+                                  for i in range(len(lowerBound))
+                                  if lowerBound[i] is not None
+                                ], None )
+        if physicalBound == None: lowerBound=space.dimRange*["std::numeric_limits<double>::min()"]
+    upperBound = getattr(Model,"upperBound",None)
+    if upperBound is None:
+        upperBound = space.dimRange*["std::numeric_limits<double>::max()"]
+    else:
+        physicalBound_ = reduce( (lambda x,y: x*y),
+                                [conditional(u[i]>=upperBound[i],1,0)
+                                  for i in range(len(upperBound))
+                                  if upperBound[i] is not None
+                                ], None )
+        if physicalBound_ == None: lowerBound=space.dimRange*["std::numeric_limits<double>::max()"]
+        elif physicalBound_ is not None:
+              physicalBound = physicalBound_ if physicalBound is None else\
+                              physicalBound*physicalBound_
+
+    if physicalBound == [None]: physicalBound = None
     maxSpeed = getattr(Model,"maxLambda",None)
     if maxSpeed is not None:
         maxSpeed = maxSpeed(t,x,u,n)
@@ -20,9 +49,14 @@ def uflExpr(Model,space,t):
     diffusionTimeStep = getattr(Model,"maxDiffusion",None)
     if diffusionTimeStep is not None:
         diffusionTimeStep = diffusionTimeStep(t,x,u)
-    physical = getattr(Model,"physical",None)
-    if physical is not None:
+    physical = getattr(Model,"physical",True)
+    if not isinstance(physical,bool):
         physical = physical(t,x,u)
+        if physicalBound is not None:
+            physical = physical*physicalBound
+    else:
+        if physicalBound is not None:
+            physical = physical*physicalBound
     # TODO: jump is problematic since the coefficient 'w' causes issues -
     # no predefined when extracting required Coefficients so needs fixing
     # So jump is not returned by this method and is constructed again in
@@ -78,12 +112,13 @@ def uflExpr(Model,space,t):
         limitedDimRange = "DFunctionSpace :: dimRange"
     else:
         limiterModified = {}
-        count = 0
-        for id,f in limiterModifiedDict.items(): count += 1
+        count = len(limiterModifiedDict.items())
+        # for id,f in limiterModifiedDict.items(): count += 1
         limitedDimRange = str(count)
     # jump = None # TODO: see comment above
     return maxSpeed, velocity, diffusionTimeStep, physical, jump,\
-           boundaryAFlux, boundaryDFlux, boundaryValue, hasBoundaryValue
+           boundaryAFlux, boundaryDFlux, boundaryValue, hasBoundaryValue,\
+           physicalBound
 
 def codeFemDg(self):
     code = self._code()
@@ -99,6 +134,31 @@ def codeFemDg(self):
     # v = TestFunction(space)
     n = FacetNormal(space.cell())
     x = SpatialCoordinate(space.cell())
+
+    physicalBound = None
+    lowerBound = getattr(Model,"lowerBound",None)
+    if lowerBound is None:
+        lowerBound = space.dimRange*["std::numeric_limits<double>::min()"]
+    else:
+        physicalBound = reduce( (lambda x,y: x*y),
+                                [conditional(u[i]>=lowerBound[i],1,0)
+                                  for i in range(len(lowerBound))
+                                  if lowerBound[i] is not None
+                                ], None )
+        if physicalBound == None: lowerBound=space.dimRange*["std::numeric_limits<double>::min()"]
+    upperBound = getattr(Model,"upperBound",None)
+    if upperBound is None:
+        upperBound = space.dimRange*["std::numeric_limits<double>::max()"]
+    else:
+        physicalBound_ = reduce( (lambda x,y: x*y),
+                                [conditional(u[i]>=upperBound[i],1,0)
+                                  for i in range(len(upperBound))
+                                  if upperBound[i] is not None
+                                ], None )
+        if physicalBound_ == None: upperBound=space.dimRange*["std::numeric_limits<double>::max()"]
+        elif physicalBound_ is not None:
+            physicalBound = physicalBound_ if physicalBound is None else\
+                                physicalBound*physicalBound_
 
     # TODO come up with something better!
     hasGamma = getattr(Model,"gamma",None)
@@ -158,10 +218,15 @@ def codeFemDg(self):
             targs=['class Entity, class Point, class T'], const=True,
             predefined=predefined)
 
-    # QUESTION: should `physical` actually depend on x? Perhaps even t?
     physical = getattr(Model,"physical",True)
     if not isinstance(physical,bool):
         physical = physical(t,x,u)
+        if physicalBound is not None:
+            physical = physical*physicalBound
+    else:
+        if physicalBound is not None:
+            physical = physical*physicalBound
+
     self.generateMethod(code, physical,
             'double', 'physical',
             args=['const Entity &entity', 'const Point &x',
@@ -285,15 +350,24 @@ def codeFemDg(self):
         limitedDimRange = "DFunctionSpace :: dimRange"
     else:
         limiterModified = {}
-        count = 0
-        for id,f in limiterModifiedDict.items(): count += 1
+        count = len(limiterModifiedDict.items())
+        # for id,f in limiterModifiedDict.items(): count += 1
         limitedDimRange = str(count)
     self.generateMethod(code, limiterModified,
             'void', 'limitedRange',
             args=['LimitedRange& limRange'],
             targs=['class LimitedRange'], const=True, evalSwitch=False,
             predefined=predefined)
-
+    obtainBounds = Method("void","obtainBounds",
+                          targs=['class LimitedRange'],
+                          args=["LimitedRange& globalMin","LimitedRange& globalMax"],const=True)
+    obtainBounds.append("globalMin = {"
+                        + ', '.join(map(str, lowerBound))
+                        +"};")
+    obtainBounds.append("globalMax = {"
+                        + ', '.join(map(str, upperBound))
+                        +"};")
+    code.append( [obtainBounds] )
     return code
 
 def transform(Model,space,t, name="" ):
