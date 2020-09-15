@@ -19,27 +19,25 @@ def uflExpr(Model,space,t):
     if lowerBound is None:
         lowerBound = space.dimRange*["std::numeric_limits<double>::min()"]
     else:
-        physicalBound = reduce( (lambda x,y: x*y),
-                                [conditional(u[i]>=lowerBound[i],1,0)
+        lowerCond = [conditional(u[i]>=lowerBound[i],1,0)
                                   for i in range(len(lowerBound))
-                                  if lowerBound[i] is not None
-                                ], None )
-        if physicalBound == None: lowerBound=space.dimRange*["std::numeric_limits<double>::min()"]
+                                  if lowerBound[i] is not None ]
+        if lowerCond != []:
+            physicalBound = reduce( (lambda x,y: x*y), lowerCond )
+        else: lowerBound=space.dimRange*["std::numeric_limits<double>::min()"]
     upperBound = getattr(Model,"upperBound",None)
     if upperBound is None:
         upperBound = space.dimRange*["std::numeric_limits<double>::max()"]
     else:
-        physicalBound_ = reduce( (lambda x,y: x*y),
-                                [conditional(u[i]>=upperBound[i],1,0)
+        upperCond = [conditional(u[i]>=upperBound[i],1,0)
                                   for i in range(len(upperBound))
-                                  if upperBound[i] is not None
-                                ], None )
-        if physicalBound_ == None: lowerBound=space.dimRange*["std::numeric_limits<double>::max()"]
-        elif physicalBound_ is not None:
-              physicalBound = physicalBound_ if physicalBound is None else\
-                              physicalBound*physicalBound_
+                                  if upperBound[i] is not None ]
+        if upperCond != []:
+            physicalBound_ = reduce( (lambda x,y: x*y), lowerCond )
+            physicalBound = physicalBound_ if physicalBound is None else\
+                            physicalBound*physicalBound_
+        else: upperBound=space.dimRange*["std::numeric_limits<double>::min()"]
 
-    if physicalBound == [None]: physicalBound = None
     maxSpeed = getattr(Model,"maxLambda",None)
     if maxSpeed is not None:
         maxSpeed = maxSpeed(t,x,u,n)
@@ -140,25 +138,24 @@ def codeFemDg(self):
     if lowerBound is None:
         lowerBound = space.dimRange*["std::numeric_limits<double>::min()"]
     else:
-        physicalBound = reduce( (lambda x,y: x*y),
-                                [conditional(u[i]>=lowerBound[i],1,0)
+        lowerCond = [conditional(u[i]>=lowerBound[i],1,0)
                                   for i in range(len(lowerBound))
-                                  if lowerBound[i] is not None
-                                ], None )
-        if physicalBound == None: lowerBound=space.dimRange*["std::numeric_limits<double>::min()"]
+                                  if lowerBound[i] is not None ]
+        if lowerCond != []:
+            physicalBound = reduce( (lambda x,y: x*y), lowerCond )
+        else: lowerBound=space.dimRange*["std::numeric_limits<double>::min()"]
     upperBound = getattr(Model,"upperBound",None)
     if upperBound is None:
         upperBound = space.dimRange*["std::numeric_limits<double>::max()"]
     else:
-        physicalBound_ = reduce( (lambda x,y: x*y),
-                                [conditional(u[i]>=upperBound[i],1,0)
+        upperCond = [conditional(u[i]>=upperBound[i],1,0)
                                   for i in range(len(upperBound))
-                                  if upperBound[i] is not None
-                                ], None )
-        if physicalBound_ == None: upperBound=space.dimRange*["std::numeric_limits<double>::max()"]
-        elif physicalBound_ is not None:
+                                  if upperBound[i] is not None ]
+        if upperCond != []:
+            physicalBound_ = reduce( (lambda x,y: x*y), lowerCond )
             physicalBound = physicalBound_ if physicalBound is None else\
-                                physicalBound*physicalBound_
+                            physicalBound*physicalBound_
+        else: upperBound=space.dimRange*["std::numeric_limits<double>::min()"]
 
     # TODO come up with something better!
     hasGamma = getattr(Model,"gamma",None)
