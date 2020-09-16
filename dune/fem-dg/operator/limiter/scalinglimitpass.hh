@@ -563,6 +563,8 @@ namespace Fem
         limiter = true;
       }
 
+      for (auto t : theta) if (t<1) limiter = true;
+
       // scale function
       if( limiter )
       {

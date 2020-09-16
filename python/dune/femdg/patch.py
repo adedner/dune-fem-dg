@@ -215,7 +215,7 @@ def codeFemDg(self):
             targs=['class Entity, class Point, class T'], const=True,
             predefined=predefined)
 
-    # physicalBound = None
+    physicalBound = None  # don't need to use this anymore
     physical = getattr(Model,"physical",True)
     if not isinstance(physical,bool):
         physical = physical(t,x,u)
@@ -224,7 +224,6 @@ def codeFemDg(self):
     else:
         if physicalBound is not None:
             physical = physical*physicalBound
-    # assert physical == True
 
     self.generateMethod(code, physical,
             'double', 'physical',
