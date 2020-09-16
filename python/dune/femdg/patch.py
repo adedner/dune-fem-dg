@@ -29,11 +29,11 @@ def uflExpr(Model,space,t):
     if upperBound is None:
         upperBound = space.dimRange*["std::numeric_limits<double>::max()"]
     else:
-        upperCond = [conditional(u[i]>=upperBound[i],1,0)
+        upperCond = [conditional(u[i]<=upperBound[i],1,0)
                                   for i in range(len(upperBound))
                                   if upperBound[i] is not None ]
         if upperCond != []:
-            physicalBound_ = reduce( (lambda x,y: x*y), lowerCond )
+            physicalBound_ = reduce( (lambda x,y: x*y), upperCond )
             physicalBound = physicalBound_ if physicalBound is None else\
                             physicalBound*physicalBound_
         else: upperBound=space.dimRange*["std::numeric_limits<double>::min()"]
@@ -148,11 +148,11 @@ def codeFemDg(self):
     if upperBound is None:
         upperBound = space.dimRange*["std::numeric_limits<double>::max()"]
     else:
-        upperCond = [conditional(u[i]>=upperBound[i],1,0)
+        upperCond = [conditional(u[i]<=upperBound[i],1,0)
                                   for i in range(len(upperBound))
                                   if upperBound[i] is not None ]
         if upperCond != []:
-            physicalBound_ = reduce( (lambda x,y: x*y), lowerCond )
+            physicalBound_ = reduce( (lambda x,y: x*y), upperCond )
             physicalBound = physicalBound_ if physicalBound is None else\
                             physicalBound*physicalBound_
         else: upperBound=space.dimRange*["std::numeric_limits<double>::min()"]
@@ -215,6 +215,7 @@ def codeFemDg(self):
             targs=['class Entity, class Point, class T'], const=True,
             predefined=predefined)
 
+    # physicalBound = None
     physical = getattr(Model,"physical",True)
     if not isinstance(physical,bool):
         physical = physical(t,x,u)
@@ -223,6 +224,7 @@ def codeFemDg(self):
     else:
         if physicalBound is not None:
             physical = physical*physicalBound
+    # assert physical == True
 
     self.generateMethod(code, physical,
             'double', 'physical',
