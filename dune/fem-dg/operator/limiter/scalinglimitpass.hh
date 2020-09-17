@@ -598,9 +598,6 @@ namespace Fem
       // timer for shock detection
       Dune::Timer indiTime;
 
-      // extract types
-      enum { dim = EntityType :: dimension };
-
       // check argument is not zero
       assert( arg_ );
 

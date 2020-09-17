@@ -865,9 +865,6 @@ namespace Fem
       // timer for shock detection
       Dune::Timer indiTime;
 
-      // extract types
-      enum { dim = EntityType :: dimension };
-
       // check argument is not zero
       assert( arg_ );
 
@@ -1215,7 +1212,6 @@ namespace Fem
                        const Geometry& geo,
                        const LocalFunctionImp& uEn) const
     {
-      enum { dim = dimGrid };
       if( discreteModel_.hasPhysical() )
       {
         if( en.type().isNone() )
@@ -1278,8 +1274,6 @@ namespace Fem
                      const LinearFunction& linearFunction,
                      LocalFunctionImp& limitEn ) const
     {
-      enum { dim = dimGrid };
-
       // true if geometry mapping is affine
       const bool affineMapping = geo.affine();
 
@@ -1546,7 +1540,6 @@ namespace Fem
                             RangeType& adaptIndicator ) const
     {
       const EntityType& en = uEn.entity();
-      enum { dim = EntityType :: dimension };
 
       // calculate circume during neighbor check
       double circume = 0.0;
