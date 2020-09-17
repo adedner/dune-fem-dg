@@ -355,11 +355,12 @@ namespace Fem
       int order_;
 
       mutable unsigned int quadId_;
-      mutable std::vector< RangeType >  tmpVal_ ;
+      mutable std::vector< RangeType > tmpVal_ ;
       mutable RangeType theta_;
     public:
       using Base::bind;
       mutable RangeType enVal_;
+      mutable int count_ ;
 
       ScaledFunction( const GridPartType& gridPart,
                       const ModelType& model, const int order )
@@ -367,7 +368,7 @@ namespace Fem
           model_( model ),
           order_( order ),
           quadId_( -1 ),
-          tmpVal_(), theta_(1), enVal_(0)
+          tmpVal_(), theta_(1), enVal_(0), count_(0)
       {}
 
       void bind( const EntityType& entity, const int order )
@@ -384,6 +385,7 @@ namespace Fem
 
         // store quadrature id for later check during evaluate
         quadId_ = quadrature.id();
+        count_  = 0;
         return tmpVal_;
       }
 
@@ -409,8 +411,14 @@ namespace Fem
       }
 
       template <class Point>
-      void evaluate(const Point &x, typename Base::RangeType &ret) const
+      void evaluate(const Point &x, typename Base::RangeType &value) const
       {
+        evaluate( count_, value );
+        ++count_;
+        return ;
+
+        std::cout << "Wrong quadrature " << std::endl;
+        assert( false );
         std::abort();
       }
 
@@ -427,6 +435,7 @@ namespace Fem
     protected:
       void evaluate(const int qP, typename Base::RangeType &value) const
       {
+        assert( qP < int(tmpVal_.size() ));
         // copy value
         value = tmpVal_[ qP ];
 
