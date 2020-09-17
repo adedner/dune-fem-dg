@@ -154,7 +154,7 @@ class RungeKutta:
             self.op.stepTime(0,0)
             self.op(u,self.k[0])
             if dt is None and self.dt is None:
-                dt = self.op.timeStepEstimate[0]*self.cfl
+                dt = self.op.localTimeStepEstimate[0]*self.cfl
             elif dt is None:
                 dt = self.dt
             self.dt = 1e10
@@ -164,12 +164,12 @@ class RungeKutta:
                     self.tmp.axpy(dt*self.A[i][j],self.k[j])
                 self.op.stepTime(self.c[i],dt)
                 self.op(self.tmp,self.k[i])
-                self.dt = min(self.dt, self.op.timeStepEstimate[0]*self.cfl)
+                self.dt = min(self.dt, self.op.localTimeStepEstimate[0]*self.cfl)
         else:
             if dt is None and self.dt is None:
                 self.op.stepTime(0,0)
                 self.op(u,self.k[0])
-                dt = self.op.timeStepEstimate[0]*self.cfl
+                dt = self.op.localTimeStepEstimate[0]*self.cfl
             elif dt is None:
                 dt = self.dt
             self.dt = 1e10
@@ -179,7 +179,7 @@ class RungeKutta:
                     self.tmp.axpy(dt*self.A[i][j],self.k[j])
                 self.op.stepTime(self.c[i],dt)
                 self.op(self.tmp,self.k[i]) # this seems like a good initial guess for dt small
-                self.dt = min(self.dt, self.op.timeStepEstimate[0]*self.cfl)
+                self.dt = min(self.dt, self.op.localTimeStepEstimate[0]*self.cfl)
                 self.helmholtz.alpha = dt*self.A[i][i]
                 self.helmholtz.solve(baru=self.tmp,target=self.k[i])
 
@@ -231,7 +231,7 @@ class ImplSSP2: # with stages=1 same as above - increasing stages does not impro
         if dt is None and self.dt is None:
             self.op.stepTime(0,0)
             self.op(u, self.tmp)
-            dt = self.op.timeStepEstimate[0]*self.cfl
+            dt = self.op.localTimeStepEstimate[0]*self.cfl
         elif dt is None:
             dt = self.dt
         self.dt = 1e10
@@ -243,14 +243,14 @@ class ImplSSP2: # with stages=1 same as above - increasing stages does not impro
         for i in range(2,self.stages+1):
             self.op.stepTime(self.c(i),dt)
             self.op(self.q2, self.tmp)
-            self.dt = min(self.dt, self.op.timeStepEstimate[0]*self.cfl)
+            self.dt = min(self.dt, self.op.localTimeStepEstimate[0]*self.cfl)
             self.q2.axpy(dt*self.mu21, self.tmp)
             self.q2.assgin(tmp)
             self.helmholtz.solve(self.tmp, self.q2)
         u.as_numpy[:] *= (1-self.lamsps)
         u.axpy(self.lamsps, self.q2)
         self.op(self.q2, self.tmp)
-        self.dt = min(self.dt, self.op.timeStepEstimate[0]*self.cfl)
+        self.dt = min(self.dt, self.op.localTimeStepEstimate[0]*self.cfl)
         u.axpy(dt*self.musps, self.tmp)
         self.op.applyLimiter( u )
         self.op.stepTime(0,0)
@@ -269,7 +269,7 @@ class ExplSSP2:
         if dt is None and self.dt is None:
             self.op.stepTime(0,0)
             self.op(u, self.tmp)
-            dt = self.op.timeStepEstimate[0]*self.cfl
+            dt = self.op.localTimeStepEstimate[0]*self.cfl
         elif dt is None:
             dt = self.dt
         self.dt = 1e10
@@ -278,11 +278,11 @@ class ExplSSP2:
         for i in range(1,self.stages):
             self.op.stepTime(self.c(i),dt)
             self.op(u,self.tmp)
-            self.dt = min(self.dt, self.op.timeStepEstimate[0]*self.cfl)
+            self.dt = min(self.dt, self.op.localTimeStepEstimate[0]*self.cfl)
             u.axpy(fac, self.tmp)
         self.op.stepTime(self.c(i),dt)
         self.op(u,self.tmp)
-        self.dt = min(self.dt, self.op.timeStepEstimate[0]*self.cfl)
+        self.dt = min(self.dt, self.op.localTimeStepEstimate[0]*self.cfl)
         u.as_numpy[:] *= (self.stages-1)/self.stages
         u.axpy(dt/self.stages, self.tmp)
         u.axpy(1/self.stages, self.q2)
@@ -319,7 +319,7 @@ class ExplSSP3:
         if dt is None and self.dt is None:
             self.op.stepTime(0,0)
             self.op(u, self.tmp)
-            dt = self.op.timeStepEstimate[0]*self.cfl
+            dt = self.op.localTimeStepEstimate[0]*self.cfl
         elif dt is None:
             dt = self.dt
         self.dt = 1e10
@@ -328,14 +328,14 @@ class ExplSSP3:
         while i <= (self.n-1)*(self.n-2)/2:
             self.op.stepTime(self.c(i),dt)
             self.op(u,self.tmp)
-            self.dt = min(self.dt, self.op.timeStepEstimate[0]*self.cfl)
+            self.dt = min(self.dt, self.op.localTimeStepEstimate[0]*self.cfl)
             u.axpy(fac, self.tmp)
             i += 1
         self.q2.assign(u)
         while i <= self.n*(self.n+1)/2:
             self.op.stepTime(self.c(i),dt)
             self.op(u,self.tmp)
-            self.dt = min(self.dt, self.op.timeStepEstimate[0]*self.cfl)
+            self.dt = min(self.dt, self.op.localTimeStepEstimate[0]*self.cfl)
             u.axpy(fac, self.tmp)
             i += 1
         u.as_numpy[:] *= (self.n-1)/(2*self.n-1)
@@ -343,7 +343,7 @@ class ExplSSP3:
         while i <= self.stages:
             self.op.stepTime(self.c(i),dt)
             self.op(u,self.tmp)
-            self.dt = min(self.dt, self.op.timeStepEstimate[0]*self.cfl)
+            self.dt = min(self.dt, self.op.localTimeStepEstimate[0]*self.cfl)
             u.axpy(fac, self.tmp)
             i += 1
         self.op.applyLimiter( u )
@@ -378,7 +378,7 @@ class ImplSSP3:
         if dt is None and self.dt is None:
             # self.op.stepTime(0,0)
             self.op(u, self.tmp)
-            dt = self.op.timeStepEstimate[0]*self.cfl
+            dt = self.op.localTimeStepEstimate[0]*self.cfl
         elif dt is None:
             dt = self.dt
         self.dt = 1e10
@@ -389,14 +389,14 @@ class ImplSSP3:
         for i in range(2,self.stages+1):
             # self.op.stepTime(self.c(i),dt)
             self.op(self.q2, self.tmp)
-            self.dt = min(self.dt, self.op.timeStepEstimate[0]*self.cfl)
+            self.dt = min(self.dt, self.op.localTimeStepEstimate[0]*self.cfl)
             self.q2.axpy(dt*self.mu21, self.tmp)
             self.helmholtz.solve(self.q2,self.tmp)
             self.q2.assign(self.tmp)
         u.as_numpy[:] *= (1-self.lamsps)
         u.axpy(self.lamsps, self.q2)
         self.op(self.q2, self.tmp)
-        self.dt = min(self.dt, self.op.timeStepEstimate[0]*self.cfl)
+        self.dt = min(self.dt, self.op.localTimeStepEstimate[0]*self.cfl)
         u.axpy(dt*self.musps, self.tmp)
         self.op.applyLimiter( u )
         self.op.stepTime(0,0)
@@ -421,7 +421,7 @@ class ExplSSP4_10:
         if dt is None and self.dt is None:
             self.op.stepTime(0,0)
             self.op(u, self.tmp)
-            dt = self.op.timeStepEstimate[0]*self.cfl
+            dt = self.op.localTimeStepEstimate[0]*self.cfl
         elif dt is None:
             dt = self.dt
         self.dt = 1e10
@@ -431,7 +431,7 @@ class ExplSSP4_10:
         while i <= 5:
             self.op.stepTime(self.c(i), dt)
             self.op(u, self.tmp)
-            self.dt = min(self.dt, self.op.timeStepEstimate[0]*self.cfl)
+            self.dt = min(self.dt, self.op.localTimeStepEstimate[0]*self.cfl)
             u.axpy(dt/6, self.tmp)
             i += 1
 
@@ -443,13 +443,13 @@ class ExplSSP4_10:
         while i <= 9:
             self.op.stepTime(self.c(i), dt)
             self.op(u, self.tmp)
-            self.dt = min(self.dt, self.op.timeStepEstimate[0]*self.cfl)
+            self.dt = min(self.dt, self.op.localTimeStepEstimate[0]*self.cfl)
             u.axpy(dt/6, self.tmp)
             i += 1
 
         self.op.stepTime(self.c(i), dt)
         self.op(u, self.tmp)
-        self.dt = min(self.dt, self.op.timeStepEstimate[0]*self.cfl)
+        self.dt = min(self.dt, self.op.localTimeStepEstimate[0]*self.cfl)
         u.as_numpy[:] *= 3/5
         u.axpy(1, self.q2)
         u.axpy(dt/10, self.tmp)

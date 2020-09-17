@@ -131,7 +131,7 @@ def run(Model, Stepper=None,
             sys.exit(1)
         if t > saveTime:
             print('[',tcount,']','dt = ', dt, 'time = ',t,
-                    'dtEst = ',operator.timeStepEstimate,
+                    'dtEst = ',operator.localTimeStepEstimate,
                     'elements = ',grid.size(0), flush=True )
             try:
                 velo0.setConstant("time",[t])
