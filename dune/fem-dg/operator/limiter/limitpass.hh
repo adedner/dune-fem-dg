@@ -13,8 +13,6 @@
 #include <dune/fem/quadrature/cornerpointset.hh>
 #include <dune/fem/io/parameter.hh>
 
-#include <dune/fem/operator/1order/localmassmatrix.hh>
-
 #include <dune/fem/space/common/adaptationmanager.hh>
 #include <dune/fem/space/common/basesetlocalkeystorage.hh>
 #include <dune/fem/space/common/capabilities.hh>
@@ -425,7 +423,6 @@ namespace Fem
       matrixCacheVec_( gridPart_.grid().maxLevel() + 1 ),
       factors_(),
       numbers_(),
-      localMassMatrix_( spc_ , [this](const int order) { return DefaultQuadrature<DiscreteFunctionSpaceType >::volumeOrder(order); } ),
       adaptive_((AdaptationMethodType(gridPart_.grid())).adaptive()),
       cartesianGrid_( CheckCartesianType::check( gridPart_ ) ),
       stepTime_(3, 0.0),
@@ -879,7 +876,7 @@ namespace Fem
       caller().setEntity( en );
 
       // initialize linear function
-      linearFunction_.bind( en );
+      linearFunction_.bind( en, spc_.order( en ) );
 
       // get function to limit
       const ArgumentFunctionType &U = *(std::get< argumentPosition >( *arg_ ));
@@ -1284,7 +1281,7 @@ namespace Fem
       enum { dim = dimGrid };
 
       // true if geometry mapping is affine
-      const bool affineMapping = localMassMatrix_.affine();
+      const bool affineMapping = geo.affine();
 
       // set zero dof to zero
       uTmpLocal_.init( en );
@@ -1380,8 +1377,9 @@ namespace Fem
                      RangeType& val) const
     {
       bool notphysical = false;
-      if( Dune::Fem::Capabilities::isHierarchic< DiscreteFunctionSpaceType > :: v
-          && localMassMatrix_.affine() )
+      const Geometry& geo = en.geometry();
+
+      if( Dune::Fem::Capabilities::isHierarchic< DiscreteFunctionSpaceType > :: v && geo.affine() )
       {
         // get point quadrature
         VolumeQuadratureType quad( en, 0 );
@@ -1402,8 +1400,6 @@ namespace Fem
       }
       else
       {
-        const Geometry& geo = en.geometry();
-
         // get quadrature
         VolumeQuadratureType quad( en, volumeQuadratureOrder( en ) );
 
@@ -1864,7 +1860,6 @@ namespace Fem
     // vector for stroing the information which elements have been computed already
     mutable std::vector< bool > visited_;
 
-    LocalMassMatrixType localMassMatrix_;
     //! true if limiter is used in adaptive scheme
     const bool adaptive_;
     //! true if grid is cartesian like
