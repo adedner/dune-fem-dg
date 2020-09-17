@@ -609,7 +609,7 @@ namespace Fem
       caller().setEntity( en );
 
       // bind function to entity
-      scaledFunction_.bind( en );
+      scaledFunction_.bind( en, spc_.order( en ) );
 
       // get function to limit
       const ArgumentFunctionType &U = *(std::get< argumentPosition >( *arg_ ));

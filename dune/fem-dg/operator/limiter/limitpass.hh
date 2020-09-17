@@ -876,7 +876,7 @@ namespace Fem
       caller().setEntity( en );
 
       // initialize linear function
-      linearFunction_.bind( en, spc_.order( en ) );
+      linearFunction_.bind( en );
 
       // get function to limit
       const ArgumentFunctionType &U = *(std::get< argumentPosition >( *arg_ ));
