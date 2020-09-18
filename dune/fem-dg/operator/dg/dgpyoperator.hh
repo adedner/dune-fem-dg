@@ -208,7 +208,18 @@ namespace Fem
     //! return number of interior elements visited by the operator
     inline size_t gridSizeInterior() const
     {
-      return std::max( fullOperator_.numberOfElements(), explOperator_.numberOfElements() );
+      size_t elem = std::max( fullOperator_.numberOfElements(),
+                              explOperator_.numberOfElements() );
+
+      // this can occur if element size if requested
+      // before operator had been applied
+      if( elem == 0 )
+      {
+        const auto end = space_.end();
+        size_t elem = 0;
+        for( auto it = space_.begin(); it != end; ++it, ++elem );
+      }
+      return elem;
     }
 
     //// End Methods from SpaceOperatorInterface /////

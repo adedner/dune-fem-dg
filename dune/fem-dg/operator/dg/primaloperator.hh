@@ -464,7 +464,7 @@ namespace Fem
 
     inline size_t numberOfElements () const
     {
-      return pass2_.numberOfElements();
+      return std::max( pass2_.numberOfElements(), limiter_.numberOfElements() );
     }
 
     /*

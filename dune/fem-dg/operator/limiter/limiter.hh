@@ -182,6 +182,11 @@ namespace Fem
       return limitPass_.computeTimeSteps();
     }
 
+    inline size_t numberOfElements () const
+    {
+      return limitPass_.numberOfElements();
+    }
+
   private:
     Limiter( const Limiter& );
 

@@ -684,7 +684,7 @@ namespace Fem
       return tmp;
     }
 
-    size_t leafElements() const
+    size_t numberOfElements() const
     {
       return elementCounter_;
     }
