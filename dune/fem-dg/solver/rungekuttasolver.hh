@@ -346,7 +346,7 @@ namespace Fem
         tpPtr_->init();
       tpPtr_->init();
 
-      if( parameter.verbose() )
+      if( Dune::Fem::Parameter::verbose() )
       {
         std::cout << "cfl = " << double(tpPtr_->factor()) << ", T_0 = " << tpPtr_->time() << std::endl;
       }
