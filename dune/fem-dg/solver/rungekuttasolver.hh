@@ -291,7 +291,6 @@ namespace Fem
       // create implicit or explicit ode solver
       if( odeSolverType_ == 0 )
       {
-        std::cout << "Creating explicit ode solver" << std::endl;
         solver = OdeSolversType :: createExplicitSolver( operator_, tp, rkSteps_, *param_, parameter, name_ );
       }
       else if (odeSolverType_ == 1)
@@ -346,7 +345,11 @@ namespace Fem
       else
         tpPtr_->init();
       tpPtr_->init();
-      std::cout << "cfl = " << double(tpPtr_->factor()) << ", T_0 = " << tpPtr_->time() << std::endl;
+
+      if( Dune::Fem::Parameter::verbose() )
+      {
+        std::cout << "cfl = " << double(tpPtr_->factor()) << ", T_0 = " << tpPtr_->time() << std::endl;
+      }
     }
 
     void initialize( const DestinationType& U )
