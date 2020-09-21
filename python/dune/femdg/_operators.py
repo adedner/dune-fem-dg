@@ -143,18 +143,42 @@ def femDGModels(Model, space, initialTime=0):
 #####################################################
 ## fem-dg Operator
 #####################################################
-# create DG operator + solver (limiter = none,minmod,vanleer,superbee),
-# (diffusionScheme = cdg2,br2,ip,nipg,...)
+# create DG operator + solver (limiter = none,default,minmod,vanleer,superbee,lp,scaling),
+# (diffusionScheme = cdg2,cdg,br2,ip,nipg,bo)
 def femDGOperator(Model, space,
-        limiter="minmod",
+        limiter="default",
         advectionFlux="default",
         diffusionScheme = "cdg2",
         threading=False,
         defaultQuadrature=True,
         codegen=True,
         initialTime=0.0, parameters=None):
+    """ create DG operator + ODE solver
+
+    Args:
+        Model: analytical model describing the PDE and auxiliary functionality
+        space: discrete function space (DG space)
+        limiter: choice of limiter stabilization, possible values are
+                 none,default,minmod,vanleer,superbee,lp,scaling
+        advectionFlux: choice of numerical flux for advective parts
+                    default is local Lax-Friedrichs
+        diffusionScheme: choice of numerical flux for diffusive parts
+                possible choices are cdg2(default),cdg,br2,ip,nipg,bo
+        threading: enable shared memory parallelization
+        defaultQuadrature: use quadratures that generically fit to the space
+        codegen: enable optimized code for evaluation and interpolation
+        initialTime: T_0, default is 0.0
+        parameters: Additional parameter passed to the DG operator, limiter and ODE solvers
+    Returns:
+        DGOperator
+    """
 
     includes = []
+
+    # obtain information about limiter interface before Model
+    # is augmented with default implementations
+    hasScalingInterface = hasattr(Model,"lowerBound") or hasattr(Model,"upperBound") or hasattr(Model,"physical")
+    hasLimiterInterface = (hasattr(Model,"jump") and hasattr(Model,"velocity")) or hasattr(Model,"physical")
 
     if type(Model)==list or type(Model)==tuple:
         advModel = Model[1]
@@ -167,7 +191,10 @@ def femDGOperator(Model, space,
     hasDiffFlux = hasattr(Model,"F_v")
     hasStiffSource = hasattr(Model,"S_i") or hasattr(Model,"S_s")
     hasNonStiffSource = hasattr(Model,"S_e") or hasattr(Model,"S_ns")
+
     virtualize = False
+
+    defaultLimiter = limiter == "default"
 
     if limiter is None or limiter is False:
         limiter = "unlimited"
@@ -178,8 +205,39 @@ def femDGOperator(Model, space,
     else:
         limiterIndicator = None
 
+    limiterstr = limiter
     if limiter.lower() == "default":
+        # check for limiter interface implementation
+        if not hasLimiterInterface:
+            print("\nfemDGOperator: Limiter selected but limiter interface (jump,velocity,physical) missing in Model!", flush=True)
+            print("femDGOperator: Falling back to unlimited!\n", flush=True)
+            limiter = "unlimited"
+        else:
+            # default is minmod which can be either lp-minmod or muscl-minmod
+            limiter = "minmod"
+            limiterstr = limiter if space.grid.type.isSimplex else "lp"
+            # force default values for how reconstruction is done
+            parameters["femdg.limiter.admissiblefunctions"] = "default"
+
+    if limiter.lower() == "lp":
         limiter = "minmod"
+        # force default values for how reconstruction is done
+        parameters["femdg.limiter.admissiblefunctions"] = "lp"
+
+    if limiter.lower() == "scaling":
+        # check for scaling limiter interface
+        if not hasScalingInterface:
+            raise KeyError(\
+              "femDGOperator: ScalingLimiter selected but scaling limiter interface (lowerBound,upperBound,physical) missing in Model!\n")
+    elif limiter.lower() != "unlimited":
+        # check for scaling limiter interface
+        if not hasScalingInterface:
+            raise KeyError(\
+              "femDGOperator: MUSCL type stabilization selected but limiter interface (jump,velocity,physical) missing in Model!\n")
+
+    if space.grid.comm.rank == 0:
+        limiterstr = "default(" + limiterstr + ")" if defaultLimiter else limiterstr
+        print("femDGOperator: Limiter =",limiterstr)
 
     # TODO: does this make sense - if there is no diffusion then it doesn't
     # matter and with diffusion using 'none' seems a bad idea?
