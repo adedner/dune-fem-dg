@@ -488,7 +488,7 @@ def femDGOperator(Model, space,
         op.setTroubledCellIndicator(limiterIndicator)
     return op
 
-def troubledCellIndicator(clsName, includes, u_h, ctorArgs=None):
+def smoothnessIndicator(clsName, includes, u_h, ctorArgs=None):
     if ctorArgs is None: ctorArgs=[]
     baseName,_ = generateTypeName("Dune::Fem::TroubledCellIndicatorBase",u_h)
     return classLoad(clsName, includes,*ctorArgs, baseClasses=[baseName],
